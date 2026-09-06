@@ -106,8 +106,8 @@ impl AiBackend {
 
     /// Runs a full tool-capable streaming chat request and returns the raw `genai`
     /// stream, so the caller maps the events into its own delta type. Applies the
-    /// same per-model option fixups as [`chat_completion_stream`] (reasoning-class
-    /// models get `temperature`/`top_p` stripped).
+    /// same per-adapter option fixups as [`chat_completion_stream`] (see
+    /// [`adjust_for_model`]).
     ///
     /// The prompt-only helpers above can't express a multipart tool loop (tool
     /// calls, tool responses, reasoning parts), so the agent's `AgentLlm` genai impl
@@ -275,7 +275,7 @@ fn clamp_u32(count: i32) -> u32 {
 /// Maps a BYOK model name to the `genai` model identifier whose namespace picks the right adapter.
 ///
 /// `genai` infers the adapter from the model name and falls back to **Ollama** for anything it
-/// doesn't recognize — so a bare `llama-3.1-8b-instant` (Groq), `deepseek-chat`, or
+/// doesn't recognize — so a bare `openai/gpt-oss-20b` (Groq), `deepseek-chat`, or
 /// `google/gemma-…:free` (OpenRouter) would POST to Ollama's `/api/chat` against an OpenAI endpoint
 /// and 404. Every cloud provider we support except Anthropic and Gemini speaks the OpenAI
 /// chat-completions wire format, so we force the `openai::` namespace for all of them. Anthropic
@@ -307,6 +307,11 @@ pub enum AiError {
     AuthFailed(String),
     /// The provider is rate-limiting requests or the account is out of quota (HTTP 429).
     RateLimited(String),
+    /// The provider has no such model, or the base URL points at a path it doesn't serve
+    /// (HTTP 404). The commonest BYOK misconfiguration, and what a decommissioned model id
+    /// looks like from our side — the `<provider>-smoke` lanes branch on this variant to
+    /// tell a stale pin apart from an outage.
+    NotFound(String),
     /// The call succeeded but the model produced no visible text. Common on reasoning models
     /// when `max_tokens` is fully consumed by reasoning before any answer is emitted.
     EmptyResponse,
@@ -323,6 +328,7 @@ impl Display for AiError {
             Self::Timeout => write!(f, "AI request timed out"),
             Self::AuthFailed(msg) => write!(f, "AI provider rejected the API key: {msg}"),
             Self::RateLimited(msg) => write!(f, "AI provider is rate-limiting or out of quota: {msg}"),
+            Self::NotFound(msg) => write!(f, "AI provider has no such model or endpoint: {msg}"),
             Self::EmptyResponse => write!(f, "AI returned no text"),
             Self::ServerError(msg) => write!(f, "AI server error: {msg}"),
             Self::ParseError(msg) => write!(f, "AI response parse error: {msg}"),
@@ -332,9 +338,10 @@ impl Display for AiError {
 
 /// Sends a chat completion request to an AI backend.
 ///
-/// `options` are the caller-supplied generation knobs. We auto-strip `temperature`/
-/// `top_p` and substitute [`ReasoningEffort::Low`] when the resolved adapter+model
-/// is reasoning-class (see [`is_openai_chat_reasoning_model`]).
+/// `options` are the caller-supplied generation knobs, fixed up per adapter by
+/// [`adjust_for_model`]: reasoning-class models lose `temperature`/`top_p` and gain
+/// [`ReasoningEffort::Low`] (see [`is_openai_chat_reasoning_model`]); Anthropic keeps
+/// `temperature` but loses `top_p`, which it rejects alongside it.
 pub async fn chat_completion(
     backend: &AiBackend,
     system_prompt: &str,
@@ -438,8 +445,7 @@ pub async fn chat_completion_with_empty_retry(
 
 /// Streams a chat completion. Returns a boxed stream of content chunks.
 ///
-/// Same per-model option fixups as [`chat_completion`] (reasoning models get
-/// `temperature`/`top_p` stripped and `ReasoningEffort::Low` substituted). Reasoning,
+/// Same per-adapter option fixups as [`chat_completion`] (see [`adjust_for_model`]). Reasoning,
 /// thought-signature, and tool-call chunks are filtered out; callers only see the
 /// visible text content. Stream ends when `genai` emits `End` or errors; an empty
 /// stream (zero chunks) is valid and matches the same graceful-degradation contract
@@ -501,6 +507,17 @@ fn adjust_for_model(options: &ChatOptions, target: &ServiceTarget) -> ChatOption
     let model_name = &*target.model.model_name;
     let adapter = target.model.adapter_kind;
 
+    // Anthropic refuses a request carrying both sampling knobs: HTTP 400, "`temperature` and
+    // `top_p` cannot both be specified for this model". Keep `temperature`, which callers
+    // actually tune, and drop `top_p`, which every call site leaves at a near-default 0.95.
+    // Verified live on 2026-09-04 against `claude-haiku-4-5-20251001` and
+    // `claude-sonnet-4-5-20250929`: both 400 with the pair, both 200 with temperature alone.
+    if matches!(adapter, AdapterKind::Anthropic) {
+        let mut opts = options.clone();
+        opts.top_p = None;
+        return opts;
+    }
+
     let needs_reasoning_swap = matches!(adapter, AdapterKind::OpenAIResp)
         || (matches!(adapter, AdapterKind::OpenAI) && is_openai_chat_reasoning_model(model_name));
 
@@ -559,10 +576,12 @@ fn make_resolver(endpoint: String, auth: AuthData, force_adapter: ForceAdapter) 
 /// Classifies a provider HTTP error status into the right [`AiError`] so the frontend can
 /// show a specific toast (key rejected vs. out of quota vs. generic server error). Branches
 /// on the numeric status, never the message body. 429 covers both rate-limiting and
-/// OpenAI's `insufficient_quota`; 401/403 is a rejected key.
+/// OpenAI's `insufficient_quota`; 401/403 is a rejected key; 404 is a model id the provider
+/// doesn't serve (a typo, or one it decommissioned) or a base URL with the wrong path.
 fn ai_error_for_status(status: u16, detail: String) -> AiError {
     match status {
         401 | 403 => AiError::AuthFailed(detail),
+        404 => AiError::NotFound(detail),
         429 => AiError::RateLimited(detail),
         _ => AiError::ServerError(detail),
     }
@@ -595,6 +614,17 @@ fn provider_error_detail(status: impl Display, body: &str) -> String {
 pub(crate) fn map_genai_error(e: genai::Error) -> AiError {
     use genai::Error as G;
     use genai::webc::Error as W;
+
+    // A failure on the STREAMING path arrives differently: `genai` wraps the response error in
+    // `WebStream { error: BoxError }`, where the box holds a `genai::Error::HttpError` carrying
+    // the status. Without this arm every streaming failure fell through to the catch-all below,
+    // so a rejected key or an exhausted quota reached the UI as a generic server error — on the
+    // path the agent and folder suggestions actually use.
+    if let G::WebStream { error, .. } = &e
+        && let Some(G::HttpError { status, body, .. }) = error.downcast_ref::<G>()
+    {
+        return ai_error_for_status(status.as_u16(), provider_error_detail(status, body));
+    }
 
     let webc = match &e {
         G::WebAdapterCall { webc_error, .. } | G::WebModelCall { webc_error, .. } => Some(webc_error),
@@ -658,124 +688,5 @@ pub async fn health_check(port: u16) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_ai_error_display() {
-        assert_eq!(AiError::Unavailable.to_string(), "AI server unavailable");
-        assert_eq!(AiError::Timeout.to_string(), "AI request timed out");
-        assert_eq!(AiError::EmptyResponse.to_string(), "AI returned no text");
-        assert_eq!(
-            AiError::ServerError(String::from("bad")).to_string(),
-            "AI server error: bad"
-        );
-        assert_eq!(
-            AiError::ParseError(String::from("oops")).to_string(),
-            "AI response parse error: oops"
-        );
-    }
-
-    #[test]
-    fn remote_model_iden_forces_openai_for_compatible_providers() {
-        // Native protocols + real OpenAI families: left untouched.
-        for m in [
-            "claude-sonnet-4-5",
-            "gemini-2.5-flash",
-            "gpt-4.1-mini",
-            "gpt-5.5",
-            "o3-mini",
-            "chatgpt-4o-latest",
-        ] {
-            assert_eq!(remote_model_iden(m), m, "{m} should keep its inferred adapter");
-        }
-        // OpenAI-compatible BYOK models genai would mis-route to Ollama: forced to OpenAI.
-        assert_eq!(
-            remote_model_iden("llama-3.1-8b-instant"),
-            "openai::llama-3.1-8b-instant"
-        );
-        assert_eq!(remote_model_iden("deepseek-chat"), "openai::deepseek-chat");
-        assert_eq!(
-            remote_model_iden("google/gemma-4-31b-it:free"),
-            "openai::google/gemma-4-31b-it:free"
-        );
-        assert_eq!(
-            remote_model_iden("mistral-small-latest"),
-            "openai::mistral-small-latest"
-        );
-    }
-
-    #[test]
-    fn with_bumped_max_tokens_multiplies_and_caps() {
-        let base = ChatOptions::default().with_max_tokens(300);
-        assert_eq!(with_bumped_max_tokens(&base, 4, 2000).max_tokens, Some(1200));
-        // Caps at the ceiling.
-        assert_eq!(with_bumped_max_tokens(&base, 100, 2000).max_tokens, Some(2000));
-        // Saturating multiply can't overflow into a tiny value.
-        let huge = ChatOptions::default().with_max_tokens(u32::MAX);
-        assert_eq!(with_bumped_max_tokens(&huge, 4, 2000).max_tokens, Some(2000));
-        // No prior cap → jump straight to the ceiling on retry.
-        assert_eq!(
-            with_bumped_max_tokens(&ChatOptions::default(), 4, 2000).max_tokens,
-            Some(2000)
-        );
-    }
-
-    #[test]
-    fn ai_error_for_status_classifies_by_code() {
-        assert!(matches!(ai_error_for_status(401, "x".into()), AiError::AuthFailed(_)));
-        assert!(matches!(ai_error_for_status(403, "x".into()), AiError::AuthFailed(_)));
-        // 429 is both rate-limiting and OpenAI's `insufficient_quota`.
-        assert!(matches!(ai_error_for_status(429, "x".into()), AiError::RateLimited(_)));
-        assert!(matches!(ai_error_for_status(500, "x".into()), AiError::ServerError(_)));
-        assert!(matches!(ai_error_for_status(404, "x".into()), AiError::ServerError(_)));
-    }
-
-    #[test]
-    fn provider_error_detail_extracts_the_json_error_message() {
-        // OpenAI, OpenRouter, Anthropic, and Gemini all put the human sentence at
-        // `error.message`; the rest of the body is noise for a user.
-        let body = r#"{"error":{"message":"This model is unavailable for free.","code":404},"user_id":"u1"}"#;
-        assert_eq!(
-            provider_error_detail("404 Not Found", body),
-            "HTTP 404 Not Found: This model is unavailable for free."
-        );
-    }
-
-    #[test]
-    fn provider_error_detail_falls_back_to_the_raw_body() {
-        assert_eq!(
-            provider_error_detail("502 Bad Gateway", "upstream exploded"),
-            "HTTP 502 Bad Gateway: upstream exploded"
-        );
-        // JSON without the well-known shape also falls back whole.
-        assert_eq!(
-            provider_error_detail("500", r#"{"oops":true}"#),
-            r#"HTTP 500: {"oops":true}"#
-        );
-    }
-
-    #[test]
-    fn provider_error_detail_truncates_a_huge_body() {
-        // An HTML error page (a proxy, Cloudflare) must not flood the UI or the logs.
-        let body = "x".repeat(5000);
-        let detail = provider_error_detail("500", &body);
-        assert!(detail.chars().count() < 450, "got {} chars", detail.chars().count());
-        assert!(detail.ends_with('…'));
-    }
-
-    #[test]
-    fn test_is_openai_chat_reasoning_model() {
-        assert!(is_openai_chat_reasoning_model("o1"));
-        assert!(is_openai_chat_reasoning_model("o1-mini"));
-        assert!(is_openai_chat_reasoning_model("o3-pro"));
-        assert!(is_openai_chat_reasoning_model("o4-mini"));
-        assert!(is_openai_chat_reasoning_model("chatgpt-4o-latest"));
-        assert!(is_openai_chat_reasoning_model("gpt-5"), "defense-in-depth");
-        assert!(is_openai_chat_reasoning_model("gpt-5.5"), "defense-in-depth");
-
-        assert!(!is_openai_chat_reasoning_model("gpt-4o-mini"));
-        assert!(!is_openai_chat_reasoning_model("gpt-4.1"));
-        assert!(!is_openai_chat_reasoning_model("local-model"));
-    }
-}
+#[path = "client_unit_test.rs"]
+mod client_unit_test;

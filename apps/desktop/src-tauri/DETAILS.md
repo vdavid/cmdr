@@ -29,6 +29,16 @@ What does move out is any block with a real owner elsewhere. Three live outside 
 The test for moving a block: it has a module that already owns the subject, and moving it doesn't hide an ordering
 constraint. A block whose only home would be "startup, part 4" stays in `lib.rs`.
 
+## The E2E build's launch mock (`open_mock.rs`)
+
+Every action that hands a path to another app records into `crate::open_mock` under the `playwright-e2e` feature
+instead of launching: `open_path` and `open_in_editor` (`commands/file_actions.rs`), and "open terminal here"
+(`src/file_system/terminal.rs`). The suite creates files and opens them, and it can't close a TextEdit or terminal window,
+so real launches would pile up unbounded across runs. It's crate-level rather than colocated with any one of them
+because all three share the store the specs read back through `e2e_opened_paths`. Same shape as the clipboard mock
+(`clipboard/mock.rs`): compiled only under the feature, so prod and dev binaries never link it, and it never touches
+the OS.
+
 ## Which Apple APIs skip the main-thread rule
 
 `CLAUDE.md` requires an `objc2::MainThreadMarker` for AppKit/Cocoa main-thread-only calls. These are thread-safe and

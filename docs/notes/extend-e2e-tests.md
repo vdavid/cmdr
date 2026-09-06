@@ -63,8 +63,8 @@ the shared test suite isn't set up to do cleanly.
 
 ### git-portal.spec.ts
 
-**Source surface**: `src-tauri/src/file_system/git/{virtual_listing,path,tree}.rs`. Frontend pane orchestration is
-generic; the portal lives entirely in the volume hooks.
+**Source surface**: `crates/cmdr-git/src/{virtual_listing,path,tree}.rs`. Frontend pane orchestration is generic; the
+portal lives entirely in the volume hooks.
 
 **Behaviors covered (before)**: 2 active tests (portal root entries; branches/main tree) + 2 skipped (cross-volume copy;
 portal toggle), both documented.
@@ -73,7 +73,7 @@ portal toggle), both documented.
 
 - `tags/<tag>` navigation (exercises `resolve_ref_commit`, including annotated-tag peel and the dot-bearing ref parse in
   `classify`).
-- `commits/` listing (exercises `list_commits` end-to-end via the volume hook; M3-era code path).
+- `commits/` listing (exercises `list_commits` end-to-end through the routed portal volume).
 - Friendly error rendering inside the portal (would need an injected gix error; `error-pane.spec.ts` already covers
   FriendlyError for filesystem errors and a Rust test covers it for git).
 

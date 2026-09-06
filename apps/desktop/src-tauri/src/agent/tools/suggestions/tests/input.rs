@@ -364,7 +364,7 @@ fn a_group_cannot_be_proposed_to_write_inside_an_archive() {
             refusal,
             PlanRefusal::Group {
                 group: 0,
-                problem: GroupProblem::DestinationInsideArchive
+                problem: GroupProblem::DestinationTakesNoWrites
             },
             "{verb} must be refused at the boundary"
         );

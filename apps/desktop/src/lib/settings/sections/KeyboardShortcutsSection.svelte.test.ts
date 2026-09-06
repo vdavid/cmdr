@@ -13,7 +13,7 @@
  * runs end-to-end against an in-memory disk, exactly like `shortcuts-store.test`.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mount, unmount, flushSync } from 'svelte'
+import { mount, unmount, flushSync, createRawSnippet } from 'svelte'
 
 // In-memory disk for the fake plugin-store (mirrors shortcuts-store.test.ts).
 const disk = vi.hoisted(() => new Map<string, unknown>())
@@ -64,6 +64,7 @@ vi.mock('$lib/utils/confirm-dialog', () => ({
 }))
 
 import KeyboardShortcutsSection from './KeyboardShortcutsSection.svelte'
+import ShortcutPill from './ShortcutPill.svelte'
 import { initializeShortcuts, getEffectiveShortcuts, isShortcutModified, resetAllShortcuts } from '$lib/shortcuts'
 
 // `app.about` (About Cmdr): scope App, default [] — David's original repro row.
@@ -426,5 +427,72 @@ describe('KeyboardShortcutsSection native macOS rows', () => {
 
     // Nothing was persisted to the conflicting command.
     expect(isShortcutModified(COPY)).toBe(false)
+  })
+})
+
+/**
+ * `ShortcutPill.svelte`'s remove control, mounted on its own.
+ *
+ * The × sits INSIDE the pill's own button, so its press has to stop there: let it
+ * bubble and removing a binding would immediately start recording a replacement
+ * over the slot that just emptied. The section mounts pills through real rows
+ * above; these mount the pill directly, which is the only way to watch both
+ * handlers of one press at once.
+ */
+describe('ShortcutPill remove control', () => {
+  const onRemove = vi.fn()
+  const onclick = vi.fn()
+
+  /** Mounts a pill and hands back its × (or null when the pill has no remove). */
+  function mountPill(removable: boolean): HTMLElement | null {
+    component = mount(ShortcutPill, {
+      target,
+      props: {
+        onclick,
+        remove: removable ? { tooltip: 'Remove this shortcut', onRemove } : undefined,
+        children: createRawSnippet(() => ({ render: () => '<span>F5</span>' })),
+      },
+    })
+    flushSync()
+    return target.querySelector<HTMLElement>('.remove-shortcut')
+  }
+
+  beforeEach(() => {
+    onRemove.mockClear()
+    onclick.mockClear()
+  })
+
+  it('renders no × for a slot that cannot be removed', () => {
+    expect(mountPill(false)).toBeNull()
+    expect(target.querySelector('.shortcut-pill')).not.toBeNull()
+  })
+
+  it('clicking the × removes the binding and does NOT start a recording', () => {
+    const remove = mountPill(true)
+    expect(remove).not.toBeNull()
+
+    remove?.click()
+    flushSync()
+
+    expect(onRemove).toHaveBeenCalledTimes(1)
+    // The press stopped at the ×: the pill's own click never ran.
+    expect(onclick).not.toHaveBeenCalled()
+  })
+
+  it('reaches the × from the keyboard with Enter and Space, and ignores other keys', () => {
+    const remove = mountPill(true)
+
+    remove?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    flushSync()
+    expect(onRemove).toHaveBeenCalledTimes(1)
+
+    remove?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    flushSync()
+    expect(onRemove).toHaveBeenCalledTimes(2)
+
+    remove?.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', bubbles: true }))
+    flushSync()
+    expect(onRemove).toHaveBeenCalledTimes(2)
+    expect(onclick).not.toHaveBeenCalled()
   })
 })

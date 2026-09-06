@@ -113,9 +113,20 @@ pub fn clear_for_test() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ignore_poison::IgnorePoison;
+
+    /// `BUFFER` is process-global, so these tests can't run concurrently: each one clears it
+    /// and then asserts on exactly what it recorded. Under a thread-per-test runner they
+    /// interleave and clobber each other (they pass under nextest, which is process-per-test,
+    /// so `pnpm check` stays green while a bare `cargo test --lib mcp::` fails a few runs in
+    /// ten). Every test that touches the ring takes this lock for its whole body; the one
+    /// that only maps enum tokens reads no shared state and needs none. Same shape as the
+    /// sibling ring's lock in `listing_errors.rs`.
+    static TEST_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn record_then_lookup_returns_type_and_status() {
+        let _guard = TEST_LOCK.lock_ignore_poison();
         clear_for_test();
         record("op-1", WriteOperationType::Copy, TerminalStatus::Completed);
         let found = lookup("op-1").expect("recorded op is found");
@@ -126,6 +137,7 @@ mod tests {
 
     #[test]
     fn lookup_unknown_id_is_none() {
+        let _guard = TEST_LOCK.lock_ignore_poison();
         clear_for_test();
         record("op-1", WriteOperationType::Move, TerminalStatus::Cancelled);
         assert!(lookup("op-nope").is_none());
@@ -140,6 +152,7 @@ mod tests {
 
     #[test]
     fn buffer_drops_oldest_past_capacity() {
+        let _guard = TEST_LOCK.lock_ignore_poison();
         clear_for_test();
         for i in 0..(CAPACITY + 5) {
             record(
@@ -158,6 +171,7 @@ mod tests {
     fn lookup_returns_the_latest_settle_for_an_id() {
         // Ids are unique in production, but the newest-first walk means a
         // re-recorded id resolves to its latest status. Pins that contract.
+        let _guard = TEST_LOCK.lock_ignore_poison();
         clear_for_test();
         record("op-x", WriteOperationType::Copy, TerminalStatus::Cancelled);
         record("op-x", WriteOperationType::Copy, TerminalStatus::Completed);

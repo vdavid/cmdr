@@ -335,18 +335,25 @@ async function handleSyntheticHeartbeatSweep(env: Bindings): Promise<void> {
   }
 }
 
+/**
+ * Daily tripwire on the telemetry D1, with the per-table row counts that say where the size went.
+ *
+ * The size comes from `meta.size_after`, which D1 stamps on the result of EVERY statement, so a
+ * throwaway `SELECT 1` reads it for free and the quiet path stays at one query.
+ *
+ * ❌ Never reach for SQLite's `pragma_page_count` / `pragma_page_size` table-valued functions: they
+ * look like the obvious source, and D1 rejects them with `SQLITE_AUTH` at runtime. That's invisible
+ * to every test here, because a mocked D1 answers whatever it's told to.
+ */
 async function handleDbSizeCheck(env: Bindings): Promise<void> {
   if (!env.CRASH_NOTIFICATION_EMAIL || !env.RESEND_API_KEY) return
 
-  const sizeRow = await env.TELEMETRY_DB.prepare(
-    `SELECT page_count * page_size AS total_size FROM pragma_page_count, pragma_page_size`,
-  ).first<{ total_size: number }>()
+  const probe = await env.TELEMETRY_DB.prepare(`SELECT 1`).run()
+  if (probe.meta.size_after <= dbSizeThresholdBytes) return
 
-  if (!sizeRow || sizeRow.total_size <= dbSizeThresholdBytes) return
+  const sizeMb = probe.meta.size_after / (1024 * 1024)
 
-  const sizeMb = sizeRow.total_size / (1024 * 1024)
-
-  // Get row counts for each table
+  // Only past the threshold, so the daily no-op costs one statement rather than one per table.
   const tables = ['crash_reports', 'downloads', 'update_checks', 'daily_active_users']
   const tableCounts: Record<string, number> = {}
   for (const table of tables) {

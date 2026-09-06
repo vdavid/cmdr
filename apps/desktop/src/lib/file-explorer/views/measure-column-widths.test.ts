@@ -94,6 +94,17 @@ describe('computeFullListColumnWidths', () => {
     expect(extSorted.size).toBe(nameSorted.size)
   })
 
+  it('reserves no caret room on a pane in no column order', () => {
+    _setMeasureForTests(fakeMeasure)
+    // `sortBy: null` (a search-results pane showing the engine's ranked rows)
+    // draws no caret anywhere, so no column may reserve the caret's width —
+    // otherwise the header track is 12px wider than anything drawn in it.
+    const sorted = computeFullListColumnWidths({ ...baseArgs, entries: [], sortBy: 'extension' })
+    const ranked = computeFullListColumnWidths({ ...baseArgs, entries: [], sortBy: null })
+
+    expect(ranked.ext).toBeLessThan(sorted.ext)
+  })
+
   it('widens size column when a large file is present', () => {
     _setMeasureForTests(fakeMeasure)
     const small = computeFullListColumnWidths({

@@ -22,44 +22,46 @@ sections compose).
   is one control, not two: the `listing.briefColumnWidthMode` radio group carries the `briefColumnWidthMaxPx` number
   field on its "Limit to" option's own line (`SettingRadioGroup`'s `itemTrailing`), greyed out while the other option is
   picked, so the row reads as the sentence the option label was written for ("Limit to [400 px]")
-- **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: three labeled `SectionCard`s —
-  Navigation (the `behavior.doubleClickPaneNavigatesToParent` switch), File operations (the extension-change
-  confirmation row `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group), and Operation log (the
-  retention limits `operationLog.maxAge` / `operationLog.maxSize`, plus the `settings.operationLog.intro` blurb). The
-  conflict/progress settings live ONLY in Advanced (`maxConflictsToShow`, `progressUpdateInterval` →
-  `section: ['Advanced']`), never mirrored here. The hidden `behavior.doubleClickOnPaneNotificationSeen` flag
-  (one-time-hint tracker) is registered but renders no row. Each card frame gated via `anyVisible(shouldShow, ...)` (the
-  card-group pattern).
-- **`ArchivesSection.svelte`**: `Behavior > Archives`: what pressing Enter does per format (Browse | Open | Ask). A
-  CUSTOM section (not registry-driven rows): all formats live in ONE pinned-shape JSON setting
-  (`behavior.archiveEnterBehavior`, `{ zip, bundle }`), so the format list extends without a registry entry per format.
-  Two labeled `SectionCard`s — Archives (the zip row) and App bundles — each a `lib/ui/ToggleGroup`
-  (`semantics="toggles"`) bound to the parsed override, writing the merged JSON back. Defaults + the pure classification
-  live in `file-explorer/pane/archive-enter-policy.ts`; this file only renders and persists. Both cards gated via
-  `anyVisible(shouldShow, 'behavior.archiveEnterBehavior')`. The Archives card ALSO holds a "Compression level" row: a
-  registry-backed `behavior.archiveCompressionLevel` slider (1–9, default 6) with "Faster"/"Smaller" `endLabels`,
-  hand-rendered here like the rest. It's the SAME setting the Compress dialog's `CompressLevelControl.svelte` binds by
-  id, and it governs every user-driven zip write; the effect on the archive is single-sourced in the backend mutation
-  `DETAILS.md` (via `write_operations/DETAILS.md` § "Archive edits").
+- **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: four labeled `SectionCard`s — Navigation
+  (the `behavior.doubleClickPaneNavigatesToParent` switch), File operations (the extension-change confirmation row
+  `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group), Terminal (the `behavior.openTerminalHereApp`
+  row, see below), and Operation log (the retention limits `operationLog.maxAge` / `operationLog.maxSize`, plus the
+  `settings.operationLog.intro` blurb). The conflict/progress settings live ONLY in Advanced (`maxConflictsToShow`,
+  `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. The hidden
+  `behavior.doubleClickOnPaneNotificationSeen` and `behavior.openTerminalHereToastSeen` flags (one-time-hint trackers)
+  are registered but render no row. Each card frame gated via `anyVisible(shouldShow, ...)` (the card-group pattern).
+- **`TerminalAppSelect.svelte`** + **`terminal-app-options.ts`**: the "Open terminal here uses" control. See below.
+- **`ArchivesSection.svelte`**: `Behavior > Archives`: what pressing Enter does per format (Browse | Open | Ask). Fully
+  registry-driven — one setting per format (`behavior.archiveEnter.zip` / `.ooxml` / `.bundle`), each a `SettingRow` +
+  `SettingToggleGroup`, so this file reads, writes, defaults, and validates nothing of its own. Two labeled
+  `SectionCard`s: Archives holds zip AND the zip-based documents and app packages (`.docx`/`.jar`/…), since both are
+  things Cmdr browses into; App bundles holds `.app`/`.bundle`/`.framework`, which are folders rather than files. The
+  format list, the matcher behind each id, and the defaults live in `file-explorer/pane/archive-enter-policy.ts`, pinned
+  to these registry entries by the parity test there. Cards gated via `anyVisible(shouldShow, ...)` over their own
+  member ids. The Archives card ALSO holds a "Compression level" row: a registry-backed
+  `behavior.archiveCompressionLevel` slider (1–9, default 6) with "Faster"/"Smaller" `endLabels`, hand-rendered here
+  like the rest. It's the SAME setting the Compress dialog's `CompressLevelControl.svelte` binds by id, and it governs
+  every user-driven zip write; the effect on the archive is single-sourced in the backend mutation `DETAILS.md` (via
+  `write_operations/DETAILS.md` § "Archive edits").
 - **`DriveIndexingSection.svelte`**: `Indexing > Drive indexing`: one unlabeled `SectionCard` (the section title already
-  reads "Drive indexing") — the `indexing.enabled` toggle + clear-index action (the hidden `indexing.indexSize` search
-  anchor), the per-drive first-connect prompt toggle (`askForEachDrive`) with its "re-enable notifications" button, and
-  the stale-drive notification toggle (`staleNotify`). Stays interactive regardless of the FDA gate (indexing operates
-  on whatever paths it can read; the gate is for the downloads watcher). The card frame is gated via
-  `anyVisible(shouldShow, ...memberIds)` (the card-group pattern), and the hidden `indexing.indexSize` anchor (its
-  `section` equals this page's) makes "index size" a search hit, keeping the section visible (no blank pane) when
-  searched. See `lib/settings/components/CLAUDE.md` § card groups. `indexing.enabled` is the MASTER switch, a hard gate
-  in the backend (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two indexing switches), so while it's off
-  this section renders the rows it overrides as overridden: both sub-toggles get `disabled` + the "Off with drive
-  indexing" badge, the hand-rendered re-enable row dims with them (`.reenable-row.overridden`, matching `SettingRow`'s
-  own disabled opacity), and one `.master-off-note` line says what stopped and that each drive keeps its own choice.
-  Clear index stays live on purpose: reclaiming the disk is exactly what someone who turned indexing off may want next,
-  and after this effort there IS something to reclaim there — a search walks whatever folder it's pointed at whichever
-  way the switch is set (`docs/specs/unindexed-search-plan.md` Decision 13). So the size and the button read the whole
-  index's FOOTPRINT off disk (`get_index_disk_usage`, every `index-*.db` plus sidecars, `root` included) instead of the
-  live `root` instance's `db_file_size`, which answers `None` on exactly the machine that most needs the number.
-  Clearing goes just as wide (`clear_drive_index` → `Index::forget_all_volumes`): a walk's disk can belong to a share
-  nobody ever enabled, and per-drive clearing has its own action in the drive's badge menu. ❌ **Don't "fix"
+  reads "Drive indexing") — the `indexing.enabled` toggle + clear-index action, the per-drive first-connect prompt
+  toggle (`askForEachDrive`) with its "re-enable notifications" button, and the stale-drive notification toggle
+  (`staleNotify`). Stays interactive regardless of the FDA gate (indexing operates on whatever paths it can read; the
+  gate is for the downloads watcher). The card frame is gated via `anyVisible(shouldShow, ...memberIds)` (the card-group
+  pattern), and the two rows that aren't settings — index size, re-enable notifications — take part in that guard
+  through the ids in `DriveIndexingSection.rows.ts` (§ Searchable rows below), which is what keeps "index size" a hit
+  and the pane non-blank. See `lib/settings/components/CLAUDE.md` § card groups. `indexing.enabled` is the MASTER
+  switch, a hard gate in the backend (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two indexing
+  switches), so while it's off this section renders the rows it overrides as overridden: both sub-toggles get
+  `disabled` + the "Off with drive indexing" badge, the hand-rendered re-enable row dims with them
+  (`.reenable-row.overridden`, matching `SettingRow`'s own disabled opacity), and one `.master-off-note` line says what
+  stopped and that each drive keeps its own choice. Clear index stays live on purpose: reclaiming the disk is exactly
+  what someone who turned indexing off may want next, and there IS something to reclaim there: a search walks whatever
+  folder it's pointed at whichever way the switch is set, and leaves an index behind. So the size and the button read
+  the whole index's FOOTPRINT off disk (`get_index_disk_usage`, every `index-*.db` plus sidecars, `root` included)
+  instead of the live `root` instance's `db_file_size`, which answers `None` on exactly the machine that most needs the
+  number. Clearing goes just as wide (`clear_drive_index` → `Index::forget_all_volumes`): a walk's disk can belong to a
+  share nobody ever enabled, and per-drive clearing has its own action in the drive's badge menu. ❌ **Don't "fix"
   `settings.indexing.masterOffNote` without asking David.** It says no drive is indexed and folder sizes stay hidden,
   which stops being strictly true the moment a search writes coverage for a branch it walked; he read it against that
   and chose to leave it, since it describes what the switch does rather than what a search may have left behind. It is
@@ -91,15 +93,18 @@ sections compose).
 - **`AiCloudSection.svelte`**: Cloud provider config: preset dropdown, per-provider endpoint/model in
   `ai.cloudProviderConfigs`, API key in OS secret store, two-step connection check. Its whole row list plus the
   connection-status block live in one unlabeled `SectionCard` (no `anyVisible` gate: the section mounts only when
-  `provider === 'cloud'` and its rows aren't search-gated as a group).
+  `provider === 'cloud'` and its rows aren't search-gated as a group). It holds the only hand-rolled `Select` in
+  settings (the provider row; every other dropdown here goes through `SettingSelect`), so it carries the `portal` prop
+  itself — without it the menu is trapped in `.settings-content-wrapper`'s mask and `overflow`, which is exactly how the
+  provider pop-up's top rows became unclickable. `../../ui/DETAILS.md` § Select → Portal.
 - **`AiLocalSection.svelte`**: Local llama-server lifecycle, model install with multi-step tracking, context window
   "Apply" (server restart), RAM gauge, delete confirmation. Only the context-window registry-row cluster (`SettingRow`
   - the RAM gauge) is wrapped in an unlabeled `SectionCard`, and that wrapper sits INSIDE the
     `{#if modelInstalled && shouldShow('ai.localContextSize')}` guard, so no empty card renders before the model is
     installed. The `.status-card`, install/`.actions` buttons, and the delete dialog stay OUTSIDE any card on purpose
-    (already visually distinct full-bleed blocks). **The window starts at 16,384**: below that an Ask Cmdr turn can't
-    fit its own prefix, so smaller sizes were dropped from the picker and a stored one resolves to the 16,384 default
-    (`agent/chat/DETAILS.md` § A local window too small to use).
+    (already visually distinct full-bleed blocks). **The window starts at 32,768**: below that an Ask Cmdr turn can't
+    fit its own prefix plus a paged tool result, so smaller sizes are absent from the picker and a stored one resolves
+    to the 32,768 default (`agent/chat/DETAILS.md` § A local window too small to use).
 - **`DeleteAiModelDialog.svelte`**: the "Delete the local AI model?" confirmation `AiLocalSection` opens
   (`dialogId: 'delete-ai-model'`, `role="alertdialog"`). Props are `modelSizeFormatted` / `isDeleting` / `onConfirm` /
   `onCancel`; the section owns the flags and the `uninstallAi()` call, so the dialog performs nothing itself. While
@@ -107,13 +112,26 @@ sections compose).
   be cancelled or double-fired (pinned by the `DeleteAiModelDialog` block of `sections.a11y.test.ts`). It's the only
   settings dialog the dev-only dialog gallery can open; see `lib/dialog-gallery/DETAILS.md`.
 - **`ImageIndexingSection.svelte`**: `Indexing › Image indexing` subsection (second subsection of Indexing): on-device
-  image-content (OCR) search. One `SectionCard` (titled by `settings.mediaIndex.card`) holding the `mediaIndex.enabled`
-  master toggle, an explicit on-device privacy note (`settings.mediaIndex.privacyNote` — the feature touches no AI
-  provider or API key, so the note says so), and, once the toggle is on, the bespoke `MediaIndexScope` (which itself
-  hosts `MediaIndexImportanceSlider`, which hosts `MediaIndexReclaim`), `MediaIndexChosenFolders`, and the
-  `MediaIndexNetworkVolumes` opt-in list. Composes the self-contained media components — it renders and gates them; the
-  logic lives in each. The `mediaIndex.*` registry entries all live at `section: ['Indexing', 'Image indexing']` (a
-  setting's one home).
+  image-content (OCR) search, in three `SectionCard`s.
+  - "Enable indexing" (`settings.mediaIndex.cards.enable`): the `mediaIndex.enabled` master toggle, an explicit
+    on-device privacy note (`settings.mediaIndex.privacyNote` — the feature touches no AI provider or API key, so the
+    note says so), the live per-drive `MediaIndexProgressSummary`, the two display toggles
+    (`mediaIndex.showFileStatusIcons` for the file-list badges, `mediaIndex.showInSearch` for the Search dialog's image
+    grid, which is off by default and gates that grid alone: `lib/search/DETAILS.md` § The image grid answers two
+    settings), and the `mediaIndex.parallelism` slider. The progress summary, both display toggles, and the slider gate
+    on the live master toggle, so they appear only once indexing is on.
+  - "Folders to index" (`settings.mediaIndex.cards.folders`): the bespoke `MediaIndexScope` (which itself hosts
+    `MediaIndexImportanceSlider`, which hosts `MediaIndexReclaim`), `MediaIndexChosenFolders`, and the
+    `MediaIndexNetworkVolumes` opt-in list.
+  - "Semantic search" (`settings.mediaIndex.clip.title`): `MediaIndexClipModel`.
+
+  Cards 2 and 3 gate on the live master toggle. Composes the self-contained media components — it renders and gates
+  them; the logic lives in each. The `mediaIndex.*` registry entries all live at
+  `section: ['Indexing', 'Image indexing']` (a setting's one home), and ALL FOUR of card 1's rows (the three switches
+  plus the `parallelism` slider) carry `cardKey: 'settings.mediaIndex.cards.enable'` so searching the card's VISIBLE
+  title reaches them (the `cardKey` contract in `docs/guides/adding-a-new-setting.md`: it must be the key the card
+  actually renders, and a `hidden` hand-rendered row needs it as much as an auto-rendered one).
+
 - **`MediaIndexScope.svelte`**: the `mediaIndex.scope` radio group — index only the folders the user chose (the default)
   or automatically by folder importance. It OWNS the importance slider's visibility: the slider renders only in the
   automatic scope, because in the narrow one the threshold has no effect at all and showing it would promise a control
@@ -209,6 +227,12 @@ sections compose).
 - **`license-section-utils.ts`**: Pure label/status formatters extracted from `LicenseSection` for testability
 - **`ram-gauge-utils.ts`**: Pure stacked-bar segment math for `AiLocalSection`'s memory gauge (used → projected → free,
   plus warning thresholds)
+- **`beta-email-signup.svelte.ts`**: `createBetaEmailSignup()`, the beta contact email field's per-mount state and
+  handlers (persist on keystroke, `betaSignup` on commit of a valid address, typed success/failure feedback), shared by
+  `UpdatesSection` and `$lib/onboarding/StepBeta.svelte`
+- **`ShortcutPill.svelte`**: the shortcut chip of a `KeyboardShortcutsSection` row and of
+  `lib/downloads/GlobalShortcutRow.svelte` (editable button with `editing` / `pendingConflict` / `empty` states and the
+  hover-only × via `remove`, or a `readOnly` span), so the two rows look the same
 - **`keyboard-shortcuts-grouping.ts`**: Pure scope→group logic for `KeyboardShortcutsSection` (one titled group per
   `CommandScope`, fixed order). Tested by the set-equality regression guard
 - **`keyboard-shortcuts-banner.ts`**: Pure conflict-banner classification for `KeyboardShortcutsSection`
@@ -229,6 +253,27 @@ reach: the key-filter field helpers (platform-aware combo splitting and subset m
 derivations.
 
 ## Conventions
+
+### Searchable rows (`<Component>.rows.ts`)
+
+A section renders plenty that no setting models: "Clear index", "Open log file", "Get a license". Those rows are
+declared as `SearchableRow`s so search can reach them, in a `<Component>.rows.ts` **beside the component whose markup
+renders them** (`DriveIndexingSection.rows.ts`, `AdvancedSection.rows.ts`, …), with `searchable-rows.ts` as the one
+aggregator `settings-search.ts` imports. Adding or removing a row touches the file next to the markup, plus that
+aggregator line for a brand-new file.
+
+The shape, the rationale, and the guardrails are single-sourced in `../DETAILS.md` § "Searchable rows"; the authoring
+steps are `docs/guides/adding-a-new-setting.md` § "Adding a searchable non-setting row". What's specific to this
+directory:
+
+- **A row NEVER decides what renders**, so ❌ don't grow this into a renderer: sections stay bespoke Svelte, and a
+  `.rows.ts` is search metadata sitting beside markup it doesn't own.
+- **`MediaIndex*` has no rows file on purpose.** Everything it renders is gated on runtime state (the reclaim offer, the
+  CLIP model's download/delete, anything behind the image-index master toggle), and a hit that scrolls to a row that
+  isn't rendered is worse than no hit.
+- `searchable-rows.test.ts` lives here, not in `../`, and fails if a declared row names a label key its sibling
+  component doesn't render, if a filtering section doesn't gate the row on its own id, or if an id collides with a
+  `SettingId`.
 
 ### Registry-driven section routing
 
@@ -383,13 +428,13 @@ more state than the race is worth. Revisit only if it shows up in practice.
 ## macOS-native and fixed-key rows are read-only
 
 The four `nativeShortcut` commands (`app.quit`/`hide`/`hideOthers`/`showAll`) render read-only: their combos show as
-plain `.shortcut-pill.static` spans (no click-to-edit), with no `+` add, no `×` remove, no reset button, and never the
-add slot. Each native row also carries a small "macOS" badge (`.readonly-badge`) with a tooltip: "macOS handles this
-shortcut. Cmdr can't change it." (`Show all` has no default binding, so it renders its `(none)` unframed plus the
-badge.) The branch is keyed off `isNativeShortcutCommand(command.id)` from `$lib/shortcuts`. This is honest: AppKit owns
-both the behavior and the accelerator (see `lib/shortcuts/DETAILS.md` § "macOS-native commands are not customizable"),
-so an editable control here would be a double illusion. The store also refuses these writes as defense in depth, so the
-UI and the store agree.
+plain read-only `ShortcutPill`s (`.shortcut-pill.static` spans) (no click-to-edit), with no `+` add, no `×` remove, no
+reset button, and never the add slot. Each native row also carries a small "macOS" badge (`.readonly-badge`) with a
+tooltip: "macOS handles this shortcut. Cmdr can't change it." (`Show all` has no default binding, so it renders its
+`(none)` unframed plus the badge.) The branch is keyed off `isNativeShortcutCommand(command.id)` from `$lib/shortcuts`.
+This is honest: AppKit owns both the behavior and the accelerator (see `lib/shortcuts/DETAILS.md` § "macOS-native
+commands are not customizable"), so an editable control here would be a double illusion. The store also refuses these
+writes as defense in depth, so the UI and the store agree.
 
 The `FIXED_KEY_COMMAND_IDS` rows (nav arrows, palette navigation, modal Enter/Escape — `isFixedKeyCommand(command.id)`)
 get the same read-only treatment with a "Fixed" badge ("This key is built into Cmdr and can't be changed.") and share
@@ -468,6 +513,47 @@ the section top; the Low disk space card carries `LOW_DISK_SPACE_ANCHOR_ID` the 
 (`routes/settings/+page.svelte`) reads from the URL on cold-open and from the `navigate-to-section` event on
 already-open windows, then `scrollIntoView`s the matching element.
 
+### "Open terminal here uses": a row whose options are read off the machine
+
+macOS has no system-wide default terminal, so Cmdr keeps its own list. The Rust side owns it
+(`src-tauri/src/file_system/terminal.rs`: which apps it knows, how each one takes a folder, and which are installed
+right now); this row only renders the answer.
+
+**Why it isn't `SettingSelect`.** Those options are registry constants. These are whatever is installed at this moment,
+so `TerminalAppSelect.svelte` builds them from `list_terminal_apps` instead: on mount, and again after every write. The
+query is one LaunchServices lookup per known app plus a bundle-icon read, cheap enough that caching would only buy a
+stale list the day someone installs Ghostty. Hence ❌ no `/Applications` scan and ❌ no refresh button, both settled in
+the Rust module.
+
+**The stored value carries both kinds of choice.** `behavior.openTerminalHereApp` is one string: a bundle id for a known
+terminal, an absolute `.app` path for a "Choose an app…" pick. Rust's `parse_choice` tells them apart structurally (a
+choice is a path exactly when it's absolute), which is why the frontend never has to tag or wrap the value. The
+`CHOOSE_APP_VALUE` sentinel is deliberately neither shape, so it couldn't be mistaken for a real choice even if a bug
+wrote it.
+
+**The picker is the plugin's, not a new IPC.** "Choose an app…" opens `@tauri-apps/plugin-dialog`'s `open()` filtered to
+`app`, defaulting to `/Applications`, the same shape `MediaIndexChosenFolders` uses for its folder picker. Under the
+hood that's the same `NSOpenPanel` with the same `setAllowedFileTypes(["app"])` as the native "Open with > Other…" path,
+so `.app` bundles select as files. The settings window already grants `dialog:allow-open`. Cancelling returns `null` and
+the setting is left alone.
+
+**An uninstalled app shows as Terminal, without a write.** `list_terminal_apps` reports `chosenId: null` when the stored
+app is gone, and `selectedTerminalAppId` displays Terminal.app for it, matching what the action does when it falls back.
+It only DISPLAYS: rewriting the setting belongs to the moment the action actually opens Terminal instead, so browsing
+Settings never silently changes a choice.
+
+**While the list is empty the control is disabled and reads "Checking…".** That covers both the first few milliseconds
+and the (very unlikely) case of the 2 s command deadline expiring, which answers with an empty list. Showing a short
+list would claim this Mac has fewer terminals than it does; staying disabled claims nothing.
+
+**Deep-linking here** uses the standard row anchor:
+`openSettingsWindow(surface, ['Behavior', 'Navigation & file ops'], settingAnchorId('behavior.openTerminalHereApp'))`.
+Both "Open terminal here" toasts arrive that way, and the hidden `behavior.openTerminalHereToastSeen` flag beside the
+row is theirs. The first-use picker that can WRITE this setting on the user's behalf (when exactly one terminal is
+running and the stored choice is still Terminal.app), the rule that it never overrides an explicit non-Terminal choice,
+and the toasts themselves all live in `apps/desktop/src/lib/open-terminal/DETAILS.md`. This row only reads and writes
+the value.
+
 ### Global go-to-latest hotkey: on/off in the Downloads card, combo edited in Keyboard shortcuts
 
 The go-to-latest toggle is a plain on/off `Switch` inside the Downloads card (alongside the downloads-notifications
@@ -492,6 +578,10 @@ and would break on a copy edit or in another locale). This is the FIRST and only
 Advanced section; keep it that way — a new card that needs extra content adds another marker-id check and an inline
 block, not a general plugin system. The two buttons reuse the same handlers and `settings.logging.*` catalog copy the
 old standalone `LoggingSection` carried.
+
+Both buttons (and the page-header "Reset all to defaults") are searchable rows, so `cardMemberIds(group)` appends
+`LOGGING_ROW_IDS` to the Logging card's members: the card's `anyVisible` guard has to see them, or a hit on "open log
+file" would open Advanced with every card filtered out.
 
 ## Ask Cmdr section (`AskCmdrSection.svelte`)
 

@@ -70,6 +70,9 @@ export function initQuickLookFollow(deps: QuickLookFollowDeps): QuickLookFollow 
     // (the pane's `volId` is the writable parent drive, so the backend's non-local
     // no-op doesn't catch it). Skip it — the panel keeps its last valid preview,
     // matching the initial-open gate in the `file.quickLook` handler.
+    //
+    // NARROW, for the same reason as that gate: cursoring onto a `.zip` or a
+    // `.docx` row must update the preview, since both are real files on disk.
     if (pathInsideArchive(path)) return
     const generation = ++quickLookFollowGeneration
     if (quickLookFollowTimer !== null) clearTimeout(quickLookFollowTimer)

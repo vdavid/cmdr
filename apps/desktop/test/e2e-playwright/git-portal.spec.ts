@@ -11,17 +11,34 @@
  * 2. Navigate into `.git/branches/` and see the branch ref.
  * 3. Navigate into a branch and see the working-tree files at HEAD.
  *
- * Cross-volume copy with executable-bit preservation lives in the Rust
- * integration test `file_system::git::m2_tests::cross_volume_copy_preserves_executable_bit`,
- * which drives the real `LocalPosixVolume::open_read_stream` and
- * `write_from_stream` round-trip. Driving the full copy UI from Playwright
- * would need dialog automation we don't have, and the Rust test exercises the
- * load-bearing code path (the volume hook + write stream).
+ * 4. Deleting the whole repo folder with the portal ON, which is the app-level
+ *    proof that no walker meets a virtual folder any more.
+ * 5. Flipping the portal off with a `.git/` pane open: the six rows go, the
+ *    real entries stay, and flipping back brings them straight back.
  *
- * Portal-toggle behavior is covered by Rust unit tests on
- * `git::try_route_listing` (volume-hook level, drives the AtomicBool the
- * toggle flips) and `git::watcher::refresh_all_virtual_listings_after_toggle`
- * (IPC + watcher invalidation), plus manual smoke per release.
+ * 6. Copying a file and a folder OUT of a branch snapshot into a real folder,
+ *    which is the app-level proof that the transfer reads through the portal
+ *    rather than looking for an inode that isn't there.
+ *
+ * 7. A LONE `branches/` pane picking up a branch created on the CLI, which is
+ *    the app-level proof that the repo's watcher follows the open listing rather
+ *    than the breadcrumb chip's subscription.
+ *
+ * Executable-bit preservation on that copy lives in the Rust integration test
+ * `cmdr_git::volume_tests::a_copy_out_of_a_snapshot_carries_the_bytes_and_the_executable_bit`,
+ * and the routing plus engine leg in
+ * `file_system::write_operations::transfer::volume::copy::snapshot_out_tests`.
+ *
+ * 7. A pane standing inside a branch snapshot refuses the write actions up front:
+ *    F7 and F2 surface the read-only-portal alert rather than opening the mkdir
+ *    dialog or an inline rename. That's the app-level proof that the frontend's
+ *    `git-portal` capability row reaches the guards, instead of the pane
+ *    inheriting the parent drive's fully-writable row and offering writes the
+ *    backend then refuses.
+ *
+ * Editing, renaming, and removing a REAL file under `.git/` is
+ * `file_system::git::walker_exposure_tests::real_files_under_dot_git_stay_fully_mutable`,
+ * which drives every write method on the local volume directly.
  */
 
 import fs from 'fs'
@@ -29,7 +46,16 @@ import path from 'path'
 import { execSync } from 'child_process'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, getFixtureRoot, fileExistsInPane, pollUntil } from './helpers.js'
+import {
+  dismissOverlay,
+  ensureAppReady,
+  expectAndDismissToast,
+  getFixtureRoot,
+  fileExistsInPane,
+  pollUntil,
+  MKDIR_DIALOG,
+} from './helpers.js'
+import { ensureMcpClient, mcpCall, mcpNavToPath } from '../e2e-shared/mcp-client.js'
 
 /** Matches the `PageLike` alias used inside `helpers.ts`. */
 type PageLike = TauriPage | BrowserPageAdapter
@@ -45,7 +71,7 @@ function repoPath(): string {
  * tears down any prior copy first so individual test runs start clean.
  *
  * Layout:
- * - `README.md`            (regular file, stable content)
+ * - `readme.txt`           (regular file, stable content)
  * - `scripts/run.sh`       (executable file, mode 0755)
  * - `branches/main` HEAD ➜ commits these two files
  */
@@ -54,8 +80,8 @@ function createGitRepoFixture(): void {
   if (fs.existsSync(repo)) fs.rmSync(repo, { recursive: true, force: true })
   fs.mkdirSync(repo, { recursive: true })
 
-  const readme = path.join(repo, 'README.md')
-  fs.writeFileSync(readme, '# Git portal fixture\n\nSynthesized at test time.\n')
+  const readme = path.join(repo, 'readme.txt')
+  fs.writeFileSync(readme, 'Git portal fixture\n\nSynthesized at test time.\n')
 
   const scripts = path.join(repo, 'scripts')
   fs.mkdirSync(scripts, { recursive: true })
@@ -64,19 +90,26 @@ function createGitRepoFixture(): void {
   fs.chmodSync(runSh, 0o755)
 
   // Init + commit. We pin author to keep SHAs stable across runs.
-  const env = {
-    ...process.env,
-    GIT_AUTHOR_NAME: 'Cmdr Test',
-    GIT_AUTHOR_EMAIL: 'test@cmdr.local',
-    GIT_COMMITTER_NAME: 'Cmdr Test',
-    GIT_COMMITTER_EMAIL: 'test@cmdr.local',
-    GIT_AUTHOR_DATE: '2025-01-01T00:00:00Z',
-    GIT_COMMITTER_DATE: '2025-01-01T00:00:00Z',
-  }
-  execSync('git init -q -b main', { cwd: repo, env })
-  execSync('git add .', { cwd: repo, env })
-  execSync('git commit -q -m "Add fixture content"', { cwd: repo, env })
-  execSync('git tag v1.0.0', { cwd: repo, env })
+  gitInRepo('init -q -b main')
+  gitInRepo('add .')
+  gitInRepo('commit -q -m "Add fixture content"')
+  gitInRepo('tag v1.0.0')
+}
+
+/** Runs `git <args>` inside the fixture repo, with the pinned author identity. */
+function gitInRepo(args: string): void {
+  execSync(`git ${args}`, {
+    cwd: repoPath(),
+    env: {
+      ...process.env,
+      GIT_AUTHOR_NAME: 'Cmdr Test',
+      GIT_AUTHOR_EMAIL: 'test@cmdr.local',
+      GIT_COMMITTER_NAME: 'Cmdr Test',
+      GIT_COMMITTER_EMAIL: 'test@cmdr.local',
+      GIT_AUTHOR_DATE: '2025-01-01T00:00:00Z',
+      GIT_COMMITTER_DATE: '2025-01-01T00:00:00Z',
+    },
+  })
 }
 
 /**
@@ -95,6 +128,17 @@ async function navigateLeftPaneTo(tauriPage: PageLike, target: string): Promise<
 
 async function paneHasFile(tauriPage: PageLike, paneIndex: number, name: string, timeout = 5000): Promise<boolean> {
   return pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, name, paneIndex), timeout)
+}
+
+async function paneLacksFile(tauriPage: PageLike, paneIndex: number, name: string, timeout = 5000): Promise<boolean> {
+  return pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, name, paneIndex)), timeout)
+}
+
+/** Flips the live portal setting the way `settings-applier.ts` does. */
+async function setPortalEnabled(tauriPage: PageLike, enabled: boolean): Promise<void> {
+  await tauriPage.evaluate(`(function() {
+    return window.__TAURI_INTERNALS__.invoke('set_show_virtual_git_portal', { enabled: ${JSON.stringify(enabled)} });
+  })()`)
 }
 
 test.describe('Git portal', () => {
@@ -125,7 +169,7 @@ test.describe('Git portal', () => {
     expect(await paneHasFile(tauriPage, 0, 'main')).toBe(true)
 
     await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/branches/main'))
-    expect(await paneHasFile(tauriPage, 0, 'README.md')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
     expect(await paneHasFile(tauriPage, 0, 'scripts')).toBe(true)
   })
 
@@ -138,8 +182,187 @@ test.describe('Git portal', () => {
     expect(await paneHasFile(tauriPage, 0, 'v1.0.0')).toBe(true)
 
     await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/tags/v1.0.0'))
-    expect(await paneHasFile(tauriPage, 0, 'README.md')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
     expect(await paneHasFile(tauriPage, 0, 'scripts')).toBe(true)
+  })
+
+  // The portal is process-global, so a cell that turns it off puts it back.
+  test.afterEach(async ({ tauriPage }) => {
+    await setPortalEnabled(tauriPage, true)
+  })
+
+  test('deletes the whole repo folder with the portal on, leaving no .git behind', async ({ tauriPage }) => {
+    // The bug this pins: the six virtual folders used to reach the volume-aware
+    // delete walker, which refused each one (and every real file under `.git`)
+    // with `NotSupported`, stopping with the repo half-gone.
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    await mcpNavToPath('left', getFixtureRoot())
+    expect(await paneHasFile(tauriPage, 0, REPO_REL)).toBe(true)
+
+    await mcpCall('select', { pane: 'left', names: [REPO_REL] })
+    expect(await mcpCall('delete', { mode: 'delete', autoConfirm: true })).toContain('OK')
+
+    const gone = await mcpCall('await', {
+      pane: 'left',
+      condition: 'not_has_item',
+      value: REPO_REL,
+      timeoutSeconds: 20,
+    })
+    expect(gone).toContain('OK')
+    expect(fs.existsSync(path.join(repoPath(), '.git'))).toBe(false)
+    expect(fs.existsSync(repoPath())).toBe(false)
+
+    // ❗ The completion TOAST, ❌ never `dismissAllToasts`. The row above goes
+    // when the file watcher re-reads the pane, which is a good half-second before
+    // the progress dialog comes down: the dialog holds itself open for
+    // `MIN_DISPLAY_MS` (400 ms) so a fast operation doesn't flash. A cell that
+    // stops at "the row is gone" therefore ends INSIDE that window, and the leak
+    // guard reports the still-open `transfer-progress` overlay against it, while
+    // the toast lands a moment later and gets blamed on the NEXT cell. Waiting
+    // for the toast waits for the dialog, because the same handler raises one and
+    // unmounts the other. 10 s rather than the helper's 3 s default: the unmount
+    // has been seen lagging several seconds under Docker-lane load, and it is
+    // still well inside the 15 s per-test timeout.
+    await expectAndDismissToast(tauriPage, 'Delete complete', { timeout: 10000 })
+  })
+
+  test('turning the portal off with a .git pane open drops the virtual rows and keeps the real ones', async ({
+    tauriPage,
+  }) => {
+    await ensureAppReady(tauriPage)
+    await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git'))
+    expect(await paneHasFile(tauriPage, 0, 'branches')).toBe(true)
+
+    // The setting flip alone isn't enough; the backend also refreshes every open
+    // `.git/` listing, and the refresh must re-read WITHOUT the overlay's rows.
+    await setPortalEnabled(tauriPage, false)
+    expect(await paneLacksFile(tauriPage, 0, 'branches')).toBe(true)
+    expect(await paneLacksFile(tauriPage, 0, 'commits')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'HEAD')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'config')).toBe(true)
+
+    // And back: the same refresh runs the overlay again.
+    await setPortalEnabled(tauriPage, true)
+    expect(await paneHasFile(tauriPage, 0, 'branches')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'HEAD')).toBe(true)
+  })
+
+  test('copies a file and a folder out of a branch snapshot into a real folder', async ({ tauriPage }) => {
+    // The bug this pins: a snapshot source used to stay on the parent drive, so
+    // the copy took the local-to-local fast path against paths with no inode.
+    // The dialog then sat on "Verifying before copy" forever and ended in
+    // "Couldn't finish copying".
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+
+    const outDir = path.join(getFixtureRoot(), 'git-portal-copy-out')
+    fs.rmSync(outDir, { recursive: true, force: true })
+    fs.mkdirSync(outDir, { recursive: true })
+
+    await mcpNavToPath('right', outDir)
+    await mcpNavToPath('left', path.join(repoPath(), '.git/branches/main'))
+    expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
+
+    // `select` focuses the pane, so the copy runs from the snapshot into the
+    // right pane's real folder.
+    await mcpCall('select', { pane: 'left', names: ['readme.txt', 'scripts'] })
+    expect(await mcpCall('copy', { autoConfirm: true })).toContain('OK')
+
+    const landed = await mcpCall('await', {
+      pane: 'right',
+      condition: 'has_item',
+      value: 'readme.txt',
+      timeoutSeconds: 20,
+    })
+    expect(landed).toContain('OK')
+
+    // Byte-for-byte, both the top-level file and the folder's contents.
+    await expect.poll(() => fs.existsSync(path.join(outDir, 'scripts', 'run.sh')), { timeout: 20000 }).toBe(true)
+    expect(fs.readFileSync(path.join(outDir, 'readme.txt'))).toEqual(
+      fs.readFileSync(path.join(repoPath(), 'readme.txt')),
+    )
+    expect(fs.readFileSync(path.join(outDir, 'scripts', 'run.sh'))).toEqual(
+      fs.readFileSync(path.join(repoPath(), 'scripts', 'run.sh')),
+    )
+
+    // The copy's own completion toast, for the reason the delete cell spells out:
+    // the bytes land well before the progress dialog's anti-flicker floor expires.
+    await expectAndDismissToast(tauriPage, 'Copied 1 file and 1 folder.', { timeout: 10000 })
+    fs.rmSync(outDir, { recursive: true, force: true })
+  })
+
+  test('a pane inside a branch snapshot offers no new folder and no rename', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    await mcpNavToPath('left', path.join(repoPath(), '.git/branches/main'))
+    expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
+
+    // `select` focuses the pane, so the keystrokes below land on the snapshot.
+    await mcpCall('select', { pane: 'left', names: ['readme.txt'] })
+
+    // The F-bar renders what the snapshot can't honor as DISABLED rather than
+    // offering it and refusing on press: `docs/design-principles.md` puts a
+    // disabled key ahead of a "you did the wrong thing" dialog. The pane sits on
+    // the writable parent drive's volume id, so this only holds because the bar
+    // reads the PANE's capability row (`capabilitiesForPane`), kind from path.
+    // Buttons, in order: F2 Rename, F3 View, F4 Edit, F5 Copy, F6 Move,
+    // F7 New folder, F8 Delete.
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<string>(`(function() {
+            var bar = document.querySelector('.function-key-bar');
+            if (!bar) return 'no bar';
+            var b = bar.querySelectorAll('button');
+            if (b.length < 7) return 'only ' + b.length + ' buttons';
+            return 'rename=' + b[0].disabled + ' newFolder=' + b[5].disabled + ' copy=' + b[3].disabled;
+          })()`),
+        { timeout: 5000 },
+      )
+      // Copy stays live: a snapshot's rows are real content the transfer reads out.
+      .toBe('rename=true newFolder=true copy=false')
+
+    // A keystroke bypasses the bar, so the alert stays the last line: F7 surfaces
+    // the read-only-portal alert up front, NOT the mkdir dialog.
+    await tauriPage.keyboard.press('F7')
+    await expect.poll(async () => tauriPage.isVisible('[data-dialog-id="alert"]'), { timeout: 5000 }).toBeTruthy()
+    expect(await tauriPage.isVisible(MKDIR_DIALOG)).toBe(false)
+    const alertText = await tauriPage.evaluate<string>(`(function() {
+            var msg = document.querySelector('[data-dialog-id="alert"] .message, [data-dialog-id="alert"] #alert-dialog-message');
+            return msg ? msg.textContent : '';
+        })()`)
+    expect(alertText.toLowerCase()).toContain('snapshots of your git history')
+    await dismissOverlay(tauriPage)
+
+    // F2 is refused the same way: no inline rename opens on a snapshot row.
+    await tauriPage.keyboard.press('F2')
+    await expect.poll(async () => tauriPage.isVisible('[data-dialog-id="alert"]'), { timeout: 5000 }).toBeTruthy()
+    expect(await tauriPage.isVisible('.rename-input')).toBe(false)
+    await dismissOverlay(tauriPage)
+
+    // The snapshot is untouched either way.
+    expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
+  })
+
+  test('a lone branches pane picks up a branch created on the CLI', async ({ tauriPage }) => {
+    // The bug this pins: the per-repo `.git/*` watcher used to be armed only by
+    // the breadcrumb chip's `subscribeGitState`, which fires for the repo a pane
+    // is standing in the WORKING TREE of. With `branches/` the only pane on the
+    // repo, nothing armed it and the pane sat on the refs as they were when it
+    // opened. Arming now follows the open listing, backend-side.
+    await ensureAppReady(tauriPage)
+    await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/branches'))
+    expect(await paneHasFile(tauriPage, 0, 'main')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'picked-up-live', 500)).toBe(false)
+
+    gitInRepo('branch picked-up-live')
+
+    // 200 ms debounce, then the report drives a `FullRefresh` of this listing.
+    // ❗ Well inside the 15 s per-test timeout: a wait AT that timeout can only
+    // ever end the run with "test timeout exceeded", never with this assertion's
+    // own message.
+    expect(await paneHasFile(tauriPage, 0, 'picked-up-live', 8000)).toBe(true)
   })
 
   test('navigates commits/ and shows the single HEAD commit by short SHA', async ({ tauriPage }) => {

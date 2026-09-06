@@ -17,7 +17,17 @@
 //! untouched — staging it again would only produce a `foo.cmdr-tmp-A.cmdr-tmp-B`.
 //! A write the DESTINATION lands in one indivisible shot is
 //! [`WriteStaging::SingleShot`] and needs no temp: there is no moment at which
-//! the final name holds a partial. Every other write is [`WriteStaging::Stage`].
+//! the final name holds a partial. Every other write stages here
+//! ([`WriteStaging::Stage`], or [`WriteStaging::StageOntoClaimedName`] when the
+//! caller picked the final name itself).
+//!
+//! **Whose name it is.** The landing rename can answer `AlreadyExists`, and
+//! what that means is the CALLER's to say ([`LandingName`]): a name it claimed
+//! (a `Rename` pick's `O_EXCL` placeholder, a cross-type Overwrite's cleared
+//! destination) may be cleared, a name it believed FREE may not. Without the
+//! distinction a clash nobody resolved — a case-insensitive destination
+//! answering for `Report.docx` with the user's `report.docx` — read as "clear
+//! the way" and replaced a file under a Skip.
 //!
 //! **Cost.** One extra rename per staged file. On SMB that is one round trip,
 //! which roughly doubles the wire cost of a file the compound
@@ -31,6 +41,7 @@ use std::sync::Arc;
 
 use super::super::in_flight_temps::TempHome;
 use super::super::state::WriteOperationState;
+use super::recovered_name::{FinalizeFailure, rescue_out_of_temp_space};
 use super::transfer_probe::{TaskPhase, set_task_phase};
 use crate::file_system::staging::StagingTemp;
 use crate::file_system::volume::{Volume, VolumeError};
@@ -39,7 +50,14 @@ use crate::file_system::volume::{Volume, VolumeError};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum WriteStaging {
     /// The path handed to the writer is the file's FINAL name: stage it here.
+    /// The caller believes that name is FREE, so an `AlreadyExists` when the
+    /// bytes come to take it is a clash nobody answered — see [`LandingName`].
     Stage,
+    /// Stage as [`WriteStaging::Stage`], but the final name is one the CALLER
+    /// claimed or cleared: a `Rename` resolution's `O_EXCL` placeholder, or a
+    /// cross-type Overwrite that removed what was there. Whatever the landing
+    /// finds in the way is the caller's own doing, so it may clear it.
+    StageOntoClaimedName,
     /// The path handed to the writer is already a `.cmdr-tmp-*` the CALLER
     /// minted and will land itself (the conflict layer's safe-replace, which
     /// keeps the original in place until the temp is complete). Write straight
@@ -50,6 +68,25 @@ pub(super) enum WriteStaging {
     /// staging would buy nothing but a rename round trip. Write straight to the
     /// final name.
     SingleShot,
+}
+
+/// What the caller believes sits at the final name when the staged bytes come
+/// to take it, and therefore what an `AlreadyExists` from the landing rename
+/// means.
+///
+/// The distinction is the difference between a late-detected conflict and a
+/// deleted file. Only the caller knows which it is: the landing sees the same
+/// `AlreadyExists` either way.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum LandingName {
+    /// Nobody resolved a conflict for this write: the name was free when the
+    /// caller last looked. Something in the way now is a clash no policy and no
+    /// person answered, so the landing REFUSES rather than clearing it.
+    ExpectedFree,
+    /// The caller claimed or cleared this name and is entitled to what's in the
+    /// way: a `Rename` pick reserved with an `O_EXCL` placeholder, a cross-type
+    /// Overwrite whose destination delete has already run.
+    ClaimedByTheCaller,
 }
 
 /// One file write's staging: where the bytes go, and how they get their final
@@ -80,6 +117,9 @@ pub(super) struct StagedWrite {
     /// Where the file must end up. Under `AlreadyStaged` this IS the caller's
     /// temp, and landing it is the caller's job.
     final_path: PathBuf,
+    /// What the caller believes about that name, which is what [`land`] needs to
+    /// tell a clash nobody answered from a name the caller itself claimed.
+    landing: LandingName,
     state: Arc<WriteOperationState>,
 }
 
@@ -90,7 +130,7 @@ impl StagedWrite {
         let mut temp = None;
         let mut caller_temp = None;
         match staging {
-            WriteStaging::Stage => {
+            WriteStaging::Stage | WriteStaging::StageOntoClaimedName => {
                 let staged = StagingTemp::mint(final_path, state.liveness_token());
                 super::super::in_flight_temps::register(state, staged.path(), dest_home(state));
                 temp = Some(staged);
@@ -108,6 +148,15 @@ impl StagedWrite {
             temp,
             caller_temp,
             final_path: final_path.to_path_buf(),
+            // The two staging kinds that never land here answer
+            // `ClaimedByTheCaller` for the same reason they need no landing:
+            // the name is the caller's, and the caller does the swap.
+            landing: match staging {
+                WriteStaging::Stage => LandingName::ExpectedFree,
+                WriteStaging::StageOntoClaimedName | WriteStaging::AlreadyStaged | WriteStaging::SingleShot => {
+                    LandingName::ClaimedByTheCaller
+                }
+            },
             state: Arc::clone(state),
         }
     }
@@ -128,7 +177,7 @@ impl StagedWrite {
     /// `Err(VolumeError::NotSupported)` means this destination can't rename (or
     /// delete), so it can't stage at all; the caller may fall back to writing at
     /// the final name. No production backend takes that branch.
-    pub(super) async fn commit(mut self, dest_volume: &Arc<dyn Volume>) -> Result<(), VolumeError> {
+    pub(super) async fn commit(mut self, dest_volume: &Arc<dyn Volume>) -> Result<(), FinalizeFailure> {
         let Some(temp) = self.temp.take() else {
             // Nothing of ours to land: the caller stages and lands its own temp,
             // and a single-shot write already sits at its final name.
@@ -138,14 +187,17 @@ impl StagedWrite {
         // Landing is a device round trip of its own; a dump has to be able to
         // name it rather than showing a task still "streaming" at EOF.
         set_task_phase(TaskPhase::Finalizing);
-        match land(dest_volume, temp.path(), &self.final_path).await {
-            Err(VolumeError::NotSupported) => {
+        match land(dest_volume, temp.path(), &self.final_path, self.landing).await {
+            Err(FinalizeFailure {
+                error: VolumeError::NotSupported,
+                ..
+            }) => {
                 // This backend can't land a staged write at all, so the caller
                 // will rewrite the file at its final name. Drop the temp here:
                 // it isn't the only copy of anything, and leaving it would litter
                 // the destination on every single file.
                 let _ = dest_volume.delete(temp.path()).await;
-                Err(VolumeError::NotSupported)
+                Err(VolumeError::NotSupported.into())
             }
             other => other,
         }
@@ -249,19 +301,60 @@ fn dest_home(state: &WriteOperationState) -> Option<TempHome<'_>> {
 /// backend that can delete but not rename, which would otherwise destroy the
 /// destination and answer `NotSupported`.
 ///
-/// On failure `temp` is left alone: past this point it holds the file's only
-/// complete copy.
-async fn land(dest_volume: &Arc<dyn Volume>, temp: &Path, final_path: &Path) -> Result<(), VolumeError> {
+/// ❗ **And only a name the CALLER claimed**, which is the other half of the
+/// same question. `AlreadyExists` says something is in the way; only
+/// [`LandingName`] says whose it is. Under
+/// [`LandingName::ExpectedFree`] nothing resolved a conflict for this write, so
+/// what's in the way is the user's file and a policy nobody applied to it: the
+/// landing reports the clash and leaves both sides alone. A case-insensitive
+/// destination is where that happens without any race — `Report.docx` renaming
+/// onto a stored `report.docx` — and clearing the way there replaced files under
+/// a Skip.
+///
+/// The bytes are never deleted on failure: past this point `temp` holds the
+/// file's only complete copy. When the way was CLEARED and the rename then
+/// failed anyway, they don't stay under the temp name either — see
+/// [`FinalizeFailure::new_data_at`].
+async fn land(
+    dest_volume: &Arc<dyn Volume>,
+    temp: &Path,
+    final_path: &Path,
+    landing: LandingName,
+) -> Result<(), FinalizeFailure> {
     let Err(first) = dest_volume.rename(temp, final_path, false).await else {
         return Ok(());
     };
     if !matches!(first, VolumeError::AlreadyExists(_)) {
-        return Err(first);
+        return Err(first.into());
+    }
+    if landing == LandingName::ExpectedFree {
+        log::warn!(
+            target: "copy",
+            "staged write: {} is taken by something nobody resolved a conflict for; \
+             leaving it alone. The new bytes stay at {}.",
+            final_path.display(),
+            temp.display(),
+        );
+        return Err(first.into());
     }
     match dest_volume.delete(final_path).await {
-        Ok(()) | Err(VolumeError::NotFound(_)) => dest_volume.rename(temp, final_path, false).await,
-        // Couldn't clear the way either; the rename error is the one to report.
-        Err(_) => Err(first),
+        Ok(()) | Err(VolumeError::NotFound(_)) => match dest_volume.rename(temp, final_path, false).await {
+            Ok(()) => Ok(()),
+            // ❗ The way is cleared and the bytes couldn't take the name, so the
+            // temp is now the only complete copy of a file with nothing at its
+            // destination — and it wears a `.cmdr-tmp-*` name
+            // `cleanup.rs::reap_stale_transfer_temps` matches an hour later. Get
+            // it out of temp space and report where it went. Same act, same
+            // reason, as `conflict::finalize_safe_replace`'s.
+            Err(error) => Err(FinalizeFailure {
+                new_data_at: Some(rescue_out_of_temp_space(dest_volume, temp, final_path).await),
+                error,
+            }),
+        },
+        // Couldn't clear the way either, so nothing was lost: the destination
+        // still holds whatever was in the way, and the rename error is the one to
+        // report.
+        Err(_) => Err(first.into()),
     }
 }
 
@@ -352,19 +445,73 @@ mod tests {
         assert!(state.in_flight_temps.lock_ignore_poison().is_empty());
     }
 
-    /// Landing onto a name something else already holds is the case the second
+    /// Landing onto a name the CALLER claimed — a `Rename` pick's placeholder,
+    /// a cross-type Overwrite's cleared destination — is the case the second
     /// attempt exists for: clear the way, then rename again.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn landing_clears_a_destination_that_is_genuinely_in_the_way() {
+    async fn landing_clears_a_claimed_name_that_is_genuinely_in_the_way() {
         let inner = Arc::new(InMemoryVolume::new("dest"));
         let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
         inner.create_file(Path::new("/notes.txt"), b"OLD").await.unwrap();
         inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
 
-        land(&dest, Path::new("/temp"), Path::new("/notes.txt")).await.unwrap();
+        land(
+            &dest,
+            Path::new("/temp"),
+            Path::new("/notes.txt"),
+            LandingName::ClaimedByTheCaller,
+        )
+        .await
+        .unwrap();
 
         assert!(!inner.exists(Path::new("/temp")).await);
         assert_eq!(size_of(&inner, "/notes.txt").await, Some(3), "the new bytes landed");
+    }
+
+    /// The same collision under a name the caller believed FREE is a conflict
+    /// nobody answered, and clearing it would replace a file under a policy
+    /// (Skip, an unanswered Stop) that promised not to.
+    ///
+    /// The reachable case needs no race: a case-insensitive destination resolves
+    /// `Report.docx` onto the user's `report.docx`, so the rename says
+    /// `AlreadyExists` for a name the level listing reported as free.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn landing_onto_a_name_believed_free_leaves_it_alone() {
+        let inner = Arc::new(InMemoryVolume::new("dest"));
+        let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
+        inner
+            .create_file(Path::new("/notes.txt"), b"THE USER'S FILE")
+            .await
+            .unwrap();
+        inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
+
+        let outcome = land(
+            &dest,
+            Path::new("/temp"),
+            Path::new("/notes.txt"),
+            LandingName::ExpectedFree,
+        )
+        .await;
+
+        assert!(
+            matches!(
+                outcome,
+                Err(FinalizeFailure {
+                    error: VolumeError::AlreadyExists(_),
+                    ..
+                })
+            ),
+            "the clash is what the caller has to see; got {outcome:?}"
+        );
+        assert_eq!(
+            size_of(&inner, "/notes.txt").await,
+            Some(15),
+            "a name nobody resolved a conflict for must still hold the user's bytes"
+        );
+        assert!(
+            inner.exists(Path::new("/temp")).await,
+            "and the new bytes stay recoverable under the temp name"
+        );
     }
 
     /// A rename that failed for ANY OTHER reason must leave the destination
@@ -381,7 +528,13 @@ mod tests {
         let (inner, outcome) = land_with_a_rename_that_fails(VolumeError::DeviceDisconnected("blip".to_string())).await;
 
         assert!(
-            matches!(outcome, Err(VolumeError::DeviceDisconnected(_))),
+            matches!(
+                outcome,
+                Err(FinalizeFailure {
+                    error: VolumeError::DeviceDisconnected(_),
+                    ..
+                })
+            ),
             "the rename's own failure is what the caller has to see; got {outcome:?}"
         );
         assert_eq!(
@@ -401,14 +554,23 @@ mod tests {
     async fn a_backend_without_rename_does_not_delete_what_it_cannot_replace() {
         let (inner, outcome) = land_with_a_rename_that_fails(VolumeError::NotSupported).await;
 
-        assert!(matches!(outcome, Err(VolumeError::NotSupported)), "got {outcome:?}");
+        assert!(
+            matches!(
+                outcome,
+                Err(FinalizeFailure {
+                    error: VolumeError::NotSupported,
+                    ..
+                })
+            ),
+            "got {outcome:?}"
+        );
         assert!(inner.exists(Path::new("/notes.txt")).await);
     }
 
     /// A landing onto a destination the user already has, over a backend whose
     /// rename fails with `failure`. Answers the volume so a cell can ask what
     /// survived.
-    async fn land_with_a_rename_that_fails(failure: VolumeError) -> (Arc<InMemoryVolume>, Result<(), VolumeError>) {
+    async fn land_with_a_rename_that_fails(failure: VolumeError) -> (Arc<InMemoryVolume>, Result<(), FinalizeFailure>) {
         let inner = Arc::new(InMemoryVolume::new("dest").with_rename_failing(failure));
         let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
         inner
@@ -417,8 +579,59 @@ mod tests {
             .unwrap();
         inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
 
-        let outcome = land(&dest, Path::new("/temp"), Path::new("/notes.txt")).await;
+        // The claimed reading, so the cell is about the rename's error and not
+        // about who owns the name.
+        let outcome = land(
+            &dest,
+            Path::new("/temp"),
+            Path::new("/notes.txt"),
+            LandingName::ClaimedByTheCaller,
+        )
+        .await;
         (inner, outcome)
+    }
+
+    /// The landing cleared a name the caller claimed, and then the rename onto
+    /// it was refused. The destination is gone, so the temp holds the ONLY
+    /// complete copy of the new file — and it wears a `.cmdr-tmp-*` name, which
+    /// `cleanup.rs::reap_stale_transfer_temps` matches on age at the start of the
+    /// next transfer into that folder. It has to get out of temp space, and the
+    /// failure has to say where it went.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_landing_that_cleared_the_way_and_then_could_not_rename_rescues_the_new_bytes() {
+        let inner = Arc::new(InMemoryVolume::new("dest"));
+        let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
+        inner.create_file(Path::new("/notes.txt"), b"CLAIMED").await.unwrap();
+        inner
+            .create_file(Path::new("/notes.txt.cmdr-tmp-abc"), b"THE NEW BYTES")
+            .await
+            .unwrap();
+        // Only the final name is refused, so the rescue's own rename can land.
+        inner.set_rename_to_failing(Path::new("/notes.txt"));
+
+        let failure = land(
+            &dest,
+            Path::new("/notes.txt.cmdr-tmp-abc"),
+            Path::new("/notes.txt"),
+            LandingName::ClaimedByTheCaller,
+        )
+        .await
+        .expect_err("a landing that can't rename has to fail");
+
+        assert!(
+            !inner.exists(Path::new("/notes.txt.cmdr-tmp-abc")).await,
+            "committed data may not be left under a name the stale-temp reap matches"
+        );
+        assert_eq!(
+            failure.new_data_at,
+            Some(PathBuf::from("/notes (recovered).txt")),
+            "and the failure has to name where the only copy of the new file is"
+        );
+        assert_eq!(
+            size_of(&inner, "/notes (recovered).txt").await,
+            Some(13),
+            "which is where the bytes actually are"
+        );
     }
 
     /// Abandoning removes the partial and stops tracking it.

@@ -17,7 +17,7 @@
 //! `copy_volumes_with_progress` ask independently and a fix to one leaves the
 //! other wrong.
 //!
-//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests.rs`
+//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests/`
 //! (`super::tests`) so they aren't duplicated.
 
 use super::tests::make_state;

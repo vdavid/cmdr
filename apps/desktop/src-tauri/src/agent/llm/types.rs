@@ -164,6 +164,10 @@ pub enum ToolId {
     OperationsList,
     /// One logged operation's header plus a page of its item rows (shared).
     OperationsGet,
+    /// Find files and folders on ONE drive by name pattern, size, date, or type
+    /// (shared with the ai-client view). Reads the index where it covers the scope and
+    /// walks the rest, so the result is a lower bound until its coverage says otherwise.
+    Search,
     /// Search the user's photos by description, in-image text, or tag (shared with the
     /// ai-client view). Reads the media index; text-only, no image bytes.
     SearchPhotos,
@@ -199,7 +203,7 @@ impl ToolId {
     /// Every known read-only variant, in wire order. Excludes [`ToolId::Unrecognized`]
     /// by design (it's the refusal case, never a view entry). The 1:1 structural test
     /// asserts these map exactly onto `agent_tool_view()`.
-    pub const KNOWN: [ToolId; 18] = [
+    pub const KNOWN: [ToolId; 19] = [
         ToolId::AppState,
         ToolId::ListDir,
         ToolId::ListPaneFiles,
@@ -209,6 +213,7 @@ impl ToolId {
         ToolId::InspectFile,
         ToolId::OperationsList,
         ToolId::OperationsGet,
+        ToolId::Search,
         ToolId::SearchPhotos,
         ToolId::ImageFacts,
         ToolId::ProposeRenamePlan,
@@ -233,6 +238,7 @@ impl ToolId {
             ToolId::InspectFile => "inspect_file",
             ToolId::OperationsList => "operations_list",
             ToolId::OperationsGet => "operations_get",
+            ToolId::Search => "search",
             ToolId::SearchPhotos => "search_photos",
             ToolId::ImageFacts => "image_facts",
             ToolId::ProposeRenamePlan => "propose_rename_plan",
@@ -261,6 +267,7 @@ impl ToolId {
             "inspect_file" => ToolId::InspectFile,
             "operations_list" => ToolId::OperationsList,
             "operations_get" => ToolId::OperationsGet,
+            "search" => ToolId::Search,
             "search_photos" => ToolId::SearchPhotos,
             "image_facts" => ToolId::ImageFacts,
             "propose_rename_plan" => ToolId::ProposeRenamePlan,
@@ -322,6 +329,21 @@ pub struct AgentToolResult {
     pub call_id: String,
     pub content: serde_json::Value,
     pub elided: bool,
+}
+
+impl AgentToolResult {
+    /// True when this is a real answer rather than a refusal or a handler problem. Reads OUR
+    /// OWN typed result keys (`available` / `problem`), never external wording.
+    ///
+    /// It lives on the type, not with any one caller, because four of them now judge the same
+    /// question: the turn loop (whether to record a failed call), the wake watcher (whether a
+    /// proposal landed), the repeat breaker's contract, and the tools view (whether to stamp a
+    /// propose refusal's `readyForReview: false`). A second copy of these key names is a second
+    /// thing to forget when a result shape grows.
+    pub fn reports_a_problem(&self) -> bool {
+        let refused = self.content.get("available") == Some(&serde_json::Value::Bool(false));
+        refused || self.content.get("problem").is_some()
+    }
 }
 
 /// What a wake noticed, as DATA: one entry per folder that earned its own line, plus

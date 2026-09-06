@@ -191,9 +191,10 @@ In `budget.rs` (how many tokens a prompt and a tool result may spend):
   holding a 200-row listing plus a full `image_facts` batch.
 - `PROMPT_BUDGET_WINDOW_PERCENT = 60` — the share of a window one prompt may claim, cloud and local alike. The rest is
   the reply's, which comes out of the same window.
-- `MIN_LOCAL_CONTEXT_TOKENS = 16_384` — the smallest local window one turn can run in, mirrored by
-  `ai.localContextSize`'s default and its smallest option. See § A local window too small to use.
-- `FIXED_PROMPT_OVERHEAD_TOKENS = 3_124` / `RENAME_TOKENS_PER_FILE = 349` / `BATCH_HINT_HEADROOM_PERCENT = 10` — what
+- `MIN_LOCAL_CONTEXT_TOKENS = 32_768` — the smallest local window one turn can run in, mirrored by
+  `ai.localContextSize`'s default and its smallest option. It tracks the prefix, so it moves when the tool view grows.
+  See § A local window too small to use.
+- `FIXED_PROMPT_OVERHEAD_TOKENS = 6_263` / `RENAME_TOKENS_PER_FILE = 349` / `BATCH_HINT_HEADROOM_PERCENT = 10` — what
   `files_per_batch` divides. See § Sizing a batch from the budget.
 - `MAX_TOOL_RESULT_TOKENS = DEFAULT_PROMPT_TOKEN_BUDGET / 2` — the most ONE tool result may spend. Derived from the
   conservative default, not the resolved budget, because a tool handler doesn't know the model (and may be answering an
@@ -235,10 +236,15 @@ same shape as the interactive model override.
 
 ### A local window too small to use
 
-`prompt_budget_for_local_context(4096)` was 2,457 tokens against 5,605 of fixed overhead: the shipped default could not
-complete one turn. So `MIN_LOCAL_CONTEXT_TOKENS = 16_384` is the floor, `ai.localContextSize` offers nothing smaller,
-and a stored 2,048 / 4,096 / 8,192 no longer validates (it resolves to the 16,384 default on load, migrating an early
-tester instead of leaving them broken).
+A window only 60% of which one prompt may claim has to hold `FIXED_PROMPT_OVERHEAD_TOKENS` (6,263) plus a paged tool
+result before it holds a single word of the conversation, so the floor is `MIN_LOCAL_CONTEXT_TOKENS = 32_768`, which
+resolves to 19,660. `ai.localContextSize` offers nothing smaller, and a smaller stored size no longer validates (it
+resolves to the 32,768 default on load, migrating an early tester instead of leaving them broken).
+
+**The floor is derived, not chosen**, and `budget.rs`'s `the_floor_leaves_room_for_a_prefix_and_a_paged_result` is what
+holds it: one window down, 16,384 resolves to 9,830 and cannot fit the prefix plus half a paged result. Every tool that
+joins the agent view grows the prefix, so that assertion is answered by raising the floor or shrinking the prefix, never
+by lowering its fraction.
 
 A window UNDER the floor is still reachable — a local server Cmdr didn't launch at the current setting — and it is
 refused, not assembled: `BudgetRefusal::LocalWindowBelowFloor` reaches the rail as
@@ -266,13 +272,13 @@ all. A persist problem is logged and dropped — a gauge is worth no turn.
 `files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits, as the **smaller of two
 limits**:
 
-- what the PROMPT holds: `(budget − 10% headroom − 5,492 of prefix) / 349 per file`. The headroom exists because the
+- what the PROMPT holds: `(budget − 10% headroom − 6,263 of prefix) / 349 per file`. The headroom exists because the
   measured 100-file turn came in ~4% above what the per-file costs account for (the paths the calls name, the envelope,
   the user's sentence, JSON scaffolding).
 - what one REPLY can emit: `AGENT_MAX_OUTPUT_TOKENS` (12,000), less a half-slot reasoning reserve, divided by the plan
   row's 59 tokens, so **101**.
 
-25 files at 16,000, 66 at 32,000, then **101 from roughly 50,000 upward** — including at 200,000, because past that
+23 files at 16,000, 64 at 32,000, then **101 from roughly 50,000 upward** — including at 200,000, because past that
 crossover the reply's ceiling binds and a bigger window buys no bigger batch.
 
 **Both limits are load-bearing.** The number is advertised to the model as "propose this many files" and the model
@@ -302,18 +308,20 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
 the test and this section together.
 
-- **Fixed overhead: 5,492 tokens** on every single call — 1,809 for `SYSTEM_PROMPT` and 3,683 for the 18 tool
-  declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch fit and a
-  12-file one did not. **It grows with the tool view**: the suggested-ops trio is ~1,000 tokens of schema, which every
-  call pays whether or not it suggests anything, and which costs a 16k budget about four files of rename batch. Even
+- **Fixed overhead: 6,263 tokens** on every single call — 1,994 for `SYSTEM_PROMPT` and 4,269 for the 19 tool
+  declarations. The old flat 8k budget, against a prefix half this size, still left only ~4.9k for the actual work, so
+  an 11-file `image_facts` batch fit and a 12-file one did not. **It grows with the tool view**: the suggested-ops trio
+  is ~1,000 tokens of schema, which every call pays whether or not it suggests anything, and which costs a 16k budget
+  about four files of rename batch. Even
   `nothing_to_suggest`, one string argument and a two-sentence description, is 97 of them, paid by every rail turn that
   will never call it. `memory_write` + `memory_edit` cost 252 between them, and the prompt's memory section another 265.
   A new tool's schema is prefix, so keep its descriptions terse and say the rest once, in the registry line or the
-  prompt.
+  prompt. `search` is the most expensive single declaration at 560 (439 of schema, 119 of description), and the
+  § Coverage paragraph that teaches a model to read its answer costs 182 more.
 - **Per file: 269 for an `image_facts` row** (at 900 chars of OCR, the corpus average, against the 2,000-char cap — a
   text-dense corpus costs up to ~2.2× more), **59 for a plan row**, **21 for a pane-listing entry**. The facts dominate
   by more than 3×, so a window has to be sized for them, not for the plan.
-- **A 100-file content-based rename: 42,077 tokens** for the whole turn. The parts above account for over 90% of it; the
+- **A 100-file content-based rename: 42,845 tokens** for the whole turn. The parts above account for over 90% of it; the
   rest is the paths the calls name, the envelope, the user's sentence, and JSON scaffolding. The facts arrive over
   several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn.
 - So **60k does 100 files, 16k does roughly 25** (`files_per_batch` says 101 and 25). A model's window must exceed the
@@ -495,32 +503,50 @@ state is unambiguous:
 `TurnResult` (`Answered` / `Failed(kind)` / `Cancelled`) is the caller's bookkeeping; the
 `AgentChatEvent`s already told the frontend everything.
 
-### Model-change events
+### Slot-change events
 
 `ProposalReady` is a display-only stream event. The runtime emits it only after the proposal dispatcher staged the rows
 in `main.db`; chat history persists the concise tool result, not proposal authority.
 
-A settings change can switch a thread's effective model mid-conversation; the thread logs
-it honestly as a UI-facing event row (`store::ConversationEvent::ModelChanged`) so the
-user sees which replies used which model. Two cooperating paths, one comparison
-(`conversations.last_model` vs the effective model):
+A settings change can move a thread's interactive slot mid-conversation, and the thread
+logs it honestly as UI-facing event rows so the user sees which replies ran under what.
+Two facets, each with its own persisted comparison and its own event:
 
-- **Send-time** (`record_model_transition`, at the turn's FIRST `End`, before the user
-  row): covers threads that weren't active when the setting changed (a resumed thread).
-  Running at first `End` keeps crash case b intact — a failed first attempt records
-  nothing, and the next successful turn re-runs the comparison, so the event is deferred,
-  never lost. The first turn of a thread only stamps `last_model` (nothing to switch from).
-- **Change-time** (`ChatRuntime::record_model_change`, called by the
-  `ask_cmdr_record_model_change` command when a model-affecting setting changes): awaits
-  the thread's single-flight lock, so with a turn in flight the event lands right AFTER
-  that reply (the turn keeps its already-resolved model — a change never yanks a running
-  request). The two paths can't double-log: whichever runs first updates `last_model`, and
-  the other sees "unchanged" and no-ops.
+- the **effective model** (`conversations.last_model`, `ConversationEvent::ModelChanged`);
+- the **chat memory size**, meaning the resolved prompt budget
+  (`conversations.last_chat_memory`, `ConversationEvent::ChatMemoryChanged`).
 
-The event's identity reaches the live rail via `AgentChatEvent::ModelChanged` (send-time)
-or the command's returned `MessageView` (change-time); history shows it via the `Event`
-role projection. Event rows never enter the LLM transcript (`load_transcript` filters
-them) or the prompt prefix.
+They are separate because a model switch usually moves the budget too, and "switched to X"
+doesn't say what it costs the thread — the budget is the part the user can't see anywhere
+else. A thread that changes both gets both lines, model first.
+
+⚠️ **`last_chat_memory` is deliberately NOT `last_prompt_budget`**, which holds the same
+number: that one is half of the gauge's pair (`conversation_context_usage`) and is written
+only beside the `last_prompt_tokens` it must be read with, so stamping it from a live
+settings change would leave the gauge reporting an old size against a new budget.
+
+Two cooperating paths run both comparisons:
+
+- **Send-time** (`record_model_transition` + `record_chat_memory_transition`, at the turn's
+  FIRST `End`, before the user row): covers threads that weren't active when the setting
+  changed (a resumed thread). Running at first `End` keeps crash case b intact — a failed
+  first attempt records nothing, and the next successful turn re-runs both comparisons, so
+  an event is deferred, never lost. A thread's first turn only stamps (nothing to change
+  from).
+- **Change-time** (`ChatRuntime::record_slot_change`, called by the
+  `ask_cmdr_record_slot_change` command when a slot-affecting setting changes): awaits the
+  thread's single-flight lock, so with a turn in flight the rows land right AFTER that reply
+  (the turn keeps what it already resolved — a change never yanks a running request). It
+  answers one `RecordedSlotEvent` per facet that moved, and `None` for a chat memory size
+  that couldn't be resolved (a local window under the floor) leaves that stamp alone rather
+  than clearing it. The two paths can't double-log: whichever runs first updates the stamp,
+  and the other sees "unchanged" and no-ops.
+
+An event's identity reaches the live rail via `AgentChatEvent::ModelChanged` /
+`ChatMemoryChanged` (send-time) or the command's returned `MessageView`s (change-time);
+history shows it via the `Event` role projection. Event rows never enter the LLM transcript
+(`load_transcript` filters them) or the prompt prefix, and they carry numbers and names
+rather than sentences, so the rail says them in the user's own language.
 
 **Decision: `Failed` carries `detail: Option<String>` — the source error's own wording —
 alongside the typed `kind`.** Why: the typed kinds alone left the user blind on the
@@ -612,7 +638,7 @@ can't cite it), `cost_tests.rs` (what the real shapes cost), and `test_support.r
 transcript builders and budgets they share). The runtime tests split the same way, over
 `runtime/test_support.rs`: `tests.rs` (single-flight, the per-message budgets, cancellation,
 the crash cases, cost, the typed error surface, and the attachment + consent gates),
-`repeat_tests.rs` (the repeat breaker), `context_budget_tests.rs`, `model_change_tests.rs`, and
+`repeat_tests.rs` (the repeat breaker), `context_budget_tests.rs`, `slot_change_tests.rs`, and
 `wake_tests.rs`. Put a new test in the module whose concern it matches rather than growing
 `tests.rs`.
 

@@ -76,6 +76,12 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
   merge. When a top-level kind probe comes back partial it falls back to flattened file-count wording. F5/F6 feed it the
   split from real selection stats; drag-and-drop and clipboard paste feed it from a batched `stat_paths_kinds` /
   `read_clipboard_files` probe.
+- **A move that left something in the source appends one sentence** ("2 items appeared in Work during the move and stay
+  there"), off `WriteCompleteEvent.appearedDuringMove` — typed data (`itemCount`, `folderName`, `folderCount`), never
+  prose crossing IPC. It means a cross-filesystem move found files the copy phase never carried, so the source sweep
+  left them alone (backend: `write_operations/transfer/DETAILS.md` § "deletes a LEDGER"). The move still reads as a
+  success, and the toast stays `success`, not a warning: nothing went wrong, some files simply arrived too late to
+  travel. Absent on every other ending, so the historic wordings render byte-identical.
 
 ## How transfer flows
 
@@ -258,19 +264,33 @@ Three entry paths start a transfer, and they all prepare it through `pane/transf
   caller surfaces through its own dialog/toast plumbing. **The copy is the E2E-asserted contract — don't reword it.** An
   unknown destination id (no `VolumeInfo`) is allowed through: we can't prove read-only, and blocking on "unknown" would
   break a transfer to a freshly-mounted volume.
-- **`resolveSourceVolumeId(paths, volumes, resolvePathVolume)`** — resolves the REAL source volume for dropped/pasted
-  paths so they carry the same accurate `sourceVolumeId` an F5 transfer does. FAVORITES (`category === 'favorite'`) are
-  filtered out of the candidate set first: they're picker-only pseudo-volumes the backend can't dispatch against, so a
-  path under `~/Desktop` must resolve to its BACKING real volume (`root`), not the non-existent `fav-desktop` (dropping
-  a Desktop file used to fail with "Source volume 'fav-desktop' not found"). Then frontend longest-prefix
-  (`drag/drop-operation.ts::findVolumeIdForPath`, handles MTP-shaped paths) → backend `resolve_path_volume` for the
-  common parent when no registered root matches → `root` (the honest unknown). NEVER returns a knowingly-wrong id: when
-  per-path matches disagree (sources span volumes) or resolution fails, it returns `root`, which gives today's
-  degraded-but-correct behavior. The drop path feeds the result into `startScanPreview`'s `sourceVolumeId` arg via
-  `TransferDialog`, so the byte scan stats the right volume (a cross-volume drop's counters fill instead of reading 0).
-  This resolver runs only for EXTERNAL drops and paste; an in-app self-drag bypasses it via the recorded self-drag
-  identity (the drop carries the source volume + volume-relative paths directly — see `file-explorer/drag/CLAUDE.md` §
-  "Self-drag identity").
+- **`resolveSourceVolumeId(paths, volumes, resolvePathVolume)`** — resolves the REAL source volume for DROPPED and
+  PASTED paths so they carry the same accurate `sourceVolumeId` an F5 transfer does. FAVORITES
+  (`category === 'favorite'`) are filtered out of the candidate set first: they're picker-only pseudo-volumes the
+  backend can't dispatch against, so a path under `~/Desktop` must resolve to its BACKING real volume (`root`), not the
+  non-existent `fav-desktop` (dropping a Desktop file used to fail with "Source volume 'fav-desktop' not found"). Then
+  frontend longest-prefix (`drag/drop-operation.ts::findVolumeIdForPath`, handles MTP-shaped paths) → backend
+  `resolve_path_volume` for the common parent when no registered root matches → `root` (the honest unknown). NEVER
+  returns a knowingly-wrong id: when per-path matches disagree (sources span volumes) or resolution fails, it returns
+  `root`, which gives a degraded-but-correct result. The drop path feeds the result into `startScanPreview`'s
+  `sourceVolumeId` arg via `TransferDialog`, so the byte scan stats the right volume (a cross-volume drop's counters
+  fill instead of reading 0). It runs for EXTERNAL drops only; an in-app self-drag bypasses it via the recorded
+  self-drag identity (the drop carries the source volume + volume-relative paths directly — see
+  `file-explorer/drag/CLAUDE.md` § "Self-drag identity").
+
+  **What naming the source volume buys the paste path.** The bytes never depended on it: clipboard paths are absolute
+  and the backend's both-local branch does `src_root.join(absolute)`, which is the absolute path, and the local move
+  engine picks same-fs vs cross-fs from runtime device ids. Everything keyed on the volume ITSELF does depend on it, and
+  a flat `root` broke all of it: the source volume has to enter the busy set so Eject stays DISABLED while a paste reads
+  off a USB stick, a DMG, or a mounted share (`status_cache.rs::compute_busy_volume_ids` filters root out, and
+  `volume/eject.rs::eject_volume` refuses only what's in that set); the operation has to take the source mount's lane so
+  two pastes off one device serialize; the operation log records the source; and `TransferProgressDialog`'s direction
+  header resolves the source label off that id.
+
+  ❌ Not `pane/snapshot-source-volume.ts::resolveSnapshotSourceVolume` for the paste — that one also answers
+  `supportsTrash`, which a paste has no use for, and it deliberately skips the backend round-trip because a snapshot's
+  paths came out of ONE volume's index. Clipboard paths carry no such guarantee (they can come from Finder or any other
+  app), so the `resolve_path_volume` fallback is exactly what they need.
 
 The paste path keeps its MTP-specific refusal ("Use F5 to copy files to MTP devices") SEPARATE and BEFORE the shared
 guard, because that toast points the user at the F5/F6 flow paste lacks; the shared guard then handles read-only /

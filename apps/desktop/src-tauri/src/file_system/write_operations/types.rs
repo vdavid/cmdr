@@ -299,6 +299,25 @@ pub struct OperationSummary {
 // Error enum (following MountError pattern)
 // ============================================================================
 
+/// Which half of a transfer refused the write, for [`WriteOperationError::ReadOnlyDevice`].
+///
+/// The two are different sentences, not different wordings of one: a read-only
+/// DESTINATION means "put it somewhere else", a read-only SOURCE means "you can
+/// copy out of here, you just can't move out of here", because a move needs a
+/// delete the source will never do.
+///
+/// ❌ Never decide this by inspecting a path or a message. The refusing site
+/// knows which half it was looking at and says so.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum ReadOnlySide {
+    /// The SOURCE can't give up its files. A copy out of it works; a move
+    /// doesn't, because the source half of the move could never happen.
+    Source,
+    /// The DESTINATION takes no writes, so nothing can land there.
+    Destination,
+}
+
 /// Errors that can occur during write operations.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
@@ -334,6 +353,16 @@ pub enum WriteOperationError {
         source: String,
         destination: String,
     },
+    /// Two of the selected items carry the same name, so they would land on one
+    /// destination path and fight over it. Refused before anything is written:
+    /// a cross-filesystem move stages both under that one name, and whichever
+    /// arrives second meets the first one's files instead of an empty slot.
+    /// Carries both paths, so the message can show which two clashed.
+    DuplicateSourceNames {
+        name: String,
+        first: String,
+        second: String,
+    },
     SymlinkLoop {
         path: String,
     },
@@ -344,10 +373,17 @@ pub enum WriteOperationError {
     DeviceDisconnected {
         path: String,
     },
-    /// Target device or volume is read-only.
+    /// A device or volume refused a write, and [`ReadOnlySide`] says WHICH half
+    /// of the transfer it was.
+    ///
+    /// ❗ The side is load-bearing for the sentence the user reads: a move OFF a
+    /// read-only source is refused because the source has no delete to pair with
+    /// the copy, and telling that user to "choose a different destination" sends
+    /// them to fix the half that was fine.
     ReadOnlyDevice {
         path: String,
         device_name: Option<String>,
+        side: ReadOnlySide,
     },
     /// File is locked (macOS immutable flag, "Operation not permitted" on delete).
     FileLocked {
@@ -409,11 +445,63 @@ pub enum WriteOperationError {
         path: String,
         wrong_attempt: bool,
     },
+    /// A cross-volume Overwrite wrote the new file completely, then couldn't give
+    /// it the destination's name, and the destination it was replacing is
+    /// already gone (the safe-replace deletes it between the last byte and the
+    /// rename). The new data is intact at `kept_at`, under a ` (recovered)` name.
+    ///
+    /// ❗ `kept_at` is the whole point of the variant: it is the only place the
+    /// user's new file exists, and a message that doesn't name it leaves them
+    /// hunting. Typed so nothing has to parse it back out of prose.
+    NewDataKeptAt {
+        /// The name the file was meant to take.
+        path: String,
+        /// Where the complete new data is right now.
+        kept_at: String,
+        /// What the destination said when the rename was refused.
+        message: String,
+    },
+    /// The operation failed, and a folder that was replacing one of the user's
+    /// files had already taken its name. Everything that landed is kept, so the
+    /// folder stays; the file it displaced is beside it under a ` (recovered)`
+    /// name rather than being thrown away with the aside.
+    ///
+    /// ❗ `recovered` is the whole point of the variant, and it is never empty:
+    /// nothing else in the app tells the user their file changed names. `cause`
+    /// carries what actually failed, so the dialog keeps that error's own advice
+    /// (a full disk still says "free up space") instead of flattening every
+    /// failure into one sentence.
+    OriginalsKeptAside {
+        cause: Box<WriteOperationError>,
+        recovered: Vec<RecoveredOriginal>,
+    },
     /// Catch-all for genuinely unexpected IO errors.
     IoError {
         path: String,
         message: String,
     },
+}
+
+/// One file a failed copy kept under a new name, because a folder that was
+/// replacing it took its own. Carried by
+/// [`WriteOperationError::OriginalsKeptAside`].
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RecoveredOriginal {
+    /// The name the file had, which the folder now wears.
+    pub path: String,
+    /// Where its bytes are now. Typed, so nothing has to parse a path back out
+    /// of prose.
+    pub kept_at: String,
+}
+
+impl RecoveredOriginal {
+    pub(super) fn new(path: &std::path::Path, kept_at: &std::path::Path) -> Self {
+        Self {
+            path: path.display().to_string(),
+            kept_at: kept_at.display().to_string(),
+        }
+    }
 }
 
 /// A file that exceeds the destination filesystem's per-file size limit.

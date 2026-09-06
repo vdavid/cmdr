@@ -19,6 +19,7 @@ import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
+import { ensureMcpClient, mcpNavToPath } from '../e2e-shared/mcp-client.js'
 import { ensureAppReady, getFixtureRoot, executeViaCommandPalette, getSizeText } from './helpers.js'
 
 /** Union type for tauriPage (works in both Tauri and browser mode). */
@@ -146,9 +147,36 @@ test.afterEach(() => {
   restoreFixtureTree(getFixtureRoot())
 })
 
+/**
+ * Lists a directory in the left pane, which is what makes the index reconcile it.
+ *
+ * `get_dir_stats` reads what the index HOLDS, and `recreateFixtures` has just
+ * rewritten the tree underneath it. The verifier is what closes that gap, and it
+ * is LISTING-driven: it diffs a directory against the index when a pane lists
+ * it, and runs for no directory nobody visits.
+ *
+ * ❌ Don't drop this and let the tests rely on an earlier spec having wandered
+ * through `sub-dir`. That is what they used to do, and it made them fail whenever
+ * the shard's ordering left the folder unvisited — with no symptom but a poll
+ * that never converges. CI run 33909203247 lost 13 minutes to three of them
+ * timing out, and that run has no verifier pass on `left/sub-dir` anywhere in it;
+ * the run before it verified `sub-dir` 27 s before the first test, which then
+ * passed in 264 ms.
+ */
+async function listSoTheIndexCatchesUp(dirPath: string): Promise<void> {
+  await mcpNavToPath('left', dirPath)
+}
+
 test.describe('Drive indexing', () => {
-  test.beforeEach(() => {
+  test.beforeEach(async ({ tauriPage }) => {
     recreateFixtures(getFixtureRoot())
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    // `sub-dir` is what every assertion here measures; `left` is where the row
+    // assertions read it from. Visiting both leaves the pane back on `left`.
+    const leftDir = path.join(getFixtureRoot(), 'left')
+    await listSoTheIndexCatchesUp(path.join(leftDir, 'sub-dir'))
+    await listSoTheIndexCatchesUp(leftDir)
   })
 
   test('shows correct directory size from the index', async ({ tauriPage }, testInfo) => {

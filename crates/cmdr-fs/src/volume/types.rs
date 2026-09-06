@@ -88,6 +88,20 @@ pub enum DirectoryChange {
         /// The entry under its new name, with fresh metadata.
         new_entry: FileEntry,
     },
+    /// The backend re-read the directory and these are its contents now.
+    ///
+    /// For a backend that learns "something under here moved" without learning
+    /// what: it re-lists once and hands the result over, and the HOST diffs
+    /// against what the panes hold and patches them. One call however many
+    /// entries came back, which is what keeps a device event out of a per-entry
+    /// loop.
+    ///
+    /// Different from [`FullRefresh`](Self::FullRefresh), which asks the host to
+    /// do the re-read through `Volume::list_directory`. Report `Replaced` when
+    /// you already have the entries in hand (an MTP event loop that must
+    /// invalidate its own path cache before re-listing anyway); report
+    /// `FullRefresh` when the host should go and get them.
+    Replaced(Vec<FileEntry>),
     /// Unknown or bulk change: trigger a full re-read via the Volume trait.
     FullRefresh,
 }
@@ -215,6 +229,26 @@ impl ListingProgress {
     /// streaming listing UI, which renders one "Loaded N entries…" line.
     pub fn entries(&self) -> usize {
         self.files + self.dirs
+    }
+
+    /// The whole of `entries` folded into one tick, for a backend whose listing
+    /// arrives in a single piece and so has nothing incremental to report.
+    ///
+    /// The trait asks every backend to call `on_progress` at least once, and an
+    /// atomic listing (an archive's central directory, a git snapshot's tree)
+    /// has exactly one honest thing to say. Shared so the two agree on what a
+    /// directory contributes: a count, and no bytes.
+    pub fn of(entries: &[FileEntry]) -> Self {
+        let mut progress = Self::default();
+        for entry in entries {
+            if entry.is_directory {
+                progress.dirs += 1;
+            } else {
+                progress.files += 1;
+                progress.bytes += entry.size.unwrap_or(0);
+            }
+        }
+        progress
     }
 }
 

@@ -169,19 +169,39 @@ async fn rename_managed_inner(
                 let from_syscall = from.clone();
                 let to_syscall = to.clone();
                 tokio::task::spawn_blocking(move || {
-                    if !force && from_syscall != to_syscall && std::fs::symlink_metadata(&to_syscall).is_ok() {
-                        return Err(MutationError::AlreadyExists {
-                            name: name_of(&to_syscall),
-                        });
-                    }
+                    // The kernel decides whether the name is free, in the same
+                    // syscall that takes it. A stat first and a plain
+                    // `std::fs::rename` after are two operations, and POSIX
+                    // rename replaces its target without a word: a file created
+                    // in between would be destroyed with no prompt and no way
+                    // back. `rename_no_replace` refuses instead.
+                    //
+                    // `force` is the caller saying "replace what's there", and a
+                    // self-rename (a case-only change on a case-insensitive
+                    // filesystem folds onto one entry) has to be allowed to land
+                    // on its own target.
+                    let renamed = if force || from_syscall == to_syscall {
+                        std::fs::rename(&from_syscall, &to_syscall)
+                    } else {
+                        super::overwrite::rename_no_replace(&from_syscall, &to_syscall)
+                    };
                     // The two paths mean different things: `ENOENT` is the source
-                    // that's gone, `EEXIST` the destination that isn't free.
-                    std::fs::rename(&from_syscall, &to_syscall).map_err(|e| MutationError::Volume {
-                        error: crate::file_system::volume::backends::rename_volume_error(
-                            &e,
-                            &from_syscall,
-                            &to_syscall,
-                        ),
+                    // that's gone, `EEXIST` the destination that isn't free. A
+                    // taken name is reported BY NAME (the frontend words it in
+                    // ten locales), matching the volume branch above.
+                    renamed.map_err(|e| {
+                        if e.kind() == std::io::ErrorKind::AlreadyExists {
+                            return MutationError::AlreadyExists {
+                                name: name_of(&to_syscall),
+                            };
+                        }
+                        MutationError::Volume {
+                            error: crate::file_system::volume::backends::rename_volume_error(
+                                &e,
+                                &from_syscall,
+                                &to_syscall,
+                            ),
+                        }
                     })
                 })
                 .await
@@ -247,7 +267,8 @@ async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result
         return Err(MutationError::RenameAcrossArchives);
     }
     // Only zip archives are writable; tar and 7z are browse + extract only.
-    archive_edit::ensure_zip_writable(&from_archive).map_err(|_| MutationError::ArchiveReadOnly)?;
+    archive_edit::ensure_zip_writable(&from_archive, crate::file_system::ReadOnlySide::Destination)
+        .map_err(|_| MutationError::ArchiveReadOnly)?;
 
     let from_inner = archive_edit::normalize_inner_path(&from_inner);
     let to_inner = archive_edit::normalize_inner_path(&to_inner);
@@ -531,19 +552,14 @@ pub(crate) async fn check_rename_validity_impl(
 
 /// Checks if a file with `new_path` exists and whether it's the same inode as `old_path`
 /// (case-only rename on case-insensitive FS).
-#[cfg(unix)]
 fn check_sibling_conflict(old_path: &Path, new_path: &Path) -> (bool, bool, Option<ConflictFileInfo>) {
-    use std::os::unix::fs::MetadataExt;
-
     let new_meta = match std::fs::symlink_metadata(new_path) {
         Ok(m) => m,
         Err(_) => return (false, false, None), // No conflict
     };
 
     // Check if it's the same inode (case-only rename)
-    let is_same_inode = std::fs::symlink_metadata(old_path)
-        .map(|old_meta| old_meta.dev() == new_meta.dev() && old_meta.ino() == new_meta.ino())
-        .unwrap_or(false);
+    let is_same_inode = std::fs::symlink_metadata(old_path).is_ok_and(|old_meta| same_local_file(&old_meta, &new_meta));
 
     let modified = new_meta
         .modified()
@@ -564,31 +580,19 @@ fn check_sibling_conflict(old_path: &Path, new_path: &Path) -> (bool, bool, Opti
     (true, is_same_inode, Some(conflict))
 }
 
+/// Whether two `symlink_metadata` results name one local file (same device and
+/// inode), which is how a case-only rename on a case-insensitive volume shows up.
+#[cfg(unix)]
+pub(crate) fn same_local_file(left: &std::fs::Metadata, right: &std::fs::Metadata) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    left.dev() == right.dev() && left.ino() == right.ino()
+}
+
+/// Without an inode to compare, two paths never count as one file, so a case-only
+/// rename is indistinguishable from a conflict here.
 #[cfg(not(unix))]
-fn check_sibling_conflict(_old_path: &Path, new_path: &Path) -> (bool, bool, Option<ConflictFileInfo>) {
-    let new_meta = match std::fs::symlink_metadata(new_path) {
-        Ok(m) => m,
-        Err(_) => return (false, false, None),
-    };
-
-    let modified = new_meta
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs() as i64);
-
-    let conflict = ConflictFileInfo {
-        name: new_path
-            .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_default(),
-        size: new_meta.len(),
-        modified,
-        is_directory: new_meta.is_dir(),
-    };
-
-    // Without inode comparison, we can't detect case-only renames
-    (true, false, Some(conflict))
+pub(crate) fn same_local_file(_left: &std::fs::Metadata, _right: &std::fs::Metadata) -> bool {
+    false
 }
 
 /// Checks if a file with `new_path` exists on a non-local volume using the Volume trait's

@@ -89,6 +89,26 @@ describe('buildRailMessages', () => {
     expect(items).toEqual([{ kind: 'modelChange', model: 'claude-opus-5' }])
   })
 
+  /** A chat-memory change persists the same way, so reopening a thread still explains why
+   *  the replies after that point saw a different amount of the conversation. */
+  it('renders a persisted chat-memory change as a timeline line', () => {
+    const items = buildRailMessages(
+      detail([
+        {
+          id: 1,
+          seq: 0,
+          role: 'event',
+          createdAt: 0,
+          promptTokens: null,
+          completionTokens: null,
+          blocks: [{ type: 'chatMemoryChanged', chatMemoryTokens: 16_000 }],
+        },
+      ]),
+    )
+
+    expect(items).toEqual([{ kind: 'chatMemoryChange', chatMemoryTokens: 16_000 }])
+  })
+
   /** A wake opens its thread with a structured digest sitting in the user-role row. It has
    *  to fold into its own item, not into a text bubble: the digest carries no text at all,
    *  so treating it as one would render an empty bubble where the whole reason for the

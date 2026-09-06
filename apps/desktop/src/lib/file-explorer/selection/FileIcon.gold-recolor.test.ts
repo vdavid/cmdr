@@ -18,6 +18,10 @@ vi.mock('$lib/icon-cache', async () => {
   const { writable } = await import('svelte/store')
   return {
     getCachedIcon: () => '/icons/stub.svg',
+    // No folder here carries a Finder custom icon, so the recolor gate depends
+    // solely on iconId. The custom-icon case is pinned in
+    // `FileIcon.custom-folder-icon.test.ts`.
+    getCachedCustomFolderIcon: () => undefined,
     iconCacheVersion: writable(0),
   }
 })

@@ -70,6 +70,18 @@ export async function setReopenClosedTabEnabled(enabled: boolean): Promise<void>
   await invoke('set_reopen_closed_tab_enabled', { enabled })
 }
 
+/**
+ * Greys out (or restores) the File menu's "Open terminal here", following the
+ * focused pane's volume.
+ *
+ * ⚠️ Chrome, never the guard: a disabled item's accelerator still fires. Driven by
+ * `$lib/open-terminal/menu-gate.svelte.ts`; the command handler words the refusal.
+ */
+export async function setOpenTerminalHereEnabled(enabled: boolean): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic over Runtime; not in typed bindings
+  await invoke('set_open_terminal_here_enabled', { enabled })
+}
+
 // ============================================================================
 // Dialog tracking
 // ============================================================================

@@ -3,32 +3,39 @@
  *
  * Owns the stateful side of text selection by pointer: the active drag's
  * `pointerId` + last pointer position, the click cycle behind word / line selection, the
- * in-app context-menu position, and the drag-autoscroll RAF loop. Point → caret
- * resolution lives in `viewer-pointer.ts` (over `viewer-caret-geometry.ts`), the click
- * cycle in `viewer-multi-click.ts`, and the autoscroll speed curve and RAF driver in
- * `viewer-autoscroll.ts` / `viewer-autoscroll.svelte.ts`. This controller wires
- * those together against the page's selection model and scroll composable.
+ * gesture's selection granularity, the in-app context-menu position, and the
+ * drag-autoscroll RAF loop. Point → caret resolution lives in `viewer-pointer.ts` (over
+ * `viewer-caret-geometry.ts`), the click cycle in `viewer-multi-click.ts`, the
+ * granularity arithmetic in `viewer-selection-granularity.ts`, and the autoscroll speed
+ * curve and RAF driver in `viewer-autoscroll.ts` / `viewer-autoscroll.svelte.ts`. This
+ * controller wires those together against the page's selection model and scroll
+ * composable.
  *
  * Every gesture rides the `pointerdown` stream, `click` included: the controller counts
  * presses itself rather than reading a mouse event's `detail`.
  *
  * The page provides getters/callbacks for the scroll container ref, the line
- * cache (for double / triple-click word/line selection), and the selection
- * model's mutators. It binds the returned handlers to the `.file-content`
- * element and the `<svelte:window on:blur>` safety net.
+ * cache (for word / line granularity), and the selection model's mutators. It binds the
+ * returned handlers to the `.file-content` element and the `<svelte:window on:blur>`
+ * safety net.
  */
 
 import { caretFromPoint, caretFromPointClamped } from './viewer-pointer'
 import { computeAutoscrollPxPerFrame } from './viewer-autoscroll'
 import { createViewerAutoscroll } from './viewer-autoscroll.svelte'
 import { advanceMultiClick, type MultiClickState } from './viewer-multi-click'
-import { findWordBoundsAt } from './viewer-word'
-import type { LineOffset } from './selection.svelte'
+import {
+  extendRangeToGranularity,
+  rangeAtCaret,
+  type LineRange,
+  type SelectionGranularity,
+} from './viewer-selection-granularity'
+import type { LineOffset, Selection } from './selection.svelte'
 
 interface PointerDragDeps {
   /** Returns the scrollable `.file-content` element, or `undefined` before mount. */
   getContentRef: () => HTMLElement | undefined
-  /** Reads the cached text of a line (for double / triple-click), or `undefined` if not cached. */
+  /** Reads the cached text of a line (for word / line granularity), or `undefined` if not cached. */
   getLineText: (line: number) => string | undefined
   /** Whether a selection currently exists (for shift-click extend vs. fresh anchor). */
   hasSelection: () => boolean
@@ -36,6 +43,8 @@ interface PointerDragDeps {
   setAnchor: (offset: LineOffset) => void
   /** Moves the selection focus (extend the active selection). */
   setFocus: (offset: LineOffset) => void
+  /** Sets both endpoints at once, for word- and line-granularity gestures. */
+  setRange: (range: Selection) => void
   /**
    * Gives DOM focus back to the viewer surface (the page focuses its container, the
    * same element it focuses after a session opens). Called when a selection gesture
@@ -64,16 +73,66 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
   let lastPress: MultiClickState | null = null
 
   /**
+   * Granularity of the drag in progress, reset by `endDrag`: it describes this drag and
+   * nothing beyond it.
+   */
+  let dragGranularity: SelectionGranularity = 'character'
+
+  /**
+   * Granularity of the current gesture and the range its press covered, reset only by a
+   * plain (count 1, non-shift) press. A later shift-click reads both.
+   *
+   * Gotcha/Why: ❌ don't fold these into `dragGranularity`. `endDrag` fires on the
+   * double-press's own `pointerup`, so a shift-click reading the drag's granularity
+   * would always see `character` and silently extend by one character. The anchor range
+   * has to outlive the drag too, or a backwards shift-click can't anchor at the far edge
+   * of the pressed word.
+   */
+  let gestureGranularity: SelectionGranularity = 'character'
+  let gestureAnchorRange: LineRange | null = null
+
+  /**
    * Re-resolves the caret after each autoscroll step. The pointer is past a viewport
    * edge by definition here (that's what started the autoscroll), so the aim is clamped
    * into `.file-content` and the selection sweeps whole rows of the newly-scrolled-in
-   * text.
+   * text. Routed through the same extend call as a plain move, so a word drag past the
+   * viewport edge keeps its granularity.
    */
   function reAimAfterAutoscroll(pointerY: number): void {
     const content = deps.getContentRef()
     if (!content) return
     const caret = caretFromPointClamped(content, dragPointerX, pointerY)
-    if (caret !== null) deps.setFocus(caret)
+    if (caret !== null) extendToCaret(caret, dragGranularity)
+  }
+
+  /**
+   * Starts a gesture at `granularity`, snapping the pressed caret to the anchor range the
+   * rest of the gesture (drag, autoscroll, a later shift-click) extends from.
+   */
+  function startGesture(caret: LineOffset, granularity: SelectionGranularity): void {
+    gestureGranularity = granularity
+    gestureAnchorRange = rangeAtCaret({ caret, granularity, getLineText: deps.getLineText })
+    dragGranularity = granularity
+  }
+
+  /**
+   * Extends the selection to `caret` at `granularity`. Character granularity moves the
+   * focus alone, which is what a plain drag does; word and line re-derive both endpoints
+   * from the remembered anchor range, so the selection stays snapped in both directions.
+   */
+  function extendToCaret(caret: LineOffset, granularity: SelectionGranularity): void {
+    if (granularity === 'character' || gestureAnchorRange === null) {
+      deps.setFocus(caret)
+      return
+    }
+    deps.setRange(
+      extendRangeToGranularity({
+        anchorRange: gestureAnchorRange,
+        focus: caret,
+        granularity,
+        getLineText: deps.getLineText,
+      }),
+    )
   }
 
   const autoscroll = createViewerAutoscroll({
@@ -102,20 +161,25 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
     const press = advanceMultiClick(lastPress, { x: e.clientX, y: e.clientY, time: e.timeStamp })
     lastPress = press
 
-    // Shift-click extends the existing selection from its anchor to the clicked
-    // position. If there's no current selection, treat shift-click as a plain click.
-    // It's an extend gesture, never part of a word/line cycle, so the count restarts.
+    // Shift-click extends the existing selection to the clicked position, at whatever
+    // granularity the gesture is running (native behavior: shift-clicking after a
+    // double-click extends by whole words). If there's no current selection, treat
+    // shift-click as a plain click. It's an extend gesture, never part of a word/line
+    // cycle, so the count restarts.
     if (e.shiftKey && deps.hasSelection()) {
       lastPress = { ...press, count: 1 }
-      deps.setFocus(caret)
+      dragGranularity = gestureGranularity
+      extendToCaret(caret, gestureGranularity)
     } else if (press.count === 1) {
+      // A plain press ends the previous gesture and starts a fresh caret selection.
+      startGesture(caret, 'character')
       deps.setAnchor(caret)
     } else {
-      // Second press selects the word, third the whole line. Neither arms the drag: the
-      // gesture is finished at this point, and a twitch before the release would
-      // otherwise collapse the fresh selection back to a caret.
-      selectAroundCaret(caret, press.count)
-      return
+      // Second press selects the word, third the whole line, and the drag carries on at
+      // that granularity: every move re-derives the selection from the pressed range, so
+      // a twitch inside it yields the same union rather than collapsing to a caret.
+      startGesture(caret, press.count === 2 ? 'word' : 'line')
+      extendToCaret(caret, gestureGranularity)
     }
 
     dragPointerId = e.pointerId
@@ -142,7 +206,7 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
     // Clamped: a drag that has left the viewport still extends the selection to the
     // nearest edge of the rendered text instead of freezing where it crossed out.
     const caret = caretFromPointClamped(content, e.clientX, e.clientY)
-    if (caret !== null) deps.setFocus(caret)
+    if (caret !== null) extendToCaret(caret, dragGranularity)
 
     // Check whether the pointer is near a viewport edge; start/stop autoscroll as needed.
     const rect = content.getBoundingClientRect()
@@ -157,6 +221,7 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
   function endDrag(pointerId: number): void {
     if (dragPointerId !== pointerId) return
     dragPointerId = null
+    dragGranularity = 'character'
     autoscroll.stop()
   }
 
@@ -174,18 +239,6 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
     contextMenuPos = { x: e.clientX, y: e.clientY }
   }
 
-  /**
-   * Selects the word under `caret` (second press) or its whole logical line (third).
-   * The line runs from offset 0 to the line's UTF-16 length whatever the wrap does, so a
-   * line spread over several visual rows selects in full.
-   */
-  function selectAroundCaret(caret: LineOffset, count: 2 | 3): void {
-    const lineText = deps.getLineText(caret.line) ?? ''
-    const { start, end } = count === 2 ? findWordBoundsAt(lineText, caret.offset) : { start: 0, end: lineText.length }
-    deps.setAnchor({ line: caret.line, offset: start })
-    deps.setFocus({ line: caret.line, offset: end })
-  }
-
   function closeContextMenu(): void {
     contextMenuPos = null
   }
@@ -198,6 +251,7 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
   function handleWindowBlur(): void {
     if (dragPointerId !== null) {
       dragPointerId = null
+      dragGranularity = 'character'
     }
     autoscroll.stop()
   }

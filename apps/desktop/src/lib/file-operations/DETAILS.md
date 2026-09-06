@@ -40,6 +40,12 @@ Umbrella-level files:
 - `RollbackConfirmDialog.svelte` + `reversal-wording.ts`: the question every Rollback goes through, the typed variant
   that decides what it says, and the same variant's catalog keys for the running bar (§ below).
 - `mutation-error.ts` + `mutation-error-messages.ts`: the rename / New Folder / New File refusal path (§ below).
+- `NewEntryNameField.svelte` + `new-entry-name-check.svelte.ts`: the "Create <kind> in <dir>" subtitle and name field
+  the New folder and New file dialogs share, and the rune-backed check behind it (sync validators, then the debounced
+  clash lookup against the listing, re-run on every `directory-diff`). The field runs the check's lifecycle; the dialog
+  reads `errorMessage` / `isChecking` and writes `errorMessage` back when the create is refused.
+- `cursor-entry.ts`: `getCursorEntry()`, the backend entry under the pane's cursor with the `..` row shift applied once,
+  so the two dialogs' pre-fills (`getInitialFolderName` / `getInitialFileName`) can't drift.
 
 ## Mutation refusals (rename, New Folder, New File, single trash)
 
@@ -82,9 +88,17 @@ temp+rename rewrite), surfaced through the same transfer/queue UI as any write:
 
 - **Routing.** Copy always goes through `copyBetweenVolumes` (backend resolves the archive dest), so it needs no
   special-casing. Move has a local same-FS fast-path (`moveFiles`) that would reject an archive-inner path, so
-  `transfer-progress-state`'s `isVolumeMove` OR-s in `pathInsideArchive(destinationPath)` and `sourcePaths.some(...)` to
-  force the cross-volume route for a move INTO or OUT of a zip — source and dest can share the parent drive's
-  `volumeId`, so the id comparison alone misses it.
+  `transfer/transfer-dispatch.ts`'s `isVolumeMove` forces the cross-volume route for a move INTO or OUT of a zip —
+  source and dest can share the parent drive's `volumeId`, so the id comparison alone misses it.
+- **❗ The destination and the sources ask DIFFERENT archive questions.** `pathCrossesArchiveBoundary(destinationPath)`
+  (wide: at-or-inside) OR `sourcePaths.some(pathInsideArchive)` (narrow: strictly inside). A destination names a
+  container to write INTO, and that container can BE the `.zip` itself — F6 with the destination pane sitting at
+  `/a/foo.zip` is the ordinary way to move something into an archive. A source is a thing being operated ON, and moving
+  the `.zip` FILE is an ordinary move that must keep the fast path. Narrowing the destination to match the source breaks
+  F6-into-an-open-zip with a backend "Destination must be a directory", while copy, move-out, and moves into a SUBfolder
+  all keep working — a gap quiet enough that only the archive-root destination case catches it. Same asymmetry as the
+  backend's `create` vs delete/move-source split; full rationale in `file-explorer/pane/DETAILS.md` § "Destination wide,
+  source narrow".
 - **Op handle, not a path.** `create_directory`/`create_file` on an archive target return an operation id, and an in-zip
   rename starts an async op — the FE never treats these as a landed cursor target. The cursor lands via the durable
   `pendingCursorName` channel when the backing `.zip`'s live-watch refresh diff arrives (see the pane DETAILS). The

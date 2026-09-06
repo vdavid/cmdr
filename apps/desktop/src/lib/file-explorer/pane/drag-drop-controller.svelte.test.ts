@@ -150,7 +150,7 @@ vi.mock('../drag/drag-overlay.svelte.js', () => ({
   hideOverlay: hideOverlaySpy,
 }))
 
-vi.mock('$lib/icon-cache', () => ({ getCachedIcon: getCachedIconSpy }))
+vi.mock('$lib/icon-cache', () => ({ getCachedIcon: getCachedIconSpy, getCachedCustomFolderIcon: () => undefined }))
 
 vi.mock('../modifier-key-tracker.svelte', () => ({
   startModifierTracking: startModifierTrackingSpy,

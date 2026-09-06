@@ -82,6 +82,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "the reserved quiet-wakes thread, so a deleted noop wake still leaves its cost behind",
         up: migrate_v8_quiet_wakes_thread,
     },
+    Migration {
+        version: 9,
+        description: "conversations.last_chat_memory for chat-memory-size events",
+        up: migrate_v9_last_chat_memory,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a fresh DB
@@ -475,4 +480,17 @@ fn migrate_v8_quiet_wakes_thread(tx: &Transaction<'_>) -> rusqlite::Result<()> {
         rusqlite::params![now],
     )?;
     Ok(())
+}
+
+/// Version 9: `conversations.last_chat_memory` — the prompt-token budget the conversation's
+/// most recent completed turn (or recorded chat-memory event) was assembled against. NULL
+/// means no turn has run yet. The chat runtime compares against it to write an honest
+/// "chat memory now holds N tokens" event row when the budget changes between turns.
+///
+/// ⚠️ **A separate column from `last_prompt_budget` (v3), which holds the same NUMBER.** That
+/// one is half of the gauge's pair, written only with the `last_prompt_tokens` it must be read
+/// beside; a live settings change has no prompt size to record, so stamping it there would
+/// leave the gauge showing an old size against a new budget, which is a wrong percentage.
+fn migrate_v9_last_chat_memory(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch("ALTER TABLE conversations ADD COLUMN last_chat_memory INTEGER;")
 }

@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
-use cmdr_fs::volume::InMemoryVolume;
+use cmdr_fs::volume::{InMemoryVolume, Volume};
 
 use super::test_support::{SameNameSiblings, Share, Tree, drain};
 use super::*;

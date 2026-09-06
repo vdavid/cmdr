@@ -386,14 +386,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Ouverture des archives et des paquets",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Choisissez ce que fait la touche Entrée pour chaque format : parcourir le contenu comme un dossier, ouvrir dans une autre application, ou demander à chaque fois.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Archives",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8",
@@ -410,6 +402,14 @@
   "settings.archives.zip.description": "Ce que fait la touche Entrée sur un fichier zip.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
+  },
+  "settings.archives.ooxml.label": "Documents et paquets",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Ce que fait la touche Entrée sur un fichier .docx, .xlsx, .pptx, .jar ou .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
   },
   "settings.archives.bundle.label": "Paquets d''application",
   "@settings.archives.bundle.label": {
@@ -454,10 +454,6 @@
   "settings.indexing.enabled.description": "Indexe votre disque en arrière-plan pour des tailles de dossiers instantanées.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
-  },
-  "settings.mediaIndex.card": "Recherche d''images",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Tout cela fonctionne entièrement sur votre Mac grâce au framework Vision intégré d''Apple. Vos images ne quittent jamais votre ordinateur, et aucun fournisseur d''IA ni clé d''API n''est impliqué.",
   "@settings.mediaIndex.privacyNote": {
@@ -550,6 +546,14 @@
   "settings.mediaIndex.showFileStatusIcons.description": "Ajoute une petite pastille sur chaque image de la liste des fichiers pour indiquer si elle a été indexée pour la recherche.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
+  },
+  "settings.mediaIndex.showInSearch.label": "Afficher les résultats d''images dans Rechercher",
+  "@settings.mediaIndex.showInSearch.label": {
+    "sourceHash": "45dd528"
+  },
+  "settings.mediaIndex.showInSearch.description": "Rechercher ajoute une rangée d''images correspondantes au-dessus de vos fichiers. La correspondance est encore approximative, donc l''option reste désactivée tant que vous n''en avez pas envie.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "sourceHash": "5b62cab"
   },
   "settings.mediaIndex.networkVolumes.label": "Indexation des images des disques réseau",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -1080,6 +1084,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "Afficher le curseur de texte",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Affiche un curseur clignotant dans la visionneuse de fichiers, indiquant le point à partir duquel une sélection au clavier s''étend.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "Activer le serveur MCP",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"
@@ -1460,6 +1472,39 @@
   "settings.navigationAndFileOps.card.fileOperations": "Opérations sur les fichiers",
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.navigationAndFileOps.card.terminal": "Terminal",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd",
+    "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Ouvrir dans Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
+  },
+  "settings.behavior.openTerminalHereApp.label": "« Ouvrir un terminal ici » utilise",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "Cmdr liste les apps de terminal qu''il trouve sur ce Mac. Pour en utiliser une qu''il ne connaît pas, choisissez « Choisir une app… ».",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "Choisir une app…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Choisir une app de terminal",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Vérification de vos apps…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "Astuce « Ouvrir un terminal ici » affichée",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Indique si l''astuce unique sur le choix d''une app de terminal a été affichée.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
   },
   "settings.section.archives": "Archives",
   "@settings.section.archives": {

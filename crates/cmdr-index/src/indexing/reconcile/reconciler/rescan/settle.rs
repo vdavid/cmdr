@@ -160,7 +160,8 @@ mod tests {
         std::fs::remove_dir_all(&anchor).expect("the updater cleans up");
 
         let cancelled = CancellationToken::new();
-        let summary = reconcile_subtree(&anchor, &IndexPathSpace::root(), &conn, &writer, &cancelled).expect("walks");
+        let summary =
+            reconcile_subtree(&anchor, &IndexPathSpace::root(), &conn, &writer, &cancelled, None).expect("walks");
 
         assert_eq!(
             (summary.added, summary.removed, summary.updated),

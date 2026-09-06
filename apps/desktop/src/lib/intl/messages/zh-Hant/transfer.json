@@ -46,5 +46,9 @@
   "transfer.fileOnly.mixedMove": "移動完成：已移動 {transferredText}，略過 {skippedText}。{skippedText} {skipped, plural, other {個檔案}}原本就在目標位置。",
   "@transfer.fileOnly.mixedMove": {
     "sourceHash": "1457a4f"
+  },
+  "transfer.appearedDuringMove": "移動過程中有 {countText} {count, plural, other {個項目}}出現在{scope, select, manyFolders {{folderName} 等來源資料夾} other {{folderName}}}中，仍留在原處。",
+  "@transfer.appearedDuringMove": {
+    "sourceHash": "b884882"
   }
 }

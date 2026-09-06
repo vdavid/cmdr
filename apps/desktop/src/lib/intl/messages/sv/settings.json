@@ -387,14 +387,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Öppna arkiv och paket",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Välj vad Enter gör för varje format: bläddra i det som en mapp, öppna det i en annan app, eller fråga varje gång.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Arkiv",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"
@@ -410,6 +402,14 @@
   "settings.archives.zip.description": "Vad Enter gör med en zip-fil.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
+  },
+  "settings.archives.ooxml.label": "Dokument och paket",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Vad Enter gör med en .docx, .xlsx, .pptx, .jar eller .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
   },
   "settings.archives.bundle.label": "Appaket",
   "@settings.archives.bundle.label": {
@@ -454,10 +454,6 @@
   "settings.indexing.enabled.description": "Indexera din enhet i bakgrunden för omedelbara mappstorlekar.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
-  },
-  "settings.mediaIndex.card": "Bildsökning",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Det här körs helt på din Mac med Apples inbyggda Vision-ramverk. Dina bilder lämnar aldrig din dator, och ingen AI-leverantör eller API-nyckel är inblandad.",
   "@settings.mediaIndex.privacyNote": {
@@ -550,6 +546,14 @@
   "settings.mediaIndex.showFileStatusIcons.description": "Lägg till en liten symbol på varje bild i fillistan som visar om den har indexerats för sökning.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
+  },
+  "settings.mediaIndex.showInSearch.label": "Visa bildresultat i Sök",
+  "@settings.mediaIndex.showInSearch.label": {
+    "sourceHash": "45dd528"
+  },
+  "settings.mediaIndex.showInSearch.description": "Sök lägger till en rad matchande bilder ovanför dina filer. Matchningen är fortfarande grov, så det är avstängt tills du vill ha det.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "sourceHash": "5b62cab"
   },
   "settings.mediaIndex.networkVolumes.label": "Bildindexering för nätverksenheter",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -1065,7 +1069,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "sourceHash": "40d9fa1"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.description": "När du går in i `.git`, visa grenar, taggar, incheckningar och arbetsträd som bläddringsbara virtuella mappar. Stäng av för att i stället se det råa innehållet i `.git`.",
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "När du går in i `.git`, visa grenar, taggar, incheckningar och worktrees som bläddringsbara virtuella mappar. Stäng av för att i stället se det råa innehållet i `.git`.",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },
@@ -1076,6 +1080,14 @@
   "settings.viewer.wordWrap.description": "Bryt långa rader vid fönsterkanten i förhandsvisningen i stället för att rulla i sidled.",
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
+  },
+  "settings.viewer.showTextCursor.label": "Visa textmarkör",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Visa en blinkande textmarkör i förhandsvisningen, som visar varifrån en markering med tangentbordet växer.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
   },
   "settings.developer.mcpEnabled.label": "Aktivera MCP-server",
   "@settings.developer.mcpEnabled.label": {
@@ -1457,6 +1469,39 @@
   "settings.navigationAndFileOps.card.fileOperations": "Filåtgärder",
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.navigationAndFileOps.card.terminal": "Terminal",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd",
+    "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Öppna i Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
+  },
+  "settings.behavior.openTerminalHereApp.label": "”Öppna terminal här” använder",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "Cmdr listar de terminalappar den hittar på den här Macen. För en som den inte känner till, välj ”Välj app…”.",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "Välj app…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Välj en terminalapp",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Kontrollerar dina appar…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "Tips om ”Öppna terminal här” visat",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Om engångstipset om att välja en terminalapp har visats.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
   },
   "settings.section.archives": "Arkiv",
   "@settings.section.archives": {

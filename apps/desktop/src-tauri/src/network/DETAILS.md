@@ -492,4 +492,14 @@ cycles"; re-measure there before trusting any number.
   hostname-keyed creds, and fell back to guest → `STATUS_LOGON_FAILURE`). The manual "Connect directly" path
   (`commands::network::upgrade_to_smb_volume`) stays separate because it surfaces `CredentialsNeeded` to prompt the
   user, but uses the same `resolve_ip_to_hostname_with_wait` + `get_keychain_password` pair.
+- **A wedged `NetAuthSysAgent` hangs every NetFS mount, and only restarting the daemon clears it**: `mount_share_sync`
+  sits in `NetFSMountURLSync` → `NAAA_MountURL`, blocked on the MIG reply, while the daemon itself sits in `smb_mount` →
+  `setNetworkAccountSID` → `LsarGetUserName` → `rpc__cn_assoc_receive_frag`, waiting on an LSARPC response fragment that
+  never arrives. The `smb_integration_mount_*` fixture tests then time out against healthy containers, so the Docker
+  stack looks guilty and isn't: restarting the containers changes nothing, and `mount_smbfs` keeps mounting the same
+  share in well under a second, because only NetFS's CIFS plugin does the account-SID step. Confirm by sampling both
+  sides (`sample $(pgrep -f 'deps/cmdr_lib-')` and `sample $(pgrep NetAuthSysAgent)`) rather than trusting the test
+  name; clear it with `killall NetAuthSysAgent`, which launchd relaunches on demand. (Verified on macOS 26.6.2 / 25G83,
+  2026-09-05: 39 consecutive timeouts across two commits and two worktrees, then a 1.5 s pass immediately after the
+  restart, with no code change.)
 - **`statfs` can return mDNS service names instead of IPs**: When macOS auto-reconnects an SMB mount on login, `statfs.f_mntfromname` may contain `//user@Naspolya._smb._tcp.local/share` instead of `//user@192.168.1.111/share`. These service names are not DNS-resolvable. `resolve_server_address()` in `commands/network.rs` detects these (by checking for `._tcp`/`._udp`) and resolves them to IPs via `get_discovered_hosts()`. All upgrade paths (startup, mount-time, manual) go through this resolution. Similarly, `friendly_server_name()` extracts the display name (e.g., `Naspolya`) for UI display.

@@ -35,7 +35,9 @@ import (
 // `file-length` allowlist entry. Shrinking is always fine and never fails.
 
 // guardedIndexCrates are the crates whose dependency trees must stay app-free.
-var guardedIndexCrates = []string{"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp", "cmdr-webdav"}
+var guardedIndexCrates = []string{
+	"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp", "cmdr-webdav", "cmdr-mtp",
+}
 
 // forbiddenForIndexCrates are the packages that must not appear in a guarded
 // crate's tree. `cmdr` is the app; `tauri` and `tauri-specta` are what would let
@@ -206,6 +208,58 @@ var surfaceGuardedCrates = []struct {
 			RootPromises:   6,
 			PublicModules:  1,
 			SubsystemItems: 8,
+		},
+	},
+	{
+		// Measured 2026-09-05, at the extraction, and set to exactly what the crate
+		// exposes — no headroom, so the first addition has to be argued for.
+		//
+		// EVERY module is private, so a host can name no path into this crate at all
+		// and all 11 promises arrive as root re-exports. That's why both other buckets
+		// are zero, and it's the tightest shape any backend crate here has taken:
+		// `GitPortal`'s own methods are reachable but unmeasured, so the item-by-item
+		// argument in the crate's `DETAILS.md` is what holds them, not this number.
+		//
+		// The 11 serve four callers, and a new one should name which:
+		// browsing (`GitPortal`, `GitPortalVolume`, `portal_route`), the chip
+		// (`RepoInfo`, `repo_info`, `RepoHandle`), the status column (`EntryStatus`,
+		// `EntryStatusCode`, `list_status`), and reporting a change
+		// (`GitStateSink`, `no_git_state_sink`).
+		//
+		// LOWERED 12 -> 11 on 2026-09-05, no conversation needed because a tightening
+		// isn't a loosening: `virtual_category_prefixes` lost its only caller when the
+		// post-change listing refresh started matching by CANONICAL worktree root
+		// instead of by string prefix, and this crate keeps no promise nothing reaches.
+		//
+		// Item-by-item: `crates/cmdr-git/DETAILS.md` § "The public surface is capped".
+		Name: "cmdr-git",
+		Ceilings: surfaceCeilings{
+			RootPromises:   11,
+			PublicModules:  0,
+			SubsystemItems: 0,
+		},
+	},
+	{
+		// Measured 2026-09-05, at the extraction, and set to exactly what the crate
+		// exposes — no headroom, so the first addition has to be argued for.
+		//
+		// The session layer is most of this crate and NONE of it is a public module:
+		// `connection` is private, so all 12 of its names arrive as root re-exports,
+		// which is why the root bucket is large and the subsystem one tiny. Two public
+		// modules is the whole tree a host can name a path into: `volume` (for
+		// `MtpVolume`) and `virtual_device`.
+		//
+		// 11 of the 13 subsystem items are `virtual_device`'s, which reads oddly for a
+		// fixture and is deliberate: the fake phone sits behind `virtual-device` rather
+		// than `testing`, so the E2E build ships it and the counter measures it.
+		//
+		// Item-by-item, and which of the four audiences each one serves:
+		// `crates/cmdr-mtp/DETAILS.md` § "The public surface is capped".
+		Name: "cmdr-mtp",
+		Ceilings: surfaceCeilings{
+			RootPromises:   20,
+			PublicModules:  2,
+			SubsystemItems: 13,
 		},
 	},
 	{

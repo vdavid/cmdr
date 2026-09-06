@@ -383,14 +383,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Mở tệp nén và gói ứng dụng",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Chọn xem nhấn Enter sẽ làm gì với mỗi định dạng: duyệt bên trong như một thư mục, mở trong ứng dụng khác, hoặc hỏi mỗi lần.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Tệp nén",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"
@@ -406,6 +398,14 @@
   "settings.archives.zip.description": "Nhấn Enter sẽ làm gì với một tệp zip.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
+  },
+  "settings.archives.ooxml.label": "Tài liệu và gói",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Nhấn Enter sẽ làm gì với tệp .docx, .xlsx, .pptx, .jar hoặc .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
   },
   "settings.archives.bundle.label": "Gói ứng dụng",
   "@settings.archives.bundle.label": {
@@ -450,10 +450,6 @@
   "settings.indexing.enabled.description": "Lập chỉ mục ổ đĩa của bạn ở chế độ nền để có ngay kích cỡ thư mục.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
-  },
-  "settings.mediaIndex.card": "Tìm kiếm hình ảnh",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Việc này chạy hoàn toàn trên máy Mac của bạn bằng Vision framework tích hợp của Apple. Hình ảnh của bạn không bao giờ rời khỏi máy tính, và không có nhà cung cấp AI hay khóa API nào tham gia.",
   "@settings.mediaIndex.privacyNote": {
@@ -546,6 +542,14 @@
   "settings.mediaIndex.showFileStatusIcons.description": "Thêm một huy hiệu nhỏ vào mỗi hình ảnh trong danh sách tệp, cho biết nó đã được lập chỉ mục để tìm kiếm hay chưa.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
+  },
+  "settings.mediaIndex.showInSearch.label": "Hiển thị kết quả hình ảnh trong Tìm kiếm",
+  "@settings.mediaIndex.showInSearch.label": {
+    "sourceHash": "45dd528"
+  },
+  "settings.mediaIndex.showInSearch.description": "Tìm kiếm sẽ thêm một hàng hình ảnh khớp phía trên các tệp của bạn. Việc so khớp vẫn chưa chính xác lắm, nên tính năng này đang tắt cho đến khi bạn muốn dùng.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "sourceHash": "5b62cab"
   },
   "settings.mediaIndex.networkVolumes.label": "Lập chỉ mục hình ảnh trên ổ đĩa mạng",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -1073,6 +1077,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "Hiển thị con trỏ văn bản",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Hiển thị con trỏ nhấp nháy trong trình xem tệp, đánh dấu điểm mà vùng chọn bằng bàn phím mở rộng ra.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "Bật máy chủ MCP",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"
@@ -1448,6 +1460,39 @@
   "settings.navigationAndFileOps.card.fileOperations": "Thao tác tệp",
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.navigationAndFileOps.card.terminal": "Terminal",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd",
+    "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Mở trong Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
+  },
+  "settings.behavior.openTerminalHereApp.label": "“Mở terminal tại đây” dùng",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "Cmdr liệt kê các ứng dụng terminal mà nó tìm thấy trên máy Mac này. Để dùng một ứng dụng nó chưa biết, hãy chọn “Chọn ứng dụng…”.",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "Chọn ứng dụng…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Chọn một ứng dụng terminal",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Đang kiểm tra các ứng dụng của bạn…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "Đã hiện gợi ý về “Mở terminal tại đây”",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Gợi ý một lần về việc chọn ứng dụng terminal đã hiện hay chưa.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
   },
   "settings.section.archives": "Tệp nén",
   "@settings.section.archives": {

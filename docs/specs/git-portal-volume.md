@@ -1,13 +1,47 @@
 # The git portal becomes a routed volume in `crates/cmdr-git`, and `LocalPosixVolume` stops knowing about git
 
+**Status (2026-09-05): M0 through M4 are done and on `worktree-git-portal-volume`, plus a follow-up pass over the four
+seams that still asked "is this an archive?" where they meant "is this routed?"** — the transfer's source resolution and
+scan preview, the local write fast path's guard, the viewer's materialization and open budget, the agent's
+`inspect_file`, and the MCP `nav_to_path` existence probe. Copying out of a snapshot, opening one in the viewer, and
+navigating into one all work as a result, and a move out of one or a drop onto one refuses with the typed read-only
+error rather than starting and dying. `Volume::routes_over_a_parent` replaced the name-based downcast that kept a routed
+volume out of the mount lookup. Everything below describes the shape as built, and each milestone's own section records
+what it decided.
+
+The work left is the manual QA David runs against a real app:
+
+1. Browse each of the six categories in a repo's `.git/`.
+2. Copy a file out of a branch tree to another volume, and check the executable bit survives. (Automated for the bytes
+   and the folder shape, including through the app in `git-portal.spec.ts`; the executable bit has a crate-level cell.
+   What is left to a human is a real cross-device copy.)
+3. Edit `.git/config` in place, then rename and delete a real file under `.git/`.
+4. Delete a whole repo folder, on the boot disk and on an external one.
+5. Toggle the portal off and on with a `.git/` pane open, and with a pane standing inside `.git/branches/`.
+6. Open a linked worktree's `.git`: the categories below it answer, and the landing listing does not (§ M3).
+
+**The frontend carries a `git-portal` capability kind.** `capabilitiesForPane` resolves it from the path the way the
+backend routes, `isVirtualGitPath` gated on the live portal toggle, and hands a portal pane a read-only row: no paste,
+F7, ⇧F4, F2, or delete (each refused up front with its own alert), ⌘C/⌘X pointed at F5/F6, and copy-out through the
+transfer still allowed. It borrows the archive kind's shape, so a portal pane keeps the parent drive's tint and needs no
+breadcrumb special case. Real files under `.git/` keep the drive's full row. Rationale and the guard sites:
+`apps/desktop/src/lib/file-explorer/pane/DETAILS.md` § "The virtual `.git` portal pane".
+
 **Problem.** The virtual `.git` portal (browsable `branches/`, `tags/`, `commits/`, `stash/`, `worktrees/`,
 `submodules/`) is implemented as ten `if` sites inside `LocalPosixVolume`: three route hooks on list, metadata, and
 read, plus seven `is_virtual` guards on every mutation method. Two more hand-enforced rules ride on top (the listing
 layer must skip watching virtual paths; the toggle must manually refresh open listings), the docs call the hook order
 "load-bearing", and the module holds English (`pluralize(n, "file")`, "Pinned at commit …") that 10 translations never
-see. The delete walker lists through the hooked `list_directory`, so a delete of a repo with the portal on may meet six
-virtual folders it can't remove (verify at M0). And the git module's first reason for `local_posix` being permanently
-app-resident is these hooks.
+see. The volume-aware delete walker (every non-boot volume: an external disk, a share, a phone) lists through the hooked
+`list_directory`, so a delete of a repo meets all six virtual folders and refuses each with `NotSupported`. The same
+guard refuses the REAL `.git/config` and `.git/HEAD` as well, because `is_virtual` matches any `.git` path segment
+rather than a virtual category, so that delete stops with the repo half-gone. The other three walkers are clean: the
+copy scan walks with `walkdir` against the resolved path and never asks the volume; the LOCAL delete walker falls back
+to `read_dir` because the listing oracle declines every `.git` listing (`listing/streaming.rs` arms no watch under
+`.git`, so coverage reads `None`); and the drive index walks with raw syscalls inside `cmdr-index`, which can't reach
+the git module at all. All of that is pinned by `apps/desktop/src-tauri/src/file_system/git/walker_exposure_tests.rs`
+(verified on macOS 26.6, `cargo test --lib`, 2026-09-05). And the git module's first reason for `local_posix` being
+permanently app-resident is these hooks.
 
 **Shape.** The same mechanism archives already use. A path crossing a `.zip` isn't a hook inside the local backend:
 `VolumeManager::resolve` routes it to a read-only `ArchiveVolume` in its own crate. The portal is the same shape. A
@@ -36,6 +70,16 @@ one can go first.
   non-virtual stays on the parent volume, so every mutation on real files keeps its current behavior with no guard
   anywhere. A real directory literally named `.git/branches/` is shadowed while the portal is on, which is today's
   behavior too (the classifier hides the deprecated `.git/branches/` and linked-worktree `.git/worktrees/`).
+- **A linked worktree's `.git` is a FILE, so the overlay can't key on "a directory named `.git`".** `classify` splits on
+  the path SEGMENT and never stats, so the portal answers in a linked worktree exactly as in the main one, and
+  `virtual_listing::list_root` follows the gitlink to `<common>/worktrees/<name>/` and lists its real entries under
+  rewritten `<linked>/.git/…` paths (verified 2026-09-05, `a_linked_worktree_serves_the_portal_from_a_dot_git_file`).
+  Two consequences for M2: the contributor's predicate is "the last segment is `.git`", ❌ never `is_dir`; and once the
+  hooks come out, `Volume::list_directory(<linked>/.git)` is a `read_dir` on a file (`ENOTDIR`), so the overlay's six
+  entries would land on an errored listing. Today's rewritten real entries are already un-openable (`<linked>/.git/HEAD`
+  doesn't resolve), so dropping them is a fix rather than a loss; what M2 owes is a listing that succeeds. Simplest
+  shape: route `.git` itself to the portal volume when it's a gitlink, or let the overlay stand in for a parent listing
+  that failed `ENOTDIR` on one.
 - **One `GitPortalVolume` per repo root**, registered on demand and LRU-capped the way `register_archive` does it in
   `file_system/volume/manager/archive_routing.rs`. It maps the full input path to `(repo, category, ref, tree path)`
   through the existing `path::classify`, so `ResolvedVolume.path` stays the input path verbatim, as for archives.
@@ -106,13 +150,15 @@ per milestone. M1 and M2 happen in place under today's paths; the move (M3) wait
 
 ### M0: verify and record
 
-- Verify the delete-walker exposure: with the portal on, delete a small repo directory through Cmdr (or the delete
-  walker's unit harness) and record what happens to the six virtual entries. Verify `scan_for_copy_batch` and the
-  indexer's BFS the same way. Write the finding into this spec's Problem paragraph as fact.
-- Verify linked-worktree behavior (`.git` is a FILE there) so the overlay's "directory named `.git`" rule matches what
-  `classify` does today.
-- Revise the two decision paragraphs (decision 5; the host `DETAILS.md` § "Which backends move" line on `local_posix`).
-- Green: the docs checks.
+Done. The findings are in the Problem paragraph and the linked-worktree routing bullet above, pinned by
+`apps/desktop/src-tauri/src/file_system/git/walker_exposure_tests.rs`, and the two decision paragraphs
+(`apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "Per-backend decisions",
+`crates/cmdr-fs/src/volume/host/DETAILS.md` § "Which backends move") now rest on the two reasons that outlive this plan.
+
+**Open question for David.** The volume-delete `NotSupported` on real `.git/*` files is a live data bug, not only a
+portal wart: on an external disk, deleting a repo folder leaves `.git/` behind. M2's routing fixes it structurally (the
+guard disappears with the hooks), so M0 left it standing rather than patching seven sites that are about to be deleted.
+If it should ship sooner, narrowing the guards from `is_virtual` to `classify(..).is_some()` is a small separate change.
 
 ### M1: English out (in place)
 
@@ -122,37 +168,59 @@ per milestone. M1 and M2 happen in place under today's paths; the move (M3) wait
 
 ### M2: route + overlay (in place)
 
-1. `GitPortalVolume` in `file_system/git/volume.rs` implementing `Volume` over today's hook bodies; the read-only subset
-   of `volume::conformance` runs against it (TDD: the conformance cell first, red).
-2. `RoutedKind` in `ResolvedVolume`; lexical git routing in `resolve` and `resolve_local_only`, LRU registration
-   mirroring archives. Routing tests: category paths route, `.git/config` doesn't, toggle off doesn't.
-3. `ListingOverlay` registry + the git contributor; the shadowing rule under test; a test that the delete walker and a
-   copy scan of a repo see NO virtual entries (the regression anchor for the M0 bug).
-4. Remove the ten `local_posix.rs` sites, the `is_virtual` watch skip, and the `notify_mutation` early return. Rewire
-   the toggle and the watcher's refresh target (routing design, last bullet).
-5. Gate: bindings zero-diff, `pnpm check`, the portal E2E spec (`test/e2e-playwright/git-portal.spec.ts`), and
-   `bench.rs` numbers within the budgets in `git/DETAILS.md` § "Performance".
+Done. Steps 1 and 2 landed the routed volume and `RoutedKind`; steps 3-5 landed the seam, the removal, and the gate. The
+shape as built, and the three things it decided that the plan left open:
+
+- **The overlay's predicate is "the listed directory is called `.git`, on a volume answering `local_path().is_some()`,
+  with the portal on"**, and the ROUTE asks the volume half of the same question. The plan worried about keying on
+  `is_dir`; the answer is that the overlay contributes to a listing that already succeeded, so a linked worktree's
+  gitlink FILE excludes itself (`ENOTDIR`) with no stat of our own. That worktree keeps every category below `.git/`,
+  and loses only the landing listing, whose rewritten real rows were never openable anyway.
+- **`.git/` itself is watched now**, since the `is_virtual` watch skip is gone and it's an ordinary local directory. Two
+  consequences the plan didn't name: a watcher-driven `FullRefresh` has to re-run the overlays (it does, in
+  `caching::notify_full_refresh_locked`), and a watched `.git/` listing would otherwise read as authoritative to the
+  fresh-listing oracle. `CachedListing` records the contributed-row count and the oracle declines any listing carrying
+  some, which is the general form of "a pane view is not a picture of a directory".
+- **The watcher's refresh target was a non-question in the end.** Listings stay keyed on the FE-provided parent drive
+  id, and the refresh now matches by PATH across every volume rather than only `DEFAULT_VOLUME_ID` (a repo on an
+  external disk used to go stale).
+
+Full rationale is in the code's own docs now: `file_system/git/DETAILS.md` § "Two seams, no hooks",
+`file_system/volume/DETAILS.md` § "Architecture", `file_system/listing/DETAILS.md` § "The overlay step".
 
 ### M3: the move
 
-- `crates/cmdr-git/` modeled on `crates/cmdr-adb/Cargo.toml` (workspace lints, `#![deny(missing_docs)]`, `testing`
-  feature, self dev-dependency). Decisions 3 and 4 (the sink and the parked value) as their own commits before the
-  `git mv`. `index-crate-isolation`: guarded crate plus surface ceilings justified in the crate's `DETAILS.md`.
-  `cargo deny check`. Every `use super::*` prelude in the moving tests replaced first; every rustdoc link to an app
-  symbol made prose.
-- Gate: `cargo check -p cmdr-git --all-targets` with no app in the graph, bindings zero-diff,
-  `pnpm check --include-slow`.
+Done. `crates/cmdr-git/` holds everything a repository can answer; the app keeps `overlay.rs` and `wiring.rs`. Four
+things it decided that the plan left open:
+
+- **The crate has NO public module.** All 12 promises arrive as root re-exports, so a host can name no path into it,
+  which is tighter than any backend crate before it. `GitPortal`'s methods are therefore reachable but unmeasured, so
+  what holds them is the item-by-item list in `crates/cmdr-git/DETAILS.md` § "The public surface is capped", not the
+  ceiling.
+- **`volume_holds_real_repos` landed app-side**, in `wiring.rs`. It reads a `Volume` capability
+  (`local_path().is_some()`), both callers are the app's two seams, and nothing in the crate ever asks it.
+- **Two statics stayed**, and the crate's `DETAILS.md` draws the line: a memo keyed by content (`snapshot_dates`) or by
+  `(root, mtime)` (`status`) is correct for any number of portals, so it may; anything owning a resource's lifecycle
+  (the `RepoCache`) may not, and became a portal field.
+- **The test files moved with their subject**, which overlaps M4's split. Leaving them app-side would have forced a
+  `pub` on `path::classify`, `Cat`, and every category lister, which is exactly the widening the ceiling exists to
+  prevent. Six cells stayed behind or were folded into an app cell: the toggle, the two watcher-invalidation ones, and
+  the walker-exposure set.
+- **`gix` left the app manifest** (nothing else used it); `notify`, `notify-debouncer-full`, and `walkdir` stayed,
+  because the local, downloads, file-viewer, and Linux-volume watchers still use them.
+
+One unrelated fix rode along: `cmdr-fs` was borrowing `tokio/macros` from whichever consumer happened to enable it, so
+`cargo check -p cmdr-git` was the first build to find it missing. It declares the feature itself now.
 
 ### M4: tests and docs
 
-- Split by what a cell asserts: portal, category, column-meta, snapshot-date, and fixture cells to the crate; routing,
-  overlay, toggle, watcher-adapter, and walker-regression cells stay app-side beside the code they exercise.
-- `crates/cmdr-git/CLAUDE.md` + `DETAILS.md` from today's `git/` docs (the hook contract section is deleted, not
-  rewritten; the performance table and the watcher path set move). `file_system/git/CLAUDE.md` shrinks to the wiring.
-  `file_system/volume/CLAUDE.md` + `DETAILS.md` (the "Git delegation hooks" section goes; § "Architecture" gains the
-  overlay seam beside the registry), `backends/DETAILS.md`, `docs/architecture.md`,
-  `apps/desktop/src/lib/file-explorer/git/CLAUDE.md` (the typed meta). Allowlist entries for moved files carry over at
-  their current numbers as a rename; anything new is a finding, not a silent bump.
+- The split by what a cell asserts largely landed with M3 (see above). What's left is a pass over both sides for cells
+  that ended up on the wrong one, and `crates/cmdr-git/src/tests.rs`, whose name no longer says what it holds.
+- The crate's `C+D.md` pair, the shrunk `file_system/git/` pair, `docs/architecture.md`, `AGENTS.md`, and the
+  `lock-poison` allowlist carry-overs landed with M3. What's left: `file_system/volume/CLAUDE.md` + `DETAILS.md` (§
+  "Architecture" gains the overlay seam beside the registry), `backends/DETAILS.md`, and
+  `apps/desktop/src/lib/file-explorer/git/CLAUDE.md` (the typed meta). Anything new in an allowlist is a finding, not a
+  silent bump.
 - Manual QA (David): browse each of the six categories, copy a file out of a branch tree to another volume, edit
   `.git/config` in place, delete a repo folder, toggle the portal off and on with a `.git/` pane open, open a linked
   worktree's `.git`.

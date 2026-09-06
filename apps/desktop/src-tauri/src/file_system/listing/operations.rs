@@ -8,8 +8,10 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+
 use crate::benchmark;
-use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
+use crate::file_system::listing::cached_listing::{CachedListing, LISTING_CACHE, OverlayRows};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::listing::visible_rows::VisibleRows;
@@ -49,7 +51,7 @@ pub async fn list_directory_start_with_volume(
     let resolved = crate::file_system::volume::manager::get_volume_manager()
         .resolve(volume_id, path)
         .await;
-    let is_archive = resolved.is_archive;
+    let is_routed = resolved.is_routed();
     let volume = resolved.volume.ok_or_else(|| {
         std::io::Error::new(
             std::io::ErrorKind::NotFound,
@@ -71,13 +73,18 @@ pub async fn list_directory_start_with_volume(
     let listing_id = Uuid::new_v4().to_string();
 
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
-    // so that sort-by-size works correctly for directories. Archives have no drive
-    // index (inner paths aren't real FS paths), so enrich/verify are skipped.
+    // so that sort-by-size works correctly for directories. A routed volume has no
+    // drive index (its paths aren't real FS paths), so enrich/verify are skipped.
     let mut all_entries = all_entries;
-    if !is_archive {
+    if !is_routed {
         index().enrich(volume_id, &mut all_entries);
         index().verify_directory(volume_id, &path.to_string_lossy());
     }
+
+    // Fold in the rows a PANE sees that the volume doesn't hold (the git
+    // portal's six category rows on a repo's `.git/`), between enrich and the
+    // sort for the same reasons as the streaming path. `crate::listing_overlays`.
+    let overlay_rows = crate::listing_overlays::decorate(&volume, path, &mut all_entries).await;
 
     // Sort the entries
     sort_entries(&mut all_entries, sort_by, sort_order, dir_sort_mode);
@@ -92,7 +99,8 @@ pub async fn list_directory_start_with_volume(
         sort_by,
         sort_order,
         dir_sort_mode,
-    );
+    )
+    .with_overlay_rows(overlay_rows);
     let total_count = listing.rows(include_hidden).len();
     if let Ok(mut cache) = LISTING_CACHE.write() {
         cache.insert(listing_id.clone(), listing);
@@ -103,6 +111,10 @@ pub async fn list_directory_start_with_volume(
     if volume.can_watch_listings() {
         start_watching_detached(&listing_id, path);
     }
+    // And whatever else a subsystem keeps alive while a pane shows this
+    // directory: today the git portal's per-repo watcher, which a virtual path
+    // can't arm through the line above. `crate::listing_lifecycle`.
+    crate::listing_lifecycle::listing_opened(&listing_id, volume.as_ref(), path);
 
     benchmark::log_event("list_directory_start RETURNING");
     Ok(ListingStartResult {
@@ -123,6 +135,11 @@ pub fn list_directory_end(listing_id: &str) {
     if let Ok(mut cache) = LISTING_CACHE.write() {
         cache.remove(listing_id);
     }
+
+    // AFTER the cache removal, ❗ never before: an observer's own detached arm
+    // reconciles against listing-cache membership, so releasing while the entry
+    // is still there lets a racing arm re-take what this just gave back.
+    crate::listing_lifecycle::listing_closed(listing_id);
 }
 
 // ============================================================================
@@ -408,7 +425,7 @@ pub(crate) fn get_listing_entries(listing_id: &str) -> Option<(PathBuf, Vec<File
 
 /// Updates the entries in the listing cache (after watcher detects changes).
 /// Re-sorts using the stored sort parameters so the cache stays consistent.
-pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) {
+pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>, overlay_rows: OverlayRows) {
     if let Ok(mut cache) = LISTING_CACHE.write()
         && let Some(listing) = cache.get_mut(listing_id)
     {
@@ -422,33 +439,31 @@ pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) 
             listing.directory_sort_mode,
         );
         listing.set_entries(entries);
+        if let OverlayRows::Recounted(count) = overlay_rows {
+            listing.set_overlay_rows(count);
+        }
     }
 }
 
-/// Gets all listings for volumes matching a specific prefix.
+/// The distinct volume ids under `prefix` that have at least one cached listing.
 ///
-/// Used by MTP file watching to find all listings belonging to a device.
-/// MTP volume IDs have the format "mtp-{device_id}:{storage_id}".
-///
-/// Returns: Vec<(listing_id, volume_id, path, entries)>
-pub(crate) fn get_listings_by_volume_prefix(prefix: &str) -> Vec<(String, String, PathBuf, Vec<FileEntry>)> {
-    let cache = match LISTING_CACHE.read() {
-        Ok(c) => c,
-        Err(_) => return Vec::new(),
-    };
+/// What a device backend asks when its event names an object the protocol alone
+/// can't place: "which of my storages is a pane showing?" Ids only, so nothing
+/// clones an open directory's entries to answer it.
+pub(crate) fn volume_ids_with_listings(prefix: &str) -> Vec<String> {
+    // Recover rather than answer empty: an empty answer reads as "no pane is
+    // showing anything", which sends a device backend down the blanket-refresh
+    // path for as long as the process lives.
+    let cache = LISTING_CACHE.read_ignore_poison();
 
-    cache
-        .iter()
-        .filter(|(_, listing)| listing.volume_id.starts_with(prefix))
-        .map(|(listing_id, listing)| {
-            (
-                listing_id.clone(),
-                listing.volume_id.clone(),
-                listing.path.clone(),
-                listing.entries().to_vec(),
-            )
-        })
-        .collect()
+    let mut ids: Vec<String> = cache
+        .values()
+        .filter(|listing| listing.volume_id.starts_with(prefix))
+        .map(|listing| listing.volume_id.clone())
+        .collect();
+    ids.sort_unstable();
+    ids.dedup();
+    ids
 }
 
 // ============================================================================

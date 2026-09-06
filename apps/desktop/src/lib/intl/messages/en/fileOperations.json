@@ -711,7 +711,7 @@
       "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,240)"
     },
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
   },
 
   "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Deleting what it created} one {Deleting the file it created} other {Deleting the {countText} files it created}}...",
@@ -722,7 +722,7 @@
       "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,240)"
     },
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
   },
 
   "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Putting the old names back} one {Putting the old name back} other {Putting {countText} old names back}}...",
@@ -733,7 +733,7 @@
       "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,240)"
     },
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
   },
 
   "fileOperations.transferProgress.titleCancelling": "Canceling...",
@@ -821,7 +821,7 @@
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "description": "Progress-dialog title for the last stage of a move BETWEEN disks, which copies first and only then removes the source files. By this point every file is safely at the destination and what is left is clearing the old copies, which on a big folder takes real time. \"The originals\" are the source files the user asked to move; the word matters, because a title that only said \"Deleting\" over a move would read as the user''s files being destroyed. A move within one disk never shows this (it renames, so there is nothing to clear). Keep the trailing ellipsis, like its sibling titles.",
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is the title it shows during the final stage of a move between disks."
   },
 
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to trash}}...",
@@ -1299,7 +1299,9 @@
 
   "fileOperations.cancelRollback.leftBehind": "Cmdr skips anything it isn''t sure about, so these stayed where they are:",
   "@fileOperations.cancelRollback.leftBehind": {
-    "description": "Middle line of the toast after a cancelled copy or move whose undo left things behind. It sets the expectation BEFORE the reasons, so the user reads the leftovers as care rather than as something going wrong: Cmdr refuses to remove or move anything it can''t match against what it wrote. The lines under it (fileOperations.cancelRollback.reason.*) each name one reason and are shown as a bulleted list, which is why this line ends in a colon. It opens with the same verb as the Rollback confirmations (fileOperations.rollbackConfirm.body and its bodyUndo* siblings), which say Cmdr skips anything it isn''t sure about; keep the two matched in your language too. Sentence case; the apostrophe is doubled for ICU and renders as one."
+    "description": "Middle line of the toast after a cancelled copy or move whose undo left things behind. It sets the expectation BEFORE the reasons, so the user reads the leftovers as care rather than as something going wrong: Cmdr refuses to remove or move anything it can''t match against what it wrote. The lines under it (fileOperations.cancelRollback.reason.*) each name one reason and are shown as a bulleted list, which is why this line ends in a colon. It opens with the same verb as the Rollback confirmations (fileOperations.rollbackConfirm.body and its bodyUndo* siblings), which say Cmdr skips anything it isn''t sure about; keep the two matched in your language too. Sentence case; the apostrophe is doubled for ICU and renders as one.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is one of the lines inside a toast like it."
   },
 
   "fileOperations.cancelRollback.reason.drift.named": "Left {name} alone: it changed after Cmdr put it there.",

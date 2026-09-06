@@ -11,6 +11,26 @@ import {
 } from './tauri-commands'
 
 const STORAGE_KEY = 'cmdr-icon-cache'
+
+/**
+ * Bump when a BOUNDED icon's pixels can change while its key stays the same.
+ *
+ * `dir` / `ext:*` / `special:*` survive restarts in localStorage and are only
+ * refetched on a cache miss, so a backend change to how one is PRODUCED is
+ * otherwise invisible forever on every machine that already ran the old build —
+ * the fix ships, the pixels don't move, and it reads as the fix not working.
+ *
+ * 2: `dir` / `symlink-dir` stopped sampling the home directory, whose baked-in
+ *    house badge every plain folder had been wearing.
+ */
+const CACHE_SCHEMA = 2
+
+/** The persisted envelope. A bare map (no `version`) is a pre-schema build's. */
+interface StoredCache {
+  version: number
+  icons: Record<string, string>
+}
+
 const retryDelayMs = 5000
 
 /**
@@ -112,8 +132,15 @@ function loadFromStorage(): void {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
-      const parsed = JSON.parse(stored) as Record<string, string>
-      for (const [id, url] of Object.entries(parsed)) {
+      const parsed = JSON.parse(stored) as Partial<StoredCache>
+      // Written by a build whose bounded icons may differ from what this one
+      // would fetch. Drop the lot rather than guess which entries still hold:
+      // they refetch on first use, and a stale one would never be revisited.
+      if (parsed.version !== CACHE_SCHEMA || !parsed.icons) {
+        localStorage.removeItem(STORAGE_KEY)
+        return
+      }
+      for (const [id, url] of Object.entries(parsed.icons)) {
         // Defensive: skip any per-path (`path:`/`pkg:`) keys left by an older build.
         // They're no longer persisted, and feeding them in would seed the
         // bounded-keys-only cache.
@@ -138,7 +165,7 @@ function saveToStorage(): void {
       if (isPerPathKey(id)) continue
       obj[id] = url
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: CACHE_SCHEMA, icons: obj } satisfies StoredCache))
   } catch {
     // Ignore storage errors
   }
@@ -273,6 +300,20 @@ export function evictPerPathIconsForDir(dirPath: string): void {
  */
 export function getCachedIcon(iconId: string): string | undefined {
   return memoryCache.get(iconId)
+}
+
+/**
+ * Gets a folder's Finder custom icon from the cache, or undefined when it has
+ * none (the overwhelmingly common case).
+ *
+ * A custom-icon folder keeps the generic `dir` iconId — the backend defers the
+ * `kHasCustomIcon` getxattr off the bulk-listing hot path — so its icon arrives
+ * under a `path:{dir}` key that no entry ever points at. Renderers must ask by
+ * PATH here, not by `iconId`, or `prefetchCustomFolderIcons` fetches and caches
+ * an icon nothing ever draws.
+ */
+export function getCachedCustomFolderIcon(directoryPath: string): string | undefined {
+  return memoryCache.get(`${PATH_KEY_PREFIX}${directoryPath}`)
 }
 
 /**

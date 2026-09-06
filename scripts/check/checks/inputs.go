@@ -109,7 +109,9 @@ var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr-archive", Kind: KindApp, Glob: "crates/cmdr-archive/**"},
 	{Pkg: "cmdr-fs", Kind: KindApp, Glob: "crates/cmdr-fs/**"},
 	{Pkg: "cmdr-fsevent-stream", Kind: KindVendored, Glob: "crates/fsevent-stream/**"},
+	{Pkg: "cmdr-git", Kind: KindApp, Glob: "crates/cmdr-git/**"},
 	{Pkg: "cmdr-index", Kind: KindApp, Glob: "crates/cmdr-index/**"},
+	{Pkg: "cmdr-mtp", Kind: KindApp, Glob: "crates/cmdr-mtp/**"},
 	{Pkg: "cmdr-sftp", Kind: KindApp, Glob: "crates/cmdr-sftp/**"},
 	{Pkg: "cmdr-smb", Kind: KindApp, Glob: "crates/cmdr-smb/**"},
 	{Pkg: "cmdr-webdav", Kind: KindApp, Glob: "crates/cmdr-webdav/**"},
@@ -184,6 +186,18 @@ var macOSAvailabilityInputs = inputs(
 	rustScanInputs(KindApp, KindTool, KindVendored),
 	[]string{"apps/desktop/src-tauri/tauri.conf.json"},
 	runnerDataInputs("macos-availability-selectors.json"),
+)
+
+// macOSFrameworkFloorInputs is what decides which frameworks the binary ends up
+// loading: the manifests and the lockfile (a feature default is what put the wrong
+// one there), plus the floor being enforced and the version list it's judged
+// against. The binary itself is NOT an input; it lives in `target/`, and a lane
+// that fingerprinted it would miss on every rebuild while answering the same.
+var macOSFrameworkFloorInputs = inputs(
+	rustWorkspaceConfigInputs,
+	[]string{"apps/desktop/src-tauri/Cargo.toml", "crates/*/Cargo.toml"},
+	[]string{"apps/desktop/src-tauri/tauri.conf.json"},
+	runnerDataInputs("macos-framework-versions.json"),
 )
 
 // rustCompileInputs is what a lane that runs cargo over the whole workspace

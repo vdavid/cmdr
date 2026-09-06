@@ -3,7 +3,7 @@
 //! pre-known-conflict bulk skip, and destination auto-create.
 //!
 //! These drive the sink-based inner function directly with a
-//! `CollectorEventSink` + `InMemoryVolume`, mirroring `volume/copy_tests.rs`.
+//! `CollectorEventSink` + `InMemoryVolume`, mirroring `volume/copy_tests/`.
 //! Tests target the data-safety invariants the bulk-skip / per-iter skip
 //! work introduced: pre-known-conflict bulk skip lands before any destructive
 //! call, and skipped conflicts bump `files_done` so the bar doesn't stall.
@@ -475,6 +475,68 @@ async fn cross_volume_move_on_real_local_volumes() {
     assert!(!src_dir.join("note.txt").exists());
     assert_eq!(fs::read_to_string(dst_dir.join("doc.txt")).unwrap(), "hello");
     assert_eq!(fs::read_to_string(dst_dir.join("note.txt")).unwrap(), "world");
+}
+
+/// A cross-volume MOVE is a copy plus a source delete, so the mode has to
+/// travel exactly as it does for a copy — otherwise moving a script between two
+/// devices silently disarms it, and unlike a copy there is no original left to
+/// go back to.
+///
+/// Both shapes, because they take different routes through the engine: the file
+/// selected ALONE goes through the top-level dispatch, the one inside a folder
+/// through the merge walker.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_cross_volume_move_carries_the_executable_bit() {
+    use std::fs;
+    use std::os::unix::fs::PermissionsExt;
+
+    let base = TestDir::new("move_exec_bit");
+    let src_dir = base.join("src");
+    let dst_dir = base.join("dst");
+    fs::create_dir_all(src_dir.join("scripts")).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    for rel in ["run.sh", "scripts/run.sh"] {
+        fs::write(src_dir.join(rel), "#!/bin/sh\n").unwrap();
+        fs::set_permissions(src_dir.join(rel), fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    fs::write(src_dir.join("scripts/notes.txt"), "nnn").unwrap();
+    fs::set_permissions(src_dir.join("scripts/notes.txt"), fs::Permissions::from_mode(0o644)).unwrap();
+
+    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Source", src_dir.to_str().unwrap()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+
+    let result = move_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "op-move-exec-bit",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("run.sh"), PathBuf::from("scripts")],
+        Arc::clone(&dest),
+        Path::new(""),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let mode_of = |rel: &str| {
+        fs::metadata(dst_dir.join(rel))
+            .unwrap_or_else(|e| panic!("stat {rel}: {e}"))
+            .permissions()
+            .mode()
+            & 0o777
+    };
+    assert_eq!(mode_of("run.sh") & 0o111, 0o111, "a moved script stays executable");
+    assert_eq!(
+        mode_of("scripts/run.sh") & 0o111,
+        0o111,
+        "and so does one inside a moved folder"
+    );
+    assert_eq!(
+        mode_of("scripts/notes.txt") & 0o111,
+        0,
+        "a plain file stays non-executable"
+    );
 }
 
 /// Cross-volume move into a not-yet-existing nested dest creates the folder

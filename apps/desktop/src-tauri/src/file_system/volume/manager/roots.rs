@@ -10,7 +10,6 @@
 
 use super::{Volume, VolumeManager};
 use crate::ignore_poison::RwLockIgnorePoison;
-use cmdr_archive::ArchiveVolume;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -264,10 +263,14 @@ impl VolumeManager {
     /// wise `starts_with` avoids a `/Volumes/XY`-matches-`/Volumes/X` false hit, and
     /// the longest-root wins so a nested mount (`/Volumes/X/Y`) beats its parent.
     ///
-    /// An on-demand `ArchiveVolume` (its root is the `.zip` file, so it would win
-    /// the longest-root race for every path inside the archive) is not a mount and
-    /// is skipped: a path inside an archive belongs to the volume that holds the
-    /// archive, which is what its callers route by.
+    /// A ROUTED volume is not a mount and is skipped: an `ArchiveVolume`'s root
+    /// is the `.zip` file and a `GitPortalVolume`'s is `<worktree>/.git`, so
+    /// either would win the longest-root race for every path inside it. A path
+    /// inside an archive, or inside a repo's snapshots, belongs to the volume
+    /// that physically holds it, which is what the callers here route by. The
+    /// question is `Volume::routes_over_a_parent`, ❌ never a downcast to a list
+    /// of concrete types: a future routed backend that isn't on such a list
+    /// silently reintroduces the steal.
     ///
     /// In-memory (one `RwLock<HashMap>` read, no syscall), so it's safe on the
     /// enrichment / dir-stats hot path.
@@ -277,9 +280,10 @@ impl VolumeManager {
             .read_ignore_poison()
             .iter()
             .map(|(id, entry)| (id, &entry.volume))
-            // By type, not by LRU membership: an archive is registered a moment before
-            // it enters the LRU, and a concurrent caller must not see it in that gap.
-            .filter(|(_, v)| v.as_any().downcast_ref::<ArchiveVolume>().is_none())
+            // By the volume's own declaration, not by LRU membership: a routed
+            // volume is registered a moment before it enters its LRU, and a
+            // concurrent caller must not see it in that gap.
+            .filter(|(_, v)| !v.routes_over_a_parent())
             .filter(|(_, v)| v.root() != Path::new("/"))
             .filter(|(_, v)| target.starts_with(v.root()))
             .max_by_key(|(_, v)| v.root().as_os_str().len())
@@ -758,3 +762,9 @@ mod tests {
         assert!(!is_retired(), "the share is still registered, just at another mount");
     }
 }
+
+/// The mount-root lookup's own cells, in their own file so this one stays
+/// readable; `mod tests` above holds the registration-lifecycle ones.
+#[cfg(test)]
+#[path = "mount_id_tests.rs"]
+mod mount_id_tests;

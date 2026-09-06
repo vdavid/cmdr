@@ -15,11 +15,11 @@ use super::super::macos_copy::copy_symlink;
 use super::super::chunked_copy::ChunkedCopyProgressFn;
 use super::super::copy_strategy::copy_file_with_strategy;
 
-use crate::file_system::write_operations::conflict::{ApplyToAll, resolve_conflict};
+use crate::file_system::write_operations::conflict::{ApplyToAll, IncomingItem, resolve_conflict};
 use crate::file_system::write_operations::error_classification::IoResultExt;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::ledger::{CopyTransaction, WrittenFile};
-use crate::file_system::write_operations::overwrite::safe_overwrite_dir;
+use crate::file_system::write_operations::overwrite::{displace_with_directory, safe_overwrite_dir};
 use crate::file_system::write_operations::state::{WriteOperationState, is_cancelled, update_operation_status};
 use crate::file_system::write_operations::types::{
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
@@ -246,6 +246,10 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
                 match resolve_conflict(
                     &blocking,
                     &blocking,
+                    // What's arriving is the DIRECTORY the dest tree needs
+                    // here, even though the pair handed over is the blocking
+                    // file on both sides (so the prompt describes it).
+                    IncomingItem::Directory,
                     config,
                     events,
                     operation_id,
@@ -254,26 +258,22 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
                 )? {
                     Some(resolved) if resolved.path == blocking => {
                         // Folder→file OVERWRITE: the dest tree wants a directory at
-                        // `blocking` but a file is there. Route through
-                        // `safe_overwrite_dir` so the dest file is renamed aside, the
-                        // directory is created in its place, and on `create_dir_all`
-                        // failure the aside is rolled back. The subtree is populated
-                        // lazily by subsequent iterations.
-                        safe_overwrite_dir(&blocking, |target| {
-                            fs::create_dir_all(target).map_err(|e| WriteOperationError::IoError {
-                                path: target.display().to_string(),
-                                message: format!("Failed to create directory after removing blocking file: {}", e),
-                            })?;
-                            // Honor the caller's full parent chain (we may have been called
-                            // for a deeper blocker than `target == parent`).
-                            if parent != target {
-                                fs::create_dir_all(parent).map_err(|e| WriteOperationError::IoError {
-                                    path: parent.display().to_string(),
-                                    message: format!("Failed to create child directory: {}", e),
-                                })?;
-                            }
-                            Ok(())
-                        })?;
+                        // `blocking` but a file is there. The file is renamed aside and
+                        // a directory stands in its place, and the TRANSACTION takes
+                        // both — the aside, so a rollback or a failure can put the
+                        // user's file back, and the directory, so the same reversal can
+                        // take it away first. The subtree lands lazily over the
+                        // iterations that follow, which is exactly why the aside can't
+                        // be dropped here: for most of this operation the directory is
+                        // empty and the file is the only thing anybody has.
+                        //
+                        // Only `blocking` itself is created. Any deeper level `parent`
+                        // needs falls to the ordinary create-and-record walk below, so
+                        // every directory this copy makes reaches the ledger.
+                        let displaced = displace_with_directory(state, &blocking)?;
+                        transaction.record_dir(blocking.clone());
+                        created_dirs.insert(blocking.clone());
+                        transaction.record_displaced(displaced);
                         log::debug!(
                             "copy: replaced file with directory at {} (type mismatch overwrite)",
                             blocking.display()
@@ -365,6 +365,8 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
             match resolve_conflict(
                 source,
                 &dest_path,
+                // A symlink is a leaf whatever it points at.
+                IncomingItem::Leaf,
                 config,
                 events,
                 operation_id,
@@ -447,6 +449,9 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
             match resolve_conflict(
                 source,
                 &dest_path,
+                // `copy_single_item` is the per-FILE copier; a directory source
+                // never reaches here.
+                IncomingItem::Leaf,
                 config,
                 events,
                 operation_id,

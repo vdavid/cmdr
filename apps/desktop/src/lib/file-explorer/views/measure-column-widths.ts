@@ -23,6 +23,7 @@ import {
   getDisplayExtension,
   getDisplaySize,
   hasSizeMismatch,
+  wordGitMeta,
 } from './full-list-utils'
 import { tString } from '$lib/intl/messages.svelte'
 
@@ -58,7 +59,8 @@ const HEADER_CHROME_ACTIVE = 12
  * Header overhead for a column that isn't being sorted: the caret is
  * `display: none`, which collapses both the glyph and the flex gap. The
  * button's padding is offset by the negative margin, so the label is flush
- * against the track edges and chrome is zero.
+ * against the track edges and chrome is zero. Every column gets this on a pane
+ * with `sortBy: null`, which draws no caret anywhere.
  */
 const HEADER_CHROME_INACTIVE = 0
 
@@ -204,14 +206,15 @@ function sizeTextForEntry(
   isRestricted: boolean,
 ): string {
   // TCC-restricted entries render `<no perms>` instead of the misleading `0`
-  // the indexer recorded after a denied scan. Keep this BEFORE the
-  // `entry.displaySize` check: restricted state takes priority over virtual
-  // git display strings (which wouldn't apply to favorites anyway).
+  // the indexer recorded after a denied scan. Keep this BEFORE the git check:
+  // restricted state takes priority over a virtual git row's wording (which
+  // wouldn't apply to favorites anyway).
   if (isRestricted) return tString('fileExplorer.dirSize.noPerms')
-  // Virtual git entries override the Size cell with a short string
-  // (`+12 / -3`, `5 files`, …); measure that instead of the byte format.
-  if (entry.displaySize != null) {
-    return entry.displaySize
+  // A virtual git row words its own Size cell (`+12 / -3`, `5 files`, …);
+  // measure that instead of the byte format. Same helper the renderer calls,
+  // so the two can't drift apart on a copy edit or a locale switch.
+  if (entry.gitMeta != null) {
+    return wordGitMeta(entry.gitMeta).override ?? ''
   }
   if (entry.isDirectory) {
     const s = getDisplaySize(entry.recursiveSize, entry.recursivePhysicalSize, sizeDisplayMode)
@@ -272,7 +275,8 @@ export function computeFullListColumnWidths(args: {
    *  width and the drawn glyph disagree row by row. */
   isSizeUpdating: (entry: FileEntry) => boolean
   showSizeMismatchWarning: boolean
-  sortBy: SortColumn
+  /** The column the rows are in, or `null` when they are in no column's order. */
+  sortBy: SortColumn | null
   sizeFormatOpts: SizeFormatOpts
   /** Returns `true` for paths in the TCC-restricted set so the size cell
    * widths account for the `<no perms>` override. Defaults to never-restricted. */

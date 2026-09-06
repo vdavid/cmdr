@@ -1393,20 +1393,20 @@
   "@errors.write.filesTooLargeForFilesystem.suggestion": {
     "sourceHash": "bb4ac05"
   },
-  "errors.write.readOnlyDevice.title": "Csak olvasható eszköz",
-  "@errors.write.readOnlyDevice.title": {
+  "errors.write.readOnlyDevice.destination.title": "Csak olvasható eszköz",
+  "@errors.write.readOnlyDevice.destination.title": {
     "sourceHash": "3f79690"
   },
-  "errors.write.readOnlyDevice.message": "A(z) {deviceName} csak olvasható. Másolhatsz róla fájlokat, de rá nem.",
-  "@errors.write.readOnlyDevice.message": {
+  "errors.write.readOnlyDevice.destination.message": "A(z) {deviceName} csak olvasható. Másolhatsz róla fájlokat, de rá nem.",
+  "@errors.write.readOnlyDevice.destination.message": {
     "sourceHash": "932e2ed"
   },
-  "errors.write.readOnlyDevice.suggestion": "Válassz másik célt, amely támogatja az írást.",
-  "@errors.write.readOnlyDevice.suggestion": {
+  "errors.write.readOnlyDevice.destination.suggestion": "Válassz másik célt, amely támogatja az írást.",
+  "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
-  "errors.write.readOnlyDevice.fallbackName": "A céleszköz",
-  "@errors.write.readOnlyDevice.fallbackName": {
+  "errors.write.readOnlyDevice.destination.fallbackName": "A céleszköz",
+  "@errors.write.readOnlyDevice.destination.fallbackName": {
     "sourceHash": "ef2429e"
   },
   "errors.write.fileLocked.title": "A fájl zárolva van",
@@ -1436,6 +1436,38 @@
   "errors.write.deletePending.suggestion": "Várj egy kicsit, majd próbáld újra. Amint az utolsó leíró bezárul, a fájl eltűnik. Ha továbbra is megmarad, zárj be minden más appot, ami nyitva tarthatja.",
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
+  },
+  "errors.write.newDataKeptAt.title": "Az új fájlod más néven van meg",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Az új {path} teljesen kiírva megvan, de a célhely nem engedte, hogy ezt a nevet kapja, és a fájl, amit lecserélt volna, már nincs meg. Az új itt van: {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Nyisd meg a(z) {keptAt} elemet, nézd át, majd nevezd át. Ha a célhely hálózati megosztás vagy telefon, előbb csatlakoztasd újra, és az átnevezés menni fog.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
+  "errors.write.originalsKeptAside.title": "A fájlod új néven van meg",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "Egy mappa elvette a(z) {path} nevet, így a fájlod most itt van: {keptAt}. Semmi nem veszett el.",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "Mappák vették el {count} fájlod nevét, így ezek a fájlok most új néven vannak meg. Semmi nem veszett el; az alábbi technikai részletek mindegyiket felsorolják.",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "Nyisd meg a(z) {keptAt} fájlt, és nézd meg. Ha félretetted a mappát, visszanevezheted a fájlodat.",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "Az alábbi részletekben látod, melyik fájl hol van. Ha félretetted a mappákat, visszanevezheted őket.",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
   },
   "errors.write.fallback.title.copy": "Nem sikerült a másolás",
   "@errors.write.fallback.title.copy": {
@@ -1636,5 +1668,37 @@
   "errors.eject.unexpected": "A Cmdr problémába ütközött, és nem tudta megállapítani, hogy mi.",
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
+  },
+  "errors.write.readOnlyDevice.source.title": "Csak olvasható forrás",
+  "@errors.write.readOnlyDevice.source.title": {
+    "sourceHash": "5d77aa4"
+  },
+  "errors.write.readOnlyDevice.source.message": "A(z) {deviceName} csak olvasható. Másolhatsz belőle fájlokat, de kimozgatni nem tudod őket.",
+  "@errors.write.readOnlyDevice.source.message": {
+    "sourceHash": "ec7d263"
+  },
+  "errors.write.readOnlyDevice.source.suggestion": "Másold őket inkább. Az eredetiek a helyükön maradnak.",
+  "@errors.write.readOnlyDevice.source.suggestion": {
+    "sourceHash": "f6a307b"
+  },
+  "errors.write.readOnlyDevice.source.fallbackName": "A forrás",
+  "@errors.write.readOnlyDevice.source.fallbackName": {
+    "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Két elem neve egyezik",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Két {name} nevű elemet választottál ki, így mindkettő ugyanoda kerülne: {first} és {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Másold őket egyesével, vagy nevezd át az egyiket.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Helyezd át őket egyesével, vagy nevezd át az egyiket.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

@@ -959,7 +959,7 @@ pub(crate) async fn copy_volumes_with_progress(
             deep_skipped_files: Arc::clone(&deep_skipped_files),
             deep_skipped_bytes: Arc::clone(&deep_skipped_bytes),
         })
-        .await?;
+        .await;
         last_dest_path = outcome.last_dest_path;
         copy_error = outcome.copy_error;
         // Sync counters for post-loop reporting.
@@ -1070,6 +1070,7 @@ pub(crate) async fn copy_volumes_with_progress(
             files_processed: files_done,
             files_skipped,
             bytes_processed: bytes_done,
+            appeared_during_move: None,
         });
 
         return Ok(());
@@ -1160,11 +1161,12 @@ pub(crate) async fn copy_volumes_with_progress(
     }))
 }
 
-// The copy suite is one file per contract, and `tests` (`copy_tests.rs`) is the
+// The copy suite is one file per contract, and `tests` (`copy_tests/`) is the
 // general one rather than the default: a new test goes to the sibling whose
-// contract it pins, and only here when it pins none of them. Every sibling
-// shares `make_state` / `make_volumes` from `tests` (`super::tests`). Tests for
-// a symbol another module owns go to THAT module's suite. What each file holds:
+// contract it pins, and only here when it pins none of them, in the
+// `copy_tests/` child named after its subject. Every sibling shares
+// `make_state` / `make_volumes` from `tests` (`super::tests`). Tests for a
+// symbol another module owns go to THAT module's suite. What each file holds:
 // `volume/DETAILS.md` § Files. The bench suites are `#[ignore]`d and
 // network-gated.
 #[cfg(test)]
@@ -1186,6 +1188,9 @@ mod crashsafe_tests;
 #[path = "copy_extract_out_tests.rs"]
 mod extract_out_tests;
 #[cfg(test)]
+#[path = "merge_case_fold_tests.rs"]
+mod merge_case_fold_tests;
+#[cfg(test)]
 #[path = "merge_dir_vs_dir_tests.rs"]
 mod merge_dir_vs_dir_tests;
 #[cfg(test)]
@@ -1200,6 +1205,11 @@ mod merge_tests;
 #[cfg(test)]
 #[path = "merge_window_tests.rs"]
 mod merge_window_tests;
+
+/// What a deep merge does with the ` (N)` name it reserved for a child.
+#[cfg(test)]
+#[path = "merge_placeholder_tests.rs"]
+mod merge_placeholder_tests;
 #[cfg(test)]
 #[path = "copy_precheck_tests.rs"]
 mod precheck_tests;
@@ -1213,6 +1223,9 @@ mod retry_tests;
 #[path = "copy_rollback_tests.rs"]
 mod rollback_tests;
 #[cfg(test)]
+#[path = "copy_snapshot_out_tests.rs"]
+mod snapshot_out_tests;
+#[cfg(test)]
 #[path = "copy_source_hint_tests.rs"]
 mod source_hint_tests;
 #[cfg(test)]
@@ -1222,7 +1235,7 @@ mod space_tests;
 #[path = "copy_staged_write_tests.rs"]
 mod staged_write_tests;
 #[cfg(test)]
-#[path = "copy_tests.rs"]
+#[path = "copy_tests/mod.rs"]
 mod tests;
 #[cfg(test)]
 #[path = "copy_wedge_test_support.rs"]

@@ -1,9 +1,17 @@
-//! Volume move operations.
+//! Volume move operations: the DISPATCHER, and the managed-op lifecycle around
+//! whichever engine it picks.
 //!
-//! Move operations across different volume types:
-//! - Same volume (same Arc): `volume.rename()` per file (instant for MTP MoveObject)
+//! Three strategies, decided by the volume relationship:
+//! - Same volume (same Arc): `volume.rename()` per file (instant for MTP MoveObject) — `move_same`
 //! - Both local: delegates to `move_files_start` (handles same-fs rename optimization)
-//! - Cross-volume: copy to destination then delete sources
+//! - Cross-volume: copy to destination then delete sources — `move_cross`
+//!
+//! ❗ The dependency runs ONE way: this module names both engines, and neither
+//! names it back. Vocabulary the dispatcher and an engine both need belongs
+//! where its contract is — the driver's closure future shapes in
+//! `transfer_driver`, the source hints in `preflight.rs` — ❌ never parked here
+//! for an engine to import. Three type aliases living here were the whole of a
+//! three-module cycle. `DETAILS.md` § Files.
 
 use std::future::Future;
 use std::path::PathBuf;
@@ -19,26 +27,12 @@ use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
     VolumeCopyConfig, WriteOperationConfig, WriteOperationError, WriteOperationStartResult, WriteOperationType,
 };
-use super::super::transfer_driver::{ConflictDecision, TransferOutcome};
 // The same-volume rename path lives in `volume::move_same`; the dispatcher below
 // routes to its entry point.
 use super::move_same::move_within_same_volume;
 use super::transfer_error::{WriteFailure, write_error_event_from};
 use crate::file_system::volume::Volume;
 use crate::operation_log::types::OpKind;
-
-// The driver-closure future-shape aliases are shared with `volume::move_same`
-// (which imports them from here), so they're `pub(super)` rather than private.
-/// Per-call future shape for the driver's `dest_meta_fetcher` closure.
-pub(super) type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
-
-/// Per-call future shape for the driver's `conflict_resolver` closure.
-pub(super) type ResolveFut<'a> =
-    Pin<Box<dyn Future<Output = Result<ConflictDecision, WriteOperationError>> + Send + 'a>>;
-
-/// Per-call future shape for the driver's `transfer_one` closure.
-pub(super) type TransferFut<'a> =
-    Pin<Box<dyn Future<Output = Result<TransferOutcome, WriteOperationError>> + Send + 'a>>;
 
 /// Unified move across volume types.
 ///

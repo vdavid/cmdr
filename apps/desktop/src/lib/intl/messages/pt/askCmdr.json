@@ -104,6 +104,14 @@
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
+  "askCmdr.tool.search.doing": "Buscando nos seus arquivos",
+  "@askCmdr.tool.search.doing": {
+    "sourceHash": "892be3e"
+  },
+  "askCmdr.tool.search.done": "Buscou nos seus arquivos",
+  "@askCmdr.tool.search.done": {
+    "sourceHash": "995a356"
+  },
   "askCmdr.tool.searchPhotos.doing": "Buscando nas suas fotos",
   "@askCmdr.tool.searchPhotos.doing": {
     "sourceHash": "da1265d"
@@ -208,9 +216,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "O Ask Cmdr precisa de uma janela de contexto maior do que a do seu modelo local. Escolha 16.384 tokens ou mais nos ajustes, em IA.",
+  "askCmdr.error.localWindowTooSmall": "O Ask Cmdr precisa de uma janela de contexto maior do que a do seu modelo local. Escolha 32.768 tokens ou mais nos ajustes, em IA.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "Não foi possível falar com o provedor de IA. Verifique sua conexão e tente novamente.",
   "@askCmdr.error.unavailable": {
@@ -243,6 +251,10 @@
   "askCmdr.error.provider": "Algo deu errado do lado do provedor. Tentar de novo?",
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
+  },
+  "askCmdr.event.chatMemoryChanged": "A memória do chat agora guarda {tokens, number} tokens",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
   },
   "askCmdr.event.contextTrimmed": "{count, plural, one {# consulta anterior removida} many {# consultas anteriores removidas} other {# consultas anteriores removidas}} para caber no contexto do modelo.",
   "@askCmdr.event.contextTrimmed": {

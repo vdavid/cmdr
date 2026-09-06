@@ -7,8 +7,8 @@ two `Memory` tools. Must-knows: `CLAUDE.md`.
 
 There is ONE authored tool table (`mcp/tool_registry/mod.rs`, `mcp_tools!`). Each entry declares `consumers`
 (`AiClient` / `Agent`) and `access` (`Read` / `Propose` / `Memory` / `Write`). The agent's tools are
-`consumers: [Agent]` entries, never `access: Write`; `operations_list` / `operations_get` / `search_photos` /
-`image_facts` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
+`consumers: [Agent]` entries, never `access: Write`; `operations_list` / `operations_get` / `search` /
+`search_photos` / `image_facts` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
 `get_all_tools()` is the ai-client slice (agent-only entries filtered out, so the ai-client wire snapshot is unchanged).
 `execute_tool(app, Consumer::Agent, name, params)` dispatches only the agent view. See
 [`mcp/tool_registry` + `mcp/DETAILS.md`](../../mcp/DETAILS.md) § Consumer and access views for the mechanism.
@@ -22,8 +22,9 @@ makes intentional.
 
 ## The tool catalog
 
-Each handler is `async fn(&AppHandle<R>, &Value) -> ToolResult` (the `app_params` macro shape), reuses a shipped core,
-and returns a typed serde shape as the tool-result JSON the model reads. Every tool maps 1:1 to a `ToolId` variant.
+Each handler is `async fn(&AppHandle<R>, &Value) -> ToolResult` (the `app_params` macro shape; `search` is the only one here
+authored `params_only`, since it needs no `AppHandle`), reuses a shipped core, and returns a typed serde shape as the
+tool-result JSON the model reads. Every tool maps 1:1 to a `ToolId` variant.
 
 - **`app_state`** (`read/state.rs`) — both panes (path, cursor item, selection count, view/sort) plus the volume list.
   Built from `PaneStateStore` (`get_focused_pane` returns the SIDE; the path comes from that side's state) +
@@ -38,9 +39,40 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   (`indexing::list_dir_children`, a path-based helper beside `get_dir_stats`) plus its own recursive size stats
   (`get_dir_stats`) and a `Coverage` block. `Ok(None)` children ⇒ typed "not in index" / "no index", distinguished by
   whether the volume is indexed. Ordered by `sortBy` (`name` / `size` / `modified`) and paged by `limit` / `offset`;
-  `type` narrows to files or folders. **`sortBy: "size"` is the disk-usage answer** — see § One tool, both questions.
+  `type` narrows to files or folders. **`sortBy: "size"` is the disk-usage answer for ONE folder's children**;
+  `search` with the same sort ranks a whole drive — see § One tool, both questions.
   Every number also arrives spoken (`sizeHuman`, `modifiedHuman`, `recursiveSizeHuman`, `totalHuman` /
   `availableHuman`) and a paged answer carries a `remainder` — see § Numbers arrive already spoken.
+- **`search`** (`mcp/executor/search.rs`, shared `[AiClient, Agent]`) — find files across ONE whole drive by name
+  pattern (glob or regex), size range, modified range, or type, over the same live path a person's search takes
+  (`search::run_live_collected`: the index where it covers the scope, a walk for the rest, so an unindexed drive still
+  answers). `sortBy` is relevance / size / modified, `limit` defaults to 30 and clamps to 200, and `countOnly` answers
+  with the counts and coverage alone. The typed result shape and every rule about its counts: `mcp/executor/DETAILS.md`
+  § The search result.
+  - **Names and metadata only, ❌ never contents.** The chain for a contents question is `search` (or `search_photos`)
+    to narrow, then `inspect_file` with `find` over the hits. A `modified` is when a file last CHANGED, never when it
+    was saved or opened, which the model has to voice rather than round off.
+  - **One drive per call, and the model loops.** `resolve_target` refuses a scope spanning volumes
+    (`ScopeError::SpansMultipleVolumes`), because a fan-out is the only way a search can silently omit a drive. The
+    default is the boot volume; another drive is named by the `mountPath` `list_volumes` hands over. The description
+    obliges the model to say WHICH drive it covered before offering the others.
+  - **What the coverage block obliges the model to say**, field by field: `stillWalking` and `abandonedGround` make the
+    list a lower bound (❗ never "no matches"), `permissionDenied` names refused folders and offers Full Disk Access
+    only where it would help, `declined` explains rather than offers (snapshot trees are nothing to fix),
+    `stillCovering` says those results arrive later rather than being lost, `unresolvedScopes` is ❌ never "that folder
+    doesn't exist" (Cmdr can't tell a typo from unwalked ground), and `hiddenByExcludes` says the count is filtered.
+    The default system/cache/build tier is right for "find my invoice" and exactly wrong for "where is my disk space
+    going", where the hidden folders ARE the answer. The system prompt's § Coverage carries the rule; the authored
+    sentences ride in `notes` beside the flags.
+  - **❌ No `offset`, by decision.** Ranking is top-k, and an offset over a re-ranked run would skip and double-count
+    rows. The model narrows instead (a tighter pattern, a smaller scope, a date range), and the description says so.
+  - **❌ `ai_search` is deliberately NOT in the agent view.** It spends an LLM call turning prose into a structured
+    query, and Ask Cmdr is already an LLM holding the user's prose: exposing it would nest a second model call, bill
+    two providers, and hide a translation the agent can't see or correct, for a schema that rides every turn. The agent
+    writes the structured query itself.
+  - **❌ No drive-wide content index**, until something measures the gap the `search` → `inspect_file` chain leaves. It
+    would be a second index with its own enrichment pass, storage budget, and incremental reconcile, on the scale of
+    `media_index`.
 - **`important_folders`** (`read/importance.rs`) — top-N or above-threshold across scored volumes, reusing
   `mcp::resources::importance::{snapshot_top, snapshot_threshold, snapshot_overview}` (which read every scored volume,
   including offline ones). The overview carries each volume's current generation for staleness.
@@ -79,6 +111,11 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   SMB, `smbConnectionState` (`direct`/`os_mount`/`disconnected`), straight from `snapshot_volumes` so tokens can't drift.
   Space rides along as `totalBytes` / `availableBytes` plus `totalHuman` / `availableHuman`, each pair present exactly
   when the poller has a reading (the same pair `cmdr://state`'s `volumes:` renders; see `mcp/DETAILS.md`).
+  `mountPath` is what makes a `search` of anything but the boot volume expressible: `search` covers ONE volume per call
+  and addresses it by a path in `scope`, and every other field here is a name, an id, or a token. It's absent for a
+  volume with no filesystem path (MTP storages, the `Network` root), which is also exactly where a search can't reach.
+  ⚠️ It rides `VolumeSummary` but ❌ NOT the `cmdr://state` YAML: that view redacts home paths, so a favorite folder's
+  mount path would render redacted and an AI client copying it into a scope would match nothing.
 - **`operations_list` / `operations_get`** — the shipped executors (`mcp/executor/operation_log.rs`), shared into the
   agent view unchanged (their schemas + coverage flags already fit an agent reader).
 - **`search_photos`** (`mcp/executor/photos.rs`, shared `[AiClient, Agent]`) — photo search by description (CLIP),
@@ -119,13 +156,13 @@ and it would delete a USER's thread the moment a rail turn called it. So the han
 delete lives on the wake path, after the turn (`agent/wake/`), and a rail turn calling this changes nothing —
 `wake/tests/job.rs` pins that.
 
-**Why the `reason` never reaches a log.** It exists for the agent's own memory (M3) and is trimmed to
+**Why the `reason` never reaches a log.** It exists for the agent's own memory and is trimmed to
 `MAX_REASON_CHARS`. ❌ It must never be logged verbatim: `cmdr.log` ships inside error reports, including the
 auto-dispatched ones the user never previews, and `redact::redact_line_salted` is path-shaped, so it does nothing to a
 sentence about which of the user's folders were boring. Log that a wake was quiet, never what it said.
 
-**What it costs everyone else.** The schema is prefix, so all 17 declarations are paid on every rail turn: this one is
-97 tokens of the 5,257 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
+**What it costs everyone else.** The schema is prefix, so all 19 declarations are paid on every rail turn: this one is
+97 tokens of the 6,263 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
 being able to stay silent, and it's why the description is two sentences.
 
 ## The two tools that write (`memory_write`, `memory_edit`)
@@ -221,9 +258,17 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   path whose owning volume (`VolumeManager::mount_id_for_path`, else `root`) reports
   `!supports_local_fs_access()`. A `missing` there would be a lie the model relays. An OS-mounted share
   (`/Volumes/share`) is a real path and flows through; the timeout is what protects the turn.
+- **An OOXML document inspects as an ARCHIVE, deliberately.** `.docx` / `.xlsx` / `.pptx` / `.jar` / `.apk` are
+  browsable archive suffixes, so `inspect_file` on a Word document returns its PARTS (`[Content_Types].xml`, `word/`,
+  `docProps/`) rather than treating it as one opaque file. **Decision/Why**: there is no Office-document reader
+  anywhere in the agent or viewer, so the alternative answer is "binary, unreadable" — the part listing is strictly more
+  useful, `word/document.xml` is genuinely where the text lives, and the whole path is read-only. It follows from the
+  suffix table rather than from anything here, and it is NOT gated on the user's `behavior.archiveEnter.ooxml` setting:
+  that setting steers the Enter KEY, while this is the tool's own read. Egress is unchanged — entry names, as for any
+  archive. If an Office reader ever lands, revisit this branch first.
 - **Archives** (`archive.rs`): the pane's own routing, before any `std::fs`. A path with an archive-named component
   (`cmdr_archive::archive_boundary_candidate`, a pure string check) goes through `VolumeManager::resolve(volume_id,
-  path)` (`block_on` from the blocking thread, as `archive_extract` does): the shared boundary detector confirms the
+  path)` (`block_on` from the blocking thread, as `routed_extract` does): the shared boundary detector confirms the
   format by name and magic bytes and hands back the on-demand `ArchiveVolume`, or a passthrough for a mislabeled
   `.zip`, which then reads as text or binary. The row is then built from the archive's cached index
   (`ArchiveVolume::index()`, the seam the volume opened for this: `FileEntry` has no `encrypted` field, and
@@ -233,16 +278,23 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   format from `ArchiveFormat::label()`; the archive root's row metadata is the `.zip` file's own `std::fs` stat, an
   inner directory's `sizeBytes` is absent (never a zero). A file node → refused `unreadable { encrypted }` from the
   node's flag BEFORE extraction (the tool has no password path), else
-  `archive_extract::extract_if_archive_inner(path, volume_id)` streams it to the viewer's bounded temp (the same
+  `routed_extract::extract_if_routed(path, volume_id)` streams it to the viewer's bounded temp (the same
   256 MiB refuse-before-extract cap; `ExtractTooLarge` → `tooLargeToExtract`, `ViewerError::Archive` → `corrupt`),
   `read_content` runs the normal per-kind pipeline on `temp_file` (so `find` and the window work inside a zip), and
   `TempCleanup` removes `cleanup_dir` in `Drop`, so an early return or a panic can't leak it. A zip inside a zip is
   `binary`: the boundary is the leftmost archive component, as in the pane. The parse errors map typed:
   `NeedsPassword` (a header-encrypted 7z) → `encrypted`, `IoError` (a damaged structure) → `corrupt`, `NotSupported`
   (the archive layer's unsupported-codec / non-archive / over-cap collapse) → `unsupported`: an unsupported codec is
-  not a damaged file. (An unsupported codec met at EXTRACT time still reads `corrupt`: `archive_extract` folds it into
+  not a damaged file. (An unsupported codec met at EXTRACT time still reads `corrupt`: `routed_extract` folds it into
   `ViewerError::Archive { message }`, which carries no kind.) The extract step is injected (`ExtractFn`) so the tests
   shrink the cap and watch the temp dir.
+- **Every other route** (`inspect_routed_path` in `mod.rs`): a file in a repo's virtual `.git` trees has no inode to
+  `stat` either, so once the archive branch declines, `volume::manager::path_routes_over_its_parent` gates the same
+  `extract_if_routed` call and the row is built from the temp with the ordinary per-kind pipeline. It reports no
+  `modified`: the temp was written a moment ago, and quoting its mtime would date a years-old commit as today. A path
+  the confirm rejects (a mislabeled `.zip`, a `.git` that isn't a repository) falls through to the plain `std::fs`
+  pipeline, and so do the REAL files under `.git/`, which are the parent volume's and keep their own mtime. Snapshot
+  contents egress like any other file contents, which the consent copy already covers.
 - **Statuses from I/O**: `NotFound` / `NotADirectory` → `missing`; `PermissionDenied` → `unreadable { permission }`
   (EACCES and a Full Disk Access refusal are one kind of `std::io::Error`, so the enum doesn't pretend to tell them
   apart); anything else, including a read that panicked → `unreadable { io }`.
@@ -270,6 +322,11 @@ walks the serialized result and requires every leaf to be a string, a number, or
 "What's in this folder" and "where is my disk space going" are one query with two orderings, so they're one tool. A
 second by-size tool would have overlapped it on every axis but the sort, and an agent facing two near-identical listing
 tools guesses.
+
+**Where `search` draws the line.** `list_dir` ranks the children of a folder the caller names; `search` with
+`sortBy: "size"` ranks a whole drive, which is what surfaces a 900 GB VM image eight levels down that no
+folder-by-folder walk would reach. Both tool descriptions state that split, and ❌ nothing else does: the `path`
+property deliberately carries no disk-space advice, because two places saying it is two places to drift.
 
 Three properties make the size ordering an honest disk-usage answer:
 
@@ -349,9 +406,15 @@ Every result that carries a LIST is cut to `agent::chat::budget::MAX_TOOL_RESULT
 `mcp::executor::fit_to_result_budget`, and reports `total` / `returned` / `truncated` so the model can say what it saw
 and ask for the rest. It applies to `list_dir` (children, under the caller's own `limit`), `list_pane_files` (entries, on
 top of its 200-row cap), `image_facts` (per-path rows, on top of the 2,000-char per-file text cap),
-`search_photos` (hits), `inspect_file` (per-path rows, on top of the 16,000-char per-row window cap, with the rows it
-drops named in `unanswered`), the `operations_*` pages, and the suggested-ops reads (group summaries from
-`list_suggestions`, the op page from `get_suggestion_group`).
+`search_photos` (hits), `search` (entries, on top of its own 200-row cap), `inspect_file` (per-path rows, on top of the
+16,000-char per-row window cap, with the rows it drops named in `unanswered`), the `operations_*` pages, and the
+suggested-ops reads (group summaries from `list_suggestions`, the op page from `get_suggestion_group`).
+
+⚠️ **`search` reports `matchCount`, which is NOT the `total` the rest of this list reports.** Everywhere else `total` is
+what the page was cut from, so `returned == total` means "you saw everything". A search's engine stops emitting rows at
+the row cap while the count keeps rising, so `matchCount` can exceed `returned` by orders of magnitude with nothing
+wrong; `coverage.capped` says which, and `matchCountHuman` wears a `≥` so the caveat can't be shed when the number is
+restated.
 
 **Why a size cut on top of the row caps:** a row cap can't bound a payload. `image_facts` at 200 paths × 2,000
 characters is ~100k estimated tokens, and a `list_dir` on a 20k-entry folder had no cap at all. A result that doesn't
@@ -387,6 +450,35 @@ notes in its own memory folder, but can't touch the user's files or approve a pr
 through `inspect_file`. ⚠️ Keep it accurate as the tiers grow: it promised "couldn't change anything at all" until
 `Access::Memory`, and "can't read file contents" until `inspect_file`; a model told a false limit either refuses the
 question or invents the answer.
+
+### A propose result always answers `readyForReview`
+
+`true` when it staged, `false` when it didn't. `view.rs::ensure_review_verdict` holds it at `dispatch`'s single exit:
+`dispatch` is a two-line wrapper over `route_call`, so every branch funnels through one stamp.
+
+**It is a choke point rather than a stamp at each refusal site** because four sites already have to agree — the schema
+gate, `execute_tool`'s flattened `ToolError`, `propose_in_thread`'s, and the rename boundary's own typed refusals — and
+the fifth nobody has written yet is the one that would go missing. Two of those four had no verdict when this was
+found: a model read a bare `{ problem }` from the gate and told the user its rename plan was waiting in the suggestions
+panel while the store held nothing.
+
+Both decisions are typed, never the tool's name or the refusal's wording: the registry's `Access` says which tools owe
+a verdict, and `AgentToolResult::reports_a_problem` (on the type, shared with `chat/runtime`'s `dispatch_ok`) tells a
+problem from an answer. It fails closed but never overwrites — a result that already answered keeps its own verdict, so
+a plan that DID stage can't be reported as staging nothing, which would be the same dishonesty pointed the other way.
+
+`chat/runtime/repeats.rs` keeps a failed result's content whole, so a repeat inherits the verdict too.
+
+### What a gate refusal says
+
+The schema gate (`mcp/tool_registry/params.rs`) runs inside `route_call`, ahead of the branch, so it covers every agent
+call. It warns on `agent::tools`, carrying the typed `data` (which properties were wrong) beside the sentence. Before
+that line, a plan that never reached the proposal store was invisible: the log held the provider round trips and the
+repeat breaker's warn, and characterizing the report meant reading `main.db`'s conversation rows.
+
+The refusal SENTENCE matters as much as the shape, and its rules live with the gate, not here: a per-row property sent
+at the top level is a `Misplaced` violation naming the row that takes it, because "propose_rename_plan has no volumeId
+parameter. It takes renames." is a true sentence a model cannot act on — it reads as "your rows were fine".
 
 `dispatch` routes two tools specially rather than through the generic `execute_tool` call: `propose_rename_plan`,
 which needs the evidence scope, and `propose_suggestions`, which needs the conversation id so a sweep records the

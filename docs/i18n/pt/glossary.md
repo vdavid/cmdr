@@ -526,11 +526,11 @@ The Ask Cmdr rename-proposal modal: a table of proposed renames the user allows 
 
 ### Image-index status and scope terms (`fileExplorer.imageIndex.*` + `settings.mediaIndex.scope/chosenFolders.*` + `askCmdr.tool.imageFacts/searchPhotos.*`, 2026-07-20)
 
-- image search (the feature, when named in running text) · **busca de imagens** · matches the shipped card title
-  `settings.mediaIndex.card` "Image search" → "Busca de imagens" and the glossary search → **busca** row · confirmed. ❌
-  Not "pesquisa de imagens" when naming the feature. The adjective **pesquisável** stays where it already ships
-  (`settings.mediaIndex.reclaim.line`, `progress.kept`, `chosenFolders.help`): it's a property of the indexed item, not
-  the feature name.
+- image search (the feature, when named in running text) · **busca de imagens** · the catalog's term wherever the
+  feature is named (`fileExplorer.imageIndex.drive.off` = "A busca de imagens está desativada para este disco.") and the
+  glossary search → **busca** row · confirmed. ❌ Not "pesquisa de imagens" when naming the feature. The adjective
+  **pesquisável** stays where it already ships (`settings.mediaIndex.reclaim.line`, `progress.kept`,
+  `chosenFolders.help`): it's a property of the indexed item, not the feature name.
 - indexing (in progress) · **Indexando** · pt-BR gerund, matching every sibling progress label (Copiando/Movendo/
   Analisando/Baixando) and the shipped `search.imageResults.indexing` ("ainda estão sendo indexadas") · confirmed. ❌
   Never the pt-PT `A indexar` / `está a indexar`. `fileExplorer.imageIndex.indexing`, `indexingTooltip*`.
@@ -1893,3 +1893,45 @@ movimentação entre dois sistemas de arquivos chega ao último passo (apagar os
   destino»), `reversão` é o termo assentado para o rollback (`rollbackUnavailableTooltip`), e `Cancelar` é o rótulo do
   botão ao lado (`fileOperations.button.cancel`), então entra sem mudança · `high`.
 - Sem `sameAsSourceJustification`; nenhum valor tem apóstrofo.
+
+## “Abrir terminal aqui” e o seletor de app (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Superfície nova: um cartão em `Comportamento > Navegação e operações de arquivo` que escolhe o app de terminal aberto
+pelo comando. O macOS monta a lista; aqui só os rótulos são traduzidos.
+
+- **terminal (o tipo de app) → `terminal`; Terminal (o app da Apple) → `Terminal`** · o macOS em pt-BR mantém o nome em
+  inglês (`Abrir no Terminal`, chave `N67` em `macOS/Finder/LocalizableMerged.json`), e a palavra genérica em português
+  é o mesmo empréstimo · `high`. Por isso o título do cartão `settings.navigationAndFileOps.card.terminal` leva
+  `sameAsSourceJustification`: ele é idêntico ao inglês de propósito.
+- **Open terminal here (o nome do comando) → `Abrir terminal aqui`** · construído sobre o `Abrir no Terminal` da Apple,
+  com `aqui` para o lugar · `high`. A tradução do próprio comando (menu, paleta) precisa usar exatamente esta forma.
+- **Choose an app… → `Escolher app…`** · o `Choose Application…` da Apple (chave `N137`) diz `Escolher Aplicativo…`;
+  `app` no lugar de `aplicativo`, como no resto do catálogo, e em caixa de frase · `high`.
+- Nenhum valor tem apóstrofo.
+
+## `Sort by relevance`: a dica da coluna de resultados de busca (`fileExplorer.columns.sortByRelevance`)
+
+Superfície nova: a dica que aparece ao passar o cursor sobre o cabeçalho de coluna ativo de um painel de resultados de
+busca. O clique seguinte devolve as linhas à ordem do próprio buscador, com a melhor correspondência primeiro.
+
+- **relevance (o quanto um resultado corresponde à busca) → `relevância`** · as quatro fontes do macOS concordam, tanto
+  em pt-BR quanto em pt-PT: WorkflowKit (`Relevance (WFSearchSortOrder)` → `Relevância`), AppStoreKit
+  (`SEARCH_FACET_RELEVANCE` → `Relevância`), Automator (`%1$[Relevância]@ …`) e Música · `high`. Minúscula depois de
+  `por`, como no resto do catálogo. (verificado no macOS 26.6.2, build 25G83, extração com `plutil` das localizações
+  incluídas, 2026-09-06)
+- **Moldura da frase → `Ordenar por relevância`** · exatamente o padrão das chaves irmãs em `commands.json`
+  (`Ordenar por nome`, `Ordenar por tamanho`) · `high`. Sem `sameAsSourceJustification`, e o valor não tem apóstrofo.
+
+## `Documents and packages`: a nova linha OOXML (`settings.archives.ooxml.*`)
+
+Superfície nova: uma linha no mesmo cartão de `Arquivos zip`, acima do cartão `Pacotes de aplicativo`. Ela cobre de
+propósito AS DUAS coisas: documentos do Office (.docx, .xlsx, .pptx) e pacotes de aplicativo (.jar, .apk). Por isso nem
+o inglês cita o Office.
+
+- **documents (o tipo de arquivo) → `Documentos`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Documentos`; tipos
+  `Documento RTF`, `Documento de Texto Simples`) · `high`.
+- **packages (genérico, não só apps) → `pacotes`** · macOS Finder (`Mostrar Conteúdo do Pacote`) e a entrada de
+  glossário `app bundle → pacote` · `high`. Fica o `pacotes` puro, para a linha continuar mais ampla que o cartão
+  `Pacotes de aplicativo` abaixo dela — a mesma separação que o inglês faz entre `packages` e `app bundles`.
+- **Moldura da frase → `O que pressionar Enter faz em um …, … ou ….`** · exatamente a moldura das chaves irmãs
+  `settings.archives.zip.description` e `settings.archives.bundle.description` · `high`. Sem apóstrofo no valor.

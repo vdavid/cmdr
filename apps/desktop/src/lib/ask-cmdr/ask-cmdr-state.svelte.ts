@@ -47,12 +47,27 @@ export interface BulkRenameReviewRow {
   nameRejected: boolean
 }
 
-export interface BulkRenameReview {
+/**
+ * One staged plan inside a review: the unit the BACKEND knows about. Preflight, apply, and
+ * cancel are all per proposal, so each carries its own in-flight and expiry state.
+ */
+export interface BulkRenameReviewProposal {
   proposalId: string
   rows: BulkRenameReviewRow[]
   preflighting: boolean
   expired: boolean
   requestVersion: number
+}
+
+/**
+ * One review, however many batches a job took.
+ *
+ * The model can only emit about 101 plan rows per reply, so a big rename arrives as a run of
+ * staged proposals. They accumulate here and the user answers all of them once; Apply then
+ * starts one operation per proposal, which is what the backend has always expected.
+ */
+export interface BulkRenameReview {
+  proposals: BulkRenameReviewProposal[]
 }
 
 interface AskCmdrState {
@@ -77,8 +92,8 @@ interface AskCmdrState {
    * `null` means no turn has been measured, which the gauge shows as nothing at all. */
   contextUsage: ContextUsage | null
   /** Destination names the user turned down in the last review, newest first, waiting to ride
-   * the NEXT send so the following batch doesn't propose the same style again. Cleared once
-   * sent: they're feedback on one decision, not a permanent denylist. */
+   * the NEXT send so a retry doesn't propose the same style again. Cleared once sent: they're
+   * feedback on one decision, not a permanent denylist. */
   deniedNames: string[]
 }
 

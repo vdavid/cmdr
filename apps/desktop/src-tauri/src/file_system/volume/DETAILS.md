@@ -23,7 +23,7 @@ in-memory test fixture. Callers never touch the filesystem directly; they call `
 - **`manager.rs`** (+ `manager/roots.rs`): `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default
   volume. Also holds the process-wide instance and its `get_volume_manager()` accessor. `roots.rs` holds the mount-root
   set each entry owns and the promotion rules over it
-- **`backends/`**: the app-resident `Volume` impls (`LocalPosixVolume`, `MtpVolume`) and their tests, and nothing else. Every crate backend is imported by crate name at its call sites. See `backends/CLAUDE.md`.
+- **`backends/`**: the app-resident `Volume` impls (`LocalPosixVolume` only) and their tests, and nothing else. Every crate backend is imported by crate name at its call sites. See `backends/CLAUDE.md`.
 - **`friendly_error/`**: User-facing error messages + provider detection. See `friendly_error/CLAUDE.md`.
 
 ## Architecture
@@ -46,17 +46,24 @@ the crate boundary is what makes that a compile error rather than a habit.
      plus a `VolumeHost` handed in at construction; the app's adapters turn each answer into a frontend event or a
      cache write.
    - Crate backends (no `tauri`, verified alone by `cargo check -p <crate>`): `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
-     `cmdr-webdav`, `cmdr-adb`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`, permanent: the git portal
-     is implemented as its hooks) and `MtpVolume` (`backends/mtp/` over `src/mtp/`), which predates the seams and does
-     its lifecycle face the old way: the session layer holds a `tauri::AppHandle`, emits seven `tauri_specta::Event`
-     payloads itself, and reaches the listing cache, the registry, and `device_volumes` directly. `InMemoryVolume` (in
-     `cmdr-fs`) is the test and stress fixture.
+     `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`,
+     permanently). `InMemoryVolume` (in `cmdr-fs`) is the test and stress fixture.
 3. **The app-side half of each backend.** What a backend can't answer from its protocol alone, and what must know the
    concrete type: discovery UI, the keychain, the OS mount, the ptpcamerad workaround, and REGISTRATION. A backend never
    registers itself; a wiring module (`network/smb_upgrade.rs`, `network/sftp_volume_wiring.rs`,
    `network/webdav_volume_wiring.rs`, `adb/`, `mtp/volume_wiring.rs`) mints the volume, hands it the app's `VolumeHost`
    (`src-tauri/src/volume_host.rs`), and inserts it. Device backends also register a `DeviceVolumeProvider`
-   (`device_volumes.rs`) so the volume list and eject can fold over them.
+   (`device_volumes.rs`) so the volume list and eject can fold over them. Beside that registry sits a second one with
+   the same shape, `listing_overlays.rs`: a `ListingOverlay` contributes extra rows to ONE directory's listing, folded
+   in by the listing pipeline (`listing/streaming.rs`, `listing/operations.rs`, and every watcher-driven `FullRefresh`)
+   after the volume's entries arrive and before the cache insert. A contributed row shadows a real one of the same
+   name. Today's one contributor is the git portal, which puts the six virtual category rows into a repo's `.git/`
+   listing (`file_system/git/overlay.rs`).
+   ❌ **Never move an overlay into a `Volume` impl or into the volume manager.** Contributed rows must reach a PANE and
+   nothing else: a copy scan, a delete walker, and the indexer all list through `Volume`, and the last time one of them
+   could see a row with no inode behind it, deleting a repo folder stopped with `.git/` still on disk. The same rule is
+   why a listing an overlay decorated is never authoritative for a walker: `CachedListing::has_overlay_rows` records
+   it, and `try_get_authoritative_listing` declines any listing carrying some, whatever its watch reports.
 4. **The registry: `VolumeManager`** (`manager.rs`). Volume id → `Arc<dyn Volume>`, plus the mount-root set per entry,
    archive routing in `resolve`, retirement on removal, and the arrival subscription.
 5. **The consumers.** `write_operations/` (copy, move, delete, the cross-volume engine), `listing/` (panes and the
@@ -66,12 +73,13 @@ the crate boundary is what makes that a compile error rather than a habit.
 ```
 consumers: transfer engine, panes, delete, indexer BFS, viewer, MCP
         │  Arc<dyn Volume>
-VolumeManager (registry; resolve routes .zip paths to ArchiveVolume)
+VolumeManager (registry; resolve routes .zip paths to ArchiveVolume,
+               and .git/<category>/ paths to GitPortalVolume)
         │
 backends ── file-ops face: impl Volume ──────────────────────────────┐
-  crate:  Archive  Smb  Sftp  WebDav  Adb                            │ cmdr-fs: Volume trait,
-  app:    LocalPosix (permanent)  Mtp (pre-seam)  InMemory (tests)   │ types, walkers, host seams
-        │  lifecycle face: VolumeHost seams (crates) / direct reaches (MTP)
+  crate:  Archive  Smb  Sftp  WebDav  Adb  Mtp  GitPortal            │ cmdr-fs: Volume trait,
+  app:    LocalPosix (permanent)  InMemory (tests)                   │ types, walkers, host seams
+        │  lifecycle face: VolumeHost seams
 app-side halves: wiring + registration, discovery, keychain, mounts, ptpcamerad, DeviceVolumeProvider, tauri events
 ```
 
@@ -90,21 +98,58 @@ Every non-forced `LocalPosixVolume::rename` is atomic-no-overwrite. macOS uses `
 `renameat2(RENAME_NOREPLACE)`, covering the boot volume, attached local volumes, and cloud folders registered under
 their own volume IDs. A separate metadata check followed by plain `rename` is not an acceptable substitute.
 
-## Resolving a path: archive routing
+## Resolving a path: the two routes
 
-`VolumeManager::resolve(volume_id, path)` (`manager/archive_routing.rs`) answers "which volume serves this path": the
-registered volume for `volume_id`, or a read-only `ArchiveVolume` when the path crosses a `.zip` boundary. It's async
-because confirming that boundary on a remote parent (direct SMB / MTP) costs a `get_metadata` plus a four-byte
-`read_range` over the network; a local parent confirms with a zero-network `std::fs` stat and magic sniff.
+`VolumeManager::resolve(volume_id, path)` (`manager/routing.rs`) answers "which volume serves this path": the
+registered volume for `volume_id`, or a read-only volume minted by one of two ROUTES. Both hand the caller's path back
+verbatim and both are capped by an LRU; `ResolvedVolume.routed` says which one fired.
 
-- **`ResolvedVolume.path` is the caller's input path, verbatim.** An archive resolve only swaps the volume; the
-  `ArchiveVolume` maps the whole `/…/foo.zip/inner` path into its own namespace via `inner_path()`. Adoption sites read
+- **`RoutedKind::GitPortal`** (`manager/git_routing.rs`), when the path reaches into a repo's virtual `.git` trees:
+  a `.git/<category>/` segment for one of the six categories, or exactly one of those category directories. Purely
+  lexical, no I/O, and checked FIRST, so a `.zip` inside a snapshot belongs to the portal rather than to an archive
+  route looking for a file that isn't on disk. `.git/` itself, `.git/config`, and every real entry under `.git` stay on
+  the parent volume, which is what keeps them editable and keeps a repo-folder delete walking them.
+- **`RoutedKind::Archive`** (`manager/archive_routing.rs`), when the path crosses a `.zip` boundary. This is the half
+  that makes `resolve` async: confirming a boundary on a remote parent (direct SMB / MTP) costs a `get_metadata` plus a
+  four-byte `read_range` over the network, where a local parent confirms with a zero-network `std::fs` stat and magic
+  sniff.
+
+- **`ResolvedVolume.path` is the caller's input path, verbatim.** A routed resolve only swaps the volume; the
+  `ArchiveVolume` maps the whole `/…/foo.zip/inner` path into its own namespace via `inner_path()`, and the
+  `GitPortalVolume` maps `/…/.git/branches/main/src` through `git::path::classify_in`. Adoption sites read
   `resolved.path`, so the "path unchanged" contract lives in one place.
-- **`resolve_local_only` is the sync sibling that confirms LOCAL boundaries only**, and its one caller is the write-op
-  fresh-listing oracle (`listing::caching::try_get_authoritative_listing`), which runs on sync recursive scan walkers.
-  That oracle guards remote archives separately, so local-only routing is sufficient there.
-- **An archive LRU caps registrations at 16.** Browsing many zips must not leak volumes, parents, and index caches;
-  eviction is harmless, since the next navigation re-resolves lazily.
+- **Most readers ask `is_routed()`, not the kind.** Skipping drive-index enrich/verify and refusing writes follow from
+  being routed at all: neither kind's paths are real FS paths and neither takes a mutation. Match a variant only where
+  the answer is about that ONE backend — the archive-edit changeset driver, the archive preview, the routed
+  materialization's error mapping, and the fresh-listing oracle's unconfirmed-remote-archive guard.
+- **`path_routes_over_its_parent(path)` is the cheap gate in front of an `await`ed `resolve`** (same module). Pure
+  string work plus one atomic read, true for exactly the paths with no file of their own on the parent volume: a
+  non-empty archive-inner path, and anything the portal serves right now. It is deliberately narrow at both edges. The
+  `.zip` FILE itself is an ordinary file that a copy, a move, and the viewer must treat as bytes on disk, and a `.git`
+  path stops counting the moment the portal toggle goes off. Whoever acts on the answer still reads `resolved.routed`;
+  this only decides whether to ask. Its askers are the transfer source resolver, the scan-preview source, the local
+  write fast path's guard, the viewer's materialization and open budget, the agent's `inspect_file` and its proposal
+  boundary, and the MCP path-existence probe.
+- **❌ The path predicate and `Volume::routes_over_a_parent` are two questions, and merging them would cost one of
+  them.** The trait method asks whether a volume that ALREADY EXISTS is one a route minted, which is what keeps it out
+  of the mount lookup; answering it needs the volume. The path predicate is asked before any volume has been resolved,
+  which is the only reason it can stay lexical. One predicate serving both would force a `stat` on the hot path, or a
+  downcast where only a path is in hand.
+- **A routed volume is not a mount.** `mount_id_for_path` skips one because it says so: `Volume::routes_over_a_parent`
+  is `false` by default and `true` on `ArchiveVolume` (root = the `.zip`) and `GitPortalVolume` (root =
+  `<worktree>/.git`), either of which would otherwise win the longest-root race for every path inside it. ❌ Never a
+  downcast to a list of concrete types: a future routed backend that forgets to join the list reintroduces the steal
+  silently. By the declaration rather than by LRU membership, because registration happens a moment before the LRU
+  insert. The rule is pinned against a capability-only stub
+  (`manager::tests::mount_id_for_path_skips_any_volume_that_routes_over_a_parent`), with the two shipping backends
+  covered beside their own routes.
+- **`resolve_local_only` is the sync sibling that confirms LOCAL archive boundaries only** (git routing is lexical, so
+  it's identical there), and its one caller is the write-op fresh-listing oracle
+  (`listing::caching::try_get_authoritative_listing`), which runs on sync recursive scan walkers. That oracle guards
+  remote archives separately, so local-only routing is sufficient there.
+- **Separate LRUs, 16 archives and 8 git portals**, sharing `touch_routed_lru`. Separate on purpose: browsing a folder
+  full of zips must not evict the portal of the repo the other pane is sitting in. Eviction is harmless either way,
+  since the next navigation re-resolves lazily.
 
 ## Trait capability model
 
@@ -115,10 +160,13 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `is_writable()`: whether the backend accepts mutations at all (create, rename, delete). Default `false`, matching the `NotSupported` default of every mutation method, so a backend opts in when it implements them. `true` for `LocalPosixVolume`, `SmbVolume`, `MtpVolume`, and `InMemoryVolume`; `ArchiveVolume` restates `false` explicitly, because writing INTO a zip is the app's managed archive-edit rewrite and never mutates through the volume. It is a claim about the BACKEND, so a read-only MOUNT of a writable backend still answers `true` — that mount's own read-only flag travels separately as the location's `mountIsReadOnly`. The predicate keeps the bare name while the published field spells its subject out (`backend_can_write`): inside a `Volume` impl the subject can only be the backend, while the published struct sits next to the location's mount flag, where it can't. This is the one capability predicate whose answer reaches the user as UI state (New folder / New file / Rename / Paste render enabled off it), so `conformance::assert_writability_matches_the_mutations_offered` pins it against real behavior in both directions.
 - `capabilities()`: the published fold of the predicates above into `VolumeCapabilities` (`backend_can_write`, `can_export`), the struct that travels over IPC so the frontend receives capability as DATA. ❌ Never override it and never compute an answer inside it: growing the surface means adding a predicate and folding it there. Only what a consumer OUTSIDE the backend acts on belongs in the struct; the predicates that steer the operations engine stay predicates. Published onto each `LocationInfo` by `volumes::enrich_from_volume_registry` (and its Linux twin), which is also why a location with no registered volume carries `capabilities: null` and lets the frontend fall back to its per-kind defaults.
 - `supports_streaming()`: enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `LocalPosixVolume`, `MtpVolume`, `SmbVolume`, `ArchiveVolume`, `SftpVolume`, `WebdavVolume`, and `InMemoryVolume` all return `true`. This is the universal byte path for every non-APFS-clone copy. A new backend implements the two streaming methods AND states both this and `supports_export()`; nothing in production reads this predicate on its own, so `assert_export_matches_the_bytes_offered` is what keeps it honest alongside the one that is read.
+- `reports_posix_mode()`: whether a `FileEntry::permissions` from this backend is a REAL mode somebody recorded, rather than the `0` that means "no permission concept". Default `false`; `true` for `LocalPosixVolume` (`st_mode`), `GitPortalVolume` (the tree entry's kind), `ArchiveVolume` (zip external attributes / the tar header / 7z's unix extension), and `AdbVolume` (the device's `stat`). SMB, SFTP, WebDAV, and MTP carry no mode and answer `false`. What it buys is a ROUND TRIP, not a branch: the cross-volume copy engine puts the source's mode on what it writes to a local destination, and for a top-level file it has no listing in hand, so without this it would spend one `get_metadata` per selected file on a share that has nothing to answer with. ❗ A backend answering `true` without real bits is worse than one answering nothing — the engine treats a non-zero mode as a fact and puts it on the user's file. The full contract: `write_operations/transfer/volume/DETAILS.md` § "What mode a landed file wears".
 - `max_concurrent_ops()`: how many streaming copies the copy engine can drive in parallel against this volume. The batch copy path resolves a pair through `transfer_concurrency` (`write_operations/transfer/volume/copy.rs`), clamped to 32, and spawns that many `FuturesUnordered` tasks. It is NOT a plain `min()`: a volume answering `operations_are_local() == true` reports a CPU guard-rail rather than a transport limit, so its cap doesn't bound a remote peer. Defaults to `1` (safe for any new backend). Current values: `LocalPosixVolume` returns `available_parallelism()/2` clamped to 4..=16 (local); `SmbVolume` returns the `network.smbConcurrency` setting, default 10, range 1..=32; `MtpVolume` returns 1 (USB bulk transport is serial, and that 1 is what routes a phone to the serial driver); `InMemoryVolume` returns 32 (local).
 - `operations_are_local()`: whether one operation here is a local syscall rather than a transport round trip. A claim about COST, so it is a different question from `supports_local_fs_access` (an OS-mounted SMB share is `true` there, `false` here). Default `false`, the conservative answer in both directions. `true` for `LocalPosixVolume` and `InMemoryVolume` only.
 - `create_directory_all()`: reports `DirectoryCreation::{Created, AlreadyExisted}` for the LEAF. The copy driver skips its destination conflict pre-check entirely on `Created` (`transfer/DETAILS.md` § "Answering the pre-check from one listing"), so an overriding backend must answer honestly and answer `AlreadyExisted` when unsure — including when it lost a create race.
-- `local_path()`: returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount.
+- `exists()` / `is_directory()`: both default to deriving themselves from `get_metadata` (`is_ok()`, and the directory bit). `MtpVolume` and `GitPortalVolume` take both defaults, and `AdbVolume`, `SftpVolume`, and `WebDavVolume` take the `is_directory` one. Override only for a cheaper primitive or a different truth: `SmbVolume` answers `exists` with a bare protocol `stat` (and the share root without a round trip at all), `ArchiveVolume` reads its parsed central directory, `InMemoryVolume` its map, and `LocalPosixVolume` uses `symlink_metadata`, because a BROKEN symlink is still something on disk the user can see and delete while `get_metadata` would say it isn't there. `AdbVolume`, `SftpVolume`, and `WebDavVolume` keep an `exists` override for a lifecycle reason rather than a cost one: the default routes through their `noting`-wrapped `get_metadata`, so a bare existence probe on a dropped link would report a connection transition and drive a reconnect.
+- `local_path()`: returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount. ❗ Also THE predicate for "this volume's paths are ones a local library can open", which is what the git portal's route and listing overlay both key on (`file_system/git/DETAILS.md` § "Two seams, no hooks").
+- `routes_over_a_parent()`: whether a ROUTE minted this volume rather than a mount, so its root is a path inside another volume's storage. Default `false`; `true` on `ArchiveVolume` (root = the `.zip` file) and `GitPortalVolume` (root = `<worktree>/.git`). Read by `mount_id_for_path`, which must not hand a routed volume a path that belongs to the disk under it. ❗ A new routed backend has to declare it: nothing else can tell, and the symptom is silent (index reads land on a mount with no index). `InMemoryVolume::routing_over_a_parent()` is the stub for pinning a host's rule without naming a concrete backend.
 - `supports_local_fs_access()`: whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` and `SmbVolume` return `false`. Used to skip the legacy synthetic entry diff path (now superseded by `notify_mutation`).
 - `paths_are_os_visible()`: whether ANOTHER app can open a `file://` URL built from a path this volume hands out. Defaults to whatever `supports_local_fs_access()` says, which is right wherever the two coincide. `SmbVolume` is the one backend that splits them: it answers `false` above (its own I/O rides smb2, never `std::fs`) and `true` here, because the sneaky mount keeps the share OS-mounted and every path it yields is an ordinary `/Volumes/…` path. Consumed by the macOS drag-out path (`commands/file_system/drag.rs::locality_for_volume`) to pick the pasteboard layout: `false` means promise-only items, which only Finder accepts, so a backend that answers it wrong makes drags into browsers and mail clients silently do nothing while Finder keeps working. It is a claim about the MOUNT, not the backend kind, so it has to track the mount going away — see `note_root_mount_gone` below.
 - `note_root_mount_gone()`: the registry telling a volume that its active mount root is gone and there was no live sibling to promote it to (§ "A volume ID owns a set of mount roots"). Default no-op; only `SmbVolume` overrides, latching `paths_are_os_visible()` to `false` while its smb2 session keeps browsing. A volume can't work this out for itself — nothing may probe a mount — and the failure it prevents is silent: paths that still list fine in Cmdr, and a drag out of them that does nothing.
@@ -191,7 +239,7 @@ The write-op layer hands `Some(&state.backend_cancel)` (the same token
 ignore it are unaffected; volumes that consume it stop their wire activity, not
 just the loop above.
 
-See `apps/desktop/src-tauri/src/mtp/CLAUDE.md` § "Cancel propagation" for the
+See `apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Cancel propagation wiring" for the
 MTP-specific wiring and the rationale for "between-roundtrip" cancel vs PTP
 `CancelTransaction`.
 
@@ -208,7 +256,7 @@ Without these, the volume can't even appear in the UI:
 - [ ] Implement `name()` and `root()` (return the display name and the path everything is relative to).
 - [ ] Implement `list_directory(path, on_progress)`: the core read. **Feed `on_progress` as you enumerate**, and don't rename the parameter to `_on_progress` to quiet the compiler. It drives the pane's "Loaded N files..." readout, which is all the user sees while a big folder reads; dropping it leaves them on "Opening folder..." for the whole wait, and nothing fails to say so. If your enumeration happens on a thread the callback can't reach (it's `Sync` but not `Send`, so `spawn_blocking` is out), publish counts into a shared tally and sample it from the async side: `LocalPosixVolume` is the worked example, described in `listing/DETAILS.md` § "Local listing progress".
 - [ ] Implement `get_metadata(path)`: per-entry stat.
-- [ ] Implement `exists(path)` and `is_directory(path)`. On backends where these would issue two round-trips, implement them in terms of `get_metadata` to share the cost.
+- [ ] Leave `exists(path)` and `is_directory(path)` on the trait default, which derives both from your `get_metadata`. Override one only for a cheaper protocol primitive, or for a truth `get_metadata` doesn't tell (a broken symlink, a probe that must not drive a reconnect).
 - [ ] Implement `get_space_info()`: for the volume usage bar and pre-copy space checks. Answer `SpaceInfo::Bounded` where the backend knows a capacity, `SpaceInfo::Unbounded { used_bytes }` where the storage has no ceiling but reports what it holds (a quota-less WebDAV account), and `VolumeError::NotSupported` where the protocol can't say at all. ❌ Never zeros: the pre-flight reads a zero `available` as "no room" and refuses every copy.
 - [ ] Register the volume via `VolumeManager::register_if_absent` (not `register`; see "Key decisions" below).
 - [ ] Add unit tests using a fake/in-memory harness or real fixtures.
@@ -296,7 +344,7 @@ The rest of this section is about **read-side** lifetime handling. Which pattern
 
 ### Pattern A: cached session + bounded windows (use when the SDK exposes a stateless partial-read primitive)
 
-If the SDK can read an arbitrary byte range on demand (no held streaming handle), cache the resolved session in your stream struct and issue one bounded read per `next_chunk`. Nothing is held between reads, so there's no lifetime gymnastics, no task, no channel, and no `Drop` to write. **Example: `MtpReadStream`** (`backends/mtp/mod.rs`), which loops mtp-rs's `WindowedDownload::next_window` (one `GetPartialObject64` each).
+If the SDK can read an arbitrary byte range on demand (no held streaming handle), cache the resolved session in your stream struct and issue one bounded read per `next_chunk`. Nothing is held between reads, so there's no lifetime gymnastics, no task, no channel, and no `Drop` to write. **Example: `MtpReadStream`** (`crates/cmdr-mtp/src/volume/mod.rs`), which loops mtp-rs's `WindowedDownload::next_window` (one `GetPartialObject64` each).
 
 ```rust
 struct MtpReadStream {
@@ -359,18 +407,6 @@ destination goes through, plus `path_exists`.
 ## Integration status
 
 `LocalPosixVolume` is wired into the indexing subsystem. `VolumeManager` is actively used.
-
-## Git delegation hooks
-
-`LocalPosixVolume` delegates three read-side methods to the git module after `resolve()`:
-
-- `list_directory` calls `git::try_route_listing(resolved_path)`. Returns the virtual listing for `.git/`, `.git/branches/...`, `.git/tags/...`, `.git/commits/...`, `.git/stash/...`, `.git/worktrees/...`, or `.git/submodules/...`. Real `.git/*` entries (HEAD, config, hooks/, objects/, refs/, etc.) get `None` from the hook and fall through to real-FS listing. The portal root (`.git/`) returns a mixed listing: real entries plus the six virtual categories.
-- `get_metadata` calls `git::try_route_metadata(resolved_path)`.
-- `open_read_stream` calls `git::try_open_blob_stream(resolved_path)`. Returns a `GitBlobReadStream` for blobs inside refs; real `.git/*` files fall through to the LocalPosixVolume real-FS reader.
-
-All mutation methods (`create_file`, `create_directory`, `delete`, `rename`, `write_from_stream`) detect virtual paths via `git::is_virtual(path)` and return `VolumeError::NotSupported` immediately. `notify_mutation` early-returns for virtual paths since git mutations happen out-of-band (the user runs `git` in a terminal); state changes flow through the `.git`-watcher pipeline (`file_system/git/watcher.rs`) instead.
-
-The hook order is fixed: `resolve()` first (normalizes the path), then `try_route_*`. This lets the user open `.git` from any volume-rooted path and get the portal regardless of whether the frontend sent an absolute or relative path.
 
 ## Eject
 
@@ -548,7 +584,7 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
 **Why**: The three plausible copy paths (local↔local, local↔volume, volume↔volume) all reduce to "open a reader, pipe to a writer." The APFS clonefile fast path is the only one with a real capability difference. Routing the other two through a single streaming path means new backends (S3, WebDAV, FTP) implement two methods instead of four, concurrency lives in one place (`volume/copy.rs`), and features like resume / checksum / progress benefit every direction at once. Don't reintroduce `export_to_local` / `import_from_local`. See `docs/notes/phase4-volume-copy-unification.md`.
 
 **Decision**: `Volume::list_directory` / `scan_for_copy_batch_with_boundary` callbacks take a `ListingProgress { files, dirs, bytes }` struct (not `Fn(usize)` — files-only).
-**Why**: A files-only count makes MTP and Direct SMB scan previews show "0 bytes / N files / 0 dirs" climbing through the scan, because `run_volume_scan_preview` has nothing else to forward to the mid-stream `scan-preview-progress` event. The struct lets each backend track running file count, dir count, and byte total as it enumerates entries (MTP per-handle in `mtp/connection/directory_ops.rs`, SMB in a single tally pass after `list_directory_impl`, the default trait impl in `scan_for_copy_batch_with_boundary`). Self-documenting field semantics; room to grow (symlinks, special files). Streaming-listing UI callers (`commands/file_system/listing.rs`) read `progress.entries()` (= `files + dirs`) which preserves their "Loaded N entries…" display. The baseline-shift logic in `run_oracle_aware_batch_scan` shifts files / dirs / bytes together so cross-group accumulation stays cumulative. Pinned by `scan_preview_listing_progress_tests`.
+**Why**: A files-only count makes MTP and Direct SMB scan previews show "0 bytes / N files / 0 dirs" climbing through the scan, because `run_volume_scan_preview` has nothing else to forward to the mid-stream `scan-preview-progress` event. The struct lets each backend track running file count, dir count, and byte total as it enumerates entries (MTP per-handle in `crates/cmdr-mtp/src/connection/directory_ops.rs`, SMB in a single tally pass after `list_directory_impl`, the default trait impl in `scan_for_copy_batch_with_boundary`). Self-documenting field semantics; room to grow (symlinks, special files). Streaming-listing UI callers (`commands/file_system/listing.rs`) read `progress.entries()` (= `files + dirs`) which preserves their "Loaded N entries…" display. The baseline-shift logic in `run_oracle_aware_batch_scan` shifts files / dirs / bytes together so cross-group accumulation stays cumulative. Pinned by `scan_preview_listing_progress_tests`.
 
 **Decision**: Progress callbacks use `&dyn Fn(u64, u64) -> ControlFlow<()>`, not `FnMut`
 **Why**: The Volume trait is object-safe (`dyn Volume`), so callbacks must be `Fn` (not `FnMut`). Callers use `AtomicU64` for byte counters and `Cell<Instant>` for timestamps to mutate state inside a `Fn` closure. This avoids needing `RefCell` or `Mutex` in the hot path.
@@ -580,9 +616,9 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
   real `cmdr-smb` session (the BFS scanner, and media enrichment's byte fetcher). They live app-side because only this
   side can build both halves; the fixtures come from `write_operations::smb_test_support`
 
-`LocalPosixVolume`'s and `MtpVolume`'s own tests are colocated in `backends/` (`backends/DETAILS.md` § "Testing"). A
-crate backend's app-side cells sit beside the app code they assert on, not here or there:
-`crates/cmdr-smb/DETAILS.md` § "Which side a test lives on".
+`LocalPosixVolume`'s own tests are colocated in `backends/` (`backends/DETAILS.md` § "Testing"); `MtpVolume`'s live
+with it in `crates/cmdr-mtp/src/volume/`. A crate backend's app-side cells sit beside the app code they assert on, not
+here or there: `crates/cmdr-smb/DETAILS.md` § "Which side a test lives on".
 
 ### Test isolation for the global `VolumeManager`
 
@@ -593,7 +629,7 @@ resolve `None` to `"root"`, so the volume has to be registered under exactly tha
 
 Under plain `cargo test` a crate's tests share one process, so those tests are all writing to one `"root"` slot:
 - Installing an **equivalent** volume idempotently is safe. `ensure_root_volume()` (duplicated in `create/tests.rs`,
-  `write_operations/paste_clipboard_tests.rs`, `file_viewer/archive_extract_test.rs`, and `commands/rename.rs`)
+  `write_operations/paste_clipboard_tests.rs`, `file_viewer/routed_extract_test.rs`, and `commands/rename.rs`)
   `register_if_absent`s a local-FS `"root"`, so whoever runs first wins and the value is the same either way.
 - Installing a **different** volume needs `manager::test_support::TestVolumeRegistration`, which restores the previous
   registration from `Drop` (unwind included). Without it, `commands/file_system/write_ops.rs`'s `InMemoryVolume` `"root"`
@@ -610,8 +646,8 @@ Same guard family as `listing::caching_test_support::TestListingGuard` (over `LI
 knows nothing about `LISTING_CACHE`. Every backend that can be mutated overrides it.
 
 - `LocalPosixVolume` calls `file_system::listing::mutation::patch_listing_after_local_mutation`, which stats the affected
-  entry through `std::fs` and turns it into the right `DirectoryChange`. It early-returns for virtual git paths, whose
-  invalidations come through the `.git`-watcher pipeline instead.
+  entry through `std::fs` and turns it into the right `DirectoryChange`. It needs no git exception: a path in a virtual
+  `.git` tree never reaches this volume, because `resolve` routed it to the portal.
 - `SmbVolume` and `MtpVolume` build the entry from their own protocol's `get_metadata` (faster than `std::fs` would be,
   and on MTP `std::fs` isn't an option at all) and call `notify_directory_changed` directly.
 - `ArchiveVolume` never calls it, because it implements no mutation: `create_file`, `delete`, `rename`, and

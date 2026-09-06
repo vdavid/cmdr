@@ -5,6 +5,7 @@ use super::*;
 fn summary(duration: Duration, writer_wait: Duration) -> ReconcileSummary {
     ReconcileSummary {
         added: 7,
+        added_dirs: 0,
         removed: 0,
         updated: 0,
         unreadable_dirs: 0,

@@ -153,6 +153,32 @@ pub trait Volume: Send + Sync {
     /// nothing left to answer for anyway.
     fn note_root_mount_gone(&self) {}
 
+    /// Whether this volume was minted by a ROUTE rather than mounted: its root
+    /// is a path INSIDE another volume's storage, and it maps a namespace onto
+    /// it (an archive's root is the `.zip` file, a git portal's is
+    /// `<worktree>/.git`).
+    ///
+    /// ❗ A routed volume is not a mount, and a host that treats it as one hands
+    /// every path inside it to the wrong place. The host's mount lookup picks
+    /// the registered volume whose root is the LONGEST ancestor of a path, so a
+    /// routed volume would win that race for every path under it, and reads that
+    /// belong to the disk holding the `.zip` or the repo (a drive index, an
+    /// agent's file inspection) would be routed to a mount that has no index.
+    ///
+    /// Default `false`, so an ordinary backend says nothing. ❗ A new routed
+    /// backend MUST override it to `true`: nothing else can tell, and the
+    /// symptom is silent.
+    ///
+    /// ❌ Not the same question as a host's "could this PATH route?" predicate,
+    /// and the two must not be collapsed. This one is about a volume that
+    /// already exists, and answering it needs the volume. That one is lexical,
+    /// asked before any volume has been resolved, so that a hot path can skip
+    /// the resolve entirely. Merging them would force either a `stat` on that
+    /// hot path or a downcast where only a path is in hand.
+    fn routes_over_a_parent(&self) -> bool {
+        false
+    }
+
     /// Returns this volume as `&dyn Any` for downcasting to a concrete
     /// backend type. Used by debug/IPC paths (for example, the SMB
     /// diagnostics dashboard) that need backend-specific state. Most
@@ -263,14 +289,28 @@ pub trait Volume: Send + Sync {
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>>;
 
     /// Checks if a path exists (relative to volume root).
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>>;
+    ///
+    /// Defaults to "[`get_metadata`](Self::get_metadata) answered", which is the
+    /// right answer for any backend whose only existence primitive is a stat.
+    /// Override when the backend can answer more cheaply (a bare protocol
+    /// `stat`, an in-memory index) or when its truth differs:
+    /// `LocalPosixVolume` uses `symlink_metadata`, because a BROKEN symlink is
+    /// still a thing on disk the user can see and delete.
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move { self.get_metadata(path).await.is_ok() })
+    }
 
     /// Checks if a path is a directory.
     /// Returns Ok(true) if directory, Ok(false) if file, Err if path doesn't exist.
+    ///
+    /// Defaults to the directory bit off [`get_metadata`](Self::get_metadata).
+    /// Same reasons to override as [`exists`](Self::exists).
     fn is_directory<'a>(
         &'a self,
         path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>>;
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async move { self.get_metadata(path).await.map(|entry| entry.is_directory) })
+    }
 
     // ========================================
     // E2E test support (feature-gated)
@@ -676,6 +716,32 @@ pub trait Volume: Send + Sync {
     /// (that is, it can act as a source in a cross-volume copy). Gates the copy
     /// dialog's "copy from this volume" UI.
     fn supports_export(&self) -> bool {
+        false
+    }
+
+    /// Whether a [`FileEntry::permissions`](crate::entry::FileEntry::permissions)
+    /// from this backend is a REAL POSIX mode somebody recorded, rather than the
+    /// `0` that means "this backend has no permission concept".
+    ///
+    /// A claim about the BACKEND, so it is answered without touching a path.
+    /// `true` for `LocalPosixVolume` (`st_mode`), the git portal (the tree
+    /// entry's kind), the archive backend (zip external attributes, the tar
+    /// header, 7z's unix extension), and ADB (the device's own `stat`). `false`
+    /// for SMB, SFTP, WebDAV, and MTP, none of which carry one.
+    ///
+    /// **What it buys is a round trip, not a branch.** The cross-volume copy
+    /// engine puts the source's mode on what it writes to a local destination
+    /// (`write_operations/transfer/volume/landed_mode.rs`), and for a TOP-LEVEL
+    /// file it has no listing in hand, so it would have to ask
+    /// `get_metadata`. On a share that has no mode to give, that is one wasted
+    /// stat per selected file — the same shape as the 15k-MTP-listing stall the
+    /// source hints exist to prevent. This answers it for free instead.
+    ///
+    /// Default `false`: a backend that has modes says so, and one that doesn't
+    /// can't be asked for them. ❗ Answering `true` without real bits is worse
+    /// than answering nothing: the engine treats a non-zero mode as a fact and
+    /// puts it on the user's file.
+    fn reports_posix_mode(&self) -> bool {
         false
     }
 
@@ -1382,6 +1448,7 @@ pub mod scan_stop;
 pub mod scan_walk;
 pub mod secret_store;
 mod types;
+mod usb_speed;
 
 // Docs live in the file's own `//!` header. ❌ Never add an outer `///` here on
 // top of it: rustdoc resolves the concatenated fragments in THIS module's scope,
@@ -1411,6 +1478,7 @@ pub use scan_boundary::{ScanBoundary, stopped as scan_stopped};
 pub use scan_stop::{ScanStop, ScanStopSignal};
 pub use scan_walk::{ScanSource, Walking, conflicts_against, fold_batch, scan_conflicts, scan_one, scan_trees};
 pub use types::*;
+pub use usb_speed::UsbSpeed;
 
 #[cfg(test)]
 mod capabilities_test;

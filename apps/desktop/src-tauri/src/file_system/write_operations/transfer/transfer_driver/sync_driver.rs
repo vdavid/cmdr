@@ -143,6 +143,7 @@ where
             source_path,
             dest_path: None,
             replace_after_write: None,
+            dest_name_claimed: false,
             files_done_so_far: files_done,
             bytes_done_so_far: bytes_done,
             total_files,

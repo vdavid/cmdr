@@ -87,6 +87,59 @@ export const behaviorSettings: SettingDefinitionSource[] = [
   },
 
   // ------------------------------------------------------------------------
+  // Terminal, rendered as its own card inside Navigation & file ops.
+  //
+  // FE-owned: the frontend reads the choice and passes it to `listTerminalApps`
+  // / `openTerminalHere`, so there's no applier case and no backend push. The
+  // stored value is one string holding either kind of choice, told apart
+  // structurally by Rust's `parse_choice`: a bundle id for a known terminal, an
+  // absolute `.app` path for a "Choose an app…" pick. Which apps exist and what
+  // each is called comes from `list_terminal_apps`, never from a table here.
+  // ------------------------------------------------------------------------
+  {
+    id: 'behavior.openTerminalHereApp',
+    section: ['Behavior', 'Navigation & file ops'],
+    cardKey: 'settings.navigationAndFileOps.card.terminal',
+    labelKey: 'settings.behavior.openTerminalHereApp.label',
+    descriptionKey: 'settings.behavior.openTerminalHereApp.description',
+    keywords: [
+      'terminal',
+      'shell',
+      'console',
+      'command line',
+      'iTerm',
+      'Warp',
+      'Ghostty',
+      'kitty',
+      'Alacritty',
+      'WezTerm',
+      'Hyper',
+    ],
+    type: 'string',
+    // Terminal.app, always present on macOS, so a user with no other terminal
+    // never has to touch this row. Mirrors `TERMINAL_APP_BUNDLE_ID` in
+    // `src-tauri/src/file_system/terminal.rs`.
+    default: 'com.apple.Terminal',
+    // Rendered by `TerminalAppSelect.svelte`, not `SettingSelect`: the options
+    // are whatever is installed right now, so they can't be registry constants.
+    component: 'select',
+  },
+  {
+    // Internal (FE-owned): whether the one-time "which app opened, and how to
+    // change it" toast has fired. No UI row; hidden from search and the section
+    // tree, the way `behavior.doubleClickOnPaneNotificationSeen` is.
+    id: 'behavior.openTerminalHereToastSeen',
+    section: ['Behavior', 'Navigation & file ops'],
+    labelKey: 'settings.behavior.openTerminalHereToastSeen.label',
+    descriptionKey: 'settings.behavior.openTerminalHereToastSeen.description',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+
+  // ------------------------------------------------------------------------
   // Operation log (retention), rendered as a card inside Navigation & file ops.
   //
   // Both settings are read by the Rust retention loop each prune tick
@@ -146,25 +199,71 @@ export const behaviorSettings: SettingDefinitionSource[] = [
 
   // ========================================================================
   // Behavior › Archives
-  // Per-format Enter behavior (Browse | Open | Ask) for archives and macOS
-  // bundles. Stored as a pinned-shape JSON object keyed by format
-  // (`{ zip: 'ask', bundle: 'ask' }`); parsed and rendered by the custom
-  // `ArchivesSection`. FE-owned: read at Enter time, applies with no restart or
-  // backend round-trip.
+  // What pressing Enter does (Browse | Open | Ask), one setting per format.
+  // ❗ The format list, the matcher for each, and these defaults live in
+  // `file-explorer/pane/archive-enter-policy.ts`; a two-way parity test there
+  // fails if a format loses its setting or a setting loses its format, so adding
+  // `tar` means adding BOTH. FE-owned: read at Enter time, applies with no
+  // restart or backend round-trip.
   // ========================================================================
   {
-    id: 'behavior.archiveEnterBehavior',
+    id: 'behavior.archiveEnter.zip',
     section: ['Behavior', 'Archives'],
-    labelKey: 'settings.archives.enterBehavior.label',
-    descriptionKey: 'settings.archives.enterBehavior.description',
-    keywords: ['archive', 'zip', 'bundle', 'app', 'browse', 'open', 'extract', 'enter', 'launch'],
-    type: 'string',
-    default: '{}',
-    component: 'text-input',
+    cardKey: 'settings.archives.card.archives',
+    labelKey: 'settings.archives.zip.label',
+    descriptionKey: 'settings.archives.zip.description',
+    keywords: ['archive', 'zip', 'browse', 'open', 'extract', 'enter', 'compressed'],
+    type: 'enum',
+    default: 'ask',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'browse', labelKey: 'settings.archives.opt.browse' },
+        { value: 'open', labelKey: 'settings.archives.opt.open' },
+        { value: 'ask', labelKey: 'settings.archives.opt.ask' },
+      ],
+    },
+  },
+  {
+    id: 'behavior.archiveEnter.ooxml',
+    section: ['Behavior', 'Archives'],
+    cardKey: 'settings.archives.card.archives',
+    labelKey: 'settings.archives.ooxml.label',
+    descriptionKey: 'settings.archives.ooxml.description',
+    keywords: ['docx', 'xlsx', 'pptx', 'jar', 'apk', 'office', 'word', 'excel', 'powerpoint', 'document', 'package'],
+    type: 'enum',
+    default: 'open',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'browse', labelKey: 'settings.archives.opt.browse' },
+        { value: 'open', labelKey: 'settings.archives.opt.open' },
+        { value: 'ask', labelKey: 'settings.archives.opt.ask' },
+      ],
+    },
+  },
+  {
+    id: 'behavior.archiveEnter.bundle',
+    section: ['Behavior', 'Archives'],
+    cardKey: 'settings.archives.card.bundles',
+    labelKey: 'settings.archives.bundle.label',
+    descriptionKey: 'settings.archives.bundle.description',
+    keywords: ['bundle', 'app', 'application', 'framework', 'browse', 'open', 'enter', 'launch'],
+    type: 'enum',
+    default: 'ask',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'browse', labelKey: 'settings.archives.opt.browse' },
+        { value: 'open', labelKey: 'settings.archives.opt.open' },
+        { value: 'ask', labelKey: 'settings.archives.opt.ask' },
+      ],
+    },
   },
   {
     id: 'behavior.archiveCompressionLevel',
     section: ['Behavior', 'Archives'],
+    cardKey: 'settings.archives.card.archives',
     labelKey: 'settings.archives.compressionLevel.label',
     descriptionKey: 'settings.archives.compressionLevel.description',
     keywords: ['compression', 'level', 'zip', 'deflate', 'archive', 'size', 'faster', 'smaller'],

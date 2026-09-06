@@ -48,6 +48,9 @@ export function buildRailMessages(detail: ConversationDetailView): RailMessage[]
     } else if (message.role === 'event') {
       for (const block of message.blocks) {
         if (block.type === 'modelChanged') out.push({ kind: 'modelChange', model: block.model })
+        if (block.type === 'chatMemoryChanged') {
+          out.push({ kind: 'chatMemoryChange', chatMemoryTokens: block.chatMemoryTokens })
+        }
         // One decision, as the store recorded it the moment the user answered.
         if (block.type === 'proposalDecisions') {
           out.push({ kind: 'proposalDecisions', id: message.id, decisions: block.decisions })

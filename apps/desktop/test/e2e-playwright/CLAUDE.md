@@ -15,11 +15,12 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcod
 - **❌ Never `keyboard.press('Escape')`** to close an overlay: under Linux Xvfb it can vanish as an opaque timeout. Use
   `dismissOverlay` / `expectAndDismissToast` / `dismissAllToasts`, or `escapeOverlayUntilGone` when press one isn't a
   close; no double-Escape in `beforeEach`.
-- **Three ways a helper claims success it never got.** Bare `await pollUntil(...)` returns `false` on timeout, so the
+- **Four ways a helper claims success it never got.** Bare `await pollUntil(...)` returns `false` on timeout, so the
   test goes green: use `expect.poll(...).toBeTruthy()` (`bare-poll` flags it). `.click()` on a `disabled` button
-  dispatches NOTHING yet returns normally: press via `clickButtonByText` / `resolveConflict`, which wait for
-  actionability. And `.click()` drives no Ark `Select` (its trigger toggles on `pointerdown`): use `pointerClick`, and
-  assert its `'clicked'`. One lost answer wedged 196 tests.
+  dispatches NOTHING yet returns normally: press via `clickButtonByText` / `resolveConflict`. `.click()` drives no Ark
+  `Select` (its trigger toggles on `pointerdown`): use `pointerClick`, and assert its `'clicked'`. One lost answer
+  wedged 196 tests. And `dismissAllToasts` clears nothing before the toast lands: a write op's toast trails the pane by
+  the progress dialog's 400 ms floor, so END an op with `expectAndDismissToast`.
 - **Exercise viewer + settings through the production multi-window flow** (`openViewerWindow` /
   `openSettingsWindowViaProd` / `closeScopedWindow`), ❌ never by routing the main window there: that hides a scoped
   page that can't call a Tauri command.

@@ -16,7 +16,7 @@ Frontend                          Backend
    |<--- listing-opening event --------| (just before read_dir)
    |<--- listing-progress event -------| (every 200ms, { listingId, loadedCount })
    |<--- listing-read-complete event --| (when read_dir finishes, { listingId, totalCount })
-   |                            [sorting + caching; watcher arm dispatched, not awaited]
+   |                            [overlay rows folded in; sorting + caching; watcher arm dispatched, not awaited]
    |<--- listing-complete event -------| (ready, { listingId, totalCount, volumeRoot })
    |                                   |
    |-- getFileRange(listingId, ...) -->| (on-demand fetching)
@@ -26,6 +26,25 @@ Frontend                          Backend
 `listing-complete` is what commits the listing in the pane, so nothing slow may sit in front of it. Arming the FSEvents
 watch used to, and no longer does: `start_watching_detached` hands it to the blocking pool. Why arming is slow, what
 that cost, and the two rules that keep it cheap: `../DETAILS.md` § "Arming a listing watch is detached".
+
+## The overlay step
+
+Between the index enrich and the sort, `read_directory_with_progress` calls `crate::listing_overlays::decorate`, which
+folds in rows a PANE sees that the volume doesn't hold. `listing/operations.rs` (the sync sibling) and
+`caching::notify_full_refresh_locked` (the watcher-driven re-read) do the same, in the same place, so a refresh can't
+quietly strip them.
+
+Today's one contributor is the git portal, which puts the six virtual category rows into a repo's `.git/` listing.
+Placement matters three ways:
+
+- **After enrich**: a contributed row has no drive-index entry, so there is nothing to look up for it.
+- **Before the sort**: the rows land wherever the pane's own sort puts them, with no ordering privilege of their own.
+- **Before the cache insert**: the pane reads its rows out of the cache, so a row that isn't there isn't shown.
+
+`CachedListing` records how many rows came from an overlay, and `try_get_authoritative_listing` declines any listing
+carrying some. A decorated listing is a PANE view, never a picture of a directory a delete walker or a copy scan may
+reuse. ❌ Never let one answer that oracle: the rows have no inode behind them, and a walker that meets one stops
+mid-operation. The seam and the reasoning: `src/listing_overlays.rs`, `volume/DETAILS.md` § "Architecture".
 
 ## Local listing progress
 
@@ -58,9 +77,12 @@ SMB and MTP wire `on_progress` through their own listing loops directly, having 
 
 ## Caching
 
+The record and the map are `cached_listing.rs`, everything that patches one or notifies about it is `caching.rs`, and
+the six-hour backstop that reclaims a leaked one is `orphan_reaper.rs`.
+
 - **`LISTING_CACHE`**: global `RwLock<HashMap<String, CachedListing>>`, keyed by `listing_id` (UUID per navigation).
 - **`CachedListing`**: `{ volume_id, path, entries, visible_rows, path_index, sort_by, sort_order,
-  directory_sort_mode, sequence, created_at, last_accessed_ms }`. `entries` is private: `entries()` reads,
+  directory_sort_mode, sequence, created_at, last_accessed_ms, overlay_rows }`. `entries` is private: `entries()` reads,
   `entries_mut()` / `set_entries()` change it and drop BOTH maps on the way, `rows(include_hidden)` is what every read
   accessor asks, and `index_of_path` / `indices_of_paths` are what every by-path caller asks. See § "Row numbers" and
   § "Entries by path".
@@ -80,6 +102,11 @@ SMB and MTP wire `on_progress` through their own listing loops directly, having 
 5. Frontend calls `get_paths_at_indices()` / `get_files_at_indices()` for batch selection lookups (transfer dialogs,
    delete dialog, drag, clipboard).
 6. `list_directory_end()` stops the watcher and removes from the cache (primary, fast eviction).
+
+Both ends also tell `crate::listing_lifecycle`, the seam for subsystems that keep something alive while a pane is
+showing a directory (today: the git portal's per-repo watcher, which a virtual path can't arm through the FSEvents
+watcher). ❗ The close call comes AFTER the cache removal: an observer's own detached arm reconciles against
+listing-cache membership, so releasing while the entry is still there lets a racing arm re-take what was just released.
 
 ### Backstop reaper
 
@@ -251,6 +278,26 @@ a trade to take without measuring first.
 **What is still O(entries), by path**: nothing. The single-path callers walk only on a listing that has no map yet,
 which is what the threshold deliberately buys.
 
+## Sorting
+
+`sorting.rs` holds the comparator every list in the app is ordered by. `entry_comparator(sort_by, sort_order,
+dir_sort_mode)` is generic over the `SortableEntry` trait, which names the seven fields ordering reads: name,
+is_directory, size, modified_at, created_at, and the two recursive-size fields the Size column's directory rule needs.
+
+Two implementors. `FileEntry` answers from its own fields. `commands::search::SearchSortRow` is a search-results pane's
+row, and it answers `None` for the creation time and recursive size a search result doesn't carry, which lands it on the
+comparator's existing unknown-value arms rather than on a second set of rules: ordering such rows by Created falls back
+to the name, and under Size the directories are all unknown and sort by name among themselves.
+
+**Why a trait and not a conversion.** Building a fabricated `FileEntry` per search row would be a second place where the
+mapping from "a row" to "what orders it" is decided, and that mapping is the thing that must not drift. The trait makes
+the shared fields the contract and the generic monomorphizes, so the listing's hot path pays nothing.
+
+`sort_search_results` (`commands/search.rs`) is the frontend's way in: it answers with the input indices in sorted
+order, and the caller re-orders the rows it already holds. The frontend deliberately has NO comparator of its own; the
+snapshot store's sort round-trips through this command. `apps/desktop/src/lib/search/DETAILS.md` § "The snapshot pane's
+row order".
+
 ## Decisions
 
 - **Streaming with a background task, not chunked IPC**: chunked needs multiple IPC calls and complex state tracking.
@@ -337,7 +384,16 @@ directory changed on a volume. `DirectoryChange` variants:
 - `Removed(String)`: single remove by name, patches via `remove_entry_by_name` (name match, not full path — see above).
 - `Modified(FileEntry)`: single modify, patches via `update_entry_sorted`.
 - `Renamed { old_name, new_entry }`: same-dir rename (remove old + insert new).
+- `Replaced(Vec<FileEntry>)`: the backend already re-read the directory and hands the contents over; the host sorts them
+  the listing's way, diffs, stores, and publishes (`publish_replacement`).
 - `FullRefresh`: re-reads via the Volume trait, computes a diff against the cache.
+
+`Replaced` and `FullRefresh` differ only in who does the read, and both end in the same `publish_replacement`. Report
+`Replaced` when the entries are already in hand (a device event loop that has to invalidate its own path cache and
+re-list anyway); report `FullRefresh` when the host should go and get them, which also gets the volume-wide fallback
+when no listing matches the exact path. ❗ Sorting before the diff is load-bearing, not a double sort: a backend answers
+in its protocol's order (MTP by object handle), so a diff computed against that order carries indices pointing at the
+wrong rows in a pane sorted any other way.
 
 All variants enrich entries with index data and queue `directory-diff` events through `diff_emitter::enqueue_diff`.
 A re-stat whose sort-relevant fields changed re-inserts the entry at its new sorted position and reports one
@@ -367,7 +423,7 @@ All `directory-diff` emit paths funnel through `diff_emitter::enqueue_diff(listi
 window. Producers: `caching::notify_added` / `notify_removed` / `notify_modified`; `caching::notify_full_refresh`
 (SMB `STATUS_NOTIFY_ENUM_DIR` re-reads); `watcher::handle_directory_change_incremental`;
 `watcher::handle_directory_change` (full re-read fallback); `commands::file_system::write_ops::emit_synthetic_entry_diff`
-(`create_file` / `create_directory`); `mtp::connection::event_loop::compute_and_emit_diffs`.
+(`create_file` / `create_directory`); `caching::publish_replacement`, which every `Replaced` and `FullRefresh` ends in.
 
 **Why**: a 5k-file bulk delete used to fire one `directory-diff` per file. The frontend handler in `FilePane.svelte`
 runs ~5 IPC calls per event (`getTotalCount`, `refetchColumnWidths`, `fetchEntryUnderCursor`, `fetchListingStats`, plus
@@ -481,7 +537,7 @@ safe boundary, while the user sees an instant cancel.
 
 ❌ Never `listing_task.abort()` there. Abort drops the listing future at whatever await point it's sitting on. For MTP
 that's mid-PTP-transaction: the device is left expecting bytes nobody will send, and it wedges until the user replugs
-the phone (`mtp/connection/CLAUDE.md` § the dropping-timeout guardrail). MTP bails between per-handle `GetObjectInfo`
+the phone; the guardrail is in `crates/cmdr-mtp/src/connection/CLAUDE.md`. MTP bails between per-handle `GetObjectInfo`
 round trips, so cooperative cancel costs at most one round trip of latency.
 
 Backends that ignore the token (local, in-memory, SMB today) run their listing to completion in the detached task.

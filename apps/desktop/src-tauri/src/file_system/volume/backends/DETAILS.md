@@ -2,14 +2,14 @@
 
 Pull-tier docs for `file_system/volume/backends/`: per-backend architecture, lifecycle flows, and decision rationale.
 Must-know invariants and gotchas live in `CLAUDE.md`. The trait shape, capability matrix, streaming patterns, and
-"Building a new volume" checklist live in the parent `../DETAILS.md`. When you're modifying `MtpVolume`,
-`LocalPosixVolume`, or `InMemoryVolume`, read here; for `SmbVolume` and its watcher, `crates/cmdr-smb/DETAILS.md`.
+"Building a new volume" checklist live in the parent `../DETAILS.md`. When you're modifying `LocalPosixVolume` or
+`InMemoryVolume`, read here; for a crate backend, read its own `DETAILS.md` (`crates/cmdr-smb/`, `crates/cmdr-mtp/`,
+and so on).
 
 ## Key files
 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` §
-Module map. `mtp/` splits into `mod.rs`, `volume_impl.rs`, `streams.rs`, `mapping.rs`, `cancel.rs`, and `scan.rs`;
-`local_posix.rs` into itself plus `local_posix/scan.rs` and `local_posix/streams.rs`. What each piece DOES is in the sections below (§ "SMB
+Module map. `local_posix.rs` splits into itself plus `local_posix/scan.rs` and `local_posix/streams.rs`. What each piece DOES is in the sections below (§ "SMB
 auto-upgrade lifecycle", § "Per-backend decisions", § Testing), or in `crates/cmdr-archive/DETAILS.md` for
 `ArchiveVolume` and `crates/cmdr-smb/DETAILS.md` for `SmbVolume`. Only the layout facts that none of those carry live
 here:
@@ -112,17 +112,14 @@ decisions — is `crates/cmdr-smb/DETAILS.md`. What stays on this side is the au
 **Decision**: `SmbVolume` and `MtpVolume` store `volume_id: String` for listing cache lookups
 **Why**: `notify_mutation` needs to call `host.listings().directory_changed(volume_id, ...)` to find the right cached listings. The volume_id is computed at creation time (`smb_volume_id(server, port, share)` for SMB so two same-named shares on different servers don't collide — see `volumes/CLAUDE.md` § "Volume IDs"; `"{device_id}:{storage_id}"` for MTP) and stored on the struct rather than recomputed on every mutation.
 
-**Decision**: `MtpVolume` overrides `scan_for_copy_batch_with_boundary` to group selected paths by parent and list each parent once
-**Why**: MTP has no single-file stat call: `get_metadata(path)` lists the parent directory and searches by name. A naive scan that called `get_metadata` per path would re-list `/DCIM/Camera` (15k entries, ~17 s over USB) for every selected photo. The override groups the input paths by parent, calls `list_directory(parent, on_progress)` once per unique parent, and indexes the entries by name for O(1) lookups. **Oracle layered on top**: before listing a parent, the override consults `try_get_authoritative_listing(volume_id, parent)`; on hit, the cached entries replace the listing call entirely (no USB I/O for that parent). On miss the single-listing-per-parent path runs, so cold-cache perf is preserved. Decision is per-parent; one batch can mix watcher-fresh and cold parents.
-
 **Decision**: `LocalPosixVolume::write_from_stream` `sync_data`s each file (+ best-effort parent-dir fsync) before it returns
 **Why**: Every cross-volume copy/move that lands on a local disk (MTP → Local, SMB → Local, USB import) flows through this one method. A bare `file.flush()` finish is a userspace no-op on a raw `std::fs::File`, so the bytes would sit only in the OS page cache when the op reports "complete" — letting the user eject / sleep and lose data (on a move, from both sides, since the source delete runs after the copy reports Ok). The `sync_data` (fdatasync) gives the "durable as each file completes" property the local-FS chunked copy already has (`transfer/chunked_copy.rs`), so a crash mid-batch leaves earlier files safe. The parent-dir fsync makes the file's directory entry durable too. Both are best-effort on error: a failure logs under `target: "write_durability"` and continues rather than failing a completed multi-GB transfer at the final fsync (matching `durability::flush_created_destinations`). Non-local backends (MTP/SMB/InMemory) need no equivalent — durability there is the device/server's concern. Pinned by `local_posix_test::test_write_from_stream_multichunk_is_durable_and_correct` (content-correctness regression guard; the fdatasync itself isn't observable from a unit test).
 
 **Decision**: `local_posix` stays in the app crate permanently; it is NOT a candidate for a backend crate
-**Why**: it looks like the smallest backend (1,056 lines across `local_posix.rs` + `local_posix/`, measured 2026-09-04) and is the hardest extraction of the four. It calls `crate::file_system::git` at ten sites (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`, and seven `is_virtual` guards), and `file_system/git/` is 6,327 lines including a `gix`-backed repo walker and a `.git` watcher: the git portal is *implemented as* `LocalPosixVolume` hooks, so extracting the backend means extracting git or inventing a git seam with exactly one implementor forever. It is also the only caller of the real-FS reader in `listing/reading.rs`, which serves the non-volume listing path too, and it's the FSEvents watcher's peer. It's the sole caller of `find_listings_for_path_on_volume` and `patch_listing_after_local_mutation`, and the latter is *definitionally* local — it `std::fs`-stats the changed entry, which no backend on a protocol can do. ❌ Don't propose this as "completing the set" once FTP and S3 are crates: the set is deliberately incomplete. Seam rationale: `crates/cmdr-fs/src/volume/host/DETAILS.md`.
+**Why**: it looks like the smallest backend (1,018 lines across `local_posix.rs` + `local_posix/`, measured 2026-09-05) and is the one backend whose couplings are to the app's LOCAL machinery rather than to a protocol. It is the only caller of the real-FS reader in `listing/reading.rs`, which serves the non-volume listing path too, and it's the FSEvents watcher's peer. It's the sole caller of `find_listings_for_path_on_volume` and `patch_listing_after_local_mutation`, and the latter is *definitionally* local — it `std::fs`-stats the changed entry, which no backend on a protocol can do. **Those two reasons are the whole argument, and they are the only ones.** The git portal is ❌ not a third: it reaches a repo's virtual trees through a route plus a listing overlay, and `local_posix.rs` names git nowhere (`file_system/git/DETAILS.md` § "Two seams, no hooks"). ❌ Don't propose this as "completing the set" once FTP and S3 are crates: the set is deliberately incomplete. Seam rationale: `crates/cmdr-fs/src/volume/host/DETAILS.md`.
 
-**Decision**: MTP stays in the app crate too, and moving it would be a project rather than a milestone
-**Why**: three things make it a redesign instead of a mechanical move. Event payload types carry `specta::Type` + `tauri_specta::Event` derives **inside the transport layer** (13 derives across `mtp/{types,watcher}.rs` and `mtp/connection/{mod,directory_ops}.rs`, measured 2026-08-21), so the presentation boundary runs through the middle of the code that talks to the device. Nine inline `#[cfg(test)]` gates gate real behavior rather than declaring a test module (`mtp/virtual_device.rs` ×5, `mtp/connection/{file_ops.rs,mod.rs}` ×2 each), and `cfg(test)` is set only for a crate's own test target, so each would silently flip the moment the code became a dependency (this project has been bitten by that three times). And `backends/mtp/mod.rs:147`'s `test_hooks` is `pub(in crate::file_system::volume)`, a visibility with **no cross-crate spelling** — it becomes `#[cfg(any(test, feature = "testing"))] pub`, a real widening of the public surface, or its tests move with it. On top of that, `backends/mtp/` (1,331 lines) is a veneer over `src/mtp/` (7,294 lines), so extracting one without the other buys nothing.
+**Decision**: MTP is `crates/cmdr-mtp`, and the three things that once read as permanent refusals each got an answer
+**Why**: a backend has two faces (`../DETAILS.md` § "Architecture"), and MTP's split along them: the file-ops face was already the `Volume` trait, so all the work was on the lifecycle face, done as an in-place retrofit onto the host seams with the whole suite watching, which left the move itself a `git mv`. The three refusals: the 13 `specta::Type` + `tauri_specta::Event` derives inside the transport layer became one crate-local `MtpDeviceEvents` trait carrying a typed `MtpDeviceEvent`, with the payload structs and their derives in the app-side `apps/desktop/src-tauri/src/mtp/events.rs` — the same "backend says WHAT, host says what the user sees" split every other backend lives under. The nine inline `#[cfg(test)]` gates on real behavior became `any(test, feature = "testing")`, the crate rule that exists precisely because `cfg(test)` is set only for a crate's own test target. And the test hooks became a gated `pub` under `cmdr_mtp::volume::testing`, the argued exception SMB already granted `detach_session_for_test` (`crates/cmdr-fs/src/volume/host/DETAILS.md` § "Visibility that has no cross-crate equivalent"), because the app's scan-oracle cell asserts on the APP's fresh-listing oracle and belongs app-side. What stays app-side: the hotplug watcher (ADB's tracker twin), the macOS workaround, the registrar wiring, the tauri event payloads, and the IPC commands. Where the boundary runs in full: `crates/cmdr-mtp/DETAILS.md`.
 
 **Decision**: a backend never registers itself; an outside wiring module does
 **Why**: registration needs to know both the concrete volume type and the manager, and a backend that reaches the registry to insert itself draws a dependency edge back up into the layer that knows every backend — which is exactly what welds a subsystem into one cycle and what a backend crate cannot do at all. `network/smb_upgrade.rs` and `mtp/volume_wiring.rs` are the two structural twins to copy: the backend exposes a constructor and, where it needs to trigger registration from deep inside (MTP's attach/detach), a `OnceLock` hook the wiring module fills at startup. **Preserve the ORDERING deliberately when you wire one**: MTP's connect path registers volumes before starting its event loop, and a hook adds an indirection that can quietly change when that happens. This is not settleable by static analysis; verify against a real device or the `virtual-mtp` feature.
@@ -181,24 +178,17 @@ Resolving the id instead would answer with the SUCCESSOR after a swap and mark a
 `Disconnected`, and would keep answering after an eject for as long as any in-flight holder kept the share allocated.
 `cmdr-smb`'s `retirement_test.rs` pins all three answers, and `manager::tests::unregistering_a_volume_retires_it` pins the registry's side of them.
 
-
-## Gotchas
-
-**Gotcha**: `MtpReadStream` holds nothing scarce between windows, so dropping it mid-read is safe and needs no `Drop` impl
-**Why**: It reads in bounded `GetPartialObject64(offset, MTP_READ_WINDOW)` windows (the windowing + offset accounting live in `mtp/connection`; see that module's DETAILS § "Bounded-window reads"). Between windows nothing is in flight — no held `FileDownload`, no pinned PTP session — so a cancel/pause/drop has nothing to abort or drain (`cancel_and_release` is the trait default no-op). If the stream is dropped WHILE a window read is in flight, mtp-rs's `TransactionScope` flags the pipe and the next op drains it under the operation lock (one ~300 ms self-heal), so an aborted window never desyncs the session. ❌ Don't re-add a `Drop`/cancel here: there's no held `FileDownload`, so mtp-rs's `ReceiveStream` unconsumed-drop panic (the reason a `Drop` cancel was once needed) can't apply.
-
-**Gotcha**: `MtpVolume::get_metadata` is expensive: it lists the entire parent directory
-**Why**: MTP has no single-file stat call. `get_metadata` lists the parent directory and searches for the entry by name. This is used by `notify_mutation` after each self-mutation (create, delete, rename) and is acceptable because those are infrequent, but avoid calling it in hot paths.
-
 ## Testing
 
 - `in_memory_test.rs`: unit tests for `InMemoryVolume` (CRUD, sorting, concurrency, stress 50k entries)
 - `local_posix_test.rs`: real-FS tests (write ops, symlinks, copy, space info) using `std::env::temp_dir()`
-- `mtp/` inline tests: path conversion and capability flags (no device needed)
-- **No SMB or archive cell lives here.** Which side of the crate boundary one belongs on is decided by what it asserts,
+- **No SMB, archive, or MTP cell lives here.** Which side of the crate boundary one belongs on is decided by what it asserts,
   not by what it connects to (`crates/cmdr-smb/DETAILS.md` § "Which side a test lives on"), and the app-side ones then
   sit beside the app code they assert on. What they pin, the Docker fixture ports, and the soak and wedge harnesses:
   `file_system/write_operations/DETAILS.md` § "The SMB app-side suites".
+
+## Local renames are atomic-exclusive
+
 `LocalPosixVolume` routes every non-forced rename through the shared atomic-exclusive primitive. This applies equally
 to `/`, attached disks, Dropbox, iCloud, and other local POSIX roots registered with non-root volume IDs. Forced
 renames retain normal POSIX replacement semantics because the caller explicitly authorized replacement.
@@ -206,37 +196,12 @@ renames retain normal POSIX replacement semantics because the caller explicitly 
 ## Where the shared conformance assertions live
 
 `cmdr_fs::volume::conformance` holds the promises no backend may quietly opt out of, and each backend runs the ones it
-can: `mtp_conformance_test.rs`, `local_posix_conformance_test.rs`, and each remote crate's own `conformance_test.rs`
-collect them per backend, and `mtp_delete_test.rs` stays separate because the non-recursion contract is the one MTP has
+can: `local_posix_conformance_test.rs` here, and every crate backend's own `volume/conformance_test.rs`. MTP's
+`volume/delete_test.rs` stays separate from its conformance file because the non-recursion contract is the one MTP has
 to IMPLEMENT rather than inherit (`MtpDeleteScope`), with enough scaffolding to earn its own file. The roster and what
 each one defends: `crates/cmdr-fs/DETAILS.md` § "The shared assertions in `volume::conformance`".
 
-**Decision**: MTP settles a conflict scan's missing destination through `get_metadata`, not through a `NotFound` arm.
-**Why**: every other backend reads a `VolumeError::NotFound` from the destination listing as "nothing clashes" and
-answers an empty list. MTP can't: `resolve_path_to_handle` is cache-only, so a path nobody has browsed to fails as a
-generic `IoError` ("path not in cache"), which is honest, because it means UNKNOWN rather than absent. Reading every
-listing failure as absence would let a disconnected device pass for an empty folder and clear the copy to run.
-`get_metadata` settles it by listing the PARENT, so only a confirmed-absent destination reads as empty and every other
-failure stays the caller's to see. It costs one extra parent listing, on the error path only.
-
-## MTP's no-clobber rename is check-then-act
-
-`MtpVolume::rename` earns the `force == false` refusal by asking `exists(to)` and then moving. Every other backend
-claims the name with a primitive the other end refuses (`renamex_np(RENAME_EXCL)`, an SFTP `create_new` placeholder or
-plain `SSH_FXP_RENAME`, WebDAV's `Overwrite: F`, SMB's `ReplaceIfExists == false`), so MTP is the only one whose refusal
-has a window in it. The conformance cell is `mtp_conformance_test.rs`'s
-`rename_honors_the_shared_no_clobber_contract`.
-
-**Decision**: leave the window open and say so, rather than build machinery around it. **Why**: MTP offers nothing
-tighter to build on (verified on `mtp-rs` 0.32.0, source read, 2026-09-02). A same-directory rename is
-`SetObjectPropValue(0x9804)` on `ObjectFileName(0xDC07)`, and a cross-directory move is `MoveObject(0x1019)` with
-params `[handle, storage_id, parent]`; neither operation takes an overwrite or exclusive flag, and PTP's response-code
-enum has no collision code to read one out of (`StoreFull`, `AccessDenied`, `InvalidParameter`, and no
-`ObjectAlreadyExists`). The protocol also permits two siblings with the same name, so a device asked to collide doesn't
-refuse: it complies, and the user ends up with a duplicate. ❌ Don't reach for a lock or a retry loop here. Cmdr isn't the only writer — the phone's own apps and MTP's
-other clients mutate the same storage — so a lock this side would buy nothing and read like a guarantee.
-
-**Gotcha: a virtual-MTP test must UNREGISTER its device, not just disconnect.** `setup_virtual_mtp_device()` registers a
-device over a fresh `TempDir`; leaving it registered means the next test in the same binary connects to a stale storage
-handle over a directory that's gone, and fails on its first write with a bare `GeneralError` that says nothing about the
-cause. Pair every setup with `unregister_virtual_mtp_device(fixture.location_id)`.
+Where a crate backend's own `Volume` impl deviates from the shared shape is that crate's business, not this doc's:
+MTP's five deviations (the grouped copy scan, the expensive `get_metadata`, the safely-droppable read stream, the
+conflict-scan destination probe, and the check-then-act no-clobber rename) are `crates/cmdr-mtp/DETAILS.md` § "What
+`MtpVolume` does differently".

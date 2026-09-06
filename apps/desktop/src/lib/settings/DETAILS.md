@@ -174,10 +174,19 @@ content; see `src-tauri/capabilities/CLAUDE.md` § viewer). It calls `initialize
 which never touches the store plugin:
 
 - **Reads**: the cache seeds from the typed `get_restricted_window_settings` backend command (allowlist:
-  `viewer.wordWrap`, `fileViewer.suppressBinaryWarning`, `appearance.textSize`, `appearance.appColor`,
-  `appearance.fileSizeFormat`; the command reads `settings.json` fresh, so the snapshot lags the main window's cache by
-  at most the 500 ms save debounce). Live updates after open arrive through the regular cross-window `settings:changed`
-  event.
+  `viewer.wordWrap`, `viewer.showTextCursor`, `fileViewer.suppressBinaryWarning`, `appearance.textSize`,
+  `appearance.appColor`, `appearance.fileSizeFormat`, `appearance.language`; the command reads `settings.json` fresh, so
+  the snapshot lags the main window's cache by at most the 500 ms save debounce). Live updates after open arrive through
+  the regular cross-window `settings:changed` event, and a setting a restricted window has to follow LIVE also needs a
+  slot in `reactive-settings.svelte.ts` (`viewer.showTextCursor` has one; `viewer.wordWrap` deliberately doesn't,
+  because the viewer reads it once at mount and `W` owns it from there).
+- **The write allowlist is deliberately NARROWER than the read one.** A setting earns a place in
+  `RestrictedWindowPersistableSetting` only when a restricted window has a control that WRITES it: `W` for
+  `viewer.wordWrap`, the banner's "Never show this warning again" button for `fileViewer.suppressBinaryWarning`. One the
+  window only displays stays read-only, so the app's highest-risk webview never gets a write it has no use for:
+  `viewer.showTextCursor` (its only control is the Settings row in the main window) and every `appearance.*` are in the
+  snapshot and nowhere else. ❌ Don't add a read-only setting to the persist enum to "complete the pattern"; a
+  `setSetting` for one in a restricted window is session-only by design.
 - **Writes**: `setSetting` skips the store save and forwards allowlisted ids through the typed
   `persist_restricted_window_setting` command (enum-validated on the Rust side), which emits to the main window;
   `restricted-settings-bridge.ts` (mounted in the main layout) re-checks the allowlist and persists via
@@ -282,6 +291,11 @@ exactly that; the root-layout init is what let it go back to `getFileSizeFormat(
   value: `getDriveIndexingEnabled()` (`indexing.enabled`, read by the per-drive index badge menu) and
   `getMediaIndexEnabled()` (`mediaIndex.enabled`). Both are hard gates in the backend, so a surface that ignores them
   offers actions that get refused.
+- `getShowVirtualGitPortal()` (`fileExplorer.git.showVirtualGitPortal`) is here for the same reason as those two, one
+  step further: the frontend has to AGREE with a backend switch, not just render it. `capabilitiesForPane` reruns the
+  backend's own portal-routing predicate to decide a pane's capability row, so the toggle has to reach a `$derived`
+  live. A `getSetting` read (a plain Map) would leave an open `.git/branches/` pane on its old row until the next
+  navigation.
 
 ### Sections (`sections/`)
 
@@ -410,6 +424,22 @@ subsection). The mechanism:
   `<SectionCard label=…>` displays, so the title is findable. `buildSearchableText` appends the resolved `card` LAST in
   the parts array.
 
+**A `cardKey` naming a title no card renders fails SILENTLY, and has.** The Image indexing rows pointed at
+`settings.mediaIndex.card` ("Image search") long enough for a user to hit it, while the card renders
+`settings.mediaIndex.cards.enable` ("Enable indexing"): searching the title the user can read returned an EMPTY result
+set, and nothing anywhere complained, because a resolvable `MessageKey` is all the type asks for. Two rules follow, and
+nothing structural enforces either:
+
+- **Every row a titled card renders carries THAT card's key**, checked by eye against the section's
+  `<SectionCard label=…>` when adding a row.
+- **`hidden` rows included.** `hidden` keeps a row out of the auto-render pass; it does NOT keep it out of the search
+  index. So a hand-rendered control inside a titled card (`mediaIndex.parallelism`, a `SettingSlider`) needs the
+  `cardKey` exactly as much as the switches beside it, or it's the one row the card's title can't reach.
+- **Non-setting rows included**: a `SearchableRow` carries the same `cardKey` (§ "Searchable rows" below).
+
+`settings-search.test.ts` § "card title indexing" pins the title search for every row of the Image indexing card; add a
+case there when a page grows a card.
+
 **Decision / why: card titles are catalog keys, not literals.** With the i18n runtime in place,
 `no-raw-user-facing-string` forbids literal UI strings, and `card` must be translation-aware (untranslated `keywords`
 couldn't make a card title findable in another locale). So the field is a `MessageKey`, resolved through `tString` at
@@ -425,16 +455,8 @@ the frame can never disagree with its contents. `card` is explicitly NOT read to
 add a wrapper component that re-derives card visibility from `card`**: that double-sources visibility and re-creates the
 empty-card bug for non-registry and mirrored rows.
 
-**Decision / why: non-registry searchable rows get a hidden anchor.** A hand-rendered action row with no registry entry
-(e.g. "Index size / Clear index") can't be a search hit, so its card can't know to show, so searching "index size"
-yielded a blank pane. Fix: a `hidden: true` registry entry (`indexing.indexSize`) reusing the existing
-`settings.fileSystemWatching.indexSize` label key. `buildSearchIndex` indexes the WHOLE registry (it filters nothing,
-not even `hidden`), so a hidden entry IS searchable; `buildSectionTree` skips `hidden`, so it adds no nav row. It's a
-fully-modeled setting (its own `SettingsValues` key, `type:'boolean'`, `default:false`) that's never read or written —
-modeled because `SettingId = keyof SettingsValues`. **Guardrail: the anchor's `section` MUST equal its hosting page's
-section**, or it lands outside that page's section-scoped match set and the blank-page fix breaks. Additive key, so no
-`SCHEMA_VERSION` bump. Precedent: the hidden `downloadsToastCollapsed` / `…acknowledged` state rows; the anchor extends
-that pattern from "internal state" to "a searchable UI element that isn't a setting."
+**Decision / why: a non-setting row is a `SearchableRow`, never a setting.** See § "Searchable rows" below; a card that
+renders one puts its id in the card's `anyVisible(...)` guard exactly like a setting's.
 
 **Decision / why: "subsection" stays the level-2 nav term.** The card axis is named `cardKey` (not `subsection`),
 because `subsection` already means the level-2 nav entry (`SettingsSection.subsections`, the page you click). The
@@ -460,6 +482,52 @@ is a separate, still-valid thing and never a way to reach Advanced. Settings liv
 (`network.smbConcurrency` under "Network and mounts"; `fileOperations.maxConflictsToShow` / `progressUpdateInterval`
 under "File operations"; `search.recentSearches.maxCount` / `selection.recentSelections.maxCount` under "History and
 limits"). See `sections/DETAILS.md` § "Advanced section is auto-generated".
+
+## Searchable rows (things search must find that aren't settings)
+
+Every settings page renders things no setting models: "Clear index", "Open log file", "Turn off Ask Cmdr", "Get a
+license". The registry was search's only source, so those rows were unfindable, and a card gated on `anyVisible(...)`
+couldn't know to show for one — searching "index size" produced a blank pane.
+
+A `SearchableRow` (`types.ts`) gives such a row a searchable identity without modelling it as a setting:
+
+- **Shape**: a `row:`-prefixed `id`, the hosting page's `section`, the `labelKey` the row already renders, an optional
+  `cardKey` (the key its `SectionCard` title displays) and `keywords`. No `SettingsValues` key, no default, nothing read
+  or written.
+- **Where they live**: a `<Component>.rows.ts` beside the markup, aggregated by `sections/searchable-rows.ts`, which
+  resolves each into a getter-backed `SearchableEntry` (the same lazy-`tString` trick `resolveDefinition` plays).
+- **How search sees them**: `buildSearchIndex` concatenates `settingsRegistry` and the row entries, so `shouldShow(id)`,
+  `anyVisible(...)`, `getMatchingSections`, and `getMatchingSettingIdsInSection` treat a row id exactly like a setting
+  id. `buildSectionTree` reads the registry alone, so a row adds no nav entry — the property the old hidden anchor got
+  from `hidden`, now structural.
+- **What they never do**: decide what renders. Sections stay free-form Svelte and own their markup. That separation is
+  why the empty-card bug can't come back through this: a row is one more id in the SAME `shouldShow` predicate the frame
+  and the rows already share, never a second source of truth for visibility.
+
+**Decision / why not a hidden setting.** The predecessor was `indexing.indexSize`: a `hidden: true` registry entry with
+its own `SettingsValues` key, `type: 'boolean'`, `default: false`, that nothing ever read or wrote, modeled only because
+`SettingId = keyof SettingsValues`. It worked, and it lied — a fake setting in the store's type surface, invisible to
+every reader as anything else. One instance was tolerable; the ~15 rows users can reasonably search for were not.
+
+**Decision / why `row:` prefixed ids.** Row ids and setting ids share one namespace (`shouldShow` takes a `string`), so
+a collision would silently make a row masquerade as a setting. The prefix makes them disjoint by construction: no
+`SettingsValues` key carries it (a compile-time `Extract<SettingId, SearchableRowId>` assert in
+`sections/searchable-rows.test.ts` fails if one ever does), and `settingAnchorId(SettingId)` rejects a row id outright.
+
+**Decision / rows are not deep-link targets.** `openSettingsWindow(surface, section, anchor)` scrolls to a DOM id that
+`SettingRow` stamps via `settingAnchorId(id)`; searchable rows are bespoke markup with no `SettingRow`, and no caller
+wants to deep-link one today. `settingAnchorId` stays typed to `SettingId`, so passing a row id is a compile error
+rather than a silently missing anchor. To make one linkable later: stamp `settingAnchorId`-shaped id on the row's
+element and widen that signature — deliberately not done for an unused capability.
+
+**Guardrails** (both pinned by `sections/searchable-rows.test.ts`):
+
+- **A row's `section` MUST equal its hosting page's.** Otherwise it lands outside that page's section-scoped match set
+  and the page comes up blank on a hit.
+- **A card that renders a row lists its id in the card's `anyVisible(...)` guard**, or a hit filters every card away.
+- **Only register a row that's there whenever its page is.** Rows gated on runtime state (the image-index reclaim offer,
+  the CLIP model's download/delete, everything behind the image-index master toggle) stay unregistered: a hit that
+  scrolls to a row that isn't rendered is worse than no hit.
 
 ## Key decisions
 
@@ -521,9 +589,13 @@ Current cases: v2 renamed `appearance.dateColors`'s "off" value to "none"; v3 st
 that already had image indexing on, so the new "only folders I choose" default doesn't silently narrow what they've
 already indexed; v4 moves onboarding's four keys (`isOnboarded`, `fullDiskAccessChoice`, `termsAcceptedVersion`,
 `termsAcceptedAt`) from top-level legacy names onto their `onboarding.*` registry ids and deletes the originals, which
-the sparse save can't prune on its own. A migration that changes a BACKEND-read setting also needs the same rule applied
-Rust-side (v3: `media_index::gate::scope_from_settings`), because the backend reads `settings.json` at startup and would
-otherwise see the raw default on the launch before the migration writes the key.
+the sparse save can't prune on its own; v5 unpacks the `behavior.archiveEnterBehavior` JSON blob
+(`{ zip: 'ask', bundle: 'open' }`) into one `behavior.archiveEnter.<format>` key per archive format and deletes the
+blob, writing nothing for a format the blob never named (so an untouched format stays on its registry default) and
+nothing at all for a blob it can't read (every format then falls to its default, the same answer the resolver already
+gave for an unreadable blob). A migration that changes a BACKEND-read setting also needs the same rule applied Rust-side
+(v3: `media_index::gate::scope_from_settings`), because the backend reads `settings.json` at startup and would otherwise
+see the raw default on the launch before the migration writes the key.
 
 ### Settings cache is write-through
 
@@ -549,7 +621,8 @@ feature page. They're in the global search index too (findable from the main sea
 value is still persisted via the same store and accessible via `getSetting`/`setSetting`. Use this for internal flags
 the backend or business logic needs to track but the user shouldn't see (for example, `network.firstTriggerDone`, which
 records whether we've ever performed a gated network action so subsequent launches can start mDNS eagerly without
-re-prompting).
+re-prompting). ❌ Never reach for it to make a non-setting row searchable — that's what a `SearchableRow` is for (§
+"Searchable rows").
 
 ### Density mapping is internal
 

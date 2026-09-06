@@ -90,7 +90,8 @@ pub(crate) use archive_edit::global_tauri_sink;
 pub use event_sinks::{OperationEventSink, TauriEventSink};
 #[cfg(not(test))]
 use validation::{
-    ensure_destination_dir, validate_destination_not_inside_source, validate_destination_writable, validate_sources,
+    ensure_destination_dir, validate_destination_not_inside_source, validate_destination_writable,
+    validate_source_names_are_distinct, validate_sources,
 };
 
 // Re-export public types
@@ -130,7 +131,7 @@ pub(crate) use create::{create_directory_managed, create_file_managed};
 pub(crate) use paste_clipboard::write_payload_to_dir;
 pub(crate) use rename::{
     BulkRenameRow, RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
-    start_bulk_rename,
+    same_local_file, start_bulk_rename,
 };
 // The source-identity binding a reviewed batch may supply. `source_binding.rs`.
 // Volume + destination resolution and the three routed cross-volume entry points,
@@ -158,12 +159,12 @@ pub(crate) use state::{register_external_volume_op, release_external_volume_op};
 #[allow(unused_imports, reason = "Public API re-exports for consumers of this module")]
 pub use types::{
     ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, LifecycleStatus,
-    OperationStatus, OperationSummary, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
-    ScanPreviewProgressEvent, ScanPreviewStartResult, ScanPreviewTotals, ScanProgressEvent, SortColumn, SortOrder,
-    SourceItemOutcome, TransferActivity, TransferWaitReason, WriteCancelledEvent, WriteCompleteEvent,
-    WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
-    WriteSourceItemDoneEvent,
+    OperationStatus, OperationSummary, ReadOnlySide, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent,
+    ScanPreviewErrorEvent, ScanPreviewProgressEvent, ScanPreviewStartResult, ScanPreviewTotals, ScanProgressEvent,
+    SortColumn, SortOrder, SourceItemOutcome, TransferActivity, TransferWaitReason, WriteCancelledEvent,
+    WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
+    WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 
 // Re-export for tests (these are pub(crate) in validation.rs and state.rs)
@@ -175,7 +176,8 @@ pub(crate) use state::{OperationIntent, WriteOperationState, is_cancelled, load_
 #[allow(unused_imports, reason = "Re-exports for test modules in file_system")]
 pub(crate) use validation::{
     ensure_destination_dir, is_same_file, is_same_filesystem, validate_destination_not_inside_source,
-    validate_destination_writable, validate_disk_space, validate_path_length, validate_sources,
+    validate_destination_writable, validate_disk_space, validate_path_length, validate_source_names_are_distinct,
+    validate_sources,
 };
 // Exposed for the integration suites that drive `copy_volumes_with_progress`
 // directly against a real backend instead of through the full Tauri path (for
@@ -490,6 +492,7 @@ pub async fn copy_files_start(
                 return Ok(());
             };
             validate_sources(&sources)?;
+            validate_source_names_are_distinct(&sources)?;
             // Guard against copying a folder into itself BEFORE creating anything:
             // the dest may not exist yet, and the guard resolves it via its nearest
             // existing ancestor.
@@ -555,6 +558,7 @@ pub async fn move_files_start(
                 return Ok(());
             };
             validate_sources(&sources)?;
+            validate_source_names_are_distinct(&sources)?;
             // Guard against moving a folder into itself BEFORE creating anything:
             // the dest may not exist yet, and the guard resolves it via its nearest
             // existing ancestor.
@@ -757,6 +761,11 @@ mod stop_or_park_tests;
 // `sftp_integration_` lane the check runner selects on.
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod sftp_transfer_integration_test;
+// Archive browsing and remote editing over a virtual MTP device: the archive
+// routing is this app's, so the cell sits with the pipeline it asserts on rather
+// than with the backend. The MTP twin of `smb_archive_integration_test`.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux"), feature = "virtual-mtp"))]
+mod mtp_archive_test;
 // The app-side SMB suites: every cell whose other half is this pipeline rather
 // than the protocol. The backend's own white-box suites live with it, in
 // `cmdr-smb`. All Docker-gated and named for the `smb_integration_` lane, except

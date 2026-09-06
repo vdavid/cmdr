@@ -77,7 +77,17 @@ refs, and the row template). Four siblings hold the rest, each with its own suit
   paths-by-value flavour a static-entries pane needs.
 - **`FullListHeader.svelte`** — the column header, rendered above the scroll container. It owns `.header-row` /
   `.header-icon` / `.header-name-ext` / `.header-git` (all self-contained: no rule reaches outside the header's own
-  sub-tree), and takes a `scrollbarWidth` prop it spends on its right padding (see § Key decisions).
+  sub-tree), and takes a `scrollbarWidth` prop it spends on its right padding (see § Key decisions). Every pane that
+  renders a file list sorts one, so there is no per-pane "is this header live" flag; what varies is
+  `sortBy: SortColumn | null`, where `null` means the rows are in no column's order. All four triggers stay clickable
+  then, none is active, no caret draws, and no column claims the caret allowance in the measured tracks. The one pane
+  that reaches that state is the search-results snapshot in its ranked order: `../../search/DETAILS.md` § "The snapshot
+  pane's row order".
+
+  A `SortableHeader` also takes an optional `clearsSortLabel`, shown as the ACTIVE column's tooltip when clicking it
+  does something other than sort by it. The snapshot pane sets it so a third click reads "Sort by relevance" rather than
+  promising a sort it won't perform; every other pane leaves it unset and the tooltip stays the column's sort command
+  plus its shortcut.
 
 ### Where the row styles live
 
@@ -483,3 +493,22 @@ factory that reaches back into a module the mounted component also imports deadl
 import is mid-flight when the factory awaits it). Keep the mocks file free of component imports. Its other job is
 completeness — one missing export or one absent numeric setting (which turns the fetch range into `NaN`) empties the
 list silently, which is the same wrong-reason pass in a different costume.
+
+## Wording a git portal row
+
+A row inside the virtual `.git` portal has no byte count to show, so the backend ships a typed fact on
+`FileEntry.gitMeta` (`GitEntryMeta`: a count, an ahead/behind pair, a tagged or pinned commit, a branch name) and
+`wordGitMeta` in `full-list-utils.ts` turns it into the cell text plus the tooltip that doubles as the aria-label. Keys
+live under `fileExplorer.git.size.*` (cell) and `fileExplorer.git.tooltip.*` (tooltip); the three rows whose tooltip
+would only repeat the cell point at the cell's key.
+
+Every count goes through the catalog's `plural`, which is the whole reason the fact travels typed: each language picks
+its own forms. English switches noun at one, Hungarian never switches it, Chinese has a single form, and Portuguese
+carries a `many` category English has no use for.
+
+**Gotcha**: a commit id crosses IPC in FULL, and the cell shortens it to `SHORT_ID_LENGTH` (seven) characters. **Why**:
+the tooltip names the whole id, so shipping the short form too would mean shipping both. Seven is a display choice,
+which is why it lives here rather than in the backend.
+
+❌ Never let the width measurer word a cell itself. It calls `wordGitMeta`, so a copy edit or a locale switch can't move
+the rendered text and the measured text apart.

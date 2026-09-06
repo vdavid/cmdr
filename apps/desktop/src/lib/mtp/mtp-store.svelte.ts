@@ -278,6 +278,28 @@ export async function disconnect(deviceId: string): Promise<void> {
 }
 
 /**
+ * Puts a device into the `error` state with `error` as its message. The device may be
+ * unknown to the store (the backend reports access problems before a connect), so a
+ * placeholder `MtpDeviceInfo` stands in until a real one arrives.
+ */
+function markDeviceError(deviceId: string, error: string): void {
+  const existing = state.devices.get(deviceId)
+  const device = existing?.device ?? {
+    id: deviceId,
+    locationId: 0,
+    vendorId: 0,
+    productId: 0,
+  }
+  state.devices.set(deviceId, {
+    device,
+    connectionState: 'error',
+    storages: [],
+    displayName: existing?.displayName ?? getMtpDeviceDisplayName(device),
+    error,
+  })
+}
+
+/**
  * Initializes the MTP store.
  * Sets up event listeners for device connection state tracking.
  * The backend handles device detection and auto-connection; this store
@@ -326,37 +348,11 @@ export async function initialize(): Promise<void> {
   })
 
   unlistenExclusiveAccess = await onMtpExclusiveAccessError((event) => {
-    const existing = state.devices.get(event.deviceId)
-    const device = existing?.device ?? {
-      id: event.deviceId,
-      locationId: 0,
-      vendorId: 0,
-      productId: 0,
-    }
-    state.devices.set(event.deviceId, {
-      device,
-      connectionState: 'error',
-      storages: [],
-      displayName: existing?.displayName ?? getMtpDeviceDisplayName(device),
-      error: tString('mtp.error.exclusiveAccess', { blocking: event.blockingProcess || 'none' }),
-    })
+    markDeviceError(event.deviceId, tString('mtp.error.exclusiveAccess', { blocking: event.blockingProcess || 'none' }))
   })
 
   unlistenPermissionError = await onMtpPermissionError((event) => {
-    const existing = state.devices.get(event.deviceId)
-    const device = existing?.device ?? {
-      id: event.deviceId,
-      locationId: 0,
-      vendorId: 0,
-      productId: 0,
-    }
-    state.devices.set(event.deviceId, {
-      device,
-      connectionState: 'error',
-      storages: [],
-      displayName: existing?.displayName ?? getMtpDeviceDisplayName(device),
-      error: tString('mtp.error.permissionDenied'),
-    })
+    markDeviceError(event.deviceId, tString('mtp.error.permissionDenied'))
   })
 
   state.initialized = true

@@ -105,6 +105,14 @@
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
+  "askCmdr.tool.search.doing": "Doorzoekt je bestanden",
+  "@askCmdr.tool.search.doing": {
+    "sourceHash": "892be3e"
+  },
+  "askCmdr.tool.search.done": "Je bestanden doorzocht",
+  "@askCmdr.tool.search.done": {
+    "sourceHash": "995a356"
+  },
   "askCmdr.tool.searchPhotos.doing": "Doorzoekt je foto''s",
   "@askCmdr.tool.searchPhotos.doing": {
     "sourceHash": "da1265d"
@@ -209,9 +217,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr heeft een groter contextvenster nodig dan je lokale model heeft. Kies 16.384 tokens of meer in instellingen, onder AI.",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr heeft een groter contextvenster nodig dan je lokale model heeft. Kies 32.768 tokens of meer in instellingen, onder AI.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "Kon de AI-aanbieder niet bereiken. Controleer je verbinding en probeer het opnieuw.",
   "@askCmdr.error.unavailable": {
@@ -244,6 +252,10 @@
   "askCmdr.error.provider": "Er ging iets mis bij de aanbieder. Opnieuw proberen?",
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
+  },
+  "askCmdr.event.chatMemoryChanged": "Het chatgeheugen bevat nu {tokens, number} tokens",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
   },
   "askCmdr.event.contextTrimmed": "{count, plural, one {# eerdere opzoeking} other {# eerdere opzoekingen}} weggelaten om binnen de context van het model te blijven.",
   "@askCmdr.event.contextTrimmed": {

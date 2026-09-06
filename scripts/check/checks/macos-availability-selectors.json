@@ -1,6 +1,6 @@
 {
   "floor": "10.15",
-  "sdk": "MacOSX26.5.sdk",
+  "sdk": "MacOSX.sdk",
   "selectors": {
     "CGDirectDisplayID": "26.0",
     "CGPath": "14.0",
@@ -171,6 +171,8 @@
     "layoutMarginsGuide": "11.0",
     "lineLayoutPadding": "12.0",
     "linearExposure": "26.0",
+    "loadDataRepresentationForContentType_completionHandler": "13.0",
+    "loadFileRepresentationForContentType_openInPlace_completionHandler": "13.0",
     "loadViewIfNeeded": "14.0",
     "localPosition": "14.0",
     "localizedAttributedStringWithFormat": "12.0",
@@ -237,7 +239,10 @@
     "redoActionUserInfoValueForKey": "15.0",
     "redoCount": "14.4",
     "regionCode": "14.0",
+    "registerDataRepresentationForContentType_visibility_loadHandler": "13.0",
+    "registerFileRepresentationForContentType_visibility_openInPlace_loadHandler": "13.0",
     "registerTextAttachmentViewProviderClass_forFileType": "12.0",
+    "registeredContentTypesConformingToContentType": "13.0",
     "relativeCurveToPoint_controlPoint": "14.0",
     "removeAllSymbolEffects": "14.0",
     "removeAllSymbolEffectsWithOptions": "14.0",

@@ -59,6 +59,41 @@ fn size_to_sql(value: Option<u64>) -> Option<i64> {
     value.map(|v| i64::try_from(v).unwrap_or(i64::MAX))
 }
 
+/// Map one row of the full-row `SELECT` (`id, parent_id, name, is_directory,
+/// is_symlink, logical_size, physical_size, modified_at, inode`, in that order)
+/// onto an [`EntryRow`]. Every full-row read here selects exactly that list.
+fn entry_row_from(row: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
+    Ok(EntryRow {
+        id: row.get(0)?,
+        parent_id: row.get(1)?,
+        name: row.get(2)?,
+        is_directory: row.get::<_, i32>(3)? != 0,
+        is_symlink: row.get::<_, i32>(4)? != 0,
+        logical_size: row.get(5)?,
+        physical_size: row.get(6)?,
+        modified_at: row.get(7)?,
+        inode: row.get::<_, Option<i64>>(8)?.map(inode_from_sql),
+    })
+}
+
+/// Feed each `(id, parent_id, name, modified_at)` row of a directory `SELECT`
+/// through `f`, borrowing the name off SQLite's own row buffer so the loop
+/// allocates nothing per row.
+fn for_each_directory_row(
+    mut rows: rusqlite::Rows<'_>,
+    mut f: impl FnMut(i64, i64, &str, Option<u64>),
+) -> Result<(), IndexStoreError> {
+    while let Some(row) = rows.next()? {
+        let id: i64 = row.get(0)?;
+        let parent_id: i64 = row.get(1)?;
+        // `get_ref` borrows SQLite's own buffer, so no `String` is allocated per row.
+        let name = row.get_ref(2)?.as_str().map_err(rusqlite::Error::from)?;
+        let modified_at: Option<u64> = row.get(3)?;
+        f(id, parent_id, name, modified_at);
+    }
+    Ok(())
+}
+
 impl IndexStore {
     // ── Read methods (integer-keyed, new API) ────────────────────────
 
@@ -74,19 +109,7 @@ impl IndexStore {
             "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode
              FROM entries WHERE parent_id = ?1",
         )?;
-        let rows = stmt.query_map(params![parent_id], |row| {
-            Ok(EntryRow {
-                id: row.get(0)?,
-                parent_id: row.get(1)?,
-                name: row.get(2)?,
-                is_directory: row.get::<_, i32>(3)? != 0,
-                is_symlink: row.get::<_, i32>(4)? != 0,
-                logical_size: row.get(5)?,
-                physical_size: row.get(6)?,
-                modified_at: row.get(7)?,
-                inode: row.get::<_, Option<i64>>(8)?.map(inode_from_sql),
-            })
-        })?;
+        let rows = stmt.query_map(params![parent_id], entry_row_from)?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
@@ -119,19 +142,7 @@ impl IndexStore {
             "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode
              FROM entries WHERE parent_id = ?1 LIMIT ?2",
         )?;
-        let rows = stmt.query_map(params![parent_id, limit], |row| {
-            Ok(EntryRow {
-                id: row.get(0)?,
-                parent_id: row.get(1)?,
-                name: row.get(2)?,
-                is_directory: row.get::<_, i32>(3)? != 0,
-                is_symlink: row.get::<_, i32>(4)? != 0,
-                logical_size: row.get(5)?,
-                physical_size: row.get(6)?,
-                modified_at: row.get(7)?,
-                inode: row.get::<_, Option<i64>>(8)?.map(inode_from_sql),
-            })
-        })?;
+        let rows = stmt.query_map(params![parent_id, limit], entry_row_from)?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
@@ -146,19 +157,7 @@ impl IndexStore {
             "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode
              FROM entries ORDER BY id",
         )?;
-        let rows = stmt.query_map([], |row| {
-            Ok(EntryRow {
-                id: row.get(0)?,
-                parent_id: row.get(1)?,
-                name: row.get(2)?,
-                is_directory: row.get::<_, i32>(3)? != 0,
-                is_symlink: row.get::<_, i32>(4)? != 0,
-                logical_size: row.get(5)?,
-                physical_size: row.get(6)?,
-                modified_at: row.get(7)?,
-                inode: row.get::<_, Option<i64>>(8)?.map(inode_from_sql),
-            })
-        })?;
+        let rows = stmt.query_map([], entry_row_from)?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
@@ -175,19 +174,7 @@ impl IndexStore {
             "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode
              FROM entries WHERE is_directory = 1 ORDER BY id",
         )?;
-        let rows = stmt.query_map([], |row| {
-            Ok(EntryRow {
-                id: row.get(0)?,
-                parent_id: row.get(1)?,
-                name: row.get(2)?,
-                is_directory: row.get::<_, i32>(3)? != 0,
-                is_symlink: row.get::<_, i32>(4)? != 0,
-                logical_size: row.get(5)?,
-                physical_size: row.get(6)?,
-                modified_at: row.get(7)?,
-                inode: row.get::<_, Option<i64>>(8)?.map(inode_from_sql),
-            })
-        })?;
+        let rows = stmt.query_map([], entry_row_from)?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
@@ -207,21 +194,12 @@ impl IndexStore {
     /// searchable, so don't drop it.
     pub fn for_each_directory(
         conn: &Connection,
-        mut f: impl FnMut(i64, i64, &str, Option<u64>),
+        f: impl FnMut(i64, i64, &str, Option<u64>),
     ) -> Result<(), IndexStoreError> {
         let mut stmt = conn.prepare_cached(
             "SELECT id, parent_id, name, modified_at FROM entries WHERE is_directory = 1 ORDER BY id",
         )?;
-        let mut rows = stmt.query([])?;
-        while let Some(row) = rows.next()? {
-            let id: i64 = row.get(0)?;
-            let parent_id: i64 = row.get(1)?;
-            // `get_ref` borrows SQLite's own buffer, so no `String` is allocated per row.
-            let name = row.get_ref(2)?.as_str().map_err(rusqlite::Error::from)?;
-            let modified_at: Option<u64> = row.get(3)?;
-            f(id, parent_id, name, modified_at);
-        }
-        Ok(())
+        for_each_directory_row(stmt.query([])?, f)
     }
 
     /// Stream every FILE entry's `(parent_id, name)` through `f`, one row at a time, with all of
@@ -272,7 +250,7 @@ impl IndexStore {
     pub fn for_each_child_directory_of(
         conn: &Connection,
         parent_ids: &[i64],
-        mut f: impl FnMut(i64, i64, &str, Option<u64>),
+        f: impl FnMut(i64, i64, &str, Option<u64>),
     ) -> Result<(), IndexStoreError> {
         if parent_ids.is_empty() {
             return Ok(());
@@ -283,16 +261,7 @@ impl IndexStore {
             placeholders(parent_ids.len())
         );
         let mut stmt = conn.prepare_cached(&sql)?;
-        let mut rows = stmt.query(rusqlite::params_from_iter(parent_ids))?;
-        while let Some(row) = rows.next()? {
-            let id: i64 = row.get(0)?;
-            let parent_id: i64 = row.get(1)?;
-            // `get_ref` borrows SQLite's own buffer, so no `String` is allocated per row.
-            let name = row.get_ref(2)?.as_str().map_err(rusqlite::Error::from)?;
-            let modified_at: Option<u64> = row.get(3)?;
-            f(id, parent_id, name, modified_at);
-        }
-        Ok(())
+        for_each_directory_row(stmt.query(rusqlite::params_from_iter(parent_ids))?, f)
     }
 
     /// Stream the child FILE rows of every parent in `parent_ids` through `f` as
@@ -347,21 +316,7 @@ impl IndexStore {
             "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode
              FROM entries WHERE id = ?1",
         )?;
-        let result = stmt
-            .query_row(params![id], |row| {
-                Ok(EntryRow {
-                    id: row.get(0)?,
-                    parent_id: row.get(1)?,
-                    name: row.get(2)?,
-                    is_directory: row.get::<_, i32>(3)? != 0,
-                    is_symlink: row.get::<_, i32>(4)? != 0,
-                    logical_size: row.get(5)?,
-                    physical_size: row.get(6)?,
-                    modified_at: row.get(7)?,
-                    inode: row.get::<_, Option<i64>>(8)?.map(inode_from_sql),
-                })
-            })
-            .optional()?;
+        let result = stmt.query_row(params![id], entry_row_from).optional()?;
         Ok(result)
     }
 

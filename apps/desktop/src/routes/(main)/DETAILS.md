@@ -177,9 +177,18 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (skip `pushViewMenuState`)
   (`resolveLocation` — the agent path can live on any volume), replying `ok: false` if it can't resolve, then calls
   `explorerRef.navigate({ pane, to: { goTo }, source: 'mcp' })` and branches on the typed `NavigateResult`: a
   `'refused'` result forwards `result.reason.message` byte-identically as the `mcp-response` error; a `'started'` result
-  awaits `result.settled` before replying `ok: true`. Resolving at the edge also narrows the on-network refusal — a
-  local target from a network pane now switches volumes instead of refusing; only an `smb://` target still refuses. The
-  bus dispatch is fire-and-forget and can't surface this round-trip.
+  awaits `result.settled`. Resolving at the edge also narrows the on-network refusal — a local target from a network
+  pane now switches volumes instead of refusing; only an `smb://` target still refuses. The bus dispatch is
+  fire-and-forget and can't surface this round-trip.
+
+  **The reply says where the pane ended up, not where it was sent** (`mcp-nav-landing.ts`). `settled` alone can't carry
+  that: the switch arm resolves it as a no-op the moment the optimistic commit lands, so a cross-volume navigation acked
+  `ok: true` before the new volume had listed anything, and kept that `OK` when the listing died and an edge-flow
+  fallback moved the pane home. After a switch (the volume ids differ, the same test `navigate()` routes on) the adapter
+  waits for the pane to go QUIET — a listing other than the one it started with, then `quietMs` with no load in flight —
+  and classifies what it finds: `navigated`, `fell-back`, or `did-not-settle`. The reply carries that discriminant plus
+  the pane's resting `volumeId` and `path`; the Rust side words the tool result from the discriminant, ❌ never from the
+  message text. The in-place arm skips the wait, because there `settled` IS the listing.
 
   **Every way this handler declines also logs.** The three of them — the path not resolving to a volume, `navigate()`
   refusing, and no explorer being mounted — used to `return` in silence, because the only channel out is a reply keyed
@@ -233,17 +242,40 @@ the button, and why only the id travels: `$lib/file-operations/queue/DETAILS.md`
 ## Mouse back / forward buttons
 
 A pointer's dedicated X1/X2 side buttons drive the same `nav.back` / `nav.forward` bus commands as `⌘[` / `⌘]` (issue
-#31), so history walks the same way regardless of input device. `+page.svelte` registers two document listeners that
-both consult `navCommandForMouseButton` (`mouse-nav.ts`, mapping `button === 3 → nav.back`, `4 → nav.forward`):
+#31), so history walks the same way regardless of input device. The buttons reach the dispatch by a different road per
+platform, both mapped in `mouse-nav.ts`.
+
+**macOS: from AppKit** (`navCommandForDirection`). `mouse_nav.rs` (in `src-tauri/src/`) installs a local `NSEvent`
+monitor and emits the typed `mouse-nav` event to the main window; `setupMouseNavListener` (`listener-setup.ts`) turns
+the direction into the dispatch, behind the same `isModalDialogOpen()` guard as everything else.
+
+That monitor watches TWO kinds of event, because on macOS the mouse's driver decides which one the user's press becomes.
+It reads `buttonNumber` off `otherMouseUp` for a raw five-button mouse, and `deltaX` off `NSEventType::Swipe` for a Logi
+Options+ mouse, which substitutes a macOS swipe gesture and emits no mouse button at all. Both roads reach the same two
+directions. **Gotcha / Why:** the DOM listeners below never fire on a Logi Options+ mouse, and the reason is NOT that
+WKWebView withholds extra buttons — no mouse-button event is posted anywhere in the system, so an `otherMouse`-only
+monitor is just as blind as the webview. Confirming that took an AppKit probe;
+`docs/notes/mx-side-buttons-swipe-2026-09-04.md` is the canonical record of what each device actually delivers, and the
+one to read before touching either side of this feature.
+
+Three properties of the monitor matter here. It **swallows** the events it recognizes — an extra button so a
+webview-side reading can't fire Cmdr's middle-click gestures, a swipe so WKWebView's own back / forward gesture can't
+pop the SPA history underneath us. It only acts while the MAIN window is focused. And a swipe arrives as a PAIR whose
+first half carries no direction, so `action_for` swallows that half without dispatching; every other `otherMouse` event,
+the middle button included, is handed straight back.
+
+**Linux: from the DOM.** `+page.svelte` registers two document listeners that both consult `navCommandForMouseButton`
+(mapping `button === 3 → nav.back`, `4 → nav.forward`):
 
 - **`mouseup`** dispatches the command (gated by the same `isModalDialogOpen()` guard as the keyboard path, so the
   buttons stay inert while a dialog or overlay is up). The dispatch is left untagged for the cross-source dedup: a mouse
   button has no native-menu twin to double-fire, so it should always pass.
-- **`mousedown`** only `preventDefault`s the side buttons (no dispatch). This is what cancels WKWebView's built-in page
-  back / forward, which would otherwise pop the SvelteKit SPA history (e.g. unwinding a `/settings` visit) underneath
-  us. The suppression can't move to `mouseup` — the webview commits its default nav on the press — so the two halves
-  stay split across the two events. Suppression runs even while a modal is open (we never want the webview navigating
-  itself); only the dispatch is gated.
+- **`mousedown`** only `preventDefault`s the side buttons (no dispatch). This is what cancels the webview's built-in
+  page back / forward, which would otherwise pop the SvelteKit SPA history (e.g. unwinding a `/settings` visit)
+  underneath us. The suppression can't move to `mouseup` — the webview commits its default nav on the press — so the two
+  halves stay split across the two events. Suppression runs even while a modal is open (we never want the webview
+  navigating itself); only the dispatch is gated. On macOS the AppKit monitor above swallows the events first, so these
+  two listeners are the Linux path's alone.
 
 ## Right-click ownership
 

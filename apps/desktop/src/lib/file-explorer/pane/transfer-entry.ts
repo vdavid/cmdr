@@ -54,12 +54,15 @@ export type TransferGuardResult =
  *    `!canWrite` SCOPED to the `search-results` kind so the wording stays
  *    correct (a network destination shares the `false` capability but isn't a
  *    misrendered "not a folder").
- * 2. Read-only destination → refuse with an alert. Read off the destination's
+ * 2. Read-only ROUTED destination → refuse with an alert, worded per kind: a tar
+ *    or 7z is browse + extract only, and a virtual `.git` snapshot has no
+ *    directory behind it at all.
+ * 3. Read-only destination → refuse with an alert. Read off the destination's
  *    `VolumeInfo.mountIsReadOnly` (a per-volume runtime flag, not a kind capability).
  *
  * A zip destination is NOT refused: it's the writable `archive` kind
- * (`canWrite: true`), so it passes step 1 and the transfer routes into the
- * archive-edit flow (a zip on a read-only VolumeInfo is still caught by step 2).
+ * (`canWrite: true`), so it passes steps 1 and 2 and the transfer routes into the
+ * archive-edit flow (a zip on a read-only VolumeInfo is still caught by step 3).
  *
  * Returns `ok` when none fire. An unknown destination volume id (no `VolumeInfo`)
  * is allowed through: we can't prove it's read-only, the backend still rejects a
@@ -91,6 +94,18 @@ export function checkTransferDestinationGuard(
       },
     }
   }
+  // A virtual `.git` snapshot has no directory behind it to land a paste or a
+  // move-in. Refuse up front rather than starting a transfer the portal volume
+  // turns away with its typed read-only rejection.
+  if (destCaps.kind === 'git-portal') {
+    return {
+      ok: false,
+      alert: {
+        title: tString('fileExplorer.readOnly.gitPortalTitle'),
+        message: tString('fileExplorer.readOnly.gitPortalMessage'),
+      },
+    }
+  }
 
   const destVolume = getDestinationVolumeInfo(destVolumeId, volumes)
   if (destVolume?.mountIsReadOnly) {
@@ -107,12 +122,12 @@ export function checkTransferDestinationGuard(
 }
 
 /**
- * Resolves the real source volume id for a set of source paths, so a dropped or
- * pasted transfer carries the same accurate `sourceVolumeId` an F5/F6 transfer
+ * Resolves the real source volume id for a set of source paths, so a DROPPED or
+ * PASTED transfer carries the same accurate `sourceVolumeId` an F5/F6 transfer
  * does. NEVER returns a knowingly-wrong id: when resolution is genuinely
  * ambiguous (sources span volumes) or fails, it returns `DEFAULT_VOLUME_ID`
- * (root) — the honest "unknown", which gives today's degraded-but-correct
- * behavior rather than stat'ing the wrong volume.
+ * (root) — the honest "unknown", which gives a degraded-but-correct result
+ * rather than stat'ing the wrong volume.
  *
  * Favorites (`category === 'favorite'`) are EXCLUDED from the candidate set:
  * they're pseudo-volumes that exist only in the volume picker, the backend

@@ -99,6 +99,7 @@ function openSnapshot(id = 'sr-1'): void {
     totalCount: 1,
     createdAt: 0,
     label: 'report',
+    sort: null,
   })
   incrementRef(id)
 }

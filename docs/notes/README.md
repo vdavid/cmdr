@@ -49,6 +49,12 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Load-bearing as the evidence behind a decision that would otherwise look arbitrary:**
 
+- `terminal-launch-sources-2026-09-04.md` — where every bundle id and launch recipe in the "open terminal here" table
+  came from, each with its source and date, and the per-app survey behind the decision NOT to offer a window-vs-tab
+  control. Read it before adding a terminal to `KNOWN_TERMINALS` (a new entry owes the same standard: a source, not a
+  recollection), before trusting an id that looks right, and before anyone proposes the tab toggle again: the six
+  vendors answer that question six different ways, and only Warp could honor it cleanly. It also names the four external
+  changes that would invalidate these answers.
 - `phased-vs-bulk-index-2026-08-14.md` — the measurement gate the phased-indexing plan set for itself, and the running
   record of what the phased shape costs. **The current number is 1.75×** (the shipped machine over a real `/`, against a
   same-evening bulk baseline of 40.5 s), with `home_covered_at` at 42.5–44.1 s, which is parity with the bulk build's
@@ -89,6 +95,14 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   cannot tell and could not have**: a hang is neither an error nor a crash, there is no hang detector, the heartbeat
   keeps beating from a background thread, and one install out of 765 has auto error reporting on. Read it before
   treating a quiet `#error-reports` channel as evidence that a defect did not bite.
+
+- `mx-side-buttons-swipe-2026-09-04.md` — why `mouse_nav.rs` watches a SWIPE gesture in a module about mouse buttons.
+  **With Logi Options+ installed, an MX mouse's thumb buttons emit no mouse button at all**: Options+ binds them to
+  `OSX_GESTURE_BACK` / `_FORWARD` with `hidUsage: 0` and posts `NSEventType::Swipe` (`deltaX` `+1` back, `-1` forward)
+  in a two-event pair whose first half carries no direction. Carries the AppKit probe output, the Options+ config trail
+  that names the mechanism, and the proof a swipe can't collide with the thumb wheel's horizontal scroll. Read it before
+  attributing any missing pointer input to WKWebView — that was the wrong answer we shipped first, and the note records
+  why the two failure modes look identical from inside the webview.
 
 **Load-bearing as regression anchors:**
 

@@ -20,11 +20,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mount, tick, type Component } from 'svelte'
+import { createRawSnippet, mount, tick, type Component } from 'svelte'
 import AutoSendToastContent from './AutoSendToastContent.svelte'
 import BundleSavedToastContent from './BundleSavedToastContent.svelte'
 import ErrorReportDialog from './ErrorReportDialog.svelte'
 import ErrorReportToastContent from './ErrorReportToastContent.svelte'
+import SentReportToastBody from './SentReportToastBody.svelte'
 import { setLastAutoSentReportId, getLastAutoSentReportId } from './auto-send-toast-state.svelte'
 import { setLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
 import { setLastSentReport, getLastSentReportId } from './error-report-toast-state.svelte'
@@ -304,6 +305,41 @@ describe('ErrorReportToastContent', () => {
     if (!dismissButton) throw new Error('Dismiss button missing')
     dismissButton.click()
     expect(dismissToast).toHaveBeenCalledWith('error-report-sent')
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `SentReportToastBody.svelte`, the body shared by the two
+ * "a report went out" toasts. The two shapes it can take are the ones the callers
+ * pick between: with a bold lead line, and without one, where the sentence carries
+ * the news itself and the id badge has to stay part of that sentence.
+ */
+describe('SentReportToastBody', () => {
+  const actions = createRawSnippet(() => ({
+    render: () => '<button type="button">Dismiss</button>',
+  }))
+
+  function mountBody(title?: string): HTMLElement {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SentReportToastBody, {
+      target,
+      props: { title, message: 'Reference ID:', reportId: 'ERR-AB23X', actions },
+    })
+    return target
+  }
+
+  it('with a title has no a11y violations', async () => {
+    const target = mountBody('Error report sent')
+    await tick()
+    expect(target.textContent).toContain('ERR-AB23X')
+    await expectNoA11yViolations(target)
+  })
+
+  it('without a title has no a11y violations', async () => {
+    const target = mountBody()
+    await tick()
+    await expectNoA11yViolations(target)
   })
 })
 

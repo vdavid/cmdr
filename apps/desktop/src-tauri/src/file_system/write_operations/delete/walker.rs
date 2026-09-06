@@ -245,6 +245,7 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
         files_processed: files_done,
         files_skipped: 0,
         bytes_processed: bytes_done,
+        appeared_during_move: None,
     });
 
     Ok(())
@@ -954,6 +955,7 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
         files_processed: files_done,
         files_skipped: 0,
         bytes_processed: bytes_done,
+        appeared_during_move: None,
     });
 
     Ok(())

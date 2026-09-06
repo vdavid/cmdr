@@ -292,7 +292,14 @@ describe('QueueRow', () => {
   })
 
   it("a failed row says it couldn't finish and drops every live control", () => {
-    render({ row: buildFailedRow({ type: 'read_only_device', path: '/Volumes/Stick', deviceName: 'Stick' }) })
+    render({
+      row: buildFailedRow({
+        type: 'read_only_device',
+        path: '/Volumes/Stick',
+        deviceName: 'Stick',
+        side: 'destination',
+      }),
+    })
 
     expect(target.querySelector('.status-text')?.textContent.trim()).toBe("Couldn't finish")
     expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
@@ -306,7 +313,14 @@ describe('QueueRow', () => {
   it('a failed row renders the real reason, per error variant and per operation', () => {
     // Two variants and two operation types, so a broken variant-key selection
     // can't hide behind one lucky lookup.
-    render({ row: buildFailedRow({ type: 'read_only_device', path: '/Volumes/Stick', deviceName: 'Stick' }) })
+    render({
+      row: buildFailedRow({
+        type: 'read_only_device',
+        path: '/Volumes/Stick',
+        deviceName: 'Stick',
+        side: 'destination',
+      }),
+    })
     let reason = target.querySelector('.reason-cell')?.textContent ?? ''
     expect(reason).toContain('Stick is read-only')
     expect(reason).toContain('Choose a different destination that supports writing.')

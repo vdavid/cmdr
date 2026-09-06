@@ -128,6 +128,7 @@ fn a_second_failure_for_one_operation_keeps_the_first_error() {
     let first = WriteOperationError::ReadOnlyDevice {
         path: "/Volumes/stick/a.txt".to_string(),
         device_name: Some("stick".to_string()),
+        side: crate::file_system::ReadOnlySide::Destination,
     };
     mgr.record_failure("op-double", WriteOperationType::Delete, &first);
     mgr.record_failure(

@@ -7,9 +7,9 @@ Optional (4); Linux skips step 1 and resumes at step 2.
 ## Module map
 
 `OnboardingWizard.svelte` (shell), `OnboardingStepShell.svelte` (per-step frame), `StepFda` / `StepAi` / `StepBeta` /
-`StepOptional`, `CloudProviderPicker` / `CloudProviderSetup` (AI step), `OnboardingLanguagePicker` (the header's
-language control), and `onboarding-state.svelte.ts` (the state machine: step cursor, variants, banner mode,
-`resumeStepFor()`).
+`StepOptional`, `OnboardingToggleCard` (the bordered switch card steps 3 and 4 share), `CloudProviderPicker` /
+`CloudProviderSetup` (AI step), `OnboardingLanguagePicker` (the header's language control), and
+`onboarding-state.svelte.ts` (the state machine: step cursor, variants, banner mode, `resumeStepFor()`).
 
 ## Must-knows
 

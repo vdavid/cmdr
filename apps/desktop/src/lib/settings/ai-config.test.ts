@@ -298,7 +298,7 @@ describe('pushConfigToBackend', () => {
     settingsMap['ai.provider'] = 'cloud'
     settingsMap['ai.cloudProvider'] = 'openai'
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ openai: { model: 'gpt-4o' } })
-    settingsMap['ai.localContextSize'] = '16384'
+    settingsMap['ai.localContextSize'] = '32768'
     configureAi.mockResolvedValue({ secretStoreError: { type: 'access_denied', message: 'keyring locked' } })
 
     await pushConfigToBackend()
@@ -314,7 +314,7 @@ describe('pushConfigToBackend', () => {
     settingsMap['ai.provider'] = 'cloud'
     settingsMap['ai.cloudProvider'] = 'openai'
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ openai: { model: 'gpt-4o' } })
-    settingsMap['ai.localContextSize'] = '16384'
+    settingsMap['ai.localContextSize'] = '32768'
 
     await pushConfigToBackend()
 
@@ -336,13 +336,13 @@ describe('pushConfigToBackend', () => {
     settingsMap['ai.provider'] = 'local'
     settingsMap['ai.cloudProvider'] = ''
     settingsMap['ai.cloudProviderConfigs'] = '{}'
-    settingsMap['ai.localContextSize'] = '16384'
+    settingsMap['ai.localContextSize'] = '32768'
 
     await pushConfigToBackend()
 
     expect(configureAi).toHaveBeenCalledWith({
       provider: 'local',
-      contextSize: 16384,
+      contextSize: 32768,
       cloudProviderId: '',
       cloudBaseUrl: expect.any(String) as string,
       cloudModel: expect.any(String) as string,
@@ -354,7 +354,7 @@ describe('pushConfigToBackend', () => {
     settingsMap['ai.provider'] = 'cloud'
     settingsMap['ai.cloudProvider'] = 'openai'
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ openai: { model: 'gpt-4o' } })
-    settingsMap['ai.localContextSize'] = '16384'
+    settingsMap['ai.localContextSize'] = '32768'
 
     await pushConfigToBackend()
 

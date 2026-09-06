@@ -127,6 +127,28 @@ const cases: Case[] = [
     },
   },
   {
+    name: 'duplicate_source_names (move)',
+    error: { type: 'duplicate_source_names', name: 'invoices', first: '/a/invoices', second: '/b/invoices' },
+    op: 'move',
+    expected: {
+      title: 'Two items have the same name',
+      message:
+        "You picked two items called invoices, so they'd both land in the same spot: /a/invoices and /b/invoices.",
+      suggestion: 'Move them one at a time, or rename one first.',
+    },
+  },
+  {
+    name: 'duplicate_source_names (copy)',
+    error: { type: 'duplicate_source_names', name: 'invoices', first: '/a/invoices', second: '/b/invoices' },
+    op: 'copy',
+    expected: {
+      title: 'Two items have the same name',
+      message:
+        "You picked two items called invoices, so they'd both land in the same spot: /a/invoices and /b/invoices.",
+      suggestion: 'Copy them one at a time, or rename one first.',
+    },
+  },
+  {
     name: 'symlink_loop',
     error: { type: 'symlink_loop', path: '/p' },
     expected: {
@@ -296,7 +318,7 @@ const cases: Case[] = [
   },
   {
     name: 'read_only_device (named)',
-    error: { type: 'read_only_device', path: '/p', deviceName: 'My Phone' },
+    error: { type: 'read_only_device', path: '/p', deviceName: 'My Phone', side: 'destination' },
     expected: {
       title: 'Read-only device',
       message: 'My Phone is read-only. You can copy files from it, but not to it.',
@@ -305,7 +327,7 @@ const cases: Case[] = [
   },
   {
     name: 'read_only_device (no name → fallback)',
-    error: { type: 'read_only_device', path: '/p', deviceName: null },
+    error: { type: 'read_only_device', path: '/p', deviceName: null, side: 'destination' },
     expected: {
       title: 'Read-only device',
       message: 'The target device is read-only. You can copy files from it, but not to it.',
@@ -333,6 +355,22 @@ const cases: Case[] = [
       message: "The file is locked and can't be deleted.",
       suggestion:
         'The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.',
+    },
+  },
+  {
+    name: 'new_data_kept_at',
+    error: {
+      type: 'new_data_kept_at',
+      path: '/Volumes/nas/notes.txt',
+      keptAt: '/Volumes/nas/notes (recovered).txt',
+      message: 'the connection dropped',
+    },
+    expected: {
+      title: 'Your new file is under a different name',
+      message:
+        "The new /Volumes/nas/notes.txt is written and complete, but the destination wouldn't let it take that name, and the file it was replacing is already gone. The new one is at /Volumes/nas/notes (recovered).txt.",
+      suggestion:
+        'Open /Volumes/nas/notes (recovered).txt to check it, then rename it. If the destination is a network share or a phone, reconnect it first and the rename will go through.',
     },
   },
   {
@@ -560,6 +598,38 @@ const cases: Case[] = [
       title: 'File too large for this drive',
       message: `movie.mkv is ${bigFileSize}, but this drive is formatted as FAT32, which can't store files larger than ${fatMaxSize}.`,
       suggestion: 'To store files this large, use a drive formatted as exFAT, which has no such limit.',
+    },
+  },
+  {
+    name: 'originals_kept_aside (one)',
+    error: {
+      type: 'originals_kept_aside',
+      cause: { type: 'source_not_found', path: '/src/thing/b.txt' },
+      recovered: [{ path: '/dst/thing', keptAt: '/dst/thing (recovered)' }],
+    },
+    expected: {
+      title: 'Your file is under a new name',
+      message:
+        'A folder took the name /dst/thing, so your file is now at /dst/thing (recovered). Nothing was thrown away. The file or folder you tried to copy no longer exists.',
+      suggestion:
+        "Open /dst/thing (recovered) to check it. Once you've moved the folder out of the way, you can rename your file back. It may have been moved, renamed, or deleted. Try refreshing the file list.",
+    },
+  },
+  {
+    name: "originals_kept_aside (many, keeping the cause's own advice)",
+    error: {
+      type: 'originals_kept_aside',
+      cause: { type: 'insufficient_space', required: REQUIRED, available: AVAILABLE, volumeName: null },
+      recovered: [
+        { path: '/dst/one', keptAt: '/dst/one (recovered)' },
+        { path: '/dst/two', keptAt: '/dst/two (recovered)' },
+      ],
+    },
+    expected: {
+      title: 'Your file is under a new name',
+      message: `Folders took the names of 2 of your files, so those files are now under new names. Nothing was thrown away; the technical details below list every one. The destination needs ${requiredSize} but only has ${availableSize} available.`,
+      suggestion:
+        "Check the details below for where each file is. Once you've moved the folders out of the way, you can rename them back. Free up some space on the destination by deleting unnecessary files, or choose a different location.",
     },
   },
   {

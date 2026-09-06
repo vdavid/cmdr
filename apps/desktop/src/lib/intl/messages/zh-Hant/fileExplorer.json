@@ -835,9 +835,21 @@
   "@fileExplorer.readOnly.deviceMessage": {
     "sourceHash": "039488f"
   },
+  "fileExplorer.readOnly.gitPortalTitle": "唯讀 git 入口",
+  "@fileExplorer.readOnly.gitPortalTitle": {
+    "sourceHash": "d4bd9c1"
+  },
+  "fileExplorer.readOnly.gitPortalMessage": "分支、標籤和提交是你 git 歷史的快照，可以瀏覽、也可以從中複製，但不能修改。",
+  "@fileExplorer.readOnly.gitPortalMessage": {
+    "sourceHash": "87bc79d"
+  },
   "fileExplorer.archive.useTransferToCopyOut": "要把檔案從壓縮檔裡複製出來，請用 F5 複製或 F6 移動。",
   "@fileExplorer.archive.useTransferToCopyOut": {
     "sourceHash": "3edbc36"
+  },
+  "fileExplorer.git.useTransferToCopyOut": "要把檔案從 git 快照裡複製出來，請用 F5 複製或 F6 移動。",
+  "@fileExplorer.git.useTransferToCopyOut": {
+    "sourceHash": "a0d65fe"
   },
   "fileExplorer.rename.hiddenAfterRename": "你的檔案從畫面上消失了，因為現在沒有顯示隱藏檔案。",
   "@fileExplorer.rename.hiddenAfterRename": {
@@ -882,6 +894,10 @@
   "fileExplorer.columns.created": "製作日期",
   "@fileExplorer.columns.created": {
     "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.columns.sortByRelevance": "依關聯性排序",
+  "@fileExplorer.columns.sortByRelevance": {
+    "sourceHash": "20632dd"
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
@@ -967,6 +983,83 @@
   "fileExplorer.dirSize.staleLine": "這些大小來自比較早的掃描，可能已經過時。",
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
+  },
+  "fileExplorer.git.size.branches": "{count, plural, other {{countText} 個分支}}",
+  "@fileExplorer.git.size.branches": {
+    "sourceHash": "ea4d085"
+  },
+  "fileExplorer.git.size.tags": "{count, plural, other {{countText} 個標籤}}",
+  "@fileExplorer.git.size.tags": {
+    "sourceHash": "f9c07cd"
+  },
+  "fileExplorer.git.size.commits": "{count, plural, other {{countText} 次提交}}",
+  "@fileExplorer.git.size.commits": {
+    "sourceHash": "cfdb4be"
+  },
+  "fileExplorer.git.size.stashEntries": "{count, plural, other {{countText} 項貯藏}}",
+  "@fileExplorer.git.size.stashEntries": {
+    "sourceHash": "d9f98ff"
+  },
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, other {{countText} 個關聯 worktree}}",
+  "@fileExplorer.git.size.linkedWorktrees": {
+    "sourceHash": "7bc228e"
+  },
+  "fileExplorer.git.size.submodules": "{count, plural, other {{countText} 個子模組}}",
+  "@fileExplorer.git.size.submodules": {
+    "sourceHash": "b1b847e"
+  },
+  "fileExplorer.git.size.filesChanged": "{count, plural, other {{countText} 個檔案}}",
+  "@fileExplorer.git.size.filesChanged": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.git.size.aheadBehind": "+{aheadText} / -{behindText}",
+  "@fileExplorer.git.size.aheadBehind": {
+    "sourceHash": "6ff31ac",
+    "sameAsSourceJustification": "The `+n / -n` tally is symbols and numbers only. Every language that uses git reads it the same way, so there is nothing here to translate."
+  },
+  "fileExplorer.git.size.onBranch": "位於 {branch}",
+  "@fileExplorer.git.size.onBranch": {
+    "sourceHash": "b94a28d"
+  },
+  "fileExplorer.git.tooltip.branches": "{count, plural, other {這個存放庫裡有 {countText} 個分支}}",
+  "@fileExplorer.git.tooltip.branches": {
+    "sourceHash": "a3372d8"
+  },
+  "fileExplorer.git.tooltip.tags": "{count, plural, other {這個存放庫裡有 {countText} 個標籤}}",
+  "@fileExplorer.git.tooltip.tags": {
+    "sourceHash": "cac35ae"
+  },
+  "fileExplorer.git.tooltip.commits": "{count, plural, other {從 HEAD 可追溯到 {countText} 次提交}}",
+  "@fileExplorer.git.tooltip.commits": {
+    "sourceHash": "4d9cea8"
+  },
+  "fileExplorer.git.tooltip.filesChanged": "{count, plural, other {相比父提交改動了 {countText} 個檔案}}",
+  "@fileExplorer.git.tooltip.filesChanged": {
+    "sourceHash": "9808044"
+  },
+  "fileExplorer.git.tooltip.aheadBehind": "比「{vs}」領先 {ahead, plural, other {{aheadText} 次提交}}，落後 {behind, plural, other {{behindText} 次提交}}",
+  "@fileExplorer.git.tooltip.aheadBehind": {
+    "sourceHash": "2eba558"
+  },
+  "fileExplorer.git.tooltip.taggedCommit": "被標記的提交 {id}",
+  "@fileExplorer.git.tooltip.taggedCommit": {
+    "sourceHash": "39e11d5"
+  },
+  "fileExplorer.git.tooltip.pinnedCommit": "固定在提交 {id}",
+  "@fileExplorer.git.tooltip.pinnedCommit": {
+    "sourceHash": "f80ccba"
+  },
+  "fileExplorer.git.tooltip.stashedOnBranch": "建立於分支「{branch}」",
+  "@fileExplorer.git.tooltip.stashedOnBranch": {
+    "sourceHash": "770565f"
+  },
+  "fileExplorer.git.tooltip.worktreeOnBranch": "已檢出分支「{branch}」",
+  "@fileExplorer.git.tooltip.worktreeOnBranch": {
+    "sourceHash": "5036eb7"
+  },
+  "fileExplorer.git.tooltip.worktreeDetached": "分離狀態，位於 {id}",
+  "@fileExplorer.git.tooltip.worktreeDetached": {
+    "sourceHash": "8455479"
   },
   "fileExplorer.selectionTooltip.selected": "已選取",
   "@fileExplorer.selectionTooltip.selected": {

@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { FileEntry } from '../types'
-    import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
+    import { getCachedIcon, getCachedCustomFolderIcon, iconCacheVersion } from '$lib/icon-cache'
     import { getIsCmdrGold } from '$lib/settings/reactive-settings.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import type { IconName } from '$lib/ui/icons/icon-map'
@@ -20,10 +20,26 @@
     // Subscribe to cache version - this makes getIconUrl reactive
     const _cacheVersion = $derived($iconCacheVersion)
 
-    function getIconUrl(f: FileEntry): string | undefined {
+    // A folder the user assigned a Finder custom icon to still carries the generic
+    // `dir` iconId (the backend defers that `getxattr` off the bulk-listing hot
+    // path), so its icon lands in the cache keyed by PATH instead. Ask for it
+    // first: `iconId` alone would draw the generic folder over an icon
+    // `prefetchCustomFolderIcons` already fetched and cached.
+    // Mirrors that prefetch's own filter — real directories only, symlinks keep
+    // their link-badged glyph.
+    const customFolderIconUrl = $derived.by((): string | undefined => {
         void _cacheVersion // Track cache version for reactivity
-        return getCachedIcon(f.iconId)
-    }
+        if (!file.isDirectory || file.isSymlink) return undefined
+        return getCachedCustomFolderIcon(file.path)
+    })
+
+    // Reads `_cacheVersion` itself rather than leaning on `customFolderIconUrl`:
+    // that stays `undefined` for ~99% of rows, so a cache update wouldn't
+    // propagate through it and the generic icon would never swap in.
+    const iconUrl = $derived.by((): string | undefined => {
+        void _cacheVersion // Track cache version for reactivity
+        return customFolderIconUrl ?? getCachedIcon(file.iconId)
+    })
 
     // Which icon ids get the Cmdr-gold recolor filter. All are folders macOS
     // renders as a plain (accent-tinted) folder shape, so the grayscale-first
@@ -39,7 +55,10 @@
     const isFolderIcon = $derived(
         file.iconId === 'dir' || file.iconId === 'symlink-dir' || file.iconId.startsWith('special:'),
     )
-    const recolorToGold = $derived(isFolderIcon && getIsCmdrGold())
+    // `!customFolderIconUrl` because a custom-icon folder keeps the `dir` iconId,
+    // so `isFolderIcon` is true for it too — without this the filter would repaint
+    // the user's own artwork gold, the one thing the exclusion above forbids.
+    const recolorToGold = $derived(isFolderIcon && !customFolderIconUrl && getIsCmdrGold())
 
     // Git portal icons resolve in the frontend via Lucide instead of going
     // through the OS icon provider. The four IDs are reserved by the
@@ -67,8 +86,8 @@
         <span class="git-icon">
             <Icon name={gitIconName} size={16} />
         </span>
-    {:else if getIconUrl(file)}
-        <img class="icon" class:gold-folder={recolorToGold} src={getIconUrl(file)} alt="" width="16" height="16" />
+    {:else if iconUrl}
+        <img class="icon" class:gold-folder={recolorToGold} src={iconUrl} alt="" width="16" height="16" />
     {:else}
         <!-- Cache miss (cold first launch, or briefly after a theme/accent change clears the cache):
              show the bundled macOS default folder/file icon (from `static/icons/default-*.png`,

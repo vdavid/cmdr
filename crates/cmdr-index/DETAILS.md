@@ -18,10 +18,10 @@ Three reasons, in priority order. When a decision here is ambiguous, resolve it 
 
 1. **No `tauri` in the dependency tree.** The load-bearing property, and exactly the kind that erodes one convenient
    import at a time.
-2. **No user-facing strings produced here.** The index emits typed values; the host renders every word. Two deliberate
-   exceptions, both from `cmdr-fs` rather than this crate: `FileEntry::display_size` (written app-side) and `pluralize`,
-   which builds log lines. `PhaseRecord.trigger` carries pluralized text that the developer debug panel renders, which
-   is acceptable but means "pluralize is purely log-only" isn't a claim to make.
+2. **No user-facing strings produced here.** The index emits typed values; the host renders every word. One deliberate
+   exception, from `cmdr-fs` rather than this crate: `pluralize`, which builds log lines. `PhaseRecord.trigger` carries
+   pluralized text that the developer debug panel renders, which is acceptable but means "pluralize is purely log-only"
+   isn't a claim to make.
 3. **Typed errors everywhere.** No `Box<dyn Error>`, no stringly-typed failure, so a host never string-matches. Two
    named exceptions rather than zero: `IndexError::Internal(Diagnostic)` is the log-only residue for causes no caller
    acts on, and `ReadPool::with_conn` still returns `Result<T, String>`. Both are in `src/indexing/handle/DETAILS.md` §

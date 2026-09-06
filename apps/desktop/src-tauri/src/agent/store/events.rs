@@ -23,6 +23,11 @@ use crate::agent::types::ProposalDecision;
 pub enum ConversationEvent {
     /// The conversation's effective model changed between turns; `model` is the new name.
     ModelChanged { model: String },
+    /// How much of the conversation each message carries changed between turns;
+    /// `chat_memory_tokens` is the newly resolved prompt-token budget
+    /// (`agent::chat::budget`). A number, never a sentence: the rail says it in the user's
+    /// own language, so no English is frozen in `main.db`.
+    ChatMemoryChanged { chat_memory_tokens: usize },
     /// The user answered a proposal this thread produced.
     ///
     /// ⚠️ **Numbers and the group's own display text, never an authored sentence.** This row

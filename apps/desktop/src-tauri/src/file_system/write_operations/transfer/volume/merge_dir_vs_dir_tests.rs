@@ -9,13 +9,14 @@
 //! `InMemoryVolume` pairs + `CollectorEventSink`, so the whole stack (preflight,
 //! the serial/concurrent split, `copy_directory_streaming`, the resolver) runs
 //! exactly as in production. Shared fixtures `make_state` / `make_volumes` live in
-//! `volume/copy_tests.rs` (`super::tests`). Per-file conflict resolution inside a
+//! `volume/copy_tests/` (`super::tests`). Per-file conflict resolution inside a
 //! merge is `volume/merge_tests.rs`.
 
 use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::volume::Volume;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+use crate::file_system::write_operations::transfer::conflict_responder_test_support::ConflictResponderSink;
 use crate::file_system::write_operations::types::ConflictResolution;
 
 // ============================================================================
@@ -102,10 +103,15 @@ async fn dir_vs_dir_never_prompts_top_level_or_deep_under_every_policy() {
 // ============================================================================
 
 /// A source SUBDIRECTORY clashing with a same-named dest FILE is a type
-/// mismatch, NOT a dir-vs-dir merge: it routes through the resolver. Under
-/// Overwrite the dest file is replaced by the incoming directory; the dest-only
-/// sibling survives. Pins the `dir_clashes_with_file` branch (source-dir-vs-
-/// dest-file) distinct from the dir-vs-dir recurse path.
+/// mismatch, NOT a dir-vs-dir merge: it routes through the resolver. Under an
+/// Overwrite answered on the prompt for THAT pair the dest file is replaced by
+/// the incoming directory; the dest-only sibling survives. Pins the
+/// `dir_clashes_with_file` branch (source-dir-vs-dest-file) distinct from the
+/// dir-vs-dir recurse path.
+///
+/// Answered rather than policy-driven: a BLANKET Overwrite refuses a cross-type
+/// clash (`../../conflict.rs::blanket_resolution_across_types`), so the policy
+/// would Skip and this branch would never run.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn source_dir_over_dest_file_overwrite_replaces_file_with_dir() {
     let (source, dest) = make_volumes();
@@ -124,9 +130,9 @@ async fn source_dir_over_dest_file_overwrite_replaces_file_with_dir() {
         .unwrap();
 
     let state = make_state();
-    let events = Arc::new(CollectorEventSink::new());
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Overwrite, false));
     let config = VolumeCopyConfig {
-        conflict_resolution: ConflictResolution::Overwrite,
+        conflict_resolution: ConflictResolution::Stop,
         progress_interval_ms: 0,
         ..VolumeCopyConfig::default()
     };
@@ -158,6 +164,7 @@ async fn source_dir_over_dest_file_overwrite_replaces_file_with_dir() {
     // `inner.txt` is 9 bytes ("SRC-inner"). Asserting the exact total pins that
     // branch's accumulation (a `*=`/`-=` corruption would zero/wrap it).
     let total = events
+        .inner
         .complete
         .lock()
         .unwrap()

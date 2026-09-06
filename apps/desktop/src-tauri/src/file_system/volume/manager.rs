@@ -11,12 +11,21 @@ use std::path::Path;
 use std::sync::{Arc, LazyLock, Mutex, RwLock};
 
 mod archive_routing;
+mod git_routing;
+
+/// Which volume serves a path: `resolve` and what it answers.
+mod routing;
 
 /// The mount-root set an ID owns, and the promotion rules over it.
 mod roots;
 
 use roots::Registration;
 pub use roots::{RootRemoval, StaleRootOutcome, is_stale_mount_errno};
+#[allow(
+    unused_imports,
+    reason = "ResolvedVolume is `resolve`'s return type: named by rustdoc and by any site that binds it, even where today's callers only read its fields"
+)]
+pub use routing::{ResolvedVolume, RoutedKind, path_routes_over_its_parent};
 
 #[cfg(test)]
 pub(crate) mod test_support;
@@ -32,8 +41,12 @@ pub struct VolumeManager {
     default_volume_id: RwLock<Option<String>>,
     /// Registration recency of the on-demand `ArchiveVolume`s (front = oldest).
     /// A value store: recovering on poison is safe (a lost reorder at worst
-    /// evicts slightly early). See [`Self::touch_archive_lru`].
+    /// evicts slightly early). See [`routing::touch_routed_lru`].
     archive_lru: Mutex<VecDeque<String>>,
+    /// The same, for the on-demand `GitPortalVolume`s. Separate from the
+    /// archive LRU on purpose: browsing a folder full of zips must not evict
+    /// the portal of the repo the other pane is sitting in.
+    git_portal_lru: Mutex<VecDeque<String>>,
     /// Who wants to hear that a volume has become available. See
     /// [`Self::on_volume_arrival`].
     arrival_listeners: RwLock<Vec<VolumeArrivalListener>>,
@@ -103,6 +116,7 @@ impl VolumeManager {
             volumes: RwLock::new(HashMap::new()),
             default_volume_id: RwLock::new(None),
             archive_lru: Mutex::new(VecDeque::new()),
+            git_portal_lru: Mutex::new(VecDeque::new()),
             arrival_listeners: RwLock::new(Vec::new()),
         }
     }
@@ -425,30 +439,6 @@ mod tests {
 
         manager.unregister("test");
         assert!(manager.default_volume().is_none());
-    }
-
-    #[test]
-    fn mount_id_for_path_returns_longest_non_root_ancestor() {
-        use crate::file_system::LocalPosixVolume;
-
-        let manager = VolumeManager::new();
-        manager.register("root", Arc::new(LocalPosixVolume::new("Root", "/")));
-        manager.register("ext", Arc::new(LocalPosixVolume::new("Ext", "/Volumes/X")));
-        manager.register("nested", Arc::new(LocalPosixVolume::new("Nested", "/Volumes/X/Y")));
-
-        // A path under the external mount routes to it, never to `root`.
-        assert_eq!(manager.mount_id_for_path("/Volumes/X/sub").as_deref(), Some("ext"));
-        // A nested mount wins over its parent (longest ancestor).
-        assert_eq!(
-            manager.mount_id_for_path("/Volumes/X/Y/deep").as_deref(),
-            Some("nested")
-        );
-        // The mount root itself matches.
-        assert_eq!(manager.mount_id_for_path("/Volumes/X").as_deref(), Some("ext"));
-        // A component-boundary sibling is NOT a false prefix hit.
-        assert_eq!(manager.mount_id_for_path("/Volumes/XY/z"), None);
-        // A boot-disk path matches only `root` (skipped) → None.
-        assert_eq!(manager.mount_id_for_path("/Users/me"), None);
     }
 
     #[test]

@@ -15,6 +15,7 @@ import {
   type ExecuteCommand,
   type FocusFileViewer,
   type ForegroundOperation,
+  type MouseNavDirection,
   type OpenFileViewer,
   type OpenSettings,
   type PersistRestrictedSetting,
@@ -202,5 +203,18 @@ export function onRevealPath(handler: (payload: RevealPath) => void): Promise<Un
 export function onPersistRestrictedSetting(handler: (payload: PersistRestrictedSetting) => void): Promise<UnlistenFn> {
   return events.persistRestrictedSetting.listen((event) => {
     handler(event.payload)
+  })
+}
+
+/**
+ * A back / forward navigation gesture (a mouse's X1/X2 side button, or the swipe
+ * a Logi Options+ mouse substitutes for it) finished over the main window. macOS
+ * only, from the AppKit event monitor in `mouse_nav.rs`, which is the only way
+ * either shape arrives there. On Linux the DOM path in `routes/(main)/mouse-nav.ts`
+ * reads the buttons straight off the event. Both ends dispatch the same bus command.
+ */
+export function onMouseNav(handler: (direction: MouseNavDirection) => void): Promise<UnlistenFn> {
+  return events.mouseNav.listen((event) => {
+    handler(event.payload.direction)
   })
 }

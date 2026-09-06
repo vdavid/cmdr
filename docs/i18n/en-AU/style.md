@@ -61,6 +61,11 @@ All verified in the pile, all absent from Cmdr's catalog. Fork them if the copy 
 - The cancelled-rollback toast (`fileOperations.cancelRollback.*`) forks nothing here either; its vocabulary is
   dialect-neutral, `stagedLeftover.*` included. Same reading as `docs/i18n/en-GB/style.md` § The fork test, reached
   independently.
+- The "Open terminal here" setting (`settings.behavior.openTerminalHereApp.*`,
+  `settings.navigationAndFileOps.card.terminal`, 8 keys) forks nothing: `terminal`, `app`, `Mac`, `Choose`, `Checking`,
+  and `hint` are dialect-neutral, and Australian Finder spells `Open in Terminal` and `Choose Application…` exactly as
+  base `en` does (`_ignored/i18n/en-AU/macOS/Finder/LocalizableMerged.json`, `N67` and `N137`, 2026-09-05). Nothing here
+  is in reach of the `Deselect`/`Unselect` or compound-splitting rules above.
 
 ## Claims about `en-AU` that are WRONG
 

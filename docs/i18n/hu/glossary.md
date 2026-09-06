@@ -64,7 +64,12 @@ Settled while translating `errors.json` (second pass, 2026-06-21):
   ("**{full_disk_access}** jogosultság").
 - handle (open file handle): `leíró` ("nyitott leíró") · descriptive · tentative.
 - git terms kept verbatim per the en `@key` do-not-translate notes: `git`, `worktree`, `commit`, `blob`, `repó` (repo).
-  "working tree" = `munkafa`; "bare repo" = `csupasz repó`; "git browser" (Cmdr feature) = `git böngésző`.
+  "working tree" = `munkafa`; "bare repo" = `csupasz repó`; "git browser" (Cmdr feature) = `git böngésző`. The verbatim
+  `worktree` covers every key naming git's linked checkout, the git-portal ones included
+  (`errors.git.orphanedWorktree.*`, `settings.fileExplorer.git.showVirtualGitPortal.description`,
+  `fileExplorer.git.size.linkedWorktrees` = `{countText} csatolt worktree`); `munkafa` is only for the generic "working
+  tree" in `errors.git.bareRepo`, `blobTooLarge`, and `gitDirPermissionDenied`. "working directory" stays the separate
+  `munkakönyvtár`. Suffixes attach with a hyphen (`worktree-eket`), as for other consonant-final loanwords.
 - cloud mount (`cmVolumes.displayName`, descriptive not a brand): `Felhőcsatolás` · descriptive · tentative.
 - your cloud provider (`genericCloudStorage.displayName`): `a felhőszolgáltatód` · descriptive · high.
 
@@ -764,13 +769,13 @@ Settled while translating the network-drive image-indexing feature (`settings.me
 `alwaysIndex*` internals in `settings.json`, `search.imageResults.networkOff`/`.paused` in `search.json`, 2026-07-13):
 
 - **photo vs image — MIRROR the EN split: `fotó` (photo) / `kép` (image).** The EN copy deliberately alternates: the
-  settings CARD and global toggle say "image" (already shipped `settings.mediaIndex.card` = `Képkeresés`,
-  `enabled.label` = `Képek tartalmának indexelése`), while the per-network-drive user strings say "photos" (a NAS holds
-  photos). So user-facing per-drive strings and status lines use `fotó` (`fotók`, `fotói`, `fotóarchívum`), and the
-  feature/section-level and INTERNAL developer labels keep `kép`/`képindexelés` (image indexing). `fotó` is Tier-1
-  attested (macOS Photos app = `Fotók`); `kép` is settled (macOS AppKit "Image" = `Kép`). EN itself mixes the two even
-  within one sentence (`search.imageResults.networkOff` = "image indexing … its photos"), so mirroring is faithful, not
-  drift · high.
+  settings SECTION and global toggle say "image" (`settings.section.imageIndexing` = `Képek indexelése`,
+  `settings.mediaIndex.enabled.label` = `Képek tartalmának indexelése`), while the per-network-drive user strings say
+  "photos" (a NAS holds photos). So user-facing per-drive strings and status lines use `fotó` (`fotók`, `fotói`,
+  `fotóarchívum`), and the feature/section-level and INTERNAL developer labels keep `kép`/`képindexelés` (image
+  indexing). `fotó` is Tier-1 attested (macOS Photos app = `Fotók`); `kép` is settled (macOS AppKit "Image" = `Kép`). EN
+  itself mixes the two even within one sentence (`search.imageResults.networkOff` = "image indexing … its photos"), so
+  mirroring is faithful, not drift · high.
 - network drive → `hálózati meghajtó` · macOS (`Hálózati meghajtó`, Tier 1) + settled `drive → meghajtó` · high.
 - image indexing (the feature, internal labels) → `képindexelés` (transparent compound `kép`+`indexelés`, parallel to
   `fájlindexelés`); "Network drive image indexing" = `Hálózati meghajtók képindexelése` · high.
@@ -877,8 +882,8 @@ Settled while translating the image-index indicator badges (`fileExplorer.imageI
   deliberate-user-exclusion term `kizár`/`kizárva` (settled for `settings.mediaIndex.excludedFolders` = `Kizárt mappák`)
   would over-claim. `szerepel` = to appear/be included; `képkeresés` inessive `-ben` (front) · high. Distinct on purpose
   from the folder-level `imageIndex.excluded` (deliberate exclusion) which stays `kizárva`.
-- **image search (feature) → `Képkeresés`** · REUSED verbatim from the already-shipped `settings.mediaIndex.card` /
-  `settings.section.imageSearch` = `Képkeresés` · high. Don''t fork it.
+- **image search (feature) → `Képkeresés`** · the catalog's one term wherever the feature is named
+  (`fileExplorer.imageIndex.drive.off` = `A képkeresés ki van kapcsolva ehhez a meghajtóhoz.`) · high. Don''t fork it.
 - **drive image-search dot aria (`drive.ariaLabel`) → `Meghajtó képkeresési állapota`** · parallels the sibling
   index-status dot `fileExplorer.navigation.driveIndex.ariaLabel` = `Meghajtó indexállapota` (same nominal, no-article,
   no-"this" shape; the two dots sit adjacent) · high. `drive.off` "Image search is off for this drive." =
@@ -2332,3 +2337,50 @@ célhelyen van).
   szomszédos gomb saját felirata (`fileOperations.button.cancel`), így ragozás nélkül áll a mondatban · `high`.
 - A `Cmdrt` tárgyeset a márkanév kiejtés szerinti ragozása (style.md); nincs `sameAsSourceJustification`, és egyik érték
   sem tartalmaz aposztrófot.
+
+## A „Terminál megnyitása itt” és az appválasztója (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Új felület: egy kártya a `Viselkedés > Navigáció és fájlműveletek` alatt, ahol a parancs által indított terminálapp áll.
+A listát a macOS építi; itt csak a feliratok fordulnak.
+
+- **terminal (az appfajta) → `terminál`; Terminal (az Apple appja) → `Terminal`** · a magyar macOS megtartja az angol
+  nevet (`Megnyitás a Terminalban`, `N67` kulcs a `macOS/Finder/LocalizableMerged.json`-ban), a köznévre viszont a
+  Microsoft-terminológia `terminál`-t ad (`HUN`) · `high`. A kártyacím ezért `Terminál`; a `glossary.md` korábbi „kept
+  verbatim `Terminal`” sora a tulajdonnévre vonatkozik, és itt fut a kettő közti határ.
+- **Open terminal here (a parancs neve) → `Terminál megnyitása itt`** · az Apple `Megnyitás a Terminalban` mintájára,
+  köznévi `terminál`-lal · `high`. A parancs saját fordításának (menü, parancspaletta) pontosan ezt kell használnia.
+- **Choose an app… → `App kiválasztása…`** · az Apple `Choose Application…` (`N137`) `Alkalmazás kiválasztása…`-t ad;
+  `app`, mert a katalógus végig azt írja · `high`.
+- **terminal app → `terminálapp`** · egybeírt összetétel · `high`. Egyik érték sem tartalmaz aposztrófot.
+
+## `Sort by relevance`: a találati oszlop elemleírása (`fileExplorer.columns.sortByRelevance`)
+
+Új felület: a keresési találatokat mutató panel aktív oszlopfejlécének elemleírása. A következő kattintás visszaállítja
+a keresőmotor saját sorrendjét, elöl a legjobb találattal.
+
+- **relevance (mennyire illik egy találat a keresésre) → `relevancia`** · az Apple WorkflowKitje
+  (`Relevance (WFSearchSortOrder)` → `Relevancia`), amely pontosan ugyanezt a fogalmat, egy keresési rendezési sorrendet
+  nevezi meg · `tentative`. Az Apple magyar katalógusai négyfélét mondanak, közös szótő nélkül: `Relevancia`
+  (WorkflowKit), `Fontosság` (Automator), `Találati pontosság` (AppStoreKit), `Témábavágóság` (Zene és TV), ezért marad
+  `tentative`. A `relevancia` mellett szól, hogy a magyar felületek bevett szava a találati jóságra, és egyedül ez a
+  fogalmat nevezi meg, nem egy szomszédosat (fontosság, pontosság). (macOS 26.6.2, 25G83 verzión ellenőrizve, a
+  mellékelt honosítások `plutil`-kiírásával, 2026-09-06)
+- **A mondat kerete → `Rendezés relevancia szerint`** · pontosan a `commands.json` testvérkulcsainak mintája
+  (`Rendezés név szerint`, `Rendezés méret szerint`) · `high`. Nincs `sameAsSourceJustification`, és nincs aposztróf az
+  értékben.
+
+## `Documents and packages`: az új OOXML-sor (`settings.archives.ooxml.*`)
+
+Új felület: egy sor ugyanabban a kártyában, ahol a `Zip archívumok` áll, az `Alkalmazáscsomagok` kártya fölött.
+Szándékosan MINDKETTŐT lefedi: az Office-dokumentumokat (.docx, .xlsx, .pptx) és az alkalmazáscsomagokat (.jar, .apk),
+ezért már az angol sem nevezi meg az Office-t.
+
+- **documents (a fájlfajta) → `Dokumentumok`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Dokumentumok`; fájlfajták
+  `RTF-dokumentum`, `Egyszerű szöveges dokumentum`) · `high`.
+- **packages (általánosan, nem csak alkalmazások) → `csomagok`** · macOS Finder `Csomag tartalmának megjelenítése`, és a
+  glosszárium `app bundle / package → csomag` bejegyzése · `high`. Szándékosan a puszta `csomagok`, hogy a sor tágabb
+  maradjon, mint az alatta lévő `Alkalmazáscsomagok` kártya — ugyanaz a szétválasztás, amit az angol csinál a `packages`
+  és az `app bundles` között.
+- **A mondat kerete → `Mit tesz az Enter egy …, … vagy … fájlon.`** · pontosan a testvérkulcsok
+  (`settings.archives.zip.description`, `settings.archives.bundle.description`) kerete · `high`. Nincs aposztróf az
+  értékben.

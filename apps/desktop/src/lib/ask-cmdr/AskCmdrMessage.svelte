@@ -136,6 +136,12 @@
     <div class="msg model-change" role="status">
         {tString('askCmdr.event.modelChanged', { model: message.model })}
     </div>
+{:else if message.kind === 'chatMemoryChange'}
+    <!-- A timeline line beside the model one: from here on, each message carries a
+         different amount of the chat. The backend sends a number; the sentence is ours. -->
+    <div class="msg model-change" role="status">
+        {tString('askCmdr.event.chatMemoryChanged', { tokens: message.chatMemoryTokens })}
+    </div>
 {:else if message.kind === 'contextTrimmed'}
     <!-- A timeline line: older lookups left the model's context so this turn fit its budget,
          so the reply that follows saw less than the whole chat. -->

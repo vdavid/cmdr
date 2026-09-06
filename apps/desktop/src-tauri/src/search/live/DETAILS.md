@@ -21,8 +21,9 @@ What survives the flattening, and why each half matters:
   a different transport: walking is coverage work, and coverage work outlives the query that asked for it.
 
 The wait comes from the tool's `maxWaitSeconds` (`AGENT_WAIT_DEFAULT` 20 s, `AGENT_WAIT_MAX` 120 s). It's a transport
-knob: it says how much of the walk to wait for, never whether to walk. The MCP reply renders the typed coverage signal
-above the results (`mcp/executor/search.rs::coverage_note`), including the two unreadable lists.
+knob: it says how much of the walk to wait for, never whether to walk. The MCP reply carries the typed coverage signal
+as its own `coverage` block, with an authored sentence per cause beside it in `notes`
+(`mcp/executor/search/result.rs`), including the two unreadable lists.
 
 
 ## What a run says it's doing

@@ -173,6 +173,31 @@ describe('loadPersistedState on a first run', () => {
     expect(commands.pathExists).not.toHaveBeenCalledWith('~/Downloads')
   })
 
+  it('brings a tab left on a search-results pane back on a real volume', async () => {
+    // Search snapshots are in-memory and per-session, so `search-results://sr-3`
+    // names nothing after a relaunch. Restoring the tab with that volume id
+    // intact would hand `FilePane` the search-results KIND with no snapshot
+    // behind it, and the window would come up on the "no longer available" pane
+    // with no listing to navigate. What saves it is that `resolveVolumeId` trusts
+    // the stored id for `network` alone and re-derives every other tab's volume
+    // from its PATH, which `loadPaneTabs` has already walked back to a real
+    // folder. ❌ Don't add a `search-results` arm to that `network` exemption.
+    appStatus.hasPersistedPaneState.mockResolvedValue(true)
+    appStatus.loadPaneTabs.mockImplementation((side: 'left' | 'right') => {
+      const paneTabs = freshPaneTabs(side)
+      // What `loadPaneTabs` hands back: the path already fell back to `~`
+      // (nothing answers a `search-results://` path), the volume id did not.
+      paneTabs.tabs[0].volumeId = 'search-results'
+      paneTabs.tabs[0].path = '~'
+      return Promise.resolve(paneTabs)
+    })
+
+    const state = await initialize()
+
+    expect(getActiveTab(state.leftTabMgr).volumeId).toBe('root')
+    expect(getActiveTab(state.rightTabMgr).volumeId).toBe('root')
+  })
+
   it('lets an E2E fixture path win over the layout', async () => {
     isE2eRun.mockReturnValue(true)
     commands.getE2eStartPath.mockResolvedValue('/tmp/fixture')

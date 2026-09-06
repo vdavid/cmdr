@@ -393,6 +393,7 @@ impl From<AiError> for AgentLlmError {
             AiError::Timeout => AgentLlmError::Timeout,
             AiError::AuthFailed(detail) => AgentLlmError::AuthFailed(detail),
             AiError::RateLimited(detail) => AgentLlmError::RateLimited(detail),
+            AiError::NotFound(detail) => AgentLlmError::Provider(detail),
             AiError::EmptyResponse => AgentLlmError::Provider("the model returned no text".to_string()),
             AiError::ServerError(detail) => AgentLlmError::Provider(detail),
             AiError::ParseError(detail) => AgentLlmError::Provider(detail),
@@ -718,6 +719,10 @@ mod tests {
         );
         assert!(matches!(
             AgentLlmError::from(AiError::EmptyResponse),
+            AgentLlmError::Provider(_)
+        ));
+        assert!(matches!(
+            AgentLlmError::from(AiError::NotFound("no such model".into())),
             AgentLlmError::Provider(_)
         ));
         assert!(matches!(

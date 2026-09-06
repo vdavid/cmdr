@@ -61,6 +61,52 @@ pub trait IndexNotifier: Send + Sync {
     /// Reconnecting does NOT make a stale index fresh again; only a rescan does.
     /// This asks the index to resume, not to forget the gap it was told about.
     fn resume_after_reconnect(&self, volume_id: &str);
+
+    /// Live watching on every storage of `device_id` broke at once, and here's
+    /// how.
+    ///
+    /// The device twin of [`watch_gap`](Self::watch_gap), for a backend whose
+    /// one session carries several volumes: an MTP phone opens a single PTP
+    /// session per device, so a reset invalidates each storage on it together.
+    /// ❌ Don't loop [`watch_gap`](Self::watch_gap) over the device's volumes
+    /// instead — which volumes a device carries is the host's list, and a dead
+    /// session is exactly when the backend can no longer enumerate it.
+    ///
+    /// Same cheap, idempotent, report-blindly contract as
+    /// [`watch_gap`](Self::watch_gap), and the same no-op default as the two
+    /// object methods below.
+    fn device_watch_gap(&self, device_id: &str, gap: WatchGap) {
+        let _ = (device_id, gap);
+    }
+
+    /// One object on `device_id` appeared or changed, named by the bare protocol
+    /// handle the device reported.
+    ///
+    /// For a device backend whose events name an opaque handle rather than a
+    /// path: an MTP phone reports `ObjectAdded { handle }` and says nothing about
+    /// which storage it lives in or what it's called. ❌ Don't resolve it first —
+    /// that's a round trip per event, and the index may be mid-walk and about to
+    /// read the object anyway, so it owns the routing and the
+    /// gate-before-resolve decision.
+    ///
+    /// Keyed by DEVICE, not by volume, because one session carries every storage
+    /// on the phone and the handle namespace spans them all.
+    ///
+    /// Defaults to doing nothing: a host with no device index has nowhere to put
+    /// this, and a backend must be able to report blindly.
+    fn device_object_changed(&self, device_id: &str, handle: u32) {
+        let _ = (device_id, handle);
+    }
+
+    /// One object on `device_id` is gone, named by the handle it had.
+    ///
+    /// Costs the index no round trip: the object no longer exists to be asked
+    /// about, so each indexed storage matches on the handle it stored. Same
+    /// device-level keying and same no-op default as
+    /// [`device_object_changed`](Self::device_object_changed).
+    fn device_object_removed(&self, device_id: &str, handle: u32) {
+        let _ = (device_id, handle);
+    }
 }
 
 /// Nothing is indexed, so nothing needs telling.
@@ -86,7 +132,10 @@ mod recording {
     #[derive(Default)]
     pub struct RecordingIndexNotifier {
         gaps: Mutex<Vec<(String, WatchGap)>>,
+        device_gaps: Mutex<Vec<(String, WatchGap)>>,
         resumes: Mutex<Vec<String>>,
+        objects_changed: Mutex<Vec<(String, u32)>>,
+        objects_removed: Mutex<Vec<(String, u32)>>,
     }
 
     impl RecordingIndexNotifier {
@@ -100,9 +149,27 @@ mod recording {
             self.gaps.lock_ignore_poison().clone()
         }
 
+        /// Every device-wide gap reported so far, in order. Kept apart from
+        /// [`gaps`](Self::gaps) on purpose: a backend that reported per volume
+        /// where it meant per device would leave the device's other storages
+        /// claiming to be fresh.
+        pub fn device_gaps(&self) -> Vec<(String, WatchGap)> {
+            self.device_gaps.lock_ignore_poison().clone()
+        }
+
         /// Every volume a resume was requested for, in order.
         pub fn resumes(&self) -> Vec<String> {
             self.resumes.lock_ignore_poison().clone()
+        }
+
+        /// Every `(device_id, handle)` reported as appeared-or-changed, in order.
+        pub fn device_objects_changed(&self) -> Vec<(String, u32)> {
+            self.objects_changed.lock_ignore_poison().clone()
+        }
+
+        /// Every `(device_id, handle)` reported as gone, in order.
+        pub fn device_objects_removed(&self) -> Vec<(String, u32)> {
+            self.objects_removed.lock_ignore_poison().clone()
         }
     }
 
@@ -111,8 +178,24 @@ mod recording {
             self.gaps.lock_ignore_poison().push((volume_id.to_string(), gap));
         }
 
+        fn device_watch_gap(&self, device_id: &str, gap: WatchGap) {
+            self.device_gaps.lock_ignore_poison().push((device_id.to_string(), gap));
+        }
+
         fn resume_after_reconnect(&self, volume_id: &str) {
             self.resumes.lock_ignore_poison().push(volume_id.to_string());
+        }
+
+        fn device_object_changed(&self, device_id: &str, handle: u32) {
+            self.objects_changed
+                .lock_ignore_poison()
+                .push((device_id.to_string(), handle));
+        }
+
+        fn device_object_removed(&self, device_id: &str, handle: u32) {
+            self.objects_removed
+                .lock_ignore_poison()
+                .push((device_id.to_string(), handle));
         }
     }
 }

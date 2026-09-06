@@ -69,6 +69,10 @@ export type RailMessage =
   | { kind: 'proposalDecisions'; id: number | null; decisions: ProposalDecision[] }
   /** A timeline line marking that the thread's effective model changed between turns. */
   | { kind: 'modelChange'; model: string }
+  /** A timeline line marking that the chat memory size changed between turns, so every reply
+   * after it carries a different amount of the conversation. A NUMBER from the backend: the
+   * rail owns the sentence around it. */
+  | { kind: 'chatMemoryChange'; chatMemoryTokens: number }
   /** A timeline line marking that older lookups left the model's context so this turn would
    * fit its budget: the reply was written with less than the whole chat in view. Live-stream
    * only — it describes one turn's assembly, so history doesn't replay it. */

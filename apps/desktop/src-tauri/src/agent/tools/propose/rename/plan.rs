@@ -101,6 +101,33 @@ pub(super) fn refusal_content(refusal: &ProposalRefusal) -> Value {
     }
 }
 
+/// One refusal as a log line: which typed variant, and enough of the offending rows to work
+/// from. Reads the variant, never the wording, and names paths (the log already carries them
+/// freely) without the proposed NAMES, which is where a model's reading of file contents would
+/// sit.
+pub(super) fn refusal_reason(refusal: &ProposalRefusal) -> String {
+    match refusal {
+        ProposalRefusal::Problem(error) => error.message.clone(),
+        ProposalRefusal::Evidence(rejections) => {
+            let named: Vec<String> = rejections
+                .iter()
+                .take(MAX_NAMED_ROWS)
+                .map(|r| format!("{} ({:?})", r.source_path, r.problem))
+                .collect();
+            let rest = match rejections.len().saturating_sub(named.len()) {
+                0 => String::new(),
+                more => format!(" and {more} more"),
+            };
+            let count = rejections.len();
+            let noun = if count == 1 { "row" } else { "rows" };
+            format!(
+                "{count} {noun} carried evidence that didn't check out: {}{rest}",
+                named.join(", ")
+            )
+        }
+    }
+}
+
 pub async fn dispatch<R: Runtime>(
     app: &AppHandle<R>,
     scope: EvidenceScope,
@@ -117,14 +144,22 @@ pub async fn dispatch<R: Runtime>(
             },
             proposal: Some(snapshot),
         },
-        Err(refusal) => RenameDispatchOutcome {
-            result: AgentToolResult {
-                call_id: call_id.to_string(),
-                content: refusal_content(&refusal),
-                elided: false,
-            },
-            proposal: None,
-        },
+        Err(refusal) => {
+            // A refused plan stages nothing, and until this line it said so nowhere the user
+            // or a maintainer could see: the panel read "nothing is waiting for you", the log
+            // held only the provider round trips, and characterizing one real report meant
+            // reading the conversation rows out of `main.db`. One line, at the one place a
+            // plan dies.
+            log::warn!(target: "agent::propose", "a rename plan was refused, so nothing was staged: {}", refusal_reason(&refusal));
+            RenameDispatchOutcome {
+                result: AgentToolResult {
+                    call_id: call_id.to_string(),
+                    content: refusal_content(&refusal),
+                    elided: false,
+                },
+                proposal: None,
+            }
+        }
     }
 }
 
@@ -263,6 +298,12 @@ fn describe_rows(violation: &ParamViolation, at: &[usize], total: usize) -> Stri
             let noun = if plural { "parameters" } else { "parameter" };
             format!("{subject} has no {field} {noun}")
         }
+        // A row schema declares no arrays of its own, so nothing here can be hoisted out of
+        // one. Rendered rather than collapsed into `Unknown` so a row schema that grows an
+        // array later still reads honestly.
+        ParamViolation::Misplaced { property, rows } => {
+            format!("{subject} has no {property} parameter; each {rows} row takes {property}")
+        }
     }
 }
 
@@ -345,8 +386,16 @@ fn build_draft<R: Runtime>(
                 "Every source must be in the focused pane's effective scope.",
             ));
         }
-        if cmdr_archive::archive_boundary_candidate(Path::new(&rename.source_path)).is_some() {
+        if is_archive_inner_path(&rename.source_path) {
             return Err(invalid_params("Rename plans can't include files inside an archive."));
+        }
+        // A repo's snapshots are read-only for the same reason: `.git/branches/…` has
+        // no file to rename. Asked separately from the archive line above, which is
+        // a different question (a portal path has no archive suffix to find).
+        if crate::file_system::git::wiring::portal_serves(Path::new(&rename.source_path)) {
+            return Err(invalid_params(
+                "Rename plans can't include files inside a repository's history.",
+            ));
         }
         // One group is one `start_bulk_rename` call, and that executor refuses a row whose
         // source and destination parents differ — so the group binds ONE parent folder, and a
@@ -399,6 +448,24 @@ pub(super) fn check_row_evidence(
         }
     }
     if rejections.is_empty() { Ok(()) } else { Err(rejections) }
+}
+
+/// Whether `source_path` names something strictly INSIDE an archive, which a
+/// rename plan has to refuse: an archive-inner path has no file on disk for the
+/// bulk-rename executor to touch.
+///
+/// The archive FILE itself is not that. `/photos/trip.zip` is an ordinary file
+/// and renaming it is an ordinary rename, so this asks the same narrow question
+/// `cmdr_archive::path_is_inside_archive` does (a non-empty inner path) rather
+/// than merely finding an archive-suffixed component. Purely lexical, no I/O:
+/// validation runs per row and shouldn't stat.
+///
+/// Load-bearing now that `.docx` is a browsable container: the wide question
+/// would refuse a bulk rename of every Office document in a folder, which is one
+/// of the things people most want bulk rename FOR.
+pub(super) fn is_archive_inner_path(source_path: &str) -> bool {
+    cmdr_archive::archive_boundary_candidate(Path::new(source_path))
+        .is_some_and(|(_archive, inner)| !inner.as_os_str().is_empty())
 }
 
 /// A model may invent a filename that is not in the pane cache. Keep that row

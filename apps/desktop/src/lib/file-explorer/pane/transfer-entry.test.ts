@@ -122,6 +122,22 @@ describe('checkTransferDestinationGuard', () => {
     expect(result.alert.title).toBe('Read-only device')
   })
 
+  it('blocks a virtual `.git` portal destination with the read-only-portal alert', () => {
+    // A snapshot of git history has no directory behind it to land a paste in.
+    // The dest volumeId is the writable parent drive, so the PATH decides.
+    const result = checkTransferDestinationGuard('root', [ROOT], '/Users/me/repo/.git/branches/main/src')
+    expect(result.ok).toBe(false)
+    if (result.ok || !result.alert) throw new Error('expected a blocking alert')
+    expect(result.alert.title).toBe('Read-only git portal')
+  })
+
+  it('allows a REAL folder under `.git` as a destination', () => {
+    // `.git/` stays writable outside the six virtual categories: pasting into
+    // `.git/refs/heads` is an ordinary local write.
+    const result = checkTransferDestinationGuard('root', [ROOT], '/Users/me/repo/.git/refs/heads')
+    expect(result.ok).toBe(true)
+  })
+
   it('allows a writable local destination even when the path merely contains a zip file name', () => {
     // The pane is AT `/Users/me` (which contains `foo.zip` as a row), not inside it.
     const result = checkTransferDestinationGuard('root', [ROOT], '/Users/me')

@@ -7,7 +7,13 @@
     interface Props {
         column: SortColumn
         label: string
-        currentSortColumn: SortColumn
+        /**
+         * The column this pane's rows are currently in, or `null` when they are in
+         * no column's order at all: the search-results pane's RANKED state, where
+         * the engine's ordering is the answer. Every header stays clickable then;
+         * none is active and none draws a caret.
+         */
+        currentSortColumn: SortColumn | null
         currentSortOrder: SortOrder
         onClick: (column: SortColumn) => void
         /** Alignment: 'left' (default), 'right' for numeric columns */
@@ -17,6 +23,14 @@
          * sort this pane. Clicking sorts this pane regardless, so the tooltip text
          * itself always shows. */
         isFocused?: boolean
+        /**
+         * What clicking the ACTIVE column does next, when that is something other
+         * than sorting by it. The search-results pane cycles a third click back to
+         * the engine's ranked order, so its active header says "Sort by relevance"
+         * rather than promising a sort it won't perform. Absent on every pane whose
+         * header only ever toggles a direction.
+         */
+        clearsSortLabel?: string
     }
 
     const {
@@ -27,6 +41,7 @@
         onClick,
         align = 'left',
         isFocused = true,
+        clearsSortLabel,
     }: Props = $props()
 
     const columnToCommandIdMap: Record<SortColumn, CommandId> = {
@@ -44,6 +59,13 @@
     const shortcut = $derived(isFocused ? getFirstShortcutReactive(commandId) : undefined)
 
     const isActive = $derived(column === currentSortColumn)
+    /**
+     * The tooltip names what the NEXT click does. That is normally this column's
+     * sort command; on the active column of a pane that cycles back to an unsorted
+     * state, it's `clearsSortLabel`. The shortcut stays either way, because the key
+     * runs the same cycle the click does.
+     */
+    const tooltipText = $derived(isActive && clearsSortLabel !== undefined ? clearsSortLabel : commandName)
 
     function handleClick() {
         onClick(column)
@@ -64,7 +86,7 @@
     onclick={handleClick}
     onkeydown={handleKeyDown}
     type="button"
-    use:tooltip={{ text: commandName, shortcut }}
+    use:tooltip={{ text: tooltipText, shortcut }}
 >
     <span class="label">{label}</span>
     <span class="sort-indicator" class:invisible={!isActive} aria-hidden="true">
@@ -97,7 +119,7 @@
             color var(--transition-fast);
     }
 
-    .sortable-header:hover {
+    button.sortable-header:hover {
         color: var(--color-text-primary);
         background: var(--color-bg-tertiary);
     }

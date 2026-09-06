@@ -50,6 +50,10 @@ pub struct InMemoryVolume {
     /// path) set it `true` via [`with_local_fs_access`](Self::with_local_fs_access);
     /// remote-backed archive tests leave it `false`.
     local_fs_access: bool,
+    /// What [`Volume::routes_over_a_parent`] reports. Default `false` (a mount of
+    /// its own). Set it `true` via [`routing_over_a_parent`](Self::routing_over_a_parent)
+    /// to stand in for a routed backend without naming a concrete one.
+    routes_over_a_parent: bool,
     /// Log of `read_range(offset, len)` calls, in order. Lets tests assert how
     /// many positioned reads a remote-archive flow issues (e.g. the
     /// central-directory tail-read strategy: one tail read, a second only if the
@@ -85,6 +89,7 @@ pub struct InMemoryVolume {
     /// `AlreadyExists`" need a rename that fails some OTHER way. Default `None`.
     /// Set via [`Self::with_rename_failing`].
     rename_failure: Option<VolumeError>,
+    rename_to_failing: RwLock<HashSet<PathBuf>>, // [`Self::set_rename_to_failing`]
     /// When `true`, [`Volume::create_directory`] returns `NotFound` for the path it
     /// was handed instead of creating it. Models a backend that can't ADDRESS the
     /// destination at all (a share answering `NotFound` for a path outside its
@@ -119,12 +124,14 @@ impl InMemoryVolume {
             space_info: None,
             lane_key: None,
             local_fs_access: false,
+            routes_over_a_parent: false,
             read_range_log: std::sync::Mutex::new(Vec::new()),
             read_range_unsupported: false,
             sibling_duplicates_allowed: false,
             delete_fails: false,
             read_chunk_delay: None,
             rename_failure: None,
+            rename_to_failing: RwLock::new(HashSet::new()),
             create_directory_not_found: false,
             stat_failing: RwLock::new(HashSet::new()),
             smb_connection_state: None,
@@ -196,6 +203,16 @@ impl InMemoryVolume {
         self
     }
 
+    /// Test helper: fails any `rename` whose DESTINATION is `to`, AFTER the
+    /// occupancy check — a destination that refuses a rename onto a name that IS
+    /// free, so a caller which clears the way and retries still can't land. The
+    /// per-path twin of [`Self::with_rename_failing`], which refuses every name
+    /// and so can't exercise a caller reaching for a SECOND one.
+    pub fn set_rename_to_failing(&self, to: &Path) {
+        let normalized = self.normalize(to);
+        self.rename_to_failing.write_ignore_poison().insert(normalized);
+    }
+
     /// Test helper: makes `is_directory` and `get_metadata` FAIL for `path`
     /// (typed `IoError`), rather than reporting it missing. The path keeps
     /// existing for everything else, so a test can put an unanswerable stat in
@@ -208,6 +225,29 @@ impl InMemoryVolume {
     /// Whether `path`'s stat is configured to fail.
     fn stat_fails_for(&self, normalized: &Path) -> bool {
         self.stat_failing.read_ignore_poison().contains(normalized)
+    }
+
+    /// The one stat body behind `get_metadata` and `is_directory`: answers `f`
+    /// over the entry's metadata, `NotFound` for a missing path, and the typed
+    /// `IoError` for a path under [`Self::set_stat_failing`].
+    fn stat_with<T>(&self, path: &Path, f: impl FnOnce(&FileEntry) -> T) -> Result<T, VolumeError> {
+        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
+
+        let normalized = self.normalize(path);
+        if self.stat_fails_for(&normalized) {
+            return Err(VolumeError::IoError {
+                message: format!("Stat unavailable for {}", normalized.display()),
+                raw_os_error: None,
+            });
+        }
+
+        entries
+            .get(&normalized)
+            .map(|e| f(&e.metadata))
+            .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
     }
 
     /// Test helper: overwrites an existing entry's `modified_at` (unix seconds), so
@@ -261,6 +301,18 @@ impl InMemoryVolume {
     /// remote-backed one.
     pub fn with_local_fs_access(mut self) -> Self {
         self.local_fs_access = true;
+        self
+    }
+
+    /// Makes this volume report `routes_over_a_parent() = true`, standing in for
+    /// a read-only volume a route minted over some other volume's storage.
+    ///
+    /// The point of the stub is that it names NO concrete backend: a host's
+    /// "a routed volume is not a mount" rule has to hold for the next routed
+    /// backend too, and a cell written against `ArchiveVolume` or
+    /// `GitPortalVolume` can't say that.
+    pub fn routing_over_a_parent(mut self) -> Self {
+        self.routes_over_a_parent = true;
         self
     }
 
@@ -494,25 +546,7 @@ impl Volume for InMemoryVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-                message: "Lock poisoned".into(),
-                raw_os_error: None,
-            })?;
-
-            let normalized = self.normalize(path);
-            if self.stat_fails_for(&normalized) {
-                return Err(VolumeError::IoError {
-                    message: format!("Stat unavailable for {}", normalized.display()),
-                    raw_os_error: None,
-                });
-            }
-
-            entries
-                .get(&normalized)
-                .map(|e| e.metadata.clone())
-                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
-        })
+        Box::pin(async move { self.stat_with(path, FileEntry::clone) })
     }
 
     fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
@@ -531,25 +565,7 @@ impl Volume for InMemoryVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-                message: "Lock poisoned".into(),
-                raw_os_error: None,
-            })?;
-
-            let normalized = self.normalize(path);
-            if self.stat_fails_for(&normalized) {
-                return Err(VolumeError::IoError {
-                    message: format!("Stat unavailable for {}", normalized.display()),
-                    raw_os_error: None,
-                });
-            }
-
-            entries
-                .get(&normalized)
-                .map(|e| e.metadata.is_directory)
-                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
-        })
+        Box::pin(async move { self.stat_with(path, |metadata| metadata.is_directory) })
     }
 
     fn create_file<'a>(
@@ -698,7 +714,6 @@ impl Volume for InMemoryVolume {
             if let Some(failure) = &self.rename_failure {
                 return Err(failure.clone());
             }
-
             let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
                 message: "Lock poisoned".into(),
                 raw_os_error: None,
@@ -709,6 +724,12 @@ impl Volume for InMemoryVolume {
 
             if !force && from_normalized != to_normalized && entries.contains_key(&to_normalized) {
                 return Err(VolumeError::AlreadyExists(to_normalized.display().to_string()));
+            }
+            if self.rename_to_failing.read_ignore_poison().contains(&to_normalized) {
+                return Err(VolumeError::IoError {
+                    message: format!("rename to {} is configured to fail", to.display()),
+                    raw_os_error: None,
+                });
             }
 
             let mut entry = entries
@@ -940,6 +961,10 @@ impl Volume for InMemoryVolume {
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
         Box::pin(async move { self.space_info.ok_or(VolumeError::NotSupported) })
+    }
+
+    fn routes_over_a_parent(&self) -> bool {
+        self.routes_over_a_parent
     }
 
     fn supports_local_fs_access(&self) -> bool {

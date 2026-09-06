@@ -82,12 +82,12 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 		Why:   "it pairs each member's OWN manifest with that member's tree, so it governs every member that isn't already macOS-only at the crate level",
 	},
 	"desktop-rust-mtp-dropping-timeout": {
-		AppTreeOnly: true,
-		Why:         "scoped to `src/mtp/`, the app-side USB transport; the rule is about that one subsystem's wire protocol",
+		Kinds: []MemberKind{KindApp},
+		Why:   "narrowed further to the two MTP trees (all of `cmdr-mtp` and the app's `src/mtp/`), the one subsystem whose wire protocol this rule is about; a timeout over something that isn't a PTP transaction is just a timeout",
 	},
 	"desktop-rust-mtp-no-transport-reset": {
-		AppTreeOnly: true,
-		Why:         "scoped to `src/mtp/`, same subsystem as mtp-dropping-timeout",
+		Kinds: []MemberKind{KindApp},
+		Why:   "narrowed to the same two MTP trees as mtp-dropping-timeout",
 	},
 	"desktop-fixture-lane-coverage": {
 		AppTreeOnly: true,
@@ -113,9 +113,13 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-webdav-nextcloud":  "`--workspace` via HostCargoLaneArgs, narrowed to one module of `cmdr-webdav`; the cells the shared fixture lane subtracts",
 	"desktop-rust-tests-linux":       "`--workspace` computed for `linux`, since cargo runs in a container",
 	"desktop-bindings-fresh":         "hashes every member's sources and manifest to decide whether to regenerate; the regen itself is `--workspace` via `pnpm bindings:regen`",
-	// Not a coverage lane: one named test against a live endpoint, self-skipping
-	// without a key. It reaches the app crate on purpose and nothing else.
-	"desktop-rust-groq-smoke": "one `--lib` test in the app crate; a targeted smoke, not a sweep (selected via HostCargoLaneArgs so it shares the other lanes' artifacts)",
+	// Not coverage lanes: a handful of named tests against a live endpoint, each
+	// self-skipping without its key. They reach the app crate on purpose and nothing else.
+	"desktop-rust-groq-smoke":      "one `--lib` test module in the app crate; a targeted smoke, not a sweep (selected via HostCargoLaneArgs so it shares the other lanes' artifacts)",
+	"desktop-rust-fireworks-smoke": "one `--lib` test module in the app crate; same shape as the Groq smoke",
+	"desktop-rust-anthropic-smoke": "one `--lib` test module in the app crate; same shape as the Groq smoke",
+	"desktop-rust-openai-smoke":    "one `--lib` test module in the app crate; same shape as the Groq smoke",
+	"desktop-rust-gemini-smoke":    "one `--lib` test module in the app crate; same shape as the Groq smoke",
 }
 
 // memberCoverageRegistry is assigned in init() rather than read from AllChecks
@@ -134,6 +138,7 @@ var rustMetaChecks = map[string]string{
 	"index-crate-isolation":         "it reads the `cargo metadata` graph and counts `cmdr-index`'s public surface; both are about two named crates, not a sweep",
 	"desktop-shipped-locales-fresh": "it regenerates ONE file in the app crate from the message-catalog dirs and diffs it; the inputs are catalog directories, not workspace sources",
 	"desktop-native-strings-fresh":  "same shape as shipped-locales-fresh: it regenerates ONE file in the app crate from the message catalogs and diffs it, so its inputs are catalog files, not workspace sources",
+	"desktop-macos-framework-floor": "it reads a BUILT binary's Mach-O load commands, which is the linked whole rather than any member's sources; every member that contributes a framework link is in it by construction",
 }
 
 // rustCheckClassification is the partition of the Rust checks: each is a cargo

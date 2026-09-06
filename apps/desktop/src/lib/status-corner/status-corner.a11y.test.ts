@@ -92,6 +92,7 @@ vi.mock('$lib/media-index/enabled-volumes', () => ({
 
 import OperationChip from './OperationChip.svelte'
 import OperationFailedToastContent from './OperationFailedToastContent.svelte'
+import OperationFailureToastBody from './OperationFailureToastBody.svelte'
 import OperationFailuresToastContent from './OperationFailuresToastContent.svelte'
 import StatusCorner from './StatusCorner.svelte'
 
@@ -220,6 +221,37 @@ describe('OperationFailedToastContent a11y', () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(OperationFailedToastContent, { target, props: { toastId: 'toast-1', snapshot } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `OperationFailureToastBody.svelte`, the body both failure
+ * notices render. Two states: the title alone (what the summary passes) and the
+ * title with a reason under it (what one failure passes). The glyph is decorative,
+ * so the title's words have to carry the severity on their own.
+ */
+describe('OperationFailureToastBody a11y', () => {
+  function mountBody(children?: ReturnType<typeof createRawSnippet>): HTMLElement {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(OperationFailureToastBody, {
+      target,
+      props: { toastId: 'toast-1', title: 'Copy did not finish', children },
+    })
+    return target
+  }
+
+  it('title only has no a11y violations', async () => {
+    const target = mountBody()
+    await tick()
+    expect(target.querySelector('.glyph')?.getAttribute('aria-hidden')).toBe('true')
+    await expectNoA11yViolations(target)
+  })
+
+  it('with a reason under the title has no a11y violations', async () => {
+    const target = mountBody(createRawSnippet(() => ({ render: () => '<p>There is not enough room on Backup.</p>' })))
     await tick()
     await expectNoA11yViolations(target)
   })

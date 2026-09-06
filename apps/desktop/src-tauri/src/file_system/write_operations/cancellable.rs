@@ -9,6 +9,7 @@
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::mpsc;
 use std::time::Duration;
 
 use super::state::WriteOperationState;
@@ -57,33 +58,13 @@ pub(super) fn run_cancellable<T>(
 where
     T: Send + 'static,
 {
-    use std::sync::mpsc;
-
     let (tx, rx) = mpsc::channel();
 
     std::thread::spawn(move || {
         let _ = tx.send(work());
     });
 
-    loop {
-        if super::state::is_cancelled(&state.intent) {
-            log::debug!("{context}: cancellation detected during polling op={operation_id}");
-            return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
-            });
-        }
-
-        match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
-            Ok(result) => return result,
-            Err(mpsc::RecvTimeoutError::Timeout) => {}
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
-                return Err(WriteOperationError::IoError {
-                    path: context.to_string(),
-                    message: format!("{context} thread terminated unexpectedly"),
-                });
-            }
-        }
-    }
+    await_worker_result(&rx, state, context, operation_id)
 }
 
 /// Scoped variant of [`run_cancellable`] that allows the work closure to borrow
@@ -103,8 +84,6 @@ where
     F: FnOnce() -> Result<T, WriteOperationError> + Send + 'env,
     T: Send + 'env,
 {
-    use std::sync::mpsc;
-
     let (tx, rx) = mpsc::channel();
 
     std::thread::scope(|scope| {
@@ -112,24 +91,37 @@ where
             let _ = tx.send(work());
         });
 
-        loop {
-            if super::state::is_cancelled(&state.intent) {
-                log::debug!("{context}: cancellation detected during polling op={operation_id}");
-                return Err(WriteOperationError::Cancelled {
-                    message: "Operation cancelled by user".to_string(),
+        await_worker_result(&rx, state, context, operation_id)
+    })
+}
+
+/// Waits for the worker's result, checking the cancellation flag between polls.
+///
+/// A worker that hangs up without sending (it panicked) surfaces as an `IoError`
+/// naming the context, so the operation reports instead of waiting forever.
+fn await_worker_result<T>(
+    rx: &mpsc::Receiver<Result<T, WriteOperationError>>,
+    state: &WriteOperationState,
+    context: &str,
+    operation_id: &str,
+) -> Result<T, WriteOperationError> {
+    loop {
+        if super::state::is_cancelled(&state.intent) {
+            log::debug!("{context}: cancellation detected during polling op={operation_id}");
+            return Err(WriteOperationError::Cancelled {
+                message: "Operation cancelled by user".to_string(),
+            });
+        }
+
+        match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
+            Ok(result) => return result,
+            Err(mpsc::RecvTimeoutError::Timeout) => {}
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return Err(WriteOperationError::IoError {
+                    path: context.to_string(),
+                    message: format!("{context} thread terminated unexpectedly"),
                 });
             }
-
-            match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
-                Ok(result) => return result,
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
-                Err(mpsc::RecvTimeoutError::Disconnected) => {
-                    return Err(WriteOperationError::IoError {
-                        path: context.to_string(),
-                        message: format!("{context} thread terminated unexpectedly"),
-                    });
-                }
-            }
         }
-    })
+    }
 }

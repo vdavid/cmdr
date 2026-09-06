@@ -46,6 +46,26 @@ fn is_encrypted(entry: &Entry) -> bool {
     entry.flags & GP_FLAG_ENCRYPTED != 0 || entry.method == Method::Aex
 }
 
+/// The POSIX permission bits this entry recorded, or `None` when it recorded
+/// none.
+///
+/// rc-zip has already decided whether the external attributes hold a unix mode:
+/// it reads them as one only for a Unix or macOS creator, and turns a
+/// Windows/DOS creator's attributes into the `0o666`/`0o777` stand-in that the
+/// DOS read-only flag is the whole of. That stand-in is not a mode anybody
+/// recorded, but it is indistinguishable from one here — which is fine, because
+/// the copy engine folds whatever it gets through the destination's own
+/// creation mode (`transfer/volume/landed_mode.rs`), where `0o666` lands
+/// exactly where a plain new file would.
+///
+/// Only the low nine bits travel. setuid, setgid, and sticky are dropped on
+/// purpose: an archive is untrusted input, and no zip is a good enough reason to
+/// hand a landed file one of those.
+fn recorded_permission_bits(entry: &Entry) -> Option<u32> {
+    let bits = entry.mode.0 & 0o777;
+    (bits != 0).then_some(bits)
+}
+
 /// Parses the central directory into the format-neutral entry list the tree
 /// builder consumes, each paired with its [`ZipHandle`] (the read handle a later
 /// [`open_read`] uses). This is the only I/O in the zip parse path.
@@ -68,6 +88,7 @@ pub(super) fn parse(source: &dyn ArchiveByteSource) -> Result<Vec<(RawEntry, Zip
                 compressed_size: entry.compressed_size,
                 modified: Some(entry.modified.timestamp()),
                 encrypted,
+                mode: recorded_permission_bits(&entry),
             };
             (raw, ZipHandle { entry, ordinal })
         })

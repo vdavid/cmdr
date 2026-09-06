@@ -23,8 +23,8 @@ import type { FileEntry } from '../types'
 import type { Location } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings'
 import { basenameOf, type CanonicalPath } from '$lib/path/canonical'
-import { pathInsideArchive } from './volume-capabilities'
-import { resolveEnterPolicy, parseEnterBehaviorOverrides } from './archive-enter-policy'
+import { pathCrossesArchiveBoundary, pathInsideArchive } from './volume-capabilities'
+import { resolveEnterPolicy, enterBehaviorFromSettings } from './archive-enter-policy'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { resolveLocationOrToast } from '../navigation/navigate-and-select'
 import type { LoadDirectoryArgs } from './types'
@@ -104,16 +104,16 @@ export function createEntryActivation(deps: EntryActivationDeps): EntryActivatio
       await deps.loadDirectory({ path: entry.redirectToPath })
       return
     }
-    // Enter-behavior policy for archives (`.zip`) and macOS bundles (`.app`
-    // etc.). Gate on the PANE's path, not the entry's: `pathInsideArchive` is true
-    // for a `.zip` file ITSELF (its own path crosses the boundary), so gating on
-    // the entry would wrongly skip the archive we want the popup for. Gating on the
-    // current directory skips the policy only when we're already browsing INSIDE an
-    // archive — there the entries are inner items, which keep the viewer interim
-    // below. `browse` falls through to the folder-browse arm; `open` launches;
-    // `ask` shows the Browse | Open | Configure popup.
-    if (!pathInsideArchive(deps.getCurrentPath())) {
-      const action = resolveEnterPolicy(entry, parseEnterBehaviorOverrides(getSetting('behavior.archiveEnterBehavior')))
+    // Enter-behavior policy for archives (`.zip`), OOXML documents (`.docx`), and
+    // macOS bundles (`.app` etc.). Gate on the PANE's path, not the entry's, and
+    // with the WIDE check: a pane sitting AT `/a/foo.zip` is already showing the
+    // archive's contents, so the policy has had its say and the entries below are
+    // inner items, which keep the viewer interim below. Gating on the entry
+    // instead would skip the very archive we want the popup for. `browse` falls
+    // through to the folder-browse arm; `open` launches; `ask` shows the
+    // Browse | Open | Configure popup.
+    if (!pathCrossesArchiveBoundary(deps.getCurrentPath())) {
+      const action = resolveEnterPolicy(entry, enterBehaviorFromSettings(getSetting))
       if (action) {
         // From search results, opening any real entry must switch to its real
         // volume first (no popup on the snapshot pane — mirrors the arms below).
@@ -145,10 +145,15 @@ export function createEntryActivation(deps: EntryActivationDeps): EntryActivatio
       }
       await browseIntoEntry(entry)
     } else if (pathInsideArchive(entry.path)) {
+      // The NARROW check: only a path with a real inner part is unopenable. An
+      // archive FILE reaching here would be openable, though it never does — the
+      // `isArchive` arm above catches it first.
       // A file INSIDE an archive can't be opened by the OS default app: the
       // inner path doesn't exist on disk, so `openFile` is a silent no-op.
       // Route to the viewer (bounded temp-extract, same as F3) — the honest
-      // interim until the Enter-behavior milestone adds extract-then-open.
+      // interim until extract-then-launch lands, which needs its own
+      // extract-and-persist lifecycle (`crates/cmdr-archive/DETAILS.md` §
+      // "Left for later").
       // Pass the pane's DRIVE volume id (an archive pane keeps its parent
       // drive's id) so a remote-hosted zip previews through that volume.
       void openFileViewer(entry.path, deps.getVolumeId())

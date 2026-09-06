@@ -27,9 +27,9 @@
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
-  "viewer.error.archiveTooLarge": "Este archivo es demasiado grande para previsualizarlo dentro del archivo comprimido. Cópialo fuera primero y luego ábrelo.",
-  "@viewer.error.archiveTooLarge": {
-    "sourceHash": "1bf7d91"
+  "viewer.error.tooLargeToPreview": "Este archivo es demasiado grande para previsualizarlo desde aquí. Cópialo fuera primero y luego ábrelo.",
+  "@viewer.error.tooLargeToPreview": {
+    "sourceHash": "8696039"
   },
   "viewer.error.archiveUnreadable": "No se pudo abrir este archivo desde el archivo comprimido. Puede que esté cifrado, dañado o use un formato que Cmdr no puede leer.",
   "@viewer.error.archiveUnreadable": {
@@ -362,6 +362,10 @@
   "viewer.saveAs.saveFailed": "No se pudo guardar la selección. ¿Reintentar?",
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
+  },
+  "viewer.saveAs.destinationReadOnly": "Esa ubicación es de solo lectura. ¿Eliges otra carpeta para guardar?",
+  "@viewer.saveAs.destinationReadOnly": {
+    "sourceHash": "8d627aa"
   },
   "viewer.selection.toEndOfFile": "Seleccionado desde la línea {line} hasta el final del archivo",
   "@viewer.selection.toEndOfFile": {

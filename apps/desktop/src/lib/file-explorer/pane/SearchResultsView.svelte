@@ -21,12 +21,19 @@
      * defensively we render a small "snapshot not available" pane rather than throwing.
      */
 
-    import type { FileEntry, SelectPayload, SortColumn, SortOrder, VisibleRangePayload } from '../types'
+    import type { FileEntry, SelectPayload, SortColumn, VisibleRangePayload } from '../types'
     import FullList from '../views/FullList.svelte'
-    import { getSnapshot, getMutationTick, type SearchSnapshot } from '$lib/search/snapshot-store.svelte'
+    import {
+        getSnapshot,
+        getMutationTick,
+        snapshotIdFromPanePath,
+        type SearchSnapshot,
+    } from '$lib/search/snapshot-store.svelte'
+    import { nextSnapshotSort, sortSnapshot } from '$lib/search/snapshot-sort.svelte'
     import { capabilitiesForKind } from './volume-capabilities'
     import { showFileContextMenu } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
+    import { snapshotBasename, snapshotContextMenuPaths } from './snapshot-context-menu'
     import type { SearchResultEntry } from '$lib/ipc/bindings'
     import type { ListViewAPI } from './types'
 
@@ -35,12 +42,10 @@
         path: string
         cursorIndex: number
         isFocused?: boolean
-        sortBy: SortColumn
-        sortOrder: SortOrder
         /**
          * Selected indices within the snapshot's entries. The snapshot pane shares
          * `FilePane.selection` state with normal panes; indices are 0-based (no `..`
-         * row). M8d: drives source-side copy/move/cut behaviour.
+         * row). Drives source-side copy / move / cut / delete.
          */
         selectedIndices?: Set<number>
         /** Called when the user activates a row (Enter / double-click). */
@@ -58,17 +63,14 @@
         path,
         cursorIndex,
         isFocused = false,
-        sortBy,
-        sortOrder,
         selectedIndices = new Set<number>(),
         onNavigate,
         onSelect,
         onVisibleRangeChange,
     }: Props = $props()
 
-    /** Pull the snapshot id out of `search-results://<id>`. Returns `null` for any other shape. */
-    const SEARCH_RESULTS_PREFIX = 'search-results://'
-    const snapshotId = $derived(path.startsWith(SEARCH_RESULTS_PREFIX) ? path.slice(SEARCH_RESULTS_PREFIX.length) : null)
+    /** The snapshot id in `search-results://<id>`. `null` for any other path shape. */
+    const snapshotId = $derived(snapshotIdFromPanePath(path))
 
     /**
      * Live snapshot lookup. Re-derives if the id changes (which happens on pane
@@ -88,6 +90,27 @@
      * string compare). The pure `capabilitiesForKind` needs no store lookup.
      */
     const caps = capabilitiesForKind('search-results')
+
+    /**
+     * The snapshot's own order, NOT the pane's persisted directory sort. A
+     * snapshot pane borrows a tab whose `sortBy` / `sortOrder` belong to the
+     * folder the user came from, and a header click here must never write back
+     * into those: navigating away and back finds that folder in the order it was
+     * left. `null` is the engine's ranked order, so no column is active.
+     */
+    const snapshotSort = $derived(snapshot?.sort ?? null)
+
+    /**
+     * The tooltip for the active column when clicking it goes BACK to the ranked
+     * order rather than flipping direction. Named "relevance" because that is what
+     * a ranked result set is ordered by, and the same word `cmdr://state` reports
+     * to agents.
+     */
+    const clearsSortLabel = $derived(
+        snapshotSort && nextSnapshotSort(snapshotSort, snapshotSort.column) === null
+            ? tString('fileExplorer.columns.sortByRelevance')
+            : undefined,
+    )
 
     /**
      * Adapt `SearchResultEntry` (the wire-typed search result) into `FileEntry` (the
@@ -136,8 +159,9 @@
     }
 
     /**
-     * Adapted FileEntry array for FullList. Derived from `snapshot.entries`; changes
-     * only when the snapshot id changes (the snapshot itself is immutable once stored).
+     * Adapted FileEntry array for FullList. Re-derives with `snapshot` above, so it
+     * follows both a pane navigation and a store mutation (a walk appending rows, a
+     * purge removing one).
      */
     const entries = $derived<FileEntry[]>(snapshot ? snapshot.entries.map(adaptEntry) : [])
 
@@ -157,12 +181,7 @@
      * type-to-jump and MCP) still pass plain filenames.
      */
     export function findItemIndex(name: string): number {
-        return entries.findIndex((e) => basename(e.path) === name)
-    }
-
-    function basename(path: string): string {
-        const idx = path.lastIndexOf('/')
-        return idx >= 0 ? path.slice(idx + 1) : path
+        return entries.findIndex((e) => snapshotBasename(e.path) === name)
     }
 
     /**
@@ -186,6 +205,11 @@
 </script>
 
 {#if snapshot}
+    <!-- The header sorts the SNAPSHOT, never the pane's tab. `sortSnapshot` replaces
+         `snapshot.entries` in the store, so every consumer that resolves the index the
+         user sees against `snapshot.entries[i]` (F5/F6/F8, the clipboard, the context
+         menu, the MCP mirror, the selection remap) follows without knowing a sort
+         happened. See `search/DETAILS.md` § "The snapshot pane's row order". -->
     <FullList
         bind:this={fullListRef}
         listingId=""
@@ -198,8 +222,12 @@
         hasParent={false}
         parentPath=""
         currentPath={path}
-        {sortBy}
-        {sortOrder}
+        sortBy={snapshotSort?.column ?? null}
+        sortOrder={snapshotSort?.order ?? 'ascending'}
+        {clearsSortLabel}
+        onSortChange={(column: SortColumn) => {
+            if (snapshotId) void sortSnapshot(snapshotId, nextSnapshotSort(snapshotSort, column))
+        }}
         {onSelect}
         {onNavigate}
         {onVisibleRangeChange}
@@ -220,8 +248,12 @@
             // instead so it reads `Copy test.md` and the underlying
             // command-dispatch (which uses `entryUnderCursor.name`, also a
             // basename) copies the same string.
-            const restrict = !caps.canWrite
-            void showFileContextMenu(entry.path, basename(entry.path), entry.isDirectory, [entry.path], restrict)
+            // `canOpenTerminalHere` stays off: a snapshot pane is a result set, not
+            // a folder, so there's nothing for "here" to mean.
+            const paths = snapshotContextMenuPaths(entry.path, entries, selectedIndices)
+            void showFileContextMenu(entry.path, snapshotBasename(entry.path), entry.isDirectory, paths, {
+                restrictDestinationActions: !caps.canWrite,
+            })
         }}
     />
 {:else}

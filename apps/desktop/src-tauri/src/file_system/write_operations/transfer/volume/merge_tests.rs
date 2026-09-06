@@ -7,7 +7,7 @@
 //! `InMemoryVolume` pairs + `CollectorEventSink`, so the whole stack (preflight,
 //! the serial/concurrent split, `copy_directory_streaming`, the resolver) runs
 //! exactly as in production. Shared fixtures `make_state` / `make_volumes` live in
-//! `volume/copy_tests.rs` (`super::tests`). Sibling suites: the dir-vs-dir
+//! `volume/copy_tests/` (`super::tests`). Sibling suites: the dir-vs-dir
 //! contract in `volume/merge_dir_vs_dir_tests.rs`, the conflict-dispatch mutex in
 //! `volume/merge_dispatch_mutex_tests.rs`.
 

@@ -838,9 +838,21 @@
   "@fileExplorer.readOnly.deviceMessage": {
     "sourceHash": "039488f"
   },
+  "fileExplorer.readOnly.gitPortalTitle": "Skrivskyddad git-portal",
+  "@fileExplorer.readOnly.gitPortalTitle": {
+    "sourceHash": "d4bd9c1"
+  },
+  "fileExplorer.readOnly.gitPortalMessage": "Grenar, taggar och incheckningar är ögonblicksbilder av din git-historik, så du kan bläddra i dem och kopiera ut ur dem, men inte ändra dem.",
+  "@fileExplorer.readOnly.gitPortalMessage": {
+    "sourceHash": "87bc79d"
+  },
   "fileExplorer.archive.useTransferToCopyOut": "Om du vill kopiera ut filer ur ett arkiv använder du F5 för att kopiera eller F6 för att flytta.",
   "@fileExplorer.archive.useTransferToCopyOut": {
     "sourceHash": "3edbc36"
+  },
+  "fileExplorer.git.useTransferToCopyOut": "Om du vill kopiera ut filer ur en git-ögonblicksbild använder du F5 för att kopiera eller F6 för att flytta.",
+  "@fileExplorer.git.useTransferToCopyOut": {
+    "sourceHash": "a0d65fe"
   },
   "fileExplorer.rename.hiddenAfterRename": "Din fil försvann från vyn eftersom dolda filer inte visas.",
   "@fileExplorer.rename.hiddenAfterRename": {
@@ -885,6 +897,10 @@
   "fileExplorer.columns.created": "Skapad",
   "@fileExplorer.columns.created": {
     "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.columns.sortByRelevance": "Sortera efter relevans",
+  "@fileExplorer.columns.sortByRelevance": {
+    "sourceHash": "20632dd"
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
@@ -970,6 +986,83 @@
   "fileExplorer.dirSize.staleLine": "De här storlekarna är från en tidigare genomsökning och kan vara inaktuella.",
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
+  },
+  "fileExplorer.git.size.branches": "{count, plural, one {{countText} gren} other {{countText} grenar}}",
+  "@fileExplorer.git.size.branches": {
+    "sourceHash": "ea4d085"
+  },
+  "fileExplorer.git.size.tags": "{count, plural, one {{countText} tagg} other {{countText} taggar}}",
+  "@fileExplorer.git.size.tags": {
+    "sourceHash": "f9c07cd"
+  },
+  "fileExplorer.git.size.commits": "{count, plural, one {{countText} incheckning} other {{countText} incheckningar}}",
+  "@fileExplorer.git.size.commits": {
+    "sourceHash": "cfdb4be"
+  },
+  "fileExplorer.git.size.stashEntries": "{count, plural, one {{countText} stash-post} other {{countText} stash-poster}}",
+  "@fileExplorer.git.size.stashEntries": {
+    "sourceHash": "d9f98ff"
+  },
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, one {{countText} länkad worktree} other {{countText} länkade worktrees}}",
+  "@fileExplorer.git.size.linkedWorktrees": {
+    "sourceHash": "7bc228e"
+  },
+  "fileExplorer.git.size.submodules": "{count, plural, one {{countText} undermodul} other {{countText} undermoduler}}",
+  "@fileExplorer.git.size.submodules": {
+    "sourceHash": "b1b847e"
+  },
+  "fileExplorer.git.size.filesChanged": "{count, plural, one {{countText} fil} other {{countText} filer}}",
+  "@fileExplorer.git.size.filesChanged": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.git.size.aheadBehind": "+{aheadText} / -{behindText}",
+  "@fileExplorer.git.size.aheadBehind": {
+    "sourceHash": "6ff31ac",
+    "sameAsSourceJustification": "The `+n / -n` tally is symbols and numbers only. Every language that uses git reads it the same way, so there is nothing here to translate."
+  },
+  "fileExplorer.git.size.onBranch": "på {branch}",
+  "@fileExplorer.git.size.onBranch": {
+    "sourceHash": "b94a28d"
+  },
+  "fileExplorer.git.tooltip.branches": "{count, plural, one {{countText} gren i det här repot} other {{countText} grenar i det här repot}}",
+  "@fileExplorer.git.tooltip.branches": {
+    "sourceHash": "a3372d8"
+  },
+  "fileExplorer.git.tooltip.tags": "{count, plural, one {{countText} tagg i det här repot} other {{countText} taggar i det här repot}}",
+  "@fileExplorer.git.tooltip.tags": {
+    "sourceHash": "cac35ae"
+  },
+  "fileExplorer.git.tooltip.commits": "{count, plural, one {{countText} incheckning nåbar från HEAD} other {{countText} incheckningar nåbara från HEAD}}",
+  "@fileExplorer.git.tooltip.commits": {
+    "sourceHash": "4d9cea8"
+  },
+  "fileExplorer.git.tooltip.filesChanged": "{count, plural, one {{countText} fil ändrad jämfört med föräldraincheckningen} other {{countText} filer ändrade jämfört med föräldraincheckningen}}",
+  "@fileExplorer.git.tooltip.filesChanged": {
+    "sourceHash": "9808044"
+  },
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} incheckning} other {{aheadText} incheckningar}} före, {behind, plural, one {{behindText} incheckning} other {{behindText} incheckningar}} efter ”{vs}”",
+  "@fileExplorer.git.tooltip.aheadBehind": {
+    "sourceHash": "2eba558"
+  },
+  "fileExplorer.git.tooltip.taggedCommit": "Taggad incheckning {id}",
+  "@fileExplorer.git.tooltip.taggedCommit": {
+    "sourceHash": "39e11d5"
+  },
+  "fileExplorer.git.tooltip.pinnedCommit": "Låst till incheckning {id}",
+  "@fileExplorer.git.tooltip.pinnedCommit": {
+    "sourceHash": "f80ccba"
+  },
+  "fileExplorer.git.tooltip.stashedOnBranch": "Skapad på grenen ”{branch}”",
+  "@fileExplorer.git.tooltip.stashedOnBranch": {
+    "sourceHash": "770565f"
+  },
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Grenen ”{branch}” är utcheckad",
+  "@fileExplorer.git.tooltip.worktreeOnBranch": {
+    "sourceHash": "5036eb7"
+  },
+  "fileExplorer.git.tooltip.worktreeDetached": "Frikopplad vid {id}",
+  "@fileExplorer.git.tooltip.worktreeDetached": {
+    "sourceHash": "8455479"
   },
   "fileExplorer.selectionTooltip.selected": "Markerat",
   "@fileExplorer.selectionTooltip.selected": {

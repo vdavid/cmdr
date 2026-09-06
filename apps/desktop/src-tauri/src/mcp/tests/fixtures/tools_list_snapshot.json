@@ -674,27 +674,28 @@
       "name": "swap_panes"
     },
     {
-      "description": "Search one drive by filename pattern, size, date, or type; returns paths (no UI). Reads the index where it covers the scope and walks the folders it doesn't, so an unindexed drive still answers, only slower. Set countOnly:true for the total alone.",
+      "description": "Find files and folders across ONE whole drive by name pattern, size, date, or type. list_dir ranks one folder's children instead. Reads the index and walks the rest, so an unindexed drive still answers, only slower. Names and metadata only: inspect_file reads contents, and a date is when a file last CHANGED, never saved or opened. Disk space: sortBy size with excludeSystemDirs false. No paging, so narrow instead. Cover the drive the question is about and say which one you covered.",
       "inputSchema": {
+        "additionalProperties": false,
         "properties": {
           "caseSensitive": {
             "description": "Case-sensitive matching. Default: false on macOS, true on Linux",
             "type": "boolean"
           },
           "countOnly": {
-            "description": "Set true when you only need the total, not the results. Returns just the match count (for example, \"1,234 files match\") and skips the file list. Faster than a full search. Default: false",
+            "description": "Answer with the counts and coverage alone, no entries. Default: false.",
             "type": "boolean"
           },
           "excludeSystemDirs": {
-            "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc). Default: true. Turn it OFF for disk-space questions: those folders are usually where the space went. The result says how many matches this hid.",
+            "description": "Skip system, cache, and build folders (node_modules, .git, Caches). Default: true.",
             "type": "boolean"
           },
           "limit": {
-            "description": "Max results to return. Default: 30",
+            "description": "Max entries. Default 30, max 200; a page may come back shorter to fit one result.",
             "type": "integer"
           },
           "maxWaitSeconds": {
-            "description": "How long to wait for the answer, 1-120. Cmdr walks whatever the index hasn't covered yet, so a first search of a folder takes as long as reading it does. When the wait runs out you get what was found so far plus a note; the walk keeps going, so running the same search again picks up the rest. Default: 20",
+            "description": "Seconds to wait for the walk, 1-120. Default: 20.",
             "type": "integer"
           },
           "modifiedAfter": {
@@ -730,7 +731,7 @@
             "type": "string"
           },
           "sortBy": {
-            "description": "Result order. Default 'relevance' (best name match, then recency). 'size' returns the biggest matches that exist anywhere in scope, files and folders on one scale (a folder by its recursive total) — use it with excludeSystemDirs: false to find where disk space went. 'modified' returns the newest.",
+            "description": "relevance (default), size (biggest first, a folder by its recursive total), or modified (newest first).",
             "enum": [
               "relevance",
               "size",
@@ -757,7 +758,7 @@
       "inputSchema": {
         "properties": {
           "limit": {
-            "description": "Max results to return. Default: 30",
+            "description": "Max results to return. Default 30, max 200.",
             "type": "integer"
           },
           "maxWaitSeconds": {
@@ -1272,7 +1273,7 @@
       "name": "image_facts"
     },
     {
-      "description": "List a folder's children from the drive index (never the disk), plus its recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes.",
+      "description": "List a folder's children from the drive index (never the disk), plus its recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes inside ONE folder; search ranks a whole drive.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -1293,7 +1294,7 @@
             "type": "string"
           },
           "path": {
-            "description": "Absolute or ~-relative folder. To find where space goes, start at a volume root or ~ with sortBy size and drill into the biggest child. Relay the coverage block and any lower-bound size rather than a total the index can't back.",
+            "description": "Absolute or ~-relative folder to list. Relay the coverage block and any lower-bound size rather than a total the index can't back.",
             "type": "string"
           },
           "sortBy": {

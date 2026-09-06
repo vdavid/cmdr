@@ -32,7 +32,7 @@ async fn cross_volume_move_cancel_between_sources_emits_cancelled_event() {
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
     // Pre-cancel before the loop runs: every iteration sees the cancel at the
-    // top check. Uses the existing convention in `volume/copy_tests.rs` of a
+    // top check. Uses the existing convention in `volume/copy_tests/` of a
     // direct `intent.store` for the simulated cancel; the public-path
     // `cancel_write_operation` requires the state to be in the cache, which
     // the outer wrapper (not under test here) is responsible for.

@@ -35,7 +35,47 @@ type droppingTimeoutSite struct {
 	text    string
 }
 
-// RunMtpDroppingTimeout fails the build if any non-test file under `src/mtp/`
+// mtpTrees narrows a member's `src/` to the part of it that talks to a phone.
+//
+// The two MTP guardrails are about ONE subsystem's wire protocol, and that
+// subsystem now spans a crate boundary: `crates/cmdr-mtp` holds the session
+// layer and the `Volume`, and the app keeps the hotplug watcher, the registrar
+// wiring, and the ptpcamerad workaround — all of which still issue mtp-rs calls.
+// Both halves are in scope; every other member is out, because a timeout over
+// something that isn't a PTP transaction is just a timeout.
+//
+// Returns an empty slice for a member that has no MTP tree, which is most of
+// them. The caller skips a root that isn't on disk, so a fresh worktree and a
+// fixture workspace both behave.
+func mtpTrees(srcDir string) []string {
+	if strings.HasSuffix(filepath.ToSlash(srcDir), "crates/cmdr-mtp/src") {
+		return []string{srcDir}
+	}
+	if strings.HasSuffix(filepath.ToSlash(srcDir), "apps/desktop/src-tauri/src") {
+		return []string{filepath.Join(srcDir, "mtp")}
+	}
+	return nil
+}
+
+// mtpScanRoots resolves the MTP trees the named check should walk, dropping the
+// ones that aren't on disk.
+func mtpScanRoots(rootDir, checkID string) ([]string, error) {
+	members, err := ScannerRoots(rootDir, checkID)
+	if err != nil {
+		return nil, err
+	}
+	var trees []string
+	for _, member := range members {
+		for _, tree := range mtpTrees(member) {
+			if info, statErr := os.Stat(tree); statErr == nil && info.IsDir() {
+				trees = append(trees, tree)
+			}
+		}
+	}
+	return trees, nil
+}
+
+// RunMtpDroppingTimeout fails the build if any non-test file in an MTP tree
 // wraps something in a wall-clock timeout or aborts a task without recording why
 // dropping that future is safe.
 //
@@ -43,14 +83,24 @@ type droppingTimeoutSite struct {
 // physical consequence: the device is left mid-transaction, expecting bytes
 // nobody will send or holding bytes nobody will read. mtp-rs bounds every USB
 // transfer on its own and fails CLEANLY, so an outer wall-clock timeout can only
-// ever preempt a clean failure with a wedge. See
-// `apps/desktop/src-tauri/src/mtp/connection/CLAUDE.md`.
+// ever preempt a clean failure with a wedge. See `crates/cmdr-mtp/CLAUDE.md`.
 func RunMtpDroppingTimeout(ctx *CheckContext) (CheckResult, error) {
-	mtpDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src", "mtp")
-
-	violations, orphans, scanned, err := scanForDroppingTimeouts(ctx.RootDir, mtpDir)
+	trees, err := mtpScanRoots(ctx.RootDir, "desktop-rust-mtp-dropping-timeout")
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to scan MTP Rust files: %w", err)
+		return CheckResult{}, err
+	}
+
+	var violations []droppingTimeoutSite
+	var orphans []orphanDirective
+	scanned := 0
+	for _, tree := range trees {
+		treeViolations, treeOrphans, treeScanned, scanErr := scanForDroppingTimeouts(ctx.RootDir, tree)
+		if scanErr != nil {
+			return CheckResult{}, fmt.Errorf("failed to scan MTP Rust files: %w", scanErr)
+		}
+		violations = append(violations, treeViolations...)
+		orphans = append(orphans, treeOrphans...)
+		scanned += treeScanned
 	}
 
 	var parts []string
@@ -66,7 +116,7 @@ func RunMtpDroppingTimeout(ctx *CheckContext) (CheckResult, error) {
 			sb.WriteString(fmt.Sprintf("  %s:%d: %s\n", v.relPath, v.line, v.text))
 		}
 		parts = append(parts, fmt.Sprintf(
-			"found %d %s that can drop an in-flight future under `src/mtp/` "+
+			"found %d %s that can drop an in-flight future in the MTP trees "+
 				"(dropping an mtp-rs call abandons a PTP transaction mid-data-phase and wedges the user's phone; "+
 				"mtp-rs bounds each USB transfer itself and fails cleanly, and `CancelToken` bails at a safe boundary — "+
 				"use those instead; add `%s <reason>` on the line above or as a trailing comment when the dropped "+

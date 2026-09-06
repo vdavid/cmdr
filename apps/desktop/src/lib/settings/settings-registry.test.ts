@@ -336,7 +336,7 @@ describe('buildSectionTree', () => {
   })
 
   it('gives every setting exactly one home: Advanced auto-render XOR a non-Advanced tree node', () => {
-    // The M8 invariant. `getAdvancedSettings()` is what AdvancedSection auto-renders;
+    // The one-home invariant. `getAdvancedSettings()` is what AdvancedSection auto-renders;
     // the tree (sans Advanced) is what feature pages hand-render. No id may be in both,
     // and together (plus hidden) they account for the whole registry.
     const advancedIds = new Set(getAdvancedSettings().map((s) => s.id))
@@ -430,30 +430,28 @@ describe('cardKey resolution (resolveDefinition)', () => {
   })
 })
 
-describe('indexing.indexSize hidden search anchor', () => {
-  it('is a fully-modeled, hidden boolean under the Drive indexing page', () => {
-    const def = getSettingDefinition('indexing.indexSize')
-    expect(def).toBeDefined()
-    expect(def?.hidden).toBe(true)
-    expect(def?.type).toBe('boolean')
-    expect(getDefaultValue('indexing.indexSize')).toBe(false)
-    // Guardrail: section MUST equal the hosting page`s, or the blank-page fix breaks.
-    expect(def?.section).toEqual(['Indexing', 'Drive indexing'])
-    expect(def?.component).toBeUndefined()
+describe('the index-size row is not a setting', () => {
+  it('models no setting for the hand-rendered "Index size / Clear index" row', () => {
+    // It used to be a fully-modeled `indexing.indexSize` boolean that nothing ever
+    // read or wrote, invented only so search could reach the row. Rows have their
+    // own mechanism now (`sections/DriveIndexingSection.rows.ts`), so the registry
+    // is back to holding settings alone.
+    expect(getSettingDefinition('indexing.indexSize')).toBeUndefined()
+    expect(settingsRegistry.some((s) => s.section.includes('Drive indexing') && s.id.includes('indexSize'))).toBe(false)
   })
 
-  it('is excluded from the nav section tree (it is hidden)', () => {
+  it('adds no nav row for the searchable row that replaced it', () => {
     const tree = buildSectionTree()
     const indexing = tree.find((s) => s.name === 'Indexing')
     const driveIndexing = indexing?.subsections.find((s) => s.name === 'Drive indexing')
     expect(driveIndexing).toBeDefined()
-    expect(driveIndexing?.settings.some((s) => s.id === 'indexing.indexSize')).toBe(false)
+    expect(driveIndexing?.settings.some((s) => s.id.startsWith('row:'))).toBe(false)
   })
 
-  it('is included in the search index (the whole registry is indexed; hidden is searchable)', () => {
+  it('is in the search index all the same', () => {
     clearSearchIndex()
-    const ids = searchSettings('').map((r) => r.setting.id)
-    expect(ids).toContain('indexing.indexSize')
+    const ids = searchSettings('').map((r) => r.entry.id)
+    expect(ids).toContain('row:indexing.indexSize')
   })
 })
 
@@ -605,16 +603,16 @@ describe('askCmdr.chatMemorySize (how much of a chat one message carries)', () =
 })
 
 describe('ai.localContextSize (the local model’s window)', () => {
-  it('starts at the 16,384 floor and defaults to it', () => {
-    // Below 16,384 an Ask Cmdr turn cannot fit its own prefix, so those sizes are gone from
-    // the picker and a stored one resolves to this default instead.
-    expect(getDefaultValue('ai.localContextSize')).toBe('16384')
+  it('starts at the 32,768 floor and defaults to it', () => {
+    // Below 32,768 an Ask Cmdr turn cannot fit its own prefix plus a paged tool result, so
+    // those sizes are gone from the picker and a stored one resolves to this default instead.
+    expect(getDefaultValue('ai.localContextSize')).toBe('32768')
     const options = getSettingDefinition('ai.localContextSize')?.constraints?.options ?? []
-    expect(options.map((o) => o.value)).toEqual(['16384', '32768', '65536', '131072', '262144'])
+    expect(options.map((o) => o.value)).toEqual(['32768', '65536', '131072', '262144'])
   })
 
   it('rejects the sizes an earlier build offered', () => {
-    for (const value of ['2048', '4096', '8192']) {
+    for (const value of ['2048', '4096', '8192', '16384']) {
       expect(() => {
         validateSettingValue('ai.localContextSize', value)
       }).toThrow()

@@ -1,0 +1,1100 @@
+//! MTP connection management.
+//!
+//! Manages device connections with a global registry. Each connected device
+//! maintains an active MTP session until disconnected or unplugged.
+//!
+//! ## File watching
+//!
+//! MTP devices support event notifications via USB interrupt endpoints. When a
+//! device is connected, we start a background task that polls for events using
+//! `device.next_event()`. Events like ObjectAdded, ObjectRemoved, and ObjectInfoChanged
+//! trigger incremental `directory-diff` events to the frontend, using the same
+//! unified diff system as local file watching. This provides smooth UI updates
+//! without full directory reloads.
+
+mod bulk_ops;
+mod cache;
+mod directory_ops;
+pub(crate) mod errors;
+mod event_loop;
+pub mod events;
+mod file_ops;
+mod handle_resolver;
+/// What this layer tells the analytics and registrar seams, against a real device.
+#[cfg(all(test, feature = "virtual-device"))]
+mod host_seam_test;
+/// The session-free cells: the manager's own bookkeeping and the free functions
+/// beside it.
+#[cfg(test)]
+mod manager_test;
+mod mutation_ops;
+/// Every test here drives a virtual MTP device, so it carries that feature gate.
+#[cfg(all(test, feature = "virtual-device"))]
+mod path_cache_sync_test;
+mod scheduler;
+mod session_reset;
+/// The manager and the recording registrar this crate's own device cells drive.
+#[cfg(test)]
+pub(crate) mod testing;
+/// What an upload leaves on the device when its source stops early.
+#[cfg(all(test, feature = "virtual-device"))]
+mod upload_test;
+/// Who holds the device we couldn't open. macOS-only: it's the one platform
+/// where a system daemon takes MTP devices out from under us.
+#[cfg(target_os = "macos")]
+mod usb_owner;
+mod volume_registrar;
+
+use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};
+pub use errors::MtpConnectionError;
+use errors::map_mtp_error;
+#[cfg(any(test, feature = "testing"))]
+pub use events::RecordingMtpDeviceEvents;
+pub use events::{MtpDeviceEvent, MtpDeviceEvents, no_device_events};
+pub(crate) use file_ops::MtpReadSession;
+pub use handle_resolver::ResolvedMtpObject;
+pub use mutation_ops::MtpDeleteScope;
+use scheduler::{DevicePriorityGate, ForegroundGuard};
+pub use volume_registrar::MtpVolumeRegistrar;
+
+use cmdr_fs::volume::host::VolumeHost;
+use log::{debug, error, info, warn};
+use mtp_rs::{MtpDevice, MtpDeviceBuilder};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, RwLock, Weak};
+use std::time::Duration;
+use tokio::sync::{Mutex, broadcast};
+
+use crate::types::{MtpDeviceInfo, MtpStorageInfo};
+
+/// Per-USB-transfer timeout handed to mtp-rs, the ONE bound that can stop a
+/// stuck device without abandoning anything.
+///
+/// mtp-rs applies it to each bulk transfer and, on expiry, returns
+/// `PtpError::Timeout` while LEAVING the transfer pending on the endpoint, so
+/// nothing is abandoned mid-transaction. This is the bound Cmdr relies on
+/// instead of wrapping calls in `tokio::time::timeout` (which drops the future).
+/// 30 s matches mtp-rs's own default; stated here so the choice is deliberate.
+const USB_TRANSFER_TIMEOUT_SECS: u64 = 30;
+
+/// How long an op waits for the per-device lock before giving up.
+///
+/// This bounds QUEUEING behind another op on the same device, never a device
+/// response: waiting on a `tokio::Mutex` holds nothing on the wire, so timing it
+/// out abandons nothing. That's why this is the ONE wall-clock timeout left in
+/// this module (see the `CLAUDE.md` guardrail).
+///
+/// It's generous because device ops are no longer capped at 30 s: a 2,000-entry
+/// folder listing is 2,000 `GetObjectInfo` round trips and legitimately runs for
+/// minutes. Too short a wait here would fail a queued nav that was only ever
+/// waiting its turn.
+const DEVICE_LOCK_WAIT_SECS: u64 = 300;
+
+/// Window size for one bounded MTP read transaction (`GetPartialObject64`).
+///
+/// 8 MiB is the spike-validated value: large enough for healthy USB throughput,
+/// small enough that the per-window device-lock hold (~80 ms on a Pixel) lets a
+/// foreground listing slip in between windows. It's the throughput-vs-yield-
+/// latency knob, tuned on real hardware. The volume backend's read stream
+/// caches this at open and can shrink it in tests. See
+/// [DETAILS.md](DETAILS.md) § "Bounded-window reads".
+pub(crate) const MTP_READ_WINDOW: u32 = 8 * 1024 * 1024;
+
+/// Why an MTP device was disconnected.
+///
+/// Surfaced on the `mtp-device-disconnected` event so logs and UI can
+/// distinguish a deliberate user action from a USB-level removal (unplug,
+/// I/O error, etc.). Previously every disconnect was reported as `"user"`,
+/// which made unstable-USB sessions read like the user kept pulling the cable.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum MtpDisconnectReason {
+    /// User explicitly disconnected (toggled MTP off in settings).
+    User,
+    /// The device was removed: USB hotplug saw it gone, or the event loop
+    /// reported `Error::Disconnected`. Includes hard unplugs and I/O-level
+    /// drops (cable, port, phone-side USB stack).
+    Removed,
+}
+
+/// Whether a connect also runs the device's change watch.
+///
+/// The two halves an `Option<AppHandle>` used to carry at once: where lifecycle
+/// events go, and whether to poll the device. They're separate questions, and a
+/// caller driving a session directly wants a real events sink with no polling.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeviceWatch {
+    /// Poll the device for object and storage events, so open panes and the file
+    /// index follow what changes on the phone. What the running app asks for.
+    Live,
+    /// Don't poll. For a test or a tool driving the session itself: there are no
+    /// panes to keep fresh, and a loop reacting to the caller's own writes would
+    /// race the reads it is making. A virtual device queues a
+    /// `StorageInfoChanged` for every file that lands in its backing directory,
+    /// so a watched fixture drops the cached storage handle under a test that is
+    /// counting round trips.
+    Off,
+}
+
+/// Information about an object on the device (returned after creation).
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpObjectInfo {
+    /// Object handle.
+    pub handle: u32,
+    /// Object name.
+    pub name: String,
+    /// Virtual path on device.
+    pub path: String,
+    /// Whether it's a directory.
+    pub is_directory: bool,
+    /// Size in bytes (None for directories).
+    pub size: Option<u64>,
+}
+
+/// Information about a connected device, including its storages.
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectedDeviceInfo {
+    /// Device information.
+    pub device: MtpDeviceInfo,
+    /// Available storages on the device.
+    pub storages: Vec<MtpStorageInfo>,
+}
+
+/// Internal entry for a connected device.
+///
+/// Fields are private but accessible from child modules (event_loop, directory_ops, etc.).
+struct DeviceEntry {
+    /// The MTP device handle (wrapped in Arc for shared access).
+    device: Arc<Mutex<MtpDevice>>,
+    /// Device metadata.
+    info: MtpDeviceInfo,
+    /// Cached storage information.
+    storages: Vec<MtpStorageInfo>,
+    /// Path-to-handle cache per storage.
+    path_cache: RwLock<HashMap<u32, PathHandleCache>>,
+    /// Directory listing cache per storage.
+    listing_cache: RwLock<HashMap<u32, ListingCache>>,
+    /// Foreground/background priority arbiter for device access. Foreground ops
+    /// (nav, copy, delete, visible-folder resolves) take a `ForegroundGuard`
+    /// before touching the device; the background index scan yields to them at
+    /// every unit boundary. See `scheduler.rs`.
+    priority_gate: DevicePriorityGate,
+    /// `mtp_rs::Storage` handles resolved for this device, keyed by storage id.
+    ///
+    /// `MtpDevice::storage()` is a real `GetStorageInfo` USB round trip, so the
+    /// bounded-read path (`read_range_direct`) resolves each storage once and
+    /// reuses the handle. A `Storage` is `{ Arc<dyn MtpBackend>, id, info }`:
+    /// reads go straight to the backend, so a cached one can only serve stale
+    /// `info()` (free space), never stale bytes. Invalidated on
+    /// `StorageInfoChanged` / `StoreRemoved`, and dropped with the whole entry
+    /// on disconnect. Held behind its own `Arc` so a reader can clone the handle
+    /// out without re-locking `devices` while it owns the device lock.
+    storage_cache: Arc<RwLock<HashMap<u32, Arc<mtp_rs::Storage>>>>,
+    /// Test-only tally of `GetStorageInfo` round trips the read paths issued for
+    /// this device. Pins the "one storage lookup per device, not per read"
+    /// contract that `read_range_direct` exists to hold.
+    ///
+    /// ❌ `cfg(test)` alone would be wrong: it's set only for a crate's OWN test
+    /// target, so counting would silently stop in a consumer's test build.
+    #[cfg(any(test, feature = "testing"))]
+    storage_lookups: Arc<std::sync::atomic::AtomicUsize>,
+}
+
+/// One process's MTP device sessions, and everything they need from the app.
+///
+/// A VALUE, not a static: the app builds one at startup and parks it, a test
+/// builds one with fakes. Fields are private but accessible from child modules
+/// (event_loop, directory_ops, etc.).
+pub struct MtpConnectionManager {
+    /// Map of device_id -> connected device entry.
+    devices: Mutex<HashMap<String, DeviceEntry>>,
+    /// Channels to signal event loop shutdown per device.
+    event_loop_shutdown: RwLock<HashMap<String, broadcast::Sender<()>>>,
+    /// Debouncer for directory change events.
+    event_debouncer: EventDebouncer,
+    /// What the panes show, which runtime to spawn on, what the index needs to
+    /// hear: everything this layer can't answer for itself.
+    host: VolumeHost,
+    /// Where a device's lifecycle is reported.
+    events: Arc<dyn MtpDeviceEvents>,
+    /// How an attached storage becomes a browsable volume.
+    registrar: MtpVolumeRegistrar,
+    /// Devices whose session-reset recovery is already in flight, so N
+    /// operations failing against the same dead session schedule ONE recovery.
+    recovering: std::sync::Mutex<std::collections::HashSet<String>>,
+    /// Whether MTP support is on, as the user's setting last left it.
+    ///
+    /// The one bit of product policy this layer holds, and it holds it because
+    /// the reopen loop has to read it between attempts: a recovery in flight
+    /// must not resurrect a device the user just switched MTP off for. The app
+    /// PUSHES the setting in (at startup and on every toggle) and reads it back
+    /// for its own auto-connect gate; ❌ this layer never asks the app, which is
+    /// what lets it run with no app around it. Starts ON, because a manager that
+    /// began by refusing would drop a recovery in the window before that first
+    /// push.
+    enabled: std::sync::atomic::AtomicBool,
+    /// This manager, as background work sees it.
+    ///
+    /// A `&self` method that has to hand the manager over (to the registrar, to
+    /// a spawned task, to an `MtpVolume`) upgrades this. `Weak` rather than a
+    /// stored `Arc` because a self-referential `Arc` would keep every retired
+    /// manager alive forever; a failed upgrade means the manager is already gone
+    /// and the work has nothing left to do, which is a log line and never a
+    /// panic.
+    self_ref: Weak<Self>,
+}
+
+/// Acquires the device lock with a timeout.
+/// This prevents indefinite blocking if the device is unresponsive or another operation is stuck.
+async fn acquire_device_lock<'a>(
+    device_arc: &'a Arc<Mutex<MtpDevice>>,
+    device_id: &str,
+    operation: &str,
+) -> Result<tokio::sync::MutexGuard<'a, MtpDevice>, MtpConnectionError> {
+    // allowed-dropping-timeout: waiting on a `tokio::Mutex` holds nothing on the wire, so giving up on the wait abandons no transaction.
+    tokio::time::timeout(Duration::from_secs(DEVICE_LOCK_WAIT_SECS), device_arc.lock())
+        .await
+        .map_err(|_| {
+            error!("MTP {}: timed out waiting for device lock", operation);
+            MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            }
+        })
+}
+
+impl MtpConnectionManager {
+    /// Builds a manager over the host it reports to, the sink it reports device
+    /// lifecycle into, and the registrar that turns an attached storage into a
+    /// volume.
+    ///
+    /// Comes out in an `Arc` because the manager hands itself to background
+    /// tasks and to every `MtpVolume` it causes to exist. Nothing here touches
+    /// USB: a manager with no device connected costs three empty maps.
+    pub fn new(host: VolumeHost, events: Arc<dyn MtpDeviceEvents>, registrar: MtpVolumeRegistrar) -> Arc<Self> {
+        Arc::new_cyclic(|self_ref| Self {
+            devices: Mutex::new(HashMap::new()),
+            event_loop_shutdown: RwLock::new(HashMap::new()),
+            event_debouncer: EventDebouncer::new(Duration::from_millis(EVENT_DEBOUNCE_MS)),
+            host,
+            events,
+            registrar,
+            recovering: std::sync::Mutex::new(std::collections::HashSet::new()),
+            enabled: std::sync::atomic::AtomicBool::new(true),
+            self_ref: self_ref.clone(),
+        })
+    }
+
+    /// The seams this layer reaches the app through.
+    pub(crate) fn host(&self) -> &VolumeHost {
+        &self.host
+    }
+
+    /// Whether MTP support is currently on. See [`enabled`](Self::enabled).
+    pub fn is_enabled(&self) -> bool {
+        self.enabled.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
+    /// Turns MTP support on or off, and reports what it WAS.
+    ///
+    /// The return value is what lets a caller tell a real change from a
+    /// redundant push: the app's disable path disconnects every device and
+    /// clears its known-device set, and running that for a no-op push would tear
+    /// down live sessions.
+    pub fn set_enabled(&self, enabled: bool) -> bool {
+        self.enabled.swap(enabled, std::sync::atomic::Ordering::SeqCst)
+    }
+
+    /// This manager as an owned handle, or `None` once it has been dropped.
+    ///
+    /// The caller decides what a gone manager means; every current one logs and
+    /// returns, because there is no session left for the work to act on.
+    fn self_handle(&self) -> Option<Arc<Self>> {
+        self.self_ref.upgrade()
+    }
+
+    /// Classifies a device error, and starts session recovery when the PTP
+    /// session died under it.
+    ///
+    /// ❗ Every device operation maps its errors through here, ❌ never through
+    /// the bare `map_mtp_error`: this is the one choke point that sees a reset
+    /// whichever operation tripped it, and a reset nobody schedules a reopen for
+    /// leaves the device in the sidebar answering nothing until a replug.
+    /// Scheduling is fire-and-forget and deduplicates per device, so the failing
+    /// op still returns right away with its own retryable error.
+    pub(super) fn map_device_error(&self, e: mtp_rs::Error, device_id: &str) -> MtpConnectionError {
+        let mapped = map_mtp_error(e, device_id);
+        if matches!(mapped, MtpConnectionError::SessionReset { .. }) {
+            self.schedule_recovery(device_id);
+        }
+        mapped
+    }
+
+    /// Connects to an MTP device by ID.
+    ///
+    /// Opens an MTP session and retrieves storage information.
+    ///
+    /// # Returns
+    ///
+    /// Information about the connected device including available storages.
+    pub async fn connect(
+        &self,
+        device_id: &str,
+        watch: DeviceWatch,
+    ) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
+        let events = &self.events;
+        // Check if already connected - if so, return existing connection info (idempotent)
+        {
+            let devices = self.devices.lock().await;
+            if let Some(entry) = devices.get(device_id) {
+                debug!(
+                    "connect: {} already connected, returning existing connection info",
+                    device_id
+                );
+                return Ok(ConnectedDeviceInfo {
+                    device: entry.info.clone(),
+                    storages: entry.storages.clone(),
+                });
+            }
+        }
+
+        info!("Connecting to MTP device: {}", device_id);
+
+        // Resolve device_id (serial- or location-based) to a live USB location_id
+        // by matching the live device enumeration. A serial id can't be parsed
+        // back into a location, so we look it up rather than decode it.
+        let location_id = resolve_device_location_id(device_id).ok_or_else(|| MtpConnectionError::DeviceNotFound {
+            device_id: device_id.to_string(),
+        })?;
+        debug!("Resolved device_id to location_id={}", location_id);
+
+        // Find and open the device
+        debug!("Opening MTP device...");
+        let device = match open_device(location_id).await {
+            Ok(d) => d,
+            Err(e) => {
+                // Check for exclusive access error
+                if e.is_exclusive_access() {
+                    #[cfg(target_os = "macos")]
+                    let blocking_process = usb_owner::get_usb_exclusive_owner();
+                    #[cfg(not(target_os = "macos"))]
+                    let blocking_process: Option<String> = None;
+
+                    // Report it so the app can offer the workaround.
+                    events.device_event(MtpDeviceEvent::ExclusiveAccess {
+                        device_id: device_id.to_string(),
+                        blocking_process: blocking_process.clone(),
+                    });
+
+                    return Err(MtpConnectionError::ExclusiveAccess {
+                        device_id: device_id.to_string(),
+                        blocking_process,
+                    });
+                }
+
+                // Check for permission errors (Linux: missing udev rules).
+                //
+                // mtp-rs classifies a missing-udev-rules denial (`EACCES`) as the
+                // typed `Error::PermissionDenied`, distinct from `ExclusiveAccess`
+                // (`EBUSY` / macOS exclusive). Use the typed predicate rather than
+                // matching message text.
+                #[cfg(target_os = "linux")]
+                {
+                    if e.is_permission_denied() {
+                        events.device_event(MtpDeviceEvent::PermissionDenied {
+                            device_id: device_id.to_string(),
+                        });
+                        return Err(MtpConnectionError::PermissionDenied {
+                            device_id: device_id.to_string(),
+                        });
+                    }
+                }
+
+                // Map other errors
+                return Err(self.map_device_error(e, device_id));
+            }
+        };
+
+        // Get device info
+        let mtp_info = device.device_info();
+
+        // Speed isn't exposed by the open MTP session — read it from a fresh USB
+        // enumeration. `list_devices()` is a cheap syscall (no device open).
+        let usb_speed = MtpDevice::list_devices()
+            .ok()
+            .and_then(|devs| devs.into_iter().find(|d| d.location_id == location_id))
+            .and_then(|d| d.speed)
+            .map(crate::types::usb_speed_from_device);
+
+        let device_info = MtpDeviceInfo {
+            id: device_id.to_string(),
+            location_id,
+            vendor_id: 0, // Not available from device_info
+            product_id: 0,
+            manufacturer: if mtp_info.manufacturer.is_empty() {
+                None
+            } else {
+                Some(mtp_info.manufacturer.clone())
+            },
+            product: if mtp_info.model.is_empty() {
+                None
+            } else {
+                Some(mtp_info.model.clone())
+            },
+            serial_number: if mtp_info.serial_number.is_empty() {
+                None
+            } else {
+                Some(mtp_info.serial_number.clone())
+            },
+            usb_speed,
+        };
+
+        debug!(
+            "Device opened successfully: {} {}",
+            mtp_info.manufacturer, mtp_info.model
+        );
+
+        // Check if device supports write operations (upload requires the device to
+        // advertise create+send). PTP cameras often don't, making them effectively
+        // read-only. The neutral API exposes this via `Capabilities` instead of raw
+        // operation codes.
+        let caps = device.capabilities();
+        let device_supports_write = caps.can_upload;
+        info!(
+            "Device '{}' write support: {} (can_upload={}, can_delete={}, can_rename={})",
+            mtp_info.model, device_supports_write, caps.can_upload, caps.can_delete, caps.can_rename
+        );
+
+        // Get storage information
+        debug!("Fetching storage information...");
+        let storages = match get_storages(&device, device_supports_write).await {
+            Ok(s) => s,
+            Err(e) => {
+                error!("Failed to get storages for {}: {:?}", device_id, e);
+                Vec::new()
+            }
+        };
+
+        let connected_info = ConnectedDeviceInfo {
+            device: device_info.clone(),
+            storages: storages.clone(),
+        };
+
+        // Wrap device in Arc for shared access
+        let device_arc = Arc::new(Mutex::new(device));
+
+        // Store in registry
+        {
+            let mut devices = self.devices.lock().await;
+            devices.insert(
+                device_id.to_string(),
+                DeviceEntry {
+                    device: Arc::clone(&device_arc),
+                    info: device_info,
+                    storages,
+                    path_cache: RwLock::new(HashMap::new()),
+                    listing_cache: RwLock::new(HashMap::new()),
+                    priority_gate: DevicePriorityGate::default(),
+                    storage_cache: Arc::new(RwLock::new(HashMap::new())),
+                    #[cfg(any(test, feature = "testing"))]
+                    storage_lookups: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+                },
+            );
+        }
+
+        // Attach every storage as a browsable volume, so MTP browsing goes
+        // through the standard file listing pipeline.
+        //
+        // ❗ This must finish BEFORE the event loop starts, and it does because
+        // `attach_storage_volume` is a plain synchronous call. The loop's
+        // consumers (open listings, the per-volume index) route through the
+        // volume registry, so an event that beat the volumes into existence
+        // would have nothing to land on. See `volume_registrar.rs`.
+        for storage in &connected_info.storages {
+            self.attach_storage_volume(device_id, storage.id, &storage.name);
+        }
+
+        // Start the event loop for file watching.
+        if watch == DeviceWatch::Live {
+            self.start_event_loop(device_id.to_string(), device_arc);
+        }
+
+        // Report the device as up.
+        events.device_event(MtpDeviceEvent::Connected {
+            device_id: device_id.to_string(),
+            device_name: connected_info.device.product.clone().unwrap_or_default(),
+            storages: connected_info.storages.clone(),
+        });
+
+        // PII-free analytics: an MTP device connected. No device / product / storage
+        // identifiers ever cross, which the seam's `&[(&str, &str)]` shape is there
+        // to keep true.
+        self.host.analytics().record("mtp_connected", &[]);
+
+        info!(
+            "MTP device connected: {} ({} storages)",
+            device_id,
+            connected_info.storages.len()
+        );
+
+        Ok(connected_info)
+    }
+
+    /// Disconnects from an MTP device.
+    ///
+    /// Closes the MTP session gracefully. `reason` is forwarded to the
+    /// frontend via the `mtp-device-disconnected` event so logs can tell a
+    /// user-initiated disconnect apart from a hotplug removal.
+    pub async fn disconnect(&self, device_id: &str, reason: MtpDisconnectReason) -> Result<(), MtpConnectionError> {
+        info!("Disconnecting from MTP device: {} (reason: {:?})", device_id, reason);
+
+        // Stop the event loop first
+        self.stop_event_loop(device_id);
+
+        // Remove from registry
+        let entry = {
+            let mut devices = self.devices.lock().await;
+            devices.remove(device_id)
+        };
+
+        let Some(entry) = entry else {
+            return Err(MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            });
+        };
+
+        // Detach this device's volumes
+        for storage in &entry.storages {
+            self.detach_storage_volume(device_id, storage.id);
+        }
+
+        // The device will be closed when it's dropped.
+        // MtpDevice::close() takes ownership, but we have it in an Arc<Mutex>.
+        // Dropping the entry will drop the Arc, and if this is the last reference,
+        // the device will be closed (MtpDevice has a Drop impl that closes the session).
+        // We just drop the entry here - the device handle going out of scope handles cleanup.
+        drop(entry);
+
+        // Report the device as gone.
+        self.events.device_event(MtpDeviceEvent::Disconnected {
+            device_id: device_id.to_string(),
+            reason,
+        });
+
+        info!("MTP device disconnected: {}", device_id);
+        Ok(())
+    }
+
+    /// Gets information about a connected device.
+    pub async fn get_device_info(&self, device_id: &str) -> Option<ConnectedDeviceInfo> {
+        let devices = self.devices.lock().await;
+        devices.get(device_id).map(|entry| ConnectedDeviceInfo {
+            device: entry.info.clone(),
+            storages: entry.storages.clone(),
+        })
+    }
+
+    /// Returns `true` when `device_id` is currently connected, without awaiting.
+    ///
+    /// Used by `MtpVolume::listing_watch_coverage` (a sync trait method) to gate the
+    /// fresh-listing oracle. Uses `try_lock` on the devices map so a hot-path
+    /// MTP op holding the mutex doesn't stall pre-flight scan decisions: if the
+    /// lock is contended, treat it as "not watched" and fall through to a real
+    /// read, which is the safe direction. The oracle re-checks on the next
+    /// pre-flight; the lock is held only for short bookkeeping operations on
+    /// the device map, so we won't see sustained false negatives.
+    pub(crate) fn is_connected(&self, device_id: &str) -> bool {
+        match self.devices.try_lock() {
+            Ok(guard) => guard.contains_key(device_id),
+            Err(_) => false,
+        }
+    }
+
+    /// Clone the priority gate for a connected device, or `None` if it isn't in
+    /// the registry. The gate is cheap to clone (`Arc` inside), so callers hold
+    /// the registry lock only briefly here, then use the clone unlocked.
+    async fn priority_gate(&self, device_id: &str) -> Option<DevicePriorityGate> {
+        let devices = self.devices.lock().await;
+        devices.get(device_id).map(|entry| entry.priority_gate.clone())
+    }
+
+    /// Take a foreground-priority guard for a device op, so the background scan
+    /// yields to it. Returns `None` if the device isn't connected (the op will
+    /// fail later with `NotConnected` anyway; running un-guarded is harmless).
+    /// Hold the returned guard across the whole foreground device op.
+    async fn foreground_guard(&self, device_id: &str) -> Option<ForegroundGuard> {
+        Some(self.priority_gate(device_id).await?.foreground_guard())
+    }
+
+    /// Background yield point for the index scan: park while any foreground op on
+    /// this device is pending, returning once it's clear. Called between scan
+    /// units. A no-op (returns immediately) if the device isn't connected or no
+    /// foreground op pends, so the scan never stalls on a missing gate.
+    pub(crate) async fn background_yield_point(&self, device_id: &str) {
+        if let Some(gate) = self.priority_gate(device_id).await {
+            gate.background_yield_point().await;
+        }
+    }
+
+    /// `true` when any foreground op is currently pending on this device.
+    ///
+    /// The cheap "should I yield?" probe a running transfer's per-chunk
+    /// checkpoint polls (see `CheckpointStream`): when it returns `true` the
+    /// transfer releases the PTP session and `background_yield_point`s, exactly
+    /// like the scan does between units. `false` when the device isn't connected
+    /// (no gate ⇒ nothing to yield to), so a transfer over a vanished device
+    /// never wedges on a missing gate.
+    pub(crate) async fn foreground_pending(&self, device_id: &str) -> bool {
+        match self.priority_gate(device_id).await {
+            Some(gate) => gate.foreground_pending(),
+            None => false,
+        }
+    }
+
+    /// Gets information about all connected devices.
+    pub async fn get_all_connected_devices(&self) -> Vec<ConnectedDeviceInfo> {
+        let devices = self.devices.lock().await;
+        devices
+            .values()
+            .map(|entry| ConnectedDeviceInfo {
+                device: entry.info.clone(),
+                storages: entry.storages.clone(),
+            })
+            .collect()
+    }
+
+    /// Handles a StoreAdded event: queries the new storage, registers its volume,
+    /// and broadcasts the change so the frontend picks it up.
+    pub(crate) async fn handle_storage_added(&self, device_id: &str, storage_id: u32) {
+        let device_arc = {
+            let devices = self.devices.lock().await;
+            match devices.get(device_id) {
+                Some(entry) => {
+                    // Skip if we already know about this storage (duplicate event)
+                    if entry.storages.iter().any(|s| s.id == storage_id) {
+                        debug!(
+                            "handle_storage_added: storage {} already registered for {}",
+                            storage_id, device_id
+                        );
+                        return;
+                    }
+                    entry.device.clone()
+                }
+                None => {
+                    warn!("handle_storage_added: device {} not in registry", device_id);
+                    return;
+                }
+            }
+        };
+
+        // Query the new storage from the device
+        let device = match acquire_device_lock(&device_arc, device_id, "handle_storage_added").await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("handle_storage_added: failed to acquire lock: {:?}", e);
+                return;
+            }
+        };
+
+        let mtp_storage_id = mtp_rs::StorageId(u64::from(storage_id));
+        let storage = match device.storage(mtp_storage_id).await {
+            Ok(s) => s,
+            Err(e) => {
+                warn!("handle_storage_added: failed to query storage {}: {:?}", storage_id, e);
+                return;
+            }
+        };
+
+        let info = storage.info();
+        let device_supports_write = device.capabilities().can_upload;
+        let storage_reports_read_only = !info.is_writable;
+
+        let is_read_only = if !device_supports_write || storage_reports_read_only {
+            true
+        } else {
+            let probe_ok = probe_write_capability(&storage, &info.description).await;
+            if !probe_ok {
+                info!(
+                    "Storage '{}' claims write support but probe failed - marking read-only",
+                    info.description
+                );
+            }
+            !probe_ok
+        };
+
+        let storage_info = MtpStorageInfo {
+            id: storage_id,
+            name: info.description.clone(),
+            total_bytes: info.total_capacity,
+            available_bytes: info.free_space,
+            storage_type: Some(format!("{:?}", info.storage_type)),
+            is_read_only,
+        };
+
+        info!(
+            "Registering late-arriving storage '{}' (id={}) for device {}",
+            storage_info.name, storage_id, device_id
+        );
+
+        // Release device lock before updating registry
+        drop(device);
+
+        // Attach the volume
+        self.attach_storage_volume(device_id, storage_id, &storage_info.name);
+
+        // Update the DeviceEntry's storage list
+        {
+            let mut devices = self.devices.lock().await;
+            if let Some(entry) = devices.get_mut(device_id) {
+                entry.storages.push(storage_info.clone());
+            }
+        }
+
+        // Report the new storage. An empty `device_name` is what marks this as an
+        // addition to a device that is already up rather than a fresh connect.
+        self.events.device_event(MtpDeviceEvent::Connected {
+            device_id: device_id.to_string(),
+            device_name: String::new(),
+            storages: vec![storage_info],
+        });
+    }
+
+    /// Drops the cached `mtp_rs::Storage` handle(s) for a device so the next
+    /// bounded read re-resolves them: `Some(id)` for one storage, `None` for all
+    /// of them.
+    ///
+    /// Call this whenever the device says its storage picture moved
+    /// (`StorageInfoChanged`, `StoreRemoved`). A disconnect needs no call — the
+    /// whole `DeviceEntry`, cache included, is removed from the registry.
+    pub(crate) async fn invalidate_storage_cache(&self, device_id: &str, storage_id: Option<u32>) {
+        let devices = self.devices.lock().await;
+        if let Some(entry) = devices.get(device_id)
+            && let Ok(mut cache) = entry.storage_cache.write()
+        {
+            match storage_id {
+                Some(id) => {
+                    cache.remove(&id);
+                }
+                None => cache.clear(),
+            }
+            debug!("Invalidated MTP storage cache for {device_id} (storage={storage_id:?})");
+        }
+    }
+
+    /// Test-only: the REVERSE (`handle_to_path`) side of the path cache for one
+    /// handle. Lets tests assert the bidirectional invariant directly, which is
+    /// otherwise invisible: `resolve_handle_to_path` silently falls back to a USB
+    /// parent-chain walk when the reverse entry is missing, so a desync looks
+    /// like correct behavior until a handle is reused or the object is gone.
+    #[cfg(all(test, feature = "virtual-device"))]
+    pub(crate) async fn cached_path_for_handle(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        handle: mtp_rs::ObjectHandle,
+    ) -> Option<PathBuf> {
+        let devices = self.devices.lock().await;
+        devices
+            .get(device_id)?
+            .path_cache
+            .read()
+            .ok()?
+            .get(&storage_id)?
+            .handle_to_path
+            .get(&handle)
+            .cloned()
+    }
+
+    /// Test-only: the FORWARD (`path_to_handle`) side, for tests that need an
+    /// object's handle without re-listing (a re-list would repopulate BOTH
+    /// directions and mask exactly the desync under test).
+    #[cfg(all(test, feature = "virtual-device"))]
+    pub(crate) async fn cached_handle_for_path(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &Path,
+    ) -> Option<mtp_rs::ObjectHandle> {
+        let devices = self.devices.lock().await;
+        devices
+            .get(device_id)?
+            .path_cache
+            .read()
+            .ok()?
+            .get(&storage_id)?
+            .path_to_handle
+            .get(path)
+            .copied()
+    }
+
+    /// Test-only: how many `GetStorageInfo` round trips the bounded-read path has
+    /// issued for this device. See `DeviceEntry::storage_lookups`. Only the
+    /// virtual-device tests can assert it, so it carries that gate too.
+    #[cfg(all(test, feature = "virtual-device"))]
+    pub(crate) async fn storage_lookup_count(&self, device_id: &str) -> usize {
+        let devices = self.devices.lock().await;
+        devices
+            .get(device_id)
+            .map(|entry| entry.storage_lookups.load(std::sync::atomic::Ordering::Relaxed))
+            .unwrap_or(0)
+    }
+
+    /// Handles a StoreRemoved event: unregisters the volume and broadcasts the change.
+    pub(crate) async fn handle_storage_removed(&self, device_id: &str, storage_id: u32) {
+        // Remove from DeviceEntry
+        {
+            let mut devices = self.devices.lock().await;
+            if let Some(entry) = devices.get_mut(device_id) {
+                entry.storages.retain(|s| s.id != storage_id);
+                if let Ok(mut cache) = entry.storage_cache.write() {
+                    cache.remove(&storage_id);
+                }
+            }
+        }
+
+        // Detach the volume
+        self.detach_storage_volume(device_id, storage_id);
+        info!("MTP storage {storage_id} removed from {device_id}");
+
+        // Report it so the frontend drops the storage from the sidebar.
+        self.events.device_event(MtpDeviceEvent::StorageRemoved {
+            device_id: device_id.to_string(),
+            storage_id,
+        });
+    }
+
+    /// Queries live storage space from the device and updates the cache.
+    ///
+    /// Returns `(total_bytes, available_bytes)` freshly read from the device,
+    /// or `None` if the device/storage is not found or the query fails.
+    pub async fn get_live_storage_space(&self, device_id: &str, storage_id: u32) -> Option<(u64, u64)> {
+        let device_arc = {
+            let devices = self.devices.lock().await;
+            devices.get(device_id)?.device.clone()
+        };
+
+        let device = match acquire_device_lock(&device_arc, device_id, "get_live_storage_space").await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("get_live_storage_space: failed to acquire lock: {:?}", e);
+                return None;
+            }
+        };
+
+        let mtp_storage_id = mtp_rs::StorageId(u64::from(storage_id));
+        let storage = match device.storage(mtp_storage_id).await {
+            Ok(s) => s,
+            Err(e) => {
+                warn!(
+                    "get_live_storage_space: failed to query storage {}: {:?}",
+                    storage_id, e
+                );
+                return None;
+            }
+        };
+        let info = storage.info();
+        let total = info.total_capacity;
+        let available = info.free_space;
+
+        // Release the device lock before updating the cache
+        drop(device);
+
+        // Update cache so other consumers (e.g. volume breadcrumb) see fresh data too
+        {
+            let mut devices = self.devices.lock().await;
+            if let Some(entry) = devices.get_mut(device_id)
+                && let Some(cached) = entry.storages.iter_mut().find(|s| s.id == storage_id)
+            {
+                cached.total_bytes = total;
+                cached.available_bytes = available;
+            }
+        }
+
+        Some((total, available))
+    }
+}
+
+// Remaining impl blocks are in submodules:
+// - directory_ops.rs: list_directory, resolve_path_to_handle, handle_device_disconnected
+// - event_loop.rs: start_event_loop, stop_event_loop, event handling
+// - file_ops.rs: open_read_session + read_next_window (bounded-window reads), upload_from_stream
+// - mutation_ops.rs: delete_object, create_folder, rename_object, move_object
+// - bulk_ops.rs: scan_for_copy, upload_recursive
+
+/// Resolve a device id (`mtp-{serial}` or `mtp-{location_id}`) to the live
+/// USB `location_id` to open it with.
+///
+/// The device id is now serial-based when the device reports a serial
+/// (`cmdr_fs::volume::mtp_ids`), so it can no longer be NUMERICALLY parsed back into a
+/// location_id. Instead we re-enumerate and match the requested id against each
+/// live device's computed id — the same derivation discovery uses — and return
+/// its location_id. This keeps the id OPAQUE (no substring interpretation) and
+/// works for both serial and location ids. `None` if no currently-connected device produces this id.
+fn resolve_device_location_id(device_id: &str) -> Option<u64> {
+    crate::list_mtp_devices()
+        .into_iter()
+        .find(|d| d.id == device_id)
+        .map(|d| d.location_id)
+}
+
+/// Opens an MTP device by location_id.
+async fn open_device(location_id: u64) -> Result<MtpDevice, mtp_rs::Error> {
+    MtpDeviceBuilder::new()
+        .timeout(Duration::from_secs(USB_TRANSFER_TIMEOUT_SECS))
+        .open_by_location(location_id)
+        .await
+}
+
+/// Probes whether a storage actually supports writes by attempting to create
+/// and delete a hidden test folder.
+///
+/// Some devices (especially cameras) report ReadWrite capability but actually
+/// reject writes at runtime with `StoreReadOnly`. This probe detects such cases early.
+///
+/// Returns `true` if writes are supported (or probe was inconclusive), `false` only
+/// if the device explicitly rejected writes with `StoreReadOnly` or `AccessDenied`.
+async fn probe_write_capability(storage: &mtp_rs::Storage, storage_name: &str) -> bool {
+    const PROBE_FOLDER_NAME: &str = ".cmdr_write_probe";
+
+    // ❌ No wall-clock timeout around the probe. A slow device answering
+    // `CreateObject` in 4 s is common; abandoning the transaction at 3 s would
+    // wedge the phone at CONNECT time, which is the worst possible moment. The
+    // transport bounds each USB transfer on its own, so this stays bounded.
+    match storage.create_folder(None, PROBE_FOLDER_NAME).await {
+        Ok(handle) => {
+            // Success! Clean up by deleting the probe folder
+            debug!("Storage '{}': write probe succeeded, cleaning up", storage_name);
+            if let Err(e) = storage.delete(handle).await {
+                warn!("Storage '{}': failed to clean up probe folder: {:?}", storage_name, e);
+            }
+            true
+        }
+        Err(e) => {
+            // A neutral `AccessDenied` (read-only storage or write-protected/denied)
+            // means the device truly refuses writes. A stale-handle rejection (can't
+            // create at root) is non-fatal: Android often blocks root creation but is
+            // still writable into existing folders.
+            let is_read_only_error = matches!(e, mtp_rs::Error::AccessDenied);
+
+            if is_read_only_error {
+                debug!(
+                    "Storage '{}': write probe failed with read-only error: {:?}",
+                    storage_name, e
+                );
+                false
+            } else {
+                // Other errors (InvalidObjectHandle, InvalidParentObject, etc.) likely mean
+                // we just can't create at root, not that the device is read-only.
+                // Android devices often don't allow creating at root but are still writable.
+                debug!(
+                    "Storage '{}': write probe failed with non-fatal error (assuming writable): {:?}",
+                    storage_name, e
+                );
+                true
+            }
+        }
+    }
+}
+
+/// Gets storage information from a connected device.
+///
+/// # Arguments
+/// * `device` - The connected MTP device
+/// * `device_supports_write` - Whether the device supports write operations (SendObjectInfo)
+async fn get_storages(device: &MtpDevice, device_supports_write: bool) -> Result<Vec<MtpStorageInfo>, mtp_rs::Error> {
+    debug!("Calling device.storages()...");
+    let storage_list = device.storages().await?;
+    debug!("Got {} storage(s)", storage_list.len());
+    let mut storages = Vec::new();
+
+    for storage in storage_list {
+        let info = storage.info();
+        // Check if storage reports read-only capability
+        let storage_reports_read_only = !info.is_writable;
+
+        // Determine actual read-only status
+        let is_read_only = if !device_supports_write || storage_reports_read_only {
+            // Device/storage claims no write support - trust it
+            true
+        } else {
+            // Device claims write support - probe to verify
+            // This catches cameras that advertise write support but reject writes at runtime
+            let probe_ok = probe_write_capability(&storage, &info.description).await;
+            if !probe_ok {
+                info!(
+                    "Storage '{}' claims write support but probe failed - marking read-only",
+                    info.description
+                );
+            }
+            !probe_ok // read-only if probe failed
+        };
+
+        // Log final determination
+        info!(
+            "Storage '{}': is_writable={}, device_supports_write={}, is_read_only={}",
+            info.description, info.is_writable, device_supports_write, is_read_only
+        );
+
+        storages.push(MtpStorageInfo {
+            id: storage.id().0 as u32,
+            name: info.description.clone(),
+            total_bytes: info.total_capacity,
+            available_bytes: info.free_space,
+            storage_type: Some(format!("{:?}", info.storage_type)),
+            is_read_only,
+        });
+    }
+
+    Ok(storages)
+}
+
+/// Normalizes an MTP path.
+///
+/// Ensures the path starts with "/" and handles empty/relative paths.
+fn normalize_mtp_path(path: &str) -> PathBuf {
+    if path.is_empty() || path == "." {
+        PathBuf::from("/")
+    } else if !path.starts_with('/') {
+        PathBuf::from("/").join(path)
+    } else {
+        PathBuf::from(path)
+    }
+}
+
+/// Converts MTP DateTime to Unix timestamp.
+pub(super) fn convert_mtp_datetime(dt: mtp_rs::DateTime) -> u64 {
+    // Convert the DateTime struct fields to Unix timestamp
+    // This is a simplified conversion - MTP DateTime has year, month, day, hour, minute, second
+
+    // Create a rough Unix timestamp from the date components
+    // Note: This is a simplified calculation that doesn't account for leap years perfectly
+    let year = dt.year as u64;
+    let month = dt.month as u64;
+    let day = dt.day as u64;
+    let hour = dt.hour as u64;
+    let minute = dt.minute as u64;
+    let second = dt.second as u64;
+
+    // Simplified calculation: days since epoch + time
+    // This is approximate but good enough for file listing purposes
+    let years_since_1970 = year.saturating_sub(1970);
+    let days = years_since_1970 * 365 + (years_since_1970 / 4) // leap years approximation
+        + (month.saturating_sub(1)) * 30  // approximate days per month
+        + day.saturating_sub(1);
+
+    days * 86400 + hour * 3600 + minute * 60 + second
+}
+
+/// Generates icon ID for MTP files.
+fn get_mtp_icon_id(is_dir: bool, filename: &str) -> String {
+    if is_dir {
+        return "dir".to_string();
+    }
+    if let Some(ext) = Path::new(filename).extension() {
+        return format!("ext:{}", ext.to_string_lossy().to_lowercase());
+    }
+    "file".to_string()
+}

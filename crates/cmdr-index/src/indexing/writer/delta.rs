@@ -265,7 +265,8 @@ pub(super) fn propagate_min_subtree_epoch(conn: &rusqlite::Connection, start_id:
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indexing::store::{DirStatsById, EntryRow, ROOT_ID};
+    use crate::indexing::store::{DirStatsById, ROOT_ID};
+    use crate::indexing::writer::entry_fixtures::dir_entry;
     use crate::indexing::writer::tests::setup_db;
     use crate::indexing::writer::{IndexWriter, WriteMessage};
 
@@ -275,17 +276,7 @@ mod tests {
         let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).unwrap();
 
         // Insert a directory to propagate to
-        let entries = vec![EntryRow {
-            id: 10,
-            parent_id: ROOT_ID,
-            name: "home".into(),
-            is_directory: true,
-            is_symlink: false,
-            logical_size: None,
-            physical_size: None,
-            modified_at: None,
-            inode: None,
-        }];
+        let entries = vec![dir_entry(10, ROOT_ID, "home")];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         writer.flush_blocking().unwrap();
 
@@ -337,17 +328,7 @@ mod tests {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).unwrap();
 
-        let entries = vec![EntryRow {
-            id: 10,
-            parent_id: ROOT_ID,
-            name: "home".into(),
-            is_directory: true,
-            is_symlink: false,
-            logical_size: None,
-            physical_size: None,
-            modified_at: None,
-            inode: None,
-        }];
+        let entries = vec![dir_entry(10, ROOT_ID, "home")];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         writer.flush_blocking().unwrap();
 
@@ -401,17 +382,7 @@ mod tests {
         let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).unwrap();
 
         // home(10), listed at epoch 5, with complete dir_stats.
-        let entries = vec![EntryRow {
-            id: 10,
-            parent_id: ROOT_ID,
-            name: "home".into(),
-            is_directory: true,
-            is_symlink: false,
-            logical_size: None,
-            physical_size: None,
-            modified_at: None,
-            inode: None,
-        }];
+        let entries = vec![dir_entry(10, ROOT_ID, "home")];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         writer.flush_blocking().unwrap();
         {
@@ -496,17 +467,7 @@ mod tests {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).unwrap();
 
-        let entries = vec![EntryRow {
-            id: 10,
-            parent_id: ROOT_ID,
-            name: "home".into(),
-            is_directory: true,
-            is_symlink: false,
-            logical_size: None,
-            physical_size: None,
-            modified_at: None,
-            inode: None,
-        }];
+        let entries = vec![dir_entry(10, ROOT_ID, "home")];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         writer.flush_blocking().unwrap();
         {
@@ -582,30 +543,7 @@ mod tests {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).unwrap();
 
-        let entries = vec![
-            EntryRow {
-                id: 10,
-                parent_id: ROOT_ID,
-                name: "complete".into(),
-                is_directory: true,
-                is_symlink: false,
-                logical_size: None,
-                physical_size: None,
-                modified_at: None,
-                inode: None,
-            },
-            EntryRow {
-                id: 20,
-                parent_id: ROOT_ID,
-                name: "incomplete".into(),
-                is_directory: true,
-                is_symlink: false,
-                logical_size: None,
-                physical_size: None,
-                modified_at: None,
-                inode: None,
-            },
-        ];
+        let entries = vec![dir_entry(10, ROOT_ID, "complete"), dir_entry(20, ROOT_ID, "incomplete")];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         writer.flush_blocking().unwrap();
         {
@@ -674,39 +612,9 @@ mod tests {
         // ROOT → src(10) → incomplete(30); ROOT → dst(20). src holds an
         // incomplete child so src is 0; dst is complete at 5.
         let entries = vec![
-            EntryRow {
-                id: 10,
-                parent_id: ROOT_ID,
-                name: "src".into(),
-                is_directory: true,
-                is_symlink: false,
-                logical_size: None,
-                physical_size: None,
-                modified_at: None,
-                inode: None,
-            },
-            EntryRow {
-                id: 20,
-                parent_id: ROOT_ID,
-                name: "dst".into(),
-                is_directory: true,
-                is_symlink: false,
-                logical_size: None,
-                physical_size: None,
-                modified_at: None,
-                inode: None,
-            },
-            EntryRow {
-                id: 30,
-                parent_id: 10,
-                name: "moving".into(),
-                is_directory: true,
-                is_symlink: false,
-                logical_size: None,
-                physical_size: None,
-                modified_at: None,
-                inode: None,
-            },
+            dir_entry(10, ROOT_ID, "src"),
+            dir_entry(20, ROOT_ID, "dst"),
+            dir_entry(30, 10, "moving"),
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         writer.flush_blocking().unwrap();

@@ -401,16 +401,7 @@ impl Volume for ArchiveVolume {
             // `on_progress` at least once; the archive listing is atomic so
             // there's nothing incremental to report).
             if let Some(callback) = on_progress {
-                let mut progress = ListingProgress::default();
-                for entry in &entries {
-                    if entry.is_directory {
-                        progress.dirs += 1;
-                    } else {
-                        progress.files += 1;
-                        progress.bytes += entry.size.unwrap_or(0);
-                    }
-                }
-                callback(progress);
+                callback(ListingProgress::of(&entries));
             }
             Ok(entries)
         })
@@ -485,6 +476,13 @@ impl Volume for ArchiveVolume {
     // ---- Extract-out: streaming reads + copy scanning -----------------------
 
     fn supports_export(&self) -> bool {
+        true
+    }
+
+    /// Zip external attributes, the tar header, 7z's unix extension — whichever
+    /// the archive recorded. An entry that recorded none still answers `0`; this
+    /// says only that the backend can carry one.
+    fn reports_posix_mode(&self) -> bool {
         true
     }
 
@@ -602,6 +600,12 @@ impl Volume for ArchiveVolume {
 
     /// `None`: an archive isn't a local FS path. Inner entries aren't reachable
     /// via `std::fs`, so there's no `copyfile(2)` fast path to advertise.
+    /// `true`: this volume's root is the `.zip` FILE, which lives inside the
+    /// volume that holds it. See [`Volume::routes_over_a_parent`].
+    fn routes_over_a_parent(&self) -> bool {
+        true
+    }
+
     fn local_path(&self) -> Option<PathBuf> {
         None
     }
@@ -883,6 +887,12 @@ fn node_to_entry(archive_path: &Path, volume_name: &str, node: &ArchiveNode) -> 
         // `ArchiveNode::modified` is Unix seconds, matching `FileEntry`; a
         // negative (pre-1970) timestamp is dropped rather than wrapped.
         modified_at: node.modified.and_then(|secs| u64::try_from(secs).ok()),
+        // The mode the archive recorded, or `FileEntry`'s "no permission
+        // concept" sentinel when it recorded none. The copy engine reads this to
+        // decide what an extracted file lands as, so ❌ never a plausible
+        // default: a fabricated `0o644` would widen a landed file under a strict
+        // umask on the word of an archive that said nothing.
+        permissions: node.mode.unwrap_or(0),
         // The archive listing is complete in one pass — no deferred metadata.
         extended_metadata_loaded: true,
         ..FileEntry::new(

@@ -1,44 +1,56 @@
 /**
- * The snapshot pane's right-click context menu must label `Copy {filename}` with the
- * basename, not the adapted FileEntry's `name` (which is the friendly full path like
- * `~/Library/.../test.md`). This test pins the basename helper that
- * SearchResultsView's onContextMenu uses.
- *
- * We don't drive the full component here (FullList virtualization makes the
- * row-level event hard to simulate cleanly in jsdom); instead we mirror the
- * inline `basename` helper from the component and pin its contract.
+ * The two rules `SearchResultsView.svelte`'s row context menu runs on, unit-tested
+ * on the pure helpers behind it. That the view actually calls them with its own
+ * rows and selection is pinned one tier up, in `SearchResultsView.svelte.test.ts`
+ * (a real `contextmenu` event on a rendered row).
  */
 import { describe, it, expect } from 'vitest'
-// Touch the real component so the lint rule `custom/no-isolated-tests` accepts the test as a
-// real exercise of application code. The default export is also the surface we'd mount if we
-// were running an integration check; importing it pins the module path against typos and
-// any inadvertent rename of `SearchResultsView.svelte`.
-import SearchResultsView from './SearchResultsView.svelte'
+import { snapshotBasename, snapshotContextMenuPaths } from './snapshot-context-menu'
 
-/** Mirrors the inline `basename` helper in SearchResultsView.svelte. */
-function basename(path: string): string {
-  const idx = path.lastIndexOf('/')
-  return idx >= 0 ? path.slice(idx + 1) : path
-}
+const ROWS = [{ path: '/Users/test/a.txt' }, { path: '/Users/test/b.txt' }, { path: '/Users/test/c.txt' }]
 
-describe('SearchResultsView basename (P10)', () => {
-  it('imports the real SearchResultsView module', () => {
-    expect(SearchResultsView).toBeDefined()
+describe('snapshotContextMenuPaths', () => {
+  it('acts on the whole selection when the clicked row is part of it', () => {
+    expect(snapshotContextMenuPaths('/Users/test/a.txt', ROWS, new Set([0, 2]))).toEqual([
+      '/Users/test/a.txt',
+      '/Users/test/c.txt',
+    ])
   })
 
+  it('acts on the clicked row alone when it sits outside the selection', () => {
+    expect(snapshotContextMenuPaths('/Users/test/b.txt', ROWS, new Set([0, 2]))).toEqual(['/Users/test/b.txt'])
+  })
+
+  it('acts on the clicked row alone when nothing is selected', () => {
+    expect(snapshotContextMenuPaths('/Users/test/b.txt', ROWS, new Set())).toEqual(['/Users/test/b.txt'])
+  })
+
+  it('returns the selection in row order, whatever order the user picked it in', () => {
+    expect(snapshotContextMenuPaths('/Users/test/c.txt', ROWS, new Set([2, 0]))).toEqual([
+      '/Users/test/a.txt',
+      '/Users/test/c.txt',
+    ])
+  })
+
+  it('drops a selected index the rows no longer have', () => {
+    expect(snapshotContextMenuPaths('/Users/test/a.txt', ROWS, new Set([0, 42]))).toEqual(['/Users/test/a.txt'])
+  })
+})
+
+describe('snapshotBasename', () => {
   it('returns just the filename from an absolute path', () => {
-    expect(basename('/Users/test/Library/foo/report.pdf')).toBe('report.pdf')
+    expect(snapshotBasename('/Users/test/Library/foo/report.pdf')).toBe('report.pdf')
   })
 
   it('returns the input when no slashes are present', () => {
-    expect(basename('report.pdf')).toBe('report.pdf')
+    expect(snapshotBasename('report.pdf')).toBe('report.pdf')
   })
 
   it('handles paths ending in a slash by returning empty', () => {
-    expect(basename('/Users/test/Library/foo/')).toBe('')
+    expect(snapshotBasename('/Users/test/Library/foo/')).toBe('')
   })
 
   it('handles single-letter filenames', () => {
-    expect(basename('/a')).toBe('a')
+    expect(snapshotBasename('/a')).toBe('a')
   })
 })

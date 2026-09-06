@@ -8,11 +8,8 @@
      * back. It's a PREVIEW of the failed row, not a replacement for it — the
      * queue window carries the full reason, the suggestion, and the Dismiss.
      */
-    import Button from '$lib/ui/Button.svelte'
-    import Icon from '$lib/ui/Icon.svelte'
-    import { dismissToast } from '$lib/ui/toast'
+    import OperationFailureToastBody from './OperationFailureToastBody.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
     import { failureReasonFor } from '$lib/file-operations/queue/failure-reason'
     import type { OperationSnapshot } from '$lib/tauri-commands'
 
@@ -30,53 +27,16 @@
     /** `reason.message` is markup from the error pipeline (escaped names and
      *  paths, size tiers), the same value the error dialog renders. */
     const reason = $derived(failureReasonFor(snapshot))
-
-    function showInQueue(): void {
-        void openQueueWindow()
-        // The queue window now owns this conversation, in full. Leaving the
-        // toast up behind it would be two voices saying the same thing.
-        dismissToast(toastId)
-    }
 </script>
 
-<div class="toast-body">
-    <span class="title">
-        <span class="glyph" aria-hidden="true"><Icon name="triangle-alert" size={15} /></span>
-        {title}
-    </span>
+<OperationFailureToastBody {toastId} {title}>
     {#if reason}
         <!-- eslint-disable-next-line svelte/no-at-html-tags -- markup from the typed error via `failureReasonFor`: escaped names/paths plus size tiers, no user input. Same boundary as `FallbackErrorContent`. -->
         <p class="reason">{@html reason.message}</p>
     {/if}
-    <div class="actions">
-        <Button size="mini" variant="secondary" onclick={showInQueue}>{tString('queue.failureToast.action')}</Button>
-    </div>
-</div>
+</OperationFailureToastBody>
 
 <style>
-    .toast-body {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-        font-size: var(--font-size-sm);
-    }
-
-    .title {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        color: var(--color-text-primary);
-        font-weight: 600;
-    }
-
-    .glyph {
-        display: inline-flex;
-        flex-shrink: 0;
-        /* Error red, matching the toast's own stripe: this notice names the
-           failure and shows its reason, so it carries the full severity. */
-        color: var(--color-error);
-    }
-
     /*
       The queue row prints the reason in full; a 360px toast can't, and the
       pipeline's prose was written for a dialog. Three lines covers every stock
@@ -94,11 +54,5 @@
         line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
-    }
-
-    .actions {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: var(--spacing-xs);
     }
 </style>

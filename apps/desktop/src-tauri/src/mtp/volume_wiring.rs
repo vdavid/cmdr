@@ -14,12 +14,12 @@ use log::debug;
 use crate::device_volumes::{DeviceVolumeEntry, DeviceVolumeProvider, ProviderFuture, register_device_provider};
 use crate::file_system::volume::MtpVolume;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::mtp::connection::{MtpVolumeRegistrar, set_volume_registrar};
+use crate::mtp::MtpVolumeRegistrar;
 
-/// Teaches the MTP session layer how a storage becomes a volume.
+/// How this app turns an attached storage into a browsable volume.
 ///
-/// Call once at startup, before anything can connect a device. Without it a
-/// device connects and its storages never appear as volumes.
+/// Handed to `MtpConnectionManager::new` at startup. Without it a device
+/// connects and its storages never appear as volumes.
 ///
 /// ❗ Both callbacks run synchronously inside the session layer, and must stay
 /// that way. `connect()` attaches every storage before it starts the device's
@@ -28,20 +28,30 @@ use crate::mtp::connection::{MtpVolumeRegistrar, set_volume_registrar};
 /// arriving ahead of the volumes has nothing to land on and the update is lost.
 /// ❌ Never spawn from here, never make these async. See
 /// `connection/volume_registrar.rs`.
-pub(crate) fn install_volume_registrar() {
-    set_volume_registrar(MtpVolumeRegistrar {
-        attach: |device_id, storage_id, storage_name| {
+///
+/// The `volumes-changed` broadcast rides along here, and this is the only place
+/// MTP asks for one. Attaching and detaching a storage is exactly what changes
+/// the volume list, so the two can't drift apart; the session layer, which knows
+/// nothing about the app's volume list, would have to remember to ask at every
+/// path that touches a storage, and one that forgot would leave the picker
+/// showing a phone that has gone. `emit_volumes_changed` coalesces on a 150 ms
+/// window, so a device arriving with four storages still costs one broadcast.
+pub(crate) fn volume_registrar() -> MtpVolumeRegistrar {
+    MtpVolumeRegistrar {
+        attach: |manager, device_id, storage_id, storage_name| {
             let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
-            let volume = Arc::new(MtpVolume::new(device_id, storage_id, storage_name));
+            let volume = Arc::new(MtpVolume::new(Arc::clone(manager), device_id, storage_id, storage_name));
             get_volume_manager().register(&volume_id, volume);
             debug!("Registered MTP volume: {volume_id} ({storage_name})");
+            crate::volume_broadcast::emit_volumes_changed();
         },
         detach: |device_id, storage_id| {
             let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
             get_volume_manager().unregister(&volume_id);
             debug!("Unregistered MTP volume: {volume_id}");
+            crate::volume_broadcast::emit_volumes_changed();
         },
-    });
+    }
 }
 
 // ============================================================================
@@ -130,11 +140,7 @@ impl DeviceVolumeProvider for MtpDeviceProvider {
             let device_id = cmdr_fs::volume::mtp_ids::device_id_of_volume(volume_id)
                 .ok_or_else(|| format!("MTP volume id {volume_id} is missing a device prefix"))?;
             crate::mtp::connection_manager()
-                .disconnect(
-                    device_id,
-                    None::<&tauri::AppHandle>,
-                    crate::mtp::MtpDisconnectReason::User,
-                )
+                .disconnect(device_id, crate::mtp::MtpDisconnectReason::User)
                 .await
                 .map_err(|e| e.to_string())
         })

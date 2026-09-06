@@ -37,8 +37,18 @@ import { resolveLocation } from '$lib/file-explorer/navigation/resolve-location'
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import type { ExplorerAPI } from './explorer-api'
+import { classifyLanding, waitForPaneToGoQuiet, NAV_QUIET_WAIT, type NavLandingOutcome } from './mcp-nav-landing'
 
 const log = getAppLogger('mcpListeners')
+
+/**
+ * What `mcp-nav-to-path` puts on the wire. The plain `{ ok, error }` shape covers the
+ * declines that happen before the pane moves (no explorer, an unresolvable path, a
+ * synchronous refusal); the landing shapes carry a typed `outcome` plus the location the
+ * pane came to rest on, which the Rust handler turns into the tool result. ❌ The backend
+ * branches on `outcome`, never on the message text.
+ */
+type NavReplyBody = { ok: false; error: string } | ({ ok: boolean } & NavLandingOutcome)
 
 /**
  * Typed dispatch entry point the adapter calls. Bound by the caller to
@@ -338,24 +348,26 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const path = typeof raw.path === 'string' ? raw.path : undefined
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (!pane || path === undefined) return
-    const explorerRef = getExplorer()
-    // `explorerRef` is null during HMR, and would also be null if the explorer ever
-    // failed to mount. Let the backend's timeout handle the reply, but say so: a
-    // navigation that never reaches the pane is otherwise indistinguishable from one
-    // that ran and did nothing.
-    if (!explorerRef) {
-      log.warn('mcp-nav-to-path dropped: no explorer is mounted ({pane} pane, {path})', { path, pane })
-      return
-    }
     void (async () => {
-      const reply = async (body: { ok: true } | { ok: false; error: string }): Promise<void> => {
+      const reply = async (body: NavReplyBody): Promise<void> => {
         if (requestId === undefined) return
         const { emit } = await import('@tauri-apps/api/event')
         await emit('mcp-response', { requestId, ...body })
       }
 
-      const outcome = await resolveLocation(path)
-      if (!outcome.ok) {
+      const explorerRef = getExplorer()
+      // `explorerRef` is null during HMR, and would also be null if the explorer ever
+      // failed to mount. Say so both ways: the log covers fire-and-forget callers that
+      // send no `requestId`, and the reply spares the backend a full 30 s wait that
+      // would read as "slow" when the truth is "never reached the pane".
+      if (!explorerRef) {
+        log.warn('mcp-nav-to-path dropped: no explorer is mounted ({pane} pane, {path})', { path, pane })
+        await reply({ ok: false, error: 'Explorer is not ready' })
+        return
+      }
+
+      const resolved = await resolveLocation(path)
+      if (!resolved.ok) {
         // Log as well as reply: a caller that sends no `requestId` (the E2E harness,
         // and anything fire-and-forget) gets no reply, so without this line a
         // dropped navigation leaves no trace anywhere. That silence is what made a
@@ -364,7 +376,15 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
         await reply({ ok: false, error: tString('fileExplorer.navigation.locationUnreachableToast') })
         return
       }
-      const result = explorerRef.navigate({ pane, to: { goTo: outcome.location }, source: 'mcp' })
+
+      const target = { volumeId: resolved.location.volumeId, path: resolved.location.path }
+      // Which arm `{ goTo }` self-routes to, decided the same way `navigate()` decides
+      // it: a different volume takes the switch arm, whose `settled` resolves before
+      // the listing runs.
+      const isVolumeSwitch = explorerRef.getPaneLocation(pane).volumeId !== target.volumeId
+      const listingIdBefore = explorerRef.getPaneListingId(pane)
+
+      const result = explorerRef.navigate({ pane, to: { goTo: resolved.location }, source: 'mcp' })
       if (result.status === 'refused') {
         log.warn('mcp-nav-to-path refused for {path} ({pane} pane): {reason}', {
           path,
@@ -384,14 +404,53 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
       // `cmdr://state` reports the navigated one — a follow-up focused-pane op
       // (mkdir/copy/move) would then hit the WRONG pane.
       explorerRef.setFocusedPane(pane)
-      // Started: wait for the navigation to settle (the listing completes).
       try {
         await result.settled
-        await reply({ ok: true })
       } catch (e) {
         const error = e instanceof Error ? e.message : String(e)
         await reply({ ok: false, error })
+        return
       }
+
+      // Nobody to tell: a fire-and-forget caller (the E2E harness) sends no
+      // `requestId`, and the landing wait exists only to answer one. The declines
+      // above still log, which is what a caller with no reply channel can use.
+      if (requestId === undefined) return
+
+      // The in-place arm's `settled` IS the listing, so the pane is already at rest.
+      // The switch arm's resolves immediately, so wait for the pane to come to rest
+      // before reading where it landed (`mcp-nav-landing.ts`).
+      const quiet = isVolumeSwitch
+        ? await waitForPaneToGoQuiet(
+            {
+              getListingId: () => explorerRef.getPaneListingId(pane),
+              isLoading: () => explorerRef.isPaneLoading(pane),
+              now: () => Date.now(),
+              sleep: (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+            },
+            { listingIdBefore, ...NAV_QUIET_WAIT },
+          )
+        : true
+
+      const landed = explorerRef.getPaneLocation(pane)
+      const landing = classifyLanding({
+        target,
+        landed: { volumeId: landed.volumeId, path: landed.path },
+        quiet,
+      })
+      if (landing.outcome === 'navigated') {
+        await reply({ ok: true, ...landing })
+        return
+      }
+      // The pane came to rest somewhere else, or never came to rest at all. Both used
+      // to ack `OK: Navigated …` for a pane that never went there.
+      log.warn('mcp-nav-to-path did not land {path} on the {pane} pane: {outcome} at {landedPath}', {
+        path,
+        pane,
+        outcome: landing.outcome,
+        landedPath: landing.path,
+      })
+      await reply({ ok: false, ...landing })
     })()
   })
 

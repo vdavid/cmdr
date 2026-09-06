@@ -385,14 +385,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "打开压缩文件和应用程序包",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "选择每种格式按 Enter 键时的行为：像文件夹一样浏览它、用其他应用打开它，或者每次都询问。",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "压缩文件",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"
@@ -408,6 +400,14 @@
   "settings.archives.zip.description": "在 zip 文件上按 Enter 键时的行为。",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
+  },
+  "settings.archives.ooxml.label": "文稿和软件包",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "在 .docx、.xlsx、.pptx、.jar 或 .apk 上按 Enter 键时的行为。",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
   },
   "settings.archives.bundle.label": "应用程序包",
   "@settings.archives.bundle.label": {
@@ -452,10 +452,6 @@
   "settings.indexing.enabled.description": "在后台为你的驱动器建立索引，从而即时显示文件夹大小。",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
-  },
-  "settings.mediaIndex.card": "图像搜索",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "这一切完全在你的 Mac 上通过 Apple 内置的 Vision 框架运行。你的图像绝不离开你的电脑，也不涉及任何 AI 提供商或 API 密钥。",
   "@settings.mediaIndex.privacyNote": {
@@ -548,6 +544,14 @@
   "settings.mediaIndex.showFileStatusIcons.description": "在文件列表中为每张图像添加一个小标记，显示它是否已建立搜索索引。",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
+  },
+  "settings.mediaIndex.showInSearch.label": "在搜索中显示图像结果",
+  "@settings.mediaIndex.showInSearch.label": {
+    "sourceHash": "45dd528"
+  },
+  "settings.mediaIndex.showInSearch.description": "搜索会在你的文件上方加一排匹配的图像。匹配还比较粗糙，所以先关着，等你想用再打开。",
+  "@settings.mediaIndex.showInSearch.description": {
+    "sourceHash": "5b62cab"
   },
   "settings.mediaIndex.networkVolumes.label": "网络驱动器图像索引",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -1063,7 +1067,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "sourceHash": "40d9fa1"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.description": "进入 `.git` 时，将分支、标签、提交和工作树显示为可浏览的虚拟文件夹。禁用后则改为查看原始的 `.git` 内容。",
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "进入 `.git` 时，将分支、标签、提交和 worktree 显示为可浏览的虚拟文件夹。禁用后则改为查看原始的 `.git` 内容。",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },
@@ -1074,6 +1078,14 @@
   "settings.viewer.wordWrap.description": "在文件查看器中让长行在窗口边缘换行，而不是横向滚动。",
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
+  },
+  "settings.viewer.showTextCursor.label": "显示文本光标",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "在文件查看器中显示闪烁的光标，标出使用键盘选择时选区从哪里开始扩展。",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
   },
   "settings.developer.mcpEnabled.label": "启用 MCP 服务器",
   "@settings.developer.mcpEnabled.label": {
@@ -1450,6 +1462,38 @@
   "settings.navigationAndFileOps.card.fileOperations": "文件操作",
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.navigationAndFileOps.card.terminal": "终端",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd"
+  },
+  "settings.behavior.openTerminalHereApp.label": "“在此处打开终端”使用",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "Cmdr 会列出在这台 Mac 上找到的终端 App。要用它不认识的 App，请选择“选取 App…”。",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "选取 App…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "选取终端 App",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "正在检查你的 App…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "已显示“在此处打开终端”提示",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "是否已显示过关于选择终端 App 的一次性提示。",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
   },
   "settings.section.archives": "压缩文件",
   "@settings.section.archives": {

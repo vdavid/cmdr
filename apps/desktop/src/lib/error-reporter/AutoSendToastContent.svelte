@@ -5,6 +5,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { openErrorReportDialogForAutoSentReport } from './error-report-flow.svelte'
     import { getLastAutoSentReportId } from './auto-send-toast-state.svelte'
+    import SentReportToastBody from './SentReportToastBody.svelte'
 
     const TOAST_ID = 'error-report-auto-sent'
 
@@ -22,53 +23,18 @@
     }
 </script>
 
-<div class="content">
-    <div class="title">{tString('errorReporter.autoSentToast.title')}</div>
-    <div class="body">
-        {tString('errorReporter.autoSentToast.referenceIdLabel')}
-        <span class="id-badge">{getLastAutoSentReportId()}</span>
-    </div>
-    <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleChangeSettings}
-            >{tString('errorReporter.autoSentToast.changeSettings')}</Button
-        >
-        <Button size="mini" variant="primary" onclick={handleViewOrAddNotes}
-            >{tString('errorReporter.autoSentToast.viewOrAddNotes')}</Button
-        >
-    </div>
-</div>
+{#snippet actions()}
+    <Button size="mini" variant="secondary" onclick={handleChangeSettings}
+        >{tString('errorReporter.autoSentToast.changeSettings')}</Button
+    >
+    <Button size="mini" variant="primary" onclick={handleViewOrAddNotes}
+        >{tString('errorReporter.autoSentToast.viewOrAddNotes')}</Button
+    >
+{/snippet}
 
-<style>
-    .content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-        font-size: var(--font-size-sm);
-    }
-
-    .title {
-        color: var(--color-text-primary);
-        font-weight: 600;
-    }
-
-    .body {
-        color: var(--color-text-primary);
-    }
-
-    .id-badge {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-        background: var(--color-bg-tertiary);
-        padding: 0 var(--spacing-xs);
-        border-radius: var(--radius-sm);
-        white-space: nowrap;
-    }
-
-    .actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: var(--spacing-sm);
-        margin-top: var(--spacing-md);
-    }
-</style>
+<SentReportToastBody
+    title={tString('errorReporter.autoSentToast.title')}
+    message={tString('errorReporter.autoSentToast.referenceIdLabel')}
+    reportId={getLastAutoSentReportId()}
+    {actions}
+/>

@@ -17,8 +17,7 @@
  * `setPaneHistory` helpers (defined around line 311–335) and
  * `tabs/tab-state-manager.svelte.ts::switchTab` (which only touches `cursorFilename`
  * and `activeTabId`, never `history`). Net effect: snapshot refs survive `{#key}`
- * re-creation because history isn't owned by the pane. M8b can rely on this without
- * re-verifying.
+ * re-creation because history isn't owned by the pane.
  *
  * The store is pure module state (not a `$state` reactive store) because consumers
  * read snapshots imperatively at render time — there's no DOM that should re-render
@@ -26,7 +25,7 @@
  * results in a `$derived` at the call site.
  */
 
-import type { SearchResultEntry } from '$lib/ipc/bindings'
+import type { SearchResultEntry, SortColumn, SortOrder } from '$lib/ipc/bindings'
 import { tString } from '$lib/intl/messages.svelte'
 
 /** Maximum entries we keep in a single snapshot. Excess matches are truncated. */
@@ -41,6 +40,24 @@ export interface SearchSnapshotFilters {
   sizeMax?: number
   modifiedAfter?: number
   modifiedBefore?: number
+}
+
+/**
+ * A snapshot pane's row order: a column plus a direction, or `null` for the
+ * search engine's RANKED order, which is the state every snapshot opens in and
+ * the whole point of an AI-mode result set.
+ *
+ * It lives on the snapshot, not on the pane, because sorting REPLACES
+ * `entries`: every consumer resolves the index the user sees against
+ * `snapshot.entries[i]`, so a view-side reorder would hand a delete the wrong
+ * file. Two panes showing the same snapshot id therefore share one order, which
+ * is the honest answer for one result set. It also dies with the snapshot: this
+ * is module state, and the pane's own persisted directory sort is a separate
+ * thing that navigating into a snapshot never touches.
+ */
+export interface SnapshotSort {
+  column: SortColumn
+  order: SortOrder
 }
 
 /** A fully-materialized search snapshot. Immutable from the store's perspective. */
@@ -65,6 +82,8 @@ export interface SearchSnapshot {
   createdAt: number
   /** Friendly label for breadcrumbs and tab titles, derived from the query. */
   label: string
+  /** The order `entries` is in. `null` is the engine's ranked order. See [`SnapshotSort`]. */
+  sort: SnapshotSort | null
 }
 
 /** Internal map entry: snapshot plus the live reference count. */
@@ -76,6 +95,13 @@ interface StoreEntry extends SearchSnapshot {
    * the same base instead of annotating an already-annotated string.
    */
   baseLabel: string
+  /**
+   * The engine's ranked order, kept in step with every append and purge. `entries`
+   * is either this array itself (`sort === null`) or a sorted permutation of it, so
+   * going back to ranked restores the original order EXACTLY rather than
+   * approximating it.
+   */
+  rankedEntries: SearchResultEntry[]
 }
 
 // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state; consumers read imperatively at render time. Snapshots are immutable once stored (refCount aside), so there's nothing to subscribe to. See module header.
@@ -111,6 +137,18 @@ export function getMutationTick(): number {
   return mutationTick
 }
 
+/** The virtual-volume namespace a snapshot pane's path lives in. */
+const SEARCH_RESULTS_PREFIX = 'search-results://'
+
+/**
+ * The snapshot id a pane path names, or `null` when the path isn't a snapshot
+ * pane's. The one place that arithmetic lives, so a caller can't half-remember
+ * the prefix.
+ */
+export function snapshotIdFromPanePath(path: string): string | null {
+  return path.startsWith(SEARCH_RESULTS_PREFIX) ? path.slice(SEARCH_RESULTS_PREFIX.length) : null
+}
+
 /** Returns a fresh monotonic snapshot id (`sr-1`, `sr-2`, …). Per-session only. */
 export function nextSnapshotId(): string {
   return `sr-${String(nextId++)}`
@@ -134,6 +172,10 @@ export function getOrCreate(id: string, snapshot: SearchSnapshot): SearchSnapsho
     ...snapshot,
     id,
     entries: capped,
+    // A snapshot opens in the engine's ranked order, so the two arrays start as
+    // one and the same. `applySnapshotSort` is what ever splits them.
+    rankedEntries: capped,
+    sort: null,
     label: labelFor(snapshot.label, capped.length, snapshot.totalCount),
     baseLabel: snapshot.label,
     refCount: 0,
@@ -173,18 +215,73 @@ function labelFor(baseLabel: string, shown: number, total: number): string {
 export function appendSnapshotEntries(id: string, entries: SearchResultEntry[], totalCount: number): boolean {
   const stored = store.get(id)
   if (!stored) return false
-  const room = SNAPSHOT_ENTRIES_CAP - stored.entries.length
+  const room = SNAPSHOT_ENTRIES_CAP - stored.rankedEntries.length
   // A fresh array rather than a push, and a fresh ENTRY rather than a field write:
   // reactive consumers derive off the stored object, and a derived that recomputes
   // to the same reference tells the deriveds below it nothing changed.
-  const grown = room > 0 && entries.length > 0 ? [...stored.entries, ...entries.slice(0, room)] : stored.entries
+  const grown =
+    room > 0 && entries.length > 0 ? [...stored.rankedEntries, ...entries.slice(0, room)] : stored.rankedEntries
   const grownTotal = Math.max(stored.totalCount, totalCount)
   store.set(id, {
     ...stored,
-    entries: grown,
+    rankedEntries: grown,
+    // An UNSORTED pane renders the ranked order, so new rows show at the tail
+    // straight away. A SORTED one leaves its rows untouched until
+    // `snapshot-sort.svelte.ts::resortSnapshotIfSorted` places the new ones,
+    // one round trip later: a fully-sorted array that lags by a tick beats a
+    // half-sorted one nobody can read an index off. ❗ Every caller of this must
+    // follow it with that re-sort, or a sorted pane never shows the new rows.
+    entries: stored.sort === null ? grown : stored.entries,
     totalCount: grownTotal,
     label: labelFor(stored.baseLabel, grown.length, grownTotal),
   })
+  mutationTick += 1
+  return true
+}
+
+/**
+ * The engine's ranked rows for `id`, or `undefined` when the snapshot is gone.
+ *
+ * The sorter reads this to build its request and then compares the SAME array
+ * reference on the way back: every mutator replaces the array, so an unchanged
+ * reference is proof the rows didn't move under the round trip.
+ */
+export function getRankedEntries(id: string): readonly SearchResultEntry[] | undefined {
+  return store.get(id)?.rankedEntries
+}
+
+/**
+ * Puts a snapshot's rows in a new order and records the sort that produced it.
+ * The one place `entries` is re-ordered.
+ *
+ * `sort === null` restores the engine's ranked order exactly, and `rankedOrder`
+ * is ignored. Otherwise `rankedOrder` indexes into the snapshot's ranked entries,
+ * as `sort_search_results` answers; a list whose length doesn't match them is
+ * REFUSED (`false`), because applying it would drop or duplicate a row and every
+ * source-side op resolves the user's index against this array.
+ *
+ * Synchronous on purpose. The round trip that produces `rankedOrder` belongs to
+ * `snapshot-sort.svelte.ts`; keeping the mutation itself synchronous is what lets
+ * every reader (the rendered rows, the ops, the MCP mirror) go on seeing a
+ * complete array at every moment.
+ */
+export function applySnapshotSort(id: string, sort: SnapshotSort | null, rankedOrder: readonly number[]): boolean {
+  const stored = store.get(id)
+  if (!stored) return false
+  if (sort === null) {
+    store.set(id, { ...stored, entries: stored.rankedEntries, sort: null })
+    mutationTick += 1
+    return true
+  }
+  if (rankedOrder.length !== stored.rankedEntries.length) return false
+  const reordered: SearchResultEntry[] = []
+  for (const index of rankedOrder) {
+    const entry = stored.rankedEntries[index]
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime bounds guard on a list that crossed IPC
+    if (!entry) return false
+    reordered.push(entry)
+  }
+  store.set(id, { ...stored, entries: reordered, sort })
   mutationTick += 1
   return true
 }
@@ -222,11 +319,19 @@ export function getRefCount(id: string): number {
 }
 
 /**
- * Removes the entry with the given `path` from every stored snapshot. Called
- * after a successful delete from a search-results pane so the row disappears
- * from this snapshot AND from any other snapshot that happened to contain the
- * same file. Returns the list of snapshot ids that were mutated (useful for
- * tests and debugging; production callers can ignore it).
+ * Removes `path` AND everything under it from every stored snapshot. Called with
+ * each vanished top-level source path off the write stream, so a row disappears
+ * from the snapshot the operation ran in and from every other snapshot that
+ * happened to hold the same file. Returns the ids that changed (useful for tests
+ * and debugging; production callers can ignore it).
+ *
+ * **Descendants go too, and the boundary is the separator.** One event covers one
+ * TOP-LEVEL item; when that item is a directory and it is gone, every file under
+ * it went with it, and a snapshot holding both a folder and its contents is the
+ * ordinary outcome of a search that matched both. `/a/reports-old.pdf` shares the
+ * name prefix of `/a/reports` without being inside it, so a bare `startsWith`
+ * would take a file that still exists. A plain file has no descendants, so the
+ * extra clause costs it nothing.
  *
  * The `entries` array on each affected snapshot is replaced with a fresh
  * filtered array so reactive consumers (Svelte `$derived` over
@@ -234,18 +339,20 @@ export function getRefCount(id: string): number {
  * it still reports what the backend originally found; mismatch between
  * `entries.length` and `totalCount` is the existing "truncated-to-cap"
  * signal, so reusing it here is consistent.
- *
- * Per plan §3.7: "delete from search-results pane: confirms with the real
- * path. On success, the row is removed from this snapshot AND from any
- * other snapshot it appears in."
  */
 export function removeEntryFromAllSnapshots(path: string): string[] {
+  const insidePrefix = `${path}/`
+  const survives = (candidate: string): boolean => candidate !== path && !candidate.startsWith(insidePrefix)
   const mutatedIds: string[] = []
   for (const [id, entry] of store.entries()) {
-    const filtered = entry.entries.filter((e) => e.path !== path)
+    const filtered = entry.entries.filter((e) => survives(e.path))
     if (filtered.length !== entry.entries.length) {
+      // Both orders lose the row. A filter preserves relative order, so a sorted
+      // pane stays sorted and the ranked order stays restorable, with no round
+      // trip: a purge can't move a surviving row past another one.
+      const filteredRanked = entry.sort === null ? filtered : entry.rankedEntries.filter((e) => survives(e.path))
       // Replaced, not written into, for the reason on `mutationTick`.
-      store.set(id, { ...entry, entries: filtered })
+      store.set(id, { ...entry, entries: filtered, rankedEntries: filteredRanked })
       mutatedIds.push(id)
     }
   }
@@ -301,9 +408,11 @@ export function getDebugStats(): {
 }
 
 /**
- * Resolves a list of cursor / selected indices into absolute paths from a
- * snapshot. Used by the search-results pane source-side ops (M8d) to feed the
- * paths-based clipboard / transfer IPCs.
+ * Resolves a list of cursor / selected indices into snapshot entries. The one
+ * index→entry resolution every source-side op on the snapshot pane shares:
+ * clipboard (Cmd+C / Cmd+X), transfer (F5 / F6), and delete (F8) all reach the
+ * rows through here, so "the selection wins, the cursor is the fallback" is
+ * decided once instead of three times.
  *
  * - `selectedIndices`: frontend indices into `snapshot.entries`. Out-of-range
  *   indices are skipped (defensive — the snapshot is immutable from the store's
@@ -315,20 +424,29 @@ export function getDebugStats(): {
  * empty. The snapshot pane never has a `..` row, so there's no `hasParent`
  * adjustment.
  */
-export function resolveSnapshotPaths(snapshotId: string, selectedIndices: number[], cursorIndex: number): string[] {
+export function resolveSnapshotEntries(
+  snapshotId: string,
+  selectedIndices: number[],
+  cursorIndex: number,
+): SearchResultEntry[] {
   const snapshot = store.get(snapshotId)
   if (!snapshot) return []
   const indices = selectedIndices.length > 0 ? selectedIndices : [cursorIndex]
-  const paths: string[] = []
+  const entries: SearchResultEntry[] = []
   for (const idx of indices) {
-    // Runtime bounds guard: callers can pass stale indices (the M8c delete-sync
-    // shortens `entries` while in-flight selections still reference the old
-    // length).
+    // Runtime bounds guard: callers can pass stale indices (the cross-snapshot
+    // delete sync shortens `entries` while in-flight selections still reference
+    // the old length).
     const entry = snapshot.entries[idx]
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime bounds guard
-    if (entry) paths.push(entry.path)
+    if (entry) entries.push(entry)
   }
-  return paths
+  return entries
+}
+
+/** [`resolveSnapshotEntries`] narrowed to absolute paths, for the ops that only need those. */
+export function resolveSnapshotPaths(snapshotId: string, selectedIndices: number[], cursorIndex: number): string[] {
+  return resolveSnapshotEntries(snapshotId, selectedIndices, cursorIndex).map((e) => e.path)
 }
 
 /**

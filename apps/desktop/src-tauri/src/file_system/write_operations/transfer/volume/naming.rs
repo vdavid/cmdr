@@ -10,8 +10,33 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::super::super::unique_name::{ClaimedNames, NameCandidates};
+use super::super::super::unique_name::ClaimedNames;
+use super::super::super::unique_name::NameCandidates;
 use crate::file_system::volume::Volume;
+
+/// A name this operation has taken, and whether taking it PUT SOMETHING ON DISK.
+///
+/// The two are one answer because only the reserving call knows. A local-FS
+/// destination gets an `O_CREAT|O_EXCL` zero-byte placeholder, and a caller whose
+/// write then never happens has to take that placeholder back: on disk it is
+/// indistinguishable from a real, empty file the copy produced. Every other
+/// backend gets a probe, which leaves nothing behind and must NOT be deleted (the
+/// name may be free for a completely unrelated reason).
+pub(super) struct ClaimedName {
+    pub(super) path: PathBuf,
+    /// `true` ⇒ a zero-byte placeholder exists at `path` right now.
+    pub(super) reserved_on_disk: bool,
+}
+
+impl ClaimedName {
+    /// A name found free by probing, with nothing written to hold it.
+    fn probed(path: PathBuf) -> Self {
+        Self {
+            path,
+            reserved_on_disk: false,
+        }
+    }
+}
 
 /// Finds a unique filename on a volume by appending " (1)", " (2)", etc.
 ///
@@ -55,7 +80,7 @@ pub(super) async fn find_unique_volume_name(
     path: &Path,
     is_directory: bool,
     claimed: &ClaimedNames,
-) -> PathBuf {
+) -> ClaimedName {
     let local_root = dest_volume.local_path().filter(|_| !is_directory);
     let mut candidates = if is_directory {
         NameCandidates::for_directory(path)
@@ -81,21 +106,26 @@ pub(super) async fn find_unique_volume_name(
                 .create_new(true)
                 .open(&local_path)
             {
-                Ok(_) => return new_path,
+                Ok(_) => {
+                    return ClaimedName {
+                        path: new_path,
+                        reserved_on_disk: true,
+                    };
+                }
                 Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
                     candidates.advance();
                 }
                 Err(_) => {
                     // Anything else (parent unwritable, ENOSPC, …) leaks back to
                     // the caller's write attempt, which has its own error path.
-                    return new_path;
+                    return ClaimedName::probed(new_path);
                 }
             }
         } else {
             // Non-local backend: best-effort `exists()` probe. Re-check right
             // before returning to keep the residual window as narrow as we can.
             if !dest_volume.exists(&new_path).await {
-                return new_path;
+                return ClaimedName::probed(new_path);
             }
             candidates.advance();
         }
@@ -103,7 +133,7 @@ pub(super) async fn find_unique_volume_name(
         // Safety limit to prevent an infinite loop.
         if candidates.attempts() > 1000 {
             // Extremely unlikely to happen.
-            return candidates.current();
+            return ClaimedName::probed(candidates.current());
         }
     }
 }
@@ -115,6 +145,31 @@ pub(super) async fn find_unique_volume_name(
 /// that shared rule IS the guarantee the two paths agree.
 fn resolve_local_path(root: &Path, path: &Path) -> PathBuf {
     cmdr_fs::volume::root_anchored(root, path)
+}
+
+/// Removes the `O_EXCL` placeholder a `Rename` resolution reserved for a child
+/// that never landed.
+///
+/// ❗ **Only while it is still EMPTY.** The placeholder is zero bytes by
+/// construction, so a size means somebody else wrote there between the
+/// reservation and now, and deleting a stranger's file to tidy up our own
+/// reservation is a worse bug than the litter. Best-effort otherwise: a
+/// destination that won't answer keeps the empty file, which is the same
+/// outcome as before and no worse.
+pub(super) async fn take_back_reservation(dest_volume: &Arc<dyn Volume>, path: &Path) {
+    match dest_volume.get_metadata(path).await {
+        Ok(entry) if !entry.is_directory && entry.size.unwrap_or(0) == 0 => {
+            if let Err(e) = dest_volume.delete(path).await {
+                log::debug!(target: "copy", "couldn't take back the reservation at {}: {e}", path.display());
+            }
+        }
+        Ok(_) => log::warn!(
+            target: "copy",
+            "the reservation at {} isn't an empty file any more, so it stays",
+            path.display()
+        ),
+        Err(_) => {}
+    }
 }
 
 #[cfg(test)]

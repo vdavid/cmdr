@@ -239,6 +239,24 @@ filter = '''
 slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
+# The git portal's ONE real-`.git/*` watcher cell. It arms a real `notify` debouncer over a
+# repository's four watched `.git` directories, writes two bursts of five commits plus a
+# branch switch, and blocks on each debounced delivery — so it is squarely the
+# delivery-blocking class this group exists for. Measured on an M1 Max: 1.8 s idle with both
+# bursts (2026-09-06), against the global 8 s cap. 20 s puts the cap above its own two 10 s
+# settle waits' worst case so the assertion (which names the reports it got) decides, and the
+# group keeps its live streams from multiplying the other watcher tests' starvation.
+#
+# ❗ It is the only cell anywhere that arms a real git watcher, and it has to stay that way:
+# every other subscription cell takes `GitPortal::with_scripted_watcher` and runs in ~0.05 s.
+# The second burst lives inside THIS cell for that reason; it proves the watch survives git's
+# rename over `HEAD`, which is what broke on Linux and what no scripted backend can stand in
+# for. `crates/cmdr-git/DETAILS.md` § "The watcher splits into bookkeeping and a backend".
+filter = 'test(a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one)'
+test-group = 'real-notify'
+slow-timeout = { period = "20s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # SELF-HEALING real-FSEvents tests — no retries. Each keeps producing the
 # observable mutation until the watch delivers, so neither the just-registered
 # arming window nor a lone coalesced/dropped event can starve it, all inside one
@@ -332,6 +350,36 @@ retries = 2
 # headroom that a busy host doesn't decide the verdict.
 filter = 'test(volume::nextcloud_test::)'
 slow-timeout = { period = "30s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# Gemini alone, ahead of the general provider-smoke cap below so it wins (nextest: the first
+# matching override per setting wins). Its free tier flaps — the identical request answered
+# 200, then 503, then a bodyless 404 inside a few minutes on 2026-09-04 — so
+# `client_real_gemini_test` retries four times with 5/10/20 s backoff before it will call the
+# run inconclusive. That's ~35 s of deliberate waiting plus four live round trips, which the
+# 60 s cap below would SIGKILL mid-retry, turning "Google was busy" into a red lane: exactly
+# the false alarm the retry exists to prevent. 150 s keeps the test's own budget authoritative
+# with the cap as a hang backstop. ❌ Don't read it as a runtime: a healthy attempt answers
+# first try in ~2 s.
+filter = 'test(ai::client_real_gemini_)'
+slow-timeout = { period = "150s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# The real-API provider smokes (`ai::client_real_*_test`, `#[ignore]`-gated, run only by the
+# `<provider>-smoke` check lanes). A live LLM round trip is the one thing they exist to do, so
+# the global 8 s cap can't be met without deleting the coverage — the exception the policy at
+# the top of this file describes.
+#
+# ❌ Don't read 60 s as a runtime. Measured 2026-09-04 on an idle M3 Max: Groq 1.2 s, Fireworks
+# 4.5–7.5 s. But every provider's small model reasons before it answers now, so latency is set
+# by how long the model thinks, not by us; the OpenAI Responses leg is the slowest. Fireworks
+# already blew the 8 s cap on its first lane run. 60 s is a hang backstop with enough headroom
+# that a thinking model or a busy provider doesn't decide the verdict.
+#
+# No `test-group`: each lane runs one provider's module and the lanes are `Exclusive` on the
+# cargo build dir, so they never overlap. Nothing here contends with anything.
+filter = 'test(ai::client_real_)'
+slow-timeout = { period = "60s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 # The SFTP window measurements, read and write (`crates/cmdr-sftp/src/volume/streams_bench.rs`).

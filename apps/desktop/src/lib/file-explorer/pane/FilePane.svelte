@@ -47,7 +47,7 @@
     import NetworkMountView from './NetworkMountView.svelte'
     import SearchResultsView from './SearchResultsView.svelte'
     import type { CancelLoadingPayload, SearchResultsViewAPI, VolumeChangePayload } from './types'
-    import { getSnapshot } from '$lib/search/snapshot-store.svelte'
+    import { getMutationTick, getSnapshot, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
     import MtpConnectionView from './MtpConnectionView.svelte'
     import SmbReconnectingView from './SmbReconnectingView.svelte'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
@@ -92,6 +92,7 @@
     import { resyncAfterHiddenFilesToggle } from './hidden-files-resync'
     import { createNetworkHostState } from './network-host-state.svelte'
     import { createMtpDisconnectWatch } from './mtp-disconnect-watch.svelte'
+    import { createSnapshotSelectionSync } from './snapshot-selection-sync.svelte'
     import { formatByteSize } from '$lib/units'
 
     interface Props {
@@ -401,14 +402,16 @@
      * or `null` for any other pane / unparseable path. Drives the breadcrumb label, the
      * row-count for keyboard cursor clamping, and the view's snapshot lookup.
      */
-    const searchSnapshotId = $derived(
-        isSearchResultsView && currentPath.startsWith('search-results://')
-            ? currentPath.slice('search-results://'.length)
-            : null,
-    )
+    const searchSnapshotId = $derived(isSearchResultsView ? snapshotIdFromPanePath(currentPath) : null)
 
-    /** Live snapshot lookup. Re-derives on path/id change. */
-    const searchSnapshot = $derived(searchSnapshotId ? getSnapshot(searchSnapshotId) : undefined)
+    /**
+     * Live snapshot lookup. Re-derives on path/id change AND on the store's mutation
+     * tick, so the row count, the cursor entry, and `createSnapshotSelectionSync`
+     * below all follow a purge or a still-running walk's appends. Without the tick
+     * read the `Map` mutation is invisible to Svelte (snapshots aren't `$state`, by
+     * design — see the store's header).
+     */
+    const searchSnapshot = $derived(searchSnapshotId ? (void getMutationTick(), getSnapshot(searchSnapshotId)) : undefined)
 
     /** Number of result rows in the active snapshot, or 0 when not on a search-results pane. */
     const searchResultsCount = $derived(searchSnapshot?.entries.length ?? 0)
@@ -654,6 +657,22 @@
      */
     // noinspection JSUnusedGlobalSymbols -- used by DualPaneExplorer.copyPathBetweenPanes
     export function getCursorEntry(): FileEntry | null {
+        return selectionInfo.entry
+    }
+
+    /**
+     * Re-reads the entry under the cursor and returns it, so a caller acting on the
+     * cursor row can be sure it isn't acting on the previous one.
+     *
+     * `getCursorEntry()` above is fed by an `$effect` that fires ONE `get_file_at`
+     * round trip per cursor move, so for a moment after a move it still holds the
+     * row the cursor just left. A read that only DISPLAYS the entry can live with
+     * that; a command that acts on it can't (arrow-down then ⌥⌘T is an ordinary
+     * keyboard sequence, and the gap widens on a slow mount).
+     */
+    // noinspection JSUnusedGlobalSymbols -- used by DualPaneExplorer.getCursorRowForTerminal
+    export async function refreshCursorEntry(): Promise<FileEntry | null> {
+        await selectionInfo.fetchEntry()
         return selectionInfo.entry
     }
 
@@ -1087,12 +1106,20 @@
     // pass reactive reads via getters so the factory lives in a plain `.svelte.ts`.
     const mcpSync = createPaneMcpSync({
         paneId,
-        // The network + search-results skip folds into the kind's `syncsToMcp`
-        // capability (false for both), read off the pane's derived `caps` rather
-        // than the two `volumeId ===` deriveds.
+        // The network skip folds into the kind's `syncsToMcp` capability, read off
+        // the pane's derived `caps` rather than a `volumeId ===` derived.
         getSyncsToMcp: () => caps.syncsToMcp,
         getListingId: () => listingId,
         getTotalCount: () => totalCount,
+        // Rows on screen (`..` included; the snapshot's own count on a search pane),
+        // against the backend listing count above.
+        getRowCount: () => effectiveTotalCount,
+        // A search-results pane's rows live in the frontend snapshot, not a listing.
+        getSnapshotEntries: () => searchSnapshot?.entries ?? null,
+        // And so does their ORDER. The tab's own `sortBy` / `sortOrder` belong to
+        // the folder this pane came from, so reporting them would describe an
+        // order the rows aren't in.
+        getSnapshotSort: () => searchSnapshot?.sort ?? null,
         getHasParent: () => hasParent,
         getVisibleRangeStart: () => visibleRangeStart,
         getVisibleRangeEnd: () => visibleRangeEnd,
@@ -1159,8 +1186,8 @@
 
     // Effective total count includes ".." entry if not at root.
     // For search-results panes, the snapshot owns the count (the backend
-    // `totalCount` state stays at 0 because no listing IPC ran). M8d depends on
-    // this so Cmd+A / range-select span the snapshot's entries.
+    // `totalCount` state stays at 0 because no listing IPC ran), which is what
+    // lets Cmd+A / range-select span the snapshot's entries.
     const effectiveTotalCount = $derived.by(() => {
         if (isSearchResultsView) return searchResultsCount
         return hasParent ? totalCount + 1 : totalCount
@@ -1549,6 +1576,21 @@
         navigateToFallback: loader.navigateToFallback,
     })
 
+    // A snapshot pane's rows can vanish under a live selection (a delete from this
+    // pane, from another window, or a move purging its sources), and no listing diff
+    // covers it. Remaps cursor + selection by path; inert on every other pane.
+    createSnapshotSelectionSync({
+        getSnapshotEntries: () => searchSnapshot?.entries,
+        getCursorIndex: () => cursorIndex,
+        getSelectedIndices: () => selection.getSelectedIndices(),
+        setSelectedIndices: (indices: number[]) => {
+            selection.setSelectedIndices(indices)
+        },
+        applyCursorIndex: (index: number) => {
+            cursorIndex = index
+        },
+    })
+
     // The pane's MTP device being unplugged: the listener re-registers itself on
     // every volume switch, so it can't fire on a stale device id.
     // (`mtp-disconnect-watch.svelte.ts`.)
@@ -1711,15 +1753,13 @@
                 path={currentPath}
                 {cursorIndex}
                 {isFocused}
-                {sortBy}
-                {sortOrder}
                 selectedIndices={selection.selectedIndices}
                 onNavigate={(entry: FileEntry) => { void handleNavigate(entry) }}
                 onSelect={({ index, shiftKey, metaKey }: SelectPayload) => {
                     // Reuse the regular pane's click semantics so shift-range
                     // and cmd-toggle behave identically. The snapshot pane has
                     // no `..` row, so `hasParent` is always false; `handleSelect`
-                    // honours it via the bound `hasParent` state. M8d.
+                    // honours it via the bound `hasParent` state.
                     handleSelect({ index, shiftKey: shiftKey ?? false, metaKey: metaKey ?? false })
                 }}
                 onVisibleRangeChange={handleVisibleRangeChange}

@@ -19,6 +19,7 @@
  */
 
 import { tString } from '$lib/intl/messages.svelte'
+import type { RangeEnd } from '$lib/tauri-commands'
 
 export interface LineOffset {
   /** Zero-based line number. */
@@ -142,6 +143,10 @@ export function getLineSegmentBounds(
  *
  * For a file of `N` lines, the range runs from `{ line: 0, offset: 0 }` to
  * `{ line: N - 1, offset: lastLineLength }` inclusive of the last character.
+ *
+ * `totalLines` is only ever a real line count. Selecting to the end of a file whose
+ * line count isn't known yet is `makeSelectToEof()`, which mints `EOF_LINE` directly
+ * instead of arriving at it by arithmetic.
  */
 export function makeSelectAll(totalLines: number, lastLineLength: number): Selection | null {
   if (totalLines <= 0) return null
@@ -152,13 +157,42 @@ export function makeSelectAll(totalLines: number, lastLineLength: number): Selec
 }
 
 /**
+ * Line number standing for "the end of the file" in a selection whose focus can't name
+ * a real line: ⌘A in ByteSeek-no-index mode, before the line index exists. `toRangeEnds`
+ * maps it to `RangeEnd::Eof` so the backend resolves the true end itself, and
+ * `isWholeFileSelection` reads it to hand the copy flow the known file size instead of a
+ * per-line walk over lines that were never fetched.
+ *
+ * `Number.MAX_SAFE_INTEGER` so plain `compareLineOffset` ordering sorts it after every
+ * real line, which keeps `normaliseSelection` and the per-line renderers working with no
+ * special case.
+ *
+ * ❌ Never reconstruct this value by arithmetic. `makeSelectToEof` is the only
+ * producer; a `totalLines - 1` elsewhere lands one line short of it and every
+ * consumer's literal comparison silently stops matching.
+ */
+export const EOF_LINE = Number.MAX_SAFE_INTEGER
+
+/**
+ * Returns the selection ⌘A mints when the file's total line count isn't known yet
+ * (ByteSeek before the line index lands): the whole file, from its first character to
+ * `EOF_LINE`.
+ */
+export function makeSelectToEof(): Selection {
+  return {
+    anchor: { line: 0, offset: 0 },
+    focus: { line: EOF_LINE, offset: 0 },
+  }
+}
+
+/**
  * Returns `true` if the selection covers the whole file. Used by the copy flow to
  * short-circuit the per-line byte estimator with the known file size: walking lines
  * fails for ⌘A on large files because the line cache only contains lines the user
  * has scrolled past, but the file size is known at viewer-open time.
  *
  * Matches three cases:
- * 1. ByteSeek-no-index sentinel: `end.line === Number.MAX_SAFE_INTEGER`.
+ * 1. End-of-file selection: `end.line === EOF_LINE` (`makeSelectToEof`).
  * 2. Known total lines: `end.line >= totalLines - 1` (the last line is included).
  * 3. `start === (0, 0)` is required in all cases.
  *
@@ -168,16 +202,35 @@ export function isWholeFileSelection(sel: Selection | null, totalLines: number |
   if (sel === null) return false
   const { start, end } = normaliseSelection(sel)
   if (start.line !== 0 || start.offset !== 0) return false
-  if (end.line === Number.MAX_SAFE_INTEGER) return true
+  if (end.line === EOF_LINE) return true
   if (totalLines !== null && end.line >= totalLines - 1) return true
   return false
 }
 
 /**
+ * Converts a selection into the `(anchor, focus)` `RangeEnd` pair `viewer_read_range`
+ * and `viewer_write_range_to_file` accept. Endpoints come out in document order, so a
+ * reversed drag reads the same range. Returns `null` for no selection.
+ *
+ * An end at `EOF_LINE` becomes `RangeEnd::Eof`, so the backend resolves the end of the
+ * file itself instead of receiving a line number no file has. That holds whether or not
+ * a line count has arrived since the selection was made: `EOF_LINE` means end-of-file
+ * either way, and `isWholeFileSelection` reads it the same way.
+ */
+export function toRangeEnds(sel: Selection | null): { anchor: RangeEnd; focus: RangeEnd } | null {
+  if (sel === null) return null
+  const { start, end } = normaliseSelection(sel)
+  return {
+    anchor: { kind: 'line', line: start.line, offset: start.offset },
+    focus: end.line === EOF_LINE ? { kind: 'eof' } : { kind: 'line', line: end.line, offset: end.offset },
+  }
+}
+
+/**
  * Maximum number of intermediate lines the AT (VoiceOver) announcement loop walks
  * before falling back to a generic "extends past visible content" message. Caps the
- * 9e15-line worst case from ⌘A in ByteSeek-no-index mode (where `focus.line` is set
- * to `Number.MAX_SAFE_INTEGER`).
+ * 9e15-line worst case from ⌘A in ByteSeek-no-index mode (where `focus.line` is
+ * `EOF_LINE`).
  */
 export const MAX_ANNOUNCE_LINES = 10_000
 
@@ -188,7 +241,7 @@ export const MAX_ANNOUNCE_LINES = 10_000
  *
  * Caps the line-span at `MAX_ANNOUNCE_LINES`; past that, returns a generic message
  * so the announcement work stays bounded (the alternative would freeze the UI on
- * ⌘A in ByteSeek-no-index mode where the focus line is `Number.MAX_SAFE_INTEGER`).
+ * ⌘A in ByteSeek-no-index mode where the focus line is `EOF_LINE`).
  */
 export function describeSelectionForAt(sel: Selection | null, getLineLength: (line: number) => number | null): string {
   if (sel === null) return ''
@@ -321,9 +374,10 @@ export function estimateSelectionBytes(
 
 /**
  * Reactive selection state for the viewer. Owns the `Selection | null` and exposes
- * setters that match the gesture vocabulary (`setAnchor`, `setFocus`, `selectAll`,
- * `clear`). The pure helpers above operate on the value `selection` returns; they
- * don't need the composable, which makes them trivially testable.
+ * setters that match the gesture vocabulary (`setAnchor`, `setFocus`, `setRange`,
+ * `selectAll`, `selectToEof`, `clear`). The pure helpers above operate on the value
+ * `selection` returns; they don't need the composable, which makes them trivially
+ * testable.
  */
 export function createViewerSelection() {
   let selection = $state<Selection | null>(null)
@@ -340,8 +394,25 @@ export function createViewerSelection() {
     selection = { anchor: selection.anchor, focus: point }
   }
 
+  /**
+   * Sets both endpoints at once. Word- and line-granularity gestures re-derive the whole
+   * selection from the pressed range on every move, so they land here rather than on
+   * `setAnchor` + `setFocus`; a character drag genuinely moves one endpoint and keeps
+   * using `setFocus`.
+   *
+   * One object param on purpose: two bare `LineOffset`s are exactly the confusable
+   * positional pair `cmdr/no-confusable-callback-params` exists for.
+   */
+  function setRange({ anchor, focus }: Selection): void {
+    selection = { anchor, focus }
+  }
+
   function selectAll({ totalLines, lastLineLength }: SelectAllArgs): void {
     selection = makeSelectAll(totalLines, lastLineLength)
+  }
+
+  function selectToEof(): void {
+    selection = makeSelectToEof()
   }
 
   function clear(): void {
@@ -354,7 +425,9 @@ export function createViewerSelection() {
     },
     setAnchor,
     setFocus,
+    setRange,
     selectAll,
+    selectToEof,
     clear,
   }
 }

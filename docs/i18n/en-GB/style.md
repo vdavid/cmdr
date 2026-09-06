@@ -18,7 +18,7 @@ Keep the two in step by hand when you edit either. `docs/i18n/en-AU/style.md` re
 
 ## What forks
 
-150 keys of 3,153 (4.8%). Four groups:
+151 keys of 3,263 (4.6%). Four groups:
 
 - **Bin (37 keys)**, the loudest one: the Trash is a destination people navigate to, and their Mac calls it the Bin.
 - **Spelling (65 keys)**: `-our`, `-ise`, `-ll-`, plus `grey`, `ageing`, `towards`, and `got` for `gotten`.
@@ -147,6 +147,11 @@ Considered and deliberately NOT forked, so nobody re-litigates them:
   2026-09-02 hold nothing new either: `remove`, `unfinished`, `copy`, `destination`, `clear`, and `move` are all
   dialect-neutral, and `destination` is British Finder's own word for the place a copy lands
   (`_ignored/i18n/en-GB/macOS/Finder`, `PE83`: `can't be copied to the destination`).
+- **The "Open terminal here" setting (`settings.behavior.openTerminalHereApp.*`,
+  `settings.navigationAndFileOps.card.terminal`, 8 keys).** Nothing forks. `terminal`, `app`, `Mac`, `Choose`,
+  `Checking`, and `hint` are dialect-neutral, and British Finder writes `Open in Terminal` and `Choose Application…`
+  with the same spellings as base `en` (`_ignored/i18n/en-GB/macOS/Finder/LocalizableMerged.json`, `N67` and `N137`,
+  2026-09-05). The one word worth a look, `app`, is what British Finder calls it too.
 - **`Forward` → `Forwards` on the Go menu.** The adverbial `-s` rides the verb phrase only. `en-GB` writes `Forward` on
   the menu item (`Finder/MenuBar.json:249.title`, `SystemSettings/MainMenu.json:448.title`) while writing `go forwards`
   in the accessibility description, so `menu.go.forward` inherits and `commands.navForward.label` forks.
@@ -168,7 +173,7 @@ lists `en_NZ` as a formatting region. So en-NZ exists to macOS as a _region_ and
 - **A value identical to base `en` is a coverage finding**, and the fix is always to delete the key. `@key.sourceHash`
   and `reviewed` apply; `sameAsSourceJustification` does not.
 - `gen-locale-skeleton.ts` refuses overlay tags and `sync-locale-keys.ts` skips them, both on purpose: they'd mirror all
-  3,153 English keys. These catalogs are written by hand, which is what keeps them small.
+  3,263 English keys. These catalogs are written by hand, which is what keeps them small.
 - ICU rules are inherited from the source: double every apostrophe (`''`) in ICU families, keep them single in the raw
   `errors.*` and native `menu.*` families, and match every `{placeholder}` and `<tag>` name to base `en` exactly.
   `settings.appearance.tintTriggerAria` is the trap: its only "color" is the `{colorName}` placeholder NAME, so it must

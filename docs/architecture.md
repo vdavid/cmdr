@@ -78,6 +78,8 @@ All under `apps/desktop/src/lib/`.
 - `downloads/`: Go-to-latest action, settings-gated download notifications, global shortcut bridge
 - `low-disk-space/`: Low-disk-space warning frontend: event bridge, mode/threshold helpers, Settings deep-link
 - `notifications/`: Shared macOS notification permission flow, used by `downloads/` and `low-disk-space/`
+- `open-terminal/`: "Open terminal here" frontend: which folder "here" means, where the command is offered, the
+  first-use app picker and its two toasts. See `apps/desktop/src/lib/open-terminal/CLAUDE.md`
 - `go-to-path/`: "Go to path" (⌘G) dialog + handler: thin presenter over backend `resolve_go_to_path`, recents mirror
 - `query-ui/`: Shared filter-and-act-on primitives for Search and Selection: `QueryBar`, `ModeChips`, `QueryResults`,
   recent-items, `createQueryFilterState()`
@@ -138,19 +140,27 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/write_operations/delete/`: Delete walker, trash, oracle-aware delete semantics
 - `file_system/volume/`: `VolumeManager` plus the `backends/` umbrella, re-exporting the `Volume` trait and its types
   from `crates/cmdr-fs/`. Checklist + capability matrix for new backends
-- `file_system/volume/backends/`: only the `Volume` impls that live in the app, `LocalPosixVolume` and `MtpVolume`.
-  Every crate backend (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`) is imported by crate name at
-  its call sites, and each one's app-side tests sit beside the app code they assert on. What stays app-side is what
-  needs the app: archive routing and the archive LRU, SMB's mount and upgrade passes, and edit / transfer driving
-- `file_system/git/`: Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume`
-  hooks, typed git-error classification (`FriendlyGitErrorKind`)
+- `file_system/volume/backends/`: the one `Volume` impl that still lives in the app, `LocalPosixVolume`. Every crate
+  backend (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`) is imported by
+  crate name at its call sites, and each one's app-side tests sit beside the app code they assert on. What stays
+  app-side is what needs the app: archive routing and the archive LRU, SMB's mount and upgrade passes, and edit /
+  transfer driving
+- `file_system/git/`: the app's two git seams, the `.git/` listing overlay and the wiring (the parked portal, the
+  toggle, `volume_holds_real_repos`, and the `git-state-changed` event). The route itself sits with the registry in
+  `file_system/volume/manager/git_routing.rs`; everything a repository answers, typed git-error classification
+  (`FriendlyGitErrorKind`) included, is `crates/cmdr-git`
+- `file_system/terminal.rs`: "Open terminal here": which terminal apps Cmdr knows, how each one takes a folder, and
+  whether a pane's folder has a path a shell can reach. Rationale: the module's own docs; the sources behind the table:
+  `docs/notes/terminal-launch-sources-2026-09-04.md`
 - `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)
 - `network/`: SMB's app-side half: mDNS discovery, share listing (smb2 + smbutil/smbclient fallback), mounting,
   Keychain, the auto-upgrade passes, and the frontend's connection events. The backend under it is `crates/cmdr-smb/`
 - `clipboard/`: File clipboard (Cmd+C/X/V) with NSPasteboard interop; tracks cut state and validates at paste
 - `secrets/`: Pluggable secret storage: Keychain (macOS), Secret Service (Linux), encrypted-file fallback. SMB creds +
   AI keys
-- `mtp/`: MTP device management, file ops, event-based watching
+- `mtp/`: the app-side half of the MTP backend (`crates/cmdr-mtp/`): the USB hotplug task with its enabled gate and
+  auto-connect, the `tauri_specta` device events, the registrar and `MtpDeviceProvider` wiring, the macOS ptpcamerad
+  workaround, and where the app parks the one connection manager it built. See `mtp/CLAUDE.md`
 - `adb/`: the app-side half of the Android-over-ADB backend (`crates/cmdr-adb/`): the `host:track-devices` task, the
   `AdbDeviceProvider`, lazy connect on first navigation, eject (forget the device client-side), and the IPC commands.
   See `adb/CLAUDE.md`
@@ -158,6 +168,14 @@ All under `apps/desktop/src-tauri/src/`.
   `AdbDeviceProvider`), a registry `volume_listing::complete` folds over, and `notify_devices_changed`, the one hotplug
   push channel (it emits `volumes-changed`). Contract in the module doc; the checklist step in
   `file_system/volume/DETAILS.md` § "Building a new volume"
+- `listing_overlays.rs`: the listing-overlay seam, same registration shape. A `ListingOverlay` contributes rows a PANE
+  sees that no volume holds, folded in by the listing pipeline; today's one contributor is the git portal's `.git/`
+  category rows (`file_system/git/overlay.rs`). Why it must never move into a `Volume`: `file_system/volume/DETAILS.md`
+  § "Architecture"
+- `listing_lifecycle.rs`: the listing-lifecycle seam, same registration shape. A `ListingLifecycle` observer hears which
+  directories a PANE has open; today's one observer keeps a repo's `.git/*` watcher armed while a pane shows one of its
+  virtual listings (`apps/desktop/src-tauri/src/file_system/git/arming.rs`). Why arming is the backend's:
+  `apps/desktop/src-tauri/src/file_system/git/DETAILS.md` § "Who arms the repo watcher"
 - `mcp/`: MCP server (tools, YAML resources, agent-centric API)
 - `ai/`: llama-server lifecycle, model download, inference client
 - `analytics/`: Anonymous beta usage analytics: hourly `/heartbeat` sender (true DAU + a PII-free config-shape snapshot
@@ -258,10 +276,10 @@ All under `apps/desktop/src-tauri/src/`.
 ## Workspace crates
 
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
-`cmdr-webdav`, and `cmdr-adb` carry no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces
-that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`,
-`cmdr-sftp`, and `cmdr-webdav` at the numbers their audits landed on. The two dev CLIs and the vendored fork are
-ordinary members.
+`cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`, and `cmdr-git` carry no `tauri` dependency and no reach into the app;
+`index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`,
+`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-mtp`, and `cmdr-git` at the numbers their audits landed
+on. The two dev CLIs and the vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -302,6 +320,20 @@ ordinary members.
   for its suites. The device-side twin of `cmdr-sftp`; the app-side half (tracker task, device provider, lazy connect,
   eject, IPC) is `apps/desktop/src-tauri/src/adb/`. Wire contract, `Volume` answers, and gaps:
   `crates/cmdr-adb/DETAILS.md`; guardrails: `crates/cmdr-adb/CLAUDE.md`
+- `crates/cmdr-mtp/`: everything Cmdr says to an Android phone or a PTP camera over USB. Device discovery, the
+  per-device PTP session layer (path ↔ handle caches, the priority gate, the interrupt-endpoint event loop, and the
+  session-reset recovery a screen lock triggers), `MtpVolume` over one storage area, and the fixture-backed virtual
+  device the E2E lane and a dev session drive. The app-side half (hotplug policy, the frontend events, the registrar
+  wiring, ptpcamerad) is `apps/desktop/src-tauri/src/mtp/`. Where the boundary runs and which side a test lives on:
+  `crates/cmdr-mtp/DETAILS.md`; the wire guardrails that keep a dropped future from wedging a phone:
+  `crates/cmdr-mtp/CLAUDE.md` and `crates/cmdr-mtp/src/connection/CLAUDE.md`
+- `crates/cmdr-git/`: everything Cmdr knows about a git repository. Repo discovery and info for the breadcrumb chip, the
+  cached per-entry status walk behind the status column, the per-repo `.git/*` watcher (reporting a typed snapshot
+  through a `GitStateSink`, never to a window), and `GitPortalVolume`, the read-only `Volume` that turns `.git`'s
+  branches, tags, commits, stash, worktrees, and submodules into browsable trees a copy can stream out of. The app-side
+  half (the route, the `.git/` listing overlay, the toggle, the `git-state-changed` event) is
+  `apps/desktop/src-tauri/src/file_system/git/`. Where the boundary runs, the capped surface, and every decision:
+  `crates/cmdr-git/DETAILS.md`; guardrails: `crates/cmdr-git/CLAUDE.md`
 - `crates/cmdr-smb/`: everything Cmdr says to an SMB server. `SmbVolume` over a live smb2 session, with its change
   watcher, reconnect state machine, and refcounted scan-connection pool, plus the protocol layer under it (address
   building, `smb2::Error` classification, the share-listing vocabulary). The second backend in its own crate; what

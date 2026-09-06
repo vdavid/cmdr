@@ -49,6 +49,7 @@ import CloudProviderPicker from './CloudProviderPicker.svelte'
 import CloudProviderSetup from './CloudProviderSetup.svelte'
 import OnboardingLanguagePicker from './OnboardingLanguagePicker.svelte'
 import OnboardingStepShell from './OnboardingStepShell.svelte'
+import OnboardingToggleCard from './OnboardingToggleCard.svelte'
 import { cloudProviderPresets } from '$lib/settings'
 
 let mounted: { target: HTMLElement; instance: ReturnType<typeof mount> } | undefined
@@ -180,6 +181,54 @@ describe('OnboardingStepShell a11y', () => {
     }))
     const instance = mount(OnboardingStepShell, { target, props: { children } })
     mounted = { target, instance }
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `OnboardingToggleCard.svelte`, the bordered card `StepBeta` and
+ * `StepOptional` both render. Two things have to survive a registry-backed mount: the
+ * `<h3>` labelling the `<section>` through `titleId`, and the switch taking its
+ * accessible name from the setting registry rather than from the visible title.
+ */
+describe('OnboardingToggleCard a11y', () => {
+  beforeEach(() => {
+    stubs.getSetting = (id: string) => stubs.settingsMap[id] ?? false
+  })
+
+  function mountCard(): HTMLElement {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const children = createRawSnippet(() => ({
+      render: () => '<p>What this sends, and what it never sends.</p>',
+    }))
+    mounted = {
+      target,
+      instance: mount(OnboardingToggleCard, {
+        target,
+        props: {
+          titleId: 'toggle-analytics-title',
+          title: 'Anonymous usage analytics',
+          settingId: 'analytics.enabled',
+          caption: 'On by default',
+          children,
+        },
+      }),
+    }
+    return target
+  }
+
+  it('with the switch on has no a11y violations', async () => {
+    stubs.settingsMap['analytics.enabled'] = true
+    const target = mountCard()
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('with the switch off has no a11y violations', async () => {
+    stubs.settingsMap['analytics.enabled'] = false
+    const target = mountCard()
     await tick()
     await expectNoA11yViolations(target)
   })

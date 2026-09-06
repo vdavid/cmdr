@@ -8,8 +8,54 @@ plus deferred work under `later/`.
 Each spec below states the problem it solves and what finishing it costs. ❌ None of them narrates what already shipped:
 that lives beside the code, and git holds the history.
 
+## Shipped, kept for review
+
+Each of these shipped and its durable intent already lives beside the code; the file survives only so David can judge
+the work against the plan it came from. Wipe per `DETAILS.md` § "Wiping a shipped spec" once the entry's own condition
+below is met.
+
+- [x] 2026-09-05 `viewer-selection-plan.md` - the three reported F3-viewer selection gaps (a double-click drag stuck on
+      one word, Shift+Arrow dead, Option+Shift+Arrow dead), plus keyboard extension, horizontal scroll on the bare
+      arrows, and the optional `viewer.showTextCursor`. Durable intent lives in
+      `apps/desktop/src/routes/viewer/DETAILS.md` (§ "Selection granularity", § "Keyboard motion model", § "Text
+      cursor") and `apps/desktop/src/lib/settings/DETAILS.md` § "Restricted-window mode".
+- [x] 2026-09-03 `agent-search-tool.md` - **Shipped, all six milestones.** Ask Cmdr can find a file by name: the one
+      authored `search` entry now serves both views and answers with typed JSON, so a walk still running reads as a
+      lower bound instead of the four confident "nothing matched" replies that prompted the spec. `coverage.complete` is
+      derived once beside the seven flags that each say a different sentence, `matchCountHuman` wears its `≥` so the
+      caveat can't be shed, `entries` goes through `fit_to_result_budget` on top of a `limit` clamped to 200, and
+      `list_volumes` hands over the `mountPath` that makes "search my NAS" expressible. `ai_search` stayed out by
+      decision. The schema trim paid for part of the new declaration, and the rest moved three pins plus the local
+      window floor, which rose to 32,768 because the 19th declaration broke the old one. Design and rules now live
+      beside the code (`mcp/executor/DETAILS.md` § The search result, `agent/tools/DETAILS.md` § The tool catalog and §
+      The size contract, `agent/chat/DETAILS.md` § What the budgets buy). **Wipe per `DETAILS.md` § "Wiping a shipped
+      spec"** once the watch item finds a home: whether the model offers to turn image indexing on when the content half
+      is the half that was asked for. That wipe is a one-way door, so it waits for David.
+- [x] 2026-09-03 `open-terminal-here.md` - **A keyboard-first file manager with no way to hand a folder to a shell.** A
+      user asked for "Open terminal here"; macOS has no default-terminal setting, so Cmdr keeps its own known-terminals
+      table (bundle id + launch recipe, queried live via `NSWorkspace`, no scan, no Refresh button), defaults to
+      Terminal, asks once on first use when another terminal is installed, and exposes one dropdown row in Navigation &
+      file ops plus a "Choose an app…" escape hatch. Deliberately no window-vs-tab control in v1: no universal mechanism
+      exists, so each terminal's own preference decides. Four milestones, about one agent-day.
+- [x] 2026-08-31 `smb-foreground-lease-plan.md` - **Shipped, all three milestones.** A background SMB upload now stands
+      aside for the folder you're actually waiting on: a listing holds an RAII lease so "busy" is a fact rather than a
+      decaying estimate, the parked upload wakes on that lease dropping, and a single-shot write is exempt from the
+      per-file 4 MiB floor that kept every photo and document from yielding once. The design and its bounds now live
+      beside the code (`apps/desktop/src-tauri/src/priority/DETAILS.md`, `write_operations/transfer/DETAILS.md`, and
+      `crates/cmdr-smb/DETAILS.md`), the deferred pre-file yield gate for the 1 MiB–4 MiB band included. **Wipe per
+      `DETAILS.md` § "Wiping a shipped spec"** once one refusal recorded nowhere else finds a home there: no foreground
+      stamping in `path_exists` / `get_file_range` / `refresh_listing`, since background callers would pin a share
+      permanently busy. That wipe is a one-way door, so it waits for David.
+
 ## In progress
 
+- [ ] 2026-09-06 `data-safety-hunt-follow-ups.md` - **What the transfer-engine hunt left open after its 15 findings were
+      fixed.** Nine ranked entries in problem / impact / solution / size form: two high (a cross-FS move loses the bytes
+      written to a file after its copy finished; a top-level folder symlink on a volume still merges through the link,
+      which needs a symlink-aware answer on the `Volume` trait), three medium (the SMB single-shot write has no
+      "expected free" guard; the volume engine's folder-over-file Overwrite still deletes the file first; the local
+      folder-over-file prompt describes the clash as file-vs-file), four low. The nine subsystems the hunt never reached
+      are a second hunt, not an entry. Roughly a week in total; the two high ones are about two days.
 - [ ] 2026-09-03 `mtp-crate-extraction.md` - **MTP is the last backend that still reaches sideways into the app.** Its
       session layer holds a `tauri::AppHandle`, emits seven frontend events itself, writes the listing cache and the
       index directly, and gates real behavior on nine inline `cfg(test)`s, so the backend on the flakiest hardware is
@@ -29,26 +75,6 @@ that lives beside the code, and git holds the history.
       pane-only overlay seam that scans and walkers never see. Three rules become types. `display_size` becomes a typed
       `GitEntryMeta` the frontend words per locale; the watcher moves with a typed sink. Sequenced after
       `mtp-crate-extraction.md`; can go first if that stalls. About three days.
-- [ ] 2026-09-03 `agent-search-tool.md` - **Ask Cmdr has 18 tools and none of them searches.** Asked to find penguin
-      pictures, the agent invented `name` / `nameMatch` arguments onto `list_dir`, the deserializer dropped them, and it
-      reported "nothing matched" four times: confident fabricated negatives on a question the index answers instantly. A
-      full `search` tool is already authored in the shared registry with `consumers: [AiClient]`, and every coverage
-      field it needs is already typed, so this is wiring and shaping. Eight decisions taken: one registry entry serving
-      both views with a typed JSON result (the text table can't report `total` / `returned` / `truncated` and has no
-      `limit` ceiling, so `limit: 5000` blows the turn's prompt); a derived `coverage.complete` beside the seven flags
-      that each say a different sentence; `ai_search` stays out, because nesting a second LLM call inside an LLM is work
-      the agent should do itself; content search answered honestly as "search names, then `inspect_file` the hits", with
-      a drive-wide content index out of scope; the one-volume ceiling held, with `list_volumes` growing the `mountPath`
-      that makes a per-drive loop expressible at all; and a schema trim, because the declaration costs ~656 tokens on a
-      5,492-token prefix every turn. Three worked scenarios say it answers. Three to four days.
-
-- [ ] 2026-09-03 `open-terminal-here.md` - **A keyboard-first file manager with no way to hand a folder to a shell.** A
-      user asked for "Open terminal here"; macOS has no default-terminal setting, so Cmdr keeps its own known-terminals
-      table (bundle id + launch recipe, queried live via `NSWorkspace`, no scan, no Refresh button), defaults to
-      Terminal, asks once on first use when another terminal is installed, and exposes one dropdown row in Navigation &
-      file ops plus a "Choose an app…" escape hatch. Deliberately no window-vs-tab control in v1: no universal mechanism
-      exists, so each terminal's own preference decides. Four milestones, about one agent-day.
-
 - [ ] 2026-09-02 `android-adb-ui.md` - **The ADB backend works and nobody can reach it.** No connect flow, no device
       picker, no settings, and no words for the six ways a connect refuses. Eight decisions, taken rather than listed:
       one switcher row per phone with MTP as the default face and ADB a mode you switch it into; non-ready devices shown
@@ -73,24 +99,14 @@ that lives beside the code, and git holds the history.
       Nextcloud chunked uploads, RFC 4331 quota, and three things David runs locally because this branch was built in a
       cloud box: `bindings.ts` regeneration, `pnpm check --include-slow`, and the surface counts for
       `index-crate-isolation`.
-- [ ] 2026-09-01 `android-adb-backend.md` - **MTP shows the tree a phone chooses to expose; developers want the real
-      one.** `crates/cmdr-adb` is a device-anchored `Volume` over the ADB server's sync service and `shell,v2`, beside
-      MTP rather than replacing it, and the development adds the seam MTP never had: `device_volumes.rs`, a provider
-      registry the volume list folds over, with `host:track-devices` as the first push-channel hotplug. The crate, the
-      seam, and the app wiring are documented beside the code (`crates/cmdr-adb/DETAILS.md`, `adb/DETAILS.md`). What
-      finishing costs: a real-device pass (authorize prompt, `unauthorized` → `device` mid-session, a 2 GB transfer, a
-      `/data` listing on a non-rooted phone), then three deliberate deferrals (`sendrecv_v2` compression off until
-      measured, wireless pairing left to the server, a settings switch for the `adb` binary path).
-
-- [x] 2026-08-31 `smb-foreground-lease-plan.md` - **Shipped, all three milestones.** A background SMB upload now stands
-      aside for the folder you're actually waiting on: a listing holds an RAII lease so "busy" is a fact rather than a
-      decaying estimate, the parked upload wakes on that lease dropping, and a single-shot write is exempt from the
-      per-file 4 MiB floor that kept every photo and document from yielding once. The design and its bounds now live
-      beside the code (`apps/desktop/src-tauri/src/priority/DETAILS.md`, `write_operations/transfer/DETAILS.md`, and
-      `crates/cmdr-smb/DETAILS.md`), the deferred pre-file yield gate for the 1 MiB–4 MiB band included. **Wipe per
-      `DETAILS.md` § "Wiping a shipped spec"** once one refusal recorded nowhere else finds a home there: no foreground
-      stamping in `path_exists` / `get_file_range` / `refresh_listing`, since background callers would pin a share
-      permanently busy. That wipe is a one-way door, so it waits for David.
+- [ ] 2026-09-01 `android-adb-backend-follow-ups.md` - **The ADB backend is done and has never met a phone.**
+      `crates/cmdr-adb` lists, streams, and writes as a device-anchored `Volume` beside MTP, over the seam MTP never had
+      (`device_volumes.rs`, with `host:track-devices` as the first push-channel hotplug); it's all documented beside the
+      code. Five items left, in PISS form: the real-device pass that gates everything (authorize prompt, `unauthorized`
+      → `device` mid-session, a 2 GB transfer, a `/data` listing on a non-rooted phone), the UI that `android-adb-ui.md`
+      owns, a `go_to_path` scheme short-circuit so ⌘G takes an `adb://` path (`mtp://` shares the hole), `sendrecv_v2`
+      compression off until measured, and wireless pairing left to the server. Indexing an ADB volume is a settled
+      non-goal, not a gap.
 
 - [ ] 2026-08-31 `rollback-recheck-plan.md` - **Cancelling an operation deletes files it no longer wrote, and the move
       case overwrites silently.** The history dialog's Roll back verifies every item against a recorded snapshot and
@@ -105,17 +121,19 @@ that lives beside the code, and git holds the history.
       recorded nowhere, because a 2-second-granularity destination (FAT32, a network mount) would otherwise drift every
       file and strand a whole copy on the stick.
 
-- [ ] 2026-08-28 `rename-review-grouping.md` - **One review for one job, not one dialog per batch.** A 500-file bulk
-      rename opens five review dialogs at a 60,000-token budget and twenty at the default, because the model can emit
-      only ~101 plan rows per reply and each reply is staged and reviewed on its own. The fix is presentational:
-      accumulate a job's proposals into one review, apply them as the operations they already are, and leave every
-      guardrail per row. ❌ Not the per-rule approval question in `open-decisions.md`, which was answered no. Depends on
-      two properties shipped code already has (a proposal never expires, and the dialog renders every row without
-      paging), so what remains is frontend and store-shape work with one design choice: open the review on turn end.
-- [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** Seven calls waiting on David:
-      unreviewed user-facing copy in four places, two product calls (one of which has blocked its dependent milestones
-      since July), and one maintenance call. Most take a minute. A question with no answer looks exactly like a task
-      nobody picked up, which is how a 600-line spec stays alive for a year.
+- [x] 2026-08-28 `rename-review-grouping.md` - **One review for one job, not one dialog per batch.** SHIPPED 2026-09-06.
+      A 500-file bulk rename opened five review dialogs at a 60,000-token budget and 22 at the default, because the
+      model can emit only ~101 plan rows per reply and each reply was staged and reviewed on its own, cancelling the
+      plan the user was reading. `proposalReady` now stages a plan, the turn's end opens one review over all of them,
+      and Apply starts one operation per batch in staging order. Presentational only: preflight, revise, apply, and
+      cancel stay keyed by proposal id, so every guardrail stays per row, and no backend change was needed. ❌ Not the
+      per-rule approval question in `open-decisions.md`, which was answered no. Follow-up still open: option (c),
+      opening the review immediately and growing it as batches land.
+- [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** One call left, in PISS form:
+      whether a file that exhausts its retries ends the whole operation or the batch carries on and reports what it
+      missed. Six others were answered on 2026-09-05 (four drafts of user-facing copy ratified as shipped, per-rule
+      approval declined, the `invariant-density` ratchet dropped with the check itself). A question with no answer looks
+      exactly like a task nobody picked up, which is how a 600-line spec stays alive for a year.
 
 ## Later
 
@@ -151,9 +169,8 @@ left, so the durable intent survives the wipe.
 
 - [ ] 2026-08-23 `later/ai/wake-loop-follow-ups.md` - What the shipped proactive agent deliberately left. Two interest
       tuning knobs and three cadence constants that want a week of real wakes before anyone moves them (the per-outcome
-      log line and analytics event exist for exactly that), reading file contents, a thread-timeline event for a
-      chat-memory-size change (half a day, unblocked), the rail not refetching on a decision, and one chore needing a
-      machine with a foreground: the consent screenshots.
+      log line and analytics event exist for exactly that), reading file contents, the rail not refetching on a
+      decision, and one chore needing a machine with a foreground: the consent screenshots.
 - [ ] 2026-08-27 `later/i18n-screenshot-gaps.md` - **Which catalog families a translator still gets no picture of, and
       why each resists capture.** Structural only: the doc now carries NO absolute numbers, because the ones it used to
       carry went stale twice while the analysis around them stayed true. Every count, percentage, and per-area ranking

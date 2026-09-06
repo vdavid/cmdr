@@ -125,9 +125,14 @@ describe('resolveCloudConfig', () => {
   })
 
   it('falls back to preset defaults when no config exists', () => {
+    // Read the expected model off the preset rather than repeating the id: what this test
+    // pins is the fallback, and providers retire models often enough that a copied id turns
+    // an unrelated default swap into a failure here. (Groq's Llama default did exactly that.)
+    const preset = getCloudProvider('groq')
     const config = resolveCloudConfig('groq', '{}')
     expect(config.baseUrl).toBe('https://api.groq.com/openai/v1')
-    expect(config.model).toBe('llama-3.3-70b-versatile')
+    expect(config.model).toBe(preset?.defaultModel)
+    expect(config.model).not.toBe('')
   })
 
   it('returns empty strings for unknown provider', () => {

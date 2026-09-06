@@ -104,6 +104,14 @@
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
+  "askCmdr.tool.search.doing": "Deine Dateien werden durchsucht",
+  "@askCmdr.tool.search.doing": {
+    "sourceHash": "892be3e"
+  },
+  "askCmdr.tool.search.done": "Deine Dateien durchsucht",
+  "@askCmdr.tool.search.done": {
+    "sourceHash": "995a356"
+  },
   "askCmdr.tool.searchPhotos.doing": "Deine Fotos werden durchsucht",
   "@askCmdr.tool.searchPhotos.doing": {
     "sourceHash": "da1265d"
@@ -208,9 +216,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr braucht ein größeres Kontextfenster, als dein lokales Modell hat. Wähle in den Einstellungen unter KI 16.384 Token oder mehr.",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr braucht ein größeres Kontextfenster, als dein lokales Modell hat. Wähle in den Einstellungen unter KI 32.768 Token oder mehr.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "Der KI-Anbieter ließ sich nicht erreichen. Prüfe deine Verbindung und versuch es erneut.",
   "@askCmdr.error.unavailable": {
@@ -243,6 +251,10 @@
   "askCmdr.error.provider": "Beim Anbieter ist etwas schiefgelaufen. Erneut versuchen?",
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
+  },
+  "askCmdr.event.chatMemoryChanged": "Chat-Speicher fasst jetzt {tokens, number} Tokens",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
   },
   "askCmdr.event.contextTrimmed": "{count, plural, one {# frühere Abfrage} other {# frühere Abfragen}} entfernt, damit alles in den Kontext des Modells passt.",
   "@askCmdr.event.contextTrimmed": {

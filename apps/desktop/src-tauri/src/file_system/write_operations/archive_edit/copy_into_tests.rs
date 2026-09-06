@@ -620,3 +620,48 @@ async fn copy_into_a_remote_archive_lands_the_file_via_the_pulled_local_copy() {
 
     get_volume_manager().unregister(&parent_id);
 }
+
+/// A blanket policy never replaces one KIND of entry with another, in a zip as
+/// on a filesystem: a source FILE landing on an archive DIRECTORY of the same
+/// name is refused and counted as skipped, so the directory and everything under
+/// it survive.
+///
+/// The hole was `conflicts.rs`'s `ConflictMode::Policy(c) => Ok(*c)`, which took
+/// `is_file_to_folder` and ignored it, and the conditional variants asked their
+/// size/mtime question of a directory node that has neither.
+#[tokio::test]
+async fn a_blanket_overwrite_never_replaces_an_archive_directory_with_a_file() {
+    for policy in [
+        ConflictResolution::Overwrite,
+        ConflictResolution::OverwriteSmaller,
+        ConflictResolution::OverwriteOlder,
+    ] {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let archive = tmp.path().join("a.zip");
+        // `d/notes` is a DIRECTORY in the archive, holding one file.
+        write_multi_zip(&archive, &[("d/notes/precious.txt", b"precious user data")]);
+
+        // The source has a FILE at the same inner path, bigger and newer than
+        // anything a directory node could report.
+        let src_root = tmp.path().join("src");
+        std::fs::create_dir_all(src_root.join("d")).expect("mkdir src");
+        std::fs::write(src_root.join("d/notes"), vec![b'x'; 10_000]).expect("write source file");
+
+        let events = run_policy_copy_into(&archive, &src_root, "d", policy, false).await;
+        wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+            !events.complete.lock_ignore_poison().is_empty()
+        })
+        .await;
+
+        assert_eq!(
+            read_entry(&archive, "d/notes/precious.txt").as_deref(),
+            Some(b"precious user data".as_slice()),
+            "{policy:?} must not delete the archive directory it compared against a file"
+        );
+        assert_eq!(
+            read_entry(&archive, "d/notes"),
+            None,
+            "{policy:?} must not land the incoming file over the directory's name"
+        );
+    }
+}

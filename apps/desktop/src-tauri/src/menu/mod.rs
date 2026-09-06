@@ -260,6 +260,13 @@ pub struct MenuState<R: Runtime> {
     /// is never the guard: the refusals in `mcp/executor`, `pane/operation-start-gate.ts`,
     /// and `pane/dialog-state.svelte.ts` are.
     pub file_operations_blocked: AtomicBool,
+    /// Whether the FOCUSED PANE sits somewhere a shell can `cd` into, deciding
+    /// "Open terminal here". Pushed by the frontend
+    /// (`lib/open-terminal/menu-gate.svelte.ts`), its only writer. Stored for the
+    /// same reason as `file_operations_blocked`: `set_menu_context` enables every
+    /// explorer item, so the verdict has to be re-appliable after a focus round-trip
+    /// or a menu-bar rebuild. Starts `true`, matching the item as it's built.
+    pub open_terminal_here_enabled: AtomicBool,
     /// Per-pane submenus that hold the Full/Brief CheckMenuItems. The View submenu
     /// itself just nests these two (`Left pane >` and `Right pane >`).
     /// Each pane's Full item is at position 0, Brief at position 1.
@@ -321,6 +328,7 @@ impl<R: Runtime> Default for MenuState<R> {
             has_existing_license: AtomicBool::new(false),
             explorer_menu_active: AtomicBool::new(true),
             file_operations_blocked: AtomicBool::new(false),
+            open_terminal_here_enabled: AtomicBool::new(true),
             view_left_pane_submenu: Mutex::new(None),
             view_right_pane_submenu: Mutex::new(None),
             view_mode_active_pane: Mutex::new("left".to_string()),

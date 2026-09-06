@@ -2,7 +2,7 @@
 //! the copy's rollback ledger records about each file it writes.
 //!
 //! Drives the sink-based inner function directly with a `CollectorEventSink`
-//! against a real tempdir, the same shape `volume/copy_tests.rs` uses against
+//! against a real tempdir, the same shape `volume/copy_tests/` uses against
 //! `InMemoryVolume`.
 
 use super::*;

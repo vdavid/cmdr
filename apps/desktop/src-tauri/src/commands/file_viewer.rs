@@ -14,26 +14,26 @@ use tauri::menu::MenuItemKind;
 
 const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// Open budget for a preview INSIDE an archive: the whole entry is streamed out to a
-/// bounded temp first, so it needs the recursive-scan tier, not the 2 s read tier. The
-/// extraction cap keeps the worst case bounded. A non-archive open keeps the strict 2 s.
-const VIEWER_ARCHIVE_TIMEOUT: Duration = Duration::from_secs(30);
+/// Open budget for a preview of a ROUTED file (inside a `.zip`, or inside a repo's
+/// virtual `.git` trees): the whole entry is streamed out to a bounded temp first, so
+/// it needs the recursive-scan tier, not the 2 s read tier. The extraction cap keeps
+/// the worst case bounded. An ordinary on-disk open keeps the strict 2 s.
+const VIEWER_ROUTED_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Picks the open timeout for `path`: the generous archive budget when the path is
-/// INSIDE a `.zip` (a temp-extract, which is slow — more so pulling from a remote
-/// parent), else the strict 2 s. Viewing the `.zip` file itself is a normal read, so
-/// it keeps the strict budget.
+/// Picks the open timeout for `path`: the generous routed budget when a route serves
+/// the path (a temp materialization, which is slow — more so pulling a `.zip` from a
+/// remote parent, or a blob out of a big pack), else the strict 2 s. Viewing the
+/// `.zip` file itself is a normal read, so it keeps the strict budget.
 ///
-/// This is a pure string check (a non-empty inner under a `.zip` component), no I/O
+/// `path_routes_over_its_parent` is a pure string check plus one atomic read, no I/O
 /// and no confirm: the budget is a heuristic, not a correctness gate, so it needs no
-/// `volume_id` and never touches the disk or network. Over-granting the archive
-/// budget to a mislabeled `.zip` is harmless (the open fails fast on its own).
+/// `volume_id` and never touches the disk or network. Over-granting the generous
+/// budget to a mislabeled `.zip` or a `.git` that isn't a repository is harmless (the
+/// open fails fast on its own).
 fn open_timeout_for(path: &str) -> Duration {
     let expanded = crate::commands::file_system::expand_tilde(path);
-    let looks_archive_inner = cmdr_archive::archive_boundary_candidate(std::path::Path::new(&expanded))
-        .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
-    if looks_archive_inner {
-        VIEWER_ARCHIVE_TIMEOUT
+    if crate::file_system::volume::manager::path_routes_over_its_parent(std::path::Path::new(&expanded)) {
+        VIEWER_ROUTED_TIMEOUT
     } else {
         VIEWER_TIMEOUT
     }
@@ -61,8 +61,9 @@ pub async fn viewer_open(
 ) -> Result<ViewerOpenResult, ViewerError> {
     let timeout = open_timeout_for(&path);
     // Typed `ViewerError` (never a stringified message) so the FE can render friendly
-    // copy for the archive family — `ExtractTooLarge` (preview cap), `Archive`
-    // (encrypted / corrupt / unsupported codec) — matching `viewer_read_range`.
+    // copy for the routed family — `ExtractTooLarge` (the preview cap, which a `.zip`
+    // entry and a `.git` snapshot blob both reach), `Archive` (encrypted / corrupt /
+    // unsupported codec) — matching `viewer_read_range`.
     match tokio::time::timeout(
         timeout,
         tokio::task::spawn_blocking(move || {
@@ -255,15 +256,17 @@ pub async fn viewer_write_range_to_file(
     focus: RangeEnd,
     dest_path: String,
 ) -> Result<(), ViewerError> {
-    // The source may be an archive preview temp (it writes fine via `std::fs` off the
-    // open session), but the DESTINATION must not be INSIDE an archive: archives are
-    // read-only in this phase. Saving over a `.zip` file itself is a normal file
-    // overwrite (allowed); only a path inside one is refused. Typed error, matching
-    // the write-path guards.
-    if cmdr_archive::path_is_inside_archive(std::path::Path::new(&crate::commands::file_system::expand_tilde(
-        &dest_path,
-    ))) {
-        return Err(ViewerError::DestinationInsideArchive);
+    // The source may be a routed preview temp (it writes fine via `std::fs` off the
+    // open session), but the DESTINATION must not be a path a ROUTE serves: inside a
+    // `.zip`, or inside a repo's virtual `.git` trees. Neither has a directory on
+    // disk for the write to land in, so without this the save falls through to a raw
+    // `std::fs` errno the user can make nothing of. Saving over the `.zip` file
+    // itself is a normal overwrite (allowed); only a path INSIDE one is refused.
+    // Typed error, the same gate the write-path guards use.
+    if crate::file_system::volume::manager::path_routes_over_its_parent(std::path::Path::new(
+        &crate::commands::file_system::expand_tilde(&dest_path),
+    )) {
+        return Err(ViewerError::DestinationIsReadOnly);
     }
     match tokio::time::timeout(
         READ_RANGE_TIMEOUT,
@@ -447,8 +450,8 @@ mod tests {
         .await
         .expect_err("archive-inner destination must be refused");
         assert!(
-            matches!(err, ViewerError::DestinationInsideArchive),
-            "expected DestinationInsideArchive, got {err:?}"
+            matches!(err, ViewerError::DestinationIsReadOnly),
+            "expected DestinationIsReadOnly, got {err:?}"
         );
 
         // A plain sibling destination passes the guard (proves it's not a blanket reject);
@@ -467,5 +470,53 @@ mod tests {
             matches!(err, ViewerError::SessionNotFound { .. }),
             "expected the guard to pass and the session lookup to fail, got {err:?}"
         );
+    }
+
+    /// The guard is about ROUTES, not about archives: a path inside a repo's
+    /// virtual `.git` trees has no directory on disk either, so a save there must
+    /// meet the same typed refusal rather than a raw `std::fs` errno. A real file
+    /// under `.git` is an ordinary local path and still writes.
+    #[tokio::test]
+    async fn saving_into_a_repos_history_is_refused_the_way_saving_into_a_zip_is() {
+        use cmdr_git::test_fixtures::{Fixture, cleanup, temp_dir};
+
+        let dir = temp_dir("viewer_save_guard", "snapshot");
+        let mut fixture = Fixture::init(dir.clone());
+        fixture.commit_file("README.md", b"hello\n", "initial");
+        crate::file_system::git::wiring::set_virtual_portal_enabled(true);
+
+        let snapshot = dir.join(".git/branches/main/saved.txt");
+        let err = viewer_write_range_to_file(
+            "no-such-session".to_string(),
+            0,
+            RangeEnd::Eof,
+            RangeEnd::Eof,
+            snapshot.to_string_lossy().into_owned(),
+        )
+        .await
+        .expect_err("a snapshot destination must be refused");
+        assert!(
+            matches!(err, ViewerError::DestinationIsReadOnly),
+            "expected DestinationIsReadOnly, got {err:?}"
+        );
+
+        // A REAL file under `.git` is the parent volume's and takes ordinary
+        // writes, so it passes the guard and fails only on the bogus session.
+        let real = dir.join(".git/config.bak");
+        let err = viewer_write_range_to_file(
+            "no-such-session".to_string(),
+            0,
+            RangeEnd::Eof,
+            RangeEnd::Eof,
+            real.to_string_lossy().into_owned(),
+        )
+        .await
+        .expect_err("bogus session should fail past the guard");
+        assert!(
+            matches!(err, ViewerError::SessionNotFound { .. }),
+            "a real path under `.git` must pass the guard, got {err:?}"
+        );
+
+        cleanup(&dir);
     }
 }

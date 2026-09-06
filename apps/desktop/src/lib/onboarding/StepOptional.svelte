@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
     import OnboardingStepShell from './OnboardingStepShell.svelte'
-    import SettingSwitch from '$lib/settings/components/SettingSwitch.svelte'
+    import OnboardingToggleCard from './OnboardingToggleCard.svelte'
     import { setFooterOverride, requestWizardComplete } from './onboarding-state.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
@@ -58,62 +58,46 @@
     <h2 class="step-title">{tString('onboarding.stepOptional.title')}</h2>
     <p class="lede">{tString('onboarding.stepOptional.lede')}</p>
 
-    <section class="toggle-block" aria-labelledby="toggle-networking-title">
-        <header class="toggle-header">
-            <div class="toggle-text">
-                <h3 id="toggle-networking-title" class="toggle-title">{tString('onboarding.stepOptional.networking.title')}</h3>
-                <p class="toggle-desc"><Trans key="onboarding.stepOptional.networking.desc" snippets={{ em }} /></p>
-            </div>
-            <div class="toggle-control">
-                <SettingSwitch id="network.enabled" />
-                <p class="toggle-caption">{tString('onboarding.stepOptional.recommendedOn')}</p>
-            </div>
-        </header>
-    </section>
+    <OnboardingToggleCard
+        titleId="toggle-networking-title"
+        title={tString('onboarding.stepOptional.networking.title')}
+        settingId="network.enabled"
+        caption={tString('onboarding.stepOptional.recommendedOn')}
+    >
+        <p class="toggle-desc"><Trans key="onboarding.stepOptional.networking.desc" snippets={{ em }} /></p>
+    </OnboardingToggleCard>
 
-    <section class="toggle-block" aria-labelledby="toggle-indexing-title">
-        <header class="toggle-header">
-            <div class="toggle-text">
-                <h3 id="toggle-indexing-title" class="toggle-title">{tString('onboarding.stepOptional.indexing.title')}</h3>
-                <p class="toggle-desc">{tString('onboarding.stepOptional.indexing.descIntro')}</p>
-                <ol class="toggle-list">
-                    <li>{tString('onboarding.stepOptional.indexing.benefit1')}</li>
-                    <li>{tString('onboarding.stepOptional.indexing.benefit2')}</li>
-                </ol>
-                <p class="toggle-desc"><Trans key="onboarding.stepOptional.indexing.descCost" snippets={{ code }} /></p>
-            </div>
-            <div class="toggle-control">
-                <SettingSwitch id="indexing.enabled" />
-                <p class="toggle-caption">{tString('onboarding.stepOptional.recommendedOn')}</p>
-            </div>
-        </header>
-    </section>
+    <OnboardingToggleCard
+        titleId="toggle-indexing-title"
+        title={tString('onboarding.stepOptional.indexing.title')}
+        settingId="indexing.enabled"
+        caption={tString('onboarding.stepOptional.recommendedOn')}
+    >
+        <p class="toggle-desc">{tString('onboarding.stepOptional.indexing.descIntro')}</p>
+        <ol class="toggle-list">
+            <li>{tString('onboarding.stepOptional.indexing.benefit1')}</li>
+            <li>{tString('onboarding.stepOptional.indexing.benefit2')}</li>
+        </ol>
+        <p class="toggle-desc"><Trans key="onboarding.stepOptional.indexing.descCost" snippets={{ code }} /></p>
+    </OnboardingToggleCard>
 
-    <section class="toggle-block" aria-labelledby="toggle-updates-title">
-        <header class="toggle-header">
-            <div class="toggle-text">
-                <h3 id="toggle-updates-title" class="toggle-title">{tString('onboarding.stepOptional.updates.title')}</h3>
-                <p class="toggle-desc">{tString('onboarding.stepOptional.updates.desc')}</p>
-            </div>
-            <div class="toggle-control">
-                <SettingSwitch id="updates.autoCheck" />
-                <p class="toggle-caption">{tString('onboarding.stepOptional.recommendedOn')}</p>
-            </div>
-        </header>
-    </section>
+    <OnboardingToggleCard
+        titleId="toggle-updates-title"
+        title={tString('onboarding.stepOptional.updates.title')}
+        settingId="updates.autoCheck"
+        caption={tString('onboarding.stepOptional.recommendedOn')}
+    >
+        <p class="toggle-desc">{tString('onboarding.stepOptional.updates.desc')}</p>
+    </OnboardingToggleCard>
 
-    <section class="toggle-block" aria-labelledby="toggle-mtp-title">
-        <header class="toggle-header">
-            <div class="toggle-text">
-                <h3 id="toggle-mtp-title" class="toggle-title">{tString('onboarding.stepOptional.mtp.title')}</h3>
-                <p class="toggle-desc"><Trans key="onboarding.stepOptional.mtp.desc" snippets={{ strong, em }} /></p>
-            </div>
-            <div class="toggle-control">
-                <SettingSwitch id="fileOperations.mtpEnabled" />
-                <p class="toggle-caption">{tString('onboarding.stepOptional.recommendedOn')}</p>
-            </div>
-        </header>
-    </section>
+    <OnboardingToggleCard
+        titleId="toggle-mtp-title"
+        title={tString('onboarding.stepOptional.mtp.title')}
+        settingId="fileOperations.mtpEnabled"
+        caption={tString('onboarding.stepOptional.recommendedOn')}
+    >
+        <p class="toggle-desc"><Trans key="onboarding.stepOptional.mtp.desc" snippets={{ strong, em }} /></p>
+    </OnboardingToggleCard>
 </OnboardingStepShell>
 
 <style>
@@ -132,46 +116,7 @@
         color: var(--color-text-primary);
     }
 
-    .toggle-block {
-        margin-bottom: var(--spacing-md);
-        padding: var(--spacing-lg);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        background: var(--color-bg-primary);
-    }
-
-    .toggle-block:last-child {
-        margin-bottom: 0;
-    }
-
-    .toggle-header {
-        display: flex;
-        align-items: flex-start;
-        gap: var(--spacing-lg);
-    }
-
-    .toggle-text {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .toggle-control {
-        flex-shrink: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: var(--spacing-xs);
-        padding-top: var(--spacing-xxs);
-    }
-
-    .toggle-caption {
-        margin: 0;
-        max-width: 14rem;
-        text-align: right;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-    }
-
+    /* Inside `OnboardingToggleCard`'s description slot, so these stay parent-scoped. */
     .toggle-list {
         margin: 0 0 var(--spacing-sm);
         padding-left: var(--spacing-lg);
@@ -182,13 +127,6 @@
 
     .toggle-list li {
         margin: 0 0 var(--spacing-xxs);
-    }
-
-    .toggle-title {
-        margin: 0 0 var(--spacing-xs);
-        font-size: var(--font-size-md);
-        font-weight: 600;
-        color: var(--color-text-primary);
     }
 
     .toggle-desc {

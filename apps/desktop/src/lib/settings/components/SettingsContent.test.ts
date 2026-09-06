@@ -110,8 +110,8 @@ describe('SettingsContent search gating for the index-size row', () => {
   it('keeps Drive indexing visible and shows its card for "index size"', async () => {
     // Pre-fix this showed a blank pane: "index size" is a hand-rendered action
     // row, not a registry setting, so `sectionHasMatchingSettings` matched
-    // nothing and hid the whole section. The hidden `indexing.indexSize` anchor
-    // makes the section match again.
+    // nothing and hid the whole section. The `row:indexing.indexSize` searchable
+    // row makes the section match again.
     await render('index size')
     const section = driveIndexingSection()
     if (!section) throw new Error('Drive indexing section not rendered')

@@ -1,20 +1,11 @@
 <script lang="ts">
-    import { onDestroy, onMount, tick } from 'svelte'
-    import {
-        createFile,
-        findFileIndex,
-        getFileAt,
-        onDirectoryDiff,
-        type Initiator,
-        type UnlistenFn,
-    } from '$lib/tauri-commands'
-    import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
+    import { createFile, type Initiator } from '$lib/tauri-commands'
     import { asMutationError } from '$lib/file-operations/mutation-error'
     import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
+    import { NewEntryNameCheck } from '$lib/file-operations/new-entry-name-check.svelte'
+    import NewEntryNameField from '$lib/file-operations/NewEntryNameField.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
-    import TextInput from '$lib/ui/TextInput.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -38,104 +29,21 @@
         $props()
 
     let fileName = $state(initialName)
-    let errorMessage = $state('')
-    let isChecking = $state(false)
-    let nameInputRef: HTMLInputElement | undefined = $state()
-    let unlistenDiff: UnlistenFn | undefined
 
-    // Debounce timer for validation
-    let validateTimer: ReturnType<typeof setTimeout> | undefined
+    // Name validation + clash lookup; `NewEntryNameField` runs its lifecycle.
+    const check = new NewEntryNameCheck({ currentPath, listingId, showHiddenFiles, getName: () => fileName })
 
-    const currentDirName = $derived(currentPath.split('/').pop() || currentPath)
-    const isValid = $derived(fileName.trim().length > 0 && !errorMessage)
-
-    async function validateName(name: string) {
-        const trimmed = name.trim()
-        if (trimmed === '') {
-            errorMessage = ''
-            return
-        }
-
-        // Sync validators: chars, name length, full path length
-        const charCheck = validateDisallowedChars(trimmed, true)
-        if (charCheck.severity === 'error') {
-            errorMessage = charCheck.message
-            return
-        }
-        const nameLenCheck = validateNameLength(trimmed, true)
-        if (nameLenCheck.severity === 'error') {
-            errorMessage = nameLenCheck.message
-            return
-        }
-        const pathLenCheck = validatePathLength(currentPath, trimmed)
-        if (pathLenCheck.severity === 'error') {
-            errorMessage = pathLenCheck.message
-            return
-        }
-
-        // Sync checks passed. Clear any previous error, then run async conflict check.
-        errorMessage = ''
-
-        isChecking = true
-        try {
-            const index = await findFileIndex(listingId, trimmed, showHiddenFiles)
-            if (index !== null) {
-                const entry = await getFileAt(listingId, index, showHiddenFiles)
-                if (entry?.isDirectory) {
-                    errorMessage = tString('fileOperations.shared.conflictExistsFolder')
-                } else {
-                    errorMessage = tString('fileOperations.shared.conflictExistsFile')
-                }
-            } else {
-                errorMessage = ''
-            }
-        } catch {
-            // If lookup fails (listing gone), clear error and let the backend handle it
-            errorMessage = ''
-        } finally {
-            isChecking = false
-        }
-    }
-
-    function scheduleValidation() {
-        if (validateTimer) clearTimeout(validateTimer)
-        validateTimer = setTimeout(() => {
-            void validateName(fileName)
-        }, 100)
-    }
-
-    onMount(async () => {
-        await tick()
-        nameInputRef?.focus()
-        nameInputRef?.select()
-
-        // Validate initial name if pre-filled
-        if (fileName.trim()) {
-            void validateName(fileName)
-        }
-
-        // Listen for directory changes to re-validate.
-        // Small delay ensures the listing cache is fully consistent after the diff is applied.
-        unlistenDiff = await onDirectoryDiff((payload) => {
-            if (payload.listingId !== listingId) return
-            scheduleValidation()
-        })
-    })
-
-    onDestroy(() => {
-        if (validateTimer) clearTimeout(validateTimer)
-        unlistenDiff?.()
-    })
+    const isValid = $derived(fileName.trim().length > 0 && !check.errorMessage)
 
     async function handleConfirm() {
         const trimmed = fileName.trim()
-        if (!trimmed || errorMessage) return
+        if (!trimmed || check.errorMessage) return
         try {
             await createFile(currentPath, trimmed, volumeId, initiator)
             onCreated(trimmed)
         } catch (e) {
             const failure = asMutationError(e)
-            errorMessage = failure ? renderMutationError(failure, 'file') : String(e)
+            check.errorMessage = failure ? renderMutationError(failure, 'file') : String(e)
         }
     }
 
@@ -143,18 +51,6 @@
         if (event.key === 'Enter') {
             void handleConfirm()
         }
-    }
-
-    function handleInputKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter') {
-            event.preventDefault()
-            event.stopPropagation()
-            void handleConfirm()
-        }
-    }
-
-    function handleInput() {
-        scheduleValidation()
     }
 </script>
 
@@ -169,64 +65,13 @@
     {#snippet title()}{tString('fileOperations.mkfile.title')}{/snippet}
 
     <div class="dialog-body">
-        <p class="subtitle">
-            <Trans key="fileOperations.mkfile.createIn" params={{ name: currentDirName }} snippets={{ dir }} />
-        </p>
-
-        <div class="input-group">
-            <TextInput
-                bind:inputElement={nameInputRef}
-                bind:value={fileName}
-                invalid={!!errorMessage}
-                ariaLabel={tString('fileOperations.mkfile.nameAria')}
-                aria-describedby={errorMessage ? 'new-file-error' : undefined}
-                spellcheck={false}
-                autocomplete="off"
-                placeholder={tString('fileOperations.mkfile.placeholder')}
-                onkeydown={handleInputKeydown}
-                oninput={handleInput}
-            />
-            {#if errorMessage}
-                <p id="new-file-error" class="error-message" role="alert">{errorMessage}</p>
-            {/if}
-        </div>
-
+        <NewEntryNameField kind="file" {currentPath} {check} bind:value={fileName} onSubmit={() => void handleConfirm()} />
     </div>
 
     {#snippet footer()}
         <Button variant="secondary" onclick={onCancel}>{tString('fileOperations.button.cancel')}</Button>
-        <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}
+        <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || check.isChecking}
             >{tString('fileOperations.button.ok')}</Button
         >
     {/snippet}
 </ModalDialog>
-
-{#snippet dir(children: import('svelte').Snippet)}<span class="dir-name">{@render children()}</span>{/snippet}
-
-<style>
-    .subtitle {
-        margin: 0 0 var(--spacing-lg);
-        font-size: var(--font-size-md);
-        color: var(--color-text-secondary);
-    }
-
-    .dir-name {
-        color: var(--color-text-primary);
-        font-weight: 500;
-    }
-
-    .input-group {
-        margin-bottom: var(--spacing-lg);
-    }
-
-
-
-
-
-
-    .error-message {
-        margin: var(--spacing-sm) 0 0;
-        font-size: var(--font-size-sm);
-        color: var(--color-error);
-    }
-</style>

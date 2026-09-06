@@ -19,7 +19,12 @@ import type { FileEntry } from '../types'
 const { ipc, settings, policy, viewer, navigate } = vi.hoisted<{
   ipc: { openFile: Mock }
   settings: { getSetting: Mock }
-  policy: { resolveEnterPolicy: Mock; parseEnterBehaviorOverrides: Mock; pathInsideArchive: Mock }
+  policy: {
+    resolveEnterPolicy: Mock
+    enterBehaviorFromSettings: Mock
+    pathInsideArchive: Mock
+    pathCrossesArchiveBoundary: Mock
+  }
   viewer: { openFileViewer: Mock }
   navigate: { resolveLocationOrToast: Mock }
 }>(() => ({
@@ -27,8 +32,13 @@ const { ipc, settings, policy, viewer, navigate } = vi.hoisted<{
   settings: { getSetting: vi.fn() },
   policy: {
     resolveEnterPolicy: vi.fn(),
-    parseEnterBehaviorOverrides: vi.fn(),
+    enterBehaviorFromSettings: vi.fn(),
+    // Two separate spies on purpose: this module asks the WIDE question about the
+    // pane's path (is the pane already showing an archive's contents?) and the
+    // NARROW one about an entry's path (is there a real file to hand the OS?).
+    // One shared spy would let a site read the other's answer and still pass.
     pathInsideArchive: vi.fn(),
+    pathCrossesArchiveBoundary: vi.fn(),
   },
   viewer: { openFileViewer: vi.fn() },
   navigate: { resolveLocationOrToast: vi.fn() },
@@ -38,9 +48,12 @@ vi.mock('$lib/tauri-commands', () => ({ openFile: ipc.openFile }))
 vi.mock('$lib/settings', () => ({ getSetting: settings.getSetting }))
 vi.mock('./archive-enter-policy', () => ({
   resolveEnterPolicy: policy.resolveEnterPolicy,
-  parseEnterBehaviorOverrides: policy.parseEnterBehaviorOverrides,
+  enterBehaviorFromSettings: policy.enterBehaviorFromSettings,
 }))
-vi.mock('./volume-capabilities', () => ({ pathInsideArchive: policy.pathInsideArchive }))
+vi.mock('./volume-capabilities', () => ({
+  pathInsideArchive: policy.pathInsideArchive,
+  pathCrossesArchiveBoundary: policy.pathCrossesArchiveBoundary,
+}))
 vi.mock('$lib/file-viewer/open-viewer', () => ({ openFileViewer: viewer.openFileViewer }))
 vi.mock('../navigation/navigate-and-select', () => ({ resolveLocationOrToast: navigate.resolveLocationOrToast }))
 
@@ -77,8 +90,9 @@ describe('createEntryActivation', () => {
     vi.clearAllMocks()
     ipc.openFile.mockResolvedValue(undefined)
     policy.pathInsideArchive.mockReturnValue(false)
+    policy.pathCrossesArchiveBoundary.mockReturnValue(false)
     policy.resolveEnterPolicy.mockReturnValue(null)
-    policy.parseEnterBehaviorOverrides.mockReturnValue({})
+    policy.enterBehaviorFromSettings.mockReturnValue({})
     settings.getSetting.mockReturnValue('')
     paneState = { currentPath: '/dir', isSearchResultsView: false }
     calls = {
@@ -143,8 +157,14 @@ describe('createEntryActivation', () => {
     })
 
     it('skips the policy entirely once the PANE is inside an archive', async () => {
-      // The pane's path crosses the boundary; its entries are inner items.
-      policy.pathInsideArchive.mockImplementation((p: string) => p.startsWith('/dir/a.zip'))
+      // The pane's path crosses the boundary; its entries are inner items. This
+      // gate reads the WIDE predicate, because a pane sitting AT `/dir/a.zip` is
+      // already showing the archive's contents.
+      policy.pathCrossesArchiveBoundary.mockImplementation((p: string) => p.startsWith('/dir/a.zip'))
+      // The entry itself is genuinely inside, so the viewer arm below takes the
+      // narrow answer. Both are set here precisely because they differ: the pane
+      // path is AT the archive, the entry path is IN it.
+      policy.pathInsideArchive.mockImplementation((p: string) => p.startsWith('/dir/a.zip/'))
       paneState.currentPath = '/dir/a.zip'
       await createEntryActivation(deps).handleNavigate(entryOf({ name: 'inner.txt', path: '/dir/a.zip/inner.txt' }))
       expect(policy.resolveEnterPolicy).not.toHaveBeenCalled()

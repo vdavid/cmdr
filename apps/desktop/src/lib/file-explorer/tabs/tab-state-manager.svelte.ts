@@ -1,21 +1,16 @@
 import type { TabId, TabState } from './tab-types'
 import { push as navHistoryPush, type HistoryEntry, type NavigationHistory } from '../navigation/navigation-history'
-import { decrementRef as decrementSnapshotRef } from '$lib/search/snapshot-store.svelte'
+import { decrementRef as decrementSnapshotRef, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
 
 export const MAX_TABS_PER_PANE = 10
 
-/** URL prefix that identifies a history entry pointing at a search-results snapshot. */
-const SEARCH_RESULTS_PREFIX = 'search-results://'
-
 /**
- * Extracts the snapshot id from a `search-results://<id>` history-entry path, or
- * returns `null` for any other entry. Keeping the parse in one place means
- * `transferSnapshotRefs`, `applyPushResult`, and any future caller agree on the
- * exact wire format.
+ * The snapshot id a history entry points at, or `null` for any other entry. The
+ * wire format itself is parsed by the store's `snapshotIdFromPanePath`, so
+ * `transferSnapshotRefs`, `applyPushResult`, and the panes can't disagree about it.
  */
 function snapshotIdFromEntry(entry: HistoryEntry): string | null {
-  if (!entry.path.startsWith(SEARCH_RESULTS_PREFIX)) return null
-  return entry.path.slice(SEARCH_RESULTS_PREFIX.length)
+  return snapshotIdFromPanePath(entry.path)
 }
 
 /**

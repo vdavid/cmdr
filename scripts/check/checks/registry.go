@@ -180,6 +180,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunSqliteOpenDirect,
 	},
 	{
+		ID:          "desktop-macos-framework-floor",
+		Nickname:    "macos-framework-floor",
+		DisplayName: "macos-framework-floor",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      macOSFrameworkFloorInputs,
+		Run:         RunMacOSFrameworkFloor,
+	},
+	{
 		ID:          "desktop-rust-macos-availability",
 		Nickname:    "macos-availability",
 		DisplayName: "macos-availability",
@@ -297,7 +308,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🦀 Rust",
 		DependsOn:   nil,
 		IsFast:      true,
-		Inputs:      rustAppTreeInputs,
+		Inputs:      rustScanInputs(KindApp),
 		Run:         RunMtpDroppingTimeout,
 	},
 	{
@@ -308,7 +319,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🦀 Rust",
 		DependsOn:   nil,
 		IsFast:      true,
-		Inputs:      rustAppTreeInputs,
+		Inputs:      rustScanInputs(KindApp),
 		Run:         RunMtpNoTransportReset,
 	},
 	{
@@ -662,6 +673,19 @@ var AllChecks = []CheckDefinition{
 		Inputs:      rustCompileInputs,
 		Run:         RunRustTestsLinux,
 	},
+	// The real-API provider smokes. One lane per provider whose key we hold, because a
+	// decommission or a contract break at ANY of them should surface here rather than in a
+	// user's app — a single-provider lane only ever notices that one provider's schedule.
+	//
+	// All five share the same treatment: a live network call validating a third-party
+	// contract rather than our code, so it can only go red on the provider's schedule and
+	// has no business gating local work (24 days of the Groq lane: 106 runs, 9 211
+	// CPU-seconds, 70 s median, four catches). CIOnly keeps them out of every local lane
+	// including `--include-slow`; IsSlow keeps them out of CI's default lane, so their
+	// dedicated steps in the nightly slow-checks workflow stay the only place they run.
+	// Each self-skips without its key, and `pnpm check <provider>-smoke` runs it on demand.
+	//
+	// Model ids live in `apps/desktop/src-tauri/src/ai/smoke_providers.rs`, one line each.
 	{
 		ID:          "desktop-rust-groq-smoke",
 		CpuWeight:   2,
@@ -670,18 +694,67 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "Groq smoke (real API)",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
-		// A live network call validating a third-party provider's contract, not our code:
-		// it can only ever go red on Groq's schedule, so it has no business gating local
-		// work (24 days: 106 runs, 9 211 CPU-seconds, 70 s median, four catches). CIOnly
-		// keeps it out of every local lane including `--include-slow`; IsSlow keeps it out
-		// of CI's default lane, so its one dedicated step in the nightly slow-checks
-		// workflow stays the only place it runs. Self-skips without a GROQ_API_KEY, and
-		// `pnpm check groq-smoke` still runs it on demand.
-		CIOnly:    true,
-		IsSlow:    true,
-		DependsOn: []string{"desktop-rust-clippy"},
-		Inputs:    rustCompileInputs,
-		Run:       RunGroqSmoke,
+		CIOnly:      true,
+		IsSlow:      true,
+		DependsOn:   []string{"desktop-rust-clippy"},
+		Inputs:      rustCompileInputs,
+		Run:         RunGroqSmoke,
+	},
+	{
+		ID:          "desktop-rust-fireworks-smoke",
+		CpuWeight:   2,
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "fireworks-smoke",
+		DisplayName: "Fireworks AI smoke (real API)",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		CIOnly:      true,
+		IsSlow:      true,
+		DependsOn:   []string{"desktop-rust-clippy"},
+		Inputs:      rustCompileInputs,
+		Run:         RunFireworksSmoke,
+	},
+	{
+		ID:          "desktop-rust-anthropic-smoke",
+		CpuWeight:   2,
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "anthropic-smoke",
+		DisplayName: "Anthropic smoke (real API)",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		CIOnly:      true,
+		IsSlow:      true,
+		DependsOn:   []string{"desktop-rust-clippy"},
+		Inputs:      rustCompileInputs,
+		Run:         RunAnthropicSmoke,
+	},
+	{
+		ID:          "desktop-rust-gemini-smoke",
+		CpuWeight:   2,
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "gemini-smoke",
+		DisplayName: "Google Gemini smoke (real API)",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		CIOnly:      true,
+		IsSlow:      true,
+		DependsOn:   []string{"desktop-rust-clippy"},
+		Inputs:      rustCompileInputs,
+		Run:         RunGeminiSmoke,
+	},
+	{
+		ID:          "desktop-rust-openai-smoke",
+		CpuWeight:   2,
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "openai-smoke",
+		DisplayName: "OpenAI smoke (real API)",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		CIOnly:      true,
+		IsSlow:      true,
+		DependsOn:   []string{"desktop-rust-clippy"},
+		Inputs:      rustCompileInputs,
+		Run:         RunOpenAiSmoke,
 	},
 
 	// Desktop - Svelte checks

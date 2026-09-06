@@ -224,6 +224,7 @@ fn test_build_pane_yaml() {
         sort_field: "name".to_string(),
         sort_order: "asc".to_string(),
         total_files: 2,
+        has_parent_row: true,
         loaded_start: 0,
         loaded_end: 2,
         show_hidden: false,
@@ -301,6 +302,7 @@ fn test_brief_cursor_detail_respects_loaded_window() {
         sort_field: "name".to_string(),
         sort_order: "asc".to_string(),
         total_files: 50_000,
+        has_parent_row: true,
         loaded_start: 100,
         loaded_end: 102,
         show_hidden: false,
@@ -574,4 +576,41 @@ fn a_pane_showing_a_mount_failure_reports_it() {
         ..Default::default()
     };
     assert!(!build_pane_yaml_with_options(&ok, "  ", false).contains("mountError"));
+}
+
+/// A search-results pane in the engine's ranked order reports `relevance:desc`,
+/// the vocabulary a result set ranked best-match-first is sorted by.
+///
+/// The frontend decides that word (`pane-mcp-sync.svelte.ts`); this pins that the
+/// renderer passes a field it doesn't know about straight through, rather than
+/// normalizing it into one of the column names.
+#[test]
+fn a_ranked_search_results_pane_reports_its_sort_as_relevance() {
+    let state = PaneState {
+        path: "search-results://sr-1".to_string(),
+        volume_id: Some("search-results".to_string()),
+        view_mode: "full".to_string(),
+        sort_field: "relevance".to_string(),
+        sort_order: "desc".to_string(),
+        ..Default::default()
+    };
+
+    let yaml = build_pane_yaml_with_options(&state, "  ", false);
+
+    assert!(yaml.contains("sort: \"relevance:desc\""));
+}
+
+/// The empty-field fallbacks describe a `PaneState` no pane ever pushed, and
+/// nothing else: every live pane sends both halves explicitly.
+#[test]
+fn a_pane_state_no_pane_pushed_still_renders_a_sort_line() {
+    let state = PaneState {
+        path: "/Users/test".to_string(),
+        view_mode: "full".to_string(),
+        ..Default::default()
+    };
+
+    let yaml = build_pane_yaml_with_options(&state, "  ", false);
+
+    assert!(yaml.contains("sort: \"name:asc\""));
 }

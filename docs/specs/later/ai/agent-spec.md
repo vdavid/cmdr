@@ -136,9 +136,9 @@ is read off the code, never off a status line; re-derive again before trusting i
   something, a staged toast (`wake/staged.rs`). A future §9.5 build starts from that, not from a blank surface.
 
 **Ownership note.** The wake loop's own deliberate leftovers (the two interest tuning knobs, the three cadence
-constants, reading file contents, the chat-memory-size timeline event, the rail's refetch-on-decision gap, and the
-consent screenshots) belong to `docs/specs/later/ai/wake-loop-follow-ups.md` and are **not** restated here. Where §18
-below names one of them, that file is the owner.
+constants, reading file contents, the rail's refetch-on-decision gap, and the consent screenshots) belong to
+`docs/specs/later/ai/wake-loop-follow-ups.md` and are **not** restated here. Where §18 below names one of them, that
+file is the owner.
 
 ## 1. What this is
 

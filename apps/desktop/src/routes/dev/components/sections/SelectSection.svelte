@@ -17,6 +17,21 @@
         { value: 'iso-8859-1', label: 'ISO 8859-1', group: 'Western' },
     ]
     let encodingValue = $state('utf-8')
+
+    /** A stand-in for the app-icon data URLs the terminal-app picker passes in. */
+    function swatch(fill: string): string {
+        return `data:image/svg+xml;utf8,${encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="16" height="16" rx="3" fill="${fill}"/></svg>`,
+        )}`
+    }
+
+    const appItems: SelectItem[] = [
+        { value: 'terminal', label: 'Terminal', iconUrl: swatch('#4a5568') },
+        { value: 'ghostty', label: 'Ghostty', iconUrl: swatch('#7b61ff') },
+        // No icon: the row still reserves the slot, so the labels stay in one column.
+        { value: 'other', label: 'Choose an app…' },
+    ]
+    let appValue = $state('terminal')
 </script>
 
 <SectionCard id="components-select" label="Select">
@@ -45,6 +60,23 @@
                         encodingValue = v
                     }}
                     ariaLabel="Text encoding"
+                />
+            </div>
+        </div>
+
+        <div class="cell">
+            <p class="caption">
+                Items with an <code>iconUrl</code>, for example the terminal-app picker. One icon makes every row
+                reserve the slot, and the trigger shows the selected item's.
+            </p>
+            <div class="control">
+                <Select
+                    items={appItems}
+                    value={appValue}
+                    onChange={(v: string) => {
+                        appValue = v
+                    }}
+                    ariaLabel="Terminal app"
                 />
             </div>
         </div>

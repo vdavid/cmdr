@@ -9,7 +9,8 @@
 use serde_json::json;
 use tauri::{AppHandle, Manager, Runtime};
 
-use super::{PaneStateStore, ToolError, ToolResult, mcp_round_trip, mcp_round_trip_with_timeout};
+use super::nav::{NAV_TO_PATH_TIMEOUT_SECS, nav_result};
+use super::{PaneStateStore, ToolError, ToolResult, mcp_nav_round_trip, mcp_round_trip};
 
 /// `go_to_latest_download` MCP tool. No parameters in v1 (the `index`
 /// argument from the plan is deferred until the scan fallback returns a
@@ -46,15 +47,16 @@ pub async fn execute_go_to_latest_download<R: Runtime>(app: &AppHandle<R>) -> To
 
     // Navigate the focused pane to the parent dir. Reuses the FE's existing
     // `mcp-nav-to-path` handler (the one the `nav_to_path` tool drives), so
-    // any volume / listing edge cases the FE already handles apply uniformly.
-    mcp_round_trip_with_timeout(
+    // any volume / listing edge cases the FE already handles apply uniformly —
+    // including the typed landing outcome, so a pane that fell back somewhere
+    // else stops the flow here instead of moving a cursor in the wrong directory.
+    let ack = mcp_nav_round_trip(
         app,
-        "mcp-nav-to-path",
         json!({"pane": pane, "path": latest.parent_dir}),
-        format!("OK: Went to {}", latest.path),
-        30,
+        NAV_TO_PATH_TIMEOUT_SECS,
     )
     .await?;
+    nav_result(&pane, &latest.parent_dir, ack)?;
 
     // Move the cursor onto the target file. If the file disappeared
     // between the resolve call and the FE's cursor placement (race against

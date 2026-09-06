@@ -64,7 +64,7 @@ CheckDefinition{
   cold one.
 - **`CIOnly: true`** runs the check only under `--ci` (or when named explicitly). Two uses: the slow-but-authoritative
   variant of a check whose fast local variant lives elsewhere (`cargo-udeps` paired with `cargo-machete`), and a check
-  whose cost per catch doesn't justify a place in the local loop (`jscpd-rust`, `groq-smoke`).
+  whose cost per catch doesn't justify a place in the local loop (`jscpd-rust`, the five `<provider>-smoke` lanes).
 - **`DependsOn`** is a flat slice of IDs. Formatters before linters, linters before tests, type checkers before tests.
   Blocked checks (dep failed) get `StatusBlocked` automatically.
 - **`CpuWeight`** is the average number of CPU cores the check keeps busy while running (cold/working profile, rounded).
@@ -840,10 +840,10 @@ resolves dependency features for one package instead of the workspace and rebuil
 s. Full runs: `docs/notes/cargo-lane-feature-thrash.md`.
 
 So **`HostCargoLaneArgs` (`cargo-workspace.go`) is the one answer**, and every host lane that compiles builds its
-command line from it: `desktop-rust-tests`, `desktop-rust-integration-tests`, `desktop-rust-groq-smoke`, and (spelled
-out by hand, see below) `pnpm bindings:regen`. It returns the workspace selection plus `SharedTargetFeatureArgs()` =
-`--features cmdr/virtual-mtp`. A lane that needs a genuinely different feature set needs its own `CARGO_TARGET_DIR`, not
-its own flags.
+command line from it: `desktop-rust-tests`, `desktop-rust-integration-tests`, the five `desktop-rust-<provider>-smoke`
+lanes, and (spelled out by hand, see below) `pnpm bindings:regen`. It returns the workspace selection plus
+`SharedTargetFeatureArgs()` = `--features cmdr/virtual-mtp`. A lane that needs a genuinely different feature set needs
+its own `CARGO_TARGET_DIR`, not its own flags.
 
 Who stays out, and why it's not an oversight:
 
@@ -860,15 +860,15 @@ Who stays out, and why it's not an oversight:
 
 ### Why the feature set is `virtual-mtp`
 
-The MTP tests that drive a virtual device (`backends/mtp_test`, `mtp_archive_test`, `mtp_read_range_test`,
-`mtp_scan_oracle_tests`, `connection/path_cache_sync_test` — ~29 tests) only COMPILE under it. Without it
-`cargo nextest` silently filters them out, so they protected nothing while looking like coverage. It's test-only (never
-enters a production build) and costs ~2-4 s on a ~27 s suite, so it's the cheapest set that keeps the test lane honest.
-It MUST stay package-qualified (`cmdr/virtual-mtp`): a bare `--features virtual-mtp` changes meaning once more than one
-package is selected.
+The MTP tests that drive a virtual device only COMPILE under it: the app's (`mtp/volume_wiring_test`,
+`write_operations/mtp_archive_test`, `mtp_scan_oracle_tests`, the transfer cells) and `cmdr-mtp`'s own, which the
+feature reaches through `cmdr-mtp/virtual-device`. Without it `cargo nextest` silently filters them out, so they
+protected nothing while looking like coverage. It's test-only (never enters a production build) and costs ~2-4 s on a
+~27 s suite, so it's the cheapest set that keeps the test lane honest. It MUST stay package-qualified
+(`cmdr/virtual-mtp`): a bare `--features virtual-mtp` changes meaning once more than one package is selected.
 
 Prerequisites these tests rely on (per-test temp backing root, watcher off, `virtual_device_test_lock()`):
-`apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Rust tests that drive the device".
+`crates/cmdr-mtp/DETAILS.md` § "Three properties a cell must not break".
 
 ### The bindings regen is the one invocation outside Go
 
@@ -1253,8 +1253,8 @@ It asserts three things:
   (walks source trees; coverage comes from the declared kinds), or `rustMetaChecks` (reasons about the workspace rather
   than compiling or scanning it). Adding a Rust check without classifying it fails, which is the shape of "someone added
   a scanner and hardcoded a path inside it". Each cargo lane records HOW it reaches the workspace, so a targeted
-  invocation can't pass for a sweep — `desktop-rust-groq-smoke` runs one `--lib` test against a live endpoint and says
-  so.
+  invocation can't pass for a sweep — `desktop-rust-groq-smoke` runs one `--lib` test module against a live endpoint and
+  says so.
 - **No stale or empty classification**: an entry naming a check that no longer exists fails, the same way `ci-coverage`
   refuses to let an excuse outlive its check. So does a jurisdiction that declares neither member kinds nor
   `AppTreeOnly` — that one makes `ScannerRoots` hand back no roots, and a scanner with no roots scans nothing and
@@ -1267,8 +1267,10 @@ nothing" and passes). Anything narrower than every first-party member carries a 
 - **`desktop-rust-log-error-macro`** is `AppTreeOnly`. `log_error!` is a crate-root `macro_rules!` no separate crate can
   invoke, so pointing it at `crates/` would make every diagnostic `log::error!` there a hard failure with no legal
   alternative. Crates raise errors as typed values the app re-raises.
-- **`desktop-rust-mtp-dropping-timeout`** and **`desktop-rust-mtp-no-transport-reset`** are `AppTreeOnly`: both are
-  scoped to `src/mtp/`, one app-side USB subsystem.
+- **`desktop-rust-mtp-dropping-timeout`** and **`desktop-rust-mtp-no-transport-reset`** declare `KindApp` and then
+  narrow further, to the TWO trees the MTP subsystem spans: all of `crates/cmdr-mtp/src/` plus the app's `src/mtp/`.
+  Both rules are about a PTP transaction on the wire, and both trees issue mtp-rs calls. The decision entries for the
+  two checks, further down, carry the full rationale.
 - **`desktop-rust-sqlite-open-direct`** is `app` only. The page-cache slab is process-wide, so a standalone CLI opening
   the first connection in its own process has nothing to protect.
 - **`desktop-rust-write-ops-agent-isolation`** is `AppTreeOnly`. It fences `file_system/write_operations/`, which only
@@ -1323,6 +1325,44 @@ How it decides:
   `URLForApplicationToOpenURL`, and `imageWithSystemSymbolName_accessibilityDescription` (macOS 11) in
   `menu/macos_appkit.rs` leaves menu items iconless.
 
+## macOS framework floor
+
+`desktop-macos-framework-floor` fails when the built desktop binary loads a system framework that arrived AFTER the
+`bundle.macOS.minimumSystemVersion` the bundle promises. Sibling to the selector check above, for the other half of the
+same failure: that one is a call the running OS might not answer, this one is a file dyld looks for before `main` and
+refuses to start the process without.
+
+The hole it fills: v0.42.0 promised Catalina and could not open on it at all, with
+`Library not loaded: …/UniformTypeIdentifiers.framework`. That framework arrived in macOS 11, and nothing in Cmdr called
+it: `objc2-quick-look-ui` was declared without `default-features = false`, its default set turns on the
+`objc2-uniform-type-identifiers` feature, and that crate's `#[link]` is unconditional. A reference no code follows is
+enough, because a framework link is not a call.
+
+How it decides:
+
+- **It reads the Mach-O, not the dependency graph**, which is the whole design decision. A `#[link]` name is not the
+  load command it produces (`objc2-quick-look-ui` asks for `QuickLookUI` and the linker resolves it through the `Quartz`
+  umbrella, so the binary names `Quartz`), a `build.rs` can emit a link flag no manifest mentions, and the crate that
+  broke Catalina appears in no manifest in this repo. Only the load commands know the answer.
+- **Only `LC_LOAD_DYLIB` counts.** Go's `debug/macho` turns exactly that command into a `*macho.Dylib` and leaves
+  `LC_LOAD_WEAK_DYLIB` as raw bytes, which is the distinction the check wants anyway: dyld tolerates a missing weak
+  framework and binds its symbols to null.
+- **Only `/System/Library/Frameworks/` is judged.** Everything else a Mach-O loads is `/usr/lib` (shared-cache basics,
+  older than any floor we could set) or `@rpath` / `@executable_path` (shipping inside the bundle, present by
+  construction). A subframework is judged as itself, not as its umbrella, since the two ship on their own schedules.
+- **The versions are hand-recorded**, in `macos-framework-versions.json`. Nothing in the SDK carries a framework's own
+  introduction version: its headers annotate only what is newer than the framework itself, so `UniformTypeIdentifiers`
+  reads as 12.0 from its own headers and `PDFKit` as 13.0, when they arrived in 11.0 and 10.4. What IS enforced is that
+  nothing goes unrecorded: a loaded framework the file doesn't name fails the check, so a new dependency can't extend
+  the binary's reach silently. Several entries are the release a framework left an umbrella and became loadable on its
+  own (`CoreGraphics`, `CoreText`, and `ImageIO` left `ApplicationServices` in 10.8), which is the date that matters
+  here.
+- **Where it runs.** It needs a built Mach-O, so it skips where there is none, which is every CI runner (all ubuntu).
+  Locally it reads `target/release/Cmdr` if there is one, else `target/debug/Cmdr`, so any Mac that has run the app is
+  covered. The gate that can't be skipped is `release.yml`, which points `CMDR_MACOS_BINARY` at the signed bundled
+  binary right after `tauri-action` builds it; that's the only run that sees what users actually get, which is also why
+  `ci-coverage` counts it as wired without a `ci.yml` step.
+
 ## Apps and check counts
 
 Checks by app and tech:
@@ -1332,40 +1372,45 @@ Checks by app and tech:
   the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms there), cargo-audit,
   cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (warn-only; the clone list, on a per-file-pair ratchet),
   log-error-macro, macos-availability (no call to a selector newer than the bundle's `minimumSystemVersion`; § "macOS
-  availability"), sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
-  shared page cache is always installed before SQLite initializes), error-string-match, write-ops-isolation (the write
-  engine may not name the `agent` module: an approved operation is an ordinary operation, and an engine that can see the
-  agent grows a second execution path; per-source outcomes reach a caller through the injected `OperationEventSink`
-  instead), lock-poison (two lanes: an error-level one for an acquisition that records no poison-handling choice, and a
-  warn-only one for a failure that's silently discarded, on a per-file ratchet), test-sleep (flags a fixed
-  `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a genuine
-  sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on
-  `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's live
-  fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load bearing
-  opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
-  `CachedScanResult` / `SourceHint` / `VolumePreflight` / `WrittenFile` in test code, so a fixture can only be one of
-  the shapes a named constructor actually builds; it ships with ZERO findings on purpose and is a regression fence
-  rather than a finder — the shapes are already clean, and the point is that the next test author can't undo that by
-  copy-pasting an old literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and
-  `cmdr-fs` carries a `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information",
-  it's a claim about the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in
-  production `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the
-  branch that deletes; opt out with `// allowed-probe-unwrap: <why the guess is truthful>`), discarded-outcome (a
-  function that returns NOTHING while dropping a typed answer from the free function it delegates to; three of these
-  shipped before it existed, and each ended as an IPC command or MCP tool inventing a success. `Result` and `Option`
-  returns are deliberately out of scope: `Result` is `#[must_use]`, so the compiler already warns, and an `Option`
-  discard is the map/set idiom. That leaves exactly the gap the compiler can't see, a bare `bool` or a named outcome
-  type. Every ambiguity resolves to "don't flag" — an unresolvable name, two definitions disagreeing on their return
-  type, a method call — because a check people learn to ignore is worse than none. Opt out with
+  availability"), macos-framework-floor (no framework in the BUILT binary's load commands newer than that same floor,
+  which is the half no runtime gate can save; § "macOS framework floor"), sqlite-open-direct (every SQLite connection
+  opens through `crate::sqlite_util`, so the process-wide shared page cache is always installed before SQLite
+  initializes), error-string-match, write-ops-isolation (the write engine may not name the `agent` module: an approved
+  operation is an ordinary operation, and an engine that can see the agent grows a second execution path; per-source
+  outcomes reach a caller through the injected `OperationEventSink` instead), lock-poison (two lanes: an error-level one
+  for an acquisition that records no poison-handling choice, and a warn-only one for a failure that's silently
+  discarded, on a per-file ratchet), test-sleep (flags a fixed `thread::sleep` / `tokio::time::sleep` in test code,
+  where a condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
+  `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on `std::env::temp_dir()`, where every
+  process on the machine shares the path and two suite runs delete each other's live fixtures; the sanctioned fixture is
+  `crate::test_support::TestDir`, and a site where the temp root is load bearing opts out with
+  `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of `CachedScanResult` /
+  `SourceHint` / `VolumePreflight` / `WrittenFile` in test code, so a fixture can only be one of the shapes a named
+  constructor actually builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder —
+  the shapes are already clean, and the point is that the next test author can't undo that by copy-pasting an old
+  literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
+  `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information", it's a claim about
+  the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in production
+  `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the branch that
+  deletes; opt out with `// allowed-probe-unwrap: <why the guess is truthful>`), discarded-outcome (a function that
+  returns NOTHING while dropping a typed answer from the free function it delegates to; three of these shipped before it
+  existed, and each ended as an IPC command or MCP tool inventing a success. `Result` and `Option` returns are
+  deliberately out of scope: `Result` is `#[must_use]`, so the compiler already warns, and an `Option` discard is the
+  map/set idiom. That leaves exactly the gap the compiler can't see, a bare `bool` or a named outcome type. Every
+  ambiguity resolves to "don't flag" — an unresolvable name, two definitions disagreeing on their return type, a method
+  call — because a check people learn to ignore is worse than none. Opt out with
   `// allowed-discarded-outcome: <why nobody above needs the answer>`), mtp-dropping-timeout, mtp-no-transport-reset,
-  bindings-fresh, ipc-enum-camelcase, shipped-locales-fresh (regenerate-and-diff `intl/shipped_locales.gen.rs` from the
-  message-catalog dirs, so the locale resolver's CLDR script table can't go stale and leave a new locale both
-  unreachable and unguarded), module-cycles (slow, warn-only; strongly-connected module components per crate with
-  parent-child hubs collapsed, on a per-home ratchet, behind a pinned `cargo-modules` that a mismatched box skips rather
-  than mis-measures — see § "Rust module cycles"), fixture-lane-coverage (a Docker-gated cell in the app crate whose
-  name the integration lane's filter won't select never runs anywhere, so it's a finding; one cell lived its whole life
-  that way, and it was the sole caller of the crate extraction's one sanctioned public-surface widening — see § "Fixture
-  lane coverage"), tests, integration-tests (Docker network fixtures), tests-linux (slow)
+  bindings-fresh, ipc-enum-camelcase, the five `<provider>-smoke` lanes (CI-only: one `--lib` module each against a live
+  provider, self-skipping without its key; `gemini-smoke` additionally has a warn-level "inconclusive" outcome — see §
+  "Decision: a smoke lane has a THIRD outcome"), shipped-locales-fresh (regenerate-and-diff
+  `intl/shipped_locales.gen.rs` from the message-catalog dirs, so the locale resolver's CLDR script table can't go stale
+  and leave a new locale both unreachable and unguarded), module-cycles (slow, warn-only; strongly-connected module
+  components per crate with parent-child hubs collapsed, on a per-home ratchet, behind a pinned `cargo-modules` that a
+  mismatched box skips rather than mis-measures — see § "Rust module cycles"), fixture-lane-coverage (a Docker-gated
+  cell in the app crate whose name the integration lane's filter won't select never runs anywhere, so it's a finding;
+  one cell lived its whole life that way, and it was the sole caller of the crate extraction's one sanctioned
+  public-surface widening — see § "Fixture lane coverage"), tests, integration-tests (Docker network fixtures),
+  tests-linux (slow)
 
 The last three share one region tracker, `rustTestModState` / `advanceTestModRegion` (`desktop-rust-test-sleep.go`), in
 opposite polarities: test-sleep and fixed-temp-dir scan ONLY inside an inline test module, derive-default and
@@ -1376,11 +1421,11 @@ doubles as production code.
 
 - **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
   scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate —
-  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp` — reaches `tauri`, `tauri-specta`, or `cmdr` anywhere
-  in its `cargo metadata` tree, plus a per-bucket public-surface ceiling on all of them except `cmdr-fs`, which is
-  permanently uncapped: it's shared vocabulary whose job is to be named from everywhere. See
-  `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own entry in
-  `index-crate-isolation.go` for the backend ones, and why raising any of them needs David's say-so),
+  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-mtp`, `cmdr-git` — reaches
+  `tauri`, `tauri-specta`, or `cmdr` anywhere in its `cargo metadata` tree, plus a per-bucket public-surface ceiling on
+  all of them except `cmdr-fs`, which is permanently uncapped: it's shared vocabulary whose job is to be named from
+  everywhere. See `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own
+  entry in `index-crate-isolation.go` for the backend ones, and why raising any of them needs David's say-so),
   nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects a live test, so a per-test cap
   or `test-group` can't be silently detached by a module move; it lists the workspace's tests with
   `cargo nextest list --run-ignored all` and names where a stale atom's leaf went. It judges the HOST platform, so a
@@ -1584,19 +1629,35 @@ positive rate). Most of cmdr's Go modules are dep-free tooling scripts but still
 own CVEs; the check found 7 real reachable stdlib vulns the first time it ran (fixed by bumping mise's Go pin). Mirrors
 the cargo-audit role on the Rust side.
 
-**Decision**: `cfg-gate` check to catch ungated macOS-only crate imports. **Why**: Rust code using macOS-only crates
-(from `[target.'cfg(target_os = "macos")'.dependencies]`) compiles fine on macOS but fails on Linux if the `use` isn't
-wrapped in `#[cfg(target_os = "macos")]`. CI catches this after push, but the check catches it locally and instantly. It
-parses `Cargo.toml` for macOS-only crate names, detects module-level gating (for example,
-`#[cfg(target_os = "macos")] mod foo;` in `lib.rs` makes everything inside `foo` inherently safe), and scans remaining
-files for ungated references.
+**Decision**: `cfg-gate` check to catch ungated macOS-only imports. **Why**: Rust code naming something absent from the
+Linux build compiles fine on macOS and fails on Linux if the `use` isn't wrapped in `#[cfg(target_os = "macos")]`. CI
+catches this after push, but the check catches it locally and instantly. It detects module-level gating (for example,
+`#[cfg(target_os = "macos")] mod foo;` in `lib.rs` makes everything inside `foo` inherently safe, and so does a file
+`foo.rs` pulls in through `#[path = "foo_tests.rs"] mod foo_tests;`) and scans the remaining files for ungated
+references.
 
-Three things that detection has to get right, each learned from a miss:
+Two name sets, with different reach because the two are named differently in code:
 
-- **Any `crate::` reference counts, not just `use` lines.** A `use`-only scan reads `unsafe { libc::geteuid() }` as
-  nothing at all, which is how a `#[cfg(unix)]` test in `cmdr-fs` reached macOS-only `libc` and broke the Linux lane
-  with a green local run. Trailing `//` comments are stripped first so a SAFETY note explaining a gated call isn't
-  itself reported.
+- **macOS-only dependency crates**, from `[target.'cfg(target_os = "macos")'.dependencies]` in the member's own
+  manifest. ANY `crate::` reference counts here, not just `use` lines (see below).
+- **The crate's own macOS-only modules**, from `#[cfg(target_os = "macos")] mod x;`, matched as a `crate::x` path.
+  IMPORTS ONLY. A module of ours is named all over ordinary code (the `ipc.rs` command-registry macro, closure bodies,
+  multi-line signatures and `let`s), and deciding whether such a line sits under a gate needs a real parse: pointed at
+  every reference, the line-based walk misreported 22 correct sites against one true finding. An import sits at the top
+  of its scope, where the walk is reliable, and it is the shape that breaks the build. A module gated
+  `#[cfg(any(target_os = "macos", target_os = "linux"))]` is excluded: it exists in the Linux lane, so naming it needs
+  no gate.
+
+Four things that detection has to get right, each learned from a miss:
+
+- **A `use` inserted directly under an existing `#[cfg]` steals that attribute.** The line below it, gated until then,
+  goes bare, and rustfmt's alphabetical ordering is what puts the new import there. This is the module set's whole
+  reason to exist: it is how `drag.rs` reached macOS-only `native_drag` unconditionally and broke the Linux lane with a
+  green local run.
+- **Any `crate::` reference counts for a dependency crate, not just `use` lines.** A `use`-only scan reads
+  `unsafe { libc::geteuid() }` as nothing at all, which is how a `#[cfg(unix)]` test in `cmdr-fs` reached macOS-only
+  `libc` and broke the Linux lane with a green local run. Trailing `//` comments are stripped first so a SAFETY note
+  explaining a gated call isn't itself reported.
 - **A crate declared unconditionally too isn't macOS-only.** `tar` is macOS-only for production extraction and an
   all-target `[dev-dependencies]` so the tarball-building test compiles everywhere; counting it would report five
   perfectly fine test lines.
@@ -1672,21 +1733,27 @@ A PTP transaction is command → data → response over one bulk pipe, so droppi
 device expecting bytes nobody will send — that's the single trigger behind every phone wedge we've reproduced, and the
 software recovery isn't guaranteed to get the device back. mtp-rs bounds each USB transfer itself and fails cleanly, so
 an outer deadline (whose clock starts earlier) can only preempt a clean failure with a wedge. The check is a fast-lane
-Go scanner over `apps/desktop/src-tauri/src/mtp/` (modeled on `lock-poison`, reusing its `#[cfg(test)]`-mod skip) that
-flags `tokio::time::timeout(` and `.abort()`. Opt out with `// allowed-dropping-timeout: <reason>` when the dropped
-future genuinely holds nothing on the wire; the two current exceptions are the device-lock wait and the event loop's
-interrupt-endpoint poll. Rationale in full: `apps/desktop/src-tauri/src/mtp/connection/DETAILS.md` § "No dropping
-timeouts".
+Go scanner over BOTH MTP trees (modeled on `lock-poison`, reusing its `#[cfg(test)]`-mod skip) that flags
+`tokio::time::timeout(` and `.abort()`. Opt out with `// allowed-dropping-timeout: <reason>` when the dropped future
+genuinely holds nothing on the wire; the two current exceptions are the device-lock wait and the event loop's
+interrupt-endpoint poll. Rationale in full: `crates/cmdr-mtp/src/connection/DETAILS.md` § "No dropping timeouts".
 
 **Decision**: `mtp-no-transport-reset` check, with NO opt-out directive. **Why**: The Still Image Class `DEVICE_RESET`
 control request looks like the missing "unwedge the pipe" step in session-reset recovery, and it will keep looking like
 one to every future reader. On Android it's a kill switch: `MtpServer` answers it by dropping its FunctionFS endpoints
 and never re-arming them, while the USB controller stays `configured`, so the phone keeps enumerating and answering
 nothing until it's physically replugged (verified on a Pixel 9 Pro XL via `adb logcat`, 2026-07-21). The check is a
-fast-lane Go scanner over `apps/desktop/src-tauri/src/mtp/` flagging `reset_by_serial(` / `reset_by_location(` /
-`reset_first(` in any file, tests included. It has no directive on purpose: reintroducing a reset means deleting the
-check, and that deliberate act is the whole point. Rationale in full:
-`apps/desktop/src-tauri/src/mtp/connection/DETAILS.md` § "No transport reset in recovery".
+fast-lane Go scanner over both MTP trees flagging `reset_by_serial(` / `reset_by_location(` / `reset_first(` in any
+file, tests included. It has no directive on purpose: reintroducing a reset means deleting the check, and that
+deliberate act is the whole point. Rationale in full: `crates/cmdr-mtp/src/connection/DETAILS.md` § "No transport reset
+in recovery".
+
+**Both MTP scanners walk two trees**, because the subsystem does: `crates/cmdr-mtp/src` holds the session layer and the
+`Volume`, and the app's `src/mtp/` keeps the hotplug watcher, the registrar wiring, and the ptpcamerad workaround, all
+of which still issue mtp-rs calls. They resolve their roots through `rustScannerJurisdictions` (`Kinds: [KindApp]`,
+narrowed by a shared `mtpTrees`), the same shape `derive-default-justified` uses for the two filesystem trees. ❗ Pinned
+to `AppTreeOnly` they would have kept passing while guarding nothing, which is why each carries a Go cell that plants a
+violation inside the crate.
 
 **Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (full) checks. **Why**: Type-aware rules
 (`no-floating-promises`, `no-unsafe-*`, etc.) take ~45% of lint time due to TypeScript project service startup. The fast
@@ -1742,14 +1809,39 @@ lists serde but only a transitive dep actually uses it). machete's blind spot is
 or build.rs codegen; opt those out via `[package.metadata.cargo-machete] ignored = ["foo"]` in the relevant Cargo.toml.
 Local dev gets instant feedback from machete; CI runs udeps for the long-tail check.
 
-**Decision**: `jscpd-rust` and `groq-smoke` are CI-only. **Why**: Cost per catch. Measured over 24 days of
-`~/cmdr-check-log.csv`, jscpd burned 20 122 CPU-seconds across 837 local runs for one real finding, by a wide margin the
-worst ratio in the suite; copy-paste detection is a periodic sweep, and a duplicate that lands on Monday is just as
-findable on Friday. groq-smoke burned 9 211 CPU-seconds across 106 runs (70 s median) for four, and what it validates is
-a third-party provider's live contract rather than our code, so it can only ever go red on Groq's schedule. Both keep
-their existing CI steps, so neither stops being enforced. groq-smoke keeps `IsSlow` alongside `CIOnly`: that's what
-holds it out of CI's default lane, leaving its one dedicated step in the nightly slow-checks workflow as the only place
-it runs.
+**Decision**: `jscpd-rust` and the `<provider>-smoke` lanes are CI-only. **Why**: Cost per catch. Measured over 24 days
+of `~/cmdr-check-log.csv`, jscpd burned 20 122 CPU-seconds across 837 local runs for one real finding, by a wide margin
+the worst ratio in the suite; copy-paste detection is a periodic sweep, and a duplicate that lands on Monday is just as
+findable on Friday. groq-smoke burned 9 211 CPU-seconds across 106 runs (70 s median) for four, and what a smoke
+validates is a third-party provider's live contract rather than our code, so it can only ever go red on that provider's
+schedule. All keep their CI steps, so none stops being enforced. The smokes keep `IsSlow` alongside `CIOnly`: that's
+what holds them out of CI's default lane, leaving their dedicated steps in the nightly slow-checks workflow as the only
+place they run.
+
+**Decision**: one smoke lane per provider whose key we hold, not one for the cheapest. **Why**: a single-provider lane
+only ever notices that provider's schedule. Groq retired `llama-3.1-8b-instant` on 2026-08-16 and `groq-smoke` caught
+it; the Anthropic test had meanwhile been pinned to a model retired six months earlier and nothing said a word, because
+no lane ran it. Five lanes now (`groq`, `fireworks`, `anthropic`, `openai`, `gemini`), sharing `runProviderSmoke` in
+`desktop-rust-provider-smoke.go` so a sixth is a descriptor rather than a file. Which providers can have one is a
+question about keys, not about code: OpenRouter has no lane (no credit on the key, its free pool 429s upstream, and its
+`openai::` path is already covered by Groq and Fireworks). Every ADAPTER we ship now has a lane, so a sixth would have
+to buy a protocol rather than a vendor.
+
+**Decision**: a smoke lane has a THIRD outcome, `ResultWarning`, fed by a status file the tests write. **Why**: Gemini's
+free tier answers the identical request with 200, then 503, then a zero-byte-body 404, inside a few minutes (verified
+2026-09-04). Reporting that red teaches everyone to ignore the nightly; reporting it green is the silent-skip trap in a
+new costume. So `client_real_gemini_test` retries, decides decommission-vs-outage from the SHAPE of Google's answer (its
+JSON error envelope present or absent, never the sentence inside it), and on giving up calls
+`smoke_providers::report_inconclusive`. That writes to the path in `CMDR_SMOKE_STATUS_FILE`, which `runProviderSmoke`
+creates for EVERY provider and reads back — a file rather than stdout because nextest's `success-output = "never"`
+discards a passing test's output. A warn prints yellow even in quiet mode and can't read as coverage. Run by hand with
+no status file, `report_inconclusive` panics instead of passing vacuously. Full triage rationale and the evidence:
+`apps/desktop/src-tauri/src/ai/DETAILS.md`.
+
+**Gotcha**: a lane self-skips without its key, and a skip is a green step. `GROQ_API_KEY` was never added to the repo
+secrets, so the nightly Groq step reported SKIPPED for months while reading as coverage; the decommission was caught by
+a local `pnpm check groq-smoke`, not by CI. Adding a lane is half the job, adding its secret is the other half. Both
+`desktop-rust-provider-smoke.go` and `slow-checks.yml` say so where someone adding one will read it.
 
 **Decision**: E2E failure output uses section-aware filtering, not a pattern denylist. **Why**: The checker's contract
 with agents is that output is concise enough to read in full: no `head`/`tail`/`grep` needed. Raw Playwright + Tauri +

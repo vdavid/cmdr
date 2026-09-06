@@ -206,21 +206,16 @@ export const commands = {
          */
         redirectToPath: string | null
         /**
-         *  Loose Size-column override for virtual git entries: rendered verbatim
-         *  in the Full mode Size column instead of formatted bytes from `size`.
-         *  Examples: `+12 / -3`, `5 files`, `12 items`, `on main`, short SHA.
+         *  What a virtual git entry's Size cell states, as a fact rather than a
+         *  sentence: an ahead/behind pair, a count, a pinned commit. The frontend
+         *  words it from the message catalog (cell text plus the tooltip that
+         *  doubles as the aria-label), so it reads in the user's own language.
          *  `size` keeps the within-category numeric sort key (ahead-count for
-         *  branches, files-changed for commits, item count for category roots).
-         *  Cross-category Size sorting is meaningless and that's an honest
-         *  tradeoff. Each cell is self-explaining via tooltip + aria-label.
+         *  branches, files-changed for commits, item count for category roots);
+         *  cross-category Size sorting is meaningless, and that's an honest
+         *  tradeoff. `None` on every non-portal entry.
          */
-        displaySize: string | null
-        /**
-         *  Optional rich tooltip string for the Size cell, used when
-         *  `display_size` is set. Example: "12 commits ahead, 3 commits behind
-         *  `origin/main`". Doubles as the aria-label for screen readers.
-         */
-        displaySizeTooltip: string | null
+        gitMeta: GitEntryMeta | null
       } | null,
       string
     >(__TAURI_INVOKE('get_file_at', { listingId, index, includeHidden })),
@@ -337,21 +332,16 @@ export const commands = {
          */
         redirectToPath: string | null
         /**
-         *  Loose Size-column override for virtual git entries: rendered verbatim
-         *  in the Full mode Size column instead of formatted bytes from `size`.
-         *  Examples: `+12 / -3`, `5 files`, `12 items`, `on main`, short SHA.
+         *  What a virtual git entry's Size cell states, as a fact rather than a
+         *  sentence: an ahead/behind pair, a count, a pinned commit. The frontend
+         *  words it from the message catalog (cell text plus the tooltip that
+         *  doubles as the aria-label), so it reads in the user's own language.
          *  `size` keeps the within-category numeric sort key (ahead-count for
-         *  branches, files-changed for commits, item count for category roots).
-         *  Cross-category Size sorting is meaningless and that's an honest
-         *  tradeoff. Each cell is self-explaining via tooltip + aria-label.
+         *  branches, files-changed for commits, item count for category roots);
+         *  cross-category Size sorting is meaningless, and that's an honest
+         *  tradeoff. `None` on every non-portal entry.
          */
-        displaySize: string | null
-        /**
-         *  Optional rich tooltip string for the Size cell, used when
-         *  `display_size` is set. Example: "12 commits ahead, 3 commits behind
-         *  `origin/main`". Doubles as the aria-label for screen readers.
-         */
-        displaySizeTooltip: string | null
+        gitMeta: GitEntryMeta | null
       } | null,
       string
     >(__TAURI_INVOKE('get_file_beside', { listingId, name, side, includeHidden })),
@@ -1377,7 +1367,7 @@ export const commands = {
    *  new-file flow. Like `open_path`, the `playwright-e2e` build swaps in a launch-free
    *  variant: `open -t` spawns a TextEdit window per call, and the E2E suite (which
    *  creates files and opens them in the editor) has no way to close them, so they pile
-   *  up across runs. The E2E variant records into the same `open_mock` store as
+   *  up across runs. The E2E variant records into the same `crate::open_mock` store as
    *  `open_path`, so specs assert intent via `e2e_opened_paths`.
    */
   openInEditor: (path: string) => typedError<null, string>(__TAURI_INVOKE('open_in_editor', { path })),
@@ -2460,6 +2450,27 @@ export const commands = {
    */
   searchFiles: (query: SearchQuery) => typedError<SearchResult, string>(__TAURI_INVOKE('search_files', { query })),
   /**
+   *  Orders a search-results pane's rows, answering with `rows`' own indices in the
+   *  order they should render.
+   *
+   *  The pane's rows arrive ranked by the search engine and the user can re-order
+   *  them by column, exactly like a directory listing. It runs through
+   *  [`entry_comparator`], the SAME comparator every directory listing sorts by, so
+   *  the two can never drift: natural number ordering, case folding, directories
+   *  first, and the user's `directorySortMode` all come along for free.
+   *
+   *  Indices rather than rows because the frontend already holds the full entries;
+   *  shipping them back would double the round trip for no new information. The sort
+   *  is STABLE, so rows equal under the chosen column keep the engine's ranked order
+   *  between them, which makes a re-sort reproducible instead of shuffling ties.
+   */
+  sortSearchResults: (
+    rows: SearchSortRow[],
+    sortBy: SortColumn,
+    sortOrder: SortOrder,
+    dirSortMode: DirectorySortMode,
+  ) => __TAURI_INVOKE<number[]>('sort_search_results', { rows, sortBy, sortOrder, dirSortMode }),
+  /**
    *  Search the scope's volume, walking whatever its index can't answer for yet.
    *
    *  Returns as soon as routing has picked a volume; everything else arrives as
@@ -2746,26 +2757,15 @@ export const commands = {
       __TAURI_INVOKE('suggested_ops_approve', { groupId, deselectedOpIds }),
     ),
   /**
-   *  A settings change may have switched the model for an open thread: record it as a
-   *  conversation event once any in-flight turn finishes (the turn keeps its already-resolved
-   *  model; the event marks the boundary). Returns the persisted event's display view, or
-   *  `None` when nothing changed for this thread — AI is off, no turn has run yet, or the
-   *  effective model is the same (for example the interactive override masks the changed
-   *  shared model).
+   *  A settings change may have moved an open thread's slot — the model it sends to, the chat
+   *  memory each message carries, or both: record what actually moved as conversation events
+   *  once any in-flight turn finishes (that turn keeps what it already resolved; the rows mark
+   *  the boundary). Returns their display views in timeline order, and an empty list when
+   *  nothing changed for this thread — AI is off, no turn has run yet, or both facets are the
+   *  same (for example the interactive override masks the changed shared model).
    */
-  askCmdrRecordModelChange: (conversationId: number) =>
-    typedError<
-      {
-        id: number
-        seq: number
-        role: MessageRoleView
-        blocks: MessageBlock[]
-        promptTokens: number | null
-        completionTokens: number | null
-        createdAt: number
-      } | null,
-      string
-    >(__TAURI_INVOKE('ask_cmdr_record_model_change', { conversationId })),
+  askCmdrRecordSlotChange: (conversationId: number) =>
+    typedError<MessageView[], string>(__TAURI_INVOKE('ask_cmdr_record_slot_change', { conversationId })),
   /**
    *  One conversation's header plus a page of its display messages (oldest first). `None`
    *  when the thread is absent or the store never opened.
@@ -3975,6 +3975,42 @@ export const commands = {
    */
   getAccentColor: () => __TAURI_INVOKE<string>('get_accent_color'),
   /**
+   *  The terminal apps installed on this machine, plus which one `app_choice` names.
+   *
+   *  `app_choice` is the stored `behavior.openTerminalHereApp` value, passed in
+   *  rather than read here: the frontend owns the settings store, and Rust's own
+   *  loader is the startup-time read only (`settings/CLAUDE.md`).
+   *
+   *  The settings row calls this on every render. Each app costs one LaunchServices
+   *  lookup plus a bundle-icon read, so there's nothing to cache; the timeout only
+   *  bounds an icon read on a stalled mount.
+   */
+  listTerminalApps: (appChoice: string) =>
+    __TAURI_INVOKE<TimedOut<TerminalAppList>>('list_terminal_apps', { appChoice }),
+  /**
+   *  Opens `path` in the terminal app `app_choice` names.
+   *
+   *  `path` is the folder the pane resolved (the cursor's folder, or the pane's own),
+   *  and `volume_id` is the volume it came from: the refusal for MTP, ADB, and other
+   *  path-less locations keys on the volume's capabilities, never on the path string.
+   *
+   *  Answers with an outcome rather than a bare success, so the frontend can word the
+   *  uninstalled-app fallback and the path-less refusal without parsing anything.
+   */
+  openTerminalHere: (path: string, volumeId: string, appChoice: string) =>
+    typedError<OpenTerminalOutcome, OpenTerminalError>(
+      __TAURI_INVOKE('open_terminal_here', { path, volumeId, appChoice }),
+    ),
+  /**
+   *  What to call the app `app_choice` names, for the toast that says it's gone.
+   *
+   *  `null` when Cmdr carries no name for it, so the caller words the nameless
+   *  variant instead of showing a bundle id. Sync and I/O-free: it's a table lookup,
+   *  which is the only thing left once the app itself has been uninstalled.
+   */
+  terminalAppDisplayName: (appChoice: string) =>
+    __TAURI_INVOKE<string | null>('terminal_app_display_name', { appChoice }),
+  /**
    *  Tauri command: returns whether macOS "reduce transparency" is enabled.
    *
    *  `NSWorkspace` accessibility queries are main-thread-only, so we hop to the
@@ -4210,6 +4246,7 @@ export const events = {
   mediaIndexFolderExclusion: makeEvent<MediaIndexFolderExclusion>('media-index-folder-exclusion'),
   menuBarRebuilt: makeEvent<MenuBarRebuilt>('menu-bar-rebuilt'),
   menuSort: makeEvent<MenuSort>('menu-sort'),
+  mouseNav: makeEvent<MouseNav>('mouse-nav'),
   mtpDeviceConnected: makeEvent<MtpDeviceConnected>('mtp-device-connected'),
   mtpDeviceDisconnected: makeEvent<MtpDeviceDisconnected>('mtp-device-disconnected'),
   mtpExclusiveAccessError: makeEvent<MtpExclusiveAccessError>('mtp-exclusive-access-error'),
@@ -4654,6 +4691,32 @@ export type AppStatus =
   | { type: 'expired'; organizationName: string | null; expiredAt: string; showModal: boolean }
 
 /**
+ *  Items that turned up in a move's source folder after the scan counted it: a
+ *  download finishing, a sync client landing a file, an editor saving. The copy
+ *  phase never saw them, so the source sweep leaves them (and whatever holds
+ *  them) alone, and the operation says so instead of reporting a clean move.
+ *
+ *  Typed, never a sentence: the FE words this in ten locales.
+ */
+export type AppearedDuringMove = {
+  /**
+   *  How many items stayed behind. A whole unknown subtree counts once, since
+   *  that's the item the user would recognize in the pane.
+   */
+  itemCount: number
+  /**
+   *  The name (not the path) of the source folder holding them, for the
+   *  sentence. When several sources kept something, the first one's name.
+   */
+  folderName: string
+  /**
+   *  How many top-level sources kept something. `1` in the ordinary case; the
+   *  FE reads a higher number as "and others" rather than naming them all.
+   */
+  folderCount: number
+}
+
+/**
  *  What approving a group did, in the terms the dialog acts on.
  *
  *  Every refusal is a typed variant rather than a sentence, because the recoveries genuinely
@@ -4813,6 +4876,13 @@ export type AskCmdrStreamEvent =
    *  user bubble (the change happened between the turns).
    */
   | { type: 'modelChanged'; messageId: number; seq: number; model: string }
+  /**
+   *  The conversation's chat memory size changed since its previous turn, so each message
+   *  now carries a different amount of the chat; the persisted event row's identity rides
+   *  along. `chat_memory_tokens` is a NUMBER — the rail owns every word around it. The
+   *  line goes BEFORE this turn's user bubble (the change happened between the turns).
+   */
+  | { type: 'chatMemoryChanged'; messageId: number; seq: number; chatMemoryTokens: number }
   /**
    *  The prompt budget pushed earlier tool results out of this turn's context, so the
    *  reply was written with less than the full thread in view. One per turn; the rail
@@ -6050,6 +6120,7 @@ export type EncryptionInfoDto = {
 export type EntryStatus = {
   // Path relative to the repo's working tree root, with `/` separators.
   relativePath: string
+  // What changed about it; a staged change wins over a worktree one.
   code: EntryStatusCode
 }
 
@@ -6327,21 +6398,16 @@ export type FileEntry = {
    */
   redirectToPath: string | null
   /**
-   *  Loose Size-column override for virtual git entries: rendered verbatim
-   *  in the Full mode Size column instead of formatted bytes from `size`.
-   *  Examples: `+12 / -3`, `5 files`, `12 items`, `on main`, short SHA.
+   *  What a virtual git entry's Size cell states, as a fact rather than a
+   *  sentence: an ahead/behind pair, a count, a pinned commit. The frontend
+   *  words it from the message catalog (cell text plus the tooltip that
+   *  doubles as the aria-label), so it reads in the user's own language.
    *  `size` keeps the within-category numeric sort key (ahead-count for
-   *  branches, files-changed for commits, item count for category roots).
-   *  Cross-category Size sorting is meaningless and that's an honest
-   *  tradeoff. Each cell is self-explaining via tooltip + aria-label.
+   *  branches, files-changed for commits, item count for category roots);
+   *  cross-category Size sorting is meaningless, and that's an honest
+   *  tradeoff. `None` on every non-portal entry.
    */
-  displaySize: string | null
-  /**
-   *  Optional rich tooltip string for the Size cell, used when
-   *  `display_size` is set. Example: "12 commits ahead, 3 commits behind
-   *  `origin/main`". Doubles as the aria-label for screen readers.
-   */
-  displaySizeTooltip: string | null
+  gitMeta: GitEntryMeta | null
 }
 
 /**
@@ -6588,6 +6654,92 @@ export type FuzzyJumpError =
     // The listing the caller asked about.
     listingId: string
   }
+
+/**
+ *  What a [`GitEntryMeta::Count`] is counting.
+ *
+ *  One variant per row that shows a count, because each one is worded
+ *  differently and pluralized on its own noun.
+ */
+export type GitCountKind =
+  // Local branches in the repo (`.git/branches/`).
+  | 'branches'
+  // Tags in the repo (`.git/tags/`).
+  | 'tags'
+  // Commits reachable from HEAD, capped (`.git/commits/`).
+  | 'commits'
+  // Entries on the stash (`.git/stash/`).
+  | 'stashEntries'
+  // Linked worktrees (`.git/worktrees/`).
+  | 'linkedWorktrees'
+  // Submodules declared in `.gitmodules` (`.git/submodules/`).
+  | 'submodules'
+  // Files a commit changed against its first parent.
+  | 'filesChanged'
+
+/**
+ *  What a virtual git entry's Size cell states.
+ *
+ *  The discriminant is `kind` on the wire, matching every other data-carrying
+ *  enum that crosses IPC. `Count`'s own sub-kind is therefore `counted`, not
+ *  `kind`.
+ */
+export type GitEntryMeta =
+  /**
+   *  How many of something the row holds. `n` doubles as the row's
+   *  within-category Size sort key.
+   */
+  | {
+      kind: 'count'
+      // What is being counted.
+      counted: GitCountKind
+      // How many.
+      n: number
+    }
+  // How far a branch has diverged from the branch it's compared against.
+  | {
+      kind: 'aheadBehind'
+      // Commits on this branch that the comparison branch doesn't have.
+      ahead: number
+      // Commits on the comparison branch that this one doesn't have.
+      behind: number
+      /**
+       *  The comparison branch's display name: the configured upstream
+       *  (`origin/main`), or the `main` / `master` fallback when the branch
+       *  tracks nothing.
+       */
+      vs: string
+    }
+  // The commit a tag points at. Full object id; the cell shows a short form.
+  | {
+      kind: 'taggedCommit'
+      // The commit's full object id.
+      id: string
+    }
+  // The commit a submodule is pinned at. Full object id.
+  | {
+      kind: 'pinnedCommit'
+      // The commit's full object id.
+      id: string
+    }
+  // The branch a stash entry was created on.
+  | {
+      kind: 'stashedOnBranch'
+      // The branch's short name.
+      branch: string
+    }
+  // The branch a linked worktree has checked out.
+  | {
+      kind: 'worktreeOnBranch'
+      // The branch's short name.
+      branch: string
+    }
+  // The commit a linked worktree sits at with no branch checked out.
+  | {
+      kind: 'worktreeDetachedAt'
+      // The commit's full object id.
+      id: string
+    }
 
 /**
  *  Typed `git-state-changed` Tauri event. Carries the repo root and a fresh
@@ -8316,6 +8468,16 @@ export type MessageBlock =
    */
   | { type: 'modelChanged'; model: string }
   /**
+   *  How much of the conversation each message carries changed between turns, so the
+   *  replies after this line saw a different amount of the chat. Rendered as a small
+   *  centered timeline line beside the model one.
+   *
+   *  ⚠️ **A number, never a sentence.** The row outlives every locale pass, so the rail
+   *  formats the count in the user's own language and nothing English is frozen in
+   *  `main.db`.
+   */
+  | { type: 'chatMemoryChanged'; chatMemoryTokens: number }
+  /**
    *  What a wake noticed, which is the first message of every thread the agent opened for
    *  itself.
    *
@@ -8488,22 +8650,139 @@ export type MountResult = {
   alreadyMounted: boolean
 }
 
-// Error types for MTP connection operations.
+/**
+ *  `mouse-nav`: a back / forward navigation gesture finished over the main
+ *  window — a mouse's X1/X2 side button, or the swipe a Logi Options+ mouse
+ *  substitutes for it. macOS only, emitted by the AppKit event monitor in
+ *  `mouse_nav.rs`; on Linux the frontend reads the buttons straight off the DOM.
+ *  Emitted to the main window, which dispatches `nav.back` / `nav.forward` on
+ *  the same bus as `⌘[` / `⌘]`.
+ */
+export type MouseNav = {
+  direction: MouseNavDirection
+}
+
+/**
+ *  Which way a mouse gesture walks the pane history. A typed direction rather
+ *  than a raw button number or swipe delta: the frontend dispatches a command
+ *  from it, and reading either shape is `mouse_nav.rs`'s job alone.
+ */
+export type MouseNavDirection = 'back' | 'forward'
+
+/**
+ *  Why an MTP operation couldn't happen, in a shape the app can act on.
+ *
+ *  Every variant carries the `device_id` it is about, because a message the user
+ *  sees names the phone and several devices can be connected at once. ❌ Classify
+ *  on the variant, never on the `Display` text: the words are for people and the
+ *  app translates them.
+ */
 export type MtpConnectionError =
-  | { type: 'deviceNotFound'; device_id: string }
-  | { type: 'notConnected'; device_id: string }
-  | { type: 'exclusiveAccess'; device_id: string; blocking_process: string | null }
-  | { type: 'timeout'; device_id: string }
-  | { type: 'disconnected'; device_id: string }
-  | { type: 'protocol'; device_id: string; message: string }
-  // Retryable.
-  | { type: 'deviceBusy'; device_id: string }
-  | { type: 'storageFull'; device_id: string }
-  | { type: 'storeReadOnly'; device_id: string }
+  /**
+   *  No live device enumerates under this id. It was unplugged, or it never
+   *  existed.
+   */
+  | {
+      type: 'deviceNotFound'
+      // The device this is about.
+      device_id: string
+    }
+  /**
+   *  The device is there, but nothing has opened a session on it. Connect
+   *  first.
+   */
+  | {
+      type: 'notConnected'
+      // The device this is about.
+      device_id: string
+    }
+  /**
+   *  Another process holds the USB device (`ptpcamerad` on macOS), so the open
+   *  can't happen until it lets go. This is the one the ptpcamerad workaround
+   *  answers.
+   */
+  | {
+      type: 'exclusiveAccess'
+      // The device this is about.
+      device_id: string
+      /**
+       *  Who is holding it, when the OS would say. Best effort, for the
+       *  message only.
+       */
+      blocking_process: string | null
+    }
+  /**
+   *  A USB transfer ran out its own bound. The session is still open, so a
+   *  retry is reasonable.
+   */
+  | {
+      type: 'timeout'
+      // The device this is about.
+      device_id: string
+    }
+  /**
+   *  The device went away mid-operation. The session is gone and won't come
+   *  back without a replug.
+   */
+  | {
+      type: 'disconnected'
+      // The device this is about.
+      device_id: string
+    }
+  // The device answered with something the PTP layer couldn't make sense of.
+  | {
+      type: 'protocol'
+      // The device this is about.
+      device_id: string
+      // What the transport said, for the log. ❌ Not for classification.
+      message: string
+    }
+  // The device is busy with something else. Retryable.
+  | {
+      type: 'deviceBusy'
+      // The device this is about.
+      device_id: string
+    }
+  // The storage has no room for the write.
+  | {
+      type: 'storageFull'
+      // The device this is about.
+      device_id: string
+    }
+  /**
+   *  The storage refused the write because it's read-only. Some devices report
+   *  a storage as writable and only say this at the moment of the write.
+   */
+  | {
+      type: 'storeReadOnly'
+      // The device this is about.
+      device_id: string
+    }
   // USB device file not accessible (Linux: missing udev rules; `EACCES`).
-  | { type: 'permissionDenied'; device_id: string }
-  | { type: 'cancelled'; device_id: string; message: string }
-  | { type: 'objectNotFound'; device_id: string; path: string }
+  | {
+      type: 'permissionDenied'
+      // The device this is about.
+      device_id: string
+    }
+  /**
+   *  The caller cancelled, and the operation stopped at a safe PTP boundary.
+   *  Nothing is half-written on the wire.
+   */
+  | {
+      type: 'cancelled'
+      // The device this is about.
+      device_id: string
+      // Which operation stopped, for the log.
+      message: string
+    }
+  // Nothing on the device answers to that path any more.
+  | {
+      type: 'objectNotFound'
+      // The device this is about.
+      device_id: string
+      // The storage-relative path that resolved to nothing.
+      path: string
+    }
   /**
    *  A `SingleNode`-scoped delete was asked to remove a directory that still
    *  has children, and refused. Nothing was deleted.
@@ -8514,7 +8793,13 @@ export type MtpConnectionError =
    *  refusal: the same-volume move's source cleanup keeps a skipped child's
    *  only copy purely by letting the parent's delete fail here.
    */
-  | { type: 'directoryNotEmpty'; device_id: string; path: string }
+  | {
+      type: 'directoryNotEmpty'
+      // The device this is about.
+      device_id: string
+      // The directory that still has children.
+      path: string
+    }
   /**
    *  The cached parent-folder handle was rejected by the device during an
    *  upload's `SendObjectInfo` (the device re-keyed its object handles since
@@ -8523,7 +8808,13 @@ export type MtpConnectionError =
    *  Carries the destination folder path so the volume layer can surface a
    *  destination-correct message if the retry also fails.
    */
-  | { type: 'staleParentHandle'; device_id: string; dest_folder: string }
+  | {
+      type: 'staleParentHandle'
+      // The device this is about.
+      device_id: string
+      // Where the upload was headed, so a second failure can still name it.
+      dest_folder: string
+    }
   /**
    *  mtp-rs reset the device in software to recover from a wedged transfer
    *  cancel. The PTP session is gone, but the device is STILL PLUGGED IN and
@@ -8536,8 +8827,19 @@ export type MtpConnectionError =
    *  module `CLAUDE.md`), so this is the seatbelt for a genuine disconnect
    *  mid-transfer, not a routine path.
    */
-  | { type: 'sessionReset'; device_id: string }
-  | { type: 'other'; device_id: string; message: string }
+  | {
+      type: 'sessionReset'
+      // The device this is about.
+      device_id: string
+    }
+  // Anything the classifier couldn't place. A caller can only report it.
+  | {
+      type: 'other'
+      // The device this is about.
+      device_id: string
+      // What went wrong, for the log.
+      message: string
+    }
 
 /**
  *  Emitted when an MTP device connects, or when a late-arriving storage is
@@ -8573,9 +8875,16 @@ export type MtpDeviceInfo = {
   locationId: number
   // For example, 0x18d1 for Google.
   vendorId: number
+  // The USB product id, beside the vendor id.
   productId: number
+  // The maker, as the device reports it. Absent when it reports none.
   manufacturer: string | null
+  // The model, as the device reports it. What the picker shows when it's there.
   product: string | null
+  /**
+   *  The device's own serial. Present is what makes the id survive a replug to
+   *  another port; absent falls the id back to USB topology.
+   */
   serialNumber: string | null
   /**
    *  Negotiated USB link speed (slowest of host port, cable, device).
@@ -8674,6 +8983,10 @@ export type MtpStorageInfo = {
   availableBytes: number
   // For example, "FixedROM", "RemovableRAM".
   storageType: string | null
+  /**
+   *  What the device SAYS. Some report a writable storage and only refuse at
+   *  the moment of the write, so a `false` here isn't a promise.
+   */
   isReadOnly: boolean
 }
 
@@ -8955,6 +9268,37 @@ export type OpenFileViewer = {
 export type OpenSettings = {
   section: string
 }
+
+/**
+ *  Why `open_terminal_here` couldn't answer at all. Distinct from
+ *  [`OpenTerminalOutcome`], which reports things that DID happen.
+ */
+export type OpenTerminalError =
+  /**
+   *  `open` couldn't be spawned. Carries the OS errno where there is one, so
+   *  nothing has to read the message.
+   */
+  | { type: 'launchRefused'; errno: number | null }
+  // The launch didn't finish inside the command's deadline.
+  | { type: 'timedOut' }
+
+/**
+ *  What `open_terminal_here` did, so the frontend acts on a variant rather than
+ *  reading a sentence.
+ */
+export type OpenTerminalOutcome =
+  // The chosen terminal was launched at the folder.
+  | 'opened'
+  /**
+   *  The chosen app isn't installed anymore, so Terminal opened instead. The
+   *  frontend says so and resets the setting.
+   */
+  | 'app_missing_opened_terminal_instead'
+  /**
+   *  The pane isn't on a path a shell can `cd` into (MTP, ADB, a share whose
+   *  mount went away), so nothing was launched.
+   */
+  | 'not_a_local_path'
 
 /**
  *  An operation's header plus a page of its items, with dir prefixes resolved to
@@ -9291,6 +9635,15 @@ export type PaneState = {
   sortField?: string
   sortOrder?: string
   totalFiles?: number
+  /**
+   *  Whether the pane renders a `..` row, which `total_files` counts. Without
+   *  it, "one counted row" is ambiguous: an empty folder pushes zero rendered
+   *  files with `total_files: 1` (the parent), while a parentless pane — a
+   *  search-results snapshot, or any pane at a volume root — counting one row
+   *  holds one real file. The gate in `executor::file_ops` reads it to tell the
+   *  two apart instead of guessing from the count.
+   */
+  hasParentRow?: boolean
   loadedStart?: number
   loadedEnd?: number
   showHidden?: boolean
@@ -9664,6 +10017,26 @@ export type QuitRequested = {
  */
 export type RangeEnd = { kind: 'line'; line: number; offset: number } | { kind: 'eof' }
 
+/**
+ *  Which half of a transfer refused the write, for [`WriteOperationError::ReadOnlyDevice`].
+ *
+ *  The two are different sentences, not different wordings of one: a read-only
+ *  DESTINATION means "put it somewhere else", a read-only SOURCE means "you can
+ *  copy out of here, you just can't move out of here", because a move needs a
+ *  delete the source will never do.
+ *
+ *  ❌ Never decide this by inspecting a path or a message. The refusing site
+ *  knows which half it was looking at and says so.
+ */
+export type ReadOnlySide =
+  /**
+   *  The SOURCE can't give up its files. A copy out of it works; a move
+   *  doesn't, because the source half of the move could never happen.
+   */
+  | 'source'
+  // The DESTINATION takes no writes, so nothing can land there.
+  | 'destination'
+
 // A single recent-path entry, persisted verbatim.
 export type RecentPathEntry = {
   id: string
@@ -9734,6 +10107,21 @@ export type ReconnectError =
       // The backend's typed answer.
       error: VolumeError
     }
+
+/**
+ *  One file a failed copy kept under a new name, because a folder that was
+ *  replacing it took its own. Carried by
+ *  [`WriteOperationError::OriginalsKeptAside`].
+ */
+export type RecoveredOriginal = {
+  // The name the file had, which the folder now wears.
+  path: string
+  /**
+   *  Where its bytes are now. Typed, so nothing has to parse a path back out
+   *  of prose.
+   */
+  keptAt: string
+}
 
 /**
  *  `reduce-transparency-changed`: the macOS Accessibility > Display > Reduce
@@ -9950,8 +10338,18 @@ export type RestrictedPathsChangedPayload = {
 /**
  *  The settings a restricted-capability window may persist. A typed enum (not a
  *  free-form id string) so the write allowlist is enforced at the IPC boundary:
- *  a compromised viewer webview can only flip these two booleans, never touch
- *  licensing, error-report opt-in, MCP, or any other store key.
+ *  a compromised viewer webview can only flip the booleans listed here, never
+ *  touch licensing, error-report opt-in, MCP, or any other store key. Mirrored
+ *  by `RESTRICTED_PERSISTABLE_SETTINGS` in `src/lib/settings/settings-store.ts`
+ *  and `PERSIST_ALLOWLIST` in `src/lib/settings/restricted-settings-bridge.ts`.
+ *
+ *  ❌ A setting belongs here ONLY when the viewer itself has a control that
+ *  writes it: `W` for word wrap, the banner's "Never show this warning again"
+ *  button for the binary warning. A setting the viewer only READS goes in
+ *  [`crate::settings::RestrictedWindowSettings`] and stops there, the way
+ *  `viewer.showTextCursor` and every `appearance.*` one do — adding it here to
+ *  "complete the pattern" hands the app's highest-risk webview a write it has no
+ *  use for. See `src/routes/viewer/DETAILS.md` § "Text cursor".
  */
 export type RestrictedWindowPersistableSetting = 'viewerWordWrap' | 'fileViewerSuppressBinaryWarning'
 
@@ -9967,6 +10365,7 @@ export type RestrictedWindowPersistableSetting = 'viewerWordWrap' | 'fileViewerS
  */
 export type RestrictedWindowSettings = {
   viewerWordWrap: boolean | null
+  viewerShowTextCursor: boolean | null
   fileViewerSuppressBinaryWarning: boolean | null
   appearanceTextSize: number | null
   appearanceAppColor: string | null
@@ -10635,6 +11034,27 @@ export type SearchRunError =
  *  biggest matches means the biggest ones that exist.
  */
 export type SearchSort = 'relevance' | 'size' | 'modified'
+
+/**
+ *  One search-results row, carrying only what ordering it needs.
+ *
+ *  A deliberate subset of `SearchResultEntry`: the path, parent path, and icon id
+ *  decide nothing about order, and leaving them out keeps a full 10,000-row
+ *  snapshot's round trip small. The frontend holds the rows and re-orders them by
+ *  the index list this command answers with, so nothing is shipped back.
+ */
+export type SearchSortRow = {
+  /**
+   *  The file's own name (the last path component), which the Name and
+   *  Extension columns order by. Not the full path the pane DISPLAYS: a row's
+   *  name is its name everywhere else in the pane too (type-to-jump, the
+   *  context menu, the MCP rows), and one notion of it stays true here.
+   */
+  name: string
+  isDirectory: boolean
+  size: number | null
+  modifiedAt: number | null
+}
 
 /**
  *  Status of an ongoing search.
@@ -11647,6 +12067,37 @@ export type TagRef = {
   color: number
 }
 
+// One installed terminal, as the settings dropdown needs it.
+export type TerminalApp = {
+  /**
+   *  Exactly what goes into the setting: a bundle id for a known terminal, an
+   *  absolute `.app` path for a custom pick.
+   */
+  id: string
+  displayName: string
+  /**
+   *  The app's icon as a base64 WebP data URL, read from its bundle. Absent
+   *  when the bundle carries no readable icon.
+   */
+  icon: string | null
+  /**
+   *  Whether the app is running right now. The first-use picker prefers a
+   *  running terminal when exactly one is.
+   */
+  isRunning: boolean
+}
+
+// The terminal apps installed on this machine, plus which one is chosen.
+export type TerminalAppList = {
+  // Installed apps in table order, plus the custom pick last when there is one.
+  apps: TerminalApp[]
+  /**
+   *  The id of the currently chosen app, present in `apps`. Absent when the
+   *  chosen app has been uninstalled, which is the frontend's cue to reset.
+   */
+  chosenId: string | null
+}
+
 /**
  *  Wraps a value with a flag indicating whether the operation timed out.
  *  Used by commands returning collections or Option to let the frontend
@@ -11972,17 +12423,19 @@ export type ViewerError =
    */
   | { kind: 'timedOut' }
   /**
-   *  Previewing a file inside an archive would extract more than the preview cap.
-   *  Refused before any extraction (the zip-bomb guard for preview); `size` is the
-   *  entry's declared uncompressed size, `cap` the limit. See
-   *  `file_viewer::archive_extract`.
+   *  Previewing a file that lives inside a route (an archive entry, a file in a
+   *  repo's `.git` snapshot) would materialize more than the preview cap. Refused
+   *  before any extraction (the zip-bomb guard for preview); `size` is the entry's
+   *  declared size, `cap` the limit. See `file_viewer::routed_extract`.
    */
   | { kind: 'extractTooLarge'; size: number; cap: number }
   /**
-   *  Saving a selection to a destination INSIDE an archive isn't supported (archives
-   *  are read-only in this phase). Rejected by `viewer_write_range_to_file`.
+   *  Saving a selection to a destination a ROUTE serves isn't supported: inside a
+   *  `.zip`, or inside a repo's virtual `.git` trees. Neither has a directory on
+   *  disk for the write to land in, and both are read-only besides. Rejected by
+   *  `viewer_write_range_to_file`.
    */
-  | { kind: 'destinationInsideArchive' }
+  | { kind: 'destinationIsReadOnly' }
   /**
    *  The archive entry can't be previewed (encrypted, corrupt, or an unsupported
    *  codec). Carries a message; the FE renders it without inspecting the string.
@@ -12697,6 +13150,12 @@ export type WriteCompleteEvent = {
   filesProcessed: number
   filesSkipped: number
   bytesProcessed: number
+  /**
+   *  What a cross-filesystem move found in the source that its copy phase
+   *  never carried, and therefore left where it was. `None` (the ordinary
+   *  case) means every source went, and the FE says nothing about it.
+   */
+  appearedDuringMove?: AppearedDuringMove | null
 }
 
 // Conflict event payload (emitted when Stop mode encounters a conflict).
@@ -12835,12 +13294,28 @@ export type WriteOperationError =
   | { type: 'insufficient_space'; required: number; available: number; volumeName: string | null }
   // Would cause infinite recursion.
   | { type: 'destination_inside_source'; source: string; destination: string }
+  /**
+   *  Two of the selected items carry the same name, so they would land on one
+   *  destination path and fight over it. Refused before anything is written:
+   *  a cross-filesystem move stages both under that one name, and whichever
+   *  arrives second meets the first one's files instead of an empty slot.
+   *  Carries both paths, so the message can show which two clashed.
+   */
+  | { type: 'duplicate_source_names'; name: string; first: string; second: string }
   | { type: 'symlink_loop'; path: string }
   | { type: 'cancelled'; message: string }
   // Device was disconnected during the operation (USB, MTP, etc.).
   | { type: 'device_disconnected'; path: string }
-  // Target device or volume is read-only.
-  | { type: 'read_only_device'; path: string; deviceName: string | null }
+  /**
+   *  A device or volume refused a write, and [`ReadOnlySide`] says WHICH half
+   *  of the transfer it was.
+   *
+   *  ❗ The side is load-bearing for the sentence the user reads: a move OFF a
+   *  read-only source is refused because the source has no delete to pair with
+   *  the copy, and telling that user to "choose a different destination" sends
+   *  them to fix the half that was fine.
+   */
+  | { type: 'read_only_device'; path: string; deviceName: string | null; side: ReadOnlySide }
   // File is locked (macOS immutable flag, "Operation not permitted" on delete).
   | { type: 'file_locked'; path: string }
   // Volume doesn't support trash (network mounts, FAT, etc.).
@@ -12886,6 +13361,38 @@ export type WriteOperationError =
    *  `set_archive_password` and retries the operation.
    */
   | { type: 'archive_needs_password'; path: string; wrongAttempt: boolean }
+  /**
+   *  A cross-volume Overwrite wrote the new file completely, then couldn't give
+   *  it the destination's name, and the destination it was replacing is
+   *  already gone (the safe-replace deletes it between the last byte and the
+   *  rename). The new data is intact at `kept_at`, under a ` (recovered)` name.
+   *
+   *  ❗ `kept_at` is the whole point of the variant: it is the only place the
+   *  user's new file exists, and a message that doesn't name it leaves them
+   *  hunting. Typed so nothing has to parse it back out of prose.
+   */
+  | {
+      type: 'new_data_kept_at'
+      // The name the file was meant to take.
+      path: string
+      // Where the complete new data is right now.
+      keptAt: string
+      // What the destination said when the rename was refused.
+      message: string
+    }
+  /**
+   *  The operation failed, and a folder that was replacing one of the user's
+   *  files had already taken its name. Everything that landed is kept, so the
+   *  folder stays; the file it displaced is beside it under a ` (recovered)`
+   *  name rather than being thrown away with the aside.
+   *
+   *  ❗ `recovered` is the whole point of the variant, and it is never empty:
+   *  nothing else in the app tells the user their file changed names. `cause`
+   *  carries what actually failed, so the dialog keeps that error's own advice
+   *  (a full disk still says "free up space") instead of flattening every
+   *  failure into one sentence.
+   */
+  | { type: 'originals_kept_aside'; cause: WriteOperationError; recovered: RecoveredOriginal[] }
   // Catch-all for genuinely unexpected IO errors.
   | { type: 'io_error'; path: string; message: string }
 

@@ -31,8 +31,10 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
   SAME live run the dialog starts, walking whatever the index doesn't cover, folded into one reply because a tool call
   can't carry a stream (`search/DETAILS.md` § "Decision 10"). ❌ No walk-versus-don't parameter. `maxWaitSeconds` is a
   transport budget only: when it runs out the reply carries what had arrived plus a typed note, and the walk keeps
-  going. `coverage_note` renders the typed coverage signal above the results, including the two unreadable lists
-  (a refused folder offers Full Disk Access when granting it would help; a declined snapshot tree explains instead).
+  going. `limit` clamps to the house `MAX_LIMIT` of 200. `search` is shared `[AiClient, Agent]`; ❌ `ai_search` stays
+  ai-client-only, because Ask Cmdr is already an LLM holding the user's prose and nesting a second model call to write
+  a query it can write itself buys two providers and a translation it can't see (`../../agent/tools/DETAILS.md` § The
+  tool catalog). The result shape and every rule about it live in `search/result.rs` (§ The search result, below).
 - **`queue.rs`**: the `queue` tool (pause / resume / cancel one id, pause_all / resume_all). Thin adapter over the
   manager: no FE action, so no ack.
 - **`conflicts.rs`**: `resolve_conflict` — answers ONE Stop-mode clash a running operation is parked on. Same adapter
@@ -75,6 +77,45 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
   first-volume-wins merge, and the no-bytes property are unit-tested in-file.
 - **`tests.rs`**: unit tests for the dispatcher and shared helpers; per-category tests live alongside their handlers.
 
+## The search result
+
+`search/result.rs` folds a `LiveAnswer` into the ONE typed JSON shape both search tools answer with. It is pure, so
+every rule below is unit-tested against fabricated answers with no harness and no running search.
+
+```
+{ targetVolumeId, matchCount, matchCountHuman, returned, truncated,
+  entries: [{ name, path, parentPath, isDirectory, sizeBytes, sizeHuman, modified, modifiedHuman }],
+  coverage: { complete, stillWalking, foldersFound, capped, hiddenByExcludes,
+              permissionDenied[], declined[], stillCovering[], unresolvedScopes[],
+              abandonedGround, abandonedLocations },
+  notes: [ "…" ] }
+```
+
+`ai_search` returns the same object with `interpretedQuery` flattened on top, and the translator's caveat as the first
+note.
+
+- **`matchCount` is ❌ NOT the `total` the paged tools report.** There, `total` is what the page was cut from, so
+  `returned == total` means "you saw everything". Here the engine stops emitting rows at the row cap while the count
+  keeps rising, so `matchCount` can exceed `returned` by orders of magnitude with nothing wrong; `coverage.capped` says
+  which. `entries` goes through `fit_to_result_budget` on top of the 200-row cap, and `returned` / `truncated` ride out
+  with it.
+- **`coverage.complete` is the one field to read before saying "that's all of them"**: settled, walk finished (or
+  nothing to walk), and `permissionDenied` / `declined` / `stillCovering` / `unresolvedScopes` / `abandonedGround` all
+  clear. It exists because a seven-way conjunction is one a model gets wrong once in ten. The seven stay beside it,
+  because each one is a different sentence to the user.
+- **`capped` and `hiddenByExcludes` deliberately don't clear `complete`.** Neither is ground Cmdr failed to cover: the
+  first stopped the rows and not the count, the second is the caller's own filter. Both still make the number a floor,
+  which is why `matchCountHuman` wears `≥` for the first and the second always gets a note.
+- **The uncertainty rides INSIDE `matchCountHuman`** (`≥ 1,240 matches` versus `1,240 matches`), because a flag a
+  sibling field carries is a flag the model sheds the moment it restates the number. It is `≥` whenever `complete` is
+  false or the cap was hit.
+- **`sizeHuman` / `modifiedHuman` come from `search::format_size` / `format_timestamp`**, the dialog's own pair.
+  ❌ Never a second formatter. `iconId` is dropped: a model can't render an icon. An absent size stays absent, ❌ never
+  `0` (a NULL logical size is a hardlink-deduped row).
+- **`notes` keeps the authored prose beside the typed flags**, because one line is genuinely actionable copy no flag
+  replaces ("granting Cmdr Full Disk Access … opens them"). Same pattern as `SearchPhotosResult::ImageIndexingOff`'s
+  `note`. ❌ Not a `summary` field: it never restates what the fields already carry.
+
 ## Ack contract
 
 Each action tool: (1) captures a precondition snapshot (typically `snapshot_generation(app)`); (2) emits its event /
@@ -110,8 +151,10 @@ react faster than a full pane state push).
 ## `mcp_round_trip` for explicit FE responses
 
 When the backend can't fully validate preconditions (or has to wait on the OS), the tool emits an event with a
-`requestId` and waits for the FE to reply via `mcp-response` carrying `{ requestId, ok, error? }`. Response correlation
-lives in the pure, unit-tested `parse_mcp_response` in `mod.rs`. Per-tool:
+`requestId` and waits for the FE to reply via `mcp-response` carrying `{ requestId, ok, error? }`. One helper,
+`mcp_round_trip_parsed`, owns the id + listener + timeout for all of them; each caller brings the parser that says what
+its reply is allowed to mean (`parse_mcp_response`, `parse_operation_start_response`, `parse_nav_response` — all pure
+and unit-tested in `mod.rs`). Per-tool:
 
 - `move_cursor`, `set_setting` (5 s). The FE verifies the cursor actually landed (filename found, index in range), then
   (move_cursor) flushes the MCP state push (`syncStateToMcpNow`) before replying, so a follow-up `copy`/`move`/`delete`
@@ -123,7 +166,12 @@ lives in the pure, unit-tested `parse_mcp_response` in `mod.rs`. Per-tool:
 - `refresh` (5 s): the FE forces a backend re-read via `refreshListing(listingId, true)`, which bypasses the
   watcher-backed short-circuit, so `OK` means the directory was actually re-read on every volume. In the network
   browser the same command re-scans hosts instead.
-- `nav_to_path`: 30 s via `mcp_round_trip_with_timeout`; the FE delays the response until `handleListingComplete` fires.
+- `nav_to_path` (30 s, `mcp_nav_round_trip`): the reply carries a typed `outcome` plus the pane's resting location, and
+  `nav_result` (in `nav.rs`) words the tool result from that discriminant — `navigated` is the only `OK`; `fell-back`
+  and `did-not-settle` are errors naming both the request and where the pane actually is. The FE holds the response
+  until the pane comes to rest, which for a cross-volume switch is well past `settled` (that arm resolves it on the
+  optimistic commit, before the new volume lists anything — the last false-positive `OK`). `go_to_latest_download`
+  rides the same helper for its navigation leg, so it can't move a cursor in a directory the pane never reached.
 - `open_under_cursor`: 5 s via `mcp_round_trip_with_timeout`; opening a file delegates to the OS default app, so neither
   `GenerationAdvanced` nor `WindowAppeared` would fire.
 - Resources that need FE data use `resource_round_trip` (same pattern, returns the `data` field). Used by
@@ -138,7 +186,12 @@ when path-shaped). Both in `mod.rs`. Virtual paths (`mtp://…`) don't start wit
 ## Empty-operation fast-fail (`file_ops.rs`)
 
 `empty_operation_error` (pure, unit-tested) mirrors the FE fallback semantics: a selection wins; no selection falls back
-to the cursor file; cursor on `..` (or an empty pane, where `files` is empty with `total_files <= 1`) means the FE would
-silently drop the dialog, so the tool rejects fast. Unsynced state (`path` empty) passes through. Without the `select` /
-`move_cursor` pre-reply flush, select → copy reads a stale empty selection and move_cursor → copy reads a stale cursor
-(still on `..`), and either wrongly rejects here.
+to the cursor file; cursor on `..` (or an empty pane) means the FE would silently drop the dialog, so the tool rejects
+fast. Unsynced state (`path` empty) passes through. Without the `select` / `move_cursor` pre-reply flush, select → copy
+reads a stale empty selection and move_cursor → copy reads a stale cursor (still on `..`), and either wrongly rejects
+here.
+
+"Empty pane" is `files` empty AND no actionable rows, where actionable is `total_files` minus the `..` row the pane's
+`has_parent_row` declares. ❌ Don't go back to reading `total_files <= 1` as "only the parent": a search-results snapshot
+pane and a pane at a volume root have no `..`, so one counted row there is one real file, and the shortcut refused a
+delete over a file the user could see.

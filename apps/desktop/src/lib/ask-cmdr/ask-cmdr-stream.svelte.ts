@@ -21,7 +21,11 @@
 
 import { getAppLogger } from '$lib/logging/logger'
 import type { RailMessage } from './ask-cmdr-messages'
-import { openRenameReview } from './ask-cmdr-rename-review.svelte'
+import {
+  discardStagedRenameProposals,
+  openStagedRenameReview,
+  stageRenameProposal,
+} from './ask-cmdr-rename-review.svelte'
 import { askCmdrState, currentAssistant, finalizeAssistant, lastUserMessage } from './ask-cmdr-state.svelte'
 import {
   cancelAskCmdr,
@@ -99,6 +103,9 @@ export function stopStreaming(): void {
   finalizeAssistant()
   askCmdrState.streaming = false
   clearProgressWatchdog()
+  // A stopped turn may still have staged plans, and a staged plan the user never sees is one
+  // they can't answer.
+  openStagedRenameReview()
 }
 
 /**
@@ -160,7 +167,9 @@ function applyStreamEvent(event: AskCmdrStreamEvent): void {
       applyToolFinished(event.callId, event.ok)
       return
     case 'proposalReady':
-      openRenameReview(event.proposal)
+      // Staged, not shown: a big rename arrives as a run of plans, and the review opens over
+      // all of them when the turn ends. See `ask-cmdr-rename-review.svelte.ts`.
+      stageRenameProposal(event.proposal)
       return
     case 'done':
       applyDone(event.messageId)
@@ -169,7 +178,10 @@ function applyStreamEvent(event: AskCmdrStreamEvent): void {
       applyFailed(event.kind, event.detail)
       return
     case 'modelChanged':
-      applyModelChanged(event.model)
+      insertBeforeCurrentTurn({ kind: 'modelChange', model: event.model })
+      return
+    case 'chatMemoryChanged':
+      insertBeforeCurrentTurn({ kind: 'chatMemoryChange', chatMemoryTokens: event.chatMemoryTokens })
       return
     case 'discarded':
       applyDiscarded()
@@ -284,6 +296,8 @@ function applyDone(messageId: number): void {
   finalizeAssistant(messageId)
   askCmdrState.streaming = false
   clearProgressWatchdog()
+  // The turn boundary is what makes a job's batches ONE review.
+  openStagedRenameReview()
 }
 
 function applyFailed(kind: AskCmdrErrorKind, detail: string | null): void {
@@ -291,6 +305,8 @@ function applyFailed(kind: AskCmdrErrorKind, detail: string | null): void {
   askCmdrState.messages.push({ kind: 'error', errorKind: kind, detail: detail ?? undefined })
   askCmdrState.streaming = false
   clearProgressWatchdog()
+  // Whatever got staged before the failure is real and still the user's to answer.
+  openStagedRenameReview()
 }
 
 /**
@@ -306,6 +322,9 @@ function applyDiscarded(): void {
   askCmdrState.contextUsage = null
   askCmdrState.streaming = false
   clearProgressWatchdog()
+  // There is no thread left to review against, so this turn's plans go back rather than
+  // opening a dialog for a conversation that no longer exists.
+  discardStagedRenameProposals()
 }
 
 function resetProgressWatchdog(): void {
@@ -329,10 +348,10 @@ function clearProgressWatchdog(): void {
   stopTimer = null
 }
 
-/** The model changed between the previous turn and this one, so the line belongs BEFORE
- * this turn's user bubble (which is already rendered optimistically). */
-function applyModelChanged(model: string): void {
-  const item: RailMessage = { kind: 'modelChange', model }
+/** A timeline line about something that changed between the previous turn and this one (the
+ * model, the chat memory size), so it belongs BEFORE this turn's user bubble — which is
+ * already rendered optimistically. */
+function insertBeforeCurrentTurn(item: RailMessage): void {
   const lastUserIndex = askCmdrState.messages.findLastIndex((m) => m.kind === 'user')
   if (lastUserIndex >= 0) askCmdrState.messages.splice(lastUserIndex, 0, item)
   else askCmdrState.messages.push(item)

@@ -242,7 +242,8 @@ fn reconcile_subtree_missing_chain_escalates() {
 
     let cancelled = CancellationToken::new();
     let leaf_abs = space.absolute(&deep.to_string_lossy());
-    let summary = reconcile_subtree(Path::new(&leaf_abs), &space, &conn, &writer, &cancelled).expect("reconcile ok");
+    let summary =
+        reconcile_subtree(Path::new(&leaf_abs), &space, &conn, &writer, &cancelled, None).expect("reconcile ok");
     assert_eq!(
         summary.escalation,
         Some(PathBuf::from(format!("{base_abs}/mid"))),

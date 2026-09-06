@@ -211,8 +211,9 @@ pub(super) fn recompute_recursive_has_symlinks(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indexing::store::{DirStatsById, EntryRow, ROOT_ID};
+    use crate::indexing::store::{DirStatsById, ROOT_ID};
     use crate::indexing::stress_test_helpers::check_db_consistency;
+    use crate::indexing::writer::entry_fixtures::{dir_entry, file_entry, symlink_entry};
     use crate::indexing::writer::tests::setup_db;
     use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
@@ -666,48 +667,6 @@ mod tests {
     }
 
     // ── test helpers ─────────────────────────────────────────────────
-
-    fn dir_entry(id: i64, parent_id: i64, name: &str) -> EntryRow {
-        EntryRow {
-            id,
-            parent_id,
-            name: name.into(),
-            is_directory: true,
-            is_symlink: false,
-            logical_size: None,
-            physical_size: None,
-            modified_at: None,
-            inode: None,
-        }
-    }
-
-    fn file_entry(id: i64, parent_id: i64, name: &str, size: u64) -> EntryRow {
-        EntryRow {
-            id,
-            parent_id,
-            name: name.into(),
-            is_directory: false,
-            is_symlink: false,
-            logical_size: Some(size),
-            physical_size: Some(size),
-            modified_at: None,
-            inode: None,
-        }
-    }
-
-    fn symlink_entry(id: i64, parent_id: i64, name: &str) -> EntryRow {
-        EntryRow {
-            id,
-            parent_id,
-            name: name.into(),
-            is_directory: false,
-            is_symlink: true,
-            logical_size: Some(0),
-            physical_size: Some(0),
-            modified_at: None,
-            inode: None,
-        }
-    }
 
     /// Overwrite a dir's `dir_stats` sizes/counts LOW to simulate leaked ancestor
     /// credits, preserving symlink/epoch fields as a clean baseline.

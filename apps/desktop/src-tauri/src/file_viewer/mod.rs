@@ -6,7 +6,6 @@
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
 pub(crate) mod analytics;
-pub(crate) mod archive_extract;
 mod byte_seek;
 pub mod content_kind;
 pub mod encoding;
@@ -18,14 +17,13 @@ mod media_backend;
 pub mod media_protocol;
 mod media_session;
 pub(crate) mod range_read;
+pub(crate) mod routed_extract;
 mod search_matcher;
 pub mod session;
 pub mod watcher;
 
 #[cfg(test)]
 mod analytics_test;
-#[cfg(test)]
-mod archive_extract_test;
 #[cfg(test)]
 mod byte_seek_test;
 #[cfg(test)]
@@ -43,6 +41,8 @@ mod media_protocol_test;
 #[cfg(test)]
 mod media_session_test;
 #[cfg(test)]
+mod routed_extract_test;
+#[cfg(test)]
 mod search_cancel_test_support;
 #[cfg(test)]
 mod search_matcher_test;
@@ -51,11 +51,11 @@ mod session_test;
 #[cfg(test)]
 mod watcher_test;
 
-pub use archive_extract::init_archive_extract_dir;
 pub use content_kind::{ViewerContentKind, classify_viewer_content};
 pub use encoding::FileEncoding;
 pub use media_session::MediaDimensions;
 pub use range_read::RangeEnd;
+pub use routed_extract::init_routed_extract_dir;
 pub use search_matcher::{Matcher, SearchMode};
 pub use session::{
     EncodingOptions, SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session,
@@ -171,17 +171,19 @@ pub enum ViewerError {
     /// The read exceeded the IPC timeout. The frontend can offer Retry; the underlying
     /// backend read continues until it sees the per-read cancel flag or completes.
     TimedOut,
-    /// Previewing a file inside an archive would extract more than the preview cap.
-    /// Refused before any extraction (the zip-bomb guard for preview); `size` is the
-    /// entry's declared uncompressed size, `cap` the limit. See
-    /// `file_viewer::archive_extract`.
+    /// Previewing a file that lives inside a route (an archive entry, a file in a
+    /// repo's `.git` snapshot) would materialize more than the preview cap. Refused
+    /// before any extraction (the zip-bomb guard for preview); `size` is the entry's
+    /// declared size, `cap` the limit. See `file_viewer::routed_extract`.
     ExtractTooLarge {
         size: u64,
         cap: u64,
     },
-    /// Saving a selection to a destination INSIDE an archive isn't supported (archives
-    /// are read-only in this phase). Rejected by `viewer_write_range_to_file`.
-    DestinationInsideArchive,
+    /// Saving a selection to a destination a ROUTE serves isn't supported: inside a
+    /// `.zip`, or inside a repo's virtual `.git` trees. Neither has a directory on
+    /// disk for the write to land in, and both are read-only besides. Rejected by
+    /// `viewer_write_range_to_file`.
+    DestinationIsReadOnly,
     /// The archive entry can't be previewed (encrypted, corrupt, or an unsupported
     /// codec). Carries a message; the FE renders it without inspecting the string.
     Archive {
@@ -201,13 +203,18 @@ impl std::fmt::Display for ViewerError {
             Self::TimedOut => write!(f, "Read timed out"),
             Self::ExtractTooLarge { size, cap } => {
                 // Display/log string only — the user sees the FE's friendly copy
-                // (`viewer.error.archiveTooLarge`). Phrased to avoid a `1 bytes` singular.
+                // (`viewer.error.tooLargeToPreview`). Phrased to avoid a `1 bytes`
+                // singular. Names no namespace: a `.zip` entry and a `.git` snapshot
+                // blob both reach this cap.
                 write!(
                     f,
-                    "This item is too large to preview from the archive (size {size}, limit {cap})"
+                    "This item is too large to preview from here (size {size}, limit {cap})"
                 )
             }
-            Self::DestinationInsideArchive => write!(f, "Can't save into an archive"),
+            // Display/log string only — the user sees the FE's friendly copy
+            // (`viewer.saveAs.destinationReadOnly`). Names no namespace, because
+            // both a `.zip` and a `.git` snapshot reach it.
+            Self::DestinationIsReadOnly => write!(f, "Can't save into a read-only location"),
             Self::Archive { message } => write!(f, "{message}"),
         }
     }

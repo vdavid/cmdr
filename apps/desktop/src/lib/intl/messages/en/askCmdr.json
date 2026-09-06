@@ -111,6 +111,14 @@
   "@askCmdr.tool.operationsGet.done": {
     "description": "Past-tense label after the assistant read one file operation's detail."
   },
+  "askCmdr.tool.search.doing": "Searching your files",
+  "@askCmdr.tool.search.doing": {
+    "description": "Present-tense status on a tool line in the Ask Cmdr chat rail, shown while the assistant looks for files and folders on one drive by name, size, date, or type. It searches names and details, never what is inside a file, so avoid a word that implies reading the contents. Keep it short: it sits on one line beside a spinner. Pairs with askCmdr.tool.search.done."
+  },
+  "askCmdr.tool.search.done": "Searched your files",
+  "@askCmdr.tool.search.done": {
+    "description": "Past-tense label on the same tool line once the file search finished. Pairs with askCmdr.tool.search.doing; keep both the same length where the language allows."
+  },
   "askCmdr.tool.searchPhotos.doing": "Searching your photos",
   "@askCmdr.tool.searchPhotos.doing": {
     "description": "Present-tense status on a tool line in the Ask Cmdr chat rail, shown while the assistant searches the user's photos by description, by text recognized inside them, or by tag. Keep it short: it sits on one line beside a spinner."
@@ -215,7 +223,7 @@
   "@askCmdr.error.noConsent": {
     "description": "Shown when the user hasn't opted into Ask Cmdr yet (or the consent copy changed and needs re-accepting), so the backend refused to send. Friendly and actionable; avoids the words error and failed; points the user at the opt-in screen."
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr needs a bigger context window than your local model has. Pick 16,384 tokens or more in settings, under AI.",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr needs a bigger context window than your local model has. Pick 32,768 tokens or more in settings, under AI.",
   "@askCmdr.error.localWindowTooSmall": {
     "description": "Shown in the Ask Cmdr chat when the local AI server is running with a context window too small to hold one message, so Cmdr refused to send rather than have the model reject it. Names the number to pick and where. Friendly and actionable; avoids the words error and failed. Group the number the way the language does. Sentence case."
   },
@@ -250,6 +258,10 @@
   "askCmdr.error.provider": "Something went wrong on the provider’s side. Try again?",
   "@askCmdr.error.provider": {
     "description": "Shown for any other provider-side problem. Friendly; avoids the words error and failed. The apostrophe is U+2019."
+  },
+  "askCmdr.event.chatMemoryChanged": "Chat memory now holds {tokens, number} tokens",
+  "@askCmdr.event.chatMemoryChanged": {
+    "description": "A small centered timeline line in the chat thread marking that the chat memory size changed between turns, so every reply after it carries a different amount of the conversation. It sits beside the \"Switched to {model}\" line, so keep the two reading as a pair. {tokens} is a token count, always in the thousands. \"tokens\" are the units a language model processes: keep the AI term, matching the local context-window setting. Sentence case, no period."
   },
   "askCmdr.event.contextTrimmed": "Trimmed {count, plural, one {# earlier lookup} other {# earlier lookups}} to fit the model’s context.",
   "@askCmdr.event.contextTrimmed": {

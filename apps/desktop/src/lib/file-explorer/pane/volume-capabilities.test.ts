@@ -15,6 +15,8 @@
  * the tint-render suites; those must stay green alongside this file.
  */
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, it, expect, vi } from 'vitest'
 import type { VolumeInfo } from '$lib/file-explorer/types'
 
@@ -25,6 +27,15 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
   getVolumes: () => volumes.list,
 }))
 
+// `capabilitiesForPane` reads the live `fileExplorer.git.showVirtualGitPortal`
+// switch: with the portal off the backend routes nothing, so a `.git/branches/`
+// path is whatever sits on disk and keeps its volume's own row. Default ON,
+// matching the setting's registry default.
+const gitPortal = vi.hoisted(() => ({ on: true }))
+vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getShowVirtualGitPortal: () => gitPortal.on,
+}))
+
 import {
   type VolumeKind,
   type VolumeCapabilities,
@@ -33,8 +44,11 @@ import {
   capabilitiesFor,
   capabilitiesForPane,
   withBackendCapabilities,
+  pathCrossesArchiveBoundary,
   pathInsideArchive,
   archiveNameFromPath,
+  SUPPORTED_ARCHIVE_SUFFIXES,
+  WRITABLE_ARCHIVE_SUFFIXES,
 } from './volume-capabilities'
 
 function vol(partial: Partial<VolumeInfo> & { id: string }): VolumeInfo {
@@ -87,6 +101,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canWrite: false,
       canBeSource: false,
       hasParentRow: false,
+      // No file list at all (NetworkMountView renders instead), so there is
+      // nothing for a sort to order.
       syncsToMcp: false,
     },
     'search-results': {
@@ -95,13 +111,28 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canWrite: false,
       canBeSource: true,
       hasParentRow: false,
-      syncsToMcp: false,
+      // The rows arrive in the search engine's ranked order and stay in it:
+      // every source-side op resolves a selected index against `snapshot.entries[i]`.
+      // Mirrors to MCP off the frontend snapshot: no backend listing needed, and
+      // the copy/move/delete gate reads this pane's state.
+      syncsToMcp: true,
     },
     archive: {
       kind: 'archive',
       hasBackendListing: true,
       // Zip is writable through the managed archive-edit flow.
       canWrite: true,
+      canBeSource: true,
+      hasParentRow: true,
+      syncsToMcp: true,
+    },
+    'git-portal': {
+      kind: 'git-portal',
+      hasBackendListing: true,
+      // A snapshot of git history: `GitPortalVolume` keeps the trait's
+      // `NotSupported` on every mutation, so nothing here is writable.
+      canWrite: false,
+      // ...but the rows are real content, so copying OUT works.
       canBeSource: true,
       hasParentRow: true,
       syncsToMcp: true,
@@ -273,41 +304,117 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
   })
 })
 
-describe('pathInsideArchive — the pure extension-only boundary check', () => {
+describe('pathCrossesArchiveBoundary — the WIDE, navigate-into check', () => {
   it('is true at the archive root and anywhere inside it', () => {
-    expect(pathInsideArchive('/a/foo.zip')).toBe(true) // the archive root itself
-    expect(pathInsideArchive('/a/foo.zip/inner')).toBe(true)
-    expect(pathInsideArchive('/a/foo.zip/inner/deep/file.txt')).toBe(true)
+    expect(pathCrossesArchiveBoundary('/a/foo.zip')).toBe(true) // the archive root itself
+    expect(pathCrossesArchiveBoundary('/a/foo.zip/inner')).toBe(true)
+    expect(pathCrossesArchiveBoundary('/a/foo.zip/inner/deep/file.txt')).toBe(true)
   })
 
   it('is false for a plain folder that merely CONTAINS an archive', () => {
     // The pane is at `/a`, listing `foo.zip` as a row — not inside it.
-    expect(pathInsideArchive('/a')).toBe(false)
-    expect(pathInsideArchive('/a/b/c')).toBe(false)
+    expect(pathCrossesArchiveBoundary('/a')).toBe(false)
+    expect(pathCrossesArchiveBoundary('/a/b/c')).toBe(false)
   })
 
   it('matches the case-insensitive extension, and any component (nested leftmost)', () => {
-    expect(pathInsideArchive('/a/foo.ZIP/inner')).toBe(true)
-    expect(pathInsideArchive('/a/archive.name.zip')).toBe(true)
-    // Leftmost archive component makes the whole path "inside"; the inner b.zip
+    expect(pathCrossesArchiveBoundary('/a/foo.ZIP/inner')).toBe(true)
+    expect(pathCrossesArchiveBoundary('/a/archive.name.zip')).toBe(true)
+    // Leftmost archive component makes the whole path cross; the inner b.zip
     // is a plain entry the FE can't distinguish, but the answer (true) is right.
-    expect(pathInsideArchive('/a.zip/b.zip/x')).toBe(true)
+    expect(pathCrossesArchiveBoundary('/a.zip/b.zip/x')).toBe(true)
   })
 
   it('is NOT decidable-true for a component whose extension is not an archive', () => {
     // `foo.zip.txt`: final extension is txt, so the STRING doesn't cross a boundary.
-    expect(pathInsideArchive('/a/foo.zip.txt')).toBe(false)
+    expect(pathCrossesArchiveBoundary('/a/foo.zip.txt')).toBe(false)
     // A leading-dot dotfile has no stem, so `.zip` is not an extension.
-    expect(pathInsideArchive('/a/.zip')).toBe(false)
+    expect(pathCrossesArchiveBoundary('/a/.zip')).toBe(false)
     // No dot at all.
-    expect(pathInsideArchive('/a/zip/file')).toBe(false)
+    expect(pathCrossesArchiveBoundary('/a/zip/file')).toBe(false)
   })
 
   it('a real directory literally named foo.zip is NOT decidable here (backend corrects)', () => {
     // Extension-only: the FE reads this as inside-an-archive. The backend
     // stat+magic check corrects a real directory to plain navigation; the FE only
     // uses this for read-only gating, where the false positive is safe.
-    expect(pathInsideArchive('/a/foo.zip/anything')).toBe(true)
+    expect(pathCrossesArchiveBoundary('/a/foo.zip/anything')).toBe(true)
+  })
+})
+
+/**
+ * The narrow half of the split, and the reason the split exists: a site that
+ * operates ON a path (preview it, move it, rename it) must treat the `.zip` file
+ * ITSELF as an ordinary file, exactly as the backend's `path_is_inside_archive`
+ * does. Only a path with a non-empty INNER part is unreachable through `std::fs`.
+ */
+describe('pathInsideArchive — the NARROW, operate-on check', () => {
+  it('is false for the archive file itself, true only for something inside it', () => {
+    // The distinction the whole split turns on.
+    expect(pathInsideArchive('/a/foo.zip')).toBe(false)
+    expect(pathInsideArchive('/a/foo.zip/inner')).toBe(true)
+    expect(pathInsideArchive('/a/foo.zip/inner/deep/file.txt')).toBe(true)
+  })
+
+  it('is false for ordinary paths, archive-free or not', () => {
+    expect(pathInsideArchive('/a')).toBe(false)
+    expect(pathInsideArchive('/a/b/c')).toBe(false)
+    expect(pathInsideArchive('/a/notes.txt')).toBe(false)
+  })
+
+  it('reads a trailing slash as still being AT the archive root', () => {
+    // `/a/foo.zip/` names the archive, not an entry in it: the inner path is empty.
+    // Splitting on '/' leaves a trailing empty segment, which must not read as one.
+    expect(pathInsideArchive('/a/foo.zip/')).toBe(false)
+  })
+
+  it('uses the leftmost boundary, matching the wide check and the backend', () => {
+    // The outer `.zip` is the boundary, so `b.zip` is an entry inside it.
+    expect(pathInsideArchive('/a.zip/b.zip')).toBe(true)
+    expect(pathInsideArchive('/a/foo.ZIP/inner')).toBe(true)
+  })
+
+  it('agrees with the wide check everywhere except at the archive root', () => {
+    // Pins the exact shape of the difference, so neither can drift into the other.
+    for (const path of ['/a', '/a/b/c', '/a/foo.zip/inner', '/a/foo.zip.txt']) {
+      expect(pathInsideArchive(path), path).toBe(pathCrossesArchiveBoundary(path))
+    }
+    expect(pathCrossesArchiveBoundary('/a/foo.zip')).toBe(true)
+    expect(pathInsideArchive('/a/foo.zip')).toBe(false)
+  })
+})
+
+/**
+ * The two suffix tables are one decision written twice, in two languages, and
+ * nothing but this test makes them agree. Drift is silent and asymmetric: a
+ * suffix the backend browses but the FE doesn't know is a pane whose write
+ * affordances stay ON inside a read-only container, which is the direction that
+ * costs a user their data.
+ *
+ * Reading the Rust source is the same trick `archive-enter-policy.test.ts` uses
+ * to pin a claim about a file it can't import.
+ */
+describe('archive suffix table ↔ the backend`s `format_for_name`', () => {
+  it('knows exactly the suffixes the Rust table does', () => {
+    const rust = readFileSync(resolve(process.cwd(), '../../crates/cmdr-fs/src/archive_format.rs'), 'utf8')
+    // The `SUFFIXES` const's entries: `(".tar.gz", ArchiveFormat::…)`.
+    const table = rust.slice(rust.indexOf('const SUFFIXES'), rust.indexOf('];', rust.indexOf('const SUFFIXES')))
+    const backendSuffixes = [...table.matchAll(/\("(\.[^"]+)"/g)].map((m) => m[1])
+    expect(backendSuffixes.length, 'failed to parse the Rust SUFFIXES table').toBeGreaterThan(10)
+
+    for (const suffix of backendSuffixes) {
+      expect(SUPPORTED_ARCHIVE_SUFFIXES, `backend browses ${suffix}, the FE does not`).toContain(suffix)
+    }
+    expect([...SUPPORTED_ARCHIVE_SUFFIXES].sort()).toEqual([...backendSuffixes].sort())
+  })
+
+  it('treats every document container as browsable but NOT writable', () => {
+    // The asymmetry that makes browsing a `.docx` safe to offer at all.
+    for (const suffix of ['.docx', '.xlsx', '.pptx', '.jar', '.apk']) {
+      expect(SUPPORTED_ARCHIVE_SUFFIXES, suffix).toContain(suffix)
+      expect(WRITABLE_ARCHIVE_SUFFIXES, suffix).not.toContain(suffix)
+    }
+    expect(WRITABLE_ARCHIVE_SUFFIXES).toEqual(['.zip'])
   })
 })
 
@@ -358,6 +465,109 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
       // ...but copying files OUT still works, and it lists like a folder.
       expect(caps.canBeSource, path).toBe(true)
       expect(caps.hasBackendListing, path).toBe(true)
+    }
+  })
+
+  it('returns the READ-ONLY archive row inside a DOCUMENT container, on a writable drive', () => {
+    // The data-safety property, at the UI layer. A `.docx` is a zip, so nothing
+    // about the format stops the mutator — only the refusal does. A user who
+    // steps inside a Word file to look around must find every write affordance
+    // off, so they can't hand themselves a corrupt document.
+    //
+    // The drive underneath is deliberately writable and exporting: if this row
+    // ever folded in the parent's answer, the pane would go writable and this
+    // would catch it. The backend refuses too (`ensure_zip_writable` admits
+    // `ArchiveFormat::Zip` alone), so an MCP or IPC caller is stopped as well —
+    // this is the visible half of a guarantee, not the whole of it.
+    volumes.list = [
+      vol({
+        id: 'root',
+        fsType: 'apfs',
+        category: 'main_volume',
+        capabilities: { backendCanWrite: true, canExport: true },
+      }),
+    ]
+    for (const path of [
+      '/x/report.docx/word/document.xml',
+      '/x/sheet.xlsx/xl',
+      '/x/deck.pptx/ppt/slides',
+      '/x/lib.jar/META-INF',
+      '/x/app.apk/res',
+    ]) {
+      const caps = capabilitiesForPane('root', path)
+      expect(caps.kind, path).toBe('archive')
+      expect(caps.canWrite, path).toBe(false)
+      // Reading out still works: browse it, copy a part out, preview it.
+      expect(caps.canBeSource, path).toBe(true)
+      expect(caps.hasBackendListing, path).toBe(true)
+    }
+  })
+
+  it('keeps a real `.zip` writable, so read-only did not become a blanket refusal', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    expect(capabilitiesForPane('root', '/x/real.zip/inner').canWrite).toBe(true)
+  })
+
+  it('returns the read-only git-portal row for a path inside a virtual `.git` category', () => {
+    volumes.list = [
+      vol({
+        id: 'root',
+        fsType: 'apfs',
+        category: 'main_volume',
+        capabilities: { backendCanWrite: true, canExport: true },
+      }),
+    ]
+    // The volumeId is the writable parent drive; the path crosses `.git/branches/`,
+    // so the portal row gates the pane. Without this the UI would offer paste,
+    // delete, rename, and new file/folder that the backend refuses.
+    const caps = capabilitiesForPane('root', '/Users/me/repo/.git/branches/main/src')
+    expect(caps.kind).toBe('git-portal')
+    expect(caps.canWrite).toBe(false)
+    // Copying out of a snapshot is the headline read feature, and it lists like a folder.
+    expect(caps.canBeSource).toBe(true)
+    expect(caps.hasBackendListing).toBe(true)
+    expect(caps.hasParentRow).toBe(true)
+    expect(caps.syncsToMcp).toBe(true)
+  })
+
+  it('covers all six virtual categories, and the category directory itself', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    const root = '/Users/me/repo/.git'
+    for (const category of ['branches', 'tags', 'commits', 'stash', 'worktrees', 'submodules']) {
+      expect(capabilitiesForPane('root', `${root}/${category}`).kind, category).toBe('git-portal')
+      expect(capabilitiesForPane('root', `${root}/${category}/thing`).kind, category).toBe('git-portal')
+    }
+  })
+
+  it("a REAL file under `.git` keeps the parent volume's full row", () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    // `.git/` stays writable: `config`, `HEAD`, and the real `refs/` tree are
+    // editable, renamable, and deletable, which the backend defends too. Only
+    // the six virtual trees are read-only.
+    for (const path of [
+      '/Users/me/repo/.git',
+      '/Users/me/repo/.git/config',
+      '/Users/me/repo/.git/HEAD',
+      '/Users/me/repo/.git/refs/heads/main',
+      '/Users/me/repo/.git/objects/pack',
+    ]) {
+      const caps = capabilitiesForPane('root', path)
+      expect(caps.kind, path).toBe('local')
+      expect(caps.canWrite, path).toBe(true)
+    }
+  })
+
+  it('falls back to the volume row when the portal toggle is OFF', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    gitPortal.on = false
+    try {
+      // With the portal off `resolve` routes nothing, so `.git/branches/` is a
+      // plain (usually absent) directory on the parent drive.
+      const caps = capabilitiesForPane('root', '/Users/me/repo/.git/branches/main')
+      expect(caps.kind).toBe('local')
+      expect(caps.canWrite).toBe(true)
+    } finally {
+      gitPortal.on = true
     }
   })
 

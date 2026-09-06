@@ -33,6 +33,10 @@ impl ListingHost for AppListings {
         caching::try_get_authoritative_listing(volume_id, path)
     }
 
+    fn volumes_with_open_listings(&self, volume_id_prefix: &str) -> Vec<String> {
+        super::volume_ids_with_listings(volume_id_prefix)
+    }
+
     fn refresh_archive_listings<'a>(
         &'a self,
         volume_id: &'a str,
@@ -134,6 +138,47 @@ mod tests {
         );
 
         assert_eq!(listing.entry_names(), ["kept.txt"]);
+    }
+
+    /// A device backend narrows a handle resolution to the storages a pane is
+    /// showing, and gets each such volume once however many panes are on it. The
+    /// prefix is the DEVICE id, one level above the volumes it serves.
+    #[test]
+    fn open_listings_are_answered_once_per_volume_under_the_device_prefix() {
+        let device = unique_test_id("mtp-listing-host");
+        let one = format!("{device}:65537");
+        let two = format!("{device}:131073");
+
+        let first = TestListing::new()
+            .volume(&one)
+            .path("/DCIM")
+            .entries(vec![entry_at("/DCIM", "a.jpg")])
+            .insert("listing-host-open-1");
+        let second = TestListing::new()
+            .volume(&one)
+            .path("/Download")
+            .entries(Vec::new())
+            .insert("listing-host-open-2");
+        let third = TestListing::new()
+            .volume(&two)
+            .path("/")
+            .entries(Vec::new())
+            .insert("listing-host-open-3");
+
+        let mut open = AppListings.volumes_with_open_listings(&device);
+        open.sort();
+        let mut expected = vec![one.clone(), two.clone()];
+        expected.sort();
+        assert_eq!(
+            open, expected,
+            "two panes on one storage answer once, and every storage under the device answers"
+        );
+
+        drop((first, second, third));
+        assert!(
+            AppListings.volumes_with_open_listings(&device).is_empty(),
+            "a closed pane leaves nothing to aim a targeted refresh at"
+        );
     }
 
     /// The archive refresh re-reads every open listing at or inside the path it's

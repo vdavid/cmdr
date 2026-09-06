@@ -2,10 +2,11 @@
  * Tier-3 tests for `NavigationAndFileOpsSection.svelte`
  * (Behavior › Navigation & file ops).
  *
- * Three labeled cards: "Navigation" (the double-click-to-parent switch), "File
- * operations" (the file-extension-change radio), and "Operation log" (the
- * retention limits). The conflict/progress settings live in Advanced (their
- * single home), never mirrored here.
+ * Four labeled cards: "Navigation" (the double-click-to-parent switch), "File
+ * operations" (the file-extension-change radio), "Terminal" (which app "Open
+ * terminal here" launches), and "Operation log" (the retention limits). The
+ * conflict/progress settings live in Advanced (their single home), never
+ * mirrored here.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -16,6 +17,7 @@ vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'fileOperations.allowFileExtensionChanges') return 'ask'
     if (key === 'behavior.doubleClickPaneNavigatesToParent') return true
+    if (key === 'behavior.openTerminalHereApp') return 'com.apple.Terminal'
     if (key === 'operationLog.maxAge') return 0
     if (key === 'operationLog.maxSize') return 3221225472
     return undefined
@@ -25,6 +27,20 @@ vi.mock('$lib/settings/settings-store', () => ({
   isModified: vi.fn(() => false),
   onSpecificSettingChange: vi.fn(() => () => {}),
   onSettingChange: vi.fn(() => () => {}),
+}))
+
+// The Terminal row asks the backend which terminals are installed on mount.
+vi.mock('$lib/tauri-commands', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  listTerminalApps: vi.fn(() =>
+    Promise.resolve({
+      data: {
+        apps: [{ id: 'com.apple.Terminal', displayName: 'Terminal', icon: null, isRunning: false }],
+        chosenId: 'com.apple.Terminal',
+      },
+      timedOut: false,
+    }),
+  ),
 }))
 
 async function mountSection(searchQuery = ''): Promise<HTMLDivElement> {
@@ -44,10 +60,10 @@ function labelFors(target: HTMLElement): (string | null)[] {
 }
 
 describe('NavigationAndFileOpsSection', () => {
-  it('renders Navigation, File operations, and Operation log cards in that order', async () => {
+  it('renders Navigation, File operations, Terminal, and Operation log cards in that order', async () => {
     const target = await mountSection()
-    expect(target.querySelectorAll('.section-card')).toHaveLength(3)
-    expect(cardLabels(target)).toEqual(['Navigation', 'File operations', 'Operation log'])
+    expect(target.querySelectorAll('.section-card')).toHaveLength(4)
+    expect(cardLabels(target)).toEqual(['Navigation', 'File operations', 'Terminal', 'Operation log'])
     target.remove()
   })
 
@@ -56,8 +72,15 @@ describe('NavigationAndFileOpsSection', () => {
     const fors = labelFors(target)
     expect(fors).toContain('behavior.doubleClickPaneNavigatesToParent')
     expect(fors).toContain('fileOperations.allowFileExtensionChanges')
+    expect(fors).toContain('behavior.openTerminalHereApp')
     expect(fors).toContain('operationLog.maxAge')
     expect(fors).toContain('operationLog.maxSize')
+    target.remove()
+  })
+
+  it('surfaces the Terminal card under a search for a terminal app', async () => {
+    const target = await mountSection('Ghostty')
+    expect(cardLabels(target)).toEqual(['Terminal'])
     target.remove()
   })
 

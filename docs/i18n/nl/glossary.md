@@ -629,7 +629,7 @@ REVIEW FLAGS (archive-browsing pass):
 - **read-only archive → "Alleen-lezen archief" (with space)** to match the neighboring `deviceTitle` "Alleen-lezen
   apparaat". This diverges from the errors.json no-space compound rule ("alleen-lezenvolume"). Worth a locale-wide
   decision on which form wins for "alleen-lezen" + noun.
-- **preview (verb) → "bekijken"** in `viewer.error.archiveTooLarge` ("om vanuit het archief te bekijken"); macOS
+- **preview (verb) → "bekijken"** in `viewer.error.tooLargeToPreview` ("om vanaf hier te bekijken"); macOS
   "Voorvertoning" is the Quick-Look noun, so the plain verb "bekijken" (view) is used. Subjective.
 
 From the paste-clipboard-as-file pass (5 `settings.fileOperations.pasteClipboardAsFile.*` + 2
@@ -774,9 +774,10 @@ From the network image-indexing pass (`settings.mediaIndex.networkVolumes.*` + `
   "Verbreek verbinding met netwerkschijf…") + glossary drive→`schijf`; Tier 1, preferred over Windows-flavoured
   "netwerkstation" · high
 - photo → `foto` (plural `foto''s`, ICU-doubled apostrophe) · macOS ("Foto''s" app, "^0 foto''s ontvangen") · high.
-  Mirrors the EN source's deliberate register split: internal/technical labels keep `image`→`afbeelding` (matches the
-  already-translated `settings.mediaIndex.card` "Afbeeldingen doorzoeken" / `enabled.label` "Inhoud van afbeeldingen
-  indexeren"), while the warm user-facing network-drive rows say `foto''s` (the network case is a photo archive/NAS).
+  Mirrors the EN source's deliberate register split: internal/technical labels keep `image`→`afbeelding` (matches
+  `settings.section.imageIndexing` "Afbeeldingen indexeren" / `settings.mediaIndex.enabled.label` "Inhoud van
+  afbeeldingen indexeren"), while the warm user-facing network-drive rows say `foto''s` (the network case is a photo
+  archive/NAS).
 - image (technical/label sense) → `afbeelding` (plural `afbeeldingen`) · macOS ("Afbeelding"/"Afbeeldingen") · high.
   "Image indexing" (internal label + the search hint) → "afbeeldingen indexeren" / "het indexeren van afbeeldingen".
 - indexed → `geïndexeerd` (past participle) · glossary index→indexeren; "Not indexed yet"→"Nog niet geïndexeerd", "N
@@ -838,9 +839,9 @@ From the quality pass over the bulk-rename / image-index-scope / Ask Cmdr-tool k
 - convert (file contents) → `converteren` · macOS ("Converting…"→"Converteren…", AppKit "bij het converteren van …") ·
   high
 - temporary → `tijdelijk` · macOS ("temporarily unavailable"→"tijdelijk niet beschikbaar") · high
-- image search (the feature, as referenced from outside Settings) → `het doorzoeken van afbeeldingen` · the Settings
-  card is `settings.mediaIndex.card` "Afbeeldingen doorzoeken", so prose references reuse that verb phrase rather than
-  coining "zoeken in afbeeldingen" · high
+- image search (the feature, as referenced from outside Settings) → `het doorzoeken van afbeeldingen` · the catalog's
+  verb phrase wherever the feature is named (`fileExplorer.imageIndex.drive.off` = "Het doorzoeken van afbeeldingen
+  staat uit voor deze schijf."), rather than coining "zoeken in afbeeldingen" · high
 - "Indexing images" (in-progress status label) → `Afbeeldingen worden geïndexeerd` · the passive-progress form the
   glossary already uses ("wordt gedownload", "wordt geïnstalleerd"); a bare `Afbeeldingen indexeren` would read as the
   infinitive "to index images" and collide with the sibling Settings labels · high
@@ -874,8 +875,8 @@ For the image-search index status badges (11 `fileExplorer.imageIndex.*` + 2
   settled network-image split (image→afbeelding for labels, foto→foto''s for warm network-drive rows). "image
   file"→`afbeeldingsbestand` (compound) in the settings label · high
 - image search (the feature, referenced from tooltips + aria) → reuses the settled `het doorzoeken van afbeeldingen`
-  (Settings card `settings.mediaIndex.card` = "Afbeeldingen doorzoeken"); "Indexed for image search"→"Geïndexeerd voor
-  het doorzoeken van afbeeldingen", "Image search is off …"→"Het doorzoeken van afbeeldingen staat uit …" · high
+  (the image-search row in the rename/status pass above); "Indexed for image search"→"Geïndexeerd voor het doorzoeken
+  van afbeeldingen", "Image search is off …"→"Het doorzoeken van afbeeldingen staat uit …" · high
 - indexed (status) → `geïndexeerd`; re-indexed → `opnieuw geïndexeerd`; "couldn''t be indexed" →
   `Kon niet worden geïndexeerd` (macOS passive "kon niet worden …", gentle, avoids bare "mislukt" per Cmdr voice) · high
 - waiting to be indexed → `Wacht op indexering` · index→indexeren, noun `indexering` (cf. "achtergrondindexering") ·
@@ -2296,3 +2297,45 @@ bestemming staat).
   bestemming”), `terugdraaien` is de vaste term voor rollback (`rollbackUnavailableTooltip`), en `Annuleer` is het label
   van de knop ernaast (`fileOperations.button.cancel`), dus het staat er onveranderd in · `high`.
 - Geen `sameAsSourceJustification`; geen apostrof in de waarden.
+
+## ‘Terminal hier openen’ en de app-keuze (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Nieuw oppervlak: een kaart in `Gedrag > Navigatie en bewerkingen` waar je kiest welke terminal-app het commando opent.
+macOS bouwt de lijst; hier worden alleen de labels vertaald.
+
+- **terminal (de soort app) → `terminal`; Terminal (de app van Apple) → `Terminal`** · het Nederlandse macOS van Apple
+  houdt de naam Engels (`Open in Terminal`, sleutel `N67` in `macOS/Finder/LocalizableMerged.json`), en het generieke
+  Nederlandse woord is hetzelfde leenwoord · `high`. Daarom draagt de kaarttitel
+  `settings.navigationAndFileOps.card.terminal` een `sameAsSourceJustification`: hij is met opzet gelijk aan het Engels.
+- **Open terminal here (de commandonaam) → `Terminal hier openen`** · gebouwd op Apples `Open in Terminal`, met `hier`
+  voor de plek · `high`. De vertaling van het commando zelf (menu, commandopalet) moet precies deze vorm gebruiken.
+- **Choose an app… → `Kies app…`** · letterlijk Apples eigen `Choose Application…` (sleutel `N137`) in de Nederlandse
+  Finder, die al `app` zegt · `confirmed`.
+- **terminal app → `terminal-app`** · streepje, zoals de rest van de catalogus · `high`. Geen apostrof in de waarden.
+
+## `Sort by relevance`: de tooltip van de zoekresultatenkolom (`fileExplorer.columns.sortByRelevance`)
+
+Nieuw oppervlak: de tooltip op de actieve kolomkop van een paneel met zoekresultaten. De volgende klik zet de rijen
+terug in de volgorde van de zoekmachine, met de beste overeenkomst bovenaan.
+
+- **relevance (hoe goed een resultaat bij de zoekopdracht past) → `relevantie`** · alle vier de macOS-bronnen zijn het
+  eens: WorkflowKit (`Relevance (WFSearchSortOrder)` → `Relevantie`), AppStoreKit (`SEARCH_FACET_RELEVANCE` →
+  `Relevantie`), Automator (`%1$[Relevantie]@ …`) en Muziek · `high`. Kleine letter na `op`, zoals elders in de
+  catalogus. (gecontroleerd op macOS 26.6.2, build 25G83, `plutil`-uitvoer van de meegeleverde lokalisaties, 2026-09-06)
+- **Zinsframe → `Sorteer op relevantie`** · precies het patroon van de zustersleutels in `commands.json`
+  (`Sorteer op naam`, `Sorteer op grootte`) · `high`. Geen `sameAsSourceJustification`, en de waarde bevat geen
+  apostrof.
+
+## `Documents and packages`: de nieuwe OOXML-rij (`settings.archives.ooxml.*`)
+
+Nieuw oppervlak: een rij in dezelfde kaart als `Zip-archieven`, boven de kaart `App-pakketten`. De rij dekt met opzet
+ALLEBEI: Office-documenten (.docx, .xlsx, .pptx) en app-pakketten (.jar, .apk). Daarom noemt zelfs het Engels Office
+niet.
+
+- **documents (het bestandssoort) → `Documenten`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Documenten`; soorten
+  `RTF-document`, `Platte-tekstdocument`) · `high`.
+- **packages (generiek, niet alleen apps) → `pakketten`** · macOS Finder (`Toon pakketinhoud`) en het glossariumitem
+  `app bundle → pakket` · `high`. Bewust het kale `pakketten`, zodat de rij breder blijft dan de kaart `App-pakketten`
+  eronder — dezelfde scheiding die het Engels maakt met `packages` tegenover `app bundles`.
+- **Zinsframe → `Wat Enter doet bij een …, … of ….`** · precies het frame van de zustersleutels
+  `settings.archives.zip.description` en `settings.archives.bundle.description` · `high`. Geen apostrof in de waarde.

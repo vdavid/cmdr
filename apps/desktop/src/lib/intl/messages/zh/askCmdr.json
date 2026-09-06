@@ -104,6 +104,14 @@
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
+  "askCmdr.tool.search.doing": "正在搜索你的文件",
+  "@askCmdr.tool.search.doing": {
+    "sourceHash": "892be3e"
+  },
+  "askCmdr.tool.search.done": "已搜索你的文件",
+  "@askCmdr.tool.search.done": {
+    "sourceHash": "995a356"
+  },
   "askCmdr.tool.searchPhotos.doing": "正在搜索你的照片",
   "@askCmdr.tool.searchPhotos.doing": {
     "sourceHash": "da1265d"
@@ -208,9 +216,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr 需要比你本地模型更大的上下文窗口。请在设置的 AI 部分选择 16,384 个 token 或更多。",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr 需要比你本地模型更大的上下文窗口。请在设置的 AI 部分选择 32,768 个 token 或更多。",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "无法连接到 AI 提供方，请检查网络连接后重试。",
   "@askCmdr.error.unavailable": {
@@ -243,6 +251,10 @@
   "askCmdr.error.provider": "提供方那边出了点问题，要再试一次吗？",
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
+  },
+  "askCmdr.event.chatMemoryChanged": "聊天记忆现在可容纳 {tokens, number} 个 token",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
   },
   "askCmdr.event.contextTrimmed": "已移除 {count, plural, other {# 次早前的查询}}，以适应模型的上下文长度。",
   "@askCmdr.event.contextTrimmed": {

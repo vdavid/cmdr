@@ -7,8 +7,8 @@ and typed result shapes colocated here.
 ## Module map
 
 - `read/`: `state`, `pane_listing`, `listing`, `importance`, `volumes`, and `inspect/` (DTOs + pipeline, `text.rs`,
-  `find.rs`, `pdf.rs`, `archive.rs`, `exif.rs`, `runner.rs` for the timeouts). `operations_*`, `search_photos`, and
-  `image_facts` are shared with the ai-client view and live in `mcp/executor/`.
+  `find.rs`, `pdf.rs`, `archive.rs`, `exif.rs`, `runner.rs` for the timeouts). `operations_*`, `search`,
+  `search_photos`, and `image_facts` are shared with the ai-client view and live in `mcp/executor/`.
 - `propose/`: `propose_rename_plan` and the image-facts evidence ledger. `propose/CLAUDE.md`.
 - `suggestions/`: the suggested-ops trio over the proposal spine. `suggestions/CLAUDE.md`.
 - `memory.rs`: `memory_write` + `memory_edit`, the only tools that write; every rule lives in `../memory/`.
@@ -22,6 +22,7 @@ and typed result shapes colocated here.
   the result.
 - **A result that carries a list must fit ONE tool result.** Page it with `mcp::fit_to_result_budget` and report
   `total` / `returned` / `truncated`; an oversized result pushes the turn's own evidence out of the prompt.
+  ⚠️ `search` is the exception: its `matchCount` counts PAST the cap, so it is never a `total`.
   `DETAILS.md` § The size contract.
 - **A schema is PREFIX.** Every declaration rides every turn, so keep descriptions terse. A new tool moves
   `budget::FIXED_PROMPT_OVERHEAD_TOKENS`, pinned by `context/cost_tests.rs`.

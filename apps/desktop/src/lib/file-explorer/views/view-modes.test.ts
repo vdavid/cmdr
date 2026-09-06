@@ -16,6 +16,7 @@ vi.mock('$lib/tauri-commands', () => ({
 // Mock icon-cache
 vi.mock('$lib/icon-cache', () => ({
   getCachedIcon: vi.fn().mockReturnValue(undefined),
+  getCachedCustomFolderIcon: () => undefined,
   iconCacheVersion: { subscribe: vi.fn() },
   prefetchIcons: vi.fn(),
   prefetchCustomFolderIcons: vi.fn().mockResolvedValue(undefined),

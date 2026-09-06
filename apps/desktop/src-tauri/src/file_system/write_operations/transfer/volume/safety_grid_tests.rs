@@ -629,8 +629,9 @@ enum ItemKind {
     /// A directory onto a destination that has no such name yet.
     DirOntoFreshDest,
     /// A directory onto a destination FILE of the same name: the cross-type
-    /// clash, where a wrong answer about the source's type picks the branch
-    /// that replaces the destination wholesale.
+    /// clash, which a blanket policy refuses. A wrong answer about the source's
+    /// type here would call the pair file-on-file and stream a directory over
+    /// the destination as if it were one.
     DirOntoExistingFile,
 }
 
@@ -650,6 +651,24 @@ const ITEM_KINDS: &[ItemKind] = &[
     ItemKind::DirOntoExistingFile,
 ];
 
+/// What one Tier B cell must be able to prove once its transfer has settled.
+///
+/// Two lists rather than one because the cross-type cell's outcome is a
+/// REFUSAL: a blanket Overwrite never replaces one kind of entry with another
+/// (`../../conflict.rs::blanket_resolution_across_types`), so there the
+/// destination keeps its own file and the source keeps its whole subtree —
+/// on a move as much as on a copy, since a skipped item's source is the only
+/// copy of it in existence.
+struct TierBOutcome {
+    /// Readable at the DESTINATION, whatever the driver or the operation.
+    at_dest: Vec<(&'static str, &'static [u8])>,
+    /// The SOURCE entries this cell is about, and what they must still hold.
+    at_source: Vec<(&'static str, &'static [u8])>,
+    /// Whether those source entries must survive a MOVE too — true only where
+    /// the transfer was refused and never took them.
+    source_survives_a_move: bool,
+}
+
 /// Seeds one Tier B shape and returns the sources to hand the driver.
 ///
 /// `filler` extra top-level sources go in for the concurrent driver, which only
@@ -657,23 +676,22 @@ const ITEM_KINDS: &[ItemKind] = &[
 async fn tier_b_fixture(
     kind: ItemKind,
     concurrent: bool,
-) -> (
-    Arc<dyn Volume>,
-    Arc<dyn Volume>,
-    Vec<PathBuf>,
-    Vec<(&'static str, &'static [u8])>,
-) {
+) -> (Arc<dyn Volume>, Arc<dyn Volume>, Vec<PathBuf>, TierBOutcome) {
     let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
     let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
 
     let mut sources = Vec::new();
-    let expected: Vec<(&'static str, &'static [u8])>;
+    let outcome: TierBOutcome;
 
     match kind {
         ItemKind::File => {
             source.create_file(Path::new("/solo.bin"), b"SRC-solo").await.unwrap();
             sources.push(PathBuf::from("/solo.bin"));
-            expected = vec![("/solo.bin", b"SRC-solo")];
+            outcome = TierBOutcome {
+                at_dest: vec![("/solo.bin", b"SRC-solo")],
+                at_source: vec![("/solo.bin", b"SRC-solo")],
+                source_survives_a_move: false,
+            };
         }
         ItemKind::DirOntoFreshDest => {
             source.create_directory(Path::new("/album")).await.unwrap();
@@ -687,7 +705,13 @@ async fn tier_b_fixture(
                 .await
                 .unwrap();
             sources.push(PathBuf::from("/album"));
-            expected = vec![("/album/one.bin", b"SRC-one"), ("/album/inner/two.bin", b"SRC-two")];
+            let landed: Vec<(&'static str, &'static [u8])> =
+                vec![("/album/one.bin", b"SRC-one"), ("/album/inner/two.bin", b"SRC-two")];
+            outcome = TierBOutcome {
+                at_dest: landed.clone(),
+                at_source: landed,
+                source_survives_a_move: false,
+            };
         }
         ItemKind::DirOntoExistingFile => {
             source.create_directory(Path::new("/album")).await.unwrap();
@@ -697,7 +721,13 @@ async fn tier_b_fixture(
                 .unwrap();
             dest.create_file(Path::new("/album"), b"DEST-was-a-file").await.unwrap();
             sources.push(PathBuf::from("/album"));
-            expected = vec![("/album/one.bin", b"SRC-one")];
+            outcome = TierBOutcome {
+                // The clash is refused, so what's readable at the destination is
+                // the destination's OWN file, exactly as it was.
+                at_dest: vec![("/album", b"DEST-was-a-file")],
+                at_source: vec![("/album/one.bin", b"SRC-one")],
+                source_survives_a_move: true,
+            };
         }
     }
 
@@ -708,13 +738,13 @@ async fn tier_b_fixture(
         }
     }
 
-    (source, dest, sources, expected)
+    (source, dest, sources, outcome)
 }
 
 /// Drives one Tier B cell through the copy or move pipeline against a cache
 /// entry that counted files but recorded no per-source result.
 async fn run_tier_b(kind: ItemKind, concurrent: bool, is_move: bool) {
-    let (source, dest, sources, expected) = tier_b_fixture(kind, concurrent).await;
+    let (source, dest, sources, outcome) = tier_b_fixture(kind, concurrent).await;
     let driver = if concurrent { "concurrent" } else { "serial" };
     let op = if is_move { "move" } else { "copy" };
     let cell = format!("tier-b-{op}-{driver}-{}", kind.label());
@@ -760,27 +790,26 @@ async fn run_tier_b(kind: ItemKind, concurrent: bool, is_move: bool) {
     };
     assert!(result.is_ok(), "{label}: the transfer should complete, got {result:?}");
 
-    // Every shape must arrive intact: a per-path-less cache is missing
+    // Every shape must come out intact: a per-path-less cache is missing
     // information, ❌ never license to guess that a directory is a file and
     // stream it as one.
-    for (path, content) in &expected {
+    for (path, content) in &outcome.at_dest {
         assert_eq!(
             try_read_all(&dest, path).await.as_deref(),
             Some(*content),
-            "{label}: {path} didn't arrive intact"
+            "{label}: {path} isn't intact at the destination"
         );
     }
 
-    // A move's sources are gone; a copy's are still there. Either way no byte
-    // is missing from both sides.
-    if !is_move {
-        // Source and destination roots are both `/` here, so a delivered path is
-        // also the source path it came from.
-        for (path, content) in &expected {
+    // A move's sources are gone; a copy's are still there — unless the transfer
+    // was refused, in which case the source is the only copy and survives both.
+    // Either way no byte is missing from both sides.
+    if !is_move || outcome.source_survives_a_move {
+        for (path, content) in &outcome.at_source {
             assert_eq!(
                 try_read_all(&source, path).await.as_deref(),
                 Some(*content),
-                "{label}: a COPY took {path} from the source"
+                "{label}: the transfer took {path} from the source"
             );
         }
     }

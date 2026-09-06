@@ -7,7 +7,8 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - Submodules with their own docs: `listing/`, `write_operations/`, `volume/`, `sync_status/` (cloud badges).
 - `watcher.rs` (FSEvents listing updates), `staging.rs` (scratch visibility; the `StagingTemp` mint itself is
   `cmdr_fs::staging`), `index_provider.rs` (the app's `VolumeProvider`, so the index never imports `VolumeManager`),
-  `backend_settings.rs` (live per-backend knobs), `cloud_actions.rs`, `open_with.rs`, `tags.rs` (Finder tags).
+  `backend_settings.rs` (live per-backend knobs), `cloud_actions.rs`, `open_with.rs`, `tags.rs` (Finder tags),
+  `terminal.rs` ("open terminal here").
 - `mod.rs` is a facade: it re-exports downward and bootstraps the volume registry (`init_volume_manager`), which is why
   it may know every backend.
 
@@ -39,6 +40,9 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - **A watch on an OS-mounted network share is `WatchCoverage::ThisMachineOnly`, never `EveryWriter`**: FSEvents on
   `smbfs` sees this machine's writes only. ❌ Don't refuse to arm the watch over that; what it must not do is let a
   delete walker or copy scan skip a read. `volume/DETAILS.md` § "Trait capability model".
+- **"Open terminal here" asks `NSWorkspace` whether each known app is installed; ❌ never scans `/Applications`**, and
+  its recipes are a pure `launch_argv` so every app's argv is unit-tested without launching anything. A new terminal is
+  one entry in `KNOWN_TERMINALS`, and it owes the bundle id's verification source and date. § "Open terminal here".
 - **`cloud_actions.rs` is iCloud Drive only**, gated by `is_in_icloud_drive`; the cross-provider-looking
   `NSFileProviderManager` methods need the bundled extension. Don't widen it.
 

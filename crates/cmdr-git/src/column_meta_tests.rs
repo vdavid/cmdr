@@ -1,0 +1,329 @@
+//! Integration tests for Modified + Size column population on virtual
+//! git entries.
+//!
+//! Fixtures go through `test_fixtures::Fixture` (in-process gix); stash,
+//! worktree-add, submodule-add operations stay on the [`git_cli`]
+//! shell-out because gix 0.81 doesn't expose those.
+
+#![cfg(test)]
+
+use std::os::unix::fs::PermissionsExt;
+
+use crate::path::{Cat, VirtualGitPath, classify};
+use crate::test_fixtures::{
+    Fixture, build_repo_with_branches, build_simple_repo, cleanup, discover_repo, git_cli, temp_dir,
+};
+use crate::{log as git_log, stash, submodules, virtual_listing, worktrees};
+use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
+
+// ── Root listing: counts and dates ──────────────────────────────────
+
+#[test]
+fn root_listing_populates_size_with_item_counts() {
+    let (dir, _f) = build_repo_with_branches("column_meta", &[("feature-a", 1), ("feature-b", 2)]);
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let entries = virtual_listing::list_categories(&handle, &root);
+
+    let by_name: std::collections::HashMap<&str, &cmdr_fs::entry::FileEntry> =
+        entries.iter().map(|e| (e.name.as_str(), e)).collect();
+
+    let branches = by_name["branches"];
+    assert_eq!(branches.size, Some(3), "main + feature-a + feature-b = 3 branches");
+    assert_eq!(
+        branches.git_meta,
+        Some(GitEntryMeta::Count {
+            counted: GitCountKind::Branches,
+            n: 3
+        })
+    );
+
+    let commits = by_name["commits"];
+    assert!(commits.size.is_some(), "commits/ category gets a count");
+    assert!(
+        matches!(
+            commits.git_meta,
+            Some(GitEntryMeta::Count {
+                counted: GitCountKind::Commits,
+                ..
+            })
+        ),
+        "commits/ counts commits: {:?}",
+        commits.git_meta
+    );
+
+    cleanup(&dir);
+}
+
+#[test]
+fn root_listing_reports_a_single_branch_as_a_count_of_one() {
+    let (dir, _f) = build_simple_repo("column_meta", 1);
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let entries = virtual_listing::list_categories(&handle, &root);
+    let branches = entries.iter().find(|e| e.name == "branches").unwrap();
+    // The count reaches the frontend as a number; `one` vs `other` is the
+    // catalog's job, in each locale's own plural rules.
+    assert_eq!(
+        branches.git_meta,
+        Some(GitEntryMeta::Count {
+            counted: GitCountKind::Branches,
+            n: 1
+        })
+    );
+    cleanup(&dir);
+}
+
+// ── Branches: ahead/behind + branch tip date ────────────────────────
+
+#[test]
+fn branches_listing_populates_ahead_behind() {
+    let (dir, _f) = build_repo_with_branches("column_meta", &[("feat", 3)]);
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let entries = virtual_listing::list_branches(&handle, &root).unwrap();
+
+    let feat = entries.iter().find(|e| e.name == "feat").expect("feat branch");
+    assert_eq!(
+        feat.git_meta,
+        Some(GitEntryMeta::AheadBehind {
+            ahead: 3,
+            behind: 0,
+            vs: "main".to_string(),
+        }),
+        "the fallback comparison branch travels with the counts"
+    );
+    assert_eq!(feat.size, Some(3), "ahead-count is the within-category sort key");
+    assert!(feat.modified_at.is_some(), "branch tip date populated");
+
+    cleanup(&dir);
+}
+
+#[test]
+fn branches_listing_sorts_by_ahead_count_within_category() {
+    let (dir, _f) = build_repo_with_branches("column_meta", &[("a", 5), ("b", 1), ("c", 2)]);
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let mut entries = virtual_listing::list_branches(&handle, &root).unwrap();
+    // Drop main (size==0 against itself = blank). Sort by `size` descending
+    // to mirror what the listing pipeline does for Sort/Size descending.
+    entries.retain(|e| e.size.unwrap_or(0) > 0);
+    entries.sort_by_key(|e| std::cmp::Reverse(e.size));
+    let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
+    assert_eq!(names, vec!["a", "c", "b"], "5 ahead, 2 ahead, 1 ahead");
+
+    cleanup(&dir);
+}
+
+#[test]
+fn branches_default_branch_alone_has_blank_size() {
+    // Single branch (main), no upstream, no fallback different from itself.
+    let (dir, _f) = build_simple_repo("column_meta", 1);
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let entries = virtual_listing::list_branches(&handle, &root).unwrap();
+    let main = entries.iter().find(|e| e.name == "main").unwrap();
+    assert!(main.git_meta.is_none(), "main with no upstream stays blank");
+    cleanup(&dir);
+}
+
+// ── Tags: the commit a tag points at ────────────────────────────────
+
+#[test]
+fn tags_listing_names_the_tagged_commit() {
+    let (dir, f) = build_simple_repo("column_meta", 1);
+    // Create a lightweight tag pointing at HEAD via gix.
+    let head_id = f
+        .repo
+        .find_reference("refs/heads/main")
+        .unwrap()
+        .peel_to_id()
+        .unwrap()
+        .detach();
+    f.repo
+        .reference(
+            "refs/tags/v1.0",
+            head_id,
+            gix::refs::transaction::PreviousValue::MustNotExist,
+            "test_fixtures: lightweight tag",
+        )
+        .expect("create tag ref");
+
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let entries = virtual_listing::list_tags(&handle, &root).unwrap();
+    let v1 = entries.iter().find(|e| e.name == "v1.0").unwrap();
+    let Some(GitEntryMeta::TaggedCommit { id }) = &v1.git_meta else {
+        panic!("a tag names its commit: {:?}", v1.git_meta);
+    };
+    assert_eq!(id.len(), 40, "the FULL id crosses IPC; the cell shortens it");
+    assert!(id.chars().all(|c| c.is_ascii_hexdigit()), "all hex");
+    assert!(v1.modified_at.is_some(), "tag carries a date");
+    cleanup(&dir);
+}
+
+// ── Commits: files-changed count ────────────────────────────────────
+
+#[test]
+fn commits_listing_populates_files_changed() {
+    let (dir, _f) = build_simple_repo("column_meta", 2);
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let entries = git_log::list_commits(&handle, &root).unwrap();
+    let top = &entries[0];
+    let n = top.size.expect("files-changed size set");
+    assert!(n >= 1, "at least one file changed in the second commit");
+    assert_eq!(
+        top.git_meta,
+        Some(GitEntryMeta::Count {
+            counted: GitCountKind::FilesChanged,
+            n
+        }),
+        "the cell's count and the sort key are the same number"
+    );
+    cleanup(&dir);
+}
+
+// ── Stash: branch parsing ───────────────────────────────────────────
+
+#[test]
+fn stash_listing_extracts_branch_from_subject() {
+    let (dir, _f) = build_simple_repo("column_meta", 1);
+    std::fs::write(dir.join("scratch.txt"), "x\n").unwrap();
+    // Stash creation has no gix-side API in 0.81; CLI is the only path.
+    git_cli(&dir, &["stash", "push", "-u", "-m", "scratch work"]);
+
+    let (_, root) = discover_repo(&dir).unwrap();
+    let entries = stash::list_stashes(&root).unwrap();
+    let first = &entries[0];
+    assert_eq!(
+        first.git_meta,
+        Some(GitEntryMeta::StashedOnBranch {
+            branch: "main".to_string()
+        }),
+        "stash subject parses to branch"
+    );
+    cleanup(&dir);
+}
+
+// ── Worktrees: branch / SHA ─────────────────────────────────────────
+
+#[test]
+fn worktree_listing_shows_branch() {
+    let (dir, _f) = build_simple_repo("column_meta", 1);
+    let wt = dir
+        .parent()
+        .unwrap()
+        .join(format!("{}-wt", dir.file_name().unwrap().to_string_lossy()));
+    let _ = std::fs::remove_dir_all(&wt);
+    // `git worktree add` has no gix-side public API in 0.81; CLI is the only path.
+    git_cli(&dir, &["worktree", "add", "-b", "wt-branch", wt.to_str().unwrap()]);
+
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let entries = worktrees::list_worktrees(&handle, &root).unwrap();
+    let wt_entry = &entries[0];
+    assert_eq!(
+        wt_entry.git_meta,
+        Some(GitEntryMeta::WorktreeOnBranch {
+            branch: "wt-branch".to_string()
+        })
+    );
+    assert!(wt_entry.modified_at.is_some(), "worktree HEAD date set");
+    cleanup(&dir);
+    cleanup(&wt);
+}
+
+// ── Submodules: the pinned commit ───────────────────────────────────
+
+#[test]
+fn submodule_listing_names_the_pinned_commit() {
+    let (outer, _of) = build_simple_repo("column_meta", 1);
+    let (inner, _if) = build_simple_repo("column_meta", 1);
+    let inner_url = format!("file://{}", inner.display());
+    // `git submodule add` has no gix-side public API in 0.81; CLI is
+    // the only path.
+    git_cli(
+        &outer,
+        &[
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            "-q",
+            &inner_url,
+            "vendor/inner",
+        ],
+    );
+    git_cli(&outer, &["commit", "-q", "-m", "add submodule"]);
+
+    let (handle, root) = discover_repo(&outer).unwrap();
+    let entries = submodules::list_submodules(&handle, &root).unwrap();
+    let sm = &entries[0];
+    let Some(GitEntryMeta::PinnedCommit { id }) = &sm.git_meta else {
+        panic!("a submodule names its pinned commit: {:?}", sm.git_meta);
+    };
+    assert_eq!(id.len(), 40, "the FULL id crosses IPC; the cell shortens it");
+    assert!(sm.modified_at.is_some(), "pinned commit date");
+    cleanup(&outer);
+    cleanup(&inner);
+}
+
+// ── Snapshot interior: files share commit date, dirs get bytes ─────
+
+#[test]
+fn snapshot_files_borrow_commit_date() {
+    let (dir, _f) = build_simple_repo("column_meta", 1);
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let p = root.join(".git").join("branches").join("main");
+    let (virt, _, _) = classify(&p).expect("classify branch tip");
+    assert!(matches!(virt, VirtualGitPath::Ref(Cat::Branches, _)));
+
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
+    let entries = crate::tree::list_tree(&handle, commit, "", &p)
+        .unwrap()
+        .expect("the snapshot root is there");
+    for fe in &entries {
+        assert!(fe.modified_at.is_some(), "every snapshot row carries the commit date");
+    }
+    // All entries share the same date (frozen point in time).
+    let first = entries[0].modified_at;
+    assert!(entries.iter().all(|e| e.modified_at == first));
+
+    cleanup(&dir);
+}
+
+#[test]
+fn snapshot_dirs_carry_recursive_bytes() {
+    let dir = temp_dir("column_meta", "snapshot-dirs");
+    let mut f = Fixture::init(dir.clone());
+    // Create the directory on disk; commit_file will write the files
+    // inside it and `commit_files` carries the tree forward.
+    std::fs::create_dir_all(dir.join("scripts")).unwrap();
+    std::fs::write(dir.join("scripts").join("a.sh"), "#!/bin/sh\necho hi\n").unwrap();
+    std::fs::set_permissions(dir.join("scripts").join("a.sh"), std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::write(dir.join("scripts").join("b.sh"), "echo bye\n").unwrap();
+    // Two-file commit so `recursive_size` rolls up to non-zero.
+    f.commit_files(
+        &[
+            ("scripts/a.sh", b"#!/bin/sh\necho hi\n"),
+            ("scripts/b.sh", b"echo bye\n"),
+        ],
+        "init",
+        1_700_000_000,
+    );
+
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let p = root.join(".git").join("branches").join("main");
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
+    let entries = crate::tree::list_tree(&handle, commit, "", &p)
+        .unwrap()
+        .expect("the snapshot root is there");
+    let scripts = entries.iter().find(|e| e.name == "scripts").unwrap();
+    assert!(
+        scripts.size.unwrap_or(0) > 0,
+        "directory size is the recursive byte total"
+    );
+    assert!(
+        scripts.recursive_size.unwrap_or(0) > 0,
+        "recursive_size mirrors size for dirs"
+    );
+
+    cleanup(&dir);
+}

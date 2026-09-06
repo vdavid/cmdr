@@ -20,6 +20,9 @@ pub struct FixtureFile {
     pub method: CompressionMethod,
     /// Force a zip64 entry (zip64 extra field + zip64 EOCD) regardless of size.
     pub zip64: bool,
+    /// The unix mode to record in the external attributes. `None` leaves the
+    /// `zip` writer's default, which is what a Windows-made zip looks like.
+    pub unix_mode: Option<u32>,
 }
 
 /// An uncompressed (`Stored`) entry.
@@ -29,6 +32,7 @@ pub fn stored(name: impl Into<String>, content: impl Into<Vec<u8>>) -> FixtureFi
         content: content.into(),
         method: CompressionMethod::Stored,
         zip64: false,
+        unix_mode: None,
     }
 }
 
@@ -39,6 +43,7 @@ pub fn deflated(name: impl Into<String>, content: impl Into<Vec<u8>>) -> Fixture
         content: content.into(),
         method: CompressionMethod::Deflated,
         zip64: false,
+        unix_mode: None,
     }
 }
 
@@ -49,6 +54,7 @@ pub fn dir(name: impl Into<String>) -> FixtureFile {
         content: Vec::new(),
         method: CompressionMethod::Stored,
         zip64: false,
+        unix_mode: None,
     }
 }
 
@@ -59,6 +65,17 @@ pub fn zip64_stored(name: impl Into<String>, content: impl Into<Vec<u8>>) -> Fix
         content: content.into(),
         method: CompressionMethod::Stored,
         zip64: true,
+        unix_mode: None,
+    }
+}
+
+/// A stored entry carrying an explicit unix mode in its external attributes,
+/// the way every unix zipper records one. `0o755` is what a shell script inside
+/// a release archive wears.
+pub fn with_unix_mode(name: impl Into<String>, content: impl Into<Vec<u8>>, mode: u32) -> FixtureFile {
+    FixtureFile {
+        unix_mode: Some(mode),
+        ..stored(name, content)
     }
 }
 
@@ -67,9 +84,12 @@ pub fn zip64_stored(name: impl Into<String>, content: impl Into<Vec<u8>>) -> Fix
 pub fn build_zip(entries: &[FixtureFile]) -> Vec<u8> {
     let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
     for entry in entries {
-        let opts = SimpleFileOptions::default()
+        let mut opts = SimpleFileOptions::default()
             .compression_method(entry.method)
             .large_file(entry.zip64);
+        if let Some(mode) = entry.unix_mode {
+            opts = opts.unix_permissions(mode);
+        }
         if entry.name.ends_with('/') {
             writer
                 .add_directory(entry.name.trim_end_matches('/'), opts)

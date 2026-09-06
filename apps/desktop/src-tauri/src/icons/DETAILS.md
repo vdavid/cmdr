@@ -6,6 +6,16 @@ detection-timing decision, and disk-cache mechanism live here.
 This is the Rust `src/icons/` module. (`src-tauri/icons/`, a sibling at the crate root, holds the app *bundle* icons,
 unrelated.)
 
+## Asking macOS for the pixels (`macos_workspace.rs`)
+
+`NSWorkspace.iconForFile:` answers an `NSImage`, a resolution-independent recipe rather than a buffer, so every fetch draws it: allocate an `NSBitmapImageRep` at the target size, wrap it in an `NSGraphicsContext`, draw, and read `bitmapData`. The bitmap is `RGBA8`, non-planar and tightly packed, which is exactly what `image::RgbaImage::from_raw` adopts with no copy of its own.
+
+- **Per-call bitmap and context, never a shared one.** The fetch runs on rayon workers and on the dedicated 8 MB-stack threads, so one drawing surface would be two threads compositing into the same buffer. The allocation is noise next to the Launch Services round trip.
+- **`NSCompositingOperation::Copy`, not `SourceOver`.** The bitmap arrives as uninitialized memory, so blending over it mixes garbage into every transparent pixel. `renders_a_real_icon_at_the_requested_size` pins this on the corner alpha.
+- **The path is canonicalized first**, which doubles as the existence check (`iconForFile:` hands back a plausible generic document icon for a path that isn't there, and that would cache under an id meaning something else) and resolves symlinks. The id scheme wants that: `symlink-file` / `symlink-dir` are separate ids fetched from their own samples.
+
+Decision/Why: this replaced the `file_icon_provider` crate, which did the same drawing but also reached `UTType` from a caching struct Cmdr never constructed. That reference alone hard-linked `UniformTypeIdentifiers.framework` into the binary, and since that framework arrived in macOS 11, dyld refused to launch Cmdr at all on the 10.15 floor `tauri.conf.json` promises. Sixty lines of `NSWorkspace` we own beats a dependency that can put a framework in the binary for code we don't run, and it drops `gio`, `gtk`, and `windows` from the macOS graph as a side effect. `desktop-macos-framework-floor` now fails the build on any framework newer than the floor; the version evidence is in `docs/notes/system-requirements-and-es2025.md`.
+
 ## Cache tiers and persistence
 
 `dir` / `ext:*` / `file` / `symlink*` / `special:*` are inherently bounded, so they're uncapped in the in-memory cache
@@ -15,6 +25,24 @@ for the real-folder ids (`special:*` / `pkg:*` / `path:*`), keyed by folder mtim
 
 `clear_directory_icon_cache` drops the keys macOS appearance-tints (`dir`, `symlink-dir`, `path:*`, `pkg:*`,
 `special:*`) plus the whole disk cache, on a theme/accent change.
+
+**Gotcha: changing how a BOUNDED icon is produced needs a `CACHE_SCHEMA` bump** (`$lib/icon-cache`). Those keys persist
+to localStorage and are refetched only on a miss, so an install that already ran the old build keeps serving the old
+pixels forever — the fix ships, nothing moves on screen, and it reads as the fix not working. It bit the `dir`-sampling
+fix below: the backend was correct, every machine still drew the house. The stamp lives in the persisted envelope
+(`{ version, icons }`); a mismatch or a pre-stamp bare map discards the lot and refetches. ❌ Never leave it alone
+because "the key didn't change" — the key not changing is exactly the hazard.
+
+## Tier A: the generic folder sample (`folder_sample_path`)
+
+`dir` / `symlink-dir` cover ~99% of rows, and their icon comes from asking the OS about one stand-in directory.
+
+**Decision: the stand-in is an empty `<temp>/cmdr-icon-samples/sample-folder`, ❌ never the home directory.** Sampling
+`~` looked free (it always exists, no directory to create) but macOS bakes the home folder's house badge into the
+bitmap, so every plain folder in every listing rendered with a house on it; a custom icon assigned to `~` leaked onto
+all of them by the same route. A folder Cmdr just created carries neither, so it yields the true generic glyph, still
+correctly accent- and appearance-tinted because macOS tints from system state rather than from the path. Pinned by
+`the_generic_folder_sample_is_a_cmdr_owned_directory_not_the_home_dir`.
 
 ## Tier A: extension samples (`icon_sample_path`)
 
@@ -64,6 +92,13 @@ suffix check is free (string op, no syscall), so it stays inline. The custom-ico
 it's deferred to the bounded visible set. Net: a 100k-entry directory pays zero extra syscalls for custom-icon
 detection during listing; the cost is bounded to the ~50 visible rows.
 
+**An icon that was never fetched from the OS** still reaches the frontend in the same base64 WebP form:
+`rgba_to_data_url(rgba, w, h)` encodes a raw buffer at `ICON_SIZE`. Its one caller is the "open terminal here" app list
+(`../file_system/terminal.rs`), which reads each app's `.icns` straight out of its bundle rather than asking NSWorkspace,
+so it needs no TCC permission and can't descend into a FileProvider XPC chain. Nothing here caches it: that list is a
+handful of apps, rendered when the settings row opens. It's `#[cfg(target_os = "macos")]` for the same reason its caller
+is: `.app` bundles are a macOS thing, and an ungated copy is dead code in the Linux build.
+
 **Volumes** carry their own per-path icon through a separate, already-wired path: `volumes/mod.rs` calls
 `icons::get_icon_for_path` at volume-enumeration time and stores the data URL directly on the volume struct (FDA-gated,
 returns `None` while pending). Independent of the `iconId` registry used for file-list rows, so no Tier-C wiring is
@@ -77,6 +112,13 @@ LRU-capped together under one `PATH_KEY_CAP` budget, and are never persisted to 
 **FE wiring** (`file-explorer/views/file-list-utils.ts` + `icon-cache.ts`): the visible-range fetch collects the
 on-screen directory rows' paths and calls `prefetchCustomFolderIcons` → `get_custom_folder_icon_ids`, then fetches the
 returned `path:` ids through the normal `prefetchIcons` path (packages already arrive as `pkg:` ids from the listing).
+
+**Gotcha: a custom-icon folder's entry still carries `iconId: "dir"`**, because the detection is deferred and nothing
+rewrites the id afterwards. So the RENDERER has to ask by path — `FileIcon.svelte` tries
+`getCachedCustomFolderIcon(entry.path)` before `getCachedIcon(entry.iconId)`. Looking up `iconId` alone drew the generic
+folder over an icon the prefetch had already fetched and cached: the whole chain worked and the result was invisible,
+with no error anywhere. The gold-recolor filter has to check the same thing, since `isFolderIcon` is true for these rows
+too and would repaint the user's artwork. Packages don't share the hazard — `pkg:` ids come straight off the listing.
 `FilePane` evicts a directory's `path:*` / `pkg:*` keys via `evictPerPathIconsForDir` when its listing ends (navigation
 away / unmount), keeping the working set tight and re-detecting a re-icon next time the folder is shown.
 

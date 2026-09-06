@@ -124,12 +124,22 @@ export function createAdoptedOperation(deps: AdoptedOperationDeps) {
     /** An adopted operation finished. It says what the operation did and stops
      *  there: what a pane should do about a transfer belongs to the view that
      *  started it. */
-    handleComplete({ filesProcessed, filesSkipped, bytesProcessed }: TransferCompletePayload): void {
+    handleComplete({
+      filesProcessed,
+      filesSkipped,
+      bytesProcessed,
+      appearedDuringMove,
+    }: TransferCompletePayload): void {
       const op = adoptedProps?.operationType ?? 'copy'
       log.info(
         `${transferOpLabel(op)} complete (adopted): ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${formatByteSize(bytesProcessed)})`,
       )
-      const toastMessage = composeTransferCompleteToast({ operationType: op, filesProcessed, filesSkipped })
+      const toastMessage = composeTransferCompleteToast({
+        operationType: op,
+        filesProcessed,
+        filesSkipped,
+        appearedDuringMove,
+      })
       const allSkipped = filesSkipped > 0 && filesSkipped === filesProcessed
       addToast(toastMessage, { level: allSkipped ? 'info' : 'success', timeoutMs: 7000 })
 

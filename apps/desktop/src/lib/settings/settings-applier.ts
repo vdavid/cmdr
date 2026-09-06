@@ -45,7 +45,7 @@ import { loadSystemLocales, pickUiLocale, watchSystemLocales } from '$lib/intl/o
 import { trackLanguageResolved } from '$lib/intl/language-analytics'
 import { refreshSystemStrings } from '$lib/system-strings.svelte'
 import { pushConfigToBackend } from './ai-config'
-import { noteModelSettingChanged } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
+import { noteSlotSettingChanged } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
 import { pushLowDiskSpaceConfigToBackend } from '$lib/low-disk-space/notifications-mode'
 import { applyAutoCheckEnabled } from '$lib/updates/updater.svelte'
 
@@ -232,25 +232,30 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   // whichever provider/key/model is current at the actual IPC moment wins (handles the race
   // where the user toggles things mid-flight). Three entries instead of one because each
   // setting fires independently; one shared handler keeps them in lockstep.
-  // Each also nudges the Ask Cmdr rail: if the change switched the active thread's
-  // effective model, the backend records a "switched to X" timeline event (debounced +
-  // deduped in the trigger store / backend, so the pair of calls stays cheap).
+  // Each also nudges the Ask Cmdr rail: if the change moved the active thread's slot —
+  // the effective model, or the chat memory each message carries — the backend records a
+  // timeline event per facet that moved (debounced + deduped in the trigger store /
+  // backend, so the pair of calls stays cheap).
   'ai.provider': () => {
     void pushConfigToBackend()
-    noteModelSettingChanged()
+    noteSlotSettingChanged()
   },
   'ai.cloudProvider': () => {
     void pushConfigToBackend()
-    noteModelSettingChanged()
+    noteSlotSettingChanged()
   },
   'ai.cloudProviderConfigs': () => {
     void pushConfigToBackend()
-    noteModelSettingChanged()
+    noteSlotSettingChanged()
   },
-  // The Ask Cmdr slot's own model: the backend reads it fresh from disk per send, so
-  // there is no config push — only the model-change timeline nudge.
+  // The two Ask Cmdr slot settings the backend reads fresh from disk per send, so there is
+  // no config push and nothing to apply — only the slot-change timeline nudge, which is
+  // what tells an open thread why its next reply sees a different model or less of the chat.
   'askCmdr.interactiveModel': () => {
-    noteModelSettingChanged()
+    noteSlotSettingChanged()
+  },
+  'askCmdr.chatMemorySize': () => {
+    noteSlotSettingChanged()
   },
   // The proactive loop's three rows. ⚠️ Unlike the two `askCmdr.*` settings above, these
   // can't be read fresh at send time, because there is no send: they drive a timer parked

@@ -40,9 +40,9 @@ Look daemon hung on every zip, layout-independent), plus property tests for the 
 ## 2. Enter on a file inside an archive can't open it in an external app
 
 **The gap**: Enter on a file inside an archive opens the built-in viewer (temp-extract, byte-capped, per-instance
-reaper). "Open with <external app>" is not offered. `crates/cmdr-archive/DETAILS.md` § "Left for the follow-up
-milestones" owns why: a detached launched app holds the file for an unknown lifetime and has no close event to hook, so
-it can't reuse the viewer's session-scoped extract.
+reaper). "Open with <external app>" is not offered. `crates/cmdr-archive/DETAILS.md` § "Left for later" owns why: a
+detached launched app holds the file for an unknown lifetime and has no close event to hook, so it can't reuse the
+viewer's session-scoped extract.
 
 **The shape to build**, spiked and settled: clone the viewer's persist-extract module (`file_viewer/archive_extract.rs`,
 described in `apps/desktop/src-tauri/src/file_viewer/DETAILS.md` § "Per-instance extract dir + startup reaper") into a

@@ -4,6 +4,9 @@ import { getAppLogger } from '$lib/logging/logger'
 import { createLineHeightMap, getLineHeight } from './viewer-line-heights.svelte'
 import { onDebouncedScaleChange } from '$lib/text-size.svelte'
 import { pluralize } from '$lib/utils/pluralize'
+import { ensureVisibleOffset, recenterOffset } from './viewer-search-scroll'
+import { caretRectFor, measureColumnWidth } from './viewer-pointer'
+import { EOF_LINE, type LineOffset } from './selection.svelte'
 
 const log = getAppLogger('viewer')
 
@@ -88,16 +91,40 @@ export function createViewerScroll(deps: ScrollDeps) {
     heightMap.ready ? heightMap.getLineTop(visibleFrom) * scrollScale : visibleFrom * scrollLineHeight,
   )
 
+  /** One past the last line the template draws. `visibleTo` alone can overshoot the file. */
+  const renderedTo = $derived(Math.min(visibleTo, estimatedTotalLines()))
+
   const visibleLines = $derived(getVisibleLines())
   const gutterWidth = $derived(String(estimatedTotalLines()).length)
 
   function getVisibleLines(): Array<{ lineNumber: number; text: string }> {
     const result: Array<{ lineNumber: number; text: string }> = []
-    const end = Math.min(visibleTo, estimatedTotalLines())
-    for (let i = visibleFrom; i < end; i++) {
+    for (let i = visibleFrom; i < renderedTo; i++) {
       result.push({ lineNumber: i, text: lineCache.get(i) ?? '' })
     }
     return result
+  }
+
+  /**
+   * The text the template SHOWS for a line, which is what the caret motion model has to
+   * reason about, or `undefined` when no row is drawn for it yet.
+   *
+   * Inside the rendered range a cache miss draws as an empty row (`getVisibleLines`
+   * applies the same `?? ''`), so a caller reading the cache directly would disagree with
+   * the user's screen about which lines exist. That divergence is fatal for a file ending
+   * in a newline on the `lineIndex` backend: it counts a last line `viewer_get_lines`
+   * never emits, and ⌘⇧Down would ask for it forever.
+   *
+   * OUTSIDE the range `undefined` keeps its other meaning: not fetched yet, scroll and
+   * retry. `moveFocus` turns that into `{ focus: null, targetLine }`, and the keyboard's
+   * scroll is what pulls the line in so the next press lands. Widening the `''` past the
+   * rendered range would break that two-press flow, and invent an offset for a line
+   * nobody has seen.
+   */
+  function renderedLineText(line: number): string | undefined {
+    const cached = lineCache.get(line)
+    if (cached !== undefined) return cached
+    return line >= visibleFrom && line < renderedTo ? '' : undefined
   }
 
   /** Returns the scaled Y offset for line n. Used by search for scroll-to-match. */
@@ -274,6 +301,85 @@ export function createViewerScroll(deps: ScrollDeps) {
     }
   }
 
+  /**
+   * The rendered height of line `n`, in the same scaled space `getLineTop` speaks. The
+   * height map holds the real per-line height once it's ready (a wrapped line is several
+   * rows tall); before that every line is one row.
+   */
+  function lineHeightAt(n: number): number {
+    if (heightMap.ready) {
+      const measured = (heightMap.getLineTop(n + 1) - heightMap.getLineTop(n)) * scrollScale
+      if (measured > 0) return measured
+    }
+    return scrollLineHeight
+  }
+
+  /**
+   * Scrolls line `n` just into view, with one line of breathing room, and leaves an
+   * already-visible line alone. Drives keyboard selection extension: every extend press
+   * calls this, including the one whose target line isn't cached yet, because the scroll
+   * is what pulls the line into the render window and triggers its fetch.
+   *
+   * ❌ The `EOF_LINE` branch is NOT redundant, however much the arithmetic below looks
+   * like it would cope. `⌘⇧Down` on a file with no line index reports the sentinel as its
+   * target, and it only survives `getLineTop` today through integer overflow plus the
+   * browser clamping an absurd `scrollTop` — don't lean on that. Worse, the obvious later
+   * tidy-up `Math.min(n, totalLines - 1)` yields `NaN` on exactly this branch (the line
+   * count is `null` precisely when the sentinel appears), and `scrollTop = NaN` throws the
+   * view to the TOP of the file. Branching here keeps that visible to whoever reaches for
+   * the clamp.
+   */
+  function ensureLineVisible(n: number) {
+    if (!contentRef) return
+    if (n === EOF_LINE) {
+      scrollToEnd()
+      return
+    }
+    const next = ensureVisibleOffset({
+      lineTop: getLineTop(n),
+      lineHeight: lineHeightAt(n),
+      scrollTop: contentRef.scrollTop,
+      viewportHeight: contentRef.clientHeight,
+      margin: scrollLineHeight,
+    })
+    if (next !== null) contentRef.scrollTop = next
+  }
+
+  /**
+   * Brings the character at `point` into view horizontally, the way search does for a
+   * match: measure the real rect, recentre against the content box, set `scrollLeft`.
+   * Without it, repeated Shift+Right on a long unwrapped line walks the focus past the
+   * right edge with nothing following it. Word wrap has no horizontal overflow, so it's
+   * a no-op there.
+   */
+  function ensureColumnVisible(point: LineOffset) {
+    if (!contentRef || wordWrap) return
+    const caret = caretRectFor(contentRef, point)
+    if (caret === null) return
+    const view = contentRef.getBoundingClientRect()
+    const left = recenterOffset({
+      markStart: caret.left,
+      markEnd: caret.right,
+      viewStart: view.left,
+      viewEnd: view.right,
+      currentScroll: contentRef.scrollLeft,
+    })
+    if (left !== null && Math.abs(left - contentRef.scrollLeft) > 2) contentRef.scrollLeft = left
+  }
+
+  /**
+   * One column's advance width, measured once off a rendered row and dropped when the
+   * text scale settles (the only thing that changes it). `null` until a row with text
+   * exists, which is also when there's nothing to scroll.
+   */
+  let columnWidth: number | null = null
+  function scrollByColumns(columns: number) {
+    if (!contentRef || wordWrap) return
+    columnWidth ??= measureColumnWidth(contentRef)
+    if (columnWidth === null) return
+    contentRef.scrollLeft = Math.max(0, contentRef.scrollLeft + columns * columnWidth)
+  }
+
   function runFetchEffect() {
     const from = visibleFrom
     const to = visibleTo
@@ -425,6 +531,8 @@ export function createViewerScroll(deps: ScrollDeps) {
   // event the file-list column-width path uses, so we don't thrash mid-drag.
   const unsubscribeScaleChange = onDebouncedScaleChange(() => {
     heightMap.recomputeForLineHeightChange()
+    // A new font size means a new column advance; re-measure it on the next press.
+    columnWidth = null
   })
 
   function destroy() {
@@ -497,12 +605,16 @@ export function createViewerScroll(deps: ScrollDeps) {
       return heightMap.ready
     },
     estimatedTotalLines,
+    renderedLineText,
     getLineTop,
     handleScroll,
     scrollByLines,
     scrollByPages,
     scrollToStart,
     scrollToEnd,
+    scrollByColumns,
+    ensureLineVisible,
+    ensureColumnVisible,
     runFetchEffect,
     fetchVisibleNow,
     runContentWidthEffect,

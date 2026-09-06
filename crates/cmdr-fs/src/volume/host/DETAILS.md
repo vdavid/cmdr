@@ -4,8 +4,8 @@
 
 `Volume` has always been the API between Cmdr and a storage backend, and it has always lived below the app. What it
 never had was exclusivity: a backend could implement the trait and ALSO reach sideways into the listing cache, the
-keychain, the volume registry, the analytics client, and the settings module. `local_posix` and MTP still do, and
-nothing but this boundary stops the next one; SMB's retrofit had to unpick roughly two dozen such sites.
+keychain, the volume registry, the analytics client, and the settings module. `local_posix` still does, and nothing but
+this boundary stops the next one; SMB's retrofit had to unpick roughly two dozen such sites, MTP's about the same.
 
 Turning each reach into a named seam is what makes `cargo check -p cmdr-sftp` a complete verification loop: after the
 boundary, a sideways reach is either one of the traits here or a compile error. That's the whole payoff, and it's
@@ -88,6 +88,18 @@ most entangled one, with archive, MTP, and local POSIX checked for anything SMB 
   unique parent directory by SMB's and MTP's batch scans.
 - `refresh_archive_listings` ⇐ `listing::caching::refresh_archive_listings`. Two callers, both watching the drive that
   HOLDS an archive rather than the archive itself: the local archive content watch and the SMB share watcher.
+- `volumes_with_open_listings` ⇐ `listing::volume_ids_with_listings`. For a DEVICE backend, one level above the volumes
+  it serves: an MTP phone's event names a bare PTP handle, and resolving it costs a round trip per storage, so the
+  backend asks which storages a pane is showing and searches only those.
+
+**`DirectoryChange::Replaced` is the variant a device backend reports.** It carries the directory's new contents, so the
+host sorts them the way each pane sorts, diffs, and patches. `FullRefresh` asks the host to do the read instead; report
+`Replaced` when the entries are already in hand. Both are ONE call however many entries came back, which is what keeps a
+device event out of a per-entry loop.
+
+**A `directory_changed` call answers nothing**, `Replaced` included, so a backend can't learn whether a targeted refresh
+found a pane to land on. That's deliberate: the seam is fire-and-forget in both directions, and a backend that wants a
+safety net reports `FullRefresh` for the volume, which the host fans out to every listing on it.
 
 **Two of the five listing functions the survey listed are NOT seams.** `find_listings_for_path_on_volume` and
 `patch_listing_after_local_mutation` have exactly one caller between them, `local_posix.rs`, which is permanently
@@ -171,9 +183,18 @@ today. It shouldn't: depending on the index would put a quarter of the codebase 
 the sake of two method calls, which is the exact inner-loop win the crate boundary is being built to get. So `WatchGap`
 here is the seam's own, and the app's adapter maps it.
 
-**`WatchScope` isn't here.** Its `Device` variant exists for MTP, where one PTP session carries several volumes and a
-reset invalidates all of them at once. That's the transport layer's shape, and MTP is app-resident. A volume backend
-reports per volume id; the adapter wraps it.
+**`WatchScope` isn't here**, but both of its shapes are. A volume backend reports per volume id through `watch_gap`; a
+DEVICE backend, whose one session carries several volumes, reports per device id through `device_watch_gap`, and the
+adapter wraps each in the scope the index spells. MTP is the case: one PTP session per phone, so a reset invalidates
+every storage on it at once, and looping `watch_gap` over the device's volumes would need a list the backend doesn't
+have and can't read from a session that just died. `device_watch_gap` defaults to a no-op, so only a device backend ever
+names it.
+
+`device_object_changed` / `device_object_removed` ⇐ `index_host::index().on_device_object_changed / _removed`, the MTP
+event loop's two index reaches. Keyed by DEVICE rather than by volume, because one PTP session carries every storage on
+the phone and the handle namespace spans them all. They carry the bare protocol handle and nothing else: resolving it
+first would be a device round trip per event, and the index may be mid-walk and about to read the object anyway, so it
+owns the routing. Both default to no-ops, so a host with no device index answers them by existing.
 
 The `#[cfg(any(target_os = "macos", target_os = "linux"))]` guards that surround the app's own index call sites don't
 cross the seam: `Index::on_watch_gap` compiles on every platform and gates its own MTP arm, so both the adapter and a
@@ -273,11 +294,18 @@ cached and re-registered the same `Arc` would hand the registry a volume that is
 
 `pub(in crate::file_system::volume)` has no cross-crate spelling, so an item wearing it faces one of two answers when
 its backend moves: it becomes `#[cfg(any(test, feature = "testing"))] pub`, a real widening of the public surface, or
-the test that uses it moves into the crate with it. MTP's `mtp/mod.rs::test_hooks` still wears it.
+the test that uses it moves into the crate with it.
 
 **Moving the test is the default, and widening is the exception that has to be argued.** SMB granted exactly one:
 `detach_session_for_test`, because the app's scan-oracle cell that calls it asserts on the app's fresh-listing oracle
 and belongs on that side. Everything else went the other way, `SmbVolumeInner` included, which is now private.
+
+MTP granted one too, and `cmdr_mtp::volume::testing` is it: three functions (`list_directory_call_count`,
+`reset_list_directory_call_count`, `set_read_window`), and the cell that needs them across the boundary is the app's
+fresh-listing oracle again: it asserts the ORACLE issued no listing, which is an app claim, and no wrapper `Volume` can
+see the call because the scan reaches `MtpVolume::list_directory` by static dispatch. The module hands out two numbers
+and takes one; ❌ it must not grow into a way to read the backend's state, which is the same shape
+`cmdr_smb::volume::testing` holds to.
 
 The `cfg` half is not optional: `cfg(test)` is set only for a crate's own test target, so leaving it would make the item
 vanish from a consumer's test build. This project has been bitten by that three times.
@@ -285,7 +313,8 @@ vanish from a consumer's test build. This project has been bitten by that three 
 ### Test modules reached through `use super::*`
 
 A backend whose `mod.rs` doubles as its suites' prelude glob makes the move hard to plan: what the glob pulls in isn't
-determinable without building, so the split can't be sized in advance. It's the biggest unknown MTP still carries.
+determinable without building, so the split can't be sized in advance. It was the biggest unknown MTP carried, and
+removing every glob before the move is what let its split be sized while reading rather than while compiling.
 
 SMB's answer, and the one to copy: the prelude moves to a `test_support.rs` beside the suites, and `mod.rs` goes back to
 importing what it uses. Deleting the `#![allow(unused_imports)]` the glob needed is what makes a dead import in the
@@ -317,7 +346,13 @@ surfaces at the end of a move: check every `[\`Type::method\`]` link for an app-
    `Volume::retirement`, and reach your own state through a `SelfHandle` rather than an id you look up. Without it the
    registry has nowhere to write "you left", and your background work keeps running against a volume the app has
    forgotten. § "The two registry reach-backs" has the full rationale.
-10. Write your tests against the fakes here. Assert on `change_count` as well as contents: that's what keeps a seam call
+10. If a ROUTE mints your volume rather than a mount — your root is a path inside another volume's storage, the way an
+    archive's is the `.zip` file and the git portal's is `<worktree>/.git` — override `Volume::routes_over_a_parent` to
+    `true`. Nothing else can tell, and the symptom is silent: a host's mount lookup picks the registered volume whose
+    root is the longest ancestor of a path, so yours would win that race for everything under it and send index reads to
+    a mount that has no index. `InMemoryVolume::routing_over_a_parent()` is the stub for pinning that rule without
+    naming a concrete backend.
+11. Write your tests against the fakes here. Assert on `change_count` as well as contents: that's what keeps a seam call
     from drifting into a per-entry loop. Three backends carry a `host_seam_test.rs` to copy from —
     `crates/cmdr-smb/src/volume/host_seam_test.rs` and `crates/cmdr-sftp/src/volume/host_seam_test.rs` both seed a real
     directory, walk it every way the backend can (listing, copy scan, conflict scan), and assert the counter stays put,
@@ -365,8 +400,8 @@ Three things the adapters found that aren't trait shape, and matter to whoever w
 
 `cmdr-archive`, SMB, and SFTP are all fully on the seams: SMB takes a `VolumeHost` in `connect_smb_volume` and keeps it
 on the share-scoped `SmbVolumeInner`, SFTP takes one in `connect_sftp_volume`, and neither reaches anything in the app
-directly. `local_posix` and MTP still call `listing::caching`, `network::keychain`, and the rest, and stay app-resident
-on purpose. Which backends move and which don't: § "Which backends move" below.
+directly, and MTP is now the same. `local_posix` still calls `listing::caching`, `network::keychain`, and the rest, and
+stays app-resident on purpose. Which backends move and which don't: § "Which backends move" below.
 
 **Only the event sink needs a running app.** `volume_host::host()` hands out the app's real adapters even before
 `install()`, leaving only the frontend channel (and the app's runtime) unwired, because the listing cache, secret store,
@@ -420,9 +455,24 @@ because retrofitting is where all the cost sits:
   signature moved to fit it**. What it needed that didn't exist became a NEW seam, `HostKeys` (§ "Seam by seam") —
   growth rather than a break, because no earlier backend's security depended on recognizing a server across sessions.
   The backend itself: `crates/cmdr-sftp/DETAILS.md`.
-- **`local_posix` and MTP are permanently app-resident.** Both refusals are written out with their reasons in
-  `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "Per-backend decisions", because that's where
-  someone proposing "let's complete the set" will be standing.
+- **MTP was the last retrofit, and it is `crates/cmdr-mtp`.** It was the one backend still reaching sideways (the
+  listing cache at four sites, the index handle, `tokio::spawn`, and a `tauri::AppHandle` emitting seven frontend events
+  from inside the session layer). The three things that once read as permanent refusals got the same three answers SMB
+  gave: a crate-local typed event trait for the derives, `any(test, feature = "testing")` for the `cfg(test)` gates, and
+  one argued visibility widening for the test hooks. What each half owns: `crates/cmdr-mtp/DETAILS.md` § "Where the
+  boundary runs, and why".
+- **`cmdr-git` is the one backend that was never a mount**, and it's the proof the seam set fits a ROUTED volume too. A
+  repo's virtual `.git` trees answer through a read-only `GitPortalVolume` the manager routes to, so the crate needs
+  none of the lifecycle face: no discovery, no credentials, no reconnect, no hotplug. It reaches exactly ONE seam,
+  `runtime()`, because every `gix` call is blocking work. The listing re-reads a repo change drives run app-side
+  instead, off a crate-local `GitStateSink`: the same typed-event-trait answer MTP gave, rather than a new seam. The app
+  keeps the two things only an app can decide, which paths route there and the `.git/` landing rows that reach a PANE
+  and no walker. `crates/cmdr-git/DETAILS.md` § "Where the boundary runs, and why".
+- **`local_posix` stays app-resident permanently**, and that refusal was never the same shape as MTP's: it isn't a
+  protocol backend reaching sideways, it's the app's own local machinery. It's the only caller of the real-FS reader
+  that also serves the non-volume listing path, and the sole caller of `patch_listing_after_local_mutation`, which
+  `std::fs`-stats the changed entry and so can't exist on a protocol backend. The reasons are in the same section,
+  because that's where someone proposing "let's complete the set" will be standing.
 
 **Expect an extraction to surface latent defects**, and treat that as the point rather than a surprise. Archive's move
 found two: seven `.unwrap()`s that were legal only while the file was `cfg(test)` and became clippy `unwrap_used`

@@ -172,11 +172,12 @@ export async function cancelBulkRenameProposal(proposalId: string): Promise<void
   await commands.cancelBulkRenameProposal(proposalId)
 }
 
-/** Record that a settings change switched a thread's effective model. Resolves once any
- * in-flight turn finished (the backend queues on the thread's single-flight lock), with
- * the persisted event's display view — or `null` when nothing changed for this thread. */
-export async function recordAskCmdrModelChange(conversationId: number): Promise<MessageView | null> {
-  const res = await commands.askCmdrRecordModelChange(conversationId)
+/** Record that a settings change moved a thread's slot: the model it sends to, the chat
+ * memory each message carries, or both. Resolves once any in-flight turn finished (the
+ * backend queues on the thread's single-flight lock), with one display view per change in
+ * timeline order — empty when nothing changed for this thread. */
+export async function recordAskCmdrSlotChange(conversationId: number): Promise<MessageView[]> {
+  const res = await commands.askCmdrRecordSlotChange(conversationId)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

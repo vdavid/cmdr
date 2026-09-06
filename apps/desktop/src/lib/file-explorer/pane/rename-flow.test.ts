@@ -84,6 +84,40 @@ beforeEach(() => {
   executeRenameSaveSpy.mockResolvedValue({ type: 'success', newName: 'notes.md' })
 })
 
+describe('rename pre-flight permission check (archive-inner paths skip it)', () => {
+  it('asks the NARROW archive question about the entry, and runs the check when it says no', async () => {
+    // The flow skips the permission check only for a path with no real file behind
+    // it. It asks `pathInsideArchive`, which answers false for an archive FILE —
+    // `volume-capabilities.test.ts` pins that half — so renaming a `.zip` (or a
+    // `.docx`, once it's a browsable container) keeps its pre-flight check. The
+    // wide boundary check would have dropped it for both.
+    const { flow } = buildFlow()
+    pathInsideArchiveSpy.mockReturnValue(false)
+
+    flow.startRename()
+
+    await vi.waitFor(() => {
+      expect(checkPermissionSpy).toHaveBeenCalled()
+    })
+  })
+
+  it('skips the check when the entry really is inside an archive', async () => {
+    // No `std::fs` file to ask about, so the check would be meaningless.
+    const { flow } = buildFlow()
+    pathInsideArchiveSpy.mockReturnValue(true)
+
+    flow.startRename()
+    // Wait for the branch to actually be evaluated, so this can't pass by
+    // asserting before the flow got around to deciding anything.
+    await vi.waitFor(() => {
+      expect(pathInsideArchiveSpy).toHaveBeenCalled()
+    })
+    await Promise.resolve()
+
+    expect(checkPermissionSpy).not.toHaveBeenCalled()
+  })
+})
+
 describe('rename extension-warning suppression (paste auto-rename)', () => {
   it('an auto-started rename passes policy "yes" (suppresses the extension-change dialog)', async () => {
     const { flow } = buildFlow()

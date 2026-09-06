@@ -49,9 +49,9 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   files already size-filtered), and `run_blocking` fills their sizes via `fill_dir_sizes` then calls
   `count_only_volume_total`, which subtracts the directories outside the filter. Net: an exact count in every case,
   materializing only the matching directories (never the -- usually far larger -- file set), and never building rows.
-  The MCP `search` tool formats the result as a bare line (`format_match_count`, e.g. `1,234 files match`) with any
-  `uncovered_scopes` coverage note appended; the dialog shows it as a prominent count instead of the list
-  (`QueryResults` count-only branch).
+  The MCP `search` tool answers a count-only run with an empty `entries`, the number in `matchCount` and
+  `matchCountHuman`, and the same typed coverage block every other run carries (`mcp/executor/search/result.rs`); the
+  dialog shows it as a prominent count instead of the list (`QueryResults` count-only branch).
 - **`_schemaVersion` mismatch quarantines instead of migrating in place**: there's only schema v1, so a migrator would
   be speculative. When v2 lands, replace the quarantine branch with a `match` on the version calling a
   `migrate_v1_to_v2` helper.
@@ -218,7 +218,7 @@ engine's own match total, adjusted by that post-filter.
 
 Two TYPED sibling fields on `SearchResult` (callers branch on emptiness, never string-match), for the two ways a scoped
 search returns nothing for a STRUCTURAL reason rather than a genuine "no matches". Both the dialog
-(`apps/desktop/src/lib/search/CoverageNote.svelte`) and MCP (`mcp/executor/search.rs::coverage_note`) render them, with distinct copy per
+(`apps/desktop/src/lib/search/CoverageNote.svelte`) and MCP (`mcp/executor/search/result.rs`) render them, with distinct copy per
 field:
 
 - **`uncovered_scopes`** — a `from_scope` target whose volume has no persisted index (`VolumeLoad::NotIndexed`). An
@@ -273,9 +273,9 @@ exclusion rule kept out of `total_count`: the system/build/cache tier (`SYSTEM_D
 
 **Why a filtered count needs to say so.** The defaults are right for "find my invoice" and exactly wrong for "where is
 my disk space going", where `node_modules`, `Caches`, and `.git` ARE the answer. A caller that can't see the number
-reads "27 files match" as the whole truth and states a wrong conclusion confidently; with it, MCP renders "27, plus 400
-more inside system, cache, and build folders" and names the flag that reveals them
-(`mcp/executor/search.rs::coverage_note`).
+reads "27 files match" as the whole truth and states a wrong conclusion confidently; with it, MCP reports the number in
+`coverage.hiddenByExcludes` and names the flag that reveals them in a note beside it
+(`mcp/executor/search/result.rs`).
 
 Counted across BOTH halves of a live run, or it would under-report the very case the walk exists for: the arena scan
 counts in `engine::search_ranked` (via `ScopeVerdict::Excluded`) and rides back on `engine::Ranked`; the walk counts in

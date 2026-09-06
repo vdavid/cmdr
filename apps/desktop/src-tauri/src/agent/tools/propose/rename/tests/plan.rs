@@ -2,8 +2,8 @@
 //! guardrail that refuses a WHOLE plan rather than staging part of one.
 
 use super::super::plan::{
-    ProposalRefusal, RenameInput, check_row_evidence, missing_local_child, refusal_content, rows_problem, scoped_files,
-    validate_destination_name,
+    ProposalRefusal, RenameInput, check_row_evidence, is_archive_inner_path, missing_local_child, refusal_content,
+    refusal_reason, rows_problem, scoped_files, validate_destination_name,
 };
 use super::{THREAD, draft_row};
 use crate::agent::tools::propose::evidence::{EvidenceProblem, EvidenceSource, ImageFactsLedger};
@@ -41,6 +41,26 @@ fn only_a_missing_direct_child_can_enter_review_without_a_pane_entry() {
         "mtp-device",
         missing.to_str().expect("UTF-8 path")
     ));
+}
+
+#[test]
+fn only_a_path_inside_an_archive_is_refused_never_the_archive_file_itself() {
+    // Inside: no file on disk for the executor to rename.
+    assert!(is_archive_inner_path("/photos/trip.zip/DSC_0001.jpg"));
+    assert!(is_archive_inner_path("/docs/report.docx/word/document.xml"));
+
+    // The archive FILE is an ordinary file, and renaming one is an ordinary
+    // rename. Asking the wider "does any component carry an archive suffix"
+    // refused these, which since `.docx` became a browsable container would have
+    // meant refusing a bulk rename of every Office document in a folder.
+    assert!(!is_archive_inner_path("/photos/trip.zip"));
+    assert!(!is_archive_inner_path("/docs/report.docx"));
+    assert!(!is_archive_inner_path("/docs/sheet.xlsx"));
+    assert!(!is_archive_inner_path("/apps/lib.jar"));
+
+    // Ordinary paths are untouched either way.
+    assert!(!is_archive_inner_path("/photos/DSC_0001.jpg"));
+    assert!(!is_archive_inner_path("/photos"));
 }
 
 #[test]
@@ -264,4 +284,30 @@ fn a_plan_cannot_claim_the_user_typed_a_name() {
 
     assert_eq!(rejections.len(), 1);
     assert_eq!(rejections[0].problem, EvidenceProblem::SourceReservedForUser);
+}
+
+/// The log line a refused plan leaves names the offending PATHS and the typed verdict, and
+/// never the name the model proposed. A proposed name is where a model's reading of a file's
+/// CONTENTS ends up, and the log is written unconditionally and rides an error report; paths
+/// are already in the log in the ordinary course, contents-derived names are not.
+#[test]
+fn a_refusal_log_line_names_the_path_and_the_typed_verdict_but_never_the_proposed_name() {
+    let rejections = vec![crate::agent::tools::propose::evidence::EvidenceRejection {
+        source_path: "/shots/two.png".to_string(),
+        proposed_name: "hello-world-output.png".to_string(),
+        evidence_source: EvidenceSource::ImageText,
+        problem: EvidenceProblem::FactsNotDelivered,
+    }];
+
+    let reason = refusal_reason(&ProposalRefusal::Evidence(rejections));
+
+    assert!(reason.contains("/shots/two.png"), "the path locates the row: {reason}");
+    assert!(
+        reason.contains("FactsNotDelivered"),
+        "the typed verdict says what went wrong: {reason}"
+    );
+    assert!(
+        !reason.contains("hello-world-output"),
+        "the proposed name must not reach the log: {reason}"
+    );
 }

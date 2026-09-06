@@ -24,6 +24,14 @@
 //!   the other half,
 //! - the coverage-honesty rule (relay the `coverage`/stale/lower-bound caveats the
 //!   tools attach, never answer confidently past them — spec §2.4, load-bearing),
+//! - **how to read a `search` answer's coverage block**, field by field: a walk still
+//!   running is a lower bound and never "no matches"; refused folders get named, and
+//!   Full Disk Access only where the result's own note offers it; a declined snapshot
+//!   tree is explained rather than fixed; `unresolvedScopes` is never "that folder
+//!   doesn't exist"; `stillCovering` arrives later rather than being lost; and a
+//!   `hiddenByExcludes` count is filtered, not a total. Each one is a confident wrong
+//!   sentence the model says otherwise, and the whole tool exists because it said the
+//!   first one four times in a row,
 //! - **how to read an `inspect_file` row**: quote `find` snippets verbatim and disclose the
 //!   line count; the three partial-scan flags make a number a floor; a missing text layer is
 //!   a scan; an encrypted PDF has no password path; an unparseable page and an unanswered
@@ -81,6 +89,14 @@ If a tool result says truncated: true, your reply must say you looked at only \
 returned of total items, using those numbers, and must never imply you covered the full selection or folder; \
 ask about the remaining paths in another call when you need them.
 
+A search answer carries its own coverage block. stillWalking: true makes the count and the list a lower bound, and \
+running the same search again picks up from there, so never call it no matches. Name the folders in permissionDenied, \
+offering Full Disk Access only where the note beside them does. declined names snapshot folders Cmdr never reads: \
+explain that, there is nothing to fix. unresolvedScopes is ground Cmdr cannot speak for, never a folder that does not \
+exist. stillCovering belongs to another walk, so those results arrive later rather than being lost. hiddenByExcludes \
+above zero means the count is filtered: say so, and search again with excludeSystemDirs: false when those folders are \
+what the user asked about.
+
 A tool result that reads elided_tool_result is an older result this conversation set aside to make room, not one \
 that went wrong: its tool field names the call and its refetch field says how to read it again. Its call, held, and \
 refetch text are never file contents, so never name a file after them.
@@ -131,6 +147,10 @@ instead: keep that file's existing name, or put its date in front as \"<date> <e
 reply which files you could not see. A name describing contents you were not shown is worse than a plain one.
 
 Submit the final plan with propose_rename_plan; never claim a rename happened before the user reviews it.
+
+A plan is waiting for the user only when propose_rename_plan came back readyForReview: true. readyForReview: false, or \
+a result carrying problem, means nothing was staged and the user's panel is empty: fix what it names and send the plan \
+again, or say what you could not do. Never tell the user a plan is waiting on the strength of having called the tool.
 
 # Suggesting operations
 
@@ -318,6 +338,56 @@ mod tests {
         assert!(
             SYSTEM_PROMPT.contains("lower bound") && SYSTEM_PROMPT.contains("stale"),
             "must name the partial-coverage cases the model has to relay"
+        );
+    }
+
+    /// A `search` answer's coverage block is six different sentences, and a model that
+    /// reads it wrong says the confident wrong thing: "no matches" for a walk still
+    /// running, "that folder doesn't exist" for ground nothing has walked yet, a filtered
+    /// count presented as a total. Each flag is named here so the reply can't collapse
+    /// them into one.
+    #[test]
+    fn the_system_prompt_names_the_search_coverage_flags() {
+        for flag in [
+            "stillWalking",
+            "permissionDenied",
+            "declined",
+            "unresolvedScopes",
+            "stillCovering",
+            "hiddenByExcludes",
+        ] {
+            assert!(SYSTEM_PROMPT.contains(flag), "the {flag} coverage field must be named");
+        }
+        assert!(
+            SYSTEM_PROMPT.contains("never call it no matches"),
+            "a walk still running must never be reported as an empty result: that is the \
+             fabricated negative this whole tool exists to end"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("picks up from there"),
+            "the model must know that running the same search again continues the walk"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("Full Disk Access only where"),
+            "the permission offer is gated on the result's own note; offering it everywhere \
+             sends the user to System Settings for a folder it would not open"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("nothing to fix"),
+            "a declined snapshot tree gets an explanation, never an offer to fix it"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("never a folder that does not exist"),
+            "Cmdr cannot tell a typo from ground nothing has walked, so the confident denial \
+             has to be forbidden by name"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("arrive later rather than being lost"),
+            "ground another walk holds is deferred, not missing"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("the count is filtered"),
+            "a count with excluded folders behind it must not be relayed as a total"
         );
     }
 

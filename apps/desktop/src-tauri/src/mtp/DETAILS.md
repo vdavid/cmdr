@@ -2,7 +2,9 @@
 
 Read this before any non-trivial work here: editing, planning, reorganizing, or advising. `CLAUDE.md` holds the must-knows; this is the depth.
 
-## Device and volume identity (`identity.rs`)
+The protocol, the session layer, and the `Volume` over one storage are `crates/cmdr-mtp`; where that boundary runs and what each half owns is `crates/cmdr-mtp/DETAILS.md` § "Where the boundary runs, and why". This document is the app half, plus the two subjects that span both (identity, and the virtual device's activation).
+
+## Device and volume identity
 
 The device id and volume id are built and parsed in ONE place so the scheme can't drift. `device_id_for(serial, location_id)` derives the device id: `mtp-{serial}` when the device reports a non-empty serial, else `mtp-{location_id}`. The serial-based id is stable across a replug to ANY USB port, which is what lets the persisted per-volume index (`indexing`, keyed `index-{volume_id}.db`) re-match a reconnected phone instead of forcing a rescan; the topology `location_id` only survives a same-port replug, so it's the fallback when no serial is reported (limitation surfaced in the drive-indexing tooltip). The volume id is `{device_id}:{storage_id}`.
 
@@ -23,34 +25,9 @@ suite delete a running suite's tree mid-spec). The specs read the same path from
 tree mirrors `test/e2e-shared/mtp-fixtures.ts`. The gating logic (`decide_startup_root`) is pure and unit-tested in
 `virtual_device.rs::tests`.
 
-**Build `VirtualDeviceConfig` with `..Default::default()`** and state only the fields this fixture actually cares
-about. mtp-rs 0.26 added `Default` precisely so a new field doesn't break us: every prior field addition was a compile
-error here (0.24's `supports_partial_object_64` broke CI). Don't re-expand the literal to name every field. The
-defaults model a modern Android device (`supports_rename` and `supports_partial_object_64` both true), which matches
-the Pixel 9 this fixture stands in for; set `supports_partial_object_64: false` explicitly if you ever want to exercise
-mtp-rs's 32-bit `GetPartialObject` fallback (the PTP-camera path).
-
-### Rust tests that drive the device
-
-`setup_virtual_mtp_device()` is the one entry point: it hands back a `VirtualDeviceFixture` owning a **fresh temp
-backing root** and registers with the **watcher off**. Three properties matter, and the tests run in `pnpm check`
-(`desktop-rust-tests` passes `--features virtual-mtp`), so breaking one shows up as suite flake:
-
-- **Per-test root.** `setup_virtual_mtp_device_at` WIPES its root, so any two tests sharing one delete each other's
-  fixtures mid-run. ❌ Never point a test at `MTP_FIXTURE_ROOT`; that's the E2E/dev startup root.
-- **Watcher off.** Each device's backing-dir watch is a real FSEvents/inotify watch. Several concurrent test processes
-  each holding one starve delivery and push these tests past nextest's 8 s cap. Tests sync the object tree explicitly
-  with `rescan_virtual_device()` instead, so nothing needs the watcher. Only the E2E path arms it.
-- **Lock + unregister.** Every virtual device registers under the same serial (`cmdr-e2e-virtual`), so they share ONE
-  Cmdr device id: `resolve_device_location_id` matches the FIRST registration with that id, and `connect()` is
-  idempotent per device id. Under `cargo nextest` (process per test) that's harmless, but under plain `cargo test` two
-  tests would silently share one connection pointed at the wrong backing dir. `virtual_device_test_lock()` covers it;
-  `unregister_virtual_mtp_device(location_id)` on teardown stops a finished test's registration from answering for the
-  next one. Hold the guard across register → connect → use → disconnect → unregister;
-  `connection/path_cache_sync_test.rs` is the reference shape.
-
-There is deliberately NO nextest `virtual-mtp` test-group any more: with no shared resource left, serializing would
-only hide the next real race.
+The fixture itself is the crate's: what a Rust cell must not break when it drives one (per-test root, watcher off, the
+registration lock) and how its device config is built are `crates/cmdr-mtp/DETAILS.md` § "Three properties a cell must
+not break" and § "Building the fixture's device config".
 
 ### Virtual device watcher in E2E
 
@@ -77,8 +54,8 @@ fixture-sync path.
 
 ## Hotplug watching
 
-`watcher.rs` drives off `mtp_rs::mtp::watch_devices()`, a `Stream<Item = HotplugEvent>` of `Arrived(MtpDeviceInfo)` /
-`Left(MtpDeviceInfo)`. mtp-rs owns the parts Cmdr used to hand-roll over raw `nusb`: it filters to MTP-capable devices
+`watcher.rs` drives off `cmdr_mtp::watch_devices()`, a `Stream<Item = HotplugEvent>` of `Arrived(MtpDeviceInfo)` /
+`Left(MtpDeviceInfo)` re-exported from mtp-rs. mtp-rs owns the parts Cmdr used to hand-roll over raw `nusb`: it filters to MTP-capable devices
 (a mouse or a hub never wakes us), applies its own settle delay before enumerating (`DEFAULT_SETTLE_DELAY`, 500 ms), and
 reports devices already plugged in as `Arrived` on the first poll.
 
@@ -86,7 +63,7 @@ Each event is only a trigger; `check_for_device_changes()` stays the reconciler,
 
 - **Virtual devices.** mtp-rs's watch is USB-only, so the E2E / `virtual-mtp` device produces no event. Only
   `list_mtp_devices()` sees both it and real hardware.
-- **The `MTP_ENABLED` gate.** Events arrive while auto-connect is off; the `KNOWN_DEVICES` diff is what picks the device
+- **The enabled gate** (`is_mtp_enabled`, which reads the manager's flag). Events arrive while auto-connect is off; the `KNOWN_DEVICES` diff is what picks the device
   up when it's switched back on.
 - **Cmdr's ids.** Auto-connect keys on `cmdr_fs::volume::mtp_ids::device_id_for(serial, location_id)`, derived in
   `discovery.rs`.
@@ -105,7 +82,7 @@ disabled at startup the seed is deliberately left empty (we're not connecting th
 
 ## Delete has two scopes
 
-`MtpConnectionManager`'s delete takes an explicit `MtpDeleteScope` (`connection/mutation_ops.rs`), because PTP
+`MtpConnectionManager`'s delete takes an explicit `MtpDeleteScope` (`crates/cmdr-mtp/src/connection/mutation_ops.rs`), because PTP
 `DeleteObject` on a folder is whatever the code around it decides — POSIX gets `ENOTEMPTY` from `remove_dir` and SMB
 gets `STATUS_DIRECTORY_NOT_EMPTY` from the server, but MTP has to choose.
 
@@ -142,36 +119,49 @@ a retry after a transient MTP stat failure is cheap. What each delete branch doe
 
 ```
 USB plug-in
-  → mtp_rs HotplugEvent::Arrived (watcher.rs; mtp-rs filters to MTP devices and owns the settle delay)
-  → check MTP_ENABLED gate, skip if disabled
+  → HotplugEvent::Arrived (watcher.rs; mtp-rs filters to MTP devices and owns the settle delay)
+  → check is_mtp_enabled() (the manager's flag), skip if disabled
   → list_mtp_devices() (discovery.rs)
   → auto_connect_device() (watcher.rs)
     → MtpConnectionManager::connect()
     → open_device() via MtpDeviceBuilder
     → probe_write_capability() per storage
-    → attach_storage_volume() per storage (the registrar hook; see below)
+    → attach_storage_volume() per storage (the registrar hook; see below, and it broadcasts volumes-changed)
     → start_event_loop() per device (strictly AFTER every attach)
     → emit mtp-device-connected (JSON includes `deviceName` from `connected_info.device.product`, "" if unknown)
-    → broadcast::emit_volumes_changed()
 
 USB unplug
-  → mtp_rs HotplugEvent::Left (watcher.rs)
+  → HotplugEvent::Left (watcher.rs)
   → auto_disconnect_device() (watcher.rs)
     → MtpConnectionManager::disconnect()
+    → detach_storage_volume() per storage (broadcasts volumes-changed)
     → emit mtp-device-disconnected
-    → broadcast::emit_volumes_changed()
 
 Event loop (event_loop.rs)
   → device.next_event()
   → ObjectAdded/Removed/Changed → compute_diff() → emit directory-diff
-  → StoreAdded → handle_storage_added() → attach_storage_volume() → emit volumes-changed
-  → StoreRemoved → handle_storage_removed() → detach_storage_volume() → emit volumes-changed
+  → StoreAdded → handle_storage_added() → attach_storage_volume()
+  → StoreRemoved → handle_storage_removed() → detach_storage_volume()
+  → Error::Disconnected → handle_device_disconnected() → detach_storage_volume() per storage
+    → emit mtp-device-disconnected
 ```
+
+The last arrow is the OTHER way a device leaves, and it does the same cleanup as `disconnect()`. Which of the two
+noticed the unplug is a race (the event loop's poll, or the hotplug diff) and must not change what the app is left
+holding: a volume that survived would answer for hardware that isn't there and never publish the `Retirement` that
+tells in-flight background work it stopped being live.
+
+**The `volumes-changed` broadcast belongs to the registrar hook, and nowhere else.** Every arrow above that changes the
+volume list runs through `attach_storage_volume` or `detach_storage_volume`, so `volume_wiring::volume_registrar` asks
+for the broadcast right where the change happens and the two can't drift. The session layer knows nothing about the
+app's volume list, and asking it to remember a broadcast at each of six paths is how one of them ends up forgotten,
+leaving the picker showing a phone that has gone. The 150 ms coalescing window in `volume_broadcast` is why a device
+arriving with four storages still costs one broadcast.
 
 `MtpDisconnectReason` distinguishes explicit toggle-off from hotplug-loss in logs and UI. Re-enabling MTP triggers
 auto-connect, which re-suppresses ptpcamerad if devices are found.
 
-**The write-capability probe.** `probe_write_capability()` (`connection/mod.rs`) creates a hidden `.cmdr_write_probe`
+**The write-capability probe.** `probe_write_capability()` (`crates/cmdr-mtp/src/connection/mod.rs`) creates a hidden `.cmdr_write_probe`
 folder on each storage at connect time and deletes it again. Some cameras advertise write support in their device info
 and then reject every write with `StoreReadOnly`, so the declared capability can't be trusted; an actual create is the
 only reliable answer. Timeouts and non-fatal errors count as WRITABLE: a probe is a cheap hint, and refusing writes on
@@ -195,17 +185,14 @@ test run with the workaround it genuinely needs.
 ## Backends never register themselves
 
 **Decision.** A backend's session layer reports that a storage attached or detached; it does not decide that a `Volume`
-now exists. `connection/volume_registrar.rs` holds a `OnceLock<MtpVolumeRegistrar>` (two `fn` pointers, `attach` and
-`detach`); `volume_wiring.rs` supplies them, and `lib.rs` installs it at startup right after `volume_broadcast::init`,
-before anything can connect a device. `volume_wiring.rs` is deliberately the twin of `network/smb_upgrade.rs`, which
+now exists. `crates/cmdr-mtp/src/connection/volume_registrar.rs` defines `MtpVolumeRegistrar` (two `fn` pointers, `attach` and `detach`);
+`volume_wiring.rs` supplies them, and `mtp::install_connection_manager` hands them to the manager it builds at startup,
+before anything can connect a device. A caller driving sessions with no volume registry takes
+`MtpVolumeRegistrar::detached()`. `volume_wiring.rs` is deliberately the twin of `network/smb_upgrade.rs`, which
 builds and registers the `SmbVolume` while the SMB session layer never does: a wiring module beside the feature, aware
 of both the backend and the registry, with neither aware of it.
 
-**Why.** A session layer that constructs its own `Volume` has to import the app's volume registry, and the registry
-imports the backend: `backends::mtp` and `mtp::connection` were a genuine import cycle held together by four lines of
-wiring. Neither module could then be understood or moved alone, and MTP can't become its own crate while it imports the
-app. This is the shape FTP, S3, and SFTP should copy: **the wiring knows the backend, the backend never knows the
-registry.**
+**Why.** A session layer that constructs its own `Volume` has to import the app's volume registry, and the registry imports the backend: that was a genuine import cycle held together by four lines of wiring, and it is what kept MTP from being its own crate. This is the shape FTP, S3, and SFTP should copy: **the wiring knows the backend, the backend never knows the registry.**
 
 **The same module is also the listing's device seam.** `volume_wiring.rs` registers `MtpDeviceProvider`, MTP's
 `device_volumes::DeviceVolumeProvider`, at startup beside the registrar: `volume_listing::complete` folds over every
@@ -220,8 +207,9 @@ registry (open listings are looked up by volume id; the per-volume index routes 
 before the volumes existed would have nothing to land on and the update would be dropped. The registrar adds an
 indirection but not a delay: `attach_storage_volume` is a direct synchronous call. ❌ Never spawn it, never make it
 async. Pinned by `connect_attaches_a_volume_for_every_storage_and_disconnect_detaches_them`
-(`file_system/volume/backends/mtp_test.rs`), which asserts registration with no polling at all, so a scheduled attach
-fails it.
+(`volume_wiring_test.rs`), which asserts registration with no polling at all, so a scheduled attach fails it. It stays
+app-side deliberately: it asserts that the APP's registrar really reaches the volume registry, which is the half the
+crate's own seam cells can't see.
 
 **Gotcha: a test that connects a device must install the registrar.** `setup_virtual_mtp_device` does it, mirroring
 startup. Without it a `connect()` opens the device and leaves the sidebar empty, and the failure looks like a volume bug
@@ -264,8 +252,28 @@ is fully quiet, which avoids provoking the bug in practice.
 
 ## Dependencies
 
-- `mtp_rs`: MTP session, object listing, file transfer, and hotplug events (`mtp::watch_devices()`).
+- `cmdr_mtp`: every device conversation. ❌ The app has no `mtp-rs` dependency of its own; the hotplug stream, the
+  virtual device's `rekey_virtual_object`, and the PTP object handle all arrive through the crate.
 - `futures_util`: `StreamExt` for the hotplug stream.
-- `cmdr_fs`: `FileEntry`, `CopyScanResult`, `ListingProgress`, the `mtp_ids` volume-id helpers.
-- `crate::file_system`: the listing cache and `compute_diff`. ❌ Not `MtpVolume` or the volume manager, by the decision
-  above.
+- `cmdr_fs`: the `mtp_ids` volume-id helpers.
+- `crate::file_system`: the volume registry the registrar writes to. ❌ Nothing in `cmdr-mtp` may name it, by the
+  decision above.
+
+## Where the app-side MTP cells sit
+
+A cell goes beside the subsystem it ASSERTS on, never beside the backend. The full map, including what moved the other
+way, is [the crate's](../../../../../crates/cmdr-mtp/DETAILS.md#which-side-a-test-lives-on).
+
+- `volume_wiring_test.rs` — this module's own half: that `volume_wiring` really registers a storage in the app's volume
+  registry, and that the attach runs inline on the connecting thread.
+- `file_system/volume/mtp_scan_oracle_tests.rs` — the app's fresh-listing oracle, asserted with
+  `cmdr_mtp::volume::testing`'s `list_directory` counter (an oracle hit issues zero calls).
+- `file_system/write_operations/mtp_archive_test.rs` — archive browsing and remote editing over a device. The routing is
+  the app's; `cmdr-mtp` knows nothing about zips.
+- `file_system/write_operations/transfer/volume/rename_merge_mtp_tests.rs` and `.../delete/volume_cancel_tests.rs` — the
+  transfer and delete pipelines.
+
+`test_support.rs` is how all of them reach a device: it shadows each `cmdr_mtp::testing` entry point with a no-argument
+version over the manager THIS app parked, so the listing cache, the index, and the volume registry see what the device
+reports. ❗ Seed a device's backing dir BEFORE connecting; the connect primes the root listing, and a file written after
+that is invisible until something invalidates the cache.

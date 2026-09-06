@@ -4,7 +4,7 @@
 //! guard, writability and disk-space checks, same-file / same-filesystem inode
 //! comparisons, path/name length limits, and symlink-loop detection.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -16,6 +16,39 @@ pub(crate) fn validate_sources(sources: &[PathBuf]) -> Result<(), WriteOperation
         if fs::symlink_metadata(source).is_err() {
             return Err(WriteOperationError::SourceNotFound {
                 path: source.display().to_string(),
+            });
+        }
+    }
+    Ok(())
+}
+
+/// Refuses a transfer whose top-level items share a name.
+///
+/// Two same-named sources both want `<destination>/<name>`, and neither engine
+/// has an answer for that. A cross-filesystem move stages both under that one
+/// name inside `.cmdr-staging-<op>/`, so the second one's children meet the
+/// first one's staged files rather than an empty slot: they resolve as conflicts
+/// against a copy the user never put there, and the rename phase then looks for
+/// a staged tree the first source already carried away. Refusing up front is the
+/// only outcome that doesn't ask the user about a clash they didn't create.
+///
+/// Byte-exact names only. Whether two names differing in case or normalization
+/// are one file is the destination filesystem's call, not ours — the same rule
+/// `DestNameIndex` follows for a fold-only match — and refusing them here would
+/// block a legitimate transfer onto a case-sensitive volume.
+pub(crate) fn validate_source_names_are_distinct(sources: &[PathBuf]) -> Result<(), WriteOperationError> {
+    let mut seen: HashMap<&std::ffi::OsStr, &PathBuf> = HashMap::with_capacity(sources.len());
+    for source in sources {
+        // A path with no final component (`/`, a trailing `..`) can't be a
+        // selected item; the existence check above already spoke for it.
+        let Some(name) = source.file_name() else {
+            continue;
+        };
+        if let Some(first) = seen.insert(name, source) {
+            return Err(WriteOperationError::DuplicateSourceNames {
+                name: name.to_string_lossy().into_owned(),
+                first: first.display().to_string(),
+                second: source.display().to_string(),
             });
         }
     }
@@ -322,6 +355,20 @@ pub(crate) fn is_same_file(_source: &Path, _destination: &Path) -> bool {
 /// `symlink_metadata` so the gate fires for symlinks (broken or not).
 pub(crate) fn path_exists_or_is_symlink(path: &Path) -> bool {
     path.exists() || fs::symlink_metadata(path).is_ok()
+}
+
+/// Is `path` a directory in its own right, rather than a symlink pointing at
+/// one? This is the ONE question a move asks before merging two directories.
+///
+/// `Path::is_dir()` is `fs::metadata`-based, so it says `true` for a link to a
+/// directory. A merge that believes it walks `read_dir` through the link and
+/// renames the TARGET's entries out of a folder the user never selected; a
+/// destination-side link is the mirror image, landing the user's files wherever
+/// it points. So a link is an opaque leaf to every move engine: it's renamed as
+/// a link, and a link meeting a directory is a type mismatch the conflict
+/// resolver decides. `transfer/DETAILS.md` § "Symlinks are opaque to a move".
+pub(crate) fn is_real_directory(path: &Path) -> bool {
+    fs::symlink_metadata(path).map(|m| m.is_dir()).unwrap_or(false)
 }
 
 // ============================================================================

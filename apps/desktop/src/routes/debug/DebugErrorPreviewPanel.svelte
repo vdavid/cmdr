@@ -150,6 +150,17 @@
         }
     }
 
+    interface ErrorGroup {
+        label: string
+        states: ErrorState[]
+    }
+
+    const errorGroups: ErrorGroup[] = [
+        { label: 'Transient (errno)', states: errnoErrors.filter((e) => e.category === 'transient') },
+        { label: 'Needs action (errno)', states: errnoErrors.filter((e) => e.category === 'needs_action') },
+        { label: 'Serious (errno)', states: errnoErrors.filter((e) => e.category === 'serious') },
+        { label: 'VolumeError variants', states: volumeErrors },
+    ]
 </script>
 
 <section class="debug-section">
@@ -159,84 +170,28 @@
             <button class="index-button" onclick={() => void resetErrors('both')}>Reset both panes</button>
         </div>
 
-        <div class="error-group-header">Transient (errno)</div>
-        {#each errnoErrors.filter((e) => e.category === 'transient') as state (state.name)}
-            <div class="error-row">
-                <span class="error-label" use:tooltip={{ text: state.title }}>
-                    {state.name}{#if state.code !== undefined} ({state.code}){/if}
-                    <span class="error-title">{state.title}</span>
-                </span>
-                <div class="error-provider-select">
-                    <Select
-                        items={providerItems}
-                        value={providerNames[providerSelections[state.name] ?? 0]}
-                        onChange={(v: string) => { setProviderSelection(state.name, v); }}
-                        ariaLabel="Cloud provider"
-                    />
+        {#each errorGroups as group (group.label)}
+            <div class="error-group-header">{group.label}</div>
+            {#each group.states as state (state.name)}
+                <div class="error-row">
+                    <span class="error-label" use:tooltip={{ text: state.title }}>
+                        {state.name}{#if state.code !== undefined} ({state.code}){/if}
+                        <span class="error-title">{state.title}</span>
+                    </span>
+                    <div class="error-provider-select">
+                        <Select
+                            items={providerItems}
+                            value={providerNames[providerSelections[state.name] ?? 0]}
+                            onChange={(v: string) => {
+                                setProviderSelection(state.name, v)
+                            }}
+                            ariaLabel="Cloud provider"
+                        />
+                    </div>
+                    <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
+                    <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
                 </div>
-                <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
-                <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
-            </div>
-        {/each}
-
-        <div class="error-group-header">Needs action (errno)</div>
-        {#each errnoErrors.filter((e) => e.category === 'needs_action') as state (state.name)}
-            <div class="error-row">
-                <span class="error-label" use:tooltip={{ text: state.title }}>
-                    {state.name}{#if state.code !== undefined} ({state.code}){/if}
-                    <span class="error-title">{state.title}</span>
-                </span>
-                <div class="error-provider-select">
-                    <Select
-                        items={providerItems}
-                        value={providerNames[providerSelections[state.name] ?? 0]}
-                        onChange={(v: string) => { setProviderSelection(state.name, v); }}
-                        ariaLabel="Cloud provider"
-                    />
-                </div>
-                <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
-                <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
-            </div>
-        {/each}
-
-        <div class="error-group-header">Serious (errno)</div>
-        {#each errnoErrors.filter((e) => e.category === 'serious') as state (state.name)}
-            <div class="error-row">
-                <span class="error-label" use:tooltip={{ text: state.title }}>
-                    {state.name}{#if state.code !== undefined} ({state.code}){/if}
-                    <span class="error-title">{state.title}</span>
-                </span>
-                <div class="error-provider-select">
-                    <Select
-                        items={providerItems}
-                        value={providerNames[providerSelections[state.name] ?? 0]}
-                        onChange={(v: string) => { setProviderSelection(state.name, v); }}
-                        ariaLabel="Cloud provider"
-                    />
-                </div>
-                <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
-                <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
-            </div>
-        {/each}
-
-        <div class="error-group-header">VolumeError variants</div>
-        {#each volumeErrors as state (state.name)}
-            <div class="error-row">
-                <span class="error-label" use:tooltip={{ text: state.title }}>
-                    {state.name}
-                    <span class="error-title">{state.title}</span>
-                </span>
-                <div class="error-provider-select">
-                    <Select
-                        items={providerItems}
-                        value={providerNames[providerSelections[state.name] ?? 0]}
-                        onChange={(v: string) => { setProviderSelection(state.name, v); }}
-                        ariaLabel="Cloud provider"
-                    />
-                </div>
-                <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
-                <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
-            </div>
+            {/each}
         {/each}
 
         <div class="error-preview-actions">

@@ -17,7 +17,7 @@ vi.mock('$lib/tauri-commands', () => ({
   listAskCmdrConversations: vi.fn(() => Promise.resolve([])),
   getAskCmdrConversation: (id: number, limit: number, offset: number) =>
     getConversationMock({ id, msgLimit: limit, msgOffset: offset }),
-  recordAskCmdrModelChange: vi.fn(() => Promise.resolve(null)),
+  recordAskCmdrSlotChange: vi.fn(() => Promise.resolve([])),
   preflightBulkRename: vi.fn(() => Promise.resolve({ status: 'ready', rows: [] })),
   cancelBulkRenameProposal: vi.fn(() => Promise.resolve()),
   applyBulkRename: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),

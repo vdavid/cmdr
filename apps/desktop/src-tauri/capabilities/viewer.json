@@ -10,6 +10,7 @@
         "core:window:allow-set-title",
         "core:window:allow-set-focus",
         "core:window:allow-start-dragging",
+        "core:window:allow-internal-toggle-maximize",
         "core:event:default",
         "clipboard-manager:allow-write-text",
         "dialog:allow-save"

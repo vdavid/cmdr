@@ -12,7 +12,8 @@ Depth for `CLAUDE.md`. Up: `apps/desktop/src/CLAUDE.md`.
 - `operation-failure-watch.svelte.ts`: the main window's failure notice — which failures get a toast, which are left to
   the dialog already showing them, and what a burst collapses into.
 - `OperationFailedToastContent.svelte` / `OperationFailuresToastContent.svelte`: one failure's notice, and the summary a
-  burst collapses into.
+  burst collapses into. Both render `OperationFailureToastBody.svelte` (red-glyph title, optional body, the "Show in
+  operation queue" action that also dismisses the toast).
 - `StatusCorner.svelte.test.ts`: the structural contract (always mounted, children and the chip render before the
   hourglass).
 - `operation-chip.test.ts`: every visibility gate, the bar's metric, and the progress-beats-failure precedence, as pure

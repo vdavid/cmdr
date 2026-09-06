@@ -21,6 +21,13 @@
 //!   structs can't do is name the ROW, which is why [`check_object`] is public: the rename
 //!   boundary points it at one row at a time.
 //!
+//! The one look past that level ([`row_property_home`]) EXPLAINS a violation rather than
+//! finding one: an undeclared key is refused either way, and the lookup only decides whether
+//! the caller hears "invent something else" or "move what you sent to a row". It exists
+//! because a hoisted per-row field is a call a model cannot correct blind — a rename plan sent
+//! one `volumeId` beside `renames`, was told only that the top level has no such parameter,
+//! and re-sent the identical call.
+//!
 //! So a schema that never declared `additionalProperties` (most of the ai-client family) stays
 //! open exactly as it always was, and closing one is what opts a tool in.
 
@@ -36,6 +43,11 @@ pub enum ParamViolation {
     /// A property the schema doesn't declare, on a schema that closed itself with
     /// `additionalProperties: false`.
     Unknown(String),
+    /// A property this object's schema doesn't declare, but the row schema of one of its
+    /// arrays does: the caller hoisted a per-row field to the top level. Told apart from
+    /// [`Unknown`](Self::Unknown) because the two need opposite answers — invent something
+    /// else, versus move what you sent — and the caller can only pick one if we say which.
+    Misplaced { property: String, rows: String },
     /// A property the schema's `required` list names, absent from the object.
     Missing(String),
 }
@@ -63,15 +75,26 @@ impl ParamProblems {
     fn unknown(&self) -> Vec<&String> {
         self.named(|v| match v {
             ParamViolation::Unknown(name) => Some(name),
-            ParamViolation::Missing(_) => None,
+            ParamViolation::Misplaced { .. } | ParamViolation::Missing(_) => None,
         })
     }
 
     fn missing(&self) -> Vec<&String> {
         self.named(|v| match v {
             ParamViolation::Missing(name) => Some(name),
-            ParamViolation::Unknown(_) => None,
+            ParamViolation::Unknown(_) | ParamViolation::Misplaced { .. } => None,
         })
+    }
+
+    /// The hoisted properties as `(property, rows)` pairs, in violation order.
+    fn misplaced(&self) -> Vec<(&String, &String)> {
+        self.violations
+            .iter()
+            .filter_map(|v| match v {
+                ParamViolation::Misplaced { property, rows } => Some((property, rows)),
+                ParamViolation::Unknown(_) | ParamViolation::Missing(_) => None,
+            })
+            .collect()
     }
 
     /// The sentence a caller reads, with `subject` naming what was checked (a tool name, or
@@ -88,6 +111,13 @@ impl ParamProblems {
                 pluralize_property(unknown.len())
             ));
         }
+        // Each hoisted property names its own row array, so they stay one clause apiece rather
+        // than collapsing into a list that would have to pick one of the row names.
+        for (property, rows) in self.misplaced() {
+            parts.push(format!(
+                "{subject} has no {property} parameter; each {rows} row takes {property}"
+            ));
+        }
         if !missing.is_empty() {
             // allowed-pluralize-noun: `needs` is the verb and what follows is a list of property names, never a count plus a noun
             parts.push(format!("{subject} needs {}", join(&missing)));
@@ -100,6 +130,10 @@ impl ParamProblems {
     pub fn detail(&self) -> Value {
         serde_json::json!({
             "unknownProperties": self.unknown(),
+            "misplacedProperties": self.misplaced()
+                .into_iter()
+                .map(|(property, rows)| serde_json::json!({ "property": property, "rows": rows }))
+                .collect::<Vec<_>>(),
             "missingProperties": self.missing(),
             "accepted": self.accepted,
         })
@@ -130,12 +164,15 @@ pub fn check_object(schema: &Value, value: &Value) -> ParamProblems {
 
     let mut violations = Vec::new();
     if schema.get("additionalProperties") == Some(&Value::Bool(false)) {
-        violations.extend(
-            given
-                .keys()
-                .filter(|key| !properties.contains_key(*key))
-                .map(|key| ParamViolation::Unknown(key.clone())),
-        );
+        violations.extend(given.keys().filter(|key| !properties.contains_key(*key)).map(
+            |key| match row_property_home(properties, key) {
+                Some(rows) => ParamViolation::Misplaced {
+                    property: key.clone(),
+                    rows,
+                },
+                None => ParamViolation::Unknown(key.clone()),
+            },
+        ));
     }
     violations.extend(
         schema
@@ -148,6 +185,30 @@ pub fn check_object(schema: &Value, value: &Value) -> ParamProblems {
             .map(|name| ParamViolation::Missing(name.to_string())),
     );
     ParamProblems { violations, accepted }
+}
+
+/// Which array property's row schema declares `key`, when one of them does. The single
+/// concession to nesting, and it EXPLAINS a violation rather than finding one: the key is
+/// already refused either way, and this only decides whether the caller is told to invent
+/// something else or to move what it sent.
+///
+/// It earns the lookup because a hoisted per-row field is a call a model can't correct
+/// blind. `propose_rename_plan` declares `volumeId` on each row, a plan binds one volume, so
+/// a model sends one `volumeId` beside `renames` — and a refusal listing `renames` as
+/// everything the tool takes reads as "the rows were fine", which is exactly what the model
+/// concluded before re-sending the identical call.
+///
+/// First match wins: two arrays declaring the same row property is a schema worth fixing, and
+/// naming either one still moves the caller to a row.
+fn row_property_home(properties: &serde_json::Map<String, Value>, key: &str) -> Option<String> {
+    properties.iter().find_map(|(name, property)| {
+        property
+            .get("items")?
+            .get("properties")?
+            .as_object()?
+            .contains_key(key)
+            .then(|| name.clone())
+    })
 }
 
 /// The gate as the dispatch paths use it: a params object checked against its tool's own
@@ -227,6 +288,55 @@ mod tests {
         assert_eq!(
             problems.message("list_dir"),
             "list_dir needs path. It takes limit and path."
+        );
+    }
+
+    /// A schema shaped like `propose_rename_plan`: one array whose rows carry the real fields.
+    fn with_rows() -> Value {
+        json!({
+            "type": "object",
+            "properties": { "renames": { "type": "array", "items": {
+                "type": "object",
+                "properties": { "sourcePath": { "type": "string" }, "volumeId": { "type": "string" } },
+                "required": ["sourcePath", "volumeId"],
+                "additionalProperties": false
+            } } },
+            "required": ["renames"],
+            "additionalProperties": false
+        })
+    }
+
+    #[test]
+    fn a_per_row_property_at_the_top_level_is_misplaced_and_says_which_row_takes_it() {
+        let problems = check_object(&with_rows(), &json!({ "renames": [], "volumeId": "root" }));
+        assert_eq!(
+            problems.violations,
+            vec![ParamViolation::Misplaced {
+                property: "volumeId".into(),
+                rows: "renames".into()
+            }]
+        );
+        assert_eq!(
+            problems.message("propose_rename_plan"),
+            "propose_rename_plan has no volumeId parameter; each renames row takes volumeId. It takes renames."
+        );
+    }
+
+    #[test]
+    fn a_property_no_row_declares_stays_unknown() {
+        // The look-down must not answer "put it on a row" for something no row would take:
+        // that sends a caller to move a key the schema has no home for at all.
+        let problems = check_object(&with_rows(), &json!({ "renames": [], "dryRun": true }));
+        assert_eq!(problems.violations, vec![ParamViolation::Unknown("dryRun".into())]);
+    }
+
+    #[test]
+    fn a_hoisted_property_and_a_missing_one_are_reported_together() {
+        let problems = check_object(&with_rows(), &json!({ "volumeId": "root" }));
+        assert_eq!(
+            problems.message("propose_rename_plan"),
+            "propose_rename_plan has no volumeId parameter; each renames row takes volumeId, and propose_rename_plan \
+             needs renames. It takes renames."
         );
     }
 

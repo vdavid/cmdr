@@ -559,13 +559,18 @@
     /* Invisible drag handle covering the top strip of the window. Lets the
        user grab and move the window from anywhere above the visible chrome
        — the traffic lights sit on top as NSWindow buttons, so they keep
-       working. Positioned absolutely so it doesn't push other layout. */
+       working. Positioned absolutely so it doesn't push other layout.
+       ❗ `--z-sticky`, NOT `--z-dropdown`: this strip paints over whatever it
+       covers, so at the dropdown rung it swallowed the top rows of any open
+       menu that reached up here (the AI provider pop-up's first two options).
+       Being positioned is already enough to sit over the in-flow layout; a
+       rung below `--z-dropdown` keeps window chrome under real menus. */
     .window-drag-region {
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         height: 50px;
-        z-index: var(--z-dropdown);
+        z-index: var(--z-sticky);
     }
 </style>

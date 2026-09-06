@@ -59,7 +59,9 @@
     function shouldShowSection(sectionPath: string[]): boolean {
         if (searchQuery.trim()) {
             if (sectionPath.length === 1 && sectionPath[0] === 'Keyboard shortcuts') {
-                return keyboardShortcutsHasMatches()
+                // Commands OR the page's own searchable rows (its "Reset all shortcuts"
+                // footer button lives in the settings index, not the command registry).
+                return keyboardShortcutsHasMatches() || sectionHasMatchingSettings(sectionPath)
             }
             return sectionHasMatchingSettings(sectionPath)
         }

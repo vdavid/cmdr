@@ -15,7 +15,7 @@ The frontend of Ask Cmdr: a right-side panel for chatting with a BYO-key LLM abo
   rather than the turn stream.
 - `AskCmdrRail.svelte`: the panel, mounted beside `DualPaneExplorer` by `routes/(main)/+page.svelte`, overlaid by
   `AskCmdrSessions.svelte`, with its `AskCmdrMessage` / `ToolLine` / `Composer` / `AttachmentChip` / `WakeDigest` /
-  `ProposalDecisions` parts. `BulkRenameReviewDialog.svelte` is the rename review and its display judgments.
+  `ProposalDecisions` parts. `BulkRenameReviewDialog.svelte` is the rename review.
 - The rest are named for what they do; `ask-cmdr-markdown.ts` is the XSS boundary.
 
 ## Must-knows
@@ -31,20 +31,20 @@ The frontend of Ask Cmdr: a right-side panel for chatting with a BYO-key LLM abo
   leaking provider state.
 - **Turn events are subscribed by CONVERSATION, never per send**, so a reload mid-answer keeps rendering: ❌ never key a
   turn to the invoke that started it. Any live event means a turn is running; `discarded` means a quiet wake deleted the
-  thread under the rail. Each mutates the LAST assistant message in place, and cancel finalizes LOCALLY.
+  thread. Each mutates the LAST assistant message in place, and cancel finalizes LOCALLY.
 - **The wake indicator is SILENT without consent or with `askCmdr.proactive` off**, and shows a running wake either way
-  (that one is spending money now). `wakeIndicatorMode` is the gate, reconciling the corner's "nothing to say is noise"
-  rule with `agent/wake/readiness.rs`'s "every gap is worth reporting". ❌ Its subscription stays in the `.svelte.ts`:
-  `StatusCorner`'s two suites mount the component for real and stub nothing.
+  (that one is spending money now). `wakeIndicatorMode` is the gate. ❌ Its subscription stays in the `.svelte.ts`.
 - **The toggle is wired in four places; a miss fails silently** (`ask-cmdr-shortcut.test.ts`).
 - **Opening the rail GROWS the main window so panes keep their size** (`rail-window.ts`). ❌ Never grow on hydration or
   re-open: the window is already rail-inclusive.
-- **The rename review is a guardrail surface, not a table.** Every state saying nothing inside the file was read must
-  keep saying so (`nothingRead` / `nameKept`). The name is EDITABLE and the SERVER owns the outcome. ❌ Never patch
-  `destinationName` locally or disable it.
+- **The rename review is a guardrail surface, not a table.** Every state saying nothing inside the file was read keeps
+  saying so (`nothingRead` / `nameKept`). The name is EDITABLE and the SERVER owns it: ❌ never patch `destinationName`
+  locally or disable it.
+- **One review holds a job's BATCHES; the grouping is presentational.** `proposalReady` stages, the turn's end shows. ❌
+  Never widen a per-proposal thing to the review: preflight, revise, apply, and cancel are keyed by proposal id, so
+  every guardrail stays per row.
 - **A finished batch leaves an UNDO in the thread.** ❌ Never reverse the ids: `undoOperations` takes them in APPLY
-  order and the backend reverses newest-batch-first. ❌ Never report success on dispatch; a partial result is `partial`,
-  never `undone`.
+  order and the backend reverses newest-batch-first. ❌ Never report success on dispatch; a partial result is `partial`.
 - **Attachments cross as path + kind ONLY, never contents** (the read-only privacy line). A pane drag is a NATIVE
   webview drag, so a DOM `ondrop` never fires.
 

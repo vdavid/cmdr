@@ -10,10 +10,14 @@
  * `persist-restricted-setting` event. This bridge runs in the main window
  * (always alive) and persists through the normal store pipeline.
  *
- * The allowlist is enforced twice: the backend enum can only express the two
+ * The allowlist is enforced twice: the backend enum can only express the
  * permitted settings, and this handler re-checks the id (defense in depth —
  * any webview can emit arbitrary events, so the event payload alone is
  * untrusted).
+ *
+ * It is narrower than what a restricted window can READ, and stays that way: a
+ * setting the viewer only displays (`viewer.showTextCursor`, `appearance.*`)
+ * belongs in the read snapshot alone.
  */
 
 import { type UnlistenFn } from '@tauri-apps/api/event'

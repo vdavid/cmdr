@@ -18,7 +18,9 @@ import (
 // needs explicit user consent (same discipline as the other allowlists). Word
 // counting matches `wc -w`. Ratcheted from the original 9472 after the doc diet
 // re-homed desktop ops out of the root and moved area rules to colocated docs.
-const residentDocBudgetWords = 2050
+// Raised to 2100 with David's consent to make room for the outside-contributor
+// PR pointer (`docs/guides/handling-prs.md`).
+const residentDocBudgetWords = 2100
 
 // claudeImportRe captures @-import tokens in a CLAUDE.md. Claude Code treats a
 // leading-@ token as a file import; we resolve each against the filesystem and

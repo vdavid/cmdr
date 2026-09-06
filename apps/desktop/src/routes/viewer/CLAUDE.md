@@ -1,58 +1,55 @@
 # Viewer
 
-The file viewer opens files in a separate Tauri window with virtual scrolling and text search.
-
-Backend: `apps/desktop/src-tauri/src/file_viewer/CLAUDE.md` (three strategies, session orchestration, background
-search). Reusable FE primitives: `apps/desktop/src/lib/file-viewer/CLAUDE.md`.
+The file viewer opens files in their own Tauri window, with virtual scrolling and text search. Backend:
+`apps/desktop/src-tauri/src/file_viewer/CLAUDE.md`; reusable FE primitives:
+`apps/desktop/src/lib/file-viewer/CLAUDE.md`.
 
 ## Module map
 
-`+page.svelte` (lifecycle, window management, UI) wires the `createViewer*` composables (scroll, search, line-heights,
-text-width, tail, media, copy, autoscroll), the selection/caret/segment helpers, and the `createViewerKeyboard` keydown
-router. Media renders inline (`MediaImageView` / `MediaPdfView`); toolbar, status bar, context menu, pickers, and
-dialogs are presentational siblings. Inventory and media flow: `DETAILS.md` § "Module map".
+`+page.svelte` (lifecycle, window, UI) wires the `createViewer*` composables, the selection / caret / granularity /
+motion helpers, and the `createViewerKeyboard` keydown router. Toolbar, status bar, context menu, pickers, and dialogs
+are presentational siblings. Inventory: `DETAILS.md` § "Module map".
 
 ## Must-knows
 
-Each line is a break-if-ignored invariant; the named `DETAILS.md` section has the why.
+Each is a break-if-ignored invariant; the named `DETAILS.md` section has the why.
 
 - **Composables take callback-based deps (getters), never raw `$state`** (passing `$state` loses reactivity). Effects
   live on the page and delegate to `run*Effect()`. (§ Architecture)
-- **Text-only line paths are data-gated on `media.isMedia`, not just hidden.** Media sessions have empty text fields:
-  keep the early-returns in line effects, `openViewerSession`, and the keydown router, else empty-line code runs and can
-  throw. (§ "Media rendering")
-- **Media↔text two-way switch resets media state BEFORE reopening, and `reset()` PRESERVES `lastMediaKind`.** Both route
-  through `reopenSession({ asText })`. (§ "Media rendering")
-- **`cmdr-media://` URLs are built ONLY via `mediaUrl(token)` in `media-view.ts`**, and the `cmdr-media:` scheme is in
-  the `img-src` + `object-src` CSP (`tauri.conf.json`). A src bypassing `mediaUrl`, or a CSP edit dropping the scheme,
-  trips `viewer-media.spec.ts`. (§ "Media rendering")
-- **`user-select: none` on `.file-content` is deliberate**: the viewer owns its selection model; the native one loses
-  its anchor on scroll-out. `.status-bar` opts back in with `user-select: text`. (§ Gotchas)
+- **Media sessions need two guards.** Text-only line paths are data-gated on `media.isMedia` (their text fields are
+  empty, so empty-line code otherwise runs and can throw), and the media↔text switch resets media state BEFORE
+  reopening, with `reset()` PRESERVING `lastMediaKind`. (§ "Media rendering")
+- **`cmdr-media://` URLs come ONLY from `mediaUrl(token)`**, and the scheme must stay in `tauri.conf.json`'s `img-src` +
+  `object-src` CSP. `viewer-media.spec.ts` guards both. (§ "Media rendering")
+- **`user-select: none` on `.file-content` is deliberate**: the native selection loses its anchor on scroll-out. (§
+  Gotchas)
 - **Point → caret is geometric and presses are counted off `pointerdown`**: ❌ never the browser caret API (silently
-  wrong under `user-select: none` on some WebKits) or a click's `detail` (the page binds no `click` handler). (§
-  "Pointer → caret", § "Click cycle")
+  wrong under `user-select: none`) or a click's `detail`. (§ "Pointer → caret", § "Click cycle")
 - **A content pointer gesture claims DOM focus** (`takeFocus`); without it ⌘C copies the search query. (§ Gotchas)
-- **Selection / IPC offsets are UTF-16 code units, not bytes or graphemes.** Caret math (`viewer-pointer.ts`) and
-  anything crossing `viewer_read_range` must preserve this; the backend converts to UTF-8 and clamps lone surrogates. (§
-  "Selection model")
-- **`closeWindow()` defers via `deferWindowClose()` (100 ms, NOT 0), `windowReady` via `setTimeout(0)`; never rAF.** A
-  sync `close()` stalls other webviews' IPC on the GTK tick, a `0`-delay close lets macOS WebKit segfault the whole app
-  mid-teardown, and rAF starves in unfocused E2E windows. Don't lower it. (§ Gotchas; `$lib/window-close-defer`;
-  `docs/testing.md` § "`requestAnimationFrame` in unfocused windows")
+- **Selection / IPC offsets are UTF-16 code units, not bytes or graphemes**, in caret math and across
+  `viewer_read_range` alike. (§ "Selection model")
+- **A gesture carries a granularity; both selection endpoints are edges of ranges snapped to it**, re-derived from the
+  pressed range on every move (so a twitch can't collapse a double-press). Shift-click reads `gestureGranularity`, ❌
+  never `dragGranularity`, which `endDrag` already reset. (§ "Selection granularity")
+- **Keyboard extension has two placement-sensitive entry points.** Unmodified Shift+Arrow / Home / End goes after the
+  `searchInputFocused` guard and before `handleBareKey`; the ⌥/⌃/⌘ branch sits in `handleModifiedKey`, which runs
+  regardless of focus and gates on `!searchInputFocused` itself. (§ "Keyboard motion model")
+- **"Caret" is a text POSITION, "text cursor" the optional rendered bar** — `caretRectFor` stays caret vocabulary though
+  it measures that bar. Mount the cursor in `.scroll-spacer`, ❌ never in `.lines-container`, whose child count derives
+  the wrapped-line height. (§ "Text cursor")
+- **`closeWindow()` defers via `deferWindowClose()` (100 ms, NOT 0), `windowReady` via `setTimeout(0)`; never rAF.**
+  Each dodges a different failure: stalled IPC in other webviews, a macOS WebKit segfault mid-teardown, starved rAF in
+  unfocused E2E windows. (§ Gotchas; `$lib/window-close-defer`)
 - **Escape: the page's window keydown runs BEFORE `ViewerContextMenu`'s**, so it gates on `contextMenuPos !== null`
-  before falling through to `closeWindow()`, else an open menu's Escape shuts the window. (§ Gotchas)
-- **The height map's wrap width comes from row geometry, never a `.line-text` span** (`.line-text` shrink-wraps;
-  measuring it once inflated the map ~7x). `heightMap.ready` gates every height-map path. (§ "Variable-height word
-  wrap", § Gotchas)
-- **Tail mode is not persisted, and the viewer window has NO `store:default` capability** (it renders possibly-hostile
-  content). Persisted viewer settings (`viewer.wordWrap`, `fileViewer.suppressBinaryWarning`) go through the typed
-  restricted-window commands: extend that allowlist, never re-grant store access. (§ "Tail mode";
+  first, else an open menu's Escape shuts the window. (§ Gotchas)
+- **The height map's wrap width comes from row geometry, never a `.line-text` span** (it shrink-wraps; measuring it
+  inflated the map ~7x); `heightMap.ready` gates every height-map path. (§ "Variable-height word wrap")
+- **Tail mode isn't persisted, and the viewer window has NO `store:default` capability.** Persisted viewer settings go
+  through the typed restricted-window commands: extend that allowlist, never re-grant store access. (§ "Tail mode";
   `lib/settings/DETAILS.md` § "Restricted-window mode")
-- **Search error / invalid-query state is a typed `searchStatus` + sibling `searchError` string, never inspected as
-  text** (no-error-string-match rule). In regex mode, line spans come from the backend's `searchMatches`, not a JS
-  recompile. (§ "Search modes")
-- **`scrollToMatch` centres from the rendered `mark.active` rect via two paths: gentle if the row is rendered, else
-  rough-scroll + a converge loop.** ❌ Don't collapse them; an unconditional rough-scroll flings an on-screen match to
-  its line top on every Enter. (§ "Scroll-to-match")
+- **Search error state is a typed `searchStatus` + `searchError` string, ❌ never inspected as text**; regex line spans
+  come from the backend's `searchMatches`, not a JS recompile. (§ "Search modes")
+- **`scrollToMatch` has two paths: gentle when the row is rendered, rough-scroll + a converge loop when it isn't.** ❌
+  Don't collapse them; an unconditional rough-scroll flings an on-screen match to its line top. (§ "Scroll-to-match")
 
 Read `DETAILS.md` before any non-trivial work here: editing, planning, or advising.

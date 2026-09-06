@@ -5,8 +5,8 @@ Frontend git browser: the per-pane breadcrumb chip (`RepoChip.svelte`), the opti
 (`path-detection.ts`), and the `redirectToPath` plumbing so worktree / submodule entries open their working dir
 directly. Settings UI lives in `settings/sections/GitSection.svelte`.
 
-Backend counterpart: `apps/desktop/src-tauri/src/file_system/git/CLAUDE.md` for repo discovery, the virtual `.git`
-portal, the per-repo watcher, and git error CLASSIFICATION.
+Backend counterpart: `crates/cmdr-git/CLAUDE.md` for repo discovery, the portal volume, the per-repo watcher, and git
+error CLASSIFICATION; `apps/desktop/src-tauri/src/file_system/git/CLAUDE.md` for the app's two seams and the toggle.
 
 ## File map
 
@@ -16,6 +16,7 @@ portal, the per-repo watcher, and git error CLASSIFICATION.
   `lookupRepoInfo(path)` is the cheap one-shot.
 - `status-column.ts`: pure helpers `glyphFor`, `labelFor`, `fetchStatusMap` (no reactivity).
 - `path-detection.ts`: `isVirtualGitPath(path)`, a shared regex matching the backend's virtual `.git` portal segments.
+  Pure, so the portal toggle is read by its callers, never here.
 
 ## Must-knows
 
@@ -23,6 +24,11 @@ portal, the per-repo watcher, and git error CLASSIFICATION.
   keep the refcount; two panes on the same repo share one watcher and one subscription. Live updates flow through the
   `git-state-changed` Tauri event into reactive `$state`; the chip never polls. Don't replace this with per-pane stores
   (doubles watchers and IPC round-trips).
+- **A pane inside the portal takes its own capability row, so the UI stops offering writes the backend refuses.**
+  `capabilitiesForPane` returns the read-only `git-portal` kind for an `isVirtualGitPath` path while the toggle is on:
+  no paste, F7, ⇧F4, F2, or delete (each gets the `fileExplorer.readOnly.gitPortal*` alert), ⌘C/⌘X point at F5/F6, and
+  copy-out still works. Real files under `.git/` keep the drive's full row. Details: `../pane/DETAILS.md` § "The virtual
+  `.git` portal pane".
 - **`FilePane`'s "directory still exists" poll evicts users back to `.git/` on virtual portal paths unless skipped.**
   `pathExists()` returns false for portal-only paths like `.git/branches/main/...`, and two false readings trigger
   `navigateToFallback`. The poll body early-returns via `isVirtualGitPath(currentPath)`. Keep that guard, and extend
@@ -31,11 +37,17 @@ portal, the per-repo watcher, and git error CLASSIFICATION.
   relative path per entry before lookup; don't compare against the absolute path.
 - **`fileExplorer.git.showVirtualGitPortal` round-trips through a Rust `AtomicBool`.** `settings-applier.ts` calls
   `setShowVirtualGitPortal(value)` (Tauri command `set_show_virtual_git_portal`, in `tauri-commands/settings.ts`), which
-  flips an atomic consulted on every volume-hook entry, so toggling off stops the portal hijacking `.git` listings in
-  real time.
+  flips an atomic both portal seams consult (the route to a `GitPortalVolume`, and the `.git/` listing overlay), so
+  toggling off empties the portal out of open panes in real time.
 - **Git error CLASSIFICATION lives in Rust, the WORDING lives here.** Rust ships a typed `FriendlyGitErrorKind`; the
   copy comes from `error-messages/git-error-messages.ts` + the `errors.git.*` catalog. Changing wording means editing
   the catalog; adding a state means both sides in one commit. `docs/guides/error-handling.md`.
+- **Same split for the portal's Size cells: Rust ships the FACT, this side words it.** `FileEntry.gitMeta` is a typed
+  `GitEntryMeta` (a count, an ahead/behind pair, a pinned commit), and `views/full-list-utils.ts::wordGitMeta` turns it
+  into cell text plus the tooltip that doubles as the aria-label, from the `fileExplorer.git.size.*` /
+  `fileExplorer.git.tooltip.*` keys. ❌ Never let a variant carry a sentence: every count goes through the catalog's
+  `plural` so each language picks its own categories (Hungarian never pluralizes after a number, Chinese has one form,
+  Portuguese carries a `many` English lacks). The width measurer calls the same helper, so the two can't drift.
 - **`FileEntry.redirectToPath`** is honored in `FilePane.svelte::handleNavigate`: when set, opening the entry navigates
   there directly instead of as a virtual subtree (used by `.git/worktrees/<name>` and `.git/submodules/<name>` → working
   dir). `FullList.svelte` shows an "Opens <path>" tooltip.

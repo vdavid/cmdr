@@ -9,7 +9,7 @@
 //! local-FS one at the bottom covers the same promise for
 //! `copy_strategy::copy_file_using` against a real tempdir.
 //!
-//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests.rs`
+//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests/mod.rs`
 //! (`super::tests`) so they aren't duplicated.
 
 use super::tests::{make_state, make_volumes};

@@ -14,8 +14,8 @@ import { recordBreadcrumb } from '$lib/error-reporter/breadcrumbs'
 import { addToast } from '$lib/ui/toast'
 import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
 import { getAppLogger } from '$lib/logging/logger'
-import { getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
-import { capabilitiesFor } from '$lib/file-explorer/pane/volume-capabilities'
+import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
+import { capabilitiesForPane } from '$lib/file-explorer/pane/volume-capabilities'
 import { isTextInputFocused } from '$lib/utils/text-input-focus'
 import type { CommandId, CommandArgs, CommandDispatchArgs } from '$lib/commands'
 import type { ExplorerAPI } from './explorer-api'
@@ -71,12 +71,19 @@ function activeTextRegion(): Element | null {
  * "No files on the clipboard" path). The search-results-worded toast there would
  * be a NEW, mis-worded toast, so network keeps its prior silence: the capability
  * decides the BLOCK; the kind decides the TOAST.
+ *
+ * ❌ `capabilitiesForPane`, never `capabilitiesFor`: the guard's question is about
+ * the PANE, and the two routed kinds (archive, git portal) sit on a parent drive
+ * whose own row says writable. Their write ops stay with `readOnlyRefusal`'s
+ * kind-worded alert rather than joining the block here — that alert is the last line
+ * for a shortcut bound outside the F-bar, and swallowing the dispatch silently would
+ * leave a keyboard user with no answer at all.
  */
 function blockedByCapabilities(commandId: CommandId, explorer: ExplorerAPI | undefined): boolean {
   if (!explorer) return false
   if (commandId === 'edit.paste' && isTextInputFocused()) return false
 
-  const caps = capabilitiesFor(getFocusedPaneVolumeId())
+  const caps = capabilitiesForPane(getFocusedPaneVolumeId(), getFocusedPanePath())
   // The snapshot pane is the only kind whose destination-op block produces the
   // user-facing toast; other kinds with false caps fall through as before.
   if (caps.kind !== 'search-results') return false

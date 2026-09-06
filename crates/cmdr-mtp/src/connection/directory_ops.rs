@@ -1,0 +1,1025 @@
+//! MTP directory listing and path resolution.
+
+use log::{debug, error, info};
+use mtp_rs::{CancelToken, ListingItem, ObjectHandle, StorageId};
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::Instant;
+
+use super::cache::{CachedListing, LISTING_CACHE_TTL_SECS};
+use super::errors::MtpConnectionError;
+use super::events::MtpDeviceEvent;
+use super::{
+    DeviceEntry, MtpConnectionManager, MtpDisconnectReason, acquire_device_lock, convert_mtp_datetime, get_mtp_icon_id,
+    normalize_mtp_path,
+};
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::host::indexing::WatchGap;
+
+/// Global counter for generating unique request IDs for debugging.
+static REQUEST_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Tracks concurrent list_directory calls for debugging lock contention.
+static CONCURRENT_LIST_CALLS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+/// How often to call the progress callback (every N handles processed).
+const PROGRESS_INTERVAL: usize = 20;
+
+/// What every MTP entry answers for `FileEntry::permissions`: the field's
+/// documented "this backend has no permission concept" sentinel.
+///
+/// ❗ PTP/MTP has no mode. An earlier `0o755`/`0o644` here looked harmless as a
+/// display value, but the cross-volume copy engine reads a non-zero mode as a
+/// FACT about the source and puts it on what it writes
+/// (`transfer/volume/landed_mode.rs`), so a plausible-looking guess would widen
+/// a landed file under a strict umask on nobody's authority. Say nothing
+/// instead.
+const NO_PERMISSION_CONCEPT: u32 = 0;
+
+/// How many `GetObjectInfo` round trips the background scan does per device-lock
+/// hold (one scan "unit"). Between units the scan releases the lock and yields to
+/// any pending foreground op, so the worst-case foreground wait is one unit. A
+/// single `GetObjectInfo` is single-digit-to-low-tens of ms over USB, so 32 keeps
+/// a unit well under ~1 s while keeping lock-acquire overhead negligible against
+/// the round trips. Retune here if the foreground latency target changes.
+const SCAN_METADATA_BATCH: usize = 32;
+
+impl MtpConnectionManager {
+    /// Lists the contents of a directory on an MTP device.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `path` - Virtual path to list (for example, "/" or "/DCIM")
+    ///
+    /// # Returns
+    ///
+    /// A vector of FileEntry objects suitable for the file browser.
+    pub async fn list_directory(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        self.list_directory_with_cancel(device_id, storage_id, path, None).await
+    }
+
+    /// Like [`list_directory`](Self::list_directory) but accepts a cooperative
+    /// cancel token. When the token flips, the in-flight per-handle
+    /// `GetObjectInfo` loop bails within one USB roundtrip with
+    /// `MtpConnectionError::Cancelled`. Use this from MTP write-op paths so
+    /// `OperationIntent::Stopped` cuts the wire activity, not just the loop
+    /// above it.
+    pub async fn list_directory_with_cancel(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        cancel: Option<&CancelToken>,
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        use std::sync::atomic::Ordering;
+
+        // Foreground priority: a user pane listing must preempt the background
+        // scan. The guard makes this op count as foreground-pending for its whole
+        // lifetime, so the scan yields between units.
+        let _fg = self.foreground_guard(device_id).await;
+
+        // Generate unique request ID for tracing this call
+        let request_id = REQUEST_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let call_start = Instant::now();
+
+        // Track concurrent calls
+        let concurrent_before = CONCURRENT_LIST_CALLS.fetch_add(1, Ordering::Relaxed);
+        debug!(
+            "MTP list_directory [req#{}]: START device={}, storage={}, path={}, concurrent_calls={}",
+            request_id,
+            device_id,
+            storage_id,
+            path,
+            concurrent_before + 1
+        );
+
+        // Wrap the entire operation to ensure we decrement the counter on exit
+        let result = self
+            .list_directory_inner(request_id, device_id, storage_id, path, call_start, cancel)
+            .await;
+
+        let concurrent_after = CONCURRENT_LIST_CALLS.fetch_sub(1, Ordering::Relaxed);
+        debug!(
+            "MTP list_directory [req#{}]: END total_time={:?}, concurrent_calls_remaining={}",
+            request_id,
+            call_start.elapsed(),
+            concurrent_after - 1
+        );
+
+        result
+    }
+
+    /// Lists directory contents with a progress callback and an optional
+    /// cooperative cancel token.
+    ///
+    /// Same as `list_directory_with_cancel`, but calls `on_progress(fetched_count)`
+    /// periodically during the per-object metadata fetch phase so callers can
+    /// report incremental progress to the UI. The token is threaded into the
+    /// per-handle stream so a flipped flag aborts the USB roundtrip loop
+    /// within one roundtrip's latency.
+    ///
+    /// This is a separate method (not merged with `list_directory_with_cancel`)
+    /// because the `&dyn Fn(usize)` callback is not `Send`, and the non-progress
+    /// path must produce a `Send` future for use in Tauri commands and `tokio::spawn`.
+    pub(crate) async fn list_directory_with_progress_and_cancel(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        on_progress: &(dyn Fn(cmdr_fs::volume::ListingProgress) + Sync),
+        cancel: Option<&CancelToken>,
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        use std::sync::atomic::Ordering;
+
+        // Foreground priority (the progress variant drives interactive pane
+        // navigation): preempt the background scan for this op's lifetime.
+        let _fg = self.foreground_guard(device_id).await;
+
+        let request_id = REQUEST_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let call_start = Instant::now();
+
+        let concurrent_before = CONCURRENT_LIST_CALLS.fetch_add(1, Ordering::Relaxed);
+        debug!(
+            "MTP list_directory_with_progress [req#{}]: START device={}, storage={}, path={}, concurrent_calls={}",
+            request_id,
+            device_id,
+            storage_id,
+            path,
+            concurrent_before + 1
+        );
+
+        let result = self
+            .list_directory_inner_with_progress(
+                request_id,
+                device_id,
+                storage_id,
+                path,
+                call_start,
+                on_progress,
+                cancel,
+            )
+            .await;
+
+        let concurrent_after = CONCURRENT_LIST_CALLS.fetch_sub(1, Ordering::Relaxed);
+        debug!(
+            "MTP list_directory_with_progress [req#{}]: END total_time={:?}, concurrent_calls_remaining={}",
+            request_id,
+            call_start.elapsed(),
+            concurrent_after - 1
+        );
+
+        result
+    }
+
+    /// List a directory for the BACKGROUND index scan, never holding the device
+    /// across the whole folder.
+    ///
+    /// This is the foreground-priority counterpart to `list_directory*`: instead
+    /// of one lock hold spanning `GetObjectHandles` + every `GetObjectInfo`
+    /// (which on a 9,000-file folder pins the device for ~30 s and starves
+    /// foreground ops), it splits the folder into bounded UNITS and yields to any
+    /// pending foreground op between them:
+    ///
+    /// - **Unit 0**: yield → lock → `list_objects_stream_with_cancel` (one
+    ///   `GetObjectHandles`) → release. The `ObjectListing` owns its own
+    ///   `Arc<MtpDeviceInner>`, so it survives across lock release/re-acquire.
+    /// - **Units 1..n**: yield → lock → up to [`SCAN_METADATA_BATCH`]
+    ///   `listing.next()` calls (each one `GetObjectInfo`) → release.
+    ///
+    /// The yield (`background_yield_point`) parks while a foreground op is
+    /// pending, so the scan auto-pauses while the user is active and resumes when
+    /// idle. The `cancel` flag is threaded into the `mtp-rs` stream (per-handle
+    /// bail) AND checked at every unit boundary, so a scan cancel stops within one
+    /// round trip. It populates the same path/listing caches as `list_directory`
+    /// via `finalize_listing`.
+    ///
+    /// Foreground listings deliberately do NOT use this path: the user wants the
+    /// whole listing now, and a foreground listing isn't the thing being starved.
+    pub async fn list_directory_for_scan(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        cancel: Option<&CancelToken>,
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        let parent_path = normalize_mtp_path(path);
+
+        // Resolve the parent handle from cache (the scan walks top-down, so each
+        // dir was listed via its parent first and is cached).
+        let (device_arc, parent_handle) = {
+            let devices = self.devices.lock().await;
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+            let parent_handle = self.resolve_path_to_handle(entry, storage_id, path)?;
+            (Arc::clone(&entry.device), parent_handle)
+        };
+
+        let parent_opt = if parent_handle == ObjectHandle::ROOT {
+            None
+        } else {
+            Some(parent_handle)
+        };
+
+        // Unit 0: get the handle list (one GetObjectHandles), holding the lock
+        // only for that single transaction.
+        self.background_yield_point(device_id).await;
+        if cancel.is_some_and(CancelToken::is_cancelled) {
+            return Err(scan_cancelled(device_id));
+        }
+        let mut listing = {
+            let device = acquire_device_lock(&device_arc, device_id, "list_directory_for_scan[handles]").await?;
+            let storage = device
+                .storage(StorageId(u64::from(storage_id)))
+                .await
+                .map_err(|e| self.map_device_error(e, device_id))?;
+
+            storage
+                .list_objects_stream_with_cancel(parent_opt, cancel)
+                .await
+                .map_err(|e| self.map_device_error(e, device_id))?
+            // `device` / `storage` drop here, releasing the lock before the
+            // metadata batches below.
+        };
+
+        let total = listing.total();
+        let mut entries = Vec::with_capacity(total);
+        let mut cache_updates: Vec<(PathBuf, ObjectHandle)> = Vec::new();
+
+        // Units 1..n: fetch metadata in bounded batches, releasing the lock and
+        // yielding to foreground between each.
+        loop {
+            self.background_yield_point(device_id).await;
+            if cancel.is_some_and(CancelToken::is_cancelled) {
+                return Err(scan_cancelled(device_id));
+            }
+
+            let device = acquire_device_lock(&device_arc, device_id, "list_directory_for_scan[meta]").await?;
+            let mut done = false;
+            for _ in 0..SCAN_METADATA_BATCH {
+                match listing.next().await {
+                    Some(Ok(ListingItem::Object(info))) => {
+                        let is_dir = info.is_folder();
+                        let child_path = parent_path.join(&info.filename);
+                        cache_updates.push((child_path.clone(), info.handle));
+                        entries.push(FileEntry {
+                            size: if is_dir { None } else { Some(info.size) },
+                            modified_at: info.modified.map(convert_mtp_datetime),
+                            created_at: info.created.map(convert_mtp_datetime),
+                            permissions: NO_PERMISSION_CONCEPT,
+                            icon_id: get_mtp_icon_id(is_dir, &info.filename),
+                            extended_metadata_loaded: true,
+                            inode: Some(info.handle.0),
+                            ..FileEntry::new(
+                                info.filename.clone(),
+                                child_path.to_string_lossy().to_string(),
+                                is_dir,
+                                false,
+                            )
+                        });
+                    }
+                    Some(Ok(ListingItem::Skipped(skipped))) => {
+                        // The device listed this handle and then wouldn't describe
+                        // it. mtp-rs decides what's safe to skip (see
+                        // `Storage::collect_objects`), so we no longer guess: a
+                        // single unreadable object doesn't abort the folder.
+                        debug!(
+                            "list_directory_for_scan: {device_id}:{storage_id} handle {} unreadable: {}",
+                            skipped.handle.0, skipped.error
+                        );
+                    }
+                    Some(Err(e)) => {
+                        // Now genuinely fatal. This arm used to swallow everything
+                        // except Cancelled and keep walking, so a transport or
+                        // session failure mid-listing quietly produced a SHORT
+                        // folder that looked complete. mtp-rs 0.30 separates the
+                        // two cases, so this can propagate again.
+                        return Err(self.map_device_error(e, device_id));
+                    }
+                    None => {
+                        done = true;
+                        break;
+                    }
+                }
+            }
+            drop(device);
+            if done {
+                break;
+            }
+        }
+
+        let entries = self
+            .finalize_listing(
+                u64::MAX, // scan path: a sentinel request id (not traced per-call)
+                device_id,
+                storage_id,
+                parent_path,
+                entries,
+                cache_updates,
+                Instant::now(),
+            )
+            .await;
+        Ok(entries)
+    }
+
+    /// Inner implementation of list_directory with detailed phase logging.
+    ///
+    /// Uses `storage.list_objects()` which blocks until all objects are fetched.
+    /// This produces a `Send` future, which is required by Tauri commands and `tokio::spawn`.
+    async fn list_directory_inner(
+        &self,
+        request_id: u64,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        call_start: Instant,
+        cancel: Option<&CancelToken>,
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        // Normalize the path for building child paths
+        let parent_path = normalize_mtp_path(path);
+
+        // Check listing cache first
+        let cache_check_start = Instant::now();
+        {
+            let devices = self.devices.lock().await;
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(cache_map) = entry.listing_cache.read()
+                && let Some(storage_cache) = cache_map.get(&storage_id)
+                && let Some(cached) = storage_cache.listings.get(&parent_path)
+            {
+                // Check if cache is still valid (within TTL)
+                if cached.cached_at.elapsed().as_secs() < LISTING_CACHE_TTL_SECS {
+                    debug!(
+                        "MTP list_directory [req#{}]: cache HIT, returning {} entries, cache_check_time={:?}, elapsed_since_start={:?}",
+                        request_id,
+                        cached.entries.len(),
+                        cache_check_start.elapsed(),
+                        call_start.elapsed()
+                    );
+                    return Ok(cached.entries.clone());
+                } else {
+                    debug!(
+                        "MTP list_directory [req#{}]: cache STALE (age={}s > TTL={}s)",
+                        request_id,
+                        cached.cached_at.elapsed().as_secs(),
+                        LISTING_CACHE_TTL_SECS
+                    );
+                }
+            } else {
+                debug!("MTP list_directory [req#{}]: cache MISS for path={}", request_id, path);
+            }
+        }
+        debug!(
+            "MTP list_directory [req#{}]: cache check complete, time={:?}",
+            request_id,
+            cache_check_start.elapsed()
+        );
+
+        // Get the device and resolve path to handle
+        let path_resolve_start = Instant::now();
+        debug!(
+            "MTP list_directory [req#{}]: acquiring devices registry lock...",
+            request_id
+        );
+        let (device_arc, parent_handle) = {
+            let devices = self.devices.lock().await;
+            debug!(
+                "MTP list_directory [req#{}]: got devices registry lock in {:?}, looking up device...",
+                request_id,
+                path_resolve_start.elapsed()
+            );
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+
+            // Resolve path to parent handle
+            debug!("MTP list_directory [req#{}]: resolving path to handle...", request_id);
+            let parent_handle = self.resolve_path_to_handle(entry, storage_id, path)?;
+            debug!(
+                "MTP list_directory [req#{}]: resolved to handle {:?} in {:?}",
+                request_id,
+                parent_handle,
+                path_resolve_start.elapsed()
+            );
+
+            (Arc::clone(&entry.device), parent_handle)
+        };
+        debug!(
+            "MTP list_directory [req#{}]: path resolution complete, total_time={:?}",
+            request_id,
+            path_resolve_start.elapsed()
+        );
+
+        // List directory contents (async operation)
+        let device_lock_start = Instant::now();
+        debug!(
+            "MTP list_directory [req#{}]: waiting to acquire device USB lock...",
+            request_id
+        );
+        let device =
+            acquire_device_lock(&device_arc, device_id, &format!("list_directory[req#{}]", request_id)).await?;
+        let device_lock_acquired_at = Instant::now();
+        debug!(
+            "MTP list_directory [req#{}]: acquired device USB lock after {:?} wait, getting storage...",
+            request_id,
+            device_lock_start.elapsed()
+        );
+
+        // Get the storage object
+        let usb_io_start = Instant::now();
+        let storage = device
+            .storage(StorageId(u64::from(storage_id)))
+            .await
+            .map_err(|e| self.map_device_error(e, device_id))?;
+        debug!(
+            "MTP list_directory [req#{}]: got storage object in {:?}",
+            request_id,
+            usb_io_start.elapsed()
+        );
+
+        // Use list_objects which returns Vec<ObjectInfo> directly
+        let parent_opt = if parent_handle == ObjectHandle::ROOT {
+            None
+        } else {
+            Some(parent_handle)
+        };
+
+        let list_objects_start = Instant::now();
+        debug!(
+            "MTP list_directory [req#{}]: calling list_objects (parent={:?}, cancel={})...",
+            request_id,
+            parent_opt,
+            cancel.is_some()
+        );
+        let object_infos = match storage.list_objects_with_cancel(parent_opt, cancel).await {
+            Ok(infos) => infos,
+            Err(e) => {
+                let mapped_err = self.map_device_error(e, device_id);
+                error!(
+                    "MTP list_directory [req#{}]: list_objects failed after {:?}: {:?}",
+                    request_id,
+                    list_objects_start.elapsed(),
+                    mapped_err
+                );
+                return Err(mapped_err);
+            }
+        };
+
+        debug!(
+            "MTP list_directory [req#{}]: list_objects returned {} objects in {:?}, total USB I/O time={:?}",
+            request_id,
+            object_infos.len(),
+            list_objects_start.elapsed(),
+            usb_io_start.elapsed()
+        );
+
+        let (entries, cache_updates) = convert_object_infos(&parent_path, &object_infos);
+
+        // Release device lock before updating cache
+        drop(storage);
+        drop(device);
+        let lock_held_duration = device_lock_acquired_at.elapsed();
+        debug!(
+            "MTP list_directory [req#{}]: released device USB lock after holding for {:?}",
+            request_id, lock_held_duration
+        );
+
+        let entries = self
+            .finalize_listing(
+                request_id,
+                device_id,
+                storage_id,
+                parent_path,
+                entries,
+                cache_updates,
+                call_start,
+            )
+            .await;
+        Ok(entries)
+    }
+
+    /// Inner implementation with progress callback.
+    ///
+    /// Uses `list_objects_stream()` to get the handle count upfront, then fetches
+    /// metadata per handle with periodic progress callbacks. This gives the UI
+    /// incremental feedback during MTP folder navigation.
+    ///
+    /// Only called from `block_on` (sync Volume trait), so no `Send` requirement.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "internal helper that mirrors `list_directory_inner` with the extra progress callback; grouping into a struct would obscure the call-trace request_id logging"
+    )]
+    async fn list_directory_inner_with_progress(
+        &self,
+        request_id: u64,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        call_start: Instant,
+        on_progress: &(dyn Fn(cmdr_fs::volume::ListingProgress) + Sync),
+        cancel: Option<&CancelToken>,
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        let parent_path = normalize_mtp_path(path);
+
+        // Check listing cache first
+        {
+            let devices = self.devices.lock().await;
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(cache_map) = entry.listing_cache.read()
+                && let Some(storage_cache) = cache_map.get(&storage_id)
+                && let Some(cached) = storage_cache.listings.get(&parent_path)
+                && cached.cached_at.elapsed().as_secs() < LISTING_CACHE_TTL_SECS
+            {
+                debug!(
+                    "MTP list_directory_with_progress [req#{}]: cache HIT, returning {} entries",
+                    request_id,
+                    cached.entries.len()
+                );
+                return Ok(cached.entries.clone());
+            }
+        }
+
+        // Get the device and resolve path to handle
+        let (device_arc, parent_handle) = {
+            let devices = self.devices.lock().await;
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+            let parent_handle = self.resolve_path_to_handle(entry, storage_id, path)?;
+            (Arc::clone(&entry.device), parent_handle)
+        };
+
+        // Acquire device USB lock
+        let device = acquire_device_lock(
+            &device_arc,
+            device_id,
+            &format!("list_directory_progress[req#{}]", request_id),
+        )
+        .await?;
+
+        // Get storage
+        let usb_io_start = Instant::now();
+        let storage = device
+            .storage(StorageId(u64::from(storage_id)))
+            .await
+            .map_err(|e| self.map_device_error(e, device_id))?;
+
+        let parent_opt = if parent_handle == ObjectHandle::ROOT {
+            None
+        } else {
+            Some(parent_handle)
+        };
+
+        // Get streaming listing (fast: single USB transaction for GetObjectHandles).
+        // The cancel token threads into the per-handle GetObjectInfo loop below.
+        let mut listing = storage
+            .list_objects_stream_with_cancel(parent_opt, cancel)
+            .await
+            .map_err(|e| self.map_device_error(e, device_id))?;
+
+        let total = listing.total();
+        debug!(
+            "MTP list_directory_with_progress [req#{}]: got {} handles in {:?}",
+            request_id,
+            total,
+            usb_io_start.elapsed()
+        );
+
+        // Fetch metadata per handle with progress reporting
+        let metadata_start = Instant::now();
+        let mut entries = Vec::with_capacity(total);
+        let mut cache_updates: Vec<(PathBuf, ObjectHandle)> = Vec::new();
+        // Running tally for the progress callback. Tracked separately from
+        // `entries.len()` so dirs / file-bytes / file-count are all available
+        // to the FE mid-stream (the Volume trait progress callback takes a
+        // `ListingProgress` carrying all three).
+        let mut tally = cmdr_fs::volume::ListingProgress::default();
+
+        while let Some(result) = listing.next().await {
+            let info = match result {
+                Ok(ListingItem::Object(info)) => info,
+                Ok(ListingItem::Skipped(skipped)) => {
+                    // The device listed this handle and then wouldn't describe it.
+                    // mtp-rs decides what's safe to skip (see
+                    // `Storage::collect_objects`), so we no longer guess.
+                    debug!(
+                        "MTP list_directory_with_progress [req#{}]: handle {} unreadable: {}",
+                        request_id, skipped.handle.0, skipped.error
+                    );
+                    continue;
+                }
+                Err(e) => {
+                    // Now genuinely fatal. This arm used to `continue` on ANY
+                    // error, so a transport or session failure mid-listing quietly
+                    // produced a SHORT folder that looked complete. mtp-rs 0.30
+                    // separates the two cases, so this can propagate again.
+                    return Err(self.map_device_error(e, device_id));
+                }
+            };
+
+            let is_dir = info.is_folder();
+            let child_path = parent_path.join(&info.filename);
+
+            cache_updates.push((child_path.clone(), info.handle));
+
+            entries.push(FileEntry {
+                size: if is_dir { None } else { Some(info.size) },
+                modified_at: info.modified.map(convert_mtp_datetime),
+                created_at: info.created.map(convert_mtp_datetime),
+                permissions: NO_PERMISSION_CONCEPT,
+                icon_id: get_mtp_icon_id(is_dir, &info.filename),
+                extended_metadata_loaded: true,
+                // Carry the PTP object handle in `inode` so the index can store it
+                // per entry; `ObjectRemoved{handle}` then resolves via
+                // `find_entry_by_inode` even though the object is already gone.
+                inode: Some(info.handle.0),
+                ..FileEntry::new(
+                    info.filename.clone(),
+                    child_path.to_string_lossy().to_string(),
+                    is_dir,
+                    false,
+                )
+            });
+
+            if is_dir {
+                tally.dirs += 1;
+            } else {
+                tally.files += 1;
+                tally.bytes += info.size;
+            }
+
+            // Report progress periodically
+            let fetched = listing.fetched();
+            if fetched % PROGRESS_INTERVAL == 0 || fetched == total {
+                on_progress(tally);
+            }
+        }
+
+        debug!(
+            "MTP list_directory_with_progress [req#{}]: fetched {} objects ({} after filtering) in {:?}, USB I/O={:?}",
+            request_id,
+            total,
+            entries.len(),
+            metadata_start.elapsed(),
+            usb_io_start.elapsed()
+        );
+
+        // Release device lock before cache updates
+        drop(storage);
+        drop(device);
+
+        let entries = self
+            .finalize_listing(
+                request_id,
+                device_id,
+                storage_id,
+                parent_path,
+                entries,
+                cache_updates,
+                call_start,
+            )
+            .await;
+        Ok(entries)
+    }
+
+    /// Update caches and sort entries after listing completes.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "internal helper, grouping into a struct would add complexity"
+    )]
+    async fn finalize_listing(
+        &self,
+        request_id: u64,
+        device_id: &str,
+        storage_id: u32,
+        parent_path: PathBuf,
+        mut entries: Vec<FileEntry>,
+        cache_updates: Vec<(PathBuf, ObjectHandle)>,
+        call_start: Instant,
+    ) -> Vec<FileEntry> {
+        // Update path cache
+        let cache_update_start = Instant::now();
+        {
+            let devices = self.devices.lock().await;
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(mut cache_map) = entry.path_cache.write()
+            {
+                let storage_cache = cache_map.entry(storage_id).or_default();
+                for (path, handle) in cache_updates {
+                    storage_cache.insert(path, handle);
+                }
+            }
+        }
+
+        // Sort: directories first, then files, both alphabetically
+        entries.sort_by(|a, b| match (a.is_directory, b.is_directory) {
+            (true, false) => std::cmp::Ordering::Less,
+            (false, true) => std::cmp::Ordering::Greater,
+            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+        });
+
+        // Store in listing cache
+        {
+            let devices = self.devices.lock().await;
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(mut cache_map) = entry.listing_cache.write()
+            {
+                let storage_cache = cache_map.entry(storage_id).or_default();
+                storage_cache.listings.insert(
+                    parent_path,
+                    CachedListing {
+                        entries: entries.clone(),
+                        cached_at: Instant::now(),
+                    },
+                );
+            }
+        }
+        debug!(
+            "MTP list_directory [req#{}]: cache update complete in {:?}",
+            request_id,
+            cache_update_start.elapsed()
+        );
+
+        debug!(
+            "MTP list_directory [req#{}]: returning {} entries, total_time={:?}",
+            request_id,
+            entries.len(),
+            call_start.elapsed()
+        );
+
+        entries
+    }
+
+    /// Clears all listing caches for all connected devices. Call after rescan
+    /// to ensure stale cached listings don't mask changes to the object tree.
+    pub async fn clear_all_listing_caches(&self) {
+        let devices = self.devices.lock().await;
+        for (device_id, entry) in devices.iter() {
+            if let Ok(mut cache_map) = entry.listing_cache.write() {
+                let count: usize = cache_map.values().map(|sc| sc.listings.len()).sum();
+                cache_map.clear();
+                if count > 0 {
+                    debug!("Cleared {} listing cache entries for device {}", count, device_id);
+                }
+            }
+        }
+    }
+
+    /// Drops every cached directory listing for ONE device, so the next read of
+    /// any of them goes to the wire.
+    ///
+    /// What the whole-device refresh does before it asks the host to re-read: an
+    /// event that names no directory leaves nothing to invalidate precisely, and
+    /// the 5-second TTL would answer each re-read with the entries the event
+    /// says are out of date.
+    pub(super) async fn clear_listing_caches_for_device(&self, device_id: &str) {
+        use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+
+        let devices = self.devices.lock().await;
+        if let Some(entry) = devices.get(device_id) {
+            // Recover rather than skip: a poisoned cache left uncleared serves
+            // the stale listing the refresh exists to replace.
+            let mut cache_map = entry.listing_cache.write_ignore_poison();
+            let count: usize = cache_map.values().map(|sc| sc.listings.len()).sum();
+            cache_map.clear();
+            if count > 0 {
+                debug!("Cleared {count} listing cache entries for device {device_id}");
+            }
+        }
+    }
+
+    /// Invalidates the listing cache for a specific directory.
+    /// Call this after any operation that modifies the directory contents.
+    pub(super) async fn invalidate_listing_cache(&self, device_id: &str, storage_id: u32, dir_path: &Path) {
+        let devices = self.devices.lock().await;
+        if let Some(entry) = devices.get(device_id)
+            && let Ok(mut cache_map) = entry.listing_cache.write()
+            && let Some(storage_cache) = cache_map.get_mut(&storage_id)
+            && storage_cache.listings.remove(dir_path).is_some()
+        {
+            debug!(
+                "Invalidated listing cache for {} on device {}",
+                dir_path.display(),
+                device_id
+            );
+        }
+    }
+
+    /// Re-resolves the object handles along `dir`'s path so a subsequent
+    /// [`resolve_path_to_handle`](Self::resolve_path_to_handle) returns a FRESH
+    /// handle for `dir`, not a stale cached one. Used by the upload path when
+    /// the device rejects a cached parent handle (it re-keyed its handles since
+    /// the folder was last listed).
+    ///
+    /// Walks `dir`'s ancestors root-first (excluding `dir` itself), forcing a
+    /// real USB re-list of each (the listing cache is invalidated first so the
+    /// 5 s TTL can't serve a stale listing). Listing an ancestor repopulates the
+    /// path cache for its children, so by the time we list `dir`'s parent, the
+    /// fresh handle for `dir` is cached. Root (`ObjectHandle::ROOT`) is a
+    /// constant, so the common case (a top-level folder like `/Documents`) heals
+    /// with a single re-list of `/`. Best-effort: a failed re-list is logged and
+    /// the walk stops; the caller's retry then fails cleanly with a
+    /// destination-correct error rather than looping.
+    pub(super) async fn refresh_dir_handle(&self, device_id: &str, storage_id: u32, dir: &Path) {
+        let dir = normalize_mtp_path(dir.to_string_lossy().as_ref());
+        // Ancestors root-first, excluding `dir` itself: ["/", "/a", ...] up to
+        // and including `parent(dir)`. Listing `parent(dir)` refreshes `dir`'s
+        // own handle.
+        let mut ancestors: Vec<PathBuf> = dir.ancestors().skip(1).map(Path::to_path_buf).collect();
+        ancestors.reverse();
+        for ancestor in ancestors {
+            self.invalidate_listing_cache(device_id, storage_id, &ancestor).await;
+            if let Err(e) = self
+                .list_directory(device_id, storage_id, &ancestor.to_string_lossy())
+                .await
+            {
+                debug!(
+                    "refresh_dir_handle: re-list of {} failed while healing handle for {}: {:?}",
+                    ancestor.display(),
+                    dir.display(),
+                    e
+                );
+                return;
+            }
+        }
+    }
+
+    /// Resolves a virtual path to an MTP object handle.
+    pub(super) fn resolve_path_to_handle(
+        &self,
+        entry: &DeviceEntry,
+        storage_id: u32,
+        path: &str,
+    ) -> Result<ObjectHandle, MtpConnectionError> {
+        let path = normalize_mtp_path(path);
+
+        // Root is always ObjectHandle::ROOT
+        if path.as_os_str() == "/" || path.as_os_str().is_empty() {
+            return Ok(ObjectHandle::ROOT);
+        }
+
+        // Check cache
+        if let Ok(cache_map) = entry.path_cache.read()
+            && let Some(storage_cache) = cache_map.get(&storage_id)
+            && let Some(handle) = storage_cache.path_to_handle.get(&path)
+        {
+            return Ok(*handle);
+        }
+
+        // Path not in cache: only paths that have been listed (browsed) are cached
+        Err(MtpConnectionError::Other {
+            device_id: entry.info.id.clone(),
+            message: format!(
+                "Path not in cache: {}. Navigate through parent directories first.",
+                path.display()
+            ),
+        })
+    }
+
+    /// Handles a device disconnection (called when we detect the device was unplugged).
+    ///
+    /// Drops the device entry, detaches its volumes, and reports the disconnect,
+    /// the same cleanup [`disconnect`](Self::disconnect) does for a user-driven
+    /// one. Called from the event loop when MTP reports a disconnect, and from
+    /// the reopen loop when the phone turns out to be gone for good; dropping the
+    /// entry is what keeps a later `connect()` from failing as "already
+    /// connected".
+    ///
+    /// ❌ NOT the path for a `SessionReset`: that device is still attached and
+    /// reopenable, so it goes through `handle_device_session_reset` instead (see
+    /// `session_reset.rs`). Emitting `Removed` for it would drop a live device
+    /// out of the sidebar.
+    pub(super) async fn handle_device_disconnected(&self, device_id: &str) {
+        #[cfg(all(test, feature = "virtual-device"))]
+        disconnect_test_hooks::bump_count();
+
+        debug!(
+            "handle_device_disconnected: cleaning up device {} from registry",
+            device_id
+        );
+
+        let removed = {
+            let mut devices = self.devices.lock().await;
+            let removed = devices.remove(device_id);
+            debug!(
+                "handle_device_disconnected: device {} was {} in registry, {} devices remaining",
+                device_id,
+                if removed.is_some() { "found" } else { "NOT found" },
+                devices.len()
+            );
+            removed
+        };
+
+        // Stop the event loop for this device
+        self.stop_event_loop(device_id);
+
+        // Freshness (D4): any disconnect breaks watch continuity, so flip every
+        // indexed storage on this device to Stale. Continuity can't be re-claimed
+        // by a reconnect (events were lost while unplugged) — only a rescan does.
+        self.host
+            .indexing()
+            .device_watch_gap(device_id, WatchGap::ConnectionReset);
+
+        if let Some(entry) = removed {
+            info!("MTP device disconnected and removed from registry: {}", device_id);
+
+            // Detach this device's volumes, exactly as `disconnect` does. The
+            // device is gone either way; which of the two paths noticed is an
+            // implementation detail, and a volume left registered would answer
+            // for hardware that isn't there and never publish the `Retirement`
+            // that tells in-flight background work it stopped being live.
+            for storage in &entry.storages {
+                self.detach_storage_volume(device_id, storage.id);
+            }
+
+            self.events.device_event(MtpDeviceEvent::Disconnected {
+                device_id: device_id.to_string(),
+                reason: MtpDisconnectReason::Removed,
+            });
+            debug!("handle_device_disconnected: reported the disconnect for {}", device_id);
+        } else {
+            debug!(
+                "handle_device_disconnected: device {} was not in registry (already cleaned up?)",
+                device_id
+            );
+        }
+    }
+}
+
+/// The `Cancelled` error a scan unit returns when its cancel flag is set at a
+/// unit boundary. Matches the wording-free typed classification the write-op
+/// layer keys on (`MtpConnectionError::Cancelled`).
+fn scan_cancelled(device_id: &str) -> MtpConnectionError {
+    MtpConnectionError::Cancelled {
+        device_id: device_id.to_string(),
+        message: "scan cancelled".to_string(),
+    }
+}
+
+/// Converts a list of `ObjectInfo` into `FileEntry` values and path-to-handle cache updates.
+fn convert_object_infos(
+    parent_path: &Path,
+    object_infos: &[mtp_rs::ObjectInfo],
+) -> (Vec<FileEntry>, Vec<(PathBuf, ObjectHandle)>) {
+    let mut entries = Vec::with_capacity(object_infos.len());
+    let mut cache_updates = Vec::with_capacity(object_infos.len());
+
+    for info in object_infos {
+        let is_dir = info.is_folder();
+        let child_path = parent_path.join(&info.filename);
+
+        cache_updates.push((child_path.clone(), info.handle));
+
+        entries.push(FileEntry {
+            size: if is_dir { None } else { Some(info.size) },
+            modified_at: info.modified.map(convert_mtp_datetime),
+            created_at: info.created.map(convert_mtp_datetime),
+            permissions: NO_PERMISSION_CONCEPT,
+            icon_id: get_mtp_icon_id(is_dir, &info.filename),
+            extended_metadata_loaded: true,
+            // Carry the PTP object handle in `inode` (see the streaming build site
+            // above): the index stores it per entry so removals resolve by handle.
+            inode: Some(info.handle.0),
+            ..FileEntry::new(
+                info.filename.clone(),
+                child_path.to_string_lossy().to_string(),
+                is_dir,
+                false,
+            )
+        });
+    }
+
+    (entries, cache_updates)
+}
+
+/// Test-only tally of `handle_device_disconnected` calls.
+///
+/// Pins the negative half of the reset/disconnect split: a `SessionReset` must
+/// never reach the disconnect teardown, and nothing else observable tells the two
+/// apart in a unit test (both drop the entry, both flip the index Stale; the
+/// `Removed` event needs a device-events sink). Asserted by `session_reset.rs`.
+#[cfg(all(test, feature = "virtual-device"))]
+pub(super) mod disconnect_test_hooks {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static CALLS: AtomicUsize = AtomicUsize::new(0);
+
+    pub(super) fn bump_count() {
+        CALLS.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub(in crate::connection) fn reset_count() {
+        CALLS.store(0, Ordering::Relaxed);
+    }
+
+    pub(in crate::connection) fn count() -> usize {
+        CALLS.load(Ordering::Relaxed)
+    }
+}

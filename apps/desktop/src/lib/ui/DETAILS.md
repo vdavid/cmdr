@@ -465,9 +465,14 @@ maintainability.
 
 Props:
 
-- `items: SelectItem[]` — `{ value, label, description?, group? }`. `description` renders as quieter inline text after
-  the label (used by `SettingSelect`); `group`, when present on any item, buckets items under Ark `ItemGroup` /
-  `ItemGroupLabel` headings (used by the viewer's `EncodingPicker` for Unicode / Western).
+- `items: SelectItem[]` — `{ value, label, description?, group?, iconUrl? }`. `description` renders as quieter inline
+  text after the label (used by `SettingSelect`); `group`, when present on any item, buckets items under Ark `ItemGroup`
+  / `ItemGroupLabel` headings (used by the viewer's `EncodingPicker` for Unicode / Western); `iconUrl` puts a 16px image
+  before the label. Icons are decorative (`alt=""`), so a label must never lean on one to be understandable. As soon as
+  ONE item carries an icon every row reserves the slot, keeping labels in a single column, and the trigger shows the
+  selected item's icon so the button reads like the row it came from. The one caller today is the settings row that
+  picks a terminal app (`../settings/sections/TerminalAppSelect.svelte`), which hands over app icons the backend read
+  out of each `.app` bundle as base64 WebP data URLs.
 - `value: string` — the selected item's `value` (empty string → nothing selected, shows `placeholder`).
 - `onChange: (value: string) => void`.
 - `onHighlightChange?: (highlightedValue: string | null) => void` — fires on keyboard / pointer highlight.
@@ -508,14 +513,25 @@ container, so an ancestor `overflow` clips it and, worse, an ancestor `mask-imag
 z-index (no z-index escapes an ancestor mask). The settings page's `.settings-content-wrapper` has both, which left the
 top rows shaded and un-clickable. `portal` teleports the `Positioner` (via Ark's `Portal`) to `document.body` so the
 menu floats above all of it, macOS-style; zag still anchors to the trigger, and the design tokens live on `:root` so
-body-level content keeps full theming. `SettingSelect` sets `portal`. **Leave it `false` in the viewer window**, whose
-restricted capability set assumes no portal-to-body (`ViewModePicker` / `EncodingPicker`); `Combobox` is non-portaled
-for the same reason.
+body-level content keeps full theming. `SettingSelect` sets `portal`. **Every `Select` rendered into a settings section
+must set it**, `SettingSelect` or not: `AiCloudSection`'s cloud-provider row is the one hand-rolled `Select` there, and
+it's the one that hit this trap. **Leave it `false` in the viewer window**, whose restricted capability set assumes no
+portal-to-body (`ViewModePicker` / `EncodingPicker`); `Combobox` is non-portaled for the same reason.
 
 **Inside a modal, portal to the modal's overlay (`portalContainer`), not to body.** Body is wrong twice over there:
 `--z-dropdown` (100) sits under `--z-modal` (300), so the menu paints behind the scrim, and `use:trapFocus`'s leak guard
 yanks focus straight back out of the open menu, because zag focuses the content element on open. Passing the overlay
 element fixes both while still escaping the panel's `overflow: hidden`. `OnboardingLanguagePicker` is the live example.
+
+**The `--z-dropdown` rung belongs on the positioner (`.select-positioner`).** Zag styles the positioner
+`position: absolute` + `isolation: isolate` and leaves the content a static child inside that stacking context, so a
+`z-index` on `.select-content` only orders the menu's own rows — it can lift the menu over nothing outside the
+positioner, no matter how high it goes. That's the trap: a menu painted under some other chrome looks exactly like a
+z-index problem, and the obvious fix (raise `.select-content`) is a no-op. Zag also writes `z-index: var(--z-index)` to
+the positioner's INLINE style, which no class rule outranks, so the rung goes in by defining that variable rather than
+declaring `z-index`. `Combobox` carries the same pair. The case that exposed both halves was the settings window's
+invisible drag strip painting over the AI provider menu's top rows; the other half of that fix is `../../DETAILS.md` §
+"Window drag strips".
 
 **Stable class contract (load-bearing, don't rename):** `.select-trigger`, `.select-item`, `.select-content`,
 `.option-description`. `SettingSelect`'s `handleCustomSubmit` focuses `.select-trigger` via `querySelector`, and the

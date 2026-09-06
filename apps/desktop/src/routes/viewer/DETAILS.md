@@ -18,12 +18,18 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
   (`ResizeObserver` width tracker), **`viewer-tail`** (`viewer:file-changed:<sid>` → reload toasts).
 - **`viewer-indexing-poll.ts`**: `viewer_get_status` poll during line-index build.
 - **`viewer-keyboard.ts`**: pure key helpers + `createViewerKeyboard`, the keydown router (modifiers, Escape ladder, ⌘A,
-  bare-key dispatch).
+  bare-key dispatch, and the twelve selection-extension chords).
 - Selection: **`selection.svelte.ts`** (model), **`line-segments.ts`** (pure segmenter), **`viewer-caret-geometry.ts`**
-  (pure point → offset search, surrogate-safe), **`viewer-pointer.ts`** (its DOM adapter: row hit-test + character
-  rects), **`viewer-pointer-drag.svelte.ts`** (pointer/drag/context-menu controller), **`viewer-word.ts`**
-  (word-boundary via `Intl.Segmenter`).
-- **`viewer-search-scroll.ts`**: pure per-axis scroll-to-match centring (`recenterOffset`, rect-based).
+  (pure point → offset search, surrogate-safe), **`viewer-pointer.ts`** (its DOM adapter and the ONE place line text is
+  measured: row hit-test, character rects, `caretRectFor`, `measureColumnWidth`), **`viewer-pointer-drag.svelte.ts`**
+  (pointer/drag/context-menu controller), **`viewer-word.ts`** (word-boundary via `Intl.Segmenter`: the word under a
+  caret, and the next boundary in either direction), **`viewer-selection-granularity.ts`** (pure caret → word/line range
+  snapping and the two-range union), **`viewer-caret-motion.ts`** (pure `moveFocus`: the five keyboard motions).
+- Text cursor: **`viewer-text-cursor.svelte.ts`** (pure `toSpacerRelative` + the `createViewerTextCursor` measurer),
+  **`ViewerTextCursor.svelte`** (the one absolutely-positioned bar). See § "Text cursor".
+- **`viewer-search-scroll.ts`**: pure per-axis scroll math. `recenterOffset` centres a search match from its rendered
+  rect; `ensureVisibleOffset` nudges a line just into view for keyboard extension. Different coordinate spaces, see §
+  "Keyboard motion model".
 - Copy: **`viewer-copy.ts`** (pure silent/confirm/refuse policy + thresholds), **`viewer-copy.svelte.ts`**
   (`createViewerCopy` + `createViewerCopyOrchestrator`). Autoscroll: **`viewer-autoscroll.ts`** (curve) +
   **`.svelte.ts`** (RAF controller).
@@ -128,6 +134,12 @@ logical coordinates, independent of which lines happen to be rendered.
 - **Offset units**: UTF-16 code units (matches `String.length` and the search column units the search engine already
   emits, so the whole frontend speaks one unit). The backend converts to UTF-8 bytes at the IPC boundary, clamping
   offsets that land between the high and low surrogate of an astral codepoint.
+- **Selecting to the end of a file with no line count**: in ByteSeek mode before the line index lands, ⌘A can't name a
+  last line, so `makeSelectToEof()` mints `focus.line = EOF_LINE` (`Number.MAX_SAFE_INTEGER`). `toRangeEnds` turns that
+  into `RangeEnd::Eof` so the backend resolves the real end itself, and `isWholeFileSelection` reads it to hand the copy
+  flow the known file size instead of walking lines that were never fetched. Gotcha/Why: `EOF_LINE` is minted directly
+  and never derived. A `totalLines - 1` derivation lands one line short of it, every consumer's literal comparison
+  silently stops matching, and that is how the `Eof` variant went unemitted while looking wired up.
 - **Render**: the page calls `getLineSegmentBounds(selection, lineNumber, lineLength)` and passes the bounds to
   `search.getHighlightedSegments(...)`. The shared `segmentLine()` function (in `line-segments.ts`) merges search-match
   spans with selection bounds and emits non-overlapping `LineSegment`s tagged `highlight` / `active` / `selected`. The
@@ -135,13 +147,15 @@ logical coordinates, independent of which lines happen to be rendered.
 - **Visual collision**: when a search hit and the selection overlap on the same span, search wins on the background
   (`var(--color-highlight)`) and selection wins on the foreground (`var(--color-selection-fg)`, gold). Matches the
   "selected = gold" language from the file list (design-system.md § File list).
-- **Double-click words** come from `findWordBoundsAt` in `viewer-word.ts`: `Intl.Segmenter` gives the boundaries, and
-  `isWordSegment()` decides which segments are words. Gotcha/Why: ❌ never go back to `Intl.Segmenter`'s own
-  `isWordLike`. JavaScriptCore returns `false` for every segment ICU classifies as numeric, which is any word ENDING in
-  a digit (`123`, `3.14`, `v2`, `sha256`, `abc123`), so a double-click on `"1292507278647433"` selected the JSON key
-  before it. The boundaries themselves are correct on every engine; only the flag lies. Node's ICU gets the flag right,
-  so a plain unit test can't see this: `viewer-word.test.ts` stubs a JSC-shaped segmenter to hold the line. (Verified on
-  macOS 26.5.2 WKWebView vs. Node 24 and Playwright WebKit 26.5, offscreen WKWebView probe, 2026-08-13.)
+- **Words come from `viewer-word.ts`**, the ONE caller of `Intl.Segmenter`'s word granularity: `findWordBoundsAt` for
+  the word under a double-click, `findWordEndAfter` / `findWordStartBefore` for the next boundary in either direction
+  (Option+Shift+Arrow). `Intl.Segmenter` gives the boundaries and `isWordSegment()` decides which segments are words, so
+  all three share one workaround. Gotcha/Why: ❌ never go back to `Intl.Segmenter`'s own `isWordLike`. JavaScriptCore
+  returns `false` for every segment ICU classifies as numeric, which is any word ENDING in a digit (`123`, `3.14`, `v2`,
+  `sha256`, `abc123`), so a double-click on `"1292507278647433"` selected the JSON key before it. The boundaries
+  themselves are correct on every engine; only the flag lies. Node's ICU gets the flag right, so a plain unit test can't
+  see this: `viewer-word.test.ts` stubs a JSC-shaped segmenter to hold the line. (Verified on macOS 26.5.2 WKWebView vs.
+  Node 24 and Playwright WebKit 26.5, offscreen WKWebView probe, 2026-08-13.)
 
 ### Pointer → caret
 
@@ -194,8 +208,8 @@ Decision/Why: the count comes from the controller's own `pointerdown` stream, an
 all. Before that, the same handler read a `click` event's `detail`, and triple-click selected nothing in the app while
 double-click worked; since the two branches shared every line but the `detail` comparison, `detail` never reached 3
 there. The whole gesture vocabulary now rests on the one event stream the drag already depends on, which also makes it
-reachable from a test that dispatches plain `PointerEvent`s (`viewer.spec.ts` § "multi-click selection"): a synthetic
-`click` with a hand-set `detail` would have passed against the broken code.
+reachable from a test that dispatches plain `PointerEvent`s (`viewer-selection-gestures.spec.ts`): a synthetic `click`
+with a hand-set `detail` would have passed against the broken code.
 
 Gotcha/Why: which part of the native pipeline dropped that count is NOT established, so don't reach back for `detail` on
 the theory that some documented rule explains it. `preventDefault()` on `pointerdown` suppresses the compatibility
@@ -205,8 +219,245 @@ inside the handler. In other words the obvious suspect is innocent, and an isola
 failure. (Verified on macOS 26.6.2 WKWebView, offscreen WKWebView probe driving synthesized `NSEvent`s at clickCount
 1-4, 2026-09-02.)
 
-A press that counts 2 or 3 deliberately does NOT arm the drag: the gesture is already complete, and a hand twitch before
-the release would otherwise call `setFocus` and collapse the fresh word or line back to a caret.
+### Selection granularity
+
+A gesture carries a granularity — `character`, `word`, or `line` — and both endpoints of the selection are edges of
+ranges snapped to it (`viewer-selection-granularity.ts`). A press counted 2 or 3 arms the drag at `word` / `line` and
+remembers the pressed range; every `pointermove` re-derives the whole selection as the union of that anchor range and
+the range under the pointer, direction preserved (dragging left of the anchor word anchors at the range's far edge, so a
+reversed drag reads correctly and `normaliseSelection` still orders it). Autoscroll's `reAimAfterAutoscroll` routes
+through the same call, so a word drag past the viewport edge keeps its granularity.
+
+Decision/Why: re-deriving from the anchor range is what makes a twitch after a double-press harmless. A pointer that
+hasn't left the pressed word yields the same union, so there is nothing to collapse. ❌ Don't defend the twitch by
+leaving a press counted 2 or 3 unarmed instead: the drag has to stay armed, or double-click-and-sweep selects one word
+forever, which is what users reported.
+
+Character granularity keeps calling `setFocus`, since a plain drag genuinely moves one endpoint; `word` and `line` call
+`setRange`, which sets both at once.
+
+Gotcha/Why: the controller holds **two** pieces of granularity state with different lifetimes, and folding them into one
+silently breaks shift-click. `dragGranularity` describes the drag in progress and `endDrag` resets it;
+`gestureGranularity` plus the remembered anchor range describe the gesture and only a plain (count 1, non-shift) press
+resets them. `endDrag` fires on the double-press's own `pointerup`, so a shift-click reading the drag's granularity
+would always see `character`.
+
+Shift-click therefore extends at the gesture's granularity from the remembered anchor range, matching native, and still
+doesn't advance the click cycle.
+
+Edge case: during a fast autoscroll into unfetched lines, `getLineText` returns `undefined`, so the range collapses on
+that line. The character path has the same hole and the row renders empty anyway, so the selection matches what the user
+sees.
+
+### Keyboard motion model
+
+Extending a selection from the keyboard is "keep the anchor, move the focus", so `viewer-caret-motion.ts` answers only
+the focus half. `moveFocus({ from, motion, getLineText, getTotalLines, desiredColumn })` takes one of five motions —
+`char`, `word`, `line`, `lineEdge`, `docEdge`, each with a `direction` of `-1` or `+1` — and returns
+`{ focus, targetLine, desiredColumn }`. The union makes the key map an exhaustive switch a test can enumerate, and the
+module is pure: it holds the line cache and the line count, and knows nothing about what's on screen.
+
+Three result shapes, and the caller has to handle all three:
+
+- **`focus` set**: the motion landed; `targetLine` matches it.
+- **`focus: null` with a real `targetLine`**: the line the motion wants isn't in the cache. The caller consumes the key,
+  leaves the selection alone, and **still** scrolls to `targetLine`. Decision/Why: that scroll is what puts the line in
+  the render window and triggers the fetch, so the next press succeeds. A bare `null` would make the press a permanent
+  no-op, because nothing would ever fetch the line it wanted. ❌ Never guess an offset for an unfetched line: it crosses
+  the IPC boundary into `viewer_read_range`. Only reachable by out-running the 100 ms fetch debounce with key repeat.
+- **`focus` equal to `from`**: the motion hit the edge of the file. Vertical motions clamp rather than jumping to the
+  file edge; `docEdge` is the gesture that goes there on purpose.
+
+The second shape is why `getLineText` must be the text the VIEW SHOWS, not the raw line cache: a line the template
+already draws is not "unfetched", and calling it that goes round in circles. See § "The phantom trailing line".
+
+Rules the model encodes:
+
+- **Vertical motion moves one LOGICAL line, not one visual row.** Native moves by visual row under word wrap, but every
+  other navigation here (`scrollByLines`, the height map, the search jump) counts logical lines, so a visual row would
+  be the viewer's only second coordinate system. Upgrading later means teaching the model about the height map; don't
+  build it now.
+- **Vertical motion keeps a desired column** so walking down through a short line and back returns to the original
+  column. It's a logical UTF-16 offset, matching the rule above; horizontal motions return `desiredColumn: null`, and
+  the caller clears it on any fresh gesture too (a pointer press or ⌘A), through `resetDesiredColumn`.
+- **`char` steps one grapheme**, so an emoji, a ZWJ sequence like 👨‍👩‍👧, or a base letter plus a combining mark is one
+  press. Offsets stay UTF-16 code units throughout; grapheme stepping only decides how many of them a press covers.
+  `viewer-pointer.ts` keeps caret geometry on codepoint boundaries, and grapheme boundaries strictly refine those, so
+  that invariant still holds.
+- **`word` follows macOS**: right lands on the END of the next word, left on the START of the previous one, via
+  `findWordEndAfter` / `findWordStartBefore`. When only punctuation and whitespace are left, the stop is the line edge;
+  once there, the motion crosses to the neighbouring line. An empty or wordless line is a stop of its own, so a blank
+  line between paragraphs isn't skipped.
+- **`docEdge` down has three branches**: the last line is cached → its exact end, one press; it isn't (the common case
+  on a large file, since the cache only holds fetched windows) → `{ focus: null, targetLine: totalLines - 1 }`, so the
+  caller's scroll fetches it and a second press lands it; there's no line count at all (ByteSeek before the index) → the
+  `EOF_LINE` sentinel, which `toRangeEnds` maps to `RangeEnd::Eof`. That branch's `targetLine` is the sentinel too, and
+  it names no scrollable row; `scroll.ensureLineVisible` reads it as the end of the file, and ❌ nothing may pass it to
+  line arithmetic. ❌ Don't reach for the sentinel merely because the last line isn't cached: that makes it a live,
+  movable focus, which is the wedge the precondition below exists to block. And ❌ don't call `selectToEof()` here — it
+  sets BOTH endpoints and would silently destroy the user's anchor.
+- **Consequence worth knowing rather than rediscovering**: ⌘+Shift+Down from mid-file, then copy, shows the "unknown
+  size" confirm on a large file. `isWholeFileSelection` bails on a start past `(0, 0)`, so `estimateSelectionBytes`
+  walks lines and returns `null` at the first one with an unknown byte length. It terminates safely and it's defensible.
+
+Gotcha/Why: **`moveFocus` never receives the `EOF_LINE` sentinel as its `from`, and throws on one.** ⌘A in
+ByteSeek-no-index mode parks the focus on the sentinel, and it names a line that can never be cached, so one Shift+Up
+from there would ask to step onto it forever. The refusal can't live inside the module: it knows nothing about what's on
+screen, so the only `targetLine` it could hand back is the sentinel itself, and the caller would slam the view to the
+bottom on every press with no way to shrink the selection. `resolveFrom` in `viewer-keyboard.ts` replaces a sentinel
+focus with the last line the scroll composable is rendering (at that line's cached length) before calling in, and treats
+the press as a no-op when nothing is rendered. That works because reaching the sentinel always scrolled the view to the
+bottom, so the last rendered line is the practical end of the file. Keeping the module total is what makes its
+exhaustive-switch test worth anything.
+
+#### The key map
+
+Twelve extend chords, all routed by `extendMotionFor` in `viewer-keyboard.ts`:
+
+- **Shift+Left / Right** → `char`, one grapheme, crossing line boundaries.
+- **Shift+Up / Down** → `line`, one logical line, keeping the desired column.
+- **⌥⇧Left / Right** and **⌃⇧Left / Right** → `word`. Same motion twice: ⌥ is macOS, ⌃ is Linux and Windows (macOS
+  usually eats ⌃⇧Arrow at the system level, which costs nothing to support).
+- **Shift+Home / End** → `lineEdge`.
+- **⌘⇧Up / Down** → `docEdge`; down is the two-press case above.
+
+Beside them, **unmodified Left / Right scroll horizontally by one column** (`scroll.scrollByColumns`), a natural no-op
+under word wrap where nothing overflows. Unmodified Home / End still scroll to the file edges.
+
+Decision/Why: **Shift+Home means the LINE edge while bare Home means the FILE edge**, and that's deliberate. Unmodified
+Home / End are scroll-view navigation, which is what macOS does in a document view and what the viewer already did; a
+selection gesture works on the line in every editor, and ⌘ promotes it back to the whole file. Don't harmonize them.
+
+Decision/Why: **unmodified arrows always scroll rather than moving a cursor.** The viewer's job is looking at a file,
+not editing one, and a key map that changes meaning when a setting flips is worse than a slightly non-editor-like one.
+
+Decision/Why: **extending with no selection at all is a no-op** (the key is still consumed, so the view doesn't scroll
+out from under the gesture). A plain click already leaves a collapsed selection at the click point, so
+click-then-Shift+Arrow is the discoverable path; seeding an anchor from the top of the viewport would start a selection
+the user can't see.
+
+#### Routing, and the two traps
+
+Gotcha/Why: the two entry points sit in different halves of `handleKeyDown`, and each is placement-sensitive.
+
+- **Unmodified Shift+Arrow / Home / End** arrive on the bare-key path. The extend branch goes **after the
+  `if (searchInputFocused) return` guard and before `handleBareKey`**. Before that guard it steals the search input's
+  own Shift+Arrow; after `handleBareKey` Shift+Up keeps scrolling instead of extending.
+- **⌥⇧ / ⌃⇧ / ⌘⇧ chords** arrive in `handleModifiedKey`, which runs **regardless of focus**. The branch sits after the
+  search chords (so ⌘⌥R / ⌘⌥C still win) and before the `if (!e.altKey && !e.shiftKey)` bail, and **gates on
+  `!searchInputFocused` itself** — without that gate it steals ⌥⇧← / ⌥⇧→ from a focused search input.
+
+Gotcha/Why: ❌ never write `e.shiftKey && e.key === 'ArrowLeft'`. `cmdr/no-raw-key-match` is an **error** here and fires
+on exactly that shape (a required modifier read sharing a boolean expression with a literal key test while leaving a
+modifier unconstrained). `extendMotionFor` uses the guard-then-branch shape the rule deliberately doesn't catch:
+`switch (e.key)` first, modifier flags read in a separate statement inside the branch.
+
+#### Following the focus with the view
+
+Every extend press ends in a scroll, on both the landed and the uncached path:
+
+- **Vertically**, `scroll.ensureLineVisible(line)` moves as little as it can, leaving an already-visible line alone, and
+  it takes the `EOF_LINE` sentinel too: the ONE branch reading that as "the end of the file" lives there, so the
+  keyboard hands it `targetLine` unexamined. Gotcha/Why: the branch looks redundant, because the sentinel currently
+  survives `getLineTop` through integer overflow plus the browser clamping an absurd `scrollTop`. Don't lean on that,
+  and above all don't "tidy" the arithmetic with `Math.min(line, totalLines - 1)`: the line count is `null` exactly when
+  the sentinel appears, so the clamp yields `NaN`, and `scrollTop = NaN` throws the view to the TOP of the file.
+  `viewer-scroll.svelte.test.ts` pins both halves. It wraps `ensureVisibleOffset` in `viewer-search-scroll.ts`.
+  Gotcha/Why: that file's other export, `recenterOffset`, speaks **viewport-relative rendered-rect** coordinates while
+  `ensureVisibleOffset` speaks **content-relative scaled** ones (the space `getLineTop` and `scrollTop` live in,
+  compressed by `scrollScale` on files over `MAX_SCROLL_HEIGHT`). They are not interchangeable, and feeding either a
+  `line × lineHeight` estimate mislands it under word wrap, where a wrapped line is one tall row. A line taller than the
+  viewport is left alone while any of it is on screen, so a long wrapped paragraph doesn't get yanked around on every
+  press.
+- **Horizontally**, `scroll.ensureColumnVisible(focus)` measures the focus character with `caretRectFor` and recentres
+  through `recenterOffset` against the content box, exactly as `scrollToMatch` does for a search hit. Without it,
+  repeated Shift+Right on a long unwrapped line walks the focus past the right edge with nothing following it:
+  `handleScroll` tracks only `scrollTop` / `viewportHeight`, and the viewer's only other horizontal scroll is search's.
+  Skipped under word wrap.
+
+`viewer-pointer.ts` is the one module allowed to measure line text geometry, so both new measurements live there:
+`caretRectFor(content, point)` (a zero-width rect on an EDGE of the character box — see its doc comment for why an edge
+pick rather than a fallback ladder) and `measureColumnWidth(content)` (one column's advance, cached by the scroll
+composable and dropped when the text scale settles).
+
+#### The phantom trailing line
+
+The motion model reads line text through `scroll.renderedLineText(line)`, **not** the raw `lineCache`, and the
+difference is load-bearing.
+
+A file ending in a newline makes the backend count a last line it will not serve. On `lineIndex` / `byteSeek`,
+`viewer_open` reports `totalLines` including that phantom (40 001 for 40 000 real lines), while `viewer_get_lines` never
+emits it at any offset or count; `fullLoad` DOES emit it, which is why small files behave differently. The template
+still draws a row for it, because `getVisibleLines()` renders `lineCache.get(i) ?? ''` — a cache miss and a genuinely
+empty line look identical on screen.
+
+So a model reading the cache directly disagrees with the user's screen about which lines exist, and every motion aimed
+at that row returns `{ focus: null, targetLine }` forever: ⌘+Shift+Down is permanently dead on almost every real text
+file, with no error anywhere. `renderedLineText` closes the divergence at its source by answering `''` for exactly the
+range the template draws (`[visibleFrom, renderedTo)`, the same bounds `getVisibleLines()` iterates).
+
+⌘+Shift+Down then lands on offset 0 of the phantom line, which IS the end of the last real line: the range is half-open,
+so it takes line 39 999 in full and nothing of line 40 000. That's the same landing `fullLoad` already gives, so the two
+backends now agree on screen even though they disagree over the wire. (Backend behavior verified by hand against a
+running app on a 40 000-line file, 2026-09-06.)
+
+The divergence also covers a _transient_ dead press for any motion targeting a rendered line whose fetch is still in
+flight; the phantom is the case where the miss never resolves, which is the one visible enough to get reported.
+
+The cost, and it's the right one: on a rendered line whose fetch is still in flight, Shift+End lands on offset 0,
+because 0 genuinely is the end of the empty row on screen. It agrees with what the user sees, it heals on the next press
+once the text arrives, and 0 is the one offset that stays valid for any line text, so nothing invented crosses into
+`viewer_read_range`.
+
+❌ **Don't widen this past the rendered range**, and ❌ don't give it to the other `lineCache` consumers. Outside the
+range, `undefined` still has to mean "not fetched yet, scroll and retry" — that is what makes `docEdge`'s two-press flow
+work, and answering `''` there would invent an offset for a line nobody has seen. `estimateSelectionBytes` needs the
+bare cache too: it reads `undefined` as "I can't size this, route to the confirm dialog", and a phantom `''` would make
+it under-report a real selection.
+
+## Text cursor
+
+An optional thin blinking bar at the selection's focus, off by default (`viewer.showTextCursor`). Purely a render layer
+over state that already exists: nothing about it feeds back into the selection, the keyboard, or the scroll composable,
+which is what lets it be a setting rather than a mode.
+
+**Vocabulary boundary, because the two words are one letter apart in meaning.** **Caret** is a resolved text POSITION
+(`LineOffset`, `caretFromPoint`, `viewer-caret-geometry.ts`, `caretRectFor`) and predates this feature. **Text cursor**
+is the rendered ELEMENT, and it owns the setting id, the `.text-cursor` class, `ViewerTextCursor.svelte`, and
+`viewer-text-cursor.svelte.ts`. `caretRectFor` returning the box the text cursor paints is exactly where a future agent
+starts calling the rendered bar "the caret" and then wonders why `viewer-caret-geometry.ts` renders nothing.
+
+- **Where it mounts**: inside `.scroll-spacer`, as a SIBLING of `.lines-container`. Gotcha/Why: ❌ never inside
+  `.lines-container`. `runWrappedLineHeightEffect` computes `avgWrappedLineHeight` as that container's height divided by
+  `children.length`, so one extra child shrinks the average and corrupts `scrollLineHeight`, `visibleFrom` /
+  `visibleTo`, and `spacerHeight` in word-wrap mode until the height map is ready. A cursor that quietly breaks virtual
+  scrolling is the worst bug this feature could ship.
+- **How it's placed**: `caretRectFor(content, focus)` measured live, then `toSpacerRelative` subtracts the spacer's
+  `getBoundingClientRect()`. Gotcha/Why: that subtraction is the WHOLE conversion. ❌ Never add
+  `translateY(linesOffset)` on top of it: `caretRectFor` bottoms out in `Range.getClientRects()`, so its rect is a
+  VIEWPORT rect read off the rendered row and already carries the container's transform and the scroll position.
+  Applying the transform twice puts the cursor 10⁵-10⁷ px off screen on a large file.
+- **When it's hidden**: media mode, the setting off, no selection, a focus line that isn't rendered (including the
+  `EOF_LINE` sentinel, which has no row of its own), or a rect that measures no height.
+- **Re-measured** in an `$effect` the page wires, after `tick()`, keyed on the selection focus plus everything that can
+  move a rendered row under an unchanged focus: the scroll position, `linesOffset`, the rendered line set, and the wrap
+  flag. A superseded run is dropped by a generation counter rather than racing the current one.
+- **Blink**: a CSS `step-end` animation, added only under `@media (prefers-reduced-motion: no-preference)` so reduced
+  motion gets a solid bar, and re-keyed with `{#key}` on every focus change. Without the re-key, a keypress landing in
+  the blink's "off" half looks like the cursor vanished (design principle 3).
+- **`aria-hidden`**: a visual echo of a selection the page's own `aria-live` region already announces, so a second
+  announcement would be noise. It's its own component so `viewer.a11y.test.ts` can mount it; that file mounts individual
+  components by design and never mounts `+page.svelte`.
+- **The setting is read reactively** through `getViewerShowTextCursor()` (`lib/settings/reactive-settings.svelte.ts`),
+  not a one-shot `getSetting` at mount, because the viewer has no control of its own for it: a flip in Settings has to
+  reach an already-open viewer. `viewer.wordWrap` reads once at mount only because `W` is its primary control.
+  Restricted windows already receive live updates over the cross-window `settings:changed` event, so this costs nothing
+  extra. Plumbing: `lib/settings/DETAILS.md` § "Restricted-window mode".
+- **The viewer READS this setting and never writes it**, so it is in the `get_restricted_window_settings` snapshot and
+  ❌ deliberately NOT in `RestrictedWindowPersistableSetting` / `PERSIST_ALLOWLIST`, unlike `viewer.wordWrap` (`W`
+  writes it) and `fileViewer.suppressBinaryWarning` (the banner's button does). Its only control is the Settings row in
+  the main window, which has full store access. Adding a persist entry to match the two settings beside it would hand
+  the app's highest-risk webview a write nothing uses; `restricted-settings.test.ts` pins the read-only half.
 
 ## Title-bar overlay toolbar
 
@@ -302,6 +553,11 @@ else by kind, and `+page.svelte`'s `openFailureCopy` maps `timedOut` / `extractT
 catalog keys and falls back to `viewer.error.readFailed` for anything that never reached the typed path. Nothing renders
 the backend's own words. The wider split: `docs/guides/error-handling.md`.
 
+`extractTooLarge`'s key is `viewer.error.tooLargeToPreview`, deliberately not named after archives: the preview cap is
+reached by a `.zip` entry AND by a blob in a repository's virtual `.git` snapshot, so the copy says "from here" and
+names neither. `archive` next to it IS archive-only (an encrypted, corrupt, or unsupported-codec archive entry), so
+`viewer.error.archiveUnreadable` keeps its name.
+
 ## Gotchas
 
 - `$state(false)` in `.svelte.ts` triggers `@typescript-eslint/no-unnecessary-condition` because the linter doesn't know
@@ -341,8 +597,8 @@ the backend's own words. The wider split: `docs/guides/error-handling.md`.
   listener-order change. See `tryConsumeEscapeForCopy` in `viewer-keyboard.ts` (`createViewerKeyboard`) and `handleKey`
   in `ViewerContextMenu.svelte`.
 - **AT announcement caps line iteration.** `describeSelectionForAt` in `selection.svelte.ts` walks per-line lengths to
-  build the screen-reader announcement. ⌘A in ByteSeek-no-index mode sets `focus.line = Number.MAX_SAFE_INTEGER` (the
-  sentinel that maps to `RangeEnd::Eof` at the IPC boundary), so an uncapped loop would iterate 9e15 times. The
+  build the screen-reader announcement. ⌘A in ByteSeek-no-index mode sets `focus.line = EOF_LINE` (the sentinel that
+  maps to `RangeEnd::Eof` at the IPC boundary), so an uncapped loop would iterate 9e15 times. The
   `MAX_ANNOUNCE_LINES = 10_000` cap short-circuits to "Selected from line N to the end of the file" without touching the
   line-length lookup at all.
 - **Drag autoscroll honours `prefers-reduced-motion`.** Under reduced motion, `createViewerAutoscroll().start()` does a

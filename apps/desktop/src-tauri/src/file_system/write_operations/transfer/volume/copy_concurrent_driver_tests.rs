@@ -78,6 +78,42 @@ impl Volume for FailReadForPathVolume {
     }
 }
 
+/// A source volume that refuses to answer "is this a directory?" for ONE path,
+/// which is how conflict resolution itself fails: `prepare_source` asks this
+/// before any task exists, and there is no window in which the answer is
+/// optional (a wrong one sends a directory down the streaming branch).
+struct RefuseIsDirectoryForPathVolume {
+    inner: Arc<InMemoryVolume>,
+    fail_for: PathBuf,
+}
+
+impl Volume for RefuseIsDirectoryForPathVolume {
+    forward_volume_methods!(inner =>
+        name, root, list_directory, get_metadata, exists, create_file, create_directory,
+        create_directory_all, delete, rename, get_space_info, supports_streaming, supports_export,
+        operations_are_local, max_concurrent_ops, scan_for_copy, write_from_stream, open_read_stream,
+    );
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        if path == self.fail_for {
+            return Box::pin(async move {
+                Err(VolumeError::IoError {
+                    message: "simulated probe failure while resolving a conflict".to_string(),
+                    raw_os_error: None,
+                })
+            });
+        }
+        self.inner.is_directory(path)
+    }
+}
+
 // ============================================================================
 // Harness
 // ============================================================================
@@ -172,19 +208,14 @@ impl Harness {
 
     /// Runs the whole window over the harness's sources and reports what the
     /// driver left behind.
-    async fn drive(
-        &self,
-        source: Arc<dyn Volume>,
-        dest: Arc<dyn Volume>,
-        concurrency: usize,
-    ) -> Result<DriverRun, WriteFailure> {
-        let outcome = drive_transfer_concurrent(self.ctx(source, dest, concurrency)).await?;
-        Ok(DriverRun {
+    async fn drive(&self, source: Arc<dyn Volume>, dest: Arc<dyn Volume>, concurrency: usize) -> DriverRun {
+        let outcome = drive_transfer_concurrent(self.ctx(source, dest, concurrency)).await;
+        DriverRun {
             outcome,
             copied: self.copied_paths.lock_ignore_poison().clone(),
             created_dirs: self.created_dirs.lock_ignore_poison().clone(),
             in_flight_partials: self.in_flight_partials.lock_ignore_poison().clone(),
-        })
+        }
     }
 
     /// Fills `source_hints` from a REAL preflight scan, the way the phase runner
@@ -301,10 +332,7 @@ async fn a_completed_directory_source_is_recorded_file_by_file_never_by_its_root
     let (source, dest, sources) = merge_batch(3).await;
     let harness = Harness::new(&sources);
 
-    let run = harness
-        .drive(source as Arc<dyn Volume>, Arc::clone(&dest), 4)
-        .await
-        .expect("the driver only errors when conflict resolution itself fails");
+    let run = harness.drive(source as Arc<dyn Volume>, Arc::clone(&dest), 4).await;
 
     assert!(
         run.outcome.copy_error.is_none(),
@@ -352,10 +380,7 @@ async fn every_recorded_destination_carries_the_size_it_was_written_with() {
     let (source, dest, sources) = merge_batch(3).await;
     let harness = Harness::new(&sources);
 
-    let run = harness
-        .drive(source as Arc<dyn Volume>, Arc::clone(&dest), 4)
-        .await
-        .expect("the driver only errors when conflict resolution itself fails");
+    let run = harness.drive(source as Arc<dyn Volume>, Arc::clone(&dest), 4).await;
 
     assert_eq!(run.copied.len(), 5, "three merged children plus two file sources");
     for entry in &run.copied {
@@ -385,10 +410,7 @@ async fn a_failed_directory_source_records_its_files_and_never_its_root_as_a_par
     });
     let harness = Harness::new(&sources);
 
-    let run = harness
-        .drive(source, Arc::clone(&dest), 4)
-        .await
-        .expect("a task failure comes back in the outcome, not as an Err");
+    let run = harness.drive(source, Arc::clone(&dest), 4).await;
 
     assert!(
         run.outcome.copy_error.is_some(),
@@ -452,7 +474,7 @@ async fn a_stream_failure_hands_its_staged_partial_back_for_cleanup() {
     ];
     let harness = Harness::new(&sources);
 
-    let run = harness.drive(source, Arc::clone(&dest), 4).await.unwrap();
+    let run = harness.drive(source, Arc::clone(&dest), 4).await;
 
     assert!(
         run.outcome.copy_error.is_some(),
@@ -626,8 +648,7 @@ async fn a_directory_source_takes_no_slot_from_the_file_window() {
         harness.drive(source as Arc<dyn Volume>, Arc::clone(&dest), 2),
     )
     .await
-    .expect("a two-wide window over two directory sources must not deadlock")
-    .unwrap();
+    .expect("a two-wide window over two directory sources must not deadlock");
 
     assert!(run.outcome.copy_error.is_none(), "{:?}", run.outcome.copy_error);
     for dir in ["d1", "d2"] {
@@ -637,4 +658,62 @@ async fn a_directory_source_takes_no_slot_from_the_file_window() {
         }
     }
     assert!(dest.exists(Path::new("/f.bin")).await);
+}
+
+// ============================================================================
+// A resolver failure is the batch's failure, not an escape hatch
+// ============================================================================
+
+/// Conflict resolution refusing must come back in the OUTCOME, exactly like a
+/// task failure, so the caller's post-loop still runs.
+///
+/// Pre-fix `spawn_ready_tasks` propagated it with `?` straight out of
+/// `drive_transfer_concurrent`, and `copy_volumes_with_progress`'s own `?` then
+/// skipped every line after the driver call: the counter sync, the deep-skip
+/// fold, the created-dir journal rows, the cancel reclassification, the
+/// abandoned-staged-write sweep, the rollback branch, and the terminal
+/// `write-cancelled`. The sources already copied stayed unrecorded, so nothing
+/// could roll them back, and any task still streaming was dropped with its
+/// staged temp left in the operation's in-flight ledger and nobody to sweep it.
+///
+/// Driven one source at a time so the first one is known to have landed before
+/// the second one's probe refuses.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_conflict_resolution_failure_comes_back_in_the_outcome() {
+    let source_inner = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    for name in ["a.txt", "b.txt", "c.txt"] {
+        source_inner
+            .create_file(Path::new(&format!("/{name}")), &vec![7u8; 20_000])
+            .await
+            .unwrap();
+    }
+    let source: Arc<dyn Volume> = Arc::new(RefuseIsDirectoryForPathVolume {
+        inner: source_inner,
+        fail_for: PathBuf::from("/b.txt"),
+    });
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+
+    let sources = vec![
+        PathBuf::from("/a.txt"),
+        PathBuf::from("/b.txt"),
+        PathBuf::from("/c.txt"),
+    ];
+    let harness = Harness::new(&sources);
+
+    let run = harness.drive(source, Arc::clone(&dest), 1).await;
+
+    assert!(
+        run.outcome.copy_error.is_some(),
+        "the refused probe has to surface as the operation's error"
+    );
+    assert_eq!(
+        run.copied_paths(),
+        vec![PathBuf::from("/a.txt")],
+        "the source that DID land must be in the rollback ledger; without it a Rollback has nothing to undo"
+    );
+    assert!(
+        run.in_flight_partials.is_empty(),
+        "the window was empty when the resolver refused, so nothing is left in flight: {:?}",
+        run.in_flight_partials
+    );
 }

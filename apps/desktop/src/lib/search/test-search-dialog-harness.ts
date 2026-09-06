@@ -215,9 +215,12 @@ export function settingsMock(): Record<string, unknown> {
     getSetting: vi.fn((key: string) => {
       if (key === 'ai.provider') return testSettings.aiProvider
       if (key === 'search.autoApply') return testSettings.autoApply
-      // Image indexing on, so the "text in images" grid renders and fires its IPC (the
-      // grid is a no-op when this is off — see `ImageSearchResults.gating.test.ts`).
+      // Both image-grid gates on, so the "text in images" grid renders and fires its IPC.
+      // Either one off makes it a complete no-op, and `mediaIndex.showInSearch` ships OFF,
+      // so answering it here is what keeps these specs testing the grid at all — see
+      // `ImageSearchResults.gating.test.ts`.
       if (key === 'mediaIndex.enabled') return true
+      if (key === 'mediaIndex.showInSearch') return true
       return undefined
     }),
     onSpecificSettingChange: vi.fn((id: string, listener: (value: boolean) => void) => {
@@ -237,7 +240,11 @@ export function indexingMock(): Record<string, unknown> {
 }
 
 export function iconCacheMock(): Record<string, unknown> {
-  return { iconCacheVersion: writable(0), getCachedIcon: vi.fn(() => undefined) }
+  return {
+    iconCacheVersion: writable(0),
+    getCachedIcon: vi.fn(() => undefined),
+    getCachedCustomFolderIcon: vi.fn(() => undefined),
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

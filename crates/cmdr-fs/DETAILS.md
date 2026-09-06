@@ -147,6 +147,12 @@ All three are pure name/path predicates with no I/O — that's a hard requiremen
   outer compression stayed with the archive reading core. The split line is "naming vs machinery", and it keeps
   `format_for_name` the single source of truth rather than forking a second suffix table.
 
+  One consequence of that split is worth following: because the format a name maps to decides WRITABILITY, the enum
+  carries a variant whose whole reason for existing lives in the consumer crate. `ArchiveFormat::Ooxml` is a zip in
+  every respect the reader cares about, and separate only so the app's write guard refuses it. The rationale is in
+  `crates/cmdr-archive/DETAILS.md` § "Why a document container is its own format"; don't restate it here, and read it
+  before touching the variant or the suffix table.
+
 Stripping the two fields instead was never viable: `FileEntry::new` has 83 call sites.
 
 ### 3. `filesystem_kind` split
@@ -228,11 +234,10 @@ The API contract says this crate emits no user-facing strings. Two things look l
 
 - **`pluralize`** formats "1 file" / "2 files". All 49 of its call sites build log lines. It lives here because it's a
   leaf with no dependencies, not because copy generation belongs in a filesystem crate. One of its outputs does reach a
-  UI: `PhaseRecord.trigger` renders in the developer debug panel, which is diagnostics, not product copy.
-- **`FileEntry::display_size` / `display_size_tooltip`** are `String` fields rendered verbatim in the Size column. They
-  are _written_ by the app-side git module; this crate only carries them. The bar is about production, not presence.
-
-Anyone grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first.
+  UI: `PhaseRecord.trigger` renders in the developer debug panel, which is diagnostics, not product copy. Anyone
+  grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first. The Size column
+  used to be the second exception, as a pair of pre-worded `String` fields; it's `FileEntry::git_meta` now
+  (`src/git_meta.rs`), a typed `GitEntryMeta` the host words from its own catalog.
 
 ## `ScanBoundary`: one seam, so a walk can't count without asking
 
@@ -330,7 +335,7 @@ everywhere, which is the point.
   replace, and each backend earns the refusal differently (`renamex_np(RENAME_EXCL)`, an SMB `stat` plus the server's
   `ReplaceIfExists == false`, an MTP `exists` probe, a map lookup). No shared mechanism to trust, only a shared promise.
   MTP's is the one that can't be atomic, and that's a property of the protocol rather than of the code:
-  `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "MTP's no-clobber rename is check-then-act".
+  `crates/cmdr-mtp/DETAILS.md` § "The no-clobber rename is check-then-act".
 - `assert_create_file_refuses_to_clobber` — the New File command renders the refusal as "that name is taken", so a
   clobbering backend silently empties a file and reports success.
 - `assert_create_directory_all_reports_an_existing_dir_honestly` — `Created` promises the leaf was empty, and the
@@ -353,8 +358,8 @@ everywhere, which is the point.
 `InMemoryVolume`, `LocalPosixVolume`, `AdbVolume`, and the Docker-gated `SmbVolume`, `SftpVolume`, and `WebdavVolume`
 run every one (InMemory's writability cell sits in `capabilities_test.rs`, next to the predicate it speaks for).
 `MtpVolume` runs all but `create_file`, which it doesn't implement (an upload there is `write_from_stream`, one
-`SendObject` transaction); its `delete` cell lives in `mtp_delete_test.rs` for the scaffolding that contract needs.
-`ArchiveVolume` is read-only: it runs the three that don't mutate and pins the rest of the ground with
+`SendObject` transaction); its `delete` cell lives in `cmdr-mtp`'s `volume/delete_test.rs` for the scaffolding that
+contract needs. `ArchiveVolume` is read-only: it runs the three that don't mutate and pins the rest of the ground with
 `every_mutation_is_unsupported`, and it is deliberately outside the conflict-scan one, since nothing copies INTO an
 archive through the volume. A backend that adds a mutation adds the matching call.
 

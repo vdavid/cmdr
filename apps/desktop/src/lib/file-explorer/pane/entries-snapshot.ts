@@ -33,10 +33,16 @@ export interface EntriesSnapshotInput {
 
 export async function fetchEntriesSnapshot(input: EntriesSnapshotInput): Promise<FileEntry[]> {
   if (input.isSearchResultsView) {
-    // Adapt SearchResultEntry → FileEntry. The snapshot's entry.name is the
-    // friendly full path (per the search-results virtual volume contract);
-    // we preserve that so the Selection matcher's accessor sees what the
-    // user sees in the pane.
+    // Adapt SearchResultEntry → FileEntry. `entry.name` is the BASENAME the
+    // search matcher judged the row under (`search/engine.rs::build_result_entry`),
+    // and it stays the basename here: the Selection dialog matches a mask like
+    // `*.txt` against this field, and that has to mean the filename.
+    //
+    // ⚠️ It is NOT what the pane displays. `SearchResultsView::adaptEntry`
+    // synthesizes its own `name` (the `~`-shortened full path) for the Name
+    // column. Two adapters, deliberately different: one feeds a matcher, the
+    // other a column. `parentPath` is home-relative (`~/…`) from the same Rust
+    // builder, so it is display text, never a path to join onto.
     const sn = input.searchSnapshot
     if (!sn) return []
     return sn.entries.map((e): FileEntry => ({
@@ -83,6 +89,19 @@ export interface SelectedNamesInput {
 }
 
 export async function fetchSelectedNames(input: SelectedNamesInput): Promise<string[] | 'all'> {
+  // No backend listing, no operation snapshot. A search-results pane is the case
+  // that reaches here: `getFileAt('')` rejects with "Listing not found", and the
+  // caller starts this as `void snapshotSelectionForOperation()`, so the rejection
+  // became an unhandled one on every operation started from a snapshot pane. The
+  // snapshot would have nothing to feed anyway — the listing diff that consumes
+  // it doesn't run on a pane without a listing.
+  //
+  // ⚠️ Ahead of the `all` short-circuit on purpose: `'all'` is a recorded snapshot
+  // too, and `transfer-pane-effects::clearSourcePaneAfterTransfer` can't clear it
+  // on such a pane (its gate compares the pane's path to the operation's birth
+  // FOLDER, which a `search-results://<id>` path never equals).
+  if (!input.listingId) return []
+
   if (input.isAllSelected) return 'all'
 
   const names: string[] = []

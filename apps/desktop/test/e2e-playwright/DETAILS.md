@@ -205,6 +205,13 @@ Only the layout facts that none of those carry live here:
   the guard that deletes anything not in the manifest. It also runs on `captureTest` (`fixtures.ts`), the bare `test`
   with no auto fixture: the leak guard's fixture diff is meaningless with no fixtures, and its overlay check is wrong
   for a master that is deliberately a picture of an open dialog.
+- **Splitting a spec buys readability, never parallelism, and each half has to state its own preconditions.**
+  `playwright.config.ts` sets `fullyParallel: false` and `workers: 1`, so every file in a shard runs sequentially
+  against ONE app instance, and a setting one spec writes is still written for every spec that follows. A family of
+  specs therefore shares its primitives through a `<topic>-helpers.ts` (`archive-browsing` + `archive-editing` over
+  `archive-helpers.ts`, `conflict-*` over `conflict-helpers.ts`, `search-*` over `search-helpers.ts`) while each file
+  sets the settings it depends on in its own `beforeEach`, rather than inheriting whatever ran before it. Splitting for
+  the sake of the `file-length` threshold alone is not worth it; split when the halves answer different questions.
 - **The frame anchor reaches the master through `magick`, and splits so CI still asserts something.**
   `marketing-shots-frame.test.ts` checks the focused-margin constants against a REAL capture, but the committed master
   is lossless WebP and nothing here decodes those pixels in JavaScript (`i18n-capture-png.ts` is PNG-only, and a VP8L
@@ -303,9 +310,9 @@ event; see `file-operations/transfer/DETAILS.md` § "`data-scan-state` marker".
 
 **`triggerFileDrop(tauriPage, paths, targetPane, { targetFolderPath?, operation?, recordedIdentity? })`** (helpers.ts)
 drives the native drag-and-drop ENTRY path programmatically — real OS drag can't be synthesized in Playwright. It emits
-the E2E-gated `e2e-trigger-file-drop` Tauri event, which the app's `+page.svelte` listener (gated on
-`getAppMode() === 'e2e'`, set by `CMDR_E2E_MODE=1`, never true in prod) forwards to `ExplorerAPI.triggerFileDrop` → the
-SAME `dragDrop.handleFileDrop` the live `onDragDropEvent` 'drop' branch runs. So the shared destination guard (read-only
+the E2E-gated `e2e-trigger-file-drop` Tauri event, which the app's `listener-setup.ts` listener (gated on `isE2eRun()`,
+set by `CMDR_E2E_MODE=1`, never true in prod) forwards to `ExplorerAPI.triggerFileDrop` → the SAME
+`dragDrop.handleFileDrop` the live `onDragDropEvent` 'drop' branch runs. So the shared destination guard (read-only
 refusal, search-results toast), source-volume resolution, and transfer dialog all run identically to a real drop. The
 dialog opens (or an alert/toast surfaces) exactly as a drop would; assert with the normal dialog/alert helpers.
 
@@ -643,6 +650,17 @@ reversal carries home depends on what the move had processed before the clash pa
 case there is no toast at all. Asserting there would pin a number the test's own comment says isn't pinnable. When you
 use it, say in a comment which spec DOES own the wording assertion (`conflict-edge-cases.spec.ts`, for that pair).
 
+**A write operation ends at its TOAST, ❌ never at the pane.** The progress dialog holds itself open for
+`MIN_DISPLAY_MS` (400 ms, `$lib/file-operations/transfer/transfer-progress-state.svelte.ts`) so a fast operation doesn't
+flash, and the completion handler raises the toast and unmounts the dialog in the same beat. The PANE, meanwhile, drops
+the deleted row as soon as the file watcher re-reads it, which for a small tree is a few hundred milliseconds earlier.
+So a cell that stops at "the row is gone", or at "the bytes are on disk", ends INSIDE the dialog's floor: the leak guard
+reports a `transfer-progress` overlay against it, and the toast lands afterwards and is blamed on the NEXT cell.
+`dismissAllToasts` does not save it: with no toast up yet, it clears nothing and passes. `git-portal.spec.ts`'s delete
+and copy cells failed exactly this way on Linux CI (run 34005091542, 2026-09-06) and in the Docker lane locally, about
+one attempt in three. End such a cell with `expectAndDismissToast`, which waits for the toast and therefore for the
+dialog.
+
 **A cancelled transfer now raises a toast, so any spec that presses Rollback on a running one owes the guard
 something.** The reversal summarizes itself (`$lib/file-operations/transfer/cancel-rollback-toast.ts`), so a spec that
 cancels with Rollback and then ends leaks a toast into the `afterEach`. Match the CLEAN wording's stable half
@@ -696,6 +714,11 @@ two callers. ❌ Not for a dialog that answers Escape by opening a confirmation,
 question. The `afterEach` safety net presses twice for the same reason.
 
 ### The safety net
+
+The guard's overlay report NAMES the dialog it found (`data-dialog-id` plus the first words on screen), because
+`.modal-overlay` alone is the same label for every dialog in the app and a CI-only leak leaves nothing else to identify
+it from. `.modal-overlay#transfer-progress["Deleting... 0 / 31"]` is what turned the run above from a mystery into a
+diagnosis in one read.
 
 `fixtures.ts` runs ONE global `afterEach` covering both kinds of leak a test can hand to the next one. Per leak it:
 
@@ -817,8 +840,8 @@ inode and an archive spec's watch on it survives. On a clean tree it changes not
 
 **A spec needing content the tree doesn't have writes it OUTSIDE the tree**, to `os.tmpdir()` in a `beforeAll`, and
 removes it in `afterAll`. Adding a file to `fixtures.ts` for one spec puts it in the manifest, the pane-readiness
-expectations, and every other spec's guard run. `viewer.spec.ts` § "multi-click selection" is the worked example: it
-needs a line with several words, which the 1 KB block of `A`s can't give it, and the viewer opens any absolute path.
+expectations, and every other spec's guard run. `viewer-selection-gestures.spec.ts` is the worked example: it needs a
+line with several words, which the 1 KB block of `A`s can't give it, and the viewer opens any absolute path.
 
 **Ordering, when the spec also leaves an operation in flight.** The restore DELETES a spec-made source dir (it isn't in
 the pristine manifest), so a copy still reading that dir dies with `SourceNotFound`. That's not a quiet death: the
@@ -1102,6 +1125,35 @@ inline rename editor VANISHES, because `pane/listing-diff-sync.svelte.ts` cancel
 paper over either one with a longer wait or a retry inside `selectItemsByName` — the pane never self-corrects, so no
 wait is long enough, and the same defect is reachable by a user during any heavy external burst (an unzip, a
 `git checkout`, an rsync into a watched folder).
+
+### An index assertion has to make its own ground current
+
+`get_dir_stats` reads what the index HOLDS, and the verifier is what reconciles a directory against disk. The verifier
+is LISTING-driven: it diffs a directory when a pane lists it, and runs for no directory nobody visits. So a spec that
+churns the tree and then reads `get_dir_stats` is asserting on a row nothing has refreshed.
+
+`indexing.spec.ts` recreates the fixture tree in `beforeEach` and then polls `get_dir_stats` on `left/sub-dir`, so its
+baseline is stale by construction. It passed anyway for as long as some earlier spec in the shard happened to wander
+through `sub-dir` first. Its `beforeEach` now lists `sub-dir` and then `left` itself, which is the precondition it was
+borrowing.
+
+The failure has no symptom but a poll that never converges, which makes it expensive: CI run 33909203247 spent 13
+minutes on three of these timing out, and that run holds no verifier pass on `left/sub-dir` anywhere. The run before it
+verified `sub-dir` 27 s ahead of the first test, which then passed in 264 ms. ❌ Don't answer a non-converging index
+poll with a longer timeout; ask what was supposed to refresh the row.
+
+### An `afterAll` hook gets the CONFIG timeout, not the describe's
+
+`test.describe.configure({ timeout })` reaches TESTS, ❌ never `beforeAll` / `afterAll`. Those get
+`playwright.config.ts`'s 15 s however generous the describe is, and Playwright reports it as
+`"afterAll" hook timeout of 15000ms exceeded`. A hook that legitimately needs longer calls `test.setTimeout()` in its
+own body.
+
+This matters most for a hook that repairs SHARED app state. `restoreLocalVolumeIndex` (`search-walk-ground.ts`) is
+allowed up to 50 s by its own waits — 30 s for `fresh`, then 20 s for an answer a search can actually read — so at 15 s
+it was killed mid-rebuild, and the half-built index it left behind was inherited by every later spec in the shard. In
+run 33909203247 that turned one slow restore into nine additional failures, each reported against a spec that had done
+nothing wrong. Both callers (`search-live.spec.ts`, `search-walk-handoff.spec.ts`) now set their own hook budget.
 
 ### Draining a held operation
 

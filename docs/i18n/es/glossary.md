@@ -126,6 +126,13 @@ AppKit + SystemSettings, 2026-06-21).
 - Files and Folders (pane literal) → Archivos y carpetas · macOS · high
 - git/worktree/repo/blob/commit/clone → kept as-is per do-not-translate (git terms); "repo" inflects naturally ("este
   repo", "los repos") · confirmed (prompt)
+- worktree (git) → `worktree`, verbatim; working tree → `árbol de trabajo` · English draws the two apart and so do we. A
+  worktree is git's own name for a linked checkout, so every key naming one carries it verbatim
+  (`errors.git.orphanedWorktree.*`, `settings.fileExplorer.git.showVirtualGitPortal.description`,
+  `fileExplorer.git.size.linkedWorktrees` = `{countText} worktree vinculado` / `worktrees vinculados`), while the
+  generic "working tree" in `errors.git.bareRepo`, `blobTooLarge`, and `gitDirPermissionDenied` is ordinary prose and
+  stays `árbol de trabajo`. Agreement: masculine, no accent, plural in -s (`un worktree vinculado`,
+  `dos worktrees vinculados`). "working directory" stays the separate `directorio de trabajo` · high
 
 ### Settled during the `licensing.json` + `ai.json` + `viewer.json` pass (macOS Finder/AppKit + MS terminology greps, 2026-06-21)
 
@@ -2044,3 +2051,46 @@ el destino).
   está en el destino»), `reversión` es el término asentado para el rollback (`rollbackUnavailableTooltip`), y `Cancelar`
   es la etiqueta del botón vecino (`fileOperations.button.cancel`), así que entra tal cual · `high`.
 - Sin `sameAsSourceJustification`; ningún valor lleva apóstrofo, así que no hay duplicación ICU (`''`).
+
+## “Abrir terminal aquí” y su selector de app (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Superficie nueva: una tarjeta en `Comportamiento > Navegación y operaciones de archivos` donde se elige la app de
+terminal que abre el comando. La lista la construye macOS; aquí solo se traducen las etiquetas.
+
+- **terminal (el tipo de app) → `terminal`; Terminal (la app de Apple) → `Terminal`** · el macOS en español de Apple
+  mantiene el nombre en inglés (`Abrir en Terminal`, clave `N67` de `macOS/Finder/LocalizableMerged.json`), y la palabra
+  genérica en español es el mismo préstamo · `high`. Por eso el título de la tarjeta
+  `settings.navigationAndFileOps.card.terminal` lleva `sameAsSourceJustification`: es idéntico al inglés a propósito.
+- **Open terminal here (el nombre del comando) → `Abrir terminal aquí`** · construido sobre el `Abrir en Terminal` de
+  Apple, con `aquí` para el lugar · `high`. La traducción del propio comando (menú, paleta) debe usar exactamente esta
+  forma.
+- **Choose an app… → `Seleccionar app…`** · el `Choose Application…` de Apple (clave `N137`) dice
+  `Seleccionar aplicación…`; `app` en vez de `aplicación`, como en todo el catálogo · `high`.
+- Ningún valor lleva apóstrofo, así que no hay duplicación ICU (`''`).
+
+## `Sort by relevance`: la ayuda emergente de la columna de resultados (`fileExplorer.columns.sortByRelevance`)
+
+Superficie nueva: la ayuda emergente sobre la cabecera de columna activa de un panel de resultados de búsqueda. El clic
+siguiente devuelve las filas al orden del buscador, con la mejor coincidencia primero.
+
+- **relevance (lo bien que un resultado coincide con la búsqueda) → `relevancia`** · las cuatro fuentes de macOS
+  coinciden: WorkflowKit (`Relevance (WFSearchSortOrder)` → `Relevancia`), AppStoreKit (`SEARCH_FACET_RELEVANCE` →
+  `Relevancia`), Automator (`%1$[La relevancia]@ …`) y Música · `high`. En minúscula tras `por`, como en el resto del
+  catálogo. (verificado en macOS 26.6.2, compilación 25G83, volcado con `plutil` de las localizaciones incluidas,
+  2026-09-06)
+- **Marco de la frase → `Ordenar por relevancia`** · el mismo patrón que sus claves hermanas de `commands.json`
+  (`Ordenar por nombre`, `Ordenar por tamaño`) · `high`. Sin `sameAsSourceJustification`, y el valor no lleva apóstrofo.
+
+## `Documents and packages`: la nueva fila OOXML (`settings.archives.ooxml.*`)
+
+Superficie nueva: una fila de la misma tarjeta que `Archivos comprimidos zip`, encima de la tarjeta `Paquetes de apps`.
+Cubre a propósito LAS DOS cosas, los documentos de Office (.docx, .xlsx, .pptx) y los paquetes de apps (.jar, .apk), y
+por eso ni el inglés nombra Office.
+
+- **documents (el tipo de archivo) → `Documentos`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Documentos`; tipos
+  `Documento RTF`, `Documento de texto sin formato`) · `high`.
+- **packages (genérico, no solo apps) → `paquetes`** · macOS (`Mostrar contenido del paquete`) y la entrada de glosario
+  `app bundle → paquete` · `high`. Se deja el `paquetes` desnudo para que la fila siga siendo más amplia que la tarjeta
+  `Paquetes de apps` de debajo, la misma separación que hace el inglés con `packages` frente a `app bundles`.
+- **Marco de la frase → `Qué hace pulsar Intro en un …, … o ….`** · el mismo marco que sus claves hermanas
+  `settings.archives.zip.description` y `settings.archives.bundle.description` · `high`. Sin apóstrofo en el valor.

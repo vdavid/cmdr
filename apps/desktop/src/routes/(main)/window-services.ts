@@ -43,6 +43,7 @@ import { startDownloadsEventBridge } from '$lib/downloads/event-bridge.svelte'
 import { startGlobalShortcutBridge } from '$lib/downloads/global-shortcut-bridge.svelte'
 import { initIndexState, destroyIndexState, initMediaEnrichState, destroyMediaEnrichState } from '$lib/indexing/index'
 import { startLowDiskSpaceEventBridge } from '$lib/low-disk-space/event-bridge.svelte'
+import { startOpenTerminalMenuGate } from '$lib/open-terminal/menu-gate.svelte'
 import { initSnapshotPurge, destroySnapshotPurge } from '$lib/search/snapshot-purge'
 import { getSetting } from '$lib/settings'
 import {
@@ -57,6 +58,7 @@ import {
   makeListenTauri,
   setupMenuListeners,
   setupDialogListeners,
+  setupMouseNavListener,
   setupWindowFocusListener,
 } from './listener-setup'
 import { startMenuOperationGate } from './menu-operation-gate.svelte'
@@ -87,6 +89,8 @@ export interface WindowServicesContext {
   }
   /** Re-runs the "What's new" startup trigger; component-owned because it reads startup-modal `$state`. */
   maybeRunWhatsNew: (force: boolean) => Promise<void>
+  /** Whether a modal dialog or overlay is up; the mouse side buttons stay inert while one is. */
+  isModalDialogOpen: () => boolean
 }
 
 /**
@@ -99,6 +103,9 @@ const unlistenFns: UnlistenFn[] = []
 /** Tears down the native-menu enabled-state sync (HMR safety). */
 let stopMenuGate: (() => void) | null = null
 
+/** Tears down the "Open terminal here" menu-item sync (HMR safety). */
+let stopTerminalMenuGate: (() => void) | null = null
+
 /**
  * Phase 1: the subscriptions that want to be up before anything awaits. All fire-and-forget —
  * nothing below can fail in a way the window has to know about.
@@ -107,6 +114,9 @@ export function startEarlyWindowServices(): void {
   // Grey out the File menu's operation items while a dialog is up or Ask Cmdr has focus.
   // Chrome only; every real refusal is elsewhere.
   stopMenuGate = startMenuOperationGate()
+  // Grey out the File menu's "Open terminal here" while the focused pane sits on a
+  // phone, the network browser, or a search snapshot. Chrome only, same as above.
+  stopTerminalMenuGate = startOpenTerminalMenuGate()
   // Seed and subscribe the suggestions badge. The seed is not redundant with the subscription:
   // suggestions never expire, so a group proposed in an earlier session is already waiting
   // before anything emits.
@@ -138,9 +148,12 @@ export async function startWindowServices(ctx: WindowServicesContext): Promise<v
     unlistenFns,
     dialogs: ctx.dialogs,
     maybeRunWhatsNew: ctx.maybeRunWhatsNew,
+    isModalDialogOpen: ctx.isModalDialogOpen,
   }
   await setupMenuListeners(listenerCtx)
   await setupDialogListeners(listenerCtx)
+  // macOS: the mouse's back / forward side buttons, which only AppKit sees.
+  await setupMouseNavListener(listenerCtx)
   await setupMcpListeners({
     getExplorer: ctx.getExplorer,
     // The MCP adapter dispatches through the same typed command bus as the keyboard / palette /
@@ -218,6 +231,8 @@ export function stopWindowServices(): void {
   destroySettledOperationsWatch()
   stopMenuGate?.()
   stopMenuGate = null
+  stopTerminalMenuGate?.()
+  stopTerminalMenuGate = null
   // Clean up every menu / MCP / dialog / window-focus listener (prevents duplicate listeners
   // after HMR). All of them register into this one array.
   for (const unlisten of unlistenFns) {

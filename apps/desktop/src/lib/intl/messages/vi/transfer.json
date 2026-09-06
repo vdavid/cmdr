@@ -46,5 +46,9 @@
   "transfer.fileOnly.mixedMove": "Di chuyển hoàn tất: đã di chuyển {transferredText}, đã bỏ qua {skippedText}. {skippedText} {skipped, plural, other {tệp}} đã có sẵn ở đích.",
   "@transfer.fileOnly.mixedMove": {
     "sourceHash": "1457a4f"
+  },
+  "transfer.appearedDuringMove": "{countText} {count, plural, other {mục}} đã xuất hiện trong {scope, select, manyFolders {{folderName} và các thư mục nguồn khác} other {{folderName}}} trong khi di chuyển và vẫn ở lại đó.",
+  "@transfer.appearedDuringMove": {
+    "sourceHash": "b884882"
   }
 }

@@ -95,7 +95,7 @@ function worktreeDirName() {
 // the cargo feature to the dev build. Adding a feature changes the feature set, so the
 // first `CMDR_VIRTUAL_MTP=1 pnpm dev` after a plain run triggers a full-ish rebuild.
 // Release `pnpm build` never reads this, so prod binaries stay feature-free.
-// See docs/tooling/virtual-mtp.md and src-tauri/src/mtp/virtual_device.rs.
+// See docs/tooling/virtual-mtp.md and crates/cmdr-mtp/src/virtual_device.rs.
 const wantsVirtualMtp = isDev && !!process.env.CMDR_VIRTUAL_MTP && process.env.CMDR_VIRTUAL_MTP.trim() !== ''
 if (wantsVirtualMtp && !forwardedArgs.includes('virtual-mtp')) {
   // Cargo features live after the `--` separator that splits Tauri-CLI args from

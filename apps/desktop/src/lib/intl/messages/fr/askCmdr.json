@@ -104,6 +104,14 @@
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
+  "askCmdr.tool.search.doing": "Recherche dans vos fichiers",
+  "@askCmdr.tool.search.doing": {
+    "sourceHash": "892be3e"
+  },
+  "askCmdr.tool.search.done": "A cherché dans vos fichiers",
+  "@askCmdr.tool.search.done": {
+    "sourceHash": "995a356"
+  },
   "askCmdr.tool.searchPhotos.doing": "Recherche dans vos photos",
   "@askCmdr.tool.searchPhotos.doing": {
     "sourceHash": "da1265d"
@@ -208,9 +216,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr a besoin d''une fenêtre de contexte plus grande que celle de votre modèle local. Choisissez 16 384 jetons ou plus dans les réglages, sous IA.",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr a besoin d''une fenêtre de contexte plus grande que celle de votre modèle local. Choisissez 32 768 jetons ou plus dans les réglages, sous IA.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "Impossible de joindre le fournisseur d''IA. Vérifiez votre connexion et réessayez.",
   "@askCmdr.error.unavailable": {
@@ -243,6 +251,10 @@
   "askCmdr.error.provider": "Un problème est survenu du côté du fournisseur. Réessayer ?",
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
+  },
+  "askCmdr.event.chatMemoryChanged": "La mémoire du chat contient maintenant {tokens, number} tokens",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
   },
   "askCmdr.event.contextTrimmed": "{count, plural, one {# consultation antérieure supprimée} many {# consultations antérieures supprimées} other {# consultations antérieures supprimées}} pour tenir dans le contexte du modèle.",
   "@askCmdr.event.contextTrimmed": {

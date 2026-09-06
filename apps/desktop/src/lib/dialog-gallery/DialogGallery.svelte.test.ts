@@ -76,6 +76,7 @@ vi.mock('$lib/tauri-commands', () => ({
 vi.mock('$lib/icon-cache', () => ({
   iconCacheVersion: writable(0),
   getCachedIcon: vi.fn(() => undefined),
+  getCachedCustomFolderIcon: () => undefined,
 }))
 
 const warn = vi.fn()

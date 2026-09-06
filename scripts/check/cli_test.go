@@ -188,8 +188,8 @@ func TestParseFlags_HelpReturnsErrHelp(t *testing.T) {
 func TestApplySelector_AllReservedNamesResolve(t *testing.T) {
 	for _, name := range reservedSelectorNames {
 		flags := &cliFlags{}
-		if err := applySelector(flags, name); err != nil {
-			t.Errorf("applySelector(%q) returned error: %v", name, err)
+		if !applySelector(flags, name) {
+			t.Errorf("applySelector(%q) did not recognize a reserved keyword", name)
 		}
 		if len(flags.checkNames) != 0 {
 			t.Errorf("applySelector(%q) classified a reserved group keyword as a check name", name)

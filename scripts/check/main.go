@@ -92,6 +92,14 @@ func main() {
 		return
 	}
 	if err != nil {
+		// An unrecognized selector also earns a row in the unrecognized-name log,
+		// as evidence for the naming review (`unknown_selector_log.go`). Logging
+		// happens here rather than in parseFlags, so the parser keeps no side
+		// effects and `go test` never writes to the real log.
+		var unknown *unknownSelectorError
+		if errors.As(err, &unknown) {
+			logUnknownSelectors(unknown)
+		}
 		printError("%v", err)
 		os.Exit(1)
 	}
@@ -327,7 +335,7 @@ func parseFlags(args []string) (*cliFlags, error) {
 		printNightly: *printNightly,
 	}
 
-	if err := applyPositionalSelectors(flags, positionals); err != nil {
+	if err := applyPositionalSelectors(flags, positionals, args); err != nil {
 		return nil, err
 	}
 
@@ -339,18 +347,25 @@ func parseFlags(args []string) (*cliFlags, error) {
 }
 
 // applyPositionalSelectors classifies each positional token (splitting on
-// commas) into the matching cliFlags fields.
-func applyPositionalSelectors(flags *cliFlags, positionals []string) error {
+// commas) into the matching cliFlags fields. It scans every token before
+// reporting, so one unknownSelectorError names all the unrecognized ones
+// (`unknown_selector_log.go`), and `args` (the invocation as typed) rides along
+// for the log.
+func applyPositionalSelectors(flags *cliFlags, positionals, args []string) error {
+	var unknown []string
 	for _, token := range positionals {
 		for part := range strings.SplitSeq(token, ",") {
 			part = strings.TrimSpace(part)
 			if part == "" {
 				continue
 			}
-			if err := applySelector(flags, part); err != nil {
-				return err
+			if !applySelector(flags, part) {
+				unknown = append(unknown, part)
 			}
 		}
+	}
+	if len(unknown) > 0 {
+		return newUnknownSelectorError(unknown, args, flags.noLog)
 	}
 	return nil
 }
@@ -384,15 +399,15 @@ func parseInterspersed(fs *flag.FlagSet, args []string) ([]string, error) {
 	}
 }
 
-// applySelector classifies one positional selector. Check IDs/nicknames
-// behave like --check (named checks run even if slow or CI-only); app names
-// and tech-group keywords behave like --app / --rust / --svelte / --go
-// (default lanes apply). Keep the keywords here in sync with
-// reservedSelectorNames; a test guards the pairing.
-func applySelector(flags *cliFlags, name string) error {
+// applySelector classifies one positional selector and reports whether it
+// recognized the name. Check IDs/nicknames behave like --check (named checks run
+// even if slow or CI-only); app names and tech-group keywords behave like --app /
+// --rust / --svelte / --go (default lanes apply). Keep the keywords here in sync
+// with reservedSelectorNames; a test guards the pairing.
+func applySelector(flags *cliFlags, name string) bool {
 	if checks.GetCheckByID(name) != nil {
 		flags.checkNames = append(flags.checkNames, name)
-		return nil
+		return true
 	}
 	switch strings.ToLower(name) {
 	case "desktop", "website", "api-server", "dashboard", "scripts", "crates":
@@ -404,9 +419,9 @@ func applySelector(flags *cliFlags, name string) error {
 	case "go":
 		flags.goOnly = true
 	default:
-		return fmt.Errorf("unknown check or group: %s\nRun 'pnpm check --help' to see available checks and groups", name)
+		return false
 	}
-	return nil
+	return true
 }
 
 // selectChecks determines which checks to run based on flags.

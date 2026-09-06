@@ -208,6 +208,33 @@ in the field, with no fallback in the app to recover.
 - If newer version found → downloads silently → shows "Restart to update" toast
 - Signatures verified with public key embedded in app
 
+## The tag guard, and rolling back
+
+Pushing a `v*` tag runs the whole Release workflow, and `publish` rewrites `latest.json` for whatever tag fired it. It
+has no idea which version that is, so re-pushing an old tag points the entire install base at an old build. The `guard`
+job gates the workflow on one rule: the tag's version must be strictly greater than the version
+`apps/website/public/latest.json` currently advertises. It runs in seconds and blocks `build`, so a mistaken push never
+reaches the three 90-minute macOS jobs and never overwrites assets on an old release.
+
+Two consequences worth knowing before they surprise you:
+
+- **Re-pushing the current version is refused.** That's a rebuild of something users already have. Retrying a _failed_
+  build is unaffected: publish never ran, so the manifest still names the previous version and the tag is still ahead of
+  it.
+- **A full re-run after publish already committed the manifest is refused too**, because by then the manifest names this
+  very version. Use the override below, or re-run only the failed jobs rather than all of them.
+
+**To roll back deliberately** (a shipped release turns out to be bad and you want everyone back on the previous one):
+
+1. Set the repository variable `RELEASE_REPUBLISH_TAG` to the exact tag you're republishing, like `v0.41.0`. It's under
+   Settings → Secrets and variables → Actions → Variables. It has to match the tag exactly, so a leftover value can
+   never act as a blanket "always allow".
+2. Push or re-run that tag. The guard logs a warning saying the downgrade is deliberate, and the release proceeds.
+3. **Clear the variable.** Nothing expires it for you.
+
+The variable lives outside git on purpose. A tag push is the mistake this guards against, so no combination of tag
+pushes should be able to unlock it.
+
 ## Troubleshooting
 
 ### Release build failed, need to retry same version
@@ -221,6 +248,10 @@ git push origin :refs/tags/v0.x.x      # delete remote tag
 git tag v0.x.x                         # recreate tag
 git push origin main --tags            # push again
 ```
+
+The `guard` job doesn't get in the way here: the failed run never published, so `latest.json` still names the previous
+version and this tag is still ahead of it. It only refuses once the manifest already advertises this same version, at
+which point the retry would be a rebuild of something users have.
 
 ### Draft release left on GitHub after failed build
 

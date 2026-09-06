@@ -75,51 +75,8 @@ mod tests {
     // Only the macOS-gated cases below build a real directory.
     #[cfg(target_os = "macos")]
     use crate::test_support::TestDir;
-
-    #[test]
-    fn app_bundle_is_a_package() {
-        assert!(is_package_dir("Safari.app"));
-        assert!(is_package_dir("My Cool App.app"));
-    }
-
-    #[test]
-    fn known_bundle_extensions_are_packages() {
-        assert!(is_package_dir("Foo.bundle"));
-        assert!(is_package_dir("Cocoa.framework"));
-        assert!(is_package_dir("Some.plugin"));
-        assert!(is_package_dir("Driver.kext"));
-        assert!(is_package_dir("Sound.prefpane"));
-    }
-
-    #[test]
-    fn extension_match_is_case_insensitive() {
-        assert!(is_package_dir("LOUD.APP"));
-        assert!(is_package_dir("Mixed.App"));
-    }
-
-    #[test]
-    fn plain_folders_are_not_packages() {
-        assert!(!is_package_dir("Documents"));
-        assert!(!is_package_dir("my-project"));
-        assert!(!is_package_dir("folder.with.dots"));
-        assert!(!is_package_dir("archive.zip")); // not a directory-package ext
-    }
-
-    #[test]
-    fn a_dotfile_is_not_a_package() {
-        // `.app` as the whole name is a dotfile, not a bundle.
-        assert!(!is_package_dir(".app"));
-        assert!(!is_package_dir(".config"));
-    }
-
-    #[test]
-    fn package_icon_id_uses_the_pkg_prefix_and_full_path() {
-        assert_eq!(
-            package_icon_id("Safari.app", "/Applications/Safari.app").as_deref(),
-            Some("pkg:/Applications/Safari.app")
-        );
-        assert_eq!(package_icon_id("Documents", "/Users/x/Documents"), None);
-    }
+    // The package half (`is_package_dir`, `package_icon_id`) is tested where it
+    // lives, in `cmdr_fs::icons::packages`; only the xattr half is covered here.
 
     /// Builds a minimal `com.apple.FinderInfo` buffer with the given Finder flags.
     fn finder_info_with_flags(flags: u16) -> Vec<u8> {

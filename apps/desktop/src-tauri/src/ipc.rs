@@ -56,7 +56,7 @@ use crate::events::index_mapping::{
     IndexRescanNotificationEvent, IndexScanAbortedEvent, IndexScanCompleteEvent, IndexScanProgressEvent,
     IndexScanStartedEvent, MediaEnrichProgressEvent, MediaEnrichTerminalEvent,
 };
-use crate::file_system::git::watcher::GitStateChangedPayload;
+use crate::file_system::git::wiring::GitStateChangedPayload;
 use crate::file_system::listing::streaming::{
     ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent, ListingProgressEvent,
     ListingReadCompleteEvent,
@@ -81,7 +81,7 @@ use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounte
 // Window-management events: emit_to-targeted window lifecycle.
 use crate::window_events::{
     CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
-    FocusFileViewer, FocusSettings, ForegroundOperation, McpSettingsClose, OpenFileViewer, OpenSettings,
+    FocusFileViewer, FocusSettings, ForegroundOperation, McpSettingsClose, MouseNav, OpenFileViewer, OpenSettings,
     PersistRestrictedSetting, RevealPath, TabContextAction, ViewerWordWrapToggled,
 };
 // AI + system/misc events.
@@ -231,7 +231,7 @@ macro_rules! ipc_command_manifest {
                     // in `generate_handler![]` only: `menu::{show_file_context_menu,
                     // show_breadcrumb_context_menu, show_volume_row_context_menu,
                     // show_parent_row_context_menu, update_pin_tab_menu, set_reopen_closed_tab_enabled,
-                    // set_file_operations_blocked,
+                    // set_file_operations_blocked, set_open_terminal_here_enabled,
                     // update_menu_context, activate_window_menu, toggle_hidden_files,
                     // sync_menu_show_hidden, update_view_mode_menu, set_ui_language}`,
                     // `window_ordering::{show_main_window, order_window_to_back}`, and
@@ -377,6 +377,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::media_index::media_index_folder_coverage,
                     crate::commands::search::prepare_search_index,
                     crate::commands::search::search_files,
+                    crate::commands::search::sort_search_results,
                     crate::commands::search::search_files_streaming,
                     crate::commands::search::cancel_search,
                     crate::commands::search::release_search_index,
@@ -415,7 +416,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::agent::suggested_ops_page,
                     crate::commands::agent::suggested_ops_reject,
                     crate::commands::agent::suggested_ops_approve,
-                    crate::commands::agent::ask_cmdr_record_model_change,
+                    crate::commands::agent::ask_cmdr_record_slot_change,
                     crate::commands::agent::ask_cmdr_get_conversation,
                     crate::commands::agent::ask_cmdr_list_conversations,
                     crate::commands::agent::ask_cmdr_search_conversations,
@@ -463,6 +464,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::menu::update_pin_tab_menu,
                     crate::commands::menu::set_reopen_closed_tab_enabled,
                     crate::commands::menu::set_file_operations_blocked,
+                    crate::commands::menu::set_open_terminal_here_enabled,
                     crate::commands::menu::update_menu_context,
                     crate::commands::menu::activate_window_menu,
                     crate::commands::menu::toggle_hidden_files,
@@ -694,6 +696,16 @@ macro_rules! ipc_command_manifest {
             cfg(not(any(target_os = "macos", target_os = "linux"))) {
                 typed: [
                     crate::stubs::accent_color::get_accent_color,
+                ]
+                dispatch_only: []
+            }
+            // "Open terminal here". macOS only, table and all: the known-terminals table is
+            // bundle ids, and Linux would need its own (`file_system/terminal.rs`).
+            cfg(target_os = "macos") {
+                typed: [
+                    crate::commands::file_actions::list_terminal_apps,
+                    crate::commands::file_actions::open_terminal_here,
+                    crate::commands::file_actions::terminal_app_display_name,
                 ]
                 dispatch_only: []
             }
@@ -1054,6 +1066,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             McpSettingsClose,
             ViewerWordWrapToggled,
             TabContextAction,
+            MouseNav,
             PersistRestrictedSetting,
             // FE-emitted, like `execute-command`: the queue window asks the main
             // window to foreground one operation, and the settings window asks it to show

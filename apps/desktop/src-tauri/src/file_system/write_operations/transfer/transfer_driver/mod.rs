@@ -39,8 +39,9 @@
 //! # Module layout
 //!
 //! - this file: the shared vocabulary (`TransferContext`, `TransferOutcome`, `TransferLoopOutcome`,
-//!   `PostLoopIntent`, `DriverConfig`, `ConflictDecisionInput`, `ConflictDecision`) plus the
-//!   `build_pre_skip_set` / `emit_progress_and_status` helpers.
+//!   `PostLoopIntent`, `DriverConfig`, `ConflictDecisionInput`, `ConflictDecision`), the three
+//!   closure future shapes (`FetchFut`, `ResolveFut`, `TransferFut`) the async driver's `where`
+//!   clause is written in, plus the `build_pre_skip_set` / `emit_progress_and_status` helpers.
 //! - [`progress`]: the per-file progress callback builders (`SerialLeafProgress`,
 //!   `make_concurrent_per_file_progress`).
 //! - [`sync_driver`]: [`drive_transfer_serial_sync`] for local-FS copy/move.
@@ -112,7 +113,9 @@
 )]
 
 use std::collections::HashSet;
+use std::future::Future;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::sync::Arc;
 
 use super::super::event_sinks::OperationEventSink;
@@ -134,6 +137,39 @@ pub(in crate::file_system::write_operations::transfer) use sync_driver::drive_tr
 // ============================================================================
 // Core types
 // ============================================================================
+
+/// Per-call future shape for [`drive_transfer_serial_async`]'s `dest_meta_fetcher`
+/// closure.
+///
+/// The three aliases below name the shapes the async driver's own `where` clause
+/// spells out, so an operation writing one of these closures can say what it
+/// returns instead of restating a `Pin<Box<dyn Future<Output = …> + Send + 'a>>`.
+///
+/// ❗ They live HERE, with the driver whose contract they are, and ❌ not in any
+/// one operation's module. Three operations write these closures — the
+/// cross-volume copy, the cross-volume move, and the same-volume rename — and
+/// parking the aliases in whichever module happened to need them first is what
+/// welded `volume::r#move`, `volume::move_cross`, and `volume::move_same` into
+/// one module cycle: the dispatcher imported the two engines, and both engines
+/// imported the dispatcher back for these three lines.
+///
+/// ❗ The `Result` is the data-safety half. `Ok(None)` means the destination
+/// SAID the name is free; an `Err` means it wouldn't say, and the driver fails
+/// that item rather than writing. ❌ Never fold the two together: a flaky link
+/// then becomes a silent overwrite under a Skip or Stop policy, because no
+/// resolver runs, no policy is consulted, and the landing clears whatever the
+/// probe was asked about.
+pub(super) type FetchFut<'a> = Pin<Box<dyn Future<Output = Result<Option<u64>, WriteOperationError>> + Send + 'a>>;
+
+/// Per-call future shape for [`drive_transfer_serial_async`]'s `conflict_resolver`
+/// closure. See [`FetchFut`] for why these live with the driver.
+pub(super) type ResolveFut<'a> =
+    Pin<Box<dyn Future<Output = Result<ConflictDecision, WriteOperationError>> + Send + 'a>>;
+
+/// Per-call future shape for [`drive_transfer_serial_async`]'s `transfer_one`
+/// closure. See [`FetchFut`] for why these live with the driver.
+pub(super) type TransferFut<'a> =
+    Pin<Box<dyn Future<Output = Result<TransferOutcome, WriteOperationError>> + Send + 'a>>;
 
 /// Per-iteration context passed to the `transfer_one` closure.
 ///
@@ -171,6 +207,16 @@ pub(super) struct TransferContext<'a> {
     /// `ConflictDecision::Proceed`; always `None` for the sync driver and for
     /// no-conflict paths.
     pub replace_after_write: Option<&'a Path>,
+    /// Whether `dest_path` is a name conflict resolution PICKED (a `Rename`
+    /// pick, an Overwrite whose destination it cleared) rather than the plain
+    /// `dest_root.join(name)` nothing has looked at.
+    ///
+    /// The streaming closures pass it to the staging layer, which needs it to
+    /// tell its own `Rename` placeholder from a file nobody resolved a conflict
+    /// for when the landing rename says `AlreadyExists`
+    /// (`staged_write.rs::LandingName`). `false` for the sync driver, which
+    /// resolves no conflicts of its own.
+    pub dest_name_claimed: bool,
     /// Cumulative files processed BEFORE this iteration. Lets the closure
     /// compute `effective_bytes_done` for intra-file progress callbacks
     /// without having to thread the counter through itself. Snapshotted by the

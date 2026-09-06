@@ -2,6 +2,7 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Popover from '$lib/ui/Popover.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
+    import DemoAnchor from '../DemoAnchor.svelte'
 
     let anchorEl: HTMLButtonElement | undefined = $state()
     let open = $state(false)
@@ -12,16 +13,14 @@
         <p class="caption">
             Generic positioned floater: frosted glass, auto-flip, focus trap, Esc closes. Click the anchor to toggle.
         </p>
-        <button
-            bind:this={anchorEl}
-            type="button"
-            class="demo-anchor"
+        <DemoAnchor
+            bind:el={anchorEl}
             onclick={() => {
                 open = !open
             }}
         >
             {open ? 'Close popover' : 'Open popover'}
-        </button>
+        </DemoAnchor>
         {#if anchorEl}
             <Popover
                 anchor={anchorEl}
@@ -45,15 +44,6 @@
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
-    }
-
-    .demo-anchor {
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        background: transparent;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        color: var(--color-text-primary);
     }
 
     .demo-content {

@@ -227,7 +227,8 @@ async fn route_archive_create(
     let (archive_path, inner_parent) =
         cmdr_archive::archive_boundary_candidate(Path::new(parent_path)).ok_or(MutationError::ArchiveNotEditable)?;
     // Only zip archives are writable; tar and 7z are browse + extract only.
-    archive_edit::ensure_zip_writable(&archive_path).map_err(|_| MutationError::ArchiveReadOnly)?;
+    archive_edit::ensure_zip_writable(&archive_path, crate::file_system::ReadOnlySide::Destination)
+        .map_err(|_| MutationError::ArchiveReadOnly)?;
     let inner_path = archive_edit::join_inner_path(&inner_parent, name);
 
     // Reject a duplicate up front with the same friendly message the real-FS

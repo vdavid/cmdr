@@ -26,10 +26,6 @@ Each item says what it costs and what would trigger it. None of them blocks anyt
   the parser: every byte read becomes prompt, and `agent/chat/budget.rs` already prices a small local window tightly.
   Wants a design pass on what a summary costs before any parsing lands.
 - **Per-rule approval for a long job's tail** is a policy question, not a task. It lives in `open-decisions.md`.
-- **A thread-timeline event when the chat memory size changes.** The thread logs `ModelChanged` honestly through two
-  cooperating paths, but a budget change gets no equivalent, so a user who shrinks their window mid-thread sees no note
-  explaining why the replies changed. About half a day, unblocked, and independent of everything above. The channel
-  enums are hand-mirrored in TypeScript, so both sides need the arm.
 - **The rail does not refetch on a decision.** `SuggestionsChanged` fires on every approve and reject, but the rail does
   not subscribe, so an approve/reject line reaches an open thread on next load rather than live. Same documented
   limitation the wake digest has. A naive subscription would refetch for every decision whether or not it concerns the

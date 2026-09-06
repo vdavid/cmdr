@@ -32,6 +32,13 @@ use env_logger as _;
 #[cfg(test)]
 use cmdr_lib as _;
 //noinspection RsUnusedImport
+// Scratch dirs for tests and fixtures, an optional dependency the `testing`
+// feature turns on. Its only LIB use is the virtual-MTP fixture, which also
+// needs `virtual-mtp`, so a `testing`-without-`virtual-mtp` build has the crate
+// and no use for it.
+#[cfg(feature = "testing")]
+use tempfile as _;
+//noinspection RsUnusedImport
 use mimalloc as _;
 //noinspection ALL
 // smb2 crate is used in network/smb_client module (macOS + Linux)
@@ -58,13 +65,17 @@ use tauri_plugin_mcp_bridge as _;
 // tauri_plugin_updater is only registered on non-macOS (custom updater handles macOS)
 #[cfg(target_os = "macos")]
 use tauri_plugin_updater as _;
-//noinspection ALL
-// mtp-rs is used in mtp/ module for Android device support (macOS + Linux)
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-use mtp_rs as _;
 // cmdr-adb is used in the adb/ module for Android-over-ADB support (macOS + Linux)
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use cmdr_adb as _;
+//noinspection ALL
+// `bytes` is a dev-dependency the MTP upload cells build their fake source streams
+// out of, and every one of them is behind `virtual-mtp`. The lanes that don't pass
+// that feature still LINK it into the lib test target, so without this the extern
+// reads as unused there. The production upload path lives in `cmdr-mtp`, which
+// declares its own copy.
+#[cfg(test)]
+use bytes as _;
 
 // These host primitives live in `cmdr-fs` so every crate in the workspace shares
 // one copy, and are re-exported here at their original paths: poison-free
@@ -90,6 +101,10 @@ mod ai;
 mod analytics;
 mod app_lifecycle;
 pub mod benchmark;
+/// Test-only: invariants over the `capabilities/` manifests, which no other
+/// code references (Tauri reads them at build time).
+#[cfg(test)]
+mod capabilities;
 mod child_window_state;
 mod clipboard;
 mod commands;
@@ -126,11 +141,15 @@ pub mod licensing;
 pub(crate) mod linux_distro;
 #[cfg(target_os = "linux")]
 mod linux_icons;
+mod listing_lifecycle;
+mod listing_overlays;
 mod location;
 #[cfg(target_os = "macos")]
 mod macos_icons;
 mod mcp;
 mod menu;
+#[cfg(target_os = "macos")]
+mod mouse_nav;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
 #[cfg(target_os = "macos")]
@@ -138,6 +157,8 @@ mod native_drag;
 mod net;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod network;
+#[cfg(feature = "playwright-e2e")]
+mod open_mock;
 pub mod operation_log;
 #[cfg(target_os = "macos")]
 mod permissions;
@@ -429,7 +450,7 @@ pub fn run() {
             // data dir (so side-by-side dev/prod/worktree instances never reap each
             // other's live temps), and reap any `.cmdr-viewer-*` orphan left by a crash.
             if let Ok(data_dir) = config::resolved_app_data_dir(app.handle()) {
-                file_viewer::init_archive_extract_dir(data_dir.join("viewer-extract"));
+                file_viewer::init_routed_extract_dir(data_dir.join("viewer-extract"));
 
                 // Point the in-flight transfer-partial ledger at the data dir and
                 // clear the `.cmdr-tmp-*` partials an earlier run recorded and never
@@ -482,7 +503,7 @@ pub fn run() {
             // before the virtual device and the hotplug watcher below, which
             // are the two things that can connect one.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
-            mtp::volume_wiring::install_volume_registrar();
+            mtp::install_connection_manager(app.handle());
             // File MTP as a device provider, so the volume list, eject, and path
             // resolution see its storages. `device_volumes` is the seam.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -527,7 +548,7 @@ pub fn run() {
             // out via CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP to avoid racing the shared backing dir.
             // See `mtp/virtual_device.rs::decide_startup_root` and `docs/tooling/virtual-mtp.md`.
             #[cfg(feature = "virtual-mtp")]
-            mtp::virtual_device::activate_from_env_if_requested();
+            mtp::virtual_device::activate_from_env_if_requested(test_mode::is_e2e_mode());
 
             // Ensure ptpcamerad is re-enabled in case a previous session crashed
             // while it was suppressed. No-op if it was already enabled.
@@ -639,6 +660,13 @@ pub fn run() {
             #[cfg(not(target_os = "macos"))]
             stubs::reduce_transparency::observe_reduce_transparency_changes(app.handle().clone());
 
+            // Watch the mouse's back / forward navigation. macOS only: the mouse's own
+            // driver decides what the press becomes, and a Logi Options+ mouse posts a
+            // swipe gesture with no button behind it, so AppKit is the only layer that
+            // sees both shapes. On Linux the frontend reads the buttons off the DOM.
+            #[cfg(target_os = "macos")]
+            mouse_nav::install(app.handle().clone());
+
             // Observe macOS Accessibility > Display > Text Size changes
             #[cfg(target_os = "macos")]
             text_size::observe_system_text_size_changes(app.handle().clone());
@@ -678,7 +706,18 @@ pub fn run() {
 
             // Apply direct SMB connection setting (default: true)
             file_system::set_direct_smb_enabled(saved_settings.direct_smb_connection.unwrap_or(true));
-            file_system::git::set_virtual_portal_enabled(saved_settings.show_virtual_git_portal.unwrap_or(true));
+            file_system::git::wiring::set_virtual_portal_enabled(saved_settings.show_virtual_git_portal.unwrap_or(true));
+            // The one portal every `.git` browse, IPC command, and watcher
+            // subscription shares, reporting repo changes into this window.
+            file_system::git::wiring::install_git_portal(app.handle());
+            // The portal's `.git/` landing rows. Everything below `.git/` is a
+            // routed volume instead; this seam is what keeps the six rows out of
+            // every walker (`listing_overlays.rs`).
+            file_system::git::overlay::register();
+            // And the observer that keeps a repo's `.git/*` watcher armed for as
+            // long as a pane is showing one of its virtual listings, so a lone
+            // `branches/` pane stays live (`listing_lifecycle.rs`).
+            file_system::git::arming::register();
             file_system::staging::set_show_safe_save_files(saved_settings.show_safe_save_files.unwrap_or(true));
             file_system::staging::set_show_staging_temps(saved_settings.show_staging_temp_files.unwrap_or(false));
             file_system::set_smb_concurrency(saved_settings.smb_concurrency.unwrap_or(10) as usize);

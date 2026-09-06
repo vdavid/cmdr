@@ -105,6 +105,72 @@ async fn compress_start_packs_local_files_into_a_new_zip() {
     assert!(complete[0].files_skipped == 0, "a clean compress skips nothing");
 }
 
+/// ❗ DATA SAFETY: a compress onto a destination Cmdr may not write must refuse
+/// BEFORE it touches that file, leaving the original byte-for-byte intact.
+///
+/// The seed is an atomic temp+rename OVER the destination, and the writability
+/// guard used to run inside `route_archive_copy_into`, several steps later. So
+/// compressing onto an existing `report.docx` (or a `.tar`, or a `.7z`) replaced
+/// it with a 22-byte empty zip and THEN refused: the user consented to making an
+/// archive and got a destroyed document and no archive. Atomicity is no defense
+/// here — the swap was atomic, it just landed before anyone asked whether the
+/// target could be written at all.
+///
+/// The assertion that matters is byte-level equality of the original file, not
+/// merely that the call returned an error.
+#[tokio::test]
+async fn compress_refuses_a_read_only_destination_without_touching_its_bytes() {
+    use crate::file_system::volume::backends::LocalPosixVolume;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(&src_root).expect("mkdir src");
+    std::fs::write(src_root.join("one.txt"), b"first").expect("w1");
+
+    // Every destination whose FORMAT Cmdr refuses to write: a document container
+    // and the two read-only archive formats. A `.docx` is the one a user is most
+    // likely to have sitting in the folder they're compressing into.
+    for name in ["report.docx", "sheet.xlsx", "lib.jar", "old.tar", "old.7z"] {
+        let dest = tmp.path().join(name);
+        let original: &[u8] = b"the user's real document, which must survive a refused compress";
+        std::fs::write(&dest, original).expect("pre-write the victim file");
+
+        let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+        let events = Arc::new(CollectorEventSink::new());
+        let result = compress_start(
+            Arc::clone(&events) as Arc<dyn OperationEventSink>,
+            source_volume,
+            vec![PathBuf::from("one.txt")],
+            dest.clone(),
+            unique_lane_id(),
+            ConflictResolution::Overwrite,
+            0,
+            None,
+            None,
+            crate::operation_log::types::Initiator::User,
+        )
+        .await;
+
+        // Refused, and typed — the same `ReadOnlyDevice` every other archive-edit
+        // route answers with.
+        let err = result
+            .err()
+            .unwrap_or_else(|| panic!("{name}: compress must be refused"));
+        assert!(
+            matches!(err, WriteOperationError::ReadOnlyDevice { .. }),
+            "{name}: expected a typed read-only refusal, got {err:?}"
+        );
+
+        // ❗ The file is untouched. Byte-for-byte, not "still exists" — the bug
+        // left a valid 22-byte zip behind, which would pass a weaker check.
+        let after = std::fs::read(&dest).unwrap_or_else(|e| panic!("{name}: the original must still be readable: {e}"));
+        assert_eq!(
+            after, original,
+            "{name}: a refused compress must not have altered the destination's bytes"
+        );
+    }
+}
+
 /// The compress driver supplies the `archive_edit` subkind + net-new flag the
 /// journal can't derive from `WriteOperationType` (both compress and zip-inner
 /// edit cross IPC as `ArchiveEdit`). A net-new compress finalizes with

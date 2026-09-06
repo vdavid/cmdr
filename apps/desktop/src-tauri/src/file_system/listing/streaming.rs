@@ -11,7 +11,7 @@ use tauri_specta::Event;
 use tokio_util::sync::CancellationToken;
 
 use crate::benchmark;
-use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
+use crate::file_system::listing::cached_listing::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::volume::VolumeError;
 use crate::file_system::volume::friendly_error::{
@@ -447,7 +447,7 @@ pub(crate) async fn read_directory_with_progress(
     let resolved = crate::file_system::volume::manager::get_volume_manager()
         .resolve(volume_id, path)
         .await;
-    let is_archive = resolved.is_archive;
+    let is_routed = resolved.is_routed();
     let volume = resolved
         .volume
         .ok_or_else(|| VolumeError::NotFound(format!("Volume not found: {}", volume_id)))?;
@@ -536,14 +536,21 @@ pub(crate) async fn read_directory_with_progress(
     }
 
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
-    // so that sort-by-size works correctly for directories. Archives have no drive
-    // index (their inner paths aren't real FS paths), so enrich/verify are skipped.
+    // so that sort-by-size works correctly for directories. A routed volume has no
+    // drive index (an archive's inner paths and a git snapshot's paths aren't real
+    // FS paths), so enrich/verify are skipped.
     let enrich_start = std::time::Instant::now();
-    if !is_archive {
+    if !is_routed {
         crate::index_host::index().enrich(volume_id, &mut entries);
         crate::index_host::index().verify_directory(volume_id, &path.to_string_lossy());
     }
     let enrich_ms = enrich_start.elapsed().as_millis();
+
+    // Fold in the rows a PANE sees that the volume doesn't hold: today the git
+    // portal's six category rows on a repo's `.git/` listing. AFTER enrich (a
+    // contributed row has no drive-index entry) and BEFORE the sort, so the rows
+    // land where the pane's sort puts them. `crate::listing_overlays`.
+    let overlay_rows = crate::listing_overlays::decorate(&volume, path, &mut entries).await;
 
     // Sort entries
     benchmark::log_event("sort START");
@@ -567,7 +574,8 @@ pub(crate) async fn read_directory_with_progress(
         sort_by,
         sort_order,
         dir_sort_mode,
-    );
+    )
+    .with_overlay_rows(overlay_rows);
     // The row count comes off the listing's own map, so the number the frontend
     // sizes its scroller with is produced by the same filter every later fetch
     // goes through — including the scratch-file half a plain dotfile count misses.
@@ -584,15 +592,18 @@ pub(crate) async fn read_directory_with_progress(
     }
     let cache_write_ms = cache_write_start.elapsed().as_millis();
 
-    // Get the volume from VolumeManager to check if it supports watching.
-    // Virtual git portal paths (`.git/branches/...` and friends) don't
-    // exist on disk, so `notify` would error with "No path was found".
-    // Cache invalidation for those listings flows through
-    // `git::watcher::invalidate_virtual_listings` instead.
+    // Arm a change watch when the volume can carry one. A routed volume answers
+    // `false` (a git snapshot's and an archive's paths aren't on disk, so
+    // `notify` has nothing to arm on), which is what keeps every virtual path
+    // out of here by type.
     let watcher_start_t = std::time::Instant::now();
-    if !crate::file_system::git::is_virtual(path) && volume.can_watch_listings() {
+    if volume.can_watch_listings() {
         start_watching_detached(listing_id, path);
     }
+    // And whatever else a subsystem keeps alive while a pane shows this
+    // directory: today the git portal's per-repo watcher, which a virtual path
+    // can't arm through the line above. `crate::listing_lifecycle`.
+    crate::listing_lifecycle::listing_opened(listing_id, volume.as_ref(), path);
     let watcher_start_ms = watcher_start_t.elapsed().as_millis();
 
     // Volume root for the event (the FE uses it to decide "at volume root"). For

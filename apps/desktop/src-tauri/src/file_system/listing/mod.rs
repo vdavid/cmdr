@@ -1,6 +1,7 @@
 //! Directory listing module - reading, operations, caching, metadata, sorting, streaming.
 
 pub(crate) mod brief_columns;
+pub(crate) mod cached_listing;
 pub(crate) mod caching;
 pub(crate) mod diff;
 pub(crate) mod diff_emitter;
@@ -8,6 +9,7 @@ pub(crate) mod fuzzy_jump;
 pub(crate) mod listing_host;
 pub(crate) mod mutation;
 pub(crate) mod operations;
+pub(crate) mod orphan_reaper;
 pub(crate) mod path_index;
 pub(crate) mod reading;
 pub(crate) mod sorting;
@@ -39,11 +41,13 @@ pub use operations::{get_files_at_indices, get_paths_at_indices};
 // Internal re-exports for file_system module internals (pub(crate) for crate-internal use)
 pub(crate) use caching::{
     ModifyResult, find_listings_for_path, get_cached_listing, get_listing_volume_id_and_path, has_entry,
-    increment_sequence, insert_entry_sorted, remove_entries_by_paths, start_orphan_listing_reaper, update_entry_sorted,
+    increment_sequence, insert_entry_sorted, remove_entries_by_paths, update_entry_sorted,
 };
+pub(crate) use orphan_reaper::start_orphan_listing_reaper;
 // Notification API for volume mutations
+pub(crate) use cached_listing::OverlayRows;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use operations::get_listings_by_volume_prefix;
+pub(crate) use operations::volume_ids_with_listings;
 pub(crate) use operations::{get_listing_entries, update_listing_entries};
 
 // The app's half of `cmdr-archive`'s live-content watch: what a refresh does to
@@ -57,6 +61,8 @@ mod caching_oracle_test;
 #[cfg(test)]
 mod caching_reaper_test;
 #[cfg(test)]
+mod caching_replacement_test;
+#[cfg(test)]
 mod caching_test;
 #[cfg(test)]
 pub(crate) mod caching_test_support;
@@ -68,6 +74,8 @@ mod diff_test;
 mod hidden_files_test;
 #[cfg(test)]
 mod operations_test;
+#[cfg(test)]
+mod overlay_refresh_test;
 #[cfg(test)]
 mod path_index_test;
 #[cfg(test)]

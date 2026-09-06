@@ -30,12 +30,13 @@ function mountHeader(props: Partial<Parameters<typeof mountHeaderRaw>[0]> = {}) 
 function mountHeaderRaw(props: {
   gridTemplate: string
   isFocused: boolean
-  sortBy: SortColumn
+  sortBy: SortColumn | null
   sortOrder: 'ascending' | 'descending'
   showExtensionInName: boolean
   gitColumnVisible: boolean
   skipTransition: boolean
   scrollbarWidth: number
+  clearsSortLabel?: string
   onSortChange?: (column: SortColumn) => void
 }) {
   const target = document.createElement('div')
@@ -44,7 +45,7 @@ function mountHeaderRaw(props: {
   return target
 }
 
-/** The sort trigger labels, in DOM order. */
+/** The column labels, in DOM order. Covers both sort triggers and static labels. */
 function labels(target: HTMLElement): (string | null)[] {
   return [...target.querySelectorAll('.sortable-header .label')].map((el) => el.textContent)
 }
@@ -113,6 +114,42 @@ describe('sorting', () => {
     expect(() => {
       target.querySelector<HTMLButtonElement>('button.sortable-header')?.click()
     }).not.toThrow()
+  })
+})
+
+/**
+ * A pane whose rows do NOT follow its sort (`sortable={false}`, today the
+ * search-results snapshot pane) must not claim one. The labels and their column
+ * tracks stay; the button semantics, the active column, and the direction arrow
+ * all go, because a click here would do nothing and the arrow would name an order
+ * the rows are not in.
+ */
+/**
+ * A pane in NO column's order: the search-results pane before its header is ever
+ * clicked, showing the search engine's ranked rows. Every header still sorts,
+ * because a click is what puts the pane in a column's order.
+ */
+describe('a pane in no column order', () => {
+  it('keeps the four column labels', () => {
+    expect(labels(mountHeader({ sortBy: null }))).toEqual(['Name', 'Ext', 'Size', 'Modified'])
+  })
+
+  it('keeps every header clickable, because a click is what sorts the pane', () => {
+    expect(mountHeader({ sortBy: null }).querySelectorAll('button')).toHaveLength(4)
+  })
+
+  it('lights no column and draws no direction arrow', () => {
+    const target = mountHeader({ sortBy: null })
+
+    expect(target.querySelector('.sortable-header.is-active')).toBeNull()
+    expect(target.querySelector('.sort-indicator:not(.invisible)')).toBeNull()
+  })
+
+  it('still folds Ext into the Name track when the extension rides in the name', () => {
+    const target = mountHeader({ sortBy: null, showExtensionInName: true })
+
+    expect(labels(target)).toEqual(['Name', 'Ext', 'Size', 'Modified'])
+    expect(target.querySelectorAll('.header-name-ext .sortable-header')).toHaveLength(2)
   })
 })
 

@@ -89,60 +89,6 @@ pub fn ensure_ptpcamerad_enabled() {
     debug!("Startup: ensured {} is enabled", SERVICE_LABEL);
 }
 
-/// Queries IORegistry to find the process holding exclusive access to MTP devices.
-///
-/// Returns the process name (like "ptpcamerad") if found.
-///
-/// # How it works
-///
-/// Uses the `ioreg` command to query USB device ownership. The output contains
-/// lines like: `"UsbExclusiveOwner" = "pid 45145, ptpcamerad"`
-pub fn get_usb_exclusive_owner() -> Option<String> {
-    // Run ioreg to query USB device ownership
-    let output = Command::new("ioreg").args(["-l", "-w", "0"]).output().ok()?;
-
-    if !output.status.success() {
-        debug!("ioreg command failed");
-        return None;
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-
-    // Look for lines containing "UsbExclusiveOwner" and "ptpcamera"
-    for line in stdout.lines() {
-        if line.contains("UsbExclusiveOwner") && line.contains("ptpcamera") {
-            // Parse: "UsbExclusiveOwner" = "pid 45145, ptpcamerad"
-            if let Some(value) = line.split('=').nth(1) {
-                let value = value.trim().trim_matches('"');
-                // Parse "pid 45145, ptpcamerad"
-                if let Some(stripped) = value.strip_prefix("pid ") {
-                    let parts: Vec<&str> = stripped.splitn(2, ", ").collect();
-                    if parts.len() == 2 {
-                        debug!("Found USB exclusive owner: {} (pid {})", parts[1], parts[0]);
-                        return Some(format!("pid {}, {}", parts[0], parts[1]));
-                    }
-                }
-            }
-        }
-    }
-
-    // Also check for other processes that might hold the device
-    for line in stdout.lines() {
-        if line.contains("UsbExclusiveOwner")
-            && let Some(value) = line.split('=').nth(1)
-        {
-            let value = value.trim().trim_matches('"').trim();
-            if !value.is_empty() {
-                debug!("Found USB exclusive owner: {}", value);
-                return Some(value.to_string());
-            }
-        }
-    }
-
-    debug!("No USB exclusive owner found");
-    None
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -152,13 +98,6 @@ mod tests {
         assert!(!PTPCAMERAD_WORKAROUND_COMMAND.is_empty());
         assert!(PTPCAMERAD_WORKAROUND_COMMAND.contains("pkill"));
         assert!(PTPCAMERAD_WORKAROUND_COMMAND.contains("ptpcamerad"));
-    }
-
-    #[test]
-    fn test_get_usb_exclusive_owner_returns_option() {
-        // This test just verifies the function runs without panicking
-        let result = get_usb_exclusive_owner();
-        let _ = result;
     }
 
     #[test]

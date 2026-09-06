@@ -124,6 +124,19 @@ dedupe. `refresh`'s `OK` means the backend actually re-read the directory (5 s b
 watcher-backed MTP/SMB listings short-circuit) — it acks reliably even when the re-listing matches the cached state and
 no state push fires.
 
+`nav_to_path` goes one step further: its reply carries a typed outcome, so the result says what the pane DID, not what
+was asked of it. Three shapes, and only the first is an `OK`:
+
+- **Navigated**: the pane came to rest on the target. `OK: Navigated left pane to /Users/david`.
+- **Fell back**: the pane came to rest somewhere else, which is what an edge-flow fallback (MTP-fatal, retry, open-home)
+  does after a destination fails to list. The error names both places: read `cmdr://state` for what the pane is showing.
+- **Didn't settle**: no listing completed inside the FE's 20 s window. The pane reports its destination optimistically
+  from the moment the switch commits, so this is NOT an arrival; `await` on `path` if you think it's still coming.
+
+This closes the last false-positive `OK`: a cross-volume navigation used to ack the moment the switch committed, before
+the new volume had listed anything. `go_to_latest_download` rides the same reply, so it stops moving a cursor in a
+directory the pane never reached.
+
 What this means for automation:
 
 - `OK` is now a meaningful contract: the FE accepted the action. The downstream operation may still be running (a copy
@@ -135,6 +148,8 @@ What this means for automation:
   are open"); closing one of multiple viewers acks as soon as the count drops by one, not when all viewers vanish.
 - Very slow remote shares can still exceed even the 5 s nav budget. If a nav tool times out but the navigation actually
   succeeds in the background, follow up with `await` (`path` / `path_contains`) to confirm the destination landed.
+- A `nav_to_path` that fell back or didn't settle is a real answer about the pane, not a transport failure. Don't retry
+  it blindly: read `cmdr://state` first, since the pane usually holds the reason (a mount failure, an error pane).
 
 Architecture details: `apps/desktop/src-tauri/src/mcp/executor/DETAILS.md` § "Ack contract".
 

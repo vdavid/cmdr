@@ -114,6 +114,7 @@ vi.mock('$lib/icon-cache', async () => {
   const { writable } = await import('svelte/store')
   return {
     getCachedIcon: vi.fn().mockReturnValue('/icons/file.png'),
+    getCachedCustomFolderIcon: () => undefined,
     iconCacheVersion: writable(0),
     iconCacheCleared: writable(0),
     prefetchIcons: vi.fn().mockResolvedValue(undefined),
@@ -156,6 +157,9 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   // calling an undefined getter (a throw in a $derived corrupts sibling reactive effects).
   getMediaIndexEnabled: vi.fn().mockReturnValue(false),
   getMediaIndexShowFileStatusIcons: vi.fn().mockReturnValue(false),
+  // The pane's `caps` derived reads the git-portal toggle through this module,
+  // so an unmocked getter would throw inside a $derived and corrupt its siblings.
+  getShowVirtualGitPortal: vi.fn().mockReturnValue(true),
 }))
 
 vi.mock('$lib/drag-drop', () => ({ startDragTracking: vi.fn() }))

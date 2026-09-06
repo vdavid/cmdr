@@ -135,10 +135,10 @@ export async function buildTransferPropsFromCursor(
  * the same `TransferDialogPropsDraft` shape used by normal panes. See plan §3.7
  * (`isSourceOK: true`) and `search/CLAUDE.md` § "Snapshot store".
  *
- * `sourceVolumeId` is `'root'` because snapshot entries are always real local
- * files (the indexer doesn't index remote volumes today). The transfer pipeline
- * uses this to choose the local-filesystem path; if we ever index SMB / MTP,
- * the per-entry volume needs to be resolved here.
+ * `sourceVolumeId` is resolved by the caller (`snapshot-source-volume.ts`) and
+ * passed in, never assumed: a search covers one volume and any volume with a
+ * persisted index is searchable, so the rows can live on an SMB share or an MTP
+ * storage. The transfer pipeline reads this to pick the dispatch path.
  */
 export function buildTransferPropsFromSnapshot(
   operationType: TransferOperationType,
@@ -149,6 +149,7 @@ export function buildTransferPropsFromSnapshot(
   destVolumeId: string,
   sortColumn: SortColumn,
   sortOrder: SortOrder,
+  sourceVolumeId: string,
 ): TransferDialogPropsDraft | null {
   if (sourcePaths.length === 0) return null
   if (sourcePaths.length !== isDirectoryFlags.length) {
@@ -176,7 +177,7 @@ export function buildTransferPropsFromSnapshot(
     sourceFolderPath: getCommonParentPath(sourcePaths),
     sortColumn,
     sortOrder,
-    sourceVolumeId: 'root',
+    sourceVolumeId,
     destVolumeId,
   }
 }

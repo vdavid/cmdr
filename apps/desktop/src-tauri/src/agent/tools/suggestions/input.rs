@@ -224,12 +224,13 @@ pub(super) enum GroupProblem {
     RenamesVerbMismatch,
     /// A selector under `rename`.
     SelectorCantRename,
-    /// A destination that continues inside an archive. Copy or move INTO a zip, and move
-    /// OUT of one, plan from their own walk rather than the per-source engine, so a group
-    /// written there could not be held to the sources the user reviewed. Refused HERE, where
-    /// it costs the model a retry, rather than at execution where it would refuse after the
-    /// user had already approved.
-    DestinationInsideArchive,
+    /// A destination a ROUTE serves, which takes no writes: inside an archive, or inside
+    /// a repo's virtual `.git` trees. Copy or move INTO a zip, and move OUT of one, plan
+    /// from their own walk rather than the per-source engine, so a group written there
+    /// could not be held to the sources the user reviewed; a snapshot has no file to
+    /// write to at all. Refused HERE, where it costs the model a retry, rather than at
+    /// execution where it would refuse after the user had already approved.
+    DestinationTakesNoWrites,
     /// A field the verb's executor doesn't bind (a destination on a trash group, a parent
     /// on a move).
     UnboundField {
@@ -375,7 +376,7 @@ fn explicit_naming(
 
 /// A destination a group may be built with, or the refusal that says why not.
 fn writable(location: Location) -> Result<WritableDestination, GroupProblem> {
-    WritableDestination::new(location).ok_or(GroupProblem::DestinationInsideArchive)
+    WritableDestination::new(location).ok_or(GroupProblem::DestinationTakesNoWrites)
 }
 
 /// Pair a verb with the target its executor binds: the per-verb executor table

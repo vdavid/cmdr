@@ -5,7 +5,7 @@
 //! `TripIntentOnFirstByteSink`, and `TripIntentAtFilesDoneSink` doubles trip the
 //! operation's intent at the precise moment each scenario needs.
 //!
-//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests.rs`
+//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests/mod.rs`
 //! (`super::tests`) so they aren't duplicated.
 
 use super::tests::{make_state, make_volumes};

@@ -42,7 +42,7 @@ const MTP_INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'
 /**
  * Captures the MTP surfaces, reachable in the MAIN capture pass because the
  * `virtual-mtp` capture build auto-registers the fake device under E2E mode (see
- * `src-tauri/src/mtp/virtual_device.rs` `decide_startup_root`).
+ * `crates/cmdr-mtp/src/virtual_device.rs` `decide_startup_root`).
  *
  * - `mtp-browse`: select the virtual device's Internal Storage on the focused
  *   pane and capture the browse view (the volume breadcrumb + the device's file

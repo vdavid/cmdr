@@ -1,8 +1,9 @@
 /**
- * The rename review's state slice: a `proposalReady` event opens it, the pane watcher and each
- * user decision revalidate it, an edited name is taken from the SERVER, and Apply sends opaque
- * row ids only. Split from `ask-cmdr-trigger.test.ts` (the streaming state machine) because
- * this is a guardrail surface with its own failure modes.
+ * The rename review's state slice: a turn's `proposalReady` events stage plans, the end of the
+ * turn opens ONE review over all of them, the pane watcher and each user decision revalidate it,
+ * an edited name is taken from the SERVER, and Apply sends opaque row ids only. Split from
+ * `ask-cmdr-trigger.test.ts` (the streaming state machine) because this is a guardrail surface
+ * with its own failure modes.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -12,17 +13,20 @@ const sendMock = vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) 
 const preflightRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 const reviseRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 const applyRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
+const cancelProposalMock = vi.fn<(proposalId: string) => Promise<void>>()
+const undoOperationsMock = vi.fn<(operationIds: string[]) => Promise<unknown>>()
 
 vi.mock('$lib/tauri-commands', () => ({
   sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[]) => sendMock(c, t, a, d),
   cancelAskCmdr: vi.fn(() => Promise.resolve()),
   listAskCmdrConversations: vi.fn(() => Promise.resolve([])),
   getAskCmdrConversation: vi.fn(() => Promise.resolve(null)),
-  recordAskCmdrModelChange: vi.fn(() => Promise.resolve(null)),
+  recordAskCmdrSlotChange: vi.fn(() => Promise.resolve([])),
   preflightBulkRename: (...args: unknown[]) => preflightRenameMock(...args),
-  cancelBulkRenameProposal: vi.fn(() => Promise.resolve()),
+  cancelBulkRenameProposal: (proposalId: string) => cancelProposalMock(proposalId),
   applyBulkRename: (...args: unknown[]) => applyRenameMock(...args),
   reviseBulkRenameRow: (...args: unknown[]) => reviseRenameMock(...args),
+  undoOperations: (operationIds: string[]) => undoOperationsMock(operationIds),
 }))
 vi.mock('$lib/app-status-store', () => ({ saveAppStatus: vi.fn() }))
 vi.mock('$lib/logging/logger', () => ({
@@ -48,6 +52,7 @@ import {
   renameReviewListingChanged,
   reviseRenameRow,
   sendMessage,
+  setRenameRowAllowed,
 } from './ask-cmdr-trigger.svelte'
 import { handleTurnEvent, resetStoppedTurns } from './ask-cmdr-stream.svelte'
 
@@ -70,55 +75,155 @@ beforeEach(() => {
   reviseRenameMock.mockReset()
   applyRenameMock.mockReset()
   applyRenameMock.mockResolvedValue({ operationId: 'op-1' })
+  cancelProposalMock.mockReset()
+  cancelProposalMock.mockResolvedValue()
+  undoOperationsMock.mockReset()
   newChat()
   resetStoppedTurns()
   askCmdrState.messages = []
   askCmdrState.conversationId = null
 })
 
-describe('carrying denials into the next batch', () => {
-  /** The row shape a review carries, trimmed to what these tests drive. */
-  function proposalRow(rowId: string, sourceName: string, destinationName: string) {
-    return {
-      rowId,
-      sourceName,
-      destinationName,
-      sourcePath: `/shots/${sourceName}`,
-      volumeId: 'root',
-      evidence: { source: 'filename' as const, detail: sourceName },
-      coverage: null,
-    }
+/** The row shape a review carries, trimmed to what these tests drive. */
+function proposalRow(rowId: string, sourceName: string, destinationName: string, folder = '/shots') {
+  return {
+    rowId,
+    sourceName,
+    destinationName,
+    sourcePath: `${folder}/${sourceName}`,
+    volumeId: 'root',
+    evidence: { source: 'filename' as const, detail: sourceName },
+    coverage: null,
   }
+}
 
-  /** End the streaming turn, so the next `sendMessage` isn't a no-op (single-flight). */
-  function finishTurn(): void {
-    fire({ type: 'done', messageId: 1, seq: 1, stop: 'completed', usage: { promptTokens: 1, completionTokens: 1 } })
-  }
+/** Stage one batch the way the backend does: the plan is staged, the dialog waits. */
+function stageBatch(proposalId: string, rows: ReturnType<typeof proposalRow>[]): void {
+  fire({ type: 'proposalReady', proposal: { proposalId, rows } })
+}
 
+/** End the streaming turn, which is what opens the review over everything staged. */
+function finishTurn(): void {
+  fire({ type: 'done', messageId: 1, seq: 1, stop: 'completed', usage: { promptTokens: 1, completionTokens: 1 } })
+}
+
+/** The first row on show, whichever batch staged it. */
+function firstReviewRow() {
+  return askCmdrState.renameReview?.proposals[0]?.rows[0]
+}
+
+/** Wait until every batch on show has a settled preflight: Apply no-ops while one is in flight. */
+async function reviewSettles(batches: number): Promise<void> {
+  await vi.waitFor(() => {
+    expect(preflightRenameMock).toHaveBeenCalledTimes(batches)
+    expect(askCmdrState.renameReview?.proposals.every((proposal) => !proposal.preflighting)).toBe(true)
+  })
+}
+
+/** Every row on show, in dialog order, whichever batch staged it. */
+function reviewRowIds(): string[] {
+  return askCmdrState.renameReview?.proposals.flatMap((proposal) => proposal.rows.map((row) => row.rowId)) ?? []
+}
+
+/**
+ * One review, however many batches the model needed.
+ *
+ * The model can only emit about 101 plan rows per reply, so a big job arrives as a run of
+ * `propose_rename_plan` calls inside one turn. Each used to replace the review under the
+ * user's cursor — cancelling the plan they were reading — so they were asked to make one
+ * decision several times, on the operation where careful review matters most.
+ */
+describe('one review for one job', () => {
+  it('adds a second batch to the review instead of destroying the first', async () => {
+    sendMessage('rename all of them')
+
+    stageBatch('proposal-1', [proposalRow('row-1', 'a.png', 'klarna-invoice.png')])
+    stageBatch('proposal-2', [proposalRow('row-2', 'b.png', 'klarna-receipt.png')])
+
+    // Nothing to answer yet: the model is still working through the job.
+    expect(askCmdrState.renameReview).toBeNull()
+
+    finishTurn()
+
+    await reviewSettles(2)
+    expect(askCmdrState.renameReview?.proposals.map((proposal) => proposal.proposalId)).toEqual([
+      'proposal-1',
+      'proposal-2',
+    ])
+    expect(reviewRowIds()).toEqual(['row-1', 'row-2'])
+    // The first batch is still staged on the spine: nothing cancelled it to make room.
+    expect(cancelProposalMock).not.toHaveBeenCalled()
+    // Each batch is preflighted as itself; the backend knows nothing about the grouping.
+    expect(preflightRenameMock).toHaveBeenCalledWith('proposal-1', ['row-1'])
+    expect(preflightRenameMock).toHaveBeenCalledWith('proposal-2', ['row-2'])
+  })
+
+  it('starts one operation per batch, in the order they were staged', async () => {
+    applyRenameMock.mockResolvedValueOnce({ operationId: 'op-1' }).mockResolvedValueOnce({ operationId: 'op-2' })
+    sendMessage('rename all of them')
+    stageBatch('proposal-1', [proposalRow('row-1', 'a.png', 'invoice-a.png')])
+    stageBatch('proposal-2', [proposalRow('row-2', 'b.png', 'invoice-b.png', '/receipts')])
+    finishTurn()
+    await reviewSettles(2)
+
+    await applyRenameReview()
+
+    expect(applyRenameMock.mock.calls).toEqual([
+      ['proposal-1', ['row-1']],
+      ['proposal-2', ['row-2']],
+    ])
+    // Every started operation reaches the thread, and the review is over.
+    const applied = askCmdrState.messages.filter((message) => message.kind === 'renameApplied')
+    expect(applied.map((line) => line.operationId)).toEqual(['op-1', 'op-2'])
+    expect(askCmdrState.renameReview).toBeNull()
+  })
+
+  it('never sends a row the user turned down, whichever batch staged it', async () => {
+    sendMessage('rename all of them')
+    stageBatch('proposal-1', [
+      proposalRow('row-1', 'a.png', 'invoice-a.png'),
+      proposalRow('row-2', 'b.png', 'invoice-b.png'),
+    ])
+    stageBatch('proposal-2', [
+      proposalRow('row-3', 'c.png', 'invoice-c.png'),
+      proposalRow('row-4', 'd.png', 'invoice-d.png'),
+    ])
+    finishTurn()
+    await reviewSettles(2)
+
+    // One turned down in each batch, so neither a first-batch nor a last-batch denial can ride.
+    setRenameRowAllowed('proposal-1', 'row-2', false)
+    setRenameRowAllowed('proposal-2', 'row-3', false)
+    await reviewSettles(4)
+    await applyRenameReview()
+
+    expect(applyRenameMock.mock.calls).toEqual([
+      ['proposal-1', ['row-1']],
+      ['proposal-2', ['row-4']],
+    ])
+    // And both denied names ride the next send as feedback, not just the last batch's.
+    finishTurn()
+    sendMessage('try again')
+    expect(sendMock).toHaveBeenLastCalledWith(expect.anything(), 'try again', [], ['invoice-b.png', 'invoice-c.png'])
+  })
+})
+
+describe('carrying denials into the next message', () => {
   async function openTwoRowReview(): Promise<void> {
     sendMessage('rename these')
-    fire({
-      type: 'proposalReady',
-      proposal: {
-        proposalId: 'proposal-1',
-        rows: [
-          proposalRow('row-1', 'a.png', 'klarna-invoice.png'),
-          proposalRow('row-2', 'b.png', 'klarna-receipt.png'),
-        ],
-      },
-    })
-    // The proposal kicks off a preflight; apply no-ops while one is in flight.
-    await vi.waitFor(() => {
-      expect(preflightRenameMock).toHaveBeenCalledTimes(1)
-    })
+    stageBatch('proposal-1', [
+      proposalRow('row-1', 'a.png', 'klarna-invoice.png'),
+      proposalRow('row-2', 'b.png', 'klarna-receipt.png'),
+    ])
+    finishTurn()
+    await reviewSettles(1)
   }
 
   it('sends the names the user denied with the next message, then forgets them', async () => {
     await openTwoRowReview()
-    const review = askCmdrState.renameReview
-    if (!review) throw new Error('the review should be open')
     // The user keeps the first name and turns down the second.
-    review.rows[1].allowed = false
+    setRenameRowAllowed('proposal-1', 'row-2', false)
+    await reviewSettles(2)
     await applyRenameReview()
     finishTurn()
 
@@ -166,23 +271,8 @@ describe('rename review listing updates', () => {
       rows: [{ rowId: 'row-1', status: 'blocked', reason: 'targetExists' }],
     })
     sendMessage('rename it')
-    fire({
-      type: 'proposalReady',
-      proposal: {
-        proposalId: 'proposal-1',
-        rows: [
-          {
-            rowId: 'row-1',
-            sourceName: 'before.png',
-            destinationName: 'after.png',
-            sourcePath: '/shots/before.png',
-            volumeId: 'root',
-            evidence: { source: 'filename' as const, detail: 'before' },
-            coverage: null,
-          },
-        ],
-      },
-    })
+    stageBatch('proposal-1', [proposalRow('row-1', 'before.png', 'after.png')])
+    finishTurn()
     await vi.waitFor(() => {
       expect(preflightRenameMock).toHaveBeenCalledTimes(1)
     })
@@ -193,7 +283,7 @@ describe('rename review listing updates', () => {
     await vi.waitFor(() => {
       expect(preflightRenameMock).toHaveBeenCalledWith('proposal-1', ['row-1'])
     })
-    expect(askCmdrState.renameReview?.rows[0]).toMatchObject({
+    expect(firstReviewRow()).toMatchObject({
       allowed: false,
       blockedReason: 'targetExists',
     })
@@ -205,30 +295,15 @@ describe('rename review listing updates', () => {
     await renameReviewListingChanged([{ type: 'remove', entry: { name: 'after.png' } }])
 
     await vi.waitFor(() => {
-      expect(askCmdrState.renameReview?.rows[0]?.blockedReason).toBeNull()
+      expect(firstReviewRow()?.blockedReason).toBeNull()
     })
-    expect(askCmdrState.renameReview?.rows[0]?.allowed).toBe(false)
+    expect(firstReviewRow()?.allowed).toBe(false)
   })
 
   it('ignores watcher changes unrelated to the reviewed names', async () => {
     sendMessage('rename it')
-    fire({
-      type: 'proposalReady',
-      proposal: {
-        proposalId: 'proposal-1',
-        rows: [
-          {
-            rowId: 'row-1',
-            sourceName: 'before.png',
-            destinationName: 'after.png',
-            sourcePath: '/shots/before.png',
-            volumeId: 'root',
-            evidence: { source: 'filename' as const, detail: 'before' },
-            coverage: null,
-          },
-        ],
-      },
-    })
+    stageBatch('proposal-1', [proposalRow('row-1', 'before.png', 'after.png')])
+    finishTurn()
     await vi.waitFor(() => {
       expect(preflightRenameMock).toHaveBeenCalledTimes(1)
     })
@@ -246,26 +321,11 @@ describe('rename review listing updates', () => {
       rows: [{ rowId: 'row-1', status: 'blocked', reason: 'sourceMissing', warnings: [] }],
     })
     sendMessage('rename it')
-    fire({
-      type: 'proposalReady',
-      proposal: {
-        proposalId: 'proposal-1',
-        rows: [
-          {
-            rowId: 'row-1',
-            sourceName: 'before.png',
-            destinationName: 'after.png',
-            sourcePath: '/shots/before.png',
-            volumeId: 'root',
-            evidence: { source: 'filename' as const, detail: 'before' },
-            coverage: null,
-          },
-        ],
-      },
-    })
+    stageBatch('proposal-1', [proposalRow('row-1', 'before.png', 'after.png')])
+    finishTurn()
 
     await vi.waitFor(() => {
-      expect(askCmdrState.renameReview?.rows[0]).toMatchObject({
+      expect(firstReviewRow()).toMatchObject({
         allowed: false,
         blockedReason: 'sourceMissing',
       })
@@ -279,10 +339,10 @@ describe('rename review listing updates', () => {
     await renameReviewListingChanged([{ type: 'add', entry: { name: 'before.png' } }])
 
     await vi.waitFor(() => {
-      expect(askCmdrState.renameReview?.rows[0]?.blockedReason).toBeNull()
+      expect(firstReviewRow()?.blockedReason).toBeNull()
     })
     expect(preflightRenameMock).toHaveBeenCalledWith('proposal-1', ['row-1'])
-    expect(askCmdrState.renameReview?.rows[0]?.allowed).toBe(false)
+    expect(firstReviewRow()?.allowed).toBe(false)
   })
 })
 
@@ -296,11 +356,7 @@ describe('revising a proposed name', () => {
         proposalId: 'proposal-1',
         rows: [
           {
-            rowId: 'row-1',
-            sourceName: 'before.png',
-            destinationName: 'Klarna invoice.png',
-            sourcePath: '/shots/before.png',
-            volumeId: 'root',
+            ...proposalRow('row-1', 'before.png', 'Klarna invoice.png'),
             evidence: { source: 'imageText' as const, detail: 'payment confirmation' },
             coverage: {
               matchOffset: 21,
@@ -316,6 +372,7 @@ describe('revising a proposed name', () => {
         ],
       },
     })
+    finishTurn()
     await vi.waitFor(() => {
       expect(preflightRenameMock).toHaveBeenCalledTimes(1)
     })
@@ -339,10 +396,10 @@ describe('revising a proposed name', () => {
       coverage: null,
     })
 
-    await reviseRenameRow('row-1', 'Klarna payment confirmation 2026-07-24.png')
+    await reviseRenameRow('proposal-1', 'row-1', 'Klarna payment confirmation 2026-07-24.png')
 
     expect(reviseRenameMock).toHaveBeenCalledWith('proposal-1', 'row-1', 'Klarna payment confirmation 2026-07-24.png')
-    expect(askCmdrState.renameReview?.rows[0]).toMatchObject({
+    expect(firstReviewRow()).toMatchObject({
       destinationName: 'Klarna payment confirmation 2026-07-24.png',
       evidence: { source: 'userEdited', detail: '' },
       coverage: null,
@@ -362,9 +419,9 @@ describe('revising a proposed name', () => {
     await openOneRowReview()
     reviseRenameMock.mockRejectedValue(new Error('Each destinationName must be one filename, not a path.'))
 
-    await reviseRenameRow('row-1', 'folder/name.png')
+    await reviseRenameRow('proposal-1', 'row-1', 'folder/name.png')
 
-    expect(askCmdrState.renameReview?.rows[0]).toMatchObject({
+    expect(firstReviewRow()).toMatchObject({
       destinationName: 'Klarna invoice.png',
       nameRejected: true,
     })
@@ -375,9 +432,9 @@ describe('revising a proposed name', () => {
   it('sends nothing when the name did not change', async () => {
     await openOneRowReview()
 
-    await reviseRenameRow('row-1', 'Klarna invoice.png')
+    await reviseRenameRow('proposal-1', 'row-1', 'Klarna invoice.png')
 
     expect(reviseRenameMock).not.toHaveBeenCalled()
-    expect(askCmdrState.renameReview?.rows[0]?.evidence.source).toBe('imageText')
+    expect(firstReviewRow()?.evidence.source).toBe('imageText')
   })
 })

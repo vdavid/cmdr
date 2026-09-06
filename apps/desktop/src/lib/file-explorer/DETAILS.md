@@ -203,16 +203,18 @@ Second virtual-volume namespace alongside `network`. `volumeId === 'search-resul
 `search-results://<snapshot-id>` (opaque to filesystem APIs). The view selection runs off the pane's
 `VolumeCapabilities`: `FilePane`'s `paneViewKind` derived (`caps.kind === 'search-results'`) picks `SearchResultsView`
 in the `{#if/elseif}` chain, and the "is there a real directory" per-feature gates (git lookups, listing watcher,
-dir-exists poll, MCP file sync) read `!caps.hasBackendListing` — the same gate that skips a `network` pane. See
-`pane/DETAILS.md` § "Volume capabilities" for the per-site breakdown (capabilities, not a
-`volumeId === 'search-results'` string compare).
+dir-exists poll) read `!caps.hasBackendListing` — the same gate that skips a `network` pane. The pane still MIRRORS to
+MCP, off its snapshot rather than a listing; only `network` opts out of that (`caps.syncsToMcp`). See `pane/DETAILS.md`
+§ "Volume capabilities" for the per-site breakdown (capabilities, not a `volumeId === 'search-results'` string compare).
 
 `SearchResultsView` reads the snapshot from `$lib/search/snapshot-store.svelte` and feeds its entries into `FullList`
 via `staticEntries`. No backend listing exists, no IPC traffic. Each adapted entry's `name` field is the friendly full
 path (home folder shown as `~`); the col-name cell mid-truncates via `useShortenMiddle` and surfaces the full path on
 hover. There's no separate Path column anymore. The view exports a small API (`setCursorIndex` / `findItemIndex` /
 `openCursorItem` / `isMissing`) used by FilePane's keyboard handler; `findItemIndex` matches on the basename of `path`
-so type-to-jump / MCP keep working with plain filenames.
+so type-to-jump / MCP keep working with plain filenames. The column header sorts the SNAPSHOT rather than the pane's
+tab, cycling back to the engine's ranked order on a third click: `../search/DETAILS.md` § "The snapshot pane's row
+order".
 
 Navigation:
 
@@ -282,13 +284,14 @@ Context-menu wiring on the snapshot pane:
 - `SearchResultsView.svelte::onContextMenu` hands the Rust menu builder the path's basename, not the adapted entry's
   `name` (which is the friendly full path like `~/Library/.../test.md`). Otherwise the menu label reads
   `Copy ~/Library/.../test.md` instead of `Copy test.md`. The action itself is correct either way because
-  `entryUnderCursor.name` on a snapshot pane mirrors the raw `SearchResultEntry.name` (a basename). Cmd+C / Cmd+X call
-  the paths-by-value clipboard IPCs (`copy_paths_to_clipboard` / `cut_paths_to_clipboard`) instead of the
-  listing-id-keyed family. F5 / F6 (the unified transfer dialog) detect `volumeId === 'search-results'` and call
-  `transfer-operations::buildTransferPropsFromSnapshot` with paths resolved from `snapshot-store::resolveSnapshotPaths`;
-  the existing `copy_files` / `move_files` IPCs already accept paths-by-value, so no IPC change was needed for the
-  transfer path. Drag-out uses the `'paths'` drag context (see `drag/CLAUDE.md`) which routes through
-  `start_drag_paths`. Post-move snapshot cleanup is the cleanup hook in `dialog-state::handleTransferComplete`.
+  `entryUnderCursor.name` on a snapshot pane mirrors the raw `SearchResultEntry.name` (a basename). It also hands over
+  the whole SELECTION's paths when the right-clicked row is part of it, and that row alone otherwise, which is Finder's
+  rule and `pane-pointer::handleContextMenu`'s. Both live in `pane/snapshot-context-menu.ts` rather than in the pointer
+  module, because that one resolves a selection through `getPathsAtIndices` against a backend listing and a snapshot has
+  none. Cmd+C / Cmd+X call the paths-by-value clipboard IPCs (`copy_paths_to_clipboard` / `cut_paths_to_clipboard`)
+  instead of the listing-id-keyed family. Which rows every source-side op acts on, F5 / F6 / F8 included, and where
+  post-operation snapshot cleanup happens: `../search/DETAILS.md` § "Source-side ops from the snapshot pane". Drag-out
+  uses the `'paths'` drag context (see `drag/CLAUDE.md`) which routes through `start_drag_paths`.
 
 For the dialog-side wiring see `../search/CLAUDE.md`.
 

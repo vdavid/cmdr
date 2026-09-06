@@ -15,6 +15,7 @@
     } from '$lib/shortcuts'
     import GlobalShortcutRow from '$lib/downloads/GlobalShortcutRow.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
+    import ShortcutPill from './ShortcutPill.svelte'
     import { fixedKeyMessage, reservedByMacOsMessage, systemShortcutMessage } from './keyboard-shortcuts-banner'
     import { shortcutAnchorId } from '$lib/settings/settings-window'
     import {
@@ -272,7 +273,7 @@
                                      no +/×/reset and no add slot. -->
                                 {#if shortcuts.length > 0}
                                     {#each shortcuts as shortcut (shortcut)}
-                                        <span class="shortcut-pill static">{toDisplayShortcut(shortcut)}</span>
+                                        <ShortcutPill readOnly>{toDisplayShortcut(shortcut)}</ShortcutPill>
                                     {/each}
                                 {:else}
                                     <span class="no-shortcut">{tString('shortcuts.section.noneShortcut')}</span>
@@ -293,11 +294,18 @@
                                         controller.editingShortcut !== null &&
                                         controller.editingShortcut.commandId === command.id &&
                                         controller.editingShortcut.index === i}
-                                    <button
-                                        class="shortcut-pill"
-                                        class:editing={isEditing}
-                                        class:pending-conflict={isEditing && controller.conflictWarning !== null}
-                                        class:empty={!shortcut && !isEditing}
+                                    <ShortcutPill
+                                        editing={isEditing}
+                                        pendingConflict={isEditing && controller.conflictWarning !== null}
+                                        empty={!shortcut && !isEditing}
+                                        remove={!isEditing && shortcut
+                                            ? {
+                                                  tooltip: tString('shortcuts.section.removeShortcutTooltip'),
+                                                  onRemove: () => {
+                                                      controller.handleRemoveShortcutAtIndex(command.id, i)
+                                                  },
+                                              }
+                                            : undefined}
                                         onclick={() => {
                                             controller.startEditingShortcut(command.id, i)
                                         }}
@@ -306,26 +314,10 @@
                                             {toDisplayShortcut(controller.pendingKey) || tString('shortcuts.section.pressKeys')}
                                         {:else if shortcut}
                                             {toDisplayShortcut(shortcut)}
-                                            <span
-                                                class="remove-shortcut"
-                                                use:tooltip={tString('shortcuts.section.removeShortcutTooltip')}
-                                                role="button"
-                                                tabindex="-1"
-                                                onclick={(e) => {
-                                                    e.stopPropagation()
-                                                    controller.handleRemoveShortcutAtIndex(command.id, i)
-                                                }}
-                                                onkeydown={(e) => {
-                                                    if (e.key === 'Enter' || e.key === ' ') {
-                                                        e.stopPropagation()
-                                                        controller.handleRemoveShortcutAtIndex(command.id, i)
-                                                    }
-                                                }}>×</span
-                                            >
                                         {:else}
                                             {tString('shortcuts.section.noneShortcut')}
                                         {/if}
-                                    </button>
+                                    </ShortcutPill>
                                 {/each}
                             {:else if !isAddingHere}
                                 <span class="no-shortcut">{tString('shortcuts.section.noneShortcut')}</span>
@@ -334,15 +326,15 @@
                                 <!-- Synthetic add-slot pill: UI-only until a key is captured and
                                      confirmed. Until then nothing reaches the store, so abandoning
                                      the add leaks no junk entry. -->
-                                <button
-                                    class="shortcut-pill editing"
-                                    class:pending-conflict={controller.conflictWarning !== null}
+                                <ShortcutPill
+                                    editing
+                                    pendingConflict={controller.conflictWarning !== null}
                                     onclick={() => {
                                         controller.resetPendingCapture()
                                     }}
                                 >
                                     {toDisplayShortcut(controller.pendingKey) || tString('shortcuts.section.pressKeys')}
-                                </button>
+                                </ShortcutPill>
                             {/if}
                             <button
                                 class="add-shortcut"
@@ -609,56 +601,6 @@
         gap: var(--spacing-xs);
     }
 
-    .shortcut-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        background: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        font-size: var(--font-size-xs);
-        font-family: var(--font-system) sans-serif;
-        color: var(--color-text-primary);
-        cursor: default;
-        min-width: 40px;
-        text-align: center;
-    }
-
-    .shortcut-pill.editing {
-        background: var(--color-accent);
-        color: var(--color-accent-fg);
-        border-color: var(--color-accent);
-    }
-
-    .shortcut-pill.editing:hover {
-        background: var(--color-accent-hover);
-        border-color: var(--color-accent-hover);
-    }
-
-    /* A pending-decision pill: the user pressed a conflicting combo and the warning
-       banner is up awaiting their choice. Tint it like the warning (also on hover,
-       overriding the accent hover above) so it reads as "this combo is in question",
-       not as a saved binding. */
-    .shortcut-pill.editing.pending-conflict,
-    .shortcut-pill.editing.pending-conflict:hover {
-        background: var(--color-warning-bg);
-        color: var(--color-text-primary);
-        border-color: var(--color-warning);
-    }
-
-    .shortcut-pill.empty {
-        color: var(--color-text-tertiary);
-        border-style: dashed;
-    }
-
-    /* A read-only pill for macOS-native commands: same chip shape as an editable
-       pill, but rendered as a plain span (no hover, no click) so it reads as
-       "shown, not editable". */
-    .shortcut-pill.static {
-        color: var(--color-text-secondary);
-    }
-
     /* "macOS" / "Fixed" badge marking a read-only row (OS-owned or hardcoded in
        its component). Tinted with the muted/secondary surface tokens so it reads
        as an informational tag, not an action. */
@@ -672,26 +614,6 @@
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
         cursor: default;
-    }
-
-    .remove-shortcut {
-        width: 12px;
-        height: 12px;
-        border-radius: var(--radius-full);
-        background: var(--color-text-tertiary);
-        color: var(--color-bg-primary);
-        font-size: var(--font-size-xs);
-        font-weight: 600;
-        cursor: default;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        line-height: var(--font-line-height-flat);
-        flex-shrink: 0;
-    }
-
-    .shortcut-pill:hover .remove-shortcut {
-        display: flex;
     }
 
     .no-shortcut {

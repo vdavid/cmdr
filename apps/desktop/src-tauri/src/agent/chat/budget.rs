@@ -57,11 +57,16 @@ const PROMPT_BUDGET_WINDOW_PERCENT: usize = 60;
 /// The smallest local context window Ask Cmdr can run a turn in
 /// (`ai.localContextSize`). Below it the numbers don't work: every call pays
 /// [`FIXED_PROMPT_OVERHEAD_TOKENS`] before the user has said a word, and one paged tool
-/// result can spend [`MAX_TOOL_RESULT_TOKENS`] more, so a 4,096-token window (an earlier
-/// shipped default) left 2,457 tokens for a 3,124-token prefix: not one working turn. The
-/// setting offers nothing smaller, and a window that still comes in under this is refused
-/// honestly ([`BudgetRefusal`]) rather than assembled against.
-pub const MIN_LOCAL_CONTEXT_TOKENS: u32 = 16_384;
+/// result can spend [`MAX_TOOL_RESULT_TOKENS`] more. At 32,768 the resolved budget is
+/// 19,660, which clears that pair with room for the conversation itself; one window down,
+/// 16,384 resolves to 9,830, which falls short of the prefix plus half a paged result and
+/// is not a working chat. The setting offers nothing smaller, and a window that still comes
+/// in under this is refused honestly ([`BudgetRefusal`]) rather than assembled against.
+///
+/// ⚠️ **This floor is derived from the prefix, so a tool joining the view can outgrow it.**
+/// `the_floor_leaves_room_for_a_prefix_and_a_paged_result` is what catches that; answer it
+/// by raising this number or shrinking the prefix, never by loosening the assertion.
+pub const MIN_LOCAL_CONTEXT_TOKENS: u32 = 32_768;
 
 /// The most estimated tokens ONE tool result may spend on its items: half of
 /// [`DEFAULT_PROMPT_TOKEN_BUDGET`], expressed as a fraction so the two numbers can't drift
@@ -81,12 +86,13 @@ const _: () = assert!(MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET);
 /// What every call pays before the user has said a word: the system prompt plus the tool
 /// declarations. Measured against the shipped assets, and pinned there —
 /// `context/cost_tests.rs` fails if the real prefix drifts away from this figure. The system
-/// prompt is 1,809 of it, the 18 tool declarations the rest.
+/// prompt is 1,994 of it, the 19 tool declarations the rest.
 ///
 /// It grows whenever a tool joins the view, and every call pays it whether or not it uses
 /// that tool: the suggested-ops trio cost about 1,100 tokens of schema between them, which
-/// is roughly four files off a 16,000-token rename batch. Keep a new schema terse.
-pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 5_492;
+/// is roughly four files off a 16,000-token rename batch, and `search`, the most expensive
+/// single declaration, costs 560 even trimmed. Keep a new schema terse.
+pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 6_263;
 
 /// What one `image_facts` row costs at the corpus' average OCR length.
 pub const IMAGE_FACTS_TOKENS_PER_FILE: usize = 269;
@@ -172,10 +178,11 @@ pub fn wake_digest_budget(prompt_tokens: usize) -> usize {
 /// system string is never elided (`context::assemble_prompt` tightens tool results only), so
 /// every byte of memory is a permanent tax on every turn of every thread. Run the numbers a
 /// flat 8 KB would give at the smallest window the app supports: [`MIN_LOCAL_CONTEXT_TOKENS`]
-/// resolves to a 9,830-token budget, the fixed overhead takes ~5,500 of it, and 8 KB of memory
-/// at [`CHARS_PER_TOKEN_ESTIMATE`] takes 2,048 more — leaving under 2,500 tokens for the
-/// digest, the envelope, the history, and every tool result. **And the agent writes this file
-/// itself**, so a flat cap lets it permanently degrade its own chat with no way back.
+/// resolves to a 19,660-token budget, the fixed overhead takes 6,263 of it, and 8 KB of memory
+/// at [`CHARS_PER_TOKEN_ESTIMATE`] takes 2,048 more, so memory alone would claim about a sixth
+/// of what is left for the digest, the envelope, the history, and every tool result, and it would
+/// claim the same 2,048 on a window a tenth the size. **And the agent writes this file itself**,
+/// so a flat cap lets it permanently degrade its own chat with no way back.
 const MEMORY_BUDGET_PERCENT: usize = 10;
 
 /// How many BYTES of memory this turn carries, out of its resolved prompt budget. Bytes rather
@@ -264,10 +271,26 @@ const OPENAI_COMPATIBLE_FAMILIES: &[ModelFamily] = &[
         prefix: "ministral",
         window_tokens: 128_000,
     },
-    // Llama 3.x and 4 across the hosts that serve them: `llama-3.3-70b-versatile` (Groq),
-    // `llama-v3p3-70b-instruct` (Fireworks), `Llama-4-Maverick-…` (Together). Llama 2 is
-    // absent on purpose (a 4,096-token window), which is why these prefixes carry the
-    // generation.
+    // OpenAI's open-weight line, served by the hosts rather than by OpenAI: `gpt-oss-20b` and
+    // `gpt-oss-120b` (Groq, Fireworks). Both report a 131,072-token window in their hosts'
+    // model lists (verified 2026-09-04). It sits below the `gpt-` rows above only in reading
+    // order; the prefixes don't overlap.
+    ModelFamily {
+        prefix: "gpt-oss",
+        window_tokens: 131_072,
+    },
+    // Zhipu's GLM line, which is what Fireworks serves in place of the Llamas it dropped.
+    // Fireworks reports 1,048,576 for `glm-5p3` (verified 2026-09-04), but a 128,000 floor
+    // already saturates the 60,000-token prompt cap, so claiming more buys nothing and this
+    // stays true for a smaller GLM on another host.
+    ModelFamily {
+        prefix: "glm-",
+        window_tokens: 128_000,
+    },
+    // Llama 3.x and 4 across the hosts that serve them: `Llama-4-Maverick-…` (Together).
+    // Groq and Fireworks both retired their Llama models in 2026, but a user can still name
+    // one on another host, and Llama 2 is absent on purpose (a 4,096-token window), which is
+    // why these prefixes carry the generation.
     ModelFamily {
         prefix: "llama-3",
         window_tokens: 128_000,
@@ -483,9 +506,9 @@ mod tests {
             "gpt-4.1-mini",                                      // OpenAI, Azure OpenAI
             "claude-sonnet-4-5",                                 // Anthropic
             "gemini-2.5-flash",                                  // Google Gemini
-            "llama-3.3-70b-versatile",                           // Groq
+            "openai/gpt-oss-120b",                               // Groq
             "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8", // Together AI
-            "accounts/fireworks/models/llama-v3p3-70b-instruct", // Fireworks AI
+            "accounts/fireworks/models/glm-5p3",                 // Fireworks AI
             "mistral-small-latest",                              // Mistral AI
             "openai/gpt-4.1-mini",                               // OpenRouter
             "deepseek-chat",                                     // DeepSeek
@@ -634,6 +657,10 @@ mod tests {
         );
     }
 
+    /// The assertion that decides where [`MIN_LOCAL_CONTEXT_TOKENS`] has to sit. A tool
+    /// joining the agent view grows the prefix, and this is what notices when the growth has
+    /// left the smallest window unable to hold a turn. ❌ Don't answer a failure here by
+    /// lowering the fraction; raise the floor, or make the prefix smaller.
     #[test]
     fn the_floor_leaves_room_for_a_prefix_and_a_paged_result() {
         let floored = budget_for_window(MIN_LOCAL_CONTEXT_TOKENS as usize);
@@ -678,10 +705,10 @@ mod tests {
 
     #[test]
     fn a_batch_hint_derives_from_the_budget() {
-        // (budget − 10% headroom − 5,492 of prefix) / 349 per file, while the prompt is what
+        // (budget − 10% headroom − 6,263 of prefix) / 349 per file, while the prompt is what
         // binds.
-        assert_eq!(files_per_batch(16_000), 25);
-        assert_eq!(files_per_batch(32_000), 66);
+        assert_eq!(files_per_batch(16_000), 23);
+        assert_eq!(files_per_batch(32_000), 64);
         // Past roughly 45,000 the reply's own ceiling binds instead, and the hint stops
         // growing with the budget: 6,000 emittable tokens / 59 per row.
         assert_eq!(files_per_batch(60_000), 101);

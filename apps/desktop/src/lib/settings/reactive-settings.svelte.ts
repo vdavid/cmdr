@@ -47,6 +47,8 @@ let typeToJumpResetDelay = $state<number>(1000)
 let driveIndexingEnabled = $state<boolean>(true)
 let mediaIndexEnabled = $state<boolean>(false)
 let mediaIndexShowFileStatusIcons = $state<boolean>(true)
+let showVirtualGitPortal = $state<boolean>(true)
+let viewerShowTextCursor = $state<boolean>(false)
 
 let initialized = false
 let unsubscribe: (() => void) | undefined
@@ -102,6 +104,8 @@ async function runInit(options?: { restrictedWindow?: boolean }): Promise<void> 
     driveIndexingEnabled = getSetting('indexing.enabled')
     mediaIndexEnabled = getSetting('mediaIndex.enabled')
     mediaIndexShowFileStatusIcons = getSetting('mediaIndex.showFileStatusIcons')
+    showVirtualGitPortal = getSetting('fileExplorer.git.showVirtualGitPortal')
+    viewerShowTextCursor = getSetting('viewer.showTextCursor')
 
     // Subscribe to changes (including cross-window changes). The arrow function delegates to
     // `applySettingChange` so the switch's case count stays under the per-fn complexity limit.
@@ -194,6 +198,12 @@ function applySettingChange(id: string, value: unknown): void {
       break
     case 'mediaIndex.showFileStatusIcons':
       mediaIndexShowFileStatusIcons = value as boolean
+      break
+    case 'fileExplorer.git.showVirtualGitPortal':
+      showVirtualGitPortal = value as boolean
+      break
+    case 'viewer.showTextCursor':
+      viewerShowTextCursor = value as boolean
       break
   }
 }
@@ -371,6 +381,35 @@ export function getMediaIndexEnabled(): boolean {
  */
 export function getMediaIndexShowFileStatusIcons(): boolean {
   return mediaIndexShowFileStatusIcons
+}
+
+/**
+ * Whether the virtual `.git` portal is on (`fileExplorer.git.showVirtualGitPortal`,
+ * default on). The same switch the backend consults for routing and for the `.git/`
+ * listing overlay, mirrored here so the frontend's kind-from-path resolution
+ * (`capabilitiesForPane`) agrees with what the backend will actually serve: with the
+ * portal off, `.git/branches/…` is whatever sits on disk, and the pane keeps its
+ * volume's ordinary row.
+ *
+ * Reactive on purpose. `getSetting` reads a plain Map, so a `$derived` over it would
+ * never recompute when the user flips the toggle with a portal pane open.
+ */
+export function getShowVirtualGitPortal(): boolean {
+  return showVirtualGitPortal
+}
+
+/**
+ * Whether the file viewer paints a text cursor at the selection's focus
+ * (`viewer.showTextCursor`, default off).
+ *
+ * Reactive on purpose, unlike `viewer.wordWrap` which the viewer reads once at mount
+ * because `W` is its primary control. This one has no in-viewer control at all, so a
+ * one-shot read would leave an open viewer ignoring the Settings toggle until reopened.
+ * The viewer is a restricted window, and its cross-window `settings:changed` listener
+ * already delivers the change, so following it costs nothing.
+ */
+export function getViewerShowTextCursor(): boolean {
+  return viewerShowTextCursor
 }
 
 // ============================================================================

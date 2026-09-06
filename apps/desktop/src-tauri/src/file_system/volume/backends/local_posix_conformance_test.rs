@@ -5,7 +5,7 @@
 //! contracts `cmdr_fs::volume::conformance` holds EVERY backend to. Every other
 //! backend already keeps its conformance cells in a file of their own
 //! (`cmdr-smb`'s and `cmdr-sftp`'s `volume::conformance_test`, MTP's
-//! `mtp_conformance_test`); this is that file for the local one.
+//! `cmdr-mtp`'s `volume::conformance_test`); this is that file for the local one.
 //!
 //! ❗ LocalPosix is the backend the other suites' fixtures are compared against,
 //! so a contract it stops keeping is one the whole suite stops noticing.

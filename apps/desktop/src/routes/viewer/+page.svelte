@@ -39,10 +39,13 @@
         estimateSelectionBytes,
         getLineSegmentBounds,
         isWholeFileSelection,
-        normaliseSelection,
+        toRangeEnds,
     } from './selection.svelte'
     import { createViewerCopy, createViewerCopyOrchestrator } from './viewer-copy.svelte'
     import { createViewerPointerDrag } from './viewer-pointer-drag.svelte'
+    import { createViewerTextCursor } from './viewer-text-cursor.svelte'
+    import ViewerTextCursor from './ViewerTextCursor.svelte'
+    import { getViewerShowTextCursor } from '$lib/settings/reactive-settings.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import ViewerContextMenu from './ViewerContextMenu.svelte'
     import ViewerToolbar from './ViewerToolbar.svelte'
@@ -53,7 +56,7 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
-    import { viewerSetEncoding, viewerSetTailMode, viewerGetEncodingOptions, type RangeEnd } from '$lib/tauri-commands'
+    import { viewerSetEncoding, viewerSetTailMode, viewerGetEncodingOptions } from '$lib/tauri-commands'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
     import { categorizeForViewerWarning, viewerWarningLabel } from '$lib/file-viewer/binary-warning'
     import { isMediaKind } from './media-view'
@@ -163,6 +166,11 @@
     }
 
     let unsubscribeLanguage: (() => void) | undefined
+
+    // `.scroll-spacer`, the box the text cursor is positioned against. Not on the scroll
+    // composable: nothing else needs it, and the cursor is the only thing measured
+    // against the spacer rather than the scroll container.
+    let spacerRef = $state<HTMLDivElement>()
 
     // Window lifecycle state: prevents closing before WebKit is fully initialized
     let windowReady = $state(false)
@@ -286,26 +294,6 @@
     )
 
     /**
-     * Converts a `Selection` to the `(anchor, focus)` `RangeEnd`s the IPC layer accepts.
-     * For ⌘A in ByteSeek-no-index mode we emit `Eof` so the backend can resolve the
-     * end of the file without a fake line number; everywhere else we emit `Line { ... }`.
-     */
-    function getRangeEndsForCurrentSelection(): { anchor: RangeEnd; focus: RangeEnd } | null {
-        const sel = selection.selection
-        if (sel === null) return null
-        const { start, end } = normaliseSelection(sel)
-        const startEnd: RangeEnd = { kind: 'line', line: start.line, offset: start.offset }
-        // In ByteSeek-no-index mode, the FE used `Infinity` (or a fake totalLines) for ⌘A.
-        // Translate "selection extends past every line we know about" into RangeEnd::Eof.
-        const knownTotal = totalLines
-        const usesEof = knownTotal === null && end.line === Number.MAX_SAFE_INTEGER
-        const endEnd: RangeEnd = usesEof
-            ? { kind: 'eof' }
-            : { kind: 'line', line: end.line, offset: end.offset }
-        return { anchor: startEnd, focus: endEnd }
-    }
-
-    /**
      * Estimates the UTF-8 byte length of the current selection using cached line lengths.
      * Returns `null` if any required line isn't in the cache (the copy flow will route to
      * the "unknown size" branch and confirm before reading).
@@ -340,7 +328,7 @@
     const copy = createViewerCopy({
         getSessionId: () => sessionId,
         getSelectionBytes: estimateCurrentSelectionBytes,
-        getRangeEnds: getRangeEndsForCurrentSelection,
+        getRangeEnds: () => toRangeEnds(selection.selection),
     })
 
     const copyFlow = createViewerCopyOrchestrator({
@@ -348,12 +336,35 @@
         getFileName: () => fileName,
     })
 
+    // The optional text cursor. `getLayoutKey` names everything that can move a rendered
+    // row while the focus stays where it is; the measurement itself lives in the composable.
+    const textCursor = createViewerTextCursor({
+        isEnabled: () => getViewerShowTextCursor(),
+        getFocus: () => selection.selection?.focus ?? null,
+        getContentRef: () => scroll.contentRef,
+        getSpacerRef: () => spacerRef,
+        getLayoutKey: () => [scroll.scrollTop, scroll.linesOffset, scroll.visibleLines, scroll.wordWrap],
+    })
+
+    // Each pointer setter also ends the keyboard's vertical run: a click or drag picks a
+    // new column, so the next Shift+Up/Down aims from there rather than from wherever an
+    // earlier run was heading. `keyboard` is defined below and read lazily here.
     const pointerDrag = createViewerPointerDrag({
         getContentRef: () => scroll.contentRef,
         getLineText: (line) => scroll.lineCache.get(line),
         hasSelection: () => selection.selection !== null,
-        setAnchor: selection.setAnchor,
-        setFocus: selection.setFocus,
+        setAnchor: (point) => {
+            keyboard.resetDesiredColumn()
+            selection.setAnchor(point)
+        },
+        setFocus: (point) => {
+            keyboard.resetDesiredColumn()
+            selection.setFocus(point)
+        },
+        setRange: (range) => {
+            keyboard.resetDesiredColumn()
+            selection.setRange(range)
+        },
         takeFocus: () => scroll.containerRef?.focus({ preventScroll: true }),
     })
 
@@ -415,6 +426,12 @@
         search.runDebounceEffect()
     })
 
+    // Re-place the optional text cursor after anything that moves the focus or its row
+    $effect(() => {
+        if (isMedia) return
+        textCursor.runMeasureEffect()
+    })
+
     function closeWindow() {
         if (closing) return
         if (!windowReady) {
@@ -466,8 +483,12 @@
     const keyboard = createViewerKeyboard({
         getTotalLines: () => totalLines,
         getTotalBytes: () => totalBytes,
-        getLineText: (line) => scroll.lineCache.get(line),
-        selection: { selectAll: selection.selectAll },
+        // What the template DRAWS, not what the cache holds: a rendered row the cache
+        // missed shows as empty, and the motion model has to agree with the screen or a
+        // chord aiming at that row is dead forever. See `scroll.renderedLineText`.
+        getLineText: (line) => scroll.renderedLineText(line),
+        getLastRenderedLine: () => scroll.visibleLines.at(-1)?.lineNumber ?? null,
+        selection,
         scroll,
         search: {
             get searchVisible() {
@@ -562,7 +583,7 @@
         const ve = asViewerError(e)
         if (ve) {
             if (ve.kind === 'timedOut') return { message: tString('viewer.error.timeout'), isTimeout: true }
-            if (ve.kind === 'extractTooLarge') return { message: tString('viewer.error.archiveTooLarge'), isTimeout: false }
+            if (ve.kind === 'extractTooLarge') return { message: tString('viewer.error.tooLargeToPreview'), isTimeout: false }
             if (ve.kind === 'archive') return { message: tString('viewer.error.archiveUnreadable'), isTimeout: false }
         }
         return { message: tString('viewer.error.readFailed'), isTimeout: false }
@@ -1095,6 +1116,7 @@
         >
             <div
                 class="scroll-spacer"
+                bind:this={spacerRef}
                 style="height: {scroll.spacerHeight}px; min-width: {scroll.wordWrap
                     ? 0
                     : scroll.contentWidth}px"
@@ -1118,6 +1140,10 @@
                         </div>
                     {/each}
                 </div>
+                <!-- A SIBLING of `.lines-container`, never a child: that container's
+                     height is divided by its child count to derive the average wrapped
+                     line height. -->
+                <ViewerTextCursor box={textCursor.box} blinkKey={textCursor.blinkKey} />
             </div>
         </div>
     {/if}

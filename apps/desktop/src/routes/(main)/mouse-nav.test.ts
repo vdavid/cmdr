@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { navCommandForMouseButton } from './mouse-nav'
+import { navCommandForDirection, navCommandForMouseButton } from './mouse-nav'
 
 describe('navCommandForMouseButton', () => {
   it('maps the fourth button (X1) to nav.back', () => {
@@ -19,5 +19,12 @@ describe('navCommandForMouseButton', () => {
   it('returns null for any unknown higher button code', () => {
     expect(navCommandForMouseButton(5)).toBeNull()
     expect(navCommandForMouseButton(-1)).toBeNull()
+  })
+})
+
+describe('navCommandForDirection', () => {
+  it('maps the native (macOS) directions to the same two commands', () => {
+    expect(navCommandForDirection('back')).toBe('nav.back')
+    expect(navCommandForDirection('forward')).toBe('nav.forward')
   })
 })

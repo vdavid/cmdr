@@ -10,6 +10,7 @@ import { getDefaultValue, settingsRegistry, validateSettingValue } from './setti
 import { resolveStorePath } from './store-path'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
+import { ARCHIVE_ENTER_FORMATS, isEnterAction } from '$lib/file-explorer/pane/archive-enter-policy'
 import type { RestrictedWindowPersistableSetting, SettingValue } from '$lib/ipc/bindings'
 // Import from the specific submodule, not the `$lib/tauri-commands` barrel: the
 // barrel re-exports the entire IPC surface (mtp, search, indexing, licensing, …),
@@ -41,7 +42,7 @@ interface SettingChangedPayload {
 // Store Configuration
 // ============================================================================
 
-const SCHEMA_VERSION = 4
+const SCHEMA_VERSION = 5
 
 let storeInstance: Store | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
@@ -73,7 +74,13 @@ let restrictedWindowMode = false
 /** The settings a restricted window may persist, mapped to the typed command
  *  enum. Must mirror `RestrictedWindowPersistableSetting` in
  *  `src-tauri/src/commands/settings.rs` — the backend enum is the enforced
- *  allowlist; this map only decides which `setSetting` calls are forwarded. */
+ *  allowlist; this map only decides which `setSetting` calls are forwarded.
+ *
+ *  ❌ Shorter than the read snapshot below ON PURPOSE. A setting earns a place
+ *  here only when a restricted window has a control that WRITES it (`W`, the
+ *  binary-warning banner's button). One it merely reads — `viewer.showTextCursor`,
+ *  every `appearance.*` — stays out, so the app's highest-risk webview never gets
+ *  a write it has no use for. */
 const RESTRICTED_PERSISTABLE_SETTINGS: Partial<Record<SettingId, RestrictedWindowPersistableSetting>> = {
   'viewer.wordWrap': 'viewerWordWrap',
   'fileViewer.suppressBinaryWarning': 'fileViewerSuppressBinaryWarning',
@@ -238,6 +245,7 @@ async function initializeSettingsRestricted(): Promise<void> {
     // Mechanical mapping: each snapshot field name spells out its setting id.
     const mapped: Partial<Record<SettingId, unknown>> = {
       'viewer.wordWrap': snapshot.viewerWordWrap,
+      'viewer.showTextCursor': snapshot.viewerShowTextCursor,
       'fileViewer.suppressBinaryWarning': snapshot.fileViewerSuppressBinaryWarning,
       'appearance.textSize': snapshot.appearanceTextSize,
       'appearance.appColor': snapshot.appearanceAppColor,
@@ -380,6 +388,59 @@ async function migrateOnboardingKeysIntoRegistry(store: Store): Promise<boolean>
 }
 
 /**
+ * Migration 5: the one `behavior.archiveEnterBehavior` JSON blob (`{ zip: 'ask',
+ * bundle: 'open' }`) unpacks into one registry setting per archive format. Returns
+ * whether anything changed.
+ *
+ * A format the blob never named keeps NO key, so it resolves to its registry default
+ * and stays open to a future default change — the sparse-persistence contract. A blob
+ * we can't read (hand-edited, half-written, naming a format that's gone) writes
+ * nothing: every format falls to its default, which is the same answer the resolver
+ * gave for an unreadable blob before the split, so nobody's Enter key changes meaning
+ * because a value was garbled.
+ *
+ * Idempotent: the legacy key is deleted either way, and that delete is what makes the
+ * second run a no-op. It has to be explicit — the key sits outside the registry, so
+ * the sparse save can't prune it.
+ */
+const LEGACY_ARCHIVE_ENTER_BLOB_KEY = 'behavior.archiveEnterBehavior'
+
+async function migrateArchiveEnterBlobIntoPerFormatKeys(store: Store): Promise<boolean> {
+  const stored = await store.get<unknown>(LEGACY_ARCHIVE_ENTER_BLOB_KEY)
+  if (stored === undefined) return false
+
+  const byFormatKey = typeof stored === 'string' ? parseJsonObject(stored) : undefined
+  const moved: string[] = []
+  for (const format of ARCHIVE_ENTER_FORMATS) {
+    // Iterating the formats (rather than the blob's own keys) is what drops a format
+    // that no longer exists; `isEnterAction` drops a value that never did.
+    const action = byFormatKey?.[format.key]
+    if (!isEnterAction(action)) continue
+    await store.set(format.settingId, action)
+    moved.push(format.key)
+  }
+
+  await store.delete(LEGACY_ARCHIVE_ENTER_BLOB_KEY)
+  log.info('Migration 5: unpacked the archive Enter blob into {count} per-format {keysNoun}', {
+    count: moved.length,
+    keysNoun: pluralize(moved.length, 'key'),
+  })
+  return true
+}
+
+/** The parsed object at the top level of `json`, or `undefined` for anything else. */
+function parseJsonObject(json: string): Record<string, unknown> | undefined {
+  let raw: unknown
+  try {
+    raw = JSON.parse(json)
+  } catch {
+    return undefined
+  }
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  return raw as Record<string, unknown>
+}
+
+/**
  * Migrate settings from older schema versions.
  */
 async function migrateSettings(store: Store, fromVersion: number): Promise<void> {
@@ -416,6 +477,10 @@ async function migrateSettings(store: Store, fromVersion: number): Promise<void>
   }
 
   if (fromVersion < 4 && (await migrateOnboardingKeysIntoRegistry(store))) {
+    changed = true
+  }
+
+  if (fromVersion < 5 && (await migrateArchiveEnterBlobIntoPerFormatKeys(store))) {
     changed = true
   }
 

@@ -96,15 +96,12 @@ impl Volume for AdbVolume {
         Box::pin(self.noting(self.get_metadata_impl(path)))
     }
 
+    /// Kept rather than taken from the trait default: the default routes through
+    /// `Volume::get_metadata`, which is `noting`-wrapped, so a bare existence
+    /// probe on a dropped link would report a connection transition and drive a
+    /// reconnect. An `exists` question stays a question.
     fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
         Box::pin(self.exists_impl(path))
-    }
-
-    fn is_directory<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        Box::pin(self.noting(self.is_directory_impl(path)))
     }
 
     // ── The byte path ────────────────────────────────────────────────
@@ -116,6 +113,11 @@ impl Volume for AdbVolume {
     /// ❗ Implementing the read path does not declare it: the copy engine
     /// refuses a source answering `false` before it opens anything.
     fn supports_export(&self) -> bool {
+        true
+    }
+
+    /// The device's own `stat`, masked to `0o7777` in `mapping.rs`.
+    fn reports_posix_mode(&self) -> bool {
         true
     }
 

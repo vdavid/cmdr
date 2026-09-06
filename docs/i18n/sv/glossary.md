@@ -65,6 +65,13 @@ server, bokmärke, etc.) live in `style.md` § Terminology; this list is the set
 - **branch (git): `gren`** · standard Swedish git term; MS's "förgrena" is the verb sense. `tentative`.
 - **repository (git): `git-repository`** · keep the git loanword; MS's "centrallager" is the generic-storage sense.
   `tentative`.
+- **worktree (git): `worktree`, kept verbatim; working tree: `arbetsträd`** · English draws the two apart and so do we.
+  A "worktree" is git's own name for a linked checkout and the en `@key` descriptions say do NOT translate it (so
+  `errors.git.orphanedWorktree.*`, `settings.fileExplorer.git.showVirtualGitPortal.description`, and
+  `fileExplorer.git.size.linkedWorktrees` all carry it), while the generic "working tree" in `errors.git.bareRepo`,
+  `blobTooLarge`, and `gitDirPermissionDenied` is ordinary prose and reads `arbetsträd`. Agreement: `worktree` is an
+  en-word (`den här worktree:n`, `en länkad worktree`, plural `worktrees`). "working directory" stays the separate
+  `arbetskatalog`. `high`.
 - **startup disk: `startskiva`** · macOS Finder ("Startskiva", "Startskivevärde"). Boot drive. `high`.
 - **Privacy & Security (macOS pane): `Integritet och säkerhet`** · macOS SystemSettings. `high`.
 - **Full Disk Access (macOS permission): `Full skivtillgång`** · three live macOS bundles agree, including the very pane
@@ -737,8 +744,9 @@ For the image-search index status badges (2026-07-22; the 11 `fileExplorer.image
 `settings.mediaIndex.showFileStatusIcons.*` keys). Small status indicators on image files, folders, and drives showing
 image-search indexing state. Reuses the settled indexing family; new/confirmed terms:
 
-- **image search (the feature): `bildsökning`** · already the catalog's own term (`settings.mediaIndex.card` =
-  "Bildsökning"); definite `bildsökningen`. Compound `bildsökningsstatus` for the drive aria-label. `high`.
+- **image search (the feature): `bildsökning`** · the catalog's term wherever the feature is named
+  (`fileExplorer.imageIndex.file.indexed` = "Indexerad för bildsökning", `askCmdr.consent.contentsRule` = "Bildsökningen
+  fungerar på samma sätt"); definite `bildsökningen`. Compound `bildsökningsstatus` for the drive aria-label. `high`.
 - **indexed (as a status on a `bild`): `indexerad` / `indexerade`** · en-word agreement with `bild` (glossary index
   family + shipped `settings.mediaIndex.networkVolumes.indexed` "{countText} bild indexerad / bilder indexerade"). The
   standalone file badge takes the en-word `Indexerad` (implied subject `bilden`, en-word), NOT Apple's neuter supine
@@ -2057,3 +2065,48 @@ mellan två filsystem har nått sitt sista steg (originalen tas bort, allt ligge
   på målet”), `ångra` är det satta verbet för rollback (`rollbackUnavailableTooltip`: ”går inte att ångra”), och
   `Avbryt` är knappens egen etikett (`fileOperations.button.cancel`), så den står oböjd · `high`.
 - Inga `sameAsSourceJustification`; ingen apostrof i värdena, så ICU-dubbleringen `''` blir aldrig aktuell.
+
+## ”Öppna terminal här” och dess appväljare (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Ny yta: ett kort i `Beteende > Navigering och filåtgärder` som väljer vilken terminalapp kommandot startar. Listan byggs
+av macOS, så bara etiketterna översätts här.
+
+- **terminal (appklassen) → `terminal`; Terminal (Apples app) → `Terminal`** · Apples svenska Finder behåller namnet
+  engelskt (`Öppna i Terminal`, nyckel `N67` i `macOS/Finder/LocalizableMerged.json`), och det generiska svenska ordet
+  är samma lånord · `high`. Därför bär kortrubriken `settings.navigationAndFileOps.card.terminal` en
+  `sameAsSourceJustification`: den är avsiktligt identisk med engelskan.
+- **Open terminal here (kommandonamnet) → `Öppna terminal här`** · byggt på Apples `Öppna i Terminal`, med `här` för
+  platsen · `high`. När kommandot självt översätts (meny, kommandopalett) måste exakt den formen användas.
+- **Choose an app… → `Välj app…`** · ordagrant Apples eget `Choose Application…` (nyckel `N137`) i svensk Finder, som
+  redan säger `app` · `confirmed`.
+- **terminal app → `terminalapp`** · sammansatt, som katalogens övriga `app`-sammansättningar · `high`. Inga apostrofer
+  i värdena, så ICU-dubbleringen `''` blir aldrig aktuell.
+
+## `Sort by relevance`: the search-results column tooltip (`fileExplorer.columns.sortByRelevance`)
+
+New surface: the hover tooltip on the active column header of a search-results pane. The next click puts the rows back
+into the search engine's own best-match-first order.
+
+- **relevance (how well a result matches the search) → `relevans`** · all four macOS sources agree: WorkflowKit
+  (`Relevance (WFSearchSortOrder)` → `Relevans`), AppStoreKit (`SEARCH_FACET_RELEVANCE` → `Relevans`), Automator
+  (`%1$[Relevans]@ …`), and Musik · `high`. Indefinite form, matching the sibling sort labels (`efter namn`,
+  `efter storlek`). (verified on macOS 26.6.2 build 25G83, `plutil` dump of the shipped localizations, 2026-09-06)
+- **Sentence frame → `Sortera efter relevans`** · exactly the pattern of its sibling keys in `commands.json`
+  (`Sortera efter namn`, `Sortera efter storlek`) · `high`. No `sameAsSourceJustification`, and the value carries no
+  apostrophe.
+
+## `Documents and packages`: the new OOXML row (`settings.archives.ooxml.*`)
+
+New surface: a row in the same card as `Zip-arkiv`, above the `Appaket` card. It deliberately covers BOTH Office
+documents (.docx, .xlsx, .pptx) and app packages (.jar, .apk), which is why even the English avoids naming Office.
+
+- **documents (the file kind) → `Dokument`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Dokument`; kinds `RTF-dokument`,
+  `Rent textdokument`) · `high`. Indefinite plural, which in Swedish is the bare form.
+- **packages (generic, not only apps) → `paket`** · macOS Finder (`Visa paketets innehåll`) and the glossary's
+  `bundle → paket` · `high`. Bare `paket` keeps the row broader than the `Appaket` card below it, mirroring English's
+  own `packages` vs `app bundles` split.
+- **Sentence frame → `Vad Enter gör med en …, … eller ….`** · the frame of the sibling keys
+  `settings.archives.zip.description` and `settings.archives.bundle.description`, minus the comma before `eller`
+  (style.md § no comma before `och`/`eller`) · `high`. ❗ `settings.archives.bundle.description` still carries that
+  calqued comma (`.bundle, eller .framework`). It was out of scope for this pass, so the two rows differ in punctuation
+  until someone fixes it.

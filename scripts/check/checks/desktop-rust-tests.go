@@ -27,10 +27,13 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	// `HostCargoLaneArgs` carries `--features cmdr/virtual-mtp`, which compiles in
-	// the virtual MTP device: the only way ~29 MTP tests (backends/mtp_test,
-	// mtp_archive_test, mtp_read_range_test, mtp_scan_oracle_tests,
-	// connection/path_cache_sync_test) can run at all. Without it they're silently
-	// filtered out and protect nothing. It costs ~2-4 s on a ~27 s suite.
+	// the virtual MTP device: the only way the MTP suites can run at all. Most of
+	// them are `cmdr-mtp`'s own now (the whole `volume/` and `connection/` device
+	// tree), with the app keeping the cells that assert on ITS side of the backend
+	// (`mtp/volume_wiring_test`, `file_system/volume/mtp_scan_oracle_tests`,
+	// `write_operations/mtp_archive_test`, `.../rename_merge_mtp_tests`). Without
+	// the feature they're silently filtered out and protect nothing. It costs
+	// ~2-4 s on a ~27 s suite.
 	baseArgs := append([]string{"--locked"}, laneArgs...)
 	cmd := exec.Command("cargo", append([]string{"nextest", "run"}, baseArgs...)...)
 	cmd.Dir = ctx.RootDir

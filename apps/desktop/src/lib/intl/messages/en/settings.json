@@ -497,14 +497,6 @@
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
 
-  "settings.archives.enterBehavior.label": "Opening archives and bundles",
-  "@settings.archives.enterBehavior.label": {
-    "description": "Search label for the Behavior > Archives settings section, which sets what pressing Enter does on an archive or a macOS app bundle. \"Enter\" is the Return/Enter key; do not translate the key name if your language keeps it in English."
-  },
-  "settings.archives.enterBehavior.description": "Choose what pressing Enter does for each format: browse inside it like a folder, open it in another app, or ask each time.",
-  "@settings.archives.enterBehavior.description": {
-    "description": "Search help text for the Behavior > Archives section. \"Enter\" is the Return/Enter key."
-  },
   "settings.archives.card.archives": "Archives",
   "@settings.archives.card.archives": {
     "description": "Card title in Settings > Behavior > Archives, grouping the archive formats Cmdr can browse into (zip today). \"Cmdr\" is the product name; do not translate it."
@@ -520,6 +512,14 @@
   "settings.archives.zip.description": "What pressing Enter does on a zip file.",
   "@settings.archives.zip.description": {
     "description": "Help text under the zip row in Settings > Behavior > Archives. \"Enter\" is the Return/Enter key."
+  },
+  "settings.archives.ooxml.label": "Documents and packages",
+  "@settings.archives.ooxml.label": {
+    "description": "Row label in Settings > Behavior > Archives for zip-based documents and app packages (.docx, .xlsx, .pptx, .jar, .apk): files that are archives underneath, but that people think of as one document or one app."
+  },
+  "settings.archives.ooxml.description": "What pressing Enter does on a .docx, .xlsx, .pptx, .jar, or .apk.",
+  "@settings.archives.ooxml.description": {
+    "description": "Help text under the documents-and-packages row in Settings > Behavior > Archives. The five names are file extensions; do not translate them. \"Enter\" is the Return/Enter key."
   },
   "settings.archives.bundle.label": "App bundles",
   "@settings.archives.bundle.label": {
@@ -569,10 +569,6 @@
     "screenshot": "settings-indexing-drive-indexing.png"
   },
 
-  "settings.mediaIndex.card": "Image search",
-  "@settings.mediaIndex.card": {
-    "description": "Title of the settings card that groups image-content indexing (searching the text inside images). In Settings > AI > Image search."
-  },
   "settings.mediaIndex.privacyNote": "This runs entirely on your Mac using Apple''s built-in Vision framework. Your images never leave your computer, and no AI provider or API key is involved.",
   "settings.mediaIndex.clip.title": "Semantic search",
   "@settings.mediaIndex.clip.title": {
@@ -657,12 +653,12 @@
     "description": "Heading above the live per-drive image-indexing progress shown in the Enable indexing card while a pass is running (each drive lists how many images are done, plus a rate and time estimate)."
   },
   "@settings.mediaIndex.privacyNote": {
-    "description": "Privacy reassurance shown in Settings > AI > Image search, under the master toggle. Clarifies that this AI feature is on-device only, unlike the provider-backed AI features. \"Mac\" is the Apple computer; \"Vision\" is Apple''s framework name (do not translate); \"API key\" is a credential for a cloud AI provider.",
+    "description": "Privacy reassurance shown in Settings > Indexing > Image indexing, under the master toggle. Clarifies that this AI feature is on-device only, unlike the provider-backed AI features. \"Mac\" is the Apple computer; \"Vision\" is Apple''s framework name (do not translate); \"API key\" is a credential for a cloud AI provider.",
     "screenshot": "settings-indexing-image-indexing.png"
   },
   "settings.mediaIndex.enabled.label": "Index image contents",
   "@settings.mediaIndex.enabled.label": {
-    "description": "Label for the toggle that turns on reading the text inside images (OCR) so you can search it. Off by default. In Settings > AI > Image search.",
+    "description": "Label for the toggle that turns on reading the text inside images (OCR) so you can search it. Off by default. In Settings > Indexing > Image indexing.",
     "screenshot": "settings-indexing-image-indexing.png"
   },
   "settings.mediaIndex.enabled.description": "Read the text inside your images so you can search it. Runs on your Mac and never leaves it. Covers local drives for now.",
@@ -672,11 +668,19 @@
   },
   "settings.mediaIndex.showFileStatusIcons.label": "Show status badges on image files",
   "@settings.mediaIndex.showFileStatusIcons.label": {
-    "description": "Label for the toggle that shows a small badge on each image file in the file list, marking whether it''s indexed for image search. On by default. In Settings > AI > Image search, under the \"Index image contents\" toggle."
+    "description": "Label for the toggle that shows a small badge on each image file in the file list, marking whether it''s indexed for image search. On by default. In Settings > Indexing > Image indexing, under the \"Index image contents\" toggle."
   },
   "settings.mediaIndex.showFileStatusIcons.description": "Add a small badge to each image in the file list showing whether it''s been indexed for search.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "description": "Help text under the \"Show status badges on image files\" toggle. Explains the badge marks each image''s indexing state (indexed, waiting, and so on) right in the file list."
+  },
+  "settings.mediaIndex.showInSearch.label": "Show image results in Search",
+  "@settings.mediaIndex.showInSearch.label": {
+    "description": "Label for the toggle that lets the Search dialog show a row of matching images above the file results. Off by default. In Settings > Indexing > Image indexing, under the \"Show status badges on image files\" toggle. \"Search\" names Cmdr''s Search dialog, so use the same word your translation gives that dialog."
+  },
+  "settings.mediaIndex.showInSearch.description": "Search adds a row of matching images above your files. Matching is still rough, so it''s off until you want it.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "description": "Help text under the \"Show image results in Search\" toggle. Says what turning it on does (a row of matching images sits above the file results) and admits image matching isn''t accurate yet, which is why it starts off. The tone is candid and relaxed, owning the limitation without apologizing for it. \"Search\" names Cmdr''s Search dialog; keep it consistent with the label above."
   },
   "settings.mediaIndex.networkVolumes.label": "Network drive image indexing",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -1348,6 +1352,15 @@
     "screenshot": "settings-viewer.png"
   },
 
+  "settings.viewer.showTextCursor.label": "Show text cursor",
+  "@settings.viewer.showTextCursor.label": {
+    "description": "Label for the toggle that paints a blinking text cursor (the thin insertion-point bar an editor shows) in the file viewer. In Settings > Viewer. Off by default. \"Text cursor\" is the visible bar, not the mouse pointer; use whatever your language's text editors call the insertion point."
+  },
+  "settings.viewer.showTextCursor.description": "Show a blinking cursor in the file viewer, marking where a keyboard selection grows from.",
+  "@settings.viewer.showTextCursor.description": {
+    "description": "Help text for the viewer text-cursor toggle. The cursor sits at the moving end of the selection, so pressing Shift with an arrow key extends the selection from there. \"Keyboard selection\" = selecting text with Shift plus the arrow keys, as opposed to dragging with the mouse."
+  },
+
   "settings.developer.mcpEnabled.label": "Enable MCP server",
   "@settings.developer.mcpEnabled.label": {
     "description": "Label for the toggle starting the MCP server. \"MCP\" = Model Context Protocol; keep the abbreviation. In Settings > Developer > MCP server.",
@@ -1833,6 +1846,43 @@
     "description": "Heading of the File operations card (copy, move, rename, delete settings) in Settings > Behavior > Navigation & file ops.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.navigationAndFileOps.card.terminal": "Terminal",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "description": "Heading of the Terminal card in Settings > Behavior > Navigation & file ops. It holds the setting for which terminal app the \"Open terminal here\" action launches. Generic here: a terminal (command-line) app in general, NOT Apple's app called Terminal.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.openTerminalHereApp.label": "Open terminal here uses",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "description": "Label of the dropdown that picks which terminal app the \"Open terminal here\" action launches, in Settings > Behavior > Navigation & file ops. \"Open terminal here\" is Cmdr's own command name (it opens a terminal at the folder you're looking at), so translate it the same way as the command of that name. The sentence continues in the dropdown beside it, which names an app: \"Open terminal here uses [Ghostty]\".",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.openTerminalHereApp.description": "Cmdr lists the terminal apps it finds on this Mac. To use one it doesn''t know, pick \"Choose an app…\".",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "description": "Helper text under the \"Open terminal here uses\" dropdown in Settings > Behavior > Navigation & file ops. Says two things: the list is built from what's installed right now, and there's a way out for an app Cmdr doesn't carry a recipe for. \"Choose an app…\" is the last row of that same dropdown, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "Choose an app…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "description": "Last row of the \"Open terminal here uses\" dropdown in Settings > Behavior > Navigation & file ops. Picking it opens the macOS file picker so the user can point at any app on their Mac. The trailing … (U+2026) means \"this opens a dialog\"; keep it. macOS Finder's own \"Open with > Other…\" row is the closest counterpart.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Choose a terminal app",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "description": "Title of the macOS file-picker window that opens after picking \"Choose an app…\" in the \"Open terminal here uses\" dropdown. The picker shows /Applications and only lets an app be selected. Imperative, addressed to the user."
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Checking your apps…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "description": "Placeholder shown in the \"Open terminal here uses\" dropdown for the moment before Cmdr has finished asking macOS which terminal apps are installed. The dropdown is disabled while it reads this. \"your apps\" = the apps on this Mac. Usually gone within a few milliseconds.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "Open-terminal-here hint shown",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "description": "Internal, never shown in the UI: tracks whether the one-time \"Open terminal here\" hint notification has appeared."
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Whether the one-time hint about picking a terminal app has been shown.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "description": "Internal, never shown in the UI. Pairs with the open-terminal-here hint label."
+  },
   "settings.section.archives": "Archives",
   "@settings.section.archives": {
     "description": "Settings subsection title under Behavior: Archives. Covers what pressing Enter does on archive files and macOS app bundles. Sidebar and page heading.",
@@ -1878,7 +1928,7 @@
   },
   "settings.section.imageIndexing": "Image indexing",
   "@settings.section.imageIndexing": {
-    "description": "Settings subsection title under Indexing: Image indexing (on-device search of the text inside images, via OCR). Sidebar and page heading. Keep short; match the card title \"settings.mediaIndex.card\".",
+    "description": "Settings subsection title under Indexing: Image indexing (on-device search of the text inside images, via OCR). Sidebar and page heading. Keep short.",
     "screenshot": "settings-appearance.png"
   },
   "settings.section.ai": "AI",
@@ -2791,7 +2841,7 @@
 
   "settings.mediaIndex.scope.label": "Which folders to index",
   "@settings.mediaIndex.scope.label": {
-    "description": "Label above the radio group that picks how Cmdr decides which folders to image-index. In Settings > AI > Image search."
+    "description": "Label above the radio group that picks how Cmdr decides which folders to image-index. In Settings > Indexing > Image indexing."
   },
   "settings.mediaIndex.scope.description": "Pick the folders yourself, or let Cmdr work out which ones matter to you.",
   "@settings.mediaIndex.scope.description": {
@@ -2808,7 +2858,7 @@
 
   "settings.mediaIndex.chosenFolders.title": "Folders to index",
   "@settings.mediaIndex.chosenFolders.title": {
-    "description": "Title above the list of folders the user picked for image indexing. In Settings > AI > Image search."
+    "description": "Title above the list of folders the user picked for image indexing. In Settings > Indexing > Image indexing."
   },
   "settings.mediaIndex.chosenFolders.help": "Photos in these folders are indexed whatever else you pick above. Removing a folder stops new indexing; what''s already indexed stays searchable.",
   "@settings.mediaIndex.chosenFolders.help": {

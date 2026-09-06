@@ -523,7 +523,8 @@ pub(super) fn start_next_rescan(drain: RescanDrain, writer: &IndexWriter) {
                 }
             };
 
-            let (escalation, walk_cost) = match reconcile_subtree(&path, &space_for_task, &conn, &writer, &cancel) {
+            let (escalation, walk_cost) = match reconcile_subtree(&path, &space_for_task, &conn, &writer, &cancel, None)
+            {
                 Ok(summary) => {
                     let (level, message) = reconcile_report(&path, &summary);
                     log::log!(level, "{message}");

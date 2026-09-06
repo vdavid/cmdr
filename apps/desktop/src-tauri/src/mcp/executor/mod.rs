@@ -378,13 +378,20 @@ pub(crate) fn is_virtual_path(path: &str) -> bool {
 
 /// Validates that an agent-supplied path exists, without wedging on a hung mount.
 ///
-/// Virtual paths (see `is_virtual_path`) skip the check — the local filesystem knows
-/// nothing about them; the frontend's navigation/open path is the authority there.
+/// Two kinds of path skip the check, for the same reason: the local filesystem knows
+/// nothing about them, so `Path::exists()` would answer a confident false. Scheme
+/// paths (`mtp://…`, `smb://…`, see `is_virtual_path`), and paths a ROUTE serves —
+/// inside a `.zip`, or inside a repo's virtual `.git` trees — where the volume that
+/// answers has no inode to offer. The frontend's navigation/open path is the
+/// authority for both, and it refuses an unreachable one honestly.
+///
 /// The local probe runs on the blocking pool under a 2 s timeout because
 /// `Path::exists()` on a dead network mount can block indefinitely, and an MCP handler
 /// must never do un-timed filesystem I/O (same contract as `commands/util.rs`).
 async fn validate_path_exists(path: &str) -> Result<(), ToolError> {
-    if is_virtual_path(path) {
+    if is_virtual_path(path)
+        || crate::file_system::volume::manager::path_routes_over_its_parent(std::path::Path::new(path))
+    {
         return Ok(());
     }
     let owned = path.to_string();
@@ -469,6 +476,102 @@ fn parse_operation_start_response(payload: &str, expected_id: &str) -> Option<Re
     }
 }
 
+/// What the frontend says an `mcp-nav-to-path` did to the pane.
+///
+/// The FE names the outcome and the backend words it, so the tool result describes what
+/// the pane ACTUALLY did rather than what was asked of it. ❌ Never inferred from message
+/// text (`error-string-match`): the discriminant is the contract, and it's mirrored by
+/// `NavLandingOutcome` in `apps/desktop/src/routes/(main)/mcp-nav-landing.ts`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum NavAck {
+    /// The pane came to rest on the requested location.
+    Navigated { path: String },
+    /// The pane came to rest somewhere else. An edge-flow fallback (MTP-fatal, retry,
+    /// open-home) took it there after the destination failed to list.
+    FellBack { path: String },
+    /// The pane never came to rest. `path` is what it holds meanwhile, which for a volume
+    /// switch is the destination it committed optimistically.
+    DidNotSettle { path: String },
+}
+
+/// Parse an `mcp-response` for a navigation, against the request ID we're waiting for.
+///
+/// Same `requestId` correlation as [`parse_mcp_response`]; the success arm carries the
+/// typed `outcome` plus the pane's resting `path`. A reply with no `outcome` is a decline
+/// that happened before the pane moved (no explorer mounted, an unresolvable path, a
+/// synchronous refusal) and keeps its message verbatim.
+fn parse_nav_response(payload: &str, expected_id: &str) -> Option<Result<NavAck, String>> {
+    let resp = serde_json::from_str::<Value>(payload).ok()?;
+    if resp.get("requestId").and_then(|v| v.as_str()) != Some(expected_id) {
+        return None;
+    }
+    let path = resp
+        .get("path")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default()
+        .to_string();
+    match resp.get("outcome").and_then(|v| v.as_str()) {
+        Some("navigated") => Some(Ok(NavAck::Navigated { path })),
+        Some("fell-back") => Some(Ok(NavAck::FellBack { path })),
+        Some("did-not-settle") => Some(Ok(NavAck::DidNotSettle { path })),
+        // No outcome to go on: fall back to the plain ok/error rule, where a missing
+        // `ok` counts as failure so a malformed reply can never become a false OK.
+        _ => Some(match parse_mcp_response(payload, expected_id)? {
+            Ok(()) => Ok(NavAck::Navigated { path }),
+            Err(err) => Err(err),
+        }),
+    }
+}
+
+/// Emit an event to the frontend and wait for the reply `parse` accepts.
+///
+/// The shared body behind every `mcp-response` round-trip: mint a request id, listen for
+/// the correlated reply, emit, and bound the wait. Each caller brings its own parser, so
+/// what a reply is allowed to say lives with the tool rather than in three copies of this
+/// listener.
+async fn mcp_round_trip_parsed<R: Runtime, T, F>(
+    app: &AppHandle<R>,
+    event: &str,
+    mut payload: Value,
+    timeout_secs: u64,
+    parse: F,
+) -> Result<T, ToolError>
+where
+    T: Send + 'static,
+    F: Fn(&str, &str) -> Option<Result<T, String>> + Send + 'static,
+{
+    let request_id = uuid::Uuid::new_v4().to_string();
+    payload["requestId"] = json!(request_id);
+
+    let (tx, rx) = tokio::sync::oneshot::channel::<Result<T, String>>();
+    let expected_id = request_id.clone();
+
+    // Use a Mutex to allow the closure to consume tx exactly once
+    let tx = Mutex::new(Some(tx));
+    let listener_id = app.listen("mcp-response", move |event| {
+        if let Some(result) = parse(event.payload(), &expected_id)
+            && let Some(tx) = tx.lock_ignore_poison().take()
+        {
+            let _ = tx.send(result);
+        }
+    });
+
+    app.emit(event, payload)?;
+
+    let result = tokio::time::timeout(std::time::Duration::from_secs(timeout_secs), rx).await;
+    app.unlisten(listener_id);
+
+    match result {
+        Ok(Ok(Ok(value))) => Ok(value),
+        Ok(Ok(Err(err))) => Err(ToolError::internal(err)),
+        Ok(Err(_)) => Err(ToolError::internal("Frontend response channel dropped")),
+        Err(_) => Err(ToolError::internal(format!(
+            "Frontend did not respond within {}",
+            pluralize(timeout_secs, "second")
+        ))),
+    }
+}
+
 /// Emit an autoConfirm file-op event and wait for the FE to reply with the
 /// spawned `operationId`.
 ///
@@ -482,76 +585,29 @@ fn parse_operation_start_response(payload: &str, expected_id: &str) -> Option<Re
 async fn mcp_await_operation_start<R: Runtime>(
     app: &AppHandle<R>,
     event: &str,
-    mut payload: Value,
+    payload: Value,
     timeout_secs: u64,
 ) -> Result<Option<String>, ToolError> {
-    let request_id = uuid::Uuid::new_v4().to_string();
-    payload["requestId"] = json!(request_id);
+    mcp_round_trip_parsed(app, event, payload, timeout_secs, parse_operation_start_response).await
+}
 
-    let (tx, rx) = tokio::sync::oneshot::channel::<Result<Option<String>, String>>();
-    let expected_id = request_id.clone();
-
-    let tx = Mutex::new(Some(tx));
-    let listener_id = app.listen("mcp-response", move |event| {
-        if let Some(result) = parse_operation_start_response(event.payload(), &expected_id)
-            && let Some(tx) = tx.lock_ignore_poison().take()
-        {
-            let _ = tx.send(result);
-        }
-    });
-
-    app.emit(event, payload)?;
-
-    let result = tokio::time::timeout(std::time::Duration::from_secs(timeout_secs), rx).await;
-    app.unlisten(listener_id);
-
-    match result {
-        Ok(Ok(Ok(operation_id))) => Ok(operation_id),
-        Ok(Ok(Err(err))) => Err(ToolError::internal(err)),
-        Ok(Err(_)) => Err(ToolError::internal("Frontend response channel dropped")),
-        Err(_) => Err(ToolError::internal(format!(
-            "Frontend did not respond within {}",
-            pluralize(timeout_secs, "second")
-        ))),
-    }
+/// Emit a navigation event and report what the pane actually did with it.
+async fn mcp_nav_round_trip<R: Runtime>(
+    app: &AppHandle<R>,
+    payload: Value,
+    timeout_secs: u64,
+) -> Result<NavAck, ToolError> {
+    mcp_round_trip_parsed(app, "mcp-nav-to-path", payload, timeout_secs, parse_nav_response).await
 }
 
 /// Like `mcp_round_trip` but with a configurable timeout.
 async fn mcp_round_trip_with_timeout<R: Runtime>(
     app: &AppHandle<R>,
     event: &str,
-    mut payload: Value,
+    payload: Value,
     success_msg: String,
     timeout_secs: u64,
 ) -> ToolResult {
-    let request_id = uuid::Uuid::new_v4().to_string();
-    payload["requestId"] = json!(request_id);
-
-    let (tx, rx) = tokio::sync::oneshot::channel::<Result<(), String>>();
-    let expected_id = request_id.clone();
-
-    // Use a Mutex to allow the closure to consume tx exactly once
-    let tx = Mutex::new(Some(tx));
-    let listener_id = app.listen("mcp-response", move |event| {
-        if let Some(result) = parse_mcp_response(event.payload(), &expected_id)
-            && let Some(tx) = tx.lock_ignore_poison().take()
-        {
-            let _ = tx.send(result);
-        }
-    });
-
-    app.emit(event, payload)?;
-
-    let result = tokio::time::timeout(std::time::Duration::from_secs(timeout_secs), rx).await;
-    app.unlisten(listener_id);
-
-    match result {
-        Ok(Ok(Ok(()))) => Ok(json!(success_msg)),
-        Ok(Ok(Err(err))) => Err(ToolError::internal(err)),
-        Ok(Err(_)) => Err(ToolError::internal("Frontend response channel dropped")),
-        Err(_) => Err(ToolError::internal(format!(
-            "Frontend did not respond within {}",
-            pluralize(timeout_secs, "second")
-        ))),
-    }
+    mcp_round_trip_parsed(app, event, payload, timeout_secs, parse_mcp_response).await?;
+    Ok(json!(success_msg))
 }

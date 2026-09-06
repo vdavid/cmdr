@@ -1,49 +1,46 @@
 # File system › git
 
-Backend module for the git browser: repo discovery/info/status, the per-repo watcher, and the virtual `.git` portal
-(`branches/`, `tags/`, `commits/`, `stash/`, `worktrees/`, `submodules/` browsable as virtual trees), with cross-volume
-copy "for free" because git blobs flow through the existing `VolumeReadStream` abstraction.
+The app's side of the git browser: the two seams that reach `crates/cmdr-git` and the decisions only the app can make.
+Everything that talks to a repository lives in that crate, whose `CLAUDE.md` is the one to read before touching a
+listing, the status walk, or the watcher.
 
-Frontend counterpart: `apps/desktop/src/lib/file-explorer/git/CLAUDE.md`
-for the breadcrumb chip, status column, and the live `RepoInfo` store.
+Frontend counterpart: `apps/desktop/src/lib/file-explorer/git/CLAUDE.md`.
 
 ## Module map
 
-- `mod.rs`: public API + the three volume hooks (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`) +
-  `is_virtual` for the mutation guards. `repo.rs`: discovery, `repo_info`, process-global `RepoCache`. `path.rs`:
-  `VirtualGitPath` / `classify` parser. `virtual_listing.rs`, `log.rs`, `stash.rs`, `worktrees.rs`, `submodules.rs`,
-  `tree.rs`, `snapshot_dates.rs`: per-category listing + tree walks. `status.rs`: cached status walk.
-  `read_blob.rs`: `GitBlobReadStream`. `watcher.rs`: per-repo notify debouncer. `column_meta.rs`: Modified/Size column
-  helpers. `FriendlyGitError` lives in `crates/cmdr-fs/src/volume/friendly_error/git.rs`
-  (`VolumeError::FriendlyGit` carries it), aliased here as `git::friendly`.
-- Tauri commands, the watcher path set, the column tables, and the decision record are in `DETAILS.md`.
+- `overlay.rs`: the `ListingOverlay` contributor that puts the six category rows into a repo's `.git/` listing. It asks
+  `GitPortal::category_rows` and does nothing else.
+- `wiring.rs`: the parked portal, the toggle both seams consult, `volume_holds_real_repos`, the `git-state-changed`
+  payload and the sink that emits it, and the listing re-reads a repo change or a toggle drives.
+- `arming.rs`: the `ListingLifecycle` observer that keeps a repo's `.git/*` watcher armed while a pane is showing one
+  of its virtual listings.
+- The route itself is `file_system/volume/manager/git_routing.rs`, with the registry that owns it. The IPC commands are
+  `commands/file_system/git.rs`.
 
 ## Must-knows
 
-- **Volume hook order is fixed and load-bearing: `resolve(path)` first, then `git::try_route_*(resolved_path)`.** If the
-  route returns `Some`, that's the volume method's return; otherwise the real-FS path runs. Lets the user open `.git`
-  from any volume-rooted path. See `DETAILS.md` § "Volume hook contract".
-- **Mutation guards don't consult the portal toggle.** All mutation methods reject virtual paths via `git::is_virtual`
-  even with the portal off: don't let a copy dialog write to `.git/HEAD`. Power users mutate `.git` from a terminal.
-- **Flipping the portal toggle must invalidate open virtual listings.** `set_show_virtual_git_portal` flips the atomic
-  AND calls `watcher::refresh_all_virtual_listings_after_toggle`; the atomic alone leaves panes showing stale cached
-  children. See `DETAILS.md` § "Live-toggleable portal".
-- **Listings on virtual portal paths must skip `start_watching`.** The on-disk path doesn't exist, so `notify` errors
-  ("No path was found") and spams the warn log every navigation. Skip when `git::is_virtual(path)`; virtual-listing
-  invalidation flows through `git::watcher::invalidate_virtual_listings` instead.
-- **Use typed `VolumeError::FriendlyGit(FriendlyGitError)`; never stuff a sentinel string into `IoError::message` and
-  parse it.** That violates the no-error-string-match rule. Same rule keeps `list_status` on `gix::Repository::status()`
-  rather than a `git status --porcelain` shell-out (no stderr string parsing).
-- **`GitBlobReadStream` memory cost equals blob size** (gix 0.81 has no chunked loose-object reader; the 256 KB chunks
-  are for the consumer API shape, not memory streaming). Blobs over `tree::MAX_BLOB_BYTES` (256 MB) are refused up-front
-  via `BlobTooLarge` rather than OOM.
-- **`repo_info` is the expensive call in the chip pipeline** (`is_dirty()` runs a full worktree walk, ~60 ms on 50k
-  files). Don't add work to the chip-refresh path without re-benchmarking.
-- **`list_status` is cached keyed by `.git/index` mtime**; the watcher drops the entry on every `.git/*` mutation. A
-  naive per-nav walk costs ~75 ms on a 50k-file repo. See `DETAILS.md` § "Decisions".
-- **Streaming log is capped at 5000 entries, silently** (no "Load more": pagination IPC isn't wired, so the affordance
-  would do nothing). Wire the IPC and the affordance together when a user first reports hitting the cap.
-- **Ref names render flat**: `feature/foo` is one entry, not nested. The classifier greedy-matches known refs
-  longest-first. See `DETAILS.md` § "Ref-name flat rendering".
+- **Two seams, no hooks: `LocalPosixVolume` names git nowhere, and ❌ must never again.** Below `.git/` is a ROUTE
+  (`resolve` → `cmdr_git::GitPortalVolume`); `.git/` itself is a listing OVERLAY reaching a PANE and nothing else.
+  `DETAILS.md` § "Two seams, no hooks".
+- **❌ Never widen either seam.** The volume serves the six categories and nothing under them; the overlay claims only
+  a DIRECTORY called `.git` on a volume `gix` can open. So a linked worktree's gitlink FILE has no landing listing, and
+  a `.git` on a direct-SMB share isn't the portal's.
+- **Real files under `.git` are ordinary local files**, portal on or off, which is what lets a repo-folder delete walk
+  `.git/` to the end. ❌ Never add a guard back: the last one refused `.git/config` too and half-deleted repos.
+- **Flipping the toggle must refresh open listings.** `set_show_virtual_git_portal` flips the atomic AND calls
+  `wiring::refresh_all_virtual_listings_after_toggle`, across every volume; the atomic alone leaves stale children on
+  screen. That set comes from the LISTING CACHE, ❌ never the watcher registry. `DETAILS.md` § Decisions.
+- **The portal is parked, ❌ never rebuilt.** `wiring::portal()` is the app's one `GitPortal`; a second would open every
+  repository twice and watch it twice.
+- **A repo's watcher is armed by its OPEN LISTINGS, ❌ never by a frontend subscription alone.** `arming.rs` takes a
+  subscriber when a portal listing opens and gives it back when it closes, sharing the chip's refcount. The chip's
+  `subscribeGitState` only fires while a git feature is on and only for the working tree, so a lone `branches/` pane
+  used to go stale. `DETAILS.md` § "Who arms the repo watcher".
+- **A virtual listing is unwatchable by TYPE** (`can_watch_listings()` false), and `.git/` itself IS watched. So a
+  `FullRefresh` there must re-run the overlays, and the fresh-listing oracle must keep declining a decorated listing.
+  `DETAILS.md` § "A virtual listing is unwatchable by type".
+- **`walker_exposure_tests.rs` pins the portal's blast radius**: which non-pane walkers can reach a virtual entry, and
+  the answer is none. `DETAILS.md` § "What each walker sees".
 
-Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

@@ -115,6 +115,7 @@ pub(super) fn parse(
                 compressed_size: if is_dir { 0 } else { entry.size() },
                 modified: unix_seconds(entry),
                 encrypted,
+                mode: recorded_permission_bits(entry),
             },
             (),
         ));
@@ -126,6 +127,32 @@ pub(super) fn parse(
     }
 
     Ok((out, ()))
+}
+
+/// FILE_ATTRIBUTE_UNIX_EXTENSION: p7zip's marker in the Windows attribute word
+/// saying the high 16 bits hold a unix `st_mode`. Set by p7zip and by every 7z
+/// writer that follows it; absent from an archive written on Windows, which
+/// records no mode at all (verified against the p7zip source's
+/// `FILE_ATTRIBUTE_UNIX_EXTENSION`, 2026-09-05).
+const UNIX_EXTENSION_ATTRIBUTE: u32 = 0x8000;
+
+/// The POSIX permission bits this entry recorded, or `None` when it recorded
+/// none.
+///
+/// 7z has no mode field of its own: a unix mode rides the high half of the
+/// Windows attribute word, flagged by [`UNIX_EXTENSION_ATTRIBUTE`]. Without that
+/// flag the low half is a DOS attribute set that says nothing about
+/// permissions, so the answer is `None` rather than a plausible default.
+///
+/// Only the low nine bits travel. setuid, setgid, and sticky are dropped on
+/// purpose: an archive is untrusted input.
+fn recorded_permission_bits(entry: &sevenz_rust2::ArchiveEntry) -> Option<u32> {
+    let attributes = entry.windows_attributes();
+    if attributes & UNIX_EXTENSION_ATTRIBUTE == 0 {
+        return None;
+    }
+    let bits = (attributes >> 16) & 0o777;
+    (bits != 0).then_some(bits)
 }
 
 /// Best-effort last-modified time as Unix seconds, or `None` when the entry

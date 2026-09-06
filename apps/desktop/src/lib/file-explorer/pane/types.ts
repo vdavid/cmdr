@@ -143,6 +143,11 @@ export interface FilePaneAPI {
   getPathUnderCursor(): string | undefined
   /** Full FileEntry under the cursor (incl. `..` synthetic entry), or null. */
   getCursorEntry(): FileEntry | null
+  /**
+   * Re-reads the cursor entry and returns it. `getCursorEntry` is one IPC behind a
+   * cursor move, which is fine to DISPLAY and not fine to ACT on.
+   */
+  refreshCursorEntry(): Promise<FileEntry | null>
   /** Cursor target inside the network view (host or share), or null. */
   getNetworkCursorEntry(): NetworkCursorEntry | null
   setCursorIndex(index: number): Promise<void>

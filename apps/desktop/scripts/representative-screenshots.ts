@@ -185,12 +185,38 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'dialog\'s title reads "Removing the originals…".',
   },
   {
+    prefix: 'fileOperations.transferProgress.titleRemovingOriginals',
+    screenshot: 'transfer-dialog.png',
+    note:
+      'The copy/move progress dialog, pictured here. Your string is the title it shows during the final stage of a move ' +
+      'between disks.',
+  },
+  {
+    // All three reversal titles, which the dialog shows only for a rollback
+    // started from the operation history.
+    prefix: 'fileOperations.transferProgress.titleReversal',
+    screenshot: 'transfer-dialog.png',
+    note:
+      'The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback ' +
+      'launched from the operation history, rather than a copy or a move.',
+  },
+  {
     // The transfer progress dialog's other phases (scan, pause, queue, flush).
     prefix: 'fileOperations.transferProgress.',
     screenshot: 'transfer-dialog.png',
     note:
       'The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or ' +
       'finishing up) or to one of its two progress bars.',
+  },
+  {
+    // The toast that reports what a cancelled rollback could and couldn't put
+    // back. Only this one line has a stand-in; the rest of `cancelRollback.*`
+    // stays uncoupled rather than claiming a picture it doesn't have.
+    prefix: 'fileOperations.cancelRollback.leftBehind',
+    screenshot: 'toast-transfer-complete.png',
+    note:
+      'This shows a different toast in the same corner of the window; your string is one of the lines inside a toast ' +
+      'like it.',
   },
   {
     // The failure notice's SUMMARY form only appears past three failures at once,

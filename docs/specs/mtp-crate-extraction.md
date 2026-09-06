@@ -1,5 +1,20 @@
 # MTP becomes `crates/cmdr-mtp`: retrofitting the last pre-seam backend onto the host seams
 
+**Status (2026-09-05).** Everything except the real-device pass is done: the crate exists with its surface capped at
+what it exposes, the tests are split, the allowlists carried over as renames, and the docs sweep has landed. The one
+open item is M5 step 3, real-device QA, which David runs against a phone. His checklist, in order:
+
+1. Connect the phone and list a folder.
+2. Copy a file to the phone, and copy one back off it.
+3. Delete a folder that still has children in it. It must refuse, and delete nothing.
+4. Unplug mid-copy.
+5. Trigger a session reset by locking the phone's screen. The volume must stay in the sidebar and come back on its own.
+6. Replug into a DIFFERENT USB port, and check the index re-matches by serial rather than rescanning.
+7. Toggle the MTP setting off and back on.
+
+Throughout, watch the log for the registration-before-event-loop order: every storage attaches before the device's event
+loop starts.
+
 **Problem.** MTP is the one storage backend that still reaches sideways into the app. Its session layer holds a
 `tauri::AppHandle`, emits seven frontend events itself, writes the listing cache directly at four sites, feeds the index
 handle directly, spawns on the ambient runtime, and gates real behavior behind nine inline `#[cfg(test)]`s. Nothing but

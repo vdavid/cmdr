@@ -8,14 +8,14 @@ describe('isVirtualGitPath', () => {
 
   it('treats raw `.git` internals as real', () => {
     // `.git/HEAD` and `.git/refs/...` are real on-disk files. Only the
-    // seven category names route to the virtual portal.
+    // six category names route to the virtual portal.
     expect(isVirtualGitPath('/Users/me/repo/.git/HEAD')).toBe(false)
     expect(isVirtualGitPath('/Users/me/repo/.git/refs/heads/main')).toBe(false)
     expect(isVirtualGitPath('/Users/me/repo/.git/objects/pack')).toBe(false)
     expect(isVirtualGitPath('/Users/me/repo/.git/config')).toBe(false)
   })
 
-  it('detects each of the seven virtual categories', () => {
+  it('detects each of the six virtual categories', () => {
     const root = '/Users/me/repo/.git'
     expect(isVirtualGitPath(`${root}/branches`)).toBe(true)
     expect(isVirtualGitPath(`${root}/tags`)).toBe(true)
@@ -23,7 +23,6 @@ describe('isVirtualGitPath', () => {
     expect(isVirtualGitPath(`${root}/stash`)).toBe(true)
     expect(isVirtualGitPath(`${root}/worktrees`)).toBe(true)
     expect(isVirtualGitPath(`${root}/submodules`)).toBe(true)
-    expect(isVirtualGitPath(`${root}/raw`)).toBe(true)
   })
 
   it('detects subpaths inside a virtual category', () => {
@@ -34,12 +33,12 @@ describe('isVirtualGitPath', () => {
     expect(isVirtualGitPath('/Users/me/repo/.git/commits/abc123/Cargo.toml')).toBe(true)
   })
 
-  it('treats the `raw` passthrough as virtual even though contents are real-FS', () => {
-    // `raw/` routes through `list_raw` in the backend; conceptually the
-    // path is still part of the portal, so frontend FS-bound polls
-    // should skip it.
-    expect(isVirtualGitPath('/Users/me/repo/.git/raw/HEAD')).toBe(true)
-    expect(isVirtualGitPath('/Users/me/repo/.git/raw/refs/heads/main')).toBe(true)
+  it('treats `.git/raw/` as real, because the backend has no such category', () => {
+    // There were seven categories once. `raw/` is gone, so a directory a
+    // user actually made there is an ordinary folder, and the pane's
+    // "does this still exist?" poll has to keep running for it.
+    expect(isVirtualGitPath('/Users/me/repo/.git/raw')).toBe(false)
+    expect(isVirtualGitPath('/Users/me/repo/.git/raw/HEAD')).toBe(false)
   })
 
   it('ignores paths that look similar but are not under `.git`', () => {

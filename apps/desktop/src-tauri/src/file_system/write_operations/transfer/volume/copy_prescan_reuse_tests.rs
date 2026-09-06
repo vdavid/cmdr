@@ -19,7 +19,7 @@
 //! The ABSENT hint — a local source, whose scan preview completes with an empty
 //! `per_path` — is the other half, and it lives in `copy_source_hint_tests.rs`.
 //!
-//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests.rs`
+//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests/`
 //! (`super::tests`) so they aren't duplicated.
 
 use super::super::super::conflict_responder_test_support::await_prompted_clash;

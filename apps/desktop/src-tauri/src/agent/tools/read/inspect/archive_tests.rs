@@ -13,14 +13,14 @@ use super::tests::assert_text_only;
 use super::*;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, VolumeError};
-use crate::file_viewer::archive_extract::{EXTRACT_CAP_BYTES, extract_if_archive_inner_with};
+use crate::file_viewer::routed_extract::{EXTRACT_CAP_BYTES, extract_if_routed_with};
 use crate::test_support::TestDir;
 use cmdr_archive::test_fixtures::{
     build_encrypted_7z, build_zip, build_zipcrypto_zip, dir as zip_dir, encrypted_entry, plain_entry, stored,
 };
 
 /// Registers a real local-FS "root" volume so `resolve("root", …)` finds a parent for the
-/// on-demand `ArchiveVolume`. Idempotent; the shape `archive_extract_test.rs` uses.
+/// on-demand `ArchiveVolume`. Idempotent; the shape `routed_extract_test.rs` uses.
 fn ensure_root_volume() {
     get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
 }
@@ -57,8 +57,7 @@ fn inspect(path: &Path) -> FileRow {
 /// the temp and shrink the cap.
 fn inspect_extracting_to(path: &Path, extract_dir: &Path, cap: u64) -> FileRow {
     ensure_root_volume();
-    let extract =
-        |requested: &Path, volume_id: &str| extract_if_archive_inner_with(requested, volume_id, extract_dir, cap);
+    let extract = |requested: &Path, volume_id: &str| extract_if_routed_with(requested, volume_id, extract_dir, cap);
     inspect_path_with(
         path.to_str().unwrap(),
         &TextAsk::Window(WindowOpts::default()),

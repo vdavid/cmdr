@@ -1393,20 +1393,20 @@
   "@errors.write.filesTooLargeForFilesystem.suggestion": {
     "sourceHash": "bb4ac05"
   },
-  "errors.write.readOnlyDevice.title": "Appareil en lecture seule",
-  "@errors.write.readOnlyDevice.title": {
+  "errors.write.readOnlyDevice.destination.title": "Appareil en lecture seule",
+  "@errors.write.readOnlyDevice.destination.title": {
     "sourceHash": "3f79690"
   },
-  "errors.write.readOnlyDevice.message": "{deviceName} est en lecture seule. Vous pouvez en copier des fichiers, mais pas y en copier.",
-  "@errors.write.readOnlyDevice.message": {
+  "errors.write.readOnlyDevice.destination.message": "{deviceName} est en lecture seule. Vous pouvez en copier des fichiers, mais pas y en copier.",
+  "@errors.write.readOnlyDevice.destination.message": {
     "sourceHash": "932e2ed"
   },
-  "errors.write.readOnlyDevice.suggestion": "Choisissez une destination différente qui prend en charge l'écriture.",
-  "@errors.write.readOnlyDevice.suggestion": {
+  "errors.write.readOnlyDevice.destination.suggestion": "Choisissez une destination différente qui prend en charge l'écriture.",
+  "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
-  "errors.write.readOnlyDevice.fallbackName": "L'appareil cible",
-  "@errors.write.readOnlyDevice.fallbackName": {
+  "errors.write.readOnlyDevice.destination.fallbackName": "L'appareil cible",
+  "@errors.write.readOnlyDevice.destination.fallbackName": {
     "sourceHash": "ef2429e"
   },
   "errors.write.fileLocked.title": "Le fichier est verrouillé",
@@ -1436,6 +1436,38 @@
   "errors.write.deletePending.suggestion": "Patientez un instant et réessayez. Une fois le dernier handle fermé, le fichier disparaît. S'il persiste, fermez toute autre app qui pourrait l'avoir ouvert.",
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
+  },
+  "errors.write.newDataKeptAt.title": "Votre nouveau fichier porte un autre nom",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Le nouveau {path} est écrit et complet, mais la destination a refusé de lui donner ce nom, et le fichier qu'il devait remplacer a déjà disparu. Le nouveau se trouve dans {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Ouvrez {keptAt} pour le vérifier, puis renommez-le. Si la destination est un partage réseau ou un téléphone, reconnectez-la d'abord et le renommage passera.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
+  "errors.write.originalsKeptAside.title": "Votre fichier porte un nouveau nom",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "Un dossier a pris le nom {path}, votre fichier se trouve donc maintenant dans {keptAt}. Rien n'a été jeté.",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "Des dossiers ont pris les noms de {count} de vos fichiers, qui portent donc maintenant de nouveaux noms. Rien n'a été jeté ; les détails techniques ci-dessous les listent tous.",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "Ouvrez {keptAt} pour le vérifier. Une fois le dossier écarté, vous pourrez redonner son nom à votre fichier.",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "Les détails ci-dessous indiquent où se trouve chaque fichier. Une fois les dossiers écartés, vous pourrez leur redonner leurs noms.",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
   },
   "errors.write.fallback.title.copy": "Copie impossible",
   "@errors.write.fallback.title.copy": {
@@ -1636,5 +1668,37 @@
   "errors.eject.unexpected": "Un problème est survenu, et Cmdr n'a pas pu identifier lequel.",
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
+  },
+  "errors.write.readOnlyDevice.source.title": "Source en lecture seule",
+  "@errors.write.readOnlyDevice.source.title": {
+    "sourceHash": "5d77aa4"
+  },
+  "errors.write.readOnlyDevice.source.message": "{deviceName} est en lecture seule. Tu peux en copier des fichiers, mais pas les déplacer hors de là.",
+  "@errors.write.readOnlyDevice.source.message": {
+    "sourceHash": "ec7d263"
+  },
+  "errors.write.readOnlyDevice.source.suggestion": "Copie-les plutôt. Les originaux restent où ils sont.",
+  "@errors.write.readOnlyDevice.source.suggestion": {
+    "sourceHash": "f6a307b"
+  },
+  "errors.write.readOnlyDevice.source.fallbackName": "La source",
+  "@errors.write.readOnlyDevice.source.fallbackName": {
+    "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Deux éléments portent le même nom",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Vous avez choisi deux éléments nommés {name} : ils arriveraient tous les deux au même endroit ({first} et {second}).",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Copiez-les l'un après l'autre, ou renommez-en un d'abord.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Déplacez-les l'un après l'autre, ou renommez-en un d'abord.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

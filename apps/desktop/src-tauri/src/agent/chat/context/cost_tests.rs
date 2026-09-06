@@ -31,10 +31,10 @@ const FILES: usize = 100;
 // them, and divides the reply's own ceiling by the plan row), so they're imported rather than
 // restated: this file is what keeps them honest against the real shapes.
 
-/// Every call: the system prompt plus the 18 tool declarations, before the user has said a word.
+/// Every call: the system prompt plus the 19 tool declarations, before the user has said a word.
 const FIXED_OVERHEAD: usize = FIXED_PROMPT_OVERHEAD_TOKENS;
-const SYSTEM_PROMPT_TOKENS: usize = 1_809;
-const TOOL_DECLARATION_TOKENS: usize = 3_683;
+const SYSTEM_PROMPT_TOKENS: usize = 1_994;
+const TOOL_DECLARATION_TOKENS: usize = 4_269;
 
 /// One `image_facts` row at [`OCR_CHARS`] of recognized text: the dominant per-file cost, and
 /// the reason a window has to be sized for the facts rather than for the plan.
@@ -47,7 +47,7 @@ const PLAN_ROW_PER_FILE: usize = PLAN_ROW_TOKENS_PER_FILE;
 const LISTING_PER_FILE: usize = LISTING_TOKENS_PER_FILE;
 
 /// The whole 100-file rename turn, prefix included.
-const HUNDRED_FILE_TURN: usize = 42_077;
+const HUNDRED_FILE_TURN: usize = 42_845;
 
 const SHOTS_DIR: &str = "/Users/me/Downloads/shots";
 
@@ -92,19 +92,19 @@ fn assert_near(measured: usize, documented: usize, what: &str) {
     );
 }
 
-/// What every single call pays before the user's question is even in the prompt. It is why a
-/// flat 8k budget left only ~4.9k for the actual work, which is how an 11-file `image_facts`
-/// batch fit and a 12-file one did not.
+/// What every single call pays before the user's question is even in the prompt. Against a
+/// prefix half this size, a flat 8k budget left only ~4.9k for the actual work, which is how
+/// an 11-file `image_facts` batch fit and a 12-file one did not.
 #[test]
 fn every_call_pays_about_3_500_tokens_of_fixed_overhead() {
     let tools = crate::agent::tools::agent_tool_declarations();
-    assert_eq!(tools.len(), 18, "the overhead below is the cost of THESE declarations");
+    assert_eq!(tools.len(), 19, "the overhead below is the cost of THESE declarations");
 
     let system = estimate_prompt_tokens(crate::agent::chat::system_prompt::SYSTEM_PROMPT, &[], &[]);
     let declarations = estimate_prompt_tokens("", &tools, &[]);
 
     assert_near(system, SYSTEM_PROMPT_TOKENS, "the system prompt");
-    assert_near(declarations, TOOL_DECLARATION_TOKENS, "the 18 tool declarations");
+    assert_near(declarations, TOOL_DECLARATION_TOKENS, "the 19 tool declarations");
     assert_near(system + declarations, FIXED_OVERHEAD, "the fixed per-call overhead");
 }
 

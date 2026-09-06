@@ -18,7 +18,7 @@
 //! walk pays the deadline per file and reports a peak of 1. ❌ Don't drop the
 //! linger to make these faster — it's what makes the number mean anything.
 //!
-//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests.rs`
+//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests/mod.rs`
 //! (`super::tests`).
 
 use super::super::super::conflict_responder_test_support::ConflictResponderSink;

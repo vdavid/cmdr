@@ -123,6 +123,7 @@ vi.mock('$lib/settings', () => ({
     // index-only path (an auto-applied run never walks, Decision 7).
     if (key === 'search.autoApply') return autoApply.value
     if (key === 'mediaIndex.enabled') return false
+    if (key === 'mediaIndex.showInSearch') return false
     if (key === 'indexing.silencedDrives') return silencedDrives.value
     return undefined
   }),
@@ -148,6 +149,7 @@ vi.mock('$lib/indexing', () => ({
 vi.mock('$lib/icon-cache', () => ({
   iconCacheVersion: writable(0),
   getCachedIcon: vi.fn(() => undefined),
+  getCachedCustomFolderIcon: () => undefined,
 }))
 
 const live: { component: ReturnType<typeof mount>; target: HTMLDivElement }[] = []

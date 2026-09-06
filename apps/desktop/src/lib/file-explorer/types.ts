@@ -1,4 +1,4 @@
-import type { CompressedSizeEstimate, TagRef } from '$lib/ipc/bindings'
+import type { CompressedSizeEstimate, GitEntryMeta, TagRef } from '$lib/ipc/bindings'
 
 export interface FileEntry {
   name: string
@@ -68,19 +68,14 @@ export interface FileEntry {
    */
   redirectToPath?: string
   /**
-   * Loose Size-column override for virtual git entries, for example:
-   * `+12 / -3`, `5 files`, `12 items`, `on main`, a short SHA. When set,
-   * the Size cell renders this string verbatim instead of formatted
-   * bytes from `size`. Cross-category Size sorting is meaningless on
-   * purpose; each cell is self-explaining via tooltip + aria-label.
+   * What a virtual git entry's Size cell states, as a fact rather than a
+   * sentence: an ahead/behind pair, a count, a pinned commit. `wordGitMeta`
+   * in `views/full-list-utils.ts` turns it into the cell text plus the tooltip
+   * that doubles as the aria-label, so it reads in the user's own language
+   * with that language's plural rules. Cross-category Size sorting is
+   * meaningless on purpose.
    */
-  displaySize?: string
-  /**
-   * Long-form tooltip for the Size cell when `displaySize` is set.
-   * Example: "12 commits ahead, 3 commits behind `origin/main`".
-   * Doubles as the aria-label for screen readers.
-   */
-  displaySizeTooltip?: string
+  gitMeta?: GitEntryMeta
   /**
    * Parent directory path. Optional on FileEntry because normal directory
    * listings derive it implicitly from the containing folder, but search-results
@@ -560,6 +555,26 @@ export interface OversizedFile {
   size: number
 }
 
+/**
+ * One file a stopped copy kept under a new name, because a folder that was
+ * replacing it took its own.
+ */
+export interface RecoveredOriginal {
+  /** The name the file had, which the folder now wears. */
+  path: string
+  /** Where its bytes are now. */
+  keptAt: string
+}
+
+/**
+ * Which half of a transfer refused the write, for `read_only_device`.
+ *
+ * A read-only DESTINATION means "put it somewhere else"; a read-only SOURCE
+ * means "you can copy out of here, you just can't move out of here". The
+ * backend says which, so the frontend never guesses it from a path.
+ */
+export type ReadOnlySide = 'source' | 'destination'
+
 /** Error types for write operations (discriminated union). */
 export type WriteOperationError =
   | { type: 'source_not_found'; path: string }
@@ -568,10 +583,11 @@ export type WriteOperationError =
   | { type: 'permission_denied'; path: string; message: string }
   | { type: 'insufficient_space'; required: number; available: number; volumeName: string | null }
   | { type: 'destination_inside_source'; source: string; destination: string }
+  | { type: 'duplicate_source_names'; name: string; first: string; second: string }
   | { type: 'symlink_loop'; path: string }
   | { type: 'cancelled'; message: string }
   | { type: 'device_disconnected'; path: string }
-  | { type: 'read_only_device'; path: string; deviceName: string | null }
+  | { type: 'read_only_device'; path: string; deviceName: string | null; side: ReadOnlySide }
   | { type: 'file_locked'; path: string }
   | { type: 'trash_not_supported'; path: string }
   | { type: 'connection_interrupted'; path: string }
@@ -588,6 +604,17 @@ export type WriteOperationError =
       files: OversizedFile[]
       totalCount: number
     }
+  // A cross-volume overwrite wrote the new file completely, then couldn't give it
+  // the destination's name, and the file it was replacing is already gone.
+  // `keptAt` is where the complete new data actually is (a ` (recovered)` name),
+  // and it is the only copy in existence, so the message has to name it.
+  | { type: 'new_data_kept_at'; path: string; keptAt: string; message: string }
+  // The copy stopped partway, and a folder that was replacing one of the user's
+  // files keeps its name. Each `recovered` entry is a file that moved to a
+  // ` (recovered)` sibling rather than being discarded with the folder's aside;
+  // the list is never empty. `cause` is what actually stopped the copy, so its
+  // own advice survives.
+  | { type: 'originals_kept_aside'; cause: WriteOperationError; recovered: RecoveredOriginal[] }
   | { type: 'io_error'; path: string; message: string }
   // Extracting from a password-protected archive. `wrongAttempt` is true when the
   // stored password was rejected. The FE should intercept this before the generic

@@ -4,6 +4,7 @@
 
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { IconName } from '$lib/ui/icons/icon-map'
+import type { EnterAction } from '$lib/file-explorer/pane/archive-enter-policy'
 
 // ============================================================================
 // Core Types
@@ -66,6 +67,56 @@ export interface SettingDefinitionSource extends Omit<
   /** i18n KEY for the in-page SectionCard group title this setting belongs to. Resolved to `card`. */
   cardKey?: MessageKey
   constraints?: SettingConstraintsSource
+}
+
+// ============================================================================
+// Searchable rows (things the Settings search must find that aren't settings)
+//
+// A `SearchableRow` gives a non-setting row ("Clear index", "Open log file",
+// "Get a license") a searchable identity WITHOUT modelling it as a setting: no
+// `SettingsValues` key, no default, nothing read or written. Declarations live
+// in a `<Component>.rows.ts` beside the markup they describe, aggregated by
+// `sections/searchable-rows.ts`; a row NEVER decides what renders.
+//
+// The rationale and the guardrails: `DETAILS.md` § "Searchable rows".
+// ============================================================================
+
+/**
+ * A searchable row's id. The `row:` prefix is what keeps row ids out of
+ * `SettingId`'s space; `NoRowPrefixedSettingId` (in `searchable-rows.test.ts`)
+ * fails to compile if a `SettingsValues` key ever takes the prefix, and
+ * `settingAnchorId(SettingId)` rejects a row id for the same reason.
+ */
+export type SearchableRowId = `row:${string}`
+
+/** A non-setting row, as authored in its section's `<Component>.rows.ts`. */
+export interface SearchableRow {
+  id: SearchableRowId
+  /**
+   * MUST equal the hosting page's section, or the row lands outside that page's
+   * section-scoped match set and the page comes up blank on a hit.
+   */
+  section: string[]
+  /** The SAME key the row's rendered label displays, so a hit matches what the user reads. */
+  labelKey: MessageKey
+  /** i18n KEY of the `SectionCard` title the row sits in (the key that card renders). */
+  cardKey?: MessageKey
+  /** Extra English search terms, like a setting's `keywords`. */
+  keywords?: string[]
+}
+
+/**
+ * One entry in the Settings search index: a setting or a searchable row.
+ * `SettingDefinition` satisfies this structurally, so merging the two sources is
+ * a concatenation.
+ */
+export interface SearchableEntry {
+  id: string
+  section: string[]
+  label: string
+  description: string
+  keywords: string[]
+  card?: string
 }
 
 export interface SettingConstraints {
@@ -214,12 +265,12 @@ export type LowDiskSpaceNotificationsMode = 'in-app' | 'macos' | 'off'
 
 export type AiProvider = 'off' | 'cloud' | 'local'
 /**
- * The local llama-server context window. Starts at 16,384: below that, one Ask Cmdr turn
- * cannot fit its own prefix (`agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS`). A stored
- * 2,048 / 4,096 / 8,192 from an earlier build no longer validates, so it reads as the
- * 16,384 default.
+ * The local llama-server context window. Starts at 32,768: below that, one Ask Cmdr turn
+ * cannot fit its own prefix plus a paged tool result
+ * (`agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS`). A smaller stored size from an earlier
+ * build no longer validates, so it reads as the 32,768 default.
  */
-export type AiLocalContextSize = '16384' | '32768' | '65536' | '131072' | '262144'
+export type AiLocalContextSize = '32768' | '65536' | '131072' | '262144'
 
 /**
  * How much of an Ask Cmdr thread one message may carry. `'auto'` follows the model's known
@@ -282,8 +333,17 @@ export interface SettingsValues {
   'behavior.doubleClickPaneNavigatesToParent': boolean
   'behavior.doubleClickOnPaneNotificationSeen': boolean
 
-  // Archives (Enter behavior per format: pinned-shape JSON, `{ zip: 'ask', … }`)
-  'behavior.archiveEnterBehavior': string
+  // Open terminal here: a known terminal's bundle id, or an absolute `.app` path
+  // for a "Choose an app…" pick. Rust's `parse_choice` tells the two apart.
+  'behavior.openTerminalHereApp': string
+  'behavior.openTerminalHereToastSeen': boolean
+
+  // Archives: what Enter does per format, one setting each. The format list and the
+  // matching defaults live in `file-explorer/pane/archive-enter-policy.ts`, which a
+  // two-way parity test keeps in lockstep with these three keys.
+  'behavior.archiveEnter.zip': EnterAction
+  'behavior.archiveEnter.ooxml': EnterAction
+  'behavior.archiveEnter.bundle': EnterAction
   // Deflate level (1..=9, default 6) for user-driven zip writes; read at dispatch and passed in the operation config
   'behavior.archiveCompressionLevel': number
 
@@ -324,12 +384,6 @@ export interface SettingsValues {
 
   // Indexing
   'indexing.enabled': boolean
-  /**
-   * Hidden search anchor for the "Index size / Clear index" action row, which is
-   * hand-rendered (not a real control). Never read or written; exists only so the
-   * row is searchable ("index size") and its card can show. See settings-registry.ts.
-   */
-  'indexing.indexSize': boolean
   /** Gates the per-drive first-connect "turn on indexing?" notification (D6). On by default. */
   'indexing.askForEachDrive': boolean
   /** Gates the one-time "your drive went stale" dialog (D2). The yellow badge shows regardless. On by default. */
@@ -347,7 +401,7 @@ export interface SettingsValues {
   /**
    * Master toggle for image-content indexing (OCR search, off by default). Live-applied
    * to the backend `media_index` scheduler via `set_image_index_enabled`; the scheduler
-   * no-ops until it's on. Local drives only for now (SMB/MTP is a later milestone).
+   * no-ops until it's on. Local drives only for now; SMB/MTP may follow.
    */
   'mediaIndex.enabled': boolean
   /**
@@ -356,6 +410,15 @@ export interface SettingsValues {
    * off, the overlay is neither fetched nor drawn. Gated together with `mediaIndex.enabled`.
    */
   'mediaIndex.showFileStatusIcons': boolean
+  /**
+   * Whether the Search dialog shows its grid of matching images above the file results.
+   * FE-only render toggle, default OFF: match quality isn't good enough yet to earn that
+   * space unasked. Scoped to that ONE surface — it doesn't touch indexing, the file-list
+   * status badges, or Ask Cmdr / MCP photo search, all of which keep working when it's off.
+   * Read by `search/ImageSearchResults.svelte` alongside `mediaIndex.enabled`; off means
+   * the grid renders nothing AND fires no `media.db` IPC.
+   */
+  'mediaIndex.showInSearch': boolean
   /**
    * Internal (FE-owned): volume ids opted into background network (SMB) image enrichment
    * (`media_index` network enrichment). Off by default per volume: turning on the master toggle does NOT
@@ -398,7 +461,7 @@ export interface SettingsValues {
   /**
    * How many parallel workers image indexing runs (the "Parallel workers" slider). `1`
    * (the default) is today's single worker; the max is this machine's CPU count, and the
-   * backend clamps to `1..=CPU-count`. The M2 spike measured a ~1.25x ceiling on current
+   * backend clamps to `1..=CPU-count`. A parallelism spike measured a ~1.25x ceiling on current
    * Apple Silicon (the ANE serializes inference), so more workers help modestly and only up
    * to ~2. Live-applied via `media_index_set_parallelism`; a running pass resizes its pool
    * between images. Hand-rendered via `SettingSlider` with a runtime max, so it's `hidden`.
@@ -447,6 +510,7 @@ export interface SettingsValues {
 
   // Viewer
   'viewer.wordWrap': boolean
+  'viewer.showTextCursor': boolean
   'fileViewer.suppressBinaryWarning': boolean
 
   // AI
@@ -531,7 +595,8 @@ export type SettingId = keyof SettingsValues
 // ============================================================================
 
 export interface SettingSearchResult {
-  setting: SettingDefinition
+  /** The setting or searchable row that matched. */
+  entry: SearchableEntry
   matchedIndices: number[]
   searchableText: string
 }

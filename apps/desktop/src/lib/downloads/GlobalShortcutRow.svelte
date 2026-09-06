@@ -39,6 +39,7 @@
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
+    import ShortcutPill from '$lib/settings/sections/ShortcutPill.svelte'
 
     const log = getAppLogger('downloads')
 
@@ -161,10 +162,9 @@
         >
     </div>
     <div class="command-shortcuts">
-        <button
-            class="shortcut-pill"
-            class:editing
-            data-test="global-go-to-latest-binding"
+        <ShortcutPill
+            {editing}
+            dataTest="global-go-to-latest-binding"
             onclick={() => {
                 if (editing) cancelEditing()
                 else startEditing()
@@ -175,7 +175,7 @@
             {:else}
                 {toDisplayShortcut(binding)}
             {/if}
-        </button>
+        </ShortcutPill>
         {#if isModified}
             <button
                 class="reset-shortcut"
@@ -230,33 +230,6 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
-    }
-
-    .shortcut-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        background: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        font-size: var(--font-size-xs);
-        font-family: var(--font-system) sans-serif;
-        color: var(--color-text-primary);
-        cursor: default;
-        min-width: 40px;
-        text-align: center;
-    }
-
-    .shortcut-pill.editing {
-        background: var(--color-accent);
-        color: var(--color-accent-fg);
-        border-color: var(--color-accent);
-    }
-
-    .shortcut-pill.editing:hover {
-        background: var(--color-accent-hover);
-        border-color: var(--color-accent-hover);
     }
 
     .reset-shortcut {

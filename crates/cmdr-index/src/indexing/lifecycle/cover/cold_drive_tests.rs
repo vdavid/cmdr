@@ -13,6 +13,7 @@ use std::sync::Arc;
 use super::test_support::drain;
 use super::*;
 use crate::indexing::lifecycle::rescan_request::RescanOutcome;
+use crate::indexing::store::IndexStore;
 
 /// A drive with no index, as the host reports one, plus the handle to reach it
 /// through.

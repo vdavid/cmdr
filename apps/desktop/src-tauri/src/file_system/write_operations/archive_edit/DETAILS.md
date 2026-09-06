@@ -64,7 +64,7 @@ remote temp are cleaned up — a RAII `ScratchDir` and the upload's on-error del
 (round-trip, cancel-before-swap-leaves-the-original, and the sibling-allowing delete-then-rename swap), plus live-remote
 integration proofs that drive `pull_apply_upload_swap` against a REAL backend: `smb_integration_test`
 (`smb_integration_remote_zip_edit_deletes_an_entry_through_the_share` + `..._cancel_before_swap_keeps_original`, and
-routing detection + extract-out in `smb_integration_archive_routing_detection_and_extract_out`) and `mtp_test` under the
+routing detection + extract-out in `smb_integration_archive_routing_detection_and_extract_out`) and `mtp_archive_test` under the
 `virtual-mtp` feature (`virtual_mtp_archive_browses_and_extracts_via_read_range` +
 `virtual_mtp_remote_zip_edit_deletes_an_entry_through_the_device`, exercising the MTP delete-then-rename swap). Cost: O(archive)
 network per edit (the pull), documented and accepted — there is no remote random-access WRITE adapter (that's only a
@@ -116,6 +116,19 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   after the commit, and only when nothing was skipped (the move invariant — never delete a source whose bytes didn't
   land): local sources go straight off the FS, remote ones through the source volume (recursive for trees).
 - **Compress = seed an empty zip, then copy-into** (`compress.rs`, `compress_start`). Creating a NEW zip and packing the sources into it IS an archive edit, so compress is built ON copy-into rather than as a parallel path: `seed_empty_zip` writes a valid empty archive at the target, then `compress_start` calls `route_archive_copy_into` with `is_move = false`. The seed is the ONLY net-new backend surface — scan, plan-in-closure, progress/ETA, cancel, lane admission, and the mutator's temp+rename durability are all inherited. **The seed is LOAD-BEARING**: `route_archive_copy_into` (and the mutator) open the target with `ZipArchive::new`, which rejects a 0-byte file (`ZipError::InvalidArchive`) — so a brand-new target must already be a valid archive before the copy-into runs. `seed_empty_zip` writes the 22-byte bare end-of-central-directory record (`PK\x05\x06` + 18 zero bytes) — the minimal valid zip, a zero-entry archive that `ZipArchive::new` opens with `len() == 0` and whose first bytes pass `bytes_start_with_zip_signature`. It uses the SAME temp+rename discipline as the mutator (build a `.cmdr-tmp-<uuid>` sibling, fsync, atomic rename over the target, fsync the parent dir), so a crash mid-seed never leaves a torn file and an overwrite is atomic. **Seed matches the parent, local or remote.** `route_archive_copy_into`'s remote path PULLS the existing `.zip` before editing (see the remote-edit contract above), so a local-FS seed would be invisible to a remote parent — the seed must land wherever the copy-into will look for it. So `compress_start` branches on `parent.supports_local_fs_access()`: a LOCAL parent gets the local-FS `seed_empty_zip`; a REMOTE parent (SMB / MTP) gets `seed_empty_zip_remote`, which stages the 22 bytes in a scratch file and places them THROUGH the parent volume via `archive_remote_edit::place_local_file` (the remote edit's own upload-to-temp + atomic-swap commit, generalized to tolerate a MISSING original for a brand-new target). Then the copy-into pulls the seed, adds the sources, and swaps the full archive in. The remote path composes for both swap shapes: SMB's atomic rename-replace and MTP's delete-then-rename (same-name siblings allowed) — MTP needs no compress-specific work beyond the shared remote-edit machinery. **Remote cancel-safety** is inherited, not re-earned: the seed is placed atomically, and a cancel/fault during the copy-into leaves at worst the valid empty seed at the target (`place_local_file` reuses `pull_apply_upload_swap`'s swap, so the target keeps its bytes until the final atomic swap, and any partial upload temp is deleted). `compress_start` reuses `WriteOperationType::ArchiveEdit` (compress has no distinct backend op type — its identity is frontend-only). Pinned by `compress_tests` (local seed validity + atomic overwrite, end-to-end compress of local files and a directory subtree; the seed's load-bearing role is shown by the copy-into failing against a 0-byte target), `compress_remote_tests` (seed-through-volume onto a non-local `InMemoryVolume` for both swap shapes, plus overwrite-replaces-not-merges), and the live-Samba `smb_integration_compress_local_files_onto_the_share`.
+- **❗ The writability guard runs BEFORE the seed, and the order is the whole point.** `compress_start`'s first
+  statement is `ensure_zip_writable(&dest_zip_full_path, ReadOnlySide::Destination)?`, ahead of both seed branches.
+  **Decision/Why**: the seed is a temp+rename OVER the destination, so with the guard only in
+  `route_archive_copy_into` (several steps later) a compress onto an existing `report.docx`, `foo.tar`, or `foo.7z`
+  replaced the user's file with the 22-byte empty zip and THEN refused — a destroyed document and no archive, from an
+  action the user asked for. Note what this rules out: **temp+rename does not help here**, because the swap was already
+  atomic; the bug was that it landed before anything asked whether the target could be written at all. Durability
+  machinery can't answer a permission question. The guard is a pure name check with no I/O, so asking first is free,
+  and it refuses exactly the set it always refused. Any future path that writes at the destination before the copy-into
+  owes the same up-front check. Pinned by
+  `compress_tests::compress_refuses_a_read_only_destination_without_touching_its_bytes`, which asserts the
+  destination's BYTES are unchanged — "the file still exists" would have passed against the bug, since what it left
+  behind was a valid zip.
 - **Compression level threads from the op config onto the changeset.** `VolumeCopyConfig::compression_level` (frontend-owned, read from the `behavior.archiveCompressionLevel` setting at dispatch) is passed through `compress_start` / `route_archive_copy_into` as an `Option<i64>` param and stored on the `Changeset` (`archive_copy_into_start` sets `plan.changeset.compression_level` before `mutator::apply`). It governs every user-driven zip write uniformly — compress AND copy/move INTO an existing archive — because both funnel through the shared mutator. `None` (no caller opinion, or a non-archive copy) means the crate default (level 6). The level applies to NEWLY added entries only and is clamped 1..=9; the mechanism and the clamp rationale are single-sourced in `crates/cmdr-archive/src/mutation/DETAILS.md` § "Compression level applies to ADDED entries only". Internal zips (crash/error-report bundles) keep their own fixed level and never read this setting.
 - **Source-side pull for a REMOTE source (SMB / MTP → zip).** A copy/move INTO a zip whose SOURCE volume has no
   `local_path()` can't be walked with `std::fs`, so `archive_copy_into_start` runs a pull stage FIRST, inside the op: it
@@ -166,7 +179,16 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   the OS mount the design routes around); planning inside the op is what keeps a remote plan on the pulled bytes. A
   pre-resolved policy resolves each collision non-interactively (`build_copy_into_changeset`): Skip drops the add;
   Overwrite deletes the existing entry then adds (a clean replace); Rename picks a unique ` (n)` name;
-  OverwriteSmaller/Older compare size/mtime (strict). **The Stop policy prompts interactively**
+  OverwriteSmaller/Older compare size/mtime (strict). **A BLANKET Overwrite variant never crosses types**: an incoming
+  FILE landing on an archive DIRECTORY of that name reduces to Skip, whether the policy is the pre-resolved one or a
+  latched "* all", so it can't delete the directory and everything under it. `conflicts.rs::resolve_effective` routes
+  both through the shared `../conflict.rs::blanket_resolution_across_types`, which the local-FS and cross-volume engines
+  answer with too; the conditional variants had no honest question to ask there anyway (a directory node carries no size
+  and no mtime). Only an answer a person gave on the prompt for that pair replaces. The mirror direction never consults
+  the policy at all: a source DIRECTORY meeting a same-named FILE entry just skips its `mkdir` and adds its children
+  under the name. Pinned by
+  `copy_into_tests.rs::a_blanket_overwrite_never_replaces_an_archive_directory_with_a_file`. **The Stop policy prompts
+  interactively**
   (`build_copy_into_changeset_interactive`): the op is registered so `resolve_write_conflict(op_id)` can reach the
   oneshot, and each FILE collision emits a `write-conflict` and blocks on the answer, reusing the pure `ApplyToAll` latch
   + the oneshot plumbing (store the sender BEFORE the emit). Dir-vs-dir collisions merge silently — only files prompt

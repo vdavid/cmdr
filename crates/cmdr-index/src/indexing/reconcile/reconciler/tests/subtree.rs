@@ -62,7 +62,7 @@ fn must_scan_sub_dirs_preserves_existing_children() {
 
     // Run reconcile_subtree (what MustScanSubDirs triggers)
     let cancelled = CancellationToken::new();
-    let result = reconcile_subtree(&sub_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(&sub_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled, None);
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.added, 0, "no new entries expected");
@@ -97,7 +97,14 @@ fn reconcile_new_file() {
     ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
     let cancelled = CancellationToken::new();
-    let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(
+        test_dir.path(),
+        &IndexPathSpace::root(),
+        &conn,
+        &writer,
+        &cancelled,
+        None,
+    );
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.added, 1);
@@ -143,7 +150,14 @@ fn reconcile_deleted_file() {
     }
 
     let cancelled = CancellationToken::new();
-    let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(
+        test_dir.path(),
+        &IndexPathSpace::root(),
+        &conn,
+        &writer,
+        &cancelled,
+        None,
+    );
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.removed, 1);
@@ -193,7 +207,14 @@ fn reconcile_unchanged() {
     }
 
     let cancelled = CancellationToken::new();
-    let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(
+        test_dir.path(),
+        &IndexPathSpace::root(),
+        &conn,
+        &writer,
+        &cancelled,
+        None,
+    );
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.added, 0);
@@ -234,7 +255,14 @@ fn reconcile_modified_file() {
     }
 
     let cancelled = CancellationToken::new();
-    let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(
+        test_dir.path(),
+        &IndexPathSpace::root(),
+        &conn,
+        &writer,
+        &cancelled,
+        None,
+    );
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.updated, 1);
@@ -275,7 +303,7 @@ fn reconcile_subtree_new_nested_dir_with_child() {
     ensure_path_in_db(&db_path, &parent.to_string_lossy(), &writer);
 
     let cancelled = CancellationToken::new();
-    let result = reconcile_subtree(&parent, &IndexPathSpace::root(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(&parent, &IndexPathSpace::root(), &conn, &writer, &cancelled, None);
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.added, 2, "new_dir and child.txt should both be added");
@@ -344,7 +372,7 @@ fn reconcile_subtree_dir_replaced_by_file() {
     }
 
     let cancelled = CancellationToken::new();
-    let result = reconcile_subtree(&parent, &IndexPathSpace::root(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(&parent, &IndexPathSpace::root(), &conn, &writer, &cancelled, None);
     assert!(result.is_ok());
     let summary = result.unwrap();
 
@@ -397,7 +425,7 @@ fn reconcile_subtree_deep_nested_dirs() {
     ensure_path_in_db(&db_path, &root_dir.to_string_lossy(), &writer);
 
     let cancelled = CancellationToken::new();
-    let result = reconcile_subtree(&root_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(&root_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled, None);
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.added, 4, "dirs a, b, c and file.txt should all be added");
@@ -466,7 +494,7 @@ fn reconcile_subtree_indexes_new_directory_not_in_db() {
     ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
     let cancelled = CancellationToken::new();
-    let result = reconcile_subtree(&new_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(&new_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled, None);
     assert!(result.is_ok());
     let summary = result.unwrap();
 
@@ -517,7 +545,7 @@ fn reconcile_subtree_marks_listed_dirs_at_current_epoch() {
     ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
     let cancelled = CancellationToken::new();
-    reconcile_subtree(&new_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled).unwrap();
+    reconcile_subtree(&new_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled, None).unwrap();
     writer.flush_blocking().unwrap();
     writer.shutdown();
 

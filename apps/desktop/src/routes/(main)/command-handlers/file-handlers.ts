@@ -25,7 +25,9 @@ import {
 import { addToast } from '$lib/ui/toast'
 import CopiedPathToastContent from '$lib/file-explorer/CopiedPathToastContent.svelte'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
-import { pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
+import { capabilitiesFor, pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
+import { resolveTerminalFolder } from '$lib/open-terminal/terminal-target'
+import { openTerminalHereForFolder } from '$lib/open-terminal/open-terminal-here'
 import { tString } from '$lib/intl/messages.svelte'
 import { trackEvent } from '$lib/tauri-commands'
 import type { CommandArgs } from '$lib/commands'
@@ -165,6 +167,21 @@ export const fileHandlers = {
 
   'file.showInFinder': (hctx) => withEntryUnderCursor(hctx, (entry) => showInFinder(entry.path)),
 
+  'file.openTerminalHere': async ({ explorerRef }) => {
+    // Not `withEntryUnderCursor`: this acts on a FOLDER, and every cursor state
+    // resolves to one (a folder row gives itself; a file, `..`, or an empty pane
+    // gives the pane's own). `resolveTerminalFolder` owns those rules.
+    const volumeId = getFocusedPaneVolumeId()
+    const folder = resolveTerminalFolder({
+      panePath: getFocusedPanePath(),
+      // The VOLUME's kind, never `capabilitiesForPane`: an archive pane's
+      // kind-from-path would hide the drive the archive actually lives on.
+      volumeKind: capabilitiesFor(volumeId).kind,
+      cursorEntry: (await explorerRef?.getCursorRowForTerminal()) ?? null,
+    })
+    await openTerminalHereForFolder({ folder, volumeId })
+  },
+
   'file.copyPath': async ({ explorerRef }) => {
     // Not `withEntryUnderCursor`: on the `..` row this copies the pane's OWN
     // directory, where every other under-cursor arm treats `..` as "no entry".
@@ -216,6 +233,10 @@ export const fileHandlers = {
     // how Quick Look already skips non-local volumes; F3 (viewer temp-extract) is
     // the preview path inside a zip. Return BEFORE flipping `isOpen` so state stays
     // consistent (no panel opened).
+    //
+    // The NARROW check, deliberately: an archive FILE is an ordinary file macOS
+    // previews fine, so a `.zip` — and a `.docx`, now that it's a browsable
+    // container — must still Quick Look. The wide check here refused both.
     if (pathInsideArchive(entryUnderCursor.path)) {
       // The one gate in front of Quick Look. Counted so a low `opened` number can
       // be told apart from people reaching for it where it can't work; without

@@ -385,14 +385,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Archívumok és csomagok megnyitása",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Válaszd ki, mit tegyen az Enter az egyes formátumoknál: böngészés mappaként, megnyitás egy másik appban, vagy rákérdezés minden alkalommal.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Archívumok",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"
@@ -408,6 +400,14 @@
   "settings.archives.zip.description": "Mit tesz az Enter egy zip fájlon.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
+  },
+  "settings.archives.ooxml.label": "Dokumentumok és csomagok",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Mit tesz az Enter egy .docx, .xlsx, .pptx, .jar vagy .apk fájlon.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
   },
   "settings.archives.bundle.label": "Alkalmazáscsomagok",
   "@settings.archives.bundle.label": {
@@ -452,10 +452,6 @@
   "settings.indexing.enabled.description": "A háttérben indexeli a meghajtót az azonnali mappaméretekért.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
-  },
-  "settings.mediaIndex.card": "Képkeresés",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Ez teljes egészében a Macen fut az Apple beépített Vision keretrendszerével. A képeid soha nem hagyják el a számítógépedet, és nincs benne AI-szolgáltató vagy API-kulcs.",
   "@settings.mediaIndex.privacyNote": {
@@ -548,6 +544,14 @@
   "settings.mediaIndex.showFileStatusIcons.description": "A fájllistában minden képre kis jelvényt tesz, amely megmutatja, hogy indexelve van-e a kereséshez.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
+  },
+  "settings.mediaIndex.showInSearch.label": "Képtalálatok megjelenítése a Keresésben",
+  "@settings.mediaIndex.showInSearch.label": {
+    "sourceHash": "45dd528"
+  },
+  "settings.mediaIndex.showInSearch.description": "A Keresés egy sor egyező képet mutat a fájljaid fölött. A találatok még pontatlanok, ezért ki van kapcsolva, amíg nem kéred.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "sourceHash": "5b62cab"
   },
   "settings.mediaIndex.networkVolumes.label": "Hálózati meghajtók képindexelése",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -1063,7 +1067,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "sourceHash": "40d9fa1"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.description": "A `.git` mappába belépve az ágakat, címkéket, commitokat és munkapéldányokat böngészhető virtuális mappákként mutatja. Kapcsold ki, hogy helyette a nyers `.git` tartalmat lásd.",
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "A `.git` mappába belépve az ágakat, címkéket, commitokat és worktree-eket böngészhető virtuális mappákként mutatja. Kapcsold ki, hogy helyette a nyers `.git` tartalmat lásd.",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },
@@ -1074,6 +1078,14 @@
   "settings.viewer.wordWrap.description": "A hosszú sorokat az ablak szélénél töri a fájlmegjelenítőben, ahelyett hogy vízszintesen görgetne.",
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
+  },
+  "settings.viewer.showTextCursor.label": "Szövegkurzor megjelenítése",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Villogó kurzor megjelenítése a fájlmegjelenítőben, amely megmutatja, honnan növekszik a billentyűzettel készült kijelölés.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
   },
   "settings.developer.mcpEnabled.label": "MCP-szerver bekapcsolása",
   "@settings.developer.mcpEnabled.label": {
@@ -1451,6 +1463,38 @@
   "settings.navigationAndFileOps.card.fileOperations": "Fájlműveletek",
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.navigationAndFileOps.card.terminal": "Terminál",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd"
+  },
+  "settings.behavior.openTerminalHereApp.label": "A „Terminál megnyitása itt” appja",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "A Cmdr felsorolja az ezen a Macen megtalált terminálappokat. Ha olyat használnál, amit nem ismer, válaszd az „App kiválasztása…” lehetőséget.",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "App kiválasztása…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Válassz egy terminálappot",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Appok ellenőrzése…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "A „Terminál megnyitása itt” tippje megjelent",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Hogy a terminálapp választásáról szóló egyszeri tipp megjelent-e már.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
   },
   "settings.section.archives": "Archívumok",
   "@settings.section.archives": {

@@ -50,6 +50,22 @@ pub trait ListingHost: Send + Sync {
     /// from `Volume::listing_watch_coverage`, and the oracle then declines for it.
     fn authoritative_listing(&self, volume_id: &str, path: &Path) -> Option<Vec<FileEntry>>;
 
+    /// The volume ids under `volume_id_prefix` that a pane is currently showing,
+    /// each listed once.
+    ///
+    /// For a backend whose events name an object the protocol alone can't place.
+    /// One MTP device carries several storages, each its own volume and its own
+    /// path namespace, and a PTP handle says nothing about which; resolving it
+    /// costs a device round trip per storage. Asking here narrows the search to
+    /// the storages a pane is actually showing, which are the only ones where a
+    /// targeted refresh could change anything on screen.
+    ///
+    /// A prefix rather than an exact id because the asker is the DEVICE, one
+    /// level above the volumes it serves. Order is unspecified. An empty answer
+    /// means nothing is open, so there is nothing to aim a targeted refresh at —
+    /// ❌ never read it as "the device is gone".
+    fn volumes_with_open_listings(&self, volume_id_prefix: &str) -> Vec<String>;
+
     /// The archive file at `archive_path` on `volume_id` changed, so re-read
     /// every open pane at or INSIDE it.
     ///
@@ -85,6 +101,10 @@ impl ListingHost for NoListings {
         None
     }
 
+    fn volumes_with_open_listings(&self, _volume_id_prefix: &str) -> Vec<String> {
+        Vec::new()
+    }
+
     fn refresh_archive_listings<'a>(
         &'a self,
         _volume_id: &'a str,
@@ -118,6 +138,7 @@ mod recording {
     pub struct RecordingListings {
         changes: Mutex<Vec<(String, PathBuf, DirectoryChange)>>,
         watched: Mutex<Vec<(String, PathBuf, Vec<FileEntry>)>>,
+        open_volumes: Mutex<Vec<String>>,
         authoritative_lookups: AtomicUsize,
         archive_refreshes: Mutex<Vec<(String, PathBuf)>>,
     }
@@ -131,6 +152,8 @@ mod recording {
         /// Makes `entries` the answer for one
         /// [`authoritative_listing`](super::ListingHost::authoritative_listing) lookup, as if
         /// a pane were showing that directory with a live watcher on it.
+        /// A listing the oracle can answer for is one a pane is showing, so this
+        /// registers the volume as open too.
         pub fn with_authoritative_listing(
             self,
             volume_id: &str,
@@ -140,6 +163,20 @@ mod recording {
             self.watched
                 .lock_ignore_poison()
                 .push((volume_id.to_string(), path.into(), entries));
+            self.with_open_listing(volume_id)
+        }
+
+        /// Makes `volume_id` one of the answers to
+        /// [`volumes_with_open_listings`](super::ListingHost::volumes_with_open_listings),
+        /// as if a pane were showing something on it. For an open pane whose
+        /// contents the oracle would decline to serve; a watched one comes with
+        /// [`with_authoritative_listing`](Self::with_authoritative_listing).
+        pub fn with_open_listing(self, volume_id: &str) -> Self {
+            let mut open = self.open_volumes.lock_ignore_poison();
+            if !open.iter().any(|id| id == volume_id) {
+                open.push(volume_id.to_string());
+            }
+            drop(open);
             self
         }
 
@@ -179,6 +216,15 @@ mod recording {
                 .iter()
                 .find(|(vid, dir, _)| vid == volume_id && dir == path)
                 .map(|(_, _, entries)| entries.clone())
+        }
+
+        fn volumes_with_open_listings(&self, volume_id_prefix: &str) -> Vec<String> {
+            self.open_volumes
+                .lock_ignore_poison()
+                .iter()
+                .filter(|id| id.starts_with(volume_id_prefix))
+                .cloned()
+                .collect()
         }
 
         fn refresh_archive_listings<'a>(

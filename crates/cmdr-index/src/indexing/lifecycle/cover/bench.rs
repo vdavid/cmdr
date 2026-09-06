@@ -7,7 +7,8 @@ use std::sync::atomic::Ordering;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 use super::*;
-use crate::indexing::store::ROOT_ID;
+use crate::indexing::scanner::cover_subtree;
+use crate::indexing::store::{IndexStore, ROOT_ID};
 
 /// Which primitive should cover a frontier: the parallel walker or the serial
 /// reconcile? Measured on a REAL tree rather than trusted from the in-tree
@@ -114,7 +115,7 @@ fn measure_one(root: &Path, primitive: Primitive) -> (std::time::Duration, u64, 
         }
         Primitive::Serial => {
             let conn = IndexStore::open_read_connection(&db_path).expect("read connection");
-            crate::indexing::reconcile::reconciler::reconcile_subtree(root, &space, &conn, &writer, &cancel)
+            crate::indexing::reconcile::reconciler::reconcile_subtree(root, &space, &conn, &writer, &cancel, None)
                 .expect("serial reconcile");
         }
     }

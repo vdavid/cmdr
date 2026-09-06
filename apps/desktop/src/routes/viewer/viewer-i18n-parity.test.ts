@@ -37,6 +37,15 @@ describe('viewer error + load states (en)', () => {
     expect(tString('viewer.loading')).toBe('Loading...')
   })
 
+  it('words the preview size cap for ANY routed source, not just archives', () => {
+    // The cap fires for a `.zip` entry AND for a blob in a repo's virtual `.git`
+    // snapshot, so the copy names no namespace. Pinned because "from the archive"
+    // read as a plain lie on a git snapshot.
+    expect(tString('viewer.error.tooLargeToPreview')).toBe(
+      'This file is too big to preview from here. Copy it out first, then open it.',
+    )
+  })
+
   it('builds the window title with the file name', () => {
     expect(tString('viewer.window.titleSuffix', { fileName: 'report.log' })).toBe('report.log | Viewer')
     expect(getMessage('viewer.window.fallbackTitle')).toBe('Viewer')

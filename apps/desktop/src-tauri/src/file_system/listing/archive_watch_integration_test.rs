@@ -99,7 +99,7 @@ async fn refresh_reflects_a_new_entry_and_leaves_outside_listings_alone() {
     // Resolve once so the zip is recognized as an archive (this test drives the
     // refresh directly, so it needs no live watch).
     let resolved = get_volume_manager().resolve(&volume_id, &fixture.zip_path).await;
-    assert!(resolved.is_archive, "the zip path must resolve to an ArchiveVolume");
+    assert!(resolved.is_routed(), "the zip path must resolve to an ArchiveVolume");
 
     // A listing at the archive root, plus a sibling listing on the same drive
     // that is NOT inside the archive — the refresh must not touch the sibling.

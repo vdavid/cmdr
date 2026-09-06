@@ -325,7 +325,12 @@ describe('createTransferProgressState: progress + complete', () => {
     // Min-display floor: not yet called, then called after advancing past it.
     expect(config.onComplete).not.toHaveBeenCalled()
     vi.advanceTimersByTime(450)
-    expect(config.onComplete).toHaveBeenCalledWith({ filesProcessed: 5, filesSkipped: 1, bytesProcessed: 999 })
+    expect(config.onComplete).toHaveBeenCalledWith({
+      filesProcessed: 5,
+      filesSkipped: 1,
+      bytesProcessed: 999,
+      appearedDuringMove: null,
+    })
   })
 
   it('fires onError on a write-error event', async () => {
@@ -1159,7 +1164,12 @@ describe('createTransferProgressState: disposal', () => {
     vi.advanceTimersByTime(450)
 
     expect(config.onCancelled).not.toHaveBeenCalled()
-    expect(config.onComplete).toHaveBeenCalledWith({ filesProcessed: 3, filesSkipped: 0, bytesProcessed: 9 })
+    expect(config.onComplete).toHaveBeenCalledWith({
+      filesProcessed: 3,
+      filesSkipped: 0,
+      bytesProcessed: 9,
+      appearedDuringMove: null,
+    })
   })
 
   it('closing the modal while a cancel winds down just stops watching', async () => {

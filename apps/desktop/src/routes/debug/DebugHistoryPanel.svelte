@@ -41,6 +41,17 @@
         unlisten?.()
     })
 
+    interface PaneView {
+        side: 'left' | 'right'
+        label: string
+        history: NavigationHistory | null
+    }
+
+    const panes: PaneView[] = $derived([
+        { side: 'left', label: 'Left pane', history: leftHistory },
+        { side: 'right', label: 'Right pane', history: rightHistory },
+    ])
+
     /** Format a history entry for display */
     function formatEntry(entry: HistoryEntry): string {
         if (entry.networkHost) {
@@ -59,46 +70,28 @@
 <section class="debug-section">
     <h2>Navigation history</h2>
     <div class="history-panes">
-        <div class="history-pane" class:focused={focusedPane === 'left'}>
-            <h3>Left pane</h3>
-            {#if leftHistory}
-                <ul class="history-list">
-                    {#each leftHistory.stack as entry, i (i)}
-                        {@const isCurrent = i === leftHistory.currentIndex}
-                        {@const isFuture = i > leftHistory.currentIndex}
-                        {@const arrow = isCurrent ? '→' : i < leftHistory.currentIndex ? '←' : '↓'}
-                        <li class:current={isCurrent} class:future={isFuture}>
-                            <span class="history-index">{arrow}</span>
-                            <span class="history-path" use:tooltip={{ text: entry.path, overflowOnly: true }}
-                                >{formatEntry(entry)}</span
-                            >
-                        </li>
-                    {/each}
-                </ul>
-            {:else}
-                <p class="no-history">No history yet</p>
-            {/if}
-        </div>
-        <div class="history-pane" class:focused={focusedPane === 'right'}>
-            <h3>Right pane</h3>
-            {#if rightHistory}
-                <ul class="history-list">
-                    {#each rightHistory.stack as entry, i (i)}
-                        {@const isCurrent = i === rightHistory.currentIndex}
-                        {@const isFuture = i > rightHistory.currentIndex}
-                        {@const arrow = isCurrent ? '→' : i < rightHistory.currentIndex ? '←' : '↓'}
-                        <li class:current={isCurrent} class:future={isFuture}>
-                            <span class="history-index">{arrow}</span>
-                            <span class="history-path" use:tooltip={{ text: entry.path, overflowOnly: true }}
-                                >{formatEntry(entry)}</span
-                            >
-                        </li>
-                    {/each}
-                </ul>
-            {:else}
-                <p class="no-history">No history yet</p>
-            {/if}
-        </div>
+        {#each panes as pane (pane.side)}
+            <div class="history-pane" class:focused={focusedPane === pane.side}>
+                <h3>{pane.label}</h3>
+                {#if pane.history}
+                    <ul class="history-list">
+                        {#each pane.history.stack as entry, i (i)}
+                            {@const isCurrent = i === pane.history.currentIndex}
+                            {@const isFuture = i > pane.history.currentIndex}
+                            {@const arrow = isCurrent ? '→' : i < pane.history.currentIndex ? '←' : '↓'}
+                            <li class:current={isCurrent} class:future={isFuture}>
+                                <span class="history-index">{arrow}</span>
+                                <span class="history-path" use:tooltip={{ text: entry.path, overflowOnly: true }}
+                                    >{formatEntry(entry)}</span
+                                >
+                            </li>
+                        {/each}
+                    </ul>
+                {:else}
+                    <p class="no-history">No history yet</p>
+                {/if}
+            </div>
+        {/each}
     </div>
 </section>
 

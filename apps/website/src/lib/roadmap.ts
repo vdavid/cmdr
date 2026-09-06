@@ -511,7 +511,6 @@ export const roadmapSections: RoadmapSection[] = [
             date: '(Jul 23)',
             title: 'Big design polish',
             description: 'Dialogs, main window, shared components all much nicer now',
-            icon: 'sparkles',
             done: true,
           },
           {
@@ -525,7 +524,6 @@ export const roadmapSections: RoadmapSection[] = [
             date: '(Jul 29)',
             title: 'Better agent',
             description: 'Reasonable context window management and UI, complex actions.',
-            icon: 'sparkles',
             done: true,
           },
         ],
@@ -533,12 +531,6 @@ export const roadmapSections: RoadmapSection[] = [
       {
         heading: 'Aug 2026',
         milestones: [
-          {
-            date: '(Aug 1)',
-            title: 'Survive a silent NAS',
-            description: 'A wedged network transfer now recovers in seconds instead of hanging forever.',
-            done: true,
-          },
           {
             date: '(Aug 2)',
             title: 'Speed up network copies',
@@ -567,6 +559,30 @@ export const roadmapSections: RoadmapSection[] = [
             date: '(Aug 23)',
             title: 'Built-in proactive agent',
             description: 'Suggests actions based on file system changes.',
+            done: true,
+          },
+          {
+            date: '(Aug 29)',
+            title: 'Rollback',
+            description: 'Roll back any finished copy, move, rename, or delete later from the op log.',
+            done: true,
+          },
+          {
+            date: '(Aug 30)',
+            title: 'Add language flavors',
+            description: 'Traditional Chinese, British and Australian English. 13 langs now.',
+            done: true,
+          },
+        ],
+      },
+      {
+        heading: 'Sep 2026',
+        milestones: [
+          {
+            date: '(Sep 2)',
+            title: 'Agent can read files',
+            description: 'Text, PDFs, photo EXIF, and archive contents.',
+            icon: 'sparkles',
             done: true,
           },
         ],

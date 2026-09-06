@@ -65,6 +65,7 @@ fn an_explicit_show_hidden_files_choice_wins_over_the_default() {
 fn restricted_window_settings_parse_set_values() {
     let json = r#"{
         "viewer.wordWrap": true,
+        "viewer.showTextCursor": true,
         "fileViewer.suppressBinaryWarning": true,
         "appearance.textSize": 125,
         "appearance.appColor": "blue",
@@ -72,6 +73,7 @@ fn restricted_window_settings_parse_set_values() {
     }"#;
     let parsed = parse_restricted_window_settings(json);
     assert_eq!(parsed.viewer_word_wrap, Some(true));
+    assert_eq!(parsed.viewer_show_text_cursor, Some(true));
     assert_eq!(parsed.file_viewer_suppress_binary_warning, Some(true));
     assert_eq!(parsed.appearance_text_size, Some(125.0));
     assert_eq!(parsed.appearance_app_color.as_deref(), Some("blue"));
@@ -163,6 +165,7 @@ fn operation_log_retention_zero_sentinels_mean_unlimited() {
 fn restricted_window_settings_missing_keys_are_none() {
     let parsed = parse_restricted_window_settings("{}");
     assert_eq!(parsed.viewer_word_wrap, None);
+    assert_eq!(parsed.viewer_show_text_cursor, None);
     assert_eq!(parsed.file_viewer_suppress_binary_warning, None);
     assert_eq!(parsed.appearance_text_size, None);
     assert_eq!(parsed.appearance_app_color, None);

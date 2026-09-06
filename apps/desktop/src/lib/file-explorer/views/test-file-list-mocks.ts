@@ -41,6 +41,7 @@ export function tauriCommandsMock(overrides: Record<string, unknown> = {}) {
 export function iconCacheMock(overrides: Record<string, unknown> = {}) {
   return {
     getCachedIcon: () => undefined,
+    getCachedCustomFolderIcon: () => undefined,
     iconCacheVersion: writable(0),
     iconCacheCleared: writable(0),
     prefetchIcons: vi.fn(),

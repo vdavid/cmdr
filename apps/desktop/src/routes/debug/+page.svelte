@@ -322,13 +322,16 @@
         outline: none;
     }
 
+    /* `--z-sticky`, not `--z-dropdown`, for the reason spelled out in
+       `routes/settings/+page.svelte`: at the dropdown rung this strip paints
+       over the top rows of any menu that opens up into it. */
     .window-drag-region {
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         height: 50px;
-        z-index: var(--z-dropdown);
+        z-index: var(--z-sticky);
     }
 
     .debug-layout {

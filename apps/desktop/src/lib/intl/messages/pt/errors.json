@@ -1393,20 +1393,20 @@
   "@errors.write.filesTooLargeForFilesystem.suggestion": {
     "sourceHash": "bb4ac05"
   },
-  "errors.write.readOnlyDevice.title": "Dispositivo somente leitura",
-  "@errors.write.readOnlyDevice.title": {
+  "errors.write.readOnlyDevice.destination.title": "Dispositivo somente leitura",
+  "@errors.write.readOnlyDevice.destination.title": {
     "sourceHash": "3f79690"
   },
-  "errors.write.readOnlyDevice.message": "{deviceName} é somente leitura. Você pode copiar arquivos dele, mas não para ele.",
-  "@errors.write.readOnlyDevice.message": {
+  "errors.write.readOnlyDevice.destination.message": "{deviceName} é somente leitura. Você pode copiar arquivos dele, mas não para ele.",
+  "@errors.write.readOnlyDevice.destination.message": {
     "sourceHash": "932e2ed"
   },
-  "errors.write.readOnlyDevice.suggestion": "Escolha um destino diferente que permita gravação.",
-  "@errors.write.readOnlyDevice.suggestion": {
+  "errors.write.readOnlyDevice.destination.suggestion": "Escolha um destino diferente que permita gravação.",
+  "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
-  "errors.write.readOnlyDevice.fallbackName": "O dispositivo de destino",
-  "@errors.write.readOnlyDevice.fallbackName": {
+  "errors.write.readOnlyDevice.destination.fallbackName": "O dispositivo de destino",
+  "@errors.write.readOnlyDevice.destination.fallbackName": {
     "sourceHash": "ef2429e"
   },
   "errors.write.fileLocked.title": "O arquivo está bloqueado",
@@ -1436,6 +1436,38 @@
   "errors.write.deletePending.suggestion": "Espere um momento e tente de novo. Assim que o último identificador fechar, o arquivo desaparece. Se ele continuar por aqui, feche quaisquer outros apps que possam estar com ele aberto.",
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
+  },
+  "errors.write.newDataKeptAt.title": "Seu arquivo novo ficou com outro nome",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "O novo {path} está escrito e completo, mas o destino não deixou ele ficar com esse nome, e o arquivo que ele ia substituir já não está lá. O novo está em {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Abra {keptAt} para conferir e depois renomeie. Se o destino for um compartilhamento de rede ou um telefone, reconecte primeiro e a renomeação vai passar.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
+  "errors.write.originalsKeptAside.title": "Seu arquivo ficou com um nome novo",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "Uma pasta ficou com o nome {path}, então seu arquivo agora está em {keptAt}. Nada foi descartado.",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "Pastas ficaram com os nomes de {count} dos seus arquivos, então esses arquivos agora estão com nomes novos. Nada foi descartado; os detalhes técnicos abaixo listam todos eles.",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "Abra {keptAt} para conferir. Assim que tirar a pasta do caminho, você pode devolver o nome ao seu arquivo.",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "Veja nos detalhes abaixo onde está cada arquivo. Assim que tirar as pastas do caminho, você pode devolver os nomes a eles.",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
   },
   "errors.write.fallback.title.copy": "Não foi possível copiar",
   "@errors.write.fallback.title.copy": {
@@ -1636,5 +1668,37 @@
   "errors.eject.unexpected": "Algo deu errado, e o Cmdr não conseguiu identificar o quê.",
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
+  },
+  "errors.write.readOnlyDevice.source.title": "Origem só de leitura",
+  "@errors.write.readOnlyDevice.source.title": {
+    "sourceHash": "5d77aa4"
+  },
+  "errors.write.readOnlyDevice.source.message": "{deviceName} é só de leitura. Podes copiar ficheiros de lá, mas não movê-los para fora.",
+  "@errors.write.readOnlyDevice.source.message": {
+    "sourceHash": "ec7d263"
+  },
+  "errors.write.readOnlyDevice.source.suggestion": "Copia-os em vez disso. Os originais ficam onde estão.",
+  "@errors.write.readOnlyDevice.source.suggestion": {
+    "sourceHash": "f6a307b"
+  },
+  "errors.write.readOnlyDevice.source.fallbackName": "A origem",
+  "@errors.write.readOnlyDevice.source.fallbackName": {
+    "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Dois itens têm o mesmo nome",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Você escolheu dois itens chamados {name}, então os dois cairiam no mesmo lugar: {first} e {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Copie um de cada vez, ou renomeie um antes.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Mova um de cada vez, ou renomeie um antes.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

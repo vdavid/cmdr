@@ -5,8 +5,8 @@ person with a phone on the desk has no way to say "open it": there is no connect
 and no words for the six ways a connect can refuse. This spec is the UI half, and it takes positions rather than listing
 options.
 
-The backend contract it builds on is `android-adb-backend.md`; the wire is `crates/cmdr-adb/DETAILS.md`. Neither is
-restated here.
+The backend contract it builds on and the wire are both `crates/cmdr-adb/DETAILS.md`; what the backend still owes is
+`android-adb-backend-follow-ups.md`. Neither is restated here.
 
 ## The eight decisions
 

@@ -11,14 +11,20 @@ Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUD
   `AI › Ask Cmdr`, `McpServerSection` = `AI › MCP server`. Indexing is a card-menu parent too: `DriveIndexingSection` =
   `Indexing › Drive indexing`, `ImageIndexingSection` = `Indexing › Image indexing` (on-device OCR; composes the
   `MediaIndex*` components). `DeleteAiModelDialog.svelte` is `AiLocalSection`'s delete confirmation, split out so it's
-  independently mountable. Pure helpers: `ai-secret-error.ts`, `license-section-utils.ts`, `ram-gauge-utils.ts`,
-  `keyboard-shortcuts-grouping.ts`, `keyboard-shortcuts-banner.ts`. Full file/responsibility table in DETAILS.md.
+  independently mountable. `TerminalAppSelect.svelte` is the "Open terminal here uses" control. Pure helpers:
+  `ai-secret-error.ts`, `license-section-utils.ts`, `ram-gauge-utils.ts`, `keyboard-shortcuts-grouping.ts`,
+  `keyboard-shortcuts-banner.ts`, `terminal-app-options.ts`. Full file/responsibility table in DETAILS.md.
 
 ## Must-knows
 
 - **A registry entry alone doesn't render.** Hand-render the row here (`SettingRow` + control + `shouldShow(id)` guard),
   or the setting is invisible. Only `AdvancedSection` auto-renders (`section: ['Advanced']`).
   [Checklist](../../../../../../docs/guides/adding-a-new-setting.md).
+- **A row that isn't a setting declares a `SearchableRow` in the sibling `<Component>.rows.ts`** (aggregated by
+  `searchable-rows.ts`): a `row:`-prefixed id, the hosting page's `section`, the label key the markup already renders.
+  Gate it on `shouldShow('row:…')` AND list it in its card's `anyVisible(...)`, or a hit filters every card away. It's
+  search metadata; ❌ it never decides what renders, and ❌ never model such a row as a `hidden` setting. Skip rows that
+  only appear under runtime state. DETAILS § Searchable rows.
 - **New section = route in `SettingsContent.svelte` + entry in `TOP_LEVEL_ORDER` (`SettingsSidebar.svelte`) + mirror in
   `settings.spec.ts`.** Routing is registry-driven, not string match.
 - **A toggle that can't use `SettingSwitch` still uses `$lib/ui/Switch`.** Never hand-roll Ark's `Switch.Root`/`Control`

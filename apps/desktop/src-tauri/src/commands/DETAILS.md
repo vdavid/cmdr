@@ -161,7 +161,14 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   a no-op off macOS / outside E2E, and the E2E branch of `show_main_window` orders back instead of showing.
 - **`file_actions.rs`**: direct file actions from the palette / menus — `show_in_finder`, `get_info`, `open_in_editor`,
   `copy_to_clipboard`, and `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive download/eviction via
-  `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`).
+  `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`). Plus the "open terminal here" pair,
+  `list_terminal_apps(app_choice)`, `open_terminal_here(path, volume_id, app_choice)`, and the sync
+  `terminal_app_display_name(app_choice)`, all pass-throughs to `../file_system/terminal.rs`, which owns the table, the
+  recipes, and the volume gate. The chosen app arrives as an argument because the frontend owns the settings store.
+  The display-name lookup is I/O-free on purpose: the toast that needs it fires exactly when the app it names has been
+  uninstalled, so the table is all that's left to read a name from. `open_path`, `open_in_editor`, and `open_terminal_here` all
+  swap to a recording variant under `playwright-e2e`, funneling into `crate::open_mock` so a suite run leaves no orphan
+  windows.
 - **`child_window_state.rs`**: `get_child_window_rect` / `set_child_window_rect(label, rect)` cache per-label
   child-window geometry via `State<ChildWindowRectStore>`. In-memory and session-only, never on disk; used by Settings
   and Debug. Viewers don't use it (they cascade, see `lib/window-positioning.ts`). Only the main window persists across
@@ -333,7 +340,7 @@ fut)` breaks that: when the deadline fires it drops `fut` wherever it happens to
 For anything that can reach a device backend (any command taking a `volume_id`: `rename_file`,
 `check_rename_validity`, `scan_for_volume_copy`, `scan_volume_for_conflicts`), dropping mid-flight means dropping a PTP
 transaction mid-data-phase on MTP, which leaves the phone expecting bytes nobody will send and wedges it until replug.
-See `mtp/connection/DETAILS.md` § "No dropping timeouts".
+See `crates/cmdr-mtp/src/connection/DETAILS.md` § "No dropping timeouts".
 
 `util::timeout_detached_typed` is the shape to use: it spawns the future and races the deadline against the resulting
 JOIN HANDLE. On expiry the handle is dropped, which DETACHES the task rather than cancelling it, so the caller returns

@@ -1,6 +1,7 @@
 <script lang="ts">
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import FilterPopover from '$lib/ui/FilterPopover.svelte'
+    import DemoAnchor from '../DemoAnchor.svelte'
 
     let anchorEl: HTMLButtonElement | undefined = $state()
     let open = $state(false)
@@ -12,16 +13,14 @@
             The labelled-grid filter surface: a `Popover` with an uppercase section header. Used by the query dialogs'
             Size / Modified / Search-in popovers. Click the anchor to toggle.
         </p>
-        <button
-            bind:this={anchorEl}
-            type="button"
-            class="demo-anchor"
+        <DemoAnchor
+            bind:el={anchorEl}
             onclick={() => {
                 open = !open
             }}
         >
             {open ? 'Close filter' : 'Open filter'}
-        </button>
+        </DemoAnchor>
         {#if anchorEl}
             <FilterPopover
                 anchor={anchorEl}
@@ -47,15 +46,6 @@
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
-    }
-
-    .demo-anchor {
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        background: transparent;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        color: var(--color-text-primary);
     }
 
     .demo-grid {

@@ -2,13 +2,16 @@
     /**
      * Settings > Behavior > Navigation & file ops.
      *
-     * Three cards:
+     * Four cards:
      *   1. **Navigation** — the `behavior.doubleClickPaneNavigatesToParent` switch
      *      (double-click the empty pane background to go up one folder).
      *   2. **File operations** — the file-extension-change confirmation radio. The
      *      conflict/progress settings live in Advanced (their single home); this
      *      page holds only its own settings, never a mirror.
-     *   3. **Operation log** — the retention limits (`operationLog.maxAge` /
+     *   3. **Terminal** — which app "Open terminal here" launches. Its options are
+     *      the terminals installed right now, so the control is the bespoke
+     *      `TerminalAppSelect`, not `SettingSelect`.
+     *   4. **Operation log** — the retention limits (`operationLog.maxAge` /
      *      `operationLog.maxSize`) for the file-operation history and undo log.
      *
      * Card visibility is section-owned: each `SectionCard` frame is wrapped in
@@ -22,6 +25,7 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingSelect from '../components/SettingSelect.svelte'
+    import TerminalAppSelect from './TerminalAppSelect.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
@@ -38,6 +42,7 @@
     const doubleClickDef = getSettingDefinition('behavior.doubleClickPaneNavigatesToParent') ?? defaultDef
     const extensionChangesDef = getSettingDefinition('fileOperations.allowFileExtensionChanges') ?? defaultDef
     const pasteAsFileDef = getSettingDefinition('fileOperations.pasteClipboardAsFile') ?? defaultDef
+    const openTerminalHereAppDef = getSettingDefinition('behavior.openTerminalHereApp') ?? defaultDef
     const operationLogMaxAgeDef = getSettingDefinition('operationLog.maxAge') ?? defaultDef
     const operationLogMaxSizeDef = getSettingDefinition('operationLog.maxSize') ?? defaultDef
 </script>
@@ -78,6 +83,22 @@
                     {searchQuery}
                 >
                     <SettingToggleGroup id="fileOperations.pasteClipboardAsFile" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
+    {/if}
+
+    {#if anyVisible(shouldShow, 'behavior.openTerminalHereApp')}
+        <SectionCard label={tString('settings.navigationAndFileOps.card.terminal')}>
+            {#if shouldShow('behavior.openTerminalHereApp')}
+                <SettingRow
+                    id="behavior.openTerminalHereApp"
+                    label={openTerminalHereAppDef.label}
+                    description={openTerminalHereAppDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <TerminalAppSelect ariaLabel={openTerminalHereAppDef.label} />
                 </SettingRow>
             {/if}
         </SectionCard>

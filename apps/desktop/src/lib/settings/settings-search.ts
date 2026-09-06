@@ -4,8 +4,9 @@
  */
 
 import uFuzzy from '@leeoniya/ufuzzy'
-import type { SettingDefinition, SettingSearchResult } from './types'
+import type { SearchableEntry, SettingSearchResult } from './types'
 import { settingsRegistry } from './settings-registry'
+import { searchableRowEntries } from './sections/searchable-rows'
 import { searchAllCommands } from '$lib/commands/fuzzy-search'
 
 // ============================================================================
@@ -22,14 +23,14 @@ const fuzzy = new uFuzzy({
 // ============================================================================
 
 interface SearchIndexEntry {
-  setting: SettingDefinition
+  entry: SearchableEntry
   searchableText: string
 }
 
 let searchIndex: SearchIndexEntry[] | null = null
 
 /**
- * Build the search index from the settings registry.
+ * Build the search index from the settings registry plus the searchable rows.
  * Lazily initialized on first search.
  */
 function buildSearchIndex(): SearchIndexEntry[] {
@@ -40,18 +41,23 @@ function buildSearchIndex(): SearchIndexEntry[] {
   // on the same `shouldShow` pipeline as every other section, so they must be
   // globally findable too (searching "prefetch" lights the Advanced sidebar entry
   // and shows the row in its card). `hidden` is intentionally NOT filtered here —
-  // a hidden entry like `indexing.indexSize` is a searchable anchor (see D4 in the
-  // settings card-groups plan). `buildSectionTree` excludes `hidden` from nav.
-  searchIndex = settingsRegistry.map((setting) => ({
-    setting,
-    searchableText: buildSearchableText(setting),
+  // a hidden internal-state entry costs a stray match at worst, while filtering it
+  // would need a second reason for a row to be missing. `buildSectionTree`
+  // excludes `hidden` from nav.
+  //
+  // Searchable rows (the hand-rendered non-settings: "Clear index", "Get a
+  // license") join here as equal entries. They carry no `SettingsValues` key and
+  // add no nav entry — `buildSectionTree` reads the registry alone.
+  searchIndex = [...settingsRegistry, ...searchableRowEntries].map((entry) => ({
+    entry,
+    searchableText: buildSearchableText(entry),
   }))
 
   return searchIndex
 }
 
 /**
- * Build searchable text for a setting by concatenating:
+ * Build searchable text for an entry by concatenating:
  * - Section path (like "Appearance > Colors and formats")
  * - Label
  * - Description
@@ -62,9 +68,9 @@ function buildSearchIndex(): SearchIndexEntry[] {
  * offsets assuming `section › … + ' ' + label` at the front; inserting `card` earlier would
  * silently mis-highlight labels. Appending is offset-safe.
  */
-function buildSearchableText(setting: SettingDefinition): string {
-  const parts = [setting.section.join(' › '), setting.label, setting.description, ...setting.keywords]
-  if (setting.card !== undefined) parts.push(setting.card)
+function buildSearchableText(entry: SearchableEntry): string {
+  const parts = [entry.section.join(' › '), entry.label, entry.description, ...entry.keywords]
+  if (entry.card !== undefined) parts.push(entry.card)
   return parts.join(' ').toLowerCase()
 }
 
@@ -73,18 +79,18 @@ function buildSearchableText(setting: SettingDefinition): string {
 // ============================================================================
 
 /**
- * Search settings by query string.
- * Returns settings that match the query with match indices for highlighting.
+ * Search settings and searchable rows by query string.
+ * Returns the entries that match, with match indices for highlighting.
  */
 export function searchSettings(query: string): SettingSearchResult[] {
   const index = buildSearchIndex()
 
-  // Empty query returns all settings
+  // Empty query returns everything
   if (!query.trim()) {
-    return index.map((entry) => ({
-      setting: entry.setting,
+    return index.map((indexed) => ({
+      entry: indexed.entry,
       matchedIndices: [],
-      searchableText: entry.searchableText,
+      searchableText: indexed.searchableText,
     }))
   }
 
@@ -98,7 +104,7 @@ export function searchSettings(query: string): SettingSearchResult[] {
 
   // Build results with match information
   return order.map((idx) => {
-    const entry = index[matchedIndices[idx]]
+    const indexed = index[matchedIndices[idx]]
     // ranges is a flat array of [start, end) pairs (end exclusive)
     const ranges = info.ranges[idx]
 
@@ -113,9 +119,9 @@ export function searchSettings(query: string): SettingSearchResult[] {
     }
 
     return {
-      setting: entry.setting,
+      entry: indexed.entry,
       matchedIndices: indices,
-      searchableText: entry.searchableText,
+      searchableText: indexed.searchableText,
     }
   })
 }
@@ -130,8 +136,8 @@ export function getMatchingSections(query: string): Set<string> {
 
   for (const result of results) {
     // Add all parent sections
-    for (let i = 1; i <= result.setting.section.length; i++) {
-      sections.add(result.setting.section.slice(0, i).join('/'))
+    for (let i = 1; i <= result.entry.section.length; i++) {
+      sections.add(result.entry.section.slice(0, i).join('/'))
     }
   }
 
@@ -245,7 +251,7 @@ export function clearSearchIndex(): void {
  */
 export function getMatchingSettingIds(query: string): Set<string> {
   const results = searchSettings(query)
-  return new Set(results.map((r) => r.setting.id))
+  return new Set(results.map((r) => r.entry.id))
 }
 
 /**
@@ -258,10 +264,10 @@ export function getMatchingSettingIdsInSection(query: string, sectionPath: strin
   return new Set(
     results
       .filter((r) => {
-        const settingSectionPath = r.setting.section.join('/')
+        const settingSectionPath = r.entry.section.join('/')
         return settingSectionPath === sectionPrefix || settingSectionPath.startsWith(sectionPrefix + '/')
       })
-      .map((r) => r.setting.id),
+      .map((r) => r.entry.id),
   )
 }
 
@@ -273,17 +279,17 @@ export function getMatchIndicesForLabel(query: string, settingId: string): numbe
   if (!query.trim()) return []
 
   const results = searchSettings(query)
-  const result = results.find((r) => r.setting.id === settingId)
+  const result = results.find((r) => r.entry.id === settingId)
   if (!result) return []
 
   // The matchedIndices are relative to searchableText which includes section path
   // We need to find where the label starts in searchableText and adjust indices
-  const setting = result.setting
+  const entry = result.entry
   // Match the format used in buildSearchableText: section.join(' › ') + ' ' + label
-  const sectionText = setting.section.join(' › ') + ' '
+  const sectionText = entry.section.join(' › ') + ' '
   // searchableText is lowercased, so we need to work with the lowercased label length
   const labelStart = sectionText.toLowerCase().length
-  const labelEnd = labelStart + setting.label.toLowerCase().length
+  const labelEnd = labelStart + entry.label.toLowerCase().length
 
   // Filter indices that fall within the label range and adjust them
   return result.matchedIndices.filter((idx) => idx >= labelStart && idx < labelEnd).map((idx) => idx - labelStart)

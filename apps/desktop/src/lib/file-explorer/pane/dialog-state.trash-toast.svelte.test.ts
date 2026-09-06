@@ -92,7 +92,7 @@ function props(operationType: TransferProgressPropsData['operationType']): Trans
 }
 
 /** The completion payload for one file, nothing skipped. */
-const ONE_FILE = { filesProcessed: 1, filesSkipped: 0, bytesProcessed: 10 }
+const ONE_FILE = { filesProcessed: 1, filesSkipped: 0, bytesProcessed: 10, appearedDuringMove: null }
 
 beforeEach(() => {
   vi.clearAllMocks()

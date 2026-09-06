@@ -61,6 +61,17 @@ pub enum AgentChatEvent {
     /// event row was persisted (its identity rides along). The rail shows it as a small
     /// timeline line before this turn's user message.
     ModelChanged { message_id: i64, seq: i64, model: String },
+    /// The conversation's chat-memory size (its resolved prompt budget) changed since its
+    /// previous turn; a UI-facing event row was persisted (its identity rides along). The
+    /// rail shows it as a small timeline line before this turn's user message.
+    ///
+    /// Distinct from [`Self::ContextTrimmed`], which reports what ONE assembly had to leave
+    /// out. This one reports that the ceiling itself moved, and it outlives the turn.
+    ChatMemoryChanged {
+        message_id: i64,
+        seq: i64,
+        chat_memory_tokens: usize,
+    },
     /// The prompt budget forced earlier tool results out of this turn's context. Emitted
     /// once per turn so the user learns that the model answered with less than the full
     /// thread in view, instead of a quiet drop that reads like a normal reply.

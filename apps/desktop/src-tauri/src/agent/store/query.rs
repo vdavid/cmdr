@@ -418,6 +418,40 @@ pub fn set_conversation_last_model(
     Ok(())
 }
 
+/// The chat-memory size (the resolved prompt-token budget) the conversation's most recent
+/// completed turn — or recorded chat-memory event — was assembled against. `None` means no
+/// turn has run yet, so there is nothing to have changed from.
+///
+/// ⚠️ Not [`conversation_context_usage`]'s budget, which carries the same number for the
+/// gauge: that one is written only beside the prompt size it must be read with, and the live
+/// settings path has no prompt size to record.
+pub fn conversation_last_chat_memory(
+    conn: &Connection,
+    conversation_id: i64,
+) -> Result<Option<usize>, AgentStoreError> {
+    let mut stmt = conn.prepare_cached("SELECT last_chat_memory FROM conversations WHERE id = ?1")?;
+    let mut rows = stmt.query(rusqlite::params![conversation_id])?;
+    let Some(row) = rows.next()? else {
+        return Ok(None);
+    };
+    let tokens: Option<i64> = row.get(0)?;
+    Ok(tokens.filter(|t| *t > 0).map(|t| t as usize))
+}
+
+/// Record the chat-memory size a conversation last used (stamped per completed turn, and
+/// when a chat-memory-change event is recorded).
+pub fn set_conversation_last_chat_memory(
+    conn: &Connection,
+    conversation_id: i64,
+    chat_memory_tokens: usize,
+) -> Result<(), AgentStoreError> {
+    conn.execute(
+        "UPDATE conversations SET last_chat_memory = ?2 WHERE id = ?1",
+        rusqlite::params![conversation_id, chat_memory_tokens as i64],
+    )?;
+    Ok(())
+}
+
 /// What the conversation's last completed turn sent, and the budget it was assembled against.
 /// `None` means no turn has finished yet, which the gauge shows as "not measured" rather than
 /// as an empty bar.

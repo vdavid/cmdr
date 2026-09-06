@@ -104,6 +104,14 @@
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
+  "askCmdr.tool.search.doing": "正在搜尋你的檔案",
+  "@askCmdr.tool.search.doing": {
+    "sourceHash": "892be3e"
+  },
+  "askCmdr.tool.search.done": "已搜尋你的檔案",
+  "@askCmdr.tool.search.done": {
+    "sourceHash": "995a356"
+  },
   "askCmdr.tool.searchPhotos.doing": "正在搜尋你的照片",
   "@askCmdr.tool.searchPhotos.doing": {
     "sourceHash": "da1265d"
@@ -208,9 +216,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr 需要的上下文視窗比你的本機模型大。請到設定的「AI」裡選 16,384 個 token 以上。",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr 需要的上下文視窗比你的本機模型大。請到設定的「AI」裡選 32,768 個 token 以上。",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "連不上這個 AI 提供者。檢查一下你的連線再試一次。",
   "@askCmdr.error.unavailable": {
@@ -243,6 +251,10 @@
   "askCmdr.error.provider": "提供者那邊出了點狀況。要再試一次嗎？",
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
+  },
+  "askCmdr.event.chatMemoryChanged": "聊天記憶現在可容納 {tokens, number} 個 token",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
   },
   "askCmdr.event.contextTrimmed": "已移除{count, plural, other {早前的 # 次查詢}}，好讓這次對話裝得進模型的上下文。",
   "@askCmdr.event.contextTrimmed": {

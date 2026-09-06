@@ -29,34 +29,34 @@ type Patch<T> = Partial<T> | undefined
 
 // ── Bulk rename review (`askCmdrState.renameReview`) ────────────────────────
 
+interface GalleryRenameRow {
+  sourceName: string
+  destinationName: string
+  evidence?: RenameEvidence
+  coverage?: RenameEvidenceCoverage
+  allowed?: boolean
+  blockedReason?: 'targetExists' | 'sourceMissing' | null
+  warnings?: Array<'extensionChanged' | 'cycle'>
+  nameRejected?: boolean
+  /** The folder this row's file lives in, for the states that span more than one. */
+  folder?: string
+}
+
 /**
- * Builds a review the way `openRenameReview` does: a proposal id, display rows,
- * and the preflight flags. The id is a fixture one, so Apply fails against the
- * backend (see the gallery row's note) — the review itself renders exactly as a
- * real proposal does.
+ * Builds one staged batch the way the end of a turn does: a proposal id, display rows, and the
+ * preflight flags. The id is a fixture one, so Apply fails against the backend (see the gallery
+ * row's note) — the batch itself renders exactly as a real proposal does.
  */
-function review(
-  rows: Array<{
-    sourceName: string
-    destinationName: string
-    evidence?: RenameEvidence
-    coverage?: RenameEvidenceCoverage
-    allowed?: boolean
-    blockedReason?: 'targetExists' | 'sourceMissing' | null
-    warnings?: Array<'extensionChanged' | 'cycle'>
-    nameRejected?: boolean
-  }>,
-  extra: { expired?: boolean; preflighting?: boolean } = {},
-) {
+function batch(rows: GalleryRenameRow[], extra: { expired?: boolean; preflighting?: boolean; id?: string } = {}) {
   return {
-    proposalId: 'gallery-fixture-proposal',
+    proposalId: extra.id ?? 'gallery-fixture-proposal',
     rows: rows.map((row, index) => ({
-      rowId: `gallery-row-${String(index)}`,
+      rowId: `${extra.id ?? 'gallery'}-row-${String(index)}`,
       sourceName: row.sourceName,
       destinationName: row.destinationName,
       // A fixture path that doesn't exist, so every row shows the no-thumbnail placeholder.
       // That's the degraded state on purpose: the gallery reviews layout, not real images.
-      sourcePath: `/gallery-fixture/${row.sourceName}`,
+      sourcePath: `${row.folder ?? '/gallery-fixture'}/${row.sourceName}`,
       volumeId: 'root',
       evidence: row.evidence ?? { source: 'filename' as const, detail: row.sourceName },
       coverage: row.coverage ?? null,
@@ -69,6 +69,11 @@ function review(
     expired: extra.expired ?? false,
     requestVersion: 0,
   }
+}
+
+/** One review over one batch: what a job small enough for a single model reply looks like. */
+function review(rows: GalleryRenameRow[], extra: { expired?: boolean; preflighting?: boolean } = {}) {
+  return { proposals: [batch(rows, extra)] }
 }
 
 /** A raw-file batch has no recognized text, so every row names its honest limit. */
@@ -96,8 +101,16 @@ export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
   'some-blocked': {
     renameReview: review([
       { sourceName: 'invoice-2026-06.pdf', destinationName: 'Invoice 2026-06.pdf' },
-      { sourceName: 'invoice-2026-07.pdf', destinationName: 'Invoice 2026-07.pdf', blockedReason: 'targetExists' },
-      { sourceName: 'invoice-2026-08.pdf', destinationName: 'Invoice 2026-08.pdf', blockedReason: 'sourceMissing' },
+      {
+        sourceName: 'invoice-2026-07.pdf',
+        destinationName: 'Invoice 2026-07.pdf',
+        blockedReason: 'targetExists',
+      },
+      {
+        sourceName: 'invoice-2026-08.pdf',
+        destinationName: 'Invoice 2026-08.pdf',
+        blockedReason: 'sourceMissing',
+      },
       {
         sourceName: 'scan-2026-05.jpeg',
         destinationName: 'Invoice 2026-05.pdf',
@@ -238,6 +251,53 @@ export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
       },
     ]),
   },
+  // One job, two folders, two batches: the model can only emit about 101 plan rows per reply,
+  // and a rename group binds one parent, so a job like this is several proposals and one
+  // review. The folder headings are what keep a row's folder from being a guess.
+  'spanning-folders': {
+    renameReview: {
+      proposals: [
+        batch(
+          [
+            {
+              sourceName: 'DSC09241.arw',
+              destinationName: 'Sunrise 01.arw',
+              evidence: SHOT_AT,
+              folder: '/Photos/2026-07 archipelago',
+            },
+            {
+              sourceName: 'DSC09242.arw',
+              destinationName: 'Sunrise 02.arw',
+              evidence: SHOT_AT,
+              folder: '/Photos/2026-07 archipelago',
+            },
+          ],
+          { id: 'gallery-batch-one' },
+        ),
+        batch(
+          [
+            {
+              sourceName: 'invoice-2026-06.pdf',
+              destinationName: 'Invoice 2026-06.pdf',
+              folder: '/Documents/Rymdskottkärra AB/invoices',
+            },
+            {
+              sourceName: 'invoice-2026-07.pdf',
+              destinationName: 'Invoice 2026-07.pdf',
+              folder: '/Documents/Rymdskottkärra AB/invoices',
+            },
+            {
+              sourceName: 'invoice-2026-08.pdf',
+              destinationName: 'Invoice 2026-08.pdf',
+              folder: '/Documents/Rymdskottkärra AB/invoices',
+              blockedReason: 'targetExists',
+            },
+          ],
+          { id: 'gallery-batch-two' },
+        ),
+      ],
+    },
+  },
   // The proposal outlived its backend staging: the table is replaced by a notice
   // and Apply is dead. Unreachable in practice without waiting one out.
   expired: { renameReview: review(TIDY_ROWS, { expired: true }) },
@@ -356,7 +416,10 @@ export const whatsNewFixtures: Record<string, Patch<typeof whatsNewState>> = {
         date: '2026-07-03',
         lead: 'A quiet one: mostly indexing throughput.',
         sections: [
-          { title: 'Changed', entries: ['Indexing a big drive uses about a third of the memory it used to.'] },
+          {
+            title: 'Changed',
+            entries: ['Indexing a big drive uses about a third of the memory it used to.'],
+          },
         ],
       },
     ],

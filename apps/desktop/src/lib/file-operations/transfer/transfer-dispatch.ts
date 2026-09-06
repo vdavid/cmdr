@@ -24,7 +24,7 @@ import {
 } from '$lib/tauri-commands'
 import type { ConflictResolution, SortColumn, SortOrder, TransferOperationType } from '$lib/file-explorer/types'
 import { getSetting } from '$lib/settings'
-import { pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
+import { pathCrossesArchiveBoundary, pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
 
 /** Everything the backend needs to start this operation. Captured at the moment
  *  the user confirmed, and never re-read afterwards. */
@@ -62,11 +62,28 @@ export interface TransferDispatchConfig {
  * into = `{ add }`, move out = extract + `{ delete }`). Source and dest can share
  * the parent drive's `volumeId` (a zip lives on the same drive), so the volume-id
  * comparison alone misses this — the path check is what catches it.
+ *
+ * **The two sides ask DIFFERENT questions, and swapping them breaks a real flow.**
+ * A DESTINATION names a container to write INTO, so it takes the WIDE check: the
+ * pane can sit AT `/a/foo.zip` (exactly where Enter on a zip lands you), and F6
+ * there is the ordinary way to move something into an archive. A SOURCE is a
+ * thing being operated ON, so it takes the NARROW one: moving the `.zip` FILE
+ * itself is an ordinary move that must keep the local fast path.
+ *
+ * The backend encodes the same asymmetry, which is what settles it: `create`
+ * uses `path_crosses_archive_boundary` because a new entry's parent can BE the
+ * `.zip`, while delete and the move SOURCE use `path_is_inside_archive`
+ * (`volume/manager/archive_routing.rs`).
+ *
+ * Asking narrow on both sides sends an archive-root destination down the local
+ * `moveFiles` path, where the backend stats a regular file and refuses with
+ * "Destination must be a directory". The source half is what keeps a `.docx` (or
+ * `.zip`) move on the fast path, and it is untouched by this.
  */
 export function isVolumeMove(config: TransferDispatchConfig): boolean {
   if (config.operationType !== 'move') return false
   const touchesArchive =
-    pathInsideArchive(config.destinationPath ?? '') || config.sourcePaths.some((p) => pathInsideArchive(p))
+    pathCrossesArchiveBoundary(config.destinationPath ?? '') || config.sourcePaths.some((p) => pathInsideArchive(p))
   return (
     config.sourceVolumeId !== DEFAULT_VOLUME_ID ||
     (config.destVolumeId ?? DEFAULT_VOLUME_ID) !== DEFAULT_VOLUME_ID ||

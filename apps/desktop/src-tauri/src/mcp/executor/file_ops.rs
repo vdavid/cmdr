@@ -74,7 +74,12 @@ pub(super) fn empty_operation_error(
     // An empty folder renders no file rows at all (the FE shows an empty-state overlay
     // instead, and skips even the `..` row), so the push carries zero files while
     // `total_files` still counts the parent entry. Nothing is actionable either way.
-    if state.files.is_empty() && state.total_files <= 1 {
+    // Subtract that parent row only where the pane HAS one: a search-results snapshot
+    // and a pane at a volume root have none, so a single counted row there is a real
+    // file, and refusing it would be a false "shows no files" over something the user
+    // can see.
+    let actionable_rows = state.total_files.saturating_sub(usize::from(state.has_parent_row));
+    if state.files.is_empty() && actionable_rows == 0 {
         return Some(format!(
             "Nothing to {verb}: the {pane} pane shows no files and nothing is selected."
         ));

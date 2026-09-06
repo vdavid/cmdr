@@ -1,19 +1,18 @@
 //! USB hotplug watcher for MTP devices.
 //!
-//! Watches for MTP devices arriving and leaving via `mtp_rs::mtp::watch_devices()`.
+//! Watches for MTP devices arriving and leaving via `cmdr_mtp::watch_devices()`.
 //! On detection, auto-connects devices and emits `mtp-device-connected` /
 //! `mtp-device-disconnected` events (via the connection manager). The frontend
 //! is a passive consumer. It never orchestrates connections.
 
 use crate::ignore_poison::IgnorePoison;
+use cmdr_mtp::HotplugEvent;
 use log::{debug, error, info, warn};
-use mtp_rs::mtp::HotplugEvent;
 use std::collections::HashSet;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 use tauri::AppHandle;
 
-use super::connection::MtpDisconnectReason;
+use super::MtpDisconnectReason;
 
 /// Global app handle for emitting events from the watcher
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
@@ -24,29 +23,22 @@ static KNOWN_DEVICES: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 /// Flag to indicate watcher has been started
 static WATCHER_STARTED: OnceLock<()> = OnceLock::new();
 
-/// Whether MTP support is enabled. When false, the watcher loop still runs
-/// but `check_for_device_changes()` returns early and no auto-connects happen.
-static MTP_ENABLED: AtomicBool = AtomicBool::new(true);
-
-/// The app handle the watcher emits from, once `start_mtp_watcher` has stored
-/// it. `None` before startup wiring and in unit tests. Shared so other MTP
-/// background work (the session-reset reopen) can emit the same lifecycle events
-/// an auto-connect does.
-pub(super) fn app_handle() -> Option<AppHandle> {
-    APP_HANDLE.get().cloned()
-}
-
-/// Whether MTP support is currently on. The session-reset reopen checks this
-/// between attempts so a recovery in flight doesn't resurrect a device the user
-/// just switched MTP off for.
-pub(super) fn is_mtp_enabled() -> bool {
-    MTP_ENABLED.load(Ordering::SeqCst)
+/// Whether MTP support is enabled, read from the manager, which owns the ONE
+/// copy of that bit.
+///
+/// It lives down there rather than up here because the session-reset reopen loop
+/// reads it between attempts, so a recovery in flight can't resurrect a device
+/// the user just switched MTP off for, and that layer has to run with no app
+/// around it. When it's false the watcher loop still runs but
+/// `check_for_device_changes()` returns early and no auto-connects happen.
+fn is_mtp_enabled() -> bool {
+    super::connection_manager().is_enabled()
 }
 
 /// Sets the MTP enabled flag without side effects. Used at startup before the
 /// watcher starts, so the initial auto-connect respects the persisted setting.
 pub fn set_mtp_enabled_flag(enabled: bool) {
-    MTP_ENABLED.store(enabled, Ordering::SeqCst);
+    super::connection_manager().set_enabled(enabled);
     debug!("MTP enabled flag set to {}", enabled);
 }
 
@@ -56,7 +48,7 @@ pub fn set_mtp_enabled_flag(enabled: bool) {
 /// and restores ptpcamerad (macOS). When enabling: re-checks for plugged-in
 /// devices so they get auto-connected.
 pub async fn set_mtp_enabled(enabled: bool) {
-    let was_enabled = MTP_ENABLED.swap(enabled, Ordering::SeqCst);
+    let was_enabled = super::connection_manager().set_enabled(enabled);
     if was_enabled == enabled {
         debug!("MTP enabled unchanged ({})", enabled);
         return;
@@ -96,7 +88,7 @@ fn get_current_mtp_devices() -> HashSet<String> {
 /// Auto-connects newly detected devices and disconnects removed ones.
 /// Returns early if MTP is disabled.
 fn check_for_device_changes() {
-    if !MTP_ENABLED.load(Ordering::SeqCst) {
+    if !is_mtp_enabled() {
         return;
     }
 
@@ -152,10 +144,9 @@ fn initial_known_devices(enabled: bool, discovered: &HashSet<String>) -> HashSet
 
 /// Spawns an async task to connect a newly detected MTP device.
 fn auto_connect_device(device_id: String) {
-    let app = APP_HANDLE.get().cloned();
     tauri::async_runtime::spawn(async move {
         let cm = super::connection_manager();
-        match cm.connect(&device_id, app.as_ref()).await {
+        match cm.connect(&device_id, super::DeviceWatch::Live).await {
             Ok(info) => {
                 info!(
                     "Auto-connected MTP device: {} ({} storages)",
@@ -174,10 +165,9 @@ fn auto_connect_device(device_id: String) {
 
 /// Spawns an async task to disconnect a removed MTP device.
 fn auto_disconnect_device(device_id: String, reason: MtpDisconnectReason) {
-    let app = APP_HANDLE.get().cloned();
     tauri::async_runtime::spawn(async move {
         let cm = super::connection_manager();
-        if let Err(e) = cm.disconnect(&device_id, app.as_ref(), reason).await {
+        if let Err(e) = cm.disconnect(&device_id, reason).await {
             // NotConnected is fine: device may not have been connected yet
             debug!("Disconnect for removed device {} returned: {:?}", device_id, e);
         }
@@ -203,7 +193,7 @@ pub fn start_mtp_watcher(app: &AppHandle) {
     // watcher task spawns, so the stream's initial `Arrived` burst diffs to
     // nothing instead of connecting the same devices twice. It also covers
     // virtual devices, which mtp-rs's USB-only watch never reports.
-    let enabled = MTP_ENABLED.load(Ordering::SeqCst);
+    let enabled = is_mtp_enabled();
     let initial_devices = get_current_mtp_devices();
     let known = KNOWN_DEVICES.get_or_init(|| Mutex::new(HashSet::new()));
     let mut known_guard = known.lock_ignore_poison();
@@ -236,7 +226,7 @@ pub fn start_mtp_watcher(app: &AppHandle) {
 
 /// The async hotplug watcher loop.
 ///
-/// `mtp_rs::mtp::watch_devices()` only wakes us for devices that are actually
+/// `cmdr_mtp::watch_devices()` only wakes us for devices that are actually
 /// MTP-capable, and it applies its own settle delay before enumerating, so mice,
 /// hubs, and chargers never reach this loop and there's no local sleep.
 ///
@@ -244,14 +234,14 @@ pub fn start_mtp_watcher(app: &AppHandle) {
 /// [`check_for_device_changes`]. The event payload can't drive auto-connect on its
 /// own because mtp-rs's watch is USB-only, so a virtual device (E2E, `virtual-mtp`)
 /// never produces one; `list_mtp_devices()` is the enumeration that sees both.
-/// The `MTP_ENABLED` gate also means events can arrive while auto-connect is off,
+/// The enabled gate (`is_mtp_enabled`, read off the manager) also means events can arrive while auto-connect is off,
 /// which the `KNOWN_DEVICES` diff reconciles when it's switched back on.
 ///
 /// The stream reports already-connected devices as `Arrived` on its first poll.
 /// That can't double-count: `start_mtp_watcher` seeds `KNOWN_DEVICES` synchronously
 /// before spawning this task, so the initial burst diffs to nothing.
 async fn run_hotplug_watcher(_app: AppHandle) {
-    let hotplug_stream = match mtp_rs::mtp::watch_devices() {
+    let hotplug_stream = match cmdr_mtp::watch_devices() {
         Ok(stream) => stream,
         Err(e) => {
             error!("Failed to start MTP hotplug watcher: {}", e);
@@ -316,7 +306,7 @@ fn needs_ptpcamerad_suppression<'a>(devices: impl IntoIterator<Item = &'a str>) 
 /// needs it. Emits `mtp-ptpcamerad-suppressed` on success so the frontend can toast.
 #[cfg(target_os = "macos")]
 fn suppress_ptpcamerad_if_needed<'a>(devices: impl IntoIterator<Item = &'a str>) {
-    use super::connection::MtpPtpcameradSuppressed;
+    use super::events::MtpPtpcameradSuppressed;
     use tauri_specta::Event;
 
     if !needs_ptpcamerad_suppression(devices) {
@@ -345,7 +335,7 @@ fn suppress_ptpcamerad_if_needed<'a>(devices: impl IntoIterator<Item = &'a str>)
 /// Emits `mtp-ptpcamerad-restored` event on success.
 #[cfg(target_os = "macos")]
 fn restore_ptpcamerad_unconditionally() {
-    use super::connection::MtpPtpcameradRestored;
+    use super::events::MtpPtpcameradRestored;
     use tauri_specta::Event;
 
     match super::macos_workaround::restore_ptpcamerad() {
@@ -364,7 +354,7 @@ fn restore_ptpcamerad_unconditionally() {
 /// Emits `mtp-ptpcamerad-restored` event on success.
 #[cfg(target_os = "macos")]
 fn restore_ptpcamerad_if_no_devices() {
-    use super::connection::MtpPtpcameradRestored;
+    use super::events::MtpPtpcameradRestored;
     use tauri_specta::Event;
 
     let remaining = get_current_mtp_devices();
@@ -420,14 +410,14 @@ mod tests {
     #[cfg(all(target_os = "macos", feature = "virtual-mtp"))]
     #[test]
     fn a_device_set_that_is_only_virtual_needs_no_ptpcamerad_suppression() {
-        let virtual_id = crate::mtp::virtual_device::virtual_device_id();
+        let virtual_id = cmdr_mtp::virtual_device::virtual_device_id();
         assert!(!needs_ptpcamerad_suppression([virtual_id.as_str()]));
     }
 
     #[cfg(all(target_os = "macos", feature = "virtual-mtp"))]
     #[test]
     fn real_hardware_alongside_a_virtual_device_still_needs_suppression() {
-        let virtual_id = crate::mtp::virtual_device::virtual_device_id();
+        let virtual_id = cmdr_mtp::virtual_device::virtual_device_id();
         assert!(needs_ptpcamerad_suppression([virtual_id.as_str(), "mtp-real-phone"]));
     }
 
@@ -443,22 +433,21 @@ mod tests {
         assert!(!needs_ptpcamerad_suppression(std::iter::empty::<&str>()));
     }
 
+    /// The app pushes the persisted setting into the manager, and the watcher's
+    /// own auto-connect gate reads it back from there. One bit, one owner: two
+    /// copies would let the watcher keep auto-connecting devices the reopen loop
+    /// had already been told to leave alone.
     #[test]
-    fn test_mtp_enabled_flag_defaults_to_true() {
-        assert!(MTP_ENABLED.load(Ordering::SeqCst));
-    }
-
-    #[test]
-    fn test_set_mtp_enabled_flag() {
-        let original = MTP_ENABLED.load(Ordering::SeqCst);
+    fn the_watcher_reads_the_setting_it_pushed_into_the_manager() {
+        let original = is_mtp_enabled();
 
         set_mtp_enabled_flag(false);
-        assert!(!MTP_ENABLED.load(Ordering::SeqCst));
+        assert!(!is_mtp_enabled());
+        assert!(!crate::mtp::connection_manager().is_enabled());
 
         set_mtp_enabled_flag(true);
-        assert!(MTP_ENABLED.load(Ordering::SeqCst));
+        assert!(is_mtp_enabled());
 
-        // Restore original state
-        MTP_ENABLED.store(original, Ordering::SeqCst);
+        set_mtp_enabled_flag(original);
     }
 }

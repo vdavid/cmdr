@@ -232,6 +232,39 @@ pub(super) fn next_available_name(path: &Path, claimed: &ClaimedNames) -> PathBu
     }
 }
 
+/// The suffix a rescued file wears, so a person meeting it in their pane can
+/// tell what it is. Draft copy: filenames carry no locale here, the same way the
+/// ` (N)` duplicate convention doesn't.
+const RECOVERED_SUFFIX: &str = " (recovered)";
+
+/// How many ` (N)` variants a rescue tries before giving up on a real filename.
+/// Deliberately small: a destination holding eight `notes (recovered) (N)` files
+/// is one where something else is very wrong.
+pub(super) const RESCUE_NAME_ATTEMPTS: u32 = 8;
+
+/// `/dir/notes.txt` → `/dir/notes (recovered).txt`, extension kept where it
+/// belongs.
+///
+/// The name a rescue reaches for when data has to survive under a name that
+/// isn't its own: the volume engine's finalize rescue
+/// (`transfer/volume/naming.rs::rescue_out_of_temp_space`) and the local copy's
+/// displaced-original rescue (`overwrite::DisplacedEntry::keep_as_recovered_sibling`)
+/// both start here, so a person meets one convention rather than two. When it's
+/// taken, both continue the house ` (N)` series off it through
+/// [`NameCandidates`].
+pub(super) fn recovered_sibling(orig: &Path) -> PathBuf {
+    let parent = orig.parent().unwrap_or(Path::new(""));
+    let stem = orig.file_stem().map(|s| s.to_string_lossy().to_string());
+    let name = match (stem, orig.extension()) {
+        (Some(stem), Some(ext)) => format!("{stem}{RECOVERED_SUFFIX}.{}", ext.to_string_lossy()),
+        (Some(stem), None) => format!("{stem}{RECOVERED_SUFFIX}"),
+        // A path with no file name at all can't be helped; the caller's rename
+        // will fail and report where the data actually is.
+        (None, _) => format!("cmdr{RECOVERED_SUFFIX}"),
+    };
+    parent.join(name)
+}
+
 /// Claims the next free ` (N)` name as a DIRECTORY, creating it. The `create_dir`
 /// loop IS the reservation: `mkdir(2)` fails `AlreadyExists` on a taken name, so
 /// advancing on that error is the directory analogue of [`find_unique_name`]'s

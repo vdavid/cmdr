@@ -19,6 +19,7 @@ pub(super) mod linux_copy;
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_copy;
 pub(super) mod move_op;
+pub(super) mod recovered_name;
 pub(super) mod retry;
 pub(super) mod staged_write;
 pub(super) mod transfer_driver;
@@ -37,6 +38,10 @@ pub(crate) use super::ledger::CopyTransaction;
 pub(crate) mod conflict_responder_test_support;
 #[cfg(test)]
 mod copy_integration_test;
+#[cfg(test)]
+mod cross_type_policy_tests;
+#[cfg(test)]
+mod folder_over_file_rollback_tests;
 #[cfg(test)]
 mod hardlink_progress_tests;
 #[cfg(test)]

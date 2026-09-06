@@ -1,30 +1,17 @@
 import type { FilePaneAPI } from '$lib/file-explorer/pane/types'
+import { getCursorEntry, type GetFileAtFn } from '../cursor-entry'
 
 /**
- * Returns the full filename (with extension) for the entry under cursor, or empty string
- * if the cursor is on a directory or ".." entry.
+ * The New file pre-fill: the cursor entry's full filename, extension kept.
+ * Empty for a directory (no use as a file name hint) and for `..`.
  */
 export async function getInitialFileName(
   paneRef: FilePaneAPI | undefined,
   paneListingId: string,
   showHiddenFiles: boolean,
-  getFileAt: (
-    listingId: string,
-    index: number,
-    showHiddenFiles: boolean,
-  ) => Promise<{ name: string; isDirectory: boolean } | null>,
+  getFileAt: GetFileAtFn,
 ): Promise<string> {
-  try {
-    const cursorIndex = paneRef?.getCursorIndex()
-    const hasParent = paneRef?.hasParentEntry()
-    if (cursorIndex === undefined || cursorIndex < 0) return ''
-    const backendIndex = hasParent ? cursorIndex - 1 : cursorIndex
-    if (backendIndex < 0) return ''
-    const entry = await getFileAt(paneListingId, backendIndex, showHiddenFiles)
-    if (!entry) return ''
-    // Files: return full name with extension. Directories: return empty (not useful as a file name hint).
-    return entry.isDirectory ? '' : entry.name
-  } catch {
-    return ''
-  }
+  const entry = await getCursorEntry(paneRef, paneListingId, showHiddenFiles, getFileAt)
+  if (!entry) return ''
+  return entry.isDirectory ? '' : entry.name
 }

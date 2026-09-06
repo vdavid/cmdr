@@ -23,9 +23,9 @@ use tauri::AppHandle;
 use tauri_specta::Event as _;
 
 use crate::file_system::listing::{
-    DiffChange, FileEntry, ModifyResult, compute_diff, get_listing_entries, get_listing_volume_id_and_path,
-    get_single_entry, has_entry, insert_entry_sorted, list_directory_core, remove_entries_by_paths,
-    update_entry_sorted, update_listing_entries,
+    DiffChange, FileEntry, ModifyResult, OverlayRows, compute_diff, get_listing_entries,
+    get_listing_volume_id_and_path, get_single_entry, has_entry, insert_entry_sorted, list_directory_core,
+    remove_entries_by_paths, update_entry_sorted, update_listing_entries,
 };
 use crate::index_host::index;
 use cmdr_fs::firmlinks;
@@ -484,7 +484,7 @@ pub async fn handle_directory_change(listing_id: &str) {
 
     // Look up this listing's volume id so we can re-read through the Volume trait.
     let volume_id = {
-        use crate::file_system::listing::caching::LISTING_CACHE;
+        use crate::file_system::listing::cached_listing::LISTING_CACHE;
         let cache = match LISTING_CACHE.read() {
             Ok(c) => c,
             Err(_) => return,
@@ -504,17 +504,18 @@ pub async fn handle_directory_change(listing_id: &str) {
     // same ArchiveVolume the listing used, re-registering it if the LRU evicted
     // it. (Archives get no FSEvents watcher today, so this fires for them only
     // once live archive watching lands.)
-    let volume = crate::file_system::volume::manager::get_volume_manager()
+    let resolved = crate::file_system::volume::manager::get_volume_manager()
         .resolve(&volume_id, &path)
-        .await
-        .volume;
+        .await;
+    let is_routed = resolved.is_routed();
+    let volume = resolved.volume;
 
     // Get app handle for emitting events
     let app_handle = { WATCHER_MANAGER.read_ignore_poison().app_handle.clone() };
 
     // Re-read the directory via the Volume trait (works for all volume types).
     // Falls back to list_directory_core for listings whose volume was unregistered.
-    let new_entries = if let Some(vol) = volume {
+    let new_entries = if let Some(vol) = volume.clone() {
         match vol.list_directory(&path, None).await {
             Ok(entries) => entries,
             Err(crate::file_system::VolumeError::NotFound(_)) => {
@@ -564,25 +565,45 @@ pub async fn handle_directory_change(listing_id: &str) {
         }
     };
 
+    let mut new_entries = new_entries;
+
+    // The listing's sort params, taken once: the overlay pass between the enrich
+    // and the sort is `async`, and the cache guard can't be held across it.
+    let sort_params = {
+        use crate::file_system::listing::cached_listing::LISTING_CACHE;
+
+        LISTING_CACHE.read().ok().and_then(|cache| {
+            cache
+                .get(listing_id)
+                .map(|l| (l.sort_by, l.sort_order, l.directory_sort_mode))
+        })
+    };
+
+    // Enrich with index data so diff entries have recursive_size etc. Skipped for
+    // a routed volume, which has no drive index (an archive's inner paths and a
+    // git snapshot's paths aren't real FS paths) — the same gate the three reads
+    // that CREATE a listing use. Without it a ⌘R could put a Size on a row the
+    // first read left alone, from an index row that happens to share its path.
+    if !is_routed {
+        index().enrich(&volume_id, &mut new_entries);
+    }
+
+    // Re-run the overlays, in the same place in the pipeline the first read ran
+    // them (after the enrich, before the sort). `list_directory` above answers
+    // with the real directory alone, so without this a `refresh_listing` (⌘R, and
+    // the top-up every copy, move, and delete fires when it settles) would empty
+    // a repo's six portal rows out of an open `.git/` pane. A listing whose
+    // volume was unregistered took the `std::fs` fallback and has nothing to
+    // decorate through, so it keeps the count it had.
+    let overlay_rows = match &volume {
+        Some(vol) => OverlayRows::Recounted(crate::listing_overlays::decorate(vol, &path, &mut new_entries).await),
+        None => OverlayRows::Unchanged,
+    };
+
     // Re-sort new_entries by the listing's sort params so compute_diff compares
     // two lists in the same order (list_directory returns entries in Name/Asc).
-    // Also enrich with index data so diff entries have recursive_size etc.
-    let mut new_entries = new_entries;
-    {
-        use crate::file_system::listing::caching::LISTING_CACHE;
-        use crate::file_system::listing::sorting::sort_entries;
-
-        if let Ok(cache) = LISTING_CACHE.read()
-            && let Some(listing) = cache.get(listing_id)
-        {
-            index().enrich(&listing.volume_id, &mut new_entries);
-            sort_entries(
-                &mut new_entries,
-                listing.sort_by,
-                listing.sort_order,
-                listing.directory_sort_mode,
-            );
-        }
+    if let Some((sort_by, sort_order, directory_sort_mode)) = sort_params {
+        crate::file_system::listing::sorting::sort_entries(&mut new_entries, sort_by, sort_order, directory_sort_mode);
     }
 
     // Compute diff
@@ -592,8 +613,8 @@ pub async fn handle_directory_change(listing_id: &str) {
         return; // No actual changes
     }
 
-    // Update the unified LISTING_CACHE with new entries
-    update_listing_entries(listing_id, new_entries);
+    // Update the unified LISTING_CACHE with new entries.
+    update_listing_entries(listing_id, new_entries, overlay_rows);
 
     crate::file_system::listing::diff_emitter::enqueue_diff(listing_id, changes);
 }

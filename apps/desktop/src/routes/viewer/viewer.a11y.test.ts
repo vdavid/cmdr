@@ -22,8 +22,10 @@ import ViewerContextMenu from './ViewerContextMenu.svelte'
 import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
 import ViewerStatusBar from './ViewerStatusBar.svelte'
 import ViewerToolbar from './ViewerToolbar.svelte'
+import ViewerTextCursor from './ViewerTextCursor.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import type { EncodingChoice } from '$lib/ipc/bindings'
+import type { TextCursorBox } from './viewer-text-cursor.svelte'
 
 // `ModalDialog` notifies the backend on open/close; stub those IPC calls for the
 // copy-dialogs block.
@@ -446,5 +448,36 @@ describe('viewer search-bar a11y', () => {
     expect(alert).not.toBeNull()
     expect(alert?.textContent.trim()).toBe('Bad regex')
     target.remove()
+  })
+})
+
+/**
+ * The text cursor is a visual echo of a selection screen readers already learn about
+ * from the status bar's live region, so it must stay out of the accessibility tree
+ * entirely. Mountable on its own precisely so this block can reach it: this file never
+ * mounts `+page.svelte`.
+ */
+describe('ViewerTextCursor a11y', () => {
+  function mountCursor(box: TextCursorBox | null) {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ViewerTextCursor, { target, props: { box, blinkKey: '3:7' } })
+    return target
+  }
+
+  it('is hidden from assistive tech and has no a11y violations', async () => {
+    const target = mountCursor({ top: 120, left: 48, height: 18 })
+    await tick()
+    const cursor = target.querySelector('.text-cursor')
+    expect(cursor).not.toBeNull()
+    expect(cursor?.getAttribute('aria-hidden')).toBe('true')
+    await expectNoA11yViolations(target)
+  })
+
+  it('renders nothing at all when there is no box to paint', async () => {
+    const target = mountCursor(null)
+    await tick()
+    expect(target.querySelector('.text-cursor')).toBeNull()
+    await expectNoA11yViolations(target)
   })
 })

@@ -17,7 +17,7 @@ import path from 'path'
  * suite starting in another worktree can't wipe the tree a running MTP spec is asserting
  * against. The fallback is the app's own default when nobody sets it: a manual
  * `CMDR_VIRTUAL_MTP=1 pnpm dev` session, or a direct `npx tsx` run of this file. It must
- * stay in step with `src-tauri/src/mtp/virtual_device.rs::MTP_FIXTURE_ROOT`.
+ * stay in step with `crates/cmdr-mtp/src/virtual_device.rs::MTP_FIXTURE_ROOT`.
  */
 export const MTP_FIXTURE_ROOT = process.env.CMDR_MTP_FIXTURE_ROOT?.trim() || '/tmp/cmdr-mtp-e2e-fixtures'
 

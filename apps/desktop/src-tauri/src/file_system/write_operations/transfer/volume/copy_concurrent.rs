@@ -47,7 +47,7 @@ use super::super::transfer_probe::OperationProbe;
 use super::copy::drain_deadline as drain_deadline_for;
 use super::copy_concurrent_task::{CopyTaskFailure, CopyTaskSuccess, run_copy_task};
 use super::preflight::SourceHint;
-use super::transfer_error::{PathRole, WriteFailure};
+use super::transfer_error::{PathedVolumeError, WriteFailure};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 
@@ -117,13 +117,19 @@ pub(super) struct ConcurrentOutcome {
 
 /// Runs the sliding window to completion, cancellation, or the first failure.
 ///
-/// Returns `Err` only when conflict resolution itself fails; a failed transfer
-/// comes back as `ConcurrentOutcome::copy_error` so the caller's post-loop still
-/// runs its rollback and cleanup.
-pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result<ConcurrentOutcome, WriteFailure> {
+/// ❗ **Answers an outcome, never an `Err`**, and that is a data-safety property
+/// rather than a style choice. EVERY failure this driver can meet, a task's and
+/// conflict resolution's own alike, comes back as `ConcurrentOutcome::copy_error`, so
+/// the caller's post-loop always runs: counter sync, deep-skip folding, the
+/// created-dir journal rows, the cancel reclassification, the abandoned-staged-
+/// write sweep, the rollback branch, and the terminal event. A resolver error
+/// that short-circuited out of here skipped all of it and left the user with a
+/// half-built destination nothing had swept and no `write-cancelled` to explain
+/// it.
+pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> ConcurrentOutcome {
     let mut driver = ConcurrentDriver::new(ctx);
-    driver.run().await?;
-    Ok(driver.finish())
+    driver.run().await;
+    driver.finish()
 }
 
 /// One task per top-level source item, streaming end to end. The future owns
@@ -159,8 +165,12 @@ enum AwaitStep {
     /// The wind-down window was armed or shortened. Nothing settled; go round
     /// again so the new deadline is the one being waited on.
     Rearmed,
-    /// A task came back.
-    Settled(Result<CopyTaskSuccess, CopyTaskFailure>),
+    /// A task came back. Boxed because the payload dwarfs the other two
+    /// variants (a failure carries its whole per-file rollback ledger), and this
+    /// enum is built once per settled task on a path that has just finished
+    /// streaming a file: one allocation is nothing next to that, while an
+    /// unboxed variant sizes every trip through the await.
+    Settled(Box<Result<CopyTaskSuccess, CopyTaskFailure>>),
     /// The window emptied, or the wind-down deadline expired with tasks still
     /// in it — those are abandoned, and their staged partials are cleaned up by
     /// the caller's post-loop.
@@ -183,26 +193,35 @@ impl<'a> ConcurrentDriver<'a> {
     /// Fill the window, wait for something, record it. Ends when the sources and
     /// the window are both empty, on the first task failure, or when a
     /// wind-down deadline expires.
-    async fn run(&mut self) -> Result<(), WriteFailure> {
+    async fn run(&mut self) {
         loop {
-            self.spawn_ready_tasks().await?;
+            if let Err(failure) = self.spawn_ready_tasks().await {
+                // Conflict resolution refused (the destination couldn't be
+                // probed, a Stop prompt lost its answer). Recorded like a task
+                // failure and handled by the same post-loop: the sources already
+                // in flight are dropped, their staged partials swept from the
+                // in-flight ledger, and the user gets a terminal event.
+                self.record_resolver_failure(failure);
+                break;
+            }
             if self.in_flight.is_empty() {
                 break;
             }
             match self.await_next().await {
                 AwaitStep::Rearmed => continue,
                 AwaitStep::Finished => break,
-                AwaitStep::Settled(Ok(success)) => self.record_success(success),
-                AwaitStep::Settled(Err(failure)) => {
-                    self.record_failure(failure);
-                    // Drop remaining in-flight tasks; their streams close, temp
-                    // files get cleaned up by the per-backend write abort +
-                    // delete path. Partial cleanup is the caller's post-loop.
-                    break;
-                }
+                AwaitStep::Settled(settled) => match *settled {
+                    Ok(success) => self.record_success(success),
+                    Err(failure) => {
+                        self.record_failure(failure);
+                        // Drop remaining in-flight tasks; their streams close, temp
+                        // files get cleaned up by the per-backend write abort +
+                        // delete path. Partial cleanup is the caller's post-loop.
+                        break;
+                    }
+                },
             }
         }
-        Ok(())
     }
 
     /// Keep preparing and pushing sources until either they run out or the
@@ -313,7 +332,7 @@ impl<'a> ConcurrentDriver<'a> {
             }
         };
         match next {
-            Some(settled) => AwaitStep::Settled(settled),
+            Some(settled) => AwaitStep::Settled(Box::new(settled)),
             None => AwaitStep::Finished,
         }
     }
@@ -421,6 +440,7 @@ impl<'a> ConcurrentDriver<'a> {
             reported_path,
             source_path: done_source,
             error: e,
+            new_data_at,
             cleanup_temp,
             source_is_dir,
             overwrote,
@@ -472,7 +492,31 @@ impl<'a> ConcurrentDriver<'a> {
             // data loss.
             self.last_dest_path = Some(failed_dest);
         }
-        self.copy_error = Some(WriteFailure::from_volume(&reported_path, PathRole::Source, e));
+        // `PathedVolumeError`'s conversion owns the branch: `new_data_at` set
+        // means `reported_path` is the DESTINATION and the user has to be told
+        // where their new file is; unset is the ordinary source-labelled mapping.
+        self.copy_error = Some(WriteFailure::from(PathedVolumeError {
+            path: reported_path,
+            error: e,
+            new_data_at,
+        }));
+    }
+
+    /// Conflict resolution failed while preparing a source, which is not one
+    /// task's failure but the whole batch's. Recorded the same way so the
+    /// post-loop can't tell them apart, and ❌ never overwriting a failure a task
+    /// already reported: the first one is the one that stopped the operation.
+    fn record_resolver_failure(&mut self, failure: WriteFailure) {
+        log::warn!(
+            target: "copy",
+            "copy_volumes_with_progress: op={} couldn't resolve a conflict; winding down {} in-flight task(s): {:?}",
+            self.ctx.operation_id,
+            self.in_flight.len(),
+            failure.error,
+        );
+        if self.copy_error.is_none() {
+            self.copy_error = Some(failure);
+        }
     }
 
     /// Hand the post-loop what it needs, after letting go of whatever is left in

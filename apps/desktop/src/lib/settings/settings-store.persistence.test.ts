@@ -164,7 +164,7 @@ describe('sparse settings persistence', () => {
     expect(disk.has('developer.verboseLogging')).toBe(true)
   })
 
-  it('(g) a stored below-floor local context window reads as the 16,384 floor', async () => {
+  it('(g) a stored below-floor local context window reads as the 32,768 floor', async () => {
     // A tester who picked 4,096 in an earlier build had a chat that could not complete one
     // message: the prefix alone costs more than 60% of that window. 4,096 is no longer an
     // option, so it fails validation on load and the read resolves to the default, which IS
@@ -176,8 +176,8 @@ describe('sparse settings persistence', () => {
     const store = await loadStore()
     await store.initializeSettings()
 
-    expect(getDefaultValue('ai.localContextSize')).toBe('16384')
-    expect(store.getSetting('ai.localContextSize')).toBe('16384')
+    expect(getDefaultValue('ai.localContextSize')).toBe('32768')
+    expect(store.getSetting('ai.localContextSize')).toBe('32768')
     // Dropped, not kept: the next save prunes it rather than leaving a value the UI can't show.
     await store.forceSave()
     expect(disk.has('ai.localContextSize')).toBe(false)
@@ -236,6 +236,104 @@ describe('sparse settings persistence', () => {
 })
 
 /**
+ * Migration 5 unpacks the one `behavior.archiveEnterBehavior` JSON blob into one
+ * setting per archive format. The blob was the user's own choice about what Enter does,
+ * so dropping it silently changes the behavior of the key they press most; and because
+ * the blob sits outside the registry, only an explicit delete gets it off disk (the
+ * sparse save can't prune what it doesn't know about).
+ */
+describe('migration 5: the archive Enter blob unpacks into one setting per format', () => {
+  /** A pre-migration file holding `stored` as the blob, stamped at the previous schema. */
+  function seedBlob(stored: unknown): void {
+    disk.set('behavior.archiveEnterBehavior', stored)
+    disk.set('_schemaVersion', 4)
+  }
+
+  it('carries every format the user chose across to its own key', async () => {
+    seedBlob('{"zip":"ask","bundle":"open"}')
+
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    expect(store.getSetting('behavior.archiveEnter.zip')).toBe('ask')
+    expect(store.getSetting('behavior.archiveEnter.bundle')).toBe('open')
+    // Never in the blob (the format wasn't configurable), so it takes its registry default.
+    expect(store.getSetting('behavior.archiveEnter.ooxml')).toBe('open')
+    expect(disk.has('behavior.archiveEnterBehavior')).toBe(false)
+    expect(disk.get('_schemaVersion')).toBe(5)
+  })
+
+  it('leaves a format the blob never mentioned on its default, with nothing on disk', async () => {
+    seedBlob('{"zip":"browse"}')
+
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    expect(store.getSetting('behavior.archiveEnter.zip')).toBe('browse')
+    expect(store.getSetting('behavior.archiveEnter.bundle')).toBe(getDefaultValue('behavior.archiveEnter.bundle'))
+    // Sparse persistence: an untouched format must NOT gain a key, or a future
+    // default change would skip everyone this migration ran for.
+    await store.forceSave()
+    expect(disk.has('behavior.archiveEnter.bundle')).toBe(false)
+  })
+
+  it('writes nothing when the install never had the blob', async () => {
+    disk.set('developer.mcpEnabled', true) // an unrelated key, so the file exists
+    disk.set('_schemaVersion', 4)
+
+    const store = await loadStore()
+    await store.initializeSettings()
+    await store.forceSave()
+
+    expect(persistedSettingKeys()).toEqual(['developer.mcpEnabled'])
+  })
+
+  it('drops a blob it cannot read rather than leaving it on disk forever', async () => {
+    // Anything that isn't a JSON object of known formats and valid actions: a
+    // hand-edited file, a half-written value, a format that no longer exists.
+    // Every format falls to its default, which is the same answer the resolver
+    // gave for an unreadable blob before the split.
+    seedBlob('{"zip":"nope","rar":"browse"')
+
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    expect(store.getSetting('behavior.archiveEnter.zip')).toBe(getDefaultValue('behavior.archiveEnter.zip'))
+    expect(disk.has('behavior.archiveEnterBehavior')).toBe(false)
+    await store.forceSave()
+    expect(persistedSettingKeys()).toEqual([])
+  })
+
+  it('ignores an unknown format key and an invalid action inside a readable blob', async () => {
+    seedBlob('{"zip":"nope","rar":"browse","bundle":"ask"}')
+
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    expect(store.getSetting('behavior.archiveEnter.bundle')).toBe('ask')
+    expect(store.getSetting('behavior.archiveEnter.zip')).toBe(getDefaultValue('behavior.archiveEnter.zip'))
+    await store.forceSave()
+    expect(persistedSettingKeys()).toEqual(['behavior.archiveEnter.bundle'])
+  })
+
+  it('survives a re-run: the second launch finds no blob and changes nothing', async () => {
+    // The stamp only lands once something is written, so on some installs this
+    // re-runs on the next launch. Deleting the blob is what makes that a no-op.
+    seedBlob('{"zip":"browse","bundle":"open"}')
+    const first = await loadStore()
+    await first.initializeSettings()
+    const afterFirst = new Map(disk)
+
+    vi.resetModules()
+    const second = await loadStore()
+    await second.initializeSettings()
+
+    expect([...disk.entries()].sort()).toEqual([...afterFirst.entries()].sort())
+    expect(second.getSetting('behavior.archiveEnter.zip')).toBe('browse')
+  })
+})
+
+/**
  * Migration 4 lifted onboarding's four keys out of a hand-rolled second store over the
  * same `settings.json` and into the registry. Getting this wrong is expensive in a way a
  * preference migration isn't: a dropped value re-runs the onboarding wizard or re-asks
@@ -273,7 +371,9 @@ describe('migration 4: the onboarding keys move into the registry', () => {
     for (const legacy of ['isOnboarded', 'fullDiskAccessChoice', 'termsAcceptedVersion', 'termsAcceptedAt']) {
       expect(disk.has(legacy)).toBe(false)
     }
-    expect(disk.get('_schemaVersion')).toBe(4)
+    // A run stamps the CURRENT schema version, not the one whose migration did the
+    // work, so this number moves with every bump.
+    expect(disk.get('_schemaVersion')).toBe(5)
   })
 
   it('survives a re-run: the second launch finds nothing to move and changes nothing', async () => {

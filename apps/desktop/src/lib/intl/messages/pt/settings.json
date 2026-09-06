@@ -386,14 +386,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Abrir arquivos compactados e pacotes",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Escolha o que pressionar Enter faz em cada formato: navegar dentro dele como em uma pasta, abrir em outro aplicativo ou perguntar a cada vez.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Arquivos compactados",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"
@@ -409,6 +401,14 @@
   "settings.archives.zip.description": "O que pressionar Enter faz em um arquivo zip.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
+  },
+  "settings.archives.ooxml.label": "Documentos e pacotes",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "O que pressionar Enter faz em um .docx, .xlsx, .pptx, .jar ou .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
   },
   "settings.archives.bundle.label": "Pacotes de aplicativo",
   "@settings.archives.bundle.label": {
@@ -453,10 +453,6 @@
   "settings.indexing.enabled.description": "Indexa seu disco em segundo plano para tamanhos de pasta instantâneos.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
-  },
-  "settings.mediaIndex.card": "Busca de imagens",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Isto roda inteiramente no seu Mac usando o framework Vision integrado da Apple. Suas imagens nunca saem do seu computador e nenhum provedor de IA ou chave de API está envolvido.",
   "@settings.mediaIndex.privacyNote": {
@@ -549,6 +545,14 @@
   "settings.mediaIndex.showFileStatusIcons.description": "Adicione um pequeno selo a cada imagem na lista de arquivos indicando se ela já foi indexada para busca.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
+  },
+  "settings.mediaIndex.showInSearch.label": "Mostrar resultados de imagens em Buscar",
+  "@settings.mediaIndex.showInSearch.label": {
+    "sourceHash": "45dd528"
+  },
+  "settings.mediaIndex.showInSearch.description": "Buscar adiciona uma linha de imagens correspondentes acima dos seus arquivos. A correspondência ainda é imprecisa, então a opção fica desativada até você querer.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "sourceHash": "5b62cab"
   },
   "settings.mediaIndex.networkVolumes.label": "Indexação de imagens em disco de rede",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -1077,6 +1081,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "Mostrar cursor de texto",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Mostra um cursor piscando no visualizador de arquivos, marcando de onde uma seleção feita pelo teclado se expande.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "Ativar servidor MCP",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"
@@ -1452,6 +1464,39 @@
   "settings.navigationAndFileOps.card.fileOperations": "Operações de arquivo",
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.navigationAndFileOps.card.terminal": "Terminal",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd",
+    "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Abrir no Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
+  },
+  "settings.behavior.openTerminalHereApp.label": "“Abrir terminal aqui” usa",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "O Cmdr lista os apps de terminal que encontra neste Mac. Para usar um que ele não conhece, escolha “Escolher app…”.",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "Escolher app…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Escolher um app de terminal",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Verificando seus apps…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "Dica de “Abrir terminal aqui” exibida",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Se a dica única sobre escolher um app de terminal já foi exibida.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
   },
   "settings.section.archives": "Arquivos compactados",
   "@settings.section.archives": {

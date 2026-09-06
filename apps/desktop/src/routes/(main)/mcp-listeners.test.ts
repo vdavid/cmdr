@@ -10,7 +10,7 @@
  * parts — the parsers, and the refresh round-trip's reply discipline (ack only
  * after the dispatch settles; failures forwarded; no reply without a requestId).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { emit } from '@tauri-apps/api/event'
 import {
   parsePane,
@@ -26,6 +26,7 @@ import {
   type CommandDispatch,
 } from './mcp-listeners'
 import type { ExplorerAPI } from './explorer-api'
+import { NAV_QUIET_WAIT } from './mcp-nav-landing'
 import type { NavigateResult } from '$lib/file-explorer/pane/navigate'
 
 const { resolveLocationMock } = vi.hoisted(() => ({ resolveLocationMock: vi.fn() }))
@@ -331,8 +332,15 @@ describe('mcp-nav-to-path listener', () => {
   async function setupWithExplorer(navigate: () => NavigateResult): Promise<Map<string, TauriEventHandler>> {
     setFocusedPaneMock.mockClear()
     const handlers = new Map<string, TauriEventHandler>()
+    // A pane already sitting on the target, on the target's volume: the in-place arm,
+    // whose `settled` is the listing itself, so the reply needs no quiet wait.
+    const restingPane = {
+      getPaneLocation: () => ({ volumeId: 'root', volumePath: '/', path: '/Library' }),
+      getPaneListingId: () => 'listing-1',
+      isPaneLoading: () => false,
+    }
     await setupMcpListeners({
-      getExplorer: () => ({ navigate, setFocusedPane: setFocusedPaneMock }) as unknown as ExplorerAPI,
+      getExplorer: () => ({ navigate, setFocusedPane: setFocusedPaneMock, ...restingPane }) as unknown as ExplorerAPI,
       dispatch: vi.fn(),
       listenTauri: (event, handler) => {
         handlers.set(event, handler)
@@ -359,7 +367,13 @@ describe('mcp-nav-to-path listener', () => {
     })
     // Focus follows the navigated pane so FE focus matches the backend store.
     expect(setFocusedPaneMock).toHaveBeenCalledWith('left')
-    expect(emit).toHaveBeenCalledWith('mcp-response', { requestId: 'req-1', ok: true })
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-1',
+      ok: true,
+      outcome: 'navigated',
+      volumeId: 'root',
+      path: '/Library',
+    })
   })
 
   it('does NOT shift focus when the navigate is refused', async () => {
@@ -392,6 +406,28 @@ describe('mcp-nav-to-path listener', () => {
     })
   })
 
+  it('replies ok:false when no explorer is mounted, instead of leaving the backend to time out', async () => {
+    const handlers = new Map<string, TauriEventHandler>()
+    await setupMcpListeners({
+      getExplorer: () => undefined,
+      dispatch: vi.fn(),
+      listenTauri: (event, handler) => {
+        handlers.set(event, handler)
+        return Promise.resolve()
+      },
+      isAiEnabled: () => false,
+    })
+
+    getHandler(handlers, 'mcp-nav-to-path')({ payload: { pane: 'left', path: '/Users', requestId: 'req-hmr' } })
+    await flushAsyncWork()
+
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-hmr',
+      ok: false,
+      error: 'Explorer is not ready',
+    })
+  })
+
   it('forwards a synchronous navigate refusal message verbatim (the narrowed on-network refusal)', async () => {
     // An smb:// target maps back to the virtual `network` id, so a network pane
     // still refuses it — and the exact string is the byte-for-byte contract.
@@ -412,6 +448,164 @@ describe('mcp-nav-to-path listener', () => {
       requestId: 'req-3',
       ok: false,
       error: 'Pane is on the Network volume. Use select_volume to switch to a local volume first.',
+    })
+  })
+})
+
+// === mcp-nav-to-path: the ack says what the pane actually DID ===
+// A cross-volume navigation takes `navigate()`'s switch arm, whose `settled` is a
+// resolved no-op: the pane holds the destination optimistically while the listing is
+// still to come, and an edge-flow fallback can move it somewhere else entirely after
+// that. So the adapter waits for the pane to come to rest and reports the location it
+// actually holds. Fake timers drive the wait; the pane's state changes on the same
+// timeline, the way a real switch's listing does.
+
+describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
+  beforeEach(() => {
+    vi.mocked(emit).mockClear()
+    resolveLocationMock.mockReset()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /**
+   * A pane whose location and listing the test moves over time. `navigate()` performs
+   * the switch arm's optimistic commit itself — destination in place, fresh listing
+   * loading — because that ordering is what the adapter reads around.
+   */
+  function fakePane(start: { volumeId: string; path: string; listingId: string | null }) {
+    const pane = { ...start, loading: false }
+    const explorer = {
+      navigate: vi.fn((intent: { to: { goTo: { volumeId: string; path: string } } }): NavigateResult => {
+        pane.volumeId = intent.to.goTo.volumeId
+        pane.path = intent.to.goTo.path
+        pane.listingId = 'L1'
+        pane.loading = true
+        return { status: 'started', settled: Promise.resolve() }
+      }),
+      setFocusedPane: vi.fn(),
+      getPaneLocation: () => ({ volumeId: pane.volumeId, volumePath: '/', path: pane.path }),
+      getPaneListingId: () => pane.listingId,
+      isPaneLoading: () => pane.loading,
+    }
+    return { pane, explorer }
+  }
+
+  async function setup(explorer: object): Promise<Map<string, TauriEventHandler>> {
+    const handlers = new Map<string, TauriEventHandler>()
+    await setupMcpListeners({
+      getExplorer: () => explorer as unknown as ExplorerAPI,
+      dispatch: vi.fn(),
+      listenTauri: (event, handler) => {
+        handlers.set(event, handler)
+        return Promise.resolve()
+      },
+      isAiEnabled: () => false,
+    })
+    return handlers
+  }
+
+  it('acks `navigated` once the switched pane has come to rest on the target', async () => {
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'usb-1', path: '/Volumes/Stick/photos' } })
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })
+    const handlers = await setup(explorer)
+
+    getHandler(
+      handlers,
+      'mcp-nav-to-path',
+    )({
+      payload: { pane: 'left', path: '/Volumes/Stick/photos', requestId: 'req-switch' },
+    })
+    // `navigate()` commits the destination and starts listing; the listing is still
+    // running here, so nothing is acked yet. An optimistic destination is not an arrival.
+    await vi.advanceTimersByTimeAsync(200)
+    expect(emit).not.toHaveBeenCalled()
+
+    pane.loading = false
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-switch',
+      ok: true,
+      outcome: 'navigated',
+      volumeId: 'usb-1',
+      path: '/Volumes/Stick/photos',
+    })
+  })
+
+  it('acks `fell-back` with the resting place when the listing dies and an edge flow redirects the pane', async () => {
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'mtp-1', path: 'mtp://phone/DCIM' } })
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })
+    const handlers = await setup(explorer)
+
+    getHandler(
+      handlers,
+      'mcp-nav-to-path',
+    )({
+      payload: { pane: 'left', path: 'mtp://phone/DCIM', requestId: 'req-fatal' },
+    })
+    // `navigate()` commits optimistically onto the device, then the listing dies…
+    await vi.advanceTimersByTimeAsync(300)
+    pane.loading = false
+    // …and the MTP-fatal fallback puts the pane back on the home folder.
+    await vi.advanceTimersByTimeAsync(100)
+    pane.volumeId = 'root'
+    pane.path = '/Users/david'
+    pane.listingId = 'L2'
+    pane.loading = true
+    await vi.advanceTimersByTimeAsync(200)
+    pane.loading = false
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-fatal',
+      ok: false,
+      outcome: 'fell-back',
+      volumeId: 'root',
+      path: '/Users/david',
+    })
+  })
+
+  it('skips the landing wait for a fire-and-forget caller, which has no reply channel', async () => {
+    // The E2E harness navigates by raw Tauri event with no `requestId`. Polling a
+    // switched pane for up to 20 s to answer nobody is pure waste.
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'usb-1', path: '/Volumes/Stick' } })
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })
+    const handlers = await setup(explorer)
+
+    getHandler(handlers, 'mcp-nav-to-path')({ payload: { pane: 'left', path: '/Volumes/Stick' } })
+    await vi.advanceTimersByTimeAsync(NAV_QUIET_WAIT.budgetMs + 1_000)
+
+    // It navigated, and said nothing to nobody.
+    expect(explorer.navigate).toHaveBeenCalledTimes(1)
+    expect(pane.path).toBe('/Volumes/Stick')
+    expect(emit).not.toHaveBeenCalled()
+  })
+
+  it('acks `did-not-settle` when no listing ever completes, rather than trusting the optimistic path', async () => {
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'smb-1', path: 'smb://nas/share' } })
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })
+    const handlers = await setup(explorer)
+
+    getHandler(
+      handlers,
+      'mcp-nav-to-path',
+    )({
+      payload: { pane: 'right', path: 'smb://nas/share', requestId: 'req-wedged' },
+    })
+    // The pane holds the destination optimistically and never finishes listing.
+    await vi.advanceTimersByTimeAsync(NAV_QUIET_WAIT.budgetMs + 1_000)
+    expect(pane.loading).toBe(true)
+
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-wedged',
+      ok: false,
+      outcome: 'did-not-settle',
+      volumeId: 'smb-1',
+      path: 'smb://nas/share',
     })
   })
 })

@@ -957,6 +957,10 @@
         return paneCommands.getPathToCopyUnderCursor()
     }
 
+    export function getCursorRowForTerminal(): Promise<{ name: string; path: string; isDirectory: boolean } | null> {
+        return paneCommands.getCursorRowForTerminal()
+    }
+
     export function toggleTagOnFocusedSelection(color: number): Promise<void> {
         return paneCommands.toggleTagOnFocusedSelection(color)
     }
@@ -1012,6 +1016,11 @@
     /** The pane's live backend listing handle, or `null` before its first listing settles. */
     export function getPaneListingId(pane: 'left' | 'right'): string | null {
         return getPaneRef(pane)?.getListingId() ?? null
+    }
+
+    /** Whether the pane's listing is mid-load. `false` for a pane that isn't mounted. */
+    export function isPaneLoading(pane: 'left' | 'right'): boolean {
+        return getPaneRef(pane)?.isLoading() ?? false
     }
 
     // noinspection JSUnusedGlobalSymbols -- consumed by quick-look-state

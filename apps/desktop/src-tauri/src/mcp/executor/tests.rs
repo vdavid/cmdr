@@ -2,7 +2,8 @@
 
 use std::path::Path;
 
-use super::search::{format_search_results, parse_human_size};
+use super::nav::nav_result;
+use super::search::parse_human_size;
 use super::*;
 
 #[test]
@@ -113,7 +114,44 @@ fn test_empty_operation_error_empty_dir_with_unrendered_parent() {
     // so the push has zero files while total_files still counts the parent entry.
     let mut state = pane_state_with(vec![], 0, vec![]);
     state.total_files = 1;
+    state.has_parent_row = true;
     let msg = file_ops::empty_operation_error(&state, "left", "copy").expect("should reject");
+    assert!(msg.contains("shows no files"));
+}
+
+#[test]
+fn a_parentless_pane_holding_one_row_is_not_an_empty_pane() {
+    // `total_files == 1` reads as "only the parent entry" ONLY on a pane that has
+    // one. A search-results snapshot has no `..` row, and neither does a pane at a
+    // volume root, so one counted row there is one real file. Refusing the delete
+    // would be a false "shows no files" over a file the user can see.
+    let mut state = pane_state_with(vec![], 0, vec![]);
+    state.total_files = 1;
+    state.has_parent_row = false;
+    assert!(file_ops::empty_operation_error(&state, "left", "delete").is_none());
+}
+
+#[test]
+fn a_snapshot_pane_with_rows_and_no_selection_falls_back_to_its_cursor_row() {
+    // The shape a search-results pane pushes: no `..` row, real result rows, the
+    // cursor on one of them, nothing selected. The op resolves the cursor row, so
+    // the gate must let it through. Before the pane synced to MCP at all, the store
+    // still held the directory it came FROM, and a cursor parked on that pane's `..`
+    // refused an MCP delete the user could plainly see a target for.
+    let mut state = pane_state_with(vec![("a.txt", false), ("b.txt", false)], 1, vec![]);
+    state.path = "search-results://snap-1".to_string();
+    state.total_files = 2;
+    state.has_parent_row = false;
+    assert!(file_ops::empty_operation_error(&state, "left", "delete").is_none());
+}
+
+#[test]
+fn an_empty_snapshot_pane_still_reports_it_has_nothing_to_act_on() {
+    let mut state = pane_state_with(vec![], 0, vec![]);
+    state.path = "search-results://snap-empty".to_string();
+    state.total_files = 0;
+    state.has_parent_row = false;
+    let msg = file_ops::empty_operation_error(&state, "left", "delete").expect("should reject");
     assert!(msg.contains("shows no files"));
 }
 
@@ -172,6 +210,35 @@ async fn test_validate_path_exists() {
     // Virtual paths skip the check entirely
     assert!(validate_path_exists("mtp://device/DCIM").await.is_ok());
     assert!(validate_path_exists("smb://server/share/missing").await.is_ok());
+}
+
+/// A path a ROUTE serves has no inode, so `Path::exists()` answers a confident
+/// false and would refuse every `nav` into a repo's snapshots or into a zip.
+#[tokio::test]
+async fn validate_path_exists_lets_a_routed_path_through() {
+    use crate::file_system::git;
+
+    git::wiring::set_virtual_portal_enabled(true);
+    assert!(
+        validate_path_exists("/tmp/some-repo/.git/branches/main").await.is_ok(),
+        "a snapshot path is the portal's to answer for"
+    );
+    assert!(
+        validate_path_exists("/tmp/bundle.zip/inner.txt").await.is_ok(),
+        "an archive-inner path is the archive volume's"
+    );
+
+    // The real files under `.git/` are ordinary local files, so they keep the check.
+    let err = validate_path_exists("/tmp/some-repo/.git/config").await.unwrap_err();
+    assert_eq!(err.code, INVALID_PARAMS);
+
+    // And with the portal off, a snapshot path is an ordinary missing local path.
+    git::wiring::set_virtual_portal_enabled(false);
+    let err = validate_path_exists("/tmp/some-repo/.git/branches/main")
+        .await
+        .unwrap_err();
+    assert_eq!(err.code, INVALID_PARAMS);
+    git::wiring::set_virtual_portal_enabled(true);
 }
 
 #[test]
@@ -235,47 +302,6 @@ fn test_parse_human_size_invalid() {
     assert!(parse_human_size("MB").is_err());
 }
 
-#[test]
-fn test_format_search_results_empty() {
-    assert_eq!(format_search_results(&[], 0, 30), "No files found matching the query.");
-}
-
-#[test]
-fn test_format_search_results_with_entries() {
-    use crate::search::SearchResultEntry;
-    let rows = vec![SearchResultEntry {
-        name: "test.pdf".to_string(),
-        path: "/Users/test/Documents/test.pdf".to_string(),
-        parent_path: "~/Documents".to_string(),
-        is_directory: false,
-        size: Some(340_000),
-        modified_at: Some(1_735_689_600),
-        icon_id: "pdf".to_string(),
-        entry_id: 1,
-    }];
-    let formatted = format_search_results(&rows, 1, 30);
-    assert!(formatted.contains("1 of 1 result:"), "and never \"1 of 1 results\"");
-    assert!(formatted.contains("test.pdf"));
-    assert!(formatted.contains("~/Documents"));
-}
-
-#[test]
-fn test_format_search_results_directory_trailing_slash() {
-    use crate::search::SearchResultEntry;
-    let rows = vec![SearchResultEntry {
-        name: "Projects".to_string(),
-        path: "/Users/test/Projects".to_string(),
-        parent_path: "~".to_string(),
-        is_directory: true,
-        size: Some(1_200_000),
-        modified_at: Some(1_735_689_600),
-        icon_id: "dir".to_string(),
-        entry_id: 2,
-    }];
-    let formatted = format_search_results(&rows, 1, 30);
-    assert!(formatted.contains("Projects/"));
-}
-
 // === parse_mcp_response: the per-request completion signal ===
 //
 // Round-trip tools (`refresh`, `select`, `move_cursor`, `nav_to_path`, …) wait for
@@ -329,6 +355,111 @@ fn parse_mcp_response_ignores_malformed_payloads() {
     assert_eq!(parse_mcp_response("not json", "r-1"), None);
     assert_eq!(parse_mcp_response(r#"{"requestId":42,"ok":true}"#, "r-1"), None);
     assert_eq!(parse_mcp_response(r#"{"ok":true}"#, "r-1"), None);
+}
+
+// === parse_nav_response + nav_result: the ack says what the pane DID ===
+//
+// `navigate()`'s volume-switch arm resolves its `settled` promise before the new
+// volume lists anything, so "the FE replied" never meant "the pane got there": a
+// cross-volume `nav_to_path` acked `OK: Navigated …` while an MTP-fatal fallback
+// quietly moved the pane home. The FE now names the outcome and the backend words
+// it, branching on the discriminant and never on message text.
+
+#[test]
+fn parse_nav_response_reads_the_landing_the_frontend_reported() {
+    let landed = r#"{"requestId":"r-1","ok":true,"outcome":"navigated","path":"/Users/david"}"#;
+    assert_eq!(
+        parse_nav_response(landed, "r-1"),
+        Some(Ok(NavAck::Navigated {
+            path: "/Users/david".to_string()
+        }))
+    );
+
+    let fell_back = r#"{"requestId":"r-1","ok":false,"outcome":"fell-back","path":"/Users/david"}"#;
+    assert_eq!(
+        parse_nav_response(fell_back, "r-1"),
+        Some(Ok(NavAck::FellBack {
+            path: "/Users/david".to_string()
+        }))
+    );
+
+    let unsettled = r#"{"requestId":"r-1","ok":false,"outcome":"did-not-settle","path":"smb://nas/share"}"#;
+    assert_eq!(
+        parse_nav_response(unsettled, "r-1"),
+        Some(Ok(NavAck::DidNotSettle {
+            path: "smb://nas/share".to_string()
+        }))
+    );
+}
+
+#[test]
+fn parse_nav_response_keeps_a_pre_move_refusal_verbatim() {
+    // The declines that happen before the pane moves (no explorer, an unresolvable
+    // path, a synchronous refusal) carry no outcome and keep their exact message.
+    let payload = r#"{"requestId":"r-1","ok":false,"error":"Pane is on the Network volume."}"#;
+    assert_eq!(
+        parse_nav_response(payload, "r-1"),
+        Some(Err("Pane is on the Network volume.".to_string()))
+    );
+}
+
+#[test]
+fn parse_nav_response_never_turns_a_malformed_reply_into_an_arrival() {
+    // No outcome and no `ok` is a failure, same rule as `parse_mcp_response`.
+    assert_eq!(
+        parse_nav_response(r#"{"requestId":"r-1"}"#, "r-1"),
+        Some(Err("Unknown error".to_string()))
+    );
+    // An unknown outcome is not a landing either.
+    assert_eq!(
+        parse_nav_response(r#"{"requestId":"r-1","outcome":"teleported"}"#, "r-1"),
+        Some(Err("Unknown error".to_string()))
+    );
+    // And someone else's reply is still not ours.
+    assert_eq!(
+        parse_nav_response(r#"{"requestId":"r-2","ok":true,"outcome":"navigated"}"#, "r-1"),
+        None
+    );
+}
+
+#[test]
+fn nav_result_reports_the_landing_place_not_the_request() {
+    let ok = nav_result(
+        "left",
+        "/tmp/link",
+        NavAck::Navigated {
+            path: "/tmp/link".to_string(),
+        },
+    )
+    .expect("navigated is a success");
+    assert_eq!(ok, json!("OK: Navigated left pane to /tmp/link"));
+
+    let fell_back = nav_result(
+        "left",
+        "mtp://phone/DCIM",
+        NavAck::FellBack {
+            path: "/Users/david".to_string(),
+        },
+    )
+    .expect_err("a fallback is not an OK");
+    assert!(fell_back.message.contains("mtp://phone/DCIM"), "names the request");
+    assert!(fell_back.message.contains("/Users/david"), "names where it landed");
+
+    let unsettled = nav_result(
+        "right",
+        "smb://nas/share",
+        NavAck::DidNotSettle {
+            path: "smb://nas/share".to_string(),
+        },
+    )
+    .expect_err("an unsettled pane is not an OK");
+    assert!(unsettled.message.contains("didn't settle"));
+}
+
+#[test]
+fn nav_result_falls_back_to_the_requested_path_when_the_reply_names_none() {
+    let ok = nav_result("left", "/Users", NavAck::Navigated { path: String::new() }).expect("still a success");
+    assert_eq!(ok, json!("OK: Navigated left pane to /Users"));
 }
 
 // === parse_operation_start_response: the autoConfirm-op correlation ===

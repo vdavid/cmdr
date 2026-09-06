@@ -1620,4 +1620,6 @@ fn process_message(
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+mod entry_fixtures;
+#[cfg(test)]
 pub(super) mod tests;

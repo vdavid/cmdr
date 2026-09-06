@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 
-import { findWordBoundsAt } from './viewer-word'
+import { findWordBoundsAt, findWordEndAfter, findWordStartBefore } from './viewer-word'
 
 /**
  * Replaces `Intl.Segmenter` with one that keeps the real boundaries but reports
@@ -116,5 +116,119 @@ describe('findWordBoundsAt on JavaScriptCore (the app’s real engine)', () => {
   it('still returns the next word when the caret sits on a leading separator', () => {
     stubJavaScriptCoreSegmenter()
     expect(findWordBoundsAt(' 42 rocks', 0)).toEqual({ start: 1, end: 3 })
+  })
+})
+
+// `foo, bar baz`: f0 o1 o2 ,3 ␣4 b5 a6 r7 ␣8 b9 a10 z11, length 12.
+const PUNCTUATED = 'foo, bar baz'
+
+describe('findWordEndAfter', () => {
+  it('from inside a word returns that word’s end', () => {
+    expect(findWordEndAfter(PUNCTUATED, 1)).toBe(3)
+  })
+
+  it('from a word’s end skips to the next word’s end', () => {
+    expect(findWordEndAfter(PUNCTUATED, 3)).toBe(8)
+  })
+
+  it('from whitespace returns the following word’s end', () => {
+    expect(findWordEndAfter(PUNCTUATED, 4)).toBe(8)
+  })
+
+  it('from punctuation skips it and returns the following word’s end', () => {
+    // Offset 3 is the comma, and the `, ` run holds no word, so `bar` is the answer.
+    expect(findWordEndAfter('foo, bar', 3)).toBe(8)
+  })
+
+  it('from the line start returns the first word’s end', () => {
+    expect(findWordEndAfter(PUNCTUATED, 0)).toBe(3)
+  })
+
+  it('returns null at the line end', () => {
+    expect(findWordEndAfter(PUNCTUATED, 12)).toBeNull()
+  })
+
+  it('returns null on an empty line', () => {
+    expect(findWordEndAfter('', 0)).toBeNull()
+  })
+
+  it('returns null on a line of separators only', () => {
+    expect(findWordEndAfter('   ...   ', 0)).toBeNull()
+  })
+
+  it('clamps a negative offset to the line start', () => {
+    expect(findWordEndAfter(PUNCTUATED, -5)).toBe(3)
+  })
+
+  it('clamps an offset past the line end', () => {
+    expect(findWordEndAfter(PUNCTUATED, 99)).toBeNull()
+  })
+})
+
+describe('findWordStartBefore', () => {
+  it('from inside a word returns that word’s start', () => {
+    expect(findWordStartBefore(PUNCTUATED, 10)).toBe(9)
+  })
+
+  it('from a word’s start skips to the previous word’s start', () => {
+    expect(findWordStartBefore(PUNCTUATED, 9)).toBe(5)
+  })
+
+  it('from whitespace returns the preceding word’s start', () => {
+    expect(findWordStartBefore(PUNCTUATED, 4)).toBe(0)
+  })
+
+  it('from punctuation skips it and returns the preceding word’s start', () => {
+    expect(findWordStartBefore(PUNCTUATED, 3)).toBe(0)
+  })
+
+  it('from the line end returns the last word’s start', () => {
+    expect(findWordStartBefore(PUNCTUATED, 12)).toBe(9)
+  })
+
+  it('returns null at the line start', () => {
+    expect(findWordStartBefore(PUNCTUATED, 0)).toBeNull()
+  })
+
+  it('returns null on an empty line', () => {
+    expect(findWordStartBefore('', 0)).toBeNull()
+  })
+
+  it('returns null on a line of separators only', () => {
+    expect(findWordStartBefore('   ...   ', 9)).toBeNull()
+  })
+
+  it('clamps an offset past the line end', () => {
+    expect(findWordStartBefore(PUNCTUATED, 99)).toBe(9)
+  })
+
+  it('clamps a negative offset to the line start', () => {
+    expect(findWordStartBefore(PUNCTUATED, -5)).toBeNull()
+  })
+})
+
+describe('the directional walkers on JavaScriptCore (the app’s real engine)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('walks forward onto an identifier ending in digits rather than past it', () => {
+    stubJavaScriptCoreSegmenter()
+    expect(findWordEndAfter('sha256 rocks', 0)).toBe(6)
+  })
+
+  it('walks backward onto an identifier ending in digits rather than past it', () => {
+    stubJavaScriptCoreSegmenter()
+    expect(findWordStartBefore('sha256 rocks', 6)).toBe(0)
+  })
+
+  it('walks forward onto a bare number rather than the closing quote past it', () => {
+    stubJavaScriptCoreSegmenter()
+    expect(findWordEndAfter('    "fbid": "1292507278647433"', 13)).toBe(29)
+  })
+
+  it('walks backward onto a bare number rather than the key before it', () => {
+    stubJavaScriptCoreSegmenter()
+    expect(findWordStartBefore('    "fbid": "1292507278647433"', 29)).toBe(13)
   })
 })

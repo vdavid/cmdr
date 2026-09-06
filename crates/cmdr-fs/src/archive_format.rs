@@ -16,6 +16,14 @@ use std::path::Path;
 pub enum ArchiveFormat {
     /// A zip archive (the first-class, read+write format).
     Zip,
+    /// A zip-container DOCUMENT or app package: `.docx` / `.xlsx` / `.pptx` /
+    /// `.jar` / `.apk`. Byte-identical to [`Zip`](Self::Zip) on the read side, and
+    /// deliberately its own variant on the WRITE side: `ensure_zip_writable`
+    /// admits `Zip` alone, so a document can't be mutated through the
+    /// archive-edit flow no matter which route reaches it. That's the whole point
+    /// of the variant — a user must never corrupt a Word file by wandering into
+    /// it — so ❌ never fold this back into `Zip` or add it to that guard.
+    Ooxml,
     /// A tar archive, possibly wrapped in one whole-file compression stream.
     Tar(TarCodec),
     /// A 7z archive (read-only).
@@ -44,9 +52,14 @@ impl ArchiveFormat {
     /// The format as a person (or a model) names it: `zip`, `tar`, `tar.gz`,
     /// `tar.bz2`, `tar.xz`, `tar.zst`, `7z`. The canonical suffix without its dot,
     /// so it round-trips through [`format_for_name`].
+    ///
+    /// [`Ooxml`](Self::Ooxml) is the one exception, and can't be otherwise: it
+    /// covers five suffixes, so no single label round-trips to it. It answers
+    /// `zip` — the container it genuinely is, and the honest word for a reader
+    /// asking what a `.docx` is made of.
     pub fn label(self) -> &'static str {
         match self {
-            ArchiveFormat::Zip => "zip",
+            ArchiveFormat::Zip | ArchiveFormat::Ooxml => "zip",
             ArchiveFormat::Tar(TarCodec::Plain) => "tar",
             ArchiveFormat::Tar(TarCodec::Gzip) => "tar.gz",
             ArchiveFormat::Tar(TarCodec::Bzip2) => "tar.bz2",
@@ -65,7 +78,8 @@ impl ArchiveFormat {
     /// random read of a sequential archive re-decodes the prefix every time).
     pub fn is_sequential(self) -> bool {
         match self {
-            ArchiveFormat::Zip => false,
+            // A document container is a zip: random-access, same as one.
+            ArchiveFormat::Zip | ArchiveFormat::Ooxml => false,
             ArchiveFormat::Tar(TarCodec::Plain) => false,
             ArchiveFormat::Tar(_) => true,
             ArchiveFormat::SevenZ => true,
@@ -98,6 +112,13 @@ pub fn format_for_name(name: &str) -> Option<ArchiveFormat> {
         (".tar", ArchiveFormat::Tar(TarCodec::Plain)),
         (".zip", ArchiveFormat::Zip),
         (".7z", ArchiveFormat::SevenZ),
+        // Zip containers that are a DOCUMENT or an app package, not an archive
+        // the user assembled. Browsable (they really are zips), never writable.
+        (".docx", ArchiveFormat::Ooxml),
+        (".xlsx", ArchiveFormat::Ooxml),
+        (".pptx", ArchiveFormat::Ooxml),
+        (".jar", ArchiveFormat::Ooxml),
+        (".apk", ArchiveFormat::Ooxml),
     ];
     for (suffix, format) in SUFFIXES {
         if lower.ends_with(suffix) && lower.len() > suffix.len() {
@@ -126,6 +147,9 @@ mod tests {
 
     #[test]
     fn every_label_round_trips_through_format_for_name() {
+        // `Ooxml` is deliberately absent: it covers five suffixes, so no single
+        // label can round-trip to it, and it answers `zip` (the container it is).
+        // Every format that NAMES itself is here — that's what this pins.
         for format in [
             ArchiveFormat::Zip,
             ArchiveFormat::Tar(TarCodec::Plain),
@@ -189,6 +213,30 @@ mod tests {
         assert_eq!(format_for_name(".tar"), None);
         assert_eq!(format_for_name(".zip"), None);
         assert_eq!(format_for_name(".7z"), None);
+    }
+
+    #[test]
+    fn ooxml_documents_and_app_packages_are_browsable_containers() {
+        for name in ["report.docx", "sheet.xlsx", "deck.pptx", "lib.jar", "app.apk"] {
+            assert_eq!(format_for_name(name), Some(ArchiveFormat::Ooxml), "{name}");
+            assert!(has_supported_archive_extension(name), "{name} should be browsable");
+        }
+        // Case-insensitive, and the "needs a real stem" rule still applies.
+        assert_eq!(format_for_name("REPORT.DOCX"), Some(ArchiveFormat::Ooxml));
+        assert_eq!(format_for_name(".docx"), None);
+        assert_eq!(format_for_name("docx"), None);
+        // A document is a zip container, so it reads like one and says so.
+        assert!(!ArchiveFormat::Ooxml.is_sequential());
+        assert_eq!(ArchiveFormat::Ooxml.label(), "zip");
+    }
+
+    #[test]
+    fn a_document_container_is_a_distinct_format_from_a_plain_zip() {
+        // The distinction the write guard rests on: `ensure_zip_writable` admits
+        // `Zip` and nothing else, so `.docx != Zip` is what makes a Word document
+        // unmutatable by construction rather than by a rule someone remembers.
+        assert_ne!(format_for_name("report.docx"), format_for_name("archive.zip"));
+        assert_eq!(format_for_name("archive.zip"), Some(ArchiveFormat::Zip));
     }
 
     #[test]

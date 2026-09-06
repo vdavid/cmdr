@@ -104,10 +104,11 @@ Rules for writing them:
 
 - `apps/desktop/`: `src/` (Svelte frontend), `src-tauri/` (Rust backend), `test/` (Vitest, Playwright, Linux Docker E2E,
   SMB fixtures), `scripts/`. The other three apps are listed above.
-- `crates/`: `cmdr-fs` (filesystem vocabulary + host primitives), `cmdr-index` (file index, media index, folder
-  importance), `cmdr-archive` (the zip/tar/7z backend, and the model a new backend crate copies), `cmdr-smb` (the SMB
-  backend and its protocol layer), and `cmdr-adb` (Android over ADB) carry no `tauri`, enforced by
-  `index-crate-isolation`; plus two dev CLIs and a vendored `fsevent-stream` fork. Details: `docs/architecture.md`.
+- `crates/`: `cmdr-fs` (filesystem vocabulary + host primitives), `cmdr-index` (file, media, and folder-importance
+  indexes), `cmdr-archive` (zip/tar/7z, and the model a new backend crate copies), `cmdr-smb` (SMB and its protocol
+  layer), `cmdr-adb` (Android over ADB), `cmdr-mtp` (USB phones), `cmdr-git` (repos and the `.git` portal) carry no
+  `tauri`, enforced by `index-crate-isolation`; plus two dev CLIs and a vendored `fsevent-stream` fork. Map:
+  `docs/architecture.md`.
 - `brand/`: tracked brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/specs/index.md` (per-development plans, periodically wiped), `docs/notes/README.md` (benchmarks and analysis),
@@ -156,17 +157,19 @@ inventory). Desktop-specific test, MCP, and E2E mechanics live in `apps/desktop/
 
 ## Workflow
 
-- Desktop worktree setup (target clone, CodeGraph, data-dir cleanup) is in `apps/desktop/CLAUDE.md`. For
-  parallel-subagent efforts, see `docs/guides/multi-agent-refactors.md`.
+- Desktop worktree setup (target clone, CodeGraph, data-dir cleanup): `apps/desktop/CLAUDE.md`. Parallel-subagent
+  efforts: `docs/guides/multi-agent-refactors.md`.
 - Before doing **legwork**, read the [guide](docs/guides/agent-legwork-guide.md).
 - **TDD where reasonable** (red → green); cover code with tests until confident, not beyond.
 - Step back per milestone: is it solid AND elegant AND documented?
-- Commits: We don't use PRs. Changes land on `main` via FF merge from a worktree branch (no squashing), so the commit
-  msgs is where a change gets explained. Make it good. Use conventional commmits style. Lead with impact: the title says
-  what the change achieves and why, feeds our impact-focused release notes. No hard cap for titles. Comprehensive bodies
-  are okay. Use no wraps! Enclose entities in backticks. Never use `Co-Authored-By`.
+- An **outside contributor's PR**: land it without asking them for anything, then record the head so GitHub marks it
+  merged. `docs/guides/handling-prs.md`.
+- Commits: We don't open PRs ourselves. Changes land on `main` via FF merge from a worktree branch (no squashing), so
+  the message is where a change gets explained. Conventional-commits style, leading with impact: the title says what the
+  change achieves and why, which feeds our release notes. No title length cap, comprehensive bodies fine, no wraps,
+  entities in backticks. Never `Co-Authored-By`.
 - **The delivery pipeline is fully wired; don't re-audit it.** Releases are agent-automated end to end (tag → CI
-  build/sign/notarize → publish `latest.json` → website deploy → FDA-preserving silent update), and feedback loops are
-  live (crash → email cron, error → Discord, anonymous analytics → PostHog). See `docs/guides/releasing.md`.
+  build/sign/notarize → `latest.json` → website deploy → FDA-preserving silent update), and the feedback loops are live
+  (crash → email cron, error → Discord, analytics → PostHog). `docs/guides/releasing.md`.
 
 Happy coding! 🦀✨

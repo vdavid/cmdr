@@ -203,7 +203,12 @@ describe('getUserFriendlyMessage', () => {
     })
 
     it('handles read_only_device', () => {
-      const error: WriteOperationError = { type: 'read_only_device', path: '/path', deviceName: 'My Phone' }
+      const error: WriteOperationError = {
+        type: 'read_only_device',
+        path: '/path',
+        deviceName: 'My Phone',
+        side: 'destination',
+      }
       const result = getUserFriendlyMessage(error)
 
       expect(result.message).toContain('My Phone')
@@ -212,11 +217,51 @@ describe('getUserFriendlyMessage', () => {
     })
 
     it('handles read_only_device without device name', () => {
-      const error: WriteOperationError = { type: 'read_only_device', path: '/path', deviceName: null }
+      const error: WriteOperationError = {
+        type: 'read_only_device',
+        path: '/path',
+        deviceName: null,
+        side: 'destination',
+      }
       const result = getUserFriendlyMessage(error)
 
       expect(result.message).toContain('The target device')
       expect(result.message).toContain('read-only')
+    })
+
+    // The two sides are different sentences, not two wordings of one. A move OFF
+    // a read-only source (a repo's `.git` history, a tar) is refused because the
+    // source can never delete the original, so pointing that user at the
+    // destination names the half that was fine.
+    it('words a read-only SOURCE as a move it cannot do, not a destination to change', () => {
+      const error: WriteOperationError = {
+        type: 'read_only_device',
+        path: '/repo/.git',
+        deviceName: '.git',
+        side: 'source',
+      }
+      const result = getUserFriendlyMessage(error, 'move')
+
+      expect(result.title).toBe('Read-only source')
+      expect(result.message).toContain('.git')
+      expect(result.message).toContain('copy files out of it')
+      expect(result.message).toContain('not move them out')
+      expect(result.suggestion).toContain('Copy the files instead')
+      // ❌ Never the destination sentence: that half was fine.
+      expect(result.suggestion).not.toContain('different destination')
+    })
+
+    it('falls back to naming the source when a read-only source has no name', () => {
+      const error: WriteOperationError = {
+        type: 'read_only_device',
+        path: '/x/bundle.tar',
+        deviceName: null,
+        side: 'source',
+      }
+      const result = getUserFriendlyMessage(error, 'move')
+
+      expect(result.message).toContain('The source')
+      expect(result.message).not.toContain('The target device')
     })
 
     it('handles invalid_name', () => {
@@ -242,7 +287,12 @@ describe('getUserFriendlyMessage', () => {
     })
 
     it('handles read_only_device with a dedicated message (no fallthrough)', () => {
-      const error: WriteOperationError = { type: 'read_only_device', path: '/path', deviceName: 'My Phone' }
+      const error: WriteOperationError = {
+        type: 'read_only_device',
+        path: '/path',
+        deviceName: 'My Phone',
+        side: 'destination',
+      }
       const result = getUserFriendlyMessage(error)
 
       expect(result.title).toBe('Read-only device')
@@ -352,7 +402,12 @@ describe('getTechnicalDetails', () => {
   })
 
   it('includes device name for read_only_device', () => {
-    const error: WriteOperationError = { type: 'read_only_device', path: '/path', deviceName: 'Pixel 8' }
+    const error: WriteOperationError = {
+      type: 'read_only_device',
+      path: '/path',
+      deviceName: 'Pixel 8',
+      side: 'destination',
+    }
     const result = getTechnicalDetails(error)
 
     expect(result).toContain('Path: /path')
@@ -497,7 +552,7 @@ describe('error messages are volume-agnostic', () => {
       { type: 'source_not_found', path: '/mtp-device/file.txt' },
       { type: 'permission_denied', path: '/mtp-device/protected', message: 'MTP error' },
       { type: 'device_disconnected', path: '/mtp-device/file.txt' },
-      { type: 'read_only_device', path: '/mtp-device', deviceName: null },
+      { type: 'read_only_device', path: '/mtp-device', deviceName: null, side: 'destination' },
     ]
 
     for (const error of errors) {
@@ -543,7 +598,11 @@ describe('getErrorDisplayMeta', () => {
       retryHint: false,
     },
     { error: { type: 'symlink_loop', path: '/p' }, category: 'serious', retryHint: false },
-    { error: { type: 'read_only_device', path: '/p', deviceName: null }, category: 'needs_action', retryHint: false },
+    {
+      error: { type: 'read_only_device', path: '/p', deviceName: null, side: 'destination' },
+      category: 'needs_action',
+      retryHint: false,
+    },
     { error: { type: 'file_locked', path: '/p' }, category: 'needs_action', retryHint: false },
     { error: { type: 'trash_not_supported', path: '/p' }, category: 'needs_action', retryHint: false },
     { error: { type: 'read_error', path: '/p', message: 'm' }, category: 'serious', retryHint: true },

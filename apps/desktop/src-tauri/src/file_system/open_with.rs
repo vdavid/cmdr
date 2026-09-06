@@ -403,7 +403,10 @@ mod imp {
 }
 
 #[cfg(target_os = "macos")]
-pub use imp::{compute_open_with_choices, open_paths_with, pick_app_via_open_panel, start_invalidation_observer};
+pub use imp::{
+    compute_open_with_choices, load_app_icon, open_paths_with, pick_app_via_open_panel, read_app_display_name,
+    read_bundle_identifier, start_invalidation_observer,
+};
 
 #[cfg(not(target_os = "macos"))]
 pub fn compute_open_with_choices(_paths: Vec<PathBuf>) -> OpenWithChoices {

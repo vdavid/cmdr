@@ -80,6 +80,16 @@ export interface ExplorerAPI {
    */
   getPathToCopyUnderCursor: () => string | null
   /**
+   * The focused pane's cursor row as "Open terminal here" reads it: name, path, and
+   * whether it's a folder. `..` comes back as a real row (the command treats it as
+   * "the pane's own folder"), which is why this isn't `getFileAndPathUnderCursor`.
+   * Null when no row is under the cursor. Rules: `$lib/open-terminal/terminal-target.ts`.
+   *
+   * Async because it RE-READS the row: the displayed cursor entry is one IPC behind
+   * a cursor move, and a command that acts on the row can't be.
+   */
+  getCursorRowForTerminal: () => Promise<{ name: string; path: string; isDirectory: boolean } | null>
+  /**
    * Toggles a Finder system color tag (index 1..=7, grey…orange) on the focused
    * pane's selection, or on the cursor entry when nothing is selected. Resolves the
    * paths + the pane's listing id and calls the `toggle_tags` IPC, which writes and
@@ -127,6 +137,13 @@ export interface ExplorerAPI {
    * from the pane showing that directory.
    */
   getPaneListingId: (pane: 'left' | 'right') => string | null
+  /**
+   * Whether the pane's listing is mid-load. Paired with `getPaneListingId` it tells a
+   * navigation that has come to rest from one still in flight, which the MCP
+   * `nav_to_path` adapter needs after a volume switch: that arm commits the destination
+   * optimistically, so the pane reports the target long before it has been there.
+   */
+  isPaneLoading: (pane: 'left' | 'right') => boolean
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
   handleSelectionAction: (args: SelectionActionArgs) => void
   handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) => Promise<void>

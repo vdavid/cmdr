@@ -17,8 +17,7 @@ import type { Location } from '$lib/tauri-commands'
 /**
  * Per-tab cap on the navigation stack. When `push()` would grow the stack past this
  * count, the oldest entries are dropped (FIFO) and returned in `droppedEntries` so
- * the caller can release any per-entry resources (search-results snapshot refs, in
- * the M8a wiring).
+ * the caller can release any per-entry resources (search-results snapshot refs).
  *
  * 100 keeps a few sessions of casual browsing in reach while bounding memory: each
  * `HistoryEntry` is ~3 string fields, so even 100 entries per tab × 10 tabs × 2

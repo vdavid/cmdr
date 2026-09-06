@@ -46,6 +46,9 @@ reorganizing, or advising.
   needs the password to even BROWSE** (encrypted metadata), so `parse` — not just extraction — returns
   `Encrypted`/`WrongPassword`; the volume layer surfaces it as `NeedsPassword` on the LISTING path (browse-time prompt).
   Filename encoding is rc-zip's job for zip — consume the decoded `entry.name`.
+- **`ArchiveNode::mode` is what the archive RECORDED, `None` when it recorded nothing** (zip external attributes, the
+  tar header, 7z's `0x8000` unix extension). ❌ Never a plausible `0o644`: the copy engine puts it on what an extract
+  writes. Low nine bits only — setuid/setgid/sticky are dropped at the parser.
 - **The index cache key is `(path, size, mtime)`** (external edits auto-invalidate); `index_for_local` is blocking, call
   it from `spawn_blocking`.
 - **Two DoS caps bound the synthetic tree**: per-entry depth (`name::MAX_COMPONENT_DEPTH`, over-deep entries quarantine)

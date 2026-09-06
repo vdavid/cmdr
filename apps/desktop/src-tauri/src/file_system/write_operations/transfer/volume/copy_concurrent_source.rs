@@ -23,9 +23,11 @@ use super::super::dest_name_index::DestLookup;
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::copy_concurrent::ConcurrentCopy;
 use super::copy_concurrent_task::CopyTask;
+use super::preflight::SourceFileFacts;
 use super::strategy::{MergeProbe, resolve_source_is_directory};
 use super::transfer_error::{PathRole, WriteFailure, map_volume_error};
 use crate::file_system::listing::FileEntry;
+use crate::file_system::volume::VolumeError;
 use crate::ignore_poison::IgnorePoison;
 
 impl ConcurrentCopy<'_> {
@@ -89,10 +91,20 @@ impl ConcurrentCopy<'_> {
         // after the write fully lands (safe-replace). `None` ⇒ write
         // `dest_item_path` directly.
         let mut replace_after_write: Option<PathBuf> = None;
-        if let Some(dest_meta) = self
+        // Nothing has resolved anything yet, so the name this task writes to is
+        // one we believe free (`staged_write.rs::LandingName`).
+        let mut dest_name_claimed = false;
+        let existing_dest = self
             .existing_dest_entry(source_index, source_path, &dest_item_path)
             .await
-        {
+            .map_err(|e| {
+                WriteFailure::synthetic(map_volume_error(
+                    &dest_item_path.display().to_string(),
+                    PathRole::Destination,
+                    e,
+                ))
+            })?;
+        if let Some(dest_meta) = existing_dest {
             // The type and size come from the scan (or the one probe above),
             // never a re-stat: an MTP `scan_for_copy` lists the parent dir,
             // ~18 s for 1046 photos on a cold cache.
@@ -123,6 +135,9 @@ impl ConcurrentCopy<'_> {
                 Some(rc) => {
                     dest_item_path = rc.write_path;
                     replace_after_write = rc.replace_after_write;
+                    // The resolver picked this name: a `Rename` reserved it, an
+                    // Overwrite across types already cleared it.
+                    dest_name_claimed = true;
                 }
             }
         }
@@ -179,9 +194,10 @@ impl ConcurrentCopy<'_> {
             apply_to_all: Arc::clone(&self.apply_to_all_cell),
             source_path: source_path.to_path_buf(),
             source_is_dir,
-            source_size_hint,
+            source_facts: SourceFileFacts::from_size_hint(source_size_hint),
             dest_path: dest_item_path,
             replace_after_write,
+            dest_name_claimed,
             file_name,
             window: self.file_window.clone(),
             // Every leaf of a directory source's subtree numbers itself under
@@ -230,22 +246,28 @@ impl ConcurrentCopy<'_> {
     /// trade is deliberate and David chose it (2026-08-02); ❌ don't answer it
     /// with re-listing, polling, or a freshness window. `DETAILS.md` §
     /// "Answering the pre-check from one listing".
+    ///
+    /// ❗ A probe that can't ANSWER fails the item (`Err`), and is never read as
+    /// `None`: a `ConnectionTimeout` on a flaky share would otherwise hand the
+    /// source to the fresh-write path with no resolver and no policy. Only
+    /// `NotFound` is a free name. `conflict.rs::size_of_whatever_is_at` holds
+    /// the rule the three serial engines share.
     async fn existing_dest_entry(
         &self,
         source_index: usize,
         source_path: &Path,
         dest_item_path: &Path,
-    ) -> Option<FileEntry> {
+    ) -> Result<Option<FileEntry>, VolumeError> {
         if self.dest_dir_is_ours {
-            return None;
+            return Ok(None);
         }
         match self
             .dest_index
             .as_ref()
             .map(|index| index.lookup(source_path.file_name()))
         {
-            Some(DestLookup::Absent) => None,
-            Some(DestLookup::Present(entry)) => Some(*entry),
+            Some(DestLookup::Absent) => Ok(None),
+            Some(DestLookup::Present(entry)) => Ok(Some(*entry)),
             // No index (a local destination, or a listing that failed), or a
             // name only the backend can settle.
             Some(DestLookup::Unknown) | None => {
@@ -265,7 +287,11 @@ impl ConcurrentCopy<'_> {
                         ),
                     );
                 }
-                self.dest_volume.get_metadata(dest_item_path).await.ok()
+                match self.dest_volume.get_metadata(dest_item_path).await {
+                    Ok(entry) => Ok(Some(entry)),
+                    Err(VolumeError::NotFound(_)) => Ok(None),
+                    Err(e) => Err(e),
+                }
             }
         }
     }

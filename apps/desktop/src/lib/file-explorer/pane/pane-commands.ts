@@ -97,6 +97,27 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
   }
 
   /**
+   * The focused pane's cursor row as "Open terminal here" needs it: a name (so the
+   * synthetic `..` row can be told apart), a path, and whether it's a folder.
+   *
+   * Separate from `getFileAndPathUnderCursor`, which drops `..` and carries no
+   * folder flag. That arm's callers act on a FILE; this one has to decide between
+   * the folder under the cursor and the pane's own, and `..` is a real answer
+   * there rather than "no entry". The rules themselves live in the pure
+   * `$lib/open-terminal/terminal-target.ts`; this is only the read.
+   *
+   * ❗ `refreshCursorEntry()`, ❌ never the plain `getCursorEntry()`: that one is
+   * one `get_file_at` round trip behind the cursor, so arrow-down then ⌥⌘T would
+   * open the folder the cursor just LEFT.
+   */
+  async function getCursorRowForTerminal(): Promise<{ name: string; path: string; isDirectory: boolean } | null> {
+    const paneRef = access.getPaneRef(access.getFocusedPane())
+    const entry = await paneRef?.refreshCursorEntry()
+    if (!entry) return null
+    return { name: entry.name, path: entry.path, isDirectory: entry.isDirectory }
+  }
+
+  /**
    * Toggle a Finder system color tag (index 1..=7) on the focused pane's selection,
    * or on the cursor entry when nothing is selected (mirrors how the file F-key ops
    * fall back to the cursor). Resolves selected indices → paths via the backend
@@ -490,6 +511,7 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     closeVolumeChooser,
     getFileAndPathUnderCursor,
     getPathToCopyUnderCursor,
+    getCursorRowForTerminal,
     toggleTagOnFocusedSelection,
     sendKeyToFocusedPane,
     openItemUnderCursor,

@@ -1,15 +1,9 @@
-import {
-  DEFAULT_VOLUME_ID,
-  createDirectory,
-  createFile,
-  getFileAt,
-  getFilesAtIndices,
-  type Initiator,
-} from '$lib/tauri-commands'
+import { createDirectory, createFile, getFileAt, getFilesAtIndices, type Initiator } from '$lib/tauri-commands'
 import { pluralize } from '$lib/utils/pluralize'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
-import { getSnapshot } from '$lib/search/snapshot-store.svelte'
+import { getSnapshot, resolveSnapshotEntries, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
+import { resolveSnapshotSourceVolume } from './snapshot-source-volume'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { getAppLogger } from '$lib/logging/logger'
 import { toBackendCursorIndex, toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
@@ -21,9 +15,10 @@ import {
   buildTransferPropsFromSelection,
   buildTransferPropsFromCursor,
   buildTransferPropsFromSnapshot,
+  getCommonParentPath,
   getDestinationVolumeInfo,
 } from './transfer-operations'
-import { capabilitiesFor, capabilitiesForPane, pathInsideArchive } from './volume-capabilities'
+import { capabilitiesFor, capabilitiesForPane, pathCrossesArchiveBoundary } from './volume-capabilities'
 import { checkTransferDestinationGuard } from './transfer-entry'
 import { operationStartIsBlocked } from './operation-start-gate'
 import { duplicateInPlace } from './duplicate-command'
@@ -51,10 +46,12 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * when the pane accepts writes. A zip archive is WRITABLE (the pane's `volumeId`
    * is the parent drive and `capabilitiesForPane` gives the writable `archive`
    * row), so an archive pane falls through here and runs the real managed
-   * archive-edit flow. What still refuses is a read-only `VolumeInfo` (a
-   * write-protected USB stick, a read-only disk image) — including a zip that
-   * lives on such a volume, which can't be rewritten in place. Surfacing this up
-   * front beats letting the user type a name and then hit a backend rejection.
+   * archive-edit flow. A tar / 7z pane and a virtual `.git` portal pane each get
+   * their own worded refusal. What still refuses beyond those is a read-only
+   * `VolumeInfo` (a write-protected USB stick, a read-only disk image) —
+   * including a zip that lives on such a volume, which can't be rewritten in
+   * place. Surfacing this up front beats letting the user type a name and then
+   * hit a backend rejection.
    */
   function readOnlyRefusal(
     action: 'rename' | 'mkdir' | 'mkfile' | 'delete',
@@ -64,18 +61,26 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
 
     const volumeInfo = getDestinationVolumeInfo(volId, access.getVolumes())
 
-    // A read-only archive (tar / 7z) is browse + extract only: refuse the write
-    // up front rather than letting the user type a name and hit the backend's
-    // `ReadOnlyDevice`. Kind-from-path: the pane's `volumeId` is the writable
-    // parent drive, so the PATH decides. A writable zip has `canWrite` on and
-    // falls through to the managed archive-edit flow.
-    // The archive-path branch of `capabilitiesForPane` ignores fsType/category
-    // (the boundary segment decides), so passing only the id + path is enough.
+    // The two ROUTED kinds refuse up front rather than letting the user type a
+    // name and hit the backend's typed rejection. Kind-from-path: the pane's
+    // `volumeId` is the writable parent drive, so the PATH decides, and the
+    // routed branches of `capabilitiesForPane` ignore fsType/category, so passing
+    // only the id + path is enough.
+    // - A read-only archive (tar / 7z) is browse + extract only. A writable zip
+    //   has `canWrite` on and falls through to the managed archive-edit flow.
+    // - A git-portal pane is a snapshot of history with no directory behind it,
+    //   so it's read-only whatever the drive under it says.
     const paneCaps = capabilitiesForPane(volId, access.getPanePath(pane))
     if (paneCaps.kind === 'archive' && !paneCaps.canWrite) {
       return {
         title: tString('fileExplorer.readOnly.archiveTitle'),
         message: tString('fileExplorer.readOnly.archiveMessage'),
+      }
+    }
+    if (paneCaps.kind === 'git-portal') {
+      return {
+        title: tString('fileExplorer.readOnly.gitPortalTitle'),
+        message: tString('fileExplorer.readOnly.gitPortalMessage'),
       }
     }
 
@@ -283,15 +288,18 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   }
 
   /**
-   * Builds transfer dialog props for a search-results source pane (M8d).
+   * Builds transfer dialog props for a search-results source pane.
    * The snapshot view has no backend listing, so the listing-id-driven
    * builders don't apply; we read the snapshot directly and feed
    * absolute paths into `buildTransferPropsFromSnapshot`. Returns `null`
-   * when there's no snapshot or nothing under the cursor / selection.
+   * when there's no snapshot or nothing under the cursor / selection —
+   * `resolveSnapshotEntries` answers both with an empty list.
    *
    * `canBeSource: true` per the `search-results` capability row: source-side
-   * operations always run against the real underlying files. After a move
-   * completes, `dialog-state::handleTransferComplete` already purges moved
+   * operations always run against the real underlying files. The volume they run
+   * against comes from `resolveSnapshotSourceVolume`, which places the rows
+   * against the live volume list rather than assuming the boot drive. After a
+   * move completes, `dialog-state::handleTransferComplete` already purges moved
    * paths from every snapshot via `removeEntryFromAllSnapshots`.
    */
   function buildSnapshotTransferProps(
@@ -299,34 +307,16 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     sourcePaneRef: FilePaneAPI | undefined,
     pane: 'left' | 'right',
   ) {
-    const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
-    const SEARCH_RESULTS_PREFIX = 'search-results://'
-    if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) return null
-    const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
-    const snapshot = getSnapshot(snapshotId)
-    if (!snapshot) return null
+    const snapshotId = snapshotIdFromPanePath(sourcePaneRef?.getCurrentPath() ?? '')
+    if (snapshotId === null) return null
 
     const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
     const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
-    const useIndices = selectedIndices.length > 0 ? selectedIndices : [cursorIndex]
+    const entries = resolveSnapshotEntries(snapshotId, selectedIndices, cursorIndex)
+    if (entries.length === 0) return null
 
-    const sourcePaths: string[] = []
-    const isDirectoryFlags: boolean[] = []
-    for (const idx of useIndices) {
-      // TS doesn't model array bounds (no `noUncheckedIndexedAccess`), so
-      // `snapshot.entries[idx]` is typed as non-undefined. The guard is
-      // still load-bearing at runtime: `selectedIndices` can carry stale
-      // indices after a snapshot mutation (the M8c delete-sync rewrites
-      // the entries array, but in-flight selections may briefly point
-      // past the new end).
-
-      const entry = snapshot.entries[idx]
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!entry) continue
-      sourcePaths.push(entry.path)
-      isDirectoryFlags.push(entry.isDirectory)
-    }
-    if (sourcePaths.length === 0) return null
+    const sourcePaths = entries.map((entry) => entry.path)
+    const isDirectoryFlags = entries.map((entry) => entry.isDirectory)
 
     const other = access.otherPane(pane)
     const { sortBy, sortOrder } = access.getPaneSort(pane)
@@ -339,6 +329,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       access.getPaneVolumeId(other),
       sortBy,
       sortOrder,
+      resolveSnapshotSourceVolume(sourcePaths, access.getVolumes()).volumeId,
     )
   }
 
@@ -469,72 +460,73 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   }
 
   /**
-   * Search-results pane delete path (M8c). The focused pane is on the
+   * Search-results pane delete path. The focused pane is on the
    * `search-results://<id>` virtual volume, so there's no backend listing to
-   * fetch entries from; we read the snapshot directly. Today the snapshot
-   * pane doesn't expose a multi-selection of its own, so we delete the
-   * single cursor row. The volume id we report to the dialog is `'root'`:
-   * the actual file lives on the local filesystem, and the existing
-   * permanent-delete / move-to-trash IPC routes through the local path.
-   * `supportsTrash = true` because the underlying file is on a trash-capable
-   * volume (we don't have per-snapshot-row volume detection yet; if the
-   * search ever indexes external read-only volumes we'd need to look that
-   * up per entry).
+   * fetch entries from; we read the snapshot directly.
+   *
+   * The snapshot pane shares `FilePane.selection` with normal panes, so F8 acts
+   * on the selection when there is one and falls back to the cursor row when
+   * there isn't — the same rule the clipboard and transfer openers follow, and
+   * decided in the one place all three call (`resolveSnapshotEntries`).
+   *
+   * `sourceFolderPath` is the common parent of the resolved paths: a result set
+   * is gathered from anywhere, and the dialog's "from" line plus the trash
+   * toast's volume lookup both need a real directory. The volume id and the trash
+   * affordance come from `resolveSnapshotSourceVolume`, which places the rows
+   * against the live volume list: a search covers one volume and it need not be
+   * the boot drive, so neither can be assumed.
    */
   function openDeleteFromSearchResults({ permanent, autoConfirm, mcpRequestId, initiator }: OpenDeleteDialogArgs) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
-    const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
-    const SEARCH_RESULTS_PREFIX = 'search-results://'
-    if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) {
+    const snapshotId = snapshotIdFromPanePath(sourcePaneRef?.getCurrentPath() ?? '')
+    if (snapshotId === null) {
       log.warn('openDeleteFromSearchResults: focused pane volume is search-results but path is not. Bailing.')
       return
     }
-    const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
     const snapshot = getSnapshot(snapshotId)
     if (!snapshot) {
       log.warn('openDeleteFromSearchResults: snapshot {id} not found, bailing', { id: snapshotId })
       return
     }
+    const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
+    const hasSelection = selectedIndices.length > 0
     const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
-    // Cursor might be out of range (clamping is best-effort in the search-
-    // results keyboard path); the cast lets us handle the empty case
-    // explicitly instead of crashing later in `entry.path`.
-    const entry = snapshot.entries[cursorIndex] as (typeof snapshot.entries)[number] | undefined
-    if (!entry) {
-      log.warn('openDeleteFromSearchResults: no entry at cursor {idx}, bailing', { idx: cursorIndex })
+    // Both the cursor and a selected index can point past the end (clamping is
+    // best-effort in the search-results keyboard path, and a cross-snapshot
+    // delete shortens `entries` under a live selection), so the resolver drops
+    // what it can't find and we bail on an empty result.
+    const entries = resolveSnapshotEntries(snapshotId, selectedIndices, cursorIndex)
+    if (entries.length === 0) {
+      log.warn(
+        'openDeleteFromSearchResults: nothing to delete (hasSelection={hasSelection}, cursorIndex={idx}), bailing',
+        { hasSelection, idx: cursorIndex },
+      )
       return
     }
 
-    const sourceItems: DeleteSourceItem[] = [
-      {
-        name: entry.name,
-        size: entry.size ?? undefined,
-        isDirectory: entry.isDirectory,
-        isSymlink: false,
-        recursiveSize: undefined,
-        recursiveFileCount: undefined,
-      },
-    ]
-    const sourcePaths = [entry.path]
+    const sourceItems: DeleteSourceItem[] = entries.map((entry) => ({
+      name: entry.name,
+      size: entry.size ?? undefined,
+      isDirectory: entry.isDirectory,
+      isSymlink: false,
+      recursiveSize: undefined,
+      recursiveFileCount: undefined,
+    }))
+    const sourcePaths = entries.map((entry) => entry.path)
 
     const { sortBy, sortOrder } = access.getPaneSort(access.getFocusedPane())
-
-    // Snapshot entries are guaranteed to have parentPath set by the search
-    // backend (`SearchResultEntry::parentPath` is required, see bindings).
-    // The fallback isn't hit in practice, but `'/'` is a safe display
-    // value if the field is ever absent.
-    const sourceFolderPath = entry.parentPath !== '' ? entry.parentPath : '/'
+    const sourceVolume = resolveSnapshotSourceVolume(sourcePaths, access.getVolumes())
 
     dialogs.showDeleteConfirmation({
       sourceItems,
       sourcePaths,
-      sourceFolderPath,
+      sourceFolderPath: getCommonParentPath(sourcePaths),
       isPermanent: permanent,
-      supportsTrash: true,
-      isFromCursor: true,
+      supportsTrash: sourceVolume.supportsTrash,
+      isFromCursor: !hasSelection,
       sortColumn: sortBy,
       sortOrder,
-      sourceVolumeId: DEFAULT_VOLUME_ID,
+      sourceVolumeId: sourceVolume.volumeId,
       autoConfirm,
       mcpRequestId,
       initiator,
@@ -647,7 +639,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // archive (the backend rejects trashing an archive-inner path), so force
     // permanent + the archive warning regardless of the parent drive's trash
     // support or the F8/Shift+F8 preselect.
-    const sourceIsArchive = pathInsideArchive(sourceFolderPath)
+    const sourceIsArchive = pathCrossesArchiveBoundary(sourceFolderPath)
     const supportsTrash = sourceIsArchive ? false : sourceVolume?.supportsTrash !== false
 
     const { sortBy, sortOrder } = access.getPaneSort(access.getFocusedPane())

@@ -11,7 +11,8 @@ event into a confirmation toast, whose button reopens the SAME report for a note
 - `ErrorReportDialog.svelte`: one dialog, both modes. `ErrorReportToastContent.svelte`: the post-send toast for both
   outcomes (`kind` picks the sentence).
 - `BundleSavedToastContent.svelte`: dev-only "Save bundle to disk" toast (path + Reveal in Finder).
-- `auto-send-toast.svelte.ts` + `AutoSendToastContent.svelte`: Flow B listener and toast.
+- `auto-send-toast.svelte.ts` + `AutoSendToastContent.svelte`: Flow B listener and toast. Both toasts render
+  `SentReportToastBody.svelte` (optional title, sentence + id badge, right-aligned actions).
 - `breadcrumbs.ts`: fire-and-forget `recordBreadcrumb(kind, message, ctx?)`; wire from FE handlers to add triage
   context. Backend semantics in `error_reporter/CLAUDE.md` § Breadcrumbs.
 

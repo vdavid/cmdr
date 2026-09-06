@@ -15,6 +15,7 @@
     // `routes/viewer/CLAUDE.md`), so a row's thumbnail reuses the exact preview origin.
     import { mediaUrl } from '../../routes/viewer/media-view'
     import { evidenceSourceLabel } from './ask-cmdr-labels'
+    import { parentOf, toCanonical } from '$lib/path/canonical'
     import { coverageStrength } from './rename-evidence-coverage'
     import { nameProvenance } from './rename-name-provenance'
     import {
@@ -26,12 +27,41 @@
         renameReviewListingChanged,
         reviseRenameRow,
         setRenameRowAllowed,
+        type BulkRenameReviewProposal,
     } from './ask-cmdr-trigger.svelte'
 
+    // ── One review, however many batches ──────────────────────────────────────
+    // A big rename arrives as a run of staged plans (about 101 rows per model reply), and the
+    // user answers all of them at once. Each batch stays its own PROPOSAL, because preflight,
+    // apply, and cancel are per proposal on the backend; the dialog is what makes them read as
+    // one list.
+
     const review = $derived(askCmdrState.renameReview)
-    const allowedCount = $derived(review?.rows.filter((row) => row.allowed && !row.blockedReason).length ?? 0)
-    const blockedCount = $derived(review?.rows.filter((row) => row.blockedReason).length ?? 0)
+    const proposals = $derived(review?.proposals ?? [])
+    /** The batches still answerable: an expired one has nothing left to decide. */
+    const liveProposals = $derived(proposals.filter((proposal) => !proposal.expired))
+    const allRows = $derived(liveProposals.flatMap((proposal) => proposal.rows))
+    const allowedCount = $derived(allRows.filter((row) => row.allowed && !row.blockedReason).length)
+    const blockedCount = $derived(allRows.filter((row) => row.blockedReason).length)
+    const preflighting = $derived(proposals.some((proposal) => proposal.preflighting))
+    const allExpired = $derived(proposals.length > 0 && liveProposals.length === 0)
     const renameLabel = $derived(tString('askCmdr.renameReview.rename', { count: allowedCount }))
+
+    /** The folder a batch renames inside. A rename group binds one parent, so the first row
+     *  answers for the batch. */
+    function folderOf(proposal: BulkRenameReviewProposal): string {
+        if (proposal.rows.length === 0) return ''
+        try {
+            return parentOf(toCanonical(proposal.rows[0].sourcePath, ''))
+        } catch {
+            // A path shape the brand won't take is display-only here: no heading beats a wrong one.
+            return ''
+        }
+    }
+
+    const folders = $derived(proposals.map(folderOf))
+    /** Which folder a row belongs to only earns a heading once a job spans more than one. */
+    const showFolders = $derived(folders.some((folder) => folder !== folders[0]))
 
     // ── Per-row thumbnails ────────────────────────────────────────────────────
     // Reviewing 50 rows means scanning for the odd wrong one, so every row shows its own
@@ -41,61 +71,92 @@
 
     /** `rowId` → `cmdr-media://` URL, for the rows we could tokenize. */
     let thumbnailUrls = $state<Record<string, string>>({})
-    /** Tokens minted for the CURRENT proposal, so we drop exactly them. */
-    let mintedTokens: string[] = []
+    /** `rowId` → the token minted for it, so exactly the rows that leave get theirs dropped. */
+    let mintedTokens: Record<string, string> = {}
     /** Monotonic id, so a late mint for a closed review can't install or leak tokens. */
     let thumbnailSeq = 0
     /** The row whose preview button holds focus, so the whole row reads as focused. */
     let focusedRowId = $state<string | null>(null)
 
-    async function releaseThumbnails(): Promise<void> {
-        if (mintedTokens.length === 0) return
-        const toDrop = mintedTokens
-        mintedTokens = []
-        await mediaIndexDropThumbnailTokens(toDrop).catch(() => {
+    async function dropTokens(tokens: string[]): Promise<void> {
+        if (tokens.length === 0) return
+        await mediaIndexDropThumbnailTokens(tokens).catch(() => {
             // Best-effort: a failed drop only risks a stale map entry, never correctness.
         })
     }
 
-    async function loadThumbnails(rows: Array<{ rowId: string; sourcePath: string }>, seq: number): Promise<void> {
-        const minted: string[] = []
-        const urls: Record<string, string> = {}
-        await Promise.all(
-            rows.map(async (row) => {
-                try {
-                    const token = await mediaIndexThumbnailToken(row.sourcePath)
-                    if (token === null) return
-                    minted.push(token)
-                    urls[row.rowId] = mediaUrl(token)
-                } catch {
-                    // No token → the row falls back to the neutral glyph.
-                }
-            }),
-        )
-        if (seq !== thumbnailSeq) {
-            void mediaIndexDropThumbnailTokens(minted).catch(() => {})
-            return
-        }
-        mintedTokens = minted
-        thumbnailUrls = urls
+    /** Everything minted so far, for a closing review. */
+    async function releaseThumbnails(): Promise<void> {
+        const toDrop = Object.values(mintedTokens)
+        mintedTokens = {}
+        await dropTokens(toDrop)
     }
 
-    // One mint pass per proposal, dropped when the review closes or another replaces it (the
-    // token map has no window-close choke point, so a missed drop leaks path mappings).
-    // Depends on the proposal id ALONE: preflight mutates rows in place on every recheck, so
-    // reading the rows reactively here would re-mint every token each time.
-    $effect(() => {
-        const proposalId = askCmdrState.renameReview?.proposalId ?? null
-        const seq = ++thumbnailSeq
-        thumbnailUrls = {}
-        // A draft belongs to the review it was typed in; a new proposal starts from its own names.
-        nameDrafts = {}
-        void releaseThumbnails()
-        if (proposalId === null) return
-        const rows = untrack(() =>
-            (askCmdrState.renameReview?.rows ?? []).map((row) => ({ rowId: row.rowId, sourcePath: row.sourcePath })),
+    /**
+     * Mint what the review gained and drop what it lost.
+     *
+     * Incremental rather than a fresh pass per batch: a job's later batches must not re-mint
+     * the rows the user is already looking at, and a token has no window-close choke point, so
+     * a row that leaves owes its token back right then.
+     */
+    async function syncThumbnails(rows: Array<{ rowId: string; sourcePath: string }>, seq: number): Promise<void> {
+        const present: Record<string, true> = {}
+        for (const row of rows) present[row.rowId] = true
+        const gone = Object.keys(mintedTokens).filter((rowId) => !(rowId in present))
+        if (gone.length > 0) {
+            const toDrop = gone.map((rowId) => mintedTokens[rowId])
+            mintedTokens = withoutKeys(mintedTokens, gone)
+            thumbnailUrls = withoutKeys(thumbnailUrls, gone)
+            // A draft belongs to the row it was typed on, and that row is gone.
+            nameDrafts = withoutKeys(nameDrafts, gone)
+            void dropTokens(toDrop)
+        }
+        const minted: Record<string, string> = {}
+        const urls: Record<string, string> = {}
+        await Promise.all(
+            rows
+                .filter((row) => !(row.rowId in mintedTokens))
+                .map(async (row) => {
+                    try {
+                        const token = await mediaIndexThumbnailToken(row.sourcePath)
+                        if (token === null) return
+                        minted[row.rowId] = token
+                        urls[row.rowId] = mediaUrl(token)
+                    } catch {
+                        // No token → the row falls back to the neutral glyph.
+                    }
+                }),
         )
-        void loadThumbnails(rows, seq)
+        if (seq !== thumbnailSeq) {
+            void dropTokens(Object.values(minted))
+            return
+        }
+        mintedTokens = { ...mintedTokens, ...minted }
+        thumbnailUrls = { ...thumbnailUrls, ...urls }
+    }
+
+    function withoutKeys(source: Record<string, string>, keys: string[]): Record<string, string> {
+        return Object.fromEntries(Object.entries(source).filter(([key]) => !keys.includes(key)))
+    }
+
+    // One pass per change to the SET of batches on show (the token map has no window-close
+    // choke point, so a missed drop leaks path mappings). Depends on the proposal ids ALONE:
+    // preflight mutates rows in place on every recheck, so reading the rows reactively here
+    // would re-mint every token each time.
+    $effect(() => {
+        const key = proposals.map((proposal) => proposal.proposalId).join('\n')
+        const seq = ++thumbnailSeq
+        if (key === '') {
+            nameDrafts = {}
+            void releaseThumbnails()
+            return
+        }
+        const rows = untrack(() =>
+            (askCmdrState.renameReview?.proposals ?? []).flatMap((proposal) =>
+                proposal.rows.map((row) => ({ rowId: row.rowId, sourcePath: row.sourcePath })),
+            ),
+        )
+        void syncThumbnails(rows, seq)
     })
 
     onDestroy(() => {
@@ -139,21 +200,26 @@
     /** Put the field back on the row's STORED name: what a refused edit reverts to, and what an
      *  accepted one already shows. */
     function resetDraft(rowId: string): void {
-        const row = review?.rows.find((candidate) => candidate.rowId === rowId)
+        const row = proposals.flatMap((proposal) => proposal.rows).find((candidate) => candidate.rowId === rowId)
         if (row) nameDrafts[rowId] = row.destinationName
     }
 
-    /** Commit what's in the field. Blur and Enter both land here; an unchanged name no-ops. */
-    function commitName(rowId: string): void {
-        const row = review?.rows.find((candidate) => candidate.rowId === rowId)
+    /** Commit what's in the field. Blur and Enter both land here; an unchanged name no-ops.
+     *  The batch travels with the row: a revise is scoped to the proposal that staged it. */
+    function commitName(proposalId: string, rowId: string): void {
+        const row = proposals
+            .find((candidate) => candidate.proposalId === proposalId)
+            ?.rows.find((candidate) => candidate.rowId === rowId)
         if (!row) return
-        void reviseRenameRow(rowId, draftName(row)).then(() => { resetDraft(rowId); })
+        void reviseRenameRow(proposalId, rowId, draftName(row)).then(() => {
+            resetDraft(rowId)
+        })
     }
 
-    function onNameKeydown(event: KeyboardEvent, rowId: string): void {
+    function onNameKeydown(event: KeyboardEvent, proposalId: string, rowId: string): void {
         if (event.key === 'Enter') {
             event.preventDefault()
-            commitName(rowId)
+            commitName(proposalId, rowId)
         } else if (event.key === 'Escape') {
             // Abandon this edit rather than closing the whole review over a typo.
             event.stopPropagation()
@@ -166,7 +232,11 @@
             void renameReviewListingChanged(diff.changes)
         })
         return () => {
-            void listener.then((unlisten) => { unlisten(); }).catch(() => {})
+            void listener
+                .then((unlisten) => {
+                    unlisten()
+                })
+                .catch(() => {})
         }
     })
 </script>
@@ -183,21 +253,21 @@
 
         <div class="dialog-body">
             <p class="description">{tString('askCmdr.renameReview.description')}</p>
-            {#if review.expired}
+            {#if allExpired}
                 <p class="notice" role="status">{tString('askCmdr.renameReview.expired')}</p>
             {:else}
                 <div class="bulk-actions">
-                    <Button size="mini" onclick={allowAllRenameRows} disabled={review.preflighting}>
+                    <Button size="mini" onclick={allowAllRenameRows} disabled={preflighting}>
                         {tString('askCmdr.renameReview.allowAll')}
                     </Button>
-                    <Button size="mini" onclick={denyAllRenameRows} disabled={review.preflighting}>
+                    <Button size="mini" onclick={denyAllRenameRows} disabled={preflighting}>
                         {tString('askCmdr.renameReview.denyAll')}
                     </Button>
                     <span class="summary" role="status" aria-live="polite">
                         {tString('askCmdr.renameReview.status', { allowed: allowedCount, blocked: blockedCount })}
                     </span>
                 </div>
-                <div class="rows" aria-busy={review.preflighting}>
+                <div class="rows" aria-busy={preflighting}>
                     <table>
                         <thead>
                             <tr>
@@ -213,184 +283,263 @@
                                 <th scope="col" class="why-col">{tString('askCmdr.renameReview.whyThisName')}</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {#each review.rows as row (row.rowId)}
-                                {@const hasBadges =
-                                    row.warnings.includes('extensionChanged') ||
-                                    row.warnings.includes('cycle') ||
-                                    row.blockedReason === 'targetExists' ||
-                                    row.blockedReason === 'sourceMissing'}
-                                {@const provenance = nameProvenance(row)}
-                                {@const keptName = provenance === 'nameKept'}
-                                {@const provenanceLabel = keptName
-                                    ? tString('askCmdr.renameReview.nameKeptTooltip')
-                                    : tString('askCmdr.renameReview.nothingReadTooltip')}
-                                <tr class:blocked={row.blockedReason} class:focused={row.rowId === focusedRowId}>
-                                    <td class="allow-cell">
-                                        <Checkbox
-                                            checked={row.allowed}
-                                            disabled={Boolean(row.blockedReason) || review.preflighting}
-                                            ariaLabel={row.allowed
-                                                ? `${tString('askCmdr.renameReview.deny')}: ${row.sourceName}`
-                                                : `${tString('askCmdr.renameReview.allow')}: ${row.sourceName}`}
-                                            onCheckedChange={(checked: boolean) => { setRenameRowAllowed(row.rowId, checked); }}
-                                        />
-                                    </td>
-                                    <!-- Seeing the file is the whole point: a plausible wrong
+                        {#each proposals as proposal, batchIndex (proposal.proposalId)}
+                            <tbody>
+                                <!-- A job can span folders, so the list says which one a row is in.
+                                 A run of batches inside one folder gets a single heading, and a
+                                 single-folder job gets none at all. -->
+                                {#if showFolders && (batchIndex === 0 || folders[batchIndex] !== folders[batchIndex - 1])}
+                                    <tr class="folder-heading">
+                                        <th colspan="6" scope="colgroup">
+                                            <span
+                                                use:useShortenMiddle={{
+                                                    text: folders[batchIndex],
+                                                    preferBreakAt: '/',
+                                                    startRatio: 0.3,
+                                                }}
+                                            ></span>
+                                        </th>
+                                    </tr>
+                                {/if}
+                                {#if proposal.expired}
+                                    <tr>
+                                        <td colspan="6" class="batch-expired">
+                                            <span role="status">{tString('askCmdr.renameReview.expired')}</span>
+                                        </td>
+                                    </tr>
+                                {/if}
+                                {#each proposal.expired ? [] : proposal.rows as row (row.rowId)}
+                                    {@const hasBadges =
+                                        row.warnings.includes('extensionChanged') ||
+                                        row.warnings.includes('cycle') ||
+                                        row.blockedReason === 'targetExists' ||
+                                        row.blockedReason === 'sourceMissing'}
+                                    {@const provenance = nameProvenance(row)}
+                                    {@const keptName = provenance === 'nameKept'}
+                                    {@const provenanceLabel = keptName
+                                        ? tString('askCmdr.renameReview.nameKeptTooltip')
+                                        : tString('askCmdr.renameReview.nothingReadTooltip')}
+                                    <tr class:blocked={row.blockedReason} class:focused={row.rowId === focusedRowId}>
+                                        <td class="allow-cell">
+                                            <Checkbox
+                                                checked={row.allowed}
+                                                disabled={Boolean(row.blockedReason) || preflighting}
+                                                ariaLabel={row.allowed
+                                                    ? `${tString('askCmdr.renameReview.deny')}: ${row.sourceName}`
+                                                    : `${tString('askCmdr.renameReview.allow')}: ${row.sourceName}`}
+                                                onCheckedChange={(checked: boolean) => {
+                                                    setRenameRowAllowed(proposal.proposalId, row.rowId, checked)
+                                                }}
+                                            />
+                                        </td>
+                                        <!-- Seeing the file is the whole point: a plausible wrong
                                          name only looks wrong next to the picture. -->
-                                    <td class="preview-cell">
-                                        <button
-                                            type="button"
-                                            class="preview-open"
-                                            data-row-id={row.rowId}
-                                            aria-label={tString('askCmdr.renameReview.openPreview', { name: row.sourceName })}
-                                            use:tooltip={tString('askCmdr.renameReview.openPreviewTooltip')}
-                                            onclick={() => { void openFileViewer(row.sourcePath, row.volumeId); }}
-                                            onkeydown={onPreviewKeydown}
-                                            onfocus={() => { focusedRowId = row.rowId; }}
-                                            onblur={() => { if (focusedRowId === row.rowId) focusedRowId = null; }}
-                                        >
-                                            {#if thumbnailUrls[row.rowId]}
-                                                <!-- The button carries the accessible name, so the
+                                        <td class="preview-cell">
+                                            <button
+                                                type="button"
+                                                class="preview-open"
+                                                data-row-id={row.rowId}
+                                                aria-label={tString('askCmdr.renameReview.openPreview', {
+                                                    name: row.sourceName,
+                                                })}
+                                                use:tooltip={tString('askCmdr.renameReview.openPreviewTooltip')}
+                                                onclick={() => {
+                                                    void openFileViewer(row.sourcePath, row.volumeId)
+                                                }}
+                                                onkeydown={onPreviewKeydown}
+                                                onfocus={() => {
+                                                    focusedRowId = row.rowId
+                                                }}
+                                                onblur={() => {
+                                                    if (focusedRowId === row.rowId) focusedRowId = null
+                                                }}
+                                            >
+                                                {#if thumbnailUrls[row.rowId]}
+                                                    <!-- The button carries the accessible name, so the
                                                      image is presentational (axe image-redundant-alt). -->
-                                                <img src={thumbnailUrls[row.rowId]} alt="" loading="lazy" draggable="false" />
-                                            {:else}
-                                                <span class="preview-fallback" data-preview="none">
-                                                    <Icon name="file" size={18} aria-hidden="true" />
-                                                </span>
-                                            {/if}
-                                        </button>
-                                    </td>
-                                    <td class="name">
-                                        <span class="fname" use:useShortenMiddle={{ text: row.sourceName, preferBreakAt: '.', startRatio: 0.7 }}></span>
-                                    </td>
-                                    <td class="arrow"><Icon name="arrow-right" size={14} aria-hidden="true" /></td>
-                                    <td class="name">
-                                        <!-- Editable, so a wrong name can be corrected in place
+                                                    <img
+                                                        src={thumbnailUrls[row.rowId]}
+                                                        alt=""
+                                                        loading="lazy"
+                                                        draggable="false"
+                                                    />
+                                                {:else}
+                                                    <span class="preview-fallback" data-preview="none">
+                                                        <Icon name="file" size={18} aria-hidden="true" />
+                                                    </span>
+                                                {/if}
+                                            </button>
+                                        </td>
+                                        <td class="name">
+                                            <span
+                                                class="fname"
+                                                use:useShortenMiddle={{
+                                                    text: row.sourceName,
+                                                    preferBreakAt: '.',
+                                                    startRatio: 0.7,
+                                                }}
+                                            ></span>
+                                        </td>
+                                        <td class="arrow"><Icon name="arrow-right" size={14} aria-hidden="true" /></td>
+                                        <td class="name">
+                                            <!-- Editable, so a wrong name can be corrected in place
                                              instead of abandoned. The value is one-way from the
                                              server: the field is the edit buffer, and a commit
                                              puts back whatever the backend accepted. -->
-                                        <TextInput
-                                            variant="chromeless"
-                                            radius="sm"
-                                            spellcheck="false"
-                                            autocomplete="off"
-                                            data-row-id={row.rowId}
-                                            value={draftName(row)}
-                                            invalid={row.nameRejected}
-                                            ariaLabel={tString('askCmdr.renameReview.editName', { name: row.sourceName })}
-                                            oninput={(event: Event) => { onNameInput(event, row.rowId); }}
-                                            onkeydown={(event: KeyboardEvent) => { onNameKeydown(event, row.rowId); }}
-                                            onblur={() => { commitName(row.rowId); }}
-                                        />
-                                        {#if row.nameRejected}
-                                            <small class="rejected" role="status">{tString('askCmdr.renameReview.nameRejected')}</small>
-                                        {/if}
-                                        {#if provenance === 'nothingRead' || provenance === 'nameKept'}
-                                            <!-- Scannable per row, not only inferable from the
+                                            <TextInput
+                                                variant="chromeless"
+                                                radius="sm"
+                                                spellcheck="false"
+                                                autocomplete="off"
+                                                data-row-id={row.rowId}
+                                                value={draftName(row)}
+                                                invalid={row.nameRejected}
+                                                ariaLabel={tString('askCmdr.renameReview.editName', {
+                                                    name: row.sourceName,
+                                                })}
+                                                oninput={(event: Event) => {
+                                                    onNameInput(event, row.rowId)
+                                                }}
+                                                onkeydown={(event: KeyboardEvent) => {
+                                                    onNameKeydown(event, proposal.proposalId, row.rowId)
+                                                }}
+                                                onblur={() => {
+                                                    commitName(proposal.proposalId, row.rowId)
+                                                }}
+                                            />
+                                            {#if row.nameRejected}
+                                                <small class="rejected" role="status"
+                                                    >{tString('askCmdr.renameReview.nameRejected')}</small
+                                                >
+                                            {/if}
+                                            {#if provenance === 'nothingRead' || provenance === 'nameKept'}
+                                                <!-- Scannable per row, not only inferable from the
                                                  evidence column: this is the state M4's "keep a
                                                  neutral name" path lands in, and it must keep
                                                  saying nothing inside the file was read. -->
-                                            <span class="badges">
-                                                <span
-                                                    class="quiet-badge"
-                                                    data-name-provenance={provenance}
-                                                    tabindex="0"
-                                                    aria-label={provenanceLabel}
-                                                    use:tooltip={provenanceLabel}
-                                                >{keptName
-                                                    ? tString('askCmdr.renameReview.nameKeptBadge')
-                                                    : tString('askCmdr.renameReview.nothingReadBadge')}</span>
-                                            </span>
-                                        {/if}
-                                        {#if hasBadges}
-                                            <span class="badges">
-                                                {#if row.warnings.includes('extensionChanged')}
+                                                <span class="badges">
                                                     <span
-                                                        class="warning-badge"
-                                                        data-rename-warning="extensionChanged"
+                                                        class="quiet-badge"
+                                                        data-name-provenance={provenance}
                                                         tabindex="0"
-                                                        aria-label={tString('askCmdr.renameReview.extensionTooltip')}
-                                                        use:tooltip={tString('askCmdr.renameReview.extensionTooltip')}
-                                                    >{tString('askCmdr.renameReview.extensionBadge')}</span>
-                                                {/if}
-                                                {#if row.warnings.includes('cycle')}
-                                                    <span
-                                                        class="warning-badge"
-                                                        data-rename-warning="cycle"
-                                                        tabindex="0"
-                                                        aria-label={tString('askCmdr.renameReview.cycleTooltip')}
-                                                        use:tooltip={tString('askCmdr.renameReview.cycleTooltip')}
-                                                    >{tString('askCmdr.renameReview.cycleBadge')}</span>
-                                                {/if}
-                                                {#if row.blockedReason === 'targetExists'}
-                                                    <span
-                                                        class="danger-badge"
-                                                        data-warning="overwrite"
-                                                        tabindex="0"
-                                                        aria-label={tString('askCmdr.renameReview.overwriteTooltip')}
-                                                        use:tooltip={tString('askCmdr.renameReview.overwriteTooltip')}
-                                                    >{tString('askCmdr.renameReview.overwriteBadge')}</span>
-                                                {/if}
-                                                {#if row.blockedReason === 'sourceMissing'}
-                                                    <span
-                                                        class="danger-badge"
-                                                        data-warning="source-missing"
-                                                        tabindex="0"
-                                                        aria-label={tString('askCmdr.renameReview.sourceMissingTooltip')}
-                                                        use:tooltip={tString('askCmdr.renameReview.sourceMissingTooltip')}
-                                                    >{tString('askCmdr.renameReview.sourceMissingBadge')}</span>
-                                                {/if}
-                                            </span>
-                                        {/if}
-                                        {#if row.blockedReason}
-                                            <small>{tString('askCmdr.renameReview.blocked')}</small>
-                                        {/if}
-                                    </td>
-                                    <!-- Evidence and the text Cmdr read in the image are both
+                                                        aria-label={provenanceLabel}
+                                                        use:tooltip={provenanceLabel}
+                                                        >{keptName
+                                                            ? tString('askCmdr.renameReview.nameKeptBadge')
+                                                            : tString('askCmdr.renameReview.nothingReadBadge')}</span
+                                                    >
+                                                </span>
+                                            {/if}
+                                            {#if hasBadges}
+                                                <span class="badges">
+                                                    {#if row.warnings.includes('extensionChanged')}
+                                                        <span
+                                                            class="warning-badge"
+                                                            data-rename-warning="extensionChanged"
+                                                            tabindex="0"
+                                                            aria-label={tString(
+                                                                'askCmdr.renameReview.extensionTooltip',
+                                                            )}
+                                                            use:tooltip={tString(
+                                                                'askCmdr.renameReview.extensionTooltip',
+                                                            )}>{tString('askCmdr.renameReview.extensionBadge')}</span
+                                                        >
+                                                    {/if}
+                                                    {#if row.warnings.includes('cycle')}
+                                                        <span
+                                                            class="warning-badge"
+                                                            data-rename-warning="cycle"
+                                                            tabindex="0"
+                                                            aria-label={tString('askCmdr.renameReview.cycleTooltip')}
+                                                            use:tooltip={tString('askCmdr.renameReview.cycleTooltip')}
+                                                            >{tString('askCmdr.renameReview.cycleBadge')}</span
+                                                        >
+                                                    {/if}
+                                                    {#if row.blockedReason === 'targetExists'}
+                                                        <span
+                                                            class="danger-badge"
+                                                            data-warning="overwrite"
+                                                            tabindex="0"
+                                                            aria-label={tString(
+                                                                'askCmdr.renameReview.overwriteTooltip',
+                                                            )}
+                                                            use:tooltip={tString(
+                                                                'askCmdr.renameReview.overwriteTooltip',
+                                                            )}>{tString('askCmdr.renameReview.overwriteBadge')}</span
+                                                        >
+                                                    {/if}
+                                                    {#if row.blockedReason === 'sourceMissing'}
+                                                        <span
+                                                            class="danger-badge"
+                                                            data-warning="source-missing"
+                                                            tabindex="0"
+                                                            aria-label={tString(
+                                                                'askCmdr.renameReview.sourceMissingTooltip',
+                                                            )}
+                                                            use:tooltip={tString(
+                                                                'askCmdr.renameReview.sourceMissingTooltip',
+                                                            )}
+                                                            >{tString('askCmdr.renameReview.sourceMissingBadge')}</span
+                                                        >
+                                                    {/if}
+                                                </span>
+                                            {/if}
+                                            {#if row.blockedReason}
+                                                <small>{tString('askCmdr.renameReview.blocked')}</small>
+                                            {/if}
+                                        </td>
+                                        <!-- Evidence and the text Cmdr read in the image are both
                                          untrusted text, so they render as plain text (Svelte
                                          escapes it), never `{@html}`. -->
-                                    <td class="why" data-evidence-source={row.evidence.source}>
-                                        <span class="evidence-source">{evidenceSourceLabel(row.evidence.source)}</span>
-                                        {#if row.coverage}
-                                            {@const coverage = row.coverage}
-                                            {@const strength = coverageStrength(coverage)}
-                                            <!-- The quote inside the line it came from: a
+                                        <td class="why" data-evidence-source={row.evidence.source}>
+                                            <span class="evidence-source"
+                                                >{evidenceSourceLabel(row.evidence.source)}</span
+                                            >
+                                            {#if row.coverage}
+                                                {@const coverage = row.coverage}
+                                                {@const strength = coverageStrength(coverage)}
+                                                <!-- The quote inside the line it came from: a
                                                  bare quote made a sliver of a page of OCR
                                                  look as strong as a decisive match. -->
-                                            <span class="evidence-detail"
-                                                >{#if coverage.trimmedBefore}…{/if}{coverage.contextBefore}<mark
-                                                    >{coverage.matchedText}</mark
-                                                >{coverage.contextAfter}{#if coverage.trimmedAfter}…{/if}</span
-                                            >
-                                            <span class="coverage" data-coverage={strength}>
-                                                {#if strength === 'thin'}
-                                                    <!-- `role="img"`: the marker's meaning IS
+                                                <span class="evidence-detail"
+                                                    >{#if coverage.trimmedBefore}…{/if}{coverage.contextBefore}<mark
+                                                        >{coverage.matchedText}</mark
+                                                    >{coverage.contextAfter}{#if coverage.trimmedAfter}…{/if}</span
+                                                >
+                                                <span class="coverage" data-coverage={strength}>
+                                                    {#if strength === 'thin'}
+                                                        <!-- `role="img"`: the marker's meaning IS
                                                          the icon, so its label can't come from
                                                          text content the way a badge's does. -->
-                                                    <span
-                                                        class="coverage-warning"
-                                                        data-coverage-warning="thin"
-                                                        role="img"
-                                                        tabindex="0"
-                                                        aria-label={tString('askCmdr.renameReview.coverageThin')}
-                                                        use:tooltip={tString('askCmdr.renameReview.coverageThin')}
-                                                    ><Icon name="triangle-alert" size={12} aria-hidden="true" /></span>
-                                                {/if}
-                                                {tString('askCmdr.renameReview.coverage', {
-                                                    matchedText: formatInteger(coverage.matchedChars),
-                                                    totalText: formatInteger(coverage.deliveredChars),
-                                                })}
-                                            </span>
-                                        {:else if row.evidence.detail}
-                                            <!-- A user-typed name carries no detail at all: the
+                                                        <span
+                                                            class="coverage-warning"
+                                                            data-coverage-warning="thin"
+                                                            role="img"
+                                                            tabindex="0"
+                                                            aria-label={tString('askCmdr.renameReview.coverageThin')}
+                                                            use:tooltip={tString('askCmdr.renameReview.coverageThin')}
+                                                            ><Icon
+                                                                name="triangle-alert"
+                                                                size={12}
+                                                                aria-hidden="true"
+                                                            /></span
+                                                        >
+                                                    {/if}
+                                                    {tString('askCmdr.renameReview.coverage', {
+                                                        matchedText: formatInteger(coverage.matchedChars),
+                                                        totalText: formatInteger(coverage.deliveredChars),
+                                                    })}
+                                                </span>
+                                            {:else if row.evidence.detail}
+                                                <!-- A user-typed name carries no detail at all: the
                                                  label above IS the whole answer. -->
-                                            <span class="evidence-detail">{row.evidence.detail}</span>
-                                        {/if}
-                                    </td>
-                                </tr>
-                            {/each}
-                        </tbody>
+                                                <span class="evidence-detail">{row.evidence.detail}</span>
+                                            {/if}
+                                        </td>
+                                    </tr>
+                                {/each}
+                            </tbody>
+                        {/each}
                     </table>
                 </div>
             {/if}
@@ -401,9 +550,9 @@
             <Button
                 variant="primary"
                 onclick={applyRenameReview}
-                disabled={review.preflighting || review.expired || allowedCount === 0}
-                aria-label={renameLabel}
-            >{renameLabel}</Button>
+                disabled={preflighting || allowedCount === 0}
+                aria-label={renameLabel}>{renameLabel}</Button
+            >
         {/snippet}
     </ModalDialog>
 {/if}
@@ -543,6 +692,23 @@
        arrowing down the list. */
     tbody tr.focused {
         background: var(--color-accent-subtle);
+    }
+
+    /* Which folder the rows under it are in, once a job spans more than one. Sticky under the
+       column headers, so scrolling never leaves a row's folder off screen. */
+    .folder-heading th {
+        top: calc(var(--font-size-sm) + 2 * var(--spacing-sm));
+        padding-top: var(--spacing-md);
+        color: var(--color-text-primary);
+        font-weight: 600;
+    }
+
+    .folder-heading span {
+        display: block;
+    }
+
+    .batch-expired {
+        color: var(--color-text-secondary);
     }
 
     .arrow-col,

@@ -120,6 +120,22 @@ LOOK like one.
 The frontend classifies a coverage figure as thin or solid for display (`lib/ask-cmdr/rename-evidence-coverage.ts`); the
 backend supplies only the honest counts.
 
+## A refused plan says so, in the log
+
+`plan.rs::dispatch`'s `Err` arm warns on `agent::propose`, rendered from the typed `ProposalRefusal` by
+`refusal_reason`. It names up to five offending paths and the typed evidence verdict, and never the PROPOSED names,
+which is where a model's reading of file contents would sit.
+
+It is there because a refused plan is otherwise indistinguishable from one nobody made: the suggested-ops panel says
+"nothing is waiting for you right now" either way, which is the truth and not a diagnosis. In one real report a plan
+died at the schema gate, the model told the user it was waiting in the panel, and working out what had happened meant
+reading the conversation rows out of `main.db`. The gate's own half of that trace is in `../DETAILS.md` § What a gate
+refusal answers with.
+
+⚠️ **The tool schema asks for `volumeId` on every row; the stored proposal has one, plan-level** (below). A model reads
+one plan, one volume, and sends one `volumeId` beside `renames` — which is what happened, and the boundary can only
+refuse it. Worth revisiting as a schema change rather than defending forever with a better refusal.
+
 ## Where a staged proposal lives
 
 One group on the durable proposal spine, in `main.db`. **The spine's mechanism — the three levels, `GroupIntent`, the

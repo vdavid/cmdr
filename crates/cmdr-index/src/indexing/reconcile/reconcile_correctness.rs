@@ -140,6 +140,7 @@ mod tests {
             &h.conn,
             &h.writer,
             &cancelled,
+            None,
         )
         .expect("reconcile");
         h.writer.flush_blocking().unwrap();
@@ -327,6 +328,7 @@ mod tests {
                 &h.conn,
                 &h.writer,
                 &pretripped,
+                None,
             );
             h.writer.flush_blocking().unwrap();
             // The root itself got listed+marked; its children diffs did not run. Deleted subtree rows
@@ -438,6 +440,7 @@ mod tests {
             &h.conn,
             &h.writer,
             &pretripped,
+            None,
         );
         h.writer.flush_blocking().unwrap();
 

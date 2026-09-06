@@ -24,10 +24,10 @@ use super::{
     FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_HOME_ID,
     GO_LATEST_DOWNLOAD_ID, GO_MENU_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_MENU_ID, HELP_SEND_ERROR_REPORT_ID,
     HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, INVERT_SELECTION_ID, MenuItems, NEW_TAB_ID,
-    NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID,
-    QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SELECT_MENU_ID,
-    SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, TAB_MENU_ID,
-    VIEW_MENU_ID, ViewMode, WINDOW_MENU_ID,
+    NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPEN_TERMINAL_HERE_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID,
+    QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID,
+    SELECT_MENU_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID,
+    SWITCH_PANE_ID, TAB_MENU_ID, VIEW_MENU_ID, ViewMode, WINDOW_MENU_ID,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -146,6 +146,17 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         true,
         Some(show_in_file_manager_accelerator()),
     )?;
+    // Sits next to Show in Finder because it's the same gesture aimed elsewhere:
+    // "take me to this folder in that other app". Built enabled; the frontend greys
+    // it out through `set_open_terminal_here_enabled` while the focused pane sits
+    // somewhere a shell can't `cd` into.
+    let open_terminal_here_item = MenuItem::with_id(
+        app,
+        OPEN_TERMINAL_HERE_ID,
+        menu_t("menu.file.openTerminalHere"),
+        true,
+        Some("Alt+Cmd+T"),
+    )?;
     let get_info_item = MenuItem::with_id(app, GET_INFO_ID, menu_t("menu.file.getInfo"), true, Some("Cmd+I"))?;
     // Shift+Space rather than plain Space: AppKit consumes modifier
     // accelerators before the webview can capture them, so the menu actually
@@ -180,6 +191,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &rename_item,
             &PredefinedMenuItem::separator(app)?,
             &show_in_finder_item,
+            &open_terminal_here_item,
             &get_info_item,
             &quick_look_item,
         ],
@@ -557,7 +569,8 @@ pub(crate) fn build_menu_macos<R: Runtime>(
 
     // File menu positions: open(0), view(1), edit(2), sep(3), copy(4), move(5),
     // duplicate(6), compress(7), new_folder(8), delete(9), delete_perm(10), sep(11),
-    // rename(12), sep(13), show_in_finder(14), get_info(15), quick_look(16)
+    // rename(12), sep(13), show_in_finder(14), open_terminal_here(15), get_info(16),
+    // quick_look(17)
     register_item(&mut items, OPEN_ID, &open_item, &file_menu, 0);
     register_item(&mut items, FILE_VIEW_ID, &file_view_item, &file_menu, 1);
     register_item(&mut items, EDIT_ID, &edit_item, &file_menu, 2);
@@ -576,8 +589,15 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     );
     register_item(&mut items, RENAME_ID, &rename_item, &file_menu, 12);
     register_item(&mut items, SHOW_IN_FINDER_ID, &show_in_finder_item, &file_menu, 14);
-    register_item(&mut items, GET_INFO_ID, &get_info_item, &file_menu, 15);
-    register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 16);
+    register_item(
+        &mut items,
+        OPEN_TERMINAL_HERE_ID,
+        &open_terminal_here_item,
+        &file_menu,
+        15,
+    );
+    register_item(&mut items, GET_INFO_ID, &get_info_item, &file_menu, 16);
+    register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 17);
 
     // Edit menu positions: undo(0), redo(1), sep(2), cut(3), copy(4), paste(5), move_here(6),
     // sep(7), copy_path(8), copy_filename(9), sep(10), search_files(11)

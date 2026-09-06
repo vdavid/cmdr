@@ -38,6 +38,7 @@ vi.mock('$lib/settings', () => ({
 vi.mock('$lib/icon-cache', () => ({
   iconCacheVersion: writable(0),
   getCachedIcon: vi.fn(() => undefined),
+  getCachedCustomFolderIcon: () => undefined,
 }))
 
 // Both components share one jsdom document, and axe resolves ARIA id references

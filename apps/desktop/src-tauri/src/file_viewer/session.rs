@@ -233,10 +233,11 @@ pub(super) struct ViewerSession {
     /// to the single close choke point keeps the token's lifetime exactly the
     /// session's, so a closed-window viewer can't leave a live token mapping a path.
     media_token: Option<String>,
-    /// For a preview-in-zip session, the `.cmdr-viewer-<uuid>/` temp subdir the entry
-    /// was extracted into. Removed wholesale at `close_session` (both close paths funnel
-    /// through it), so the temp's lifetime is exactly the session's. `None` for a normal
-    /// on-disk open. See `file_viewer::archive_extract`.
+    /// For a session over a ROUTED file (inside a zip, or inside a repo's virtual
+    /// `.git` trees), the `.cmdr-viewer-<uuid>/` temp subdir the entry was streamed
+    /// into. Removed wholesale at `close_session` (both close paths funnel through
+    /// it), so the temp's lifetime is exactly the session's. `None` for a normal
+    /// on-disk open. See `file_viewer::routed_extract`.
     extract_cleanup: Option<PathBuf>,
 }
 
@@ -357,7 +358,9 @@ fn open_session_inner(path: &str, volume_id: &str, force_text: bool) -> Result<V
     // dozen `?`s, so an in-body emit would count a biased subset of opens. The
     // archive question is answered here from the pure path split (the same one
     // `rename_managed` uses) — the core's own answer needs the extraction to have
-    // happened, which is exactly what the failure cases skip.
+    // happened, which is exactly what the failure cases skip. It stays ARCHIVE-only
+    // rather than "routed": `from_archive` is a shipped analytics dimension about
+    // previewing inside a zip, and a portal open is honestly `false` for it.
     let from_archive = cmdr_archive::archive_boundary_candidate(Path::new(&expand_tilde(path)))
         .is_some_and(|(_, inner)| !inner.as_os_str().is_empty());
     let result = open_session_core(path, volume_id, force_text);
@@ -369,13 +372,14 @@ fn open_session_core(path: &str, volume_id: &str, force_text: bool) -> Result<Vi
     let expanded = expand_tilde(path);
     let requested = PathBuf::from(&expanded);
 
-    // A path INSIDE an archive (`/…/foo.zip/inner`) has no `std::fs` file to open, so
-    // the viewer can't touch it directly. Stream the entry out to a bounded temp and
-    // open THAT; a non-archive path returns `None` and flows through unchanged. The
-    // `.zip` can live on a remote parent (direct SMB / MTP), so the entry is pulled
-    // through `volume_id`'s volume, not hardcoded `"root"`. On close, `close_session`
-    // removes the temp subdir. See `archive_extract`.
-    let extracted = super::archive_extract::extract_if_archive_inner(&requested, volume_id)?;
+    // A path a ROUTE serves (`/…/foo.zip/inner`, `/…/.git/branches/main/src/lib.rs`)
+    // has no `std::fs` file to open, so the viewer can't touch it directly. Stream
+    // the entry out to a bounded temp and open THAT; an unrouted path returns `None`
+    // and flows through unchanged. The `.zip` can live on a remote parent (direct
+    // SMB / MTP), so the entry is pulled through `volume_id`'s volume, not hardcoded
+    // `"root"`. On close, `close_session` removes the temp subdir. See
+    // `routed_extract`.
+    let extracted = super::routed_extract::extract_if_routed(&requested, volume_id)?;
     let (file_path, extract_cleanup) = match extracted {
         Some(e) => (e.temp_file, Some(e.cleanup_dir)),
         None => (requested, None),

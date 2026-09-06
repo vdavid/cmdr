@@ -147,6 +147,11 @@ fn _x() { let _ = stderr.contains("x"); }
 		"mcp/tests/registry_tests/gate.rs": `
 fn _x() { let _ = err.message.contains("x"); }
 `,
+		// The same convention with the subject kept in the name: `copy_tests.rs` outgrew
+		// one file and became `copy_tests/`, which is the same test code it was before.
+		"transfer/volume/copy_tests/progress.rs": `
+fn _x() { let _ = err.message.contains("x"); }
+`,
 	})
 	if err != nil {
 		t.Fatalf("expected success on test files, got: %v", err)
