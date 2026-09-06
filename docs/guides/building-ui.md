@@ -27,6 +27,10 @@ don't add a focus trap yourself: the primitive already does all of it.
   check); see `apps/desktop/src/lib/dialog-gallery/CLAUDE.md`.
 - Details and gotchas: `apps/desktop/src/lib/ui/CLAUDE.md` and its `DETAILS.md`.
 
+**Asking for a credential? Use the one sign-in sheet**, `apps/desktop/src/lib/servers/SignInSheet.svelte`, opened
+through `servers/open-sign-in.ts`. It renders what the backend says to ask, owns the retry and the inline refusal, and
+never dials; ❌ don't build a second password dialog for a new protocol. `apps/desktop/src/lib/servers/CLAUDE.md`.
+
 For a full-screen commit flow (onboarding, consent, multi-step setup the user can't cancel), use a soft sheet:
 `apps/desktop/src/lib/onboarding/OnboardingWizard.svelte` and the `--sheet-*` tokens. The sheet-vs-dialog decision table
 is in `../design-system.md` § Soft sheets.

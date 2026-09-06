@@ -22,8 +22,9 @@ All under `apps/desktop/src/lib/`.
   and MCP encoding in `servers-hub-*.ts`), the places under one account (`PlacesBrowser.svelte`), the SMB login form,
   and the mDNS discovery store
 - `servers/`: Remote places the app dials (SFTP, WebDAV): the `sftp://user@host:port/path` spelling, the connect flow
-  that picks its move by the volume's standing, the words for a connect that stopped, and which server the palette's
-  server commands act on. See `apps/desktop/src/lib/servers/CLAUDE.md`
+  that picks its move by the volume's standing, the ONE sign-in sheet every credential ask in the app opens
+  (`SignInSheet.svelte`, add / sign-in / edit), the address parser behind add mode, the words for a connect that
+  stopped, and which server the palette's server commands act on. See `apps/desktop/src/lib/servers/CLAUDE.md`
 - `file-explorer/git/`: Git browser frontend: breadcrumb chip, status columns, reactive `RepoInfo` store, git portal
   icons. Git settings in `settings/sections/GitSection.svelte`
 - `file-explorer/pane/`: Per-pane orchestration: cursor, scroll, dual-pane coordination. Owns the single `navigate.ts`

@@ -53,7 +53,8 @@ hosts, and the volume list, which is where a place's standing lives.
   `onVolumeChange` with the place's `appRoot`). ❗ The PANE does the dialing, not the hub: landing on a `saved` volume
   is what `../pane/place-connect.svelte.ts` watches for, so the connecting view and its Cancel render where every other
   wait does.
-- **The add row** opens `ConnectToServerDialog`, until the sign-in sheet replaces it.
+- **The add row** opens the one sign-in sheet in add mode (`../../servers/open-sign-in.ts`). An SMB address
+  comes back as a hand-off, and `NetworkMountView` opens the injected host's places.
 
 ### The three pure modules beside it
 
@@ -165,9 +166,10 @@ User double-clicks an SMB host → PlacesBrowser mounts → loadShares()
 User activates a one-place server → onVolumeChange → the pane lands on a `saved`
        volume → ../pane/place-connect dials, RemoteConnectView renders the wait
 
-User activates the "Add server…" row → ConnectToServerDialog opens
-       └─ connectToServer(address) → TCP check → inject host
-            └─ onConnect(host, sharePath)
+User activates the "Add server…" row → the sign-in sheet opens in add mode
+       ├─ SFTP / WebDAV → connectServer(target) → the pane lands on the volume
+       └─ SMB → connectToServer(address) → TCP check → inject host
+            └─ the sheet answers `handed_off`
                  ├─ PlacesBrowser mounts (host set)
                  └─ if sharePath → autoMountShare triggers mount
 ```
@@ -261,15 +263,17 @@ When a direct-SMB session drops mid-use, four pieces coordinate to recover:
    copy. The error-path map is `docs/guides/error-handling.md`.
 4. **`FilePane.svelte`** subscribes via `$effect` whenever the pane is on an SMB volume. Subscription is refcounted
    (both panes on one share share a cycle). During an active cycle FilePane swaps the list for `SmbReconnectingView`; on
-   `gave-up` it swaps to `VolumeUnreachableBanner` (`smbGaveUp` variant); on success the `onSuccess` callback re-runs
-   `loadDirectory`.
+   `gave-up` it swaps to `VolumeUnreachableBanner` (`smbGaveUp` variant); on `needs-auth` and `needs-host-key` it swaps
+   to `../pane/RemoteConnectView.svelte`; on success the `onSuccess` callback re-runs `loadDirectory`. ❗ The four
+   `show*` derivations are a POSITIVE list, so a FIFTH status without its own derivation renders a plain listing over a
+   dead session rather than saying anything.
 
 Auth-failure give-up → "Sign in", not "unreachable" (`needs-auth` status): when reconnect fails on an auth error the
 saved password can't fix, the backend emits `state: "needs_credentials"`. The manager's `handleNeedsAuth` stops the
-backoff (retrying a stale password is futile) and flips to `needs-auth`; FilePane shows `pane/SmbReauthView.svelte` (a
-thin wrapper over `NetworkLoginForm`). Submitting calls `reconnectVolumeWithCredentials(volumeId, …)`, which persists
-the new password and reconnects; success arrives as a `connected` event that clears the state and reloads. Pinned by
-`smb-reconnect-manager.svelte.test.ts`.
+backoff (retrying a stale password is futile) and flips to `needs-auth`; FilePane shows `RemoteConnectView`'s
+`signed_out`, whose button opens the one sign-in sheet as a REGISTERED place. The sheet's attempt calls
+`reconnectVolumeWithCredentials(volumeId, …)`, which refreshes the stored password and reconnects; success arrives as a
+`connected` event that clears the state and reloads. Pinned by `smb-reconnect-manager.svelte.test.ts`.
 
 ❗ **`handleNeedsAuth` also asks `getVolumeSignInState(volumeId)` and stores the answer on the entry**
 (`getSignInShape(volumeId)` reads it back). It is asked HERE, at the flip, and ❌ never carried over from earlier: the
@@ -279,15 +283,16 @@ one with no way in at all; the reasoning and the per-rung table are `crates/cmdr
 shows, per rung". The flip itself stays synchronous with the event (the `await` comes after), so `runAttempt`'s
 in-flight `needs-auth` check is unaffected.
 
-❗ **Nothing renders the stored prompt yet, deliberately**, the same way `needs_host_key_approval` is handled below: the
-SFTP sign-in UI is the piece still to build, and this is the value it reads. SMB's own sign-in doesn't consult it —
-`SmbReauthView` asks for a username and a password, which is what the default answer says anyway.
+The sheet reads the shape when it renders rather than taking this stored one, for the same reason the flip re-asks: it
+describes THIS session. The stored value is what the pane's banner has to hand before the sheet opens.
 
-❗ `needs_host_key_approval` is the fourth `volume-connection-changed` state, and the manager **ignores it on purpose**,
-with a comment saying so. It only ever describes an SFTP volume whose host key stopped matching, and that must never
-take the sign-in path: a password box in front of a possible man-in-the-middle is how a password gets typed into one.
-Ignoring it is the safe half — the backend has already stopped retrying — and the banner that sends the user to look at
-the key belongs with the SFTP sign-in UI. `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
+❗ `needs_host_key_approval` is the fourth `volume-connection-changed` state, and it gets its OWN status
+(`needs-host-key`), ❌ never the sign-in path: it only ever describes an SFTP volume whose host key stopped matching,
+and a password box in front of a possible man-in-the-middle is how a password gets typed into one. `handleNeedsHostKey`
+ends the backoff and flips; ❗ it asks no `getVolumeSignInState`, because nothing about this is a credential question and
+asking one would be the first step toward putting a password box in front of it. The pane renders
+`RemoteConnectView`'s `host_key_changed`, which offers Disconnect (`../pane/DETAILS.md` § the connect views says why
+that, and not "Trust it"). `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
 
 Lazy-nav path: opening a share that's already `Disconnected` (no fresh event in flight), the FilePane `$effect` notices
 `currentVolumeInfo?.connectionState === 'disconnected'` and calls `manager.startCycle(volumeId)` directly.
@@ -305,8 +310,7 @@ Disconnect button: `disconnectSmbVolume(volumeId)` shells out to `diskutil unmou
 3. Sets `network.firstTriggerDone = true` so subsequent launches start mDNS eagerly (returning users get full speed
    without re-prompts).
 
-Call sites: `ServersHub.onMount`, `ConnectToServerDialog.onMount` (manual entry opens a TCP socket to a private IP,
-which triggers the prompt anyway), and `VolumeBreadcrumb.handleSubmenuAction` (the OS-mount → direct-smb2 upgrade also
+Call sites: `ServersHub.onMount` and `VolumeBreadcrumb.handleSubmenuAction` (the OS-mount → direct-smb2 upgrade also
 opens a private-IP socket). Backend side: `src-tauri/src/network/DETAILS.md` § "Lazy mDNS startup".
 
 ## Key decisions

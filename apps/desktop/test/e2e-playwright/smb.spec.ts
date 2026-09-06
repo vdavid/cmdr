@@ -211,6 +211,41 @@ describeSmb('SMB host discovery', () => {
   })
 })
 
+describeSmb('Adding an SMB host through the sign-in sheet', () => {
+  test('typing a host opens its shares, and asks for no password on the way', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await mcpSelectVolume('left', 'Servers')
+    await expect.poll(async () => tauriPage.isVisible('.servers-hub .add-row'), { timeout: 30000 }).toBeTruthy()
+
+    // A DOUBLE click: the hub's rows follow the file list, where one click moves
+    // the cursor and two open the thing.
+    await tauriPage.evaluate(`(function () {
+      document.querySelector('.servers-hub .add-row').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    })()`)
+    const sheet = '[data-dialog-id="server-sign-in"]'
+    await expect.poll(async () => tauriPage.isVisible(sheet), { timeout: 5000 }).toBeTruthy()
+
+    await tauriPage.evaluate(`(function () {
+      var input = document.querySelector('${sheet} #server-address');
+      input.value = ${JSON.stringify(`${SMB_GUEST_HOST}:${String(SMB_GUEST_PORT)}`)};
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`)
+
+    // ❗ A bare host reads as SMB, whose connect is a share MOUNT rather than a
+    // session: nothing is asked until a listing or a mount refuses, so there is
+    // no password field to put in front of anyone.
+    expect(await tauriPage.isVisible(`${sheet} #server-secret`)).toBe(false)
+
+    await tauriPage.click(`${sheet} .modal-footer button:last-of-type`)
+
+    // The sheet hands off and the pane lands in the host's places list.
+    await expect.poll(async () => !(await tauriPage.isVisible(sheet)), { timeout: 30000 }).toBeTruthy()
+    await expect
+      .poll(async () => (await mcpReadResource('cmdr://state')).includes(SMB_GUEST_SHARE), { timeout: 30000 })
+      .toBeTruthy()
+  })
+})
+
 describeSmb('SMB share browsing', () => {
   test('opening guest host shows share list with public share', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)

@@ -71,6 +71,9 @@ async function publishSyntheticServer(tauriPage: PageLike): Promise<void> {
     mountIsReadOnly: false,
     isDiskImage: false,
     connectionState: 'saved',
+    // ❗ Pinned, or the switcher hides it: the LISTING carries every saved place
+    // and `volume-grouping.ts` applies the user's cap over this field.
+    pinned: true,
     deviceReadiness: null,
     usbSpeed: null,
     capabilities: null,
@@ -131,6 +134,32 @@ async function switcherRowHtml(tauriPage: PageLike, label: string): Promise<stri
   })()`)
 }
 
+/** The one sign-in sheet, wherever it is opened from. */
+const SHEET = '[data-dialog-id="server-sign-in"]'
+
+/**
+ * Opens the sheet from the hub's Add row.
+ *
+ * ❗ A DOUBLE click: the hub's rows follow the file list, where one click moves
+ * the cursor and two open the thing. A single click here selects the row and
+ * nothing else, which is what this helper existing at all records.
+ */
+async function activateAddRow(tauriPage: PageLike): Promise<void> {
+  await tauriPage.evaluate(`(function () {
+    document.querySelector('.servers-hub .add-row').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+  })()`)
+  await expect.poll(async () => tauriPage.isVisible(SHEET), { timeout: 5000 }).toBeTruthy()
+}
+
+/** Replaces the sheet's address field, the way a person retyping it would. */
+async function typeIntoAddress(tauriPage: PageLike, address: string): Promise<void> {
+  await tauriPage.evaluate(`(function () {
+    var input = document.querySelector('${SHEET} #server-address');
+    input.value = ${JSON.stringify(address)};
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`)
+}
+
 /** The left pane's rows, as `cmdr://state` publishes them. */
 async function leftPaneRows(): Promise<string> {
   return mcpReadResource('cmdr://state')
@@ -177,6 +206,52 @@ test.describe('The servers hub', () => {
     // The add row is keyboard-navigable, which is what makes it a row rather
     // than a button under the list.
     expect(await tauriPage.isVisible('.servers-hub .add-row')).toBe(true)
+  })
+})
+
+test.describe('Adding a server through the sheet', () => {
+  test.beforeEach(async ({ tauriPage }) => {
+    await initMcpClient(tauriPage)
+    await ensureAppReady(tauriPage)
+  })
+
+  test.afterEach(async ({ tauriPage }) => {
+    await escapeOverlayUntilGone(tauriPage, SHEET)
+    await mcpCall('select_volume', { pane: 'left', name: LOCAL_VOLUME_NAME })
+  })
+
+  test("the hub's Add row opens the one sheet, and the address picks the protocol", async ({ tauriPage }) => {
+    await mcpCall('select_volume', { pane: 'left', name: SERVERS_VOLUME_NAME })
+    await expect.poll(async () => tauriPage.isVisible('.servers-hub .add-row'), { timeout: 15000 }).toBeTruthy()
+
+    await activateAddRow(tauriPage)
+
+    // A bare hostname reads as SMB, which asks for no credentials at all.
+    await typeIntoAddress(tauriPage, 'naspolya')
+    expect(await tauriPage.isVisible(`${SHEET} #server-secret`)).toBe(false)
+
+    // `user@host` names an ACCOUNT, so the toggle flips to SFTP and the account
+    // fields appear, prefilled with what the address carried.
+    await typeIntoAddress(tauriPage, 'ada@e2e-nothing-here.invalid:22')
+    await expect.poll(async () => tauriPage.isVisible(`${SHEET} #server-secret`), { timeout: 5000 }).toBeTruthy()
+    expect(await tauriPage.evaluate<string>(`document.querySelector('${SHEET} #server-username').value`)).toBe('ada')
+  })
+
+  test('a server that cannot be reached says so under the address, and the sheet stays open', async ({ tauriPage }) => {
+    await mcpCall('select_volume', { pane: 'left', name: SERVERS_VOLUME_NAME })
+    await expect.poll(async () => tauriPage.isVisible('.servers-hub .add-row'), { timeout: 15000 }).toBeTruthy()
+    await activateAddRow(tauriPage)
+
+    // `.invalid` is reserved by RFC 2606 and never resolves, so the dial is
+    // guaranteed to come back with something to say.
+    await typeIntoAddress(tauriPage, 'ada@e2e-nothing-here.invalid:22')
+    await expect.poll(async () => tauriPage.isVisible(`${SHEET} #server-secret`), { timeout: 5000 }).toBeTruthy()
+    await tauriPage.click(`${SHEET} .modal-footer button:last-of-type`)
+
+    // ❗ The refusal lands under the field it is about, and the sheet is still up:
+    // a sheet that closed would take what the user typed with it.
+    await expect.poll(async () => tauriPage.isVisible('#server-address-refusal'), { timeout: 45000 }).toBeTruthy()
+    expect(await tauriPage.isVisible(SHEET)).toBe(true)
   })
 })
 

@@ -13,7 +13,6 @@ SMB network discovery UI: host list, per-host share list, login form, and a sing
 - **`ServersHub.svelte`**: Host list table, rendered when pane is on the `network` volume
 - **`PlacesBrowser.svelte`**: Share list for a host, handles auth flow
 - **`NetworkLoginForm.svelte`**: Credential form rendered inside `PlacesBrowser`
-- **`ConnectToServerDialog.svelte`**: Modal for manually connecting by address/IP/`smb://` URL
 - **`smb-reconnect-manager.svelte.ts`**: Per-volume backoff cycle on the `volume-connection-changed` event
   (backend-neutral; SMB is its first emitter)
 

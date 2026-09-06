@@ -9,8 +9,8 @@ lifecycle, drag handling, volume tinting, and navigation primitives.
 `DualPaneExplorer.svelte` is the root: it owns both panes, the unified key/command dispatch, the dialog manager, and the
 MCP-exposed surface. `FilePane.svelte` is one pane: it owns its listing, cursor, selection, view mode, type-to-jump
 buffer, rename flow, breadcrumb, and the alt-view rendering ({#if/elseif} between `MtpConnectionView`,
-`NetworkMountView`, `SmbReconnectingView`, `SearchResultsView`, `ErrorPane`, `VolumeUnreachableBanner`, and the regular
-list).
+`NetworkMountView`, `SmbReconnectingView`, `RemoteConnectView`, `SearchResultsView`, `ErrorPane`,
+`VolumeUnreachableBanner`, and the regular list).
 
 ## File map
 
@@ -1309,3 +1309,27 @@ touching.
 downloads toast). The object is a snapshot; the methods inside it read live state, so a pane that moves under the toast
 still resolves correctly when the button is finally pressed. First consumer:
 `$lib/file-operations/delete/go-to-trash.ts`.
+
+## The connect views
+
+`RemoteConnectView.svelte` is the pane while a remote place is on its way in or has stopped short, and it holds no state
+of its own: the caller hands it a typed `remote-connect-state.ts` value and the callbacks that go with it. Every state
+says what is happening in one sentence, and every state with a process behind it has a cancel. A spinner with no words
+is the failure shape it replaces: a person can't tell a slow handshake from a wedged one, and has no way out of either.
+
+Two producers:
+
+- `place-connect.svelte.ts` owns `connecting` and `refused`, for a pane landing on a `saved` place. It dials once per
+  landing (a `dialed` guard), and its Cancel aims at the attempt id `connect-flow.ts` hands out before the dial.
+- `smb-view-state.svelte.ts` owns `signed_out` and `host_key_changed`, off the reconnect manager's fourth and fifth
+  statuses. ❗ Its `show*` derivations are a POSITIVE list, so a status without one renders a plain listing over a dead
+  session rather than saying anything.
+
+❗ **A changed host key offers Disconnect, ❌ not "Trust it".** Nobody can answer for a fingerprint they haven't been
+shown, and nothing on this side holds one: the backend keeps no pending prompt for a REGISTERED volume. Disconnecting
+drops the dead session and leaves the place a `saved` row, so opening it dials afresh — and THAT dial's
+`needs_host_key_approval` outcome is what the sheet's key step renders. The path works today; a backend command handing
+back the pending prompt would make it one click instead of two.
+
+❗ **A state lands only once something can act on it.** Adding one before its handler puts a button on screen that does
+nothing, which is the one thing this view refuses to do (`../../servers/DETAILS.md` § "What later milestones fill in").

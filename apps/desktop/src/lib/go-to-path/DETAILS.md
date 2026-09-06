@@ -92,3 +92,32 @@ Run through this after any change to the dialog, the handler, or the recents mir
 8. Click a recent row → jumps immediately. Click a row's `[x]` → removes the entry without jumping.
 9. Rebind `nav.back` in Settings > Keyboard shortcuts, trigger the ancestor toast again → the toast shows the new combo
    (snapshotted per toast). An already-visible toast keeps its old combo.
+
+## The scheme intercept
+
+`scheme-intercept.ts` classifies a `<scheme>://` input before `resolve_go_to_path` is asked, and all three resolving
+sites read it: `goToPath`, the dialog's debounced preview, and its clipboard prefill.
+
+**Why an intercept and not a smarter resolver.** The Rust resolver is local-only by design (a `std::fs::metadata` walk
+over a tilde-expanded, base-dir-joined path). A scheme input joins onto the pane's directory there and answers
+`invalid`, and teaching it schemes would mean a resolver consulting the saved-server stores it has no business reading.
+
+**What each scheme means.**
+
+- `adb://`, `mtp://`: a device path already resolves, so it navigates
+  (`docs/specs/android-adb-backend-follow-ups.md` § 3).
+- `sftp://`, `webdav://` matching a saved place's app root by whole components: navigates, showing the place's name.
+- `sftp://`, `webdav://` matching nothing, plus `smb://`, `ssh://`, `davs://`, `dav://`, `http://`, `https://`: opens
+  the sign-in sheet in add mode, prefilled. ❗ A server path nothing saved is an ADDRESS, not a dead end: someone pasted
+  a link to a server they haven't added yet.
+- Everything else, including a bare hostname: `null`, and the local resolver owns it. A bare hostname is a legal
+  RELATIVE path, and Go to path has always resolved those.
+
+❗ **A saved list that won't answer opens the sheet rather than guessing**: one extra step for the user, ❌ never a wrong
+destination.
+
+**The return type.** `GoToPathResolution` is Rust-generated, so the frontend declares
+`GoToPathOutcome = GoToPathResolution | { kind: 'handed_off' }` and widens `goToPath` and the dialog's `onGo` to it. The
+dialog closes on anything that isn't `invalid`, and a hand-off has done its job, so it closes too.
+`shouldPrefillClipboard` stays on the narrow type; a scheme input takes its own prefill path, because a copied server
+address is exactly what the box was opened to paste.

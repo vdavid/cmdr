@@ -136,11 +136,7 @@ function parseSshCommandLine(rest: string): ParsedAddress {
  * authority however many slashes follow. `host:` with nothing after it is scp's
  * spelling of "the path starts here" and carries no port.
  */
-function readEndpoint(
-  rest: string,
-  protocol: ServerProtocol,
-  secure: boolean | undefined
-): ParsedAddress {
+function readEndpoint(rest: string, protocol: ServerProtocol, secure: boolean | undefined): ParsedAddress {
   const slash = rest.indexOf('/')
   const authority = slash === -1 ? rest : rest.slice(0, slash)
   const rawPath = slash === -1 ? '' : rest.slice(slash)

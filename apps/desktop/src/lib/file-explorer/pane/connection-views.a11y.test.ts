@@ -177,7 +177,6 @@ describe('ErrorPane a11y', () => {
   })
 })
 
-
 /**
  * Tier 3 a11y tests for `SmbReconnectingView.svelte`.
  *
