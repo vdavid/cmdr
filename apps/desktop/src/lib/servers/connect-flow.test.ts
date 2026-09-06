@@ -55,11 +55,14 @@ describe('arm 2: a registered place asking for a credential', () => {
     expect(startCycle).not.toHaveBeenCalled()
   })
 
-  it('awaits the sheet once one is wired', async () => {
+  it('hands it to the sheet as a REGISTERED place, so the sheet mends rather than dials', async () => {
     const openSignIn = vi.fn(() => Promise.resolve({ signedIn: true as const, volumeId: VOLUME_ID }))
     const result = await connectPlace({ volumeId: VOLUME_ID, connectionState: 'needs_sign_in', openSignIn })
-    expect(openSignIn).toHaveBeenCalledWith(VOLUME_ID)
+    // ❗ `registered: true` is what sends the sheet to
+    // `reconnect_volume_with_credentials`. A dial would register a SECOND volume.
+    expect(openSignIn).toHaveBeenCalledWith({ volumeId: VOLUME_ID, registered: true })
     expect(result).toEqual({ kind: 'connected', volumeId: VOLUME_ID })
+    expect(ipc.callCount('connect_saved_place')).toBe(0)
   })
 
   it('a sheet the user closed reads as cancelled, which says nothing', async () => {
@@ -131,6 +134,46 @@ describe('arm 3: a saved place with nothing registered', () => {
   it('a cancelled dial says nothing: the user pressed the button', async () => {
     ipc.mock('connect_saved_place', () => ({ outcome: 'cancelled' }))
     expect(await connectPlace({ volumeId: VOLUME_ID, connectionState: 'saved' })).toEqual({ kind: 'cancelled' })
+  })
+
+  it('hands a host-key question to the sheet, on the step the outcome names', async () => {
+    const prompt = {
+      outcome: 'needs_host_key_approval',
+      host: 'nas.local',
+      port: 22,
+      algorithm: 'ssh-ed25519',
+      fingerprint: 'SHA256:x',
+      kind: 'unknown',
+    }
+    ipc.mock('connect_saved_place', () => prompt)
+    const openSignIn = vi.fn(() => Promise.resolve({ signedIn: true as const, volumeId: VOLUME_ID }))
+    const result = await connectPlace({ volumeId: VOLUME_ID, connectionState: 'saved', openSignIn })
+
+    expect(openSignIn).toHaveBeenCalledWith({ volumeId: VOLUME_ID, registered: false, firstOutcome: prompt })
+    expect(result).toEqual({ kind: 'connected', volumeId: VOLUME_ID })
+  })
+
+  it('hands a refused credential to the sheet, and the sheet owns the rounds from there', async () => {
+    ipc.mock('connect_saved_place', () => ({ outcome: 'authentication_rejected' }))
+    const openSignIn = vi.fn(() => Promise.resolve({ signedIn: false as const }))
+    const result = await connectPlace({ volumeId: VOLUME_ID, connectionState: 'saved', openSignIn })
+
+    expect(openSignIn).toHaveBeenCalledTimes(1)
+    // ❗ Exactly one dial from here. The sheet dials again itself, through the
+    // attempt it was handed, and stays open across those rounds.
+    expect(ipc.callCount('connect_saved_place')).toBe(1)
+    expect(result).toEqual({ kind: 'cancelled' })
+  })
+
+  it('❌ never opens the sheet for a refusal no typing can fix', async () => {
+    // The server challenged with a scheme Cmdr doesn't speak: the secret never
+    // left, and a password box over it asks for something that cannot help.
+    ipc.mock('connect_saved_place', () => ({ outcome: 'auth_method_unsupported' }))
+    const openSignIn = vi.fn(() => Promise.resolve({ signedIn: false as const }))
+    const result = await connectPlace({ volumeId: VOLUME_ID, connectionState: 'saved', openSignIn })
+
+    expect(openSignIn).not.toHaveBeenCalled()
+    expect(result).toEqual({ kind: 'refused', refusal: 'auth_method_unsupported' })
   })
 
   it('a typed refusal (the wrong arm for this volume) never reaches the user as itself', async () => {
