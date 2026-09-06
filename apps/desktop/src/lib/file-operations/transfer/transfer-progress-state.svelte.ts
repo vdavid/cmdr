@@ -359,6 +359,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
             filesProcessed: event.filesProcessed,
             filesSkipped: event.filesSkipped,
             bytesProcessed: event.bytesProcessed,
+            appearedDuringMove: event.appearedDuringMove ?? null,
           })
         })
         return

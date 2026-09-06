@@ -32,6 +32,7 @@ import type { SearchResultEntry, SearchRunCoverage } from '$lib/tauri-commands'
 import { addToast, dismissToast } from '$lib/ui/toast/toast-store.svelte'
 import { observeSearchRun, type LiveRunHandlers, type LiveRunProgress } from './live-run-events'
 import { appendSnapshotEntries } from './snapshot-store.svelte'
+import { resortSnapshotIfSorted } from './snapshot-sort.svelte'
 import {
   WALK_HANDOFF_TOAST_ID,
   getWalkHandoff,
@@ -123,6 +124,11 @@ function takeProgress(event: LiveRunProgress): void {
     settle(null)
     return
   }
+  // A pane the user has SORTED holds its rows until the new ones have a place in
+  // that order, so every append has to be followed by this
+  // (`snapshot-sort.svelte.ts::resortSnapshotIfSorted`). It returns immediately on
+  // an unsorted pane, whose rows already landed at the ranked tail.
+  void resortSnapshotIfSorted(current.snapshotId)
   setWalkHandoff({
     ...current,
     view: {

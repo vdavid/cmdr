@@ -169,19 +169,39 @@ async fn rename_managed_inner(
                 let from_syscall = from.clone();
                 let to_syscall = to.clone();
                 tokio::task::spawn_blocking(move || {
-                    if !force && from_syscall != to_syscall && std::fs::symlink_metadata(&to_syscall).is_ok() {
-                        return Err(MutationError::AlreadyExists {
-                            name: name_of(&to_syscall),
-                        });
-                    }
+                    // The kernel decides whether the name is free, in the same
+                    // syscall that takes it. A stat first and a plain
+                    // `std::fs::rename` after are two operations, and POSIX
+                    // rename replaces its target without a word: a file created
+                    // in between would be destroyed with no prompt and no way
+                    // back. `rename_no_replace` refuses instead.
+                    //
+                    // `force` is the caller saying "replace what's there", and a
+                    // self-rename (a case-only change on a case-insensitive
+                    // filesystem folds onto one entry) has to be allowed to land
+                    // on its own target.
+                    let renamed = if force || from_syscall == to_syscall {
+                        std::fs::rename(&from_syscall, &to_syscall)
+                    } else {
+                        super::overwrite::rename_no_replace(&from_syscall, &to_syscall)
+                    };
                     // The two paths mean different things: `ENOENT` is the source
-                    // that's gone, `EEXIST` the destination that isn't free.
-                    std::fs::rename(&from_syscall, &to_syscall).map_err(|e| MutationError::Volume {
-                        error: crate::file_system::volume::backends::rename_volume_error(
-                            &e,
-                            &from_syscall,
-                            &to_syscall,
-                        ),
+                    // that's gone, `EEXIST` the destination that isn't free. A
+                    // taken name is reported BY NAME (the frontend words it in
+                    // ten locales), matching the volume branch above.
+                    renamed.map_err(|e| {
+                        if e.kind() == std::io::ErrorKind::AlreadyExists {
+                            return MutationError::AlreadyExists {
+                                name: name_of(&to_syscall),
+                            };
+                        }
+                        MutationError::Volume {
+                            error: crate::file_system::volume::backends::rename_volume_error(
+                                &e,
+                                &from_syscall,
+                                &to_syscall,
+                            ),
+                        }
                     })
                 })
                 .await

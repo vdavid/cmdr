@@ -140,6 +140,58 @@ fn test_validate_sources_with_broken_symlink() {
     assert!(result.is_ok());
 }
 
+/// CRITICAL: two selected items with the same name both want one destination
+/// path. A cross-FS move stages both under that name, so the second one's
+/// children land on the first one's staged files and resolve as conflicts the
+/// user never created. Refused before anything is written.
+#[test]
+fn two_sources_sharing_a_name_are_refused() {
+    use super::validate_source_names_are_distinct;
+
+    let temp_dir = create_temp_dir("validate_sources_same_name");
+    let first = temp_dir.join("a/invoices");
+    let second = temp_dir.join("b/invoices");
+    fs::create_dir_all(&first).unwrap();
+    fs::create_dir_all(&second).unwrap();
+
+    let result = validate_source_names_are_distinct(&[first, second]);
+    assert!(
+        matches!(result, Err(WriteOperationError::DuplicateSourceNames { ref name, .. }) if name == "invoices"),
+        "expected DuplicateSourceNames, got {:?}",
+        result
+    );
+}
+
+/// Names that differ only in case are NOT refused: whether the destination
+/// treats them as one file is its call, and a case-sensitive volume takes both
+/// happily. Over-refusing here would block a legitimate transfer.
+#[test]
+fn sources_differing_only_in_case_are_allowed() {
+    use super::validate_source_names_are_distinct;
+
+    let temp_dir = create_temp_dir("validate_sources_case_only");
+    let first = temp_dir.join("a/Invoices");
+    let second = temp_dir.join("b/invoices");
+    fs::create_dir_all(&first).unwrap();
+    fs::create_dir_all(&second).unwrap();
+
+    assert!(validate_source_names_are_distinct(&[first, second]).is_ok());
+}
+
+/// The ordinary selection passes untouched.
+#[test]
+fn distinct_source_names_are_allowed() {
+    use super::validate_source_names_are_distinct;
+
+    let temp_dir = create_temp_dir("validate_sources_distinct");
+    let first = temp_dir.join("invoices");
+    let second = temp_dir.join("receipts");
+    fs::create_dir_all(&first).unwrap();
+    fs::create_dir_all(&second).unwrap();
+
+    assert!(validate_source_names_are_distinct(&[first, second]).is_ok());
+}
+
 #[test]
 fn test_ensure_destination_dir_with_existing_dir() {
     use super::ensure_destination_dir;

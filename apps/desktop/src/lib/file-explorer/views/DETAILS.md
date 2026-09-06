@@ -77,7 +77,17 @@ refs, and the row template). Four siblings hold the rest, each with its own suit
   paths-by-value flavour a static-entries pane needs.
 - **`FullListHeader.svelte`** — the column header, rendered above the scroll container. It owns `.header-row` /
   `.header-icon` / `.header-name-ext` / `.header-git` (all self-contained: no rule reaches outside the header's own
-  sub-tree), and takes a `scrollbarWidth` prop it spends on its right padding (see § Key decisions).
+  sub-tree), and takes a `scrollbarWidth` prop it spends on its right padding (see § Key decisions). Every pane that
+  renders a file list sorts one, so there is no per-pane "is this header live" flag; what varies is
+  `sortBy: SortColumn | null`, where `null` means the rows are in no column's order. All four triggers stay clickable
+  then, none is active, no caret draws, and no column claims the caret allowance in the measured tracks. The one pane
+  that reaches that state is the search-results snapshot in its ranked order: `../../search/DETAILS.md` § "The snapshot
+  pane's row order".
+
+  A `SortableHeader` also takes an optional `clearsSortLabel`, shown as the ACTIVE column's tooltip when clicking it
+  does something other than sort by it. The snapshot pane sets it so a third click reads "Sort by relevance" rather than
+  promising a sort it won't perform; every other pane leaves it unset and the tooltip stays the column's sort command
+  plus its shortcut.
 
 ### Where the row styles live
 

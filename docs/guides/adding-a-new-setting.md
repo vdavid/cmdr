@@ -20,11 +20,10 @@ Add an entry to `settings-registry.ts`. Name the id after the UI vocabulary (`wh
   so searching the card title surfaces the row. It's metadata only — it never decides whether the card renders (the
   section owns that via `visible`). See `lib/settings/DETAILS.md` § Card groups.
 
-**Searchable non-setting rows (hidden anchor).** A hand-rendered action row that isn't a real control (for example
-"Index size / Clear index") can't be a search hit on its own, so its card can't know to show. Give it a `hidden: true`
-registry anchor whose `section` EQUALS the hosting page's section, reusing the row's existing label key. It's searchable
-(`buildSearchIndex` keeps hidden entries) but adds no nav row (`buildSectionTree` skips them). `indexing.indexSize` is
-the reference example.
+**Not a setting? Then it isn't a registry entry.** An action row that isn't a control ("Clear index", "Open log file",
+"Get a license") is a `SearchableRow`, not a setting: see § "Adding a searchable non-setting row" at the end of this
+guide. ❌ Never model one as a `hidden: true` setting to make it findable — that's a `SettingsValues` key nothing ever
+reads or writes, and it's the pattern this replaced.
 
 Also add the key and its value type to the `SettingsValues` interface in `types.ts`. This isn't optional bookkeeping:
 `SettingDefinition.id` is typed as `SettingId` (= `keyof SettingsValues`), so a registry entry whose id is missing from
@@ -82,3 +81,23 @@ Bump `SCHEMA_VERSION` and add a `migrateSettings()` case, or old `settings.json`
 
 Open Settings, confirm the row shows in its section, and confirm searching one of its keywords surfaces it. Both, not
 just one: a registry entry alone passes the search-index test but renders nothing.
+
+## Adding a searchable non-setting row
+
+Which mechanism? **A setting** stores a user choice: it has a value, a default, and someone reads it. **A searchable
+row** is a button or a readout the section hand-renders, with nothing to store: "Clear index", "Check for updates",
+"Forget everything". If you can't name what `getSetting(id)` would return, it's a row.
+
+1. Add a `SearchableRow` to the `<Component>.rows.ts` beside the section component (create the file and add it to
+   `lib/settings/sections/searchable-rows.ts` if the section has none yet). Give it a `row:`-prefixed id, the hosting
+   page's `section`, the `labelKey` the row ALREADY renders (no new copy), the `cardKey` of its `SectionCard` if it sits
+   in a titled one, and `keywords`.
+2. Gate the markup on `shouldShow('row:…')`, and add the id to the card's `anyVisible(...)` guard. Skip the guard and a
+   hit on the row opens the page with every card filtered away.
+3. Nothing else: no `SettingsValues` key, no `SCHEMA_VERSION` bump, no applier case.
+
+Skip the row entirely when it only renders under some runtime state (a model being installed, a master toggle being on):
+a search hit that scrolls to a row that isn't there is worse than no hit.
+
+`lib/settings/DETAILS.md` § "Searchable rows" holds the rationale and the guardrails; `sections/searchable-rows.test.ts`
+enforces them.

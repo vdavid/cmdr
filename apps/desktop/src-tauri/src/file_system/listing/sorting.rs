@@ -47,6 +47,56 @@ pub enum DirectorySortMode {
 // Sorting logic
 // ============================================================================
 
+/// The fields [`entry_comparator`] reads, so ONE comparator body serves every row
+/// shape the app orders.
+///
+/// Two implementors today: [`FileEntry`], a directory listing's row, and
+/// `commands::search::SearchSortRow`, a search-results pane's row. The second
+/// carries a strict SUBSET of the first (no creation time, no recursive size), and
+/// answers `None` for what it doesn't have, which lands it on the comparator's
+/// existing unknown-value arms rather than on a second set of rules. That is the
+/// point: a name sorts the same way in a search-results pane as it does in a
+/// folder, because there is one comparator and no copy of it anywhere.
+pub trait SortableEntry {
+    /// The row's own file name (the last path component).
+    fn name(&self) -> &str;
+    fn is_directory(&self) -> bool;
+    /// Logical size in bytes, `None` when unknown.
+    fn size(&self) -> Option<u64>;
+    /// Last-modified time in Unix seconds, `None` when unknown.
+    fn modified_at(&self) -> Option<u64>;
+    /// Creation time in Unix seconds, `None` when unknown.
+    fn created_at(&self) -> Option<u64>;
+    /// A directory's recursive size, `None` when it isn't known. See [`known_dir_size`].
+    fn recursive_size(&self) -> Option<u64>;
+    /// Whether [`SortableEntry::recursive_size`] is exact. See [`known_dir_size`].
+    fn recursive_size_complete(&self) -> Option<bool>;
+}
+
+impl SortableEntry for FileEntry {
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn is_directory(&self) -> bool {
+        self.is_directory
+    }
+    fn size(&self) -> Option<u64> {
+        self.size
+    }
+    fn modified_at(&self) -> Option<u64> {
+        self.modified_at
+    }
+    fn created_at(&self) -> Option<u64> {
+        self.created_at
+    }
+    fn recursive_size(&self) -> Option<u64> {
+        self.recursive_size
+    }
+    fn recursive_size_complete(&self) -> Option<bool> {
+        self.recursive_size_complete
+    }
+}
+
 /// Extracts file extension for sorting purposes.
 /// Returns: (is_dotfile, has_extension, extension_lowercase)
 /// Dotfiles (names starting with .) sort first, then files without extension, then by extension.
@@ -82,8 +132,8 @@ fn compare_names_natural(a: &str, b: &str) -> std::cmp::Ordering {
 /// `—` render). A genuinely-empty dir (`complete == Some(true)`, size `0`) and a
 /// lower-bound (`complete == Some(false)`, size `> 0`, the `≥N` render) are both
 /// KNOWN and sort by their numeric value.
-fn known_dir_size(e: &FileEntry) -> Option<u64> {
-    match (e.recursive_size, e.recursive_size_complete) {
+fn known_dir_size<E: SortableEntry + ?Sized>(e: &E) -> Option<u64> {
+    match (e.recursive_size(), e.recursive_size_complete()) {
         (None, _) => None,
         (Some(0), Some(false)) => None, // `—` unknown
         (Some(size), _) => Some(size),  // genuinely-empty 0, lower-bound, or exact
@@ -95,22 +145,22 @@ fn known_dir_size(e: &FileEntry) -> Option<u64> {
 /// Directories always come first, then files. Within each group the comparator
 /// applies the requested column, order, and directory sort mode (including the
 /// `recursive_size: None` sorts-last rule for Size).
-pub fn entry_comparator(
+pub fn entry_comparator<E: SortableEntry + ?Sized>(
     sort_by: SortColumn,
     sort_order: SortOrder,
     dir_sort_mode: DirectorySortMode,
-) -> impl Fn(&FileEntry, &FileEntry) -> std::cmp::Ordering {
+) -> impl Fn(&E, &E) -> std::cmp::Ordering {
     move |a, b| {
         // Directories always come first
-        match (a.is_directory, b.is_directory) {
+        match (a.is_directory(), b.is_directory()) {
             (true, false) => return std::cmp::Ordering::Less,
             (false, true) => return std::cmp::Ordering::Greater,
             _ => {}
         }
 
         // For directories in AlwaysByName mode, sort by name regardless of column
-        if a.is_directory && b.is_directory && dir_sort_mode == DirectorySortMode::AlwaysByName {
-            let name_cmp = compare_names_natural(&a.name, &b.name);
+        if a.is_directory() && b.is_directory() && dir_sort_mode == DirectorySortMode::AlwaysByName {
+            let name_cmp = compare_names_natural(a.name(), b.name());
             return match sort_order {
                 SortOrder::Ascending => name_cmp,
                 SortOrder::Descending => name_cmp.reverse(),
@@ -129,13 +179,13 @@ pub fn entry_comparator(
         // (`complete == Some(true)`, size `0`) is a KNOWN `0 bytes` and sorts by
         // its value, ahead of unknowns. A lower-bound (`complete == Some(false)`,
         // size `> 0`, rendered `≥N`) sorts by its known floor `N`.
-        if a.is_directory && b.is_directory && sort_by == SortColumn::Size {
+        if a.is_directory() && b.is_directory() && sort_by == SortColumn::Size {
             let a_known = known_dir_size(a);
             let b_known = known_dir_size(b);
             return match (a_known, b_known) {
                 (None, None) => {
                     // Both unknown: sort by name, respecting sort order
-                    let cmp = compare_names_natural(&a.name, &b.name);
+                    let cmp = compare_names_natural(a.name(), b.name());
                     match sort_order {
                         SortOrder::Ascending => cmp,
                         SortOrder::Descending => cmp.reverse(),
@@ -146,7 +196,7 @@ pub fn entry_comparator(
                 (Some(a_size), Some(b_size)) => {
                     let cmp = a_size.cmp(&b_size);
                     let cmp = if cmp == std::cmp::Ordering::Equal {
-                        compare_names_natural(&a.name, &b.name)
+                        compare_names_natural(a.name(), b.name())
                     } else {
                         cmp
                     };
@@ -160,24 +210,24 @@ pub fn entry_comparator(
 
         // Compare by the active sorting column
         let primary = match sort_by {
-            SortColumn::Name => compare_names_natural(&a.name, &b.name),
+            SortColumn::Name => compare_names_natural(a.name(), b.name()),
             SortColumn::Extension => {
-                let (a_dotfile, a_has_ext, a_ext) = extract_extension_for_sort(&a.name);
-                let (b_dotfile, b_has_ext, b_ext) = extract_extension_for_sort(&b.name);
+                let (a_dotfile, a_has_ext, a_ext) = extract_extension_for_sort(a.name());
+                let (b_dotfile, b_has_ext, b_ext) = extract_extension_for_sort(b.name());
 
                 // Dotfiles first, then no extension, then by extension alphabetically
                 match (a_dotfile, b_dotfile) {
                     (true, false) => std::cmp::Ordering::Less,
                     (false, true) => std::cmp::Ordering::Greater,
-                    (true, true) => compare_names_natural(&a.name, &b.name),
+                    (true, true) => compare_names_natural(a.name(), b.name()),
                     (false, false) => match (a_has_ext, b_has_ext) {
                         (false, true) => std::cmp::Ordering::Less,
                         (true, false) => std::cmp::Ordering::Greater,
-                        (false, false) => compare_names_natural(&a.name, &b.name),
+                        (false, false) => compare_names_natural(a.name(), b.name()),
                         (true, true) => {
                             let ext_cmp = alphanumeric_sort::compare_str(&a_ext, &b_ext);
                             if ext_cmp == std::cmp::Ordering::Equal {
-                                compare_names_natural(&a.name, &b.name)
+                                compare_names_natural(a.name(), b.name())
                             } else {
                                 ext_cmp
                             }
@@ -185,20 +235,20 @@ pub fn entry_comparator(
                     },
                 }
             }
-            SortColumn::Size => match (a.size, b.size) {
-                (None, None) => compare_names_natural(&a.name, &b.name),
+            SortColumn::Size => match (a.size(), b.size()) {
+                (None, None) => compare_names_natural(a.name(), b.name()),
                 (None, Some(_)) => std::cmp::Ordering::Less,
                 (Some(_), None) => std::cmp::Ordering::Greater,
                 (Some(a_size), Some(b_size)) => a_size.cmp(&b_size),
             },
-            SortColumn::Modified => match (a.modified_at, b.modified_at) {
-                (None, None) => compare_names_natural(&a.name, &b.name),
+            SortColumn::Modified => match (a.modified_at(), b.modified_at()) {
+                (None, None) => compare_names_natural(a.name(), b.name()),
                 (None, Some(_)) => std::cmp::Ordering::Less,
                 (Some(_), None) => std::cmp::Ordering::Greater,
                 (Some(a_time), Some(b_time)) => a_time.cmp(&b_time),
             },
-            SortColumn::Created => match (a.created_at, b.created_at) {
-                (None, None) => compare_names_natural(&a.name, &b.name),
+            SortColumn::Created => match (a.created_at(), b.created_at()) {
+                (None, None) => compare_names_natural(a.name(), b.name()),
                 (None, Some(_)) => std::cmp::Ordering::Less,
                 (Some(_), None) => std::cmp::Ordering::Greater,
                 (Some(a_time), Some(b_time)) => a_time.cmp(&b_time),

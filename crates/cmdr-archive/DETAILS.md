@@ -317,7 +317,7 @@ the `create_directory_all` guard), encrypted/corrupt/non-zip typed errors throug
 (at the archive root). `src/boundary.rs` tests the per-format magic (incl. plain-tar ustar-at-257) and the
 double-extension split. The reading-core, mutation, and watch tests live with their modules.
 
-## Left for the follow-up milestones
+## Left for later
 
 `ArchiveVolume` (browse + extract + `scan_for_copy`) and backend routing (§ "Routing and lifecycle") are landed:
 `VolumeManager::resolve`, the shared `src/boundary.rs` detector, the archive LRU, the read-only write guards, the live
@@ -347,3 +347,29 @@ and never mutates through this volume. ❌ Never flip the predicate to track edi
 in-archive pane's write capability from the PATH (`pane/volume-capabilities.ts`, `capabilitiesForPane`), precisely
 because the volume can't answer it. `conformance::assert_writability_matches_the_mutations_offered` pins the declaration
 against the refusals.
+
+## Why a document container is its own format
+
+The enum and its suffix table live one crate down, in `crates/cmdr-fs/src/archive_format.rs`; the reason this variant
+exists is here, because it's the app's write guard that the variant serves.
+
+`.docx`, `.xlsx`, `.pptx`, `.jar`, and `.apk` map to `ArchiveFormat::Ooxml` rather than to `Zip`, even though they are
+zips down to the last byte and read through the identical code path (one shared match arm in the index parser, the same
+`PK\x03\x04` magic confirm).
+
+**Decision/Why**: the app's write chokepoint is `ensure_zip_writable`, which admits `Some(ArchiveFormat::Zip)` and
+refuses everything else. Every archive-edit route — create, rename, delete, copy-in, move-out — funnels through it. So
+the format a name maps to IS its writability, and `.docx == Zip` would have made every Office document mutable: delete
+`word/document.xml` out of a Word file and the user gets a corrupt document from having wandered in to look around.
+`Ooxml` is unwritable because it isn't `Zip`, which needed no change to the guard at all — the invariant is
+unrepresentable rather than stated, the preference `AGENTS.md` asks for. ❌ Never fold it back into `Zip`, and never add
+it to the guard.
+
+`label()` answers `"zip"` for it (the container it genuinely is) and it is deliberately excluded from
+`every_label_round_trips_through_format_for_name`: one variant covers five suffixes, so no single label can round-trip
+to it. It is not a Compress target.
+
+The frontend mirrors the same split with two suffix lists in `pane/volume-capabilities.ts` (browsable vs writable), and
+a test there parses this crate's `SUFFIXES` table and asserts set equality, since drift between the two is silent and
+the dangerous direction — a suffix the backend browses but the FE doesn't know — leaves a pane writable inside a
+read-only container.

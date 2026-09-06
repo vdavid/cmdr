@@ -19,14 +19,16 @@ use super::super::super::journal;
 use super::super::super::manager;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
-    CancelRollback, SourceItemOutcome, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
-    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteSourceItemDoneEvent,
+    CancelRollback, RecoveredOriginal, SourceItemOutcome, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent,
+    WriteErrorEvent, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
+    WriteSourceItemDoneEvent,
 };
 use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, FetchFut, PostLoopIntent, ResolveFut, TransferContext,
     TransferFut, TransferOutcome, build_pre_skip_set, drive_transfer_serial_async,
 };
 use super::conflict::{is_the_same_volume_path, resolve_volume_conflict};
+use super::displaced_destination::{DisplacedDestination, displace_destination};
 use super::preflight::{SourceHint, top_level_move_hints};
 use super::rename_merge::{RenameMergeCtx, rename_merge_directory};
 use super::transfer_error::{PathRole, map_volume_error};
@@ -357,6 +359,13 @@ pub(crate) async fn move_within_same_volume_with_progress(
     let journal_volumes = state.journal_volumes.clone();
     let overwritten_sources: Arc<std::sync::Mutex<std::collections::HashSet<PathBuf>>> =
         Arc::new(std::sync::Mutex::new(std::collections::HashSet::new()));
+    // Its twin, and for the same reason: a file→file Overwrite renames the
+    // destination ASIDE in the resolver, and the rename that replaces it happens
+    // in the transfer closure, so the entry has to cross between them. Keyed by
+    // SOURCE path, which is one per item. Whatever is still in here after the
+    // loop belongs to an item that never reached its rename, and goes home.
+    let displaced_dests: Arc<std::sync::Mutex<HashMap<PathBuf, DisplacedDestination>>> =
+        Arc::new(std::sync::Mutex::new(HashMap::new()));
 
     // Bulk-skip is file-only. Top-level directory matches are excluded so
     // their non-conflicting children still move.
@@ -406,7 +415,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
             move |p: &Path| -> FetchFut<'_> {
                 let volume = Arc::clone(&volume);
                 let p_owned = p.to_path_buf();
-                Box::pin(async move { volume.get_metadata(&p_owned).await.ok().map(|m| m.size.unwrap_or(0)) })
+                Box::pin(async move { super::conflict::size_of_whatever_is_at(&volume, &p_owned).await })
             }
         },
         {
@@ -418,6 +427,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
             let config = config_owned.clone();
             let operation_id = operation_id_owned.clone();
             let overwritten_sources = Arc::clone(&overwritten_sources);
+            let displaced_dests = Arc::clone(&displaced_dests);
             move |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
                 let volume = Arc::clone(&volume);
                 let state = Arc::clone(&state);
@@ -426,6 +436,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
                 let source_hints = Arc::clone(&source_hints);
                 let config = config.clone();
                 let overwritten_sources = Arc::clone(&overwritten_sources);
+                let displaced_dests = Arc::clone(&displaced_dests);
                 let operation_id = operation_id.clone();
                 let source_path_owned = input.source_path.to_path_buf();
                 let initial_dest_owned = input.initial_dest_path.to_path_buf();
@@ -471,16 +482,16 @@ pub(crate) async fn move_within_same_volume_with_progress(
                             ConflictDecision::Skip { bytes_accounted: 0 }
                         }
                         Some(rc) => {
-                            // Same-volume move uses `volume.rename` (atomic-ish,
-                            // no streaming), so it keeps the legacy delete-first
-                            // overwrite shape — NOT the cross-volume safe-replace
-                            // temp dance. When the resolver hands back a temp +
-                            // `replace_after_write` (file→file Overwrite), delete
-                            // the original here and rename straight onto it. (We
-                            // can't rely on `rename(force=true)`: MTP's variant
-                            // doesn't delete an existing dest.) For dir-merge /
-                            // Rename, `replace_after_write` is `None` and we use
-                            // the resolved path as-is.
+                            // Same-volume move replaces by renaming the SOURCE
+                            // onto the name, so it never needs the cross-volume
+                            // temp for the new bytes. It does need the name free:
+                            // `rename(force=false)` can't replace, and MTP's
+                            // `force = true` doesn't delete an existing dest
+                            // either. When the resolver hands back a
+                            // `replace_after_write` (file→file Overwrite) the
+                            // original goes ASIDE here and the rename lands in the
+                            // closure. For dir-merge / Rename it is `None` and the
+                            // resolved path is used as-is.
                             match rc.replace_after_write {
                                 Some(orig) => {
                                     // A file→file overwrite: record it so the journal
@@ -489,16 +500,16 @@ pub(crate) async fn move_within_same_volume_with_progress(
                                     overwritten_sources
                                         .lock_ignore_poison()
                                         .insert(source_path_owned.clone());
-                                    match volume.delete(&orig).await {
-                                        Ok(()) => {}
-                                        Err(VolumeError::NotFound(_)) => {}
-                                        Err(e) => {
-                                            return Err(map_volume_error(
-                                                &orig.display().to_string(),
-                                                PathRole::Destination,
-                                                e,
-                                            ));
-                                        }
+                                    // ❗ Renamed ASIDE, never deleted. The rename
+                                    // that replaces it is a separate call the
+                                    // backend can refuse, and a delete makes that
+                                    // refusal fatal to the user's file.
+                                    if let Some(displaced) =
+                                        displace_destination(&volume, &orig, state.liveness_token()).await?
+                                    {
+                                        displaced_dests
+                                            .lock_ignore_poison()
+                                            .insert(source_path_owned.clone(), displaced);
                                     }
                                     ConflictDecision::Proceed {
                                         dest_path: orig,
@@ -525,6 +536,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
             let operation_id = operation_id_owned.clone();
             let journal_volumes = journal_volumes.clone();
             let overwritten_sources = Arc::clone(&overwritten_sources);
+            let displaced_dests = Arc::clone(&displaced_dests);
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let volume = Arc::clone(&volume);
                 let source_hints = Arc::clone(&source_hints);
@@ -535,6 +547,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
                 let operation_id = operation_id.clone();
                 let journal_volumes = journal_volumes.clone();
                 let overwritten_sources = Arc::clone(&overwritten_sources);
+                let displaced_dests = Arc::clone(&displaced_dests);
                 let source_path = ctx.source_path.to_path_buf();
                 let dest_item_path = ctx
                     .dest_path
@@ -661,10 +674,27 @@ pub(crate) async fn move_within_same_volume_with_progress(
                     note_pending_for_local_volume(&volume, &source_path);
                     note_pending_for_local_volume(&volume, &dest_item_path);
 
-                    volume
-                        .rename(&source_path, &dest_item_path, false)
-                        .await
-                        .map_err(|e| map_volume_error(&source_path.display().to_string(), PathRole::Source, e))?;
+                    // The file this rename is replacing, if any, is sitting
+                    // under its `.cmdr-temp-<uuid>` aside waiting to hear whether
+                    // the rename landed.
+                    let displaced = displaced_dests.lock_ignore_poison().remove(&source_path);
+                    if let Err(e) = volume.rename(&source_path, &dest_item_path, false).await {
+                        let cause = map_volume_error(&source_path.display().to_string(), PathRole::Source, e);
+                        let Some(displaced) = displaced else { return Err(cause) };
+                        return Err(match displaced.restore(&volume).await {
+                            // Home, and the move simply failed.
+                            None => cause,
+                            // It couldn't go home, so the failure has to say
+                            // where their file actually is.
+                            Some(kept_at) => WriteOperationError::OriginalsKeptAside {
+                                cause: Box::new(cause),
+                                recovered: vec![RecoveredOriginal::new(&dest_item_path, &kept_at)],
+                            },
+                        });
+                    }
+                    if let Some(displaced) = displaced {
+                        displaced.discard(&volume).await;
+                    }
 
                     journal_same_volume_moved_item(
                         &operation_id,
@@ -688,6 +718,15 @@ pub(crate) async fn move_within_same_volume_with_progress(
     )
     .await;
 
+    // Anything still in here belongs to an item whose replacing rename never
+    // ran (a cancel, or a failure between the resolver and the rename), so the
+    // user's file is sitting under an aside name with nothing left to replace
+    // it. It goes home.
+    let orphaned: Vec<DisplacedDestination> = displaced_dests.lock_ignore_poison().drain().map(|(_, d)| d).collect();
+    for displaced in orphaned {
+        displaced.restore(&volume).await;
+    }
+
     let files_moved = outcome.files_done;
     let bytes_moved = outcome.bytes_done;
     let files_skipped = outcome.files_skipped;
@@ -706,6 +745,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
                 files_processed: files_moved + already_in_place,
                 files_skipped,
                 bytes_processed: bytes_moved,
+                appeared_during_move: None,
             });
             Ok(())
         }

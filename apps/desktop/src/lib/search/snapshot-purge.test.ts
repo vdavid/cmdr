@@ -48,6 +48,7 @@ function seedSnapshot(): void {
     totalCount: 2,
     createdAt: 0,
     label: 'jpg',
+    sort: null,
   })
 }
 
@@ -141,6 +142,7 @@ describe('every snapshot, not only the one on screen', () => {
       totalCount: 1,
       createdAt: 0,
       label: 'a',
+      sort: null,
     })
 
     emit(done(A, true))

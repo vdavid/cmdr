@@ -23,8 +23,9 @@ use super::super::checkpoint_stream::CheckpointStream;
 use super::super::staged_write::StagedWrite;
 // Re-exported so the sibling test modules (and any future caller reached through
 // this module's API) name the staging choice without a second import path.
+use super::super::recovered_name::FinalizeFailure;
 use super::super::retry;
-pub(super) use super::super::staged_write::WriteStaging;
+pub(super) use super::super::staged_write::{LandingName, WriteStaging};
 use super::super::transfer_probe::{
     OperationProbe, TaskPhase, TaskRow, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase,
 };
@@ -450,7 +451,7 @@ pub(super) async fn copy_single_path(
             staging,
         )
         .await
-        .at(source_path)?;
+        .map_err(|f| f.at_source_or_rescued_dest(source_path, dest_path))?;
         on_file_complete(bytes);
         Ok(bytes)
     }
@@ -459,11 +460,17 @@ pub(super) async fn copy_single_path(
 /// The staging every call site derives the same way: a conflict resolution that
 /// handed back a temp to swap over an original (`Some(orig)`) already staged the
 /// write, anything else is ours to stage.
-pub(super) fn staging_for(replace_after_write: &Option<PathBuf>) -> WriteStaging {
-    if replace_after_write.is_some() {
-        WriteStaging::AlreadyStaged
-    } else {
-        WriteStaging::Stage
+///
+/// `landing` is the OTHER thing only the caller knows: whether a conflict
+/// resolution put this write at this name. It decides what the landing rename's
+/// `AlreadyExists` means (see `staged_write.rs::land`), so ❌ never pass
+/// `ClaimedByTheCaller` for a write nothing resolved — that is the reading that
+/// clears the user's file.
+pub(super) fn staging_for(replace_after_write: &Option<PathBuf>, landing: LandingName) -> WriteStaging {
+    match (replace_after_write, landing) {
+        (Some(_), _) => WriteStaging::AlreadyStaged,
+        (None, LandingName::ExpectedFree) => WriteStaging::Stage,
+        (None, LandingName::ClaimedByTheCaller) => WriteStaging::StageOntoClaimedName,
     }
 }
 
@@ -494,7 +501,8 @@ pub(super) fn staging_for(replace_after_write: &Option<PathBuf>) -> WriteStaging
 /// in place until the new bytes are complete, which is a stronger guarantee than
 /// single-shot-ness and the caller's to land.
 pub(super) fn resolve_staging(requested: WriteStaging, write_is_single_shot: bool) -> WriteStaging {
-    if requested == WriteStaging::Stage && write_is_single_shot {
+    let we_stage = matches!(requested, WriteStaging::Stage | WriteStaging::StageOntoClaimedName);
+    if we_stage && write_is_single_shot {
         WriteStaging::SingleShot
     } else {
         requested
@@ -582,7 +590,7 @@ pub(super) async fn stream_pipe_file(
     state: &Arc<WriteOperationState>,
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     staging: WriteStaging,
-) -> Result<u64, VolumeError> {
+) -> Result<u64, FinalizeFailure> {
     log::debug!("stream_pipe_file: {} -> {}", source_path.display(), dest_path.display());
 
     // Register BOTH halves of the eventual rename with the downloads watcher's
@@ -636,7 +644,7 @@ pub(super) async fn stream_pipe_file(
         set_task_phase(TaskPhase::OpeningSource);
         let stream = tokio::select! {
             biased;
-            () = state.backend_abort.cancelled() => return Err(hard_abort_error(source_path)),
+            () = state.backend_abort.cancelled() => return Err(hard_abort_error(source_path).into()),
             opened = source_volume.open_read_stream_with_hint(source_path, source_facts.size) => opened?,
         };
         let size = stream.total_size();
@@ -729,7 +737,7 @@ pub(super) async fn stream_pipe_file(
                 // promised one indivisible frame, so dropping it leaves either the
                 // whole file or nothing, which is the same outcome the process
                 // dying produces.
-                return Err(hard_abort_error(dest_path));
+                return Err(hard_abort_error(dest_path).into());
             }
         };
         let bytes = match write_result {
@@ -764,7 +772,7 @@ pub(super) async fn stream_pipe_file(
                     // Cancelled during the backoff. Report it as the cancel it is
                     // rather than the transport error that triggered the retry, so
                     // the post-loop reclassifies it and emits `write-cancelled`.
-                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()).into());
                 }
                 attempt += 1;
                 continue;
@@ -776,7 +784,7 @@ pub(super) async fn stream_pipe_file(
             // log the user's own click as a failed transfer.
             Err(e) if retry::is_retryable(&e) && super::super::super::state::is_cancelled(&state.intent) => {
                 staged.abandon(dest_volume).await;
-                return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()).into());
             }
             Err(e) => {
                 // The staged bytes are a partial (a mid-stream failure, or the
@@ -789,7 +797,7 @@ pub(super) async fn stream_pipe_file(
                         dest_path.display(),
                     );
                 }
-                return Err(e);
+                return Err(e.into());
             }
         };
 
@@ -810,7 +818,10 @@ pub(super) async fn stream_pipe_file(
         // Past the last byte: give the file its final name.
         match staged.commit(dest_volume).await {
             Ok(()) => return Ok(bytes),
-            Err(VolumeError::NotSupported) if staging == WriteStaging::Stage => {
+            Err(FinalizeFailure {
+                error: VolumeError::NotSupported,
+                ..
+            }) if matches!(staging, WriteStaging::Stage | WriteStaging::StageOntoClaimedName) => {
                 log::warn!(
                     target: "copy",
                     "stream_pipe_file: destination can't land a staged write for {}; falling back to writing at the final name",
@@ -821,7 +832,9 @@ pub(super) async fn stream_pipe_file(
             }
             // The write SUCCEEDED and the landing didn't: the temp holds the only
             // complete copy of the new bytes, and `commit` already dropped it from
-            // the in-flight set so nothing sweeps it. Surface the failure.
+            // the in-flight set so nothing sweeps it. When the landing had already
+            // cleared the way, `land` also got those bytes out of temp space and
+            // `new_data_at` says where they are. Surface the failure.
             Err(e) => return Err(e),
         }
     }
@@ -895,7 +908,7 @@ async fn try_server_side_copy(
     state: &Arc<WriteOperationState>,
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     staging: WriteStaging,
-) -> Result<Option<u64>, VolumeError> {
+) -> Result<Option<u64>, FinalizeFailure> {
     if !Arc::ptr_eq(source_volume, dest_volume) {
         return Ok(None);
     }
@@ -915,7 +928,7 @@ async fn try_server_side_copy(
     // the startup sweep.
     let outcome = tokio::select! {
         biased;
-        () = state.backend_abort.cancelled() => return Err(hard_abort_error(dest_path)),
+        () = state.backend_abort.cancelled() => return Err(hard_abort_error(dest_path).into()),
         result = dest_volume.copy_within(source_path, staged.target(), on_file_progress) => result,
     };
 
@@ -929,7 +942,7 @@ async fn try_server_side_copy(
         // else can't turn a Cancel click into a second, full-speed attempt.
         Err(e) if matches!(e, VolumeError::Cancelled(_)) || super::super::super::state::is_cancelled(&state.intent) => {
             staged.abandon(dest_volume).await;
-            Err(e)
+            Err(e.into())
         }
         Err(VolumeError::NotSupported) => {
             staged.abandon_attempt(dest_volume).await;

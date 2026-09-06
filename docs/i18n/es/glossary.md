@@ -2067,3 +2067,30 @@ terminal que abre el comando. La lista la construye macOS; aquí solo se traduce
 - **Choose an app… → `Seleccionar app…`** · el `Choose Application…` de Apple (clave `N137`) dice
   `Seleccionar aplicación…`; `app` en vez de `aplicación`, como en todo el catálogo · `high`.
 - Ningún valor lleva apóstrofo, así que no hay duplicación ICU (`''`).
+
+## `Sort by relevance`: la ayuda emergente de la columna de resultados (`fileExplorer.columns.sortByRelevance`)
+
+Superficie nueva: la ayuda emergente sobre la cabecera de columna activa de un panel de resultados de búsqueda. El clic
+siguiente devuelve las filas al orden del buscador, con la mejor coincidencia primero.
+
+- **relevance (lo bien que un resultado coincide con la búsqueda) → `relevancia`** · las cuatro fuentes de macOS
+  coinciden: WorkflowKit (`Relevance (WFSearchSortOrder)` → `Relevancia`), AppStoreKit (`SEARCH_FACET_RELEVANCE` →
+  `Relevancia`), Automator (`%1$[La relevancia]@ …`) y Música · `high`. En minúscula tras `por`, como en el resto del
+  catálogo. (verificado en macOS 26.6.2, compilación 25G83, volcado con `plutil` de las localizaciones incluidas,
+  2026-09-06)
+- **Marco de la frase → `Ordenar por relevancia`** · el mismo patrón que sus claves hermanas de `commands.json`
+  (`Ordenar por nombre`, `Ordenar por tamaño`) · `high`. Sin `sameAsSourceJustification`, y el valor no lleva apóstrofo.
+
+## `Documents and packages`: la nueva fila OOXML (`settings.archives.ooxml.*`)
+
+Superficie nueva: una fila de la misma tarjeta que `Archivos comprimidos zip`, encima de la tarjeta `Paquetes de apps`.
+Cubre a propósito LAS DOS cosas, los documentos de Office (.docx, .xlsx, .pptx) y los paquetes de apps (.jar, .apk), y
+por eso ni el inglés nombra Office.
+
+- **documents (el tipo de archivo) → `Documentos`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Documentos`; tipos
+  `Documento RTF`, `Documento de texto sin formato`) · `high`.
+- **packages (genérico, no solo apps) → `paquetes`** · macOS (`Mostrar contenido del paquete`) y la entrada de glosario
+  `app bundle → paquete` · `high`. Se deja el `paquetes` desnudo para que la fila siga siendo más amplia que la tarjeta
+  `Paquetes de apps` de debajo, la misma separación que hace el inglés con `packages` frente a `app bundles`.
+- **Marco de la frase → `Qué hace pulsar Intro en un …, … o ….`** · el mismo marco que sus claves hermanas
+  `settings.archives.zip.description` y `settings.archives.bundle.description` · `high`. Sin apóstrofo en el valor.

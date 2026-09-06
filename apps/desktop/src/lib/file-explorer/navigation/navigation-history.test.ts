@@ -327,7 +327,7 @@ describe('NavigationHistory', () => {
   })
 
   // ---------------------------------------------------------------------------
-  // MAX_HISTORY_PER_TAB cap (M8a)
+  // MAX_HISTORY_PER_TAB cap
   // ---------------------------------------------------------------------------
 
   describe('MAX_HISTORY_PER_TAB cap', () => {

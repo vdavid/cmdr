@@ -744,8 +744,9 @@ For the image-search index status badges (2026-07-22; the 11 `fileExplorer.image
 `settings.mediaIndex.showFileStatusIcons.*` keys). Small status indicators on image files, folders, and drives showing
 image-search indexing state. Reuses the settled indexing family; new/confirmed terms:
 
-- **image search (the feature): `bildsökning`** · already the catalog's own term (`settings.mediaIndex.card` =
-  "Bildsökning"); definite `bildsökningen`. Compound `bildsökningsstatus` for the drive aria-label. `high`.
+- **image search (the feature): `bildsökning`** · the catalog's term wherever the feature is named
+  (`fileExplorer.imageIndex.file.indexed` = "Indexerad för bildsökning", `askCmdr.consent.contentsRule` = "Bildsökningen
+  fungerar på samma sätt"); definite `bildsökningen`. Compound `bildsökningsstatus` for the drive aria-label. `high`.
 - **indexed (as a status on a `bild`): `indexerad` / `indexerade`** · en-word agreement with `bild` (glossary index
   family + shipped `settings.mediaIndex.networkVolumes.indexed` "{countText} bild indexerad / bilder indexerade"). The
   standalone file badge takes the en-word `Indexerad` (implied subject `bilden`, en-word), NOT Apple's neuter supine
@@ -2080,3 +2081,32 @@ av macOS, så bara etiketterna översätts här.
   redan säger `app` · `confirmed`.
 - **terminal app → `terminalapp`** · sammansatt, som katalogens övriga `app`-sammansättningar · `high`. Inga apostrofer
   i värdena, så ICU-dubbleringen `''` blir aldrig aktuell.
+
+## `Sort by relevance`: the search-results column tooltip (`fileExplorer.columns.sortByRelevance`)
+
+New surface: the hover tooltip on the active column header of a search-results pane. The next click puts the rows back
+into the search engine's own best-match-first order.
+
+- **relevance (how well a result matches the search) → `relevans`** · all four macOS sources agree: WorkflowKit
+  (`Relevance (WFSearchSortOrder)` → `Relevans`), AppStoreKit (`SEARCH_FACET_RELEVANCE` → `Relevans`), Automator
+  (`%1$[Relevans]@ …`), and Musik · `high`. Indefinite form, matching the sibling sort labels (`efter namn`,
+  `efter storlek`). (verified on macOS 26.6.2 build 25G83, `plutil` dump of the shipped localizations, 2026-09-06)
+- **Sentence frame → `Sortera efter relevans`** · exactly the pattern of its sibling keys in `commands.json`
+  (`Sortera efter namn`, `Sortera efter storlek`) · `high`. No `sameAsSourceJustification`, and the value carries no
+  apostrophe.
+
+## `Documents and packages`: the new OOXML row (`settings.archives.ooxml.*`)
+
+New surface: a row in the same card as `Zip-arkiv`, above the `Appaket` card. It deliberately covers BOTH Office
+documents (.docx, .xlsx, .pptx) and app packages (.jar, .apk), which is why even the English avoids naming Office.
+
+- **documents (the file kind) → `Dokument`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Dokument`; kinds `RTF-dokument`,
+  `Rent textdokument`) · `high`. Indefinite plural, which in Swedish is the bare form.
+- **packages (generic, not only apps) → `paket`** · macOS Finder (`Visa paketets innehåll`) and the glossary's
+  `bundle → paket` · `high`. Bare `paket` keeps the row broader than the `Appaket` card below it, mirroring English's
+  own `packages` vs `app bundles` split.
+- **Sentence frame → `Vad Enter gör med en …, … eller ….`** · the frame of the sibling keys
+  `settings.archives.zip.description` and `settings.archives.bundle.description`, minus the comma before `eller`
+  (style.md § no comma before `och`/`eller`) · `high`. ❗ `settings.archives.bundle.description` still carries that
+  calqued comma (`.bundle, eller .framework`). It was out of scope for this pass, so the two rows differ in punctuation
+  until someone fixes it.

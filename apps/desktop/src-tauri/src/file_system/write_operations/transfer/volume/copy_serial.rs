@@ -185,13 +185,9 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     if let Some(probe) = op_probe_precheck.as_ref() {
                         probe.set_driver_phase(DriverPhase::PreparingNext, &p_owned.display().to_string());
                     }
-                    // `Some(_)` signals a conflict; preserve the existing
-                    // "treat any successful stat as a conflict" semantics.
-                    dest_volume
-                        .get_metadata(&p_owned)
-                        .await
-                        .ok()
-                        .map(|m| m.size.unwrap_or(0))
+                    // Any successful stat is a conflict; a stat that can't
+                    // answer fails the item rather than writing.
+                    super::conflict::size_of_whatever_is_at(&dest_volume, &p_owned).await
                 })
             }
         },
@@ -343,6 +339,15 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                 // successful write we delete `orig` and rename the temp into
                 // place (safe-replace for file→file Overwrite).
                 let replace_after_write = ctx.replace_after_write.map(Path::to_path_buf);
+                // Whether the driver's conflict resolution PICKED this
+                // destination name (a `Rename`, an Overwrite that cleared it),
+                // which is what the landing needs to tell its own placeholder
+                // from a file nobody answered for.
+                let landing = if ctx.dest_name_claimed {
+                    super::strategy::LandingName::ClaimedByTheCaller
+                } else {
+                    super::strategy::LandingName::ExpectedFree
+                };
                 let bytes_done_so_far = ctx.bytes_done_so_far;
                 Box::pin(async move {
                     let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
@@ -491,7 +496,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                         &on_file_progress,
                         &on_file_complete,
                         Some(&merge_ctx),
-                        super::strategy::staging_for(&replace_after_write),
+                        super::strategy::staging_for(&replace_after_write, landing),
                     );
                     // Bind this source's probe as a task-local for the whole
                     // copy, so `stream_pipe_file` and `CheckpointStream`
@@ -530,12 +535,11 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                         // destination, so it names the destination
                                         // entry: the source is already fully read and
                                         // untouched, and reporting it here would point
-                                        // the user at an intact file.
-                                        return Err(map_volume_error(
-                                            &dest_item_path.display().to_string(),
-                                            PathRole::Destination,
-                                            e,
-                                        ));
+                                        // the user at an intact file. When the original
+                                        // is already gone the failure also carries where
+                                        // the new bytes were rescued to, and that path is
+                                        // what the user is told.
+                                        return Err(super::transfer_error::map_finalize_failure(&orig, e));
                                     }
                                     orig
                                 }

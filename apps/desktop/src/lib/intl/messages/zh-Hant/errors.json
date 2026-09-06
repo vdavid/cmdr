@@ -1437,6 +1437,38 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "你的新檔案換了個名字",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "新的 {path} 已經完整寫好了，但目標位置不讓它用這個名字，而它要取代的那個檔案已經沒了。新檔案現在在 {keptAt}。",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "打開 {keptAt} 看一下，然後幫它改名。如果目標位置是網路共享或手機，先重新連上，改名就會成功。",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
+  "errors.write.originalsKeptAside.title": "你的檔案換了個名字",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "有個資料夾占了 {path} 這個名字，所以你的檔案現在在 {keptAt}。什麼都沒被丟掉。",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "有幾個資料夾占了你 {count} 個檔案的名字，所以這些檔案現在都換了名字。什麼都沒被丟掉；下面的技術詳情裡每一個都列出來了。",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "打開 {keptAt} 看一下。等你把那個資料夾挪開，就可以把檔案的名字改回來。",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "下面的詳情裡寫了每個檔案在哪裡。等你把那些資料夾挪開，就可以把名字都改回來。",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
+  },
   "errors.write.fallback.title.copy": "無法複製",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"
@@ -1652,5 +1684,21 @@
   "errors.write.readOnlyDevice.source.fallbackName": "該來源",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "兩個項目重名",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "你選了兩個都叫 {name} 的項目，它們會落到同一個位置：{first} 和 {second}。",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "一個一個地複製，或者先幫其中一個改名。",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "一個一個地移動，或者先幫其中一個改名。",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

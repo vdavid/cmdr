@@ -220,6 +220,7 @@ pub(crate) async fn archive_edit_start(
                         files_processed: final_progress.entries_changed,
                         files_skipped: skipped_count,
                         bytes_processed: final_progress.bytes_total,
+                        appeared_during_move: None,
                     });
                 }
                 Err(PlanError::Cancelled) => {

@@ -5,48 +5,45 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 
 ## Module map
 
-- `DualPaneExplorer.svelte`: root, owns both panes, unified key/command dispatch, the dialog manager, the MCP surface.
+- `DualPaneExplorer.svelte`: root, owns both panes, key/command dispatch, the dialog manager, the MCP surface.
 - `FilePane.svelte`: one pane (lifecycle `$state`, the `FilePaneAPI` exports, the alt-view `{#if}` chain). Its
-  controller and the rest live in siblings: `*.svelte.ts` state factories, `*.ts` pure helpers, listed in DETAILS.
+  controller and helpers are siblings, listed in DETAILS.
 
 ## Must-knows
 
 - **One pane is always focused and only `setFocusedPane` mutates it**; a switch clears type-to-jump and rename, and
   startup must call `updateFocusedPane` or Rust's left default misdirects Ask Cmdr and MCP.
-- **Explorer-store fields are module-private with one mutator each** (`cmdr/no-explorer-state-writes`); `cursorIndex`,
-  selection, and listing UI state stay LOCAL to `FilePane` (perf P3).
-- **Guard logic branches on `VolumeCapabilities`, ❌ never volume-id strings.** Rust answers what a volume CAN DO
-  (`VolumeInfo.capabilities` → `canWrite` / `canBeSource`); `volume-capabilities.ts` classifies what it IS. ❌ Never
-  source KIND from the backend: an un-upgraded SMB share is served by a local one. `capabilitiesFor` / `volumeKindOf`
-  stay TOTAL (unknown ids fall to `local`); the tint classifier `volumeKindFor` never gets that default.
-- **The two ROUTED panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone**
-  — an archive or `.git`-portal pane keeps the parent DRIVE's `volumeId`. Zip is WRITABLE, tar/7z and portal snapshots
-  READ-ONLY. Real files under `.git/` keep the drive's row.
-- **The snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false`, AND
-  opening a real entry must LEAVE the snapshot volume. Skip either and selection goes off-by-one, or `search-results`
-  sticks on a real path.
-- **BIRTH CONTEXT and an ADOPTED operation are separate slots in separate MODULES.** `adopted-operation.svelte.ts` and
-  `archive-password-flow.svelte.ts` get a read-only `hasBirthContext()` and argument-free commands, ❌ never the props,
-  a writer, or a getter, and ❌ never read the progress slot's occupancy off `showTransferProgressDialog`. DETAILS §
-  "Birth context".
+- **`cursorIndex`, selection, and listing UI state stay LOCAL to `FilePane`** (perf P3); explorer-store fields are
+  module-private with one mutator each (`cmdr/no-explorer-state-writes`).
+- **Guard logic branches on `VolumeCapabilities`, ❌ never volume-id strings** — Rust answers what a volume CAN DO
+  (`canWrite` / `canBeSource`), `volume-capabilities.ts` what it IS. ❌ Never source KIND from the backend: an
+  un-upgraded SMB share is served by a local one.
+- **The two ROUTED panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`** — an archive or
+  `.git`-portal pane keeps the parent DRIVE's `volumeId`. Zip is WRITABLE; tar/7z, OOXML docs, and portal snapshots
+  READ-ONLY.
+- **Two archive path predicates**: `pathCrossesArchiveBoundary` (at-or-inside) for a PANE path; `pathInsideArchive`
+  (strictly inside) for a site acting ON one — a `.zip`/`.docx` file itself previews, moves, and renames normally. ❌
+  Never add a document suffix to `WRITABLE_ARCHIVE_SUFFIXES`; a `.docx` is a zip the mutator would rewrite.
+- **The snapshot pane (`volumeId === 'search-results'`) couples five points**; skip one and you get an off-by-one
+  selection, a stuck `search-results` path, a delete on rows nobody picked, an MCP delete refused by stale pane state,
+  or a folder re-sorted from a pane that isn't it (its header sorts the SNAPSHOT, ❌ never `setPaneSort`). DETAILS §
+  Snapshot pane.
+- **BIRTH CONTEXT and an ADOPTED operation are separate slots in separate MODULES.** The flow modules get a read-only
+  `hasBirthContext()` and argument-free commands, ❌ never the props, a writer, or a getter, and ❌ never read the
+  progress slot's occupancy off `showTransferProgressDialog`. DETAILS § Birth context.
 - **A dialog on screen refuses the commands that START a file operation, ❌ never the ones that STEER a running one.**
-  Cancel, pause, rollback, queue, and answering a clash keep working with the progress dialog up. Which dialogs block is
-  declared per entry in `$lib/ui/dialog-registry.ts` (a new one won't compile without a verdict); the four refusal
-  layers are DETAILS § "The operation-start gate".
+  `$lib/ui/dialog-registry.ts` declares the verdict per entry (a new dialog won't compile without one). DETAILS § The
+  operation-start gate.
 - **Every dialog renders inside ONE `<svelte:boundary>` in `DialogManager.svelte`**: `show*` flips before the dialog
-  renders and suppresses pane keys, so a mid-render throw would wedge the keyboard with a blank screen.
-- **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, A5): mutate the store and let
-  it react; ❌ don't scatter `saveAppStatus` / `saveTabsForPaneSide` across nav paths.
-- **Three first-run-layout guardrails, each looking like a tidy-up. ❌ Never "simplify" one away.** `markAlreadyLaidOut`
-  leaves an install that already has pane state untouched; `~/Downloads` is probed only after Full Disk Access is
-  confirmed; `loadPersistedState` persists an applied layout itself. DETAILS § "First-run pane layout".
+  renders and suppresses pane keys, so a mid-render throw wedges the keyboard behind a blank screen.
+- **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`): mutate the store and let it
+  react, ❌ don't scatter `saveAppStatus` / `saveTabsForPaneSide` across nav paths.
+- **Three first-run-layout guardrails, each looking like a tidy-up. ❌ Never "simplify" one away.** DETAILS § First-run
+  pane layout.
 - **`navigate(intent, deps)` is the single pane-nav entry**: `{ goTo }` self-routes by volume, `{ selectVolume }` always
-  switches. Resolve bare paths to a `Location` at the edge. Refusal `message` strings are byte-pinned. `network`
-  navigates only `smb://`; a switch there clears the pane's open host.
-- **`DualPaneExplorer.svelte` and `FilePane.svelte` are `file-length`-flagged**: don't add to them, and ❌ don't carve
-  child components either. Cross-cutting state → a `*.svelte.ts` factory, pure logic → a `*.ts` helper.
+  switches, bare paths resolve to a `Location` at the edge.
+- **`DualPaneExplorer.svelte` / `FilePane.svelte` are at their size cap**: extract cross-cutting state to a
+  `*.svelte.ts` factory or pure logic to a `*.ts` helper, ❌ never a child component.
 
-`DETAILS.md` holds the file table, the key-dispatch focus guard's dialog exemption, the walk-up fallback's volume
-re-resolve, `getTabMgr`'s live `$state` holder, the select-only cursor jump, the MTP clipboard gate, self-drag identity,
-the volume tint's `hasColorMix` fallback, `ErrorPane`'s ways out, and why the remaining volume-id compares are not
-guards. Read it before any non-trivial work here.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

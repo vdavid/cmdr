@@ -85,7 +85,7 @@ interface SelectionDragContext {
 
 /**
  * Context for a multi-path drag where the frontend already has resolved
- * absolute paths. Used by the search-results pane (M8d), which has no backend
+ * absolute paths. Used by the search-results pane, which has no backend
  * listing for `start_selection_drag` to resolve indices against. Routes
  * through `start_drag_paths` instead.
  */
@@ -400,7 +400,7 @@ export function startSelectionDragTracking(
       } else {
         // `paths` context: the FE already has resolved paths (search-results
         // pane via the snapshot store). Route through `start_drag_paths` so
-        // the backend doesn't need a listing-cache lookup. M8d.
+        // the backend doesn't need a listing-cache lookup.
         void performPathsDrag(ctx)
       }
 
@@ -537,7 +537,7 @@ async function performSelectionDrag(context: SelectionDragContext): Promise<void
  * Performs a paths-by-value drag. The search-results pane uses this because
  * it has no backend listing for `start_selection_drag` to resolve indices
  * against. `start_drag_paths` is the same Tauri command used for single-file
- * drags; it just accepts >1 path. M8d.
+ * drags; it just accepts >1 path.
  */
 async function performPathsDrag(context: PathsDragContext): Promise<void> {
   if (context.paths.length === 0) return

@@ -959,7 +959,7 @@ pub(crate) async fn copy_volumes_with_progress(
             deep_skipped_files: Arc::clone(&deep_skipped_files),
             deep_skipped_bytes: Arc::clone(&deep_skipped_bytes),
         })
-        .await?;
+        .await;
         last_dest_path = outcome.last_dest_path;
         copy_error = outcome.copy_error;
         // Sync counters for post-loop reporting.
@@ -1070,6 +1070,7 @@ pub(crate) async fn copy_volumes_with_progress(
             files_processed: files_done,
             files_skipped,
             bytes_processed: bytes_done,
+            appeared_during_move: None,
         });
 
         return Ok(());
@@ -1187,6 +1188,9 @@ mod crashsafe_tests;
 #[path = "copy_extract_out_tests.rs"]
 mod extract_out_tests;
 #[cfg(test)]
+#[path = "merge_case_fold_tests.rs"]
+mod merge_case_fold_tests;
+#[cfg(test)]
 #[path = "merge_dir_vs_dir_tests.rs"]
 mod merge_dir_vs_dir_tests;
 #[cfg(test)]
@@ -1201,6 +1205,11 @@ mod merge_tests;
 #[cfg(test)]
 #[path = "merge_window_tests.rs"]
 mod merge_window_tests;
+
+/// What a deep merge does with the ` (N)` name it reserved for a child.
+#[cfg(test)]
+#[path = "merge_placeholder_tests.rs"]
+mod merge_placeholder_tests;
 #[cfg(test)]
 #[path = "copy_precheck_tests.rs"]
 mod precheck_tests;

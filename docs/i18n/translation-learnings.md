@@ -171,7 +171,7 @@ catalog strings, not OS-sourced" for what that would take.
 
 ## Copy-shape contracts worth stating once
 
-Four recurring string families whose SHAPE is the thing that drifts, so state the contract rather than "keep them
+Five recurring string families whose SHAPE is the thing that drifts, so state the contract rather than "keep them
 parallel":
 
 - **A warning badge is a state label, not an action.** English hides this because "(overwrite!)" is noun/verb ambiguous;
@@ -194,6 +194,13 @@ parallel":
   …", hu "A macOS **az elmúlt X órában** egyszer …", zh "**在过去 X 小时内**，macOS 有 …") — re-read the remainder as a
   standalone sentence; (2) the placeholder SET must end up exactly English's, so a dropped clause must take its
   placeholders with it (parity is error-class and will catch it, but after you've written nine).
+- **A string that NAMES another Cmdr surface copies that surface's own catalog value; it never re-translates the English
+  word.** "Show image results in Search" (`settings.mediaIndex.showInSearch.label`) means the Search dialog, so each
+  locale takes the word from `search.dialog.title` (de `Suche`, hu `Keresés`, sv `Sök`, zh-Hant `搜尋`), not a fresh
+  rendering of "search": otherwise the setting sends the reader looking for a dialog by a name it doesn't have. Where
+  that title is an infinitive or imperative (es and pt `Buscar`, fr `Rechercher`), keep it capitalized and let it read
+  as a proper name inside the sentence, the way Apple refers to its own `Buscar` / `Localiser`. The same rule already
+  applies to menu names (`menu.*`) in prose; this is it generalized to dialogs and panes.
 
 ## Reference-pile notes
 

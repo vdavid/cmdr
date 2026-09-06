@@ -1,21 +1,23 @@
 import {
-  DEFAULT_VOLUME_ID,
   copyFilesToClipboard,
   cutFilesToClipboard,
   copyPathsToClipboard,
   cutPathsToClipboard,
   readClipboardFiles,
   clearClipboardCutState,
+  resolvePathVolume,
 } from '$lib/tauri-commands'
 import { addToast, addToastForPane } from '$lib/ui/toast'
-import { resolveSnapshotPaths } from '$lib/search/snapshot-store.svelte'
+import { resolveSnapshotPaths, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
 import { getAppLogger } from '$lib/logging/logger'
+import { isPlainFilesystemPath } from '$lib/path/canonical'
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
 import { tString } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
-import { checkTransferDestinationGuard } from './transfer-entry'
+import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
+import { resolveSnapshotSourceVolume } from './snapshot-source-volume'
 import { operationStartIsBlocked } from './operation-start-gate'
 import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
 import { pasteClipboardContentAsFile } from './paste-clipboard-as-file'
@@ -148,16 +150,40 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     // `volumeId === 'search-results'` string compare.
     if (capabilitiesFor(focusedVolId).kind !== 'search-results') return null
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
-    const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
-    // Extract the snapshot id from the URL — pure namespace mechanics, kept as-is.
-    const SEARCH_RESULTS_PREFIX = 'search-results://'
-    if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) return null
-    const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
+    const snapshotId = snapshotIdFromPanePath(sourcePaneRef?.getCurrentPath() ?? '')
+    if (snapshotId === null) return null
     const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
     const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
     const paths = resolveSnapshotPaths(snapshotId, selectedIndices, cursorIndex)
     if (paths.length === 0) return null
     return { paths, snapshotId }
+  }
+
+  /**
+   * True when a SEARCH-RESULTS pane's rows can't go on the system clipboard,
+   * the same refusal `isMtpClipboardRefusal` gives a live MTP pane.
+   *
+   * Two gates, and the ORDER matters. The scheme gate runs first and answers
+   * from the row path alone: anything that isn't a plain absolute filesystem
+   * path can't be handed to `NSURL::fileURLWithPath` (`clipboard/pasteboard.rs`),
+   * which reads an unknown scheme as a RELATIVE path and returns a file URL under
+   * the process working directory. It holds when the volume gate can't: unplug a
+   * phone under an open snapshot pane and the device drops off the volume list,
+   * so `resolveSnapshotSourceVolume` falls back to `root` — a kind that copies —
+   * while the rows still read `mtp://…`.
+   *
+   * The volume gate then covers the live device, where the kind has to come from
+   * where the rows really LIVE, because the pane's own volume id is the virtual
+   * `search-results`: a search covers any volume with a persisted index, MTP
+   * storages and ADB devices included.
+   *
+   * ANY offending row refuses the whole set. A partial copy would put a subset on
+   * the clipboard under a toast that says the copy happened, which is worse than
+   * refusing.
+   */
+  function snapshotClipboardIsRefused(paths: string[]): boolean {
+    if (paths.some((path) => !isPlainFilesystemPath(path))) return true
+    return isMtpClipboardRefusal(resolveSnapshotSourceVolume(paths, access.getVolumes()).volumeId)
   }
 
   /** Copies selected files (or cursor file) to the system clipboard. */
@@ -166,6 +192,10 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     // regular listing-id path can't apply because there's no backend listing.
     const snapshotClip = getSnapshotClipboardPaths()
     if (snapshotClip) {
+      if (snapshotClipboardIsRefused(snapshotClip.paths)) {
+        addToast(tString('fileExplorer.clipboard.useF5FromMtp'), { level: 'info' })
+        return
+      }
       try {
         const count = await copyPathsToClipboard(snapshotClip.paths)
         addToast(tString('fileExplorer.clipboard.copied', { countText: formatNumber(count), count }), { level: 'info' })
@@ -207,6 +237,10 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
   async function cutToClipboard() {
     const snapshotClip = getSnapshotClipboardPaths()
     if (snapshotClip) {
+      if (snapshotClipboardIsRefused(snapshotClip.paths)) {
+        addToast(tString('fileExplorer.clipboard.useF6FromMtp'), { level: 'info' })
+        return
+      }
       try {
         const count = await cutPathsToClipboard(snapshotClip.paths)
         addToast(tString('fileExplorer.clipboard.cutReady', { countText: formatNumber(count), count }), {
@@ -323,6 +357,14 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       const destVolId = access.getPaneVolumeId(access.getFocusedPane())
       const sourceFolderPath = getCommonParentPath(result.paths)
 
+      // The volume the sources really sit on, resolved through the same seam the
+      // drop path runs. Everything keyed on the source volume depends on it: the
+      // busy set that keeps Eject disabled while the paste reads off a stick, a
+      // DMG, or a mounted share; the operation's lane; the operation log; and the
+      // progress dialog's source label. `resolveSourceVolumeId` answers root when
+      // the sources span volumes or can't be placed, the honest unknown.
+      const sourceVolumeId = await resolveSourceVolumeId(result.paths, access.getVolumes(), resolvePathVolume)
+
       // Per-type top-level split for the completion toast ("Copied 1 file and 2
       // folders"). `readClipboardFiles` returns each path's kind. We surface the
       // split only when EVERY flag is known; any `null` (stat failed) drops both
@@ -344,7 +386,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
         sortColumn: sortBy,
         sortOrder,
         previewId: null,
-        sourceVolumeId: DEFAULT_VOLUME_ID,
+        sourceVolumeId,
         destVolumeId: destVolId,
         fileCount: split?.fileCount,
         folderCount: split?.folderCount,

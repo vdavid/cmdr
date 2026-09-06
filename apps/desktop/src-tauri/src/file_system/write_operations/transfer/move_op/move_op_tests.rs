@@ -10,11 +10,10 @@
 //! real mount points.
 
 use super::cross_fs::move_with_staging;
-use super::test_support::{make_state, run_cross_fs_move, run_same_fs_move};
+use super::test_support::{make_state, outcomes_for, removal_flags_for, run_cross_fs_move, run_same_fs_move};
 use super::*;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::{ConflictResolution, WriteOperationPhase, WriteProgressEvent};
-use crate::ignore_poison::IgnorePoison;
 
 /// CRITICAL ordering invariant. The final destination's dir entry must be
 /// fsynced (the `Flushing` pass) BEFORE the source originals are deleted.
@@ -382,29 +381,6 @@ fn a_local_move_never_acts_on_a_preview_of_a_different_selection() {
 // is still on disk drops a row for a file the user can still open. Inferring
 // removal from the operation type is exactly what these cases break.
 
-/// The outcomes this run reported for `path`, in emit order. The LAST one is the
-/// operation's verdict on that source (`types::SourceItemOutcome`).
-fn outcomes_for(events: &CollectorEventSink, path: &Path) -> Vec<SourceItemOutcome> {
-    events
-        .source_items_done
-        .lock_ignore_poison()
-        .iter()
-        .filter(|e| e.source_path == path.display().to_string())
-        .map(|e| e.outcome)
-        .collect()
-}
-
-/// The `source_removed` flags this run reported for `path`, in emit order.
-fn removal_flags_for(events: &CollectorEventSink, path: &Path) -> Vec<bool> {
-    events
-        .source_items_done
-        .lock_ignore_poison()
-        .iter()
-        .filter(|e| e.source_path == path.display().to_string())
-        .map(|e| e.source_removed)
-        .collect()
-}
-
 #[test]
 fn a_same_fs_move_that_took_the_whole_item_reports_it_removed() {
     let tmp = tempfile::tempdir().expect("tempdir");
@@ -504,6 +480,45 @@ fn a_cross_fs_move_that_skipped_the_item_never_reports_it_removed() {
     assert!(
         !removal_flags_for(&events, &source).contains(&true),
         "a skipped source must never be reported removed"
+    );
+}
+
+#[test]
+fn a_cross_fs_merge_that_preserved_a_skipped_child_reports_the_source_still_there() {
+    // The source sweep deletes the tree while stepping AROUND every skipped
+    // descendant (`delete_dir_preserving_skipped`), so the directory survives
+    // holding that child. Reporting it removed makes the snapshot purge drop
+    // rows for files the user can still open, which is the one thing the flag
+    // exists to prevent. The same-FS sweep already answers this with an lstat.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_root = tmp.path().join("src");
+    let dst_root = tmp.path().join("dst");
+    fs::create_dir_all(&src_root).unwrap();
+    fs::create_dir_all(&dst_root).unwrap();
+
+    let src_dir = src_root.join("d");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::write(src_dir.join("moved.bin"), b"new child").unwrap();
+    fs::write(src_dir.join("collide.bin"), b"AAAA").unwrap();
+    let dst_dir = dst_root.join("d");
+    fs::create_dir_all(&dst_dir).unwrap();
+    fs::write(dst_dir.join("collide.bin"), b"BBBB").unwrap();
+
+    let events = run_cross_fs_move(
+        std::slice::from_ref(&src_dir),
+        &dst_root,
+        ConflictResolution::Skip,
+        "cross-fs-merge-skip",
+    )
+    .expect("the move must succeed");
+
+    assert!(
+        src_dir.join("collide.bin").exists(),
+        "precondition: the skipped child is preserved on disk"
+    );
+    assert!(
+        !removal_flags_for(&events, &src_dir).contains(&true),
+        "the source dir still holds a preserved child, so it is not gone"
     );
 }
 

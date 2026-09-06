@@ -2450,6 +2450,27 @@ export const commands = {
    */
   searchFiles: (query: SearchQuery) => typedError<SearchResult, string>(__TAURI_INVOKE('search_files', { query })),
   /**
+   *  Orders a search-results pane's rows, answering with `rows`' own indices in the
+   *  order they should render.
+   *
+   *  The pane's rows arrive ranked by the search engine and the user can re-order
+   *  them by column, exactly like a directory listing. It runs through
+   *  [`entry_comparator`], the SAME comparator every directory listing sorts by, so
+   *  the two can never drift: natural number ordering, case folding, directories
+   *  first, and the user's `directorySortMode` all come along for free.
+   *
+   *  Indices rather than rows because the frontend already holds the full entries;
+   *  shipping them back would double the round trip for no new information. The sort
+   *  is STABLE, so rows equal under the chosen column keep the engine's ranked order
+   *  between them, which makes a re-sort reproducible instead of shuffling ties.
+   */
+  sortSearchResults: (
+    rows: SearchSortRow[],
+    sortBy: SortColumn,
+    sortOrder: SortOrder,
+    dirSortMode: DirectorySortMode,
+  ) => __TAURI_INVOKE<number[]>('sort_search_results', { rows, sortBy, sortOrder, dirSortMode }),
+  /**
    *  Search the scope's volume, walking whatever its index can't answer for yet.
    *
    *  Returns as soon as routing has picked a volume; everything else arrives as
@@ -4668,6 +4689,32 @@ export type AppStatus =
   | { type: 'commercial'; licenseType: LicenseType; organizationName: string | null; expiresAt: string | null }
   // Expired commercial license - reverted to personal.
   | { type: 'expired'; organizationName: string | null; expiredAt: string; showModal: boolean }
+
+/**
+ *  Items that turned up in a move's source folder after the scan counted it: a
+ *  download finishing, a sync client landing a file, an editor saving. The copy
+ *  phase never saw them, so the source sweep leaves them (and whatever holds
+ *  them) alone, and the operation says so instead of reporting a clean move.
+ *
+ *  Typed, never a sentence: the FE words this in ten locales.
+ */
+export type AppearedDuringMove = {
+  /**
+   *  How many items stayed behind. A whole unknown subtree counts once, since
+   *  that's the item the user would recognize in the pane.
+   */
+  itemCount: number
+  /**
+   *  The name (not the path) of the source folder holding them, for the
+   *  sentence. When several sources kept something, the first one's name.
+   */
+  folderName: string
+  /**
+   *  How many top-level sources kept something. `1` in the ordinary case; the
+   *  FE reads a higher number as "and others" rather than naming them all.
+   */
+  folderCount: number
+}
 
 /**
  *  What approving a group did, in the terms the dialog acts on.
@@ -9588,6 +9635,15 @@ export type PaneState = {
   sortField?: string
   sortOrder?: string
   totalFiles?: number
+  /**
+   *  Whether the pane renders a `..` row, which `total_files` counts. Without
+   *  it, "one counted row" is ambiguous: an empty folder pushes zero rendered
+   *  files with `total_files: 1` (the parent), while a parentless pane — a
+   *  search-results snapshot, or any pane at a volume root — counting one row
+   *  holds one real file. The gate in `executor::file_ops` reads it to tell the
+   *  two apart instead of guessing from the count.
+   */
+  hasParentRow?: boolean
   loadedStart?: number
   loadedEnd?: number
   showHidden?: boolean
@@ -10051,6 +10107,21 @@ export type ReconnectError =
       // The backend's typed answer.
       error: VolumeError
     }
+
+/**
+ *  One file a failed copy kept under a new name, because a folder that was
+ *  replacing it took its own. Carried by
+ *  [`WriteOperationError::OriginalsKeptAside`].
+ */
+export type RecoveredOriginal = {
+  // The name the file had, which the folder now wears.
+  path: string
+  /**
+   *  Where its bytes are now. Typed, so nothing has to parse a path back out
+   *  of prose.
+   */
+  keptAt: string
+}
 
 /**
  *  `reduce-transparency-changed`: the macOS Accessibility > Display > Reduce
@@ -10963,6 +11034,27 @@ export type SearchRunError =
  *  biggest matches means the biggest ones that exist.
  */
 export type SearchSort = 'relevance' | 'size' | 'modified'
+
+/**
+ *  One search-results row, carrying only what ordering it needs.
+ *
+ *  A deliberate subset of `SearchResultEntry`: the path, parent path, and icon id
+ *  decide nothing about order, and leaving them out keeps a full 10,000-row
+ *  snapshot's round trip small. The frontend holds the rows and re-orders them by
+ *  the index list this command answers with, so nothing is shipped back.
+ */
+export type SearchSortRow = {
+  /**
+   *  The file's own name (the last path component), which the Name and
+   *  Extension columns order by. Not the full path the pane DISPLAYS: a row's
+   *  name is its name everywhere else in the pane too (type-to-jump, the
+   *  context menu, the MCP rows), and one notion of it stays true here.
+   */
+  name: string
+  isDirectory: boolean
+  size: number | null
+  modifiedAt: number | null
+}
 
 /**
  *  Status of an ongoing search.
@@ -13058,6 +13150,12 @@ export type WriteCompleteEvent = {
   filesProcessed: number
   filesSkipped: number
   bytesProcessed: number
+  /**
+   *  What a cross-filesystem move found in the source that its copy phase
+   *  never carried, and therefore left where it was. `None` (the ordinary
+   *  case) means every source went, and the FE says nothing about it.
+   */
+  appearedDuringMove?: AppearedDuringMove | null
 }
 
 // Conflict event payload (emitted when Stop mode encounters a conflict).
@@ -13196,6 +13294,14 @@ export type WriteOperationError =
   | { type: 'insufficient_space'; required: number; available: number; volumeName: string | null }
   // Would cause infinite recursion.
   | { type: 'destination_inside_source'; source: string; destination: string }
+  /**
+   *  Two of the selected items carry the same name, so they would land on one
+   *  destination path and fight over it. Refused before anything is written:
+   *  a cross-filesystem move stages both under that one name, and whichever
+   *  arrives second meets the first one's files instead of an empty slot.
+   *  Carries both paths, so the message can show which two clashed.
+   */
+  | { type: 'duplicate_source_names'; name: string; first: string; second: string }
   | { type: 'symlink_loop'; path: string }
   | { type: 'cancelled'; message: string }
   // Device was disconnected during the operation (USB, MTP, etc.).
@@ -13255,6 +13361,38 @@ export type WriteOperationError =
    *  `set_archive_password` and retries the operation.
    */
   | { type: 'archive_needs_password'; path: string; wrongAttempt: boolean }
+  /**
+   *  A cross-volume Overwrite wrote the new file completely, then couldn't give
+   *  it the destination's name, and the destination it was replacing is
+   *  already gone (the safe-replace deletes it between the last byte and the
+   *  rename). The new data is intact at `kept_at`, under a ` (recovered)` name.
+   *
+   *  ❗ `kept_at` is the whole point of the variant: it is the only place the
+   *  user's new file exists, and a message that doesn't name it leaves them
+   *  hunting. Typed so nothing has to parse it back out of prose.
+   */
+  | {
+      type: 'new_data_kept_at'
+      // The name the file was meant to take.
+      path: string
+      // Where the complete new data is right now.
+      keptAt: string
+      // What the destination said when the rename was refused.
+      message: string
+    }
+  /**
+   *  The operation failed, and a folder that was replacing one of the user's
+   *  files had already taken its name. Everything that landed is kept, so the
+   *  folder stays; the file it displaced is beside it under a ` (recovered)`
+   *  name rather than being thrown away with the aside.
+   *
+   *  ❗ `recovered` is the whole point of the variant, and it is never empty:
+   *  nothing else in the app tells the user their file changed names. `cause`
+   *  carries what actually failed, so the dialog keeps that error's own advice
+   *  (a full disk still says "free up space") instead of flattening every
+   *  failure into one sentence.
+   */
+  | { type: 'originals_kept_aside'; cause: WriteOperationError; recovered: RecoveredOriginal[] }
   // Catch-all for genuinely unexpected IO errors.
   | { type: 'io_error'; path: string; message: string }
 

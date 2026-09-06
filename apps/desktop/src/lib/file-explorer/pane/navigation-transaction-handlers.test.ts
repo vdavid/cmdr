@@ -54,9 +54,14 @@ function makePaneRefStub(): Record<string, () => unknown> {
     'refreshIndexSizes',
     'closeVolumeChooser',
     'refreshVolumeSpace',
+    // The sort effect asks every pane whether it's a snapshot pane before it
+    // re-sorts, so a stub without this crashes the effect rather than a test.
+    'getCurrentPath',
   ]
   const stub: Record<string, () => unknown> = {}
   for (const n of names) stub[n] = () => undefined
+  // An ordinary folder pane, so the snapshot branch of the sort ops doesn't take.
+  stub.getCurrentPath = () => '/Users/test/dir'
   // The in-place path-nav arm returns `paneRef.navigateToPath(path)`, whose real
   // shape is `Promise<void>`; mirror that so the coordinator's return type is
   // faithful.

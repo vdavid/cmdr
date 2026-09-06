@@ -12,6 +12,7 @@ import {
   incrementRef,
   nextSnapshotId,
   removeEntryFromAllSnapshots,
+  resolveSnapshotEntries,
   resolveSnapshotPaths,
   setLastAttemptId,
   SNAPSHOT_ENTRIES_CAP,
@@ -43,6 +44,7 @@ function makeSnapshot(id: string, overrides: Partial<SearchSnapshot> = {}): Sear
     totalCount: 2,
     createdAt: 1_700_000_000_000,
     label: 'Search: foo',
+    sort: null,
     ...overrides,
   }
 }
@@ -255,7 +257,7 @@ describe('snapshot-store', () => {
     })
   })
 
-  describe('removeEntryFromAllSnapshots (M8c delete sync)', () => {
+  describe('removeEntryFromAllSnapshots (cross-snapshot delete sync)', () => {
     it('removes a path from every snapshot that contains it and bumps the mutation tick', () => {
       const sharedEntry = makeEntry('shared.txt')
       const otherEntry = makeEntry('other.txt')
@@ -271,6 +273,29 @@ describe('snapshot-store', () => {
       expect(getSnapshot('sr-1')?.entries.map((e) => e.name)).toEqual(['other.txt'])
       expect(getSnapshot('sr-2')?.entries).toEqual([])
       expect(getMutationTick()).toBe(tickBefore + 1)
+    })
+
+    it('takes the rows INSIDE a directory it removes, not just the directory row', () => {
+      // The stream carries one event per TOP-LEVEL source item. When that item is
+      // a directory and it is gone, every file under it is gone with it, so a row
+      // naming one of those files is stale the moment the directory row goes. A
+      // search that matched a folder and its contents is the ordinary way to end
+      // up holding both.
+      const dir: SearchResultEntry = {
+        ...makeEntry('reports'),
+        path: '/Users/test/reports',
+        isDirectory: true,
+      }
+      const inside: SearchResultEntry = { ...makeEntry('q1.pdf'), path: '/Users/test/reports/q1.pdf' }
+      const deeper: SearchResultEntry = { ...makeEntry('jan.pdf'), path: '/Users/test/reports/2026/jan.pdf' }
+      const sibling: SearchResultEntry = { ...makeEntry('reports-old.pdf'), path: '/Users/test/reports-old.pdf' }
+      getOrCreate('sr-1', makeSnapshot('sr-1', { entries: [dir, inside, deeper, sibling], totalCount: 4 }))
+
+      expect(removeEntryFromAllSnapshots('/Users/test/reports')).toEqual(['sr-1'])
+
+      // The sibling shares the directory's NAME PREFIX but is not inside it, so
+      // the boundary is the separator, never a bare `startsWith`.
+      expect(getSnapshot('sr-1')?.entries.map((e) => e.path)).toEqual(['/Users/test/reports-old.pdf'])
     })
 
     it('is a no-op when no snapshot contains the path and leaves the mutation tick untouched', () => {
@@ -293,7 +318,7 @@ describe('snapshot-store', () => {
     })
   })
 
-  describe('resolveSnapshotPaths (M8d source-side ops)', () => {
+  describe('resolveSnapshotPaths (source-side ops)', () => {
     it('resolves selected indices into absolute paths in input order', () => {
       getOrCreate('sr-1', makeSnapshot('sr-1'))
       expect(resolveSnapshotPaths('sr-1', [0, 1], 0)).toEqual(['/Users/test/a.txt', '/Users/test/b.txt'])
@@ -316,6 +341,33 @@ describe('snapshot-store', () => {
     it('returns an empty array when the snapshot is empty and the cursor is out of range', () => {
       getOrCreate('sr-1', makeSnapshot('sr-1', { entries: [] }))
       expect(resolveSnapshotPaths('sr-1', [], 0)).toEqual([])
+    })
+  })
+
+  describe('resolveSnapshotEntries', () => {
+    it('hands back whole entries so a caller can read name, size, and isDirectory', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      expect(resolveSnapshotEntries('sr-1', [1], 0)).toEqual([
+        expect.objectContaining({ name: 'b.txt', path: '/Users/test/b.txt' }),
+      ])
+    })
+
+    it('gives the selection priority over the cursor, the rule every source-side op shares', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      expect(resolveSnapshotEntries('sr-1', [0, 1], 1).map((e) => e.path)).toEqual([
+        '/Users/test/a.txt',
+        '/Users/test/b.txt',
+      ])
+    })
+
+    it('falls back to the cursor row when nothing is selected', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      expect(resolveSnapshotEntries('sr-1', [], 1).map((e) => e.path)).toEqual(['/Users/test/b.txt'])
+    })
+
+    it('drops indices a shortened entries array no longer has', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      expect(resolveSnapshotEntries('sr-1', [0, 99], 0).map((e) => e.path)).toEqual(['/Users/test/a.txt'])
     })
   })
 })

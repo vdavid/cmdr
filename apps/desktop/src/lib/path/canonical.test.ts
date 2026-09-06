@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { basenameOf, parentOf, toCanonical } from './canonical'
+import { basenameOf, isPlainFilesystemPath, parentOf, toCanonical } from './canonical'
 
 const HOME = '/Users/foo'
 
@@ -70,5 +70,26 @@ describe('basenameOf', () => {
   // Same root cause as the parentOf bug: `~.split('/').pop()` used to return '~'.
   it('returns the home folder name when called on canonicalised ~', () => {
     expect(basenameOf(toCanonical('~', HOME))).toBe('foo')
+  })
+})
+
+describe('isPlainFilesystemPath', () => {
+  it('accepts an absolute POSIX path', () => {
+    expect(isPlainFilesystemPath('/Users/foo/bar.txt')).toBe(true)
+    expect(isPlainFilesystemPath('/')).toBe(true)
+  })
+
+  it('rejects every virtual-volume URL, which no OS API can resolve', () => {
+    expect(isPlainFilesystemPath('mtp://dev/65537/Music/a.mp3')).toBe(false)
+    expect(isPlainFilesystemPath('adb://R58M12345/sdcard/a.jpg')).toBe(false)
+    expect(isPlainFilesystemPath('smb://host/share/a.txt')).toBe(false)
+    expect(isPlainFilesystemPath('search-results://snap-1')).toBe(false)
+  })
+
+  it('rejects ~-rooted and relative paths, which need a base the OS API lacks', () => {
+    expect(isPlainFilesystemPath('~')).toBe(false)
+    expect(isPlainFilesystemPath('~/Documents/a.txt')).toBe(false)
+    expect(isPlainFilesystemPath('foo/bar')).toBe(false)
+    expect(isPlainFilesystemPath('')).toBe(false)
   })
 })

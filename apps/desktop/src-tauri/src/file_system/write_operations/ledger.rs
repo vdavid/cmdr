@@ -15,6 +15,9 @@
 use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 
+use super::overwrite::DisplacedEntry;
+use super::types::RecoveredOriginal;
+
 /// One destination path this operation put on disk, with the identity a reversal
 /// rechecks before removing it or renaming it back.
 ///
@@ -206,6 +209,15 @@ pub(crate) struct CopyTransaction {
     /// `commit_journaling_created_dirs` journals after a reversal, so the list
     /// has to survive one. Rollback prunes them empty-only, deepest first.
     pub created_dirs: Vec<PathBuf>,
+    /// Entries this operation renamed out of the way to stand a directory where
+    /// they were, still on disk under a `.cmdr-temp-<uuid>` name. Newest last,
+    /// restored newest first.
+    ///
+    /// They live here rather than being resolved where they were made because a
+    /// folder→file Overwrite isn't over when the folder appears: the subtree
+    /// lands leaf by leaf over the rest of the copy. `commit()` drops them; a
+    /// reversal puts them back, after the dirs above it have been pruned.
+    displaced: Vec<DisplacedEntry>,
     /// Set to `true` by `commit()` to prevent rollback on drop.
     committed: bool,
 }
@@ -215,6 +227,7 @@ impl CopyTransaction {
         Self {
             created_files: Vec::new(),
             created_dirs: Vec::new(),
+            displaced: Vec::new(),
             committed: false,
         }
     }
@@ -225,6 +238,26 @@ impl CopyTransaction {
 
     pub fn record_dir(&mut self, path: PathBuf) {
         self.created_dirs.push(path);
+    }
+
+    /// Takes custody of an entry a landing renamed out of the way
+    /// ([`super::overwrite::displace_with_directory`]), to be dropped at commit
+    /// or put back by a reversal.
+    pub fn record_displaced(&mut self, displaced: DisplacedEntry) {
+        self.displaced.push(displaced);
+    }
+
+    /// Puts every entry this operation displaced back at its own name, newest
+    /// first. Called by the reversals AFTER they've removed the files and pruned
+    /// the directories that took those names — an occupied name is left alone,
+    /// so the order is what makes the restore land.
+    ///
+    /// Drains the list, so the `Drop` net that follows a reversal has nothing
+    /// left to redo.
+    pub fn restore_displaced(&mut self) {
+        while let Some(displaced) = self.displaced.pop() {
+            displaced.restore();
+        }
     }
 
     /// The files this operation still claims to have on disk, newest last.
@@ -249,8 +282,9 @@ impl CopyTransaction {
     /// Removes everything this ledger still claims, no questions asked.
     ///
     /// **The panic net's body, and nothing else's.** Every reversal a person can
-    /// observe goes through `reversal::reverse_copy_transaction`, which rechecks
-    /// each entry and leaves anything that changed since. This one runs because a
+    /// observe goes through `transfer::copy::rollback::rollback_with_progress`,
+    /// which rechecks each entry and leaves anything that changed since (and a
+    /// FAILURE reverses nothing at all: it keeps what landed). This one runs because a
     /// thread died mid-copy, where a destination is as likely half-written as
     /// complete and nobody is left to read a report about what got left behind.
     /// ❌ Don't "fix" the inconsistency by teaching it to skip on drift: that
@@ -274,11 +308,36 @@ impl CopyTransaction {
         for dir in self.created_dirs.iter().rev() {
             let _ = std::fs::remove_dir(dir);
         }
+        // Last, so a directory standing on a displaced entry's name is gone by
+        // the time its original tries to come home.
+        self.restore_displaced();
     }
 
-    /// Marks the transaction as committed, preventing rollback on drop.
+    /// Marks the transaction as committed, preventing rollback on drop, and
+    /// drops the entries this operation displaced: what replaced them is staying.
     pub fn commit(mut self) {
         self.committed = true;
+        for displaced in self.displaced.drain(..) {
+            displaced.discard();
+        }
+    }
+
+    /// Commits what landed, but keeps every displaced entry for the user under a
+    /// ` (recovered)` name, and answers where each one went.
+    ///
+    /// The FAILURE outcome, and the reason [`CopyTransaction::commit`] can go on
+    /// meaning "what replaced them is staying". A failure keeps the files that
+    /// landed, so a folder that was replacing one of the user's files keeps its
+    /// name too — with only part of its subtree in it. Discarding the aside there
+    /// would delete the user's file to make room for a half-built folder;
+    /// restoring it has nowhere to go. So it becomes a sibling, and the caller
+    /// names it in the failure the user reads.
+    pub fn commit_keeping_displaced_aside(mut self) -> Vec<RecoveredOriginal> {
+        self.committed = true;
+        self.displaced
+            .drain(..)
+            .map(DisplacedEntry::keep_as_recovered_sibling)
+            .collect()
     }
 }
 
@@ -286,9 +345,10 @@ impl Drop for CopyTransaction {
     fn drop(&mut self) {
         if !self.committed {
             log::warn!(
-                "CopyTransaction dropped without commit, rolling back {} files and {} dirs",
+                "CopyTransaction dropped without commit, rolling back {} files, {} dirs and {} displaced entries",
                 self.created_files.len(),
-                self.created_dirs.len()
+                self.created_dirs.len(),
+                self.displaced.len()
             );
             self.remove_everything();
         }

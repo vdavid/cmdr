@@ -46,5 +46,9 @@
   "transfer.fileOnly.mixedMove": "Movimentação concluída: {transferredText} movidos, {skippedText} ignorados. {skippedText} {skipped, plural, one {arquivo já estava} many {arquivos já estavam} other {arquivos já estavam}} no destino.",
   "@transfer.fileOnly.mixedMove": {
     "sourceHash": "1457a4f"
+  },
+  "transfer.appearedDuringMove": "{count, plural, one {{countText} item apareceu} many {{countText} itens apareceram} other {{countText} itens apareceram}} em {scope, select, manyFolders {{folderName} e em outras pastas de origem} other {{folderName}}} durante a movimentação e {count, plural, one {continua} many {continuam} other {continuam}} lá.",
+  "@transfer.appearedDuringMove": {
+    "sourceHash": "b884882"
   }
 }

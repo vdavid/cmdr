@@ -21,7 +21,8 @@ use uuid::Uuid;
 
 use super::in_flight_temps::TempHome;
 use super::state::WriteOperationState;
-use super::types::WriteOperationError;
+use super::types::{RecoveredOriginal, WriteOperationError};
+use super::unique_name::{NameCandidates, RESCUE_NAME_ATTEMPTS, recovered_sibling};
 use crate::file_system::staging::StagingTemp;
 
 /// Result of applying a conflict resolution.
@@ -253,10 +254,142 @@ pub(super) fn rename_no_replace(temp: &Path, dest: &Path) -> std::io::Result<()>
     fs::rename(temp, dest)
 }
 
+/// An entry this operation renamed out of the way, still on disk under its
+/// `dest.cmdr-temp-{uuid}` name, waiting for the operation to say whether it
+/// goes or comes back.
+///
+/// [`safe_overwrite_dir`] covers the landing whose new content is complete by
+/// the time its closure returns. A folder→file Overwrite isn't that: the
+/// directory appears the moment the first child needs a parent, and the subtree
+/// lands leaf by leaf over the rest of the copy. So the file it displaced has to
+/// stay recoverable for that whole stretch, which means the ledger holds one of
+/// these ([`super::ledger::CopyTransaction::record_displaced`]) and answers on
+/// commit or on reversal.
+///
+/// The guard rides along so the aside stays hidden from the pane for exactly as
+/// long as it's on disk.
+#[cfg_attr(test, derive(Debug))]
+pub(crate) struct DisplacedEntry {
+    aside: StagingTemp,
+    /// Where it came from, and where [`DisplacedEntry::restore`] puts it back.
+    original: PathBuf,
+}
+
+impl DisplacedEntry {
+    /// Puts the entry back at its own name. Best-effort: something else standing
+    /// there is left alone, and a failed rename leaves the aside on disk under
+    /// its recognizable name with a log line saying where it belongs.
+    pub(crate) fn restore(self) {
+        let aside = self.aside.path();
+        if let Err(e) = rename_no_replace(aside, &self.original) {
+            crate::log_error!(
+                "DisplacedEntry::restore: failed to put {} back at {}: {}",
+                aside.display(),
+                self.original.display(),
+                e
+            );
+        }
+    }
+
+    /// Keeps the entry for the user under a ` (recovered)` name beside the
+    /// folder that took its own, and answers where it went.
+    ///
+    /// ❗ **The outcome for a FAILED operation**, which keeps every file that
+    /// landed (`transfer/copy/mod.rs`, `PostLoopIntent::Failed`). The folder is
+    /// staying at the original name with only part of its subtree in it, so
+    /// [`DisplacedEntry::restore`] has nowhere to put the file back and
+    /// [`DisplacedEntry::discard`] would delete the user's only copy of it. A
+    /// file called `notes (recovered).txt` is one they can find; a
+    /// `.cmdr-temp-<uuid>` is one the pane hides and the next launch sweeps.
+    ///
+    /// Only `AlreadyExists` earns another candidate, and only
+    /// [`RESCUE_NAME_ATTEMPTS`] of them: every other refusal (a read-only
+    /// destination, a dead mount) would refuse each candidate identically. When
+    /// nothing lands, the aside path is the honest answer and the caller reports
+    /// THAT, the same shape the volume engine's rescue takes
+    /// (`transfer/volume/naming.rs::rescue_out_of_temp_space`).
+    pub(crate) fn keep_as_recovered_sibling(self) -> RecoveredOriginal {
+        let recovered = recovered_sibling(&self.original);
+        let mut candidates = NameCandidates::for_file(&recovered);
+        // The bare ` (recovered)` name first; `NameCandidates` starts at ` (1)`.
+        let mut candidate = recovered.clone();
+        loop {
+            match rename_no_replace(self.aside.path(), &candidate) {
+                Ok(()) => return RecoveredOriginal::new(&self.original, &candidate),
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+                Err(e) => {
+                    crate::log_error!(
+                        "DisplacedEntry::keep_as_recovered_sibling: couldn't give {} a real name: {}",
+                        self.aside.path().display(),
+                        e
+                    );
+                    return RecoveredOriginal::new(&self.original, self.aside.path());
+                }
+            }
+            if candidates.attempts() >= RESCUE_NAME_ATTEMPTS {
+                log::warn!(
+                    "DisplacedEntry::keep_as_recovered_sibling: every ` (N)` variant of {} is taken",
+                    recovered.display()
+                );
+                return RecoveredOriginal::new(&self.original, self.aside.path());
+            }
+            candidate = candidates.current();
+            candidates.advance();
+        }
+    }
+
+    /// Drops the entry for good, the operation having committed the thing that
+    /// replaced it. Non-critical: a leftover wears a recognizable name.
+    pub(crate) fn discard(self) {
+        let aside = self.aside.path();
+        if aside.is_dir() {
+            let _ = fs::remove_dir_all(aside);
+        } else {
+            let _ = fs::remove_file(aside);
+        }
+    }
+}
+
+/// Renames whatever is at `dest` aside and stands a fresh directory in its
+/// place, handing back the displaced entry for the caller's transaction to hold.
+///
+/// The folder→file Overwrite's opening move. Only the directory at `dest` is
+/// created: any deeper level the caller needs is its own ordinary
+/// create-and-record walk, so every directory this operation makes ends up in
+/// the ledger. A failure after the rename puts the original straight back.
+pub(super) fn displace_with_directory(
+    state: &Arc<WriteOperationState>,
+    dest: &Path,
+) -> Result<DisplacedEntry, WriteOperationError> {
+    let aside = StagingTemp::mint_aside(dest, Uuid::new_v4(), state.liveness_token());
+    fs::rename(dest, aside.path()).map_err(|e| WriteOperationError::IoError {
+        path: dest.display().to_string(),
+        message: format!("Failed to set aside existing destination: {}", e),
+    })?;
+    let displaced = DisplacedEntry {
+        aside,
+        original: dest.to_path_buf(),
+    };
+    if let Err(e) = fs::create_dir(dest) {
+        displaced.restore();
+        return Err(WriteOperationError::IoError {
+            path: dest.display().to_string(),
+            message: format!(
+                "Failed to create directory after setting the blocking file aside: {}",
+                e
+            ),
+        });
+    }
+    Ok(displaced)
+}
+
 /// Performs a safe overwrite of `dest` by setting the existing entry aside
 /// under `dest.cmdr-temp-{uuid}`, then running the caller's `materialize`
 /// closure to land the new content at `dest`. On materialize failure or
 /// cancellation the aside is rolled back, restoring the original entry.
+///
+/// For a landing that ISN'T finished when the closure returns, reach for
+/// [`displace_with_directory`] instead.
 ///
 /// The helper is type-agnostic: `dest` may hold a file or a directory before
 /// the call, and `materialize` may create either a file or a directory. The

@@ -4,55 +4,41 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
 
 ## Module map
 
-- `settings-registry.ts` (logic; data in `definitions/*.ts`), `settings-store.ts` (persistence + cache + cross-window
-  sync), `settings-applier.ts` (side effects), `reactive-settings.svelte.ts` (`$state` for rendering),
-  `window-settings.ts` (per-window init, plus `initWindowLanguageSync()`).
-- `sections/` (UI sections) and `components/` (row primitives) carry their own CLAUDE.md.
-- Shortcuts are a separate subsystem (`shortcuts.json`); see `lib/shortcuts/CLAUDE.md`.
+- `settings-registry.ts` (logic; data in `definitions/*.ts`), `settings-store.ts` (persistence, cache, cross-window
+  sync), `settings-applier.ts` (side effects), `reactive-settings.svelte.ts` (`$state`), `window-settings.ts`
+  (per-window init).
+- `sections/` (UI) and `components/` (row primitives) carry their own CLAUDE.md; shortcuts are separate
+  (`lib/shortcuts/CLAUDE.md`).
 
 ## Must-knows
 
 - **The registry stores i18n message KEYS, not English** (`labelKey` / `descriptionKey`, enum options too); copy lives
-  in `messages/en/settings.json`. `section: string[]` stays English (routing/search identity; titles come from
-  `sectionTitle()`). `cmdr/no-raw-user-facing-string` is enforced here. `DETAILS.md` § i18n.
-- **A registry entry alone does NOT render**: it needs a `SettingRow` in its `sections/*Section.svelte` (only
-  `AdvancedSection` auto-renders `section: ['Advanced']`). Miss it and the setting is invisible though searchable.
+  in `messages/en/settings.json`. `section: string[]` stays English: routing and search identity, not a title.
+- **A registry entry alone does NOT render, and its `section` is its ONE home**: hand-render a `SettingRow` on the
+  feature page, OR auto-render in Advanced (`section[0] === 'Advanced'` + a `cardKey`), never both.
   [Checklist](../../../../../docs/guides/adding-a-new-setting.md).
-- **A setting's `section` is its ONE home**: hand-rendered on its feature page OR auto-rendered in Advanced
-  (`section[0] === 'Advanced'` + a `cardKey`), never both. (The two-page mirror pattern is unrelated.)
-- **Every setting MUST apply immediately without restart.** A backend-affecting one needs a Tauri command, a
-  `$lib/tauri-commands/settings.ts` wrapper, AND an `onSettingChange` case in `settings-applier.ts`. Restart-required is
-  a bug, even for "structural" ones.
-- **Every `tauri-plugin-store` reader goes through `resolveStorePath(storeName)`** (`store-path.ts`): the plugin
-  resolves bare names against `app_data_dir()`, ignoring `CMDR_DATA_DIR`, so an isolated instance would read the
-  production store.
-- **The viewer and queue windows have NO store capability by design.** Restricted mode seeds from
-  `get_restricted_window_settings`, a FIXED typed allowlist, so a setting missing from it reads as its default there.
-  Rendering something new in one means extending `settings/loader.rs::RestrictedWindowSettings`, the bindings, AND the
-  `mapped` table. Writes use `persist_restricted_window_setting`; failures degrade with `log.warn`, never `log.error`
-  (which auto-reports on every viewer open). Never grant store perms.
+- **Every setting MUST apply immediately without restart.** A backend-affecting one also needs a Tauri command, a
+  `$lib/tauri-commands/settings.ts` wrapper, and an `onSettingChange` case in `settings-applier.ts`.
+- **Every `tauri-plugin-store` reader goes through `resolveStorePath(storeName)`** (`store-path.ts`): the plugin ignores
+  `CMDR_DATA_DIR`, so a bare name makes an isolated instance read production.
+- **The viewer and queue windows have NO store capability by design; never grant one.** Restricted mode seeds from a
+  FIXED typed allowlist, so an unlisted setting reads as its default there. DETAILS § Restricted-window mode.
 - **Persistence is sparse: `settings.json` holds ONLY keys an actor explicitly set.** "Explicit" is structural (which
-  mutator ran, tracked in `explicitlySet`), NEVER `value !== default`. Don't seed defaults or gate saves on a value
-  compare: either re-opens the leak that pinned `developer.mcpEnabled`. `DETAILS.md` § Sparse persistence.
-- **Increment `SCHEMA_VERSION` and add a `migrateSettings()` case** when changing the settings FORMAT (a new key is
-  additive, no bump). Migrations must be idempotent: they re-run until the first save stamps it.
-- **Card visibility is section-owned**, never re-derived from the registry `card` field (the empty-card bug).
-  `DETAILS.md` § Card groups.
-- **Every window gets settings from `initWindowSettings()`** (`window-settings.ts`) in the ROOT `routes/+layout.svelte`,
-  never `initializeSettings()` directly: it seeds the reactive layer and picks full vs restricted access. Skip it and
-  that window renders every reactive setting at its default. DETAILS § Per-window initialization.
-- **Date formatting has one source of truth**: `formatDateForDisplay()` (pure) → `formattedDate()` (reactive) →
-  `<DateLabel>` (render); coloring only in `age-tier-utils.ts`. `'system'` mode reads `$lib/intl`'s `getFormatLocale()`;
-  don't hardcode a locale or add a formatter. DETAILS § Date display.
-- **AI hot-apply** routes `ai.provider` / `ai.cloudProvider` / `ai.cloudProviderConfigs` through `settings-applier.ts`
-  to `ai-config.ts::pushConfigToBackend()`, which re-reads every setting fresh; never pass cached values, callers
-  `setSetting(...)`. Those three plus `askCmdr.interactiveModel` and `askCmdr.chatMemorySize` nudge
-  `noteSlotSettingChanged()`; `lib/ask-cmdr/DETAILS.md` § Slot-change events.
-- **Cloud AI API keys live in the OS secret store, never `settings.json`**, and a stored one is NEVER readable from a
-  window: `getAiApiKeyStatus` reports is-set + a fingerprint, and `configureAi` / `checkAiConnection` take a provider id
-  so the backend reads the key itself. ❌ Never pre-fill a key field. `docs/security.md` § "AI API keys".
-- **A self-closing webview defers `close()` via `deferWindowClose()`** (100 ms, never `0`/`rAF`): a sync `close()`
-  stalls cross-webview IPC on webkit2gtk, `0` segfaults macOS WebKit mid-teardown. DETAILS § Gotchas.
+  mutator ran), NEVER `value !== default` — seeding defaults or comparing values re-opens the `developer.mcpEnabled`
+  leak. DETAILS § Sparse persistence.
+- **Changing the settings FORMAT needs a `SCHEMA_VERSION` bump plus an idempotent `migrateSettings()` case** (a new key
+  is additive, no bump). DETAILS § Schema version.
+- **Card visibility is section-owned**, never re-derived from the registry `card` field (the empty-card bug); a row that
+  isn't a setting is a `SearchableRow`, ❌ never a `hidden` setting. DETAILS §§ Card groups, Searchable rows.
+- **Every window gets settings from `initWindowSettings()`** in the ROOT `routes/+layout.svelte`, ❌ never
+  `initializeSettings()`: skip it and the window renders everything at its default. DETAILS § Per-window initialization.
+- **Dates have one source of truth**: `formatDateForDisplay()` → `formattedDate()` → `<DateLabel>`. ❌ No second
+  formatter, no hardcoded locale. DETAILS § Date display.
+- **`ai.*` hot-applies via `ai-config.ts::pushConfigToBackend()`, which re-reads fresh**: callers `setSetting(...)`, ❌
+  never pass cached values. A cloud API key lives in the OS secret store, never `settings.json` or a pre-filled field
+  (`docs/security.md` § "AI API keys").
+- **A self-closing webview defers `close()` via `deferWindowClose()`** (100 ms, ❌ never `0`/`rAF`): sync `close()`
+  stalls webkit2gtk IPC, `0` segfaults macOS WebKit. DETAILS § Gotchas.
 
-Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

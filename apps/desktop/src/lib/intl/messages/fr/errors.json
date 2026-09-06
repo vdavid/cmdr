@@ -1437,6 +1437,38 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "Votre nouveau fichier porte un autre nom",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Le nouveau {path} est écrit et complet, mais la destination a refusé de lui donner ce nom, et le fichier qu'il devait remplacer a déjà disparu. Le nouveau se trouve dans {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Ouvrez {keptAt} pour le vérifier, puis renommez-le. Si la destination est un partage réseau ou un téléphone, reconnectez-la d'abord et le renommage passera.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
+  "errors.write.originalsKeptAside.title": "Votre fichier porte un nouveau nom",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "Un dossier a pris le nom {path}, votre fichier se trouve donc maintenant dans {keptAt}. Rien n'a été jeté.",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "Des dossiers ont pris les noms de {count} de vos fichiers, qui portent donc maintenant de nouveaux noms. Rien n'a été jeté ; les détails techniques ci-dessous les listent tous.",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "Ouvrez {keptAt} pour le vérifier. Une fois le dossier écarté, vous pourrez redonner son nom à votre fichier.",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "Les détails ci-dessous indiquent où se trouve chaque fichier. Une fois les dossiers écartés, vous pourrez leur redonner leurs noms.",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
+  },
   "errors.write.fallback.title.copy": "Copie impossible",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"
@@ -1652,5 +1684,21 @@
   "errors.write.readOnlyDevice.source.fallbackName": "La source",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Deux éléments portent le même nom",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Vous avez choisi deux éléments nommés {name} : ils arriveraient tous les deux au même endroit ({first} et {second}).",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Copiez-les l'un après l'autre, ou renommez-en un d'abord.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Déplacez-les l'un après l'autre, ou renommez-en un d'abord.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

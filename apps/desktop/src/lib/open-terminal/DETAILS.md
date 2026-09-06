@@ -30,9 +30,9 @@ Two edges worth naming:
 - **`..` resolves to the pane's own folder, not the parent.** Standing on `..` means "I'm looking at this folder", which
   is the reading `getPathToCopyUnderCursor` already takes. The parent would be a surprise.
 - **An archive FILE under the cursor falls to rule 4.** A shell can't `cd` into a zip. The check is
-  `pathInsideArchive(cursor.path)`, an extension-only test, so a real directory literally named `foo.zip` also lands on
-  the pane's folder, consistent with how the pane treats Enter on that path, and the only wrong answer available is a
-  folder one level up.
+  `pathCrossesArchiveBoundary(cursor.path)`, an extension-only test, so a real directory literally named `foo.zip` also
+  lands on the pane's folder, consistent with how the pane treats Enter on that path, and the only wrong answer
+  available is a folder one level up.
 
 ## Why enablement is a push, not a read
 

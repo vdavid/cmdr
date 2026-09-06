@@ -41,6 +41,11 @@ and the `recent-items/` family) lives in `../query-ui/CLAUDE.md`, over the app-w
 - **`capabilities.ts` owns only the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` string.** The capabilities themselves come from
   the per-kind table in `lib/file-explorer/pane/volume-capabilities.ts`; there is deliberately no Search-specific
   capability shim, so don't add one.
+- **`snapshot-sort.svelte.ts` owns the ROUND TRIP, `snapshot-store.svelte.ts` owns the MUTATION.** The store stays free
+  of the IPC layer and its `applySnapshotSort` stays synchronous; the sorter holds the request bookkeeping and the
+  tri-state cycle. § "The snapshot pane's row order".
+- **`snapshotIdFromPanePath` is the ONE parse of `search-results://<id>`.** Six call sites across the pane, the tab
+  manager, and the scope ladder went through their own copy of the prefix arithmetic; they now all ask the store.
 - **`snapshot-store.svelte.ts` carries the `.svelte.ts` extension for ONE `$state` cell**, `mutationTick`. The snapshot
   map itself is deliberately plain module state, because consumers read snapshots imperatively at render time and
   nothing should re-render when the map changes; the tick exists so a rendered snapshot can subscribe to a change under
@@ -157,6 +162,27 @@ live-search work did NOT deliver: its terminal states cover a RUN, and this fail
 **⌘N doesn't touch readiness.** `clearExtras()` resets what the user typed and leaves what the machine reported alone.
 Wiping the readiness flag there meant the gate went back to "waiting" with no second event ever coming, so every later
 search in that session silently did nothing.
+
+### The image grid answers two settings
+
+`ImageSearchResults.svelte` is gated by `mediaIndex.enabled` AND `mediaIndex.showInSearch`, folded into one
+`gridEnabled` derived that both the render gate (`showSection`) and the debounced fetch effect read. Two questions, not
+one: the master toggle says whether an index exists to search, and `showInSearch` (default OFF, since match quality
+isn't there yet) says whether this ONE surface may spend the space on it. Turning the grid off leaves the file-list
+status badges and Ask Cmdr / MCP photo search reading the same index untouched.
+
+Either gate off is a true no-op, not a hidden render: the effect returns before any IPC, so a keystroke fires no
+`mediaIndexVolumeState` / `mediaIndexSearchSemantic` / `mediaIndexSearchOcr` and never opens `media.db`. Both settings
+are subscribed individually, so a flip applies live with no restart. Keep the two conditions folded into `gridEnabled`
+rather than repeated at each site: a render gate that outlives its work gate is how a hidden surface keeps costing IPC.
+`ImageSearchResults.gating.test.ts` pins all of it (no section, zero IPC, tokens released on a live flip).
+
+**Decision / why `showInSearch` defaults OFF.** David's call (2026-09-06): image match quality isn't good enough yet to
+take that much room above the file results unasked. Two consequences are accepted, not overlooked: a user who already
+had image indexing on loses the grid on upgrade, and a new user who turns indexing on sees nothing in Search until they
+flip the second switch. Adding a hint line under the master toggle to point at the second switch was the considered
+alternative and was NOT built. So don't "fix" the default back, and don't read the silent Search dialog as a bug: flip
+the default only when match quality earns the space.
 
 ### The coverage note
 
@@ -551,8 +577,10 @@ first 30" is a product call for David, so ❌ don't pick one on your own.
 ## Snapshot store
 
 `snapshot-store.svelte.ts` holds `SearchSnapshot` records (query, mode, filters, scope, capped 10,000 entries,
-totalCount, createdAt, friendly label) under monotonic `sr-N` ids, plus a per-record refcount. The store has no hard cap
-on its own — **refcount is the only authority**. Refs come from two sources:
+totalCount, createdAt, friendly label, row order) under monotonic `sr-N` ids, plus a per-record refcount. Each record
+keeps TWO arrays: the `entries` the pane renders and the `rankedEntries` the engine produced, which are the same array
+until a sort splits them (§ "The snapshot pane's row order"). The store has no hard cap on its own — **refcount is the
+only authority**. Refs come from two sources:
 
 - **Pane history entries** whose `path` starts with `search-results://<id>` hold +1 per occurrence. The tab-state
   manager (`pushHistoryEntry` and the closed-tab lifecycle) drives inc/dec — `navigation-history.ts` itself stays pure
@@ -630,46 +658,146 @@ strings to every webview. **Why not `directory-diff`**, which also reports vanis
 listing, and a delete from a search-results pane targets a real file whose parent folder is usually open in no pane at
 all, so the flow this feature exists for would purge nothing.
 
-The purge is per top-level source path, so a snapshot row for a file INSIDE a moved directory outlives its file. That
-was true of the old shape too; the honest fix is a prefix sweep, and it needs care around a directory merge whose
-children were partly skipped.
+**A path it removes takes everything under it.** One event covers one top-level item, so when that item is a directory
+and it is gone, every file beneath it went with it, and a search that matched a folder and its contents is the ordinary
+way to be holding both rows. The boundary is the separator, never a bare `startsWith`: `/a/reports-old.pdf` shares the
+name prefix of `/a/reports` without being inside it. This leans entirely on `source_removed` being honest about a
+directory, which is why both move sweeps answer it with an `lstat` rather than assuming they took the item: a same-FS
+merge and a cross-FS sweep around a skipped descendant both leave the source standing
+(`src-tauri/src/file_system/write_operations/DETAILS.md` § "Per-source outcomes").
 
 `removeEntryFromAllSnapshots(path)` is the store-side half:
 
-1. Walks every stored snapshot and replaces its `entries` array with one that excludes the deleted path (preserves
-   reference identity on the unchanged entries; only the array changes).
+1. Walks every stored snapshot and replaces its `entries` array with one that excludes the deleted path and everything
+   under it (preserves reference identity on the unchanged entries; only the array changes).
 2. Bumps a module-level `mutationTick` `$state` whenever at least one snapshot was mutated.
 3. Leaves `totalCount` alone — the existing `entries.length` vs `totalCount` mismatch is the truncation signal.
 
 `SearchResultsView.svelte`'s snapshot lookup reads `getMutationTick()` inside its `$derived` so the view re-renders
-after a purge. Without the tick, the `Map` mutation would be invisible to Svelte reactivity (snapshots aren't `$state`
+after a purge, and `FilePane.svelte`'s does the same so the row count, the cursor entry, and the pane's selection sync
+follow. Without the tick, the `Map` mutation would be invisible to Svelte reactivity (snapshots aren't `$state`
 themselves, by design — see the store's header).
+
+A purge moves rows out from under an index-based selection, so the pane remaps cursor and selection by path as its
+entries array is replaced: `file-explorer/pane/DETAILS.md` § "The FilePane controller modules",
+`snapshot-selection-sync.svelte.ts`.
 
 ### Source-side ops from the snapshot pane
 
-With `isSourceOK: true`, Cmd+C / Cmd+X / F5 / F6 / drag-out run against the cursor + selection in the snapshot pane. The
-snapshot pane shares `FilePane.selection` state with normal panes. Wire path:
+With `isSourceOK: true`, Cmd+C / Cmd+X / F5 / F6 / F8 / drag-out run against the cursor + selection in the snapshot
+pane. The snapshot pane shares `FilePane.selection` state with normal panes, so every one of them takes the SELECTION
+when there is one and the cursor row only as a fallback. That rule is decided once, in
+`snapshot-store::resolveSnapshotEntries` (out-of-range indices dropped, no `hasParent` offset because a snapshot pane
+has no `..` row); `resolveSnapshotPaths` is the same call narrowed to paths. ❌ Never re-derive it per op: F8 read the
+cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wire path:
 
 - **Cmd+C / Cmd+X** route through `DualPaneExplorer.copyToClipboard` / `cutToClipboard`, which detect the snapshot pane
   via `getSnapshotClipboardPaths` and call `copy_paths_to_clipboard` / `cut_paths_to_clipboard` (paths-by-value sibling
   IPCs of the listing-id-keyed `copy_files_to_clipboard` family). The Rust commands reuse
   `clipboard::write_file_urls_to_clipboard` and `set_cut_state` / `clear_cut_state`, so the system clipboard contract
-  (file URLs + newline-separated text) is identical.
-- **F5 / F6** route through `openUnifiedTransferDialog`, which detects `volumeId === 'search-results'` and calls
-  `transfer-operations::buildTransferPropsFromSnapshot` instead of the listing-id-driven builders. The snapshot's
-  selected (or cursor) entries are resolved to paths via `snapshot-store::resolveSnapshotPaths`, fed into the same
-  `TransferDialogPropsData` shape every transfer uses, and the existing `copy_files` / `move_files` IPCs run with
-  `sources: Vec<String>`.
+  (file URLs + newline-separated text) is identical. Both first run the same MTP refusal a live MTP pane gets, against
+  the RESOLVED row volume rather than the pane's virtual id: an `mtp://…` path can't go on the OS clipboard, and
+  `NSURL::fileURLWithPath` would take it for a relative path. `file-explorer/pane/DETAILS.md` § "Volume capabilities"
+  carries the mechanism.
+- **F5 / F6** route through `openUnifiedTransferDialog`, which routes off the kind's `hasBackendListing` capability and
+  calls `transfer-operations::buildTransferPropsFromSnapshot` instead of the listing-id-driven builders. The resolved
+  entries feed the same `TransferDialogPropsData` shape every transfer uses, and the existing `copy_files` /
+  `move_files` IPCs run with `sources: Vec<String>`.
+- **F8 / Shift+F8** route through `file-operation-commands::openDeleteFromSearchResults`, on the same
+  `hasBackendListing` gate. The resolved entries become the dialog's `DeleteSourceItem[]`, `isFromCursor` is true only
+  on the cursor fallback (it picks the dialog's title), and `sourceFolderPath` is the COMMON PARENT of the resolved
+  paths: a result set is gathered from anywhere, and both the dialog's "from" line and the trash toast's volume lookup
+  (`go-to-trash::goToTrashedItems`) need a real directory.
+- **Which volume the op runs against** comes from `file-explorer/pane/snapshot-source-volume.ts`, shared by the delete
+  and transfer openers. ❌ Never assume `root`: a search covers exactly one volume and any volume with a persisted
+  `index-{volume_id}.db` is searchable, including an SMB share and an MTP storage (`src-tauri/src/search/volumes.rs`).
+  `sourceVolumeId` picks the delete and copy/move dispatch paths (`file-operations/transfer/transfer-dispatch.ts`), and
+  `supportsTrash` decides whether the dialog offers the trash at all, so both are read off the resolved volume the way a
+  normal pane reads them off its own. Resolution is the frontend half of `transfer-entry::resolveSourceVolumeId`
+  (longest-prefix per path, favorites excluded, unanimity required, else `root`); it stays synchronous because these
+  paths came out of one volume's index, so the volume list settles it without a backend round-trip. `supportsTrash` is
+  optimistic on a miss, since a `false` would force the dialog into a PERMANENT delete and a resolution miss must never
+  do that.
+- **No operation snapshot is taken**, because `entries-snapshot::fetchSelectedNames` returns early on a pane with no
+  listing id. The name snapshot exists to feed listing-diff-driven selection adjustment, which doesn't run here; the
+  path-based remap below does that job instead. Without the guard, `getFileAt('')` rejects with "Listing not found"
+  inside a `void`-ed call, so every F5 / F6 / F8 from a snapshot pane with a partial selection raises an unhandled
+  promise rejection.
 - **Drag-out** uses the `'paths'` drag context in `lib/file-explorer/drag/drag-drop.ts`: when `FullList` is rendered
   with `staticEntries` and the user drags a selection, the FE builds a paths array from `getEntryAt(idx)` and routes
   through `start_drag_paths`.
-- **Post-move snapshot cleanup**: covered by the cross-snapshot purge above. After F6 from the snapshot pane, the rows
-  the move actually took disappear from every snapshot that referenced them; a skipped one stays.
+- **Post-move snapshot cleanup**: covered by the cross-snapshot purge above. After F6 or F8 from the snapshot pane, the
+  rows the operation actually took disappear from every snapshot that referenced them; a skipped one stays.
+
+**MCP sees the pane, so an agent's delete acts on the rows on screen.** The snapshot pane mirrors to the MCP `PaneState`
+store like any other pane, with its rows read off the frontend snapshot instead of a backend listing.
+
+Both that and the header rule below are cells on the per-kind capability table; plumbing and guardrails:
+`file-explorer/pane/DETAILS.md` § "Volume capabilities".
+
+**The column header sorts the SNAPSHOT**, which is why every op above keeps working across a sort: they all resolve an
+index against `snapshot.entries[i]`, and that array is what moves. § "The snapshot pane's row order" below.
 
 Destination-side write ops are still blocked: pasting INTO a search-results pane shows the canonical
 `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` (via the F-bar disablement, the menu item omission, and the dispatcher's
 `blockedByCapabilities` guard). `openTransferDialog` also blocks F5/F6 when the OPPOSITE pane is a snapshot, so the
 shortcut path can't accidentally route a copy/move INTO a snapshot.
+
+### The snapshot pane's row order
+
+A snapshot carries a `sort: { column, order } | null`. `null` is the search engine's RANKED order, the state every
+snapshot opens in, and for an AI-mode result set that ordering IS the answer, so it stays a state the user can get back
+to rather than a corner they fall out of.
+
+**The sort lives on the SNAPSHOT, in the store, never on the view or the pane.** Sorting replaces `snapshot.entries`
+with a permutation of the ranked rows and bumps the mutation tick, exactly like every other mutator. Every consumer (the
+rendered rows, F5/F6/F8, ⌘C/⌘X, drag-out, the context menu, the keyboard cursor, the Selection dialog, the MCP mirror,
+the selection remap) resolves the index the user sees against that one array, so all of them follow with no wiring of
+their own. ❌ No view-side reorder and no per-pane permutation: either would hand a delete the wrong file.
+
+**The pane's persisted directory sort is a different thing.** A snapshot pane borrows a tab whose `sortBy` / `sortOrder`
+belong to the folder the user came from, and a header click here never reaches `setPaneSort` or `resortListing`, so
+navigating away and back finds that folder in the order it was left. Both entry points check for a snapshot before
+anything else: the header click in `SearchResultsView`, and the keyboard sort commands in
+`file-explorer/pane/sort-operations.ts`.
+
+**The cycle is tri-state**, shared by the header click and the keyboard commands through
+`snapshot-sort.svelte.ts::nextSnapshotSort`: a fresh column takes its default order, the same column flips, a third
+press goes back to ranked. On that third state the active header's tooltip reads "Sort by relevance" instead of naming
+the column, because that is what the click will actually do. Ranked shows no active column and no caret, which is
+`FullList`'s `sortBy: null`.
+
+**The comparator is Rust's, not a copy of it.** `sort_search_results` (`src-tauri/src/commands/search.rs`) runs
+`file_system::listing::sorting::entry_comparator`, the SAME comparator every directory listing sorts by, over a
+`SearchSortRow` that implements the shared `SortableEntry` trait. Natural number ordering, case folding,
+directories-first, and the user's `directorySortMode` all come along, and there is no second implementation to drift. A
+frontend comparator would have had to reproduce `alphanumeric_sort`'s leading-zero and non-ASCII rules by hand.
+
+Two consequences of that trait's `None` answers, both deliberate. A search result carries no CREATION time, so
+`sort.byCreated` lands on the comparator's both-unknown arm and orders by name (the header has no Created column to
+claim either way). And it carries no RECURSIVE size, so under Size the directories are all "unknown" and sort by name
+among themselves, matching the `<dir>` their Size cell renders.
+
+**Ties keep the ranked order.** Both `Vec::sort_by` and the frontend's array are stable, and the input is the ranked
+array, so rows equal under the chosen column stay in the engine's ranking. That makes a re-sort reproducible instead of
+shuffling equal rows on every click, and it is the same rule a directory listing follows.
+
+**The round trip is async; the store mutation is not.** `snapshot-sort.svelte.ts::sortSnapshot` owns the IPC and calls
+the synchronous `applySnapshotSort`, so `entries` is a complete array at every moment and never half-reordered. Two
+things can go stale in between: a LATER sort request supersedes this one and the answer is dropped, while the ROWS
+changing (a walk appending, a delete purging) invalidates the order rather than the intent, so the request re-runs
+against the rows that exist now.
+
+**A still-running walk keeps the sort.** The store holds a `rankedEntries` array beside `entries`, kept in step with
+every append and purge, so `sort: null` restores the engine's order EXACTLY rather than approximating it. An append on a
+SORTED pane grows `rankedEntries` and leaves `entries` alone until the re-sort lands one round trip later: a fully
+sorted array that lags a tick beats a half-sorted one nobody can read an index off. ❗ That is why every caller of
+`appendSnapshotEntries` must follow it with `resortSnapshotIfSorted` (`walk-handoff.svelte.ts` is the only one today);
+skip it and a sorted pane silently stops growing. A purge needs no round trip, because filtering preserves relative
+order in both arrays.
+
+**Two panes on one snapshot id share the order.** They are one result set, so one order is the honest answer. The sort
+dies with the snapshot, since the store is module state.
 
 ## Search-specific decisions
 

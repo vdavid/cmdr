@@ -900,6 +900,10 @@
   "@fileExplorer.columns.created": {
     "sourceHash": "d70b9e2"
   },
+  "fileExplorer.columns.sortByRelevance": "Ordenar por relevância",
+  "@fileExplorer.columns.sortByRelevance": {
+    "sourceHash": "20632dd"
+  },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
     "sourceHash": "b949c92",

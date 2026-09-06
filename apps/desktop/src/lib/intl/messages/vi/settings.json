@@ -383,14 +383,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Mở tệp nén và gói ứng dụng",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Chọn xem nhấn Enter sẽ làm gì với mỗi định dạng: duyệt bên trong như một thư mục, mở trong ứng dụng khác, hoặc hỏi mỗi lần.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Tệp nén",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"
@@ -406,6 +398,14 @@
   "settings.archives.zip.description": "Nhấn Enter sẽ làm gì với một tệp zip.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
+  },
+  "settings.archives.ooxml.label": "Tài liệu và gói",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Nhấn Enter sẽ làm gì với tệp .docx, .xlsx, .pptx, .jar hoặc .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
   },
   "settings.archives.bundle.label": "Gói ứng dụng",
   "@settings.archives.bundle.label": {
@@ -450,10 +450,6 @@
   "settings.indexing.enabled.description": "Lập chỉ mục ổ đĩa của bạn ở chế độ nền để có ngay kích cỡ thư mục.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
-  },
-  "settings.mediaIndex.card": "Tìm kiếm hình ảnh",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Việc này chạy hoàn toàn trên máy Mac của bạn bằng Vision framework tích hợp của Apple. Hình ảnh của bạn không bao giờ rời khỏi máy tính, và không có nhà cung cấp AI hay khóa API nào tham gia.",
   "@settings.mediaIndex.privacyNote": {
@@ -546,6 +542,14 @@
   "settings.mediaIndex.showFileStatusIcons.description": "Thêm một huy hiệu nhỏ vào mỗi hình ảnh trong danh sách tệp, cho biết nó đã được lập chỉ mục để tìm kiếm hay chưa.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
+  },
+  "settings.mediaIndex.showInSearch.label": "Hiển thị kết quả hình ảnh trong Tìm kiếm",
+  "@settings.mediaIndex.showInSearch.label": {
+    "sourceHash": "45dd528"
+  },
+  "settings.mediaIndex.showInSearch.description": "Tìm kiếm sẽ thêm một hàng hình ảnh khớp phía trên các tệp của bạn. Việc so khớp vẫn chưa chính xác lắm, nên tính năng này đang tắt cho đến khi bạn muốn dùng.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "sourceHash": "5b62cab"
   },
   "settings.mediaIndex.networkVolumes.label": "Lập chỉ mục hình ảnh trên ổ đĩa mạng",
   "@settings.mediaIndex.networkVolumes.label": {

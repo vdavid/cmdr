@@ -53,17 +53,13 @@ const SNAPSHOT_PANE_PATH_HEADER = '[aria-label="Right file pane"] .header-row'
  * sides are readable because a failure needs to say WHICH pane the snapshot
  * landed in, not just that the right one missed it.
  *
- * We can't read `volumeId` from `cmdr://state`'s pane block directly:
- * `FilePane.syncPaneStateToMcp` bails out for virtual-volume views (network
- * and search-results) because their content isn't a real directory MCP
- * agents should query. So the `volumeId:` field stays stale (`root`) even
- * after the pane swaps to a search-results snapshot.
- *
- * The active-tab line IS synced (`update_pane_tabs` runs independently),
- * and it carries the path: `i:1 id:... [active] sr-1 (search-results://sr-1)`.
- * We parse the parenthesized path on the `[active]` row of the right pane's
- * `tabs:` section. Paths starting with `search-results://` map to the
- * `search-results` virtual volume; everything else is a local-volume path.
+ * The read is the active-tab line, not the pane block's `volumeId:`. Tabs sync
+ * through `update_pane_tabs`, independently of the debounced pane-state push, so
+ * one poll covers the promotion whatever the pane sync is doing. The line carries
+ * the path: `i:1 id:... [active] sr-1 (search-results://sr-1)`. We parse the
+ * parenthesized path on the `[active]` row of the requested pane's `tabs:`
+ * section. Paths starting with `search-results://` map to the `search-results`
+ * virtual volume; everything else is a local-volume path.
  */
 async function getPaneActiveTabPath(side: 'left' | 'right'): Promise<string | null> {
   const state = await mcpReadResource('cmdr://state?compact=true')
@@ -203,15 +199,12 @@ async function focusRightPane(tauriPage: PageLike): Promise<void> {
 }
 
 /**
- * Resets the right pane to the local volume + fixture path if a previous
- * test left it on the `search-results://` virtual volume. `ensureAppReady`
- * skips this on its own: the FilePane's `syncPaneStateToMcp` bails out for
- * virtual-volume panes, so `cmdr://state` still reports
- * `volume: Macintosh HD` and the `isStateClean` short-circuit fires. The
- * active-tab line, which IS synced, shows the truth. We emit
- * `mcp-volume-select` for the right pane when its active tab is on a
- * snapshot path, then nav back to the fixture so `⌘[` from a fresh
- * Open-in-pane lands somewhere meaningful instead of on the volume root.
+ * Resets the right pane to the local volume + fixture path if a previous test
+ * left it on the `search-results://` virtual volume. The active-tab path is the
+ * check, because it names the snapshot outright. We emit `mcp-volume-select` for
+ * the right pane when its active tab is on a snapshot path, then nav back to the
+ * fixture so `⌘[` from a fresh Open-in-pane lands somewhere meaningful instead of
+ * on the volume root.
  */
 async function resetRightPaneToLocalIfNeeded(
   tauriPage: PageLike,

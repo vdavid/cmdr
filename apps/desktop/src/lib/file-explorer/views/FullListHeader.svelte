@@ -8,7 +8,8 @@
         /** The row's grid tracks, mirrored from the data rows so columns line up. */
         gridTemplate: string
         isFocused: boolean
-        sortBy: SortColumn
+        /** The column the rows are in, or `null` for a pane in no column's order. */
+        sortBy: SortColumn | null
         sortOrder: SortOrder
         /**
          * When on, the Name column carries the full filename and there's no Ext
@@ -25,6 +26,8 @@
          * adds this to its own right padding to stay column-aligned with the rows.
          */
         scrollbarWidth: number
+        /** Passed to the ACTIVE column's header. See `SortableHeader`'s prop. */
+        clearsSortLabel?: string
         onSortChange?: (column: SortColumn) => void
     }
 
@@ -37,6 +40,7 @@
         gitColumnVisible,
         skipTransition,
         scrollbarWidth,
+        clearsSortLabel,
         onSortChange,
     }: Props = $props()
 
@@ -64,6 +68,7 @@
             <SortableHeader
                 column="name"
                 {isFocused}
+                {clearsSortLabel}
                 label={tString('fileExplorer.columns.name')}
                 currentSortColumn={sortBy}
                 currentSortOrder={sortOrder}
@@ -72,6 +77,7 @@
             <SortableHeader
                 column="extension"
                 {isFocused}
+                {clearsSortLabel}
                 label={tString('fileExplorer.columns.ext')}
                 align="right"
                 currentSortColumn={sortBy}
@@ -83,6 +89,7 @@
         <SortableHeader
             column="name"
             {isFocused}
+            {clearsSortLabel}
             label={tString('fileExplorer.columns.name')}
             currentSortColumn={sortBy}
             currentSortOrder={sortOrder}
@@ -96,6 +103,7 @@
         <SortableHeader
             column="extension"
             {isFocused}
+            {clearsSortLabel}
             label={tString('fileExplorer.columns.ext')}
             currentSortColumn={sortBy}
             currentSortOrder={sortOrder}
@@ -105,6 +113,7 @@
     <SortableHeader
         column="size"
         {isFocused}
+        {clearsSortLabel}
         label={tString('fileExplorer.columns.size')}
         align="right"
         currentSortColumn={sortBy}
@@ -114,6 +123,7 @@
     <SortableHeader
         column="modified"
         {isFocused}
+        {clearsSortLabel}
         label={tString('fileExplorer.columns.modified')}
         align="right"
         currentSortColumn={sortBy}

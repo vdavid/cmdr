@@ -31,36 +31,37 @@ sections compose).
   `behavior.doubleClickOnPaneNotificationSeen` and `behavior.openTerminalHereToastSeen` flags (one-time-hint trackers)
   are registered but render no row. Each card frame gated via `anyVisible(shouldShow, ...)` (the card-group pattern).
 - **`TerminalAppSelect.svelte`** + **`terminal-app-options.ts`**: the "Open terminal here uses" control. See below.
-- **`ArchivesSection.svelte`**: `Behavior > Archives`: what pressing Enter does per format (Browse | Open | Ask). A
-  CUSTOM section (not registry-driven rows): all formats live in ONE pinned-shape JSON setting
-  (`behavior.archiveEnterBehavior`, `{ zip, bundle }`), so the format list extends without a registry entry per format.
-  Two labeled `SectionCard`s — Archives (the zip row) and App bundles — each a `lib/ui/ToggleGroup`
-  (`semantics="toggles"`) bound to the parsed override, writing the merged JSON back. Defaults + the pure classification
-  live in `file-explorer/pane/archive-enter-policy.ts`; this file only renders and persists. Both cards gated via
-  `anyVisible(shouldShow, 'behavior.archiveEnterBehavior')`. The Archives card ALSO holds a "Compression level" row: a
-  registry-backed `behavior.archiveCompressionLevel` slider (1–9, default 6) with "Faster"/"Smaller" `endLabels`,
-  hand-rendered here like the rest. It's the SAME setting the Compress dialog's `CompressLevelControl.svelte` binds by
-  id, and it governs every user-driven zip write; the effect on the archive is single-sourced in the backend mutation
-  `DETAILS.md` (via `write_operations/DETAILS.md` § "Archive edits").
+- **`ArchivesSection.svelte`**: `Behavior > Archives`: what pressing Enter does per format (Browse | Open | Ask). Fully
+  registry-driven — one setting per format (`behavior.archiveEnter.zip` / `.ooxml` / `.bundle`), each a `SettingRow` +
+  `SettingToggleGroup`, so this file reads, writes, defaults, and validates nothing of its own. Two labeled
+  `SectionCard`s: Archives holds zip AND the zip-based documents and app packages (`.docx`/`.jar`/…), since both are
+  things Cmdr browses into; App bundles holds `.app`/`.bundle`/`.framework`, which are folders rather than files. The
+  format list, the matcher behind each id, and the defaults live in `file-explorer/pane/archive-enter-policy.ts`, pinned
+  to these registry entries by the parity test there. Cards gated via `anyVisible(shouldShow, ...)` over their own
+  member ids. The Archives card ALSO holds a "Compression level" row: a registry-backed
+  `behavior.archiveCompressionLevel` slider (1–9, default 6) with "Faster"/"Smaller" `endLabels`, hand-rendered here
+  like the rest. It's the SAME setting the Compress dialog's `CompressLevelControl.svelte` binds by id, and it governs
+  every user-driven zip write; the effect on the archive is single-sourced in the backend mutation `DETAILS.md` (via
+  `write_operations/DETAILS.md` § "Archive edits").
 - **`DriveIndexingSection.svelte`**: `Indexing > Drive indexing`: one unlabeled `SectionCard` (the section title already
-  reads "Drive indexing") — the `indexing.enabled` toggle + clear-index action (the hidden `indexing.indexSize` search
-  anchor), the per-drive first-connect prompt toggle (`askForEachDrive`) with its "re-enable notifications" button, and
-  the stale-drive notification toggle (`staleNotify`). Stays interactive regardless of the FDA gate (indexing operates
-  on whatever paths it can read; the gate is for the downloads watcher). The card frame is gated via
-  `anyVisible(shouldShow, ...memberIds)` (the card-group pattern), and the hidden `indexing.indexSize` anchor (its
-  `section` equals this page's) makes "index size" a search hit, keeping the section visible (no blank pane) when
-  searched. See `lib/settings/components/CLAUDE.md` § card groups. `indexing.enabled` is the MASTER switch, a hard gate
-  in the backend (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two indexing switches), so while it's off
-  this section renders the rows it overrides as overridden: both sub-toggles get `disabled` + the "Off with drive
-  indexing" badge, the hand-rendered re-enable row dims with them (`.reenable-row.overridden`, matching `SettingRow`'s
-  own disabled opacity), and one `.master-off-note` line says what stopped and that each drive keeps its own choice.
-  Clear index stays live on purpose: reclaiming the disk is exactly what someone who turned indexing off may want next,
-  and after this effort there IS something to reclaim there — a search walks whatever folder it's pointed at whichever
-  way the switch is set (`docs/specs/unindexed-search-plan.md` Decision 13). So the size and the button read the whole
-  index's FOOTPRINT off disk (`get_index_disk_usage`, every `index-*.db` plus sidecars, `root` included) instead of the
-  live `root` instance's `db_file_size`, which answers `None` on exactly the machine that most needs the number.
-  Clearing goes just as wide (`clear_drive_index` → `Index::forget_all_volumes`): a walk's disk can belong to a share
-  nobody ever enabled, and per-drive clearing has its own action in the drive's badge menu. ❌ **Don't "fix"
+  reads "Drive indexing") — the `indexing.enabled` toggle + clear-index action, the per-drive first-connect prompt
+  toggle (`askForEachDrive`) with its "re-enable notifications" button, and the stale-drive notification toggle
+  (`staleNotify`). Stays interactive regardless of the FDA gate (indexing operates on whatever paths it can read; the
+  gate is for the downloads watcher). The card frame is gated via `anyVisible(shouldShow, ...memberIds)` (the card-group
+  pattern), and the two rows that aren't settings — index size, re-enable notifications — take part in that guard
+  through the ids in `DriveIndexingSection.rows.ts` (§ Searchable rows below), which is what keeps "index size" a hit
+  and the pane non-blank. See `lib/settings/components/CLAUDE.md` § card groups. `indexing.enabled` is the MASTER
+  switch, a hard gate in the backend (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two indexing
+  switches), so while it's off this section renders the rows it overrides as overridden: both sub-toggles get
+  `disabled` + the "Off with drive indexing" badge, the hand-rendered re-enable row dims with them
+  (`.reenable-row.overridden`, matching `SettingRow`'s own disabled opacity), and one `.master-off-note` line says what
+  stopped and that each drive keeps its own choice. Clear index stays live on purpose: reclaiming the disk is exactly
+  what someone who turned indexing off may want next, and there IS something to reclaim there: a search walks whatever
+  folder it's pointed at whichever way the switch is set, and leaves an index behind. So the size and the button read
+  the whole index's FOOTPRINT off disk (`get_index_disk_usage`, every `index-*.db` plus sidecars, `root` included)
+  instead of the live `root` instance's `db_file_size`, which answers `None` on exactly the machine that most needs the
+  number. Clearing goes just as wide (`clear_drive_index` → `Index::forget_all_volumes`): a walk's disk can belong to a
+  share nobody ever enabled, and per-drive clearing has its own action in the drive's badge menu. ❌ **Don't "fix"
   `settings.indexing.masterOffNote` without asking David.** It says no drive is indexed and folder sizes stay hidden,
   which stops being strictly true the moment a search writes coverage for a branch it walked; he read it against that
   and chose to leave it, since it describes what the switch does rather than what a search may have left behind. It is
@@ -111,13 +112,26 @@ sections compose).
   be cancelled or double-fired (pinned by the `DeleteAiModelDialog` block of `sections.a11y.test.ts`). It's the only
   settings dialog the dev-only dialog gallery can open; see `lib/dialog-gallery/DETAILS.md`.
 - **`ImageIndexingSection.svelte`**: `Indexing › Image indexing` subsection (second subsection of Indexing): on-device
-  image-content (OCR) search. One `SectionCard` (titled by `settings.mediaIndex.card`) holding the `mediaIndex.enabled`
-  master toggle, an explicit on-device privacy note (`settings.mediaIndex.privacyNote` — the feature touches no AI
-  provider or API key, so the note says so), and, once the toggle is on, the bespoke `MediaIndexScope` (which itself
-  hosts `MediaIndexImportanceSlider`, which hosts `MediaIndexReclaim`), `MediaIndexChosenFolders`, and the
-  `MediaIndexNetworkVolumes` opt-in list. Composes the self-contained media components — it renders and gates them; the
-  logic lives in each. The `mediaIndex.*` registry entries all live at `section: ['Indexing', 'Image indexing']` (a
-  setting's one home).
+  image-content (OCR) search, in three `SectionCard`s.
+  - "Enable indexing" (`settings.mediaIndex.cards.enable`): the `mediaIndex.enabled` master toggle, an explicit
+    on-device privacy note (`settings.mediaIndex.privacyNote` — the feature touches no AI provider or API key, so the
+    note says so), the live per-drive `MediaIndexProgressSummary`, the two display toggles
+    (`mediaIndex.showFileStatusIcons` for the file-list badges, `mediaIndex.showInSearch` for the Search dialog's image
+    grid, which is off by default and gates that grid alone: `lib/search/DETAILS.md` § The image grid answers two
+    settings), and the `mediaIndex.parallelism` slider. The progress summary, both display toggles, and the slider gate
+    on the live master toggle, so they appear only once indexing is on.
+  - "Folders to index" (`settings.mediaIndex.cards.folders`): the bespoke `MediaIndexScope` (which itself hosts
+    `MediaIndexImportanceSlider`, which hosts `MediaIndexReclaim`), `MediaIndexChosenFolders`, and the
+    `MediaIndexNetworkVolumes` opt-in list.
+  - "Semantic search" (`settings.mediaIndex.clip.title`): `MediaIndexClipModel`.
+
+  Cards 2 and 3 gate on the live master toggle. Composes the self-contained media components — it renders and gates
+  them; the logic lives in each. The `mediaIndex.*` registry entries all live at
+  `section: ['Indexing', 'Image indexing']` (a setting's one home), and ALL FOUR of card 1's rows (the three switches
+  plus the `parallelism` slider) carry `cardKey: 'settings.mediaIndex.cards.enable'` so searching the card's VISIBLE
+  title reaches them (the `cardKey` contract in `docs/guides/adding-a-new-setting.md`: it must be the key the card
+  actually renders, and a `hidden` hand-rendered row needs it as much as an auto-rendered one).
+
 - **`MediaIndexScope.svelte`**: the `mediaIndex.scope` radio group — index only the folders the user chose (the default)
   or automatically by folder importance. It OWNS the importance slider's visibility: the slider renders only in the
   automatic scope, because in the narrow one the threshold has no effect at all and showing it would promise a control
@@ -239,6 +253,27 @@ reach: the key-filter field helpers (platform-aware combo splitting and subset m
 derivations.
 
 ## Conventions
+
+### Searchable rows (`<Component>.rows.ts`)
+
+A section renders plenty that no setting models: "Clear index", "Open log file", "Get a license". Those rows are
+declared as `SearchableRow`s so search can reach them, in a `<Component>.rows.ts` **beside the component whose markup
+renders them** (`DriveIndexingSection.rows.ts`, `AdvancedSection.rows.ts`, …), with `searchable-rows.ts` as the one
+aggregator `settings-search.ts` imports. Adding or removing a row touches the file next to the markup, plus that
+aggregator line for a brand-new file.
+
+The shape, the rationale, and the guardrails are single-sourced in `../DETAILS.md` § "Searchable rows"; the authoring
+steps are `docs/guides/adding-a-new-setting.md` § "Adding a searchable non-setting row". What's specific to this
+directory:
+
+- **A row NEVER decides what renders**, so ❌ don't grow this into a renderer: sections stay bespoke Svelte, and a
+  `.rows.ts` is search metadata sitting beside markup it doesn't own.
+- **`MediaIndex*` has no rows file on purpose.** Everything it renders is gated on runtime state (the reclaim offer, the
+  CLIP model's download/delete, anything behind the image-index master toggle), and a hit that scrolls to a row that
+  isn't rendered is worse than no hit.
+- `searchable-rows.test.ts` lives here, not in `../`, and fails if a declared row names a label key its sibling
+  component doesn't render, if a filtering section doesn't gate the row on its own id, or if an id collides with a
+  `SettingId`.
 
 ### Registry-driven section routing
 
@@ -543,6 +578,10 @@ and would break on a copy edit or in another locale). This is the FIRST and only
 Advanced section; keep it that way — a new card that needs extra content adds another marker-id check and an inline
 block, not a general plugin system. The two buttons reuse the same handlers and `settings.logging.*` catalog copy the
 old standalone `LoggingSection` carried.
+
+Both buttons (and the page-header "Reset all to defaults") are searchable rows, so `cardMemberIds(group)` appends
+`LOGGING_ROW_IDS` to the Logging card's members: the card's `anyVisible` guard has to see them, or a hit on "open log
+file" would open Advanced with every card filtered out.
 
 ## Ask Cmdr section (`AskCmdrSection.svelte`)
 

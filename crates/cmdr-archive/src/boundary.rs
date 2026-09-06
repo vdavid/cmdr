@@ -41,7 +41,9 @@ pub use cmdr_fs::archive_format::has_supported_archive_extension;
 /// `VolumeManager`, so both agree on what "is a `<format>`" means.
 pub fn bytes_match_archive_magic(format: ArchiveFormat, header: &[u8]) -> bool {
     match format {
-        ArchiveFormat::Zip => bytes_start_with_zip_signature(header),
+        // A document container carries the same `PK\x03\x04` header, so the
+        // magic confirm is the zip one; only writability differs.
+        ArchiveFormat::Zip | ArchiveFormat::Ooxml => bytes_start_with_zip_signature(header),
         // A plain tar has no signature at offset 0; the ustar magic sits at 257.
         // (A pre-POSIX v7 tar has none at all — those are accepted by extension +
         // a successful parse rather than magic, but modern tars are ustar/GNU/pax.)
@@ -94,7 +96,9 @@ pub fn archive_boundary_candidate(path: &Path) -> Option<(PathBuf, PathBuf)> {
 /// Blocking (a local stat + a few-byte read). Callers on the async executor
 /// accept it because it runs once per navigation and only when a path component
 /// carries an archive extension (the pure candidate check gates the I/O).
-/// Remote-backed archives (a later milestone) revisit the sync sniff.
+/// This is `std::fs`-only, so it answers for a LOCAL parent alone; a remote
+/// parent confirms through its own volume I/O (`confirm_remote_archive_boundary`
+/// in the host's `archive_routing.rs`, sharing this module's magic predicate).
 pub fn confirm_archive_boundary(path: &Path) -> Option<(PathBuf, PathBuf)> {
     let (archive_path, inner_path) = archive_boundary_candidate(path)?;
     let metadata = std::fs::metadata(&archive_path).ok()?;

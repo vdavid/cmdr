@@ -8,7 +8,7 @@
 
 import {
   folderContainingArchive,
-  pathInsideArchive,
+  pathCrossesArchiveBoundary,
   type VolumeKind,
 } from '$lib/file-explorer/pane/volume-capabilities'
 
@@ -66,10 +66,10 @@ export function canOpenTerminalIn(volumeKind: VolumeKind): boolean {
  */
 export function resolveTerminalFolder(pane: TerminalTargetPane): string | null {
   if (!canOpenTerminalIn(pane.volumeKind)) return null
-  if (pathInsideArchive(pane.panePath)) return folderContainingArchive(pane.panePath)
+  if (pathCrossesArchiveBoundary(pane.panePath)) return folderContainingArchive(pane.panePath)
 
   const cursor = pane.cursorEntry
   const cursorIsEnterableFolder =
-    cursor !== null && cursor.name !== '..' && cursor.isDirectory && !pathInsideArchive(cursor.path)
+    cursor !== null && cursor.name !== '..' && cursor.isDirectory && !pathCrossesArchiveBoundary(cursor.path)
   return cursorIsEnterableFolder ? cursor.path : pane.panePath
 }

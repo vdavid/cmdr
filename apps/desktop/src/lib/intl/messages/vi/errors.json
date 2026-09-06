@@ -1437,6 +1437,38 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "Tệp mới của bạn đang mang tên khác",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Tệp {path} mới đã được ghi xong và đầy đủ, nhưng đích không cho nó lấy tên đó, và tệp mà nó định thay thế thì đã không còn. Tệp mới đang ở {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Hãy mở {keptAt} để kiểm tra, rồi đổi tên nó. Nếu đích là thư mục chia sẻ trên mạng hoặc một chiếc điện thoại, hãy kết nối lại trước, khi đó việc đổi tên sẽ thành công.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
+  "errors.write.originalsKeptAside.title": "Tệp của bạn đang mang tên mới",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "Một thư mục đã lấy tên {path}, nên tệp của bạn giờ nằm ở {keptAt}. Không có gì bị bỏ đi cả.",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "Các thư mục đã lấy tên của {count} tệp của bạn, nên những tệp đó giờ mang tên mới. Không có gì bị bỏ đi cả; phần chi tiết kỹ thuật bên dưới liệt kê từng tệp một.",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "Hãy mở {keptAt} để xem. Khi bạn đã dọn thư mục đi chỗ khác, bạn có thể đổi tên tệp về như cũ.",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "Phần chi tiết bên dưới cho biết từng tệp đang ở đâu. Khi bạn đã dọn các thư mục đi chỗ khác, bạn có thể đổi tên chúng về như cũ.",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
+  },
   "errors.write.fallback.title.copy": "Không thể sao chép",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"
@@ -1652,5 +1684,21 @@
   "errors.write.readOnlyDevice.source.fallbackName": "Nguồn",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Hai mục trùng tên",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Bạn đã chọn hai mục cùng tên {name}, nên cả hai sẽ rơi vào cùng một chỗ: {first} và {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Hãy sao chép từng mục một, hoặc đổi tên một mục trước.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Hãy di chuyển từng mục một, hoặc đổi tên một mục trước.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

@@ -108,6 +108,7 @@ function makeSnapshot(id: string, entries: SearchResultEntry[]): SearchSnapshot 
     totalCount: entries.length,
     createdAt: Date.now(),
     label: 'foo',
+    sort: null,
   }
 }
 
@@ -122,8 +123,6 @@ describe('SearchResultsView a11y', () => {
         path: 'search-results://nonexistent',
         cursorIndex: 0,
         isFocused: false,
-        sortBy: 'name',
-        sortOrder: 'ascending',
         onNavigate: () => {},
         onSelect: () => {},
       },
@@ -145,8 +144,6 @@ describe('SearchResultsView a11y', () => {
         path: `search-results://${id}`,
         cursorIndex: 0,
         isFocused: true,
-        sortBy: 'name',
-        sortOrder: 'ascending',
         onNavigate: () => {},
         onSelect: () => {},
       },

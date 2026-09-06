@@ -6,6 +6,7 @@ use super::cross_fs::move_with_staging;
 use super::*;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::ConflictResolution;
+use crate::ignore_poison::IgnorePoison;
 
 pub(super) fn make_state(progress_interval_ms: u64) -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(std::time::Duration::from_millis(
@@ -48,4 +49,27 @@ pub(super) fn run_cross_fs_move(
     };
     move_with_staging(&*events, op_id, &state, sources, dst_dir, &config, 0)?;
     Ok(events)
+}
+
+/// The outcomes this run reported for `path`, in emit order. The LAST one is the
+/// operation's verdict on that source (`types::SourceItemOutcome`).
+pub(super) fn outcomes_for(events: &CollectorEventSink, path: &Path) -> Vec<SourceItemOutcome> {
+    events
+        .source_items_done
+        .lock_ignore_poison()
+        .iter()
+        .filter(|e| e.source_path == path.display().to_string())
+        .map(|e| e.outcome)
+        .collect()
+}
+
+/// The `source_removed` flags this run reported for `path`, in emit order.
+pub(super) fn removal_flags_for(events: &CollectorEventSink, path: &Path) -> Vec<bool> {
+    events
+        .source_items_done
+        .lock_ignore_poison()
+        .iter()
+        .filter(|e| e.source_path == path.display().to_string())
+        .map(|e| e.source_removed)
+        .collect()
 }

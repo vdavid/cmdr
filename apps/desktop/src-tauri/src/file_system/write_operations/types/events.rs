@@ -96,6 +96,31 @@ pub struct WriteCompleteEvent {
     pub files_processed: usize,
     pub files_skipped: usize,
     pub bytes_processed: u64,
+    /// What a cross-filesystem move found in the source that its copy phase
+    /// never carried, and therefore left where it was. `None` (the ordinary
+    /// case) means every source went, and the FE says nothing about it.
+    #[serde(default)]
+    pub appeared_during_move: Option<AppearedDuringMove>,
+}
+
+/// Items that turned up in a move's source folder after the scan counted it: a
+/// download finishing, a sync client landing a file, an editor saving. The copy
+/// phase never saw them, so the source sweep leaves them (and whatever holds
+/// them) alone, and the operation says so instead of reporting a clean move.
+///
+/// Typed, never a sentence: the FE words this in ten locales.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AppearedDuringMove {
+    /// How many items stayed behind. A whole unknown subtree counts once, since
+    /// that's the item the user would recognize in the pane.
+    pub item_count: u32,
+    /// The name (not the path) of the source folder holding them, for the
+    /// sentence. When several sources kept something, the first one's name.
+    pub folder_name: String,
+    /// How many top-level sources kept something. `1` in the ordinary case; the
+    /// FE reads a higher number as "and others" rather than naming them all.
+    pub folder_count: u32,
 }
 
 /// Error event payload.

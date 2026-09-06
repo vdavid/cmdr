@@ -73,6 +73,7 @@ vi.mock('$lib/settings', () => ({
     if (key === 'ai.provider') return 'off'
     if (key === 'search.autoApply') return false
     if (key === 'mediaIndex.enabled') return false
+    if (key === 'mediaIndex.showInSearch') return false
     if (key === 'indexing.silencedDrives') return '[]'
     return undefined
   }),

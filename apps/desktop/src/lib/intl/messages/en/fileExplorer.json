@@ -1331,6 +1331,10 @@
     "description": "File-list column header for the creation date (Brief view). Keep it short.",
     "screenshot": "main-window.png"
   },
+  "fileExplorer.columns.sortByRelevance": "Sort by relevance",
+  "@fileExplorer.columns.sortByRelevance": {
+    "description": "Hover tooltip on the active column header of a search-results pane, where the next click puts the rows back in the search engine''s own best-match-first order. \"Relevance\" is how well a result matches the search."
+  },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
     "description": "File-list column header for the per-file git status indicator. \"Git\" is the version-control tool name; keep it as-is."

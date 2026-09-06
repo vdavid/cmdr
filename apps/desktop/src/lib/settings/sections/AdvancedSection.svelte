@@ -106,11 +106,22 @@
     // real `section: ['Advanced']` setting), but the "open log folder" / "copy
     // diagnostics" buttons are actions. A card is matched by a stable MARKER
     // SETTING ID it contains, never by its translated title.
+    //
+    // Those actions are searchable rows (`AdvancedSection.rows.ts`), so their ids
+    // join the card's `anyVisible` guard: without that, a hit on "open log file"
+    // would open Advanced with every card filtered away.
     // ------------------------------------------------------------------------
     const LOGGING_CARD_MARKER_ID = 'developer.verboseLogging'
+    const LOGGING_ROW_IDS = ['row:advanced.openLogFile', 'row:advanced.copyDiagnostics']
 
     function hasLoggingExtras(group: AdvancedCardGroup): boolean {
         return group.settings.some((s) => s.id === LOGGING_CARD_MARKER_ID)
+    }
+
+    /** A card's member ids: its settings, plus the row ids of any extras it renders. */
+    function cardMemberIds(group: AdvancedCardGroup): string[] {
+        const ids: string[] = group.settings.map((s) => s.id)
+        return hasLoggingExtras(group) ? [...ids, ...LOGGING_ROW_IDS] : ids
     }
 
     let copyFeedback = $state(false)
@@ -160,13 +171,19 @@ Timestamp: ${info.timestamp}
         </span>
     </div>
 
-    <div class="header-actions">
-        <Button variant="secondary" size="mini" onclick={handleResetAll}>{tString('settings.advanced.resetAll')}</Button>
-    </div>
+    <!-- Not a setting, so it carries a searchable-row id (`AdvancedSection.rows.ts`).
+         It lives above the cards, so its own gate is all it needs. -->
+    {#if shouldShow('row:advanced.resetAll')}
+        <div class="header-actions">
+            <Button variant="secondary" size="mini" onclick={handleResetAll}
+                >{tString('settings.advanced.resetAll')}</Button
+            >
+        </div>
+    {/if}
 
     <div class="advanced-settings">
         {#each cardGroups as group (group.title)}
-            {@const memberIds = group.settings.map((s) => s.id)}
+            {@const memberIds = cardMemberIds(group)}
             {#if anyVisible(shouldShow, ...memberIds)}
                 <SectionCard label={group.title || undefined}>
                     {#each group.settings as setting (`${setting.id}-${String(settingsChangeCounter)}`)}
@@ -219,16 +236,20 @@ Timestamp: ${info.timestamp}
                             </div>
                         {/if}
                     {/each}
-                    {#if hasLoggingExtras(group)}
+                    {#if hasLoggingExtras(group) && anyVisible(shouldShow, ...LOGGING_ROW_IDS)}
                         <div class="card-extra-actions">
-                            <Button variant="secondary" size="mini" onclick={openLogFile}>
-                                {tString('settings.logging.openLogFile')}
-                            </Button>
-                            <Button variant="secondary" size="mini" onclick={copyDiagnosticInfo}>
-                                {copyFeedback
-                                    ? tString('settings.logging.copied')
-                                    : tString('settings.logging.copyDiagnostics')}
-                            </Button>
+                            {#if shouldShow('row:advanced.openLogFile')}
+                                <Button variant="secondary" size="mini" onclick={openLogFile}>
+                                    {tString('settings.logging.openLogFile')}
+                                </Button>
+                            {/if}
+                            {#if shouldShow('row:advanced.copyDiagnostics')}
+                                <Button variant="secondary" size="mini" onclick={copyDiagnosticInfo}>
+                                    {copyFeedback
+                                        ? tString('settings.logging.copied')
+                                        : tString('settings.logging.copyDiagnostics')}
+                                </Button>
+                            {/if}
                         </div>
                     {/if}
                 </SectionCard>

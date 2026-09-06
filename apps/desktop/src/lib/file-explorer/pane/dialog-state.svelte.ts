@@ -30,7 +30,7 @@ import { composeTransferCompleteToast } from '$lib/file-operations/transfer/tran
 import TrashCompleteToastContent from '$lib/file-operations/delete/TrashCompleteToastContent.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
-import { pathInsideArchive } from './volume-capabilities'
+import { pathCrossesArchiveBoundary } from './volume-capabilities'
 import { transferOpLabel } from './transfer-op-label'
 import { createTransferPaneEffects } from './transfer-pane-effects'
 import { createAdoptedOperation } from './adopted-operation.svelte'
@@ -413,7 +413,12 @@ export function createDialogState(deps: DialogStateDeps) {
       deps.onRefocus()
     },
 
-    handleTransferComplete({ filesProcessed, filesSkipped, bytesProcessed }: TransferCompletePayload) {
+    handleTransferComplete({
+      filesProcessed,
+      filesSkipped,
+      bytesProcessed,
+      appearedDuringMove,
+    }: TransferCompletePayload) {
       const props = transferProgressProps
       const op = props?.operationType ?? 'copy'
       const opLabel = transferOpLabel(op)
@@ -440,6 +445,7 @@ export function createDialogState(deps: DialogStateDeps) {
         filesSkipped,
         fileCount: props?.fileCount,
         folderCount: props?.folderCount,
+        appearedDuringMove,
       })
       // `info` for the all-skipped case (nothing actually moved/copied — neutral
       // outcome, not a success). `success` everywhere else, including mixed: the
@@ -664,7 +670,7 @@ export function createDialogState(deps: DialogStateDeps) {
       // doesn't exist yet when this runs (the create returns an op id, not a
       // landed path), and an archive-inner path isn't openable in an external
       // editor anyway. The cursor still lands on it after the edit's refresh.
-      if (pathInsideArchive(currentPath)) return
+      if (pathCrossesArchiveBoundary(currentPath)) return
       const fullPath = currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`
       deps.onOpenInEditor(fullPath)
     },

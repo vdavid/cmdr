@@ -2078,6 +2078,69 @@
     "description": "Recovery suggestion when a file is marked for deletion but still held open. Plain text.",
     "screenshot": "transfer-error-delete_pending.png"
   },
+  "errors.write.newDataKeptAt.title": "Your new file is under a different name",
+  "errors.write.newDataKeptAt.message": "The new {path} is written and complete, but the destination wouldn't let it take that name, and the file it was replacing is already gone. The new one is at {keptAt}.",
+  "errors.write.newDataKeptAt.suggestion": "Open {keptAt} to check it, then rename it. If the destination is a network share or a phone, reconnect it first and the rename will go through.",
+  "@errors.write.newDataKeptAt.title": {
+    "description": "Title of the copy/move error dialog when the new file was written completely but couldn't take the destination's name, so it kept a \" (recovered)\" name instead. Plain text."
+  },
+  "@errors.write.newDataKeptAt.message": {
+    "description": "Body of the copy/move error dialog when the new file kept a different name. Plain text. It has to be clear that the new file is intact and that the old one at that name is gone, so this is the only copy.",
+    "placeholders": {
+      "path": {
+        "description": "The full path the file was meant to take, inserted verbatim. Do not translate or reformat it."
+      },
+      "keptAt": {
+        "description": "The full path where the complete new file actually is, inserted verbatim. Do not translate or reformat it."
+      }
+    }
+  },
+  "@errors.write.newDataKeptAt.suggestion": {
+    "description": "Recovery suggestion when the new file kept a different name: look at it, then rename it by hand. Plain text.",
+    "placeholders": {
+      "keptAt": {
+        "description": "The full path where the complete new file actually is, inserted verbatim. Do not translate or reformat it."
+      }
+    }
+  },
+  "errors.write.originalsKeptAside.title": "Your file is under a new name",
+  "errors.write.originalsKeptAside.message.one": "A folder took the name {path}, so your file is now at {keptAt}. Nothing was thrown away.",
+  "errors.write.originalsKeptAside.message.many": "Folders took the names of {count} of your files, so those files are now under new names. Nothing was thrown away; the technical details below list every one.",
+  "errors.write.originalsKeptAside.suggestion.one": "Open {keptAt} to check it. Once you've moved the folder out of the way, you can rename your file back.",
+  "errors.write.originalsKeptAside.suggestion.many": "Check the details below for where each file is. Once you've moved the folders out of the way, you can rename them back.",
+  "@errors.write.originalsKeptAside.title": {
+    "description": "Title of the copy error dialog when the copy stopped partway and a folder replacing one of the user's files kept its name, so that file was renamed to a \" (recovered)\" sibling. Plain text."
+  },
+  "@errors.write.originalsKeptAside.message.one": {
+    "description": "Body of the copy error dialog when exactly one of the user's files was renamed out of a folder's way. Plain text. It has to be clear the file still exists and where it is.",
+    "placeholders": {
+      "path": {
+        "description": "The full path the user's file used to have, which a folder now has, inserted verbatim. Do not translate or reformat it."
+      },
+      "keptAt": {
+        "description": "The full path where the user's file is now, inserted verbatim. Do not translate or reformat it."
+      }
+    }
+  },
+  "@errors.write.originalsKeptAside.message.many": {
+    "description": "Body of the copy error dialog when several of the user's files were renamed out of folders' way. Plain text.",
+    "placeholders": {
+      "count": {
+        "description": "How many files were renamed. Always two or more."
+      }
+    }
+  },
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "description": "Recovery suggestion when one file was renamed out of a folder's way. Plain text.",
+    "placeholders": {
+      "keptAt": {
+        "description": "The full path where the user's file is now, inserted verbatim. Do not translate or reformat it."
+      }
+    }
+  },
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "description": "Recovery suggestion when several files were renamed out of folders' way. Plain text."
+  },
   "errors.write.fallback.title.copy": "Couldn't copy",
   "errors.write.fallback.title.move": "Couldn't move",
   "errors.write.fallback.title.delete": "Couldn't delete",
@@ -2417,6 +2480,35 @@
   "errors.write.readOnlyDevice.source.fallbackName": "The source",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "description": "Fallback for the source's name in the read-only-source message when the actual name is unknown. Plain text, used as the subject of \"is read-only\".",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.duplicateSourceNames.title": "Two items have the same name",
+  "@errors.write.duplicateSourceNames.title": {
+    "description": "Title of the copy/move error dialog when the user selected two items that carry the same name, so both would land on one path in the destination. Cmdr refuses before writing anything. Plain text. This is a raw errors.* string (no ICU). Only copy and move reach this error.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.duplicateSourceNames.message": "You picked two items called {name}, so they'd both land in the same spot: {first} and {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "description": "Body of that dialog. Plain text with a contraction (\"they'd\"). This is a raw errors.* string (no ICU), so {name}, {first}, and {second} are literal replacement targets, not ICU syntax: keep them spelled exactly and reorder them freely to suit your grammar.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is.",
+    "placeholders": {
+      "name": "the shared file or folder name, e.g. invoices",
+      "first": "the full path of the first item carrying that name",
+      "second": "the full path of the second one"
+    }
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Copy them one at a time, or rename one first.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "description": "Recovery suggestion for the same-name refusal, copy variant. Plain text. This is a raw errors.* string (no ICU).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Move them one at a time, or rename one first.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "description": "Recovery suggestion for the same-name refusal, move variant. Plain text. This is a raw errors.* string (no ICU).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   }

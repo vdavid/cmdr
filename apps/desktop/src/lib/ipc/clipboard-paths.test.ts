@@ -1,5 +1,5 @@
 /**
- * IPC contract tests for the paths-by-value clipboard commands added in M8d.
+ * IPC contract tests for the paths-by-value clipboard commands.
  *
  * Pins the wire shape (`{ paths }`) for `copy_paths_to_clipboard` and
  * `cut_paths_to_clipboard` so a rename on the Rust side won't silently break

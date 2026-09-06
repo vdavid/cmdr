@@ -686,3 +686,189 @@ fn a_different_parent_names_a_different_item() {
         Path::new("/backup/photo.jpg")
     ));
 }
+
+// ============================================================================
+// A blanket policy never replaces one KIND of entry with another
+// ============================================================================
+
+/// Drives `resolve_volume_conflict` for a source file landing on a destination
+/// FOLDER under the given blanket policy, and answers what it did to the
+/// destination. The folder holds `precious.txt`, so its survival is the whole
+/// assertion.
+async fn resolve_file_over_folder(policy: ConflictResolution) -> (Arc<InMemoryVolume>, Option<ResolvedConflict>) {
+    let source = Arc::new(InMemoryVolume::new("source"));
+    source
+        .create_file(Path::new("/notes"), b"incoming bytes")
+        .await
+        .unwrap();
+    let source_dyn: Arc<dyn Volume> = source.clone();
+
+    let dest = Arc::new(InMemoryVolume::new("dest"));
+    dest.create_directory(Path::new("/notes")).await.unwrap();
+    dest.create_file(Path::new("/notes/precious.txt"), b"precious user data")
+        .await
+        .unwrap();
+    let dest_dyn: Arc<dyn Volume> = dest.clone();
+
+    let events = CollectorEventSink::new();
+    let state = Arc::new(WriteOperationState::new(std::time::Duration::from_millis(0)));
+    let config = VolumeCopyConfig {
+        conflict_resolution: policy,
+        ..VolumeCopyConfig::default()
+    };
+    let mut apply_to_all = ApplyToAll::default();
+
+    let resolved = resolve_volume_conflict(
+        &source_dyn,
+        Path::new("/notes"),
+        &dest_dyn,
+        Path::new("/notes"),
+        &config,
+        &events,
+        "op-blanket-cross-type",
+        &state,
+        &mut apply_to_all,
+        // A source far bigger and newer than any directory entry, so every
+        // conditional comparison that treats the folder as a file says
+        // "overwrite".
+        Some(100_000),
+        None,
+        Some(false),
+    )
+    .await
+    .expect("a refused cross-type clash is a Skip, never a failure");
+    (dest, resolved)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_blanket_overwrite_never_clears_a_folder_a_file_landed_on() {
+    for policy in [
+        ConflictResolution::Overwrite,
+        ConflictResolution::OverwriteSmaller,
+        ConflictResolution::OverwriteOlder,
+    ] {
+        let (dest, resolved) = resolve_file_over_folder(policy).await;
+        assert!(
+            resolved.is_none(),
+            "{policy:?} across types must resolve to Skip, got {resolved:?}"
+        );
+        assert!(
+            dest.exists(Path::new("/notes/precious.txt")).await,
+            "{policy:?} must not recursively delete the destination folder"
+        );
+        assert!(
+            dest.exists(Path::new("/notes")).await,
+            "{policy:?} must leave the destination folder standing"
+        );
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_blanket_overwrite_never_deletes_a_file_a_folder_landed_on() {
+    for policy in [
+        ConflictResolution::Overwrite,
+        ConflictResolution::OverwriteSmaller,
+        ConflictResolution::OverwriteOlder,
+    ] {
+        let source = Arc::new(InMemoryVolume::new("source"));
+        source.create_directory(Path::new("/thing")).await.unwrap();
+        source
+            .create_file(Path::new("/thing/inside.txt"), b"incoming")
+            .await
+            .unwrap();
+        let source_dyn: Arc<dyn Volume> = source.clone();
+
+        let dest = Arc::new(InMemoryVolume::new("dest"));
+        dest.create_file(Path::new("/thing"), b"precious user bytes")
+            .await
+            .unwrap();
+        let dest_dyn: Arc<dyn Volume> = dest.clone();
+
+        let events = CollectorEventSink::new();
+        let state = Arc::new(WriteOperationState::new(std::time::Duration::from_millis(0)));
+        let config = VolumeCopyConfig {
+            conflict_resolution: policy,
+            ..VolumeCopyConfig::default()
+        };
+        let mut apply_to_all = ApplyToAll::default();
+
+        let resolved = resolve_volume_conflict(
+            &source_dyn,
+            Path::new("/thing"),
+            &dest_dyn,
+            Path::new("/thing"),
+            &config,
+            &events,
+            "op-blanket-folder-over-file",
+            &state,
+            &mut apply_to_all,
+            None,
+            None,
+            Some(true),
+        )
+        .await
+        .expect("a refused cross-type clash is a Skip, never a failure");
+
+        assert!(
+            resolved.is_none(),
+            "{policy:?} across types must resolve to Skip, got {resolved:?}"
+        );
+        assert!(
+            dest.exists(Path::new("/thing")).await,
+            "{policy:?} must not delete the destination file"
+        );
+    }
+}
+
+/// The apply-to-all carry is a blanket policy too: an "Overwrite all" latched on
+/// an earlier clash decides this item without anyone looking at it, so it stops
+/// at the same line the config policy does.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_latched_overwrite_all_never_clears_a_folder_a_file_landed_on() {
+    let source = Arc::new(InMemoryVolume::new("source"));
+    source.create_file(Path::new("/notes"), b"incoming").await.unwrap();
+    let source_dyn: Arc<dyn Volume> = source.clone();
+
+    let dest = Arc::new(InMemoryVolume::new("dest"));
+    dest.create_directory(Path::new("/notes")).await.unwrap();
+    dest.create_file(Path::new("/notes/precious.txt"), b"precious user data")
+        .await
+        .unwrap();
+    let dest_dyn: Arc<dyn Volume> = dest.clone();
+
+    let events = CollectorEventSink::new();
+    let state = Arc::new(WriteOperationState::new(std::time::Duration::from_millis(0)));
+    // Stop, so nothing but the latch can answer: if the refusal were missing,
+    // the latch's Overwrite would run without a prompt.
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Stop,
+        ..VolumeCopyConfig::default()
+    };
+    let mut apply_to_all = ApplyToAll::default();
+    // An "Overwrite all" a person picked on a file→folder prompt, which the
+    // latch spreads to both buckets when it's the operation's first clash.
+    apply_to_all_record(&mut apply_to_all, true, ConflictResolution::Overwrite, true);
+
+    let resolved = resolve_volume_conflict(
+        &source_dyn,
+        Path::new("/notes"),
+        &dest_dyn,
+        Path::new("/notes"),
+        &config,
+        &events,
+        "op-latched-cross-type",
+        &state,
+        &mut apply_to_all,
+        None,
+        None,
+        Some(false),
+    )
+    .await
+    .expect("a refused cross-type clash is a Skip, never a failure");
+
+    assert!(resolved.is_none(), "a latched Overwrite across types must Skip");
+    assert!(
+        dest.exists(Path::new("/notes/precious.txt")).await,
+        "a latched Overwrite must not recursively delete the destination folder"
+    );
+}

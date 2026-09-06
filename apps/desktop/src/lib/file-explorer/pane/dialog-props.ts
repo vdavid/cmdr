@@ -9,7 +9,7 @@
  */
 
 import type { Initiator } from '$lib/tauri-commands'
-import type { OpKind } from '$lib/ipc/bindings'
+import type { AppearedDuringMove, OpKind } from '$lib/ipc/bindings'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
@@ -44,6 +44,9 @@ export interface TransferCompletePayload {
   filesProcessed: number
   filesSkipped: number
   bytesProcessed: number
+  /** What a cross-filesystem move left in the source because it never carried it there. `null`
+   *  on every other ending, which is the ordinary case. */
+  appearedDuringMove: AppearedDuringMove | null
 }
 
 /**

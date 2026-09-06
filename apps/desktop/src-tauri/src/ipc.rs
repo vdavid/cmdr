@@ -377,6 +377,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::media_index::media_index_folder_coverage,
                     crate::commands::search::prepare_search_index,
                     crate::commands::search::search_files,
+                    crate::commands::search::sort_search_results,
                     crate::commands::search::search_files_streaming,
                     crate::commands::search::cancel_search,
                     crate::commands::search::release_search_index,

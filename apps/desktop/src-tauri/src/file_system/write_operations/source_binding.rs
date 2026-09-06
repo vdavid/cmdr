@@ -435,6 +435,7 @@ pub(crate) fn announce_empty_batch(
         files_processed: 0,
         files_skipped: skipped,
         bytes_processed: 0,
+        appeared_during_move: None,
     });
 }
 

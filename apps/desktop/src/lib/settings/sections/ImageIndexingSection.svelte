@@ -8,8 +8,9 @@
   `['Indexing','Image indexing']`, so there's no new sidebar route):
 
     1. Enable indexing — the master `mediaIndex.enabled` toggle, the privacy note, the live
-       per-drive progress summary (shown while a pass runs), and the `showFileStatusIcons`
-       display toggle.
+       per-drive progress summary (shown while a pass runs), and the two display toggles:
+       `showFileStatusIcons` (badges in the file list) and `showInSearch` (the image grid in
+       the Search dialog).
     2. Folders to index — everything answering "what gets indexed": the scope control (with
        its importance slider + reclaim), the chosen-folders list with per-folder coverage, and
        the per-network-volume opt-in.
@@ -52,6 +53,10 @@
         label: '',
         description: '',
     }
+    const showInSearchDef = getSettingDefinition('mediaIndex.showInSearch') ?? {
+        label: '',
+        description: '',
+    }
     const parallelismDef = getSettingDefinition('mediaIndex.parallelism') ?? { label: '', description: '' }
     const imageSearchBadge = getBadgeStatus('image-search')
 
@@ -76,7 +81,13 @@
 
     // Card frames: each is the SAME `shouldShow` predicate that gates its rows.
     const showEnableCard = $derived(
-        anyVisible(shouldShow, 'mediaIndex.enabled', 'mediaIndex.showFileStatusIcons', 'mediaIndex.parallelism'),
+        anyVisible(
+            shouldShow,
+            'mediaIndex.enabled',
+            'mediaIndex.showFileStatusIcons',
+            'mediaIndex.showInSearch',
+            'mediaIndex.parallelism',
+        ),
     )
     const showFoldersCard = $derived(
         imageIndexEnabled && anyVisible(shouldShow, 'mediaIndex.enabled', 'mediaIndex.scope', 'mediaIndex.importanceThreshold'),
@@ -124,6 +135,20 @@
                     {searchQuery}
                 >
                     <SettingSwitch id="mediaIndex.showFileStatusIcons" />
+                </SettingRow>
+            {/if}
+
+            <!-- Whether the Search dialog shows its grid of matching images above the file
+                 results. Off by default (match quality isn't there yet), and only meaningful
+                 once indexing is on, so gate on the live master toggle. -->
+            {#if imageIndexEnabled && shouldShow('mediaIndex.showInSearch')}
+                <SettingRow
+                    id="mediaIndex.showInSearch"
+                    label={showInSearchDef.label}
+                    description={showInSearchDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="mediaIndex.showInSearch" />
                 </SettingRow>
             {/if}
 

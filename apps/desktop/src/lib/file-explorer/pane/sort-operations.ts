@@ -15,6 +15,8 @@
 
 import { resortListing } from '$lib/tauri-commands'
 import { getDirectorySortMode } from '$lib/settings/reactive-settings.svelte'
+import { getSnapshot, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
+import { nextSnapshotSort, sortSnapshot } from '$lib/search/snapshot-sort.svelte'
 import type { SortColumn, SortOrder } from '../types'
 import { defaultSortOrders } from '../types'
 import type { FilePaneAPI } from './types'
@@ -46,12 +48,34 @@ export interface SortOperations {
 }
 
 export function createSortOperations(deps: SortOperationsDeps): SortOperations {
+  /**
+   * The snapshot id a pane is showing, or `null` for an ordinary pane.
+   *
+   * A search-results pane sorts its SNAPSHOT, in the store, because every consumer
+   * resolves the index the user sees against `snapshot.entries[i]`. Its tab's
+   * `sortBy` / `sortOrder` belong to the folder the user came from and must not be
+   * touched, so this branch returns before any `setPaneSort` or `resortListing`.
+   * Reads the pane's own path rather than a capability, because the id is in it.
+   */
+  function snapshotPaneId(pane: 'left' | 'right'): string | null {
+    const currentPath = deps.getPaneRef(pane)?.getCurrentPath()
+    return currentPath === undefined ? null : snapshotIdFromPanePath(currentPath)
+  }
+
   async function handleSortChange(pane: 'left' | 'right', newColumn: SortColumn): Promise<void> {
     // Cancel any active rename on the affected pane (sort invalidates indices)
     deps.getPaneRef(pane)?.cancelRename()
     // Re-sort changes the listing's index space; any in-flight type-to-jump
     // match would land on the wrong row.
     deps.getPaneRef(pane)?.clearJumpState()
+
+    const snapshotId = snapshotPaneId(pane)
+    if (snapshotId !== null) {
+      // The same tri-state a header click runs, so the keyboard and the mouse
+      // can't disagree about where the third press lands.
+      await sortSnapshot(snapshotId, nextSnapshotSort(getSnapshot(snapshotId)?.sort ?? null, newColumn))
+      return
+    }
 
     const paneRef = deps.getPaneRef(pane)
     const listingId = paneRef?.getListingId()
@@ -79,6 +103,16 @@ export function createSortOperations(deps: SortOperationsDeps): SortOperations {
   }
 
   async function resortPaneWithCurrentSort(pane: 'left' | 'right'): Promise<void> {
+    const snapshotId = snapshotPaneId(pane)
+    if (snapshotId !== null) {
+      // `directorySortMode` crosses to the backend comparator on every snapshot
+      // sort too, so a snapshot pane already ordered by a column has to re-ask
+      // when the setting flips. One in the ranked order has nothing to redo.
+      const sort = getSnapshot(snapshotId)?.sort
+      if (sort) await sortSnapshot(snapshotId, sort)
+      return
+    }
+
     const paneRef = deps.getPaneRef(pane)
     const listingId = paneRef?.getListingId()
     if (!listingId) return
@@ -99,11 +133,21 @@ export function createSortOperations(deps: SortOperationsDeps): SortOperations {
   }
 
   async function setSort(column: SortColumn, order: 'asc' | 'desc', pane: 'left' | 'right'): Promise<void> {
+    const newOrderAsked: SortOrder = order === 'asc' ? 'ascending' : 'descending'
+    const snapshotId = snapshotPaneId(pane)
+    if (snapshotId !== null) {
+      // The atomic set names both halves, so there is no cycle to run and no way
+      // to ask for the ranked order through it. An agent restores that by opening
+      // the snapshot again.
+      await sortSnapshot(snapshotId, { column, order: newOrderAsked })
+      return
+    }
+
     const paneRef = deps.getPaneRef(pane)
     const listingId = paneRef?.getListingId()
     if (!listingId) return
 
-    const newOrder: SortOrder = order === 'asc' ? 'ascending' : 'descending'
+    const newOrder: SortOrder = newOrderAsked
 
     const sortState = collectSortState(paneRef)
     const result = await resortListing(
@@ -128,7 +172,14 @@ export function createSortOperations(deps: SortOperationsDeps): SortOperations {
 
   function setSortOrder(order: 'asc' | 'desc' | 'toggle', pane?: 'left' | 'right'): void {
     const targetPane = pane ?? deps.getFocusedPane()
-    const { sortOrder: currentOrder, sortBy: currentColumn } = deps.getPaneSort(targetPane)
+    // On a snapshot pane the live order is the SNAPSHOT's, and a pane in the
+    // ranked order has no column to re-point, so there is nothing to flip.
+    const snapshotId = snapshotPaneId(targetPane)
+    const snapshotSort = snapshotId === null ? null : (getSnapshot(snapshotId)?.sort ?? null)
+    if (snapshotId !== null && snapshotSort === null) return
+    const { sortOrder: currentOrder, sortBy: currentColumn } = snapshotSort
+      ? { sortOrder: snapshotSort.order, sortBy: snapshotSort.column }
+      : deps.getPaneSort(targetPane)
 
     let newOrder: SortOrder
     if (order === 'toggle') {
@@ -137,11 +188,13 @@ export function createSortOperations(deps: SortOperationsDeps): SortOperations {
       newOrder = order === 'asc' ? 'ascending' : 'descending'
     }
 
-    // Re-apply sort with new order by pretending to click same column
-    // This triggers the toggle logic in the handler
-    if (newOrder !== currentOrder) {
-      void handleSortChange(targetPane, currentColumn)
-    }
+    if (newOrder === currentOrder) return
+    // A snapshot pane takes the order straight: routing it through the cycle
+    // would land the third press on the ranked order instead of the flip asked
+    // for. An ordinary pane re-applies by pretending to click the same column,
+    // which is what triggers the toggle in the handler.
+    if (snapshotId !== null) void sortSnapshot(snapshotId, { column: currentColumn, order: newOrder })
+    else void handleSortChange(targetPane, currentColumn)
   }
 
   return { handleSortChange, resortPaneWithCurrentSort, setSort, setSortColumn, setSortOrder }

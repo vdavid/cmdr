@@ -46,5 +46,9 @@
   "transfer.fileOnly.mixedMove": "Flyttning klar: flyttade {transferredText}, hoppade över {skippedText}. {skippedText} {skipped, plural, one {fil} other {filer}} {skipped, plural, one {fanns} other {fanns}} redan på målet.",
   "@transfer.fileOnly.mixedMove": {
     "sourceHash": "1457a4f"
+  },
+  "transfer.appearedDuringMove": "{countText} {count, plural, one {objekt} other {objekt}} dök upp i {scope, select, manyFolders {{folderName} och andra källmappar} other {{folderName}}} under flytten och blir kvar där.",
+  "@transfer.appearedDuringMove": {
+    "sourceHash": "b884882"
   }
 }

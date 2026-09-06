@@ -20,3 +20,16 @@ keeps the brand from spreading into every signature while still gating the one o
 
 `mtp://device/storage/Music` becomes `mtp://device/storage` via the same `lastIndexOf('/')`. The brand exists to make
 this safe to assume: anything that survived `toCanonical` is known to have a slash where the parent boundary lives.
+
+## Canonical is not OS-resolvable
+
+`CanonicalPath` answers "is slash arithmetic safe here", and that is all. `mtp://dev/65537/Music` passes, because the
+parent boundary is where a `lastIndexOf('/')` says it is; nothing outside Cmdr can open it. The two questions look like
+one and are not, so the outbound guard is a separate export rather than a stricter brand: paths flow through the app as
+plain strings and only a handful of call sites hand one to an OS API.
+
+`isPlainFilesystemPath` is that guard. It answers false for every virtual-volume URL and for `~`-rooted and relative
+paths, since none of them resolves without a base the OS API lacks. Its live caller is the search-results clipboard
+refusal (`file-explorer/pane/clipboard-operations.ts::snapshotClipboardIsRefused`), where a snapshot row can name a file
+on an MTP storage or an ADB device: `NSURL::fileURLWithPath` reads an unknown scheme as a RELATIVE path and returns a
+file URL under the process working directory, so a missing check ships a mangled path rather than a refusal.

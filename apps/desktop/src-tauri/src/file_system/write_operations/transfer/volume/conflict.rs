@@ -7,14 +7,19 @@
 //!   delete the original and rename the temp in (`finalize_safe_replace`), so a
 //!   mid-stream failure can't lose both the old and the new copy
 //! - Overwrite (dir→dir): merge into the existing tree (no delete)
-//! - Overwrite (cross-type): delete the dest first, then write
+//! - Overwrite (cross-type): only ever from a Stop prompt a person answered for
+//!   that pair — delete the dest first, then write. A BLANKET Overwrite (the
+//!   config's, or an apply-to-all carry) refuses across types and Skips;
+//!   `../../conflict.rs::blanket_resolution_across_types` holds the rule.
 //! - Rename: Find unique name like "file (1).txt"
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
+use super::super::super::conflict::{
+    ApplyToAll, apply_to_all_effective, apply_to_all_record, blanket_resolution_across_types,
+};
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
@@ -22,9 +27,40 @@ use super::super::super::types::{
 };
 use super::super::super::unique_name::ClaimedNames;
 use super::super::dest_name_index::fold;
+use super::super::recovered_name::FinalizeFailure;
+use super::super::recovered_name::rescue_out_of_temp_space;
 use super::naming::find_unique_volume_name;
 use super::transfer_error::{PathRole, map_volume_error};
 use crate::file_system::volume::{Volume, VolumeError};
+
+/// What the destination holds at one TOP-LEVEL name, for the conflict pre-check
+/// every engine runs before it writes.
+///
+/// `Ok(None)` ⇒ the destination said the name is free. `Ok(Some(size))` ⇒
+/// something is there and the caller routes it through the resolver.
+///
+/// ❗ **Only `NotFound` means free.** A `ConnectionTimeout`, a
+/// `DeviceSessionReset`, a `PermissionDenied` — anything else — is the
+/// destination refusing to answer, and reading that as "nothing is there" is
+/// the whole bug: the item skips the resolver, the Skip/Stop policy is never
+/// consulted, and the landing then clears whatever the probe was asked about.
+/// So it fails THAT item, at the destination path. Same discipline
+/// `merge.rs::what_the_destination_holds` follows one level down, for a merge
+/// child.
+///
+/// ❌ No retry here. Per-file retry belongs to `retry.rs`, inside
+/// `stream_pipe_file`, and a second layer above it would multiply the wait a
+/// user sits through on a dead link (`transfer/CLAUDE.md`).
+pub(super) async fn size_of_whatever_is_at(
+    dest_volume: &Arc<dyn Volume>,
+    path: &Path,
+) -> Result<Option<u64>, WriteOperationError> {
+    match dest_volume.get_metadata(path).await {
+        Ok(entry) => Ok(Some(entry.size.unwrap_or(0))),
+        Err(VolumeError::NotFound(_)) => Ok(None),
+        Err(e) => Err(map_volume_error(&path.display().to_string(), PathRole::Destination, e)),
+    }
+}
 
 /// Outcome of resolving a volume conflict.
 ///
@@ -38,6 +74,12 @@ use crate::file_system::volume::{Volume, VolumeError};
 pub(super) struct ResolvedConflict {
     /// Where the streaming writer should land bytes.
     pub write_path: PathBuf,
+    /// `true` ⇒ resolving this clash RESERVED `write_path` with a zero-byte
+    /// `O_EXCL` placeholder (a `Rename` pick on a local-FS destination). A caller
+    /// whose write then never happens owes taking it back: on disk that
+    /// placeholder is indistinguishable from an empty file the copy produced.
+    /// `naming.rs::ClaimedName` is where the answer comes from.
+    pub reserved_placeholder: bool,
     /// `Some(orig)` ⇒ `write_path` is a temp sibling; after a successful write the
     /// caller must delete `orig` (it survived the full write) then rename
     /// `write_path` → `orig`. `None` ⇒ `write_path` is final, write directly.
@@ -105,14 +147,15 @@ pub(super) async fn resolve_volume_conflict(
     // child onto the destination it was handed, so a renamed root carries its
     // whole subtree. `../DETAILS.md` § "Self-collision (duplicating in place)".
     if is_the_same_item(source_volume, source_path, dest_volume, dest_path) {
-        let unique_path = find_unique_volume_name(dest_volume, dest_path, source_is_directory, claimed).await;
+        let unique = find_unique_volume_name(dest_volume, dest_path, source_is_directory, claimed).await;
         log::info!(
             "resolve_volume_conflict: {} is already in the destination, duplicating it as {}",
             source_path.display(),
-            unique_path.display()
+            unique.path.display()
         );
         return Ok(Some(ResolvedConflict {
-            write_path: unique_path,
+            write_path: unique.path,
+            reserved_placeholder: unique.reserved_on_disk,
             replace_after_write: None,
         }));
     }
@@ -132,18 +175,24 @@ pub(super) async fn resolve_volume_conflict(
     if source_is_directory && destination_is_directory {
         return Ok(Some(ResolvedConflict {
             write_path: dest_path.to_path_buf(),
+            reserved_placeholder: false,
             replace_after_write: None,
         }));
     }
 
-    // Determine effective conflict resolution
-    let resolution = if let Some(saved_resolution) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder)
-    {
-        // Use saved "apply to all" resolution
-        saved_resolution
-    } else {
-        config.conflict_resolution
-    };
+    // Dir-vs-dir left above and self-collision left before it, so the two sides
+    // differing means one is a folder and the other a leaf.
+    let is_cross_type = source_is_directory != destination_is_directory;
+
+    // Determine effective conflict resolution. A blanket policy — the config's,
+    // or one latched by an earlier "* all" — never replaces a folder with a file
+    // or a file with a folder; `blanket_resolution_across_types` holds the why.
+    let latched = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder);
+    let resolution = blanket_resolution_across_types(
+        latched.unwrap_or(config.conflict_resolution),
+        is_cross_type,
+        &dest_path.display(),
+    );
 
     match resolution {
         ConflictResolution::Stop => {
@@ -174,6 +223,10 @@ pub(super) async fn resolve_volume_conflict(
             // that resolves this clash too. If so, apply that resolution without
             // prompting — the queued prompt silently collapses.
             if let Some(saved) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder) {
+                // A carry is a blanket answer, so it stops where the config
+                // policy does. `Skip` from here needs no reduction, but running
+                // it through keeps the one path.
+                let saved = blanket_resolution_across_types(saved, is_cross_type, &dest_path.display());
                 let effective = reduce_volume_conditional_resolution(
                     saved,
                     source_volume,
@@ -502,8 +555,10 @@ async fn apply_volume_conflict_resolution(
             //   must delete it before the source materializes. There's no volume-level temp+rename
             //   atomicity (cross-backend) for a type swap, so a recursive delete is the best we can
             //   do; backends that support it (LocalPosix, MTP, SMB) handle the delete safely under
-            //   their own semantics. These are rare and lower-stakes (a type mismatch already means
-            //   the dest content is being intentionally replaced wholesale).
+            //   their own semantics. This arm is reachable ONLY from an Overwrite a person picked on
+            //   a Stop prompt naming both types: `resolve_volume_conflict` turns every BLANKET
+            //   Overwrite across types into a Skip before it gets here, so nothing a bulk policy
+            //   decided reaches a recursive delete.
             //
             // The same-type dir branch is enforced HERE rather than relying on `Volume::delete`'s
             // "file or empty directory" trait contract. That contract is real — a shared
@@ -524,6 +579,7 @@ async fn apply_volume_conflict_resolution(
                 let temp = temp_sibling_path(dest_path);
                 return Ok(Some(ResolvedConflict {
                     write_path: temp,
+                    reserved_placeholder: false,
                     replace_after_write: Some(dest_path.to_path_buf()),
                 }));
             }
@@ -564,14 +620,16 @@ async fn apply_volume_conflict_resolution(
             }
             Ok(Some(ResolvedConflict {
                 write_path: dest_path.to_path_buf(),
+                reserved_placeholder: false,
                 replace_after_write: None,
             }))
         }
         ConflictResolution::Rename => {
             // Find a unique name - we need to check what exists on the volume
-            let unique_path = find_unique_volume_name(dest_volume, dest_path, source_is_directory, claimed).await;
+            let unique = find_unique_volume_name(dest_volume, dest_path, source_is_directory, claimed).await;
             Ok(Some(ResolvedConflict {
-                write_path: unique_path,
+                write_path: unique.path,
+                reserved_placeholder: unique.reserved_on_disk,
                 replace_after_write: None,
             }))
         }
@@ -626,20 +684,22 @@ pub(super) fn temp_sibling_path(dest_path: &Path) -> PathBuf {
 /// other reason we return the error WITHOUT deleting the temp — the new data
 /// must survive so the user (or a retry) can recover it.
 ///
-/// CALLER CONTRACT: when this returns `Err` (either the delete failed, or — the
-/// nastier case — the delete SUCCEEDED and the rename failed), `temp` holds the
-/// only complete copy of the new data and the original may already be gone. The
-/// caller MUST NOT delete `temp` on this error path: leaving it as a recoverable
-/// `.cmdr-tmp-*` artifact is the safe outcome; cleaning it would be total data
-/// loss. The three write sites enforce this by stopping their partial-cleanup
-/// tracking from designating the temp the moment the streaming write succeeded,
-/// before this function runs. See `transfer/CLAUDE.md` § "The post-write temp is
-/// committed data" and the `*_preserves_new_data_on_finalize_failure` tests.
+/// CALLER CONTRACT: when this returns `Err` the new data is somewhere the caller
+/// must NOT clean up, and [`FinalizeFailure::new_data_at`] says where. If the
+/// DELETE failed, nothing moved: the destination still holds the user's file and
+/// the temp is an ordinary partial. If the delete SUCCEEDED and the rename
+/// failed, the temp holds the only complete copy of the new data and the
+/// original is gone, so this rescues it out of temp space (see
+/// [`rescue_out_of_temp_space`]) and reports where it went. The write sites
+/// enforce the no-cleanup half by stopping their partial-cleanup tracking from
+/// designating the temp the moment the streaming write succeeded, before this
+/// function runs. See `transfer/CLAUDE.md` § "The post-write temp is committed
+/// data" and the `*_preserves_new_data_on_finalize_failure` tests.
 pub(super) async fn finalize_safe_replace(
     dest_volume: &Arc<dyn Volume>,
     temp: &Path,
     orig: &Path,
-) -> Result<(), VolumeError> {
+) -> Result<(), FinalizeFailure> {
     match dest_volume.delete(orig).await {
         Ok(()) => {}
         Err(VolumeError::NotFound(_)) => {
@@ -647,15 +707,33 @@ pub(super) async fn finalize_safe_replace(
         }
         Err(e) => {
             log::warn!(
-                "finalize_safe_replace: failed to delete original {} before rename (temp {} holds the complete new data and is preserved): {}",
+                "finalize_safe_replace: couldn't delete the original {} before the rename, so the destination still holds it and the temp {} is an ordinary partial: {}",
                 orig.display(),
                 temp.display(),
                 e
             );
-            return Err(e);
+            return Err(FinalizeFailure {
+                error: e,
+                new_data_at: None,
+            });
         }
     }
-    dest_volume.rename(temp, orig, false).await
+    match dest_volume.rename(temp, orig, false).await {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            let new_data_at = rescue_out_of_temp_space(dest_volume, temp, orig).await;
+            log::warn!(
+                "finalize_safe_replace: the original {} is gone and the new data couldn't take its name, so it is at {} now: {}",
+                orig.display(),
+                new_data_at.display(),
+                error
+            );
+            Err(FinalizeFailure {
+                error,
+                new_data_at: Some(new_data_at),
+            })
+        }
+    }
 }
 
 /// Whether `source_path` and `dest_path` name the same item: the question

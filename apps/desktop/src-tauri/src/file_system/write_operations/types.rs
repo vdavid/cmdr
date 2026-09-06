@@ -353,6 +353,16 @@ pub enum WriteOperationError {
         source: String,
         destination: String,
     },
+    /// Two of the selected items carry the same name, so they would land on one
+    /// destination path and fight over it. Refused before anything is written:
+    /// a cross-filesystem move stages both under that one name, and whichever
+    /// arrives second meets the first one's files instead of an empty slot.
+    /// Carries both paths, so the message can show which two clashed.
+    DuplicateSourceNames {
+        name: String,
+        first: String,
+        second: String,
+    },
     SymlinkLoop {
         path: String,
     },
@@ -435,11 +445,63 @@ pub enum WriteOperationError {
         path: String,
         wrong_attempt: bool,
     },
+    /// A cross-volume Overwrite wrote the new file completely, then couldn't give
+    /// it the destination's name, and the destination it was replacing is
+    /// already gone (the safe-replace deletes it between the last byte and the
+    /// rename). The new data is intact at `kept_at`, under a ` (recovered)` name.
+    ///
+    /// ❗ `kept_at` is the whole point of the variant: it is the only place the
+    /// user's new file exists, and a message that doesn't name it leaves them
+    /// hunting. Typed so nothing has to parse it back out of prose.
+    NewDataKeptAt {
+        /// The name the file was meant to take.
+        path: String,
+        /// Where the complete new data is right now.
+        kept_at: String,
+        /// What the destination said when the rename was refused.
+        message: String,
+    },
+    /// The operation failed, and a folder that was replacing one of the user's
+    /// files had already taken its name. Everything that landed is kept, so the
+    /// folder stays; the file it displaced is beside it under a ` (recovered)`
+    /// name rather than being thrown away with the aside.
+    ///
+    /// ❗ `recovered` is the whole point of the variant, and it is never empty:
+    /// nothing else in the app tells the user their file changed names. `cause`
+    /// carries what actually failed, so the dialog keeps that error's own advice
+    /// (a full disk still says "free up space") instead of flattening every
+    /// failure into one sentence.
+    OriginalsKeptAside {
+        cause: Box<WriteOperationError>,
+        recovered: Vec<RecoveredOriginal>,
+    },
     /// Catch-all for genuinely unexpected IO errors.
     IoError {
         path: String,
         message: String,
     },
+}
+
+/// One file a failed copy kept under a new name, because a folder that was
+/// replacing it took its own. Carried by
+/// [`WriteOperationError::OriginalsKeptAside`].
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RecoveredOriginal {
+    /// The name the file had, which the folder now wears.
+    pub path: String,
+    /// Where its bytes are now. Typed, so nothing has to parse a path back out
+    /// of prose.
+    pub kept_at: String,
+}
+
+impl RecoveredOriginal {
+    pub(super) fn new(path: &std::path::Path, kept_at: &std::path::Path) -> Self {
+        Self {
+            path: path.display().to_string(),
+            kept_at: kept_at.display().to_string(),
+        }
+    }
 }
 
 /// A file that exceeds the destination filesystem's per-file size limit.

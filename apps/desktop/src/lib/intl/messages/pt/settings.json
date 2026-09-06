@@ -386,14 +386,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Abrir arquivos compactados e pacotes",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Escolha o que pressionar Enter faz em cada formato: navegar dentro dele como em uma pasta, abrir em outro aplicativo ou perguntar a cada vez.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Arquivos compactados",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"
@@ -409,6 +401,14 @@
   "settings.archives.zip.description": "O que pressionar Enter faz em um arquivo zip.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
+  },
+  "settings.archives.ooxml.label": "Documentos e pacotes",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "O que pressionar Enter faz em um .docx, .xlsx, .pptx, .jar ou .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
   },
   "settings.archives.bundle.label": "Pacotes de aplicativo",
   "@settings.archives.bundle.label": {
@@ -453,10 +453,6 @@
   "settings.indexing.enabled.description": "Indexa seu disco em segundo plano para tamanhos de pasta instantâneos.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
-  },
-  "settings.mediaIndex.card": "Busca de imagens",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Isto roda inteiramente no seu Mac usando o framework Vision integrado da Apple. Suas imagens nunca saem do seu computador e nenhum provedor de IA ou chave de API está envolvido.",
   "@settings.mediaIndex.privacyNote": {
@@ -549,6 +545,14 @@
   "settings.mediaIndex.showFileStatusIcons.description": "Adicione um pequeno selo a cada imagem na lista de arquivos indicando se ela já foi indexada para busca.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
+  },
+  "settings.mediaIndex.showInSearch.label": "Mostrar resultados de imagens em Buscar",
+  "@settings.mediaIndex.showInSearch.label": {
+    "sourceHash": "45dd528"
+  },
+  "settings.mediaIndex.showInSearch.description": "Buscar adiciona uma linha de imagens correspondentes acima dos seus arquivos. A correspondência ainda é imprecisa, então a opção fica desativada até você querer.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "sourceHash": "5b62cab"
   },
   "settings.mediaIndex.networkVolumes.label": "Indexação de imagens em disco de rede",
   "@settings.mediaIndex.networkVolumes.label": {

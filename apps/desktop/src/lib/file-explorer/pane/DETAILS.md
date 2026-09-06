@@ -78,9 +78,23 @@ suite:
 - `entry-activation.ts`: what opening an entry does (redirect, archive Enter policy, browse, viewer, OS default app).
 - `breadcrumb-bar.ts`: the displayed path plus the segment-click, context-menu, and volume-switch handlers.
 - `deleted-dir-poll.ts` / `mtp-disconnect-watch.svelte.ts`: the two "what I'm showing is gone" recoveries.
+- `snapshot-selection-sync.svelte.ts`: a search-results pane's cursor and selection remapped by PATH whenever its
+  entries array is replaced. It exists because the selection is a set of INDICES and a snapshot pane has no listing to
+  diff, so `listing-diff-sync` never runs for it: delete rows 2 and 3 of five and the selection still reads `{2, 3}`,
+  now naming the fifth row and nothing, and the next F8 takes a file nobody picked. The rules match the diff path's — a
+  surviving row keeps its selection at its new index, a vanished one leaves it, the cursor follows its own row or slides
+  to whatever took its place. ❌ Not a widened `sourcePaneStillShowsBirthFolder` (below): that gate only sees deletes
+  this pane started, and the array also shrinks when another window deletes the same file, when a move purges its
+  sources, and when a result is trashed from a normal pane. It needs `FilePane`'s `searchSnapshot` to read the store's
+  mutation tick, which also keeps `effectiveTotalCount` (Cmd+A, cursor clamping) honest after a purge.
 - `path-sync.ts` / `hidden-files-resync.ts`: the prop-driven reload truth table, and the cursor follow after the
   hidden-files toggle.
-- `entries-snapshot.ts`: the Selection dialog's entry list and the operation's selected-names snapshot.
+- `entries-snapshot.ts`: the Selection dialog's entry list and the operation's selected-names snapshot. Both adapt a
+  search snapshot's rows; the Selection list keeps the search engine's BASENAME in `name` (a mask like `*.txt` has to
+  mean the filename), unlike `SearchResultsView`'s own adapter, which synthesizes the `~`-shortened full path for the
+  Name column. `SearchResultEntry.parentPath` is home-relative too, so it is display text and never a path to join onto.
+- `snapshot-source-volume.ts`: which real volume a search-results pane's rows live on, for the delete and transfer
+  openers. ❌ Never assume `root` there — any volume with a persisted index is searchable, SMB and MTP included.
 - `network-host-state.svelte.ts`: the open Network host and its queued auto-mount share.
 - `rename-flow.svelte.ts`: the whole inline-rename flow (activation, save, the dialogs, the arrow-key chain). It lives
   here because it hangs off the pane, but everything it does is documented next to the rest of rename in
@@ -200,14 +214,21 @@ a just-deselected row reads as wrong. The target comes from `firstSelectedIndex`
 land on the same first row it actually selected. Both sides apply the identical skip, so an `idxs` still carrying a
 leading `0` can't park the cursor on the synthetic `..` row.
 
-**Snapshot pane (`volumeId === 'search-results'`).** Two integration points that MUST stay coupled: `computeHasParent`
-returns `false` (no `..` row, via the `hasParentRow` capability), and opening a real entry from the result rows leaves
-the snapshot volume. `FilePane.handleNavigate` gates the latter on the `isSearchResultsView` capability (the
-`caps.kind === 'search-results'` classifier, never a raw id compare), resolves the entry's `Location`
-(`resolveLocationOrToast`, shared with the other nav edges), and bubbles it via the `onGoToLocation` callback →
-`navigate({ to: { goTo } })`, whose switch arm changes volume (a different volume than `search-results`). An
-unresolvable entry shows the shared friendly toast. Skipping the has-parent rule breaks selection (off-by-one); skipping
-the resolve+switch poisons the pane with `volumeId === 'search-results'` + a real path. `onGoToLocation` (go to a
+**Snapshot pane (`volumeId === 'search-results'`).** FOUR integration points that MUST stay coupled, and skipping one
+gives an off-by-one selection, a stuck `search-results` path, a delete on rows nobody picked, or an MCP delete refused
+by stale pane state:
+
+1. `computeHasParent` returns `false` (no `..` row, via the `hasParentRow` capability).
+2. Opening a real entry from the result rows leaves the snapshot volume (below).
+3. `snapshot-selection-sync.svelte.ts` remaps the pane's index selection BY PATH whenever the snapshot changes — no
+   listing diff does it, because the rows aren't a directory listing (§ File map).
+4. The pane mirrors to MCP off the snapshot rather than off a backend listing (§ File map, `mcp-sync`).
+
+`FilePane.handleNavigate` gates the second on the `isSearchResultsView` capability (the `caps.kind === 'search-results'`
+classifier, never a raw id compare), resolves the entry's `Location` (`resolveLocationOrToast`, shared with the other
+nav edges), and bubbles it via the `onGoToLocation` callback → `navigate({ to: { goTo } })`, whose switch arm changes
+volume (a different volume than `search-results`). An unresolvable entry shows the shared friendly toast. Skip the
+resolve+switch and the pane is poisoned with `volumeId === 'search-results'` + a real path. `onGoToLocation` (go to a
 location) and `onVolumeChange` (deliberate volume-(re)select) are the two distinct intents — `Location` carries no
 `volumePath`, so the location-only callback is the clean seam.
 
@@ -272,6 +293,20 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   a "no system clipboard" capability: `network` + `search-results` lack one too, and an MTP-worded toast on a reachable
   network paste would be a new, mis-worded toast. On the live clipboard-time pane id set it's byte-equivalent to the old
   `startsWith('mtp-')` gate, pinned by the equivalence test in `clipboard-operations.test.ts`.
+
+  **The snapshot-clip branch gates TWICE, in this order** (`snapshotClipboardIsRefused`). First the PATH SCHEME:
+  `$lib/path/canonical.ts::isPlainFilesystemPath` refuses any row that isn't a plain absolute filesystem path, from the
+  path alone. Then the resolved row VOLUME (`snapshot-source-volume.ts::resolveSnapshotSourceVolume` →
+  `isMtpClipboardRefusal`), because the pane's own volume id is the virtual `search-results` and a search covers any
+  volume with a persisted index, MTP storages included. Either gate refuses the WHOLE set if any row offends; a partial
+  copy under a toast claiming success is worse than a refusal.
+
+  **Why the scheme gate leads:** the volume gate is only as good as the resolution, and a device unplugged while its
+  snapshot pane stays open drops off the volume list, so `resolveSnapshotSourceVolume` answers the `root` fallback — a
+  kind that copies — while the rows still read `mtp://…`. Such a path reaches `NSURL::fileURLWithPath`
+  (`clipboard/pasteboard.rs`), which reads an unknown scheme as a RELATIVE path and hands back a file URL under the
+  process working directory. The scheme gate holds with no volume registered at all, which is the case it exists for.
+
 - **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`.
   `readOnlyRefusal` turns rename / mkdir / mkfile / delete away up front on a read-only routed pane, worded per kind
   (`fileExplorer.readOnly.archive*` for tar/7z, `fileExplorer.readOnly.gitPortal*` for a snapshot). The destination
@@ -281,8 +316,20 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   `file-operations/transfer/CLAUDE.md` § "One transfer entry seam". The `search-results://` URL parses stay (namespace
   mechanics).
 - **`pane-commands.ts`**: `isSnapshotPane` (the Selection-dialog banner flag) off `!hasBackendListing`.
-- **MCP sync** (`pane-mcp-sync.svelte.ts`): the network/search skip off `!syncsToMcp`. The deps interface carries a
-  single `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps).
+- **The column header** (`views/FullList.svelte` → `FullListHeader` → `SortableHeader`) reads no capability at all:
+  every pane that renders a file list sorts one. What varies is `sortBy: SortColumn | null`, where `null` means the rows
+  are in no column's order (the snapshot pane's ranked state): every header stays clickable, none is active, no caret
+  draws, and no column claims the caret allowance in the measured tracks (`measure-column-widths::chromeFor`). Where a
+  snapshot pane's click goes and why: `../../search/DETAILS.md` § "The snapshot pane's row order".
+- **MCP sync** (`pane-mcp-sync.svelte.ts`): the network skip off `!syncsToMcp`. The deps interface carries a single
+  `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps). Only `network` is false, because
+  `NetworkBrowser` owns that pane's push. A search-results pane DOES mirror even with no backend listing: its rows come
+  off the frontend snapshot through `snapshot-mcp-rows.ts` (basename in `name`, absolute path in `path`, no recursive
+  fields), its `totalFiles` is the snapshot's own count, and `hasParentRow: false` tells the backend gate that one
+  counted row is one real file. ❌ Don't turn that push back off: MCP's copy/move/delete pre-check reasons on this
+  store, so a pane that pushes nothing leaves it describing whatever directory the pane came FROM, and an old cursor
+  parked on that directory's `..` refused a delete over rows the user could see. Gate:
+  `src-tauri/src/mcp/executor/DETAILS.md` § "Empty-operation fast-fail".
 - **`has-parent.ts`**: `computeHasParent` folds ONLY the snapshot rule via `hasParentRow`; the two PATH comparisons
   (`=== '/'`, `=== root`) stay.
 - **FilePane alt-view chain** (`FilePane.svelte`): the kind-structural view selection resolves through a `paneViewKind`
@@ -648,6 +695,20 @@ that pane is NOW; a plain transfer whose source pane navigated away mid-copy is 
 `clearSourcePaneAfterTransfer` and `adjustSelectionAfterCancel` ask `sourcePaneStillShowsBirthFolder()` first — the
 pane's current folder against the one the operation was born in. Refreshing a listing is harmless whatever the answer
 and still happens; changing a selection the user made somewhere else is not.
+
+A snapshot pane is outside this rule rather than an exception to it: its `search-results://<id>` can never equal an
+operation's `sourceFolderPath`, so neither selection tail ever runs there. Its selection is kept honest by the entries
+array instead, `snapshot-selection-sync.svelte.ts` above. Two consequences, both deliberate:
+
+- **A PARTIAL delete leaves the survivors selected**, where a normal pane clears the selection outright. What the rows
+  mean differs: `clearSourcePaneAfterTransfer` clears indices that no longer describe anything, while the remap has
+  already dropped every row the operation took, so what is left is exactly the rows the user picked that are still there
+  (a permission-denied one, say). Leaving them selected is a retry, and it can't act on a file nobody chose. ❌ Don't
+  "fix" the divergence by threading the pane's own path into birth context: that trades a useful state for a matching
+  one. Pinned in `snapshot-selection-sync.svelte.test.ts`.
+- **No operation snapshot is recorded at all.** `entries-snapshot::fetchSelectedNames` returns early when the pane has
+  no listing id, ahead of its `'all'` short-circuit, so there is nothing for the never-running
+  `clearOperationSnapshot()` to leave behind.
 
 **❌ No dialog handler purges a search snapshot, in either family.** A dialog holds what the operation was ASKED to do,
 and the purge needs what it DID; a snapshot also outlives every pane and dialog, in every window. So it is a
@@ -1036,14 +1097,44 @@ move out). The design keeps the frontend simple: the tab keeps ONE `volumeId` �
 volume ids never enter FE state, history, persistence, or MCP sync. Archive-ness is derived from the PATH; all I/O
 routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
 
-- **`pathInsideArchive(path)` + `capabilitiesForPane(volumeId, path)`** (`volume-capabilities.ts`) are the seam. The
-  first is a pure, extension-only check mirroring the backend's `archive_format::format_for_name`; the second returns
-  the `archive` capability row when the path is inside an archive, else defers to `capabilitiesFor(volumeId)`. The
-  pane's `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so `hasBackendListing` / `hasParentRow` /
-  `syncsToMcp` / `canWrite` are all true for a zip; a tar or 7z boundary gets the read-only variant (`canWrite: false`,
-  `canBeSource: true` so extract-out still works). ⌘C/⌘X are refused separately and route to F5/F6, since archive-inner
-  paths aren't OS-resolvable URLs. ❌ The archive branch never folds in the PARENT drive's published capabilities: they
-  answer for the drive, and the pane is inside a file on it.
+- **TWO path predicates, and picking the wrong one is a real bug** (`volume-capabilities.ts`), mirroring the backend's
+  own pair in `crates/cmdr-archive/src/boundary.rs`:
+  - `pathCrossesArchiveBoundary(path)` — AT or inside an archive (any component carries a supported suffix). The
+    ENTER-IT question, for sites reading a PANE path: capability rows, the git-repo lookup, disk space, the terminal
+    target, the Enter policy's already-inside check.
+  - `pathInsideArchive(path)` — strictly inside (a non-empty inner path). The OPERATE-ON question, for sites acting on a
+    path: Quick Look and its cursor-follow, `isVolumeMove`, the rename permission pre-flight. The archive FILE itself is
+    an ordinary file that must be previewed, copied, moved, and renamed like any other, which is the backend's rule too.
+
+  **Why it matters, and why the frontend once got it wrong**: a single wide predicate refused Quick Look on a plain
+  `.zip` and pulled its same-drive move off the local fast path. Harmless-looking until `.docx` became a browsable
+  suffix, at which point the same predicate would have killed Quick Look on every Office document. A trailing slash
+  still reads as the archive ROOT (`/a/foo.zip/` has an empty inner path), which the naive length check gets wrong.
+
+  **Destination wide, source narrow.** ❗ The choice is per ARGUMENT, not per call site: one function can need both.
+  `isVolumeMove` is the case — a DESTINATION names a container to write INTO (the enter-it question, so wide), while a
+  SOURCE is a thing being operated ON (narrow). The backend encodes the identical asymmetry, which is what settles it:
+  `create` uses `path_crosses_archive_boundary` because a new entry's parent can BE the `.zip`, while delete and the
+  move source use `path_is_inside_archive` (`volume/manager/archive_routing.rs`). **Decision/Why**: asking narrow on
+  BOTH sides looks tidy and silently breaks F6 into an open zip pane — the pane sits AT `/a/foo.zip`, which is exactly
+  where Enter on a zip lands you, narrow answers `false`, both ids are the parent drive, the local `moveFiles` fast path
+  runs, and the backend stats a regular file and refuses with "Destination must be a directory". Copy is unaffected (it
+  always routes cross-volume), as are move-out and a move into a SUBfolder, so the gap is narrow enough to survive a
+  casual test pass; `transfer-dispatch.test.ts` pins the archive-root destination and the mixed source/destination case
+  precisely because of that.
+
+- **`capabilitiesForPane(volumeId, path)`** returns the `archive` capability row when the path crosses an archive, else
+  defers to `capabilitiesFor(volumeId)`. The pane's `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so
+  `hasBackendListing` / `hasParentRow` / `syncsToMcp` / `canWrite` are all true for a zip; a tar, 7z, or OOXML boundary
+  gets the read-only variant (`canWrite: false`, `canBeSource: true` so extract-out still works). ⌘C/⌘X are refused
+  separately and route to F5/F6, since archive-inner paths aren't OS-resolvable URLs. ❌ The archive branch never folds
+  in the PARENT drive's published capabilities: they answer for the drive, and the pane is inside a file on it.
+- **A DOCUMENT container (`.docx` / `.xlsx` / `.pptx` / `.jar` / `.apk`) browses but is never writable**, and two suffix
+  tables express that here: `SUPPORTED_ARCHIVE_SUFFIXES` (browsable, mirrors the backend's `format_for_name` — a test
+  parses the Rust table and asserts set equality) and `WRITABLE_ARCHIVE_SUFFIXES`, which is `['.zip']` and ❌ must stay
+  that way. These lists are the VISIBLE half only: the backend refuses by TYPE, so an MCP or IPC caller that never sees
+  a dialog is refused too, and read-only holds by construction rather than by hidden buttons. Why the split exists at
+  all is the backend's decision to own: `crates/cmdr-archive/DETAILS.md` § "Why a document container is its own format".
 - **Why `VolumeInfo.mountIsReadOnly` still matters**: the archive pane's `volumeId` is the parent drive. A writable zip
   runs the real managed archive-edit flow, but a zip that lives on a read-only `VolumeInfo` (a locked disk image) can't
   be rewritten in place — the write guards (`file-operation-commands.ts` `readOnlyRefusal`, `transfer-entry.ts`
@@ -1051,14 +1142,15 @@ routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
   backend `ReadOnlyDevice` rejection is the safety net behind them.
 - **Edits are managed ops, not instant.** A zip mutation is an O(archive) temp+rename rewrite, so mkdir/mkfile/rename
   inside a zip return an OPERATION handle, not a landed path, and copy/move into or out of a zip route through
-  `copyBetweenVolumes`/`moveBetweenVolumes` (never the local `moveFiles` fast-path — `transfer-progress-state`'s
-  `isVolumeMove` OR-s in `pathInsideArchive(sourcePaths | destinationPath)` so a same-drive archive move still crosses).
-  The cursor lands on the new/renamed entry when the backing `.zip`'s live-watch refresh arrives (the durable
-  `pendingCursorName` channel in `listing-diff-sync`, consumed on the refresh diff — no timer). `handleNewFileCreated`
-  skips its open-in-editor for an archive target (the file is created async and an archive-inner path isn't editable in
-  place). Deleting inside a zip is PERMANENT (no Trash inside an archive): `openDeleteDialog` forces
-  `isPermanent`/`isArchive` and drops `supportsTrash`, and `DeleteDialog` shows the archive warning. The queue row for a
-  zip edit is the `archive_edit` `WriteOperationType` (`file-archive` glyph, "Editing archive" label; no scan phase).
+  `copyBetweenVolumes`/`moveBetweenVolumes` (never the local `moveFiles` fast-path — `transfer/transfer-dispatch.ts`'s
+  `isVolumeMove` asks the DESTINATION the wide question and each SOURCE the narrow one; see § "Destination wide, source
+  narrow" below for why that asymmetry is load-bearing). The cursor lands on the new/renamed entry when the backing
+  `.zip`'s live-watch refresh arrives (the durable `pendingCursorName` channel in `listing-diff-sync`, consumed on the
+  refresh diff — no timer). `handleNewFileCreated` skips its open-in-editor for an archive target (the file is created
+  async and an archive-inner path isn't editable in place). Deleting inside a zip is PERMANENT (no Trash inside an
+  archive): `openDeleteDialog` forces `isPermanent`/`isArchive` and drops `supportsTrash`, and `DeleteDialog` shows the
+  archive warning. The queue row for a zip edit is the `archive_edit` `WriteOperationType` (`file-archive` glyph,
+  "Editing archive" label; no scan phase).
 - **Navigation is nearly free.** `handleNavigate` forks on `entry.isDirectory || entry.isArchive` (a zip stays
   `isDirectory:false`; `isArchive` is backend-computed, extension-only, crosses IPC on `FileEntry`), routing in-place
   (same parent-drive volume) via `browseIntoEntry`. The Enter-behavior policy (below) runs FIRST and can divert to a
@@ -1068,8 +1160,9 @@ routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
   archive, NOT the `.zip` path the backend emits as the listing's `volume_root` — otherwise the archive root would read
   as a volume root and hide its `..` row.
 - **Opt-outs that `hasBackendListing:true` doesn't cover**: `git-browser-sync` skips inside archives
-  (`pathInsideArchive` — a repo can't live in a zip); `volume-space` queries the parent mount path inside an archive (an
-  archive-inner path isn't NSURL-resolvable, and the archive borrows the parent's space).
+  (`pathCrossesArchiveBoundary` — a repo can't live in a zip); `volume-space` queries the parent mount path inside an
+  archive (an archive-inner path isn't NSURL-resolvable, and the archive borrows the parent's space). Both read the PANE
+  path, so both take the wide check.
 - **Path bar** renders the transparent `…/foo.zip/inner` for free: `breadcrumbDisplayPath` strips the parent
   `volumePath` prefix and `enrichBreadcrumbSegments` rebuilds ancestor targets from it, both path-agnostic.
 - **Persistence/restore** is archive-safe with no FE change: the tab stores `(parentDriveId, fullPath)`; on restore
@@ -1118,12 +1211,22 @@ Pressing Enter on an archive or a macOS app bundle (`.app`/`.bundle`/`.framework
 open in the default app, or ask. The decision is a pure function; the UI is a small popup.
 
 - **`archive-enter-policy.ts` is the pure resolver**:
-  `resolveEnterPolicy(entry, overrides) -> 'browse' | 'open' | 'ask' | null`. `null` means the entry is an ordinary
+  `resolveEnterPolicy(entry, behavior) -> 'browse' | 'open' | 'ask' | null`. `null` means the entry is an ordinary
   file/folder (the caller does its normal open/browse). Zip archives default Ask (matched off `entry.isArchive`, so
   tar/7z join automatically when the backend flags them); bundles default Ask (matched by directory extension);
-  Office/app packages (`.docx`/`.xlsx`/`.pptx`/`.jar`/`.apk`) default Open and aren't user-configurable yet (browse-into
-  isn't supported for them). Per-format overrides come from the `behavior.archiveEnterBehavior` setting (a pinned-shape
-  JSON object, parsed by `parseEnterBehaviorOverrides`).
+  Office/app packages (`.docx`/`.xlsx`/`.pptx`/`.jar`/`.apk`) default Open. The actions come in as a per-format map;
+  `enterBehaviorFromSettings(getSetting)` builds it by walking the format list, so the resolver stays a pure leaf and a
+  new format is read for free.
+- **A format IS its setting.** Each descriptor carries a `settingId` (`behavior.archiveEnter.zip` / `.ooxml` /
+  `.bundle`), which is the whole answer to "can the user configure this format?" — there is no second `configurable`
+  flag to disagree with it. `archive-enter-policy.test.ts` asserts parity both ways: every format names a registry entry
+  whose default and options match it, and every `behavior.archiveEnter.*` entry belongs to a format. Adding `tar` means
+  adding both halves, or the test is red.
+- **❗ `ARCHIVE_ENTER_FORMATS` is ordered by MATCH SPECIFICITY, not by display order.** `classify` is first-match-wins
+  and the zip matcher is the broadest predicate there is (`isArchive === true`), so `ooxml` — a strict subset, since an
+  Office file is a zip — must precede it. Once the backend flags `.docx` as an archive, a zip-first order would swallow
+  every Office document into the zip row and the Office documents setting would silently stop working. A test pins the
+  order with a `.docx` carrying `isArchive: true`.
 - **`handleNavigate` consults it before the browse arm**, but only when NOT `pathInsideArchive(entry.path)` (a file
   inside an archive keeps the viewer interim). `ask` → `enterMenu.openFor`; `open` → `openEntryExternally` (`openFile`,
   i.e. LaunchServices — a `.zip` opens in the OS archive tool, a `.app` launches); `browse` → falls through to
@@ -1134,8 +1237,10 @@ open in the default app, or ask. The decision is a pure function; the UI is a sm
   guard (`key-dispatch.ts`, which only exempts `[role="dialog"]`) doesn't yank focus off the `role="menu"`; on close the
   controller calls `restoreFocus` (`onRequestFocus`), which re-focuses the explorer container so keyboard routing
   resumes. `Configure…` deep-links to `openSettingsWindow('enter-menu', ['Behavior', 'Archives'])`.
-- **Settings** live in `settings/sections/ArchivesSection.svelte` (a custom section: two `ToggleGroup` cards over the
-  one JSON setting, so the format list extends without a registry entry per format).
+- **Settings** live in `settings/sections/ArchivesSection.svelte`: three registry-driven `SettingRow` +
+  `SettingToggleGroup` rows over the three ids, so the section itself reads, writes, defaults, and validates nothing.
+  Installs from before the split are carried over by settings migration 5 (`settings/settings-store.ts`), which unpacks
+  the old `behavior.archiveEnterBehavior` JSON blob into the three keys and deletes it.
 
 ## Analytics emitted from this directory
 

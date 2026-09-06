@@ -227,11 +227,7 @@ pub(crate) async fn move_volumes_with_progress(
                         super::super::transfer_probe::DriverPhase::PreparingNext,
                         &p_owned.display().to_string(),
                     );
-                    dest_volume
-                        .get_metadata(&p_owned)
-                        .await
-                        .ok()
-                        .map(|m| m.size.unwrap_or(0))
+                    super::conflict::size_of_whatever_is_at(&dest_volume, &p_owned).await
                 })
             }
         },
@@ -370,6 +366,15 @@ pub(crate) async fn move_volumes_with_progress(
                 // deleting the source (a move must never delete the source if
                 // the destination isn't fully in place).
                 let replace_after_write = ctx.replace_after_write.map(Path::to_path_buf);
+                // Whether the driver's conflict resolution PICKED this
+                // destination name (a `Rename`, an Overwrite that cleared it),
+                // which is what the landing needs to tell its own placeholder
+                // from a file nobody answered for.
+                let landing = if ctx.dest_name_claimed {
+                    super::strategy::LandingName::ClaimedByTheCaller
+                } else {
+                    super::strategy::LandingName::ExpectedFree
+                };
                 let bytes_done_so_far = ctx.bytes_done_so_far;
                 Box::pin(async move {
                     // Use the cached scan hint for type + size. A missing hint
@@ -490,7 +495,7 @@ pub(crate) async fn move_volumes_with_progress(
                         &on_file_progress,
                         &on_file_complete,
                         Some(&merge_ctx),
-                        super::strategy::staging_for(&replace_after_write),
+                        super::strategy::staging_for(&replace_after_write, landing),
                     );
                     // Bind this source's probe as a task-local for the whole
                     // copy phase, so `stream_pipe_file` and `CheckpointStream`
@@ -551,13 +556,13 @@ pub(crate) async fn move_volumes_with_progress(
                         {
                             log::warn!(
                                 target: "move",
-                                "move_between_volumes: safe-replace finalize failed for {} (temp {} preserved, source {} untouched): {}",
+                                "move_between_volumes: the safe-replace finalize for {} couldn't land (new data at {:?}, source {} untouched): {}",
                                 orig.display(),
-                                dest_item_path.display(),
+                                e.new_data_at,
                                 source_path.display(),
-                                e
+                                e.error
                             );
-                            return Err(map_volume_error(&source_path.display().to_string(), PathRole::Source, e));
+                            return Err(super::transfer_error::map_finalize_failure(&orig, e));
                         }
 
                     // Delete source. `Volume::delete` is contractually for
@@ -676,6 +681,7 @@ pub(crate) async fn move_volumes_with_progress(
                 files_processed: files_done,
                 files_skipped,
                 bytes_processed: bytes_done,
+                appeared_during_move: None,
             });
             Ok(())
         }
@@ -733,6 +739,10 @@ mod probe_row_tests;
 #[cfg(test)]
 #[path = "move_progress_tests.rs"]
 mod progress_tests;
+/// What a same-volume Overwrite leaves behind when its replacing rename refuses.
+#[cfg(test)]
+#[path = "move_same_overwrite_tests.rs"]
+mod same_overwrite_tests;
 #[cfg(test)]
 #[path = "move_same_tests.rs"]
 mod same_tests;

@@ -2,10 +2,9 @@
     /**
      * `Indexing > Drive indexing`: the background file-system indexer. One
      * unlabeled `SectionCard` (the section title already reads "Drive indexing")
-     * holding the `indexing.enabled` toggle, the clear-index action (the hidden
-     * `indexing.indexSize` search anchor), the per-drive first-connect prompt
-     * toggle plus its "re-enable notifications" button, and the stale-drive
-     * notification toggle.
+     * holding the `indexing.enabled` toggle, the clear-index action, the
+     * per-drive first-connect prompt toggle plus its "re-enable notifications"
+     * button, and the stale-drive notification toggle.
      *
      * Stays interactive regardless of the Full Disk Access gate: indexing
      * operates on whatever paths it can read; the gate is for the downloads
@@ -20,9 +19,9 @@
      * Card visibility under search is section-owned: the `SectionCard` frame is
      * wrapped in `{#if anyVisible(shouldShow, ...ids)}` over the SAME `shouldShow`
      * predicate that gates each row, so an all-filtered-out card hides its frame
-     * too (no empty cards). The hidden `indexing.indexSize` anchor (its `section`
-     * equals this page's) makes "index size" a search hit, and the index-size
-     * action row is gated on `shouldShow('indexing.indexSize')`.
+     * too (no empty cards). The two rows that aren't settings (index size,
+     * re-enable notifications) get their ids from `DriveIndexingSection.rows.ts`,
+     * and take part in both guards exactly like a `SettingId`.
      */
     import { onMount } from 'svelte'
     import SettingsSection from '../components/SettingsSection.svelte'
@@ -72,9 +71,9 @@
 
     // What the index takes up across EVERY drive, read off the files on disk. It
     // has to hold with the master switch off: a search walks the folder it's
-    // pointed at whatever the switch says (`docs/specs/unindexed-search-plan.md`
-    // Decision 13), so the machine that indexes nothing is exactly the one whose
-    // index nobody could see or clear when this read the live `root` instance.
+    // pointed at whatever the switch says and leaves an index behind, so the
+    // machine that indexes nothing is exactly the one whose index nobody could
+    // see or clear when this read the live `root` instance.
     // `null` means there's nothing on disk, which is the one case with no size to
     // show and nothing to clear.
     let indexBytes = $state<number | null>(null)
@@ -128,7 +127,7 @@
 </script>
 
 <SettingsSection title={tString('settings.section.driveIndexing')}>
-    {#if anyVisible(shouldShow, 'indexing.enabled', 'indexing.indexSize', 'indexing.askForEachDrive', 'indexing.staleNotify')}
+    {#if anyVisible(shouldShow, 'indexing.enabled', 'row:indexing.indexSize', 'indexing.askForEachDrive', 'row:indexing.reEnableNotifications', 'indexing.staleNotify')}
         <SectionCard>
             {#if shouldShow('indexing.enabled')}
                 <SettingRow
@@ -146,7 +145,7 @@
                 {/if}
             {/if}
 
-            {#if shouldShow('indexing.indexSize')}
+            {#if shouldShow('row:indexing.indexSize')}
                 <div class="index-info">
                     <div class="index-row">
                         <span class="info-label">{tString('settings.fileSystemWatching.indexSize')}</span>
@@ -194,7 +193,9 @@
                 </SettingRow>
             {/if}
 
-            {#if shouldShow('indexing.askForEachDrive')}
+            <!-- The re-enable button belongs to the prompt toggle above it, so it shows
+                 for a hit on either: its own row id, or that setting's. -->
+            {#if anyVisible(shouldShow, 'indexing.askForEachDrive', 'row:indexing.reEnableNotifications')}
                 <div class="reenable-row" class:overridden={!masterEnabled}>
                     <div class="reenable-header">
                         <span class="info-label">{tString('settings.indexing.reEnableNotifications.label')}</span>

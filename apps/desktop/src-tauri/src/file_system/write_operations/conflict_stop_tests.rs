@@ -104,7 +104,16 @@ fn stop_clash_answered_from_within_emit_resolves_without_hanging() {
     let config = WriteOperationConfig::default(); // Stop, overwrite=false
     let mut latch = ApplyToAll::default();
 
-    let result = resolve_conflict(&src, &dst, &config, &events, "op-local-stop-pin", &state, &mut latch);
+    let result = resolve_conflict(
+        &src,
+        &dst,
+        IncomingItem::Leaf,
+        &config,
+        &events,
+        "op-local-stop-pin",
+        &state,
+        &mut latch,
+    );
 
     // Skip resolves to "skip this file" (None), proving the responder's
     // answer reached the op — which is only possible if the sender was
@@ -146,7 +155,16 @@ fn an_answered_clash_is_announced_as_over_by_id() {
     let config = WriteOperationConfig::default();
     let mut latch = ApplyToAll::default();
 
-    let _ = resolve_conflict(&src, &dst, &config, &events, "op-local-resolved", &state, &mut latch);
+    let _ = resolve_conflict(
+        &src,
+        &dst,
+        IncomingItem::Leaf,
+        &config,
+        &events,
+        "op-local-resolved",
+        &state,
+        &mut latch,
+    );
 
     let raised = events.inner.conflicts.lock_ignore_poison();
     let resolved = events.inner.conflicts_resolved.lock_ignore_poison();
@@ -195,7 +213,16 @@ fn a_local_clash_announces_the_wait_and_its_end() {
 
     let config = WriteOperationConfig::default(); // Stop, overwrite=false
     let mut latch = ApplyToAll::default();
-    let result = resolve_conflict(&src, &dst, &config, &events, "op-local-park", &state, &mut latch);
+    let result = resolve_conflict(
+        &src,
+        &dst,
+        IncomingItem::Leaf,
+        &config,
+        &events,
+        "op-local-park",
+        &state,
+        &mut latch,
+    );
     assert!(matches!(result, Ok(None)), "the scripted Skip resolves the clash");
 
     let progress = events.inner.progress.lock_ignore_poison();

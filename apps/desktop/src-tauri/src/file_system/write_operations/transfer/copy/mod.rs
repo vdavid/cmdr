@@ -16,7 +16,6 @@ use super::super::conflict::ApplyToAll;
 use super::super::durability::flush_created_destinations;
 use super::super::event_sinks::OperationEventSink;
 use super::super::ledger::CopyTransaction;
-use super::super::reversal::reverse_copy_transaction;
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, top_level_source_path};
 use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
@@ -109,6 +108,35 @@ pub(super) fn apply_dir_remap(dest: &Path, dir_remap: &HashMap<PathBuf, PathBuf>
 fn commit_journaling_created_dirs(transaction: CopyTransaction, operation_id: &str) {
     crate::file_system::write_operations::journal::record_created_dirs(operation_id, &transaction.created_dirs);
     transaction.commit();
+}
+
+/// The FAILING terminal path's close-out: same journaling, but the folder→file
+/// asides are kept for the user instead of discarded, and whatever failed is
+/// re-labelled so the dialog can name where each file went.
+///
+/// A failure keeps every file that landed, which includes a folder that took one
+/// of the user's filenames with only part of its subtree in it
+/// (`ledger::CopyTransaction::commit_keeping_displaced_aside`). Ordinary
+/// failures displace nothing, and those get their own error back untouched.
+fn fail_keeping_displaced_aside(
+    transaction: CopyTransaction,
+    operation_id: &str,
+    error: WriteOperationError,
+) -> WriteOperationError {
+    crate::file_system::write_operations::journal::record_created_dirs(operation_id, &transaction.created_dirs);
+    let recovered = transaction.commit_keeping_displaced_aside();
+    if recovered.is_empty() {
+        return error;
+    }
+    log::warn!(
+        "copy_files_with_progress: op={} kept {} displaced original(s) under a ` (recovered)` name",
+        operation_id,
+        recovered.len()
+    );
+    WriteOperationError::OriginalsKeptAside {
+        cause: Box::new(error),
+        recovered,
+    }
 }
 
 // ============================================================================
@@ -540,9 +568,9 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             // Land the scanned directories the per-file loop didn't create:
             // empty dirs (and branches of only empty dirs) have no files, so
             // without this they'd silently never arrive at the destination.
-            // Outcomes mirror the loop's arms: Cancelled keeps what's copied
-            // (commit, so the Drop safety-net can't roll it back), any other
-            // error rolls back like `PostLoopIntent::Failed`.
+            // Outcomes mirror the loop's arms: both a Cancelled and any other
+            // error keep what's copied (commit, so the `Drop` safety net can't
+            // roll it back), the way `PostLoopIntent::Failed` does.
             if let Err(e) = create_scanned_dirs_at_destination(
                 &scan_result.dirs,
                 sources,
@@ -560,17 +588,17 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                         files_processed: files_done,
                         rollback: CancelRollback::none(),
                     });
-                } else {
-                    // Error cleanup, and it rechecks like the Rollback button
-                    // does: deleting a file somebody else has modified is wrong
-                    // whatever brought Cmdr here.
-                    reverse_copy_transaction(&mut transaction);
-                    events.emit_error(WriteErrorEvent::new(
-                        operation_id.to_string(),
-                        WriteOperationType::Copy,
-                        e.clone(),
-                    ));
+                    return Err(e);
                 }
+                // A failure keeps what landed, exactly like the arm below. Every
+                // file in the ledger is complete, and one of them may have
+                // replaced the user's original.
+                let e = fail_keeping_displaced_aside(transaction, operation_id, e);
+                events.emit_error(WriteErrorEvent::new(
+                    operation_id.to_string(),
+                    WriteOperationType::Copy,
+                    e.clone(),
+                ));
                 return Err(e);
             }
 
@@ -606,6 +634,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 files_processed: files_done,
                 files_skipped: outcome.files_skipped,
                 bytes_processed: bytes_done,
+                appeared_during_move: None,
             });
             Ok(())
         }
@@ -663,15 +692,25 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             Err(cancellation)
         }
         PostLoopIntent::Failed(e) => {
-            // Non-cancellation error - always rollback. Routed through `log_error!`
-            // so opt-in users get an auto error report (copy failures are exactly
-            // the kind of "this didn't work" we want signal on).
+            // A failure KEEPS every file that landed and cleans only the partial,
+            // which `overwrite::stage_and_land_file` already did on its way out.
+            // ❌ Never auto-delete them: a file in this ledger may have replaced
+            // the user's original, and that original went the moment the new
+            // bytes took its name — so removing the replacement leaves neither
+            // copy. The user can still roll the operation back from history,
+            // where the same reversal runs with the whole picture in front of
+            // them. Routed through `log_error!` so opt-in users get an auto
+            // error report (copy failures are exactly the kind of "this didn't
+            // work" we want signal on). A folder that replaced one of the user's
+            // FILES keeps its name too, so the file it displaced becomes a
+            // ` (recovered)` sibling rather than going with the aside.
             crate::log_error!(
-                "copy_files_with_progress: failed op={} error={:?}, rolling back",
+                "copy_files_with_progress: failed op={} error={:?}, keeping {} completed files",
                 operation_id,
                 e,
+                transaction.created_files().len(),
             );
-            reverse_copy_transaction(&mut transaction);
+            let e = fail_keeping_displaced_aside(transaction, operation_id, e);
             events.emit_error(WriteErrorEvent::new(
                 operation_id.to_string(),
                 WriteOperationType::Copy,
@@ -685,3 +724,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
 #[cfg(test)]
 #[path = "copy_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "copy_failure_tests.rs"]
+mod copy_failure_tests;

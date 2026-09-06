@@ -558,8 +558,76 @@ fn test_safe_overwrite_file_replaces_existing_folder() {
 // safe_overwrite_dir tests (folder materialized over existing file or folder)
 // ============================================================================
 
-use super::overwrite::safe_overwrite_dir;
+use super::overwrite::{displace_with_directory, safe_overwrite_dir};
 use super::types::WriteOperationError;
+
+// ============================================================================
+// displace_with_directory: the aside outlives the directory that took its place
+// ============================================================================
+
+#[test]
+fn displace_with_directory_keeps_the_file_until_the_transaction_answers() {
+    // The distinction from `safe_overwrite_dir`: a folder→file Overwrite isn't
+    // finished when the directory appears, so the displaced file must still be
+    // on disk (under its `.cmdr-temp-` name) once this returns, and only the
+    // transaction decides which way it goes.
+    let temp_dir = create_temp_dir("displace_with_directory");
+    let dest = temp_dir.join("thing");
+    fs::write(&dest, "the user's only copy").unwrap();
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+
+    let displaced = displace_with_directory(&state, &dest).expect("the file should go aside");
+
+    assert!(
+        fs::symlink_metadata(&dest).unwrap().is_dir(),
+        "a fresh directory stands where the file was"
+    );
+    let asides: Vec<String> = fs::read_dir(&temp_dir)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().to_string())
+        .filter(|n| n.contains(".cmdr-temp-"))
+        .collect();
+    assert_eq!(asides.len(), 1, "the displaced file is still on disk: {asides:?}");
+    assert_eq!(
+        fs::read_to_string(temp_dir.join(&asides[0])).unwrap(),
+        "the user's only copy",
+        "and it still holds every byte"
+    );
+
+    // A reversal removes the directory first, then asks for the original back.
+    fs::remove_dir(&dest).unwrap();
+    let mut transaction = CopyTransaction::new();
+    transaction.record_displaced(displaced);
+    transaction.restore_displaced();
+
+    assert!(fs::symlink_metadata(&dest).unwrap().is_file(), "the file is back");
+    assert_eq!(fs::read_to_string(&dest).unwrap(), "the user's only copy");
+    for entry in fs::read_dir(&temp_dir).unwrap() {
+        let name = entry.unwrap().file_name().to_string_lossy().to_string();
+        assert!(!name.contains(".cmdr-temp-"), "the aside is gone: {name}");
+    }
+}
+
+#[test]
+fn a_committed_transaction_drops_what_it_displaced() {
+    let temp_dir = create_temp_dir("displace_commit");
+    let dest = temp_dir.join("thing");
+    fs::write(&dest, "replaced").unwrap();
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+
+    let mut transaction = CopyTransaction::new();
+    transaction.record_displaced(displace_with_directory(&state, &dest).expect("displace"));
+    transaction.commit();
+
+    assert!(
+        fs::symlink_metadata(&dest).unwrap().is_dir(),
+        "the directory that replaced it stays"
+    );
+    for entry in fs::read_dir(&temp_dir).unwrap() {
+        let name = entry.unwrap().file_name().to_string_lossy().to_string();
+        assert!(!name.contains(".cmdr-temp-"), "commit drops the aside: {name}");
+    }
+}
 
 #[test]
 fn test_safe_overwrite_dir_materializes_folder_over_existing_file() {

@@ -24,30 +24,13 @@ export const indexingSettings: SettingDefinitionSource[] = [
     labelKey: 'settings.indexing.enabled.label',
     descriptionKey: 'settings.indexing.enabled.description',
     // The Drive-indexing card has no dedicated `card*` key; it reuses this row-label key
-    // as its title (DriveIndexingSection.svelte). Same key as `indexing.indexSize`.
+    // as its title (DriveIndexingSection.svelte), and so do the card's searchable rows
+    // (`DriveIndexingSection.rows.ts`).
     cardKey: 'settings.indexing.enabled.label',
     keywords: ['index', 'drive', 'scan', 'size', 'directory', 'folder', 'background'],
     type: 'boolean',
     default: true,
     component: 'switch',
-  },
-  {
-    // Hidden search anchor (not a control). The "Index size / Clear index" action row is
-    // hand-rendered in DriveIndexingSection.svelte with no registry entry of its own,
-    // so search couldn't reach it and its card couldn't know to show. This anchor gives it
-    // a searchable identity: `buildSearchIndex` keeps hidden entries, `buildSectionTree`
-    // skips them, so it never adds a nav row. Never read or written. Its `section` MUST
-    // equal the hosting page's, or the blank-page fix breaks (the anchor must land in that
-    // page's section-scoped match set). Reuses the existing `indexSize` label key (no new
-    // string). Additive key, so no SCHEMA_VERSION bump (defaults rebuild from the registry).
-    id: 'indexing.indexSize',
-    section: ['Indexing', 'Drive indexing'],
-    labelKey: 'settings.fileSystemWatching.indexSize',
-    cardKey: 'settings.indexing.enabled.label',
-    keywords: ['clear index', 'index database'],
-    type: 'boolean',
-    default: false,
-    hidden: true,
   },
   {
     // Gates the per-drive first-connect "turn on indexing?" notification (D6).
@@ -106,18 +89,21 @@ export const indexingSettings: SettingDefinitionSource[] = [
   //
   // On-device image-content (OCR) search. Runs entirely on the user's Mac via
   // Apple's Vision framework — no cloud, no AI provider, no API key. Rendered by
-  // `ImageIndexingSection.svelte`; only `mediaIndex.enabled` is a visible row,
-  // the rest back the bespoke slider / network-volume components.
+  // `ImageIndexingSection.svelte`: `mediaIndex.enabled`, the two display toggles
+  // (`showFileStatusIcons`, `showInSearch`), and `parallelism` are visible rows in
+  // its "Enable indexing" card; the rest are `hidden`, backing the bespoke scope /
+  // slider / chosen-folder / network-volume / CLIP components.
   // ========================================================================
   {
     // Master toggle for image-content (OCR) indexing. Off by default; live-applied to
-    // the `media_index` backend scheduler via `set_image_index_enabled`. Its own card
-    // in `ImageIndexingSection.svelte`, titled by `cardKey`.
+    // the `media_index` backend scheduler via `set_image_index_enabled`. Lives in the
+    // "Enable indexing" card of `ImageIndexingSection.svelte`, so `cardKey` is the key
+    // that card's title renders (searching the visible title has to reach the row).
     id: 'mediaIndex.enabled',
     section: ['Indexing', 'Image indexing'],
     labelKey: 'settings.mediaIndex.enabled.label',
     descriptionKey: 'settings.mediaIndex.enabled.description',
-    cardKey: 'settings.mediaIndex.card',
+    cardKey: 'settings.mediaIndex.cards.enable',
     keywords: ['image', 'photo', 'ocr', 'text', 'search', 'index', 'picture', 'screenshot', 'content'],
     type: 'boolean',
     default: false,
@@ -132,10 +118,29 @@ export const indexingSettings: SettingDefinitionSource[] = [
     section: ['Indexing', 'Image indexing'],
     labelKey: 'settings.mediaIndex.showFileStatusIcons.label',
     descriptionKey: 'settings.mediaIndex.showFileStatusIcons.description',
-    cardKey: 'settings.mediaIndex.card',
+    cardKey: 'settings.mediaIndex.cards.enable',
     keywords: ['image', 'photo', 'badge', 'icon', 'overlay', 'indicator', 'status', 'indexed'],
     type: 'boolean',
     default: true,
+    component: 'switch',
+  },
+  {
+    // Whether the Search dialog shows its grid of matching images above the file results.
+    // FE-only render toggle, read by `search/ImageSearchResults.svelte`: off means the grid
+    // renders nothing AND fires no `media.db` IPC per keystroke, so there's no Tauri command
+    // and no `settings-applier.ts` case. Default OFF because match quality isn't good enough
+    // yet to take that space unasked; indexing, the file-list badges, and Ask Cmdr / MCP
+    // photo search are unaffected either way. Rendered under the status-badges row in
+    // `ImageIndexingSection.svelte`, gated on `mediaIndex.enabled`. A new key is additive,
+    // so SCHEMA_VERSION doesn't move.
+    id: 'mediaIndex.showInSearch',
+    section: ['Indexing', 'Image indexing'],
+    labelKey: 'settings.mediaIndex.showInSearch.label',
+    descriptionKey: 'settings.mediaIndex.showInSearch.description',
+    cardKey: 'settings.mediaIndex.cards.enable',
+    keywords: ['image', 'photo', 'search', 'results', 'grid', 'ocr', 'semantic', 'show', 'hide'],
+    type: 'boolean',
+    default: false,
     component: 'switch',
   },
   {
@@ -239,17 +244,19 @@ export const indexingSettings: SettingDefinitionSource[] = [
   },
   {
     // How many parallel workers image indexing runs. Default 1 = today's single worker
-    // (the M2 spike measured a ~1.25x ceiling on current Apple Silicon: the ANE serializes
+    // (a parallelism spike measured a ~1.25x ceiling on current Apple Silicon: the ANE serializes
     // inference, so more workers help modestly and only up to ~2). Rendered by `SettingSlider`
     // inside the "Enable indexing" card with a RUNTIME max = this machine's CPU count
     // (`media_index_max_parallelism`); the `constraints.max` here is only a static fallback
-    // for search. `hidden` because it's hand-rendered, not an auto row. Live-applied via the
+    // for search. `hidden` because it's hand-rendered, not an auto row; `hidden` doesn't mean
+    // unsearchable, so it still carries the card title the user reads above it. Live-applied via the
     // `settings-applier.ts` passthrough → `media_index_set_parallelism` (the backend clamps to
     // `1..=CPU-count` and a running pass resizes its pool between images).
     id: 'mediaIndex.parallelism',
     section: ['Indexing', 'Image indexing'],
     labelKey: 'settings.mediaIndex.parallelism.label',
     descriptionKey: 'settings.mediaIndex.parallelism.description',
+    cardKey: 'settings.mediaIndex.cards.enable',
     keywords: ['image', 'photo', 'index', 'parallel', 'workers', 'speed', 'performance', 'cpu', 'cores'],
     type: 'number',
     default: 1,

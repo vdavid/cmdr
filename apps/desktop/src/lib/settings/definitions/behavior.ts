@@ -199,25 +199,71 @@ export const behaviorSettings: SettingDefinitionSource[] = [
 
   // ========================================================================
   // Behavior › Archives
-  // Per-format Enter behavior (Browse | Open | Ask) for archives and macOS
-  // bundles. Stored as a pinned-shape JSON object keyed by format
-  // (`{ zip: 'ask', bundle: 'ask' }`); parsed and rendered by the custom
-  // `ArchivesSection`. FE-owned: read at Enter time, applies with no restart or
-  // backend round-trip.
+  // What pressing Enter does (Browse | Open | Ask), one setting per format.
+  // ❗ The format list, the matcher for each, and these defaults live in
+  // `file-explorer/pane/archive-enter-policy.ts`; a two-way parity test there
+  // fails if a format loses its setting or a setting loses its format, so adding
+  // `tar` means adding BOTH. FE-owned: read at Enter time, applies with no
+  // restart or backend round-trip.
   // ========================================================================
   {
-    id: 'behavior.archiveEnterBehavior',
+    id: 'behavior.archiveEnter.zip',
     section: ['Behavior', 'Archives'],
-    labelKey: 'settings.archives.enterBehavior.label',
-    descriptionKey: 'settings.archives.enterBehavior.description',
-    keywords: ['archive', 'zip', 'bundle', 'app', 'browse', 'open', 'extract', 'enter', 'launch'],
-    type: 'string',
-    default: '{}',
-    component: 'text-input',
+    cardKey: 'settings.archives.card.archives',
+    labelKey: 'settings.archives.zip.label',
+    descriptionKey: 'settings.archives.zip.description',
+    keywords: ['archive', 'zip', 'browse', 'open', 'extract', 'enter', 'compressed'],
+    type: 'enum',
+    default: 'ask',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'browse', labelKey: 'settings.archives.opt.browse' },
+        { value: 'open', labelKey: 'settings.archives.opt.open' },
+        { value: 'ask', labelKey: 'settings.archives.opt.ask' },
+      ],
+    },
+  },
+  {
+    id: 'behavior.archiveEnter.ooxml',
+    section: ['Behavior', 'Archives'],
+    cardKey: 'settings.archives.card.archives',
+    labelKey: 'settings.archives.ooxml.label',
+    descriptionKey: 'settings.archives.ooxml.description',
+    keywords: ['docx', 'xlsx', 'pptx', 'jar', 'apk', 'office', 'word', 'excel', 'powerpoint', 'document', 'package'],
+    type: 'enum',
+    default: 'open',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'browse', labelKey: 'settings.archives.opt.browse' },
+        { value: 'open', labelKey: 'settings.archives.opt.open' },
+        { value: 'ask', labelKey: 'settings.archives.opt.ask' },
+      ],
+    },
+  },
+  {
+    id: 'behavior.archiveEnter.bundle',
+    section: ['Behavior', 'Archives'],
+    cardKey: 'settings.archives.card.bundles',
+    labelKey: 'settings.archives.bundle.label',
+    descriptionKey: 'settings.archives.bundle.description',
+    keywords: ['bundle', 'app', 'application', 'framework', 'browse', 'open', 'enter', 'launch'],
+    type: 'enum',
+    default: 'ask',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'browse', labelKey: 'settings.archives.opt.browse' },
+        { value: 'open', labelKey: 'settings.archives.opt.open' },
+        { value: 'ask', labelKey: 'settings.archives.opt.ask' },
+      ],
+    },
   },
   {
     id: 'behavior.archiveCompressionLevel',
     section: ['Behavior', 'Archives'],
+    cardKey: 'settings.archives.card.archives',
     labelKey: 'settings.archives.compressionLevel.label',
     descriptionKey: 'settings.archives.compressionLevel.description',
     keywords: ['compression', 'level', 'zip', 'deflate', 'archive', 'size', 'faster', 'smaller'],

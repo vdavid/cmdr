@@ -704,10 +704,11 @@ disconnect → `ngắt kết nối`, browse → `duyệt`, background → `ở c
 below:
 
 - **photo (vs image): `ảnh`** · macOS (`Chọn ảnh` = Choose Photo, `Cắt ảnh` = Crop photo; Apple's Photos app is `Ảnh`).
-  Deliberately distinct from the feature-level "image" → `hình ảnh` (`settings.mediaIndex.card` = `Tìm kiếm hình ảnh`,
-  `enabled.label` = `Lập chỉ mục nội dung hình ảnh`): the English copy itself splits "image" (feature/card) from
-  "photos" (the concrete per-drive strings), and `ảnh` is the natural concrete word. "photos indexed" →
-  `Đã lập chỉ mục … ảnh`; "photos on {name}" → `ảnh trên {name}`. `high`.
+  Deliberately distinct from the feature-level "image" → `hình ảnh` (`settings.mediaIndex.enabled.label` =
+  `Lập chỉ mục nội dung hình ảnh`, `fileExplorer.imageIndex.drive.ariaLabel` =
+  `Trạng thái tìm kiếm hình ảnh của ổ đĩa này`): the English copy itself splits "image" (feature/card) from "photos"
+  (the concrete per-drive strings), and `ảnh` is the natural concrete word. "photos indexed" → `Đã lập chỉ mục … ảnh`;
+  "photos on {name}" → `ảnh trên {name}`. `high`.
 - **network drive: `ổ đĩa mạng`** · `ổ đĩa` (drive) + `mạng` (network), both settled. `high`.
 - **reconnect: `kết nối lại`** · macOS (`Để kết nối lại, hãy bấm…`). "resumes when this drive reconnects" →
   `sẽ tiếp tục khi ổ đĩa này kết nối lại`. `high`.
@@ -768,10 +769,11 @@ lại, không thể, gỡ, mức độ quan trọng). New or newly-sourced below
 Added during the image-index-indicator pass (2026-07-22): the 13 new keys for the per-file / per-folder / per-drive
 image-search status badges (`fileExplorer.imageIndex.file.*`, `.folder.*`, `.drive.*` +
 `settings.mediaIndex.showFileStatusIcons.*`). Reuses prior terms (image, feature-level → `hình ảnh` per the 2026-07-21
-decision on the whole `fileExplorer.imageIndex.*` family; image search → `tìm kiếm hình ảnh` =
-`settings.mediaIndex.card`; index/indexed/re-index → `lập chỉ mục`/ `đã lập chỉ mục`/`lập chỉ mục lại`; drive → `ổ đĩa`;
-file list → `danh sách tệp`; scope → `phạm vi`; can't → `không thể`; "of" in a count → `trên`, matching
-`settings.mediaIndex.progress.ofTotal`; toggle off → `tắt`). New/confirmed below:
+decision on the whole `fileExplorer.imageIndex.*` family; image search → `tìm kiếm hình ảnh`, as in
+`fileExplorer.imageIndex.drive.off` = `Tìm kiếm hình ảnh đang tắt cho ổ đĩa này.`; index/indexed/re-index →
+`lập chỉ mục`/ `đã lập chỉ mục`/`lập chỉ mục lại`; drive → `ổ đĩa`; file list → `danh sách tệp`; scope → `phạm vi`;
+can't → `không thể`; "of" in a count → `trên`, matching `settings.mediaIndex.progress.ofTotal`; toggle off → `tắt`).
+New/confirmed below:
 
 - **status badge (the small per-file indicator): `huy hiệu`** · reuses the settled toast/chip/**badge** → `huy hiệu`
   rendering. "status badge" → `huy hiệu trạng thái`. `tentative` (descriptive; no single pile source).
@@ -2088,3 +2090,32 @@ lệnh sẽ mở. macOS dựng danh sách; ở đây chỉ dịch các nhãn.
 - **Choose an app… → `Chọn ứng dụng…`** · đúng nguyên văn `Choose Application…` của Apple (khóa `N137`) trong Finder
   tiếng Việt · `confirmed`.
 - Không giá trị nào chứa dấu nháy đơn.
+
+## `Sort by relevance`: chú giải của cột kết quả tìm kiếm (`fileExplorer.columns.sortByRelevance`)
+
+Bề mặt mới: chú giải hiện ra khi rê chuột lên tiêu đề cột đang sắp xếp của khung kết quả tìm kiếm. Cú nhấp tiếp theo đưa
+các hàng về đúng thứ tự của bộ tìm kiếm, kết quả khớp nhất lên đầu.
+
+- **relevance (mức khớp giữa một kết quả và truy vấn) → `mức độ liên quan`** · Apple WorkflowKit
+  (`Relevance (WFSearchSortOrder)` → `Mức độ liên quan`) và Automator (`%1$[Mức độ liên quan]@ …`); Nhạc và TV rút gọn
+  thành `Liên quan`, tức là ba trên bốn nguồn dùng chung gốc `liên quan`, nên chọn dạng đầy đủ · `high`. AppStoreKit
+  (`SEARCH_FACET_RELEVANCE`) lại nói `Độ phù hợp`, một gốc khác, ghi lại ở đây để lần sau khỏi phải tra lại. (kiểm chứng
+  trên macOS 26.6.2, bản dựng 25G83, kết xuất `plutil` các bản địa hóa đi kèm, 2026-09-06)
+- **Khung câu → `Sắp xếp theo mức độ liên quan`** · đúng khuôn của các khóa anh em trong `commands.json`
+  (`Sắp xếp theo tên`, `Sắp xếp theo kích cỡ`) · `high`. Không cần `sameAsSourceJustification`, và giá trị không có dấu
+  nháy đơn.
+
+## `Documents and packages`: hàng OOXML mới (`settings.archives.ooxml.*`)
+
+Bề mặt mới: một hàng trong cùng thẻ với `Tệp nén zip`, nằm trên thẻ `Gói ứng dụng`. Hàng này cố ý bao cả HAI: tài liệu
+Office (.docx, .xlsx, .pptx) và gói ứng dụng (.jar, .apk), nên ngay cả bản tiếng Anh cũng không nêu tên Office.
+
+- **documents (loại tệp) → `Tài liệu`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Tài liệu`; tên loại `Tài liệu RTF`,
+  `Tài liệu văn bản thuần túy`), khớp mục glossary `document → tài liệu` · `high`.
+- **packages (chung, không chỉ ứng dụng) → `gói`** · macOS Finder (`Hiển thị nội dung gói`) và mục glossary
+  `app bundle → gói ứng dụng` · `high`. Giữ `gói` trần để hàng này rộng hơn thẻ `Gói ứng dụng` bên dưới, đúng như tiếng
+  Anh tách `packages` với `app bundles`.
+- **Khung câu → `Nhấn Enter sẽ làm gì với tệp …, … hoặc ….`** · đúng khuôn của các khóa anh em
+  `settings.archives.zip.description` và `settings.archives.bundle.description`, nhưng bỏ dấu phẩy trước `hoặc` theo quy
+  ước đã chốt · `high`. ❗ `settings.archives.bundle.description` vẫn còn dấu phẩy đó (`.bundle, hoặc .framework`); nằm
+  ngoài phạm vi lần này, nên hai hàng khác nhau về dấu câu cho tới khi có người sửa.

@@ -11,7 +11,9 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use super::super::OperationEventSink;
-use super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
+use super::super::conflict::{
+    ApplyToAll, apply_to_all_effective, apply_to_all_record, blanket_resolution_across_types,
+};
 use super::super::state::{ConflictResolutionResponse, WriteOperationState};
 use super::super::types::{ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent};
 use super::engine::PlanError;
@@ -37,6 +39,12 @@ pub(super) enum ConflictMode<'a> {
 /// choice; `Interactive` consults the `ApplyToAll` latch and otherwise prompts the
 /// user (storing the oneshot sender BEFORE emitting `write-conflict`, then blocking
 /// on the answer — the Stop-mode ordering must-know).
+///
+/// Both blanket routes — the fixed policy and a latched "* all" — go through
+/// `blanket_resolution_across_types`, so an `Overwrite` variant never deletes an
+/// archive DIRECTORY that a file happens to share a name with. Only the prompt's
+/// own answer can do that, and it named both types. Same rule as the local-FS
+/// and cross-volume engines.
 pub(super) fn resolve_effective(
     mode: &mut ConflictMode<'_>,
     inner: &str,
@@ -46,7 +54,7 @@ pub(super) fn resolve_effective(
     is_file_to_folder: bool,
 ) -> Result<ConflictResolution, PlanError> {
     match mode {
-        ConflictMode::Policy(c) => Ok(*c),
+        ConflictMode::Policy(c) => Ok(blanket_resolution_across_types(*c, is_file_to_folder, &inner)),
         ConflictMode::Interactive {
             events,
             operation_id,
@@ -54,7 +62,7 @@ pub(super) fn resolve_effective(
             apply_to_all,
         } => {
             if let Some(saved) = apply_to_all_effective(apply_to_all, is_file_to_folder) {
-                return Ok(saved);
+                return Ok(blanket_resolution_across_types(saved, is_file_to_folder, &inner));
             }
             let response = prompt_archive_conflict(
                 *events,

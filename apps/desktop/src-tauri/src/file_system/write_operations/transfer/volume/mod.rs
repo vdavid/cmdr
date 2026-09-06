@@ -18,6 +18,9 @@ mod copy_concurrent;
 mod copy_concurrent_source;
 mod copy_concurrent_task;
 mod copy_serial;
+/// The destination a same-volume Overwrite is replacing, held aside until the
+/// rename that replaces it lands.
+mod displaced_destination;
 /// What mode a file lands with on a LOCAL destination. The volumes report a
 /// mode; this is the layer that applies it.
 mod landed_mode;
@@ -100,6 +103,14 @@ mod self_collision_tests;
 #[cfg(test)]
 mod rename_merge_test_support;
 
+/// Where the new bytes go when a safe-replace finalize can't land them.
+#[cfg(test)]
+mod finalize_recovery_tests;
+
+/// What each engine does when the destination won't say whether a name is taken.
+#[cfg(test)]
+mod dest_precheck_failure_tests;
+
 #[cfg(test)]
 mod preflight_stop_tests;
 #[cfg(test)]
@@ -112,6 +123,9 @@ mod rename_merge_mtp_tests;
 mod rename_merge_pause_tests;
 #[cfg(test)]
 mod rename_merge_stat_tests;
+/// A symlink is an opaque entry to the merge, never a directory to descend.
+#[cfg(test)]
+mod rename_merge_symlink_tests;
 #[cfg(test)]
 mod rename_merge_tests;
 #[cfg(test)]

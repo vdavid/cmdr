@@ -81,6 +81,14 @@ pub struct PaneState {
     pub sort_order: String,
     #[serde(default)]
     pub total_files: usize,
+    /// Whether the pane renders a `..` row, which `total_files` counts. Without
+    /// it, "one counted row" is ambiguous: an empty folder pushes zero rendered
+    /// files with `total_files: 1` (the parent), while a parentless pane — a
+    /// search-results snapshot, or any pane at a volume root — counting one row
+    /// holds one real file. The gate in `executor::file_ops` reads it to tell the
+    /// two apart instead of guessing from the count.
+    #[serde(default)]
+    pub has_parent_row: bool,
     #[serde(default)]
     pub loaded_start: usize,
     #[serde(default)]
@@ -299,6 +307,7 @@ mod tests {
             sort_field: "name".to_string(),
             sort_order: "asc".to_string(),
             total_files: 1,
+            has_parent_row: false,
             loaded_start: 0,
             loaded_end: 1,
             show_hidden: false,

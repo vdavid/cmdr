@@ -323,4 +323,61 @@ describe('composeTransferCompleteToast', () => {
       )
     })
   })
+
+  describe('what a move left behind in the source', () => {
+    // A cross-filesystem move never copies what turned up in the source after
+    // the scan, so it leaves those files alone. The toast has to say so: the
+    // move succeeded, and part of what the user was looking at is still there.
+    it('names the folder and counts what stayed', () => {
+      expect(
+        composeTransferCompleteToast({
+          operationType: 'move',
+          filesProcessed: 4,
+          filesSkipped: 0,
+          fileCount: 0,
+          folderCount: 1,
+          appearedDuringMove: { itemCount: 2, folderName: 'Work', folderCount: 1 },
+        }),
+      ).toBe('Moved 1 folder. 2 items appeared in Work during the move and stay there.')
+    })
+
+    it('reads naturally for a single item', () => {
+      expect(
+        composeTransferCompleteToast({
+          operationType: 'move',
+          filesProcessed: 4,
+          filesSkipped: 0,
+          fileCount: 0,
+          folderCount: 1,
+          appearedDuringMove: { itemCount: 1, folderName: 'Work', folderCount: 1 },
+        }),
+      ).toBe('Moved 1 folder. 1 item appeared in Work during the move and stays there.')
+    })
+
+    it('names only the first folder when several kept something', () => {
+      expect(
+        composeTransferCompleteToast({
+          operationType: 'move',
+          filesProcessed: 9,
+          filesSkipped: 0,
+          fileCount: 0,
+          folderCount: 3,
+          appearedDuringMove: { itemCount: 5, folderName: 'Work', folderCount: 2 },
+        }),
+      ).toBe('Moved 3 folders. 5 items appeared in Work and other source folders during the move and stay there.')
+    })
+
+    it('says nothing when the move took everything', () => {
+      expect(
+        composeTransferCompleteToast({
+          operationType: 'move',
+          filesProcessed: 4,
+          filesSkipped: 0,
+          fileCount: 0,
+          folderCount: 1,
+          appearedDuringMove: null,
+        }),
+      ).toBe('Moved 1 folder.')
+    })
+  })
 })

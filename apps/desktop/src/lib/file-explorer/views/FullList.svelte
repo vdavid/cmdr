@@ -92,7 +92,12 @@
         parentPath: string
         /** Path of the directory currently being listed (used to show its total on the ".." row). */
         currentPath: string
-        sortBy: SortColumn
+        /**
+         * The column the rows are in. `null` means they are in no column's order:
+         * the search-results pane's ranked state, where every header is clickable
+         * but none is active.
+         */
+        sortBy: SortColumn | null
         sortOrder: SortOrder
         /**
          * Repo root for the optional Git status column. `null` when the path
@@ -139,6 +144,12 @@
          * unset — the listing-cache path remains the default.
          */
         staticEntries?: FileEntry[]
+        /**
+         * Passed to the ACTIVE column's header, naming what its next click does
+         * when that isn't sorting by it. The search-results pane sets it so a third
+         * click reads "Sort by relevance". See `SortableHeader`'s prop.
+         */
+        clearsSortLabel?: string
     }
 
     const {
@@ -179,6 +190,7 @@
         onStartRename,
         onDragInitiate,
         staticEntries,
+        clearsSortLabel,
     }: Props = $props()
 
     /**
@@ -632,6 +644,7 @@
         {gitColumnVisible}
         {skipTransition}
         {scrollbarWidth}
+        {clearsSortLabel}
         {onSortChange}
     />
     <!-- Scrollable file list. `role="listbox"` lives on the inner rows wrapper

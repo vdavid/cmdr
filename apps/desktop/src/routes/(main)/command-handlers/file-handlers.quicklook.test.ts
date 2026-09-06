@@ -68,6 +68,33 @@ describe('file.quickLook archive gate', () => {
     expect(quickLookOpen).toHaveBeenCalledWith('/x/normal.txt', 'root')
     expect(quickLookState.isOpen).toBe(true)
   })
+
+  it('opens Quick Look for the ARCHIVE FILE itself — it IS a real file on disk', async () => {
+    // The gate asks the NARROW question. A `.zip` row has a real file behind it,
+    // and macOS previews one perfectly well; only an inner path has nothing to
+    // show. Asking the WIDE boundary question here refused the archive itself,
+    // and would refuse every `.docx` the moment one became a browsable container.
+    await fileHandlers['file.quickLook'](ctxAt('/x/foo.zip'))
+    expect(quickLookOpen).toHaveBeenCalledWith('/x/foo.zip', 'root')
+    expect(quickLookState.isOpen).toBe(true)
+  })
+
+  it('opens Quick Look on an Office document, which is a browsable container', async () => {
+    // The regression this guards is the loud one: `.docx` is a zip suffix now, so
+    // a wide boundary check would refuse Quick Look on every Word, Excel, and
+    // PowerPoint file in the user's Documents folder. Previewing a document is
+    // most of what Quick Look is FOR.
+    await fileHandlers['file.quickLook'](ctxAt('/x/report.docx'))
+    expect(quickLookOpen).toHaveBeenCalledWith('/x/report.docx', 'root')
+    expect(quickLookState.isOpen).toBe(true)
+  })
+
+  it('still refuses a part INSIDE an Office document', async () => {
+    // `word/document.xml` has no file on disk, exactly like a zip's inner entry.
+    await fileHandlers['file.quickLook'](ctxAt('/x/report.docx/word/document.xml'))
+    expect(quickLookOpen).not.toHaveBeenCalled()
+    expect(quickLookState.isOpen).toBe(false)
+  })
 })
 
 // Quick Look sits behind a gate (an inner-archive path has no real file to

@@ -59,7 +59,8 @@ const HEADER_CHROME_ACTIVE = 12
  * Header overhead for a column that isn't being sorted: the caret is
  * `display: none`, which collapses both the glyph and the flex gap. The
  * button's padding is offset by the negative margin, so the label is flush
- * against the track edges and chrome is zero.
+ * against the track edges and chrome is zero. Every column gets this on a pane
+ * with `sortBy: null`, which draws no caret anywhere.
  */
 const HEADER_CHROME_INACTIVE = 0
 
@@ -274,7 +275,8 @@ export function computeFullListColumnWidths(args: {
    *  width and the drawn glyph disagree row by row. */
   isSizeUpdating: (entry: FileEntry) => boolean
   showSizeMismatchWarning: boolean
-  sortBy: SortColumn
+  /** The column the rows are in, or `null` when they are in no column's order. */
+  sortBy: SortColumn | null
   sizeFormatOpts: SizeFormatOpts
   /** Returns `true` for paths in the TCC-restricted set so the size cell
    * widths account for the `<no perms>` override. Defaults to never-restricted. */

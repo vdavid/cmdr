@@ -90,7 +90,8 @@ pub(crate) use archive_edit::global_tauri_sink;
 pub use event_sinks::{OperationEventSink, TauriEventSink};
 #[cfg(not(test))]
 use validation::{
-    ensure_destination_dir, validate_destination_not_inside_source, validate_destination_writable, validate_sources,
+    ensure_destination_dir, validate_destination_not_inside_source, validate_destination_writable,
+    validate_source_names_are_distinct, validate_sources,
 };
 
 // Re-export public types
@@ -175,7 +176,8 @@ pub(crate) use state::{OperationIntent, WriteOperationState, is_cancelled, load_
 #[allow(unused_imports, reason = "Re-exports for test modules in file_system")]
 pub(crate) use validation::{
     ensure_destination_dir, is_same_file, is_same_filesystem, validate_destination_not_inside_source,
-    validate_destination_writable, validate_disk_space, validate_path_length, validate_sources,
+    validate_destination_writable, validate_disk_space, validate_path_length, validate_source_names_are_distinct,
+    validate_sources,
 };
 // Exposed for the integration suites that drive `copy_volumes_with_progress`
 // directly against a real backend instead of through the full Tauri path (for
@@ -490,6 +492,7 @@ pub async fn copy_files_start(
                 return Ok(());
             };
             validate_sources(&sources)?;
+            validate_source_names_are_distinct(&sources)?;
             // Guard against copying a folder into itself BEFORE creating anything:
             // the dest may not exist yet, and the guard resolves it via its nearest
             // existing ancestor.
@@ -555,6 +558,7 @@ pub async fn move_files_start(
                 return Ok(());
             };
             validate_sources(&sources)?;
+            validate_source_names_are_distinct(&sources)?;
             // Guard against moving a folder into itself BEFORE creating anything:
             // the dest may not exist yet, and the guard resolves it via its nearest
             // existing ancestor.

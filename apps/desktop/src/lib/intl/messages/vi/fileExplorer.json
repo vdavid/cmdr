@@ -897,6 +897,10 @@
   "@fileExplorer.columns.created": {
     "sourceHash": "d70b9e2"
   },
+  "fileExplorer.columns.sortByRelevance": "Sắp xếp theo mức độ liên quan",
+  "@fileExplorer.columns.sortByRelevance": {
+    "sourceHash": "20632dd"
+  },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
     "sourceHash": "b949c92",

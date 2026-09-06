@@ -1437,6 +1437,38 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "Deine neue Datei liegt unter einem anderen Namen",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Die neue {path} ist vollständig geschrieben, aber das Ziel wollte ihr diesen Namen nicht geben, und die Datei, die sie ersetzen sollte, ist schon weg. Die neue liegt jetzt unter {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Öffne {keptAt} und sieh sie dir an, dann benenne sie um. Wenn das Ziel eine Netzwerkfreigabe oder ein Telefon ist, verbinde es zuerst neu, dann klappt das Umbenennen.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
+  "errors.write.originalsKeptAside.title": "Deine Datei liegt unter einem neuen Namen",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "Ein Ordner hat den Namen {path} übernommen, deshalb liegt deine Datei jetzt unter {keptAt}. Weggeworfen wurde nichts.",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "Ordner haben die Namen von {count} deiner Dateien übernommen, deshalb liegen diese Dateien jetzt unter neuen Namen. Weggeworfen wurde nichts; die technischen Details unten führen jede einzelne auf.",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "Öffne {keptAt} und sieh sie dir an. Sobald du den Ordner aus dem Weg geräumt hast, kannst du deine Datei zurückbenennen.",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "In den Details unten steht, wo jede Datei liegt. Sobald du die Ordner aus dem Weg geräumt hast, kannst du sie zurückbenennen.",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
+  },
   "errors.write.fallback.title.copy": "Kopieren nicht möglich",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"
@@ -1652,5 +1684,21 @@
   "errors.write.readOnlyDevice.source.fallbackName": "Die Quelle",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Zwei Objekte heißen gleich",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Du hast zwei Objekte namens {name} ausgewählt, die beide an derselben Stelle landen würden: {first} und {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Kopiere sie nacheinander, oder benenne eines vorher um.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Bewege sie nacheinander, oder benenne eines vorher um.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

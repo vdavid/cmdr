@@ -1437,6 +1437,38 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "Din nya fil ligger under ett annat namn",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Den nya {path} är färdigskriven och komplett, men målet lät den inte ta det namnet, och filen den skulle ersätta är redan borta. Den nya ligger på {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Öppna {keptAt} och titta på den, byt sedan namn på den. Om målet är en nätverksresurs eller en telefon, anslut den igen först så går namnbytet igenom.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
+  "errors.write.originalsKeptAside.title": "Din fil ligger under ett nytt namn",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "En mapp tog namnet {path}, så din fil ligger nu på {keptAt}. Ingenting slängdes.",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "Mappar tog namnen på {count} av dina filer, så de filerna ligger nu under nya namn. Ingenting slängdes; de tekniska detaljerna nedan listar varenda en.",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "Öppna {keptAt} och titta på den. När du har flyttat undan mappen kan du byta tillbaka namnet på filen.",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "Detaljerna nedan visar var varje fil ligger. När du har flyttat undan mapparna kan du byta tillbaka deras namn.",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
+  },
   "errors.write.fallback.title.copy": "Det gick inte att kopiera",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"
@@ -1652,5 +1684,21 @@
   "errors.write.readOnlyDevice.source.fallbackName": "Källan",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Två objekt heter likadant",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Du valde två objekt som heter {name}, så båda skulle hamna på samma plats: {first} och {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Kopiera dem ett i taget, eller byt namn på ett först.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Flytta dem ett i taget, eller byt namn på ett först.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

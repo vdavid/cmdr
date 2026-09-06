@@ -186,7 +186,12 @@ when path-shaped). Both in `mod.rs`. Virtual paths (`mtp://…`) don't start wit
 ## Empty-operation fast-fail (`file_ops.rs`)
 
 `empty_operation_error` (pure, unit-tested) mirrors the FE fallback semantics: a selection wins; no selection falls back
-to the cursor file; cursor on `..` (or an empty pane, where `files` is empty with `total_files <= 1`) means the FE would
-silently drop the dialog, so the tool rejects fast. Unsynced state (`path` empty) passes through. Without the `select` /
-`move_cursor` pre-reply flush, select → copy reads a stale empty selection and move_cursor → copy reads a stale cursor
-(still on `..`), and either wrongly rejects here.
+to the cursor file; cursor on `..` (or an empty pane) means the FE would silently drop the dialog, so the tool rejects
+fast. Unsynced state (`path` empty) passes through. Without the `select` / `move_cursor` pre-reply flush, select → copy
+reads a stale empty selection and move_cursor → copy reads a stale cursor (still on `..`), and either wrongly rejects
+here.
+
+"Empty pane" is `files` empty AND no actionable rows, where actionable is `total_files` minus the `..` row the pane's
+`has_parent_row` declares. ❌ Don't go back to reading `total_files <= 1` as "only the parent": a search-results snapshot
+pane and a pane at a volume root have no `..`, so one counted row there is one real file, and the shortcut refused a
+delete over a file the user could see.

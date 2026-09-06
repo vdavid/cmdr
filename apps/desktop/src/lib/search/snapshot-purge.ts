@@ -18,6 +18,13 @@
  * vanished carries `outcome: 'skipped'` and `sourceRemoved: true`, and its row is
  * as stale as one a delete removed.
  *
+ * **A gone path takes its subtree.** `removeEntryFromAllSnapshots` drops every row
+ * under the path too, because one event covers one TOP-LEVEL item and a directory
+ * that is gone took its contents with it. That rests on the flag being honest
+ * about a directory, so both move sweeps answer it with an `lstat` rather than
+ * assuming they took the item: a same-FS merge and a cross-FS sweep stepping
+ * around a skipped descendant each leave the source standing.
+ *
  * **It costs one event per top-level item and no state.** Putting the vanished
  * paths on the completion event was the obvious alternative and is not available:
  * a 500k-file move would ship 500k strings to every webview.

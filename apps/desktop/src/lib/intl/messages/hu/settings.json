@@ -385,14 +385,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Archívumok és csomagok megnyitása",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Válaszd ki, mit tegyen az Enter az egyes formátumoknál: böngészés mappaként, megnyitás egy másik appban, vagy rákérdezés minden alkalommal.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Archívumok",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"
@@ -408,6 +400,14 @@
   "settings.archives.zip.description": "Mit tesz az Enter egy zip fájlon.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
+  },
+  "settings.archives.ooxml.label": "Dokumentumok és csomagok",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Mit tesz az Enter egy .docx, .xlsx, .pptx, .jar vagy .apk fájlon.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
   },
   "settings.archives.bundle.label": "Alkalmazáscsomagok",
   "@settings.archives.bundle.label": {
@@ -452,10 +452,6 @@
   "settings.indexing.enabled.description": "A háttérben indexeli a meghajtót az azonnali mappaméretekért.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
-  },
-  "settings.mediaIndex.card": "Képkeresés",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Ez teljes egészében a Macen fut az Apple beépített Vision keretrendszerével. A képeid soha nem hagyják el a számítógépedet, és nincs benne AI-szolgáltató vagy API-kulcs.",
   "@settings.mediaIndex.privacyNote": {
@@ -548,6 +544,14 @@
   "settings.mediaIndex.showFileStatusIcons.description": "A fájllistában minden képre kis jelvényt tesz, amely megmutatja, hogy indexelve van-e a kereséshez.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
+  },
+  "settings.mediaIndex.showInSearch.label": "Képtalálatok megjelenítése a Keresésben",
+  "@settings.mediaIndex.showInSearch.label": {
+    "sourceHash": "45dd528"
+  },
+  "settings.mediaIndex.showInSearch.description": "A Keresés egy sor egyező képet mutat a fájljaid fölött. A találatok még pontatlanok, ezért ki van kapcsolva, amíg nem kéred.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "sourceHash": "5b62cab"
   },
   "settings.mediaIndex.networkVolumes.label": "Hálózati meghajtók képindexelése",
   "@settings.mediaIndex.networkVolumes.label": {

@@ -156,13 +156,23 @@ where
         };
 
         // Conflict detection via caller-supplied dest meta fetcher.
-        // `Some(size)` => conflict; `None` => no conflict (or stat failed,
-        // treated identically to no-conflict at the top-level — same shape as
-        // today's `dest_volume.get_metadata(...).await.ok()` check in
-        // `copy_volumes_with_progress`).
-        let dest_size_hint = dest_meta_fetcher(&initial_dest_path).await;
+        // `Ok(Some(size))` => conflict; `Ok(None)` => the destination said the
+        // name is free. An `Err` is neither: the destination wouldn't say, so
+        // this item fails HERE, before any resolver or write. See `FetchFut`.
+        let dest_size_hint = match dest_meta_fetcher(&initial_dest_path).await {
+            Ok(hint) => hint,
+            Err(e) => {
+                return TransferLoopOutcome {
+                    files_done,
+                    bytes_done,
+                    files_skipped,
+                    bytes_skipped,
+                    intent: PostLoopIntent::Failed(e),
+                };
+            }
+        };
 
-        let (resolved_dest, replace_after_write) = if dest_size_hint.is_some() {
+        let (resolved_dest, replace_after_write, dest_name_claimed) = if dest_size_hint.is_some() {
             log::debug!(
                 "drive_transfer_serial_async: conflict detected at {}",
                 initial_dest_path.display()
@@ -206,7 +216,7 @@ where
                 Ok(ConflictDecision::Proceed {
                     dest_path,
                     replace_after_write,
-                }) => (dest_path, replace_after_write),
+                }) => (dest_path, replace_after_write, true),
                 Err(e) => {
                     return TransferLoopOutcome {
                         files_done,
@@ -218,7 +228,10 @@ where
                 }
             }
         } else {
-            (initial_dest_path, None)
+            // Nothing sits at this name as far as the pre-check could tell, so
+            // nothing resolved anything: the closure's write is landing on a
+            // name it believes free.
+            (initial_dest_path, None, false)
         };
 
         let ctx = TransferContext {
@@ -229,6 +242,7 @@ where
             source_path,
             dest_path: Some(&resolved_dest),
             replace_after_write: replace_after_write.as_deref(),
+            dest_name_claimed,
             files_done_so_far: files_done,
             bytes_done_so_far: bytes_done,
             total_files,

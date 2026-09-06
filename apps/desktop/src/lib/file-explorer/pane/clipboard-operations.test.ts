@@ -11,6 +11,7 @@ const {
   cutPathsToClipboardSpy,
   readClipboardFilesSpy,
   clearClipboardCutStateSpy,
+  resolvePathVolumeSpy,
   addToastSpy,
   resolveSnapshotPathsSpy,
   getCommonParentPathSpy,
@@ -23,6 +24,7 @@ const {
   cutPathsToClipboardSpy: vi.fn<() => Promise<number>>(),
   readClipboardFilesSpy: vi.fn<() => Promise<{ paths: string[]; isCut: boolean; isDirectory?: (boolean | null)[] }>>(),
   clearClipboardCutStateSpy: vi.fn<() => Promise<void>>(),
+  resolvePathVolumeSpy: vi.fn<(path: string) => Promise<{ volume: { id: string } | null }>>(),
   addToastSpy: vi.fn<(content: ToastContent, options?: ToastOptions) => string>(),
   resolveSnapshotPathsSpy: vi.fn<() => string[]>(),
   getCommonParentPathSpy: vi.fn<() => string>(),
@@ -38,6 +40,7 @@ vi.mock('$lib/tauri-commands', () => ({
   cutPathsToClipboard: cutPathsToClipboardSpy,
   readClipboardFiles: readClipboardFilesSpy,
   clearClipboardCutState: clearClipboardCutStateSpy,
+  resolvePathVolume: resolvePathVolumeSpy,
 }))
 
 vi.mock('$lib/ui/toast', () => ({
@@ -51,7 +54,13 @@ vi.mock('$lib/ui/toast', () => ({
 // `paste-clipboard-as-file.test.ts`); here we only assert the DISPATCH into it.
 vi.mock('./paste-clipboard-as-file', () => ({ pasteClipboardContentAsFile: pasteClipboardContentAsFileSpy }))
 
-vi.mock('$lib/search/snapshot-store.svelte', () => ({ resolveSnapshotPaths: resolveSnapshotPathsSpy }))
+vi.mock('$lib/search/snapshot-store.svelte', () => ({
+  resolveSnapshotPaths: resolveSnapshotPathsSpy,
+  // Pure namespace arithmetic with no store state behind it, so the mock keeps
+  // the real shape rather than a spy.
+  snapshotIdFromPanePath: (path: string) =>
+    path.startsWith('search-results://') ? path.slice('search-results://'.length) : null,
+}))
 
 // `transfer-entry` (the shared guard chain) imports `getDestinationVolumeInfo`
 // from here too, so the mock must export it. Keep it a thin lookup matching the
@@ -107,7 +116,7 @@ interface AccessConfig {
   volumeId?: string
   path?: string
   showHiddenFiles?: boolean
-  volumes?: { id: string; name: string; mountIsReadOnly?: boolean }[]
+  volumes?: { id: string; name: string; path?: string; mountIsReadOnly?: boolean }[]
 }
 
 function buildAccess(config: AccessConfig = {}): PaneAccess {
@@ -143,6 +152,10 @@ function buildDialogs() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // The real `resolvePathVolume` swallows its own IPC failure and answers "no
+  // volume" (`tauri-commands/storage.ts`), so an unplaceable path is the default
+  // here too: the paste resolves to `root`, the honest unknown.
+  resolvePathVolumeSpy.mockResolvedValue({ volume: null })
 })
 
 describe('copyToClipboard', () => {
@@ -168,6 +181,68 @@ describe('copyToClipboard', () => {
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()
 
     expect(addToastSpy).toHaveBeenCalledWith('Copied 1 item', { level: 'info' })
+  })
+
+  it('refuses a snapshot copy whose rows sit on an MTP storage, with the pane refusal wording', async () => {
+    // A search covers any volume with a persisted index, MTP storages included,
+    // so an `mtp://…` row path can reach `NSURL::fileURLWithPath` and come back
+    // mangled. The snapshot pane's own id is virtual, so the kind has to come
+    // from where the rows really live.
+    resolveSnapshotPathsSpy.mockReturnValue(['mtp://0-5/65537/DCIM/a.jpg'])
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({
+      paneRef,
+      volumeId: 'search-results',
+      volumes: [{ id: 'mtp-0-5:65537', name: 'Pixel', path: 'mtp://0-5/65537' }],
+    })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('Use F5 to copy files from MTP devices', { level: 'info' })
+    expect(copyPathsToClipboardSpy).not.toHaveBeenCalled()
+    expect(copyFilesToClipboardSpy).not.toHaveBeenCalled()
+  })
+
+  it('copies a snapshot whose rows sit on an ordinary volume, so the refusal stays narrow', async () => {
+    resolveSnapshotPathsSpy.mockReturnValue(['/Volumes/Stick/a.txt'])
+    copyPathsToClipboardSpy.mockResolvedValue(1)
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({
+      paneRef,
+      volumeId: 'search-results',
+      volumes: [{ id: 'stick', name: 'Stick', path: '/Volumes/Stick' }],
+    })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(copyPathsToClipboardSpy).toHaveBeenCalledWith(['/Volumes/Stick/a.txt'])
+  })
+
+  it('refuses a snapshot copy of a device row after the device is unplugged, when no volume can place it', async () => {
+    // The device went away under an open snapshot pane, so the volume list no
+    // longer holds it and `resolveSnapshotSourceVolume` answers the `root`
+    // fallback — a kind that copies. The row path is still `mtp://…`, which
+    // `NSURL::fileURLWithPath` reads as RELATIVE, so the scheme itself has to
+    // refuse, ahead of any volume lookup.
+    resolveSnapshotPathsSpy.mockReturnValue(['mtp://0-5/65537/DCIM/a.jpg'])
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({ paneRef, volumeId: 'search-results', volumes: [] })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('Use F5 to copy files from MTP devices', { level: 'info' })
+    expect(copyPathsToClipboardSpy).not.toHaveBeenCalled()
+  })
+
+  it('refuses a snapshot copy when only SOME rows carry a scheme, so a mixed set never half-copies', async () => {
+    resolveSnapshotPathsSpy.mockReturnValue(['/Users/x/a.txt', 'adb://serial/sdcard/b.jpg'])
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({ paneRef, volumeId: 'search-results', volumes: [] })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('Use F5 to copy files from MTP devices', { level: 'info' })
+    expect(copyPathsToClipboardSpy).not.toHaveBeenCalled()
   })
 
   it('falls back to the listing-id path when a snapshot resolves to no paths', async () => {
@@ -260,6 +335,33 @@ describe('cutToClipboard', () => {
 
     expect(cutPathsToClipboardSpy).toHaveBeenCalledWith(['/a.txt', '/b.txt'])
     expect(addToastSpy).toHaveBeenCalledWith('2 items ready to move. Paste to complete.', { level: 'info' })
+  })
+
+  it('refuses a snapshot cut whose rows sit on an MTP storage, pointing at F6', async () => {
+    resolveSnapshotPathsSpy.mockReturnValue(['mtp://0-5/65537/DCIM/a.jpg'])
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({
+      paneRef,
+      volumeId: 'search-results',
+      volumes: [{ id: 'mtp-0-5:65537', name: 'Pixel', path: 'mtp://0-5/65537' }],
+    })
+
+    await createClipboardOperations(access, buildDialogs()).cutToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('Use F6 to move files from MTP devices', { level: 'info' })
+    expect(cutPathsToClipboardSpy).not.toHaveBeenCalled()
+    expect(cutFilesToClipboardSpy).not.toHaveBeenCalled()
+  })
+
+  it('refuses a snapshot cut of a device row after the device is unplugged, when no volume can place it', async () => {
+    resolveSnapshotPathsSpy.mockReturnValue(['mtp://0-5/65537/DCIM/a.jpg'])
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({ paneRef, volumeId: 'search-results', volumes: [] })
+
+    await createClipboardOperations(access, buildDialogs()).cutToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('Use F6 to move files from MTP devices', { level: 'info' })
+    expect(cutPathsToClipboardSpy).not.toHaveBeenCalled()
   })
 
   it('refuses MTP cut with a toast pointing at F6', async () => {
@@ -533,6 +635,58 @@ describe('pasteFromClipboard', () => {
     const props = dialogsStub.startTransferProgress.mock.calls[0][0]
     expect(props.fileCount).toBeUndefined()
     expect(props.folderCount).toBeUndefined()
+  })
+
+  it('names the volume the pasted sources really sit on, so Eject stays blocked while the paste reads', async () => {
+    // A paste that claims `root` as its source leaves the stick out of the busy
+    // set (`compute_busy_volume_ids`), so Eject stays enabled mid-copy, the
+    // operation takes root's lane, and the log records the wrong source.
+    readClipboardFilesSpy.mockResolvedValue({ paths: ['/Volumes/Stick/a.txt', '/Volumes/Stick/b.txt'], isCut: false })
+    getCommonParentPathSpy.mockReturnValue('/Volumes/Stick')
+    const access = buildAccess({
+      volumeId: 'root',
+      path: '/dest',
+      volumes: [
+        { id: 'root', name: 'Macintosh HD', path: '/' },
+        { id: 'stick', name: 'Stick', path: '/Volumes/Stick' },
+      ],
+    })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(dialogsStub.startTransferProgress.mock.calls[0][0]).toMatchObject({ sourceVolumeId: 'stick' })
+    expect(resolvePathVolumeSpy).not.toHaveBeenCalled()
+  })
+
+  it('asks the backend for the source volume when no registered root matches the clipboard paths', async () => {
+    // Clipboard paths can come from any app, so unlike a snapshot pane's rows
+    // they carry no guarantee of sitting under a known volume root.
+    readClipboardFilesSpy.mockResolvedValue({ paths: ['/mnt/elsewhere/a.txt'], isCut: false })
+    getCommonParentPathSpy.mockReturnValue('/mnt/elsewhere')
+    resolvePathVolumeSpy.mockResolvedValue({ volume: { id: 'share-7' } })
+    const access = buildAccess({ volumeId: 'root', path: '/dest', volumes: [{ id: 'root', name: 'Macintosh HD' }] })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(resolvePathVolumeSpy).toHaveBeenCalledWith('/mnt/elsewhere')
+    expect(dialogsStub.startTransferProgress.mock.calls[0][0]).toMatchObject({ sourceVolumeId: 'share-7' })
+  })
+
+  it('falls back to root when the pasted sources span volumes (the honest unknown)', async () => {
+    readClipboardFilesSpy.mockResolvedValue({ paths: ['/Volumes/Stick/a.txt', '/Users/x/b.txt'], isCut: false })
+    getCommonParentPathSpy.mockReturnValue('/')
+    const access = buildAccess({
+      volumeId: 'root',
+      path: '/dest',
+      volumes: [
+        { id: 'root', name: 'Macintosh HD', path: '/' },
+        { id: 'stick', name: 'Stick', path: '/Volumes/Stick' },
+      ],
+    })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(dialogsStub.startTransferProgress.mock.calls[0][0]).toMatchObject({ sourceVolumeId: 'root' })
   })
 
   it('omits the split when the clipboard carries no kind flags (legacy shape)', async () => {

@@ -122,12 +122,12 @@ export function checkTransferDestinationGuard(
 }
 
 /**
- * Resolves the real source volume id for a set of source paths, so a dropped or
- * pasted transfer carries the same accurate `sourceVolumeId` an F5/F6 transfer
+ * Resolves the real source volume id for a set of source paths, so a DROPPED or
+ * PASTED transfer carries the same accurate `sourceVolumeId` an F5/F6 transfer
  * does. NEVER returns a knowingly-wrong id: when resolution is genuinely
  * ambiguous (sources span volumes) or fails, it returns `DEFAULT_VOLUME_ID`
- * (root) — the honest "unknown", which gives today's degraded-but-correct
- * behavior rather than stat'ing the wrong volume.
+ * (root) — the honest "unknown", which gives a degraded-but-correct result
+ * rather than stat'ing the wrong volume.
  *
  * Favorites (`category === 'favorite'`) are EXCLUDED from the candidate set:
  * they're pseudo-volumes that exist only in the volume picker, the backend

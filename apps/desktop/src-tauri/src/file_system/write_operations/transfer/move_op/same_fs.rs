@@ -15,9 +15,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::super::super::ledger::WrittenFile;
-use super::{MoveTransaction, merge_move_directory, move_resolved_into_place};
+use super::{MoveTransaction, merge_move_directory, move_resolved_into_place, rename_onto_free_name};
 
-use crate::file_system::write_operations::conflict::{ApplyToAll, resolve_conflict};
+use crate::file_system::write_operations::conflict::{ApplyToAll, IncomingItem, resolve_conflict};
 use crate::file_system::write_operations::durability::flush_touched_directories;
 use crate::file_system::write_operations::error_classification::IoResultExt;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
@@ -28,7 +28,7 @@ use crate::file_system::write_operations::types::{
     CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteSourceItemDoneEvent,
 };
-use crate::file_system::write_operations::validation::path_exists_or_is_symlink;
+use crate::file_system::write_operations::validation::{is_real_directory, path_exists_or_is_symlink};
 use crate::file_system::write_operations::{journal, journal_search};
 
 /// `already_in_place` counts the top-level sources the caller dropped as already
@@ -111,9 +111,10 @@ pub(super) fn move_with_rename(
                 None
             };
 
-            // When both source and dest are directories, merge recursively
-            // instead of replacing (which would destroy dest-only files).
-            if source.is_dir() && dest_path.exists() && dest_path.is_dir() {
+            // When both source and dest are real directories, merge recursively
+            // instead of replacing (which would destroy dest-only files). A
+            // symlink on either side is a leaf and takes the conflict branch.
+            if is_real_directory(source) && is_real_directory(&dest_path) {
                 // Same-FS merge operates on the original tree directly, so a
                 // skipped child just leaves the source non-empty; no skip-set
                 // bookkeeping is needed (there's no later source-delete phase).
@@ -146,6 +147,7 @@ pub(super) fn move_with_rename(
                 match resolve_conflict(
                     source,
                     &dest_path,
+                    IncomingItem::of_local_source(source),
                     config,
                     events,
                     operation_id,
@@ -175,7 +177,7 @@ pub(super) fn move_with_rename(
                 // No conflict, so just rename
                 crate::downloads::note_pending_write_for_cmdr(source);
                 crate::downloads::note_pending_write_for_cmdr(&dest_path);
-                fs::rename(source, &dest_path).with_path(source)?;
+                rename_onto_free_name(source, &dest_path).with_path(source)?;
                 move_tx.record(
                     source.clone(),
                     WrittenFile::local_stat(dest_path.clone(), source_meta.as_ref()),
@@ -273,7 +275,7 @@ pub(super) fn move_with_rename(
         log::info!(
             "move_with_rename: rollback requested after loop completion op={}, {} items",
             operation_id,
-            move_tx.renames.len()
+            move_tx.renamed_items().count()
         );
         let rollback = move_tx.rollback().into_cancel_rollback();
         events.emit_cancelled(WriteCancelledEvent {
@@ -317,6 +319,7 @@ pub(super) fn move_with_rename(
         files_processed: files_done + already_in_place,
         files_skipped,
         bytes_processed: 0, // Rename doesn't track bytes
+        appeared_during_move: None,
     });
 
     Ok(())

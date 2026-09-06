@@ -386,14 +386,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Abrir archivos comprimidos y paquetes",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Elige qué hace pulsar Intro en cada formato: explorarlo como una carpeta, abrirlo en otra app o preguntar cada vez.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Archivos comprimidos",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"
@@ -409,6 +401,14 @@
   "settings.archives.zip.description": "Qué hace pulsar Intro en un archivo zip.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
+  },
+  "settings.archives.ooxml.label": "Documentos y paquetes",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Qué hace pulsar Intro en un .docx, .xlsx, .pptx, .jar o .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
   },
   "settings.archives.bundle.label": "Paquetes de apps",
   "@settings.archives.bundle.label": {
@@ -453,10 +453,6 @@
   "settings.indexing.enabled.description": "Indexa tu unidad en segundo plano para obtener tamaños de carpeta al instante.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
-  },
-  "settings.mediaIndex.card": "Búsqueda de imágenes",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Esto se ejecuta por completo en tu Mac usando el framework Vision integrado de Apple. Tus imágenes nunca salen de tu ordenador y no interviene ningún proveedor de IA ni clave de API.",
   "@settings.mediaIndex.privacyNote": {
@@ -549,6 +545,14 @@
   "settings.mediaIndex.showFileStatusIcons.description": "Añade una pequeña insignia a cada imagen de la lista de archivos que indica si se ha indexado para la búsqueda.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
+  },
+  "settings.mediaIndex.showInSearch.label": "Mostrar resultados de imágenes en Buscar",
+  "@settings.mediaIndex.showInSearch.label": {
+    "sourceHash": "45dd528"
+  },
+  "settings.mediaIndex.showInSearch.description": "Buscar añade una fila de imágenes coincidentes encima de tus archivos. Las coincidencias todavía son imprecisas, así que la opción está desactivada hasta que la quieras.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "sourceHash": "5b62cab"
   },
   "settings.mediaIndex.networkVolumes.label": "Indexación de imágenes en unidades de red",
   "@settings.mediaIndex.networkVolumes.label": {

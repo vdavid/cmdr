@@ -835,9 +835,9 @@ Settled for the per-file/folder/drive image-search index status badges in the fi
 every apostrophe is doubled in the catalog:
 
 - image search (the OCR/photo-content search FEATURE) → `recherche d''images` · settled catalog-wide, NOT re-derived:
-  `settings.mediaIndex.card` and `settings.section.imageSearch` both already render "Recherche d''images", and
-  `search.imageResults.*` uses "images". Reused verbatim for every "image search" mention (`file.indexed`,
-  `file.excluded`, `drive.ariaLabel`, `drive.off`) · high.
+  every surface that names the feature renders it (`fileExplorer.imageIndex.drive.off` = "La recherche d''images est
+  désactivée pour ce disque."), and `search.imageResults.*` uses "images". Reused verbatim for every "image search"
+  mention (`file.indexed`, `file.excluded`, `drive.ariaLabel`, `drive.off`) · high.
 - image (the file/noun, feminine: "une image", "les images") → `image` · macOS/pile pervasive; same word as EN but
   genuinely FR and gendered, so agreeing participles are feminine: "image indexée" / "images indexées". The badge sits
   on an image file, so every per-file status agrees feminine (indexée, incluse, modifiée, réindexée) · high.
@@ -2449,3 +2449,33 @@ commande. C’est macOS qui construit la liste ; seules les étiquettes se tradu
 - **Choose an app… → `Choisir une app…`** · le `Choose Application…` d’Apple (clé `N137`) dit `Choisir une application…`
   ; `app` plutôt qu’`application`, comme partout dans le catalogue · `high`.
 - Les apostrophes des valeurs sont doublées pour ICU (`qu''il`, `l''astuce`, `d''une`).
+
+## `Sort by relevance`: the search-results column tooltip (`fileExplorer.columns.sortByRelevance`)
+
+New surface: the hover tooltip on the active column header of a search-results pane. The next click puts the rows back
+into the search engine's own best-match-first order.
+
+- **relevance (how well a result matches the search) → `pertinence`** · all four macOS sources agree: WorkflowKit
+  (`Relevance (WFSearchSortOrder)` → `Pertinence`), AppStoreKit (`SEARCH_FACET_RELEVANCE` → `Pertinence`), Automator
+  (`%1$[La pertinence]@ …`), and Musique · `high`. Lowercase after `par`, as everywhere else in the catalog. (verified
+  on macOS 26.6.2 build 25G83, `plutil` dump of the shipped localizations, 2026-09-06)
+- **Sentence frame → `Trier par pertinence`** · exactly the pattern of its sibling keys in `commands.json`
+  (`Trier par nom`, `Trier par taille`) · `high`. No `sameAsSourceJustification`, and the value carries no apostrophe.
+
+## `Documents and packages`: the new OOXML row (`settings.archives.ooxml.*`)
+
+New surface: a row in the same card as `Archives zip`, above the `Paquets d''application` card. It deliberately covers
+BOTH Office documents (.docx, .xlsx, .pptx) and app packages (.jar, .apk), which is why even the English avoids naming
+Office.
+
+- **documents (the file kind) → `Documents`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Documents`; kinds
+  `Document RTF`, `Document format texte`) · `high`. The whole value differs from English, so no
+  `sameAsSourceJustification` is needed.
+- **packages (generic, not only apps) → `paquets`** · macOS Finder (`Afficher le contenu du paquet`) and the glossary's
+  `app bundle → paquet` · `high`. Bare `paquets` keeps the row broader than the `Paquets d''application` card below it,
+  the same split English makes with `packages` vs `app bundles`.
+- **Sentence frame → `Ce que fait la touche Entrée sur un fichier …, …, … ou ….`** · takes `un fichier` from the sibling
+  `settings.archives.zip.description` (`sur un fichier zip`) instead of repeating `un` five times, and drops the comma
+  before `ou` (French has no serial comma; see the calqued `virgule avant ou` note above) · `high`. ❗
+  `settings.archives.bundle.description` still carries that calqued comma (`un .bundle, ou un .framework`). It was out
+  of scope for this pass, so the two rows differ in punctuation until someone fixes it.

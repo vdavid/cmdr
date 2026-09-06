@@ -114,7 +114,44 @@ fn test_empty_operation_error_empty_dir_with_unrendered_parent() {
     // so the push has zero files while total_files still counts the parent entry.
     let mut state = pane_state_with(vec![], 0, vec![]);
     state.total_files = 1;
+    state.has_parent_row = true;
     let msg = file_ops::empty_operation_error(&state, "left", "copy").expect("should reject");
+    assert!(msg.contains("shows no files"));
+}
+
+#[test]
+fn a_parentless_pane_holding_one_row_is_not_an_empty_pane() {
+    // `total_files == 1` reads as "only the parent entry" ONLY on a pane that has
+    // one. A search-results snapshot has no `..` row, and neither does a pane at a
+    // volume root, so one counted row there is one real file. Refusing the delete
+    // would be a false "shows no files" over a file the user can see.
+    let mut state = pane_state_with(vec![], 0, vec![]);
+    state.total_files = 1;
+    state.has_parent_row = false;
+    assert!(file_ops::empty_operation_error(&state, "left", "delete").is_none());
+}
+
+#[test]
+fn a_snapshot_pane_with_rows_and_no_selection_falls_back_to_its_cursor_row() {
+    // The shape a search-results pane pushes: no `..` row, real result rows, the
+    // cursor on one of them, nothing selected. The op resolves the cursor row, so
+    // the gate must let it through. Before the pane synced to MCP at all, the store
+    // still held the directory it came FROM, and a cursor parked on that pane's `..`
+    // refused an MCP delete the user could plainly see a target for.
+    let mut state = pane_state_with(vec![("a.txt", false), ("b.txt", false)], 1, vec![]);
+    state.path = "search-results://snap-1".to_string();
+    state.total_files = 2;
+    state.has_parent_row = false;
+    assert!(file_ops::empty_operation_error(&state, "left", "delete").is_none());
+}
+
+#[test]
+fn an_empty_snapshot_pane_still_reports_it_has_nothing_to_act_on() {
+    let mut state = pane_state_with(vec![], 0, vec![]);
+    state.path = "search-results://snap-empty".to_string();
+    state.total_files = 0;
+    state.has_parent_row = false;
+    let msg = file_ops::empty_operation_error(&state, "left", "delete").expect("should reject");
     assert!(msg.contains("shows no files"));
 }
 

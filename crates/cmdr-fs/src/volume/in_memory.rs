@@ -89,6 +89,7 @@ pub struct InMemoryVolume {
     /// `AlreadyExists`" need a rename that fails some OTHER way. Default `None`.
     /// Set via [`Self::with_rename_failing`].
     rename_failure: Option<VolumeError>,
+    rename_to_failing: RwLock<HashSet<PathBuf>>, // [`Self::set_rename_to_failing`]
     /// When `true`, [`Volume::create_directory`] returns `NotFound` for the path it
     /// was handed instead of creating it. Models a backend that can't ADDRESS the
     /// destination at all (a share answering `NotFound` for a path outside its
@@ -130,6 +131,7 @@ impl InMemoryVolume {
             delete_fails: false,
             read_chunk_delay: None,
             rename_failure: None,
+            rename_to_failing: RwLock::new(HashSet::new()),
             create_directory_not_found: false,
             stat_failing: RwLock::new(HashSet::new()),
             smb_connection_state: None,
@@ -199,6 +201,16 @@ impl InMemoryVolume {
     pub fn with_create_directory_not_found(mut self) -> Self {
         self.create_directory_not_found = true;
         self
+    }
+
+    /// Test helper: fails any `rename` whose DESTINATION is `to`, AFTER the
+    /// occupancy check — a destination that refuses a rename onto a name that IS
+    /// free, so a caller which clears the way and retries still can't land. The
+    /// per-path twin of [`Self::with_rename_failing`], which refuses every name
+    /// and so can't exercise a caller reaching for a SECOND one.
+    pub fn set_rename_to_failing(&self, to: &Path) {
+        let normalized = self.normalize(to);
+        self.rename_to_failing.write_ignore_poison().insert(normalized);
     }
 
     /// Test helper: makes `is_directory` and `get_metadata` FAIL for `path`
@@ -702,7 +714,6 @@ impl Volume for InMemoryVolume {
             if let Some(failure) = &self.rename_failure {
                 return Err(failure.clone());
             }
-
             let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
                 message: "Lock poisoned".into(),
                 raw_os_error: None,
@@ -713,6 +724,12 @@ impl Volume for InMemoryVolume {
 
             if !force && from_normalized != to_normalized && entries.contains_key(&to_normalized) {
                 return Err(VolumeError::AlreadyExists(to_normalized.display().to_string()));
+            }
+            if self.rename_to_failing.read_ignore_poison().contains(&to_normalized) {
+                return Err(VolumeError::IoError {
+                    message: format!("rename to {} is configured to fail", to.display()),
+                    raw_os_error: None,
+                });
             }
 
             let mut entry = entries

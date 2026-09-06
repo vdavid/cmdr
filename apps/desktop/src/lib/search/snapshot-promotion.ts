@@ -100,6 +100,9 @@ function buildSnapshot(id: string, label: string): SearchSnapshot {
     totalCount: getTotalCount(),
     createdAt: Date.now(),
     label,
+    // Every snapshot opens in the engine's ranked order; a header click is what
+    // ever puts it in another one (`snapshot-sort.svelte.ts`).
+    sort: null,
   }
 }
 
