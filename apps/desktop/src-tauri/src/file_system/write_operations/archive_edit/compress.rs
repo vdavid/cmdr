@@ -160,6 +160,16 @@ pub(crate) async fn compress_start(
     preview_id: Option<String>,
     initiator: crate::operation_log::types::Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
+    // ❗ Refuse an unwritable destination BEFORE touching it. The seed below is a
+    // temp+rename OVER `dest_zip_full_path`, and `route_archive_copy_into` runs
+    // this same guard several steps later — which is too late: compressing onto an
+    // existing `report.docx` or `foo.tar` replaced the user's file with a 22-byte
+    // empty zip and THEN refused, so they lost a document and got no archive.
+    // Atomicity is no defense; the swap was atomic, it just landed before anyone
+    // asked whether the target may be written. Pure name check, no I/O, so it
+    // costs nothing to ask first.
+    super::routing::ensure_zip_writable(&dest_zip_full_path, crate::file_system::ReadOnlySide::Destination)?;
+
     // Seed a valid empty zip at the target so the copy-into has a real archive to
     // open. The seed must be visible to `route_archive_copy_into`'s parent-aware
     // path: a LOCAL parent edits the file in place, so a local-FS seed works; a
