@@ -194,7 +194,19 @@ async function failOnLeaks(tauriPage: EvaluatablePage): Promise<void> {
   try {
     leaked = await tauriPage.evaluate<string[] | null>(`(function(){
             var overlays = ['.ui-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];
-            var found = overlays.filter(function(s){ return document.querySelector(s) !== null; });
+            // Name WHICH overlay leaked, not just that one did. A bare
+            // \`.modal-overlay\` is the same label for every dialog in the app,
+            // and a CI-only leak leaves no other trace to identify it from:
+            // \`data-dialog-id\` (every \`ModalDialog\` sets it) plus the first
+            // words on screen turn the report into the diagnosis.
+            var found = [];
+            overlays.forEach(function(s){
+                var el = document.querySelector(s);
+                if (el === null) return;
+                var id = el.getAttribute('data-dialog-id');
+                var text = (el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 100);
+                found.push(s + (id ? '#' + id : '') + (text ? '["' + text + '"]' : ''));
+            });
             // Include each toast's first-100-char text in the leak label so
             // the failure message tells the test writer exactly what to assert
             // (e.g. \`expectAndDismissToast(tauriPage, 'Copy complete')\`).

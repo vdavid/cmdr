@@ -47,9 +47,9 @@ import { execSync } from 'child_process'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
 import {
-  dismissAllToasts,
   dismissOverlay,
   ensureAppReady,
+  expectAndDismissToast,
   getFixtureRoot,
   fileExistsInPane,
   pollUntil,
@@ -212,7 +212,19 @@ test.describe('Git portal', () => {
     expect(gone).toContain('OK')
     expect(fs.existsSync(path.join(repoPath(), '.git'))).toBe(false)
     expect(fs.existsSync(repoPath())).toBe(false)
-    await dismissAllToasts(tauriPage)
+
+    // ❗ The completion TOAST, ❌ never `dismissAllToasts`. The row above goes
+    // when the file watcher re-reads the pane, which is a good half-second before
+    // the progress dialog comes down: the dialog holds itself open for
+    // `MIN_DISPLAY_MS` (400 ms) so a fast operation doesn't flash. A cell that
+    // stops at "the row is gone" therefore ends INSIDE that window, and the leak
+    // guard reports the still-open `transfer-progress` overlay against it, while
+    // the toast lands a moment later and gets blamed on the NEXT cell. Waiting
+    // for the toast waits for the dialog, because the same handler raises one and
+    // unmounts the other. 10 s rather than the helper's 3 s default: the unmount
+    // has been seen lagging several seconds under Docker-lane load, and it is
+    // still well inside the 15 s per-test timeout.
+    await expectAndDismissToast(tauriPage, 'Delete complete', { timeout: 10000 })
   })
 
   test('turning the portal off with a .git pane open drops the virtual rows and keeps the real ones', async ({
@@ -274,8 +286,10 @@ test.describe('Git portal', () => {
       fs.readFileSync(path.join(repoPath(), 'scripts', 'run.sh')),
     )
 
+    // The copy's own completion toast, for the reason the delete cell spells out:
+    // the bytes land well before the progress dialog's anti-flicker floor expires.
+    await expectAndDismissToast(tauriPage, 'Copied 1 file and 1 folder.', { timeout: 10000 })
     fs.rmSync(outDir, { recursive: true, force: true })
-    await dismissAllToasts(tauriPage)
   })
 
   test('a pane inside a branch snapshot offers no new folder and no rename', async ({ tauriPage }) => {

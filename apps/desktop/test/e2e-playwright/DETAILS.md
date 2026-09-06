@@ -643,6 +643,17 @@ reversal carries home depends on what the move had processed before the clash pa
 case there is no toast at all. Asserting there would pin a number the test's own comment says isn't pinnable. When you
 use it, say in a comment which spec DOES own the wording assertion (`conflict-edge-cases.spec.ts`, for that pair).
 
+**A write operation ends at its TOAST, ❌ never at the pane.** The progress dialog holds itself open for
+`MIN_DISPLAY_MS` (400 ms, `$lib/file-operations/transfer/transfer-progress-state.svelte.ts`) so a fast operation doesn't
+flash, and the completion handler raises the toast and unmounts the dialog in the same beat. The PANE, meanwhile, drops
+the deleted row as soon as the file watcher re-reads it, which for a small tree is a few hundred milliseconds earlier.
+So a cell that stops at "the row is gone", or at "the bytes are on disk", ends INSIDE the dialog's floor: the leak guard
+reports a `transfer-progress` overlay against it, and the toast lands afterwards and is blamed on the NEXT cell.
+`dismissAllToasts` does not save it — with no toast up yet, it clears nothing and passes. `git-portal.spec.ts`'s delete
+and copy cells failed exactly this way on Linux CI (run 34005091542, 2026-09-06), and only there, because the same cells
+win the race by a hair on a faster macOS run. End such a cell with `expectAndDismissToast`, which waits for the toast
+and therefore for the dialog.
+
 **A cancelled transfer now raises a toast, so any spec that presses Rollback on a running one owes the guard
 something.** The reversal summarizes itself (`$lib/file-operations/transfer/cancel-rollback-toast.ts`), so a spec that
 cancels with Rollback and then ends leaks a toast into the `afterEach`. Match the CLEAN wording's stable half
@@ -696,6 +707,11 @@ two callers. ❌ Not for a dialog that answers Escape by opening a confirmation,
 question. The `afterEach` safety net presses twice for the same reason.
 
 ### The safety net
+
+The guard's overlay report NAMES the dialog it found (`data-dialog-id` plus the first words on screen), because
+`.modal-overlay` alone is the same label for every dialog in the app and a CI-only leak leaves nothing else to identify
+it from. `.modal-overlay#transfer-progress["Deleting... 0 / 31"]` is what turned the run above from a mystery into a
+diagnosis in one read.
 
 `fixtures.ts` runs ONE global `afterEach` covering both kinds of leak a test can hand to the next one. Per leak it:
 
