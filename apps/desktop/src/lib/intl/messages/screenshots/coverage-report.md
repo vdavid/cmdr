@@ -16,23 +16,23 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2245 / 3268 keys have a screenshot (69%):** 1285 direct (39%) and 960 representative (29%). 890 remain
+**Total: 2266 / 3289 keys have a screenshot (69%):** 1306 direct (40%) and 960 representative (29%). 890 remain
 uncoupled, and 133 are native surfaces a webview capture cannot reach.
 
 | Area           | Direct | Representative | Uncoupled | Native | Total | Any % |
 | -------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
 | adb            |      0 |              0 |         1 |      0 |     1 |    0% |
 | ai             |      0 |            102 |         0 |      0 |   102 |  100% |
-| askCmdr        |     79 |              0 |       122 |      0 |   201 |   39% |
+| askCmdr        |     79 |              0 |       123 |      0 |   202 |   39% |
 | commandPalette |      3 |              0 |         3 |      0 |     6 |   50% |
-| commands       |    138 |              0 |        54 |      0 |   192 |   72% |
+| commands       |    139 |              0 |        53 |      0 |   192 |   72% |
 | common         |      1 |              0 |         5 |      0 |     6 |   17% |
 | crashReporter  |     12 |              6 |         0 |      0 |    18 |  100% |
 | downloads      |     10 |              0 |        26 |      0 |    36 |   28% |
 | errorReporter  |     17 |              0 |        27 |      0 |    44 |   39% |
-| errors         |     65 |            341 |         0 |      0 |   406 |  100% |
+| errors         |     77 |            341 |         0 |      0 |   418 |  100% |
 | feedback       |      7 |              0 |         6 |      0 |    13 |   54% |
-| fileExplorer   |    124 |             84 |       184 |      0 |   392 |   53% |
+| fileExplorer   |    125 |             84 |       187 |      0 |   396 |   53% |
 | fileOperations |    107 |             51 |        65 |      0 |   223 |   71% |
 | goToPath       |      5 |              0 |         5 |      0 |    10 |   50% |
 | indexing       |     33 |              0 |        31 |      0 |    64 |   52% |
@@ -48,10 +48,10 @@ uncoupled, and 133 are native surfaces a webview capture cannot reach.
 | queue          |     25 |              1 |        10 |      0 |    36 |   72% |
 | search         |      9 |             47 |         0 |      0 |    56 |  100% |
 | selection      |     14 |              0 |         1 |      0 |    15 |   93% |
-| settings       |    323 |              0 |       247 |      0 |   570 |   57% |
+| settings       |    330 |              0 |       243 |      0 |   573 |   58% |
 | shortcuts      |     31 |             28 |         0 |      0 |    59 |  100% |
 | suggestedOps   |      0 |              0 |        29 |      0 |    29 |    0% |
-| transfer       |      2 |              0 |        10 |      0 |    12 |   17% |
+| transfer       |      2 |              0 |        11 |      0 |    13 |   15% |
 | ui             |     13 |              0 |         9 |      0 |    22 |   59% |
 | updates        |      5 |             13 |         0 |      0 |    18 |  100% |
 | viewer         |     29 |             65 |         0 |      0 |    94 |  100% |
@@ -59,7 +59,7 @@ uncoupled, and 133 are native surfaces a webview capture cannot reach.
 
 ## Surfaces to review
 
-The run captured 146 surfaces. This section is regenerated every run, so it stays true as the UI changes.
+The run captured 149 surfaces. This section is regenerated every run, so it stays true as the UI changes.
 
 ### No unique keys (21)
 
@@ -90,7 +90,7 @@ staging (or add it to `DROPPED_GALLERY_STATES` for a gallery state) in `test/e2e
 - `empty-pane` (46 keys, none unique)
 - `viewer-encoding` (15 keys, none unique)
 
-### Captured at a reduced UI zoom (3)
+### Captured at a reduced UI zoom (2)
 
 ❗ These surfaces are taller than the display allows even with the window grown to full height, so the driver reduced
 the UI zoom to fit the whole surface in frame. **The text in these images is smaller than what a user sees.** Judge
@@ -98,4 +98,3 @@ length against the other screenshots, not these.
 
 - `bulk-rename-review-some-blocked`: captured at 90% zoom
 - `bulk-rename-review-why-this-name`: captured at 75% zoom
-- `transfer-confirmation-move`: captured at 90% zoom

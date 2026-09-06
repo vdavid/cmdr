@@ -1354,11 +1354,13 @@
 
   "settings.viewer.showTextCursor.label": "Show text cursor",
   "@settings.viewer.showTextCursor.label": {
-    "description": "Label for the toggle that paints a blinking text cursor (the thin insertion-point bar an editor shows) in the file viewer. In Settings > Viewer. Off by default. \"Text cursor\" is the visible bar, not the mouse pointer; use whatever your language's text editors call the insertion point."
+    "description": "Label for the toggle that paints a blinking text cursor (the thin insertion-point bar an editor shows) in the file viewer. In Settings > Viewer. Off by default. \"Text cursor\" is the visible bar, not the mouse pointer; use whatever your language's text editors call the insertion point.",
+    "screenshot": "settings-viewer.png"
   },
   "settings.viewer.showTextCursor.description": "Show a blinking cursor in the file viewer, marking where a keyboard selection grows from.",
   "@settings.viewer.showTextCursor.description": {
-    "description": "Help text for the viewer text-cursor toggle. The cursor sits at the moving end of the selection, so pressing Shift with an arrow key extends the selection from there. \"Keyboard selection\" = selecting text with Shift plus the arrow keys, as opposed to dragging with the mouse."
+    "description": "Help text for the viewer text-cursor toggle. The cursor sits at the moving end of the selection, so pressing Shift with an arrow key extends the selection from there. \"Keyboard selection\" = selecting text with Shift plus the arrow keys, as opposed to dragging with the mouse.",
+    "screenshot": "settings-viewer.png"
   },
 
   "settings.developer.mcpEnabled.label": "Enable MCP server",
