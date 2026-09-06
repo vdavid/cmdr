@@ -2118,3 +2118,109 @@ macOS-Bundles (macOS 26.6.2, Build 25G83, gelesen 2026-09-06), weil der Referenz
   Rahmen wie die Geschwister `forgetServerRefusedToast` („Cmdr konnte {name} nicht vergessen.“) und
   `disconnectRefusedToast`; `{name}` bleibt Nominativ-Subjekt des Passivs · `high`.
 - Kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt.
+
+## Das Verbindungsblatt, der Hostschlüssel und die zwei Vorschauzeilen (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`, `goToPath.dialog.opensServer`/`.addsServer`, `commands.serversConnect.label`)
+
+Das Blatt, in dem ein Server angelegt, angemeldet oder bearbeitet wird, plus die SSH-Vertrauensfrage darin. Der
+Referenz-Stapel fehlt auf dieser Maschine, also kommen alle Tier-1-Belege direkt aus den installierten macOS-Bundles
+(Rezept: `../reference-pile/how-to-mine.md` § No pile on this machine?; alles unten auf **macOS 26.6.2, 2026-09-07**
+geprüft). Die ergiebigste Quelle ist `NetAuthAgent.app/Contents/Resources/{AuthDialog,Localizable}.loctable`: das ist
+Apples eigener „Mit Server verbinden“-Dialog, also dieselbe Fläche wie unsere.
+
+Begriffe:
+
+- **`Connect` → `Verbinden`** · Finder `ConnectToWindow.strings` `46.title`, NetAuthAgent `AuthDialog` `600218.title`,
+  `Localizable` `CONNECT` · `high`. Zeichengleich zum schon ausgelieferten `fileExplorer.network.connect`.
+- **`Sign in` → `Anmelden`**, **`Sign in to {name}` → `Bei {name} anmelden`** · AppSSOKerberos `MainMenu.loctable`
+  („Sign In“ → „Anmelden“), CloudSharing („sign in to your Apple Account“ → „melde dich bei deinem Apple Account an“);
+  zeichengleich zum ausgelieferten `fileExplorer.network.login.title` („Bei „{target}“ anmelden“) · `high`.
+- **`Save` → `Sichern`** · AppKit `Document`/`SavePanel`/`Preferences`/`Printing.loctable` („Save“ → „Sichern“) ·
+  `high`. ❌ Nicht `Speichern`, das ist die Microsoft-Konvention.
+- **`Guest` → `Gast`, `Connect as guest` → `Als Gast verbinden`** · NetAuthAgent `AuthDialog` `RiA-l0-ASw.title`,
+  `Localizable` `GUEST`; zeichengleich zum ausgelieferten `fileExplorer.network.login.connectAsGuest` · `high`.
+- **`Sign in with a username and password` → `Mit Benutzername und Passwort anmelden`** · Apples Gegenstück heißt
+  `Registrierte:r Benutzer:in` (NetAuthAgent `REGISTERED_USER`), also mit Gender-Doppelpunkt, den die Stilregel wegen
+  Screenreadern verbietet. Die Handlung statt der Person zu benennen umgeht das sauber und deckt sich mit Apples eigenem
+  Fließtext „Gib Benutzername und Passwort für den Server „%@“ ein.“ (`PS_MSG_BOTH`) · `high`.
+- **`Keychain` → `Schlüsselbund`** · NetAuthAgent `AuthDialog` `600268.title` („Remember this password in my keychain“ →
+  „Passwort im Schlüsselbund sichern“) · `high`. Der Katalog beschriftet die Checkbox schon als
+  `Im Schlüsselbund merken` (`fileExplorer.network.login.rememberInKeychain`); das Blatt übernimmt sie zeichengleich.
+- **`Advanced` → `Erweitert`** · AppKit `AccessibilityImageDescriptions.loctable` `NSAdvanced`, ImageKit
+  `kIKScannerDeviceView_Advanced`; zeichengleich zum ausgelieferten `settings.section.advanced` · `high`.
+- **`Protocol` → `Protokoll`** · `AddPrinter.app` IP-Plug-in `100268.title` („Protocol:“ → „Protokoll:“) · `high`.
+- **`Browse…` (Taste, die den Dateiauswahl-Dialog öffnet) → `Durchsuchen…`** · Finder `ConnectToWindow.strings`
+  `48.title` („Browse“ → „Durchsuchen“) und Finders eigener Tooltip „Verfügbare Server in einem Fenster im Finder
+  durchsuchen“ · `high`. ⚠️ Das kollidiert mit `settings.archives.opt.browse` = `Durchsehen` (dort heißt „Browse“ „im
+  Archiv wie in einem Ordner blättern“, nicht „einen Dateidialog öffnen“). `i18n-terms` sieht beide Schlüssel als EIN
+  englisches Wort und meldet die Spaltung; sie ist echt, aber die `reviewed`-Liste braucht Davids Zustimmung, also steht
+  der Warn offen.
+- **`Remote folder` → `Entfernter Ordner`** · macOS rendert `Remote X` durchgängig als `Entfernter X`: PrintCore
+  („Remote Printer“ → „Entfernter Drucker“, „Remote host“ → „Entfernter Host“), LaunchServices („Remote Disc“ →
+  „Entfernte CD/DVD“), ActionKit („Remote Host Identification Has Changed“ → „Entfernte Hostidentifizierung hat sich
+  geändert“) · `high`.
+- **`Key file` → `Schlüsseldatei`** · macOS `de` hat den Begriff nicht, bildet aber beide Hälften: `SSH-Schlüssel` /
+  `privater Schlüssel` (ActionKit) und `-datei`-Komposita („Steuerungsdatei“, „Datendatei“, CUPS) · `high`.
+- **`Key passphrase` → `Schlüssel-Passphrase`** · `tentative`. macOS `de` kennt `Passphrase` in der Oberfläche gar
+  nicht: DiskManagement übersetzt jedes `passphrase` mit `Passwort` („A passphrase is required …“ → „… wird ein Passwort
+  benötigt.“). Das geht hier nicht, weil direkt darüber das Feld `Passwort` steht und der englische `@key` genau diese
+  Verwechslung ausschließen will. Die Kompositform folgt Apples eigenem Muster für „X password“ (`FTP-Passwort`,
+  `Netzwerkpasswort`, `Drucker-Passwort`, NetAuthAgent), und `Passphrase` ist der eingeführte Begriff der SSH-Welt. Von
+  David oder einer muttersprachlichen Prüfung zu bestätigen.
+- **`fingerprint` → `Fingerabdruck`, `host key` → `Hostschlüssel`** · ActionKit `Localizable.loctable`, Apples eigene
+  SSH-Aktion: „The host key's fingerprint is %@.“ → „Der Fingerabdruck des Hostschlüssels ist %@.“ · `high`. Im Blatt
+  steht der Server schon fest, also reicht `der Schlüssel` (wie in der schon ausgelieferten Zeile
+  `servers.refusal.hostKeyUntrusted`); das Label darüber heißt `Schlüssel-Fingerabdruck`.
+- **`Trust` → `Vertrauen`** · SecurityInterface `Localizable.loctable` („Trust“ → „Vertrauen“, „Always trust this
+  certificate“ → „Diesem Zertifikat immer vertrauen“) · `high`. Daher `Vertrauen und verbinden` und
+  `Dem neuen Schlüssel vertrauen` (Dativ, wie bei Apple).
+- **`man in the middle` → `sich zwischen dich und den Server schalten`** · Apple benennt den Angriff direkt
+  („Man-in-the-Middle-Angriff“, Directory Utility `LDAPv3Panel`, ActionKit) · `high`. Cmdrs Englisch vermeidet den
+  Fachbegriff bewusst („something is sitting between you and it“), also übernimmt das Deutsche die Umschreibung; die
+  Bewegungsvariante `sich dazwischenschalten` ist die idiomatische deutsche Form dafür.
+- **`Reconnect automatically` → `Automatisch erneut verbinden`** · Kerberos-Menüleiste `Ozt-wA-9P8.title` („Reconnect“ →
+  „Erneut verbinden“) plus IOBluetoothUI („This device will not reconnect automatically.“ → „Dieses Gerät wird sich
+  nicht automatisch erneut verbinden.“) · `high`.
+- **`Username` → `Benutzername`, `Password` → `Passwort`, `Address` → `Adresse`, `Name` → `Name`** · NetAuthAgent
+  (`TOOLTIP_NAME_SMB` „Domain\Benutzername“, `UfI-08-e8v.title` „Passwort:“, `SV8-VX-EVJ.title` „Name:“), Finder
+  `ConnectToWindow` `YEA-3L-WnW.placeholderString` („Server Address“ → „Serveradresse“) · `high`.
+
+Wortlaut-Entscheidungen:
+
+- **Die Legende der Gast-oder-Konto-Auswahl heißt `Verbindungsmodus`**, obwohl das Englische hier `How to connect` sagt
+  und beim Geschwisterschlüssel `Connection mode`. Es ist dieselbe Fläche, und die Stilregel „Ein Bedienelement trägt im
+  Deutschen EINEN Namen“ zieht den schon ausgelieferten Namen (`fileExplorer.network.login.connectionModeLegend`) vor.
+  Apples Alternative wäre `Verbinden als:` (NetAuthAgent `CONNECT_AS`), passt aber nicht über beide Optionen, weil die
+  zweite ein `anmelden` ist.
+- **`First time connecting to {host}` → `Erste Verbindung zu {host}`**, kein „Zum ersten Mal mit {host} verbinden“: die
+  Überschrift beschreibt eine Lage, sie fordert nichts. Der `@key` verlangt „routine, not alarming“, und ein Nominalsatz
+  ist hier ruhiger als ein Imperativ.
+- **`{host}''s key changed` → `Der Schlüssel von {host} hat sich geändert`** · analytischer Genitiv, weil `{host}` einen
+  fremden Namen trägt und kein Genitiv-s bekommen darf. Zeichengleicher Rahmen wie das ausgelieferte
+  `servers.refusal.hostKeyRevoked` („Der Schlüssel von {host} ist … markiert.“). Das Verb kommt aus ActionKit („… hat
+  sich geändert“).
+- **`I''ve checked it` → `Ich habe ihn geprüft`** · erste Person, wie der englische `@key` verlangt. Das `ihn` ist
+  eindeutig: der Satz darüber endet auf „Prüfe den Fingerabdruck …“, und beide möglichen Bezugswörter (`Fingerabdruck`,
+  `Schlüssel`) sind maskulin.
+- **`the server''s owner` → `die Person, die den Server betreibt`** · kein `Betreiber`/`Besitzer`: die sind im Deutschen
+  generisch maskulin, und die Stilregel verbietet sowohl den Gender-Stern als auch den ausgestellten maskulinen Default.
+  `Person` ist der dort empfohlene neutrale Ausweg.
+- **`Cmdr stopped connecting to {name}` → `Cmdr hat die Verbindung zu {name} gestoppt`** · nicht `abgebrochen`: das ist
+  im Katalog das Wort für `Cancel` (`Abbrechen`) und läse sich, als hätte der Nutzer selbst abgebrochen. Cmdr ist das
+  Subjekt, damit klar ist, dass die App bewusst angehalten hat.
+- **`needsStoredSecret` zitiert beide Nachbarn wörtlich**: der Satz beginnt mit der Checkbox-Beschriftung („Automatisch
+  erneut verbinden geht nur mit …“) und nennt die andere in deutschen Anführungszeichen („Im Schlüsselbund merken“).
+  Eine Wortfamilie pro Dialog: `merken` → `gemerktes Passwort`, `anmelden` → `melde dich einmal an`.
+- **Die drei Protokollnamen und der Beispiel-Hostname bleiben zeichengleich** und tragen deshalb je eine
+  `sameAsSourceJustification`: `SMB`, `SFTP`, `WebDAV` schreibt macOS `de` genauso („SMB-Passwort“, „WebDAV-Passwort“,
+  „SSH-Schlüssel“), und `nas.local` ist ein mDNS-Name. `Name` ist ebenfalls zeichengleich, mit Apples eigener
+  Feldbeschriftung als Beleg.
+- **Die Vorschauzeilen von „Zu Pfad gehen“ bleiben im Präsens der dritten Person**, wie das Englische: `Öffnet {name}`
+  und `Fügt einen Server hinzu`. Kein `du`, weil die Zeile die Wirkung der Eingabe beschreibt und nicht den Nutzer
+  anspricht.
+- **`Connect to server…` (Befehlspalette) → `Mit Server verbinden…`** · Finder `ConnectToWindow` `1.title` und
+  NetAuthAgent `CONNECT_TO_SERVER` („Connect to Server“ → „Mit Server verbinden“); die Auslassungspunkte hängen ohne
+  Leerzeichen an, wie bei allen anderen dialogöffnenden Einträgen im Katalog (`Server hinzufügen…`,
+  `Server bearbeiten…`).
+- **`Connecting…` im Blatt → `Verbindung wird hergestellt …`** · zeichengleich zu `fileExplorer.network.connecting` und
+  `servers.paneState.connecting`; Fortschrittszeilen bekommen das Leerzeichen vor den Auslassungspunkten.
+- Kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt.
