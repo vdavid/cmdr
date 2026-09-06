@@ -49,6 +49,13 @@ below is met.
 
 ## In progress
 
+- [ ] 2026-09-06 `data-safety-hunt-follow-ups.md` - **What the transfer-engine hunt left open after its 15 findings
+      were fixed.** Nine ranked entries in problem / impact / solution / size form: two high (a cross-FS move loses the
+      bytes written to a file after its copy finished; a top-level folder symlink on a volume still merges through the
+      link, which needs a symlink-aware answer on the `Volume` trait), three medium (the SMB single-shot write has no
+      "expected free" guard; the volume engine's folder-over-file Overwrite still deletes the file first; the local
+      folder-over-file prompt describes the clash as file-vs-file), four low. The nine subsystems the hunt never
+      reached are a second hunt, not an entry. Roughly a week in total; the two high ones are about two days.
 - [ ] 2026-09-03 `mtp-crate-extraction.md` - **MTP is the last backend that still reaches sideways into the app.** Its
       session layer holds a `tauri::AppHandle`, emits seven frontend events itself, writes the listing cache and the
       index directly, and gates real behavior on nine inline `cfg(test)`s, so the backend on the flakiest hardware is
