@@ -350,6 +350,9 @@ against the refusals.
 
 ## Why a document container is its own format
 
+The enum and its suffix table live one crate down, in `crates/cmdr-fs/src/archive_format.rs`; the reason this variant
+exists is here, because it's the app's write guard that the variant serves.
+
 `.docx`, `.xlsx`, `.pptx`, `.jar`, and `.apk` map to `ArchiveFormat::Ooxml` rather than to `Zip`, even though they are
 zips down to the last byte and read through the identical code path (one shared match arm in the index parser, the same
 `PK\x03\x04` magic confirm).

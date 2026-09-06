@@ -147,6 +147,12 @@ All three are pure name/path predicates with no I/O — that's a hard requiremen
   outer compression stayed with the archive reading core. The split line is "naming vs machinery", and it keeps
   `format_for_name` the single source of truth rather than forking a second suffix table.
 
+  One consequence of that split is worth following: because the format a name maps to decides WRITABILITY, the enum
+  carries a variant whose whole reason for existing lives in the consumer crate. `ArchiveFormat::Ooxml` is a zip in
+  every respect the reader cares about, and separate only so the app's write guard refuses it. The rationale is in
+  `crates/cmdr-archive/DETAILS.md` § "Why a document container is its own format"; don't restate it here, and read it
+  before touching the variant or the suffix table.
+
 Stripping the two fields instead was never viable: `FileEntry::new` has 83 call sites.
 
 ### 3. `filesystem_kind` split
