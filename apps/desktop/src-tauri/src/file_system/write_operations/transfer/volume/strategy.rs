@@ -24,7 +24,7 @@ use super::super::staged_write::StagedWrite;
 // Re-exported so the sibling test modules (and any future caller reached through
 // this module's API) name the staging choice without a second import path.
 use super::super::retry;
-pub(super) use super::super::staged_write::WriteStaging;
+pub(super) use super::super::staged_write::{LandingName, WriteStaging};
 use super::super::transfer_probe::{
     OperationProbe, TaskPhase, TaskRow, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase,
 };
@@ -459,11 +459,17 @@ pub(super) async fn copy_single_path(
 /// The staging every call site derives the same way: a conflict resolution that
 /// handed back a temp to swap over an original (`Some(orig)`) already staged the
 /// write, anything else is ours to stage.
-pub(super) fn staging_for(replace_after_write: &Option<PathBuf>) -> WriteStaging {
-    if replace_after_write.is_some() {
-        WriteStaging::AlreadyStaged
-    } else {
-        WriteStaging::Stage
+///
+/// `landing` is the OTHER thing only the caller knows: whether a conflict
+/// resolution put this write at this name. It decides what the landing rename's
+/// `AlreadyExists` means (see `staged_write.rs::land`), so ❌ never pass
+/// `ClaimedByTheCaller` for a write nothing resolved — that is the reading that
+/// clears the user's file.
+pub(super) fn staging_for(replace_after_write: &Option<PathBuf>, landing: LandingName) -> WriteStaging {
+    match (replace_after_write, landing) {
+        (Some(_), _) => WriteStaging::AlreadyStaged,
+        (None, LandingName::ExpectedFree) => WriteStaging::Stage,
+        (None, LandingName::ClaimedByTheCaller) => WriteStaging::StageOntoClaimedName,
     }
 }
 
@@ -494,7 +500,8 @@ pub(super) fn staging_for(replace_after_write: &Option<PathBuf>) -> WriteStaging
 /// in place until the new bytes are complete, which is a stronger guarantee than
 /// single-shot-ness and the caller's to land.
 pub(super) fn resolve_staging(requested: WriteStaging, write_is_single_shot: bool) -> WriteStaging {
-    if requested == WriteStaging::Stage && write_is_single_shot {
+    let we_stage = matches!(requested, WriteStaging::Stage | WriteStaging::StageOntoClaimedName);
+    if we_stage && write_is_single_shot {
         WriteStaging::SingleShot
     } else {
         requested
@@ -810,7 +817,9 @@ pub(super) async fn stream_pipe_file(
         // Past the last byte: give the file its final name.
         match staged.commit(dest_volume).await {
             Ok(()) => return Ok(bytes),
-            Err(VolumeError::NotSupported) if staging == WriteStaging::Stage => {
+            Err(VolumeError::NotSupported)
+                if matches!(staging, WriteStaging::Stage | WriteStaging::StageOntoClaimedName) =>
+            {
                 log::warn!(
                     target: "copy",
                     "stream_pipe_file: destination can't land a staged write for {}; falling back to writing at the final name",

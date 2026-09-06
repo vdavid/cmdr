@@ -343,6 +343,15 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                 // successful write we delete `orig` and rename the temp into
                 // place (safe-replace for file→file Overwrite).
                 let replace_after_write = ctx.replace_after_write.map(Path::to_path_buf);
+                // Whether the driver's conflict resolution PICKED this
+                // destination name (a `Rename`, an Overwrite that cleared it),
+                // which is what the landing needs to tell its own placeholder
+                // from a file nobody answered for.
+                let landing = if ctx.dest_name_claimed {
+                    super::strategy::LandingName::ClaimedByTheCaller
+                } else {
+                    super::strategy::LandingName::ExpectedFree
+                };
                 let bytes_done_so_far = ctx.bytes_done_so_far;
                 Box::pin(async move {
                     let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
@@ -491,7 +500,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                         &on_file_progress,
                         &on_file_complete,
                         Some(&merge_ctx),
-                        super::strategy::staging_for(&replace_after_write),
+                        super::strategy::staging_for(&replace_after_write, landing),
                     );
                     // Bind this source's probe as a task-local for the whole
                     // copy, so `stream_pipe_file` and `CheckpointStream`

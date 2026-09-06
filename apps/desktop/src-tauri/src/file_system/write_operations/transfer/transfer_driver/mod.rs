@@ -200,6 +200,16 @@ pub(super) struct TransferContext<'a> {
     /// `ConflictDecision::Proceed`; always `None` for the sync driver and for
     /// no-conflict paths.
     pub replace_after_write: Option<&'a Path>,
+    /// Whether `dest_path` is a name conflict resolution PICKED (a `Rename`
+    /// pick, an Overwrite whose destination it cleared) rather than the plain
+    /// `dest_root.join(name)` nothing has looked at.
+    ///
+    /// The streaming closures pass it to the staging layer, which needs it to
+    /// tell its own `Rename` placeholder from a file nobody resolved a conflict
+    /// for when the landing rename says `AlreadyExists`
+    /// (`staged_write.rs::LandingName`). `false` for the sync driver, which
+    /// resolves no conflicts of its own.
+    pub dest_name_claimed: bool,
     /// Cumulative files processed BEFORE this iteration. Lets the closure
     /// compute `effective_bytes_done` for intra-file progress callbacks
     /// without having to thread the counter through itself. Snapshotted by the

@@ -431,3 +431,149 @@ async fn a_case_differing_directory_child_merges_into_the_one_that_is_there() {
         "a dir-vs-dir merge never prompts, folded or not"
     );
 }
+
+/// A destination that reports one name as absent and then refuses the landing
+/// rename for it: what a file ARRIVING between the level listing and the write
+/// looks like from here.
+///
+/// The listing can't answer for that file however carefully it folds, which is
+/// why the landing carries the caller's own expectation
+/// (`staged_write.rs::LandingName`) as well.
+struct LateArrivalDest {
+    inner: Arc<InMemoryVolume>,
+    /// The path the listing pretends isn't there yet.
+    arriving: PathBuf,
+}
+
+impl Volume for LateArrivalDest {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let entries = self.inner.list_directory(path, on_progress).await?;
+            Ok(entries
+                .into_iter()
+                .filter(|e| Path::new(&e.path) != self.arriving)
+                .collect())
+        })
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            if path == self.arriving {
+                return Err(VolumeError::NotFound(path.display().to_string()));
+            }
+            self.inner.get_metadata(path).await
+        })
+    }
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.create_directory(path)
+    }
+    fn create_file<'a>(
+        &'a self,
+        path: &'a Path,
+        content: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.create_file(path, content)
+    }
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.delete(path)
+    }
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.rename(from, to, force)
+    }
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
+        size: u64,
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        self.inner.write_from_stream(dest, size, stream, on_progress)
+    }
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        self.inner.open_read_stream(path)
+    }
+    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        self.inner.get_space_info()
+    }
+    fn create_directory_errors_on_existing_dir(&self) -> bool {
+        self.inner.create_directory_errors_on_existing_dir()
+    }
+    fn scan_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        self.inner.scan_for_copy(path)
+    }
+}
+
+/// The belt and braces: a name the level listing reported as FREE, taken by the
+/// time the bytes come to claim it. Nothing resolved a conflict for it, so the
+/// landing must leave it alone rather than clear the way.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_name_that_fills_up_after_the_listing_is_not_cleared_by_the_landing() {
+    let (source, dest_inner) = folded_pair("notes.txt", "notes.txt").await;
+    let dest: Arc<dyn Volume> = Arc::new(LateArrivalDest {
+        inner: Arc::clone(&dest_inner),
+        arriving: PathBuf::from("/album/notes.txt"),
+    });
+
+    let state = make_state();
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Skip, false));
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Skip,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+    let outcome = copy_volumes_with_progress(
+        events.clone(),
+        "op-late-arrival",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/album")],
+        dest,
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    assert!(
+        matches!(
+            outcome,
+            Err(WriteFailure {
+                error: WriteOperationError::DestinationExists { .. },
+            })
+        ),
+        "the clash has to be reported; got {outcome:?}"
+    );
+    assert_eq!(
+        stored_bytes(&dest_inner, "/album/notes.txt").await.as_deref(),
+        Some(&b"THE USER'S FILE"[..]),
+        "a file that arrived after the listing is still the user's, and nothing answered for it"
+    );
+}

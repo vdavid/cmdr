@@ -90,6 +90,9 @@ impl ConcurrentCopy<'_> {
         // after the write fully lands (safe-replace). `None` ⇒ write
         // `dest_item_path` directly.
         let mut replace_after_write: Option<PathBuf> = None;
+        // Nothing has resolved anything yet, so the name this task writes to is
+        // one we believe free (`staged_write.rs::LandingName`).
+        let mut dest_name_claimed = false;
         if let Some(dest_meta) = self
             .existing_dest_entry(source_index, source_path, &dest_item_path)
             .await
@@ -124,6 +127,9 @@ impl ConcurrentCopy<'_> {
                 Some(rc) => {
                     dest_item_path = rc.write_path;
                     replace_after_write = rc.replace_after_write;
+                    // The resolver picked this name: a `Rename` reserved it, an
+                    // Overwrite across types already cleared it.
+                    dest_name_claimed = true;
                 }
             }
         }
@@ -183,6 +189,7 @@ impl ConcurrentCopy<'_> {
             source_facts: SourceFileFacts::from_size_hint(source_size_hint),
             dest_path: dest_item_path,
             replace_after_write,
+            dest_name_claimed,
             file_name,
             window: self.file_window.clone(),
             // Every leaf of a directory source's subtree numbers itself under

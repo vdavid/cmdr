@@ -17,7 +17,7 @@ use std::sync::{Arc, Mutex};
 use super::super::super::state::WriteOperationState;
 use super::super::staged_write::StagedWrite;
 use super::merge::copy_directory_streaming;
-use super::strategy::{CreatedPaths, MergeCtx, note_pending_for_local_dest, resolve_staging, staging_for};
+use super::strategy::{CreatedPaths, LandingName, MergeCtx, note_pending_for_local_dest, resolve_staging, staging_for};
 use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
@@ -28,6 +28,10 @@ use crate::ignore_poison::IgnorePoison;
 pub(super) struct PlannedWrite {
     pub(super) dest_path: PathBuf,
     pub(super) replace_after_write: Option<PathBuf>,
+    /// Whether a conflict resolution picked `dest_path`, which is what the
+    /// landing needs to tell its own placeholder from the user's file
+    /// (`staged_write.rs::LandingName`).
+    pub(super) landing: LandingName,
     /// The mode the source entry reported, carried from the planning pass
     /// because it is the only one that lists the archive (`0` when the format
     /// recorded none). The data pass puts it on what it writes, so an executable
@@ -140,7 +144,7 @@ pub(super) async fn extract_sequential_subtree(
         // source can't be re-read, so a destination that can't land a staged write
         // fails the extract instead of falling back.
         let single_shot = dest_volume.write_is_single_shot(file.size).await;
-        let staging = resolve_staging(staging_for(&planned.replace_after_write), single_shot);
+        let staging = resolve_staging(staging_for(&planned.replace_after_write, planned.landing), single_shot);
         let staged = StagedWrite::begin(state, &planned.dest_path, staging);
         // Register the destination before the write, exactly as `stream_pipe_file`
         // does (covers a Downloads-landing local dest; a no-op for MTP/SMB).

@@ -28,7 +28,7 @@ use super::super::super::types::{VolumeCopyConfig, WriteOperationType};
 use super::super::transfer_driver::make_concurrent_per_file_progress;
 use super::super::transfer_probe::{CURRENT_TASK_PROBE, TaskProbeHandle};
 use super::preflight::{SourceFileFacts, SourceHint};
-use super::strategy::{CreatedPaths, FileWindow, MergeCtx, MergeProbe, copy_single_path, staging_for};
+use super::strategy::{CreatedPaths, FileWindow, LandingName, MergeCtx, MergeProbe, copy_single_path, staging_for};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -128,6 +128,12 @@ pub(super) struct CopyTask {
     /// `Some(orig)` ⇒ safe-replace: after a successful write, swap the temp over
     /// `orig`.
     pub(super) replace_after_write: Option<PathBuf>,
+    /// Whether conflict resolution PICKED `dest_path` (a `Rename` pick, an
+    /// Overwrite that cleared it) rather than it being the plain
+    /// `dest_root.join(name)` nothing has looked at. The landing needs it to
+    /// tell its own placeholder from a file nobody answered for
+    /// (`staged_write.rs::LandingName`).
+    pub(super) dest_name_claimed: bool,
     pub(super) file_name: Option<String>,
     /// The operation's one file-copy window, shared with every merge walker.
     pub(super) window: FileWindow,
@@ -162,6 +168,7 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
         source_facts,
         dest_path,
         replace_after_write,
+        dest_name_claimed,
         file_name,
         window,
         merge_probe,
@@ -254,7 +261,14 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
         &on_file_progress,
         &on_file_complete,
         Some(&merge_ctx),
-        staging_for(&replace_after_write),
+        staging_for(
+            &replace_after_write,
+            if dest_name_claimed {
+                LandingName::ClaimedByTheCaller
+            } else {
+                LandingName::ExpectedFree
+            },
+        ),
     );
     // Bind this task's probe as a task-local for the whole copy, so
     // `stream_pipe_file` and `CheckpointStream` can record their phases without

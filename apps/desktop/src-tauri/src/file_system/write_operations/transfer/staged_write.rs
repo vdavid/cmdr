@@ -17,7 +17,17 @@
 //! untouched — staging it again would only produce a `foo.cmdr-tmp-A.cmdr-tmp-B`.
 //! A write the DESTINATION lands in one indivisible shot is
 //! [`WriteStaging::SingleShot`] and needs no temp: there is no moment at which
-//! the final name holds a partial. Every other write is [`WriteStaging::Stage`].
+//! the final name holds a partial. Every other write stages here
+//! ([`WriteStaging::Stage`], or [`WriteStaging::StageOntoClaimedName`] when the
+//! caller picked the final name itself).
+//!
+//! **Whose name it is.** The landing rename can answer `AlreadyExists`, and
+//! what that means is the CALLER's to say ([`LandingName`]): a name it claimed
+//! (a `Rename` pick's `O_EXCL` placeholder, a cross-type Overwrite's cleared
+//! destination) may be cleared, a name it believed FREE may not. Without the
+//! distinction a clash nobody resolved — a case-insensitive destination
+//! answering for `Report.docx` with the user's `report.docx` — read as "clear
+//! the way" and replaced a file under a Skip.
 //!
 //! **Cost.** One extra rename per staged file. On SMB that is one round trip,
 //! which roughly doubles the wire cost of a file the compound
@@ -39,7 +49,14 @@ use crate::file_system::volume::{Volume, VolumeError};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum WriteStaging {
     /// The path handed to the writer is the file's FINAL name: stage it here.
+    /// The caller believes that name is FREE, so an `AlreadyExists` when the
+    /// bytes come to take it is a clash nobody answered — see [`LandingName`].
     Stage,
+    /// Stage as [`WriteStaging::Stage`], but the final name is one the CALLER
+    /// claimed or cleared: a `Rename` resolution's `O_EXCL` placeholder, or a
+    /// cross-type Overwrite that removed what was there. Whatever the landing
+    /// finds in the way is the caller's own doing, so it may clear it.
+    StageOntoClaimedName,
     /// The path handed to the writer is already a `.cmdr-tmp-*` the CALLER
     /// minted and will land itself (the conflict layer's safe-replace, which
     /// keeps the original in place until the temp is complete). Write straight
@@ -50,6 +67,25 @@ pub(super) enum WriteStaging {
     /// staging would buy nothing but a rename round trip. Write straight to the
     /// final name.
     SingleShot,
+}
+
+/// What the caller believes sits at the final name when the staged bytes come
+/// to take it, and therefore what an `AlreadyExists` from the landing rename
+/// means.
+///
+/// The distinction is the difference between a late-detected conflict and a
+/// deleted file. Only the caller knows which it is: the landing sees the same
+/// `AlreadyExists` either way.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum LandingName {
+    /// Nobody resolved a conflict for this write: the name was free when the
+    /// caller last looked. Something in the way now is a clash no policy and no
+    /// person answered, so the landing REFUSES rather than clearing it.
+    ExpectedFree,
+    /// The caller claimed or cleared this name and is entitled to what's in the
+    /// way: a `Rename` pick reserved with an `O_EXCL` placeholder, a cross-type
+    /// Overwrite whose destination delete has already run.
+    ClaimedByTheCaller,
 }
 
 /// One file write's staging: where the bytes go, and how they get their final
@@ -80,6 +116,9 @@ pub(super) struct StagedWrite {
     /// Where the file must end up. Under `AlreadyStaged` this IS the caller's
     /// temp, and landing it is the caller's job.
     final_path: PathBuf,
+    /// What the caller believes about that name, which is what [`land`] needs to
+    /// tell a clash nobody answered from a name the caller itself claimed.
+    landing: LandingName,
     state: Arc<WriteOperationState>,
 }
 
@@ -90,7 +129,7 @@ impl StagedWrite {
         let mut temp = None;
         let mut caller_temp = None;
         match staging {
-            WriteStaging::Stage => {
+            WriteStaging::Stage | WriteStaging::StageOntoClaimedName => {
                 let staged = StagingTemp::mint(final_path, state.liveness_token());
                 super::super::in_flight_temps::register(state, staged.path(), dest_home(state));
                 temp = Some(staged);
@@ -108,6 +147,15 @@ impl StagedWrite {
             temp,
             caller_temp,
             final_path: final_path.to_path_buf(),
+            // The two staging kinds that never land here answer
+            // `ClaimedByTheCaller` for the same reason they need no landing:
+            // the name is the caller's, and the caller does the swap.
+            landing: match staging {
+                WriteStaging::Stage => LandingName::ExpectedFree,
+                WriteStaging::StageOntoClaimedName | WriteStaging::AlreadyStaged | WriteStaging::SingleShot => {
+                    LandingName::ClaimedByTheCaller
+                }
+            },
             state: Arc::clone(state),
         }
     }
@@ -138,7 +186,7 @@ impl StagedWrite {
         // Landing is a device round trip of its own; a dump has to be able to
         // name it rather than showing a task still "streaming" at EOF.
         set_task_phase(TaskPhase::Finalizing);
-        match land(dest_volume, temp.path(), &self.final_path).await {
+        match land(dest_volume, temp.path(), &self.final_path, self.landing).await {
             Err(VolumeError::NotSupported) => {
                 // This backend can't land a staged write at all, so the caller
                 // will rewrite the file at its final name. Drop the temp here:
@@ -249,13 +297,38 @@ fn dest_home(state: &WriteOperationState) -> Option<TempHome<'_>> {
 /// backend that can delete but not rename, which would otherwise destroy the
 /// destination and answer `NotSupported`.
 ///
+/// ❗ **And only a name the CALLER claimed**, which is the other half of the
+/// same question. `AlreadyExists` says something is in the way; only
+/// [`LandingName`] says whose it is. Under
+/// [`LandingName::ExpectedFree`] nothing resolved a conflict for this write, so
+/// what's in the way is the user's file and a policy nobody applied to it: the
+/// landing reports the clash and leaves both sides alone. A case-insensitive
+/// destination is where that happens without any race — `Report.docx` renaming
+/// onto a stored `report.docx` — and clearing the way there replaced files under
+/// a Skip.
+///
 /// On failure `temp` is left alone: past this point it holds the file's only
 /// complete copy.
-async fn land(dest_volume: &Arc<dyn Volume>, temp: &Path, final_path: &Path) -> Result<(), VolumeError> {
+async fn land(
+    dest_volume: &Arc<dyn Volume>,
+    temp: &Path,
+    final_path: &Path,
+    landing: LandingName,
+) -> Result<(), VolumeError> {
     let Err(first) = dest_volume.rename(temp, final_path, false).await else {
         return Ok(());
     };
     if !matches!(first, VolumeError::AlreadyExists(_)) {
+        return Err(first);
+    }
+    if landing == LandingName::ExpectedFree {
+        log::warn!(
+            target: "copy",
+            "staged write: {} is taken by something nobody resolved a conflict for; \
+             leaving it alone. The new bytes stay at {}.",
+            final_path.display(),
+            temp.display(),
+        );
         return Err(first);
     }
     match dest_volume.delete(final_path).await {
@@ -352,19 +425,67 @@ mod tests {
         assert!(state.in_flight_temps.lock_ignore_poison().is_empty());
     }
 
-    /// Landing onto a name something else already holds is the case the second
+    /// Landing onto a name the CALLER claimed — a `Rename` pick's placeholder,
+    /// a cross-type Overwrite's cleared destination — is the case the second
     /// attempt exists for: clear the way, then rename again.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn landing_clears_a_destination_that_is_genuinely_in_the_way() {
+    async fn landing_clears_a_claimed_name_that_is_genuinely_in_the_way() {
         let inner = Arc::new(InMemoryVolume::new("dest"));
         let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
         inner.create_file(Path::new("/notes.txt"), b"OLD").await.unwrap();
         inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
 
-        land(&dest, Path::new("/temp"), Path::new("/notes.txt")).await.unwrap();
+        land(
+            &dest,
+            Path::new("/temp"),
+            Path::new("/notes.txt"),
+            LandingName::ClaimedByTheCaller,
+        )
+        .await
+        .unwrap();
 
         assert!(!inner.exists(Path::new("/temp")).await);
         assert_eq!(size_of(&inner, "/notes.txt").await, Some(3), "the new bytes landed");
+    }
+
+    /// The same collision under a name the caller believed FREE is a conflict
+    /// nobody answered, and clearing it would replace a file under a policy
+    /// (Skip, an unanswered Stop) that promised not to.
+    ///
+    /// The reachable case needs no race: a case-insensitive destination resolves
+    /// `Report.docx` onto the user's `report.docx`, so the rename says
+    /// `AlreadyExists` for a name the level listing reported as free.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn landing_onto_a_name_believed_free_leaves_it_alone() {
+        let inner = Arc::new(InMemoryVolume::new("dest"));
+        let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
+        inner
+            .create_file(Path::new("/notes.txt"), b"THE USER'S FILE")
+            .await
+            .unwrap();
+        inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
+
+        let outcome = land(
+            &dest,
+            Path::new("/temp"),
+            Path::new("/notes.txt"),
+            LandingName::ExpectedFree,
+        )
+        .await;
+
+        assert!(
+            matches!(outcome, Err(VolumeError::AlreadyExists(_))),
+            "the clash is what the caller has to see; got {outcome:?}"
+        );
+        assert_eq!(
+            size_of(&inner, "/notes.txt").await,
+            Some(15),
+            "a name nobody resolved a conflict for must still hold the user's bytes"
+        );
+        assert!(
+            inner.exists(Path::new("/temp")).await,
+            "and the new bytes stay recoverable under the temp name"
+        );
     }
 
     /// A rename that failed for ANY OTHER reason must leave the destination
@@ -417,7 +538,15 @@ mod tests {
             .unwrap();
         inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
 
-        let outcome = land(&dest, Path::new("/temp"), Path::new("/notes.txt")).await;
+        // The claimed reading, so the cell is about the rename's error and not
+        // about who owns the name.
+        let outcome = land(
+            &dest,
+            Path::new("/temp"),
+            Path::new("/notes.txt"),
+            LandingName::ClaimedByTheCaller,
+        )
+        .await;
         (inner, outcome)
     }
 

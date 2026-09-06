@@ -39,7 +39,8 @@ use super::super::transfer_probe::{CURRENT_TASK_PROBE, TaskPhase, TaskProbeHandl
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::preflight::SourceFileFacts;
 use super::strategy::{
-    CreatedPaths, FileWindow, MergeCtx, MergeProbe, note_pending_for_local_dest, staging_for, stream_pipe_file,
+    CreatedPaths, FileWindow, LandingName, MergeCtx, MergeProbe, WriteStaging, note_pending_for_local_dest,
+    staging_for, stream_pipe_file,
 };
 use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::listing::FileEntry;
@@ -217,7 +218,7 @@ impl<'a> LeafPool<'a> {
 /// window as a unit of work.
 #[allow(
     clippy::too_many_arguments,
-    reason = "One leaf's whole context: both volumes, both paths, what the listing knows about the source, the safe-replace original, shared state, the ledger, and two progress callbacks."
+    reason = "One leaf's whole context: both volumes, both paths, what the listing knows about the source, the safe-replace original, how the write is staged, shared state, the ledger, and two progress callbacks."
 )]
 async fn copy_leaf<'a>(
     source_volume: &'a Arc<dyn Volume>,
@@ -226,6 +227,7 @@ async fn copy_leaf<'a>(
     dest_volume: &'a Arc<dyn Volume>,
     write_dest: PathBuf,
     replace_after_write: Option<PathBuf>,
+    staging: WriteStaging,
     state: &'a Arc<WriteOperationState>,
     created: &'a CreatedPaths,
     on_file_progress: &'a (dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
@@ -242,7 +244,7 @@ async fn copy_leaf<'a>(
         &write_dest,
         state,
         on_file_progress,
-        staging_for(&replace_after_write),
+        staging,
     )
     .await
     .at(&child_source)?;
@@ -527,6 +529,10 @@ async fn merge_level<'a>(
         // have merge context, route it through the file-policy resolver.
         let mut write_dest = child_dest.clone();
         let mut replace_after_write: Option<PathBuf> = None;
+        // Nothing has resolved a conflict for this child yet, so the name it is
+        // about to take is one we believe FREE. A resolver decision below is
+        // what turns that into a claim (`staged_write.rs::LandingName`).
+        let mut landing = LandingName::ExpectedFree;
         if let Some(hit) = dest_hit
             && let Some(ctx) = merge
         {
@@ -548,6 +554,10 @@ async fn merge_level<'a>(
                 MergeChildDecision::Proceed { write_path, replace } => {
                     write_dest = write_path;
                     replace_after_write = replace;
+                    // The resolver picked this name: a `Rename` reserved it with
+                    // a placeholder, an Overwrite across types already cleared
+                    // it. Either way what the landing may find there is ours.
+                    landing = LandingName::ClaimedByTheCaller;
                 }
             }
         }
@@ -584,6 +594,7 @@ async fn merge_level<'a>(
                 super::sequential_extract::PlannedWrite {
                     dest_path: write_dest,
                     replace_after_write,
+                    landing,
                     // The plan pass is the only one that lists the source, so
                     // the mode has to be recorded here or the data pass has
                     // nothing to land the file with.
@@ -596,6 +607,7 @@ async fn merge_level<'a>(
         // Conflict resolution for this child is DONE, on the walker, in listing
         // order — the same rule the top-level concurrent driver follows. Only the
         // bytes go wide.
+        let staging = staging_for(&replace_after_write, landing);
         let row = LeafRow {
             source: child_source.clone(),
             dest: write_dest.clone(),
@@ -612,6 +624,7 @@ async fn merge_level<'a>(
                 dest_volume,
                 write_dest,
                 replace_after_write,
+                staging,
                 state,
                 created,
                 on_file_progress,

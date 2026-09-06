@@ -162,7 +162,7 @@ where
         // `copy_volumes_with_progress`).
         let dest_size_hint = dest_meta_fetcher(&initial_dest_path).await;
 
-        let (resolved_dest, replace_after_write) = if dest_size_hint.is_some() {
+        let (resolved_dest, replace_after_write, dest_name_claimed) = if dest_size_hint.is_some() {
             log::debug!(
                 "drive_transfer_serial_async: conflict detected at {}",
                 initial_dest_path.display()
@@ -206,7 +206,7 @@ where
                 Ok(ConflictDecision::Proceed {
                     dest_path,
                     replace_after_write,
-                }) => (dest_path, replace_after_write),
+                }) => (dest_path, replace_after_write, true),
                 Err(e) => {
                     return TransferLoopOutcome {
                         files_done,
@@ -218,7 +218,10 @@ where
                 }
             }
         } else {
-            (initial_dest_path, None)
+            // Nothing sits at this name as far as the pre-check could tell, so
+            // nothing resolved anything: the closure's write is landing on a
+            // name it believes free.
+            (initial_dest_path, None, false)
         };
 
         let ctx = TransferContext {
@@ -229,6 +232,7 @@ where
             source_path,
             dest_path: Some(&resolved_dest),
             replace_after_write: replace_after_write.as_deref(),
+            dest_name_claimed,
             files_done_so_far: files_done,
             bytes_done_so_far: bytes_done,
             total_files,

@@ -350,15 +350,36 @@ than dependent on cleanup running.
 
 **Who stages.** `WriteStaging::AlreadyStaged` means the caller already minted the temp (the conflict layer's
 safe-replace, which additionally keeps the ORIGINAL in place until the temp is complete) and lands it itself; staging it
-again would just yield a `foo.cmdr-tmp-A.cmdr-tmp-B`. Every other write is `WriteStaging::Stage`. Each call site derives
-it identically via `volume::strategy::staging_for(&replace_after_write)`, so there is one rule, not four. Both write
-sites then run that choice through `resolve_staging`, the single place a `Stage` can become `SingleShot`.
+again would just yield a `foo.cmdr-tmp-A.cmdr-tmp-B`. Every other write stages here, as `WriteStaging::Stage` or
+`WriteStaging::StageOntoClaimedName`. Each call site derives it identically via
+`volume::strategy::staging_for(&replace_after_write, landing)`, so there is one rule, not four. Both write sites then run
+that choice through `resolve_staging`, the single place a staged write can become `SingleShot`.
 
 **Landing** (`staged_write::land`) renames FIRST and only clears the final name if that rename said something is in the
 way. `finalize_safe_replace` is the other way round because there the original is known to be in the way; here it
 usually isn't, and a speculative delete would burn one extra round trip per file. The name can still be taken (a
-`Rename` resolution's `O_EXCL` placeholder, a cross-type Overwrite whose dest delete failed, a racing writer), which the
-second attempt covers.
+`Rename` resolution's `O_EXCL` placeholder, a cross-type Overwrite whose dest delete failed, a file that arrived after
+the caller last looked), which the second attempt covers.
+
+❗ **And only for a name the CALLER claimed** (`LandingName`). `AlreadyExists` says something is in the way; only the
+caller knows whose it is, because only the caller knows whether a conflict resolution put this write at this name. A
+`Rename` pick reserved its name with a placeholder and a cross-type Overwrite already cleared its destination, so both
+answer `ClaimedByTheCaller` and the delete-then-rename stands. A write nothing resolved answers `ExpectedFree`, and its
+landing REPORTS the clash instead: the file in the way is the user's, under a policy (Skip, an unanswered Stop) that
+never touched it, and the complete new bytes stay recoverable under the `.cmdr-tmp-*` name. Where each caller's answer
+comes from: the deep merge from whether `resolve_merge_child` decided the child, the two top-level drivers from
+`TransferContext::dest_name_claimed` and `CopyTask::dest_name_claimed`, the one-shot cross-volume file move from "the
+destination is assumed CLEAR" (`move_file.rs`). Pinned by
+`staged_write.rs::{landing_clears_a_claimed_name_that_is_genuinely_in_the_way,
+landing_onto_a_name_believed_free_leaves_it_alone}` and, end to end,
+`volume/merge_case_fold_tests.rs::a_name_that_fills_up_after_the_listing_is_not_cleared_by_the_landing`.
+
+⚠️ **A `SingleShot` write has no landing, so it has no such guard**: the destination writes it at the final name with an
+overwriting create disposition (SMB's compound `FileOverwriteIf`), and refusing that would need an exclusive-create
+disposition threaded through `Volume::write_from_stream`. The systematic hole this covered was the fold-only collision,
+which the fold-aware lookup now settles BEFORE any write (`volume/DETAILS.md` § "The deep merge asks the same
+question"); what remains for single-shot is the same arrival-after-the-listing race the top-level pre-check already
+accepts.
 
 ❗ **Only `VolumeError::AlreadyExists` earns the delete.** A rename over a network backend fails for plenty of reasons
 that say nothing about the destination: a session that dropped, a server that refused, SFTP v3 folding an errno into its
@@ -653,7 +674,7 @@ The cap is a sleep to an instant rather than a condition anyone re-checks, so it
 
 **Decision/Why a SINGLE-SHOT write skips the min-progress floor.** The floor is counted from zero for every file (each file gets a fresh `CheckpointStream`), so a file SMALLER than the floor can never satisfy it and yields exactly zero times. That made the protection weakest where it is needed most: a folder of photos or documents going to a NAS stood aside for the user not once. The floor exists to keep an OPEN write handle warm, and a single-shot write has none while it matters: `crates/cmdr-smb/src/volume/streams.rs` drains the source fully into a buffer and only then sends CREATE+WRITE+FLUSH+CLOSE as one frame, so during the drain — which is where every checkpoint happens — nothing is open on the server. So the arm skips the floor when the destination answers `Volume::write_is_single_shot` for this file, and a small upload can stand aside. Pinned by `dest_yield_tests::single_shot_upload_stands_aside_even_below_the_min_progress_floor`, which parks a 200 KiB upload against the PRODUCTION floor.
 
-**Why the carrier is the raw boolean, ❌ not `WriteStaging::SingleShot`.** `resolve_staging` upgrades only a `Stage` request, so an `AlreadyStaged` write (a caller's safe-replace temp) reports `AlreadyStaged` however single-shot it is — the enum under-reports. Staging is a different question anyway: what the arm needs to know is whether a handle is open, which is a property of `write_from_stream`'s branch alone. `stream_pipe_file` therefore probes `write_is_single_shot` ONCE, hands the answer to `resolve_staging` and to `CheckpointStream::new`, and both consumers see the same answer; two probes could straddle a reconnect and disagree. What makes the answer trustworthy is the backend contract in `volume/DETAILS.md` § "The single-shot exemption": `write_is_single_shot` and `write_from_stream` branch on the same predicate.
+**Why the carrier is the raw boolean, ❌ not `WriteStaging::SingleShot`.** `resolve_staging` upgrades only a staged request, so an `AlreadyStaged` write (a caller's safe-replace temp) reports `AlreadyStaged` however single-shot it is — the enum under-reports. Staging is a different question anyway: what the arm needs to know is whether a handle is open, which is a property of `write_from_stream`'s branch alone. `stream_pipe_file` therefore probes `write_is_single_shot` ONCE, hands the answer to `resolve_staging` and to `CheckpointStream::new`, and both consumers see the same answer; two probes could straddle a reconnect and disagree. What makes the answer trustworthy is the backend contract in `volume/DETAILS.md` § "The single-shot exemption": `write_is_single_shot` and `write_from_stream` branch on the same predicate.
 
 **The cap still races the exempt park, and must.** The single-shot answer and the write happen at different moments; a reconnect in between can renegotiate `max_write_size` and put the file on the streaming path, which does hold a handle open. The cap makes that race harmless, so it is ❌ never made conditional on the answer. Pinned by `dest_yield_tests::single_shot_dest_yield_is_still_hard_capped_under_continuous_browsing`.
 
