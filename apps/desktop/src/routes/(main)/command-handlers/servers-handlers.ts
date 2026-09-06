@@ -78,16 +78,27 @@ export const serversHandlers = {
     await runServerRowAction({ action: 'forget-secret', volumeId: server.volumeId, volumeName: server.name })
   },
 
-  'servers.edit': async ({ explorerRef }) => {
+  // ❗ The two sheet commands OPEN and return, ❌ never await the sheet: a
+  // dispatch that doesn't settle until the user is done typing holds the command
+  // pipeline open for as long as they take, and nothing downstream reads the
+  // answer. `servers.show` behaves the same way.
+  'servers.edit': ({ explorerRef }) => {
     const server = target(explorerRef)
     if (!server) return
-    await runServerRowAction({ action: 'edit', volumeId: server.volumeId, volumeName: server.name })
+    void runServerRowAction({ action: 'edit', volumeId: server.volumeId, volumeName: server.name })
   },
 
-  'servers.connect': async () => {
+  'servers.connect': ({ explorerRef }) => {
     // ⌘K, Finder's binding for the same thing. ❗ It opens the sheet directly
     // rather than through `serverCommandTarget`: adding a server is about no
     // server in particular, so what the pane is pointing at is irrelevant.
-    await openAddServerSheet({ onSmbHandOff: () => {} })
+    void openAddServerSheet({
+      // An SMB address lands in the hub rather than on a volume: its connect is
+      // a share MOUNT, and the host is now a saved manual server the hub lists,
+      // one Enter from its shares.
+      onSmbHandOff: () => {
+        explorerRef?.showServersInFocusedPane()
+      },
+    })
   },
 } satisfies Partial<CommandHandlerRecord>

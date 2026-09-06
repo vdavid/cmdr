@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest'
 import { DIALOG_GALLERY_ENTRIES } from './gallery-registry'
 import { fixtureRecords } from './fixtures'
+import { serverSignInFixtures } from './fixtures/servers'
 
 /** Dialogs that take callbacks only, so they have no fixture record by design. */
 const CALLBACK_ONLY = new Set([
@@ -17,7 +18,6 @@ const CALLBACK_ONLY = new Set([
   'acknowledgements',
   'license',
   'commercial-reminder',
-  'connect-to-server',
   'mtp-permission',
 ])
 
@@ -56,5 +56,35 @@ describe('dialog gallery fixtures', () => {
       // so the row has to say so rather than implying a curated preview.
       expect(entry.note?.trim(), `${entry.dialogId} must disclose that it has no fixture`).toBeTruthy()
     }
+  })
+})
+
+/**
+ * The sign-in sheet's fixtures carry an `attempt`, which is a real prop the
+ * component really calls. These cells prove each state answers what its gallery
+ * row's note advertises, so a design review of the refusal or the key step is
+ * looking at the outcome it was promised.
+ */
+describe('the sign-in sheet fixtures answer what their rows advertise', () => {
+  const cases: [string, string][] = [
+    ['add', 'refused'],
+    ['add-prefilled', 'refused'],
+    ['sign-in', 'refused'],
+    ['sign-in-guest', 'refused'],
+    ['host-key-first-contact', 'connected'],
+    ['host-key-changed', 'connected'],
+  ]
+
+  it.each(cases)('%s answers %s', async (stateId, kind) => {
+    const request = serverSignInFixtures[stateId]?.request
+    expect(request, `no fixture for ${stateId}`).toBeDefined()
+    if (!request || request.mode === 'edit') throw new Error(`${stateId} has no attempt`)
+    const outcome = await request.attempt({ mode: 'add_smb', address: 'naspolya' })
+    expect(outcome.kind).toBe(kind)
+  })
+
+  it('edit mode carries no attempt: Save writes and closes, nothing dials', () => {
+    const request = serverSignInFixtures.edit?.request
+    expect(request?.mode).toBe('edit')
   })
 })
