@@ -48,10 +48,17 @@ serde = { version = "1", features = ["derive"] }
 # `tauri-specta`, and the app's command signatures collect them transitively.
 specta = { version = "=2.0.0-rc.24", features = ["derive"] }
 
-# ❌ No `tokio` and no `log` here, and neither is an oversight. The runtime a
-# portal volume spawns blocking `gix` work onto arrives as a `Handle` through
-# `VolumeHost::runtime`, so this crate never names tokio; and nothing here logs,
-# because every failure leaves as a typed `FriendlyGitError` the host words.
+# ❌ No `tokio` here, and that isn't an oversight: the runtime a portal volume
+# spawns blocking `gix` work onto arrives as a `Handle` through
+# `VolumeHost::runtime`, so this crate never names tokio.
+#
+# `log` earns its place for exactly ONE call site. Every failure a CALLER can see
+# leaves as a typed `FriendlyGitError` the host words, and that stays true. The
+# `.git` watcher's backend has no caller: it runs on notify's own thread long
+# after `watch` returned, so a debouncer that starts erroring would otherwise go
+# quiet with no diagnostic anywhere. ❌ Don't reach for it for anything a caller
+# could have been told instead.
+log = "0.4"
 
 [dev-dependencies]
 # Depending on ourselves turns `testing` on for every DEV target and leaves it off

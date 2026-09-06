@@ -62,10 +62,19 @@ fn the_payload_serializes_to_the_shape_the_frontend_subscribes_to() {
     assert_eq!(json["info"]["isDirty"], true);
 }
 
-/// A burst of `.git/*` writes collapses into ONE report, and what lands carries
-/// the state as it is AFTER the burst. That's what keeps a `git checkout` (which
-/// rewrites `HEAD`, `index`, and a pile of refs) from driving an event per file
-/// and a re-read of every open portal pane per file.
+/// A burst of `.git/*` writes collapses into ONE report carrying the state as it
+/// is AFTER the burst, and the watch is still alive to do the same for the NEXT
+/// burst. That's what keeps a `git checkout` (which rewrites `HEAD`, `index`, and
+/// a pile of refs) from driving an event per file and a re-read of every open
+/// portal pane per file.
+///
+/// ❗ **The second burst is not a repetition.** git writes `HEAD` and `index` by
+/// renaming a lockfile over them, so a watch registered on those FILES dies at
+/// the first rename: burst one reports, and everything after it is lost with no
+/// error. That is exactly how this cell failed on Linux, whose inotify is
+/// inode-based, while passing on macOS, whose FSEvents is path-based (CI,
+/// 2026-09-06). The watcher watches the DIRECTORIES now, and this second act is
+/// what would catch a return to the old shape on either platform.
 ///
 /// ❗ **The one cell in the app that arms a REAL `.git/*` watcher.** The debounce
 /// it proves is `notify`'s own, so a scripted backend can't stand in: it would
@@ -82,7 +91,7 @@ fn the_payload_serializes_to_the_shape_the_frontend_subscribes_to() {
 /// untouched: `cmdr_git::watcher_tests::the_same_state_after_the_window_is_news_again`
 /// is the cell for that.
 #[test]
-fn a_debounced_burst_reports_one_change_with_the_new_state() {
+fn a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one() {
     let dir = temp_dir("wiring", "one_report_per_burst");
     let mut fixture = Fixture::init(dir.clone());
     fixture.commit_file("README.md", b"hello\n", "initial");
@@ -108,7 +117,7 @@ fn a_debounced_burst_reports_one_change_with_the_new_state() {
     fixture.create_branch("after-the-burst");
     fixture.checkout("after-the-burst");
 
-    let changes = changes_once_settled(&sink);
+    let changes = changes_once_settled(&sink, 1);
     assert_eq!(
         changes.len(),
         1,
@@ -124,6 +133,27 @@ fn a_debounced_burst_reports_one_change_with_the_new_state() {
         "the report carries the state the burst left behind: {info:?}"
     );
 
+    // A SECOND burst, after the first has already renamed a lockfile over `HEAD`
+    // and `index`. A dead watch delivers nothing here and the settle wait times
+    // out naming the one report it kept.
+    for index in 0..COMMITS_IN_THE_BURST {
+        fixture.commit_file(&format!("g{index}.txt"), b"y\n", "more still");
+    }
+    fixture.create_branch("after-the-second-burst");
+    fixture.checkout("after-the-second-burst");
+
+    let changes = changes_once_settled(&sink, 2);
+    assert_eq!(
+        changes.len(),
+        2,
+        "the second burst costs one more report, and the watch was alive to send it: {changes:?}"
+    );
+    assert_eq!(
+        changes[1].1.branch.as_deref(),
+        Some("after-the-second-burst"),
+        "the second report carries what the second burst left behind: {changes:?}"
+    );
+
     portal.unsubscribe_state(&root);
     cleanup(&dir);
 }
@@ -131,26 +161,52 @@ fn a_debounced_burst_reports_one_change_with_the_new_state() {
 /// Everything the sink holds once it has gone QUIET for longer than the
 /// watcher's debounce window.
 ///
+/// ❗ `at_least` is a FLOOR, ❌ not the answer: quiet still decides the number,
+/// and the assertion at the call site decides whether it's the right one. It
+/// exists because the quiet window is longer than a debounce, so a wait started
+/// right after a second burst would otherwise be satisfied by the FIRST burst's
+/// report sitting there untouched, and return before the second one landed.
+///
 /// ❗ Read the count through this, ❌ never by waiting for the FIRST report.
 /// `wait_until(count >= 1)` returns while a second report may still be in
 /// flight, so the same run asserted 1 when it read early and 2 when it read
 /// late: the cell passed and failed at random without the behavior changing.
 /// Waiting for quiet makes the number observed the number that actually
 /// happened, so a real regression fails every time and a slow machine doesn't.
-fn changes_once_settled(sink: &RecordingGitStateSink) -> Vec<(PathBuf, RepoInfo)> {
+///
+/// ❗ **The timeout names the reports it saw**, because "timed out waiting for
+/// the reports to settle" is the same message whether the watcher delivered
+/// nothing at all or delivered a burst that never went quiet, and those are
+/// opposite bugs. A watcher whose delivery breaks (as it did on Linux, where
+/// watching the state FILES let git's rename dance kill the watch) shows up here
+/// as an empty list, which says so.
+fn changes_once_settled(sink: &RecordingGitStateSink, at_least: usize) -> Vec<(PathBuf, RepoInfo)> {
     // Twice the window, so a report arriving one poll interval late still counts
     // as part of the burst rather than as quiet.
     let quiet = WATCH_DEBOUNCE * 2;
+    const SETTLE_TIMEOUT: Duration = Duration::from_secs(10);
+    let deadline = Instant::now() + SETTLE_TIMEOUT;
     let mut seen = 0usize;
     let mut unchanged_since = Instant::now();
-    wait_until(Duration::from_secs(10), "the watcher's reports settle", || {
+    // The outer cap is deliberately unreachable: the deadline inside fires first
+    // and carries the diagnostic, and this only backstops it.
+    wait_until(SETTLE_TIMEOUT * 2, "the watcher's reports to settle", || {
         let now = sink.count();
         if now != seen {
             seen = now;
             unchanged_since = Instant::now();
             return false;
         }
-        now > 0 && unchanged_since.elapsed() >= quiet
+        if now >= at_least && unchanged_since.elapsed() >= quiet {
+            return true;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "the watcher's reports never settled in {SETTLE_TIMEOUT:?}; {} reported so far: {:?}",
+            now,
+            sink.changes()
+        );
+        false
     });
     sink.changes()
 }

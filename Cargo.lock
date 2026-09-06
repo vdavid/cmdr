@@ -1547,6 +1547,7 @@ dependencies = [
  "cmdr-git",
  "filetime",
  "gix",
+ "log",
  "notify",
  "notify-debouncer-full",
  "serde",

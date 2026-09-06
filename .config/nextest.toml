@@ -240,17 +240,19 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 # The git portal's ONE real-`.git/*` watcher cell. It arms a real `notify` debouncer over a
-# repository's ~10 watched paths, writes five commits inside the 200 ms window, and blocks on
-# the debounced delivery with a 5 s in-test wait — so it is squarely the delivery-blocking
-# class this group exists for. Measured on an M3 Max: 0.47 s idle, 1.6 s inside a saturated
-# `cargo nextest run --workspace` (2026-09-05), against the global 8 s cap. 20 s puts the cap
-# above its own 5 s wait so the assertion (which prints the reports it got) decides, and the
+# repository's four watched `.git` directories, writes two bursts of five commits plus a
+# branch switch, and blocks on each debounced delivery — so it is squarely the
+# delivery-blocking class this group exists for. Measured on an M1 Max: 1.8 s idle with both
+# bursts (2026-09-06), against the global 8 s cap. 20 s puts the cap above its own two 10 s
+# settle waits' worst case so the assertion (which names the reports it got) decides, and the
 # group keeps its live streams from multiplying the other watcher tests' starvation.
 #
 # ❗ It is the only cell anywhere that arms a real git watcher, and it has to stay that way:
 # every other subscription cell takes `GitPortal::with_scripted_watcher` and runs in ~0.05 s.
-# `crates/cmdr-git/DETAILS.md` § "The watcher splits into bookkeeping and a backend".
-filter = 'test(a_debounced_burst_reports_one_change_with_the_new_state)'
+# The second burst lives inside THIS cell for that reason; it proves the watch survives git's
+# rename over `HEAD`, which is what broke on Linux and what no scripted backend can stand in
+# for. `crates/cmdr-git/DETAILS.md` § "The watcher splits into bookkeeping and a backend".
+filter = 'test(a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one)'
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 

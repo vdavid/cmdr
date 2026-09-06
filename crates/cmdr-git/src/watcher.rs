@@ -85,32 +85,45 @@ pub(crate) struct NotifyWatcherBackend;
 
 impl GitWatcherBackend for NotifyWatcherBackend {
     fn watch(&self, repo_root: &Path, on_change: RepoChanged) -> Result<Box<dyn Send>, FriendlyGitError> {
-        let mut debouncer = new_debouncer(DEBOUNCE, None, move |result: DebounceEventResult| {
-            if result.is_err() {
-                return;
+        let git_dir = git_dir_path(repo_root);
+        let filter_dir = git_dir.clone();
+        let logged_root = repo_root.to_path_buf();
+        let mut debouncer = new_debouncer(DEBOUNCE, None, move |result: DebounceEventResult| match result {
+            Ok(events) => {
+                let touched_state = events
+                    .iter()
+                    .flat_map(|event| event.paths.iter())
+                    .any(|path| is_repo_state_path(&filter_dir, path));
+                if touched_state {
+                    on_change();
+                }
             }
-            on_change();
+            Err(errors) => {
+                // A backend that can't deliver is the one failure here with no
+                // caller to answer: the watch is armed, the pane is open, and the
+                // reports simply stop. Recompute anyway, because the usual cause is
+                // a dropped-event queue and what we missed is unknown; the report
+                // coalescing drops it again if nothing actually moved.
+                log::warn!(
+                    target: "git",
+                    "the `.git` watcher for {} reported {} problem(s), recomputing anyway: {}",
+                    logged_root.display(),
+                    errors.len(),
+                    errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("; ")
+                );
+                on_change();
+            }
         })
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
 
-        for path in watch_paths(repo_root) {
-            // Some paths (`refs/`) are dirs, others (`HEAD`, `index`) are files.
-            // notify happily handles both. Missing paths are common (no MERGE_HEAD
-            // until a merge starts) – we register watches lazily by watching the
-            // `.git` dir non-recursively as a fallback so create-then-modify still fires.
+        for (path, mode) in watch_targets(&git_dir) {
+            // A missing target is ordinary (`logs/` with reflogs off, `worktrees/`
+            // until the first `git worktree add`). The non-recursive watch on the
+            // gitdir sees it appear, and the report that drives re-reads the
+            // repository rather than the directory that was missing.
             if path.exists() {
-                let mode = if path.is_dir() {
-                    RecursiveMode::Recursive
-                } else {
-                    RecursiveMode::NonRecursive
-                };
                 let _ = debouncer.watch(&path, mode);
             }
-        }
-        // Always watch `.git` itself for create events on optional files.
-        let dot_git = git_dir_path(repo_root);
-        if dot_git.exists() {
-            let _ = debouncer.watch(&dot_git, RecursiveMode::NonRecursive);
         }
         Ok(Box::new(debouncer))
     }
@@ -391,44 +404,77 @@ fn git_dir_path(repo_root: &Path) -> PathBuf {
     dot_git
 }
 
-/// The set of paths inside `.git` whose changes should trigger a re-emit.
-fn watch_paths(repo_root: &Path) -> Vec<PathBuf> {
-    let git_dir = git_dir_path(repo_root);
-    let mut paths: Vec<PathBuf> = [
-        "HEAD",
-        "ORIG_HEAD",
-        "MERGE_HEAD",
-        "FETCH_HEAD",
-        "packed-refs",
-        "index",
-        "refs",
-        "logs/HEAD",
-    ]
-    .iter()
-    .map(|sub| git_dir.join(sub))
-    .collect();
+/// The direct children of the gitdir whose contents decide a [`RepoInfo`], as
+/// file NAMES rather than paths: the watch is on the directory, and this is what
+/// makes an event in it worth a recompute.
+pub(crate) const STATE_FILES: [&str; 6] = ["HEAD", "ORIG_HEAD", "MERGE_HEAD", "FETCH_HEAD", "packed-refs", "index"];
 
-    // Linked worktrees: each has its own HEAD under
-    // `<common-dir>/worktrees/<name>/HEAD`. We register one watch per
-    // worktree at subscribe time. New worktrees added later are picked
-    // up via the non-recursive `.git` watch (the `worktrees/` parent
-    // directory's create event triggers a re-subscribe path on the
-    // refresh – and even without that, a `git worktree add` always
-    // touches `HEAD` in the main repo too, which fires a re-emit).
-    //
-    // Decision: per-worktree registration on enumeration rather than glob
-    // support. notify-debouncer-full doesn't natively glob. Registering
-    // each `worktrees/<name>/HEAD` keeps the notify config flat and
-    // self-documenting; the cost is a few extra watcher entries per
-    // worktree, which is negligible at typical worktree counts (1-5).
-    let worktrees_dir = git_dir.join("worktrees");
-    if let Ok(read) = std::fs::read_dir(&worktrees_dir) {
-        for entry in read.flatten() {
-            let head = entry.path().join("HEAD");
-            if head.exists() {
-                paths.push(head);
-            }
-        }
+/// The directories under the gitdir whose whole subtree matters, as first path
+/// components: refs (every branch, tag, and remote), the reflog `logs/HEAD` the
+/// categories read, and each linked worktree's own `HEAD`.
+const STATE_DIRS: [&str; 3] = ["refs", "logs", "worktrees"];
+
+/// What the backend arms, as `(path, mode)` pairs.
+///
+/// ❗ **Directories, ❌ never the state FILES themselves.** git never writes
+/// `HEAD` or `index` in place: it writes `HEAD.lock` and renames it over the top.
+/// inotify watches an INODE, so a watch on the file itself goes dead at the first
+/// rename and every later write in the same burst is lost silently. A watch on
+/// the directory survives, because the directory's inode is what gets modified.
+/// macOS FSEvents is path-based and tolerated the file watches, which is why this
+/// only ever failed on Linux (`a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`
+/// timed out there while passing here, 2026-09-06).
+///
+/// The cost of watching directories is events for things no snapshot reads
+/// (`COMMIT_EDITMSG`, `*.lock`, `objects/` churn), which [`is_repo_state_path`]
+/// drops before anything opens the repository.
+pub(crate) fn watch_targets(git_dir: &Path) -> Vec<(PathBuf, RecursiveMode)> {
+    let mut targets = vec![
+        // The gitdir itself, non-recursively: every file in `STATE_FILES` is a
+        // direct child, so this one watch covers all of them plus their creation
+        // (no `MERGE_HEAD` exists until a merge starts).
+        (git_dir.to_path_buf(), RecursiveMode::NonRecursive),
+        // Refs live in a tree that grows (`refs/heads/feature/x`), so this one
+        // has to reach down.
+        (git_dir.join("refs"), RecursiveMode::Recursive),
+        // `logs/HEAD` is a direct child of `logs/`; the per-ref reflogs below it
+        // say nothing a `RepoInfo` or a category listing reads.
+        (git_dir.join("logs"), RecursiveMode::NonRecursive),
+    ];
+    // Each linked worktree keeps its own `HEAD` at `worktrees/<name>/HEAD`, and a
+    // `git worktree add` creates the directory. Recursive covers both the HEADs
+    // and worktrees that appear after this call, which the old per-worktree
+    // enumeration could not.
+    targets.push((git_dir.join("worktrees"), RecursiveMode::Recursive));
+    targets
+}
+
+/// Whether an event on `path` is worth recomputing the repository for.
+///
+/// The allowlist half of the directory watches above: a `RepoInfo`, the six
+/// category listings, and the status column read [`STATE_FILES`] and
+/// [`STATE_DIRS`] and nothing else, so `COMMIT_EDITMSG`, `MERGE_MSG`, and the
+/// `objects/` writes a commit makes never reach the sink.
+///
+/// ❗ `*.lock` is dropped on purpose. git's write dance is create-lock,
+/// write, rename-over, so the lock file's own create and the rename's SOURCE path
+/// are noise; the rename's TARGET (`HEAD`) is in the same event and is what
+/// answers `true`.
+pub(crate) fn is_repo_state_path(git_dir: &Path, path: &Path) -> bool {
+    let Ok(relative) = path.strip_prefix(git_dir) else {
+        return false;
+    };
+    if path.extension().is_some_and(|extension| extension == "lock") {
+        return false;
     }
-    paths
+    let mut components = relative.components();
+    let Some(std::path::Component::Normal(first)) = components.next() else {
+        return false;
+    };
+    if components.next().is_none() {
+        // A direct child of the gitdir: one of the state files, or one of the
+        // state directories being created.
+        return STATE_FILES.iter().any(|name| first == *name) || STATE_DIRS.iter().any(|name| first == *name);
+    }
+    STATE_DIRS.iter().any(|name| first == *name)
 }

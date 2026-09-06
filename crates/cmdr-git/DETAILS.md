@@ -93,11 +93,12 @@ The instrument for the app half is the `testing` feature: `test_fixtures` builds
 makes a watcher report observable without a window, and `GitPortal::with_scripted_watcher` plus `fire_watcher` make one
 observable without FSEvents. **That recorder is what a subscription cell asserts through.** The DEBOUNCE cell lives
 app-side and takes the real backend: it drives the parked portal's `subscribe_state`, writes five commits and a branch
-switch back to back, and expects EXACTLY one report carrying the post-burst branch. The debounce is this crate's
-contract, but the path that proves it starts where the portal is parked, so the cell belongs at that end — and it is the
-only one anywhere that arms a real watcher (§ "The watcher splits into bookkeeping and a backend"). The coalescing that
-makes the count one is asserted crate-side on the scripted backend (`watcher_tests`), where a "second batch" is a second
-`fire_watcher` and costs no FSEvents.
+switch back to back, expects EXACTLY one report carrying the post-burst branch, and then does it all a second time to
+prove the watch outlived git's rename over `HEAD` (§ "Watcher path set"). The debounce is this crate's contract, but the
+path that proves it starts where the portal is parked, so the cell belongs at that end — and it is the only one anywhere
+that arms a real watcher (§ "The watcher splits into bookkeeping and a backend"). The coalescing that makes the count
+one is asserted crate-side on the scripted backend (`watcher_tests`), where a "second batch" is a second `fire_watcher`
+and costs no FSEvents.
 
 ## One burst is one report
 
@@ -157,8 +158,10 @@ runs in 0.05 s, and under a saturated `cargo nextest run --workspace` the differ
 the suite's 8 s cap at all (measured 2026-09-05).
 
 **Exactly one cell in the repo takes the real backend**:
-`file_system::git::wiring_tests::a_debounced_burst_reports_one_change_with_the_new_state`. The debounce it proves is
-`notify`'s own, so a fake standing in for it would assert the fake's arithmetic. ❌ Don't add a second.
+`file_system::git::wiring_tests::a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`. The debounce
+it proves is `notify`'s own, and so is the watch surviving git's rename over `HEAD`, so a fake standing in for either
+would assert the fake's arithmetic. ❌ Don't add a second: a new real-watcher property belongs as another act inside
+that cell, which is where its second burst came from.
 
 **Neither door costs public surface.** `GitPortal::with_scripted_watcher` and `GitPortal::fire_watcher` are methods on a
 type in a private module, so `index-crate-isolation` doesn't measure them, and both are `testing`-gated so a shipped
@@ -172,21 +175,38 @@ would never unsubscribe.
 
 ## Watcher path set
 
-- `<repo>/.git/HEAD`
-- `<repo>/.git/ORIG_HEAD`
-- `<repo>/.git/MERGE_HEAD`
-- `<repo>/.git/FETCH_HEAD`
-- `<repo>/.git/refs/` (recursive)
-- `<repo>/.git/packed-refs`
-- `<repo>/.git/index`
-- `<repo>/.git/logs/HEAD`
+Four watches, all on DIRECTORIES (`watcher::watch_targets`):
 
-Plus a non-recursive watch on `.git` itself so creating optional files (`MERGE_HEAD` during a merge) still triggers a
-recompute. Linked worktrees have their `.git` as a file (gitlink); the watcher resolves the gitdir through it.
+- `<gitdir>/` non-recursively. Covers `HEAD`, `ORIG_HEAD`, `MERGE_HEAD`, `FETCH_HEAD`, `packed-refs`, and `index`, which
+  are all direct children, including their creation (no `MERGE_HEAD` exists until a merge starts).
+- `<gitdir>/refs/` recursively, because the ref tree grows (`refs/heads/feature/x`).
+- `<gitdir>/logs/` non-recursively, for `logs/HEAD`. The per-ref reflogs under it say nothing a snapshot or a category
+  listing reads.
+- `<gitdir>/worktrees/` recursively, for each linked worktree's own `HEAD`, and for worktrees added after the subscribe.
 
-Per-worktree `HEAD` watches: at subscribe time we enumerate `<common-dir>/worktrees/<name>/HEAD` files and register one
-watch each. That keeps the chip live for every linked worktree. New worktrees added later are picked up indirectly via
-the main-HEAD watch (`git worktree add` writes to the main repo's `HEAD` too).
+A missing target is ordinary (`logs/` with reflogs off, `worktrees/` until the first `git worktree add`) and is skipped;
+the gitdir watch sees it appear. Linked worktrees have their `.git` as a FILE (gitlink), and `git_dir_path` resolves
+through it, so a linked worktree watches the same four directories under the common dir.
+
+❗ **Directories, ❌ never the state files themselves.** git never writes `HEAD` or `index` in place: it writes
+`HEAD.lock` and renames it over the top. inotify watches an INODE, so a watch on the file dies at the first rename and
+every later write in the same burst is lost with no error anywhere. macOS FSEvents is path-based and tolerated the file
+watches, so this only ever failed on Linux, where the DEBOUNCE cell timed out having received nothing after the first
+commit (CI, 2026-09-06). A directory's inode is what the rename modifies, so it survives.
+
+**What the directories cost, and what pays it back.** A directory watch also delivers `COMMIT_EDITMSG`, `MERGE_MSG`,
+`*.lock`, and `config`, none of which moves a pane. `watcher::is_repo_state_path` is the allowlist that drops them
+before anything opens the repository: a path counts when it is one of those six direct children, or sits under `refs/`,
+`logs/`, or `worktrees/`, and never when it ends in `.lock`. Dropping the lock half of git's write dance costs no
+report, because the rename's TARGET (`HEAD`) rides in the same event and answers `true`.
+`watcher_tests::only_the_paths_a_snapshot_reads_are_worth_a_recompute` pins the whole table, and
+`every_watch_target_is_a_directory_no_rename_can_kill` pins the shape.
+
+**A debouncer error recomputes and says so.** `NotifyWatcherBackend` used to swallow `DebounceEventResult::Err`, so a
+degraded backend went quiet with no diagnostic. It now logs at `warn` with the repo root and the errors, and calls
+`on_change` anyway: the usual cause is a dropped-event queue, so what was missed is unknown, and the report coalescing
+drops the recompute again if nothing actually moved. That one call site is the whole reason this crate depends on `log`
+at all; `Cargo.toml` says why it stops there.
 
 ## Performance
 
@@ -420,12 +440,10 @@ a _cooperative_ cancel takes effect within one commit decode (microseconds). The
 production listings (which rely on task abort). Changing to streaming would require revisiting the trait contract
 everywhere.
 
-**Decision**: Per-worktree HEAD watch registration on enumeration **Why**: notify-debouncer-full doesn't natively glob,
-so `<common-dir>/worktrees/*/HEAD` can't be expressed as a single watch. We enumerate worktree gitdirs via
-`std::fs::read_dir(<common>/worktrees)` at subscribe time and register one watch per existing `HEAD`. Worktrees added
-later are picked up indirectly: `git worktree add` always touches the main repo's `HEAD` too, which fires our existing
-main-HEAD watch and drives another report. The cost is a few extra watcher entries (typical worktree counts are 1-5) –
-negligible.
+**Decision**: One recursive watch on `<common-dir>/worktrees/` for every linked worktree's `HEAD` **Why**: it needs no
+glob (which notify-debouncer-full has no support for) and no enumeration at subscribe time, and it covers worktrees
+added AFTER the subscribe, which an enumeration cannot. One watch entry replaces one per worktree, and
+`is_repo_state_path` keeps the extra subtree from turning into extra reports.
 
 **Decision**: `Cat::browses_commit_tree()` covers branches/tags/commits/stash **Why**: All four categories browse a
 commit tree, just resolved differently. Branches/tags peel through refs, commits resolve a SHA prefix, stash expands

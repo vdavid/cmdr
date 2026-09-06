@@ -8,10 +8,10 @@
 //! rather than a real FSEvents stream.
 //!
 //! The one cell that pays for a real watcher is app-side
-//! (`file_system::git::wiring_tests::a_debounced_burst_reports_one_change_with_the_new_state`),
+//! (`file_system::git::wiring_tests::a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`),
 //! because the debounce it proves is `notify`'s and no fake can stand in for it.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -181,6 +181,93 @@ fn the_same_state_after_the_window_is_news_again() {
 
     portal.unsubscribe_state(&root);
     cleanup(&dir);
+}
+
+/// ❗ **Every watch target is a DIRECTORY**, so none of them can die the way a
+/// watch on `HEAD` or `index` does.
+///
+/// git never writes those in place: it writes `HEAD.lock` and renames it over the
+/// top. inotify watches an inode, so a watch on the file itself goes dead at the
+/// first rename and every later write in the burst is lost with no error. macOS
+/// FSEvents is path-based and tolerated it, so this only ever showed up on Linux
+/// CI, where the debounce cell timed out with nothing after the first commit
+/// (2026-09-06). A directory's inode survives the rename dance.
+#[test]
+fn every_watch_target_is_a_directory_no_rename_can_kill() {
+    let (dir, root, _fixture) = a_repo("watch_targets");
+    let git_dir = root.join(".git");
+
+    let targets = crate::watcher::watch_targets(&git_dir);
+    for (path, _) in &targets {
+        let name = path.file_name().expect("a target always names something");
+        assert!(
+            !crate::watcher::STATE_FILES.iter().any(|state| name == *state),
+            "{} is a file git renames over, ❌ never a watch target: {targets:?}",
+            path.display()
+        );
+        assert!(
+            path.is_dir() || !path.exists(),
+            "a target is a directory or absent, ❌ never a file: {}",
+            path.display()
+        );
+    }
+
+    let watched: Vec<PathBuf> = targets.iter().map(|(path, _)| path.clone()).collect();
+    for expected in [
+        &git_dir,
+        &git_dir.join("refs"),
+        &git_dir.join("logs"),
+        &git_dir.join("worktrees"),
+    ] {
+        assert!(
+            watched.contains(expected),
+            "{} is watched: {watched:?}",
+            expected.display()
+        );
+    }
+
+    cleanup(&dir);
+}
+
+/// The allowlist that pays for those directory watches: everything a `RepoInfo`,
+/// a category listing, or the status column reads counts, and the churn a commit
+/// makes beside it does not.
+#[test]
+fn only_the_paths_a_snapshot_reads_are_worth_a_recompute() {
+    let git_dir = PathBuf::from("/repo/.git");
+    let matters = |relative: &str| crate::watcher::is_repo_state_path(&git_dir, &git_dir.join(relative));
+
+    for path in ["HEAD", "index", "packed-refs", "MERGE_HEAD", "ORIG_HEAD", "FETCH_HEAD"] {
+        assert!(matters(path), "{path} decides a RepoInfo");
+    }
+    for path in [
+        "refs",
+        "refs/heads/main",
+        "refs/remotes/origin/main",
+        "logs/HEAD",
+        "worktrees/wt/HEAD",
+    ] {
+        assert!(matters(path), "{path} is state a listing reads");
+    }
+    // A commit writes all of these, and not one of them moves a pane.
+    for path in [
+        "COMMIT_EDITMSG",
+        "MERGE_MSG",
+        "objects/ab/cdef",
+        "hooks/pre-commit",
+        "config",
+    ] {
+        assert!(!matters(path), "{path} is noise the directory watch delivers");
+    }
+    // The lock half of git's write dance. The rename's TARGET rides in the same
+    // event and answers `true`, so dropping these costs no report.
+    for path in ["HEAD.lock", "index.lock", "refs/heads/main.lock"] {
+        assert!(!matters(path), "{path} is the lock, not the write");
+    }
+    assert!(
+        !crate::watcher::is_repo_state_path(&git_dir, Path::new("/somewhere/else/HEAD")),
+        "a path outside the gitdir is never ours"
+    );
 }
 
 /// Firing a repository nobody subscribed reports nothing, which is what makes

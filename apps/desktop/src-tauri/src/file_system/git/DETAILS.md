@@ -32,10 +32,11 @@ The route itself lives with the registry that owns it: `file_system/volume/manag
 `listing/streaming.rs` arms a `notify` watch on any listing whose volume says it can carry one. A virtual path
 has nothing on disk, so `notify` answers "No path was found" and spams the warn log; the portal volume returns
 `can_watch_listings() == false`, which keeps every one of them out with no path check anywhere. Invalidation arrives
-from the per-repo `.git/HEAD`, `refs/`, `packed-refs` watchers instead. `.git/` itself is a real directory on the local
-volume, so it IS watched, which is what makes an open `.git/` pane notice a new `MERGE_HEAD`. Two things ride on
-that and are tested: a `FullRefresh` re-runs the overlays (else the six rows vanish from the pane), and the
-fresh-listing oracle declines any overlay-decorated listing (else a delete walker gets the six rows).
+from the per-repo watcher's four `.git` directory watches instead (`crates/cmdr-git/DETAILS.md` § "Watcher path set").
+`.git/` itself is a real directory on the local volume, so it IS watched, which is what makes an open `.git/` pane
+notice a new `MERGE_HEAD`. Two things ride on that and are tested: a `FullRefresh` re-runs the overlays (else the six
+rows vanish from the pane), and the fresh-listing oracle declines any overlay-decorated listing (else a delete walker
+gets the six rows).
 
 That FSEvents watch on `.git/` is non-recursive, so it sees a new direct child and nothing deeper. What keeps a `.git/`
 pane's category-row COUNTS honest after a `git branch` is the per-repo watcher instead, which is why that pane arms one
