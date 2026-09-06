@@ -7,13 +7,14 @@
  * the standard volume-switch mechanics (focus shift, history push, new-tab-on-
  * pinned) apply uniformly. Matches `VolumeBreadcrumb`'s `handleVolumeSelect`: a
  * favorite navigates to its path on the containing volume; a real volume opens at
- * its root; the virtual `Network` volume isn't in the volumes list, so it's
+ * its root; the virtual servers-hub volume isn't in the volumes list, so it's
  * special-cased. The switch arm shifts STORE focus but not DOM focus — re-
  * anchoring the container would drop a Space press during the multi-select-then-
  * delete sequence (regression guard: mtp.spec.ts).
  */
 
 import { resolvePathVolume } from '$lib/tauri-commands'
+import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { reportFavoriteOpened } from '../navigation/favorites-analytics'
 import type { VolumeInfo } from '../types'
@@ -29,7 +30,7 @@ export interface VolumeSelectionDeps {
 export interface VolumeSelection {
   /** Select a volume by zero-based index into the volumes array. */
   selectVolumeByIndex: (pane: 'left' | 'right', index: number) => Promise<boolean>
-  /** Select a volume by name (MCP `select_volume`). "Network" is virtual. */
+  /** Select a volume by name (MCP `select_volume`). The servers hub is virtual. */
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
 }
 
@@ -59,8 +60,11 @@ export function createVolumeSelection(deps: VolumeSelectionDeps): VolumeSelectio
   }
 
   async function selectVolumeByName(pane: 'left' | 'right', name: string): Promise<boolean> {
-    // "Network" is a virtual volume not in the volumes list
-    if (name === 'Network') {
+    // ❗ The servers hub row is SYNTHETIC: `volume-grouping.ts` builds it, so it
+    // is not in the volume list and no `findIndex` can reach it. Its name comes
+    // from the catalog rather than a literal, so the label, the MCP pane push,
+    // and Rust's `volume_listing::SERVERS_VOLUME_NAME` stay one word.
+    if (name === tString('fileExplorer.navigation.networkVolume')) {
       deps.navigate({ pane, to: { selectVolume: { volumeId: 'network', path: 'smb://' } }, source: 'user' })
       return true
     }
