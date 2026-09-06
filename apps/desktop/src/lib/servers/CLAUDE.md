@@ -10,6 +10,7 @@ connect that stopped. Up: `../../CLAUDE.md`. Backend contracts: `crates/cmdr-sft
   `isServerVolumeId`.
 - `connect-flow.ts`: `connectPlace` picks the move by the volume's standing, and `cancelPlaceConnect` calls it off.
 - `connect-refusals.ts`: one sentence per reason a connect stopped.
+- `server-command-target.ts`: which server the palette's server commands act on.
 
 ## Must-knows
 
@@ -30,6 +31,10 @@ connect that stopped. Up: `../../CLAUDE.md`. Backend contracts: `crates/cmdr-sft
   sent.
 - **❌ No inert affordance.** A refused connect offers Try again, which really re-dials. The "Sign in…" button lands
   with the sheet that can answer it (M2), not before; until then the `needs_sign_in` arm refuses with the reason.
+- **A server command aims at the hub's CURSOR ROW first, the focused pane's volume second** (`server-command-target.ts`).
+  ❗ The hub IS a pane, so reading "the focused pane's volume" alone answers the synthetic hub row rather than the
+  server the user is looking at. It stops at an SMB host row instead of falling through: acting on something other than
+  what someone is pointing at is worse than doing nothing.
 - **The pane is where waiting is shown, the sheet is where data is typed.**
   `file-explorer/pane/RemoteConnectView.svelte` renders the states; `pane/place-connect.svelte.ts` owns the `$effect`
   and the one-dial-per-landing rule.

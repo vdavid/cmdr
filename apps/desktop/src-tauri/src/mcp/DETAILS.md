@@ -508,7 +508,8 @@ Frontend calls `update_left_pane_state()` after loading files, but there's no gu
 `select_volume` polls the target pane's `volume_name` in `PaneStateStore` until it equals the requested name. Two consequences worth knowing:
 
 - **Re-selecting the same volume is an instant no-op** (the first poll matches). The previous "wait for path to change" formulation timed out for ~30s in this case.
-- **Virtual volumes like `Network`** work correctly even though the pane path doesn't necessarily change. The volume_name does change, which is what we check.
+- **The virtual `Servers` volume** works correctly even though the pane path doesn't necessarily change. The volume_name does change, which is what we check. ❗ That name is `volume_listing::SERVERS_VOLUME_NAME`, which has to equal the English `fileExplorer.navigation.networkVolume` catalog value byte for byte and the name the frontend pushes: a drift makes `select_volume` on the hub wait out its full budget instead of answering.
+- **The servers hub's rows carry their columns inside `name`**, as `<name>  protocol=<p>  status=<s>  address=<a>` (plus `shares=<n>` on an SMB host), because `PaneFileEntry` has only `name` / `path` / `isDirectory`. The status token is deliberately NOT translated: it is a wire an agent parses, and `smb.spec.ts` polls on it. A one-place server's `path` is its app root (`sftp://user@host:port/…`), an SMB host's is `smb://<address>`, and the last row is always `+ Add server…` at `smb://add`. Owned by `src/lib/file-explorer/network/servers-hub-mcp.ts`.
 
 `volume_name` flows through `PaneState` from the FE via `update_left_pane_state` / `update_right_pane_state` on every state push (`FilePane.svelte`).
 

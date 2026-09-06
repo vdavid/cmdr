@@ -42,6 +42,9 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   pane layout.
 - **`navigate(intent, deps)` is the single pane-nav entry**: `{ goTo }` self-routes by volume, `{ selectVolume }` always
   switches, bare paths resolve to a `Location` at the edge.
+- **The `network` pane is the SERVERS HUB**, hosted by `NetworkMountView`, and it owns its own MCP push
+  (`pane-mcp-sync` skips it). ❗ Its NAME is spelled in four places, one of them Rust; a fifth spelling is a 30 s MCP
+  timeout, not a wrong word. `../network/DETAILS.md` § Gotchas.
 - **A pane on a SAVED place dials it, in the pane, with a cancel** (`place-connect.svelte.ts`, whose `$effect` holds the
   one-dial-per-landing rule). The gate is the CONNECTION STATE, in FRONT of the kind chain. ❌ Never add a
   `RemoteConnectState` variant before the milestone that can act on it. DETAILS § "A pane on a saved place".

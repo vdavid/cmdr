@@ -7,8 +7,8 @@ The family-grouped handler modules behind the dispatch core (`../command-dispatc
 
 - `types.ts`: the seam (`CommandHandlerContext`, `CommandHandler`, `CommandHandlerRecord`, the `DispatchExemptId` union
   - its runtime `DISPATCH_EXEMPT_IDS` tuple). Self-documenting; read it before touching exemptions.
-- One module per family (`app-dialog`, `view`, `pane`, `tab`, `nav`, `sort`, `file`, `clipboard`, `selection`, `misc`),
-  each a `satisfies Partial<CommandHandlerRecord>` object.
+- One module per family (`app-dialog`, `view`, `pane`, `tab`, `nav`, `sort`, `file`, `clipboard`, `selection`, `tag`,
+  `servers`, `misc`), each a `satisfies Partial<CommandHandlerRecord>` object.
 - `index.ts`: spreads the families into one `commandHandlers: CommandHandlerRecord`. The annotation is the completeness
   guard: a missing handler or an exempt-id handler fails to compile.
 
@@ -24,6 +24,11 @@ The family-grouped handler modules behind the dispatch core (`../command-dispatc
 - **Grouped ids share ONE body, no copy-paste.** The four `view.zoom.setNN` presets call one `applyZoomPreset`; the
   get-entry-then-act file/cloud arms call one `withEntryUnderCursor`; `file.copyPath` and
   `file.copyCurrentDirectoryPath` call one `copyPathAndAnnounce` (clipboard write + the copied-path toast).
+- **The `servers.*` arms all route through `runServerRowAction`**, the same function the native row menu's answer lands
+  in, so a menu item and a palette command can't drift on a confirmation or a toast. Which server they act on is
+  `$lib/servers/server-command-target.ts`'s call, ❌ never `getFocusedPaneVolumeId()` alone: the hub IS a pane, so that
+  reading answers the synthetic hub row instead of the server under the cursor. A command that finds no server says
+  NOTHING — the palette lists every command whatever the pane is on.
 - **`file.copyPath` deliberately skips `withEntryUnderCursor`**: it reads `getPathToCopyUnderCursor()`, which resolves
   the `..` row to the pane's own directory. Every other under-cursor arm must keep treating `..` as "no entry"
   (`file-explorer/pane/DETAILS.md` § Copy-path).
