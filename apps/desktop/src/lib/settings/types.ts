@@ -362,6 +362,15 @@ export interface SettingsValues {
    */
   'mediaIndex.showFileStatusIcons': boolean
   /**
+   * Whether the Search dialog shows its grid of matching images above the file results.
+   * FE-only render toggle, default OFF: match quality isn't good enough yet to earn that
+   * space unasked. Scoped to that ONE surface — it doesn't touch indexing, the file-list
+   * status badges, or Ask Cmdr / MCP photo search, all of which keep working when it's off.
+   * Read by `search/ImageSearchResults.svelte` alongside `mediaIndex.enabled`; off means
+   * the grid renders nothing AND fires no `media.db` IPC.
+   */
+  'mediaIndex.showInSearch': boolean
+  /**
    * Internal (FE-owned): volume ids opted into background network (SMB) image enrichment
    * (`media_index` network enrichment). Off by default per volume: turning on the master toggle does NOT
    * auto-enrich network drives. Persisted as a real JSON array so the Rust loader reads it

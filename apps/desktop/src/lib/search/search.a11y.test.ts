@@ -219,7 +219,13 @@ describe('ImageSearchResults a11y', () => {
 
   beforeEach(() => {
     masterEnabled = true
-    settingsStub = (key: string): unknown => (key === 'mediaIndex.enabled' ? masterEnabled : undefined)
+    // `mediaIndex.showInSearch` ships OFF, and it gates the grid exactly like the master
+    // toggle, so these blocks have to answer it or there'd be nothing to run axe against.
+    settingsStub = (key: string): unknown => {
+      if (key === 'mediaIndex.enabled') return masterEnabled
+      if (key === 'mediaIndex.showInSearch') return true
+      return undefined
+    }
     vi.useFakeTimers()
     searchOcr.mockResolvedValue([])
     searchSemantic.mockResolvedValue([])

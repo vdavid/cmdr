@@ -2878,6 +2878,8 @@ export type MessageKey =
   | 'settings.mediaIndex.semanticSearch.label'
   | 'settings.mediaIndex.showFileStatusIcons.description'
   | 'settings.mediaIndex.showFileStatusIcons.label'
+  | 'settings.mediaIndex.showInSearch.description'
+  | 'settings.mediaIndex.showInSearch.label'
   | 'settings.navigationAndFileOps.card.fileOperations'
   | 'settings.navigationAndFileOps.card.navigation'
   | 'settings.navigationAndFileOps.card.operationLog'

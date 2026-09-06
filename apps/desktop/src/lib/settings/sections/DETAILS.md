@@ -111,8 +111,11 @@ sections compose).
   image-content (OCR) search, in three `SectionCard`s.
   - "Enable indexing" (`settings.mediaIndex.cards.enable`): the `mediaIndex.enabled` master toggle, an explicit
     on-device privacy note (`settings.mediaIndex.privacyNote` — the feature touches no AI provider or API key, so the
-    note says so), the live per-drive `MediaIndexProgressSummary`, the `mediaIndex.showFileStatusIcons` display toggle,
-    and the `mediaIndex.parallelism` slider.
+    note says so), the live per-drive `MediaIndexProgressSummary`, the two display toggles
+    (`mediaIndex.showFileStatusIcons` for the file-list badges, `mediaIndex.showInSearch` for the Search dialog's image
+    grid, which is off by default and gates that grid alone: `lib/search/DETAILS.md` § The image grid answers two
+    settings), and the `mediaIndex.parallelism` slider. All four gate on the live master toggle, so they appear only
+    once indexing is on.
   - "Folders to index" (`settings.mediaIndex.cards.folders`): the bespoke `MediaIndexScope` (which itself hosts
     `MediaIndexImportanceSlider`, which hosts `MediaIndexReclaim`), `MediaIndexChosenFolders`, and the
     `MediaIndexNetworkVolumes` opt-in list.
@@ -123,6 +126,7 @@ sections compose).
   `section: ['Indexing', 'Image indexing']` (a setting's one home), and card 1's rows carry
   `cardKey: 'settings.mediaIndex.cards.enable'` so searching the card's VISIBLE title reaches them (the `cardKey`
   contract in `docs/guides/adding-a-new-setting.md`: it must be the key the card actually renders).
+
 - **`MediaIndexScope.svelte`**: the `mediaIndex.scope` radio group — index only the folders the user chose (the default)
   or automatically by folder importance. It OWNS the importance slider's visibility: the slider renders only in the
   automatic scope, because in the narrow one the threshold has no effect at all and showing it would promise a control

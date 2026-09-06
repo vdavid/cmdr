@@ -158,6 +158,20 @@ live-search work did NOT deliver: its terminal states cover a RUN, and this fail
 Wiping the readiness flag there meant the gate went back to "waiting" with no second event ever coming, so every later
 search in that session silently did nothing.
 
+### The image grid answers two settings
+
+`ImageSearchResults.svelte` is gated by `mediaIndex.enabled` AND `mediaIndex.showInSearch`, folded into one
+`gridEnabled` derived that both the render gate (`showSection`) and the debounced fetch effect read. Two questions, not
+one: the master toggle says whether an index exists to search, and `showInSearch` (default OFF, since match quality
+isn't there yet) says whether this ONE surface may spend the space on it. Turning the grid off leaves the file-list
+status badges and Ask Cmdr / MCP photo search reading the same index untouched.
+
+Either gate off is a true no-op, not a hidden render: the effect returns before any IPC, so a keystroke fires no
+`mediaIndexVolumeState` / `mediaIndexSearchSemantic` / `mediaIndexSearchOcr` and never opens `media.db`. Both settings
+are subscribed individually, so a flip applies live with no restart. Keep the two conditions folded into `gridEnabled`
+rather than repeated at each site: a render gate that outlives its work gate is how a hidden surface keeps costing IPC.
+`ImageSearchResults.gating.test.ts` pins all of it (no section, zero IPC, tokens released on a live flip).
+
 ### The coverage note
 
 The one-shot path (`search-runners.ts`) clears the note before the IPC and writes the answer's `uncoveredScopes` /

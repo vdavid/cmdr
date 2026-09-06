@@ -674,6 +674,14 @@
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "description": "Help text under the \"Show status badges on image files\" toggle. Explains the badge marks each image''s indexing state (indexed, waiting, and so on) right in the file list."
   },
+  "settings.mediaIndex.showInSearch.label": "Show image results in Search",
+  "@settings.mediaIndex.showInSearch.label": {
+    "description": "Label for the toggle that lets the Search dialog show a row of matching images above the file results. Off by default. In Settings > Indexing > Image indexing, under the \"Show status badges on image files\" toggle. \"Search\" names Cmdr''s Search dialog, so use the same word your translation gives that dialog."
+  },
+  "settings.mediaIndex.showInSearch.description": "Search adds a row of matching images above your files. Matching is still rough, so it''s off until you want it.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "description": "Help text under the \"Show image results in Search\" toggle. Says what turning it on does (a row of matching images sits above the file results) and admits image matching isn''t accurate yet, which is why it starts off. The tone is candid and relaxed, owning the limitation without apologizing for it. \"Search\" names Cmdr''s Search dialog; keep it consistent with the label above."
+  },
   "settings.mediaIndex.networkVolumes.label": "Network drive image indexing",
   "@settings.mediaIndex.networkVolumes.label": {
     "description": "Internal (hidden setting): label for the list of network drives opted into image indexing."

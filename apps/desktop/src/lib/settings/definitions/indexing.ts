@@ -140,6 +140,25 @@ export const indexingSettings: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
+    // Whether the Search dialog shows its grid of matching images above the file results.
+    // FE-only render toggle, read by `search/ImageSearchResults.svelte`: off means the grid
+    // renders nothing AND fires no `media.db` IPC per keystroke, so there's no Tauri command
+    // and no `settings-applier.ts` case. Default OFF because match quality isn't good enough
+    // yet to take that space unasked; indexing, the file-list badges, and Ask Cmdr / MCP
+    // photo search are unaffected either way. Rendered under the status-badges row in
+    // `ImageIndexingSection.svelte`, gated on `mediaIndex.enabled`. A new key is additive,
+    // so SCHEMA_VERSION doesn't move.
+    id: 'mediaIndex.showInSearch',
+    section: ['Indexing', 'Image indexing'],
+    labelKey: 'settings.mediaIndex.showInSearch.label',
+    descriptionKey: 'settings.mediaIndex.showInSearch.description',
+    cardKey: 'settings.mediaIndex.cards.enable',
+    keywords: ['image', 'photo', 'search', 'results', 'grid', 'ocr', 'semantic', 'show', 'hide'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
     // Internal (FE-owned): JSON array of volume ids opted into background network (SMB)
     // image enrichment (network enrichment). Off by default per volume; the per-network-volume rows in
     // `ImageIndexingSection`'s "Image indexing" card toggle it, persisting here AND

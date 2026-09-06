@@ -6,10 +6,17 @@
      * and owns its own data fetch + lifecycle rather than touching the shared
      * `results` / `cursorIndex` contract.
      *
-     * Master toggle: when `mediaIndex.enabled` is OFF the whole section is a no-op — it
-     * renders NOTHING and fires NO backend IPC (read reactively + cheaply from settings,
-     * never learned from the backend, so a keystroke never opens `media.db`). Flipping the
-     * setting live-hides / reveals the section with no restart.
+     * Two settings gate it, folded into `gridEnabled`, and either one OFF makes the whole
+     * section a no-op — it renders NOTHING and fires NO backend IPC (both are read
+     * reactively + cheaply from settings, never learned from the backend, so a keystroke
+     * never opens `media.db`). Flipping either live-hides / reveals the section with no
+     * restart:
+     *   - `mediaIndex.enabled`, the master "Index image contents" toggle: there's no index
+     *     to search.
+     *   - `mediaIndex.showInSearch`, "Show image results in Search" (default off): the
+     *     index is there and maintained, the user just doesn't want the grid taking this
+     *     space. It gates THIS surface only; the file-list status badges and Ask Cmdr /
+     *     MCP photo search read the same index regardless.
      *
      * Honesty (plan § Coverage honesty): when enabled, the section voices its own coverage
      * from the backend `mediaIndexVolumeState`, so an empty result is never a confident lie:
@@ -103,12 +110,18 @@
         reason: MatchReason
     }
 
-    // The master "Index image contents" toggle (`mediaIndex.enabled`), read reactively and
-    // cheaply from settings — NOT learned from the backend `volumeState`. When off, the whole
-    // section is a no-op: it renders nothing and fires no IPC (so a keystroke never opens
-    // `media.db`). Flipping the setting live-hides/reveals the section with no restart.
+    // The two gates, read reactively and cheaply from settings — NOT learned from the
+    // backend `volumeState`. `mediaIndex.enabled` is the master "Index image contents"
+    // toggle; `mediaIndex.showInSearch` is "Show image results in Search", which owns this
+    // surface alone. Each subscribes so flipping it live-hides/reveals with no restart.
     let masterEnabled = $state(getSetting('mediaIndex.enabled'))
     $effect(() => onSpecificSettingChange('mediaIndex.enabled', (v) => (masterEnabled = v)))
+    let showInSearch = $state(getSetting('mediaIndex.showInSearch'))
+    $effect(() => onSpecificSettingChange('mediaIndex.showInSearch', (v) => (showInSearch = v)))
+
+    // ONE answer to "should this section exist at all", so the render gate and the do-no-work
+    // gate below can't drift apart: both read this, never the two settings separately.
+    const gridEnabled = $derived(masterEnabled && showInSearch)
 
     let volumeState = $state<MediaIndexVolumeState | null>(null)
     let tiles = $state<Tile[]>([])
@@ -266,13 +279,14 @@
     $effect(() => {
         const trimmed = query.trim()
         const isActive = active
-        const isMasterEnabled = masterEnabled
+        const isGridEnabled = gridEnabled
         similarSource = null
         if (debounceTimer) clearTimeout(debounceTimer)
-        // Master toggle off ⇒ the section is hidden anyway; do NO backend work (no
-        // `mediaIndexVolumeState`, no `mediaIndexSearchOcr`), just release any tokens and
-        // clear. Flipping it back on re-runs this effect and resumes the query.
-        if (!isMasterEnabled || !isActive || trimmed === '') {
+        // Either gate off ⇒ the section is hidden anyway; do NO backend work (no
+        // `mediaIndexVolumeState`, no `mediaIndexSearchSemantic`, no `mediaIndexSearchOcr`),
+        // just release any tokens and clear. Flipping either back on re-runs this effect and
+        // resumes the query.
+        if (!isGridEnabled || !isActive || trimmed === '') {
             requestSeq += 1
             clearResults()
             loading = false
@@ -291,7 +305,7 @@
     })
 
     // ── Derived coverage-honesty state ────────────────────────────────────────
-    const showSection = $derived(masterEnabled && active && query.trim() !== '')
+    const showSection = $derived(gridEnabled && active && query.trim() !== '')
     const enabled = $derived(volumeState?.enabled ?? false)
     const indexing = $derived(volumeState?.indexing ?? false)
     const enrichedCount = $derived(volumeState?.enrichedCount ?? 0)

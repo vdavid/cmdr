@@ -1315,6 +1315,7 @@
     "mediaIndex.parallelism": 1,
     "mediaIndex.semanticSearch.enabled": true,
     "mediaIndex.showFileStatusIcons": true,
+    "mediaIndex.showInSearch": false,
     "network.customTimeout": 15,
     "network.directSmbConnection": true,
     "network.enabled": true,
