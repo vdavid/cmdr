@@ -57,6 +57,12 @@ Format: each line is `English: chosen · sources · confidence`. Confidence is `
 - disconnect (network): `leválasztás` · mac ("Leválaszt", "Kapcsolat bontása"), xf ("Failed to unmount" = "leválasztása
   sikertelen") · high.
 - share (an SMB share): `megosztás` · mac, ms, gn · high.
+- servers (the hub row and its shortcut section): `Szerverek` · mac (AppKit `Menus.loctable`, `Sharing.framework`, and
+  the macOS `Servers` folder name in `SystemFolderLocalizations`) · high. ❗ The GROUP it sits in stays `Hálózat`
+  (`fileExplorer.navigation.groupNetwork`); don't collapse the two back together.
+- volume switcher / volume chooser (one UI, two English names): `kötetválasztó` · the catalog's shipped visible form
+  (`Kötetválasztó bezárása`, `kötetválasztóban`) · high. Don't spread `commands.favoritesAdd.description`'s bare
+  `váltó`.
 - network share: `hálózati megosztás` · ms ("network share" = "hálózati megosztás", HUN) · high.
 - removable (of a drive): `cserélhető` · mac ("Cserélhető kötet", "Cserélhető"), ms ("removable drive" = "cserélhető
   meghajtó") · high.
@@ -262,6 +268,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   `menu.volume.forgetServerBusy`, `menu.volume.forgetSavedPasswordBusy`). A `(foglalt)` névszói állapotjelző, ezért
   bármelyik címke után áll, akár ige, akár főnévi szerkezet az alap. Egyetlen jelölő van; új „busy” kulcs ne találjon ki
   másikat. Forrás: `glossary.md` § busy.
+- **Az oszlopcímeknél a betű szerinti Apple-találat veri a katalógus családi mintáját.** A `Last used` azért
+  `Utolsó használat` (macOS `Security.prefPane`, ugyanez a szerep: táblázat-oszlopcím) és nem `Utoljára használva`,
+  pedig a fájllista dátumoszlopai `-va/-ve` alakúak (`Módosítva`, `Létrehozva`): azoknál nincs Tier-1 forrás a konkrét
+  szóra, itt van. Bizonyíték: `glossary.md` § A szerverközpont táblázata.
+- **A `Mac` tárgyesete `Macet`, kötőjel nélkül** (macOS-attesztált, 161 találat), a `Macen` alakkal egy tőről.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

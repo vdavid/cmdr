@@ -1,4 +1,75 @@
 {
+  "servers.hub.colName": "Naam",
+  "@servers.hub.colName": {
+    "sourceHash": "dcd1d52"
+  },
+  "servers.hub.colType": "Type",
+  "@servers.hub.colType": {
+    "sourceHash": "baaddf7",
+    "sameAsSourceJustification": "Dutch for this column heading is \"Type\": macOS System Settings Localizable.loctable renders \"Type\"→\"Type\" (verified on macOS 26.6.2, build 25G83, 2026-09-06)."
+  },
+  "servers.hub.colAddress": "Adres",
+  "@servers.hub.colAddress": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.hub.colStatus": "Status",
+  "@servers.hub.colStatus": {
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "Dutch for this column heading is \"Status\": macOS System Settings Localizable.loctable renders \"Status\"→\"Status\" (verified on macOS 26.6.2, build 25G83, 2026-09-06)."
+  },
+  "servers.hub.colLastUsed": "Laatst gebruikt",
+  "@servers.hub.colLastUsed": {
+    "sourceHash": "830ec7f"
+  },
+  "servers.hub.addServer": "Voeg server toe…",
+  "@servers.hub.addServer": {
+    "sourceHash": "9574f8e"
+  },
+  "servers.hub.status.connected": "Verbonden",
+  "@servers.hub.status.connected": {
+    "sourceHash": "2296556"
+  },
+  "servers.hub.status.saved": "Opgeslagen",
+  "@servers.hub.status.saved": {
+    "sourceHash": "b5c120b"
+  },
+  "servers.hub.status.foundNearby": "Gevonden in de buurt",
+  "@servers.hub.status.foundNearby": {
+    "sourceHash": "a7fdf7d"
+  },
+  "servers.hub.status.signedOut": "Uitgelogd",
+  "@servers.hub.status.signedOut": {
+    "sourceHash": "80c6e7c"
+  },
+  "servers.hub.status.waitingForKey": "Wachten tot je de sleutel controleert",
+  "@servers.hub.status.waitingForKey": {
+    "sourceHash": "f0a43e8"
+  },
+  "servers.hub.neverUsed": "Nooit",
+  "@servers.hub.neverUsed": {
+    "sourceHash": "6300ef8"
+  },
+  "servers.hub.discoveryOff": "Lokale netwerkdetectie staat uit.",
+  "@servers.hub.discoveryOff": {
+    "sourceHash": "cadcceb"
+  },
+  "servers.hub.discoveryOffLink": "Zet het aan in Instellingen",
+  "@servers.hub.discoveryOffLink": {
+    "sourceHash": "818571b"
+  },
+  "servers.hub.emptyTitle": "Nog geen servers",
+  "@servers.hub.emptyTitle": {
+    "sourceHash": "7846930"
+  },
+  "servers.hub.emptyMessage": "Voeg er hieronder een toe, of zet een Mac of NAS in je netwerk aan, dan vindt Cmdr hem.",
+  "@servers.hub.emptyMessage": {
+    "sourceHash": "04bdc26"
+  },
+  "servers.hub.rowCount": "{count, plural, one {{countText} server} other {{countText} servers}}",
+  "@servers.hub.rowCount": {
+    "sourceHash": "7ef87d1",
+    "sameAsSourceJustification": "Dutch for the singular and the plural of \"server\" is \"server\" / \"servers\": macOS AppKit renders \"Servers\"→\"Servers\" and Finder nl says \"Wis recente servers\" (verified on macOS 26.6.2, build 25G83, 2026-09-06), so both ICU branches land byte-identical to English."
+  },
   "servers.paneState.connecting": "Verbinden met {name}…",
   "@servers.paneState.connecting": {
     "sourceHash": "7fb114e"

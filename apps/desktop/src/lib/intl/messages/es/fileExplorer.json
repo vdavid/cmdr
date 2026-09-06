@@ -1286,9 +1286,9 @@
   "@fileExplorer.navigation.groupNetwork": {
     "sourceHash": "1744b96"
   },
-  "fileExplorer.navigation.networkVolume": "Red",
+  "fileExplorer.navigation.networkVolume": "Servidores",
   "@fileExplorer.navigation.networkVolume": {
-    "sourceHash": "1744b96"
+    "sourceHash": "68d7beb"
   },
   "fileExplorer.navigation.searchResultsVolume": "Resultados de búsqueda",
   "@fileExplorer.navigation.searchResultsVolume": {
@@ -1393,6 +1393,18 @@
   "fileExplorer.navigation.disconnectBusyTooltip": "No se puede desconectar mientras hay operaciones en curso en este servidor",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
     "sourceHash": "2085de5"
+  },
+  "fileExplorer.navigation.serverPinnedToast": "{name} ya está en tu selector de volúmenes.",
+  "@fileExplorer.navigation.serverPinnedToast": {
+    "sourceHash": "d09b133"
+  },
+  "fileExplorer.navigation.serverUnpinnedToast": "{name} ya no está en tu selector de volúmenes. El servidor sigue guardado.",
+  "@fileExplorer.navigation.serverUnpinnedToast": {
+    "sourceHash": "3367b4d"
+  },
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr no pudo cambiar dónde aparece {name}.",
+  "@fileExplorer.navigation.pinRefusedToast": {
+    "sourceHash": "14230e4"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr no pudo desconectarse de {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {

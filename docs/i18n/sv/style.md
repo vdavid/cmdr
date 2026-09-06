@@ -279,6 +279,18 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 - **`plats` är var en fil ligger; var en bild togs skrivs ut som bisats.** `plats` är det satta ordet för `location` i
   filsystemsmening, så direkt efter ”en bilds” läses det som filens plats. Skriv `var den togs` när engelskan menar
   fotots geoposition. Belägg: `glossary.md` § Ask Cmdr tittar in i filer.
+- **Ett `eller` inuti ett led som redan hänger på ett `eller` klaras av kommat, inte av ett nytt ord.** Engelskans ”Add
+  one below, or turn on a Mac or NAS on your network…” har två `or` med olika räckvidd. Svenskan har ingen `samt`-utväg
+  här (den gäller `och`), så det yttre `eller` markeras med komma före sig och det inre lämnas naket: ”Lägg till en
+  nedan, eller slå på en Mac eller NAS i ditt nätverk, så hittar Cmdr den” (`servers.hub.emptyMessage`). Artikeln delas
+  av båda leden, eftersom `Mac` och `NAS` båda är en-genus.
+- **Ett kommando som packar båda riktningarna behåller engelskans snedstreck.** `commands.serversTogglePin.label` (”Pin
+  / unpin server”) blir `Fäst / lossa server`, inte en `eller`-form. Katalogens `eller` hör till de strängar där
+  engelskan själv skriver ”or” (`commands.viewShowHidden.label`), så snedstrecket bär informationen att det är ETT
+  kommando som växlar. Belägg för verben: `glossary.md` § Serverhubben: tabellen.
+- **Statuscellerna i en tabell är particip som böjs efter radens huvudord.** Serverhubbens rader är `en server`, alltså
+  en-genus: `Ansluten`, `Sparad`, `Hittad i närheten`, `Utloggad`. Slår raden om till ett neutrumord någon gång måste
+  hela kolumnen skrivas om, inte bara den nya statusen.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

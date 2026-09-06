@@ -2534,3 +2534,85 @@ Notes de formulation :
   `ne l''affiche plus` évite l'accord : l'élision de `le` rend le pronom neutre quel que soit le nom inséré.
 - Aucune valeur n'est identique à l'anglais, donc aucune `sameAsSourceJustification` dans ce lot. Toutes les apostrophes
   sont ASCII et doublées (`n''a`, `d''accès`, `d''identification`, `s''y`, `l''affiche`).
+
+## Le hub des serveurs : la table, ses colonnes et ses états (2026-09-06, 28 clés `servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.*`, `shortcuts.scope.*`)
+
+La rangée « Network » du sélecteur de volume devient **« Servers »** et ouvre un hub : une table de tous les serveurs
+enregistrés (SFTP, WebDAV, SMB) plus ceux détectés sur le réseau local, avec les colonnes Nom / Type / Adresse / État /
+Dernière utilisation et une dernière rangée « Ajouter un serveur… ». Le GROUPE qui contient la rangée reste « Réseau »
+(`fileExplorer.navigation.groupNetwork`). Le tas de références (`_ignored/i18n/fr/`) est absent de cette machine ; les
+termes viennent donc des paquets macOS installés (`plutil -convert json` sur les `.strings` / `.loctable`, macOS 26.6.2
+build 25G83, 2026-09-06) et du catalogue `fr` déjà livré.
+
+- **Servers (la rangée, la portée de raccourcis) → `Serveurs`** · le catalogue emploie déjà `serveur` partout
+  (`servers.refusal.*`, `menu.network.forgetServer` → `Oublier le serveur`), et Finder dit `serveurs récents` (`MN3`) ·
+  `high`. La rangée et le groupe portent maintenant deux mots distincts : `Serveurs` dans `Réseau`.
+- **Places (la liste des partages sous un serveur) → `Emplacements`** · Finder nomme `Locations` la section de sa barre
+  latérale qui contient disques et serveurs : `LocalizableMerged.strings` clé `SD5` → `Emplacements` (macOS 26.6.2 build
+  25G83, 2026-09-06) · `high`. Mot volontairement générique : aujourd'hui des partages SMB, demain les compartiments
+  d'un compte de stockage. Ne pas rétrécir en `Partages`.
+- **Status (l'en-tête de colonne) → `État`** · Feedback Assistant `CommonStrings.loctable` (`STATUS_SECTION_TITLE` →
+  `État`), Réglages Bluetooth (`Status: %@` → `État : %@`), et le catalogue lui-même (`fileExplorer.columns.gitTitle` →
+  `État Git`) · `high`. L'accent sur la capitale est obligatoire.
+- **Address (l'en-tête de colonne) → `Adresse`** · Finder `ConnectToWindow.strings` fr (`YEA-3L-WnW.placeholderString` →
+  `Adresse du serveur`), ControlCenter `WiFi.loctable` / `Bluetooth.loctable` (`Address: %@` → `Adresse : %@`) · `high`.
+- **Last used (l'en-tête de colonne) → `Dernière utilisation`** · `Security.prefPane/Localizable.loctable`, clé
+  `Last Used` → `Dernière utilisation` (macOS 26.6.2 build 25G83, 2026-09-06) · `high`. Deux mots, comme l'anglais.
+- **Never (la valeur de cette colonne) → `Jamais`** · même paquet, clé `Never` → `Jamais` · `high`.
+- **Type (l'en-tête de colonne du protocole) → `Type`, identique à l'anglais** · Finder rend la colonne `Kind` par
+  `Type` (`LocalizableMerged.strings`, `N224` et `N169.35`), et les panneaux de détail de profil d'Apple livrent `Type`
+  → `Type` (`ManagedClient.app`, `mcx` / `iChat` `profileDomainPlugin`, `str_Detail_globalproxy_Type`) · `high`. D'où la
+  `sameAsSourceJustification` sur cette clé : c'est le mot français, pas un oubli de traduction.
+- **Connected (l'état) → `Connecté`** · `Security.prefPane/Localizable.loctable` et ControlCenter `Bluetooth.loctable`
+  (`CONNECTED` → `Connecté`) · `high`. L'accord se fait sur `le serveur` (masculin), jamais sur la personne : la règle
+  de genre est respectée sans restructuration.
+- **Saved (l'état d'un serveur enregistré mais inactif) → `Enregistré`** · le voisin déjà livré
+  `fileExplorer.navigation.connectionTooltipSaved` (`Enregistré. Ouvrez-le pour vous connecter.`) · `high`. Rien ne va
+  mal : pas de `Inactif` ni de `Hors ligne`, qui se liraient comme un verdict.
+- **Found nearby (l'état) → `Découvert à proximité`** · `IOBluetoothUI.framework/Localizable.loctable`,
+  `PROX_PAIRING_OPTIONS_HEADER%@` : `“%@” discovered nearby` → `« %@ » découvert à proximité`, et `GROUP_FOUND_DEVICES`
+  → `Appareils à proximité` (macOS 26.6.2 build 25G83, 2026-09-06) · `high`. Cohérent avec la découverte réseau déjà
+  livrée (`settings.network.firstTriggerDone.label` → `Découverte réseau lancée`).
+- **Waiting for you to check the key → `En attente de votre vérification de la clé`** · moule d'état sanctionné par le
+  style guide (`En attente d''une réponse de la destination`), et `vérifier` est le verbe du catalogue pour contrôler
+  quelque chose (`Vérifiez que le partage est accessible`) · `high`. À distinguer de `examiner`, réservé au
+  `look at the key` du voisin `fileExplorer.navigation.connectionTooltipNeedsHostKey`. `votre` garde l'adresse directe
+  sans accord de genre.
+- **local network discovery → `la découverte du réseau local`** · `découverte` vient du catalogue
+  (`settings.network.firstTriggerDone.label`), `réseau local` est le nom qu'Apple donne à l'autorisation de
+  confidentialité et que le catalogue reprend (`settings.network.permissionWithout`, `Réseau local`) · `high`.
+- **pin / unpin (un serveur) → `épingler` / `désépingler`** · le catalogue les a déjà pour les onglets
+  (`menu.tab.pinTab` → `Épingler l''onglet`, `menu.tab.unpinTab` → `Désépingler l''onglet`,
+  `commands.tabTogglePin.label` → `Épingler ou désépingler l''onglet`) · `high`. ❗ AppKit dit
+  `Ne plus épingler l'onglet` (`MenuCommands.loctable`, `Unpin Tab`) : ne le reprenez PAS, les trois clés déjà livrées
+  font foi et une divergence se compterait dans `desktop-i18n-term-consistency`.
+- **volume switcher → `le sélecteur de volume`** (singulier `volume`) · fixé par les clés livrées
+  `commands.paneLeftVolumeChooser.label` (`Ouvrir le sélecteur de volume gauche`), `commands.volumeClose.label`
+  (`Fermer le sélecteur de volume`), `shortcuts.scope.volumeChooser` (`Sélecteur de volume`) · `high`.
+
+Notes de formulation :
+
+- **`Pin / unpin server` perd la barre oblique.** La commande devient `Épingler ou désépingler le serveur`, mot pour mot
+  la structure de `commands.tabTogglePin.label` déjà livrée. Les deux commandes se lisent côte à côte dans la palette ;
+  une barre oblique là où sa jumelle écrit `ou` se lirait comme deux commandes différentes.
+- **`Forget saved password` reprend le libellé de menu MOT POUR MOT** : `Oublier le mot de passe enregistré`, identique
+  à `menu.network.forgetSavedPassword` et à `fileExplorer.navigation.forgetSecretConfirmTitle`.
+- **`Disconnect server` garde le pronominal du catalogue** : `Se déconnecter du serveur`, construit sur
+  `menu.network.disconnect` (`Se déconnecter`) et `fileExplorer.navigation.disconnectPlaceAriaLabel`
+  (`Se déconnecter de {name}`). Jamais `Éjecter` : un serveur n'a rien à débrancher.
+- **Les deux notifications d'épinglage nomment l'objet, jamais la personne.** `It''s still saved.` devient
+  `Le serveur reste enregistré.` plutôt qu'un `Il est toujours enregistré` qui accorderait un participe sur un `{name}`
+  de genre inconnu. Même logique pour `Cmdr n''a pas pu changer l''endroit où {name} s''affiche.` : `s''affiche` est un
+  verbe, il ne s'accorde pas.
+- **`Turn it on in Settings` → `Activez-la dans les Réglages`.** Le `la` reprend `la découverte du réseau local` de la
+  ligne précédente ; `les Réglages` est le nom de la fenêtre de réglages de Cmdr en français
+  (`commands.appSettings.label` → `Ouvrir les réglages`, `driveIndex.tooltipIndexingOff` →
+  `désactivée dans les Réglages`), pas `Réglages Système` qui nomme l'app d'Apple.
+- **L'état vide suit `askCmdr.sessions.empty`** (`No chats yet` → `Pas encore de conversation`) : `No servers yet`
+  devient `Pas encore de serveur`, au singulier comme son modèle.
+- **Le pluriel prend les trois catégories CLDR du français** (`one` / `many` / `other`), comme tout le set `fr`
+  (`operationLog.summary.*`, `queue.chip.tooltip`).
+- **Les `…` restent le caractère unique U+2026** là où l'anglais l'emploie (`Modifier le serveur…`,
+  `Ajouter un serveur…`) : la note « trois points » du style guide vise les clés dont la source anglaise écrit `...`.
+- Une seule valeur est identique à l'anglais (`servers.hub.colType`), et elle porte sa `sameAsSourceJustification`.
+  Toutes les apostrophes sont ASCII et doublées (`n''a`, `l''endroit`, `s''affiche`).

@@ -2001,3 +2001,90 @@ Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `estar a` + infinitivo
 (`na próxima vez que você se conectar`). Ênclise em pt-BR nos infinitivos e imperativos (`restabelecê-la`, `Abra-o`,
 `Adicione-o`), nunca próclise antes do infinitivo. Nenhum valor leva apóstrofo ASCII, então não há `''` a dobrar, e
 nenhum `sameAsSourceJustification`: os 28 valores diferem do inglês.
+
+## A tabela do hub de servidores: colunas, estados e o estado vazio (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.serverPinnedToast` / `serverUnpinnedToast` / `pinRefusedToast` / `networkVolume`, `shortcuts.scope.servers` / `places`)
+
+Superfície nova: a linha `Servidores` do seletor de volumes agora abre um HUB, uma tabela com todo servidor salvo (SFTP,
+WebDAV, SMB) mais os encontrados por perto, com as colunas Nome / Tipo / Endereço / Status / Último uso e uma linha
+`Adicionar servidor…` no fim. O GRUPO onde a linha fica continua sendo `Rede` (`fileExplorer.navigation.groupNetwork`),
+então `Servidores` e `Rede` passam a conviver no mesmo menu: a distinção é justamente o que esta rodada compra. A pilha
+de referência não existe nesta máquina, então as fontes vêm do macOS instalado (26.6.2, build 25G83, 2026-09-06), o
+caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" descreve.
+
+- **Servers (a linha e o título de seção) → `Servidores`** · Finder pt-BR `ConnectToWindow.strings` (`13.title`
+  `Favorite Servers:` → `Servidores Favoritos:`, `48.title` `Browse` → `Explorar`) e `LocalizableMerged.strings` `SD13`
+  (`Connected servers` → `Servidores conectados`) · confirmed. Em caixa de frase, como o resto do catálogo.
+- **Places (a seção de atalhos dos lugares dentro de um servidor) → `Locais`** · Finder pt-BR
+  `LocalizableMerged.strings` `FI1` (`Recent Places` → `Locais Recentes`) e `FF20.1_V2` (`^0 Places` → `^0 Locais`) ·
+  confirmed. ❌ Não `Lugares` (o termo do Freeform e do Journal, de outra família) nem `Navegador de compartilhamentos`:
+  o rótulo anterior descrevia só os compartilhamentos SMB, e a seção agora cobre qualquer lugar dentro de um servidor
+  (buckets de uma conta de armazenamento depois).
+- **Name → `Nome`, Type → `Tipo`, Address → `Endereço`** · Finder pt-BR (`N224` `Kind` → `Tipo`,
+  `ConnectToWindow.strings` `YEA-3L-WnW.placeholderString` `Server Address` → `Endereço do Servidor`), `VPN.appex` e
+  `Sound.appex` (`Type` → `Tipo`), `Bluetooth.appex` (`Address` → `Endereço`) · confirmed. São cópias byte a byte das
+  irmãs já publicadas (`fileExplorer.columns.name`, `menu.sort.name`, `queryUi.ai.filter.type`), que o
+  `desktop-i18n-term-consistency` pareia pelo inglês.
+- **Status → `Status`, verbatim** · linha já fixada acima (§ Terms) e byte a byte igual a
+  `licensing.section.labelStatus`, a irmã com o mesmo inglês · confirmed. O macOS pt-BR diz `Estado` (`Network.appex`
+  `BRIDGE_STATUS_TABLE_COLUMN_STATUS`), mas o catálogo inteiro já publica o empréstimo naturalizado, e uma coluna que
+  diverge da tela de licença seria a costura visível. Leva `sameAsSourceJustification`.
+- **Last used (cabeçalho de coluna estreita) → `Último uso`** · high. As duas formas da Apple não servem aqui:
+  `Última Usada` (`SecurityPrivacyExtension.appex` e `PrinterScannerSettings.appex`, `LAST_USED`) trava no feminino, e o
+  sujeito é `o servidor`; `Usado pela última vez` (Mail.app `AddressHistory.loctable` `12.headerCell.title`, que é
+  justamente um cabeçalho de tabela) tem quatro palavras e não cabe na coluna. A forma nominal não concorda com nada e
+  fica em duas palavras.
+- **Connected → `Conectado`** · `Network.appex`, `VPN.appex` e `Wi-Fi.appex` (`Connected` → `Conectado`) · confirmed.
+  Byte a byte igual a `ai.cloud.connected` e `fileExplorer.network.browser.status.connected`.
+- **Saved (o estado de um servidor salvo e ocioso) → `Salvo`** · Apple pt-BR, Podcasts `LISTEN_NOW_SAVED` (`Saved` →
+  `Salvo`) · confirmed. Masculino, concordando com `o servidor`. Nada de errado aconteceu: é só o estado parado, e
+  `Salvo` não sugere falha nenhuma.
+- **nearby → `por perto`; Found nearby → `Encontrado por perto`** · Apple pt-BR, Home.app (`Nearby` → `Por Perto`,
+  `Nearby Accessories` → `Acessórios por Perto`), Weather.app (`Nearby Location` → `Localização por perto`) e Setup
+  Assistant (`Looking for nearby devices…` → `Buscando dispositivos por perto…`) · confirmed. ❌ Não `Próximo`, que o
+  catálogo já usa no sentido de "seguinte" (`commands.navDown.label` = `Selecionar próximo arquivo`).
+- **Signed out → `Sessão encerrada`** · a linha já fixada na § anterior: o estado concorda com a SESSÃO, não com a
+  pessoa, o que evita gênero sem glifo nenhum · high. Não é recusa nem falha; a pessoa só precisa iniciar a sessão de
+  novo.
+- **check the key → `conferir a chave`** · `conferir` é o verbo do catálogo para uma verificação que a PESSOA faz
+  (`askCmdr.renameReview.openPreviewTooltip` = `Abra o arquivo para conferir o nome`), enquanto `verificar` fica para o
+  que o Cmdr faz sozinho (`askCmdr.renameUndo.skipReason.unverifiable.*`) · high. A espera segue o `Aguardando …` já
+  publicado (`fileExplorer.network.browser.status.waitingForNetwork` = `Aguardando a rede…`), e a frase fala com a
+  pessoa: `Aguardando você conferir a chave`. `chave` sozinho basta para a host key, como a § anterior fixou.
+- **local network discovery → `a descoberta na rede local`** · `descoberta` é o termo da Apple (`VPN.appex`
+  `Auto proxy discovery` → `Descoberta de proxy automática`; Directory Utility LDAPv3
+  `Initial server information discovery` → `Descoberta inicial de informações do servidor`) e o que o catálogo já
+  publica em `settings.network.firstTriggerDone.label` (`Descoberta de rede iniciada`); `rede local` em minúsculas é o
+  conceito, o molde de `settings.network.enabled.description` (`na sua rede local`), enquanto `Rede Local` maiúsculo
+  fica reservado para o NOME da permissão do macOS · confirmed. Desligado → **`está desativada`**, o par de
+  `Quando desativado` que a mesma chave publica.
+- **Settings (a janela de ajustes do próprio Cmdr) → `Ajustes`** · System Settings.app `InfoPlist.loctable` (`Settings`
+  → `Ajustes`) e todo o catálogo (`Ajustes > IA`, `Ajustes > Atalhos de teclado`) · confirmed. `Ajustes do Sistema`
+  continua sendo só o macOS. O link é infinitivo-imperativo: `Ativar nos Ajustes`, sobre o `Ativar rede` de
+  `settings.network.enabled.label`.
+- **Never (na coluna Último uso) → `Nunca`** · macOS pt-BR em toda parte (`Security.prefPane`, `Wi-Fi.appex`,
+  `BatteryUI.loctable` `NEVER`) · confirmed.
+- **Pin / unpin → `Fixar/desafixar`** · Safari pt-BR (`Fixar Aba`) e, mais forte, a irmã já publicada
+  `commands.tabTogglePin.label` = `Fixar/desafixar aba` · confirmed. A barra fica sem espaços porque é a forma que a
+  paleta de comandos já mostra; duas entradas vizinhas com espaçamento diferente leem como dois padrões.
+- **volume switcher → `seletor de volumes`** · o rótulo visível já publicado em `shortcuts.scope.volumeChooser`
+  (`Volume chooser` → `Seletor de volumes`) · confirmed. ⚠️ `commands.favoritesAdd.description` diz `alternador` para a
+  mesma coisa; a forma dos avisos segue o rótulo visível, e o `alternador` solto fica anotado abaixo.
+- **NAS fica `NAS`** · o catálogo já publica o acrônimo sem glosa em `settings.network.smbConcurrency.description`
+  (`a maioria dos NAS domésticos`) · confirmed.
+- **Nada concorda com `{name}`, de novo.** Os três avisos de fixar põem um VERBO logo depois do inserto
+  (`{name} agora aparece…`, `{name} saiu do…`, `…onde {name} aparece.`), e onde a frase precisa de um particípio ela
+  escreve o substantivo: `O servidor continua salvo`, nunca `Continua salvo`. O `pinRefusedToast` usa o molde
+  `O Cmdr não conseguiu X` que a § anterior fixou.
+
+Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `ecrã`, `estar a` + infinitivo, `consoante`, `Rever`, ou `você`
+omitido onde a forma verbal fica ambígua (`Aguardando você conferir a chave` escreve o pronome de propósito). Ênclise
+pt-BR no infinitivo (`encontrá-lo`), nunca próclise. Nenhum valor leva apóstrofo ASCII, então não há `''` a dobrar. Um
+único `sameAsSourceJustification`, em `servers.hub.colStatus`.
+
+⚠️ Duas heranças pt-PT achadas na varredura, fora das 28 chaves:
+
+- `shortcuts.scope.errorScreen` dizia `Ecrã de erro`. Corrigida para **`Tela de erro`** na mesma rodada: `ecrã` é o
+  marcador pt-PT mais visível do style.md, e a chave fica no `shortcuts.json` desta rodada.
+- `errors.write.readOnlyDevice.source.message` ainda diz `Podes copiar ficheiros de lá` — `ficheiros` mais a conjugação
+  de `tu`, os dois marcadores pt-PT ao mesmo tempo. Está no `errors.json`, fora dos arquivos desta rodada, então segue
+  aberta.

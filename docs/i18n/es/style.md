@@ -250,6 +250,16 @@ strings are counted, so no plural branches are needed there.
   (`askCmdr.consent.contentsRule`). Spain says `hacer una foto` and Latin America `tomar una foto`; `tomar` reads fine
   on both sides, which is what the pan-regional base wants, and `sacar` is the colloquial one. Same shape as the `coste`
   / preterite decisions above. Evidence: `glossary.md` § Mirar dentro de un archivo.
+- **A "last X" column takes a NOUN phrase, not a participle.** macOS `es` names its date columns `Última apertura` (Last
+  Opened) and `Fecha de modificación`, and the catalog already settled `Modified` → `Modificación`. So `Last used` →
+  `Último uso`, not `Usado por última vez`. Evidence: `glossary.md` § La tabla del hub de servidores.
+- **A command that toggles in both directions spells both verbs with `o`, never a slash.** English writes "Pin / unpin
+  server" and "Toggle pin tab"; Spanish writes `Fijar o desfijar el servidor`, matching `commands.tabTogglePin.label`
+  and the macOS `es` pattern `Activar o desactivar …`. The slash is an English shorthand, not a Spanish command-palette
+  form.
+- **`Añadir X` drops the article when X is new; commands acting on the thing under the cursor keep it.**
+  `Añadir servidor…` (macOS: `Añadir personas`, `Añadir contraseña`) beside `Olvidar el servidor` /
+  `Desconectar el servidor` (the catalog's own menu items). Both shapes are deliberate; don't unify them.
 - **`ejecutarse` names an OPERATION that keeps running, never the app.** The catalog already spends it on "Sigue
   ejecutándose en segundo plano" (`transferProgress.backgroundedToast`), so an app that survived a problem
   `siguió funcionando`. Putting `ejecutándose` right after `en segundo plano` would read as the operation, not Cmdr.

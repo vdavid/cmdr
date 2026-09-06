@@ -281,6 +281,18 @@ Vietnamese has no grammatical number, so one form covers all counts.
 - **Một cú rớt mạng là `Đã mất kết nối`, không phải `Kết nối đã bị ngắt`.** `ngắt` thuộc về hành động chủ ý
   (`Ngắt kết nối`), nên dùng nó cho sự cố sẽ làm hai trạng thái khác hẳn nhau đọc y như nhau. macOS: `CFNetwork`
   (`The network connection was lost.` → `Đã mất kết nối mạng.`).
+- **Một bề mặt, một tên tiếng Việt, kể cả khi tiếng Anh có hai.** Bộ chọn ổ đĩa được tiếng Anh gọi là "volume chooser" ở
+  `shortcuts.scope.volumeChooser` và ba khóa `commands.*VolumeChooser`, nhưng là "volume switcher" ở hai toast
+  `fileExplorer.navigation.server*PinnedToast`. Tiếng Việt chỉ có `bộ chọn ổ đĩa`. Gặp một tên tiếng Anh mới cho một
+  danh sách đã có tên tiếng Việt thì dùng lại tên cũ, đừng dịch sát cái tên mới.
+- **`Never` có hai nghĩa, và cột quyết định nghĩa nào.** Một ô nói về QUÁ KHỨ ("chưa xảy ra lần nào", như cột
+  `Last used`) là `Chưa từng`, đúng như bảng quyền trong Cài đặt hệ thống. Một mục CHỌN nói về tương lai ("đừng bao giờ
+  làm", như lịch lặp lại hay `settings.fileOperations.allowFileExtensionChanges.opt.no`) là `Không bao giờ`. macOS dùng
+  cả hai; đừng lấy nhầm.
+- **`Vị trí` là "nơi chốn để đi tới", `Địa điểm` là nơi chốn ĐỊA LÝ.** Finder gọi mục `Locations` ở khung bên là
+  `Vị trí`; Photos/Maps/Journal gọi `Places` (ảnh chụp ở đâu) là `Địa điểm`. Cmdr chỉ dùng nghĩa thứ nhất
+  (`shortcuts.scope.places` = danh sách các bản chia sẻ / bucket bên trong một máy chủ), nên không bao giờ viết
+  `Địa điểm`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

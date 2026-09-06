@@ -309,6 +309,18 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   qualifie le volume ou le serveur visé (masculin), pas le complément du libellé, donc `(occupé)` reste invariable même
   après « le mot de passe enregistré ». N'inventez jamais un second marqueur (« en cours d'utilisation », « indisponible
   ») : la paire actif/grisé doit se lire comme un seul élément dans deux états. Terme : `glossary.md` § busy.
+- **Une commande « à bascule » écrit les deux verbes avec « ou », jamais avec une barre oblique.** L'anglais
+  `Pin / unpin server` devient « Épingler ou désépingler le serveur », sur le moule de `commands.tabTogglePin.label` («
+  Épingler ou désépingler l'onglet »). Les deux se lisent côte à côte dans la palette de commandes : une barre oblique
+  chez l'une et « ou » chez l'autre ferait croire à deux commandes de nature différente. Preuves : `glossary.md` § Le
+  hub des serveurs : la table.
+- **Les points de suspension suivent la source anglaise, caractère pour caractère.** Là où l'anglais écrit « ... »
+  (trois points), le français garde trois points ; là où il écrit « … » (U+2026), le français garde U+2026 (« Modifier
+  le serveur… », « Ajouter un serveur… »). Ne convertissez jamais dans un sens ou dans l'autre : le catalogue anglais
+  fait foi, clé par clé.
+- **La fenêtre de réglages de Cmdr, c'est « les Réglages » ; « Réglages Système » nomme l'app d'Apple.** Un lien du type
+  « Turn it on in Settings » se rend par « Activez-la dans les Réglages », comme
+  `fileExplorer.navigation.driveIndex.tooltipIndexingOff` déjà livrée.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

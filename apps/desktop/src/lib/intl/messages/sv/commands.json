@@ -632,6 +632,26 @@
   "@commands.networkSelectHost.label": {
     "sourceHash": "4a9ede5"
   },
+  "commands.serversShow.label": "Visa servrar",
+  "@commands.serversShow.label": {
+    "sourceHash": "092283a"
+  },
+  "commands.serversTogglePin.label": "Fäst / lossa server",
+  "@commands.serversTogglePin.label": {
+    "sourceHash": "7d800c8"
+  },
+  "commands.serversDisconnect.label": "Koppla från server",
+  "@commands.serversDisconnect.label": {
+    "sourceHash": "8656022"
+  },
+  "commands.serversForgetSecret.label": "Glöm sparat lösenord",
+  "@commands.serversForgetSecret.label": {
+    "sourceHash": "ed68566"
+  },
+  "commands.serversEdit.label": "Redigera server…",
+  "@commands.serversEdit.label": {
+    "sourceHash": "a3282a7"
+  },
   "commands.networkRefresh.label": "Uppdatera nätverksvärdar",
   "@commands.networkRefresh.label": {
     "sourceHash": "73966bd"

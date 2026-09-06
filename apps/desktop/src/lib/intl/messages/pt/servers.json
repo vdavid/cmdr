@@ -1,4 +1,73 @@
 {
+  "servers.hub.colName": "Nome",
+  "@servers.hub.colName": {
+    "sourceHash": "dcd1d52"
+  },
+  "servers.hub.colType": "Tipo",
+  "@servers.hub.colType": {
+    "sourceHash": "baaddf7"
+  },
+  "servers.hub.colAddress": "Endereço",
+  "@servers.hub.colAddress": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.hub.colStatus": "Status",
+  "@servers.hub.colStatus": {
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "Glossary-locked: 'Status' kept verbatim, naturalized in pt-BR tech UI and used consistently across pt (glossary 'status . Status (kept verbatim)'); byte-identical to the shipped sibling licensing.section.labelStatus, which carries the same English."
+  },
+  "servers.hub.colLastUsed": "Último uso",
+  "@servers.hub.colLastUsed": {
+    "sourceHash": "830ec7f"
+  },
+  "servers.hub.addServer": "Adicionar servidor…",
+  "@servers.hub.addServer": {
+    "sourceHash": "9574f8e"
+  },
+  "servers.hub.status.connected": "Conectado",
+  "@servers.hub.status.connected": {
+    "sourceHash": "2296556"
+  },
+  "servers.hub.status.saved": "Salvo",
+  "@servers.hub.status.saved": {
+    "sourceHash": "b5c120b"
+  },
+  "servers.hub.status.foundNearby": "Encontrado por perto",
+  "@servers.hub.status.foundNearby": {
+    "sourceHash": "a7fdf7d"
+  },
+  "servers.hub.status.signedOut": "Sessão encerrada",
+  "@servers.hub.status.signedOut": {
+    "sourceHash": "80c6e7c"
+  },
+  "servers.hub.status.waitingForKey": "Aguardando você conferir a chave",
+  "@servers.hub.status.waitingForKey": {
+    "sourceHash": "f0a43e8"
+  },
+  "servers.hub.neverUsed": "Nunca",
+  "@servers.hub.neverUsed": {
+    "sourceHash": "6300ef8"
+  },
+  "servers.hub.discoveryOff": "A descoberta na rede local está desativada.",
+  "@servers.hub.discoveryOff": {
+    "sourceHash": "cadcceb"
+  },
+  "servers.hub.discoveryOffLink": "Ativar nos Ajustes",
+  "@servers.hub.discoveryOffLink": {
+    "sourceHash": "818571b"
+  },
+  "servers.hub.emptyTitle": "Nenhum servidor ainda",
+  "@servers.hub.emptyTitle": {
+    "sourceHash": "7846930"
+  },
+  "servers.hub.emptyMessage": "Adicione um abaixo, ou ligue um Mac ou um NAS na sua rede e o Cmdr vai encontrá-lo.",
+  "@servers.hub.emptyMessage": {
+    "sourceHash": "04bdc26"
+  },
+  "servers.hub.rowCount": "{count, plural, one {{countText} servidor} many {{countText} servidores} other {{countText} servidores}}",
+  "@servers.hub.rowCount": {
+    "sourceHash": "7ef87d1"
+  },
   "servers.paneState.connecting": "Conectando a {name}…",
   "@servers.paneState.connecting": {
     "sourceHash": "7fb114e"

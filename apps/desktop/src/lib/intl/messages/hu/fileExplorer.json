@@ -1284,9 +1284,9 @@
   "@fileExplorer.navigation.groupNetwork": {
     "sourceHash": "1744b96"
   },
-  "fileExplorer.navigation.networkVolume": "Hálózat",
+  "fileExplorer.navigation.networkVolume": "Szerverek",
   "@fileExplorer.navigation.networkVolume": {
-    "sourceHash": "1744b96"
+    "sourceHash": "68d7beb"
   },
   "fileExplorer.navigation.searchResultsVolume": "Keresési találatok",
   "@fileExplorer.navigation.searchResultsVolume": {
@@ -1391,6 +1391,18 @@
   "fileExplorer.navigation.disconnectBusyTooltip": "Nem választható le, amíg ezen a szerveren műveletek vannak folyamatban",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
     "sourceHash": "2085de5"
+  },
+  "fileExplorer.navigation.serverPinnedToast": "{name} mostantól ott van a kötetválasztódban.",
+  "@fileExplorer.navigation.serverPinnedToast": {
+    "sourceHash": "d09b133"
+  },
+  "fileExplorer.navigation.serverUnpinnedToast": "{name} kikerült a kötetválasztódból. Továbbra is mentve van.",
+  "@fileExplorer.navigation.serverUnpinnedToast": {
+    "sourceHash": "3367b4d"
+  },
+  "fileExplorer.navigation.pinRefusedToast": "A Cmdr nem tudta megváltoztatni, hogy {name} hol jelenjen meg.",
+  "@fileExplorer.navigation.pinRefusedToast": {
+    "sourceHash": "14230e4"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "A Cmdr nem tudta leválasztani ezt: {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {

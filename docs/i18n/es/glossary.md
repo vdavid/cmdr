@@ -2184,3 +2184,105 @@ no está en esta máquina, así que las fuentes de Tier 1 se sacaron del propio 
 - Ningún valor lleva apóstrofo, así que no hay duplicación ICU (`''`) que hacer.
 - Los 28 valores difieren del inglés, así que ninguno necesita `@key.sameAsSourceJustification`.
 - Verbatim: `Cmdr`, `macOS`, `Mac`, `SSH`, `WebDAV`. Las elipsis copian el `…` (U+2026) del inglés, carácter a carácter.
+
+## La tabla del hub de servidores y sus comandos (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.{serverPinnedToast,serverUnpinnedToast,pinRefusedToast,networkVolume}`, `shortcuts.scope.{servers,places}`, 2026-09-06)
+
+Segunda tanda de 28 claves de la misma superficie: la fila `Servidores` del selector de volúmenes abre ahora un hub con
+una tabla (Nombre / Tipo / Dirección / Estado / Último uso), su fila final `Añadir servidor…`, el estado vacío, la línea
+de «detección apagada» y los cinco comandos de la paleta. El grupo donde vive esa fila sigue llamándose `Red`
+(`fileExplorer.navigation.groupNetwork`). El montón de referencia no está en esta máquina, así que las fuentes de Tier 1
+salen del propio Mac (macOS 26.6.2, build 25G83, `plutil -convert json` sobre los bundles del sistema, 2026-09-06).
+
+### Términos de Tier 1 (macOS en vivo)
+
+- **Status → `Estado`** · `Network.appex/Localizable.loctable`, `CONNECTION_STATUS_LABEL` · `high`. Coincide con
+  `licensing.section.labelStatus`, que ya traducía el mismo inglés.
+- **Address → `Dirección`** · `Network.appex`, `SERVER_ADDRESS` = «Dirección del servidor:» e `InvalidServerAddress` =
+  «Dirección del servidor no válida» · `high`. La columna va sola, sin `del servidor`, porque la tabla ya es de
+  servidores.
+- **Type → `Tipo`** · Utilidad de Discos `Localizable.loctable`, clave `Type` · `high`. Coincide con
+  `queryUi.ai.filter.type`.
+- **Name → `Nombre`** · Finder `LocalizableMerged`, `N220` · `high`. Igual que `fileExplorer.columns.name`.
+- **Connected → `Conectado`** · `Network.appex` (`Connected`) y AppKit `SavePanel.loctable` (`Connected`) · `high`.
+  Obligatorio además por coherencia: `ai.cloud.connected` y `fileExplorer.network.browser.status.connected` traducen ese
+  mismo inglés así.
+- **Never (una fecha que nunca ocurrió) → `Nunca`** · `LockScreen.appex/Localizable.loctable`, clave `Never` · `high`.
+- **Local Network (la red de casa o la oficina) → `red local`** · `SecurityPrivacyExtension.appex`, `LOCAL_NETWORK` =
+  «Red local» y `LOCAL_NETWORK_SUMMARY` = «encontrar dispositivos en tu red local» · `high`. Minúscula dentro de la
+  frase; el catálogo ya la usa así (`settings.network.enabled.description`).
+- **Locations (la sección de la barra lateral que agrupa discos y servidores) → `Ubicaciones`** · Finder
+  `LocalizableMerged`, `SD5` · `high`. Es la fuente para `Places` (abajo).
+- **Saved → `Guardado`** · Finder `InfoPlist.loctable`, «Saved Search Query» → «Búsqueda guardada»; el catálogo ya dice
+  `contraseña guardada` en seis claves · `high`.
+
+### Decisiones
+
+- **`Servers` (la fila y el epígrafe) → `Servidores`** · `server → servidor` ya estaba asentado (macOS «desmontar
+  servidores»). Las dos claves con ese inglés (`fileExplorer.navigation.networkVolume` y `shortcuts.scope.servers`)
+  llevan el mismo valor, como pide `i18n-terms`. Antes las dos decían `Red`, que ahora es solo el GRUPO
+  (`fileExplorer.navigation.groupNetwork`) · `high`.
+- **`Places` (el epígrafe de atajos de la lista que cuelga de un servidor) → `Ubicaciones`** · el concepto es el de la
+  sección `Locations` de la barra lateral del Finder, o sea «los sitios a los que puedes ir», y hoy son los recursos
+  compartidos de un host SMB pero mañana los buckets de una cuenta de almacenamiento. Por eso NO `Recursos compartidos`,
+  que nombra solo el caso de hoy, ni el antiguo `Explorador de recursos compartidos`, que además nombraba una pantalla ·
+  `high`. Nautilus dice `Lugares` (Tier 3); gana la palabra de Apple.
+- **`Last used` → `Último uso`** · sin cadena equivalente en el Mac. Se compone sobre el molde de columna de fecha de
+  macOS, que es un sustantivo y no un participio: Finder `N228` «Last Opened» → `Última apertura`, `kMDItemLastUsedDate`
+  → `Fecha de última apertura`. El catálogo ya tomó esa decisión para `Modified` → `Modificación`. ❌ No
+  `Última conexión`: el inglés eligió «used» a propósito, para que la columna siga valiendo cuando «usar» un servidor
+  sea algo más que conectarse · `high` (molde), `tentative` (la palabra exacta).
+- **`Found nearby` → `Encontrado cerca`** · compuesto sobre dos piezas del Mac: `encontrar` para el descubrimiento en
+  red (`LOCAL_NETWORK_SUMMARY`, «encontrar dispositivos en tu red local») y `cerca` para la proximidad (Finder AirDrop
+  `MR19`/`MR21`, «personas que estén cerca»). Concuerda con `servidor`, masculino, igual que sus vecinos `Conectado` y
+  `Guardado`, así que la columna entera lee en paralelo · `high`.
+- **`Waiting for you to check the key` → `Esperando a que compruebes la clave`** · `clave` es la palabra ya asentada
+  para la clave de host SSH (`servers.refusal.hostKeyUntrusted`, «la clave de {host}»), y `comprobar` es el verbo del
+  catálogo para verificar algo uno mismo (`errors.listing.hostDown.suggestion`, «Comprueba que el host esté encendido»).
+  El inglés se dirige a quien lee, así que el español va en `tú` · `high`. La prohibición de empezar por `Esperando` es
+  de la columna de estado de LA COLA (`queue.row.status`), donde `Esperando` ya significa «en cola»; esta es otra tabla
+  y ahí no hay ningún `Esperando` con el que confundirse.
+- **`Local network discovery is off.` → `La detección de servidores en la red local está desactivada.`** · el inglés
+  nombra la función («discovery»); en español el sustantivo `descubrimiento` suena a hallazgo y `la detección` es la
+  forma corriente. Se dice `de servidores` porque la línea sustituye justo a la lista de servidores cercanos, y la
+  interfaz que la enciende ya se describe así (`settings.network.enabled.description`, «Descubre servidores SMB en tu
+  red local») · `high`.
+- **`Turn it on in Settings` → `Actívala en Ajustes`** · `activar` es el verbo de macOS («activa Bluetooth») y `Ajustes`
+  el nombre que da el Mac a su ventana de ajustes. El clítico `-la` concuerda con `la detección` de la línea anterior,
+  que es la única frase junto a la que aparece este enlace · `high`.
+- **`Add server…` → `Añadir servidor…`, sin artículo** · macOS pone el objeto sin artículo cuando se AÑADE algo nuevo
+  («Añadir personas», «Añadir contraseña», «Añadir a favoritos»), y el catálogo hace lo mismo (`Añadir atajo`). El
+  artículo se reserva para las órdenes que actúan sobre el servidor que ya está bajo el cursor (`Olvidar el servidor`,
+  `Desconectar el servidor`) · `high`. ❌ `agregar` no aparece ni una vez en el macOS en español.
+- **`No servers yet` → `Aún no hay servidores`** · molde ya asentado del catálogo: `askCmdr.sessions.empty` («No chats
+  yet» → «Aún no hay chats»), `operationLog.dialog.empty` («No operations yet.» → «Aún no hay operaciones.») · `high`.
+- **`emptyMessage`: imperativo más futuro** · «Add one below, or turn on a Mac or NAS …and Cmdr will find it» →
+  `Añade uno aquí abajo, o enciende un Mac o un NAS de tu red y Cmdr lo encontrará.` El par imperativo + futuro es el
+  que el `style.md` fija para «haz X y pasará Y» (`Déjalo vacío y Cmdr buscará …`). `NAS` se queda tal cual, como en
+  `settings.network.smbConcurrency.description` («los NAS domésticos») y `onboarding.stepOptional.networking.desc`.
+  `aquí abajo` en vez de `abajo` a secas: en español `abajo` solo se apoya en un sustantivo (`el botón de abajo`) ·
+  `high`.
+- **`Pin / unpin server` → `Fijar o desfijar el servidor`, con `o` y no con barra** · el catálogo ya resolvió este
+  patrón de dos direcciones en un solo comando: `commands.tabTogglePin.label` = `Fijar o desfijar la pestaña`, y macOS
+  `es` usa el par explícito (`Activar o desactivar …`). El `@key` inglés conserva la barra por su propia sintaxis; en
+  español la barra entre dos verbos no es la forma de la paleta de comandos · `high`. `fijar`/`desfijar` (y no `anclar`)
+  es la variante ya asentada del catálogo.
+- **Los otros cuatro comandos copian palabra por palabra a sus hermanos ya publicados** ·
+  `Olvidar la contraseña guardada` es literalmente el valor de `menu.network.forgetSavedPassword` y
+  `fileExplorer.network.share.forgetPassword` (mismo inglés, lo exige `i18n-terms`); `Desconectar el servidor` y
+  `Editar el servidor…` siguen el molde con artículo de `menu.network.forgetServer` (`Olvidar el servidor`);
+  `Mostrar servidores` usa `mostrar` (glosario: show → mostrar) · `high`.
+- **Los tres avisos de fijar/desfijar** · `{name} ya está en tu selector de volúmenes.` y
+  `{name} ya no está en tu selector de volúmenes.` reutilizan `selector de volúmenes`
+  (`commands.paneLeftVolumeChooser.label`, `shortcuts.scope.volumeChooser`), y `estar` no expone género. La segunda
+  frase del aviso de desfijar nombra el sustantivo, `El servidor sigue guardado.`, en vez de un `Sigue guardado.` que
+  colgaría de `{name}`: es la salida que manda el `style.md` para no concordar nunca con un `{name}`. El tercero pone a
+  Cmdr de sujeto en pretérito, igual que `servers.refusal.unreachable`: `Cmdr no pudo cambiar dónde aparece {name}.` ·
+  `high`.
+
+### Notas de forma
+
+- Ningún valor lleva apóstrofo, así que no hay duplicación ICU (`''`) que hacer.
+- Los 28 valores difieren del inglés, así que ninguno necesita `@key.sameAsSourceJustification`.
+- `servers.hub.rowCount` escribe las tres categorías CLDR del español (`one` / `many` / `other`); `many` repite `other`
+  palabra por palabra, como ya hace el resto del catálogo.
+- Verbatim: `Cmdr`, `Mac`, `NAS`. Las elipsis copian el `…` (U+2026) del inglés, carácter a carácter.

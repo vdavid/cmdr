@@ -632,6 +632,26 @@
   "@commands.networkSelectHost.label": {
     "sourceHash": "4a9ede5"
   },
+  "commands.serversShow.label": "Afficher les serveurs",
+  "@commands.serversShow.label": {
+    "sourceHash": "092283a"
+  },
+  "commands.serversTogglePin.label": "Épingler ou désépingler le serveur",
+  "@commands.serversTogglePin.label": {
+    "sourceHash": "7d800c8"
+  },
+  "commands.serversDisconnect.label": "Se déconnecter du serveur",
+  "@commands.serversDisconnect.label": {
+    "sourceHash": "8656022"
+  },
+  "commands.serversForgetSecret.label": "Oublier le mot de passe enregistré",
+  "@commands.serversForgetSecret.label": {
+    "sourceHash": "ed68566"
+  },
+  "commands.serversEdit.label": "Modifier le serveur…",
+  "@commands.serversEdit.label": {
+    "sourceHash": "a3282a7"
+  },
   "commands.networkRefresh.label": "Actualiser les hôtes réseau",
   "@commands.networkRefresh.label": {
     "sourceHash": "73966bd"

@@ -1286,9 +1286,9 @@
   "@fileExplorer.navigation.groupNetwork": {
     "sourceHash": "1744b96"
   },
-  "fileExplorer.navigation.networkVolume": "Netzwerk",
+  "fileExplorer.navigation.networkVolume": "Server",
   "@fileExplorer.navigation.networkVolume": {
-    "sourceHash": "1744b96"
+    "sourceHash": "68d7beb"
   },
   "fileExplorer.navigation.searchResultsVolume": "Suchergebnisse",
   "@fileExplorer.navigation.searchResultsVolume": {
@@ -1394,6 +1394,18 @@
   "fileExplorer.navigation.disconnectBusyTooltip": "Trennen nicht möglich, während auf diesem Server Vorgänge laufen",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
     "sourceHash": "2085de5"
+  },
+  "fileExplorer.navigation.serverPinnedToast": "{name} ist jetzt in deiner Volume-Auswahl.",
+  "@fileExplorer.navigation.serverPinnedToast": {
+    "sourceHash": "d09b133"
+  },
+  "fileExplorer.navigation.serverUnpinnedToast": "{name} ist nicht mehr in deiner Volume-Auswahl. Der Server bleibt gespeichert.",
+  "@fileExplorer.navigation.serverUnpinnedToast": {
+    "sourceHash": "3367b4d"
+  },
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr konnte nicht ändern, wo {name} angezeigt wird.",
+  "@fileExplorer.navigation.pinRefusedToast": {
+    "sourceHash": "14230e4"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr konnte die Verbindung zu {name} nicht trennen.",
   "@fileExplorer.navigation.disconnectRefusedToast": {

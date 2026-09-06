@@ -2053,3 +2053,68 @@ der Referenz-Stapel auf der M1-Kiste fehlt.
 - **Der Rückverweis in den Tooltips heißt `den Server`, nicht `ihn`** · in `connectionTooltipNeedsHostKey` stünde `ihn`
   zwischen zwei maskulinen Bezugswörtern (`der Schlüssel`, `dieses Servers`) und wäre mehrdeutig;
   `connectionTooltipSaved` hat vor `Öffne …` überhaupt kein Bezugswort · `high`.
+
+## Die Server-Übersicht: Spalten, Zustände und die Zeile im Volume-Umschalter (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.server*`/`.pinRefusedToast`/`.networkVolume`, `shortcuts.scope.servers`/`.places`)
+
+Die Zeile `Netzwerk` im Volume-Umschalter heißt jetzt `Server` und öffnet eine Tabelle aller gespeicherten und in der
+Nähe gefundenen Server (Name / Typ / Adresse / Status / Zuletzt benutzt) mit einer Zeile `Server hinzufügen…` am Ende.
+Die GRUPPE darüber bleibt `Netzwerk` (`fileExplorer.navigation.groupNetwork`). Belege aus den installierten
+macOS-Bundles (macOS 26.6.2, Build 25G83, gelesen 2026-09-06), weil der Referenz-Stapel auf der M1-Kiste fehlt.
+
+- **Spaltentitel `Name` / `Typ` / `Adresse` / `Status`** · Finder `LocalizableMerged` `N220` („Name“ → „Name“); `Type` →
+  `Typ` (WorkflowKit/ActionKit `Localizable.loctable`); `Address` → `Adresse` (durchgängig, u. a.
+  `Security.framework/OID.loctable`, `MapKit`, `Contacts`); `Status` → `Status` (CalendarLink `Localizable.loctable`,
+  dazu Finder „iCloud-Status“, „Statusleiste“) · `high`. `Name` und `Status` sind zeichengleich zum Englischen und
+  tragen deshalb ein `sameAsSourceJustification`.
+- **„Last used“ → `Zuletzt benutzt`** · Finder `de.lproj/ConnectToWindow.strings` („Clear Recent Servers“ → „Zuletzt
+  benutzte Server löschen“) und ContactsUICore `PREFERRED_LINE_PICKER_LAST_USED_VALUE` („Last Used“ → „Zuletzt benutzt“)
+  · `high`. Abgrenzung: `Zuletzt verwendet` bleibt der Gruppentitel der Befehlspalette (`commandPalette.groupRecent`),
+  `Zuletzt geöffnet` die Datei-Zeitangabe (`fileExplorer.dateTooltip.lastOpened`).
+- **„Add server…“ → `Server hinzufügen…`** · gesetztes „Add to X“ → „Zu X hinzufügen“ plus Finders `Hinzufügen`
+  (`ConnectToWindow.strings` `dFo-pT-NQm.ibShadowedToolTips[0]`) · `high`. Menü-/Tastenpunkt, also `…` ohne Leerzeichen.
+- **`Connected` → `Verbunden`** · AppKit `SavePanel.loctable` („Connected“ → „Verbunden“) und Finder `SD13` („Connected
+  servers“ → „Verbundene Server“) · `high`.
+- **`Saved` (Zustand eines gespeicherten Servers) → `Gespeichert`** · zeichengleich zum schon ausgelieferten
+  `fileExplorer.navigation.connectionTooltipSaved` („Gespeichert. Öffne den Server, …“) · `high`. ❌ Nicht Apples
+  `Gesichert` (Podcasts): das ist dort „gesicherte“ Folgen im Sinn von heruntergeladen.
+- **`Found nearby` → `In der Nähe gefunden`** · Apples eigener Satz „%@ have been found nearby“ → „„%@“ wurden in der
+  Nähe gefunden“ (Find My) · `high`. `nearby` → `in der Nähe` ist bei Apple durchgängig.
+- **`Signed out` → `Abgemeldet`** · zeichengleich zum ausgelieferten `connectionTooltipNeedsSignIn` („Abgemeldet. Öffne
+  diesen Server, …“); Apple rendert „Profile (Signed out)“ als „Profil (abgemeldet)“ · `high`.
+- **„Waiting for you to check the key“ → `Wartet darauf, dass du den Schlüssel prüfst`** · direkte `du`-Anrede wie im
+  englischen `@key` verlangt, und `der Schlüssel` statt `Hostschlüssel` nach der schon gesetzten Zeile oben · `high`. ❌
+  Keine Nominalisierung („Warten auf deine Prüfung des Schlüssels“): die Stilregel zieht das Verb vor.
+- **`Never` (Spalte „Zuletzt benutzt“) → `Nie`** · Mail `PreferencesWindow.loctable` („Never“ → „Nie“) · `high`.
+- **„Local network discovery is off.“ → `Die Suche im lokalen Netzwerk ist deaktiviert.`** · `discovery` → `Suche` aus
+  dem eigenen Katalog (`settings.network.firstTriggerDone.label` = „Netzwerksuche gestartet“), `Local Network` →
+  `Lokales Netzwerk` aus macOS' Privatsphäre-Einstellung, und „X is off“ → „X ist deaktiviert“ aus dem Katalog
+  (`ai.translateError.off.title`, `settings.askCmdr.status.off`) · `high`.
+- **„Turn it on in Settings“ → `In den Einstellungen aktivieren`** · `settings.window.title` = „Einstellungen“, und
+  `aktivieren` hält die Wortfamilie mit dem `deaktiviert` der Zeile darüber zusammen (`settings.network.enabled.label` =
+  „Netzwerk aktivieren“) · `high`.
+- **„No servers yet“ / „Add one below…“ → `Noch keine Server` / `Füge unten einen hinzu, …`** · wortgleicher Rahmen wie
+  `settings.mediaIndex.chosenFolders.empty` („Noch keine Ordner. Füge einen hinzu, um …“) · `high`. Der Rückverweis am
+  Satzende heißt `das Gerät`, nicht `ihn`/`es`: „ein Mac oder ein NAS“ mischt Maskulinum und Neutrum, ein Pronomen
+  könnte sich also nicht auf beide beziehen. `NAS` bleibt stehen (schon im Katalog,
+  `errors.listing.hostDown.suggestion`).
+- **`Server` ist im Plural endungsgleich**, also tragen beide CLDR-Zweige von `servers.hub.rowCount` denselben Text
+  (`{countText} Server`). Das ist korrektes Deutsch, kein vergessener Zweig.
+- **„Pin / unpin server“ → `Server fixieren/lösen`** · zeichengleich zum Muster von `commands.tabTogglePin.label` („Tab
+  fixieren/lösen“) und zur Glossarzeile `pin / unpin tab` · `high`. Ohne Leerzeichen um den Schrägstrich, wie beim
+  Tab-Befehl.
+- **„Disconnect server“ (Befehl) → `Verbindung zum Server trennen`** · dieselbe Rektion wie
+  `fileExplorer.navigation.disconnectPlaceAriaLabel` („Verbindung zu {name} trennen“): getrennt wird die Verbindung,
+  nicht der Server · `high`. ❌ Nicht `Server trennen`.
+- **„volume switcher“ im sichtbaren Text → `Volume-Auswahl`** · das Englische wechselt zwischen „volume chooser“
+  (Befehle, Kurzbefehl-Bereich) und „volume switcher“ (Toasts); im Deutschen trägt beides den schon ausgelieferten Namen
+  `Volume-Auswahl` (`commands.paneLeftVolumeChooser.label`, `commands.volumeClose.label`,
+  `shortcuts.scope.volumeChooser`), damit der Nutzer eine Sache wiedererkennt · `high`.
+- **`Places` (Kurzbefehl-Bereich unter einem Server) → `Orte`** · Apples durchgängiges Rendering, u. a. Finder `SD5`/
+  `FI9` („Locations“ → „Orte“) und 40 `Places` → `Orte`-Treffer in den Systembundles · `high`. Ersetzt das frühere
+  `Freigabe-Browser`, weil der Bereich jetzt auch Buckets und nicht nur SMB-Freigaben abdeckt.
+- **`Servers` als Zeile im Umschalter und als Kurzbefehl-Bereich → `Server`** · Singular und Plural sind endungsgleich;
+  die Gruppe darüber bleibt `Netzwerk`, sodass sich Zeile und Gruppe im Umschalter unterscheiden · `high`.
+- **„Cmdr couldn''t change where {name} shows.“ → `Cmdr konnte nicht ändern, wo {name} angezeigt wird.`** · wortgleicher
+  Rahmen wie die Geschwister `forgetServerRefusedToast` („Cmdr konnte {name} nicht vergessen.“) und
+  `disconnectRefusedToast`; `{name}` bleibt Nominativ-Subjekt des Passivs · `high`.
+- Kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt.

@@ -1047,3 +1047,68 @@ so the live bundles ARE the Tier-1 source here; read the `zh_TW` key of each `.l
 - **連接詞 → `和`** · 目錄中「X and Y」型標籤幾乎都用 `和`（`顏色和格式`、`日期和時間`、`提示和警告`）· `high`。
 - **句式 → `在 …、…、… 或 … 上按 Enter 鍵時的行為。`** · 與同類鍵 `settings.archives.zip.description`、
   `settings.archives.bundle.description` 完全相同的格式 · `high`。值中沒有撇號。
+## 伺服器中心
+
+涵蓋 `servers.hub.*`、`commands.servers*`，以及 `fileExplorer.navigation.server*Toast` 這一組（2026-09-06）。
+
+卷宗切換器裡原本叫 "Network" 的那一列改名為 "Servers"，點進去是一張表：使用者存起來的伺服器（SFTP、WebDAV、SMB）加上在附近找到的，欄位是 Name
+/ Type / Address / Status / Last used，最後一列是 "Add server…"。這一列所屬的**群組**仍叫
+`網路`（`fileExplorer.navigation.groupNetwork`）。
+
+代理機上沒有參考資料堆，所以下面的詞都是照 `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this
+machine"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lproj`，macOS 26.6.2、build 25G83、2026-09-06）用
+`plutil -convert json` 比對英文鍵得來的。
+
+- **Servers（切換器裡的那一列、鍵盤快速鍵的區段標題）** · `伺服器` · AP-TW = AP-HK
+  (`Mail/SMTPSettings.loctable:106.ibExternalAccessibilityDescription` = "Servers" → `伺服器`；`Localizable.loctable` 的
+  `Server` 鍵同樣是 `伺服器`)，也是詞彙表既有的 `server` · `confirmed`
+- **Places（一部伺服器底下的位置清單：今天是 SMB 的共享資料夾，之後是儲存帳號的 bucket）** · `位置` ·
+  Finder 側邊欄的 "Locations" → `位置`（`LocalizableMerged.strings:SD5`，TW = HK）· `high`。❗ 不用
+  `地點`：那是 Freeform 和「尋找」裡的地理義（`CRLShapeLibrarianCategoryNames.loctable:Places_47`）。
+- **Name / Type / Address / Status（欄位標題）** · `名稱` / `類型` / `位址` / `狀態` · 全部照英文鍵直接命中：Finder
+  `LocalizableMerged.strings:N220` "Name" → `名稱`（TW = HK）、系統設定 `Localizable.loctable` 的 `Type` →
+  `類型`、`Status` → `狀態`（皆 TW = HK）、`address` → TW `位址`（HK `地址`，依台灣優先取 `位址`，也和既有的
+  `伺服器位址` 一致）· `high`
+- **Last used（欄位標題）** · `上次使用` · AP-HK 的 `Last Used` 鍵就是 `上次使用`；AP-TW 那把鍵譯成
+  `最近使用的裝置`（裝置清單專用，不通用），但 TW 的 Finder 欄位用的正是同一個 `上次…` 句式（"Last Opened" →
+  `上次打開日期`）· `high`
+- **Never（"Last used" 欄位裡從沒連過的那格）** · `從未使用` · AP-TW 的 "Never Played" → `從未執行`
+  給出「從未+動詞」的形狀 · `high`。❗ 不用單獨的
+  `永不`：AP-TW 拿它翻未來義的 "Never"（`永不允許`、`永不中斷連線`），放在「上次使用」欄裡會讀成「永遠不要用」。
+- **Connected（狀態）** · `已連線` · AP-TW `Localizable.loctable:Connected`（HK `已連接`）· `confirmed`
+- **Saved（狀態：存起來了但現在沒連）** · `已儲存` · AP-TW = AP-HK (`SignatureSaved` = "Saved" → `已儲存`)，也和詞彙表的
+  `save` = `儲存` 一致 · `high`
+- **Found nearby（狀態：現在在區域網路上看得到）** · `在附近找到` · `nearby` = `附近` 是 AP-TW = AP-HK (`nearby_devices`
+  "Nearby Devices" → `附近裝置`，`PERSON_DETAIL_FIND_BUTTON_SUBTITLE` "Nearby" → `附近`) · `high`
+- **Signed out（狀態：因為少了密碼而斷掉的工作階段）** · `已登出` · AP-TW = AP-HK (`PROFILE_SIGNED_OUT_MAC_APP` "Profile
+  (Signed out)" → `個人檔案（已登出）`)，和詞彙表既有的 `sign in / signed out` 一致 ·
+  `high`。❗ 這不是拒絕，也不是出錯，所以不寫 `無法`、不寫 `錯誤`。
+- **Waiting for you to check the key（狀態）** · `等你確認主機金鑰` · `主機金鑰` 沿用詞彙表既有的條目；英文只說 "the
+  key"，中文非補上 `主機` 不可，否則會讀成 API 金鑰 · `high`。用第二人稱直接對使用者說話，和英文一樣。
+- **pin / unpin（讓伺服器也出現在卷宗切換器裡，或拿掉）** · `釘選` / `取消釘選` · AP-TW = AP-HK（Music
+  `Localizable.strings` 的 "Pin" → `釘選`、"Unpin" → `取消釘選`；Notes 的 "Pin Note" → `釘選備忘錄`
+  給出「釘選+受詞」的形狀），也是目錄既有的 `menu.tab.pinTab` / `unpinTab` · `confirmed`。指令名稱裡的斜線用全形
+  `／`，照 `settings.selection.recentSelections.maxCount.description` 的 `「選取／取消選取檔案」`。
+- **volume switcher（挑磁碟的那個清單）** · `卷宗切換器` · `切換器`
+  是目錄既有的 "switcher"（`commands.favoritesAdd.description` = `切換器的「喜好項目」`），`卷宗` 是既定的 volume ·
+  `high`。⚠️ 同一個介面英文自己有兩個名字："volume chooser"（`shortcuts.scope.volumeChooser`、兩個
+  `commands.pane*VolumeChooser.label`，中文是 `卷宗選擇器`）和這裡的 "volume
+  switcher"。中文照著英文分開寫，不自行合併；要統一應該先統一英文。
+- **Add server…（表格最後一列）** · `加入伺服器…` · Apple 的「加入+受詞」句式（系統設定 `ADD_DEVICE` "Add Device…" →
+  `加入裝置⋯`、`MainMenu.loctable` "Add Account…" → `加入帳號⋯`，TW = HK）· `high`。刪節號照目錄慣例寫
+  `…`（U+2026），不跟 Apple 的 `⋯`。
+- **local network（區域網路）** · `區域網路` · AP-TW 把隱私權面板的 `LOCAL_NETWORK` 鍵（"Local Network"）譯成
+  `區域網路`，整份 SystemSettings 的行文也一律 `區域網路`（HK 是 `本地網絡`，台灣優先取 `區域網路`）· `high`。⚠️
+  **目錄和 Apple 不一致**：`settings.network.enabled.description` 和 `onboarding.stepOptional.networking.desc` 寫的是
+  `本機網路`（早先的 pass 自行組出來的），而使用者的 macOS 權限對話框上寫的是 `區域網路`。新字串取
+  `區域網路`；那兩個舊值應該另開一個 pass 改掉（不在這 28 個鍵的範圍內），和 `ai.*` 的 `金鑰環` 一樣。
+- **discovery（探索）** · `探索` · 目錄既有的 `settings.network.firstTriggerDone.label` = `網路探索已啟動`、
+  `settings.network.enabled.description` = `探索 SMB 伺服器` · `high`。所以 "Local network discovery is off." 是
+  `區域網路探索已關閉。`
+- **Turn it on in Settings（連結文字）** · `在「設定」中開啟` · 句式照目錄既有的 `shortcuts.window.editInSettings` =
+  `在「設定」中編輯快速鍵`；`開啟` 是 Apple 的 "Turn on" · `high`。這裡的 Settings 是 Cmdr 自己的設定視窗，依 §
+  Punctuation 加角括號。
+- **伺服器的量詞是 `部`** · `{count, plural, other {{countText} 部伺服器}}` ·
+  **自行組出來的**：Apple的繁體套件裡沒有帶量詞的 `伺服器`，但 `style.md` § Plurals 指定 `部`
+  是 Mac 的量詞，目錄也已經寫 `這部 Mac`，而伺服器就是一部機器 · `tentative`。zh-Hant 只需要 `other` 這一支。
+- 這 28 個值都不含撇號，也沒有 `sameAsSourceJustification`：每一個都和英文不同。

@@ -281,6 +281,13 @@ Dateien".
   `Server vergessen (in Benutzung)`, `Gespeichertes Passwort vergessen (in Benutzung)`. Keinen zweiten Marker erfinden.
   Abgrenzung zur Glossarzeile `in use → in Verwendung`: die gilt für den Fließtext im Finder-Ton („Das Volume ist gerade
   in Verwendung …“), der Menü-Marker bleibt `in Benutzung`, weil `menu.volume.ejectBusy` ihn gesetzt hat.
+- **Zwei Nomen mit verschiedenem Genus vertragen kein gemeinsames Pronomen.** Wo das Englische mit „it“ auf eine
+  Aufzählung zurückzeigt („turn on a Mac or NAS … and Cmdr will find it“), braucht das Deutsche ein Oberbegriff-Nomen,
+  weil `ein Mac` maskulin und `ein NAS` neutrum ist: „… und Cmdr findet **das Gerät**.“ (`servers.hub.emptyMessage`).
+  Dieselbe Mechanik wie die `{name}`-Regel oben, nur ohne Platzhalter.
+- **Ein Bedienelement trägt im Deutschen EINEN Namen, auch wenn das Englische zwei hat.** „volume chooser“ und „volume
+  switcher“ meinen dasselbe Aufklappmenü und heißen beide `Volume-Auswahl`. Beim Übersetzen eines neuen Strings prüfen,
+  ob der Katalog die Fläche schon benannt hat, statt das englische Synonym mitzuübersetzen.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

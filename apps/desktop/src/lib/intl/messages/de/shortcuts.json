@@ -36,17 +36,17 @@
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "250a34f"
   },
-  "shortcuts.scope.servers": "Netzwerk",
+  "shortcuts.scope.servers": "Server",
   "@shortcuts.scope.servers": {
-    "sourceHash": "1744b96"
+    "sourceHash": "68d7beb"
   },
   "shortcuts.scope.errorScreen": "Fehlerbildschirm",
   "@shortcuts.scope.errorScreen": {
     "sourceHash": "d3da94a"
   },
-  "shortcuts.scope.places": "Freigabe-Browser",
+  "shortcuts.scope.places": "Orte",
   "@shortcuts.scope.places": {
-    "sourceHash": "5cec2a6"
+    "sourceHash": "eb5cfb7"
   },
   "shortcuts.scope.commandPalette": "Befehlspalette",
   "@shortcuts.scope.commandPalette": {
