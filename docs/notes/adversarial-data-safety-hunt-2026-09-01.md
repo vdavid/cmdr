@@ -6,9 +6,9 @@ for principle #1 (protect the user's data), meant to be worked through at leisur
 
 ## Status (2026-09-06)
 
-Nine of the 15 findings are fixed on `main`, each with a regression test that failed before its fix; the cross-type
-Overwrite rule and the folder-over-file aside are policy changes David decided on 2026-09-06 (a blanket policy never
-crosses types; an explicit Stop-prompt answer still does, in both directions).
+Thirteen of the 15 findings are fixed, each with a regression test that failed before its fix; the cross-type Overwrite
+rule and the folder-over-file aside are policy changes David decided on 2026-09-06 (a blanket policy never crosses
+types; an explicit Stop-prompt answer still does, in both directions).
 
 - **#1, #8** fixed: `fix(move): a cross-filesystem move stops destroying files that arrived in the source while it ran`
   (Phase 4 deletes a ledger via `move_op/source_sweep.rs`), `feat(move): a move that left files behind says so`, and
@@ -38,8 +38,24 @@ crosses types; an explicit Stop-prompt answer still does, in both directions).
   recreates parents.
 - **#15** fixed: `fix(move): a file that appears at the destination mid-move is refused` (`rename_onto_free_name` at all
   four sites).
-- **Open**: #6, #7, #9, #10, #12, #14. Planned as two batches: copy-engine rollback and temp cleanup (#6, #7, #12, #14),
-  then volume conflict detection and the delete-before-rename (#9, #10).
+- **#6** fixed:
+  `fix(copy): a copy that fails partway stops deleting the files that already replaced the user's originals` (the local
+  engine matches the volume engine: a failure keeps what landed and cleans only the partial, on BOTH error arms).
+  `reversal::reverse_copy_transaction` has no production caller left and is `#[cfg(test)]`.
+- **#7** fixed:
+  `fix(copy): the only copy of a file whose cross-volume overwrite couldn't finish stops being deleted by the next transfer into that folder`
+  (`finalize_safe_replace` renames the temp to a ` (recovered)` name, and a new typed
+  `WriteOperationError::NewDataKeptAt` tells the user where it is), plus the frontend half. Left open: a failed
+  `staged_write::land` (delete succeeded, second rename failed) leaves committed data under a `.cmdr-tmp-*` name the
+  same way, on a narrower trigger.
+- **#12** fixed:
+  `fix(copy): a cross-volume copy whose conflict resolution refuses stops abandoning its half-built destination without cleanup, a rollback, or a word to the user`
+  (`drive_transfer_concurrent` answers an outcome and can no longer return `Err`, so the post-loop always runs).
+- **#14** fixed: `fix(copy): a deep-merge child that never lands stops leaving an empty `file
+  (1).ext` in the user's folder` (`find_unique_volume_name` answers a `ClaimedName`; `copy_leaf` takes the reservation
+  back on its failure path). Left open: a leaf whose FUTURE is dropped at the cancel-drain deadline runs no cleanup, and
+  `sequential_extract`'s plan mode reserves in one pass and streams in another.
+- **Open**: #9, #10 (volume conflict detection and the delete-before-rename).
 
 **Scope, honestly.** The plan was 18 subsystems (both transfer engines, the write-ops umbrella, archive edits,
 delete/trash/clipboard, `cmdr-fs`, SMB, SFTP, MTP, secrets and settings persistence, the file viewer, the operation log,
