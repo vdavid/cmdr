@@ -254,3 +254,38 @@ async fn a_live_servers_row_comes_out_of_the_pipeline_enriched() {
 
     manager.unregister(&volume_id);
 }
+
+/// ❗ **A live session is never a ghost.** `forget_server` drops the saved entry
+/// without dropping the session, so a volume the stores no longer know about
+/// still gets its row: one a pane can sit on while the switcher denies it exists
+/// is worse than one the user can disconnect.
+#[test]
+fn a_registered_volume_nothing_saved_still_gets_a_row() {
+    let volume_id = cmdr_fs::volume::sftp_volume_id("192.0.2.46", 2222, "ada");
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    manager.register(
+        &volume_id,
+        std::sync::Arc::new(
+            cmdr_fs::volume::InMemoryVolume::new("Forgotten but live")
+                .with_backend_kind(BackendKind::Sftp)
+                .with_connection_state(ConnectionState::Direct)
+                .with_root("sftp://ada@192.0.2.46:2222/srv/data"),
+        ),
+    );
+
+    let mut rows = Vec::new();
+    append_server_volumes(&mut rows);
+    let row = rows
+        .iter()
+        .find(|row| row.id == volume_id)
+        .expect("a live volume has a row whether or not anything saved it");
+
+    assert_eq!(
+        row.name, "Forgotten but live",
+        "the volume's own name, since no entry has one"
+    );
+    assert_eq!(row.path, "sftp://ada@192.0.2.46:2222/srv/data");
+    assert_eq!(row.fs_type.as_deref(), Some("sftp"));
+
+    manager.unregister(&volume_id);
+}
