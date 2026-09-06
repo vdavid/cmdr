@@ -9,7 +9,7 @@
 //! that costs and which cells opt out: the fixture README's "Against a server
 //! of your own".
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use cmdr_fs::volume::Volume;
@@ -304,7 +304,10 @@ pub async fn connect_fixture_as(service: &str, fallback_port: u16, username: &st
 pub async fn scratch_dir(volume: &WebdavVolume) -> PathBuf {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT: AtomicU64 = AtomicU64::new(0);
-    let path = Path::new("/").join(format!(
+    // ❗ Under the volume's APP root, prefix and all, because that is what a pane
+    // holds and what every app site hands the volume. A bare `/cmdr-test-…` is
+    // refused now, on purpose (`cmdr_fs::volume::remote_paths`).
+    let path = volume.root().join(format!(
         "cmdr-test-{}-{}",
         std::process::id(),
         NEXT.fetch_add(1, Ordering::Relaxed)

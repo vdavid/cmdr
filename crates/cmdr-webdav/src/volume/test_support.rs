@@ -1,12 +1,12 @@
 //! A volume with no client behind it, for the cells that exercise the path
 //! translation and the state machine without a server.
 
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU8};
 
 use cmdr_fs::volume::Retirement;
 use cmdr_fs::volume::host::VolumeHost;
+use cmdr_fs::volume::remote_paths::RemoteRoot;
 use url::Url;
 
 use super::{ConnectionState, WebdavVolume, WebdavVolumeInner};
@@ -24,7 +24,10 @@ pub(super) fn make_test_volume_with(root: &str, host: VolumeHost) -> WebdavVolum
     );
     WebdavVolume {
         name: "test".to_string(),
-        root: PathBuf::from(super::paths::root_remote_path(&params.remote_root)),
+        root: RemoteRoot::new(
+            cmdr_fs::volume::webdav_app_root(params.host(), params.port(), &params.username),
+            &params.remote_root,
+        ),
         inner: Arc::new_cyclic(|me| WebdavVolumeInner {
             volume_id: "webdav-test".to_string(),
             params,

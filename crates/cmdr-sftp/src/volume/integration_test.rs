@@ -792,3 +792,32 @@ async fn approving_the_key_the_server_presents_records_it() {
         "a recorded key means the next dial never asks again"
     );
 }
+
+/// ❗ **A listing hands out APP paths, and they come straight back in.**
+///
+/// A pane holds what a listing gives it and passes it to the next call, and the
+/// app anchors it against the volume root on the way
+/// (`cmdr_fs::volume::root_anchored`). A bare server path would be joined ONTO
+/// the root, arrive doubled, and strip back to a real, wrong directory. This is
+/// the cell that would catch that.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_a_listings_paths_are_what_the_app_hands_back() {
+    let params = fixture_params("OPENSSH", 12480);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let entries = volume.list_directory(volume.root(), None).await.expect(FIXTURE);
+    let hello = entries.iter().find(|e| e.name == "hello.txt").expect(FIXTURE);
+
+    assert_eq!(
+        Path::new(&hello.path),
+        volume.root().join("hello.txt"),
+        "a listing spells an entry the way the volume root is spelled"
+    );
+    // The round trip a pane makes: the listed path, anchored the way the app
+    // anchors it, back into the volume.
+    let handed_back = cmdr_fs::volume::root_anchored(volume.root(), Path::new(&hello.path));
+    assert_eq!(handed_back, volume.root().join("hello.txt"));
+    assert!(volume.exists(&handed_back).await, "and it still names the same file");
+}

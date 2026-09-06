@@ -56,11 +56,22 @@ covers any TLS refusal, of which a self-signed NAS is by far the commonest. Narr
 
 ## Path handling
 
-`paths.rs` is `cmdr-sftp`'s translation with a different root: `remote_root` is normalized to `/` or `/Photos` under the
-base URL, `..` is resolved lexically BEFORE the containment check, the root is matched by whole components, and anything
-outside is `NotFound` (never anchored). The result is a root-relative remote path; `WebdavClient::url_for`
-percent-encodes each segment (everything but unreserved characters) and appends a trailing slash for collections.
-`FileEntry.path` is the decoded remote path, the same string the app addresses the entry by.
+`paths.rs` is `cmdr-sftp`'s translation with a different root, and both go through
+`cmdr_fs::volume::remote_paths::RemoteRoot`: the app spells a file `webdav://ada@nas.local:443/Photos/a.jpg`, the server
+spells it `/Photos/a.jpg`, and the volume is rooted at `<prefix><remote root>`. The prefix comes from
+`cmdr_fs::volume::webdav_app_root`, a sibling of the `webdav_volume_id` the registry keys on. ❗ `webdav://` whatever
+the transport is: `http` and `https` to one host and port are the same server, which is the call the volume id already
+makes.
+
+`remote_root` is normalized to `/` or `/Photos` under the base URL, `..` is resolved lexically BEFORE the containment
+check, the prefix and the root are both matched by whole components, and anything outside is `NotFound` (never
+anchored). ❗ A bare server-absolute path is refused too; `crates/cmdr-sftp/DETAILS.md` § "Path handling" has the
+reasoning, which is the same here. The three root aliases stay, and `query.rs` uses one: `is_root` and
+`get_space_info_impl` ask for `/`.
+
+The remote half is what `WebdavClient::url_for` percent-encodes (everything but unreserved characters) and appends a
+trailing slash to for collections. ❗ `FileEntry.path` is the APP spelling, prefix and all, because a pane hands what a
+listing gave it straight back — as does `display_path_for`, the listing-cache patcher's.
 
 Listings are one `PROPFIND Depth: 1` with a body naming
 `resourcetype, getcontentlength, getlastmodified, creationdate, getetag, quota-available-bytes, quota-used-bytes`.

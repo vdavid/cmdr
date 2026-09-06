@@ -69,7 +69,11 @@ impl WebdavVolume {
             if name.is_empty() {
                 continue;
             }
-            let built = propfind_to_file_entry(name, &child_of(&remote, name), prop);
+            let built = propfind_to_file_entry(
+                name,
+                &self.root.to_app_path(&child_of(&remote, name)).to_string_lossy(),
+                prop,
+            );
             if built.is_directory {
                 tally.dirs += 1;
             } else {
@@ -94,7 +98,11 @@ impl WebdavVolume {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| self.name.clone());
-        Ok(propfind_to_file_entry(&name, &remote, &prop))
+        Ok(propfind_to_file_entry(
+            &name,
+            &self.root.to_app_path(&remote).to_string_lossy(),
+            &prop,
+        ))
     }
 
     /// The one entry a `Depth: 0` PROPFIND answers with.

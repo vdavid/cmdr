@@ -9,14 +9,15 @@ path; prefer that in app code (`crate::file_system::volume::VolumeError`), `cmdr
 - `volume/`: the trait, its types, `connection.rs` (the REMOTE vocabulary: `ConnectionState`, `DeviceReadiness`,
   `BackendKind`, `SignInShape`; ❗ confusing any two is a bug, and its header says how), `InMemoryVolume`, `ids` +
   `canonical_root` (the ID funnel and double-mount collapse), `retirement.rs` (how background work learns it stopped
-  being the live volume), `channel_stream.rs` (the consumer half of a network backend's read path), `scan_boundary.rs` +
-  `scan_stop.rs` (the one seam a copy scan touches per entry: it reports counts AND answers Cancel and Pause), the four
-  modules a stat-and-listing backend gets its `Volume` bodies from (`scan_walk.rs`, `mkdir_all.rs`, `patching.rs`,
-  `secret_store.rs`), `friendly_error/` (typed, word-free classification), `usb_speed.rs` (❗ its doc comment reaches
+  being the live volume), `channel_stream.rs` (a network backend's read path, consumer half), `scan_boundary.rs` +
+  `scan_stop.rs` (the one seam a copy scan touches per entry: counts, Cancel, and Pause), the four modules a
+  stat-and-listing backend gets its `Volume` bodies from (`scan_walk.rs`, `mkdir_all.rs`, `patching.rs`,
+  `secret_store.rs`), `remote_paths.rs` (a server tree's `<scheme>://user@host:port` app spelling, and the ONE
+  translation), `friendly_error/` (typed, word-free classification), `usb_speed.rs` (❗ its doc comment reaches
   `bindings.ts`), and `host/` (what a backend needs from the app, as named traits; read `src/volume/host/CLAUDE.md`
   before writing a backend).
 - `entry.rs` + `icons/` (`FileEntry` and the classifiers behind `get_icon_id`), `sqlite_util.rs` (the ONE process-wide
-  page-cache slab and the factories all five stores open through), `staging.rs` (`StagingTemp`, the ONLY way to name a
+  page-cache slab, and the factories all five stores open through), `staging.rs` (`StagingTemp`, the ONLY way to name a
   scratch file).
 - Leaves: `archive_format.rs` (sole source of truth for archive detection), `firmlinks.rs` (`normalize_path`; the index
   and the app's watchers have to agree on it), `file_provider.rs` (the cloud-domain marker), `filesystem_kind.rs`,
@@ -25,8 +26,8 @@ path; prefer that in app code (`crate::file_system::volume::VolumeError`), `cmdr
 
 ## Must-knows
 
-- **`#![deny(missing_docs)]` holds here**: new `pub` items, fields, and variants need doc comments, and several cross
-  IPC via `specta::Type`, so the comment lands in `bindings.ts`.
+- **`#![deny(missing_docs)]` holds here**: new `pub` items, fields, and variants need doc comments, and several reach
+  `bindings.ts` through `specta::Type`.
 - **`specta` stays pinned to `=2.0.0-rc.24`, identical to the app's**: two copies break bindings generation.
 - **`Volume::capabilities()` is a PURE FOLD of the trait's predicates, published over IPC.** ❌ Never override it: grow
   the surface by adding a predicate (`src/volume/capabilities.rs`).

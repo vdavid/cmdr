@@ -752,24 +752,41 @@ either would spend authentication attempts or dial a server whose key stopped ma
 
 ## Path handling
 
-`SftpVolume::to_remote_path` mirrors `SmbVolume::to_smb_path`'s stance: an absolute path outside the volume root is
-`NotFound`, and the root is matched by **whole components**.
+**The tree has two spellings, and `cmdr_fs::volume::remote_paths::RemoteRoot` is the only translation between them.**
+The app spells a file `sftp://ada@nas.local:22/srv/data/photos`; the server spells it `/srv/data/photos`. The volume is
+rooted at `<prefix><remote root>`, where the prefix comes from `cmdr_fs::volume::sftp_app_root` — the same function the
+app mints a saved server's row from, and a sibling of the `sftp_volume_id` the registry keys on, so a path and the
+volume it resolves to can't disagree. That module's header holds the rules and the reasoning; what follows is what this
+backend does with them.
 
-❌ Never reach for `cmdr_fs::volume::root_anchored` here. It _anchors_: on a volume rooted at `/srv/data` it turns
+**Why the prefix.** `commands/volumes.rs::resolve_path_to_volume` falls through to the mount table, which on both
+platforms walks up to `/` and answers the LOCAL root for any absolute path it doesn't recognize. A scheme-free
+`/srv/data/photos` would therefore send a restored tab, a favorite, a drag between panes, go-to-path, an MCP row, and
+the trash to the boot disk. It is also the convention the app already has for `mtp://` and `adb://`.
+
+❗ **Everything this backend HANDS the app carries the prefix**: `Volume::root`, every `FileEntry.path` a listing or a
+`get_metadata` produces (`mapping.rs`), and `display_path_for`, which is what the listing-cache patcher spells a
+mutation with. A bare server path anywhere in that set would come back through `cmdr_fs::volume::root_anchored` — five
+app sites run one — joined ONTO the root, and strip back to a real, wrong server path.
+`apps/desktop/src-tauri/src/file_system/write_operations/sftp_transfer_semantics_test.rs` is the cell that would catch
+it.
+
+❗ **A bare server-absolute path is REFUSED**, not accepted as a courtesy: with the prefix in place the app never spells
+one, so leniency buys only that hole. The three root aliases stay (`/`, `.`, the empty path).
+
+❌ Never reach for `root_anchored` inside this crate. It _anchors_: on a volume rooted at `/srv/data` it turns
 `/etc/passwd` into `/srv/data/etc/passwd`, which is a real path on a real server and quietly the wrong one.
 
 Two ways of guessing that would each send a request somewhere wrong, both pinned by cells:
 
 - A string prefix compare strips `/srv/data` off a sibling `/srv/data-1/photos` and asks for `-1/photos`, which is a
-  legal name.
+  legal name. The prefix is matched by whole components for the same reason: `…nas.local:2222` must not borrow
+  `…nas.local:22`'s volume.
 - `..` has to be resolved **before** the containment check, or `photos/../../etc` is the same escape spelled relatively.
 
 Resolution is lexical — no round trip, no symlink following. The question is "did the caller address something outside
 this volume", which is about the path they wrote rather than about what it resolves to, and asking the server would be
 both a round trip per path and a TOCTOU window.
-
-There is no mount, so the volume's root IS a remote directory and the paths it hands out ARE remote paths: no second
-spelling of the tree, and nothing to translate. Empty, `.`, and a bare `/` all mean the root.
 
 ## The `Volume` answers, and why
 

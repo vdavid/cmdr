@@ -1464,6 +1464,7 @@ mod in_memory;
 pub mod mkdir_all;
 pub mod mtp_ids;
 pub mod patching;
+pub mod remote_paths;
 mod retirement;
 mod scan_boundary;
 pub mod scan_stop;

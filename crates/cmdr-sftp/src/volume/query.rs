@@ -7,6 +7,8 @@ use openssh_sftp_client::fs::DirEntry;
 use tokio_util::sync::CancellationToken;
 
 use super::SftpVolume;
+use cmdr_fs::volume::remote_paths::RemoteRoot;
+
 use super::mapping::metadata_to_file_entry;
 use crate::errors::map_sftp_error;
 
@@ -59,7 +61,7 @@ impl SftpVolume {
             // which is strict. Loud and lossless beats the alternative, where a
             // folder copy writes files under names that address nothing.
             let entry = next.map_err(|e| map_sftp_error(&e, &remote))?;
-            let Some(built) = file_entry(&entry, &remote) else {
+            let Some(built) = file_entry(&self.root, &entry, &remote) else {
                 continue;
             };
             if built.is_directory {
@@ -94,7 +96,11 @@ impl SftpVolume {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| self.name.clone());
-        Ok(metadata_to_file_entry(&name, &remote, &meta))
+        Ok(metadata_to_file_entry(
+            &name,
+            &self.root.to_app_path(&remote).to_string_lossy(),
+            &meta,
+        ))
     }
 
     /// Whether `path` is there, as a plain yes/no.
@@ -107,7 +113,7 @@ impl SftpVolume {
 
 /// One directory entry as a `FileEntry`, or `None` for the two the protocol
 /// includes and a pane never shows.
-fn file_entry(entry: &DirEntry, parent: &str) -> Option<FileEntry> {
+fn file_entry(root: &RemoteRoot, entry: &DirEntry, parent: &str) -> Option<FileEntry> {
     let name = entry.filename().to_string_lossy().into_owned();
     if name == "." || name == ".." {
         return None;
@@ -117,5 +123,9 @@ fn file_entry(entry: &DirEntry, parent: &str) -> Option<FileEntry> {
     } else {
         format!("{parent}/{name}")
     };
-    Some(metadata_to_file_entry(&name, &remote_path, &entry.metadata()))
+    Some(metadata_to_file_entry(
+        &name,
+        &root.to_app_path(&remote_path).to_string_lossy(),
+        &entry.metadata(),
+    ))
 }

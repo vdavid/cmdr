@@ -371,7 +371,10 @@ async fn a_deep_destination_is_created_whole_and_reported_as_created() {
             .changes()
             .into_iter()
             .skip(before)
-            .filter(|(_, parent, _)| parent == Path::new(&format!("{FIXTURE_ROOT}/{dir}")))
+            // ❗ The APP spelling, prefix and all: `display_path_for` answers what a
+            // pane holds, so a patch keyed on the bare server path would never
+            // reach the pane it is for.
+            .filter(|(_, parent, _)| parent == &volume.root().join(&dir))
             .count(),
         1,
         "the SHALLOWEST new directory is the one a pane could be showing the parent of; \

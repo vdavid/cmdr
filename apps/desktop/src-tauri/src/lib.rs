@@ -178,6 +178,10 @@ pub mod search;
 mod secrets;
 pub mod selection;
 mod settings;
+// The saved-and-live SFTP and WebDAV servers, as volume rows. Gated with
+// `network`, whose stores it reads.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod server_volumes;
 mod short_id;
 mod space_poller;
 /// Ask Spotlight which folders this user has been working in. One narrow question,
