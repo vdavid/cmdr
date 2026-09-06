@@ -48,6 +48,12 @@ below is met.
       permanently busy. That wipe is a one-way door, so it waits for David.
 
 ## In progress
+- [ ] 2026-09-06 `servers-hub-plan.md` - **Three remote backends and one model to reach them.** SFTP and WebDAV are
+      finished and invisible, ADB is silent at the one moment the user needs feedback, and SMB signs in inside a pane
+      where Tab can't mean two things. One model (an account holds places, the switcher shows pinned places), one modal
+      sign-in sheet driven by a backend-owned `SignInShape`, one pane view for every wait, and a "Servers" hub pane
+      state; SMB migrates onto all four so S3 and OAuth inherit them. Supersedes `servers-in-the-sidebar.md` and the
+      frontend half of `android-adb-ui.md`. Eight milestones, sequential, roughly two weeks.
 
 - [ ] 2026-09-06 `data-safety-hunt-follow-ups.md` - **What the transfer-engine hunt left open after its 15 findings were
       fixed.** Nine ranked entries in problem / impact / solution / size form: two high (a cross-FS move loses the bytes
