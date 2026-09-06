@@ -52,31 +52,35 @@ const OOXML_EXTENSIONS: readonly string[] = ['docx', 'xlsx', 'pptx', 'jar', 'apk
 const BUNDLE_EXTENSIONS: readonly string[] = ['app', 'bundle', 'framework']
 
 /**
- * The format registry. Order is the Settings-list order.
+ * The format registry, ordered by MATCH SPECIFICITY: `classify` is first-match-wins,
+ * so a narrow format must sit above every broader one it would otherwise fall into.
+ * (Display order is the section's own business; it hand-renders each row.)
  *
+ * - `ooxml`: Office and Java/Android packages — zip under the hood, but a document
+ *   or an app, so Open by default. FIRST because it's a strict subset of `zip`:
+ *   these files are real zips, and the moment the backend flags one `isArchive`
+ *   the broader zip matcher would swallow it. `archive-enter-policy.test.ts` pins it.
+ *   NOT configurable yet — browsing into them isn't supported this phase, so a Browse
+ *   option would be dead.
  * - `zip`: true archives Cmdr can browse into, keyed off the backend's `isArchive`
  *   flag (its single source of truth — extension-only, never a directory) so the
  *   two stay in lockstep and future formats (tar/7z) join automatically. Default
  *   Ask (browse or open is a genuine per-file choice).
- * - `ooxml`: Office and Java/Android packages — zip under the hood, but opened, not
- *   browsed. Default Open, and NOT configurable yet — browsing into them isn't
- *   supported this phase, so a Browse option would be dead. Encoded so the default
- *   is explicit and testable (it resolves to the same Open as any other document).
  * - `bundle`: macOS application/framework bundles. Directories, so browsing already
  *   works; Open launches them via LaunchServices. Default Ask.
  */
 export const ARCHIVE_ENTER_FORMATS: readonly FormatDescriptor[] = [
   {
-    key: 'zip',
-    matches: (entry) => entry.isArchive === true,
-    defaultAction: 'ask',
-    configurable: true,
-  },
-  {
     key: 'ooxml',
     matches: (entry) => !entry.isDirectory && hasExtensionIn(entry.name, OOXML_EXTENSIONS),
     defaultAction: 'open',
     configurable: false,
+  },
+  {
+    key: 'zip',
+    matches: (entry) => entry.isArchive === true,
+    defaultAction: 'ask',
+    configurable: true,
   },
   {
     key: 'bundle',

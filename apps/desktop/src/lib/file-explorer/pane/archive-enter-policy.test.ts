@@ -54,6 +54,18 @@ describe('resolveEnterPolicy classification', () => {
     expect(resolveEnterPolicy(file('FOO.ZIP', true), {})).toBe('ask')
     expect(resolveEnterPolicy(dir('Safari.APP'), {})).toBe('ask')
   })
+
+  it('keeps an OOXML file on the ooxml format even once the backend flags it as an archive', () => {
+    // ❗ Order guard, not a style preference. An OOXML file IS a zip, so the day the
+    // backend's archive suffix table learns to browse into `.docx`, `isArchive` goes
+    // true on one — and the zip matcher is exactly `isArchive === true`. Classification
+    // is first-match-wins, so a registry ordered zip-before-ooxml would swallow every
+    // Office document into the zip row and the Office documents setting would silently
+    // stop doing anything. Specific formats MUST precede general ones.
+    const flaggedDocx = file('report.docx', true)
+    expect(resolveEnterPolicy(flaggedDocx, {})).toBe('open')
+    expect(resolveEnterPolicy(flaggedDocx, { zip: 'browse', ooxml: 'ask' })).toBe('ask')
+  })
 })
 
 describe('resolveEnterPolicy overrides', () => {
