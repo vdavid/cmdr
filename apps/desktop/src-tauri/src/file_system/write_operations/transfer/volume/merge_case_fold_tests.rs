@@ -22,6 +22,7 @@ use crate::file_system::volume::{CopyScanResult, InMemoryVolume, ListingProgress
 use crate::file_system::write_operations::types::{ConflictResolution, VolumeCopyConfig, WriteOperationError};
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::Mutex;
 use unicode_normalization::UnicodeNormalization;
 
 /// The key two names share on a backend that resolves case and normalization:
@@ -40,6 +41,10 @@ fn fold_key(name: &str) -> String {
 /// out of the way.
 struct CaseFoldingDest {
     inner: Arc<InMemoryVolume>,
+    /// Every path this destination is asked to `get_metadata`, so a cell can
+    /// pin what the fold-aware lookup COSTS: an ordinary tree must pay none
+    /// INSIDE the merge (the top-level source keeps the driver's own pre-check).
+    probes: Mutex<Vec<PathBuf>>,
     /// Makes a `get_metadata` of a name that only FOLDS onto a stored one fail
     /// with a transport error instead of answering. An unanswerable probe must
     /// fail its item, never read as "nothing is there".
@@ -50,6 +55,7 @@ impl CaseFoldingDest {
     fn new(inner: &Arc<InMemoryVolume>) -> Self {
         Self {
             inner: Arc::clone(inner),
+            probes: Mutex::new(Vec::new()),
             probe_is_unanswerable: false,
         }
     }
@@ -57,6 +63,7 @@ impl CaseFoldingDest {
     fn with_an_unanswerable_probe(inner: &Arc<InMemoryVolume>) -> Self {
         Self {
             inner: Arc::clone(inner),
+            probes: Mutex::new(Vec::new()),
             probe_is_unanswerable: true,
         }
     }
@@ -105,6 +112,7 @@ impl Volume for CaseFoldingDest {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            self.probes.lock_ignore_poison().push(path.to_path_buf());
             let folded = self.fold(path).await;
             if self.probe_is_unanswerable && folded != *path {
                 return Err(VolumeError::DeviceDisconnected(
@@ -575,5 +583,50 @@ async fn a_name_that_fills_up_after_the_listing_is_not_cleared_by_the_landing() 
         stored_bytes(&dest_inner, "/album/notes.txt").await.as_deref(),
         Some(&b"THE USER'S FILE"[..]),
         "a file that arrived after the listing is still the user's, and nothing answered for it"
+    );
+}
+
+/// The cost side: an ordinary tree pays NO probe. A byte-exact hit and a name
+/// nothing in the listing can fold onto are both settled in memory, so the
+/// `get_metadata` only a fold-only name needs is never asked for.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_ordinary_merge_costs_no_probes() {
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source.create_directory(Path::new("/album")).await.unwrap();
+    source.create_directory(Path::new("/album/sub")).await.unwrap();
+    for path in ["/album/fresh.txt", "/album/clash.txt", "/album/sub/deep.txt"] {
+        source.create_file(Path::new(path), b"SOURCE").await.unwrap();
+    }
+
+    let dest_inner = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+    dest_inner.create_directory(Path::new("/album")).await.unwrap();
+    dest_inner.create_directory(Path::new("/album/sub")).await.unwrap();
+    dest_inner
+        .create_file(Path::new("/album/clash.txt"), b"THE USER'S FILE")
+        .await
+        .unwrap();
+    let counting = Arc::new(CaseFoldingDest::new(&dest_inner));
+    let dest: Arc<dyn Volume> = Arc::clone(&counting) as Arc<dyn Volume>;
+
+    let (_events, _state) = merge_album("op-fold-cost", &source, dest, ConflictResolution::Skip).await;
+
+    // The one probe an ordinary copy still pays is the SERIAL driver's own
+    // top-level pre-check for `/album`, which predates this and is documented
+    // in `DETAILS.md` § "Answering the pre-check from one listing".
+    let inside_the_merge: Vec<PathBuf> = counting
+        .probes
+        .lock_ignore_poison()
+        .iter()
+        .filter(|p| *p != Path::new("/album"))
+        .cloned()
+        .collect();
+    assert!(
+        inside_the_merge.is_empty(),
+        "a merge of plain ASCII names must settle every child from the level listing, probed {inside_the_merge:?}"
+    );
+    assert_eq!(
+        stored_bytes(&dest_inner, "/album/fresh.txt").await.as_deref(),
+        Some(&b"SOURCE"[..]),
+        "and it still copies what it should"
     );
 }
