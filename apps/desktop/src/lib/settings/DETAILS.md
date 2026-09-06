@@ -180,6 +180,13 @@ which never touches the store plugin:
   the regular cross-window `settings:changed` event, and a setting a restricted window has to follow LIVE also needs a
   slot in `reactive-settings.svelte.ts` (`viewer.showTextCursor` has one; `viewer.wordWrap` deliberately doesn't,
   because the viewer reads it once at mount and `W` owns it from there).
+- **The write allowlist is deliberately NARROWER than the read one.** A setting earns a place in
+  `RestrictedWindowPersistableSetting` only when a restricted window has a control that WRITES it: `W` for
+  `viewer.wordWrap`, the banner's "Never show this warning again" button for `fileViewer.suppressBinaryWarning`. One the
+  window only displays stays read-only, so the app's highest-risk webview never gets a write it has no use for:
+  `viewer.showTextCursor` (its only control is the Settings row in the main window) and every `appearance.*` are in the
+  snapshot and nowhere else. ❌ Don't add a read-only setting to the persist enum to "complete the pattern"; a
+  `setSetting` for one in a restricted window is session-only by design.
 - **Writes**: `setSetting` skips the store save and forwards allowlisted ids through the typed
   `persist_restricted_window_setting` command (enum-validated on the Rust side), which emits to the main window;
   `restricted-settings-bridge.ts` (mounted in the main layout) re-checks the allowlist and persists via

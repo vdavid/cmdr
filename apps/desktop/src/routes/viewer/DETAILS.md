@@ -415,6 +415,11 @@ starts calling the rendered bar "the caret" and then wonders why `viewer-caret-g
   reach an already-open viewer. `viewer.wordWrap` reads once at mount only because `W` is its primary control.
   Restricted windows already receive live updates over the cross-window `settings:changed` event, so this costs nothing
   extra. Plumbing: `lib/settings/DETAILS.md` § "Restricted-window mode".
+- **The viewer READS this setting and never writes it**, so it is in the `get_restricted_window_settings` snapshot and
+  ❌ deliberately NOT in `RestrictedWindowPersistableSetting` / `PERSIST_ALLOWLIST`, unlike `viewer.wordWrap` (`W`
+  writes it) and `fileViewer.suppressBinaryWarning` (the banner's button does). Its only control is the Settings row in
+  the main window, which has full store access. Adding a persist entry to match the two settings beside it would hand
+  the app's highest-risk webview a write nothing uses; `restricted-settings.test.ts` pins the read-only half.
 
 ## Title-bar overlay toolbar
 

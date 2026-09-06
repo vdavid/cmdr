@@ -14,6 +14,10 @@
  * permitted settings, and this handler re-checks the id (defense in depth —
  * any webview can emit arbitrary events, so the event payload alone is
  * untrusted).
+ *
+ * It is narrower than what a restricted window can READ, and stays that way: a
+ * setting the viewer only displays (`viewer.showTextCursor`, `appearance.*`)
+ * belongs in the read snapshot alone.
  */
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
@@ -26,11 +30,7 @@ import { getAppLogger } from '$lib/logging/logger'
 const log = getAppLogger('restricted-settings-bridge')
 
 /** Mirrors the backend's `RestrictedWindowPersistableSetting` enum mapping. */
-const PERSIST_ALLOWLIST: ReadonlySet<string> = new Set([
-  'viewer.wordWrap',
-  'viewer.showTextCursor',
-  'fileViewer.suppressBinaryWarning',
-])
+const PERSIST_ALLOWLIST: ReadonlySet<string> = new Set(['viewer.wordWrap', 'fileViewer.suppressBinaryWarning'])
 
 interface PersistRestrictedSettingPayload {
   id: string

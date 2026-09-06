@@ -73,10 +73,15 @@ let restrictedWindowMode = false
 /** The settings a restricted window may persist, mapped to the typed command
  *  enum. Must mirror `RestrictedWindowPersistableSetting` in
  *  `src-tauri/src/commands/settings.rs` — the backend enum is the enforced
- *  allowlist; this map only decides which `setSetting` calls are forwarded. */
+ *  allowlist; this map only decides which `setSetting` calls are forwarded.
+ *
+ *  ❌ Shorter than the read snapshot below ON PURPOSE. A setting earns a place
+ *  here only when a restricted window has a control that WRITES it (`W`, the
+ *  binary-warning banner's button). One it merely reads — `viewer.showTextCursor`,
+ *  every `appearance.*` — stays out, so the app's highest-risk webview never gets
+ *  a write it has no use for. */
 const RESTRICTED_PERSISTABLE_SETTINGS: Partial<Record<SettingId, RestrictedWindowPersistableSetting>> = {
   'viewer.wordWrap': 'viewerWordWrap',
-  'viewer.showTextCursor': 'viewerShowTextCursor',
   'fileViewer.suppressBinaryWarning': 'fileViewerSuppressBinaryWarning',
 }
 

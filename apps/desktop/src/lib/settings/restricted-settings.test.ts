@@ -126,18 +126,24 @@ describe('setSetting in restricted mode', () => {
     expect(ipc.calls.some((c) => c.command.startsWith('plugin:store|'))).toBe(false)
   })
 
-  it('round-trips the text-cursor toggle through the typed command', async () => {
+  it('keeps the text cursor READ-only: readable from the snapshot, never persistable', async () => {
+    // The viewer has no control of its own for `viewer.showTextCursor` — the Settings row
+    // in the main window is the only one — so it never earns a place in the write
+    // allowlist. Pinned here because "complete the pattern" is the obvious wrong move: it
+    // would hand the app's highest-risk webview a write it has no use for.
     ipc.mock('get_restricted_window_settings', () => snapshot)
     ipc.mock('persist_restricted_window_setting', () => null)
     const store = await importStore()
     await store.initializeSettings({ restrictedWindow: true })
 
+    expect(store.getSetting('viewer.showTextCursor')).toBe(true)
+
     store.setSetting('viewer.showTextCursor', false)
     await Promise.resolve()
 
-    const call = ipc.lastCall('persist_restricted_window_setting')
-    expect(call?.payload).toMatchObject({ setting: 'viewerShowTextCursor', value: false })
+    // Session-only: the value applies in this window and goes nowhere else.
     expect(store.getSetting('viewer.showTextCursor')).toBe(false)
+    expect(ipc.callCount('persist_restricted_window_setting')).toBe(0)
     expect(ipc.calls.some((c) => c.command.startsWith('plugin:store|'))).toBe(false)
   })
 
@@ -169,22 +175,21 @@ describe('restricted-settings bridge (main-window side)', () => {
     vi.doUnmock('./settings-store')
   })
 
-  it('persists the text-cursor toggle but not an id dressed up to look like it', async () => {
+  it('refuses a spoofed text-cursor persist, and near misses of an allowlisted id', async () => {
     vi.doMock('./settings-store', () => ({
       persistSettingFromRestrictedWindow: vi.fn(),
     }))
     const storeMock = await import('./settings-store')
     const bridge = await import('./restricted-settings-bridge')
 
+    // Read-only from a restricted window, so a forwarded write is refused here even
+    // though the id is a real registered setting.
     bridge.handlePersistRestrictedSetting({ id: 'viewer.showTextCursor', value: true })
-    expect(storeMock.persistSettingFromRestrictedWindow).toHaveBeenCalledWith('viewer.showTextCursor', true)
+    // And the allowlist matches whole ids: no near miss, no prefix.
+    bridge.handlePersistRestrictedSetting({ id: 'viewer.wordWrap.enabled', value: true })
+    bridge.handlePersistRestrictedSetting({ id: 'viewer.word', value: true })
 
-    // The allowlist matches whole ids, so neither a near miss nor a prefix gets through.
-    vi.mocked(storeMock.persistSettingFromRestrictedWindow).mockClear()
-    bridge.handlePersistRestrictedSetting({ id: 'viewer.showTextCursor.enabled', value: true })
-    bridge.handlePersistRestrictedSetting({ id: 'viewer.textCursor', value: true })
     expect(storeMock.persistSettingFromRestrictedWindow).not.toHaveBeenCalled()
-
     vi.doUnmock('./settings-store')
   })
 

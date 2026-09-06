@@ -218,16 +218,22 @@ pub fn get_restricted_window_settings(app: AppHandle) -> crate::settings::Restri
 
 /// The settings a restricted-capability window may persist. A typed enum (not a
 /// free-form id string) so the write allowlist is enforced at the IPC boundary:
-/// a compromised viewer webview can only flip the view-preference booleans
-/// listed here, never touch licensing, error-report opt-in, MCP, or any other
-/// store key. Mirrored by `RESTRICTED_PERSISTABLE_SETTINGS` in
-/// `src/lib/settings/settings-store.ts` and `PERSIST_ALLOWLIST` in
-/// `src/lib/settings/restricted-settings-bridge.ts`.
+/// a compromised viewer webview can only flip the booleans listed here, never
+/// touch licensing, error-report opt-in, MCP, or any other store key. Mirrored
+/// by `RESTRICTED_PERSISTABLE_SETTINGS` in `src/lib/settings/settings-store.ts`
+/// and `PERSIST_ALLOWLIST` in `src/lib/settings/restricted-settings-bridge.ts`.
+///
+/// ❌ A setting belongs here ONLY when the viewer itself has a control that
+/// writes it: `W` for word wrap, the banner's "Never show this warning again"
+/// button for the binary warning. A setting the viewer only READS goes in
+/// [`crate::settings::RestrictedWindowSettings`] and stops there, the way
+/// `viewer.showTextCursor` and every `appearance.*` one do — adding it here to
+/// "complete the pattern" hands the app's highest-risk webview a write it has no
+/// use for. See `src/routes/viewer/DETAILS.md` § "Text cursor".
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum RestrictedWindowPersistableSetting {
     ViewerWordWrap,
-    ViewerShowTextCursor,
     FileViewerSuppressBinaryWarning,
 }
 
@@ -236,7 +242,6 @@ impl RestrictedWindowPersistableSetting {
     pub fn setting_id(self) -> &'static str {
         match self {
             Self::ViewerWordWrap => "viewer.wordWrap",
-            Self::ViewerShowTextCursor => "viewer.showTextCursor",
             Self::FileViewerSuppressBinaryWarning => "fileViewer.suppressBinaryWarning",
         }
     }
