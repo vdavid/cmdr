@@ -4,6 +4,7 @@
 
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { IconName } from '$lib/ui/icons/icon-map'
+import type { EnterAction } from '$lib/file-explorer/pane/archive-enter-policy'
 
 // ============================================================================
 // Core Types
@@ -342,6 +343,12 @@ export interface SettingsValues {
   'behavior.openTerminalHereApp': string
   'behavior.openTerminalHereToastSeen': boolean
 
+  // Archives: what Enter does per format, one setting each. The format list and the
+  // matching defaults live in `file-explorer/pane/archive-enter-policy.ts`, which a
+  // two-way parity test keeps in lockstep with these three keys.
+  'behavior.archiveEnter.zip': EnterAction
+  'behavior.archiveEnter.ooxml': EnterAction
+  'behavior.archiveEnter.bundle': EnterAction
   // Archives (Enter behavior per format: pinned-shape JSON, `{ zip: 'ask', … }`)
   'behavior.archiveEnterBehavior': string
   // Deflate level (1..=9, default 6) for user-driven zip writes; read at dispatch and passed in the operation config

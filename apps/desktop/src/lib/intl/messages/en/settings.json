@@ -521,6 +521,14 @@
   "@settings.archives.zip.description": {
     "description": "Help text under the zip row in Settings > Behavior > Archives. \"Enter\" is the Return/Enter key."
   },
+  "settings.archives.ooxml.label": "Documents and packages",
+  "@settings.archives.ooxml.label": {
+    "description": "Row label in Settings > Behavior > Archives for zip-based documents and app packages (.docx, .xlsx, .pptx, .jar, .apk): files that are archives underneath, but that people think of as one document or one app."
+  },
+  "settings.archives.ooxml.description": "What pressing Enter does on a .docx, .xlsx, .pptx, .jar, or .apk.",
+  "@settings.archives.ooxml.description": {
+    "description": "Help text under the documents-and-packages row in Settings > Behavior > Archives. The five names are file extensions; do not translate them. \"Enter\" is the Return/Enter key."
+  },
   "settings.archives.bundle.label": "App bundles",
   "@settings.archives.bundle.label": {
     "description": "Row label in Settings > Behavior > Archives for macOS app bundles (.app, .bundle, .framework)."

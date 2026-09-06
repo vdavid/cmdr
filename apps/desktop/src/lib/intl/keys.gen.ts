@@ -2625,6 +2625,8 @@ export type MessageKey =
   | 'settings.archives.compressionLevel.smaller'
   | 'settings.archives.enterBehavior.description'
   | 'settings.archives.enterBehavior.label'
+  | 'settings.archives.ooxml.description'
+  | 'settings.archives.ooxml.label'
   | 'settings.archives.opt.ask'
   | 'settings.archives.opt.browse'
   | 'settings.archives.opt.open'

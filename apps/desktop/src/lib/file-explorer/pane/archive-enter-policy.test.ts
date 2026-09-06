@@ -6,6 +6,7 @@ import {
   type EnterBehaviorOverrides,
   type EnterCandidate,
 } from './archive-enter-policy'
+import { getSettingDefinition, settingsRegistry } from '$lib/settings/settings-registry'
 
 /** A plain file entry with the fields the resolver reads. */
 function file(name: string, isArchive = false): EnterCandidate {
@@ -101,15 +102,45 @@ describe('parseEnterBehaviorOverrides', () => {
 })
 
 describe('ARCHIVE_ENTER_FORMATS registry', () => {
-  it('exposes the configurable formats with their defaults', () => {
+  it('exposes each format with its default', () => {
     const byKey = Object.fromEntries(ARCHIVE_ENTER_FORMATS.map((f) => [f.key, f]))
     expect(byKey.zip.defaultAction).toBe('ask')
-    expect(byKey.zip.configurable).toBe(true)
     expect(byKey.bundle.defaultAction).toBe('ask')
-    expect(byKey.bundle.configurable).toBe(true)
-    // OOXML/app packages resolve to open but aren't user-configurable yet
-    // (browse-into isn't supported for them in this phase).
+    // Office documents and app packages open in their app rather than browsing.
     expect(byKey.ooxml.defaultAction).toBe('open')
-    expect(byKey.ooxml.configurable).toBe(false)
+  })
+})
+
+/**
+ * The seam this whole module rests on: a format is user-configurable because it names
+ * a settings id, and nothing else. Both directions matter, so both are asserted —
+ * a format with no setting is a row a user can never change, and a
+ * `behavior.archiveEnter.*` setting with no format is a control that writes a value
+ * nothing reads. Either one is silent in production and instant here.
+ */
+describe('ARCHIVE_ENTER_FORMATS ↔ settings registry parity', () => {
+  const ARCHIVE_ENTER_PREFIX = 'behavior.archiveEnter.'
+
+  it('every format names a registry setting whose default matches the format default', () => {
+    for (const format of ARCHIVE_ENTER_FORMATS) {
+      const definition = getSettingDefinition(format.settingId)
+      expect(definition, `no registry entry for ${format.settingId}`).toBeDefined()
+      // The registry default IS the format default: `resolveEnterPolicy` falls back to
+      // the format's, `getSetting` falls back to the registry's, and a user who never
+      // touched the row must get the same answer down either path.
+      expect(definition?.default, `${format.settingId} default`).toBe(format.defaultAction)
+      // Every action the resolver understands has to be offerable, or a row would be
+      // missing a choice the policy can still resolve to.
+      const values = definition?.constraints?.options?.map((o) => o.value)
+      expect(values, `${format.settingId} options`).toEqual(['browse', 'open', 'ask'])
+    }
+  })
+
+  it('every archive-enter setting in the registry belongs to a format', () => {
+    const declared = new Set<string>(ARCHIVE_ENTER_FORMATS.map((f) => f.settingId))
+    const registered = settingsRegistry.map((d) => d.id).filter((id) => id.startsWith(ARCHIVE_ENTER_PREFIX))
+
+    expect(registered.length).toBeGreaterThan(0) // guard against the prefix silently changing
+    expect([...registered].sort()).toEqual([...declared].sort())
   })
 })

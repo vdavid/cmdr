@@ -22,6 +22,14 @@ export type EnterAction = 'browse' | 'open' | 'ask'
 /** The stable format keys, used both as settings keys and as resolver categories. */
 export type ArchiveFormatKey = 'zip' | 'ooxml' | 'bundle'
 
+/**
+ * The registry setting that holds one format's action. Spelled as a template type so
+ * a descriptor can't name an id that doesn't follow the scheme; that the id also
+ * EXISTS in the settings registry (with a matching default) is what
+ * `archive-enter-policy.test.ts`'s two-way parity test proves.
+ */
+export type ArchiveEnterSettingId = `behavior.archiveEnter.${ArchiveFormatKey}`
+
 /** The stored per-format override map (a subset — unset formats use their default). */
 export type EnterBehaviorOverrides = Partial<Record<ArchiveFormatKey, EnterAction>>
 
@@ -38,12 +46,16 @@ export interface EnterCandidate {
 
 interface FormatDescriptor {
   key: ArchiveFormatKey
+  /**
+   * The registry setting holding this format's action. Every format has one, so
+   * "is this format configurable?" is answered by the format list itself rather
+   * than by a flag that could disagree with it.
+   */
+  settingId: ArchiveEnterSettingId
   /** True when an entry belongs to this format. */
   matches: (entry: EnterCandidate) => boolean
-  /** The action when the user hasn't overridden this format. */
+  /** The action when the user hasn't chosen one. Must equal the setting's registry default. */
   defaultAction: EnterAction
-  /** Whether this format is exposed as a Settings row (with a Browse option). */
-  configurable: boolean
 }
 
 /** Zip-based document and app packages users mean as documents, not folders. */
@@ -60,8 +72,6 @@ const BUNDLE_EXTENSIONS: readonly string[] = ['app', 'bundle', 'framework']
  *   or an app, so Open by default. FIRST because it's a strict subset of `zip`:
  *   these files are real zips, and the moment the backend flags one `isArchive`
  *   the broader zip matcher would swallow it. `archive-enter-policy.test.ts` pins it.
- *   NOT configurable yet — browsing into them isn't supported this phase, so a Browse
- *   option would be dead.
  * - `zip`: true archives Cmdr can browse into, keyed off the backend's `isArchive`
  *   flag (its single source of truth — extension-only, never a directory) so the
  *   two stay in lockstep and future formats (tar/7z) join automatically. Default
@@ -72,21 +82,21 @@ const BUNDLE_EXTENSIONS: readonly string[] = ['app', 'bundle', 'framework']
 export const ARCHIVE_ENTER_FORMATS: readonly FormatDescriptor[] = [
   {
     key: 'ooxml',
+    settingId: 'behavior.archiveEnter.ooxml',
     matches: (entry) => !entry.isDirectory && hasExtensionIn(entry.name, OOXML_EXTENSIONS),
     defaultAction: 'open',
-    configurable: false,
   },
   {
     key: 'zip',
+    settingId: 'behavior.archiveEnter.zip',
     matches: (entry) => entry.isArchive === true,
     defaultAction: 'ask',
-    configurable: true,
   },
   {
     key: 'bundle',
+    settingId: 'behavior.archiveEnter.bundle',
     matches: (entry) => entry.isDirectory && hasExtensionIn(entry.name, BUNDLE_EXTENSIONS),
     defaultAction: 'ask',
-    configurable: true,
   },
 ]
 
