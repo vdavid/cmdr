@@ -49,6 +49,8 @@
     import type { CancelLoadingPayload, SearchResultsViewAPI, VolumeChangePayload } from './types'
     import { getMutationTick, getSnapshot, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
     import MtpConnectionView from './MtpConnectionView.svelte'
+    import RemoteConnectView from './RemoteConnectView.svelte'
+    import { createPlaceConnect } from './place-connect.svelte'
     import SmbReconnectingView from './SmbReconnectingView.svelte'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
     import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
@@ -565,6 +567,16 @@
         getCurrentVolumeInfo: () => currentVolumeInfo,
         loadDirectory: (path: string) => void loader.loadDirectory({ path }),
         navigateToFallback: loader.navigateToFallback,
+    })
+
+    // A pane standing on a SAVED place dials it, showing the connecting view with a
+    // cancel, and reloads once it is live. The gate is the CONNECTION STATE, checked
+    // in front of the kind chain below: a `saved` row is a real volume id with no
+    // session behind it, so every listing on it would refuse until something dials.
+    const placeConnect = createPlaceConnect({
+        getVolumeId: () => volumeId,
+        getCurrentVolumeInfo: () => currentVolumeInfo,
+        onConnected: () => { void loader.loadDirectory({ path: currentPath }) },
     })
 
     // Live per-pane disk space: the readout, the fetch, the backend live-update
@@ -1715,6 +1727,8 @@
                 onRetry={() => onRetryUnreachable?.()}
                 onOpenHome={() => onOpenHome?.()}
             />
+        {:else if placeConnect.state}
+            <RemoteConnectView name={currentVolumeInfo?.name ?? volumeId} state={placeConnect.state} />
         {:else if smbView.showSmbReconnecting && smbView.reconnectState}
             <SmbReconnectingView
                 {volumeId}

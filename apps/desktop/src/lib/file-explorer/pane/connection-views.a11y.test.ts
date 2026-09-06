@@ -1,6 +1,6 @@
 /**
  * Tier 3 a11y tests for the full-pane views that stand in for a listing: the
- * error pane and the SMB / MTP connection states.
+ * error pane, the SMB / MTP connection states, and the remote-place ones.
  *
  * One file per view would cost about four times as much: `svelte-tests` charges
  * per test FILE, not per test (`docs/testing.md` § "What a test actually
@@ -64,6 +64,7 @@ import ErrorPane from './ErrorPane.svelte'
 import MtpConnectionView from './MtpConnectionView.svelte'
 import SmbReauthView from './SmbReauthView.svelte'
 import SmbReconnectingView from './SmbReconnectingView.svelte'
+import RemoteConnectView from './RemoteConnectView.svelte'
 
 /** A fresh container, appended to the document and ready to mount into. */
 function container(): HTMLDivElement {
@@ -293,6 +294,57 @@ describe('MtpConnectionView a11y', () => {
     mount(MtpConnectionView, {
       target,
       props: { volumeId: 'root' },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `RemoteConnectView.svelte`.
+ *
+ * The pane while a remote place is on its way in or has stopped short. Both
+ * states are announced (`role="status"`, `aria-live="polite"`), because the view
+ * REPLACES the listing: a screen-reader user who activated a saved server row
+ * would otherwise hear nothing at all until it finished, or forever.
+ */
+describe('RemoteConnectView a11y', () => {
+  it('connecting (spinner + cancel) has no a11y violations', async () => {
+    const target = container()
+    mount(RemoteConnectView, {
+      target,
+      props: { name: 'Naspolya', state: { kind: 'connecting' as const, cancel: vi.fn() } },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('refused with both ways forward has no a11y violations', async () => {
+    const target = container()
+    mount(RemoteConnectView, {
+      target,
+      props: {
+        name: 'Naspolya',
+        state: {
+          kind: 'refused' as const,
+          refusal: 'Cmdr couldn’t reach nas.local.',
+          retry: vi.fn(),
+          disconnect: vi.fn(),
+        },
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('refused with retry only has no a11y violations', async () => {
+    const target = container()
+    mount(RemoteConnectView, {
+      target,
+      props: {
+        name: 'Naspolya',
+        state: { kind: 'refused' as const, refusal: 'This server asks for a password.', retry: vi.fn() },
+      },
     })
     await tick()
     await expectNoA11yViolations(target)
