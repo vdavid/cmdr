@@ -96,6 +96,26 @@ scrolls past their own disks. Pins are the cap, and the user holds it.
   keyboard.
 - The `network.enabled` switch relabels the synthetic row "Network (disabled)" and sends its click to Settings; it
   exists for the macOS Local Network permission that mDNS needs, which SFTP and WebDAV never do.
+  `test/e2e-playwright/network-toggle.spec.ts` asserts both behaviors.
+- The frontend classifies a pane's kind in `pane/volume-capabilities.ts::volumeKindOf`, which delegates to the tint
+  classifier `volume-tint.svelte.ts` (`category === 'network' || fsType === 'smbfs'` → `smb`). ❗ A `category: Network`
+  row with `fs_type: sftp` is therefore an SMB pane today: SMB tint, SMB capability row, and `canOpenTerminalIn('smb')`
+  is true, so Open terminal would fire with an `sftp://` path. That module's header rule stands: classify off `fsType`
+  and category, ❌ never off the backend's published identity.
+- `resolveValidPath` (`navigation/path-resolution.ts`, called from `listing-loader.ts`) walks a missing path up to its
+  parents, then `~`, then `/`. On a scheme path every `pathExists` is false and the walk-up chops the scheme itself
+  (`sftp:/`, then `sftp:`), so `~` wins and the pane lands on home. `path-navigation.ts::determineNavigationPath` never
+  goes home; it falls back to the volume path.
+- Go-to-path resolution is backend-owned and local-only (`commands/go_to_path.rs` → `go_to_path/mod.rs`, a
+  `std::fs::metadata` resolver over a tilde-expanded, base-dir-joined path answering
+  `directory | file | nearestAncestor | invalid`). A scheme input joins onto the pane's directory and answers `invalid`.
+- There are THREE `LocationInfo` / `VolumeInfo` twins: `volumes/mod.rs`, `volumes_linux/mod.rs`, and
+  `stubs/volumes.rs` (declared unconditionally, `smb_connection_state: Option<String>`).
+- The browsers' command ids (`network.selectHost`, `share.back`, `share.selectShare`) are in `FIXED_KEY_COMMAND_IDS`,
+  so nothing about them is persisted in anyone's shortcut settings; `rust-command-id-drift.test.ts` and the message
+  keys are what pin them. Scopes are a typed record in `shortcuts/scope-hierarchy.ts` with `shortcut-vocabulary.test.ts`
+  over it; `Main window/Network` is a sibling of `Main window/File list`, so a hub key never overlaps a file-list key.
+  F8 and ⌘E are both free in that scope.
 - Four saved-server stores with no shared type: `sftp_known_servers.rs`, `webdav_known_servers.rs`, `known_shares.rs`
   (SMB, keyed `(server, share)`), `manual_servers.rs` (SMB hosts typed by hand). ❗ SFTP's and WebDAV's `remember`
   replaces the whole entry on every connect, so any new field is clobbered unless the connect path reads the existing
@@ -133,7 +153,8 @@ scrolls past their own disks. Pins are the cap, and the user holds it.
 ### D1. Session health is one field; device presence is another
 
 `LocationInfo.smb_connection_state: Option<SmbConnectionState>` becomes `connection_state: Option<ConnectionState>`,
-on both platform twins (the Linux one is `Option<String>` today and becomes the enum) and the TS `VolumeInfo`:
+on all three twins (`volumes/mod.rs`, `volumes_linux/mod.rs`, and `stubs/volumes.rs`; the latter two are
+`Option<String>` today and become the enum) and the TS `VolumeInfo`:
 
 - `direct`: a live session Cmdr owns (SMB smb2, SFTP, WebDAV, ADB dialed).
 - `os_mount`: SMB's kernel-mount fallback. Unchanged meaning.
@@ -147,11 +168,21 @@ implement it (SMB already does). ❗ This is what keeps `enrich_from_volume_regi
 `direct` back to `None`; the Linux enrichment twin starts copying the state too, so the Docker E2E lane sees what macOS
 sees.
 
-❗ **`is_some()` on the old accessor was also the backend's "is this SMB" test**, and once three more backends answer
-it, every one of those sites reclassifies an SFTP volume as an SMB session (the SMB indexer would receive an `sftp://`
-root). So the same commit adds `Volume::backend_kind() -> BackendKind` (`local | smb | sftp | webdav | mtp | adb |
-archive | git_portal`), converts each site to `backend_kind() == Smb`, and M0 step 1 lists them by path so nobody
-discovers them at `cargo build` time. The MCP volumes resource derives `kind` from the same accessor.
+❗ **Every read of the old accessor was also a backend "is this SMB" test** (`is_some()` in most places, and
+`matches!(…, Some(Direct))` in `network/smb_upgrade.rs`, which an `is_some()` grep never finds), and once three more
+backends answer it, every one of those sites reclassifies an SFTP volume as an SMB session (the SMB indexer would
+receive an `sftp://` root). So the same commit adds `Volume::backend_kind() -> BackendKind` (`local | smb | sftp |
+webdav | mtp | adb | archive | git_portal`, with a `local` default so the test doubles keep compiling), converts every
+read site to `backend_kind() == Smb` where it meant "SMB" and to the state where it meant the state, and M0 step 1 lists
+them by path so nobody discovers them at `cargo build` time. The MCP volumes resource derives `kind` from the same
+accessor; its token set grows from `local | smb | mtp | virtual` to `local | smb | sftp | webdav | mtp | adb | virtual`,
+which is an agent-facing wire change pinned in `mcp/resources/DETAILS.md` beside the `connectionState` rename.
+
+**The frontend classifier is separate and stays keyed on `fsType` and category**, per its own header rule.
+`VolumeKind` gains `sftp` and `webdav` members with their own capability rows (a real backend listing, write and
+export from the backend's published answer, no system clipboard, no terminal, no index badge), `volumeKindFor` learns
+the two `fsType` values AHEAD of the `category === 'network'` arm, and the tint gets a server color. Without this an
+SFTP pane is an SMB pane: SMB tint, SMB capability row, and Open terminal firing with an `sftp://` path.
 
 **The three connection enums stay three**, because they answer different questions: the backend seam and wire enums
 are transitions an event carries, the listing enum is a row's standing state. What changes is the frontend mapper:
@@ -201,8 +232,10 @@ step). WebDAV mirrors it.
 ❗ **A bare server-absolute path is REFUSED on a prefixed volume**, not accepted as a courtesy. Five app sites run paths
 through `root_anchored` before the volume sees them, and that helper joins anything not under the root ONTO the root:
 `/srv/data/x` would become `sftp://…/srv/data/srv/data/x`, strip to a real, wrong server path, and never refuse. With
-the scheme in place the app never spells a remote path bare, so the only thing leniency buys is that hole. The cell for
-this lives at the routing level (a `root_anchored`-fed copy against the fixture), not only in `paths_test.rs`.
+the scheme in place the app never spells a remote path bare, so the only thing leniency buys is that hole. The three
+root aliases stay: `/`, `.`, and the empty path still mean the volume root (WebDAV's own `query.rs` passes a bare `/`
+from `is_root` and `get_space_info_impl`, and those two callers are named in the `paths_test.rs` list). The refusal
+cell lives at the routing level too (a `root_anchored`-fed copy against the fixture), not only in `paths_test.rs`.
 
 **Why a scheme and not a hint.** The mount table answers the local root for any absolute path it doesn't know, on both
 platforms, so a scheme-free remote path is wrong at every resolver site the plan doesn't reach (eleven today, and the
@@ -309,17 +342,22 @@ bottom (the `+` pseudo-row today). Status words: Connected, Saved, Found nearby,
 - Enter on an SFTP or WebDAV account navigates the pane to its one place (dialing if needed, D8). Enter on an SMB host
   opens its places list (`ShareBrowser`, renamed `PlacesBrowser` and given an `account` prop rather than a `host`, so an
   S3 account's buckets render through the same component later).
-- Keyboard: the command ids `network.selectHost` and `share.back` stay (they are persisted in users' shortcut
-  settings); their scope labels become "Main window/Servers" and "Main window/Places" and their message keys follow.
-  In the hub, Backspace and Escape do nothing (it is a volume root; ⌘↑ likewise). In the places list they go back to
-  the hub, as today. F8 forgets a saved server (confirmed) or toasts "Can't remove discovered hosts" as today. ⌘E and
-  the D6 menu edit.
+- Keyboard: the command ids `network.selectHost`, `share.back`, and `share.selectShare` stay (they are fixed-key
+  ids pinned by `rust-command-id-drift.test.ts` and their message keys; renaming buys nothing); their scopes become
+  "Main window/Servers" and "Main window/Places" in `shortcuts/scope-hierarchy.ts` (the typed record and the
+  `CommandScope` union) with `shortcut-vocabulary.test.ts` updated. In the hub, Backspace and Escape do nothing (it is
+  a volume root; ⌘↑ likewise). In the places list they go back to the hub, as today. F8 forgets a saved server
+  (confirmed) or toasts "Can't remove discovered hosts" as today. ⌘E and the D6 menu edit. Both keys are free in that
+  scope, and the scope is a sibling of the file list's, so a hub F8 never meets `file.delete`'s.
 - The hub row pushes MCP rows the way `NetworkBrowser` does today, one encoded `name` per row with `protocol=`,
   `status=`, `address=` tokens, and the add row as `+ Add server…` at `smb://add`.
 - A pane on the hub keeps `syncsToMcp: false`, `canWrite: false`, and the rest of the `network` capability row.
 - `network.enabled` off no longer relabels or redirects the row: it gates mDNS discovery and SMB, which is what the
   macOS Local Network permission is about, and SFTP and WebDAV need none of it. The hub shows its saved servers as
   usual and, in place of the discovered hosts, one line: "Local network discovery is off" with a link to the setting.
+  That deletes the "Network (disabled)" label (`fileExplorer.navigation.networkVolumeDisabled`, removed from every
+  locale catalog) and `handleVolumeSelect`'s Settings early return, and `network-toggle.spec.ts` is rewritten to assert
+  the hub's line and link instead.
 
 **Why a pane state and not a settings list.** David is considering settings-as-pane-state generally; this is the pilot,
 with one rule carried over: a pane state may be a list, never a form. The saved-server list in Settings is dropped; a
@@ -334,10 +372,12 @@ Three new modules under `apps/desktop/src/lib/servers/`:
   `needs_credentials` or `authentication_rejected` open the sheet's sign-in step → dial with the offer → loop; terminal
   outcomes return. The attempt id is minted here before the first dial, so cancel is armed from the first millisecond.
   ❗ It is the only caller of `connect_server` / `connect_saved_place` / `reconnect_volume_with_credentials`; the hub,
-  the switcher, the sheet's Connect button, and the pane banner all go through it. ❗ It picks the command by whether
-  the volume is registered: registered and `needs_sign_in` → `reconnect_volume_with_credentials` (refreshes but never
-  seeds a secret; whether the username is editable is the shape's call, D10); absent → a dial. A `cancelled` outcome
-  returns silently: the user pressed the button.
+  the switcher, the sheet's Connect button, and the pane banner all go through it. ❗ It picks its move by the volume's
+  standing, three arms: registered and `disconnected` → subscribe to the reconnect manager (which starts the backoff
+  cycle if none is running, the lazy-nav path `smb-view-state` already documents for SMB) and render `connecting`,
+  ❌ never a dial; registered and `needs_sign_in` → `reconnect_volume_with_credentials` (refreshes but never seeds a
+  secret; whether the username is editable is the shape's call, D10); absent (`saved`) → a dial. A `cancelled`
+  outcome returns silently: the user pressed the button.
 - **`RemoteConnectView.svelte`** (in `file-explorer/pane/`): the non-interactive pane states, replacing
   `SmbReconnectingView`, `SmbReauthView`, `MtpConnectionView`'s connecting branch, and the ADB view the spec never
   built. Typed `state` prop: `connecting { cancel }`, `waiting_for_device { reason }`, `signed_out { shape, signIn }`,
@@ -458,8 +498,12 @@ linking to a short help page, gated by `behavior.adbHintDismissed`.
   servers" (navigates the focused pane to the hub). Both via the four-place command contract.
 - **Go to path** (⌘G) accepts a pasted `sftp://`, `ssh://`, `webdav://`, `davs://`, `https://`, or `smb://` address and
   opens the sheet prefilled; an `sftp://` or `webdav://` path that matches a saved place navigates to it instead.
-  `adb://` and `mtp://` short-circuit to the device (`android-adb-backend-follow-ups.md` § 3, an adjacent clear win,
-  taken here).
+  `adb://` and `mtp://` navigate straight to the device (`android-adb-backend-follow-ups.md` § 3, an adjacent clear
+  win, taken here). ❗ All of it is a frontend intercept in `go-to-path.ts` BEFORE `resolveGoToPath` is called: the
+  Rust resolver is local-only by design (a `std::fs::metadata` walk), a scheme input joins onto the pane's directory
+  there and answers `invalid`, and teaching it schemes would mean a resolver that consults stores it has no business
+  reading. The intercept parses the scheme, asks `list_saved_servers()` for a match, and hands `navigate()` a
+  `Location`; the pane's own scheme guards decide reachability. One cell per scheme.
 - **Educational toast**: when the pinned count first reaches five, one persistent toast (`behavior.serversPinHintSeen`)
   teaches right-click → Unpin and the hub, and adds a line about favorites when the user has three or more. Dismiss
   with "Got it".
@@ -471,8 +515,11 @@ linking to a short help page, gated by `behavior.adbHintDismissed`.
 A restored tab on a remote place comes back as `saved` and dials when ACTIVATED (the pane shows `connecting` with
 cancel). ❌ Launch never dials a server in the background: four servers dialing at startup is four Keychain reads and
 four network waits nobody asked for. `initialization.ts::resolveVolumeId` re-resolves the stored path and lands on the
-`saved` id through the D3 arm; `path-navigation.ts`'s initial-path pick treats a `saved` volume as "path exists, don't
-probe" so a restored tab doesn't fall back to home before the user has pressed anything.
+`saved` id through the D3 arm. ❗ The walk-to-home lives in `navigation/path-resolution.ts::resolveValidPath`, not in
+`path-navigation.ts`: on a `saved` volume every `pathExists` is false, the parent walk chops the scheme itself, and `~`
+wins. Two rules go there: a `saved` volume short-circuits to "the path stands, don't probe", and the walk-up on any
+scheme path stops at the scheme root, never above it. A cell restores `sftp://…/srv/data/photos` onto a `saved` row
+and asserts the pane keeps the subpath.
 
 ## Milestones
 
@@ -481,17 +528,21 @@ red → green sequence; "after" marks tests written once the shape settles.
 
 ### M0. Backend groundwork (no UI change)
 
-1. D1: `ConnectionState` and `DeviceReadiness` on both platform twins and `VolumeInfo`; `Volume::connection_state()`
-   implemented by SFTP, WebDAV, ADB; `Volume::backend_kind()` and the conversion of every backend `is_some()`-as-SMB
-   site (`crates/cmdr-index/src/indexing/transports/smb/index.rs`, `transports/local_external/index.rs`,
-   `lifecycle/cover/bootstrap.rs`, `file_system/volume/eject.rs`, `file_viewer/media_session.rs`,
-   `commands/file_system/listing.rs`, `mcp/resources/volumes.rs`); the Linux enrichment twin copying the state; the
-   frontend predicates in `navigation/connection-state.ts`; `toConnectionState` mapping all four wire variants; every
-   consumer renamed (store, breadcrumb, `FilePane`, `smb-view-state`, eject predicate, `direct-connect`, tests, the two
-   E2E specs keyed on the dot); `bindings.ts` regenerated. TDD: a listing cell proving a registered SFTP volume
-   survives enrichment as `direct` on both platform twins; a cell proving the SMB indexer transport refuses an SFTP
-   volume; the predicate table; the eject predicate on `saved`; the store mapper on `needs_credentials`. After: the
-   rest.
+1. D1: `ConnectionState` and `DeviceReadiness` on all three twins and `VolumeInfo`; `Volume::connection_state()`
+   implemented by SFTP, WebDAV, ADB; `Volume::backend_kind()` and the conversion of EVERY read of the old accessor
+   (`rg "smb_connection_state\(" --type rust` is the sweep, and the doc comment in `file_system/volume/manager.rs`
+   goes too): `crates/cmdr-index/src/indexing/transports/smb/index.rs`, `transports/local_external/index.rs`,
+   `lifecycle/cover/bootstrap.rs`, `file_system/volume/eject.rs`, `file_system/mod.rs`, `file_viewer/media_session.rs`,
+   `commands/file_system/listing.rs`, `commands/network.rs` (the three direct-upgrade short-circuits),
+   `network/smb_upgrade.rs` (the `matches!(Direct)`), `mcp/resources/volumes.rs` (with its widened token set); the
+   Linux enrichment twin copying the state; the frontend predicates in `navigation/connection-state.ts`;
+   `toConnectionState` mapping all four wire variants; the `sftp` / `webdav` members of the frontend `VolumeKind` with
+   their capability rows, `volumeKindFor`, and the tint; every consumer renamed (store, breadcrumb, `FilePane`,
+   `smb-view-state`, eject predicate, `direct-connect`, tests, the two E2E specs keyed on the dot); `bindings.ts`
+   regenerated. TDD: a listing cell proving a registered SFTP volume survives enrichment as `direct` on both platform
+   twins; a cell proving the SMB indexer transport refuses an SFTP volume; a `volumeKindOf` cell for an `sftp` row and
+   a terminal-refusal cell; the predicate table; the eject predicate on `saved`; the store mapper on
+   `needs_credentials`. After: the rest.
 2. D10: `SignInShape`; SMB's producer; `get_volume_sign_in_state` answers it. TDD: `commands/network_test.rs` default
    cell, an SMB cell for `guestAllowed`, and the SFTP rung table in `reconnect_test.rs` updated by variant.
 3. `pinned` on `KnownSftpServer` and `KnownWebdavServer` (`#[serde(default)]`, default `false`; the connect path sets
@@ -532,17 +583,20 @@ once at the end of M0 (the fixture lanes).
 
 1. D7: `ServersHub.svelte` replacing `NetworkBrowser.svelte` (rename, then edit, to keep file history),
    `PlacesBrowser` (renamed `ShareBrowser` with an `account` prop), the MCP row encoding, the status column, the scope
-   labels, the discovery-off line. ❗ The hub's "Connect to server…" row keeps opening today's `ConnectToServerDialog`
-   until M2 replaces it, so a user can add an SMB host at every boundary. `volume-grouping.ts` applies the three-things
-   rule; the switcher row renders the `saved` dot, the protocol in the `volume-fs` slot, and the Disconnect control
-   (D6). The context menu (D6) and the hub commands that mirror it.
+   rename in `scope-hierarchy.ts`, the discovery-off line with the "Network (disabled)" label and the Settings early
+   return deleted and `network-toggle.spec.ts` rewritten. ❗ The hub's "Connect to server…" row keeps opening today's
+   `ConnectToServerDialog` until M2 replaces it, so a user can add an SMB host at every boundary. `volume-grouping.ts`
+   applies the three-things rule; the switcher row renders the `saved` dot, the protocol in the `volume-fs` slot, and
+   the Disconnect control (D6). The context menu (D6) and the hub commands that mirror it.
 2. D3 frontend: `server-path-utils.ts`, the `navigate.ts` guard, `initialization.ts::resolveVolumeId` verified against
-   a `saved` id (TDD: a restore cell with an `sftp://` path).
-3. `handleVolumeSelect` on a `saved` row navigates to the volume id; `FilePane` gates `connectionState === 'saved'` in
-   front of kind and renders `RemoteConnectView` `connecting`, which calls `connect-flow`'s dial half. Until M2 delivers
-   the sheet, a `needs_credentials` or `authentication_rejected` outcome renders `refused` with the explanation and
-   "Try again" only; ❌ no inert "Sign in…" button. M1 is demoable on a server with a stored secret.
-4. D14 restore.
+   a `saved` id (TDD: a restore cell with an `sftp://` path), and D14's two rules in `path-resolution.ts` (TDD: the
+   restored-subpath cell, and a scheme path never walking above its root).
+3. **M1 deliverables from D8**: `RemoteConnectView.svelte` with the `connecting` and `refused` states only, and
+   `connect-flow.ts`'s dial half (the three-arm dispatch and the terminal outcomes; the sheet-driven loop is M2).
+   `handleVolumeSelect` on a `saved` row navigates to the volume id; `FilePane` gates `connectionState === 'saved'`
+   in front of kind and renders `connecting`. Until M2 delivers the sheet, a `needs_credentials` or
+   `authentication_rejected` outcome renders `refused` with the explanation and "Try again" only; ❌ no inert
+   "Sign in…" button. M1 is demoable on a server with a stored secret.
 
 Tests: TDD for `volume-grouping` (three-things rule: hub row always, connected-unpinned appears, pinned `saved`
 appears, unpinned-disconnected absent), hub sorting; after: `ServersHub.test.ts` (rename of `NetworkBrowser.test.ts`,
@@ -568,8 +622,9 @@ Checks: `pnpm check --fast` per step, `pnpm check` at the end, `pnpm check deskt
 3. `connect-flow.ts` (TDD with `installIpcMock`: the three-round first connection, `superseded` restart, cancel from
    each phase returns `cancelled` silently, `remember: false` sends the offer and never `save_*`, a registered
    `needs_sign_in` volume takes `reconnect_volume_with_credentials` and never a dial).
-4. Wire: hub Add row, ⌘K, palette, go-to-path URL branch (D13), `RemoteConnectView.signed_out`'s button, the switcher
-   row's Edit…. Delete `ConnectToServerDialog.svelte`.
+4. Wire: hub Add row, ⌘K, palette, the go-to-path scheme intercept (D13, TDD: one cell per scheme, and a cell that
+   `resolveGoToPath` is never called for one), `RemoteConnectView`'s remaining states and `signed_out`'s button, the
+   switcher row's Edit…. Delete `ConnectToServerDialog.svelte`.
 5. The two remedy buttons (D9).
 
 Tests: above, plus the sheet's component tests (wrong password renders inline and keeps the field's focus; Tab moves
@@ -655,14 +710,15 @@ Every string below is a draft for David's pass (principle 4). Rules: `docs/style
 - Host key, first contact: "First time connecting to {host}. Its key fingerprint is {fingerprint}. Trust it?" Button
   "Trust and connect". Changed: "{host}'s key changed. This can mean the server was reinstalled, or that something is
   sitting between you and it. Check the fingerprint with the server's owner before trusting it." Secondary, behind a
-  disclosure: "I've checked, trust the new key". Revoked: "{host}'s key is marked as compromised in your SSH settings
+  disclosure: "I've checked it. Trust the new key". Revoked: "{host}'s key is marked as compromised in your SSH settings
   on this Mac. Cmdr won't connect to it."
 - Pane states: "Connecting to {name}…", "Waiting for you to tap Allow on your phone", "Signed out of {name}",
   "Couldn't reach {name}", "Cmdr stopped trying to reconnect to {name}". Buttons: "Cancel", "Sign in…", "Try again",
   "Disconnect", "Look at the key".
 - Context menu: "Open", "Disconnect", "Pin to switcher", "Unpin", "Edit…", "Forget saved password", "Forget server".
-- Toast at five pins: "Your Network group is getting long. Right-click a server and choose Unpin; it stays in the
-  Servers list." Extra line with ≥3 favorites: "Favorites work the same way." Button "Got it".
+- Toast at five pins: "Your Network group is getting long. Right-click a server and choose Unpin, or use "Pin / unpin
+  server" from the command palette; it stays in the Servers list." Extra line with ≥3 favorites: "Favorites work the
+  same way." Button "Got it".
 - Hub, discovery off: "Local network discovery is off." Link "Turn it on in Settings".
 - ADB hint: "Want the whole filesystem? Turn on USB debugging." Link "How".
 - Settings: "Servers (SFTP, WebDAV)", "Trusted host keys", "Forget"; "Android (ADB)", "Enable Android debugging
