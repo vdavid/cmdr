@@ -38,8 +38,16 @@ pub(crate) enum VolumeKind {
     )]
     Smb,
     /// An SFTP server.
+    #[cfg_attr(
+        not(target_os = "macos"),
+        allow(dead_code, reason = "macOS-path-only today; unconstructed off macOS, see `Smb`")
+    )]
     Sftp,
     /// A WebDAV server.
+    #[cfg_attr(
+        not(target_os = "macos"),
+        allow(dead_code, reason = "macOS-path-only today; unconstructed off macOS, see `Smb`")
+    )]
     Webdav,
     /// An MTP device storage (Android / camera over USB).
     Mtp,
@@ -122,6 +130,13 @@ pub(crate) fn space_summary(volume_id: &str) -> Option<SpaceInfo> {
 
 /// The agent-facing token for a session state. One mapping, so `cmdr://state`,
 /// the agent's `list_volumes`, and the chat envelope can't drift apart.
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(
+        dead_code,
+        reason = "called only from the macOS `snapshot_volumes` path; the Linux snapshot surfaces no volume that carries a session yet"
+    )
+)]
 pub(crate) fn connection_state_token(state: cmdr_fs::volume::ConnectionState) -> &'static str {
     use cmdr_fs::volume::ConnectionState as S;
     match state {

@@ -6,7 +6,9 @@ path; prefer that in app code (`crate::file_system::volume::VolumeError`), `cmdr
 
 ## Module map
 
-- `volume/`: the trait, its types, `InMemoryVolume`, `ids` + `canonical_root` (the ID funnel and double-mount collapse),
+- `volume/`: the trait, its types, `connection.rs` (the REMOTE vocabulary: `ConnectionState`, `DeviceReadiness`,
+  `BackendKind`, `SignInShape`; ❗ confusing any two is a bug, and its header says how), `InMemoryVolume`, `ids` +
+  `canonical_root` (the ID funnel and double-mount collapse),
   `retirement.rs` (how background work learns it stopped being the live volume), `channel_stream.rs` (the consumer half
   of a network backend's read path), `scan_boundary.rs` + `scan_stop.rs` (the one seam a copy scan touches per entry: it
   reports counts AND answers Cancel and Pause), the four modules a stat-and-listing backend gets its `Volume` bodies
@@ -25,20 +27,18 @@ path; prefer that in app code (`crate::file_system::volume::VolumeError`), `cmdr
 
 - **`#![deny(missing_docs)]` holds here**: new `pub` items, fields, and variants need doc comments, and several cross
   IPC via `specta::Type`, so the comment lands in `bindings.ts`.
-- **`specta` stays pinned to `=2.0.0-rc.24`, identical to the app's**: two copies in one graph break bindings
-  generation.
+- **`specta` stays pinned to `=2.0.0-rc.24`, identical to the app's**: two copies break bindings generation.
 - **`Volume::capabilities()` is a PURE FOLD of the trait's predicates, published over IPC.** ❌ Never override it: grow
   the surface by adding a predicate (`src/volume/capabilities.rs`).
 - **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane goes
   stale after a copy. `DETAILS.md` § "What the app kept".
-- **❌ Never gate BEHAVIOR on `cfg(test)` here; use `any(test, feature = "testing")`, switched on through a
-  dev-dependency.** `cfg(test)` is off in a consumer's test build, so the arm flips and production behavior runs inside
-  their suite: it compiles clean and surfaces as someone else's flake. `DETAILS.md` § "Gotcha: `cfg(test)`-conditioned
-  BEHAVIOR".
+- **❌ Never gate BEHAVIOR on `cfg(test)` here; use `any(test, feature = "testing")`.** `cfg(test)` is off in a
+  consumer's test build, so production behavior runs inside their suite and surfaces as someone else's flake.
+  `DETAILS.md` § "Gotcha: `cfg(test)`-conditioned BEHAVIOR".
 - **`InMemoryVolume` honors the `Volume` contracts data safety LEANS on**, and LIES on request (`set_stat_failing`,
   `with_delete_failing`, …) so a defense against a hostile backend is testable. ❌ Never relax a contract to make a test
   green: the double is the oracle. Cross-backend promises live in `volume::conformance`, which every backend's suite
-  calls, since each earns them differently.
+  calls.
 - **❌ Never build a volume ID by hand, or by stripping characters.** `volume::ids` is the one funnel; an ID keys the
   index DB, `lastUsedPaths`, tab state, and routing, so a lossy one hands two disks one identity and sends deletes to
   the wrong disk. Add a constructor there.

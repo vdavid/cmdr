@@ -534,8 +534,9 @@ orchestration-level lifecycles (`IndexPhase`, `ActivityPhase`, `DiscoveryState`)
 17 state-transition tests added (and one bug fix surfaced while writing them):
 
 - **`SmbVolume::ConnectionState`**: dropped the dead `OsMount` variant. The internal state machine is now exactly the
-  binary shape it was already operating as (`Direct ⇄ Disconnected`). The outer `SmbConnectionState::OsMount` (attached
-  by `enrich_smb_connection_state` for SMB shares with an OS mount but no Cmdr smb2 session) is unchanged.
+  binary shape it was already operating as (`Direct ⇄ Disconnected`). The outer `SmbConnectionState::OsMount` (since renamed
+  `cmdr_fs::volume::ConnectionState::OsMount`, attached by `enrich_from_volume_registry` for SMB shares with an OS
+  mount but no Cmdr smb2 session) is unchanged.
 - **`SearchStatus`**: fix + transition test. `search_cancel` was clearing `session.search`, which made the `Cancelled`
   status (set by the search thread on cancel) unobservable: poll returned `Idle`. Stopped nulling the state on cancel;
   the thread now writes `Cancelled` and poll surfaces it. New test pins `Running → Cancelled` and the reset-on-new-start
@@ -639,8 +640,8 @@ binary `Direct ⇄ Disconnected` shape).
 ### Dead code removed
 
 - `SmbVolume::ConnectionState::OsMount` variant: never written to the atomic, two unreachable `match` arms gone. The
-  OS-mount fallback the UI renders lives at the outer `SmbConnectionState` enriched by `enrich_smb_connection_state` in
-  `commands/volumes.rs`, not on this internal atomic.
+  OS-mount fallback the UI renders lives at the outer `SmbConnectionState` (since renamed
+  `cmdr_fs::volume::ConnectionState`) enriched by `enrich_from_volume_registry`, not on this internal atomic.
 
 ### Honest verdict per technique
 
