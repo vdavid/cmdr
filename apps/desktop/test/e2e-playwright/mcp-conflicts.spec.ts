@@ -131,7 +131,9 @@ test.describe('MCP per-file conflicts', () => {
       expect(fs.readFileSync(path.join(destDir, `file-${String(i)}.txt`), 'utf8')).toBe('destination')
     }
 
-    await expectAndDismissToast(main, 'Copied')
+    // Every file clashed and every clash was skipped, so nothing was copied and
+    // the toast says so rather than reporting a count that never landed.
+    await expectAndDismissToast(main, 'Copy complete: skipped all 3 files (already at the target), nothing was copied.')
   })
 })
 

@@ -682,6 +682,7 @@ pub(crate) async fn move_volumes_with_progress(
                 files_skipped,
                 bytes_processed: bytes_done,
                 appeared_during_move: None,
+                top_level_skipped: None,
             });
             Ok(())
         }

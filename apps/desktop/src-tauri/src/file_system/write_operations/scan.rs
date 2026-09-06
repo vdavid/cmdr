@@ -14,8 +14,8 @@ use super::error_classification::IoResultExt;
 use super::event_sinks::OperationEventSink;
 use super::state::{FileInfo, ScanResult, WriteOperationState, update_operation_status};
 use super::types::{
-    ConflictInfo, ScanProgressEvent, SourceItemOutcome, WriteOperationError, WriteOperationPhase, WriteOperationType,
-    WriteProgressEvent,
+    ConflictInfo, ScanProgressEvent, SourceItemOutcome, TopLevelSkipped, WriteOperationError, WriteOperationPhase,
+    WriteOperationType, WriteProgressEvent,
 };
 use super::validation::is_symlink_loop;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
@@ -629,6 +629,9 @@ pub(super) struct SourceItemTracker {
     /// Sources at least one of whose files actually landed. A source missing
     /// here when its count completes had every file walked past.
     landed_something: HashSet<PathBuf>,
+    /// Running tally of the top-level sources that finished having landed
+    /// nothing, for `WriteCompleteEvent::top_level_skipped`.
+    skipped: TopLevelSkipped,
 }
 
 impl SourceItemTracker {
@@ -637,7 +640,18 @@ impl SourceItemTracker {
             totals: build_source_file_counts(files),
             processed: std::collections::HashMap::new(),
             landed_something: HashSet::new(),
+            skipped: TopLevelSkipped { files: 0, folders: 0 },
         }
+    }
+
+    /// The top-level sources that landed nothing, split by kind. Read after the
+    /// per-file loop; a source only lands in it once its LAST file is in.
+    ///
+    /// ⚠️ Sources dropped before the tracker was built (a copy's bulk pre-known
+    /// -conflict skip) are not in here — nothing ever calls `record` for them.
+    /// Their caller adds them.
+    pub fn skipped_top_level(&self) -> TopLevelSkipped {
+        self.skipped
     }
 
     /// Records a processed file and what happened to it. Returns the source
@@ -661,6 +675,17 @@ impl SourceItemTracker {
         } else {
             SourceItemOutcome::Skipped
         };
+        if outcome == SourceItemOutcome::Skipped {
+            // A source that IS the file it walked was a top-level FILE; one
+            // whose path differs from the file's is the folder above it. No
+            // stat needed, and it stays right for a source that has since
+            // vanished.
+            if source_path == file_info.path {
+                self.skipped.files += 1;
+            } else {
+                self.skipped.folders += 1;
+            }
+        }
         Some(FinishedSource { source_path, outcome })
     }
 }

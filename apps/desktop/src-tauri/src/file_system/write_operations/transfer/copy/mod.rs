@@ -20,9 +20,9 @@ use super::super::scan::{FileVerdict, SourceItemTracker, handle_dry_run, scan_so
 use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::super::types::{
-    CancelRollback, ConflictResolution, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
-    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
-    WriteSourceItemDoneEvent,
+    CancelRollback, ConflictResolution, SourceItemOutcome, TopLevelSkipped, WriteCancelledEvent, WriteCompleteEvent,
+    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType,
+    WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use super::super::unique_name::{create_unique_dir, next_available_name};
 use super::super::validation::{is_same_file, validate_disk_space, validate_file_sizes_for_filesystem};
@@ -537,6 +537,17 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
 
     let files_done = outcome.files_done;
     let bytes_done = outcome.bytes_done;
+    // What the SUMMARY subtracts from the user's selection counts. The tracker
+    // speaks for the sources it walked; the bulk pre-skip above dropped its own
+    // before the tracker existed, and those are all files (it refuses to
+    // classify, and so never bulk-skips, anything that stats as a directory).
+    let top_level_skipped = {
+        let walked = tracker.skipped_top_level();
+        TopLevelSkipped {
+            files: walked.files + pre_skip_top_levels.len(),
+            folders: walked.folders,
+        }
+    };
 
     match outcome.intent {
         PostLoopIntent::Completed => {
@@ -644,6 +655,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 files_skipped: outcome.files_skipped,
                 bytes_processed: bytes_done,
                 appeared_during_move: None,
+                top_level_skipped: Some(top_level_skipped),
             });
             Ok(())
         }

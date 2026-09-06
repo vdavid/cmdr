@@ -216,6 +216,84 @@ describe('composeTransferCompleteToast', () => {
     })
   })
 
+  // The engine that can tell a top-level skip from a nested one says so, and
+  // then each selection count is reduced only by its own kind. Without this the
+  // leaf count eats top-level items that actually landed.
+  describe('selection split when the engine reports the selection`s own skips', () => {
+    it('a nested skip leaves the top-level file it used to eat', () => {
+      // Selected `readme.txt` + `only-in-source.txt` + `docs/`. Skip All keeps
+      // the clashing readme plus two files inside docs/: 3 leaves skipped, but
+      // only ONE of the things the user picked.
+      expect(
+        composeTransferCompleteToast({
+          operationType: 'copy',
+          filesProcessed: 5,
+          filesSkipped: 3,
+          fileCount: 2,
+          folderCount: 1,
+          topLevelSkipped: { files: 1, folders: 0 },
+        }),
+      ).toBe('Copied 1 file and 1 folder, skipped 3 files (already at the target).')
+    })
+
+    it('a skipped folder is not reported as copied', () => {
+      // A folder landing on a same-named file is refused, so nothing arrived.
+      expect(
+        composeTransferCompleteToast({
+          operationType: 'copy',
+          filesProcessed: 1,
+          filesSkipped: 1,
+          fileCount: 0,
+          folderCount: 1,
+          topLevelSkipped: { files: 0, folders: 1 },
+        }),
+      ).toBe('Copy complete: file already at the target, not copied.')
+    })
+
+    it('a folder whose child was skipped still counts as copied', () => {
+      // One refused child doesn't make the folder a skip: it partly arrived.
+      expect(
+        composeTransferCompleteToast({
+          operationType: 'copy',
+          filesProcessed: 3,
+          filesSkipped: 1,
+          fileCount: 0,
+          folderCount: 1,
+          topLevelSkipped: { files: 0, folders: 0 },
+        }),
+      ).toBe('Copied 1 folder, skipped 1 file (already at the target).')
+    })
+
+    it('reporting no top-level skips keeps every selected item in the phrase', () => {
+      // The counterweight to the fallback: an engine that reports `0/0` means
+      // "nothing you picked was skipped", and must NOT have `filesSkipped`
+      // subtracted from its files the way an engine that stays silent does.
+      expect(
+        composeTransferCompleteToast({
+          operationType: 'move',
+          filesProcessed: 8,
+          filesSkipped: 2,
+          fileCount: 2,
+          folderCount: 1,
+          topLevelSkipped: { files: 0, folders: 0 },
+        }),
+      ).toBe('Moved 2 files and 1 folder, skipped 2 files (already at the target).')
+    })
+
+    it('every selected item skipped collapses to the flat wording', () => {
+      expect(
+        composeTransferCompleteToast({
+          operationType: 'copy',
+          filesProcessed: 4,
+          filesSkipped: 4,
+          fileCount: 1,
+          folderCount: 1,
+          topLevelSkipped: { files: 1, folders: 1 },
+        }),
+      ).toBe('Copy complete: skipped all 4 files (already at the target), nothing was copied.')
+    })
+  })
+
   describe('copy fallback (no selection counts — clipboard paste)', () => {
     it('all copied, multi-file', () => {
       expect(composeTransferCompleteToast({ operationType: 'copy', filesProcessed: 5, filesSkipped: 0 })).toBe(

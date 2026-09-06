@@ -154,6 +154,12 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   counted as skipped rather than added. On a MOVE, any skip suppresses the source deletion (all-or-nothing — the whole
   transfer degrades to a copy, so a symlink is never removed from the source while absent from the archive). The skip
   count rides in `ArchiveEditRequest.skipped_count` and surfaces as `files_skipped` on the terminal event.
+- **Both managed routes end through `engine.rs::emit_archive_terminal`**, which owns the one three-arm match from
+  outcome to `write-complete` / `write-cancelled` / `write-error`. Each route keeps only what it must do BEFORE that
+  emit (a move's source delete in `driver.rs`, the journal row in `copy_into.rs`); the match itself was a 26-line clone
+  across the two, free to drift. An archive edit reports `top_level_skipped: None`: its `skipped_count` is
+  unrepresentable entries and in-zip clashes, not items a user picked in a pane, so the FE words the summary from
+  `files_skipped` alone.
 - **Move OUT of a zip is a compound op** (`route_archive_move_out`), NOT a per-file `Volume::delete` (the `ArchiveVolume`
   is read-only). One managed Move op runs two phases on ONE lifecycle: (1) extract the selected entries to the
   destination through the ordinary cross-volume copy engine (`copy_volumes_with_progress`, wrapped in a

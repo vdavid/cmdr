@@ -12109,6 +12109,27 @@ export type TimedOut<T> = {
 }
 
 /**
+ *  The top-level items an operation landed nothing for, split the way the
+ *  user's SELECTION is.
+ *
+ *  ❗ Not derivable from `files_skipped`, and the summary breaks if you try.
+ *  `files_skipped` counts LEAVES, nested ones included, while the FE's phrase
+ *  ("Copied 2 files and 1 folder") is about the things the user picked. The FE
+ *  used to subtract the one from the other, which held only while every skip
+ *  was a top-level file: once a folder's child could be skipped, a Skip-All
+ *  over `readme.txt` + `docs/` reported "Copied 1 folder, skipped 3 files" and
+ *  lost the top-level file that did copy. So the engine reports both, and each
+ *  count is subtracted from its own kind.
+ *
+ *  A folder counts here only when NOTHING under it landed. One refused child
+ *  leaves its folder `Done`, because the folder did partly arrive.
+ */
+export type TopLevelSkipped = {
+  files: number
+  folders: number
+}
+
+/**
  *  The live shape of a running transfer, on every progress event AND on
  *  [`OperationStatus`], so both windows and an agent polling `cmdr://state` can
  *  answer "why isn't this moving?" and "why does the counter say fewer files
@@ -13156,6 +13177,12 @@ export type WriteCompleteEvent = {
    *  case) means every source went, and the FE says nothing about it.
    */
   appearedDuringMove?: AppearedDuringMove | null
+  /**
+   *  Which of the TOP-LEVEL items the user picked landed nothing at all.
+   *  `None` from an engine that doesn't track it, and the FE then words the
+   *  summary from `files_skipped` alone. See [`TopLevelSkipped`].
+   */
+  topLevelSkipped?: TopLevelSkipped | null
 }
 
 // Conflict event payload (emitted when Stop mode encounters a conflict).

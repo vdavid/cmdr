@@ -25,7 +25,7 @@ use crate::file_system::write_operations::state::{
     OperationIntent, WriteOperationState, load_intent, update_operation_status,
 };
 use crate::file_system::write_operations::types::{
-    CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
+    CancelRollback, SourceItemOutcome, TopLevelSkipped, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteSourceItemDoneEvent,
 };
 use crate::file_system::write_operations::validation::{is_real_directory, path_exists_or_is_symlink};
@@ -45,6 +45,11 @@ pub(super) fn move_with_rename(
 ) -> Result<(), WriteOperationError> {
     let mut files_done = 0;
     let mut files_skipped = 0usize;
+    // The TOP-LEVEL half of that count, for the summary's phrase. A merge's
+    // nested skips land in `files_skipped` only: the folder itself still took
+    // children, so it isn't a skipped selection item. Only the whole-source
+    // refusal below is.
+    let mut top_level_skipped = TopLevelSkipped { files: 0, folders: 0 };
     let mut apply_to_all_resolution = ApplyToAll::default();
     let mut move_tx = MoveTransaction::new();
     // A same-FS move is journaled and reversed at TOP-LEVEL granularity (one
@@ -170,6 +175,11 @@ pub(super) fn move_with_rename(
                     None => {
                         // Skip this file
                         files_skipped += 1;
+                        if is_real_directory(source) {
+                            top_level_skipped.folders += 1;
+                        } else {
+                            top_level_skipped.files += 1;
+                        }
                         continue;
                     }
                 }
@@ -320,6 +330,7 @@ pub(super) fn move_with_rename(
         files_skipped,
         bytes_processed: 0, // Rename doesn't track bytes
         appeared_during_move: None,
+        top_level_skipped: Some(top_level_skipped),
     });
 
     Ok(())

@@ -107,7 +107,7 @@ test.describe('Move multi-item merge (Layout B)', () => {
     // Layout B selection: 1 top-level file (delta.txt) + 3 folders. Skip All
     // skips the one clashing file (bravo/foxtrot/golf.txt), which the toast
     // counts against the file part, so no files land — 3 folders merge.
-    await expectAndDismissToast(tauriPage, 'Moved 3 folders, skipped 1 file (already at the target).')
+    await expectAndDismissToast(tauriPage, 'Moved 1 file and 3 folders, skipped 1 file (already at the target).')
 
     // Dest files correct (same as copy skip)
     expect(readFile(fixtureRoot, 'right/bravo/foxtrot/golf.txt')).toBe('dest-golf')

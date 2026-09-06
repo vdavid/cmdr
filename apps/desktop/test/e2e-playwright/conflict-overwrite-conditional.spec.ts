@@ -135,7 +135,7 @@ test.describe('Conditional conflict policies (upfront radios)', () => {
     expect(readFile(fixtureRoot, 'right/larger.txt')).toBe('d'.repeat(500))
     // The transfer's completion toast is user-facing contract; assert and dismiss
     // it so it doesn't sit through the next test (the post-test leak guard).
-    await expectAndDismissToast(tauriPage, 'Copied 3 files')
+    await expectAndDismissToast(tauriPage, 'Copied 1 file, skipped 2 files (already at the target).')
   })
 
   test('Overwrite all older: only strictly-older dest is replaced', async ({ tauriPage }) => {
@@ -163,7 +163,7 @@ test.describe('Conditional conflict policies (upfront radios)', () => {
     expect(readFile(fixtureRoot, 'right/newer.txt')).toBe('dst-newer')
     // The transfer's completion toast is user-facing contract; assert and dismiss
     // it so it doesn't sit through the next test (the post-test leak guard).
-    await expectAndDismissToast(tauriPage, 'Copied 3 files')
+    await expectAndDismissToast(tauriPage, 'Copied 1 file, skipped 2 files (already at the target).')
   })
 })
 
@@ -198,6 +198,6 @@ test.describe('Conditional conflict policies (per-file dialog buttons)', () => {
     expect(readFile(fixtureRoot, 'right/newer.txt')).toBe('dst-newer')
     // The transfer's completion toast is user-facing contract; assert and dismiss
     // it so it doesn't sit through the next test (the post-test leak guard).
-    await expectAndDismissToast(tauriPage, 'Copied 3 files')
+    await expectAndDismissToast(tauriPage, 'Copied 1 file, skipped 2 files (already at the target).')
   })
 })

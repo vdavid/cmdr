@@ -160,7 +160,7 @@ test.describe('Single clash: baseline file/folder smoke', () => {
 
     await startCopyAskForEach(tauriPage, ['doc.txt'])
     await resolveConflict(tauriPage, 'Skip')
-    await finishCopy(tauriPage, 'Copied 1 file.')
+    await finishCopy(tauriPage, 'Copy complete: file already at the target, not copied.')
 
     expect(readFile(fixtureRoot, 'right/doc.txt')).toBe('dest-doc.txt')
   })
@@ -197,7 +197,11 @@ test.describe('Single clash: folder→file (existing file, incoming folder)', ()
     // folder→file is NOT the red file→folder variant.
     expect(conflict.isFileOverFolder).toBe(false)
     await resolveConflict(tauriPage, 'Skip')
-    await finishCopy(tauriPage, 'Copied 1 folder.')
+    // The whole source was skipped, so nothing is reported as copied: the
+    // engine counts the folder against `topLevelSkipped.folders`, which is what
+    // stops the phrase claiming "Copied 1 folder" for a folder that never
+    // arrived.
+    await finishCopy(tauriPage, 'Copy complete: file already at the target, not copied.')
 
     const destPath = path.join(fixtureRoot, 'right', 'thing')
     expect(fs.lstatSync(destPath).isFile()).toBe(true)
@@ -248,7 +252,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
     // This IS the red warning variant.
     expect(conflict.isFileOverFolder).toBe(true)
     await resolveConflict(tauriPage, 'Skip')
-    await finishCopy(tauriPage, 'Copied 1 file.')
+    await finishCopy(tauriPage, 'Copy complete: file already at the target, not copied.')
 
     const destPath = path.join(fixtureRoot, 'right', 'item')
     expect(fs.lstatSync(destPath).isDirectory()).toBe(true)
@@ -305,7 +309,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
     // No second prompt: both dest folders survive untouched.
     const next = await waitForNextConflictOrDone(tauriPage, first)
     expect(next).toBeNull()
-    await finishCopy(tauriPage, 'Copied 2 files.')
+    await finishCopy(tauriPage, 'Copy complete: skipped all 2 files (already at the target), nothing was copied.')
 
     expect(readFile(fixtureRoot, 'right/1-item/inside.txt')).toBe('dest-inside-1')
     expect(readFile(fixtureRoot, 'right/2-item/inside.txt')).toBe('dest-inside-2')
@@ -350,11 +354,19 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
 // surfaces later in the per-file copy pass.) So the "* all" choice on the
 // file→file clash is what may or may not carry over to the file→folder clash.
 test.describe('Bucket spread: normal-first → file→folder', () => {
+  // `landsNormal` is whether `1-normal.txt` actually takes the source bytes,
+  // which is NOT the same question as whether the choice carries. The
+  // conditional variants re-ask their own question per file: `smaller` sees a
+  // dest 2 bytes shorter than the source and overwrites, while `older` sees two
+  // files the fixture wrote moments apart and skips, because an equal (or
+  // newer) mtime is never grounds for overwriting.
+  const ALL_SKIPPED = 'Copy complete: skipped all 2 files (already at the target), nothing was copied.'
+  const ONE_EACH = 'Copied 1 file, skipped 1 file (already at the target).'
   for (const variant of [
-    { choice: 'Skip all', carries: true },
-    { choice: 'Overwrite all', carries: false },
-    { choice: 'Overwrite all smaller', carries: false },
-    { choice: 'Overwrite all older', carries: false },
+    { choice: 'Skip all', carries: true, toast: ALL_SKIPPED },
+    { choice: 'Overwrite all', carries: false, toast: ONE_EACH },
+    { choice: 'Overwrite all smaller', carries: false, toast: ONE_EACH },
+    { choice: 'Overwrite all older', carries: false, toast: ALL_SKIPPED },
   ] as const) {
     // `Rename all` carries over too (and now lands correctly for the file→folder
     // clash), but `Skip all` already covers the carry-over contract for this
@@ -384,7 +396,9 @@ test.describe('Bucket spread: normal-first → file→folder', () => {
         // Resolve it so the op can finish and the dialog closes cleanly.
         await resolveConflict(tauriPage, 'Skip')
       }
-      await finishCopy(tauriPage, 'Copied 2 files.')
+      // 2-folder is Skipped in every variant (carried, or answered above), so
+      // the toast turns on whether 1-normal.txt landed. See `landsNormal` above.
+      await finishCopy(tauriPage, variant.toast)
 
       // The dest folder stays intact in every case here (Skip carries; Overwrite*
       // prompted and we Skipped it). The contract under test is whether a SECOND

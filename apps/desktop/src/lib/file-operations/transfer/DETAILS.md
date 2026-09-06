@@ -72,10 +72,19 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
 - **`ScanPhaseBody.svelte` is shared by the progress dialog and the queue row** (`comfortable` and `compact` densities),
   so a change to it lands on both surfaces.
 - **`transfer-complete-toast.ts::composeTransferCompleteToast` splits TOP-LEVEL items by type only** ("Moved 1 file and
-  3 folders"), never interior counts. It omits zero parts, and the skip suffix is file-only because folders always
-  merge. When a top-level kind probe comes back partial it falls back to flattened file-count wording. F5/F6 feed it the
-  split from real selection stats; drag-and-drop and clipboard paste feed it from a batched `stat_paths_kinds` /
-  `read_clipboard_files` probe.
+  3 folders"), never interior counts. It omits zero parts, and the skip suffix stays file-worded (the backend counts
+  skipped LEAVES). When a top-level kind probe comes back partial it falls back to flattened file-count wording. F5/F6
+  feed it the split from real selection stats; drag-and-drop and clipboard paste feed it from a batched
+  `stat_paths_kinds` / `read_clipboard_files` probe.
+- ❗ **Each selection count is reduced by the skips of ITS OWN kind**, from `WriteCompleteEvent.topLevelSkipped`
+  (`{files, folders}`). `filesSkipped` cannot stand in for it: that counts leaves, nested ones included, so subtracting
+  it from `fileCount` only held while every skip was a top-level file. Once a folder's child could be skipped, a
+  Skip-All over `readme.txt` + `docs/` read "Copied 1 folder, skipped 3 files" — the two skipped children ate the
+  top-level file that DID copy — and a folder refused onto a same-named file still read "Copied 1 folder". A folder
+  counts as skipped only when NOTHING under it landed; one refused child leaves it copied, because it partly arrived.
+  The `?? filesSkipped` fallback is that old heuristic on purpose, for the engines that report no breakdown
+  (cross-volume, in-archive), whose skips are all top-level files today. Backend contract:
+  `write_operations/types/events.rs::TopLevelSkipped`.
 - **A move that left something in the source appends one sentence** ("2 items appeared in Work during the move and stay
   there"), off `WriteCompleteEvent.appearedDuringMove` — typed data (`itemCount`, `folderName`, `folderCount`), never
   prose crossing IPC. It means a cross-filesystem move found files the copy phase never carried, so the source sweep

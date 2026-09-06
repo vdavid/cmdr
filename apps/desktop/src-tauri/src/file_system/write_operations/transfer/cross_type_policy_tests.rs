@@ -242,6 +242,47 @@ fn a_refused_cross_type_item_reports_as_skipped_not_copied() {
     );
 }
 
+/// The summary's phrase is built from the SELECTION, so the engine reports
+/// which of the user's own items landed nothing, separately from the leaf
+/// count. Getting this wrong is what made a Skip-All read "Copied 1 folder,
+/// skipped 3 files" and lose the top-level file that did copy.
+#[test]
+fn a_refused_item_is_counted_against_its_own_kind_not_the_leaf_total() {
+    let dir = temp("top_level_split");
+    let src_root = dir.join("src");
+    let dst_root = dir.join("dst");
+    // `notes` (a file onto a dest FOLDER) is refused outright. `tree/` lands
+    // one child and has one refused: it partly arrived, so it is NOT skipped.
+    fs::create_dir_all(&src_root).unwrap();
+    fs::create_dir_all(dst_root.join("notes")).unwrap();
+    fs::write(src_root.join("notes"), "x".repeat(100_000)).unwrap();
+    fs::write(dst_root.join("notes/precious.txt"), "precious user data").unwrap();
+    fs::create_dir_all(src_root.join("tree")).unwrap();
+    fs::write(src_root.join("tree/kept.txt"), "lands fine").unwrap();
+    fs::write(src_root.join("tree/blocked"), "x".repeat(100_000)).unwrap();
+    fs::create_dir_all(dst_root.join("tree/blocked")).unwrap();
+    let events = CollectorEventSink::new();
+
+    copy_files_with_progress_inner(
+        &events,
+        "op-top-level-split",
+        &state(),
+        &[src_root.join("notes"), src_root.join("tree")],
+        &dst_root,
+        &policy(ConflictResolution::Overwrite),
+    )
+    .expect("the copy should finish");
+
+    let complete = events.complete.lock_ignore_poison();
+    let event = complete.last().expect("a finished copy emits one complete event");
+    assert_eq!(event.files_skipped, 2, "two LEAVES were refused");
+    let top = event
+        .top_level_skipped
+        .expect("the local copy engine reports the selection's own skips");
+    assert_eq!(top.files, 1, "only `notes` was a top-level item that landed nothing");
+    assert_eq!(top.folders, 0, "`tree/` landed a child, so it is not a skipped folder");
+}
+
 /// A folder source whose children DID land still reports `Done`: the skip is
 /// per file, and one refused child doesn't make the whole source a skip.
 #[test]

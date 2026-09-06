@@ -11,7 +11,10 @@ use std::time::{Duration, Instant};
 use super::super::OperationEventSink;
 use super::super::operation_intent::is_cancelled;
 use super::super::state::WriteOperationState;
-use super::super::types::{WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
+use super::super::types::{
+    CancelRollback, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase,
+    WriteOperationType, WriteProgressEvent,
+};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::ignore_poison::IgnorePoison;
 use cmdr_archive::mutator::{MutationError, MutationHooks, MutationProgress};
@@ -132,6 +135,55 @@ pub(super) async fn delete_move_sources(sources: &[PathBuf]) {
         .await;
         if let Ok(Err((path, err))) = removed {
             log::warn!(target: "archive_edit", "couldn't remove moved source {}: {err}", path.display());
+        }
+    }
+}
+
+/// Emits the ONE terminal event an archive edit's outcome calls for, and
+/// nothing else.
+///
+/// Both managed routes (`copy_into.rs`'s into-archive edit and `driver.rs`'s
+/// general one) end the same three ways, and each owns only what it must do
+/// BEFORE the emit — a move's source delete, a compress route's journal row. So
+/// the three-arm match itself lives here rather than being written twice and
+/// drifting: it was already a 26-line clone the duplication gauge tracked.
+///
+/// `skipped_count` is meaningful only on the `Ok` path; the other two arms
+/// carry `entries_done` instead, since a run that stopped has no final tally.
+///
+/// ❗ An archive edit tracks no top-level SELECTION, so `top_level_skipped` is
+/// `None`: its `skipped_count` is unrepresentable entries and in-zip clashes,
+/// not items the user picked in a pane. The FE words the summary from
+/// `files_skipped` alone for these.
+pub(super) fn emit_archive_terminal(
+    events: &dyn OperationEventSink,
+    op_id: &str,
+    outcome: Result<(), PlanError>,
+    skipped_count: usize,
+    final_progress: &MutationProgress,
+) {
+    match outcome {
+        Ok(()) => events.emit_complete(WriteCompleteEvent {
+            operation_id: op_id.to_string(),
+            operation_type: WriteOperationType::ArchiveEdit,
+            files_processed: final_progress.entries_changed,
+            files_skipped: skipped_count,
+            bytes_processed: final_progress.bytes_total,
+            appeared_during_move: None,
+            top_level_skipped: None,
+        }),
+        Err(PlanError::Cancelled) => events.emit_cancelled(WriteCancelledEvent {
+            operation_id: op_id.to_string(),
+            operation_type: WriteOperationType::ArchiveEdit,
+            files_processed: final_progress.entries_done,
+            rollback: CancelRollback::none(),
+        }),
+        Err(PlanError::Op(err)) => {
+            events.emit_error(WriteErrorEvent::new(
+                op_id.to_string(),
+                WriteOperationType::ArchiveEdit,
+                err,
+            ));
         }
     }
 }

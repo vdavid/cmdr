@@ -115,9 +115,11 @@ test.describe('Copy with conflict policies (Layout A)', () => {
     await selectConflictPolicy(tauriPage, 'skip')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
-    // Skip All keeps the conflicting top-level readme.txt at the dest, so the
-    // toast reports it as skipped (only-in-source.txt + docs/ copied).
-    await expectAndDismissToast(tauriPage, 'Copied 1 file and 1 folder, skipped 1 file')
+    // Skip All keeps the conflicting top-level readme.txt AND the two clashing
+    // files inside docs/, so three LEAVES are skipped. Only one of them is a
+    // thing the user picked, which is why the phrase still names the file and
+    // the folder that did land (`TopLevelSkipped`).
+    await expectAndDismissToast(tauriPage, 'Copied 1 file and 1 folder, skipped 3 files (already at the target).')
 
     // Conflicting files preserved (dest content kept)
     expect(readFile(fixtureRoot, 'right/readme.txt')).toBe('dest-readme')
@@ -181,10 +183,11 @@ test.describe('Copy multi-item merge (Layout B)', () => {
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
     // Dismiss the success toast before the file assertions, like every sibling
-    // test. Nested skips (golf.txt) aren't surfaced in the count, so it reads the
-    // same as Overwrite. Without this the toast lingers and the teardown leak-check
-    // races its auto-dismiss timer (passes only if the timer fires first).
-    await expectAndDismissToast(tauriPage, 'Copied 1 file and 3 folders.')
+    // test. The nested skip (golf.txt) IS surfaced in the count now, while the
+    // folder holding it still lands, so this reads differently from Overwrite.
+    // Without this the toast lingers and the teardown leak-check races its
+    // auto-dismiss timer (passes only if the timer fires first).
+    await expectAndDismissToast(tauriPage, 'Copied 1 file and 3 folders, skipped 1 file (already at the target).')
 
     // Conflicting file preserved
     expect(readFile(fixtureRoot, 'right/bravo/foxtrot/golf.txt')).toBe('dest-golf')
@@ -246,13 +249,15 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
 
     await waitForDialogsToClose(tauriPage)
     // The copy fires a transient selection-split toast. Layout A's selection is
-    // 2 top-level files (readme.txt, only-in-source.txt) + 1 folder (docs/);
-    // per-file Skips are not surfaced in the count. Assert + dismiss it so the
-    // afterEach leak-detector does not fail on a still-visible toast (these
-    // per-file-conflict flows finish slower than the upfront-policy tests, so the
-    // toast is still on screen when afterEach probes — it does not reliably
-    // auto-dismiss in time on Linux).
-    await expectAndDismissToast(tauriPage, 'Copied 2 files and 1 folder.')
+    // 2 top-level files (readme.txt, only-in-source.txt) + 1 folder (docs/). One
+    // of the three clashes was answered Overwrite and the other two Skipped, and
+    // BOTH those skips are surfaced now; the top-level readme.txt is the one
+    // that didn't land, so the phrase drops it and keeps the rest. Assert +
+    // dismiss so the afterEach leak-detector does not fail on a still-visible
+    // toast (these per-file-conflict flows finish slower than the upfront-policy
+    // tests, so the toast is still on screen when afterEach probes — it does not
+    // reliably auto-dismiss in time on Linux).
+    await expectAndDismissToast(tauriPage, 'Copied 1 file and 1 folder, skipped 2 files (already at the target).')
 
     // We overwrote the first conflict and skipped the rest.
     // Since filesystem traversal order is unpredictable, verify that

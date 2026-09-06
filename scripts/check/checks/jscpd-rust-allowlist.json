@@ -9,7 +9,6 @@
     "apps/desktop/src-tauri/src/commands/quick_look.rs": 15,
     "apps/desktop/src-tauri/src/file_system/listing/reading.rs": 26,
     "apps/desktop/src-tauri/src/file_system/volume/backends/local_posix.rs": 9,
-    "apps/desktop/src-tauri/src/file_system/write_operations/archive_edit/copy_into.rs ↔ apps/desktop/src-tauri/src/file_system/write_operations/archive_edit/driver.rs": 26,
     "apps/desktop/src-tauri/src/file_system/write_operations/archive_edit/copy_into.rs ↔ apps/desktop/src-tauri/src/file_system/write_operations/archive_edit/move_out.rs": 16,
     "apps/desktop/src-tauri/src/file_system/write_operations/rename/bulk.rs": 10,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/linux_copy.rs ↔ apps/desktop/src-tauri/src/file_system/write_operations/transfer/macos_copy.rs": 14,

@@ -28,7 +28,7 @@
 
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
 import { tString } from '$lib/intl/messages.svelte'
-import type { AppearedDuringMove } from '$lib/ipc/bindings'
+import type { AppearedDuringMove, TopLevelSkipped } from '$lib/ipc/bindings'
 import type { TransferOperationType } from '$lib/file-explorer/types'
 
 export interface TransferCompleteToastInput {
@@ -41,8 +41,12 @@ export interface TransferCompleteToastInput {
    *  drag-and-drop, and clipboard paste; omitted only when a top-level kind probe came
    *  back partial, where the composer falls back to the flattened file-count wording. */
   fileCount?: number
-  /** Top-level folders the operation transferred. Folders always merge, so they're never skipped. */
+  /** Top-level folders the operation transferred. */
   folderCount?: number
+  /** Which of those top-level items landed nothing at all, split the same way. Absent from an
+   *  engine that doesn't track it, and the phrase then falls back to `fileCount`/`folderCount`
+   *  as the moved counts. See the BE's `TopLevelSkipped`. */
+  topLevelSkipped?: TopLevelSkipped | null
   /** What a cross-filesystem move found in the source that it never carried, and therefore left
    *  where it was (a download that finished mid-move, a sync app, an editor saving). Absent on the
    *  ordinary move, and on every copy. Adds a sentence; the move still reads as a success. */
@@ -67,7 +71,7 @@ function withLeftBehind(toast: string, appeared: AppearedDuringMove | null | und
 
 /** The outcome sentence itself: what went, and what was skipped on the way. */
 function composeOutcome(input: TransferCompleteToastInput): string {
-  const { operationType, filesProcessed, filesSkipped, fileCount, folderCount } = input
+  const { operationType, filesProcessed, filesSkipped, fileCount, folderCount, topLevelSkipped } = input
 
   if (operationType === 'trash') {
     return tString('transfer.trash', { countText: formatNumber(filesProcessed), count: filesProcessed })
@@ -87,14 +91,29 @@ function composeOutcome(input: TransferCompleteToastInput): string {
 
   const verb = verbParam(operationType)
 
-  // Selection split: report the top-level items the user picked. Folders always
-  // merge (never skipped), so the moved-file count is `fileCount - filesSkipped`.
+  // Selection split: report the top-level items the user picked, so each count
+  // is reduced by the skips of ITS OWN kind.
+  //
+  // ❗ `filesSkipped` cannot do that job: it counts LEAVES, nested ones
+  // included. Subtracting it from `fileCount` holds only while every skip is a
+  // top-level file; once a folder's child can be skipped, a Skip-All over
+  // `readme.txt` + `docs/` reads "Copied 1 folder, skipped 3 files" — the two
+  // skipped children ate the top-level file that did copy. So an engine that
+  // knows reports `topLevelSkipped`, and each count is reduced by its own kind.
+  //
+  // The fallback is that same old heuristic, kept deliberately: an engine that
+  // doesn't report (cross-volume, in-archive) is one whose skips ARE top-level
+  // files today, so it keeps the wording it has rather than silently switching
+  // to "nothing was skipped".
   if (fileCount !== undefined && folderCount !== undefined) {
-    const movedFiles = fileCount - filesSkipped
-    const phrase = describeCounts(movedFiles, folderCount)
+    const movedFiles = fileCount - (topLevelSkipped?.files ?? filesSkipped)
+    const movedFolders = folderCount - (topLevelSkipped?.folders ?? 0)
+    const phrase = describeCounts(movedFiles, movedFolders)
 
     if (phrase === null) {
-      // Nothing actually landed (no folders, every selected file skipped).
+      // Nothing landed at all: every selected item was skipped. The flat
+      // wording is the only one that can say that without naming a count of
+      // zero, so it takes over.
       return composeFileOnlyToast(operationType, filesProcessed, filesSkipped)
     }
 

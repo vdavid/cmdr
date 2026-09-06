@@ -247,6 +247,10 @@ pub(super) fn move_with_staging(
         Ok(())
     })();
 
+    // Read before the error branch: a failed op emits no complete event, but
+    // the tally has to be taken while the tracker is still in scope either way.
+    let staging_skipped = tracker.skipped_top_level();
+
     if let Err(e) = copy_result {
         // Cleanup staging directory in background (may block on network mounts)
         remove_dir_all_in_background(staging_dir.clone());
@@ -493,6 +497,10 @@ pub(super) fn move_with_staging(
         files_skipped,
         bytes_processed: bytes_done,
         appeared_during_move: leftovers.appeared_during_move(),
+        // The STAGING phase's verdict, which is where a conflict is resolved.
+        // A source phase 3 later declines to rename into place re-reports
+        // itself on `write-source-item-done`; this summary is written once.
+        top_level_skipped: Some(staging_skipped),
     });
 
     Ok(())

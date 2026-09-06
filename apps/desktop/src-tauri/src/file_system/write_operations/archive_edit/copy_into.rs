@@ -22,12 +22,11 @@ use super::super::state::{WriteOperationState, WriteSettledGuard};
 use super::super::transfer::volume::pull_path_to_local;
 use super::super::transfer::volume::{TreeRemoval, remove_tree};
 use super::super::types::ReadOnlySide;
-use super::super::types::{
-    CancelRollback, ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
-    WriteOperationStartResult, WriteOperationType,
-};
+use super::super::types::{ConflictResolution, WriteOperationError, WriteOperationStartResult, WriteOperationType};
 use super::conflicts::{ConflictMode, conditional_overwrites, find_unique_inner, resolve_effective};
-use super::engine::{MutatorHooks, PlanError, delete_move_sources, run_managed_edit, to_write_error};
+use super::engine::{
+    MutatorHooks, PlanError, delete_move_sources, emit_archive_terminal, run_managed_edit, to_write_error,
+};
 use super::routing::{ensure_zip_writable, normalize_inner_path, read_only_error};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{LaneKey, LocalPosixVolume, Volume, VolumeError};
@@ -699,33 +698,14 @@ async fn archive_copy_into_start(
                 Err(PlanError::Cancelled) => ExecutionStatus::Canceled,
                 Err(PlanError::Op(_)) => ExecutionStatus::Failed,
             };
-            match outcome {
-                Ok(skipped_count) => {
-                    events.emit_complete(WriteCompleteEvent {
-                        operation_id: op_id.clone(),
-                        operation_type: WriteOperationType::ArchiveEdit,
-                        files_processed: final_progress.entries_changed,
-                        files_skipped: skipped_count,
-                        bytes_processed: final_progress.bytes_total,
-                        appeared_during_move: None,
-                    });
-                }
-                Err(PlanError::Cancelled) => {
-                    events.emit_cancelled(WriteCancelledEvent {
-                        operation_id: op_id.clone(),
-                        operation_type: WriteOperationType::ArchiveEdit,
-                        files_processed: final_progress.entries_done,
-                        rollback: CancelRollback::none(),
-                    });
-                }
-                Err(PlanError::Op(err)) => {
-                    events.emit_error(WriteErrorEvent::new(
-                        op_id.clone(),
-                        WriteOperationType::ArchiveEdit,
-                        err,
-                    ));
-                }
-            }
+            let skipped_count = *outcome.as_ref().unwrap_or(&0);
+            emit_archive_terminal(
+                events.as_ref(),
+                &op_id,
+                outcome.map(|_| ()),
+                skipped_count,
+                &final_progress,
+            );
 
             // Finalize the journal row. Compress records the created archive as
             // its single `rollback_unit` item (the rollback deletes it if still

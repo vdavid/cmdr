@@ -9,7 +9,7 @@
  */
 
 import type { Initiator } from '$lib/tauri-commands'
-import type { AppearedDuringMove, OpKind } from '$lib/ipc/bindings'
+import type { AppearedDuringMove, TopLevelSkipped, OpKind } from '$lib/ipc/bindings'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
@@ -47,6 +47,10 @@ export interface TransferCompletePayload {
   /** What a cross-filesystem move left in the source because it never carried it there. `null`
    *  on every other ending, which is the ordinary case. */
   appearedDuringMove: AppearedDuringMove | null
+  /** Which of the user's TOP-LEVEL selected items landed nothing, split by kind. `null` from an
+   *  engine that doesn't track it. Needed because `filesSkipped` counts leaves, so it can't say
+   *  what happened to the selection. */
+  topLevelSkipped: TopLevelSkipped | null
 }
 
 /**

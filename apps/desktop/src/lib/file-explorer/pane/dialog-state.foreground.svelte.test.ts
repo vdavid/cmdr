@@ -269,6 +269,7 @@ describe("an adopted view's outcomes touch no pane", () => {
       filesSkipped: 0,
       bytesProcessed: 4096,
       appearedDuringMove: null,
+      topLevelSkipped: null,
     })
 
     expect(rightPane.spies.clearSelection).not.toHaveBeenCalled()
@@ -288,7 +289,13 @@ describe("an adopted view's outcomes touch no pane", () => {
     // whole window instead. This pins that neither family reaches for the store.
     const { dialogs } = makeState()
     dialogs.foregroundOperation({ ...adopted(), operationType: 'move' })
-    dialogs.handleAdoptedComplete({ filesProcessed: 3, filesSkipped: 0, bytesProcessed: 128, appearedDuringMove: null })
+    dialogs.handleAdoptedComplete({
+      filesProcessed: 3,
+      filesSkipped: 0,
+      bytesProcessed: 128,
+      appearedDuringMove: null,
+      topLevelSkipped: null,
+    })
 
     dialogs.startTransferProgress(moveProps())
     dialogs.handleTransferComplete({
@@ -296,6 +303,7 @@ describe("an adopted view's outcomes touch no pane", () => {
       filesSkipped: 0,
       bytesProcessed: 2048,
       appearedDuringMove: null,
+      topLevelSkipped: null,
     })
 
     expect(removeEntryFromAllSnapshots).not.toHaveBeenCalled()
@@ -355,6 +363,7 @@ describe('a view whose pane has moved on since the operation was born', () => {
       filesSkipped: 0,
       bytesProcessed: 2048,
       appearedDuringMove: null,
+      topLevelSkipped: null,
     })
 
     expect(refreshListing).toHaveBeenCalled()
@@ -372,6 +381,7 @@ describe('a view whose pane has moved on since the operation was born', () => {
       filesSkipped: 0,
       bytesProcessed: 2048,
       appearedDuringMove: null,
+      topLevelSkipped: null,
     })
 
     expect(rightPane.spies.clearSelection).toHaveBeenCalled()

@@ -330,6 +330,7 @@ describe('createTransferProgressState: progress + complete', () => {
       filesSkipped: 1,
       bytesProcessed: 999,
       appearedDuringMove: null,
+      topLevelSkipped: null,
     })
   })
 
@@ -1169,6 +1170,7 @@ describe('createTransferProgressState: disposal', () => {
       filesSkipped: 0,
       bytesProcessed: 9,
       appearedDuringMove: null,
+      topLevelSkipped: null,
     })
   })
 

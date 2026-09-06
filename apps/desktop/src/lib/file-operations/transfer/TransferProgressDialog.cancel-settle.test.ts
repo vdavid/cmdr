@@ -270,6 +270,7 @@ describe('TransferProgressDialog cancel-settle gate', () => {
         filesSkipped: 0,
         bytesProcessed: 1234,
         appearedDuringMove: null,
+        topLevelSkipped: null,
       })
       void unmount(component)
     } finally {

@@ -36,6 +36,7 @@ import {
   clickTransferStart,
   confirmRollback,
   waitForDialogsToClose,
+  expectNoTempArtifacts,
 } from './conflict-helpers.js'
 
 test.beforeEach(() => {
@@ -364,8 +365,14 @@ test.describe('Symlink conflicts', () => {
   })
 })
 
+// A policy picked from the transfer dialog's dropdown is a BLANKET one: nobody
+// was shown either kind of entry, so it may not replace a folder with a file or
+// a file with a folder. Both directions reduce to Skip and both sides survive.
+// The rule is `write_operations/conflict.rs::resolution_for_clash`; the
+// counterweight (a person answering a prompt that NAMED both kinds, whose
+// choice does replace, carry included) is `conflict-dialog-matrix.spec.ts`.
 test.describe('Type mismatch conflicts', () => {
-  test('Copy with Overwrite All handles file-over-directory', async ({ tauriPage }) => {
+  test('Copy with Overwrite All refuses file-over-directory and reports the skip', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createTypeMismatchFixture(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: expectedLeftPaneEntries(fixtureRoot) })
@@ -378,21 +385,30 @@ test.describe('Type mismatch conflicts', () => {
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
-    // The type-mismatch fixture's own items: 1 top-level file (reports.txt) +
-    // 1 folder (config/). Overwrite skips nothing.
-    await expectAndDismissToast(tauriPage, 'Copied 1 file and 1 folder.')
+    // Both leaves are refused: `reports.txt` (a file onto a dest folder) and
+    // `config/settings.json` (whose dest parent `config` is a file). Nothing the
+    // user picked landed, and the toast says exactly that — reporting a refusal
+    // as a copy is the bug this pins, and it stayed silent for as long as the
+    // engine had no way to say a mid-flight skip happened.
+    await expectAndDismissToast(
+      tauriPage,
+      'Copy complete: skipped all 2 files (already at the target), nothing was copied.',
+    )
 
-    // reports.txt: source file overwrites dest directory
+    // reports.txt: the destination folder and its contents are untouched.
     const reportsPath = path.join(fixtureRoot, 'right', 'reports.txt')
-    const reportsStat = fs.lstatSync(reportsPath)
-    expect(reportsStat.isFile()).toBe(true)
-    expect(fs.readFileSync(reportsPath, 'utf-8')).toBe('source-reports')
+    expect(fs.lstatSync(reportsPath).isDirectory()).toBe(true)
+    expect(readFile(fixtureRoot, 'right/reports.txt/data.csv')).toBe('dest-data')
 
-    // config/: source directory replaces dest file
-    expect(readFile(fixtureRoot, 'right/config/settings.json')).toBe('source-settings')
+    // config: the destination file keeps its bytes, and no folder replaced it.
+    const configPath = path.join(fixtureRoot, 'right', 'config')
+    expect(fs.lstatSync(configPath).isFile()).toBe(true)
+    expect(fs.readFileSync(configPath, 'utf-8')).toBe('dest-config')
+
+    expectNoTempArtifacts(path.join(fixtureRoot, 'right'))
   })
 
-  test('Copy with Overwrite All handles directory-over-file', async ({ tauriPage }) => {
+  test('Copy with Overwrite All refuses directory-over-file and reports the skip', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     await ensureAppReady(tauriPage)
 
@@ -452,13 +468,16 @@ test.describe('Type mismatch conflicts', () => {
     }
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
-    // The dir-over-file fixture's own item: just config/ (1 folder), no files.
-    await expectAndDismissToast(tauriPage, 'Copied 1 folder.')
+    // The one leaf under `config/` is refused: its dest parent is a file. The
+    // folder is counted against `topLevelSkipped.folders`, so nothing is
+    // reported as copied.
+    await expectAndDismissToast(tauriPage, 'Copy complete: file already at the target, not copied.')
 
-    // config/ directory replaced the file
+    // The destination file survives; no folder took its name.
     const configPath = path.join(fixtureRoot, 'right', 'config')
-    const configStat = fs.lstatSync(configPath)
-    expect(configStat.isDirectory()).toBe(true)
-    expect(readFile(fixtureRoot, 'right/config/settings.json')).toBe('source-settings')
+    expect(fs.lstatSync(configPath).isFile()).toBe(true)
+    expect(fs.readFileSync(configPath, 'utf-8')).toBe('dest-config')
+
+    expectNoTempArtifacts(path.join(fixtureRoot, 'right'))
   })
 })
