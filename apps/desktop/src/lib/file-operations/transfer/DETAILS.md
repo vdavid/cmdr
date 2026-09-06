@@ -258,19 +258,34 @@ Three entry paths start a transfer, and they all prepare it through `pane/transf
   caller surfaces through its own dialog/toast plumbing. **The copy is the E2E-asserted contract — don't reword it.** An
   unknown destination id (no `VolumeInfo`) is allowed through: we can't prove read-only, and blocking on "unknown" would
   break a transfer to a freshly-mounted volume.
-- **`resolveSourceVolumeId(paths, volumes, resolvePathVolume)`** — resolves the REAL source volume for dropped/pasted
-  paths so they carry the same accurate `sourceVolumeId` an F5 transfer does. FAVORITES (`category === 'favorite'`) are
-  filtered out of the candidate set first: they're picker-only pseudo-volumes the backend can't dispatch against, so a
-  path under `~/Desktop` must resolve to its BACKING real volume (`root`), not the non-existent `fav-desktop` (dropping
-  a Desktop file used to fail with "Source volume 'fav-desktop' not found"). Then frontend longest-prefix
+- **`resolveSourceVolumeId(paths, volumes, resolvePathVolume)`** — resolves the REAL source volume for DROPPED paths so
+  they carry the same accurate `sourceVolumeId` an F5 transfer does. FAVORITES (`category === 'favorite'`) are filtered
+  out of the candidate set first: they're picker-only pseudo-volumes the backend can't dispatch against, so a path under
+  `~/Desktop` must resolve to its BACKING real volume (`root`), not the non-existent `fav-desktop` (dropping a Desktop
+  file used to fail with "Source volume 'fav-desktop' not found"). Then frontend longest-prefix
   (`drag/drop-operation.ts::findVolumeIdForPath`, handles MTP-shaped paths) → backend `resolve_path_volume` for the
   common parent when no registered root matches → `root` (the honest unknown). NEVER returns a knowingly-wrong id: when
   per-path matches disagree (sources span volumes) or resolution fails, it returns `root`, which gives today's
   degraded-but-correct behavior. The drop path feeds the result into `startScanPreview`'s `sourceVolumeId` arg via
   `TransferDialog`, so the byte scan stats the right volume (a cross-volume drop's counters fill instead of reading 0).
-  This resolver runs only for EXTERNAL drops and paste; an in-app self-drag bypasses it via the recorded self-drag
-  identity (the drop carries the source volume + volume-relative paths directly — see `file-explorer/drag/CLAUDE.md` §
-  "Self-drag identity").
+  This resolver runs only for EXTERNAL drops; an in-app self-drag bypasses it via the recorded self-drag identity (the
+  drop carries the source volume + volume-relative paths directly — see `file-explorer/drag/CLAUDE.md` § "Self-drag
+  identity").
+
+  **⚠️ Paste doesn't call it yet.** `clipboard-operations.ts::pasteFromClipboard` hands `startTransferProgress` a flat
+  `DEFAULT_VOLUME_ID`. The transfer still moves the right bytes, because clipboard paths are absolute and the backend's
+  both-local branch does `src_root.join(absolute)`, which is the absolute path; the local move engine picks same-fs vs
+  cross-fs from the runtime device ids, not from this. What the placeholder costs is everything keyed on the volume
+  ITSELF: the source volume never enters the busy set, so Eject stays enabled while a paste is reading off a USB stick,
+  a DMG, or a mounted share; the operation takes root's lane instead of the source mount's, so two pastes off one device
+  don't serialize; the operation log records root as the source; and `TransferProgressDialog`'s direction header looks
+  the source volume up by that id. The fix is the one line the drop path already runs, since `pasteFromClipboard` is
+  async and `result.paths` are absolute:
+  `await resolveSourceVolumeId(result.paths, access.getVolumes(), resolvePathVolume)`. ❌ Not
+  `pane/snapshot-source-volume.ts::resolveSnapshotSourceVolume` — that one also answers `supportsTrash`, which a paste
+  has no use for, and it deliberately skips the backend round-trip because a snapshot's paths came out of ONE volume's
+  index. Clipboard paths carry no such guarantee (they can come from Finder or any other app), so the backend
+  `resolve_path_volume` fallback is exactly what they need.
 
 The paste path keeps its MTP-specific refusal ("Use F5 to copy files to MTP devices") SEPARATE and BEFORE the shared
 guard, because that toast points the user at the F5/F6 flow paste lacks; the shared guard then handles read-only /
