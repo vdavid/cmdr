@@ -46,5 +46,9 @@
   "transfer.fileOnly.mixedMove": "Áthelyezés kész: {transferredText} áthelyezve, {skippedText} kihagyva. {skippedText} {skipped, plural, one {fájl} other {fájl}} már a célhelyen volt.",
   "@transfer.fileOnly.mixedMove": {
     "sourceHash": "1457a4f"
+  },
+  "transfer.appearedDuringMove": "{countText} {count, plural, one {elem} other {elem}} jelent meg {scope, select, manyFolders {a(z) {folderName} mappában és további forrásmappákban} other {a(z) {folderName} mappában}} az áthelyezés közben, és ott is marad.",
+  "@transfer.appearedDuringMove": {
+    "sourceHash": "b884882"
   }
 }

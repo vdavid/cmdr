@@ -46,5 +46,9 @@
   "transfer.fileOnly.mixedMove": "Verplaatsen voltooid: {transferredText} verplaatst, {skippedText} overgeslagen. {skippedText} {skipped, plural, one {bestand stond} other {bestanden stonden}} al op de bestemming.",
   "@transfer.fileOnly.mixedMove": {
     "sourceHash": "1457a4f"
+  },
+  "transfer.appearedDuringMove": "{countText} {count, plural, one {onderdeel} other {onderdelen}} {count, plural, one {is} other {zijn}} tijdens het verplaatsen in {scope, select, manyFolders {{folderName} en andere bronmappen} other {{folderName}}} verschenen en {count, plural, one {blijft} other {blijven}} daar staan.",
+  "@transfer.appearedDuringMove": {
+    "sourceHash": "b884882"
   }
 }

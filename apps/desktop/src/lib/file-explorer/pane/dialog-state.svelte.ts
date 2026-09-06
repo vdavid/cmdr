@@ -413,7 +413,12 @@ export function createDialogState(deps: DialogStateDeps) {
       deps.onRefocus()
     },
 
-    handleTransferComplete({ filesProcessed, filesSkipped, bytesProcessed }: TransferCompletePayload) {
+    handleTransferComplete({
+      filesProcessed,
+      filesSkipped,
+      bytesProcessed,
+      appearedDuringMove,
+    }: TransferCompletePayload) {
       const props = transferProgressProps
       const op = props?.operationType ?? 'copy'
       const opLabel = transferOpLabel(op)
@@ -440,6 +445,7 @@ export function createDialogState(deps: DialogStateDeps) {
         filesSkipped,
         fileCount: props?.fileCount,
         folderCount: props?.folderCount,
+        appearedDuringMove,
       })
       // `info` for the all-skipped case (nothing actually moved/copied — neutral
       // outcome, not a success). `success` everywhere else, including mixed: the

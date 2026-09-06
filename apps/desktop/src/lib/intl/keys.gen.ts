@@ -3124,6 +3124,7 @@ export type MessageKey =
   | 'suggestedOps.review'
   | 'suggestedOps.showNewVersion'
   | 'suggestedOps.title'
+  | 'transfer.appearedDuringMove'
   | 'transfer.compress.fileOnly'
   | 'transfer.compress.split'
   | 'transfer.delete'

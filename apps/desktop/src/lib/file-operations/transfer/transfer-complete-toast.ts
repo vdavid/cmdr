@@ -28,6 +28,7 @@
 
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
 import { tString } from '$lib/intl/messages.svelte'
+import type { AppearedDuringMove } from '$lib/ipc/bindings'
 import type { TransferOperationType } from '$lib/file-explorer/types'
 
 export interface TransferCompleteToastInput {
@@ -42,10 +43,30 @@ export interface TransferCompleteToastInput {
   fileCount?: number
   /** Top-level folders the operation transferred. Folders always merge, so they're never skipped. */
   folderCount?: number
+  /** What a cross-filesystem move found in the source that it never carried, and therefore left
+   *  where it was (a download that finished mid-move, a sync app, an editor saving). Absent on the
+   *  ordinary move, and on every copy. Adds a sentence; the move still reads as a success. */
+  appearedDuringMove?: AppearedDuringMove | null
 }
 
 /** Composes the copy/move/trash/delete completion toast from catalog keys. */
 export function composeTransferCompleteToast(input: TransferCompleteToastInput): string {
+  return withLeftBehind(composeOutcome(input), input.appearedDuringMove)
+}
+
+/** Appends what the move left in the source, when it left anything. */
+function withLeftBehind(toast: string, appeared: AppearedDuringMove | null | undefined): string {
+  if (!appeared || appeared.itemCount <= 0) return toast
+  return `${toast} ${tString('transfer.appearedDuringMove', {
+    scope: appeared.folderCount > 1 ? 'manyFolders' : 'oneFolder',
+    countText: formatNumber(appeared.itemCount),
+    count: appeared.itemCount,
+    folderName: appeared.folderName,
+  })}`
+}
+
+/** The outcome sentence itself: what went, and what was skipped on the way. */
+function composeOutcome(input: TransferCompleteToastInput): string {
   const { operationType, filesProcessed, filesSkipped, fileCount, folderCount } = input
 
   if (operationType === 'trash') {

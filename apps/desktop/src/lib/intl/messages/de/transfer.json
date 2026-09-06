@@ -46,5 +46,9 @@
   "transfer.fileOnly.mixedMove": "Bewegen abgeschlossen: {transferredText} bewegt, {skippedText} übersprungen. {skippedText} {skipped, plural, one {Datei war} other {Dateien waren}} bereits am Ziel.",
   "@transfer.fileOnly.mixedMove": {
     "sourceHash": "1457a4f"
+  },
+  "transfer.appearedDuringMove": "{countText} {count, plural, one {Objekt} other {Objekte}} {count, plural, one {ist} other {sind}} während des Bewegens in {scope, select, manyFolders {{folderName} und weiteren Quellordnern} other {{folderName}}} neu hinzugekommen und {count, plural, one {bleibt} other {bleiben}} dort.",
+  "@transfer.appearedDuringMove": {
+    "sourceHash": "b884882"
   }
 }

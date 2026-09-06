@@ -76,6 +76,12 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
   merge. When a top-level kind probe comes back partial it falls back to flattened file-count wording. F5/F6 feed it the
   split from real selection stats; drag-and-drop and clipboard paste feed it from a batched `stat_paths_kinds` /
   `read_clipboard_files` probe.
+- **A move that left something in the source appends one sentence** ("2 items appeared in Work during the move and stay
+  there"), off `WriteCompleteEvent.appearedDuringMove` — typed data (`itemCount`, `folderName`, `folderCount`), never
+  prose crossing IPC. It means a cross-filesystem move found files the copy phase never carried, so the source sweep
+  left them alone (backend: `write_operations/transfer/DETAILS.md` § "deletes a LEDGER"). The move still reads as a
+  success, and the toast stays `success`, not a warning: nothing went wrong, some files simply arrived too late to
+  travel. Absent on every other ending, so the historic wordings render byte-identical.
 
 ## How transfer flows
 

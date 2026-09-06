@@ -122,5 +122,17 @@
       "skipped": "the same number of skipped files (decides both the noun's singular/plural and the verb's was/were agreement)"
     },
     "screenshot": "transfer-complete-toast.png"
+  },
+
+  "transfer.appearedDuringMove": "{countText} {count, plural, one {item} other {items}} appeared in {scope, select, manyFolders {{folderName} and other source folders} other {{folderName}}} during the move and {count, plural, one {stays} other {stay}} there.",
+  "@transfer.appearedDuringMove": {
+    "description": "Extra sentence appended to the move-complete toast when files turned up in a source folder after Cmdr counted it (a download finishing, a sync app, an editor saving). Cmdr never copied them, so it left them where they were instead of deleting them with the rest. The move itself succeeded, so keep the tone matter-of-fact, not alarming.",
+    "placeholders": {
+      "countText": "number of items left behind, ready to drop into the sentence (e.g. 1,234)",
+      "count": "the same number of items (decides the noun's singular/plural and the verb's agreement)",
+      "scope": "\"manyFolders\" when several of the moved folders kept something, so only the first is named; anything else means one folder kept something",
+      "folderName": "the name of the source folder the items are in, e.g. Work (a name, not a path)"
+    },
+    "screenshot": "transfer-complete-toast.png"
   }
 }
