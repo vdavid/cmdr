@@ -113,6 +113,13 @@ const simpleMessageFactories: Partial<
     message: w('connectionInterrupted.message'),
     suggestion: w('connectionInterrupted.suggestion'),
   }),
+  // STATUS_DELETE_PENDING: the file is marked for deletion on the server but an
+  // open handle is keeping it alive. Transient: retry-after-a-moment.
+  delete_pending: () => ({
+    title: w('deletePending.title'),
+    message: w('deletePending.message'),
+    suggestion: w('deletePending.suggestion'),
+  }),
   read_error: (op) => ({
     title: w(`readError.title.${op}`),
     message: w('readError.message'),
@@ -178,6 +185,10 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   name_too_long: { category: 'needs_action', retryHint: false },
   invalid_name: { category: 'needs_action', retryHint: false },
   files_too_large_for_filesystem: { category: 'needs_action', retryHint: false },
+  // No Retry: nothing is broken to retry. The new file is written and complete,
+  // it is just under a different name, and the one move left is the user's
+  // (renaming it), which the suggestion spells out.
+  new_data_kept_at: { category: 'needs_action', retryHint: false },
   // A password-protected archive source. The FE prompts for a password and
   // retries, so this classification is only the fallback if the prompt is
   // bypassed; retryHint stays on so the generic dialog still offers a retry.
@@ -310,15 +321,6 @@ export function getUserFriendlyMessage(
         message: w('invalidName.message', { path: escapeHtml(error.path) }),
         suggestion: w('invalidName.suggestion'),
       }
-    case 'delete_pending':
-      // STATUS_DELETE_PENDING: the file is marked for deletion on the server but
-      // an open handle is keeping it alive. Transient: retry-after-a-moment.
-      // Mirrors the prose the Rust write_error path produced (kinds::delete_pending).
-      return {
-        title: w('deletePending.title'),
-        message: w('deletePending.message'),
-        suggestion: w('deletePending.suggestion'),
-      }
     case 'new_data_kept_at':
       // The new file landed complete and the one it was replacing is already
       // gone, so `keptAt` is the ONLY copy in existence. Naming it is the whole
@@ -366,6 +368,50 @@ const pathAndMessageTypes = new Set<WriteOperationError['type']>([
 ])
 
 /**
+ * The technical lines for the variants the two sets above don't cover.
+ *
+ * Split out of `getTechnicalDetails` so that stays a three-way dispatcher: this
+ * chain grows one arm per new variant, and its length is the shape of the error
+ * union rather than of the function.
+ */
+function variantDetailLines(error: WriteOperationError): string[] {
+  if (error.type === 'read_only_device') {
+    return error.deviceName ? [`Path: ${error.path}`, `Device: ${error.deviceName}`] : [`Path: ${error.path}`]
+  }
+  if (error.type === 'permission_denied') {
+    return error.message ? [`Path: ${error.path}`, `Details: ${error.message}`] : [`Path: ${error.path}`]
+  }
+  if (error.type === 'insufficient_space') {
+    const lines = [`Required: ${formatByteSize(error.required)}`, `Available: ${formatByteSize(error.available)}`]
+    if (error.volumeName) lines.push(`Volume: ${error.volumeName}`)
+    return lines
+  }
+  if (error.type === 'destination_inside_source') {
+    return [`Source: ${error.source}`, `Destination: ${error.destination}`]
+  }
+  if (error.type === 'duplicate_source_names') {
+    return [`Name: ${error.name}`, `First: ${error.first}`, `Second: ${error.second}`]
+  }
+  if (error.type === 'files_too_large_for_filesystem') {
+    return [
+      `Filesystem: ${error.filesystem}`,
+      `Max file size: ${formatByteSize(error.maxSize)}`,
+      `Files over the limit: ${String(error.totalCount)}`,
+      ...error.files.map((file) => `  ${file.name} (${formatByteSize(file.size)})`),
+    ]
+  }
+  // Both paths, because the whole point of this variant is that the user's new
+  // file is at the second one and nowhere else.
+  if (error.type === 'new_data_kept_at') {
+    return [`Path: ${error.path}`, `New data kept at: ${error.keptAt}`, `Error: ${error.message}`]
+  }
+  if (error.type === 'cancelled' && error.message) {
+    return [`Details: ${error.message}`]
+  }
+  return []
+}
+
+/**
  * Returns the technical details for an error (path, raw error message, etc.)
  */
 export function getTechnicalDetails(error: WriteOperationError): string {
@@ -376,36 +422,8 @@ export function getTechnicalDetails(error: WriteOperationError): string {
   } else if (pathAndMessageTypes.has(error.type)) {
     lines.push(`Path: ${(error as { path: string }).path}`)
     lines.push(`Error: ${(error as { message: string }).message}`)
-  } else if (error.type === 'read_only_device') {
-    lines.push(`Path: ${error.path}`)
-    if (error.deviceName) lines.push(`Device: ${error.deviceName}`)
-  } else if (error.type === 'permission_denied') {
-    lines.push(`Path: ${error.path}`)
-    if (error.message) lines.push(`Details: ${error.message}`)
-  } else if (error.type === 'insufficient_space') {
-    lines.push(`Required: ${formatByteSize(error.required)}`)
-    lines.push(`Available: ${formatByteSize(error.available)}`)
-    if (error.volumeName) lines.push(`Volume: ${error.volumeName}`)
-  } else if (error.type === 'destination_inside_source') {
-    lines.push(`Source: ${error.source}`)
-    lines.push(`Destination: ${error.destination}`)
-  } else if (error.type === 'duplicate_source_names') {
-    lines.push(`Name: ${error.name}`)
-    lines.push(`First: ${error.first}`)
-    lines.push(`Second: ${error.second}`)
-  } else if (error.type === 'files_too_large_for_filesystem') {
-    lines.push(`Filesystem: ${error.filesystem}`)
-    lines.push(`Max file size: ${formatByteSize(error.maxSize)}`)
-    lines.push(`Files over the limit: ${String(error.totalCount)}`)
-    for (const file of error.files) {
-      lines.push(`  ${file.name} (${formatByteSize(file.size)})`)
-    }
-  } else if (error.type === 'new_data_kept_at') {
-    lines.push(`Path: ${error.path}`)
-    lines.push(`New data kept at: ${error.keptAt}`)
-    lines.push(`Error: ${error.message}`)
-  } else if (error.type === 'cancelled') {
-    if (error.message) lines.push(`Details: ${error.message}`)
+  } else {
+    lines.push(...variantDetailLines(error))
   }
 
   lines.push(`Error type: ${error.type}`)

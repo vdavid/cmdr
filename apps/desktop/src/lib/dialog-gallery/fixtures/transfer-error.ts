@@ -167,6 +167,18 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       totalCount: 3,
     },
   },
+  // The new file is written and complete; it just couldn't take the name, and the
+  // one it was replacing is already gone. Both paths matter to the reader, so the
+  // fixture uses names that differ only by the recovered suffix.
+  new_data_kept_at: {
+    operationType: 'copy',
+    error: {
+      type: 'new_data_kept_at',
+      path: '/Volumes/naspi/papers/finances/2026-tax-return.pdf',
+      keptAt: '/Volumes/naspi/papers/finances/2026-tax-return (recovered).pdf',
+      message: 'os error 60: Operation timed out',
+    },
+  },
   io_error: {
     operationType: 'copy',
     error: {

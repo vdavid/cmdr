@@ -593,6 +593,11 @@ export type WriteOperationError =
       files: OversizedFile[]
       totalCount: number
     }
+  // A cross-volume overwrite wrote the new file completely, then couldn't give it
+  // the destination's name, and the file it was replacing is already gone.
+  // `keptAt` is where the complete new data actually is (a ` (recovered)` name),
+  // and it is the only copy in existence, so the message has to name it.
+  | { type: 'new_data_kept_at'; path: string; keptAt: string; message: string }
   | { type: 'io_error'; path: string; message: string }
   // Extracting from a password-protected archive. `wrongAttempt` is true when the
   // stored password was rejected. The FE should intercept this before the generic
