@@ -16,6 +16,7 @@ const hasServerSecret = vi.fn(() => Promise.resolve(true))
 const listSavedServers = vi.fn(() =>
   Promise.resolve([{ id: 'sftp-nas-local-22-ada', places: [{ volumeId: 'sftp-nas-local-22-ada' }] }]),
 )
+const setPlacePinned = vi.fn(() => Promise.resolve(true))
 const showVolumeRowContextMenu = vi.fn(() => Promise.resolve())
 const addToast = vi.fn()
 const confirmDialog = vi.fn(() => Promise.resolve(true))
@@ -26,6 +27,7 @@ vi.mock('$lib/tauri-commands', () => ({
   forgetServerSecret: (...args: unknown[]) => forgetServerSecret(...(args as [])),
   hasServerSecret: (...args: unknown[]) => hasServerSecret(...(args as [])),
   listSavedServers: () => listSavedServers(),
+  setPlacePinned: (...args: unknown[]) => setPlacePinned(...(args as [])),
   showVolumeRowContextMenu: (...args: unknown[]) => {
     void showVolumeRowContextMenu(...(args as []))
     return Promise.resolve()
@@ -162,8 +164,29 @@ describe('runServerRowAction', () => {
     expect(addToast).not.toHaveBeenCalled()
   })
 
-  it('takes the four not-yet-built items quietly', async () => {
-    for (const action of ['open', 'pin', 'unpin', 'edit']) {
+  it('moves the pin both ways, and says the server is still saved when it comes out', async () => {
+    await runServerRowAction(payload('pin'))
+    expect(setPlacePinned).toHaveBeenCalledWith('sftp-nas-local-22-ada', true)
+
+    await runServerRowAction(payload('unpin'))
+    expect(setPlacePinned).toHaveBeenLastCalledWith('sftp-nas-local-22-ada', false)
+    // ❗ The unpin toast has to say the server survives: nothing was deleted, and
+    // a person who reads "removed" will re-add a server they still have.
+    expect(addToast).toHaveBeenLastCalledWith(
+      "Naspolya is out of your volume switcher. It's still saved.",
+      { level: 'success' },
+    )
+  })
+
+  it('asks nothing before moving a pin, unlike the two Forgets', async () => {
+    await runServerRowAction(payload('pin'))
+    // Unpinning loses nothing and the same command puts it back, so a
+    // confirmation here would be friction with nothing behind it.
+    expect(confirmDialog).not.toHaveBeenCalled()
+  })
+
+  it('takes the two not-yet-built items quietly', async () => {
+    for (const action of ['open', 'edit']) {
       await runServerRowAction(payload(action))
     }
     expect(addToast).not.toHaveBeenCalled()
