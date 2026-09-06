@@ -4113,6 +4113,16 @@ export const commands = {
    */
   forgetServer: (id: string) => __TAURI_INVOKE<boolean>('forget_server', { id }),
   /**
+   *  Whether a secret is remembered for the place `id` names.
+   *
+   *  ❗ The protocol-agnostic reader behind the "Forget saved password" item: the
+   *  row's menu offers it only when there is one to forget, and a caller that
+   *  branched on protocol to answer would be one more place that has to know SFTP
+   *  from WebDAV. A store that didn't answer in time reads as `false`, the same
+   *  harmless collapse the per-protocol readers make.
+   */
+  hasServerSecret: (id: string) => __TAURI_INVOKE<boolean>('has_server_secret', { id }),
+  /**
    *  Forgets a server's remembered secret, answering whether the store accepted
    *  the removal.
    *

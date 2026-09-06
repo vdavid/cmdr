@@ -534,6 +534,25 @@ pub async fn forget_server(id: String) -> bool {
     true
 }
 
+/// Whether a secret is remembered for the place `id` names.
+///
+/// ❗ The protocol-agnostic reader behind the "Forget saved password" item: the
+/// row's menu offers it only when there is one to forget, and a caller that
+/// branched on protocol to answer would be one more place that has to know SFTP
+/// from WebDAV. A store that didn't answer in time reads as `false`, the same
+/// harmless collapse the per-protocol readers make.
+#[tauri::command]
+#[specta::specta]
+pub async fn has_server_secret(id: String) -> bool {
+    let Some(saved) = saved_by_id(&id) else {
+        return false;
+    };
+    match saved {
+        SavedEntry::Sftp(entry) => super::sftp::has_sftp_credentials(entry.host, entry.port, entry.username).await,
+        SavedEntry::Webdav(entry) => super::webdav::has_webdav_credentials(entry.url, entry.username).await,
+    }
+}
+
 /// Forgets a server's remembered secret, answering whether the store accepted
 /// the removal.
 ///

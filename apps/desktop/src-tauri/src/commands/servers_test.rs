@@ -360,3 +360,10 @@ async fn disconnecting_a_place_that_has_no_session_announces_nothing() {
         "and nothing was announced, so no pane goes home for nothing"
     );
 }
+
+/// An id nothing saved has no secret to forget, so the menu item stays off
+/// rather than offering to revoke a credential that was never stored.
+#[tokio::test]
+async fn an_unsaved_id_has_no_remembered_secret() {
+    assert!(!has_server_secret("sftp-nothing-was-ever-saved-here".to_string()).await);
+}
