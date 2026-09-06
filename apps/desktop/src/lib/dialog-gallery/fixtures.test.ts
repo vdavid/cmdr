@@ -13,13 +13,7 @@ import { fixtureRecords } from './fixtures'
 import { serverSignInFixtures } from './fixtures/servers'
 
 /** Dialogs that take callbacks only, so they have no fixture record by design. */
-const CALLBACK_ONLY = new Set([
-  'about',
-  'acknowledgements',
-  'license',
-  'commercial-reminder',
-  'mtp-permission',
-])
+const CALLBACK_ONLY = new Set(['about', 'acknowledgements', 'license', 'commercial-reminder', 'mtp-permission'])
 
 const readyEntries = DIALOG_GALLERY_ENTRIES.filter((entry) => entry.status === 'ready')
 const records: Record<string, Record<string, unknown> | undefined> = fixtureRecords
