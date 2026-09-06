@@ -649,10 +649,10 @@ flash, and the completion handler raises the toast and unmounts the dialog in th
 the deleted row as soon as the file watcher re-reads it, which for a small tree is a few hundred milliseconds earlier.
 So a cell that stops at "the row is gone", or at "the bytes are on disk", ends INSIDE the dialog's floor: the leak guard
 reports a `transfer-progress` overlay against it, and the toast lands afterwards and is blamed on the NEXT cell.
-`dismissAllToasts` does not save it — with no toast up yet, it clears nothing and passes. `git-portal.spec.ts`'s delete
-and copy cells failed exactly this way on Linux CI (run 34005091542, 2026-09-06), and only there, because the same cells
-win the race by a hair on a faster macOS run. End such a cell with `expectAndDismissToast`, which waits for the toast
-and therefore for the dialog.
+`dismissAllToasts` does not save it: with no toast up yet, it clears nothing and passes. `git-portal.spec.ts`'s delete
+and copy cells failed exactly this way on Linux CI (run 34005091542, 2026-09-06) and in the Docker lane locally, about
+one attempt in three. End such a cell with `expectAndDismissToast`, which waits for the toast and therefore for the
+dialog.
 
 **A cancelled transfer now raises a toast, so any spec that presses Rollback on a running one owes the guard
 something.** The reversal summarizes itself (`$lib/file-operations/transfer/cancel-rollback-toast.ts`), so a spec that
