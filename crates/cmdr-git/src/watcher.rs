@@ -22,7 +22,8 @@ use std::time::{Duration, Instant};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
-use notify::RecursiveMode;
+use notify::event::{AccessKind, AccessMode};
+use notify::{EventKind, RecursiveMode};
 use notify_debouncer_full::{DebounceEventResult, new_debouncer};
 
 use crate::repo::{RepoCache, RepoHandle, RepoInfo, repo_info};
@@ -90,10 +91,8 @@ impl GitWatcherBackend for NotifyWatcherBackend {
         let logged_root = repo_root.to_path_buf();
         let mut debouncer = new_debouncer(DEBOUNCE, None, move |result: DebounceEventResult| match result {
             Ok(events) => {
-                let touched_state = events
-                    .iter()
-                    .flat_map(|event| event.paths.iter())
-                    .any(|path| is_repo_state_path(&filter_dir, path));
+                let touched_state = events.iter().any(|event| is_repo_state_change(&filter_dir, event));
+                trace_delivery(&logged_root, Ok(&events), touched_state);
                 if touched_state {
                     on_change();
                 }
@@ -111,6 +110,7 @@ impl GitWatcherBackend for NotifyWatcherBackend {
                     errors.len(),
                     errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("; ")
                 );
+                trace_delivery(&logged_root, Err(&errors), true);
                 on_change();
             }
         })
@@ -127,6 +127,51 @@ impl GitWatcherBackend for NotifyWatcherBackend {
         }
         Ok(Box::new(debouncer))
     }
+}
+
+/// What the operating system actually delivered for one repository, printed
+/// where a failing test can be read next to it.
+///
+/// ❗ `eprintln!` rather than `log::trace!`, and the exception is the whole
+/// point: a test binary installs no logger, so a `log` line reaches nobody, and
+/// this exists for exactly the failures that leave nothing else to look at. A
+/// real-watcher cell that times out says "N reports, all identical" and not one
+/// word about WHICH events drove them, which is the difference between a
+/// self-feeding read loop, a dead watch, and a debouncer error storm. `nextest`
+/// prints a failing cell's captured stderr and swallows a passing one's, so this
+/// is quiet until something breaks — and it never compiles into a shipped build.
+#[cfg(any(test, feature = "testing"))]
+#[allow(
+    clippy::print_stderr,
+    reason = "test-build-only diagnostic; a test binary has no logger, so `log` would reach nobody"
+)]
+fn trace_delivery(
+    repo_root: &Path,
+    delivered: Result<&[notify_debouncer_full::DebouncedEvent], &[notify::Error]>,
+    recomputing: bool,
+) {
+    let what = match delivered {
+        Ok(events) => events
+            .iter()
+            .map(|event| format!("{:?} {:?}", event.kind, event.paths))
+            .collect::<Vec<_>>()
+            .join(" | "),
+        Err(errors) => errors
+            .iter()
+            .map(|error| format!("problem: {error}"))
+            .collect::<Vec<_>>()
+            .join(" | "),
+    };
+    eprintln!("[git-watch] {} recomputing={recomputing}: {what}", repo_root.display());
+}
+
+/// The shipped build's version: the watcher says nothing on a delivery.
+#[cfg(not(any(test, feature = "testing")))]
+fn trace_delivery(
+    _repo_root: &Path,
+    _delivered: Result<&[notify_debouncer_full::DebouncedEvent], &[notify::Error]>,
+    _recomputing: bool,
+) {
 }
 
 // ❌ Not `cfg(test)` alone: that's set only while this crate compiles its OWN
@@ -426,8 +471,9 @@ const STATE_DIRS: [&str; 3] = ["refs", "logs", "worktrees"];
 /// timed out there while passing here, 2026-09-06).
 ///
 /// The cost of watching directories is events for things no snapshot reads
-/// (`COMMIT_EDITMSG`, `*.lock`, `objects/` churn), which [`is_repo_state_path`]
-/// drops before anything opens the repository.
+/// (`COMMIT_EDITMSG`, `*.lock`, `objects/` churn) and, on Linux, an event for
+/// every file the recompute itself OPENS. [`is_repo_state_change`] drops both
+/// before anything opens the repository.
 pub(crate) fn watch_targets(git_dir: &Path) -> Vec<(PathBuf, RecursiveMode)> {
     let mut targets = vec![
         // The gitdir itself, non-recursively: every file in `STATE_FILES` is a
@@ -447,6 +493,38 @@ pub(crate) fn watch_targets(git_dir: &Path) -> Vec<(PathBuf, RecursiveMode)> {
     // enumeration could not.
     targets.push((git_dir.join("worktrees"), RecursiveMode::Recursive));
     targets
+}
+
+/// Whether a delivered event is one the repository can have CHANGED behind.
+///
+/// Two gates, and each carries half the answer: the event has to name a path a
+/// snapshot reads ([`is_repo_state_path`]), and it has to be a WRITE rather than
+/// one of the reads [`is_a_read`] drops.
+pub(crate) fn is_repo_state_change(git_dir: &Path, event: &notify::Event) -> bool {
+    !is_a_read(&event.kind) && event.paths.iter().any(|path| is_repo_state_path(git_dir, path))
+}
+
+/// Whether an event kind says somebody READ something rather than wrote it.
+///
+/// ❗ **Dropping reads is what stops the watcher feeding itself**, ❌ not an
+/// optimization. Linux inotify asks for `IN_OPEN` (`notify` 8.2 sets it in
+/// `add_single_watch`), so opening `HEAD`, `index`, `packed-refs`, or a `refs/`
+/// directory arrives as `Access(Open)` on a directory we watch — and a recompute
+/// opens every one of them. Pass those on and each report becomes the trigger for
+/// the next, one per [`DEBOUNCE`] window, until the last subscriber leaves.
+/// macOS FSEvents reports no reads at all, so this only ever ran away on Linux
+/// (`a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one` timed
+/// out there with 48 identical reports in 10 s, CI, 2026-09-06).
+///
+/// ❗ A write is never dropped here: it reaches us as `Modify`, `Create`,
+/// `Remove`, a rename, or `Access(Close(Write))`, and none of those is a read.
+/// `Access(Open)` covers a write's open too, which costs nothing, because the
+/// write itself then arrives in its own event.
+fn is_a_read(kind: &EventKind) -> bool {
+    matches!(
+        kind,
+        EventKind::Access(AccessKind::Open(_) | AccessKind::Read | AccessKind::Close(AccessMode::Read))
+    )
 }
 
 /// Whether an event on `path` is worth recomputing the repository for.

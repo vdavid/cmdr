@@ -202,6 +202,30 @@ report, because the rename's TARGET (`HEAD`) rides in the same event and answers
 `watcher_tests::only_the_paths_a_snapshot_reads_are_worth_a_recompute` pins the whole table, and
 `every_watch_target_is_a_directory_no_rename_can_kill` pins the shape.
 
+❗ **A READ is dropped by KIND, and that is what keeps the watcher off its own tail.** Linux inotify asks for `IN_OPEN`
+(`notify` 8.2 sets it in `add_single_watch`), so every file a recompute OPENS — `HEAD`, `index`, `packed-refs`, a
+`refs/` directory — comes back as `Access(Open)` on a directory we watch, and the path allowlist accepts every one of
+them. Each report then became the trigger for the next: the debounce cell reported the same snapshot 48 times in 10 s
+and timed out, at one report per debounce window, with the test making no git calls at all after the first burst (CI run
+34001957865, `ubuntu-latest`, 2026-09-06). macOS stayed green throughout because FSEvents reports no reads.
+`watcher::is_repo_state_change` gates on kind BEFORE path and drops `Access(Open)`, `Access(Read)`, and
+`Access(Close(Read))`; a real write always arrives as `Modify`, `Create`, `Remove`, a rename, or `Access(Close(Write))`,
+so nothing is lost with them. `watcher_tests::the_watchers_own_reads_are_not_changes` pins both halves.
+
+❌ **Don't reach for the report coalescing to close a loop like that.** A feedback loop runs at one cycle per debounce
+window plus the recompute, so its reports land just OUTSIDE the window the coalescing covers and it never sees them.
+Widening the window to catch one would break the guarantee the § above rests on.
+
+The other half of the invariant is that the reader really is one: `repo_info` and the status walk open the repository
+through `gix`, which writes nothing back, index stat-cache refresh included (verified on gix 0.87 by
+`watcher_tests::reading_a_repository_writes_nothing_into_the_gitdir`, 2026-09-06). A reader that DID write would arm the
+same loop, and no event filter could close that one, because a write really is a change.
+
+**A real-watcher cell that fails prints what the OS delivered.** `watcher::trace_delivery` writes one stderr line per
+debounced batch (kinds, paths, and whether a recompute followed) in `test` and `testing` builds, and nothing at all in a
+shipped one. `nextest` captures it and prints it only for a failing cell, which is what turns "48 identical reports"
+into an answer: a read loop, a dead watch, and an error storm all look the same from the sink.
+
 **A debouncer error recomputes and says so.** `NotifyWatcherBackend` used to swallow `DebounceEventResult::Err`, so a
 degraded backend went quiet with no diagnostic. It now logs at `warn` with the repo root and the errors, and calls
 `on_change` anyway: the usual cause is a dropped-event queue, so what was missed is unknown, and the report coalescing

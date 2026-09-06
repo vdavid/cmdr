@@ -270,6 +270,106 @@ fn only_the_paths_a_snapshot_reads_are_worth_a_recompute() {
     );
 }
 
+/// ❗ **A READ of the gitdir is never a change**, and dropping one is what keeps
+/// the watcher from feeding itself.
+///
+/// Linux inotify asks for `IN_OPEN` (`notify` 8.2 sets it in `add_single_watch`),
+/// so every file a recompute OPENS — `HEAD`, `index`, `packed-refs`, a
+/// `refs/heads/` directory — comes straight back as `Access(Open)` on a directory
+/// we watch. With only the path allowlist in front of it, the recompute became its
+/// own trigger: one report per debounce window, forever, each carrying the
+/// identical snapshot. macOS FSEvents reports no reads at all, so it only ever ran
+/// away on Linux (`a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`
+/// timed out there with 48 identical reports in 10 s, CI, 2026-09-06).
+#[test]
+fn the_watchers_own_reads_are_not_changes() {
+    use notify::EventKind;
+    use notify::event::{AccessKind, AccessMode, CreateKind, DataChange, ModifyKind, RenameMode};
+
+    let git_dir = PathBuf::from("/repo/.git");
+    let about = |kind: EventKind, relative: &str| {
+        crate::watcher::is_repo_state_change(&git_dir, &notify::Event::new(kind).add_path(git_dir.join(relative)))
+    };
+
+    // Everything the recompute itself provokes. Each of these names a path the
+    // allowlist accepts, which is exactly why the kind has to be read too.
+    for relative in ["HEAD", "index", "packed-refs", "refs", "refs/heads/main", "logs/HEAD"] {
+        assert!(
+            !about(EventKind::Access(AccessKind::Open(AccessMode::Any)), relative),
+            "opening {relative} is the watcher reading, ❌ never a change to report"
+        );
+        assert!(
+            !about(EventKind::Access(AccessKind::Read), relative),
+            "reading {relative} is not a change"
+        );
+        assert!(
+            !about(EventKind::Access(AccessKind::Close(AccessMode::Read)), relative),
+            "closing {relative} after a read is not a change"
+        );
+    }
+
+    // …and every shape an actual write arrives in still counts.
+    for kind in [
+        EventKind::Modify(ModifyKind::Data(DataChange::Any)),
+        EventKind::Modify(ModifyKind::Name(RenameMode::To)),
+        EventKind::Create(CreateKind::File),
+        EventKind::Access(AccessKind::Close(AccessMode::Write)),
+    ] {
+        assert!(about(kind, "HEAD"), "a write to HEAD is news whichever kind it wears");
+    }
+}
+
+/// ❗ **Reading a repository leaves its gitdir untouched.** The watcher recomputes
+/// by reading, and a `.git` watch delivers events for whatever happens in there,
+/// so a reader that wrote so much as an index stat-cache refresh would arm the
+/// same feedback loop [`the_watchers_own_reads_are_not_changes`] closes — and that
+/// one no filter could close, because a write really is a change.
+#[test]
+fn reading_a_repository_writes_nothing_into_the_gitdir() {
+    let (dir, root, _fixture) = a_repo("read_only_reader");
+    let git_dir = root.join(".git");
+    let (handle, discovered) = discover_repo(&root).expect("the fixture is a repo");
+
+    let before = gitdir_fingerprint(&git_dir);
+    for _ in 0..5 {
+        crate::repo::repo_info(&handle, &discovered).expect("the snapshot reads");
+    }
+    let after = gitdir_fingerprint(&git_dir);
+
+    assert_eq!(
+        before, after,
+        "a snapshot read is a pure read; anything it wrote would retrigger the watch"
+    );
+    cleanup(&dir);
+}
+
+/// Every entry under `path`, as `(relative path, length, modified)`, sorted. The
+/// instrument for [`reading_a_repository_writes_nothing_into_the_gitdir`].
+fn gitdir_fingerprint(path: &Path) -> Vec<(PathBuf, u64, Option<std::time::SystemTime>)> {
+    fn walk(root: &Path, at: &Path, into: &mut Vec<(PathBuf, u64, Option<std::time::SystemTime>)>) {
+        let Ok(entries) = std::fs::read_dir(at) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let entry_path = entry.path();
+            let metadata = match entry.metadata() {
+                Ok(metadata) => metadata,
+                Err(_) => continue,
+            };
+            if metadata.is_dir() {
+                walk(root, &entry_path, into);
+                continue;
+            }
+            let relative = entry_path.strip_prefix(root).unwrap_or(&entry_path).to_path_buf();
+            into.push((relative, metadata.len(), metadata.modified().ok()));
+        }
+    }
+    let mut out = Vec::new();
+    walk(path, path, &mut out);
+    out.sort();
+    out
+}
+
 /// Firing a repository nobody subscribed reports nothing, which is what makes
 /// `fire_watcher`'s answer readable as "was this repo armed?".
 #[test]

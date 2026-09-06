@@ -76,6 +76,13 @@ fn the_payload_serializes_to_the_shape_the_frontend_subscribes_to() {
 /// 2026-09-06). The watcher watches the DIRECTORIES now, and this second act is
 /// what would catch a return to the old shape on either platform.
 ///
+/// ❗ **"Once" is a CEILING as much as a floor.** The same settle wait catches the
+/// opposite Linux failure: the watcher recomputing by reading the repository,
+/// inotify reporting those reads back as events, and every report triggering the
+/// next one forever (48 identical reports in 10 s, CI, 2026-09-06). The kind gate
+/// that closes that loop is `cmdr_git`'s, and so is the reasoning:
+/// `crates/cmdr-git/DETAILS.md` § "Watcher path set".
+///
 /// ❗ **The one cell in the app that arms a REAL `.git/*` watcher.** The debounce
 /// it proves is `notify`'s own, so a scripted backend can't stand in: it would
 /// assert the fake's arithmetic. Every other subscription cell here and in
