@@ -180,9 +180,22 @@ which is an agent-facing wire change pinned in `mcp/resources/DETAILS.md` beside
 
 **The frontend classifier is separate and stays keyed on `fsType` and category**, per its own header rule.
 `VolumeKind` gains `sftp` and `webdav` members with their own capability rows (a real backend listing, write and
-export from the backend's published answer, no system clipboard, no terminal, no index badge), `volumeKindFor` learns
-the two `fsType` values AHEAD of the `category === 'network'` arm, and the tint gets a server color. Without this an
-SFTP pane is an SMB pane: SMB tint, SMB capability row, and Open terminal firing with an `sftp://` path.
+export from the backend's published answer, no system clipboard, no terminal, no index badge), and `volumeKindFor`
+learns the two `fsType` values AHEAD of the `category === 'network'` arm. ❗ Nothing switches exhaustively over
+`VolumeKind`; every consumer is a positive-list comparison, so the compiler reports nothing and three sites
+misclassify silently: `pane/clipboard-operations.ts` (`kind === 'mtp' || kind === 'adb'` gates the system-clipboard
+refusal, so ⌘C on an SFTP pane would put an `sftp://` path on the clipboard), `volume-tint.svelte.ts` (falls through
+to `'none'`), and `search/search-target-volume.ts` (`=== 'smb'` picks the coverage voice). All three gain the two
+members. The tint reuses the existing `appearance.tintSmb` setting, relabelled "Servers (SMB, SFTP, WebDAV)" (a copy
+change on its label key); ❌ no fourth tint setting, which would be three definition sites, a section row, and two
+parity tests for a color nobody asked to set separately. Without this an SFTP pane is an SMB pane: SMB capability row
+and Open terminal firing with an `sftp://` path.
+
+**One name for the hub row.** "Network" is a literal in `mcp/executor/nav.rs` (the `is_virtual` test and the
+available-volumes message), `commands/volumes.rs`'s `smb://` arm, `mcp/resources/volumes.rs`, eleven
+`mcpSelectVolume('left', 'Network')` calls in `smb.spec.ts`, `i18n-capture-surfaces.ts`, and the parity test that pins
+`fileExplorer.navigation.networkVolume` to "Network". A Rust `SERVERS_VOLUME_NAME` const feeds the three Rust sites,
+and the four test sites retarget in the same commit as the label.
 
 **The three connection enums stay three**, because they answer different questions: the backend seam and wire enums
 are transitions an event carries, the listing enum is a row's standing state. What changes is the frontend mapper:
@@ -198,9 +211,10 @@ providers only (D12).
 subscription, the volume-store patch on `volume-connection-changed`), and the SMB view-state's `!= null` test enrolls
 whatever is non-null into the reconnect manager. A phone waiting for its Allow tap must never start a backoff loop.
 Consumers get explicit predicates in `navigation/connection-state.ts`: `hasReconnectLoop(state)` (`direct`, `os_mount`,
-`disconnected`, `needs_sign_in`), `isLiveSession(state)`, `showsDisconnect(state)` (`direct` and `disconnected`; ❌ not
-`saved`, there is nothing to disconnect). The eject predicate becomes `isEjectable || showsDisconnect(connectionState)`
-in the same commit.
+`disconnected`, `needs_sign_in`, `needs_host_key_approval`: the last so the pane keeps its subscription and can render
+the key banner), `isLiveSession(state)`, `showsDisconnect(state)` (`direct` and `disconnected`; ❌ not `saved`, there
+is nothing to disconnect). The eject predicate becomes `isEjectable || showsDisconnect(connectionState)` in the same
+commit. The switcher's dot builds its CSS class from the state name, so the three added states get three style rules.
 
 The MCP volumes resource exposes the field as `connectionState` and takes the synthetic row's name from the same source
 the hub does. That field is an agent-facing contract; the rename is stated in `mcp/resources/DETAILS.md`.
@@ -503,7 +517,11 @@ linking to a short help page, gated by `behavior.adbHintDismissed`.
   Rust resolver is local-only by design (a `std::fs::metadata` walk), a scheme input joins onto the pane's directory
   there and answers `invalid`, and teaching it schemes would mean a resolver that consults stores it has no business
   reading. The intercept parses the scheme, asks `list_saved_servers()` for a match, and hands `navigate()` a
-  `Location`; the pane's own scheme guards decide reachability. One cell per scheme.
+  `Location`; the pane's own scheme guards decide reachability. ❗ The dialog closes only on a resolution whose kind
+  isn't `invalid`, so the intercept returns a resolution-shaped `{ kind: 'directory' }` for a navigation and a new
+  `{ kind: 'handed_off' }` when it opened the sheet (the dialog closes on both), and the debounced preview is
+  intercepted too, so a scheme input previews "Opens {name}" or "Adds a server" instead of "not found". One cell per
+  scheme, plus one for each return shape.
 - **Educational toast**: when the pinned count first reaches five, one persistent toast (`behavior.serversPinHintSeen`)
   teaches right-click → Unpin and the hub, and adds a line about favorites when the user has three or more. Dismiss
   with "Got it".
@@ -515,11 +533,14 @@ linking to a short help page, gated by `behavior.adbHintDismissed`.
 A restored tab on a remote place comes back as `saved` and dials when ACTIVATED (the pane shows `connecting` with
 cancel). ❌ Launch never dials a server in the background: four servers dialing at startup is four Keychain reads and
 four network waits nobody asked for. `initialization.ts::resolveVolumeId` re-resolves the stored path and lands on the
-`saved` id through the D3 arm. ❗ The walk-to-home lives in `navigation/path-resolution.ts::resolveValidPath`, not in
-`path-navigation.ts`: on a `saved` volume every `pathExists` is false, the parent walk chops the scheme itself, and `~`
-wins. Two rules go there: a `saved` volume short-circuits to "the path stands, don't probe", and the walk-up on any
-scheme path stops at the scheme root, never above it. A cell restores `sftp://…/srv/data/photos` onto a `saved` row
-and asserts the pane keeps the subpath.
+`saved` id through the D3 arm. ❗ The walk-to-home is `navigation/path-resolution.ts::resolveValidPath`, which has six
+callers, and restore is not the `listing-loader.ts` one: it is `app-status-store.ts::resolvePersistedPath`, applied to
+every persisted tab and both pane paths before the volume list exists, with a single `volumeId === 'network'`
+exemption. So the rule is PATH-shaped, not state-shaped: `resolvePersistedPath` skips probing any `<scheme>://` path
+(beside the `network` exemption), and `resolveValidPath` itself gains a guard for the other five callers: on a scheme
+path the parent walk stops at the scheme root and never falls through to `~` or `/`. The cell is a
+`loadPersistedPaneTabs` cell restoring `sftp://…/srv/data/photos` and asserting the tab keeps the subpath, plus a
+`resolveValidPath` cell for the stop.
 
 ## Milestones
 
@@ -538,10 +559,12 @@ red → green sequence; "after" marks tests written once the shape settles.
    Linux enrichment twin copying the state; the frontend predicates in `navigation/connection-state.ts`;
    `toConnectionState` mapping all four wire variants; the `sftp` / `webdav` members of the frontend `VolumeKind` with
    their capability rows, `volumeKindFor`, and the tint; every consumer renamed (store, breadcrumb, `FilePane`,
-   `smb-view-state`, eject predicate, `direct-connect`, tests, the two E2E specs keyed on the dot); `bindings.ts`
-   regenerated. TDD: a listing cell proving a registered SFTP volume survives enrichment as `direct` on both platform
-   twins; a cell proving the SMB indexer transport refuses an SFTP volume; a `volumeKindOf` cell for an `sftp` row and
-   a terminal-refusal cell; the predicate table; the eject predicate on `saved`; the store mapper on
+   `smb-view-state`, eject predicate, `direct-connect`, `os-mount-notice-bridge.ts`, `TransferDialog.svelte`,
+   `TransferProgressDialog.svelte`, `clipboard-operations.ts`, `search-target-volume.ts`, tests, the two E2E specs
+   keyed on the dot); the dot's three new style rules; `bindings.ts` regenerated. TDD: a listing cell proving a
+   registered SFTP volume survives enrichment as `direct` on both platform twins; a cell proving the SMB indexer
+   transport refuses an SFTP volume; a `volumeKindOf` cell for an `sftp` row, a clipboard-refusal cell, and a
+   terminal-refusal cell; the predicate table; the eject predicate on `saved`; the store mapper on
    `needs_credentials`. After: the rest.
 2. D10: `SignInShape`; SMB's producer; `get_volume_sign_in_state` answers it. TDD: `commands/network_test.rs` default
    cell, an SMB cell for `guestAllowed`, and the SFTP rung table in `reconnect_test.rs` updated by variant.
@@ -549,13 +572,16 @@ red → green sequence; "after" marks tests written once the shape settles.
    `true` only when the entry is NEW, and otherwise preserves the stored value). TDD: the "field-absent file" cell each
    store already has, copied for `pinned`, plus a "reconnect preserves an unpinned entry" cell in each wiring test.
 4. D5: `one_shot_credentials.rs` and `SecretOffer` on both wirings. TDD: a wrapper cell (answers the one key, forwards
-   the rest, never writes), a wiring cell per backend against the Docker fixture (`--run-ignored only` lane) proving a
-   `remember: false` dial leaves the store empty afterwards.
+   the rest, never writes), a wiring cell per backend against the Docker fixture proving a `remember: false` dial
+   leaves the store empty afterwards. ❗ Every app-crate fixture cell is named with the `sftp_integration_` /
+   `webdav_integration_` prefix, or `desktop-fixture-lane-coverage` fails it and no lane runs it.
 5. D3 backend: `sftp_app_root` / `webdav_app_root` in `ids.rs`; the crates' roots, `to_remote_path` prefix stripping,
    `to_app_path`, and `display_path_for` on it (TDD in each crate's `paths_test.rs`: prefixed and relative spellings
    land on the same server path and round-trip through `to_app_path`; a bare server-absolute path and a prefixed path
    outside the root are both refused); a routing-level cell against the fixture proving a copy whose destination went
-   through `root_anchored` lands where the pane says; the `sftp://` / `webdav://` arm in `resolve_path_to_volume` (TDD:
+   through `root_anchored` lands where the pane says (a new
+   `write_operations/sftp_transfer_semantics_test.rs` modelled on the SMB twin's `root_anchored` destination cell,
+   prefixed per step 4); the `sftp://` / `webdav://` arm in `resolve_path_to_volume` (TDD:
    registered volume, pinned saved server, UNPINNED saved server, unknown prefix → `None`, no connect performed, and
    the existing local cells untouched).
 6. D4: `commands/servers.rs` and the reconnect-command rename. TDD: `commands/servers_test.rs` cells for the union
@@ -583,8 +609,10 @@ once at the end of M0 (the fixture lanes).
 
 1. D7: `ServersHub.svelte` replacing `NetworkBrowser.svelte` (rename, then edit, to keep file history),
    `PlacesBrowser` (renamed `ShareBrowser` with an `account` prop), the MCP row encoding, the status column, the scope
-   rename in `scope-hierarchy.ts`, the discovery-off line with the "Network (disabled)" label and the Settings early
-   return deleted and `network-toggle.spec.ts` rewritten. ❗ The hub's "Connect to server…" row keeps opening today's
+   rename in `scope-hierarchy.ts`, the `SERVERS_VOLUME_NAME` const and its four test retargets, the discovery-off line
+   with the "Network (disabled)" label and the Settings early return deleted and `network-toggle.spec.ts` rewritten
+   (it already drives settings through the `mcp-set-setting` event and keys on `.volume-name`; the new assertions key
+   on the hub's line and its link). ❗ The hub's "Connect to server…" row keeps opening today's
    `ConnectToServerDialog` until M2 replaces it, so a user can add an SMB host at every boundary. `volume-grouping.ts`
    applies the three-things rule; the switcher row renders the `saved` dot, the protocol in the `volume-fs` slot, and
    the Disconnect control (D6). The context menu (D6) and the hub commands that mirror it.
@@ -616,15 +644,19 @@ Checks: `pnpm check --fast` per step, `pnpm check` at the end, `pnpm check deskt
    origin is WebDAV; `smb://` is SMB; garbage is `unparsed`).
 2. `SignInSheet.svelte` with the four renderers (`nothing` never opens the sheet), the host-key step (both `kind`
    values, revoked, `superseded` restart, `unreachable` no-write), the add mode fields, `dialog:allow-open` in the main
-   capability file, the edit mode with the two switches and the `needs_stored_secret` warning
+   capability file, the `servers` area added to `messageKeyKnownAreas` in
+   `scripts/check/checks/desktop-message-key-naming.go` (an unknown first segment is an error-level violation), the
+   edit mode with the two switches and the `needs_stored_secret` warning
    (`getSftpUnattendedReconnect` / the WebDAV twin, asked when the sheet renders), the per-mode Remember seeding.
    Dialog registry, gallery rows (one per mode, fixtures), a11y block in `network.a11y.test.ts`.
 3. `connect-flow.ts` (TDD with `installIpcMock`: the three-round first connection, `superseded` restart, cancel from
    each phase returns `cancelled` silently, `remember: false` sends the offer and never `save_*`, a registered
    `needs_sign_in` volume takes `reconnect_volume_with_credentials` and never a dial).
-4. Wire: hub Add row, ⌘K, palette, the go-to-path scheme intercept (D13, TDD: one cell per scheme, and a cell that
-   `resolveGoToPath` is never called for one), `RemoteConnectView`'s remaining states and `signed_out`'s button, the
-   switcher row's Edit…. Delete `ConnectToServerDialog.svelte`.
+4. Wire: hub Add row, ⌘K, palette, the go-to-path scheme intercept (D13, TDD: one cell per scheme, one per return
+   shape, and a cell that `resolveGoToPath` is never called for one), `RemoteConnectView`'s remaining states and
+   `signed_out`'s button, the switcher row's Edit…. The reconnect manager gains a `needs-host-key` status with the same
+   hand-off `needs-auth` gets, so a mid-session key change reaches `host_key_changed` (the manager's "ignored on
+   purpose" comment and branch go). Delete `ConnectToServerDialog.svelte`.
 5. The two remedy buttons (D9).
 
 Tests: above, plus the sheet's component tests (wrong password renders inline and keeps the field's focus; Tab moves
@@ -722,7 +754,9 @@ Every string below is a draft for David's pass (principle 4). Rules: `docs/style
 - Hub, discovery off: "Local network discovery is off." Link "Turn it on in Settings".
 - ADB hint: "Want the whole filesystem? Turn on USB debugging." Link "How".
 - Settings: "Servers (SFTP, WebDAV)", "Trusted host keys", "Forget"; "Android (ADB)", "Enable Android debugging
-  (ADB)", "Status", "Found at {path}" / "Not found", "Re-check", "adb location", "Browse…".
+  (ADB)", "Status", "Found at {path}" / "Not found", "Re-check", "adb location", "Browse…". Tint label: "Servers
+  (SMB, SFTP, WebDAV)".
+- Go to path preview: "Opens {name}", "Adds a server".
 
 ❌ Never expose "adb server", "sync service", "transport", "rung", "PROPFIND", "Basic", "Digest", or a backend
 diagnostic.
