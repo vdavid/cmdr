@@ -165,6 +165,22 @@ describe('openTransferDialog on a search-results pane', () => {
     expect(dialogs.showTransfer).not.toHaveBeenCalled()
   })
 
+  it('does not open a transfer for a snapshot with no rows at all', async () => {
+    getSnapshotSpy.mockReturnValue(snapshot([]))
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [], cursorIndex: 0 })
+    const access = buildAccess({
+      focusedPane: 'left',
+      paneRefs: { left: paneRef },
+      volumeIds: { left: 'search-results', right: 'root' },
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openTransferDialog('copy')
+
+    expect(dialogs.showTransfer).not.toHaveBeenCalled()
+    expect(dialogs.showAlert).not.toHaveBeenCalled()
+  })
+
   it('does not open a snapshot transfer when the snapshot is missing', async () => {
     getSnapshotSpy.mockReturnValue(undefined)
     const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0] })
@@ -382,6 +398,41 @@ describe('openDeleteDialog on a search-results pane', () => {
     await create(access, dialogs).openDeleteDialog({ permanent: false })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
+  })
+
+  it('does nothing on a snapshot with no rows at all', async () => {
+    // A search that found nothing, or one whose every row has since been purged.
+    // Cmd+A leaves the selection empty and the cursor sits at 0 over nothing, so
+    // F8 must be a quiet no-op rather than a dialog over an empty list.
+    getSnapshotSpy.mockReturnValue(snapshot([]))
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [], cursorIndex: 0 })
+    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
+
+    expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
+    expect(dialogs.showAlert).not.toHaveBeenCalled()
+  })
+
+  it('carries a path with a newline or unicode in it through untouched', async () => {
+    // These reach the backend as an array of strings, never a newline-joined
+    // blob, so nothing has to escape them. The common-parent walk splits on `/`
+    // and must not trip over either.
+    const odd = '/Users/me/dossier\nnote/\u00e9t\u00e9 \u2014 r\u00e9sum\u00e9.txt'
+    getSnapshotSpy.mockReturnValue(
+      snapshot([snapshotEntry({ name: 'x.txt', path: odd, parentPath: '/Users/me/dossier\nnote' })]),
+    )
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0] })
+    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
+
+    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
+      sourcePaths: [odd],
+      sourceFolderPath: '/Users/me/dossier\nnote',
+    })
   })
 
   it('bails on a search-results pane whose snapshot is missing', async () => {
