@@ -18,7 +18,7 @@ import {
   getCommonParentPath,
   getDestinationVolumeInfo,
 } from './transfer-operations'
-import { capabilitiesFor, capabilitiesForPane, pathInsideArchive } from './volume-capabilities'
+import { capabilitiesFor, capabilitiesForPane, pathCrossesArchiveBoundary } from './volume-capabilities'
 import { checkTransferDestinationGuard } from './transfer-entry'
 import { operationStartIsBlocked } from './operation-start-gate'
 import { duplicateInPlace } from './duplicate-command'
@@ -639,7 +639,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // archive (the backend rejects trashing an archive-inner path), so force
     // permanent + the archive warning regardless of the parent drive's trash
     // support or the F8/Shift+F8 preselect.
-    const sourceIsArchive = pathInsideArchive(sourceFolderPath)
+    const sourceIsArchive = pathCrossesArchiveBoundary(sourceFolderPath)
     const supportsTrash = sourceIsArchive ? false : sourceVolume?.supportsTrash !== false
 
     const { sortBy, sortOrder } = access.getPaneSort(access.getFocusedPane())

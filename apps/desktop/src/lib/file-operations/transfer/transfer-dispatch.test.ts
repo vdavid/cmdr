@@ -109,6 +109,26 @@ describe('dispatchTransferOperation: routing', () => {
     expect(moveFiles).not.toHaveBeenCalled()
   })
 
+  it('keeps a move of the ARCHIVE FILE itself on the local fast-path', async () => {
+    // The other half of the boundary check, and the one a wide predicate gets
+    // wrong: `/left/foo.zip` names a real file on disk, so moving it is an
+    // ordinary same-drive move — no archive-edit flow, no cross-volume route.
+    // The backend agrees (its routing asks `path_is_inside_archive`, which is
+    // false for the `.zip` itself), so routing it cross-volume would be the FE
+    // inventing work the backend never asked for.
+    await dispatchTransferOperation(
+      makeConfig({
+        operationType: 'move',
+        sourceVolumeId: 'root',
+        destVolumeId: 'root',
+        sourcePaths: ['/left/foo.zip'],
+        destinationPath: '/right',
+      }),
+    )
+    expect(moveFiles).toHaveBeenCalledTimes(1)
+    expect(moveBetweenVolumes).not.toHaveBeenCalled()
+  })
+
   it('dispatches delete through deleteFiles', async () => {
     await dispatchTransferOperation(makeConfig({ operationType: 'delete' }))
     expect(deleteFiles).toHaveBeenCalledTimes(1)

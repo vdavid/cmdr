@@ -62,6 +62,12 @@ export interface TransferDispatchConfig {
  * into = `{ add }`, move out = extract + `{ delete }`). Source and dest can share
  * the parent drive's `volumeId` (a zip lives on the same drive), so the volume-id
  * comparison alone misses this — the path check is what catches it.
+ *
+ * The check is NARROW (`pathInsideArchive`, not the wide boundary one): moving
+ * the `.zip` FILE itself is an ordinary move and must keep the local fast path,
+ * which the backend agrees with — its own routing uses the same narrow predicate.
+ * With `.docx` a browsable container, the wide check would have pulled every
+ * Office-document move off that fast path too.
  */
 export function isVolumeMove(config: TransferDispatchConfig): boolean {
   if (config.operationType !== 'move') return false

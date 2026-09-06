@@ -71,7 +71,7 @@ import { getShowVirtualGitPortal } from '$lib/settings/reactive-settings.svelte'
  * is total.
  *
  * `archive` and `git-portal` are KIND-FROM-PATH, not kind-from-id: a pane whose
- * PATH crosses a supported archive (`pathInsideArchive`) or one of the six
+ * PATH crosses a supported archive (`pathCrossesArchiveBoundary`) or one of the six
  * virtual `.git` categories (`isVirtualGitPath`) takes that kind regardless of
  * its `volumeId`, which stays the parent drive (the tab keeps ONE id). This union
  * is DELIBERATELY WIDER than the tint union in `volume-tint.svelte.ts`: both
@@ -350,11 +350,19 @@ function isWritableArchiveName(name: string): boolean {
 }
 
 /**
- * Whether `path` is at or inside a supported archive — a pure, extension-only
- * string check (NO I/O), mirroring the backend's `archive_boundary_candidate`:
- * ANY path component (not just the last) carrying a supported archive extension
- * crosses the boundary. `/a/foo.zip` (the archive root) and `/a/foo.zip/inner`
- * both return true; `/a` (a plain folder that merely CONTAINS `foo.zip`) does not.
+ * Whether `path` is AT or inside a supported archive — the WIDE half of the pair,
+ * a pure extension-only string check (NO I/O) mirroring the backend's
+ * `path_crosses_archive_boundary`: ANY path component (not just the last)
+ * carrying a supported archive extension crosses. `/a/foo.zip` (the archive root)
+ * and `/a/foo.zip/inner` both return true; `/a` (a plain folder that merely
+ * CONTAINS `foo.zip`) does not.
+ *
+ * This is the ENTER-IT question, so it's what a site gating on the PANE's path
+ * wants: a pane sitting at `/a/foo.zip` is showing the archive's contents, and
+ * a git lookup, a disk-space query, or a write-capability row must treat it as
+ * such. For a site that operates ON a path — preview it, move it, rename it —
+ * reach for `pathInsideArchive` instead: the `.zip` file itself is an ordinary
+ * file there.
  *
  * This is a lower bound the backend corrects: a real directory literally named
  * `foo.zip`, or a mislabeled non-archive file, is NOT decidable here (it needs a
@@ -362,14 +370,39 @@ function isWritableArchiveName(name: string): boolean {
  * a false "read-only" is safe (the backend rejects a genuinely writable-target
  * mistake) and a missed one is caught by the backend `ReadOnlyDevice` net.
  */
-export function pathInsideArchive(path: string): boolean {
+export function pathCrossesArchiveBoundary(path: string): boolean {
   return path.split('/').some((segment) => hasSupportedArchiveExtension(segment))
+}
+
+/**
+ * Whether `path` points at something strictly INSIDE a supported archive — the
+ * NARROW half, mirroring the backend's `path_is_inside_archive`. True only when
+ * the archive boundary is followed by a non-empty inner path:
+ * `/a/foo.zip/inner` yes, `/a/foo.zip` (and `/a/foo.zip/`) no.
+ *
+ * The distinction is load-bearing, in the backend's own words: an archive-inner
+ * path has no real file behind it, while the `.zip` file ITSELF is a regular file
+ * that must be copied, moved, renamed, previewed, and Quick Looked exactly like
+ * any other. Sites that operate ON a path use this one; sites that navigate INTO
+ * a path use `pathCrossesArchiveBoundary`.
+ *
+ * Gets sharper the more zip-container formats Cmdr browses: with `.docx` a
+ * supported suffix, the wide check here would refuse Quick Look on every Word
+ * document, which is what this half exists to prevent.
+ */
+export function pathInsideArchive(path: string): boolean {
+  const segments = path.split('/')
+  const boundary = segments.findIndex((segment) => hasSupportedArchiveExtension(segment))
+  if (boundary === -1) return false
+  // A trailing slash leaves an empty segment, which is still the archive ROOT —
+  // so ask for a non-empty inner component rather than just a longer array.
+  return segments.slice(boundary + 1).some((segment) => segment.length > 0)
 }
 
 /**
  * The display name of the archive a path is at or inside: the FIRST path segment
  * carrying a supported archive extension (leftmost wins, matching the backend's
- * boundary resolution and `pathInsideArchive`), so `/a/photos.zip/inner/x.jpg`
+ * boundary resolution and `pathCrossesArchiveBoundary`), so `/a/photos.zip/inner/x.jpg`
  * returns `photos.zip`. Falls back to the path's basename when no segment is an
  * archive (a caller should only reach here for an in-archive path, but the
  * fallback keeps it total). Pure, no I/O.
@@ -385,7 +418,7 @@ export function archiveNameFromPath(path: string): string {
  * The real folder on disk that CONTAINS the archive a path is at or inside: the
  * directory holding the FIRST archive-extension segment, so
  * `/a/b/photos.zip/inner/x.jpg` and `/a/b/photos.zip` both return `/a/b`. The
- * leftmost-wins rule matches `pathInsideArchive` and the backend's boundary
+ * leftmost-wins rule matches `pathCrossesArchiveBoundary` and the backend's boundary
  * resolution, so a nested `foo.tar/bar.zip/…` resolves against the outer tar.
  *
  * Returns `'/'` when the archive sits at the filesystem root, and the path

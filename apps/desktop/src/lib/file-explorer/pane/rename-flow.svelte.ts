@@ -173,6 +173,8 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     void siblingNames.ensure(currentScope())
 
     // Skip the permission check for MTP AND archive-inner paths (see startRename below).
+    // NARROW: renaming the `.zip` (or `.docx`) file itself is an ordinary rename on
+    // a real file, so it still gets its pre-flight permission check.
     const currentVolumeId = deps.getVolumeId()
     if (!currentVolumeId.startsWith('mtp-') && !pathInsideArchive(entry.path)) {
       void checkPermission(entry.path, entry.isDirectory).then((errorMsg) => {

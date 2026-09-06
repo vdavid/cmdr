@@ -30,7 +30,7 @@ import { composeTransferCompleteToast } from '$lib/file-operations/transfer/tran
 import TrashCompleteToastContent from '$lib/file-operations/delete/TrashCompleteToastContent.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
-import { pathInsideArchive } from './volume-capabilities'
+import { pathCrossesArchiveBoundary } from './volume-capabilities'
 import { transferOpLabel } from './transfer-op-label'
 import { createTransferPaneEffects } from './transfer-pane-effects'
 import { createAdoptedOperation } from './adopted-operation.svelte'
@@ -670,7 +670,7 @@ export function createDialogState(deps: DialogStateDeps) {
       // doesn't exist yet when this runs (the create returns an op id, not a
       // landed path), and an archive-inner path isn't openable in an external
       // editor anyway. The cursor still lands on it after the edit's refresh.
-      if (pathInsideArchive(currentPath)) return
+      if (pathCrossesArchiveBoundary(currentPath)) return
       const fullPath = currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`
       deps.onOpenInEditor(fullPath)
     },

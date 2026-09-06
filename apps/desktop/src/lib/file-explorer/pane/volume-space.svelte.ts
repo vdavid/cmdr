@@ -19,7 +19,7 @@ import {
   type SpaceInfo,
   type UnlistenFn,
 } from '$lib/tauri-commands'
-import { pathInsideArchive } from './volume-capabilities'
+import { pathCrossesArchiveBoundary } from './volume-capabilities'
 import type { VolumeSpaceWatchArgs } from './types'
 
 export interface VolumeSpaceDeps {
@@ -71,7 +71,7 @@ export function createVolumeSpace(deps: VolumeSpaceDeps): VolumeSpace {
     // filesystem path, so query the containing volume's mount instead — the space
     // shown is the parent drive's, which is what an archive borrows.
     const currentPath = deps.getCurrentPath()
-    const queryPath = pathInsideArchive(currentPath) ? deps.getVolumePath() : currentPath
+    const queryPath = pathCrossesArchiveBoundary(currentPath) ? deps.getVolumePath() : currentPath
     volumeSpace = (await getVolumeSpace(queryPath)).data
   }
 

@@ -233,6 +233,10 @@ export const fileHandlers = {
     // how Quick Look already skips non-local volumes; F3 (viewer temp-extract) is
     // the preview path inside a zip. Return BEFORE flipping `isOpen` so state stays
     // consistent (no panel opened).
+    //
+    // The NARROW check, deliberately: an archive FILE is an ordinary file macOS
+    // previews fine, so a `.zip` — and a `.docx`, now that it's a browsable
+    // container — must still Quick Look. The wide check here refused both.
     if (pathInsideArchive(entryUnderCursor.path)) {
       // The one gate in front of Quick Look. Counted so a low `opened` number can
       // be told apart from people reaching for it where it can't work; without

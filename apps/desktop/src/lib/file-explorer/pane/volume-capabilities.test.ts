@@ -42,6 +42,7 @@ import {
   capabilitiesFor,
   capabilitiesForPane,
   withBackendCapabilities,
+  pathCrossesArchiveBoundary,
   pathInsideArchive,
   archiveNameFromPath,
 } from './volume-capabilities'
@@ -299,41 +300,83 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
   })
 })
 
-describe('pathInsideArchive — the pure extension-only boundary check', () => {
+describe('pathCrossesArchiveBoundary — the WIDE, navigate-into check', () => {
   it('is true at the archive root and anywhere inside it', () => {
-    expect(pathInsideArchive('/a/foo.zip')).toBe(true) // the archive root itself
-    expect(pathInsideArchive('/a/foo.zip/inner')).toBe(true)
-    expect(pathInsideArchive('/a/foo.zip/inner/deep/file.txt')).toBe(true)
+    expect(pathCrossesArchiveBoundary('/a/foo.zip')).toBe(true) // the archive root itself
+    expect(pathCrossesArchiveBoundary('/a/foo.zip/inner')).toBe(true)
+    expect(pathCrossesArchiveBoundary('/a/foo.zip/inner/deep/file.txt')).toBe(true)
   })
 
   it('is false for a plain folder that merely CONTAINS an archive', () => {
     // The pane is at `/a`, listing `foo.zip` as a row — not inside it.
-    expect(pathInsideArchive('/a')).toBe(false)
-    expect(pathInsideArchive('/a/b/c')).toBe(false)
+    expect(pathCrossesArchiveBoundary('/a')).toBe(false)
+    expect(pathCrossesArchiveBoundary('/a/b/c')).toBe(false)
   })
 
   it('matches the case-insensitive extension, and any component (nested leftmost)', () => {
-    expect(pathInsideArchive('/a/foo.ZIP/inner')).toBe(true)
-    expect(pathInsideArchive('/a/archive.name.zip')).toBe(true)
-    // Leftmost archive component makes the whole path "inside"; the inner b.zip
+    expect(pathCrossesArchiveBoundary('/a/foo.ZIP/inner')).toBe(true)
+    expect(pathCrossesArchiveBoundary('/a/archive.name.zip')).toBe(true)
+    // Leftmost archive component makes the whole path cross; the inner b.zip
     // is a plain entry the FE can't distinguish, but the answer (true) is right.
-    expect(pathInsideArchive('/a.zip/b.zip/x')).toBe(true)
+    expect(pathCrossesArchiveBoundary('/a.zip/b.zip/x')).toBe(true)
   })
 
   it('is NOT decidable-true for a component whose extension is not an archive', () => {
     // `foo.zip.txt`: final extension is txt, so the STRING doesn't cross a boundary.
-    expect(pathInsideArchive('/a/foo.zip.txt')).toBe(false)
+    expect(pathCrossesArchiveBoundary('/a/foo.zip.txt')).toBe(false)
     // A leading-dot dotfile has no stem, so `.zip` is not an extension.
-    expect(pathInsideArchive('/a/.zip')).toBe(false)
+    expect(pathCrossesArchiveBoundary('/a/.zip')).toBe(false)
     // No dot at all.
-    expect(pathInsideArchive('/a/zip/file')).toBe(false)
+    expect(pathCrossesArchiveBoundary('/a/zip/file')).toBe(false)
   })
 
   it('a real directory literally named foo.zip is NOT decidable here (backend corrects)', () => {
     // Extension-only: the FE reads this as inside-an-archive. The backend
     // stat+magic check corrects a real directory to plain navigation; the FE only
     // uses this for read-only gating, where the false positive is safe.
-    expect(pathInsideArchive('/a/foo.zip/anything')).toBe(true)
+    expect(pathCrossesArchiveBoundary('/a/foo.zip/anything')).toBe(true)
+  })
+})
+
+/**
+ * The narrow half of the split, and the reason the split exists: a site that
+ * operates ON a path (preview it, move it, rename it) must treat the `.zip` file
+ * ITSELF as an ordinary file, exactly as the backend's `path_is_inside_archive`
+ * does. Only a path with a non-empty INNER part is unreachable through `std::fs`.
+ */
+describe('pathInsideArchive — the NARROW, operate-on check', () => {
+  it('is false for the archive file itself, true only for something inside it', () => {
+    // The distinction the whole split turns on.
+    expect(pathInsideArchive('/a/foo.zip')).toBe(false)
+    expect(pathInsideArchive('/a/foo.zip/inner')).toBe(true)
+    expect(pathInsideArchive('/a/foo.zip/inner/deep/file.txt')).toBe(true)
+  })
+
+  it('is false for ordinary paths, archive-free or not', () => {
+    expect(pathInsideArchive('/a')).toBe(false)
+    expect(pathInsideArchive('/a/b/c')).toBe(false)
+    expect(pathInsideArchive('/a/notes.txt')).toBe(false)
+  })
+
+  it('reads a trailing slash as still being AT the archive root', () => {
+    // `/a/foo.zip/` names the archive, not an entry in it: the inner path is empty.
+    // Splitting on '/' leaves a trailing empty segment, which must not read as one.
+    expect(pathInsideArchive('/a/foo.zip/')).toBe(false)
+  })
+
+  it('uses the leftmost boundary, matching the wide check and the backend', () => {
+    // The outer `.zip` is the boundary, so `b.zip` is an entry inside it.
+    expect(pathInsideArchive('/a.zip/b.zip')).toBe(true)
+    expect(pathInsideArchive('/a/foo.ZIP/inner')).toBe(true)
+  })
+
+  it('agrees with the wide check everywhere except at the archive root', () => {
+    // Pins the exact shape of the difference, so neither can drift into the other.
+    for (const path of ['/a', '/a/b/c', '/a/foo.zip/inner', '/a/foo.zip.txt']) {
+      expect(pathInsideArchive(path), path).toBe(pathCrossesArchiveBoundary(path))
+    }
+    expect(pathCrossesArchiveBoundary('/a/foo.zip')).toBe(true)
+    expect(pathInsideArchive('/a/foo.zip')).toBe(false)
   })
 })
 
