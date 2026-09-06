@@ -110,7 +110,7 @@
                 <span class="combobox-indicator"><Icon name="chevron-down" size={16} /></span>
             </Combobox.Trigger>
         </Combobox.Control>
-        <Combobox.Positioner>
+        <Combobox.Positioner class="combobox-positioner">
             <Combobox.Content
                 class="combobox-content"
                 onkeydown={(e: KeyboardEvent) => {
@@ -214,13 +214,18 @@
         color: var(--color-text-tertiary);
     }
 
+    /* The dropdown rung goes on the positioner, through zag's `--z-index` hook — same reasoning
+       (and same trap) as `Select.svelte`'s `.select-positioner`; that comment is the long version. */
+    :global(.combobox-positioner) {
+        --z-index: var(--z-dropdown);
+    }
+
     :global(.combobox-content) {
         background: var(--color-bg-primary);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         box-shadow: var(--shadow-md);
         padding: var(--spacing-xs) 0;
-        z-index: var(--z-dropdown);
         max-height: 300px;
         overflow-y: auto;
         min-width: 180px;

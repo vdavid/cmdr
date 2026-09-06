@@ -93,7 +93,10 @@ sections compose).
 - **`AiCloudSection.svelte`**: Cloud provider config: preset dropdown, per-provider endpoint/model in
   `ai.cloudProviderConfigs`, API key in OS secret store, two-step connection check. Its whole row list plus the
   connection-status block live in one unlabeled `SectionCard` (no `anyVisible` gate: the section mounts only when
-  `provider === 'cloud'` and its rows aren't search-gated as a group).
+  `provider === 'cloud'` and its rows aren't search-gated as a group). It holds the only hand-rolled `Select` in
+  settings (the provider row; every other dropdown here goes through `SettingSelect`), so it carries the `portal` prop
+  itself — without it the menu is trapped in `.settings-content-wrapper`'s mask and `overflow`, which is exactly how the
+  provider pop-up's top rows became unclickable. `../../ui/DETAILS.md` § Select → Portal.
 - **`AiLocalSection.svelte`**: Local llama-server lifecycle, model install with multi-step tracking, context window
   "Apply" (server restart), RAM gauge, delete confirmation. Only the context-window registry-row cluster (`SettingRow`
   - the RAM gauge) is wrapped in an unlabeled `SectionCard`, and that wrapper sits INSIDE the

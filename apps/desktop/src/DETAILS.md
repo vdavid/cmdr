@@ -18,6 +18,17 @@ The backend reads the `NSWorkspace` value and `$lib/reduce-transparency` (inited
 `--color-border-glass` to opaque, and each surface drops its `backdrop-filter` (and the `-webkit-` twin) via
 `:global(html.reduce-transparency)`. `prefers-reduced-motion` WKWebView does honor, so that one stays a media query.
 
+## Window drag strips sit at `--z-sticky`, under every menu
+
+Each secondary window (settings, debug, shortcuts, queue) paints an invisible `.window-drag-region` over its top strip
+so the user can move the window from the empty space beside the traffic lights. It's absolutely positioned, so it
+already paints over the in-flow layout — a rung is only needed to beat other POSITIONED chrome, and `--z-sticky` is as
+high as it should ever go. All four sat at `--z-dropdown` once, which put an invisible strip on the same rung as the
+app's menus and let it swallow clicks on their top rows: the AI provider pop-up in settings opens over its trigger, so
+its first two options landed under the strip and couldn't be picked. Anything a menu can open into belongs BELOW
+`--z-dropdown`. (The other half of that bug was the rung sitting on the wrong element inside `Select`;
+`lib/ui/DETAILS.md` § Select has it.)
+
 ## Global stylesheets
 
 Seven sheets, all global (no Svelte scoping). Who owns what:
