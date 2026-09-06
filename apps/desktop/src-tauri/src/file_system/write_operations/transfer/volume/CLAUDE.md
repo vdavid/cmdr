@@ -21,8 +21,9 @@ concurrent driver), the cross-, same-volume, and single-file moves, and the merg
   is the ONLY copy.
 - **❌ Never fabricate a destination size for the conflict dialog**; report `None`. A fabricated `0` turns "Overwrite
   all smaller" into an unconditional overwrite.
-- **Skip the top-level dest pre-check ONLY for a dest dir THIS op created** (`DirectoryCreation::Created`), ❌ never
-  one that merely looks empty.
+- **Skip the dest pre-check ONLY for a dir THIS op created** (`DirectoryCreation::Created`), ❌ never one that merely
+  looks empty. Top level and deep merge share `DestNameIndex`: ❌ a fold-only name is never free, `Unknown` probes, and
+  an unanswerable probe fails the item.
 
 ## Staging and cleanup
 

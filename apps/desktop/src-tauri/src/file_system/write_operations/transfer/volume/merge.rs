@@ -22,7 +22,7 @@
 //! `safety_oracle.rs`, never fresh inline asserts. See `CLAUDE.md` § Merge and
 //! conflicts, and `DETAILS.md` § "Scan-as-you-merge".
 
-use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::future::Future;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
@@ -34,6 +34,7 @@ use futures_util::stream::FuturesUnordered;
 
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::WriteOperationError;
+use super::super::dest_name_index::{DestLookup, DestNameIndex};
 use super::super::transfer_probe::{CURRENT_TASK_PROBE, TaskPhase, TaskProbeHandle, TaskRole, set_task_phase};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::preflight::SourceFileFacts;
@@ -281,13 +282,15 @@ async fn copy_leaf<'a>(
 ///   inside it can clash, so we skip the dest listing entirely and stream every
 ///   source child straight in.
 /// - `create_directory` returns `AlreadyExists` ⇒ we're MERGING into the user's
-///   pre-existing directory. We list the dest level ONCE and build a
-///   `name → FileEntry` map, then for each source child that hits the map we
-///   dispatch through the conflict resolver (file policy: Stop-wait, latch,
-///   conditional reduce, type mismatches) — EXCEPT dir-vs-dir, which recurses
-///   unconditionally (a folder landing on a folder always merges, never
-///   prompts). A child with no map hit is copied straight in. One listing per
-///   level, in-memory lookups after — no per-child `get_metadata` probes.
+///   pre-existing directory. We list the dest level ONCE and index it into the
+///   `DestNameIndex` the top-level pre-check uses, then for each source child
+///   the index reports as taken we dispatch through the conflict resolver (file
+///   policy: Stop-wait, latch, conditional reduce, type mismatches) — EXCEPT
+///   dir-vs-dir, which recurses unconditionally (a folder landing on a folder
+///   always merges, never prompts). A child the index reports free is copied
+///   straight in. One listing per level, in-memory lookups after; the only
+///   `get_metadata` is for a name the listing can't settle, which on an
+///   ordinary tree is none of them (`what_the_destination_holds`).
 ///
 /// The `Ok` vs `AlreadyExists` split also drives rollback: `Ok` records the dir
 /// in `created` (rollback may remove it once empty); `AlreadyExists` does NOT,
@@ -458,20 +461,17 @@ async fn merge_level<'a>(
             }
         };
 
-        let dest_by_name: HashMap<String, FileEntry> = if level_pre_existed {
-            dest_volume
-                .list_directory(dest_path, None)
-                .await?
-                .into_iter()
-                .map(|e| (e.name.clone(), e))
-                .collect()
+        // A level we created ourselves holds nothing, so there is no index to
+        // build and no name to look up: `None` is the answer for every child.
+        let dest_index = if level_pre_existed {
+            Some(DestNameIndex::build(dest_volume.list_directory(dest_path, None).await?))
         } else {
-            HashMap::new()
+            None
         };
-        Ok(dest_by_name)
+        Ok(dest_index)
     };
 
-    let (dest_by_name, entries) = if legs_may_overlap {
+    let (dest_index, entries) = if legs_may_overlap {
         tokio::join!(dest_prepare, source_volume.list_directory(source_path, None))
     } else {
         (
@@ -479,7 +479,7 @@ async fn merge_level<'a>(
             source_volume.list_directory(source_path, None).await,
         )
     };
-    let dest_by_name = dest_by_name.at(source_path)?;
+    let dest_index = dest_index.at(source_path)?;
     let entries = entries.at(source_path)?;
 
     for entry in &entries {
@@ -493,7 +493,10 @@ async fn merge_level<'a>(
 
         let child_source = PathBuf::from(&entry.path);
         let child_dest = dest_path.join(&entry.name);
-        let dest_hit = dest_by_name.get(&entry.name);
+        let dest_hit = what_the_destination_holds(dest_volume, dest_index.as_ref(), &entry.name, &child_dest)
+            .await
+            .at(&child_source)?;
+        let dest_hit = dest_hit.as_ref();
 
         if entry.is_directory {
             // Dir-vs-dir (and dir-into-nothing) always recurses to merge — no
@@ -619,6 +622,41 @@ async fn merge_level<'a>(
     }
 
     Ok(())
+}
+
+/// What the destination holds at one child's name, answered the way the
+/// backend would resolve it rather than byte-for-byte.
+///
+/// `None` ⇒ the name is free and the child may be written straight in. `Some` ⇒
+/// a clash the caller routes through the resolver (or, for dir-vs-dir, merges
+/// into).
+///
+/// The level listing settles almost everything: a byte-exact match is the entry
+/// itself, and a name no stored entry can fold onto is genuinely free. What it
+/// CAN'T settle is a name that folds onto one it holds (`Report.docx` against
+/// `report.docx`, NFD against NFC) — whether those are one file is the
+/// destination filesystem's call, so we ask it. On an ordinary ASCII tree that
+/// probe never fires; see `dest_name_index.rs` for the residual list.
+///
+/// ❗ A probe that can't answer fails the item. Reading a transport failure as
+/// "nothing is there" hands the child to the fresh-write path, whose landing
+/// then clears whatever the probe was asked about — the same discipline
+/// `conflict.rs` states for its own probes.
+async fn what_the_destination_holds(
+    dest_volume: &Arc<dyn Volume>,
+    dest_index: Option<&DestNameIndex>,
+    name: &str,
+    child_dest: &Path,
+) -> Result<Option<FileEntry>, VolumeError> {
+    match dest_index.map(|index| index.lookup(Some(OsStr::new(name)))) {
+        None | Some(DestLookup::Absent) => Ok(None),
+        Some(DestLookup::Present(entry)) => Ok(Some(*entry)),
+        Some(DestLookup::Unknown) => match dest_volume.get_metadata(child_dest).await {
+            Ok(entry) => Ok(Some(entry)),
+            Err(VolumeError::NotFound(_)) => Ok(None),
+            Err(e) => Err(e),
+        },
+    }
 }
 
 /// Whether this backend's `create_directory` reliably returns
