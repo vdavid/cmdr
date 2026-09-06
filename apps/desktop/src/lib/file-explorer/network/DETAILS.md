@@ -65,9 +65,9 @@ Auth flow on mount:
 `authenticatedCredentials` is passed to `onShareSelect` so the caller mounts without re-prompting.
 
 The stored-creds attempt matters because the share list often loads via the SYSTEM Keychain (`smbutil view -N`) without
-exercising Cmdr's own creds, so `authenticatedCredentials` is null even when a working password is saved. PlacesBrowser's
-own `NetworkLoginForm` appears ONLY when the share **listing** needs auth (`loadShares`); cancelling returns to the host
-list.
+exercising Cmdr's own creds, so `authenticatedCredentials` is null even when a working password is saved.
+PlacesBrowser's own `NetworkLoginForm` appears ONLY when the share **listing** needs auth (`loadShares`); cancelling
+returns to the host list.
 
 When `authenticatedCredentials` is set, a "Forget saved password" button appears in the header; clicking it calls
 `forgetCredentials` and clears `authenticatedCredentials`. Shares sort case-insensitively. Escape/Backspace go back.
@@ -278,10 +278,9 @@ opens a private-IP socket). Backend side: `src-tauri/src/network/DETAILS.md` § 
 - **Tab in `NetworkLoginForm` calls `stopPropagation()`**: the parent reads Tab as pane-switch otherwise.
 - **⌘R in `ServersHub` calls `stopPropagation()` too, and one round of shares depends on it.** The document-level
   dispatcher runs after this handler and has no `defaultPrevented` guard, so `pane.refresh` would ALSO dispatch into
-  `refreshPane` → `refreshNetworkHosts()` → `ServersHub.refresh()` — the same `handleRefreshClick()` the local
-  branch just ran, giving every host two `clearShareState` + `fetchShares` rounds per keypress. Pinned by
-  `ServersHub.test.ts`; the general rule is in `$lib/shortcuts/DETAILS.md` § "Local handlers resolve through the
-  registry too".
+  `refreshPane` → `refreshNetworkHosts()` → `ServersHub.refresh()` — the same `handleRefreshClick()` the local branch
+  just ran, giving every host two `clearShareState` + `fetchShares` rounds per keypress. Pinned by `ServersHub.test.ts`;
+  the general rule is in `$lib/shortcuts/DETAILS.md` § "Local handlers resolve through the registry too".
 - **Neither browser's `handleKeyDown` returns a "handled" boolean** (`BrowserAPI` in `../pane/types.ts`). Nothing above
   them branches on one: `NetworkMountView` and `pane-key-router` hand the network view every key and return either way,
   so the claim is `preventDefault()` + `stopPropagation()` on the event.

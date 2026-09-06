@@ -327,49 +327,9 @@
   "@fileExplorer.network.connectDialog.examples": {
     "sourceHash": "10794ec"
   },
-  "fileExplorer.network.browser.colName": "名稱",
-  "@fileExplorer.network.browser.colName": {
-    "sourceHash": "dcd1d52"
-  },
-  "fileExplorer.network.browser.colIp": "IP 位址",
-  "@fileExplorer.network.browser.colIp": {
-    "sourceHash": "0302a46"
-  },
-  "fileExplorer.network.browser.colHostname": "主機名稱",
-  "@fileExplorer.network.browser.colHostname": {
-    "sourceHash": "2db5335"
-  },
-  "fileExplorer.network.browser.colShares": "共享資料夾",
-  "@fileExplorer.network.browser.colShares": {
-    "sourceHash": "d4ea333"
-  },
-  "fileExplorer.network.browser.colStatus": "狀態",
-  "@fileExplorer.network.browser.colStatus": {
-    "sourceHash": "920e413"
-  },
-  "fileExplorer.network.browser.fetching": "正在取得…",
-  "@fileExplorer.network.browser.fetching": {
-    "sourceHash": "9e6ab8c"
-  },
-  "fileExplorer.network.browser.unknown": "（未知）",
-  "@fileExplorer.network.browser.unknown": {
-    "sourceHash": "8fe7794"
-  },
   "fileExplorer.network.browser.searching": "正在搜尋…",
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "78c9d9f"
-  },
-  "fileExplorer.network.browser.connectToServerRow": "連接伺服器…",
-  "@fileExplorer.network.browser.connectToServerRow": {
-    "sourceHash": "1bf4858"
-  },
-  "fileExplorer.network.browser.noHostsTitle": "找不到網路主機",
-  "@fileExplorer.network.browser.noHostsTitle": {
-    "sourceHash": "e8dfaf2"
-  },
-  "fileExplorer.network.browser.noHostsMessage": "請確認你所在的網路上有支援 SMB 的裝置。",
-  "@fileExplorer.network.browser.noHostsMessage": {
-    "sourceHash": "b1cb7ba"
   },
   "fileExplorer.network.browser.refresh": "重新整理",
   "@fileExplorer.network.browser.refresh": {
@@ -382,10 +342,6 @@
   "fileExplorer.network.browser.refreshHint": "按 <key></key> 或按這裡重新整理",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
-  },
-  "fileExplorer.network.browser.hostCount": "{count, plural, other {{countText} 台主機}}",
-  "@fileExplorer.network.browser.hostCount": {
-    "sourceHash": "41843ee"
   },
   "fileExplorer.network.browser.status.resolving": "正在解析…",
   "@fileExplorer.network.browser.status.resolving": {
@@ -1328,10 +1284,6 @@
   "fileExplorer.navigation.networkVolume": "網路",
   "@fileExplorer.navigation.networkVolume": {
     "sourceHash": "1744b96"
-  },
-  "fileExplorer.navigation.networkVolumeDisabled": "網路（已停用）",
-  "@fileExplorer.navigation.networkVolumeDisabled": {
-    "sourceHash": "4ccfa47"
   },
   "fileExplorer.navigation.searchResultsVolume": "搜尋結果",
   "@fileExplorer.navigation.searchResultsVolume": {

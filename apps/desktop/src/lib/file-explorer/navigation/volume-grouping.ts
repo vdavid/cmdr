@@ -19,15 +19,7 @@ const categoryOrder: { category: LocationCategory; labelKey: MessageKey | null }
   { category: 'network', labelKey: 'fileExplorer.navigation.groupNetwork' },
 ]
 
-export interface GroupingOptions {
-  /** When false, the synthetic "Network" entry shows as "Network (disabled)" and clicking it opens settings instead of navigating. */
-  networkEnabled: boolean
-}
-
-export function groupByCategory(
-  vols: VolumeInfo[],
-  options: GroupingOptions = { networkEnabled: true },
-): VolumeGroup[] {
+export function groupByCategory(vols: VolumeInfo[]): VolumeGroup[] {
   const groups: VolumeGroup[] = []
 
   for (const { category, labelKey } of categoryOrder) {
@@ -45,26 +37,26 @@ export function groupByCategory(
         groups.push({ category, label, items: mobileItems })
       }
     } else if (category === 'network') {
-      // Network section: show a single "Network" item that opens ServersHub
-      // Also include any pre-mounted network volumes (mounted shares).
-      // When networking is disabled in Settings, the synthetic entry is labelled
-      // "Network (disabled)": already-mounted shares stay listed (filesystem I/O on
-      // them doesn't need Local Network permission).
+      // The Network group holds the hub row plus the places that earned a row:
+      // every live session and every pinned place (the backend's servers arm is
+      // what applies the pin), plus any mounted SMB share.
+      //
+      // ❗ The hub row is here whatever `network.enabled` says. That switch gates
+      // mDNS discovery and SMB, which is what the macOS Local Network permission
+      // is about; SFTP and WebDAV need none of it, and the hub says so in its own
+      // list rather than by refusing to open.
       const networkVolumes = vols.filter((v) => v.category === 'network')
 
-      const networkItem: VolumeInfo = {
+      const hubRow: VolumeInfo = {
         id: 'network',
-        name: options.networkEnabled
-          ? tString('fileExplorer.navigation.networkVolume')
-          : tString('fileExplorer.navigation.networkVolumeDisabled'),
+        name: tString('fileExplorer.navigation.networkVolume'),
         path: 'smb://', // Virtual path
         category: 'network' as const,
         icon: undefined, // Will use placeholder
         isEjectable: false,
       }
 
-      const allItems = [networkItem, ...networkVolumes]
-      groups.push({ category, label, items: allItems })
+      groups.push({ category, label, items: [hubRow, ...networkVolumes] })
     } else {
       const items = vols.filter((v) => v.category === category)
       if (items.length > 0) {

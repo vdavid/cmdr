@@ -1,4 +1,76 @@
 {
+  "servers.hub.colName": "Name",
+  "@servers.hub.colName": {
+    "description": "Column heading in the servers hub: the server''s own name. One or two words; the column is narrow."
+  },
+  "servers.hub.colType": "Type",
+  "@servers.hub.colType": {
+    "description": "Column heading in the servers hub for which protocol a server speaks (SFTP, WebDAV, SMB). One word."
+  },
+  "servers.hub.colAddress": "Address",
+  "@servers.hub.colAddress": {
+    "description": "Column heading in the servers hub for where the server lives: a hostname, an IP address, or a web address. One word."
+  },
+  "servers.hub.colStatus": "Status",
+  "@servers.hub.colStatus": {
+    "description": "Column heading in the servers hub for how the server is doing right now. One word."
+  },
+  "servers.hub.colLastUsed": "Last used",
+  "@servers.hub.colLastUsed": {
+    "description": "Column heading in the servers hub for when the user last connected to the server. Two words at most."
+  },
+  "servers.hub.addServer": "Add server…",
+  "@servers.hub.addServer": {
+    "description": "The last row of the servers hub, which opens the form for typing a new server. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means \"this opens something\"; keep it."
+  },
+  "servers.hub.status.connected": "Connected",
+  "@servers.hub.status.connected": {
+    "description": "Status of a server the app is talking to right now. One word, ADJECTIVE."
+  },
+  "servers.hub.status.saved": "Saved",
+  "@servers.hub.status.saved": {
+    "description": "Status of a server the user has saved but isn''t connected to. Nothing is wrong; it''s simply idle. One word, ADJECTIVE."
+  },
+  "servers.hub.status.foundNearby": "Found nearby",
+  "@servers.hub.status.foundNearby": {
+    "description": "Status of a server Cmdr can see on the local network right now, whether or not the user saved it. Two words."
+  },
+  "servers.hub.status.signedOut": "Signed out",
+  "@servers.hub.status.signedOut": {
+    "description": "Status of a saved server whose session ended because a password is what''s missing. ❗ NOT a rejection and not a fault: the user simply has to sign in again."
+  },
+  "servers.hub.status.waitingForKey": "Waiting for you to check the key",
+  "@servers.hub.status.waitingForKey": {
+    "description": "Status of an SSH server whose identity key the user hasn''t approved yet. \"The key\" is the server''s SSH host key, a fingerprint a person compares before trusting the server. Address the user directly."
+  },
+  "servers.hub.neverUsed": "Never",
+  "@servers.hub.neverUsed": {
+    "description": "Shown in the servers hub''s \"Last used\" column for a server the user has never connected to. One word."
+  },
+  "servers.hub.discoveryOff": "Local network discovery is off.",
+  "@servers.hub.discoveryOff": {
+    "description": "One line in the servers hub, in place of the list of servers found nearby, when the user has turned local network discovery off in Settings. Saved servers still work and are still listed; this line is only about the nearby ones."
+  },
+  "servers.hub.discoveryOffLink": "Turn it on in Settings",
+  "@servers.hub.discoveryOffLink": {
+    "description": "Link beside the discovery-off line; it opens Settings at the switch that turns local network discovery back on. VERB phrase, imperative. \"Settings\" is the app''s own Settings window; use the word your language''s macOS uses for it."
+  },
+  "servers.hub.emptyTitle": "No servers yet",
+  "@servers.hub.emptyTitle": {
+    "description": "Heading of the empty state in the servers hub, when the user has saved none and Cmdr found none nearby. Short and neutral."
+  },
+  "servers.hub.emptyMessage": "Add one below, or turn on a Mac or NAS on your network and Cmdr will find it.",
+  "@servers.hub.emptyMessage": {
+    "description": "One line under the empty-state heading in the servers hub. \"NAS\" is a network storage box; keep the abbreviation if your language uses it, otherwise say the equivalent. \"below\" points at the \"Add server…\" row at the bottom of the list."
+  },
+  "servers.hub.rowCount": "{count, plural, one {{countText} server} other {{countText} servers}}",
+  "@servers.hub.rowCount": {
+    "description": "The count in the status bar under the servers hub. Counts saved servers and nearby ones together, and excludes the \"Add server…\" row.",
+    "placeholders": {
+      "count": "the number, for choosing the plural form",
+      "countText": "the number as the user''s locale writes it, like \"1,024\""
+    }
+  },
   "servers.paneState.connecting": "Connecting to {name}…",
   "@servers.paneState.connecting": {
     "description": "Heading of the pane view shown while Cmdr opens a connection to a server. {name} is the server''s display name. The ellipsis is the single character … (U+2026)."

@@ -1,38 +1,34 @@
 <script lang="ts">
     /**
-     * ServersHub - displays discovered network hosts in a list view.
-     * Rendered when user selects "Network" in the volume selector.
-     * Uses the shared network-store for host data (initialized at app startup).
+     * The servers hub: every server the user saved, plus every host mDNS found,
+     * in one table. Rendered when a pane is on the `network` volume.
+     *
+     * The merge, the ordering, and the MCP encoding are pure and live next door
+     * (`servers-hub-rows.ts`, `servers-hub-mcp.ts`); this file is the table, the
+     * cursor, and the keys.
      */
     import { onMount, onDestroy } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import LinkButton from '$lib/ui/LinkButton.svelte'
+    import DateLabel from '$lib/ui/DateLabel.svelte'
     import {
         getNetworkHosts,
         getDiscoveryState,
-        isHostResolving,
-        getShareState,
         getShareCount,
-        isListingShares,
-        isShareDataStale,
-        refreshAllStaleShares,
         clearShareState,
         fetchShares,
+        refreshAllStaleShares,
         getCredentialStatus,
         checkCredentialsForHost,
         forgetCredentials,
     } from './network-store.svelte'
-    import {
-        getHostStatus,
-        getStatusTooltip,
-        isStatusError,
-        STATUS_ICON,
-        STATUS_MCP_LABEL,
-        STATUS_TEXT_KEY,
-    } from './host-status'
+    import { getStatusTooltip } from './host-status'
+    import { buildHubRows, type HubRow, type HubRowStatus } from './servers-hub-rows'
+    import { hubMcpEntries } from './servers-hub-mcp'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import type { NetworkHost } from '../types'
+    import type { NetworkHost, VolumeInfo } from '../types'
     import {
         updateLeftPaneState,
         updateRightPaneState,
@@ -40,68 +36,88 @@
         showNetworkHostContextMenu,
         onNetworkHostContextAction,
         disconnectNetworkHost,
+        listSavedServers,
         type PaneState,
-        type PaneFileEntry,
+        type SavedServer,
     } from '$lib/tauri-commands'
+    import { getVolumes } from '$lib/stores/volume-store.svelte'
+    import { getNetworkEnabled } from '$lib/settings/reactive-settings.svelte'
+    import { openSettingsWindow, settingAnchorId } from '$lib/settings/settings-window'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
+    import { protocolLabel } from '../navigation/filesystem-label'
+    import { forgetSavedServer, openServerRowMenu } from '../navigation/server-row-actions'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import { addToast } from '$lib/ui/toast'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { eventMatchesCommand } from '$lib/shortcuts'
     import { triggerNetworkDiscovery } from './lazy-trigger'
     import { tString } from '$lib/intl/messages.svelte'
+    import type { MessageKey } from '$lib/intl/keys.gen'
     import Trans from '$lib/intl/Trans.svelte'
     import { formatInteger } from '$lib/intl/number-format'
+    import { getAppLogger } from '$lib/logging/logger'
 
-    /** Row height for host list (matches Full list) */
-    const HOST_ROW_HEIGHT = 20
+    const log = getAppLogger('servers')
+
+    /** Row height (matches Full list). */
+    const ROW_HEIGHT = 20
+
+    /** The word each status wears in the Status column. */
+    const STATUS_TEXT_KEY: Record<HubRowStatus, MessageKey> = {
+        connected: 'servers.hub.status.connected',
+        saved: 'servers.hub.status.saved',
+        found_nearby: 'servers.hub.status.foundNearby',
+        signed_out: 'servers.hub.status.signedOut',
+        waiting_for_key: 'servers.hub.status.waitingForKey',
+    }
 
     interface Props {
         paneId?: 'left' | 'right'
         isFocused?: boolean
+        /** Enter on an SMB host: open its places list. */
         onHostSelect?: (host: NetworkHost) => void
+        /** Enter on a one-place server: take the pane there. */
+        onServerSelect?: (row: HubRow) => void
+        /** Enter on the "Add server…" row. */
         onConnectToServer?: () => void
     }
 
-    const { paneId, isFocused = false, onHostSelect, onConnectToServer }: Props = $props()
+    const { paneId, isFocused = false, onHostSelect, onServerSelect, onConnectToServer }: Props = $props()
 
-    // Get reactive state from the network store
+    /** `listSavedServers()`, refreshed whenever the volume list is. */
+    let savedServers = $state<SavedServer[]>([])
+
     const hosts = $derived(getNetworkHosts())
-    const discoveryState = $derived(getDiscoveryState())
-    const isSearching = $derived(discoveryState === 'searching')
+    const volumes = $derived(getVolumes())
+    const isSearching = $derived(getDiscoveryState() === 'searching')
+    const discoveryEnabled = $derived(getNetworkEnabled())
+    const rows = $derived(buildHubRows({ saved: savedServers, hosts, volumes }))
 
-    // Local cursor state
     let cursorIndex = $state(0)
-
-    // Container tracking for PageUp/PageDown
     let listContainer: HTMLDivElement | undefined = $state()
     let containerHeight = $state(0)
-
-    // Event listener cleanup for network host context menu
     let unlistenContextAction: (() => void) | undefined
 
-    // Refresh stale shares when component mounts (entering network view)
+    /**
+     * Re-reads the saved list whenever the volume list changes.
+     *
+     * ❗ Subscribe, don't poll: pin, forget, connect, and disconnect all emit
+     * `volumes-changed`, and the volume store's array is reassigned on each one.
+     * Reading it here is the whole subscription.
+     */
+    $effect(() => {
+        void volumes
+        void refreshSavedServers()
+    })
+
     onMount(() => {
-        // Lazy-start mDNS the first time the user enters Network. Triggers the macOS
-        // Local Network prompt on first call after a fresh install. No-op if discovery
-        // is already running or networking is disabled.
+        // Lazy-start mDNS the first time the user enters the hub. No-op when
+        // discovery is already running or the setting is off.
         triggerNetworkDiscovery()
-
         refreshAllStaleShares()
-        // Check credentials for all hosts that need auth
-        for (const host of hosts) {
-            const state = getShareState(host.id)
-            if (
-                state?.status === 'error' &&
-                (state.error.type === 'auth_required' || state.error.type === 'signing_required')
-            ) {
-                void checkCredentialsForHost(host.name)
-            }
-        }
 
-        // Listen for network host context menu actions
         void onNetworkHostContextAction((payload) => {
-            void handleContextAction(payload)
+            void handleHostContextAction(payload)
         }).then((fn) => {
             unlistenContextAction = fn
         })
@@ -111,15 +127,14 @@
         unlistenContextAction?.()
     })
 
-    // Re-sync MCP state when hosts or cursor change
+    // Re-sync MCP state when the rows or the cursor change.
     $effect(() => {
-        // Touch reactive deps
-        void hosts.length
+        void rows
         void cursorIndex
         void syncPaneStateToMcp()
     })
 
-    // Clamp cursor when hosts change (e.g. a host is removed)
+    // Clamp the cursor when a row disappears (a host went quiet, a server was forgotten).
     $effect(() => {
         const maxIndex = totalNavigableItems - 1
         if (cursorIndex > maxIndex) {
@@ -127,69 +142,67 @@
         }
     })
 
+    async function refreshSavedServers(): Promise<void> {
+        try {
+            // `Array.isArray` because this is an IPC boundary: a command that
+            // answered with nothing would otherwise put `undefined` where the
+            // merge iterates, and the hub would render nothing at all.
+            const answer: unknown = await listSavedServers()
+            savedServers = Array.isArray(answer) ? (answer as SavedServer[]) : []
+        } catch (e) {
+            // A store that didn't answer costs the hub its saved rows, never the
+            // nearby ones: the list is still useful, and the next `volumes-changed`
+            // tries again.
+            log.warn('Reading the saved servers broke down: {error}', { error: String(e) })
+        }
+    }
+
+    /** Every row plus the "Add server…" row. */
+    const totalNavigableItems = $derived(rows.length + 1)
+
+    /** Whether the cursor sits on the "Add server…" row. */
+    const isCursorOnAddRow = $derived(cursorIndex === rows.length)
+
+    /** The row under the cursor, or `null` on the add row. */
+    function rowUnderCursor(): HubRow | null {
+        if (isCursorOnAddRow) return null
+        return rows[cursorIndex] ?? null
+    }
+
     /**
-     * Sync network hosts to MCP for context tools.
-     * Encodes host details (IP, hostname, shares, status) into file entry names
-     * so MCP agents can see the same info as the UI.
+     * Mirrors the hub into `cmdr://state`.
+     *
+     * The columns a person reads are encoded into each entry's `name`, because
+     * MCP's `PaneFileEntry` has only `name` / `path` / `isDirectory`.
      */
     async function syncPaneStateToMcp() {
         if (!paneId) return
-
         try {
-            const files: PaneFileEntry[] = hosts.map((host) => {
-                const ip = getIpDisplay(host)
-                const hostname = getHostnameDisplay(host)
-                const shares = getSharesDisplay(host)
-                // Stable, locale-independent status token (not the localized UI label).
-                const status = STATUS_MCP_LABEL[getHostStatus(host).kind]
-                return {
-                    name: `${host.name}  ip=${ip}  hostname=${hostname}  source=${host.source ?? 'discovered'}  shares=${shares}  status="${status}"`,
-                    path: `smb://${host.ipAddress ?? host.name}`,
-                    isDirectory: true,
-                    size: null,
-                    recursiveSize: null,
-                    modified: null,
-                    recursiveSizePending: null,                }
-            })
-
-            // Add the "Connect to server..." pseudo-row for MCP visibility
-            files.push({
-                name: '+ Connect to server...',
-                path: 'smb://connect',
-                isDirectory: false,
-                size: null,
-                recursiveSize: null,
-                modified: null,
-                recursiveSizePending: null,            })
-
             const state: PaneState = {
                 path: 'smb://',
                 volumeId: 'network',
                 volumeName: tString('fileExplorer.navigation.networkVolume'),
-                files,
+                files: hubMcpEntries(rows, {
+                    appRootOf: (row) => row.saved?.places[0]?.appRoot ?? null,
+                    shareCountOf: (row) => (row.host ? getShareCount(row.host.id) : undefined),
+                }),
                 cursorIndex,
                 viewMode: 'full',
                 selectedIndices: [],
-                totalFiles: hosts.length,
+                totalFiles: rows.length,
                 loadedStart: 0,
-                loadedEnd: hosts.length,
+                loadedEnd: rows.length,
             }
-
-            if (paneId === 'left') {
-                await updateLeftPaneState(state)
-            } else {
-                await updateRightPaneState(state)
-            }
+            await (paneId === 'left' ? updateLeftPaneState(state) : updateRightPaneState(state))
         } catch {
-            // Silently ignore sync errors
+            // MCP mirroring is optional; a failed push must not touch the UI.
         }
     }
 
-    /** Scrolls to make the cursor visible */
     function scrollToIndex(index: number) {
         if (!listContainer) return
-        const targetTop = index * HOST_ROW_HEIGHT
-        const targetBottom = targetTop + HOST_ROW_HEIGHT
+        const targetTop = index * ROW_HEIGHT
+        const targetBottom = targetTop + ROW_HEIGHT
         const scrollTop = listContainer.scrollTop
         const viewportBottom = scrollTop + containerHeight
 
@@ -200,59 +213,84 @@
         }
     }
 
-    /** Move cursor to a specific index. */
-    /** Total navigable items: hosts + the "Connect to server..." pseudo-row. */
-    const totalNavigableItems = $derived(hosts.length + 1)
-
-    // noinspection JSUnusedGlobalSymbols -- used dynamically by MCP move_cursor tool
+    // noinspection JSUnusedGlobalSymbols -- used dynamically by MCP move_cursor
     export function setCursorIndex(index: number) {
         cursorIndex = Math.max(0, Math.min(index, totalNavigableItems - 1))
         scrollToIndex(cursorIndex)
     }
 
-    /** Every host plus the "Connect to server…" row. */
     // noinspection JSUnusedGlobalSymbols -- used dynamically by MCP move_cursor's range check
     export function getItemCount(): number {
         return totalNavigableItems
     }
 
-    /** Refresh all shares (used by ⌘R shortcut). */
+    /** Refresh everything the hub shows (⌘R). */
     export function refresh() {
         handleRefreshClick()
     }
 
-    /** Find a host by name, returns its index or -1. */
+    /** Find a row by name, returns its index or -1. */
     // noinspection JSUnusedGlobalSymbols -- used dynamically
     export function findItemIndex(name: string): number {
-        return hosts.findIndex((h) => h.name.toLowerCase() === name.toLowerCase())
+        return rows.findIndex((row) => row.name.toLowerCase() === name.toLowerCase())
     }
 
     /**
-     * Returns the host under the cursor, or `null` when the cursor sits on the
-     * "Connect to server…" pseudo-row or the list is empty. Consumed by the
-     * "Copy path between panes" command so cursor-on-server mirrors that server.
+     * The SMB host under the cursor, or `null`. Consumed by "Copy path between
+     * panes", which mirrors a host into the other pane.
      */
     // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView
     export function getHostUnderCursor(): NetworkHost | null {
-        if (isCursorOnConnectRow) return null
-        if (cursorIndex < 0 || cursorIndex >= hosts.length) return null
-        return hosts[cursorIndex]
+        return rowUnderCursor()?.host ?? null
     }
 
-    /** Opens the host (or "Connect to server…" row) under the cursor — same action Enter triggers. */
+    /**
+     * The whole row under the cursor, or `null` on the add row.
+     *
+     * ❗ How the palette commands ("Pin / unpin server", "Disconnect server",
+     * "Forget saved password") reach what the user is looking at: the hub IS a
+     * pane, so a command acting on "the focused pane's volume" would otherwise
+     * act on the synthetic hub row.
+     */
+    // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView / FilePane
+    export function getRowUnderCursor(): HubRow | null {
+        return rowUnderCursor()
+    }
+
+    /** Opens whatever the cursor is on — the same action Enter triggers. */
     // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView / MCP
     export function openCursorItem(): void {
-        if (isCursorOnConnectRow) {
+        if (isCursorOnAddRow) {
             onConnectToServer?.()
-        } else if (cursorIndex >= 0 && cursorIndex < hosts.length) {
-            onHostSelect?.(hosts[cursorIndex])
+            return
         }
+        const row = rowUnderCursor()
+        if (row) openRow(row)
     }
 
-    /** Whether the cursor is on the "Connect to server..." pseudo-row. */
-    const isCursorOnConnectRow = $derived(cursorIndex === hosts.length)
+    /**
+     * What Enter does to a row.
+     *
+     * An SMB host opens its places list; a one-place server takes the pane to its
+     * place, where the pane's own connect view does the dialing.
+     */
+    function openRow(row: HubRow): void {
+        if (row.protocol === 'smb') {
+            onHostSelect?.(row.host ?? savedHostFor(row))
+            return
+        }
+        onServerSelect?.(row)
+    }
 
-    /** Handle arrow keys and Enter for host list navigation. */
+    /**
+     * A saved SMB host mDNS isn't seeing right now, as a host the places list can
+     * take. Its address is the only spelling anything has for it.
+     */
+    function savedHostFor(row: HubRow): NetworkHost {
+        return { id: row.id, name: row.name, hostname: row.address, port: 445, source: 'manual' }
+    }
+
+    /** Arrow keys and Enter. */
     function handleArrowAndEnter(key: string): boolean {
         switch (key) {
             case 'ArrowDown':
@@ -272,11 +310,7 @@
                 scrollToIndex(cursorIndex)
                 return true
             case 'Enter':
-                if (isCursorOnConnectRow) {
-                    onConnectToServer?.()
-                } else if (cursorIndex >= 0 && cursorIndex < hosts.length) {
-                    onHostSelect?.(hosts[cursorIndex])
-                }
+                openCursorItem()
                 return true
             default:
                 return false
@@ -293,7 +327,7 @@
      */
     // noinspection JSUnusedGlobalSymbols -- used dynamically
     export function handleKeyDown(e: KeyboardEvent): void {
-        // The refresh key (⌘R by default) works regardless of host count. Read through
+        // The refresh key (⌘R by default) works regardless of row count. Read through
         // the registry so a rebind follows. `stopPropagation` keeps it to ONE refresh:
         // `pane.refresh` is centrally dispatched too, and `refreshPane` routes it back
         // into this component through `refreshNetworkHosts()` → `refresh()`, which is
@@ -305,11 +339,8 @@
             return
         }
 
-        // The connect row is always present, so totalNavigableItems >= 1
-        if (totalNavigableItems === 0) return
-
         // Try centralized navigation shortcuts first (PageUp, PageDown, Home, End, Option+arrows)
-        const visibleItems = Math.max(1, Math.floor(containerHeight / HOST_ROW_HEIGHT))
+        const visibleItems = Math.max(1, Math.floor(containerHeight / ROW_HEIGHT))
         const navResult = handleNavigationShortcut(e, {
             currentIndex: cursorIndex,
             totalCount: totalNavigableItems,
@@ -328,11 +359,13 @@
         // also moving this cursor.
         if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
 
-        // F8: remove manual host
-        if (e.key === 'F8' && !isCursorOnConnectRow && cursorIndex < hosts.length) {
-            e.preventDefault()
-            const host = hosts[cursorIndex]
-            void handleRemoveHost(host)
+        // F8: forget the saved server under the cursor.
+        if (e.key === 'F8') {
+            const row = rowUnderCursor()
+            if (row) {
+                e.preventDefault()
+                void handleForget(row)
+            }
             return
         }
 
@@ -341,99 +374,121 @@
         }
     }
 
-    // Handle host clicks
-    function handleHostClick(index: number) {
+    function handleRowClick(index: number) {
         cursorIndex = index
     }
 
-    function handleHostDoubleClick(index: number) {
-        if (index >= 0 && index < hosts.length) {
-            onHostSelect?.(hosts[index])
-        }
+    function handleRowDoubleClick(index: number) {
+        const row = rows[index]
+        if (row) openRow(row)
     }
 
-    function handleConnectRowClick() {
-        cursorIndex = hosts.length
+    function handleAddRowClick() {
+        cursorIndex = rows.length
     }
 
-    function handleConnectRowDoubleClick() {
-        onConnectToServer?.()
+    /** The protocol name, from the same map the volume switcher's slot reads. */
+    function typeLabel(row: HubRow): string {
+        return protocolLabel(row.protocol) ?? row.protocol.toUpperCase()
     }
 
-    // Helper to get display text for IP/hostname column
-    function getIpDisplay(host: NetworkHost): string {
-        if (host.ipAddress) return host.ipAddress
-        if (isHostResolving(host.id)) return tString('fileExplorer.network.browser.fetching')
-        return '—'
+    /** `Last used`, as the seconds-based `DateLabel` takes it. */
+    function lastUsedSeconds(row: HubRow): number | null {
+        if (!row.lastConnectedAt) return null
+        const parsed = Date.parse(row.lastConnectedAt)
+        return Number.isNaN(parsed) ? null : Math.floor(parsed / 1000)
     }
 
-    function getHostnameDisplay(host: NetworkHost): string {
-        if (host.hostname) return host.hostname
-        if (isHostResolving(host.id)) return tString('fileExplorer.network.browser.fetching')
-        return '—'
-    }
-
-    // Helper to get share count display - shows "{N}?" when stale, "(unknown)" when no data
-    function getSharesDisplay(host: NetworkHost): string {
-        const isStale = isShareDataStale(host.id)
-        const count = getShareCount(host.id)
-        if (count !== undefined) {
-            return isStale ? `${String(count)}?` : String(count)
-        }
-        if (isListingShares(host.id)) return '...'
-        return tString('fileExplorer.network.browser.unknown')
-    }
-
-    // Check if share data needs refresh indicator
-    function needsRefreshIndicator(host: NetworkHost): boolean {
-        return isShareDataStale(host.id) && getShareCount(host.id) !== undefined
-    }
-
-    /** Remove a manual host after confirmation. For discovered hosts, show a toast. */
-    async function handleRemoveHost(host: NetworkHost) {
-        if (host.source !== 'manual') {
+    /**
+     * F8. A saved server goes (after a confirmation); a host only mDNS knows about
+     * has nothing to forget, and says so.
+     */
+    async function handleForget(row: HubRow): Promise<void> {
+        if (!row.saved) {
             addToast(tString('fileExplorer.network.browser.cannotRemoveDiscovered'), { level: 'warn' })
             return
         }
+        if (row.volumeId) {
+            // A one-place server: the servers family owns the confirmation and the
+            // toast, so the hub and the switcher's menu ask the same question.
+            await forgetSavedServer(row.volumeId, row.name)
+            return
+        }
+        await removeSavedSmbHost(row)
+    }
 
+    /** Forgets a saved SMB host, which is a manual-server entry rather than a place. */
+    async function removeSavedSmbHost(row: HubRow): Promise<void> {
         const confirmed = await confirmDialog(
-            tString('fileExplorer.network.browser.removeHostConfirm', { hostName: host.name }),
+            tString('fileExplorer.network.browser.removeHostConfirm', { hostName: row.name }),
             tString('fileExplorer.network.browser.removeHostConfirmButton'),
         )
         if (!confirmed) return
-
         try {
-            await removeManualServer(host.id)
-            addToast(tString('fileExplorer.network.browser.hostRemoved', { hostName: host.name }), { level: 'success' })
+            await removeManualServer(row.id)
+            addToast(tString('fileExplorer.network.browser.hostRemoved', { hostName: row.name }), { level: 'success' })
+            await refreshSavedServers()
         } catch {
-            addToast(tString('fileExplorer.network.browser.hostRemoveFailed', { hostName: host.name }), {
+            addToast(tString('fileExplorer.network.browser.hostRemoveFailed', { hostName: row.name }), {
                 level: 'error',
             })
         }
     }
 
-    /** Show native context menu for a network host. */
-    async function handleHostContextMenu(e: MouseEvent, host: NetworkHost) {
+    /**
+     * Right-click.
+     *
+     * A one-place row raises the SERVERS menu (Disconnect, Forget saved password,
+     * Forget server), the same one the switcher row raises, so the two surfaces
+     * can't drift. An SMB host keeps its own host menu, whose Disconnect unmounts
+     * shares rather than dropping a session.
+     */
+    async function handleRowContextMenu(e: MouseEvent, row: HubRow): Promise<void> {
         e.preventDefault()
-
-        const isManual = host.source === 'manual'
-
-        // Ensure we have current credential status (may need Keychain lookup)
+        if (row.volumeId) {
+            await openServerRowMenu(volumeForRow(row))
+            return
+        }
+        const host = row.host
+        if (!host) return
         if (getCredentialStatus(host.name) === 'unknown') {
             await checkCredentialsForHost(host.name)
         }
-
-        const hasCredentials = getCredentialStatus(host.name) === 'has_creds'
-
-        void showNetworkHostContextMenu(host.id, host.name, isManual, hasCredentials)
+        void showNetworkHostContextMenu(
+            host.id,
+            host.name,
+            host.source === 'manual',
+            getCredentialStatus(host.name) === 'has_creds',
+        )
     }
 
-    /** Handle actions dispatched from the native network host context menu. */
-    async function handleContextAction(payload: { action: string; hostId: string; hostName: string }) {
+    /**
+     * The row's `VolumeInfo`, for the menu builder.
+     *
+     * The volume list is the source when it has the row; a saved server that is
+     * neither pinned nor connected has no row there, and the stand-in carries the
+     * three fields the menu actually reads.
+     */
+    function volumeForRow(row: HubRow): VolumeInfo {
+        const known = volumes.find((volume) => volume.id === row.volumeId)
+        if (known) return known
+        return {
+            id: row.volumeId ?? row.id,
+            name: row.name,
+            path: row.saved?.places[0]?.appRoot ?? '',
+            category: 'network',
+            isEjectable: false,
+            fsType: row.protocol,
+            connectionState: null,
+        }
+    }
+
+    /** Actions dispatched from the native SMB-host context menu. */
+    async function handleHostContextAction(payload: { action: string; hostId: string; hostName: string }) {
         switch (payload.action) {
             case 'forget-server': {
-                const host = hosts.find((h: NetworkHost) => h.id === payload.hostId)
-                if (host) void handleRemoveHost(host)
+                const row = rows.find((r) => r.host?.id === payload.hostId || r.id === payload.hostId)
+                if (row) await handleForget(row)
                 break
             }
             case 'forget-password': {
@@ -448,7 +503,7 @@
                 break
             }
             case 'disconnect': {
-                const host = hosts.find((h: NetworkHost) => h.id === payload.hostId)
+                const host = hosts.find((h) => h.id === payload.hostId)
                 if (!host) break
                 try {
                     const unmounted = await disconnectNetworkHost(host.id, host.name, host.ipAddress)
@@ -469,9 +524,9 @@
         }
     }
 
-    // Refresh all shares (user-initiated)
+    /** Re-read the saved list and re-fetch every host's shares (user-initiated). */
     function handleRefreshClick() {
-        // Clear all share states to force refetch
+        void refreshSavedServers()
         for (const host of hosts) {
             clearShareState(host.id)
             if (host.hostname) {
@@ -480,6 +535,15 @@
                 })
             }
         }
+    }
+
+    /** Opens Settings at the switch that turns local network discovery back on. */
+    function openDiscoverySetting() {
+        void openSettingsWindow(
+            'servers-hub',
+            ['File systems', 'SMB/Network shares'],
+            settingAnchorId('network.enabled'),
+        )
     }
 
     // The keyboard-shortcut chip rendered inline in the refresh hint (`<key>` tag).
@@ -496,62 +560,55 @@
         size="sm"
     />{/snippet}
 
-<div class="network-browser" class:is-focused={isFocused}>
+<div class="servers-hub" class:is-focused={isFocused}>
     <div class="header-row">
-        <span class="col-name">{tString('fileExplorer.network.browser.colName')}</span>
-        <span class="col-ip">{tString('fileExplorer.network.browser.colIp')}</span>
-        <span class="col-hostname">{tString('fileExplorer.network.browser.colHostname')}</span>
-        <span class="col-shares">{tString('fileExplorer.network.browser.colShares')}</span>
-        <span class="col-status">{tString('fileExplorer.network.browser.colStatus')}</span>
+        <span class="col-name">{tString('servers.hub.colName')}</span>
+        <span class="col-type">{tString('servers.hub.colType')}</span>
+        <span class="col-address">{tString('servers.hub.colAddress')}</span>
+        <span class="col-status">{tString('servers.hub.colStatus')}</span>
+        <span class="col-last-used">{tString('servers.hub.colLastUsed')}</span>
     </div>
-    <div class="host-list" bind:this={listContainer} bind:clientHeight={containerHeight}>
-        {#each hosts as host, index (host.id)}
-            {@const hostStatus = getHostStatus(host)}
-            {@const statusIcon = STATUS_ICON[hostStatus.kind]}
+    <div class="row-list" bind:this={listContainer} bind:clientHeight={containerHeight}>
+        {#each rows as row, index (row.id)}
             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
             <div
-                class="host-row"
+                class="server-row"
                 class:is-under-cursor={index === cursorIndex}
                 class:is-focused-and-under-cursor={isFocused && index === cursorIndex}
                 role="listitem"
                 onclick={() => {
-                    handleHostClick(index)
+                    handleRowClick(index)
                 }}
                 ondblclick={() => {
-                    handleHostDoubleClick(index)
+                    handleRowDoubleClick(index)
                 }}
                 oncontextmenu={(e: MouseEvent) => {
-                    void handleHostContextMenu(e, host)
+                    void handleRowContextMenu(e, row)
                 }}
                 onkeydown={() => {}}
             >
-                <span class="col-name" use:tooltip={{ text: host.name, overflowOnly: true }}>
-                    <span class="host-icon"><Icon name="monitor" size={16} aria-hidden="true" /></span>
-                    {host.name}
+                <span class="col-name" use:tooltip={{ text: row.name, overflowOnly: true }}>
+                    <span class="row-icon"
+                        ><Icon name={row.protocol === 'smb' ? 'monitor' : 'server'} size={16} aria-hidden="true" /></span
+                    >
+                    {row.name}
                 </span>
-                <span class="col-ip" class:is-fetching={isHostResolving(host.id) && !host.ipAddress}
-                    >{getIpDisplay(host)}</span
-                >
-                <span
-                    class="col-hostname"
-                    class:is-fetching={isHostResolving(host.id) && !host.hostname}
-                    use:tooltip={{ text: getHostnameDisplay(host), overflowOnly: true }}>{getHostnameDisplay(host)}</span
-                >
-                <span
-                    class="col-shares"
-                    class:is-fetching={isListingShares(host.id)}
-                    class:is-stale={needsRefreshIndicator(host)}>{getSharesDisplay(host)}</span
-                >
+                <span class="col-type">{typeLabel(row)}</span>
+                <span class="col-address" use:tooltip={{ text: row.address, overflowOnly: true }}>{row.address}</span>
                 <span
                     class="col-status"
-                    class:is-error={isStatusError(host)}
-                    class:needs-login={!isStatusError(host) && getShareState(host.id)?.status === 'error'}
-                    use:tooltip={getStatusTooltip(host)}
+                    class:needs-you={row.status === 'signed_out' || row.status === 'waiting_for_key'}
+                    class:is-live={row.status === 'connected'}
+                    use:tooltip={row.host ? getStatusTooltip(row.host) : ''}
                 >
-                    {#if statusIcon}<Icon name={statusIcon} size={13} aria-hidden="true" />{/if}
-                    <span class="status-text">{tString(STATUS_TEXT_KEY[hostStatus.kind])}</span>
-                    {#if hostStatus.stale}<Icon name="rotate-cw" size={12} aria-hidden="true" />{/if}
-                    {#if hostStatus.hasInfo}<Icon name="info" size={12} aria-hidden="true" />{/if}
+                    {tString(STATUS_TEXT_KEY[row.status])}
+                </span>
+                <span class="col-last-used">
+                    {#if lastUsedSeconds(row) === null}
+                        <span class="never-used">{tString('servers.hub.neverUsed')}</span>
+                    {:else}
+                        <DateLabel modifiedAt={lastUsedSeconds(row)} />
+                    {/if}
                 </span>
             </div>
         {/each}
@@ -563,28 +620,42 @@
             </div>
         {/if}
 
-        <!-- "Connect to server..." pseudo-row, always at the bottom, keyboard navigable -->
+        {#if !discoveryEnabled}
+            <!--
+                Discovery off: the saved servers above are unaffected (SFTP and WebDAV
+                never needed the macOS Local Network permission), so this line replaces
+                the nearby hosts and nothing else.
+            -->
+            <div class="discovery-off">
+                <span>{tString('servers.hub.discoveryOff')}</span>
+                <LinkButton onclick={openDiscoverySetting}
+                    >{tString('servers.hub.discoveryOffLink')}</LinkButton
+                >
+            </div>
+        {/if}
+
+        <!-- "Add server…" pseudo-row, always at the bottom, keyboard navigable -->
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div
-            class="host-row connect-row"
-            class:is-under-cursor={isCursorOnConnectRow}
-            class:is-focused-and-under-cursor={isFocused && isCursorOnConnectRow}
+            class="server-row add-row"
+            class:is-under-cursor={isCursorOnAddRow}
+            class:is-focused-and-under-cursor={isFocused && isCursorOnAddRow}
             role="listitem"
-            onclick={handleConnectRowClick}
-            ondblclick={handleConnectRowDoubleClick}
+            onclick={handleAddRowClick}
+            ondblclick={() => onConnectToServer?.()}
             onkeydown={() => {}}
         >
-            <span class="col-name connect-label">
-                <span class="connect-icon">+</span>
-                <span>{tString('fileExplorer.network.browser.connectToServerRow')}</span>
+            <span class="col-name add-label">
+                <span class="add-icon">+</span>
+                <span>{tString('servers.hub.addServer')}</span>
             </span>
         </div>
 
-        {#if !isSearching && hosts.length === 0}
+        {#if !isSearching && rows.length === 0}
             <div class="empty-state">
                 <img class="empty-icon" src="/icons/network-no-hosts.svg" alt="" />
-                <div class="empty-title">{tString('fileExplorer.network.browser.noHostsTitle')}</div>
-                <div class="empty-message">{tString('fileExplorer.network.browser.noHostsMessage')}</div>
+                <div class="empty-title">{tString('servers.hub.emptyTitle')}</div>
+                <div class="empty-message">{tString('servers.hub.emptyMessage')}</div>
                 <Button variant="secondary" onclick={handleRefreshClick}
                     >{tString('fileExplorer.network.browser.refresh')}</Button
                 >
@@ -592,16 +663,16 @@
         {/if}
     </div>
 
-    {#if hosts.length > 0}
+    {#if rows.length > 0}
         <button
-            class="network-status-bar"
+            class="hub-status-bar"
             onclick={handleRefreshClick}
             aria-label={tString('fileExplorer.network.browser.refreshAriaLabel')}
         >
             <span class="status-text"
-                >{tString('fileExplorer.network.browser.hostCount', {
-                    count: hosts.length,
-                    countText: formatInteger(hosts.length),
+                >{tString('servers.hub.rowCount', {
+                    count: rows.length,
+                    countText: formatInteger(rows.length),
                 })}</span
             >
             <span class="refresh-hint"><Trans key="fileExplorer.network.browser.refreshHint" {snippets} /></span>
@@ -610,7 +681,7 @@
 </div>
 
 <style>
-    .network-browser {
+    .servers-hub {
         display: flex;
         flex-direction: column;
         height: 100%;
@@ -627,23 +698,23 @@
         color: var(--color-text-secondary);
     }
 
-    .host-list {
+    .row-list {
         flex: 1;
         overflow-y: auto;
     }
 
-    .host-row {
+    .server-row {
         display: flex;
         height: 20px;
         padding: var(--spacing-xxs) var(--spacing-sm);
         cursor: default;
     }
 
-    .host-row.is-under-cursor {
+    .server-row.is-under-cursor {
         background-color: var(--color-cursor-inactive);
     }
 
-    .host-row.is-focused-and-under-cursor {
+    .server-row.is-focused-and-under-cursor {
         background-color: var(--color-cursor-active);
     }
 
@@ -657,48 +728,62 @@
         white-space: nowrap;
     }
 
-    .col-ip,
-    .col-hostname {
-        flex: 1.5;
+    .col-type {
+        flex: 1;
+        color: var(--color-text-secondary);
+        white-space: nowrap;
+    }
+
+    .col-address {
+        flex: 2;
         color: var(--color-text-secondary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    .col-ip.is-fetching,
-    .col-hostname.is-fetching {
-        font-style: italic;
-        color: var(--color-text-tertiary);
-    }
-
-    .col-shares {
-        flex: 1;
-        color: var(--color-text-tertiary);
-        text-align: center;
-    }
-
     .col-status {
-        flex: 2.5;
+        flex: 2;
         display: flex;
         align-items: center;
-        justify-content: center;
         gap: var(--spacing-xxs);
+        color: var(--color-text-tertiary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .col-status.is-live {
+        color: var(--color-text-secondary);
+    }
+
+    .col-status.needs-you {
+        color: var(--color-warning);
+    }
+
+    .col-last-used {
+        flex: 1.5;
+        color: var(--color-text-tertiary);
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .never-used {
         color: var(--color-text-tertiary);
     }
 
-    .host-icon {
+    .row-icon {
         display: inline-flex;
         align-items: center;
         color: var(--color-text-secondary);
     }
 
-    .connect-row .connect-label {
+    .add-row .add-label {
         color: var(--color-text-tertiary);
         font-style: italic;
     }
 
-    .connect-icon {
+    .add-icon {
         font-style: normal;
         font-weight: 600;
         font-size: var(--font-size-md);
@@ -712,6 +797,14 @@
         padding: var(--spacing-md) var(--spacing-lg);
         color: var(--color-text-tertiary);
         font-style: italic;
+    }
+
+    .discovery-off {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-lg);
+        color: var(--color-text-tertiary);
     }
 
     .empty-state {
@@ -742,26 +835,7 @@
         text-align: center;
     }
 
-    .col-shares.is-fetching {
-        font-style: italic;
-        color: var(--color-text-tertiary);
-    }
-
-    .col-shares.is-stale {
-        color: var(--color-text-tertiary);
-    }
-
-    .col-status.is-error {
-        color: var(--color-error);
-        cursor: help;
-    }
-
-    .col-status.needs-login {
-        color: var(--color-warning);
-        cursor: help;
-    }
-
-    .network-status-bar {
+    .hub-status-bar {
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);

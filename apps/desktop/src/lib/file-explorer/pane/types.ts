@@ -1,6 +1,7 @@
 import type { FileEntry, FriendlyError, NetworkHost, ShareInfo } from '../types'
 import type { DragAutoScrollFrameResult, DragAutoScrollPointer } from '../drag/drag-auto-scroll'
 import type { Initiator } from '$lib/tauri-commands'
+import type { HubRow } from '../network/servers-hub-rows'
 
 /** Options for `startRename`. */
 export interface StartRenameOptions {
@@ -282,8 +283,16 @@ export interface BrowserAPI {
 /** Typed interface for ServersHub's exported methods (extends BrowserAPI with refresh). */
 export interface ServersHubAPI extends BrowserAPI {
   refresh(): void
-  /** Host under cursor; `null` when cursor sits on "Connect to server…" or list is empty. */
+  /** SMB host under the cursor; `null` on a one-place server or the "Add server…" row. */
   getHostUnderCursor(): NetworkHost | null
+  /**
+   * The whole row under the cursor; `null` on the "Add server…" row.
+   *
+   * ❗ How a command reaches what the user is looking at: the hub IS a pane, so
+   * "act on the focused pane's volume" would otherwise act on the synthetic hub
+   * row rather than the server the cursor is on.
+   */
+  getRowUnderCursor(): HubRow | null
 }
 
 /** Typed interface for PlacesBrowser. */
@@ -326,4 +335,8 @@ export interface NetworkMountViewAPI {
 }
 
 /** Cursor target inside the network browser stack, returned by NetworkMountView. */
-export type NetworkCursorEntry = { kind: 'host'; host: NetworkHost } | { kind: 'share'; share: ShareInfo }
+export type NetworkCursorEntry =
+  | { kind: 'host'; host: NetworkHost }
+  | { kind: 'share'; share: ShareInfo }
+  /** A one-place server in the hub: SFTP or WebDAV, which has no SMB host. */
+  | { kind: 'server'; row: HubRow }

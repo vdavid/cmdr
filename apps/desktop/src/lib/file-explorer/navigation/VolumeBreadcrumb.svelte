@@ -19,12 +19,8 @@
     import { connectDirectly } from '../network/direct-connect'
     import { addToast } from '$lib/ui/toast'
     import { getUsageBar, formatDiskSpaceShort } from '../disk-space-utils'
-    import {
-        getNetworkEnabled,
-        getUseAppIconsForDocuments,
-    } from '$lib/settings/reactive-settings.svelte'
+    import { getUseAppIconsForDocuments } from '$lib/settings/reactive-settings.svelte'
     import { formatByteSize } from '$lib/units'
-    import { openSettingsWindow } from '$lib/settings/settings-window'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getCachedIcon, iconCacheVersion, prefetchIcons } from '$lib/icon-cache'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
@@ -227,10 +223,8 @@
         return volumes.map((v) => (v.category === 'favorite' ? orderedFavs[fi++] : v))
     })
 
-    // Group volumes by category for display. The grouping helper renames the synthetic
-    // "Network" entry to "Network (disabled)" when networking is off; the click handler
-    // checks `getNetworkEnabled()` and routes to settings instead of navigating.
-    const groupedVolumes = $derived(groupByCategory(effectiveVolumes, { networkEnabled: getNetworkEnabled() }))
+    // Group volumes by category for display.
+    const groupedVolumes = $derived(groupByCategory(effectiveVolumes))
 
     // Flat list of all volumes for keyboard navigation
     const allVolumes = $derived(groupedVolumes.flatMap((g) => g.items))
@@ -293,14 +287,6 @@
 
     async function handleVolumeSelect(volume: VolumeInfo) {
         isOpen = false
-
-        // "Network (disabled)" entry → don't navigate, deep-link to the toggle in Settings
-        // so the user can flip it on. Identified by the synthetic id, not the label, so
-        // future label tweaks don't break this branch.
-        if (volume.id === 'network' && !getNetworkEnabled()) {
-            void openSettingsWindow('volume-breadcrumb', ['File systems', 'SMB/Network shares'])
-            return
-        }
 
         // Check if this is a favorite (shortcut) or an actual volume
         if (volume.category === 'favorite') {

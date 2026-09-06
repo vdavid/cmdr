@@ -472,59 +472,9 @@
     "description": "Help text under the connect-to-server field giving example addresses. The example values (mynas.local, the IP, smb://server/share) are literals; keep them as-is.",
     "screenshot": "connect-to-server.png"
   },
-  "fileExplorer.network.browser.colName": "Name",
-  "@fileExplorer.network.browser.colName": {
-    "description": "Column header in the network host list for the host''s display name. Tight column; keep it short.",
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.colIp": "IP address",
-  "@fileExplorer.network.browser.colIp": {
-    "description": "Column header in the network host list for the host''s IP address. Tight column; keep it short.",
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.colHostname": "Hostname",
-  "@fileExplorer.network.browser.colHostname": {
-    "description": "Column header in the network host list for the host''s network hostname. Tight column; keep it short.",
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.colShares": "Shares",
-  "@fileExplorer.network.browser.colShares": {
-    "description": "Column header in the network host list for how many shared folders the host offers. Tight column; keep it short.",
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.colStatus": "Status",
-  "@fileExplorer.network.browser.colStatus": {
-    "description": "Column header in the network host list for the host''s connection status. Tight column; keep it short.",
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.fetching": "fetching...",
-  "@fileExplorer.network.browser.fetching": {
-    "description": "Placeholder shown in the network host list''s IP or hostname cell while that value is still being resolved. Lowercase, matching the quiet inline style.",
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.unknown": "(unknown)",
-  "@fileExplorer.network.browser.unknown": {
-    "description": "Placeholder in the network host list''s Shares cell when the share count could not be determined. Shown in parentheses.",
-    "screenshot": "connect-to-server.png"
-  },
   "fileExplorer.network.browser.searching": "Searching...",
   "@fileExplorer.network.browser.searching": {
     "description": "Status shown while the app is still discovering network hosts (mDNS browsing in progress).",
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.connectToServerRow": "Connect to server...",
-  "@fileExplorer.network.browser.connectToServerRow": {
-    "description": "Label of the always-present last row in the network host list that opens the manual connect-to-server dialog. The trailing ellipsis signals a dialog follows.",
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.noHostsTitle": "No network hosts found",
-  "@fileExplorer.network.browser.noHostsTitle": {
-    "description": "Empty-state title in the network browser when no SMB hosts were discovered on the network.",
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.noHostsMessage": "Make sure you''re on a network with SMB-capable devices.",
-  "@fileExplorer.network.browser.noHostsMessage": {
-    "description": "Empty-state body in the network browser advising the user to check their network. \"SMB\" is the file-sharing protocol name; do not translate it.",
     "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.refresh": "Refresh",
@@ -542,15 +492,6 @@
     "description": "Hint in the network status bar telling the user how to refresh the host list. The empty <key></key> marks where a keyboard-shortcut chip (showing the refresh key, ⌘R unless the user rebinds it) is rendered inline; keep the tag in the sentence and reorder the surrounding words for natural grammar.",
     "placeholders": {
       "key": "marks where the keyboard-shortcut chip is inserted inline (the chip shows the refresh key combo, ⌘R by default); keep the tag, it carries no translatable text"
-    },
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.hostCount": "{count, plural, one {{countText} host} other {{countText} hosts}}",
-  "@fileExplorer.network.browser.hostCount": {
-    "description": "Status-bar count of discovered network hosts, e.g. \"3 hosts\".",
-    "placeholders": {
-      "countText": "the number of hosts, already formatted for display",
-      "count": "the same number of hosts (drives the singular/plural form)"
     },
     "screenshot": "connect-to-server.png"
   },
@@ -1979,10 +1920,6 @@
   "@fileExplorer.navigation.networkVolume": {
     "description": "Name of the row in the volume switcher that opens the servers hub: the list of every server the user has saved or Cmdr found nearby. Also the current volume''s name in the breadcrumb while the hub is open. The GROUP this row sits in is still called \"Network\" (fileExplorer.navigation.groupNetwork); this is one row inside it.",
     "screenshot": "pane-volume-chooser.png"
-  },
-  "fileExplorer.navigation.networkVolumeDisabled": "Network (disabled)",
-  "@fileExplorer.navigation.networkVolumeDisabled": {
-    "description": "Name of the virtual Network entry in the volume switcher when networking is turned off in Settings; clicking it opens Settings instead of browsing. The \"(disabled)\" note tells the user why it won''t open."
   },
   "fileExplorer.navigation.searchResultsVolume": "Search results",
   "@fileExplorer.navigation.searchResultsVolume": {

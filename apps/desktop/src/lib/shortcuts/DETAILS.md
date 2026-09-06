@@ -230,9 +230,9 @@ central dispatch), but it means a sloppy local match silently shadows or doubles
 that only prevents the default still lets central dispatch run the very same command a moment later. When both ends land
 in the same place, the work happens TWICE and nothing looks wrong: `ServersHub`'s ⌘R ran `clearShareState` +
 `fetchShares` for every host, then `pane.refresh` dispatched into `refreshPane` → `refreshNetworkHosts()` →
-`ServersHub.refresh()`, which is that same handler's body again. ❌ Don't reach for a "did you handle it?" return
-value instead: `pane-key-router` hands the network and search views every key and returns either way, so a boolean has
-nobody to tell. `preventDefault` + `stopPropagation` IS the claim.
+`ServersHub.refresh()`, which is that same handler's body again. ❌ Don't reach for a "did you handle it?" return value
+instead: `pane-key-router` hands the network and search views every key and returns either way, so a boolean has nobody
+to tell. `preventDefault` + `stopPropagation` IS the claim.
 
 So local handlers don't test raw key flags; they ask the registry:
 
@@ -260,7 +260,8 @@ So local handlers don't test raw key flags; they ask the registry:
 Callers today: `../file-explorer/pane/selection-keys.ts` (`Space` / `Insert` / `⌘A` / `⌘⇧A` / `⇧8` / `*`),
 `FilePane.handleOpenOrParentKey` (`nav.open` / `nav.parent` — and `⌘Backspace` falls through to `file.delete` for free,
 since it isn't `nav.parent`'s combo), `../file-explorer/pane/cursor-nav-keys.ts` (the ten cursor commands, as one gate
-in front of the per-view math), and `../file-explorer/network/PlacesBrowser.svelte` (`share.back` / `share.selectShare`).
+in front of the per-view math), and `../file-explorer/network/PlacesBrowser.svelte` (`share.back` /
+`share.selectShare`).
 
 Two file-list matchers stay hand-rolled ON PURPOSE, because they match a CLASS of keys rather than a combo:
 `../file-explorer/pane/type-to-jump-keys.ts` (any printable character) and

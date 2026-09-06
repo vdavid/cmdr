@@ -329,49 +329,9 @@
   "@fileExplorer.network.connectDialog.examples": {
     "sourceHash": "10794ec"
   },
-  "fileExplorer.network.browser.colName": "Tên",
-  "@fileExplorer.network.browser.colName": {
-    "sourceHash": "dcd1d52"
-  },
-  "fileExplorer.network.browser.colIp": "Địa chỉ IP",
-  "@fileExplorer.network.browser.colIp": {
-    "sourceHash": "0302a46"
-  },
-  "fileExplorer.network.browser.colHostname": "Tên máy chủ",
-  "@fileExplorer.network.browser.colHostname": {
-    "sourceHash": "2db5335"
-  },
-  "fileExplorer.network.browser.colShares": "Mục chia sẻ",
-  "@fileExplorer.network.browser.colShares": {
-    "sourceHash": "d4ea333"
-  },
-  "fileExplorer.network.browser.colStatus": "Trạng thái",
-  "@fileExplorer.network.browser.colStatus": {
-    "sourceHash": "920e413"
-  },
-  "fileExplorer.network.browser.fetching": "đang lấy...",
-  "@fileExplorer.network.browser.fetching": {
-    "sourceHash": "9e6ab8c"
-  },
-  "fileExplorer.network.browser.unknown": "(không rõ)",
-  "@fileExplorer.network.browser.unknown": {
-    "sourceHash": "8fe7794"
-  },
   "fileExplorer.network.browser.searching": "Đang tìm kiếm...",
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "78c9d9f"
-  },
-  "fileExplorer.network.browser.connectToServerRow": "Kết nối với máy chủ...",
-  "@fileExplorer.network.browser.connectToServerRow": {
-    "sourceHash": "1bf4858"
-  },
-  "fileExplorer.network.browser.noHostsTitle": "Không tìm thấy máy chủ nào trên mạng",
-  "@fileExplorer.network.browser.noHostsTitle": {
-    "sourceHash": "e8dfaf2"
-  },
-  "fileExplorer.network.browser.noHostsMessage": "Hãy chắc chắn bạn đang ở trong mạng có các thiết bị hỗ trợ SMB.",
-  "@fileExplorer.network.browser.noHostsMessage": {
-    "sourceHash": "b1cb7ba"
   },
   "fileExplorer.network.browser.refresh": "Làm mới",
   "@fileExplorer.network.browser.refresh": {
@@ -384,10 +344,6 @@
   "fileExplorer.network.browser.refreshHint": "Nhấn <key></key> hoặc bấm vào đây để làm mới",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
-  },
-  "fileExplorer.network.browser.hostCount": "{count, plural, other {{countText} máy chủ}}",
-  "@fileExplorer.network.browser.hostCount": {
-    "sourceHash": "41843ee"
   },
   "fileExplorer.network.browser.status.resolving": "Đang phân giải...",
   "@fileExplorer.network.browser.status.resolving": {
@@ -1331,10 +1287,6 @@
   "fileExplorer.navigation.networkVolume": "Mạng",
   "@fileExplorer.navigation.networkVolume": {
     "sourceHash": "1744b96"
-  },
-  "fileExplorer.navigation.networkVolumeDisabled": "Mạng (đã tắt)",
-  "@fileExplorer.navigation.networkVolumeDisabled": {
-    "sourceHash": "4ccfa47"
   },
   "fileExplorer.navigation.searchResultsVolume": "Kết quả tìm kiếm",
   "@fileExplorer.navigation.searchResultsVolume": {
