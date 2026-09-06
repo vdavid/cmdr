@@ -15,7 +15,7 @@
  * files the same machine under its Bonjour name.
  */
 
-import type { SavedServer } from '$lib/tauri-commands'
+import type { SavedPlace, SavedServer } from '$lib/tauri-commands'
 import type { ConnectionState, NetworkHost, VolumeInfo } from '../types'
 
 /** What the Status column says about a row. */
@@ -118,7 +118,9 @@ function matchHost(server: SavedServer, hosts: NetworkHost[]): NetworkHost | nul
 }
 
 function savedRow(server: SavedServer, host: NetworkHost | null, states: Map<string, ConnectionState | null>): HubRow {
-  const place = server.places[0] ?? null
+  // ❗ Length-checked, not `[0] ?? null`: an SMB server carries no places at
+  // all, and the index signature would otherwise type the gap away.
+  const place: SavedPlace | null = server.places.length > 0 ? server.places[0] : null
   return {
     id: server.id,
     name: server.displayName,

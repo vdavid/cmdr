@@ -172,10 +172,9 @@ describe('runServerRowAction', () => {
     expect(setPlacePinned).toHaveBeenLastCalledWith('sftp-nas-local-22-ada', false)
     // ❗ The unpin toast has to say the server survives: nothing was deleted, and
     // a person who reads "removed" will re-add a server they still have.
-    expect(addToast).toHaveBeenLastCalledWith(
-      "Naspolya is out of your volume switcher. It's still saved.",
-      { level: 'success' },
-    )
+    expect(addToast).toHaveBeenLastCalledWith("Naspolya is out of your volume switcher. It's still saved.", {
+      level: 'success',
+    })
   })
 
   it('asks nothing before moving a pin, unlike the two Forgets', async () => {
