@@ -9,8 +9,13 @@
  * truth the copy/move size guard reads; keep the two in sync.
  *
  * Only REAL local filesystems get a label: disk images, cloud drives,
- * favorites, network locations, mobile (MTP) devices, and OS-mounted SMB shares
- * (whose backing filesystem we can't see) return `null` and show nothing.
+ * favorites, mobile (MTP) devices, and OS-mounted SMB shares (whose backing
+ * filesystem we can't see) return `null` and show nothing.
+ *
+ * A NETWORK row answers with the PROTOCOL it speaks instead ("SFTP", "WebDAV",
+ * "SMB"): the slot's question is "what am I talking to", and for a place with no
+ * local mount the protocol is the only honest answer. Protocol names are proper
+ * nouns too, so they live here beside the filesystem ones.
  */
 import type { VolumeInfo } from '../types'
 
@@ -44,6 +49,18 @@ const FS_LABELS: Record<string, string> = {
   fat16: 'FAT16',
 }
 
+/**
+ * `fsType` → protocol name, for a row in the Network group. The two SMB
+ * spellings are the OS's (macOS `smbfs`, Linux `cifs`); `sftp` and `webdav` are
+ * what the servers listing arm publishes (`src-tauri/src/server_volumes.rs`).
+ */
+const PROTOCOL_LABELS: Record<string, string> = {
+  sftp: 'SFTP',
+  webdav: 'WebDAV',
+  smbfs: 'SMB',
+  cifs: 'SMB',
+}
+
 /** Whether a volume represents a real local filesystem worth labeling. */
 function isRealFilesystemVolume(volume: VolumeInfo): boolean {
   if (volume.isDiskImage) return false
@@ -55,8 +72,9 @@ function isRealFilesystemVolume(volume: VolumeInfo): boolean {
  * meaningful to show (not a real local filesystem, or an unrecognized type).
  */
 export function filesystemLabel(volume: VolumeInfo): string | null {
-  if (!isRealFilesystemVolume(volume)) return null
   const raw = volume.fsType?.toLowerCase()
   if (!raw) return null
+  if (volume.category === 'network') return PROTOCOL_LABELS[raw] ?? null
+  if (!isRealFilesystemVolume(volume)) return null
   return FS_LABELS[raw] ?? null
 }

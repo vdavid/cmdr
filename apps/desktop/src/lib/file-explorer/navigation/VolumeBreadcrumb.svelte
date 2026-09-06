@@ -35,10 +35,11 @@
     import type { VolumeChangePayload } from '../pane/types'
     import { filesystemLabel } from './filesystem-label'
     import { isVolumeEjectable } from './eject-predicate'
+    import { showsDisconnect } from './connection-state'
+    import { disconnectServerPlace, isServerPlaceRow, openServerRowMenu } from './server-row-actions'
     import { wordEjectRefusal } from './eject-error-messages'
     import { buildFavoriteTooltip } from './favorite-tooltip'
     import { tString } from '$lib/intl/messages.svelte'
-
     const favoriteTooltip = (volume: VolumeInfo): string => buildFavoriteTooltip(volume.path, isMacOS())
 
     /** "USB 3.2 Gen 1 (Max. 625 MB/s)" - shared between the chip tooltip and the dropdown subline. */
@@ -62,6 +63,8 @@
 
     /** Tooltip shown on a disabled Eject control while a transfer touches the volume. */
     const EJECT_BUSY_TOOLTIP = $derived(tString('fileExplorer.navigation.ejectBusyTooltip'))
+    /** Its Disconnect twin: same guard, a server's words for it. */
+    const DISCONNECT_BUSY_TOOLTIP = $derived(tString('fileExplorer.navigation.disconnectBusyTooltip'))
     import { groupByCategory, getIconForVolume } from './volume-grouping'
     import { deviceVolumeLabel } from '$lib/adb/adb-volume-label'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
@@ -596,6 +599,10 @@
         event.stopPropagation()
         const isFavorite = volume.category === 'favorite'
         const ejectable = isVolumeEjectable(volume)
+        if (isServerPlaceRow(volume)) {
+            void openServerRowMenu(volume)
+            return
+        }
         if (!isFavorite && !ejectable) return
         void showVolumeRowContextMenu(volume.id, volume.name, isFavorite, ejectable)
     }
@@ -638,6 +645,14 @@
                 level: 'error',
             })
         }
+    }
+
+    /** The row's Disconnect control. Guarded like Eject: never mid-transfer. */
+    function handleDisconnectClick(volume: VolumeInfo, event?: MouseEvent) {
+        event?.stopPropagation()
+        if (isVolumeBusy(volume.id)) return
+        breadcrumbPopup.close()
+        void disconnectServerPlace(volume.id, volume.name)
     }
 
     // ── Drive-index badge menu actions ───────────────────────────────────
@@ -845,6 +860,7 @@
                         class:is-under-cursor={shouldShowCheckmark(volume, containingVolumeId)}
                         class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex && !submenu.volumeId}
                         class:is-restricted={isRestricted(volume.path)}
+                        class:is-saved-place={volume.connectionState === 'saved'}
                         data-index={allVolumes.indexOf(volume)}
                         data-fav-id={isFavorite ? volume.id : undefined}
                         use:tooltip={isRestricted(volume.path)
@@ -946,7 +962,23 @@
                                 <ImageIndexDriveBadge volumeId={volume.id} volumeState={rowImageState} />
                             {/if}
                         {/if}
-                        {#if isVolumeEjectable(volume)}
+                        {#if isServerPlaceRow(volume) && showsDisconnect(volume.connectionState)}
+                            <!-- A server has nothing to unplug, so its slot says Disconnect
+                                 (D6). The place stays saved; only the session goes. -->
+                            {@const disconnectLabel = isVolumeBusy(volume.id)
+                                ? DISCONNECT_BUSY_TOOLTIP
+                                : tString('fileExplorer.navigation.disconnectPlaceAriaLabel', { name: volume.name })}
+                            <button
+                                type="button"
+                                class="eject-button"
+                                aria-label={disconnectLabel}
+                                disabled={isVolumeBusy(volume.id)}
+                                use:tooltip={disconnectLabel}
+                                onclick={(e: MouseEvent) => { handleDisconnectClick(volume, e) }}
+                            >
+                                <Icon name="unplug" size={14} aria-hidden="true" />
+                            </button>
+                        {:else if isVolumeEjectable(volume)}
                             <button
                                 type="button"
                                 class="eject-button"
@@ -1508,6 +1540,14 @@
         background-color: var(--color-warning);
     }
 
+    /* The session dropped and the backoff loop owns getting it back: grey
+       and filled, so it reads as "not right now" rather than as something
+       the user has to answer. */
+    /*noinspection CssUnusedSymbol*/
+    .smb-indicator-disconnected {
+        background-color: var(--color-text-tertiary);
+    }
+
     /* Waiting on the user, not on the network: the same amber as the
        OS-mount fallback, because both are "reachable, but not the way you
        asked for". */
@@ -1530,6 +1570,14 @@
         background-color: transparent;
         border: 1.5px solid var(--color-border-strong);
         opacity: 0.7;
+    }
+
+    /* A pinned place nobody has dialed. Dimmed, so the connected rows above
+       it read as the live ones; it is still fully clickable, and opening it
+       is what dials. ❌ Not `aria-disabled`: it is the opposite of disabled. */
+    .volume-item.is-saved-place .volume-label,
+    .volume-item.is-saved-place .volume-fs {
+        opacity: 0.6;
     }
 
     /* In the dropdown, push the indicator to the far right */

@@ -1,4 +1,5 @@
 import { tString } from '$lib/intl/messages.svelte'
+import type { MessageKey } from '$lib/intl/keys.gen'
 import type { ConnectionState, VolumeInfo } from '../types'
 
 /** Owns the keyboard-vs-mouse mode toggle for the dropdown. Mouse moves >5px exit
@@ -103,18 +104,26 @@ export function createBreadcrumbPopupController() {
   }
 }
 
-/** Tooltip text for the SMB connection indicator. */
 /**
- * The dot's tooltip. ❗ Two words for six states today: `direct` gets its own,
- * everything else falls to the OS-mount wording. The remaining states carry no
- * copy of their own yet, because a new English string owes ten translations and
- * M0 is a backend milestone — the servers-hub switcher milestone gives them one
- * each. Until then a `disconnected` share reads the way it always has.
+ * What the row's connection dot says on hover, one sentence per state.
+ *
+ * ❗ Exhaustive over `ConnectionState` by a `Record`, so a seventh state can't
+ * compile until someone writes its words. The dot is the only thing on a server
+ * row that says how live it is, and a state that quietly borrowed another's
+ * sentence is how "signed out" came to read as "using system connection".
  */
+const CONNECTION_TOOLTIP_KEYS: Record<ConnectionState, MessageKey> = {
+  direct: 'fileExplorer.navigation.connectionTooltipDirect',
+  os_mount: 'fileExplorer.navigation.connectionTooltipSystem',
+  disconnected: 'fileExplorer.navigation.connectionTooltipDisconnected',
+  needs_sign_in: 'fileExplorer.navigation.connectionTooltipNeedsSignIn',
+  needs_host_key_approval: 'fileExplorer.navigation.connectionTooltipNeedsHostKey',
+  saved: 'fileExplorer.navigation.connectionTooltipSaved',
+}
+
+/** The dot's tooltip for one connection state. */
 export function getConnectionTooltip(state: ConnectionState): string {
-  return state === 'direct'
-    ? tString('fileExplorer.navigation.connectionTooltipDirect')
-    : tString('fileExplorer.navigation.connectionTooltipSystem')
+  return tString(CONNECTION_TOOLTIP_KEYS[state])
 }
 
 /** Whether a volume should show the active checkmark.

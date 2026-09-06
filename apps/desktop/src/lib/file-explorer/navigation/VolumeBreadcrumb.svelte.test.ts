@@ -11,6 +11,19 @@ import { mount, tick, flushSync } from 'svelte'
 import VolumeBreadcrumb from './VolumeBreadcrumb.svelte'
 
 const reorderFavorites = vi.fn(() => Promise.resolve())
+const disconnectPlace = vi.fn(() => Promise.resolve(true))
+const showVolumeRowContextMenu = vi.fn(() => Promise.resolve())
+const hasServerSecret = vi.fn(() => Promise.resolve(true))
+const listSavedServers = vi.fn(() =>
+  Promise.resolve([{ id: 'sftp-nas-local-22-ada', places: [{ volumeId: 'sftp-nas-local-22-ada' }] }]),
+)
+
+/**
+ * The volume list the store mock answers with. Swappable so the server-row block
+ * can put a place in the switcher without shifting the favorite indices every
+ * other block here counts on.
+ */
+const stubs = vi.hoisted(() => ({ volumes: null as unknown[] | null }))
 
 // Captures the `volume-context-action` listener the component registers in `onMount`, so a
 // test can fire a native row-menu pick (Rename / Remove) the same way the backend would.
@@ -27,7 +40,12 @@ vi.mock('$lib/tauri-commands', () => ({
   renameFavorite: vi.fn(() => Promise.resolve()),
   reorderFavorites: (...args: unknown[]) => reorderFavorites(...(args as [])),
   stripFavoritePrefix: (id: string) => (id.startsWith('fav-') ? id.slice(4) : id),
-  showVolumeRowContextMenu: vi.fn(() => Promise.resolve()),
+  showVolumeRowContextMenu: (...args: unknown[]) => showVolumeRowContextMenu(...(args as [])),
+  disconnectPlace: (...args: unknown[]) => disconnectPlace(...(args as [])),
+  forgetServer: vi.fn(() => Promise.resolve(true)),
+  forgetServerSecret: vi.fn(() => Promise.resolve(true)),
+  hasServerSecret: (...args: unknown[]) => hasServerSecret(...(args as [])),
+  listSavedServers: () => listSavedServers(),
   onVolumeContextAction: (cb: (payload: { action: string; volumeId: string }) => void) => {
     volumeContextActionHandler = cb
     return Promise.resolve(() => {})
@@ -35,12 +53,13 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({
-  getVolumes: () => [
-    { id: 'fav-1', name: 'Documents', path: '/Users/test/Documents', category: 'favorite', isEjectable: false },
-    { id: 'fav-2', name: 'Downloads', path: '/Users/test/Downloads', category: 'favorite', isEjectable: false },
-    { id: 'fav-3', name: 'Projects', path: '/Users/test/Projects', category: 'favorite', isEjectable: false },
-    { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false },
-  ],
+  getVolumes: () =>
+    stubs.volumes ?? [
+      { id: 'fav-1', name: 'Documents', path: '/Users/test/Documents', category: 'favorite', isEjectable: false },
+      { id: 'fav-2', name: 'Downloads', path: '/Users/test/Downloads', category: 'favorite', isEjectable: false },
+      { id: 'fav-3', name: 'Projects', path: '/Users/test/Projects', category: 'favorite', isEjectable: false },
+      { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false },
+    ],
   getVolumesTimedOut: () => false,
   isVolumesRefreshing: () => false,
   isVolumeRetryFailed: () => false,
@@ -244,5 +263,99 @@ describe('VolumeBreadcrumb favorite-rename keyboard guard', () => {
     } finally {
       document.removeEventListener('keydown', docListener)
     }
+  })
+})
+
+/**
+ * The switcher's server rows: the dot that says how live the place is, and the
+ * Disconnect control that replaces Eject on one.
+ *
+ * ❗ The control's WORD is the point. "Eject" promises safe-to-unplug, which a
+ * server can't deliver, and `saved` is the row where a control would have no
+ * subject at all: nothing is open to close.
+ */
+describe('VolumeBreadcrumb server rows', () => {
+  function serverRow(overrides: Record<string, unknown>) {
+    return {
+      id: 'sftp-nas-local-22-ada',
+      name: 'Naspolya',
+      path: 'sftp://ada@nas.local:22/srv/data',
+      category: 'network',
+      fsType: 'sftp',
+      isEjectable: false,
+      ...overrides,
+    }
+  }
+
+  async function openWith(rows: unknown[]) {
+    stubs.volumes = rows
+    const { instance, target } = mountBreadcrumb()
+    instance.open()
+    await tick()
+    flushSync()
+    return target
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    stubs.volumes = null
+    disconnectPlace.mockClear()
+    showVolumeRowContextMenu.mockClear()
+  })
+
+  it('gives a live place a Disconnect control, and clicking it drops the session', async () => {
+    const target = await openWith([serverRow({ connectionState: 'direct' })])
+    const button = target.querySelector('.volume-item .eject-button') as HTMLButtonElement
+    expect(button).toBeTruthy()
+    expect(button.getAttribute('aria-label')).toBe('Disconnect Naspolya')
+
+    button.click()
+    await tick()
+    expect(disconnectPlace).toHaveBeenCalledWith('sftp-nas-local-22-ada')
+  })
+
+  it('gives a dropped-but-registered place one too: there is still a session to close', async () => {
+    const target = await openWith([serverRow({ connectionState: 'disconnected' })])
+    const button = target.querySelector('.volume-item .eject-button') as HTMLButtonElement
+    expect(button.getAttribute('aria-label')).toBe('Disconnect Naspolya')
+  })
+
+  it('gives a saved place NO control: nothing is open to close', async () => {
+    const target = await openWith([serverRow({ connectionState: 'saved' })])
+    expect(target.querySelector('.volume-item .eject-button')).toBeNull()
+    // ❗ And it reads as saved rather than as a failure: greyed, hollow dot.
+    expect(target.querySelector('.volume-item.is-saved-place')).toBeTruthy()
+  })
+
+  // The dot's WORDS are pinned in `connection-tooltips.test.ts` (a pure call, no
+  // hover timer); what the row owes is a class per state, since the stylesheet
+  // paints each one differently and a missing rule renders an unpainted circle.
+  it('paints one dot class per connection state', async () => {
+    for (const state of ['direct', 'disconnected', 'needs_sign_in', 'needs_host_key_approval', 'saved'] as const) {
+      document.body.innerHTML = ''
+      const target = await openWith([serverRow({ connectionState: state })])
+      expect(target.querySelector(`.volume-item .smb-indicator-${state}`), `no dot for ${state}`).toBeTruthy()
+    }
+  })
+
+  it('shows the protocol in the filesystem slot, so a row says what it speaks', async () => {
+    const target = await openWith([serverRow({ connectionState: 'direct' })])
+    expect(target.querySelector('.volume-item .volume-fs')?.textContent).toBe('SFTP')
+  })
+
+  it('opens a server menu on right-click, with the row read as the caller sees it', async () => {
+    const target = await openWith([serverRow({ connectionState: 'direct' })])
+    // Row 0 is the hub ("Servers"); the place is the one after it.
+    const row = target.querySelectorAll('.volume-item')[1] as HTMLElement
+    row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
+    // Two store reads run before the popup: let both settle.
+    await vi.waitFor(() => {
+      expect(showVolumeRowContextMenu).toHaveBeenCalled()
+    })
+    expect(showVolumeRowContextMenu).toHaveBeenCalledWith('sftp-nas-local-22-ada', 'Naspolya', false, false, {
+      showsDisconnect: true,
+      isSaved: true,
+      hasSavedSecret: true,
+    })
   })
 })

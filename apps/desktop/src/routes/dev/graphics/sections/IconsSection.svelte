@@ -71,6 +71,7 @@
         'trash-2': 'Type marker for a delete or trash operation row in the operation queue window.',
         'triangle-alert':
             'Warning marker in the delete and transfer dialogs, the onboarding AI step, unreachable tabs, the Advanced and Keyboard-shortcuts settings banners, the MTP connection error, and the SMB login form.',
+        unplug: 'Disconnect control on a server row in the volume switcher, where a removable drive shows Eject.',
         x: 'Clear-field button in the go-to-path dialog, and the dismiss button on toasts.',
     }
 

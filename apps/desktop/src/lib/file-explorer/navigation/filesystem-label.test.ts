@@ -41,3 +41,23 @@ describe('filesystemLabel', () => {
     expect(filesystemLabel(vol({ fsType: undefined }))).toBeNull()
   })
 })
+
+describe('filesystemLabel: remote places', () => {
+  it('names the protocol for a server row, so the slot says what the row speaks', () => {
+    expect(filesystemLabel(vol({ category: 'network', fsType: 'sftp' }))).toBe('SFTP')
+    expect(filesystemLabel(vol({ category: 'network', fsType: 'webdav' }))).toBe('WebDAV')
+    expect(filesystemLabel(vol({ category: 'network', fsType: 'smbfs' }))).toBe('SMB')
+    expect(filesystemLabel(vol({ category: 'network', fsType: 'cifs' }))).toBe('SMB')
+  })
+
+  it('is case-insensitive there too, and stays quiet on an unknown protocol', () => {
+    expect(filesystemLabel(vol({ category: 'network', fsType: 'SFTP' }))).toBe('SFTP')
+    expect(filesystemLabel(vol({ category: 'network', fsType: 'gopher' }))).toBeNull()
+  })
+
+  it('leaves a local disk alone', () => {
+    // The protocol names are a NETWORK-row answer. A local disk that somehow
+    // reports `smbfs` is the SMB-mount case the local table already refuses.
+    expect(filesystemLabel(vol({ fsType: 'sftp' }))).toBeNull()
+  })
+})
