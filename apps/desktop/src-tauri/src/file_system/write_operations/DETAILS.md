@@ -795,6 +795,8 @@ a set number of milliseconds. Per-test rather than per-process, so one spec's wi
 
 ⚠️ **`source_removed` is a separate question from the outcome**, and it is the one the search-snapshot purge steers by (`apps/desktop/src/lib/search/snapshot-purge.ts`). A source skipped BECAUSE it vanished under the operation reports `Skipped` AND `source_removed: true`; a source that merely couldn't be stat'd reports `false`, because "we couldn't look" is not evidence a file is gone and a wrong `true` drops a row for a file the user can still open.
 
+⚠️ **Both move sweeps ANSWER it with an `lstat`, never by assuming the sweep took the item.** A directory move can leave the source standing two ways: a same-FS MERGE whose child hit a conflict, and a cross-FS sweep that deletes the tree around a skipped descendant (`delete_dir_preserving_skipped`). The skipped-source list only rules out a skipped TOP-LEVEL item, so it can't answer for either. One `lstat` per top-level item is nothing beside the move, and it is the only honest answer; the purge now drops every snapshot row UNDER a path this reports gone, so a wrong `true` on a directory costs a whole subtree of rows rather than one. Pinned by `move_op_tests.rs`'s `a_{same,cross}_fs_merge_that_*` cases.
+
 Where each non-`Done` outcome comes from — every one a place the engine already knew and used to say nothing:
 
 - **The binding's pre-flight** (§ above) reports `Skipped` per dropped source, for all four verbs.

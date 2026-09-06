@@ -338,13 +338,25 @@ describe('buildTransferPropsFromDroppedPaths', () => {
 
 describe('buildTransferPropsFromSnapshot (M8d source-side ops)', () => {
   it('returns null when no source paths are supplied', () => {
-    expect(buildTransferPropsFromSnapshot('copy', [], [], true, '/dest', 'vol-dest', 'name', 'ascending', 'root')).toBeNull()
+    expect(
+      buildTransferPropsFromSnapshot('copy', [], [], true, '/dest', 'vol-dest', 'name', 'ascending', 'root'),
+    ).toBeNull()
   })
 
   it('returns null when paths and flags lengths disagree', () => {
     // Defensive: would otherwise misreport file/folder counts.
     expect(
-      buildTransferPropsFromSnapshot('copy', ['/a/x', '/a/y'], [false], true, '/dest', 'vol-dest', 'name', 'ascending', 'root'),
+      buildTransferPropsFromSnapshot(
+        'copy',
+        ['/a/x', '/a/y'],
+        [false],
+        true,
+        '/dest',
+        'vol-dest',
+        'name',
+        'ascending',
+        'root',
+      ),
     ).toBeNull()
   })
 

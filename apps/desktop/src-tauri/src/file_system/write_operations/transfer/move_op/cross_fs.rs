@@ -37,7 +37,7 @@ use crate::file_system::write_operations::types::{
     CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
-use crate::file_system::write_operations::validation::validate_file_sizes_for_filesystem;
+use crate::file_system::write_operations::validation::{path_exists_or_is_symlink, validate_file_sizes_for_filesystem};
 
 /// Performs cross-filesystem move using atomic staging pattern.
 /// This ensures source files remain intact if the operation fails.
@@ -581,9 +581,14 @@ fn delete_sources_after_move(
             events.emit_source_item_done(WriteSourceItemDoneEvent {
                 operation_id: operation_id.to_string(),
                 source_path: source.display().to_string(),
-                // Phase 4 only reaches here for a source it just removed; a
-                // skipped one is reported above.
-                source_removed: true,
+                // Usually true (the sweep just removed it), but a directory
+                // whose DESCENDANT was skipped is deleted around that child, so
+                // the directory is still standing. `skipped_source_paths` only
+                // rules out a skipped TOP-LEVEL source, checked above. One
+                // `lstat` per top-level item, the same honest answer the same-FS
+                // sweep gives; the frontend's snapshot purge drops rows for
+                // everything under a path this reports gone.
+                source_removed: !path_exists_or_is_symlink(source),
                 outcome: SourceItemOutcome::Done,
             });
         }

@@ -1,10 +1,4 @@
-import {
-  createDirectory,
-  createFile,
-  getFileAt,
-  getFilesAtIndices,
-  type Initiator,
-} from '$lib/tauri-commands'
+import { createDirectory, createFile, getFileAt, getFilesAtIndices, type Initiator } from '$lib/tauri-commands'
 import { pluralize } from '$lib/utils/pluralize'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'

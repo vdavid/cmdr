@@ -274,6 +274,29 @@ describe('snapshot-store', () => {
       expect(getMutationTick()).toBe(tickBefore + 1)
     })
 
+    it('takes the rows INSIDE a directory it removes, not just the directory row', () => {
+      // The stream carries one event per TOP-LEVEL source item. When that item is
+      // a directory and it is gone, every file under it is gone with it, so a row
+      // naming one of those files is stale the moment the directory row goes. A
+      // search that matched a folder and its contents is the ordinary way to end
+      // up holding both.
+      const dir: SearchResultEntry = {
+        ...makeEntry('reports'),
+        path: '/Users/test/reports',
+        isDirectory: true,
+      }
+      const inside: SearchResultEntry = { ...makeEntry('q1.pdf'), path: '/Users/test/reports/q1.pdf' }
+      const deeper: SearchResultEntry = { ...makeEntry('jan.pdf'), path: '/Users/test/reports/2026/jan.pdf' }
+      const sibling: SearchResultEntry = { ...makeEntry('reports-old.pdf'), path: '/Users/test/reports-old.pdf' }
+      getOrCreate('sr-1', makeSnapshot('sr-1', { entries: [dir, inside, deeper, sibling], totalCount: 4 }))
+
+      expect(removeEntryFromAllSnapshots('/Users/test/reports')).toEqual(['sr-1'])
+
+      // The sibling shares the directory's NAME PREFIX but is not inside it, so
+      // the boundary is the separator, never a bare `startsWith`.
+      expect(getSnapshot('sr-1')?.entries.map((e) => e.path)).toEqual(['/Users/test/reports-old.pdf'])
+    })
+
     it('is a no-op when no snapshot contains the path and leaves the mutation tick untouched', () => {
       getOrCreate('sr-1', makeSnapshot('sr-1'))
       const tickBefore = getMutationTick()

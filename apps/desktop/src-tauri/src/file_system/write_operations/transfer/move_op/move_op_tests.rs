@@ -507,6 +507,45 @@ fn a_cross_fs_move_that_skipped_the_item_never_reports_it_removed() {
     );
 }
 
+#[test]
+fn a_cross_fs_merge_that_preserved_a_skipped_child_reports_the_source_still_there() {
+    // The source sweep deletes the tree while stepping AROUND every skipped
+    // descendant (`delete_dir_preserving_skipped`), so the directory survives
+    // holding that child. Reporting it removed makes the snapshot purge drop
+    // rows for files the user can still open, which is the one thing the flag
+    // exists to prevent. The same-FS sweep already answers this with an lstat.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_root = tmp.path().join("src");
+    let dst_root = tmp.path().join("dst");
+    fs::create_dir_all(&src_root).unwrap();
+    fs::create_dir_all(&dst_root).unwrap();
+
+    let src_dir = src_root.join("d");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::write(src_dir.join("moved.bin"), b"new child").unwrap();
+    fs::write(src_dir.join("collide.bin"), b"AAAA").unwrap();
+    let dst_dir = dst_root.join("d");
+    fs::create_dir_all(&dst_dir).unwrap();
+    fs::write(dst_dir.join("collide.bin"), b"BBBB").unwrap();
+
+    let events = run_cross_fs_move(
+        std::slice::from_ref(&src_dir),
+        &dst_root,
+        ConflictResolution::Skip,
+        "cross-fs-merge-skip",
+    )
+    .expect("the move must succeed");
+
+    assert!(
+        src_dir.join("collide.bin").exists(),
+        "precondition: the skipped child is preserved on disk"
+    );
+    assert!(
+        !removal_flags_for(&events, &src_dir).contains(&true),
+        "the source dir still holds a preserved child, so it is not gone"
+    );
+}
+
 /// A cross-filesystem move stages every source before it renames any of them, so
 /// staging succeeding says nothing about where the item ended up. Before this,
 /// a source the rename phase skipped kept `Done` from staging as its only word,

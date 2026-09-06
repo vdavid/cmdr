@@ -197,7 +197,7 @@ describe('createSnapshotSelectionSync', () => {
     expect(pane.selection.getSelectedIndices()).toEqual([1])
   })
 
-  it('leaves a PARTIAL delete\'s survivors selected, unlike a normal pane, which clears outright', () => {
+  it("leaves a PARTIAL delete's survivors selected, unlike a normal pane, which clears outright", () => {
     // Decision, not an oversight. A normal pane's `clearSourcePaneAfterTransfer`
     // clears indices that stopped describing anything; here the remap has already
     // dropped every row the operation took, so what is left is exactly the rows

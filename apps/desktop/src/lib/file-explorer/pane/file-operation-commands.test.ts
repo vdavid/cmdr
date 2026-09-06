@@ -10,7 +10,9 @@ vi.mock('$lib/tauri-commands', async () => {
   return { DEFAULT_VOLUME_ID: 'root', getFileAt: spies.getFileAt, getFilesAtIndices: spies.getFilesAtIndices }
 })
 
-vi.mock('$lib/ui/toast', async () => ({ addToast: (await import('./file-operation-commands.test-harness')).spies.addToast }))
+vi.mock('$lib/ui/toast', async () => ({
+  addToast: (await import('./file-operation-commands.test-harness')).spies.addToast,
+}))
 
 vi.mock('$lib/search/snapshot-store.svelte', async () => {
   const { spies, resolveSnapshotEntriesStub } = await import('./file-operation-commands.test-harness')

@@ -669,10 +669,10 @@ array instead, `snapshot-selection-sync.svelte.ts` above. Two consequences, both
 
 - **A PARTIAL delete leaves the survivors selected**, where a normal pane clears the selection outright. What the rows
   mean differs: `clearSourcePaneAfterTransfer` clears indices that no longer describe anything, while the remap has
-  already dropped every row the operation took, so what is left is exactly the rows the user picked that are still
-  there — a permission-denied one, say. Leaving them selected is a retry, and it can't act on a file nobody chose.
-  ❌ Don't "fix" the divergence by threading the pane's own path into birth context: that trades a useful state for a
-  matching one. Pinned in `snapshot-selection-sync.svelte.test.ts`.
+  already dropped every row the operation took, so what is left is exactly the rows the user picked that are still there
+  (a permission-denied one, say). Leaving them selected is a retry, and it can't act on a file nobody chose. ❌ Don't
+  "fix" the divergence by threading the pane's own path into birth context: that trades a useful state for a matching
+  one. Pinned in `snapshot-selection-sync.svelte.test.ts`.
 - **No operation snapshot is recorded at all.** `entries-snapshot::fetchSelectedNames` returns early when the pane has
   no listing id, ahead of its `'all'` short-circuit, so there is nothing for the never-running
   `clearOperationSnapshot()` to leave behind.

@@ -222,11 +222,19 @@ export function getRefCount(id: string): number {
 }
 
 /**
- * Removes the entry with the given `path` from every stored snapshot. Called
- * after a successful delete from a search-results pane so the row disappears
- * from this snapshot AND from any other snapshot that happened to contain the
- * same file. Returns the list of snapshot ids that were mutated (useful for
- * tests and debugging; production callers can ignore it).
+ * Removes `path` AND everything under it from every stored snapshot. Called with
+ * each vanished top-level source path off the write stream, so a row disappears
+ * from the snapshot the operation ran in and from every other snapshot that
+ * happened to hold the same file. Returns the ids that changed (useful for tests
+ * and debugging; production callers can ignore it).
+ *
+ * **Descendants go too, and the boundary is the separator.** One event covers one
+ * TOP-LEVEL item; when that item is a directory and it is gone, every file under
+ * it went with it, and a snapshot holding both a folder and its contents is the
+ * ordinary outcome of a search that matched both. `/a/reports-old.pdf` shares the
+ * name prefix of `/a/reports` without being inside it, so a bare `startsWith`
+ * would take a file that still exists. A plain file has no descendants, so the
+ * extra clause costs it nothing.
  *
  * The `entries` array on each affected snapshot is replaced with a fresh
  * filtered array so reactive consumers (Svelte `$derived` over
@@ -234,15 +242,13 @@ export function getRefCount(id: string): number {
  * it still reports what the backend originally found; mismatch between
  * `entries.length` and `totalCount` is the existing "truncated-to-cap"
  * signal, so reusing it here is consistent.
- *
- * Per plan §3.7: "delete from search-results pane: confirms with the real
- * path. On success, the row is removed from this snapshot AND from any
- * other snapshot it appears in."
  */
 export function removeEntryFromAllSnapshots(path: string): string[] {
+  const insidePrefix = `${path}/`
+  const survives = (candidate: string): boolean => candidate !== path && !candidate.startsWith(insidePrefix)
   const mutatedIds: string[] = []
   for (const [id, entry] of store.entries()) {
-    const filtered = entry.entries.filter((e) => e.path !== path)
+    const filtered = entry.entries.filter((e) => survives(e.path))
     if (filtered.length !== entry.entries.length) {
       // Replaced, not written into, for the reason on `mutationTick`.
       store.set(id, { ...entry, entries: filtered })

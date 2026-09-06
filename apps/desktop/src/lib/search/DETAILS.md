@@ -630,14 +630,18 @@ strings to every webview. **Why not `directory-diff`**, which also reports vanis
 listing, and a delete from a search-results pane targets a real file whose parent folder is usually open in no pane at
 all, so the flow this feature exists for would purge nothing.
 
-The purge is per top-level source path, so a snapshot row for a file INSIDE a moved directory outlives its file. That
-was true of the old shape too; the honest fix is a prefix sweep, and it needs care around a directory merge whose
-children were partly skipped.
+**A path it removes takes everything under it.** One event covers one top-level item, so when that item is a directory
+and it is gone, every file beneath it went with it, and a search that matched a folder and its contents is the ordinary
+way to be holding both rows. The boundary is the separator, never a bare `startsWith`: `/a/reports-old.pdf` shares the
+name prefix of `/a/reports` without being inside it. This leans entirely on `source_removed` being honest about a
+directory, which is why both move sweeps answer it with an `lstat` rather than assuming they took the item: a same-FS
+merge and a cross-FS sweep around a skipped descendant both leave the source standing
+(`src-tauri/src/file_system/write_operations/DETAILS.md` § "Per-source outcomes").
 
 `removeEntryFromAllSnapshots(path)` is the store-side half:
 
-1. Walks every stored snapshot and replaces its `entries` array with one that excludes the deleted path (preserves
-   reference identity on the unchanged entries; only the array changes).
+1. Walks every stored snapshot and replaces its `entries` array with one that excludes the deleted path and everything
+   under it (preserves reference identity on the unchanged entries; only the array changes).
 2. Bumps a module-level `mutationTick` `$state` whenever at least one snapshot was mutated.
 3. Leaves `totalCount` alone — the existing `entries.length` vs `totalCount` mismatch is the truncation signal.
 
@@ -675,14 +679,14 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
   (`go-to-trash::goToTrashedItems`) need a real directory.
 - **Which volume the op runs against** comes from `file-explorer/pane/snapshot-source-volume.ts`, shared by the delete
   and transfer openers. ❌ Never assume `root`: a search covers exactly one volume and any volume with a persisted
-  `index-{volume_id}.db` is searchable, including an SMB share and an MTP storage
-  (`src-tauri/src/search/volumes.rs`). `sourceVolumeId` picks the delete and copy/move dispatch paths
-  (`file-operations/transfer/transfer-dispatch.ts`), and `supportsTrash` decides whether the dialog offers the trash at
-  all, so both are read off the resolved volume the way a normal pane reads them off its own. Resolution is the
-  frontend half of `transfer-entry::resolveSourceVolumeId` (longest-prefix per path, favorites excluded, unanimity
-  required, else `root`); it stays synchronous because these paths came out of one volume's index, so the volume list
-  settles it without a backend round-trip. `supportsTrash` is optimistic on a miss, since a `false` would force the
-  dialog into a PERMANENT delete and a resolution miss must never do that.
+  `index-{volume_id}.db` is searchable, including an SMB share and an MTP storage (`src-tauri/src/search/volumes.rs`).
+  `sourceVolumeId` picks the delete and copy/move dispatch paths (`file-operations/transfer/transfer-dispatch.ts`), and
+  `supportsTrash` decides whether the dialog offers the trash at all, so both are read off the resolved volume the way a
+  normal pane reads them off its own. Resolution is the frontend half of `transfer-entry::resolveSourceVolumeId`
+  (longest-prefix per path, favorites excluded, unanimity required, else `root`); it stays synchronous because these
+  paths came out of one volume's index, so the volume list settles it without a backend round-trip. `supportsTrash` is
+  optimistic on a miss, since a `false` would force the dialog into a PERMANENT delete and a resolution miss must never
+  do that.
 - **No operation snapshot is taken**, because `entries-snapshot::fetchSelectedNames` returns early on a pane with no
   listing id. The name snapshot exists to feed listing-diff-driven selection adjustment, which doesn't run here; the
   path-based remap below does that job instead. Before the guard, `getFileAt('')` rejected with "Listing not found"
