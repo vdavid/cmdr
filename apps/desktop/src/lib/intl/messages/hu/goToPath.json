@@ -38,5 +38,13 @@
   "goToPath.toast.pressToGoBack": "A visszalépéshez nyomd meg ezt: <chip></chip>.",
   "@goToPath.toast.pressToGoBack": {
     "sourceHash": "ee851b2"
+  },
+  "goToPath.dialog.opensServer": "Megnyitja ezt: {name}",
+  "@goToPath.dialog.opensServer": {
+    "sourceHash": "e3fb00e"
+  },
+  "goToPath.dialog.addsServer": "Hozzáad egy szervert",
+  "@goToPath.dialog.addsServer": {
+    "sourceHash": "8e73f74"
   }
 }

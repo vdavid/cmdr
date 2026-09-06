@@ -2026,3 +2026,81 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   `confirmed`。
 - **ICU** · 28 个值都不含撇号，没有转义问题。`servers.hub.rowCount` 只写 `other` 一支（中文 CLDR 只有
   `other`）。没有一个值与英文相同，不需要 `sameAsSourceJustification`。
+
+## 添加服务器的模态表单、SSH 主机密钥确认、前往路径的预览行（`servers.sheet.*`、`servers.hostKey.*`、`servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`、`goToPath.dialog.opensServer`/`.addsServer`、`commands.serversConnect.label`，2026-09-07）
+
+服务器中心里「添加服务器…」打开的那张表单（协议 SMB / SFTP / WebDAV、地址、账户、`高级`
+折叠区），第一次连 SSH 服务器时核对主机密钥的那一步，以及「前往路径」输入框下面的两行预览。
+
+参考堆（`_ignored/i18n/zh-CN/`）在这台机器上仍然不存在（`~/projects-git/vdavid/cmdr/_ignored/`
+整个目录都没有，不是 worktree 陷阱），改用指南许可的实时 macOS 包取词：`plutil` 读 `.loctable` 的 `zh_CN`
+分支，全部验证于 macOS 26.6.2 / 25G83，2026-09-07。
+
+- **Connect（按钮）→ `连接`；Connecting… → `正在连接…`** · NetAuthAgent `Localizable.loctable`（`CONNECT` → `连接`、
+  `CONNECTING_TO_GENERIC` → `正在连接…`，就是 Apple 自己的「连接服务器」对话框），目录里
+  `fileExplorer.network.connect`/`.connecting` 也是同一对词 · `confirmed`。
+- **Connect to server…（命令）→ `连接服务器…`** · NetAuthAgent `CONNECT_TO_SERVER` → `连接服务器` · `confirmed`。
+- **Save（按钮）→ `保存`** · AppKit `Document.loctable`（`Save` → `保存`、`Save…` → `保存…`、`Don't Save` → `不保存`）·
+  `confirmed`。⚠️ Apple 早年的 `存储` 已经不是现在的用词，别按旧印象写。
+- **Sign in to {name}（表单标题）→ `登录 {name}`，不加介词** · AppSSOKerberos `LAPOLICY_REASON`（`sign in to %@` →
+  `登录%@`）、CloudSharing（`sign in to your Apple Account` → `登录Apple账户`）·
+  `confirmed`。拉丁词/占位符两侧留空格是本目录的写法，Apple 自己不留。
+- **Signed out of {name} → `已从 {name} 退出登录`** · 沿用已定的 `Sign Out → 退出登录`；带宾语时用 `从…退出登录`，比
+  `退出 {name} 的登录` 顺 · `high`。
+- **Protocol（无障碍名）→ `协议`** · AddPrinter `IP.plugin` 的 IP 协议选择器无障碍描述（`Protocol` → `协议`）·
+  `confirmed`。⚠️ 别用 Finder 的 `种类`（Kind，文件种类）。
+- **SMB / SFTP / WebDAV（协议选项）→ 原样保留** · NetAuthAgent 把同族缩写都留拉丁（`SMB_PASSWORD` → `SMB密码`、
+  `WEBDAV_PASSWORD` → `WebDAV密码`、`AFP_PASSWORD` → `AFP密码`）· `confirmed`。三个键都带 `sameAsSourceJustification`。
+- **`nas.local`（地址框占位符）→ 原样保留** · `.local`
+  是 mDNS 后缀，翻了就不再是个能用的示例；目录里示例值一向留拉丁（`goToPath.dialog.inputPlaceholder` 的 `~/Documents`）·
+  `confirmed`。带 `sameAsSourceJustification`。
+- **hostname → `主机名`** · Automator `Variables.loctable`、Security `OID.loctable`、Terminal `ServiceBrowser`
+  （`host name` → `主机名`），目录里 `fileExplorer.network.browser.tooltip.resolving` 已经是它 · `confirmed`。
+- **Username → `用户名`；Password → `密码`；Name → `名称`；Address → `地址`；Advanced → `高级`；Cancel → `取消`**
+  ·与目录里同英文的键一字不差（`fileExplorer.network.login.username`/`.password`、`fileExplorer.columns.name`、
+  `servers.hub.colAddress`、`settings.section.advanced`）· `confirmed`。`i18n-terms` 会比这几组。
+- **passphrase → `密码短语`，所以 Key passphrase → `密钥密码短语`** ·
+  Apple 全系统统一（DiskManagement、DiskImages2、Security `SecErrorMessages` 与 `OID`、Certificate Assistant
+  `Enter Passphrase:` → `输入密码短语：`）· `confirmed`。写全是有原因的：这一栏解锁的是密钥文件，不是账户密码，`密码`
+  两个字会把两栏读混。
+- **Key file → `密钥文件`** · 与 `主机密钥` 同一个 `密钥`；`钥匙串访问` 把 `private key` 译作 `专用密钥`，但 UI 里
+  `密钥文件` 更直白 · `high`。
+- **Browse…（按钮）→ `浏览…`** · AppleAccountUI `PROFILE_BROWSE_PHOTO`（`Browse...` → `浏览…`）·
+  `confirmed`。省略号是 U+2026。
+- **Remember in Keychain → `记住到钥匙串`（沿用目录既有值）** · 与 `fileExplorer.network.login.rememberInKeychain`
+  一字不差，`i18n-terms` 会比 · `confirmed`。Apple 自己的说法是 `在我的钥匙串中记住此密码` （NetAuthAgent
+  `AuthDialog.loctable`），词根 `钥匙串` 一致。`servers.sheet.needsStoredSecret` 正文里引用这个复选框时用
+  `“记住到钥匙串”`，必须与复选框同字。
+- **Connect as guest → `以来宾身份连接`（沿用目录既有值）** · 与 `fileExplorer.network.login.connectAsGuest` 一字不差 ·
+  `high`。⚠️ 分歧待复审：macOS `zh_CN` 里 Guest 一律是 `客人`（NetAuthAgent `GUEST`、LoginUIKit
+  `GUEST_ACCOUNT_RECORD_NAME`、AppKit `NSUserGuest`），微软才用
+  `来宾`。真要按「macOS 优先」改，得两个键一起改，属于单独一趟收敛，别只改一边（`i18n-terms` 会立刻报新分歧）。
+- **Sign in with a username and password → `用用户名和密码登录`** · NetAuthAgent `GENERIC_MSG_NONAME`
+  （`Enter your user name and password.` → `输入你的用户名和密码。`）· `high`。它是 `以来宾身份连接`
+  的对照项，Apple对应的单选是 `注册用户`，但我们的英文是动词短语，所以照动词写。
+- **How to connect（无障碍名）→ `连接方式`** · NetAuthAgent 的同位控件叫
+  `连接身份：`（`CONNECT_AS`），我们这组选项问的是用不用账户，`连接方式` 更贴 · `high`。
+- **Remote folder → `远程文件夹`** · FinderKit `LocalizableMerged.loctable`（`Remote` → `远程`）· `confirmed`。
+- **Reconnect automatically → `自动重新连接`** · AppSSOKerberos `MainMenu.loctable`（`Reconnect` →
+  `重新连接`）、ClassroomKit（`Automatically` → `自动`），目录里 `fileExplorer.smbReconnect.*` 一直写 `重新连接` ·
+  `confirmed`。
+- **host key → `主机密钥`；fingerprint → `指纹`；Key fingerprint（标签）→ `密钥指纹`** · ActionKit
+  `Localizable.loctable` 的 OpenSSH 提示（`The host key's fingerprint is %@.` → `主机密钥的指纹为%@。`；
+  `The authenticity of host '%@' can't be established…` 同段）· `confirmed`。目录里
+  `servers.refusal.hostKeyUntrusted`、`servers.hub.status.waitingForKey` 已经是 `主机密钥`，标题和提示里都写全，只有
+  `connectionTooltipNeedsHostKey` 那种一句两提的地方才简称 `密钥`。
+- **Trust（动词）→ `信任`** · AMPDevices 的设备信任按钮（`Trust` → `信任`）、OpenDirectoryConfigUI（`Don't Trust` →
+  `不信任`）· `confirmed`。`Trust and connect` → `信任并连接`，`Trust the new key` → `信任新密钥`。
+- **“something is sitting between you and it” → `有东西夹在你和它之间`** · 英文刻意不说
+  `中间人攻击`（ActionKit 里 Apple 说的是 `中间人攻击`），中文照着英文的大白话走，别把术语补回去 · `high`。
+- **the server''s owner → `这台服务器的所有者`** · `Owner` → `所有者`（PhotoLibraryServices `OWNER`、Photos
+  `IPXSharedAlbumOwnerLabel`）· `high`。故意不写 `管理员`：那是目录里 `errors.listing.authRequiredEneedauth.suggestion`
+  给 `administrator` 留的词，家里的服务器说 `所有者` 更准。
+- **I''ve checked it（展开三角的标签）→ `我核对过了`** · 第一人称、用户在说话，配合状态列已定的 `等你核对主机密钥`
+  用同一个动词 `核对` · `high`。
+- **Cmdr stopped connecting to {name} → `Cmdr 已停止连接到 {name}`** · 与 `servers.paneState.connecting`
+  （`正在连接到 {name}…`）同一句式，读起来是同一件事的两个结局 · `high`。
+- **Opens {name} / Adds a server（前往路径的预览行）→ `打开 {name}` / `添加一台服务器`**
+  ·第三人称描述回车会做什么；量词沿用服务器的 `台` · `high`。
+- **ICU** · 46 个值都不含撇号，没有转义问题；没有 plural 键。4 个值与英文相同（三个协议名 + `nas.local`），都写了
+  `sameAsSourceJustification`。

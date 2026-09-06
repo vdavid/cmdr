@@ -126,5 +126,181 @@
   "servers.refusal.hostKeyRevoked": "在這部 Mac 的 SSH 設定裡，{host} 的主機金鑰被標記為已遭洩漏。Cmdr 不會連線到它。",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "47aacda"
+  },
+  "servers.sheet.addTitle": "加入伺服器",
+  "@servers.sheet.addTitle": {
+    "sourceHash": "1099b2a"
+  },
+  "servers.sheet.signInTitle": "登入「{name}」",
+  "@servers.sheet.signInTitle": {
+    "sourceHash": "47e7f20"
+  },
+  "servers.sheet.editTitle": "編輯「{name}」",
+  "@servers.sheet.editTitle": {
+    "sourceHash": "2313fe2"
+  },
+  "servers.sheet.connect": "連線",
+  "@servers.sheet.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "servers.sheet.signIn": "登入",
+  "@servers.sheet.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "servers.sheet.save": "儲存",
+  "@servers.sheet.save": {
+    "sourceHash": "1509f56"
+  },
+  "servers.sheet.cancel": "取消",
+  "@servers.sheet.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "servers.sheet.connecting": "正在連線…",
+  "@servers.sheet.connecting": {
+    "sourceHash": "72021eb"
+  },
+  "servers.sheet.protocolLegend": "通訊協定",
+  "@servers.sheet.protocolLegend": {
+    "sourceHash": "cf08833"
+  },
+  "servers.sheet.protocolSmb": "SMB",
+  "@servers.sheet.protocolSmb": {
+    "sourceHash": "f54ab2d",
+    "sameAsSourceJustification": "“SMB” is a protocol name kept verbatim in Traditional Chinese: it is on Cmdr's BRAND_WORDS list, and Apple's own zh-TW and zh-HK bundles write it Latin (NetAuthAgent `Localizable.loctable` `SMB_PASSWORD` = `SMB密碼`, macOS 26.6.2 build 25G83, verified 2026-09-07). The catalog already ships `SMB 伺服器` on the same reasoning."
+  },
+  "servers.sheet.protocolSftp": "SFTP",
+  "@servers.sheet.protocolSftp": {
+    "sourceHash": "b07c0f4",
+    "sameAsSourceJustification": "“SFTP” is a protocol name kept verbatim, the same call as its sibling `servers.sheet.protocolSmb`. Apple keeps SSH-family protocol names Latin in Traditional Chinese (`Localizable.loctable` `SSH Protocol 2` = `SSH通訊協定2`, macOS 26.6.2 build 25G83, verified 2026-09-07), and Traditional Chinese has no established rendering of the acronym."
+  },
+  "servers.sheet.protocolWebdav": "WebDAV",
+  "@servers.sheet.protocolWebdav": {
+    "sourceHash": "d92634e",
+    "sameAsSourceJustification": "“WebDAV” is a protocol name kept verbatim, the same call as its sibling `servers.sheet.protocolSmb`. Apple's zh-TW and zh-HK write it Latin (NetAuthAgent `Localizable.loctable` `WEBDAV_PASSWORD` = `WebDAV密碼`, macOS 26.6.2 build 25G83, verified 2026-09-07), and the catalog already ships it Latin in `servers.refusal.notAWebdavServer`."
+  },
+  "servers.sheet.address": "位址",
+  "@servers.sheet.address": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.sheet.addressPlaceholder": "nas.local",
+  "@servers.sheet.addressPlaceholder": {
+    "sourceHash": "5e0ec1d",
+    "sameAsSourceJustification": "“nas.local” is a sample hostname shown inside the address field, not prose. A hostname is Latin text the user would type verbatim, so a Traditional Chinese rendering would be a worse hint; Apple keeps example hosts Latin in its zh-TW bundles too (Finder `ConnectToWindow.strings` ships the field with a bare `伺服器位址` label and no localized sample). `.local` is the mDNS suffix and is not translatable."
+  },
+  "servers.sheet.addressHelp": "主機名稱、你複製來的位址，或一整行 ssh 指令都可以。Cmdr 會自己選通訊協定。",
+  "@servers.sheet.addressHelp": {
+    "sourceHash": "f91dc8a"
+  },
+  "servers.sheet.username": "使用者名稱",
+  "@servers.sheet.username": {
+    "sourceHash": "e3b89e9"
+  },
+  "servers.sheet.password": "密碼",
+  "@servers.sheet.password": {
+    "sourceHash": "e7cf3ef"
+  },
+  "servers.sheet.passphrase": "金鑰密語",
+  "@servers.sheet.passphrase": {
+    "sourceHash": "2510031"
+  },
+  "servers.sheet.remember": "記住在鑰匙圈中",
+  "@servers.sheet.remember": {
+    "sourceHash": "3fd7384"
+  },
+  "servers.sheet.connectionModeLegend": "連線方式",
+  "@servers.sheet.connectionModeLegend": {
+    "sourceHash": "2198ec8"
+  },
+  "servers.sheet.connectAsGuest": "以訪客身分連線",
+  "@servers.sheet.connectAsGuest": {
+    "sourceHash": "d3cee9e"
+  },
+  "servers.sheet.signInWithCredentials": "用使用者名稱和密碼登入",
+  "@servers.sheet.signInWithCredentials": {
+    "sourceHash": "d71eef0"
+  },
+  "servers.sheet.advanced": "進階",
+  "@servers.sheet.advanced": {
+    "sourceHash": "9f088db"
+  },
+  "servers.sheet.name": "名稱",
+  "@servers.sheet.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.remoteFolder": "遠端資料夾",
+  "@servers.sheet.remoteFolder": {
+    "sourceHash": "71525cd"
+  },
+  "servers.sheet.keyFile": "金鑰檔案",
+  "@servers.sheet.keyFile": {
+    "sourceHash": "33c7999"
+  },
+  "servers.sheet.browse": "瀏覽…",
+  "@servers.sheet.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "servers.sheet.useAgent": "使用 ssh-agent",
+  "@servers.sheet.useAgent": {
+    "sourceHash": "21f2e2c"
+  },
+  "servers.sheet.autoReconnect": "自動重新連線",
+  "@servers.sheet.autoReconnect": {
+    "sourceHash": "a56b579"
+  },
+  "servers.sheet.needsStoredSecret": "要自動重新連線，得先記住密碼。請開啟「記住在鑰匙圈中」，然後登入一次。",
+  "@servers.sheet.needsStoredSecret": {
+    "sourceHash": "32336f3"
+  },
+  "servers.sheet.tryNextcloudAddress": "試試 Nextcloud 位址",
+  "@servers.sheet.tryNextcloudAddress": {
+    "sourceHash": "1afdfc7"
+  },
+  "servers.hostKey.firstContactTitle": "第一次連線到 {host}",
+  "@servers.hostKey.firstContactTitle": {
+    "sourceHash": "6282d68"
+  },
+  "servers.hostKey.firstContactBody": "請把下面的指紋和伺服器擁有者給你的那組核對一下，然後再信任它。",
+  "@servers.hostKey.firstContactBody": {
+    "sourceHash": "befd6c3"
+  },
+  "servers.hostKey.changedTitle": "{host} 的主機金鑰變了",
+  "@servers.hostKey.changedTitle": {
+    "sourceHash": "dde14d6"
+  },
+  "servers.hostKey.changedBody": "這可能表示伺服器重新安裝過，也可能有東西夾在你和它中間。信任之前，請先和伺服器擁有者核對指紋。",
+  "@servers.hostKey.changedBody": {
+    "sourceHash": "34552a6"
+  },
+  "servers.hostKey.changedDisclosure": "我核對過了",
+  "@servers.hostKey.changedDisclosure": {
+    "sourceHash": "29d1f63"
+  },
+  "servers.hostKey.fingerprintLabel": "金鑰指紋",
+  "@servers.hostKey.fingerprintLabel": {
+    "sourceHash": "26f8639"
+  },
+  "servers.hostKey.trustAndConnect": "信任並連線",
+  "@servers.hostKey.trustAndConnect": {
+    "sourceHash": "0cce535"
+  },
+  "servers.hostKey.trustNewKey": "信任新的金鑰",
+  "@servers.hostKey.trustNewKey": {
+    "sourceHash": "772baac"
+  },
+  "servers.paneState.signedOut": "已從 {name} 登出",
+  "@servers.paneState.signedOut": {
+    "sourceHash": "b1d908f"
+  },
+  "servers.paneState.signIn": "登入…",
+  "@servers.paneState.signIn": {
+    "sourceHash": "a6a5723"
+  },
+  "servers.paneState.hostKeyChanged": "Cmdr 停止連線到 {name}",
+  "@servers.paneState.hostKeyChanged": {
+    "sourceHash": "ac65ece"
+  },
+  "servers.paneState.hostKeyChangedHint": "它的主機金鑰變了。這可能表示伺服器重新安裝過，也可能有東西夾在你和它中間。請先中斷連線，再重新開啟它來核對指紋。",
+  "@servers.paneState.hostKeyChangedHint": {
+    "sourceHash": "923de62"
   }
 }

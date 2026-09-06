@@ -2537,3 +2537,87 @@ en→hu párt kigyűjtve a `CoreServices`, `Frameworks`, `PrivateFrameworks`, `P
   Plurals) · `high`.
 - Nincs `sameAsSourceJustification` ebben a passzban: mind a 28 érték eltér az angoltól. Egyik érték sem tartalmaz
   aposztrófot, tehát ICU-kettőzés sem kellett.
+
+## A szerverlap, az SSH-kulcs jóváhagyása és a Go-to-path előnézete (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`, `goToPath.dialog.opensServer`/`.addsServer`, `commands.serversConnect.label`, 2026-09-07)
+
+46 kulcs: az „Add server” lap (SMB / SFTP / WebDAV), a benne élő SSH-hosztkulcs-jóváhagyás, a panelnézet két új
+állapota, plusz két Go-to-path előnézetsor és egy parancspaletta-parancs.
+
+**A források ebben a passzban**: a `_ignored/i18n/hu/` referenciakupac ezen a gépen nincs meg (ellenőrizve:
+`~/projects-git/vdavid/cmdr/_ignored/` maga sem létezik, tehát nem a worktree-csapdáról van szó), ezért a guide
+szentesített élő-macOS ága szerint közvetlenül a rendszer `.lproj` / `.loctable` fájljaiból bányásztunk (macOS 26.6.2,
+25G83, `plutil -convert json`, 254 185 en→hu pár a `CoreServices`, `Frameworks`, `PrivateFrameworks`, `PreferencePanes`,
+`ExtensionKit` és `/System/Applications` alól). Minden sor mellett a bundle és a kulcs neve.
+
+- **fingerprint (kulcs ujjlenyomata) → `ujjlenyomat`**; a `Key fingerprint` címke `A kulcs ujjlenyomata` · mac
+  (`ActionKit.framework/Localizable.loctable`: „A hoszt kulcsának ujjlenyomata %@”, `Security.framework/Certificate`
+  `Fingerprints` = „Ujjlenyomatok”) · `high`. A birtokos szerkezet Apple-mintájú, és a névelő azért marad benne, mert a
+  címke egy megjelenített ÉRTÉK fölött áll, nem beviteli mező mellett.
+- **trust (a kulcs jóváhagyásának GOMBJA) → `beállítás megbízhatóként`** · mac (`UsersGroups.appex` `Trust` = „Beállítás
+  megbízhatóként”, `SecurityInterface` `Always Trust` = „Mindig legyen megbízható”) · `high`. Innen a három összetartozó
+  sor: `Beállítás megbízhatóként és csatlakozás`, `Az új kulcs beállítása megbízhatóként`, és a prózazáró
+  `majd állítsd be megbízhatóként`. A szótár korábbi `megbízhatónak tekint` sora ÉRVÉNYBEN MARAD a kijelentő prózára
+  (`servers.refusal.hostKeyUntrusted` = „A Cmdr még nem tekinti megbízhatónak {host} kulcsát.”): a fogalmat mindkettőben
+  a `megbízható` melléknév viszi, csak az ige más a gombon és a tényközlésben. ❌ Nem `elfogad`.
+- **man in the middle („something is sitting between you and it”) → `valami beékelődött közéd és a szerver közé`** · mac
+  (`ActionKit`: „Ez utalhat egy közbeékelődéses támadásra”) · `high`. Az Apple `közbeékelődéses` tövét visszük, de a
+  mondat a miénk marad: tegező, és nem nevezi meg a támadást, ahogy az angol sem.
+- **owner (a szerver gazdája) → `tulajdonos`** · mac (FindMy `Owner` = „Tulajdonos”, CloudDocs „a megosztott mappa
+  tulajdonosa”) · `high`. `a szerver tulajdonosától kaptál`, `egyeztesd … a szerver tulajdonosával`.
+- **Connecting… → `Csatlakozás…`, a LAPON** · mac (Home `HUDropIn_Label_Connecting_State` = „Csatlakozás…”, 14 találat)
+  · `high`. ⚠️ **Tudatos kettősség, ne söpörd össze**: a PANEL nyitósora a szállított `servers.paneState.connecting` =
+  `Kapcsolódás ide: {name}…` (Finder `MN1`), a LAP főgombja viszont a `servers.sheet.connect` = `Csatlakozás` alakot
+  veszi fel, mert az angol `Connect` betű szerint azonos a szállított `fileExplorer.network.connect` kulccsal
+  (`desktop-i18n-term-consistency`), és ugyanaz a gomb írja át magát `Connecting…`-ra. Ha itt `Kapcsolódás…` állna, a
+  felhasználó a saját szeme előtt látná a gombot tövet váltani. A lap többi kapcsolódás-szava ezért végig `csatlakoz-`:
+  `Első csatlakozás ide: {host}`, `Csatlakozás vendégként`, `Beállítás megbízhatóként és csatlakozás`,
+  `Automatikus újracsatlakozás` (ez utóbbi a szállított `fileExplorer.smbReconnect.title` =
+  `Újracsatlakozás a szerverhez…` tövével is egyezik).
+- **Reconnect automatically → `Automatikus újracsatlakozás`** · mac (`DisplaysSettingsIntentsExtension`: „Az
+  »Automatikus újracsatlakozás bármely közeli Machez vagy iPadhez« beállítás…”) · `high`. Betű szerinti Apple-alak
+  ugyanerre a beállításnévre.
+- **Remember in Keychain → `Megjegyzés a kulcskarikában`** · mac (Music `Remember password` = „Jelszó megjegyzése”,
+  `IMDaemonCore` „Remember this password in my keychain” = „Jelszó megjegyzése a kulcskarikámon”, AE `Authentication`
+  „Add to keychain?” = „Hozzáadás a kulcskarikához?”) · `high`. Az Apple-sorok kiteszik a `jelszó` tárgyat, mi
+  **tudatosan nem**: a jelölőnégyzet SFTP-nél kulcsjelmondatot is elmenthet, és az angol is épp ezért általános. A
+  `kulcskarika` a tár jelentése, tehát kisbetűs és ragozódik (szótár § Terms); az APP neve marad `Kulcskarika-elérés`. A
+  `servers.sheet.needsStoredSecret` betű szerint ezt a címkét idézi: `a „Megjegyzés a kulcskarikában” beállítást`.
+- **Key passphrase → `Kulcsjelmondat`; Key file → `Kulcsfájl`** · mac (`Security.framework/OID` `Passphrase` =
+  „Jelmondat”, `SecErrorMessages` -25293 „user name or passphrase” = „felhasználónév vagy jelmondat”; az összetétel
+  mintája a `DiskManagement` „Disk Passphrase” = „lemezjelszó”) · `high`. A `jelmondat` az, ami elválasztja a fiók
+  `Jelszó`-jától, pont ahogy az angol `passphrase` a `password`-től. Mindkettő egybeírt összetétel, mert a lap többi
+  mezőcímkéje is puszta főnév (`Felhasználónév`, `Jelszó`, `Név`, `Cím`, `Távoli mappa`).
+- **Protocol → `Protokoll`** · mac (AirPort Utility `moMP`) · `high`. **Remote folder → `Távoli mappa`** · mac (Finder
+  `KIND_FORMATTER_29_1` `Remote` = „Távoli”, `Sharing.appex` „Remote Login” = „Távoli bejelentkezés”) · `high`.
+  **Browse… → `Böngészés…`** · mac (`AppleAccountUI` `PROFILE_BROWSE_PHOTO` „Browse...” = „Böngészés…”) · `high`. **Save
+  → `Mentés`** · mac (Finder `LocalizableMerged` `AL2`, 171 találat) · `high`. **Guest → `Vendég`** · mac
+  (`NetAuthAgent` `GUEST` — épp a szerverre kapcsolódás lapja) · `high`.
+- **Kényszerítve, mert az angol betű szerint azonos egy szállított kulcséval** (`desktop-i18n-term-consistency`):
+  `Connect` → `Csatlakozás` (`fileExplorer.network.connect`), `Sign in` → `Bejelentkezés`
+  (`fileExplorer.network.signIn`), `Username` → `Felhasználónév` (`fileExplorer.network.login.username`), `Password` →
+  `Jelszó` (`fileExplorer.network.login.password`), `Name` → `Név` (`fileExplorer.columns.name`), `Address` → `Cím`
+  (`servers.hub.colAddress`), `Cancel` → `Mégsem` (20 kulcs), `Advanced` → `Speciális` (`settings.section.advanced`),
+  `Connect to server…` → `Kapcsolódás szerverre…` (`settings.network.permissionIntroConnectLink`, egyben a Finder saját
+  menüparancsa). Mind egybevág a Tier-1 forrásokkal is.
+- **A helyőrző sehol nem kap toldalékot.** `Bejelentkezés ide: {name}` (mac `iCloud.app/CloudKit` `Sign In to %1$@` =
+  „Bejelentkezés: %1$@”, plusz a szállított `ide:` idióma), `Első csatlakozás ide: {host}`,
+  `Kijelentkezve innen: {name}`, `A Cmdr leállította a kapcsolódást ide: {name}`, `Megnyitja ezt: {name}`. A két kivétel
+  alanyi/birtokos helyen áll, ahol amúgy sem kellene rag: `{name} szerkesztése`, `{host} kulcsa megváltozott` (a
+  birtokos rag a `kulcs`-ra megy, szótár § A szerverközpont).
+- **`Kijelentkezve innen: {name}`, nem `Kijelentkeztél…`** · a szállított `servers.hub.status.signedOut` =
+  `Kijelentkezve` állapotalakja, és a testvér panelcím `Kapcsolódás ide: {name}…` névszói mintája · `high`. Így a panel
+  három nyitósora egy család, és a semleges, tárgyhoz igazodó állapotalak marad (nemsemlegességi szabály).
+- **`I’ve checked it` → `Ellenőriztem`** · a szállított `ai.translateError.authFailed.body` (`Ellenőrizd a kulcsodat…`)
+  igetöve · `high`. Egyes szám első személy, mert az angol is a FELHASZNÁLÓ szava; ez a katalógus egyetlen ilyen sora,
+  és a lenyíló mögé rejtett gomb súlyát ez adja.
+- **`Adds a server` → `Hozzáad egy szervert`; `Opens {name}` → `Megnyitja ezt: {name}`** · mac (Journal „Adds a title to
+  a journal entry.” = „Hozzáad egy címet a naplóbejegyzéshez.”, Notes „Opens an existing folder…” = „Megnyit egy meglévő
+  mappát…”) · `high`. Egyes szám harmadik személy, kijelentő jelen idő, ahogy az angol előnézetsor.
+- **`ssh`, `ssh-agent`, `SFTP`, `WebDAV`, `Nextcloud` marad angolul.** A parancsnév kisbetűs, összetételben kötőjeles
+  (`ssh-sor`), a névelője `az` (esz-esz-há), ahogy a szótár `adb`-sora előírja: `Az ssh-agent használata`. A
+  tulajdonnév + köznév összetétel az AkH szerint kötőjeles: `Nextcloud-cím`.
+- **`sameAsSourceJustification` ebben a passzban négy kulcson**: `servers.sheet.protocolSmb` / `.protocolSftp` /
+  `.protocolWebdav` (protokoll-betűszavak; a magyar macOS is változatlanul hozza őket, és a szállított
+  `servers.refusal.notAWebdavServer` is `WebDAV-on` alakban ragozza) és `servers.sheet.addressPlaceholder` (`nas.local`,
+  egy beviteli mező példa-gépneve, nem lefordítandó szöveg). A többi 42 érték eltér az angoltól. Aposztróf egyik magyar
+  értékben sincs, tehát ICU-kettőzés sem kellett.

@@ -1112,3 +1112,81 @@ machine"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lpro
   **自行組出來的**：Apple的繁體套件裡沒有帶量詞的 `伺服器`，但 `style.md` § Plurals 指定 `部`
   是 Mac 的量詞，目錄也已經寫 `這部 Mac`，而伺服器就是一部機器 · `tentative`。zh-Hant 只需要 `other` 這一支。
 - 這 28 個值都不含撇號，也沒有 `sameAsSourceJustification`：每一個都和英文不同。
+
+## 連線伺服器的表單與主機金鑰那一步
+
+涵蓋 `servers.sheet.*`、`servers.hostKey.*`、`servers.paneState.signedOut` / `.signIn` / `.hostKeyChanged*`、
+`goToPath.dialog.opensServer` / `.addsServer`，以及 `commands.serversConnect.label`（2026-09-07）。
+
+這是「伺服器中心」的下一層：一張輸入伺服器（SFTP、WebDAV、SMB）的浮動表單，裡面包含第一次連線時要人確認 SSH 主機金鑰的那一步。
+
+代理機上一樣沒有參考資料堆，所以下面的詞照 `docs/i18n/translation-learnings.md` § "Quoting a macOS UI
+label"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lproj`，macOS 26.6.2、build 25G83、2026-09-07）用
+`plutil -convert json` 比對英文鍵得來的。最好用的兩份是 Apple 自己的「連接伺服器」對話框：
+`NetAuthAgent.app/Contents/Resources/{AuthDialog,Localizable}.loctable` 和
+`Finder.app/Contents/Resources/zh_TW.lproj/ConnectToWindow.strings`。
+
+- **Connect（按鈕）** · `連線` · Finder `ConnectToWindow.strings:46.title`（TW = HK），NetAuthAgent 的 `CONNECT` 和
+  `AuthDialog.loctable:600218.title` 同樣是 `連線`；目錄既有的 `fileExplorer.network.connect` 也已經是 `連線` ·
+  `confirmed`
+- **Connect to server…（指令名稱）** · `連接伺服器…` · Finder `MenuBar.strings:266.title`「Connect to Server…」→
+  `連接伺服器⋯`（TW = HK），目錄既有的 `settings.network.permissionIntroConnectLink` 也是 `連接伺服器…` ·
+  `confirmed`。❗ 動詞用 `連接` 而按鈕用 `連線`，是照 Apple 自己的分工：整句的「連接伺服器」是動作，光一顆按鈕是
+  `連線`。刪節號照目錄慣例寫 `…`（U+2026）。
+- **Connecting…** · `正在連線…` · NetAuthAgent `CONNECTING_TO_GENERIC` = `正在連線⋯`（TW = HK） · `confirmed`
+- **Protocol** · `通訊協定` · AP-TW = AP-HK（`IP.loctable:100268.title`、`AirPortSettings.loctable:moMP`；Apple 也把
+  `SSH Protocol 2` 譯成 `SSH通訊協定2`） · `confirmed`
+- **hostname** · `主機名稱` · AP-TW = AP-HK（`AirPortSettings.loctable:wbHN`「Hostname」、多個 `Host Name:` →
+  `主機名稱：`） · `confirmed`。`host` 本身仍是既有的 `主機`。
+- **Username** · `使用者名稱` · 目錄既有的 `fileExplorer.network.login.username`；AP-TW 的 NetAuthAgent 也一路寫
+  `使用者名稱`（HK 是 `用户名稱`，依台灣優先） · `confirmed`
+- **Guest / Connect as guest** · `訪客` / `以訪客身分連線` · `訪客` 是 AP-TW = AP-HK
+  (`AuthDialog.loctable:RiA-l0-ASw.title`、`GUEST`)，整句沿用目錄既有的 `fileExplorer.network.login.connectAsGuest` ·
+  `confirmed`
+- **How to connect（挑訪客或帳號的那組選項的無障礙名稱）** · `連線方式` · 沿用目錄既有的
+  `fileExplorer.network.login.connectionModeLegend`（英文是 "Connection mode"，同一個介面概念） · `high`
+- **Advanced（收合起來的進階區塊）** · `進階` · AP-TW = AP-HK（數十處，含系統設定的
+  `ADVANCED_PANE_TITLE`），也是目錄既有的 `settings.section.advanced` · `confirmed`
+- **Browse…（開啟系統檔案選擇器的按鈕）** · `瀏覽…` · Finder `ConnectToWindow.strings:48.title`「Browse」→ `瀏覽`（TW =
+  HK），同一張「連接伺服器」對話框上的按鈕 · `confirmed`
+- **Keychain（單獨的那個字）** · `鑰匙圈` · AP-TW = AP-HK（`MainMenu.loctable:825.title`、`Keychain` 鍵本身）；"Remember
+  in Keychain" 直接沿用目錄既有的 `fileExplorer.network.login.rememberInKeychain` = `記住在鑰匙圈中` ·
+  `confirmed`。App 名稱仍是 `「鑰匙圈存取」`。
+- **passphrase** · `密語` · AP-TW = AP-HK，數量很多且一致（`P12Password.loctable:23.title`「Enter Passphrase:」→
+  `輸入密語：`、`SecErrorMessages.loctable:-25260`、DiskManagement 的一整組 FileVault 字串） · `confirmed`。❗ 不寫
+  `通行密碼`，Apple 的繁體套件裡零次。
+- **Key passphrase（解開 SSH 金鑰檔案的那組密語）** · `金鑰密語` · **自行組出來的**：`密語` 是 Apple 的 passphrase（上面
+  `confirmed`），`金鑰` 是目錄保留給密碼學金鑰的字（見上面的 `主機金鑰` 條目） · `high`
+- **Key file（要拿來登入的 SSH 私鑰檔案）** · `金鑰檔案` · **自行組出來的**，同樣是 `金鑰` + `檔案` ·
+  `high`。❗ 不跟 Apple 的 `SSH密鑰` / `專用密鑰`：目錄已經在 `主機金鑰` 條目裡把 `密鑰` 排除掉了，整份目錄只用 `金鑰`。
+- **fingerprint / Key fingerprint** · `指紋` / `金鑰指紋` · `指紋` 是 AP-TW = AP-HK
+  (`Certificate.loctable:Fingerprints`、`CRLShapeLibrarianShapeNames.loctable:Fingerprint_372`，另外 Shortcuts 講的正是 SSH 伺服器的 fingerprint)
+  · `confirmed`；加上 `金鑰` 的複合詞是自行組出來的 · `high`
+- **trust（信任一把主機金鑰）** · `信任` · AP-TW = AP-HK（`Localizable.loctable:Trust`、
+  `DeviceModeUnpairedViewController.loctable:ToI-Wa-f1o.title`），也是詞彙表既有的條目 · `confirmed`。"Trust and
+  connect" 是 `信任並連線`，"Trust the new key" 是 `信任新的金鑰`。
+- **owner（伺服器的擁有者，要跟他核對指紋的那個人）** · `擁有者` · AP-TW =
+  AP-HK（`PhotoLibraryServices.loctable:OWNER`、 `OID.loctable` 的 `Owner`、Spotlight
+  `schema.strings:kMDItemFSOwnerUserID`） · `high`。❗ 不寫
+  `管理者`：英文特意說 owner，因為家裡的 NAS 通常就是使用者自己或朋友。
+- **Remote folder（伺服器上要開啟的那個資料夾）** · `遠端資料夾` · `遠端` 是詞彙表既有的 remote（台灣優先，HK 是
+  `遙距`），`資料夾` 是既定的 folder · `high`
+- **Reconnect automatically** · `自動重新連線` · `自動` 是 AP-TW = AP-HK 的 "Automatically"（數十處），`重新連線`
+  是目錄既有的用法（`fileExplorer.smbReconnect.title` = `正在重新連線到伺服器…`） · `high`。⚠️ Apple 自己在
+  `重新連接`（`MainMenu.loctable:Ozt-wA-9P8.title`）和
+  `重新連線`（`ScreenSharing.loctable:RECONNECTBUTTON`）之間搖擺，目錄一律取 `重新連線`。
+- **reinstalled（伺服器重灌過，主機金鑰才會變）** · `重新安裝過` · Apple 的 "reinstall" 一律 `重新安裝` ·
+  `high`。❗ 不寫口語的 `重灌`，和目錄的書面語氣不合。
+- **"{host}''s key changed"** · `{host} 的主機金鑰變了` · 直接沿用目錄既有的
+  `fileExplorer.navigation.connectionTooltipNeedsHostKey`（`這個伺服器的主機金鑰變了。`） ·
+  `high`。英文只說 "key"，中文一定要補 `主機`，否則讀成 API 金鑰。
+- **"Cmdr stopped connecting to {name}"** · `Cmdr 停止連線到 {name}` · **自行組出來的** ·
+  `high`。英文刻意不說「失敗」，中文照 § Voice 的規則也不寫 `失敗` / `錯誤`；這裡連 `無法`
+  都不適合，因為 Cmdr 是「主動停下」而不是「辦不到」，所以取中性的 `停止`。
+- **"Signed out of {name}"（窗格標題）** · `已從 {name} 登出` · `已登出`
+  是伺服器中心那一組已經確認過的狀態詞，標題形只是把受詞補回去 · `high`
+- **Sign in to {name} / Edit {name}（表單標題）** · `登入「{name}」` / `編輯「{name}」` · 沿用目錄既有的
+  `fileExplorer.network.login.title` = `登入「{target}」`；名稱照 § Punctuation 加角括號 · `high`
+- **這一組有四個 `sameAsSourceJustification`**：`servers.sheet.protocolSmb` / `.protocolSftp` / `.protocolWebdav`
+  （通訊協定名稱，Apple 的繁體套件也一律寫拉丁字母：`SMB密碼`、`WebDAV密碼`、`SSH通訊協定2`）和
+  `.addressPlaceholder`（`nas.local` 是使用者會照打的主機名稱範例，翻了反而更難懂）。其餘 42 個值都和英文不同。

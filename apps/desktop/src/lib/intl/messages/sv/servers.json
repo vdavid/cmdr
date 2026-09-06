@@ -127,5 +127,181 @@
   "servers.refusal.hostKeyRevoked": "Nyckeln från {host} är märkt som komprometterad i dina SSH-inställningar på den här Macen. Cmdr ansluter inte till servern.",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "47aacda"
+  },
+  "servers.sheet.addTitle": "Lägg till server",
+  "@servers.sheet.addTitle": {
+    "sourceHash": "1099b2a"
+  },
+  "servers.sheet.signInTitle": "Logga in på {name}",
+  "@servers.sheet.signInTitle": {
+    "sourceHash": "47e7f20"
+  },
+  "servers.sheet.editTitle": "Redigera {name}",
+  "@servers.sheet.editTitle": {
+    "sourceHash": "2313fe2"
+  },
+  "servers.sheet.connect": "Anslut",
+  "@servers.sheet.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "servers.sheet.signIn": "Logga in",
+  "@servers.sheet.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "servers.sheet.save": "Spara",
+  "@servers.sheet.save": {
+    "sourceHash": "1509f56"
+  },
+  "servers.sheet.cancel": "Avbryt",
+  "@servers.sheet.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "servers.sheet.connecting": "Ansluter…",
+  "@servers.sheet.connecting": {
+    "sourceHash": "72021eb"
+  },
+  "servers.sheet.protocolLegend": "Protokoll",
+  "@servers.sheet.protocolLegend": {
+    "sourceHash": "cf08833"
+  },
+  "servers.sheet.protocolSmb": "SMB",
+  "@servers.sheet.protocolSmb": {
+    "sourceHash": "f54ab2d",
+    "sameAsSourceJustification": "SMB is a protocol name and stays verbatim in Swedish; style.md lists it under brand and do-not-translate, and the catalog already writes it bare (settings.network.smbConcurrency.*, fileExplorer.smbReconnect.*). Deliberately identical."
+  },
+  "servers.sheet.protocolSftp": "SFTP",
+  "@servers.sheet.protocolSftp": {
+    "sourceHash": "b07c0f4",
+    "sameAsSourceJustification": "SFTP is a protocol name and stays verbatim in Swedish, the same reflex as the SMB option beside it; macOS sv keeps protocol abbreviations Latin (NetAuthAgent Localizable.loctable sv: 'FTP-lösenord', 'WebDAV-lösenord', 'AFP-lösenord', read on macOS 26.6.2 build 25G83, 2026-09-06). Deliberately identical."
+  },
+  "servers.sheet.protocolWebdav": "WebDAV",
+  "@servers.sheet.protocolWebdav": {
+    "sourceHash": "d92634e",
+    "sameAsSourceJustification": "WebDAV is a protocol name and stays verbatim in Swedish; macOS sv writes it Latin in NetAuthAgent Localizable.loctable ('WebDAV-lösenord' = WebDAV Password, read on macOS 26.6.2 build 25G83, 2026-09-06), and the catalog's servers.refusal.notAWebdavServer already carries it bare. Deliberately identical."
+  },
+  "servers.sheet.address": "Adress",
+  "@servers.sheet.address": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.sheet.addressPlaceholder": "nas.local",
+  "@servers.sheet.addressPlaceholder": {
+    "sourceHash": "5e0ec1d",
+    "sameAsSourceJustification": "A sample hostname, not prose: 'nas' plus the .local mDNS suffix macOS itself uses for Bonjour names, which is the same in Swedish. The @key says to leave it as-is or pick an equally short one, and no shorter Swedish-flavoured example exists. Deliberately identical."
+  },
+  "servers.sheet.addressHelp": "Ett värdnamn, en adress du har kopierat eller en hel ssh-rad. Cmdr väljer protokollet.",
+  "@servers.sheet.addressHelp": {
+    "sourceHash": "f91dc8a"
+  },
+  "servers.sheet.username": "Användarnamn",
+  "@servers.sheet.username": {
+    "sourceHash": "e3b89e9"
+  },
+  "servers.sheet.password": "Lösenord",
+  "@servers.sheet.password": {
+    "sourceHash": "e7cf3ef"
+  },
+  "servers.sheet.passphrase": "Nyckelns lösenfras",
+  "@servers.sheet.passphrase": {
+    "sourceHash": "2510031"
+  },
+  "servers.sheet.remember": "Kom ihåg i nyckelringen",
+  "@servers.sheet.remember": {
+    "sourceHash": "3fd7384"
+  },
+  "servers.sheet.connectionModeLegend": "Hur du ansluter",
+  "@servers.sheet.connectionModeLegend": {
+    "sourceHash": "2198ec8"
+  },
+  "servers.sheet.connectAsGuest": "Anslut som gäst",
+  "@servers.sheet.connectAsGuest": {
+    "sourceHash": "d3cee9e"
+  },
+  "servers.sheet.signInWithCredentials": "Logga in med användarnamn och lösenord",
+  "@servers.sheet.signInWithCredentials": {
+    "sourceHash": "d71eef0"
+  },
+  "servers.sheet.advanced": "Avancerat",
+  "@servers.sheet.advanced": {
+    "sourceHash": "9f088db"
+  },
+  "servers.sheet.name": "Namn",
+  "@servers.sheet.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.remoteFolder": "Mapp på servern",
+  "@servers.sheet.remoteFolder": {
+    "sourceHash": "71525cd"
+  },
+  "servers.sheet.keyFile": "Nyckelfil",
+  "@servers.sheet.keyFile": {
+    "sourceHash": "33c7999"
+  },
+  "servers.sheet.browse": "Bläddra…",
+  "@servers.sheet.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "servers.sheet.useAgent": "Använd ssh-agent",
+  "@servers.sheet.useAgent": {
+    "sourceHash": "21f2e2c"
+  },
+  "servers.sheet.autoReconnect": "Återanslut automatiskt",
+  "@servers.sheet.autoReconnect": {
+    "sourceHash": "a56b579"
+  },
+  "servers.sheet.needsStoredSecret": "Att återansluta på egen hand kräver ett sparat lösenord. Slå på ”Kom ihåg i nyckelringen” och logga in en gång.",
+  "@servers.sheet.needsStoredSecret": {
+    "sourceHash": "32336f3"
+  },
+  "servers.sheet.tryNextcloudAddress": "Prova Nextcloud-adressen",
+  "@servers.sheet.tryNextcloudAddress": {
+    "sourceHash": "1afdfc7"
+  },
+  "servers.hostKey.firstContactTitle": "Första gången du ansluter till {host}",
+  "@servers.hostKey.firstContactTitle": {
+    "sourceHash": "6282d68"
+  },
+  "servers.hostKey.firstContactBody": "Jämför fingeravtrycket nedan med det du fått av serverns ägare, och lita sedan på nyckeln.",
+  "@servers.hostKey.firstContactBody": {
+    "sourceHash": "befd6c3"
+  },
+  "servers.hostKey.changedTitle": "Nyckeln från {host} har ändrats",
+  "@servers.hostKey.changedTitle": {
+    "sourceHash": "dde14d6"
+  },
+  "servers.hostKey.changedBody": "Det kan betyda att servern har installerats om, eller att något sitter mellan dig och den. Kontrollera fingeravtrycket med serverns ägare innan du litar på nyckeln.",
+  "@servers.hostKey.changedBody": {
+    "sourceHash": "34552a6"
+  },
+  "servers.hostKey.changedDisclosure": "Jag har kontrollerat nyckeln",
+  "@servers.hostKey.changedDisclosure": {
+    "sourceHash": "29d1f63"
+  },
+  "servers.hostKey.fingerprintLabel": "Nyckelns fingeravtryck",
+  "@servers.hostKey.fingerprintLabel": {
+    "sourceHash": "26f8639"
+  },
+  "servers.hostKey.trustAndConnect": "Lita på nyckeln och anslut",
+  "@servers.hostKey.trustAndConnect": {
+    "sourceHash": "0cce535"
+  },
+  "servers.hostKey.trustNewKey": "Lita på den nya nyckeln",
+  "@servers.hostKey.trustNewKey": {
+    "sourceHash": "772baac"
+  },
+  "servers.paneState.signedOut": "Utloggad från {name}",
+  "@servers.paneState.signedOut": {
+    "sourceHash": "b1d908f"
+  },
+  "servers.paneState.signIn": "Logga in…",
+  "@servers.paneState.signIn": {
+    "sourceHash": "a6a5723"
+  },
+  "servers.paneState.hostKeyChanged": "Cmdr stoppade anslutningen till {name}",
+  "@servers.paneState.hostKeyChanged": {
+    "sourceHash": "ac65ece"
+  },
+  "servers.paneState.hostKeyChangedHint": "Serverns nyckel har ändrats. Det kan betyda att servern har installerats om, eller att något sitter mellan dig och den. Koppla från och öppna servern igen för att kontrollera fingeravtrycket.",
+  "@servers.paneState.hostKeyChangedHint": {
+    "sourceHash": "923de62"
   }
 }

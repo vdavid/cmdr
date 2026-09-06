@@ -2286,3 +2286,117 @@ salen del propio Mac (macOS 26.6.2, build 25G83, `plutil -convert json` sobre lo
 - `servers.hub.rowCount` escribe las tres categorías CLDR del español (`one` / `many` / `other`); `many` repite `other`
   palabra por palabra, como ya hace el resto del catálogo.
 - Verbatim: `Cmdr`, `Mac`, `NAS`. Las elipsis copian el `…` (U+2026) del inglés, carácter a carácter.
+
+## La hoja para conectarse a un servidor y la confianza en la clave de host (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.{signedOut,signIn,hostKeyChanged,hostKeyChangedHint}`, `goToPath.dialog.{opensServer,addsServer}`, `commands.serversConnect.label`, 2026-09-07)
+
+Tercera tanda de la misma superficie: la hoja modal donde se escribe un servidor SFTP / WebDAV / SMB, el paso que pide
+aprobar la clave de host SSH, los dos estados del panel que dependen de ella, y dos líneas de vista previa de «Ir a la
+ruta». El montón de referencia sigue sin estar en esta máquina, así que las fuentes de Tier 1 salen del propio Mac
+(macOS 26.6.2, build 25G83, `plutil -convert json` sobre los bundles del sistema, 2026-09-07).
+
+### Términos de Tier 1 (macOS en vivo)
+
+- **fingerprint (la huella criptográfica de una clave) → `huella digital`** · Apple traduce exactamente esta frase en la
+  acción «Ejecutar script a través de SSH» de Atajos: `ActionKit.framework/Localizable.loctable`, «The host key's
+  fingerprint is %@.» → «La huella digital de la clave de host es %@.» y «The authenticity of host '%@' can't be
+  established…» → «No se puede determinar la autenticidad del host “%@”…». Lo confirman
+  `Security.framework/Certificate.loctable` («Fingerprints» → «Huellas digitales») y ConfigurationProfiles
+  (`str_SCEP_InvalidFingerprint`, «La huella digital del servidor SCEP “%@” no coincide») · `high`. ❌ No `huella` a
+  secas: Apple reserva la forma corta para la huella dactilar de Touch ID.
+- **host key → `clave de host`** · la misma cadena de ActionKit · `high`. Encaja con `clave` para la clave SSH, ya
+  asentado arriba.
+- **Connecting… (solo, sin destino) → `Conectando…`** · NetAuthAgent `Localizable.loctable`, `CONNECTING_TO_GENERIC` ·
+  `high`. Ojo: NO es `Conectándose…`; el gerundio reflexivo lo pide `servers.paneState.connecting`, que sí nombra el
+  destino («Connecting to X…» → «Conectándose a X…», Finder `MN1`). Además `i18n-terms` obliga: el catálogo ya rendía
+  «Connecting...» como `Conectando...` en `fileExplorer.network.connecting`, y la normalización del check ignora los
+  puntos finales, así que las dos claves tienen que decir lo mismo.
+- **Save → `Guardar`** · AppKit `SavePanel.loctable`, clave `Save` · `high`.
+- **Protocol → `Protocolo`** · `AirPortSettings.loctable`, clave `moMP`; también Utilidad de Directorios («SSH Protocol
+  2» → «Protocolo SSH 2») · `high`.
+- **Browse (botón que abre un selector) → `Explorar`** · Finder `ConnectToWindow.strings`, `48.title`; el catálogo ya lo
+  dice así en `settings.archives.opt.browse`, que `i18n-terms` obliga a respetar · `high`.
+- **Sign In… (botón) → `Iniciar sesión…`** · Finder `LocalizableMerged`, `NE104` · `high`.
+- **«X is signed out» → `Se ha cerrado la sesión de “X”`** · Finder `NE103` / `NE103.1` · `high`. De ahí sale la
+  preposición de `servers.paneState.signedOut`: `Sesión cerrada de {name}`, no `en {name}`.
+- **Remember this password in my keychain → `Guardar esta contraseña en mi llavero`** · NetAuthAgent
+  `AuthDialog.loctable`, `600268.title` · `high`. Cmdr publica la forma corta ya asentada, `Recordar en el Llavero`
+  (`fileExplorer.network.login.rememberInKeychain`), que `i18n-terms` obliga a repetir.
+- **Guest → `Invitado`; Connect As: → `Conectar como:`** · NetAuthAgent `AuthDialog.loctable` (`RiA-l0-ASw.title`,
+  `PHL-pS-ELV.title`) y `Localizable.loctable` (`GUEST`, `CONNECT_AS`) · `high`.
+- **passphrase → `contraseña`** · Apple no distingue: `Security.framework/OID.loctable` («Passphrase» → «Contraseña»),
+  `P12Password.loctable` («Enter Passphrase:» → «Introducir contraseña:»), `SecErrorMessages` («The username or
+  passphrase you entered is not correct.» → «El nombre de usuario o la contraseña que has introducido no son
+  correctos.») · `high`.
+- **Use X (casilla) → `Usar X`** · Finder `ViewOptionsWindow.strings`, `54.title` («Use relative dates» → «Usar fechas
+  relativas») · `high`.
+- **reconnect automatically → `volver a conectar automáticamente`** · Bluetooth `UNPAIR_WARNING`, «This device will not
+  reconnect automatically.» → «Este dispositivo no se volverá a conectar automáticamente.» · `high`.
+- **remote (un recurso que está en otra máquina) → `remoto`** · Finder `LocalizableMerged` `GV4.1`, «Remote Volume» →
+  «Volumen remoto» · `high`. De ahí `Carpeta remota`.
+- **hostname → `nombre de host`** · ActionKit («Device Hostname» → «Nombre de host del dispositivo») y NetAuthAgent
+  `EINFO_NO_SERVER` («Comprueba el nombre del servidor o la dirección IP») · `high`.
+- **Sign in to X (título) → `Iniciar sesión en X`** · CloudKit `SIGN_IN_TO_ICLOUD_TITLE_MAC` («Sign in to
+  %1$@.» →
+  «Inicia sesión en %1$@») fija la preposición `en`. Apple usa ahí el imperativo; Cmdr pone el infinitivo
+  porque las tres modalidades del mismo título tienen que leerse en paralelo y `Añadir servidor` ya está fijado por
+  `i18n-terms` (`servers.hub.addServer`) · `high` (la preposición), `high` (el registro, por paralelismo interno).
+
+### Decisiones
+
+- **Los tres títulos de la hoja van en infinitivo** · `Añadir servidor` / `Iniciar sesión en {name}` / `Editar {name}`.
+  El primero lo fija `i18n-terms` contra `servers.hub.addServer` (`Añadir servidor…`), así que los otros dos lo siguen;
+  `Editar {name}` calca además a `commands.serversEdit.label` (`Editar el servidor…`), sin artículo porque el nombre
+  propio ya ocupa esa posición · `high`.
+- **Catorce valores los impone `i18n-terms`, no la elección del traductor** · `Conectar`, `Iniciar sesión`, `Cancelar`,
+  `Conectando…`, `Dirección`, `Nombre de usuario`, `Contraseña`, `Recordar en el Llavero`, `Conectarse como invitado`,
+  `Avanzado`, `Nombre`, `Explorar…`, `Iniciar sesión…`, `Conectarse a un servidor…`. Todos repiten el valor que otra
+  clave con el mismo inglés ya publica; cambiarlos rompería el check. Antes de traducir una hoja nueva, busca el inglés
+  exacto en el resto del catálogo.
+- **`Key passphrase` → `Contraseña de la clave`** · compuesto sobre `passphrase → contraseña` (Apple, arriba) y `clave`
+  para la clave SSH. Queda distinto de `Contraseña` a secas, que es la de la cuenta, que es justo lo que el inglés
+  separa · `high`.
+- **`Key file` → `Archivo de clave`** · `clave` de Acceso a Llaveros («private key» → «clave privada») más `archivo`.
+  Sin artículo, como los demás rótulos de campo · `high`.
+- **`How to connect` (nombre accesible, invisible) → `Cómo conectarse`** · el reflexivo es el ya asentado
+  (`Conectarse a un servidor`). El equivalente de macOS en esa misma pantalla es `Conectar como:` (NetAuthAgent), pero
+  nombra las opciones y no la pregunta, así que se traduce el inglés · `high`.
+- **`Trust and connect` → `Confiar en la clave y conectar`** · `confiar` rige `en`, así que un `Confiar y conectar`
+  calcado del inglés no es español. Se nombra el objeto una vez y los dos verbos quedan bien; `la clave` es además lo
+  que hay justo encima del botón (`Huella digital de la clave`) · `high`.
+- **`I've checked it` → `Ya la comprobé`** · pretérito, no `Ya la he comprobado`, según la regla pan-regional del
+  `style.md`. El clítico `la` concuerda con `la huella digital` / `la clave`, las dos femeninas, así que no expone el
+  género de quien lee · `high`.
+- **`First time connecting to {host}` → `Primera conexión con {host}`** · `conexión con` es la forma sustantiva de macOS
+  («establecer conexión con el servidor», NetAuthAgent `SHOULD_CONNECT_SERVER`). El sustantivo mantiene el título corto
+  y sin alarma, en paralelo con sus vecinos `Sesión cerrada de {name}` y `La clave de {host} cambió` · `high`.
+- **`owner` (de un servidor) → `quien posee el servidor`** · el catálogo ya evita el gendered `el propietario`:
+  `errors.listing.permissionDenied.suggestion` dice «pide a quien la posee» · `high`.
+- **`something is sitting between you and it` → `hay algo entre tú y él`** · Apple dice aquí «un ataque tipo
+  “Man-in-the-middle”» (ActionKit), que es jerga; el inglés de Cmdr la evita a propósito y el español también. `él`
+  concuerda con `el servidor`, que es fijo · `high`.
+- **`Cmdr stopped connecting to {name}` → `Cmdr dejó de conectarse a {name}`** · pretérito con Cmdr de sujeto, el mismo
+  molde que `servers.refusal.unreachable` (`Cmdr no pudo acceder a {host}`) · `high`.
+- **`Opens {name}` / `Adds a server` → `Abre {name}` / `Añade un servidor`** · tercera persona del presente, como el
+  resto de descripciones de la paleta (`commands.fileContextMenu.description`, «Abre el menú contextual…») · `high`.
+- **`needsStoredSecret` va en impersonal** · `Para volver a conectar por su cuenta hace falta una contraseña recordada.`
+  evita inventar un sujeto y no genera a nadie; la segunda frase es el par imperativo del `style.md`
+  (`Activa … e inicia sesión una vez`), con `e` ante `i-` · `high`.
+
+### Cadenas deliberadamente iguales al inglés
+
+Cuatro claves llevan `@key.sameAsSourceJustification`, y las cuatro se apoyan en que el macOS en español deja el token
+igual: `SMB` (NetAuth `SMB_PASSWORD` = «Contraseña SMB», y además está en `BRAND_WORDS`), `SFTP` (Utilidad de
+Directorios, «SFTP Protocol 1» → «Protocolo SFTP 1»), `WebDAV` (NetAuth `WEBDAV_PASSWORD` = «Contraseña WebDAV») y
+`nas.local`, que es un nombre de host de ejemplo dentro del campo: `NAS` es la sigla que el catálogo ya deja igual
+(`servers.hub.emptyMessage`) y `.local` es el sufijo de mDNS del RFC 6762.
+
+### Notas de forma
+
+- Ningún valor español lleva apóstrofo, así que no hay duplicación ICU (`''`) que hacer, aunque cinco valores ingleses
+  sí la llevan.
+- Verbatim: `Cmdr`, `SMB`, `SFTP`, `WebDAV`, `ssh`, `ssh-agent`, `Nextcloud`. Las elipsis copian el `…` (U+2026) del
+  inglés, carácter a carácter.
+- `“Recordar en el Llavero”` va entre comillas curvas porque cita una etiqueta que Cmdr enseña en pantalla, según la
+  regla de las dos comillas del `style.md`.
+- Ninguna clave de esta tanda termina en `Aria`, así que no hay contención WCAG 2.5.3 que satisfacer: `protocolLegend` y
+  `connectionModeLegend` son nombres accesibles de un grupo sin etiqueta visible, no de un control con etiqueta.

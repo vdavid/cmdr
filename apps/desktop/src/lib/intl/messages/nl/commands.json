@@ -654,6 +654,10 @@
   "@commands.serversEdit.label": {
     "sourceHash": "a3282a7"
   },
+  "commands.serversConnect.label": "Verbind met server…",
+  "@commands.serversConnect.label": {
+    "sourceHash": "6188f47"
+  },
   "commands.networkRefresh.label": "Ververs netwerkhosts",
   "@commands.networkRefresh.label": {
     "sourceHash": "73966bd"

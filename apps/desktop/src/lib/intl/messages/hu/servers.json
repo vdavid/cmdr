@@ -126,5 +126,181 @@
   "servers.refusal.hostKeyRevoked": "{host} kulcsa kompromittáltként van megjelölve az SSH-beállításaidban ezen a Macen. A Cmdr nem kapcsolódik hozzá.",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "47aacda"
+  },
+  "servers.sheet.addTitle": "Szerver hozzáadása",
+  "@servers.sheet.addTitle": {
+    "sourceHash": "1099b2a"
+  },
+  "servers.sheet.signInTitle": "Bejelentkezés ide: {name}",
+  "@servers.sheet.signInTitle": {
+    "sourceHash": "47e7f20"
+  },
+  "servers.sheet.editTitle": "{name} szerkesztése",
+  "@servers.sheet.editTitle": {
+    "sourceHash": "2313fe2"
+  },
+  "servers.sheet.connect": "Csatlakozás",
+  "@servers.sheet.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "servers.sheet.signIn": "Bejelentkezés",
+  "@servers.sheet.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "servers.sheet.save": "Mentés",
+  "@servers.sheet.save": {
+    "sourceHash": "1509f56"
+  },
+  "servers.sheet.cancel": "Mégsem",
+  "@servers.sheet.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "servers.sheet.connecting": "Csatlakozás…",
+  "@servers.sheet.connecting": {
+    "sourceHash": "72021eb"
+  },
+  "servers.sheet.protocolLegend": "Protokoll",
+  "@servers.sheet.protocolLegend": {
+    "sourceHash": "cf08833"
+  },
+  "servers.sheet.protocolSmb": "SMB",
+  "@servers.sheet.protocolSmb": {
+    "sourceHash": "f54ab2d",
+    "sameAsSourceJustification": "Protokollnév, a magyar macOS is változatlanul hozza (`ExtensionKit/.../NetworkSettingsIntents.appex` `SSH` = `SSH` mintájára; az `SMB` a `BRAND_WORDS` listán is rajta van). macOS 26.6.2, `plutil`, 2026-09-06."
+  },
+  "servers.sheet.protocolSftp": "SFTP",
+  "@servers.sheet.protocolSftp": {
+    "sourceHash": "b07c0f4",
+    "sameAsSourceJustification": "Protokollnév, betűszó; a magyar macOS a hálózati protokollok betűszavait változatlanul hagyja (`AirPortSettings.loctable` `SSH`, `Terminal` „SSH protokoll 2”). macOS 26.6.2, `plutil`, 2026-09-06."
+  },
+  "servers.sheet.protocolWebdav": "WebDAV",
+  "@servers.sheet.protocolWebdav": {
+    "sourceHash": "d92634e",
+    "sameAsSourceJustification": "Protokollnév; a katalógus szállított magyar szövege is így hozza (`servers.refusal.notAWebdavServer` = „Ezen a címen semmi nem válaszol WebDAV-on.”)."
+  },
+  "servers.sheet.address": "Cím",
+  "@servers.sheet.address": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.sheet.addressPlaceholder": "nas.local",
+  "@servers.sheet.addressPlaceholder": {
+    "sourceHash": "5e0ec1d",
+    "sameAsSourceJustification": "Példa gépnév egy beviteli mező helyőrzőjében, nem lefordítandó szöveg; a `.local` végződés a Bonjour-nevek formája, a `nas` pedig nemzetközileg érthető rövidítés (a katalógus `onboarding.stepOptional.networking.desc` kulcsa is `NAS`-ként hozza)."
+  },
+  "servers.sheet.addressHelp": "Egy gépnév, egy másolt cím vagy egy teljes ssh-sor. A protokollt a Cmdr választja ki.",
+  "@servers.sheet.addressHelp": {
+    "sourceHash": "f91dc8a"
+  },
+  "servers.sheet.username": "Felhasználónév",
+  "@servers.sheet.username": {
+    "sourceHash": "e3b89e9"
+  },
+  "servers.sheet.password": "Jelszó",
+  "@servers.sheet.password": {
+    "sourceHash": "e7cf3ef"
+  },
+  "servers.sheet.passphrase": "Kulcsjelmondat",
+  "@servers.sheet.passphrase": {
+    "sourceHash": "2510031"
+  },
+  "servers.sheet.remember": "Megjegyzés a kulcskarikában",
+  "@servers.sheet.remember": {
+    "sourceHash": "3fd7384"
+  },
+  "servers.sheet.connectionModeLegend": "Kapcsolódás módja",
+  "@servers.sheet.connectionModeLegend": {
+    "sourceHash": "2198ec8"
+  },
+  "servers.sheet.connectAsGuest": "Csatlakozás vendégként",
+  "@servers.sheet.connectAsGuest": {
+    "sourceHash": "d3cee9e"
+  },
+  "servers.sheet.signInWithCredentials": "Bejelentkezés felhasználónévvel és jelszóval",
+  "@servers.sheet.signInWithCredentials": {
+    "sourceHash": "d71eef0"
+  },
+  "servers.sheet.advanced": "Speciális",
+  "@servers.sheet.advanced": {
+    "sourceHash": "9f088db"
+  },
+  "servers.sheet.name": "Név",
+  "@servers.sheet.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.remoteFolder": "Távoli mappa",
+  "@servers.sheet.remoteFolder": {
+    "sourceHash": "71525cd"
+  },
+  "servers.sheet.keyFile": "Kulcsfájl",
+  "@servers.sheet.keyFile": {
+    "sourceHash": "33c7999"
+  },
+  "servers.sheet.browse": "Böngészés…",
+  "@servers.sheet.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "servers.sheet.useAgent": "Az ssh-agent használata",
+  "@servers.sheet.useAgent": {
+    "sourceHash": "21f2e2c"
+  },
+  "servers.sheet.autoReconnect": "Automatikus újracsatlakozás",
+  "@servers.sheet.autoReconnect": {
+    "sourceHash": "a56b579"
+  },
+  "servers.sheet.needsStoredSecret": "Az automatikus újracsatlakozáshoz megjegyzett jelszó kell. Kapcsold be a „Megjegyzés a kulcskarikában” beállítást, és jelentkezz be egyszer.",
+  "@servers.sheet.needsStoredSecret": {
+    "sourceHash": "32336f3"
+  },
+  "servers.sheet.tryNextcloudAddress": "A Nextcloud-cím kipróbálása",
+  "@servers.sheet.tryNextcloudAddress": {
+    "sourceHash": "1afdfc7"
+  },
+  "servers.hostKey.firstContactTitle": "Első csatlakozás ide: {host}",
+  "@servers.hostKey.firstContactTitle": {
+    "sourceHash": "6282d68"
+  },
+  "servers.hostKey.firstContactBody": "Vesd össze az alábbi ujjlenyomatot azzal, amit a szerver tulajdonosától kaptál, majd állítsd be megbízhatóként.",
+  "@servers.hostKey.firstContactBody": {
+    "sourceHash": "befd6c3"
+  },
+  "servers.hostKey.changedTitle": "{host} kulcsa megváltozott",
+  "@servers.hostKey.changedTitle": {
+    "sourceHash": "dde14d6"
+  },
+  "servers.hostKey.changedBody": "Ez jelentheti azt, hogy a szervert újratelepítették, de azt is, hogy valami beékelődött közéd és a szerver közé. Egyeztesd az ujjlenyomatot a szerver tulajdonosával, mielőtt megbízhatóként beállítanád.",
+  "@servers.hostKey.changedBody": {
+    "sourceHash": "34552a6"
+  },
+  "servers.hostKey.changedDisclosure": "Ellenőriztem",
+  "@servers.hostKey.changedDisclosure": {
+    "sourceHash": "29d1f63"
+  },
+  "servers.hostKey.fingerprintLabel": "A kulcs ujjlenyomata",
+  "@servers.hostKey.fingerprintLabel": {
+    "sourceHash": "26f8639"
+  },
+  "servers.hostKey.trustAndConnect": "Beállítás megbízhatóként és csatlakozás",
+  "@servers.hostKey.trustAndConnect": {
+    "sourceHash": "0cce535"
+  },
+  "servers.hostKey.trustNewKey": "Az új kulcs beállítása megbízhatóként",
+  "@servers.hostKey.trustNewKey": {
+    "sourceHash": "772baac"
+  },
+  "servers.paneState.signedOut": "Kijelentkezve innen: {name}",
+  "@servers.paneState.signedOut": {
+    "sourceHash": "b1d908f"
+  },
+  "servers.paneState.signIn": "Bejelentkezés…",
+  "@servers.paneState.signIn": {
+    "sourceHash": "a6a5723"
+  },
+  "servers.paneState.hostKeyChanged": "A Cmdr leállította a kapcsolódást ide: {name}",
+  "@servers.paneState.hostKeyChanged": {
+    "sourceHash": "ac65ece"
+  },
+  "servers.paneState.hostKeyChangedHint": "A kulcsa megváltozott. Ez jelentheti azt, hogy a szervert újratelepítették, de azt is, hogy valami beékelődött közéd és a szerver közé. Válaszd le, majd nyisd meg újra az ujjlenyomat ellenőrzéséhez.",
+  "@servers.paneState.hostKeyChangedHint": {
+    "sourceHash": "923de62"
   }
 }

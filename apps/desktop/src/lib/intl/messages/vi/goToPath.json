@@ -38,5 +38,13 @@
   "goToPath.toast.pressToGoBack": "Nhấn <chip></chip> để quay lại.",
   "@goToPath.toast.pressToGoBack": {
     "sourceHash": "ee851b2"
+  },
+  "goToPath.dialog.opensServer": "Mở {name}",
+  "@goToPath.dialog.opensServer": {
+    "sourceHash": "e3fb00e"
+  },
+  "goToPath.dialog.addsServer": "Thêm một máy chủ",
+  "@goToPath.dialog.addsServer": {
+    "sourceHash": "8e73f74"
   }
 }

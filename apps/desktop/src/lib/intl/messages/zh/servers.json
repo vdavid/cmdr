@@ -126,5 +126,181 @@
   "servers.refusal.hostKeyRevoked": "在这台 Mac 的 SSH 设置里，{host} 的主机密钥被标记为已泄露。Cmdr 不会连接到它。",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "47aacda"
+  },
+  "servers.sheet.addTitle": "添加服务器",
+  "@servers.sheet.addTitle": {
+    "sourceHash": "1099b2a"
+  },
+  "servers.sheet.signInTitle": "登录 {name}",
+  "@servers.sheet.signInTitle": {
+    "sourceHash": "47e7f20"
+  },
+  "servers.sheet.editTitle": "编辑 {name}",
+  "@servers.sheet.editTitle": {
+    "sourceHash": "2313fe2"
+  },
+  "servers.sheet.connect": "连接",
+  "@servers.sheet.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "servers.sheet.signIn": "登录",
+  "@servers.sheet.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "servers.sheet.save": "保存",
+  "@servers.sheet.save": {
+    "sourceHash": "1509f56"
+  },
+  "servers.sheet.cancel": "取消",
+  "@servers.sheet.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "servers.sheet.connecting": "正在连接…",
+  "@servers.sheet.connecting": {
+    "sourceHash": "72021eb"
+  },
+  "servers.sheet.protocolLegend": "协议",
+  "@servers.sheet.protocolLegend": {
+    "sourceHash": "cf08833"
+  },
+  "servers.sheet.protocolSmb": "SMB",
+  "@servers.sheet.protocolSmb": {
+    "sourceHash": "f54ab2d",
+    "sameAsSourceJustification": "Protocol acronym kept verbatim: SMB is on the catalog's BRAND_WORDS list, and macOS zh_CN keeps it Latin too (NetAuthAgent `Localizable.loctable` `SMB_PASSWORD` -> `SMB密码`; verified on macOS 26.6.2 build 25G83, `plutil`, 2026-09-07)."
+  },
+  "servers.sheet.protocolSftp": "SFTP",
+  "@servers.sheet.protocolSftp": {
+    "sourceHash": "b07c0f4",
+    "sameAsSourceJustification": "Protocol acronym kept verbatim, like every other protocol name in the zh catalog (`WebDAV`, `SMB`, `SSH`, `adb`). macOS zh_CN keeps its sibling acronyms Latin in the same picker family (NetAuthAgent `Localizable.loctable` `AFP_PASSWORD` -> `AFP密码`, `WEBDAV_PASSWORD` -> `WebDAV密码`; verified on macOS 26.6.2 build 25G83, `plutil`, 2026-09-07)."
+  },
+  "servers.sheet.protocolWebdav": "WebDAV",
+  "@servers.sheet.protocolWebdav": {
+    "sourceHash": "d92634e",
+    "sameAsSourceJustification": "Protocol name kept verbatim: macOS zh_CN writes it Latin (NetAuthAgent `Localizable.loctable` `WEBDAV_PASSWORD` -> `WebDAV密码`; verified on macOS 26.6.2 build 25G83, `plutil`, 2026-09-07), and `servers.refusal.notAWebdavServer` already ships it untranslated in this catalog."
+  },
+  "servers.sheet.address": "地址",
+  "@servers.sheet.address": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.sheet.addressPlaceholder": "nas.local",
+  "@servers.sheet.addressPlaceholder": {
+    "sourceHash": "5e0ec1d",
+    "sameAsSourceJustification": "An example hostname (`nas.local`), not prose: `.local` is the mDNS suffix a real Bonjour name carries, so translating it would make the hint wrong. The zh catalog keeps sample values Latin elsewhere too (`fileExplorer.network.login.usernamePlaceholderDefault` = `示例：barry`, `goToPath.dialog.inputPlaceholder` keeps `~/Documents`)."
+  },
+  "servers.sheet.addressHelp": "主机名、你复制来的地址，或者一整行 ssh 命令都行。Cmdr 会自动判断协议。",
+  "@servers.sheet.addressHelp": {
+    "sourceHash": "f91dc8a"
+  },
+  "servers.sheet.username": "用户名",
+  "@servers.sheet.username": {
+    "sourceHash": "e3b89e9"
+  },
+  "servers.sheet.password": "密码",
+  "@servers.sheet.password": {
+    "sourceHash": "e7cf3ef"
+  },
+  "servers.sheet.passphrase": "密钥密码短语",
+  "@servers.sheet.passphrase": {
+    "sourceHash": "2510031"
+  },
+  "servers.sheet.remember": "记住到钥匙串",
+  "@servers.sheet.remember": {
+    "sourceHash": "3fd7384"
+  },
+  "servers.sheet.connectionModeLegend": "连接方式",
+  "@servers.sheet.connectionModeLegend": {
+    "sourceHash": "2198ec8"
+  },
+  "servers.sheet.connectAsGuest": "以来宾身份连接",
+  "@servers.sheet.connectAsGuest": {
+    "sourceHash": "d3cee9e"
+  },
+  "servers.sheet.signInWithCredentials": "用用户名和密码登录",
+  "@servers.sheet.signInWithCredentials": {
+    "sourceHash": "d71eef0"
+  },
+  "servers.sheet.advanced": "高级",
+  "@servers.sheet.advanced": {
+    "sourceHash": "9f088db"
+  },
+  "servers.sheet.name": "名称",
+  "@servers.sheet.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.remoteFolder": "远程文件夹",
+  "@servers.sheet.remoteFolder": {
+    "sourceHash": "71525cd"
+  },
+  "servers.sheet.keyFile": "密钥文件",
+  "@servers.sheet.keyFile": {
+    "sourceHash": "33c7999"
+  },
+  "servers.sheet.browse": "浏览…",
+  "@servers.sheet.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "servers.sheet.useAgent": "使用 ssh-agent",
+  "@servers.sheet.useAgent": {
+    "sourceHash": "21f2e2c"
+  },
+  "servers.sheet.autoReconnect": "自动重新连接",
+  "@servers.sheet.autoReconnect": {
+    "sourceHash": "a56b579"
+  },
+  "servers.sheet.needsStoredSecret": "自动重新连接需要一个记住的密码。请打开“记住到钥匙串”，然后登录一次。",
+  "@servers.sheet.needsStoredSecret": {
+    "sourceHash": "32336f3"
+  },
+  "servers.sheet.tryNextcloudAddress": "试试 Nextcloud 地址",
+  "@servers.sheet.tryNextcloudAddress": {
+    "sourceHash": "1afdfc7"
+  },
+  "servers.hostKey.firstContactTitle": "第一次连接 {host}",
+  "@servers.hostKey.firstContactTitle": {
+    "sourceHash": "6282d68"
+  },
+  "servers.hostKey.firstContactBody": "请把下面的指纹和这台服务器的所有者给你的那个核对一下，然后信任它。",
+  "@servers.hostKey.firstContactBody": {
+    "sourceHash": "befd6c3"
+  },
+  "servers.hostKey.changedTitle": "{host} 的主机密钥变了",
+  "@servers.hostKey.changedTitle": {
+    "sourceHash": "dde14d6"
+  },
+  "servers.hostKey.changedBody": "这可能是因为服务器重装过，也可能是有东西夹在你和它之间。信任之前，请先和这台服务器的所有者核对指纹。",
+  "@servers.hostKey.changedBody": {
+    "sourceHash": "34552a6"
+  },
+  "servers.hostKey.changedDisclosure": "我核对过了",
+  "@servers.hostKey.changedDisclosure": {
+    "sourceHash": "29d1f63"
+  },
+  "servers.hostKey.fingerprintLabel": "密钥指纹",
+  "@servers.hostKey.fingerprintLabel": {
+    "sourceHash": "26f8639"
+  },
+  "servers.hostKey.trustAndConnect": "信任并连接",
+  "@servers.hostKey.trustAndConnect": {
+    "sourceHash": "0cce535"
+  },
+  "servers.hostKey.trustNewKey": "信任新密钥",
+  "@servers.hostKey.trustNewKey": {
+    "sourceHash": "772baac"
+  },
+  "servers.paneState.signedOut": "已从 {name} 退出登录",
+  "@servers.paneState.signedOut": {
+    "sourceHash": "b1d908f"
+  },
+  "servers.paneState.signIn": "登录…",
+  "@servers.paneState.signIn": {
+    "sourceHash": "a6a5723"
+  },
+  "servers.paneState.hostKeyChanged": "Cmdr 已停止连接到 {name}",
+  "@servers.paneState.hostKeyChanged": {
+    "sourceHash": "ac65ece"
+  },
+  "servers.paneState.hostKeyChangedHint": "它的主机密钥变了。可能是服务器重装过，也可能是有东西夹在你和它之间。请先断开连接，然后再打开它来核对指纹。",
+  "@servers.paneState.hostKeyChangedHint": {
+    "sourceHash": "923de62"
   }
 }

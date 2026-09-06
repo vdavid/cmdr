@@ -2088,3 +2088,90 @@ pt-BR no infinitivo (`encontrá-lo`), nunca próclise. Nenhum valor leva apóstr
 - `errors.write.readOnlyDevice.source.message` ainda diz `Podes copiar ficheiros de lá` — `ficheiros` mais a conjugação
   de `tu`, os dois marcadores pt-PT ao mesmo tempo. Está no `errors.json`, fora dos arquivos desta rodada, então segue
   aberta.
+
+## O painel de adicionar servidor, a chave de host e as duas linhas do "Ir para o caminho" (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.signedOut`/`signIn`/`hostKeyChanged*`, `goToPath.dialog.opensServer`/`addsServer`, `commands.serversConnect.label`)
+
+Superfície nova: o painel modal que adiciona, edita ou reautentica um servidor (SFTP, WebDAV, SMB), o passo em que a
+pessoa aprova a chave SSH do host, e duas linhas de prévia do "Ir para o caminho". A pilha de referência não existe
+nesta máquina, então as fontes vêm do macOS instalado (26.6.2, build 25G83, 2026-09-06), o caminho que
+`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" descreve.
+
+- **fingerprint (a impressão da chave SSH do host) → `impressão digital`** · Apple pt-BR,
+  `ActionKit.framework/Localizable.loctable`, a ação "Executar Script Via SSH": `The host key's fingerprint is %@` →
+  `A impressão digital da chave do host é %@`, e
+  `The SSH server has a fingerprint that is different from the fingerprint that was saved…` →
+  `O servidor SSH tem uma impressão digital diferente da impressão digital que foi salva…` · confirmed. Daí
+  `Key fingerprint` → **`Impressão digital da chave`**: `chave` sozinho já é a host key (§ anterior), então `do host`
+  fica de fora do rótulo curto.
+- **trust (o verbo do botão) → `Confiar`** · macOS pt-BR, `UsersGroups.appex/Localizable.loctable` (`Trust` → `Confiar`)
+  · confirmed, e casa com o `confiar`/`confiança` que a § do hub já fixou. Daí `Trust and connect` →
+  **`Confiar e conectar`** e `Trust the new key` → **`Confiar na nova chave`**.
+- **passphrase → `frase-senha`** · Apple pt-BR em todo lugar: `DiskImages2.framework` (`Incorrect passphrase` →
+  `Frase-senha incorreta`), `DiskManagement.framework` (`A passphrase is required for this operation.` →
+  `Uma frase-senha é exigida para esta operação.`), Certificate Assistant (`Enter Passphrase:` →
+  `Digite a Frase-senha:`) · confirmed. `Key passphrase` → **`Frase-senha da chave`**: é a frase que destrava o ARQUIVO
+  de chave, nunca a senha da conta, e o par `frase-senha`/`senha` separa as duas sem glosa.
+- **Protocol (nome acessível do seletor SMB/SFTP/WebDAV) → `Protocolo`** · macOS pt-BR,
+  `AddPrinter.app/PlugIns/IP.plugin/IP.loctable` (`Protocol:` → `Protocolo:`, e a própria descrição de acessibilidade
+  `100257.ibExternalAccessibilityDescription` `Protocol` → `Protocolo`) · confirmed. A fonte é justamente um rótulo de
+  leitor de tela, que é o uso desta chave.
+- **Advanced (a seção recolhida) → `Avançado`** · macOS pt-BR, `Security.prefPane/Localizable.loctable` (`Advanced…` →
+  `Avançado…`) e `AccessibilitySettingsWidgetExtension.appex` (`Advanced` → `Avançado`) · confirmed. Byte a byte igual a
+  `settings.section.advanced`, a irmã com o mesmo inglês.
+- **Remote folder → `Pasta remota`** · `Remote` → `Remoto` no Finder pt-BR (`LocalizableMerged.strings`,
+  `KIND_FORMATTER_29_1`) e em `Network.appex` (`Remote Management` → `Gerenciamento Remoto`); `pasta` é o termo
+  compartilhado do style.md · confirmed.
+- **Key file → `Arquivo de chave`** · `chave` é o termo do macOS pt-BR para chave criptográfica (Keychain Access:
+  `private key` → `chave privada`; Certificate Assistant: `public key` → `chave pública`), e `arquivo de …` é o molde do
+  catálogo · high.
+- **Browse… (o botão que abre o seletor de arquivos do sistema) → `Escolher…`** · o botão da Apple para essa ação é
+  `Choose…` → `Escolher…` (`ControlCenterHelper.xpc/BackgroundReplacement.loctable`,
+  `AccessibilitySettingsWidgetExtension.appex` `global.choose`, `GPUIExtension.appex` `Choose File…` →
+  `Escolher Arquivo…`), e o catálogo já publica `Escolher app…` · confirmed. ❌ Não `Navegar`, que é o `Browse` de
+  entrar num arquivo compactado (`settings.archives.opt.browse`, outro sentido), nem o `Explorar` do Finder
+  (`ConnectToWindow.strings` `48.title`), que é procurar servidores NA REDE, não escolher um arquivo. ❌ Nem o
+  `Procurar…` da Microsoft: o Cmdr é um app de macOS (princípio 2 de escolha de termo).
+- **Reconnect automatically → `Reconectar automaticamente`** · Apple pt-BR, exatamente este rótulo de interruptor:
+  `DisplaysSettingsIntentsExtension.appex/Localizable.loctable` (`Automatically reconnect` →
+  `Reconectar automaticamente`) · confirmed.
+- **Connect → `Conectar`; Guest → `Convidado`** · `NetAuthAgent.app/AuthDialog.loctable`, o próprio diálogo de conectar
+  a servidor da Apple (`600218.title` `Connect` → `Conectar`, `RiA-l0-ASw.title` `Guest` → `Convidado`) · confirmed. As
+  duas já eram o que o catálogo publica (`fileExplorer.network.connect`, `fileExplorer.network.login.connectAsGuest`),
+  então as chaves do painel copiam byte a byte.
+- **How to connect (nome acessível da escolha convidado-ou-conta) → `Como conectar`** · o grupo equivalente da Apple se
+  chama `Connect As:` → `Conectar como:` (`AuthDialog.loctable` `PHL-pS-ELV.title`), e `conectar` sem objeto é a forma
+  que o catálogo já publica (`fileExplorer.navigation.connectionTooltipSaved` = `Salvo. Abra-o para conectar.`) · high
+- **Sign in with a username and password → `Iniciar sessão com nome de usuário e senha`** · a irmã
+  `fileExplorer.network.login.signInWithCredentials` tem OUTRO inglês (`Sign in with credentials`), então não é cópia
+  byte a byte; `nome de usuário` e `senha` vêm das próprias irmãs do formulário (`login.username`, `login.password`) ·
+  confirmed. O português dispensa o artigo indefinido que o inglês usa.
+- **ssh-agent, Nextcloud, SFTP, WebDAV, SMB e `ssh` ficam verbatim.** `Use ssh-agent` → **`Usar o ssh-agent`**, no molde
+  `Usar …` que o catálogo publica em `settings.mcp.usePortInstead` e `fileExplorer.navigation.useSavedPasswordConfirm`;
+  o artigo entra porque o nome do programa é um substantivo masculino na frase.
+- **First time connecting to {host} → `Primeira conexão com {host}`** · forma nominal, que é o jeito de o título não
+  concordar com nada nem soar alarmante; o inglês é deliberadamente rotineiro · high
+- **quem cuida do servidor**, para `the server's owner` · o dono de um NAS doméstico costuma ser a própria pessoa, e a
+  forma com `quem` evita o `o dono` masculino sem glifo nenhum (style.md § Gender) · high
+- **I've checked it → `Já conferi`** · primeira pessoa, é a PESSOA falando, e o verbo é o `conferir` que a § do hub
+  fixou para uma verificação feita por ela · high
+
+Consistência de valor idêntico (`desktop-i18n-term-consistency` pareia pelo inglês, então estas são cópias byte a byte
+das irmãs já publicadas): `Connect` → `Conectar` (`fileExplorer.network.connect`), `Sign in` → `Iniciar sessão`
+(`fileExplorer.network.signIn`), `Cancel` → `Cancelar`, `Address` → `Endereço` (`servers.hub.colAddress`), `Name` →
+`Nome` (`servers.hub.colName`), `Username` → `Nome de usuário` (`fileExplorer.network.login.username`), `Password` →
+`Senha` (`fileExplorer.network.login.password`), `Remember in Keychain` → `Lembrar no Acesso às Chaves`
+(`fileExplorer.network.login.rememberInKeychain`), `Connect as guest` → `Conectar como convidado`
+(`fileExplorer.network.login.connectAsGuest`), `Advanced` → `Avançado` (`settings.section.advanced`),
+`Connect to server…` → `Conectar ao servidor…` (`settings.network.permissionIntroConnectLink`).
+
+Quatro `sameAsSourceJustification`: `servers.sheet.protocolSmb`, `protocolSftp`, `protocolWebdav` (nomes de protocolo,
+que o macOS pt-BR também não traduz) e `addressPlaceholder` (`nas.local`, um nome mDNS literal).
+
+`servers.paneState.hostKeyChangedHint` escreve `A chave do servidor mudou`, com o SUBSTANTIVO, porque um `dele` se
+apoiaria no `{name}` do título; mesma regra do style.md § final. E nenhuma das três frases de chave trocada soa como
+falha do usuário: `O Cmdr parou de conectar a {name}` põe o Cmdr como sujeito, no molde `O Cmdr parou de …` que
+`search.walkHandoff.superseded` já publica.
+
+Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `ecrã`, `estar a` + infinitivo, `consoante`, `Rever`,
+`alterar o nome`, ou `você` omitido onde a forma verbal fica ambígua (`um endereço que você copiou`,
+`a que você recebeu`). Nenhum valor leva apóstrofo ASCII, então não há `''` a dobrar.
