@@ -47,7 +47,7 @@ describe('arm 1: a registered place whose session dropped', () => {
 })
 
 describe('arm 2: a registered place asking for a credential', () => {
-  it('refuses with the reason while no sheet exists, and ❌ dials nothing', async () => {
+  it('refuses with the reason when the caller supplies no sheet, and ❌ dials nothing', async () => {
     const result = await connectPlace({ volumeId: VOLUME_ID, connectionState: 'needs_sign_in' })
     // ❗ Not `authentication_rejected`: nothing was offered, so nothing is wrong.
     expect(result).toEqual({ kind: 'refused', refusal: 'needs_credentials' })

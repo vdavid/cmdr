@@ -214,15 +214,18 @@ a just-deselected row reads as wrong. The target comes from `firstSelectedIndex`
 land on the same first row it actually selected. Both sides apply the identical skip, so an `idxs` still carrying a
 leading `0` can't park the cursor on the synthetic `..` row.
 
-**Snapshot pane (`volumeId === 'search-results'`).** FOUR integration points that MUST stay coupled, and skipping one
-gives an off-by-one selection, a stuck `search-results` path, a delete on rows nobody picked, or an MCP delete refused
-by stale pane state:
+**Snapshot pane (`volumeId === 'search-results'`).** FIVE integration points that MUST stay coupled, and skipping one
+gives an off-by-one selection, a stuck `search-results` path, a delete on rows nobody picked, an MCP delete refused by
+stale pane state, or a folder re-sorted from a pane that isn't showing it:
 
 1. `computeHasParent` returns `false` (no `..` row, via the `hasParentRow` capability).
 2. Opening a real entry from the result rows leaves the snapshot volume (below).
 3. `snapshot-selection-sync.svelte.ts` remaps the pane's index selection BY PATH whenever the snapshot changes — no
    listing diff does it, because the rows aren't a directory listing (§ File map).
 4. The pane mirrors to MCP off the snapshot rather than off a backend listing (§ File map, `mcp-sync`).
+5. Its column header sorts the SNAPSHOT in the store (`sort-operations.ts::snapshotPaneId` returns before any
+   `setPaneSort` or `resortListing`), because every consumer resolves the index the user sees against
+   `snapshot.entries[i]`. The header itself reads no capability (below).
 
 `FilePane.handleNavigate` gates the second on the `isSearchResultsView` capability (the `caps.kind === 'search-results'`
 classifier, never a raw id compare), resolves the entry's `Location` (`resolveLocationOrToast`, shared with the other
@@ -492,9 +495,9 @@ drive that is itself writable, so asking the volume id alone put New folder and 
 snapshot and inside a read-only tar, and the press then hit `readOnlyRefusal`'s alert. A zip keeps both, being the one
 archive format the managed edit flow writes. A store getter inside a `$derived` is reactive across the component
 boundary, so there's no `onFocusedVolumeChange` callback or `+page.svelte` mirror `$state` in the chain. Per-pane read
-only (P1): touch the focused pane's manager, never both. `canSourceOps` is no longer a prop (it was a dead-true
-`+page.svelte={true}` placeholder); a focused `network` pane now disables the source buttons too (`canBeSource: false`),
-which only makes the bar honest — those ops already no-op'd deep down on a network pane.
+only (P1): touch the focused pane's manager, never both. `canSourceOps` is derived here rather than passed in as a prop,
+so a focused `network` pane disables the source buttons too (`canBeSource: false`) instead of offering ops that no-op
+deep down.
 
 **`FunctionKeyBar` dispatches `file.*` onto the bus.** Each button click calls a single
 `onCommand?: (id: CommandId) => void` prop, wired in `+page.svelte` to `handleCommandExecute`. The button-to-command
@@ -627,7 +630,7 @@ below rather than merely spreading lines:
 `dialog-state.svelte.ts` keeps birth context, the confirmation / alert / error dialogs, and the cross-cutting queries
 (`anyDialogOpen`, `isConfirmationDialogOpen`, `dismissAllAfterRenderFailure`, the MCP `confirmOpenDialog`).
 
-`handleTransferConfirm` takes no scan flag: the progress dialog no longer waits for a `TransferDialog` preview, because
+`handleTransferConfirm` takes no scan flag: the progress dialog doesn't wait for a `TransferDialog` preview, because
 the backend registers the operation at confirm and its own task waits for the preview it claimed
 (`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "The scan-wait"). What the handler MUST keep
 threading is `previewId`, and the archive-password retry MUST keep clearing it: that retry is a new operation, a preview
@@ -1384,7 +1387,7 @@ drops the dead session and leaves the place a `saved` row, so opening it dials a
 back the pending prompt would make it one click instead of two.
 
 ❗ **A state lands only once something can act on it.** Adding one before its handler puts a button on screen that does
-nothing, which is the one thing this view refuses to do (`../../servers/DETAILS.md` § "What later milestones fill in").
+nothing, which is the one thing this view refuses to do (`../../servers/DETAILS.md` § "The sheet contract").
 
 ❗ **The `state` prop is destructured to a different local name.** A binding called `state` in a Svelte 5 component
 makes every `$state(...)` in the file read as a store subscription instead of a rune, which the compiler reports as a

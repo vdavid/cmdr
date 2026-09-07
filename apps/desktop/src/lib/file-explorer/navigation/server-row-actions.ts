@@ -2,8 +2,8 @@
  * What a server row in the volume switcher offers, and what each offer does.
  *
  * Lives beside the switcher rather than inside `VolumeBreadcrumb.svelte` because
- * TWO surfaces raise the same menu (the switcher row and, from M1's hub half,
- * the hub row) and the picked action lands in a THIRD (`DualPaneExplorer`, which
+ * TWO surfaces raise the same menu (the switcher row and the hub row) and the
+ * picked action lands in a THIRD (`DualPaneExplorer`, which
  * owns the `volume-context-action` listener). One module means the three can't
  * drift on which items a row has or what confirming one costs.
  *
@@ -39,8 +39,9 @@ const log = getAppLogger('fileExplorer')
  *
  * ❗ Off the VOLUME ID, which the two id minters spell (`sftp-…`, `webdav-…`), ❌
  * never off `category === 'network'`: a mounted SMB share is one of those, and
- * its session is an OS mount that `disconnectPlace` doesn't speak. SMB moves onto
- * this family in M3, when its unmount moves with it.
+ * its session is an OS mount that `disconnectPlace` doesn't speak. SMB shares
+ * reach the switcher as ordinary mounted volumes and leave through Eject; they
+ * join this family when their unmount does.
  */
 export function isServerPlaceRow(volume: VolumeInfo): boolean {
   return volume.category === 'network' && isServerVolumeId(volume.id)

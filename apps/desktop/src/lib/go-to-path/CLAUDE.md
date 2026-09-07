@@ -1,56 +1,38 @@
 # Go to path (frontend)
 
-Frontend half of the "Go to path" action (⌘G, command palette): a small modal that jumps the focused pane to a typed,
-pasted, or recent path. Local filesystem plus one intercept: a pasted server address.
-
-Backend counterpart: `apps/desktop/src-tauri/src/go_to_path/CLAUDE.md`. The backend's `resolve_go_to_path` owns all path
-reasoning; this frontend is a thin presenter (smart backend, thin frontend).
+The ⌘G modal that jumps the focused pane to a typed, pasted, or recent path. A thin presenter: the backend's
+`resolve_go_to_path` (`apps/desktop/src-tauri/src/go_to_path/CLAUDE.md`) owns all path reasoning.
 
 ## Module map
 
-- `go-to-path.ts`: `goToPath(explorer, input)` handler (resolve → switch on typed `kind` → navigate → record recents) +
-  the pure helpers `digitToRecentIndex` and `shouldPrefillClipboard`.
-- `scheme-intercept.ts`: what a `<scheme>://` input means, decided BEFORE the backend is asked.
-- `GoToPathDialog.svelte`: the modal (auto-focused textbox, up to 10 recent rows, live inline ancestor warning).
-  `RESOLVE_DEBOUNCE_MS` lives here.
-- `GoToPathAncestorToastContent.svelte`: INFO toast for the nearest-ancestor outcome.
-- `recent-paths-state.svelte.ts`: `$state` mirror of the backend recents store.
-- `go-to-path-ids.ts`: stable dedup id for the ancestor INFO toast.
-
-Navigation primitives are shared one level up in `../file-explorer/navigation/navigate-and-select.ts`
-(`navigateToDirInPane`, `navigateToFileInPane`), reused by "Go to latest download".
+- `go-to-path.ts`: the `goToPath(explorer, input)` handler plus the pure `digitToRecentIndex` and
+  `shouldPrefillClipboard`. `scheme-intercept.ts`: what a `<scheme>://` input means.
+- `GoToPathDialog.svelte` (textbox, recent rows, inline ancestor warning, `RESOLVE_DEBOUNCE_MS`),
+  `GoToPathAncestorToastContent.svelte`, `recent-paths-state.svelte.ts` (`$state` mirror of the backend recents store),
+  `go-to-path-ids.ts`.
+- Navigation primitives live one level up in `../file-explorer/navigation/navigate-and-select.ts`.
 
 ## Must-knows
 
-- **A `<scheme>://` input never reaches the backend resolver**, and the classification is ONE function all three
-  resolving sites call (the jump, the debounced preview, and the clipboard prefill). `resolve_go_to_path` walks
-  `std::fs::metadata` over a path joined onto the pane's directory, so it answers `invalid` for an address that is about
-  to work. ❗ Reading and ACTING are separate: `readSchemeInput` classifies and is safe from the preview,
-  `actOnSchemeInput` opens the sheet and is the jump's alone. A preview that opened a modal would put one on screen
-  mid-keystroke. DETAILS § "The scheme intercept".
-- **Switch on the typed `kind`, never on a message string.** The backend returns one `GoToPathResolution` with a `kind`
-  discriminator (`directory` / `file` / `nearestAncestor` / `invalid`); `reason` and toast copy are user-facing only.
-  This is the smart-backend principle.
-- **`file` selects, never opens.** `file` → navigate to the parent and move the cursor onto the file. Don't open it.
-- **Recents store the RESOLVED target, populated ONLY by manual jumps in this dialog.** Not by `nav_to_path` MCP calls,
-  not by ordinary app-wide navigation (matches the search-history precedent). Deduped by path, move-to-top, cap 10. The
-  backend owns dedup/order/cap; the `$state` mirror re-reads the authoritative list after each write rather than
-  guessing the new order.
-- **The digit→recent jump is guarded by the EMPTY box, not a modifier.** Empty box + `'1'..'9'` → recents 0..8, `'0'` →
-  10th. No valid path starts with a digit, so once any character is typed, digits are ordinary input. The guard is
-  stated in a code comment at the keydown site; confirmed with David. Don't switch it to a modifier.
-- **Menu double-dispatch idempotency.** The native `Go to path…` menu item carries ⌘G as an accelerator AND
-  `command-registry` binds ⌘G, so both fire on macOS. The `showGoToPathDialog` callback in `+page.svelte` guards with
-  `if (show && showGoToPathDialog) return` so a double-fire opens the dialog once. Don't drop the guard.
-- **The ancestor toast's back-shortcut is snapshotted at toast-creation** (`getEffectiveShortcuts('nav.back')[0]`) and
-  rendered as a literal-mode `ShortcutChip`, never hardcoded and never live-subscribed: a later rebind shouldn't rewrite
-  a visible toast. A `commandId`-mode chip re-renders live, so keep it literal.
+- **A `<scheme>://` input never reaches the backend resolver.** `resolve_go_to_path` walks `std::fs` over a path joined
+  onto the pane's directory, so it answers `invalid` for an address that is about to work. All three resolving sites
+  (the jump, the debounced preview, the clipboard prefill) call ONE classifier. ❗ Reading and ACTING are separate:
+  `readSchemeInput` is safe from the preview; `actOnSchemeInput` opens the sheet and is the jump's alone, because a
+  preview that opened a modal would put a sheet on screen mid-keystroke. DETAILS § The scheme intercept.
+- **Switch on the typed `kind`** (`directory` / `file` / `nearestAncestor` / `invalid`), never on `reason` or toast
+  copy: that wording is user-facing only.
+- **`file` selects, never opens**: navigate to the parent, then move the cursor onto the file.
+- **Recents hold the RESOLVED target, written only by manual jumps in this dialog** (not `nav_to_path` MCP calls, not
+  app-wide navigation). The backend owns dedup, order, and the cap of 10; the `$state` mirror re-reads the authoritative
+  list after each write rather than guessing the new order.
+- **The digit→recent jump is guarded by the EMPTY box, not a modifier.** No valid path starts with a digit, so digits
+  are ordinary input once anything is typed. Confirmed with David; don't switch it to a modifier.
+- **Keep the `if (show && showGoToPathDialog) return` guard in `routes/(main)/+page.svelte`.** The native `Go to path…`
+  menu item carries ⌘G as an accelerator AND `command-registry` binds ⌘G, so both fire on macOS.
+- **The ancestor toast's back-shortcut is snapshotted at toast creation** and rendered as a literal-mode `ShortcutChip`.
+  A `commandId`-mode chip re-renders live, and a later rebind shouldn't rewrite a visible toast.
+- **Anything that isn't a scheme input is local**, so a relative input on a non-local pane falls back to
+  nearest-ancestor (often `/`).
 
-## v1 limitations
-
-- **Local filesystem, plus the scheme intercept.** A `<scheme>://` address is handled above; anything else is local, so
-  a relative input on a non-local pane falls back to nearest-ancestor (often `/`). Absolute and `~` paths always work.
-- **Case-insensitivity.** Dedupe is a raw path-string compare, so on case-insensitive APFS `/Users/x/Foo` and
-  `/Users/x/foo` can show as two recents. Accepted for v1.
-
-Architecture, navigation semantics, decisions, and the manual smoke checklist: `DETAILS.md`.
+Architecture, navigation semantics, decisions, and the manual smoke checklist: `DETAILS.md`. Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.

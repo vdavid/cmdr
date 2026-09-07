@@ -10,12 +10,35 @@ The boundary is enforceable rather than aspirational: nothing here can reach `ta
 backend, because none of them are in the dependency graph. That's the property the whole extraction rests on, so treat
 "just add a small dependency" as a design change, not a convenience.
 
-## What's in, and why each thing had to be
+## Module map
 
-The set was derived by the compiler, not by reading `use` lines: create the crate, move the hypothesised set, and let
-`cargo check` enumerate the real closure. Three earlier attempts at an import census each missed something, always the
-same way — a call through a local helper, a fully-qualified call inline in an expression, a `use` inside a function
-body, and `#[cfg(test)]` items are all invisible to a header grep.
+`CLAUDE.md` carries the must-knows; this is where each file sits. Why each one belongs here rather than in the app is
+the next section.
+
+- `volume/`: the `Volume` trait and its types; `connection.rs` (the REMOTE vocabulary: `ConnectionState`,
+  `DeviceReadiness`, `BackendKind`, `SignInShape`, and `DeviceUnavailableReason`); `ids` + `canonical_root` +
+  `mtp_ids` (the ID funnel and double-mount collapse); `capabilities.rs`; `retirement.rs` (how background work learns
+  it stopped being the live volume); `channel_stream.rs` (a network backend's read path, consumer half);
+  `scan_boundary.rs` + `scan_stop.rs` (the one seam a copy scan touches per entry: counts, Cancel, and Pause);
+  `scan_walk.rs`, `mkdir_all.rs`, `patching.rs`, and `secret_store.rs` (the bodies a stat-and-listing backend gets for
+  free); `remote_paths.rs` (a server tree's `<scheme>://user@host:port` app spelling, and the ONE translation);
+  `friendly_error/` (typed, word-free classification); `usb_speed.rs` (❗ its doc comment reaches `bindings.ts`);
+  `in_memory.rs`; `conformance.rs`; and `host/` (what a backend needs from the app, as named traits; read
+  `src/volume/host/CLAUDE.md` before writing a backend).
+- `entry.rs` + `icons/`: `FileEntry` and the classifiers behind `get_icon_id`.
+- `sqlite_util.rs`: the ONE process-wide page-cache slab, and the connection factories every store opens through.
+- `staging.rs`: `StagingTemp`, the ONLY way to name a scratch file.
+- Leaves: `archive_format.rs` (sole source of truth for archive detection), `firmlinks.rs` (`normalize_path`; the index
+  and the app's watchers have to agree on it), `file_provider.rs` (the cloud-domain marker), `filesystem_kind.rs`,
+  `path_locations.rs` (how many PLACES a set of directories amounts to), `git_meta` (what a git portal row's Size cell
+  states), `log_rollup`, `tcc_paths`, `ignore_poison`, `pluralize`, `thread_qos`, `thread_cpu`, `process_memory`,
+  `testing`.
+
+## Why each thing is here rather than in the app
+
+❗ The membership of this crate is a `cargo check` closure, not a reading of `use` lines. An import census misses a call
+through a local helper, a fully-qualified call inline in an expression, a `use` inside a function body, and
+`#[cfg(test)]` items, so weigh any "just move this down" against the compiler, not a grep.
 
 - **`Volume` + `types` + `ids`.** The trait is the crate's centrepiece: the index walks network volumes through
   `Volume::list_directory_for_scan`, so it needs the trait and every type the trait mentions.
@@ -24,10 +47,10 @@ body, and `#[cfg(test)]` items are all invisible to a header grep.
   type's only other non-`std` dependency is `serde`, so no git internals came along, and the boxed-trait fallback (keep
   the payload app-side behind a `cmdr-fs`-owned trait) wasn't needed.
 - **`tcc_paths`.** `friendly_error/volume_error.rs` asks it whether a permission denial is really macOS TCC (it answers
-  by probing the gate that covers the path, not by matching the path alone). Its parent `restricted_paths/mod.rs`
-  imports `tauri::AppHandle`, so the child was split out and moved alone.
+  by probing the gate that covers the path, not by matching the path alone). Its app-side parent
+  `restricted_paths/mod.rs` imports `tauri::AppHandle`, so only the child is here.
 - **`FileEntry`.** 11 of the ~70 `crate::file_system` references from the index are this type; it isn't skippable. Its
-  constructor pulled three more things down with it (below).
+  constructor brings three more predicates with it (below).
 - **`InMemoryVolume`.** The one `Volume` impl that needs no host. It rides with the trait so a test in any crate can
   build a volume without the app.
 - **`ignore_poison`, `pluralize`, `thread_qos`, `thread_cpu`, `process_memory`.** Host primitives with 8–49 references
@@ -38,17 +61,15 @@ body, and `#[cfg(test)]` items are all invisible to a header grep.
   purpose, so a window is the difference of two readings; the index writer's heartbeat is its one consumer today
   (`../cmdr-index/src/indexing/writer/probe_stats.rs`).
 - **`sqlite_util`.** A leaf over `std` + `rusqlite`, whose only two in-crate calls are `pluralize` and `ignore_poison`,
-  both already here. It had to come down because five stores share it and they sit on both sides of the boundary: the
-  three index DBs move into `cmdr-index`, while the agent's and the operation log's stay app-side. Putting it in
-  `cmdr-index` would have made `agent/` and `operation_log/` depend on the index for connection plumbing, and there is
-  only one `SQLITE_CONFIG_PAGECACHE` slab per process, so it genuinely has to be one instance both sides see. (The plan
-  budgeted this as "move `run_incremental_vacuum` down", counted when the module was two references; the process-wide
-  page-cache work landed four days later and took it to 33.)
+  both already here. It belongs here because the stores that share it sit on both sides of the boundary: the
+  three index DBs live in `cmdr-index`, while the agent's and the operation log's stay app-side. Putting it in
+  `cmdr-index` would make `agent/` and `operation_log/` depend on the index for connection plumbing, and there is only
+  one `SQLITE_CONFIG_PAGECACHE` slab per process, so it genuinely has to be one instance both sides see.
 - **`staging`.** The markers, the `StagingTemp` mint, and the in-flight registry. A mutating backend has to be able to
   stage a write, and the archive mutator already does; leaving the mint in the app would mean the first backend crate
-  either reaches upward for it or grows a seam for something with no per-backend variation. What made the move
-  mechanical is that the mint's only tie to write-op state is an `Option<Weak<()>>` liveness token the CALLER hands
-  over, which names no app type. The two visibility settings stayed behind (below).
+  either reaches upward for it or grows a seam for something with no per-backend variation. The mint's only tie to
+  write-op state is an `Option<Weak<()>>` liveness token the CALLER hands over, which names no app type. The two
+  visibility settings stay app-side (below).
 - **`wait_until` / `wait_until_async`.** Behind the `testing` feature. The rest of the app's `test_support.rs` can't
   follow: `COUNTING_ALLOCATOR` is a `#[global_allocator]`, and a second one in any binary linking this crate is a hard
   compile error.
@@ -123,73 +144,65 @@ interchangeable:
   the `Volume`. A phone waiting for its "Allow USB debugging?" tap has no session, so putting it on the session field
   would enrol it in a backoff loop that dials nothing forever.
 
-## The four cuts that made the closure finite
+## Three boundary decisions, and why they hold
 
-Measured at file granularity over transitive `crate::` references, the hypothesised seed set dragged in **89 files and
-~36,200 lines** — `network/`, `secrets/`, `volumes/`, `mtp/`, `settings/`, and ~15,600 lines of `indexing/`, which is
-the cycle coming straight back. Four cuts took it to the 25 files and ~7,600 lines that are here.
+A naive reading of what `FileEntry` and `Volume` "need" pulls in 89 files and ~36,200 lines of the app, including
+~15,600 lines of `indexing/`, which is the cycle coming straight back. Three decisions keep the closure at the ~25 files
+and ~7,600 lines here, and each is worth defending against a tidy-up pass.
 
-### 1. `Volume::notify_mutation` lost its default body
+### 1. `Volume::notify_mutation` has a no-op default
 
-The default opened with `use crate::file_system::listing::caching::…` and `use crate::file_system::listing::reading::…`
-**inside the function body**, so the marquee type dragged the app's listing cache and listing I/O. Essentially the whole
-blow-up ran through those two edges.
-
-**Disposition: the default is now a documented no-op**, and the local-FS behavior lives app-side in
+A default that patched the local listing cache would open with `use crate::file_system::listing::caching::…` and
+`use crate::file_system::listing::reading::…` inside the function body, and those two edges alone drag the app's listing
+cache and listing I/O into the graph. So the default is a documented no-op, and the local-FS behavior lives app-side in
 `file_system::listing::mutation::patch_listing_after_local_mutation`.
 
 Why this over the alternatives:
 
-- **Making it a required method** (no default body) would touch ~45 `impl Volume for` sites, most of them test doubles,
-  which contradicts "no other app file changes" for no gain: every one of them would write `Box::pin(async {})`.
+- **A required method** (no default body) would touch ~45 `impl Volume for` sites, most of them test doubles, for no
+  gain: every one would write `Box::pin(async {})`.
 - **A `MutationObserver` trait** would need an injection point the signature doesn't have, so it would land as a
-  `OnceLock` global inside this crate — exactly the shape the extraction is trying to get rid of.
-- The no-op is also a correctness improvement. All four real backends (`LocalPosixVolume`, `SmbVolume`, `MtpVolume`, and
-  the read-only `ArchiveVolume`, which never calls it) already override the method, so **nothing changed behaviorally**.
-  The only consumers of the old default were `InMemoryVolume` and the test doubles — for which "stat the real filesystem
-  through `std::fs`" was never right.
-- `LocalPosixVolume` already carried a verbatim copy of the default body, so extracting the helper **removed** ~50 lines
-  of duplication rather than adding any. Two copies of a cache-patching routine is exactly the thing that rots apart.
+  `OnceLock` global inside this crate, exactly the shape this boundary exists to avoid.
+- The no-op is also more correct. All four real backends (`LocalPosixVolume`, `SmbVolume`, `MtpVolume`, and the
+  read-only `ArchiveVolume`, which never calls it) override the method; the only callers of a stat-the-real-filesystem
+  default would be `InMemoryVolume` and the test doubles, for which it was never right.
+- Keeping one helper app-side rather than a default plus `LocalPosixVolume`'s own copy leaves ~50 fewer lines and no
+  duplicated cache-patching routine to rot apart.
 
 **Guardrail this leaves behind**: a new mutable backend that forgets to override `notify_mutation` gets a silently stale
 pane instead of a free correct one. That's why the trait doc says so and why the backends checklist repeats it.
 
-### 2. `FileEntry::new`'s three predicates came down
+### 2. `FileEntry::new`'s three predicates live here
 
 `FileEntry::new` sets `icon_id` through a local `get_icon_id` helper (which calls `icons::special_folders` and
-`icons::per_path`) and `is_archive` from a fully-qualified inline call into the archive backend. None of the three
-appear in any header `use` line.
+`icons::per_path`) and `is_archive` from a fully-qualified inline call into the archive vocabulary. None of the three
+appear in any header `use` line, which is exactly why the closure is derived by `cargo check` rather than by grepping
+imports: a call through a local helper, a fully-qualified inline call, a `use` inside a function body, and
+`#[cfg(test)]` items are all invisible to a header grep.
 
-All three are pure name/path predicates with no I/O — that's a hard requirement, since they run for every entry of a
-100k-entry listing — so **they moved down** rather than being stripped or injected:
+All three are pure name and path predicates with no I/O, a hard requirement since they run for every entry of a
+100k-entry listing, so they live here rather than being stripped or injected (stripping the two fields was never
+viable: `FileEntry::new` has 83 call sites):
 
-- `icons/special_folders.rs` moved whole (its only non-`std` dependency is `dirs`).
-- The package half of `icons/per_path.rs` split into `icons/packages.rs`. The custom-icon half stayed: it needs a
-  `getxattr` syscall, which is why it never runs during a listing in the first place.
-- `has_supported_archive_extension` delegates to `format_for_name`, so the whole name → format vocabulary moved
+- `icons/special_folders.rs` is whole here; its only non-`std` dependency is `dirs`.
+- `icons/packages.rs` holds the package half of the per-path classification. The custom-icon half stays app-side: it
+  needs a `getxattr` syscall, which is why it never runs during a listing in the first place.
+- `has_supported_archive_extension` delegates to `format_for_name`, so the whole name → format vocabulary is here
   (`ArchiveFormat`, `TarCodec`, `format_for_name`, `format_for_path`, `is_sequential`). The decoders that unwrap a tar's
-  outer compression stayed with the archive reading core. The split line is "naming vs machinery", and it keeps
+  outer compression stay with the archive reading core. The split line is "naming vs machinery", and it keeps
   `format_for_name` the single source of truth rather than forking a second suffix table.
 
-  One consequence of that split is worth following: because the format a name maps to decides WRITABILITY, the enum
-  carries a variant whose whole reason for existing lives in the consumer crate. `ArchiveFormat::Ooxml` is a zip in
-  every respect the reader cares about, and separate only so the app's write guard refuses it. The rationale is in
+  One consequence is worth following: because the format a name maps to decides WRITABILITY, the enum carries a variant
+  whose whole reason for existing lives in the consumer crate. `ArchiveFormat::Ooxml` is a zip in every respect the
+  reader cares about, and separate only so the app's write guard refuses it. The rationale is in
   `crates/cmdr-archive/DETAILS.md` § "Why a document container is its own format"; don't restate it here, and read it
   before touching the variant or the suffix table.
 
-Stripping the two fields instead was never viable: `FileEntry::new` has 83 call sites.
-
-### 3. `filesystem_kind` split
+### 3. `filesystem_kind` is split: classification here, detection app-side
 
 `detect_filesystem_for_path` reaches `crate::volumes::get_mount_point` (macOS) or `crate::file_system::linux_mounts`
-(Linux). The module's own doc already drew the line — classification is platform-free, detection is thin platform wiring
-— so the classification moved and detection stayed. Callers that want detection stay app-side anyway.
-
-### 4. The dead scanner/watcher apparatus
-
-Already deleted before this crate existed: `VolumeScanner`, `VolumeWatcher`, `Volume::scanner()`, `Volume::watcher()`,
-and their `LocalPosixVolume` implementations. They were the `file_system → indexing` half of the cycle and had zero
-callers.
+(Linux). Classification is platform-free and detection is thin platform wiring, so only the classification is here.
+Callers that want detection are app-side anyway.
 
 ## Gotcha: `cfg(test)`-conditioned BEHAVIOR stops meaning anything in a dependency
 
@@ -259,9 +272,9 @@ The API contract says this crate emits no user-facing strings. Two things look l
 - **`pluralize`** formats "1 file" / "2 files". All 49 of its call sites build log lines. It lives here because it's a
   leaf with no dependencies, not because copy generation belongs in a filesystem crate. One of its outputs does reach a
   UI: `PhaseRecord.trigger` renders in the developer debug panel, which is diagnostics, not product copy. Anyone
-  grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first. The Size column
-  used to be the second exception, as a pair of pre-worded `String` fields; it's `FileEntry::git_meta` now
-  (`src/git_meta.rs`), a typed `GitEntryMeta` the host words from its own catalog.
+  grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first.
+- **`git_meta`** (`src/git_meta.rs`) looks like the second, and isn't: `FileEntry::git_meta` is a typed `GitEntryMeta`
+  that states a fact, and the host words the Size column from its own catalog.
 
 ## `ScanBoundary`: one seam, so a walk can't count without asking
 

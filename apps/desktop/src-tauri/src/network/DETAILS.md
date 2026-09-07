@@ -1,9 +1,11 @@
-# Network SMB support details
+# Network support details
 
-Pull-tier docs for `src-tauri/src/network/`: architecture, flows, and decision rationale. Must-know invariants and
-gotchas live in `CLAUDE.md`.
+Pull-tier docs for `src-tauri/src/network/`: architecture, flows, and decision rationale. Read this before any
+non-trivial work here. Must-know invariants and gotchas live in `CLAUDE.md`.
 
-Discover, browse, and mount SMB network shares. Works on macOS and Linux.
+Discover, browse, and mount SMB network shares on macOS and Linux, and hold the saved-server stores, the connect
+wiring, and the one-shot credential seam that SFTP and WebDAV share. Why SMB's auth flow is shaped the way it is:
+`docs/notes/smb-auth-flow-redesign.md`.
 
 Frontend counterpart: `apps/desktop/src/lib/file-explorer/network/CLAUDE.md` for the network browser, share picker,
 login form, and reconnect-manager state.
@@ -35,20 +37,18 @@ of the app build.
 
 ## Platform strategy
 
-| Component | macOS | Linux |
-|-----------|-------|-------|
-| mDNS discovery | `mdns-sd` (pure Rust) | `mdns-sd` (same) |
-| SMB share listing | `smb2` crate (pure Rust) | `smb2` (same) |
-| smbutil fallback | `smbutil view -G` | `smbclient -L` (from `samba-client` package) |
-| Credential storage | `secrets` module (Keychain) | `secrets` module (Secret Service → encrypted file fallback) |
-| Mounting | `NetFSMountURLSync` → `/Volumes/` | `gio mount` → `/run/user/<uid>/gvfs/` |
+- **mDNS discovery**: `mdns-sd` (pure Rust) on both platforms.
+- **SMB share listing**: the `smb2` crate on both platforms.
+- **CLI fallback**: `smbutil view -G` on macOS, `smbclient -L` (from `samba-client`) on Linux.
+- **Credential storage**: the `secrets` module on both: Keychain on macOS, Secret Service with an encrypted-file
+  fallback on Linux.
+- **Mounting**: `NetFSMountURLSync` → `/Volumes/` on macOS, `gio mount` → `/run/user/<uid>/gvfs/` on Linux.
 
 ## Key decisions
 
 ### Lazy mDNS startup gated on user toggle and first-trigger flag
 
-`network::start_discovery()` no longer fires unconditionally in `lib.rs::setup`. Instead, two settings drive the
-lifecycle:
+`network::start_discovery()` never fires unconditionally from `lib.rs::setup`; two settings drive the lifecycle:
 
 - **`network.enabled`** (boolean, default `true`): top-level user toggle in `Settings > Network > SMB/Network shares`.
   When `false`, the picker shows "Network (disabled)", no mDNS daemon runs, and no proactive smb2 upgrades happen.
@@ -114,7 +114,7 @@ The end-to-end regression test is `smb_client.rs::integration_tests::smb_integra
 
 We considered a native macOS SMB-enumeration API to drop the smbutil shell-out entirely, and rejected it. The auth half
 exists only as **private SPI** (`SMBClient.framework`'s `SMBOpenServerEx`, no public headers), and the enumeration half
-(`NetShareEnum` srvsvc + `RapNetShareEnum` legacy RAP — the exact path old servers need) is **not a framework API at
+(`NetShareEnum` srvsvc + `RapNetShareEnum` legacy RAP, the exact path old servers need) is **not a framework API at
 all**: it lives inside the `/usr/bin/smbutil` binary, so we'd link a fragile private framework for auth and still
 reimplement enumeration ourselves. Since smb2 already owns that domain (in supported, cross-platform Rust), fixing the
 root cause there is the cleaner path. Full evidence (disassembly, SDK header grep, in-memory-auth probe against the
@@ -143,7 +143,7 @@ Always pass the resolved IP from mDNS discovery when one is available; fall back
 - A guest/anonymous SessionSetup the server rejects on auth grounds: macOS smbd answers with `STATUS_ACCOUNT_RESTRICTION` (0xC000006E), and smb2 ≥0.13.1 classifies the whole logon-rejection NTSTATUS family as `ErrorKind::AuthRequired`, so `is_auth_error` routes it to the credentials path (keychain → prompt) instead of the CLI fallback. Pinned by `crates/cmdr-smb/src/errors.rs::test_guest_rejection_status_is_auth_error`.
 
 The fallback paths:
-- **macOS:** `smbutil view -G -N` (guest) or `smbutil view -N` (Keychain-backed; smbutil reads the system Keychain itself). **No authenticated smbutil fallback** — see the credential-channel note below.
+- **macOS:** `smbutil view -G -N` (guest) or `smbutil view -N` (Keychain-backed; smbutil reads the system Keychain itself). **No authenticated smbutil fallback**; see the credential-channel note below.
 - **Linux:** `smbclient -L` (from `samba-client` package), guest or authenticated. If `smbclient` is not installed, returns a `MissingDependency` error with a distro-specific install command (detected via `/etc/os-release`). The `smb_smbutil.rs` Linux stubs delegate to `smb_smbclient.rs`.
 - **Other platforms:** stubs return `ProtocolError`.
 
@@ -182,7 +182,7 @@ When the user mounts an SMB share, we establish a parallel smb2 connection along
 
 Every `NSWorkspaceDidMountNotification` on an SMB share triggers a fresh `register_smb_volume` cycle, the user can re-trigger the same path via manual "Connect directly", and the startup upgrade pass can land on an already-direct volume. `register_replacing_predecessor` (in `smb_upgrade.rs`) is the one place a new `SmbVolume` takes an occupied slot: it looks up the predecessor via `manager.get(volume_id)`, calls `Volume::on_superseded` on it, then `register`s the new volume. Both `register_smb_volume` and `try_smb_upgrade` route through it. It also emits `volumes-changed` after registering: the after-sign-in and already-mounted upgrade paths have no FSEvents mount event to ride, so without the explicit broadcast the frontend keeps the stale `os_mount` dot on a volume that's already `direct`.
 
-**A replace is not a disconnect, and the predecessor's session must survive it.** The full lifecycle contract, the in-flight holders it protects, and the id-scoped parts that do retire live in `file_system/volume/backends/DETAILS.md` § "Supersede vs. unmount" — the canonical doc, next to the `SmbVolume` code that implements it.
+**A replace is not a disconnect, and the predecessor's session must survive it.** The full lifecycle contract, the in-flight holders it protects, and the id-scoped parts that do retire live in `file_system/volume/backends/DETAILS.md` § "Supersede vs. unmount", the canonical doc, next to the `SmbVolume` code that implements it.
 
 **Gotcha**: the `Volume::on_superseded` DEFAULT delegates to `on_unmount`, which uses `blocking_write()` / `blocking_lock()` because its FSEvents-thread call site (`volumes::watcher::handle_volume_unmounted`) is sync. Inside `register_replacing_predecessor` we're in an async context, so a direct call would panic ("cannot block_on within a runtime") for any backend that hasn't overridden the hook. The helper wraps the call in `tokio::task::spawn_blocking(...).await` so the lock acquisition runs on the blocking-thread pool. Don't switch back to a direct call.
 
@@ -190,7 +190,7 @@ Every `NSWorkspaceDidMountNotification` on an SMB share triggers a fresh `regist
 
 `gio mount` is used for user-space SMB mounting on Linux. It requires the `gvfs-smb` package. If `gio` is not available, a helpful error message is returned. Mounts appear under `/run/user/<uid>/gvfs/`.
 
-The password is fed to `gio mount` through the child's **stdin** (`run_gio_mount` spawns `gio` directly with a piped stdin), never via a shell command line. An earlier `sh -c "echo 'PASS' | gio mount …"` shape leaked the cleartext password into the process argument list (`ps` / `/proc/<pid>/cmdline`) — the same argv exposure the macOS smbutil path is careful to avoid. The already-mounted check (`find_existing_mount` → `match_existing_smb_mount`) parses `gio mount -l` and compares servers by identity (`server_identity::same_server`), so a share mounted under one name (for example by Nautilus using the hostname) is recognized when we look it up by another (the IP).
+The password is fed to `gio mount` through the child's **stdin** (`run_gio_mount` spawns `gio` directly with a piped stdin), never via a shell command line. An earlier `sh -c "echo 'PASS' | gio mount …"` shape leaked the cleartext password into the process argument list (`ps` / `/proc/<pid>/cmdline`), the same argv exposure the macOS smbutil path is careful to avoid. The already-mounted check (`find_existing_mount` → `match_existing_smb_mount`) parses `gio mount -l` and compares servers by identity (`server_identity::same_server`), so a share mounted under one name (for example by Nautilus using the hostname) is recognized when we look it up by another (the IP).
 
 ### `HostSource` enum on `NetworkHost`
 
@@ -211,7 +211,7 @@ Manual server IDs use the format `manual-{address}-{port}` with dots/colons repl
 
 ### TCP reachability check runs in the dialog, before the host is added
 
-`add_manual_server` does a TCP connect to `host:port` and fails up front if the port is closed, so the dialog shows the error inline and the host is never added on an unreachable address. Discovered hosts can sit in a "Resolving…" state because mDNS guarantees they exist; a typed address has no such guarantee, so without the up-front check a typo or dead host would clutter the list with an entry that never works. The check proves only that the port is open, not that SMB is healthy — protocol/auth failures still surface later through the normal share-listing pipeline once the host is in the list.
+`add_manual_server` does a TCP connect to `host:port` and fails up front if the port is closed, so the dialog shows the error inline and the host is never added on an unreachable address. Discovered hosts can sit in a "Resolving…" state because mDNS guarantees they exist; a typed address has no such guarantee, so without the up-front check a typo or dead host would clutter the list with an entry that never works. The check proves only that the port is open, not that SMB is healthy: protocol/auth failures still surface later through the normal share-listing pipeline once the host is in the list.
 
 ### Mount path disambiguation for same-name shares
 
@@ -236,7 +236,7 @@ finished URL string instead would eat the scheme, the `//`, the port colon, and 
 two data halves are escaped separately and the structure assembled around them.
 
 - **The escape set is RFC 3986 `unreserved`** (`urlencoding::encode`: keeps `A-Za-z0-9-._~`). Over-escaping is free
-  (a reader decodes back to the same bytes); under-escaping is not — an unescaped `%` in a share named `100%` reads as
+  (a reader decodes back to the same bytes); under-escaping is not: an unescaped `%` in a share named `100%` reads as
   a truncated escape and the URL is rejected outright, and `#` or `?` would silently cut the name short.
 - **NFC first, both halves.** macOS hands out decomposed strings while SMB servers store and answer with composed
   ones, so one visible name is two byte strings and two different escapes, and the server only recognizes the NFC one.
@@ -353,11 +353,11 @@ silence it replaces.
 **The ledger asks `server_identity::same_server`, not a string key.** `statfs` echoes back whichever name form each
 mount used, so one NAS arrives as `192.168.1.111` on one mount and `Naspolya._smb._tcp.local` on the next. That's also
 why the ledger is a `Vec` rather than a `HashSet`: identity here is an equivalence relation over the live mDNS state,
-not a value to hash. Its one weak spot is the same one `same_server` documents — before discovery warms, an IP and a
+not a value to hash. Its one weak spot is the same one `same_server` documents: before discovery warms, an IP and a
 name look like two servers, so the worst case is two notices rather than one, never a missed one.
 
 **An E2E run never gets here at all.** The notice's one trigger is the auto-upgrade of a mount the app didn't make, and
-under E2E every such mount is the developer's own — on this machine, reliably `/Volumes/naspi`. So the startup adopter
+under E2E every such mount is the developer's own, on this machine reliably `/Volumes/naspi`. So the startup adopter
 returns early (`test_mode::may_adopt_preexisting_network_mounts`, checked in
 `file_system::upgrade_existing_smb_mounts` BEFORE the scan), and no E2E run waits on mDNS for a real NAS, reaches for
 its Keychain entry, opens a session to it, or raises a toast about it that then fails whichever spec is running. The
@@ -386,18 +386,18 @@ answer three different questions and have three different lifetimes: forgetting 
 password, and neither is deciding its identity changed. The commands keep that split (`forget_known_sftp_server`,
 `delete_sftp_credentials`, `forget_sftp_host_key`), so the UI can ask exactly what it means.
 
-❗ **A server entry is keyed `(host, port, username)`** — the same triple `cmdr_fs::volume::sftp_volume_id` derives from,
+❗ **A server entry is keyed `(host, port, username)`**, the same triple `cmdr_fs::volume::sftp_volume_id` derives from,
 with the same case rules (the host folds, the account doesn't). A drift there files one volume under two entries. A host
 key is keyed `(host, port, algorithm)` instead, because a server may hold several key types and present any of them;
 that is `crates/cmdr-sftp/DETAILS.md` § "Host-key trust".
 
 ❌ **Not a widened `KnownNetworkShare`.** That type carries a `share_name` an SFTP server has no equivalent of, and an
-`AuthOptions` that can only say guest-or-credentials — which expresses neither a key file nor an ssh-agent. Bending it
+`AuthOptions` that can only say guest-or-credentials, which expresses neither a key file nor an ssh-agent. Bending it
 would leave two backends sharing fields that mean different things in each.
 
 **The two per-server switches live in two different places, on purpose.** "Remember the secret" IS the Keychain entry
 (`save_sftp_credentials` writes it, `has_sftp_credentials` reads it, `delete_sftp_credentials` clears it), so there is
-❌ no second flag anywhere that could disagree with the store — a user who deletes the entry through Keychain Access has
+❌ no second flag anywhere that could disagree with the store: a user who deletes the entry through Keychain Access has
 turned the switch off. "Reconnect automatically" is `KnownSftpServer::auto_reconnect`, which is per-server user intent
 rather than a fact about a secret, so the saved-server list is its home. ❗ It reads as `true` when a stored entry
 doesn't name it: SFTP has always come back on its own, and a missing field must not switch that off under servers saved
@@ -412,7 +412,7 @@ together, what the backend answers when one is on and can't work, and what a UI 
 through `cmdr_sftp::connect_sftp_volume` (an ABANDONED connect leaves the server nothing, because the SFTP hello's
 teardown runs from a guard's `Drop`: `crates/cmdr-sftp/DETAILS.md` § "2. An abandoned `Sftp::new`"), register while
 retiring any predecessor with `on_superseded`, and remember the server. `disconnect`
-downcasts through `Volume::as_any` rather than guessing at the id's shape, then DROPS the session — ❌ never
+downcasts through `Volume::as_any` rather than guessing at the id's shape, then DROPS the session. ❌ Never
 `Sftp::close()`, which hangs forever over an SSH channel.
 
 ### The attempt table, and why the id is the caller's
@@ -422,7 +422,7 @@ downcasts through `Volume::as_any` rather than guessing at the id's shape, then 
 backend's, and `crates/cmdr-sftp/DETAILS.md` § "2b. Calling a connect off" owns it.
 
 ❗ **The id comes from the caller, and there is no version where the backend hands one back.** `connect_sftp_volume`
-doesn't answer until the connect is over — up to 30 s — so an id it returned would arrive at exactly the moment a
+doesn't answer until the connect is over (up to 30 s), so an id it returned would arrive at exactly the moment a
 cancel stopped being useful. A second command to allocate one first would be a round trip plus a state to leak whenever
 the connect never followed.
 
@@ -526,11 +526,11 @@ cycles"; re-measure there before trusting any number.
   keyed by mDNS hostname (`smb://naspolya/share`), not by IP, so a sync IP→hostname lookup misses and we'd prompt the
   user for credentials they already saved. The upgrade path now (a) kicks off mDNS via `network::ensure_mdns_started`
   before resolving and (b) calls `smb_upgrade::resolve_ip_to_hostname_with_wait` which polls the discovered-host map
-  every 100ms up to 1500ms for private-range IPv4. Non-private IPs (Tailscale, public DNS) skip the wait — mDNS won't
+  every 100ms up to 1500ms for private-range IPv4. Non-private IPs (Tailscale, public DNS) skip the wait, since mDNS won't
   help there. The wait fails open: if mDNS never warms, the IP-only Keychain lookup still runs. Only relevant in dev,
   where `network.firstTriggerDone == false` keeps mDNS off at launch; prod users hit this once on the very first install
-  but never afterwards. **All three upgrade paths are covered.** The two fire-and-forget paths — startup
-  (`file_system::upgrade_existing_smb_mounts`) and mount-time (`volumes::watcher::try_upgrade_smb_mount`) — both go
+  but never afterwards. **All three upgrade paths are covered.** The two fire-and-forget paths, startup
+  (`file_system::upgrade_existing_smb_mounts`) and mount-time (`volumes::watcher::try_upgrade_smb_mount`), both go
   through the shared `smb_upgrade::resolve_and_register_smb_volume`, so the resolver choice can't drift between them
   again (the startup copy previously used the one-shot `resolve_ip_to_hostname`, looked creds up by LAN IP, missed
   hostname-keyed creds, and fell back to guest → `STATUS_LOGON_FAILURE`). The manual "Connect directly" path

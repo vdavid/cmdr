@@ -1,9 +1,10 @@
 # ADB (frontend): details
 
 The frontend half of Android-over-ADB: what a phone's row says, what the pane shows while one opens, where a first
-navigation lands, and the one line that makes the feature findable. The app-side backend contract (the provider, the
-dial, eject, the settings) is `apps/desktop/src-tauri/src/adb/DETAILS.md`; the wire is `crates/cmdr-adb/DETAILS.md`.
-Neither is restated here.
+navigation lands, and the one line that makes the feature findable. Read this before any non-trivial work here. The
+app-side backend contract (the provider, the dial, eject, the settings) is `apps/desktop/src-tauri/src/adb/DETAILS.md`;
+the wire is `crates/cmdr-adb/DETAILS.md`. Neither is restated here, and neither is why a phone's dial skips
+`connect-flow.ts`: that is `$lib/servers/DETAILS.md` § The device dial.
 
 ## Two fields, two questions
 
@@ -19,23 +20,23 @@ A phone sitting on its "Allow USB debugging?" prompt is present and answering th
 like a dropped session and start a backoff loop that dials nothing until it gives up. `deviceRowState` here reads the
 second field and answers only two things: whether the row opens, and what its tooltip says.
 
-### The readiness table
+### What each readiness makes of a row
 
-| readiness                        | row       | tooltip                                       |
-| -------------------------------- | --------- | --------------------------------------------- |
-| absent (`null`)                  | opens     | none — every disk and every server lands here |
-| `ready`                          | opens     | none                                          |
-| `waiting_for_authorization`      | **opens** | "Waiting for you to allow USB debugging"      |
-| `unavailable { offline }`        | greyed    | wake the screen, or reseat the cable          |
-| `unavailable { no_permissions }` | greyed    | this Mac can't reach the phone over USB       |
+- Absent (`null`), the case every disk and every server lands on, and `ready`: the row opens, with no tooltip.
+- `waiting_for_authorization`: the row **opens**, tooltipped "Waiting for you to allow USB debugging".
+- `unavailable { offline }`: greyed, tooltipped to wake the screen or reseat the cable.
+- `unavailable { no_permissions }`: greyed, tooltipped that this Mac can't reach the phone over USB.
 
 The greying is `.volume-item.is-unavailable` plus `aria-disabled`, and `handleVolumeSelect` returns early on a row that
 doesn't open, so the keyboard path and the pointer path refuse together.
 
-**Decision / a `waiting_for_authorization` row opens.** The design that produced this had it both ways: one decision
-said non-ready rows are visible but "not navigable", another said opening one resolves itself. The second won, because
-the whole reason the row is visible at all is that hiding it made the one moment a user needs feedback silent. A row you
-can see but cannot open reproduces the same silence one step later.
+**Decision / a `waiting_for_authorization` row opens.** The row is visible at all because hiding it left the one moment
+a user needs feedback silent, and a row you can see but cannot open reproduces that silence one step later. Opening it
+is what resolves it: the pane lands on the waiting state, and the tap on Allow walks it in.
+
+**Decision / the tooltips are ANDROID's words, in a generic type.** `DeviceReadiness` is provider-agnostic and ADB is
+its only producer, so `adb.readiness.*` is where the wording lives. A second provider answering readiness moves them
+behind a per-provider lookup rather than bending Android's phrasing onto it.
 
 ## The three outcome shapes
 
@@ -43,10 +44,10 @@ can see but cannot open reproduces the same silence one step later.
 arm can't compile wordless) and answers one of three shapes rather than one sentence, because two of the eight variants
 are not refusals:
 
-- **`silent`** — `cancelled`. The user pressed the button; saying anything about it is noise.
-- **`waiting`** — `unauthorized`. The phone is mid-prompt. It carries the same two sentences a readiness-driven wait
+- **`silent`**, for `cancelled`. The user pressed the button; saying anything about it is noise.
+- **`waiting`**, for `unauthorized`. The phone is mid-prompt, carrying the same two sentences a readiness-driven wait
   carries, from `waitingForTheAllowTap()`, so the two producers can't drift into two vocabularies.
-- **`refused`** — the other six, each with a `recovery`:
+- **`refused`**, the other six, each with a `recovery`:
   - `open_settings`: `adbNotInstalled`. Only Settings can fix it (point Cmdr at an `adb`, or re-check after installing
     the platform tools), so the button deep-links to `File systems > Android (ADB)`.
   - `retry`: `serverUnreachable`, `timedOut`, `transport`. A second attempt can clear all three with nothing else
@@ -62,8 +63,8 @@ person. `friendly-error-style.test.ts` runs the whole table through the writing 
 ## Where a phone's first navigation lands
 
 The rule is in `../file-explorer/navigation/path-navigation.ts::firstLandingOn`, applied in `determineNavigationPath`'s
-default arm — the one reached only when there is no favorite target, no matching other-pane path, and no remembered path
-for the volume.
+default arm: the one reached only when there is no favorite target, no matching other-pane path, and no remembered
+path for the volume.
 
 An `adb://<serial>` volume path becomes `adb://<serial>/sdcard`. An Android device root is a kernel filesystem: `acct`,
 `apex`, `bin`, `proc`, forty entries a person mostly cannot read, and the user's own files are one level in.

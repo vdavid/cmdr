@@ -1,6 +1,8 @@
 # Servers: details
 
-Depth for `CLAUDE.md`. The model (account → place → pin) and every decision behind it: `docs/specs/servers-hub-plan.md`.
+Depth for `CLAUDE.md`; read this before any non-trivial work here. The model (account → place → pin) and every decision
+behind it: `docs/specs/servers-hub-plan.md`. Backend contracts: `crates/cmdr-sftp/DETAILS.md`,
+`crates/cmdr-webdav/DETAILS.md`, and `apps/desktop/src-tauri/src/server_volumes.rs`.
 
 ## The path grammar
 
@@ -20,8 +22,9 @@ POSIX account may be case-sensitive, and `Ada` and `ada` can be two people), and
 differently misses the volume its own id names, which is the same tuple `sftp_volume_id` hashes.
 
 **Matching is by whole components, never a string prefix.** `/srv/data-1` is a legal sibling of `/srv/data`, and a
-string-prefix containment test would strip the root off it and ask the server for `-1/photos`. `navigate.ts`'s
-`isUnderServerRoot` appends the separator for exactly that reason, and `RemoteRoot::to_remote_path` refuses the same
+string-prefix containment test would strip the root off it and ask the server for `-1/photos`.
+`../file-explorer/pane/navigate.ts`'s `isUnderServerRoot` appends the separator for exactly that reason, and
+`RemoteRoot::to_remote_path` refuses the same
 three shapes (a bare server path, another server's prefix, a `..` escape) on the Rust side.
 
 **The three root aliases** (`''`, `'/'`, `'.'`) all mean the volume root, on both sides. A backend's own code passes a
@@ -34,9 +37,10 @@ bare `/` for its root, which is why the Rust side keeps them too.
 - **`direct`, `os_mount` → nothing** (`already_live`). There is a session serving right now.
 - **`disconnected` → `smbReconnectManager.startCycle`**, answering `reconnecting`. The volume is REGISTERED, so a dial
   would register a second one under a second id, and the backoff loop already owns recovery. The manager is idempotent,
-  so landing on the same place twice costs nothing.
+  so landing on the same place twice costs nothing. The cycle itself:
+  `../file-explorer/network/DETAILS.md` § "SMB live-reconnect flow".
 - **`needs_sign_in` → the sheet, as a REGISTERED place.** The backend stopped retrying because a credential is missing,
-  so re-dialing can't help — and a re-dial of a registered volume is the second-volume bug again.
+  so re-dialing can't help, and a re-dial of a registered volume is the second-volume bug again.
 - **`saved`, or nothing → `connectSavedPlace`.** Nothing is registered, so this is the first dial. If THAT answers
   `needs_host_key_approval`, `needs_credentials`, or `authentication_rejected`, the place goes to the sheet as an ABSENT
   one, carrying the outcome so the sheet opens on the right step.
@@ -61,24 +65,24 @@ ask, puts the refusal under the field it is about, and calls a caller-supplied `
 retries. It ❌ never dials. That is what lets SMB's three sites (a share listing, a share mount, a reconnect) reuse it
 with their own commands, and what lets S3 plug in with one more renderer.
 
-❗ **It stays open across rounds.** A first connect to a new SFTP server is three round-trips — the host key, then the
-credentials, then connected — and a sheet that closed between them would lose what the user typed and put the refusal
+❗ **It stays open across rounds.** A first connect to a new SFTP server is three round-trips (the host key, then the
+credentials, then connected), and a sheet that closed between them would lose what the user typed and put the refusal
 somewhere other than under the field it belongs to. `connect-flow.ts` decides WHEN a human is needed; the sheet decides
 how many times to ask.
 
-**The three SMB sites, and what each `attempt` runs** (`apps/desktop/src/lib/file-explorer/network/smb-sign-in.ts`
+**The three SMB sites, and what each `attempt` runs** (`../file-explorer/network/smb-sign-in.ts`
 builds all three requests, so the endpoint header, the remembered username, and the refusal vocabulary can't drift
 between them):
 
 - **A share listing** (`PlacesBrowser`) → `listSharesWithCredentials`. Server-level, so the header is `smb://<host>` and
   guest is offered where the host allows one. Cancelling goes back to the host list.
-- **A share mount** (`pane/NetworkMountView.svelte`) → `mountNetworkShare`, then `saveSmbCredentials` ❗ only once it
-  went through. Cancelling goes back to the share list.
-- **A "Connect directly" upgrade** (`network/direct-connect.ts`) → `upgradeToSmbVolumeWithCredentials`, which stores the
-  credential backend-side when the box is checked.
+- **A share mount** (`../file-explorer/pane/NetworkMountView.svelte`) → `mountNetworkShare`, then `saveSmbCredentials`
+  ❗ only once it went through. Cancelling goes back to the share list.
+- **A "Connect directly" upgrade** (`../file-explorer/network/direct-connect.ts`) →
+  `upgradeToSmbVolumeWithCredentials`, which stores the credential backend-side when the box is checked.
 
 The last two pass `guestAllowed: false`: an unauthenticated attempt is what just came back refused, so offering it again
-would be inert. All three answer `handed_off` on success — none of them connects a VOLUME — and hand anything that isn't
+would be inert. All three answer `handed_off` on success (none of them connects a VOLUME), and hand anything that isn't
 a credential refusal back to the pane, which has the words and the retry for it.
 
 ❗ **`open-sign-in.ts` is where the standing picks the command**: a REGISTERED volume is mended with
@@ -88,7 +92,7 @@ caller opens the host's places list.
 
 **Remember, and who decides where it starts.** `add`: on, because someone typing a password into a new server means to
 come back to it. `edit`: from `hasServerSecret`. `sign-in`: from the request's `remembered`, which the ❗ OPENER
-decides, ❌ never the sheet — what it costs to find out is the protocol's business. SFTP and WebDAV ask
+decides, ❌ never the sheet: what it costs to find out is the protocol's business. SFTP and WebDAV ask
 `hasServerSecret`, because an attended sign-in REFRESHES a remembered secret and ❌ never seeds one, so a default-on box
 there would seed one the user already declined. SMB passes `true` unasked, because `has_smb_credentials` is
 `get_credentials(…).is_ok()` and every read of that Keychain entry can cost a system prompt; nothing is written until a
@@ -110,6 +114,10 @@ and puts its trust button behind a disclosure. A `superseded` approval starts th
 presents rather than silently trusting the one on screen; an `unreachable` one records nothing, because approving is a
 live question and an unanswered one is not a yes.
 
+❗ **A changed host key on a REGISTERED volume shows no fingerprint.** No backend command hands the PENDING host-key
+prompt back for one, so the banner offers Disconnect and the fingerprint appears on the next open's dial
+(`../file-explorer/pane/DETAILS.md` § "The connect views").
+
 ## The renderer table
 
 One renderer per `SignInShape` variant, and ❗ **username editability is the VARIANT's property, ❌ never the sheet's
@@ -119,8 +127,8 @@ SFTP.
 - `nothing`: the sheet never opens. There is no secret a person could type that would help.
 - `password`: the account as a read-only header, one password field. SFTP's and WebDAV's `reconnect_with_credentials`
   refuse a changed username, because the volume id IS the account.
-- `key_passphrase`: the same, with the field labelled for a key file's passphrase and `autocomplete="off"` — a
-  passphrase is not the account's password, and autofill must not offer one.
+- `key_passphrase`: the same, with the field labelled for a key file's passphrase and `autocomplete="off"`, because a
+  passphrase is not the account's password and autofill must not offer one.
 - `username_password { guestAllowed }`: username editable, plus a guest `RadioGroup` where the share allows one. SMB's
   reconnect accepts a new username and rewrites its params, which is how re-auth-as-someone-else works. The field
   carries the "Example: barry" placeholder, so an empty box says what kind of thing goes in it; the remembered username
@@ -146,9 +154,10 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
   approved.
 - `host_key_revoked`: deliberately final. No button can safely undo a revocation the user's own `known_hosts` records.
 
-Keys live in `messages/en/servers.json` under `servers.refusal.*`, reached through a `Record` in `connect-refusals.ts`
-rather than a built string, which is what keeps `desktop-message-keys-unused` honest without a dynamic-prefix entry.
-`error-messages/friendly-error-style.test.ts` renders all of them and holds them to the same writing rules the
+Keys live in `$lib/intl/messages/en/servers.json` under `servers.refusal.*`, reached through a `Record` in
+`connect-refusals.ts` rather than a built string, which is what keeps `desktop-message-keys-unused` honest without a
+dynamic-prefix entry.
+`$lib/error-messages/friendly-error-style.test.ts` renders all of them and holds them to the same writing rules the
 friendly-error copy obeys: they are error copy however they are filed.
 
 **A second `Record` says WHICH FIELD each sentence goes under** (`refusalField`): the secret for the two that are about
@@ -181,19 +190,14 @@ A phone is dialed by the same seam and rendered by the same `RemoteConnectView`,
 `connect-flow.ts`, and that is deliberate. `connect-flow` exists to pick between three moves a SERVER can need
 (subscribe to a running backoff, mend a registered volume's credentials, or dial an absent one) and to loop a sign-in
 sheet through as many rounds as the user retries. A phone has none of that: there is no credential, no backoff loop, no
-sheet, and no registered-versus-absent question — `connect_adb_device` answers an already-dialed device without a second
-dial. So `pane/device-connect.svelte.ts` calls `connectAdbDevice` directly, and what the two share is the typed
-`RemoteConnectState`, the pane-not-dialog rule, and the attempt-id-before-the-dial rule.
+sheet, and no registered-versus-absent question, since `connect_adb_device` answers an already-dialed device without a
+second dial. So `../file-explorer/pane/device-connect.svelte.ts` calls `connectAdbDevice` directly, and what the two
+share is the typed `RemoteConnectState`, the pane-not-dialog rule, and the attempt-id-before-the-dial rule.
 
 ❗ The attempt-id prefixes are separate on purpose (`server-connect-…` vs `adb-connect-…`): ADB files attempts in its
 own table (`src-tauri/src/adb/volume_wiring.rs`), so a cancel aimed across the two answers a silent `false`. The words
 are separate too (`$lib/adb/adb-connect-errors.ts` vs `connect-refusals.ts`): a phone's reasons and a server's share
 nothing but shape.
-
-## What later milestones fill in
-
-- A backend command handing back the PENDING host-key prompt for a registered volume. Until then the changed-key banner
-  offers Disconnect, and the fingerprint appears on the next open's dial (`pane/DETAILS.md` § the connect views).
 
 ## Which server a command acts on
 
@@ -207,12 +211,12 @@ nothing but shape.
 Two details are load-bearing:
 
 - **An SMB host row stops the search** rather than falling through to reading 2. Its places are mounted shares whose ids
-  `statfs` mints, so there is nothing for `disconnectPlace` or `setPlacePinned` to act on — and quietly acting on the
+  `statfs` mints, so there is nothing for `disconnectPlace` or `setPlacePinned` to act on, and quietly acting on the
   pane's volume instead would move a server the user isn't pointing at.
 - **A target resolved from the pane's volume reports `pinned: null`**, because a `VolumeInfo` carries no pin (the pin is
   the switcher's cap, decided in Rust, and deliberately off the wire). `servers.togglePin` reads `listSavedServers()`
   for that case; a store that doesn't answer reads as unpinned, which makes the command a pin rather than a no-op.
 
-The handlers themselves (`routes/(main)/command-handlers/servers-handlers.ts`) then route through
-`navigation/server-row-actions.ts::runServerRowAction`, the same function the native menu's answer lands in, so a menu
-item and a palette command can't drift on a confirmation or a toast.
+The handlers themselves (`src/routes/(main)/command-handlers/servers-handlers.ts`) then route through
+`../file-explorer/navigation/server-row-actions.ts::runServerRowAction`, the same function the native menu's answer
+lands in, so a menu item and a palette command can't drift on a confirmation or a toast.

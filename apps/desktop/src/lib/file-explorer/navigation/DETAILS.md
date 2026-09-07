@@ -24,8 +24,10 @@ badges). `resolve-location.ts` and `breadcrumb-navigation.ts` are documented whe
   cycle-free way to reach the resolver. Folding it back into `path-navigation.ts` reintroduces the cycle.
 - **`path-segments.ts` flags segments inside a `.git/…` portal** as it splits the breadcrumb display path, purely so
   `FilePane.svelte` can paint them with `--color-git-portal-text`. It's the only consumer of that flag.
-- **`eject-predicate.ts::isVolumeEjectable` is true when NSURL says ejectable OR the volume carries ANY SMB connection
-  state**, which is what puts SMB shares behind the same `⏏` affordance as physical media.
+- **`eject-predicate.ts::isVolumeEjectable` is true when the OS says ejectable OR the row has a session to end**
+  (`isLiveSession` or `showsDisconnect`), which is what puts SMB shares and dialed places behind the same `⏏`
+  affordance as physical media. ❌ Never widen it back to "carries a connection state": `saved` and the two sign-in
+  states would offer a control with no subject.
 
 ## `navigation-history.ts`
 
@@ -38,7 +40,9 @@ PushResult = { history: NavigationHistory, droppedEntries: HistoryEntry[] }
 ```
 
 Key functions: `createHistory`, `push`, `pushPath`, `back`, `forward`, `getCurrentEntry`, `getCurrentPath`, `canGoBack`,
-`canGoForward`, `setCurrentIndex`, `getEntryAt`. Plus the constant `MAX_HISTORY_PER_TAB = 100`.
+`canGoForward`, `setCurrentIndex`, `getEntryAt`. Plus the constant `MAX_HISTORY_PER_TAB = 100`, which applies to every
+volume uniformly. ❗ Don't tighten it (deep navigators lean on `⌘[` for orientation) or raise it: 100 entries × 10 tabs
+× 2 panes is three string fields apiece, so memory is not what the cap is buying.
 
 `push` returns `{ history, droppedEntries }`. `history` is the new stack; `droppedEntries` aggregates every entry the
 push removed: the truncated-forward tail (when pushing after `back()`) and the oldest entries evicted to honor
@@ -214,13 +218,14 @@ grant would free it, so an indicator promising one would mislead.
 
 ### Connection indicator
 
-Every volume a connecting backend serves carries a `connectionState` (`crates/cmdr-fs/src/volume/types.rs` has the six
-variants), and a saved-but-unconnected server carries `saved`. The component renders a small colored circle both in the
-dropdown and in the closed breadcrumb label, its modifier class built from the state name — so ❗ a variant with no
-`.smb-indicator-<state>` rule in `VolumeBreadcrumb.svelte` renders as an unpainted circle. Green = a live session, amber
-= the OS-mount fallback or a waiting sign-in, red = a changed host key, hollow = `saved`. The dot's TOOLTIP still knows
-two words (`direct` and everything else); the remaining states get their own copy in the servers-hub switcher milestone,
-since a new English string owes ten translations.
+Every volume a connecting backend serves carries a `connectionState`; `crates/cmdr-fs/src/volume/connection.rs` holds
+the six variants, `saved` (a saved place with nothing in flight) among them. The component renders a small colored
+circle both in the dropdown and in the closed breadcrumb label, its modifier class built from the state name — so ❗ a
+variant with no `.smb-indicator-<state>` rule in `VolumeBreadcrumb.svelte` renders as an unpainted circle. Green = a
+live session, amber = the OS-mount fallback or a waiting sign-in, red = a changed host key, hollow = `saved`. Each
+state gets its OWN tooltip sentence (`getConnectionTooltip`, a `Record` over the union, so a new state is a compile
+error); `connection-tooltips.test.ts` also catches a BORROWED one, since five states once shared two sentences and a
+signed-out SFTP server hovered as "Using system connection".
 
 ❌ Never read `connectionState` with `!= null` — `connection-state.ts` holds the named predicates (`hasReconnectLoop`,
 `isLiveSession`, `showsDisconnect`), and `eject-predicate.ts` composes two of them. Yellow state has a submenu trigger
@@ -463,7 +468,7 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
     to ask). Silence here is what made "Rescan now" look like a dead button for the minutes a walk can last.
   - `deferred_until_scan_ends` → the same promise with a full walk of the drive already running, so ONE line
     (`queuedBehindScan`) serves both buttons: the drive is being indexed either way, and what the user asked for is
-    next. This arm is what "Rescan now" during a scan became — it used to report `started` and do nothing at all.
+    next. ❗ Without this arm, "Rescan now" during a scan reports `started` and does nothing at all.
   - `indexing_disabled` → the settings-oriented toast at `info`, not `error`: transport-neutral, and reachable because
     the master switch can flip between the menu opening and the click, or MCP can call in.
   - `refused` → the typed `SmbIndexGateReason`, which `credentials_needed` routes into the direct-connect/login flow

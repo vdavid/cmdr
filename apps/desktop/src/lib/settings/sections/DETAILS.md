@@ -205,14 +205,14 @@ sections compose).
 - **`McpServerSection.svelte`**: `AI > MCP server`: one unlabeled `SectionCard` wrapping the enable switch, port row,
   and the live port-status block, gated via `anyVisible(shouldShow, 'developer.mcpEnabled', 'developer.mcpPort')`. (The
   `developer.mcp*` id prefix is a stable persistence key; homing the setting under AI doesn't touch it.) Verbose logging
-  is no longer a section here: `developer.verboseLogging` moved to Advanced (a "Logging" card, see `AdvancedSection`
-  below), and its open-log/copy-diagnostics action buttons ride the Advanced per-card "extra content" mechanism.
+  is NOT a section here: `developer.verboseLogging` lives in Advanced's "Logging" card (see `AdvancedSection` below),
+  whose open-log and copy-diagnostics action buttons ride the Advanced per-card "extra content" mechanism.
 - **`UpdatesSection.svelte`**: `Updates & privacy`: two `SectionCard` card groups — Updates (the "Check for updates"
   action + status, `updates.autoCheck`, `whatsNew.showOnUpdate`) and Privacy and data sharing (the beta analytics
   opt-out `analytics.enabled` default-on, the `analytics.email` contact field with its "never sent with your usage data"
   note, and the `updates.crashReports` / `updates.errorReports` opt-ins — Flow B auto-send; Flow A consent-on-click is
-  always available). The report opt-in logic and the beta-signup email flow are unchanged; the cards are presentation
-  only. Frames are gated via `anyVisible(shouldShow, ...)` (same pattern as FSW above). The email field persists to
+  always available). The cards are presentation only. Frames are gated via `anyVisible(shouldShow, ...)` (same pattern
+  as FSW above). The email field persists to
   settings here; the beta-signup network call is wired separately
 - **`LicenseSection.svelte`**: `License`: special (non-registry), reads `getLicenseInfo` / `getLicenseStatus`. The info
   block + action buttons live in one unlabeled `SectionCard`; the personal / commercial / expired / loading states are

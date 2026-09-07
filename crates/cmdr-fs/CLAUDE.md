@@ -1,54 +1,41 @@
 # `cmdr-fs`
 
-The filesystem vocabulary and host primitives every layer of Cmdr speaks in, with **no `tauri` in its dependency tree**,
-so the index reaches `Volume` and `FileEntry` without reaching the app. The app re-exports every item at its original
-path; prefer that in app code (`crate::file_system::volume::VolumeError`), `cmdr_fs::…` from another crate.
+The filesystem vocabulary and host primitives every layer of Cmdr speaks in, with **no `tauri` in its dependency
+tree**, so the index reaches `Volume` and `FileEntry` without reaching the app. App code uses the re-exports at their
+original paths (`crate::file_system::volume::VolumeError`); other crates use `cmdr_fs::…`.
 
 ## Module map
 
-- `volume/`: the trait, its types, `connection.rs` (the REMOTE vocabulary: `ConnectionState`, `DeviceReadiness`,
-  `BackendKind`, `SignInShape`; ❗ confusing any two is a bug, and its header says how), `InMemoryVolume`, `ids` +
-  `canonical_root` (the ID funnel and double-mount collapse), `retirement.rs` (how background work learns it stopped
-  being the live volume), `channel_stream.rs` (a network backend's read path, consumer half), `scan_boundary.rs` +
-  `scan_stop.rs` (the one seam a copy scan touches per entry: counts, Cancel, and Pause), the four modules a
-  stat-and-listing backend gets its `Volume` bodies from (`scan_walk.rs`, `mkdir_all.rs`, `patching.rs`,
-  `secret_store.rs`), `remote_paths.rs` (a server tree's `<scheme>://user@host:port` app spelling, and the ONE
-  translation), `friendly_error/` (typed, word-free classification), `usb_speed.rs` (❗ its doc comment reaches
-  `bindings.ts`), and `host/` (what a backend needs from the app, as named traits; read `src/volume/host/CLAUDE.md`
-  before writing a backend).
-- `entry.rs` + `icons/` (`FileEntry` and the classifiers behind `get_icon_id`), `sqlite_util.rs` (the ONE process-wide
-  page-cache slab, and the factories all five stores open through), `staging.rs` (`StagingTemp`, the ONLY way to name a
-  scratch file).
-- Leaves: `archive_format.rs` (sole source of truth for archive detection), `firmlinks.rs` (`normalize_path`; the index
-  and the app's watchers have to agree on it), `file_provider.rs` (the cloud-domain marker), `filesystem_kind.rs`,
-  `log_rollup`, `tcc_paths`, `ignore_poison`, `pluralize`, `git_meta` (what a git portal row's Size cell states),
-  `thread_qos`, `thread_cpu`, `process_memory`, `testing`.
+- `volume/`: the `Volume` trait and its types, the ID funnel, the copy-scan seam, the bodies a stat-and-listing backend
+  gets for free, `InMemoryVolume`, `host/` (read `src/volume/host/CLAUDE.md` before writing a backend), and
+  `connection.rs`'s four remote types, whose header says which answers what; ❗ confusing any two is a bug.
+- Around it: `entry.rs` + `icons/`, `sqlite_util.rs`, `staging.rs`, `archive_format.rs`, `firmlinks.rs`, and a dozen
+  small leaves. Per-module responsibilities: DETAILS § Module map.
 
 ## Must-knows
 
-- **`#![deny(missing_docs)]` holds here**: new `pub` items, fields, and variants need doc comments, and several reach
-  `bindings.ts` through `specta::Type`.
-- **`specta` stays pinned to `=2.0.0-rc.24`, identical to the app's**: two copies break bindings generation.
-- **`Volume::capabilities()` is a PURE FOLD of the trait's predicates, published over IPC.** ❌ Never override it: grow
-  the surface by adding a predicate (`src/volume/capabilities.rs`).
-- **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane goes
-  stale after a copy. `DETAILS.md` § "What the app kept".
+- **`#![deny(missing_docs)]` holds here**, and several types reach `bindings.ts` through `specta::Type`, which is why
+  `Cargo.toml` pins `specta` to the app's exact version.
+- **`Volume::capabilities()` is a PURE FOLD of the trait's predicates, published over IPC.** ❌ Never override it: add
+  a predicate instead (`src/volume/capabilities.rs`).
+- **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane
+  goes stale after a copy. DETAILS § What the app kept.
 - **❌ Never gate BEHAVIOR on `cfg(test)` here; use `any(test, feature = "testing")`.** `cfg(test)` is off in a
   consumer's test build, so production behavior runs inside their suite and surfaces as someone else's flake.
-  `DETAILS.md` § "Gotcha: `cfg(test)`-conditioned BEHAVIOR".
-- **`InMemoryVolume` honors the `Volume` contracts data safety LEANS on**, and LIES on request (`set_stat_failing`,
-  `with_delete_failing`, …) so a defense against a hostile backend is testable. ❌ Never relax a contract to make a test
-  green: the double is the oracle. Cross-backend promises live in `volume::conformance`, which every backend's suite
-  calls.
+- **`InMemoryVolume` is the oracle for the `Volume` contracts data safety leans on**, and LIES on request
+  (`set_stat_failing`, `with_delete_failing`, …) so a defense against a hostile backend is testable. ❌ Never relax a
+  contract to green a test. Cross-backend promises live in `volume::conformance`.
 - **❌ Never build a volume ID by hand, or by stripping characters.** `volume::ids` is the one funnel; an ID keys the
   index DB, `lastUsedPaths`, tab state, and routing, so a lossy one hands two disks one identity and sends deletes to
-  the wrong disk. Add a constructor there.
+  the wrong one.
+- **❌ Never open SQLite outside `sqlite_util`'s factories.** They install the process-wide page-cache slab, which can
+  only be installed before the process's first connection (`desktop-rust-sqlite-open-direct` enforces it).
 - **Nothing here produces user-facing prose**: errors carry typed reasons and structured params, the frontend renders
-  every word, and `git_meta.rs` shows the shape for a whole column (`FileEntry.git_meta` states a FACT, ❌ never a
-  sentence). `pluralize` is the exception; its callers are all logs.
+  every word, and `FileEntry.git_meta` states a FACT, ❌ never a sentence. DETAILS § The one place prose is produced
+  here.
 - **A stat-and-listing backend implements three small traits, ❌ never its own copy of the walk**: `ScanSource`,
-  `MakesDirectories`, `PatchSource`. `secret_store.rs` is the only place a backend touches the credential store.
-  `DETAILS.md` § "Bodies a backend gets for free".
+  `MakesDirectories`, `PatchSource` (DETAILS § Bodies a backend gets for free). `secret_store.rs` is a backend's only
+  door to the credential store.
 
-Composition rationale, the four cuts that made the closure finite, and what deliberately stayed in the app:
-`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Composition rationale, the boundary decisions, and what deliberately stayed in the app: `DETAILS.md`. Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.

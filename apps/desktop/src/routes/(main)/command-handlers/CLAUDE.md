@@ -5,48 +5,38 @@ The family-grouped handler modules behind the dispatch core (`../command-dispatc
 
 ## Shape
 
-- `types.ts`: the seam (`CommandHandlerContext`, `CommandHandler`, `CommandHandlerRecord`, the `DispatchExemptId` union
-  - its runtime `DISPATCH_EXEMPT_IDS` tuple). Self-documenting; read it before touching exemptions.
+- `types.ts`: the seam, including `DispatchExemptId` and its runtime `DISPATCH_EXEMPT_IDS` tuple. Read it before
+  touching exemptions.
 - One module per family (`app-dialog`, `view`, `pane`, `tab`, `nav`, `sort`, `file`, `clipboard`, `selection`, `tag`,
-  `servers`, `misc`), each a `satisfies Partial<CommandHandlerRecord>` object.
-- `index.ts`: spreads the families into one `commandHandlers: CommandHandlerRecord`. The annotation is the completeness
-  guard: a missing handler or an exempt-id handler fails to compile.
+  `servers`, `misc`), spread by `index.ts` into `commandHandlers: CommandHandlerRecord`. That annotation is the
+  completeness guard: a missing or exempt-id handler fails to compile.
 
 ## Rules
 
 - **Handlers read `hctx.explorerRef`, never `ctx.getExplorer()`.** The core reads the explorer once per dispatch;
   re-reading would re-evaluate mid-dispatch (HMR-fragile). Grep `getExplorer(` here must stay zero.
-- **Preserve each arm's `await` vs `void` exactly.** The MCP round-trip ids (`nav.openUnderCursor`, `cursor.moveTo`,
-  `selection.mcpSelect`, `selection.mcpSelectByNames`, `pane.refresh`) are `async` + `await` so the adapter acks on real
-  completion (the ack-timing contract; `command-dispatch.characterization.test.ts` deferred-promise pins guard it).
-  Every other explorer-driving arm `void`s its promise. `void`-ing a round-trip (or awaiting a fire-and-forget) is a
-  silent behavior break with no compile error.
-- **Grouped ids share ONE body, no copy-paste.** The four `view.zoom.setNN` presets call one `applyZoomPreset`; the
-  get-entry-then-act file/cloud arms call one `withEntryUnderCursor`; `file.copyPath` and
-  `file.copyCurrentDirectoryPath` call one `copyPathAndAnnounce` (clipboard write + the copied-path toast).
-- **The `servers.*` arms all route through `runServerRowAction`**, the same function the native row menu's answer lands
-  in, so a menu item and a palette command can't drift on a confirmation or a toast. Which server they act on is
+- **Preserve each arm's `await` vs `void` exactly.** The five MCP round-trip ids (`nav.openUnderCursor`,
+  `cursor.moveTo`, `selection.mcpSelect`, `selection.mcpSelectByNames`, `pane.refresh`) are `async` + `await` so the
+  adapter acks on real completion; every other explorer-driving arm `void`s its promise. Swapping one breaks behavior
+  silently, with no compile error (`command-dispatch.characterization.test.ts` pins it).
+- **Grouped ids share ONE body, no copy-paste** (`applyZoomPreset`, `withEntryUnderCursor`, `copyPathAndAnnounce`).
+- **The `servers.*` row actions (pin, disconnect, forget, edit) go through `runServerRowAction`**, the native row
+  menu's own path, so menu and palette can't drift on a confirmation or a toast. Which server they act on is
   `$lib/servers/server-command-target.ts`'s call, ❌ never `getFocusedPaneVolumeId()` alone: the hub IS a pane, so that
-  reading answers the synthetic hub row instead of the server under the cursor. A command that finds no server says
-  NOTHING — the palette lists every command whatever the pane is on.
-- **`file.copyPath` deliberately skips `withEntryUnderCursor`**: it reads `getPathToCopyUnderCursor()`, which resolves
-  the `..` row to the pane's own directory. Every other under-cursor arm must keep treating `..` as "no entry"
+  reading answers the synthetic hub row (`$lib/servers/DETAILS.md` § Which server a command acts on). Finding no server
+  says NOTHING: the palette lists every command whatever the pane is on. ❗ `servers.edit` and `servers.connect` open
+  their sheet and return; awaiting it holds the pipeline open.
+- **`file.copyPath` skips `withEntryUnderCursor`** for `getPathToCopyUnderCursor()`, which resolves `..` to the pane's
+  own directory. Every other under-cursor arm keeps treating `..` as "no entry"
   (`file-explorer/pane/DETAILS.md` § Copy-path).
-- **The clipboard arms branch on `isTextInputFocused()` (`$lib/utils/text-input-focus`) before touching the explorer**,
-  because a native menu accelerator reaches them even when focus is in a dialog's text field. Use that predicate, don't
-  re-roll the `activeElement` check: the keydown resolver and the capability guard read the same one, and they have to
-  agree. (`selection.selectAll` needs the element itself for `active.select()`, so it keeps its own narrower check.)
-- **No imports of the core or `+page.svelte`.** Modules import `../command-dispatch-context`, `../explorer-api`,
-  `$lib/commands` types, and the leaf helpers the arms call; never the core (`import-cycles` fires if this inverts).
-- **❌ Don't add a handler for a per-keystroke `nav.*` id** (`nav.up/down/left/right/firstInFull/lastInFull`). They ride
-  `handleKeyDown → FilePane`, never the bus; a registry lookup + log + breadcrumb IPC per keypress is a P2 regression,
-  not a completion.
+- **The clipboard arms branch on `isTextInputFocused()` (`$lib/utils/text-input-focus`) before touching the explorer**:
+  a native menu accelerator reaches them even with focus in a dialog's text field. Don't re-roll the `activeElement`
+  check: the keydown resolver and the capability guard read that same predicate.
+- **No imports of the core or `+page.svelte`**; `import-cycles` fires if this inverts.
 
-## Adding a command
-
-Add the handler to the right family module. A missing one is a COMPILE error (the record is keyed by
-`Exclude<CommandId, DispatchExemptId>`). An intentionally handlerless command goes in `DISPATCH_EXEMPT_IDS` with a
-documented reason. `command-handler-record.test.ts` set-equality fails if the id is in neither.
+A new command's handler goes in the right family module (a missing one is a COMPILE error); a deliberately handlerless
+one goes in `DISPATCH_EXEMPT_IDS` with a reason. `command-handler-record.test.ts` fails if it is in neither. The
+per-keystroke `nav.*` ids are exempt on purpose: `../CLAUDE.md` and `types.ts` say why.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

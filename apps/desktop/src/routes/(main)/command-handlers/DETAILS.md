@@ -5,7 +5,7 @@ exemption types. This file adds the family breakdown and the single-source ratio
 
 ## The exempt families (`DispatchExemptId`)
 
-20 ids are registered for the rebinding UI with NO handler, in three families (each documented inline in `types.ts`):
+21 ids are registered for the rebinding UI with NO handler, in four families (each documented inline in `types.ts`):
 
 - **Native-menu-owned** (`app.quit`, `app.hide`, `app.hideOthers`, `app.showAll`): run by macOS PredefinedMenuItems via
   native selectors. A JS handler would double-fire alongside the native one.
@@ -13,6 +13,8 @@ exemption types. This file adds the family breakdown and the single-source ratio
   bus. Registered only so the rebinding UI can show/edit their shortcuts.
 - **Component-scoped** (palette / volume / network / share / context-menu ids): handled inside each component's own
   keydown handler, not the global dispatch spine.
+- **Deliberate override** (`errorPane.toggleTechnicalDetails`): ErrorPane claims ⌘D through a CAPTURE-phase document
+  listener that runs ahead of the spine, so it beats whatever the user bound ⌘D to.
 
 The core silently no-ops these after the preamble.
 
@@ -24,13 +26,21 @@ shortcuts editor uses to render those rows read-only, so each "who owns this key
 `DispatchExemptId` union still lists the literals (a type can't spread a runtime tuple); `command-registry.test.ts` pins
 the union and the tuple in sync.
 
+## Shared bodies behind grouped ids
+
+- `applyZoomPreset` (`view-handlers.ts`) backs the four `view.zoom.setNN` presets.
+- `withEntryUnderCursor` (`file-handlers.ts`) backs every get-entry-then-act file and cloud arm. `file.copyPath` is the
+  documented exception.
+- `copyPathAndAnnounce` (`file-handlers.ts`) does the clipboard write plus the copied-path toast for `file.copyPath`
+  and `file.copyCurrentDirectoryPath`.
+
 ## Analytics from the file arms
 
 `file-handlers.ts` emits two events, both because nothing downstream can.
 
 - `quick_look_used` on all four arms of the `file.quickLook` toggle, the refusals included, so the inner-archive gate
   has a number of its own. The double fire of one Shift+Space (AppKit's menu accelerator plus the webview keydown) is
-  swallowed by `quickLookDispatchGuardJustFired()` BEFORE the emit — moving the emit above that guard would double every
+  swallowed by `quickLookDispatchGuardJustFired()` BEFORE the emit; moving the emit above that guard would double every
   number this event produces.
 - `editor_opened` on `file.edit`, with no props: F4 hands the file to the OS's text editor (`open -t`), and the file's
   name and extension are exactly what must never cross.

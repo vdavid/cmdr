@@ -1,8 +1,8 @@
 # Logging
 
 Unified logging: frontend (Svelte/TS) and backend (Rust) logs share one terminal stream and log file with unified
-timestamps. The Rust side runs a fern dispatch tree with per-output level filtering (the file target stays at Debug
-regardless of `RUST_LOG` or the verbose toggle; terminal defaults to Info).
+timestamps. The Rust side's fern dispatch tree, with its per-output level filtering, is documented in
+`apps/desktop/src-tauri/src/logging/CLAUDE.md`.
 
 ## Module map
 
@@ -13,8 +13,7 @@ regardless of `RUST_LOG` or the verbose toggle; terminal defaults to Info).
 - Rust side: `src-tauri/src/commands/logging.rs` (batch IPC receiver + runtime level control); the dispatch tree is in
   `src-tauri/src/logging/CLAUDE.md`.
 
-Full architecture and decisions: `DETAILS.md`. Usage (adding logging, `RUST_LOG` recipes, the verbose toggle):
-`docs/tooling/logging.md`.
+Usage (adding logging, `RUST_LOG` recipes, the verbose toggle): `docs/tooling/logging.md`.
 
 ## Must-knows
 
@@ -28,9 +27,12 @@ Full architecture and decisions: `DETAILS.md`. Usage (adding logging, `RUST_LOG`
   floods the IPC.
 - **An uncaught frontend throw is only visible because `uncaught-errors.ts` forwards it.** Nothing else does: the
   console is unread under Tauri, so without those two listeners a crash leaves no line in the log file, nothing in an
-  error-report bundle, and nothing in a CI E2E run. The listeners deliberately don't `preventDefault` — they observe,
+  error-report bundle, and nothing in a CI E2E run. The listeners deliberately don't `preventDefault`: they observe,
   they never swallow (which would also blind `hmr-recovery`). ❗ WebKit's `error.stack` carries FRAMES ONLY, so the
   message is put back in front of it; ❌ never log a stack verbatim here.
 - **`beforeunload` flush is best-effort (async)**, so logs right before a page unload may not all reach Rust.
 - **Error-report bundles (Help > Send error report…) include the file target's recent debug logs**, the same logs the
   cap setting governs. Keep the file chain at Debug.
+
+Architecture and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or
+advising.
