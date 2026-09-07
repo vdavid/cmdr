@@ -97,8 +97,21 @@ there would seed one the user already declined. SMB passes `true` unasked, becau
 `get_credentials(…).is_ok()` and every read of that Keychain entry can cost a system prompt; nothing is written until a
 sign-in works, and its caller writes it, so a checked box promises nothing that hasn't been shown.
 
-Turning it OFF forgets the stored secret immediately; turning it on rides the next successful offer, because there is
-nothing typed to save yet. ❌ Neither ever happens as a side effect of a dial.
+**A flip is WRITTEN, before the round it belongs to.** `open-sign-in.ts`'s `withRememberFlip` wraps whichever attempt
+the standing picked, compares the box against what `hasServerSecret` answered, and writes once per flip: OFF →
+`forgetServerSecret` NOW, because `refresh_remembered_secret` writes wherever the store already holds something, so a
+mend over a live entry would put the just-declined password straight back; ON over an empty store →
+`saveSftpCredentials` / `saveWebdavCredentials` NOW, because an attended sign-in refreshes a remembered secret and never
+seeds one, so a box flipped on with nothing written would promise a thing that never happens. ❌ Neither ever happens as
+a side effect of a dial.
+
+❗ **The writer takes the whole tuple the volume id is minted from** (`(host, port, username)` for SFTP, the base URL
+and the account for WebDAV), read off the place's `appRoot` rather than rebuilt from a host plus a default port: an
+entry written under a different key is one the dial never finds, and the box would be lying in the other direction.
+A place no saved server claims has no key to write under, so it has no writer.
+
+In EDIT mode there is nothing typed to save, so the box only ever forgets (`SignInSheet.svelte`'s `writeRememberFlip`);
+turning it on there rides the next successful sign-in's offer.
 
 **Edit mode's "this can't reconnect on its own" warning is the BACKEND's answer, ❌ never a derivation.**
 `getSftpUnattendedReconnect` / `getWebdavUnattendedReconnect` say whether an unattended reconnect can work as things

@@ -35,6 +35,16 @@ describe('applyParsedAddress', () => {
   })
 })
 
+describe('emptyServerForm', () => {
+  it('starts Remember ON, because someone typing a password into a NEW server means to come back to it', () => {
+    // ❗ Add mode is the one place the box proposes rather than reports: there is
+    // no stored secret to report yet. Sign-in mode seeds from the store instead
+    // (`open-sign-in.ts`), where a default-on box would seed one the user
+    // already declined.
+    expect(emptyServerForm().remember).toBe(true)
+  })
+})
+
 describe('serverTargetFrom', () => {
   it('builds an SFTP target from the address and the advanced fields', () => {
     const form = { ...typed('ada@nas.local:2222/srv/data'), keyFile: ' ~/.ssh/id_ed25519 ', useAgent: false }
