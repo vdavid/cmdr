@@ -516,6 +516,14 @@
   "@menu.network.disconnect": {
     "sourceHash": "acfc5be"
   },
+  "menu.network.pinToSwitcher": "固定到宗卷选择器",
+  "@menu.network.pinToSwitcher": {
+    "sourceHash": "868b68d"
+  },
+  "menu.network.unpin": "取消固定",
+  "@menu.network.unpin": {
+    "sourceHash": "ee3c716"
+  },
   "menu.network.forgetServer": "忘记服务器",
   "@menu.network.forgetServer": {
     "sourceHash": "e43c85d"

@@ -2231,3 +2231,81 @@ infinitivo, `consoante`, `Rever`, `alterar o nome` ou próclise.
   chaves acima, `hostKeyChangedHint` diz `A chave do servidor mudou`, e ali `chave` é a do host; nesta linha é a do
   cliente. O inglês tem exatamente a mesma ambiguidade e os dois estados nunca aparecem juntos na tela, então o valor
   fica literal. Confirmar isso, ou escrever `uma chave SSH` e divergir do inglês.
+
+## Fixar no seletor, chaves de host confiáveis e o painel do ADB (`menu.network.pinToSwitcher`/`unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`adb`, `settings.summary.servers`/`adb`, `settings.appearance.tintSmb.*`, 2026-09-07)
+
+Três superfícies numa rodada: os dois itens de menu que põem e tiram um servidor do seletor de volumes (mais a
+notificação única que aparece quando o grupo `Rede` fica cheio), a tela `Ajustes > Sistemas de arquivos > Servidores`
+com as chaves de host aceitas, e a tela do Android por ADB. Mais o matiz de painel, que deixou de ser só de SMB.
+
+A pilha de referência não existe nesta máquina, então o Tier 1 vem dos bundles do macOS instalado (26.6.2, build 25G83,
+lidos em 2026-09-07), o caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" descreve.
+
+- **unpin → `Desafixar`** · Apple pt-BR, Notes.app `Localizable.loctable` (`Unpin Note` → `Desafixar Nota`,
+  `Pin or Unpin Notes` → `Fixar ou Desafixar Notas`) · confirmed. Casa byte a byte com a família já publicada
+  (`menu.tab.unpinTab` = `Desafixar aba`, `commands.tabTogglePin.label` = `Fixar/desafixar aba`), e não soa como apagar:
+  o servidor continua salvo.
+- **Pin to switcher → `Fixar no seletor`** · o termo cheio é `seletor de volumes` (§ da tabela do hub), mas o item fica
+  num menu de contexto estreito e o inglês encurta do mesmo jeito (`switcher`, não `volume switcher`); o menu se abre
+  DENTRO do seletor, então o referente está na tela · high
+- **trusted (adjetivo) → `confiável`** · macOS pt-BR, `SecurityInterface.framework/Localizable.loctable`
+  (`This certificate will be marked as trusted for all users of this computer.` →
+  `Este certificado será marcado como confiável para todos os usuários deste computador.`) · confirmed. Daí
+  `Trusted host keys` → **`Chaves de host confiáveis`** e `Nothing trusted yet.` → **`Nenhuma chave confiável ainda.`**,
+  que é o estado vazio e não uma recusa. O verbo continua sendo `Confiar` (§ do painel de adicionar servidor), e
+  `host key` continua `chave do host`, o termo do `ActionKit` já fixado.
+- **`Trusted` antes da data → `Confiável desde`** · `confiar em algo` não passiva em português (`Confiada em 7 de…` fica
+  agramatical), então a linha usa o ADJETIVO mais `desde`, que diz o mesmo fato e não concorda com pessoa nenhuma ·
+  high. O componente renderiza `{prefixo} <DateLabel>` (`ServersSection.svelte`), então sai
+  `Confiável desde 2026-09-07`.
+- **Check Again / Re-check → `Verificar novamente`** · macOS pt-BR, `SoftwareUpdate.framework`
+  `SUSoftwareUpdateController.loctable`, chave `CheckAgain` (`Check Again` → `Verificar Novamente`) · confirmed, em
+  caixa de frase como o resto do catálogo. É o Cmdr que procura sozinho, então o verbo é `verificar`, não o `conferir`
+  reservado para o que a PESSOA faz (§ da tabela do hub). A linha de instalação repete o rótulo palavra por palavra.
+- **Watching for phones. → `O Cmdr está aguardando celulares.`** · o molde `Aguardando …` já publicado
+  (`fileExplorer.network.browser.status.waitingForNetwork` = `Aguardando a rede…`) · high. As duas linhas escrevem
+  `O Cmdr` por extenso porque a negativa sem sujeito (`Não está aguardando…`) se lê como `você não está`, e a § anterior
+  já fixou que uma frase de estado não fica sem sujeito. Nenhuma das duas menciona o servidor do ADB, o socket ou a
+  inscrição, como manda a `@key`.
+- **Browse… (o botão do seletor de arquivos) → `Escolher…`** · cópia byte a byte de `servers.sheet.browse`, que tem o
+  MESMO inglês e que a § do painel de adicionar servidor já fundamentou no `Choose…` → `Escolher…` da Apple · confirmed.
+  O `desktop-i18n-term-consistency` pareia pelo inglês, então as duas têm que bater.
+- **Got it → `Entendi`** · cópia byte a byte das três irmãs já publicadas com o mesmo inglês (`ai.toast.gotIt`,
+  `main.oldMacos.gotIt`, `updates.moveToApplicationsDialog.gotIt`) · confirmed.
+- **`Your Network group is getting long` → `Seu grupo Rede está ficando grande`** · `grupo` não aceita `longo` em
+  português (`lista longa`, sim; `grupo longo`, não), e `grande` é o que o pt-BR diz de um grupo com itens demais ·
+  high. `Rede` é o nome do cabeçalho, byte a byte com `fileExplorer.navigation.groupNetwork`, e o rótulo interno do
+  ajuste (`serversPinHintSeen.label`) repete a mesma forma, no molde `Dica de … exibida` que
+  `settings.behavior.openTerminalHereToastSeen.label` já publica.
+- **right-click (imperativo) → `Clique em … com o botão direito`** · molde já publicado quatro vezes
+  (`errors.listing.permissionDenied.suggestion`: `clique na pasta com o botão direito, escolha Obter Informações`) ·
+  confirmed. O nome do comando entra entre aspas curvas “ ”, como as irmãs recentes que citam um rótulo da interface
+  (`servers.sheet.needsStoredSecret`, `settings.behavior.openTerminalHereApp.description`).
+- **`It stays in the Servers list.` → `O servidor continua na lista Servidores.`** · o inglês elide o sujeito, o
+  português escreve o substantivo, no molde que `fileExplorer.navigation.serverUnpinnedToast` já publica
+  (`O servidor continua salvo.`) · confirmed.
+- **`ask whether to trust it` → `perguntar se você confia nela`** · o `nela` é a CHAVE (feminino), o único feminino da
+  frase, então o pronome fecha sozinho; a mesma forma fecha o estado vazio (`e pergunta se você confia nela`), onde o
+  inglês para em `and asks` e o português precisa do complemento para a frase não ficar pendurada · high
+- **`Android platform tools` → `ferramentas de plataforma do Android`, `USB debugging` → `depuração USB`,
+  `Location of adb` → `Localização do adb`** · termos já fixados na § Terminology and glossary do `style.md`, na rodada
+  do ADB; a linha do campo vazio copia o `procura o adb nos lugares de sempre` que
+  `settings.fileOperations.adbBinaryPath.description` publica.
+- **`Tint server panes (SMB, SFTP, WebDAV)` → `Matizar painéis de servidor (SMB, SFTP, WebDAV)`** · o inglês deixou de
+  falar só de SMB, e o valor antigo (`Matizar painéis SMB/rede`) descrevia a versão anterior do ajuste; `painel` e
+  `matiz` vêm das irmãs `tintLocal`/`tintMtp`, que ficam na mesma lista · confirmed.
+
+Dois `sameAsSourceJustification`: `settings.section.adb` (`Android (ADB)`, nome de produto mais a sigla da ponte de
+depuração, as duas na lista de não-traduzir) e `settings.adb.status.label` (`Status`, o empréstimo naturalizado que a §
+Terms já fixou e que as irmãs `licensing.section.labelStatus` e `servers.hub.colStatus` publicam).
+
+Varredura pt-PT do lote: zero `ficheiro`, `ecrã`, `estar a` + infinitivo, `consoante`, `Rever`, `alterar o nome`,
+próclise, ou `você` omitido onde a forma verbal fica ambígua. Nenhum valor leva apóstrofo ASCII, então não há `''` a
+dobrar; os dois valores de `menu.*` (família RAW) também não levam. `{command}`, `{path}` e `{host}` ficam intactos, e
+nada concorda com eles.
+
+### Bandeira de revisão desta rodada
+
+- **`Fixar no seletor`, com `seletor` sozinho** (`menu.network.pinToSwitcher`): o termo cheio publicado é
+  `seletor de volumes`, e aqui ele aparece cortado, seguindo o `switcher` do inglês. Confirmar, ou escrever
+  `Fixar no seletor de volumes` e aceitar um item de menu de cinco palavras.

@@ -2359,3 +2359,80 @@ reservvägen är `docs/i18n/reference-pile/how-to-mine.md` § ”No pile on this
 
 Ingen `sameAsSourceJustification` i passet: båda värdena skiljer sig från engelskan. Ingen apostrof i något värde, så
 ICU-dubbleringen `''` blir aldrig aktuell, och `{name}` står kvar oförändrad i den enda nyckel som bär den.
+
+## Fästa servrar, betrodda värdnycklar och Android-raden i Inställningar (2026-09-07; 2 `menu.network.*` + 4 `servers.pinHint.*` + 21 `settings.*`)
+
+Tre ytor i samma pass: snabbmenyn på en serverrad i volymväljaren, engångsaviseringen som säger att `Nätverk`-gruppen
+blivit lång, och två nya underavsnitt under Filsystem (`Servrar (SFTP, WebDAV)` med de betrodda värdnycklarna, och
+`Android (ADB)` med statusraden för `adb`-kommandot).
+
+Belägget kommer från de LEVANDE macOS-paketen, inte från referenshögen: `_ignored/i18n/` finns inte på den här maskinen
+(den är gitignorerad och ligger bara i en klon), och `docs/i18n/reference-pile/how-to-mine.md` § ”No pile on this
+machine?” är den dokumenterade reservvägen. Allt Apple-belägg nedan är läst på macOS 26.6.2, build 25G83, 2026-09-07. ❗
+`grep` hittar ingenting inuti en `.loctable`; strängarna togs ut med `plutil -convert json -o -`.
+
+- **Pin to switcher → `Fäst i volymväljaren`; Unpin → `Lossa`** · verben var satta i `menu.tab.pinTab`/`.unpinTab`
+  (”Fäst flik”/”Lossa flik”) och i `commands.serversTogglePin.label` (”Fäst / lossa server”) · `high`. Asymmetrin är
+  engelskans egen (`Pin to switcher` mot bara `Unpin`), så svenskan behåller den: `volymväljaren` skrivs ut i det
+  fästande alternativet och utelämnas i det lossande, där raden i menyn redan svarar på ”ur vad”. ❌ Inte `Ta bort`, som
+  katalogen reserverar för att plocka ut något ur en lista permanent; servern är kvar i listan Servrar.
+- **”the Servers list” / ”your Network group” → `listan Servrar` / `Gruppen Nätverk`** · apposition, så UI-namnet står
+  ordagrant som rubriken det pekar på (`fileExplorer.navigation.networkVolume` = ”Servrar”, `.groupNetwork` = ”Nätverk”)
+  · `high`. En sammansättning (`Servrar-listan`, `Nätverksgruppen`) skulle tappa eller stava om rubriken. Engelskans
+  possessiva `Your` faller bort: svenska aviseringsrubriker tar den inte, och gruppen är ändå användarens.
+- **Got it → `Uppfattat`** · katalogens egen form på tre systerknappar (`ai.toast.gotIt`,
+  `updates.moveToApplicationsDialog.gotIt`, `main.oldMacos.gotIt`) · `high`. macOS sv säger visserligen `OK` för ”Got
+  It” (ShazamKitUI `SOUNDS_LIKE_ALERT_DISMISS`, DigitalTouchShared `INFO_DONE`, PodcastsFoundation
+  `NOW_PLAYING_SCROLLING_TIP_DONE_BUTTON_TITLE`), men katalogen håller `OK` för dialogernas förvalsknapp
+  (`ui.alertDialog.defaultButton`, `fileOperations.button.ok`), så `Uppfattat` bär den avfärdande nyansen engelskan
+  valt.
+- **trusted → `betrodd` (en) / `betrott` (ett) / `betrodda` (plural)** · Certificate Assistant sv
+  `Localizable.loctable`: ”Trusted Root” = ”Betrodd rot”, ”Untrusted Root” = ”Ej betrodd rot”; ManagedClient
+  `ConfigurationProfilesUI` ”listan över betrodda certifikat”; iCal-profilinsticket ”Certifikatet är inte betrott.” ·
+  `high`. Därav `Betrodda värdnycklar` (kortrubrik), `Betrodd` (prefix före datumet, en-genus efter `nyckeln`) och
+  `Inget betrott än.` (neutrum efter `inget`).
+- **(SSH) host key → `värdnyckel`** · sammansättning av glossarets `värd`/`värdnamn` (Certificate Assistant
+  `EvalCerts.loctable` `DSi-jV-fn4.title` = ”Värdnamn:”) och det satta `nyckel` · `tentative`, låg risk. Används bara
+  där engelskan själv skriver ut `host key` (`settings.servers.card.trustedHostKeys`, `settings.summary.servers`); i
+  serverhubbens texter, där engelskan säger bara `key`, står `nyckel` ensamt enligt passet 2026-09-06.
+- **Not found → `Hittades inte`** · Tier 1 och entydigt: AppKit `FindPanel.loctable`, Foundation `URL.loctable`,
+  CFNetwork, Dictionary `MainMenu.loctable` `100386.title`, AirPort Utility `placeholder.notfound`, Stickies `NOT_FOUND`
+  · `high`.
+- **Found at {path} → `Hittades: {path}`** · samma passivform som `Hittades inte`, så de två statusvärdena läses som ett
+  par · `tentative` (kolonkonstruktionen är Cmdrs egen; inget läst paket har en `Found at`-motsvarighet). ❌ Inte
+  `Hittades i {path}`: `{path}` är sökvägen till själva `adb`-kommandot, inte mappen det ligger i, så `i` skulle säga
+  fel sak. Kolonet följer katalogens vana att låta ett värde stå efter ramen (style.md § ”Ett värde som hamnar efter
+  kolon”).
+- **Watching for phones → `Håller utkik efter telefoner.`** · Apple sv använder samma konstruktion i Notes
+  `LearnMoreTagsWindow.loctable` `jRk-sf-TqB.title` (”Håll utkik efter taggförslag medan du skriver.”) · `high`.
+  Negationen blir `Håller inte utkik efter telefoner just nu.` ❗ Inget om ADB-servern, prenumerationen eller socketen,
+  precis som engelskan.
+- **Re-check (knappen bredvid statusen) → `Leta igen`** · katalogens eget verb för exakt den här handlingen:
+  `settings.fileOperations.adbBinaryPath.description` säger ”så letar Cmdr efter adb på vanligt sätt” · `high`.
+  `Kontrollera igen` vore ordagrant men längre än knappen tål, och `leta` binder ihop knappen med platshållartexten
+  `Leta efter adb på vanligt sätt`. Samma ord ordagrant i `settings.adb.install.intro` (”… och tryck sedan på Leta
+  igen:”).
+- **Browse… (knappen som öppnar filväljaren) → `Bläddra…`** · Finder sv `ConnectToWindow.strings` `48.title` =
+  ”Bläddra”, och katalogens `servers.sheet.browse` har redan formen · `high`. ❗ Själva filväljarens OK-knapp heter
+  `Välj` hos Apple (Finder sv `LocalizableMerged.strings` `NS0`/`NS1`/`NS2` = ”Välj fil”/”Välj mapp”/”Välj”), vilket är
+  varför `settings.adb.pickerTitle` blir `Välj kommandot adb` medan knappen som öppnar den heter `Bläddra…`.
+- **Tint server panes → `Tona serverpaneler`** · `Tona` var satt i systerraderna `settings.appearance.tintLocal.label`
+  (”Tona paneler med lokala volymer”) och `.tintMtp.label` (”Tona MTP-paneler”) · `high`. Etiketten hette tidigare
+  `Tona SMB-/nätverkspaneler`; engelskan namnger nu alla tre protokollen, så svenskan lyfter huvudordet till
+  `serverpaneler` och låter parentesen bära `SMB, SFTP, WebDAV`. Beskrivningen skriver ut `en delad SMB-mapp` enligt
+  glossarets `share → delad mapp`, och listan tar inget serie-komma (`…, en SFTP-server eller en WebDAV-server`).
+- **USB debugging turned on → `har USB-felsökning aktiverad`** · ordagrant katalogens
+  `settings.fileOperations.adbEnabled.description` · `high`. `Browse an Android phone` blir
+  `Bläddra i en Android-telefon`: `bläddra i` är riktningen för att gå igenom ett innehåll, som Finder sv ”Bläddra bland
+  tillgängliga servrar” (`ConnectToWindow.strings` `47.ibShadowedToolTip`).
+- **De interna spårningsnycklarna följer sina syskon ordagrant** · `settings.behavior.serversPinHintSeen.label` =
+  `Tips om lång Nätverk-grupp visat` speglar `settings.behavior.openTerminalHereToastSeen.label` (”Tips om ”Öppna
+  terminal här” visat”), och `.description` = `Om engångstipset om att lossa servrar har visats.` speglar samma nyckels
+  beskrivning · `high`. Bindestrecket i `Nätverk-grupp` är Apples mönster för egennamn i sammansättning
+  (`Time Machine-skiva`), så rubriken `Nätverk` står kvar oförändrad.
+
+Två `sameAsSourceJustification` i passet: `settings.section.adb` (”Android (ADB)” är två egennamn plus parentes, och
+inget däremellan finns kvar att översätta) och `settings.adb.status.label` (`Status`, samma skäl som
+`servers.hub.colStatus` och `licensing.section.labelStatus`). `settings.section.servers` blir däremot
+`Servrar (SFTP, WebDAV)`, eftersom huvudordet böjs. Ingen apostrof i något värde, så ICU-dubbleringen `''` blir aldrig
+aktuell, och `{command}`, `{host}` och `{path}` står oförändrade.

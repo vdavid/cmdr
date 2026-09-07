@@ -1,4 +1,20 @@
 {
+  "servers.pinHint.title": "Tu grupo Red se está haciendo largo",
+  "@servers.pinHint.title": {
+    "sourceHash": "0cf001a"
+  },
+  "servers.pinHint.body": "Haz clic derecho en un servidor y elige Desfijar, o usa “{command}” en la paleta de comandos. Seguirá en la lista Servidores.",
+  "@servers.pinHint.body": {
+    "sourceHash": "0663b02"
+  },
+  "servers.pinHint.favorites": "Los favoritos funcionan igual.",
+  "@servers.pinHint.favorites": {
+    "sourceHash": "932faeb"
+  },
+  "servers.pinHint.gotIt": "Entendido",
+  "@servers.pinHint.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "servers.hub.colName": "Nombre",
   "@servers.hub.colName": {
     "sourceHash": "dcd1d52"

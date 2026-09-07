@@ -2273,3 +2273,99 @@ gelesen 2026-09-07), weil der Referenz-Stapel auf dieser Maschine fehlt.
   `um es noch einmal zu versuchen` steht so schon in `errors.listing.emptyRootICloud.suggestion`.
 - Kein `sameAsSourceJustification` bei diesen beiden: beide Werte weichen vom Englischen ab. Kein Apostroph in den
   Werten, die ICU-Dopplung `''` entfällt.
+
+## Server fixieren und lösen, die vertrauten Hostschlüssel und die ADB-Seite (`menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.summary.servers`/`.adb`, `settings.appearance.tintSmb.*`)
+
+Drei neue Flächen: der Kontextmenü-Punkt, mit dem ein Server aus der Volume-Auswahl verschwindet, der einmalige Hinweis,
+wenn die Gruppe `Netzwerk` zu lang wird, und die beiden neuen Einstellungs-Unterabschnitte (`Server (SFTP, WebDAV)` mit
+den vertrauten Hostschlüsseln, `Android (ADB)` mit dem `adb`-Status). Der Referenz-Stapel fehlt auf dieser Maschine,
+also kommen alle Tier-1-Belege direkt aus den installierten macOS-Bundles (Rezept: `../reference-pile/how-to-mine.md` §
+No pile on this machine?; alles unten auf **macOS 26.6.2, Build 25G83, 2026-09-07** geprüft).
+
+Begriffe:
+
+- **`Pin` → `fixieren`** · Safari `de.lproj/MainMenu.strings` `PrR-Dj-zwG.title` („Pin Tab“ → „Tab fixieren“) · `high`.
+  ❌ Nicht Apples `anpinnen` aus Notes (`Localizable.loctable`, „Pin Note“ → „Notiz anpinnen“): der Katalog hat mit
+  `menu.tab.pinTab` und `commands.serversTogglePin.label` schon Safaris Wort gesetzt, und Safaris Tab-Leiste ist die
+  nähere Fläche.
+- **`Unpin` → `Lösen`** · Notes `Localizable.loctable` („Unpin Note“ → „Notiz lösen“, „Unpin Notes“ → „Notizen lösen“) ·
+  `high`. Deckt sich zeichengleich mit dem ausgelieferten `menu.tab.unpinTab` („Tab lösen“) und der zweiten Hälfte von
+  `commands.serversTogglePin.label` („Server fixieren/lösen“). Im Kontextmenü steht das Wort allein, also
+  imperativ-großgeschrieben: `Lösen`. ❌ Nicht `Loslösen` (Apples Langform in „Pin or Unpin Notes“): Notes' eigener
+  Menüeintrag kürzt selbst auf `lösen`.
+- **`Pin to switcher` → `In der Volume-Auswahl fixieren`** · das Ziel trägt den schon ausgelieferten Namen
+  `Volume-Auswahl` (§ Die Server-Übersicht), und der `zu X`-Rahmen folgt Finders eigenen Menüeinträgen
+  (`de.lproj/MenuBar.strings` `300790.title` „Add to Sidebar“ → „Zur Seitenleiste hinzufügen“, `300772.title` „Add to
+  Dock“ → „Zum Dock hinzufügen“: Apple behält den Artikel) · `high`. Der Eintrag ist deutlich länger als das englische
+  `Pin to switcher`; der Name der Fläche wiegt schwerer als die Kürze, weil der Nutzer sie wiedererkennen können muss.
+- **`Not found` → `Nicht gefunden`** · AppKit `FindPanel.loctable` und Foundation `URL.loctable` (beide „Not found“ →
+  „Nicht gefunden“) · `high`.
+- **`Re-check` → `Erneut prüfen`** · Apples eigene Taste neben einem Suchergebnis:
+  `SoftwareUpdate.framework/…/SUSoftwareUpdateController.loctable` („Check Again“ → „Erneut prüfen“) · `high`. ❌ Nicht
+  `Erneut suchen` (Apples `Check for Updates` → „Nach Updates suchen“): gesucht wird hier nichts Neues, sondern derselbe
+  Befehl noch einmal geprüft.
+- **`trusted` (Attribut) → `vertrauenswürdig`** · SecurityInterface `Localizable.loctable` („This certificate will be
+  marked as trusted …“ → „Dieses Zertifikat wird … als vertrauenswürdig markiert.“), Keychain Access `Errors.loctable`
+  („the trusted application list“ → „die Liste der vertrauenswürdigen Programme“) · `high`. Daher `Trusted host keys` →
+  `Vertrauenswürdige Hostschlüssel`. Das VERB bleibt `vertrauen` (§ Das Verbindungsblatt), die beiden Formen sind kein
+  Auseinanderlaufen: Apple hält es genauso.
+- **`Trusted <Datum>` (Datumspräfix in der Schlüsselzeile) → `Vertrauenswürdig seit <Datum>`** · `high` für das Wort,
+  `tentative` für das `seit`. Das englische Partizip steht bloß vor dem Datum; ein bloßes deutsches `Vertraut` wäre
+  zweideutig (`vertraut` heißt auch „bekannt/familiär“), also trägt `seit` die Zeitangabe. Die Zeile rendert ein
+  absolutes Datum (`DateLabel`), nicht „heute“, also liest sich das sauber.
+- **`Found at {path}` → `Gefunden unter {path}`** · `tentative`. macOS `de` hat keinen Satz der Form „found at <Pfad>“
+  (Suche über alle `.loctable` in `/System/Library` ohne Treffer); `unter` ist die normale deutsche Präposition für eine
+  Pfadangabe, und das Nachbar-Label nennt dieselbe Sache `Speicherort von adb`
+  (`settings.fileOperations.adbBinaryPath.label`, § Terms).
+- **`Watching for phones.` → `Cmdr achtet auf Telefone.`** · `tentative`. Der englische `@key` verbietet ausdrücklich
+  jede Erwähnung von ADB-Server, Abo oder Socket, es gibt also nichts Technisches zu übersetzen. Der Katalog rendert
+  `watch` schon dreifach (`im Blick behalten` in `askCmdr.consent.proactive`, `beobachten` in `askCmdr.wake.*`,
+  `überwachen` für den Downloads-Ordner); `achten auf` ist die knappste Form und hält die Zeile so kurz wie das
+  Englische. Der Gegenwert `Cmdr achtet gerade nicht auf Telefone.` bleibt wortgleich, damit die beiden Zustände als ein
+  Paar lesbar sind. `Telefon` ist das Katalogwort (`settings.fileOperations.adbEnabled.description`: „eines
+  Android-Telefons“).
+- **`Choose the adb command` → `Den Befehl „adb“ auswählen`** · wortgleicher Rahmen wie der andere Dateiauswahl-Titel im
+  Katalog, `settings.behavior.openTerminalHereApp.chooseAppTitle` („Choose a terminal app“ → „Terminal-App auswählen“);
+  `den Befehl „adb“` steht so schon in `settings.fileOperations.adbEnabled.description` · `high`.
+- **`Browse…` (Taste, die den Dateiauswahl-Dialog öffnet) → `Durchsuchen…`** · schon gesetzt (§ Das Verbindungsblatt);
+  `settings.adb.browse` übernimmt es zeichengleich von `servers.sheet.browse`. Der `i18n-terms`-Warn gegen
+  `settings.archives.opt.browse` („Durchsehen“) bestand schon vor dieser Fläche und wächst durch sie nicht.
+
+Wortlaut-Entscheidungen:
+
+- **Eine Gruppe im Fließtext heißt `die Gruppe „Netzwerk“`**, genau wie ein Menü (`style.md` § Ein Menü im Fließtext).
+  Also `Deine Gruppe „Netzwerk“ wird lang` und `Hinweis zur langen Gruppe „Netzwerk“ gezeigt`. Der Gruppenname kommt aus
+  `fileExplorer.navigation.groupNetwork`, nicht aus einer Direktübersetzung.
+- **`Right-click a server` → `Klicke einen Server mit der rechten Maustaste an`** · der Katalog nimmt für die
+  AUFFORDERUNG genau diesen Rahmen (`errors.listing.permissionDenied.suggestion`: „klicke den Ordner mit der rechten
+  Maustaste an“); das kurze Nomen `Rechtsklick` bleibt den Tooltips vorbehalten
+  (`fileExplorer.navigation.favoriteTooltip`).
+- **`use "{command}" from the command palette` → `führe „{command}“ in der Befehlspalette aus`** · Rahmen aus
+  `main.upgradeNudge.other` („Öffne die Befehlspalette und führe Einführung… aus“). Die deutschen Anführungszeichen um
+  den Platzhalter bleiben, weil er einen Befehlsnamen trägt.
+- **`It stays in the Servers list.` → `Der Server bleibt in der Liste „Server“.`** · kein `Er`: davor steht
+  `„{command}“`, und `der Befehl` ist ebenfalls maskulin, das Pronomen wäre also mehrdeutig (dieselbe Mechanik wie in
+  `connectionTooltipNeedsHostKey`, § Der Server-Hub). Die Wiederholung von `Server` ist der Preis dafür und in Ordnung.
+- **`Cmdr` nimmt im Nebensatz das Pronomen `es`** („… fragt Cmdr, bevor **es** dessen Schlüssel vertraut …“), wie schon
+  in `settings.askCmdr.proactive.description` („… wenn **es** etwas vorzuschlagen hat“) und
+  `onboarding.stepOptional.mtp.desc` („… solange **es** läuft“).
+- **Die Hilfetexte drehen den englischen Satzbau um**, weil `the first time you connect` im Deutschen als Nebensatz vorn
+  steht:
+  `Wenn du dich zum ersten Mal mit einem Server verbindest, fragt Cmdr, bevor es dessen Schlüssel vertraut, und merkt sich deine Antwort hier.`
+  Dasselbe im Leerzustand und in der Bestätigung, wo der Rahmen `wenn du dich das nächste Mal … verbindest` aus
+  `fileExplorer.navigation.forgetSecretConfirm` kommt.
+- **`Nothing trusted yet.` → `Bisher vertraust du keinem Schlüssel.`** · kein Partizip-Fragment: die Stilregel will im
+  Fließtext einen ganzen Satz, und die `du`-Form sagt zugleich, wer entschieden hat. Der Ton bleibt sachlich, keine
+  Warnung.
+- **`Forget` bleibt `Vergessen`** und der Bestätigungstitel `Diesen Schlüssel vergessen?` · zeichengleich zur
+  `forget`-Familie im Katalog (`menu.network.forgetServer` = „Server vergessen“,
+  `fileExplorer.navigation.forgetServerConfirm` = „{name} vergessen? …“).
+- **`Servers (SFTP, WebDAV)` → `Server (SFTP, WebDAV)`** · Singular und Plural sind endungsgleich, der Wert weicht also
+  nur um das englische Plural-`s` ab; die drei Protokollnamen bleiben stehen.
+- **Der Server-Farbton heißt jetzt `Serverbereiche einfärben (SMB, SFTP, WebDAV)`** · der Farbton deckt nicht mehr nur
+  SMB ab. Der Rahmen bleibt der der Geschwister (`settings.appearance.tintMtp.label` = „MTP-Bereiche einfärben“,
+  `tintLocal.description` = „Hintergrund-Farbton für Bereiche, die …“), `Bereich` ist das gesetzte Wort für `pane`.
+- **Zwei `sameAsSourceJustification`**: `settings.adb.status.label` („Status“, dieselbe Begründung wie
+  `servers.hub.colStatus`) und `settings.section.adb` („Android (ADB)“, Produktname plus Abkürzung aus Googles
+  Sprachhoheit, wie schon `adb.volumeLabelWithSuffix`). Alle übrigen 25 Werte weichen vom Englischen ab.
+- Kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt; `menu.network.*` ist ohnehin eine RAW-Familie.

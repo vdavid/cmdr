@@ -151,13 +151,13 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "SMB-/Netzwerkbereiche einfärben",
+  "settings.appearance.tintSmb.label": "Serverbereiche einfärben (SMB, SFTP, WebDAV)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "66fd4a8"
+    "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "Hintergrund-Farbton für Bereiche, die eine SMB- oder Netzwerkfreigabe zeigen.",
+  "settings.appearance.tintSmb.description": "Hintergrund-Farbton für Bereiche, die eine SMB-Freigabe, einen SFTP-Server oder einen WebDAV-Server zeigen.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "cf3a857"
+    "sourceHash": "2e071d3"
   },
   "settings.appearance.tintMtp.label": "MTP-Bereiche einfärben",
   "@settings.appearance.tintMtp.label": {
@@ -1540,6 +1540,14 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.serversPinHintSeen.label": "Hinweis zur langen Gruppe „Netzwerk“ gezeigt",
+  "@settings.behavior.serversPinHintSeen.label": {
+    "sourceHash": "8d632ca"
+  },
+  "settings.behavior.serversPinHintSeen.description": "Ob der einmalige Hinweis zum Lösen von Servern gezeigt wurde.",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "sourceHash": "fc0722f"
+  },
   "settings.section.notifications": "Benachrichtigungen",
   "@settings.section.notifications": {
     "sourceHash": "7880118"
@@ -1721,6 +1729,15 @@
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
+  "settings.section.servers": "Server (SFTP, WebDAV)",
+  "@settings.section.servers": {
+    "sourceHash": "58704f8"
+  },
+  "settings.section.adb": "Android (ADB)",
+  "@settings.section.adb": {
+    "sourceHash": "bc9c1a1",
+    "sameAsSourceJustification": "Produktname „Android“ plus die Abkürzung „ADB“ in Klammern, beide aus Googles Sprachhoheit und in macOS `de` wie im Katalog unverändert (`adb.volumeLabelWithSuffix` trägt dieselbe Klammer); es bleibt nichts zu übersetzen."
+  },
   "settings.section.mtp": "MTP (Android/Kindle/Kameras)",
   "@settings.section.mtp": {
     "sourceHash": "a68fa47"
@@ -1859,6 +1876,14 @@
   "settings.summary.smbNetworkShares": "Netzwerk aktivieren, direkte SMB-Verbindungen, Freigabe-Cache und Zeitüberschreitungen.",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
+  },
+  "settings.summary.servers": "Die SSH-Hostschlüssel, denen du vertraust.",
+  "@settings.summary.servers": {
+    "sourceHash": "40940fa"
+  },
+  "settings.summary.adb": "Ein Android-Telefon durchsehen, auf dem USB-Debugging eingeschaltet ist.",
+  "@settings.summary.adb": {
+    "sourceHash": "fb69a13"
   },
   "settings.summary.mtp": "Android-, Kindle- und Kamera-Geräte über USB erkennen.",
   "@settings.summary.mtp": {
@@ -2336,5 +2361,74 @@
   "settings.window.loading": "Einstellungen werden geladen …",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.servers.card.trustedHostKeys": "Vertrauenswürdige Hostschlüssel",
+  "@settings.servers.card.trustedHostKeys": {
+    "sourceHash": "46c5c9d"
+  },
+  "settings.servers.trustedHostKeys.description": "Wenn du dich zum ersten Mal mit einem Server verbindest, fragt Cmdr, bevor es dessen Schlüssel vertraut, und merkt sich deine Antwort hier. Gespeicherte Server stehen in der Liste „Server“, nicht auf dieser Seite.",
+  "@settings.servers.trustedHostKeys.description": {
+    "sourceHash": "bbbed1a"
+  },
+  "settings.servers.trustedHostKeys.empty": "Bisher vertraust du keinem Schlüssel. Wenn du dich zum ersten Mal mit einem SFTP-Server verbindest, zeigt dir Cmdr dessen Fingerabdruck und fragt nach.",
+  "@settings.servers.trustedHostKeys.empty": {
+    "sourceHash": "7bc982e"
+  },
+  "settings.servers.trustedHostKeys.approvedPrefix": "Vertrauenswürdig seit",
+  "@settings.servers.trustedHostKeys.approvedPrefix": {
+    "sourceHash": "639538c"
+  },
+  "settings.servers.trustedHostKeys.forget": "Vergessen",
+  "@settings.servers.trustedHostKeys.forget": {
+    "sourceHash": "a6bd489"
+  },
+  "settings.servers.trustedHostKeys.confirmTitle": "Diesen Schlüssel vergessen?",
+  "@settings.servers.trustedHostKeys.confirmTitle": {
+    "sourceHash": "524bfa5"
+  },
+  "settings.servers.trustedHostKeys.confirm": "Wenn du dich das nächste Mal mit {host} verbindest, zeigt dir Cmdr den Fingerabdruck des Schlüssels und fragt, ob du ihm vertrauen möchtest.",
+  "@settings.servers.trustedHostKeys.confirm": {
+    "sourceHash": "6db1a3f"
+  },
+  "settings.adb.status.label": "Status",
+  "@settings.adb.status.label": {
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "„Status“ ist im Deutschen dasselbe Wort; macOS nutzt es unverändert (CalendarLink `Localizable.loctable`, Finder „iCloud-Status“, „Statusleiste“, macOS 26.6.2, 2026-09-07)."
+  },
+  "settings.adb.status.foundAt": "Gefunden unter {path}",
+  "@settings.adb.status.foundAt": {
+    "sourceHash": "c49cc6a"
+  },
+  "settings.adb.status.notFound": "Nicht gefunden",
+  "@settings.adb.status.notFound": {
+    "sourceHash": "e3ebaa1"
+  },
+  "settings.adb.status.watching": "Cmdr achtet auf Telefone.",
+  "@settings.adb.status.watching": {
+    "sourceHash": "d1538e3"
+  },
+  "settings.adb.status.notWatching": "Cmdr achtet gerade nicht auf Telefone.",
+  "@settings.adb.status.notWatching": {
+    "sourceHash": "6e1936c"
+  },
+  "settings.adb.recheck": "Erneut prüfen",
+  "@settings.adb.recheck": {
+    "sourceHash": "24fcca0"
+  },
+  "settings.adb.install.intro": "Installiere die Android Platform Tools und drücke dann auf „Erneut prüfen“:",
+  "@settings.adb.install.intro": {
+    "sourceHash": "5a82ea4"
+  },
+  "settings.adb.pathPlaceholder": "adb auf den üblichen Wegen suchen",
+  "@settings.adb.pathPlaceholder": {
+    "sourceHash": "e236ef2"
+  },
+  "settings.adb.browse": "Durchsuchen…",
+  "@settings.adb.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "settings.adb.pickerTitle": "Den Befehl „adb“ auswählen",
+  "@settings.adb.pickerTitle": {
+    "sourceHash": "d6fc142"
   }
 }

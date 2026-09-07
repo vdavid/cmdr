@@ -2680,3 +2680,110 @@ bundle és a kulcs neve.
   eltér, mert az angoljuk is más szó és mindkettőnek külön szállított horgonya van. Ha egy későbbi passz egységesíteni
   akarja, a `retryProgressAriaLabel` / `retryNowTooltip` / `servers.sheet.autoReconnect` hármast kell hozzáigazítania,
   nem ezt az egy címet.
+
+## A rögzítési tipp, a megbízható szerverkulcsok lapja és az ADB-állapotsor (`menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.summary.servers`/`.adb`, `settings.behavior.serversPinHintSeen.*`, `settings.appearance.tintSmb.*`, 2026-09-07)
+
+31 kulcs: a kötetváltó szerversorának két új helyi menüpontja, az egyszeri „hosszú a Hálózat csoportod” értesítés négy
+sora, a Beállítások két új alszakasza (`Szerverek (SFTP, WebDAV)` és `Android (ADB)`) minden szövegével, plusz a
+szerverpanel-színezés két átcímkézett kulcsa.
+
+**A források ebben a passzban**: a `_ignored/i18n/hu/` referenciakupac ezen a gépen nincs meg (ellenőrizve:
+`~/projects-git/vdavid/cmdr/_ignored/` maga sem létezik, tehát nem a worktree-csapdáról van szó), ezért a guide
+szentesített élő-macOS ága szerint közvetlenül a rendszer `.loctable` / `.lproj` fájljaiból bányásztunk (macOS 26.6.2,
+25G83, `plistlib`, 320 427 en→hu pár a `CoreServices`, `Frameworks`, `PrivateFrameworks`, `PreferencePanes`,
+`ExtensionKit`, `Extensions`, `Services`, `UserNotifications`, `/System/Applications` és `/Applications/Utilities`
+alól). Minden sor mellett a bundle és a kulcs neve.
+
+- **Unpin (puszta, helyi menüben) → `Rögzítés feloldása`** · mac (`NotesShared.framework/Localizable.loctable` `Unpin` =
+  „Rögzítés feloldása”; `AppKit/MenuCommands.loctable` `Unpin Tab` = „Lap rögzítésének feloldása”) · `high`. Betű
+  szerinti Apple-találat pont erre az egyszavas menüpontra, és egybevág a szótár `pin / unpin tab` sorával, valamint a
+  szállított `commands.serversTogglePin.label` (`Szerver rögzítése / rögzítés feloldása`) második felével. ❌ Nem
+  `Rögzítés megszüntetése` (a Music/Maps-ág alakja): a `feloldása` az, amit a katalógus már visz.
+- **Pin to switcher → `Rögzítés a kötetválasztóban`** · mac (`WorkflowUI.framework/Localizable.loctable`
+  `Pin in Menu Bar` = „Rögzítés a menüsoron” — ugyanaz a szerkezet: `Rögzítés` + a felület helyhatározós neve) · `high`.
+  A `kötetválasztó` a szótár szállított alakja, a `-ban` rag pedig a szállított
+  `fileExplorer.navigation.serverPinnedToast` (`… ott van a kötetválasztódban`) esete. Az angol elhagyja a névelőt, a
+  magyar nem teheti.
+- **A tipp címe birtokos, mert a szállított buborék is az**: `Kezd hosszúra nyúlni a Hálózat csoportod` · a
+  `serverPinnedToast` `kötetválasztódban` alakja · `high`. A `Hálózat` a kötetváltó csoportcímkéje
+  (`fileExplorer.navigation.groupNetwork`), változatlanul; a `kezd hosszúra nyúlni` a semleges, nem figyelmeztető
+  olvasat („is getting long”), ahogy az angol is kéri.
+- **A tipp törzse a szállított mintákat fűzi össze**: `Kattints jobb gombbal …`
+  (`fileExplorer.navigation.favoriteTooltip`), `válaszd a „…” lehetőséget`
+  (`settings.behavior.openTerminalHereApp.description`), `futtasd a parancspalettából a(z) „{command}” parancsot`
+  (`main.upgradeNudge.other` = „nyisd meg a parancspalettát, és futtasd a Bevezető… parancsot”), `Továbbra is …`
+  (`fileExplorer.navigation.serverUnpinnedToast`) · `high`. A záró mondat alanya elmarad, ahogy az angolban is; a
+  `Továbbra is ott marad a Szerverek listában.` viszi az „semmi nem veszett el” jelentést. A `{command}` elé `a(z)`
+  kerül, mert a beszúrt parancsnév kezdőhangja ismeretlen.
+- **Got it → `Értem`** · kényszerítve, mert az angol betű szerint azonos három szállított kulcséval (`ai.toast.gotIt`,
+  `updates.moveToApplicationsDialog.gotIt`, `main.oldMacos.gotIt`), `desktop-i18n-term-consistency` · `high`.
+- **host key (a kártya és a lap főneve) → `szerverkulcs`** · a szótár `host key → a szerver kulcsa` sorának egybeírt
+  összetétele · `high`. A birtokos szerkezet marad, ahol van birtokos (`{host} kulcsának ujjlenyomata`); ahol az angol
+  puszta többes szám áll („Trusted host keys”), ott az összetétel a természetes: `Megbízható szerverkulcsok`. ❌ Nem
+  `hosztkulcs`: a `hoszt` Apple-attesztált ugyan (`hosztnév`, „Tanúsítvány kérése a hoszttól”), de a felhasználó felé a
+  katalógus egységesen `szerver`-t mond.
+- **Trusted X → `Megbízható X`** · mac (`Network.appex` `8021X_PROFILE_TRUSTED_SERVER_LABEL` `Trusted servers` =
+  „Megbízható szerverek”, `8021X_PROFILE_TRUSTED_CERTIFICATES_LABEL` = „Megbízható tanúsítvány”) · `high`.
+- **A megbízhatóvá tétel IGÉJE a szállított `megbízhatónak tekint`** (`servers.refusal.hostKeyUntrusted` = „A Cmdr még
+  nem tekinti megbízhatónak {host} kulcsát.”), ezért a lap prózája is ezt viszi:
+  `mielőtt megbízhatónak tekintené egy szerver kulcsát`, `A megbízhatónak tekintett SSH-szerverkulcsok.`,
+  `Még nincs megbízhatónak tekintett kulcs.` · `high`.
+- **⚠️ Egy kivétel: a dátum előtti `Trusted` címke `Megbízhatóként jelölve`** · mac
+  (`SecurityInterface.framework/Localizable.loctable`: „Ez a tanúsítvány … megbízhatóként lesz jelölve”) · `high`. A
+  `tekint` igéből nincs használható `-va/-ve` alak egy dátum elé („Megbízhatónak tekintve 2026. 09. 07.” nem magyar), az
+  Apple viszont pont a „megjelölés megbízhatóként” aktusára ad Tier-1 alakot, és ez az, amit a sor rögzít: mikor döntött
+  így a felhasználó. A fogalmat mindkét alakban a `megbízható` melléknév viszi, ezért a lap nem esik szét. ❌ Nem
+  `Jóváhagyva` (a `PermissionKit` `Approved` alakja): elveszne belőle a bizalmi döntés.
+- **Forget (puszta gomb) → `Elfelejtés`** · mac (`BluetoothUIServer.app/Localizable.loctable`
+  `kBTUIServerUSBPairedWhileLoggedOffActionButtonTitle` `Forget` = „Elfelejtés”) · `high`. Ugyanaz a tő, mint a
+  szállított `menu.network.forgetServer` (`Szerver elfelejtése`) családban, ahogy az angol `@key` kéri.
+- **A megerősítő párbeszéd a szállított „elfelejtés” család mintája**: `Elfelejted ezt a kulcsot?` +
+  `A következő kapcsolódáskor a Cmdr megmutatja {host} kulcsának ujjlenyomatát, és rákérdez, megbízol-e benne.` · a
+  szállított `fileExplorer.navigation.forgetSecretConfirm`
+  (`Elfelejted a(z) „{name}” mentett jelszavát? A Cmdr a következő kapcsolódáskor újra elkéri.`) · `high`. A `{host}`
+  birtokos helyen áll, a rag a `kulcs`-ra megy, tehát a helyőrző ragozatlan marad; ez oldja meg a „connect to {host}”
+  ragozási csapdáját is.
+- **connect to a server → `kapcsolódás szerverre`** · a szótár szállított döntése (Finder `N84` = „Kapcsolódás
+  szerverre…”) · `high`. Innen `Amikor először kapcsolódsz egy SFTP-szerverre, …`.
+- **Status → `Állapot`; Browse… → `Böngészés…`** · kényszerítve, mert az angoljuk betű szerint azonos a szállított
+  `servers.hub.colStatus` / `licensing.section.labelStatus`, illetve `servers.sheet.browse` kulcsokéval · `high`.
+- **Not found → `Nem található`** · mac (`AppKit.framework/FindPanel.loctable` `Not found` = „Nem található”) · `high`.
+  Egybevág a szállított `fileExplorer.network.share.notFound` alakjával.
+- **Found at {path} → `Megtalálva itt: {path}`** · a `megtalálva` a szállított `indexing.summary.found`
+  (`{countText} megtalálva`) és `askCmdr.tool.importantFolders.done` alakja, az `itt: {x}` pedig a katalógus házi
+  idiómája a ragozhatatlan helyőrzőre (`fileExplorer.network.share.notFound` = „… nem található itt: {hostName}”) ·
+  `high`.
+- **Re-check → `Újraellenőrzés`** · mac (`TextToSpeechVoiceBankingUI.framework` `VB_CHECK_AGAIN` `Check Again` =
+  „Újraellenőrzés”) · `high`. A `SoftwareUpdate` `Ismételt ellenőrzés` alakja is Tier 1, de két szó, és ez a gomb `mini`
+  méretű. A `settings.adb.install.intro` betű szerint idézi a gombcímkét: `majd nyomd meg az Újraellenőrzés gombot:` (a
+  `nyomd meg a … gombot` keret a szállított `downloads.toast.inAppHint` és `mtp.ptpcameradDialog.helpText` alakja).
+- **watch (Cmdr figyeli a csatlakozó eszközöket) → `figyel`** · a katalógus szállított töve
+  (`settings.section.fileSystemWatching` = `Fájlrendszer figyelése`, `settings.advanced.card.fileWatching` =
+  `Fájlfigyelés`, `askCmdr.wake.needsApiKey` = `Az Ask Cmdr figyel, de …`) · `high`. Innen
+  `A Cmdr figyeli a csatlakozó telefonokat.` és `A Cmdr most nem figyeli a csatlakozó telefonokat.` A két sor
+  szándékosan egy mondatpár: az angol is csak a tagadásban és a `right now`-ban tér el. Az ADB-szerver, az előfizetés és
+  a socket egyikben sem jelenik meg, ahogy az `@key` kéri.
+- **A `Cmdr` alanyt kitesszük mindkét figyelő sorban**, mert az angol alanytalan mondata („Watching for phones.”)
+  magyarul gazdátlan harmadik személy lenne egy olyan sorban, amely fölött csak az `Állapot` címke áll · `high`.
+- **Az adb-sorok a szállított `settings.fileOperations.adb*` kulcsok szóhasználatát viszik tovább**:
+  `Az adb keresése a szokásos módon` (a `settings.fileOperations.adbBinaryPath.description` = „a Cmdr a szokásos módon
+  keresi az adb-t”), `Az adb parancs kiválasztása` (a `kiválasztása` a szállított
+  `settings.behavior.openTerminalHereApp.description` `„App kiválasztása…”` alakja, plusz a mac `X kiválasztása`
+  mintája), `Telepítsd az Android platform tools csomagot` (a szótár `platform tools` sora),
+  `be van kapcsolva az USB-hibakeresés` (a szótár `USB debugging` sora és a szállított
+  `settings.fileOperations.adbEnabled.description` mondata) · `high`. Az `adb` prózában itt idézőjel NÉLKÜL áll, mert az
+  angol sem idézi ezen a két kulcson (a szótár szabálya az idézést az angolhoz köti).
+- **`settings.summary.servers` nem tagad**: `A megbízhatónak tekintett SSH-szerverkulcsok.`, és a kártya súgójának
+  második mondata is állító (`… a Szerverek listában találod; ez az oldal csak a kulcsokról szól.`) az angol „…, not on
+  this page.” helyett · a házi hangszabály („Y, nem X” kerülendő) · `high`.
+- **`settings.appearance.tintSmb.*` átcímkézve**: a színezés már nemcsak SMB-t fed le, ezért
+  `Szerverpanelek színezése (SMB, SFTP, WebDAV)` és
+  `Háttérszínezés az SMB-megosztást, SFTP- vagy WebDAV-szervert mutató paneleken.` A címke a testvérek mintáját tartja
+  (`MTP-panelek színezése`, `Helyi kötetek paneljeinek színezése`), a leírás pedig betű szerint a
+  `settings.appearance.tintMtp.description` keretét (`Háttérszínezés az … mutató paneleken.`) · `high`. A `sourceHash`-t
+  nem nyúltuk, azt a lead bélyegzi újra.
+- **`sameAsSourceJustification` ebben a passzban egy kulcson**: `settings.section.adb` (`Android (ADB)`) — terméknév +
+  betűszó, mindkettőt a magyar Android és a katalógus szállított sorai is változatlanul hozzák. A többi 30 érték eltér
+  az angoltól.
+- Aposztróf egyik magyar értékben sincs, tehát ICU-kettőzés sem kellett; a két `menu.*` kulcs RAW családba tartozik, és
+  ott sincs aposztróf.

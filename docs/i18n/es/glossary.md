@@ -2466,3 +2466,122 @@ sin estar en esta máquina, así que las fuentes de Tier 1 salen del propio Mac 
 - `{name}` se conserva tal cual y queda detrás de la preposición, en la misma posición que en el hermano `connecting`:
   nada concuerda con él.
 - La elipsis de `reconnecting` copia el `…` (U+2026) del inglés, carácter a carácter.
+
+## Fijar servidores en el selector, las claves de host de confianza y la página de ADB (`menu.network.{pinToSwitcher,unpin}`, `servers.pinHint.*`, `settings.{section,summary}.{servers,adb}`, `settings.servers.*`, `settings.adb.*`, `settings.appearance.tintSmb.*`, 2026-09-07)
+
+Quinta tanda de la superficie de servidores: los dos ítems nativos que fijan y desfijan un servidor en el selector de
+volúmenes, el aviso único que salta cuando el grupo `Red` se llena, las dos subsecciones nuevas de
+`Sistemas de archivos` (`Servidores (SFTP, WebDAV)` y `Android (ADB)`) con su contenido, y el reetiquetado del tinte de
+panel, que ahora cubre SMB, SFTP y WebDAV. El montón de referencia sigue sin estar en esta máquina, así que las fuentes
+de Tier 1 salen del propio Mac (macOS 26.6.2, build 25G83, `plutil -convert json` sobre los `.loctable` y los `.strings`
+por nib del sistema, 2026-09-07).
+
+### Términos de Tier 1 (macOS en vivo)
+
+- **Trusted X (una cosa en la que se ha confiado) → `X de confianza`** · `Network.appex/Localizable.loctable`,
+  `8021X_PROFILE_TRUSTED_SERVER_LABEL` = «Trusted servers» → «Servidores de confianza» y
+  `8021X_PROFILE_TRUSTED_CERTIFICATES_LABEL` = «Trusted certificate» → «Certificado de confianza»; lo repiten
+  `FindMy.app` («Trusted Locations» → «Ubicaciones de confianza») y `AppleAccount.framework` («trusted contacts» →
+  «contactos de confianza») · `high`. De ahí `Trusted host keys` → `Claves de host de confianza`. ❌ No `fiable`: Apple
+  reserva `fiable` para el estado de un certificado («This certificate is marked as trusted» → «está marcado como
+  fiable», `SecurityFoundation/Certificate.loctable`), que es un veredicto de la máquina; `de confianza` es la forma que
+  usa cuando quien confía es la persona, que es el caso de Cmdr.
+- **Check Again → `Comprobar de nuevo`** · tres fuentes coincidentes:
+  `SoftwareUpdate.framework/SUSoftwareUpdateController.loctable` (`CheckAgain`), `TextToSpeechVoiceBankingUI`
+  (`VB_CHECK_AGAIN`) y `Mail.app/ConnectionDoctor.loctable` (`100017.title`) · `high`. Es la traducción de `Re-check`.
+- **not found → `no encontrado`** · `Medical Imaging Calibrator` («Device not found» → «Dispositivo no encontrado»),
+  `SPConfigurationProfileReporter` («<Not found in policy database>» → «<No encontrado en la base de datos de
+  políticas>») y ActionKit («Podcast Not Found» → «Podcast no encontrado») · `high`. Concuerda con `el comando adb`,
+  masculino fijo.
+- **Located at %@ → `está en %@`** · `FindMy.app/Localizable-TINKER.loctable`,
+  `PEOPLE_DETAIL_LOCATION_ALERT_WHEN_SOMEONE_IS_NOT_AT` («When %1$@ Is Not Located At %2$@» → «Cuando
+  %1$@ no está en
+  %2$@») · `high`. Fija la preposición `en` para `Found at {path}`.
+- **Pin Tab → `Anclar pestaña` (fuente descartada a propósito, ver Decisiones)** · Safari `es.lproj/MainMenu.strings`,
+  `PrR-Dj-zwG.title` · `high` como evidencia, no como elección.
+
+### Decisiones
+
+- **`pin` / `unpin` → `fijar` / `desfijar`, y NO el `anclar` de Safari** · Safari `es` dice `Anclar pestaña`, pero el
+  catálogo ya publicó toda la familia con `fijar`: `menu.tab.pinTab` (`Fijar pestaña`), `menu.tab.unpinTab`
+  (`Desfijar pestaña`), `commands.tabTogglePin.label` (`Fijar o desfijar la pestaña`) y, sobre todo,
+  `commands.serversTogglePin.label` (`Fijar o desfijar el servidor`), que es literalmente el mismo comando que estos dos
+  ítems de menú ejecutan. Cambiar a `anclar` partiría la familia en dos y dejaría el menú contextual diciendo una cosa y
+  la paleta otra · `high` (la consistencia), `tentative` (la palabra frente a la de Apple; si algún día se cambia, hay
+  que mover las cinco claves a la vez).
+- **`Pin to switcher` → `Fijar en el selector`** · el inglés acorta «volume switcher» a «switcher» porque el ítem vive
+  dentro del propio selector; el español hace el mismo recorte sobre `selector de volúmenes`
+  (`commands.paneLeftVolumeChooser.label`, `shortcuts.scope.volumeChooser`). `fijar` rige `en`, así que el calco
+  `Fijar al selector` no es español · `high`.
+- **`Unpin` → `Desfijar`, a secas** · copia el segundo verbo de `Fijar o desfijar el servidor` y queda tan corto como el
+  inglés, que es lo que pide un menú estrecho. `servers.pinHint.body` lo cita palabra por palabra · `high`.
+- **`Your Network group is getting long` → `Tu grupo Red se está haciendo largo`** · `Red` es el nombre del epígrafe
+  (`fileExplorer.navigation.groupNetwork`) y va sin comillas, como el `el menú Ayuda` ya asentado (macOS escribe
+  «selecciona menú Apple > Ajustes del Sistema» sin comillas) · `high`.
+- **`the Servers list` → `la lista Servidores`** · misma regla que `el menú Ayuda`: el nombre de la fila
+  (`fileExplorer.navigation.networkVolume` = `Servidores`) va detrás del sustantivo genérico y sin comillas. Difiere a
+  propósito de `fileExplorer.network.browser.removeHostConfirm` (`la lista de servidores`), cuyo inglés no nombra
+  ninguna fila · `high`.
+- **`It stays in the Servers list.` → `Seguirá en la lista Servidores.`** · el sujeto tácito es `el servidor`, masculino
+  fijo, y `seguir` no expone género. El futuro traduce la promesa del inglés mejor que un presente, que leería como una
+  descripción · `high`.
+- **`Favorites work the same way.` → `Los favoritos funcionan igual.`** · `Favoritos` es el epígrafe
+  (`fileExplorer.navigation.groupFavorites`); `funcionar igual` es la forma llana de «work the same way», sin el calco
+  `de la misma manera` · `high`.
+- **`Trusted` + fecha → `De confianza desde`** · la fila lee `De confianza desde 2026-09-07`. El inglés usa un
+  participio suelto que el español no tiene sin artículo ni preposición (`Aprobada 2026-09-07` no es español), así que
+  se toma la locución `de confianza` de Apple y se le añade el `desde` que la fecha pide. No expone género · `high` (la
+  locución), `tentative` (la longitud: son tres palabras donde el inglés tiene una, en una fila estrecha).
+- **`Forget` (el botón de cada fila) → `Olvidar`** · el `@key` pide que suene igual que `menu.network.forgetServer`
+  (`Olvidar el servidor`); aquí el objeto ya está en la fila, así que va el infinitivo solo · `high`.
+- **`Saved servers live in the Servers list, not on this page.` →
+  `… están en la lista Servidores; esta página solo guarda las claves.`** · el molde «Y, no X» está vetado por el
+  `style-guide.md`, así que la segunda mitad afirma lo que esta página sí hace en vez de negar lo que no · `high`.
+- **`Nothing trusted yet.` → `Aún no hay ninguna clave de confianza.`** · molde `Aún no hay X` ya asentado
+  (`askCmdr.sessions.empty`, `operationLog.dialog.empty`) · `high`.
+- **`Watching for phones.` / `Not watching for phones right now.` → `Cmdr detecta los teléfonos en cuanto los conectas.`
+  / `Ahora mismo Cmdr no detecta los teléfonos al conectarlos.`** · el inglés omite el sujeto; el español necesita uno
+  para conjugar, y `Cmdr` es el que ya usa el resto del catálogo en las líneas de estado. `detectar` es el verbo del
+  catálogo para notar un dispositivo (`settings.summary.mtp`, «Detecta dispositivos Android, Kindle y cámaras por USB»),
+  y `en cuanto los conectas` dice lo que el `@key` describe («the moment it is plugged in») sin nombrar el servidor de
+  ADB, la suscripción ni el socket. ❌ No `Buscando teléfonos` (macOS reserva `Buscando X` para una búsqueda en marcha,
+  `CoreBluetoothUI`), ❌ no `pendiente de` (en el macOS en español `pendiente de` solo significa «a la espera de
+  resolverse», `PassKit`, `HomeDataModel`) · `high` (el verbo), `tentative` (la frase entera).
+- **`Choose the adb command` → `Seleccionar el comando adb`** · calca a
+  `settings.behavior.openTerminalHereApp.chooseAppTitle` (`Choose a terminal app` → `Seleccionar una app de terminal`),
+  que es el otro título de selector nativo del catálogo; `comando` es la palabra ya asentada para una orden de shell ·
+  `high`.
+- **`Look for adb the usual way` → `Buscar adb en los sitios habituales`** · es literalmente la mitad de
+  `settings.fileOperations.adbBinaryPath.description` (`Cmdr buscará adb en los sitios habituales`), puesta en
+  infinitivo porque es el texto de marcador de un campo vacío · `high`.
+- **`Install the Android platform tools, then press Re-check:` →
+  `Instala las herramientas de plataforma de Android y después pulsa Comprobar de nuevo:`** ·
+  `herramientas de plataforma de Android` es la forma corta ya publicada en
+  `settings.fileOperations.adbEnabled.description` (sigue `tentative` frente al «Herramientas de la plataforma del SDK
+  de Android» de Google, ver `style.md`), y `pulsar` es el verbo del catálogo para apretar algo
+  (`settings.summary.archives`, «Qué hace pulsar Intro») · `high`.
+- **`Tint server panes (SMB, SFTP, WebDAV)` → `Teñir paneles de servidor (SMB, SFTP, WebDAV)`** · el inglés se
+  reetiquetó al ampliarse de SMB a los tres protocolos; el español sigue el molde de sus dos hermanos en pantalla
+  (`Teñir paneles de volúmenes locales`, `Teñir paneles MTP`). La descripción enumera los tres en paralelo, como hace la
+  de MTP con sus tres dispositivos · `high`.
+- **`The SSH host keys you have trusted.` → `Las claves de host SSH en las que has confiado.`** · `clave de host` ya
+  estaba asentado (ActionKit); `confiar` rige `en`, así que la relativa lleva la preposición delante · `high`.
+
+### Cadenas deliberadamente iguales al inglés
+
+- `settings.section.adb` (`Android (ADB)`): `Android` es nombre de producto y `ADB` la sigla de su puente de depuración;
+  el macOS en español deja los dos igual y el propio catálogo ya escribe `Android` y `adb` sin tocar
+  (`settings.fileOperations.adbEnabled.*`). El título entero, paréntesis incluidos, coincide con el inglés.
+- `settings.section.servers` sí cambia (`Servidores (SFTP, WebDAV)`): solo los dos nombres de protocolo quedan igual.
+
+### Notas de forma
+
+- Ningún valor español lleva apóstrofo, así que no hay duplicación ICU (`''`) que hacer, aunque
+  `settings.servers.trustedHostKeys.description` sí la lleva en inglés (`server''s`).
+- `menu.network.pinToSwitcher` y `menu.network.unpin` son de la familia RAW (menú nativo): apóstrofos normales y `{…}`
+  literal. Ninguno de los dos valores necesita ni una cosa ni la otra.
+- Verbatim: `Cmdr`, `Android`, `ADB`, `adb`, `SMB`, `SFTP`, `WebDAV`, `SSH`, `USB`. `{command}`, `{host}` y `{path}` se
+  conservan tal cual; nada concuerda con ellos.
+- `“{command}”` va entre comillas curvas porque cita una etiqueta que Cmdr enseña en pantalla, según la regla de las dos
+  comillas del `style.md`. `Desfijar` y `Comprobar de nuevo` van sin comillas porque el inglés tampoco las pone.
+- `Explorar…` copia el `…` (U+2026) del inglés y repite el valor de `servers.sheet.browse`, que `i18n-terms` obliga.

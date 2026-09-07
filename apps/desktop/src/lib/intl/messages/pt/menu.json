@@ -518,6 +518,14 @@
   "@menu.network.disconnect": {
     "sourceHash": "acfc5be"
   },
+  "menu.network.pinToSwitcher": "Fixar no seletor",
+  "@menu.network.pinToSwitcher": {
+    "sourceHash": "868b68d"
+  },
+  "menu.network.unpin": "Desafixar",
+  "@menu.network.unpin": {
+    "sourceHash": "ee3c716"
+  },
   "menu.network.forgetServer": "Esquecer servidor",
   "@menu.network.forgetServer": {
     "sourceHash": "e43c85d"

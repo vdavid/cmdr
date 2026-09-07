@@ -1227,3 +1227,81 @@ machine?"，直接從這部 Mac 的 `.loctable` 比對英文鍵得來（macOS 26
   `.retryNowTooltip` = `立刻嘗試重新連線。` 已經出貨，按鈕求短可以留著，但 `style.md` 判的是 `再試一次`（MS 的 `重試`
   是 Windows house style），所以新的句子一律 `再試一次`。
 - 這兩個值都不含撇號，也都和英文不同，沒有 `sameAsSourceJustification`。
+
+## 釘選提示、已信任的主機金鑰，與 ADB 設定頁
+
+涵蓋 `menu.network.pinToSwitcher` / `.unpin`、`servers.pinHint.*`、`settings.behavior.serversPinHintSeen.*`、
+`settings.section.servers` / `.adb`、`settings.summary.servers` / `.adb`、`settings.servers.trustedHostKeys.*`、
+`settings.adb.*`，以及重新標記過的 `settings.appearance.tintSmb.*`（2026-09-07）。
+
+代理機上一樣沒有參考資料堆，所以詞照 `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this
+machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得來（macOS 26.6.2、build 25G83、2026-09-07）。
+
+- **Pin / Unpin（把伺服器留在卷宗切換器裡，或拿掉）** · `釘選` / `取消釘選` · AP-TW = AP-HK，「音樂」的
+  `Localizable.strings:3b4vzpvjdc`「Pin」→ `釘選`、`xj54uhvn95`「Unpin」→ `取消釘選`（同一份檔案裡另有 58 組 `釘選X` /
+  `取消釘選X`）· `confirmed`。目錄既有的 `menu.tab.pinTab` / `unpinTab` 也是同一組。
+- **Pin to X（釘到某個地方）** · `釘選到 X` · AP-TW `Localizable.strings:q9rfaw0pw6`「Pin Music to Your Library」→
+  `將音樂釘選到資料庫`，以及 `ybpw6kzxu6`「You can pin up to %S things to your Library」→
+  `你可以將最多%S個項目釘選到資料庫` · `high`。所以 `menu.network.pinToSwitcher`「Pin to switcher」是
+  `釘選到切換器`：右鍵選單裡受詞已經明擺著（那一列就是伺服器），中文照英文省略。
+- **switcher** · `切換器` · AP-TW = AP-HK（`Localizable.loctable:App Switcher` → `App切換器`、 `calendar view switcher`
+  → `行事曆檢視區切換器`）· `confirmed`。目錄既有的 `卷宗切換器` 因此站得住腳。
+- **group（切換器裡的一段分組標題）** · `群組` · AP-TW = AP-HK（Finder `LocalizableMerged.strings:TL29`「Group」→
+  `群組`、`Localizable.loctable:Groups` → `群組`）· `high`。切換器裡那一段的標題本身仍是
+  `網路`（`fileExplorer.navigation.groupNetwork`），提示文案照 § Punctuation 加角括號寫成 `「網路」群組`。
+- **"is getting long"** · `越來越長了` · **自行組出來的**：`愈來愈` 和 `越來越`
+  在 Apple 的繁體語料裡都是零次（那份語料是 UI 標籤，不是這種觀察句），但 `越`
+  是目錄自己一路在用的字（24 處「數值越高，…越…」，`愈` 零次），而 `越來越長` 是台灣現代口語的標準說法 ·
+  `medium-high`。❗ 不寫 Apple 的 `過長`：那是 `名稱過長` 這種「太長以致不能用」的判定語氣，這裡只是友善提醒，不是警告。
+- **Got it（收下提示的那顆按鈕）** · `知道了` · **刻意不取 Apple 的
+  `瞭解`**（`Localizable.loctable: NOW_PLAYING_SCROLLING_TIP_DONE_BUTTON_TITLE`「Got It」→ TW `瞭解` / HK
+  `明白`）：目錄已經在 `ai.toast.gotIt`、`main.oldMacos.gotIt`、`updates.moveToApplicationsDialog.gotIt` 三處寫
+  `知道了`，`i18n-terms` 會對同一句英文的兩種寫法示警，同一個名字勝過更好的名字 · `high`。
+- **Trusted X（已經被使用者信任的東西）** · `信任的 X` · AP-TW = AP-HK
+  `Localizable.loctable:8021X_PROFILE_TRUSTED_SERVER_LABEL`「Trusted servers」→ `信任的伺服器`，
+  `8021X_PROFILE_TRUSTED_CERTIFICATES_LABEL`「Trusted certificate」→ TW `信任的憑證` · `high`。所以卡片標題
+  `settings.servers.card.trustedHostKeys` 是 `信任的主機金鑰`。
+- **Trusted（日期前面的那個狀態字，讀作「已信任 2026-09-07」）** · `已信任` · 照 `style.md` § "Notes and
+  decisions" 裡「表格格子裡的狀態字保留 `已…`」那一條，和伺服器中心的 `已連線` / `已儲存` / `已登出` 同一族 · `high`。
+- **Forget（單獨那顆按鈕）** · `忘記` · AP-TW = AP-HK `AirPortSettings.loctable:deviceNotFound.forget`「Forget」→
+  `忘記`，也是詞彙表既有的 forget 條目 · `confirmed`。和 `menu.network.forgetServer`（`忘記伺服器`）同一個字。
+- **"Forget this key?"（確認對話框標題）** · `要忘記這把主機金鑰嗎？` · 句式直接照 AP-TW
+  `Localizable.loctable:REMOVE_ONE_NETWORK_TITLE`「Forget Wi‑Fi Network "%@"?」→ `要忘記「%@」的Wi‑Fi網路設定嗎？` ·
+  `high`。Apple 寫 `此`，我們照 `style.md` § "Voice and tone" 取口語的 `這`；`把` 是目錄行文一路給 `金鑰`
+  用的量詞。❗ 英文只說 "key"，中文照 `主機金鑰` 條目的規矩非補 `主機` 不可，否則讀成 API 金鑰。
+- **fingerprint（在這一組裡）** · `金鑰指紋` · 沿用上一節已定的 `指紋` / `金鑰指紋` · `high`。英文的 "its
+  fingerprint" 指的是伺服器那把金鑰的指紋，中文補上 `金鑰` 才不會被讀成別的。
+- **Not found（狀態值）** · `找不到` · AP-TW = AP-HK，三份套件同值（`AirPortSettings.loctable:placeholder.notfound`、
+  `MainMenu.loctable:100386.title`、`Localizable.loctable:Not found.`）· `confirmed`
+- **Re-check（狀態旁邊那顆按鈕）** · `重新檢查` · AP-TW = AP-HK `fsck_appex.loctable:Rechecking volume.` →
+  `重新檢查卷宗。` · `high`。`再次檢查`（`ConnectionDoctor.loctable:100017.title`「Check Again」，TW =
+  HK）是次選，但英文寫的是 "Re-check"，`重新` 才對得上 `re-`。`settings.adb.install.intro` 裡引用按鈕時寫
+  `「重新檢查」`，兩者必須一字不差。
+- **"Found at {path}"（狀態值）** · `已找到，位於 {path}` · `位於`
+  是目錄既有的後置地點詞（`queue.row.reversalInFolder`、 `downloads.toast.inSubdir`），`已找到` 和同胞的 `找不到` 成對 ·
+  `high`。路徑很長且會換行，所以刻意讓 `{path}` 落在句尾，不用中文慣常的前置 `在…找到`。
+- **detect（偵測到接上的手機）** · `偵測到` · AP-TW = AP-HK，語料裡 234 列（Finder `PE102.1`「has been detected」→
+  `偵測到`、`PE43`「can't be detected」→ `無法偵測到`），也是目錄既有的 `settings.summary.mtp`（`透過 USB 偵測…`） ·
+  `high`。
+- **"Watching for phones." / "Not watching for phones right now."** · `手機一接上就會偵測到。` /
+  `目前不會偵測有沒有手機接上。` · **自行組出來的**：Apple 的 `Watching` 全是「觀看」影片義（`Continue Watching` →
+  `繼續觀看`），這個訂閱義在繁體語料裡沒有對應詞 · `medium-high`。照 en 的 `@key` 指示，兩句都不提 ADB
+  server、訂閱或 socket，只講使用者需要知道的事：手機接上會不會被看到。
+- **USB debugging** · `「USB 偵錯」` · 沿用 § Android and ADB terms 既有的條目；`settings.summary.adb` 因此是
+  `瀏覽已開啟「USB 偵錯」的 Android 手機。`，和 `settings.fileOperations.adbEnabled.description` 一字相同 · `high`
+- **Android platform tools（英文自己省掉 SDK 的那個短寫）** · `Android 平台工具` · § Android and ADB terms 判的是
+  `Android SDK 平台工具`，這裡英文自己寫 "the Android platform tools"，中文照著省 · `high`
+- **"Look for adb the usual way"（空欄位的預留文字）** · `用一般的方式尋找 adb` · 一字不差沿用
+  `settings.fileOperations.adbBinaryPath.description`（`Cmdr 會用一般的方式尋找 adb`）· `high`
+- **Browse…（開檔案選擇器的按鈕）／Choose the adb command（選擇器標題）** · `瀏覽…` / `選擇 adb 指令`
+  · 兩者都是上一節已確認的條目（Finder `ConnectToWindow.strings:48.title`「Browse」→ `瀏覽`；Apple 的
+  `Choose Application…` → `選擇應用程式⋯`，`選擇` = 挑一個東西）· `confirmed`。刪節號照目錄慣例寫 `…`（U+2026）。
+- **`settings.section.servers` / `.adb` 的括號** · `伺服器（SFTP、WebDAV）` / `Android（ADB）` · 全形括號依 §
+  Punctuation，句內短列表用 `、`（英文用的是逗號，不是 `settings.section.mtp` 那種斜線）· `high`。`Android`、`ADB`、
+  `SFTP`、`WebDAV` 都是 BRAND_WORDS，原樣保留；全形括號不與被包住的字之間加空格。
+- **重新標記過的伺服器窗格著色** · `settings.appearance.tintSmb.label` = `為伺服器窗格著色（SMB、SFTP、WebDAV）`、
+  `.description` = `為顯示 SMB 共享資料夾、SFTP 伺服器或 WebDAV 伺服器的窗格加上的背景著色。` · 句式一字不差照同胞的
+  `tintMtp.description`（`為顯示 Android、Kindle 或相機裝置的窗格加上的背景著色。`），`共享資料夾` 是詞彙表既有的 SMB
+  share · `high`。英文從只講 SMB 擴成三種通訊協定，舊值的 `SMB/網路` 已經不對。
+- 這 29 個值都不含撇號（中文不需要，`''` 規則咬不到），也都和英文不同，所以沒有 `sameAsSourceJustification`。`menu.*`
+  兩個鍵是 RAW 家族，值裡本來就沒有撇號和 ICU 結構。

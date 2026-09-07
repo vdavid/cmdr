@@ -1,4 +1,20 @@
 {
+  "servers.pinHint.title": "Deine Gruppe „Netzwerk“ wird lang",
+  "@servers.pinHint.title": {
+    "sourceHash": "0cf001a"
+  },
+  "servers.pinHint.body": "Klicke einen Server mit der rechten Maustaste an und wähle „Lösen“, oder führe „{command}“ in der Befehlspalette aus. Der Server bleibt in der Liste „Server“.",
+  "@servers.pinHint.body": {
+    "sourceHash": "0663b02"
+  },
+  "servers.pinHint.favorites": "Bei Favoriten geht das genauso.",
+  "@servers.pinHint.favorites": {
+    "sourceHash": "932faeb"
+  },
+  "servers.pinHint.gotIt": "Alles klar",
+  "@servers.pinHint.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "servers.hub.colName": "Name",
   "@servers.hub.colName": {
     "sourceHash": "dcd1d52",

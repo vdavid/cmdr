@@ -2131,3 +2131,68 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   · 英文这里刻意说大白话（`signs in with a key`），中文照着走，别把 SSH 术语补回来。同一条原则见上面
   `有东西夹在你和它之间` 那一行。
 - **ICU** · 两个值都不含撇号，没有转义问题；`{name}` 原样保留，句首放得下任意长度、任意字符的服务器名。
+
+## 固定/取消固定的右键项与一次性提示、可信主机密钥页、Android（ADB）设置页（`menu.network.pinToSwitcher`/`.unpin`、`servers.pinHint.*`、`settings.servers.*`、`settings.adb.*`、`settings.section.servers`/`.adb`、`settings.summary.servers`/`.adb`、`settings.behavior.serversPinHintSeen.*`、`settings.appearance.tintSmb.*`，2026-09-07）
+
+宗卷选择器里服务器行的右键菜单（固定 / 取消固定），「网络」分组太长时弹的一次性提示条，设置里新的「服务器（SFTP、WebDAV）」页（可信主机密钥列表）和「Android（ADB）」页（adb 状态、重新查找、安装说明、路径选择），以及改名后的服务器窗格着色项。
+
+参考堆（`_ignored/i18n/zh-CN/`）在这台机器上不存在（`~/projects-git/vdavid/cmdr/_ignored/`
+整个目录都没有，不是 worktree 陷阱），继续按指南许可的方式从实时 macOS 包取词：`plutil` 读 `.loctable` 的 `zh_CN`
+分支，全部验证于 macOS 26.6.2 / 25G83，2026-09-07。
+
+- **Pin to switcher（右键项）→ `固定到宗卷选择器`；Unpin → `取消固定`** · 沿用目录里已定的
+  `menu.tab.pinTab`/`menu.tab.unpinTab`（`固定标签页` / `取消固定标签页`）和 `commands.serversTogglePin.label`
+  （`固定/取消固定服务器`）；控件名 `宗卷选择器` 也是已定的 · `high`。⚠️ **故意不跟 Apple 的 `置顶`**：macOS `zh_CN`
+  在列表里把 pin/unpin 一律译作 `置顶` / `取消置顶`（备忘录 `Pin Note`、地图 `Unpin`、快捷指令
+  `Pin`、提醒事项、音乐，全部 2026-09-07 核对），但 `置顶`
+  说的是「挪到最上面」，而这里是「留在选择器里」。Apple 自己在这个意思上也用 `固定`（快捷指令 `Pin in Menu Bar` →
+  `在菜单栏中固定`），Safari 的 `固定标签页` 同理。
+- **`servers.pinHint.body` 里的「Unpin」必须与右键项一字不差** · 正文写 `选择“取消固定”`，`i18n-terms`
+  之外没有检查会比这一对，靠这条记着 · `confirmed`。
+- **group（宗卷选择器里的分组）→ `分组`** · 目录里这个概念一直叫分组（本文件多处、`fileExplorer.navigation.group*`
+  三个键的中文是分组名本身）· `high`。⚠️ 不用 Apple 的
+  `群组`：那是「一群人/一组设备」（日历、家庭、课堂），不是列表里的分节。提示条标题写 `你的“网络”分组越来越长了`，分组名
+  `网络` 与 `fileExplorer.navigation.groupNetwork` 一字不差。
+- **Got it（提示条按钮）→ `知道了`** · 目录里同英文的三个键（`ai.toast.gotIt`、`main.oldMacos.gotIt`、
+  `updates.moveToApplicationsDialog.gotIt`）都是它 · `confirmed`。
+- **Trusted host keys（卡片标题）→ `受信任的主机密钥`** · Apple 的定语式就是 `受信任…`（Network.appex
+  `Trusted certificate` → `受信任证书`、`Trusted servers` → `受信任服务器`；iCloudSettings `Trusted devices list` →
+  `信任的设备列表`）· `high`。`主机密钥` 沿用上面已定的 `host key`。
+- **Trusted（日期前缀，读作「已信任 2026-09-07」）→ `已信任`** · Apple 没有这个位置的对应项；照本文件已定的「状态用
+  `已…` 形容词」写，而且这确实是用户自己做过的动作 · `high`。
+- **Forget（每行上的按钮）→ `忘记`** · 与 `menu.network.forgetServer`（`忘记服务器`）同词根，去掉宾语 ·
+  `confirmed`。确认标题 `忘记这个密钥？` 用 `这个`（本文件已定：口语的 `这个` 优先于书面的 `此`）。
+- **Status（状态行标签）→ `状态`** · 目录里同英文的 `servers.hub.colStatus`、`licensing.section.labelStatus` 都是它 ·
+  `confirmed`。
+- **Not found（adb 找不到时的状态值）→ `未找到`** · AppKit `FindPanel.loctable`（`Not found` → `未找到`）、AirPort 工具
+  `placeholder.notfound`、照片 `PGErrorFormatNotFound` · `high`。⚠️ 不写成目录里 `errors.listing.notFound.title` 的
+  `找不到路径` 那种带宾语的句式：这里是一个裸的状态值。
+- **Found at {path} → `已找到：{path}`** · Apple 没有对应句式；`已找到` 与 `未找到`
+  成对，全角冒号后接可能很长的路径，换行点干净 · `high`。
+- **Re-check（按钮）→ `再次检查`** · Apple 全系统统一（`Check Again` → `再次检查`：Mail `ConnectionDoctor`、
+  `SoftwareUpdate.framework` 的 `CheckAgain`、`TextToSpeechVoiceBankingUI`）· `high`。安装说明里引用它时一字不差：
+  `然后点按“再次检查”：`（`点按` 是本文件已定的 click）。
+- **Watching for phones. → `正在留意接入的手机。`；Not watching… → `目前没有在留意接入的手机。`** · Apple 没有 "watching
+  for" 这个说法，最近的是 `Waiting for iPhone or iPad…` → `正在等待iPhone或iPad…` （Setup Assistant
+  `PROXIMITY_PAIRING_TITLE`），但 `等待` 会读成「现在正卡着等」，而英文说的是被动的随时留意 · `tentative`。`留意`
+  在目录里有先例（`onboarding.stepBeta.openBeta` 的
+  `留意那些 <alpha></alpha> 徽章`）。❗ 按英文的要求，两句都不提 ADB 服务器、订阅或套接字。
+- **Look for adb the usual way（占位符）→ `按常规方式查找 adb`** · 与
+  `settings.fileOperations.adbBinaryPath.description` 里已经落地的 `Cmdr 会按常规方式查找 adb` 一字不差 · `confirmed`。
+- **Choose the adb command（文件选择器标题）→ `选取 adb 命令`** · 目录里同类标题
+  `settings.behavior.openTerminalHereApp.chooseAppTitle`（`Choose a terminal app` → `选取终端 App`）·
+  `confirmed`。macOS 的文件选择器按钮也是 `选取`，不是 `选择`。
+- **Browse…（按钮）→ `浏览…`** · 与 `servers.sheet.browse` 一字不差（AppleAccountUI `PROFILE_BROWSE_PHOTO`）·
+  `confirmed`。省略号是 U+2026。
+- **Android platform tools → `Android 平台工具`；USB debugging → `USB 调试`；`adb` / `ADB` 保持拉丁**
+  ·已在本文件上方的术语表里定过，来源是 Google 自己的 zh-CN 文档；这一批只是复用 · `confirmed`。
+- **括号用全角，并列用顿号** · `Servers (SFTP, WebDAV)` → `服务器（SFTP、WebDAV）`、`Android (ADB)` →
+  `Android（ADB）`，与目录里 `settings.section.mtp`（`MTP（Android/Kindle/相机）`）、`adb.volumeLabelWithSuffix`
+  （`{deviceName}（ADB）`）一致 · `confirmed`。英文的 `, ` 在中文并列里写 `、`。
+- **服务器窗格着色改名** · 英文从 "Tint SMB panes" 改成了 `Tint server panes (SMB, SFTP, WebDAV)`，中文跟着改成
+  `为服务器窗格着色（SMB、SFTP、WebDAV）`，说明句照兄弟键 `settings.appearance.tintLocal.description` 的句式写成
+  `为显示 SMB 共享、SFTP 服务器或 WebDAV 服务器的窗格添加的背景着色。` · `high`。旧值只提 SMB 和网络共享，已经不成立。
+- **ICU** · 31 个值都不含撇号，没有转义问题；`{command}`、`{host}`、`{path}`
+  原样保留，句中位置对任意长度都成立；没有 plural 键。没有一个值与英文相同（`Android（ADB）`
+  是全角括号，与英文不同），不需要 `sameAsSourceJustification`。`menu.network.*`
+  两个键属于 RAW 家族，值里没有撇号，也没有 `{token}`。

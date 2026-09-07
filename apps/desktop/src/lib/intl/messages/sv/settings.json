@@ -151,13 +151,13 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Tona SMB-/nätverkspaneler",
+  "settings.appearance.tintSmb.label": "Tona serverpaneler (SMB, SFTP, WebDAV)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "66fd4a8"
+    "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "Bakgrundston som läggs på paneler som visar en SMB- eller nätverksresurs.",
+  "settings.appearance.tintSmb.description": "Bakgrundston som läggs på paneler som visar en delad SMB-mapp, en SFTP-server eller en WebDAV-server.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "cf3a857"
+    "sourceHash": "2e071d3"
   },
   "settings.appearance.tintMtp.label": "Tona MTP-paneler",
   "@settings.appearance.tintMtp.label": {
@@ -1539,6 +1539,14 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.serversPinHintSeen.label": "Tips om lång Nätverk-grupp visat",
+  "@settings.behavior.serversPinHintSeen.label": {
+    "sourceHash": "8d632ca"
+  },
+  "settings.behavior.serversPinHintSeen.description": "Om engångstipset om att lossa servrar har visats.",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "sourceHash": "fc0722f"
+  },
   "settings.section.notifications": "Aviseringar",
   "@settings.section.notifications": {
     "sourceHash": "7880118"
@@ -1721,6 +1729,15 @@
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
+  "settings.section.servers": "Servrar (SFTP, WebDAV)",
+  "@settings.section.servers": {
+    "sourceHash": "58704f8"
+  },
+  "settings.section.adb": "Android (ADB)",
+  "@settings.section.adb": {
+    "sourceHash": "bc9c1a1",
+    "sameAsSourceJustification": "'Android' is a product name and 'ADB' its debug-bridge abbreviation, both kept verbatim per the @key and style.md's brand list; macOS sv keeps Latin product and protocol abbreviations as-is (NetAuthAgent Localizable.loctable sv: 'WebDAV-lösenord', 'AFP-lösenord', read on macOS 26.6.2 build 25G83, 2026-09-07), and the catalog already writes 'Android' bare (settings.fileOperations.adbEnabled.*, settings.summary.mtp). Nothing outside the two names is left to translate. Deliberately identical."
+  },
   "settings.section.mtp": "MTP (Android/Kindle/kameror)",
   "@settings.section.mtp": {
     "sourceHash": "a68fa47"
@@ -1859,6 +1876,14 @@
   "settings.summary.smbNetworkShares": "Aktivera nätverk, direkta SMB-anslutningar, resurscache och tidsgränser.",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
+  },
+  "settings.summary.servers": "SSH-värdnycklarna du har litat på.",
+  "@settings.summary.servers": {
+    "sourceHash": "40940fa"
+  },
+  "settings.summary.adb": "Bläddra i en Android-telefon som har USB-felsökning aktiverad.",
+  "@settings.summary.adb": {
+    "sourceHash": "fb69a13"
   },
   "settings.summary.mtp": "Upptäck Android-, Kindle- och kameraenheter via USB.",
   "@settings.summary.mtp": {
@@ -2333,5 +2358,74 @@
   "settings.window.loading": "Läser in inställningar…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.servers.card.trustedHostKeys": "Betrodda värdnycklar",
+  "@settings.servers.card.trustedHostKeys": {
+    "sourceHash": "46c5c9d"
+  },
+  "settings.servers.trustedHostKeys.description": "Cmdr frågar innan den litar på nyckeln från en server första gången du ansluter, och kommer ihåg ditt svar här. Sparade servrar finns i listan Servrar, inte på den här sidan.",
+  "@settings.servers.trustedHostKeys.description": {
+    "sourceHash": "bbbed1a"
+  },
+  "settings.servers.trustedHostKeys.empty": "Inget betrott än. Första gången du ansluter till en SFTP-server visar Cmdr dig serverns fingeravtryck och frågar.",
+  "@settings.servers.trustedHostKeys.empty": {
+    "sourceHash": "7bc982e"
+  },
+  "settings.servers.trustedHostKeys.approvedPrefix": "Betrodd",
+  "@settings.servers.trustedHostKeys.approvedPrefix": {
+    "sourceHash": "639538c"
+  },
+  "settings.servers.trustedHostKeys.forget": "Glöm",
+  "@settings.servers.trustedHostKeys.forget": {
+    "sourceHash": "a6bd489"
+  },
+  "settings.servers.trustedHostKeys.confirmTitle": "Glöm den här nyckeln?",
+  "@settings.servers.trustedHostKeys.confirmTitle": {
+    "sourceHash": "524bfa5"
+  },
+  "settings.servers.trustedHostKeys.confirm": "Nästa gång du ansluter till {host} visar Cmdr dig nyckelns fingeravtryck och frågar om du vill lita på den.",
+  "@settings.servers.trustedHostKeys.confirm": {
+    "sourceHash": "6db1a3f"
+  },
+  "settings.adb.status.label": "Status",
+  "@settings.adb.status.label": {
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "'Status' is the same word in Swedish; the catalog already ships licensing.section.labelStatus and servers.hub.colStatus as 'Status' with the same justification, and style.md lists Status among the terms that stay verbatim. Deliberately identical."
+  },
+  "settings.adb.status.foundAt": "Hittades: {path}",
+  "@settings.adb.status.foundAt": {
+    "sourceHash": "c49cc6a"
+  },
+  "settings.adb.status.notFound": "Hittades inte",
+  "@settings.adb.status.notFound": {
+    "sourceHash": "e3ebaa1"
+  },
+  "settings.adb.status.watching": "Håller utkik efter telefoner.",
+  "@settings.adb.status.watching": {
+    "sourceHash": "d1538e3"
+  },
+  "settings.adb.status.notWatching": "Håller inte utkik efter telefoner just nu.",
+  "@settings.adb.status.notWatching": {
+    "sourceHash": "6e1936c"
+  },
+  "settings.adb.recheck": "Leta igen",
+  "@settings.adb.recheck": {
+    "sourceHash": "24fcca0"
+  },
+  "settings.adb.install.intro": "Installera Android platform tools och tryck sedan på Leta igen:",
+  "@settings.adb.install.intro": {
+    "sourceHash": "5a82ea4"
+  },
+  "settings.adb.pathPlaceholder": "Leta efter adb på vanligt sätt",
+  "@settings.adb.pathPlaceholder": {
+    "sourceHash": "e236ef2"
+  },
+  "settings.adb.browse": "Bläddra…",
+  "@settings.adb.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "settings.adb.pickerTitle": "Välj kommandot adb",
+  "@settings.adb.pickerTitle": {
+    "sourceHash": "d6fc142"
   }
 }

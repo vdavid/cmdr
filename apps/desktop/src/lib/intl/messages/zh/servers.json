@@ -1,4 +1,20 @@
 {
+  "servers.pinHint.title": "你的“网络”分组越来越长了",
+  "@servers.pinHint.title": {
+    "sourceHash": "0cf001a"
+  },
+  "servers.pinHint.body": "右键点按某台服务器，选择“取消固定”，或者在命令面板里使用“{command}”。它仍然留在“服务器”列表里。",
+  "@servers.pinHint.body": {
+    "sourceHash": "0663b02"
+  },
+  "servers.pinHint.favorites": "“个人收藏”也是一样。",
+  "@servers.pinHint.favorites": {
+    "sourceHash": "932faeb"
+  },
+  "servers.pinHint.gotIt": "知道了",
+  "@servers.pinHint.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "servers.hub.colName": "名称",
   "@servers.hub.colName": {
     "sourceHash": "dcd1d52"

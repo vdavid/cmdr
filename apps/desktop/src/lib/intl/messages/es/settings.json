@@ -150,13 +150,13 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Teñir paneles SMB/de red",
+  "settings.appearance.tintSmb.label": "Teñir paneles de servidor (SMB, SFTP, WebDAV)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "66fd4a8"
+    "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "Tinte de fondo aplicado a los paneles que muestran un recurso compartido SMB o de red.",
+  "settings.appearance.tintSmb.description": "Tinte de fondo aplicado a los paneles que muestran un recurso compartido SMB, un servidor SFTP o un servidor WebDAV.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "cf3a857"
+    "sourceHash": "2e071d3"
   },
   "settings.appearance.tintMtp.label": "Teñir paneles MTP",
   "@settings.appearance.tintMtp.label": {
@@ -1534,6 +1534,14 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.serversPinHintSeen.label": "Aviso de grupo Red largo mostrado",
+  "@settings.behavior.serversPinHintSeen.label": {
+    "sourceHash": "8d632ca"
+  },
+  "settings.behavior.serversPinHintSeen.description": "Si ya se mostró el aviso único sobre desfijar servidores.",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "sourceHash": "fc0722f"
+  },
   "settings.section.notifications": "Notificaciones",
   "@settings.section.notifications": {
     "sourceHash": "7880118"
@@ -1715,6 +1723,15 @@
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
+  "settings.section.servers": "Servidores (SFTP, WebDAV)",
+  "@settings.section.servers": {
+    "sourceHash": "58704f8"
+  },
+  "settings.section.adb": "Android (ADB)",
+  "@settings.section.adb": {
+    "sourceHash": "bc9c1a1",
+    "sameAsSourceJustification": "\"Android\" is a product name and \"ADB\" its debug-bridge abbreviation; macOS es keeps both verbatim (Network.appex and the catalog's own settings.fileOperations.adbEnabled.* already write \"Android\" and \"adb\" unchanged), so the whole parenthesised title is identical in Spanish."
+  },
   "settings.section.mtp": "MTP (Android/Kindle/cámaras)",
   "@settings.section.mtp": {
     "sourceHash": "a68fa47"
@@ -1853,6 +1870,14 @@
   "settings.summary.smbNetworkShares": "Activar la red, conexiones SMB directas, caché de recursos compartidos y tiempos de espera.",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
+  },
+  "settings.summary.servers": "Las claves de host SSH en las que has confiado.",
+  "@settings.summary.servers": {
+    "sourceHash": "40940fa"
+  },
+  "settings.summary.adb": "Explora un teléfono Android que tenga activada la depuración por USB.",
+  "@settings.summary.adb": {
+    "sourceHash": "fb69a13"
   },
   "settings.summary.mtp": "Detecta dispositivos Android, Kindle y cámaras por USB.",
   "@settings.summary.mtp": {
@@ -2328,5 +2353,73 @@
   "settings.window.loading": "Cargando ajustes…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.servers.card.trustedHostKeys": "Claves de host de confianza",
+  "@settings.servers.card.trustedHostKeys": {
+    "sourceHash": "46c5c9d"
+  },
+  "settings.servers.trustedHostKeys.description": "Cmdr te pregunta antes de confiar en la clave de un servidor la primera vez que te conectas, y aquí recuerda tu respuesta. Los servidores guardados están en la lista Servidores; esta página solo guarda las claves.",
+  "@settings.servers.trustedHostKeys.description": {
+    "sourceHash": "bbbed1a"
+  },
+  "settings.servers.trustedHostKeys.empty": "Aún no hay ninguna clave de confianza. La primera vez que te conectes a un servidor SFTP, Cmdr te mostrará su huella digital y te preguntará.",
+  "@settings.servers.trustedHostKeys.empty": {
+    "sourceHash": "7bc982e"
+  },
+  "settings.servers.trustedHostKeys.approvedPrefix": "De confianza desde",
+  "@settings.servers.trustedHostKeys.approvedPrefix": {
+    "sourceHash": "639538c"
+  },
+  "settings.servers.trustedHostKeys.forget": "Olvidar",
+  "@settings.servers.trustedHostKeys.forget": {
+    "sourceHash": "a6bd489"
+  },
+  "settings.servers.trustedHostKeys.confirmTitle": "¿Olvidar esta clave?",
+  "@settings.servers.trustedHostKeys.confirmTitle": {
+    "sourceHash": "524bfa5"
+  },
+  "settings.servers.trustedHostKeys.confirm": "La próxima vez que te conectes a {host}, Cmdr te mostrará la huella digital de su clave y te preguntará si confías en ella.",
+  "@settings.servers.trustedHostKeys.confirm": {
+    "sourceHash": "6db1a3f"
+  },
+  "settings.adb.status.label": "Estado",
+  "@settings.adb.status.label": {
+    "sourceHash": "920e413"
+  },
+  "settings.adb.status.foundAt": "Encontrado en {path}",
+  "@settings.adb.status.foundAt": {
+    "sourceHash": "c49cc6a"
+  },
+  "settings.adb.status.notFound": "No encontrado",
+  "@settings.adb.status.notFound": {
+    "sourceHash": "e3ebaa1"
+  },
+  "settings.adb.status.watching": "Cmdr detecta los teléfonos en cuanto los conectas.",
+  "@settings.adb.status.watching": {
+    "sourceHash": "d1538e3"
+  },
+  "settings.adb.status.notWatching": "Ahora mismo Cmdr no detecta los teléfonos al conectarlos.",
+  "@settings.adb.status.notWatching": {
+    "sourceHash": "6e1936c"
+  },
+  "settings.adb.recheck": "Comprobar de nuevo",
+  "@settings.adb.recheck": {
+    "sourceHash": "24fcca0"
+  },
+  "settings.adb.install.intro": "Instala las herramientas de plataforma de Android y después pulsa Comprobar de nuevo:",
+  "@settings.adb.install.intro": {
+    "sourceHash": "5a82ea4"
+  },
+  "settings.adb.pathPlaceholder": "Buscar adb en los sitios habituales",
+  "@settings.adb.pathPlaceholder": {
+    "sourceHash": "e236ef2"
+  },
+  "settings.adb.browse": "Explorar…",
+  "@settings.adb.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "settings.adb.pickerTitle": "Seleccionar el comando adb",
+  "@settings.adb.pickerTitle": {
+    "sourceHash": "d6fc142"
   }
 }
