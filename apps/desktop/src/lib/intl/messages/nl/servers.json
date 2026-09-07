@@ -306,5 +306,45 @@
   "servers.paneState.hostKeyChangedHint": "De sleutel is gewijzigd. Dat kan betekenen dat de server opnieuw is geïnstalleerd, of dat er iets tussen jou en de server zit. Verbreek de verbinding en open de server opnieuw om de vingerafdruk te controleren.",
   "@servers.paneState.hostKeyChangedHint": {
     "sourceHash": "923de62"
+  },
+  "servers.paneState.reconnecting": "Opnieuw verbinden met {name}…",
+  "@servers.paneState.reconnecting": {
+    "sourceHash": "dce8cef"
+  },
+  "servers.paneState.signedOutNothingToAsk": "Bij deze server log je in met een sleutel in plaats van een wachtwoord, dus er valt niets te typen. Open de server opnieuw om het nog eens te proberen.",
+  "@servers.paneState.signedOutNothingToAsk": {
+    "sourceHash": "71d7eee"
+  },
+  "servers.paneState.retryProgressAriaLabel": "Tijd tot de volgende verbindingspoging",
+  "@servers.paneState.retryProgressAriaLabel": {
+    "sourceHash": "d4341c3"
+  },
+  "servers.paneState.retryNow": "Probeer nu opnieuw",
+  "@servers.paneState.retryNow": {
+    "sourceHash": "5148c3e"
+  },
+  "servers.paneState.retryNowTooltip": "Probeer meteen opnieuw te verbinden.",
+  "@servers.paneState.retryNowTooltip": {
+    "sourceHash": "11525f0"
+  },
+  "servers.paneState.cancelCycleTooltip": "Stop voorlopig met proberen. De verbinding blijft beschikbaar. Schakel terug om het opnieuw te proberen.",
+  "@servers.paneState.cancelCycleTooltip": {
+    "sourceHash": "377638b"
+  },
+  "servers.paneState.disconnectCycleTooltip": "Stop met proberen en verbreek de verbinding met de server.",
+  "@servers.paneState.disconnectCycleTooltip": {
+    "sourceHash": "8fba8b0"
+  },
+  "servers.paneState.retryKeepsTrying": "We blijven het in totaal {duration} proberen.",
+  "@servers.paneState.retryKeepsTrying": {
+    "sourceHash": "e4d25b7"
+  },
+  "servers.paneState.retryTotalSeconds": "{seconds} seconden",
+  "@servers.paneState.retryTotalSeconds": {
+    "sourceHash": "86d62ab"
+  },
+  "servers.paneState.retryTotalMinutes": "{minutes} minuten",
+  "@servers.paneState.retryTotalMinutes": {
+    "sourceHash": "fc339ba"
   }
 }

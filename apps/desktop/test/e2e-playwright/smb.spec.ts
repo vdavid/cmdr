@@ -425,11 +425,13 @@ describeSmb('SMB cross-storage copy', () => {
 //
 // The auth Docker container (smb-auth, `guest ok = no`) allows guest share
 // LISTING via IPC$ (Samba default: `map to guest = bad user`). Only share
-// ACCESS (mounting) requires credentials. The PlacesBrowser shows the share
-// list directly without a login prompt when opening the auth host.
+// ACCESS (mounting) requires credentials, so opening the auth host lands
+// straight on its share list and asks for nothing.
 //
-// These tests verify the auth host's share discovery and the share listing
-// via IPC with credentials (the backend path used by the login form).
+// These tests verify the auth host's share discovery and the share listing via
+// IPC with credentials, which is the command the sign-in sheet's own attempt
+// runs. The sheet itself is covered by the unit tests, which can drive its
+// `attempt` directly; here the fixture's value is the real Samba round-trip.
 
 describeSmb('SMB authentication', () => {
   test('auth host shows share count after discovery', async ({ tauriPage }) => {
@@ -452,8 +454,8 @@ describeSmb('SMB authentication', () => {
   test('listing shares with valid credentials returns private share', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
-    // Call the Tauri IPC command directly: same backend path the login form
-    // uses. Uses a unique hostId to bypass any cached results.
+    // Call the Tauri IPC command directly: the same command the sign-in sheet's
+    // attempt runs. A unique hostId bypasses any cached results.
     const result = await tauriPage.evaluate<{ shares: { name: string }[]; authMode: string }>(`
       window.__TAURI_INTERNALS__.invoke('list_shares_with_credentials', {
         hostId: 'smb-e2e-auth-valid-' + Date.now(),

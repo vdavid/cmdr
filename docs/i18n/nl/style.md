@@ -214,6 +214,16 @@ second half is now a normal plural with a real verb
 - **A feature switched off in Settings, referenced from elsewhere, reads `… staat uit.`** The whole
   `driveIndex.tooltip*` family already says it that way, and the pointer next to it is `Zet het aan in Instellingen` /
   `Zet het aan bij <pad>`. The glossary row `turned on → ingeschakeld` is for the Settings label itself.
+- **Een voortgangskop staat in de infinitief, een hele zin in de werkwoordsvorm.** `Reconnecting to {name}…` wordt
+  `Opnieuw verbinden met {name}…` (Apples eigen `Opnieuw verbinden…` in `ScreenSharing.loctable`, en het al aanwezige
+  `errors.listing.deviceReconnecting.title`), terwijl `Try reconnecting` in een lopende zin `opnieuw verbinding maken`
+  blijft, zoals de hele PPP/VPN-familie. Kies op wat de string is: een kop of een zin.
+- **`Log in bij …` is het voorzetsel, en `Log in met …` de vorm voor de inlogmethode.** `servers.sheet.signInTitle`
+  (`Log in bij {name}`) en `servers.sheet.signInWithCredentials` (`Log in met een gebruikersnaam en wachtwoord`) zetten
+  het patroon; een nieuwe zin over inloggen hergebruikt beide in plaats van Apples `inloggen op '%@'`.
+- **Een zin die naar de server terugwijst, herhaalt het naamwoord.** `Open de server opnieuw om …`, niet
+  `Open hem opnieuw`: in een paneel waar ook `de sleutel` staat, is `hem` dubbelzinnig. De vorm komt uit
+  `paneState.hostKeyChangedHint` en `fileExplorer.navigation.connectionTooltipNeedsSignIn`.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -286,6 +296,13 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   a judgment call and the label runs 20 characters in a narrow status column. Overflow-check it.
 - **"Local network discovery" → `lokale netwerkdetectie`**: both halves are sourced, the compound is not. Confirm it
   over the looser `Detectie in je lokale netwerk`.
+- **"there''s nothing to type" → `er valt niets te typen`** (`servers.paneState.signedOutNothingToAsk`): niets in de
+  bundels draagt deze wending. `hoef je niets in te vullen` is warmer en gangbaarder, maar verschuift de zin van "er is
+  niets" naar "jij hoeft niets". Bevestig welke in een klein paneel beter leest.
+- **`een sleutel` naast de hostsleutel** (`servers.paneState.signedOutNothingToAsk`): dezelfde dubbelzinnigheid als het
+  Engels (de sleutel van de gebruiker tegenover die van de server, waar `hostKey.*` het over heeft). De twee
+  paneelstanden zijn nooit tegelijk in beeld, dus de waarde blijft letterlijk. Bevestig, of kies `een SSH-sleutel` en
+  wijk daarmee van het Engels af.
 - **"camera details" → `cameragegevens`** (`askCmdr.consent.item.contents`, `contentsRule`, `whatsNew.body`): a coined
   compound for a photo's EXIF block, no source has a collective noun for it. Confirm it reads as "what the camera
   recorded", not "data about the camera". Evidence and the fallback: `glossary.md` § Ask Cmdr looks inside files.

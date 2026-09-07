@@ -70,9 +70,10 @@ interface VolumeEntry {
    * What a sign-in on this volume would ask for, as of the last `needs-auth`
    * flip. `null` until one happens.
    *
-   * Nothing renders this yet, and that's deliberate: the sign-in sheet is the
-   * next piece of work, and this is the value it reads (the same shape as the
-   * `needs_host_key_approval` state, which is also stored and not shown).
+   * The pane's signed-out banner reads it (`getSignInShape`) to decide whether to
+   * offer a Sign in button at all: a `nothing` shape means no secret a person
+   * could type would help, and a button that can't work is worse than none. The
+   * SHEET asks again when it renders, because it describes THIS session.
    * Recorded here rather than kept from the connect result because the credential
    * a remote volume comes back on is decided per dial.
    *
@@ -457,4 +458,25 @@ export function reconnectProgressMessage(attemptIndex: number): string | null {
     return tString('fileExplorer.network.reconnect.finalAttempt', { retried })
   }
   return tString('fileExplorer.network.reconnect.willTryMore', { retried, remaining: ordinalCount(remaining) })
+}
+
+/**
+ * The two sentences the pane says while a cycle runs, in order: how long the
+ * whole loop keeps going, and which attempt it is on.
+ *
+ * ❗ The copy lives HERE, beside the delay table it describes, so a change to
+ * `RECONNECT_DELAYS_MS` and a change to the words a person reads about it land
+ * together. The pane renders whatever strings it is handed.
+ */
+export function reconnectCycleLines(attemptIndex: number): string[] {
+  const total = tString('servers.paneState.retryKeepsTrying', { duration: totalDurationLabel() })
+  const progress = reconnectProgressMessage(attemptIndex)
+  return progress ? [total, progress] : [total]
+}
+
+/** The whole cycle's length as a human sentence ("60 seconds", "2 minutes"). */
+function totalDurationLabel(): string {
+  const seconds = Math.round(TOTAL_DURATION_MS / 1000)
+  if (seconds < 90) return tString('servers.paneState.retryTotalSeconds', { seconds })
+  return tString('servers.paneState.retryTotalMinutes', { minutes: Math.round(seconds / 60) })
 }

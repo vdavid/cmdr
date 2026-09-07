@@ -2700,3 +2700,55 @@ Notes de formulation :
 - Quatre valeurs sont identiques à l'anglais (`servers.sheet.protocolSmb`, `protocolSftp`, `protocolWebdav`,
   `addressPlaceholder`) et portent chacune leur `sameAsSourceJustification`. Toutes les apostrophes sont ASCII et
   doublées (`S''identifier`, `d''hôte`, `qu''invité`, `l''empreinte`, `s''est`, `d''approuver`).
+
+## Le panneau de reconnexion et la session fermée sans mot de passe à saisir (2026-09-07, `servers.paneState.reconnecting`, `.signedOutNothingToAsk`)
+
+Le tas de références (`_ignored/i18n/fr/`) est absent de cette machine ; tout ce qui suit est miné directement dans les
+paquets macOS installés (macOS 26.6.2 build 25G83, `plutil -convert json` sur les `.loctable` / `.strings`, 2026-09-07),
+selon la recette de repli documentée dans `docs/i18n/reference-pile/how-to-mine.md`.
+
+Termes :
+
+- **to reconnect → `reconnecter` ; Reconnecting… (titre d'état) → `Reconnexion…`** · HomeDataModel
+  `HFLocalizable.loctable`, clé `HFServiceDescriptionReconnecting` : `Reconnecting…` → `Reconnexion…` ; même paquet,
+  `Reconnect HomePod to “%@”` → `Reconnecter le HomePod à « %@ »`, qui atteste aussi la préposition `à` ; Finder
+  `fr.lproj/LocalizableMerged.strings`, clé `NE111.1` : `reconnect “^0”` → `reconnecter « ^0 »` ; AirPort.menu et
+  WiFiAgent `Localizable.loctable`, clé `kAirPortBaseStationPPPStatusReconnecting` : `PPPoE Reconnecting` →
+  `PPPoE en cours de reconnexion` · `high`. Le nom `reconnexion` était déjà livré dans
+  `servers.paneState.retryProgressAriaLabel` (« Temps avant la prochaine tentative de reconnexion ») ; la source le
+  confirme.
+- **rather than / instead of (contraste entre deux moyens) → `plutôt que`** · WiFiSettingsKit `Localizable.loctable` :
+  `Use “%@” Wi-Fi instead of cellular?` → `Utiliser le réseau Wi-Fi « %@ » plutôt que les données cellulaires ?`,
+  `Prefer 5G over Wi-Fi` → `Utiliser la 5G plutôt que le Wi-Fi` · `high`. Le catalogue l'employait déjà une fois
+  (`fileExplorer` : « une nouvelle analyse est en cours plutôt que de rejouer les changements un à un »).
+- **to type / to enter (une valeur dans un champ) → `saisir`** · Finder `fr.lproj/LocalizableMerged.strings`, série
+  `Enter the name of…` → `Saisissez le nom de…` et `enter the name and password for an administrator` →
+  `saisir le nom et le mot de passe d''un administrateur` · `high`. Déjà livré dans
+  `fileExplorer.network.connectionTooltipNeedsLogin` (« Double-cliquez pour saisir vos identifiants »).
+- **SSH key → `clé SSH` ; public key → `clé publique` ; private key → `clé privée`** · ActionKitUI
+  `Localizable.loctable` (`SSH Key` → `Clé SSH`, `No SSH Key` → `Aucune clé SSH`, `Copy Public Key` →
+  `Copier la clé publique`, `Replace SSH Key` → `Remplacer la clé SSH`) et ActionKit `Localizable.loctable`
+  (`Private key is not a valid RSA private key.` → `La clé privée n''est pas une clé privée RSA valide.`) · `high`.
+  Cohérent avec `clé` déjà fixé pour la clé d'hôte (§ Le hub des serveurs : la feuille de connexion) et avec
+  `servers.sheet` § `key file` → `Fichier de clé`.
+
+Notes de formulation :
+
+- **`Reconnecting to {name}…` → `Reconnexion à {name}…`**, sur le moule exact du voisin `servers.paneState.connecting`
+  (`Connexion à {name}…`) et de Finder (« Connexion au serveur »). La paire se lit comme un seul état en deux temps ;
+  n'introduisez pas `En cours de reconnexion vers…`, plus long et hors moule. `à` ne s'élide pas, donc `{name}` peut
+  commencer par n'importe quel caractère.
+- **`This server signs in with a key…` ne prend PAS `Ce serveur s''identifie…`.** Dans ce même fichier, le serveur qui «
+  s'identifie » est le sens de la clé d'hôte (`servers.paneState.hostKeyChanged*`, où c'est bien le serveur qui prouve
+  son identité). Ici c'est la personne qui est identifiée, par sa clé SSH, donc le serveur est l'agent :
+  `Ce serveur vous identifie par une clé plutôt que par un mot de passe`. Le verbe reste actif, comme le veut le style
+  guide, et rien ne s'accorde sur la personne.
+- **La deuxième proposition reprend le moule `…, il n''y a donc rien à <verbe>.`**, déjà livré deux fois dans
+  `errors.eject.*` (« Ce disque n'est plus connecté, il n'y a donc rien à éjecter. », « Ce n'est pas un partage réseau,
+  il n'y a donc rien à déconnecter. »). Même forme ici avec `saisir`. Pas de « Désolé », pas d'« erreur » : c'est un
+  constat, pas une faute.
+- **`Open it again to retry.` → `Ouvrez-le à nouveau pour réessayer.`**, mot pour mot la fin du voisin
+  `servers.paneState.hostKeyChangedHint` (« … ouvrez-le à nouveau pour vérifier l''empreinte. »). `le` reprend
+  `Ce serveur` (masculin), sûr côté accord. `réessayer` est le terme du glossaire (§ Terms).
+- Le `…` de `reconnecting` est U+2026, comme la source anglaise et comme `Connexion à {name}…`. Toutes les apostrophes
+  sont ASCII et doublées (`n''y`).

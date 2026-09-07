@@ -48,6 +48,9 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 - **A pane on a SAVED place dials it, in the pane, with a cancel** (`place-connect.svelte.ts`, whose `$effect` holds the
   one-dial-per-landing rule). The gate is the CONNECTION STATE, in FRONT of the kind chain. ❌ Never add a
   `RemoteConnectState` variant before the milestone that can act on it. DETAILS § "A pane on a saved place".
+- **`RemoteConnectView.svelte` renders every remote wait off ONE typed state** (`remote-connect-state.ts`). A backoff
+  loop is `connecting` with a `cycle`; a loop that gave up is `VolumeUnreachableBanner`'s `gaveUp`, ❌ never a second
+  renderer. ❌ No inert button. DETAILS § "The connect views".
 - **`DualPaneExplorer.svelte` / `FilePane.svelte` are at their size cap**: extract cross-cutting state to a
   `*.svelte.ts` factory or pure logic to a `*.ts` helper, ❌ never a child component.
 

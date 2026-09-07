@@ -551,56 +551,12 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.smbReconnect.totalSeconds": "{seconds} 秒",
-  "@fileExplorer.smbReconnect.totalSeconds": {
-    "sourceHash": "86d62ab"
-  },
-  "fileExplorer.smbReconnect.totalMinutes": "{minutes} 分钟",
-  "@fileExplorer.smbReconnect.totalMinutes": {
-    "sourceHash": "fc339ba"
-  },
-  "fileExplorer.smbReconnect.title": "正在重新连接到服务器…",
-  "@fileExplorer.smbReconnect.title": {
-    "sourceHash": "7562773"
-  },
-  "fileExplorer.smbReconnect.progressBarAriaLabel": "距下次重连尝试的时间",
-  "@fileExplorer.smbReconnect.progressBarAriaLabel": {
-    "sourceHash": "d4341c3"
-  },
-  "fileExplorer.smbReconnect.willKeepTrying": "会持续尝试，总共 {duration}。",
-  "@fileExplorer.smbReconnect.willKeepTrying": {
-    "sourceHash": "e4d25b7"
-  },
-  "fileExplorer.smbReconnect.retryNowTooltip": "立即尝试重新连接。",
-  "@fileExplorer.smbReconnect.retryNowTooltip": {
-    "sourceHash": "11525f0"
-  },
-  "fileExplorer.smbReconnect.retryNow": "立即重试",
-  "@fileExplorer.smbReconnect.retryNow": {
-    "sourceHash": "5148c3e"
-  },
-  "fileExplorer.smbReconnect.cancelTooltip": "暂时停止尝试。连接仍然可用。切换回来即可重试。",
-  "@fileExplorer.smbReconnect.cancelTooltip": {
-    "sourceHash": "377638b"
-  },
-  "fileExplorer.smbReconnect.cancel": "取消",
-  "@fileExplorer.smbReconnect.cancel": {
-    "sourceHash": "19766ed"
-  },
-  "fileExplorer.smbReconnect.disconnectTooltip": "停止尝试并断开与服务器的连接。",
-  "@fileExplorer.smbReconnect.disconnectTooltip": {
-    "sourceHash": "8fba8b0"
-  },
-  "fileExplorer.smbReconnect.disconnect": "断开连接",
-  "@fileExplorer.smbReconnect.disconnect": {
-    "sourceHash": "acfc5be"
-  },
   "fileExplorer.unreachable.title": "无法访问 {path}",
   "@fileExplorer.unreachable.title": {
     "sourceHash": "586e44c"
   },
-  "fileExplorer.unreachable.detailSmbGaveUp": "Cmdr 已多次尝试重新连接，但服务器没有恢复。连接暂时仍然可用。你可以重试，或断开连接以放弃它。",
-  "@fileExplorer.unreachable.detailSmbGaveUp": {
+  "fileExplorer.unreachable.detailGaveUp": "Cmdr 已多次尝试重新连接，但服务器没有恢复。连接暂时仍然可用。你可以重试，或断开连接以放弃它。",
+  "@fileExplorer.unreachable.detailGaveUp": {
     "sourceHash": "7d8c5fc"
   },
   "fileExplorer.unreachable.detailTimeout": "此路径所在的宗卷未及时响应。它可能是当前不可用的网络驱动器。",

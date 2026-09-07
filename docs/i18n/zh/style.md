@@ -246,6 +246,13 @@ inflection.
   and the Keyboard-shortcuts scope both say `服务器`.
 - **A photo's place is `拍摄地点`, never `位置`.** `位置` is reserved for a file-system location in this catalog
   (`目标位置`, `原来的位置`); Photos.app calls photo places `地点`. Camera EXIF is `相机信息` (Photos.app `无相机信息`).
+- **“There's nothing to X” is a fixed Apple pattern: `没有要 X 的内容`.** `There's nothing to send.` →
+  `没有要发送的内容。`, `There is nothing to print.` → `没有要打印的内容。` (AppIntents and Printing `.loctable`, macOS
+  26.6.2 / 25G83, 2026-09-07). Reach for it whenever a string says there is nothing for the user to supply, rather than
+  inventing a chattier `没什么可…的`.
+- **A progress heading is `正在…`, and the reconnect one is `正在重新连接到 {name}…`.** It shares the sentence shape of
+  `正在连接到 {name}…`, so first connect and auto-reconnect read as two states of one thing. Evidence in `glossary.md`
+  § 自动重连的面板标题.
 
 ### ICU mechanics (catalog-level, easy to miss)
 

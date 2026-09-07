@@ -553,56 +553,12 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.smbReconnect.totalSeconds": "{seconds} segundos",
-  "@fileExplorer.smbReconnect.totalSeconds": {
-    "sourceHash": "86d62ab"
-  },
-  "fileExplorer.smbReconnect.totalMinutes": "{minutes} minutos",
-  "@fileExplorer.smbReconnect.totalMinutes": {
-    "sourceHash": "fc339ba"
-  },
-  "fileExplorer.smbReconnect.title": "Volviendo a conectar con el servidor…",
-  "@fileExplorer.smbReconnect.title": {
-    "sourceHash": "7562773"
-  },
-  "fileExplorer.smbReconnect.progressBarAriaLabel": "Tiempo hasta el próximo intento de reconexión",
-  "@fileExplorer.smbReconnect.progressBarAriaLabel": {
-    "sourceHash": "d4341c3"
-  },
-  "fileExplorer.smbReconnect.willKeepTrying": "Se seguirá intentando durante un total de {duration}.",
-  "@fileExplorer.smbReconnect.willKeepTrying": {
-    "sourceHash": "e4d25b7"
-  },
-  "fileExplorer.smbReconnect.retryNowTooltip": "Intentar volver a conectar de inmediato.",
-  "@fileExplorer.smbReconnect.retryNowTooltip": {
-    "sourceHash": "11525f0"
-  },
-  "fileExplorer.smbReconnect.retryNow": "Reintentar ahora",
-  "@fileExplorer.smbReconnect.retryNow": {
-    "sourceHash": "5148c3e"
-  },
-  "fileExplorer.smbReconnect.cancelTooltip": "Dejar de intentarlo por ahora. La conexión sigue disponible. Vuelve a activar para reintentar.",
-  "@fileExplorer.smbReconnect.cancelTooltip": {
-    "sourceHash": "377638b"
-  },
-  "fileExplorer.smbReconnect.cancel": "Cancelar",
-  "@fileExplorer.smbReconnect.cancel": {
-    "sourceHash": "19766ed"
-  },
-  "fileExplorer.smbReconnect.disconnectTooltip": "Dejar de intentarlo y desconectar del servidor.",
-  "@fileExplorer.smbReconnect.disconnectTooltip": {
-    "sourceHash": "8fba8b0"
-  },
-  "fileExplorer.smbReconnect.disconnect": "Desconectar",
-  "@fileExplorer.smbReconnect.disconnect": {
-    "sourceHash": "acfc5be"
-  },
   "fileExplorer.unreachable.title": "No se pudo acceder a {path}",
   "@fileExplorer.unreachable.title": {
     "sourceHash": "586e44c"
   },
-  "fileExplorer.unreachable.detailSmbGaveUp": "Cmdr intentó volver a conectar varias veces, pero el servidor no volvió. La conexión sigue disponible por ahora. Inténtalo de nuevo o desconecta para descartarla.",
-  "@fileExplorer.unreachable.detailSmbGaveUp": {
+  "fileExplorer.unreachable.detailGaveUp": "Cmdr intentó volver a conectar varias veces, pero el servidor no volvió. La conexión sigue disponible por ahora. Inténtalo de nuevo o desconecta para descartarla.",
+  "@fileExplorer.unreachable.detailGaveUp": {
     "sourceHash": "7d8c5fc"
   },
   "fileExplorer.unreachable.detailTimeout": "El volumen de esta ruta no respondió a tiempo. Puede que sea una unidad de red que no está disponible ahora mismo.",

@@ -293,6 +293,13 @@ Vietnamese has no grammatical number, so one form covers all counts.
   `Vị trí`; Photos/Maps/Journal gọi `Places` (ảnh chụp ở đâu) là `Địa điểm`. Cmdr chỉ dùng nghĩa thứ nhất
   (`shortcuts.scope.places` = danh sách các bản chia sẻ / bucket bên trong một máy chủ), nên không bao giờ viết
   `Địa điểm`.
+- **`đăng nhập` luôn có NGƯỜI làm chủ ngữ.** Tiếng Anh cho phép "This server signs in with a key"; tiếng Việt thì
+  `Máy chủ này đăng nhập bằng khóa` đọc thành máy chủ đi đăng nhập chỗ khác. Khi chủ ngữ là một MÁY, đổi động từ chính
+  sang `dùng` và đẩy `đăng nhập` xuống vế mục đích: `Máy chủ này dùng khóa thay vì mật khẩu để đăng nhập`. Ví dụ:
+  `servers.paneState.signedOutNothingToAsk`.
+- **"rather than" / "instead of" là `thay vì`, và "type/enter vào một ô" là `nhập`.** Cả hai đã ship nhiều chỗ trong
+  catalog; đừng nghĩ ra `chứ không phải` hay `gõ` cho chuỗi mới (`gõ ký tự` của macOS dành cho việc gõ trên bàn phím).
+  Bằng chứng: `glossary.md` § Trung tâm máy chủ, đợt 4.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

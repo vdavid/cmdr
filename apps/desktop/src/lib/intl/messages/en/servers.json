@@ -335,5 +335,73 @@
   "servers.paneState.hostKeyChangedHint": "Its key changed. That can mean the server was reinstalled, or that something is sitting between you and it. Disconnect, then open it again to check the fingerprint.",
   "@servers.paneState.hostKeyChangedHint": {
     "description": "One line under that heading, saying both innocent and serious causes and what to do. “Key” is the server''s SSH host key; “fingerprint” is the short string a person compares before trusting it."
+  },
+  "servers.paneState.reconnecting": "Reconnecting to {name}…",
+  "@servers.paneState.reconnecting": {
+    "description": "Heading of the pane view shown while Cmdr keeps trying to bring back a server connection that dropped. ❗ NOT a first connection: the session existed and Cmdr is getting it back on its own. {name} is the server''s display name. The ellipsis is the single character … (U+2026).",
+    "placeholders": {
+      "name": "the server''s display name"
+    }
+  },
+  "servers.paneState.signedOutNothingToAsk": "This server signs in with a key rather than a password, so there''s nothing to type. Open it again to retry.",
+  "@servers.paneState.signedOutNothingToAsk": {
+    "description": "One line under the \"Signed out\" heading, shown instead of a Sign in button when the server proves itself with an SSH key or an agent identity rather than a password. Say plainly that there is nothing for the user to enter and what they can do instead. ❗ Not an apology and not a fault."
+  },
+  "servers.paneState.retryProgressAriaLabel": "Time until next reconnect attempt",
+  "@servers.paneState.retryProgressAriaLabel": {
+    "description": "Accessibility label for the countdown progress bar showing how long until the next reconnect attempt.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+  },
+  "servers.paneState.retryNow": "Retry now",
+  "@servers.paneState.retryNow": {
+    "description": "Button that triggers a reconnect attempt immediately.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+  },
+  "servers.paneState.retryNowTooltip": "Try reconnecting immediately.",
+  "@servers.paneState.retryNowTooltip": {
+    "description": "Hover tooltip for the button that triggers a reconnect attempt right away instead of waiting.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+  },
+  "servers.paneState.cancelCycleTooltip": "Stop trying for now. The connection stays available. Switch back to retry.",
+  "@servers.paneState.cancelCycleTooltip": {
+    "description": "Hover tooltip for the button that pauses auto-reconnect while keeping the connection available to resume.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+  },
+  "servers.paneState.disconnectCycleTooltip": "Stop trying and disconnect from the server.",
+  "@servers.paneState.disconnectCycleTooltip": {
+    "description": "Hover tooltip for the button that stops reconnecting and drops the server connection.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+  },
+  "servers.paneState.retryKeepsTrying": "Will keep trying for a total of {duration}.",
+  "@servers.paneState.retryKeepsTrying": {
+    "description": "Reassurance line telling the user how long the auto-reconnect will keep trying. {duration} is a phrase like \"60 seconds\" or \"2 minutes\".",
+    "placeholders": {
+      "duration": "the total duration phrase, e.g. 60 seconds or 2 minutes"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+  },
+  "servers.paneState.retryTotalSeconds": "{seconds} seconds",
+  "@servers.paneState.retryTotalSeconds": {
+    "description": "Total reconnect-cycle duration phrased in seconds, embedded in the \"Will keep trying for a total of …\" sentence.",
+    "placeholders": {
+      "seconds": "the number of seconds"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+  },
+  "servers.paneState.retryTotalMinutes": "{minutes} minutes",
+  "@servers.paneState.retryTotalMinutes": {
+    "description": "Total reconnect-cycle duration phrased in minutes, embedded in the \"Will keep trying for a total of …\" sentence.",
+    "placeholders": {
+      "minutes": "the number of minutes"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   }
 }

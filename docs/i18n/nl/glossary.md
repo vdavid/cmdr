@@ -784,6 +784,10 @@ From the network image-indexing pass (`settings.mediaIndex.networkVolumes.*` + `
   photos indexed"→"{countText} foto''s geïndexeerd" · high
 - reconnect (drive comes back) → `opnieuw verbinding maken` · macOS Finder ("opnieuw verbinding maken met '^0'");
   "resumes when this drive reconnects"→"gaat verder zodra deze schijf opnieuw verbinding maakt" · high
+- Reconnecting… (voortgangskop, gerundium) → `Opnieuw verbinden…` · macOS `ScreenSharing.loctable`
+  (`Reconnecting…`→`Opnieuw verbinden…`), en de catalogus zegt het al zo in `errors.listing.deviceReconnecting.title` ·
+  high. In een hele zin blijft het werkwoord `opnieuw verbinding maken` (de rij hierboven); de kop krijgt de kortere
+  vorm
 - disconnect / disconnected (drive drops off mid-pass) → `wordt losgekoppeld` / `is losgekoppeld` · reuses the
   indexing-pass glossary disconnected→`losgekoppeld` (macOS koppel-family) · high
 - background indexing → `achtergrondindexering` · compound of "achtergrond" (glossary "op de achtergrond") +
@@ -2679,3 +2683,57 @@ Notities:
 - **`Voor het eerst verbinden met {host}`** (`hostKey.firstContactTitle`): infinitief, omdat dit een situatie beschrijft
   en geen opdracht geeft; de knop eronder (`Vertrouw en verbind`) draagt de imperatief. Bevestig dat de twee registers
   naast elkaar kloppen.
+
+## Twee paneelregels erbij: automatisch opnieuw verbinden en inloggen met een sleutel (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`, 2026-09-07)
+
+Twee sleutels in hetzelfde serverpaneel. De ene is de kop terwijl Cmdr uit zichzelf, in een backoff-lus, een weggevallen
+verbinding terughaalt (eronder: een spinner, een aftelling en de knoppen `Probeer nu opnieuw` / `Annuleer` /
+`Verbreek`). De andere is de regel onder `Uitgelogd bij {name}` die in de plaats komt van de knop `Log in…`, omdat deze
+server zich met een sleutel legitimeert en er dus niets in te vullen valt.
+
+De referentiestapel ontbreekt op deze machine, dus Tier 1 komt uit de LIVE macOS-bundels
+(`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?"), geverifieerd op macOS 26.6.2, build 25G83,
+2026-09-07.
+
+- **Reconnecting… → `Opnieuw verbinden…`** · letterlijk Apple, in `ScreenSharing.framework/…/ScreenSharing.loctable`
+  (`Reconnecting…` → `Opnieuw verbinden…`, en `Reconnect` → `Verbind opnieuw`) · `high`. Dezelfde vorm staat al in de
+  catalogus als `errors.listing.deviceReconnecting.title` (`Reconnecting to the device` →
+  `Opnieuw verbinden met het apparaat`), dus `Reconnecting to {name}…` wordt **`Opnieuw verbinden met {name}…`**: het
+  zusje `paneState.connecting` (`Verbinden met {name}…`) met `Opnieuw` ervoor, zodat de twee koppen als één paar lezen.
+  - De hele PPP/VPN-familie bevestigt dat `reconnect` als wérkwoord `opnieuw verbinding maken` is
+    (`PPPController.bundle/…/Localizable.loctable`, ~50 zinnen: `Try reconnecting.` →
+    `Probeer opnieuw verbinding te maken.`). Dat is de vorm voor een volle zin; voor een voortgangskop wint Apples eigen
+    `Opnieuw verbinden…`, dat korter is en het gerundium van het Engels behoudt.
+- **signs in with a key rather than a password → `log je in met een sleutel in plaats van een wachtwoord`** · de shape
+  komt van de eigen catalogus (`servers.sheet.signInWithCredentials`: `Log in met een gebruikersnaam en wachtwoord`), en
+  Apple zegt het in een hele zin net zo (`ScreenSharing.loctable`:
+  `Screen Sharing requires a password to sign in to “%@”.` →
+  `Voor schermdeling moet je met een wachtwoord inloggen op '%@'.`) · `high`. Voorzetsel `bij`, niet `op`, want de
+  catalogus heeft `Log in bij {name}` (`servers.sheet.signInTitle`) en `Uitgelogd bij {name}`.
+- **key (de sleutel waarmee de client zich legitimeert) → `een sleutel`** · het Engels gaat hier niet verder dan `key`,
+  dus de waarde ook niet; de al vastgelegde regel `SSH key → SSH-sleutel` blijft voor het Engels dat `SSH` wél noemt ·
+  `high`. Zie de review-vlag hieronder.
+- **there''s nothing to type → `er valt niets te typen`** · `typen` is het woord dat de catalogus al gebruikt
+  (`ui.combobox.emptyText`: `Blijf typen om je eigen waarde te gebruiken`); `invullen` is de andere kandidaat, maar het
+  Engels zegt letterlijk `type` en er is geen formulier meer om in te vullen · `tentative` (geen Apple-bron voor deze
+  wending; Tier 2 was onbereikbaar).
+- **Open it again to retry. → `Open de server opnieuw om het nog eens te proberen.`** · de zin neemt de vorm over van
+  het zusje twee sleutels hoger, `paneState.hostKeyChangedHint`
+  (`… open de server opnieuw om de vingerafdruk te controleren`), en van
+  `fileExplorer.navigation.connectionTooltipNeedsSignIn` (`Open deze server om opnieuw in te loggen.`) · `high`. Het
+  naamwoord staat er voluit in plaats van `hem`, omdat `hem` in deze zin net zo goed naar `de sleutel` kan wijzen.
+  `nog eens` in plaats van het gebruikelijke `opnieuw`, omdat `opnieuw` al in `Open de server opnieuw` staat.
+
+Notities: geen ASCII-apostrof in beide waarden, dus geen ICU-verdubbeling. `{name}` blijft ongewijzigd en krijgt geen
+voornaamwoord; de ellips is het enkele teken `…` (U+2026). Geen `sameAsSourceJustification`: beide waarden verschillen
+van het Engels.
+
+### Review-vlaggen van deze pass
+
+- **`een sleutel` naast de hostsleutel** (`paneState.signedOutNothingToAsk`): in dit paneel heet de sleutel van de
+  server ook `de sleutel` (`hostKey.*`, `paneState.hostKeyChangedHint`), terwijl deze zin over de sleutel van de
+  gebruiker gaat. Het Engels heeft precies dezelfde dubbelzinnigheid en de twee paneelstanden zijn nooit tegelijk in
+  beeld, dus de waarde blijft letterlijk. Bevestig dat, of kies `een SSH-sleutel` en wijk daarmee van het Engels af.
+- **`er valt niets te typen`** (`paneState.signedOutNothingToAsk`): ongesourcete wending. `hoef je niets in te vullen`
+  is warmer en gangbaarder in het Nederlands, maar verschuift de zin van "er is niets" naar "jij hoeft niets". Bevestig
+  welke van de twee in een klein paneel beter leest.

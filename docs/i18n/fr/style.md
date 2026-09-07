@@ -321,6 +321,13 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
 - **La fenêtre de réglages de Cmdr, c'est « les Réglages » ; « Réglages Système » nomme l'app d'Apple.** Un lien du type
   « Turn it on in Settings » se rend par « Activez-la dans les Réglages », comme
   `fileExplorer.navigation.driveIndex.tooltipIndexingOff` déjà livrée.
+- **`Reconnexion` est le nom d'état, `reconnecter` le verbe.** `Reconnecting to {name}…` suit exactement le moule du
+  voisin `Connexion à {name}…` : « Reconnexion à {name}… ». Preuves Apple et pièges : `glossary.md` § Le panneau de
+  reconnexion.
+- **Un constat « il n'y a rien à faire » se rend par `…, il n'y a donc rien à <verbe>.`** Moule déjà livré par
+  `errors.eject.*` (« … il n'y a donc rien à éjecter. ») et repris par `servers.paneState.signedOutNothingToAsk` (« … il
+  n'y a donc rien à saisir. »). Ni excuse ni « erreur » : c'est un constat. Le verbe pour remplir un champ est `saisir`
+  (Finder), jamais `taper`.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

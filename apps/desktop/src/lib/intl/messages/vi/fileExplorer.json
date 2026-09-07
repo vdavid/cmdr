@@ -553,56 +553,12 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.smbReconnect.totalSeconds": "{seconds} giây",
-  "@fileExplorer.smbReconnect.totalSeconds": {
-    "sourceHash": "86d62ab"
-  },
-  "fileExplorer.smbReconnect.totalMinutes": "{minutes} phút",
-  "@fileExplorer.smbReconnect.totalMinutes": {
-    "sourceHash": "fc339ba"
-  },
-  "fileExplorer.smbReconnect.title": "Đang kết nối lại với máy chủ…",
-  "@fileExplorer.smbReconnect.title": {
-    "sourceHash": "7562773"
-  },
-  "fileExplorer.smbReconnect.progressBarAriaLabel": "Thời gian đến lần thử kết nối lại tiếp theo",
-  "@fileExplorer.smbReconnect.progressBarAriaLabel": {
-    "sourceHash": "d4341c3"
-  },
-  "fileExplorer.smbReconnect.willKeepTrying": "Sẽ tiếp tục thử trong tổng cộng {duration}.",
-  "@fileExplorer.smbReconnect.willKeepTrying": {
-    "sourceHash": "e4d25b7"
-  },
-  "fileExplorer.smbReconnect.retryNowTooltip": "Thử kết nối lại ngay.",
-  "@fileExplorer.smbReconnect.retryNowTooltip": {
-    "sourceHash": "11525f0"
-  },
-  "fileExplorer.smbReconnect.retryNow": "Thử lại ngay",
-  "@fileExplorer.smbReconnect.retryNow": {
-    "sourceHash": "5148c3e"
-  },
-  "fileExplorer.smbReconnect.cancelTooltip": "Tạm ngừng thử. Kết nối vẫn khả dụng. Chuyển lại để thử lại.",
-  "@fileExplorer.smbReconnect.cancelTooltip": {
-    "sourceHash": "377638b"
-  },
-  "fileExplorer.smbReconnect.cancel": "Hủy",
-  "@fileExplorer.smbReconnect.cancel": {
-    "sourceHash": "19766ed"
-  },
-  "fileExplorer.smbReconnect.disconnectTooltip": "Ngừng thử và ngắt kết nối khỏi máy chủ.",
-  "@fileExplorer.smbReconnect.disconnectTooltip": {
-    "sourceHash": "8fba8b0"
-  },
-  "fileExplorer.smbReconnect.disconnect": "Ngắt kết nối",
-  "@fileExplorer.smbReconnect.disconnect": {
-    "sourceHash": "acfc5be"
-  },
   "fileExplorer.unreachable.title": "Không thể truy cập {path}",
   "@fileExplorer.unreachable.title": {
     "sourceHash": "586e44c"
   },
-  "fileExplorer.unreachable.detailSmbGaveUp": "Cmdr đã thử kết nối lại vài lần nhưng máy chủ vẫn chưa trở lại. Kết nối hiện vẫn khả dụng. Hãy thử lại, hoặc ngắt kết nối để bỏ nó.",
-  "@fileExplorer.unreachable.detailSmbGaveUp": {
+  "fileExplorer.unreachable.detailGaveUp": "Cmdr đã thử kết nối lại vài lần nhưng máy chủ vẫn chưa trở lại. Kết nối hiện vẫn khả dụng. Hãy thử lại, hoặc ngắt kết nối để bỏ nó.",
+  "@fileExplorer.unreachable.detailGaveUp": {
     "sourceHash": "7d8c5fc"
   },
   "fileExplorer.unreachable.detailTimeout": "Ổ đĩa cho đường dẫn này đã không phản hồi kịp thời. Đây có thể là một ổ đĩa mạng hiện không khả dụng.",

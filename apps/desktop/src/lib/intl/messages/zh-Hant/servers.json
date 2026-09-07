@@ -302,5 +302,45 @@
   "servers.paneState.hostKeyChangedHint": "它的主機金鑰變了。這可能表示伺服器重新安裝過，也可能有東西夾在你和它中間。請先中斷連線，再重新開啟它來核對指紋。",
   "@servers.paneState.hostKeyChangedHint": {
     "sourceHash": "923de62"
+  },
+  "servers.paneState.reconnecting": "正在重新連線到 {name}…",
+  "@servers.paneState.reconnecting": {
+    "sourceHash": "dce8cef"
+  },
+  "servers.paneState.signedOutNothingToAsk": "這部伺服器是用金鑰而不是密碼登入的，所以沒有東西要輸入。重新開啟它就會再試一次。",
+  "@servers.paneState.signedOutNothingToAsk": {
+    "sourceHash": "71d7eee"
+  },
+  "servers.paneState.retryProgressAriaLabel": "距離下次重新連線的時間",
+  "@servers.paneState.retryProgressAriaLabel": {
+    "sourceHash": "d4341c3"
+  },
+  "servers.paneState.retryNow": "立刻重試",
+  "@servers.paneState.retryNow": {
+    "sourceHash": "5148c3e"
+  },
+  "servers.paneState.retryNowTooltip": "立刻嘗試重新連線。",
+  "@servers.paneState.retryNowTooltip": {
+    "sourceHash": "11525f0"
+  },
+  "servers.paneState.cancelCycleTooltip": "暫時停止嘗試。連線仍然可用，切換回來就會繼續試。",
+  "@servers.paneState.cancelCycleTooltip": {
+    "sourceHash": "377638b"
+  },
+  "servers.paneState.disconnectCycleTooltip": "停止嘗試並中斷與伺服器的連線。",
+  "@servers.paneState.disconnectCycleTooltip": {
+    "sourceHash": "8fba8b0"
+  },
+  "servers.paneState.retryKeepsTrying": "會持續嘗試，總共 {duration}。",
+  "@servers.paneState.retryKeepsTrying": {
+    "sourceHash": "e4d25b7"
+  },
+  "servers.paneState.retryTotalSeconds": "{seconds} 秒",
+  "@servers.paneState.retryTotalSeconds": {
+    "sourceHash": "86d62ab"
+  },
+  "servers.paneState.retryTotalMinutes": "{minutes} 分鐘",
+  "@servers.paneState.retryTotalMinutes": {
+    "sourceHash": "fc339ba"
   }
 }

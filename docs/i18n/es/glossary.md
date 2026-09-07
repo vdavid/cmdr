@@ -2400,3 +2400,69 @@ Directorios, «SFTP Protocol 1» → «Protocolo SFTP 1»), `WebDAV` (NetAuth `W
   regla de las dos comillas del `style.md`.
 - Ninguna clave de esta tanda termina en `Aria`, así que no hay contención WCAG 2.5.3 que satisfacer: `protocolLegend` y
   `connectionModeLegend` son nombres accesibles de un grupo sin etiqueta visible, no de un control con etiqueta.
+
+## Las dos líneas nuevas del panel: reconexión automática y una sesión sin nada que teclear (`servers.paneState.{reconnecting,signedOutNothingToAsk}`, 2026-09-07)
+
+Cuarta tanda de la misma superficie. La primera clave es el título del panel mientras Cmdr recupera por su cuenta una
+conexión que se cayó (debajo hay un indicador, una cuenta atrás y los botones `Reintentar ahora` / `Cancelar` /
+`Desconectar`); la segunda es la línea que sustituye al botón `Iniciar sesión…` cuando el servidor se identifica con una
+clave SSH o con una identidad de `ssh-agent`, así que no hay ningún campo que rellenar. El montón de referencia sigue
+sin estar en esta máquina, así que las fuentes de Tier 1 salen del propio Mac (macOS 26.6.2, build 25G83,
+`plutil -convert json` sobre los 5.548 `.loctable` del sistema, 2026-09-07).
+
+### Términos de Tier 1 (macOS en vivo)
+
+- **Reconnecting… (solo, sin destino) → Apple reparte entre `Conectando de nuevo…` y `Reconectando…`** · cuatro casos
+  del primero (`ScreenSharing.framework/ScreenSharing.loctable` `reconnectingMessage`, el más cercano a Cmdr porque es
+  una sesión remota que se cayó; `RemotePeoplePicker.appex` de FaceTime y de Teléfono; `ConversationKit.loctable`) y dos
+  del segundo (`HFLocalizable.loctable` de Home y de `HomeDataModel.framework`, `HFServiceDescriptionReconnecting`) ·
+  `high` (las dos formas son de Apple; la elección entre ellas la decide el paralelismo interno, ver Decisiones).
+- **reconnect to X (con destino) → `reconectarse a X`** · `DisplaysExt.appex` /
+  `DisplaysSettingsIntentsExtension.appex`, «Automatically reconnect to any nearby Mac or iPad» → «Reconectarse
+  automáticamente a cualquier Mac o iPad cercano» · `high`. Es la única cadena de macOS que junta el reflexivo, el
+  prefijo `re-` y un destino con `a`, que es exactamente la forma que pide `servers.paneState.reconnecting`.
+- **type (escribir en un campo) → `escribir`** · es la forma dominante en macOS: `Sharing.appex` `PASS_IS_TOO_SHORT_ERR`
+  («Retype the password.» → «Vuelve a escribir la contraseña.»), `IOBluetoothUI` / `CoreBluetoothUI`
+  `UNPAIR_KEYBOARD_MESSAGE` («to type on this Mac» → «para escribir en este Mac»), `WorkflowUI` («Type a question here…»
+  → «Escribe aquí una pregunta…») · `high`. Apple también usa `introducir` cuando el objeto es la credencial («Please
+  type the password below.» → «Introduce la contraseña.»), y el catálogo lo hace igual (`fileExplorer.network.*`:
+  «introduce de nuevo tu usuario y contraseña»). Aquí gana `escribir` porque el inglés eligió a propósito el verbo
+  físico llano (`type`, no `enter`) y porque la frase no nombra ninguna credencial: dice que no hay NADA que escribir.
+- **key (la clave SSH) → `clave`** · ya asentado en la tanda anterior (`clave de host`, ActionKit «SSH Key
+  Authentication Failed» → «Error de autenticación de la clave SSH», `Security.framework` «public/private key» → «clave
+  pública/privada»). No se repite aquí; se reutiliza.
+- **password → `contraseña`; sign in → `iniciar sesión`; sign in TO X → `iniciar sesión EN X`** · ya asentados arriba
+  (Finder `NE104`, CloudKit `SIGN_IN_TO_ICLOUD_TITLE_MAC`). La preposición `en` es la que fija la primera frase de
+  `signedOutNothingToAsk`.
+
+### Decisiones
+
+- **`Reconnecting to {name}…` → `Reconectándose a {name}…`** · manda el paralelismo con el hermano que el usuario ve en
+  el mismo panel: `servers.paneState.connecting` dice `Conectándose a {name}…` (gerundio reflexivo + `a`, fijado por
+  Finder `MN1`), así que la versión con `re-` tiene que leerse como su gemela y no como otra cadena. Apple respalda la
+  forma exacta con `Reconectarse … a …` (Displays, arriba) · `high`.
+- **Diverge a propósito de `errors.listing.deviceReconnecting.title` (`Reconectando con el dispositivo`)** · aquella
+  clave habla de un dispositivo USB, sin marcador y sin hermano en pantalla; esta vive pegada a `connecting` y copia su
+  molde. `i18n-terms` no las agrupa porque el inglés no es idéntico, así que la divergencia es legal; si algún día se
+  unifican, hay que mover las dos a la vez · `high`.
+- **La frase larga va en impersonal: `En este servidor se inicia sesión con una clave…`** · el calco
+  `Este servidor inicia sesión con una clave` haría del servidor el sujeto que abre la sesión, que es justo al revés de
+  lo que pasa. El `se` impersonal deja el servidor como lugar (con el `en` que ya fijó CloudKit), no genera a nadie y
+  evita inventar un sujeto, igual que se resolvió `servers.sheet.needsStoredSecret` · `high`.
+- **`rather than a password` → `en lugar de una contraseña`, no `no con una contraseña`** · el molde «Y, no X» está
+  vetado por el `style-guide.md` del proyecto, y `en lugar de` es además la forma neutra y no correctiva · `high`.
+- **`Open it again to retry.` → `Vuelve a abrirlo para reintentar.`** · `vuelve a abrirlo` lo fija el vecino de familia
+  `servers.paneState.hostKeyChangedHint` («Desconecta y vuelve a abrirlo para comprobar la huella digital»); el cierre
+  usa `reintentar` y no `volver a intentarlo` para no repetir `volver a` en la misma frase, y porque los dos botones de
+  este mismo panel ya dicen `Reintentar` y `Reintentar ahora` · `high`. (`errors.volume.staleDestinationHandle` dice
+  `Ábrela de nuevo y vuelve a intentarlo` para un inglés distinto; gana la familia, no el eco.)
+- **El clítico `lo` de `Vuelve a abrirlo` concuerda con `el servidor`, no con ningún marcador** · esta clave no lleva
+  `{name}`, así que la trampa de género del `style.md` no se activa; `servidor` es masculino fijo · `high`.
+
+### Notas de forma
+
+- Ninguno de los dos valores lleva apóstrofo, así que no hay duplicación ICU (`''`) que hacer, aunque el inglés de
+  `signedOutNothingToAsk` sí la lleva (`there''s`).
+- `{name}` se conserva tal cual y queda detrás de la preposición, en la misma posición que en el hermano `connecting`:
+  nada concuerda con él.
+- La elipsis de `reconnecting` copia el `…` (U+2026) del inglés, carácter a carácter.

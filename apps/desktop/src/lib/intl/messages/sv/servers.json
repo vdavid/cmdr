@@ -303,5 +303,45 @@
   "servers.paneState.hostKeyChangedHint": "Serverns nyckel har ändrats. Det kan betyda att servern har installerats om, eller att något sitter mellan dig och den. Koppla från och öppna servern igen för att kontrollera fingeravtrycket.",
   "@servers.paneState.hostKeyChangedHint": {
     "sourceHash": "923de62"
+  },
+  "servers.paneState.reconnecting": "Återansluter till {name}…",
+  "@servers.paneState.reconnecting": {
+    "sourceHash": "dce8cef"
+  },
+  "servers.paneState.signedOutNothingToAsk": "Den här servern använder en nyckel i stället för ett lösenord, så det finns inget att skriva. Öppna servern igen för att försöka på nytt.",
+  "@servers.paneState.signedOutNothingToAsk": {
+    "sourceHash": "71d7eee"
+  },
+  "servers.paneState.retryProgressAriaLabel": "Tid till nästa återanslutningsförsök",
+  "@servers.paneState.retryProgressAriaLabel": {
+    "sourceHash": "d4341c3"
+  },
+  "servers.paneState.retryNow": "Försök igen nu",
+  "@servers.paneState.retryNow": {
+    "sourceHash": "5148c3e"
+  },
+  "servers.paneState.retryNowTooltip": "Försök återansluta direkt.",
+  "@servers.paneState.retryNowTooltip": {
+    "sourceHash": "11525f0"
+  },
+  "servers.paneState.cancelCycleTooltip": "Sluta försöka tills vidare. Anslutningen finns kvar. Växla tillbaka för att försöka igen.",
+  "@servers.paneState.cancelCycleTooltip": {
+    "sourceHash": "377638b"
+  },
+  "servers.paneState.disconnectCycleTooltip": "Sluta försöka och koppla från servern.",
+  "@servers.paneState.disconnectCycleTooltip": {
+    "sourceHash": "8fba8b0"
+  },
+  "servers.paneState.retryKeepsTrying": "Fortsätter försöka i totalt {duration}.",
+  "@servers.paneState.retryKeepsTrying": {
+    "sourceHash": "e4d25b7"
+  },
+  "servers.paneState.retryTotalSeconds": "{seconds} sekunder",
+  "@servers.paneState.retryTotalSeconds": {
+    "sourceHash": "86d62ab"
+  },
+  "servers.paneState.retryTotalMinutes": "{minutes} minuter",
+  "@servers.paneState.retryTotalMinutes": {
+    "sourceHash": "fc339ba"
   }
 }

@@ -303,5 +303,45 @@
   "servers.paneState.hostKeyChangedHint": "A chave do servidor mudou. Isso pode significar que ele foi reinstalado, ou que algo está entre você e ele. Desconecte e abra o servidor de novo para conferir a impressão digital.",
   "@servers.paneState.hostKeyChangedHint": {
     "sourceHash": "923de62"
+  },
+  "servers.paneState.reconnecting": "Reconectando a {name}…",
+  "@servers.paneState.reconnecting": {
+    "sourceHash": "dce8cef"
+  },
+  "servers.paneState.signedOutNothingToAsk": "Este servidor usa uma chave em vez de uma senha para iniciar a sessão, então não há nada para digitar. Abra-o de novo para tentar conectar.",
+  "@servers.paneState.signedOutNothingToAsk": {
+    "sourceHash": "71d7eee"
+  },
+  "servers.paneState.retryProgressAriaLabel": "Tempo até a próxima tentativa de reconexão",
+  "@servers.paneState.retryProgressAriaLabel": {
+    "sourceHash": "d4341c3"
+  },
+  "servers.paneState.retryNow": "Tentar agora",
+  "@servers.paneState.retryNow": {
+    "sourceHash": "5148c3e"
+  },
+  "servers.paneState.retryNowTooltip": "Tentar reconectar imediatamente.",
+  "@servers.paneState.retryNowTooltip": {
+    "sourceHash": "11525f0"
+  },
+  "servers.paneState.cancelCycleTooltip": "Parar de tentar por enquanto. A conexão continua disponível. Volte para tentar novamente.",
+  "@servers.paneState.cancelCycleTooltip": {
+    "sourceHash": "377638b"
+  },
+  "servers.paneState.disconnectCycleTooltip": "Parar de tentar e desconectar do servidor.",
+  "@servers.paneState.disconnectCycleTooltip": {
+    "sourceHash": "8fba8b0"
+  },
+  "servers.paneState.retryKeepsTrying": "Vai continuar tentando por um total de {duration}.",
+  "@servers.paneState.retryKeepsTrying": {
+    "sourceHash": "e4d25b7"
+  },
+  "servers.paneState.retryTotalSeconds": "{seconds} segundos",
+  "@servers.paneState.retryTotalSeconds": {
+    "sourceHash": "86d62ab"
+  },
+  "servers.paneState.retryTotalMinutes": "{minutes} minutos",
+  "@servers.paneState.retryTotalMinutes": {
+    "sourceHash": "fc339ba"
   }
 }

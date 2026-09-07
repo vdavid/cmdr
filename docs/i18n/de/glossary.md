@@ -2224,3 +2224,52 @@ Wortlaut-Entscheidungen:
 - **`Connecting…` im Blatt → `Verbindung wird hergestellt …`** · zeichengleich zu `fileExplorer.network.connecting` und
   `servers.paneState.connecting`; Fortschrittszeilen bekommen das Leerzeichen vor den Auslassungspunkten.
 - Kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt.
+
+## Der Wiederverbindungs-Zyklus und die Anmeldung per Schlüssel (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`)
+
+Zwei Zeilen im Bereichszustand: die Überschrift, während Cmdr eine abgerissene Verbindung von selbst zurückholt
+(Backoff-Schleife, darunter Spinner, Countdown und die Tasten `Jetzt erneut versuchen` / `Abbrechen` / `Trennen`), und
+die Zeile unter `Von {name} abgemeldet`, die dort steht, wo sonst `Anmelden…` stünde: der Server weist sich mit einem
+Schlüssel aus, es gibt also nichts einzutippen. Belege aus den installierten macOS-Bundles (macOS 26.6.2, Build 25G83,
+gelesen 2026-09-07), weil der Referenz-Stapel auf dieser Maschine fehlt.
+
+- **`Reconnecting to {name}…` → `Verbindung zu {name} wird wiederhergestellt …`** · die schon gesetzte Glossarzeile
+  `reconnect → Verbindung wiederherstellen` (§ Terms) trägt die Wortwahl; der Satzrahmen ist zeichengleich zum
+  Geschwister `servers.paneState.connecting` (`Verbindung zu {name} wird hergestellt …`), das in derselben
+  Bereichsfläche sitzt · `high`. Das Präfix `wieder-` ist der ganze Unterschied zwischen Erstverbindung und Rückholung,
+  genau wie im Englischen `connecting` / `reconnecting`.
+  - ❌ Nicht Apples Kurzform `Erneut verbinden …` (ScreenSharing `ScreenSharing.loctable` `reconnectingMessage`,
+    HomeDataModel `HFLocalizable.loctable` `HFServiceDescriptionReconnecting`, ConversationKit — alle drei rendern das
+    bare `Reconnecting…` so). Die passt als Zustandsetikett ohne Ziel; mit `{name}` daran („Erneut verbinden mit
+    Naspolya …“) bricht der Satzbau. Apple selbst wechselt für die Langform in denselben Rahmen wie wir: „Stelle die
+    Verbindung neu her“ (AMPDevices `kjryjsqgau`), „um die Verbindung wiederherzustellen“ (BiometricKitUI
+    `BUDDY_SI_FAILED_SUBTITLE_TOUCH_ID`).
+  - Leerzeichen vor dem `…`, weil es eine Fortschrittszeile ist (`style.md` § Ellipsis); Apples drei Treffer oben
+    schreiben es genauso.
+  - `{name}` steht nach `zu` im Dativ, bekommt als fremder Eigenname aber keine Endung: derselbe risikofreie Slot wie im
+    ausgelieferten `connecting`.
+- **`This server signs in with a key rather than a password, so there''s nothing to type.` →
+  `Bei diesem Server meldest du dich mit einem Schlüssel an statt mit einem Passwort, du musst also nichts eingeben.`**
+  · `high`.
+  - Der Verbrahmen `mit … anmelden` ist im Katalog schon gesetzt (`servers.sheet.signInWithCredentials` =
+    `Mit Benutzername und Passwort anmelden`, § Das Verbindungsblatt), also trägt die Schlüssel-Variante denselben. Verb
+    statt Nominalisierung (`Anmeldemethode`, `Anmeldung über einen Schlüssel`), weil die Stilregel das Verb vorzieht und
+    das Englische auch eins nimmt.
+  - `du`-Anrede mit `du meldest dich an`: sie gibt der zweiten Hälfte (`du musst also nichts eingeben`) dasselbe
+    Subjekt, sodass der Satz ohne Subjektwechsel durchläuft.
+  - **`nothing to type` → `du musst nichts eingeben`** · derselbe Rahmen wie das ausgelieferte
+    `errors.listing.deviceReconnecting.suggestion` („There''s nothing to unplug.“ → „Du musst nichts abziehen.“), und
+    `eingeben` ist Apples Verb fürs Tippen genau dieser Sache: NetAuthAgent `Localizable.loctable` `FS_MSG_PASS` („Gib
+    das Passwort für den Server „%@“ ein.“), `PS_MSG_BOTH`, `ENTER_CREDENTIALS` („Accountdaten eingeben“) · `high`. ❌
+    Kein `tippen`: macOS `de` benutzt es für Tastatureingabe als Geste, nicht fürs Ausfüllen eines Felds.
+  - **`a key` bleibt schlicht `ein Schlüssel`** · wie die schon gesetzte Zeile für den Hostschlüssel im Fließtext (§ Der
+    Server-Hub); `SSH-Schlüssel` (ActionKit `Localizable.loctable`, „Auf diesem Gerät wurde kein SSH-Schlüssel
+    gefunden.“) wäre der Fachbegriff, den der englische `@key` bewusst vermeidet. Der Bereich nennt den Server direkt
+    darüber, das Wort ist also eindeutig.
+- **`Open it again to retry.` → `Öffne den Server erneut, um es noch einmal zu versuchen.`** · der Rückverweis nimmt das
+  Nomen statt `ihn`, weil `ein Schlüssel` im Satz davor ebenfalls maskulin ist und `ihn` mehrdeutig wäre (dieselbe
+  Mechanik wie bei `connectionTooltipNeedsHostKey`, § Der Server-Hub) · `high`. Der Imperativrahmen ist zeichengleich zu
+  `fileExplorer.navigation.connectionTooltipSaved` („Öffne den Server, um dich zu verbinden.“);
+  `um es noch einmal zu versuchen` steht so schon in `errors.listing.emptyRootICloud.suggestion`.
+- Kein `sameAsSourceJustification` bei diesen beiden: beide Werte weichen vom Englischen ab. Kein Apostroph in den
+  Werten, die ICU-Dopplung `''` entfällt.

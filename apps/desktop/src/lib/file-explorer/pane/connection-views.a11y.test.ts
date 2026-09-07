@@ -1,6 +1,7 @@
 /**
  * Tier 3 a11y tests for the full-pane views that stand in for a listing: the
- * error pane, the SMB / MTP connection states, and the remote-place ones.
+ * error pane, the MTP connection states, and the remote-place ones (a first dial,
+ * a reconnect cycle, a refusal, signed out, and a changed host key).
  *
  * One file per view would cost about four times as much: `svelte-tests` charges
  * per test FILE, not per test (`docs/testing.md` § "What a test actually
@@ -15,7 +16,7 @@
 import { describe, it, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
-import { RECONNECT_DELAYS_MS, type ReconnectState } from '../network/smb-reconnect-manager.svelte'
+import { RECONNECT_DELAYS_MS } from '../network/smb-reconnect-manager.svelte'
 
 // `null` means "use the real `isMacOS`". Only `ErrorPane` forces it, because
 // only that block depends on the macOS-only branch rendering; forcing it
@@ -62,7 +63,6 @@ vi.mock('$lib/mtp', () => ({
 
 import ErrorPane from './ErrorPane.svelte'
 import MtpConnectionView from './MtpConnectionView.svelte'
-import SmbReconnectingView from './SmbReconnectingView.svelte'
 import RemoteConnectView from './RemoteConnectView.svelte'
 
 /** A fresh container, appended to the document and ready to mount into. */
@@ -178,82 +178,6 @@ describe('ErrorPane a11y', () => {
 })
 
 /**
- * Tier 3 a11y tests for `SmbReconnectingView.svelte`.
- *
- * Covers the three cycle states (waiting, attempting, gave-up; but the pane
- * never renders the gave-up state itself; the parent swaps to
- * `VolumeUnreachableBanner`). Validates structural a11y in each phase and that
- * the buttons stay accessible when "Retry now" is disabled mid-attempt.
- */
-describe('SmbReconnectingView a11y', () => {
-  function waitingState(attemptIndex = 0): ReconnectState {
-    return {
-      status: 'waiting',
-      attemptIndex,
-      currentDelayMs: RECONNECT_DELAYS_MS[attemptIndex],
-      waitStartedAt: performance.now(),
-    }
-  }
-
-  function attemptingState(attemptIndex = 0): ReconnectState {
-    return {
-      status: 'attempting',
-      attemptIndex,
-      currentDelayMs: RECONNECT_DELAYS_MS[attemptIndex],
-      waitStartedAt: performance.now(),
-    }
-  }
-
-  it('first wait (no body 2) has no violations', async () => {
-    const target = container()
-    mount(SmbReconnectingView, {
-      target,
-      props: {
-        volumeId: 'volumesnaspi',
-        shareName: 'naspi',
-        cycleState: waitingState(0),
-        onCancel: () => {},
-        onDisconnect: () => {},
-      },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-
-  it('mid-cycle wait with body 2 has no violations', async () => {
-    const target = container()
-    mount(SmbReconnectingView, {
-      target,
-      props: {
-        volumeId: 'volumesnaspi',
-        shareName: 'naspi',
-        cycleState: waitingState(2),
-        onCancel: () => {},
-        onDisconnect: () => {},
-      },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-
-  it('attempting state (Retry now disabled) has no violations', async () => {
-    const target = container()
-    mount(SmbReconnectingView, {
-      target,
-      props: {
-        volumeId: 'volumesnaspi',
-        shareName: 'naspi',
-        cycleState: attemptingState(1),
-        onCancel: () => {},
-        onDisconnect: () => {},
-      },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-})
-
-/**
  * Tier 3 a11y tests for `MtpConnectionView.svelte`.
  *
  * Only renders when the current volume is a device-only MTP ID. Tests
@@ -331,11 +255,67 @@ describe('RemoteConnectView a11y', () => {
     await expectNoA11yViolations(target)
   })
 
+  it('a reconnect cycle waiting for its next attempt has no a11y violations', async () => {
+    const target = container()
+    mount(RemoteConnectView, {
+      target,
+      props: {
+        name: 'naspi',
+        state: {
+          kind: 'connecting' as const,
+          cancel: vi.fn(),
+          cycle: {
+            lines: ['Will keep trying for a total of 2 minutes.', 'Retried twice, will try it twice more after this.'],
+            waiting: { startedAt: performance.now(), durationMs: RECONNECT_DELAYS_MS[2] },
+            retryNow: vi.fn(),
+            disconnect: vi.fn(),
+          },
+        },
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('a reconnect cycle mid-attempt (Try now disabled) has no a11y violations', async () => {
+    const target = container()
+    mount(RemoteConnectView, {
+      target,
+      props: {
+        name: 'naspi',
+        state: {
+          kind: 'connecting' as const,
+          cancel: vi.fn(),
+          cycle: {
+            lines: ['Will keep trying for a total of 2 minutes.'],
+            waiting: null,
+            retryNow: vi.fn(),
+            disconnect: vi.fn(),
+          },
+        },
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
   it('signed out has no a11y violations', async () => {
     const target = container()
     mount(RemoteConnectView, {
       target,
       props: { name: 'Naspolya', state: { kind: 'signed_out' as const, signIn: vi.fn() } },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('signed out with nothing to ask has no a11y violations', async () => {
+    // The backend's shape is `nothing`: no button, because no secret a person
+    // could type would bring the session back.
+    const target = container()
+    mount(RemoteConnectView, {
+      target,
+      props: { name: 'Naspolya', state: { kind: 'signed_out' as const, signIn: null } },
     })
     await tick()
     await expectNoA11yViolations(target)

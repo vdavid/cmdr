@@ -303,5 +303,46 @@
   "servers.paneState.hostKeyChangedHint": "Sa clé a changé. Cela peut signifier que le serveur a été réinstallé, ou que quelque chose s''est interposé entre vous et lui. Déconnectez-vous, puis ouvrez-le à nouveau pour vérifier l''empreinte.",
   "@servers.paneState.hostKeyChangedHint": {
     "sourceHash": "923de62"
+  },
+  "servers.paneState.reconnecting": "Reconnexion à {name}…",
+  "@servers.paneState.reconnecting": {
+    "sourceHash": "dce8cef"
+  },
+  "servers.paneState.signedOutNothingToAsk": "Ce serveur vous identifie par une clé plutôt que par un mot de passe, il n''y a donc rien à saisir. Ouvrez-le à nouveau pour réessayer.",
+  "@servers.paneState.signedOutNothingToAsk": {
+    "sourceHash": "71d7eee"
+  },
+  "servers.paneState.retryProgressAriaLabel": "Temps avant la prochaine tentative de reconnexion",
+  "@servers.paneState.retryProgressAriaLabel": {
+    "sourceHash": "d4341c3"
+  },
+  "servers.paneState.retryNow": "Réessayer maintenant",
+  "@servers.paneState.retryNow": {
+    "sourceHash": "5148c3e"
+  },
+  "servers.paneState.retryNowTooltip": "Tenter une reconnexion immédiate.",
+  "@servers.paneState.retryNowTooltip": {
+    "sourceHash": "11525f0"
+  },
+  "servers.paneState.cancelCycleTooltip": "Arrêter d''essayer pour l''instant. La connexion reste disponible. Revenez pour réessayer.",
+  "@servers.paneState.cancelCycleTooltip": {
+    "sourceHash": "377638b"
+  },
+  "servers.paneState.disconnectCycleTooltip": "Arrêter d''essayer et se déconnecter du serveur.",
+  "@servers.paneState.disconnectCycleTooltip": {
+    "sourceHash": "8fba8b0"
+  },
+  "servers.paneState.retryKeepsTrying": "Cmdr continuera d''essayer pendant {duration} au total.",
+  "@servers.paneState.retryKeepsTrying": {
+    "sourceHash": "e4d25b7"
+  },
+  "servers.paneState.retryTotalSeconds": "{seconds} secondes",
+  "@servers.paneState.retryTotalSeconds": {
+    "sourceHash": "86d62ab"
+  },
+  "servers.paneState.retryTotalMinutes": "{minutes} minutes",
+  "@servers.paneState.retryTotalMinutes": {
+    "sourceHash": "fc339ba",
+    "sameAsSourceJustification": "Placeholder + 'minutes', which is the same word in French ('{minutes} minutes'); no other translatable text."
   }
 }

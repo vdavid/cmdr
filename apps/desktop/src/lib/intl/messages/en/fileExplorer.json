@@ -849,81 +849,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
   },
-  "fileExplorer.smbReconnect.totalSeconds": "{seconds} seconds",
-  "@fileExplorer.smbReconnect.totalSeconds": {
-    "description": "Total reconnect-cycle duration phrased in seconds, embedded in the \"Will keep trying for a total of …\" sentence.",
-    "placeholders": {
-      "seconds": "the number of seconds"
-    },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
-  },
-  "fileExplorer.smbReconnect.totalMinutes": "{minutes} minutes",
-  "@fileExplorer.smbReconnect.totalMinutes": {
-    "description": "Total reconnect-cycle duration phrased in minutes, embedded in the \"Will keep trying for a total of …\" sentence.",
-    "placeholders": {
-      "minutes": "the number of minutes"
-    },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
-  },
-  "fileExplorer.smbReconnect.title": "Reconnecting to server…",
-  "@fileExplorer.smbReconnect.title": {
-    "description": "Heading of the screen shown while Cmdr automatically tries to reconnect to a dropped network server. Ends with an ellipsis character (…).",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
-  },
-  "fileExplorer.smbReconnect.progressBarAriaLabel": "Time until next reconnect attempt",
-  "@fileExplorer.smbReconnect.progressBarAriaLabel": {
-    "description": "Accessibility label for the countdown progress bar showing how long until the next reconnect attempt.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
-  },
-  "fileExplorer.smbReconnect.willKeepTrying": "Will keep trying for a total of {duration}.",
-  "@fileExplorer.smbReconnect.willKeepTrying": {
-    "description": "Reassurance line telling the user how long the auto-reconnect will keep trying. {duration} is a phrase like \"60 seconds\" or \"2 minutes\".",
-    "placeholders": {
-      "duration": "the total duration phrase, e.g. 60 seconds or 2 minutes"
-    },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
-  },
-  "fileExplorer.smbReconnect.retryNowTooltip": "Try reconnecting immediately.",
-  "@fileExplorer.smbReconnect.retryNowTooltip": {
-    "description": "Hover tooltip for the button that triggers a reconnect attempt right away instead of waiting.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
-  },
-  "fileExplorer.smbReconnect.retryNow": "Retry now",
-  "@fileExplorer.smbReconnect.retryNow": {
-    "description": "Button that triggers a reconnect attempt immediately.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
-  },
-  "fileExplorer.smbReconnect.cancelTooltip": "Stop trying for now. The connection stays available. Switch back to retry.",
-  "@fileExplorer.smbReconnect.cancelTooltip": {
-    "description": "Hover tooltip for the button that pauses auto-reconnect while keeping the connection available to resume.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
-  },
-  "fileExplorer.smbReconnect.cancel": "Cancel",
-  "@fileExplorer.smbReconnect.cancel": {
-    "description": "Button that pauses the auto-reconnect attempts (the connection stays available).",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
-  },
-  "fileExplorer.smbReconnect.disconnectTooltip": "Stop trying and disconnect from the server.",
-  "@fileExplorer.smbReconnect.disconnectTooltip": {
-    "description": "Hover tooltip for the button that stops reconnecting and drops the server connection.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
-  },
-  "fileExplorer.smbReconnect.disconnect": "Disconnect",
-  "@fileExplorer.smbReconnect.disconnect": {
-    "description": "Button that stops reconnecting and disconnects from the server.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
-  },
   "fileExplorer.unreachable.title": "Couldn''t reach {path}",
   "@fileExplorer.unreachable.title": {
     "description": "Banner heading shown when a folder''s volume can''t be reached. {path} is the path the user tried to open.",
@@ -931,8 +856,8 @@
       "path": "the file-system path that could not be reached"
     }
   },
-  "fileExplorer.unreachable.detailSmbGaveUp": "Cmdr tried reconnecting several times but the server didn''t come back. The connection stays available for now. Try again, or disconnect to drop it.",
-  "@fileExplorer.unreachable.detailSmbGaveUp": {
+  "fileExplorer.unreachable.detailGaveUp": "Cmdr tried reconnecting several times but the server didn''t come back. The connection stays available for now. Try again, or disconnect to drop it.",
+  "@fileExplorer.unreachable.detailGaveUp": {
     "description": "Banner detail shown after automatic reconnection to a network server gave up, explaining the options (retry or disconnect)."
   },
   "fileExplorer.unreachable.detailTimeout": "The volume for this path didn''t respond in time. It may be a network drive that''s currently unavailable.",

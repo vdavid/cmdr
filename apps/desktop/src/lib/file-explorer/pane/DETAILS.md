@@ -9,8 +9,8 @@ lifecycle, drag handling, volume tinting, and navigation primitives.
 `DualPaneExplorer.svelte` is the root: it owns both panes, the unified key/command dispatch, the dialog manager, and the
 MCP-exposed surface. `FilePane.svelte` is one pane: it owns its listing, cursor, selection, view mode, type-to-jump
 buffer, rename flow, breadcrumb, and the alt-view rendering ({#if/elseif} between `MtpConnectionView`,
-`NetworkMountView`, `SmbReconnectingView`, `RemoteConnectView`, `SearchResultsView`, `ErrorPane`,
-`VolumeUnreachableBanner`, and the regular list).
+`NetworkMountView`, `RemoteConnectView`, `SearchResultsView`, `ErrorPane`, `VolumeUnreachableBanner`, and the regular
+list).
 
 ## File map
 
@@ -343,13 +343,13 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   device-only connection sub-state, which the table doesn't carry — it's a runtime connection state, not a kind). The
   `{#if}` chain branches on `paneViewKind` for the three alt-views (NetworkMountView / SearchResultsView /
   MtpConnectionView) and the SelectionInfo footer (`paneViewKind === 'normal'`). The RUNTIME-state branches
-  (`unreachable`, the SAVED-place dial, SMB reconnecting / gave-up / needs-auth sign-in, the inline SMB upgrade login,
-  `loading` / `friendlyError` / `error`) stay per-feature and gate IN FRONT of the descriptor, byte-identical
-  precedence. This is a derived discriminant, NOT a new component. The per-feature gates (git lookup, type-to-jump
-  keystroke, dir-exists poll) read `!caps.hasBackendListing` for the "is there a real directory" half; the
-  MTP-path-specific checks (`isMtpVolumeId(volumeId)` for git-skip, `isMtpView` for the dir-poll, `isMtpDeviceOnly` for
-  the jump) STAY — MTP has a backend listing but git can't run on it, there's no on-disk path to `pathExists`-poll, and
-  the not-yet-connected sub-state isn't a kind capability. `caps` is derived once per pane
+  (`unreachable`, the SAVED-place dial, the reconnect cycle's `RemoteConnectState`, the gave-up banner, `loading` /
+  `friendlyError` / `error`) stay per-feature and gate IN FRONT of the descriptor, byte-identical precedence. This is a
+  derived discriminant, NOT a new component. The per-feature gates (git lookup, type-to-jump keystroke, dir-exists poll)
+  read `!caps.hasBackendListing` for the "is there a real directory" half; the MTP-path-specific checks
+  (`isMtpVolumeId(volumeId)` for git-skip, `isMtpView` for the dir-poll, `isMtpDeviceOnly` for the jump) STAY — MTP has
+  a backend listing but git can't run on it, there's no on-disk path to `pathExists`-poll, and the not-yet-connected
+  sub-state isn't a kind capability. `caps` is derived once per pane
   (`caps = $derived(capabilitiesForPane(volumeId, currentPath))`); the named `isNetworkView` / `isSearchResultsView`
   deriveds re-source off `caps.kind`.
 
@@ -365,8 +365,8 @@ no session behind it, so every listing on it would refuse until something dials.
   before the dial returns (`$lib/servers/CLAUDE.md`).
 - **`connected` reloads the pane** rather than waiting for the row to flip to `direct` on the next broadcast, which is
   what makes the place feel like it opened rather than waited. `cancelled` clears the view and says nothing.
-  `reconnecting` KEEPS the spinner: the backoff loop owns it, and `smb-view-state`'s own views take over once the row
-  reaches `disconnected`.
+  `reconnecting` KEEPS the spinner: the backoff loop owns it, and `smb-view-state`'s own `RemoteConnectState` takes over
+  once the row reaches `disconnected`.
 - The listing still runs underneath and fails, setting `friendlyError`. That branch sits BEHIND this one in the chain,
   so it never shows, and the reload on connect clears it.
 
@@ -1318,11 +1318,27 @@ is the failure shape it replaces: a person can't tell a slow handshake from a we
 
 Two producers:
 
-- `place-connect.svelte.ts` owns `connecting` and `refused`, for a pane landing on a `saved` place. It dials once per
-  landing (a `dialed` guard), and its Cancel aims at the attempt id `connect-flow.ts` hands out before the dial.
-- `smb-view-state.svelte.ts` owns `signed_out` and `host_key_changed`, off the reconnect manager's fourth and fifth
-  statuses. ❗ Its `show*` derivations are a POSITIVE list, so a status without one renders a plain listing over a dead
-  session rather than saying anything.
+- `place-connect.svelte.ts` owns the first-dial `connecting` and `refused`, for a pane landing on a `saved` place. It
+  dials once per landing (a `dialed` guard), and its Cancel aims at the attempt id `connect-flow.ts` hands out before
+  the dial.
+- `smb-view-state.svelte.ts` maps the reconnect manager's status onto `connecting` (with a `cycle`), `signed_out`, and
+  `host_key_changed`, in ONE exhaustive `switch`. ❗ Exhaustive, ❌ not a list of per-status booleans: a status without
+  its own arm used to render a plain listing over a dead session.
+
+**A backoff loop wears the `connecting` state, with a `cycle` payload.** It says how long the loop keeps going and which
+attempt it is on, drains a bar toward the next attempt, and offers Try now beside Cancel and Disconnect. ❗ The
+countdown and Try now are not decoration: without the bar a person can't tell a slow handshake from a wedged one, and
+without Try now they sit out a delay for a server they can see is back. The payload is plain data plus callbacks, so the
+view holds no reference to the reconnect manager and a second backend's loop renders through it unchanged. `waiting` is
+`null` while an attempt is actually in flight — nothing to draw, nothing to skip — and the spinner carries the motion.
+
+❗ **There is no `gave_up` state.** A loop that ran out of attempts renders `VolumeUnreachableBanner`'s `gaveUp`
+variant, the app's one "couldn't reach this" surface, which already words the path, the retry, and the disconnect. Two
+renderers for one state is worse than one in the file next door.
+
+❗ **`signed_out` carries a `signIn` that may be `null`.** The reconnect manager stores what the backend said a sign-in
+would ask for at the moment it flipped (`getSignInShape`), and a `nothing` shape means no secret a person could type
+would bring the session back. The banner then says so instead of offering a button that cannot work.
 
 ❗ **A changed host key offers Disconnect, ❌ not "Trust it".** Nobody can answer for a fingerprint they haven't been
 shown, and nothing on this side holds one: the backend keeps no pending prompt for a REGISTERED volume. Disconnecting
@@ -1332,3 +1348,7 @@ back the pending prompt would make it one click instead of two.
 
 ❗ **A state lands only once something can act on it.** Adding one before its handler puts a button on screen that does
 nothing, which is the one thing this view refuses to do (`../../servers/DETAILS.md` § "What later milestones fill in").
+
+❗ **The `state` prop is destructured to a different local name.** A binding called `state` in a Svelte 5 component
+makes every `$state(...)` in the file read as a store subscription instead of a rune, which the compiler reports as a
+type error rather than a rename hint.

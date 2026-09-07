@@ -9,12 +9,12 @@
         onRetry: () => void
         onOpenHome?: () => void
         /**
-         * SMB give-up variant: shown when the per-volume reconnect manager
-         * exhausted its backoff cycle. Replaces "Open home folder" with
-         * "Disconnect" (the connection stays alive by default; the user
-         * explicitly drops it). The detail line also adapts.
+         * The gave-up variant: the per-volume reconnect manager ran out of
+         * attempts. Serves every remote backend, not just SMB. Replaces "Open
+         * home folder" with "Disconnect" (the connection stays alive by default;
+         * the user explicitly drops it), and the detail line adapts.
          */
-        smbGaveUp?: boolean
+        gaveUp?: boolean
         onDisconnect?: () => void
     }
 
@@ -23,7 +23,7 @@
         retrying,
         onRetry,
         onOpenHome,
-        smbGaveUp = false,
+        gaveUp = false,
         onDisconnect,
     }: Props = $props()
 </script>
@@ -35,8 +35,8 @@
             <span class="banner-message">{tString('fileExplorer.unreachable.title', { path: originalPath })}</span>
         </div>
         <p class="banner-detail">
-            {#if smbGaveUp}
-                {tString('fileExplorer.unreachable.detailSmbGaveUp')}
+            {#if gaveUp}
+                {tString('fileExplorer.unreachable.detailGaveUp')}
             {:else}
                 {tString('fileExplorer.unreachable.detailTimeout')}
             {/if}
@@ -47,7 +47,7 @@
                     ? tString('fileExplorer.unreachable.retrying')
                     : tString('fileExplorer.unreachable.retry')}
             </Button>
-            {#if smbGaveUp}
+            {#if gaveUp}
                 {#if onDisconnect}
                     <Button size="mini" onclick={onDisconnect}>{tString('fileExplorer.unreachable.disconnect')}</Button>
                 {/if}

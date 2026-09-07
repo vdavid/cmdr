@@ -1,8 +1,8 @@
 /**
- * SMB reconnect view state for a file pane. Owns the reactive derivations that
- * pick the pane's alt-views (the reconnect cycle, the gave-up banner, the
- * signed-out and changed-key banners), the reconnect-manager subscription
- * `$effect`, and the handlers behind those views (cancel / disconnect).
+ * SMB reconnect view state for a file pane. Turns the reconnect manager's status
+ * into the one `RemoteConnectState` the pane renders (plus the gave-up banner's
+ * own flag), owns the manager subscription `$effect`, and holds the handlers
+ * behind those views (retry now / cancel / disconnect / sign in).
  *
  * Lifted out of `FilePane.svelte` into a `*.svelte.ts` factory owning its
  * `$effect` (created synchronously during component init, the
@@ -19,13 +19,14 @@
 import { wordEjectRefusal } from '../navigation/eject-error-messages'
 import { disconnectPlace, disconnectSmbVolume } from '$lib/tauri-commands'
 import { openSignInForPlace } from '$lib/servers/open-sign-in'
-import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
+import { reconnectCycleLines, smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
 import { resolveValidPath } from '../navigation/path-resolution'
 import { hasReconnectLoop } from '../navigation/connection-state'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import type { VolumeInfo } from '../types'
+import type { RemoteConnectState } from './remote-connect-state'
 
 const log = getAppLogger('fileExplorer')
 
@@ -42,23 +43,25 @@ export interface SmbViewStateDeps {
 }
 
 export interface SmbViewState {
-  /** Reconnect cycle state for this pane's volume, or null when no cycle is running. */
-  readonly reconnectState: ReturnType<typeof smbReconnectManager.getState>
-  /** Show the reconnecting spinner (cycle waiting / attempting). */
-  readonly showSmbReconnecting: boolean
-  /** Show the gave-up banner (cycle exhausted its attempts). */
-  readonly showSmbGaveUp: boolean
-  /** Show the sign-in prompt (reconnect gave up because the saved password went stale). */
-  readonly showSmbNeedsAuth: boolean
   /**
-   * Show the changed-host-key banner (SFTP: the server's identity stopped
-   * matching, so the backend stopped).
+   * What `RemoteConnectView` should render for this pane, or `null` when the
+   * pane shows its listing.
    *
-   * ❗ The three above are a POSITIVE list, so a fourth status without its own
-   * derivation renders a plain listing over a dead session rather than saying
-   * anything.
+   * ❗ ONE exhaustive `switch` over the manager's status, so a new status can't
+   * quietly render a plain listing over a dead session — which is what a list of
+   * per-status booleans allowed.
    */
-  readonly showSmbNeedsHostKey: boolean
+  readonly remoteConnectState: RemoteConnectState | null
+  /**
+   * Show the gave-up banner (the cycle ran out of attempts).
+   *
+   * ❗ Its own flag rather than a `RemoteConnectState` variant:
+   * `VolumeUnreachableBanner` is the app's one "couldn't reach this" surface,
+   * and two renderers for one state is worse than one in the file next door.
+   */
+  readonly showGaveUp: boolean
+  /** Skip the wait and try the gave-up cycle once more. */
+  handleRetryNow: () => void
   /** Open the sign-in sheet for this pane's place, from the signed-out banner. */
   handleSignIn: () => void
   /** Drop a server place's dead session and leave, so the next open dials afresh. */
@@ -84,12 +87,43 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
    * scheduled the first attempt.
    */
   const reconnectState = $derived(smbReconnectManager.getState(deps.getVolumeId()))
-  const showSmbReconnecting = $derived(
-    reconnectState !== null && (reconnectState.status === 'waiting' || reconnectState.status === 'attempting'),
-  )
-  const showSmbGaveUp = $derived(reconnectState !== null && reconnectState.status === 'gave-up')
-  const showSmbNeedsAuth = $derived(reconnectState !== null && reconnectState.status === 'needs-auth')
-  const showSmbNeedsHostKey = $derived(reconnectState !== null && reconnectState.status === 'needs-host-key')
+
+  /**
+   * The manager's status, as the pane renders it. ❗ Exhaustive: `gave-up` is the
+   * one status with no pane view of its own (`showGaveUp` sends it to
+   * `VolumeUnreachableBanner`), and every other status names what it shows.
+   */
+  const remoteConnectState = $derived.by<RemoteConnectState | null>(() => {
+    const cycle = reconnectState
+    if (!cycle) return null
+    switch (cycle.status) {
+      case 'waiting':
+      case 'attempting':
+        return {
+          kind: 'connecting',
+          cancel: handleSmbReconnectCancel,
+          cycle: {
+            lines: reconnectCycleLines(cycle.attemptIndex),
+            waiting:
+              cycle.status === 'waiting' ? { startedAt: cycle.waitStartedAt, durationMs: cycle.currentDelayMs } : null,
+            retryNow: handleRetryNow,
+            disconnect: handleSmbReconnectDisconnect,
+          },
+        }
+      case 'needs-auth':
+        // ❗ `nothing` means no secret a person could type would help, so the
+        // banner says what happened and offers no button.
+        return {
+          kind: 'signed_out',
+          signIn: smbReconnectManager.getSignInShape(deps.getVolumeId())?.kind === 'nothing' ? null : handleSignIn,
+        }
+      case 'needs-host-key':
+        return { kind: 'host_key_changed', disconnect: handleDisconnectPlace }
+      case 'gave-up':
+        return null
+    }
+  })
+  const showGaveUp = $derived(reconnectState !== null && reconnectState.status === 'gave-up')
 
   // Subscribe to the per-volume reconnect manager whenever this pane is on an SMB
   // share. The subscription is refcounted (multiple panes on the same share share
@@ -147,6 +181,11 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
     })
   }
 
+  /** Skips the current wait and attempts now. */
+  function handleRetryNow(): void {
+    smbReconnectManager.retryNow(deps.getVolumeId())
+  }
+
   function handleSmbReconnectCancel(): void {
     smbReconnectManager.cancel(deps.getVolumeId())
     // Walk up to the nearest reachable folder, same fallback chain we use elsewhere.
@@ -175,21 +214,13 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
   }
 
   return {
-    get reconnectState() {
-      return reconnectState
+    get remoteConnectState() {
+      return remoteConnectState
     },
-    get showSmbReconnecting() {
-      return showSmbReconnecting
+    get showGaveUp() {
+      return showGaveUp
     },
-    get showSmbGaveUp() {
-      return showSmbGaveUp
-    },
-    get showSmbNeedsAuth() {
-      return showSmbNeedsAuth
-    },
-    get showSmbNeedsHostKey() {
-      return showSmbNeedsHostKey
-    },
+    handleRetryNow,
     handleSignIn,
     handleDisconnectPlace,
     handleSmbReconnectCancel,
