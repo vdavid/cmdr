@@ -302,6 +302,26 @@ export function capabilitiesForKind(kind: VolumeKind): VolumeCapabilities {
 }
 
 /**
+ * Whether a pane on this kind hands out ROWS that are ordinary paths on the OS
+ * filesystem. What "Share…" needs: the macOS share sheet takes file URLs, and a
+ * URL for a row with no file behind it produces a sheet that can send nothing.
+ *
+ * `local` and `smb` yes (both keep a real `/Volumes/…` mount alive, the same
+ * reading Rust takes with `Volume::paths_are_os_visible()`), and so does
+ * `search-results` — that's the one row where this parts company with
+ * `canOpenTerminalIn`, which asks about the pane's own FOLDER and gets `false`
+ * from a snapshot that has none. `mtp` / `adb` stream from a device, `archive`
+ * and `git-portal` rows are synthesized from a container, and `network` lists
+ * hosts rather than files.
+ *
+ * ❌ Never a test on the path string: an archive-inner path looks exactly like a
+ * folder path, and a share whose mount went away still looks local.
+ */
+export function paneRowsAreOsVisible(kind: VolumeKind): boolean {
+  return kind === 'local' || kind === 'smb' || kind === 'search-results'
+}
+
+/**
  * Pure: lay the backend's published answer over the per-kind defaults.
  *
  * `published` is absent for everything Rust has no volume for (the two virtual
@@ -332,6 +352,26 @@ export function capabilitiesFor(volumeId: string): VolumeCapabilities {
   const info: VolumeInfo | undefined = getVolumes().find((v) => v.id === volumeId)
   const row = capabilitiesForKind(volumeKindOf(volumeId, info?.fsType, info?.category))
   return withBackendCapabilities(row, info?.capabilities)
+}
+
+/**
+ * Whether ONE row hands out a path the OS filesystem knows: the gate behind
+ * "Share…", which needs a file URL a share service can actually read.
+ *
+ * Three questions, and each one needs a different input, which is why this can't
+ * collapse into a single kind lookup:
+ *
+ * 1. The VOLUME (`paneRowsAreOsVisible`) rules out phones and the host list.
+ * 2. The ROW's path rules out an archive's insides. `capabilitiesForPane` is the
+ *    wrong tool here: it uses the WIDE archive check, which would call the `.zip`
+ *    file itself unshareable, and sharing a freshly-made archive is the point.
+ * 3. The row's path again, for the virtual `.git` portal, and only while the
+ *    portal is switched ON (with it off the same path is whatever is on disk).
+ */
+export function rowIsOsVisible(volumeId: string, rowPath: string): boolean {
+  if (!paneRowsAreOsVisible(capabilitiesFor(volumeId).kind)) return false
+  if (pathInsideArchive(rowPath)) return false
+  return !(getShowVirtualGitPortal() && isVirtualGitPath(rowPath))
 }
 
 /**
