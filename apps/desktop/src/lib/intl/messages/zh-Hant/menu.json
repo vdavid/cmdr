@@ -512,6 +512,14 @@
   "@menu.volume.removeFavorite": {
     "sourceHash": "c3812fc"
   },
+  "menu.network.open": "開啟",
+  "@menu.network.open": {
+    "sourceHash": "ed077f3"
+  },
+  "menu.network.edit": "編輯伺服器…",
+  "@menu.network.edit": {
+    "sourceHash": "a3282a7"
+  },
   "menu.network.disconnect": "中斷連線",
   "@menu.network.disconnect": {
     "sourceHash": "acfc5be"

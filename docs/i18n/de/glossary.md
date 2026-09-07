@@ -2529,3 +2529,20 @@ wird.
   tippst“ zwei `auf` hintereinander hätte: dasselbe Verb, nur die trennbare Form · `high`.
 - Die Referenzsammlung war auf dieser Maschine nicht vorhanden (`_ignored/i18n/` fehlt auch im Haupt-Klon), die
   Entscheidung stützt sich daher auf den ausgelieferten Katalog und dieses Glossar.
+
+## Das Kontextmenü der Server-Zeile: `Öffnen` und `Server bearbeiten…`
+
+- **`Open` (auf einer Server-Zeile) → `Öffnen`** (`menu.network.open`) · wortgleich mit `menu.file.open`, denn es ist
+  derselbe Sinn: in etwas hineingehen, nicht eine Datei an ein Programm übergeben. Das Deutsche trennt die beiden
+  Bedeutungen nicht, und macOS auch nicht: Finder zeigt `Öffnen` (`LocalizableMerged` `N151`), `Öffnen mit` (`N152`) und
+  `In neuem Fenster öffnen` (`FV7`, das Hineingehen) alle mit demselben Verb (Finder 26.6.2, Build 25G83, gelesen am
+  2026-09-07) · `high`.
+- **`Edit server…` → `Server bearbeiten…`** (`menu.network.edit`), Byte für Byte aus `commands.serversEdit.label`
+  kopiert · `high`. Beide öffnen dasselbe Blatt; zwei Beschriftungen läsen sich wie zwei Funktionen. Die Auslassung ist
+  das EINE Zeichen `…` (U+2026) und bleibt stehen.
+- **Beide Paare sind erzwungen, nicht nur schön**: `i18n-terms` meldet es, wenn zwei Schlüssel mit demselben englischen
+  Wert im Deutschen auseinanderlaufen. Wer einen der beiden Werte später umformuliert, muss den Partner mitziehen.
+- **`menu.*` ist eine RAW-Familie**: Rust zeichnet das Menü über `menu_t`, nie über `t()`. Apostrophe bleiben also
+  EINFACH, ein verdoppeltes `''` lässt `i18n-icu` scheitern. In diesen beiden Werten kommt keiner vor.
+- Die Referenzsammlung fehlt auf dieser Maschine, aber `Finder.app` liefert dieselbe Tier-1-Evidenz direkt aus dem
+  System (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").

@@ -2553,3 +2553,20 @@ De två raderna under de gråade fälten `Adress` och `Användarnamn`, när anv�
   samma korta mening · `high`.
 - Referenssamlingen fanns inte på den här maskinen (`_ignored/i18n/` saknas även i huvudklonen), så beslutet vilar på
   den redan levererade katalogen och den här ordlistan.
+
+## Serverradens kontextmeny: `Öppna` och `Redigera server…`
+
+- **`Open` (på en serverrad) → `Öppna`** (`menu.network.open`) · ordagrant samma som `menu.file.open`, för det är samma
+  betydelse: att gå in i något, inte att lämna en fil till en app. Svenskan skiljer inte på de två, och det gör inte
+  macOS heller: Finder använder samma verb i `Öppna` (`LocalizableMerged` `N151`), `Öppna med` (`N152`) och
+  `Öppna i nytt fönster` (`FV7`, gå-in-i-betydelsen) (Finder 26.6.2, build 25G83, läst 2026-09-07) · `high`.
+- **`Edit server…` → `Redigera server…`** (`menu.network.edit`), kopierat byte för byte från
+  `commands.serversEdit.label` · `high`. Båda öppnar samma blad; två olika etiketter skulle läsas som två funktioner.
+  Uttrycksprickarna är det ENA tecknet `…` (U+2026) och ska stå kvar. Obestämd form här, till skillnad från systern
+  `menu.network.forgetServer` (`Glöm servern`), eftersom `commands.serversEdit.label` redan är levererad så.
+- **Båda likheterna bevakas av en check**, de är inte bara snygga: `i18n-terms` larmar när två nycklar med samma
+  engelska värde går isär på svenska. Skriver du om den ena måste partnern med.
+- **`menu.*` är en RAW-familj**: Rust ritar menyn via `menu_t`, aldrig via `t()`. Apostrofer förblir ENKLA och en
+  dubblerad `''` fäller `i18n-icu`. Ingen av de två värdena har någon.
+- Referenssamlingen saknas på den här maskinen, men `Finder.app` ger samma Tier 1-belägg direkt ur systemet
+  (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").

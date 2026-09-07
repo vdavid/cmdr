@@ -2921,3 +2921,20 @@ hogy időtartamról van szó. ❌ Csupasz helyőrző időtartamra soha.
   kerüljön. A `koppint` ige is onnan jön, így a szöveg és a képernyő ugyanazt a szót mutatja · `high`.
 - A referenciagyűjtemény ezen a gépen nem volt elérhető (`_ignored/i18n/` a fő klónban sincs meg), így a döntés a
   szállított katalógusra és erre a szótárra támaszkodik.
+
+## A szerversor helyi menüje: `Megnyitás` és `Szerver szerkesztése…`
+
+- **`Open` (szerversoron) → `Megnyitás`** (`menu.network.open`) · szó szerint ugyanaz, mint a `menu.file.open`, mert ez
+  ugyanaz a jelentés: belépünk valamibe, nem pedig átadunk egy fájlt egy alkalmazásnak. A magyar nem választja szét a
+  kettőt, és a macOS sem: a Finder ugyanazt az igét viszi a `Megnyitás` (`LocalizableMerged` `N151`), `Megnyitás ezzel`
+  (`N152`) és `Megnyitás új ablakban` (`FV7`, a belépős értelem) címkékben (Finder 26.6.2, build 25G83, olvasva
+  2026-09-07) · `high`. A nominális `-ás` alak illik a testvérekhez is (`Leválasztás`, `Szerver elfelejtése`).
+- **`Edit server…` → `Szerver szerkesztése…`** (`menu.network.edit`), bájtra pontosan a `commands.serversEdit.label`-ből
+  másolva · `high`. A kettő ugyanazt a lapot nyitja meg; két különböző felirat két külön funkciónak olvasódna. A három
+  pont az EGYETLEN `…` karakter (U+2026), és marad.
+- **Mindkét egyezést ellenőrzés őrzi**, nem csak ízlés kérdése: az `i18n-terms` szól, ha két azonos angol értékű kulcs
+  magyarul szétcsúszik. Ha valaki később átfogalmazza az egyiket, a párját is vinnie kell.
+- **A `menu.*` RAW család**: a menüt a Rust rajzolja `menu_t`-vel, sosem `t()`-vel. Az aposztróf tehát EGYSZERES marad,
+  a megkettőzött `''` elbuktatja az `i18n-icu`-t. Ebben a két értékben egy sincs.
+- A referenciagyűjtemény ezen a gépen nincs meg, de a `Finder.app` ugyanazt az 1. szintű bizonyítékot adja közvetlenül a
+  rendszerből (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
