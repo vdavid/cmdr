@@ -70,6 +70,13 @@ unit-tested:
   disagreeing about whether a server is up is worse than either being briefly stale. Order: live sessions, then the ones
   asking something of the user (`signed_out`, `waiting_for_key`), then the rest of what they saved by recency, then what
   is merely nearby.
+
+  ❗ **The merge also guarantees every row id is UNIQUE**, first writer wins. The hub keys its `{#each}` on `row.id`,
+  and Svelte throws `each_key_duplicate` on a repeat, so a duplicate crashes the whole pane rather than showing a row
+  twice. `listSavedServers()` unions three stores, so a server recorded in two of them arrives twice and the name/id
+  dedup above doesn't catch it: that is a REAL crash, seen in the Linux E2E suite (the hub went blank and every
+  `move_cursor` onto a host afterwards reported the row missing).
+
 - **`servers-hub-mcp.ts`**: the `name` encoding. MCP's `PaneFileEntry` has only `name` / `path` / `isDirectory`, so the
   columns are encoded as `protocol=` / `status=` / `address=` tokens (plus `shares=` on an SMB host, which is what
   `smb.spec.ts` polls on). ❗ The status token is locale-independent even though the column beside it is translated: an

@@ -82,21 +82,38 @@ const STATUS_RANK: Record<HubRowStatus, number> = {
   found_nearby: 3,
 }
 
-/** The hub's rows, merged and ordered. */
+/**
+ * The hub's rows, merged and ordered.
+ *
+ * ❗ **Every row's `id` is unique, and that is this function's job, ❌ not its
+ * caller's.** The hub keys its `{#each}` on it, and Svelte THROWS
+ * (`each_key_duplicate`) on a repeat, so a duplicate is a CRASHED pane rather
+ * than a row shown twice — and it takes the whole servers hub down with it. The
+ * sources can genuinely repeat one: `listSavedServers()` unions three stores, and
+ * a server recorded in two of them arrives twice. First writer wins, so the
+ * order below still decides which row a person sees.
+ */
 export function buildHubRows(sources: HubRowSources): HubRow[] {
   const states = new Map(sources.volumes.map((volume) => [volume.id, volume.connectionState ?? null]))
   const claimed = new Set<string>()
+  const taken = new Set<string>()
   const rows: HubRow[] = []
+
+  const add = (row: HubRow): void => {
+    if (taken.has(row.id)) return
+    taken.add(row.id)
+    rows.push(row)
+  }
 
   for (const server of sources.saved) {
     const host = server.protocol === 'smb' ? matchHost(server, sources.hosts) : null
     if (host) claimed.add(host.id)
-    rows.push(savedRow(server, host, states))
+    add(savedRow(server, host, states))
   }
 
   for (const host of sources.hosts) {
     if (claimed.has(host.id)) continue
-    rows.push(nearbyRow(host))
+    add(nearbyRow(host))
   }
 
   return rows.sort(compareRows)

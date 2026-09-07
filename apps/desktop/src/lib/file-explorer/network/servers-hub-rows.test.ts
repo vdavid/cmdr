@@ -44,6 +44,40 @@ function host(overrides: Partial<NetworkHost> = {}): NetworkHost {
   return { id: 'h1', name: 'Attic NAS', port: 445, source: 'discovered', ...overrides }
 }
 
+describe('row identity', () => {
+  /**
+   * ❗ The hub keys its `{#each}` on `row.id`, and Svelte THROWS
+   * (`each_key_duplicate`) on a repeat — a pane that crashes rather than one that
+   * shows a row twice. The sources can genuinely repeat an id: `listSavedServers`
+   * unions three stores, and a server recorded in two of them arrives twice. So
+   * uniqueness is this function's invariant, ❌ not its callers'.
+   */
+  it('never emits two rows under one id, whatever the sources repeat', () => {
+    const rows = buildHubRows({
+      saved: [
+        smbServer({ id: 'dup', displayName: 'Attic NAS', address: '10.0.0.4' }),
+        smbServer({ id: 'dup', displayName: 'Attic NAS (again)', address: '10.0.0.9' }),
+        sftpServer({ id: 'dup' }),
+      ],
+      hosts: [host({ id: 'dup', name: 'Somewhere else' })],
+      volumes: [],
+    })
+
+    const ids = rows.map((row) => row.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('keeps the FIRST row under a repeated id, so the merge order still decides', () => {
+    const rows = buildHubRows({
+      saved: [smbServer({ id: 'dup', displayName: 'The real one' }), smbServer({ id: 'dup', displayName: 'The echo' })],
+      hosts: [],
+      volumes: [],
+    })
+
+    expect(rows.map((row) => row.name)).toEqual(['The real one'])
+  })
+})
+
 function volume(id: string, connectionState: VolumeInfo['connectionState']): VolumeInfo {
   return {
     id,
