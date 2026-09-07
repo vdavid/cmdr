@@ -184,7 +184,7 @@ pub const TAB_CLOSE_ID: &str = "tab_close";
 
 /// Menu item IDs for network host context menu.
 pub const NETWORK_HOST_FORGET_SERVER_ID: &str = "network_host_forget_server";
-pub const NETWORK_HOST_FORGET_PASSWORD_ID: &str = "network_host_forget_password";
+pub const NETWORK_HOST_FORGET_SECRET_ID: &str = "network_host_forget_secret";
 pub const NETWORK_HOST_DISCONNECT_ID: &str = "network_host_disconnect";
 
 /// Menu item ID for "Eject (name)" in the breadcrumb / volume context menus.

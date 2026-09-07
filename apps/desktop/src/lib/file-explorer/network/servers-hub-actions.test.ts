@@ -44,6 +44,7 @@ vi.mock('$lib/utils/confirm-dialog', () => ({ confirmDialog: (...args: unknown[]
 
 import { createHubActions } from './servers-hub-actions'
 import type { HubRow } from './servers-hub-rows'
+import type { NetworkHostContextActionKind } from '$lib/ipc/bindings'
 
 const host: NetworkHost = { id: 'h1', name: 'Attic NAS', ipAddress: '10.0.0.4', port: 445, source: 'manual' }
 
@@ -198,7 +199,9 @@ describe('openMenu', () => {
 })
 
 describe('runHostAction', () => {
-  const payload = (action: string) => ({ action, hostId: 'h1', hostName: 'Attic NAS' })
+  // ❗ Typed, so a spelling that drifts from the Rust enum is a compile error
+  // rather than a silently-dead menu item.
+  const payload = (action: NetworkHostContextActionKind) => ({ action, hostId: 'h1', hostName: 'Attic NAS' })
 
   it('routes the host menu’s Forget back through the same branch F8 takes', async () => {
     await actions().runHostAction(payload('forget-server'))
@@ -206,7 +209,7 @@ describe('runHostAction', () => {
   })
 
   it('forgets the host’s stored password without touching the host itself', async () => {
-    await actions().runHostAction(payload('forget-password'))
+    await actions().runHostAction(payload('forget-secret'))
     expect(forgetCredentials).toHaveBeenCalledWith('Attic NAS')
     expect(removeManualServer).not.toHaveBeenCalled()
   })

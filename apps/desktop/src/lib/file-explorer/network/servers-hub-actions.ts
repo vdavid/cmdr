@@ -21,6 +21,7 @@ import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import type { HubRow } from './servers-hub-rows'
 import type { NetworkHost, VolumeInfo } from '../types'
+import type { NetworkHostContextActionKind } from '$lib/ipc/bindings'
 
 /** What the actions read from the component, live. */
 export interface HubActionDeps {
@@ -35,8 +36,15 @@ export interface HubActionDeps {
 }
 
 /** The payload the native SMB-host menu answers with. */
+/**
+ * What the native SMB-host menu answered.
+ *
+ * ❗ `action` is the typed wire enum, ❌ never a free string: `forget-secret` is
+ * spelled the same here as on a server ROW (`VolumeContextActionKind`), so one
+ * act has one name on both sides of the app.
+ */
 export interface HostContextActionPayload {
-  action: string
+  action: NetworkHostContextActionKind
   hostId: string
   hostName: string
 }
@@ -142,8 +150,8 @@ export function createHubActions(deps: HubActionDeps): HubActions {
         if (row) await forget(row)
         return
       }
-      case 'forget-password':
-        await forgetHostPassword(payload.hostName)
+      case 'forget-secret':
+        await forgetHostSecret(payload.hostName)
         return
       case 'disconnect':
         await disconnectHost(payload)
@@ -151,7 +159,7 @@ export function createHubActions(deps: HubActionDeps): HubActions {
     }
   }
 
-  async function forgetHostPassword(hostName: string): Promise<void> {
+  async function forgetHostSecret(hostName: string): Promise<void> {
     try {
       await forgetCredentials(hostName)
       addToast(tString('fileExplorer.network.forgotPassword', { hostName }), { level: 'success' })

@@ -3609,7 +3609,7 @@ export const commands = {
    *
    *  Thin delegate to [`crate::file_system::volume::eject::disconnect_smb`]; the
    *  typed `EjectError` IS the wire type, so it crosses unchanged. Called by the
-   *  "Disconnect" button in `SmbReconnectingView` / the gave-up
+   *  "Disconnect" button in the pane's reconnect view and the gave-up
    *  `VolumeUnreachableBanner`.
    */
   disconnectSmbVolume: (volumeId: string) =>
@@ -9471,16 +9471,35 @@ export type NetworkHost = {
 
 /**
  *  Typed `network-host-context-action` Tauri event. Emitted to the `main` window
- *  when the user picks an action from a network host's native context menu
- *  (forget-server / forget-password / disconnect). Window-scoped, so it's emitted
- *  via `Event::emit_to` from `menu::menu_handlers`.
+ *  when the user picks an action from a network host's native context menu.
+ *  Window-scoped, so it's emitted via `Event::emit_to` from `menu::menu_handlers`.
  */
 export type NetworkHostContextAction = {
-  // The action id: `"forget-server"`, `"forget-password"`, or `"disconnect"`.
-  action: string
+  // Which item was picked.
+  action: NetworkHostContextActionKind
   hostId: string
   hostName: string
 }
+
+/**
+ *  What the user picked in an SMB host's context menu.
+ *
+ *  ❗ A typed enum, ❌ never a free string: the frontend branches on every one of
+ *  these, and a misspelling would go to the one place a compiler never looks.
+ *
+ *  ❗ `ForgetSecret` is spelled the way
+ *  [`crate::volume_broadcast::VolumeContextActionKind`] spells the same act on a
+ *  server ROW. One act, one name on both sides: two spellings for "stop
+ *  remembering this password" is how a handler ends up wired to one of them and
+ *  silently missing the other.
+ */
+export type NetworkHostContextActionKind =
+  // Drop a manually-added host. ❗ A discovered one has nothing to forget.
+  | 'forget-server'
+  // Stop remembering this host's credential, keeping the host.
+  | 'forget-secret'
+  // Unmount every share mounted from this host.
+  | 'disconnect'
 
 /**
  *  Typed `network-host-found` Tauri event. The payload is the bare `NetworkHost`

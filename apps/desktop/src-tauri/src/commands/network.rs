@@ -823,7 +823,7 @@ pub async fn reconnect_volume_with_credentials(
 ///
 /// Thin delegate to [`crate::file_system::volume::eject::disconnect_smb`]; the
 /// typed `EjectError` IS the wire type, so it crosses unchanged. Called by the
-/// "Disconnect" button in `SmbReconnectingView` / the gave-up
+/// "Disconnect" button in the pane's reconnect view and the gave-up
 /// `VolumeUnreachableBanner`.
 #[tauri::command]
 #[specta::specta]

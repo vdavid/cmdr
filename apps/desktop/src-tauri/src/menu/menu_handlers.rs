@@ -20,7 +20,7 @@ use super::{
     CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
     FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, MEDIA_INDEX_ADD_FOLDER_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID,
     MEDIA_INDEX_INCLUDE_FOLDER_ID, MEDIA_INDEX_REMOVE_FOLDER_ID, MediaIndexFolderChoice, MediaIndexFolderExclusion,
-    MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID,
+    MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID,
     SELECT_ALL_ID, SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SHOW_HIDDEN_FILES_ID,
     SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
     SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID,
@@ -334,20 +334,20 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     }
 
     // === Network host context menu actions ===
-    if id == NETWORK_HOST_FORGET_SERVER_ID || id == NETWORK_HOST_FORGET_PASSWORD_ID || id == NETWORK_HOST_DISCONNECT_ID
-    {
+    if id == NETWORK_HOST_FORGET_SERVER_ID || id == NETWORK_HOST_FORGET_SECRET_ID || id == NETWORK_HOST_DISCONNECT_ID {
+        use crate::network::NetworkHostContextActionKind;
         let menu_state = app.state::<MenuState<tauri::Wry>>();
         let ctx = menu_state.network_host_context.lock_ignore_poison();
         let action = if id == NETWORK_HOST_FORGET_SERVER_ID {
-            "forget-server"
-        } else if id == NETWORK_HOST_FORGET_PASSWORD_ID {
-            "forget-password"
+            NetworkHostContextActionKind::ForgetServer
+        } else if id == NETWORK_HOST_FORGET_SECRET_ID {
+            NetworkHostContextActionKind::ForgetSecret
         } else {
-            "disconnect"
+            NetworkHostContextActionKind::Disconnect
         };
         use tauri_specta::Event as _;
         let payload = crate::network::NetworkHostContextAction {
-            action: action.to_string(),
+            action,
             host_id: ctx.host_id.clone(),
             host_name: ctx.host_name.clone(),
         };
@@ -545,7 +545,7 @@ mod volume_row_action_tests {
     fn a_network_host_menu_id_is_not_a_volume_row_action() {
         assert_eq!(volume_row_action(NETWORK_HOST_DISCONNECT_ID), None);
         assert_eq!(volume_row_action(NETWORK_HOST_FORGET_SERVER_ID), None);
-        assert_eq!(volume_row_action(NETWORK_HOST_FORGET_PASSWORD_ID), None);
+        assert_eq!(volume_row_action(NETWORK_HOST_FORGET_SECRET_ID), None);
         assert_eq!(volume_row_action("tab_close"), None);
     }
 }
