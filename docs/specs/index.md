@@ -62,6 +62,15 @@ below is met.
       `apps/desktop/src/lib/file-explorer/navigation/`), and what is deferred is in `later/`. That wipe is a one-way
       door, so it waits for David.
 
+- [ ] 2026-09-07 `servers-hub-review-follow-ups.md` - **What the servers branch's pre-merge review left open once its
+      fixes landed.** Twenty-five entries in problem / impact / solution / size form, verified against the code as it
+      stands. Four are decisions rather than fixes and wait for David: the SMB sheet seeding "Remember in Keychain" ON
+      against the sign-in rule, `root_anchored` joining a bare server-absolute path onto the app root instead of
+      refusing it, launch dialing a phone with no way to call it off, and `VolumeBreadcrumb.svelte` sitting 206 lines
+      over its allowlist entry. Three majors: the twenty pointers into `servers-hub-plan.md` that rot when that file is
+      wiped, an SMB host on a non-445 port listed twice in the hub, and the disconnect-tells-the-panes guarantee having
+      no test. The rest is five minors and thirteen nits, mostly copy. Roughly three days for everything but the two
+      big product calls.
 - [ ] 2026-09-06 `data-safety-hunt-follow-ups.md` - **What the transfer-engine hunt left open after its 15 findings were
       fixed.** Nine ranked entries in problem / impact / solution / size form: two high (a cross-FS move loses the bytes
       written to a file after its copy finished; a top-level folder symlink on a volume still merges through the link,
