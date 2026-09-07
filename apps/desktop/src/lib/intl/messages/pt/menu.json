@@ -115,6 +115,10 @@
   "@menu.file.newFolder": {
     "sourceHash": "6cca529"
   },
+  "menu.file.newFile": "Novo arquivo…",
+  "@menu.file.newFile": {
+    "sourceHash": "6b2727f"
+  },
   "menu.file.delete": "Apagar",
   "@menu.file.delete": {
     "sourceHash": "e2d0a54"

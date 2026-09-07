@@ -7,9 +7,9 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
     CLOSE_TAB_ID, CommandScope, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
-    FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FileContextInfo, MenuState, OPEN_TERMINAL_HERE_ID,
-    RENAME_ID, REOPEN_CLOSED_TAB_ID, SettingsChanged, ViewMode, build_breadcrumb_context_menu, build_context_menu,
-    build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu,
+    FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FileContextInfo, MenuState,
+    OPEN_TERMINAL_HERE_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SettingsChanged, ViewMode, build_breadcrumb_context_menu,
+    build_context_menu, build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu,
     build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items,
     sync_view_mode_check_states,
 };
@@ -699,6 +699,7 @@ const OPERATION_START_ITEM_IDS: &[&str] = &[
     FILE_MOVE_ID,
     FILE_COMPRESS_ID,
     FILE_NEW_FOLDER_ID,
+    FILE_NEW_FILE_ID,
     FILE_DELETE_ID,
     FILE_DELETE_PERMANENTLY_ID,
     RENAME_ID,

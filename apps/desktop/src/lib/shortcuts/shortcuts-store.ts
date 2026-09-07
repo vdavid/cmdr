@@ -269,6 +269,7 @@ export const menuCommands = [
   'file.duplicate',
   'file.compress',
   'file.newFolder',
+  'file.newFile',
   'file.delete',
   'file.deletePermanently',
   'file.rename',

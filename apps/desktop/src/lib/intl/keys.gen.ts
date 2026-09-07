@@ -1912,6 +1912,7 @@ export type MessageKey =
   | 'menu.file.edit'
   | 'menu.file.getInfo'
   | 'menu.file.move'
+  | 'menu.file.newFile'
   | 'menu.file.newFolder'
   | 'menu.file.open'
   | 'menu.file.openTerminalHere'

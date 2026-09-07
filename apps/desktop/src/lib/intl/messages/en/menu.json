@@ -144,6 +144,11 @@
     "description": "NOUN phrase, not a verb: it names what gets created (F7). Creates a directory in the active pane. Use whichever word for a directory your macOS Finder uses in this language, so it matches what people see everywhere else. The trailing … is U+2026 and must stay: the dialog takes the name."
   },
 
+  "menu.file.newFile": "New file…",
+  "@menu.file.newFile": {
+    "description": "NOUN phrase, not a verb: it names what gets created (⇧F4). Creates an empty file in the active pane, and sits right under menu.file.newFolder, so the two should read as a pair. Use whichever word for a file your macOS Finder uses in this language. The trailing … is U+2026 and must stay: the dialog takes the name."
+  },
+
   "menu.file.delete": "Delete",
   "@menu.file.delete": {
     "description": "VERB (imperative). Moves the selected files to the system Trash, recoverably (F8). No ellipsis: the confirmation it shows cannot change which files it acts on. Its permanent counterpart is menu.file.deletePermanently, so the two must read as clearly different in strength."

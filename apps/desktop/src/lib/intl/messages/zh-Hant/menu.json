@@ -115,6 +115,10 @@
   "@menu.file.newFolder": {
     "sourceHash": "6cca529"
   },
+  "menu.file.newFile": "新增檔案…",
+  "@menu.file.newFile": {
+    "sourceHash": "6b2727f"
+  },
   "menu.file.delete": "刪除",
   "@menu.file.delete": {
     "sourceHash": "e2d0a54"

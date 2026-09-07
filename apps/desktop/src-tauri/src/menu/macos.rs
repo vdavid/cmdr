@@ -21,13 +21,13 @@ use super::{
     CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID,
     EDIT_CUT_ID, EDIT_ID, EDIT_MENU_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID,
     FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_DUPLICATE_ID, FILE_MENU_ID,
-    FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_HOME_ID,
-    GO_LATEST_DOWNLOAD_ID, GO_MENU_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_MENU_ID, HELP_SEND_ERROR_REPORT_ID,
-    HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, INVERT_SELECTION_ID, MenuItems, NEW_TAB_ID,
-    NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPEN_TERMINAL_HERE_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID,
-    QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID,
-    SELECT_MENU_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID,
-    SWITCH_PANE_ID, TAB_MENU_ID, VIEW_MENU_ID, ViewMode, WINDOW_MENU_ID,
+    FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID,
+    GO_HOME_ID, GO_LATEST_DOWNLOAD_ID, GO_MENU_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_MENU_ID,
+    HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, INVERT_SELECTION_ID,
+    MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPEN_TERMINAL_HERE_ID, OPERATION_LOG_ID,
+    PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID,
+    SELECT_ALL_ID, SELECT_FILES_ID, SELECT_MENU_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID,
+    SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, TAB_MENU_ID, VIEW_MENU_ID, ViewMode, WINDOW_MENU_ID,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -130,6 +130,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     )?;
     let file_new_folder_item =
         MenuItem::with_id(app, FILE_NEW_FOLDER_ID, menu_t("menu.file.newFolder"), true, Some("F7"))?;
+    let file_new_file_item = MenuItem::with_id(
+        app,
+        FILE_NEW_FILE_ID,
+        menu_t("menu.file.newFile"),
+        true,
+        Some("Shift+F4"),
+    )?;
     let file_delete_item = MenuItem::with_id(app, FILE_DELETE_ID, menu_t("menu.file.delete"), true, Some("F8"))?;
     let file_delete_permanently_item = MenuItem::with_id(
         app,
@@ -185,6 +192,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &file_duplicate_item,
             &file_compress_item,
             &file_new_folder_item,
+            &file_new_file_item,
             &file_delete_item,
             &file_delete_permanently_item,
             &PredefinedMenuItem::separator(app)?,
@@ -568,9 +576,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let mut items = HashMap::new();
 
     // File menu positions: open(0), view(1), edit(2), sep(3), copy(4), move(5),
-    // duplicate(6), compress(7), new_folder(8), delete(9), delete_perm(10), sep(11),
-    // rename(12), sep(13), show_in_finder(14), open_terminal_here(15), get_info(16),
-    // quick_look(17)
+    // duplicate(6), compress(7), new_folder(8), new_file(9), delete(10),
+    // delete_perm(11), sep(12), rename(13), sep(14), show_in_finder(15),
+    // open_terminal_here(16), get_info(17), quick_look(18)
     register_item(&mut items, OPEN_ID, &open_item, &file_menu, 0);
     register_item(&mut items, FILE_VIEW_ID, &file_view_item, &file_menu, 1);
     register_item(&mut items, EDIT_ID, &edit_item, &file_menu, 2);
@@ -579,25 +587,26 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, FILE_DUPLICATE_ID, &file_duplicate_item, &file_menu, 6);
     register_item(&mut items, FILE_COMPRESS_ID, &file_compress_item, &file_menu, 7);
     register_item(&mut items, FILE_NEW_FOLDER_ID, &file_new_folder_item, &file_menu, 8);
-    register_item(&mut items, FILE_DELETE_ID, &file_delete_item, &file_menu, 9);
+    register_item(&mut items, FILE_NEW_FILE_ID, &file_new_file_item, &file_menu, 9);
+    register_item(&mut items, FILE_DELETE_ID, &file_delete_item, &file_menu, 10);
     register_item(
         &mut items,
         FILE_DELETE_PERMANENTLY_ID,
         &file_delete_permanently_item,
         &file_menu,
-        10,
+        11,
     );
-    register_item(&mut items, RENAME_ID, &rename_item, &file_menu, 12);
-    register_item(&mut items, SHOW_IN_FINDER_ID, &show_in_finder_item, &file_menu, 14);
+    register_item(&mut items, RENAME_ID, &rename_item, &file_menu, 13);
+    register_item(&mut items, SHOW_IN_FINDER_ID, &show_in_finder_item, &file_menu, 15);
     register_item(
         &mut items,
         OPEN_TERMINAL_HERE_ID,
         &open_terminal_here_item,
         &file_menu,
-        15,
+        16,
     );
-    register_item(&mut items, GET_INFO_ID, &get_info_item, &file_menu, 16);
-    register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 17);
+    register_item(&mut items, GET_INFO_ID, &get_info_item, &file_menu, 17);
+    register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 18);
 
     // Edit menu positions: undo(0), redo(1), sep(2), cut(3), copy(4), paste(5), move_here(6),
     // sep(7), copy_path(8), copy_filename(9), sep(10), search_files(11)

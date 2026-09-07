@@ -35,10 +35,10 @@ use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, HELP_M
 use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EDIT_MENU_ID, EJECT_VOLUME_ID,
     FAVORITE_REMOVE_ID, FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID,
-    FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, ImageIndexMenuState, MenuItems, NETWORK_HOST_DISCONNECT_ID,
-    NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID,
-    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
-    image_index_menu_items,
+    FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, ImageIndexMenuState, MenuItems,
+    NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
+    SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID,
+    ViewMode, ViewerMenuItems, image_index_menu_items,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -195,12 +195,20 @@ pub fn build_context_menu<R: Runtime>(
     }
     menu.append(&PredefinedMenuItem::separator(app)?)?;
 
-    // New folder — also omitted on search-results panes (no destination folder
-    // to create into; the pane IS the snapshot, not a directory).
+    // New folder / New file — also omitted on search-results panes (no destination
+    // folder to create into; the pane IS the snapshot, not a directory).
     if !restrict_destination_actions {
         let new_folder_item =
             MenuItem::with_id(app, FILE_NEW_FOLDER_ID, menu_t("menu.file.newFolder"), true, Some("F7"))?;
+        let new_file_item = MenuItem::with_id(
+            app,
+            FILE_NEW_FILE_ID,
+            menu_t("menu.file.newFile"),
+            true,
+            Some("Shift+F4"),
+        )?;
         menu.append(&new_folder_item)?;
+        menu.append(&new_file_item)?;
         menu.append(&PredefinedMenuItem::separator(app)?)?;
     }
 

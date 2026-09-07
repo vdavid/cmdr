@@ -63,6 +63,7 @@ pub const FILE_MOVE_ID: &str = "file_move";
 pub const FILE_DUPLICATE_ID: &str = "file_duplicate";
 pub const FILE_COMPRESS_ID: &str = "file_compress";
 pub const FILE_NEW_FOLDER_ID: &str = "file_new_folder";
+pub const FILE_NEW_FILE_ID: &str = "file_new_file";
 pub const FILE_DELETE_ID: &str = "file_delete";
 pub const FILE_DELETE_PERMANENTLY_ID: &str = "file_delete_permanently";
 pub const SHOW_IN_FINDER_ID: &str = "show_in_finder";
@@ -315,6 +316,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         FILE_DUPLICATE_ID => Some(("file.duplicate", CommandScope::FileScoped)),
         FILE_COMPRESS_ID => Some(("file.compress", CommandScope::FileScoped)),
         FILE_NEW_FOLDER_ID => Some(("file.newFolder", CommandScope::FileScoped)),
+        FILE_NEW_FILE_ID => Some(("file.newFile", CommandScope::FileScoped)),
         FILE_DELETE_ID => Some(("file.delete", CommandScope::FileScoped)),
         FILE_DELETE_PERMANENTLY_ID => Some(("file.deletePermanently", CommandScope::FileScoped)),
         SHOW_IN_FINDER_ID => Some(("file.showInFinder", CommandScope::FileScoped)),
@@ -407,6 +409,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "file.duplicate" => Some(FILE_DUPLICATE_ID),
         "file.compress" => Some(FILE_COMPRESS_ID),
         "file.newFolder" => Some(FILE_NEW_FOLDER_ID),
+        "file.newFile" => Some(FILE_NEW_FILE_ID),
         "file.delete" => Some(FILE_DELETE_ID),
         "file.deletePermanently" => Some(FILE_DELETE_PERMANENTLY_ID),
         "file.showInFinder" => Some(SHOW_IN_FINDER_ID),
@@ -582,6 +585,7 @@ mod tests {
             "file.duplicate",
             "file.compress",
             "file.newFolder",
+            "file.newFile",
             "file.delete",
             "file.deletePermanently",
             "file.showInFinder",
