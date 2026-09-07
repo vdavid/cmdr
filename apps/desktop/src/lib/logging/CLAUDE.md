@@ -29,7 +29,8 @@ Full architecture and decisions: `DETAILS.md`. Usage (adding logging, `RUST_LOG`
 - **An uncaught frontend throw is only visible because `uncaught-errors.ts` forwards it.** Nothing else does: the
   console is unread under Tauri, so without those two listeners a crash leaves no line in the log file, nothing in an
   error-report bundle, and nothing in a CI E2E run. The listeners deliberately don't `preventDefault` — they observe,
-  they never swallow (which would also blind `hmr-recovery`).
+  they never swallow (which would also blind `hmr-recovery`). ❗ WebKit's `error.stack` carries FRAMES ONLY, so the
+  message is put back in front of it; ❌ never log a stack verbatim here.
 - **`beforeunload` flush is best-effort (async)**, so logs right before a page unload may not all reach Rust.
 - **Error-report bundles (Help > Send error report…) include the file target's recent debug logs**, the same logs the
   cap setting governs. Keep the file chain at Debug.
