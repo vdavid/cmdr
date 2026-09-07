@@ -78,7 +78,7 @@ pub(in crate::file_system::write_operations) fn map_finalize_failure(
     dest_path: &Path,
     failure: FinalizeFailure,
 ) -> WriteOperationError {
-    WriteFailure::from(failure.at_destination(dest_path)).error
+    WriteFailure::from(PathedVolumeError::at_destination(failure, dest_path)).error
 }
 
 /// A `VolumeError` plus the path that actually produced it.
@@ -133,15 +133,24 @@ impl From<PathedVolumeError> for WriteFailure {
     }
 }
 
-impl FinalizeFailure {
+/// The two ways a `FinalizeFailure` becomes a pathed one.
+///
+/// ❗ These are inherent to `PathedVolumeError`, the type they PRODUCE, and not
+/// methods on `FinalizeFailure`. `cargo-modules` attributes an `impl` to the
+/// module defining the type, so `impl FinalizeFailure` written here would print
+/// as `recovered_name → volume::transfer_error`, welding the two into a module
+/// cycle that reads backwards from the code. ❌ Don't move them onto
+/// `FinalizeFailure` for the nicer call syntax. `scripts/check/checks/DETAILS.md`
+/// § "Rust module cycles", trap 4.
+impl PathedVolumeError {
     /// Labels a finalize failure with the destination name the new bytes were
     /// meant to take. ❌ Never `at()`: that would label it with a source path,
     /// and the failure is entirely the destination's.
-    pub(super) fn at_destination(self, dest_path: &Path) -> PathedVolumeError {
-        PathedVolumeError {
+    pub(super) fn at_destination(failure: FinalizeFailure, dest_path: &Path) -> Self {
+        Self {
             path: dest_path.to_path_buf(),
-            error: self.error,
-            new_data_at: self.new_data_at,
+            error: failure.error,
+            new_data_at: failure.new_data_at,
         }
     }
 
@@ -152,13 +161,17 @@ impl FinalizeFailure {
     /// find on their own, so the DESTINATION is what they have to be pointed at
     /// (`at_destination`). Everything else is an ordinary transfer failure and
     /// gets the source item the walker was on, which is what `at()` is for.
-    pub(super) fn at_source_or_rescued_dest(self, source_path: &Path, dest_path: &Path) -> PathedVolumeError {
-        if self.new_data_at.is_some() {
-            return self.at_destination(dest_path);
+    pub(super) fn at_source_or_rescued_dest(
+        failure: FinalizeFailure,
+        source_path: &Path,
+        dest_path: &Path,
+    ) -> Self {
+        if failure.new_data_at.is_some() {
+            return Self::at_destination(failure, dest_path);
         }
-        PathedVolumeError {
+        Self {
             path: source_path.to_path_buf(),
-            error: self.error,
+            error: failure.error,
             new_data_at: None,
         }
     }

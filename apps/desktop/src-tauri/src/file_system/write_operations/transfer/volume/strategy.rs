@@ -451,7 +451,7 @@ pub(super) async fn copy_single_path(
             staging,
         )
         .await
-        .map_err(|f| f.at_source_or_rescued_dest(source_path, dest_path))?;
+        .map_err(|f| PathedVolumeError::at_source_or_rescued_dest(f, source_path, dest_path))?;
         on_file_complete(bytes);
         Ok(bytes)
     }

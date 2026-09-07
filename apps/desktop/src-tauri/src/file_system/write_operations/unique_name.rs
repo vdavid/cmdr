@@ -247,7 +247,7 @@ pub(super) const RESCUE_NAME_ATTEMPTS: u32 = 8;
 ///
 /// The name a rescue reaches for when data has to survive under a name that
 /// isn't its own: the volume engine's finalize rescue
-/// (`transfer/volume/naming.rs::rescue_out_of_temp_space`) and the local copy's
+/// (`transfer/recovered_name.rs::rescue_out_of_temp_space`) and the local copy's
 /// displaced-original rescue (`overwrite::DisplacedEntry::keep_as_recovered_sibling`)
 /// both start here, so a person meets one convention rather than two. When it's
 /// taken, both continue the house ` (N)` series off it through

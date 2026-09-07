@@ -307,7 +307,7 @@ impl DisplacedEntry {
     /// destination, a dead mount) would refuse each candidate identically. When
     /// nothing lands, the aside path is the honest answer and the caller reports
     /// THAT, the same shape the volume engine's rescue takes
-    /// (`transfer/volume/naming.rs::rescue_out_of_temp_space`).
+    /// (`transfer/recovered_name.rs::rescue_out_of_temp_space`).
     pub(crate) fn keep_as_recovered_sibling(self) -> RecoveredOriginal {
         let recovered = recovered_sibling(&self.original);
         let mut candidates = NameCandidates::for_file(&recovered);
