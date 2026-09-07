@@ -41,23 +41,18 @@ wired yet".
 - **What is left**: one switcher row per phone rather than one per protocol, deferred as
   `later/adb-merged-phone-row.md`. Nothing waits on it, and the "(ADB)" name suffix is the stopgap until it lands.
 
-## 3. ⌘G can't take an `adb://` path
+## 3. ⌘G takes an `adb://` path ✅ SHIPPED
 
-Scheduled: `servers-hub-plan.md` § D13 takes this as a FRONTEND intercept in `go-to-path.ts`, ahead of the Rust
-resolver, and covers `mtp://` in the same move. What follows is why the Rust side stays local-only.
-
-- **Problem**: `go_to_path::resolve` has no scheme branch. An `adb://<serial>/sdcard` input isn't absolute to `Path`, so
-  it joins against the focused pane's directory, misses on disk, and comes back as `NearestAncestor` pointing at
-  nonsense. Typing a device path into the path bar cannot work.
-- **Impact**: small in reach and sharp when hit, because the path bar is the keyboard-first way into a known location,
-  and a user who copies a path out of a breadcrumb and pastes it back gets silently redirected. `mtp://` has the same
-  hole, so this is one fix for both device schemes rather than an ADB-specific one. MCP is fine: `is_virtual_path` is
-  scheme-generic, so `nav_to_path` passes an `adb://` path through, and `select_volume` sees the volume because
-  `volume_listing::complete` folds the provider in.
-- **Solution**: short-circuit a device scheme at the top of `resolve`, before the tilde expansion and the join, and
-  classify it as a directory without touching the disk. The pane's own `adb://` navigation arm
-  (`file-explorer/pane/navigate.ts`) is the authority on whether it's reachable, and it refuses honestly.
-- **Size**: an hour or two, most of it tests for both schemes.
+- **What it was**: `go_to_path::resolve` had no scheme branch, so an `adb://<serial>/sdcard` input joined against the
+  focused pane's directory, missed on disk, and came back as `NearestAncestor` pointing at nonsense. `mtp://` had the
+  same hole, so copying a path out of a breadcrumb and pasting it back was silently redirected.
+- **Where it landed**: `servers-hub-plan.md` § D13, as a FRONTEND intercept rather than the Rust fix this file
+  sketched. `apps/desktop/src/lib/go-to-path/scheme-intercept.ts` classifies a scheme input before the local resolver
+  is asked, and its `DEVICE_SCHEMES` covers both device schemes in one move. The Rust resolver stays a local
+  `std::fs::metadata` walk on purpose: teaching it schemes would mean a resolver that consults the saved-server stores
+  it has no business reading.
+- **Why the frontend, and how the three call sites share one function**:
+  `apps/desktop/src/lib/go-to-path/DETAILS.md`.
 
 ## 4. `sendrecv_v2` compression is off until it's measured
 

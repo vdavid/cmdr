@@ -569,7 +569,7 @@ error-level FAST check with no exemption for a missing key, so a milestone witho
 catalog file (`servers.json`) needs its sibling in every locale dir. The pass is the milestone's last step, by a
 translator agent following that guide, ❌ never a hand-typed placeholder.
 
-### M0. Backend groundwork (no UI change)
+### M0. Backend groundwork (no UI change) ✅ LANDED
 
 1. D1: `ConnectionState` and `DeviceReadiness` on all three twins and `VolumeInfo`; `Volume::connection_state()`
    implemented by SFTP, WebDAV, ADB; `Volume::backend_kind()` and the conversion of EVERY read of the old accessor AND
@@ -628,7 +628,7 @@ translator agent following that guide, ❌ never a hand-typed placeholder.
 Checks: `pnpm check rust` per step, `pnpm check` after step 1 (it touches the frontend), `pnpm check --include-slow`
 once at the end of M0 (the fixture lanes).
 
-### M1. Switcher rows and the hub
+### M1. Switcher rows and the hub ✅ LANDED
 
 1. D7: `ServersHub.svelte` replacing `NetworkBrowser.svelte` (rename, then edit, to keep file history), `PlacesBrowser`
    (renamed `ShareBrowser` with an `account` prop), the MCP row encoding, the status column, the scope rename in
@@ -661,7 +661,7 @@ itself is proven in the Rust integration lane, not in Playwright (no SFTP fixtur
 
 Checks: `pnpm check --fast` per step, `pnpm check` at the end, `pnpm check desktop-e2e-playwright` for the spec.
 
-### M2. The sign-in sheet and the connect flow
+### M2. The sign-in sheet and the connect flow ✅ LANDED
 
 1. `address-parser.ts` (TDD, example table: every shape in D9 round-trips; `user@host` is SFTP; a bare `https://` origin
    is WebDAV; `smb://` is SMB; garbage is `unparsed`).
@@ -843,15 +843,26 @@ Every string below is a draft for David's pass (principle 4). Rules: `docs/style
 ❌ Never expose "adb server", "sync service", "transport", "rung", "PROPFIND", "Basic", "Digest", or a backend
 diagnostic.
 
-## Not in this effort
+## Not in this effort, and where each piece went
 
-- Trust-on-first-use certificates, Digest, Nextcloud chunked uploads, quota: `webdav-backend-follow-ups.md` § 2–5. TOFU
-  is the day-one wall for the NAS audience and should follow this effort directly.
-- `~/.ssh/config` host aliases as autocomplete in the address field. Backend follow-up; recorded in
-  `later/sftp-follow-ups.md` at M6.
-- Wireless ADB pairing. Decided out (`android-adb-backend-follow-ups.md` § 5).
-- S3 and OAuth code. Their contracts are D4 (`ServerTarget` arm), D8 (one renderer), D10 (the reserved shapes).
-- A property-testing library on the frontend.
+Everything below is written down somewhere schedulable. ❌ Nothing here is only in this plan.
+
+- **Trust-on-first-use certificates, Digest, Nextcloud chunked uploads, quota**: `webdav-backend-follow-ups.md` § 2-5.
+  TOFU is the day-one wall for the NAS audience and should follow this effort directly; until it does, a self-signed
+  NAS lands on the honest `certificate_untrusted` wording D9 settles.
+- **`~/.ssh/config` host aliases as autocomplete in the address field**: `later/sftp-follow-ups.md` § 4, with the
+  parser's edge cases and the read-only rule.
+- **Pinnable SMB shares**: `later/smb-pinned-shares.md`. The reason they are not here is D4: the store holds no share
+  rows and no port, and a mounted share's id comes from `statfs`, so a pin keyed on a stored row would never match. The
+  fix is a share-level writer at mount time, spelling the server the way `statfs` does, plus the port.
+- **One switcher row per phone** (M8 below, ADB decision 1): `later/adb-merged-phone-row.md`. Nothing waits on it, and
+  `adb.volumeLabelWithSuffix` is the stopgap until it lands.
+- **Wireless ADB pairing**: decided out, `android-adb-backend-follow-ups.md` § 5.
+- **S3 and OAuth code**: their contracts are here and only here, because they shape types that shipped: D4 (a
+  `ServerTarget` arm), D8 (one more renderer), D10 (the two reserved `SignInShape` variants, whose doc comments carry
+  the same reservation beside the type).
+- **A property-testing library on the frontend**: `proptest` stays Rust-only. The address parser is tested against an
+  example table instead (D9).
 
 ## Parallelism
 

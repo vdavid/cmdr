@@ -60,11 +60,17 @@ Two smaller things the review pass flagged and did not settle, each an hour at m
 - [ ] **A file where an ancestor directory should be.** `create_directory_all` reads a 405 on an ancestor MKCOL as "it
       exists", so a FILE in the way surfaces as the leaf's `NotFound` rather than a clear refusal.
 
-## 1. There is no WebDAV frontend (the bigger item, and shared with SFTP)
+## 1. The frontend is built (kept as a pointer, not an open item)
 
-`docs/specs/servers-hub-plan.md` owns it: one model for every remote thing, one sign-in sheet, one pane view for every
-wait. Nothing on the backend side is missing for it, and this crate's § "Connecting from the frontend" is the contract
-it builds against. What the frontend settled, and why, is `apps/desktop/src/lib/servers/DETAILS.md`.
+A saved WebDAV server gets a row in the volume switcher, a place in the servers hub, and the one sign-in sheet every
+credential ask in the app opens; paths carry a `webdav://` scheme so path resolution answers for one. What the frontend
+settled, and why, is `apps/desktop/src/lib/servers/DETAILS.md` (the path grammar, the three connect arms, the sheet
+contract, the renderer table, and the refusal table). The protocol side it builds against is this crate's
+§ "Connecting from the frontend".
+
+Two of this file's items are what the frontend has to word around today: a self-signed NAS certificate lands on
+`certificate_untrusted` with no way to trust it (§ 2), and a Digest-only server lands on a refusal rather than a
+prompt (§ 3).
 
 ## 2. Certificate trust-on-first-use for self-signed NAS certificates
 
