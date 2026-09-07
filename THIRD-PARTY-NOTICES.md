@@ -731,7 +731,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **winnow** 0.5.40, MIT, <https://github.com/winnow-rs/winnow>
 - **winnow** 0.7.15, MIT, <https://github.com/winnow-rs/winnow>
 - **winnow** 1.0.3, MIT, <https://github.com/winnow-rs/winnow>
-- **wnaf** 0.14.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/elliptic-curves>
+- **wnaf** 0.14.1, Apache-2.0 OR MIT, <https://github.com/RustCrypto/elliptic-curves>
 - **writeable** 0.6.3, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **wry** 0.55.1, Apache-2.0 OR MIT, <https://github.com/tauri-apps/wry>
 - **xattr** 1.6.1, MIT OR Apache-2.0, <https://github.com/Stebalien/xattr>
@@ -12337,7 +12337,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: wnaf 0.14.0
+Covers: wnaf 0.14.1
 
 Text from: `LICENSE-MIT`
 

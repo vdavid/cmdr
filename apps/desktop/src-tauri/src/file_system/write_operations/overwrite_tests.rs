@@ -22,7 +22,6 @@ fn create_temp_dir(name: &str) -> TestDir {
 // safe_overwrite_file tests
 // ============================================================================
 
-
 /// A running operation to land a write under.
 fn overwrite_state() -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(50)))
@@ -177,7 +176,6 @@ fn test_safe_overwrite_file_replaces_existing_folder() {
 // ============================================================================
 // safe_overwrite_dir tests (folder materialized over existing file or folder)
 // ============================================================================
-
 
 // ============================================================================
 // displace_with_directory: the aside outlives the directory that took its place

@@ -28,8 +28,8 @@ use super::super::transfer_driver::{
     TransferFut, TransferOutcome, build_pre_skip_set, drive_transfer_serial_async,
 };
 use super::conflict::resolve_volume_conflict;
-use super::item_identity::is_the_same_volume_path;
 use super::displaced_destination::{DisplacedDestination, displace_destination};
+use super::item_identity::is_the_same_volume_path;
 use super::preflight::{SourceHint, top_level_move_hints};
 use super::rename_merge::{RenameMergeCtx, rename_merge_directory};
 use super::transfer_error::{PathRole, map_volume_error};

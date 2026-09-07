@@ -38,6 +38,9 @@ pub(crate) async fn delete_volume_files_for_test(
     delete_volume_files_with_progress_inner(volume, volume_id, events, operation_id, state, sources, config).await
 }
 
+/// What a cancel does to a delete, and what the cancelled event admits.
+#[cfg(test)]
+mod delete_cancel_tests;
 #[cfg(test)]
 mod delete_integration_test;
 #[cfg(test)]
@@ -52,6 +55,3 @@ mod trash_pause_tests;
 mod volume_cancel_tests;
 #[cfg(test)]
 mod volume_hardlink_progress_tests;
-/// What a cancel does to a delete, and what the cancelled event admits.
-#[cfg(test)]
-mod delete_cancel_tests;

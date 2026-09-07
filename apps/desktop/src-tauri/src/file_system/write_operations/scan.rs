@@ -23,7 +23,6 @@ use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::file_system::listing::{FileEntry, SortColumn, SortOrder};
 use crate::file_system::volume::{CopyScanResult, Volume, VolumeError};
 
-
 /// Totals returned by `scan_subtree_with_oracle`.
 ///
 /// `per_path` carries one entry per direct child of the scanned `path`, sized
@@ -198,7 +197,6 @@ pub(super) async fn scan_subtree_with_oracle(
 
     Ok(totals)
 }
-
 
 /// Scans source paths recursively, returns file list and totals.
 /// Files are sorted according to the specified column and order.

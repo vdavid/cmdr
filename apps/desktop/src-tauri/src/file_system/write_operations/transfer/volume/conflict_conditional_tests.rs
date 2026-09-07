@@ -338,4 +338,3 @@ async fn volume_older_ignores_size() {
 
     assert_eq!(resolved, ConflictResolution::Overwrite);
 }
-
