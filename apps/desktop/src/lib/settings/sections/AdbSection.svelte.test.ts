@@ -44,6 +44,16 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({
   open: () => openDialog(),
 }))
 
+/** What ran, in order, so a cell can say the push landed before the re-check. */
+const ran: string[] = []
+const pushAdbConfigToBackend = vi.fn<() => Promise<void>>()
+
+vi.mock('$lib/adb/adb-settings', () => ({
+  pushAdbConfigToBackend: () => pushAdbConfigToBackend(),
+  ADB_ENABLED_SETTING_KEY: 'fileOperations.adbEnabled',
+  ADB_BINARY_PATH_SETTING_KEY: 'fileOperations.adbBinaryPath',
+}))
+
 const missing: InstallStatus = { binaryPath: null, tracking: false }
 const found: InstallStatus = { binaryPath: '/opt/homebrew/bin/adb', tracking: true }
 
@@ -125,6 +135,36 @@ describe('Re-check', () => {
     await tick()
 
     expect(recheckAdbInstall).toHaveBeenCalledTimes(1)
+    target.remove()
+  })
+
+  /**
+   * ❗ The push and the re-check are two independent Tauri commands, so the
+   * backend runs them as two tasks. The applier's own push is fire-and-forget,
+   * so a re-check fired beside it can reach `recheck_adb_install` first and
+   * report on the OLD binary — exactly the stale status the Browse re-check
+   * exists to prevent.
+   */
+  it('lands the new path on the backend BEFORE asking about it', async () => {
+    ran.length = 0
+    openDialog.mockResolvedValue('/opt/android/platform-tools/adb')
+    pushAdbConfigToBackend.mockImplementation(async () => {
+      // A real IPC round-trip is not instant; a same-tick resolve would let a
+      // broken ordering pass.
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      ran.push('push')
+    })
+    recheckAdbInstall.mockImplementation(() => {
+      ran.push('recheck')
+      return Promise.resolve(found)
+    })
+    const target = await mountSection()
+
+    const browse = Array.from(target.querySelectorAll('.path-field button'))[0] as HTMLButtonElement | undefined
+    browse?.click()
+    await vi.waitFor(() => {
+      expect(ran).toEqual(['push', 'recheck'])
+    })
     target.remove()
   })
 

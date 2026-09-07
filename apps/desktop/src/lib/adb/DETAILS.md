@@ -99,3 +99,19 @@ is one constant to repoint.
 
 The link goes through `openExternalUrl`, ❌ never as a plain `<a>` navigation: Tauri blocks that, and the link would
 silently do nothing.
+
+## The two settings, and the order their push has to keep
+
+`fileOperations.adbEnabled` and `fileOperations.adbBinaryPath` travel TOGETHER through
+`adb-settings.ts::pushAdbConfigToBackend`, which re-reads both fresh at call time: the backend restarts its device
+tracker under whichever binary the path names, so pushing one without the other would restart it under a stale one.
+`settings-applier.ts` maps both keys to that one push.
+
+❗ **A caller that ASKS ABOUT the binary right after changing it has to await the push itself.** The applier's call is
+fire-and-forget (`void pushAdbConfigToBackend()`), and Tauri runs `set_adb_settings` and `recheck_adb_install` as
+independent tasks, so a re-check fired beside the push can land first and answer about the OLD binary — the exact stale
+status that re-check exists to prevent. `AdbSection.svelte`'s Browse pick awaits the push before `handleRecheck()` for
+that reason. Running the push twice is free: it re-reads the settings and sends the same pair.
+
+❗ **Re-check is the ONLY path allowed to retry `adb start-server`**, budgeted per human action (a Re-check click, a
+Browse pick), ❌ never on mount and ❌ never on a status read. `getAdbInstallStatus` reports; `recheckAdbInstall` acts.
