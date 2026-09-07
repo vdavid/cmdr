@@ -140,7 +140,7 @@ function savedRow(server: SavedServer, host: NetworkHost | null, states: Map<str
   const place: SavedPlace | null = server.places.length > 0 ? server.places[0] : null
   return {
     id: server.id,
-    name: server.displayName,
+    name: displayName(server, host),
     protocol: server.protocol,
     address: hostAddress(host) ?? server.address,
     status: savedStatus(server, host, place ? (states.get(place.volumeId) ?? null) : null),
@@ -150,6 +150,22 @@ function savedRow(server: SavedServer, host: NetworkHost | null, states: Map<str
     saved: server,
     host,
   }
+}
+
+/**
+ * Which of the three names the Name column shows.
+ *
+ * ❗ A name a person chose wins, then the Bonjour name mDNS found, then the one
+ * the SMB mount reported. The top rank is a FACT the backend publishes
+ * (`SavedServer.nameSource`), ❌ never a guess at the string's shape: opening a
+ * host writes a `known_shares` row named the way `statfs` spells the server
+ * (`smb-consumer-guest`), and without the rank the friendly name a person
+ * recognizes (`SMB Test (Guest)`) would vanish from the column the first time
+ * they used the host.
+ */
+function displayName(server: SavedServer, host: NetworkHost | null): string {
+  if (server.nameSource === 'user') return server.displayName
+  return host?.name ?? server.displayName
 }
 
 function nearbyRow(host: NetworkHost): HubRow {
