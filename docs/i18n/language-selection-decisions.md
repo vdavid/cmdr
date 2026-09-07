@@ -10,10 +10,10 @@ Which of the 139 researched languages Cmdr plans to localize, and in what order.
   `desktop-i18n-coverage`: `de`, `es`, `fr`, `hu`, `nl`, `pt`, `sv`, `vi`, `zh`, and `zh-Hant`. Two are regional
   OVERLAYS of `en`, carrying only the keys they fork and inheriting the rest: `en-GB` (151 keys) and `en-AU` (161).
   `en-GB` also answers for CLDR's `en-001`, so `en-NZ`, `en-IE`, `en-ZA`, and ~110 other regions reach it without a
-  catalog of their own (`apps/desktop/src-tauri/src/intl/DETAILS.md` § The ancestor chain). All
-  twelve finished 2026-08-29. A locale ships once it's translated, passes the checks, and is overflow-checked; human
-  review is opportunistic, not a gate (`../guides/i18n-translation.md`). Being in a wave below is a PLAN, not a ship
-  state, so check this line rather than the wave column to know what's live.
+  catalog of their own (`apps/desktop/src-tauri/src/intl/DETAILS.md` § The ancestor chain). All twelve finished
+  2026-08-29. A locale ships once it's translated, passes the checks, and is overflow-checked; human review is
+  opportunistic, not a gate (`../guides/i18n-translation.md`). Being in a wave below is a PLAN, not a ship state, so
+  check this line rather than the wave column to know what's live.
 - **exclude RTL**: set aside until Cmdr supports right-to-left layout. Decision 2026-06-20: no RTL for now.
 - **exclude long-tail**: no major-product localization ecosystem. Decision 2026-06-20: skip the long tail.
 

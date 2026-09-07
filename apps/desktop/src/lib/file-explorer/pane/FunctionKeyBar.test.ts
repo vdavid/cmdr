@@ -139,15 +139,7 @@ describe('FunctionKeyBar', () => {
     // `⇧F4` → `Shift+F4` off macOS). A command button reads ITS command's effective
     // SHIFTED binding, so "Rename" (index 4) shows `⇧F6` — its `F2` binding belongs to
     // the unshifted row. The empty slots read their key off their POSITION: slot 0 is F2.
-    expect(keys).toEqual([
-      'Shift+F2',
-      'Shift+F3',
-      'Shift+F4',
-      'Shift+F5',
-      'Shift+F6',
-      'Shift+F7',
-      'Shift+F8',
-    ])
+    expect(keys).toEqual(['Shift+F2', 'Shift+F3', 'Shift+F4', 'Shift+F5', 'Shift+F6', 'Shift+F7', 'Shift+F8'])
 
     // Shift+F4, Shift+F6, and Shift+F8 should have labels
     const buttons = target.querySelectorAll('button')
