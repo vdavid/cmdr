@@ -436,6 +436,10 @@
   "@menu.context.copyGoogleDriveLink": {
     "sourceHash": "070b383"
   },
+  "menu.context.share": "分享…",
+  "@menu.context.share": {
+    "sourceHash": "51fc2d2"
+  },
   "menu.context.openWith": "開啟檔案的應用程式",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"

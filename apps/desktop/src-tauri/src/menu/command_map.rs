@@ -94,6 +94,14 @@ pub const CLOUD_REMOVE_DOWNLOAD_ID: &str = "cloud_remove_download";
 pub const DRIVE_OPEN_ID: &str = "drive_open";
 pub const DRIVE_COPY_LINK_ID: &str = "drive_copy_link";
 
+/// Menu item ID for "Share…" (macOS): opens the system share sheet
+/// (`NSSharingServicePicker`) on the right-clicked selection. Handled in
+/// `handle_menu_event` like the tag colors, NOT via `menu_id_to_command`: the sheet
+/// acts on `MenuState.context.paths`, and it has to be presented from the menu
+/// thread, which no frontend command can do.
+#[cfg(target_os = "macos")]
+pub const SHARE_ID: &str = "share";
+
 /// Menu item IDs for the per-folder image-search exclusion (media_index privacy veto).
 /// Shown on a folder's context menu only while image indexing is enabled; exactly one
 /// of the two appears, keyed on whether the folder is already excluded. Handled

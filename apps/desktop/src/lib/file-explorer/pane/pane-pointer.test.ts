@@ -5,6 +5,9 @@
  *   held (Finder parity),
  * - a right-click inside the current selection acts on the whole selection, and
  *   outside it acts on the one entry,
+ * - the two pane facts the context menu carries answer different questions and
+ *   part company in both directions (the snapshot pane shares but opens no
+ *   terminal; an archive's insides do the reverse),
  * - the `..` row gets its own one-item menu, and none at all on a snapshot pane,
  * - opening any context menu cancels an in-flight type-to-jump,
  * - a click inside the inline rename editor does NOT steal focus (that would
@@ -139,6 +142,7 @@ describe('createPanePointer', () => {
       expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt', '/dir/b.txt'], {
         listingId: 'listing-1',
         canOpenTerminalHere: true,
+        canShare: true,
       })
     })
 
@@ -149,6 +153,7 @@ describe('createPanePointer', () => {
       expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt'], {
         listingId: 'listing-1',
         canOpenTerminalHere: true,
+        canShare: true,
       })
     })
 
@@ -159,6 +164,7 @@ describe('createPanePointer', () => {
       expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt'], {
         listingId: 'listing-1',
         canOpenTerminalHere: true,
+        canShare: true,
       })
     })
 
@@ -169,7 +175,33 @@ describe('createPanePointer', () => {
       expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt'], {
         listingId: 'listing-1',
         canOpenTerminalHere: false,
+        canShare: false,
       })
+    })
+
+    it('offers "Share…" on the snapshot pane, where the terminal item has nothing to open', async () => {
+      // The two facts answer different questions and part company here: a
+      // search-results pane has no folder of its own, but every row is a real file.
+      state.volumeId = 'search-results'
+      await createPanePointer(deps).handleContextMenu(entryOf())
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt'], {
+        listingId: 'listing-1',
+        canOpenTerminalHere: false,
+        canShare: true,
+      })
+    })
+
+    it('leaves "Share…" out for a row inside an archive, though the pane sits on a local drive', async () => {
+      // The other direction: the volume says "local", and only the ROW's path knows
+      // there's no file behind it for a share service to read.
+      await createPanePointer(deps).handleContextMenu(entryOf({ path: '/dir/trip.zip/IMG_0001.jpg' }))
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
+        '/dir/trip.zip/IMG_0001.jpg',
+        'a.txt',
+        false,
+        ['/dir/trip.zip/IMG_0001.jpg'],
+        { listingId: 'listing-1', canOpenTerminalHere: true, canShare: false },
+      )
     })
 
     it('gives the `..` row its own one-item menu', async () => {

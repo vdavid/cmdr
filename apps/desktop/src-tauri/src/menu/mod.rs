@@ -9,7 +9,8 @@
 //! - `menu_items.rs`: menu item builder helpers and submenu factories (sort, zoom),
 //!   accelerator/label platform-aware helpers, `register_item`, and `truncate_for_menu_label`.
 //! - `menu_structure.rs`: hierarchical assembly: `build_menu` dispatcher, context menus (file,
-//!   breadcrumb, tab, network host), viewer menu, plus `FileContextInfo` / `ContextMenuResult`.
+//!   breadcrumb, tab, network host), viewer menu, plus `FileContextInfo` / `ContextMenuPaneFacts` /
+//!   `ContextMenuResult`.
 //! - `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher wired into the Tauri
 //!   builder, plus the macOS post-construction helpers it shares a platform with
 //!   (`cleanup_macos_menus`, `set_macos_menu_icons`, and the responder-chain edit actions).
@@ -69,7 +70,8 @@ pub use menu_handlers::{
 pub(crate) use menu_items::DetachWord;
 pub use menu_items::pin_tab_label;
 pub use menu_structure::{
-    FileContextInfo, ServerRowMenu, build_breadcrumb_context_menu, build_context_menu, build_menu,
+    ContextMenuPaneFacts, FileContextInfo, ServerRowMenu, build_breadcrumb_context_menu, build_context_menu,
+    build_menu,
     build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu, build_viewer_menu,
     build_volume_row_context_menu,
 };

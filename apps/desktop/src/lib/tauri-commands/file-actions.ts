@@ -62,6 +62,13 @@ export interface PaneContextMenuFacts {
    * its own, like the Search dialog) leaves it out and the item shows greyed.
    */
   canOpenTerminalHere?: boolean
+  /**
+   * Whether "Share…" appears at all (macOS). It hands the selection to the system
+   * share sheet, which takes file URLs, so only a pane whose ROWS are ordinary OS
+   * paths offers it. Not the same question as `canOpenTerminalHere`: the
+   * search-results snapshot has no folder of its own yet lists real files.
+   */
+  canShare?: boolean
 }
 
 /**
@@ -91,6 +98,7 @@ export async function showFileContextMenu(
       restrictDestinationActions: pane.restrictDestinationActions ?? false,
       listingId: pane.listingId ?? '',
       canOpenTerminalHere: pane.canOpenTerminalHere ?? false,
+      canShare: pane.canShare ?? false,
     },
   })
 }

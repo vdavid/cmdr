@@ -541,6 +541,11 @@
     "description": "VERB phrase (imperative). Right-click menu on a file or folder stored in Google Drive: copies the web address of that item to the clipboard, so it can be pasted into a message. It copies a link, not the file. \"Google Drive\" is a product name and stays in English."
   },
 
+  "menu.context.share": "Share…",
+  "@menu.context.share": {
+    "description": "VERB (imperative). Right-click menu on a file or folder, next to \"Show in Finder\": opens the macOS share sheet, the system popover listing AirDrop, Mail, Messages, Notes, and any share extension the user has installed. Use the exact word your macOS Finder uses for its own \"Share\" item, so the two menus read the same. The trailing … is U+2026 and must stay: the sheet changes where the file goes."
+  },
+
   "menu.context.openWith": "Open with",
   "@menu.context.openWith": {
     "description": "VERB phrase, title of the submenu listing the apps that can open the right-clicked file. It reads as the opening of a sentence its children finish: \"Open with\" → \"Preview\". Use the exact wording your macOS Finder uses for its own \"Open With\" submenu, so the same grammatical trick works in this language."

@@ -435,6 +435,10 @@
   "@menu.context.copyGoogleDriveLink": {
     "sourceHash": "070b383"
   },
+  "menu.context.share": "Partager…",
+  "@menu.context.share": {
+    "sourceHash": "51fc2d2"
+  },
   "menu.context.openWith": "Ouvrir avec",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"

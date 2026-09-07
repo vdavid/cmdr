@@ -33,7 +33,7 @@ use super::menu_items::{
 #[cfg(target_os = "macos")]
 use super::{
     CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, DRIVE_COPY_LINK_ID, DRIVE_OPEN_ID, GET_INFO_ID, HELP_MENU_ID,
-    QUICK_LOOK_ID,
+    QUICK_LOOK_ID, SHARE_ID,
 };
 use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EDIT_MENU_ID, EJECT_VOLUME_ID,
@@ -103,18 +103,36 @@ pub fn build_menu<R: Runtime>(
     }
 }
 
+/// What the PANE the right-click landed in contributes, as opposed to the file
+/// under the cursor.
+///
+/// One struct rather than three trailing `bool`s, for the reason the frontend's
+/// `PaneContextMenuFacts` gives: same-typed positional flags are exactly what binds
+/// to the wrong slot when one is inserted. Every field's most restrictive answer is
+/// its `Default`, so a surface that can't answer says nothing.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct ContextMenuPaneFacts {
+    /// Suppresses Rename, Duplicate, and the two create items, which only make
+    /// sense on a real directory. `true` from the search-results virtual pane
+    /// (`volumeId == "search-results"`, see `apps/desktop/src/lib/search/capabilities.ts`).
+    /// Source-side actions (Open, Copy, Move, Delete, Show in Finder, Copy filename,
+    /// Copy path) stay, because the underlying paths are real.
+    pub restrict_destination_actions: bool,
+    /// Whether "Open terminal here" is clickable. It acts on the pane's FOLDER, not
+    /// this file, so a pane on MTP or ADB shows it greyed out; the snapshot pane and
+    /// the Search dialog pass `false` too, having no folder of their own to open.
+    pub can_open_terminal_here: bool,
+    /// Whether "Share…" appears at all. The pane's answer too, but to a different
+    /// question: whether its ROWS are real OS paths, which is what the share sheet
+    /// needs. The search-results snapshot says yes (its rows are real files) where
+    /// `can_open_terminal_here` says no, so the two can't be folded into one flag.
+    pub can_share: bool,
+}
+
 /// Builds a context menu for a specific file.
 ///
-/// `restrict_destination_actions = true` is used by the search-results virtual
-/// pane (`volumeId == "search-results"`, see `apps/desktop/src/lib/search/capabilities.ts`):
-/// it suppresses Rename and New folder, which only make sense on a real directory.
-/// Source-side actions (Open, Copy, Move, Delete, Show in Finder, Copy filename,
-/// Copy path) stay because the underlying paths are real.
-///
-/// `can_open_terminal_here` is the focused pane's answer, not this file's: the item
-/// acts on the pane's folder, so a pane on MTP or ADB shows it greyed out. The
-/// snapshot pane and the Search dialog pass `false` too, having no folder of their
-/// own to open.
+/// `pane` is what the surface the click landed in contributes; see
+/// [`ContextMenuPaneFacts`] for each answer and who gives it.
 pub fn build_context_menu<R: Runtime>(
     app: &AppHandle<R>,
     filename: &str,
@@ -124,20 +142,20 @@ pub fn build_context_menu<R: Runtime>(
         allow(unused_variables, reason = "all reads of `info` sit inside macOS-gated branches")
     )]
     info: &FileContextInfo,
-    restrict_destination_actions: bool,
-    #[cfg_attr(
-        not(target_os = "macos"),
-        allow(
-            unused_variables,
-            reason = "the item it gates is macOS-only, like the launch module behind it"
-        )
-    )]
-    can_open_terminal_here: bool,
+    pane: ContextMenuPaneFacts,
     // Media-index image-search facts about the right-clicked folder; `image_index_menu_items`
     // turns them into the folder-only chosen/exclusion items (empty when the master toggle
     // is off).
     image_index: ImageIndexMenuState,
 ) -> tauri::Result<ContextMenuResult<R>> {
+    let ContextMenuPaneFacts {
+        restrict_destination_actions,
+        can_open_terminal_here,
+        can_share,
+    } = pane;
+    // Both gate macOS-only items, so on Linux they're read nowhere.
+    #[cfg(not(target_os = "macos"))]
+    let _ = (can_open_terminal_here, can_share);
     let menu = Menu::new(app)?;
 
     // Open / View / Edit group (files only)
@@ -264,6 +282,15 @@ pub fn build_context_menu<R: Runtime>(
             Some("Alt+Cmd+T"),
         )?;
         menu.append(&open_terminal_here_item)?;
+        // "Share…" rides with them for the same reason: all three hand the selection
+        // to something outside Cmdr. It's ABSENT rather than greyed when the pane's
+        // rows don't live on the OS filesystem (a phone, an archive's insides): the
+        // share sheet takes file URLs, and there's no way to word a greyed item that
+        // explains "this row isn't a file yet" better than its absence does.
+        if can_share {
+            let share_item = MenuItem::with_id(app, SHARE_ID, menu_t("menu.context.share"), true, None::<&str>)?;
+            menu.append(&share_item)?;
+        }
     }
     menu.append(&copy_filename_item)?;
     menu.append(&copy_path_item)?;
