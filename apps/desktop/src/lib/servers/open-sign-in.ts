@@ -97,7 +97,7 @@ export async function openSignInForPlace(request: SignInSeamRequest): Promise<Si
     // `SignInCredentialFields` would otherwise fall through to a password box
     // over it. The pane's `signed_out` banner with no button is the honest view,
     // and answering "not signed in" is what leaves it standing.
-    log.info('The place {volumeId} asks for nothing a person could type, so no sheet opens', { volumeId })
+    log.info('No sheet for {volumeId}: nothing a person could type would help', { volumeId })
     return { signedIn: false }
   }
   const identity = await identityFor(volumeId)

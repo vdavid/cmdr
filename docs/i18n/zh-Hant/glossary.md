@@ -1377,10 +1377,11 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   `Dismissed`，中文跟著從 `已顯示` 換成 `已關閉`，和上面的 Dismiss 條目同字。
 - 這 19 個值都不含撇號（中文不需要，ICU 的 `''` 規則咬不到），也都和英文不同，所以沒有 `sameAsSourceJustification`。
 - **`You stopped opening your phone.`** · `你停止了開啟手機。`（`adb.connect.cancelled`）· 動詞照平行鍵
-  `search.coverage.walk.cancelled`（`你停止了這次搜尋`）和 `errors.volume.cancelled` 取 `停止` ·
-  `high`。❌ 不寫 `取消`：`取消` 是按鈕的標籤（`fileOperations.button.cancel`），寫成「你取消了…」會像在指那顆按鈕，
-  而不是在說發生了什麼。`停止` 直接帶動詞短語是目錄既有的寫法（`停止建立索引`、`停止連線到 {name}`、`停止搜尋`）。
-  `開啟` 是已定的開手機動詞（`adb.connect.waitingHint`）；主詞已經是 `你`，所以不再寫 `你的手機`。
+  `search.coverage.walk.cancelled`（`你停止了這次搜尋`）和 `errors.volume.cancelled` 取 `停止` · `high`。❌ 不寫
+  `取消`：`取消`
+  是按鈕的標籤（`fileOperations.button.cancel`），寫成「你取消了…」會像在指那顆按鈕，而不是在說發生了什麼。`停止`
+  直接帶動詞短語是目錄既有的寫法（`停止建立索引`、`停止連線到 {name}`、`停止搜尋`）。 `開啟`
+  是已定的開手機動詞（`adb.connect.waitingHint`）；主詞已經是 `你`，所以不再寫 `你的手機`。
 
 ## 被鎖住的伺服器身分（`servers.sheet.identityLocked`）
 
@@ -1388,9 +1389,23 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 
 - **`the account`（用來登入伺服器的那個欄位）→ `帳號`** · 目錄裡已有同一個意思的用法（`errors.json` 六處、
   `onboarding.json` 一處），也和 `Apple 帳號` 的既定寫法一致 · `high`。
-- **這行提示裡的動作詞必須和它指向的按鈕一字不差**：`忘記` 取自 `menu.network.forgetServer`（「忘記伺服器」），
-  `加入` 取自 `servers.sheet.addTitle`（「加入伺服器」）。換成近義詞（「刪除」「新增」）會把讀者送去找一個不存在的選單項目。
-  ❗ 特別留意 `加入` 不能寫成 `新增`：Apple 的「加入＋受詞」句式是這個目錄已經定下的寫法。
-- **`are what name this server` → `決定了這是哪個伺服器`** · 表單本身另有「名稱」欄位（`servers.sheet.name`），
-  所以這句不能用「命名」：會被讀成在講那個標籤。用「決定了這是哪個」才是原意（這兩個值就是這台伺服器本身）· `high`。
+- **這行提示裡的動作詞必須和它指向的按鈕一字不差**：`忘記` 取自 `menu.network.forgetServer`（「忘記伺服器」）， `加入`
+  取自
+  `servers.sheet.addTitle`（「加入伺服器」）。換成近義詞（「刪除」「新增」）會把讀者送去找一個不存在的選單項目。❗ 特別留意
+  `加入` 不能寫成 `新增`：Apple 的「加入＋受詞」句式是這個目錄已經定下的寫法。
+- **`are what name this server` → `決定了這是哪個伺服器`**
+  · 表單本身另有「名稱」欄位（`servers.sheet.name`），所以這句不能用「命名」：會被讀成在講那個標籤。用「決定了這是哪個」才是原意（這兩個值就是這台伺服器本身）·
+  `high`。
 - 量詞沿用 `servers.json` 裡已有的 `這個伺服器`（三處），而不是 `errors.json` 的 `這台伺服器`。
+
+## 本來就沒有密碼可忘記時的提示（`fileExplorer.navigation.forgetSecretNoneToast`）
+
+- **`There was no saved password for {name}.` → `{name} 沒有已儲存的密碼。`**
+  · 「已儲存的密碼」一字不差沿用已出貨的三個兄弟鍵（`menu.network.forgetSavedPassword`、`fileExplorer.navigation.forgetSecretConfirmTitle`
+  = `忘記已儲存的密碼`，`.forgetSecretConfirm` = `要忘記 {name} 已儲存的密碼嗎？`，`.forgetSecretRefusedToast`）·
+  `high`。使用者剛從那個確認對話框過來，用詞必須一致。
+- **`{name}`
+  放主語位置最自然**，也避開了「為 {name} 儲存的密碼」這種要補介詞的說法。中文不標時態，英文的過去式由「沒有」承擔。占位符後面留一個半形空格（§
+  style.md 的拉丁占位符間距規則）。
+- 不用「失敗」「錯誤」：什麼都沒出錯，這正是這個鍵存在的理由。
+- 這台機器上沒有參考語料庫（主 clone 裡也沒有 `_ignored/i18n/`），所以這條決定依據的是已出貨的目錄和本詞彙表。

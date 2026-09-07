@@ -16,7 +16,6 @@ import {
   disconnectPlace,
   forgetServer,
   forgetServerSecret,
-  hasServerSecret,
   listSavedServers,
   setPlacePinned,
   showVolumeRowContextMenu,
@@ -51,23 +50,26 @@ export function isServerPlaceRow(volume: VolumeInfo): boolean {
  * Raises the native menu for a server row: Disconnect, Pin to switcher / Unpin,
  * Forget saved password, Forget server.
  *
- * ❗ Which items apply is the CALLER's reading of the row, so the two store
- * questions are asked here rather than on Rust's popup path, where "is a secret
- * stored?" would put a Keychain read in front of the menu appearing. `busy` is
- * the backend's own answer and it fills that in. A store that doesn't answer
- * costs the row one item, never the menu.
+ * ❗ Which items apply is the CALLER's reading of the row, so the saved-server
+ * question is asked here rather than on Rust's popup path, which is synchronous.
+ * `busy` is the backend's own answer and it fills that in. A store that doesn't
+ * answer costs the row one item, never the menu.
+ *
+ * ❗ **❌ No Keychain read here, and "Forget saved password" is always offered.**
+ * Every read of a Keychain entry can cost a system prompt, and a right-click is
+ * not a moment to spend one — the same rule `../network/CLAUDE.md` states for
+ * SMB, and it applies identically here: SFTP's `has_sftp_credentials` is the
+ * same `get_credentials(…).is_ok()` SMB's is. The COMMAND is what answers
+ * instead: `forgetServerSecret` says whether an entry was there, and
+ * [`forgetSavedSecret`] words a `false`.
  */
 export async function openServerRowMenu(volume: VolumeInfo): Promise<void> {
-  const [hasSavedSecret, isSaved] = await Promise.all([
-    hasServerSecret(volume.id).catch(() => false),
-    listSavedServers()
-      .then((servers) => servers.some((server) => server.places.some((place) => place.volumeId === volume.id)))
-      .catch(() => false),
-  ])
+  const isSaved = await listSavedServers()
+    .then((servers) => servers.some((server) => server.places.some((place) => place.volumeId === volume.id)))
+    .catch(() => false)
   const server: ServerRowMenu = {
     showsDisconnect: showsDisconnect(volume.connectionState),
     isSaved,
-    hasSavedSecret,
     pinned: volume.pinned === true,
   }
   await showVolumeRowContextMenu(volume.id, volume.name, false, false, server)
@@ -129,7 +131,16 @@ export async function setServerPinned(volumeId: string, volumeName: string, pinn
   }
 }
 
-/** Asks first, then forgets the place's remembered secret, keeping the server. */
+/**
+ * Asks first, then forgets the place's remembered secret, keeping the server.
+ *
+ * ❗ **This is where "was there one?" gets answered**, because the menu offers
+ * the item unconditionally rather than paying a Keychain read to decide
+ * ([`openServerRowMenu`]). `forget_server_secret` answers `false` when the store
+ * held nothing, and a person who just confirmed a Forget deserves a sentence
+ * rather than silence. A `true` says nothing: the entry is gone, which is what
+ * they asked for, and a toast confirming their own action is noise.
+ */
 export async function forgetSavedSecret(volumeId: string, volumeName: string): Promise<void> {
   const confirmed = await confirmDialog(
     tString('fileExplorer.navigation.forgetSecretConfirm', { name: volumeName }),
@@ -137,7 +148,10 @@ export async function forgetSavedSecret(volumeId: string, volumeName: string): P
   )
   if (!confirmed) return
   try {
-    await forgetServerSecret(volumeId)
+    const forgotten = await forgetServerSecret(volumeId)
+    if (!forgotten) {
+      addToast(tString('fileExplorer.navigation.forgetSecretNoneToast', { name: volumeName }), { level: 'info' })
+    }
   } catch (e) {
     refused('Forgetting the secret for', volumeId, e, 'fileExplorer.navigation.forgetSecretRefusedToast', volumeName)
   }
@@ -153,11 +167,11 @@ export async function forgetSavedSecret(volumeId: string, volumeName: string): P
  * actions are NOT here — their owners are the eject listener and the open
  * dropdown respectively.
  *
- * `open`, `pin`, `unpin`, and `edit` are typed variants with no producer yet:
- * Rust builds only the three items below for a server row today, and the rest
- * arrive with the hub (`pin` / `unpin` / `open`) and the sign-in sheet (`edit`).
- * They log rather than silently doing nothing, so the first menu that emits one
- * says so in the log instead of looking broken.
+ * `open` is the one typed variant with no producer: nothing emits it yet, and it
+ * logs rather than silently doing nothing, so the first menu that emits one says
+ * so in the log instead of looking broken. The native menu builds Disconnect,
+ * Pin / Unpin, Forget saved password, and Forget server (`menu_structure.rs`);
+ * `edit` comes from the palette (`command-handlers/servers-handlers.ts`).
  */
 export async function runServerRowAction(payload: {
   action: VolumeContextActionKind

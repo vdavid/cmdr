@@ -2604,8 +2604,8 @@ Các quyết định theo từng chuỗi:
   `adb.hint.dismiss`. Hai khóa này không bao giờ hiện trên giao diện.
 - Không giá trị nào trong đợt này chứa dấu nháy đơn, nên không có dấu nháy nào phải nhân đôi. Chỉ
   `adb.volumeLabelWithSuffix` (đã dịch từ đợt trước) mang `sameAsSourceJustification`.
-- **`You stopped opening your phone.` → `Bạn đã dừng việc mở điện thoại.`** (`adb.connect.cancelled`) · `dừng`,
-  giống khóa song song `search.coverage.walk.cancelled` (`Bạn đã dừng lần tìm kiếm này`) và `errors.volume.cancelled`
+- **`You stopped opening your phone.` → `Bạn đã dừng việc mở điện thoại.`** (`adb.connect.cancelled`) · `dừng`, giống
+  khóa song song `search.coverage.walk.cancelled` (`Bạn đã dừng lần tìm kiếm này`) và `errors.volume.cancelled`
   (`Cmdr đã dừng việc này theo yêu cầu của bạn.`) · `high`. ❌ Không dùng `hủy`: `Hủy` là NHÃN của nút
   (`fileOperations.button.cancel`), câu sẽ đọc như đang nhắc tới nút đó. Khuôn `dừng việc` + động từ đã có sẵn trong
   catalog (`dừng việc lập chỉ mục mới`). Bỏ `của bạn` vì chủ ngữ đã là `Bạn`; `mở` là động từ đã chốt cho điện thoại
@@ -2621,5 +2621,18 @@ Hai dòng dưới hai ô đã bị làm mờ `Địa chỉ` và `Tên người d
   chủ") và `thêm` lấy từ `servers.sheet.addTitle` ("Thêm máy chủ"). Dùng từ đồng nghĩa ("xoá", "tạo") sẽ khiến người đọc
   đi tìm một mục menu không tồn tại.
 - **`are what name this server` → `là những gì xác định máy chủ này`** · biểu mẫu có ô `Tên` riêng
-  (`servers.sheet.name`), nên câu này không được dựa vào chữ "đặt tên": người đọc sẽ tưởng đang nói về ô nhãn đó. `xác
-  định` nói đúng ý (hai giá trị đó CHÍNH LÀ máy chủ) · `high`.
+  (`servers.sheet.name`), nên câu này không được dựa vào chữ "đặt tên": người đọc sẽ tưởng đang nói về ô nhãn đó.
+  `xác định` nói đúng ý (hai giá trị đó CHÍNH LÀ máy chủ) · `high`.
+
+## Toast khi vốn không có mật khẩu nào được lưu (`fileExplorer.navigation.forgetSecretNoneToast`)
+
+- **`There was no saved password for {name}.` → `Không có mật khẩu đã lưu cho {name}.`** · lấy nguyên cụm
+  `mật khẩu đã lưu` và `cho {name}` từ ba khóa anh em đã xuất bản (`menu.network.forgetSavedPassword` và
+  `fileExplorer.navigation.forgetSecretConfirmTitle` = `Quên mật khẩu đã lưu`, `.forgetSecretConfirm`,
+  `.forgetSecretRefusedToast`) · `high`.
+- **`đã` trong `đã lưu` đã mang nghĩa quá khứ**, nên câu không cần thêm dấu thì nào nữa; `Không có …` là câu phủ định
+  tồn tại quen thuộc của catalog (`fileOperations.trash.undoUnavailable`: `Không có gì để đưa trở lại.`).
+- **`{name}` đứng sau `cho`, không cần loại từ**, nên tên máy chủ có hình dạng nào cũng đọc trôi. Không dùng chữ `lỗi`
+  hay `không thể`: chẳng có gì hỏng cả.
+- Kho tham chiếu không có trên máy này (`_ignored/i18n/` cũng không có trong bản clone chính), nên quyết định dựa vào
+  catalog đã xuất bản và bảng thuật ngữ này.

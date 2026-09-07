@@ -176,15 +176,18 @@ export async function showVolumeRowContextMenu(
  *
  * ❗ Read from the row's own state, never guessed: `showsDisconnect` is
  * `navigation/connection-state.ts`'s predicate over the volume's connection state,
- * and the other two come from the saved-server listing.
+ * and `isSaved` comes from the saved-server listing.
+ *
+ * ❗ There is deliberately no "is a secret stored?" field: answering it costs a
+ * Keychain read, and every read of one can raise a system prompt. "Forget saved
+ * password" is offered on every server row instead, and `forgetServerSecret`
+ * reports whether there was one.
  */
 export type ServerRowMenu = {
   /** Whether there is a session to drop (a `direct` or `disconnected` place). */
   showsDisconnect: boolean
   /** Whether a saved entry exists, so "Forget server" has something to forget. */
   isSaved: boolean
-  /** Whether a credential is remembered for the place. */
-  hasSavedSecret: boolean
   /** Whether the place is in the switcher, so the row offers Pin or Unpin. */
   pinned: boolean
 }

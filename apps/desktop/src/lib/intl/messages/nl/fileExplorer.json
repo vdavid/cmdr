@@ -1313,6 +1313,10 @@
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
     "sourceHash": "940eb59"
   },
+  "fileExplorer.navigation.forgetSecretNoneToast": "Er was geen opgeslagen wachtwoord voor {name}.",
+  "@fileExplorer.navigation.forgetSecretNoneToast": {
+    "sourceHash": "3d40a09"
+  },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "Werp {name} uit",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"

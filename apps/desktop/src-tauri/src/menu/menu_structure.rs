@@ -439,10 +439,12 @@ pub fn build_breadcrumb_context_menu<R: Runtime>(
 
 /// What a SERVER row's context menu offers, as the caller sees the row.
 ///
-/// ❗ The caller decides, ❌ never this builder: `show_volume_row_context_menu` is
-/// a synchronous command, and answering "is a secret stored for this?" here would
-/// put a secret-store read on the menu-popup path. Same shape as
-/// [`build_network_host_context_menu`]'s `has_credentials`.
+/// ❗ The caller decides which items apply, ❌ never this builder:
+/// `show_volume_row_context_menu` is a synchronous command. ❗ And "is a secret
+/// stored for this?" is asked by NOBODY on this path: it costs a Keychain read,
+/// every read of one can raise a system prompt, and a right-click is not a moment
+/// to spend one, so "Forget saved password" is offered unconditionally and the
+/// command it runs reports whether there was one.
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerRowMenu {
@@ -451,8 +453,6 @@ pub struct ServerRowMenu {
     pub shows_disconnect: bool,
     /// Whether a saved entry exists, so "Forget server" has something to forget.
     pub is_saved: bool,
-    /// Whether a credential is remembered for the place.
-    pub has_saved_secret: bool,
     /// Whether the place is in the volume switcher right now, which decides
     /// whether the row offers "Pin to switcher" or "Unpin".
     pub pinned: bool,
@@ -492,15 +492,19 @@ fn append_server_row_items<R: Runtime>(
     };
     let pin_item = MenuItem::with_id(app, pin_id, menu_t(pin_key), true, None::<&str>)?;
     menu.append(&pin_item)?;
-    if server.has_saved_secret {
-        let key = if server.busy {
-            "menu.volume.forgetSavedPasswordBusy"
-        } else {
-            "menu.network.forgetSavedPassword"
-        };
-        let item = MenuItem::with_id(app, SERVER_FORGET_SECRET_ID, menu_t(key), !server.busy, None::<&str>)?;
-        menu.append(&item)?;
-    }
+    // ❗ Offered on every server row, ❌ never gated on "is a secret stored?":
+    // answering that costs a Keychain read, and every read of one can raise a
+    // system prompt. A right-click is not a moment to spend one, which is the
+    // rule SMB's host menu already follows. The COMMAND answers instead:
+    // `forget_server_secret` reports whether an entry was there, and the caller
+    // words a `false` (`navigation/server-row-actions.ts::forgetSavedSecret`).
+    let key = if server.busy {
+        "menu.volume.forgetSavedPasswordBusy"
+    } else {
+        "menu.network.forgetSavedPassword"
+    };
+    let item = MenuItem::with_id(app, SERVER_FORGET_SECRET_ID, menu_t(key), !server.busy, None::<&str>)?;
+    menu.append(&item)?;
     if server.is_saved {
         let key = if server.busy {
             "menu.volume.forgetServerBusy"

@@ -2378,8 +2378,8 @@ termos do Android vêm do AOSP, que é a fonte autoritativa da tradução do pr�
 - **`This phone''s Android version is too old` → `A versão do Android deste celular é antiga demais`** · a concordância
   cai em `versão` (feminino), que é o sujeito; `navegar por ele` é o verbo de `settings.summary.adb`
   (`Navegue por um celular Android…`) · high
-- **`You stopped opening your phone.` → `Você parou de abrir o seu celular.`** (`adb.connect.cancelled`) · `parar`,
-  como na chave paralela `search.coverage.walk.cancelled` (`Você parou esta busca`) e em `errors.volume.cancelled`
+- **`You stopped opening your phone.` → `Você parou de abrir o seu celular.`** (`adb.connect.cancelled`) · `parar`, como
+  na chave paralela `search.coverage.walk.cancelled` (`Você parou esta busca`) e em `errors.volume.cancelled`
   (`O Cmdr parou isso a seu pedido.`) · confirmed. O molde `parar de` + infinitivo já é o do catálogo
   (`parou de conectar a {name}`, `parou de adicionar…`, `parou de responder`), então a frase fica verbal em vez do
   pesado `a abertura do celular`. ❌ Não `cancelou`: `Cancelar` é o RÓTULO do botão (`fileOperations.button.cancel`).
@@ -2408,3 +2408,15 @@ As duas linhas abaixo dos campos esmaecidos `Endereço` e `Nome de usuário`, qu
   que se quer (os dois valores SÃO o servidor) · `high`.
 - **`add it again` → `adicione-o de novo`** · `de novo` é a forma dominante do catálogo (66 ocorrências só em
   `errors.json`) e soa mais falada que `novamente` · `high`.
+
+## O toast quando não havia senha salva (`fileExplorer.navigation.forgetSecretNoneToast`)
+
+- **`There was no saved password for {name}.` → `Não havia nenhuma senha salva de {name}.`** · repete `senha salva` e o
+  `de {name}` das três irmãs já publicadas (`menu.network.forgetSavedPassword` e
+  `fileExplorer.navigation.forgetSecretConfirmTitle` = `Esquecer senha salva`, `.forgetSecretConfirm` =
+  `Esquecer a senha salva de {name}?`, `.forgetSecretRefusedToast`) · `high`.
+- **O imperfeito `Não havia` dá o tom de constatação** que o `@key` pede: nada deu errado e não havia o que fazer, então
+  nada de desculpa nem de `erro`. `salva` concorda com `senha`, nunca com `{name}` (§ style.md, «Nada concorda com um
+  `{name}`»).
+- A pilha de referência não estava nesta máquina (`_ignored/i18n/` também não existe no clone principal), então a
+  decisão se apoia no catálogo já publicado e neste glossário.

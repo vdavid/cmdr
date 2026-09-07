@@ -33,8 +33,9 @@ bare `/` for its root, which is why the Rust side keeps them too.
 ## The three arms
 
 `connectPlace({ volumeId, connectionState, onAttemptStarted, openSignIn })` picks by standing. Three production callers,
-one per arm: `../file-explorer/pane/place-connect.svelte.ts` for a `saved` row, and `../file-explorer/pane/smb-view-state.svelte.ts`
-for both the lazy-nav `disconnected` landing and the signed-out banner's Sign in.
+one per arm: `../file-explorer/pane/place-connect.svelte.ts` for a `saved` row, and
+`../file-explorer/pane/smb-view-state.svelte.ts` for both the lazy-nav `disconnected` landing and the signed-out
+banner's Sign in.
 
 - **`direct`, `os_mount` → nothing** (`already_live`). There is a session serving right now.
 - **`disconnected` → `smbReconnectManager.startCycle`**, answering `reconnecting`. The volume is REGISTERED, so a dial
@@ -99,11 +100,18 @@ caller opens the host's places list.
 
 **Remember, and who decides where it starts.** `add`: on, because someone typing a password into a new server means to
 come back to it. `edit`: from `hasServerSecret`. `sign-in`: from the request's `remembered`, which the ❗ OPENER
-decides, ❌ never the sheet: what it costs to find out is the protocol's business. SFTP and WebDAV ask
+decides, ❌ never the sheet: whether the answer is worth what it costs is the protocol's business. SFTP and WebDAV ask
 `hasServerSecret`, because an attended sign-in REFRESHES a remembered secret and ❌ never seeds one, so a default-on box
-there would seed one the user already declined. SMB passes `true` unasked, because `has_smb_credentials` is
-`get_credentials(…).is_ok()` and every read of that Keychain entry can cost a system prompt; nothing is written until a
-sign-in works, and its caller writes it, so a checked box promises nothing that hasn't been shown.
+there would seed one the user already declined; the sheet is a moment a person is already waiting through, so the read
+is affordable there. SMB passes `true` unasked, because nothing is written until a sign-in works and its caller writes
+it, so a checked box promises nothing that hasn't been shown.
+
+❗ **The read is not cheaper for SFTP, and ❌ don't reason as if it were.** `has_sftp_credentials` is
+`network::keychain::has_credentials`, which is literally `get_credentials(server, share).is_ok()` — the same call
+`has_smb_credentials` makes. So the cost argument is about WHEN it is worth paying, ❌ never about which protocol. On a
+right-click it is not worth paying: `../file-explorer/navigation/server-row-actions.ts` offers "Forget saved password"
+on every server row and lets `forgetServerSecret`'s own answer word the empty case, rather than reading the Keychain to
+decide whether to draw a menu item.
 
 **A flip is WRITTEN, before the round it belongs to.** `open-sign-in.ts`'s `withRememberFlip` wraps whichever attempt
 the standing picked, compares the box against what `hasServerSecret` answered, and writes once per flip: OFF →
@@ -115,8 +123,8 @@ a side effect of a dial.
 
 ❗ **The writer takes the whole tuple the volume id is minted from** (`(host, port, username)` for SFTP, the base URL
 and the account for WebDAV), read off the place's `appRoot` rather than rebuilt from a host plus a default port: an
-entry written under a different key is one the dial never finds, and the box would be lying in the other direction.
-A place no saved server claims has no key to write under, so it has no writer.
+entry written under a different key is one the dial never finds, and the box would be lying in the other direction. A
+place no saved server claims has no key to write under, so it has no writer.
 
 In EDIT mode there is nothing typed to save, so the box only ever forgets (`SignInSheet.svelte`'s `writeRememberFlip`);
 turning it on there rides the next successful sign-in's offer.
@@ -128,12 +136,12 @@ saved entry beside the first: the hub and the switcher both grow a duplicate row
 previous account, and any tab on the old volume id is orphaned. ❗ This is `ServerFormFields`' own rule and says nothing
 about sign-in mode, where username editability is the SHAPE VARIANT's property (§ "The renderer table").
 
-**Edit mode's password field writes what it shows.** A non-empty value on Save goes through
-`saveSftpCredentials` / `saveWebdavCredentials` keyed on the target's tuple, and the Remember box then reports on,
-because the store holds one. An EMPTY field means "I didn't come here to change the password", ❌ never "store an empty
-one": the field opens empty every time, since a stored secret is never read back out of the Keychain to prefill it. The
-typed password is written LAST, after the Remember flip, so it wins over a box the same visit turned off: a password
-field with text in it and Save pressed stores that password.
+**Edit mode's password field writes what it shows.** A non-empty value on Save goes through `saveSftpCredentials` /
+`saveWebdavCredentials` keyed on the target's tuple, and the Remember box then reports on, because the store holds one.
+An EMPTY field means "I didn't come here to change the password", ❌ never "store an empty one": the field opens empty
+every time, since a stored secret is never read back out of the Keychain to prefill it. The typed password is written
+LAST, after the Remember flip, so it wins over a box the same visit turned off: a password field with text in it and
+Save pressed stores that password.
 
 **Edit mode's "this can't reconnect on its own" warning is the BACKEND's answer, ❌ never a derivation.**
 `getSftpUnattendedReconnect` / `getWebdavUnattendedReconnect` say whether an unattended reconnect can work as things

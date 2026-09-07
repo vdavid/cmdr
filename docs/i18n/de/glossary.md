@@ -2494,3 +2494,17 @@ wird.
 - **`are what name this server` → `machen diesen Server aus`** · das Blatt hat ein eigenes Feld `Name`
   (`servers.sheet.name`), also darf der Satz nicht mit „benennen“ arbeiten: sonst liest er sich, als ginge es um die
   Beschriftung. „ausmachen“ trifft den gemeinten Sinn (die beiden Werte SIND der Server) · `high`.
+
+## Der Toast, wenn gar kein Passwort gespeichert war (`fileExplorer.navigation.forgetSecretNoneToast`)
+
+- **`There was no saved password for {name}.` → `Für {name} war kein Passwort gespeichert.`** · Begriff wortgleich aus
+  den drei ausgelieferten Geschwistern (`menu.network.forgetSavedPassword` und
+  `fileExplorer.navigation.forgetSecretConfirmTitle` = „Gespeichertes Passwort vergessen“, `.forgetSecretConfirm` = „Das
+  gespeicherte Passwort für {name} vergessen? …“, `.forgetSecretRefusedToast`) · `high`. Der Toast trägt den Begriff als
+  PRÄDIKAT: das Partizip `gespeichert` sagt dasselbe wie `gespeichertes Passwort`, ohne dass der Satz in den Nominalstil
+  kippt („kein gespeichertes Passwort vorhanden“ klingt nach Formular). Präteritum und kein Bedauern, wie der `@key`
+  verlangt: es ist nichts schiefgegangen.
+- **Der Platzhalter steht hinter `Für` und bleibt unflektiert** — dieselbe Mechanik wie die Regel gegen case-marked
+  placeholders in `style.md`. Kein Pronomen dahinter, der Katalog nennt die Sache beim Namen.
+- Die Referenzsammlung war auf dieser Maschine nicht vorhanden (`_ignored/i18n/` fehlt auch im Haupt-Klon), die
+  Entscheidung stützt sich daher auf den ausgelieferten Katalog und dieses Glossar.

@@ -207,11 +207,11 @@ root is `sftp://ada@nas:22/srv`, which is not a mount point at all and therefore
 the network flag is what let `enable_drive_index` on an SFTP or WebDAV id start a walker plus a watcher on a scheme
 root, cover zero entries, persist the user-enabled marker, and report the volume as indexed, so folder sizes and search
 answered "nothing here" for a server full of files. Neither ⇒ `LocalExternal`, indexed via
-`start_indexing_for_local_external_inner` →
-`start_indexing_for(.., LocalExternal, inodes_trustworthy)`, then `enforce_external_index_cap` (retention, owned by
-`../resources/DETAILS.md`). The pure routing decision (`routes_to_local_external`) is split from the wiring so it's
-unit-testable against a `FakeVolumeProvider`. Disk images are INCLUDED: a mounted DMG is a real local filesystem; the
-first-connect prompt stays `isDriveRow`-gated so a DMG is only ever indexed by an explicit enable.
+`start_indexing_for_local_external_inner` → `start_indexing_for(.., LocalExternal, inodes_trustworthy)`, then
+`enforce_external_index_cap` (retention, owned by `../resources/DETAILS.md`). The pure routing decision
+(`routes_to_local_external`) is split from the wiring so it's unit-testable against a `FakeVolumeProvider`. Disk images
+are INCLUDED: a mounted DMG is a real local filesystem; the first-connect prompt stays `isDriveRow`-gated so a DMG is
+only ever indexed by an explicit enable.
 
 **The fs-type probe is timeout-guarded** (2 s, on the blocking pool): a hung network mount's `statfs` must never stall
 the IPC thread, and a timed-out/errored probe is treated as network → fall through (safe). The same probe also yields

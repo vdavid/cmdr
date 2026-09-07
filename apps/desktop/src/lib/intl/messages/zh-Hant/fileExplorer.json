@@ -1301,6 +1301,10 @@
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
     "sourceHash": "940eb59"
   },
+  "fileExplorer.navigation.forgetSecretNoneToast": "{name} 沒有已儲存的密碼。",
+  "@fileExplorer.navigation.forgetSecretNoneToast": {
+    "sourceHash": "3d40a09"
+  },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "退出 {name}",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"

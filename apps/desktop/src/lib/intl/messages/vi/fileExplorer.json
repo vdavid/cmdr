@@ -1304,6 +1304,10 @@
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
     "sourceHash": "940eb59"
   },
+  "fileExplorer.navigation.forgetSecretNoneToast": "Không có mật khẩu đã lưu cho {name}.",
+  "@fileExplorer.navigation.forgetSecretNoneToast": {
+    "sourceHash": "3d40a09"
+  },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "Tháo {name}",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
