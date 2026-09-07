@@ -86,15 +86,20 @@ a credential refusal back to the pane, which has the words and the retry for it.
 `connectServer`. SMB's add path has no target at all (its connect is a share MOUNT), so it answers `handed_off` and the
 caller opens the host's places list.
 
-**Remember, per mode.** `add`: on, because someone typing a password into a new server means to come back to it.
-`sign-in` and `edit`: seeded from `hasServerSecret`. ❗ An attended sign-in REFRESHES a remembered secret and ❌ never
-seeds one, so a default-on box would seed one the user already declined. Turning it OFF forgets the stored secret
-immediately; turning it on rides the next successful offer, because there is nothing typed to save yet. ❌ Neither ever
-happens as a side effect of a dial.
+**Remember, and who decides where it starts.** `add`: on, because someone typing a password into a new server means to
+come back to it. `edit`: from `hasServerSecret`. `sign-in`: from the request's `remembered`, which the ❗ OPENER
+decides, ❌ never the sheet — what it costs to find out is the protocol's business. SFTP and WebDAV ask
+`hasServerSecret`, because an attended sign-in REFRESHES a remembered secret and ❌ never seeds one, so a default-on box
+there would seed one the user already declined. SMB passes `true` unasked, because `has_smb_credentials` is
+`get_credentials(…).is_ok()` and every read of that Keychain entry can cost a system prompt; nothing is written until a
+sign-in works, and its caller writes it, so a checked box promises nothing that hasn't been shown.
+
+Turning it OFF forgets the stored secret immediately; turning it on rides the next successful offer, because there is
+nothing typed to save yet. ❌ Neither ever happens as a side effect of a dial.
 
 **Edit mode's "this can't reconnect on its own" warning is the BACKEND's answer, ❌ never a derivation.**
 `getSftpUnattendedReconnect` / `getWebdavUnattendedReconnect` say whether an unattended reconnect can work as things
-stand, and the sheet asks when it RENDERS. ❗ ❌ Don't rebuild it from "auto-reconnect is on AND no secret is stored":
+stand, and the sheet asks when it RENDERS. ❌ Don't rebuild it from "auto-reconnect is on AND no secret is stored":
 the rung a remote volume comes back on is decided per dial, so a derivation goes stale the moment one lands elsewhere,
 and the two backends spell the same answer differently (`needs_stored_secret` vs `no_stored_secret`). The state worth
 warning about is the silent one: auto-reconnect on, nothing stored, so nothing can ever happen.
