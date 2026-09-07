@@ -114,6 +114,18 @@ if (wantsVirtualMtp && !forwardedArgs.includes('virtual-mtp')) {
 
 const env = { ...process.env }
 
+// Answer the "is there a terminal?" question on the app's behalf. The Tauri CLI spawns the
+// app with a piped stderr and forwards the bytes to its own, so the app's `is_terminal()`
+// says false even in a real terminal and can't tell one from `2> log.txt`. We're the last
+// process that still sees the real stderr — which is where the app's log lines come out, so
+// stderr is the stream to ask, not stdout. The Tauri CLI makes the same move one layer down
+// when it hands cargo `--color always`. Either name set explicitly wins; the app honors
+// `NO_COLOR` over both. Dev only: a build launches no app, and forcing color on the tools a
+// build runs would put escape sequences into a captured `pnpm build > build.log`.
+if (isDev && process.stderr.isTTY && !env.CLICOLOR_FORCE && !env.FORCE_COLOR) {
+  env.CLICOLOR_FORCE = '1'
+}
+
 // Dev-only: label which working tree this session runs against, so the dev-mode title bar
 // can mark side-by-side worktree windows apart (e.g. "(colorful-tags) DEV MODE - …"). Vite
 // bakes it into the frontend as `__CMDR_WORKTREE_LABEL__`. Skipped under E2E (CMDR_E2E_MODE)

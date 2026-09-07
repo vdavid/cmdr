@@ -38,9 +38,9 @@ Dispatch-tree shape, why fern + file-rotate, timestamp formats, and decisions: `
 - **The file chain's ISO timestamp is prepended by `CoalescingWriter`, NOT the fern `.format()` closure.** ❌ Don't move
   `file_timestamp()` back into that format: the dedup key must stay timestamp-free or identical lines a millisecond
   apart never coalesce. DETAILS § "Duplicate coalescing".
-- **ANSI is terminal-only, resolved once at startup.** `color_enabled()` answers false for a piped `pnpm dev` and under
-  `NO_COLOR`; the target padding holds either way. ❌ Don't move that call into the format closure (a syscall per line).
-  DETAILS § "Terminal target column".
+- **ANSI is terminal-only, resolved once at startup.** ❌ `is_terminal()` can't decide it alone: under `pnpm dev` the
+  Tauri CLI hands us a piped stderr, so `tauri-wrapper.ts` sets `CLICOLOR_FORCE`; `NO_COLOR` outranks both. DETAILS §
+  "Terminal target column".
 - **The RAM gauge is off unless `CMDR_LOG_RAM_USE` is truthy** (`ram_gauge::tag()` returns `""`, no alloc). When on, its
   ever-changing number lands in the file dedup key, so floods coalesce less: accepted debug-mode tradeoff.
 - **Cap = 0 disables the file chain entirely** (`init` skips it). The terminal and the verbose toggle still work; the
