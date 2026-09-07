@@ -44,8 +44,8 @@ two agree today; a bundle-id change has to touch both.
 - **`set_log_dir(path)` / `log_dir()`**: cache the resolved dir at logger-init; the error-report bundle builder reads it
   back.
 - **`set_keep_count(n)` / `keep_count()`**: live view of the keep-N the file chain was built with.
-- **`list_recent_log_files(dir)`**: active log files (`cmdr.log` plus `cmdr.log.<digits>`) newest-first by mtime.
-  Rejects legacy `Cmdr_*.log`.
+- **`list_recent_log_files(dir)`**: active log files newest-first by mtime. The active-file pattern is
+  `^cmdr\.log(\.\d+)?$` (case-insensitive); anything else, legacy `Cmdr_<timestamp>.log` included, is rejected.
 - **`eager_prune(dir, keep_n)`**: one-shot delete of everything beyond `keep_n` newest. Used after the user lowers the
   cap so files vanish now.
 - **`cleanup_legacy_log_files(dir)`**: one-shot startup sweep removing `Cmdr_<timestamp>.log` files left from the
@@ -138,10 +138,41 @@ above the baked-in value.
 
 ## Timestamp formats
 
-- **Stdout chain**: `HH:MM:SS.mmm` (terse; devs reading the live terminal know the date).
+- **Stdout chain**: `HH:MM:SS.mmm` (terse; devs reading the live terminal know the date). The rest of that line's shape
+  is § "Terminal target column".
 - **File chain**: `YYYY-MM-DDTHH:MM:SS.mmm±HH:MM` (ISO 8601 with millisecond precision and timezone offset). The file
   ships to triage, where bare `HH:MM:SS.mmm` is impossible to correlate; the error reporter's Flow B bundle parses this
   stamp to line-trim by timestamp.
+
+## Terminal target column
+
+`target_style.rs` styles the target on the terminal chain only. A startup log is dozens of lines from a dozen
+subsystems, and a dev scanning it is looking for one of them; an unpadded, uniformly white target makes that a read
+rather than a glance.
+
+- **Head and tail**: the target splits at its first `::`, so `cmdr_index::indexing::watch::watcher` is the head
+  `cmdr_index` plus the tail `::indexing::watch::watcher`. The head is padded to `HEAD_WIDTH` (14, matching
+  `crash_reporter`, the longest head in the tree) and colored; the tail follows in gray. A longer head overflows rather
+  than being truncated: one misaligned line beats an unrecognizable subsystem name. The two spaces before the message
+  stay, so a headless target puts its message two columns past the padding.
+- **Stable color**: FNV-1a over the head, modulo a 16-entry palette, so `logging` is the same color in every run, on
+  every machine, and in a colleague's paste. ❌ Not `DefaultHasher`: std promises nothing about its output across
+  releases, and a Rust upgrade silently repainting every subsystem defeats the point. Sixteen buckets against ~20
+  subsystems means a few pairs share a color (`logging` / `downloads` today); the names still differ, and widening the
+  palette would only add hues too close to tell apart.
+- **Palette**: 256-color mid-tones, no reds, yellows, or greens. Two reasons: the extremes vanish on one background or
+  the other, and those three hues are the level colors sitting one column to the left, where a head that borrows one
+  reads as a level at a glance.
+- **When ANSI is emitted**: `color_enabled()`, once at startup, requires stderr to be a terminal and `NO_COLOR` to be
+  unset or empty. `write_terminal_line` then substitutes empty strings for every sequence, so a redirected `pnpm dev`
+  yields plain text with the padding intact. Resolved once because it's a syscall and stderr can't become a terminal
+  mid-run.
+- **No allocation**: the padding and the sequences go through `format_args!` as separate arguments, so the width applies
+  to the head alone (a pre-assembled colored string would count the escape bytes as width) and nothing is built on the
+  log path.
+- **Test seam**: `build_dispatch_for_test` takes the `color` flag and calls the same `write_terminal_line` the real
+  chain does, so the tests assert the format that ships. A test runner's stderr is a pipe, so calling `color_enabled()`
+  there would always answer false and the colored path would go uncovered.
 
 ## RAM gauge (`CMDR_LOG_RAM_USE`)
 

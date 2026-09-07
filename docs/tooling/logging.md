@@ -151,6 +151,12 @@ RUST_LOG=trace pnpm dev
 Format: `HH:MM:SS.mmm LEVEL target  message`. Frontend logs appear with an `FE:` prefix followed by the LogTape category
 name.
 
+The terminal adds ANSI on top of that, and only when stderr is a real terminal and `NO_COLOR` is unset: a piped or
+redirected `pnpm dev` gets the plain shape above. The target's head (everything before its first `::`) is padded to 14
+columns and painted a color derived from the head itself, so a subsystem keeps the same color across runs and machines;
+the module path after it goes gray. The head column makes the terminal shape
+`… INFO  downloads     ::watcher  Started watching …`. The log FILE is unaffected: no ANSI, no padding.
+
 ## RUST_LOG recipes
 
 Copy-paste commands for common debugging scenarios. All include `info` as the base level.
