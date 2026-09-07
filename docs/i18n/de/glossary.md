@@ -2471,3 +2471,19 @@ Wortlaut-Entscheidungen:
   interne Flags und erscheinen nie in der Oberfläche, brauchen aber Deckung.
 - Kein neuer `sameAsSourceJustification`: `adb.volumeLabelWithSuffix` hatte schon einen, alle 18 anderen Werte weichen
   vom Englischen ab. Kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt.
+
+## Die gesperrte Server-Identität (`servers.sheet.identityLocked`)
+
+Die zwei Zeilen unter den ausgegrauten Feldern `Adresse` und `Benutzername`, wenn ein gespeicherter Server bearbeitet
+wird.
+
+- **`the account` (das Feld, mit dem man sich am Server anmeldet) → `Konto`** · der Katalog führt genau diesen Sinn
+  schon: `errors.listing.remotePermissionDenied.explanation` schreibt „das Konto, mit dem du verbunden bist“, und
+  `.suggestion` „das Konto, mit dem du die Freigabe verbunden hast“ · `high`. ❌ Nicht „Account“: das bleibt Apples Wort
+  für den `Apple Account` (`errors.provider.iCloud.needsAction`), und die Vermischung liest sich schlampig.
+- **Der Hinweis nennt die Aktionen genauso wie die Knöpfe, auf die er zeigt**: `vergessen` aus
+  `menu.network.forgetServer` („Server vergessen“) und `hinzufügen` aus `servers.sheet.addTitle` („Server hinzufügen“).
+  Wer hier ein Synonym wählt („entfernen“, „anlegen“), schickt den Leser zu einem Menüpunkt, den es nicht gibt.
+- **`are what name this server` → `machen diesen Server aus`** · das Blatt hat ein eigenes Feld `Name`
+  (`servers.sheet.name`), also darf der Satz nicht mit „benennen“ arbeiten: sonst liest er sich, als ginge es um die
+  Beschriftung. „ausmachen“ trifft den gemeinten Sinn (die beiden Werte SIND der Server) · `high`.

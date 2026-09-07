@@ -113,6 +113,20 @@ A place no saved server claims has no key to write under, so it has no writer.
 In EDIT mode there is nothing typed to save, so the box only ever forgets (`SignInSheet.svelte`'s `writeRememberFlip`);
 turning it on there rides the next successful sign-in's offer.
 
+**Edit mode changes SETTINGS, ❌ never identity.** The address, the protocol toggle, and the username are locked, and
+`servers.sheet.identityLocked` sits under them saying to Forget and Add instead. Rust mints the volume id from
+`(host, port, username)` and `sftp_known_servers::remember` keys on that same tuple, so an edited one UPSERTS a second
+saved entry beside the first: the hub and the switcher both grow a duplicate row, the old row still points at the
+previous account, and any tab on the old volume id is orphaned. ❗ This is `ServerFormFields`' own rule and says nothing
+about sign-in mode, where username editability is the SHAPE VARIANT's property (§ "The renderer table").
+
+**Edit mode's password field writes what it shows.** A non-empty value on Save goes through
+`saveSftpCredentials` / `saveWebdavCredentials` keyed on the target's tuple, and the Remember box then reports on,
+because the store holds one. An EMPTY field means "I didn't come here to change the password", ❌ never "store an empty
+one": the field opens empty every time, since a stored secret is never read back out of the Keychain to prefill it. The
+typed password is written LAST, after the Remember flip, so it wins over a box the same visit turned off: a password
+field with text in it and Save pressed stores that password.
+
 **Edit mode's "this can't reconnect on its own" warning is the BACKEND's answer, ❌ never a derivation.**
 `getSftpUnattendedReconnect` / `getWebdavUnattendedReconnect` say whether an unattended reconnect can work as things
 stand, and the sheet asks when it RENDERS. ❌ Don't rebuild it from "auto-reconnect is on AND no secret is stored": the

@@ -211,6 +211,10 @@
   "@servers.sheet.addressHelp": {
     "sourceHash": "f91dc8a"
   },
+  "servers.sheet.identityLocked": "Địa chỉ và tài khoản là những gì xác định máy chủ này. Để thay đổi chúng, hãy quên máy chủ này rồi thêm lại.",
+  "@servers.sheet.identityLocked": {
+    "sourceHash": "c16657d"
+  },
   "servers.sheet.username": "Tên người dùng",
   "@servers.sheet.username": {
     "sourceHash": "e3b89e9"

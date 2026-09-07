@@ -211,6 +211,10 @@
   "@servers.sheet.addressHelp": {
     "sourceHash": "f91dc8a"
   },
+  "servers.sheet.identityLocked": "地址和账户决定了这是哪台服务器。要改这两项，先忘记这台服务器，再重新添加。",
+  "@servers.sheet.identityLocked": {
+    "sourceHash": "c16657d"
+  },
   "servers.sheet.username": "用户名",
   "@servers.sheet.username": {
     "sourceHash": "e3b89e9"

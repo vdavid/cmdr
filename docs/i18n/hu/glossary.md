@@ -2852,3 +2852,18 @@ fordításából.
   korábbról áll rajta.
 - Aposztróf egyik magyar értékben sincs, tehát ICU-kettőzés sem kellett. A `{name}` és a `{deviceName}` halmaza
   megegyezik az angoléval.
+
+## A zárolt szerveridentitás (`servers.sheet.identityLocked`)
+
+A két sor a kiszürkített `Cím` és `Felhasználónév` mezők alatt, amikor mentett szervert szerkesztesz.
+
+- **`the account` (az a mező, amivel a szerverre bejelentkezel) → `fiók`** · a katalógus már ezt használja ugyanebben az
+  értelemben (`errors.json` és `onboarding.json`, például „a fiók, amellyel csatlakoztál”) · `high`.
+- **A súgósor pontosan úgy nevezi meg a műveleteket, ahogy a gombok, amikre mutat**: `elfelejt` a
+  `menu.network.forgetServer`-ből („Szerver elfelejtése”) és `hozzáad` a `servers.sheet.addTitle`-ből („Szerver
+  hozzáadása”). Szinonima („eltávolítás”, „felvétel”) olyan menüponthoz küldi az olvasót, ami nincs.
+- **`are what name this server` → `azonosítja ezt a szervert`** · az űrlapon van saját `Név` mező
+  (`servers.sheet.name`), ezért a mondat nem építhet az „elnevezés”-re: úgy hangzana, mintha arról a címkéről lenne szó.
+  Az „azonosít” azt mondja, amit kell (a két érték MAGA a szerver) · `high`.
+- **`to change them` → `a módosításukhoz`** · a `módosít` tő a katalógus szava a beállítások megváltoztatására
+  (`settings.json` „módosításához”, `onboarding.json` „módosíthatod”) · `high`.

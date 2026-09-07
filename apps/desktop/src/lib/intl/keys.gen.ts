@@ -2550,6 +2550,7 @@ export type MessageKey =
   | 'servers.sheet.connecting'
   | 'servers.sheet.connectionModeLegend'
   | 'servers.sheet.editTitle'
+  | 'servers.sheet.identityLocked'
   | 'servers.sheet.keyFile'
   | 'servers.sheet.name'
   | 'servers.sheet.needsStoredSecret'

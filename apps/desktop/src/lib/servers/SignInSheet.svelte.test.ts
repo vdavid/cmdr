@@ -24,6 +24,8 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   getWebdavUnattendedReconnect: vi.fn(() => Promise.resolve('possible')),
   forgetServerSecret: vi.fn(() => Promise.resolve(true)),
   updateSavedServer: vi.fn(() => Promise.resolve()),
+  saveSftpCredentials: vi.fn(() => Promise.resolve()),
+  saveWebdavCredentials: vi.fn(() => Promise.resolve()),
   approveSftpHostKey: vi.fn(() => Promise.resolve({ outcome: 'recorded' })),
 }))
 
@@ -258,6 +260,86 @@ describe('SignInSheet: add mode', () => {
 
     expect(submissions).toEqual([{ mode: 'add_smb', address: 'naspolya' }])
     expect(done).toEqual([{ kind: 'handed_off' }])
+  })
+})
+
+/**
+ * ❗ Edit mode changes a server's SETTINGS. The address and the account are its
+ * IDENTITY: Rust mints the volume id from `(host, port, username)` and
+ * `sftp_known_servers::remember` is keyed on the same tuple, so an edited one
+ * upserts a SECOND saved entry beside the first rather than moving anything.
+ * The fields say so by being locked, and the hint says what to do instead.
+ */
+describe('SignInSheet: edit mode', () => {
+  const SAVED = {
+    id: 'sftp-nas-local-22-ada',
+    protocol: 'sftp' as const,
+    displayName: 'Naspolya',
+    address: 'nas.local:22',
+    username: 'ada',
+    pinned: true,
+    lastConnectedAt: null,
+    places: [],
+  }
+
+  const KNOWN_SFTP = {
+    host: 'nas.local',
+    port: 22,
+    username: 'ada',
+    displayName: 'Naspolya',
+    remoteRoot: '/srv/data',
+    keyFile: null,
+    useAgent: true,
+    autoReconnect: true,
+    pinned: true,
+  }
+
+  beforeEach(async () => {
+    const commands = await import('$lib/tauri-commands')
+    vi.mocked(commands.getKnownSftpServers).mockResolvedValue([KNOWN_SFTP])
+    vi.mocked(commands.saveSftpCredentials).mockClear()
+    vi.mocked(commands.forgetServerSecret).mockClear()
+  })
+
+  it('locks the identity and points at the honest way to change it', async () => {
+    await renderSheet({ mode: 'edit', server: SAVED })
+
+    const address = document.body.querySelector<HTMLInputElement>('#server-address')
+    const username = document.body.querySelector<HTMLInputElement>('#server-username')
+    expect(address?.value).toBe('ada@nas.local:22')
+    expect(address?.disabled).toBe(true)
+    expect(username?.disabled).toBe(true)
+    // ❗ An inert-looking field with no explanation is worse than no field. The
+    // hint names the path that actually works.
+    expect(document.body.textContent).toContain('Forget this server and add it again')
+  })
+
+  it('writes a typed password through the Keychain, so the field does what it shows', async () => {
+    const commands = await import('$lib/tauri-commands')
+    await renderSheet({ mode: 'edit', server: SAVED })
+
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-secret') as HTMLInputElement, 'hunter2')
+    await tick()
+    buttonSaying('Save').click()
+    await flush()
+
+    // The tuple the volume id is minted from, so the entry the next dial reads
+    // is the one this writes.
+    expect(vi.mocked(commands.saveSftpCredentials)).toHaveBeenCalledWith('nas.local', 22, 'ada', 'hunter2')
+    expect(vi.mocked(commands.forgetServerSecret)).not.toHaveBeenCalled()
+  })
+
+  it('leaves the store alone when the password field is left empty', async () => {
+    const commands = await import('$lib/tauri-commands')
+    await renderSheet({ mode: 'edit', server: SAVED })
+
+    buttonSaying('Save').click()
+    await flush()
+
+    // An empty box means "I didn't come here to change the password", ❌ never
+    // "store an empty one".
+    expect(vi.mocked(commands.saveSftpCredentials)).not.toHaveBeenCalled()
+    expect(vi.mocked(commands.forgetServerSecret)).not.toHaveBeenCalled()
   })
 })
 

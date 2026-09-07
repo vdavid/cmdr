@@ -2387,3 +2387,18 @@ Nenhuma linha diz `erro` nem `falhou`, nenhuma expõe o servidor do ADB, o trans
 nenhuma usa `só`, `simples` ou `fácil`. Varredura pt-PT do lote: zero `ficheiro`, `telemóvel`, `ecrã`, `estar a` +
 infinitivo, `consoante`, `Rever`, `alterar o nome` ou próclise. Nenhum valor leva apóstrofo, então não há `''` a dobrar;
 `{name}` e `{deviceName}` ficam intactos e nada concorda com eles.
+
+## A identidade travada do servidor (`servers.sheet.identityLocked`)
+
+As duas linhas abaixo dos campos esmaecidos `Endereço` e `Nome de usuário`, quando o usuário EDITA um servidor salvo.
+
+- **`the account` (o campo com que você entra no servidor) → `a conta`** · o catálogo já usa a palavra nesse sentido
+  (cinco vezes em `errors.json`, três em `fileExplorer.json`) · `high`.
+- **A dica nomeia as ações exatamente como os botões para os quais ela aponta**: `esquecer` de
+  `menu.network.forgetServer` ("Esquecer servidor") e `adicionar` de `servers.sheet.addTitle` ("Adicionar servidor"). Um
+  sinônimo ("remover", "criar") manda o leitor procurar um menu que não existe.
+- **`are what name this server` → `identificam este servidor`** · a folha tem o próprio campo `Nome`
+  (`servers.sheet.name`), então a frase não pode usar "dar nome": pareceria falar daquele rótulo. "identificar" diz o
+  que se quer (os dois valores SÃO o servidor) · `high`.
+- **`add it again` → `adicione-o de novo`** · `de novo` é a forma dominante do catálogo (66 ocorrências só em
+  `errors.json`) e soa mais falada que `novamente` · `high`.

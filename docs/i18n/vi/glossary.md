@@ -2604,3 +2604,16 @@ Các quyết định theo từng chuỗi:
   `adb.hint.dismiss`. Hai khóa này không bao giờ hiện trên giao diện.
 - Không giá trị nào trong đợt này chứa dấu nháy đơn, nên không có dấu nháy nào phải nhân đôi. Chỉ
   `adb.volumeLabelWithSuffix` (đã dịch từ đợt trước) mang `sameAsSourceJustification`.
+
+## Danh tính bị khoá của máy chủ (`servers.sheet.identityLocked`)
+
+Hai dòng dưới hai ô đã bị làm mờ `Địa chỉ` và `Tên người dùng`, khi người dùng SỬA một máy chủ đã lưu.
+
+- **`the account` (ô dùng để đăng nhập vào máy chủ) → `tài khoản`** · catalog đã dùng đúng nghĩa này (sáu lần trong
+  `errors.json`, một lần trong `onboarding.json`) · `high`.
+- **Dòng gợi ý gọi tên hành động y hệt các nút mà nó trỏ tới**: `quên` lấy từ `menu.network.forgetServer` ("Quên máy
+  chủ") và `thêm` lấy từ `servers.sheet.addTitle` ("Thêm máy chủ"). Dùng từ đồng nghĩa ("xoá", "tạo") sẽ khiến người đọc
+  đi tìm một mục menu không tồn tại.
+- **`are what name this server` → `là những gì xác định máy chủ này`** · biểu mẫu có ô `Tên` riêng
+  (`servers.sheet.name`), nên câu này không được dựa vào chữ "đặt tên": người đọc sẽ tưởng đang nói về ô nhãn đó. `xác
+  định` nói đúng ý (hai giá trị đó CHÍNH LÀ máy chủ) · `high`.

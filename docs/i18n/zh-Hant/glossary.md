@@ -1376,3 +1376,16 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   （`已顯示「網路」群組過長的提示` / `是否已顯示過關於取消釘選伺服器的一次性提示。`）· `high`。英文從 `Seen` 換成
   `Dismissed`，中文跟著從 `已顯示` 換成 `已關閉`，和上面的 Dismiss 條目同字。
 - 這 19 個值都不含撇號（中文不需要，ICU 的 `''` 規則咬不到），也都和英文不同，所以沒有 `sameAsSourceJustification`。
+
+## 被鎖住的伺服器身分（`servers.sheet.identityLocked`）
+
+編輯已儲存的伺服器時，變灰的「位址」與「使用者名稱」兩個欄位底下的兩行說明。
+
+- **`the account`（用來登入伺服器的那個欄位）→ `帳號`** · 目錄裡已有同一個意思的用法（`errors.json` 六處、
+  `onboarding.json` 一處），也和 `Apple 帳號` 的既定寫法一致 · `high`。
+- **這行提示裡的動作詞必須和它指向的按鈕一字不差**：`忘記` 取自 `menu.network.forgetServer`（「忘記伺服器」），
+  `加入` 取自 `servers.sheet.addTitle`（「加入伺服器」）。換成近義詞（「刪除」「新增」）會把讀者送去找一個不存在的選單項目。
+  ❗ 特別留意 `加入` 不能寫成 `新增`：Apple 的「加入＋受詞」句式是這個目錄已經定下的寫法。
+- **`are what name this server` → `決定了這是哪個伺服器`** · 表單本身另有「名稱」欄位（`servers.sheet.name`），
+  所以這句不能用「命名」：會被讀成在講那個標籤。用「決定了這是哪個」才是原意（這兩個值就是這台伺服器本身）· `high`。
+- 量詞沿用 `servers.json` 裡已有的 `這個伺服器`（三處），而不是 `errors.json` 的 `這台伺服器`。

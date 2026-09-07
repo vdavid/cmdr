@@ -211,6 +211,10 @@
   "@servers.sheet.addressHelp": {
     "sourceHash": "f91dc8a"
   },
+  "servers.sheet.identityLocked": "位址和帳號決定了這是哪個伺服器。要改這兩項，先忘記這個伺服器，再重新加入。",
+  "@servers.sheet.identityLocked": {
+    "sourceHash": "c16657d"
+  },
   "servers.sheet.username": "使用者名稱",
   "@servers.sheet.username": {
     "sourceHash": "e3b89e9"

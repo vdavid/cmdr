@@ -1,0 +1,24 @@
+fix(servers): editing a saved server stops silently minting a second one, and its password field starts working
+
+Two ways the edit sheet lied about what Save does.
+
+**Identity.** Only the protocol toggle was locked, so Address and Username stayed typeable. Rust mints the volume id
+from `(host, port, username)` and `sftp_known_servers::remember` keys on the same tuple, so `update_saved_server` on an
+edited one UPSERTS a new pinned entry beside the old: the hub and the switcher both grow a duplicate row, the old row
+still points at the previous account, and any tab on the old volume id is orphaned. Nothing said so on screen. All three
+identity fields are locked now, with `servers.sheet.identityLocked` under them naming the path that actually works
+(Forget, then Add). The "paste whatever you have" address help steps aside when nobody can type in the field.
+
+**Password.** `ServerFormFields` binds `form.secret` in edit mode too, but `save()` only sent `serverTargetFrom(form)`,
+which carries no secret. Typing a new password and pressing Save did nothing at all, with no feedback. It now writes
+through `saveSftpCredentials` / `saveWebdavCredentials` on the target's tuple and the Remember box reports on, because
+the store holds one. An empty field still means "I didn't come here to change the password", never "store an empty one".
+The write lands after the Remember flip, so a password typed in the same visit wins over a box turned off: a field with
+text in it and Save pressed stores that password.
+
+- `identityEditable` + `identityHint` on `ServerFormFields`, off in edit mode.
+- `writeTypedSecret` in `SignInSheet.svelte`, keyed on the `ServerTarget`'s own tuple.
+- Three cells: the locked fields plus the visible hint, a typed password reaching the Keychain with the right tuple, and
+  an empty one leaving the store alone.
+- `servers.sheet.identityLocked` translated into all ten locales, terms sourced from each catalog's existing
+  `menu.network.forgetServer` and `servers.hub.addServer` so the hint matches the buttons it points at.

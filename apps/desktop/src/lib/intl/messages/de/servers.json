@@ -213,6 +213,10 @@
   "@servers.sheet.addressHelp": {
     "sourceHash": "f91dc8a"
   },
+  "servers.sheet.identityLocked": "Adresse und Konto machen diesen Server aus. Vergiss ihn und füge ihn erneut hinzu, um sie zu ändern.",
+  "@servers.sheet.identityLocked": {
+    "sourceHash": "c16657d"
+  },
   "servers.sheet.username": "Benutzername",
   "@servers.sheet.username": {
     "sourceHash": "e3b89e9"
