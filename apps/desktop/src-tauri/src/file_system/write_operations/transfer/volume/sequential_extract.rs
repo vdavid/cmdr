@@ -181,7 +181,7 @@ pub(super) async fn extract_sequential_subtree(
         // path): the temp holds the complete new bytes; swap it over the original.
         let recorded = match planned.replace_after_write {
             Some(orig) => {
-                super::conflict::finalize_safe_replace(dest_volume, &planned.dest_path, &orig)
+                super::finalize::finalize_safe_replace(dest_volume, &planned.dest_path, &orig)
                     .await
                     .map_err(|e| PathedVolumeError::at_destination(e, &orig))?;
                 orig

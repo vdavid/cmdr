@@ -8,7 +8,7 @@
 //! into the directory: an hour later it would delete the user's only copy.
 
 use super::cleanup::reap_stale_transfer_temps;
-use super::conflict::finalize_safe_replace;
+use super::finalize::finalize_safe_replace;
 use super::faulty_volume::forward_volume_methods;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};

@@ -311,7 +311,7 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
             // removed the original). It must survive as a recoverable
             // `.cmdr-tmp-*` artifact, NOT be cleaned.
             if let Some(orig) = replace_after_write {
-                if let Err(e) = super::conflict::finalize_safe_replace(&dest_volume, &dest_path, &orig).await {
+                if let Err(e) = super::finalize::finalize_safe_replace(&dest_volume, &dest_path, &orig).await {
                     // Finalize is file→file only (safe-replace), so there's no
                     // directory ledger to carry. The failure is the
                     // DESTINATION's, and when the original is already gone it

@@ -9,7 +9,7 @@
 //! [`FinalizeFailure`] carries that name out to the user.
 //!
 //! It sits at `transfer/` level rather than inside `volume/` because BOTH
-//! landings reach it: `volume::conflict::finalize_safe_replace` (a cross-volume
+//! landings reach it: `volume::finalize::finalize_safe_replace` (a cross-volume
 //! file→file Overwrite) and `staged_write::land` (any staged write onto a name
 //! the caller claimed).
 

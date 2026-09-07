@@ -552,7 +552,7 @@ pub(crate) async fn move_volumes_with_progress(
                     // intact, and the new data survives in the temp.
                     if let Some(orig) = replace_after_write
                         && let Err(e) =
-                            super::conflict::finalize_safe_replace(&dest_volume, &dest_item_path, &orig).await
+                            super::finalize::finalize_safe_replace(&dest_volume, &dest_item_path, &orig).await
                         {
                             log::warn!(
                                 target: "move",

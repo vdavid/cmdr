@@ -528,7 +528,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             let landed_path = match replace_after_write {
                                 Some(orig) => {
                                     if let Err(e) =
-                                        super::conflict::finalize_safe_replace(&dest_volume, &dest_item_path, &orig)
+                                        super::finalize::finalize_safe_replace(&dest_volume, &dest_item_path, &orig)
                                             .await
                                     {
                                         // The rename that failed is entirely on the

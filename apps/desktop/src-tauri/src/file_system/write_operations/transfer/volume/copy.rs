@@ -45,7 +45,7 @@ use crate::operation_log::types::OpKind;
 
 use super::super::super::ledger::WrittenFile;
 use super::cleanup::{clean_partial_writes, volume_rollback_with_progress};
-use super::conflict::is_the_same_item;
+use super::item_identity::is_the_same_item;
 use super::transfer_error::{PathRole, WriteFailure, write_error_event_from};
 
 /// How long a cancelled or rolled-back operation waits for its in-flight copy
