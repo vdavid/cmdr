@@ -7,8 +7,17 @@ use crate::network::sftp_known_servers::KnownSftpServer;
 use crate::network::webdav_known_servers::KnownWebdavServer;
 
 /// A host nobody else's cell uses, so this suite can share the process-global
-/// stores with whatever runs beside it. `192.0.2.x` is reserved for
-/// documentation (RFC 5737) and routed nowhere.
+/// stores with whatever runs beside it.
+///
+/// ❗ **This suite owns `192.0.2.x` and `server_volumes_test.rs` owns
+/// `198.51.100.x`, one reserved block each.** Both write the same process-global
+/// `KNOWN` store, so under a thread-per-test runner (`cargo test --lib`, which
+/// nextest's process-per-test hides) a shared address is one cell removing the
+/// entry another is about to look up, or writing it with the other pin. Pick a
+/// free last octet inside your OWN block; a number that merely looks unused
+/// across both files is how they collided.
+///
+/// Both blocks are reserved for documentation (RFC 5737) and routed nowhere.
 fn sftp_entry(host: &str, pinned: bool) -> KnownSftpServer {
     KnownSftpServer {
         host: host.to_string(),
@@ -244,6 +253,7 @@ fn every_webdav_outcome_maps_to_its_superset_twin_including_the_unsupported_sche
 /// A pin round-trips through the family and tells the switcher to redraw.
 #[test]
 fn pinning_a_place_round_trips_and_republishes_the_volume_list() {
+    let _recorder = crate::volume_broadcast::recorder_test_lock();
     let host = "192.0.2.36";
     sftp_known_servers::remember(sftp_entry(host, true));
     let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
@@ -322,7 +332,12 @@ async fn connecting_a_place_that_is_already_registered_is_refused() {
 /// exists to keep out. Asserting on the recorded GENERATION rather than on
 /// wall-clock order is what makes it un-flaky.
 #[tokio::test]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the lock serializes the process-global broadcast recorders for the whole cell; holding it across the await IS the point"
+)]
 async fn forgetting_a_server_tells_the_panes_before_it_takes_the_row_away() {
+    let _recorder = crate::volume_broadcast::recorder_test_lock();
     let host = "192.0.2.41";
     sftp_known_servers::remember(sftp_entry(host, true));
     let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
@@ -349,7 +364,12 @@ async fn forgetting_a_server_tells_the_panes_before_it_takes_the_row_away() {
 /// An id nothing saved answers no and tells nobody: a spurious `VolumeUnmounted`
 /// would send a pane home for no reason.
 #[tokio::test]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the lock serializes the process-global broadcast recorders for the whole cell; holding it across the await IS the point"
+)]
 async fn forgetting_a_server_nothing_saved_is_a_plain_no() {
+    let _recorder = crate::volume_broadcast::recorder_test_lock();
     let before = crate::volume_broadcast::last_volume_gone();
     assert!(!forget_server("sftp-nothing-was-ever-saved-here".to_string()).await);
     assert_eq!(
@@ -363,7 +383,12 @@ async fn forgetting_a_server_nothing_saved_is_a_plain_no() {
 /// the registry no longer answers for and every listing on it fails instead of
 /// redirecting. Unlike a forget, the ROW survives (it becomes `saved`).
 #[tokio::test]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the lock serializes the process-global broadcast recorders for the whole cell; holding it across the await IS the point"
+)]
 async fn disconnecting_a_place_that_has_no_session_announces_nothing() {
+    let _recorder = crate::volume_broadcast::recorder_test_lock();
     let host = "192.0.2.42";
     sftp_known_servers::remember(sftp_entry(host, true));
     let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");

@@ -31,16 +31,34 @@ use cmdr_fs::volume::host::credentials::{CredentialStore, CredentialsNotStored, 
 ///
 /// Crosses IPC: the sign-in sheet is where a person types one, and the backend
 /// reads the store for every dial that isn't answering a sign-in.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
+///
+/// ❗ **Inbound only, and it does not derive `Debug` or `Serialize`.** It holds a
+/// plaintext secret, so a derived `Debug` would put one a `{:?}` away from a log
+/// line or a crash report, and a derived `Serialize` would let it ride an event
+/// or an analytics property. `StoredCredentials` next door derives only `Clone`
+/// for the same reason (`cmdr_fs::volume::host::credentials`, whose module header
+/// carries the rule). `Deserialize` is what the IPC boundary actually needs.
+#[derive(Clone, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SecretOffer {
     /// The secret itself: a password, a key file's passphrase, whatever the
-    /// account's rung wants.
+    /// account's rung wants. ❌ Never logged, never in an event, never a property.
     pub secret: String,
     /// The "Remember in Keychain" switch as the sheet showed it. `true` writes
     /// the secret before dialing; `false` keeps it in memory for this attempt
     /// only.
     pub remember: bool,
+}
+
+/// Prints the switch and ❌ never the secret, so `{:?}` on a struct holding one
+/// of these stays safe to write.
+impl std::fmt::Debug for SecretOffer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SecretOffer")
+            .field("secret", &"<redacted>")
+            .field("remember", &self.remember)
+            .finish()
+    }
 }
 
 // ============================================================================
