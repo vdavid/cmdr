@@ -25,6 +25,13 @@
 # changed nothing here (2026-09-07). Use it when you KNOW you changed something these shots contain,
 # and read the resulting diff: `--force` will happily bake in a regression.
 #
+# ❌ Don't commit everything `--force` rewrites. These renders are NOT byte-deterministic: two forced
+# runs of identical code differed by ~50 of 1,024,000 px in `home-fold`, and 5 of the 6 baselines came
+# back "modified" with nothing changed between them (measured 2026-09-07, same container, same
+# commit). So `--force` always produces diffs, most of them meaningless. Keep only the shots that
+# actually contain what you changed, `git checkout --` the rest, then run this script with no
+# arguments: a clean "Changed baselines:" list is the proof CI will pass.
+#
 # The committed set is small and region-scoped on purpose (see e2e/visual.spec.ts): it shoots the
 # markdown fixture and a few components, never full marketing pages, so publishing a post or editing
 # copy doesn't invalidate it. In practice this script now has little to do; run it when you change a
