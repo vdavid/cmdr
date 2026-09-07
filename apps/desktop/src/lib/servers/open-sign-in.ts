@@ -28,6 +28,7 @@ import {
   saveSftpCredentials,
   saveWebdavCredentials,
   type SavedServer,
+  type ServerConnectOutcome,
 } from '$lib/tauri-commands'
 import { asReconnectError } from '$lib/file-explorer/network/reconnect-error'
 import type { NetworkHost } from '$lib/file-explorer/types'
@@ -305,8 +306,9 @@ function secretWriterFor(
   owner: SavedServer,
   parsed: ReturnType<typeof parseServerPath>,
 ): ((secret: string) => Promise<void>) | null {
+  // `null` is an SMB host, which is not an account yet and files no secret here.
   const username = parsed?.username ?? owner.username
-  if (username === null || username === undefined) return null
+  if (username === null) return null
   if (owner.protocol === 'sftp') {
     if (!parsed) return null
     const { host, port } = parsed

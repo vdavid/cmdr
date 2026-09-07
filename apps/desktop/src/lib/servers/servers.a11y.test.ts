@@ -156,6 +156,7 @@ describe('the three renderers on their own', () => {
         form: { ...emptyServerForm(), protocol: 'sftp', address: 'ada@nas.local' },
         disabled: false,
         protocolEditable: true,
+        identityEditable: true,
         addressRefusal: 'Nothing at this address answers WebDAV.',
         onTryNextcloudAddress: () => {},
         secretRefusal: "That password didn't work for ada.",
