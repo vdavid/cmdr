@@ -74,8 +74,17 @@ unit-tested:
   ❗ **The merge also guarantees every row id is UNIQUE**, first writer wins. The hub keys its `{#each}` on `row.id`,
   and Svelte throws `each_key_duplicate` on a repeat, so a duplicate crashes the whole pane rather than showing a row
   twice. `listSavedServers()` unions three stores, so a server recorded in two of them arrives twice and the name/id
-  dedup above doesn't catch it: that is a REAL crash, seen in the Linux E2E suite (the hub went blank and every
-  `move_cursor` onto a host afterwards reported the row missing).
+  dedup above doesn't catch it: `smb_hosts` (`commands/servers.rs`) dedupes by ADDRESS while the row id comes from a
+  normalized server NAME, so two rows for one host can differ in address and agree on id. Seen for real in the Linux E2E
+  suite: the hub went blank and every `move_cursor` onto a host afterwards reported the row missing.
+
+  ❗ **Once a host has been listed, the hub shows it under its SAVED name, not its mDNS one.** A share listing writes a
+  `known_shares` row whose `server_name` is what the mount reported (`smb-consumer-guest`), `smb_hosts` turns that into
+  a saved server, and `matchHost` pairs it with the discovered host by `hostname`, so the discovered row is claimed and
+  `savedRow` publishes `server.displayName`. The friendly Bonjour name the person recognizes (`SMB Test (Guest)`,
+  `Naspolya`) disappears from the Name column the first time they open the host. Four `smb.spec.ts` specs fail on
+  exactly this, and they are honest about it: whether the paired DISCOVERED name should win is an open product call, and
+  it can't simply always win, because a manually-typed server's name is the one the USER chose.
 
 - **`servers-hub-mcp.ts`**: the `name` encoding. MCP's `PaneFileEntry` has only `name` / `path` / `isDirectory`, so the
   columns are encoded as `protocol=` / `status=` / `address=` tokens (plus `shares=` on an SMB host, which is what
