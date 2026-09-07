@@ -474,3 +474,9 @@ where
         }
     }
 }
+
+/// The staged file landing, the folder landing, and what `displace_with_directory`
+/// leaves behind.
+#[cfg(test)]
+#[path = "overwrite_tests.rs"]
+mod tests;

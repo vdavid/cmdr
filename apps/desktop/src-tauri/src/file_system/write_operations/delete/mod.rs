@@ -52,3 +52,6 @@ mod trash_pause_tests;
 mod volume_cancel_tests;
 #[cfg(test)]
 mod volume_hardlink_progress_tests;
+/// What a cancel does to a delete, and what the cancelled event admits.
+#[cfg(test)]
+mod delete_cancel_tests;

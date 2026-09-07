@@ -44,11 +44,17 @@ The full top-level inventory is here:
   behind and delete it through the right backend; `transfer/DETAILS.md` § "Which path space a recorded partial lives
   in" holds the decisions, and § "Testing the in-flight temp ledger" below the rules its process-wide singleton imposes
   on tests.
+- **`tests.rs` is the SHARED-vocabulary suite only**: the intent machine, the config the frontend sends, the
+  `io::Error` conversion, and `no_global_sync_or_spawn_async_sync_in_write_operations` — a whole-tree scanner that
+  excludes itself by the filename `tests.rs`, so ❗ moving it to another file silently makes it fail on its own prose.
+  Anything with a subject of its own lives next to that subject (`overwrite_tests.rs`, `ledger_tests.rs`,
+  `delete/delete_cancel_tests.rs`).
 - Scan and preview: `scan.rs`, `scan_preview.rs`, `scan_cache.rs`, `scan_bridge.rs` (the scan-progress seam the drivers
   feed, and `ScanPause`, the park that lets a walk honor its owner's Pause), `scan_watchdog.rs` (the inactivity bound on
   a preview), `compress_estimate.rs`. Conflicts and overwrite:
   `conflict.rs` (policy), `unique_name.rs` (the ` (N)` namer), `conflict_slot.rs` (the one-answer-wins slot behind
-  `resolve_write_conflict`), `overwrite.rs`. Cancellation and durability: `cancellable.rs`, `rollback.rs`, `durability.rs`.
+  `resolve_write_conflict`), `overwrite.rs` (tests in `overwrite_tests.rs`). Cancellation and durability:
+  `cancellable.rs`, `rollback.rs`, `durability.rs`.
   `rollback.rs` wears two hats: the history dialog's reversal, and the executor the operation-log engine injects.
 - Vocabulary and edges: `types.rs` (+ `types/events.rs`, every `#[tauri_specta(event_name)]` payload, re-exported
   through `types`), `event_sinks.rs`, `error_classification.rs`, `mutation_error.rs` (the typed refusal an instant
