@@ -24,14 +24,21 @@ pre-measured column width agree: don't re-inline the decision in any of them.
   (`complete === false` and `recursiveSize === 0`), kept distinct from a genuinely-empty `0 bytes` (`complete === true`,
   `recursiveSize === 0` → `'size'`).
 - The lower-bound prefix is `LOWER_BOUND_GLYPH` (`≥`), a symbol rather than copy.
-- **The in-flux hourglass is ORTHOGONAL to the content state**, not a sixth value: `isDirSizeUpdating` rides on TOP of a
-  size, a `≥` lower bound, or the placeholder. Its two inputs are the row's own `recursiveSizePending` (a live
-  delete/copy for that dir) and whether THIS row's ground is being walked. The `'scanning'` tooltip is "Sizes appear as
-  the scan progresses", so a fresh install reads as quietly working rather than `Scanning...` on every row.
-  Freshness-stale (`'size-stale'`) renders exactly like `'size'`: no glyph, no muting, with the staleness voiced by the
-  per-drive freshness badge and the tooltip's stale line (see `$lib/indexing/DETAILS.md` § Honest size rendering). The
-  per-dir flag rides `DirStats.recursiveSizePending`, copied onto entries by `updateIndexSizesInPlace` /
-  `createParentEntry` (backend: `indexing/read/pending_sizes.rs`).
+- **The hourglass SUPERSEDES the `≥`**, and the tooltip's updating line supersedes its lower-bound line: an in-flux row
+  renders a plain number plus the hourglass. Two reasons, and the second is the load-bearing one. The markers say the
+  same thing to a reader ("don't trust this yet"), and `≥` is a claim we can't stand behind while the number moves: it's
+  derived from coverage alone (unscanned subtrees ⇒ the truth is higher) and can't express the opposite error, an index
+  entry for a subtree that's already gone ⇒ the truth is far lower. A deleted worktree left `.claude` reading `≥422 GB`
+  while it was on its way down to 56 KB (2026-09-07). The stale line stays beside the updating line, because it says
+  something else: where the number came from, not whether it's moving.
+- **The in-flux hourglass is otherwise ORTHOGONAL to the content state**, not a sixth value: `isDirSizeUpdating` rides
+  on TOP of a size or the placeholder. Its two inputs are the row's own `recursiveSizePending` (a live delete/copy for
+  that dir) and whether THIS row's ground is being walked. The `'scanning'` tooltip is "Sizes appear as the scan
+  progresses", so a fresh install reads as quietly working rather than `Scanning...` on every row. Freshness-stale
+  (`'size-stale'`) renders exactly like `'size'`: no glyph, no muting, with the staleness voiced by the per-drive
+  freshness badge and the tooltip's stale line (see `$lib/indexing/DETAILS.md` § Honest size rendering). The per-dir
+  flag rides `DirStats.recursiveSizePending`, copied onto entries by `updateIndexSizesInPlace` / `createParentEntry`
+  (backend: `indexing/read/pending_sizes.rs`).
 
 **The walked-ground input is PER ROW, and the measurer contract follows from it.** `getWalkedGround(volumeId)` +
 `isPathAffectedByWalk` (`$lib/indexing/walked-ground.ts`) answer whether one row's folder size can move: the volume is
@@ -45,7 +52,9 @@ The consequence for `measure-column-widths.ts`: it takes the pane's own `isSizeU
 per-volume boolean, and reserves `SIZE_ICON_WIDTH` for exactly the rows that answer true. ⚠️ Pass the same function the
 size cell renders from. A per-row renderer measured against a per-volume answer clips the glyph on precisely the rows
 that show it, and the column looks correct everywhere else — which is why the contract is a shared function rather than
-two flags that happen to agree.
+two flags that happen to agree. `foldEntries` calls it ONCE per row and feeds that one answer to both halves of the
+cell: the icon suffix, and `getDirSizeDisplayState` for the text, which needs it because an in-flux row drops its `≥`.
+Measure the text without the flag and the column reserves a character the cell never draws.
 
 **A file's size cell is dual-valued (logical vs physical on disk).** `full-list-utils.ts::getDisplaySize()` picks
 between them per the `listing.sizeDisplay` setting (logical / physical / smart), `hasSizeMismatch()` decides whether the

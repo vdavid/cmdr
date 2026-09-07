@@ -425,6 +425,9 @@ export function buildSelectionSizeTooltip(
  * Prefix glyph for a lower-bound directory size (`≥1.2 GB`): the known total is
  * a floor because part of the subtree hasn't been scanned. A symbol, not
  * translatable copy (the explanation lives in the tooltip).
+ *
+ * Only drawn on a SETTLED lower bound — see `getDirSizeDisplayState`, where the
+ * in-flux hourglass supersedes it.
  */
 export const LOWER_BOUND_GLYPH = '≥'
 
@@ -437,7 +440,9 @@ export const LOWER_BOUND_GLYPH = '≥'
  *   showed before it was ever scanned, NOT a settled-looking value.
  * - `'scanning'`: same as `'dir'`, but a scan is active → `<dir>` placeholder
  *   (hourglass on top).
- * - `'lower-bound'`: subtree incomplete but a partial total is known → `≥1.2 GB`.
+ * - `'lower-bound'`: subtree incomplete, a partial total is known, and nothing is
+ *   in flight → `≥1.2 GB`. In flight, it renders as `'size'` instead: the
+ *   hourglass supersedes the floor (see below).
  * - `'size'`: exact and fresh → `1.2 GB` (or a genuinely-empty `0 bytes`).
  * - `'size-stale'`: exact but computed at an older epoch → `1.2 GB`, rendered
  *   exactly like `'size'`. Staleness is voiced by the per-drive freshness badge
@@ -449,16 +454,20 @@ export const LOWER_BOUND_GLYPH = '≥'
  * Crux: an incomplete subtree at size 0 is UNKNOWN (the `<dir>` placeholder),
  * distinct from a complete subtree at size 0 (a genuinely-empty `0 bytes`).
  *
- * The in-flux hourglass (`indexing || pending`) is ORTHOGONAL — see
- * `isDirSizeUpdating` — and applies on top of any of these.
+ * The in-flux hourglass (`indexing || pending`) applies on top of any of these —
+ * see `isDirSizeUpdating`. It's orthogonal to every state but `'lower-bound'`,
+ * which it SUPERSEDES: two markers for one meaning, and only the hourglass is
+ * honest about direction (an in-flux number moves down too, when the index still
+ * holds a subtree that's already gone).
  */
 export type DirSizeDisplayState = 'dir' | 'scanning' | 'lower-bound' | 'size' | 'size-stale'
 
 /**
- * Determine the CONTENT display state for a directory's size column — a pure
- * function of `{recursiveSize, complete, stale}`. The in-flux hourglass is
- * decided separately by `isDirSizeUpdating` (orthogonal: a dir can be both
- * `'size-stale'` and updating).
+ * Determine the CONTENT display state for a directory's size column. Whether the
+ * hourglass is drawn is decided separately by `isDirSizeUpdating`; its answer
+ * comes back in here as `updating`, because two states read it: `'scanning'`
+ * (the `<dir>` placeholder's in-flux twin), and `'lower-bound'`, which it
+ * suppresses. A dir can still be both `'size-stale'` and updating.
  *
  * `complete` / `stale` come from the backend's honest-size derivation
  * (`recursiveSizeComplete` / `recursiveSizeStale` on `FileEntry`/`DirStats`).
@@ -485,8 +494,12 @@ export function getDirSizeDisplayState(
     return updating ? 'scanning' : 'dir'
   }
   // Absent `complete` ⇒ treat as exact (pre-honest-sizes / fixtures).
+  // The hourglass SUPERSEDES the floor: while the number is in flux it can move
+  // down as well as up (the index still holds a subtree that's already gone), so
+  // `≥` would assert a floor we can't stand behind, and it would say a second
+  // time what the hourglass beside it already says. Plain number + hourglass.
   if (complete === false) {
-    return 'lower-bound'
+    return updating ? 'size' : 'lower-bound'
   }
   return stale === true ? 'size-stale' : 'size'
 }
@@ -562,8 +575,13 @@ export function buildDirSizeTooltip(
 
     // One-line honest-size state label. Lower-bound and stale are
     // mutually exclusive content states; either can also be mid-update.
+    // The updating line SUPERSEDES the lower-bound one, mirroring the cell
+    // dropping its `≥`: a number in flux can move either way, so the floor claim
+    // goes and "size may change" carries the caveat on its own. Staleness stays,
+    // because it says something the updating line doesn't (where the number came
+    // from, not whether it's moving).
     if (complete === false) {
-      lines.push(tString('fileExplorer.dirSize.lowerBoundLine'))
+      if (!scanning) lines.push(tString('fileExplorer.dirSize.lowerBoundLine'))
     } else if (stale === true) {
       lines.push(tString('fileExplorer.dirSize.staleLine'))
     }
