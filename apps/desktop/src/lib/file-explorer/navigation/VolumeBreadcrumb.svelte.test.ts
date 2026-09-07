@@ -11,6 +11,7 @@ import { mount, tick, flushSync } from 'svelte'
 import VolumeBreadcrumb from './VolumeBreadcrumb.svelte'
 
 const reorderFavorites = vi.fn(() => Promise.resolve())
+const ejectVolume = vi.fn(() => Promise.resolve())
 const disconnectPlace = vi.fn(() => Promise.resolve(true))
 const showVolumeRowContextMenu = vi.fn(() => Promise.resolve())
 const hasServerSecret = vi.fn(() => Promise.resolve(true))
@@ -32,7 +33,7 @@ let volumeContextActionHandler: ((payload: { action: string; volumeId: string })
 vi.mock('$lib/tauri-commands', () => ({
   resolvePathVolume: vi.fn(() => Promise.resolve({ volume: { id: 'root', path: '/' } })),
   upgradeToSmbVolume: vi.fn(() => Promise.resolve({ status: 'success' })),
-  ejectVolume: vi.fn(() => Promise.resolve()),
+  ejectVolume: (...args: unknown[]) => ejectVolume(...(args as [])),
   getVolumeSpace: vi.fn(() => Promise.resolve(null)),
   systemHasSavedSmbPassword: vi.fn(() => Promise.resolve(false)),
   upgradeToSmbVolumeUsingSavedPassword: vi.fn(() => Promise.resolve({ status: 'success' })),
@@ -358,5 +359,69 @@ describe('VolumeBreadcrumb server rows', () => {
       hasSavedSecret: true,
       pinned: false,
     })
+  })
+})
+
+describe('VolumeBreadcrumb phone rows', () => {
+  function phoneRow(overrides: Record<string, unknown>) {
+    return {
+      id: 'adb-pixel-7-a1b2c3d',
+      name: 'Pixel 7',
+      path: 'adb://R58M12345',
+      category: 'mobile_device',
+      fsType: 'adb',
+      isEjectable: true,
+      ...overrides,
+    }
+  }
+
+  async function openWith(rows: unknown[]) {
+    stubs.volumes = rows
+    const { instance, target } = mountBreadcrumb()
+    instance.open()
+    await tick()
+    flushSync()
+    return target
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    stubs.volumes = null
+    ejectVolume.mockClear()
+  })
+
+  // ❗ `adb` has no per-client detach, so nothing here is made safe to unplug.
+  // The ACTION is still the ordinary eject path (which for ADB answers
+  // `DeviceDisconnect`); only the word changes.
+  it('says Disconnect on a phone, and still runs the eject path', async () => {
+    const target = await openWith([phoneRow({ deviceReadiness: { kind: 'ready' } })])
+    const button = target.querySelector('.volume-item .eject-button') as HTMLButtonElement
+    expect(button.getAttribute('aria-label')).toBe('Disconnect Pixel 7')
+
+    button.click()
+    await tick()
+    expect(ejectVolume).toHaveBeenCalledWith('adb-pixel-7-a1b2c3d')
+  })
+
+  // A regression anchor: it passes with the readiness gate absent too, and that
+  // is the point — it is what fails the day someone "tidies up" by disabling
+  // every non-ready row.
+  it('keeps a phone waiting for its Allow tap openable, and says what it waits for', async () => {
+    const target = await openWith([phoneRow({ deviceReadiness: { kind: 'waiting_for_authorization' } })])
+    const row = target.querySelector('.volume-item') as HTMLElement
+    expect(row.classList.contains('is-unavailable')).toBe(false)
+    expect(row.getAttribute('aria-disabled')).toBeNull()
+  })
+
+  it('greys a phone the daemon lists but cannot use, and refuses to open it', async () => {
+    const target = await openWith([phoneRow({ deviceReadiness: { kind: 'unavailable', reason: 'offline' } })])
+    const row = target.querySelector('.volume-item') as HTMLElement
+    expect(row.classList.contains('is-unavailable')).toBe(true)
+    expect(row.getAttribute('aria-disabled')).toBe('true')
+
+    // Clicking it leaves the dropdown where it was: there is nothing to open.
+    row.click()
+    await tick()
+    expect(target.querySelector('.volume-dropdown')).toBeTruthy()
   })
 })

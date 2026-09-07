@@ -22,6 +22,12 @@ export interface InitialPathSyncInput {
   isSearchResultsView: boolean
   isNetworkView: boolean
   isMtpDeviceOnly: boolean
+  /**
+   * Whether `device-connect.svelte.ts` is holding this pane while it opens a
+   * phone. ❗ A load here would dial the SAME phone a second time through
+   * `resolve_path_to_volume`, and the pane's Cancel aims at the other one.
+   */
+  deviceIsConnecting: boolean
 }
 
 export type InitialPathAction =
@@ -58,6 +64,11 @@ export function resolveInitialPathAction(input: InitialPathSyncInput): InitialPa
   // Case 3: device-only MTP syncs the path only; the auto-connect flow handles
   // the transition to a browsable storage volume.
   if (input.isMtpDeviceOnly) return { kind: 'sync-path', path: initialPath }
+
+  // Case 4: a phone being opened over ADB. Same shape as case 3, but the volume
+  // id does NOT change on connect, so what resumes the load is the connect
+  // factory's own `onConnected`, at the path this arm commits.
+  if (input.deviceIsConnecting) return { kind: 'sync-path', path: initialPath }
 
   // The network view owns its own data (ServersHub / PlacesBrowser).
   if (input.isNetworkView) return { kind: 'none' }

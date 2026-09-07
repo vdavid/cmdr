@@ -22,6 +22,7 @@ const base = {
   isSearchResultsView: false,
   isNetworkView: false,
   isMtpDeviceOnly: false,
+  deviceIsConnecting: false,
 }
 
 describe('resolveInitialPathAction', () => {
@@ -68,6 +69,20 @@ describe('resolveInitialPathAction', () => {
     expect(
       resolveInitialPathAction({ ...base, isMtpDeviceOnly: true, volumeId: 'mtp-2097152', initialPath: '/DCIM' }),
     ).toEqual({ kind: 'sync-path', path: '/DCIM' })
+  })
+
+  it('only syncs the path while a phone is being opened, so the dial is not doubled', () => {
+    // ❗ A `loadDirectory` here reaches `resolve_path_to_volume`, which dials the
+    // same phone again under the backend's own attempt id — and the pane's Cancel
+    // aims at the OTHER one.
+    expect(
+      resolveInitialPathAction({
+        ...base,
+        deviceIsConnecting: true,
+        volumeId: 'adb-pixel-7-a1b2c3d',
+        initialPath: 'adb://R58M12345/sdcard',
+      }),
+    ).toEqual({ kind: 'sync-path', path: 'adb://R58M12345/sdcard' })
   })
 
   it('does nothing on the network view, which owns its own data', () => {

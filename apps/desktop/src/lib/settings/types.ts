@@ -353,6 +353,13 @@ export interface SettingsValues {
    */
   'behavior.serversPinHintSeen': boolean
 
+  /**
+   * Internal (FE-owned): whether the user has dismissed the line offering USB
+   * debugging in an MTP pane's header. Set by the line's own × and never read
+   * anywhere else.
+   */
+  'behavior.adbHintDismissed': boolean
+
   // Open terminal here: a known terminal's bundle id, or an absolute `.app` path
   // for a "Choose an app…" pick. Rust's `parse_choice` tells the two apart.
   'behavior.openTerminalHereApp': string

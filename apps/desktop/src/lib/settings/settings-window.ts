@@ -80,6 +80,8 @@ export type SettingsSurface =
   | 'volume-breadcrumb'
   /** The servers hub's "Turn it on in Settings" link, deep-linking to `network.enabled`. */
   | 'servers-hub'
+  /** A pane's ADB refusal with no platform tools to talk to, deep-linking to the Android section. */
+  | 'adb-refusal'
   /** The downloads "Stop showing these" notification toast. */
   | 'downloads-toast'
   /** The low-disk-space "Stop showing these" notification toast. */

@@ -50,6 +50,8 @@
     import MtpConnectionView from './MtpConnectionView.svelte'
     import RemoteConnectView from './RemoteConnectView.svelte'
     import { createPlaceConnect } from './place-connect.svelte'
+    import { createDeviceConnect } from './device-connect.svelte'
+    import AdbHint from '$lib/adb/AdbHint.svelte'
     import { createSelectionState } from './selection-state.svelte'
     import { createPaneMcpSync } from './pane-mcp-sync.svelte'
     import { initListingDiffSync } from './listing-diff-sync.svelte'
@@ -570,6 +572,18 @@
     // in front of the kind chain below: a `saved` row is a real volume id with no
     // session behind it, so every listing on it would refuse until something dials.
     const placeConnect = createPlaceConnect({
+        getVolumeId: () => volumeId,
+        getCurrentVolumeInfo: () => currentVolumeInfo,
+        onConnected: () => { void loader.loadDirectory({ path: currentPath }) },
+    })
+
+    // A pane standing on a PHONE dials it the same way, gated on the device's
+    // readiness rather than a connection state: a phone waiting for its "Allow USB
+    // debugging?" tap has no session to be in any state about. ❗ It also HOLDS the
+    // listing while it works (`holdsListing`), or `list_directory` dials the same
+    // phone a second time through the backend's own navigation path and Cancel
+    // aims at the wrong one.
+    const deviceConnect = createDeviceConnect({
         getVolumeId: () => volumeId,
         getCurrentVolumeInfo: () => currentVolumeInfo,
         onConnected: () => { void loader.loadDirectory({ path: currentPath }) },
@@ -1482,6 +1496,7 @@
             isSearchResultsView,
             isNetworkView,
             isMtpDeviceOnly,
+            deviceIsConnecting: deviceConnect.holdsListing,
         })
         prevVolumeId = volumeId
 
@@ -1631,6 +1646,10 @@
         if (unreachable) {
             log.debug('[FilePane] onMount: SKIPPING loadDirectory for unreachable tab, paneId={paneId}', { paneId })
             loading = false
+        } else if (deviceConnect.holdsListing) {
+            // A restored tab on a phone: the dial owns the pane until it answers.
+            log.debug('[FilePane] onMount: SKIPPING loadDirectory while the phone opens, paneId={paneId}', { paneId })
+            loading = false
         } else if (!isNetworkView && !isMtpDeviceOnly && !isSearchResultsView) {
             log.debug('[FilePane] onMount: triggering loadDirectory for paneId={paneId}', { paneId })
             void loader.loadDirectory({ path: currentPath })
@@ -1709,6 +1728,10 @@
             <RepoChip info={gitBrowser.gitRepoInfo} />
         {/if}
     </div>
+    <!-- A phone reached over MTP: one quiet line offering the fuller way in.
+         Self-gating (its own settings and volume-list reads), so the pane
+         renders it unconditionally and it decides. -->
+    <AdbHint {volumeId} />
     <div class="content">
         <TypeToJumpIndicator
             buffer={jump.buffer}
@@ -1724,6 +1747,8 @@
             />
         {:else if placeConnect.state}
             <RemoteConnectView name={currentVolumeInfo?.name ?? volumeId} state={placeConnect.state} />
+        {:else if deviceConnect.state}
+            <RemoteConnectView name={currentVolumeInfo?.name ?? volumeId} state={deviceConnect.state} />
         {:else if smbView.remoteConnectState}
             <RemoteConnectView
                 name={currentVolumeInfo?.name ?? volumePath}

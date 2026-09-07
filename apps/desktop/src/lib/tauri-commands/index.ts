@@ -572,6 +572,7 @@ export {
   listAdbDevices,
   connectAdbDevice,
   cancelAdbConnect,
+  newAdbAttemptId,
   getAdbInstallStatus,
   recheckAdbInstall,
   AdbConnectFailure,

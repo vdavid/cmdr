@@ -133,7 +133,10 @@ describe('createPlaceConnect', () => {
     expect(sub.state.disconnect).toBeUndefined()
 
     connectPlace.mockResolvedValue({ kind: 'connected', volumeId: savedPlace.id })
-    sub.state.retry()
+    // ❗ A server refusal always carries one: the state's `retry` is optional
+    // only so a phone that left can render its sentence with no button at all.
+    expect(sub.state.retry).toBeTypeOf('function')
+    sub.state.retry?.()
     await vi.waitFor(() => {
       expect(sub.state).toBeNull()
     })
