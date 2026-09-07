@@ -274,13 +274,17 @@ volume-id string. The record has two halves, and which half answers is the whole
   the path first (archive by suffix, git portal by `isVirtualGitPath` gated on the live `showVirtualGitPortal` toggle),
   and otherwise defers to `capabilitiesFor`. ❌ Neither routed branch folds in the parent drive's published
   capabilities: those answer for the drive, and the pane is inside something ON it.
+- **`rowIsOsVisible(volumeId, rowPath)`** answers ONE row's "is there a real file behind this", the gate behind the
+  context menu's `Share…` (see § "Sharing a row" below). ❌ It is NOT `capabilitiesForPane`: that one uses the WIDE
+  archive check, so it would call a `.zip` FILE unshareable, and sharing a freshly-made archive is the point.
 - **❗ Nothing switches exhaustively over `VolumeKind`.** Every consumer is a positive-list comparison, so a new member
-  compiles clean everywhere and silently falls out of each list. The four to walk when you add one:
+  compiles clean everywhere and silently falls out of each list. The five to walk when you add one:
   `pane/clipboard-operations.ts` (the system-clipboard refusal — a missed kind puts an unusable scheme path on the OS
   clipboard), `volume-tint.svelte.ts::tintForKind` (falls through to `'none'`), `search/search-target-volume.ts` (a
-  missed remote kind gets the LOCAL coverage voice), and `open-terminal/terminal-target.ts::canOpenTerminalIn`.
+  missed remote kind gets the LOCAL coverage voice), `open-terminal/terminal-target.ts::canOpenTerminalIn`, and
+  `rowIsOsVisible` (a missed kind reaches the share sheet with no file behind it).
 - **To add virtual volume #3:** add a `VolumeKind` member, a table row, and a `volumeKindOf` branch, then walk those
-  four.
+  five.
 - **To add a real backend:** override `is_writable` in Rust and there's nothing to do on this side.
 
 Consumers read the record directly: `SearchResultsView.svelte` reads `capabilitiesForKind('search-results')` (it always
@@ -1316,6 +1320,30 @@ open in the default app, or ask. The decision is a pure function; the UI is a sm
   `SettingToggleGroup` rows over the three ids, so the section itself reads, writes, defaults, and validates nothing.
   Installs from before the split are carried over by settings migration 5 (`settings/settings-store.ts`), which unpacks
   the old `behavior.archiveEnterBehavior` JSON blob into the three keys and deletes it.
+
+## Sharing a row
+
+The native context menu's `Share…` (macOS) opens the system share sheet on the right-clicked selection. The picker and
+its anchoring live in Rust (`src-tauri/src/file_system/DETAILS.md` § "Share sheet"); what this directory owns is WHETHER
+the item appears, pushed as `PaneContextMenuFacts.canShare` from `pane-pointer.ts::handleContextMenu`.
+
+The share sheet takes file URLs, so the question is whether the right-clicked ROW has a real file behind it, and it
+needs three inputs rather than one kind lookup (`rowIsOsVisible` in `volume-capabilities.ts`):
+
+1. The VOLUME's kind, via the pure `paneRowsAreOsVisible`: `local`, `smb`, and `search-results` yes; `mtp`, `adb`,
+   `network`, `archive`, `git-portal` no.
+2. The ROW's path, for an archive's insides — `pathInsideArchive`, the NARROW check, so the `.zip` file itself stays
+   shareable.
+3. The ROW's path again, for the virtual `.git` portal, and only while `showVirtualGitPortal` is on.
+
+**This is deliberately NOT `canOpenTerminalHere`, and the two part company in both directions.** The terminal item asks
+about the pane's own FOLDER, so a search-results snapshot answers no while every row in it is a real file; an
+archive-inner pane answers yes (the terminal opens the folder holding the `.zip`) while its rows have nothing behind
+them. Folding them into one flag would be wrong for both panes.
+
+Surfaces other than the two file panes leave `canShare` at its `false` default, so the Search dialog's row menu carries
+no `Share…` today. Not a considered no: it's the "a surface that can't answer says nothing" default the whole
+`PaneContextMenuFacts` object takes.
 
 ## Analytics emitted from this directory
 

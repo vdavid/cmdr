@@ -47,6 +47,8 @@ import {
   pathCrossesArchiveBoundary,
   pathInsideArchive,
   archiveNameFromPath,
+  paneRowsAreOsVisible,
+  rowIsOsVisible,
   SUPPORTED_ARCHIVE_SUFFIXES,
   WRITABLE_ARCHIVE_SUFFIXES,
 } from './volume-capabilities'
@@ -641,5 +643,71 @@ describe('archiveNameFromPath — the archive display name for a prompt', () => 
 
   it('falls back to the basename when no segment is an archive', () => {
     expect(archiveNameFromPath('/a/b/c.txt')).toBe('c.txt')
+  })
+})
+
+describe('paneRowsAreOsVisible — what the share sheet needs', () => {
+  it('says yes for the two kinds whose rows are ordinary mounted files', () => {
+    expect(paneRowsAreOsVisible('local')).toBe(true)
+    expect(paneRowsAreOsVisible('smb')).toBe(true)
+  })
+
+  it('says yes for the search-results snapshot, whose rows are real files', () => {
+    // The one place this parts company with `canOpenTerminalIn`: the snapshot pane
+    // has no folder of its own, yet every row is a real path on disk.
+    expect(paneRowsAreOsVisible('search-results')).toBe(true)
+  })
+
+  it('says no for every kind whose rows have no file behind them', () => {
+    for (const kind of ['mtp', 'adb', 'network', 'archive', 'git-portal'] as const) {
+      expect(paneRowsAreOsVisible(kind), kind).toBe(false)
+    }
+  })
+
+  it('answers every kind in the union, so a new kind can`t be silently shareable', () => {
+    const kinds: VolumeKind[] = ['local', 'smb', 'mtp', 'adb', 'network', 'search-results', 'archive', 'git-portal']
+    for (const kind of kinds) {
+      expect(typeof paneRowsAreOsVisible(kind), kind).toBe('boolean')
+    }
+  })
+})
+
+describe('rowIsOsVisible — the per-ROW share gate', () => {
+  it('says yes for an ordinary row on a local volume', () => {
+    volumes.list = [vol({ id: 'disk1', category: 'main_volume' })]
+    expect(rowIsOsVisible('disk1', '/Users/me/photo.jpg')).toBe(true)
+  })
+
+  it('says no for a row STRICTLY inside an archive, on the very same volume', () => {
+    // An archive pane keeps the parent drive's volumeId, so the volume alone says
+    // "local" and only the row's path knows there's no file behind it.
+    volumes.list = [vol({ id: 'disk1', category: 'main_volume' })]
+    expect(rowIsOsVisible('disk1', '/Users/me/trip.zip/IMG_0001.jpg')).toBe(false)
+  })
+
+  it('still says yes for the archive FILE itself', () => {
+    // The `.zip` is an ordinary file sitting in an ordinary folder; sharing it is
+    // exactly what someone wants after compressing a selection.
+    volumes.list = [vol({ id: 'disk1', category: 'main_volume' })]
+    expect(rowIsOsVisible('disk1', '/Users/me/trip.zip')).toBe(true)
+  })
+
+  it('says no for a row inside the virtual git portal while the portal is on', () => {
+    volumes.list = [vol({ id: 'disk1', category: 'main_volume' })]
+    gitPortal.on = true
+    expect(rowIsOsVisible('disk1', '/repo/.git/branches/main/src/main.rs')).toBe(false)
+  })
+
+  it('says yes for that same path once the portal is switched off', () => {
+    // With the portal off nothing routes it, so the path is whatever is on disk.
+    volumes.list = [vol({ id: 'disk1', category: 'main_volume' })]
+    gitPortal.on = false
+    expect(rowIsOsVisible('disk1', '/repo/.git/branches/main/src/main.rs')).toBe(true)
+    gitPortal.on = true
+  })
+
+  it('says no on a phone, whatever the row looks like', () => {
+    volumes.list = [vol({ id: 'mtp-1:1', category: 'mobile_device' })]
+    expect(rowIsOsVisible('mtp-1:1', '/DCIM/IMG_0001.jpg')).toBe(false)
   })
 })
