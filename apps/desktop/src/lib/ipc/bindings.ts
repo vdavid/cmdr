@@ -1382,9 +1382,19 @@ export const commands = {
    */
   openPath: (path: string) => typedError<null, string>(__TAURI_INVOKE('open_path', { path })),
   /**
-   *  Make a cloud-managed file available offline (download it). On macOS, talks to the
-   *  File Provider extension responsible for the file (iCloud Drive, Dropbox, GDrive,
-   *  OneDrive, Box, etc.).
+   *  The web URL for a Google Drive item, or `None` when the path isn't one we can
+   *  identify. Backs "Open in Google Drive" and "Copy Google Drive link".
+   *
+   *  Resolution (an xattr read, or a small JSON stub for Google-native docs) lives in
+   *  `file_system::google_drive`; this is the pass-through. Async with the usual
+   *  blocking hop because it touches the filesystem.
+   */
+  googleDriveLink: (path: string) => typedError<string | null, string>(__TAURI_INVOKE('google_drive_link', { path })),
+  /**
+   *  Make a cloud-managed file available offline (download it). **iCloud Drive only**:
+   *  this routes through the `FileManager` ubiquity APIs, which accept iCloud URLs and
+   *  reject everything else. Third-party providers (Dropbox, Google Drive, OneDrive,
+   *  Box) can't be driven this way; see `file_system/cloud_actions.rs`.
    */
   cloudMakeAvailableOffline: (path: string) =>
     typedError<null, string>(__TAURI_INVOKE('cloud_make_available_offline', { path })),

@@ -181,6 +181,8 @@ export const COMMAND_IDS = [
   'file.contextMenu',
   'cloud.makeOffline',
   'cloud.removeDownload',
+  'cloud.openInGoogleDrive',
+  'cloud.copyGoogleDriveLink',
 
   // Finder tag colors (macOS): toggle a system color tag on the focused selection.
   // No default shortcut; the user can bind one. The context-menu circles route

@@ -89,6 +89,11 @@ pub const TOGGLE_SELECTION_ID: &str = "toggle_selection";
 pub const CLOUD_MAKE_OFFLINE_ID: &str = "cloud_make_offline";
 pub const CLOUD_REMOVE_DOWNLOAD_ID: &str = "cloud_remove_download";
 
+/// Menu item IDs for the Google Drive items. Shown only when the right-clicked
+/// item resolves to a Drive ID (`file_system/google_drive.rs`).
+pub const DRIVE_OPEN_ID: &str = "drive_open";
+pub const DRIVE_COPY_LINK_ID: &str = "drive_copy_link";
+
 /// Menu item IDs for the per-folder image-search exclusion (media_index privacy veto).
 /// Shown on a folder's context menu only while image indexing is enabled; exactly one
 /// of the two appears, keyed on whether the folder is already excluded. Handled
@@ -349,6 +354,8 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         // Cloud actions (macOS File Provider)
         CLOUD_MAKE_OFFLINE_ID => Some(("cloud.makeOffline", CommandScope::FileScoped)),
         CLOUD_REMOVE_DOWNLOAD_ID => Some(("cloud.removeDownload", CommandScope::FileScoped)),
+        DRIVE_OPEN_ID => Some(("cloud.openInGoogleDrive", CommandScope::FileScoped)),
+        DRIVE_COPY_LINK_ID => Some(("cloud.copyGoogleDriveLink", CommandScope::FileScoped)),
 
         // Zoom (text size): App scope so ⌘0/⌘+/⌘- work in any focused window.
         VIEW_ZOOM_75_ID => Some(("view.zoom.set75", CommandScope::App)),
@@ -447,6 +454,8 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "edit.pasteAsMove" => Some(EDIT_PASTE_MOVE_ID),
         "cloud.makeOffline" => Some(CLOUD_MAKE_OFFLINE_ID),
         "cloud.removeDownload" => Some(CLOUD_REMOVE_DOWNLOAD_ID),
+        "cloud.openInGoogleDrive" => Some(DRIVE_OPEN_ID),
+        "cloud.copyGoogleDriveLink" => Some(DRIVE_COPY_LINK_ID),
         "sort.byName" => Some(SORT_BY_NAME_ID),
         "sort.byExtension" => Some(SORT_BY_EXTENSION_ID),
         "sort.byModified" => Some(SORT_BY_MODIFIED_ID),

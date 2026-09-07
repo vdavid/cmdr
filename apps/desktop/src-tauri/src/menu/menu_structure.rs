@@ -31,7 +31,10 @@ use super::menu_items::{
     show_in_file_manager_accelerator, show_in_file_manager_label, truncate_for_menu_label,
 };
 #[cfg(target_os = "macos")]
-use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, HELP_MENU_ID, QUICK_LOOK_ID};
+use super::{
+    CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, DRIVE_COPY_LINK_ID, DRIVE_OPEN_ID, GET_INFO_ID, HELP_MENU_ID,
+    QUICK_LOOK_ID,
+};
 use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EDIT_MENU_ID, EJECT_VOLUME_ID,
     FAVORITE_REMOVE_ID, FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID,
@@ -56,6 +59,11 @@ pub struct FileContextInfo {
     /// items. Eviction / download work via `FileManager` ubiquity APIs, which only
     /// support iCloud (not third-party File Providers). See `cloud_actions.rs` for why.
     pub is_icloud_drive: bool,
+    /// The web URL for this item in Google Drive, when it resolves to one. `Some`
+    /// gates both Drive menu items, which is self-validating: no ID, no item. See
+    /// `file_system/google_drive.rs` for why this isn't a path-prefix check (Drive's
+    /// mirror mode puts real files outside `~/Library/CloudStorage`).
+    pub google_drive_link: Option<String>,
     pub open_with: OpenWithChoices,
     /// Which of the seven Finder color tags (index 1..=7) the selection already carries.
     /// "Applied" = EVERY selected path has a tag of that color, so the menu shows a
@@ -290,8 +298,40 @@ pub fn build_context_menu<R: Runtime>(
         }
     }
 
-    // Cloud actions (macOS File Provider): only show when the file is in a
-    // cloud-managed folder, gated by sync status.
+    // Cloud group (macOS). Provider-aware: each provider contributes only the
+    // actions it can actually carry out, so the group is a concatenation rather
+    // than one iCloud-shaped block.
+    //
+    // Google Drive: open on the web / copy the link. Drive's own Share sheet and
+    // its pin-offline toggle are File Provider custom actions only Finder can
+    // invoke, so the web page (where Share is one click away) is the honest
+    // equivalent. `file_system/google_drive.rs` has the full story.
+    #[cfg(target_os = "macos")]
+    if info.google_drive_link.is_some() {
+        let open_item = MenuItem::with_id(
+            app,
+            DRIVE_OPEN_ID,
+            menu_t("menu.context.openInGoogleDrive"),
+            true,
+            None::<&str>,
+        )?;
+        let copy_link_item = MenuItem::with_id(
+            app,
+            DRIVE_COPY_LINK_ID,
+            menu_t("menu.context.copyGoogleDriveLink"),
+            true,
+            None::<&str>,
+        )?;
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+        menu.append(&open_item)?;
+        menu.append(&copy_link_item)?;
+    }
+
+    // Eviction pair: iCloud Drive ONLY, and gated by sync status. The
+    // `FileManager` ubiquity APIs behind these accept iCloud URLs and nothing
+    // else; a third-party provider's pin/unpin is a File Provider custom action
+    // reserved for the app that bundles the extension. ❌ Don't widen this to
+    // other providers — see `file_system/cloud_actions.rs`.
     #[cfg(target_os = "macos")]
     if info.is_icloud_drive {
         let cloud_item = match info.sync_status {

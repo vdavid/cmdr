@@ -261,9 +261,32 @@ pub fn copy_to_clipboard<R: Runtime>(app: AppHandle<R>, text: String) -> Result<
     app.clipboard().write_text(text).map_err(|e| e.to_string())
 }
 
-/// Make a cloud-managed file available offline (download it). On macOS, talks to the
-/// File Provider extension responsible for the file (iCloud Drive, Dropbox, GDrive,
-/// OneDrive, Box, etc.).
+/// The web URL for a Google Drive item, or `None` when the path isn't one we can
+/// identify. Backs "Open in Google Drive" and "Copy Google Drive link".
+///
+/// Resolution (an xattr read, or a small JSON stub for Google-native docs) lives in
+/// `file_system::google_drive`; this is the pass-through. Async with the usual
+/// blocking hop because it touches the filesystem.
+#[tauri::command]
+#[specta::specta]
+pub async fn google_drive_link(path: String) -> Result<Option<String>, String> {
+    let work = tokio::task::spawn_blocking(move || {
+        let path = std::path::PathBuf::from(path);
+        let is_directory = path.is_dir();
+        crate::file_system::google_drive::item_url(&path, is_directory)
+    });
+    match tokio::time::timeout(Duration::from_secs(30), work).await {
+        Ok(joined) => joined.map_err(|e| e.to_string()),
+        // A wedged File Provider can hang a `getxattr`; a missing link just means
+        // the caller shows nothing, so a timeout is not worth a scary message.
+        Err(_elapsed) => Ok(None),
+    }
+}
+
+/// Make a cloud-managed file available offline (download it). **iCloud Drive only**:
+/// this routes through the `FileManager` ubiquity APIs, which accept iCloud URLs and
+/// reject everything else. Third-party providers (Dropbox, Google Drive, OneDrive,
+/// Box) can't be driven this way; see `file_system/cloud_actions.rs`.
 #[tauri::command]
 #[specta::specta]
 pub async fn cloud_make_available_offline(path: String) -> Result<(), String> {

@@ -623,6 +623,24 @@
   "@commands.cloudRemoveDownload.description": {
     "description": "Longer help text for the \"Remove download\" command, shown as a secondary line in the command palette."
   },
+  "commands.cloudOpenInGoogleDrive.label": "Open in Google Drive",
+  "@commands.cloudOpenInGoogleDrive.label": {
+    "description": "Command name that opens the selected Google Drive file or folder on the Google Drive website in the default browser. \"Google Drive\" is a product name and stays in English. Appears in the command palette.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.cloudOpenInGoogleDrive.description": "Opens the selected item on the Google Drive website, where sharing lives",
+  "@commands.cloudOpenInGoogleDrive.description": {
+    "description": "Longer help text for the \"Open in Google Drive\" command, shown as a secondary line in the command palette."
+  },
+  "commands.cloudCopyGoogleDriveLink.label": "Copy Google Drive link",
+  "@commands.cloudCopyGoogleDriveLink.label": {
+    "description": "Command name that copies the web address of the selected Google Drive item to the clipboard. It copies a link, not the file. \"Google Drive\" is a product name and stays in English. Appears in the command palette.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.cloudCopyGoogleDriveLink.description": "Copies the web address of the selected item, ready to paste into a message",
+  "@commands.cloudCopyGoogleDriveLink.description": {
+    "description": "Longer help text for the \"Copy Google Drive link\" command, shown as a secondary line in the command palette."
+  },
   "commands.tagsToggleGrey.label": "Toggle gray tag",
   "@commands.tagsToggleGrey.label": {
     "description": "Command name that adds or removes the gray macOS Finder color tag on the selected files. \"Gray\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
@@ -872,6 +890,28 @@
   "commands.handler.cloudRemoveDownloadFailed": "Couldn't remove the download. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "description": "Error toast when removing a cloud file's local download (freeing space) didn't go through. Uses a contraction (\"Couldn't\").",
+    "placeholders": {
+      "detail": "the raw underlying error text appended after the sentence (a technical message, often in English)"
+    }
+  },
+  "commands.handler.googleDriveLinkMissing": "This item doesn't have a Google Drive link.",
+  "@commands.handler.googleDriveLinkMissing": {
+    "description": "Warning toast when the user runs \"Open in Google Drive\" or \"Copy Google Drive link\" from the command palette on something that isn't a Google Drive item, so there's no link to use. \"Google Drive\" is a product name and stays in English. Uses a contraction (\"doesn't\")."
+  },
+  "commands.handler.googleDriveOpenFailed": "Couldn't open this in Google Drive. {detail}",
+  "@commands.handler.googleDriveOpenFailed": {
+    "description": "Error toast when opening a Google Drive item in the browser didn't go through. \"Google Drive\" is a product name and stays in English. Uses a contraction (\"Couldn't\").",
+    "placeholders": {
+      "detail": "the raw underlying error text appended after the sentence (a technical message, often in English)"
+    }
+  },
+  "commands.handler.googleDriveLinkCopied": "Copied the Google Drive link.",
+  "@commands.handler.googleDriveLinkCopied": {
+    "description": "Success toast confirming the Google Drive web address of the selected item is now on the clipboard. \"Google Drive\" is a product name and stays in English."
+  },
+  "commands.handler.googleDriveCopyFailed": "Couldn't copy the Google Drive link. {detail}",
+  "@commands.handler.googleDriveCopyFailed": {
+    "description": "Error toast when copying a Google Drive item's web address to the clipboard didn't go through. \"Google Drive\" is a product name and stays in English. Uses a contraction (\"Couldn't\").",
     "placeholders": {
       "detail": "the raw underlying error text appended after the sentence (a technical message, often in English)"
     }
