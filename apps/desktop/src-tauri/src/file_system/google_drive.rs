@@ -132,7 +132,9 @@ fn read_native_shortcut(path: &Path) -> Option<NativeShortcut> {
     // means no menu item.
     let file = std::fs::File::open(path).ok()?;
     let mut bytes = Vec::new();
-    file.take(MAX_NATIVE_SHORTCUT_BYTES as u64).read_to_end(&mut bytes).ok()?;
+    file.take(MAX_NATIVE_SHORTCUT_BYTES as u64)
+        .read_to_end(&mut bytes)
+        .ok()?;
     let parsed: NativeShortcut = serde_json::from_slice(&bytes).ok()?;
     if parsed.doc_id.is_empty() {
         return None;
