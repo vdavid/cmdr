@@ -37,7 +37,8 @@ the words for a connect that stopped. Up: `../../CLAUDE.md`. Backend contracts: 
   rather than "Trust it": nobody can answer for a fingerprint they haven't been shown.
 - **The pane is where waiting is shown, the sheet is where data is typed.**
   `file-explorer/pane/RemoteConnectView.svelte` renders the states; `pane/place-connect.svelte.ts` owns the `$effect`
-  and the one-dial-per-landing rule.
+  and the one-dial-per-landing rule. A PHONE rides the same view through `pane/device-connect.svelte.ts` and ❌ never
+  through `connect-flow.ts`: it has no credential, no backoff, and no sheet. DETAILS § The device dial.
 
 `DETAILS.md` holds the three arms, the sheet contract, the renderer table, the path grammar, the refusal table, the
 reserved S3 and OAuth shapes, and what later milestones fill in.

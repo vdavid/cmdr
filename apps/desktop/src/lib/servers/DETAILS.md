@@ -175,10 +175,23 @@ a certificate happens in Keychain Access.
 There is no property-testing library on the frontend, so `address-parser.test.ts`'s example table IS the contract: a
 shape that reaches the field and isn't in it is a shape nobody decided.
 
+## The device dial, beside the place dial
+
+A phone is dialed by the same seam and rendered by the same `RemoteConnectView`, but it does NOT come through
+`connect-flow.ts`, and that is deliberate. `connect-flow` exists to pick between three moves a SERVER can need
+(subscribe to a running backoff, mend a registered volume's credentials, or dial an absent one) and to loop a sign-in
+sheet through as many rounds as the user retries. A phone has none of that: there is no credential, no backoff loop, no
+sheet, and no registered-versus-absent question — `connect_adb_device` answers an already-dialed device without a second
+dial. So `pane/device-connect.svelte.ts` calls `connectAdbDevice` directly, and what the two share is the typed
+`RemoteConnectState`, the pane-not-dialog rule, and the attempt-id-before-the-dial rule.
+
+❗ The attempt-id prefixes are separate on purpose (`server-connect-…` vs `adb-connect-…`): ADB files attempts in its
+own table (`src-tauri/src/adb/volume_wiring.rs`), so a cancel aimed across the two answers a silent `false`. The words
+are separate too (`$lib/adb/adb-connect-errors.ts` vs `connect-refusals.ts`): a phone's reasons and a server's share
+nothing but shape.
+
 ## What later milestones fill in
 
-- `waiting_for_device`, with the ADB work that produces it. ❗ A state added before its handler puts a button on screen
-  that does nothing.
 - A backend command handing back the PENDING host-key prompt for a registered volume. Until then the changed-key banner
   offers Disconnect, and the fingerprint appears on the next open's dial (`pane/DETAILS.md` § the connect views).
 

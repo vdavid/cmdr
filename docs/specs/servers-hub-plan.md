@@ -11,11 +11,12 @@ one modal sheet for every sign-in (backend tells the sheet what to ask, the shee
 (connecting, waiting for the phone, signed out, refused), and a hub pane state that lists what the user has. SMB
 migrates onto all four so the next backend (S3, then an OAuth provider) inherits them instead of adding a fifth dialog.
 
-This plan superseded `servers-in-the-sidebar.md`, wiped when M3 landed, and absorbs the frontend half of
-`android-adb-ui.md` (wipe it when M5 lands; its eight decisions are restated below only where this plan changes them).
-The backend contracts this builds on are canonical elsewhere and ❌ not restated here: `crates/cmdr-sftp/DETAILS.md` §
-"Connecting from the frontend", `crates/cmdr-webdav/DETAILS.md` § the same, `apps/desktop/src-tauri/src/adb/DETAILS.md`,
-`apps/desktop/src/lib/file-explorer/network/DETAILS.md` (the SMB flows being migrated).
+This plan superseded `servers-in-the-sidebar.md`, wiped when M3 landed, and absorbed the frontend half of the ADB UI
+spec, wiped when M5 landed (its decision 1 survives as `later/adb-merged-phone-row.md`; the rest is beside the code,
+mostly `apps/desktop/src/lib/adb/DETAILS.md`). The backend contracts this builds on are canonical elsewhere and ❌ not
+restated here: `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend", `crates/cmdr-webdav/DETAILS.md` § the
+same, `apps/desktop/src-tauri/src/adb/DETAILS.md`, `apps/desktop/src/lib/file-explorer/network/DETAILS.md` (the SMB
+flows being migrated).
 
 David's calls, already taken (2026-09-06): the group stays "Network" and the hub row is "Servers"; places auto-pin on
 first connect and unpin from the context menu; an educational toast fires at five pinned rows; every backend change the
@@ -51,8 +52,8 @@ scrolls past their own disks. Pins are the cap, and the user holds it.
   button.** MTP already works this way (`MtpConnectionView`); SFTP, WebDAV, SMB, and ADB inherit it.
 - **Dialogs are for entering data; panes are for waiting.** The sheet exists to type a new server, edit one, or answer a
   sign-in. Connecting, waiting for the phone's Allow tap, a refusal with retry, a changed host key, and "signed out" all
-  render in the pane. This is what reconciles `android-adb-ui.md`'s "never a modal" with a connect dialog: both are
-  right once split.
+  render in the pane. This is what reconciles the ADB spec's "never a modal" with a connect dialog: both are right once
+  split.
 - **The sheet opens only on user intent.** Activating a row that needs a sign-in, pressing Add, pressing "Sign in…". ❌
   Never on its own when a session drops: a modal stealing focus during a lid-open wake is the wrong thing, and the SMB
   doc's "a reconnect is silent" promise stays. The pane's banner has the button.
@@ -333,11 +334,11 @@ Where the wrapper lives: `network/one_shot_credentials.rs`, generic over the sea
 ### D6. Servers say "Disconnect"; disconnecting keeps the row
 
 The eject slot on a remote row is a Disconnect control (an unplug icon, tooltip "Disconnect"), shown by
-`showsDisconnect` (D1), mirroring `android-adb-ui.md` decision 8: "Eject" promises safe-to-unplug and a server has
-nothing to unplug. It is disabled while `busy_volume_ids()` names the volume, exactly like Eject, and so are the
-Disconnect and Forget items in the menu. Disconnecting a pinned place leaves it as a `saved` row; "Forget server"
-(removes the entry, its places, and their pins) and "Forget saved password" are separate context-menu items, both
-confirmed. MTP keeps "Eject": it earns it by closing the device session.
+`showsDisconnect` (D1), mirroring the ADB spec's decision 8: "Eject" promises safe-to-unplug and a server has nothing to
+unplug. It is disabled while `busy_volume_ids()` names the volume, exactly like Eject, and so are the Disconnect and
+Forget items in the menu. Disconnecting a pinned place leaves it as a `saved` row; "Forget server" (removes the entry,
+its places, and their pins) and "Forget saved password" are separate context-menu items, both confirmed. MTP keeps
+"Eject": it earns it by closing the device session.
 
 **What the panes do.** Both Disconnect and Forget emit the `VolumeUnmounted` broadcast (a new emit site: today only the
 two mount watchers raise it), so a pane sitting on the volume goes home the way it does after an eject, in both panes,
@@ -492,8 +493,8 @@ sheet; its test compares on `kind`.
 
 - **Servers (SFTP, WebDAV)**: one card, "Trusted host keys" listing `listTrustedSftpHostKeys()` rows with a Forget
   button each. Nothing else: saved servers live in the hub.
-- **Android (ADB)**, exactly `android-adb-ui.md` decision 5's four controls (enable switch default on, status, Re-check,
-  `adb` location with Browse), plus one addition: when the status is "Not found", a copyable
+- **Android (ADB)**, exactly the ADB spec's decision 5 controls (enable switch default on, status, Re-check, `adb`
+  location with Browse), plus one addition: when the status is "Not found", a copyable
   `brew install android-platform-tools` line the way `PtpcameradDialog` shows its command. Settings ids:
   `fileOperations.adbEnabled`, `fileOperations.adbBinaryPath`; both follow the five-place `mtpEnabled` plumbing
   (`settings/loader.rs` hand-parsed dot keys, startup seed, live apply through a `set_adb_settings` command that
@@ -504,7 +505,7 @@ sheet; its test compares on `kind`.
 `DeviceVolumeEntry` grows `device_readiness: Option<DeviceReadiness>` (D1) and `AdbDeviceProvider::entries()` lists
 every device except `recovery`, `bootloader`, and `sideload`: `Ready` as today, `unauthorized` / `authorizing` /
 `connecting` as `waiting_for_authorization`, `offline` / `no permissions` as `unavailable`. This resolves the
-contradiction between `android-adb-ui.md` decisions 2 and 3: `waiting_for_authorization` rows ARE openable and lead to
+contradiction between the ADB spec's decisions 2 and 3: `waiting_for_authorization` rows ARE openable and lead to
 `RemoteConnectView`'s `waiting_for_device` state, which subscribes to `volumes-changed` and navigates on its own the
 moment the row turns `ready`; `unavailable` rows are disabled with the reason as tooltip.
 
@@ -748,18 +749,33 @@ Docs: `settings/CLAUDE.md`, `navigation/DETAILS.md`. Checks: `pnpm check`.
 - **The sheet's restored username placeholder cost no translation work**: the deleted key's ten values were recovered
   from the commit that removed them and re-filed under `servers.sheet.usernamePlaceholder`.
 
-### M5. ADB in the pane
+### M5. ADB in the pane ✅ LANDED
 
-1. D12 frontend: non-ready rows, `waiting_for_device` auto-proceed, cancel, a new `adb/adb-connect-errors.ts` wording
-   every `AdbConnectOutcomeError` variant from the `adb.connect.*` keys (nothing words the enum today; the app-side ADB
-   doc says otherwise and is corrected), `RemoteConnectView.refused` rendering them, Disconnect wording, the `/sdcard`
-   first-path rule.
-2. The MTP-header hint.
-3. Wipe `android-adb-ui.md` except decision 1 (moves to M8's entry in `later/` if M8 slips).
+Where the code differed from this plan, and why:
 
-Tests: `connection-views.a11y.test.ts` blocks, an E2E driving `emitBackendEvent` for `volumes-changed` with a
-`waiting_for_authorization` → `ready` transition (the real-device pass stays David's:
-`android-adb-backend-follow-ups.md` § 1). Docs: `adb/CLAUDE.md` (frontend), `pane/CLAUDE.md`.
+- **A `waiting_for_authorization` row is never dialed.** D12 said such a row leads to `waiting_for_device`; it did not
+  say whether opening one also dials. It doesn't: the dial's answer is known in advance (`unauthorized`), so
+  `device-connect.svelte.ts` renders the wait and spends nothing, and dials only once a broadcast says `ready`.
+- **The dial does NOT go through `connect-flow.ts`.** That orchestrator exists to pick between three moves a SERVER can
+  need and to loop a sign-in sheet through rounds; a phone has no credential, no backoff, and no sheet, and
+  `connect_adb_device` already answers an already-dialed device. A twin factory beside `place-connect` was the smaller,
+  truer shape. `servers/DETAILS.md` § "The device dial" records it.
+- **The pane HOLDS its listing while a phone opens** (`holdsListing`, threaded through `path-sync.ts`). This plan did
+  not anticipate it: without the hold, `list_directory` dials the same phone a second time through
+  `resolve_path_to_volume`, and Cancel aims at the wrong attempt. `pane/DETAILS.md` § "A pane on a phone".
+- **`RemoteConnectState.refused` grew optional callbacks.** `deviceGone` and `deviceTooOld` have no move left, so they
+  render the sentence with no action row; a "Try again" there is the inert affordance the view refuses. `openSettings`
+  is a new sibling for `adbNotInstalled`.
+- **`waiting_for_device` carries `{ reason, hint, cancel }`**, not the bare `{ reason }` D8 sketched. The producer
+  supplies both finished sentences so the generic view carries none of Android's words.
+- **The "How" link points at Android's own instructions**, not a `getcmdr.com/help/` page: a vendor procedure that
+  changes per Android release, already translated by Google into more languages than Cmdr has. `adb/DETAILS.md` records
+  it as one constant to repoint if a Cmdr page is ever written.
+- **MTP's connect stayed in `MtpConnectionView.svelte`.** Its volume id CHANGES on connect, which is a different pane
+  transition with its own `path-sync.ts` arm; folding it in would have bought nothing this milestone needed.
+- **The phone row's native context menu still says "Eject {name}"** while its inline slot says Disconnect. Fixing that
+  is a Rust menu change (`menu_structure.rs`, the command signature, `bindings.ts`, and a `menu.*` key in eleven
+  catalogs), outside this milestone. `later/adb-merged-phone-row.md` touches device rows anyway.
 
 ### M6. Reconcile, docs pass, spec wipe
 

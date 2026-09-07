@@ -9,39 +9,42 @@ file exists so what is left stays schedulable.
 
 ❌ Nothing here restates a mechanism. Every item points at the doc that owns it.
 
-Two things that look like gaps and are not. **Indexing an ADB volume is a settled non-goal**, decided in
-`android-adb-ui.md` § "ADB volumes are not indexed, deliberately": a phone is transient and walking it over USB would
-thrash the cable for data that goes stale on unplug. **The wire-level gaps** (no ranged `RECV`, so a resumed read
-re-reads from zero) live in `crates/cmdr-adb/DETAILS.md` § "Known gaps and follow-ups", and the smaller app-side ones,
-including a connect that isn't cancelable from the pane, in `adb/DETAILS.md` § "Not wired yet".
+Two things that look like gaps and are not. **Indexing an ADB volume is a settled non-goal**, and so is wireless
+pairing; both are written down with their reasons in `apps/desktop/src-tauri/src/adb/DETAILS.md` § "Deliberate
+non-goals". **The wire-level gaps** (no ranged `RECV`, so a resumed read re-reads from zero) live in
+`crates/cmdr-adb/DETAILS.md` § "Known gaps and follow-ups", and the smaller app-side ones in `adb/DETAILS.md` § "Not
+wired yet".
 
 ## 1. No real phone has ever run this
 
 - **Problem**: every test is against the in-repo fake ADB server. Nothing has been observed on hardware: the authorize
   prompt, an `unauthorized` → `device` transition mid-session, a 2 GB `RECV` and `SEND`, or a `/data` listing on a
   non-rooted phone (which should answer `PermissionDenied` carrying the path).
-- **Impact**: this gates everything else, including the whole UI spec, which says so itself. A fake server agrees with
-  whatever the crate believes about framing and state transitions, so the first real device is where a wrong belief
-  surfaces. Until it runs, the honest status is "works against our own mock".
+- **Impact**: this gates everything else, the shipped UI included. A fake server agrees with whatever the crate believes
+  about framing and state transitions, so the first real device is where a wrong belief surfaces. Until it runs, the
+  honest status is "works against our own mock".
 - **Solution**: an Android phone with USB debugging on, plugged into the Mac, and the four cases walked by hand. Record
   what comes back in `crates/cmdr-adb/DETAILS.md` with the usual evidence anchor (device, Android version, date).
 - **Size**: an afternoon, once a phone is on the desk.
 
-## 2. Nobody can reach it from the UI
+## 2. Nobody can reach it from the UI ✅ SHIPPED, except the merged row
 
-- **Problem**: a `Ready` device already on the volume list can be browsed, and that is the only way in. There is no
-  connect flow, no device picker, no words for the six ways a connect refuses, and no settings. `isAdbPath` is exported
-  and nothing outside its own test calls it; `connectAdbDevice` is the same.
-- **Impact**: a phone that is plugged in but not yet authorized is invisible, so the user concludes Cmdr cannot see it.
-  On top of that, a macOS GUI app never inherits the shell `PATH`, so every developer whose `adb` comes from mise, asdf,
-  nix, or a custom SDK root has a working toolchain that Cmdr cannot find, with no override to point it at one.
-- **Solution**: `android-adb-ui.md` owns this end to end, in eight decisions and a four-step build order. It covers the
-  connect surfaces, non-ready rows, the Settings section with the `adb` path override and the
-  `fileOperations.adbEnabled` twin of the MTP toggle, panes opening at `/sdcard`, and "Disconnect" rather than "Eject".
-  Nothing on the backend side blocks it.
-- **Size**: read the order in that spec. The merged one-row-per-phone item is the large one and is deliberately last.
+- **What it was**: a `Ready` device already on the volume list could be browsed, and that was the only way in. A phone
+  plugged in but not yet authorized was invisible, so the user concluded Cmdr could not see it; and because a macOS GUI
+  app never inherits the shell `PATH`, a developer whose `adb` comes from mise, asdf, nix, or a custom SDK root had a
+  working toolchain Cmdr could not find, with no override.
+- **Where it landed**: `servers-hub-plan.md` M4 and M5. Every device state is a switcher row with its readiness
+  (`apps/desktop/src/lib/adb/DETAILS.md` § "The readiness table"); a phone waiting for its Allow tap opens into a pane
+  state that walks in by itself; every refusal has words and its own recovery (§ "The three outcome shapes"); a first
+  navigation lands on `/sdcard`; the eject slot says Disconnect; the Settings section carries the `adb` path override
+  and the `fileOperations.adbEnabled` toggle (`src-tauri/src/adb/DETAILS.md` § Settings).
+- **What is left**: one switcher row per phone rather than one per protocol, deferred as
+  `later/adb-merged-phone-row.md`. Nothing waits on it, and the "(ADB)" name suffix is the stopgap until it lands.
 
 ## 3. ⌘G can't take an `adb://` path
+
+Scheduled: `servers-hub-plan.md` § D13 takes this as a FRONTEND intercept in `go-to-path.ts`, ahead of the Rust
+resolver, and covers `mtp://` in the same move. What follows is why the Rust side stays local-only.
 
 - **Problem**: `go_to_path::resolve` has no scheme branch. An `adb://<serial>/sdcard` input isn't absolute to `Path`, so
   it joins against the focused pane's directory, misses on disk, and comes back as `NearestAncestor` pointing at
@@ -71,6 +74,6 @@ including a connect that isn't cancelable from the pane, in `adb/DETAILS.md` § 
 - **Problem**: `adb pair` and its six-digit code have no surface in Cmdr, and won't get one.
 - **Impact**: none we intend to carry. Pairing is a one-time terminal step with its own flow, and a device paired there
   shows up in `track-devices` exactly like a cabled one, so the backend already serves it.
-- **Solution**: leave it. Recorded here and in `android-adb-ui.md` § "What this does not cover" so it doesn't get
-  rediscovered as a gap.
+- **Solution**: leave it. Recorded here and in `apps/desktop/src-tauri/src/adb/DETAILS.md` § "Deliberate non-goals" so
+  it doesn't get rediscovered as a gap.
 - **Size**: zero. It's a decision, not work.

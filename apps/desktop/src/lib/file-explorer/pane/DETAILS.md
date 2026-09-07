@@ -370,6 +370,31 @@ no session behind it, so every listing on it would refuse until something dials.
 - The listing still runs underneath and fails, setting `friendlyError`. That branch sits BEHIND this one in the chain,
   so it never shows, and the reload on connect clears it.
 
+### A pane on a phone
+
+`device-connect.svelte.ts` is the device twin of the section above: same seam, same typed `RemoteConnectState`, same
+one-per-landing rule. Its gate is `deviceReadiness` rather than `connectionState`, because a phone waiting for its
+"Allow USB debugging?" tap has no session to be in any state about (`$lib/adb/DETAILS.md` § "Two fields, two
+questions").
+
+- **A `waiting_for_authorization` row is NOT dialed.** The answer is known in advance (`unauthorized`), so the factory
+  renders the waiting state and spends nothing. The next `volumes-changed` carrying `ready` re-runs the effect and the
+  dial starts with nothing pressed.
+- **The auto-proceed is a READ, not a listener.** `getCurrentVolumeInfo()` is the pane's own lookup into the volume
+  store, and the store is what subscribes to `volumes-changed`. One subscription for the whole app, ❌ not one per pane.
+- **The effect keys on `<volume>:<readiness>`**, so one landing is one dial AND a readiness change (the Allow tap) is a
+  fresh decision. A plain volume-id guard would strand the pane in the waiting state forever.
+- **❗ It HOLDS the pane's listing** (`holdsListing`). Without that, `list_directory` reaches
+  `commands/volumes.rs::resolve_path_to_volume`, which dials the same phone AGAIN under the backend's own
+  `adb-navigation:<serial>` attempt id — and Cancel, which aims at the id minted here, would call off the dial nobody
+  was watching while the other quietly registered the volume. The hold is threaded through `path-sync.ts`'s
+  `deviceIsConnecting` input (a `sync-path` arm, like device-only MTP's) and the mount-time load's own branch.
+- **`holdsListing` is a `$derived` off the volume id and the factory's own record, ❌ never off `state`.** The
+  mount-time load runs before this factory's `$effect` has said anything, so a gate read from the view state would
+  depend on `$effect` ordering — correct today, silently wrong after any reordering.
+- **MTP is deliberately NOT folded in.** Its volume id CHANGES on connect (device-only → storage), which is a different
+  pane transition with its own `path-sync.ts` arm, and it keeps `MtpConnectionView.svelte`.
+
 **The volume-id string compares that REMAIN are not guards — don't "finish the sweep".** A grep for
 `=== 'search-results'` / `=== 'network'` / `startsWith('mtp-')` (and the `!==` forms) across `apps/desktop/src/` returns
 hits, and every one is a classifier input, a namespace mechanic, or a display choice. Forcing one of those through the
@@ -1324,6 +1349,8 @@ Two producers:
 - `smb-view-state.svelte.ts` maps the reconnect manager's status onto `connecting` (with a `cycle`), `signed_out`, and
   `host_key_changed`, in ONE exhaustive `switch`. ❗ Exhaustive, ❌ not a list of per-status booleans: a status without
   its own arm used to render a plain listing over a dead session.
+- `device-connect.svelte.ts` owns `waiting_for_device` and a phone's `connecting` / `refused`. Its sentences come from
+  `$lib/adb/adb-connect-errors.ts`, so the view stays generic and the words stay Android's.
 
 **A backoff loop wears the `connecting` state, with a `cycle` payload.** It says how long the loop keeps going and which
 attempt it is on, drains a bar toward the next attempt, and offers Try now beside Cancel and Disconnect. ❗ The
@@ -1335,6 +1362,16 @@ view holds no reference to the reconnect manager and a second backend's loop ren
 ❗ **There is no `gave_up` state.** A loop that ran out of attempts renders `VolumeUnreachableBanner`'s `gaveUp`
 variant, the app's one "couldn't reach this" surface, which already words the path, the retry, and the disconnect. Two
 renderers for one state is worse than one in the file next door.
+
+❗ **`waiting_for_device` carries no retry, deliberately.** Nothing is dialing, and the thing that would change the
+state happens on the DEVICE. A "Try again" would re-ask a question already answered, and an "I tapped it" button would
+be a lie about how the pane finds out (it reads the volume list). Cancel is the only control, because the wait is the
+process and calling it off is the one thing a person can do from here.
+
+❗ **A `refused` state's callbacks are all optional.** Some refusals have no move left: an unplugged phone is fixed by
+the cable, an Android 6 phone by nothing. Those render the sentence with NO action row at all. ❌ Never supply a `retry`
+that is guaranteed to fail again — an inert affordance is the one thing this view refuses. `openSettings` is for the
+refusals only Settings can clear and never appears beside `retry`.
 
 ❗ **`signed_out` carries a `signIn` that may be `null`.** The reconnect manager stores what the backend said a sign-in
 would ask for at the moment it flipped (`getSignInShape`), and a `nothing` shape means no secret a person could type

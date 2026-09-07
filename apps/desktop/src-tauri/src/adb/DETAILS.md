@@ -101,9 +101,10 @@ for good is unplugged, or revoked on the phone.
 
   ❗ `device_readiness` is PRESENCE, never session health: `connection_state` stays `None` on a device row, so nothing
   enrolls a phone waiting for its Allow tap in the reconnect backoff (`cmdr_fs::volume::connection` carries the split).
-  ❗ A `waiting_for_authorization` row resolving through `commands/volumes.rs::resolve_path_to_volume` still dials and
-  the dial answers `Unauthorized`; the pane state that waits for the row to turn ready is frontend work
-  (`docs/specs/servers-hub-plan.md` § D12, M5).
+  ❗ A `waiting_for_authorization` row resolving through `commands/volumes.rs::resolve_path_to_volume` still dials, and
+  the dial answers `Unauthorized`. The frontend avoids that round-trip: it holds the pane's listing and renders the
+  waiting state without dialing, and dials only once a broadcast says the row turned ready
+  (`apps/desktop/src/lib/adb/DETAILS.md`, `src/lib/file-explorer/pane/DETAILS.md` § "A pane on a phone").
 - `owns_volume_id`: any cached serial's id matches.
 - `space_for_path`: the connected volume's `get_space_info` (`df -k` on the device), `None` until it is dialed.
 - `eject`: above.
@@ -125,9 +126,24 @@ the tracker's diff and inline retirement, the provider's listing answers, eject,
 `adb://` path, and the transfer engine through the registry. A cell asserting on the protocol belongs in the crate:
 `crates/cmdr-adb/DETAILS.md` § "Which side a test lives on".
 
+## Deliberate non-goals
+
+Two things read like gaps and are not. They live here because the spec that decided them is wiped, and because both are
+the kind of "oversight" someone will otherwise fix.
+
+- **An ADB volume is never indexed.** `cmdr-index` does not route `adb://`, and that is the intended end state. A phone
+  is transient, its filesystem is large, and walking it over USB to fill an index would thrash the device and the cable
+  for data that is stale the moment it is unplugged. Search inside an ADB pane is live filename search over the current
+  listing.
+- **Wireless pairing stays the `adb` server's job.** `adb pair` and its six-digit code have no surface in Cmdr and
+  won't get one: pairing is a one-time terminal step with its own flow, and a device paired there arrives through
+  `track-devices` exactly like a cabled one, so this module already serves it.
+
 ## Not wired yet
 
-- An " (ADB)" name suffix when the same phone is also listed over MTP (`entries()` names the model alone).
+- An " (ADB)" name suffix when the same phone is also listed over MTP (`entries()` names the model alone). The frontend
+  applies one from the volume list (`src/lib/adb/adb-volume-label.ts`); the merged one-row-per-phone listing that
+  retires it is `docs/specs/later/adb-merged-phone-row.md`.
 - Index routing for `adb:` volume ids, `go_to_path`, and the MCP `select_volume` tool don't answer for an `adb://`
   path.
 - The real-device pass and the crate's own deferrals: `crates/cmdr-adb/DETAILS.md` § "Known gaps and follow-ups".
