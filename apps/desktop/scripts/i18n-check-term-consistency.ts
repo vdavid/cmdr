@@ -43,6 +43,12 @@
  * when the number GROWS. It ratchets down on local runs as locales get cleaned, and
  * a locale in neither section is strict from its first day.
  *
+ * A baselined locale is judged on the divergences that carry NO reasoned `reviewed`
+ * entry, so the two sections compose: record why one split is right, the count drops
+ * by one, and the baseline ratchets after it. Without that, the only way to move a
+ * baselined locale would be a translation edit, which is the wrong answer whenever
+ * the split is the honest one, and untriaged locales are exactly where those live.
+ *
  * Run: `pnpm i18n:check-term-consistency` (desktop). Pass `--messages-root <dir>`
  * to point at a fixture (used by the tests).
  */
@@ -205,7 +211,10 @@ export function loadAllowlist(path: string = ALLOWLIST_PATH): Allowlist {
   }
 }
 
-/** One locale's outcome. `baseline` is set only for a not-yet-reviewed locale. */
+/**
+ * One locale's outcome. `baseline` is set only for a not-yet-reviewed locale, and
+ * it is compared against `unallowed`, never against every `divergences` entry.
+ */
 export interface LocaleOutcome {
   locale: string
   isOverlay: boolean
@@ -245,16 +254,12 @@ export function inspectLocales({
     const source = isOverlay ? layerCatalogs(load(BASE_LOCALE), load(overrides)) : load(BASE_LOCALE)
     const divergences = findDivergences(source, load(locale), isOverlay)
 
-    const baseline = locale in allowlist.notYetReviewed ? allowlist.notYetReviewed[locale] : undefined
-    if (baseline !== undefined) {
-      outcomes.push({ locale, isOverlay, divergences, unallowed: [], staleAllows: [], baseline })
-      continue
-    }
     const entries = locale in allowlist.reviewed ? allowlist.reviewed[locale] : []
     const unallowed = divergences.filter((finding) => !isAllowed(finding.source, entries))
     const live = new Set(divergences.map((finding) => finding.source))
     const staleAllows = entries.map((entry) => entry.source).filter((source) => !live.has(source))
-    outcomes.push({ locale, isOverlay, divergences, unallowed, staleAllows })
+    const baseline = locale in allowlist.notYetReviewed ? allowlist.notYetReviewed[locale] : undefined
+    outcomes.push({ locale, isOverlay, divergences, unallowed, staleAllows, baseline })
   }
   return outcomes
 }
@@ -273,7 +278,7 @@ export function inspectLocales({
  */
 function allClearLine(outcomes: readonly LocaleOutcome[]): string {
   const awaiting = outcomes.filter(({ baseline }) => baseline !== undefined)
-  const untriaged = awaiting.reduce((total, { divergences }) => total + divergences.length, 0)
+  const untriaged = awaiting.reduce((total, { unallowed }) => total + unallowed.length, 0)
   if (untriaged === 0) return 'Term consistency: every locale names one thing one way (or says why not).'
   return (
     `Term consistency: every triaged locale names one thing one way (or says why not). ` +
@@ -300,9 +305,9 @@ export function report(outcomes: readonly LocaleOutcome[], write?: (line: string
   }
 
   let issues = 0
-  for (const { locale, divergences, unallowed, staleAllows, baseline } of outcomes) {
+  for (const { locale, unallowed, staleAllows, baseline } of outcomes) {
     if (baseline !== undefined) {
-      const count = divergences.length
+      const count = unallowed.length
       if (count > baseline) {
         issues++
         out(`${locale}: ${String(count)} divergent terms, up from the recorded ${String(baseline)} (not yet triaged).`)
@@ -311,6 +316,8 @@ export function report(outcomes: readonly LocaleOutcome[], write?: (line: string
         const trend = count < baseline ? ` (down from ${String(baseline)}; ratchet the baseline)` : ''
         out(`${locale}: ${String(count)} divergent terms, not yet triaged${trend}.`)
       }
+      issues += staleAllows.length
+      for (const source of staleAllows) out(`  - stale allowlist entry: "${source}" no longer diverges; drop it`)
       continue
     }
     if (unallowed.length === 0 && staleAllows.length === 0) {
@@ -336,18 +343,19 @@ export function report(outcomes: readonly LocaleOutcome[], write?: (line: string
 }
 
 /**
- * Ratchets `notYetReviewed` counts down to what the catalogs actually carry, so a
- * cleaned-up locale can't keep spending slack it no longer needs. Never raises a
- * number and never touches `reviewed`. Local runs only; CI reads the file as
- * committed.
+ * Ratchets `notYetReviewed` counts down to what the catalogs still leave
+ * unexplained, so a cleaned-up locale can't keep spending slack it no longer needs.
+ * A term that gained a reasoned `reviewed` entry counts as cleaned up, same as one
+ * whose translation was fixed. Never raises a number and never touches `reviewed`.
+ * Local runs only; CI reads the file as committed.
  *
  * @returns the locales whose baseline moved
  */
 export function shrinkWrap(outcomes: readonly LocaleOutcome[], allowlist: Allowlist, path: string): string[] {
   const lowered: string[] = []
-  for (const { locale, divergences, baseline } of outcomes) {
-    if (baseline === undefined || divergences.length >= baseline) continue
-    allowlist.notYetReviewed[locale] = divergences.length
+  for (const { locale, unallowed, baseline } of outcomes) {
+    if (baseline === undefined || unallowed.length >= baseline) continue
+    allowlist.notYetReviewed[locale] = unallowed.length
     lowered.push(locale)
   }
   if (lowered.length > 0) writeFileSync(path, `${JSON.stringify(allowlist, null, 2)}\n`)

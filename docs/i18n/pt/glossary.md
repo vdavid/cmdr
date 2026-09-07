@@ -2131,7 +2131,9 @@ nesta máquina, então as fontes vêm do macOS instalado (26.6.2, build 25G83, 2
   `Escolher Arquivo…`), e o catálogo já publica `Escolher app…` · confirmed. ❌ Não `Navegar`, que é o `Browse` de
   entrar num arquivo compactado (`settings.archives.opt.browse`, outro sentido), nem o `Explorar` do Finder
   (`ConnectToWindow.strings` `48.title`), que é procurar servidores NA REDE, não escolher um arquivo. ❌ Nem o
-  `Procurar…` da Microsoft: o Cmdr é um app de macOS (princípio 2 de escolha de termo).
+  `Procurar…` da Microsoft: o Cmdr é um app de macOS (princípio 2 de escolha de termo). O `i18n-terms` lê as duas chaves
+  como UMA palavra inglesa; a divisão é real e está registrada com o motivo como `Browse` em
+  `apps/desktop/scripts/i18n-term-consistency-allowlist.json` (§ `reviewed.pt`).
 - **Reconnect automatically → `Reconectar automaticamente`** · Apple pt-BR, exatamente este rótulo de interruptor:
   `DisplaysSettingsIntentsExtension.appex/Localizable.loctable` (`Automatically reconnect` →
   `Reconectar automaticamente`) · confirmed.

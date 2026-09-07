@@ -1,7 +1,19 @@
 {
   "reviewed": {
+    "de": [
+      {
+        "source": "Browse",
+        "reason": "Two senses of one English word, each sourced separately in `docs/i18n/de/glossary.md`. `Durchsuchen…` is the button that opens the system file picker (`servers.sheet.browse`, `settings.adb.browse`), taken from Finder's own `ConnectToWindow.strings` `48.title`. `Durchsehen` is the archives segmented cell (`settings.archives.opt.browse`), which means step INTO the archive and list it like a folder (KDE Dolphin, \"Archive durchsehen\"). The archive sense cannot take `Durchsuchen`: that is the settled scan/search verb (\"Laufwerk wird durchsucht …\"), so merging them would tell the reader the app is searching the archive."
+      }
+    ],
     "en-AU": [],
     "en-GB": [],
+    "pt": [
+      {
+        "source": "Browse",
+        "reason": "Two senses of one English word, each sourced separately in `docs/i18n/pt/glossary.md`. `Escolher…` is the button that opens the system file picker (`servers.sheet.browse`, `settings.adb.browse`), taken from Apple's own `Choose…` → `Escolher…`. `Navegar` is the archives segmented cell (`settings.archives.opt.browse`), which means step inside and list like a folder (macOS Finder VoiceOver, Total Commander pt-BR). Apple never says `Navegar` for picking a file, and the archive sense is never `Escolher`, so one word for both would be wrong on whichever surface lost."
+      }
+    ],
     "zh-Hant": [
       {
         "source": "App",
