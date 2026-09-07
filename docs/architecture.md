@@ -19,8 +19,9 @@ All under `apps/desktop/src/lib/`.
 - `file-explorer/selection/`: Space/Shift/Cmd selection, range operations
 - `file-explorer/navigation/`: Back/forward history, breadcrumb, path utilities
 - `file-explorer/network/`: the servers hub (`ServersHub.svelte`: every saved and nearby server, with its merge, order,
-  and MCP encoding in `servers-hub-*.ts`), the places under one account (`PlacesBrowser.svelte`), the SMB login form,
-  and the mDNS discovery store
+  and MCP encoding in `servers-hub-*.ts`), the places under one account (`PlacesBrowser.svelte`), SMB's side of the
+  sign-in sheet (`smb-sign-in.ts`), the "Connect directly" upgrade, the per-volume reconnect cycle, and the mDNS
+  discovery store
 - `servers/`: Remote places the app dials (SFTP, WebDAV): the `sftp://user@host:port/path` spelling, the connect flow
   that picks its move by the volume's standing, the ONE sign-in sheet every credential ask in the app opens
   (`SignInSheet.svelte`, add / sign-in / edit), the address parser behind add mode, the words for a connect that
