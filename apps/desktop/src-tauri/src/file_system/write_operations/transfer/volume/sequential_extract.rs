@@ -175,7 +175,7 @@ pub(super) async fn extract_sequential_subtree(
         staged
             .commit(dest_volume)
             .await
-            .map_err(|f| f.at_source_or_rescued_dest(&file.source_path, &planned.dest_path))?;
+            .map_err(|f| PathedVolumeError::at_source_or_rescued_dest(f, &file.source_path, &planned.dest_path))?;
 
         // Safe-replace finalize for a file→file Overwrite (same as the per-entry
         // path): the temp holds the complete new bytes; swap it over the original.
@@ -183,7 +183,7 @@ pub(super) async fn extract_sequential_subtree(
             Some(orig) => {
                 super::conflict::finalize_safe_replace(dest_volume, &planned.dest_path, &orig)
                     .await
-                    .map_err(|e| e.at_destination(&orig))?;
+                    .map_err(|e| PathedVolumeError::at_destination(e, &orig))?;
                 orig
             }
             None => planned.dest_path,

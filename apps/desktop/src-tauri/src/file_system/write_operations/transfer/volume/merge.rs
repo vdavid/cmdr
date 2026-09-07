@@ -256,7 +256,7 @@ async fn copy_leaf<'a>(
     if streamed.is_err() && reserved_placeholder {
         take_back_reservation(dest_volume, &write_dest).await;
     }
-    let bytes = streamed.map_err(|f| f.at_source_or_rescued_dest(&child_source, &write_dest))?;
+    let bytes = streamed.map_err(|f| PathedVolumeError::at_source_or_rescued_dest(f, &child_source, &write_dest))?;
     // Safe-replace finalize for a file→file Overwrite: the temp now holds the
     // complete new bytes; swap it over the original. On finalize error the temp
     // is preserved as committed data (see `finalize_safe_replace`).
@@ -264,7 +264,7 @@ async fn copy_leaf<'a>(
         Some(orig) => {
             super::conflict::finalize_safe_replace(dest_volume, &write_dest, &orig)
                 .await
-                .map_err(|e| e.at_destination(&orig))?;
+                .map_err(|e| PathedVolumeError::at_destination(e, &orig))?;
             // A deep-merge child that replaced an existing dest file: record the
             // overwrite so the operation-log eligibility is honest (a copy / move
             // that overwrote isn't rollbackable — the original is gone).
