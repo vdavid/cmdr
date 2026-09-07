@@ -97,8 +97,10 @@ docker run --rm \
     pnpm install --frozen-lockfile --filter @cmdr/website
     pnpm --filter @cmdr/website build
     cd apps/website
+    # `=all` matters: bare `--update-snapshots` presets to mode "changed", which asks the same
+    # comparator the normal run does, so it skips exactly the sub-threshold diffs --force exists for.
     if [ -n "$VISUAL_FORCE" ]; then
-      pnpm exec playwright test visual.spec.ts --update-snapshots
+      pnpm exec playwright test visual.spec.ts --update-snapshots=all
     elif ! pnpm exec playwright test visual.spec.ts; then
       echo "   re-shooting failed baselines"
       pnpm exec playwright test visual.spec.ts --last-failed --update-snapshots

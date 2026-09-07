@@ -74,6 +74,9 @@ apps/website/scripts/update-visual-baselines.sh   # the header and footer carry 
   pixel-identical to the source (verified at 1024 against both librsvg and resvg, 2026-09-07).
 - **Check it at 16px.** The haze collapses to a colored strip there, which is fine, but a change that only reads at 512
   is a change that doesn't reach the Dock or a browser tab.
+- **Load `logo.svg` through `<img src>`, never inlined into a page.** SVGO shortens its gradient and filter ids to
+  single letters (`#a`, `#g`, `#o`…), which is safe in its own document and a collision waiting to happen in a shared
+  one: another element with `id="g"` silently repaints the logo. Inlining it means turning on SVGO's `prefixIds` first.
 
 ## Where the artwork itself is described
 
