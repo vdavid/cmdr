@@ -274,6 +274,28 @@ describe('computeFullListColumnWidths', () => {
     expect(inside.size).toBe(above.size)
   })
 
+  it('reserves the ≥ glyph while a lower bound is settled, and stops once it goes in flux', () => {
+    // The cell drops its `≥` while the number is in flux (the hourglass says the
+    // same thing, and the number can move either way), so the measurer has to
+    // stop reserving the glyph on exactly those rows or the column over-reserves.
+    _setMeasureForTests(fakeMeasure)
+    const incomplete = entry({ name: 'd', isDirectory: true, recursiveSize: 12345, recursiveSizeComplete: false })
+    const complete = entry({ name: 'd', isDirectory: true, recursiveSize: 12345, recursiveSizeComplete: true })
+
+    const idleLowerBound = computeFullListColumnWidths({ ...baseArgs, entries: [incomplete] })
+    const idleExact = computeFullListColumnWidths({ ...baseArgs, entries: [complete] })
+    // `≥12345` is one character wider than `12345`.
+    expect(idleLowerBound.size).toBe(idleExact.size + 7)
+
+    const busyLowerBound = computeFullListColumnWidths({
+      ...baseArgs,
+      isSizeUpdating: () => true,
+      entries: [incomplete],
+    })
+    const busyExact = computeFullListColumnWidths({ ...baseArgs, isSizeUpdating: () => true, entries: [complete] })
+    expect(busyLowerBound.size).toBe(busyExact.size)
+  })
+
   it('reserves icon width for a scanning directory with no size yet', () => {
     _setMeasureForTests(fakeMeasure)
     const idle = computeFullListColumnWidths({

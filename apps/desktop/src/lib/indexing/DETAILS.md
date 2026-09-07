@@ -445,7 +445,9 @@ pure function and the single source of truth:
 - `complete === false && size === 0` → unknown, which collapses into `'dir'`/`'scanning'` → the familiar `<dir>`
   placeholder (the same render as a not-yet-scanned dir), never a settled-looking value. The crux: distinct from a
   genuinely-empty `0 bytes`. (A size we don't yet know shows the placeholder it always showed, not a `—`.)
-- `complete === false && size > 0` → `'lower-bound'` → `≥` (`LOWER_BOUND_GLYPH`) prefix + the formatted size.
+- `complete === false && size > 0` → `'lower-bound'` → `≥` (`LOWER_BOUND_GLYPH`) prefix + the formatted size, but only
+  while nothing is in flight: `updating` collapses it to `'size'`, because the hourglass supersedes the floor. Why, and
+  the incident behind it: `views/DETAILS.md` § the size column's content state.
 - `complete === true && stale === true` → `'size-stale'` → the formatted size, rendered exactly like `'size'`. Staleness
   is voiced by the per-drive freshness badge and by `buildDirSizeTooltip`'s stale line (which reads the raw `stale`
   flag, not the display state), never by the size text itself. **Don't reintroduce a muted/dimmed size for this state**:
@@ -455,17 +457,19 @@ pure function and the single source of truth:
 - otherwise → `'size'` → the plain formatted size (incl. a genuinely-empty `0 bytes`).
 - Absent `complete`/`stale` (a dir enriched before the flags, or a fixture) ⇒ treated as exact + fresh.
 
-**The in-flux hourglass is ORTHOGONAL** — `isDirSizeUpdating(indexing, pending)` (`indexing || pending`), applied on top
-of any content state. A dir can be both `'size-stale'` (freshness) and updating (in-flux). The `≥` is a symbol, not
-translatable copy; the per-state explanation is a one-line label in `buildDirSizeTooltip` (keys
-`fileExplorer.dirSize.{lowerBoundLine,unknownTooltip,staleLine}`). `unknownTooltip` is the tooltip for the unknown
-(`<dir>`-placeholder) state — incomplete subtree, size 0.
+**The in-flux hourglass is ORTHOGONAL to every state but the lower bound, which it supersedes** —
+`isDirSizeUpdating(indexing, pending)` (`indexing || pending`), applied on top of any content state. A dir can be both
+`'size-stale'` (freshness) and updating (in-flux). The tooltip follows the cell: the updating line replaces the
+lower-bound line, and sits beside the stale one. The `≥` is a symbol, not translatable copy; the per-state explanation
+is a one-line label in `buildDirSizeTooltip` (keys `fileExplorer.dirSize.{lowerBoundLine,unknownTooltip,staleLine}`).
+`unknownTooltip` is the tooltip for the unknown (`<dir>`-placeholder) state — incomplete subtree, size 0.
 
 **Three consumers, kept in lockstep** (or rendered text and pre-measured width drift): `FullList.svelte` (the Size
 cell), `SelectionInfo.svelte` (Brief-mode status bar, so it matches Full), and `measure-column-widths.ts` (reserves the
-`≥` glyph + `<dir>`-placeholder widths and the hourglass icon when `isDirSizeUpdating`). The `..` parent row carries the
-flags too (it renders the current dir's own stats), so a partially-scanned dir shows `..` as `≥` or the `<dir>`
-placeholder.
+`≥` glyph + `<dir>`-placeholder widths and the hourglass icon when `isDirSizeUpdating`). ⚠️ All three pass their per-row
+`updating` answer into `getDirSizeDisplayState`; the measurer that skips it reserves a `≥` the cell no longer draws. The
+`..` parent row carries the flags too (it renders the current dir's own stats), so a partially-scanned dir shows `..` as
+`≥` or the `<dir>` placeholder.
 
 **Sort-by-size keeps the three classes distinct** and runs in Rust (`file_system/listing/sorting.rs`), not the FE.
 `known_dir_size` returns `None` (sorts LAST, by name, regardless of order) for an unknown dir — either incomplete + size

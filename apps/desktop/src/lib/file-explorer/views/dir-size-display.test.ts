@@ -67,8 +67,16 @@ describe('getDirSizeDisplayState', () => {
     expect(getDirSizeDisplayState(0, false, false, true)).toBe('scanning')
   })
 
-  it('returns "lower-bound" (≥) when incomplete and size > 0', () => {
+  it('returns "lower-bound" (≥) when incomplete and size > 0 and nothing is in flight', () => {
     expect(getDirSizeDisplayState(1234, false, false)).toBe('lower-bound')
+  })
+
+  it('drops the ≥ while updating — the hourglass supersedes the floor', () => {
+    // A number in flux can move DOWN too (a deleted subtree the index still
+    // holds), so "at least this much" is a promise we can't keep. The hourglass
+    // already says "not settled"; one marker, not two.
+    expect(getDirSizeDisplayState(1234, false, false, true)).toBe('size')
+    expect(getDirSizeDisplayState(1234, false, true, true)).toBe('size')
   })
 
   it('returns "size" when complete and fresh', () => {
@@ -230,6 +238,15 @@ describe('buildDirSizeTooltip', () => {
     const html = tooltipHtml(buildDirSizeTooltip(1234, undefined, 10, 3, false, formatSize, formatNum, false, false))
     expect(html).toContain('1234 bytes')
     expect(html).toContain('At least this much')
+  })
+
+  it('drops the lower-bound line while scanning — the updating line supersedes it', () => {
+    // Matches the cell dropping its `≥`: while the number is in flux it can move
+    // either way, so the floor claim goes and "Updating index" carries the caveat.
+    const html = tooltipHtml(buildDirSizeTooltip(1234, undefined, 10, 3, true, formatSize, formatNum, false, false))
+    expect(html).toContain('1234 bytes')
+    expect(html).toContain('Updating index')
+    expect(html).not.toContain('At least this much')
   })
 
   it('appends the stale line when complete but stale', () => {

@@ -16,6 +16,9 @@
  * `walked-ground.test.ts` covers the predicate itself; this covers what the rows
  * actually render. The mocks come from `test-file-list-mocks.ts`, the measured
  * surface from `test-full-list.ts`.
+ *
+ * The last spec covers the one place the hourglass and the `≥` lower-bound prefix
+ * meet: a row showing the hourglass drops its `≥`.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -71,5 +74,24 @@ describe('FullList per-folder walk hourglass', () => {
 
     expect(list.rowNames()).toHaveLength(5)
     expect(list.hourglassRowNames()).toEqual([])
+  })
+
+  it('drops the ≥ on the rows the hourglass claims, and keeps it on the settled ones', async () => {
+    // The two markers say the same thing ("don't trust this number yet"), and
+    // only the hourglass is honest about direction: an in-flux size can move
+    // DOWN as the index drops a subtree that's gone. So the hourglass wins.
+    const incomplete = { recursiveSizeComplete: false }
+    const list = await mountFullList({
+      entries: [
+        dirEntry({ name: 'downloads', ...incomplete }),
+        dirEntry({ name: 'music', ...incomplete }),
+        dirEntry({ name: 'projects', ...incomplete }),
+      ],
+    })
+
+    expect(list.rowNames()).toEqual(['downloads', 'music', 'projects'])
+    expect(list.hourglassRowNames()).toEqual(['downloads', 'projects'])
+    // Only `music` is settled, so only `music` still claims a floor.
+    expect(list.lowerBoundRowNames()).toEqual(['music'])
   })
 })

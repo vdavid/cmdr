@@ -108,6 +108,8 @@ export interface MountedFullList {
   rowNames: () => string[]
   /** The rendered rows showing the size-updating hourglass, by filename. */
   hourglassRowNames: () => string[]
+  /** The rendered rows prefixing their size with the `≥` lower-bound glyph, by filename. */
+  lowerBoundRowNames: () => string[]
   /**
    * Drives effects and IPC promises until `until` holds, throwing `reason` if it
    * never does. Use it after a `layout.resize` / `layout.scroll`, and phrase
@@ -200,6 +202,10 @@ export async function mountFullList(options: MountFullListOptions = {}): Promise
     hourglassRowNames: () =>
       rows()
         .filter((row) => row.querySelector('.size-updating') !== null)
+        .map((row) => row.dataset.filename ?? ''),
+    lowerBoundRowNames: () =>
+      rows()
+        .filter((row) => row.querySelector('.size-lower-bound-prefix') !== null)
         .map((row) => row.dataset.filename ?? ''),
     settle: settleUntil,
   }
