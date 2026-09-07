@@ -103,7 +103,7 @@ fallback.
 forks ("Bin" for "Trash", `-ise` for `-ize`), wins on the ancestor chain above, and resolves every other key up to `en`
 through exactly the regional fallback here. So the fallback isn't the regional reader's consolation prize; it's what
 lets a 151-key overlay stand in for a 3,263-key catalog. `docs/i18n/language-selection-decisions.md` is the roster of
-which variants ship a catalog and which still fall back to their base, and `docs/guides/i18n.md` § Overlay catalogs is
+which variants ship a catalog and which still fall back to their base, and `docs/guides/i18n.md` § Overlay catalogs (regional variants) is
 how an overlay is built and checked.
 
 **Which regions reach one is CLDR's answer, not a list we keep.** An overlay serves far more than the region in its
@@ -121,7 +121,7 @@ have to agree, or one of them puts text on screen that another has already ruled
    would silently serve Simplified text for every key it hadn't translated yet.
 3. **The i18n check layer** (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`): whether a catalog is
    an OVERLAY of another (carrying only its forks) or a full translation. A different-script variant is a full
-   translation, precisely because it can't inherit. See `docs/guides/i18n.md` § Overlay catalogs.
+   translation, precisely because it can't inherit. See `docs/guides/i18n.md` § Overlay catalogs (regional variants).
 
 Layers 2 and 3 share one implementation, `inheritableAncestors` in `apps/desktop/src/lib/intl/locale-inheritance.ts`
 ("the ancestors that exist AND read the same script"). Layer 1 can't call `Intl`, so it reads the same CLDR answers off
