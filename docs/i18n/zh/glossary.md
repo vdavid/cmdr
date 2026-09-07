@@ -1903,3 +1903,9 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
 - **连接词 → `和`** · 目录中「X and Y」型标签几乎都用 `和`（`颜色和格式`、`日期和时间`、`提示和警告`）· `high`。
 - **句式 → `在 …、…、… 或 … 上按 Enter 键时的行为。`** · 与同类键 `settings.archives.zip.description`、
   `settings.archives.bundle.description` 完全相同的格式 · `high`。值中没有撇号。
+
+## Function key bar context menu (2026-09-07)
+
+- function key
+  bar（窗口底部的功能键命令按钮行）→ 功能键栏 · 已在目录中确定（`settings.appearance.showFunctionKeyBar.label`）；用于右键菜单项及其提示 ·
+  high

@@ -2384,3 +2384,9 @@ ezért már az angol sem nevezi meg az Office-t.
 - **A mondat kerete → `Mit tesz az Enter egy …, … vagy … fájlon.`** · pontosan a testvérkulcsok
   (`settings.archives.zip.description`, `settings.archives.bundle.description`) kerete · `high`. Nincs aposztróf az
   értékben.
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (az ablak alján lévő F-billentyűs parancsgombok sora) → funkcióbillentyű-sáv · már rögzítve a
+  katalógusban (`settings.appearance.showFunctionKeyBar.label`); újrafelhasználva a helyi menü elemhez és a hozzá
+  tartozó toasthoz · high

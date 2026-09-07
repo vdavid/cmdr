@@ -182,6 +182,9 @@ pub const TAB_PIN_ID: &str = "tab_pin";
 pub const TAB_CLOSE_OTHERS_ID: &str = "tab_close_others";
 pub const TAB_CLOSE_ID: &str = "tab_close";
 
+/// Menu item ID for the function key bar's context menu ("Hide function key bar").
+pub const FUNCTION_KEY_BAR_HIDE_ID: &str = "function_key_bar_hide";
+
 /// Menu item IDs for network host context menu.
 pub const NETWORK_HOST_FORGET_SERVER_ID: &str = "network_host_forget_server";
 pub const NETWORK_HOST_FORGET_PASSWORD_ID: &str = "network_host_forget_password";

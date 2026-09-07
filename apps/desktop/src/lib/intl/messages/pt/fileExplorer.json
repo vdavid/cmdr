@@ -257,6 +257,10 @@
   "@fileExplorer.functionKeyBar.deleteAction": {
     "sourceHash": "e2d0a54"
   },
+  "fileExplorer.functionKeyBar.hiddenToast": "A barra de teclas de função agora está oculta. Você pode reativá-la quando quiser em <settingsLink>Ajustes</settingsLink>.",
+  "@fileExplorer.functionKeyBar.hiddenToast": {
+    "sourceHash": "f961d3b"
+  },
   "fileExplorer.typeToJump.ariaLabel": "Ir para {buffer}",
   "@fileExplorer.typeToJump.ariaLabel": {
     "sourceHash": "da879a5"

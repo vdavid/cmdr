@@ -1935,3 +1935,9 @@ o inglês cita o Office.
   `Pacotes de aplicativo` abaixo dela — a mesma separação que o inglês faz entre `packages` e `app bundles`.
 - **Moldura da frase → `O que pressionar Enter faz em um …, … ou ….`** · exatamente a moldura das chaves irmãs
   `settings.archives.zip.description` e `settings.archives.bundle.description` · `high`. Sem apóstrofo no valor.
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (a linha de botões de comando das teclas de função na parte inferior da janela) → barra de teclas de
+  função · já definido no catálogo (`settings.appearance.showFunctionKeyBar.label`); reutilizado para o item do menu de
+  contexto e o respetivo toast · high

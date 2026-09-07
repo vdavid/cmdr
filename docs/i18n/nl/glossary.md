@@ -2339,3 +2339,9 @@ niet.
   eronder — dezelfde scheiding die het Engels maakt met `packages` tegenover `app bundles`.
 - **Zinsframe → `Wat Enter doet bij een …, … of ….`** · precies het frame van de zustersleutels
   `settings.archives.zip.description` en `settings.archives.bundle.description` · `high`. Geen apostrof in de waarde.
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (de rij met functietoets-commandoknoppen onderin het venster) → functietoetsbalk · al vastgelegd in
+  de catalogus (`settings.appearance.showFunctionKeyBar.label`); hergebruikt voor het contextmenu-item en de
+  bijbehorende toast · high

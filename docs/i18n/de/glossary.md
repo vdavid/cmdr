@@ -1982,3 +1982,9 @@ Office-Dokumente (.docx, .xlsx, .pptx) und App-Pakete (.jar, .apk), deshalb nenn
   `app bundles` macht.
 - **Satzrahmen → `Was die Eingabetaste bei einer …, … oder … bewirkt.`** · wörtlich der Rahmen der Geschwisterschlüssel
   `settings.archives.zip.description` und `settings.archives.bundle.description` · `high`. Kein Apostroph im Wert.
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (die Zeile mit den Funktionstasten-Befehlsschaltflächen am unteren Fensterrand) →
+  Funktionstastenleiste · bereits im Katalog festgelegt (`settings.appearance.showFunctionKeyBar.label`); für das
+  Kontextmenü-Element und den zugehörigen Toast wiederverwendet · high

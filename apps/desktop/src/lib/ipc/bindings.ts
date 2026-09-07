@@ -1350,6 +1350,13 @@ export const commands = {
     typedError<null, string>(
       __TAURI_INVOKE('show_network_host_context_menu', { hostId, hostName, isManual, hasCredentials }),
     ),
+  /**
+   *  Shows the function key bar's context menu (fire-and-forget): a single "Hide
+   *  function key bar" item. The click is delivered asynchronously via the
+   *  `function-key-bar-hide-requested` event from `on_menu_event`, same shape as
+   *  [`show_tab_context_menu`].
+   */
+  showFunctionKeyBarContextMenu: () => typedError<null, string>(__TAURI_INVOKE('show_function_key_bar_context_menu')),
   // Show a file in Finder (reveal in parent folder)
   showInFinder: (path: string) => typedError<null, string>(__TAURI_INVOKE('show_in_finder', { path })),
   // Open (or re-open) Quick Look on the given path.
@@ -4214,6 +4221,7 @@ export const events = {
   focusFileViewer: makeEvent<FocusFileViewer>('focus-file-viewer'),
   focusSettings: makeEvent<FocusSettings>('focus-settings'),
   foregroundOperation: makeEvent<ForegroundOperation>('foreground-operation'),
+  functionKeyBarHideRequested: makeEvent<FunctionKeyBarHideRequested>('function-key-bar-hide-requested'),
   gitStateChanged: makeEvent<GitStateChangedPayload>('git-state-changed'),
   globalShortcutFired: makeEvent<GlobalShortcutFired>('global-shortcut-fired'),
   indexAggregationComplete: makeEvent<IndexAggregationCompleteEvent>('index-aggregation-complete'),
@@ -6636,6 +6644,14 @@ export type FrontendLogEntry = {
   category: string
   message: string
 }
+
+/**
+ *  `function-key-bar-hide-requested`: the function key bar's right-click context
+ *  menu's "Hide function key bar" item was clicked. No payload: the frontend
+ *  owns both the setting write and the confirmation toast. Emitted to the main
+ *  window, the only place the bar renders.
+ */
+export type FunctionKeyBarHideRequested = null
 
 /**
  *  The one way a fuzzy jump can't answer at all.

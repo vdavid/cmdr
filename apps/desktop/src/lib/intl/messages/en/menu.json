@@ -521,6 +521,11 @@
     "description": "VERB phrase (imperative). A folder's right-click menu: pins that folder to Cmdr's favorites list in the volume dropdown. Same wording as the Go menu's item (menu.go.addToFavorites) and it should stay identical, since it does the same thing to a different folder."
   },
 
+  "menu.context.hideFunctionKeyBar": "Hide function key bar",
+  "@menu.context.hideFunctionKeyBar": {
+    "description": "VERB phrase (imperative). The single item in the function key bar's own right-click context menu (the row of F-key command buttons at the bottom of the window): turns off appearance.showFunctionKeyBar and hides the bar. No capture can photograph a native menu, so this description is the whole translator aid."
+  },
+
   "menu.context.makeAvailableOffline": "Make available offline",
   "@menu.context.makeAvailableOffline": {
     "description": "VERB phrase (imperative). Right-click menu on an iCloud Drive file that currently lives only in the cloud: downloads it so it works without a network. Use the exact wording your macOS Finder uses for the same iCloud item. Its opposite is menu.context.removeDownload."

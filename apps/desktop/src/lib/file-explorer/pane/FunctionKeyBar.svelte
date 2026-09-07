@@ -10,6 +10,7 @@
     import { fnKeyToCommand } from './function-key-commands'
     import { tString } from '$lib/intl/messages.svelte'
     import type { CommandId } from '$lib/commands'
+    import { showFunctionKeyBarContextMenu } from '$lib/tauri-commands'
 
     interface Props {
         visible?: boolean
@@ -68,6 +69,11 @@
         if (e.key === 'Shift') {
             shiftHeld = false
         }
+    }
+
+    function handleContextMenu(e: MouseEvent) {
+        e.preventDefault()
+        void showFunctionKeyBarContextMenu()
     }
 
     /** Slot 0 of the bar is F2, so slot `i` carries `F${i + FIRST_FN_KEY}`. */
@@ -225,6 +231,7 @@
         onmousedown={(e) => {
             e.preventDefault()
         }}
+        oncontextmenu={handleContextMenu}
     >
         <!-- eslint-disable @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
         {#each shiftHeld ? shiftRow : defaultRow as slot, index (index)}

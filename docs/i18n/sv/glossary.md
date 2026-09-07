@@ -2110,3 +2110,9 @@ documents (.docx, .xlsx, .pptx) and app packages (.jar, .apk), which is why even
   (style.md § no comma before `och`/`eller`) · `high`. ❗ `settings.archives.bundle.description` still carries that
   calqued comma (`.bundle, eller .framework`). It was out of scope for this pass, so the two rows differ in punctuation
   until someone fixes it.
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (raden med funktionstangent-kommandoknappar längst ned i fönstret) → funktionstangentsraden · redan
+  fastställt i katalogen (`settings.appearance.showFunctionKeyBar.label`); återanvänt för snabbmenyalternativet och
+  tillhörande meddelande · high

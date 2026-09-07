@@ -2119,3 +2119,8 @@ Office (.docx, .xlsx, .pptx) và gói ứng dụng (.jar, .apk), nên ngay cả 
   `settings.archives.zip.description` và `settings.archives.bundle.description`, nhưng bỏ dấu phẩy trước `hoặc` theo quy
   ước đã chốt · `high`. ❗ `settings.archives.bundle.description` vẫn còn dấu phẩy đó (`.bundle, hoặc .framework`); nằm
   ngoài phạm vi lần này, nên hai hàng khác nhau về dấu câu cho tới khi có người sửa.
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (hàng nút lệnh phím chức năng ở cuối cửa sổ) → thanh phím chức năng · đã được chốt trong danh mục
+  (`settings.appearance.showFunctionKeyBar.label`); dùng lại cho mục menu ngữ cảnh và thông báo đi kèm · high

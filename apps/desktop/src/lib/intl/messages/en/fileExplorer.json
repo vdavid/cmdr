@@ -371,6 +371,10 @@
     "description": "The full spoken action name (for screen readers) of the delete (to trash) function-key button.",
     "screenshot": "main-window.png"
   },
+  "fileExplorer.functionKeyBar.hiddenToast": "Function key bar is now hidden. Re-enable it any time later in <settingsLink>Settings</settingsLink>.",
+  "@fileExplorer.functionKeyBar.hiddenToast": {
+    "description": "Self-dismissing INFO toast shown after picking \"Hide function key bar\" from the bar's own right-click context menu. The <settingsLink>…</settingsLink> tag wraps the clickable link text, which names the Settings location; deep-links to the \"Show function key bar\" row in Settings > Appearance."
+  },
   "fileExplorer.typeToJump.ariaLabel": "Jump to {buffer}",
   "@fileExplorer.typeToJump.ariaLabel": {
     "description": "Accessibility label for the type-to-jump indicator, which shows what the user has typed to jump to a matching file. {buffer} is the typed text so far.",

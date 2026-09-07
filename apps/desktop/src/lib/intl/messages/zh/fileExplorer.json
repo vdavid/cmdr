@@ -255,6 +255,10 @@
   "@fileExplorer.functionKeyBar.deleteAction": {
     "sourceHash": "e2d0a54"
   },
+  "fileExplorer.functionKeyBar.hiddenToast": "功能键栏现已隐藏，可随时在<settingsLink>设置</settingsLink>中重新开启。",
+  "@fileExplorer.functionKeyBar.hiddenToast": {
+    "sourceHash": "f961d3b"
+  },
   "fileExplorer.typeToJump.ariaLabel": "跳转到 {buffer}",
   "@fileExplorer.typeToJump.ariaLabel": {
     "sourceHash": "da879a5"

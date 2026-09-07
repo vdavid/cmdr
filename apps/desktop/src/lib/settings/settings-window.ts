@@ -90,6 +90,8 @@ export type SettingsSurface =
   | 'quick-look-toast'
   /** The report dialogs' "Attach my email" label, deep-linking to the contact-email row. */
   | 'attach-email'
+  /** The function-key-bar-hidden toast, deep-linking to the "Show function key bar" row. */
+  | 'function-key-bar-toast'
 
 /**
  * Opens the settings window, or focuses it if already open. When `section` is provided,

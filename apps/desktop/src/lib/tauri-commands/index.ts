@@ -669,6 +669,9 @@ export type {
 // Tab context menu
 export { showTabContextMenu, onTabContextAction } from './tab'
 
+// Function key bar context menu
+export { showFunctionKeyBarContextMenu, onFunctionKeyBarHideRequested } from './function-key-bar'
+
 // Clipboard file operations (copy/cut/paste files via system clipboard)
 export {
   copyFilesToClipboard,

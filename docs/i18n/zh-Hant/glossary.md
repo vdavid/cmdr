@@ -1004,3 +1004,9 @@ so the live bundles ARE the Tier-1 source here; read the `zh_TW` key of each `.l
 - **連接詞 → `和`** · 目錄中「X and Y」型標籤幾乎都用 `和`（`顏色和格式`、`日期和時間`、`提示和警告`）· `high`。
 - **句式 → `在 …、…、… 或 … 上按 Enter 鍵時的行為。`** · 與同類鍵 `settings.archives.zip.description`、
   `settings.archives.bundle.description` 完全相同的格式 · `high`。值中沒有撇號。
+
+## Function key bar context menu (2026-09-07)
+
+- function key
+  bar（視窗底部的功能鍵命令按鈕列）→ 功能鍵列 · 已在目錄中確定（`settings.appearance.showFunctionKeyBar.label`）；用於右鍵選單項目及其提示 ·
+  high

@@ -2479,3 +2479,9 @@ Office.
   before `ou` (French has no serial comma; see the calqued `virgule avant ou` note above) · `high`. ❗
   `settings.archives.bundle.description` still carries that calqued comma (`un .bundle, ou un .framework`). It was out
   of scope for this pass, so the two rows differ in punctuation until someone fixes it.
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (la rangée de boutons de commande des touches de fonction en bas de la fenêtre) → barre des touches
+  de fonction · déjà fixé dans le catalogue (`settings.appearance.showFunctionKeyBar.label`) ; réutilisé pour l'élément
+  du menu contextuel et son toast · high

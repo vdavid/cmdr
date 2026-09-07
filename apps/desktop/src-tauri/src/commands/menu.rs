@@ -9,9 +9,9 @@ use crate::menu::{
     CLOSE_TAB_ID, CommandScope, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
     FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FileContextInfo, MenuState,
     OPEN_TERMINAL_HERE_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SettingsChanged, ViewMode, build_breadcrumb_context_menu,
-    build_context_menu, build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu,
-    build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items,
-    sync_view_mode_check_states,
+    build_context_menu, build_function_key_bar_context_menu, build_network_host_context_menu,
+    build_parent_row_context_menu, build_tab_context_menu, build_volume_row_context_menu,
+    frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items, sync_view_mode_check_states,
 };
 use std::sync::atomic::Ordering;
 use tauri::menu::ContextMenu;
@@ -387,6 +387,19 @@ pub fn show_tab_context_menu(
         build_tab_context_menu(&app, is_pinned, can_close, has_other_unpinned_tabs).map_err(|e| e.to_string())?;
     menu.popup(window).map_err(|e| e.to_string())?;
 
+    Ok(())
+}
+
+/// Shows the function key bar's context menu (fire-and-forget): a single "Hide
+/// function key bar" item. The click is delivered asynchronously via the
+/// `function-key-bar-hide-requested` event from `on_menu_event`, same shape as
+/// [`show_tab_context_menu`].
+#[tauri::command]
+#[specta::specta]
+pub fn show_function_key_bar_context_menu(window: Window<tauri::Wry>) -> Result<(), String> {
+    let app = window.app_handle().clone();
+    let menu = build_function_key_bar_context_menu(&app).map_err(|e| e.to_string())?;
+    menu.popup(window).map_err(|e| e.to_string())?;
     Ok(())
 }
 

@@ -2094,3 +2094,9 @@ por eso ni el inglés nombra Office.
   `Paquetes de apps` de debajo, la misma separación que hace el inglés con `packages` frente a `app bundles`.
 - **Marco de la frase → `Qué hace pulsar Intro en un …, … o ….`** · el mismo marco que sus claves hermanas
   `settings.archives.zip.description` y `settings.archives.bundle.description` · `high`. Sin apóstrofo en el valor.
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (la fila de botones de comando de teclas de función en la parte inferior de la ventana) → barra de
+  teclas de función · ya establecido en el catálogo (`settings.appearance.showFunctionKeyBar.label`); reutilizado para
+  el elemento del menú contextual y su aviso · high

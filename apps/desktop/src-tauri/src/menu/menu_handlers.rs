@@ -17,13 +17,14 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::{
     CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
-    FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, MEDIA_INDEX_ADD_FOLDER_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID,
-    MEDIA_INDEX_INCLUDE_FOLDER_ID, MEDIA_INDEX_REMOVE_FOLDER_ID, MediaIndexFolderChoice, MediaIndexFolderExclusion,
-    MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID,
-    SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID,
-    SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID,
-    TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID,
-    VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged, menu_id_to_command,
+    FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FUNCTION_KEY_BAR_HIDE_ID, MEDIA_INDEX_ADD_FOLDER_ID,
+    MEDIA_INDEX_EXCLUDE_FOLDER_ID, MEDIA_INDEX_INCLUDE_FOLDER_ID, MEDIA_INDEX_REMOVE_FOLDER_ID, MediaIndexFolderChoice,
+    MediaIndexFolderExclusion, MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID,
+    NETWORK_HOST_FORGET_SERVER_ID, SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID,
+    SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged,
+    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
+    VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged,
+    menu_id_to_command,
 };
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
@@ -308,6 +309,14 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     if id == TAB_PIN_ID || id == TAB_CLOSE_OTHERS_ID || id == TAB_CLOSE_ID {
         use tauri_specta::Event as _;
         let _ = crate::window_events::TabContextAction { action: id.to_string() }.emit_to(app, "main");
+        return;
+    }
+
+    // === Function key bar context menu: emit function-key-bar-hide-requested ===
+    // No context to stash: the frontend owns both the setting write and the toast.
+    if id == FUNCTION_KEY_BAR_HIDE_ID {
+        use tauri_specta::Event as _;
+        let _ = crate::window_events::FunctionKeyBarHideRequested.emit_to(app, "main");
         return;
     }
 
