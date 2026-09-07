@@ -149,8 +149,8 @@ export async function showBreadcrumbContextMenu(
  * @param volumeName - Target row's display name (used in the eject label / rename seed).
  * @param isFavorite - True for a favorite row (Rename / Remove); false for a volume row.
  * @param isEjectable - True when the volume row can be ejected (adds the Eject item).
- * @param server - Present for a SERVER row, which gets Disconnect / Forget saved password /
- *   Forget server instead of Eject. The caller decides which apply; the backend fills in
+ * @param server - Present for a SERVER row, which gets Disconnect / Pin to switcher or Unpin /
+ *   Forget saved password / Forget server instead of Eject. The caller decides which apply; the backend fills in
  *   whether the volume is busy and disables the destructive items itself.
  */
 export async function showVolumeRowContextMenu(
@@ -185,6 +185,8 @@ export type ServerRowMenu = {
   isSaved: boolean
   /** Whether a credential is remembered for the place. */
   hasSavedSecret: boolean
+  /** Whether the place is in the switcher, so the row offers Pin or Unpin. */
+  pinned: boolean
 }
 
 /**

@@ -198,6 +198,8 @@ pub const FAVORITE_REMOVE_ID: &str = "favorite_remove";
 /// `NETWORK_HOST_*` trio, which belongs to the SMB hub's own host menu and
 /// carries a host id rather than a volume id.
 pub const SERVER_DISCONNECT_ID: &str = "server_disconnect";
+pub const SERVER_PIN_ID: &str = "server_pin";
+pub const SERVER_UNPIN_ID: &str = "server_unpin";
 pub const SERVER_FORGET_SECRET_ID: &str = "server_forget_secret";
 pub const SERVER_FORGET_ID: &str = "server_forget";
 

@@ -650,6 +650,14 @@
     "description": "VERB (imperative). Right-click item on a network server in the volume dropdown: unmounts its shares and drops the connection. Use the exact word your macOS Finder uses for disconnecting from a server. Very short label in a narrow dropdown."
   },
 
+  "menu.network.pinToSwitcher": "Pin to switcher",
+  "@menu.network.pinToSwitcher": {
+    "description": "VERB phrase (imperative). Right-click item on a server row in the volume dropdown: keeps the server in the volume switcher so it is one keystroke away. \"Switcher\" is the list of disks and servers the dropdown shows. Very short label in a narrow dropdown."
+  },
+  "menu.network.unpin": "Unpin",
+  "@menu.network.unpin": {
+    "description": "VERB (imperative). Right-click item on a server row in the volume dropdown: takes the server back out of the volume switcher. The server stays saved and stays in the Servers list, so avoid a word that sounds like deleting. Very short label in a narrow dropdown."
+  },
   "menu.network.forgetServer": "Forget server",
   "@menu.network.forgetServer": {
     "description": "VERB phrase (imperative). Right-click item on a server the user added by hand: removes it from the list so it stops appearing. \"Forget\" is the same sense as forgetting a Wi-Fi network, and \"server\" is the machine sharing folders over the network. Its sibling is menu.network.forgetSavedPassword; the two must read as clearly different in scope."

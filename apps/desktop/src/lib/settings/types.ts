@@ -332,6 +332,11 @@ export interface SettingsValues {
   // Navigation
   'behavior.doubleClickPaneNavigatesToParent': boolean
   'behavior.doubleClickOnPaneNotificationSeen': boolean
+  /**
+   * Whether the once-ever toast about a long Network group has fired. Raised by
+   * `$lib/stores/volume-store` the first time five server places are pinned.
+   */
+  'behavior.serversPinHintSeen': boolean
 
   // Open terminal here: a known terminal's bundle id, or an absolute `.app` path
   // for a "Choose an app…" pick. Rust's `parse_choice` tells the two apart.

@@ -19,6 +19,7 @@ import type { MediaIndexVolumeState } from '$lib/tauri-commands'
 import type { VolumeIndexActivity } from '$lib/indexing'
 import type { VolumeEnrichActivity } from '$lib/indexing/media-enrich-state.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
+import ServersPinHintToastContent from './ServersPinHintToastContent.svelte'
 
 // The drive badge reads its own volume's live activity + phase from `index-state`;
 // the image dot reads the master toggle and this volume's enrichment activity. Mock
@@ -302,6 +303,28 @@ describe('VolumeBreadcrumb a11y', () => {
         currentPath: 'smb://',
       },
     })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y for `ServersPinHintToastContent.svelte`, in both shapes: the
+ * favorites line is an extra paragraph, so it is its own mount.
+ */
+describe('ServersPinHintToastContent a11y', () => {
+  it('has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ServersPinHintToastContent, { target, props: { toastId: 'pin-hint', mentionFavorites: false } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('has no a11y violations with the favorites line', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ServersPinHintToastContent, { target, props: { toastId: 'pin-hint', mentionFavorites: true } })
     await tick()
     await expectNoA11yViolations(target)
   })

@@ -10895,8 +10895,8 @@ export type SavedServer = {
   // The user's own label, falling back to the address.
   displayName: string
   /**
-   *  Who chose that label, which is what lets the hub prefer a Bonjour name
-   *  over one only the mount ever said.
+   *  Whether a person named it, which is what lets the hub prefer a Bonjour
+   *  name over a stand-in nobody chose.
    */
   nameSource: ServerNameSource
   /**
@@ -11709,25 +11709,28 @@ export type ServerConnectOutcome =
   | { outcome: 'cancelled' }
 
 /**
- *  Who chose a server's [`SavedServer::display_name`].
+ *  Whether a person NAMED this server, or the label is a stand-in.
  *
- *  ❗ The hub's Name column ranks three names (a name the user typed, the
- *  Bonjour name mDNS found, the name the SMB mount reported), and the top rank
- *  is a FACT this enum publishes, ❌ never a guess at the string's shape. Only
- *  the store that wrote the name knows who wrote it.
+ *  ❗ The hub's Name column ranks three names (a name a person chose, the Bonjour
+ *  name mDNS found, a stand-in nobody chose), and the top rank is a FACT this
+ *  enum publishes, ❌ never a guess at the string's shape. Only the store that
+ *  wrote the label knows where it came from.
+ *
+ *  ❗ Every SMB row is [`Fallback`](Self::Fallback) today, so this reads as "is
+ *  it SMB?" — it isn't. SMB has no name field to fill in yet; adding one changes
+ *  what a store answers here and nothing else, and until then the rule at the
+ *  hub stays readable as what it means.
  */
 export type ServerNameSource =
-  /**
-   *  A person chose it: an SFTP or WebDAV account's label, or the address
-   *  typed into "Add server", which is what a manual SMB host is named after.
-   */
+  // A person typed the NAME itself, in the sign-in sheet's Name field.
   | 'user'
   /**
-   *  The SMB mount reported it (`known_shares`' `server_name`, which `statfs`
-   *  spells as the server answered, `smb-consumer-guest` rather than
-   *  `SMB Test (Guest)`). Nobody chose it, so a friendlier name outranks it.
+   *  A stand-in the app derived, because nothing better existed: the SMB
+   *  mount's `server_name` (which `statfs` spells as the server answered,
+   *  `smb-consumer-guest` rather than `SMB Test (Guest)`), or the address typed
+   *  into "Add server", which is all an SMB host is ever given.
    */
-  | 'reported'
+  | 'fallback'
 
 // Which protocol an account speaks.
 export type ServerProtocol =

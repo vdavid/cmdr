@@ -29,6 +29,23 @@ vi.mock('$lib/tauri-commands', () => ({
   onVolumeConnectionChanged: () => Promise.resolve(mockUnlisten),
 }))
 
+vi.mock('$lib/settings', () => ({
+  getSetting: (id: string) => seenFlag[id] ?? false,
+  setSetting: (id: string, value: boolean) => {
+    seenFlag[id] = value
+  },
+}))
+
+vi.mock('$lib/ui/toast', () => ({
+  addToast: (content: unknown, options: { props?: Record<string, unknown> }) => {
+    raisedToasts.push(options.props ?? {})
+    return 'toast-id'
+  },
+}))
+
+const seenFlag: Record<string, boolean> = {}
+const raisedToasts: Record<string, unknown>[] = []
+
 import { initVolumeStore, cleanupVolumeStore, getVolumes, toConnectionState } from './volume-store.svelte'
 
 /** A share mounted twice: two paths, one volume ID. */
@@ -107,5 +124,82 @@ describe('toConnectionState — the wire enum the picker renders', () => {
     expect(toConnectionState('disconnected')).toBe('disconnected')
     expect(toConnectionState('needs_credentials')).toBe('needs_sign_in')
     expect(toConnectionState('needs_host_key_approval')).toBe('needs_host_key_approval')
+  })
+})
+
+/** A pinned server place, as the servers arm publishes one. */
+function pinnedPlace(index: number): VolumeInfo {
+  return {
+    id: `sftp-nas${String(index)}.local-22-ada`,
+    name: `NAS ${String(index)}`,
+    path: `sftp://ada@nas${String(index)}.local:22`,
+    category: 'network',
+    isEjectable: false,
+    pinned: true,
+  }
+}
+
+function favorite(index: number): VolumeInfo {
+  return {
+    id: `favorite-${String(index)}`,
+    name: `Folder ${String(index)}`,
+    path: `/Users/ada/folder-${String(index)}`,
+    category: 'favorite',
+    isEjectable: false,
+  }
+}
+
+/**
+ * The switcher's Network group can only grow past what fits by the user pinning
+ * things, so the store that publishes the list is where the count is noticed.
+ */
+describe('the pin hint, raised where the pinned count is observed', () => {
+  beforeEach(() => {
+    mockListVolumes.mockReset()
+    mockListVolumes.mockResolvedValue({ data: [], timedOut: false })
+    lastVolumesHandler = null
+    raisedToasts.length = 0
+    for (const key of Object.keys(seenFlag)) delete seenFlag[key]
+    cleanupVolumeStore()
+  })
+
+  afterEach(() => {
+    cleanupVolumeStore()
+  })
+
+  it('says nothing while four servers are pinned', async () => {
+    await initVolumeStore()
+    lastVolumesHandler?.({ data: [pinnedPlace(1), pinnedPlace(2), pinnedPlace(3), pinnedPlace(4)], timedOut: false })
+
+    expect(raisedToasts).toHaveLength(0)
+    expect(seenFlag['behavior.serversPinHintSeen']).toBeUndefined()
+  })
+
+  it('raises the hint at the fifth, and never again', async () => {
+    const five = [1, 2, 3, 4, 5].map(pinnedPlace)
+    await initVolumeStore()
+    lastVolumesHandler?.({ data: five, timedOut: false })
+    lastVolumesHandler?.({ data: [...five, pinnedPlace(6)], timedOut: false })
+
+    expect(raisedToasts).toHaveLength(1)
+    expect(raisedToasts[0]).toEqual({ mentionFavorites: false })
+    expect(seenFlag['behavior.serversPinHintSeen']).toBe(true)
+  })
+
+  it('adds the favorites line when those are piling up too', async () => {
+    await initVolumeStore()
+    lastVolumesHandler?.({
+      data: [...[1, 2, 3, 4, 5].map(pinnedPlace), favorite(1), favorite(2), favorite(3)],
+      timedOut: false,
+    })
+
+    expect(raisedToasts[0]).toEqual({ mentionFavorites: true })
+  })
+
+  it('notices a list that arrives through the bootstrap, not the event', async () => {
+    mockListVolumes.mockResolvedValue({ data: [1, 2, 3, 4, 5].map(pinnedPlace), timedOut: false })
+    await initVolumeStore()
+
+    expect(raisedToasts).toHaveLength(1)
   })
 })

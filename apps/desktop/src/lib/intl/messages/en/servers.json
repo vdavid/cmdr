@@ -1,4 +1,23 @@
 {
+  "servers.pinHint.title": "Your Network group is getting long",
+  "@servers.pinHint.title": {
+    "description": "Title of a one-time notification, shown the first time five servers sit in the volume switcher's Network group. \"Network group\" is the heading in the switcher (the dropdown listing disks and servers) that servers are filed under; use the same wording as that heading. Friendly and factual, never a warning."
+  },
+  "servers.pinHint.body": "Right-click a server and choose Unpin, or use \"{command}\" from the command palette. It stays in the Servers list.",
+  "@servers.pinHint.body": {
+    "description": "Body of that notification: how to take a server out of the volume switcher, and the reassurance that unpinning loses nothing. \"Unpin\" must match the context-menu item menu.network.unpin word for word. \"Servers\" is the hub row in the switcher that lists every saved server. The command name arrives translated in {command}; keep the quotation marks your language uses around a UI label.",
+    "placeholders": {
+      "command": "the name of the command palette entry that pins or unpins a server, already translated"
+    }
+  },
+  "servers.pinHint.favorites": "Favorites work the same way.",
+  "@servers.pinHint.favorites": {
+    "description": "One extra line in that notification, added only when the user also has three or more favorites: favorites can be taken out of the switcher the same way servers can. \"Favorites\" is the switcher group holding folders the user saved."
+  },
+  "servers.pinHint.gotIt": "Got it",
+  "@servers.pinHint.gotIt": {
+    "description": "VERB phrase (imperative), the button that dismisses the notification. Casual acknowledgement, the way a person says \"understood\" and moves on. Two or three words at most."
+  },
   "servers.hub.colName": "Name",
   "@servers.hub.colName": {
     "description": "Column heading in the servers hub: the server''s own name. One or two words; the column is narrow."

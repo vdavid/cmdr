@@ -96,6 +96,7 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
         id: 'sftp-gallery-fixture',
         protocol: 'sftp',
         displayName: 'Naspolya',
+        nameSource: 'user',
         address: 'nas.local:22',
         username: 'ada',
         pinned: true,

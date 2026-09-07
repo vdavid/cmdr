@@ -82,12 +82,12 @@ fn the_listing_unions_the_sftp_the_webdav_and_the_smb_stores() {
     assert_eq!(smb.address, smb_host);
 }
 
-/// ❗ **Who chose a name is a FACT the listing publishes**, because the hub
-/// ranks three names and can't tell them apart by looking at the strings. An
-/// account label and a typed address are the user's; only a `known_shares` row
-/// carries the name the mount reported.
+/// ❗ **Whether a person NAMED a server is a FACT the listing publishes**,
+/// because the hub ranks three names and can't tell them apart by looking at the
+/// strings. An account label is the user's; an SMB host's label is the address
+/// they typed, worn as a stand-in, so a Bonjour name outranks it.
 #[test]
-fn a_typed_address_and_an_account_label_are_both_the_users_own_name() {
+fn an_account_label_is_the_users_name_and_an_smb_hosts_address_is_a_stand_in() {
     let sftp_host = "192.0.2.41";
     let smb_host = "192.0.2.42";
     sftp_known_servers::remember(sftp_entry(sftp_host, false));
@@ -98,7 +98,7 @@ fn a_typed_address_and_an_account_label_are_both_the_users_own_name() {
         find(&servers, &format!("{sftp_host} over ssh")).name_source,
         ServerNameSource::User
     );
-    assert_eq!(find(&servers, smb_host).name_source, ServerNameSource::User);
+    assert_eq!(find(&servers, smb_host).name_source, ServerNameSource::Fallback);
 }
 
 /// ❗ **An SFTP or WebDAV account has exactly ONE place, and its id is the volume

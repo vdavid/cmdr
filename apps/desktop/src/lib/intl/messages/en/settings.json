@@ -1926,6 +1926,14 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "description": "Internal, never shown in the UI. Pairs with the double-click-to-parent hint label."
   },
+  "settings.behavior.serversPinHintSeen.label": "Long Network group hint shown",
+  "@settings.behavior.serversPinHintSeen.label": {
+    "description": "Internal, never shown in the UI: tracks whether the one-time hint about a long Network group in the volume switcher has appeared."
+  },
+  "settings.behavior.serversPinHintSeen.description": "Whether the one-time hint about unpinning servers has been shown.",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "description": "Internal, never shown in the UI. Pairs with the long-Network-group hint label."
+  },
   "settings.section.notifications": "Notifications",
   "@settings.section.notifications": {
     "description": "Settings subsection title under Behavior: Notifications (downloads notifications and low-disk-space warnings). Sidebar and page heading.",

@@ -79,13 +79,19 @@ unit-tested:
   suite: the hub went blank and every `move_cursor` onto a host afterwards reported the row missing.
 
   ❗ **The Name column ranks three names**, in `servers-hub-rows.ts::displayName`: a name a PERSON chose (an SFTP or
-  WebDAV account's label, the address typed into "Add server"), then the DISCOVERED Bonjour name, and last the name the
-  SMB mount reported, which nobody chose. The rank comes off `SavedServer.nameSource` (`commands/servers.rs`'s
-  `ServerNameSource`), a fact the store that wrote the name publishes, ❌ never a guess at the string's shape. Without
-  it a person's NAS renames itself the first time they open it: a share listing writes a `known_shares` row whose
-  `server_name` is what the mount reported (`smb-consumer-guest`), `smb_hosts` turns that into a saved server, and
-  `matchHost` claims the discovered row, so the friendly name they recognize (`SMB Test (Guest)`, `Naspolya`) drops out
-  of the column. Four `smb.spec.ts` specs poll on the Bonjour name and are the regression guard.
+  WebDAV account's label), then the DISCOVERED Bonjour name, and last a stand-in nobody chose. The rank comes off
+  `SavedServer.nameSource` (`commands/servers.rs`'s `ServerNameSource`), a fact the store that wrote the label
+  publishes, ❌ never a guess at the string's shape. Without it a person's NAS renames itself the moment they use it:
+  every SMB label is a stand-in, either the way `statfs` spells the server (written to `known_shares` on the first share
+  listing, `smb-consumer-guest`) or the address typed into "Add server" (`manual_servers` derives `host` or
+  `host:port`; SMB's add flow asks for nothing else), and the friendly name they recognize (`SMB Test (Guest)`,
+  `Naspolya`) would drop out of the column. Four `smb.spec.ts` specs poll on the Bonjour name and are the regression
+  guard.
+
+  ❗ **A saved SMB server claims EVERY host that matches it, not the first.** One machine sits in the discovery list
+  twice once a person types a host mDNS already found: the manual entry injects a `manual` host beside the `discovered`
+  one. `primaryHost` then picks the DISCOVERED one for the row's name and address, because a manual host is named after
+  the address that was typed.
 
 - **`servers-hub-mcp.ts`**: the `name` encoding. MCP's `PaneFileEntry` has only `name` / `path` / `isDirectory`, so the
   columns are encoded as `protocol=` / `status=` / `address=` tokens (plus `shares=` on an SMB host, which is what
