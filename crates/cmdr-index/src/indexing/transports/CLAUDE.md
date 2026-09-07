@@ -29,7 +29,9 @@ HOW live changes arrive.
   and the master switch going off).
 - **FAT/exFAT `LocalExternal` drives store `inode: None`** (via `IndexPathSpace::trust_inode`): a reused derived inode
   false-matches the local rename pre-pass and corrupts `dir_stats`. `classify` decides local-external vs
-  SMB-fall-through from TYPED facts (a live smb2 session, or a network fs-type), never a volume-id/path substring.
+  SMB-fall-through from TYPED facts (`backend_kind()`, and the mount's network fs-type), never a volume-id/path
+  substring. ❗ BOTH halves: a network mount answers `Local` because a `LocalPosixVolume` serves it, while a server's
+  `sftp://…` root is no mount point and so probes as NON-network.
 - **FSKit stop-before-unmount (2026-07-15 incident): stop a `LocalExternal` index BEFORE its volume unmounts.** An open
   FSEvents stream / SQLite handle at unmount can wedge the userspace FSKit service and kernel-panic the machine. The
   eject-stop ORDERING is the only reliable defense; test with synthetic disk images ONLY.
