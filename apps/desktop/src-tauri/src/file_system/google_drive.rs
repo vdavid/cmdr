@@ -116,11 +116,23 @@ struct NativeShortcut {
     resource_key: String,
 }
 
+/// How much of a `.gdoc`-family file we're willing to read. Real stubs are a
+/// couple of hundred bytes; the cap is what keeps an unrelated multi-gigabyte
+/// file that merely ENDS in `.gdoc` from being pulled into memory while the user
+/// waits for a context menu. Past it, the truncated JSON won't parse and the
+/// menu items stay away, which is the right answer for a file this isn't.
+const MAX_NATIVE_SHORTCUT_BYTES: usize = 64 * 1024;
+
 /// Reads the Drive item ID out of a Google-native shortcut file.
 fn read_native_shortcut(path: &Path) -> Option<NativeShortcut> {
-    // These stubs are a couple of hundred bytes; a malformed or oversized one
-    // just means no menu item.
-    let bytes = std::fs::read(path).ok()?;
+    use std::io::Read;
+
+    // Bounded, not `fs::read`: the extension is the only thing saying this is a
+    // stub, and anything can carry it. A malformed, empty, or over-cap file just
+    // means no menu item.
+    let file = std::fs::File::open(path).ok()?;
+    let mut bytes = Vec::new();
+    file.take(MAX_NATIVE_SHORTCUT_BYTES as u64).read_to_end(&mut bytes).ok()?;
     let parsed: NativeShortcut = serde_json::from_slice(&bytes).ok()?;
     if parsed.doc_id.is_empty() {
         return None;
@@ -302,6 +314,19 @@ mod tests {
             item_url(&doc, false).as_deref(),
             Some("https://docs.google.com/document/d/SAMEID/edit")
         );
+    }
+
+    /// Anything can be named `.gdoc`, and this runs while the user waits for a
+    /// context menu. A file past the cap must cost one bounded read, never its
+    /// own size in memory.
+    #[test]
+    fn an_oversized_stub_is_not_read_whole() {
+        let dir = TempDir::new().unwrap();
+        // Valid JSON, but only past the cap: truncating it can't parse, so the
+        // menu item stays away rather than the read growing to fit.
+        let padding = " ".repeat(MAX_NATIVE_SHORTCUT_BYTES);
+        let huge = write_shortcut(&dir, "huge.gdoc", &format!("{padding}{}", stub_json("DOC3")));
+        assert_eq!(item_url(&huge, false), None);
     }
 
     /// An empty xattr is not an ID.
