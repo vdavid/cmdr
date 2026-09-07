@@ -96,7 +96,10 @@
                         <div class="progress-placeholder"></div>
                     {/if}
                 </div>
-                {#each cycle.lines as line (line)}
+                <!-- Keyed by position, ❌ not by text: the cycle's own sentences
+                     are the list, and a locale where two of them came out
+                     identical would throw on a text key. -->
+                {#each cycle.lines as line, i (i)}
                     <p class="hint">{line}</p>
                 {/each}
             {:else}
