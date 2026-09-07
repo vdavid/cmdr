@@ -58,9 +58,17 @@ fn lower_bound_row(name: &str, size: u64) -> ChildEntry {
     ChildEntry::new(name.to_string(), true, false, Some(size), true, false, None)
 }
 
-/// A volume block with no space known: the default for tests that aren't about space.
-fn no_space() -> VolumeBlock {
-    VolumeBlock::new("root".to_string(), None)
+/// A fresh, indexed volume with no space known and nothing walking: the base for
+/// every test that isn't about coverage, space, or a walk. Those override the one
+/// field they're about (`VolumeView { enabled: false, ..fresh_volume() }`), which
+/// keeps each test's setup down to the thing it's actually testing.
+fn fresh_volume() -> VolumeView {
+    VolumeView {
+        enabled: true,
+        freshness: Some(Freshness::Fresh),
+        block: VolumeBlock::new("root".to_string(), None),
+        walked_roots: Vec::new(),
+    }
 }
 
 fn page_of(children: Vec<ChildEntry>) -> Page {
@@ -82,16 +90,7 @@ fn a_huge_folder_listing_is_paged_not_shipped_whole() {
     };
     let children: Vec<ChildEntry> = (0..20_000).map(child).collect();
     let page = sort_and_page(children, &opts);
-    let result = build_list_dir(
-        "/downloads",
-        Some(page),
-        None,
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
-        &opts,
-        &[],
-    );
+    let result = build_list_dir("/downloads", Some(page), None, &fresh_volume(), &opts);
 
     let rows = result.children.as_ref().expect("an indexed listing");
     assert_eq!(result.total, Some(20_000), "the honest denominator survives");
@@ -109,16 +108,7 @@ fn a_huge_folder_listing_is_paged_not_shipped_whole() {
 fn a_normal_folder_listing_is_returned_whole() {
     let opts = ListOptions::default();
     let page = sort_and_page((0..30).map(child).collect(), &opts);
-    let result = build_list_dir(
-        "/photos",
-        Some(page),
-        None,
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
-        &opts,
-        &[],
-    );
+    let result = build_list_dir("/photos", Some(page), None, &fresh_volume(), &opts);
     assert_eq!(result.total, Some(30));
     assert_eq!(result.returned, Some(30));
     assert!(!result.truncated);
@@ -132,11 +122,12 @@ fn unindexed_volume_returns_typed_no_index_not_a_wrong_zero() {
         "/nas/share",
         None,
         None,
-        false,
-        None,
-        no_space(),
+        &VolumeView {
+            enabled: false,
+            freshness: None,
+            ..fresh_volume()
+        },
         &ListOptions::default(),
-        &[],
     );
     assert_eq!(result.coverage.index_status, "off");
     assert!(!result.coverage.authoritative);
@@ -148,16 +139,7 @@ fn unindexed_volume_returns_typed_no_index_not_a_wrong_zero() {
 
 #[test]
 fn indexed_but_missing_path_is_a_distinct_not_in_index_note() {
-    let result = build_list_dir(
-        "/Users/x/new",
-        None,
-        None,
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
-        &ListOptions::default(),
-        &[],
-    );
+    let result = build_list_dir("/Users/x/new", None, None, &fresh_volume(), &ListOptions::default());
     assert_eq!(result.coverage.index_status, "fresh");
     assert!(
         result
@@ -176,11 +158,8 @@ fn list_dir_surfaces_lower_bound_and_updating_flags() {
         "/Users/x",
         Some(page_of(vec![row("sub", true, None)])),
         Some(&stats),
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
+        &fresh_volume(),
         &ListOptions::default(),
-        &[],
     );
     let size = result.size.unwrap();
     assert!(size.size_is_lower_bound);
@@ -196,14 +175,14 @@ fn a_listing_names_its_volume_and_how_full_it_is() {
         "/Users/x",
         Some(page_of(vec![])),
         None,
-        true,
-        Some(Freshness::Fresh),
-        VolumeBlock::new(
-            "root".to_string(),
-            Some(SpaceInfo::bounded(2_000_000_000_000, 214_300_000_000)),
-        ),
+        &VolumeView {
+            block: VolumeBlock::new(
+                "root".to_string(),
+                Some(SpaceInfo::bounded(2_000_000_000_000, 214_300_000_000)),
+            ),
+            ..fresh_volume()
+        },
         &ListOptions::default(),
-        &[],
     );
     assert_eq!(result.volume.id, "root");
     assert_eq!(result.volume.available_bytes, Some(214_300_000_000));
@@ -227,11 +206,8 @@ fn an_unwatched_volume_has_no_human_space_either() {
         "/Users/x",
         Some(page_of(vec![])),
         None,
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
+        &fresh_volume(),
         &ListOptions::default(),
-        &[],
     );
     assert_eq!(result.volume.total_human, None);
     assert_eq!(result.volume.available_human, None);
@@ -249,11 +225,8 @@ fn a_lower_bound_size_carries_the_symbol_inside_the_string() {
         "/Users/x",
         Some(page_of(vec![lower_bound_row("archive", 1_000_000_000_000)])),
         Some(&stats),
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
+        &fresh_volume(),
         &ListOptions::default(),
-        &[],
     );
     let rows = result.children.as_ref().expect("an indexed listing");
     let human = rows[0].size_human.as_deref().expect("a known size");
@@ -278,11 +251,11 @@ fn folder_size(path: &str, stats: &DirStats, walking: &[&str]) -> SizeStats {
         path,
         Some(page_of(vec![])),
         Some(stats),
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
+        &VolumeView {
+            walked_roots: ground,
+            ..fresh_volume()
+        },
         &ListOptions::default(),
-        &ground,
     )
     .size
     .expect("an indexed folder")
@@ -355,11 +328,8 @@ fn an_exact_size_carries_no_symbol() {
         "/Users/x",
         Some(page_of(vec![row("a-file", false, Some(1_024))])),
         Some(&stats),
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
+        &fresh_volume(),
         &ListOptions::default(),
-        &[],
     );
     let rows = result.children.as_ref().expect("an indexed listing");
     assert_eq!(rows[0].size_human.as_deref(), Some("1 KB"));
@@ -374,11 +344,8 @@ fn an_unknown_size_has_no_human_form_rather_than_zero_bytes() {
         "/Users/x",
         Some(page_of(vec![row("mystery", true, None)])),
         None,
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
+        &fresh_volume(),
         &ListOptions::default(),
-        &[],
     );
     let rows = result.children.as_ref().expect("an indexed listing");
     assert_eq!(rows[0].size, None);
@@ -391,11 +358,8 @@ fn a_modified_epoch_comes_with_the_date_it_means() {
         "/Users/x",
         Some(page_of(vec![child(0)])),
         None,
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
+        &fresh_volume(),
         &ListOptions::default(),
-        &[],
     );
     let rows = result.children.as_ref().expect("an indexed listing");
     assert_eq!(rows[0].modified, Some(1_700_000_000));
@@ -424,16 +388,7 @@ fn five_child_page(limit: usize, folder_stats: &DirStats) -> ListDirResult {
         ],
         &opts,
     );
-    build_list_dir(
-        "/p",
-        Some(page),
-        Some(folder_stats),
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
-        &opts,
-        &[],
-    )
+    build_list_dir("/p", Some(page), Some(folder_stats), &fresh_volume(), &opts)
 }
 
 #[test]
@@ -476,16 +431,7 @@ fn the_remainder_is_omitted_when_a_returned_child_size_is_unknown() {
         ],
         &opts,
     );
-    let result = build_list_dir(
-        "/p",
-        Some(page),
-        Some(&stats),
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
-        &opts,
-        &[],
-    );
+    let result = build_list_dir("/p", Some(page), Some(&stats), &fresh_volume(), &opts);
     assert_eq!(result.returned, Some(2));
     assert!(result.remainder.is_none(), "an unknown size silences the remainder");
 }
@@ -504,16 +450,7 @@ fn the_remainder_is_omitted_without_a_folder_total_to_subtract_from() {
         ],
         &opts,
     );
-    let result = build_list_dir(
-        "/p",
-        Some(page),
-        None,
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
-        &opts,
-        &[],
-    );
+    let result = build_list_dir("/p", Some(page), None, &fresh_volume(), &opts);
     assert!(result.remainder.is_none());
 }
 
@@ -545,16 +482,7 @@ fn the_remainder_is_approximate_when_a_returned_child_is_a_lower_bound() {
         vec![lower_bound_row("a-archive", 100), row("b", false, Some(200))],
         &opts,
     );
-    let result = build_list_dir(
-        "/p",
-        Some(page),
-        Some(&stats),
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
-        &opts,
-        &[],
-    );
+    let result = build_list_dir("/p", Some(page), Some(&stats), &fresh_volume(), &opts);
     let rem = result.remainder.expect("one child wasn't shown");
     assert_eq!(rem.count, 1);
     assert!(rem.is_approximate);
@@ -589,16 +517,7 @@ fn a_filtered_listing_has_no_remainder_at_all() {
         ],
         &opts,
     );
-    let result = build_list_dir(
-        "/p",
-        Some(page),
-        Some(&stats),
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
-        &opts,
-        &[],
-    );
+    let result = build_list_dir("/p", Some(page), Some(&stats), &fresh_volume(), &opts);
     assert_eq!(result.total, Some(2));
     assert!(result.remainder.is_none());
 }
@@ -626,14 +545,14 @@ fn the_wire_shape_carries_every_spoken_field_in_camel_case() {
         "/Users/x/Media",
         Some(page),
         Some(&stats),
-        true,
-        Some(Freshness::Fresh),
-        VolumeBlock::new(
-            "root".to_string(),
-            Some(SpaceInfo::bounded(2_000_000_000_000, 214_300_000_000)),
-        ),
+        &VolumeView {
+            block: VolumeBlock::new(
+                "root".to_string(),
+                Some(SpaceInfo::bounded(2_000_000_000_000, 214_300_000_000)),
+            ),
+            ..fresh_volume()
+        },
         &opts,
-        &[],
     );
     let json = serde_json::to_value(&result).unwrap();
     assert_eq!(json["size"]["recursiveSizeHuman"], "≥ 1.8 TB");
@@ -653,11 +572,12 @@ fn an_unindexed_folder_has_no_remainder() {
         "/nas/share",
         None,
         None,
-        false,
-        None,
-        no_space(),
+        &VolumeView {
+            enabled: false,
+            freshness: None,
+            ..fresh_volume()
+        },
         &ListOptions::default(),
-        &[],
     );
     assert!(result.remainder.is_none());
 }
@@ -770,16 +690,7 @@ fn a_last_page_is_not_flagged_truncated() {
         ..Default::default()
     };
     let page = sort_and_page((0..10).map(child).collect(), &opts);
-    let result = build_list_dir(
-        "/p",
-        Some(page),
-        None,
-        true,
-        Some(Freshness::Fresh),
-        no_space(),
-        &opts,
-        &[],
-    );
+    let result = build_list_dir("/p", Some(page), None, &fresh_volume(), &opts);
     assert_eq!(result.returned, Some(2));
     assert_eq!(result.offset, 8);
     assert!(!result.truncated);

@@ -354,10 +354,14 @@ the flags spec §2.4 makes load-bearing; the system prompt requires the model to
 
 **`sizeIsUpdating` is the one flag `DirStats` can't answer alone.** A folder's total also moves while a walk is on it,
 above it, or below it (the roll-up repairs ancestors), and `DirStats.recursive_size_pending` only knows about that
-folder's own draining writes. So `execute_list_dir` resolves the volume's walked ground once
-(`IndexStatusResponse::walked_roots`) and `cmdr_index::walk_affects` answers per row — the folder's own total and each
-child folder's, since a walker deep inside one child leaves its siblings settled. ❌ Reading the pending flag alone
-calls a folder settled through the whole walk that's rewriting it, which is when its number is furthest from the truth.
+folder's own draining writes. So `execute_list_dir` resolves the volume's walked ground once and
+`IndexStatusResponse::walk_affects` answers per row — the folder's own total and each child folder's, since a walker
+deep inside one child leaves its siblings settled. ❌ Reading the pending flag alone calls a folder settled through the
+whole walk that's rewriting it, which is when its number is furthest from the truth.
+
+That ground travels as one field of `VolumeView`, beside `enabled`, `freshness`, and the `VolumeBlock` the model sees.
+All four are read from the same volume at the same instant, so bundling them is what stops a `walked_roots` resolved
+for one volume from sitting beside an `enabled` read from another and quietly mis-reporting every size on the page.
 
 Aggregation (the 12–19 s after a first index's walk, when the drive's folder totals are computed) is deliberately NOT
 in that answer: the walker has released its ground by then, and nothing queryable per volume reports it. The `coverage`

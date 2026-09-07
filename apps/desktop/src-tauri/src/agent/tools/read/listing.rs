@@ -420,6 +420,25 @@ impl VolumeBlock {
     }
 }
 
+/// The volume a listing sits on, as it stands at the moment of the call.
+///
+/// One value rather than four arguments because all four answers must describe the
+/// SAME volume at the SAME instant. Passed separately, `walked_roots` resolved for
+/// one volume could sit beside an `enabled` read from another, and every size on
+/// the page would quietly mis-report; as one value that's unrepresentable.
+pub(crate) struct VolumeView {
+    /// Whether this volume is indexed at all.
+    pub enabled: bool,
+    /// The index's freshness token, or `None` when the path resolves to no volume.
+    pub freshness: Option<Freshness>,
+    /// The part of this view the model sees: the volume's id and how full it is.
+    pub block: VolumeBlock,
+    /// The ground a walker holds right now, so a folder it's moving can say so.
+    /// Empty means nothing is moving, which is also the answer for a volume whose
+    /// status can't be read: a missing status must not invent motion.
+    pub walked_roots: Vec<String>,
+}
+
 /// What the rows this page did NOT return add up to, so a paged answer can account
 /// for the whole folder without the model subtracting anything.
 ///
@@ -587,11 +606,8 @@ pub(crate) fn build_list_dir(
     path: &str,
     page: Option<Page>,
     stats: Option<&DirStats>,
-    enabled: bool,
-    freshness: Option<Freshness>,
-    volume: VolumeBlock,
+    volume: &VolumeView,
     opts: &ListOptions,
-    walked_roots: &[String],
 ) -> ListDirResult {
     let indexed = page.is_some();
     let total = page.as_ref().map(|p| p.total);
@@ -609,9 +625,10 @@ pub(crate) fn build_list_dir(
     };
     ListDirResult {
         path: path.to_string(),
-        coverage: coverage(enabled, freshness, indexed),
-        volume,
-        size: stats.map(|s| SizeStats::from_dir_stats(s, IndexStatusResponse::walk_affects(walked_roots, path))),
+        coverage: coverage(volume.enabled, volume.freshness, indexed),
+        volume: volume.block.clone(),
+        size: stats
+            .map(|s| SizeStats::from_dir_stats(s, IndexStatusResponse::walk_affects(&volume.walked_roots, path))),
         total,
         returned,
         offset: opts.offset,
@@ -653,34 +670,27 @@ pub async fn execute_list_dir<R: Runtime>(_app: &AppHandle<R>, params: &Value) -
         .map_err(|e| ToolError::internal(e.to_string()))?;
     let status = index().volume_status_for_path(&path);
     let space = crate::mcp::resources::volumes::space_summary(&status.volume_id);
-    // The ground a walker holds on this volume right now, resolved ONCE and then
-    // asked per row. Every size below is only as honest as this: without it a
-    // folder mid-walk reads as a settled floor, which is when its number is
-    // furthest from the truth. An unreadable status means "nothing is walking",
-    // the same answer as an idle volume — a missing status must not invent motion.
-    let walked_roots = index()
-        .status(&status.volume_id)
-        .map(|s| s.walked_roots)
-        .unwrap_or_default();
+    // Resolved ONCE, then asked per row. Every size below is only as honest as the
+    // walked ground in here: without it a folder mid-walk reads as a settled floor,
+    // which is exactly when its number is furthest from the truth.
+    let volume = VolumeView {
+        enabled: status.enabled,
+        freshness: status.freshness,
+        block: VolumeBlock::new(status.volume_id.clone(), space),
+        walked_roots: index()
+            .status(&status.volume_id)
+            .map(|s| s.walked_roots)
+            .unwrap_or_default(),
+    };
 
     let page = match rows {
         None => None,
         Some(rows) => {
             let children: Vec<ChildEntry> = rows.iter().map(child_from_row).collect();
-            Some(page_with_folder_sizes(&path, children, &opts, &walked_roots)?)
+            Some(page_with_folder_sizes(&path, children, &opts, &volume.walked_roots)?)
         }
     };
-    let volume = VolumeBlock::new(status.volume_id.clone(), space);
-    let result = build_list_dir(
-        &path,
-        page,
-        stats.as_ref(),
-        status.enabled,
-        status.freshness,
-        volume,
-        &opts,
-        &walked_roots,
-    );
+    let result = build_list_dir(&path, page, stats.as_ref(), &volume, &opts);
     serde_json::to_value(&result).map_err(|e| ToolError::internal(e.to_string()))
 }
 
