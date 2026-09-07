@@ -159,7 +159,6 @@ describe('POST /error-report', () => {
   it('returns 400 when the meta id is missing', async () => {
     const bindings = createBindings()
     const { id: _id, ...rest } = validMeta
-    void _id
     const fd = buildMultipart(new Uint8Array([1]), rest)
 
     const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
@@ -250,7 +249,6 @@ describe('POST /error-report', () => {
   it('returns 400 for meta missing a required field', async () => {
     const bindings = createBindings()
     const { arch, ...rest } = validMeta
-    void arch
     const fd = buildMultipart(new Uint8Array([1]), rest)
 
     const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)

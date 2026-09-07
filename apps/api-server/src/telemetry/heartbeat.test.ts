@@ -126,7 +126,6 @@ describe('POST /heartbeat', () => {
   it('returns 400 when analId is missing', async () => {
     const bindings = createBindings()
     const { analId, ...withoutId } = validBeat
-    void analId
 
     const res = await postHeartbeat(withoutId, bindings)
     expect(res.status).toBe(400)
@@ -161,7 +160,6 @@ describe('POST /heartbeat', () => {
   it('returns 400 when osVersion is missing', async () => {
     const bindings = createBindings()
     const { osVersion, ...rest } = validBeat
-    void osVersion
 
     const res = await postHeartbeat(rest, bindings)
     expect(res.status).toBe(400)
