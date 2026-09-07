@@ -45,12 +45,10 @@ Directory listing, file writing, sync status, volume management, and file watchi
   its recipes are a pure `launch_argv` so every app's argv is unit-tested without launching anything. A new terminal is
   one entry in `KNOWN_TERMINALS`, and it owes the bundle id's verification source and date. § "Open terminal here".
 - **`cloud_actions.rs` is iCloud Drive only**, gated by `CloudProvider::supports_eviction`; the cross-provider-looking
-  `NSFileProviderManager` methods need the bundled extension. Don't widen it. Provider identity itself lives once, in
-  `cloud_provider.rs`; the volume switcher reads the same enum.
-- **Google Drive item IDs come from two places, and a path prefix is NOT one of them.** Drive's *mirror* mode keeps real
-  files outside `~/Library/CloudStorage` with no xattr at all, so `google_drive.rs` keys off the
-  `com.google.drivefs.item-id#S` xattr (stream mode, files and folders) or a `.gdoc`-family stub's `doc_id` (both
-  modes), and the menu offers its items only when one resolves. § "Google Drive links" in `DETAILS.md`.
+  `NSFileProviderManager` methods need the bundled extension. Don't widen it. Provider identity lives once, in
+  `cloud_provider.rs`, which the volume switcher reads too.
+- **❌ Never gate a Google Drive action on a path prefix.** Drive's mirror mode keeps real files outside
+  `~/Library/CloudStorage`, carrying no xattr, so `google_drive.rs` gates on a resolved item ID instead.
 
 Open-with internals, cloud-actions rationale, and the full threading/watcher story: `DETAILS.md`. Read it before any
 non-trivial work here: editing, planning, reorganizing, or advising.

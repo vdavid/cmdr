@@ -156,21 +156,23 @@ pub fn item_url(path: &Path, is_directory: bool) -> Option<String> {
 
     // Native shortcut stubs first: they resolve in both Drive modes, and only
     // the extension tells us the item is native rather than a plain file.
-    if !is_directory && is_native_shortcut_extension(&extension)
-        && let Some(shortcut) = read_native_shortcut(path) {
-            let kind = match native_editor_segment(&extension) {
-                Some(editor) => DriveItemKind::Native(editor),
-                None => DriveItemKind::NativeUnknown,
-            };
-            let mut url = kind.url_for(&shortcut.doc_id);
-            // A resource key is required to open items shared through a
-            // resource-key link; it's empty on everything else.
-            if !shortcut.resource_key.is_empty() {
-                let separator = if url.contains('?') { '&' } else { '?' };
-                url.push_str(&format!("{separator}resourcekey={}", shortcut.resource_key));
-            }
-            return Some(url);
+    if !is_directory
+        && is_native_shortcut_extension(&extension)
+        && let Some(shortcut) = read_native_shortcut(path)
+    {
+        let kind = match native_editor_segment(&extension) {
+            Some(editor) => DriveItemKind::Native(editor),
+            None => DriveItemKind::NativeUnknown,
+        };
+        let mut url = kind.url_for(&shortcut.doc_id);
+        // A resource key is required to open items shared through a
+        // resource-key link; it's empty on everything else.
+        if !shortcut.resource_key.is_empty() {
+            let separator = if url.contains('?') { '&' } else { '?' };
+            url.push_str(&format!("{separator}resourcekey={}", shortcut.resource_key));
         }
+        return Some(url);
+    }
 
     let id = read_item_id_xattr(path)?;
     let kind = if is_directory {
