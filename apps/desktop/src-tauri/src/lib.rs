@@ -5,77 +5,9 @@
 // This one can't go with them: it's judged per compilation unit, so as a
 // package-wide flag every bin, integration test, and bench would report ~100
 // "unused extern crate" errors for deps only the lib uses. It catches
-// platform-specific cfg mismatches, hence the `use foo as _;` markers below.
+// platform-specific cfg mismatches, and the `use foo as _;` markers it needs
+// live in `crate_deps.rs`.
 #![warn(unused_crate_dependencies)]
-
-//noinspection RsUnusedImport
-// Silence false positives for dev dependencies (used only in benches/, not lib)
-// and transitive dependencies (notify is used by notify-debouncer-full)
-#[cfg(test)]
-use criterion as _;
-//noinspection RsUnusedImport
-// Property-based testing. Used in module-local `mod proptests` blocks; the
-// crate-root marker keeps `unused_crate_dependencies` quiet for builds that
-// happen to compile a subset of test modules.
-#[cfg(test)]
-use proptest as _;
-//noinspection RsUnusedImport
-// Dev-only log-routing shim. Used by the phase4 bench's optional
-// `env_logger::try_init()` (commented-in when collecting wire traces) and by
-// ad-hoc debug-logging in tests. Harmless otherwise.
-#[cfg(test)]
-use env_logger as _;
-//noinspection RsUnusedImport
-// We dev-depend on ourselves so the `testing` feature is on for dev targets and
-// off for the shipped binary (see `Cargo.toml`). That makes `cmdr_lib` an extern
-// crate of its own test target, which `unused_crate_dependencies` then reports.
-#[cfg(test)]
-use cmdr_lib as _;
-//noinspection RsUnusedImport
-// Scratch dirs for tests and fixtures, an optional dependency the `testing`
-// feature turns on. Its only LIB use is the virtual-MTP fixture, which also
-// needs `virtual-mtp`, so a `testing`-without-`virtual-mtp` build has the crate
-// and no use for it.
-#[cfg(feature = "testing")]
-use tempfile as _;
-//noinspection RsUnusedImport
-use mimalloc as _;
-//noinspection ALL
-// smb2 crate is used in network/smb_client module (macOS + Linux)
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-use smb2 as _;
-
-//noinspection ALL
-// trash crate is used in write_operations/trash.rs (Linux only)
-#[cfg(target_os = "linux")]
-use trash as _;
-
-//noinspection ALL
-// keyring-core + the zbus secret-service backend are used in secrets/keyring_linux.rs
-// for credential storage (Linux only).
-#[cfg(target_os = "linux")]
-use keyring_core as _;
-#[cfg(target_os = "linux")]
-use zbus_secret_service_keyring_store as _;
-//noinspection ALL
-// MCP Bridge is only used in debug builds, so silence the warning in release builds
-#[cfg(not(debug_assertions))]
-use tauri_plugin_mcp_bridge as _;
-//noinspection ALL
-// tauri_plugin_updater is only registered on non-macOS (custom updater handles macOS)
-#[cfg(target_os = "macos")]
-use tauri_plugin_updater as _;
-// cmdr-adb is used in the adb/ module for Android-over-ADB support (macOS + Linux)
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-use cmdr_adb as _;
-//noinspection ALL
-// `bytes` is a dev-dependency the MTP upload cells build their fake source streams
-// out of, and every one of them is behind `virtual-mtp`. The lanes that don't pass
-// that feature still LINK it into the lib test target, so without this the extern
-// reads as unused there. The production upload path lives in `cmdr-mtp`, which
-// declares its own copy.
-#[cfg(test)]
-use bytes as _;
 
 // These host primitives live in `cmdr-fs` so every crate in the workspace shares
 // one copy, and are re-exported here at their original paths: poison-free
@@ -110,6 +42,7 @@ mod clipboard;
 mod commands;
 pub mod config;
 mod crash_reporter;
+mod crate_deps;
 /// The dialog gallery's fixture tree (Debug > Soft dialogs). Dev and E2E builds:
 /// `dialog-inset.spec.ts` drives the gallery, and the disk-backed dialogs need a
 /// real tree to scan. Never in a shipped build.
@@ -196,6 +129,7 @@ mod subprocess;
 mod system_events;
 mod system_memory;
 mod system_strings;
+mod tauri_builder;
 pub mod test_mode;
 /// The sanctioned way to wait for background work in a Rust test. See `docs/testing.md`.
 #[cfg(test)]
@@ -227,28 +161,21 @@ use tauri::Manager;
 // exposes them through a typed `tauri_specta::Builder`. See `ipc.rs` for the
 // migration recipe.
 
-// ── On this file's length (`file-length` allowlists it at 803) ───────────────
+// ── On this file's length ────────────────────────────────────────────────────
 //
-// Two different masses, and only one of them is a smell:
+// What's left is the crate's module map plus `run()`, and `run()` is one strictly
+// ORDERED sequence whose order is load-bearing in ways the code says out loud (the
+// panic hook goes in before anything in this crate can panic; the E2E data-dir
+// guard goes in before anything resolves persisted state).
 //
-// - ~190 lines of preamble: 92 `mod`/`use` declarations plus 13 `use foo as _;`
-//   markers that `unused_crate_dependencies` (above) needs. Both are structurally
-//   required, and moving them elsewhere would hide the crate's own map. Nothing
-//   to win here.
-// - ~610 lines of `run()`: the startup sequence.
-//
-// Opinion, so the next reader doesn't have to re-derive it: **the allowlist bump
-// is right and a split would currently make this worse.** `run()` is one strictly
-// ORDERED sequence, and the order is load-bearing in ways the code says out loud
-// (the panic hook goes in before anything in this crate can panic; the E2E
-// data-dir guard goes in before anything resolves persisted state). Extracting
-// stretches of it into `startup/*.rs` helpers buys line count and pays for it by
-// making those ordering constraints invisible at the call site, which is exactly
-// the class of silent detachment this repo keeps getting bitten by.
-//
-// What WOULD justify a split: `run()` growing phases that are genuinely
-// independent of each other rather than sequenced. Extract those, by phase, and
-// leave the ordered spine here. Splitting by line count alone is the wrong cut.
+// ❌ Don't shorten it by lifting stretches of that sequence into `startup/*.rs`
+// helpers. That buys line count and pays for it by making the ordering constraints
+// invisible at the call site, which is exactly the class of silent detachment this
+// repo keeps getting bitten by. The cut that IS right is by phase, for phases that
+// are genuinely independent of each other: `tauri_builder::configure` holds the
+// pre-`setup` registrations, where nothing observes app state or cares what ran
+// before it. A new order-free registration belongs there; anything that has to
+// happen after another step belongs in the spine below.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Before anything in this crate can panic. It can't write a crash file until
@@ -273,109 +200,10 @@ pub fn run() {
     // internally), so we grab it here before moving `specta_builder` into the
     // `setup` closure where `mount_events` registers the typed events.
     let invoke_handler = specta_builder.invoke_handler();
-    let builder = tauri::Builder::default();
 
-    // Register the `cmdr-media://` async URI scheme the file viewer serves images and
-    // PDFs through. Registered before any window exists (correct: `viewer-*` windows
-    // are created lazily and inherit the app-wide scheme). The handler is a thin shell
-    // over `file_viewer::media_protocol`; access is gated by an unguessable per-open
-    // token, not the path. See `file_viewer/media_protocol.rs`.
-    let builder = builder.register_asynchronous_uri_scheme_protocol(
-        file_viewer::media_protocol::SCHEME,
-        |_ctx, request, responder| {
-            file_viewer::media_protocol::handle_request(request, responder);
-        },
-    );
-
-    // MCP Bridge plugin is only available in debug builds for security.
-    //
-    // Two non-obvious things to keep in mind here:
-    //   1. The plugin's `Config::default()` is `bind_address: "0.0.0.0"`, which exposes
-    //      the WebSocket bridge (DOM inspection, JS execution, IPC monitoring) to anyone
-    //      on the LAN. We always force `127.0.0.1` so the bridge is localhost-only. This
-    //      is a security fix; do NOT remove it even when adding remote-device support.
-    //   2. The plugin has no public method to query the bound port, and its internal
-    //      `find_available_port` silently returns `base_port` on exhaustion (no error).
-    //      We therefore let `tauri-wrapper.js` allocate an ephemeral port up front via
-    //      `net.createServer().listen(0)`, pass it as `CMDR_MCP_BRIDGE_PORT`, AND have
-    //      the wrapper write `<data_dir>/tauri-mcp.port` BEFORE Tauri launches. After
-    //      plugin setup we run a 500 ms post-bind `TcpStream::connect` probe and
-    //      warn-log on mismatch so a silent fallback is visible in the logs.
-    //
-    // See docs/tooling/instance-isolation.md § "Per-resource breakdown" (Tauri MCP
-    // bridge port row) for the wrapper-writes-port-file contract.
-    #[cfg(debug_assertions)]
-    let builder = {
-        let mut bridge_builder = tauri_plugin_mcp_bridge::Builder::new().bind_address("127.0.0.1");
-        let expected_bridge_port: Option<u16> = std::env::var("CMDR_MCP_BRIDGE_PORT").ok().and_then(|v| v.parse().ok());
-        if let Some(port) = expected_bridge_port {
-            bridge_builder = bridge_builder.base_port(port);
-        }
-        let plugin = bridge_builder.build::<tauri::Wry>();
-
-        // Post-bind probe: 500 ms after registration, try to connect on the expected port.
-        // On success: log info. On failure: warn that the wrapper-written port file may be
-        // stale (the plugin silently fell back to a different port; readers will discover
-        // it on first request via `ECONNREFUSED`).
-        if let Some(port) = expected_bridge_port {
-            tauri::async_runtime::spawn(async move {
-                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-                let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
-                match tokio::time::timeout(
-                    std::time::Duration::from_millis(500),
-                    tokio::net::TcpStream::connect(addr),
-                )
-                .await
-                {
-                    Ok(Ok(_)) => log::info!(
-                        target: "mcp::bridge",
-                        "tauri-MCP bridge bound to 127.0.0.1:{port}",
-                    ),
-                    Ok(Err(err)) => log::warn!(
-                        target: "mcp::bridge",
-                        "tauri-MCP bridge did not bind 127.0.0.1:{port} within 500 ms ({err}); the port file at <data_dir>/tauri-mcp.port may be stale",
-                    ),
-                    Err(_) => log::warn!(
-                        target: "mcp::bridge",
-                        "tauri-MCP bridge probe to 127.0.0.1:{port} timed out after 500 ms; the port file at <data_dir>/tauri-mcp.port may be stale",
-                    ),
-                }
-            });
-        }
-
-        builder.plugin(plugin)
-    };
-
-    // Playwright E2E testing plugin: socket bridge for direct webview injection.
-    // Socket path is overridable via CMDR_PLAYWRIGHT_SOCKET so parallel E2E shards
-    // can each spawn their own Tauri instance bound to a distinct socket.
-    #[cfg(feature = "playwright-e2e")]
-    let builder = {
-        let mut pw_config = tauri_plugin_playwright::PluginConfig::new();
-        if let Ok(socket_path) = std::env::var("CMDR_PLAYWRIGHT_SOCKET") {
-            pw_config = pw_config.socket_path(socket_path);
-        }
-        builder.plugin(tauri_plugin_playwright::init_with_config(pw_config))
-    };
-
-    // Skip Tauri updater plugin on macOS (custom updater preserves TCC permissions)
-    // and in CI (avoids network dependency and latency during E2E tests)
-    #[cfg(not(target_os = "macos"))]
-    let builder = if std::env::var("CI").is_ok() {
-        builder
-    } else {
-        builder.plugin(tauri_plugin_updater::Builder::new().build())
-    };
-
-    builder
-        .plugin(tauri_plugin_store::Builder::new().build())
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_clipboard_manager::init())
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_notification::init())
-        .plugin(downloads::global_shortcut::plugin_builder())
+    // The `cmdr-media://` scheme and every plugin. Order-free by construction, so
+    // it lives in one place off the spine; see `tauri_builder.rs`.
+    tauri_builder::configure(tauri::Builder::default())
         .setup(move |app| {
             // Everything the index needs from this app, in one place. Must run
             // before anything can start background work. Mirror of
