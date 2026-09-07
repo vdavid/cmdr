@@ -7,8 +7,14 @@
  * the base value where it doesn't), which is what catches a half-forked term.
  */
 import { describe, it, expect } from 'vitest'
-import { findDivergences, normalizeForComparison, isAllowed, report } from './i18n-check-term-consistency.ts'
-import type { LocaleOutcome } from './i18n-check-term-consistency.ts'
+import {
+  findDivergences,
+  normalizeForComparison,
+  isAllowed,
+  report,
+  shrinkWrap,
+} from './i18n-check-term-consistency.ts'
+import type { Allowlist, DivergenceFinding, LocaleOutcome } from './i18n-check-term-consistency.ts'
 import type { Catalog } from './i18n-catalog-lib.ts'
 
 const cat = (messages: Record<string, string>): Catalog => ({ messages, metadata: {} })
@@ -106,20 +112,30 @@ describe('isAllowed', () => {
 })
 
 describe('report: the summary line has to be true', () => {
-  const outcome = (locale: string, divergent: number, baseline?: number): LocaleOutcome => ({
-    locale,
-    isOverlay: false,
-    divergences: Array.from({ length: divergent }, (_, index) => ({
-      source: `term ${String(index)}`,
-      renderings: [
-        { value: 'a', keys: ['x.a'] },
-        { value: 'b', keys: ['x.b'] },
-      ],
-    })),
-    unallowed: [],
-    staleAllows: [],
-    baseline,
+  const finding = (index: number): DivergenceFinding => ({
+    source: `term ${String(index)}`,
+    renderings: [
+      { value: 'a', keys: ['x.a'] },
+      { value: 'b', keys: ['x.b'] },
+    ],
   })
+
+  /**
+   * @param divergent how many terms the locale renders two ways
+   * @param baseline the recorded `notYetReviewed` count, if the locale has one
+   * @param allowed how many of those divergences carry a reasoned allowlist entry
+   */
+  const outcome = (locale: string, divergent: number, baseline?: number, allowed = 0): LocaleOutcome => {
+    const divergences = Array.from({ length: divergent }, (_, index) => finding(index))
+    return {
+      locale,
+      isOverlay: false,
+      divergences,
+      unallowed: divergences.slice(allowed),
+      staleAllows: [],
+      baseline,
+    }
+  }
 
   const linesFor = (outcomes: LocaleOutcome[]): { lines: string[]; code: number } => {
     const lines: string[] = []
@@ -148,5 +164,53 @@ describe('report: the summary line has to be true', () => {
   it('leaves the warn path alone: a grown baseline still exits non-zero', () => {
     const { code } = linesFor([outcome('hu', 30, 28)])
     expect(code).toBe(1)
+  })
+
+  it('judges a baselined locale on what is still UNEXPLAINED, so one term can be triaged at a time', () => {
+    // A locale awaiting triage is exactly where a genuine split is most likely to
+    // be found, and recording it is the only honest way to move the number: the
+    // alternative is a translation edit that makes the copy worse.
+    const { lines, code } = linesFor([outcome('de', 9, 8, 1)])
+    expect(code).toBe(0)
+    expect(lines[0]).toContain('8 divergent terms')
+    expect(lines[0]).not.toContain('up from')
+  })
+
+  it('counts only the unexplained ones as awaiting triage', () => {
+    const { lines } = linesFor([outcome('de', 9, 8, 1)])
+    expect(lines[lines.length - 1]).toContain('8 divergences across 1 locale')
+  })
+
+  it('a baselined locale keeps ratcheting: one more reason drops it under the baseline', () => {
+    const { lines } = linesFor([outcome('de', 9, 8, 2)])
+    expect(lines[0]).toContain('down from 8; ratchet the baseline')
+  })
+
+  it('flags a stale allowlist entry on a baselined locale too', () => {
+    const { lines, code } = linesFor([{ ...outcome('de', 8, 8), staleAllows: ['Purple'] }])
+    expect(code).toBe(1)
+    expect(lines.some((line) => line.includes('stale allowlist entry: "Purple"'))).toBe(true)
+  })
+})
+
+describe('shrinkWrap: the baseline follows the unexplained count', () => {
+  it('ratchets down to what is still unexplained, not to the raw divergence count', () => {
+    const allowlist: Allowlist = { reviewed: {}, notYetReviewed: { de: 9 } }
+    const divergences: DivergenceFinding[] = Array.from({ length: 9 }, (_, index) => ({
+      source: `term ${String(index)}`,
+      renderings: [
+        { value: 'a', keys: ['x.a'] },
+        { value: 'b', keys: ['x.b'] },
+      ],
+    }))
+    const lowered = shrinkWrap(
+      [{ locale: 'de', isOverlay: false, divergences, unallowed: divergences.slice(2), staleAllows: [], baseline: 9 }],
+      allowlist,
+      // A path that is never written: `shrinkWrap` only touches disk when it lowers
+      // something, and this assertion is about the number it computes.
+      '/dev/null',
+    )
+    expect(lowered).toEqual(['de'])
+    expect(allowlist.notYetReviewed.de).toBe(7)
   })
 })

@@ -2153,8 +2153,9 @@ Begriffe:
   `48.title` („Browse“ → „Durchsuchen“) und Finders eigener Tooltip „Verfügbare Server in einem Fenster im Finder
   durchsuchen“ · `high`. ⚠️ Das kollidiert mit `settings.archives.opt.browse` = `Durchsehen` (dort heißt „Browse“ „im
   Archiv wie in einem Ordner blättern“, nicht „einen Dateidialog öffnen“). `i18n-terms` sieht beide Schlüssel als EIN
-  englisches Wort und meldet die Spaltung; sie ist echt, aber die `reviewed`-Liste braucht Davids Zustimmung, also steht
-  der Warn offen.
+  englisches Wort; die Spaltung ist echt und steht mit Begründung als `Browse` in
+  `apps/desktop/scripts/i18n-term-consistency-allowlist.json` (§ `reviewed.de`). ❌ Also nicht zusammenführen: ein
+  weiterer Dateidialog-Knopf nimmt `Durchsuchen…`, eine weitere Archiv-Fläche `Durchsehen`.
 - **`Remote folder` → `Entfernter Ordner`** · macOS rendert `Remote X` durchgängig als `Entfernter X`: PrintCore
   („Remote Printer“ → „Entfernter Drucker“, „Remote host“ → „Entfernter Host“), LaunchServices („Remote Disc“ →
   „Entfernte CD/DVD“), ActionKit („Remote Host Identification Has Changed“ → „Entfernte Hostidentifizierung hat sich
@@ -2329,8 +2330,9 @@ Begriffe:
   Katalog, `settings.behavior.openTerminalHereApp.chooseAppTitle` („Choose a terminal app“ → „Terminal-App auswählen“);
   `den Befehl „adb“` steht so schon in `settings.fileOperations.adbEnabled.description` · `high`.
 - **`Browse…` (Taste, die den Dateiauswahl-Dialog öffnet) → `Durchsuchen…`** · schon gesetzt (§ Das Verbindungsblatt);
-  `settings.adb.browse` übernimmt es zeichengleich von `servers.sheet.browse`. Der `i18n-terms`-Warn gegen
-  `settings.archives.opt.browse` („Durchsehen“) bestand schon vor dieser Fläche und wächst durch sie nicht.
+  `settings.adb.browse` übernimmt es zeichengleich von `servers.sheet.browse`. Die Spaltung gegen
+  `settings.archives.opt.browse` („Durchsehen“) ist dort begründet und in der `reviewed`-Liste von `i18n-terms`
+  eingetragen.
 
 Wortlaut-Entscheidungen:
 
