@@ -1100,10 +1100,11 @@ machine"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lpro
   `加入裝置⋯`、`MainMenu.loctable` "Add Account…" → `加入帳號⋯`，TW = HK）· `high`。刪節號照目錄慣例寫
   `…`（U+2026），不跟 Apple 的 `⋯`。
 - **local network（區域網路）** · `區域網路` · AP-TW 把隱私權面板的 `LOCAL_NETWORK` 鍵（"Local Network"）譯成
-  `區域網路`，整份 SystemSettings 的行文也一律 `區域網路`（HK 是 `本地網絡`，台灣優先取 `區域網路`）· `high`。⚠️
-  **目錄和 Apple 不一致**：`settings.network.enabled.description` 和 `onboarding.stepOptional.networking.desc` 寫的是
-  `本機網路`（早先的 pass 自行組出來的），而使用者的 macOS 權限對話框上寫的是 `區域網路`。新字串取
-  `區域網路`；那兩個舊值應該另開一個 pass 改掉（不在這 28 個鍵的範圍內），和 `ai.*` 的 `金鑰環` 一樣。
+  `區域網路`，整份 SystemSettings 的行文也一律 `區域網路`（HK 是 `本地網絡`，台灣優先取 `區域網路`）· `confirmed`。
+  整個目錄現在只有這一個寫法：早先自行組出來的 `本機網路` 已經從
+  `settings.network.enabled.description`、`settings.network.timeoutMode.optDesc.normal` 和
+  `onboarding.stepOptional.networking.desc` 換掉。onboarding 那一條是最關鍵的：它逐字引用 macOS 權限對話框上的標籤，
+  而那個對話框寫的就是「區域網路」，所以舊值等於叫使用者去找一個螢幕上不存在的字。❌ 不要再寫回 `本機網路`。
 - **discovery（探索）** · `探索` · 目錄既有的 `settings.network.firstTriggerDone.label` = `網路探索已啟動`、
   `settings.network.enabled.description` = `探索 SMB 伺服器` · `high`。所以 "Local network discovery is off." 是
   `區域網路探索已關閉。`
