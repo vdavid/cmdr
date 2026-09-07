@@ -4643,7 +4643,7 @@
     },
     {
       "name": "@typescript-eslint/types",
-      "version": "8.68.0",
+      "version": "8.69.0",
       "license": "MIT",
       "url": "https://typescript-eslint.io"
     },
