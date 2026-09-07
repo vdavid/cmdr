@@ -3,7 +3,8 @@
 The canonical, tracked home for Cmdr's reusable exported artifacts: the press-kit / media-kit set that the README,
 website, AlternativeTo, newsletter, and any new surface all pull from.
 
-- `logos/`: clean exported logos (`cmdr-{512,128,32}.png`), copied from the desktop app icons. The grab-here set.
+- `logos/`: `cmdr.svg` is the **source of truth** for every icon and logo raster in the repo; `cmdr-{512,128,32}.png`
+  are generated from it. The grab-here set. Regenerate with `pnpm icons`, never by hand.
 - `screenshots/`: pristine full-window product shots, all carrying a focused window's 112/76 shadow margins. Regenerate
   the whole set with **`pnpm marketing:shots`** (~25 s); never reshoot one by hand. `app-main-{dark,light}.webp` is the
   master pair that feeds the README, the website hero, and AlternativeTo, so they never drift; `search-`, `chat-`, and
@@ -29,8 +30,10 @@ animation sources) stay in `_ignored/designs/`, which is gitignored.
 - **Reshoot screenshots and refresh every consumer**: [`docs/guides/screenshots.md`](../docs/guides/screenshots.md).
 - **Visual identity reference** (colors, type, voice, logo description):
   [`docs/guides/branding.md`](../docs/guides/branding.md).
-- **Regenerate the logo from source**:
-  [`docs/guides/regenerating-app-icon.md`](../docs/guides/regenerating-app-icon.md).
+- **Change the logo, or regenerate any icon from it**:
+  [`docs/guides/updating-icon.md`](../docs/guides/updating-icon.md). Read it before touching `logos/`: every raster here
+  is generated, `pnpm icons` rewrites them all from `logos/cmdr.svg`, and one consumer (the macOS Tahoe `Assets.car`)
+  can only be rebuilt by hand.
 
 Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

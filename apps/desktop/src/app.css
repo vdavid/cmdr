@@ -132,8 +132,6 @@
      (dark override in the prefers-color-scheme block below). Used by the symlink badge. */
   --color-accent-pop: color-mix(in oklch, var(--color-accent), black 40%);
   --color-cmdr-gold: #d4a006;
-  --color-cmdr-blue: #4a9eff;
-  --color-cmdr-purple: #7c3aed;
   --color-system-accent: #d4a006; /* Updated at runtime by accent-color.ts */
 
   /* === Cursor (row highlight in file lists) === */

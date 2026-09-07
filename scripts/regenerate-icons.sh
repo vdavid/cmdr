@@ -26,6 +26,8 @@ done
 
 echo "==> Minifying the SVG for the copies we ship over the wire"
 pnpm exec svgo --config brand/logos/svgo.config.mjs -i "$src" -o apps/website/public/logo.svg
+cp apps/website/public/logo.svg apps/analytics-dashboard/static/logo.svg
+cp apps/website/public/logo.svg apps/desktop/static/logo.svg
 
 echo "==> Desktop app icons (PNGs, .icns, .ico, Square*, android, ios)"
 (cd apps/desktop && pnpm tauri icon "../../$src")

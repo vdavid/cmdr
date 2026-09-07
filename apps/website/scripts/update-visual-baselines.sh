@@ -3,6 +3,7 @@
 #
 # Usage:
 #   update-visual-baselines.sh          Refresh the committed baselines that are actually stale.
+#   update-visual-baselines.sh --force  Re-shoot every committed baseline, comparison skipped.
 #   update-visual-baselines.sh --full   Capture the gitignored full-page set (upgrade diffing).
 #
 # Why Docker: baselines are Linux-only (`*-chromium-linux.png`) because macOS renders different font
@@ -18,6 +19,12 @@
 # threshold. That churns unrelated baselines on every run. Instead we run a normal comparison first
 # and only re-shoot what genuinely failed (`--last-failed`).
 #
+# `--force` is the escape hatch for the blind spot that creates: a deliberate visual change too small
+# to breach `maxDiffPixelRatio` leaves the baseline passing while showing the OLD render. A 24px logo
+# in the 1280x533 footer shot is 0.08% of the pixels against a 1% threshold, so swapping the logo
+# changed nothing here (2026-09-07). Use it when you KNOW you changed something these shots contain,
+# and read the resulting diff: `--force` will happily bake in a regression.
+#
 # The committed set is small and region-scoped on purpose (see e2e/visual.spec.ts): it shoots the
 # markdown fixture and a few components, never full marketing pages, so publishing a post or editing
 # copy doesn't invalidate it. In practice this script now has little to do; run it when you change a
@@ -31,12 +38,16 @@
 set -euo pipefail
 
 FULL_MODE=0
-if [[ "${1:-}" == "--full" ]]; then
-  FULL_MODE=1
-elif [[ -n "${1:-}" ]]; then
-  echo "ERROR: unknown argument '$1' (expected --full or nothing)." >&2
-  exit 2
-fi
+FORCE_MODE=0
+case "${1:-}" in
+  --full) FULL_MODE=1 ;;
+  --force) FORCE_MODE=1 ;;
+  "") ;;
+  *)
+    echo "ERROR: unknown argument '$1' (expected --full, --force, or nothing)." >&2
+    exit 2
+    ;;
+esac
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 WEBSITE_DIR="$REPO_ROOT/apps/website"
@@ -60,6 +71,8 @@ IMAGE="mcr.microsoft.com/playwright:v${PW_VERSION}-noble"
 
 if [[ "$FULL_MODE" == "1" ]]; then
   echo "==> full-page set (container: $IMAGE) -> apps/website/e2e/visual-full-snapshots/ (gitignored)"
+elif [[ "$FORCE_MODE" == "1" ]]; then
+  echo "==> committed baselines (container: $IMAGE): re-shoot ALL, comparison skipped"
 else
   echo "==> committed baselines (container: $IMAGE): compare, refresh only failures"
 fi
@@ -72,6 +85,7 @@ docker run --rm \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
   -e CI=1 \
   -e VISUAL_FULL="$([[ "$FULL_MODE" == "1" ]] && echo 1 || echo '')" \
+  -e VISUAL_FORCE="$([[ "$FORCE_MODE" == "1" ]] && echo 1 || echo '')" \
   -v "$REPO_ROOT":/repo -w /repo \
   -v /repo/node_modules \
   -v /repo/apps/website/node_modules \
@@ -83,7 +97,9 @@ docker run --rm \
     pnpm install --frozen-lockfile --filter @cmdr/website
     pnpm --filter @cmdr/website build
     cd apps/website
-    if ! pnpm exec playwright test visual.spec.ts; then
+    if [ -n "$VISUAL_FORCE" ]; then
+      pnpm exec playwright test visual.spec.ts --update-snapshots
+    elif ! pnpm exec playwright test visual.spec.ts; then
       echo "   re-shooting failed baselines"
       pnpm exec playwright test visual.spec.ts --last-failed --update-snapshots
     fi

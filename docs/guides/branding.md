@@ -9,15 +9,17 @@ This doc is the reference prose; `brand/` is the grab-here files.
 
 ## Logo
 
-A golden/mustard folder icon with AI-inspired sparkle/glow effects behind it. White horizontal bars on the folder
-suggest a file list. The overall feel is "familiar file manager meets futuristic AI."
+A golden/mustard folder icon whose back panel glows with a blue → violet → pink haze: a node graph, flowing waves, and
+circuit traces, lit by a cyan rim along the top edge. The front is a two-pane file list, white rows on the focused
+(left) pane and dimmed gold on the other, which is the app's own layout. The overall feel is "familiar file manager
+meets futuristic AI": the yellow says file manager, the haze spilling out the top says there's AI inside.
 
-- Source icon: `_ignored/app-icon-no-background.png` (transparent bg, used for regeneration) - NOT IN THE REPO!
+- **Source of truth**: `brand/logos/cmdr.svg`. Every raster below is generated from it by `pnpm icons`.
 - Exported logo set (grab-here, tracked): `brand/logos/cmdr-{512,128,32}.png`
-- Desktop app icons: `apps/desktop/src-tauri/icons/` (all sizes, generated via `pnpm tauri icon`)
-- Website: `apps/website/public/logo-512.png` (512x512), `logo-32.png` (32x32)
+- Desktop app icons: `apps/desktop/src-tauri/icons/` (all sizes, plus the macOS Tahoe `resources/Assets.car`)
+- Website: `apps/website/public/logo.svg` (what pages render), `logo-512.png` (JSON-LD and the newsletter)
 - Favicons: `apps/website/public/favicon.png`, `favicon.ico`, `apple-touch-icon.png`
-- See `docs/guides/regenerating-app-icon.md` for how to regenerate
+- Procedure, gotchas, and the one manual step: `docs/guides/updating-icon.md`
 
 ## Colors
 

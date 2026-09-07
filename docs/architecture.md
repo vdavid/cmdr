@@ -271,7 +271,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `logging/`: Log directory resolver, `KeepSome(N)` post-rotation pruner, `list_recent_log_files`
 - `commands/`: Tauri command definitions (IPC entry points)
 - `capabilities/`: Per-window Tauri API permissions; update when using new Tauri APIs from a window
-- `icons/`: App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car). See its CLAUDE.md for regeneration
+- `icons/`: App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car), all generated from
+  `brand/logos/cmdr.svg` by `pnpm icons`. Procedure: [update the icon](guides/updating-icon.md)
 
 ## Workspace crates
 

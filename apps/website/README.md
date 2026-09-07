@@ -91,7 +91,7 @@ apps/website/
 │   └── styles/
 │       └── global.css       # Tailwind theme
 ├── public/
-│   └── favicon.png
+│   └── logo.svg             # Logo + favicon (generated; see docs/guides/updating-icon.md)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── nginx.conf

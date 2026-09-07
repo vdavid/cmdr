@@ -43,7 +43,9 @@ const {
         <meta name="twitter:description" content={description} />
         {ogImage && <meta name="twitter:image" content={new URL(ogImage, Astro.site).href} />}
 
-        <!-- Favicon -->
+        <!-- Favicon. Browsers pick the SVG; `.ico` and `.png` are the fallbacks, and
+             iOS only ever takes the apple-touch-icon. -->
+        <link rel="icon" type="image/svg+xml" href="/logo.svg" />
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

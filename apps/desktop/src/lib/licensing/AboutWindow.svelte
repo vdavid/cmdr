@@ -104,9 +104,7 @@
     {/snippet}
 
     <div class="about-content">
-        <div class="app-icon">
-            <span class="icon-text">⌘</span>
-        </div>
+        <img class="app-icon" src="/logo.svg" alt="" width="80" height="80" />
 
         <p class="app-name">{tString('licensing.about.appName')}</p>
         <p class="app-tagline">{tString('licensing.about.tagline')}</p>
@@ -166,19 +164,10 @@
     }
 
     .app-icon {
+        display: block;
         width: 80px;
         height: 80px;
         margin: 0 auto var(--spacing-lg);
-        background: linear-gradient(135deg, var(--color-cmdr-blue), var(--color-cmdr-purple));
-        border-radius: var(--radius-lg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .icon-text {
-        font-size: 40px;
-        color: white;
     }
 
     .app-name {
