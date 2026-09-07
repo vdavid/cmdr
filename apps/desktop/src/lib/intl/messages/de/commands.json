@@ -226,11 +226,11 @@
   },
   "commands.paneLeftVolumeChooser.label": "Linke Volume-Auswahl öffnen",
   "@commands.paneLeftVolumeChooser.label": {
-    "sourceHash": "8682140"
+    "sourceHash": "6210f8e"
   },
   "commands.paneRightVolumeChooser.label": "Rechte Volume-Auswahl öffnen",
   "@commands.paneRightVolumeChooser.label": {
-    "sourceHash": "7a0268f"
+    "sourceHash": "6103296"
   },
   "commands.paneCopyPathLeftToRight.label": "Pfad vom linken in den rechten Bereich kopieren",
   "@commands.paneCopyPathLeftToRight.label": {
@@ -674,7 +674,7 @@
   },
   "commands.volumeClose.label": "Volume-Auswahl schließen",
   "@commands.volumeClose.label": {
-    "sourceHash": "aa6a29b"
+    "sourceHash": "075481e"
   },
   "commands.volumeSelectByName.label": "Volume des Bereichs nach Name auswählen",
   "@commands.volumeSelectByName.label": {

@@ -226,11 +226,11 @@
   },
   "commands.paneLeftVolumeChooser.label": "Mở bộ chọn ổ đĩa bên trái",
   "@commands.paneLeftVolumeChooser.label": {
-    "sourceHash": "8682140"
+    "sourceHash": "6210f8e"
   },
   "commands.paneRightVolumeChooser.label": "Mở bộ chọn ổ đĩa bên phải",
   "@commands.paneRightVolumeChooser.label": {
-    "sourceHash": "7a0268f"
+    "sourceHash": "6103296"
   },
   "commands.paneCopyPathLeftToRight.label": "Sao chép đường dẫn từ khung trái sang phải",
   "@commands.paneCopyPathLeftToRight.label": {
@@ -674,7 +674,7 @@
   },
   "commands.volumeClose.label": "Đóng bộ chọn ổ đĩa",
   "@commands.volumeClose.label": {
-    "sourceHash": "aa6a29b"
+    "sourceHash": "075481e"
   },
   "commands.volumeSelectByName.label": "Chọn ổ đĩa của khung theo tên",
   "@commands.volumeSelectByName.label": {

@@ -267,14 +267,14 @@
     "description": "Command name that swaps the contents of the left and right panes. \"Panes\" are the two side-by-side file lists. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.paneLeftVolumeChooser.label": "Open left volume chooser",
+  "commands.paneLeftVolumeChooser.label": "Open left volume switcher",
   "@commands.paneLeftVolumeChooser.label": {
-    "description": "Command name that opens the volume/location chooser for the LEFT pane. \"Volume\" is a disk or mounted location. Appears in the command palette.",
+    "description": "Command name that opens the volume/location switcher for the LEFT pane. \"Volume\" is a disk or mounted location. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.paneRightVolumeChooser.label": "Open right volume chooser",
+  "commands.paneRightVolumeChooser.label": "Open right volume switcher",
   "@commands.paneRightVolumeChooser.label": {
-    "description": "Command name that opens the volume/location chooser for the RIGHT pane. \"Volume\" is a disk or mounted location. Appears in the command palette.",
+    "description": "Command name that opens the volume/location switcher for the RIGHT pane. \"Volume\" is a disk or mounted location. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.paneCopyPathLeftToRight.label": "Copy path from left to right pane",
@@ -793,12 +793,12 @@
   },
   "commands.volumeSelect.label": "Select volume",
   "@commands.volumeSelect.label": {
-    "description": "Command name that opens the selected volume (disk or mounted location) in the volume chooser. Shown only in the keyboard-shortcuts list (not the palette).",
+    "description": "Command name that opens the selected volume (disk or mounted location) in the volume switcher. Shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.volumeClose.label": "Close volume chooser",
+  "commands.volumeClose.label": "Close volume switcher",
   "@commands.volumeClose.label": {
-    "description": "Command name that closes the volume chooser. Shown only in the keyboard-shortcuts list (not the palette).",
+    "description": "Command name that closes the volume switcher. Shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.volumeSelectByName.label": "Select pane volume by name",

@@ -226,11 +226,11 @@
   },
   "commands.paneLeftVolumeChooser.label": "Bal oldali kötetválasztó megnyitása",
   "@commands.paneLeftVolumeChooser.label": {
-    "sourceHash": "8682140"
+    "sourceHash": "6210f8e"
   },
   "commands.paneRightVolumeChooser.label": "Jobb oldali kötetválasztó megnyitása",
   "@commands.paneRightVolumeChooser.label": {
-    "sourceHash": "7a0268f"
+    "sourceHash": "6103296"
   },
   "commands.paneCopyPathLeftToRight.label": "Útvonal másolása a bal panelről a jobbra",
   "@commands.paneCopyPathLeftToRight.label": {
@@ -674,7 +674,7 @@
   },
   "commands.volumeClose.label": "Kötetválasztó bezárása",
   "@commands.volumeClose.label": {
-    "sourceHash": "aa6a29b"
+    "sourceHash": "075481e"
   },
   "commands.volumeSelectByName.label": "Panelkötet kiválasztása név szerint",
   "@commands.volumeSelectByName.label": {
