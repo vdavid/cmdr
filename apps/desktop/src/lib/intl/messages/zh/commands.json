@@ -520,6 +520,22 @@
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
+  "commands.cloudOpenInGoogleDrive.label": "在 Google Drive 中打开",
+  "@commands.cloudOpenInGoogleDrive.label": {
+    "sourceHash": "98c7516"
+  },
+  "commands.cloudOpenInGoogleDrive.description": "在 Google Drive 网站上打开所选项目，分享功能就在那里",
+  "@commands.cloudOpenInGoogleDrive.description": {
+    "sourceHash": "0328e04"
+  },
+  "commands.cloudCopyGoogleDriveLink.label": "拷贝 Google Drive 链接",
+  "@commands.cloudCopyGoogleDriveLink.label": {
+    "sourceHash": "070b383"
+  },
+  "commands.cloudCopyGoogleDriveLink.description": "拷贝所选项目的网址，可以直接粘贴到消息里",
+  "@commands.cloudCopyGoogleDriveLink.description": {
+    "sourceHash": "920f0d4"
+  },
   "commands.tagsToggleGrey.label": "切换灰色标签",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"
@@ -731,6 +747,22 @@
   "commands.handler.cloudRemoveDownloadFailed": "没能移除下载。{detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
+  },
+  "commands.handler.googleDriveLinkMissing": "这个项目没有 Google Drive 链接。",
+  "@commands.handler.googleDriveLinkMissing": {
+    "sourceHash": "af21508"
+  },
+  "commands.handler.googleDriveOpenFailed": "没能在 Google Drive 中打开这个。{detail}",
+  "@commands.handler.googleDriveOpenFailed": {
+    "sourceHash": "71dc94a"
+  },
+  "commands.handler.googleDriveLinkCopied": "已拷贝 Google Drive 链接。",
+  "@commands.handler.googleDriveLinkCopied": {
+    "sourceHash": "0997eb8"
+  },
+  "commands.handler.googleDriveCopyFailed": "没能拷贝 Google Drive 链接。{detail}",
+  "@commands.handler.googleDriveCopyFailed": {
+    "sourceHash": "dd970ec"
   },
   "commands.handler.openTerminalHere.hint": "已在你的终端 App 中打开这个文件夹。想让 Cmdr 下次打开别的 App？在“设置”的“导航与文件操作”里选一个。",
   "@commands.handler.openTerminalHere.hint": {

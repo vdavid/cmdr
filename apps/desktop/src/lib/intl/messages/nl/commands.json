@@ -522,6 +522,22 @@
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
+  "commands.cloudOpenInGoogleDrive.label": "Open op Google Drive",
+  "@commands.cloudOpenInGoogleDrive.label": {
+    "sourceHash": "98c7516"
+  },
+  "commands.cloudOpenInGoogleDrive.description": "Opent het geselecteerde onderdeel op de Google Drive-website, waar je het ook kunt delen",
+  "@commands.cloudOpenInGoogleDrive.description": {
+    "sourceHash": "0328e04"
+  },
+  "commands.cloudCopyGoogleDriveLink.label": "Kopieer Google Drive-link",
+  "@commands.cloudCopyGoogleDriveLink.label": {
+    "sourceHash": "070b383"
+  },
+  "commands.cloudCopyGoogleDriveLink.description": "Kopieert de link van het geselecteerde onderdeel, klaar om in een bericht te plakken",
+  "@commands.cloudCopyGoogleDriveLink.description": {
+    "sourceHash": "920f0d4"
+  },
   "commands.tagsToggleGrey.label": "Tag ''Grijs'' in-/uitschakelen",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"
@@ -734,6 +750,22 @@
   "commands.handler.cloudRemoveDownloadFailed": "De download kon niet worden verwijderd. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
+  },
+  "commands.handler.googleDriveLinkMissing": "Dit onderdeel heeft geen Google Drive-link.",
+  "@commands.handler.googleDriveLinkMissing": {
+    "sourceHash": "af21508"
+  },
+  "commands.handler.googleDriveOpenFailed": "Openen in Google Drive lukte niet. {detail}",
+  "@commands.handler.googleDriveOpenFailed": {
+    "sourceHash": "71dc94a"
+  },
+  "commands.handler.googleDriveLinkCopied": "Google Drive-link gekopieerd.",
+  "@commands.handler.googleDriveLinkCopied": {
+    "sourceHash": "0997eb8"
+  },
+  "commands.handler.googleDriveCopyFailed": "Google Drive-link kopiëren lukte niet. {detail}",
+  "@commands.handler.googleDriveCopyFailed": {
+    "sourceHash": "dd970ec"
   },
   "commands.handler.openTerminalHere.hint": "Deze map is geopend in je terminal-app. Wil je dat Cmdr de volgende keer een andere app opent? Kies er een in Instellingen, onder ‘Navigatie en bewerkingen’.",
   "@commands.handler.openTerminalHere.hint": {

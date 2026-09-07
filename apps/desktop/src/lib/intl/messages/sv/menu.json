@@ -425,6 +425,14 @@
   "@menu.context.removeDownload": {
     "sourceHash": "5dfc369"
   },
+  "menu.context.openInGoogleDrive": "Öppna på Google Drive",
+  "@menu.context.openInGoogleDrive": {
+    "sourceHash": "98c7516"
+  },
+  "menu.context.copyGoogleDriveLink": "Kopiera Google Drive-länk",
+  "@menu.context.copyGoogleDriveLink": {
+    "sourceHash": "070b383"
+  },
   "menu.context.openWith": "Öppna med",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"

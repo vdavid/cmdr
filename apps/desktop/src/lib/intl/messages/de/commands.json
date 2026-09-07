@@ -520,6 +520,22 @@
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
+  "commands.cloudOpenInGoogleDrive.label": "In Google Drive öffnen",
+  "@commands.cloudOpenInGoogleDrive.label": {
+    "sourceHash": "98c7516"
+  },
+  "commands.cloudOpenInGoogleDrive.description": "Öffnet das ausgewählte Objekt auf der Google-Drive-Website, wo sich die Freigabe verwalten lässt",
+  "@commands.cloudOpenInGoogleDrive.description": {
+    "sourceHash": "0328e04"
+  },
+  "commands.cloudCopyGoogleDriveLink.label": "Google-Drive-Link kopieren",
+  "@commands.cloudCopyGoogleDriveLink.label": {
+    "sourceHash": "070b383"
+  },
+  "commands.cloudCopyGoogleDriveLink.description": "Kopiert die Webadresse des ausgewählten Objekts, bereit zum Einsetzen in eine Nachricht",
+  "@commands.cloudCopyGoogleDriveLink.description": {
+    "sourceHash": "920f0d4"
+  },
   "commands.tagsToggleGrey.label": "Tag „Grau“ umschalten",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"
@@ -731,6 +747,22 @@
   "commands.handler.cloudRemoveDownloadFailed": "Der Download konnte nicht entfernt werden. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
+  },
+  "commands.handler.googleDriveLinkMissing": "Für dieses Objekt gibt es keinen Google-Drive-Link.",
+  "@commands.handler.googleDriveLinkMissing": {
+    "sourceHash": "af21508"
+  },
+  "commands.handler.googleDriveOpenFailed": "Öffnen in Google Drive nicht möglich. {detail}",
+  "@commands.handler.googleDriveOpenFailed": {
+    "sourceHash": "71dc94a"
+  },
+  "commands.handler.googleDriveLinkCopied": "Google-Drive-Link kopiert.",
+  "@commands.handler.googleDriveLinkCopied": {
+    "sourceHash": "0997eb8"
+  },
+  "commands.handler.googleDriveCopyFailed": "Kopieren des Google-Drive-Links nicht möglich. {detail}",
+  "@commands.handler.googleDriveCopyFailed": {
+    "sourceHash": "dd970ec"
   },
   "commands.handler.openTerminalHere.hint": "Ordner in deiner Terminal-App geöffnet. Soll Cmdr beim nächsten Mal eine andere App öffnen? Wähle sie in den Einstellungen unter „Navigation & Dateioperationen“.",
   "@commands.handler.openTerminalHere.hint": {

@@ -520,6 +520,22 @@
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
+  "commands.cloudOpenInGoogleDrive.label": "在 Google Drive 中開啟",
+  "@commands.cloudOpenInGoogleDrive.label": {
+    "sourceHash": "98c7516"
+  },
+  "commands.cloudOpenInGoogleDrive.description": "在 Google Drive 網站上開啟選取的項目，分享功能就在那裡",
+  "@commands.cloudOpenInGoogleDrive.description": {
+    "sourceHash": "0328e04"
+  },
+  "commands.cloudCopyGoogleDriveLink.label": "複製 Google Drive 連結",
+  "@commands.cloudCopyGoogleDriveLink.label": {
+    "sourceHash": "070b383"
+  },
+  "commands.cloudCopyGoogleDriveLink.description": "複製選取的項目的網址，可以直接貼到訊息裡",
+  "@commands.cloudCopyGoogleDriveLink.description": {
+    "sourceHash": "920f0d4"
+  },
   "commands.tagsToggleGrey.label": "切換灰色標籤",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"
@@ -731,6 +747,22 @@
   "commands.handler.cloudRemoveDownloadFailed": "無法移除下載項目。{detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
+  },
+  "commands.handler.googleDriveLinkMissing": "這個項目沒有 Google Drive 連結。",
+  "@commands.handler.googleDriveLinkMissing": {
+    "sourceHash": "af21508"
+  },
+  "commands.handler.googleDriveOpenFailed": "無法在 Google Drive 中開啟這個。{detail}",
+  "@commands.handler.googleDriveOpenFailed": {
+    "sourceHash": "71dc94a"
+  },
+  "commands.handler.googleDriveLinkCopied": "已複製 Google Drive 連結。",
+  "@commands.handler.googleDriveLinkCopied": {
+    "sourceHash": "0997eb8"
+  },
+  "commands.handler.googleDriveCopyFailed": "無法複製 Google Drive 連結。{detail}",
+  "@commands.handler.googleDriveCopyFailed": {
+    "sourceHash": "dd970ec"
   },
   "commands.handler.openTerminalHere.hint": "已在你的終端機 App 中開啟這個資料夾。想讓 Cmdr 下次開啟別的 App？在「設定」的「導覽與檔案操作」裡選一個。",
   "@commands.handler.openTerminalHere.hint": {

@@ -428,6 +428,14 @@
   "@menu.context.removeDownload": {
     "sourceHash": "5dfc369"
   },
+  "menu.context.openInGoogleDrive": "在 Google Drive 中打开",
+  "@menu.context.openInGoogleDrive": {
+    "sourceHash": "98c7516"
+  },
+  "menu.context.copyGoogleDriveLink": "拷贝 Google Drive 链接",
+  "@menu.context.copyGoogleDriveLink": {
+    "sourceHash": "070b383"
+  },
   "menu.context.openWith": "打开方式",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"

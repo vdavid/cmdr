@@ -433,6 +433,14 @@
   "@menu.context.removeDownload": {
     "sourceHash": "5dfc369"
   },
+  "menu.context.openInGoogleDrive": "Open op Google Drive",
+  "@menu.context.openInGoogleDrive": {
+    "sourceHash": "98c7516"
+  },
+  "menu.context.copyGoogleDriveLink": "Kopieer Google Drive-link",
+  "@menu.context.copyGoogleDriveLink": {
+    "sourceHash": "070b383"
+  },
   "menu.context.openWith": "Open met",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"

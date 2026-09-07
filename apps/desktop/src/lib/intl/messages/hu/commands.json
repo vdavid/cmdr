@@ -520,6 +520,22 @@
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
+  "commands.cloudOpenInGoogleDrive.label": "Megnyitás a Google Drive-ban",
+  "@commands.cloudOpenInGoogleDrive.label": {
+    "sourceHash": "98c7516"
+  },
+  "commands.cloudOpenInGoogleDrive.description": "A kijelölt elemet a Google Drive weboldalán nyitja meg, ahol meg is oszthatod",
+  "@commands.cloudOpenInGoogleDrive.description": {
+    "sourceHash": "0328e04"
+  },
+  "commands.cloudCopyGoogleDriveLink.label": "Google Drive-link másolása",
+  "@commands.cloudCopyGoogleDriveLink.label": {
+    "sourceHash": "070b383"
+  },
+  "commands.cloudCopyGoogleDriveLink.description": "A kijelölt elem Google Drive-linkjét másolja ki, készen arra, hogy beilleszd egy üzenetbe",
+  "@commands.cloudCopyGoogleDriveLink.description": {
+    "sourceHash": "920f0d4"
+  },
   "commands.tagsToggleGrey.label": "Szürke címke be-/kikapcsolása",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"
@@ -731,6 +747,22 @@
   "commands.handler.cloudRemoveDownloadFailed": "Nem sikerült eltávolítani a letöltést. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
+  },
+  "commands.handler.googleDriveLinkMissing": "Ennek az elemnek nincs Google Drive-linkje.",
+  "@commands.handler.googleDriveLinkMissing": {
+    "sourceHash": "af21508"
+  },
+  "commands.handler.googleDriveOpenFailed": "Nem sikerült megnyitni a Google Drive-ban. {detail}",
+  "@commands.handler.googleDriveOpenFailed": {
+    "sourceHash": "71dc94a"
+  },
+  "commands.handler.googleDriveLinkCopied": "Google Drive-link másolva.",
+  "@commands.handler.googleDriveLinkCopied": {
+    "sourceHash": "0997eb8"
+  },
+  "commands.handler.googleDriveCopyFailed": "Nem sikerült másolni a Google Drive-linket. {detail}",
+  "@commands.handler.googleDriveCopyFailed": {
+    "sourceHash": "dd970ec"
   },
   "commands.handler.openTerminalHere.hint": "Ez a mappa megnyílt a terminálappodban. Szeretnéd, hogy a Cmdr legközelebb másik appot nyisson? Válaszd ki a Beállításokban, a „Navigáció és fájlműveletek” alatt.",
   "@commands.handler.openTerminalHere.hint": {
