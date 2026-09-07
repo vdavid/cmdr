@@ -8,7 +8,7 @@ Cursor) control this app: take screenshots, click buttons, and read front-end lo
 The MCP bridge requires `withGlobalTauri: true` which exposes `window.__TAURI__` to the frontend. This would be a huge
 security risk in production (untrusted JS could access system APIs, not good), so we enable it **only in development**:
 
-1. **Compile-time exclusion**: The MCP plugin is only registered via `#[cfg(debug_assertions)]` in `lib.rs`
+1. **Compile-time exclusion**: The MCP plugin is only registered via `#[cfg(debug_assertions)]` in `tauri_builder.rs`
 2. **Config separation**: `"withGlobalTauri": false` in `tauri.conf.json` (production). For any non-prod instance, the
    wrapper generates a fresh `tauri.instance.json` under `$TMPDIR` that flips `withGlobalTauri` to `true` (plus sets the
    per-instance identifier and `productName`).

@@ -13,21 +13,29 @@ the retry-window callers: `docs/tooling/instance-isolation.md` § Instance lock.
 
 ## What `lib.rs` is, and what it deliberately isn't
 
-`lib.rs`'s `run()` is the wiring: the Tauri builder chain, the `setup` hook's startup sequence, and the names of the
-handlers. It is the ONE place a reader can see startup order, and order here is load-bearing (the hosts before any
-background work, the logger before the data-dir claim, settings before the menu bar). So the long linear run of
-`x::init(app.handle())` calls stays: breaking it into "phases" would hide the sequence behind function names without
-adding a boundary anybody owns.
+`lib.rs`'s `run()` is the wiring: the `setup` hook's startup sequence and the names of the handlers. It is the ONE place
+a reader can see startup order, and order here is load-bearing (the hosts before any background work, the logger before
+the data-dir claim, settings before the menu bar). So the long linear run of `x::init(app.handle())` calls stays:
+breaking it into "phases" would hide the sequence behind function names without adding a boundary anybody owns.
 
-What does move out is any block with a real owner elsewhere. Three live outside today:
+Two kinds of block move out. First, anything with a real owner elsewhere:
 
 - `logging::startup::init()`: resolve the log dir, read the two early settings, install the fern tree, sweep legacy files.
 - `menu::install::at_startup(app, &settings)`: pin the UI language, build the bar, run the macOS AppKit passes, place `MenuState`.
 - `app_lifecycle::{on_window_event, on_run_event}`: the two builder handlers, plus the shared `stop_background_services`
   all three shutdown routes take (main window closed, main window destroyed, process exiting; none implies the others).
 
-The test for moving a block: it has a module that already owns the subject, and moving it doesn't hide an ordering
-constraint. A block whose only home would be "startup, part 4" stays in `lib.rs`.
+Second, a whole PHASE whose steps are independent of each other, so lifting it hides no sequence:
+
+- `tauri_builder::configure(builder)`: the `cmdr-media://` URI scheme and every plugin, including the three registered
+  behind a `cfg` (MCP bridge in debug, Playwright under its feature, Tauri's updater off macOS). Nothing here observes
+  app state or cares what registered before it, which is exactly what makes the cut safe. A new order-free registration
+  goes here.
+- `crate_deps`: the `use foo as _;` markers `unused_crate_dependencies` needs. Lint artifacts rather than structure, and
+  a marker satisfies the lint from anywhere in the crate.
+
+The test for moving a block: either it has a module that already owns the subject, or it's a phase whose steps don't
+depend on each other. A block whose only home would be "startup, part 4" stays in `lib.rs`.
 
 ## The E2E build's launch mock (`open_mock.rs`)
 

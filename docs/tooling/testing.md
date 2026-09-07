@@ -74,7 +74,7 @@ The `testing` Cargo feature widens the few scaffolding items a bench needs (toda
 `cargo clippy --all-targets` silently SKIPS targets whose required features are off, and an unlinted, never-compiled
 benchmark rots. Instead the package dev-depends on itself (`cmdr = { path = ".", features = ["testing"] }`), which turns
 the feature on for every dev target and leaves it off for the lib and the shipped `Cmdr` binary. That self-dependency is
-load-bearing, and it's why `lib.rs` carries a `#[cfg(test)] use cmdr_lib as _;` marker.
+load-bearing, and it's why `crate_deps.rs` carries a `#[cfg(test)] use cmdr_lib as _;` marker.
 
 ## Frontend + Svelte
 

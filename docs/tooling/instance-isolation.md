@@ -120,7 +120,7 @@ Authoritative files: `apps/desktop/src-tauri/src/mcp/server.rs`, `apps/desktop/s
 Wrapper allocates via `net.createServer().listen(0)`, exports `CMDR_MCP_BRIDGE_PORT`, writes `<data_dir>/tauri-mcp.port`
 BEFORE Tauri launches. Plugin forced to `127.0.0.1` (was `0.0.0.0`, a LAN exposure: load-bearing security fix).
 
-Authoritative files: `apps/desktop/scripts/tauri-wrapper.ts`, `apps/desktop/src-tauri/src/lib.rs`.
+Authoritative files: `apps/desktop/scripts/tauri-wrapper.ts`, `apps/desktop/src-tauri/src/tauri_builder.rs`.
 
 ### Vite dev port
 
@@ -191,7 +191,7 @@ fixture root.
 Per-shard at `/tmp/tauri-playwright-<instance>.sock` via `CMDR_PLAYWRIGHT_SOCKET`. Plugin falls back to
 `/tmp/tauri-playwright.sock` when unset (manual / Linux paths).
 
-Authoritative file: `apps/desktop/src-tauri/src/lib.rs`.
+Authoritative file: `apps/desktop/src-tauri/src/tauri_builder.rs`.
 
 `tauri-plugin-store` handles `settings.json`, `shortcuts.json`, `app-status.json`, and `viewer-tail.json`.
 
