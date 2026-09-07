@@ -275,6 +275,7 @@ describe('SignInSheet: edit mode', () => {
     id: 'sftp-nas-local-22-ada',
     protocol: 'sftp' as const,
     displayName: 'Naspolya',
+    nameSource: 'user' as const,
     address: 'nas.local:22',
     username: 'ada',
     pinned: true,
@@ -292,6 +293,7 @@ describe('SignInSheet: edit mode', () => {
     useAgent: true,
     autoReconnect: true,
     pinned: true,
+    lastConnectedAt: '2026-09-06T00:00:00Z',
   }
 
   beforeEach(async () => {

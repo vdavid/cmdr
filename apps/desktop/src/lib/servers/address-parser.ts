@@ -130,6 +130,25 @@ function parseSshCommandLine(rest: string): ParsedAddress {
 }
 
 /**
+ * Splits an authority into the account and what's left, or `null` when the
+ * userinfo names nobody.
+ *
+ * ❗ **A URL's userinfo may be `user:password`, and only the ACCOUNT survives.**
+ * What this parse returns feeds the visible Username field, the volume id Rust
+ * mints from `(host, port, username)`, and the Keychain scope keyed on it; a
+ * password belongs in none of the three. The person retypes it into the password
+ * field, the one place that treats it as a secret. Userinfo that is a password
+ * with no account in front of it is refused rather than guessed at.
+ */
+function readAccount(authority: string): { username?: string; hostPort: string } | null {
+  const at = authority.lastIndexOf('@')
+  const hostPort = authority.slice(at + 1)
+  if (at === -1) return { hostPort }
+  const username = authority.slice(0, at).split(':', 1)[0]
+  return username === '' ? null : { username, hostPort }
+}
+
+/**
  * `[user@]host[:port][/path]`, once the protocol is known.
  *
  * The path is split off at the FIRST `/`, so everything before it is the
@@ -141,17 +160,9 @@ function readEndpoint(rest: string, protocol: ServerProtocol, secure: boolean | 
   const authority = slash === -1 ? rest : rest.slice(0, slash)
   const rawPath = slash === -1 ? '' : rest.slice(slash)
 
-  const at = authority.lastIndexOf('@')
-  const userinfo = at === -1 ? undefined : authority.slice(0, at)
-  const hostPort = authority.slice(at + 1)
-  if (at !== -1 && userinfo === '') return UNPARSED
-  // ❗ A URL's userinfo may be `user:password`. Only the account survives: the
-  // rest of this parse feeds the visible Username field, the volume id, and the
-  // Keychain scope keyed on it, and a password does not belong in any of the
-  // three. The person retypes it into the password field, which is the one place
-  // that treats it as a secret.
-  const username = userinfo?.split(':', 1)[0]
-  if (userinfo !== undefined && username === '') return UNPARSED
+  const account = readAccount(authority)
+  if (!account) return UNPARSED
+  const { username, hostPort } = account
 
   const colon = hostPort.lastIndexOf(':')
   const host = colon === -1 ? hostPort : hostPort.slice(0, colon)
