@@ -9931,20 +9931,24 @@ export type PaneFileEntry = {
   recursiveSize: number | null
   modified: string | null
   /**
-   *  `Some(true)` while the indexer still has unprocessed writes affecting
-   *  this directory or a descendant, so its recursive size is mid-update.
-   *  Surfaced in `cmdr://state` as a `[size-pending]` marker so agents can
-   *  observe the "size updating" hourglass without DOM access. `None`/`false`
-   *  once the writer drains. Only meaningful for directories.
+   *  `Some(true)` while this directory's recursive size can still move: a walk
+   *  is on it, above it, or below it (the roll-up repairs ancestors), the
+   *  volume is aggregating, or the indexer still has unprocessed writes for it.
+   *  The frontend's per-row answer verbatim (`FullList`'s `isSizeUpdating`), so
+   *  `cmdr://state`'s `[size-unsettled]` marker and the file list's hourglass
+   *  light up the same rows. ⚠️ Carrying only the per-folder pending flag here
+   *  is what made an agent read a settled-looking number through the whole walk
+   *  that was rewriting it. Only meaningful for directories.
    */
-  recursiveSizePending: boolean | null
+  recursiveSizeUpdating: boolean | null
   /**
    *  Whether `recursive_size` is an exact total (`Some(true)`) or a LOWER
    *  BOUND over a subtree the indexer hasn't finished covering
-   *  (`Some(false)`). `cmdr://state` renders the same `≥` prefix the UI shows,
-   *  so an agent can't mistake a partial total for a settled one. `None` when
-   *  the directory isn't indexed. See the "Honest sizes" model in
-   *  `crates/cmdr-index/src/indexing/DETAILS.md`.
+   *  (`Some(false)`). `cmdr://state` renders it as a `≥` prefix, so an agent
+   *  can't mistake a partial total for a settled one — but only while
+   *  `recursive_size_updating` is false, since a moving number has no floor to
+   *  promise. `None` when the directory isn't indexed. See the "Honest sizes"
+   *  model in `crates/cmdr-index/src/indexing/DETAILS.md`.
    */
   recursiveSizeComplete?: boolean | null
   /**

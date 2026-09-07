@@ -63,7 +63,7 @@ fn pane_state_with(files: Vec<(&str, bool)>, cursor_index: usize, selected: Vec<
                 is_directory,
                 size: None,
                 recursive_size: None,
-                recursive_size_pending: None,
+                recursive_size_updating: None,
                 modified: None,
                 tags: vec![],
                 ..Default::default()

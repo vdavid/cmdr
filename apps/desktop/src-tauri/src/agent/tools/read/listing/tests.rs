@@ -42,18 +42,20 @@ fn child(index: usize) -> ChildEntry {
         false,
         Some(1_234_567),
         false,
+        false,
         Some(1_700_000_000),
     )
 }
 
 /// A named row with a size, for the ordering tests.
 fn row(name: &str, is_directory: bool, size: Option<u64>) -> ChildEntry {
-    ChildEntry::new(name.to_string(), is_directory, false, size, false, size)
+    ChildEntry::new(name.to_string(), is_directory, false, size, false, false, size)
 }
 
-/// A named folder row whose size is only a lower bound.
+/// A named folder row whose size is a SETTLED lower bound: incomplete coverage,
+/// nothing moving it.
 fn lower_bound_row(name: &str, size: u64) -> ChildEntry {
-    ChildEntry::new(name.to_string(), true, false, Some(size), true, None)
+    ChildEntry::new(name.to_string(), true, false, Some(size), true, false, None)
 }
 
 /// A volume block with no space known: the default for tests that aren't about space.
@@ -88,6 +90,7 @@ fn a_huge_folder_listing_is_paged_not_shipped_whole() {
         Some(Freshness::Fresh),
         no_space(),
         &opts,
+        &[],
     );
 
     let rows = result.children.as_ref().expect("an indexed listing");
@@ -114,6 +117,7 @@ fn a_normal_folder_listing_is_returned_whole() {
         Some(Freshness::Fresh),
         no_space(),
         &opts,
+        &[],
     );
     assert_eq!(result.total, Some(30));
     assert_eq!(result.returned, Some(30));
@@ -132,6 +136,7 @@ fn unindexed_volume_returns_typed_no_index_not_a_wrong_zero() {
         None,
         no_space(),
         &ListOptions::default(),
+        &[],
     );
     assert_eq!(result.coverage.index_status, "off");
     assert!(!result.coverage.authoritative);
@@ -151,6 +156,7 @@ fn indexed_but_missing_path_is_a_distinct_not_in_index_note() {
         Some(Freshness::Fresh),
         no_space(),
         &ListOptions::default(),
+        &[],
     );
     assert_eq!(result.coverage.index_status, "fresh");
     assert!(
@@ -174,6 +180,7 @@ fn list_dir_surfaces_lower_bound_and_updating_flags() {
         Some(Freshness::Fresh),
         no_space(),
         &ListOptions::default(),
+        &[],
     );
     let size = result.size.unwrap();
     assert!(size.size_is_lower_bound);
@@ -196,6 +203,7 @@ fn a_listing_names_its_volume_and_how_full_it_is() {
             Some(SpaceInfo::bounded(2_000_000_000_000, 214_300_000_000)),
         ),
         &ListOptions::default(),
+        &[],
     );
     assert_eq!(result.volume.id, "root");
     assert_eq!(result.volume.available_bytes, Some(214_300_000_000));
@@ -223,6 +231,7 @@ fn an_unwatched_volume_has_no_human_space_either() {
         Some(Freshness::Fresh),
         no_space(),
         &ListOptions::default(),
+        &[],
     );
     assert_eq!(result.volume.total_human, None);
     assert_eq!(result.volume.available_human, None);
@@ -244,11 +253,99 @@ fn a_lower_bound_size_carries_the_symbol_inside_the_string() {
         Some(Freshness::Fresh),
         no_space(),
         &ListOptions::default(),
+        &[],
     );
     let rows = result.children.as_ref().expect("an indexed listing");
     let human = rows[0].size_human.as_deref().expect("a known size");
     assert!(human.starts_with("≥ "), "a lower-bound child reads '{human}'");
     assert!(result.size.as_ref().unwrap().recursive_size_human.starts_with("≥ "));
+}
+
+// ── A moving number carries `~`, not a floor ─────────────────────────────────
+//
+// `≥` is derived from COVERAGE alone (unscanned subtrees ⇒ the truth is higher).
+// It can't express the opposite error, an index entry for a subtree that's
+// already gone ⇒ the truth is far lower, which is exactly what a walk is busy
+// correcting. So while a total is in flux it reads `~`: approximate, direction
+// unknown. The booleans stay separate, because an agent can still act on which
+// kind of uncertainty this is.
+
+/// The `SizeStats` for a folder with no children listed, where `walking` names
+/// the ground under a walker (empty for a settled volume).
+fn folder_size(path: &str, stats: &DirStats, walking: &[&str]) -> SizeStats {
+    let ground: Vec<String> = walking.iter().map(|r| (*r).to_string()).collect();
+    build_list_dir(
+        path,
+        Some(page_of(vec![])),
+        Some(stats),
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &ListOptions::default(),
+        &ground,
+    )
+    .size
+    .expect("an indexed folder")
+}
+
+#[test]
+fn a_total_under_a_walk_reads_approximate_rather_than_claiming_a_floor() {
+    let stats = dir_stats(422_000_000_000, false, false, false);
+    let size = folder_size("/Users/x/.claude", &stats, &["/Users/x/.claude"]);
+
+    assert!(
+        size.recursive_size_human.starts_with("~ "),
+        "reads '{}'",
+        size.recursive_size_human
+    );
+    assert!(size.size_is_updating);
+    // The coverage fact survives as a boolean; only the CLAIM in the string goes.
+    assert!(size.size_is_lower_bound);
+}
+
+/// The roll-up repairs the ancestor chain, so a walk below a folder moves that
+/// folder's total too — the property a downward-only test would miss.
+#[test]
+fn a_walk_below_a_folder_marks_that_folders_total_as_moving() {
+    let stats = dir_stats(1_000, true, false, false);
+    let size = folder_size("/Users/x", &stats, &["/Users/x/projects/cmdr/target"]);
+
+    // Exact AND moving: `~` is about motion, not about coverage.
+    assert!(!size.size_is_lower_bound);
+    assert!(size.size_is_updating);
+    assert!(
+        size.recursive_size_human.starts_with("~ "),
+        "reads '{}'",
+        size.recursive_size_human
+    );
+}
+
+#[test]
+fn a_folder_on_an_unwalked_branch_keeps_its_settled_floor() {
+    let stats = dir_stats(1_000, false, false, false);
+    let size = folder_size("/Users/x/Documents", &stats, &["/Users/x/Downloads"]);
+
+    assert!(!size.size_is_updating);
+    assert!(
+        size.recursive_size_human.starts_with("≥ "),
+        "reads '{}'",
+        size.recursive_size_human
+    );
+}
+
+#[test]
+fn a_child_rows_qualifier_follows_the_same_rule() {
+    // `ChildEntry` derives its spoken form from the two flags, so the child rows
+    // and the folder's own total can't disagree about the same uncertainty.
+    let moving = ChildEntry::new("a".to_string(), true, false, Some(1_024), true, true, None);
+    assert_eq!(moving.size_human.as_deref(), Some("~ 1 KB"));
+    assert!(moving.size_is_updating);
+
+    let settled_floor = ChildEntry::new("b".to_string(), true, false, Some(1_024), true, false, None);
+    assert_eq!(settled_floor.size_human.as_deref(), Some("≥ 1 KB"));
+
+    let exact = ChildEntry::new("c".to_string(), true, false, Some(1_024), false, false, None);
+    assert_eq!(exact.size_human.as_deref(), Some("1 KB"));
 }
 
 #[test]
@@ -262,6 +359,7 @@ fn an_exact_size_carries_no_symbol() {
         Some(Freshness::Fresh),
         no_space(),
         &ListOptions::default(),
+        &[],
     );
     let rows = result.children.as_ref().expect("an indexed listing");
     assert_eq!(rows[0].size_human.as_deref(), Some("1 KB"));
@@ -280,6 +378,7 @@ fn an_unknown_size_has_no_human_form_rather_than_zero_bytes() {
         Some(Freshness::Fresh),
         no_space(),
         &ListOptions::default(),
+        &[],
     );
     let rows = result.children.as_ref().expect("an indexed listing");
     assert_eq!(rows[0].size, None);
@@ -296,6 +395,7 @@ fn a_modified_epoch_comes_with_the_date_it_means() {
         Some(Freshness::Fresh),
         no_space(),
         &ListOptions::default(),
+        &[],
     );
     let rows = result.children.as_ref().expect("an indexed listing");
     assert_eq!(rows[0].modified, Some(1_700_000_000));
@@ -332,6 +432,7 @@ fn five_child_page(limit: usize, folder_stats: &DirStats) -> ListDirResult {
         Some(Freshness::Fresh),
         no_space(),
         &opts,
+        &[],
     )
 }
 
@@ -383,6 +484,7 @@ fn the_remainder_is_omitted_when_a_returned_child_size_is_unknown() {
         Some(Freshness::Fresh),
         no_space(),
         &opts,
+        &[],
     );
     assert_eq!(result.returned, Some(2));
     assert!(result.remainder.is_none(), "an unknown size silences the remainder");
@@ -402,7 +504,16 @@ fn the_remainder_is_omitted_without_a_folder_total_to_subtract_from() {
         ],
         &opts,
     );
-    let result = build_list_dir("/p", Some(page), None, true, Some(Freshness::Fresh), no_space(), &opts);
+    let result = build_list_dir(
+        "/p",
+        Some(page),
+        None,
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &opts,
+        &[],
+    );
     assert!(result.remainder.is_none());
 }
 
@@ -442,6 +553,7 @@ fn the_remainder_is_approximate_when_a_returned_child_is_a_lower_bound() {
         Some(Freshness::Fresh),
         no_space(),
         &opts,
+        &[],
     );
     let rem = result.remainder.expect("one child wasn't shown");
     assert_eq!(rem.count, 1);
@@ -485,6 +597,7 @@ fn a_filtered_listing_has_no_remainder_at_all() {
         Some(Freshness::Fresh),
         no_space(),
         &opts,
+        &[],
     );
     assert_eq!(result.total, Some(2));
     assert!(result.remainder.is_none());
@@ -520,6 +633,7 @@ fn the_wire_shape_carries_every_spoken_field_in_camel_case() {
             Some(SpaceInfo::bounded(2_000_000_000_000, 214_300_000_000)),
         ),
         &opts,
+        &[],
     );
     let json = serde_json::to_value(&result).unwrap();
     assert_eq!(json["size"]["recursiveSizeHuman"], "≥ 1.8 TB");
@@ -543,6 +657,7 @@ fn an_unindexed_folder_has_no_remainder() {
         None,
         no_space(),
         &ListOptions::default(),
+        &[],
     );
     assert!(result.remainder.is_none());
 }
@@ -655,7 +770,16 @@ fn a_last_page_is_not_flagged_truncated() {
         ..Default::default()
     };
     let page = sort_and_page((0..10).map(child).collect(), &opts);
-    let result = build_list_dir("/p", Some(page), None, true, Some(Freshness::Fresh), no_space(), &opts);
+    let result = build_list_dir(
+        "/p",
+        Some(page),
+        None,
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &opts,
+        &[],
+    );
     assert_eq!(result.returned, Some(2));
     assert_eq!(result.offset, 8);
     assert!(!result.truncated);

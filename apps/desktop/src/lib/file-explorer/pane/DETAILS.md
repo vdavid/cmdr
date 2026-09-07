@@ -339,6 +339,15 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   pushes nothing leaves it describing whatever directory the pane came FROM, and an old cursor parked on that
   directory's `..` refused a delete over rows the user could see. Gate: `src-tauri/src/mcp/executor/DETAILS.md` §
   "Empty-operation fast-fail".
+- **The mirrored rows carry the pane's OWN "is this size still moving" answer**, as `recursiveSizeUpdating`.
+  `inFluxAnswerFor(volumeId)` composes it exactly as `FullList` composes its hourglass
+  (`aggregating || under a walk || this dir's own pending writes`), resolved once per push and asked per row, so a row
+  marked `[size-unsettled]` in `cmdr://state` is exactly a row wearing the hourglass on screen. ❌ Don't mirror the raw
+  `recursiveSizePending` field instead: that's one of the three terms, and it calls a folder settled through the whole
+  walk that's rewriting it, which is when its number is furthest from the truth (a folder read `≥422 GB` on its way down
+  to 56 KB). Read outside a reactive context on purpose — a push is triggered, not subscribed, and the index storm that
+  moves these numbers fires the `index-dir-updated` ticks that re-push. The rendering side:
+  `src-tauri/src/mcp/resources/DETAILS.md` § "Directory sizes say how much they're worth".
 - **`has-parent.ts`**: `computeHasParent` folds ONLY the snapshot rule via `hasParentRow`; the two PATH comparisons
   (`=== '/'`, `=== root`) stay.
 - **FilePane alt-view chain** (`FilePane.svelte`): the kind-structural view selection resolves through a `paneViewKind`

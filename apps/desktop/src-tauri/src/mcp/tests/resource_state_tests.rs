@@ -68,7 +68,7 @@ fn test_format_file_compact() {
         size: Some(1024),
         recursive_size: None,
         modified: Some("2024-01-15".to_string()),
-        recursive_size_pending: None,
+        recursive_size_updating: None,
         tags: vec![],
         ..Default::default()
     };
@@ -97,7 +97,7 @@ fn test_format_file_compact() {
         size: None,
         recursive_size: None,
         modified: None,
-        recursive_size_pending: None,
+        recursive_size_updating: None,
         tags: vec![],
         ..Default::default()
     };
@@ -112,31 +112,32 @@ fn test_format_file_compact() {
         size: None,
         recursive_size: Some(169),
         modified: Some("2026-03-19T17:33:53.000Z".to_string()),
-        recursive_size_pending: None,
+        recursive_size_updating: None,
         tags: vec![],
         ..Default::default()
     };
     let formatted = format_file_compact(&dir_with_size, 5, false, false, true);
     assert_eq!(formatted, "i:5 d src 169 B 2026-03-19T17:33:53.000Z");
 
-    // Directory whose recursive size is mid-update gets a [size-pending] marker
-    // (the "size updating" hourglass, observable without DOM access).
-    let pending_dir = PaneFileEntry {
+    // Directory whose recursive size is still moving gets a [size-unsettled]
+    // marker (the "size updating" hourglass, observable without DOM access), and
+    // a `~` on the number itself.
+    let moving_dir = PaneFileEntry {
         name: "target".to_string(),
         path: "/tmp/target".to_string(),
         is_directory: true,
         size: None,
         recursive_size: Some(4096),
         modified: None,
-        recursive_size_pending: Some(true),
+        recursive_size_updating: Some(true),
         tags: vec![],
         ..Default::default()
     };
-    let formatted = format_file_compact(&pending_dir, 2, false, false, true);
-    assert_eq!(formatted, "i:2 d target 4 KB [size-pending]");
+    let formatted = format_file_compact(&moving_dir, 2, false, false, true);
+    assert_eq!(formatted, "i:2 d target ~4 KB [size-unsettled]");
     // The marker shows even without details (it's a status, not a detail).
-    let formatted = format_file_compact(&pending_dir, 2, false, false, false);
-    assert_eq!(formatted, "i:2 d target [size-pending]");
+    let formatted = format_file_compact(&moving_dir, 2, false, false, false);
+    assert_eq!(formatted, "i:2 d target [size-unsettled]");
 }
 
 #[test]
@@ -176,7 +177,7 @@ fn test_format_file_compact_appends_tags_marker() {
         size: Some(2048),
         recursive_size: None,
         modified: None,
-        recursive_size_pending: None,
+        recursive_size_updating: None,
         tags: vec![TagRef {
             name: "Green".to_string(),
             color: 2,
@@ -202,7 +203,7 @@ fn test_build_pane_yaml() {
                 size: Some(100),
                 recursive_size: None,
                 modified: Some("2024-01-15".to_string()),
-                recursive_size_pending: None,
+                recursive_size_updating: None,
                 tags: vec![],
                 ..Default::default()
             },
@@ -213,7 +214,7 @@ fn test_build_pane_yaml() {
                 size: None,
                 recursive_size: None,
                 modified: None,
-                recursive_size_pending: None,
+                recursive_size_updating: None,
                 tags: vec![],
                 ..Default::default()
             },
@@ -280,7 +281,7 @@ fn test_brief_cursor_detail_respects_loaded_window() {
                 size: Some(1),
                 recursive_size: None,
                 modified: None,
-                recursive_size_pending: None,
+                recursive_size_updating: None,
                 tags: vec![],
                 ..Default::default()
             },
@@ -291,7 +292,7 @@ fn test_brief_cursor_detail_respects_loaded_window() {
                 size: Some(2),
                 recursive_size: None,
                 modified: None,
-                recursive_size_pending: None,
+                recursive_size_updating: None,
                 tags: vec![],
                 ..Default::default()
             },
@@ -437,6 +438,47 @@ fn incomplete_recursive_size_renders_as_a_lower_bound() {
         ..partial.clone()
     };
     assert_eq!(format_file_compact(&unknown, 2, false, false, true), "i:2 d deps 4 KB");
+}
+
+/// While a total is still moving it reads `~`, never `≥`.
+///
+/// `≥` is derived from COVERAGE alone (unscanned subtrees ⇒ the truth is higher),
+/// so it can't express the opposite error: an index entry for a subtree that's
+/// already gone, where the truth is far LOWER. That's exactly what a running walk
+/// is busy correcting, and it's how a folder read `≥422 GB` on its way down to
+/// 56 KB (2026-09-07). `~` says the honest thing: approximate, direction unknown.
+#[test]
+fn a_moving_total_reads_approximate_rather_than_claiming_a_floor() {
+    let moving = PaneFileEntry {
+        name: "deps".to_string(),
+        path: "/tmp/deps".to_string(),
+        is_directory: true,
+        recursive_size: Some(4096),
+        recursive_size_complete: Some(false),
+        recursive_size_updating: Some(true),
+        ..Default::default()
+    };
+    assert_eq!(
+        format_file_compact(&moving, 2, false, false, true),
+        "i:2 d deps ~4 KB [size-unsettled]"
+    );
+
+    // Exact AND moving is still approximate: `~` is about motion, not coverage.
+    let moving_exact = PaneFileEntry {
+        recursive_size_complete: Some(true),
+        ..moving.clone()
+    };
+    assert_eq!(
+        format_file_compact(&moving_exact, 2, false, false, true),
+        "i:2 d deps ~4 KB [size-unsettled]"
+    );
+
+    // Settled again: the floor is a claim we can stand behind, so it comes back.
+    let settled = PaneFileEntry {
+        recursive_size_updating: None,
+        ..moving.clone()
+    };
+    assert_eq!(format_file_compact(&settled, 2, false, false, true), "i:2 d deps ≥4 KB");
 }
 
 /// Incomplete AND nothing known below yet: `≥0 B` would be worse than silence,

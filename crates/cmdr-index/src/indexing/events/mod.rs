@@ -117,6 +117,61 @@ pub struct IndexStatusResponse {
     pub prior_scan_duration_ms: Option<u64>,
 }
 
+impl IndexStatusResponse {
+    /// Whether a walk holding `walked_roots` can still move the recursive size the
+    /// index serves for `path`.
+    ///
+    /// The test is BIDIRECTIONAL, and that is the whole subtlety: the roll-up
+    /// repairs the ancestor chain upward, so walking `~/Downloads/big` changes the
+    /// total for `~/Downloads` and for `~` too. A downward-only test marks the
+    /// ground being walked and calls every folder above it settled while its
+    /// number is about to change.
+    ///
+    /// Twin of the frontend's `isPathAffectedByWalk`
+    /// (`$lib/indexing/walked-ground.ts`), which answers the same question for the
+    /// file list's per-row hourglass. Both sides read the roots
+    /// [`walked_roots`](Self::walked_roots) carries, so a run that takes the
+    /// volume whole reaches every row on the drive through the same predicate as a
+    /// phased one, and an empty list means nothing is moving.
+    ///
+    /// Paths are compared by whole segments (`~/Downloads2` is not inside
+    /// `~/Downloads`) and without case folding: the walker and the listing read
+    /// the same rows, so on a case-insensitive volume they already agree on
+    /// spelling.
+    ///
+    /// An associated function rather than a `&self` method on purpose: a caller
+    /// asking it per row keeps the roots alone, and it hangs off the type that
+    /// owns them so you can't find one without the other.
+    pub fn walk_affects(walked_roots: &[String], path: &str) -> bool {
+        let row = trim_trailing_sep(path);
+        walked_roots.iter().any(|root| {
+            let branch = trim_trailing_sep(root);
+            is_at_or_under(row, branch) || is_at_or_under(branch, row)
+        })
+    }
+}
+
+/// Drop a trailing separator so `/a/b/` and `/a/b` name the same folder. The
+/// volume root itself (`/`) keeps its one character.
+fn trim_trailing_sep(path: &str) -> &str {
+    match path.strip_suffix('/') {
+        Some("") => path,
+        Some(trimmed) => trimmed,
+        None => path,
+    }
+}
+
+/// Whether `path` IS `ancestor` or sits somewhere below it, by whole segments.
+fn is_at_or_under(path: &str, ancestor: &str) -> bool {
+    if path == ancestor {
+        return true;
+    }
+    if ancestor == "/" {
+        return path.starts_with('/');
+    }
+    path.strip_prefix(ancestor).is_some_and(|rest| rest.starts_with('/'))
+}
+
 /// Per-volume index status for the per-drive freshness badge.
 ///
 /// Unlike [`IndexStatusResponse`] (the local-disk scan-progress shape the debug

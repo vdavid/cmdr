@@ -33,6 +33,15 @@ vi.mock('$lib/tauri-commands', () => ({
   updateRightPaneState,
 }))
 
+const { getWalkedGround, isVolumeAggregating } = vi.hoisted<{
+  getWalkedGround: Mock
+  isVolumeAggregating: Mock
+}>(() => ({
+  getWalkedGround: vi.fn(() => [] as string[]),
+  isVolumeAggregating: vi.fn(() => false),
+}))
+vi.mock('$lib/indexing/index-state.svelte', () => ({ getWalkedGround, isVolumeAggregating }))
+
 import type { CanonicalPath } from '$lib/path/canonical'
 import type { SearchResultEntry } from '$lib/ipc/bindings'
 import { createPaneMcpSync, type PaneMcpSyncDeps } from './pane-mcp-sync.svelte'
@@ -134,6 +143,72 @@ describe('buildMcpFileList', () => {
 
     expect(await sync.buildMcpFileList()).toEqual([])
     expect(getFileRange).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * `recursiveSizeUpdating` is what `cmdr://state` renders as `[size-unsettled]`
+ * (and as the `~` on the number). It has to be the pane's WHOLE answer — the same
+ * one `FullList` draws its hourglass from — or an agent reads a settled-looking
+ * number right through the walk that's rewriting it.
+ */
+describe('the mirrored in-flux answer', () => {
+  const dirAt = (name: string, overrides: Record<string, unknown> = {}) => ({
+    name,
+    path: `/big/${name}`,
+    isDirectory: true,
+    size: null,
+    recursiveSize: 4096,
+    modifiedAt: null,
+    tags: [],
+    ...overrides,
+  })
+
+  function mirroredRows(rows: ReturnType<typeof dirAt>[]) {
+    getFileRange.mockResolvedValue(rows)
+    return createPaneMcpSync(
+      deps({ getTotalCount: () => rows.length, getVisibleRangeStart: () => 0, getVisibleRangeEnd: () => rows.length }),
+    ).buildMcpFileList()
+  }
+
+  beforeEach(() => {
+    getFileAt.mockReset()
+    getFileRange.mockReset()
+    getWalkedGround.mockReset().mockReturnValue([])
+    isVolumeAggregating.mockReset().mockReturnValue(false)
+  })
+
+  it('marks a row under a walk even when its own pending flag is clear', async () => {
+    // The regression this exists for: mirroring `recursiveSizePending` alone left
+    // a folder mid-walk looking settled, which is when it's furthest from true.
+    getWalkedGround.mockReturnValue(['/big/downloads'])
+
+    const files = await mirroredRows([dirAt('downloads'), dirAt('music')])
+
+    expect(files.map((f) => f.recursiveSizeUpdating)).toEqual([true, false])
+  })
+
+  it('marks a row ABOVE the walked ground too, since the roll-up repairs ancestors', async () => {
+    getWalkedGround.mockReturnValue(['/big/projects/cmdr/target'])
+
+    const files = await mirroredRows([dirAt('projects'), dirAt('music')])
+
+    expect(files.map((f) => f.recursiveSizeUpdating)).toEqual([true, false])
+  })
+
+  it('keeps the other two terms: the row’s own pending writes, and aggregation', async () => {
+    const pending = await mirroredRows([dirAt('a', { recursiveSizePending: true })])
+    expect(pending[0]?.recursiveSizeUpdating).toBe(true)
+
+    isVolumeAggregating.mockReturnValue(true)
+    const aggregating = await mirroredRows([dirAt('b')])
+    expect(aggregating[0]?.recursiveSizeUpdating).toBe(true)
+  })
+
+  it('leaves every row settled when nothing is moving', async () => {
+    const files = await mirroredRows([dirAt('a'), dirAt('b')])
+
+    expect(files.map((f) => f.recursiveSizeUpdating)).toEqual([false, false])
   })
 })
 

@@ -212,10 +212,13 @@ pub(crate) fn format_file_compact(
     if is_selected {
         parts.push("[sel]".to_string());
     }
-    // The recursive size is mid-update (indexer still draining writes for this
-    // dir or a descendant). Mirrors the per-row "size updating" hourglass.
-    if file.recursive_size_pending == Some(true) {
-        parts.push("[size-pending]".to_string());
+    // The recursive size is still moving (a walk is on, above, or below this dir,
+    // or its own index writes are draining). Mirrors the per-row "size updating"
+    // hourglass. "Unsettled" rather than "pending": "pending" reads as a small
+    // refinement queued up, and this number can be off by orders of magnitude in
+    // either direction until the walk that's rewriting it finishes.
+    if file.recursive_size_updating == Some(true) {
+        parts.push("[size-unsettled]".to_string());
     }
     // Exact, but computed at an older volume epoch. A status like the hourglass
     // above, so it shows with or without details.
@@ -229,29 +232,45 @@ pub(crate) fn format_file_compact(
     parts.join(" ")
 }
 
-/// Prefix for a directory total the indexer hasn't finished covering. Same
-/// glyph as the UI's `LOWER_BOUND_GLYPH` (`full-list-utils.ts`).
+/// Prefix for a SETTLED directory total the indexer hasn't finished covering.
+/// Same glyph as the UI's `LOWER_BOUND_GLYPH` (`full-list-utils.ts`).
 const LOWER_BOUND_GLYPH: &str = "≥";
+
+/// Prefix for a total that's still moving: approximate, direction unknown.
+const IN_FLUX_GLYPH: &str = "~";
 
 /// The size cell for a directory's recursive total, or `None` when there's
 /// nothing honest to print.
 ///
-/// Mirrors the UI's `getDirSizeDisplayState`: an incomplete subtree is a LOWER
-/// BOUND and says so, and an incomplete subtree with no bytes known yet prints
+/// Mirrors the UI's `getDirSizeDisplayState`: an incomplete subtree is a lower
+/// bound and says so, and an incomplete subtree with no bytes known yet prints
 /// nothing at all (the UI's `<dir>` placeholder) because `≥0 B` reads as a
 /// measurement. An absent `recursive_size_complete` means exact, which covers
 /// fixtures and volumes with no index.
+///
+/// **Motion outranks coverage.** `≥` claims a floor, which only holds once the
+/// number has stopped: it's derived from unscanned subtrees alone and can't
+/// express the opposite error, an index entry for a subtree that's already gone,
+/// where the truth is far LOWER. A walk is busy correcting exactly that, so an
+/// in-flux total wears `~` instead. (The UI resolves the same collision by
+/// dropping its `≥` and leaving the hourglass to speak; a third glyph would
+/// compete with the hourglass in a dense column, which is why the two surfaces
+/// share the rule but not the symbol.)
 ///
 /// Why this matters more here than on screen: a person sees a folder mid-scan
 /// and waits, while an agent reads the number and acts on it.
 pub(crate) fn recursive_size_text(file: &PaneFileEntry) -> Option<String> {
     let size = file.recursive_size?;
     let complete = file.recursive_size_complete.unwrap_or(true);
-    match (complete, size) {
-        (false, 0) => None,
-        (false, size) => Some(format!("{LOWER_BOUND_GLYPH}{}", format_size(size))),
-        (true, size) => Some(format_size(size)),
+    if !complete && size == 0 {
+        return None;
     }
+    let glyph = match (file.recursive_size_updating == Some(true), complete) {
+        (true, _) => IN_FLUX_GLYPH,
+        (false, false) => LOWER_BOUND_GLYPH,
+        (false, true) => "",
+    };
+    Some(format!("{glyph}{}", format_size(size)))
 }
 
 /// `(1 GB on disk)` when the allocated-blocks total diverges from the logical
