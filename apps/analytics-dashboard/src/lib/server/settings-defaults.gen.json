@@ -1433,7 +1433,6 @@
     "network.shareCacheDuration": 30000,
     "network.smbConcurrency": 10,
     "network.timeoutMode": "normal",
-    "network.trustedHostKeys": false,
     "onboarding.completed": false,
     "onboarding.upgradeNudgeShown": false,
     "operationLog.maxAge": 0,

@@ -28,7 +28,7 @@ Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUD
   search metadata; ❌ it never decides what renders, and ❌ never model such a row as a `hidden` setting. Skip rows that
   only appear under runtime state. DETAILS § Searchable rows.
 - **A page with NO control of its own** (`ServersSection`: a list of trusted host keys and nothing else) reaches the
-  sidebar through a `hidden` + `sectionAnchor: true` registry entry. `../DETAILS.md` § Card groups.
+  sidebar through one of its rows saying `anchorsSection`. ❌ Never a `hidden` registry entry nothing reads.
 - **New section = route in `SettingsContent.svelte` + entry in `TOP_LEVEL_ORDER` (`SettingsSidebar.svelte`) + mirror in
   `settings.spec.ts`.** Routing is registry-driven, not string match.
 - **A toggle that can't use `SettingSwitch` still uses `$lib/ui/Switch`.** Never hand-roll Ark's `Switch.Root`/`Control`

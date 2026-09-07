@@ -630,14 +630,13 @@ function fileSystemsSubsections(): string[] {
 describe('File systems > Servers (SFTP, WebDAV)', () => {
   /**
    * ❗ The page carries no control at all: its content is the trusted-host-key
-   * list. `sectionAnchor` is what puts it in the sidebar anyway, and `hidden` is
-   * what keeps it from rendering as a row.
+   * list. An anchoring `SearchableRow` is what puts it in the sidebar, and
+   * `section.settings` stays empty because a row is not a setting.
    */
-  it('reaches the sidebar through a section anchor that renders nothing', () => {
-    const def = getSettingDefinition('network.trustedHostKeys')
-    expect(def?.hidden).toBe(true)
-    expect(def?.sectionAnchor).toBe(true)
-    expect(def?.section).toEqual(['File systems', 'Servers (SFTP, WebDAV)'])
+  it('reaches the sidebar through an anchoring row, not a setting', () => {
+    // ❌ No registry entry lives on this page: the deleted `network.trustedHostKeys`
+    // was a `SettingsValues` key nothing read, which is what the row shape replaces.
+    expect(settingsRegistry.filter((setting) => setting.section[1] === 'Servers (SFTP, WebDAV)')).toEqual([])
 
     expect(fileSystemsSubsections()).toContain('Servers (SFTP, WebDAV)')
 
@@ -650,11 +649,11 @@ describe('File systems > Servers (SFTP, WebDAV)', () => {
 
   it('is a search hit, so looking for a host key opens the page', () => {
     clearSearchIndex()
-    const ids = searchSettings('host key').map((result) => result.setting.id)
-    expect(ids).toContain('network.trustedHostKeys')
+    const ids = searchSettings('host key').map((result) => result.entry.id)
+    expect(ids).toContain('row:network.trustedHostKeys')
   })
 
-  /** ❗ A plain hidden flag still adds no nav row; only the anchor does. */
+  /** ❗ Hidden internal state adds no nav row, and no anchoring row rescues it. */
   it('leaves ordinary hidden state out of the tree', () => {
     const tree = buildSectionTree()
     const smb = tree
@@ -686,9 +685,11 @@ describe('File systems > Android (ADB)', () => {
    */
   it('is a search hit that now has somewhere to land', () => {
     clearSearchIndex()
-    const ids = searchSettings('adb').map((result) => result.setting.id)
+    const ids = searchSettings('adb').map((result) => result.entry.id)
     expect(ids).toContain('fileOperations.adbEnabled')
     expect(ids).toContain('fileOperations.adbBinaryPath')
+    // The status block is no setting, so it reaches search as a row of its own.
+    expect(ids).toContain('row:adb.status')
 
     const tree = buildSectionTree()
     const adb = tree

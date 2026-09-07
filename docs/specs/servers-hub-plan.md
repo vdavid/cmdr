@@ -742,9 +742,9 @@ Docs: `settings/CLAUDE.md`, `navigation/DETAILS.md`. Checks: `pnpm check`.
 - **The hub's Name column ranks three names**, and an SMB label is ALWAYS a stand-in: `manual_servers` derives it from
   the address that was typed, so "the user typed it" ranks it below a Bonjour name rather than above.
   `SavedServer.name_source` publishes the fact; `network/DETAILS.md` is canonical.
-- **A settings page with no control of its own** (Servers: one list, one Forget per row) had no way into the sidebar,
-  since `buildSectionTree` reads the registry. `sectionAnchor: true` beside `hidden: true` is the answer, documented in
-  `settings/DETAILS.md` § Card groups.
+- **A settings page with no control of its own** (Servers: one list, one Forget per row) has no way into the sidebar
+  from the registry, so one of its `SearchableRow`s carries `anchorsSection` and `buildSectionTree` creates the node.
+  `settings/DETAILS.md` § Searchable rows.
 - **The sheet's restored username placeholder cost no translation work**: the deleted key's ten values were recovered
   from the commit that removed them and re-filed under `servers.sheet.usernamePlaceholder`.
 
