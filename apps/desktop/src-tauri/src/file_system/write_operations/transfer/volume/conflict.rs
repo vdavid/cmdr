@@ -802,6 +802,22 @@ pub(super) fn is_the_same_volume_path(source_path: &Path, dest_path: &Path) -> b
     }
 }
 
+/// Merge safety, the overwrite ordering, and the finalize swap.
 #[cfg(test)]
 #[path = "conflict_tests.rs"]
 mod tests;
+
+/// `OverwriteSmaller` / `OverwriteOlder`, on hints and on `get_metadata`.
+#[cfg(test)]
+#[path = "conflict_conditional_tests.rs"]
+mod conditional_tests;
+
+/// `is_the_same_volume_path`: one volume, two paths, one item?
+#[cfg(test)]
+#[path = "conflict_same_item_tests.rs"]
+mod same_item_tests;
+
+/// A blanket policy never replaces one KIND of entry with another.
+#[cfg(test)]
+#[path = "conflict_cross_type_tests.rs"]
+mod cross_type_tests;
