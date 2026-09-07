@@ -17,6 +17,7 @@ function sftpServer(overrides: Partial<SavedServer> = {}): SavedServer {
     id,
     protocol: 'sftp',
     displayName: 'Naspolya',
+    nameSource: 'user',
     address: 'nas.local:22',
     username: 'ada',
     pinned: true,
@@ -31,6 +32,7 @@ function smbServer(overrides: Partial<SavedServer> = {}): SavedServer {
     id: 'manual-10-0-0-4-445',
     protocol: 'smb',
     displayName: 'Attic NAS',
+    nameSource: 'user',
     address: '10.0.0.4',
     username: null,
     pinned: false,
@@ -131,6 +133,56 @@ describe('buildHubRows: what appears', () => {
       volumes: [],
     })
     expect(rows).toHaveLength(2)
+  })
+})
+
+describe('buildHubRows: whose name the Name column shows', () => {
+  /**
+   * Three ranks, and the top one is a fact the backend publishes (`nameSource`),
+   * ❌ never a guess at the string's shape: a name a person chose, then the
+   * Bonjour name mDNS found, then the name the SMB mount reported.
+   */
+  it('keeps the name the user typed, even when mDNS spells the same host differently', () => {
+    const rows = buildHubRows({
+      saved: [smbServer({ id: 'manual-naspolya-445', displayName: 'Naspolya', address: 'naspolya.local' })],
+      hosts: [host({ id: 'bonjour-1', name: 'Naspolya Media Server', hostname: 'naspolya.local' })],
+      volumes: [],
+    })
+    expect(rows.map((r) => r.name)).toEqual(['Naspolya'])
+  })
+
+  it('shows the Bonjour name over the one the mount reported, which nobody chose', () => {
+    // Opening a host writes a `known_shares` row named the way `statfs` spells
+    // the server, and the friendly name a person recognizes must survive that.
+    const rows = buildHubRows({
+      saved: [
+        smbServer({
+          id: 'manual-smb-consumer-guest-445',
+          displayName: 'smb-consumer-guest',
+          address: 'smb-consumer-guest',
+          nameSource: 'reported',
+        }),
+      ],
+      hosts: [host({ id: 'bonjour-1', name: 'SMB Test (Guest)', hostname: 'smb-consumer-guest' })],
+      volumes: [],
+    })
+    expect(rows.map((r) => r.name)).toEqual(['SMB Test (Guest)'])
+  })
+
+  it('falls back to the reported name when mDNS is seeing nothing', () => {
+    const rows = buildHubRows({
+      saved: [
+        smbServer({
+          id: 'manual-smb-consumer-guest-445',
+          displayName: 'smb-consumer-guest',
+          address: 'smb-consumer-guest',
+          nameSource: 'reported',
+        }),
+      ],
+      hosts: [],
+      volumes: [],
+    })
+    expect(rows.map((r) => r.name)).toEqual(['smb-consumer-guest'])
   })
 })
 

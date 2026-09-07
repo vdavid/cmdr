@@ -78,13 +78,14 @@ unit-tested:
   normalized server NAME, so two rows for one host can differ in address and agree on id. Seen for real in the Linux E2E
   suite: the hub went blank and every `move_cursor` onto a host afterwards reported the row missing.
 
-  ❗ **Once a host has been listed, the hub shows it under its SAVED name, not its mDNS one.** A share listing writes a
-  `known_shares` row whose `server_name` is what the mount reported (`smb-consumer-guest`), `smb_hosts` turns that into
-  a saved server, and `matchHost` pairs it with the discovered host by `hostname`, so the discovered row is claimed and
-  `savedRow` publishes `server.displayName`. The friendly Bonjour name the person recognizes (`SMB Test (Guest)`,
-  `Naspolya`) disappears from the Name column the first time they open the host. Four `smb.spec.ts` specs fail on
-  exactly this, and they are honest about it: whether the paired DISCOVERED name should win is an open product call, and
-  it can't simply always win, because a manually-typed server's name is the one the USER chose.
+  ❗ **The Name column ranks three names**, in `servers-hub-rows.ts::displayName`: a name a PERSON chose (an SFTP or
+  WebDAV account's label, the address typed into "Add server"), then the DISCOVERED Bonjour name, and last the name the
+  SMB mount reported, which nobody chose. The rank comes off `SavedServer.nameSource` (`commands/servers.rs`'s
+  `ServerNameSource`), a fact the store that wrote the name publishes, ❌ never a guess at the string's shape. Without
+  it a person's NAS renames itself the first time they open it: a share listing writes a `known_shares` row whose
+  `server_name` is what the mount reported (`smb-consumer-guest`), `smb_hosts` turns that into a saved server, and
+  `matchHost` claims the discovered row, so the friendly name they recognize (`SMB Test (Guest)`, `Naspolya`) drops out
+  of the column. Four `smb.spec.ts` specs poll on the Bonjour name and are the regression guard.
 
 - **`servers-hub-mcp.ts`**: the `name` encoding. MCP's `PaneFileEntry` has only `name` / `path` / `isDirectory`, so the
   columns are encoded as `protocol=` / `status=` / `address=` tokens (plus `shares=` on an SMB host, which is what

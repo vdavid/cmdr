@@ -45,6 +45,24 @@ pub enum ServerProtocol {
     Webdav,
 }
 
+/// Who chose a server's [`SavedServer::display_name`].
+///
+/// ❗ The hub's Name column ranks three names (a name the user typed, the
+/// Bonjour name mDNS found, the name the SMB mount reported), and the top rank
+/// is a FACT this enum publishes, ❌ never a guess at the string's shape. Only
+/// the store that wrote the name knows who wrote it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum ServerNameSource {
+    /// A person chose it: an SFTP or WebDAV account's label, or the address
+    /// typed into "Add server", which is what a manual SMB host is named after.
+    User,
+    /// The SMB mount reported it (`known_shares`' `server_name`, which `statfs`
+    /// spells as the server answered, `smb-consumer-guest` rather than
+    /// `SMB Test (Guest)`). Nobody chose it, so a friendlier name outranks it.
+    Reported,
+}
+
 /// One mountable thing under an account: an SFTP or WebDAV root, later an S3
 /// bucket or a shared drive. What a tab, a favorite, and a path point at.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -90,6 +108,9 @@ pub struct SavedServer {
     pub protocol: ServerProtocol,
     /// The user's own label, falling back to the address.
     pub display_name: String,
+    /// Who chose that label, which is what lets the hub prefer a Bonjour name
+    /// over one only the mount ever said.
+    pub name_source: ServerNameSource,
     /// What the user typed, near enough to paste back: `host:port` for SFTP, the
     /// base URL for WebDAV, the host for SMB.
     pub address: String,
@@ -267,6 +288,7 @@ fn saved_servers(manual: Vec<manual_servers::ManualServerEntry>) -> Vec<SavedSer
             id: volume_id,
             protocol: ServerProtocol::Sftp,
             display_name: entry.display_name,
+            name_source: ServerNameSource::User,
             address: format!("{}:{}", entry.host, entry.port),
             username: Some(entry.username),
             pinned: entry.pinned,
@@ -295,6 +317,7 @@ fn saved_servers(manual: Vec<manual_servers::ManualServerEntry>) -> Vec<SavedSer
             id: volume_id,
             protocol: ServerProtocol::Webdav,
             display_name: entry.display_name,
+            name_source: ServerNameSource::User,
             address: entry.url,
             username: Some(entry.username),
             pinned: entry.pinned,
@@ -328,6 +351,9 @@ fn smb_hosts(manual: Vec<manual_servers::ManualServerEntry>) -> Vec<SavedServer>
             id: manual_servers::generate_server_id(&share.server_name, 445),
             protocol: ServerProtocol::Smb,
             display_name: share.server_name.clone(),
+            // ❗ The mount's spelling, which nobody chose: the hub lets a
+            // discovered Bonjour name outrank it.
+            name_source: ServerNameSource::Reported,
             address: share.server_name,
             // ❗ Not the share's username: that is per-share, and this row is the
             // HOST. A share's own account is asked for when it is mounted.
@@ -342,6 +368,8 @@ fn smb_hosts(manual: Vec<manual_servers::ManualServerEntry>) -> Vec<SavedServer>
             id: entry.id,
             protocol: ServerProtocol::Smb,
             display_name: entry.display_name,
+            // The address the person typed into "Add server" is the name.
+            name_source: ServerNameSource::User,
             address: entry.address,
             username: None,
             pinned: false,

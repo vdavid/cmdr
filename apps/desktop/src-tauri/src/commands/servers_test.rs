@@ -82,6 +82,25 @@ fn the_listing_unions_the_sftp_the_webdav_and_the_smb_stores() {
     assert_eq!(smb.address, smb_host);
 }
 
+/// ❗ **Who chose a name is a FACT the listing publishes**, because the hub
+/// ranks three names and can't tell them apart by looking at the strings. An
+/// account label and a typed address are the user's; only a `known_shares` row
+/// carries the name the mount reported.
+#[test]
+fn a_typed_address_and_an_account_label_are_both_the_users_own_name() {
+    let sftp_host = "192.0.2.41";
+    let smb_host = "192.0.2.42";
+    sftp_known_servers::remember(sftp_entry(sftp_host, false));
+
+    let servers = saved_servers(vec![manual_entry(smb_host)]);
+
+    assert_eq!(
+        find(&servers, &format!("{sftp_host} over ssh")).name_source,
+        ServerNameSource::User
+    );
+    assert_eq!(find(&servers, smb_host).name_source, ServerNameSource::User);
+}
+
 /// ❗ **An SFTP or WebDAV account has exactly ONE place, and its id is the volume
 /// id**, so a `saved` row and the volume it becomes are the same thing to a tab,
 /// a favorite, and the switcher.

@@ -10895,6 +10895,11 @@ export type SavedServer = {
   // The user's own label, falling back to the address.
   displayName: string
   /**
+   *  Who chose that label, which is what lets the hub prefer a Bonjour name
+   *  over one only the mount ever said.
+   */
+  nameSource: ServerNameSource
+  /**
    *  What the user typed, near enough to paste back: `host:port` for SFTP, the
    *  base URL for WebDAV, the host for SMB.
    */
@@ -11702,6 +11707,27 @@ export type ServerConnectOutcome =
   | { outcome: 'unreachable' }
   // The user called it off. ❗ Nothing was registered, remembered, or stored.
   | { outcome: 'cancelled' }
+
+/**
+ *  Who chose a server's [`SavedServer::display_name`].
+ *
+ *  ❗ The hub's Name column ranks three names (a name the user typed, the
+ *  Bonjour name mDNS found, the name the SMB mount reported), and the top rank
+ *  is a FACT this enum publishes, ❌ never a guess at the string's shape. Only
+ *  the store that wrote the name knows who wrote it.
+ */
+export type ServerNameSource =
+  /**
+   *  A person chose it: an SFTP or WebDAV account's label, or the address
+   *  typed into "Add server", which is what a manual SMB host is named after.
+   */
+  | 'user'
+  /**
+   *  The SMB mount reported it (`known_shares`' `server_name`, which `statfs`
+   *  spells as the server answered, `smb-consumer-guest` rather than
+   *  `SMB Test (Guest)`). Nobody chose it, so a friendlier name outranks it.
+   */
+  | 'reported'
 
 // Which protocol an account speaks.
 export type ServerProtocol =
