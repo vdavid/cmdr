@@ -25,6 +25,7 @@
     import { getSetting, getSettingDefinition, setSetting, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import { getAdbInstallStatus, recheckAdbInstall } from '$lib/tauri-commands'
+    import { pushAdbConfigToBackend } from '$lib/adb/adb-settings'
     import type { AdbInstallStatus } from '$lib/ipc/bindings'
     import { getAppLogger } from '$lib/logging/logger'
 
@@ -88,6 +89,13 @@
             const picked = await open({ multiple: false, directory: false, title: tString('settings.adb.pickerTitle') })
             if (typeof picked !== 'string') return
             commitPath(picked)
+            // ❗ AWAITED, and before the re-check. `setSetting`'s applier fires
+            // its own `pushAdbConfigToBackend()` unawaited, and Tauri runs the
+            // push and the re-check as independent tasks, so a re-check started
+            // beside it can reach `recheck_adb_install` first and report on the
+            // OLD binary. The push re-reads both settings fresh, so running it
+            // twice costs a round-trip and changes nothing.
+            await pushAdbConfigToBackend()
             // ❗ A re-check, ❌ not a status read: the path only takes effect once
             // the tracker restarts under it, so `getAdbInstallStatus` here would
             // answer about the OLD binary. Choosing a file is a person saying "look
