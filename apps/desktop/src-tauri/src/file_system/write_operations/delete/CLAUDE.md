@@ -21,7 +21,8 @@ copy + move. Frontend counterpart:
   `symlink_metadata()`.
 - **`volume_start.rs`**: a volume delete's managed lifecycle, here rather than `../mod.rs` because its body is `async`. DETAILS § "The volume delete's own lifecycle".
 - Test siblings: `delete_integration_test.rs`, `delete_volume_reuse_tests.rs` (preview reuse, oracle fast path, the
-  missing-fact audit), `preview_binding_tests.rs` (the cache binding), `volume_cancel_tests.rs`.
+  missing-fact audit), `preview_binding_tests.rs` (the cache binding), `volume_cancel_tests.rs`,
+  `delete_cancel_tests.rs`.
 
 ## Must-knows
 

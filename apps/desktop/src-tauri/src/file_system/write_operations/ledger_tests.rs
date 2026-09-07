@@ -1,6 +1,15 @@
-//! What the in-flight ledger vocabulary records, and what it refuses to record.
+//! What the in-flight ledger vocabulary records, what it refuses to record, and
+//! what `CopyTransaction` undoes when it isn't committed.
 
+use super::super::reversal::reverse_copy_transaction;
 use super::*;
+use crate::test_support::TestDir;
+use std::fs;
+
+/// Creates a temporary test directory with a unique name.
+fn create_temp_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("write_test_{}", name))
+}
 
 /// A local file is snapshotted with both halves of its identity, and the size is
 /// the file's own.
@@ -8,7 +17,7 @@ use super::*;
 fn a_local_file_records_its_size_and_node() {
     let tmp = tempfile::tempdir().unwrap();
     let file = tmp.path().join("photo.raw");
-    std::fs::write(&file, b"0123456789").unwrap();
+    fs::write(&file, b"0123456789").unwrap();
 
     let recorded = WrittenFile::local(file.clone());
 
@@ -27,13 +36,13 @@ fn a_local_file_records_its_size_and_node() {
 fn a_same_size_replacement_is_a_different_identity() {
     let tmp = tempfile::tempdir().unwrap();
     let file = tmp.path().join("notes.txt");
-    std::fs::write(&file, b"before").unwrap();
+    fs::write(&file, b"before").unwrap();
     let recorded = WrittenFile::local(file.clone());
 
     // Replace it the way an editor does: write a temp, rename it over the top.
     let temp = tmp.path().join("notes.txt.tmp");
-    std::fs::write(&temp, b"after!").unwrap();
-    std::fs::rename(&temp, &file).unwrap();
+    fs::write(&temp, b"after!").unwrap();
+    fs::rename(&temp, &file).unwrap();
 
     let now = WrittenIdentity::at_local_path(&file);
     assert_eq!(
@@ -51,7 +60,7 @@ fn a_same_size_replacement_is_a_different_identity() {
 fn a_local_directory_records_its_node_and_no_size() {
     let tmp = tempfile::tempdir().unwrap();
     let dir = tmp.path().join("album");
-    std::fs::create_dir(&dir).unwrap();
+    fs::create_dir(&dir).unwrap();
 
     let recorded = WrittenFile::local(dir);
 
@@ -69,7 +78,7 @@ fn a_local_directory_records_its_node_and_no_size() {
 fn a_symlink_records_the_link_not_its_target() {
     let tmp = tempfile::tempdir().unwrap();
     let target = tmp.path().join("target.bin");
-    std::fs::write(&target, vec![0u8; 4096]).unwrap();
+    fs::write(&target, vec![0u8; 4096]).unwrap();
     let link = tmp.path().join("link");
     std::os::unix::fs::symlink(&target, &link).unwrap();
 
@@ -129,17 +138,17 @@ fn copy_transaction_rollback_deletes_files_and_dirs_in_reverse() {
     let tmp = tempfile::tempdir().unwrap();
     let outer = tmp.path().join("outer");
     let inner = outer.join("inner");
-    std::fs::create_dir(&outer).unwrap();
-    std::fs::create_dir(&inner).unwrap();
+    fs::create_dir(&outer).unwrap();
+    fs::create_dir(&inner).unwrap();
     let file = inner.join("data.bin");
-    std::fs::write(&file, b"hello").unwrap();
+    fs::write(&file, b"hello").unwrap();
 
     let mut tx = CopyTransaction::new();
     tx.record_dir(outer.clone());
     tx.record_dir(inner.clone());
     tx.record_file(WrittenFile::local(file.clone()));
 
-    crate::file_system::write_operations::reversal::reverse_copy_transaction(&mut tx);
+    reverse_copy_transaction(&mut tx);
 
     assert!(!file.exists(), "file must be removed on rollback");
     assert!(!inner.exists(), "inner dir must be removed (leaf-first)");
@@ -152,7 +161,7 @@ fn copy_transaction_commit_prevents_drop_rollback() {
     // guard in Drop. After commit(), files must survive Drop.
     let tmp = tempfile::tempdir().unwrap();
     let file = tmp.path().join("kept.txt");
-    std::fs::write(&file, b"persist").unwrap();
+    fs::write(&file, b"persist").unwrap();
 
     {
         let mut tx = CopyTransaction::new();
@@ -168,7 +177,7 @@ fn copy_transaction_drop_rolls_back_when_not_committed() {
     // Kills: replace <impl Drop>::drop with (), and `delete !` in Drop.
     let tmp = tempfile::tempdir().unwrap();
     let file = tmp.path().join("ephemeral.txt");
-    std::fs::write(&file, b"will be gone").unwrap();
+    fs::write(&file, b"will be gone").unwrap();
 
     {
         let mut tx = CopyTransaction::new();
@@ -214,14 +223,34 @@ fn copy_transaction_pops_the_newest_file_first() {
 fn the_panic_net_removes_even_a_file_that_changed() {
     let tmp = tempfile::tempdir().unwrap();
     let file = tmp.path().join("mid-copy.bin");
-    std::fs::write(&file, b"as recorded").unwrap();
+    fs::write(&file, b"as recorded").unwrap();
 
     let mut tx = CopyTransaction::new();
     tx.record_file(WrittenFile::local(file.clone()));
     // Somebody else replaces it while the copy is still running, and then the
     // copy's thread panics.
-    std::fs::write(&file, b"a very different length now").unwrap();
+    fs::write(&file, b"a very different length now").unwrap();
     drop(tx);
 
     assert!(!file.exists(), "a panic net that leaves partials behind is not a net");
+}
+
+/// A rollback over an entry that is already gone completes rather than panicking.
+///
+/// An external delete between the record and the reversal (the user, another
+/// tool, a racing sweep) is ordinary, and a `CopyTransaction` that panicked on
+/// one would take the reversal down for every OTHER entry behind it.
+#[test]
+fn copy_transaction_rollback_tolerates_an_already_deleted_file() {
+    let temp_dir = create_temp_dir("rollback_missing");
+    let file = temp_dir.join("file1.txt");
+    fs::write(&file, "content1").unwrap();
+
+    let mut tx = CopyTransaction::new();
+    tx.record_file(WrittenFile::local(file.clone()));
+
+    // Somebody else got there first.
+    fs::remove_file(&file).unwrap();
+
+    reverse_copy_transaction(&mut tx);
 }
