@@ -60,7 +60,7 @@ export interface SmbViewState {
    * and two renderers for one state is worse than one in the file next door.
    */
   readonly showGaveUp: boolean
-  /** Skip the wait and try the gave-up cycle once more. */
+  /** Try now: skip the running cycle's wait, or restart one that gave up. */
   handleRetryNow: () => void
   /** Open the sign-in sheet for this pane's place, from the signed-out banner. */
   handleSignIn: () => void
@@ -181,7 +181,7 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
     })
   }
 
-  /** Skips the current wait and attempts now. */
+  /** Skips the current wait and attempts now. Also the gave-up banner's Retry. */
   function handleRetryNow(): void {
     smbReconnectManager.retryNow(deps.getVolumeId())
   }
