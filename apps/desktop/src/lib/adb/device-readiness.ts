@@ -18,7 +18,8 @@
  */
 
 import { tString } from '$lib/intl/messages.svelte'
-import type { DeviceReadiness } from '$lib/ipc/bindings'
+import type { DeviceReadiness, DeviceUnavailableReason } from '$lib/ipc/bindings'
+import type { MessageKey } from '$lib/intl/keys.gen'
 
 /** How the switcher draws one row, once readiness has had its say. */
 export interface DeviceRowState {
@@ -31,6 +32,18 @@ export interface DeviceRowState {
 /** A row nothing is holding back: every disk, and a phone that is ready. */
 const UNREMARKABLE: DeviceRowState = { openable: true, tooltip: null }
 
+/**
+ * Why a greyed row is greyed, one sentence each.
+ *
+ * ❗ A `Record`, ❌ not a ternary: a third reason added to the backend enum would
+ * otherwise inherit whichever branch the `else` happened to be, and a row would
+ * quietly explain itself wrong. This way it doesn't compile.
+ */
+const UNAVAILABLE_KEYS: Record<DeviceUnavailableReason, MessageKey> = {
+  offline: 'adb.readiness.offline',
+  no_permissions: 'adb.readiness.noPermissions',
+}
+
 /** How to draw the row for `readiness`. `null` is a volume that is not a device. */
 export function deviceRowState(readiness: DeviceReadiness | null | undefined): DeviceRowState {
   if (!readiness) return UNREMARKABLE
@@ -40,9 +53,6 @@ export function deviceRowState(readiness: DeviceReadiness | null | undefined): D
     case 'waiting_for_authorization':
       return { openable: true, tooltip: tString('adb.readiness.waitingForAuthorization') }
     case 'unavailable':
-      return {
-        openable: false,
-        tooltip: tString(readiness.reason === 'offline' ? 'adb.readiness.offline' : 'adb.readiness.noPermissions'),
-      }
+      return { openable: false, tooltip: tString(UNAVAILABLE_KEYS[readiness.reason]) }
   }
 }
