@@ -4023,7 +4023,7 @@ export const commands = {
     secret: {
       /**
        *  The secret itself: a password, a key file's passphrase, whatever the
-       *  account's rung wants.
+       *  account's rung wants. ❌ Never logged, never in an event, never a property.
        */
       secret: string
       /**
@@ -4049,7 +4049,7 @@ export const commands = {
     secret: {
       /**
        *  The secret itself: a password, a key file's passphrase, whatever the
-       *  account's rung wants.
+       *  account's rung wants. ❌ Never logged, never in an event, never a property.
        */
       secret: string
       /**
@@ -4115,11 +4115,16 @@ export const commands = {
   /**
    *  Whether a secret is remembered for the place `id` names.
    *
-   *  ❗ The protocol-agnostic reader behind the "Forget saved password" item: the
-   *  row's menu offers it only when there is one to forget, and a caller that
-   *  branched on protocol to answer would be one more place that has to know SFTP
-   *  from WebDAV. A store that didn't answer in time reads as `false`, the same
-   *  harmless collapse the per-protocol readers make.
+   *  ❗ The protocol-agnostic reader behind the sign-in sheet's Remember box: a
+   *  caller that branched on protocol to answer would be one more place that has to
+   *  know SFTP from WebDAV. A store that didn't answer in time reads as `false`,
+   *  the same harmless collapse the per-protocol readers make.
+   *
+   *  ❌ **Not for a context menu.** It is `get_credentials(…).is_ok()` underneath,
+   *  and every read of a Keychain entry can raise a system prompt. A sheet opening
+   *  is a moment a person is already waiting through; a right-click is not, so the
+   *  row's menu offers "Forget saved password" unconditionally and lets
+   *  [`forget_server_secret`] report whether there was one.
    */
   hasServerSecret: (id: string) => __TAURI_INVOKE<boolean>('has_server_secret', { id }),
   /**
@@ -11528,11 +11533,18 @@ export type SearchStatus =
  *
  *  Crosses IPC: the sign-in sheet is where a person types one, and the backend
  *  reads the store for every dial that isn't answering a sign-in.
+ *
+ *  ❗ **Inbound only, and it does not derive `Debug` or `Serialize`.** It holds a
+ *  plaintext secret, so a derived `Debug` would put one a `{:?}` away from a log
+ *  line or a crash report, and a derived `Serialize` would let it ride an event
+ *  or an analytics property. `StoredCredentials` next door derives only `Clone`
+ *  for the same reason (`cmdr_fs::volume::host::credentials`, whose module header
+ *  carries the rule). `Deserialize` is what the IPC boundary actually needs.
  */
 export type SecretOffer = {
   /**
    *  The secret itself: a password, a key file's passphrase, whatever the
-   *  account's rung wants.
+   *  account's rung wants. ❌ Never logged, never in an event, never a property.
    */
   secret: string
   /**
