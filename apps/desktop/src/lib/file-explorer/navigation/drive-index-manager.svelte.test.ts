@@ -153,4 +153,20 @@ describe('isDriveRow — index-affordance eligibility', () => {
     expect(isDriveRow(vol({ id: 'network' }))).toBe(false)
     expect(isDriveRow(vol({ id: 'search-results' }))).toBe(false)
   })
+
+  /**
+   * ❗ A server is not a drive. Its paths carry a scheme no local walker can
+   * read, so an enable answers `started`, covers zero entries, and leaves a
+   * FRESH-looking empty index: folder sizes and search then quietly say the
+   * server holds nothing. The badge is the only invitation to that, so it is
+   * where the refusal belongs.
+   */
+  it('excludes SFTP and WebDAV servers, which no local walker can index', () => {
+    expect(isDriveRow(vol({ id: 'sftp-nas-22-ada', category: 'network', fsType: 'sftp' }))).toBe(false)
+    expect(isDriveRow(vol({ id: 'webdav-nas-443-ada', category: 'network', fsType: 'webdav' }))).toBe(false)
+  })
+
+  it('keeps the badge on a mounted SMB share, which the SMB gate really does index', () => {
+    expect(isDriveRow(vol({ id: 'smb-share', category: 'network', fsType: 'smbfs' }))).toBe(true)
+  })
 })

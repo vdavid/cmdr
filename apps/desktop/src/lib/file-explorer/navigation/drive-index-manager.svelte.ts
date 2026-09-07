@@ -33,11 +33,19 @@ import type { VolumeInfo } from '../types'
  * disk image here suppresses the index badge (both the active-volume spot and
  * each dropdown row), the first-connect "index this drive?" prompt, and the
  * per-volume index-status fetch, all at once.
+ *
+ * ❗ An SFTP or WebDAV server is dropped for a different reason than a disk
+ * image: an enable there SUCCEEDS and is wrong. The volume's root is a
+ * `sftp://…` path, so the local walker reads nothing, covers zero entries, and
+ * leaves an index that reports itself fresh and complete while folder sizes and
+ * search answer "nothing here". A mounted SMB share keeps its badge: the SMB
+ * gate really does index one over its own session.
  */
 export function isDriveRow(volume: VolumeInfo): boolean {
   if (volume.category === 'favorite') return false
   if (volume.id === 'network' || volume.id === 'search-results') return false
   if (volume.isDiskImage) return false
+  if (volume.fsType === 'sftp' || volume.fsType === 'webdav') return false
   return true
 }
 
