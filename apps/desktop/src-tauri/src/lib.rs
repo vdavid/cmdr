@@ -177,6 +177,11 @@ mod restricted_paths;
 pub mod search;
 mod secrets;
 pub mod selection;
+// `Cmdr > Services`: what Cmdr tells AppKit it can hand a service, and what the selection is at the
+// moment one is picked. macOS only. An outer `///` here would merge with the module's own `//!`
+// header and break its intra-doc links (see the `rustdoc` check's hint).
+#[cfg(target_os = "macos")]
+pub mod services_menu;
 mod settings;
 // The saved-and-live SFTP and WebDAV servers, as volume rows. Gated with
 // `network`, whose stores it reads.
@@ -761,6 +766,11 @@ pub fn run() {
             // present at launch; subsequent launches start mDNS eagerly via `firstTriggerDone`.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             file_system::upgrade_existing_smb_mounts(app.handle().clone());
+
+            // Before the menu bar is built: AppKit decides what the Services submenu may
+            // contain from the send types the app has registered.
+            #[cfg(target_os = "macos")]
+            services_menu::install(app.handle());
 
             menu::install::at_startup(app, &saved_settings)?;
 

@@ -138,6 +138,7 @@ export {
   registerKnownDialogs,
   setFileOperationsBlocked,
   updateMenuContext,
+  updateServicesSelection,
   activateWindowMenu,
   syncMenuShowHidden,
   updateViewModeMenu,
@@ -151,7 +152,7 @@ export {
   updateMenuAccelerator,
   setUiLanguage,
 } from './app-state'
-export type { PaneFileEntry, PaneState, McpTabInfo } from './app-state'
+export type { PaneFileEntry, PaneState, McpTabInfo, SelectedRows, ServicesSelection } from './app-state'
 
 // Shared IPC types (timeout-aware wrappers)
 export type { TimedOut } from './ipc-types'

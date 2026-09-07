@@ -313,10 +313,18 @@ bar is ever installed at a time, so the shared IDs never collide. `menu_items.rs
 1. Hands the Help menu (found by `HELP_MENU_ID`) to `NSApplication.setHelpMenu:` so macOS adds the
    search field. Tauri's `Submenu::set_as_help_menu_for_nsapp` resolves the live `NSMenu` itself, so
    this half needs no title at all.
-2. Finds the Edit menu by `EDIT_MENU_ID` and removes the items AppKit injects into it (Writing
+2. Hangs AppKit's own services menu off the Services item in the installed app menu
+   (`adopt_installed_services_menu`), which is what makes `Cmdr > Services` list the file services
+   Finder lists. muda registers one `NSMenu` at build time and the installed bar carries a different,
+   empty one, so AppKit fills a menu nobody can see; `NSApplication.setServicesMenu:` is ignored once
+   AppKit owns one, so this goes the other way and re-parents the managed menu (detaching it from
+   muda's first, or AppKit raises). Measurements and the rest of the mechanism:
+   `../services_menu/DETAILS.md`. It sits in its own `objc2::exception::catch`, because re-parenting
+   an `NSMenu` is the one step here that can raise and an escaping exception takes step 3 with it.
+3. Finds the Edit menu by `EDIT_MENU_ID` and removes the items AppKit injects into it (Writing
    Tools, AutoFill, Dictation, Emoji & Symbols), plus the separators they leave behind.
 
-The injected items in step 2 carry none of our IDs (AppKit adds them after we build the menu), so
+The injected items in step 3 carry none of our IDs (AppKit adds them after we build the menu), so
 they're matched on `NSMenuItem.identifier` — AppKit's own API identity, listed in
 `APPKIT_INJECTED_EDIT_ITEM_IDS`. Their TITLES would be the obvious key and are the wrong one: macOS
 localizes them to the system language, so an English title match strips nothing on a Swedish Mac and

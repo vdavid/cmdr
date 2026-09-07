@@ -65,6 +65,12 @@ fn cleanup_macos_menus_inner<R: Runtime>(app: &AppHandle<R>) {
         log::warn!(target: "menu", "Failed to register the Help menu with AppKit: {e}");
     }
 
+    // In its own `catch`: re-parenting an `NSMenu` is the one step here that can raise, and an
+    // exception escaping to the caller would take the Edit-menu strip below down with it.
+    if let Err(e) = objc2::exception::catch(AssertUnwindSafe(|| adopt_installed_services_menu(mtm, &menu))) {
+        log::warn!(target: "menu", "Couldn't hand the Services item AppKit's own menu: {e:?}");
+    }
+
     let Some(edit_menu) = submenu_by_id(&menu, EDIT_MENU_ID) else {
         log::warn!(target: "menu", "The installed menu bar has no `{EDIT_MENU_ID}` menu, so AppKit's injected items stay");
         return;
@@ -353,6 +359,65 @@ fn find_ns_submenu(parent: &NSMenu, title: &str) -> Option<Retained<NSMenu>> {
     (0..parent.numberOfItems())
         .filter_map(|index| parent.itemAtIndex(index)?.submenu())
         .find(|submenu| submenu.title().to_string() == title)
+}
+
+/// Makes the Services item in the INSTALLED menu bar show the menu AppKit fills.
+///
+/// ⚠️ Without this, `Cmdr > Services` lists four Instruments trace templates forever, however many
+/// send types the app registers. muda's `PredefinedMenuItem::services` registers the `NSMenu` it
+/// creates at BUILD time, but installing the bar materializes a second `NSMenuItem` carrying a
+/// different, empty `NSMenu`. AppKit then fills the registered one, which is on screen nowhere.
+/// (Measured on macOS 26.6.2, 2026-09-07: the two `NSMenu` pointers differed, the registered one
+/// held 26 items and the displayed one four.)
+///
+/// Re-pointing `NSApplication.servicesMenu` at the displayed menu does NOT work — the setter is
+/// ignored once AppKit owns one — so this goes the other way and hangs AppKit's own menu off the
+/// displayed item. The managed menu is still a submenu of muda's build-time menu, and AppKit raises
+/// `NSInternalInconsistencyException` on a second parent, so it is detached first.
+///
+/// Runs with the rest of this pass after every `app.set_menu()`, because a swap installs a fresh
+/// item. Idempotent, and a no-op while the viewer menu is up (it has no Services item).
+fn adopt_installed_services_menu<R: Runtime>(mtm: MainThreadMarker, menu: &Menu<R>) {
+    let Some(app_submenu) = submenu_by_id(menu, APP_MENU_ID) else {
+        log::warn!(target: "menu", "The installed menu bar has no `{APP_MENU_ID}` menu, so the Services menu stays short");
+        return;
+    };
+    let Ok(app_title) = app_submenu.text() else {
+        return;
+    };
+    let ns_app = NSApplication::sharedApplication(mtm);
+    let Some(main_menu) = ns_app.mainMenu() else {
+        return;
+    };
+    let Some(ns_app_menu) = find_ns_submenu(&main_menu, &app_title) else {
+        log::warn!(target: "menu", "No AppKit menu titled `{app_title}`, so the Services menu stays short");
+        return;
+    };
+    // By the ITEM's title, then its submenu: the item carries the label we set, while the `NSMenu`
+    // behind it has an empty title of its own.
+    let Some(item) = find_ns_item(&ns_app_menu, &crate::intl::menu_t("menu.app.services")) else {
+        return;
+    };
+    let Some(managed) = ns_app.servicesMenu() else {
+        return;
+    };
+    if item
+        .submenu()
+        .is_some_and(|shown| std::ptr::eq(Retained::as_ptr(&shown), Retained::as_ptr(&managed)))
+    {
+        return;
+    }
+    // SAFETY: `supermenu` is unsafe only because the reference is unretained; it is read and used
+    // inside this synchronous main-thread call, so the parent can't go away underneath it.
+    if let Some(parent) = unsafe { managed.supermenu() } {
+        let index = parent.indexOfItemWithSubmenu(Some(&managed));
+        if index >= 0
+            && let Some(owner) = parent.itemAtIndex(index)
+        {
+            owner.setSubmenu(None);
+        }
+    }
+    item.setSubmenu(Some(&managed));
 }
 
 /// The item in `menu` with this title. Separators carry an empty title, so they never match.

@@ -37,6 +37,10 @@ pub mod rename;
 pub mod restricted_paths;
 pub mod search;
 pub mod selection;
+// `Cmdr > Services` has no counterpart off macOS, so there's no stub either: the
+// frontend's wrapper no-ops elsewhere (`tauri-commands/app-state.ts`).
+#[cfg(target_os = "macos")]
+pub mod services_menu;
 pub mod settings;
 // The protocol-agnostic server family, over the per-protocol wiring. Same gate
 // as `sftp` and `webdav`, whose commands it faces.

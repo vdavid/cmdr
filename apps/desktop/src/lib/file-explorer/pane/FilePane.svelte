@@ -13,6 +13,7 @@
         refreshListingIndexSizes,
         type Location,
         updateMenuContext,
+        updateServicesSelection,
     } from '$lib/tauri-commands'
     import { createTypeToJumpController } from './type-to-jump-controller.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
@@ -63,6 +64,7 @@
     import RenameConflictDialog from '../rename/RenameConflictDialog.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { createDebounce } from '$lib/utils/timing'
+    import { servicesSelectionForPane } from './services-selection'
 
     const log = getAppLogger('fileExplorer')
     import { isMtpVolumeId } from '$lib/mtp'
@@ -71,7 +73,7 @@
     import { createSearchPaneKeys } from './search-pane-keys'
     import { computeHasParent } from './has-parent'
     import { firstSelectedIndex } from './first-selected-index'
-    import { capabilitiesForPane } from './volume-capabilities'
+    import { capabilitiesForPane, paneRowsAreOsVisible } from './volume-capabilities'
     import { createEnterMenu } from './enter-menu.svelte'
     import Menu from '$lib/ui/Menu.svelte'
     import { homeDir } from '@tauri-apps/api/path'
@@ -206,6 +208,10 @@
     const selection = createSelectionState({
         onChanged: () => {
             debouncedSyncMcp.call()
+            // The exact signal: it fires once per real selection mutation, which a
+            // `$effect` on `selectedIndices.size` would miss when a gesture swaps
+            // WHICH rows are selected without changing how many.
+            debouncedServicesSelection.call()
         },
     })
 
@@ -1175,6 +1181,31 @@
     }, 100)
     const debouncedSyncMcp = createDebounce(() => void syncPaneStateToMcp(), 300)
 
+    /**
+     * Tells the backend what `Cmdr > Services` acts on. AppKit asks for it
+     * synchronously the moment the user opens the submenu, so it has to already be
+     * there; see `apps/desktop/src-tauri/src/services_menu/CLAUDE.md`.
+     *
+     * The payload is BUILT here, on the timer, not in the trigger: a held ⇧↓ across
+     * a 500k-row folder would otherwise copy the whole index array per keystroke.
+     * Same reason `syncPaneStateToMcp` reads its indices inside its own debounce.
+     */
+    const debouncedServicesSelection = createDebounce(() => {
+        const cursorEntry = selectionInfo.entry
+        void updateServicesSelection(
+            servicesSelectionForPane({
+                rowsAreOsVisible: paneRowsAreOsVisible(caps.kind),
+                // `..` points at the PARENT folder, which is not what the user has
+                // under the cursor in any sense a service should act on.
+                cursorPath: cursorEntry && cursorEntry.name !== '..' ? cursorEntry.path : null,
+                selectedIndices: selection.getSelectedIndices(),
+                rows: isSearchResultsView
+                    ? { kind: 'snapshot', pathAt: (index) => searchSnapshot?.entries[index]?.path }
+                    : { kind: 'listing', listingId, includeHidden, hasParent },
+            }),
+        )
+    }, 100)
+
     /** Handle visible range change from list components */
     function handleVisibleRangeChange({ start, end }: VisibleRangePayload) {
         visibleRangeStart = start
@@ -1531,6 +1562,21 @@
         }
     })
 
+    // Everything the Services payload reads EXCEPT the selection itself, which
+    // arrives on `createSelectionState`'s exact `onChanged`. Gated on focus like
+    // the menu context above: one pane owns the answer at a time, and taking focus
+    // is itself a trigger, so the newly-focused pane overwrites the other's push.
+    $effect(() => {
+        if (!isFocused) return
+        void selectionInfo.entry
+        void caps.kind
+        void listingId
+        void includeHidden
+        void hasParent
+        void searchSnapshot
+        debouncedServicesSelection.call()
+    })
+
     // The pane's cursor-entry + listing-stats feed: the two fetchers, their
     // debounce/throttle wrappers, the cursor-move and selection-change effects,
     // and the search-results snapshot mirror live in a `*.svelte.ts` factory.
@@ -1685,6 +1731,7 @@
         overlays.cleanup()
         selectionInfo.cleanup()
         debouncedMenuContext.cancel()
+        debouncedServicesSelection.cancel()
         debouncedSyncMcp.cancel()
         // Stop type-to-jump timers so they can't fire after the FilePane is gone
         // (otherwise orphan setTimeouts mutate $state slots on the dead instance).

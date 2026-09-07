@@ -1,11 +1,19 @@
 // App-level state: MCP pane state, dialog tracking, menu context, window lifecycle
 
 import { invoke } from '@tauri-apps/api/core'
-import { commands, type ChildWindowRect, type PaneFileEntry, type PaneState } from '$lib/ipc/bindings'
+import {
+  commands,
+  type ChildWindowRect,
+  type PaneFileEntry,
+  type PaneState,
+  type SelectedRows,
+  type ServicesSelection,
+} from '$lib/ipc/bindings'
 import type { OperationGate, SoftDialogId } from '$lib/ui/dialog-registry'
+import { isMacOS } from '$lib/shortcuts/key-capture'
 import { throwIpcError } from './ipc-types'
 
-export type { PaneFileEntry, PaneState }
+export type { PaneFileEntry, PaneState, SelectedRows, ServicesSelection }
 
 // ============================================================================
 // MCP pane state
@@ -136,6 +144,21 @@ export async function registerKnownDialogs(
 export async function updateMenuContext(path: string, filename: string): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see the `ipc.rs` manifest)
   await invoke('update_menu_context', { path, filename })
+}
+
+/**
+ * Pushes what `Cmdr > Services` acts on: the focused pane's selection, or its
+ * cursor row when nothing is selected.
+ *
+ * macOS only (nothing else has a Services menu), so this is a no-op elsewhere and
+ * the caller doesn't have to know. Selected ROWS travel as listing indices rather
+ * than resolved paths, so a select-all over a huge folder stays cheap; the backend
+ * reads the paths out of the listing cache only when a service asks. See
+ * `apps/desktop/src-tauri/src/services_menu/CLAUDE.md`.
+ */
+export async function updateServicesSelection(selection: ServicesSelection): Promise<void> {
+  if (!isMacOS()) return
+  await commands.updateServicesSelection(selection)
 }
 
 /**

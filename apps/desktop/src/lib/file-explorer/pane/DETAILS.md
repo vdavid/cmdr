@@ -1345,6 +1345,32 @@ Surfaces other than the two file panes leave `canShare` at its `false` default, 
 no `Share…` today. Not a considered no: it's the "a surface that can't answer says nothing" default the whole
 `PaneContextMenuFacts` object takes.
 
+## Feeding the macOS Services menu
+
+`Cmdr > Services` acts on whatever is selected RIGHT NOW, at any moment, so the pane pushes it rather than answering a
+question. AppKit asks synchronously on the main thread and can't await IPC; the mechanism, the send types, and the
+pasteboard layout are Rust's (`src-tauri/src/services_menu/DETAILS.md`).
+
+What this directory owns is the payload, built by the pure `services-selection.ts` and pushed by `FilePane.svelte`'s
+`debouncedServicesSelection`:
+
+- **Selected rows travel as listing INDICES**, not resolved paths, and the backend reads the paths out of the listing
+  cache only when a service asks. A held ⇧↓ across a 500k-row folder would otherwise ship the whole path array on every
+  keystroke. The search-results snapshot is the exception: its rows live here, so they travel as paths, resolved through
+  a `pathAt` accessor so the cost is per SELECTED row rather than per row.
+- **The payload is built inside the debounce, not at the trigger**, so the index-array copy happens on the timer.
+  `syncPaneStateToMcp` reads its indices the same way and for the same reason.
+- **The trigger is `createSelectionState`'s `onChanged`**, which fires once per real mutation. ❌ Not a `$effect` on
+  `selectedIndices.size`: a gesture that swaps WHICH rows are selected without changing HOW MANY would push nothing, and
+  a service would then act on the previous set. Everything else the payload reads (focus, cursor entry, listing id,
+  `caps.kind`, hidden files, `hasParent`) rides a plain `$effect` beside the menu-context one.
+- **The pane-level gate is `paneRowsAreOsVisible(capabilitiesForPane(...).kind)`**, and it's the WIDE archive check on
+  purpose, unlike `rowIsOsVisible` above: the question here is about the pane's rows as a set, so a pane sitting INSIDE
+  a `.zip` offers nothing while a pane merely CONTAINING one offers everything. A pane that fails the gate pushes both
+  fields empty, leaving the Services menu exactly as it was before this feature.
+- **Both panes run the effect; only the focused one pushes**, same as the menu context. Taking focus is itself a
+  trigger, so the newly-focused pane overwrites the other's push.
+
 ## Analytics emitted from this directory
 
 Three of this directory's modules are analytics chokepoints, and they're chokepoints on purpose — a per-call-site event
