@@ -18,7 +18,6 @@
 //! TypeScript, would be two implementations of one rule, drifting apart.
 
 use serde::{Deserialize, Serialize};
-use std::cmp::Reverse;
 
 // The catalog table is generated from the message-catalog directories. The
 // `#[path]` keeps the `.gen.rs` spelling the repo already uses to mark a
@@ -26,10 +25,14 @@ use std::cmp::Reverse;
 #[path = "shipped_locales.gen.rs"]
 mod shipped_locales;
 
-use shipped_locales::SHIPPED_LOCALES;
+use shipped_locales::{PARENT_LOCALES, SHIPPED_LOCALES};
 
 mod format_locale;
 mod live_locale;
+// The resolver's answers, checked against what macOS itself would do with the
+// same question. macOS-only because CFBundle is.
+#[cfg(all(test, target_os = "macos"))]
+mod macos_fallback_test;
 // `pub(crate)` only so a test in another module can take the locale lock; the
 // module's real surface is the re-export below.
 #[cfg(test)]
@@ -43,7 +46,7 @@ pub use live_locale::observe_os_locale_changes;
 // public name on every platform that has no live-locale observer.
 pub use native_strings::{menu_t, menu_t_with, set_language_preference};
 
-/// One catalog we ship, plus the script facts the resolver's guard needs.
+/// One catalog we ship, plus the CLDR facts the resolver needs.
 ///
 /// The scripts come from CLDR's likely-subtags data, which Rust has no runtime
 /// access to; `apps/desktop/scripts/gen-shipped-locales.ts` asks Node's `Intl`
@@ -64,6 +67,20 @@ pub(crate) struct ShippedLocale {
     /// [`Self::default_script`], lowercased: `zh` carries `("tw", "hant")` and
     /// friends. Empty for every Latin-script language.
     pub(crate) region_scripts: &'static [(&'static str, &'static str)],
+    /// CLDR nodes this catalog answers for besides its own [`Self::tag`],
+    /// lowercased. Only `en-GB` carries one today: it answers for `en-001`,
+    /// CLDR's World English, which is where [`PARENT_LOCALES`] sends `en-NZ`,
+    /// `en-IE`, `en-ZA`, and ~110 other regions nobody ships a catalog for.
+    /// Declared in the generator's `CATALOG_COVERS`, with the reasoning.
+    pub(crate) covers: &'static [&'static str],
+}
+
+impl ShippedLocale {
+    /// Whether this catalog is the answer for an already-[`normalize`]d CLDR
+    /// node: it either IS that node, or stands in for it.
+    fn answers_for(&self, node: &str) -> bool {
+        self.tag.eq_ignore_ascii_case(node) || self.covers.iter().any(|covered| covered.eq_ignore_ascii_case(node))
+    }
 }
 
 /// Everything the OS has to say about locale, in the two halves the app keeps
@@ -203,27 +220,92 @@ fn base_language(tag: &str) -> &str {
 /// The catalog an already-[`normalize`]d preference should open, in the
 /// catalog's own spelling.
 ///
-/// One rule, two halves: the catalog has to be the same LANGUAGE (so `pt-PT`
-/// reaches the Brazilian `pt` catalog and `en-CA` reaches US `en`, deliberately)
-/// and the same SCRIPT (so `zh-Hant-TW` does NOT reach the Simplified `zh` one).
-/// The script half is the guard: a fallback is only a kindness when it lands
-/// somewhere the reader can actually read, and Simplified Chinese in front of a
-/// Traditional reader is worse than English, a language they at least chose to
-/// list. Dialect friction is a papercut a later catalog fixes; an unreadable
-/// script is a wall. ❌ Don't "fix" this by blocking regional fallback too.
+/// Two gates, then a walk.
 ///
-/// Among the catalogs that qualify, the most specific one wins: with `en`,
-/// `en-GB`, and `en-AU` all shipped, `en-GB` opens the British overlay while
-/// `en-CA` opens plain `en`. Canonical rationale for both halves:
+/// The gates say which catalogs this reader can read at all: the same LANGUAGE
+/// (so `pt-PT` reaches the Brazilian `pt` catalog and `en-CA` reaches US `en`,
+/// deliberately) and the same SCRIPT (so `zh-Hant-TW` does NOT reach the
+/// Simplified `zh` one). The script gate is the guard: a fallback is only a
+/// kindness when it lands somewhere the reader can actually read, and Simplified
+/// Chinese in front of a Traditional reader is worse than English, a language
+/// they at least chose to list. Dialect friction is a papercut a later catalog
+/// fixes; an unreadable script is a wall. ❌ Don't "fix" this by blocking
+/// regional fallback too.
+///
+/// The walk then takes the first node of [`ancestor_chain`] one of those
+/// catalogs answers for, so the most specific catalog on the way home wins:
+/// `en-GB` opens the British overlay, `en-NZ` reaches it through CLDR's
+/// `en-001`, and `en-CA` opens plain `en`. Canonical rationale for all of it:
 /// `DETAILS.md` § The script guard, and why regional fallback survives it.
 fn match_shipped(tag: &str, shipped: &[ShippedLocale]) -> Option<String> {
     let language = base_language(tag);
-    shipped
+    let same_language: Vec<&ShippedLocale> = shipped
         .iter()
         .filter(|entry| base_language(entry.tag).eq_ignore_ascii_case(language))
-        .filter(|entry| script_of(tag, entry).eq_ignore_ascii_case(entry.script))
-        .max_by_key(|entry| (shared_subtags(tag, entry.tag), Reverse(entry.tag.len())))
+        .collect();
+    // The script facts are language-level, so every entry of this language
+    // answers identically; asking just needs one of them in hand. No entry at
+    // all means we ship nothing for this language, which is the `None` case.
+    let script = script_of(tag, same_language.first()?);
+    let readable: Vec<&ShippedLocale> = same_language
+        .into_iter()
+        .filter(|entry| entry.script.eq_ignore_ascii_case(script))
+        .collect();
+
+    ancestor_chain(tag, script)
+        .iter()
+        .find_map(|node| readable.iter().find(|entry| entry.answers_for(node)))
         .map(|entry| entry.tag.to_string())
+}
+
+/// The nodes to try for an already-[`normalize`]d `tag`, most specific first:
+/// the tag itself, then its ancestors, then the tag CLDR's likely subtags would
+/// have maximized it to.
+///
+/// An ancestor is [`PARENT_LOCALES`]'s override where CLDR states one, and the
+/// tag minus its last subtag otherwise. The overrides are the whole point:
+/// `en-nz` truncates to `en`, US English, while CLDR parents it to `en-001`,
+/// the World English our `en-GB` catalog answers for. Every regional English
+/// CLDR knows about reaches an overlay this way, so ❌ don't add a region table
+/// beside this: that's the thing CLDR's data replaces.
+///
+/// A `und` override means the locale has NO parent, and the walk stops there
+/// rather than truncating: it's how CLDR spells the wall between `zh-Hant` and
+/// Simplified `zh`.
+///
+/// The `<language>-<script>` node comes last, and only when the walk hasn't
+/// already produced it. It's what lets `zh-tw` reach the `zh-Hant` catalog: the
+/// tag names no script, its ancestors are `zh`, and only maximization says out
+/// loud that this reader reads Traditional.
+fn ancestor_chain(tag: &str, script: &str) -> Vec<String> {
+    // CLDR's parent graph is acyclic and every truncation step shortens the tag,
+    // so this cap can only fire on a corrupted table. It's here so that such a
+    // table costs a wrong answer rather than a hung app.
+    const MAX_DEPTH: usize = 8;
+
+    let mut chain = vec![tag.to_string()];
+    let mut current = tag.to_string();
+    while chain.len() < MAX_DEPTH {
+        let parent = match PARENT_LOCALES
+            .iter()
+            .find(|(child, _)| child.eq_ignore_ascii_case(&current))
+        {
+            Some(&(_, "und")) => break,
+            Some(&(_, parent)) => parent.to_string(),
+            None => match current.rsplit_once('-') {
+                Some((head, _)) => head.to_string(),
+                None => break,
+            },
+        };
+        chain.push(parent.clone());
+        current = parent;
+    }
+
+    let maximized = format!("{}-{script}", base_language(tag));
+    if !chain.iter().any(|node| node.eq_ignore_ascii_case(&maximized)) {
+        chain.push(maximized);
+    }
+    chain
 }
 
 /// The script an already-[`normalize`]d `tag` is written in, per CLDR's likely
@@ -298,25 +380,28 @@ pub(crate) fn overlay_base(tag: &str, shipped: &[ShippedLocale]) -> Option<&'sta
     shipped
         .iter()
         .filter(|candidate| !candidate.tag.eq_ignore_ascii_case(entry.tag))
-        .filter(|candidate| shared_subtags(entry.tag, candidate.tag) > 0)
+        .filter(|candidate| is_ancestor_tag(candidate.tag, entry.tag))
         .filter(|candidate| candidate.script.eq_ignore_ascii_case(entry.script))
         .max_by_key(|candidate| candidate.tag.len())
         .map(|candidate| candidate.tag)
 }
 
-/// How specifically `entry_tag` matches `tag`: the count of leading subtags they
-/// share, or 0 unless `entry_tag` is a subtag-aligned prefix of `tag`. Against
-/// `pt-BR`, the `pt-BR` catalog scores 2 and `pt` scores 1; against `pt-PT`,
-/// `pt-BR` scores 0 and `pt` still scores 1.
-fn shared_subtags(tag: &str, entry_tag: &str) -> usize {
-    let mut theirs = entry_tag.split('-');
+/// Whether `ancestor` is a subtag-aligned prefix of `tag`: `pt` is one of
+/// `pt-BR`, `pt-BR` is not one of `pt-PT`, and `p` is not one of `pt`.
+///
+/// This is plain truncation, matching the frontend's `ancestorTags`. It is NOT
+/// how a PREFERENCE finds its catalog ([`ancestor_chain`] follows CLDR's parent
+/// overrides for that); it answers the different question [`overlay_base`] asks,
+/// which is what one shipped catalog inherits its missing keys from.
+#[cfg(test)]
+fn is_ancestor_tag(ancestor: &str, tag: &str) -> bool {
+    let mut theirs = ancestor.split('-');
     let mut ours = tag.split('-');
-    let mut shared = 0;
     loop {
         match (theirs.next(), ours.next()) {
-            (None, _) => return shared,
-            (Some(a), Some(b)) if a.eq_ignore_ascii_case(b) => shared += 1,
-            _ => return 0,
+            (None, _) => return true,
+            (Some(a), Some(b)) if a.eq_ignore_ascii_case(b) => (),
+            _ => return false,
         }
     }
 }
@@ -355,7 +440,10 @@ mod tests {
     fn a_regional_variant_falls_back_to_its_base_language() {
         assert_eq!(resolve_ui_locale(&prefs(&["fr-CA"]), SHIPPED), Some("fr".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["pt-PT"]), SHIPPED), Some("pt".to_string()));
-        assert_eq!(resolve_ui_locale(&prefs(&["en-IE"]), SHIPPED), Some("en".to_string()));
+        // American-flavored English is base `en`'s own crowd, and CLDR agrees:
+        // it lists no parent for either, so both truncate straight to `en`.
+        assert_eq!(resolve_ui_locale(&prefs(&["en-CA"]), SHIPPED), Some("en".to_string()));
+        assert_eq!(resolve_ui_locale(&prefs(&["en-PH"]), SHIPPED), Some("en".to_string()));
     }
 
     #[test]
@@ -395,15 +483,34 @@ mod tests {
     }
 
     #[test]
-    fn a_new_zealand_tag_lands_on_base_english_rather_than_guessing() {
-        // macOS ships no en-NZ UI localization, so a New Zealand user picks
-        // English (UK) or English (Australia) and is served by that overlay. A
-        // literal `en-NZ` tag can still arrive from a POSIX `LANG`, and it shares
-        // exactly one subtag with `en`, `en-GB`, and `en-AU` alike, so the
-        // shortest-tag tiebreak takes base English. Picking a side for them would
-        // be a guess. Evidence for the no-en-NZ claim: `docs/i18n/en-GB/style.md`
-        // § New Zealand.
-        assert_eq!(resolve_ui_locale(&prefs(&["en-NZ"]), SHIPPED), Some("en".to_string()));
+    fn a_regional_english_with_no_catalog_of_its_own_reaches_the_british_overlay() {
+        // The bug this chain exists to kill: a New Zealander whose Mac is set to
+        // English (New Zealand) was reading "Trash", because `en-NZ` truncates to
+        // `en`. CLDR parents it to `en-001`, World English, which `en-GB` answers
+        // for, so they read "Bin" like every other reader of that English.
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["en-NZ"]), SHIPPED),
+            Some("en-GB".to_string())
+        );
+        // Same road, three more ways onto it: a direct `en-001` child, a
+        // two-hop child through the Europe group, and `en-001` itself.
+        for tag in ["en-IE", "en-ZA", "en-IN", "en-SG", "en-AT", "en-SE", "en-001"] {
+            assert_eq!(
+                resolve_ui_locale(&prefs(&[tag]), SHIPPED),
+                Some("en-GB".to_string()),
+                "{tag} should reach the British overlay"
+            );
+        }
+    }
+
+    #[test]
+    fn a_shipped_regional_catalog_still_beats_the_group_it_belongs_to() {
+        // `en-AU` is a child of `en-001` too, so the walk has to try the tag
+        // itself before it ever reaches the node `en-GB` answers for.
+        assert_eq!(
+            resolve_ui_locale(&prefs(&["en-AU"]), SHIPPED),
+            Some("en-AU".to_string())
+        );
     }
 
     #[test]
@@ -448,12 +555,14 @@ mod tests {
             script: "hans",
             default_script: "hans",
             region_scripts: &[("tw", "hant"), ("hk", "hant"), ("mo", "hant")],
+            covers: &[],
         },
         ShippedLocale {
             tag: "sv",
             script: "latn",
             default_script: "latn",
             region_scripts: &[],
+            covers: &[],
         },
     ];
 
@@ -519,12 +628,12 @@ mod tests {
     #[test]
     fn the_guard_is_about_legibility_not_dialect() {
         // Regional fallback is WANTED: `pt-PT` reading Brazilian Portuguese, or
-        // `en-IE` reading "Trash" and `-ize`, is a papercut a later catalog
-        // fixes (`en-GB` and `en-AU` are exactly that later catalog, and now
-        // resolve to themselves). An unreadable script is a wall. Don't "fix"
-        // this by blocking regional fallback.
+        // `en-CA` reading "Trash" and `-ize`, is a papercut a later catalog
+        // fixes (`en-GB` and `en-AU` are exactly that later catalog, for the
+        // regions CLDR routes their way). An unreadable script is a wall. Don't
+        // "fix" this by blocking regional fallback.
         assert_eq!(resolve_ui_locale(&prefs(&["pt-PT"]), SHIPPED), Some("pt".to_string()));
-        assert_eq!(resolve_ui_locale(&prefs(&["en-IE"]), SHIPPED), Some("en".to_string()));
+        assert_eq!(resolve_ui_locale(&prefs(&["en-CA"]), SHIPPED), Some("en".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["de-AT"]), SHIPPED), Some("de".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["es-419"]), SHIPPED), Some("es".to_string()));
         assert_eq!(
@@ -566,6 +675,7 @@ mod tests {
             script: "hant",
             default_script: "hans",
             region_scripts: &[("tw", "hant"), ("hk", "hant")],
+            covers: &[],
         }];
         assert_eq!(resolve_ui_locale(&prefs(&["zh-CN"]), ZH_HANT), None);
         assert_eq!(
@@ -589,12 +699,14 @@ mod tests {
                 script: "latn",
                 default_script: "latn",
                 region_scripts: &[],
+                covers: &[],
             },
             ShippedLocale {
                 tag: "pt-BR",
                 script: "latn",
                 default_script: "latn",
                 region_scripts: &[],
+                covers: &[],
             },
         ];
         assert_eq!(resolve_ui_locale(&prefs(&["pt-BR"]), PT), Some("pt-BR".to_string()));

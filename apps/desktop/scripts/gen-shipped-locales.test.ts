@@ -8,7 +8,22 @@
  * list, which drifts with every ICU update.
  */
 import { describe, it, expect } from 'vitest'
-import { buildEntry, buildShippedLocales, emitRustModule, PSEUDO_LOCALE } from './gen-shipped-locales-lib.ts'
+import {
+  buildEntry,
+  buildParentLocales,
+  buildShippedLocales,
+  emitRustModule,
+  PSEUDO_LOCALE,
+} from './gen-shipped-locales-lib.ts'
+
+/** A slice of CLDR's shape, small enough to assert against in full. */
+const PARENT_LOCALE_FIXTURE = {
+  'en-NZ': 'en-001',
+  'en-AT': 'en-150',
+  'en-150': 'en-001',
+  'zh-Hant': 'und',
+  'ca-FR': 'ca-ES',
+}
 
 describe('buildEntry', () => {
   it('reads the likely script of a Latin-script language and finds no splits', () => {
@@ -49,9 +64,36 @@ describe('buildShippedLocales', () => {
   })
 })
 
+describe('buildParentLocales', () => {
+  it('keeps only the languages we ship, since the resolver rejects the rest first', () => {
+    const pairs = buildParentLocales(PARENT_LOCALE_FIXTURE, ['en', 'zh'])
+    expect(pairs.map(([child]) => child)).not.toContain('ca-fr')
+  })
+
+  it('lowercases and sorts, matching the tags the resolver compares', () => {
+    expect(buildParentLocales(PARENT_LOCALE_FIXTURE, ['en', 'zh'])).toEqual([
+      ['en-150', 'en-001'],
+      ['en-at', 'en-150'],
+      ['en-nz', 'en-001'],
+      ['zh-hant', 'und'],
+    ])
+  })
+
+  it('keeps `und`, which is CLDR saying a locale has no parent at all', () => {
+    const pairs = buildParentLocales(PARENT_LOCALE_FIXTURE, ['zh'])
+    expect(pairs).toEqual([['zh-hant', 'und']])
+  })
+
+  it('keeps entries for a language whose regional catalog has not landed yet', () => {
+    // `es-MX` → `es-419` is inert while only base `es` ships, and goes live by
+    // itself the day an `es-419` catalog does.
+    expect(buildParentLocales({ 'es-MX': 'es-419' }, ['es'])).toEqual([['es-mx', 'es-419']])
+  })
+})
+
 describe('emitRustModule', () => {
   it('emits a table Rust can compile, with the fields the resolver reads', () => {
-    const source = emitRustModule(buildShippedLocales(['en', 'zh']))
+    const source = emitRustModule(buildShippedLocales(['en', 'zh']), [])
     expect(source).toContain('pub(crate) const SHIPPED_LOCALES: &[ShippedLocale] = &[')
     expect(source).toContain('tag: "zh",')
     expect(source).toContain('default_script: "hans",')
@@ -60,6 +102,19 @@ describe('emitRustModule', () => {
   })
 
   it('emits an empty region list rather than omitting the field', () => {
-    expect(emitRustModule(buildShippedLocales(['en']))).toContain('region_scripts: &[],')
+    expect(emitRustModule(buildShippedLocales(['en']), [])).toContain('region_scripts: &[],')
+  })
+
+  it('emits the parent table as pairs the resolver can scan', () => {
+    const source = emitRustModule(buildShippedLocales(['en']), [['en-nz', 'en-001']])
+    expect(source).toContain('pub(crate) const PARENT_LOCALES: &[(&str, &str)] = &[')
+    expect(source).toContain('("en-nz", "en-001"),')
+  })
+
+  it('gives the British catalog the World-English node to answer for', () => {
+    // The one editorial line in the generator, and the whole reason an `en-NZ`
+    // reader gets "Bin": without it the walk falls past `en-001` to US English.
+    expect(emitRustModule(buildShippedLocales(['en-GB']), [])).toContain('covers: &["en-001"],')
+    expect(emitRustModule(buildShippedLocales(['en']), [])).toContain('covers: &[],')
   })
 })

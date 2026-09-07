@@ -87,8 +87,9 @@ Recorded because each looked plausible enough to chase, and cost time to disprov
 
 ## New Zealand
 
-macOS ships no `en-NZ` UI localization, so New Zealand users land on this catalog or on `en-GB`. Full evidence:
-`docs/i18n/en-GB/style.md` § New Zealand.
+New Zealand users land on `en-GB`, not here: CLDR parents `en-NZ` to `en-001`, which `en-GB` answers for. macOS would
+have sent them here instead (its own table prefers `en-AU` for `en-NZ`), and both catalogs say Bin, so the difference
+costs a New Zealander nothing. Full evidence: `docs/i18n/en-GB/style.md` § New Zealand.
 
 ## Glossary
 

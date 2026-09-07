@@ -21,16 +21,65 @@ The formatting half has a blunter reason: the webview CAN'T answer it. See "The 
 `resolve_ui_locale(preferences, shipped)` takes each preference IN ORDER and returns the first catalog the user can
 read. The order is the user's own fallback plan, so one preference is fully exhausted before the next gets a turn.
 
-Matching one preference against the table is a single rule with two halves:
+Matching one preference against the table is two gates and then a walk. The gates say which catalogs this reader can
+read at all:
 
 - **Same language.** The base subtag has to match, which is what lets `fr-CA` land on `fr`, `pt-PT` on `pt`, and `en-CA`
   on `en`.
 - **Same script.** See below.
 
-Among the catalogs that qualify, the most specific wins: `shared_subtags` counts the leading subtags a catalog tag
-shares with the preference (0 unless it's a subtag-aligned prefix), and ties break toward the SHORTER tag. With `en`,
-`en-GB`, and `en-AU` all shipped, `en-GB` takes the British overlay and `en-CA` takes plain `en`. Tests pin the same
-rule against a `pt` / `pt-BR` fixture, for a language whose regional catalogs haven't landed yet.
+The walk then takes the first node of `ancestor_chain` that one of those catalogs answers for, so the most specific
+catalog on the way home wins.
+
+### The ancestor chain
+
+`ancestor_chain(tag, script)` lists the nodes to try, most specific first: the tag itself, then its ancestors, then the
+tag CLDR's likely subtags would have maximized it to.
+
+An ancestor is **CLDR's `PARENT_LOCALES` override** where CLDR states one, and the tag minus its last subtag otherwise.
+The overrides are why the chain exists. Truncation alone sends `en-NZ` to `en`, US English, and a New Zealander reads
+"Trash"; CLDR parents it to `en-001`, World English, which our `en-GB` catalog answers for, and they read "Bin". Around
+110 regions reach an overlay this way, some in two hops (`en-AT` → `en-150` → `en-001`). ❌ Don't add a region table
+beside this: replacing exactly that hand-kept map is what the CLDR data buys.
+
+A `und` override means the locale has **no parent at all**, and the walk stops rather than truncating. It's how CLDR
+spells the wall between `zh-Hant` and Simplified `zh`, the same wall the script gate enforces from the other side.
+
+The `<language>-<script>` node comes last, and only when the walk hasn't already produced it. It's what lets `zh-TW`
+reach the `zh-Hant` catalog: the tag names no script, its only ancestor is `zh`, and maximization is the one step that
+says out loud that this reader reads Traditional.
+
+**Which catalog answers for a node** is its own tag, plus anything in its `covers` list. Only `en-GB` carries one today
+(`en-001`), because CLDR routes most regional English to a node nobody's Mac is ever SET to and nobody ships a catalog
+under. `en-GB` and `en-AU` are both children of `en-001`, so no amount of CLDR data says which of them speaks for the
+group; the generator's `CATALOG_COVERS` picks `en-GB` and carries the reasoning, and macOS answers the same question
+the same way.
+
+### Where we differ from macOS, and the test that bounds it
+
+`macos_fallback_test.rs` asks `CFBundleCopyLocalizationsForPreferences` the same question we answer (it's a pure
+function over two tag arrays, no bundle involved) for every English locale identifier macOS knows, and holds us to one
+directional invariant: **we are never further from home than macOS puts them.** If Finder finds a reader a regional
+overlay, so must we.
+
+The converse is allowed and happens in both directions:
+
+- We are more precise for ~20 regions CLDR parents to `en-001` and Apple's table doesn't (`en-IL`, `en-MG`, `en-RW`, and
+  friends). Being ahead of the OS is not a bug.
+- We stop at `en` for six tags Apple sends to `en-GB` (`en-AL`, `en-BD`, `en-BG`, `en-BN`, `en-GR`, `en-RU`): CLDR ships
+  no English locale for those countries, so `parentLocales.json` says nothing. None is offered in the macOS language
+  picker. The test pins that set as an EQUALITY, so it fails if the gap grows OR closes.
+- Apple sends `en-NZ` to `en-AU` and we send it to `en-GB`. Both say "Bin", and CLDR backs ours.
+
+### Known gap: the chain doesn't reach the Linux webview
+
+On Linux `get_os_locales` answers `ui: None` (§ The frontend contract), so the webview picks its own catalog from
+`navigator`'s tag by plain truncation, while the native surfaces go through `os_ui_locale` and this chain. A
+`LANG=en_NZ.UTF-8` session therefore gets "Bin" in the menu bar and "Trash" in the panes. macOS is unaffected: Rust
+answers the `ui` half there, and every surface reads the same answer.
+
+Closing it means letting Rust answer the `ui` half on Linux too, which is a deliberate change to that contract rather
+than an oversight, and nobody runs Cmdr on Linux outside the E2E suite yet.
 
 `None` means nothing matched, and the caller uses English. That is NOT the same as matching `en`, which stops the walk
 deliberately: a user who listed English above Swedish wants English, not the next-best translation.
@@ -51,11 +100,15 @@ first is a papercut a fast-follow catalog fixes, the second is a wall. ❌ Don't
 fallback.
 
 **A regional catalog can also exist and win.** `en-GB` and `en-AU` ship as OVERLAYS: each carries only the keys it
-forks ("Bin" for "Trash", `-ise` for `-ize`), wins over plain `en` on specificity, and resolves every other key up to
-`en` through exactly the regional fallback above. So the fallback isn't the regional reader's consolation prize; it's
-what lets a 151-key overlay stand in for a 3,263-key catalog. `docs/i18n/language-selection-decisions.md` is the roster
-of which variants ship a catalog and which still fall back to their base, and `docs/guides/i18n.md` § Overlay catalogs
-is how an overlay is built and checked.
+forks ("Bin" for "Trash", `-ise` for `-ize`), wins on the ancestor chain above, and resolves every other key up to `en`
+through exactly the regional fallback here. So the fallback isn't the regional reader's consolation prize; it's what
+lets a 151-key overlay stand in for a 3,263-key catalog. `docs/i18n/language-selection-decisions.md` is the roster of
+which variants ship a catalog and which still fall back to their base, and `docs/guides/i18n.md` § Overlay catalogs is
+how an overlay is built and checked.
+
+**Which regions reach one is CLDR's answer, not a list we keep.** An overlay serves far more than the region in its
+name: `en-GB` also answers for the ~110 regions CLDR parents to `en-001`, `en-NZ` and `en-IE` and `en-ZA` among them.
+That's the ancestor chain's job, above.
 
 ### One rule, three layers
 
@@ -88,12 +141,15 @@ locale was chosen: once a reader is on `zh-Hant`, no missing key may fall throug
 In practice macOS emits an explicit script for Chinese (`zh-Hans-CN`, `zh-Hant-TW`), so branch 1 usually decides;
 branches 2 and 3 cover hand-set and imported preference lists.
 
-## The generated table
+## The generated tables
 
 `apps/desktop/scripts/gen-shipped-locales.ts` (pure logic in `gen-shipped-locales-lib.ts`, run via
-`pnpm intl:shipped-locales` from `apps/desktop/`) reads the catalog directories under `src/lib/intl/messages/` via
-`listLocales()` and asks Node's `Intl.Locale(tag).maximize()` for the script facts, emitting
-`shipped_locales.gen.rs`. Per catalog it records:
+`pnpm intl:shipped-locales` from `apps/desktop/`) emits `shipped_locales.gen.rs`, which holds two tables.
+
+### `SHIPPED_LOCALES`
+
+Built from the catalog directories under `src/lib/intl/messages/` via `listLocales()`, with the script facts from
+Node's `Intl.Locale(tag).maximize()`. Per catalog it records:
 
 - `tag`: the directory name VERBATIM. The resolver hands it straight back to the frontend, which keys its catalog map on
   the directory name, so the spelling has to survive the round trip. Comparisons are case-insensitive.
@@ -103,17 +159,29 @@ branches 2 and 3 cover hand-set and imported preference lists.
 - `region_scripts`: the regions whose likely script differs from `default_script`. Empty for every Latin-script
   language; `zh` carries the Traditional set (TW, HK, MO, plus the overseas-community regions CLDR lists, and their UN
   M49 numeric equivalents).
+- `covers`: the CLDR nodes this catalog answers for besides its own tag. Only `en-GB` has one (`en-001`); the
+  generator's `CATALOG_COVERS` declares it and carries the reasoning.
 
 Regions are enumerated (the 676 two-letter combinations plus the 1,000 three-digit M49 codes) rather than listed,
 because CLDR's region set drifts with every ICU update and a hand-kept list would quietly stop covering new codes.
 Unknown codes maximize to the language default and contribute nothing. Everything but `tag` is emitted lowercase,
 matching the normalized tags the resolver compares.
 
-The generator runs `rustfmt` on its output itself, rather than leaving it to the `package.json` script: the
-`shipped-locales-fresh` check invokes the script directly, so formatting anywhere else would make its
-regenerate-and-diff report permanent phantom drift.
+### `PARENT_LOCALES`
 
-Two guards keep the table honest, because a stale one leaves a new locale both unreachable AND unguarded:
+CLDR's parent-locale overrides as `(child, parent)` pairs, read from the `cldr-core` package: CLDR's own JSON
+distribution, pinned like any other dependency. `Intl` exposes likely subtags but not parents, so this file is the only
+way to learn that `en-NZ`'s parent is `en-001`. What the resolver does with them: § The ancestor chain.
+
+Filtered to the base languages we ship a catalog for. That's safe because the resolver rejects another language's
+catalog before it ever consults this table, and it keeps the entries that go live later on their own: `es-MX` →
+`es-419` and `pt-AO` → `pt-PT` are inert while only the base catalogs ship.
+
+### Guards
+
+Neither table is rustfmt's business: both carry `#[rustfmt::skip]` and the generator owns their layout byte for byte,
+because `shipped-locales-fresh` invokes the script directly and any reformatting elsewhere would make the two disagree
+forever. Two guards keep them honest, because a stale table leaves a new locale both unreachable AND unguarded:
 
 - `shipped-locales-fresh` (`scripts/check/checks/desktop-shipped-locales-fresh.go`) regenerates and diffs, restoring the
   original under `--ci` and keeping the regenerated file on a local run (same auto-fix UX as `oxfmt`).

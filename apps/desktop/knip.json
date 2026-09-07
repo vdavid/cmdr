@@ -4,7 +4,13 @@
   "ignoreBinaries": ["rustc", "oxfmt", "sqlite3", "magick"],
   "ignore": ["src/lib/tauri-commands/**", "src/lib/ipc/bindings.ts"],
   "ignoreUnresolved": ["~icons/.+"],
-  "ignoreDependencies": ["oxlint", "@testing-library/svelte", "prettier-plugin-svelte", "@iconify-json/lucide"],
+  "ignoreDependencies": [
+    "oxlint",
+    "@testing-library/svelte",
+    "prettier-plugin-svelte",
+    "@iconify-json/lucide",
+    "cldr-core"
+  ],
   "ignoreExportsUsedInFile": true,
   "project": ["src/**/*.{ts,svelte}"],
   "svelte": {
