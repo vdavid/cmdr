@@ -355,7 +355,7 @@
   "@servers.paneState.disconnectCycleTooltip": {
     "sourceHash": "8fba8b0"
   },
-  "servers.paneState.retryKeepsTrying": "Összesen {duration} próbálkozik tovább.",
+  "servers.paneState.retryKeepsTrying": "Összesen {duration} ideig próbálkozik tovább.",
   "@servers.paneState.retryKeepsTrying": {
     "sourceHash": "e4d25b7"
   },

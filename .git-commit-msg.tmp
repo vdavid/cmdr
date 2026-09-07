@@ -1,13 +1,12 @@
-fix(settings): picking an adb binary reports on the one you picked, not the one before it
+fix(i18n): the Hungarian retry line stops saying the duration is what keeps trying
 
-`handleBrowse` committed the path and then immediately re-checked. The commit's applier fires
-`void pushAdbConfigToBackend()` unawaited, and Tauri runs `set_adb_settings` and `recheck_adb_install` as independent
-tasks, so the re-check could reach the backend first and answer about the OLD binary. That is exactly the stale status
-the comment above it says the re-check exists to prevent.
+`"Összesen {duration} próbálkozik tovább."` renders as "Összesen 2 perc próbálkozik tovább", which reads as "a total of
+2 minutes keeps trying": the duration lands in the subject slot. Adding the postposition (`ideig`) is what marks it as
+a span of time.
 
-The Browse pick now awaits the push before asking. Running the push twice costs a round-trip and changes nothing: it
-re-reads both settings fresh and sends the same pair.
+English is unchanged, so every `@key.sourceHash` stays valid and nothing needs restamping.
 
-Cell: the two commands recorded in order, with the push deliberately resolving off the current tick so a broken
-ordering can't pass by accident. `adb/DETAILS.md` gains the rule, since the next caller that changes a setting and then
-asks about it has the same trap waiting.
+The rule behind it goes in `docs/i18n/hu/glossary.md`, because it is not about this key: English marks the role with a
+preposition (`for a total of {duration}`), while the Hungarian placeholder arrives as a bare nominative phrase ("2
+perc") that can't be inflected, since nothing knows which word is in it. A postposition after it is the only way to say
+"for this long", and a bare duration placeholder is wrong every time.
