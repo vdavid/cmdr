@@ -23,10 +23,10 @@ Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUD
   or the setting is invisible. Only `AdvancedSection` auto-renders (`section: ['Advanced']`).
   [Checklist](../../../../../../docs/guides/adding-a-new-setting.md).
 - **A row that isn't a setting declares a `SearchableRow` in the sibling `<Component>.rows.ts`** (aggregated by
-  `searchable-rows.ts`): a `row:`-prefixed id, the hosting page's `section`, the label key the markup renders.
-  Gate it on `shouldShow('row:…')` AND list it in its card's `anyVisible(...)`, or a hit filters every card away. It's
-  search metadata; ❌ it never decides what renders, and ❌ never model such a row as a `hidden` setting. Skip rows that
-  only appear under runtime state. A page with NO control (`ServersSection`) reaches the sidebar via a row's
+  `searchable-rows.ts`): a `row:`-prefixed id, the hosting page's `section`, the label key the markup renders. Gate it
+  on `shouldShow('row:…')` AND list it in its card's `anyVisible(...)`, or a hit filters every card away. It's search
+  metadata; ❌ it never decides what renders, and ❌ never model such a row as a `hidden` setting. Skip rows that only
+  appear under runtime state. A page with NO control (`ServersSection`) reaches the sidebar via a row's
   `anchorsSection`. DETAILS § Searchable rows.
 - **New section = route in `SettingsContent.svelte` + entry in `TOP_LEVEL_ORDER` (`SettingsSidebar.svelte`) + mirror in
   `settings.spec.ts`.** Routing is registry-driven, not string match.
