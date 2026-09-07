@@ -23,9 +23,13 @@
     let zoomedXMin: number | null = $state(null)
     let zoomedXMax: number | null = $state(null)
 
-    // Reset zoom when external xMin/xMax change (e.g. range switch)
+    // Reset zoom when external xMin/xMax change (e.g. range switch). The bare reads are what
+    // register xMin/xMax as this effect's reactive dependencies; `no-meaningless-void-operator`
+    // doesn't know Svelte gives `void` a second job here.
     $effect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-meaningless-void-operator
         void xMin
+        // eslint-disable-next-line @typescript-eslint/no-meaningless-void-operator
         void xMax
         zoomedXMin = null
         zoomedXMax = null
@@ -153,15 +157,20 @@
         }
     })
 
-    // Recreate chart when data changes
+    // Recreate chart when data changes. The bare read registers `data` as this effect's
+    // reactive dependency; `no-meaningless-void-operator` doesn't know Svelte gives `void` a
+    // second job here.
     $effect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-meaningless-void-operator
         void data
         createChart()
     })
 
-    // Apply zoom when it changes
+    // Apply zoom when it changes. Same reactive-dependency reasoning as above.
     $effect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-meaningless-void-operator
         void zoomedXMin
+        // eslint-disable-next-line @typescript-eslint/no-meaningless-void-operator
         void zoomedXMax
         applyXScale()
     })

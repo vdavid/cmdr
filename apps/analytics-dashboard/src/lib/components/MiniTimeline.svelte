@@ -101,8 +101,12 @@
         }
     })
 
+    // The bare reads register data/maxY as this effect's reactive dependencies;
+    // `no-meaningless-void-operator` doesn't know Svelte gives `void` a second job here.
     $effect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-meaningless-void-operator
         void data
+        // eslint-disable-next-line @typescript-eslint/no-meaningless-void-operator
         void maxY
         createChart()
     })
