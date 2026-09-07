@@ -2343,6 +2343,7 @@ niet.
   eronder — dezelfde scheiding die het Engels maakt met `packages` tegenover `app bundles`.
 - **Zinsframe → `Wat Enter doet bij een …, … of ….`** · precies het frame van de zustersleutels
   `settings.archives.zip.description` en `settings.archives.bundle.description` · `high`. Geen apostrof in de waarde.
+
 ## De serverhub: verbindingsscherm, verbindingstooltips en de vergeet-bevestigingen (`servers.*`, `fileExplorer.navigation.connectionTooltip*`, `.disconnect*`, `.forget*`)
 
 Nieuw oppervlak: het paneel dat je ziet terwijl Cmdr een server opent (of weigert te openen), de tooltip op het

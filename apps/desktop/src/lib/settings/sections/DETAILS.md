@@ -165,8 +165,9 @@ sections compose).
 - **`ServersSection.svelte`**: `File systems > Servers (SFTP, WebDAV)`: one "Trusted host keys" `SectionCard` listing
   `listTrustedSftpHostKeys()`, a row per key (host with port, algorithm, fingerprint, the date it was trusted) with a
   confirmed Forget. ❗ The page has NO setting: saved servers live in the hub, so both its sidebar row and its card's
-  `shouldShow` gate come from the anchoring row in `ServersSection.rows.ts` (`../DETAILS.md` § Searchable rows). The list is `null` until the read answers, so the empty sentence can't flash in front of someone who has
-  keys; a read that throws lands on the same sentence rather than an eternal blank.
+  `shouldShow` gate come from the anchoring row in `ServersSection.rows.ts` (`../DETAILS.md` § Searchable rows). The
+  list is `null` until the read answers, so the empty sentence can't flash in front of someone who has keys; a read that
+  throws lands on the same sentence rather than an eternal blank.
 - **`MtpSection.svelte`**: `File systems > MTP (Android/Kindle/cameras)`: one unlabeled `SectionCard`, gated via
   `anyVisible(shouldShow, ...)`
 - **`AdbSection.svelte`**: `File systems > Android (ADB)`: one unlabeled `SectionCard` holding the
@@ -177,8 +178,8 @@ sections compose).
   call per click and is re-entrancy guarded, ❌ never on mount and ❌ never polled: it is the only path allowed to retry
   `adb start-server`. Mount reads `getAdbInstallStatus`, which looks nothing up. A Browse pick re-checks too, ❌ not
   reads: the path only takes effect once the tracker restarts under it, so a status read there would answer about the
-  OLD binary, and choosing a file is exactly the human action the re-check budget is per. Both settings live-apply together
-  through `$lib/adb/adb-settings.ts`; this section only writes them.
+  OLD binary, and choosing a file is exactly the human action the re-check budget is per. Both settings live-apply
+  together through `$lib/adb/adb-settings.ts`; this section only writes them.
 - **`GitSection.svelte`**: `File systems > Git`: one unlabeled `SectionCard`, gated via `anyVisible(shouldShow, ...)`
 - **`ViewerSection.svelte`**: `Viewer`: one unlabeled `SectionCard`, gated via `anyVisible(shouldShow, ...)`
 - **`KeyboardShortcutsSection.svelte`**: `Keyboard shortcuts`: special (non-registry) section, renders the shortcut

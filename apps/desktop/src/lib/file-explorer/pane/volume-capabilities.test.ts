@@ -85,7 +85,6 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canWrite: true,
       canBeSource: true,
       hasParentRow: true,
-      sortsRows: true,
       syncsToMcp: true,
     },
     webdav: {
@@ -94,7 +93,6 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canWrite: true,
       canBeSource: true,
       hasParentRow: true,
-      sortsRows: true,
       syncsToMcp: true,
     },
     mtp: {

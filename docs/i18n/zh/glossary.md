@@ -1903,6 +1903,7 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
 - **连接词 → `和`** · 目录中「X and Y」型标签几乎都用 `和`（`颜色和格式`、`日期和时间`、`提示和警告`）· `high`。
 - **句式 → `在 …、…、… 或 … 上按 Enter 键时的行为。`** · 与同类键 `settings.archives.zip.description`、
   `settings.archives.bundle.description` 完全相同的格式 · `high`。值中没有撇号。
+
 ## 服务器面板与卷切换器里的服务器行（`servers.*`、`fileExplorer.navigation.connectionTooltip*`/`disconnect*`/`forget*`，2026-09-06）
 
 新界面：窗格里的服务器连接状态（正在连接 / 被拒绝的各种原因），以及卷切换器里每一行服务器的连接圆点提示、断开连接按钮、“忘记服务器”和“清除保存的密码”两个确认对话框。

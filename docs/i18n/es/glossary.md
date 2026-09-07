@@ -2094,6 +2094,7 @@ por eso ni el inglés nombra Office.
   `Paquetes de apps` de debajo, la misma separación que hace el inglés con `packages` frente a `app bundles`.
 - **Marco de la frase → `Qué hace pulsar Intro en un …, … o ….`** · el mismo marco que sus claves hermanas
   `settings.archives.zip.description` y `settings.archives.bundle.description` · `high`. Sin apóstrofo en el valor.
+
 ## El hub de servidores: conectar, desconectar y olvidar (`servers.*`, `fileExplorer.navigation.{connectionTooltip*,disconnect*,forget*}`, 2026-09-06)
 
 28 claves nuevas: el panel que enseña el estado de una conexión a un servidor SMB / SFTP / WebDAV, los tooltips del

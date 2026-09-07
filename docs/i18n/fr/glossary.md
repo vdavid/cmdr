@@ -2479,6 +2479,7 @@ Office.
   before `ou` (French has no serial comma; see the calqued `virgule avant ou` note above) · `high`. ❗
   `settings.archives.bundle.description` still carries that calqued comma (`un .bundle, ou un .framework`). It was out
   of scope for this pass, so the two rows differ in punctuation until someone fixes it.
+
 ## Le hub des serveurs : panneau de connexion, refus, et oubli (2026-09-06, 15 clés `servers.*` + 13 clés `fileExplorer.navigation.*`)
 
 Nouvelle surface : un panneau qui affiche l'état d'une connexion à un serveur (SMB, SFTP, WebDAV), la raison d'un refus,

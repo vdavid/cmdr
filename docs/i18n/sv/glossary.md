@@ -2110,6 +2110,7 @@ documents (.docx, .xlsx, .pptx) and app packages (.jar, .apk), which is why even
   (style.md § no comma before `och`/`eller`) · `high`. ❗ `settings.archives.bundle.description` still carries that
   calqued comma (`.bundle, eller .framework`). It was out of scope for this pass, so the two rows differ in punctuation
   until someone fixes it.
+
 ## Serverhubben: anslutningsläget, avvisningarna och glöm-dialogerna (2026-09-06; de 15 `servers.*` + 13 `fileExplorer.navigation.connectionTooltip*`/`.disconnect*`/`.forget*`)
 
 Ny yta: en panelvy som visar hur en serveranslutning går (`servers.paneState.*`), tio texter som säger varför servern sa

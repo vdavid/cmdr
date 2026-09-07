@@ -7,7 +7,7 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 
 - `DualPaneExplorer.svelte`: root, owns both panes, key/command dispatch, the dialog manager, the MCP surface.
 - `FilePane.svelte`: one pane (lifecycle `$state`, the `FilePaneAPI` exports, the alt-view `{#if}` chain). Its
-  controller and helpers are siblings, listed in DETAILS.
+  controller and helpers are siblings, in DETAILS.
 
 ## Must-knows
 
@@ -23,14 +23,14 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   READ-ONLY.
 - **Two archive path predicates**: `pathCrossesArchiveBoundary` (at-or-inside) for a PANE path; `pathInsideArchive`
   (strictly inside) for a site acting ON one — a `.zip`/`.docx` file itself previews, moves, and renames normally. ❌
-  Never add a document suffix to `WRITABLE_ARCHIVE_SUFFIXES`; a `.docx` is a zip the mutator would rewrite.
+  Never add a document suffix to `WRITABLE_ARCHIVE_SUFFIXES`: a `.docx` is a zip the mutator would rewrite.
 - **The snapshot pane (`volumeId === 'search-results'`) couples five points**; skip one and you get an off-by-one
   selection, a stuck `search-results` path, a delete on rows nobody picked, an MCP delete refused by stale pane state,
   or a folder re-sorted from a pane that isn't it (its header sorts the SNAPSHOT, ❌ never `setPaneSort`). DETAILS §
   Snapshot pane.
 - **BIRTH CONTEXT and an ADOPTED operation are separate slots in separate MODULES.** The flow modules get a read-only
-  `hasBirthContext()` and argument-free commands, ❌ never the props, a writer, or a getter, and ❌ never read the
-  progress slot's occupancy off `showTransferProgressDialog`. DETAILS § Birth context.
+  `hasBirthContext()` and argument-free commands, ❌ never the props, a writer, a getter, or the progress slot's
+  occupancy off `showTransferProgressDialog`. DETAILS § Birth context.
 - **A dialog on screen refuses the commands that START a file operation, ❌ never the ones that STEER a running one.**
   `$lib/ui/dialog-registry.ts` declares the verdict per entry (a new dialog won't compile without one). DETAILS § The
   operation-start gate.
@@ -42,17 +42,13 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   pane layout.
 - **`navigate(intent, deps)` is the single pane-nav entry**: `{ goTo }` self-routes by volume, `{ selectVolume }` always
   switches, bare paths resolve to a `Location` at the edge.
-- **The `network` pane is the SERVERS HUB**, hosted by `NetworkMountView`, and it owns its own MCP push
-  (`pane-mcp-sync` skips it). ❗ Its NAME is spelled in four places, one of them Rust; a fifth spelling is a 30 s MCP
-  timeout, not a wrong word. `../network/DETAILS.md` § Gotchas.
-- **A pane on a SAVED place dials it, in the pane, with a cancel** (`place-connect.svelte.ts`, whose `$effect` holds the
-  one-dial-per-landing rule). The gate is the CONNECTION STATE, in FRONT of the kind chain. ❌ Never add a
-  `RemoteConnectState` variant before the milestone that can act on it. DETAILS § "A pane on a saved place".
-- **`RemoteConnectView.svelte` renders every remote wait off ONE typed state** (`remote-connect-state.ts`). A backoff
-  loop is `connecting` with a `cycle`; a loop that gave up is `VolumeUnreachableBanner`'s `gaveUp`, ❌ never a second
-  renderer. ❌ No inert button. DETAILS § "The connect views".
-- **`DualPaneExplorer.svelte` / `FilePane.svelte` are at their size cap**: extract cross-cutting state to a
-  `*.svelte.ts` factory or pure logic to a `*.ts` helper, ❌ never a child component.
+- **The `network` pane is the SERVERS HUB** (`NetworkMountView`): it owns its MCP push, so `pane-mcp-sync` skips it.
+  ❗ Its NAME is spelled in four places. `../network/DETAILS.md` § Gotchas.
+- **A pane on a SAVED place dials it with a cancel, and ONE typed state drives every remote wait**
+  (`place-connect.svelte.ts`, `remote-connect-state.ts`, `RemoteConnectView.svelte`). The dial's gate is the CONNECTION
+  STATE, in FRONT of the kind chain. ❌ No second renderer, no inert button, no unused `RemoteConnectState` variant.
+  DETAILS § The connect views, § A pane on a saved place.
+- **`DualPaneExplorer.svelte` / `FilePane.svelte` are at their size cap**: cross-cutting state → a `*.svelte.ts`
+  factory, pure logic → a `*.ts` helper, ❌ never a child component.
 
-Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
-reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here.

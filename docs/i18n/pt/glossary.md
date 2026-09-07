@@ -1935,6 +1935,7 @@ o inglês cita o Office.
   `Pacotes de aplicativo` abaixo dela — a mesma separação que o inglês faz entre `packages` e `app bundles`.
 - **Moldura da frase → `O que pressionar Enter faz em um …, … ou ….`** · exatamente a moldura das chaves irmãs
   `settings.archives.zip.description` e `settings.archives.bundle.description` · `high`. Sem apóstrofo no valor.
+
 ## O hub de servidores: painel de conexão, esquecer servidor e esquecer senha (`servers.*`, `fileExplorer.navigation.connectionTooltip*` / `disconnect*` / `forget*`)
 
 Superfície nova: o painel que mostra o servidor conectando ou recusando (SMB, SFTP, WebDAV), o pontinho de conexão de
