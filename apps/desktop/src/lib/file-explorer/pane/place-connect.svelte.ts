@@ -113,7 +113,14 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
       }),
       retry: () => {
         // A fresh attempt, with a fresh id: the old one is spent.
-        void dial(volumeId, info)
+        //
+        // ❗ And a fresh reading of the volume's STANDING, ❌ never the one
+        // captured when the refusal landed. `connectPlace` picks its arm by that
+        // standing, and getting it wrong is silent: if a concurrent connect from
+        // the hub or the switcher registered the volume in between, a stale
+        // `saved` would send this down the dial arm and register a SECOND volume
+        // under a second id.
+        void dial(volumeId, deps.getCurrentVolumeInfo() ?? info)
       },
     }
   }

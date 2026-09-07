@@ -35,7 +35,7 @@ import type { NetworkHost } from '$lib/file-explorer/types'
 import { getAppLogger } from '$lib/logging/logger'
 import type { SignInSeamRequest, SignInSeamResult } from './connect-flow'
 import type { ConnectRefusalKind } from './connect-refusals'
-import { parseServerPath } from './server-path-utils'
+import { parseServerPath, serverProtocolOfVolumeId } from './server-path-utils'
 import type {
   SignInAttempt,
   SignInAttemptOutcome,
@@ -329,7 +329,19 @@ function secretWriterFor(
  * A place no saved server claims. It still has to say WHO is asking, so the id
  * stands in: the sheet's header is honest about knowing nothing more, and the
  * refusal sentences read fine with it.
+ *
+ * ❗ The PROTOCOL is still read off the id's own prefix, ❌ never defaulted to
+ * SFTP: `cmdr_fs::volume::ids` mints that prefix, so it is a real answer, and a
+ * WebDAV place that fell out of the listing described as SFTP puts the wrong word
+ * in the header and in the refusal under it. An id that names neither is not a
+ * server place at all, and SFTP is the honest guess for a shape nothing else
+ * explains.
  */
 function unknownEndpoint(volumeId: string): SignInEndpoint {
-  return { protocol: 'sftp', displayName: volumeId, address: volumeId, host: volumeId }
+  return {
+    protocol: serverProtocolOfVolumeId(volumeId) ?? 'sftp',
+    displayName: volumeId,
+    address: volumeId,
+    host: volumeId,
+  }
 }

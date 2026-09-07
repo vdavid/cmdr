@@ -89,8 +89,13 @@
 {/if}
 
 <div class="field">
-    <label for="sign-in-username" class="field-label">{tString('servers.sheet.username')}</label>
+    <!-- ❗ A `<label for>` binds only to a LABELABLE element, and the read-only
+         branch below renders a `<p>`, which is not one: the label would be inert
+         for a screen reader in exactly the variant SFTP and WebDAV use. So the
+         editable branch keeps the real `<label>`, and the read-only one pairs an
+         `aria-labelledby` with a plain heading. -->
     {#if usernameIsEditable}
+        <label for="sign-in-username" class="field-label">{tString('servers.sheet.username')}</label>
         <TextInput
             id="sign-in-username"
             value={username}
@@ -106,7 +111,8 @@
     {:else}
         <!-- Read-only because the volume id IS this account: a changed username
              would name a different server, and the backend refuses one. -->
-        <p id="sign-in-username" class="account-header">{accountLabel}</p>
+        <p id="sign-in-username-label" class="field-label">{tString('servers.sheet.username')}</p>
+        <p id="sign-in-username" class="account-header" aria-labelledby="sign-in-username-label">{accountLabel}</p>
     {/if}
 </div>
 

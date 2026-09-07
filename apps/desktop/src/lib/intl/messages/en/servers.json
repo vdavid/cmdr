@@ -205,7 +205,7 @@
   },
   "servers.sheet.connecting": "Connecting…",
   "@servers.sheet.connecting": {
-    "description": "Replaces the main buttons label while the sheet is waiting for the server. The ellipsis is the single character … (U+2026)."
+    "description": "Replaces the main button's label while the sheet is waiting for the server. The ellipsis is the single character … (U+2026)."
   },
   "servers.sheet.protocolLegend": "Protocol",
   "@servers.sheet.protocolLegend": {
@@ -305,7 +305,7 @@
   },
   "servers.hostKey.firstContactTitle": "First time connecting to {host}",
   "@servers.hostKey.firstContactTitle": {
-    "description": "Heading of the step where the user approves a servers SSH identity key the first time. Routine, not alarming.",
+    "description": "Heading of the step where the user approves a server's SSH identity key the first time. Routine, not alarming.",
     "placeholders": {
       "host": "the server''s hostname or address, like “nas.local”"
     }
@@ -331,7 +331,7 @@
   },
   "servers.hostKey.fingerprintLabel": "Key fingerprint",
   "@servers.hostKey.fingerprintLabel": {
-    "description": "Label above the SSH keys algorithm and fingerprint. Two words, NOUN phrase."
+    "description": "Label above the SSH key's algorithm and fingerprint. Two words, NOUN phrase."
   },
   "servers.hostKey.trustAndConnect": "Trust and connect",
   "@servers.hostKey.trustAndConnect": {

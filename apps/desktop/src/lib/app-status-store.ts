@@ -87,7 +87,10 @@ async function getStore(): Promise<Store> {
  * this rule is PATH-shaped, so it covers the volumes that don't have a fixed id.
  */
 async function resolvePersistedPath(path: string, pathExistsFn: (p: string) => Promise<boolean>): Promise<string> {
-  if (/^[a-z][a-z\d+.-]*:\/\//i.test(path)) return path
+  // ❗ The second slash is optional: a one-slash `sftp:/srv/data` is not a shape
+  // the app writes, but a `://` test misses it and the walk below then chops it
+  // to `/` and answers `~` on the boot disk. Same guard as `schemeRootOf`.
+  if (/^[a-z][a-z\d+.-]*:\/\/?/i.test(path)) return path
   return (await resolveValidPath(path, { pathExistsFn, timeoutMs: 0 })) ?? DEFAULT_PATH
 }
 

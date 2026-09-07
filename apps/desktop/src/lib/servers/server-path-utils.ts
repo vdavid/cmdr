@@ -67,7 +67,19 @@ export function isServerPath(path: string): boolean {
  * `saved` row's id is the same one the live volume gets.
  */
 export function isServerVolumeId(volumeId: string): boolean {
-  return SERVER_SCHEMES.some((scheme) => volumeId.startsWith(`${scheme}-`))
+  return serverProtocolOfVolumeId(volumeId) !== null
+}
+
+/**
+ * Which protocol a server volume id names, or `null` when it names no server.
+ *
+ * ❗ The id's own prefix is the ONLY thing a caller with nothing but an id can
+ * read a protocol off, and it is a real answer: `cmdr_fs::volume::ids` mints it.
+ * ❌ Don't default to one when the id doesn't say — a WebDAV place described as
+ * SFTP puts the wrong word in the sheet's header and in the refusal under it.
+ */
+export function serverProtocolOfVolumeId(volumeId: string): ServerPathProtocol | null {
+  return SERVER_SCHEMES.find((scheme) => volumeId.startsWith(`${scheme}-`)) ?? null
 }
 
 /**
