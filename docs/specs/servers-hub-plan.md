@@ -691,6 +691,16 @@ credential ask, `docs/architecture.md` row.
 
 ### M3. SMB moves onto the sheet and the pane view
 
+❗ **What M2 already took off this list.** `SmbReauthView.svelte` is gone: the `needs-auth` branch renders
+`RemoteConnectView`'s `signed_out`, whose button opens the sheet as a REGISTERED place. `needs_host_key_approval` has
+its own manager status and its own pane state. So step 2 below is now `SmbReconnectingView` and
+`VolumeUnreachableBanner`'s `smbGaveUp` variant only, and `gave_up` lands with that variant's retirement.
+
+❗ **The sheet's vocabulary is wider than D8 drafted.** `SignInRefusal` is `connect-refusals.ts`'s full
+`ConnectRefusalKind` (one vocabulary for a refusal across the pane and the sheet, so the two can't drift), the attempt
+outcome keeps the two host-key payloads, and it gained `handed_off` for SMB's add path, whose connect is a share mount
+rather than a session. `servers/DETAILS.md` § "The sheet contract" is canonical.
+
 1. `ShareBrowser`'s listing auth, `NetworkMountView`'s mount auth, `SmbReauthView`, and `FilePane`'s `smbUpgradeLogin`
    branch all call `openSignInSheet({ mode: 'sign-in', shape: username_password, attempt })` with their own `attempt`.
    `direct-connect.ts`'s `raiseCredentialsForm` becomes a call into the sheet; `smb-login-hosts.ts` and
