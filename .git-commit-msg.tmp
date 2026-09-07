@@ -1,21 +1,24 @@
-fix(index): turning on the drive index for a server can no longer start a local walker on a scheme root
+feat(mcp): agents can finally see the user's servers in `cmdr://state` and `list_volumes`
 
-`local_external::classify` read only two facts, a live smb2 session and the mount's network flag, and neither catches a
-server. An SFTP volume's root is `sftp://ada@nas:22/srv`, which is not a mount point, so `detect_filesystem_for_path`
-reports it as NON-network and the volume sailed through as a plain local external drive. `enable_drive_index` takes any
-volume id and only special-cases root and MTP, so the whole thing was reachable over IPC: `start_volume` would spin up
-the local guarded walker plus an FSEvents watcher rooted at a scheme path, after persisting the sticky "the user turned
-this on" marker. The walk covers zero entries and the drive is then reported as indexed, so folder sizes and search
-answer "nothing here" for a server full of files. The frontend's capability row was the only thing keeping a human away
-from it, and the badge half of that landed in `51ca90bb6`.
+`snapshot_volumes` built its own list from `crate::volumes::list_locations` plus a hand-appended MTP block, so no row
+ever carried `fs_type: "sftp" | "webdav" | "adb"`. That made three arms of `kind_for_location` and every
+`connectionState` past `disconnected` unreachable in practice, while `mcp/resources/DETAILS.md` advertised the widened
+token sets as the agent-facing contract. The compiler couldn't see it: the arms are constructed inside a function that
+IS called, just never with those inputs. `agent/tools/read/volumes.rs` maps the same snapshot, so `list_volumes` had the
+same hole.
 
-`routes_to_local_external` now takes the volume's `BackendKind` instead of an is-SMB boolean, and only `Local` may run
-the local walker. Both halves of the gate stay load-bearing and neither subsumes the other: a network mount is served by
-a `LocalPosixVolume` and so answers `Local`, while a server's scheme root probes as non-network. `smb/index.rs` already
-had the right shape (`!matches!(backend_kind(), Smb | Local)` → refuse); this is its twin.
+The macOS branch now runs `volume_listing::complete` through `list_with_timeout`, the same pipeline the `list_volumes`
+IPC command and the `volumes-changed` push use, so a saved SFTP place reaches an agent as `kind: sftp` with
+`connectionState: saved` and the agent can route a connect at it. `complete` also folds in every device provider's
+storages, so the duplicated MTP block goes away on macOS; Linux keeps it, since its branch still lists only `root`.
 
-The `cover/bootstrap.rs` caller passes the kind through too, so the one rule serves both sites. It was already safe
-there behind `supports_local_fs_access()`, and now it doesn't depend on that ordering.
+Two details the shared pipeline needed:
 
-Cells: `classify` falling through for `Sftp`, `Webdav`, and `Adb` over a mount that probes clean, plus the pure
-predicate refusing all six non-`Local` backends.
+- **`indexStatus` by path OR by id.** Path routing places a real mount point; a scheme root (`mtp://`, `sftp://`) is not
+  a path any router can place, so those look up by volume id. That is what MTP's old hand-rolled block did, now stated
+  as a rule rather than as a separate code path.
+- **No `mountPath` on a scheme-rooted row.** A scheme root is not a path a `search` scope can take, and handing one over
+  under that name would read as one. Preserves MTP's existing behavior and extends its reasoning to the servers.
+
+Cell: a remembered SFTP server reaching the real snapshot with the right kind and state, driven through
+`snapshot_volumes` rather than a fixture, because a fixture is exactly what stayed green through this.

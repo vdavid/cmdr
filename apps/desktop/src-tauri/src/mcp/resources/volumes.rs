@@ -290,32 +290,38 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
 
     #[cfg(target_os = "macos")]
     {
-        // Off-thread + timeout-guarded: `list_locations` runs blocking macOS
-        // metadata syscalls, and a resource read must never wedge the MCP handler
-        // (a dying mount once made `cmdr://state` reads take a flat 30s). SMB-state
-        // enrichment runs inside the same guarded closure so the whole snapshot is
-        // one bounded unit. Mirrors `volume_broadcast::do_emit`'s guard. See
-        // `volumes/DETAILS.md` § "Hung mounts".
-        let snapshot = tokio::task::spawn_blocking(|| {
-            let mut locations = crate::volumes::list_locations();
-            // Enrich from the `VolumeManager` so agents see the SMB connection
-            // state (`direct` / `os_mount` / `disconnected`) alongside the rest.
-            crate::volumes::enrich_from_volume_registry(&mut locations);
-            locations
-        });
-        let locations = match tokio::time::timeout(std::time::Duration::from_secs(2), snapshot).await {
-            Ok(Ok(locations)) => locations,
-            _ => Vec::new(),
-        };
+        // ❗ The SAME pipeline the app's own volume list and its `volumes-changed`
+        // push run (`volume_listing::complete`), ❌ never a second assembly here.
+        // Building its own list from `list_locations` is what left every server
+        // row out of `cmdr://state` for as long as servers existed: no entry ever
+        // carried `fs_type: "sftp"`, so three arms of `kind_for_location` and
+        // every `connectionState` past `disconnected` were unreachable while this
+        // resource's docs advertised them as the contract. It also folds in every
+        // device provider's storages, which is why there is no MTP block below on
+        // this platform.
+        //
+        // Discovery stays off-thread and timeout-guarded inside `list_with_timeout`:
+        // it runs blocking macOS metadata syscalls, and a resource read must never
+        // wedge the MCP handler (a dying mount once made `cmdr://state` reads take
+        // a flat 30 s). See `volumes/DETAILS.md` § "Hung mounts".
+        let (locations, _incomplete) =
+            crate::volume_listing::list_with_timeout(std::time::Duration::from_secs(2)).await;
         for loc in &locations {
             let connection_state = loc.connection_state.map(connection_state_token);
             let device_readiness = loc.device_readiness.map(device_readiness_token);
             let kind = kind_for_location(loc.fs_type.as_deref(), loc.connection_state.is_some());
+            let on_a_real_path = loc.path.starts_with('/');
             // Path-based status resolution routes each volume to its OWN index (see
             // `indexing::routing::volume_id_for_local_path`): a mounted-but-unindexed
             // external drive (`/Volumes/X`) reports `off`, not `root`'s freshness, so
-            // this can't disagree with `cmdr://indexing`.
-            let status = index().volume_status_for_path(&loc.path);
+            // this can't disagree with `cmdr://indexing`. ❗ A scheme root
+            // (`mtp://…`, `sftp://…`) is not a path any router can place, so those
+            // are looked up by their volume id instead.
+            let status = if on_a_real_path {
+                index().volume_status_for_path(&loc.path)
+            } else {
+                index().volume_status(&loc.id)
+            };
             out.push(VolumeSummary {
                 name: loc.name.clone(),
                 id: loc.id.clone(),
@@ -326,7 +332,10 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                 ejectable: Some(loc.is_ejectable),
                 index_status: Some(index_status_token(&status)),
                 connection_state,
-                mount_path: Some(loc.path.clone()),
+                // ❗ Only a real mount point. A scheme root is not a path a
+                // `search` scope can take, and handing one over as `mountPath`
+                // would read as one.
+                mount_path: on_a_real_path.then(|| loc.path.clone()),
                 space: space_summary(&loc.id),
             });
         }
@@ -364,7 +373,9 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
         });
     }
 
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    // Linux only: its branch above lists just `root`, so this is still the one
+    // source of device rows there. macOS gets them from `volume_listing::complete`.
+    #[cfg(target_os = "linux")]
     {
         let devices = crate::mtp::connection_manager().get_all_connected_devices().await;
         for device_info in &devices {
@@ -432,6 +443,50 @@ mod tests {
     #[test]
     fn empty_renders_flow_seq() {
         assert_eq!(build_volumes_yaml(&[]), "volumes: []\n");
+    }
+
+    /// ❗ **A saved server reaches `cmdr://state`.** The snapshot used to build
+    /// its own list from `list_locations` plus a hand-appended MTP block, so no
+    /// row ever carried `fs_type: "sftp"`: the `Sftp` / `Webdav` / `Adb` arms of
+    /// [`kind_for_location`] and every `connectionState` past `disconnected` were
+    /// unreachable in practice, while the resource's own docs advertised them as
+    /// the agent-facing contract. The compiler can't see it, because the arms are
+    /// constructed inside a function that IS called.
+    ///
+    /// Drives the real snapshot rather than a fixture, because the fixture is
+    /// exactly what stayed green through the bug.
+    #[cfg(target_os = "macos")]
+    #[tokio::test]
+    async fn a_saved_server_reaches_the_state_resource() {
+        // ❗ `192.0.2.x` is reserved for documentation (RFC 5737) and routed
+        // nowhere, so nothing here can dial a stranger's machine — and the
+        // snapshot must not dial at all.
+        let host = "192.0.2.51";
+        crate::network::sftp_known_servers::remember(crate::network::sftp_known_servers::KnownSftpServer {
+            host: host.to_string(),
+            port: 2222,
+            username: "ada".to_string(),
+            display_name: format!("{host} server"),
+            remote_root: "/srv/data".to_string(),
+            key_file: None,
+            use_agent: false,
+            auto_reconnect: true,
+            pinned: true,
+            last_connected_at: "2026-09-06T00:00:00Z".to_string(),
+        });
+
+        let volumes = snapshot_volumes().await;
+        let id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+        let row = volumes
+            .iter()
+            .find(|v| v.id == id)
+            .expect("a saved server is a volume the agent can see");
+
+        assert_eq!(row.kind, VolumeKind::Sftp, "❌ never `local`: the fs_type names it");
+        // Nothing is registered under that id, so it is the greyed row, and the
+        // agent needs the word for that to route a connect at it.
+        assert_eq!(row.connection_state, Some("saved"));
+        assert!(build_volumes_yaml(&volumes).contains("kind: sftp"));
     }
 
     #[test]
