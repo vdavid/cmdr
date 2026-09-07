@@ -423,7 +423,12 @@
             void notifyDialogOpened(dialogId)
         }
         await tick()
-        overlayElement?.focus()
+        // Only if nothing inside claimed focus first. A child that autofocuses (the
+        // name box in the New folder / New file dialogs) mounts BEFORE this component,
+        // so its post-`tick()` `.focus()` resolves first; focusing the scrim
+        // unconditionally would take it straight back and force the user to click the
+        // field before typing (#84).
+        if (overlayElement && !overlayElement.contains(document.activeElement)) overlayElement.focus()
 
         if (!growDownward || !dialogElement) return
         anchorToCurrentCenter()
