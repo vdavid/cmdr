@@ -428,6 +428,14 @@
   "@menu.context.removeDownload": {
     "sourceHash": "5dfc369"
   },
+  "menu.context.openInGoogleDrive": "Megnyitás a Google Drive-ban",
+  "@menu.context.openInGoogleDrive": {
+    "sourceHash": "98c7516"
+  },
+  "menu.context.copyGoogleDriveLink": "Google Drive-link másolása",
+  "@menu.context.copyGoogleDriveLink": {
+    "sourceHash": "070b383"
+  },
   "menu.context.openWith": "Megnyitás ezzel",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"

@@ -285,7 +285,7 @@ export const fileHandlers = {
       try {
         const link = await googleDriveLink(entry.path)
         if (!link) {
-          addToast(tString('commands.handler.googleDriveLinkMissing'), { level: 'warning' })
+          addToast(tString('commands.handler.googleDriveLinkMissing'), { level: 'warn' })
           return
         }
         await openExternalUrl(link)
@@ -299,7 +299,7 @@ export const fileHandlers = {
       try {
         const link = await googleDriveLink(entry.path)
         if (!link) {
-          addToast(tString('commands.handler.googleDriveLinkMissing'), { level: 'warning' })
+          addToast(tString('commands.handler.googleDriveLinkMissing'), { level: 'warn' })
           return
         }
         await copyToClipboard(link)
