@@ -23,6 +23,7 @@ import { wordConnectRefusal, type ConnectRefusalKind } from '$lib/servers/connec
 import { readAdbConnectOutcome } from '$lib/adb/adb-connect-errors'
 import type { AdbConnectOutcomeError } from '$lib/ipc/bindings'
 import type { MessageKey } from '$lib/intl/keys.gen'
+import serversCatalog from '$lib/intl/messages/en/servers.json'
 import { getListingErrorMessage, type ListingErrorReason } from './listing-error-messages'
 import { getGitErrorMessage, type FriendlyGitErrorKind } from './git-error-messages'
 import { getProviderSuggestion, type Provider, type ProviderCategory } from './provider-error-messages'
@@ -204,18 +205,28 @@ const REFUSAL_KINDS: ConnectRefusalKind[] = [
   'host_key_revoked',
 ]
 
-/** The pane's own sentences, which say what is happening rather than why it stopped. */
-const PANE_STATE_KEYS: MessageKey[] = [
-  'servers.paneState.connecting',
-  'servers.paneState.connectingHint',
-  'servers.paneState.cancel',
-  'servers.paneState.tryAgain',
-  'servers.paneState.disconnect',
-  'servers.paneState.signedOut',
-  'servers.paneState.signIn',
-  'servers.paneState.hostKeyChanged',
-  'servers.paneState.hostKeyChangedHint',
-]
+/**
+ * The pane's own sentences, which say what is happening rather than why it
+ * stopped.
+ *
+ * ❗ **Derived from the catalog by PREFIX, ❌ never hand-spelled.** A written-out
+ * list only covers what somebody remembered to add to it, and this one had
+ * silently fallen ten keys behind the catalog: a new pane sentence with "failed"
+ * in it shipped unguarded. Everything under `servers.paneState.` is copy a person
+ * reads when a connect stopped, so everything under it is in scope by
+ * construction.
+ */
+const PANE_STATE_KEYS = Object.keys(serversCatalog).filter(
+  (key) => key.startsWith('servers.paneState.') && !key.startsWith('@'),
+) as MessageKey[]
+
+/**
+ * Every placeholder any of those keys takes, so one loop can render them all.
+ *
+ * A key that doesn't take one ignores the extra, and the check is about the
+ * WORDS around the placeholder rather than the value in it.
+ */
+const PANE_STATE_PARAMS = { name: 'Naspolya', duration: '2 minutes', seconds: '60', minutes: '2' }
 
 /** The serial a refusal carries, which must never reach the sentence. */
 const ADB_SERIAL = 'R58M12345'
@@ -274,7 +285,7 @@ describe('servers copy obeys the writing rules', () => {
 
   for (const key of PANE_STATE_KEYS) {
     it(`pane state "${key}" is clean`, () => {
-      const sentence = tString(key, { name: 'Naspolya' })
+      const sentence = tString(key, PANE_STATE_PARAMS)
       for (const word of [...NEVER_WORDS, ...TRIVIALIZING_WORDS]) {
         expect(containsWord(sentence, word), `${key} contains "${word}": ${sentence}`).toBe(false)
       }

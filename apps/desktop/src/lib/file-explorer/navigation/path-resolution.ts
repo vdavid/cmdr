@@ -35,9 +35,22 @@ export interface ResolveValidPathOptions {
  * on the root volume. A restored server tab has to come back on its server.
  */
 function schemeRootOf(path: string): string | null {
-  const match = /^[a-z][a-z\d+.-]*:\/\/[^/]*/i.exec(path)
+  const match = SCHEME_ROOT_RE.exec(path)
   return match ? match[0] : null
 }
+
+/**
+ * `<scheme>:` plus its authority, up to the first path separator after it.
+ *
+ * ❗ The second slash is OPTIONAL, and that is the whole guard: a one-slash
+ * `sftp:/srv/data` is not a shape anything in the app writes, but a guard keyed
+ * on `://` misses it, and what it misses is not "an odd-looking path". The walk
+ * chops it to `sftp:`, then to `/`, and lands the pane on the boot disk — exactly
+ * the failure this module exists to prevent. Recognizing it costs one character
+ * and stops the walk on the scheme either way. `app-status-store.ts`'s
+ * never-probe test carries the same shape for the same reason.
+ */
+const SCHEME_ROOT_RE = /^[a-z][a-z\d+.-]*:\/\/?[^/]*/i
 
 /**
  * Where the walk stops on a scheme path, and the answer once it gets there:

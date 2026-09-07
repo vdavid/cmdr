@@ -38,6 +38,23 @@ describe('resolveValidPath on a scheme path', () => {
     }
   })
 
+  /**
+   * ❗ A guard keyed on `://` is one character wide, and what slips past it is
+   * not merely an odd-looking path: the walk chops `sftp:/srv/data` to `sftp:`,
+   * then to `/`, and answers `~` on the BOOT DISK, which is the exact failure
+   * this module exists to prevent.
+   */
+  it('stops on a scheme path spelled with ONE slash too', async () => {
+    const resolved = await resolveValidPath('sftp:/srv/data/photos', {
+      pathExistsFn: nothingExists,
+      timeoutMs: 0,
+    })
+    expect(resolved).not.toBeNull()
+    expect(resolved).not.toBe('~')
+    expect(resolved).not.toBe('/')
+    expect(resolved?.startsWith('sftp:')).toBe(true)
+  })
+
   it('takes a path that DOES answer, without walking at all', async () => {
     const exists = vi.fn(() => Promise.resolve(true))
     const resolved = await resolveValidPath('sftp://ada@nas.local:22/srv/data/photos', {
