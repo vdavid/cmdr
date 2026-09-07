@@ -45,6 +45,14 @@ Three inputs, and one of them is a command rather than a store: `listSavedServer
 is reassigned, which every pin, forget, connect, and disconnect causes through `volumes-changed`), the discovery store's
 hosts, and the volume list, which is where a place's standing lives.
 
+❗ **Why a pane state and not a Settings list**, and the rule that comes with it: the hub is this app's pilot for
+putting a manageable list where the user already navigates, so the saved-server list does NOT also live in Settings (a
+Settings card keeps only what the hub can't show, the trusted host keys). The rule the pilot carries: **a pane state may
+be a LIST, ❌ never a FORM.** Enter, F8, ⌘E, and the row menus act on the row under the cursor; anything that asks a
+person to TYPE opens the sign-in sheet (`../../servers/DETAILS.md` § "The four rules", rule 3). A form inside a pane is
+what the SMB login form used to be, where Tab meant "switch panes" to Cmdr and "next field" to macOS and the form lost
+either way.
+
 ### What Enter does, per row kind
 
 - **An SMB host** opens its places list (`onHostSelect`). A saved host mDNS isn't seeing right now is handed over as a

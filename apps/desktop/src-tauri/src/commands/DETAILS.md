@@ -106,6 +106,12 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   - `update_saved_server` takes a `ServerTarget`, the same shape the add sheet collects, because an edit and an add
     differ only in whether the fields arrived prefilled. It carries no PIN: `set_place_pinned` is the one writer that
     moves one, because the stores' `remember` deliberately preserves a stored pin on every replace.
+  - **This family is where a NEW backend plugs in**, and that is why it exists as a facade over correct, tested
+    per-protocol enums rather than as a rewrite of them: one more `ServerTarget` arm, one more saved-server store, and
+    whatever outcomes the protocol adds to the superset. The frontend then branches once, in a `switch` it already has.
+    S3 is the shape this was sized against: its account is an endpoint plus an access key, its places are buckets, and
+    its sign-in is the reserved `SignInShape::AccessKeys` variant (`crates/cmdr-fs/src/volume/connection.rs`, and
+    `apps/desktop/src/lib/servers/DETAILS.md` § "The renderer table").
 - **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
   in-place reconnect (`reconnect_volume`: backend single-flighted via `Volume::attempt_reconnect`;
   `reconnect_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via
