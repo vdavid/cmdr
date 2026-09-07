@@ -1,0 +1,252 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+	<title>Cmdr</title>
+	<defs>
+		<!-- Silhouettes -->
+		<!-- The folder back. It stops at y=198, under the front's top edge, so
+		     nothing of it can fringe out around the yellow. -->
+		<path
+			id="c-back"
+			d="M46,117
+			   A18,18 0 0 1 64,99
+			   L167,99
+			   A13,13 0 0 1 176.19,102.81
+			   L199.57,126.19
+			   A13,13 0 0 0 208.76,130
+			   L448,130
+			   A18,18 0 0 1 466,148
+			   L466,198
+			   L46,198
+			   Z"
+		/>
+		<path
+			id="c-front"
+			d="M62,177
+			   L450,177
+			   A16,16 0 0 1 466,193
+			   L466,405
+			   A16,16 0 0 1 450,421
+			   L62,421
+			   A16,16 0 0 1 46,405
+			   L46,193
+			   A16,16 0 0 1 62,177
+			   Z"
+		/>
+
+		<clipPath id="c-back-clip"><use href="#c-back" /></clipPath>
+		<clipPath id="c-front-clip"><use href="#c-front" /></clipPath>
+
+		<!-- Outer glows -->
+		<filter id="c-glow-top" x="-30%" y="-30%" width="160%" height="160%"
+			color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="11" />
+		</filter>
+		<filter id="c-glow-warm" x="-30%" y="-30%" width="160%" height="160%"
+			color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="9" />
+		</filter>
+		<filter id="c-soft" x="-40%" y="-40%" width="180%" height="180%"
+			color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="12" />
+		</filter>
+		<filter id="c-soft-sm" x="-40%" y="-40%" width="180%" height="180%"
+			color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="3" />
+		</filter>
+
+		<!-- Haze: deep base, then blue -> violet -> pink light -->
+		<linearGradient id="c-haze-base" x1="46" y1="99" x2="466" y2="200"
+			gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#0c1a3c" />
+			<stop offset="0.45" stop-color="#171348" />
+			<stop offset="1" stop-color="#2a1350" />
+		</linearGradient>
+
+		<radialGradient id="c-blob-cyan" cx="0.5" cy="0.5" r="0.5">
+			<stop offset="0" stop-color="#2ad8ea" stop-opacity="0.88" />
+			<stop offset="1" stop-color="#19c6d8" stop-opacity="0" />
+		</radialGradient>
+		<radialGradient id="c-blob-blue" cx="0.5" cy="0.5" r="0.5">
+			<stop offset="0" stop-color="#4a72f0" stop-opacity="0.85" />
+			<stop offset="1" stop-color="#3d63e0" stop-opacity="0" />
+		</radialGradient>
+		<radialGradient id="c-blob-violet" cx="0.5" cy="0.5" r="0.5">
+			<stop offset="0" stop-color="#9a4ff5" stop-opacity="0.82" />
+			<stop offset="1" stop-color="#8a45e8" stop-opacity="0" />
+		</radialGradient>
+		<radialGradient id="c-blob-pink" cx="0.5" cy="0.5" r="0.5">
+			<stop offset="0" stop-color="#ef52ad" stop-opacity="0.8" />
+			<stop offset="1" stop-color="#e0479f" stop-opacity="0" />
+		</radialGradient>
+
+		<!-- Deepens the haze toward the bottom, so the navy still reads where it
+		     meets the yellow front -->
+		<linearGradient id="c-haze-shade" x1="0" y1="158" x2="0" y2="180"
+			gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#050b22" stop-opacity="0" />
+			<stop offset="1" stop-color="#050b22" stop-opacity="0.55" />
+		</linearGradient>
+
+		<!-- Rim light along the top edge of the folder back -->
+		<linearGradient id="c-rim" x1="46" y1="0" x2="466" y2="0"
+			gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#5ff2ff" stop-opacity="0.55" />
+			<stop offset="0.32" stop-color="#9ef7ff" stop-opacity="0.95" />
+			<stop offset="0.62" stop-color="#c9a4ff" stop-opacity="0.8" />
+			<stop offset="1" stop-color="#ff9ad8" stop-opacity="0.6" />
+		</linearGradient>
+
+		<!-- Glow spilling out of the folder -->
+		<linearGradient id="c-spill" x1="46" y1="0" x2="466" y2="0"
+			gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#2fe6f0" />
+			<stop offset="0.5" stop-color="#7b6bff" />
+			<stop offset="1" stop-color="#ff5fc0" />
+		</linearGradient>
+
+		<!-- Wave strokes -->
+		<linearGradient id="c-wave-a" x1="46" y1="0" x2="466" y2="0"
+			gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#5ff2ff" stop-opacity="0.15" />
+			<stop offset="0.35" stop-color="#8ef8ff" stop-opacity="0.75" />
+			<stop offset="0.75" stop-color="#c79bff" stop-opacity="0.6" />
+			<stop offset="1" stop-color="#ff8fd4" stop-opacity="0.2" />
+		</linearGradient>
+		<linearGradient id="c-wave-b" x1="46" y1="0" x2="466" y2="0"
+			gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#8f7bff" stop-opacity="0.1" />
+			<stop offset="0.4" stop-color="#c79bff" stop-opacity="0.55" />
+			<stop offset="0.8" stop-color="#ff8fd4" stop-opacity="0.7" />
+			<stop offset="1" stop-color="#ffb08f" stop-opacity="0.25" />
+		</linearGradient>
+
+		<!-- Yellow panes -->
+		<linearGradient id="c-pane-left" x1="46" y1="177" x2="256" y2="421"
+			gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#ffc50a" />
+			<stop offset="0.55" stop-color="#f7bd02" />
+			<stop offset="1" stop-color="#eeb400" />
+		</linearGradient>
+		<linearGradient id="c-pane-right" x1="256" y1="177" x2="466" y2="421"
+			gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#dfaa00" />
+			<stop offset="0.55" stop-color="#cd9d00" />
+			<stop offset="1" stop-color="#c39400" />
+		</linearGradient>
+
+		<!-- Top-edge sheen on the yellow front -->
+		<linearGradient id="c-front-sheen" x1="0" y1="177" x2="0" y2="215"
+			gradientUnits="userSpaceOnUse">
+			<stop offset="0" stop-color="#ffffff" stop-opacity="0.1" />
+			<stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+		</linearGradient>
+	</defs>
+
+	<!-- 1. Glow spilling out of the top of the folder -->
+	<g filter="url(#c-glow-top)" opacity="0.65">
+		<use href="#c-back" fill="url(#c-spill)" />
+	</g>
+	<!-- 2. Warm glow under the yellow front -->
+	<g filter="url(#c-glow-warm)" opacity="0.38">
+		<use href="#c-front" fill="#e08a2a" />
+	</g>
+
+	<!-- 3. The AI haze inside the folder back -->
+	<g clip-path="url(#c-back-clip)">
+		<use href="#c-back" fill="url(#c-haze-base)" />
+
+		<g filter="url(#c-soft)">
+			<ellipse cx="104" cy="112" rx="108" ry="66" fill="url(#c-blob-cyan)" />
+			<ellipse cx="214" cy="146" rx="118" ry="70" fill="url(#c-blob-blue)" />
+			<ellipse cx="336" cy="122" rx="128" ry="62" fill="url(#c-blob-violet)" />
+			<ellipse cx="454" cy="152" rx="112" ry="64" fill="url(#c-blob-pink)" />
+		</g>
+
+		<!-- A hint of a node graph, sitting in the tall tab area -->
+		<g stroke="#9ef8ff" fill="none" opacity="0.5">
+			<circle cx="146" cy="132" r="30" stroke-width="1.4" opacity="0.55" />
+			<circle cx="146" cy="132" r="19" stroke-width="1.1" opacity="0.35" />
+			<path
+				d="M146,132 L112,113 M146,132 L176,112 M146,132 L120,158 M146,132 L178,155 M112,113 L176,112 M120,158 L178,155"
+				stroke-width="1.2"
+				opacity="0.6"
+			/>
+		</g>
+		<g fill="#c9fbff" opacity="0.85">
+			<circle cx="146" cy="132" r="3.4" />
+			<circle cx="112" cy="113" r="2.6" />
+			<circle cx="176" cy="112" r="2.6" />
+			<circle cx="120" cy="158" r="2.6" />
+			<circle cx="178" cy="155" r="2.6" />
+		</g>
+
+		<!-- Flowing "thinking" waves -->
+		<g fill="none" stroke-linecap="round">
+			<path
+				d="M30,122 C74,96 108,146 160,120 C212,94 254,140 306,116 C358,92 408,140 494,106"
+				stroke="url(#c-wave-a)"
+				stroke-width="2.6"
+			/>
+			<path
+				d="M30,148 C80,112 118,168 168,138 C218,108 268,166 320,142 C372,118 420,164 494,132"
+				stroke="url(#c-wave-b)"
+				stroke-width="3.2"
+			/>
+			<path
+				d="M30,170 C86,136 126,190 180,160 C234,130 280,186 332,162 C384,138 432,182 494,154"
+				stroke="url(#c-wave-a)"
+				stroke-width="2"
+				opacity="0.7"
+			/>
+		</g>
+
+		<!-- Faint circuit traces on the right -->
+		<g stroke="#a8f6ff" stroke-width="1.2" opacity="0.28" fill="none">
+			<path d="M392,144 H430 V160 H452" />
+			<path d="M406,170 H436 V152 H460" />
+			<path d="M418,128 H448" />
+		</g>
+		<g fill="#d8fbff" opacity="0.5">
+			<circle cx="452" cy="160" r="2.2" />
+			<circle cx="460" cy="152" r="2.2" />
+			<circle cx="448" cy="128" r="2.2" />
+			<circle cx="392" cy="144" r="2.2" />
+			<circle cx="406" cy="170" r="2.2" />
+		</g>
+
+		<!-- Sink the haze into shadow where the yellow front meets it -->
+		<rect x="40" y="158" width="432" height="46" fill="url(#c-haze-shade)" />
+
+		<!-- Bloom hugging the top edge, from the inside -->
+		<g filter="url(#c-soft-sm)">
+			<use href="#c-back" fill="none" stroke="url(#c-rim)" stroke-width="8" opacity="0.55" />
+		</g>
+		<use href="#c-back" fill="none" stroke="url(#c-rim)" stroke-width="2.6" opacity="0.95" />
+	</g>
+
+	<!-- 4. The yellow two-pane front -->
+	<g clip-path="url(#c-front-clip)">
+		<rect x="46" y="177" width="210" height="244" fill="url(#c-pane-left)" />
+		<rect x="256" y="177" width="210" height="244" fill="url(#c-pane-right)" />
+		<rect x="46" y="177" width="420" height="38" fill="url(#c-front-sheen)" />
+
+		<!-- Left pane: white file rows -->
+		<g fill="#ffffff">
+			<circle cx="86" cy="251" r="8" />
+			<circle cx="86" cy="299" r="8" />
+			<circle cx="86" cy="347" r="8" />
+			<rect x="105" y="236.5" width="116" height="29" rx="14.5" />
+			<rect x="105" y="284.5" width="116" height="29" rx="14.5" />
+			<rect x="105" y="332.5" width="116" height="29" rx="14.5" />
+		</g>
+
+		<!-- Right pane: dimmed file rows -->
+		<g fill="#876600">
+			<circle cx="298" cy="251" r="8" />
+			<circle cx="298" cy="299" r="8" />
+			<circle cx="298" cy="347" r="8" />
+			<rect x="317" y="236.5" width="117" height="29" rx="14.5" />
+			<rect x="317" y="284.5" width="117" height="29" rx="14.5" />
+			<rect x="317" y="332.5" width="117" height="29" rx="14.5" />
+		</g>
+	</g>
+</svg>

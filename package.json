@@ -19,10 +19,12 @@
     "i18n:couple": "pnpm --filter @cmdr/desktop i18n:couple",
     "i18n:shots": "pnpm --filter @cmdr/desktop i18n:shots",
     "i18n:overflow": "pnpm --filter @cmdr/desktop i18n:overflow",
+    "icons": "./scripts/regenerate-icons.sh",
     "check": "./scripts/check.sh"
   },
   "devDependencies": {
     "oxfmt": "^0.63.0",
+    "svgo": "4.1.0",
     "typescript": "~6.0.3"
   },
   "packageManager": "pnpm@11.25.0",
