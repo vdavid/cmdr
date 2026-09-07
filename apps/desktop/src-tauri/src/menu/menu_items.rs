@@ -11,7 +11,7 @@ use tauri::{
     menu::{CheckMenuItem, MenuItem, PredefinedMenuItem, Submenu},
 };
 
-use crate::intl::menu_t;
+use crate::intl::{menu_t, menu_t_with};
 
 pub(crate) use super::mnemonics::Mnemonics;
 
@@ -384,6 +384,49 @@ pub(crate) fn register_item<R: Runtime>(
     );
 }
 
+/// Which word a volume row's detach control uses.
+///
+/// ❗ A phone says Disconnect, ❌ never Eject: `adb` has no per-client detach, so
+/// nothing is made safe to unplug and the device stays on the cable. MTP keeps
+/// Eject, which it earns by closing the device session. The menu ITEM is
+/// `EJECT_VOLUME_ID` either way (for a phone that routes to `DeviceDisconnect`);
+/// only the word differs, which is what keeps the native menus reading the same
+/// as the inline control in `VolumeBreadcrumb.svelte`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DetachWord {
+    Eject,
+    Disconnect,
+}
+
+impl DetachWord {
+    /// The word for a row, read off its volume id: the one input both native
+    /// menus already carry, so neither can drift from the other.
+    pub(crate) fn for_volume_id(volume_id: &str) -> Self {
+        if cmdr_fs::volume::is_adb_volume_id(volume_id) {
+            Self::Disconnect
+        } else {
+            Self::Eject
+        }
+    }
+}
+
+/// The "Eject (Backup)" / "Disconnect" label, in its busy variant while a write
+/// op still touches the volume. Shared by the breadcrumb and volume-row menus so
+/// the two can't drift; the volume name is uncontrolled, so it rides in as a
+/// literal token.
+///
+/// The Disconnect pair carries no name token: it reuses the two keys a server row
+/// already spells, rather than paying eleven catalogs for a second wording of one
+/// word, and the row it sits on is the one the user right-clicked.
+pub(crate) fn detach_label(name: &str, busy: bool, word: DetachWord) -> String {
+    match (word, busy) {
+        (DetachWord::Eject, false) => menu_t_with("menu.volume.eject", &[("name", name)]),
+        (DetachWord::Eject, true) => menu_t_with("menu.volume.ejectBusy", &[("name", name)]),
+        (DetachWord::Disconnect, false) => menu_t("menu.network.disconnect"),
+        (DetachWord::Disconnect, true) => menu_t("menu.volume.disconnectBusy"),
+    }
+}
+
 /// Truncate a filename for use inside a menu label, preserving the extension.
 ///
 /// If the filename fits within `max_chars` (counted in chars, not bytes), it's returned unchanged.
@@ -440,6 +483,38 @@ pub(super) fn truncate_for_menu_label(filename: &str, max_chars: usize) -> Strin
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_disk_row_says_eject_and_a_phone_row_says_disconnect() {
+        // Pre-fix a phone's native menu read "Eject (Pixel 8)" while the inline
+        // control on the same row already said Disconnect.
+        assert_eq!(detach_label("Backup", false, DetachWord::Eject), "Eject (Backup)");
+        assert_eq!(detach_label("Backup", true, DetachWord::Eject), "Eject (Backup) (busy)");
+        assert_eq!(detach_label("Pixel 8", false, DetachWord::Disconnect), "Disconnect");
+        assert_eq!(
+            detach_label("Pixel 8", true, DetachWord::Disconnect),
+            "Disconnect (busy)"
+        );
+    }
+
+    #[test]
+    fn the_detach_word_comes_off_the_volume_id() {
+        use cmdr_fs::volume::{adb_volume_id, mtp_device_id, path_volume_id};
+
+        assert_eq!(
+            DetachWord::for_volume_id(&adb_volume_id("39041FDJH00A0K")),
+            DetachWord::Disconnect
+        );
+        // MTP keeps Eject: it earns the promise by closing the device session.
+        assert_eq!(
+            DetachWord::for_volume_id(&mtp_device_id("39041FDJH00A0K")),
+            DetachWord::Eject
+        );
+        assert_eq!(
+            DetachWord::for_volume_id(&path_volume_id("/Volumes/Backup")),
+            DetachWord::Eject
+        );
+    }
 
     #[test]
     fn test_truncate_for_menu_label_short_passes_through() {

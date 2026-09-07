@@ -799,19 +799,25 @@
         {/if}
     {/if}
     {#if currentVolume && isVolumeEjectable(currentVolume)}
+        <!-- A phone says Disconnect and wears the unplug icon, matching its row in
+             the dropdown and its native menu; the ACTION is the same eject path,
+             which for ADB is `DeviceDisconnect`. -->
+        {@const onAPhone = isAdbVolumeId(currentVolume.id)}
+        {@const headerDetachLabel = isVolumeBusy(currentVolume.id)
+            ? (onAPhone ? tString('adb.disconnectBusyTooltip') : EJECT_BUSY_TOOLTIP)
+            : tString(
+                  onAPhone ? 'adb.disconnectDeviceAriaLabel' : 'fileExplorer.navigation.ejectVolumeAriaLabel',
+                  { name: currentVolume.name },
+              )}
         <button
             type="button"
             class="eject-button breadcrumb-eject-button"
-            aria-label={isVolumeBusy(currentVolume.id)
-                ? EJECT_BUSY_TOOLTIP
-                : tString('fileExplorer.navigation.ejectVolumeAriaLabel', { name: currentVolume.name })}
+            aria-label={headerDetachLabel}
             disabled={isVolumeBusy(currentVolume.id)}
-            use:tooltip={isVolumeBusy(currentVolume.id)
-                ? EJECT_BUSY_TOOLTIP
-                : tString('fileExplorer.navigation.ejectVolumeAriaLabel', { name: currentVolume.name })}
+            use:tooltip={headerDetachLabel}
             onclick={(e: MouseEvent) => { void handleEjectClick(currentVolume, e) }}
         >
-            <Icon name="eject" size={14} aria-hidden="true" />
+            <Icon name={onAPhone ? 'unplug' : 'eject'} size={14} aria-hidden="true" />
         </button>
     {/if}
 

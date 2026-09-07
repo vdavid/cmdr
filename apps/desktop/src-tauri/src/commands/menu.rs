@@ -6,13 +6,12 @@
 
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
-    CLOSE_TAB_ID, CommandScope, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
+    CLOSE_TAB_ID, CommandScope, DetachWord, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
     FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FileContextInfo, MenuState,
     OPEN_TERMINAL_HERE_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, ServerRowMenu, SettingsChanged, ViewMode,
-    build_breadcrumb_context_menu,
-    build_context_menu, build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu,
-    build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items,
-    sync_view_mode_check_states,
+    build_breadcrumb_context_menu, build_context_menu, build_network_host_context_menu, build_parent_row_context_menu,
+    build_tab_context_menu, build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command,
+    rebuild_view_mode_items, sync_view_mode_check_states,
 };
 use std::sync::atomic::Ordering;
 use tauri::menu::ContextMenu;
@@ -190,7 +189,10 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(
     let eject_busy = eject_volume_id
         .as_ref()
         .is_some_and(|id| crate::file_system::busy_volume_ids().contains(id));
-    let menu = build_breadcrumb_context_menu(app, &accelerator, eject_volume_name.as_deref(), eject_busy)
+    let detach_word = eject_volume_id
+        .as_deref()
+        .map_or(DetachWord::Eject, DetachWord::for_volume_id);
+    let menu = build_breadcrumb_context_menu(app, &accelerator, eject_volume_name.as_deref(), eject_busy, detach_word)
         .map_err(|e| e.to_string())?;
 
     // Stash eject target so on_menu_event can read it back when the user clicks
@@ -243,8 +245,15 @@ pub fn show_volume_row_context_menu<R: Runtime>(
     let eject_busy = is_ejectable && busy;
     let eject_name = (is_ejectable && !is_favorite).then_some(volume_name.as_str());
     let server = server.map(|s| ServerRowMenu { busy, ..s });
-    let menu = build_volume_row_context_menu(app, is_favorite, eject_name, eject_busy, server.as_ref())
-        .map_err(|e| e.to_string())?;
+    let menu = build_volume_row_context_menu(
+        app,
+        is_favorite,
+        eject_name,
+        eject_busy,
+        DetachWord::for_volume_id(&volume_id),
+        server.as_ref(),
+    )
+    .map_err(|e| e.to_string())?;
 
     {
         let state = app.state::<MenuState<R>>();

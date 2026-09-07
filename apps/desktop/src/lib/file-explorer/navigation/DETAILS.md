@@ -244,13 +244,17 @@ consumer reads THAT first: a "Forget server" takes the row out of the store, so 
 `volumes-changed` refresh won the race. The mount watchers leave it null and the path lookup is their fallback.
 
 Right-clicking a dropdown row opens a NATIVE (muda) context menu via `show_volume_row_context_menu`: a favorite row gets
-`Rename` + `Remove`, an ejectable volume row gets `Eject ({name})`, a SERVER row (the `server` argument, a
+`Rename` + `Remove`, an ejectable volume row gets its detach item (`Eject ({name})` for a disk, `Disconnect` for a
+phone: `DetachWord::for_volume_id` reads the word off the id, so the native menus and the inline control can't drift on
+it, while the ITEM stays `EJECT_VOLUME_ID` because for ADB that already routes to `DeviceDisconnect`), a SERVER row (the
+`server` argument, a
 `ServerRowMenu` the caller fills from the row's own state) gets `Disconnect` / `Pin to switcher` or `Unpin` /
 `Forget saved password` / `Forget server` instead, and anything else has no menu. A server never gets `Eject`: that word
 promises safe-to-unplug and a server has nothing to unplug. The pin item is the one server item `busy` never disables: a
 pin is a view preference the switcher reads, so moving it while a copy runs breaks nothing, where dropping the session
 or the credential under one does. Right-clicking the closed header opens the native breadcrumb menu
-(`show_breadcrumb_context_menu`) that adds `Eject ({name})` alongside "Copy path" when the pane's volume is ejectable.
+(`show_breadcrumb_context_menu`) that adds the same detach item alongside "Copy path" when the pane's volume is
+ejectable.
 All these picks route back through the one `volume-context-action` Tauri event, whose `action` is the TYPED
 `VolumeContextActionKind` (`open`, `eject`, `disconnect`, `pin`, `unpin`, `edit`, `forget-secret`, `forget-server`,
 `rename-favorite`, `remove-favorite`), ❌ never a free string: `eject` is handled in `DualPaneExplorer.svelte` (calls
