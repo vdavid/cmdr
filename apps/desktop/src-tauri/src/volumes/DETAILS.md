@@ -14,16 +14,21 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the decision detail lives
   that row is minted in `commands/volumes.rs`, not by this module.)
 - **MobileDevice**: MTP and ADB storages, appended by `device_volumes.rs`.
 
-`parse_cloud_provider_name` maps `~/Library/CloudStorage/` dir prefixes to display names (Dropbox, GoogleDrive→Google
-Drive, OneDrive/Business, Box, pCloud, else the first `-`-segment).
+Provider identity lives in `file_system/cloud_provider.rs`, not here: `CloudProvider::from_cloud_storage_dir` maps
+`~/Library/CloudStorage/` dir prefixes to a typed provider (Dropbox, GoogleDrive→Google Drive, OneDrive/Business, Box,
+pCloud, else `Other` carrying the first `-`-segment), and `locate` resolves a path to its drive plus that drive's root.
+`parse_cloud_provider_name` and `match_cloud_drive_root` here are thin adapters over it, so the switcher and the file
+context menu can't drift on who owns a path. The file context menu needs the same answer plus what each provider can
+DO (`supports_eviction`), which is why the enum sits in `file_system/` rather than in `crate::volumes`.
 
 ## Location IDs (two cross-file sync points)
 
 `DEFAULT_VOLUME_ID = "root"`; `ICLOUD_VOLUME_ID = "cloud-icloud"` is the only hardcoded cloud-drive ID (the others
 derive from the `~/Library/CloudStorage/<provider>` dir name). Both the ID and the provider mapping are mirrored in
 `friendly_error.rs`, which `crate::volumes` can't reach, being macOS-only: it matches the `ICLOUD_VOLUME_ID` literal
-under a sync-point comment, and `parse_cloud_provider_name`'s provider list must stay in sync with
-`friendly_error::enrich_with_provider`'s separate one.
+under a sync-point comment, and `CloudProvider`'s provider list must stay in sync with
+`friendly_error::enrich_with_provider`'s separate one. A test pins `CloudProvider::ICloudDrive.volume_id()` against
+`ICLOUD_VOLUME_ID` so at least that half can't drift silently.
 
 Every other ID is minted by `cmdr_fs::volume::ids` (below).
 
