@@ -5,7 +5,7 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.43.0] - 2026-09-07
 
 Thanks for all the bug reports, folks! ❤️ And keep them coming!
 
@@ -53,7 +53,8 @@ Highlights:
 
 - Fix Cmdr dying on launch on macOS 10.15 Catalina, before any of its own code ran (16e064d9)
 - Fix "Overwrite", "Overwrite all smaller", and "Overwrite all older" deleting a destination folder they compared
-  against a file (7ab0ea51, 4914ac6b, 1194fbc2)
+  against a file, whether you picked them in Settings or answered them on the prompt (7ab0ea51, 4914ac6b, 1194fbc2,
+  0ec50f10)
 - Fix a folder replacing a file destroying that file before its contents had landed (7dc3f86c, 23367c94)
 - Fix a merge silently replacing a file whose name only differs in case or accents (49e61830, 478528d8)
 - Fix a move between drives destroying files that landed in the source while it ran, and say what it left behind
@@ -69,6 +70,7 @@ Highlights:
 - Fix copying two same-named folders from different places fighting over one destination path (1938da25)
 - Fix a cross-volume copy abandoning a half-built destination with no cleanup and no word (f054042c)
 - Fix an empty `file (1).ext` left in your folder when a merged file never lands (0faaa913)
+- Fix the copy summary counting a skipped file as copied, and naming a folder that never arrived (4b8b740e, 724b918a)
 - Fix compressing onto an existing file Cmdr may not write destroying it first (c687007d)
 - Fix double-clicking the title bar of the viewer, Settings, queue, or shortcuts window doing nothing and sending an
   error report (726ec617)
@@ -98,6 +100,8 @@ Highlights:
 - Fix a bulk rename asking once per batch and destroying the review you were still reading (a075ed92, da250d43)
 - Fix Ask Cmdr claiming a rename plan was waiting for review when the plan had been refused (e7b41c5a, 05dbc57c,
   20aabbc0)
+- Fix a wake digest listing the same folder up to nine times, and expanding one freezing the Ask Cmdr panel (4a57e47f,
+  afad8e03)
 - Fix double-clicking a word then dragging selecting that word alone in the viewer (07c7c506)
 - Fix ⌘A on a huge file with no line index asking about a size the file knew all along (c563ba3d)
 - Fix Eject staying available while a paste was still reading off the drive (bf0821a0)
@@ -118,6 +122,8 @@ Highlights:
   (92ef4934, 6c783f8c, a88c5b7a)
 - Turn the data-safety hunt's remaining nine follow-ups into a ranked spec, with all 15 original findings closed
   (9996183f, 96676052, 4fd23e33)
+- Shrink the website's visual baselines from 28 PNGs to six by shooting machinery instead of marketing copy, so a copy
+  edit stops costing a baseline (abdc336a)
 
 ## [0.42.0] - 2026-09-04
 
