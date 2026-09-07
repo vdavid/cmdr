@@ -175,7 +175,6 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canWrite: true,
     canBeSource: true,
     hasParentRow: true,
-    sortsRows: true,
     syncsToMcp: true,
   }),
   webdav: Object.freeze({
@@ -186,7 +185,6 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canWrite: true,
     canBeSource: true,
     hasParentRow: true,
-    sortsRows: true,
     syncsToMcp: true,
   }),
   mtp: Object.freeze({

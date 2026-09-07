@@ -17,18 +17,17 @@ Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUD
 
 ## Must-knows
 
-- **`recheckAdbInstall` runs one call per CLICK** (`AdbSection`), ❌ never on mount, never polled: it is the only path
-  allowed to retry `adb start-server`. Mount reads `getAdbInstallStatus`, which looks nothing up.
+- **`recheckAdbInstall` runs one call per CLICK** (`AdbSection`), ❌ never on mount or polled: it is the only path that
+  alone retries `adb start-server`. Mount reads `getAdbInstallStatus`, which looks nothing up.
 - **A registry entry alone doesn't render.** Hand-render the row here (`SettingRow` + control + `shouldShow(id)` guard),
   or the setting is invisible. Only `AdvancedSection` auto-renders (`section: ['Advanced']`).
   [Checklist](../../../../../../docs/guides/adding-a-new-setting.md).
 - **A row that isn't a setting declares a `SearchableRow` in the sibling `<Component>.rows.ts`** (aggregated by
-  `searchable-rows.ts`): a `row:`-prefixed id, the hosting page's `section`, the label key the markup already renders.
+  `searchable-rows.ts`): a `row:`-prefixed id, the hosting page's `section`, the label key the markup renders.
   Gate it on `shouldShow('row:…')` AND list it in its card's `anyVisible(...)`, or a hit filters every card away. It's
   search metadata; ❌ it never decides what renders, and ❌ never model such a row as a `hidden` setting. Skip rows that
-  only appear under runtime state. DETAILS § Searchable rows.
-- **A page with NO control of its own** (`ServersSection`: a list of trusted host keys and nothing else) reaches the
-  sidebar through one of its rows saying `anchorsSection`. ❌ Never a `hidden` registry entry nothing reads.
+  only appear under runtime state. A page with NO control (`ServersSection`) reaches the sidebar via a row's
+  `anchorsSection`. DETAILS § Searchable rows.
 - **New section = route in `SettingsContent.svelte` + entry in `TOP_LEVEL_ORDER` (`SettingsSidebar.svelte`) + mirror in
   `settings.spec.ts`.** Routing is registry-driven, not string match.
 - **A toggle that can't use `SettingSwitch` still uses `$lib/ui/Switch`.** Never hand-roll Ark's `Switch.Root`/`Control`
@@ -53,5 +52,4 @@ Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUD
 - **One group per `CommandScope` via the pure `groupCommandsByScope`.** Don't ad-hoc a title list; the group set must
   stay the scope union or commands vanish. `keyboard-shortcuts-grouping.test.ts` guards it.
 
-Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
-reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here.

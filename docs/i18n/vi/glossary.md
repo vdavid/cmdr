@@ -2119,6 +2119,7 @@ Office (.docx, .xlsx, .pptx) và gói ứng dụng (.jar, .apk), nên ngay cả 
   `settings.archives.zip.description` và `settings.archives.bundle.description`, nhưng bỏ dấu phẩy trước `hoặc` theo quy
   ước đã chốt · `high`. ❗ `settings.archives.bundle.description` vẫn còn dấu phẩy đó (`.bundle, hoặc .framework`); nằm
   ngoài phạm vi lần này, nên hai hàng khác nhau về dấu câu cho tới khi có người sửa.
+
 ## Trung tâm máy chủ: khung trạng thái kết nối + quên máy chủ / mật khẩu (`servers.*` 15 khóa, `fileExplorer.navigation.connectionTooltip*` / `.disconnect*` / `.forget*` 13 khóa, 2026-09-06)
 
 Bề mặt mới: một khung riêng cho máy chủ (SMB/SFTP/WebDAV) đang kết nối hoặc bị từ chối, cộng với hàng máy chủ trong bộ

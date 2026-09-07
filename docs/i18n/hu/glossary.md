@@ -2384,6 +2384,7 @@ ezért már az angol sem nevezi meg az Office-t.
 - **A mondat kerete → `Mit tesz az Enter egy …, … vagy … fájlon.`** · pontosan a testvérkulcsok
   (`settings.archives.zip.description`, `settings.archives.bundle.description`) kerete · `high`. Nincs aposztróf az
   értékben.
+
 ## A szerverközpont: kapcsolódási állapotok, elutasítások, elfelejtés (`servers.*`, `fileExplorer.navigation.connectionTooltip*`/`.disconnect*`/`.forget*`, 2026-09-06)
 
 Új felület: egy panelnézet, amely a szerverkapcsolat állapotát mutatja (kapcsolódás, elutasítás, leválasztás), plusz a

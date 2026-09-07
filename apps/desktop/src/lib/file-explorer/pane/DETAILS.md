@@ -241,9 +241,9 @@ volume-id string. The record has two halves, and which half answers is the whole
 - **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `sftp` /
   `webdav` / `mtp` / `adb` / `network` / `search-results`), which keys a frozen, by-reference table of per-kind defaults
   carrying the per-namespace UI structure Rust has nothing to say about (`hasBackendListing`, `hasParentRow`,
-  `sortsRows`, `syncsToMcp`) plus the fallback write/source answers. It's NOT a `Record<string, boolean>` bag — `kind`
-  is the discriminant. The two ROUTED kinds (`archive`, `git-portal`) are in the same table but come from the PATH,
-  resolved one layer up in `capabilitiesForPane`.
+  `syncsToMcp`) plus the fallback write/source answers. It's NOT a `Record<string, boolean>` bag — `kind` is the
+  discriminant. The two ROUTED kinds (`archive`, `git-portal`) are in the same table but come from the PATH, resolved
+  one layer up in `capabilitiesForPane`.
 
 - **❌ Never source KIND from the backend.** An OS-mounted SMB share that hasn't been upgraded to a direct smb2 session
   is served by `LocalPosixVolume`, so a backend-published kind would say `local` for a share that's plainly SMB to the

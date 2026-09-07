@@ -1982,6 +1982,7 @@ Office-Dokumente (.docx, .xlsx, .pptx) und App-Pakete (.jar, .apk), deshalb nenn
   `app bundles` macht.
 - **Satzrahmen → `Was die Eingabetaste bei einer …, … oder … bewirkt.`** · wörtlich der Rahmen der Geschwisterschlüssel
   `settings.archives.zip.description` und `settings.archives.bundle.description` · `high`. Kein Apostroph im Wert.
+
 ## Der Server-Hub: Verbindungszustände, Trennen und Vergessen (`servers.*`, `fileExplorer.navigation.connectionTooltip*`, `.disconnect*`, `.forget*`)
 
 Neue Fläche: der Bereichszustand beim Verbinden mit einem SMB-/SFTP-/WebDAV-Server, die Absagen des Servers, die
