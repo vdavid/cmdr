@@ -679,6 +679,27 @@ describe('File systems > Android (ADB)', () => {
     expect(fileSystemsSubsections()).toContain('Android (ADB)')
   })
 
+  /**
+   * ❗ The rough edge this closes: both settings were `hidden` while their page
+   * didn't exist, and `buildSearchIndex` keeps hidden entries — so searching
+   * "adb" surfaced two rows that nothing rendered.
+   */
+  it('is a search hit that now has somewhere to land', () => {
+    clearSearchIndex()
+    const ids = searchSettings('adb').map((result) => result.setting.id)
+    expect(ids).toContain('fileOperations.adbEnabled')
+    expect(ids).toContain('fileOperations.adbBinaryPath')
+
+    const tree = buildSectionTree()
+    const adb = tree
+      .find((section) => section.name === 'File systems')
+      ?.subsections.find((section) => section.name === 'Android (ADB)')
+    expect(adb?.settings.map((setting) => setting.id)).toEqual([
+      'fileOperations.adbEnabled',
+      'fileOperations.adbBinaryPath',
+    ])
+  })
+
   it('puts the network pages together and the phone pages together', () => {
     expect(fileSystemsSubsections()).toEqual([
       'SMB/Network shares',
