@@ -135,13 +135,19 @@ describe('FunctionKeyBar', () => {
 
     const kbds = target.querySelectorAll('kbd')
     const keys = Array.from(kbds).map((kbd) => kbd.textContent)
-    // The chip on each command button reads ITS command's effective FIRST binding
-    // (platform-formatted: `⇧F4` → `Shift+F4` off macOS). The Shift fork is
-    // presentational — which buttons appear is fixed — so the Shift-revealed
-    // "Rename" button (index 4) shows `file.rename`'s first binding, which is `F2`,
-    // not `⇧F6`. That's the decided, truthful behavior. The four empty slots stay
-    // hardcoded F-key labels (F2, F3, F5, F7) since they map to no command.
-    expect(keys).toEqual(['F2', 'F3', 'Shift+F4', 'F5', 'F2', 'F7', 'Shift+F8'])
+    // The whole row is the Shift row, so every chip carries Shift (platform-formatted:
+    // `⇧F4` → `Shift+F4` off macOS). A command button reads ITS command's effective
+    // SHIFTED binding, so "Rename" (index 4) shows `⇧F6` — its `F2` binding belongs to
+    // the unshifted row. The empty slots read their key off their POSITION: slot 0 is F2.
+    expect(keys).toEqual([
+      'Shift+F2',
+      'Shift+F3',
+      'Shift+F4',
+      'Shift+F5',
+      'Shift+F6',
+      'Shift+F7',
+      'Shift+F8',
+    ])
 
     // Shift+F4, Shift+F6, and Shift+F8 should have labels
     const buttons = target.querySelectorAll('button')
@@ -149,6 +155,47 @@ describe('FunctionKeyBar', () => {
     expect(labels).toEqual([null, null, 'New file', null, 'Rename', null, 'Permanently'])
 
     await releaseShift()
+    document.body.removeChild(target)
+  })
+
+  it('follows a rebind of the SHIFTED binding in the Shift row, leaving the plain row alone', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(FunctionKeyBar, { target, props: { visible: true } })
+
+    // `file.rename` ships two bindings, `F2` and `⇧F6`. Each row shows the one that
+    // belongs to it, so rebinding the shifted slot moves only the Shift row's chip.
+    setShortcut('file.rename', 1, 'Shift+F9')
+    flushSync()
+    expect(target.querySelectorAll('kbd')[0].textContent).toBe('F2')
+
+    await pressShift()
+    expect(target.querySelectorAll('kbd')[4].textContent).toBe('Shift+F9')
+
+    await releaseShift()
+    resetShortcut('file.rename')
+    document.body.removeChild(target)
+  })
+
+  it('renders no chip in the Shift row for a command with no shifted binding', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(FunctionKeyBar, { target, props: { visible: true } })
+
+    // Drop `⇧F6`, leaving `file.rename` on `F2` alone. In the Shift row a chip is a
+    // claim about Shift+<key>, so the button keeps its label (and stays clickable)
+    // rather than advertising a key that does nothing while Shift is down.
+    removeShortcut('file.rename', 1)
+    flushSync()
+    await pressShift()
+
+    const renameButton = target.querySelectorAll('button')[4]
+    expect(renameButton.querySelector('kbd')).toBeNull()
+    expect(renameButton.querySelector('span')?.textContent).toBe('Rename')
+    expect(renameButton.disabled).toBe(false)
+
+    await releaseShift()
+    resetShortcut('file.rename')
     document.body.removeChild(target)
   })
 

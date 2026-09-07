@@ -460,11 +460,19 @@ mapping lives in a typed `fnKeyToCommand` map (F2/⇧F6 → `file.rename`, F3 �
 bar never lies about what the keys do. The `aria-label` interpolates the same dynamic combo ("Copy (F5)" → "Copy (⌘C)").
 When a command has no binding the chip renders nothing (the button keeps its label and stays clickable; an empty `<kbd>`
 would read as broken). The chips keep the bar's quiet local `<kbd>` styling rather than the boxed `ShortcutChip` pill —
-a boxed pill repeated 8× fights the flat bar; truthfulness is the must, the chip look is the want. The Shift fork stays
-**presentational and hardcoded** (which buttons appear on Shift never changes), but each shown button reads ITS
-command's effective FIRST binding — so the Shift-revealed "Rename" button shows `file.rename`'s first binding (`F2`),
-not `⇧F6`. Slightly odd next to its siblings, but truthful, which is the whole point. The four Shift placeholder slots
-(F2/F3/F5/F7, no command) keep their static F-key labels. Layout survives an absurd custom binding: the buttons are
+a boxed pill repeated 8× fights the flat bar; truthfulness is the must, the chip look is the want.
+
+**Each row shows the binding that belongs to IT, and the Shift row's chips all carry Shift.** Both rows are seven fixed
+slots, F2…F8, composed from one `actions` record; `defaultRow` maps each through `getFirstShortcutReactive`, `shiftRow`
+through `getFirstShiftShortcutReactive` (first effective binding matching `comboHasShift`, `$lib/shortcuts/key-capture`).
+`file.rename` carries two bindings, `F2` and `⇧F6`, so plain-first put a dead `F2` in the Shift row's F6 slot — a key
+that does nothing while Shift is down, printed twice in one row and out of F-key order (a user reported it). ❌ There's
+deliberately no fallback to the unshifted binding when a command has no shifted one: in that row a chip is a claim about
+Shift+<key>, and no chip beats a wrong one. Which slots carry a command on Shift is still fixed (⇧F4 New file, ⇧F6
+Rename, ⇧F8 Permanently); the four empty ones derive `⇧F<n>` from their POSITION (slot 0 is F2), so the row always
+spells one ⇧F2…⇧F8 ladder. Their `aria-label` names the bare key, which is what the `noShiftAction` message
+("{fnKey} (no shift action)") is worded around, and spares a screen reader a modifier glyph. Layout survives an absurd
+custom binding: the buttons are
 `flex: 1; min-width: 0` and the label truncates before the chip, so a long combo can't push the bar past the window.
 Routing F-clicks through the bus means they now get the dispatch preamble (`log.info` + `record_breadcrumb` breadcrumb +
 the `blockedByCapabilities` guard) like every other entry path — a deliberate telemetry gain, not a behavior change. The

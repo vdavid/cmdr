@@ -5,6 +5,7 @@ import {
   isTypingKeyCombo,
   toDisplayShortcut,
   toCanonicalShortcut,
+  comboHasShift,
 } from './key-capture'
 
 // Mock navigator to control isMacOS() behavior
@@ -220,5 +221,22 @@ describe('isTypingKeyCombo', () => {
     expect(isTypingKeyCombo('F12')).toBe(false)
     expect(isTypingKeyCombo('⇧F6')).toBe(false)
     expect(isTypingKeyCombo('Escape')).toBe(false)
+  })
+})
+
+describe('comboHasShift', () => {
+  it('recognizes Shift in both platform spellings', () => {
+    expect(comboHasShift('⇧F6')).toBe(true)
+    expect(comboHasShift('Shift+F6')).toBe(true)
+    expect(comboHasShift('⌘⇧P')).toBe(true)
+    expect(comboHasShift('Ctrl+Alt+Shift+P')).toBe(true)
+  })
+
+  it('rejects combos without Shift', () => {
+    expect(comboHasShift('F2')).toBe(false)
+    expect(comboHasShift('⌘C')).toBe(false)
+    expect(comboHasShift('Ctrl+C')).toBe(false)
+    expect(comboHasShift('Super+Space')).toBe(false)
+    expect(comboHasShift('')).toBe(false)
   })
 })

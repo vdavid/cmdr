@@ -266,6 +266,22 @@ export function isCompleteCombo(event: KeyboardEvent): boolean {
 /** Modifier tokens that signal command intent (Shift alone doesn't — it types capitals and reverse-tabs). */
 const commandModifierTokens = ['⌘', '⌃', '⌥', 'Ctrl', 'Alt', 'Super']
 
+/** Both platform spellings of the Shift modifier: `⇧F6` on macOS, `Shift+F6` elsewhere. */
+const shiftModifierTokens = ['⇧', 'Shift+']
+
+/**
+ * True when the combo carries the Shift modifier, in either platform spelling. A
+ * modifier can never be a combo's own key (`formatKeyCombo` drops modifier-only
+ * combos), so a plain token test is exact.
+ *
+ * The F-key bar's Shift row asks this to pick the binding that belongs in the row
+ * the user is looking at: `file.rename` carries both `F2` and `⇧F6`, and the Shift
+ * row must show the second one.
+ */
+export function comboHasShift(shortcut: string): boolean {
+  return shiftModifierTokens.some((token) => shortcut.includes(token))
+}
+
 /**
  * True when the combo is something a user types in a text field rather than a
  * command: no command modifier (⌘/⌃/⌥ or Ctrl/Alt/Super — Shift alone still

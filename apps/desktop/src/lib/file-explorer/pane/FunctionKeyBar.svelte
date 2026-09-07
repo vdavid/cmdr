@@ -2,7 +2,11 @@
     import { explorerState } from './explorer-state.svelte'
     import { getActiveTab } from '../tabs/tab-state-manager.svelte'
     import { capabilitiesForPane } from './volume-capabilities'
-    import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
+    import {
+        getFirstShiftShortcutReactive,
+        getFirstShortcutReactive,
+    } from '$lib/shortcuts/reactive-shortcuts.svelte'
+    import { toPlatformShortcut } from '$lib/shortcuts/key-capture'
     import { fnKeyToCommand } from './function-key-commands'
     import { tString } from '$lib/intl/messages.svelte'
     import type { CommandId } from '$lib/commands'
@@ -20,26 +24,6 @@
     }
 
     const { visible = true, onCommand }: Props = $props()
-
-    /**
-     * Each visible button's CHIP shows its command's live effective first shortcut
-     * (`getFirstShortcutReactive`), not the hardcoded F-key. Rebinding `file.copy`
-     * to `⌘C` in Settings re-renders the F5 button's chip as `⌘C` immediately, so
-     * the bar never lies about what the keys do. The chip keeps the bar's quiet
-     * `<kbd>` look (a boxed `ShortcutChip` pill repeated 8× fights the flat bar);
-     * truthfulness is the must, the chip style is the want (see the migration plan).
-     *
-     * The Shift fork stays presentational: WHICH buttons appear on Shift is fixed,
-     * but each shown button reads ITS command's effective FIRST binding. Both Rename
-     * buttons (F2 and the Shift-revealed one) therefore show `file.rename`'s first
-     * binding — slightly odd, but truthful, which is the whole point.
-     *
-     * When a command has no binding the chip renders nothing (the button stays
-     * clickable and keeps its label); an empty `<kbd>` would read as broken.
-     */
-    function shortcutFor(id: CommandId): string | undefined {
-        return getFirstShortcutReactive(id)
-    }
 
     /**
      * Capabilities for the focused PANE, read straight off the explorer store.
@@ -85,32 +69,151 @@
             shiftHeld = false
         }
     }
+
+    /** Slot 0 of the bar is F2, so slot `i` carries `F${i + FIRST_FN_KEY}`. */
+    const FIRST_FN_KEY = 2
+
+    /** One button. `shortcut` is a display-form chip; `undefined` renders no chip. */
+    interface Slot {
+        id: CommandId
+        /** The short button text. */
+        label: string
+        /** The full spoken action name, for the aria-label. */
+        action: string
+        enabled: boolean
+        shortcut: string | undefined
+    }
+
+    /**
+     * The nine actions the bar can offer, without a chip: the two rows below compose
+     * them, each supplying the binding that belongs to IT.
+     */
+    const actions = $derived({
+        rename: {
+            id: fnKeyToCommand.rename,
+            label: tString('fileExplorer.functionKeyBar.renameLabel'),
+            action: tString('fileExplorer.functionKeyBar.renameAction'),
+            enabled: canRename,
+        },
+        view: {
+            id: fnKeyToCommand.view,
+            label: tString('fileExplorer.functionKeyBar.viewLabel'),
+            action: tString('fileExplorer.functionKeyBar.viewAction'),
+            enabled: true,
+        },
+        edit: {
+            id: fnKeyToCommand.edit,
+            label: tString('fileExplorer.functionKeyBar.editLabel'),
+            action: tString('fileExplorer.functionKeyBar.editAction'),
+            enabled: true,
+        },
+        copy: {
+            id: fnKeyToCommand.copy,
+            label: tString('fileExplorer.functionKeyBar.copyLabel'),
+            action: tString('fileExplorer.functionKeyBar.copyAction'),
+            enabled: canSourceOps,
+        },
+        move: {
+            id: fnKeyToCommand.move,
+            label: tString('fileExplorer.functionKeyBar.moveLabel'),
+            action: tString('fileExplorer.functionKeyBar.moveAction'),
+            enabled: canSourceOps,
+        },
+        newFolder: {
+            id: fnKeyToCommand.newFolder,
+            label: tString('fileExplorer.functionKeyBar.newFolderLabel'),
+            action: tString('fileExplorer.functionKeyBar.newFolderAction'),
+            enabled: canMkdir,
+        },
+        delete: {
+            id: fnKeyToCommand.delete,
+            label: tString('fileExplorer.functionKeyBar.deleteLabel'),
+            action: tString('fileExplorer.functionKeyBar.deleteAction'),
+            enabled: canSourceOps,
+        },
+        newFile: {
+            id: fnKeyToCommand.newFile,
+            label: tString('fileExplorer.functionKeyBar.newFileLabel'),
+            action: tString('fileExplorer.functionKeyBar.newFileAction'),
+            enabled: canMkfile,
+        },
+        deletePermanently: {
+            id: fnKeyToCommand.deletePermanently,
+            label: tString('fileExplorer.functionKeyBar.permanentlyLabel'),
+            action: tString('fileExplorer.functionKeyBar.deletePermanentlyAction'),
+            enabled: canSourceOps,
+        },
+    })
+
+    /**
+     * The plain row, F2…F8. Each chip shows its command's live effective FIRST
+     * shortcut, never the hardcoded F-key: rebinding `file.copy` to `⌘C` in Settings
+     * re-renders the F5 chip as `⌘C` immediately, so the bar can't lie about what the
+     * keys do. The chip keeps the bar's quiet `<kbd>` look (a boxed `ShortcutChip` pill
+     * repeated 7× fights the flat bar).
+     */
+    const defaultRow = $derived<Slot[]>(
+        [
+            actions.rename,
+            actions.view,
+            actions.edit,
+            actions.copy,
+            actions.move,
+            actions.newFolder,
+            actions.delete,
+        ].map((action) => ({ ...action, shortcut: getFirstShortcutReactive(action.id) })),
+    )
+
+    /**
+     * The Shift row, same seven fixed slots. WHICH slots carry a command is fixed; a
+     * `null` slot is an F-key with no Shift action, and reads its label off its
+     * POSITION so the row always spells one ⇧F2…⇧F8 ladder. A command slot reads its
+     * command's SHIFTED binding, so Rename shows `⇧F6` here and `F2` in the plain row.
+     */
+    const shiftRow = $derived<(Slot | null)[]>(
+        [null, null, actions.newFile, null, actions.rename, null, actions.deletePermanently].map(
+            (action) =>
+                action === null
+                    ? null
+                    : { ...action, shortcut: getFirstShiftShortcutReactive(action.id) },
+        ),
+    )
 </script>
 
 <svelte:document onkeydown={handleKeyDown} onkeyup={handleKeyUp} />
 
 <!--
-  One command button. The chip reads the command's live effective first shortcut;
-  the aria-label interpolates the same dynamic combo so screen readers hear what
-  actually triggers the action ("Copy (F5)" → "Copy (⌘C)" after a rebind). When
-  unbound, both the chip and the parenthetical drop — the label alone, still clickable.
+  One command button. The aria-label interpolates the same dynamic combo the chip
+  shows, so screen readers hear what actually triggers the action ("Copy (F5)" →
+  "Copy (⌘C)" after a rebind). With no chip, both it and the parenthetical drop —
+  the label alone, still clickable; an empty `<kbd>` would read as broken.
 -->
-{#snippet commandButton(id: CommandId, label: string, action: string, enabled: boolean)}
-    {@const shortcut = shortcutFor(id)}
+{#snippet commandButton(slot: Slot)}
     <button
-        onclick={() => onCommand?.(id)}
-        disabled={!enabled}
+        onclick={() => onCommand?.(slot.id)}
+        disabled={!slot.enabled}
         tabindex={-1}
-        aria-label={shortcut ? tString('fileExplorer.functionKeyBar.actionWithShortcut', { action, shortcut }) : action}
+        aria-label={slot.shortcut
+            ? tString('fileExplorer.functionKeyBar.actionWithShortcut', {
+                  action: slot.action,
+                  shortcut: slot.shortcut,
+              })
+            : slot.action}
     >
-        {#if shortcut}<kbd>{shortcut}</kbd>{/if}<span>{label}</span>
+        {#if slot.shortcut}<kbd>{slot.shortcut}</kbd>{/if}<span>{slot.label}</span>
     </button>
 {/snippet}
 
-<!-- A fixed F-key slot with no Shift action. Presentational only (not a command). -->
-{#snippet emptySlot(fnKey: string)}
+<!--
+  A fixed F-key slot with no Shift action. Presentational only (not a command). The
+  chip carries Shift so the whole row reads as the Shift row; the aria-label names the
+  bare key, which is what "{fnKey} (no shift action)" is worded around, and spares a
+  screen reader a modifier glyph.
+-->
+{#snippet emptySlot(index: number)}
+    {@const fnKey = `F${String(index + FIRST_FN_KEY)}`}
     <button disabled tabindex={-1} aria-label={tString('fileExplorer.functionKeyBar.noShiftAction', { fnKey })}>
-        <kbd>{fnKey}</kbd>
+        <kbd>{toPlatformShortcut(`⇧${fnKey}`)}</kbd>
     </button>
 {/snippet}
 
@@ -124,73 +227,13 @@
         }}
     >
         <!-- eslint-disable @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
-        {#if shiftHeld}
-            {@render emptySlot('F2')}
-            {@render emptySlot('F3')}
-            {@render commandButton(
-                fnKeyToCommand.newFile,
-                tString('fileExplorer.functionKeyBar.newFileLabel'),
-                tString('fileExplorer.functionKeyBar.newFileAction'),
-                canMkfile,
-            )}
-            {@render emptySlot('F5')}
-            {@render commandButton(
-                fnKeyToCommand.rename,
-                tString('fileExplorer.functionKeyBar.renameLabel'),
-                tString('fileExplorer.functionKeyBar.renameAction'),
-                canRename,
-            )}
-            {@render emptySlot('F7')}
-            {@render commandButton(
-                fnKeyToCommand.deletePermanently,
-                tString('fileExplorer.functionKeyBar.permanentlyLabel'),
-                tString('fileExplorer.functionKeyBar.deletePermanentlyAction'),
-                canSourceOps,
-            )}
-        {:else}
-            {@render commandButton(
-                fnKeyToCommand.rename,
-                tString('fileExplorer.functionKeyBar.renameLabel'),
-                tString('fileExplorer.functionKeyBar.renameAction'),
-                canRename,
-            )}
-            {@render commandButton(
-                fnKeyToCommand.view,
-                tString('fileExplorer.functionKeyBar.viewLabel'),
-                tString('fileExplorer.functionKeyBar.viewAction'),
-                true,
-            )}
-            {@render commandButton(
-                fnKeyToCommand.edit,
-                tString('fileExplorer.functionKeyBar.editLabel'),
-                tString('fileExplorer.functionKeyBar.editAction'),
-                true,
-            )}
-            {@render commandButton(
-                fnKeyToCommand.copy,
-                tString('fileExplorer.functionKeyBar.copyLabel'),
-                tString('fileExplorer.functionKeyBar.copyAction'),
-                canSourceOps,
-            )}
-            {@render commandButton(
-                fnKeyToCommand.move,
-                tString('fileExplorer.functionKeyBar.moveLabel'),
-                tString('fileExplorer.functionKeyBar.moveAction'),
-                canSourceOps,
-            )}
-            {@render commandButton(
-                fnKeyToCommand.newFolder,
-                tString('fileExplorer.functionKeyBar.newFolderLabel'),
-                tString('fileExplorer.functionKeyBar.newFolderAction'),
-                canMkdir,
-            )}
-            {@render commandButton(
-                fnKeyToCommand.delete,
-                tString('fileExplorer.functionKeyBar.deleteLabel'),
-                tString('fileExplorer.functionKeyBar.deleteAction'),
-                canSourceOps,
-            )}
-        {/if}
+        {#each shiftHeld ? shiftRow : defaultRow as slot, index (index)}
+            {#if slot}
+                {@render commandButton(slot)}
+            {:else}
+                {@render emptySlot(index)}
+            {/if}
+        {/each}
         <!-- eslint-enable @typescript-eslint/no-confusing-void-expression -->
     </div>
 {/if}

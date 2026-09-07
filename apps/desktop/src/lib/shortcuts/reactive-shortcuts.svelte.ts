@@ -6,11 +6,13 @@
  * wrapper bumps a `$state` version on every store change (including the initial
  * custom-shortcut load in `initializeShortcuts`), so `$derived` consumers re-read.
  *
- * Two readers, same version tick:
+ * Three readers, same version tick:
  *   - `getEffectiveShortcutsReactive(commandId)` — the full effective list (the palette
  *     shows up to three).
  *   - `getFirstShortcutReactive(commandId)` — `[0]` of that list (what menus and inline
  *     chips show).
+ *   - `getFirstShiftShortcutReactive(commandId)` — the first SHIFTED binding (what the
+ *     F-key bar's Shift row shows).
  *
  * One-off reads at event time (toasts, context menus) don't need this; they keep
  * calling `getEffectiveShortcuts` directly — and then apply `toDisplayShortcut`
@@ -21,7 +23,7 @@
  * dispatching a combo must call `getEffectiveShortcuts` instead.
  */
 import { getEffectiveShortcuts, onShortcutChange } from './shortcuts-store'
-import { toDisplayShortcut } from './key-capture'
+import { comboHasShift, toDisplayShortcut } from './key-capture'
 import type { CommandId } from '$lib/commands/command-ids'
 
 let version = $state(0)
@@ -55,4 +57,20 @@ export function getEffectiveShortcutsReactive(commandId: CommandId): string[] {
  */
 export function getFirstShortcutReactive(commandId: string): string | undefined {
   return getEffectiveShortcutsReactive(commandId as CommandId)[0]
+}
+
+/**
+ * The first effective shortcut for a command that carries Shift, in display form,
+ * reactively. `undefined` when the command has no shifted binding.
+ *
+ * Deliberately no fallback to the unshifted binding: in the F-key bar's Shift row a
+ * chip is a claim about what Shift+<key> does, and `file.rename` (bound to both `F2`
+ * and `⇧F6`) would otherwise put a dead `F2` in the row's F6 slot. No chip — the
+ * label alone, still clickable — beats a wrong one.
+ */
+export function getFirstShiftShortcutReactive(commandId: CommandId): string | undefined {
+  ensureSubscribed()
+  void version // Subscribe $derived/$effect consumers to shortcut changes
+  const shifted = getEffectiveShortcuts(commandId).find(comboHasShift)
+  return shifted === undefined ? undefined : toDisplayShortcut(shifted)
 }

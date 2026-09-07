@@ -100,14 +100,17 @@ otherwise they stay stale until restart and the new key doesn't actually work. T
 
 ### Reactive reads (`reactive-shortcuts.svelte.ts`)
 
-Two readers over one module-level `$state` version (bumped on every `onShortcutChange`):
+Three readers over one module-level `$state` version (bumped on every `onShortcutChange`):
 
 - `getEffectiveShortcutsReactive(commandId)` returns the full effective list (the command palette shows up to three).
   Param is typed `CommandId`, not loose `string`. Returns a fresh array on every call (the underlying
   `getEffectiveShortcuts` copies the store's data), so consumers can't mutate the store — don't cache the reference.
 - `getFirstShortcutReactive(commandId)` is `[0]` of that list (the one menus and inline `ShortcutChip`s show).
+- `getFirstShiftShortcutReactive(commandId)` is the first entry matching `comboHasShift` (Shift in either platform
+  spelling), or `undefined` — no fallback to the unshifted binding. Its one caller is the F-key bar's Shift row, where a
+  chip is a claim about Shift+<key>; why that matters: `../file-explorer/pane/DETAILS.md`.
 
-Both subscribe `$derived`/`$effect` consumers to shortcut changes, so a rebind updates the UI live. Use them for
+All three subscribe `$derived`/`$effect` consumers to shortcut changes, so a rebind updates the UI live. Use them for
 long-lived UI that displays a shortcut (tooltips, hints, the palette, `ShortcutChip`). One-off reads at event time
 (toasts, context menus) keep calling `getEffectiveShortcuts` directly — a toast deliberately snapshots the binding it
 was created with.
