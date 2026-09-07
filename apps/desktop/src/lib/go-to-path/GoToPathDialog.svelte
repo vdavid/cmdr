@@ -2,8 +2,9 @@
     /**
      * "Go to path" dialog (⌘G). A small modal with an auto-focused textbox, a
      * list of up to 10 recent paths (each with a digit chip, the middle-
-     * truncated path, and a remove `[x]` button), a live inline warning for the
-     * nearest-ancestor case, and Cancel / "Go to path" buttons.
+     * truncated path, and a remove `[x]` button), a live inline hint (a warning
+     * for the nearest-ancestor case, a neutral line for a server address), and
+     * Cancel / "Go to path" buttons.
      *
      * Muscle-memory flows we optimize:
      * - ⌘G → Enter on a clipboard path (prefilled when the clipboard resolves
@@ -53,8 +54,15 @@
 
     let inputValue = $state('')
     let inputRef: HTMLInputElement | undefined = $state()
-    /** Nearest-ancestor preview line below the box, or `''` when there's none. */
-    let ancestorHint = $state('')
+    /**
+     * The preview line below the box, or `null` when there's none.
+     *
+     * ❗ Two tones, because two outcomes: `warning` is the nearest-ancestor case,
+     * where the box does NOT name what the user will land on. `info` is a server
+     * address, where it does. Painting the second one yellow tells a person the
+     * good outcome is a problem.
+     */
+    let hint = $state<{ text: string; tone: 'warning' | 'info' } | null>(null)
     let isGoing = $state(false)
 
     const recents = $derived(getRecentPathsList().slice(0, 10))
@@ -66,14 +74,15 @@
     }
 
     /**
-     * Resolve the current box value for the live preview only. Returns the
-     * nearest-ancestor hint string, or `''` for directory/file/invalid (no
-     * warning shown). Wrapped in `withTimeout` so a hung mount never blocks.
+     * Resolve the current box value for the live preview only. Sets the
+     * nearest-ancestor warning, the neutral server-address line, or nothing at
+     * all for directory/file/invalid. Wrapped in `withTimeout` so a hung mount
+     * never blocks.
      */
     async function previewResolve(value: string): Promise<void> {
         const trimmed = value.trim()
         if (trimmed === '') {
-            ancestorHint = ''
+            hint = null
             return
         }
         // ❗ A scheme input never reaches the local resolver, here or on the jump:
@@ -82,7 +91,7 @@
         const intent = await withTimeout(readSchemeInput(trimmed), RESOLVE_TIMEOUT_MS, null)
         if (value !== inputValue) return
         if (intent) {
-            ancestorHint = previewSchemeInput(intent)
+            hint = { text: previewSchemeInput(intent), tone: 'info' }
             return
         }
 
@@ -90,10 +99,10 @@
         // A later keystroke may have changed the box while we awaited; only
         // apply if the value we resolved is still current.
         if (value !== inputValue) return
-        ancestorHint =
+        hint =
             resolution?.kind === 'nearestAncestor'
-                ? tString('goToPath.dialog.ancestorHint', { dir: resolution.ancestorDir })
-                : ''
+                ? { text: tString('goToPath.dialog.ancestorHint', { dir: resolution.ancestorDir }), tone: 'warning' }
+                : null
     }
 
     /** Reads the live box value. A function so the TS literal-narrowing across
@@ -230,9 +239,9 @@
                 bind:inputElement={inputRef}
                 bind:value={inputValue}
                 mono
-                warning={!!ancestorHint}
+                warning={hint?.tone === 'warning'}
                 ariaLabel={tString('goToPath.dialog.inputAriaLabel')}
-                aria-describedby={ancestorHint ? 'go-to-path-warning' : undefined}
+                aria-describedby={hint ? 'go-to-path-hint' : undefined}
                 spellcheck={false}
                 autocomplete="off"
                 autocapitalize="off"
@@ -240,8 +249,10 @@
                 onkeydown={handleInputKeydown}
                 oninput={handleInput}
             />
-            {#if ancestorHint}
-                <p id="go-to-path-warning" class="warning" role="status">{ancestorHint}</p>
+            {#if hint}
+                <p id="go-to-path-hint" class="hint" class:warning={hint.tone === 'warning'} role="status">
+                    {hint.text}
+                </p>
             {/if}
         </div>
 
@@ -298,11 +309,15 @@
         margin-bottom: var(--spacing-md);
     }
 
-    .warning {
+    .hint {
         margin: var(--spacing-sm) 0 0;
         font-size: var(--font-size-sm);
-        color: var(--color-warning);
+        color: var(--color-text-secondary);
         word-break: break-all;
+    }
+
+    .hint.warning {
+        color: var(--color-warning);
     }
 
     .recents {

@@ -258,6 +258,42 @@ describe('GoToPathDialog', () => {
     cleanup()
   })
 
+  /**
+   * ❗ The two preview lines are two different pieces of news. "Adds a server" and
+   * "Opens {name}" say the box holds something that WORKS; the nearest-ancestor
+   * line says it does not name what the pane will land on. Painting the first
+   * one in the warning colour tells a person the good outcome is a problem.
+   */
+  it('previews a server address neutrally, and keeps the warning tone for a path that misses', async () => {
+    readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'smb://naspolya' })
+    const { target, cleanup } = setup()
+    await flush()
+    const input = target.querySelector('input') as HTMLInputElement
+    input.value = 'smb://naspolya'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await new Promise((resolve) => setTimeout(resolve, 260))
+    await flush()
+
+    const schemeHint = target.querySelector('#go-to-path-hint') as HTMLElement
+    expect(schemeHint.textContent).toContain('Adds a server')
+    expect(schemeHint.classList.contains('warning')).toBe(false)
+
+    // The same slot, for a path the resolver could only answer with an ancestor.
+    readSchemeInputMock.mockResolvedValue(null)
+    resolveGoToPathMock.mockResolvedValue({
+      status: 'ok',
+      data: { kind: 'nearestAncestor', requested: '/nope/missing', ancestorDir: '/' },
+    })
+    input.value = '/nope/missing'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await new Promise((resolve) => setTimeout(resolve, 260))
+    await flush()
+
+    const ancestorHint = target.querySelector('#go-to-path-hint') as HTMLElement
+    expect(ancestorHint.classList.contains('warning')).toBe(true)
+    cleanup()
+  })
+
   it('prefills the box from a copied server address', async () => {
     readClipboardTextMock.mockResolvedValue('sftp://ada@nas.local:22/srv')
     readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'sftp://ada@nas.local:22/srv' })
