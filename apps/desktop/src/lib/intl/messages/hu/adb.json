@@ -31,6 +31,10 @@
   "@adb.connect.transport": {
     "sourceHash": "d90c37c"
   },
+  "adb.connect.cancelled": "Leállítottad a telefonod megnyitását.",
+  "@adb.connect.cancelled": {
+    "sourceHash": "bc525aa"
+  },
   "adb.connect.waitingHint": "Amint megteszed, a Cmdr megnyitja a telefonodat.",
   "@adb.connect.waitingHint": {
     "sourceHash": "d1df048"

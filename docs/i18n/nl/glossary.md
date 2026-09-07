@@ -2962,6 +2962,12 @@ Notities:
 - **Nooit een diagnose noemen**: geen `adb-server`, geen `transport`, geen `daemon`, geen serienummer.
   `adb.connect.serverUnreachable` zegt daarom `De Android-tools op deze Mac reageerden niet.` en noemt het
   achtergrondprogramma niet.
+- **`You stopped opening your phone.` → `Je hebt het openen van je telefoon gestopt.`** (`adb.connect.cancelled`) ·
+  `stoppen`, net als de parallelle sleutel `search.coverage.walk.cancelled` (`Je hebt deze zoekopdracht gestopt`) en
+  `errors.volume.cancelled` (`Cmdr heeft dit op je verzoek gestopt.`) · `high`. ❌ Niet `geannuleerd`: `Annuleer` is het
+  LABEL van de knop (`fileOperations.button.cancel`), en de zin zou dan naar die knop lijken te wijzen.
+  `het openen van …` staat al zo in de catalogus, en `openen` is het gevestigde werkwoord voor een telefoon
+  (`adb.connect.waitingHint`, `Zodra je dat doet, opent Cmdr je telefoon.`).
 
 ### Review-vlaggen van deze pass
 

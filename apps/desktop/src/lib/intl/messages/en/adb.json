@@ -31,6 +31,10 @@
   "@adb.connect.transport": {
     "description": "Shown in the pane when the USB connection broke in a way none of the other lines name: a cable knocked loose, or the phone's own side gave up. \"Cmdr\" is the product name. ❌ Never name the protocol or a diagnostic. A \"Try again\" button sits beside it."
   },
+  "adb.connect.cancelled": "You stopped opening your phone.",
+  "@adb.connect.cancelled": {
+    "description": "Shown in the pane after the user pressed Cancel while Cmdr was opening the phone. Address the user directly, matter-of-fact, no apology and no scolding: they did it on purpose. A \"Try again\" button sits beside it."
+  },
   "adb.connect.waitingHint": "Cmdr opens your phone as soon as you do.",
   "@adb.connect.waitingHint": {
     "description": "One line under \"Check your phone and tap Allow\", telling the user nothing else is needed from them: the pane moves on by itself once they tap. Reassurance, not an instruction. \"Cmdr\" is the product name."

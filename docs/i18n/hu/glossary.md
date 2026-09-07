@@ -2852,6 +2852,13 @@ fordításából.
   korábbról áll rajta.
 - Aposztróf egyik magyar értékben sincs, tehát ICU-kettőzés sem kellett. A `{name}` és a `{deviceName}` halmaza
   megegyezik az angoléval.
+- **`You stopped opening your phone.` → `Leállítottad a telefonod megnyitását.`** (`adb.connect.cancelled`) · a
+  `leállít` tő a párhuzamos `search.coverage.walk.cancelled` szállított alakjából jön („You stopped this search” →
+  `Leállítottad ezt a keresést`), és ugyanez a tő áll az `errors.volume.cancelled`-ban is
+  (`A Cmdr a kérésedre leállította ezt a műveletet.`) · `high`. ❌ NEM a `Mégsem` töve: az a GOMB felirata
+  (`fileOperations.button.cancel`), a mondat viszont nem a gombot nevezi meg, hanem azt mondja el, mi történt. A
+  `megnyitás` a telefon kinyitásának szállított igéje (`adb.connect.waitingHint`, „a Cmdr megnyitja a telefonodat”); a
+  birtokos `a telefonod megnyitását` a természetes magyar alak, és nem ragoz helyőrzőt.
 
 ## A zárolt szerveridentitás (`servers.sheet.identityLocked`)
 

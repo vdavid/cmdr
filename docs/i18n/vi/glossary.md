@@ -2604,6 +2604,12 @@ Các quyết định theo từng chuỗi:
   `adb.hint.dismiss`. Hai khóa này không bao giờ hiện trên giao diện.
 - Không giá trị nào trong đợt này chứa dấu nháy đơn, nên không có dấu nháy nào phải nhân đôi. Chỉ
   `adb.volumeLabelWithSuffix` (đã dịch từ đợt trước) mang `sameAsSourceJustification`.
+- **`You stopped opening your phone.` → `Bạn đã dừng việc mở điện thoại.`** (`adb.connect.cancelled`) · `dừng`,
+  giống khóa song song `search.coverage.walk.cancelled` (`Bạn đã dừng lần tìm kiếm này`) và `errors.volume.cancelled`
+  (`Cmdr đã dừng việc này theo yêu cầu của bạn.`) · `high`. ❌ Không dùng `hủy`: `Hủy` là NHÃN của nút
+  (`fileOperations.button.cancel`), câu sẽ đọc như đang nhắc tới nút đó. Khuôn `dừng việc` + động từ đã có sẵn trong
+  catalog (`dừng việc lập chỉ mục mới`). Bỏ `của bạn` vì chủ ngữ đã là `Bạn`; `mở` là động từ đã chốt cho điện thoại
+  (`adb.connect.waitingHint`).
 
 ## Danh tính bị khoá của máy chủ (`servers.sheet.identityLocked`)
 

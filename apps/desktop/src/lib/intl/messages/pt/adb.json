@@ -31,6 +31,10 @@
   "@adb.connect.transport": {
     "sourceHash": "d90c37c"
   },
+  "adb.connect.cancelled": "Você parou de abrir o seu celular.",
+  "@adb.connect.cancelled": {
+    "sourceHash": "bc525aa"
+  },
   "adb.connect.waitingHint": "O Cmdr abre o seu celular assim que você permitir.",
   "@adb.connect.waitingHint": {
     "sourceHash": "d1df048"

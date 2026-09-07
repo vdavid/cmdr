@@ -31,6 +31,10 @@
   "@adb.connect.transport": {
     "sourceHash": "d90c37c"
   },
+  "adb.connect.cancelled": "你停止了開啟手機。",
+  "@adb.connect.cancelled": {
+    "sourceHash": "bc525aa"
+  },
   "adb.connect.waitingHint": "你一輕觸，Cmdr 就會開啟你的手機。",
   "@adb.connect.waitingHint": {
     "sourceHash": "d1df048"

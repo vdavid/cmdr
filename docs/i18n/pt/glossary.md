@@ -2378,6 +2378,12 @@ termos do Android vêm do AOSP, que é a fonte autoritativa da tradução do pr�
 - **`This phone''s Android version is too old` → `A versão do Android deste celular é antiga demais`** · a concordância
   cai em `versão` (feminino), que é o sujeito; `navegar por ele` é o verbo de `settings.summary.adb`
   (`Navegue por um celular Android…`) · high
+- **`You stopped opening your phone.` → `Você parou de abrir o seu celular.`** (`adb.connect.cancelled`) · `parar`,
+  como na chave paralela `search.coverage.walk.cancelled` (`Você parou esta busca`) e em `errors.volume.cancelled`
+  (`O Cmdr parou isso a seu pedido.`) · confirmed. O molde `parar de` + infinitivo já é o do catálogo
+  (`parou de conectar a {name}`, `parou de adicionar…`, `parou de responder`), então a frase fica verbal em vez do
+  pesado `a abertura do celular`. ❌ Não `cancelou`: `Cancelar` é o RÓTULO do botão (`fileOperations.button.cancel`).
+  `abrir` e `celular` vêm de `adb.connect.waitingHint` (`O Cmdr abre o seu celular…`).
 
 O par interno (`settings.behavior.adbHintDismissed.*`) copia o molde da irmã `serversPinHintSeen.*`:
 `Dica de … dispensada` e `Se a linha única que oferece … já foi dispensada.`. Ele nunca aparece na interface, mas

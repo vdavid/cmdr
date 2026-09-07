@@ -28,6 +28,7 @@ import { asAdbConnectError, cancelAdbConnect, connectAdbDevice, newAdbAttemptId 
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { isAdbVolumeId, parseAdbPath } from '$lib/adb/adb-path-utils'
 import { readAdbConnectOutcome, waitingForTheAllowTap } from '$lib/adb/adb-connect-errors'
+import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import type { RemoteConnectState } from './remote-connect-state'
 import type { VolumeInfo } from '../types'
@@ -96,7 +97,7 @@ export function createDeviceConnect(deps: DeviceConnectDeps): DeviceConnect {
     if (info.deviceReadiness?.kind === 'waiting_for_authorization') {
       // ❗ ❌ No dial: the answer is `unauthorized` and it is already on screen.
       // The next `volumes-changed` carrying `ready` re-runs this effect.
-      state = waiting()
+      state = waiting(volumeId, info)
       return
     }
     void dial(volumeId, info)
@@ -109,7 +110,7 @@ export function createDeviceConnect(deps: DeviceConnectDeps): DeviceConnect {
     return readiness.kind === 'unavailable' ? `unavailable:${readiness.reason}` : readiness.kind
   }
 
-  function waiting(): RemoteConnectState {
+  function waiting(volumeId: string, info: VolumeInfo): RemoteConnectState {
     const words = waitingForTheAllowTap()
     return {
       kind: 'waiting_for_device',
@@ -119,19 +120,43 @@ export function createDeviceConnect(deps: DeviceConnectDeps): DeviceConnect {
         // A dial may be in flight (the `unauthorized` answer arrives here too),
         // and calling one off that already finished is an ordinary `false`.
         if (attemptId) void callOff(attemptId)
-        state = null
+        state = stopped(volumeId, info)
       },
+    }
+  }
+
+  /**
+   * What a phone the user stopped opening leaves on screen.
+   *
+   * ❗ ❌ Never `null`. The pane is still HELD while this factory is on a phone
+   * it hasn't seen open (`holdsListing`), so a `null` state renders NOTHING at
+   * all: no listing, no sentence, no button, and no way out but switching
+   * volumes. "A cancel says nothing" is about not scolding the user for what
+   * they just did, ❌ not about leaving them in an empty pane.
+   *
+   * ❗ ❌ And never a release of the hold either: `list_directory` on an
+   * `adb://` path dials the phone again through the backend's own
+   * `adb-navigation:<serial>` id, so letting the listing run would re-dial the
+   * very thing the user called off.
+   */
+  function stopped(volumeId: string, info: VolumeInfo): RemoteConnectState {
+    return {
+      kind: 'refused',
+      refusal: tString('adb.connect.cancelled'),
+      retry: () => void dial(volumeId, info),
     }
   }
 
   async function dial(volumeId: string, info: VolumeInfo): Promise<void> {
     const parsed = parseAdbPath(info.path)
     if (!parsed) {
-      // A device row whose path isn't `adb://…`. Nothing to dial and nothing to
-      // say: the listing runs and answers honestly.
+      // A device row whose path isn't `adb://…`, so there is no serial to dial.
+      // The reason is a bug in whoever minted the row, which is what the log is
+      // for; what a person can act on is that this row won't open, and no button
+      // changes that. ❗ A sentence rather than an empty pane: the listing is
+      // still held, so `null` here would render nothing at all.
       log.warn('An ADB volume names no serial in its path: {path}', { path: info.path })
-      state = null
-      opened = volumeId
+      state = { kind: 'refused', refusal: tString('adb.connect.deviceGone') }
       return
     }
     // ❗ Minted BEFORE the wire is touched, so Cancel is armed from the first
@@ -142,7 +167,7 @@ export function createDeviceConnect(deps: DeviceConnectDeps): DeviceConnect {
       kind: 'connecting',
       cancel: () => {
         void callOff(id)
-        state = null
+        state = stopped(volumeId, info)
       },
     }
     try {
@@ -158,23 +183,27 @@ export function createDeviceConnect(deps: DeviceConnectDeps): DeviceConnect {
   }
 
   /** What the pane shows for a dial that came back with something to say. */
-  function stateForRefusal(volumeId: string, info: VolumeInfo, error: unknown): RemoteConnectState | null {
+  function stateForRefusal(volumeId: string, info: VolumeInfo, error: unknown): RemoteConnectState {
     const failure = asAdbConnectError(error)
     if (!failure) {
-      // Not a typed refusal, so it is the IPC transport itself. ❌ Never shown:
-      // it is untranslated diagnostic text. The listing's own error pane takes
-      // over once the pane stops being held.
+      // Not a typed refusal, so it is the IPC transport itself. ❌ Its own text
+      // is never shown: it is untranslated diagnostics, and the log is where
+      // that belongs. The pane gets the one sentence true either way, with a
+      // Try again beside it — ❌ never an empty held pane.
       log.warn('Opening the phone on {volumeId} broke down: {error}', { volumeId, error: String(error) })
-      opened = volumeId
-      return null
+      return {
+        kind: 'refused',
+        refusal: tString('adb.connect.transport'),
+        retry: () => void dial(volumeId, info),
+      }
     }
     const outcome = readAdbConnectOutcome(failure)
     switch (outcome.kind) {
       case 'silent':
-        // ❗ Says nothing: the user pressed the button.
-        return null
+        // The user pressed the button. ❗ No scolding, but a way back in.
+        return stopped(volumeId, info)
       case 'waiting':
-        return waiting()
+        return waiting(volumeId, info)
       case 'refused':
         return {
           kind: 'refused',

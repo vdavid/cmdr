@@ -4,6 +4,7 @@
 /** Every key present in `messages/en/*.json`. A wrong key is a typecheck error. */
 export type MessageKey =
   | 'adb.connect.adbNotInstalled'
+  | 'adb.connect.cancelled'
   | 'adb.connect.deviceGone'
   | 'adb.connect.deviceTooOld'
   | 'adb.connect.openSettings'

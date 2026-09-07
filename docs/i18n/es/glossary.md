@@ -2719,6 +2719,14 @@ cruzando el lado `en` con el `es`, 2026-09-07). El vocabulario propio de Android
   `Aviso de grupo Red largo mostrado` / `Si ya se mostró el aviso único sobre desfijar servidores.`, cambiando `mostrar`
   por `descartar` porque el inglés hace el mismo cambio. Nunca se ven en pantalla, pero se traducen para que la
   cobertura sea honesta · `high`.
+- **`You stopped opening your phone.` → `Detuviste la apertura de tu teléfono.`** (`adb.connect.cancelled`) ·
+  `detener` en pretérito, igual que la clave paralela `search.coverage.walk.cancelled` («You stopped this search» →
+  `Detuviste esta búsqueda`) y que `errors.volume.cancelled` (`Cmdr detuvo esto porque se lo pediste.`); `style.md` §
+  Notes and decisions ya autoriza `detener` justo para este caso (la persona SÍ paró algo y la línea cuenta el
+  resultado) · `high`. ❌ No `Cancelaste`: `Cancelar` es la ETIQUETA del botón (`fileOperations.button.cancel`) y la
+  frase leería como si nombrara ese botón. El nombre deverbal `la apertura de` recoge el `abrir` ya asentado
+  (`adb.connect.waitingHint`, `Cmdr abrirá tu teléfono…`) · `tentative` solo en ese sustantivo: el catálogo no publica
+  `apertura` en ninguna otra clave.
 
 ### Notas de forma
 

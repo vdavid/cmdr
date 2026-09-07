@@ -1376,6 +1376,11 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   （`已顯示「網路」群組過長的提示` / `是否已顯示過關於取消釘選伺服器的一次性提示。`）· `high`。英文從 `Seen` 換成
   `Dismissed`，中文跟著從 `已顯示` 換成 `已關閉`，和上面的 Dismiss 條目同字。
 - 這 19 個值都不含撇號（中文不需要，ICU 的 `''` 規則咬不到），也都和英文不同，所以沒有 `sameAsSourceJustification`。
+- **`You stopped opening your phone.`** · `你停止了開啟手機。`（`adb.connect.cancelled`）· 動詞照平行鍵
+  `search.coverage.walk.cancelled`（`你停止了這次搜尋`）和 `errors.volume.cancelled` 取 `停止` ·
+  `high`。❌ 不寫 `取消`：`取消` 是按鈕的標籤（`fileOperations.button.cancel`），寫成「你取消了…」會像在指那顆按鈕，
+  而不是在說發生了什麼。`停止` 直接帶動詞短語是目錄既有的寫法（`停止建立索引`、`停止連線到 {name}`、`停止搜尋`）。
+  `開啟` 是已定的開手機動詞（`adb.connect.waitingHint`）；主詞已經是 `你`，所以不再寫 `你的手機`。
 
 ## 被鎖住的伺服器身分（`servers.sheet.identityLocked`）
 
