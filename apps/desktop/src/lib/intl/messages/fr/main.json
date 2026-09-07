@@ -43,11 +43,11 @@
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "Cmdr a besoin d’une version plus récente de Safari",
+  "main.oldWebkit.title": "Cmdr a besoin d''une version plus récente de Safari",
   "@main.oldWebkit.title": {
     "sourceHash": "03e502b"
   },
-  "main.oldWebkit.body": "L’interface de Cmdr nécessite Safari 15.4 ou une version plus récente, et ce Mac en a une plus ancienne. Ouvrez Mise à jour de logiciels et installez tout ce qui est en attente. Cela devrait suffire.",
+  "main.oldWebkit.body": "L''interface de Cmdr nécessite Safari 15.4 ou une version plus récente, et ce Mac en a une plus ancienne. Ouvrez Mise à jour de logiciels et installez tout ce qui est en attente. Cela devrait suffire.",
   "@main.oldWebkit.body": {
     "sourceHash": "bcadac5"
   },

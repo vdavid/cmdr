@@ -2947,3 +2947,10 @@ Notes de formulation :
   l'acronyme `ADB`, rien à traduire.
 - Toutes les apostrophes des valeurs sont ASCII et doublées (`n''a`, `n''ont`, `n''est`, `d''Android`, `c''est`) : les
   deux fichiers sont ICU.
+
+## Apostrophe sweep over `main.oldWebkit.*`
+
+`main.oldWebkit.title` and `main.oldWebkit.body` were the last two `fr` values carrying the curly U+2019 copied from
+the English source. Both are ICU (the English body spells `Cmdr''s`), so they now read `d''une` and `L''interface`,
+matching the catalog-wide rule in § Apostrophe form. Confidence: high. A curly apostrophe is not an ICU escape, so it
+passes every check silently; the only defence is a periodic `rg '’' apps/desktop/src/lib/intl/messages/fr` sweep.
