@@ -725,13 +725,28 @@ for the shape hand-off; a11y blocks updated; the SMB E2E spec's login steps reta
 `network/CLAUDE.md` loses the Tab guard, `connectionMode`, and login-hosts must-knows (the never-pre-prompt rule stays),
 `pane/CLAUDE.md`, `DETAILS.md`s.
 
-### M4. The toast and Settings
+### M4. The toast and Settings ✅ LANDED
 
 1. The educational toast (D13). TDD: a pure `should-show-pin-hint.ts` (count ≥ 5, seen flag, favorites ≥ 3 adds the
    line).
 2. D11: the Servers card and the Android (ADB) section, `settings-i18n-parity`, `settings-registry` tests.
 
 Docs: `settings/CLAUDE.md`, `navigation/DETAILS.md`. Checks: `pnpm check`.
+
+❗ **Four things differed, each recorded beside the code.**
+
+- **D6's context menu was missing its Pin / Unpin item**, though M1 owned it and the wire has carried the two typed
+  variants since. The toast names that item, so it was built here (`menu_structure.rs`, off the row's own `pinned`, the
+  one server item `busy` never disables). ❗ **Open and Edit… are still missing from that menu**, and remain M6's to
+  reconcile: `VolumeContextActionKind` carries both, and `server-row-actions.ts` already acts on them.
+- **The hub's Name column ranks three names**, and an SMB label is ALWAYS a stand-in: `manual_servers` derives it from
+  the address that was typed, so "the user typed it" ranks it below a Bonjour name rather than above.
+  `SavedServer.name_source` publishes the fact; `network/DETAILS.md` is canonical.
+- **A settings page with no control of its own** (Servers: one list, one Forget per row) had no way into the sidebar,
+  since `buildSectionTree` reads the registry. `sectionAnchor: true` beside `hidden: true` is the answer, documented in
+  `settings/DETAILS.md` § Card groups.
+- **The sheet's restored username placeholder cost no translation work**: the deleted key's ten values were recovered
+  from the commit that removed them and re-filed under `servers.sheet.usernamePlaceholder`.
 
 ### M5. ADB in the pane
 
