@@ -90,6 +90,16 @@ export async function openEditServerSheet(server: SavedServer): Promise<SignInSh
 export async function openSignInForPlace(request: SignInSeamRequest): Promise<SignInSeamResult> {
   const { volumeId, registered, firstOutcome } = request
   const shape = await getVolumeSignInState(volumeId)
+  if (shape.kind === 'nothing') {
+    // ❗ The guard lives HERE rather than in each caller: `nothing` means no
+    // secret a person could type would help (a key-only or agent-only server,
+    // whose `reconnect_with_credentials` answers `NotSupported` every time), and
+    // `SignInCredentialFields` would otherwise fall through to a password box
+    // over it. The pane's `signed_out` banner with no button is the honest view,
+    // and answering "not signed in" is what leaves it standing.
+    log.info('The place {volumeId} asks for nothing a person could type, so no sheet opens', { volumeId })
+    return { signedIn: false }
+  }
   const identity = await identityFor(volumeId)
   const { endpoint } = identity
   // ❗ Seeded from what is STORED, ❌ never defaulted on: an attended sign-in
@@ -103,6 +113,11 @@ export async function openSignInForPlace(request: SignInSeamRequest): Promise<Si
     shape,
     remembered,
     hostKey: firstOutcome?.outcome === 'needs_host_key_approval' ? firstOutcome : undefined,
+    // Why the person is being asked. ❗ Read off the dial that sent them here
+    // rather than assumed, so `needs_credentials` (nothing was ever offered) and
+    // `authentication_rejected` (something was, and was refused) keep their own
+    // sentences. A registered place had no dial to read, so its caller says.
+    refusal: refusalFrom(firstOutcome) ?? request.refusal,
     attempt: withRememberFlip({
       volumeId,
       identity,
@@ -150,6 +165,19 @@ function withRememberFlip(options: {
     }
     return await options.attempt(submission)
   }
+}
+
+/**
+ * The refusal a first dial answered, or `undefined` when it answered something
+ * else (a host key to approve, a cancel, a connect that landed).
+ *
+ * ❗ Folds `server-outcomes.ts`'s reading rather than re-reading the wire enum: a
+ * second switch would be a second chance to word one outcome differently.
+ */
+function refusalFrom(outcome: ServerConnectOutcome | undefined): ConnectRefusalKind | undefined {
+  if (!outcome) return undefined
+  const read = readConnectOutcome(outcome)
+  return read.kind === 'refused' ? read.refusal : undefined
 }
 
 /** Add mode's attempt: a brand-new server, or SMB's hand-off. */

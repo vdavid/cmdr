@@ -48,7 +48,13 @@ bare `/` for its root, which is why the Rust side keeps them too.
 ❗ **`auth_method_unsupported` never reaches the sheet.** The server challenged with a scheme Cmdr doesn't speak, the
 secret never left, and no typing fixes it. A password box over that asks for something that cannot help.
 
-The `openSignIn` seam takes `{ volumeId, registered, firstOutcome? }` and answers
+**The sheet opens knowing WHY.** `open-sign-in.ts` reads the refusal off `firstOutcome` through
+`server-outcomes.ts::readConnectOutcome` (one reader, so `needs_credentials` and `authentication_rejected` keep their
+own sentences) and falls back to the seam request's own `refusal` for arm 2, where a REGISTERED volume sitting in
+`needs_sign_in` had no dial to read one off. ❗ Without it a person lands on an empty password box with nothing saying
+what happened, which is the exact failure the refusal-under-the-field design exists to prevent.
+
+The `openSignIn` seam takes `{ volumeId, registered, firstOutcome?, refusal? }` and answers
 `{ signedIn: true, volumeId } | { signedIn: false }`. `open-sign-in.ts` supplies it; without one the flow refuses with
 the reason instead, and ❌ never renders an inert "Sign in…" button.
 
@@ -150,7 +156,11 @@ One renderer per `SignInShape` variant, and ❗ **username editability is the VA
 mode**. One implementer reading "read-only" as a mode rule breaks SMB; one reading "editable" as a mode rule breaks
 SFTP.
 
-- `nothing`: the sheet never opens. There is no secret a person could type that would help.
+- `nothing`: the sheet never opens. There is no secret a person could type that would help, and
+  `reconnect_with_credentials` answers `NotSupported` for a key-only or agent-only server every time. ❗ The guard is at
+  the SEAM (`open-sign-in.ts` answers `{ signedIn: false }` without opening anything), so a new caller inherits it
+  rather than having to remember it; `smb-view-state.svelte.ts`'s own reading of the shape is a separate decision, about
+  whether the `signed_out` banner offers a BUTTON at all.
 - `password`: the account as a read-only header, one password field. SFTP's and WebDAV's `reconnect_with_credentials`
   refuse a changed username, because the volume id IS the account.
 - `key_passphrase`: the same, with the field labelled for a key file's passphrase and `autocomplete="off"`, because a

@@ -60,7 +60,14 @@ describe('arm 2: a registered place asking for a credential', () => {
     const result = await connectPlace({ volumeId: VOLUME_ID, connectionState: 'needs_sign_in', openSignIn })
     // ❗ `registered: true` is what sends the sheet to
     // `reconnect_volume_with_credentials`. A dial would register a SECOND volume.
-    expect(openSignIn).toHaveBeenCalledWith({ volumeId: VOLUME_ID, registered: true })
+    // And the sheet is told WHY: this volume stopped because a credential is
+    // missing, so its first round says "Cmdr needs a password", ❌ not "that
+    // password didn't work" for one that was never offered.
+    expect(openSignIn).toHaveBeenCalledWith({
+      volumeId: VOLUME_ID,
+      registered: true,
+      refusal: 'needs_credentials',
+    })
     expect(result).toEqual({ kind: 'connected', volumeId: VOLUME_ID })
     expect(ipc.callCount('connect_saved_place')).toBe(0)
   })

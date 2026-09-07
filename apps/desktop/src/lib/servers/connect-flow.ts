@@ -65,9 +65,16 @@ export interface SignInSeamRequest {
   registered: boolean
   /**
    * What the first dial answered, when there was one. It is what opens the sheet
-   * on the host-key step rather than on the credential fields.
+   * on the host-key step rather than on the credential fields, and what the
+   * sheet's first-round sentence is read off.
    */
   firstOutcome?: ServerConnectOutcome
+  /**
+   * Why the person is being asked, for a place there was no dial to read it off:
+   * a REGISTERED volume already sitting in `needs_sign_in`. ❗ Lower precedence
+   * than `firstOutcome`, which is the live answer when there is one.
+   */
+  refusal?: ConnectRefusalKind
 }
 
 /**
@@ -117,7 +124,7 @@ export async function connectPlace(request: ConnectPlaceRequest): Promise<Connec
     // Arm 2. ❗ The volume is REGISTERED, so the sheet mends it with
     // `reconnectVolumeWithCredentials` rather than dialing: a dial would
     // register a second volume under a second id.
-    return await handOver(request, { volumeId, registered: true }, 'needs_credentials')
+    return await handOver(request, { volumeId, registered: true, refusal: 'needs_credentials' }, 'needs_credentials')
   }
 
   // Arm 3: nothing is registered, so this is a dial by saved entry.
