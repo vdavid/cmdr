@@ -11846,6 +11846,7 @@ export type ServerTarget =
       // Whether Cmdr may re-probe unattended when a request finds it gone.
       autoReconnect: boolean
     }
+
 /**
  *  The focused pane's answer to "what would a hand-off to macOS act on?".
  *
