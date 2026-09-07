@@ -112,7 +112,7 @@ few seconds one directory buys. Measure the directory in isolation and read the 
 - **`#[tauri::command]` boundary**: vitest IPC contract test using `installIpcMock()` from
   `apps/desktop/src/lib/ipc/test-helpers.ts`
 - **Frontend component logic**: vitest + svelte-testing-library in `*.test.ts`
-- **A component that sizes itself from its container** (either file-list view, `ShareBrowser`, `NetworkBrowser`):
+- **A component that sizes itself from its container** (either file-list view, `PlacesBrowser`, `ServersHub`):
   `installLayoutMock()` from `$lib/test-layout`, and for `FullList` the ready-made `mountFullList()`. **Never** assert
   on rows without one — see § "A component that measures itself, rendering nothing"
 - **Component-level a11y (ARIA, labels, focus order)**: tier-3 a11y test in `*.a11y.test.ts`
