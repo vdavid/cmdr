@@ -23,6 +23,7 @@
  */
 
 import { getKnownShareByName, getUsernameHint } from '$lib/tauri-commands'
+import { getAppLogger } from '$lib/logging/logger'
 import type { MountError, ShareListError } from '../types'
 import { openSignInSheet } from '$lib/servers/sign-in-sheet-state.svelte'
 import type { ConnectRefusalKind } from '$lib/servers/connect-refusals'
@@ -32,6 +33,8 @@ import type {
   SignInSheetResult,
   SignInSubmission,
 } from '$lib/servers/sign-in-contract'
+
+const log = getAppLogger('fileExplorer')
 
 /** The server a sign-in is for, as little of a `NetworkHost` as the sheet needs. */
 export interface SmbSignInHost {
@@ -91,14 +94,28 @@ export async function openSmbSignInSheet(request: SmbSignInRequest): Promise<Sig
  * Rust, so a hint saved under one spelling (`Naspolya`) is found when the sheet
  * opens under another (`Naspolya._smb._tcp.local`). ❌ Don't rebuild the key in
  * TypeScript: doing that is what made the two sides disagree.
+ *
+ * ❗ A lookup that breaks down answers `undefined` rather than throwing. This
+ * runs BEFORE the sheet opens, and one of the three callers cannot await it
+ * (`direct-connect.ts` returns as soon as the ask is up), so a rejection here
+ * would be an unhandled one AND a sheet that never appeared — over a pre-fill
+ * nobody would miss.
  */
 async function rememberedUsername(request: SmbSignInRequest): Promise<string | undefined> {
   if (request.initialUsername) return request.initialUsername
-  if (request.shareName) {
-    const known = await getKnownShareByName(request.host.name, request.shareName)
-    if (known?.username) return known.username
+  try {
+    if (request.shareName) {
+      const known = await getKnownShareByName(request.host.name, request.shareName)
+      if (known?.username) return known.username
+    }
+    return (await getUsernameHint(request.host.name)) ?? undefined
+  } catch (e) {
+    log.warn('Reading the remembered username for {host} broke down: {error}', {
+      host: request.host.name,
+      error: String(e),
+    })
+    return undefined
   }
-  return (await getUsernameHint(request.host.name)) ?? undefined
 }
 
 /** The read-only header: which server, and which share when it is about one. */
@@ -162,4 +179,14 @@ export function refusalForMountError(error: MountError): ConnectRefusalKind {
 /** Whether a mount failure is a credential question, so the sheet is what answers it. */
 export function isMountAuthError(error: MountError): boolean {
   return error.type === 'auth_failed' || error.type === 'auth_required'
+}
+
+/**
+ * Whether a LISTING failure is a credential question.
+ *
+ * ❗ `signing_required` counts: the server wants a signed session, which it only
+ * grants an authenticated one, so the fix is the same one the user can offer.
+ */
+export function isListingAuthError(error: ShareListError): boolean {
+  return error.type === 'auth_required' || error.type === 'signing_required'
 }

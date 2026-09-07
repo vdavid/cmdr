@@ -27,7 +27,7 @@ vi.mock('$lib/tauri-commands', () => ({
   upgradeToSmbVolumeUsingSavedPassword,
   upgradeToSmbVolumeWithCredentials,
   systemHasSavedSmbPassword,
-  getUsernameHint: vi.fn(() => Promise.resolve(null)),
+  getUsernameHint: vi.fn<() => Promise<string | null>>(() => Promise.resolve(null)),
   getKnownShareByName: vi.fn(() => Promise.resolve(null)),
 }))
 
@@ -70,7 +70,7 @@ function errorToasts(): unknown[] {
 interface SheetRequest {
   mode: string
   shape: { kind: string; guestAllowed?: boolean }
-  endpoint: { address: string; host: string }
+  endpoint: { address: string; host: string; username?: string }
   refusal?: string
   attempt: (submission: {
     mode: 'sign-in'
@@ -107,6 +107,20 @@ describe('connectDirectly', () => {
 
     await expect(connectDirectly('smb-archive')).resolves.toBe('stillOnOsMount')
     expect(errorToasts()).toHaveLength(1)
+  })
+
+  it('still asks when the remembered-username lookup breaks down', async () => {
+    // ❗ This runs BEFORE the sheet opens and nothing here can await it, so a
+    // rejection would be an unhandled one AND a prompt that never appeared, over
+    // a pre-fill nobody would miss.
+    const { getUsernameHint } = await import('$lib/tauri-commands')
+    vi.mocked(getUsernameHint).mockRejectedValueOnce(new Error('ipc down'))
+    upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
+
+    await expect(connectDirectly('smb-archive')).resolves.toBe('askingForCredentials')
+
+    const request = await sheetRequest()
+    expect(request.endpoint.username).toBeUndefined()
   })
 
   it('asks for a password on the one sign-in sheet, naming the share', async () => {
