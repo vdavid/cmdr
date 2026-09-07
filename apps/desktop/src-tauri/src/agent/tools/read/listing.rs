@@ -27,6 +27,9 @@
 //! both, never one instead of the other: the raw value is what anything
 //! downstream computes with. Uncertainty rides INSIDE the string (`≥`, `~`), so a
 //! quoted figure can't shed its caveat.
+//!
+//! A child row and the vocabulary for its size live in `listing/rows.rs`; this file
+//! is the pipeline that fills them.
 
 use serde::Serialize;
 use serde_json::Value;
@@ -37,9 +40,14 @@ use crate::file_system::volume::SpaceInfo;
 use crate::index_host::index;
 use crate::mcp::resources::indexing::status_token;
 use crate::mcp::{ToolError, ToolResult};
-use crate::search::{format_size, format_timestamp};
+use crate::search::format_size;
 use cmdr_index::store::DirStats;
 use cmdr_index::{Freshness, IndexStatusResponse};
+
+mod rows;
+
+use rows::qualified_size;
+pub(crate) use rows::{ChildEntry, RowKind, SizeClaim, human_size};
 
 /// Rows per page when the caller doesn't say. Comfortably under the result budget
 /// for a normal folder, so the common call is one round trip.
@@ -86,133 +94,6 @@ pub(crate) fn coverage(enabled: bool, freshness: Option<Freshness>, indexed: boo
         index_status: status_token(enabled, freshness).to_string(),
         authoritative,
         note,
-    }
-}
-
-/// A size string the model can quote verbatim, with any uncertainty INSIDE the
-/// string: `≥` when the number can only be higher (a lower bound), `~` when the
-/// error runs in both directions.
-///
-/// The qualifier is part of the string rather than only a neighbouring flag
-/// because the agent restates what a tool hands it. Given `"1.8 TB"` plus
-/// `sizeIsLowerBound: true`, a model that quotes the number and drops the flag has
-/// stated an exact total the index can't back; given `"≥ 1.8 TB"` it physically
-/// can't. The flag stays too, for anything that branches on it.
-fn qualified_size(bytes: u64, qualifier: Option<&str>) -> String {
-    match qualifier {
-        Some(q) => format!("{q} {}", format_size(bytes)),
-        None => format_size(bytes),
-    }
-}
-
-/// A size for a model to read out: `format_size`, carrying the qualifier its two
-/// honesty flags earn. Single-sourced on the `search` table's formatter, so a size
-/// reads the same wherever it surfaces (and, like that table, it doesn't consult
-/// the user's SI-vs-binary setting — MCP output stays internally consistent).
-pub(crate) fn human_size(bytes: u64, is_lower_bound: bool, is_updating: bool) -> String {
-    qualified_size(bytes, size_qualifier(is_lower_bound, is_updating))
-}
-
-/// Which uncertainty a size wears in front of it, if any.
-///
-/// **Motion outranks coverage.** `≥` says "the truth is at least this", which is
-/// only defensible once the number has stopped: it's derived from unscanned
-/// subtrees alone and can't express the opposite error, an index entry for a
-/// subtree that's already gone, where the truth is far LOWER. That's exactly what
-/// a running walk is busy correcting, so an in-flux total reads `~`: approximate,
-/// direction unknown. The flags themselves stay separate on the wire, so an agent
-/// that wants to know WHICH uncertainty this is still can.
-///
-/// The frontend's size column resolves the same collision by dropping its `≥` and
-/// leaving the hourglass to speak (`views/full-list-utils.ts`); there a third
-/// glyph would compete with the hourglass in a dense column, which is why the two
-/// surfaces share the rule but not the symbol.
-fn size_qualifier(is_lower_bound: bool, is_updating: bool) -> Option<&'static str> {
-    match (is_updating, is_lower_bound) {
-        (true, _) => Some("~"),
-        (false, true) => Some("≥"),
-        (false, false) => None,
-    }
-}
-
-/// One child row, shaped for the model.
-///
-/// Every raw number has a spoken twin (`size` / `size_human`, `modified` /
-/// `modified_human`), because the agent can't run arithmetic: it can't turn
-/// 1,975,684,321,280 into "1.8 TB" or an epoch into a date without guessing. Build
-/// rows through [`ChildEntry::new`] / [`ChildEntry::set_size`] so the pair can't
-/// drift apart.
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ChildEntry {
-    pub name: String,
-    #[serde(skip_serializing_if = "crate::agent::tools::read::is_false")]
-    pub is_directory: bool,
-    #[serde(skip_serializing_if = "crate::agent::tools::read::is_false")]
-    pub is_symlink: bool,
-    /// How much space this child accounts for: a file's own size, a folder's
-    /// RECURSIVE total (from `dir_stats`). One field, because the question a
-    /// listing answers is "what's using the space in here", and a folder's own
-    /// inode size answers nothing. `None` when the index has no size for it —
-    /// never a wrong zero.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub size: Option<u64>,
-    /// `size`, spelled out (`"4.2 GB"`, `"≥ 1.8 TB"` for a settled lower bound,
-    /// `"~ 1.8 TB"` while the number is still moving). Absent exactly when `size`
-    /// is: an unknown size gets no string, never a `"0 B"` that would read as an
-    /// empty folder.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub size_human: Option<String>,
-    /// `true` when a folder's `size` is a lower bound (some subtree was never
-    /// fully listed), so the model says "at least" rather than stating a total.
-    #[serde(skip_serializing_if = "crate::agent::tools::read::is_false")]
-    pub size_is_lower_bound: bool,
-    /// `true` while the indexer can still move this folder's total: a walk is on
-    /// it, above it, or below it (the roll-up repairs ancestors), or its own index
-    /// writes are still draining. The number can go DOWN as well as up, which is
-    /// why `size_human` reads `~` here rather than claiming a floor.
-    #[serde(skip_serializing_if = "crate::agent::tools::read::is_false")]
-    pub size_is_updating: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub modified: Option<u64>,
-    /// `modified` as a date (`"2023-11-14"`). Absent exactly when `modified` is.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub modified_human: Option<String>,
-}
-
-impl ChildEntry {
-    /// Build a row, deriving both spoken forms from the raw values so the two can
-    /// never disagree.
-    pub(crate) fn new(
-        name: String,
-        is_directory: bool,
-        is_symlink: bool,
-        size: Option<u64>,
-        size_is_lower_bound: bool,
-        size_is_updating: bool,
-        modified: Option<u64>,
-    ) -> Self {
-        Self {
-            name,
-            is_directory,
-            is_symlink,
-            size,
-            size_human: size.map(|b| human_size(b, size_is_lower_bound, size_is_updating)),
-            size_is_lower_bound,
-            size_is_updating,
-            modified,
-            modified_human: modified.map(format_timestamp),
-        }
-    }
-
-    /// Replace the size (and both honesty flags), re-deriving `size_human`. The
-    /// only way to change a size after construction — assigning the field alone
-    /// would leave the string behind, stating the old number with the old caveat.
-    fn set_size(&mut self, size: Option<u64>, is_lower_bound: bool, is_updating: bool) {
-        self.size = size;
-        self.size_human = size.map(|b| human_size(b, is_lower_bound, is_updating));
-        self.size_is_lower_bound = is_lower_bound;
-        self.size_is_updating = is_updating;
     }
 }
 
@@ -735,7 +616,7 @@ fn with_folder_sizes(
     let dir_indices: Vec<usize> = children
         .iter()
         .enumerate()
-        .filter(|(_, c)| c.is_directory && !c.is_symlink)
+        .filter(|(_, c)| c.kind() == RowKind::Folder)
         .map(|(i, _)| i)
         .collect();
     if dir_indices.is_empty() {
@@ -750,14 +631,15 @@ fn with_folder_sizes(
         .map_err(|e| ToolError::internal(e.to_string()))?;
     for ((&i, stats), child_path) in dir_indices.iter().zip(stats).zip(&paths) {
         match stats {
-            Some(stats) => children[i].set_size(
-                Some(stats.recursive_size),
-                !stats.recursive_size_complete,
-                stats.recursive_size_pending || IndexStatusResponse::walk_affects(walked_roots, child_path),
-            ),
+            Some(stats) => children[i].set_size(SizeClaim {
+                bytes: Some(stats.recursive_size),
+                is_lower_bound: !stats.recursive_size_complete,
+                is_updating: stats.recursive_size_pending
+                    || IndexStatusResponse::walk_affects(walked_roots, child_path),
+            }),
             // No stats row: the index knows the folder but not its total. Say
             // nothing rather than pass its inode size off as a total.
-            None => children[i].set_size(None, false, false),
+            None => children[i].set_size(SizeClaim::unknown()),
         }
     }
     Ok(children)
@@ -779,16 +661,13 @@ fn required_path(params: &Value) -> Result<String, ToolError> {
 /// row's fields. A folder's `size` starts as its own logical size and is replaced
 /// by the recursive total in [`with_folder_sizes`]; a file's is already final.
 fn child_from_row(row: &cmdr_index::store::EntryRow) -> ChildEntry {
-    // Both honesty flags start false: this is the row's own inode size, which is
-    // exact and settled. A folder's recursive total (and its caveats) arrives in
-    // `with_folder_sizes`.
+    // The claim starts EXACT: this is the row's own inode size, which is settled and
+    // complete. A folder's recursive total, and the caveats that come with it,
+    // arrives in `with_folder_sizes`.
     ChildEntry::new(
         row.name.clone(),
-        row.is_directory,
-        row.is_symlink,
-        row.logical_size,
-        false,
-        false,
+        RowKind::of(row.is_directory, row.is_symlink),
+        SizeClaim::exact(row.logical_size),
         row.modified_at,
     )
 }

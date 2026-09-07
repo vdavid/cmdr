@@ -38,24 +38,26 @@ fn stale_index_reads_stale_and_says_so() {
 fn child(index: usize) -> ChildEntry {
     ChildEntry::new(
         format!("some-reasonably-long-file-name-{index}.jpeg"),
-        false,
-        false,
-        Some(1_234_567),
-        false,
-        false,
+        RowKind::File,
+        SizeClaim::exact(Some(1_234_567)),
         Some(1_700_000_000),
     )
 }
 
-/// A named row with a size, for the ordering tests.
-fn row(name: &str, is_directory: bool, size: Option<u64>) -> ChildEntry {
-    ChildEntry::new(name.to_string(), is_directory, false, size, false, false, size)
+/// A named row with an exact, settled size, for the ordering tests.
+fn row(name: &str, kind: RowKind, size: Option<u64>) -> ChildEntry {
+    ChildEntry::new(name.to_string(), kind, SizeClaim::exact(size), size)
 }
 
 /// A named folder row whose size is a SETTLED lower bound: incomplete coverage,
 /// nothing moving it.
 fn lower_bound_row(name: &str, size: u64) -> ChildEntry {
-    ChildEntry::new(name.to_string(), true, false, Some(size), true, false, None)
+    let claim = SizeClaim {
+        bytes: Some(size),
+        is_lower_bound: true,
+        is_updating: false,
+    };
+    ChildEntry::new(name.to_string(), RowKind::Folder, claim, None)
 }
 
 /// A fresh, indexed volume with no space known and nothing walking: the base for
@@ -156,7 +158,7 @@ fn list_dir_surfaces_lower_bound_and_updating_flags() {
     let stats = dir_stats(1_000, false, false, true);
     let result = build_list_dir(
         "/Users/x",
-        Some(page_of(vec![row("sub", true, None)])),
+        Some(page_of(vec![row("sub", RowKind::Folder, None)])),
         Some(&stats),
         &fresh_volume(),
         &ListOptions::default(),
@@ -308,17 +310,69 @@ fn a_folder_on_an_unwalked_branch_keeps_its_settled_floor() {
 
 #[test]
 fn a_child_rows_qualifier_follows_the_same_rule() {
-    // `ChildEntry` derives its spoken form from the two flags, so the child rows
-    // and the folder's own total can't disagree about the same uncertainty.
-    let moving = ChildEntry::new("a".to_string(), true, false, Some(1_024), true, true, None);
+    // `ChildEntry` derives its spoken form from the claim's two flags, so the child
+    // rows and the folder's own total can't disagree about the same uncertainty.
+    let folder = |name: &str, claim: SizeClaim| ChildEntry::new(name.to_string(), RowKind::Folder, claim, None);
+
+    let moving = folder(
+        "a",
+        SizeClaim {
+            bytes: Some(1_024),
+            is_lower_bound: true,
+            is_updating: true,
+        },
+    );
     assert_eq!(moving.size_human.as_deref(), Some("~ 1 KB"));
     assert!(moving.size_is_updating);
 
-    let settled_floor = ChildEntry::new("b".to_string(), true, false, Some(1_024), true, false, None);
+    let settled_floor = folder(
+        "b",
+        SizeClaim {
+            bytes: Some(1_024),
+            is_lower_bound: true,
+            is_updating: false,
+        },
+    );
     assert_eq!(settled_floor.size_human.as_deref(), Some("≥ 1 KB"));
 
-    let exact = ChildEntry::new("c".to_string(), true, false, Some(1_024), false, false, None);
+    let exact = folder("c", SizeClaim::exact(Some(1_024)));
     assert_eq!(exact.size_human.as_deref(), Some("1 KB"));
+}
+
+#[test]
+fn a_rows_kind_survives_the_round_trip_through_its_two_wire_flags() {
+    // The code reasons in `RowKind`; the wire carries `isDirectory` + `isSymlink`.
+    // A transposition between them is silent and expensive: `with_folder_sizes`
+    // keys off `RowKind::Folder`, so getting it wrong either hands a symlink a
+    // recursive total (following it can leave the tree, or loop) or denies a real
+    // folder one.
+    for kind in [
+        RowKind::File,
+        RowKind::Folder,
+        RowKind::SymlinkToFile,
+        RowKind::SymlinkToFolder,
+    ] {
+        let entry = ChildEntry::new("x".to_string(), kind, SizeClaim::unknown(), None);
+        assert_eq!(entry.kind(), kind, "{kind:?} must survive the two flags");
+    }
+
+    // The two states the filter has to tell apart, pinned on the wire shape itself.
+    let folder = ChildEntry::new("f".to_string(), RowKind::Folder, SizeClaim::unknown(), None);
+    assert!(folder.is_directory && !folder.is_symlink);
+    let link = ChildEntry::new("l".to_string(), RowKind::SymlinkToFolder, SizeClaim::unknown(), None);
+    assert!(link.is_directory && link.is_symlink, "a link to a folder is both");
+}
+
+#[test]
+fn an_unknown_size_says_nothing_rather_than_zero() {
+    // `SizeClaim::unknown()` is what a folder the index knows without a total gets.
+    // A `0` here would read as an empty folder, and a `"0 B"` string would say it
+    // out loud.
+    let entry = ChildEntry::new("mystery".to_string(), RowKind::Folder, SizeClaim::unknown(), None);
+    assert_eq!(entry.size, None);
+    assert_eq!(entry.size_human, None);
+    assert!(!entry.size_is_lower_bound, "no size is not a floor of zero");
+    assert!(!entry.size_is_updating);
 }
 
 #[test]
@@ -326,7 +380,7 @@ fn an_exact_size_carries_no_symbol() {
     let stats = dir_stats(1_024, true, false, false);
     let result = build_list_dir(
         "/Users/x",
-        Some(page_of(vec![row("a-file", false, Some(1_024))])),
+        Some(page_of(vec![row("a-file", RowKind::File, Some(1_024))])),
         Some(&stats),
         &fresh_volume(),
         &ListOptions::default(),
@@ -342,7 +396,7 @@ fn an_unknown_size_has_no_human_form_rather_than_zero_bytes() {
     // would be a number the index can't back.
     let result = build_list_dir(
         "/Users/x",
-        Some(page_of(vec![row("mystery", true, None)])),
+        Some(page_of(vec![row("mystery", RowKind::Folder, None)])),
         None,
         &fresh_volume(),
         &ListOptions::default(),
@@ -365,7 +419,7 @@ fn a_modified_epoch_comes_with_the_date_it_means() {
     assert_eq!(rows[0].modified, Some(1_700_000_000));
     assert_eq!(rows[0].modified_human.as_deref(), Some("2023-11-14"));
     // No timestamp, no date: nothing invented for a row the index has no mtime for.
-    let no_mtime = row("x", false, None);
+    let no_mtime = row("x", RowKind::File, None);
     assert_eq!(no_mtime.modified_human, None);
 }
 
@@ -380,11 +434,11 @@ fn five_child_page(limit: usize, folder_stats: &DirStats) -> ListDirResult {
     };
     let page = sort_and_page(
         vec![
-            row("a", false, Some(100)),
-            row("b", false, Some(200)),
-            row("c", false, Some(300)),
-            row("d", false, Some(50)),
-            row("e", false, Some(10)),
+            row("a", RowKind::File, Some(100)),
+            row("b", RowKind::File, Some(200)),
+            row("c", RowKind::File, Some(300)),
+            row("d", RowKind::File, Some(50)),
+            row("e", RowKind::File, Some(10)),
         ],
         &opts,
     );
@@ -425,9 +479,9 @@ fn the_remainder_is_omitted_when_a_returned_child_size_is_unknown() {
     let stats = dir_stats(1_000, true, false, false);
     let page = sort_and_page(
         vec![
-            row("a", true, None),
-            row("b", false, Some(200)),
-            row("c", false, Some(300)),
+            row("a", RowKind::Folder, None),
+            row("b", RowKind::File, Some(200)),
+            row("c", RowKind::File, Some(300)),
         ],
         &opts,
     );
@@ -444,9 +498,9 @@ fn the_remainder_is_omitted_without_a_folder_total_to_subtract_from() {
     };
     let page = sort_and_page(
         vec![
-            row("a", false, Some(1)),
-            row("b", false, Some(2)),
-            row("c", false, Some(3)),
+            row("a", RowKind::File, Some(1)),
+            row("b", RowKind::File, Some(2)),
+            row("c", RowKind::File, Some(3)),
         ],
         &opts,
     );
@@ -479,7 +533,7 @@ fn the_remainder_is_approximate_when_a_returned_child_is_a_lower_bound() {
     };
     let stats = dir_stats(1_000, true, false, false);
     let page = sort_and_page(
-        vec![lower_bound_row("a-archive", 100), row("b", false, Some(200))],
+        vec![lower_bound_row("a-archive", 100), row("b", RowKind::File, Some(200))],
         &opts,
     );
     let result = build_list_dir("/p", Some(page), Some(&stats), &fresh_volume(), &opts);
@@ -511,9 +565,9 @@ fn a_filtered_listing_has_no_remainder_at_all() {
     let stats = dir_stats(1_000, true, false, false);
     let page = sort_and_page(
         vec![
-            row("a-folder", true, Some(100)),
-            row("b-folder", true, Some(200)),
-            row("c-file", false, Some(700)),
+            row("a-folder", RowKind::Folder, Some(100)),
+            row("b-folder", RowKind::Folder, Some(200)),
+            row("c-file", RowKind::File, Some(700)),
         ],
         &opts,
     );
@@ -536,8 +590,8 @@ fn the_wire_shape_carries_every_spoken_field_in_camel_case() {
     let page = sort_and_page(
         vec![
             lower_bound_row("Photos", 1_900_000_000_000),
-            row("clip.mov", false, Some(4_500_000_000)),
-            row("notes.txt", false, Some(2_048)),
+            row("clip.mov", RowKind::File, Some(4_500_000_000)),
+            row("notes.txt", RowKind::File, Some(2_048)),
         ],
         &opts,
     );
@@ -596,9 +650,9 @@ fn size_order_ranks_files_and_folders_together() {
     };
     let page = sort_and_page(
         vec![
-            row("small-folder", true, Some(10)),
-            row("huge-disk-image.raw", false, Some(900)),
-            row("big-folder", true, Some(400)),
+            row("small-folder", RowKind::Folder, Some(10)),
+            row("huge-disk-image.raw", RowKind::File, Some(900)),
+            row("big-folder", RowKind::Folder, Some(400)),
         ],
         &opts,
     );
@@ -612,9 +666,9 @@ fn an_unknown_size_never_leads_a_ranking_in_either_direction() {
     // either direction would read as "this is the biggest" or "this is the
     // smallest", and both are claims the index can't make.
     let rows = vec![
-        row("unknown", true, None),
-        row("known-small", true, Some(1)),
-        row("known-big", true, Some(100)),
+        row("unknown", RowKind::Folder, None),
+        row("known-small", RowKind::Folder, Some(1)),
+        row("known-big", RowKind::Folder, Some(100)),
     ];
     for order in [Order::Desc, Order::Asc] {
         let opts = ListOptions {
@@ -635,7 +689,9 @@ fn an_unknown_size_never_leads_a_ranking_in_either_direction() {
 fn offset_paging_covers_every_row_exactly_once() {
     // Stable order plus offset is what makes "resume with offset + returned"
     // safe: a repeated or skipped row would silently double-count or lose space.
-    let all: Vec<ChildEntry> = (0..10).map(|i| row(&format!("f{i:02}"), false, Some(i))).collect();
+    let all: Vec<ChildEntry> = (0..10)
+        .map(|i| row(&format!("f{i:02}"), RowKind::File, Some(i)))
+        .collect();
     let mut seen: Vec<String> = Vec::new();
     let mut offset = 0;
     loop {
@@ -670,9 +726,9 @@ fn a_type_filter_narrows_the_denominator_too() {
     };
     let page = sort_and_page(
         vec![
-            row("a-file", false, Some(1)),
-            row("b-folder", true, Some(2)),
-            row("c-folder", true, Some(3)),
+            row("a-file", RowKind::File, Some(1)),
+            row("b-folder", RowKind::Folder, Some(2)),
+            row("c-folder", RowKind::Folder, Some(3)),
         ],
         &opts,
     );
