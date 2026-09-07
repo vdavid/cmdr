@@ -319,9 +319,9 @@
   "@servers.paneState.signIn": {
     "sourceHash": "a6a5723"
   },
-  "servers.paneState.hostKeyChanged": "Cmdr đã dừng kết nối tới {name}",
+  "servers.paneState.hostKeyChanged": "Cmdr sẽ không kết nối tới {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "ac65ece"
+    "sourceHash": "123ff4f"
   },
   "servers.paneState.hostKeyChangedHint": "Khóa của máy chủ đã thay đổi. Có thể máy chủ đã được cài đặt lại, hoặc có gì đó đang nằm giữa bạn và máy chủ. Hãy ngắt kết nối, rồi mở lại để kiểm tra dấu vân tay.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -359,12 +359,12 @@
   "@servers.paneState.retryKeepsTrying": {
     "sourceHash": "e4d25b7"
   },
-  "servers.paneState.retryTotalSeconds": "{seconds} giây",
+  "servers.paneState.retryTotalSeconds": "{seconds, plural, other {{secondsText} giây}}",
   "@servers.paneState.retryTotalSeconds": {
-    "sourceHash": "86d62ab"
+    "sourceHash": "9e6c4f8"
   },
-  "servers.paneState.retryTotalMinutes": "{minutes} phút",
+  "servers.paneState.retryTotalMinutes": "{minutes, plural, other {{minutesText} phút}}",
   "@servers.paneState.retryTotalMinutes": {
-    "sourceHash": "fc339ba"
+    "sourceHash": "fc262c3"
   }
 }

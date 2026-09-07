@@ -320,9 +320,9 @@
   "@servers.paneState.signIn": {
     "sourceHash": "a6a5723"
   },
-  "servers.paneState.hostKeyChanged": "Cmdr a interrompu la connexion à {name}",
+  "servers.paneState.hostKeyChanged": "Cmdr ne se connectera pas à {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "ac65ece"
+    "sourceHash": "123ff4f"
   },
   "servers.paneState.hostKeyChangedHint": "Sa clé a changé. Cela peut signifier que le serveur a été réinstallé, ou que quelque chose s''est interposé entre vous et lui. Déconnectez-vous, puis ouvrez-le à nouveau pour vérifier l''empreinte.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -360,13 +360,13 @@
   "@servers.paneState.retryKeepsTrying": {
     "sourceHash": "e4d25b7"
   },
-  "servers.paneState.retryTotalSeconds": "{seconds} secondes",
+  "servers.paneState.retryTotalSeconds": "{seconds, plural, one {{secondsText} seconde} many {{secondsText} secondes} other {{secondsText} secondes}}",
   "@servers.paneState.retryTotalSeconds": {
-    "sourceHash": "86d62ab"
+    "sourceHash": "9e6c4f8"
   },
-  "servers.paneState.retryTotalMinutes": "{minutes} minutes",
+  "servers.paneState.retryTotalMinutes": "{minutes, plural, one {{minutesText} minute} many {{minutesText} minutes} other {{minutesText} minutes}}",
   "@servers.paneState.retryTotalMinutes": {
-    "sourceHash": "fc339ba",
-    "sameAsSourceJustification": "Placeholder + 'minutes', which is the same word in French ('{minutes} minutes'); no other translatable text."
+    "sourceHash": "fc262c3",
+    "sameAsSourceJustification": "French spells the unit exactly like English, singular and plural alike: « 1 minute », « 2 minutes ». The value IS translated (it carries French's own one/many/other categories, and the sibling seconds key reads « seconde »/« secondes »); there is simply no other French word for a minute."
   }
 }

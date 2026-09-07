@@ -2420,3 +2420,21 @@ As duas linhas abaixo dos campos esmaecidos `Endereço` e `Nome de usuário`, qu
   `{name}`»).
 - A pilha de referência não estava nesta máquina (`_ignored/i18n/` também não existe no clone principal), então a
   decisão se apoia no catálogo já publicado e neste glossário.
+
+## A duração das tentativas, o título da chave do servidor e o botão Permitir do Android
+
+- **`{seconds}`/`{minutes}` agora têm um plural ICU com DOIS marcadores** (`servers.paneState.retryTotalSeconds`,
+  `.retryTotalMinutes`): `{seconds}` só escolhe o ramo, e o que se lê é `{secondsText}`, o número já formatado. O
+  português precisa de `one`, `many` e `other` (CLDR, § style.md), então os três ramos são escritos mesmo quando `many`
+  e `other` coincidem. As formas vêm de `main.quit.countdown` (`{secondsText} segundo(s)`) e de
+  `indexing.eta.hoursMinutesLeft` (`{minutesText} minuto(s)`) · `high`.
+- **Os dois valores são peças de `servers.paneState.retryKeepsTrying`**
+  (`Vai continuar tentando por um total de {duration}.`), então ficam nus, sem preposição nem ponto.
+- **`Cmdr won't connect to {name}` → `O Cmdr não vai se conectar a {name}`** · a mesma perífrase da irmã
+  `servers.refusal.hostKeyRevoked` (`O Cmdr não vai se conectar a esse servidor.`). O inglês trocou «stopped connecting»
+  por uma recusa permanente, e o pretérito («parou de conectar») soava a uma tentativa interrompida · `high`.
+- **`Allow` é o botão do próprio Android → `Permitir`**, copiado de `adb.connect.unauthorized`
+  (`Confira seu celular e toque em Permitir.`), sem aspas como lá, para o usuário ler a mesma palavra que vê na tela. O
+  verbo `tocar em` vem da mesma chave, e `celular` é a palavra pt-BR já usada no catálogo · `high`.
+- A pilha de referência não estava nesta máquina (`_ignored/i18n/` também não existe no clone principal), então a
+  decisão se apoia no catálogo já publicado e neste glossário.

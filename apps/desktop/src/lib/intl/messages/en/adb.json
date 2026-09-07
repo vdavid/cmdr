@@ -39,9 +39,9 @@
   "@adb.connect.waitingHint": {
     "description": "One line under \"Check your phone and tap Allow\", telling the user nothing else is needed from them: the pane moves on by itself once they tap. Reassurance, not an instruction. \"Cmdr\" is the product name."
   },
-  "adb.readiness.waitingForAuthorization": "Waiting for you to allow USB debugging",
+  "adb.readiness.waitingForAuthorization": "Waiting for you to tap Allow on your phone",
   "@adb.readiness.waitingForAuthorization": {
-    "description": "Hover tooltip on a phone's row in the volume switcher (the dropdown listing disks and devices) while the phone is showing its \"Allow USB debugging?\" prompt. The row still opens; this says what will happen first. \"USB debugging\" is the ANDROID setting's own name: render it the way Android's own translation names it in your language."
+    "description": "Hover tooltip on a phone's row in the volume switcher (the dropdown listing disks and devices) while the phone is showing its \"Allow USB debugging?\" prompt. The row still opens; this says what has to happen first, naming WHERE the user acts (their phone) and WHAT they press. \"Allow\" is the button on ANDROID's own prompt: render it exactly as Android's own translation of that button reads in your language, so the user can match the word on their screen."
   },
   "adb.readiness.offline": "Your phone isn''t responding. Wake its screen, or reseat the cable.",
   "@adb.readiness.offline": {

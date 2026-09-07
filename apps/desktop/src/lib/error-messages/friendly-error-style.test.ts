@@ -226,7 +226,16 @@ const PANE_STATE_KEYS = Object.keys(serversCatalog).filter(
  * A key that doesn't take one ignores the extra, and the check is about the
  * WORDS around the placeholder rather than the value in it.
  */
-const PANE_STATE_PARAMS = { name: 'Naspolya', duration: '2 minutes', seconds: '60', minutes: '2' }
+const PANE_STATE_PARAMS = {
+  name: 'Naspolya',
+  duration: '2 minutes',
+  // The two duration keys carry an ICU plural: the raw number selects the form,
+  // the `*Text` twin is what the reader sees (`$lib/intl/messages/CLAUDE.md`).
+  seconds: 60,
+  secondsText: '60',
+  minutes: 2,
+  minutesText: '2',
+}
 
 /** The serial a refusal carries, which must never reach the sentence. */
 const ADB_SERIAL = 'R58M12345'

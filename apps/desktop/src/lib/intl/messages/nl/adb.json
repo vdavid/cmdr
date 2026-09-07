@@ -39,9 +39,9 @@
   "@adb.connect.waitingHint": {
     "sourceHash": "d1df048"
   },
-  "adb.readiness.waitingForAuthorization": "Wachten tot je USB-foutopsporing toestaat",
+  "adb.readiness.waitingForAuthorization": "Wachten tot je op je telefoon op ‘Toestaan’ tikt",
   "@adb.readiness.waitingForAuthorization": {
-    "sourceHash": "73615e0"
+    "sourceHash": "679558e"
   },
   "adb.readiness.offline": "Je telefoon reageert niet. Zet het scherm aan of sluit de kabel opnieuw aan.",
   "@adb.readiness.offline": {

@@ -323,9 +323,9 @@
   "@servers.paneState.signIn": {
     "sourceHash": "a6a5723"
   },
-  "servers.paneState.hostKeyChanged": "Cmdr verbindt niet meer met {name}",
+  "servers.paneState.hostKeyChanged": "Cmdr maakt geen verbinding met {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "ac65ece"
+    "sourceHash": "123ff4f"
   },
   "servers.paneState.hostKeyChangedHint": "De sleutel is gewijzigd. Dat kan betekenen dat de server opnieuw is geïnstalleerd, of dat er iets tussen jou en de server zit. Verbreek de verbinding en open de server opnieuw om de vingerafdruk te controleren.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -363,12 +363,12 @@
   "@servers.paneState.retryKeepsTrying": {
     "sourceHash": "e4d25b7"
   },
-  "servers.paneState.retryTotalSeconds": "{seconds} seconden",
+  "servers.paneState.retryTotalSeconds": "{seconds, plural, one {{secondsText} seconde} other {{secondsText} seconden}}",
   "@servers.paneState.retryTotalSeconds": {
-    "sourceHash": "86d62ab"
+    "sourceHash": "9e6c4f8"
   },
-  "servers.paneState.retryTotalMinutes": "{minutes} minuten",
+  "servers.paneState.retryTotalMinutes": "{minutes, plural, one {{minutesText} minuut} other {{minutesText} minuten}}",
   "@servers.paneState.retryTotalMinutes": {
-    "sourceHash": "fc339ba"
+    "sourceHash": "fc262c3"
   }
 }

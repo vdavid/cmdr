@@ -474,9 +474,18 @@ export function reconnectCycleLines(attemptIndex: number): string[] {
   return progress ? [total, progress] : [total]
 }
 
-/** The whole cycle's length as a human sentence ("60 seconds", "2 minutes"). */
+/**
+ * The whole cycle's length as a human sentence ("60 seconds", "2 minutes").
+ *
+ * ❗ Both keys carry an ICU plural, and both take the raw number for choosing the
+ * form PLUS the formatted one for reading. `RECONNECT_DELAYS_MS` can't produce a
+ * one today, so this is latent rather than live — which is exactly why it has to
+ * be right in the catalog: nothing on screen would say "1 minutes" until somebody
+ * shortens the table, and then it would say it in eleven languages.
+ */
 function totalDurationLabel(): string {
   const seconds = Math.round(TOTAL_DURATION_MS / 1000)
-  if (seconds < 90) return tString('servers.paneState.retryTotalSeconds', { seconds })
-  return tString('servers.paneState.retryTotalMinutes', { minutes: Math.round(seconds / 60) })
+  if (seconds < 90) return tString('servers.paneState.retryTotalSeconds', { seconds, secondsText: formatInteger(seconds) })
+  const minutes = Math.round(seconds / 60)
+  return tString('servers.paneState.retryTotalMinutes', { minutes, minutesText: formatInteger(minutes) })
 }
