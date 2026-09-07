@@ -182,6 +182,15 @@ export interface SettingDefinition {
   disabledReason?: string
   /** Internal state that should not appear in any section (main tree or Advanced). Persisted via the same store. */
   hidden?: boolean
+  /**
+   * A `hidden` entry that still gives its SECTION a sidebar row and a summary card.
+   *
+   * For a page whose whole content is action rows rather than controls (the trusted
+   * host keys, each with a Forget button): no control's `section` would put the page
+   * in the tree, so the anchor does it. It renders nothing itself and is never read
+   * or written, exactly like the plain search anchors. `DETAILS.md` § Card groups.
+   */
+  sectionAnchor?: boolean
 
   // UI hints
   component?:
@@ -328,6 +337,12 @@ export interface SettingsValues {
 
   // Quick Look
   'fileExplorer.suppressQuickLookHint': boolean
+
+  /**
+   * Section anchor for `File systems > Servers (SFTP, WebDAV)`, whose whole content
+   * is the trusted-host-key list. Never read or written; see `sectionAnchor`.
+   */
+  'network.trustedHostKeys': boolean
 
   // Navigation
   'behavior.doubleClickPaneNavigatesToParent': boolean

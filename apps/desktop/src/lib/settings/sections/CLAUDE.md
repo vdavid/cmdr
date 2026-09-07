@@ -17,6 +17,8 @@ Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUD
 
 ## Must-knows
 
+- **`recheckAdbInstall` runs one call per CLICK** (`AdbSection`), ❌ never on mount, never polled: it is the only path
+  allowed to retry `adb start-server`. Mount reads `getAdbInstallStatus`, which looks nothing up.
 - **A registry entry alone doesn't render.** Hand-render the row here (`SettingRow` + control + `shouldShow(id)` guard),
   or the setting is invisible. Only `AdvancedSection` auto-renders (`section: ['Advanced']`).
   [Checklist](../../../../../../docs/guides/adding-a-new-setting.md).
@@ -25,6 +27,8 @@ Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUD
   Gate it on `shouldShow('row:…')` AND list it in its card's `anyVisible(...)`, or a hit filters every card away. It's
   search metadata; ❌ it never decides what renders, and ❌ never model such a row as a `hidden` setting. Skip rows that
   only appear under runtime state. DETAILS § Searchable rows.
+- **A page with NO control of its own** (`ServersSection`: a list of trusted host keys and nothing else) reaches the
+  sidebar through a `hidden` + `sectionAnchor: true` registry entry. `../DETAILS.md` § Card groups.
 - **New section = route in `SettingsContent.svelte` + entry in `TOP_LEVEL_ORDER` (`SettingsSidebar.svelte`) + mirror in
   `settings.spec.ts`.** Routing is registry-driven, not string match.
 - **A toggle that can't use `SettingSwitch` still uses `$lib/ui/Switch`.** Never hand-roll Ark's `Switch.Root`/`Control`

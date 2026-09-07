@@ -83,10 +83,9 @@ unit-tested:
   `SavedServer.nameSource` (`commands/servers.rs`'s `ServerNameSource`), a fact the store that wrote the label
   publishes, ❌ never a guess at the string's shape. Without it a person's NAS renames itself the moment they use it:
   every SMB label is a stand-in, either the way `statfs` spells the server (written to `known_shares` on the first share
-  listing, `smb-consumer-guest`) or the address typed into "Add server" (`manual_servers` derives `host` or
-  `host:port`; SMB's add flow asks for nothing else), and the friendly name they recognize (`SMB Test (Guest)`,
-  `Naspolya`) would drop out of the column. Four `smb.spec.ts` specs poll on the Bonjour name and are the regression
-  guard.
+  listing, `smb-consumer-guest`) or the address typed into "Add server" (`manual_servers` derives `host` or `host:port`;
+  SMB's add flow asks for nothing else), and the friendly name they recognize (`SMB Test (Guest)`, `Naspolya`) would
+  drop out of the column. Four `smb.spec.ts` specs poll on the Bonjour name and are the regression guard.
 
   ❗ **A saved SMB server claims EVERY host that matches it, not the first.** One machine sits in the discovery list
   twice once a person types a host mDNS already found: the manual entry injects a `manual` host beside the `discovered`

@@ -40,6 +40,11 @@ its volumes registered, so a phone looks browsable and answers nothing. The path
 while it is RUNNABLE, so a path that went stale (an SDK moved, a typo saved) falls through to the search rather than
 making every Android device vanish.
 
+**The settings screen** (`apps/desktop/src/lib/settings/sections/AdbSection.svelte`, `File systems > Android (ADB)`) renders both
+settings plus three things that are not settings: the status (`get_adb_install_status`), a Re-check button, and, while
+no binary was found, a copyable `brew install android-platform-tools`. ❗ It calls `recheck_adb_install` once per CLICK
+and `get_adb_install_status` once on mount, which is the frontend half of the no-polling rule below.
+
 **Re-check** (`recheck_adb_install`): the one path allowed to retry `adb start-server`. It stands for a person saying
 "I installed it now", so it clears the crate's start-attempt memory (`cmdr_adb::forget_start_attempt`), starts a fresh
 tracker, and answers an `AdbInstallStatus` (`binaryPath`, `tracking`) for the settings screen to render.

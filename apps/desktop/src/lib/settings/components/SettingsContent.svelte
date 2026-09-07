@@ -13,7 +13,9 @@
     import AskCmdrSection from '$lib/settings/sections/AskCmdrSection.svelte'
     import McpServerSection from '$lib/settings/sections/McpServerSection.svelte'
     import NetworkSection from '$lib/settings/sections/NetworkSection.svelte'
+    import ServersSection from '$lib/settings/sections/ServersSection.svelte'
     import MtpSection from '$lib/settings/sections/MtpSection.svelte'
+    import AdbSection from '$lib/settings/sections/AdbSection.svelte'
     import GitSection from '$lib/settings/sections/GitSection.svelte'
     import ViewerSection from '$lib/settings/sections/ViewerSection.svelte'
     import KeyboardShortcutsSection from '$lib/settings/sections/KeyboardShortcutsSection.svelte'
@@ -160,9 +162,19 @@
                 <NetworkSection {searchQuery} />
             </section>
         {/if}
+        {#if shouldShowSection(['File systems', 'Servers (SFTP, WebDAV)'])}
+            <section data-section-id="file-systems-servers">
+                <ServersSection {searchQuery} />
+            </section>
+        {/if}
         {#if shouldShowSection(['File systems', 'MTP (Android/Kindle/cameras)'])}
             <section data-section-id="file-systems-mtp-android-kindle-cameras">
                 <MtpSection {searchQuery} />
+            </section>
+        {/if}
+        {#if shouldShowSection(['File systems', 'Android (ADB)'])}
+            <section data-section-id="file-systems-android-adb">
+                <AdbSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['File systems', 'Git'])}

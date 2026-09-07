@@ -162,8 +162,22 @@ sections compose).
   `network.smbConcurrency` lives ONLY in Advanced now (`section: ['Advanced']`), not on this page. The info block's own
   heading is `<h4>` (the card's `<h3>` is the group heading). Card frames are gated via `anyVisible(shouldShow, ...)`
   (same pattern as FSW above).
+- **`ServersSection.svelte`**: `File systems > Servers (SFTP, WebDAV)`: one "Trusted host keys" `SectionCard` listing
+  `listTrustedSftpHostKeys()`, a row per key (host with port, algorithm, fingerprint, the date it was trusted) with a
+  confirmed Forget. ❗ The page has NO setting: saved servers live in the hub, so the sidebar row comes from the
+  `network.trustedHostKeys` SECTION ANCHOR (`../DETAILS.md` § Card groups), and the card is gated on that anchor's
+  `shouldShow`. The list is `null` until the read answers, so the empty sentence can't flash in front of someone who has
+  keys; a read that throws lands on the same sentence rather than an eternal blank.
 - **`MtpSection.svelte`**: `File systems > MTP (Android/Kindle/cameras)`: one unlabeled `SectionCard`, gated via
   `anyVisible(shouldShow, ...)`
+- **`AdbSection.svelte`**: `File systems > Android (ADB)`: one unlabeled `SectionCard` holding the
+  `fileOperations.adbEnabled` switch, a Status row (`getAdbInstallStatus`, "Found at {path}" or "Not found", plus a
+  quiet line saying whether phones are being watched for), a Re-check button, the `fileOperations.adbBinaryPath` field
+  with a Browse button (`@tauri-apps/plugin-dialog`'s `open`, permitted by `capabilities/settings.json`), and, only
+  while `adb` is missing, a `CopyBox` carrying `brew install android-platform-tools`. ❗ `recheckAdbInstall` runs ONE
+  call per click and is re-entrancy guarded, ❌ never on mount and ❌ never polled: it is the only path allowed to retry
+  `adb start-server`. Mount reads `getAdbInstallStatus`, which looks nothing up. Both settings live-apply together
+  through `$lib/adb/adb-settings.ts`; this section only writes them.
 - **`GitSection.svelte`**: `File systems > Git`: one unlabeled `SectionCard`, gated via `anyVisible(shouldShow, ...)`
 - **`ViewerSection.svelte`**: `Viewer`: one unlabeled `SectionCard`, gated via `anyVisible(shouldShow, ...)`
 - **`KeyboardShortcutsSection.svelte`**: `Keyboard shortcuts`: special (non-registry) section, renders the shortcut

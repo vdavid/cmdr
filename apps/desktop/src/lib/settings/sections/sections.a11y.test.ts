@@ -39,6 +39,24 @@ const bindingCommands = vi.hoisted(() => ({
   downloadsWatcherStatus: vi.fn(),
   recheckDownloadsWatcherGate: vi.fn(),
   setGlobalGoToLatestShortcut: vi.fn(),
+  listTrustedSftpHostKeys: vi.fn(() =>
+    Promise.resolve([
+      {
+        host: 'nas.local',
+        port: 22,
+        algorithm: 'ssh-ed25519',
+        fingerprint: 'SHA256:9GbJ2r0Ck9tqZ6y5rQ0m8kFq1sWl4pS2vNbXcYdEfGh',
+        approvedAt: '2026-09-01T10:00:00Z',
+      },
+    ]),
+  ),
+  forgetSftpHostKey: vi.fn(() => Promise.resolve(true)),
+  getAdbInstallStatus: vi.fn(() =>
+    Promise.resolve<{ binaryPath: string | null; tracking: boolean }>({ binaryPath: null, tracking: false }),
+  ),
+  recheckAdbInstall: vi.fn(() =>
+    Promise.resolve<{ binaryPath: string | null; tracking: boolean }>({ binaryPath: null, tracking: false }),
+  ),
   listTerminalApps: vi.fn(() =>
     Promise.resolve({
       data: {
@@ -97,6 +115,8 @@ import ListingSection from './ListingSection.svelte'
 import McpServerSection from './McpServerSection.svelte'
 import NavigationAndFileOpsSection from './NavigationAndFileOpsSection.svelte'
 import NetworkSection from './NetworkSection.svelte'
+import ServersSection from './ServersSection.svelte'
+import AdbSection from './AdbSection.svelte'
 import NotificationsSection from './NotificationsSection.svelte'
 import SearchSection from './SearchSection.svelte'
 import ShortcutPill from './ShortcutPill.svelte'
@@ -521,6 +541,64 @@ describe('NetworkSection a11y', () => {
   it('default (no search) has no a11y violations', async () => {
     const target = container()
     mount(NetworkSection, { target, props: { searchQuery: '' } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y for `ServersSection.svelte`: the trusted-host-key list, in both
+ * shapes. The empty state is its own mount, because it renders a sentence where
+ * the other renders a list of rows with buttons.
+ */
+describe('ServersSection a11y', () => {
+  useSettings(() => undefined)
+
+  it('with a trusted key has no a11y violations', async () => {
+    const target = container()
+    mount(ServersSection, { target, props: { searchQuery: '' } })
+    await tick()
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('with nothing trusted has no a11y violations', async () => {
+    bindingCommands.listTrustedSftpHostKeys.mockResolvedValueOnce([])
+    const target = container()
+    mount(ServersSection, { target, props: { searchQuery: '' } })
+    await tick()
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y for `AdbSection.svelte`. The "Not found" status is the state that
+ * renders the most: the copyable install command comes with it.
+ */
+describe('AdbSection a11y', () => {
+  useSettings((key: string) => {
+    if (key === 'fileOperations.adbEnabled') return true
+    if (key === 'fileOperations.adbBinaryPath') return ''
+    return undefined
+  })
+
+  it('with adb missing has no a11y violations', async () => {
+    const target = container()
+    mount(AdbSection, { target, props: { searchQuery: '' } })
+    await tick()
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('with adb found has no a11y violations', async () => {
+    bindingCommands.getAdbInstallStatus.mockResolvedValueOnce({
+      binaryPath: '/opt/homebrew/bin/adb',
+      tracking: true,
+    })
+    const target = container()
+    mount(AdbSection, { target, props: { searchQuery: '' } })
+    await tick()
     await tick()
     await expectNoA11yViolations(target)
   })

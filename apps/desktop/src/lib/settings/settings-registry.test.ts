@@ -619,3 +619,73 @@ describe('ai.localContextSize (the local model’s window)', () => {
     }
   })
 })
+
+/** The subsections of `File systems`, in the order the sidebar shows them. */
+function fileSystemsSubsections(): string[] {
+  const tree = buildSectionTree()
+  const fileSystems = tree.find((section) => section.name === 'File systems')
+  return (fileSystems?.subsections ?? []).map((section) => section.name)
+}
+
+describe('File systems > Servers (SFTP, WebDAV)', () => {
+  /**
+   * ❗ The page carries no control at all: its content is the trusted-host-key
+   * list. `sectionAnchor` is what puts it in the sidebar anyway, and `hidden` is
+   * what keeps it from rendering as a row.
+   */
+  it('reaches the sidebar through a section anchor that renders nothing', () => {
+    const def = getSettingDefinition('network.trustedHostKeys')
+    expect(def?.hidden).toBe(true)
+    expect(def?.sectionAnchor).toBe(true)
+    expect(def?.section).toEqual(['File systems', 'Servers (SFTP, WebDAV)'])
+
+    expect(fileSystemsSubsections()).toContain('Servers (SFTP, WebDAV)')
+
+    const tree = buildSectionTree()
+    const servers = tree
+      .find((section) => section.name === 'File systems')
+      ?.subsections.find((section) => section.name === 'Servers (SFTP, WebDAV)')
+    expect(servers?.settings).toEqual([])
+  })
+
+  it('is a search hit, so looking for a host key opens the page', () => {
+    clearSearchIndex()
+    const ids = searchSettings('host key').map((result) => result.setting.id)
+    expect(ids).toContain('network.trustedHostKeys')
+  })
+
+  /** ❗ A plain hidden flag still adds no nav row; only the anchor does. */
+  it('leaves ordinary hidden state out of the tree', () => {
+    const tree = buildSectionTree()
+    const smb = tree
+      .find((section) => section.name === 'File systems')
+      ?.subsections.find((section) => section.name === 'SMB/Network shares')
+    expect(smb?.settings.map((setting) => setting.id)).not.toContain('network.firstTriggerDone')
+  })
+})
+
+describe('File systems > Android (ADB)', () => {
+  it('renders both ADB settings on a page of their own', () => {
+    const enabled = getSettingDefinition('fileOperations.adbEnabled')
+    expect(enabled?.hidden).toBeUndefined()
+    expect(enabled?.default).toBe(true)
+    expect(enabled?.section).toEqual(['File systems', 'Android (ADB)'])
+
+    const path = getSettingDefinition('fileOperations.adbBinaryPath')
+    expect(path?.hidden).toBeUndefined()
+    expect(path?.type).toBe('string')
+    expect(path?.default).toBe('')
+
+    expect(fileSystemsSubsections()).toContain('Android (ADB)')
+  })
+
+  it('puts the network pages together and the phone pages together', () => {
+    expect(fileSystemsSubsections()).toEqual([
+      'SMB/Network shares',
+      'Servers (SFTP, WebDAV)',
+      'MTP (Android/Kindle/cameras)',
+      'Android (ADB)',
+      'Git',
+    ])
+  })
+})
