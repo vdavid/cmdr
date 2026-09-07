@@ -116,7 +116,7 @@ Auth flow on mount:
 1. Check `shareStates` cache; use if loaded.
 2. If cache shows `auth_required` / `signing_required`: call `tryStoredCredentials()`, which calls `getSmbCredentials`
    directly (no `hasSmbCredentials` pre-check, to avoid a redundant Keychain dialog). If stored creds work,
-   `authenticatedCredentials` is set and auth is transparent; otherwise show `NetworkLoginForm`.
+   `authenticatedCredentials` is set and auth is transparent; otherwise `askForCredentials()` opens the sign-in sheet.
 3. If cache shows another error (`host_unreachable`, `timeout`, ...): fall through to a fresh fetch (user-initiated host
    open is an implicit retry; the background prefetch may have run before the host was ready).
 4. Otherwise (no cache or loading): `fetchShares(host)`, same auth fallback.
@@ -125,8 +125,14 @@ Auth flow on mount:
 
 The stored-creds attempt matters because the share list often loads via the SYSTEM Keychain (`smbutil view -N`) without
 exercising Cmdr's own creds, so `authenticatedCredentials` is null even when a working password is saved.
-PlacesBrowser's own `NetworkLoginForm` appears ONLY when the share **listing** needs auth (`loadShares`); cancelling
-returns to the host list.
+
+`PlacesBrowser` asks for a credential ONLY when the share **listing** needs one (`loadShares`, and the two "Sign in"
+buttons on its error and empty states). ❗ Cancelling goes BACK to the host list: this sheet is up because the listing
+itself can't be read, so "not now" leaves the user in a room with nothing in it. (Share-activation auth is the mount's
+question; `../pane/NetworkMountView.svelte` asks it.) Its `attempt` is `listWithCredentials`, which answers `handed_off`
+on success — nothing here connects a VOLUME, and the loaded list IS the result — keeps the sheet open on
+`authentication_rejected` / `needs_credentials`, and closes it onto the pane's own error state for anything else,
+because that is where the retry and a missing dependency's install command live.
 
 When `authenticatedCredentials` is set, a "Forget saved password" button appears in the header; clicking it calls
 `forgetCredentials` and clears `authenticatedCredentials`. Shares sort case-insensitively. Escape/Backspace go back.
@@ -135,19 +141,34 @@ The `autoMountShare` prop fires once per distinct value (tracked via `lastAutoMo
 "Copy path between panes" can auto-mount a different share without forcing a remount when the source cursor moves to
 another share on the same host.
 
-## `NetworkLoginForm.svelte`
+## `smb-sign-in.ts`
 
-Props: `host`, `shareName?`, `authMode`, `defaultConnectionMode?`, `initialUsername?`, `errorMessage?`, `isConnecting?`,
-`onConnect`, `onCancel`.
+SMB's side of the one sign-in sheet.
+`openSmbSignInSheet({ host, shareName?, guestAllowed, initialUsername?, refusal?, attempt })` builds the request, and
+the caller's `attempt` gets an `SmbCredentialAnswer` (`{ username, password, remember }`) rather than the sheet's
+generic submission. ❗ `username: null` IS guest: all three SMB commands take a nullable username and read it that way,
+so a separate flag could only disagree with it.
 
-- Guest/credentials radio when `authMode === 'guest_allowed'`.
-- Pre-fills username from `getUsernameHint(host.name)` or `getKnownShareByName()`; an explicit `initialUsername` (for
-  example from a failed mount) wins over both. Both take the server BY NAME and match on its stable identity in Rust, so
-  a hint saved under one name form (`Naspolya`) is found when the form opens under another (`Naspolya._smb._tcp.local`).
-  ❌ Don't reintroduce a keyed map here: rebuilding the key in TypeScript is what made the two sides disagree.
-- Tab stops propagation (prevents the parent pane-switch while tabbing between fields).
-- `connectionMode` is `$derived.by` from `authMode` (guest default when guest allowed). `bind:group` writes a `let`, not
-  the read-only derived; the derived re-evaluates when `authMode` changes.
+**What it decides, and why:**
+
+- **The endpoint header** is `smb://<host>` for a listing and `smb://<host>/<share>` for a mount or an upgrade, and the
+  sheet's title names the same thing. The listing's question is server-level; the other two are about one share.
+- **The username** is resolved in the order the SMB form always used: what an earlier attempt tried, then
+  `getKnownShareByName()`'s last username for this share, then `getUsernameHint()`. ❗ Both lookups take the server BY
+  NAME and match on its stable identity in Rust, so a hint saved under one spelling (`Naspolya`) is found when the sheet
+  opens under another (`Naspolya._smb._tcp.local`). ❌ Don't rebuild the key in TypeScript: that is what made the two
+  sides disagree once.
+- **Remember starts ON, and is ❌ never probed.** `has_smb_credentials` is `get_credentials(…).is_ok()`, so asking
+  whether a password is stored costs the same Keychain prompt as reading one. Nothing is written until a sign-in
+  actually works, and the caller writes it, so a checked box promises nothing that hasn't been shown. (SFTP and WebDAV
+  seed the box from `hasServerSecret` instead, because their backend can refresh a stored secret on its own; the seam is
+  the sheet request's `remembered` field, decided by the opener.)
+- **`guestAllowed` is a per-site call, ❌ not a property of SMB.** The listing offers guest where the host's `authMode`
+  says one is allowed; the mount and the upgrade both pass `false`, because an unauthenticated attempt is exactly what
+  just came back refused and a second offer of it would be a button that cannot work.
+- **`refusalForShareError` / `refusalForMountError`** put every SMB failure in `connect-refusals.ts`'s vocabulary, and
+  ❗ `auth_required` stays distinct from `auth_failed`: telling someone who has never entered a password that theirs is
+  wrong is what collapsing the two does.
 
 ## Data flow
 
@@ -161,7 +182,7 @@ User opens the Servers volume → ServersHub mounts → listSavedServers() + ref
 
 User double-clicks an SMB host → PlacesBrowser mounts → loadShares()
        ├─ cache hit → render
-       └─ auth required → tryStoredCredentials() → login form if needed
+       └─ auth required → tryStoredCredentials() → the sign-in sheet if needed
 
 User activates a one-place server → onVolumeChange → the pane lands on a `saved`
        volume → ../pane/place-connect dials, RemoteConnectView renders the wait
@@ -201,12 +222,12 @@ Two properties callers rely on:
 - **The returned `DirectConnectOutcome` describes the volume, not the call.** `connected` / `askingForCredentials` /
   `stillOnOsMount` is exactly the distinction a notice needs to decide whether it still has anything to say.
 
-The credential form is the one piece the flow can't own: it renders inside a pane (`FilePane` off
-`smbView.smbUpgradeLogin`). `VolumeBreadcrumb` passes its own pane's opener, so the form lands where the click was.
-Anything outside a pane passes `smb-login-hosts.ts::promptForSmbCredentials`, which each `createSmbViewState` registers
-into for its pane's lifetime; it prefers a pane already showing that volume and falls back to any pane, mirroring how
-the breadcrumb dropdown already opens a form for a volume the pane isn't on. It returns `false` when nothing is mounted
-to host the form, which is what turns an impossible prompt into a sentence instead of silence.
+The credential ask is the one app-global sign-in sheet, so the flow raises it itself and every caller is a bare
+`connectDirectly(volumeId)`. ❗ It returns `askingForCredentials` as soon as the sheet is UP, ❌ not when the user is
+done with it: the OS-mount notice retires on that outcome, and awaiting the sheet would leave the notice stacked under
+it. The sheet's `attempt` is `upgradeToSmbVolumeWithCredentials`; a refused credential keeps it open, and a server that
+stopped answering closes it with the same typed sentence the flow's own failure path toasts, because no password can fix
+that.
 
 ## The OS-mount fallback notice
 
@@ -235,12 +256,20 @@ one share is noise). A press while an attempt is in flight is ignored.
 
 ## Mount-phase auth failures
 
-`NetworkMountView.svelte` (in `../pane/`) renders `NetworkLoginForm` instead of its error pane whenever
+`NetworkMountView.svelte` (in `../pane/`) opens the sign-in sheet instead of dead-ending in its error pane whenever
 `mountNetworkShare` rejects with an auth-class error (`auth_failed` / `auth_required`, including the NetAuth -6600 code
-the backend maps). The form shows the error inline, pre-fills the previously tried username via `initialUsername`,
-retries the mount on submit, and saves via `saveSmbCredentials` on success when "Remember in Keychain" is checked.
-Escape/Cancel returns to the share list. Non-auth errors (unreachable, timeout, share gone) keep the error pane with
-"Try again" / "Back". Pinned by `../pane/NetworkMountView.test.ts`.
+the backend maps). The sheet opens carrying that refusal, pre-filled with the username the failed attempt tried, and its
+`attempt` re-runs the mount for as long as the user keeps answering; `saveSmbCredentials` runs ❗ only once a mount has
+actually gone through. ❗ Cancelling returns to the SHARE LIST, which is where the user was.
+
+Two properties are load-bearing:
+
+- **`mountError` is set for an auth failure too**, so the pane behind the sheet holds the failure and the MCP mirror
+  reports it. The error pane is what cancelling lands back on, cleared by `handleMountErrorBack`.
+- **Only a credential refusal keeps the sheet open.** A retry that comes back `share_not_found` or `host_unreachable`
+  answers `handed_off`, closing the sheet onto the pane's error state with its own "Try again" / "Back" — the sheet has
+  no words for a share that went missing. Non-auth failures never open it in the first place. Pinned by
+  `../pane/NetworkMountView.test.ts`.
 
 ## SMB live-reconnect flow (cross-component)
 
@@ -340,7 +369,6 @@ opens a private-IP socket). Backend side: `src-tauri/src/network/DETAILS.md` § 
   `mount_smbfs`. Mounted shares then appear as separate `VolumeInfo` entries with real IDs.
 - **Credential status keyed by lowercase `host.name`**: the same physical host can change IP (DHCP) and hostname (mDNS
   vs DNS); the Bonjour service name is the stable identifier. Lowercasing avoids case mismatches.
-- **Tab in `NetworkLoginForm` calls `stopPropagation()`**: the parent reads Tab as pane-switch otherwise.
 - **⌘R in `ServersHub` calls `stopPropagation()` too, and one round of shares depends on it.** The document-level
   dispatcher runs after this handler and has no `defaultPrevented` guard, so `pane.refresh` would ALSO dispatch into
   `refreshPane` → `refreshNetworkHosts()` → `ServersHub.refresh()` — the same `handleRefreshClick()` the local branch

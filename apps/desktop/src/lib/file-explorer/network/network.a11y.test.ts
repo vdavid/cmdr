@@ -1,13 +1,14 @@
 /**
- * Tier 3 a11y tests for the network browsing surfaces: the host list, the login
- * form, the share list, and the OS-mount fallback toast.
+ * Tier 3 a11y tests for the network browsing surfaces: the host list, the share
+ * list, and the OS-mount fallback toast.
  *
  * One file per component would cost about five times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
  * costs"). Each block below keeps its component's own doc comment, props, and
  * assertions, including the three `it.skip`s parked on a real, unfixed
- * `aria-required-parent` violation. Adding a server lives in the sign-in sheet
- * now; its own blocks are `$lib/servers/servers.a11y.test.ts`.
+ * `aria-required-parent` violation. Adding a server and signing in to one both
+ * live in the sign-in sheet now; its own blocks are
+ * `$lib/servers/servers.a11y.test.ts`.
  *
  * One stub genuinely disagrees between blocks: `getShareState` is `undefined` for
  * the host list and a loaded result for the share list, so it reads a mutable each
@@ -19,7 +20,6 @@
 import { describe, it, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import ServersHub from './ServersHub.svelte'
-import NetworkLoginForm from './NetworkLoginForm.svelte'
 import PlacesBrowser from './PlacesBrowser.svelte'
 import SmbOsMountFallbackToastContent from './SmbOsMountFallbackToastContent.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
@@ -97,10 +97,6 @@ vi.mock('./direct-connect', () => ({
   connectDirectly: vi.fn(() => Promise.resolve('connected')),
 }))
 
-vi.mock('./smb-login-hosts', () => ({
-  promptForSmbCredentials: vi.fn(() => true),
-}))
-
 // These components share one jsdom document, the dialog portals into
 // `document.body`, and axe resolves ARIA id references document-wide. Clearing
 // between tests keeps each audit looking at its own container only.
@@ -156,90 +152,13 @@ describe('ServersHub a11y', () => {
 })
 
 /**
- * Tier 3 a11y tests for `NetworkLoginForm.svelte`.
- *
- * SMB credential form rendered inline inside a pane. Tests cover each
- * `authMode` value, the connecting state (submit disabled), and the
- * error-visible state. Username-hint IPC is stubbed.
- */
-describe('NetworkLoginForm a11y', () => {
-  const host = { id: 'host-1', name: 'nas.local', hostname: 'nas.local', ipAddress: '10.0.0.10', port: 445 }
-
-  it('credentials-required mode (no guest option) has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(NetworkLoginForm, {
-      target,
-      props: {
-        host,
-        authMode: 'creds_required',
-        onConnect: () => {},
-        onCancel: () => {},
-      },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-
-  it('guest-allowed mode (radio choice visible) has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(NetworkLoginForm, {
-      target,
-      props: {
-        host,
-        shareName: 'Public',
-        authMode: 'guest_allowed',
-        onConnect: () => {},
-        onCancel: () => {},
-      },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-
-  it('connecting state (disabled inputs + spinner button) has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(NetworkLoginForm, {
-      target,
-      props: {
-        host,
-        authMode: 'creds_required',
-        isConnecting: true,
-        onConnect: () => {},
-        onCancel: () => {},
-      },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-
-  it('with error message visible has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(NetworkLoginForm, {
-      target,
-      props: {
-        host,
-        authMode: 'creds_required',
-        errorMessage: 'Authentication failed: wrong password',
-        onConnect: () => {},
-        onCancel: () => {},
-      },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-})
-
-/**
  * Tier 3 a11y tests for `PlacesBrowser.svelte`.
  *
- * Share listing for a host. Covers the loaded-with-shares state and
- * (via authMode via NetworkLoginForm) the auth-required state. Auto-
- * mount and autoMountAttempted paths are not exercised; those flow
- * through the network-store into async mount IPC which we just stub.
+ * Share listing for a host. Covers the loaded-with-shares state and the
+ * auth-required one. The sign-in itself is the modal sheet, audited in
+ * `$lib/servers/servers.a11y.test.ts`. Auto-mount and autoMountAttempted paths
+ * are not exercised; those flow through the network-store into async mount IPC
+ * which we just stub.
  */
 describe('PlacesBrowser a11y', () => {
   beforeEach(() => {

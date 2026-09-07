@@ -4,20 +4,37 @@
  * The contract every caller leans on: `connectDirectly` never resolves without
  * having told the user something. A button wired straight to it can't produce a
  * press that looks like it did nothing.
+ *
+ * ❗ The credential ask is the one sign-in sheet, so the tests assert the REQUEST
+ * it makes and drive the retry through the `attempt` it handed over.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { UpgradeResult } from '$lib/tauri-commands'
 
-const { upgradeToSmbVolume, upgradeToSmbVolumeUsingSavedPassword, systemHasSavedSmbPassword } = vi.hoisted(() => ({
+const {
+  upgradeToSmbVolume,
+  upgradeToSmbVolumeUsingSavedPassword,
+  upgradeToSmbVolumeWithCredentials,
+  systemHasSavedSmbPassword,
+} = vi.hoisted(() => ({
   upgradeToSmbVolume: vi.fn<() => Promise<UpgradeResult>>(),
   upgradeToSmbVolumeUsingSavedPassword: vi.fn<() => Promise<UpgradeResult>>(),
+  upgradeToSmbVolumeWithCredentials: vi.fn<() => Promise<UpgradeResult>>(),
   systemHasSavedSmbPassword: vi.fn<() => Promise<boolean>>(),
 }))
 vi.mock('$lib/tauri-commands', () => ({
   upgradeToSmbVolume,
   upgradeToSmbVolumeUsingSavedPassword,
+  upgradeToSmbVolumeWithCredentials,
   systemHasSavedSmbPassword,
+  getUsernameHint: vi.fn(() => Promise.resolve(null)),
+  getKnownShareByName: vi.fn(() => Promise.resolve(null)),
 }))
+
+const { openSignInSheet } = vi.hoisted(() => ({ openSignInSheet: vi.fn() }))
+vi.mock('$lib/servers/sign-in-sheet-state.svelte', () => ({ openSignInSheet }))
+
+const { requestVolumeRefresh } = vi.hoisted(() => ({ requestVolumeRefresh: vi.fn() }))
 
 const { ask } = vi.hoisted(() => ({ ask: vi.fn<() => Promise<boolean>>() }))
 vi.mock('@tauri-apps/plugin-dialog', () => ({ ask }))
@@ -28,7 +45,6 @@ const { addToast, dismissToast } = vi.hoisted(() => ({
 }))
 vi.mock('$lib/ui/toast', () => ({ addToast, dismissToast }))
 
-const { requestVolumeRefresh } = vi.hoisted(() => ({ requestVolumeRefresh: vi.fn() }))
 vi.mock('$lib/stores/volume-store.svelte', () => ({ requestVolumeRefresh }))
 
 vi.mock('./lazy-trigger', () => ({ triggerNetworkDiscovery: vi.fn() }))
@@ -50,56 +66,124 @@ function errorToasts(): unknown[] {
   return addToast.mock.calls.filter((call) => call[1]?.level === 'error').map((call) => call[0])
 }
 
+/** The sheet request under test, as much of it as these assert. */
+interface SheetRequest {
+  mode: string
+  shape: { kind: string; guestAllowed?: boolean }
+  endpoint: { address: string; host: string }
+  refusal?: string
+  attempt: (submission: {
+    mode: 'sign-in'
+    secret: { secret: string; remember: boolean } | null
+    username: string | null
+  }) => Promise<{ kind: string; refusal?: string }>
+}
+
+/** The one request the flow made of the sign-in sheet. */
+async function sheetRequest(): Promise<SheetRequest> {
+  await vi.waitFor(() => {
+    expect(openSignInSheet, 'the sheet to have been asked for').toHaveBeenCalledTimes(1)
+  })
+  return openSignInSheet.mock.calls[0][0] as SheetRequest
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   addToast.mockReturnValue('toast-id')
   systemHasSavedSmbPassword.mockResolvedValue(false)
+  openSignInSheet.mockResolvedValue({ kind: 'cancelled' })
 })
 
 describe('connectDirectly', () => {
   it('confirms a direct connection and refreshes the volume list', async () => {
     upgradeToSmbVolume.mockResolvedValue({ status: 'success' })
 
-    await expect(connectDirectly('smb-archive', () => true)).resolves.toBe('connected')
+    await expect(connectDirectly('smb-archive')).resolves.toBe('connected')
     expect(requestVolumeRefresh).toHaveBeenCalled()
   })
 
   it('names the reason a reachable-but-uncooperative server stayed on the OS mount', async () => {
     upgradeToSmbVolume.mockResolvedValue({ status: 'networkError', reason: 'unreachable', displayName: 'Naspolya' })
 
-    await expect(connectDirectly('smb-archive', () => true)).resolves.toBe('stillOnOsMount')
+    await expect(connectDirectly('smb-archive')).resolves.toBe('stillOnOsMount')
     expect(errorToasts()).toHaveLength(1)
   })
 
-  it('hands a credentials request to whoever can render the form', async () => {
+  it('asks for a password on the one sign-in sheet, naming the share', async () => {
     upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
-    const raise = vi.fn(() => true)
 
-    await expect(connectDirectly('smb-archive', raise)).resolves.toBe('askingForCredentials')
-    expect(raise).toHaveBeenCalledWith(credentialsNeeded, 'smb-archive')
+    await expect(connectDirectly('smb-archive')).resolves.toBe('askingForCredentials')
+
+    const request = await sheetRequest()
+    expect(request.mode).toBe('sign-in')
+    // ❗ No guest option: a connection with no credential is exactly what just
+    // came back needing one.
+    expect(request.shape).toEqual({ kind: 'username_password', guestAllowed: false })
+    expect(request.endpoint.address).toBe('smb://Naspolya/archive')
+    expect(request.refusal).toBe('needs_credentials')
     expect(errorToasts()).toHaveLength(0)
   })
 
-  it('says so out loud when nothing can host the credential form', async () => {
-    // Without this the press would end in silence: the form never appears, and
-    // the flow would report a state nobody can see.
+  it('upgrades with what the user typed, and says the share is fast now', async () => {
     upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
+    upgradeToSmbVolumeWithCredentials.mockResolvedValue({ status: 'success' })
 
-    await expect(connectDirectly('smb-archive', () => false)).resolves.toBe('stillOnOsMount')
+    await connectDirectly('smb-archive')
+    const request = await sheetRequest()
+    const outcome = await request.attempt({
+      mode: 'sign-in',
+      secret: { secret: 'hunter2', remember: true },
+      username: 'david',
+    })
+
+    expect(outcome).toEqual({ kind: 'handed_off' })
+    expect(upgradeToSmbVolumeWithCredentials).toHaveBeenCalledWith('smb-archive', 'david', 'hunter2', true)
+    expect(requestVolumeRefresh).toHaveBeenCalled()
+  })
+
+  it('keeps the sheet open on a password the server refused', async () => {
+    upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
+    upgradeToSmbVolumeWithCredentials.mockResolvedValue(credentialsNeeded)
+
+    await connectDirectly('smb-archive')
+    const request = await sheetRequest()
+
+    await expect(
+      request.attempt({ mode: 'sign-in', secret: { secret: 'wrong', remember: true }, username: 'david' }),
+    ).resolves.toEqual({ kind: 'refused', refusal: 'authentication_rejected' })
+  })
+
+  it('closes the sheet and names the reason when the server itself is the problem', async () => {
+    // The sheet's vocabulary is about credentials. A server that stopped
+    // answering has nothing a password can fix, so the sheet closes and the toast
+    // says what happened.
+    upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
+    upgradeToSmbVolumeWithCredentials.mockResolvedValue({
+      status: 'networkError',
+      reason: 'unreachable',
+      displayName: 'Naspolya',
+    })
+
+    await connectDirectly('smb-archive')
+    const request = await sheetRequest()
+
+    await expect(
+      request.attempt({ mode: 'sign-in', secret: { secret: 'hunter2', remember: false }, username: 'david' }),
+    ).resolves.toEqual({ kind: 'handed_off' })
     expect(errorToasts()).toHaveLength(1)
   })
 
   it('says so out loud when the attempt itself breaks down', async () => {
     upgradeToSmbVolume.mockRejectedValue(new Error('boom'))
 
-    await expect(connectDirectly('smb-archive', () => true)).resolves.toBe('stillOnOsMount')
+    await expect(connectDirectly('smb-archive')).resolves.toBe('stillOnOsMount')
     expect(errorToasts()).toHaveLength(1)
   })
 
   it('dismisses its progress toast on every path, so no spinner outlives the attempt', async () => {
     upgradeToSmbVolume.mockRejectedValue(new Error('boom'))
 
-    await connectDirectly('smb-archive', () => true)
+    await connectDirectly('smb-archive')
 
     expect(dismissToast).toHaveBeenCalledWith('toast-id')
   })
@@ -109,10 +193,8 @@ describe('connectDirectly', () => {
     systemHasSavedSmbPassword.mockResolvedValue(true)
     ask.mockResolvedValue(true)
     upgradeToSmbVolumeUsingSavedPassword.mockResolvedValue({ status: 'success' })
-    const raise = vi.fn(() => true)
-
-    await expect(connectDirectly('smb-archive', raise)).resolves.toBe('connected')
-    expect(raise).not.toHaveBeenCalled()
+    await expect(connectDirectly('smb-archive')).resolves.toBe('connected')
+    expect(openSignInSheet).not.toHaveBeenCalled()
   })
 
   it('falls to the login form when the saved password no longer works', async () => {
@@ -120,19 +202,15 @@ describe('connectDirectly', () => {
     systemHasSavedSmbPassword.mockResolvedValue(true)
     ask.mockResolvedValue(true)
     upgradeToSmbVolumeUsingSavedPassword.mockResolvedValue(credentialsNeeded)
-    const raise = vi.fn(() => true)
-
-    await expect(connectDirectly('smb-archive', raise)).resolves.toBe('askingForCredentials')
-    expect(raise).toHaveBeenCalled()
+    await expect(connectDirectly('smb-archive')).resolves.toBe('askingForCredentials')
+    expect(openSignInSheet).toHaveBeenCalled()
   })
 
   it('goes to the login form when the user would rather type the password', async () => {
     upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
     systemHasSavedSmbPassword.mockResolvedValue(true)
     ask.mockResolvedValue(false)
-    const raise = vi.fn(() => true)
-
-    await expect(connectDirectly('smb-archive', raise)).resolves.toBe('askingForCredentials')
+    await expect(connectDirectly('smb-archive')).resolves.toBe('askingForCredentials')
     expect(upgradeToSmbVolumeUsingSavedPassword).not.toHaveBeenCalled()
   })
 })

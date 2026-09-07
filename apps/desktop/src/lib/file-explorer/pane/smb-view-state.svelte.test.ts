@@ -1,8 +1,6 @@
 /**
- * Tests for `smb-view-state.svelte.ts`, the file pane's SMB reconnect + direct-
- * upgrade view state. They pin:
- * - the "Connect directly" upgrade flow's four outcomes (success / credentialsNeeded
- *   / other-failure / thrown) and the no-op when no form is open,
+ * Tests for `smb-view-state.svelte.ts`, the file pane's SMB reconnect view state.
+ * They pin:
  * - the reconnect cancel + disconnect handlers (manager cancel, OS unmount, and the
  *   walk-up-to-valid-path fallback),
  * - the alt-view decision deriveds mapping the manager's cycle status,
@@ -16,12 +14,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest'
 import { flushSync } from 'svelte'
 import type { VolumeInfo } from '../types'
-import type { UpgradeResult } from '$lib/tauri-commands'
 
-const { ipc, manager, resolveValidPathSpy, requestVolumeRefreshSpy, addToastSpy } = vi.hoisted(() => ({
+const { ipc, manager, resolveValidPathSpy, addToastSpy } = vi.hoisted(() => ({
   ipc: {
     disconnectSmbVolume: vi.fn().mockResolvedValue(undefined),
-    upgradeToSmbVolumeWithCredentials: vi.fn(),
   },
   manager: {
     getState: vi.fn(),
@@ -31,17 +27,16 @@ const { ipc, manager, resolveValidPathSpy, requestVolumeRefreshSpy, addToastSpy 
     retryNow: vi.fn(),
   },
   resolveValidPathSpy: vi.fn().mockResolvedValue('/valid'),
-  requestVolumeRefreshSpy: vi.fn(),
   addToastSpy: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
   disconnectSmbVolume: ipc.disconnectSmbVolume,
-  upgradeToSmbVolumeWithCredentials: ipc.upgradeToSmbVolumeWithCredentials,
+  disconnectPlace: vi.fn().mockResolvedValue(undefined),
 }))
 vi.mock('../network/smb-reconnect-manager.svelte', () => ({ smbReconnectManager: manager }))
 vi.mock('../navigation/path-resolution', () => ({ resolveValidPath: resolveValidPathSpy }))
-vi.mock('$lib/stores/volume-store.svelte', () => ({ requestVolumeRefresh: requestVolumeRefreshSpy }))
+vi.mock('$lib/servers/open-sign-in', () => ({ openSignInForPlace: vi.fn().mockResolvedValue({ signedIn: false }) }))
 vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: (key: string) => key }))
 vi.mock('$lib/logging/logger', () => ({
@@ -49,16 +44,6 @@ vi.mock('$lib/logging/logger', () => ({
 }))
 
 import { createSmbViewState, type SmbViewStateDeps } from './smb-view-state.svelte'
-
-const credentialsNeeded: UpgradeResult & { status: 'credentialsNeeded' } = {
-  status: 'credentialsNeeded',
-  server: 'nas.local',
-  share: 'photos',
-  port: 445,
-  displayName: 'NAS',
-  usernameHint: 'admin',
-  message: null,
-} as unknown as UpgradeResult & { status: 'credentialsNeeded' }
 
 describe('createSmbViewState', () => {
   let dispose: (() => void) | undefined
@@ -92,82 +77,6 @@ describe('createSmbViewState', () => {
   afterEach(() => {
     dispose?.()
     dispose = undefined
-  })
-
-  it('handleSmbUpgradeLogin populates the login form from the credentials-needed result', () => {
-    const { sub } = create()
-    sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
-    expect(sub.smbUpgradeLogin).toEqual({
-      volumeId: 'smb-vol',
-      server: 'nas.local',
-      share: 'photos',
-      port: 445,
-      displayName: 'NAS',
-      usernameHint: 'admin',
-      errorMessage: undefined,
-      isConnecting: false,
-    })
-  })
-
-  it('upgrade connect success clears the form, refreshes volumes, and toasts success', async () => {
-    ipc.upgradeToSmbVolumeWithCredentials.mockResolvedValue({ status: 'success' })
-    const { sub } = create()
-    sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
-    await sub.handleSmbUpgradeConnect({ username: 'admin', password: 'pw', rememberInKeychain: true })
-    expect(sub.smbUpgradeLogin).toBeNull()
-    expect(requestVolumeRefreshSpy).toHaveBeenCalled()
-    expect(addToastSpy).toHaveBeenCalledWith('fileExplorer.pane.connectedDirectlyToast', { level: 'success' })
-  })
-
-  it('upgrade connect credentialsNeeded keeps the form and surfaces the auth error', async () => {
-    ipc.upgradeToSmbVolumeWithCredentials.mockResolvedValue({ status: 'credentialsNeeded', message: 'Wrong password' })
-    const { sub } = create()
-    sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
-    await sub.handleSmbUpgradeConnect({ username: 'admin', password: 'bad', rememberInKeychain: false })
-    expect(sub.smbUpgradeLogin).not.toBeNull()
-    expect(sub.smbUpgradeLogin?.errorMessage).toBe('Wrong password')
-    expect(sub.smbUpgradeLogin?.isConnecting).toBe(false)
-    expect(requestVolumeRefreshSpy).not.toHaveBeenCalled()
-  })
-
-  it('upgrade connect unreachable-server clears the form and names the server in the toast', async () => {
-    ipc.upgradeToSmbVolumeWithCredentials.mockResolvedValue({
-      status: 'networkError',
-      reason: 'unreachable',
-      displayName: 'NAS',
-    })
-    const { sub } = create()
-    sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
-    await sub.handleSmbUpgradeConnect({ username: 'admin', password: 'pw', rememberInKeychain: false })
-    expect(sub.smbUpgradeLogin).toBeNull()
-    // The reason picks the catalog key; `upgrade-messages.test.ts` owns the words.
-    expect(addToastSpy).toHaveBeenCalledWith('fileExplorer.pane.directConnectionUnreachableToast', {
-      level: 'error',
-    })
-  })
-
-  it('upgrade connect clears the form and toasts when the IPC throws', async () => {
-    ipc.upgradeToSmbVolumeWithCredentials.mockRejectedValue(new Error('boom'))
-    const { sub } = create()
-    sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
-    await sub.handleSmbUpgradeConnect({ username: 'admin', password: 'pw', rememberInKeychain: false })
-    expect(sub.smbUpgradeLogin).toBeNull()
-    expect(addToastSpy).toHaveBeenCalledWith('fileExplorer.pane.directConnectionUnavailableToast', {
-      level: 'error',
-    })
-  })
-
-  it('upgrade connect is a no-op when no form is open', async () => {
-    const { sub } = create()
-    await sub.handleSmbUpgradeConnect({ username: 'admin', password: 'pw', rememberInKeychain: false })
-    expect(ipc.upgradeToSmbVolumeWithCredentials).not.toHaveBeenCalled()
-  })
-
-  it('handleSmbUpgradeCancel clears the form', () => {
-    const { sub } = create()
-    sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
-    sub.handleSmbUpgradeCancel()
-    expect(sub.smbUpgradeLogin).toBeNull()
   })
 
   it('handleSmbReconnectCancel cancels the cycle and walks up to a valid path', async () => {

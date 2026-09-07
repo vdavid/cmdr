@@ -31,7 +31,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   reconnectVolume: vi.fn(),
   // Never resolves: an audit runs before any round-trip lands.
   reconnectVolumeWithCredentials: vi.fn(() => new Promise<never>(() => {})),
-  // `NetworkLoginForm` pre-fills the username from these on mount.
+  // The SMB sign-in opener reads these before the sheet renders.
   getUsernameHint: vi.fn(() => Promise.resolve(null)),
 }))
 

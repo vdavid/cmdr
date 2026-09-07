@@ -637,13 +637,6 @@ export const UNREGISTERED_OVERLAY_ENTRIES: UnregisteredOverlayEntry[] = [
       'Its own overlay, not a ModalDialog, so it reports nothing to the dialog tracker. Press ⌘⇧P in the main window (the default binding; Settings › Keyboard shortcuts can change it).',
   },
   {
-    overlayId: 'network-login-form',
-    label: 'Network login form',
-    hostWindow: 'main',
-    reason:
-      'Not modal at all: it renders INSIDE a pane (role="dialog", but the rest of the app stays interactive, which is why it’s the one sanctioned opt-out from the dialog focus trap). To see it: point a pane at Network (⌥F1 / ⌥F2 › Network) and open a password-protected SMB share. A share whose saved password went stale shows the same form through the pane’s reauth view.',
-  },
-  {
     overlayId: 'pane-volume-chooser',
     label: 'Pane volume chooser',
     hostWindow: 'main',

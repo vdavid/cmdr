@@ -6,7 +6,7 @@
      * The button runs the SAME flow the yellow dot and the breadcrumb's "Connect
      * directly" item run (`connectDirectly`), which owns its own progress and
      * failure toasts. So the three outcomes here are only about this notice:
-     * connected or handed to the credential form means it has had its say and
+     * connected or handed to the sign-in sheet means it has had its say and
      * goes; still on the OS mount means the button is worth pressing again once
      * the server or the password is fixed, and `connectDirectly` has already said
      * why it didn't work.
@@ -17,7 +17,6 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { dismissToast } from '$lib/ui/toast'
     import { connectDirectly } from './direct-connect'
-    import { promptForSmbCredentials } from './smb-login-hosts'
 
     interface Props {
         /** Dedup id of this toast; lets the notice retire itself once it's moot. */
@@ -36,7 +35,7 @@
         if (connecting) return
         connecting = true
         try {
-            const outcome = await connectDirectly(volumeId, promptForSmbCredentials)
+            const outcome = await connectDirectly(volumeId)
             if (outcome !== 'stillOnOsMount') dismissToast(toastId)
         } finally {
             connecting = false

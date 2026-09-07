@@ -20,6 +20,7 @@ import {
   connectServer,
   connectToServer,
   getVolumeSignInState,
+  hasServerSecret,
   listSavedServers,
   newServerAttemptId,
   reconnectVolumeWithCredentials,
@@ -90,9 +91,12 @@ export async function openSignInForPlace(request: SignInSeamRequest): Promise<Si
 
   const result = await openSignInSheet({
     mode: 'sign-in',
-    volumeId,
     endpoint,
     shape,
+    // ❗ Seeded from what is STORED, ❌ never defaulted on: an attended sign-in
+    // REFRESHES a remembered secret and never seeds one, so a default-on box
+    // would seed one the user already declined.
+    remembered: await hasServerSecret(volumeId),
     hostKey: firstOutcome?.outcome === 'needs_host_key_approval' ? firstOutcome : undefined,
     attempt: registered ? mendAttempt(volumeId, endpoint) : dialSavedPlaceAttempt(volumeId),
   })

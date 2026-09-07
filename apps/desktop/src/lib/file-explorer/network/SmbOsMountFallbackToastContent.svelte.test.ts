@@ -8,12 +8,9 @@ import { mount, flushSync } from 'svelte'
 import type { DirectConnectOutcome } from './direct-connect'
 
 const { connectDirectly } = vi.hoisted(() => ({
-  connectDirectly: vi.fn<(volumeId: string, raise: unknown) => Promise<DirectConnectOutcome>>(),
+  connectDirectly: vi.fn<(volumeId: string) => Promise<DirectConnectOutcome>>(),
 }))
 vi.mock('./direct-connect', () => ({ connectDirectly }))
-
-const { promptForSmbCredentials } = vi.hoisted(() => ({ promptForSmbCredentials: vi.fn(() => true) }))
-vi.mock('./smb-login-hosts', () => ({ promptForSmbCredentials }))
 
 const { dismissToast } = vi.hoisted(() => ({ dismissToast: vi.fn() }))
 vi.mock('$lib/ui/toast', () => ({ dismissToast }))
@@ -36,7 +33,6 @@ function render() {
 beforeEach(() => {
   connectDirectly.mockReset()
   connectDirectly.mockResolvedValue('connected')
-  promptForSmbCredentials.mockClear()
   dismissToast.mockClear()
 })
 
@@ -58,7 +54,7 @@ describe('SmbOsMountFallbackToastContent', () => {
 
     button.click()
     await vi.waitFor(() => {
-      expect(connectDirectly).toHaveBeenCalledWith('smb-archive', promptForSmbCredentials)
+      expect(connectDirectly).toHaveBeenCalledWith('smb-archive')
     })
   })
 

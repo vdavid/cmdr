@@ -273,10 +273,6 @@
   "@fileExplorer.searchResults.unavailableBody": {
     "sourceHash": "3e4cfa2"
   },
-  "fileExplorer.network.cancel": "Mégsem",
-  "@fileExplorer.network.cancel": {
-    "sourceHash": "19766ed"
-  },
   "fileExplorer.network.connect": "Csatlakozás",
   "@fileExplorer.network.connect": {
     "sourceHash": "1a2303e"
@@ -296,10 +292,6 @@
   "fileExplorer.network.signIn": "Bejelentkezés",
   "@fileExplorer.network.signIn": {
     "sourceHash": "bfd402b"
-  },
-  "fileExplorer.network.authFailed": "A hitelesítés nem sikerült",
-  "@fileExplorer.network.authFailed": {
-    "sourceHash": "93821eb"
   },
   "fileExplorer.network.osMountFallback.message": "Nem sikerült közvetlenül csatlakozni ehhez: <shareName>{share}</shareName>. Csatlakozva vagy, de csak a macOS natív SMB-hálózati kapcsolatán keresztül, ami a legtöbb esetben négyszer (néha százszor is) lassabb a Cmdr közvetlen kapcsolatánál. Az újrapróbálkozáshoz kattints az alábbi gombra.",
   "@fileExplorer.network.osMountFallback.message": {
@@ -449,46 +441,6 @@
   "@fileExplorer.network.browser.disconnectFailed": {
     "sourceHash": "ac9e8e0"
   },
-  "fileExplorer.network.login.title": "Bejelentkezés ide: „{target}”",
-  "@fileExplorer.network.login.title": {
-    "sourceHash": "53a4feb"
-  },
-  "fileExplorer.network.login.guestNowAuth": "Korábban vendégként csatlakoztál. Most már bejelentkezhetsz a bővebb hozzáférésért.",
-  "@fileExplorer.network.login.guestNowAuth": {
-    "sourceHash": "4a0ed4d"
-  },
-  "fileExplorer.network.login.connectionModeLegend": "Kapcsolódási mód",
-  "@fileExplorer.network.login.connectionModeLegend": {
-    "sourceHash": "72c0943"
-  },
-  "fileExplorer.network.login.connectAsGuest": "Csatlakozás vendégként",
-  "@fileExplorer.network.login.connectAsGuest": {
-    "sourceHash": "d3cee9e"
-  },
-  "fileExplorer.network.login.signInWithCredentials": "Bejelentkezés hitelesítő adatokkal",
-  "@fileExplorer.network.login.signInWithCredentials": {
-    "sourceHash": "dda85fa"
-  },
-  "fileExplorer.network.login.username": "Felhasználónév",
-  "@fileExplorer.network.login.username": {
-    "sourceHash": "e3b89e9"
-  },
-  "fileExplorer.network.login.usernamePlaceholderDefault": "Például: anna",
-  "@fileExplorer.network.login.usernamePlaceholderDefault": {
-    "sourceHash": "1b5b09c"
-  },
-  "fileExplorer.network.login.password": "Jelszó",
-  "@fileExplorer.network.login.password": {
-    "sourceHash": "e7cf3ef"
-  },
-  "fileExplorer.network.login.passwordPlaceholder": "Add meg a jelszót",
-  "@fileExplorer.network.login.passwordPlaceholder": {
-    "sourceHash": "7014aff"
-  },
-  "fileExplorer.network.login.rememberInKeychain": "Megjegyzés a kulcskarikában",
-  "@fileExplorer.network.login.rememberInKeychain": {
-    "sourceHash": "3fd7384"
-  },
   "fileExplorer.network.share.credentialsStoredLocally": "A hitelesítő adatok helyben tárolódnak (nem található rendszerszintű kulcstartó)",
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
@@ -496,18 +448,6 @@
   "fileExplorer.network.share.notFound": "A(z) ''{shareName}'' megosztás nem található itt: {hostName}",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
-  },
-  "fileExplorer.network.share.invalidCredentials": "Hibás felhasználónév vagy jelszó. Próbáld újra.",
-  "@fileExplorer.network.share.invalidCredentials": {
-    "sourceHash": "846d862"
-  },
-  "fileExplorer.network.share.authRequired": "Hitelesítés szükséges. Add meg a hitelesítő adataidat.",
-  "@fileExplorer.network.share.authRequired": {
-    "sourceHash": "0bb6039"
-  },
-  "fileExplorer.network.share.connectionFailed": "Nem jött létre a kapcsolat: {reason}",
-  "@fileExplorer.network.share.connectionFailed": {
-    "sourceHash": "800132e"
   },
   "fileExplorer.network.share.connecting": "Csatlakozás ehhez: {hostName}…",
   "@fileExplorer.network.share.connecting": {
