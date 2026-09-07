@@ -321,6 +321,57 @@ describe('RemoteConnectView a11y', () => {
     await expectNoA11yViolations(target)
   })
 
+  it('a phone waiting for its Allow tap has no a11y violations', async () => {
+    const target = container()
+    mount(RemoteConnectView, {
+      target,
+      props: {
+        name: 'Pixel 7',
+        state: {
+          kind: 'waiting_for_device' as const,
+          reason: 'Check your phone and tap Allow.',
+          hint: 'Cmdr opens your phone as soon as you do.',
+          cancel: vi.fn(),
+        },
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('a refusal with nothing left to offer has no a11y violations', async () => {
+    // An unplugged phone: the sentence stands alone, with no action row at all.
+    // An empty `.actions` container would still be a landmark-free div, so what
+    // this audits is that the heading survives without a button under it.
+    const target = container()
+    mount(RemoteConnectView, {
+      target,
+      props: {
+        name: 'Pixel 7',
+        state: { kind: 'refused' as const, refusal: "Your phone isn't connected any more." },
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('a refusal routing to Settings has no a11y violations', async () => {
+    const target = container()
+    mount(RemoteConnectView, {
+      target,
+      props: {
+        name: 'Pixel 7',
+        state: {
+          kind: 'refused' as const,
+          refusal: "Cmdr couldn't find the Android platform tools.",
+          openSettings: vi.fn(),
+        },
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
   it('a changed host key has no a11y violations', async () => {
     const target = container()
     mount(RemoteConnectView, {
