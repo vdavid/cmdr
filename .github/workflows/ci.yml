@@ -680,6 +680,9 @@ jobs:
       # than installing a second Chrome. (`chromium_headless_shell-*` deliberately doesn't match
       # the glob; Lighthouse wants the full browser.)
       - name: Point Lighthouse at the container's Chromium
+        # Bash arrays and `[[`: this container's default `run:` shell is `sh` (dash), which has
+        # neither, and silently ran this as a syntax error once the job got far enough to reach it.
+        shell: bash
         run: |
           chromes=("$PLAYWRIGHT_BROWSERS_PATH"/chromium-*/chrome-linux/chrome)
           if [[ ! -x "${chromes[0]}" ]]; then
