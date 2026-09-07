@@ -2323,3 +2323,9 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   失败。这两个值里没有撇号。
 - 这台机器上没有参考语料库，但 `Finder.app` 能直接从系统里给出同样的一级证据（`docs/i18n/reference-pile/how-to-mine.md`
   § "No pile on this machine?"）。
+
+## Function key bar context menu (2026-09-07)
+
+- function key
+  bar（窗口底部的功能键命令按钮行）→ 功能键栏 · 已在目录中确定（`settings.appearance.showFunctionKeyBar.label`）；用于右键菜单项及其提示 ·
+  high

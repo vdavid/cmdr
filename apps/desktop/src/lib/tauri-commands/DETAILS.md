@@ -70,6 +70,8 @@ commands, and notable non-obvious placements.
 - **`licensing.ts`**: license status, activation, expiry, server validation.
 - **`settings.ts`**: port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands.
 - **`tab.ts`**: tab context menu: `showTabContextMenu`, `onTabContextAction`.
+- **`function-key-bar.ts`**: the function key bar's one-item context menu: `showFunctionKeyBarContextMenu`,
+  `onFunctionKeyBarHideRequested` (payload-less; the frontend owns the setting write and the toast).
 - **`clipboard-files.ts`**: clipboard file operations: copy/cut files to system clipboard, read/paste, clear cut state.
 - **`indexing.ts`**: drive-indexing commands (status reads `getIndexStatus` / `getVolumeIndexStatusById`, lifecycle
   `enable/disable/forget/rescan/clearDriveIndex`) plus the event listeners: typed `on*` wrappers over the `tauri-specta`

@@ -2938,3 +2938,9 @@ hogy időtartamról van szó. ❌ Csupasz helyőrző időtartamra soha.
   a megkettőzött `''` elbuktatja az `i18n-icu`-t. Ebben a két értékben egy sincs.
 - A referenciagyűjtemény ezen a gépen nincs meg, de a `Finder.app` ugyanazt az 1. szintű bizonyítékot adja közvetlenül a
   rendszerből (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (az ablak alján lévő F-billentyűs parancsgombok sora) → funkcióbillentyű-sáv · már rögzítve a
+  katalógusban (`settings.appearance.showFunctionKeyBar.label`); újrafelhasználva a helyi menü elemhez és a hozzá
+  tartozó toasthoz · high

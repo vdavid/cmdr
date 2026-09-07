@@ -103,6 +103,13 @@ pub struct McpSettingsClose;
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 pub struct ViewerWordWrapToggled;
 
+/// `function-key-bar-hide-requested`: the function key bar's right-click context
+/// menu's "Hide function key bar" item was clicked. No payload: the frontend
+/// owns both the setting write and the confirmation toast. Emitted to the main
+/// window, the only place the bar renders.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+pub struct FunctionKeyBarHideRequested;
+
 /// `tab-context-action`: a tab right-click context-menu item was clicked. The
 /// `action` is the raw menu item id (`TAB_PIN_ID` / `TAB_CLOSE_OTHERS_ID` /
 /// `TAB_CLOSE_ID`); the FE maps it. Emitted to the main window.

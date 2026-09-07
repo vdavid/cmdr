@@ -21,6 +21,7 @@ import {
   onMenuSort,
   onMediaIndexFolderExclusion,
   onMediaIndexFolderChoice,
+  onFunctionKeyBarHideRequested,
   onExecuteCommand,
   onOpenSettings,
   onFocusAbout,
@@ -41,6 +42,7 @@ import { markDispatchSource } from './dispatch-dedup'
 import { navCommandForDirection } from './mouse-nav'
 import { setFolderExcluded } from '$lib/media-index/excluded-folders'
 import { setFolderChosen } from '$lib/media-index/always-index-folders'
+import { handleFunctionKeyBarHideRequested } from '$lib/file-explorer/pane/function-key-bar-hide'
 import { isCommandId, type CommandId, type CommandDispatchArgs } from '$lib/commands'
 import type { ViewMode } from '$lib/app-status-store'
 import { adoptedOperationFor } from '$lib/file-operations/foreground-request'
@@ -352,6 +354,10 @@ export async function setupMenuListeners(ctx: ListenerSetupContext): Promise<voi
       void setFolderChosen(payload.folder, payload.chosen).catch(() => {})
     }),
   )
+
+  // "Hide function key bar" from the bar's own right-click context menu: no
+  // context to stash, so the handler just flips the setting and raises a toast.
+  unlistenFns.push(await onFunctionKeyBarHideRequested(handleFunctionKeyBarHideRequested))
 }
 
 /** Set up MCP dialog event listeners (close/focus). */
