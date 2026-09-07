@@ -8,7 +8,9 @@ Which of the 139 researched languages Cmdr plans to localize, and in what order.
 - **deferred**: a regional/script variant added after its base, on demand (es-ES, fr-CA, zh-HK).
 - **shipped**: twelve catalogs are live. Ten are full translations, every one of the 3,263 keys translated and passing
   `desktop-i18n-coverage`: `de`, `es`, `fr`, `hu`, `nl`, `pt`, `sv`, `vi`, `zh`, and `zh-Hant`. Two are regional
-  OVERLAYS of `en`, carrying only the keys they fork and inheriting the rest: `en-GB` (151 keys) and `en-AU` (161). All
+  OVERLAYS of `en`, carrying only the keys they fork and inheriting the rest: `en-GB` (151 keys) and `en-AU` (161).
+  `en-GB` also answers for CLDR's `en-001`, so `en-NZ`, `en-IE`, `en-ZA`, and ~110 other regions reach it without a
+  catalog of their own (`apps/desktop/src-tauri/src/intl/DETAILS.md` § The ancestor chain). All
   twelve finished 2026-08-29. A locale ships once it's translated, passes the checks, and is overflow-checked; human
   review is opportunistic, not a gate (`../guides/i18n-translation.md`). Being in a wave below is a PLAN, not a ship
   state, so check this line rather than the wave column to know what's live.
@@ -36,8 +38,8 @@ Order: source, waves 1 to 4, deferred variants, then exclusions. Formality and s
 | cs      | Czech                     | wave 2            | Apple macOS + MS ship Czech; mainstream                                                        |
 | da      | Danish                    | wave 2            | Apple macOS + MS + Google ship Danish                                                          |
 | el      | Greek                     | wave 2            | Apple macOS + MS + Google ship Greek                                                           |
-| en-AU   | English (Australia)       | wave 2, shipped   | Overlay of `en`, 155 keys: `en-GB`'s forks plus `Deselect`->`Unselect`; also serves NZ         |
-| en-GB   | English (UK)              | wave 2, shipped   | Overlay of `en`, 149 keys: Trash->Bin, -our/-ise spelling, `licence`; also serves NZ           |
+| en-AU   | English (Australia)       | wave 2, shipped   | Overlay of `en`, 155 keys: `en-GB`'s forks plus `Deselect`->`Unselect`                         |
+| en-GB   | English (UK)              | wave 2, shipped   | Overlay of `en`, 149 keys: Trash->Bin, -our/-ise spelling, `licence`; serves all of `en-001`   |
 | fi      | Finnish                   | wave 2            | Apple macOS + MS + Google ship Finnish                                                         |
 | hi      | Hindi                     | wave 2            | Tier-1: Apple, MS, Google, Spotify, Netflix all ship Hindi                                     |
 | id      | Indonesian                | wave 2            | Apple + MS ship one Indonesian; macOS Finder reference                                         |

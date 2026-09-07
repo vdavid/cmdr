@@ -158,14 +158,19 @@ Considered and deliberately NOT forked, so nobody re-litigates them:
 
 ## New Zealand
 
-**macOS ships no `en-NZ` user-interface localization**, so a New Zealand user runs English (UK) or English (Australia)
-and is served by one of these two catalogs. Don't build an `en-NZ` overlay.
+**A New Zealand Mac is served by this catalog, and `en-NZ` reaches it by itself.** Don't build an `en-NZ` overlay: the
+resolver walks CLDR's parent chain, `en-NZ`'s parent is `en-001`, and this catalog is what answers for `en-001`
+(`apps/desktop/src-tauri/src/intl/DETAILS.md` § The ancestor chain).
 
-Verified on macOS 26.6.2, build 25G83, 2026-08-29: AppKit, Finder, System Settings, and Setup Assistant each ship
-exactly three English lprojs (`en`, `en_AU`, `en_GB`), and `/System/Library` holds 2,329 of each of `en_GB.lproj` and
-`en_AU.lproj` and zero `en_NZ.lproj` UI bundles. The one `en_NZ.lproj` on the system,
-`ProofReader.framework/.../en_NZ.lproj/bindict.dat`, is a spell-check dictionary, not a localization; `locale -a` also
-lists `en_NZ` as a formatting region. So en-NZ exists to macOS as a _region_ and a _dictionary_, never as a UI language.
+**Shipping no `en-NZ` localization is not the same as nobody running `en-NZ`.** Verified on macOS 26.6.2, build 25G83,
+2026-08-29: AppKit, Finder, System Settings, and Setup Assistant each ship exactly three English lprojs (`en`, `en_AU`,
+`en_GB`), and `/System/Library` holds 2,329 of each of `en_GB.lproj` and `en_AU.lproj` and zero `en_NZ.lproj` UI
+bundles. Apple resolves the gap rather than refusing the tag: `CFBundleCopyLocalizationsForPreferences`, asked for
+`en-NZ` against those three, answers `en-AU`, `en-GB`, `en` in that order (verified on the same build, 2026-09-07).
+
+A beta user set English (New Zealand) and read "Trash" for weeks, because the resolver used to truncate `en-NZ` to `en`
+on the reasoning above. Every regional English CLDR knows about now reaches an overlay, and
+`a_regional_english_never_lands_further_from_home_than_macos_puts_it` keeps it that way.
 
 ## Catalog mechanics
 
