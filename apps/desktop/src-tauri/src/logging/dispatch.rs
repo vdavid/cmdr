@@ -20,8 +20,9 @@
 //!       .chain(<file_rotate writer>)       // 50 MB per file, KeepN
 //! ```
 //!
-//! Format mirrors the previous plugin output: `HH:MM:SS.mmm LEVEL target  message`.
-//! Stdout adds ANSI level colors; the file writer gets plain text so `cat` is readable.
+//! Both chains render `HH:MM:SS.mmm LEVEL target  message`. The terminal chain adds ANSI
+//! (level colors, plus the fixed-width colored target head `target_style` describes) when
+//! stderr is a terminal; the file writer gets plain text so `cat` is readable.
 //!
 //! Runtime mutability:
 //!
@@ -138,22 +139,11 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
 
     // Stdout chain. Stderr (not stdout) so logs don't pollute commands that pipe stdout.
     // Same behavior the previous plugin had.
+    // Resolved once, not per record: a process's stderr doesn't turn into a terminal
+    // halfway through a run, and `is_terminal()` is a syscall.
+    let color = super::target_style::color_enabled();
     let mut stdout_chain = fern::Dispatch::new()
-        .format(|out, message, record| {
-            let now = chrono::Local::now();
-            let ts = now.format("%H:%M:%S%.3f");
-            let target = record.target().strip_prefix("cmdr_lib::").unwrap_or(record.target());
-            let level = record.level();
-            let color = match level {
-                log::Level::Error => "\x1b[31m", // red
-                log::Level::Warn => "\x1b[33m",  // yellow
-                log::Level::Info => "\x1b[32m",  // green
-                log::Level::Debug => "\x1b[36m", // cyan
-                log::Level::Trace => "\x1b[35m", // magenta
-            };
-            let ram = super::ram_gauge::tag();
-            out.finish(format_args!("{ts} {color}{level:<5}\x1b[0m {ram}{target}  {message}"));
-        })
+        .format(move |out, message, record| write_terminal_line(out, message, record, color))
         // Ceiling: the live AtomicU8 filter below does the real gating.
         .level(log::LevelFilter::Trace)
         // Live verbose-toggle gate: drops anything below the current AtomicU8.
@@ -232,6 +222,59 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
         version = env!("CARGO_PKG_VERSION"),
     );
     Ok(())
+}
+
+/// Renders one terminal line: `HH:MM:SS.mmm LEVEL head::tail  message`.
+///
+/// The head (the target up to its first `::`) sits in a fixed-width column in its own
+/// stable color and the tail trails it in gray, so a dev scanning `pnpm dev` output finds
+/// the subsystem without reading. See `target_style`. With `color` false every sequence
+/// is empty and the line is plain text, alignment intact.
+///
+/// The test dispatch calls this too, so the tests assert the format that actually ships.
+fn write_terminal_line(
+    out: fern::FormatCallback<'_>,
+    message: &std::fmt::Arguments<'_>,
+    record: &log::Record<'_>,
+    color: bool,
+) {
+    let ts = chrono::Local::now().format("%H:%M:%S%.3f");
+    let target = record.target().strip_prefix("cmdr_lib::").unwrap_or(record.target());
+    let (head, tail) = super::target_style::split(target);
+    let level = record.level();
+    let (level_color, head_color, reset) = if color {
+        (
+            level_color(level),
+            super::target_style::head_color(head),
+            super::target_style::RESET,
+        )
+    } else {
+        ("", "", "")
+    };
+    // Empty for a bare head, so a headless line doesn't carry a color sequence wrapping
+    // nothing. The single trailing reset closes whichever color is still open.
+    let tail_color = if color && !tail.is_empty() {
+        super::target_style::TAIL_COLOR
+    } else {
+        ""
+    };
+    let ram = super::ram_gauge::tag();
+    out.finish(format_args!(
+        "{ts} {level_color}{level:<5}{reset} {ram}{head_color}{head:<width$}{tail_color}{tail}{reset}  {message}",
+        width = super::target_style::HEAD_WIDTH,
+    ));
+}
+
+/// The terminal color for a level. Basic ANSI (not the 256-color cube the target column
+/// uses) so it lands on whatever red/yellow/green the dev's theme defines.
+fn level_color(level: log::Level) -> &'static str {
+    match level {
+        log::Level::Error => "\x1b[31m", // red
+        log::Level::Warn => "\x1b[33m",  // yellow
+        log::Level::Info => "\x1b[32m",  // green
+        log::Level::Debug => "\x1b[36m", // cyan
+        log::Level::Trace => "\x1b[35m", // magenta
+    }
 }
 
 /// Defaults applied to the stdout chain to suppress known-noisy crates. The file chain
@@ -323,8 +366,11 @@ struct TestDispatch {
 
 /// Builds the same dispatch tree shape `init` would, but writes both chains to
 /// caller-supplied in-memory buffers and skips the global `apply()`. Test-only.
+///
+/// `color` stands in for `target_style::color_enabled()`, which a test can't influence:
+/// a test runner's stderr is a pipe, so the real call would always answer false.
 #[cfg(test)]
-fn build_dispatch_for_test(rust_log: Option<&str>, file_chain_enabled: bool) -> TestDispatch {
+fn build_dispatch_for_test(rust_log: Option<&str>, file_chain_enabled: bool, color: bool) -> TestDispatch {
     use std::sync::Arc;
 
     let stdout_buf: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
@@ -351,9 +397,7 @@ fn build_dispatch_for_test(rust_log: Option<&str>, file_chain_enabled: bool) -> 
     set_stdout_threshold(stdout_default);
 
     let mut stdout_chain = fern::Dispatch::new()
-        .format(|out, message, record| {
-            out.finish(format_args!("{} {}", record.level(), message));
-        })
+        .format(move |out, message, record| write_terminal_line(out, message, record, color))
         .level(log::LevelFilter::Trace)
         .filter(|metadata| metadata.level() <= stdout_threshold())
         .chain(Box::new(SharedBufferWriter(stdout_buf.clone())) as Box<dyn Write + Send>);
@@ -434,7 +478,7 @@ mod tests {
     #[test]
     fn debug_record_hits_file_only() {
         let _g = test_lock();
-        let d = build_dispatch_for_test(None, true);
+        let d = build_dispatch_for_test(None, true, false);
         dispatch(&*d.logger, log::Level::Debug, "cmdr_lib::test", "secret-debug");
         let s = buf_to_string(&d.stdout);
         let f = buf_to_string(&d.file);
@@ -452,10 +496,77 @@ mod tests {
     #[test]
     fn info_record_hits_both() {
         let _g = test_lock();
-        let d = build_dispatch_for_test(None, true);
+        let d = build_dispatch_for_test(None, true, false);
         dispatch(&*d.logger, log::Level::Info, "cmdr_lib::test", "shared-info");
         assert!(buf_to_string(&d.stdout).contains("shared-info"));
         assert!(buf_to_string(&d.file).contains("shared-info"));
+    }
+
+    /// The head gets a fixed-width column, so every message on a terminal starts at a
+    /// predictable place and the subsystem is scannable down the left edge.
+    #[test]
+    fn terminal_line_pads_a_bare_head() {
+        let _g = test_lock();
+        let d = build_dispatch_for_test(None, false, false);
+        dispatch(&*d.logger, log::Level::Info, "cmdr_lib::logging", "ready");
+        let s = buf_to_string(&d.stdout);
+        assert!(s.contains("INFO  logging         ready"), "got {s:?}");
+    }
+
+    /// The module path picks up where the padded head ends, so `downloads::watcher`
+    /// reads as one target with a gap in the middle rather than two words.
+    #[test]
+    fn terminal_line_pads_the_head_and_keeps_the_tail_attached() {
+        let _g = test_lock();
+        let d = build_dispatch_for_test(None, false, false);
+        dispatch(&*d.logger, log::Level::Info, "downloads::watcher", "watching");
+        let s = buf_to_string(&d.stdout);
+        assert!(s.contains("INFO  downloads     ::watcher  watching"), "got {s:?}");
+    }
+
+    /// A head longer than the column overflows rather than being cut: a truncated
+    /// subsystem name is worse than one misaligned line.
+    #[test]
+    fn an_overlong_head_is_never_truncated() {
+        let _g = test_lock();
+        let d = build_dispatch_for_test(None, false, false);
+        dispatch(&*d.logger, log::Level::Info, "a_very_long_subsystem_name", "hi");
+        let s = buf_to_string(&d.stdout);
+        assert!(s.contains("a_very_long_subsystem_name  hi"), "got {s:?}");
+    }
+
+    /// Piped or redirected output gets no ANSI at all: `pnpm dev > log.txt` should be
+    /// readable, and the escape sequences would otherwise land in the file.
+    #[test]
+    fn a_non_terminal_gets_plain_text() {
+        let _g = test_lock();
+        let d = build_dispatch_for_test(None, false, false);
+        dispatch(&*d.logger, log::Level::Error, "downloads::watcher", "boom");
+        let s = buf_to_string(&d.stdout);
+        assert!(!s.contains('\x1b'), "expected no escape sequences, got {s:?}");
+    }
+
+    /// On a terminal the head takes its own color and the tail goes gray.
+    #[test]
+    fn a_terminal_paints_the_head_and_dims_the_tail() {
+        let _g = test_lock();
+        let d = build_dispatch_for_test(None, false, true);
+        dispatch(&*d.logger, log::Level::Info, "downloads::watcher", "watching");
+        let s = buf_to_string(&d.stdout);
+        let head = super::super::target_style::head_color("downloads");
+        assert!(s.contains(&format!("{head}downloads     ")), "head not painted: {s:?}");
+        assert!(s.contains("\x1b[38;5;245m::watcher\x1b[0m"), "tail not dimmed: {s:?}");
+    }
+
+    /// A bare head carries no tail sequence wrapping nothing. Most lines have no tail,
+    /// so the wasted bytes would be on most of the output.
+    #[test]
+    fn a_bare_head_emits_no_tail_sequence() {
+        let _g = test_lock();
+        let d = build_dispatch_for_test(None, false, true);
+        dispatch(&*d.logger, log::Level::Info, "logging", "ready");
+        let s = buf_to_string(&d.stdout);
+        assert!(!s.contains("\x1b[38;5;245m"), "stray tail color: {s:?}");
     }
 
     /// Verbose toggle flip: bumping stdout to Debug starts capturing what was being
@@ -463,7 +574,7 @@ mod tests {
     #[test]
     fn stdout_threshold_flip_admits_debug() {
         let _g = test_lock();
-        let d = build_dispatch_for_test(None, false);
+        let d = build_dispatch_for_test(None, false, false);
         dispatch(&*d.logger, log::Level::Debug, "cmdr_lib::test", "before-flip");
         assert!(!buf_to_string(&d.stdout).contains("before-flip"));
 
@@ -483,7 +594,7 @@ mod tests {
     #[test]
     fn no_file_chain_when_disabled() {
         let _g = test_lock();
-        let d = build_dispatch_for_test(None, false);
+        let d = build_dispatch_for_test(None, false, false);
         dispatch(&*d.logger, log::Level::Info, "cmdr_lib::test", "stdout-only");
         assert!(buf_to_string(&d.stdout).contains("stdout-only"));
         assert!(buf_to_string(&d.file).is_empty());
@@ -495,7 +606,7 @@ mod tests {
     #[test]
     fn rust_log_module_override_applies_to_stdout_only() {
         let _g = test_lock();
-        let d = build_dispatch_for_test(Some("cmdr_lib::test=warn,info"), true);
+        let d = build_dispatch_for_test(Some("cmdr_lib::test=warn,info"), true, false);
         dispatch(&*d.logger, log::Level::Info, "cmdr_lib::test", "filtered-on-stdout");
         assert!(
             !buf_to_string(&d.stdout).contains("filtered-on-stdout"),
