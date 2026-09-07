@@ -226,11 +226,11 @@
   },
   "commands.paneLeftVolumeChooser.label": "Abrir el selector de volúmenes izquierdo",
   "@commands.paneLeftVolumeChooser.label": {
-    "sourceHash": "8682140"
+    "sourceHash": "6210f8e"
   },
   "commands.paneRightVolumeChooser.label": "Abrir el selector de volúmenes derecho",
   "@commands.paneRightVolumeChooser.label": {
-    "sourceHash": "7a0268f"
+    "sourceHash": "6103296"
   },
   "commands.paneCopyPathLeftToRight.label": "Copiar la ruta del panel izquierdo al derecho",
   "@commands.paneCopyPathLeftToRight.label": {
@@ -674,7 +674,7 @@
   },
   "commands.volumeClose.label": "Cerrar el selector de volúmenes",
   "@commands.volumeClose.label": {
-    "sourceHash": "aa6a29b"
+    "sourceHash": "075481e"
   },
   "commands.volumeSelectByName.label": "Seleccionar el volumen del panel por nombre",
   "@commands.volumeSelectByName.label": {

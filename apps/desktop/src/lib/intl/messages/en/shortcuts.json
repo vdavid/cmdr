@@ -49,9 +49,9 @@
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 
-  "shortcuts.scope.volumeChooser": "Volume chooser",
+  "shortcuts.scope.volumeChooser": "Volume switcher",
   "@shortcuts.scope.volumeChooser": {
-    "description": "Group heading in the Keyboard shortcuts list for commands in the volume chooser (the picker for disks and mounted locations). A short section title.",
+    "description": "Group heading in the Keyboard shortcuts list for commands in the volume switcher (the picker for disks and mounted locations). A short section title.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 

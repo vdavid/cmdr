@@ -228,11 +228,11 @@
   },
   "commands.paneLeftVolumeChooser.label": "Open linkse volumekiezer",
   "@commands.paneLeftVolumeChooser.label": {
-    "sourceHash": "8682140"
+    "sourceHash": "6210f8e"
   },
   "commands.paneRightVolumeChooser.label": "Open rechtse volumekiezer",
   "@commands.paneRightVolumeChooser.label": {
-    "sourceHash": "7a0268f"
+    "sourceHash": "6103296"
   },
   "commands.paneCopyPathLeftToRight.label": "Kopieer pad van linker- naar rechterpaneel",
   "@commands.paneCopyPathLeftToRight.label": {
@@ -676,7 +676,7 @@
   },
   "commands.volumeClose.label": "Sluit volumekiezer",
   "@commands.volumeClose.label": {
-    "sourceHash": "aa6a29b"
+    "sourceHash": "075481e"
   },
   "commands.volumeSelectByName.label": "Selecteer paneelvolume op naam",
   "@commands.volumeSelectByName.label": {

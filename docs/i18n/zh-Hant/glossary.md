@@ -1092,9 +1092,10 @@ machine"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lpro
   `／`，照 `settings.selection.recentSelections.maxCount.description` 的 `「選取／取消選取檔案」`。
 - **volume switcher（挑磁碟的那個清單）** · `卷宗切換器` · `切換器`
   是目錄既有的 "switcher"（`commands.favoritesAdd.description` = `切換器的「喜好項目」`），`卷宗` 是既定的 volume ·
-  `high`。⚠️ 同一個介面英文自己有兩個名字："volume chooser"（`shortcuts.scope.volumeChooser`、兩個
-  `commands.pane*VolumeChooser.label`，中文是 `卷宗選擇器`）和這裡的 "volume
-  switcher"。中文照著英文分開寫，不自行合併；要統一應該先統一英文。
+  `confirmed`。英文原本同一個介面有兩個名字（"volume chooser" 與 "volume switcher"），中文也照著分成
+  `卷宗選擇器` 與 `卷宗切換器`；英文後來統一成 "volume switcher"，中文因此也統一成 `卷宗切換器`，
+  `shortcuts.scope.volumeChooser` 和兩個 `commands.pane*VolumeChooser.label` 都跟著改。訊息 KEY 仍拼作
+  `Chooser`，因為它對應存進設定檔的指令 id `pane.leftVolumeChooser` / `pane.rightVolumeChooser`，不能改名。
 - **Add server…（表格最後一列）** · `加入伺服器…` · Apple 的「加入+受詞」句式（系統設定 `ADD_DEVICE` "Add Device…" →
   `加入裝置⋯`、`MainMenu.loctable` "Add Account…" → `加入帳號⋯`，TW = HK）· `high`。刪節號照目錄慣例寫
   `…`（U+2026），不跟 Apple 的 `⋯`。

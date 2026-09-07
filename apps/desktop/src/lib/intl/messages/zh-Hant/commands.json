@@ -224,13 +224,13 @@
   "@commands.paneSwap.label": {
     "sourceHash": "cc29396"
   },
-  "commands.paneLeftVolumeChooser.label": "開啟左側卷宗選擇器",
+  "commands.paneLeftVolumeChooser.label": "開啟左側卷宗切換器",
   "@commands.paneLeftVolumeChooser.label": {
-    "sourceHash": "8682140"
+    "sourceHash": "6210f8e"
   },
-  "commands.paneRightVolumeChooser.label": "開啟右側卷宗選擇器",
+  "commands.paneRightVolumeChooser.label": "開啟右側卷宗切換器",
   "@commands.paneRightVolumeChooser.label": {
-    "sourceHash": "7a0268f"
+    "sourceHash": "6103296"
   },
   "commands.paneCopyPathLeftToRight.label": "把路徑從左窗格複製到右窗格",
   "@commands.paneCopyPathLeftToRight.label": {
@@ -672,9 +672,9 @@
   "@commands.volumeSelect.label": {
     "sourceHash": "60f5ce1"
   },
-  "commands.volumeClose.label": "關閉卷宗選擇器",
+  "commands.volumeClose.label": "關閉卷宗切換器",
   "@commands.volumeClose.label": {
-    "sourceHash": "aa6a29b"
+    "sourceHash": "075481e"
   },
   "commands.volumeSelectByName.label": "依名稱選取窗格卷宗",
   "@commands.volumeSelectByName.label": {
