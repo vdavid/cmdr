@@ -2381,10 +2381,10 @@ tấm của Cmdr cần.
 
 ## Trung tâm máy chủ, đợt 4: khung đang kết nối lại + dòng "không có gì để nhập" (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`, 2026-09-07)
 
-Bề mặt: hai chuỗi trong cùng khung trạng thái máy chủ của đợt 3. Một là tiêu đề của khung Cmdr TỰ tìm lại kết nối đã
-rớt (dưới nó là vòng quay, đồng hồ đếm ngược tới lần thử sau, và ba nút Thử lại ngay / Hủy / Ngắt kết nối). Hai là dòng
-thay chỗ nút `Đăng nhập…` khi máy chủ nhận khóa SSH (hoặc danh tính ssh-agent) chứ không hỏi mật khẩu, nên người dùng
-thật sự không có gì để điền.
+Bề mặt: hai chuỗi trong cùng khung trạng thái máy chủ của đợt 3. Một là tiêu đề của khung Cmdr TỰ tìm lại kết nối đã rớt
+(dưới nó là vòng quay, đồng hồ đếm ngược tới lần thử sau, và ba nút Thử lại ngay / Hủy / Ngắt kết nối). Hai là dòng thay
+chỗ nút `Đăng nhập…` khi máy chủ nhận khóa SSH (hoặc danh tính ssh-agent) chứ không hỏi mật khẩu, nên người dùng thật sự
+không có gì để điền.
 
 Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1), nên mọi dẫn chứng Apple lấy trực tiếp từ bundle macOS đang cài
 (`.loctable` + `.lproj/*.strings`, `plistlib.load(f)['vi']` so với `['en']`), macOS 26.6.2 build 25G83, 2026-09-07. Cách
@@ -2396,12 +2396,13 @@ làm: `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
   (`Reconnecting…` → `Đang kết nối lại…`, đúng bề mặt của ta: một phiên tới máy ở xa bị rớt và đang được nối lại) và
   `ConversationKit.loctable` (`Reconnecting` → `Đang kết nối lại`) · `high`. Khớp với `kết nối lại` đã chốt cho động từ
   reconnect và với `Đang kết nối lại với thiết bị` (`errors.listing.deviceReconnecting.title`).
-- **rather than / instead of → `thay vì`** · catalog đã dùng xuyên suốt (`errors.listing.crossDeviceOperation.suggestion`
-  `Hãy sao chép mục này tới đích thay vì di chuyển.`, `errors.write.readOnlyDevice.source.suggestion`,
-  `settings.appearance.useAppIconsForDocuments.description`), và macOS dịch đúng chữ "rather than" như vậy
-  (`PrintCore/cups`: `Purge jobs rather than just canceling` → `Thanh lọc các tác vụ thay vì chỉ hủy`;
-  `Security/SecErrorMessages`: `a CA rather than an end-entity` → `một CA thay vì một thực thể cuối`) · `high`. ❌ Đừng
-  đổi sang `chứ không phải` cho chuỗi mới: `thay vì` là chữ catalog đã ship ở sáu chỗ.
+- **rather than / instead of → `thay vì`** · catalog đã dùng xuyên suốt
+  (`errors.listing.crossDeviceOperation.suggestion` `Hãy sao chép mục này tới đích thay vì di chuyển.`,
+  `errors.write.readOnlyDevice.source.suggestion`, `settings.appearance.useAppIconsForDocuments.description`), và macOS
+  dịch đúng chữ "rather than" như vậy (`PrintCore/cups`: `Purge jobs rather than just canceling` →
+  `Thanh lọc các tác vụ thay vì chỉ hủy`; `Security/SecErrorMessages`: `a CA rather than an end-entity` →
+  `một CA thay vì một thực thể cuối`) · `high`. ❌ Đừng đổi sang `chứ không phải` cho chuỗi mới: `thay vì` là chữ
+  catalog đã ship ở sáu chỗ.
 - **type / enter (điền vào một ô) → `nhập`, không phải `gõ`** · macOS `Security/SecurityAgent`
   (`Enter your password to allow this.` → `Nhập mật khẩu của bạn để cho phép việc này.`), và catalog đã có
   `fileExplorer.network.browser.tooltip.requiresLogin` = `Bấm đúp để nhập thông tin đăng nhập.` · `high`. Apple để dành
@@ -2421,8 +2422,8 @@ làm: `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
   `kết nối lại vào Nguồn của bạn`), nhưng hai tiêu đề này là hai trạng thái của cùng một khung nên phải đọc như một cặp;
   ưu tiên chuỗi chị em. Giữ dấu … (U+2026).
 - **`servers.paneState.signedOutNothingToAsk` →
-  `Máy chủ này dùng khóa thay vì mật khẩu để đăng nhập, nên không có gì để nhập. Hãy mở lại máy chủ để thử lại.`** ·
-  ❗ **Máy chủ không thể làm chủ ngữ của `đăng nhập`.** Tiếng Anh viết được "This server signs in with a key", nhưng
+  `Máy chủ này dùng khóa thay vì mật khẩu để đăng nhập, nên không có gì để nhập. Hãy mở lại máy chủ để thử lại.`** · ❗
+  **Máy chủ không thể làm chủ ngữ của `đăng nhập`.** Tiếng Anh viết được "This server signs in with a key", nhưng
   `đăng nhập bằng X` trong tiếng Việt luôn có NGƯỜI làm chủ ngữ (macOS Setup Assistant:
   `bạn sẽ cần đăng nhập bằng tên tài khoản và mật khẩu`), nên `Máy chủ này đăng nhập bằng khóa` sẽ đọc thành "máy chủ
   này đi đăng nhập ở đâu đó". Đổi động từ chính thành `dùng` và để `đăng nhập` xuống vế mục đích: máy chủ DÙNG khóa,

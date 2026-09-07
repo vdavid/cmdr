@@ -29,7 +29,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
-    import { openSmbSignInSheet, refusalForShareError } from './smb-sign-in'
+    import { isListingAuthError, openSmbSignInSheet, refusalForShareError } from './smb-sign-in'
     import type { ConnectRefusalKind } from '$lib/servers/connect-refusals'
     import type { SignInAttemptOutcome } from '$lib/servers/sign-in-contract'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
@@ -225,16 +225,8 @@
             return
         }
         if (cachedState?.status === 'error') {
-            // If auth required, try stored credentials first (keep loading indicator)
-            if (cachedState.error.type === 'auth_required' || cachedState.error.type === 'signing_required') {
-                const success = await tryStoredCredentials()
-                if (success) {
-                    loading = false
-                    return
-                }
-                error = cachedState.error
-                loading = false
-                await askForCredentials(refusalForShareError(cachedState.error))
+            if (isListingAuthError(cachedState.error)) {
+                await settleListingAuth(cachedState.error)
                 return
             }
             // Non-auth error (host_unreachable, timeout, etc.): the user is
@@ -249,23 +241,27 @@
             authMode = result.authMode
         } catch (e) {
             const shareError = e as ShareListError
-
-            // If auth required, try stored credentials first (keep loading indicator)
-            if (shareError.type === 'auth_required' || shareError.type === 'signing_required') {
-                const success = await tryStoredCredentials()
-                if (success) {
-                    loading = false
-                    return
-                }
-                error = shareError
-                loading = false
-                await askForCredentials(refusalForShareError(shareError))
+            if (isListingAuthError(shareError)) {
+                await settleListingAuth(shareError)
                 return
             }
             error = shareError
         } finally {
             loading = false
         }
+    }
+
+    /**
+     * A listing that needs a sign-in: try the stored credential silently first
+     * (the loading indicator stays up, because nothing is being asked yet), and
+     * only ask when that doesn't land.
+     */
+    async function settleListingAuth(shareError: ShareListError) {
+        const stored = await tryStoredCredentials()
+        loading = false
+        if (stored) return
+        error = shareError
+        await askForCredentials(refusalForShareError(shareError))
     }
 
     /**
@@ -291,7 +287,6 @@
             signingIn = false
         }
     }
-
 
     /** Try to use stored credentials. Returns true if shares were loaded. */
     async function tryStoredCredentials(): Promise<boolean> {

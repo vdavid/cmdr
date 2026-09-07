@@ -2107,27 +2107,27 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 
 ## 自动重连的面板标题 + 无需输入的退出登录说明（`servers.paneState.reconnecting`、`.signedOutNothingToAsk`，2026-09-07）
 
-连接掉线后 Cmdr 自己按退避节奏重连时那个面板的标题（下面是转圈、倒计时和「立即重试 / 取消 /
-断开连接」），以及服务器用 SSH 密钥（或 ssh-agent 身份）证明自己时，替代「登录…」按钮的那一行说明。
+连接掉线后 Cmdr 自己按退避节奏重连时那个面板的标题（下面是转圈、倒计时和「立即重试 / 取消 / 断开连接」），以及服务器用 SSH 密钥（或 ssh-agent 身份）证明自己时，替代「登录…」按钮的那一行说明。
 
-参考堆（`_ignored/i18n/zh-CN/`）在这台机器上仍然不存在，继续按指南许可的方式从实时 macOS 包取词：`plutil`
-读 `.loctable` 的 `zh_CN` 分支，全部验证于 macOS 26.6.2 / 25G83，2026-09-07。
+参考堆（`_ignored/i18n/zh-CN/`）在这台机器上仍然不存在，继续按指南许可的方式从实时 macOS 包取词：`plutil` 读 `.loctable`
+的 `zh_CN` 分支，全部验证于 macOS 26.6.2 / 25G83，2026-09-07。
 
-- **Reconnecting… → `正在重新连接…`，所以 `Reconnecting to {name}…` → `正在重新连接到 {name}…`** · Apple
-  全系统统一：ScreenSharing `ScreenSharing.loctable`（`reconnectingMessage`）、HomeDataModel
-  `HFLocalizable.loctable`（`HFServiceDescriptionReconnecting`）、FaceTime/Phone 的
-  `RemotePeoplePicker.appex` 都是 `正在重新连接…`；`Reconnect` → `重新连接` 也早已定过（AppSSOKerberos）·
-  `confirmed`。到 `{name}` 的介词沿用 `servers.paneState.connecting`（`正在连接到 {name}…`），两个状态读起来是同一句式。
+- **Reconnecting… → `正在重新连接…`，所以 `Reconnecting to {name}…` → `正在重新连接到 {name}…`** ·
+  Apple全系统统一：ScreenSharing `ScreenSharing.loctable`（`reconnectingMessage`）、HomeDataModel
+  `HFLocalizable.loctable`（`HFServiceDescriptionReconnecting`）、FaceTime/Phone 的 `RemotePeoplePicker.appex` 都是
+  `正在重新连接…`；`Reconnect` → `重新连接` 也早已定过（AppSSOKerberos）· `confirmed`。到 `{name}` 的介词沿用
+  `servers.paneState.connecting`（`正在连接到 {name}…`），两个状态读起来是同一句式。
 - **“there''s nothing to X” → `没有要 X 的内容`** · Apple 的固定句式：`There''s nothing to send.` →
-  `没有要发送的内容。`、`There is nothing to print.` → `没有要打印的内容。`（AppIntents、Printing
-  `.loctable`）· `confirmed`。所以 `nothing to type` → `没有要输入的内容`，别写成 `没什么可打的` 这类口语过头的说法。
-- **signs in with a key rather than a password → `登录这台服务器用的是密钥，而不是密码`** ·
-  主语挪到「登录」这件事上，而不是照英文让服务器去「登录」：中文里「服务器登录」会读成服务器是登录方 · `high`。
+  `没有要发送的内容。`、`There is nothing to print.` → `没有要打印的内容。`（AppIntents、Printing `.loctable`）·
+  `confirmed`。所以 `nothing to type` → `没有要输入的内容`，别写成 `没什么可打的` 这类口语过头的说法。
+- **signs in with a key rather than a password → `登录这台服务器用的是密钥，而不是密码`**
+  ·主语挪到「登录」这件事上，而不是照英文让服务器去「登录」：中文里「服务器登录」会读成服务器是登录方 · `high`。
   `密钥`（已定，与 `主机密钥`/`密钥文件` 同词）、`密码`（已定）、量词 `台`（已定）都是沿用，不是新词。
-- **Open it again to retry. → `重新打开它即可重试。`** · `重新打开` 是目录里既有的说法
-  （`fileExplorer` 的 `重新打开这个文件夹再试一次`），`…即可重试` 与同组的
-  `servers.paneState.cancelCycleTooltip`（`切换回来即可重试。`）同型 · `high`。同组的
-  `hostKeyChangedHint` 写的是 `然后再打开它来核对指纹`，那里的 `再` 由 `先…然后…` 撑着；单句开头用 `重新打开` 更顺。
-- **不用「认证 / 验证身份」** · 英文这里刻意说大白话（`signs in with a key`），中文照着走，别把 SSH 术语补回来。同一条
-  原则见上面 `有东西夹在你和它之间` 那一行。
+- **Open it again to retry. → `重新打开它即可重试。`** · `重新打开` 是目录里既有的说法（`fileExplorer` 的
+  `重新打开这个文件夹再试一次`），`…即可重试` 与同组的
+  `servers.paneState.cancelCycleTooltip`（`切换回来即可重试。`）同型 · `high`。同组的 `hostKeyChangedHint` 写的是
+  `然后再打开它来核对指纹`，那里的 `再` 由 `先…然后…` 撑着；单句开头用 `重新打开` 更顺。
+- **不用「认证 / 验证身份」**
+  · 英文这里刻意说大白话（`signs in with a key`），中文照着走，别把 SSH 术语补回来。同一条原则见上面
+  `有东西夹在你和它之间` 那一行。
 - **ICU** · 两个值都不含撇号，没有转义问题；`{name}` 原样保留，句首放得下任意长度、任意字符的服务器名。
