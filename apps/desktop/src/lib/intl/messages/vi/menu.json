@@ -437,6 +437,10 @@
   "@menu.context.copyGoogleDriveLink": {
     "sourceHash": "070b383"
   },
+  "menu.context.share": "Chia sẻ…",
+  "@menu.context.share": {
+    "sourceHash": "51fc2d2"
+  },
   "menu.context.openWith": "Mở bằng",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"

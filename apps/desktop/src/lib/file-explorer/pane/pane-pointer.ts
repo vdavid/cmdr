@@ -14,7 +14,7 @@ import { getPathsAtIndices, showFileContextMenu, showParentRowContextMenu } from
 import type { FileEntry, SelectPayload } from '../types'
 import { getSetting, setSetting } from '$lib/settings'
 import { addToast } from '$lib/ui/toast'
-import { capabilitiesFor } from './volume-capabilities'
+import { capabilitiesFor, rowIsOsVisible } from './volume-capabilities'
 import { canOpenTerminalIn } from '$lib/open-terminal/terminal-target'
 import { isFileListBackgroundClick } from './pane-background-dblclick'
 import DoubleClickPaneHintToastContent from './DoubleClickPaneHintToastContent.svelte'
@@ -101,11 +101,16 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
         // Selection lookup failed: fall back to single-file action.
       }
     }
+    const volumeId = deps.getVolumeId()
     await showFileContextMenu(entry.path, entry.name, entry.isDirectory, paths, {
       listingId,
       // The terminal item acts on the PANE's folder, so it asks the pane's volume,
       // not the right-clicked row.
-      canOpenTerminalHere: canOpenTerminalIn(capabilitiesFor(deps.getVolumeId()).kind),
+      canOpenTerminalHere: canOpenTerminalIn(capabilitiesFor(volumeId).kind),
+      // "Share…" acts on the ROWS, so it asks about the row: a snapshot pane has no
+      // folder to `cd` into but lists real files, and an archive's insides are the
+      // other way round.
+      canShare: rowIsOsVisible(volumeId, entry.path),
     })
   }
 

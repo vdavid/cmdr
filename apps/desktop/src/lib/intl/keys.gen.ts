@@ -1903,6 +1903,7 @@ export type MessageKey =
   | 'menu.context.openWithDefault'
   | 'menu.context.openWithOther'
   | 'menu.context.removeDownload'
+  | 'menu.context.share'
   | 'menu.context.toggleSelection'
   | 'menu.edit.copy'
   | 'menu.edit.copyFilename'

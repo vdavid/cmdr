@@ -142,6 +142,46 @@ already provider-agnostic: a streamed Drive file carries `SF_DATALESS` like any 
 - `pick_app_via_open_panel` shows an `NSOpenPanel` filtered to `.app` bundles for the "Open with → Other…" entry.
 - Worker threads use 8 MB stacks (FileProvider XPC depth), per the gotcha in `CLAUDE.md`.
 
+## Share sheet (`share.rs`)
+
+`show_share_sheet` builds an `NSSharingServicePicker` over the selection and shows it as a popover. AirDrop, Mail,
+Messages, Notes, and every installed share extension come from the system; Cmdr contributes the items and the anchor.
+Reached only from the file context menu's `Share…` (`menu/DETAILS.md`), which is also where the deferral to the next
+main-thread turn is explained.
+
+**Items are `NSURL` file URLs.** `initWithItems:` takes anything conforming to `NSPasteboardWriting`; a file URL is what
+makes every service send the FILE rather than a rendering of it, and it's what Finder hands over for the same gesture.
+A path that isn't valid UTF-8 is dropped from the list rather than sinking the whole share.
+
+**Decision: anchor to the pointer, clamped into the window's content view.**
+`showRelativeToRect:ofView:preferredEdge:` needs a rect in some view's coordinates, and Cmdr has exactly one view to
+offer: the file list is DOM inside a single `WKWebView`, so there is no per-row `NSView`. That leaves the question of
+WHERE in that view, and the pointer answers it: the user just clicked `Share…` in a menu that opened at their
+right-click, so the pointer is the closest thing to "what they are looking at", and it needs no extra IPC field that
+could go stale between the right-click and the click. `NSEvent::mouseLocation` (screen) → `convertPointFromScreen`
+(window) → `convertPoint:fromView:nil` (view). `anchor_rect_in_view` then CLAMPS it into the view's bounds, because
+`showRelativeToRect:` takes the rect literally and a stray point puts the popover in a corner the user isn't looking at.
+`NSRectEdge::MinY` is the bottom edge in AppKit's unflipped view coordinates, so the popover opens downward like a menu;
+AppKit flips it up itself when the screen has no room.
+
+⚠️ **The clamp is the NORMAL path here, not a rare guard.** The file context menu is taller than the pane it pops from,
+so `Share…` usually sits BELOW the window's bottom edge and the raw pointer lands outside the content view. What the
+user sees is the popover's arrow on their pointer's x, pinned to the window's nearest edge. Verified on macOS 26.5.2 by
+right-clicking a file in a 1080×720 window and clicking `Share…`: the pointer was 10 pt below the content view, the
+arrow landed on the window's bottom edge at exactly the pointer's x, and the sheet hung BELOW it (which also confirms
+the content view is unflipped, so `MinY` does open downward) (2026-09-07). ❌ Don't "simplify" the clamp away as
+defensive coding — without it the popover goes to a corner on nearly every share.
+
+**The picker is kept alive in a thread-local.** `showRelativeToRect:` does not take ownership, so a picker whose only
+strong reference is a local is released the moment the function returns, and the popover can vanish before it draws.
+`LIVE_PICKER` holds the last one; the next share replaces it. Thread-local rather than a `static`, because `Retained` is
+neither `Send` nor `Sync` and this only ever runs on the main thread.
+
+**Which rows may be shared is the FRONTEND's answer**, arriving as `PaneContextMenuFacts.canShare`. The share sheet
+needs a real file behind the URL, which rules out phones, the SMB host list, an archive's insides, and the virtual
+`.git` portal, while the search-results snapshot (real files, no folder of its own) is fine. That mix isn't a single
+volume-kind lookup, so it lives in `src/lib/file-explorer/pane/volume-capabilities.ts::rowIsOsVisible`.
+
 ## Open terminal here (`terminal.rs`)
 
 macOS has no system-wide "default terminal" setting. Finder's own "New Terminal at Folder" service is hardcoded to

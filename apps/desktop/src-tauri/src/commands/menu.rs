@@ -6,9 +6,9 @@
 
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
-    CLOSE_TAB_ID, CommandScope, DetachWord, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
-    FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FileContextInfo, MenuState,
-    OPEN_TERMINAL_HERE_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, ServerRowMenu, SettingsChanged, ViewMode,
+    CLOSE_TAB_ID, CommandScope, ContextMenuPaneFacts, DetachWord, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
+    FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FileContextInfo,
+    MenuState, OPEN_TERMINAL_HERE_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, ServerRowMenu, SettingsChanged, ViewMode,
     build_breadcrumb_context_menu, build_context_menu, build_network_host_context_menu, build_parent_row_context_menu,
     build_tab_context_menu, build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command,
     rebuild_view_mode_items, sync_view_mode_check_states,
@@ -43,6 +43,10 @@ pub struct PaneContextMenuFacts {
     /// Whether "Open terminal here" is clickable. It opens the PANE's folder, not
     /// the right-clicked file, so only a pane on OS-visible paths offers it.
     pub can_open_terminal_here: bool,
+    /// Whether this pane's ROWS are real OS paths, which is what the share sheet
+    /// needs. Not the same question as `can_open_terminal_here`: the search-results
+    /// snapshot has no folder of its own yet lists real files.
+    pub can_share: bool,
 }
 
 /// Shows the file context menu.
@@ -104,8 +108,11 @@ pub fn show_file_context_menu<R: Runtime>(
         &filename,
         is_directory,
         &info,
-        pane.restrict_destination_actions,
-        pane.can_open_terminal_here,
+        ContextMenuPaneFacts {
+            restrict_destination_actions: pane.restrict_destination_actions,
+            can_open_terminal_here: pane.can_open_terminal_here,
+            can_share: pane.can_share,
+        },
         image_index,
     )
     .map_err(|e| e.to_string())?;

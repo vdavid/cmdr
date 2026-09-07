@@ -436,6 +436,10 @@
   "@menu.context.copyGoogleDriveLink": {
     "sourceHash": "070b383"
   },
+  "menu.context.share": "Megosztás…",
+  "@menu.context.share": {
+    "sourceHash": "51fc2d2"
+  },
   "menu.context.openWith": "Megnyitás ezzel",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"

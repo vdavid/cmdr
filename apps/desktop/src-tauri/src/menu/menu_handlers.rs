@@ -439,6 +439,61 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
+    // === Share…: the system share sheet over the right-clicked selection ===
+    // Like the tag colors, it acts on `MenuState.context.paths` rather than the
+    // focused-pane selection, so it can't route through `execute-command`. The
+    // picker is a popover, so it's presented from the window the menu popped from.
+    //
+    // Deferred one main-thread turn instead of presented inline: we're inside
+    // muda's action while the menu's own tracking loop is still unwinding, and a
+    // popover put up there can be dismissed by the very click that opened it.
+    #[cfg(target_os = "macos")]
+    if id == super::SHARE_ID {
+        use crate::file_system::share::{ShareError, show_share_sheet};
+        use std::path::PathBuf;
+
+        let menu_state = app.state::<MenuState<tauri::Wry>>();
+        let paths: Vec<PathBuf> = menu_state
+            .context
+            .lock_ignore_poison()
+            .paths
+            .iter()
+            .map(PathBuf::from)
+            .collect();
+        let handle = app.clone();
+        if let Err(e) = app.run_on_main_thread(move || {
+            let Some(window) = handle.get_webview_window("main") else {
+                return;
+            };
+            let ns_window = match window.ns_window() {
+                Ok(ptr) => ptr,
+                Err(e) => {
+                    log::warn!(target: "menu", "Share: no NSWindow for the main window: {e}");
+                    return;
+                }
+            };
+            // SAFETY: `ns_window` is the live, non-null `NSWindow` Tauri owns for the
+            // main webview, read on the main thread inside this closure, so the window
+            // can't be torn down while `show_share_sheet` holds the reference. Null is
+            // answered by `show_share_sheet` itself.
+            let outcome = unsafe { show_share_sheet(ns_window, &paths) };
+            if let Err(reason) = outcome {
+                // A refusal is a sheet that never appeared, which the user sees as
+                // nothing happening; naming the state is what makes that debuggable.
+                let state = match reason {
+                    ShareError::NothingToShare => "no shareable paths",
+                    ShareError::WindowUnavailable => "window unavailable",
+                    ShareError::NoContentView => "no content view",
+                    ShareError::NotOnMainThread => "off the main thread",
+                };
+                log::warn!(target: "menu", "Share sheet didn't open: {state}");
+            }
+        }) {
+            log::warn!(target: "menu", "Share: couldn't reach the main thread: {e}");
+        }
+        return;
+    }
+
     // === Tag color items: prefix-routed straight to the tag write (like open-with) ===
     // `tag-color:<index>` toggles that system color on the RIGHT-CLICKED selection
     // (`MenuState.context.paths`), then refreshes the stashed listing's cache. It acts on
