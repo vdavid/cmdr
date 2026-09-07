@@ -123,6 +123,16 @@ come for free):
   background. The first time it fires it raises a one-time INFO toast (`DoubleClickPaneHintToastContent`) and flips the
   hidden `behavior.doubleClickOnPaneNotificationSeen` so the hint shows once. "Never do this again" turns the gesture
   off from the toast.
+- **Right-click the function key bar → "Hide function key bar".** The bar builds its own one-item native menu
+  (`show_function_key_bar_context_menu`), and the click comes back as the payload-less `FunctionKeyBarHideRequested`
+  event, wired in `routes/(main)/listener-setup.ts` to `function-key-bar-hide.ts`: it turns off
+  `appearance.showFunctionKeyBar` and raises an INFO toast whose inline link deep-links to that row
+  (`['Appearance', 'Listing']` + `settingAnchorId`). Two details that look like tidy-ups and aren't: the toast runs 8 s
+  rather than the 4 s default because it carries a link to read and click, and `button:disabled` in
+  `FunctionKeyBar.svelte` sets `pointer-events: none` because the buttons tile the whole bar and WebKit dispatches no
+  mouse events on a disabled control, so without it the menu would open on some pixels of the bar and not others. The
+  bar's own handler deliberately doesn't `preventDefault()`; the document-level suppressor in `+page.svelte` already did
+  (`routes/(main)/DETAILS.md` § Right-click ownership).
 
 ### The error screen's ways out (`ErrorPane.svelte`)
 

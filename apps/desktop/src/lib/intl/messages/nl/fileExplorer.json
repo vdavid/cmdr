@@ -258,6 +258,10 @@
   "@fileExplorer.functionKeyBar.deleteAction": {
     "sourceHash": "e2d0a54"
   },
+  "fileExplorer.functionKeyBar.hiddenToast": "De functietoetsbalk is nu verborgen. Je kunt hem op elk moment weer inschakelen in <settingsLink>Instellingen</settingsLink>.",
+  "@fileExplorer.functionKeyBar.hiddenToast": {
+    "sourceHash": "f961d3b"
+  },
   "fileExplorer.typeToJump.ariaLabel": "Ga naar {buffer}",
   "@fileExplorer.typeToJump.ariaLabel": {
     "sourceHash": "da879a5"

@@ -2570,3 +2570,9 @@ De två raderna under de gråade fälten `Adress` och `Användarnamn`, när anv�
   dubblerad `''` fäller `i18n-icu`. Ingen av de två värdena har någon.
 - Referenssamlingen saknas på den här maskinen, men `Finder.app` ger samma Tier 1-belägg direkt ur systemet
   (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (raden med funktionstangent-kommandoknappar längst ned i fönstret) → funktionstangentsraden · redan
+  fastställt i katalogen (`settings.appearance.showFunctionKeyBar.label`); återanvänt för snabbmenyalternativet och
+  tillhörande meddelande · high

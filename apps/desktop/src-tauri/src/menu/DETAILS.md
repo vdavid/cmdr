@@ -22,7 +22,7 @@ window focus context.
   reads `Eject ({name})` or `Disconnect` (a phone gets the second: `adb` has no per-client detach, so nothing is made
   safe to unplug).
 - `menu_structure.rs`: hierarchical assembly: the `build_menu` dispatcher, file context menu
-  (`build_context_menu`), breadcrumb / tab / network-host / volume-selector-row context menus
+  (`build_context_menu`), breadcrumb / tab / network-host / function-key-bar / volume-selector-row context menus
   (`build_volume_row_context_menu`: favorite Rename/Remove, a server's Disconnect/Pin/Forget items, or the
   `detach_label` item), the viewer-window menu
   (`build_viewer_menu`), plus the `FileContextInfo` and `ContextMenuResult` types.
@@ -125,6 +125,10 @@ Exceptions that do NOT use `"execute-command"`:
   generic update path. The on_menu_event special-case fires first, so the generic dispatch is
   never reached at click time.
 - **Tab context menu**: emits specific tab action events with tab index payload
+- **Function key bar context menu**: one item (`FUNCTION_KEY_BAR_HIDE_ID`), emitting the payload-less
+  `FunctionKeyBarHideRequested` to the main window. Nothing is stashed in `MenuState.context`, because there's no
+  right-clicked target to remember: the frontend owns both the setting write and the toast that offers the way back
+  (`src/lib/file-explorer/pane/function-key-bar-hide.ts`)
 - **Open with** (macOS): items have dynamic IDs like `open-with:com.apple.Xcode` that can't be
   enumerated in `menu_id_to_command`. `on_menu_event` prefix-matches `open-with:` and calls
   `file_system::open_with::open_paths_with` directly, looking up the app URL via

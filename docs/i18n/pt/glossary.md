@@ -2456,3 +2456,9 @@ As duas linhas abaixo dos campos esmaecidos `Endereço` e `Nome de usuário`, qu
   `''` dobrado quebra o `i18n-icu`. Nenhum dos dois valores tem apóstrofo.
 - A pilha de referência não está nesta máquina, mas o `Finder.app` dá a mesma evidência de nível 1 direto do sistema
   (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (a linha de botões de comando das teclas de função na parte inferior da janela) → barra de teclas de
+  função · já definido no catálogo (`settings.appearance.showFunctionKeyBar.label`); reutilizado para o item do menu de
+  contexto e o respetivo toast · high

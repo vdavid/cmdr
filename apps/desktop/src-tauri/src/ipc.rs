@@ -81,8 +81,8 @@ use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounte
 // Window-management events: emit_to-targeted window lifecycle.
 use crate::window_events::{
     CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
-    FocusFileViewer, FocusSettings, ForegroundOperation, McpSettingsClose, MouseNav, OpenFileViewer, OpenSettings,
-    PersistRestrictedSetting, RevealPath, TabContextAction, ViewerWordWrapToggled,
+    FocusFileViewer, FocusSettings, ForegroundOperation, FunctionKeyBarHideRequested, McpSettingsClose, MouseNav,
+    OpenFileViewer, OpenSettings, PersistRestrictedSetting, RevealPath, TabContextAction, ViewerWordWrapToggled,
 };
 // AI + system/misc events.
 use crate::ai::{
@@ -238,6 +238,7 @@ macro_rules! ipc_command_manifest {
                     // `file_actions::copy_to_clipboard`.
                     crate::commands::menu::show_tab_context_menu,
                     crate::commands::menu::show_network_host_context_menu,
+                    crate::commands::menu::show_function_key_bar_context_menu,
                     crate::commands::file_actions::show_in_finder,
                     crate::commands::quick_look::quick_look_open,
                     crate::commands::quick_look::quick_look_set_path,
@@ -1095,6 +1096,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             McpSettingsClose,
             ViewerWordWrapToggled,
             TabContextAction,
+            FunctionKeyBarHideRequested,
             MouseNav,
             PersistRestrictedSetting,
             // FE-emitted, like `execute-command`: the queue window asks the main

@@ -10,6 +10,7 @@
     import { fnKeyToCommand } from './function-key-commands'
     import { tString } from '$lib/intl/messages.svelte'
     import type { CommandId } from '$lib/commands'
+    import { showFunctionKeyBarContextMenu } from '$lib/tauri-commands'
 
     interface Props {
         visible?: boolean
@@ -68,6 +69,15 @@
         if (e.key === 'Shift') {
             shiftHeld = false
         }
+    }
+
+    /**
+     * No `preventDefault()` here: `+page.svelte`'s document-level capture handler
+     * already suppresses WebKit's menu on every non-text-field target, so this one
+     * only has to open Cmdr's (`routes/(main)/DETAILS.md` § Right-click ownership).
+     */
+    function handleContextMenu() {
+        void showFunctionKeyBarContextMenu()
     }
 
     /** Slot 0 of the bar is F2, so slot `i` carries `F${i + FIRST_FN_KEY}`. */
@@ -225,6 +235,7 @@
         onmousedown={(e) => {
             e.preventDefault()
         }}
+        oncontextmenu={handleContextMenu}
     >
         <!-- eslint-disable @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
         {#each shiftHeld ? shiftRow : defaultRow as slot, index (index)}
@@ -287,6 +298,13 @@
     button:disabled {
         opacity: 0.4;
         cursor: default;
+        /* The buttons tile the whole bar (`flex: 1`, no padding on the bar itself), and WebKit
+           doesn't dispatch mouse events on a disabled form control. Without this, right-clicking
+           a capability-blocked key or an empty Shift-row slot would hit nothing, so the bar's
+           own "Hide function key bar" menu would open on some pixels and not others. Nothing is
+           lost by opting out of hit-testing: these buttons have no tooltip and no hover state
+           (`button:hover:not(:disabled)` above). */
+        pointer-events: none;
     }
 
     kbd {

@@ -1444,3 +1444,9 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   失敗。這兩個值裡沒有撇號。
 - 這台機器上沒有參考語料庫，但 `Finder.app` 可以直接從系統給出同樣的一級證據（`docs/i18n/reference-pile/how-to-mine.md`
   § "No pile on this machine?"）。
+
+## Function key bar context menu (2026-09-07)
+
+- function key
+  bar（視窗底部的功能鍵命令按鈕列）→ 功能鍵列 · 已在目錄中確定（`settings.appearance.showFunctionKeyBar.label`）；用於右鍵選單項目及其提示 ·
+  high
