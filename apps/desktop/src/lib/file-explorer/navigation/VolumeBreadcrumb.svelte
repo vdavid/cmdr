@@ -963,14 +963,21 @@
                                 <ImageIndexDriveBadge volumeId={volume.id} volumeState={rowImageState} />
                             {/if}
                         {/if}
-                        {#if isAdbVolumeId(volume.id)}
+                        {#if isAdbVolumeId(volume.id) && isVolumeEjectable(volume)}
                             <!-- ❗ A phone says Disconnect, ❌ never Eject: `adb` has
                                  no per-client detach, so nothing is made safe to
                                  unplug — the device stays on the cable and the next
                                  navigation re-dials it. The ACTION is the ordinary
                                  eject path, which for ADB is `DeviceDisconnect`;
                                  only the word and the icon differ. MTP keeps Eject,
-                                 which it earns by closing the device session. -->
+                                 which it earns by closing the device session.
+
+                                 ❗ Gated on `isVolumeEjectable`, which for a phone
+                                 reads its READINESS: a device row carries
+                                 `isEjectable: true` unconditionally and no
+                                 `connectionState` at all, so without the gate a
+                                 greyed `unavailable` row nobody can open still
+                                 offered a live Disconnect. -->
                             {@const deviceDisconnectLabel = isVolumeBusy(volume.id)
                                 ? tString('adb.disconnectBusyTooltip')
                                 : tString('adb.disconnectDeviceAriaLabel', { name: volume.name })}

@@ -22,7 +22,12 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 - **`containingVolumeId` comes from `resolvePathVolume(currentPath)`, ❌ not the `volumeId` prop** (a favorite's is
   virtual), so the checkmark tracks the real containing volume.
 - **Read `connectionState` through `connection-state.ts`'s predicates, ❌ never `!= null`**: four backends carry one,
-  plus a `saved` row, so "has a value" answers nothing a caller asks.
+  plus a `saved` row, so "has a value" answers nothing a caller asks. `showsDisconnect` is "a volume is REGISTERED under
+  this id", so both sign-in states are IN; only `saved` has no subject.
+- **❗ A PHONE's detach control is decided by `deviceReadiness`, ❌ never by `isEjectable` or `connectionState`.** A
+  device row carries `isEjectable: true` unconditionally and no `connectionState` at all (readiness is presence, never
+  session health), so `isVolumeEjectable` reads readiness for one and every other row keeps the two session predicates.
+  Without that branch a greyed `unavailable` phone nobody can open still offered a live Disconnect.
 - **A SERVER row says Disconnect, never Eject**, and is claimed by VOLUME ID (`isServerPlaceRow`), ❌ never by
   `category === 'network'`: a mounted SMB share is one of those, and `disconnectPlace` can't speak its OS mount.
 - **`wordEjectRefusal(e)` words every eject refusal** from `errors.eject.*`; ❌ never toast `String(e)` or `diskutil`'s

@@ -32,9 +32,20 @@ describe('connection-state predicates', () => {
     expect(ALL.filter((state) => isLiveSession(state))).toEqual(['direct', 'os_mount'])
   })
 
-  it('offers Disconnect only where there is something to disconnect', () => {
+  it('offers Disconnect wherever a volume is REGISTERED, and nowhere else', () => {
     // ❌ Not `saved`: a greyed row was never connected, so "Disconnect" would
-    // promise an action with no subject.
-    expect(ALL.filter((state) => showsDisconnect(state))).toEqual(['direct', 'disconnected'])
+    // promise an action with no subject. ❗ Both sign-in states ARE in: the
+    // volume is registered and its session stopped, which is exactly a thing to
+    // drop. Leaving them out was a dead end — a share that fell to
+    // `needs_sign_in` could be signed into or forgotten and never dropped — and
+    // the changed-key banner's own Disconnect is the documented way out of a host
+    // key that stopped matching. ❌ `os_mount` stays out because the WORD differs
+    // there (it says Eject); `isLiveSession` is what covers it.
+    expect(ALL.filter((state) => showsDisconnect(state))).toEqual([
+      'direct',
+      'disconnected',
+      'needs_sign_in',
+      'needs_host_key_approval',
+    ])
   })
 })

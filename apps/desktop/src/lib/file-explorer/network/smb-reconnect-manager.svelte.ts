@@ -485,7 +485,8 @@ export function reconnectCycleLines(attemptIndex: number): string[] {
  */
 function totalDurationLabel(): string {
   const seconds = Math.round(TOTAL_DURATION_MS / 1000)
-  if (seconds < 90) return tString('servers.paneState.retryTotalSeconds', { seconds, secondsText: formatInteger(seconds) })
+  if (seconds < 90)
+    return tString('servers.paneState.retryTotalSeconds', { seconds, secondsText: formatInteger(seconds) })
   const minutes = Math.round(seconds / 60)
   return tString('servers.paneState.retryTotalMinutes', { minutes, minutesText: formatInteger(minutes) })
 }

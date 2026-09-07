@@ -2395,8 +2395,8 @@ Begriffe:
   `tippen` in § Der Wiederverbindungs-Zyklus: die verbietet `tippen` fürs AUSFÜLLEN eines Felds (dort `eingeben`), hier
   ist es die Fingergeste auf einem Touchscreen, für die Android selbst `tippen` sagt.
 - **`Android platform tools` → `Android Platform Tools`** · unverändert aus `style.md` § Terminology and glossary
-  (developer.android.com/tools/adb?hl=de); `adb.connect.adbNotInstalled` übernimmt den Namen zeichengleich
-  von `settings.fileOperations.adbEnabled.description`.
+  (developer.android.com/tools/adb?hl=de); `adb.connect.adbNotInstalled` übernimmt den Namen zeichengleich von
+  `settings.fileOperations.adbEnabled.description`.
 - **`the Android tools` (generisch, nicht der Produktname) → `die Android-Tools`** · schon im Katalog („Wenn du keine
   Android-Tools installiert hast“, `settings.fileOperations.adbEnabled.description`) und die Glossarzeile
   `tooling → Tools` · `high`. Der Produktname steht groß und ohne Bindestrich, das generische Wort klein mit: so bleiben
