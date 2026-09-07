@@ -425,6 +425,10 @@
   "@menu.context.addToFavorites": {
     "sourceHash": "7f3c078"
   },
+  "menu.context.hideFunctionKeyBar": "Functietoetsbalk verbergen",
+  "@menu.context.hideFunctionKeyBar": {
+    "sourceHash": "343a561"
+  },
   "menu.context.makeAvailableOffline": "Maak offline beschikbaar",
   "@menu.context.makeAvailableOffline": {
     "sourceHash": "b75c09f"

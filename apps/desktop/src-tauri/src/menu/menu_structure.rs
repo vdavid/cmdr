@@ -1,7 +1,7 @@
 //! Hierarchical menu structure assembly.
 //!
 //! Builds the top-level application menu, context menus (file, breadcrumb,
-//! tab, network host), and the viewer-window menu. Delegates the
+//! tab, network host, function key bar), and the viewer-window menu. Delegates the
 //! per-platform menu bar shape to `menu::macos::build_menu_macos` and
 //! `menu::linux::build_menu_linux`.
 
@@ -38,11 +38,11 @@ use super::{
 use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EDIT_MENU_ID, EJECT_VOLUME_ID,
     FAVORITE_REMOVE_ID, FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID,
-    FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, ImageIndexMenuState, MenuItems,
-    NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
-    SERVER_DISCONNECT_ID, SERVER_EDIT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_OPEN_ID, SERVER_PIN_ID,
-    SERVER_UNPIN_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID,
-    VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems, image_index_menu_items,
+    FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, FUNCTION_KEY_BAR_HIDE_ID, ImageIndexMenuState,
+    MenuItems, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID,
+    RENAME_ID, SERVER_DISCONNECT_ID, SERVER_EDIT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_OPEN_ID,
+    SERVER_PIN_ID, SERVER_UNPIN_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID,
+    TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems, image_index_menu_items,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -454,6 +454,23 @@ pub fn build_parent_row_context_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::R
         None::<&str>,
     )?;
     menu.append(&add_favorite_item)?;
+    Ok(menu)
+}
+
+/// Builds the minimal context menu for the function key bar: a single "Hide function key bar"
+/// item. Unlike the parent-row favorite, the action needs no right-clicked context to stash, so
+/// `on_menu_event` routes the click straight to the frontend via the `FunctionKeyBarHideRequested`
+/// event rather than intercepting it with stashed state.
+pub fn build_function_key_bar_context_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
+    let menu = Menu::new(app)?;
+    let hide_item = MenuItem::with_id(
+        app,
+        FUNCTION_KEY_BAR_HIDE_ID,
+        menu_t("menu.context.hideFunctionKeyBar"),
+        true,
+        None::<&str>,
+    )?;
+    menu.append(&hide_item)?;
     Ok(menu)
 }
 

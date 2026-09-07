@@ -3056,3 +3056,9 @@ De twee regels onder de grijze velden `Adres` en `Gebruikersnaam`, wanneer de ge
   verdubbelde `''` laat `i18n-icu` falen. In deze twee waarden staat er geen.
 - De referentieverzameling ontbreekt op deze machine, maar `Finder.app` levert hetzelfde Tier-1-bewijs rechtstreeks uit
   het systeem (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (de rij met functietoets-commandoknoppen onderin het venster) → functietoetsbalk · al vastgelegd in
+  de catalogus (`settings.appearance.showFunctionKeyBar.label`); hergebruikt voor het contextmenu-item en de
+  bijbehorende toast · high

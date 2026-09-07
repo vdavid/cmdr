@@ -257,6 +257,10 @@
   "@fileExplorer.functionKeyBar.deleteAction": {
     "sourceHash": "e2d0a54"
   },
+  "fileExplorer.functionKeyBar.hiddenToast": "Thanh phím chức năng hiện đã ẩn, có thể bật lại bất cứ lúc nào trong <settingsLink>Cài đặt</settingsLink>.",
+  "@fileExplorer.functionKeyBar.hiddenToast": {
+    "sourceHash": "f961d3b"
+  },
   "fileExplorer.typeToJump.ariaLabel": "Nhảy tới {buffer}",
   "@fileExplorer.typeToJump.ariaLabel": {
     "sourceHash": "da879a5"

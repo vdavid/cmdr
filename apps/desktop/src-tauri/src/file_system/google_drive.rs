@@ -40,6 +40,7 @@ use std::path::Path;
 /// The extended attribute Drive for desktop stamps on streamed files and folders.
 /// The `#S` suffix is macOS's File Provider "syncable attribute" marker and is
 /// part of the name: `xattr::get` with the bare name finds nothing.
+#[cfg(target_os = "macos")]
 pub const DRIVE_ITEM_ID_XATTR: &str = "com.google.drivefs.item-id#S";
 
 /// The canonical web URL for a Drive item, by item kind.

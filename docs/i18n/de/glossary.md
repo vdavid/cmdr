@@ -2548,3 +2548,9 @@ wird.
   EINFACH, ein verdoppeltes `''` lässt `i18n-icu` scheitern. In diesen beiden Werten kommt keiner vor.
 - Die Referenzsammlung fehlt auf dieser Maschine, aber `Finder.app` liefert dieselbe Tier-1-Evidenz direkt aus dem
   System (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (die Zeile mit den Funktionstasten-Befehlsschaltflächen am unteren Fensterrand) →
+  Funktionstastenleiste · bereits im Katalog festgelegt (`settings.appearance.showFunctionKeyBar.label`); für das
+  Kontextmenü-Element und den zugehörigen Toast wiederverwendet · high

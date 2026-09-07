@@ -279,9 +279,12 @@ the middle button included, is handed straight back.
 
 ## Right-click ownership
 
-Cmdr owns right-click in the main window: file rows, tabs, the breadcrumb, volume rows, query results, and network rows
-each build their own native macOS menu, so `+page.svelte` installs a document `contextmenu` listener that
-`preventDefault()`s WKWebView's menu. Without it every one of those clicks would show two menus.
+Cmdr owns right-click in the main window: file rows, tabs, the breadcrumb, volume rows, query results, network rows, and
+the function key bar each build their own native macOS menu, so `+page.svelte` installs a document `contextmenu`
+listener that `preventDefault()`s WKWebView's menu. Without it every one of those clicks would show two menus.
+
+Because that suppressor runs on every non-text-field target, a surface's own `oncontextmenu` doesn't need to
+`preventDefault()` again; `FunctionKeyBar.svelte` skips it and only opens Cmdr's menu.
 
 Text fields are the exception. WebKit's editing menu (Cut, Copy, Paste, Select All, plus the system Services and
 spelling entries) is exactly what a text field should offer, and it acts on the field through WebKit's own editing

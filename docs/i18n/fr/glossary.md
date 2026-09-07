@@ -3031,3 +3031,9 @@ enregistré.
   un `''` doublé fait échouer `i18n-icu`. Aucune des deux valeurs n'en contient.
 - La pile de référence est absente de cette machine, mais `Finder.app` fournit la même preuve de niveau 1 directement
   depuis le système (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (la rangée de boutons de commande des touches de fonction en bas de la fenêtre) → barre des touches
+  de fonction · déjà fixé dans le catalogue (`settings.appearance.showFunctionKeyBar.label`) ; réutilisé pour l'élément
+  du menu contextuel et son toast · high

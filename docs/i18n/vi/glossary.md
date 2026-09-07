@@ -2670,3 +2670,8 @@ Hai dòng dưới hai ô đã bị làm mờ `Địa chỉ` và `Tên người d
   đôi sẽ làm `i18n-icu` hỏng. Hai giá trị này không có dấu nháy nào.
 - Kho tham chiếu không có trên máy này, nhưng `Finder.app` cho đúng bằng chứng Tier 1 lấy thẳng từ hệ thống
   (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
+
+## Function key bar context menu (2026-09-07)
+
+- function key bar (hàng nút lệnh phím chức năng ở cuối cửa sổ) → thanh phím chức năng · đã được chốt trong danh mục
+  (`settings.appearance.showFunctionKeyBar.label`); dùng lại cho mục menu ngữ cảnh và thông báo đi kèm · high
