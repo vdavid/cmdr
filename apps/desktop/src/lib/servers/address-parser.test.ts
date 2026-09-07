@@ -175,6 +175,23 @@ describe('parseServerAddress: folding and refusing', () => {
     expect(parseServerAddress('  sftp://nas.local  ')).toMatchObject({ host: 'nas.local' })
   })
 
+  /**
+   * ❗ A pasted URL may carry `user:password@`. The password must never reach the
+   * Username field, the volume id, or the saved store: all three are plain text
+   * a person reads, and the id is what the Keychain scope is keyed on.
+   */
+  it('takes the account out of a URL that carries a password, and drops the password', () => {
+    expect(parseServerAddress('https://ada:hunter2@nas.local/dav')).toMatchObject({
+      protocol: 'webdav',
+      host: 'nas.local',
+      username: 'ada',
+    })
+  })
+
+  it('refuses a URL whose userinfo is a password with no account', () => {
+    expect(parseServerAddress('sftp://:hunter2@nas.local')).toEqual({ kind: 'unparsed' })
+  })
+
   it.each([
     ['', 'nothing typed yet'],
     ['   ', 'whitespace only'],

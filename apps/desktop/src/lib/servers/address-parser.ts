@@ -142,9 +142,16 @@ function readEndpoint(rest: string, protocol: ServerProtocol, secure: boolean | 
   const rawPath = slash === -1 ? '' : rest.slice(slash)
 
   const at = authority.lastIndexOf('@')
-  const username = at === -1 ? undefined : authority.slice(0, at)
+  const userinfo = at === -1 ? undefined : authority.slice(0, at)
   const hostPort = authority.slice(at + 1)
-  if (at !== -1 && username === '') return UNPARSED
+  if (at !== -1 && userinfo === '') return UNPARSED
+  // ❗ A URL's userinfo may be `user:password`. Only the account survives: the
+  // rest of this parse feeds the visible Username field, the volume id, and the
+  // Keychain scope keyed on it, and a password does not belong in any of the
+  // three. The person retypes it into the password field, which is the one place
+  // that treats it as a secret.
+  const username = userinfo?.split(':', 1)[0]
+  if (userinfo !== undefined && username === '') return UNPARSED
 
   const colon = hostPort.lastIndexOf(':')
   const host = colon === -1 ? hostPort : hostPort.slice(0, colon)
