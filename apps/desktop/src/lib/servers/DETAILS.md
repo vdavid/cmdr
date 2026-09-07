@@ -122,7 +122,9 @@ SFTP.
 - `key_passphrase`: the same, with the field labelled for a key file's passphrase and `autocomplete="off"` — a
   passphrase is not the account's password, and autofill must not offer one.
 - `username_password { guestAllowed }`: username editable, plus a guest `RadioGroup` where the share allows one. SMB's
-  reconnect accepts a new username and rewrites its params, which is how re-auth-as-someone-else works.
+  reconnect accepts a new username and rewrites its params, which is how re-auth-as-someone-else works. The field
+  carries the "Example: barry" placeholder, so an empty box says what kind of thing goes in it; the remembered username
+  (`../file-explorer/network/smb-sign-in.ts`) fills the VALUE when there is one, and the placeholder steps aside.
 
 **Reserved, ❌ not added until a producer exists** (`crates/cmdr-fs/src/volume/connection.rs` carries the same list):
 `access_keys { sessionToken }` for S3 (access key id, secret access key, optional session token) and

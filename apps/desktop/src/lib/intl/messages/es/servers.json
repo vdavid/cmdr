@@ -1,4 +1,8 @@
 {
+  "servers.sheet.usernamePlaceholder": "Ejemplo: marta",
+  "@servers.sheet.usernamePlaceholder": {
+    "sourceHash": "1b5b09c"
+  },
   "servers.pinHint.title": "Tu grupo Red se está haciendo largo",
   "@servers.pinHint.title": {
     "sourceHash": "0cf001a"

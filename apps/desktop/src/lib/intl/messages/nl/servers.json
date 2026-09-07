@@ -1,4 +1,8 @@
 {
+  "servers.sheet.usernamePlaceholder": "Voorbeeld: bram",
+  "@servers.sheet.usernamePlaceholder": {
+    "sourceHash": "1b5b09c"
+  },
   "servers.pinHint.title": "Je groep Netwerk wordt lang",
   "@servers.pinHint.title": {
     "sourceHash": "0cf001a"

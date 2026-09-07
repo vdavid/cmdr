@@ -1,4 +1,8 @@
 {
+  "servers.sheet.usernamePlaceholder": "Például: anna",
+  "@servers.sheet.usernamePlaceholder": {
+    "sourceHash": "1b5b09c"
+  },
   "servers.pinHint.title": "Kezd hosszúra nyúlni a Hálózat csoportod",
   "@servers.pinHint.title": {
     "sourceHash": "0cf001a"
