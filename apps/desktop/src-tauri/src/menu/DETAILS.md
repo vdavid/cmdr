@@ -18,10 +18,13 @@ window focus context.
 - `menu_items.rs`: small-piece builders and platform-aware helpers: `build_sort_submenu`,
   `build_zoom_submenu`, `register_item`, `register_sort_items`, `truncate_for_menu_label`, the `copy_path_accelerator` /
   `show_in_file_manager_*` / `full_view_label` / `brief_view_label` platform helpers, and the
-  `SortSubmenuItems` struct.
+  `SortSubmenuItems` struct, plus `DetachWord` / `detach_label`, which decide whether a row's leave-this-volume item
+  reads `Eject ({name})` or `Disconnect` (a phone gets the second: `adb` has no per-client detach, so nothing is made
+  safe to unplug).
 - `menu_structure.rs`: hierarchical assembly: the `build_menu` dispatcher, file context menu
   (`build_context_menu`), breadcrumb / tab / network-host / volume-selector-row context menus
-  (`build_volume_row_context_menu`: favorite Rename/Remove or volume Eject), the viewer-window menu
+  (`build_volume_row_context_menu`: favorite Rename/Remove, a server's Disconnect/Pin/Forget items, or the
+  `detach_label` item), the viewer-window menu
   (`build_viewer_menu`), plus the `FileContextInfo` and `ContextMenuResult` types.
 - `install.rs`: `at_startup`, the single call `lib.rs` makes in `setup`: pin the UI language, build the bar,
   run the macOS AppKit passes, and place the `MenuState` everything else mutates. Order inside is load-bearing.

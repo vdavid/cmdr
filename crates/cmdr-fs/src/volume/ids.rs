@@ -298,6 +298,17 @@ pub fn adb_volume_id(serial: &str) -> String {
     derived_id("adb", serial, &[serial])
 }
 
+/// Whether `id` names an Android device reached over ADB.
+///
+/// The Rust twin of `isAdbVolumeId` in `adb-path-utils.ts`, and the same test:
+/// the scheme prefix [`adb_volume_id`] mints. Shape-only, like
+/// [`is_mtp_device_id`](super::mtp_ids::is_mtp_device_id): it does NOT prove the
+/// phone is attached. Used where a phone must read differently from a disk,
+/// which is anywhere the word "Eject" would otherwise appear.
+pub fn is_adb_volume_id(id: &str) -> bool {
+    id.starts_with("adb-")
+}
+
 /// Whether `id` predates the current ID scheme, so the state it keys can never
 /// be reached again.
 ///
@@ -613,6 +624,16 @@ mod id_tests {
     }
 
     // ── Cross-scheme separation ───────────────────────────────────────────
+
+    #[test]
+    fn a_phone_is_recognizable_from_its_id_alone() {
+        // The native menus have only the volume id to go on when they decide
+        // whether the row's detach control says Eject or Disconnect.
+        assert!(is_adb_volume_id(&adb_volume_id("39041FDJH00A0K")));
+        assert!(!is_adb_volume_id(&mtp_device_id("39041FDJH00A0K")));
+        assert!(!is_adb_volume_id(&path_volume_id("/Volumes/Backup")));
+        assert!(!is_adb_volume_id(DEFAULT_VOLUME_ID));
+    }
 
     #[test]
     fn ids_from_different_schemes_never_collide() {

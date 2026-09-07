@@ -66,6 +66,7 @@ pub use menu_handlers::handle_menu_event;
 pub use menu_handlers::{
     cleanup_macos_menus, cleanup_macos_menus_from_command, set_macos_menu_icons, set_macos_menu_icons_from_command,
 };
+pub(crate) use menu_items::DetachWord;
 pub use menu_items::pin_tab_label;
 pub use menu_structure::{
     FileContextInfo, ServerRowMenu, build_breadcrumb_context_menu, build_context_menu, build_menu,

@@ -27,8 +27,8 @@ use super::OPEN_TERMINAL_HERE_ID;
 #[cfg(target_os = "macos")]
 use super::menu_items::APP_MENU_TITLE;
 use super::menu_items::{
-    COPY_FILENAME_MAX_CHARS, copy_path_accelerator, pin_tab_label, show_in_file_manager_accelerator,
-    show_in_file_manager_label, truncate_for_menu_label,
+    COPY_FILENAME_MAX_CHARS, DetachWord, copy_path_accelerator, detach_label, pin_tab_label,
+    show_in_file_manager_accelerator, show_in_file_manager_label, truncate_for_menu_label,
 };
 #[cfg(target_os = "macos")]
 use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, HELP_MENU_ID, QUICK_LOOK_ID};
@@ -37,9 +37,9 @@ use super::{
     FAVORITE_REMOVE_ID, FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID,
     FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, ImageIndexMenuState, MenuItems,
     NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
-    SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_PIN_ID, SERVER_UNPIN_ID,
-    SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID,
-    ViewMode, ViewerMenuItems, image_index_menu_items,
+    SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_PIN_ID, SERVER_UNPIN_ID, SHOW_IN_FINDER_ID,
+    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
+    image_index_menu_items,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -394,9 +394,10 @@ pub fn build_parent_row_context_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::R
 ///
 /// `accelerator` is the user's configured shortcut for the "Copy path" command (in
 /// Tauri accelerator format, e.g. "Cmd+Opt+C"), or empty if none is set.
-/// `eject_volume_name`, when present, appends an `Eject ({name})` item that lets
-/// the user eject the volume the breadcrumb represents. The caller is responsible
-/// for stashing the matching `volume_id` in `MenuState.volume_eject_context` so
+/// `eject_volume_name`, when present, appends the detach item that lets the user
+/// leave the volume the breadcrumb represents: `Eject ({name})` for a disk,
+/// `Disconnect` for a phone (`detach_word`). The caller is responsible for
+/// stashing the matching `volume_id` in `MenuState.volume_eject_context` so
 /// `on_menu_event` can dispatch the click.
 ///
 /// When `eject_busy` is true, the item is rendered disabled with a ` (busy)`
@@ -407,6 +408,7 @@ pub fn build_breadcrumb_context_menu<R: Runtime>(
     accelerator: &str,
     eject_volume_name: Option<&str>,
     eject_busy: bool,
+    detach_word: DetachWord,
 ) -> tauri::Result<Menu<R>> {
     let menu = Menu::new(app)?;
     let accel: Option<&str> = if accelerator.is_empty() {
@@ -426,7 +428,7 @@ pub fn build_breadcrumb_context_menu<R: Runtime>(
         let eject_item = MenuItem::with_id(
             app,
             EJECT_VOLUME_ID,
-            eject_label(name, eject_busy),
+            detach_label(name, eject_busy, detach_word),
             !eject_busy,
             None::<&str>,
         )?;
@@ -509,18 +511,6 @@ fn append_server_row_items<R: Runtime>(
         menu.append(&item)?;
     }
     Ok(())
-}
-
-/// The "Eject (Backup)" label, in its busy variant while a write op still touches
-/// the volume. Shared by the breadcrumb and volume-row menus so the two can't
-/// drift; the volume name is uncontrolled, so it rides in as a literal token.
-fn eject_label(name: &str, busy: bool) -> String {
-    let key = if busy {
-        "menu.volume.ejectBusy"
-    } else {
-        "menu.volume.eject"
-    };
-    menu_t_with(key, &[("name", name)])
 }
 
 /// Builds a menu for viewer windows (built from scratch on all platforms).
@@ -700,15 +690,17 @@ pub fn build_network_host_context_menu(
 
 /// Builds the context menu for a row in the volume-selector dropdown.
 ///
-/// Favorites get `Rename` + `Remove`; an ejectable volume gets an `Eject ({name})`
-/// item (disabled with a ` (busy)` suffix while a write op touches it, mirroring the
-/// breadcrumb menu and the inline eject button). The caller stashes the target id +
+/// Favorites get `Rename` + `Remove`; an ejectable volume gets its detach item,
+/// `Eject ({name})` for a disk and `Disconnect` for a phone (`detach_word`),
+/// disabled with a ` (busy)` suffix while a write op touches it, mirroring the
+/// breadcrumb menu and the inline control. The caller stashes the target id +
 /// name in `MenuState.volume_row_context` so `on_menu_event` can dispatch the click.
 pub fn build_volume_row_context_menu<R: Runtime>(
     app: &AppHandle<R>,
     is_favorite: bool,
     eject_volume_name: Option<&str>,
     eject_busy: bool,
+    detach_word: DetachWord,
     server: Option<&ServerRowMenu>,
 ) -> tauri::Result<Menu<R>> {
     let menu = Menu::new(app)?;
@@ -739,7 +731,7 @@ pub fn build_volume_row_context_menu<R: Runtime>(
         let eject_item = MenuItem::with_id(
             app,
             EJECT_VOLUME_ID,
-            eject_label(name, eject_busy),
+            detach_label(name, eject_busy, detach_word),
             !eject_busy,
             None::<&str>,
         )?;
