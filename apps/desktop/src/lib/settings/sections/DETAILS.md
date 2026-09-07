@@ -176,7 +176,9 @@ sections compose).
   with a Browse button (`@tauri-apps/plugin-dialog`'s `open`, permitted by `capabilities/settings.json`), and, only
   while `adb` is missing, a `CopyBox` carrying `brew install android-platform-tools`. ❗ `recheckAdbInstall` runs ONE
   call per click and is re-entrancy guarded, ❌ never on mount and ❌ never polled: it is the only path allowed to retry
-  `adb start-server`. Mount reads `getAdbInstallStatus`, which looks nothing up. Both settings live-apply together
+  `adb start-server`. Mount reads `getAdbInstallStatus`, which looks nothing up. A Browse pick re-checks too, ❌ not
+  reads: the path only takes effect once the tracker restarts under it, so a status read there would answer about the
+  OLD binary, and choosing a file is exactly the human action the re-check budget is per. Both settings live-apply together
   through `$lib/adb/adb-settings.ts`; this section only writes them.
 - **`GitSection.svelte`**: `File systems > Git`: one unlabeled `SectionCard`, gated via `anyVisible(shouldShow, ...)`
 - **`ViewerSection.svelte`**: `Viewer`: one unlabeled `SectionCard`, gated via `anyVisible(shouldShow, ...)`
