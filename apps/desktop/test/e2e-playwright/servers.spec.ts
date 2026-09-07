@@ -25,7 +25,15 @@
 import os from 'node:os'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, emitBackendEvent, escapeOverlayUntilGone } from './helpers.js'
+import { ensureAppReady, escapeOverlayUntilGone } from './helpers.js'
+import {
+  openVolumePicker,
+  publishSyntheticVolumes,
+  restoreRealVolumes as dropSyntheticVolumes,
+  switcherNames,
+  switcherRowHtml,
+  SYNTHETIC_VOLUME_DEFAULTS,
+} from './synthetic-volumes.js'
 import { initMcpClient, mcpCall, mcpReadResource } from '../e2e-shared/mcp-client.js'
 
 type PageLike = TauriPage | BrowserPageAdapter
@@ -36,7 +44,6 @@ const LOCAL_VOLUME_NAME = os.platform() === 'linux' ? 'Root' : 'Macintosh HD'
 /** The hub row's name, which is also the Rust `SERVERS_VOLUME_NAME` const. */
 const SERVERS_VOLUME_NAME = 'Servers'
 
-const PICKER_TRIGGER = '.volume-name'
 const PICKER_DROPDOWN = '.volume-dropdown'
 
 /**
@@ -48,40 +55,22 @@ const SYNTHETIC_ID = 'sftp-e2e-nothing-here.invalid-22-e2e'
 const SYNTHETIC_NAME = 'E2E synthetic server'
 const SYNTHETIC_PATH = 'sftp://e2e@e2e-nothing-here.invalid:22'
 
-/**
- * Re-broadcasts the real volume list with one `saved` SFTP place appended.
- *
- * ❗ Reads the real list first: `volumes-changed` replaces what the store holds,
- * so emitting the fake row alone would take every disk off screen and strand
- * both panes.
- */
+/** Puts the saved place into the frontend's store, beside the real volumes. */
 async function publishSyntheticServer(tauriPage: PageLike): Promise<void> {
-  const real = await tauriPage.evaluate(
-    `window.__TAURI_INTERNALS__.invoke('list_volumes').then(function (r) { return r.data; })`,
-  )
-  const row = {
-    id: SYNTHETIC_ID,
-    name: SYNTHETIC_NAME,
-    path: SYNTHETIC_PATH,
-    category: 'network',
-    icon: null,
-    isEjectable: false,
-    fsType: 'sftp',
-    supportsTrash: false,
-    mountIsReadOnly: false,
-    isDiskImage: false,
-    connectionState: 'saved',
-    // ❗ Pinned, or the switcher hides it: the LISTING carries every saved place
-    // and `volume-grouping.ts` applies the user's cap over this field.
-    pinned: true,
-    deviceReadiness: null,
-    usbSpeed: null,
-    capabilities: null,
-  }
-  await emitBackendEvent(tauriPage, 'volumes-changed', {
-    data: [...(real as unknown[]), row],
-    timedOut: false,
-  })
+  await publishSyntheticVolumes(tauriPage, [
+    {
+      ...SYNTHETIC_VOLUME_DEFAULTS,
+      id: SYNTHETIC_ID,
+      name: SYNTHETIC_NAME,
+      path: SYNTHETIC_PATH,
+      category: 'network',
+      fsType: 'sftp',
+      connectionState: 'saved',
+      // ❗ Pinned, or the switcher hides it: the LISTING carries every saved place
+      // and `volume-grouping.ts` applies the user's cap over this field.
+      pinned: true,
+    },
+  ])
 }
 
 /**
@@ -92,46 +81,13 @@ async function publishSyntheticServer(tauriPage: PageLike): Promise<void> {
  * `.volume-dropdown` behind.
  */
 async function restoreRealVolumes(tauriPage: PageLike): Promise<void> {
-  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('refresh_volumes')`)
-  await expect
-    .poll(async () => !(await switcherNames(tauriPage)).includes(SYNTHETIC_NAME), { timeout: 5000 })
-    .toBeTruthy()
+  await dropSyntheticVolumes(tauriPage, SYNTHETIC_NAME)
   await closeVolumePicker(tauriPage)
-}
-
-/** Opens the volume switcher, or leaves it open. */
-async function openVolumePicker(tauriPage: PageLike): Promise<void> {
-  if (await tauriPage.isVisible(PICKER_DROPDOWN)) return
-  await tauriPage.click(PICKER_TRIGGER)
-  await tauriPage.waitForSelector(PICKER_DROPDOWN, 5000)
 }
 
 async function closeVolumePicker(tauriPage: PageLike): Promise<void> {
   if (!(await tauriPage.isVisible(PICKER_DROPDOWN))) return
   await escapeOverlayUntilGone(tauriPage, PICKER_DROPDOWN)
-}
-
-/** Every label the switcher is showing right now. */
-async function switcherNames(tauriPage: PageLike): Promise<string[]> {
-  await openVolumePicker(tauriPage)
-  return tauriPage.evaluate<string[]>(`(function () {
-    var out = [];
-    document.querySelectorAll('.volume-item .volume-label').forEach(function (el) { out.push(el.textContent || ''); });
-    return out;
-  })()`)
-}
-
-/** The row's own DOM, so a test can read the protocol slot and the dot beside it. */
-async function switcherRowHtml(tauriPage: PageLike, label: string): Promise<string> {
-  await openVolumePicker(tauriPage)
-  return tauriPage.evaluate<string>(`(function () {
-    var items = document.querySelectorAll('.volume-item');
-    for (var i = 0; i < items.length; i++) {
-      var el = items[i].querySelector('.volume-label');
-      if (el && el.textContent === ${JSON.stringify(label)}) return items[i].innerHTML;
-    }
-    return '';
-  })()`)
 }
 
 /** The one sign-in sheet, wherever it is opened from. */
