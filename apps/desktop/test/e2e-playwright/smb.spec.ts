@@ -145,10 +145,10 @@ test.afterEach(() => {
 
 // ── Helper ───────────────────────────────────────────────────────────────────
 
-/** Checks whether a host name appears in the network browser's host list. */
+/** Checks whether a host name appears in the servers hub's row list. */
 async function hostExistsInPane(tauriPage: Parameters<typeof pollUntil>[0], hostName: string): Promise<boolean> {
   return tauriPage.evaluate<boolean>(`(function() {
-        var rows = document.querySelectorAll('.host-row .col-name');
+        var rows = document.querySelectorAll('.server-row .col-name');
         for (var i = 0; i < rows.length; i++) {
             if (rows[i].textContent.indexOf(${JSON.stringify(hostName)}) >= 0) return true;
         }
