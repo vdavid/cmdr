@@ -157,6 +157,50 @@ describe('a place that is asking, with nothing registered', () => {
   })
 })
 
+describe('why the sheet opened', () => {
+  it('carries the refusal that sent the user here, so the first round already says so', async () => {
+    ipc.mock('connect_saved_place', () => ({ outcome: 'authentication_rejected' }))
+    const seam = openSignInForPlace({
+      volumeId: VOLUME_ID,
+      registered: false,
+      firstOutcome: { outcome: 'authentication_rejected' },
+    })
+    const request = await parkedRequest()
+    if (request.mode !== 'sign-in') throw new Error('unreachable')
+    // ❗ An empty password box with no sentence asks a person to guess why they
+    // are being asked. The refusal goes under the field it is about.
+    expect(request.refusal).toBe('authentication_rejected')
+    closeSignInSheet({ kind: 'cancelled' })
+    await seam
+  })
+
+  it('says "nothing was offered" for a place that was never asked for one', async () => {
+    const seam = openSignInForPlace({
+      volumeId: VOLUME_ID,
+      registered: false,
+      firstOutcome: { outcome: 'needs_credentials' },
+    })
+    const request = await parkedRequest()
+    if (request.mode !== 'sign-in') throw new Error('unreachable')
+    // ❌ `needs_credentials` is NOT `authentication_rejected`: nothing was ever
+    // offered, so calling it a rejection accuses a password that never left.
+    expect(request.refusal).toBe('needs_credentials')
+    closeSignInSheet({ kind: 'cancelled' })
+    await seam
+  })
+
+  it('❌ never opens over a shape that asks NOTHING', async () => {
+    // ❗ A key-only or agent-only server: `reconnect_with_credentials` answers
+    // `NotSupported` every time, so a password box over it asks for something
+    // that cannot help. The pane's `signed_out` banner with no button is what
+    // the person should see instead.
+    ipc.mock('get_volume_sign_in_state', () => ({ kind: 'nothing' }))
+    const result = await openSignInForPlace({ volumeId: VOLUME_ID, registered: true })
+    expect(result).toEqual({ signedIn: false })
+    expect(currentSignInRequest()).toBeNull()
+  })
+})
+
 describe('a REGISTERED place whose session wants a credential', () => {
   it('mends it and ❌ never dials', async () => {
     ipc.mock('reconnect_volume_with_credentials', () => null)
