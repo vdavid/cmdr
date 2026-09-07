@@ -301,7 +301,7 @@ async fn stop_index_blocking(volume_id: &str) {
 
 /// Disconnects a single SMB volume by tearing down its OS mount.
 ///
-/// The "Disconnect" affordance in `SmbReconnectingView` / the gave-up
+/// The "Disconnect" affordance in the pane's reconnect view and the gave-up
 /// `VolumeUnreachableBanner` calls this (via the `disconnect_smb_volume`
 /// command). On macOS it runs `diskutil unmount`; FSEvents then drives the
 /// standard `Volume::on_unmount` → `VolumeManager`-removal pipeline (same as an

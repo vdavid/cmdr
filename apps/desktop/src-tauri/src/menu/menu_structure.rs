@@ -36,7 +36,7 @@ use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EDIT_MENU_ID, EJECT_VOLUME_ID,
     FAVORITE_REMOVE_ID, FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID,
     FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, ImageIndexMenuState, MenuItems,
-    NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
+    NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
     SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID,
     TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
     image_index_menu_items,
@@ -672,14 +672,14 @@ pub fn build_network_host_context_menu(
         if !is_manual {
             menu.append(&PredefinedMenuItem::separator(app)?)?;
         }
-        let forget_password = MenuItem::with_id(
+        let forget_secret = MenuItem::with_id(
             app,
-            NETWORK_HOST_FORGET_PASSWORD_ID,
+            NETWORK_HOST_FORGET_SECRET_ID,
             menu_t("menu.network.forgetSavedPassword"),
             true,
             None::<&str>,
         )?;
-        menu.append(&forget_password)?;
+        menu.append(&forget_secret)?;
     }
 
     Ok(menu)
