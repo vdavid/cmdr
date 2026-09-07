@@ -257,11 +257,11 @@ Vietnamese has no grammatical number, so one form covers all counts.
   to "camera", write `một bức ảnh` so `ảnh` doesn't double up; elsewhere keep bare `ảnh`. Evidence: `glossary.md` § Ask
   Cmdr xem bên trong tệp.
 - **`gỡ lỗi qua USB` and `bộ công cụ nền tảng Android` get translated, `adb` / `ADB` / `Android SDK` / `Homebrew`
-  don't.** The `en` `@key.description` on `settings.fileOperations.adbEnabled.*` calls "USB debugging" and "platform
-  tools" product names, but they're descriptive phrases that Android's own Vietnamese UI translates, so a Vietnamese
-  reader looking for the phone toggle needs `Gỡ lỗi qua USB`. What stays verbatim is the command (`adb`), the acronym
-  (`ADB`), and the packaged product names (`Android SDK`, `Homebrew`), matching how the sibling MTP strings keep quoted
-  on-phone menu labels English while translating the prose around them.
+  don't.** The `en` `@key.description` on `settings.fileOperations.adbEnabled.*` asks for both phrases the way the
+  vendor's localized Android renders them, and Android's own Vietnamese UI translates both, so a Vietnamese reader
+  looking for the phone toggle finds `Gỡ lỗi qua USB`. What stays verbatim is the command (`adb`), the acronym (`ADB`),
+  and the packaged product names (`Android SDK`, `Homebrew`), matching how the sibling MTP strings keep quoted on-phone
+  menu labels English while translating the prose around them.
 - **The reference pile can be missing on the machine you're translating from.** The M1 agent box has no
   `_ignored/i18n/vi/` at all (it lives only on David's laptop). The fallback in
   `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" works and is Tier 1 all the same: mine the
