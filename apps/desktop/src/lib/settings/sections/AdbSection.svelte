@@ -101,7 +101,7 @@
 </script>
 
 <SettingsSection title={tString('settings.section.adb')}>
-    {#if anyVisible(shouldShow, 'fileOperations.adbEnabled', 'fileOperations.adbBinaryPath')}
+    {#if anyVisible(shouldShow, 'fileOperations.adbEnabled', 'row:adb.status', 'fileOperations.adbBinaryPath')}
         <SectionCard>
             {#if shouldShow('fileOperations.adbEnabled')}
                 <SettingRow
@@ -112,7 +112,12 @@
                 >
                     <SettingSwitch id="fileOperations.adbEnabled" />
                 </SettingRow>
+            {/if}
 
+            <!-- Its OWN gate, not the switch's: the status block is a searchable row
+                 of its own, so a hit on "re-check" must render it even when the
+                 switch above filtered out. -->
+            {#if shouldShow('row:adb.status')}
                 <div class="status-row">
                     <span class="status-label">{tString('settings.adb.status.label')}</span>
                     <div class="status-body">

@@ -33,6 +33,7 @@ import { fileSystemsSettings } from './definitions/file-systems'
 import { viewerSettings } from './definitions/viewer'
 import { updatesPrivacySettings } from './definitions/updates-privacy'
 import { advancedSettings } from './definitions/advanced'
+import { searchableRows } from './sections/searchable-rows'
 
 // ============================================================================
 // Settings Definitions
@@ -270,44 +271,68 @@ export interface SettingsSection {
 }
 
 /**
- * Build a hierarchical tree structure from the flat settings registry.
+ * Build the nav tree: every (sub)section that has something to show, in
+ * first-appearance order.
+ *
+ * Two sources, and the asymmetry is the point. A SETTING creates its section's
+ * node and lands in `section.settings`. A SEARCHABLE ROW creates the node only,
+ * and only when it says `anchorsSection` — that's for a page whose whole content
+ * is action rows (`Servers (SFTP, WebDAV)`), which no setting would otherwise
+ * put in the sidebar. So `section.settings` stays controls only, and a row still
+ * never decides what renders.
  */
 export function buildSectionTree(): SettingsSection[] {
   const root: SettingsSection[] = []
   const sectionMap = new Map<string, SettingsSection>()
 
-  for (const setting of settingsRegistry) {
-    // Internal-only settings (e.g. `network.firstTriggerDone`) are not nav rows. A
-    // SECTION anchor is the exception: it carries a page whose content is action
-    // rows rather than controls, so it creates the node and still renders nothing.
-    if (setting.hidden && setting.sectionAnchor !== true) continue
-
+  /**
+   * Walks `path`, creating any missing node, and answers the deepest one. A node
+   * created here lands last among its siblings, which for a setting IS registry
+   * order; `after` is how an anchoring row states a place it doesn't have.
+   */
+  function ensureSection(path: string[], after?: string): SettingsSection {
     let currentLevel = root
     let currentPath: string[] = []
+    let section!: SettingsSection
 
-    for (let i = 0; i < setting.section.length; i++) {
-      const sectionName = setting.section[i]
+    for (const sectionName of path) {
       currentPath = [...currentPath, sectionName]
       const pathKey = currentPath.join('/')
 
-      let section = sectionMap.get(pathKey)
-      if (!section) {
-        section = {
+      let existing = sectionMap.get(pathKey)
+      if (!existing) {
+        existing = {
           name: sectionName,
           path: [...currentPath],
           subsections: [],
           settings: [],
         }
-        sectionMap.set(pathKey, section)
-        currentLevel.push(section)
+        sectionMap.set(pathKey, existing)
+
+        const isLeaf = currentPath.length === path.length
+        const afterIndex =
+          isLeaf && after !== undefined ? currentLevel.findIndex((sibling) => sibling.name === after) : -1
+        if (afterIndex === -1) currentLevel.push(existing)
+        else currentLevel.splice(afterIndex + 1, 0, existing)
       }
 
-      if (i === setting.section.length - 1) {
-        if (!setting.hidden) section.settings.push(setting)
-      } else {
-        currentLevel = section.subsections
-      }
+      section = existing
+      currentLevel = existing.subsections
     }
+
+    return section
+  }
+
+  for (const setting of settingsRegistry) {
+    // Internal-only settings (e.g. `network.firstTriggerDone`) are not nav rows,
+    // and don't create one either.
+    if (setting.hidden) continue
+    ensureSection(setting.section).settings.push(setting)
+  }
+
+  // Anchoring rows run last so every sibling a page names already exists.
+  for (const row of searchableRows) {
+    if (row.anchorsSection !== undefined) ensureSection(row.section, row.anchorsSection.after)
   }
 
   return root

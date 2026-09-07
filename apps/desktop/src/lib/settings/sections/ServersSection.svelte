@@ -7,9 +7,9 @@
      * "Servers" row, which is a pane state so a person can navigate, sort, and act
      * on them the way they do files. This page keeps only what the hub can't show.
      *
-     * ❗ The page has no CONTROL of its own, so its sidebar row comes from the
-     * `network.trustedHostKeys` SECTION ANCHOR (`definitions/file-systems.ts`),
-     * which is also what makes "host key" a settings-search hit.
+     * ❗ The page has no CONTROL of its own, so both its sidebar row and its
+     * "host key" search hit come from the anchoring `SearchableRow` in
+     * `ServersSection.rows.ts`, never a registry entry.
      */
     import { onMount } from 'svelte'
     import SettingsSection from '../components/SettingsSection.svelte'
@@ -83,7 +83,7 @@
 </script>
 
 <SettingsSection title={tString('settings.section.servers')}>
-    {#if shouldShow('network.trustedHostKeys')}
+    {#if shouldShow('row:network.trustedHostKeys')}
         <SectionCard label={tString('settings.servers.card.trustedHostKeys')}>
             <p class="card-description">{tString('settings.servers.trustedHostKeys.description')}</p>
 

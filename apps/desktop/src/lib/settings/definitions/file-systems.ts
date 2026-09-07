@@ -110,27 +110,11 @@ export const fileSystemsSettings: SettingDefinitionSource[] = [
     },
   },
 
-  // ========================================================================
-  // File systems › Servers (SFTP, WebDAV)
-  //
-  // ❗ The page carries no setting: its whole content is the trusted-host-key
-  // list, one Forget button per row, and the saved servers live in the hub rather
-  // than here (`docs/specs/servers-hub-plan.md` § D11). So the one entry is a
-  // SECTION anchor: `hidden` (it renders no row) plus `sectionAnchor` (its section
-  // still gets a sidebar row and a summary card), never read or written.
-  // ========================================================================
-  {
-    id: 'network.trustedHostKeys',
-    section: ['File systems', 'Servers (SFTP, WebDAV)'],
-    labelKey: 'settings.servers.card.trustedHostKeys',
-    descriptionKey: 'settings.servers.trustedHostKeys.description',
-    cardKey: 'settings.servers.card.trustedHostKeys',
-    keywords: ['sftp', 'webdav', 'ssh', 'host key', 'fingerprint', 'trust', 'known hosts', 'server', 'forget'],
-    type: 'boolean',
-    default: false,
-    hidden: true,
-    sectionAnchor: true,
-  },
+  // ❗ `File systems › Servers (SFTP, WebDAV)` has NO entry here, on purpose. Its
+  // whole content is the trusted-host-key list, one Forget per row, and the saved
+  // servers live in the hub rather than here (`docs/specs/servers-hub-plan.md`
+  // § D11). Its sidebar row and its search hits come from
+  // `sections/ServersSection.rows.ts`.
 
   // ========================================================================
   // File systems › MTP (Android/Kindle/cameras)

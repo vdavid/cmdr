@@ -14,17 +14,21 @@
 
 import { tString } from '$lib/intl/messages.svelte'
 import type { SearchableEntry, SearchableRow } from '../types'
+import { adbRows } from './AdbSection.rows'
 import { advancedRows } from './AdvancedSection.rows'
 import { askCmdrRows } from './AskCmdrSection.rows'
 import { driveIndexingRows } from './DriveIndexingSection.rows'
 import { keyboardShortcutsRows } from './KeyboardShortcutsSection.rows'
 import { licenseRows } from './LicenseSection.rows'
+import { serversRows } from './ServersSection.rows'
 import { updatesRows } from './UpdatesSection.rows'
 
 /** Every declared row, in section order (search doesn't rank by it; readers do). */
 export const searchableRows: SearchableRow[] = [
   ...driveIndexingRows,
   ...askCmdrRows,
+  ...serversRows,
+  ...adbRows,
   ...updatesRows,
   ...licenseRows,
   ...keyboardShortcutsRows,

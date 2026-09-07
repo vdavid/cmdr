@@ -164,9 +164,8 @@ sections compose).
   (same pattern as FSW above).
 - **`ServersSection.svelte`**: `File systems > Servers (SFTP, WebDAV)`: one "Trusted host keys" `SectionCard` listing
   `listTrustedSftpHostKeys()`, a row per key (host with port, algorithm, fingerprint, the date it was trusted) with a
-  confirmed Forget. ❗ The page has NO setting: saved servers live in the hub, so the sidebar row comes from the
-  `network.trustedHostKeys` SECTION ANCHOR (`../DETAILS.md` § Card groups), and the card is gated on that anchor's
-  `shouldShow`. The list is `null` until the read answers, so the empty sentence can't flash in front of someone who has
+  confirmed Forget. ❗ The page has NO setting: saved servers live in the hub, so both its sidebar row and its card's
+  `shouldShow` gate come from the anchoring row in `ServersSection.rows.ts` (`../DETAILS.md` § Searchable rows). The list is `null` until the read answers, so the empty sentence can't flash in front of someone who has
   keys; a read that throws lands on the same sentence rather than an eternal blank.
 - **`MtpSection.svelte`**: `File systems > MTP (Android/Kindle/cameras)`: one unlabeled `SectionCard`, gated via
   `anyVisible(shouldShow, ...)`
