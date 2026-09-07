@@ -4,9 +4,10 @@ An SFTP or WebDAV place can be pinned: it keeps a greyed row in the volume switc
 and activating that row dials it. An SMB share cannot. It reaches the switcher only while it is mounted, so an unmounted
 share is invisible until the user walks the servers hub down to it again.
 
-Closing that gap is a share-level writer plus one id rule, and both are cheap. The reason it was left out of
-`docs/specs/servers-hub-plan.md` is in that plan's D4: half-building it would have shipped pins that silently never
-match a mounted share.
+Closing that gap is a share-level writer plus one id rule, and both are cheap. The reason it was left out of the servers
+effort is recorded beside the command family that would have carried it
+(`apps/desktop/src-tauri/src/commands/DETAILS.md` § `servers.rs`): half-building it would have shipped pins that
+silently never match a mounted share.
 
 ❌ Nothing here restates a mechanism. Every item points at the doc that owns it.
 
