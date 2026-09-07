@@ -3037,3 +3037,22 @@ De twee regels onder de grijze velden `Adres` en `Gebruikersnaam`, wanneer de ge
   zodat de zin en het scherm hetzelfde woord tonen · `high`.
 - De referentieverzameling stond niet op deze machine (`_ignored/i18n/` ontbreekt ook in de hoofdclone), dus de keuze
   leunt op de al geleverde catalogus en op deze woordenlijst.
+
+## Het contextmenu van de serverrij: `Open` en `Wijzig server…`
+
+- **`Open` (op een serverrij) → `Open`** (`menu.network.open`) · woordelijk gelijk aan `menu.file.open`, want het is
+  dezelfde betekenis: ergens naar binnen gaan, niet een bestand aan een app geven. Het Nederlands scheidt die twee niet,
+  en macOS ook niet: de Finder gebruikt hetzelfde werkwoord in `Open` (`LocalizableMerged` `N151`), `Open met` (`N152`)
+  en `Open in nieuw venster` (`FV7`, het naar-binnen-gaan) (Finder 26.6.2, build 25G83, gelezen op 2026-09-07) · `high`.
+  De kale stam-imperatief valt toevallig samen met het Engelse woord, dus de sleutel draagt een
+  `sameAsSourceJustification`, net als `menu.file.open`.
+- **`Edit server…` → `Wijzig server…`** (`menu.network.edit`), byte voor byte overgenomen uit
+  `commands.serversEdit.label` · `high`. Beide openen hetzelfde blad; twee labels zouden als twee functies lezen. De
+  puntjes zijn het ENE teken `…` (U+2026) en blijven staan. De stam-imperatief past ook bij de buren (`Verbreek`,
+  `Vergeet server`).
+- **Beide gelijkheden worden bewaakt**, ze zijn niet alleen netjes: `i18n-terms` meldt het als twee sleutels met
+  dezelfde Engelse waarde in het Nederlands uit elkaar lopen. Herschrijf je er één, dan moet de partner mee.
+- **`menu.*` is een RAW-familie**: Rust tekent het menu via `menu_t`, nooit via `t()`. Apostrofs blijven dus ENKEL, een
+  verdubbelde `''` laat `i18n-icu` falen. In deze twee waarden staat er geen.
+- De referentieverzameling ontbreekt op deze machine, maar `Finder.app` levert hetzelfde Tier-1-bewijs rechtstreeks uit
+  het systeem (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").

@@ -645,6 +645,14 @@
     "description": "VERB (imperative). Right-click item on a favorite in the volume dropdown: takes it off the favorites list. Nothing on disk is deleted, so avoid a word that sounds like deleting files. Very short label in a narrow dropdown."
   },
 
+  "menu.network.open": "Open",
+  "@menu.network.open": {
+    "description": "VERB (imperative). First right-click item on a SERVER row in the volume switcher: it puts the pane inside that server, connecting first if it isn''t open yet. ❗ Not \"open\" as in unlocking, and not the adjective. This is the same sense as menu.file.open used on a folder (entering it), rather than the sense of handing a file to an app."
+  },
+  "menu.network.edit": "Edit server…",
+  "@menu.network.edit": {
+    "description": "VERB phrase (imperative). Right-click item on a saved SERVER row: opens the form for changing its address, account, or options. Must read word for word the same as commands.serversEdit.label, which opens the very same form from the command palette. The ellipsis is the single character … (U+2026) and means \"this opens something\"; keep it."
+  },
   "menu.network.disconnect": "Disconnect",
   "@menu.network.disconnect": {
     "description": "VERB (imperative). Right-click item on a network server in the volume dropdown: unmounts its shares and drops the connection. Use the exact word your macOS Finder uses for disconnecting from a server. Very short label in a narrow dropdown."

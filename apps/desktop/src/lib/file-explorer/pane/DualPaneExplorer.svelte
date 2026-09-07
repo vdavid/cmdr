@@ -670,9 +670,25 @@
         // the native-menu case.
         unlistenVolumeContextAction = await onVolumeContextAction((payload) => {
             if (payload.action !== 'eject') {
-                // Everything a SERVER row's menu offers (Disconnect, the two
-                // Forgets) is dispatched from one module, shared with the hub.
-                void runServerRowAction(payload)
+                // Everything a SERVER row's menu offers (Open, Edit…, Disconnect,
+                // the pin pair, the two Forgets) is dispatched from one module,
+                // shared with the hub and the palette.
+                void runServerRowAction({
+                    ...payload,
+                    // ❗ Open needs a pane to move, and the `navigate()`
+                    // transaction lives here. Through the same `selectVolume`
+                    // intent a switcher click raises, so the pinned-tab fork,
+                    // focus, and history push all apply.
+                    onOpen: (volumeId: string) => {
+                        const volume = volumes.find((v) => v.id === volumeId)
+                        if (!volume) return
+                        navigateIntent({
+                            pane: explorerState.getFocusedPane(),
+                            to: { selectVolume: { volumeId, path: volume.path } },
+                            source: 'user',
+                        })
+                    },
+                })
                 return
             }
             void (async () => {

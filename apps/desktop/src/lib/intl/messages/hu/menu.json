@@ -512,6 +512,14 @@
   "@menu.volume.removeFavorite": {
     "sourceHash": "c3812fc"
   },
+  "menu.network.open": "Megnyitás",
+  "@menu.network.open": {
+    "sourceHash": "ed077f3"
+  },
+  "menu.network.edit": "Szerver szerkesztése…",
+  "@menu.network.edit": {
+    "sourceHash": "a3282a7"
+  },
   "menu.network.disconnect": "Leválasztás",
   "@menu.network.disconnect": {
     "sourceHash": "acfc5be"

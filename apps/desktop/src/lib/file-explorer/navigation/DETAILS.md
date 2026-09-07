@@ -252,19 +252,24 @@ Right-clicking a dropdown row opens a NATIVE (muda) context menu via `show_volum
 `Rename` + `Remove`, an ejectable volume row gets its detach item (`Eject ({name})` for a disk, `Disconnect` for a
 phone: `DetachWord::for_volume_id` reads the word off the id, so the native menus and the inline control can't drift on
 it, while the ITEM stays `EJECT_VOLUME_ID` because for ADB that already routes to `DeviceDisconnect`), a SERVER row (the
-`server` argument, a `ServerRowMenu` the caller fills from the row's own state) gets `Disconnect` / `Pin to switcher` or
-`Unpin` / `Forget saved password` / `Forget server` instead, and anything else has no menu. A server never gets `Eject`:
-that word promises safe-to-unplug and a server has nothing to unplug. The pin item is the one server item `busy` never
-disables: a pin is a view preference the switcher reads, so moving it while a copy runs breaks nothing, where dropping
-the session or the credential under one does. Right-clicking the closed header opens the native breadcrumb menu
-(`show_breadcrumb_context_menu`) that adds the same detach item alongside "Copy path" when the pane's volume is
-ejectable. All these picks route back through the one `volume-context-action` Tauri event, whose `action` is the TYPED
-`VolumeContextActionKind` (`open`, `eject`, `disconnect`, `pin`, `unpin`, `edit`, `forget-secret`, `forget-server`,
-`rename-favorite`, `remove-favorite`), ❌ never a free string: `eject` is handled in `DualPaneExplorer.svelte` (calls
-`ejectVolume`); `rename-favorite` / `remove-favorite` land in `VolumeBreadcrumb.handleVolumeContextAction`, which only
-acts when its own dropdown `isOpen` (both panes' breadcrumbs receive the global event, but only the open one owns the
-menu it spawned). Going native means the webview is frozen while the menu tracks, so the dropdown's `highlightedIndex`
-can't drift onto another row under the cursor or arrow keys — the menu always acts on the right-clicked row.
+`server` argument, a `ServerRowMenu` the caller fills from the row's own state) gets `Open` / `Edit server…` /
+`Disconnect` / `Pin to switcher` or `Unpin` / `Forget saved password` / `Forget server` instead, and anything else has
+no menu. A server never gets `Eject`: that word promises safe-to-unplug and a server has nothing to unplug. `Open` and
+`Edit server…` lead, the way the row's two purposes rank (going there, and changing what "there" means), and neither is
+disabled by `busy` — navigating into a server a copy is reading from is fine, and editing settings touches no session.
+`Edit server…` needs a SAVED entry to edit, so it is the one gated on `isSaved`; `Forget saved password` is offered
+unconditionally, because deciding otherwise would mean a Keychain read on the right-click path
+(`server-row-actions.ts`). The pin item is the other server item `busy` never disables: a pin is a view preference the
+switcher reads, so moving it while a copy runs breaks nothing, where dropping the session or the credential under one
+does. Right-clicking the closed header opens the native breadcrumb menu (`show_breadcrumb_context_menu`) that adds the
+same detach item alongside "Copy path" when the pane's volume is ejectable. All these picks route back through the one
+`volume-context-action` Tauri event, whose `action` is the TYPED `VolumeContextActionKind` (`open`, `eject`,
+`disconnect`, `pin`, `unpin`, `edit`, `forget-secret`, `forget-server`, `rename-favorite`, `remove-favorite`), ❌ never
+a free string: `eject` is handled in `DualPaneExplorer.svelte` (calls `ejectVolume`); `rename-favorite` /
+`remove-favorite` land in `VolumeBreadcrumb.handleVolumeContextAction`, which only acts when its own dropdown `isOpen`
+(both panes' breadcrumbs receive the global event, but only the open one owns the menu it spawned). Going native means
+the webview is frozen while the menu tracks, so the dropdown's `highlightedIndex` can't drift onto another row under the
+cursor or arrow keys — the menu always acts on the right-clicked row.
 
 **Busy gating.** While a copy / move / delete reads from or writes to a volume, ejecting it is blocked so a disconnect
 can't truncate an in-flight file. `$lib/stores/volume-busy-store.svelte`'s `isVolumeBusy(id)` (fed by the backend

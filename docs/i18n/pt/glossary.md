@@ -2438,3 +2438,19 @@ As duas linhas abaixo dos campos esmaecidos `Endereço` e `Nome de usuário`, qu
   verbo `tocar em` vem da mesma chave, e `celular` é a palavra pt-BR já usada no catálogo · `high`.
 - A pilha de referência não estava nesta máquina (`_ignored/i18n/` também não existe no clone principal), então a
   decisão se apoia no catálogo já publicado e neste glossário.
+
+## O menu de contexto da linha do servidor: `Abrir` e `Editar servidor…`
+
+- **`Open` (numa linha de servidor) → `Abrir`** (`menu.network.open`) · igual a `menu.file.open`, porque é o mesmo
+  sentido: entrar em alguma coisa, não entregar um arquivo a um app. O português não separa as duas acepções, e o macOS
+  também não: o Finder usa o mesmo verbo em `Abrir` (`LocalizableMerged` `N151`), `Abrir Com` (`N152`) e
+  `Abrir em Nova Janela` (`FV7`, o sentido de entrar) (Finder 26.6.2, build 25G83, lido em 2026-09-07) · `high`.
+- **`Edit server…` → `Editar servidor…`** (`menu.network.edit`), copiado byte a byte de `commands.serversEdit.label` ·
+  `high`. Os dois abrem a mesma folha; dois rótulos diferentes se leriam como duas funções. As reticências são o
+  caractere ÚNICO `…` (U+2026) e ficam. Sem artigo, como a irmã `menu.network.forgetServer` («Esquecer servidor»).
+- **As duas igualdades são conferidas por um check**, não são só capricho: o `i18n-terms` avisa quando duas chaves com o
+  mesmo valor em inglês divergem em português. Reescrever uma obriga a reescrever a outra.
+- **`menu.*` é uma família RAW**: o Rust desenha o menu por `menu_t`, nunca por `t()`. Os apóstrofos ficam SIMPLES e um
+  `''` dobrado quebra o `i18n-icu`. Nenhum dos dois valores tem apóstrofo.
+- A pilha de referência não está nesta máquina, mas o `Finder.app` dá a mesma evidência de nível 1 direto do sistema
+  (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").

@@ -175,10 +175,13 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   tab / network host), the view-mode + hidden-files + pin-tab + reopen-tab sync commands, and `activate_window_menu`
   (per-window focus-gain: swaps the macOS app menu bar between main/viewer, then enables/disables file-scoped items via
   the private `set_menu_context` helper; see `menu/DETAILS.md`).
-  - ❗ **`show_volume_row_context_menu` takes an optional `ServerRowMenu`**, and a server row gets Disconnect / Forget
-    saved password / Forget server instead of Eject: "Eject" promises safe-to-unplug and a server has nothing to unplug.
-    The CALLER says which items apply (this command is synchronous, and a secret-store read on the popup path would
-    block the IPC handler thread); `busy_volume_ids()` is filled in here and disables all three exactly like Eject.
+  - ❗ **`show_volume_row_context_menu` takes an optional `ServerRowMenu`**, and a server row gets Open / Edit server… /
+    Disconnect / Pin or Unpin / Forget saved password / Forget server instead of Eject: "Eject" promises safe-to-unplug
+    and a server has nothing to unplug. The CALLER says which items apply (this command is synchronous, and a
+    secret-store read on the popup path would block the IPC handler thread); `busy_volume_ids()` is filled in here and
+    disables the three destructive items exactly like Eject. ❌ Open, Edit…, and the pin pair are never `busy`-disabled:
+    none of them touches a session. ❗ There is deliberately no "is a secret stored" field — see
+    `navigation/server-row-actions.ts` for why the Keychain is not read on a right-click.
   - ❗ **The picked action crosses as the typed `VolumeContextActionKind`**, ❌ never a free string. `menu_handlers.rs`
     maps menu id → action through one table, so what it recognizes and what it emits can't drift.
 - **`quick_look.rs`**: `quick_look_open` / `quick_look_set_path` / `quick_look_close` (native `QLPreviewPanel`

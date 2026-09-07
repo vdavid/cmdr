@@ -167,11 +167,14 @@ export async function forgetSavedSecret(volumeId: string, volumeName: string): P
  * actions are NOT here — their owners are the eject listener and the open
  * dropdown respectively.
  *
- * `open` is the one typed variant with no producer: nothing emits it yet, and it
- * logs rather than silently doing nothing, so the first menu that emits one says
- * so in the log instead of looking broken. The native menu builds Disconnect,
- * Pin / Unpin, Forget saved password, and Forget server (`menu_structure.rs`);
- * `edit` comes from the palette (`command-handlers/servers-handlers.ts`).
+ * Every typed variant has a producer: the native row menu builds Open, Edit…,
+ * Disconnect, Pin / Unpin, Forget saved password, and Forget server
+ * (`menu_structure.rs`), and the palette raises the same actions through
+ * `command-handlers/servers-handlers.ts`.
+ *
+ * ❗ Open is the one that needs something from its caller: the `navigate()`
+ * transaction lives in the pane, so a surface with no pane to move logs rather
+ * than pretending it did something.
  */
 export async function runServerRowAction(payload: {
   action: VolumeContextActionKind

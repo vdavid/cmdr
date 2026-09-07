@@ -514,6 +514,14 @@
   "@menu.volume.removeFavorite": {
     "sourceHash": "c3812fc"
   },
+  "menu.network.open": "Abrir",
+  "@menu.network.open": {
+    "sourceHash": "ed077f3"
+  },
+  "menu.network.edit": "Editar el servidor…",
+  "@menu.network.edit": {
+    "sourceHash": "a3282a7"
+  },
   "menu.network.disconnect": "Desconectar",
   "@menu.network.disconnect": {
     "sourceHash": "acfc5be"

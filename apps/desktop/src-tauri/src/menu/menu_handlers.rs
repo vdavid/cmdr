@@ -21,11 +21,11 @@ use super::{
     FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, MEDIA_INDEX_ADD_FOLDER_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID,
     MEDIA_INDEX_INCLUDE_FOLDER_ID, MEDIA_INDEX_REMOVE_FOLDER_ID, MediaIndexFolderChoice, MediaIndexFolderExclusion,
     MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID,
-    SELECT_ALL_ID, SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_PIN_ID, SERVER_UNPIN_ID,
-    SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID,
-    SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID,
-    TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
-    VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged, menu_id_to_command,
+    SELECT_ALL_ID, SERVER_DISCONNECT_ID, SERVER_EDIT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_OPEN_ID,
+    SERVER_PIN_ID, SERVER_UNPIN_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID,
+    SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID,
+    TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID,
+    VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged, menu_id_to_command,
 };
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
@@ -502,6 +502,8 @@ fn volume_row_action(id: &str) -> Option<VolumeContextActionKind> {
         EJECT_VOLUME_ID => Some(VolumeContextActionKind::Eject),
         FAVORITE_RENAME_ID => Some(VolumeContextActionKind::RenameFavorite),
         FAVORITE_REMOVE_ID => Some(VolumeContextActionKind::RemoveFavorite),
+        SERVER_OPEN_ID => Some(VolumeContextActionKind::Open),
+        SERVER_EDIT_ID => Some(VolumeContextActionKind::Edit),
         SERVER_DISCONNECT_ID => Some(VolumeContextActionKind::Disconnect),
         SERVER_PIN_ID => Some(VolumeContextActionKind::Pin),
         SERVER_UNPIN_ID => Some(VolumeContextActionKind::Unpin),
@@ -526,6 +528,8 @@ mod volume_row_action_tests {
             volume_row_action(FAVORITE_REMOVE_ID),
             Some(VolumeContextActionKind::RemoveFavorite)
         );
+        assert_eq!(volume_row_action(SERVER_OPEN_ID), Some(VolumeContextActionKind::Open));
+        assert_eq!(volume_row_action(SERVER_EDIT_ID), Some(VolumeContextActionKind::Edit));
         assert_eq!(
             volume_row_action(SERVER_DISCONNECT_ID),
             Some(VolumeContextActionKind::Disconnect)

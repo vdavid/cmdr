@@ -3014,3 +3014,20 @@ enregistré.
   sur Autoriser ») afin d'éviter « appuyez sur Autoriser sur votre téléphone », deux `sur` collés · `high`.
 - La pile de référence était absente de cette machine (`_ignored/i18n/` n'existe pas non plus dans le clone principal) ;
   la décision s'appuie donc sur le catalogue déjà livré et sur ce glossaire.
+
+## Le menu contextuel de la ligne serveur : `Ouvrir` et `Modifier le serveur…`
+
+- **`Open` (sur une ligne de serveur) → `Ouvrir`** (`menu.network.open`) · identique à `menu.file.open`, car c'est le
+  même sens : entrer dans quelque chose, et non confier un fichier à une app. Le français ne sépare pas les deux
+  acceptions, et macOS non plus : le Finder emploie le même verbe pour `Ouvrir` (`LocalizableMerged` `N151`),
+  `Ouvrir avec` (`N152`) et `Ouvrir dans une nouvelle fenêtre` (`FV7`, le sens « entrer ») (Finder 26.6.2, build 25G83,
+  lu le 2026-09-07) · `high`.
+- **`Edit server…` → `Modifier le serveur…`** (`menu.network.edit`), copié octet pour octet depuis
+  `commands.serversEdit.label` · `high`. Les deux ouvrent la même feuille ; deux libellés différents se liraient comme
+  deux fonctions. Les points de suspension sont le caractère UNIQUE `…` (U+2026) et restent.
+- **Les deux égalités sont vérifiées par un contrôle**, pas seulement souhaitables : `i18n-terms` signale deux clés de
+  même valeur anglaise qui divergent en français. Réécrire l'une oblige à réécrire l'autre.
+- **`menu.*` est une famille RAW** : Rust dessine le menu via `menu_t`, jamais `t()`. Les apostrophes restent SIMPLES et
+  un `''` doublé fait échouer `i18n-icu`. Aucune des deux valeurs n'en contient.
+- La pile de référence est absente de cette machine, mais `Finder.app` fournit la même preuve de niveau 1 directement
+  depuis le système (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").

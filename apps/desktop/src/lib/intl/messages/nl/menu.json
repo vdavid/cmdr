@@ -517,6 +517,15 @@
   "@menu.volume.removeFavorite": {
     "sourceHash": "c3812fc"
   },
+  "menu.network.open": "Open",
+  "@menu.network.open": {
+    "sourceHash": "ed077f3",
+    "sameAsSourceJustification": "The Dutch bare-stem imperative of \"openen\" is \"Open\", which happens to be spelt like English; macOS Dutch Finder shows exactly this (Finder 26.6.2, LocalizableMerged key N151). Same word as menu.file.open, which carries the same justification."
+  },
+  "menu.network.edit": "Wijzig server…",
+  "@menu.network.edit": {
+    "sourceHash": "a3282a7"
+  },
   "menu.network.disconnect": "Verbreek",
   "@menu.network.disconnect": {
     "sourceHash": "acfc5be"

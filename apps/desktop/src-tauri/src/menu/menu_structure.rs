@@ -37,9 +37,9 @@ use super::{
     FAVORITE_REMOVE_ID, FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID,
     FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, ImageIndexMenuState, MenuItems,
     NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
-    SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_PIN_ID, SERVER_UNPIN_ID, SHOW_IN_FINDER_ID,
-    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
-    image_index_menu_items,
+    SERVER_DISCONNECT_ID, SERVER_EDIT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_OPEN_ID, SERVER_PIN_ID,
+    SERVER_UNPIN_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID,
+    VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems, image_index_menu_items,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -463,8 +463,8 @@ pub struct ServerRowMenu {
 }
 
 /// Appends a server row's items, in the order `docs/specs/servers-hub-plan.md`
-/// § D6 sets: Disconnect (when live), Pin to switcher / Unpin, Forget saved
-/// password (when one exists), Forget server (when it is saved).
+/// § D6 sets: Open, Edit…, Disconnect (when live), Pin to switcher / Unpin,
+/// Forget saved password, Forget server (when it is saved).
 ///
 /// ❗ A server row shows Disconnect, ❌ never Eject: "Eject" promises
 /// safe-to-unplug, and a server has nothing to unplug.
@@ -473,6 +473,18 @@ fn append_server_row_items<R: Runtime>(
     menu: &Menu<R>,
     server: &ServerRowMenu,
 ) -> tauri::Result<()> {
+    // Open and Edit… lead, the way the row's own two purposes rank: going there,
+    // and changing what "there" means. ❗ Neither is gated by `busy`, unlike the
+    // three destructive items below: navigating into a server a copy is reading
+    // from is fine, and editing its settings touches no session.
+    let open = MenuItem::with_id(app, SERVER_OPEN_ID, menu_t("menu.network.open"), true, None::<&str>)?;
+    menu.append(&open)?;
+    if server.is_saved {
+        // ❌ Only for a SAVED server: the sheet edits a store entry, and a live
+        // volume nothing saved has none to open.
+        let edit = MenuItem::with_id(app, SERVER_EDIT_ID, menu_t("menu.network.edit"), true, None::<&str>)?;
+        menu.append(&edit)?;
+    }
     if server.shows_disconnect {
         let key = if server.busy {
             "menu.volume.disconnectBusy"

@@ -2654,3 +2654,19 @@ Hai dòng dưới hai ô đã bị làm mờ `Địa chỉ` và `Tên người d
   trong câu trùng với chữ trên màn hình · `high`.
 - Kho tham chiếu không có trên máy này (`_ignored/i18n/` cũng không có trong bản clone chính), nên quyết định dựa vào
   catalog đã xuất bản và bảng thuật ngữ này.
+
+## Menu chuột phải trên hàng máy chủ: `Mở` và `Sửa máy chủ…`
+
+- **`Open` (trên một hàng máy chủ) → `Mở`** (`menu.network.open`) · giống hệt `menu.file.open`, vì cùng một nghĩa: đi
+  vào bên trong một thứ, không phải giao tệp cho một ứng dụng. Tiếng Việt không tách hai nghĩa đó, macOS cũng vậy:
+  Finder dùng chung một động từ cho `Mở` (`LocalizableMerged` `N151`), `Mở bằng` (`N152`) và `Mở trong cửa sổ mới`
+  (`FV7`, nghĩa đi vào) (Finder 26.6.2, build 25G83, đọc ngày 2026-09-07) · `high`.
+- **`Edit server…` → `Sửa máy chủ…`** (`menu.network.edit`), chép nguyên từng byte từ `commands.serversEdit.label` ·
+  `high`. Hai chỗ này mở cùng một biểu mẫu; hai nhãn khác nhau sẽ đọc thành hai tính năng. Dấu ba chấm là MỘT ký tự `…`
+  (U+2026) và phải giữ.
+- **Cả hai sự trùng khớp đều có check canh**, không chỉ là gọn gàng: `i18n-terms` báo khi hai khóa cùng giá trị tiếng
+  Anh lại lệch nhau trong tiếng Việt. Viết lại một cái thì phải kéo cái kia theo.
+- **`menu.*` là họ RAW**: Rust vẽ menu qua `menu_t`, không bao giờ qua `t()`. Dấu nháy đơn giữ nguyên MỘT dấu, `''` nhân
+  đôi sẽ làm `i18n-icu` hỏng. Hai giá trị này không có dấu nháy nào.
+- Kho tham chiếu không có trên máy này, nhưng `Finder.app` cho đúng bằng chứng Tier 1 lấy thẳng từ hệ thống
+  (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
