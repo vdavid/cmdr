@@ -128,6 +128,7 @@ func main() {
 	}
 
 	enforceMainCloneGuard(flags, rootDir)
+	awaitWorktreeWarming(rootDir)
 
 	ctx := &checks.CheckContext{
 		CI:             flags.ciMode,

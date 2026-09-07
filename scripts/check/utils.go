@@ -1,11 +1,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
+	"time"
 )
 
 // findRootDir finds the project root directory.
@@ -43,6 +47,80 @@ func enforceMainCloneGuard(flags *cliFlags, rootDir string) {
 		"Checks auto-fix files. Add -m to run here, "+
 		"or cd into .claude/worktrees/<slug>.", rootDir)
 	os.Exit(1)
+}
+
+// warmingSentinel is written by `~/.claude/scripts/new-worktree.sh` for exactly
+// as long as it is still cloning target/ and node_modules into a fresh worktree
+// in the background. Building against a half-cloned target/ isn't unsafe, but it
+// throws away the warm start the clone exists to provide, so we wait it out.
+const warmingSentinel = ".warming-worktree"
+
+// awaitWorktreeWarming blocks while a fresh worktree is still being warmed.
+//
+// This lives in the check runner rather than in a note to the reader because
+// `pnpm check` is the only sanctioned way to build here (AGENTS.md), so one wait
+// covers every lane, and nobody has to remember anything. Call it after the main
+// clone guard: the main clone is never warming.
+//
+// A sentinel whose worker has died is treated as "proceed", not "wait forever".
+// That's the difference between a stalled clone costing a cold build and it
+// costing every future run in the worktree.
+func awaitWorktreeWarming(rootDir string) {
+	path := filepath.Join(rootDir, warmingSentinel)
+	announced := false
+	for {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			if announced {
+				printNotice("Worktree warm-up finished; continuing.")
+			}
+			return
+		}
+		pid := warmingWorkerPID(data)
+		if pid <= 0 || !processAlive(pid) {
+			printNotice("Found a stale %s (worker pid %d is gone).\n"+
+				"Its clone of target/ and node_modules didn't finish, so this run may build cold.\n"+
+				"Removing the marker and continuing.", warmingSentinel, pid)
+			_ = os.Remove(path)
+			return
+		}
+		if !announced {
+			printNotice("This worktree is still warming up (cloning target/ and node_modules, pid %d).\n"+
+				"Waiting, so the build starts from a complete cache. Progress: %s",
+				pid, filepath.Join(rootDir, warmingSentinel+".log"))
+			announced = true
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+// warmingWorkerPID pulls the `pid=N` line out of a sentinel, returning 0 when
+// it's absent or unparseable (which callers treat as a dead worker).
+func warmingWorkerPID(data []byte) int {
+	for line := range strings.SplitSeq(string(data), "\n") {
+		rest, ok := strings.CutPrefix(strings.TrimSpace(line), "pid=")
+		if !ok {
+			continue
+		}
+		pid, err := strconv.Atoi(rest)
+		if err != nil {
+			return 0
+		}
+		return pid
+	}
+	return 0
+}
+
+// processAlive reports whether pid is a live process. Signal 0 runs the kernel's
+// existence and permission checks without delivering anything; EPERM means the
+// process is there but owned by someone else, which still counts as alive.
+func processAlive(pid int) bool {
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return false
+	}
+	err = proc.Signal(syscall.Signal(0))
+	return err == nil || errors.Is(err, os.ErrPermission)
 }
 
 // isMainWorkingTree reports whether dir is the repo's MAIN clone rather than a

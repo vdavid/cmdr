@@ -185,6 +185,24 @@ pnpm check [flags]
 
 ## Runner-level patterns
 
+**The warm-start interlock:** `awaitWorktreeWarming` (`utils.go`) runs right after the main-clone guard and blocks while
+`<root>/.warming-worktree` exists.
+
+`~/.claude/scripts/new-worktree.sh` prints a new worktree's path in ~1.3 s and then clones `target/` and every
+`node_modules/` in a detached background job, because `cp -Rc` is per-file and that clone is ~100 s of a ~105 s run
+(measured 2026-09-07). The sentinel exists for exactly the life of that job and carries its pid; `.warming-worktree.log`
+holds its output.
+
+The wait lives here rather than in a note to the reader because `pnpm check` is the only sanctioned way to build in this
+repo, so one blocking call covers every lane and no agent has to remember anything. `scripts/check.sh` is pure Go
+(`go run .`), so nothing touches `node_modules` before the wait, and the chicken-and-egg of checking a half-cloned tree
+can't arise.
+
+A sentinel whose pid is dead is treated as "proceed, and say so", never "wait forever": the runner reports it, removes
+the marker, and continues. A half-cloned `target/` is safe to build on, since cargo treats a missing artifact as one
+needing a rebuild, so the worst case is a colder build. Holding the interlock on a dead worker would instead break every
+future run in that worktree. Signal 0 is the liveness probe, with `EPERM` counted as alive.
+
 **Dependency graph:** Flat `DependsOn` slice per check. Blocked checks get `StatusBlocked` on dep failure and are
 counted as failed. Dependencies not in the selected run set are treated as satisfied. Visualize it with
 `pnpm check --graph` (every check currently has ≤1 dependency, so it renders as a clean forest rooted at `oxfmt` /

@@ -18,6 +18,12 @@ _ignored/
 .claude/scheduled_tasks.lock
 .claude/worktrees/
 
+# Warm-start interlock, written at a fresh worktree's root by new-worktree.sh while it
+# clones target/ and node_modules in the background. `.claude/worktrees/` covers this from
+# the main clone, but inside the worktree it sits at the repo root and needs its own rule.
+.warming-worktree
+.warming-worktree.log
+
 # .env files
 .env
 .env.*

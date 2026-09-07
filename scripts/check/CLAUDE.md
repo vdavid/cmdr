@@ -18,6 +18,9 @@ Authoring a check: `checks/CLAUDE.md`.
   slow/CI-only/disabled, an app or group selector keeps the default lanes.
 - **Checks refuse to run in the main clone** (the auto-fixers reformat tracked files, which belongs in a worktree).
   `--ci` is exempt; override with `--allow-main`.
+- **A run blocks while a fresh worktree is still warming** (`.warming-worktree`, written by `new-worktree.sh` while it
+  clones `target/` in the background). This is the one wait covering every lane, since nothing here calls cargo
+  directly. A dead worker pid means "proceed", never "wait forever".
 - **A check fingerprints the runner CORE (`GlobalInputs`) plus the files its own `Run` reaches** (read from the AST at
   plan time), and fails closed to the whole tree. ❌ No helper the EXECUTOR calls in a check file.
 - **Cache ordering is load-bearing.** Planning runs BEFORE `pnpm install` and Docker bring-up, so an all-hits run
