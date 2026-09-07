@@ -14,12 +14,14 @@
 //! The enable site (`commands/indexing.rs`) has only a volume id, so we classify
 //! here: resolve the registered volume, read its mount root, and probe the
 //! mount's filesystem type (timeout-guarded — a hung network mount must never
-//! block the IPC thread, per `src-tauri/CLAUDE.md`). A volume that carries a live
-//! smb2 session OR whose mount is a network filesystem (SMB os-mount, NFS, AFP,
-//! ...) is NOT a local external drive; the caller falls through to the SMB gate.
-//! Everything else — every local filesystem, disk images INCLUDED (plan
-//! Decision 1) — indexes here. Classification is by typed facts (smb-session
-//! flag, network-fs flag), never a volume-id or path substring.
+//! block the IPC thread, per `src-tauri/CLAUDE.md`). A volume served by anything
+//! but a real filesystem (`backend_kind() != Local`, so an smb2 session, a
+//! server, a phone, an archive, a git portal) OR whose mount is a network
+//! filesystem (SMB os-mount, NFS, AFP, ...) is NOT a local external drive; the
+//! caller falls through to the SMB gate. Everything else — every local
+//! filesystem, disk images INCLUDED (plan Decision 1) — indexes here.
+//! Classification is by typed facts (the backend kind, the network-fs flag),
+//! never a volume-id or path substring.
 
 use std::path::PathBuf;
 
@@ -46,13 +48,27 @@ pub(crate) enum LocalExternalEnable {
 /// drive (index via the local scanner) rather than something that must fall
 /// through to the SMB gate.
 ///
-/// A volume falls through when it carries a live smb2 session OR its mount
-/// filesystem is a network type (SMB os-mount, NFS, AFP, WebDAV, ...): those must
-/// never run the local guarded walker (a network `readdir` can hang, and the
-/// index would be mis-scanned). Pure so the routing decision is unit-testable
-/// without a `VolumeManager` or an `AppHandle`.
-pub(in crate::indexing) fn routes_to_local_external(is_smb_session: bool, fs_is_network: bool) -> bool {
-    !(is_smb_session || fs_is_network)
+/// Two independent reasons to fall through, and BOTH are needed:
+///
+/// - **The backend isn't a real filesystem.** Only [`cmdr_fs::volume::BackendKind::Local`] is
+///   readable by the local guarded walker. `Smb` is Cmdr's own smb2 session and
+///   the SMB gate's business; `Sftp`, `Webdav`, `Adb`, `Mtp`, `Archive`, and
+///   `GitPortal` are rooted at a scheme path (`sftp://ada@nas:22/srv`) that no
+///   `readdir` can open.
+/// - **The mount is a network filesystem** (SMB os-mount, NFS, AFP, ...). Those
+///   are served by a `LocalPosixVolume`, so they DO answer `Local`, and a network
+///   `readdir` can hang.
+///
+/// ❗ The network flag alone does not cover the first case, which is what made
+/// this gate wrong: a scheme root is not a mount point, so `detect_filesystem_for_path`
+/// reports it as non-network and a server sailed straight through as a "drive".
+/// Pure so the routing decision is unit-testable without a `VolumeManager` or an
+/// `AppHandle`.
+pub(in crate::indexing) fn routes_to_local_external(
+    backend: cmdr_fs::volume::BackendKind,
+    fs_is_network: bool,
+) -> bool {
+    backend == cmdr_fs::volume::BackendKind::Local && !fs_is_network
 }
 
 /// The result of classifying an enable target by its typed volume facts.
@@ -81,7 +97,7 @@ async fn classify(volume_id: &str) -> Classified {
         return Classified::FallThrough;
     };
     let mount_root = volume.root().to_path_buf();
-    let is_smb_session = volume.backend_kind() == cmdr_fs::volume::BackendKind::Smb;
+    let backend = volume.backend_kind();
 
     let probe_root = mount_root.clone();
     let facts = match tokio::time::timeout(
@@ -96,7 +112,7 @@ async fn classify(volume_id: &str) -> Classified {
         _ => MountFacts::UNPROBEABLE,
     };
 
-    if routes_to_local_external(is_smb_session, facts.is_network) {
+    if routes_to_local_external(backend, facts.is_network) {
         Classified::LocalExternal {
             mount_root,
             inodes_trustworthy: facts.inodes_trustworthy,
@@ -157,15 +173,39 @@ mod tests {
         // session, a local filesystem) used to fall through to the SMB gate and
         // be refused as `NotAnSmbVolume`. It must route to the local-external
         // scanner instead.
+        use cmdr_fs::volume::BackendKind;
+
         assert!(
-            routes_to_local_external(false, false),
-            "no smb2 session + local fs => local external drive",
+            routes_to_local_external(BackendKind::Local, false),
+            "a real filesystem + a local mount => local external drive",
         );
         // A live smb2 session or a network filesystem must fall through to the
         // SMB gate (the local guarded walker must never walk a network mount).
-        assert!(!routes_to_local_external(true, false), "smb2 session => SMB gate");
-        assert!(!routes_to_local_external(false, true), "network fs => SMB gate");
-        assert!(!routes_to_local_external(true, true), "both => SMB gate");
+        assert!(
+            !routes_to_local_external(BackendKind::Smb, false),
+            "smb2 session => SMB gate"
+        );
+        assert!(
+            !routes_to_local_external(BackendKind::Local, true),
+            "network fs => SMB gate"
+        );
+        assert!(!routes_to_local_external(BackendKind::Smb, true), "both => SMB gate");
+        // ❗ And every backend rooted at a scheme path, whatever the mount probe
+        // says: `sftp://…` is not a mount point, so it reports NON-network and
+        // the network flag alone would wave it through.
+        for kind in [
+            BackendKind::Sftp,
+            BackendKind::Webdav,
+            BackendKind::Adb,
+            BackendKind::Mtp,
+            BackendKind::Archive,
+            BackendKind::GitPortal,
+        ] {
+            assert!(
+                !routes_to_local_external(kind, false),
+                "{kind:?} has no filesystem the local walker can read",
+            );
+        }
     }
 
     #[tokio::test]
@@ -196,6 +236,45 @@ mod tests {
                 assert!(inodes_trustworthy, "a local mount has trustworthy inodes");
             }
             Classified::FallThrough => panic!("a local volume must classify as LocalExternal"),
+        }
+    }
+
+    /// A server is not a drive, whatever its mount probe says.
+    ///
+    /// An SFTP or WebDAV volume is rooted at `sftp://ada@nas:22/srv`, which
+    /// `detect_filesystem_for_path` reports as NON-network because it is not a
+    /// mount point at all. So the network flag can't save this gate, and
+    /// `enable_drive_index` takes any volume id: an SFTP one used to classify as
+    /// a LOCAL EXTERNAL DRIVE and start the guarded walker plus a watcher on a
+    /// scheme path, after persisting the "the user turned this on" marker. The
+    /// walk covers zero entries and reports the drive as indexed, so folder sizes
+    /// and search then answer "nothing here" for a server full of files.
+    #[tokio::test]
+    #[allow(
+        clippy::await_holding_lock,
+        reason = "the lock serializes the process-wide provider slot for the whole test; holding it across the await IS the point"
+    )]
+    async fn classify_falls_through_for_a_server_the_local_walker_cannot_read() {
+        for kind in [
+            cmdr_fs::volume::BackendKind::Sftp,
+            cmdr_fs::volume::BackendKind::Webdav,
+            cmdr_fs::volume::BackendKind::Adb,
+        ] {
+            let mount = std::path::Path::new("/media/LocalExternalServerTest");
+            let vid = "local-external-server-test";
+            let provider = FakeVolumeProvider::shared();
+            provider.register(
+                vid,
+                Arc::new(InMemoryVolume::new("A server").with_root(mount).with_backend_kind(kind)),
+            );
+
+            let _serialized = crate::indexing::handle::test_lock();
+            let _installed = volumes::install_for_test(provider);
+
+            assert!(
+                matches!(classify(vid).await, Classified::FallThrough),
+                "{kind:?} must never route to the local guarded walker",
+            );
         }
     }
 

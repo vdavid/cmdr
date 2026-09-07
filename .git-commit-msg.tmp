@@ -1,27 +1,21 @@
-fix(adb): cancelling a phone connect stops leaving the pane blank with no way out
+fix(index): turning on the drive index for a server can no longer start a local walker on a scheme root
 
-`device-connect.svelte.ts` holds the pane's listing while it works, so a `null` view state renders NOTHING: no file
-list, no sentence, no button. Four paths set exactly that. Both Cancel closures (the one on `connecting` and the one on
-`waiting_for_device`) and the backend's own `cancelled` answer left it, and `onMount` had already skipped
-`loadDirectory` while `path-sync` answers `none` at an unchanged path, so the effect would not re-dial either. The only
-escape was switching volumes. The untyped-failure branch released the hold instead and said the listing's error pane
-would take over, but only the success path calls `onConnected`, so nothing ever restarted the listing: the same empty
-pane, minus the message.
+`local_external::classify` read only two facts, a live smb2 session and the mount's network flag, and neither catches a
+server. An SFTP volume's root is `sftp://ada@nas:22/srv`, which is not a mount point, so `detect_filesystem_for_path`
+reports it as NON-network and the volume sailed through as a plain local external drive. `enable_drive_index` takes any
+volume id and only special-cases root and MTP, so the whole thing was reachable over IPC: `start_volume` would spin up
+the local guarded walker plus an FSEvents watcher rooted at a scheme path, after persisting the sticky "the user turned
+this on" marker. The walk covers zero entries and the drive is then reported as indexed, so folder sizes and search
+answer "nothing here" for a server full of files. The frontend's capability row was the only thing keeping a human away
+from it, and the badge half of that landed in `51ca90bb6`.
 
-Every way a dial can end now leaves something to read and, where a second try could work, something to press.
+`routes_to_local_external` now takes the volume's `BackendKind` instead of an is-SMB boolean, and only `Local` may run
+the local walker. Both halves of the gate stay load-bearing and neither subsumes the other: a network mount is served by
+a `LocalPosixVolume` and so answers `Local`, while a server's scheme root probes as non-network. `smb/index.rs` already
+had the right shape (`!matches!(backend_kind(), Smb | Local)` → refuse); this is its twin.
 
-- A cancel renders `refused` with the new `adb.connect.cancelled` ("You stopped opening your phone.") and a Try again.
-  Matter-of-fact, no scolding: "a cancel says nothing" is about not lecturing someone for what they did on purpose, not
-  about leaving them staring at an empty pane.
-- An untyped failure renders `adb.connect.transport` with a Try again. Its own text is untranslated diagnostics and
-  still goes only to the log.
-- A device row whose path names no serial renders `adb.connect.deviceGone` with no button, since nothing a person
-  presses fixes a malformed row. It used to release the hold and show nothing, the same bug one branch over.
+The `cover/bootstrap.rs` caller passes the kind through too, so the one rule serves both sites. It was already safe
+there behind `supports_local_fs_access()`, and now it doesn't depend on that ordering.
 
-❗ Releasing the hold is deliberately NOT the escape hatch: `list_directory` on an `adb://` path re-dials the phone
-through the backend's own `adb-navigation:<serial>` id, so letting the listing run would redial the thing the user just
-called off.
-
-Four cells, plus the existing cancel cell rewritten from "says nothing" to "leaves a way back in". Translations for the
-new key in all ten locales, register matched to the `adb.connect.*` siblings and the verb taken from each locale's
-existing `search.coverage.walk.cancelled` rather than its Cancel-button label.
+Cells: `classify` falling through for `Sftp`, `Webdav`, and `Adb` over a mount that probes clean, plus the pure
+predicate refusing all six non-`Local` backends.

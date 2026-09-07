@@ -202,7 +202,8 @@ maintenance timer can't drift between the two. What that start does differently:
   already evicted: `../../resources/DETAILS.md` § "Rebuilt-from-scratch coverage is EVICTED, not refilled".
 - **Classifies the volume by how its ground is read**, so the only thing it refuses is a volume nothing has mounted.
   Same typed facts and the same predicates the enable command uses (MTP's id vocabulary first — `mtp://…` is not a path
-  a `statfs` can answer for — then `routes_to_local_external` over a live smb2 session and the network-filesystem flag),
+  a `statfs` can answer for — then `routes_to_local_external` over the volume's `backend_kind()` and the
+  network-filesystem flag),
   with the `statfs` probe bounded on a thread of its own: the async timeout `local_external::classify` uses needs a
   runtime this path doesn't have, and a probe that won't answer IS the answer (`MountFacts::UNPROBEABLE` reads as
   network, which routes to the trait walk — the right walk for a mount whose `statfs` won't return). ⚠️ The kind names

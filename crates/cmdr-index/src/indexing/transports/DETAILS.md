@@ -199,10 +199,15 @@ healthy local drive fell to the SMB path and was refused as `NotAnSmbVolume` (th
 connection gate (a local mount is already directly readable) and NO typed refusal; unlike MTP it uses the local scanner.
 
 **Classification (`classify`)** decides local-external vs fall-through from TYPED facts, never a volume-id/path
-substring: resolve the volume through `host::volumes`, read its mount root, and check two things — a live smb2 session
-(`backend_kind() == Smb`) and whether the mount's filesystem is a network type (`is_network_fs_type` over the fs-type
-from `detect_filesystem_for_path`). Either ⇒ fall through to the SMB gate (a network mount must never run the local
-guarded walker). Neither ⇒ `LocalExternal`, indexed via `start_indexing_for_local_external_inner` →
+substring: resolve the volume through `host::volumes`, read its mount root, and check two things — the BACKEND
+(`backend_kind()`, and only `Local` may run the local guarded walker) and whether the mount's filesystem is a network
+type (`is_network_fs_type` over the fs-type from `detect_filesystem_for_path`). Either ⇒ fall through to the SMB gate.
+Both halves are load-bearing: a network mount is served by a `LocalPosixVolume` and so answers `Local`, while a server's
+root is `sftp://ada@nas:22/srv`, which is not a mount point at all and therefore probes as NON-network. ❗ Reading only
+the network flag is what let `enable_drive_index` on an SFTP or WebDAV id start a walker plus a watcher on a scheme
+root, cover zero entries, persist the user-enabled marker, and report the volume as indexed, so folder sizes and search
+answered "nothing here" for a server full of files. Neither ⇒ `LocalExternal`, indexed via
+`start_indexing_for_local_external_inner` →
 `start_indexing_for(.., LocalExternal, inodes_trustworthy)`, then `enforce_external_index_cap` (retention, owned by
 `../resources/DETAILS.md`). The pure routing decision (`routes_to_local_external`) is split from the wiring so it's
 unit-testable against a `FakeVolumeProvider`. Disk images are INCLUDED: a mounted DMG is a real local filesystem; the
