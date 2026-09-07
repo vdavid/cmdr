@@ -12,8 +12,8 @@
  * hands back a promise because `connect-flow.ts` awaits the sheet INSIDE a
  * connect, and a callback there would split one flow across two call stacks.
  *
- * ❗ **The sheet opens only on user intent** (`docs/specs/servers-hub-plan.md` §
- * "The four rules"): activating a row that needs a sign-in, pressing Add,
+ * ❗ **The sheet opens only on user intent** (`DETAILS.md` § "The four rules",
+ * rule 4): activating a row that needs a sign-in, pressing Add,
  * pressing "Sign in…". ❌ Never on its own when a session drops. A modal stealing
  * focus during a lid-open wake is the wrong thing, and the pane's banner is where
  * that offer belongs.

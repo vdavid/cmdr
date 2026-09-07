@@ -12,8 +12,9 @@
 //! later: one more [`ServerTarget`] arm, one more store, the same outcome enum
 //! plus whatever S3 adds.
 //!
-//! ❗ **The three levels this family speaks in** (`docs/specs/servers-hub-plan.md`
-//! § "The model"): an ACCOUNT is an endpoint plus an identity and is never
+//! ❗ **The three levels this family speaks in**
+//! (`apps/desktop/src/lib/servers/DETAILS.md` § "The model: account, place,
+//! pin"): an ACCOUNT is an endpoint plus an identity and is never
 //! navigable; a PLACE is the mountable thing under it and is what becomes a
 //! `VolumeInfo`; a PIN is whether a place shows in the volume switcher. SFTP and
 //! WebDAV have exactly one place per account, SMB has many.
@@ -559,7 +560,8 @@ fn set_place_pinned_inner(volume_id: &str, pinned: bool) -> bool {
 /// ❗ **Also drops the session and unregisters the volume**, because a forgotten
 /// server is gone: leaving the session up would keep a row in the switcher that
 /// no store knows about and no "Forget" can reach a second time. A tab standing
-/// on it becomes a home tab (`docs/specs/servers-hub-plan.md` § D6).
+/// on it becomes a home tab (`apps/desktop/src-tauri/src/commands/DETAILS.md`
+/// § `servers.rs`).
 ///
 /// ❗ **`VolumeUnmounted` goes out BEFORE `volumes-changed`.** The pane's
 /// consumer is what redirects it home, and `volumes-changed` is what takes the

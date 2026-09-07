@@ -1,7 +1,8 @@
 /**
  * The switcher's Network group: what it holds, and what it must never invent.
  *
- * The three-things rule (`docs/specs/servers-hub-plan.md` § "The four rules"):
+ * The three-things rule (`DETAILS.md` § "The three-things rule, and which side
+ * enforces it"):
  * the group holds the hub row, every place connected right now, and every
  * pinned place greyed out. ❗ The listing hands over EVERY saved place, pin and
  * all, because a volume id with no row is one the app denies exists: a hub Enter

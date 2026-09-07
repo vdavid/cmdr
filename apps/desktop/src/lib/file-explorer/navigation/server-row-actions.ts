@@ -7,8 +7,9 @@
  * owns the `volume-context-action` listener). One module means the three can't
  * drift on which items a row has or what confirming one costs.
  *
- * ❗ **A server says Disconnect, never Eject** (`docs/specs/servers-hub-plan.md`
- * § D6): "Eject" promises safe-to-unplug and a server has nothing to unplug.
+ * ❗ **A server says Disconnect, never Eject** (`DETAILS.md` § "Eject button +
+ * row context menu"): "Eject" promises safe-to-unplug and a server has nothing
+ * to unplug.
  * Disconnecting keeps the row: a pinned place comes back `saved`.
  */
 

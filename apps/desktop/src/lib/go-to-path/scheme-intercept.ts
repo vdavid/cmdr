@@ -58,8 +58,8 @@ export async function readSchemeInput(input: string): Promise<SchemeIntent | nul
   if (trimmed === '') return null
 
   if (DEVICE_SCHEMES.some((scheme) => trimmed.startsWith(scheme))) {
-    // `android-adb-backend-follow-ups.md` § 3: a device path is already
-    // resolvable, so it navigates rather than opening anything.
+    // A device path is already resolvable, so it navigates rather than
+    // opening anything. `DETAILS.md` § "The scheme intercept".
     return { kind: 'place', path: trimmed, label: deviceLabel(trimmed) }
   }
 

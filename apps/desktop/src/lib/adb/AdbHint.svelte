@@ -15,7 +15,8 @@
      *
      * ❗ **Discoverability is the whole point.** A phone with USB debugging off
      * is a plain MTP row and says nothing about ADB, so without this line nobody
-     * finds the feature at all (`docs/specs/servers-hub-plan.md` § D12).
+     * finds the feature at all (`DETAILS.md` § "The line offering USB
+     * debugging").
      *
      * ❗ **It goes away for good on the ×** (`behavior.adbHintDismissed`), and it
      * never appears when the same phone ALREADY has an ADB row: the decision is

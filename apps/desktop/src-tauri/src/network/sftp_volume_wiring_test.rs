@@ -371,8 +371,8 @@ async fn sftp_integration_a_remembered_secret_is_in_the_store_after_the_dial() {
 
 /// ❗ **Forgetting a server drops its session too.** Leaving the session up would
 /// keep a switcher row that no store knows about and no second "Forget" can
-/// reach: `docs/specs/servers-hub-plan.md` § D6 settles that a tab on a
-/// forgotten server becomes a home tab.
+/// reach. A tab on a forgotten server becomes a home tab; the ordering that
+/// makes that work is `crate::commands::DETAILS.md` § `servers.rs`.
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn sftp_integration_forgetting_a_server_drops_its_session_and_unregisters_it() {

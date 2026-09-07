@@ -7,7 +7,8 @@
 // sign-in sheet do goes through here.
 //
 // What each outcome means and which side owns it:
-// `docs/specs/servers-hub-plan.md` § D4, and `src-tauri/src/commands/servers.rs`.
+// `src-tauri/src/commands/DETAILS.md` § `servers.rs`, over
+// `src-tauri/src/commands/servers.rs`.
 
 import { commands } from '$lib/ipc/bindings'
 import type {
