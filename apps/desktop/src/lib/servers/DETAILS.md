@@ -99,9 +99,9 @@ nothing typed to save yet. ❌ Neither ever happens as a side effect of a dial.
 
 **Edit mode's "this can't reconnect on its own" warning is the BACKEND's answer, ❌ never a derivation.**
 `getSftpUnattendedReconnect` / `getWebdavUnattendedReconnect` say whether an unattended reconnect can work as things
-stand, and the sheet asks when it RENDERS. ❌ Don't rebuild it from "auto-reconnect is on AND no secret is stored":
-the rung a remote volume comes back on is decided per dial, so a derivation goes stale the moment one lands elsewhere,
-and the two backends spell the same answer differently (`needs_stored_secret` vs `no_stored_secret`). The state worth
+stand, and the sheet asks when it RENDERS. ❌ Don't rebuild it from "auto-reconnect is on AND no secret is stored": the
+rung a remote volume comes back on is decided per dial, so a derivation goes stale the moment one lands elsewhere, and
+the two backends spell the same answer differently (`needs_stored_secret` vs `no_stored_secret`). The state worth
 warning about is the silent one: auto-reconnect on, nothing stored, so nothing can ever happen.
 
 **The host-key step replaces the body, ❌ never a second dialog.** First contact is routine and gets a plain primary
