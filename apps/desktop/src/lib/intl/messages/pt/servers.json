@@ -320,9 +320,9 @@
   "@servers.paneState.signIn": {
     "sourceHash": "a6a5723"
   },
-  "servers.paneState.hostKeyChanged": "O Cmdr parou de conectar a {name}",
+  "servers.paneState.hostKeyChanged": "O Cmdr não vai se conectar a {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "ac65ece"
+    "sourceHash": "123ff4f"
   },
   "servers.paneState.hostKeyChangedHint": "A chave do servidor mudou. Isso pode significar que ele foi reinstalado, ou que algo está entre você e ele. Desconecte e abra o servidor de novo para conferir a impressão digital.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -360,12 +360,12 @@
   "@servers.paneState.retryKeepsTrying": {
     "sourceHash": "e4d25b7"
   },
-  "servers.paneState.retryTotalSeconds": "{seconds} segundos",
+  "servers.paneState.retryTotalSeconds": "{seconds, plural, one {{secondsText} segundo} many {{secondsText} segundos} other {{secondsText} segundos}}",
   "@servers.paneState.retryTotalSeconds": {
-    "sourceHash": "86d62ab"
+    "sourceHash": "9e6c4f8"
   },
-  "servers.paneState.retryTotalMinutes": "{minutes} minutos",
+  "servers.paneState.retryTotalMinutes": "{minutes, plural, one {{minutesText} minuto} many {{minutesText} minutos} other {{minutesText} minutos}}",
   "@servers.paneState.retryTotalMinutes": {
-    "sourceHash": "fc339ba"
+    "sourceHash": "fc262c3"
   }
 }

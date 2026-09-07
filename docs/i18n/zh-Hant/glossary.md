@@ -1409,3 +1409,21 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   style.md 的拉丁占位符間距規則）。
 - 不用「失敗」「錯誤」：什麼都沒出錯，這正是這個鍵存在的理由。
 - 這台機器上沒有參考語料庫（主 clone 裡也沒有 `_ignored/i18n/`），所以這條決定依據的是已出貨的目錄和本詞彙表。
+
+## 重試總時長、主機金鑰標題，以及 Android 的「允許」按鈕
+
+- **`{seconds}`/`{minutes}` 現在是帶兩個占位符的 ICU
+  複數區塊**（`servers.paneState.retryTotalSeconds`、`.retryTotalMinutes`）：`{seconds}` 只負責選分支，使用者讀到的是
+  `{secondsText}`，也就是已依語言格式化好的數字。中文只有 `other` 一個類別（CLDR，§
+  style.md），所以每個區塊只寫一個分支，但外層的 `{…, plural, other {…}}` 殼一定要留著，否則占位符會跟英文對不上 ·
+  `high`。
+- **兩個值都是
+  `servers.paneState.retryKeepsTrying`（`會持續嘗試，總共 {duration}。`）的句子零件**，所以不帶介詞也不帶句號；`秒`、`分鐘`
+  沿用 `indexing.eta.*` 的寫法，占位符和漢字之間留一個半形空格 · `high`。
+- **`Cmdr won't connect to {name}` → `Cmdr 不會連線到 {name}`** · 「不會連線到」一字不差沿用兄弟鍵
+  `servers.refusal.hostKeyRevoked`（`Cmdr 不會連線到它。`）。英文從 “stopped connecting”
+  改成持續性的拒絕，所以拿掉「停止」，那讀起來像是中斷了一次嘗試 · `high`。
+- **`Allow` 是 Android 自己的按鈕 → `「允許」`**，一字不差取自
+  `adb.connect.unauthorized`（`請查看你的手機，然後輕觸「允許」。`），連引號和動詞「輕觸」一起沿用，這樣使用者在螢幕上能對到同一個詞
+  · `high`。
+- 這台機器上沒有參考語料庫（主 clone 裡也沒有 `_ignored/i18n/`），所以這條決定依據的是已出貨的目錄和本詞彙表。

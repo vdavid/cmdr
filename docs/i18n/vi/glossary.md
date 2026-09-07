@@ -2636,3 +2636,21 @@ Hai dòng dưới hai ô đã bị làm mờ `Địa chỉ` và `Tên người d
   hay `không thể`: chẳng có gì hỏng cả.
 - Kho tham chiếu không có trên máy này (`_ignored/i18n/` cũng không có trong bản clone chính), nên quyết định dựa vào
   catalog đã xuất bản và bảng thuật ngữ này.
+
+## Tổng thời gian thử lại, tiêu đề khóa máy chủ và nút Cho phép của Android
+
+- **`{seconds}`/`{minutes}` giờ là khối số nhiều ICU với HAI chỗ giữ** (`servers.paneState.retryTotalSeconds`,
+  `.retryTotalMinutes`): `{seconds}` chỉ để chọn nhánh, thứ người dùng đọc là `{secondsText}`, con số đã được định dạng
+  theo ngôn ngữ. Tiếng Việt chỉ có `other` (CLDR, § style.md) nên mỗi khối chỉ một nhánh, nhưng vẫn phải giữ lớp bọc
+  `{…, plural, other {…}}` để khớp chỗ giữ với bản tiếng Anh · `high`.
+- **Cả hai giá trị là mảnh ghép của `servers.paneState.retryKeepsTrying`**
+  (`Sẽ tiếp tục thử trong tổng cộng {duration}.`) nên để trần, không thêm giới từ hay dấu chấm. `giây` và `phút` là các
+  danh từ đơn vị đã chốt trong bảng này.
+- **`Cmdr won't connect to {name}` → `Cmdr sẽ không kết nối tới {name}`** · lấy đúng cụm của khóa anh em
+  `servers.refusal.hostKeyRevoked` (`Cmdr sẽ không kết nối tới máy chủ đó.`). Tiếng Anh đã đổi từ “stopped connecting”
+  sang lời từ chối thường trực, nên bỏ `đã dừng`, vốn nghe như một lần thử bị ngắt giữa chừng · `high`.
+- **`Allow` là nút của chính Android → `Cho phép`**, chép nguyên từ `adb.connect.unauthorized`
+  (`Hãy xem điện thoại của bạn rồi nhấn vào Cho phép.`), không đặt trong ngoặc kép, cùng động từ `nhấn vào`, để chữ
+  trong câu trùng với chữ trên màn hình · `high`.
+- Kho tham chiếu không có trên máy này (`_ignored/i18n/` cũng không có trong bản clone chính), nên quyết định dựa vào
+  catalog đã xuất bản và bảng thuật ngữ này.

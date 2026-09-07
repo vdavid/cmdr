@@ -352,7 +352,7 @@
   "@servers.paneState.signIn": {
     "description": "Button that opens the form for signing in to the server again. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means “this opens something”; keep it."
   },
-  "servers.paneState.hostKeyChanged": "Cmdr stopped connecting to {name}",
+  "servers.paneState.hostKeyChanged": "Cmdr won''t connect to {name}",
   "@servers.paneState.hostKeyChanged": {
     "description": "Heading of the pane view shown when an SSH server presents a different identity key than the one this Mac trusts. Serious: it can mean someone is in the middle. “Cmdr” is the product name.",
     "placeholders": {
@@ -413,20 +413,22 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
-  "servers.paneState.retryTotalSeconds": "{seconds} seconds",
+  "servers.paneState.retryTotalSeconds": "{seconds, plural, one {{secondsText} second} other {{secondsText} seconds}}",
   "@servers.paneState.retryTotalSeconds": {
     "description": "Total reconnect-cycle duration phrased in seconds, embedded in the \"Will keep trying for a total of …\" sentence.",
     "placeholders": {
-      "seconds": "the number of seconds"
+      "seconds": "the number of seconds, for choosing the plural form",
+      "secondsText": "the same number as the user's locale writes it, like \"1,024\""
     },
     "screenshot": "connect-to-server.png",
     "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
-  "servers.paneState.retryTotalMinutes": "{minutes} minutes",
+  "servers.paneState.retryTotalMinutes": "{minutes, plural, one {{minutesText} minute} other {{minutesText} minutes}}",
   "@servers.paneState.retryTotalMinutes": {
     "description": "Total reconnect-cycle duration phrased in minutes, embedded in the \"Will keep trying for a total of …\" sentence.",
     "placeholders": {
-      "minutes": "the number of minutes"
+      "minutes": "the number of minutes, for choosing the plural form",
+      "minutesText": "the same number as the user's locale writes it, like \"1,024\""
     },
     "screenshot": "connect-to-server.png",
     "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."

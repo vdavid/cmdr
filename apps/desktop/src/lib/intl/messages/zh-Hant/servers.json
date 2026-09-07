@@ -319,9 +319,9 @@
   "@servers.paneState.signIn": {
     "sourceHash": "a6a5723"
   },
-  "servers.paneState.hostKeyChanged": "Cmdr 停止連線到 {name}",
+  "servers.paneState.hostKeyChanged": "Cmdr 不會連線到 {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "ac65ece"
+    "sourceHash": "123ff4f"
   },
   "servers.paneState.hostKeyChangedHint": "它的主機金鑰變了。這可能表示伺服器重新安裝過，也可能有東西夾在你和它中間。請先中斷連線，再重新開啟它來核對指紋。",
   "@servers.paneState.hostKeyChangedHint": {
@@ -359,12 +359,12 @@
   "@servers.paneState.retryKeepsTrying": {
     "sourceHash": "e4d25b7"
   },
-  "servers.paneState.retryTotalSeconds": "{seconds} 秒",
+  "servers.paneState.retryTotalSeconds": "{seconds, plural, other {{secondsText} 秒}}",
   "@servers.paneState.retryTotalSeconds": {
-    "sourceHash": "86d62ab"
+    "sourceHash": "9e6c4f8"
   },
-  "servers.paneState.retryTotalMinutes": "{minutes} 分鐘",
+  "servers.paneState.retryTotalMinutes": "{minutes, plural, other {{minutesText} 分鐘}}",
   "@servers.paneState.retryTotalMinutes": {
-    "sourceHash": "fc339ba"
+    "sourceHash": "fc262c3"
   }
 }

@@ -39,9 +39,9 @@
   "@adb.connect.waitingHint": {
     "sourceHash": "d1df048"
   },
-  "adb.readiness.waitingForAuthorization": "Várakozás az USB-hibakeresés engedélyezésére",
+  "adb.readiness.waitingForAuthorization": "Várakozás, amíg a telefonodon az „Engedélyezés” gombra koppintasz",
   "@adb.readiness.waitingForAuthorization": {
-    "sourceHash": "73615e0"
+    "sourceHash": "679558e"
   },
   "adb.readiness.offline": "A telefonod nem válaszol. Ébreszd fel a kijelzőjét, vagy húzd ki és dugd vissza a kábelt.",
   "@adb.readiness.offline": {

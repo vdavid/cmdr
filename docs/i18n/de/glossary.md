@@ -2508,3 +2508,24 @@ wird.
   placeholders in `style.md`. Kein Pronomen dahinter, der Katalog nennt die Sache beim Namen.
 - Die Referenzsammlung war auf dieser Maschine nicht vorhanden (`_ignored/i18n/` fehlt auch im Haupt-Klon), die
   Entscheidung stützt sich daher auf den ausgelieferten Katalog und dieses Glossar.
+
+## Die Wiederholdauer, die Host-Key-Überschrift und Androids Erlauben-Knopf
+
+- **`{seconds}`/`{minutes}` tragen jetzt einen ICU-Plural mit ZWEI Platzhaltern**
+  (`servers.paneState.retryTotalSeconds`, `.retryTotalMinutes`): `{seconds}` wählt nur den Zweig, gelesen wird
+  `{secondsText}`, die schon formatierte Zahl. Deutsch braucht `one` und `other` (CLDR, § style.md), also `1 Sekunde` /
+  `60 Sekunden` und `1 Minute` / `2 Minuten`, wortgleich aus `main.quit.countdown` (`{secondsText} Sekunde(n)`) und
+  `indexing.eta.hoursMinutesLeft` (`{minutesText} Minute(n)`) · `high`.
+- **Beide Werte sind Satzbausteine für `servers.paneState.retryKeepsTrying`**
+  (`Es wird insgesamt {duration} lang weiterversucht.`), stehen also nackt vor `lang`: „Es wird insgesamt 2 Minuten lang
+  weiterversucht.“ ❌ Keine Präposition, kein Punkt im Baustein.
+- **`Cmdr won't connect to {name}` → `Cmdr verbindet sich nicht mit {name}`** · Präsens, wortgleich mit der Schwester
+  `servers.refusal.hostKeyRevoked` (`Cmdr verbindet sich nicht mit diesem Server.`). Das Englische wechselte von
+  „stopped connecting“ zu einer stehenden Weigerung; ein Perfekt („hat die Verbindung gestoppt“) klänge nach einem
+  abgebrochenen Versuch · `high`.
+- **`Allow` ist Androids eigener Knopf → `„Erlauben“`**, wortgleich aus `adb.connect.unauthorized`
+  (`Sieh auf dein Telefon und tippe auf „Erlauben“.`), damit der Satz und der Bildschirm dasselbe Wort zeigen. In
+  `adb.readiness.waitingForAuthorization` steht `antippst` statt `tippst auf`, weil „auf deinem Telefon auf „Erlauben“
+  tippst“ zwei `auf` hintereinander hätte: dasselbe Verb, nur die trennbare Form · `high`.
+- Die Referenzsammlung war auf dieser Maschine nicht vorhanden (`_ignored/i18n/` fehlt auch im Haupt-Klon), die
+  Entscheidung stützt sich daher auf den ausgelieferten Katalog und dieses Glossar.

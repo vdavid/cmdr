@@ -39,9 +39,9 @@
   "@adb.connect.waitingHint": {
     "sourceHash": "d1df048"
   },
-  "adb.readiness.waitingForAuthorization": "Väntar på att du ska tillåta USB-felsökning",
+  "adb.readiness.waitingForAuthorization": "Väntar på att du trycker på Tillåt i telefonen",
   "@adb.readiness.waitingForAuthorization": {
-    "sourceHash": "73615e0"
+    "sourceHash": "679558e"
   },
   "adb.readiness.offline": "Din telefon svarar inte. Väck skärmen eller dra ur och sätt i kabeln igen.",
   "@adb.readiness.offline": {

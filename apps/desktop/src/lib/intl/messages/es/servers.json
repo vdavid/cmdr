@@ -319,9 +319,9 @@
   "@servers.paneState.signIn": {
     "sourceHash": "a6a5723"
   },
-  "servers.paneState.hostKeyChanged": "Cmdr dejó de conectarse a {name}",
+  "servers.paneState.hostKeyChanged": "Cmdr no se conectará a {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "ac65ece"
+    "sourceHash": "123ff4f"
   },
   "servers.paneState.hostKeyChangedHint": "Su clave cambió. Esto puede significar que el servidor se reinstaló, o que hay algo entre tú y él. Desconecta y vuelve a abrirlo para comprobar la huella digital.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -359,12 +359,12 @@
   "@servers.paneState.retryKeepsTrying": {
     "sourceHash": "e4d25b7"
   },
-  "servers.paneState.retryTotalSeconds": "{seconds} segundos",
+  "servers.paneState.retryTotalSeconds": "{seconds, plural, one {{secondsText} segundo} many {{secondsText} segundos} other {{secondsText} segundos}}",
   "@servers.paneState.retryTotalSeconds": {
-    "sourceHash": "86d62ab"
+    "sourceHash": "9e6c4f8"
   },
-  "servers.paneState.retryTotalMinutes": "{minutes} minutos",
+  "servers.paneState.retryTotalMinutes": "{minutes, plural, one {{minutesText} minuto} many {{minutesText} minutos} other {{minutesText} minutos}}",
   "@servers.paneState.retryTotalMinutes": {
-    "sourceHash": "fc339ba"
+    "sourceHash": "fc262c3"
   }
 }

@@ -39,9 +39,9 @@
   "@adb.connect.waitingHint": {
     "sourceHash": "d1df048"
   },
-  "adb.readiness.waitingForAuthorization": "Esperando a que permitas la depuración por USB",
+  "adb.readiness.waitingForAuthorization": "Esperando a que toques Permitir en tu teléfono",
   "@adb.readiness.waitingForAuthorization": {
-    "sourceHash": "73615e0"
+    "sourceHash": "679558e"
   },
   "adb.readiness.offline": "Tu teléfono no responde. Activa su pantalla o vuelve a conectar el cable.",
   "@adb.readiness.offline": {

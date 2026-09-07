@@ -2900,3 +2900,24 @@ hogy időtartamról van szó. ❌ Csupasz helyőrző időtartamra soha.
   `Nincs mit visszahelyezni.`).
 - A referenciagyűjtemény ezen a gépen nem volt elérhető (`_ignored/i18n/` a fő klónban sincs meg), így a döntés a
   szállított katalógusra és erre a szótárra támaszkodik.
+
+## Az újrapróbálkozás hossza, a gazdakulcs-fejléc és az Android Engedélyezés gombja
+
+- **A `{seconds}`/`{minutes}` mostantól ICU-többesszámot visz, KÉT helyőrzővel** (`servers.paneState.retryTotalSeconds`,
+  `.retryTotalMinutes`): a `{seconds}` csak az ágat választja, az olvasó a `{secondsText}`-et látja, a már formázott
+  számot. A magyar CLDR-kategóriák `one` és `other`, és a főnév szám után egyes számban marad (§ style.md), ezért a két
+  ág szövege azonos · `high`.
+- **A `{duration}` a `servers.paneState.retryKeepsTrying` `ideig` névutója elé kerül**, ezért a két érték `-nyi` képzős
+  mennyiségjelző: `60 másodpercnyi`, `2 percnyi`. Így áll össze a nyelvtanilag helyes „Összesen 2 percnyi ideig
+  próbálkozik tovább.” ❌ A csupasz `2 perc` itt nem jó: a „2 perc ideig” a köznyelvben előfordul, de helytelen. Ezzel
+  egészül ki a fenti § „Időtartam-helyőrző mellé kell a névutó”: ha a névutó `ideig`, akkor a helyőrzőnek `-nyi` képzős
+  alakot kell hoznia, nem nominatívuszit · `high`.
+- **`Cmdr won't connect to {name}` → `A Cmdr nem kapcsolódik ide: {name}`** · a `nem kapcsolódik` szó szerint a testvér
+  `servers.refusal.hostKeyRevoked`-ból (`A Cmdr nem kapcsolódik hozzá.`). Az angol a „stopped connecting”-ról állandó
+  elutasításra váltott, ezért jelen idő, nem múlt („leállította”), ami félbehagyott próbálkozásnak hangzana. Az
+  `ide: {name}` a ház fogása a ragozhatatlan helyőrzőre (§ style.md) · `high`.
+- **Az `Allow` az Android saját gombja → `„Engedélyezés”`**, szó szerint az `adb.connect.unauthorized`-ból
+  (`Nézd meg a telefonodat, és koppints az „Engedélyezés” gombra.`), a `gomb` fejnévvel, hogy a rag ne a gombnévre
+  kerüljön. A `koppint` ige is onnan jön, így a szöveg és a képernyő ugyanazt a szót mutatja · `high`.
+- A referenciagyűjtemény ezen a gépen nem volt elérhető (`_ignored/i18n/` a fő klónban sincs meg), így a döntés a
+  szállított katalógusra és erre a szótárra támaszkodik.

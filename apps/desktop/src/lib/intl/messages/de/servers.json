@@ -322,9 +322,9 @@
   "@servers.paneState.signIn": {
     "sourceHash": "a6a5723"
   },
-  "servers.paneState.hostKeyChanged": "Cmdr hat die Verbindung zu {name} gestoppt",
+  "servers.paneState.hostKeyChanged": "Cmdr verbindet sich nicht mit {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "ac65ece"
+    "sourceHash": "123ff4f"
   },
   "servers.paneState.hostKeyChangedHint": "Der Schlüssel des Servers hat sich geändert. Das kann bedeuten, dass der Server neu aufgesetzt wurde, oder dass sich etwas zwischen dich und den Server geschaltet hat. Trenne die Verbindung und öffne den Server dann erneut, um den Fingerabdruck zu prüfen.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -362,12 +362,12 @@
   "@servers.paneState.retryKeepsTrying": {
     "sourceHash": "e4d25b7"
   },
-  "servers.paneState.retryTotalSeconds": "{seconds} Sekunden",
+  "servers.paneState.retryTotalSeconds": "{seconds, plural, one {{secondsText} Sekunde} other {{secondsText} Sekunden}}",
   "@servers.paneState.retryTotalSeconds": {
-    "sourceHash": "86d62ab"
+    "sourceHash": "9e6c4f8"
   },
-  "servers.paneState.retryTotalMinutes": "{minutes} Minuten",
+  "servers.paneState.retryTotalMinutes": "{minutes, plural, one {{minutesText} Minute} other {{minutesText} Minuten}}",
   "@servers.paneState.retryTotalMinutes": {
-    "sourceHash": "fc339ba"
+    "sourceHash": "fc262c3"
   }
 }

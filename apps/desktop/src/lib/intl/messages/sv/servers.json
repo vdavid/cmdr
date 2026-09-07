@@ -320,9 +320,9 @@
   "@servers.paneState.signIn": {
     "sourceHash": "a6a5723"
   },
-  "servers.paneState.hostKeyChanged": "Cmdr stoppade anslutningen till {name}",
+  "servers.paneState.hostKeyChanged": "Cmdr ansluter inte till {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "ac65ece"
+    "sourceHash": "123ff4f"
   },
   "servers.paneState.hostKeyChangedHint": "Serverns nyckel har ändrats. Det kan betyda att servern har installerats om, eller att något sitter mellan dig och den. Koppla från och öppna servern igen för att kontrollera fingeravtrycket.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -360,12 +360,12 @@
   "@servers.paneState.retryKeepsTrying": {
     "sourceHash": "e4d25b7"
   },
-  "servers.paneState.retryTotalSeconds": "{seconds} sekunder",
+  "servers.paneState.retryTotalSeconds": "{seconds, plural, one {{secondsText} sekund} other {{secondsText} sekunder}}",
   "@servers.paneState.retryTotalSeconds": {
-    "sourceHash": "86d62ab"
+    "sourceHash": "9e6c4f8"
   },
-  "servers.paneState.retryTotalMinutes": "{minutes} minuter",
+  "servers.paneState.retryTotalMinutes": "{minutes, plural, one {{minutesText} minut} other {{minutesText} minuter}}",
   "@servers.paneState.retryTotalMinutes": {
-    "sourceHash": "fc339ba"
+    "sourceHash": "fc262c3"
   }
 }

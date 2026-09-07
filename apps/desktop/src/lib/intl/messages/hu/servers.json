@@ -319,9 +319,9 @@
   "@servers.paneState.signIn": {
     "sourceHash": "a6a5723"
   },
-  "servers.paneState.hostKeyChanged": "A Cmdr leállította a kapcsolódást ide: {name}",
+  "servers.paneState.hostKeyChanged": "A Cmdr nem kapcsolódik ide: {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "ac65ece"
+    "sourceHash": "123ff4f"
   },
   "servers.paneState.hostKeyChangedHint": "A kulcsa megváltozott. Ez jelentheti azt, hogy a szervert újratelepítették, de azt is, hogy valami beékelődött közéd és a szerver közé. Válaszd le, majd nyisd meg újra az ujjlenyomat ellenőrzéséhez.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -359,12 +359,12 @@
   "@servers.paneState.retryKeepsTrying": {
     "sourceHash": "e4d25b7"
   },
-  "servers.paneState.retryTotalSeconds": "{seconds} másodperc",
+  "servers.paneState.retryTotalSeconds": "{seconds, plural, one {{secondsText} másodpercnyi} other {{secondsText} másodpercnyi}}",
   "@servers.paneState.retryTotalSeconds": {
-    "sourceHash": "86d62ab"
+    "sourceHash": "9e6c4f8"
   },
-  "servers.paneState.retryTotalMinutes": "{minutes} perc",
+  "servers.paneState.retryTotalMinutes": "{minutes, plural, one {{minutesText} percnyi} other {{minutesText} percnyi}}",
   "@servers.paneState.retryTotalMinutes": {
-    "sourceHash": "fc339ba"
+    "sourceHash": "fc262c3"
   }
 }

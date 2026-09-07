@@ -39,9 +39,9 @@
   "@adb.connect.waitingHint": {
     "sourceHash": "d1df048"
   },
-  "adb.readiness.waitingForAuthorization": "Đang chờ bạn cho phép gỡ lỗi qua USB",
+  "adb.readiness.waitingForAuthorization": "Đang chờ bạn nhấn vào Cho phép trên điện thoại",
   "@adb.readiness.waitingForAuthorization": {
-    "sourceHash": "73615e0"
+    "sourceHash": "679558e"
   },
   "adb.readiness.offline": "Điện thoại của bạn không phản hồi. Hãy đánh thức màn hình, hoặc rút và cắm lại cáp.",
   "@adb.readiness.offline": {

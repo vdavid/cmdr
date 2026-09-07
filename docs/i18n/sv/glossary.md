@@ -2535,3 +2535,21 @@ De två raderna under de gråade fälten `Adress` och `Användarnamn`, när anv�
 - Ingen ursäkt och inget `gick inte`: ingenting misslyckades, vilket är hela poängen med nyckeln.
 - Referenssamlingen fanns inte på den här maskinen (`_ignored/i18n/` saknas även i huvudklonen), så beslutet vilar på
   den redan levererade katalogen och den här ordlistan.
+
+## Återförsökens längd, rubriken om värdnyckeln och Androids Tillåt-knapp
+
+- **`{seconds}`/`{minutes}` har nu ett ICU-plural med TVÅ platshållare** (`servers.paneState.retryTotalSeconds`,
+  `.retryTotalMinutes`): `{seconds}` väljer bara grenen, det som läses är `{secondsText}`, det redan formaterade talet.
+  Svenskan har `one` och `other` (CLDR, § style.md): `1 sekund` / `60 sekunder`, `1 minut` / `2 minuter`, ordagrant från
+  `main.quit.countdown` och `indexing.eta.hoursMinutesLeft` · `high`.
+- **Båda värdena är byggstenar i `servers.paneState.retryKeepsTrying`** (`Fortsätter försöka i totalt {duration}.`), så
+  de står nakna, utan preposition och utan punkt.
+- **`Cmdr won't connect to {name}` → `Cmdr ansluter inte till {name}`** · presens, precis som systernyckeln
+  `servers.refusal.hostKeyRevoked` (`Cmdr ansluter inte till servern.`). Engelskan gick från ”stopped connecting” till
+  en stående vägran, och preteritum (”stoppade anslutningen”) lät som ett avbrutet försök · `high`.
+- **`Allow` är Androids egen knapp → `Tillåt`**, ordagrant från `adb.connect.unauthorized`
+  (`Titta på din telefon och tryck på Tillåt.`), utan citattecken precis som där, så att texten och skärmen visar samma
+  ord. I `adb.readiness.waitingForAuthorization` står `i telefonen`, inte `på telefonen`, för att slippa tre `på` i
+  samma korta mening · `high`.
+- Referenssamlingen fanns inte på den här maskinen (`_ignored/i18n/` saknas även i huvudklonen), så beslutet vilar på
+  den redan levererade katalogen och den här ordlistan.

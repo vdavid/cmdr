@@ -39,9 +39,9 @@
   "@adb.connect.waitingHint": {
     "sourceHash": "d1df048"
   },
-  "adb.readiness.waitingForAuthorization": "Warten darauf, dass du USB-Debugging erlaubst",
+  "adb.readiness.waitingForAuthorization": "Warten darauf, dass du auf deinem Telefon „Erlauben“ antippst",
   "@adb.readiness.waitingForAuthorization": {
-    "sourceHash": "73615e0"
+    "sourceHash": "679558e"
   },
   "adb.readiness.offline": "Dein Telefon reagiert nicht. Aktiviere seinen Bildschirm oder schließe das Kabel neu an.",
   "@adb.readiness.offline": {

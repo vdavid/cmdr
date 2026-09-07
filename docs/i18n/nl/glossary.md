@@ -3019,3 +3019,21 @@ De twee regels onder de grijze velden `Adres` en `Gebruikersnaam`, wanneer de ge
   mis, dezelfde toonregel als bij `forgetSecretRefusedToast`.
 - De referentieverzameling stond niet op deze machine (`_ignored/i18n/` ontbreekt ook in de hoofdclone), dus de keuze
   leunt op de al geleverde catalogus en op deze woordenlijst.
+
+## De herhaalduur, de kop over de hostsleutel en Androids knop Toestaan
+
+- **`{seconds}`/`{minutes}` hebben nu een ICU-meervoud met TWEE plaatsaanduidingen**
+  (`servers.paneState.retryTotalSeconds`, `.retryTotalMinutes`): `{seconds}` kiest alleen de tak, wat de lezer ziet is
+  `{secondsText}`, het al opgemaakte getal. Nederlands heeft `one` en `other` (CLDR, § style.md): `1 seconde` /
+  `60 seconden`, `1 minuut` / `2 minuten`, woordelijk uit `main.quit.countdown` en `indexing.eta.hoursMinutesLeft` ·
+  `high`.
+- **Beide waarden zijn bouwstenen van `servers.paneState.retryKeepsTrying`**
+  (`We blijven het in totaal {duration} proberen.`), dus ze blijven kaal: geen voorzetsel, geen punt.
+- **`Cmdr won't connect to {name}` → `Cmdr maakt geen verbinding met {name}`** · dezelfde constructie als het zusje
+  `servers.refusal.hostKeyRevoked` (`Cmdr maakt er geen verbinding mee.`). Het Engels ging van „stopped connecting” naar
+  een blijvende weigering, dus geen `niet meer`: dat suggereert dat het eerder wél lukte · `high`.
+- **`Allow` is Androids eigen knop → `‘Toestaan’`**, woordelijk uit `adb.connect.unauthorized`
+  (`Kijk op je telefoon en tik op ‘Toestaan’.`), inclusief de enkele aanhalingstekens en het werkwoord `tikken op`,
+  zodat de zin en het scherm hetzelfde woord tonen · `high`.
+- De referentieverzameling stond niet op deze machine (`_ignored/i18n/` ontbreekt ook in de hoofdclone), dus de keuze
+  leunt op de al geleverde catalogus en op deze woordenlijst.

@@ -2989,3 +2989,28 @@ enregistré.
 - **Apostrophe doublée** (`n''était`) : `fileExplorer.json` passe par ICU, contrairement aux familles brutes.
 - La pile de référence était absente de cette machine (`_ignored/i18n/` n'existe pas non plus dans le clone principal) ;
   la décision s'appuie donc sur le catalogue déjà livré et sur ce glossaire.
+
+## La durée des tentatives, le titre de clé d'hôte et le bouton Autoriser d'Android
+
+- **`{seconds}`/`{minutes}` portent désormais un pluriel ICU à DEUX paramètres** (`servers.paneState.retryTotalSeconds`,
+  `.retryTotalMinutes`) : `{seconds}` ne sert qu'à choisir la branche, ce qui s'affiche est `{secondsText}`, le nombre
+  déjà formaté. Le français exige `one`, `many` et `other` (CLDR, § style.md), donc les trois branches sont écrites même
+  quand `many` et `other` sont identiques. Les formes reprennent `main.quit.countdown` (`{secondsText} seconde(s)`) et
+  `indexing.eta.hoursMinutesLeft` (`{minutesText} minute(s)`) · `high`.
+- **`retryTotalMinutes` garde un `sameAsSourceJustification`, réaccordé sur la nouvelle valeur anglaise** : « minute »
+  et « minutes » s'écrivent pareil dans les deux langues et il n'existe pas d'autre mot français. La valeur EST traduite
+  (elle porte les catégories françaises), mais `desktop-i18n-coverage` la lit comme de l'anglais parce que seul le jeu
+  de catégories change. La clé sœur des secondes diverge (`seconde` / `secondes`), donc elle, n'a pas besoin de
+  justification.
+- **Les deux valeurs sont des morceaux de `servers.paneState.retryKeepsTrying`** (« Cmdr continuera d'essayer pendant
+  {duration} au total. ») : elles restent nues, sans préposition ni point.
+- **`Cmdr won't connect to {name}` → `Cmdr ne se connectera pas à {name}`** · même futur que la sœur
+  `servers.refusal.hostKeyRevoked` (« Cmdr ne s'y connectera pas. »). L'anglais est passé d'un « stopped connecting » à
+  un refus permanent ; le passé composé (« a interrompu la connexion ») laissait croire à une tentative abandonnée ·
+  `high`.
+- **`Allow` est le bouton d'Android → `Autoriser`**, repris mot pour mot de `adb.connect.unauthorized` (« Regardez votre
+  téléphone et appuyez sur Autoriser. »), sans guillemets comme là-bas, pour que le mot lu soit celui affiché à l'écran.
+  Dans `adb.readiness.waitingForAuthorization` le téléphone passe en tête (« En attente : sur votre téléphone, appuyez
+  sur Autoriser ») afin d'éviter « appuyez sur Autoriser sur votre téléphone », deux `sur` collés · `high`.
+- La pile de référence était absente de cette machine (`_ignored/i18n/` n'existe pas non plus dans le clone principal) ;
+  la décision s'appuie donc sur le catalogue déjà livré et sur ce glossaire.

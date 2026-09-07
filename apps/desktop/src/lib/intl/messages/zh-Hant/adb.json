@@ -39,9 +39,9 @@
   "@adb.connect.waitingHint": {
     "sourceHash": "d1df048"
   },
-  "adb.readiness.waitingForAuthorization": "正在等你允許「USB 偵錯」",
+  "adb.readiness.waitingForAuthorization": "正在等你在手機上輕觸「允許」",
   "@adb.readiness.waitingForAuthorization": {
-    "sourceHash": "73615e0"
+    "sourceHash": "679558e"
   },
   "adb.readiness.offline": "你的手機沒有回應。請喚醒螢幕，或把連接線拔掉再插上。",
   "@adb.readiness.offline": {
