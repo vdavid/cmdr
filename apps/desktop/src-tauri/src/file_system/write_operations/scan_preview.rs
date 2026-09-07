@@ -38,7 +38,9 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 use super::event_sinks::{ScanPreviewEventSink, TauriScanPreviewSink};
-use super::scan::{SubtreeTotals, WalkContext, scan_subtree_with_oracle, sort_files, walk_sources_with_per_path};
+use super::scan::{SubtreeTotals, scan_subtree_with_oracle};
+use super::scan_source_tracker::sort_files;
+use super::scan_walker::{WalkContext, walk_sources_with_per_path};
 use super::scan_bridge::{ScanCounts, ScanPause, forward_scan_progress};
 use super::scan_cache::{
     ScanOutcome, cached_scan_totals, claimed_operation, in_flight_state, register_preview, release_preview,

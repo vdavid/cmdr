@@ -23,7 +23,7 @@ use super::super::event_sinks::OperationEventSink;
 use super::super::ledger::{WrittenFile, WrittenIdentity};
 use super::super::overwrite::{rename_no_replace, safe_overwrite_dir};
 use super::super::reversal::{Recheck, ReversalTally, recheck_local};
-use super::super::scan::handle_dry_run;
+use super::super::scan_dry_run::handle_dry_run;
 use super::super::state::WriteOperationState;
 use super::super::types::{
     SourceItemOutcome, WriteOperationConfig, WriteOperationError, WriteOperationType, WriteSourceItemDoneEvent,
