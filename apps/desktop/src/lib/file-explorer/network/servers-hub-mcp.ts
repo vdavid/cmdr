@@ -70,6 +70,6 @@ function emptyEntry(name: string, path: string, isDirectory: boolean): PaneFileE
     size: null,
     recursiveSize: null,
     modified: null,
-    recursiveSizePending: null,
+    recursiveSizeUpdating: null,
   }
 }
