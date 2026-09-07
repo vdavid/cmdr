@@ -111,7 +111,6 @@ describe('POST /feedback', () => {
   it('returns 400 when feedback is missing', async () => {
     const bindings = createBindings()
     const { feedback: _f, ...rest } = validBody
-    void _f
 
     const res = await postFeedback(rest, bindings)
 
@@ -175,9 +174,7 @@ describe('POST /feedback', () => {
   it('returns 400 when appVersion or osVersion is missing', async () => {
     const bindings = createBindings()
     const { appVersion: _a, ...noAppVersion } = validBody
-    void _a
     const { osVersion: _o, ...noOsVersion } = validBody
-    void _o
 
     expect((await postFeedback(noAppVersion, bindings)).status).toBe(400)
     expect((await postFeedback(noOsVersion, bindings)).status).toBe(400)
