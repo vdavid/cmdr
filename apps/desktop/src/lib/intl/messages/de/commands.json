@@ -116,6 +116,10 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
+  "commands.searchQuickFind.label": "In diesem Ordner und Unterordnern suchen",
+  "@commands.searchQuickFind.label": {
+    "sourceHash": "b8028f4"
+  },
   "commands.navGoToPath.label": "Zu Pfad gehen…",
   "@commands.navGoToPath.label": {
     "sourceHash": "936edc5"

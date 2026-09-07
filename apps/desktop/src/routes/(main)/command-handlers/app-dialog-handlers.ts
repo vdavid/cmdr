@@ -18,6 +18,8 @@ import { openWhatsNew } from '$lib/whats-new/whats-new-trigger.svelte'
 import { openOperationLog } from '$lib/operation-log/operation-log-trigger.svelte'
 import { openSuggestedOps } from '$lib/suggested-ops/suggested-ops-trigger.svelte'
 import { toggleRail } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
+import { applySearchPrefill } from '$lib/search/search-state.svelte'
+import { armAutoPromote } from '$lib/search/snapshot-promotion'
 import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import type { CommandHandlerRecord } from './types'
 
@@ -27,6 +29,26 @@ export const appDialogHandlers = {
   },
 
   'search.open': ({ ctx }) => {
+    ctx.dialogs.showSearchDialog(true)
+  },
+
+  /**
+   * Quick find (⌘⇧F): carry what the pane's type-to-jump buffer holds into a
+   * filename search of the current folder and everything under it, and let the
+   * first live batch promote itself into the pane. An empty scope keeps the
+   * default (the focused pane's current folder, resolved per run), so no
+   * machine-specific path reaches a saved recent search; an empty buffer is the
+   * same flow with nothing typed yet, and rests on the dialog's empty state.
+   */
+  'search.quickFind': ({ ctx, explorerRef }) => {
+    applySearchPrefill({
+      query: explorerRef?.takeJumpBuffer() ?? '',
+      mode: 'filename',
+      scope: '',
+      isDirectory: null,
+      autoRun: true,
+    })
+    armAutoPromote()
     ctx.dialogs.showSearchDialog(true)
   },
 

@@ -200,6 +200,20 @@ the DOM intercept (`DualPaneExplorer.handleKeyDown`) and the Quick Look panel mi
 exception to the whole-combo rule (`cmdr/no-raw-key-match`, parent `src/CLAUDE.md`): they classify a key, they don't
 test a combo.
 
+**Quick find escalates the jump buffer, and neither intercept knows.** `takeJumpBuffer()` (FilePane → `pane-commands` →
+`DualPaneExplorer` → `ExplorerAPI`) reads the buffer and clears it in one step, so the `search.quickFind` handler can
+carry what the user typed into a search of the current folder and everything under it without leaving the indicator up
+or letting the next keystroke extend a buffer already spent. The escalation combo needs no intercept change: both
+`isTypeToJumpChar` and `isPrintableJumpContinuation` bail on `metaKey || ctrlKey || altKey`, so a modified combo bubbles
+to the global dispatcher untouched: landmine L9 stays a two-line mirror. What happens after the handler (the prefill,
+the auto-promotion into a snapshot pane) is `apps/desktop/src/lib/search/DETAILS.md`.
+
+**"Up" out of a snapshot pane walks Back.** `navigateHistory`'s `'parent'` arm delegates to `navigateToParent()`, which
+can only no-op on a `search-results://<id>` path: `navigateSnapshot` commits the snapshot url as both path and
+volumePath, so there is no parent to compute. On a snapshot pane the arm takes the `'back'` branch instead, which is
+what Backspace, `⌘↑` and MCP `nav_to_parent` all mean there: leave the results, return to the folder they came from.
+Fixed in the one place all three route through, not per caller.
+
 **Open / parent keys are FilePane-local, not registry-dispatched.** `handleOpenOrParentKey` (in `FilePane`, above the
 view-mode split so every view inherits it) handles Enter/`⌘↓` → open and Backspace/`⌘↑` → parent. The `⌘`-variants are
 ALSO bound in the registry (`nav.open` / `nav.parent`) for Settings display and palette/MCP, so the local handler

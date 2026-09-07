@@ -32,6 +32,28 @@ import {
 import { buildSnapshotLabel } from './snapshot-label'
 import { handOffWalk } from './walk-handoff.svelte'
 
+/**
+ * Whether the next live run's first batch promotes itself into a pane. Quick find
+ * (⌘⇧F) arms it because the user asked for results in the pane, not a dialog to
+ * manage; the flag is one-shot so a later run in the same session can't inherit it.
+ *
+ * A module-level `let` rather than dialog state: its one consumer is an effect
+ * already driven by `getResults()`, so nothing here needs to be reactive.
+ */
+let autoPromoteArmed = false
+
+/** Arms the one-shot auto-promotion. Call before opening the dialog. */
+export function armAutoPromote(): void {
+  autoPromoteArmed = true
+}
+
+/** Consumes the one-shot auto-promotion: true at most once per `armAutoPromote()`. */
+export function takeAutoPromote(): boolean {
+  const armed = autoPromoteArmed
+  autoPromoteArmed = false
+  return armed
+}
+
 /** What the promotion produced, for the wrapper to route and to remember. */
 export interface PanePromotion {
   /** The id the host routes the active pane to (`search-results://<id>`). */

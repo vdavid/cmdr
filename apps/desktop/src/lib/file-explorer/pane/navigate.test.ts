@@ -531,6 +531,26 @@ describe('history walk ({ history } arm)', () => {
     if (result.status === 'started') await result.settled
   })
 
+  it('parent on a snapshot pane walks back instead, so the results are exitable', async () => {
+    const mgr = h.mgr('left')
+    getActiveTab(mgr).history = {
+      stack: [
+        { volumeId: 'root', path: '/Users/me/deep' },
+        { volumeId: 'search-results', path: 'search-results://sr-1' },
+      ],
+      currentIndex: 1,
+    }
+    getActiveTab(mgr).volumeId = 'search-results'
+    getActiveTab(mgr).path = 'search-results://sr-1'
+
+    const result = navigate({ pane: 'left', to: { history: 'parent' }, source: 'user' }, h.deps)
+    if (result.status === 'started') await result.settled
+
+    expect(h.paneState.left.paneRef?.navigateToParent).not.toHaveBeenCalled()
+    expect(h.tab('left').path).toBe('/Users/me/deep')
+    expect(h.tab('left').history.currentIndex).toBe(0)
+  })
+
   it('back across volumes switches the pane volume and restores a network host', () => {
     const mgr = h.mgr('left')
     const host = { id: 'srv', name: 'srv', hostname: 'srv.local', port: 445 }

@@ -263,6 +263,10 @@
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
   },
+  "fileExplorer.typeToJump.quickFindHint": "{shortcut} 搜尋子資料夾",
+  "@fileExplorer.typeToJump.quickFindHint": {
+    "sourceHash": "0b32724"
+  },
   "fileExplorer.searchResults.unavailableTitle": "搜尋結果已無法顯示",
   "@fileExplorer.searchResults.unavailableTitle": {
     "sourceHash": "ebcc5a7"

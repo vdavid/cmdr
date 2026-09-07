@@ -132,6 +132,7 @@ import { isPathOnVolume, type DetermineNavigationPathArgs } from '../navigation/
 import { tString } from '$lib/intl/messages.svelte'
 import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
 import type { Location } from '$lib/tauri-commands'
+import { snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
 
 /** Where a navigation originates. Drives focus + history-push behavior, never the destination. */
 export type NavigateSource = 'user' | 'mcp' | 'history' | 'correction' | 'cancel' | 'fallback' | 'mirror'
@@ -684,15 +685,20 @@ function navigateSnapshot(deps: NavigateDeps, pane: 'left' | 'right', snapshotId
   return { status: 'started', settled: SETTLED_NOOP }
 }
 
-/** The `{ history }` arm: back / forward walk the stack; parent delegates to the FilePane primitive. */
+/**
+ * The `{ history }` arm: back / forward walk the stack; parent delegates to the
+ * FilePane primitive, except on a snapshot pane, where "up" walks Back instead.
+ */
 function navigateHistory(
   deps: NavigateDeps,
   pane: 'left' | 'right',
   action: 'back' | 'forward' | 'parent',
 ): NavigateResult {
   const paneRef = deps.getPaneRef(pane)
+  const onSnapshot = snapshotIdFromPanePath(deps.getPanePath(pane)) !== null
+  const walk = action === 'parent' && onSnapshot ? 'back' : action
 
-  if (action === 'parent') {
+  if (walk === 'parent') {
     // Delegates to the FilePane primitive; its onPathChange re-enters as a
     // same-token self-re-entry (commitPathFromListing). `settled` is the primitive's.
     if (!paneRef) return { status: 'started', settled: SETTLED_NOOP }
@@ -701,9 +707,9 @@ function navigateHistory(
 
   const history = deps.getPaneHistory(pane)
   let newHistory: NavigationHistory
-  if (action === 'back' && canGoBack(history)) {
+  if (walk === 'back' && canGoBack(history)) {
     newHistory = back(history)
-  } else if (action === 'forward' && canGoForward(history)) {
+  } else if (walk === 'forward' && canGoForward(history)) {
     newHistory = forward(history)
   } else {
     return { status: 'started', settled: SETTLED_NOOP }

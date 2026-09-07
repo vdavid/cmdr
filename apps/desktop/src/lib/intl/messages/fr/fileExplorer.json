@@ -265,6 +265,10 @@
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
   },
+  "fileExplorer.typeToJump.quickFindHint": "{shortcut} pour chercher dans les sous-dossiers",
+  "@fileExplorer.typeToJump.quickFindHint": {
+    "sourceHash": "0b32724"
+  },
   "fileExplorer.searchResults.unavailableTitle": "Résultats de recherche indisponibles",
   "@fileExplorer.searchResults.unavailableTitle": {
     "sourceHash": "ebcc5a7"

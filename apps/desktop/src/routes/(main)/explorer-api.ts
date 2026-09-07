@@ -117,6 +117,12 @@ export interface ExplorerAPI {
   ) => Promise<void>
   getFocusedPane: () => 'left' | 'right'
   /**
+   * Reads and clears the focused pane's type-to-jump buffer, so quick find can
+   * carry what the user already typed into the search without leaving the
+   * indicator up. Empty string when nothing was typed.
+   */
+  takeJumpBuffer: () => string
+  /**
    * Shifts keyboard focus to `pane`. Same store update the pane-switch paths use,
    * without re-anchoring DOM focus. The downloads "jump to file" flow uses it to
    * focus a pane that already shows the target dir instead of navigating.

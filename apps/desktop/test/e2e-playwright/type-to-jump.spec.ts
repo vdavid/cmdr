@@ -17,7 +17,7 @@
 
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, getFixtureRoot } from './helpers.js'
+import { dispatchMenuCommand, ensureAppReady, getFixtureRoot, pollUntil } from './helpers.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
@@ -141,6 +141,30 @@ test.describe('Type-to-jump', () => {
     // must NOT be in the DOM. Quick poll catches the rare case where the
     // keystroke does fire the indicator before being cleared.
     await expect.poll(async () => !(await tauriPage.isVisible(INDICATOR)), { timeout: 1000 }).toBeTruthy()
+    expect(await tauriPage.isVisible(INDICATOR)).toBe(false)
+  })
+
+  test('quick find turns what was typed into a search-results pane', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await typeChars(tauriPage, 'file')
+    await tauriPage.waitForSelector(INDICATOR, 3000)
+
+    // The registry path, not the keyboard one: `dispatchMenuCommand` is unaffected by
+    // DOM focus drift, and what this pins is the handler (buffer → prefilled run →
+    // promotion), not the ⌘⇧F plumbing the shortcut tests already cover.
+    await dispatchMenuCommand(tauriPage, 'search.quickFind')
+
+    // The promotion lands the focused pane on the snapshot volume, whose rows carry the
+    // match's full path as their name (a folder listing's never do) and which has no
+    // `..` row. Both together say "these are results", not "this is a folder".
+    const landed = await pollUntil(
+      tauriPage,
+      async () =>
+        (await tauriPage.count('.file-pane.is-focused .file-entry[data-filename=".."]')) === 0 &&
+        (await tauriPage.count('.file-pane.is-focused .file-entry[data-filename*="/file"]')) > 0,
+      15000,
+    )
+    expect(landed).toBe(true)
     expect(await tauriPage.isVisible(INDICATOR)).toBe(false)
   })
 

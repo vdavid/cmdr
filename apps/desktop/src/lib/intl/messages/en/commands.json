@@ -135,6 +135,11 @@
     "description": "Command name that opens the file search. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "commands.searchQuickFind.label": "Find in this folder and subfolders",
+  "@commands.searchQuickFind.label": {
+    "description": "Command name that searches the current folder and everything under it. Carries over what the user already typed in the pane. Appears in the command palette.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
   "commands.navGoToPath.label": "Go to path…",
   "@commands.navGoToPath.label": {
     "description": "Command name that opens a dialog to jump to a typed path. The trailing ellipsis (…) signals it opens a dialog; keep it. \"Path\" means a filesystem location like ~/Documents.",

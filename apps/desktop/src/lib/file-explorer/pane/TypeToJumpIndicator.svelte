@@ -1,5 +1,6 @@
 <script lang="ts">
     import { tString } from '$lib/intl/messages.svelte'
+    import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
 
     /**
      * Tooltip-like overlay that surfaces the user's in-flight type-to-jump buffer
@@ -18,6 +19,8 @@
     }
 
     const { buffer, visible, stale }: Props = $props()
+
+    const quickFindShortcut = $derived(getFirstShortcutReactive('search.quickFind'))
 </script>
 
 {#if visible}
@@ -29,6 +32,11 @@
         aria-label={tString('fileExplorer.typeToJump.ariaLabel', { buffer })}
     >
         {tString('fileExplorer.typeToJump.prefix')}<span class="buffer">{buffer}</span>
+        {#if quickFindShortcut}
+            <span class="hint"
+                >{tString('fileExplorer.typeToJump.quickFindHint', { shortcut: quickFindShortcut })}</span
+            >
+        {/if}
     </div>
 {/if}
 
@@ -57,6 +65,12 @@
     .type-to-jump-indicator.is-stale {
         font-style: italic;
         opacity: 0.5;
+    }
+
+    .hint {
+        margin-left: var(--spacing-sm);
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
     }
 
     .buffer {

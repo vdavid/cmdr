@@ -116,6 +116,10 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
+  "commands.searchQuickFind.label": "Sök i den här mappen och undermappar",
+  "@commands.searchQuickFind.label": {
+    "sourceHash": "b8028f4"
+  },
   "commands.navGoToPath.label": "Gå till sökväg…",
   "@commands.navGoToPath.label": {
     "sourceHash": "936edc5"

@@ -50,7 +50,7 @@
     import { createSearchLifecycle } from './search-lifecycle.svelte'
     import { createSearchRunners } from './search-runners'
     import { createCoverageCta } from './coverage-cta.svelte'
-    import { persistRecentSearch, promoteResultsToPane } from './snapshot-promotion'
+    import { persistRecentSearch, promoteResultsToPane, takeAutoPromote } from './snapshot-promotion'
     import {
         activateHistoryEntry,
         removeHistoryEntry,
@@ -190,6 +190,26 @@
         onShowAllInMainWindow?.(promotion.snapshotId)
         onClose()
     }
+
+    /**
+     * Quick find (⌘⇧F) asked for results in the pane, not a dialog: the first batch of
+     * its LIVE run promotes itself through the same ⌥⏎ path and hands the walk over, so
+     * the pane keeps filling. Gated on `liveRun` because the auto-apply debounce answers
+     * without one, and closing under a user who is still typing would be a trap. The arm
+     * is consumed by the run that CLAIMS it, not by the promotion, so a quick find that
+     * finds nothing can't leave a later search promoting itself. The promotion runs in a
+     * microtask: `onClose()` unmounts the component this effect belongs to.
+     */
+    let autoPromoteRunId: string | null = null
+
+    $effect(() => {
+        const resultCount = searchQueryState.getResults().length
+        if (liveRun === null) return
+        if (takeAutoPromote()) autoPromoteRunId = liveRun.runId
+        if (resultCount === 0 || autoPromoteRunId !== liveRun.runId) return
+        autoPromoteRunId = null
+        queueMicrotask(showAllInMainWindow)
+    })
 
     /**
      * "Go to file" (⏎ / click / button when results are present): persist the search,

@@ -778,6 +778,17 @@
         jump.clearJumpState()
     }
 
+    /**
+     * Reads the type-to-jump buffer and clears it in one step, so a caller that
+     * escalates what was typed into something else (quick find) can't leave the
+     * indicator up or let the next keystroke extend a buffer already consumed.
+     */
+    export function takeJumpBuffer(): string {
+        const buffer = jump.buffer
+        jump.clearJumpState()
+        return buffer
+    }
+
     /** Find an item by name in network views. Returns index or -1. */
     export function findNetworkItemIndex(name: string): number {
         return networkMountViewRef?.findItemIndex(name) ?? -1

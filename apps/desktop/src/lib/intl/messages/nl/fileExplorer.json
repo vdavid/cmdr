@@ -266,6 +266,10 @@
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
   },
+  "fileExplorer.typeToJump.quickFindHint": "{shortcut} om in submappen te zoeken",
+  "@fileExplorer.typeToJump.quickFindHint": {
+    "sourceHash": "0b32724"
+  },
   "fileExplorer.searchResults.unavailableTitle": "Zoekresultaten zijn niet meer beschikbaar",
   "@fileExplorer.searchResults.unavailableTitle": {
     "sourceHash": "ebcc5a7"

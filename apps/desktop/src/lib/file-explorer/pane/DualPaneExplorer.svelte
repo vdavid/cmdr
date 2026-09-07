@@ -1002,6 +1002,11 @@
         return paneCommands.getFocusedPane()
     }
 
+    /** Reads and clears the focused pane's type-to-jump buffer (what quick find escalates). */
+    export function takeJumpBuffer(): string {
+        return paneCommands.takeJumpBuffer()
+    }
+
     /** Shift keyboard focus to a pane (store-level; no DOM re-anchor, matching `restoreFocus`). */
     export function setFocusedPane(pane: 'left' | 'right'): void {
         explorerState.setFocusedPane(pane)

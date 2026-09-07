@@ -91,6 +91,7 @@ export function makeExplorerSpy(): Record<string, ReturnType<typeof vi.fn>> {
     'navigate',
     'goHome',
     'getFocusedPane',
+    'takeJumpBuffer',
     'openItemUnderCursor',
     'moveCursor',
     'scrollTo',
@@ -124,6 +125,7 @@ export function makeExplorerSpy(): Record<string, ReturnType<typeof vi.fn>> {
   for (const m of methods) spy[m] = vi.fn()
   // Defaults for the methods whose return value the arm branches on.
   spy.getFocusedPane.mockReturnValue('left')
+  spy.takeJumpBuffer.mockReturnValue('')
   return spy
 }
 

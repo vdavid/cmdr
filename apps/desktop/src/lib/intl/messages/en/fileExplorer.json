@@ -382,6 +382,13 @@
   "@fileExplorer.typeToJump.prefix": {
     "description": "Visible label before the typed characters in the type-to-jump indicator (the typed text follows in its own styled span). Keep the trailing space."
   },
+  "fileExplorer.typeToJump.quickFindHint": "{shortcut} to search subfolders",
+  "@fileExplorer.typeToJump.quickFindHint": {
+    "description": "Hint next to the typed characters in the type-to-jump indicator. Shows which shortcut turns what they typed into a recursive search of the current folder. {shortcut} is the key combination.",
+    "placeholders": {
+      "shortcut": "the key combination bound to the quick find command"
+    }
+  },
   "fileExplorer.searchResults.unavailableTitle": "Search results no longer available",
   "@fileExplorer.searchResults.unavailableTitle": {
     "description": "Title of an empty-state message shown when a saved search-results view can no longer be displayed because its data was cleared."

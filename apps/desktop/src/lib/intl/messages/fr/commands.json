@@ -116,6 +116,10 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
+  "commands.searchQuickFind.label": "Rechercher dans ce dossier et ses sous-dossiers",
+  "@commands.searchQuickFind.label": {
+    "sourceHash": "b8028f4"
+  },
   "commands.navGoToPath.label": "Aller au chemin…",
   "@commands.navGoToPath.label": {
     "sourceHash": "936edc5"

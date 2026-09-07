@@ -504,8 +504,14 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     await paneRef.syncStateToMcpNow()
   }
 
+  /** Reads and clears the focused pane's type-to-jump buffer. Empty string when there's no pane or nothing typed. */
+  function takeJumpBuffer(): string {
+    return access.getPaneRef(access.getFocusedPane())?.takeJumpBuffer() ?? ''
+  }
+
   return {
     confirmDialog,
+    takeJumpBuffer,
     toggleVolumeChooser,
     openVolumeChooser,
     closeVolumeChooser,

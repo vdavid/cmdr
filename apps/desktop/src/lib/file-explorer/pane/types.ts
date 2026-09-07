@@ -226,6 +226,8 @@ export interface FilePaneAPI {
   isJumpActive(): boolean
   /** Type-to-jump: clear the buffer + hide the indicator immediately. */
   clearJumpState(): void
+  /** Type-to-jump: read the buffer and clear it in one step (what quick find escalates). */
+  takeJumpBuffer(): string
 
   /** Debug only: inject a FriendlyError into this pane's error state. */
   injectError(friendly: FriendlyError): void

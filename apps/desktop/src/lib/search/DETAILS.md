@@ -529,6 +529,40 @@ The label shown in the pane breadcrumb (and the snapshot's `label` field) is bui
 - Filename mode: the pattern as-is (`*.pdf`).
 - Regex mode: the pattern wrapped in slashes (`/pattern/`).
 
+### Quick find (⌘⇧F): the same promotion, without the dialog step
+
+GitHub #85 asked for a FreeCommander-style quick search: type in a pane, get every match under the current folder, act
+on it. Everything that needs is above; what was missing was a keyboard path into it. `search.quickFind` supplies one and
+adds no search machinery of its own:
+
+1. The handler (`routes/(main)/command-handlers/app-dialog-handlers.ts`) takes the pane's type-to-jump buffer whole
+   (`ExplorerAPI.takeJumpBuffer()`, see `file-explorer/pane/DETAILS.md` § Quick find) and passes it to
+   `applySearchPrefill` as a filename query with an EMPTY scope, so the scope ladder resolves the focused pane's current
+   folder per run and no machine-specific path reaches a saved recent search. `isDirectory: null` clears a stale
+   type/size/date chip from an earlier session. An empty buffer is the same flow: `hasRunnableQuery` is false, so the
+   dialog rests on its empty state with nothing typed yet.
+2. `armAutoPromote()` (`snapshot-promotion.ts`) sets a one-shot module flag, and the dialog opens and auto-runs through
+   the existing `runOnMount` path.
+3. `SearchDialog`'s auto-promote effect consumes the arm on the first LIVE run (`liveRun !== null`) and promotes that
+   run's first batch through `showAllInMainWindow`, the same ⌥⏎ path, so the walk handoff and the
+   `releaseSearchIndex(handedOffRunId)` contract are untouched. The promotion is deferred by one microtask because
+   `onClose()` unmounts the component the effect belongs to.
+
+Three things about that effect are load-bearing:
+
+- **The `liveRun` gate.** The auto-apply debounce answers through `runQuery`, which never reports a run state. Without
+  the gate, a user still typing would have the dialog close under them a second in.
+- **The arm is consumed by the run that CLAIMS it, not by the promotion.** A quick find that finds nothing must not
+  leave the flag armed, or the next search (opened by hand with ⌘F) promotes itself and closes.
+- **Zero results promote nothing.** `promoteResultsToPane` returns `null` on an empty result set, so promoting at run
+  start is impossible; the first batch is the earliest correct moment.
+
+Accepted side effect: promotion is also the recent-searches call site (above), so every quick find that finds something
+is remembered. That matches the "the user acted on a result" rule closely enough not to earn a flag.
+
+Getting back out is `navigate`'s job, not this dialog's: Backspace / `⌘↑` on a snapshot pane walks Back
+(`file-explorer/pane/DETAILS.md` § "Up" out of a snapshot pane).
+
 ## The walk that outlives the dialog (`walk-handoff.svelte.ts`)
 
 "Open in pane" is the ONE case where a search keeps running with its dialog gone. Everything else about closing the

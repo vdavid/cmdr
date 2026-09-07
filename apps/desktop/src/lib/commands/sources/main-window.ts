@@ -18,6 +18,14 @@ export const mainWindowCommands: CommandSource[] = [
     shortcuts: ['⌘F', '⌥F7'],
     status: getBadgeStatus('search'),
   },
+  {
+    id: 'search.quickFind',
+    nameKey: 'commands.searchQuickFind.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘⇧F'],
+    status: getBadgeStatus('search'),
+  },
 
   // ============================================================================
   // Main window - Navigation (Go to path)

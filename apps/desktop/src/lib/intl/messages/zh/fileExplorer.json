@@ -263,6 +263,10 @@
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
   },
+  "fileExplorer.typeToJump.quickFindHint": "{shortcut} 搜索子文件夹",
+  "@fileExplorer.typeToJump.quickFindHint": {
+    "sourceHash": "0b32724"
+  },
   "fileExplorer.searchResults.unavailableTitle": "搜索结果已不可用",
   "@fileExplorer.searchResults.unavailableTitle": {
     "sourceHash": "ebcc5a7"

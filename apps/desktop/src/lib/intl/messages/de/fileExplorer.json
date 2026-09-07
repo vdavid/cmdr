@@ -265,6 +265,10 @@
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
   },
+  "fileExplorer.typeToJump.quickFindHint": "{shortcut} durchsucht Unterordner",
+  "@fileExplorer.typeToJump.quickFindHint": {
+    "sourceHash": "0b32724"
+  },
   "fileExplorer.searchResults.unavailableTitle": "Suchergebnisse nicht mehr verfügbar",
   "@fileExplorer.searchResults.unavailableTitle": {
     "sourceHash": "ebcc5a7"

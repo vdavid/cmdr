@@ -28,6 +28,9 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   selection, a stuck `search-results` path, a delete on rows nobody picked, an MCP delete refused by stale pane state,
   or a folder re-sorted from a pane that isn't it (its header sorts the SNAPSHOT, ❌ never `setPaneSort`). DETAILS §
   Snapshot pane.
+- **Quick find takes the jump buffer whole** (`takeJumpBuffer`, read + clear), and "up" out of a snapshot pane walks
+  Back. `navigateToParent` can only no-op there. ❌ Never widen either jump-key predicate for it: both already bail on
+  a modifier, so the intercepts stay a two-line mirror (L9). DETAILS § Quick find.
 - **BIRTH CONTEXT and an ADOPTED operation are separate slots in separate MODULES.** The flow modules get a read-only
   `hasBirthContext()` and argument-free commands, ❌ never the props, a writer, or a getter, and ❌ never read the
   progress slot's occupancy off `showTransferProgressDialog`. DETAILS § Birth context.

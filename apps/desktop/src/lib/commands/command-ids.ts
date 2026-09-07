@@ -58,6 +58,7 @@ export const COMMAND_IDS = [
 
   // Search
   'search.open',
+  'search.quickFind',
 
   // Navigation (Go to path)
   'nav.goToPath',

@@ -117,6 +117,10 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
+  "commands.searchQuickFind.label": "Zoek in deze map en submappen",
+  "@commands.searchQuickFind.label": {
+    "sourceHash": "b8028f4"
+  },
   "commands.navGoToPath.label": "Ga naar pad…",
   "@commands.navGoToPath.label": {
     "sourceHash": "936edc5"
