@@ -848,8 +848,8 @@ diagnostic.
 Everything below is written down somewhere schedulable. ❌ Nothing here is only in this plan.
 
 - **Trust-on-first-use certificates, Digest, Nextcloud chunked uploads, quota**: `webdav-backend-follow-ups.md` § 2-5.
-  TOFU is the day-one wall for the NAS audience and should follow this effort directly; until it does, a self-signed
-  NAS lands on the honest `certificate_untrusted` wording D9 settles.
+  TOFU is the day-one wall for the NAS audience and should follow this effort directly; until it does, a self-signed NAS
+  lands on the honest `certificate_untrusted` wording D9 settles.
 - **`~/.ssh/config` host aliases as autocomplete in the address field**: `later/sftp-follow-ups.md` § 4, with the
   parser's edge cases and the read-only rule.
 - **Pinnable SMB shares**: `later/smb-pinned-shares.md`. The reason they are not here is D4: the store holds no share

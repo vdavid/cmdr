@@ -17,8 +17,8 @@ activation.
 **Where it is written down**: `apps/desktop/src/lib/servers/DETAILS.md` (the path grammar, the three connect arms, the
 sheet contract, the renderer table, and the refusal table) and
 `apps/desktop/src/lib/file-explorer/navigation/DETAILS.md` (which rows the switcher's Network group holds, and why a
-server row says Disconnect). The protocol side it builds against is still
-`crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
+server row says Disconnect). The protocol side it builds against is still `crates/cmdr-sftp/DETAILS.md` § "Connecting
+from the frontend".
 
 ## 2. Free space and non-UTF-8 filenames both wait on one vendoring
 
@@ -75,6 +75,6 @@ fills the endpoint fields and leaves them editable, exactly as the address parse
 tokens like `%h`, a config that names a `ProxyJump` Cmdr can't honor), and the add form is usable without it. The
 frontend side is one more source of completions behind the field the address parser already fills.
 
-**Cost**: a day for a config parser that handles `Host`, `HostName`, `Port`, `User`, `IdentityFile`, and `Include`,
-plus the decision about what to do with an alias whose directives Cmdr can't act on (offer it and let the connect
-refuse, or hide it).
+**Cost**: a day for a config parser that handles `Host`, `HostName`, `Port`, `User`, `IdentityFile`, and `Include`, plus
+the decision about what to do with an alias whose directives Cmdr can't act on (offer it and let the connect refuse, or
+hide it).

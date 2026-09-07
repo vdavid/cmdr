@@ -51,8 +51,8 @@ actual jump (one source of truth, no drift).
   order (a real `<button>` with `aria-label="Remove from list"` and a `--shadow-focus` `:focus-visible` ring) so
   keyboard-only users can remove a recent (digits can't express "remove"). Removing the row refocuses the textbox.
 
-- **Dedupe is a raw path-string compare**, so on case-insensitive APFS `/Users/x/Foo` and `/Users/x/foo` can show as
-  two recents. Accepted.
+- **Dedupe is a raw path-string compare**, so on case-insensitive APFS `/Users/x/Foo` and `/Users/x/foo` can show as two
+  recents. Accepted.
 
 ## Key decisions
 
@@ -112,8 +112,8 @@ over a tilde-expanded, base-dir-joined path). A scheme input joins onto the pane
 - `sftp://`, `webdav://` matching a saved place's app root: navigates, showing the place's name. Matching is by whole
   components, per the grammar in `apps/desktop/src/lib/servers/DETAILS.md` § The path grammar.
 - Any other input carrying a scheme `address-parser.ts` parses: opens the sign-in sheet in add mode, prefilled. ❗ A
-  server path nothing saved is an ADDRESS, not a dead end: someone pasted a link to a server they haven't added yet.
-  The accepted scheme set is `address-parser.ts`'s alone; don't restate it here.
+  server path nothing saved is an ADDRESS, not a dead end: someone pasted a link to a server they haven't added yet. The
+  accepted scheme set is `address-parser.ts`'s alone; don't restate it here.
 - Everything else, including a bare hostname: `null`, and the local resolver owns it. A bare hostname is a legal
   RELATIVE path, and Go to path has always resolved those.
 

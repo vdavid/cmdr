@@ -170,8 +170,8 @@ the documented fallback. Anchored to macOS 26.6.2, build 25G83, read 2026-09-06.
 - **"Android file access over ADB" (switch label): `Åtkomst till Android-filer via ADB`** · `åtkomst` is the catalog's
   settled access noun (`errors.listing.*`, `fileExplorer.pane.connectedDirectlyToast`); `via` is what the catalog
   already uses for a transport ("via en USB-kabel", "via USB"). `high`.
-- **`adb`, `ADB`, `Android SDK`, `Homebrew` kept verbatim** · the command and the packaged product names, which the
-  `en` `@key` descriptions name as stay-as-is. `high`.
+- **`adb`, `ADB`, `Android SDK`, `Homebrew` kept verbatim** · the command and the packaged product names, which the `en`
+  `@key` descriptions name as stay-as-is. `high`.
 - **`platform tools` kept verbatim too, which the `en` description does NOT ask for** · that description asks for the
   phrase the way the vendor's localized Android renders it, and `vi` therefore translates it. Swedish keeps it because
   the only place a Swedish reader meets the phrase is Android Studio's SDK Manager, whose package list reads

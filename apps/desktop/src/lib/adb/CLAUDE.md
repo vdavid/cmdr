@@ -10,8 +10,8 @@ backend is `src-tauri/src/adb/`; the wire is `crates/cmdr-adb/`.
   (`isDeviceVolumeId`, `isDeviceScheme`). `adb-volume-label.ts`: the "(ADB)" suffix.
 - `adb-connect-errors.ts` turns every `AdbConnectOutcomeError` into a sentence plus what the pane may offer next;
   `device-readiness.ts` turns a `DeviceReadiness` into a switcher row's state.
-- `adb-settings.ts`: the two settings and the one push that applies them. `AdbHint.svelte` +
-  `should-show-adb-hint.ts`: the MTP pane's one line offering the fuller way in. The pane's side of a dial is
+- `adb-settings.ts`: the two settings and the one push that applies them. `AdbHint.svelte` + `should-show-adb-hint.ts`:
+  the MTP pane's one line offering the fuller way in. The pane's side of a dial is
   `../file-explorer/pane/device-connect.svelte.ts`, ❌ not here.
 
 ## Must-knows

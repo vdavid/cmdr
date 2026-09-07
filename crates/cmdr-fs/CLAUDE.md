@@ -1,8 +1,8 @@
 # `cmdr-fs`
 
-The filesystem vocabulary and host primitives every layer of Cmdr speaks in, with **no `tauri` in its dependency
-tree**, so the index reaches `Volume` and `FileEntry` without reaching the app. App code uses the re-exports at their
-original paths (`crate::file_system::volume::VolumeError`); other crates use `cmdr_fs::…`.
+The filesystem vocabulary and host primitives every layer of Cmdr speaks in, with **no `tauri` in its dependency tree**,
+so the index reaches `Volume` and `FileEntry` without reaching the app. App code uses the re-exports at their original
+paths (`crate::file_system::volume::VolumeError`); other crates use `cmdr_fs::…`.
 
 ## Module map
 
@@ -16,10 +16,10 @@ original paths (`crate::file_system::volume::VolumeError`); other crates use `cm
 
 - **`#![deny(missing_docs)]` holds here**, and several types reach `bindings.ts` through `specta::Type`, which is why
   `Cargo.toml` pins `specta` to the app's exact version.
-- **`Volume::capabilities()` is a PURE FOLD of the trait's predicates, published over IPC.** ❌ Never override it: add
-  a predicate instead (`src/volume/capabilities.rs`).
-- **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane
-  goes stale after a copy. DETAILS § What the app kept.
+- **`Volume::capabilities()` is a PURE FOLD of the trait's predicates, published over IPC.** ❌ Never override it: add a
+  predicate instead (`src/volume/capabilities.rs`).
+- **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane goes
+  stale after a copy. DETAILS § What the app kept.
 - **❌ Never gate BEHAVIOR on `cfg(test)` here; use `any(test, feature = "testing")`.** `cfg(test)` is off in a
   consumer's test build, so production behavior runs inside their suite and surfaces as someone else's flake.
 - **`InMemoryVolume` is the oracle for the `Volume` contracts data safety leans on**, and LIES on request

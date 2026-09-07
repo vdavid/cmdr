@@ -50,17 +50,17 @@ below is met.
 ## In progress
 
 - [ ] 2026-09-07 `servers-hub-plan.md` - **Three remote backends and one model to reach them. M0-M6 landed; M7 and M8
-      are open.** SFTP and WebDAV were finished and invisible, ADB was silent at the one moment the user needs
-      feedback, and SMB signed in inside a pane where Tab can't mean two things. Shipped: one model (an account holds
-      places, the switcher shows pinned places), one modal sign-in sheet driven by a backend-owned `SignInShape`, one
-      pane view for every wait, a "Servers" hub pane state, and SMB and ADB migrated onto all four so S3 and OAuth
-      inherit them. Superseded and wiped `servers-in-the-sidebar.md`; it also absorbed the frontend half of the
-      now-wiped ADB UI spec. **Left**: M7, the real-server pass David runs by hand (a Hetzner storage box over both
-      protocols, a Nextcloud, a Synology, a VPS with key auth, Fastmail, and a phone with USB debugging off then on),
-      and M8, the merged phone row, deferred as `later/adb-merged-phone-row.md`. **Wipe per `DETAILS.md` § "Wiping a
-      shipped spec"** once M7 has run: the decisions already live beside the code (`apps/desktop/src/lib/servers/`,
-      `apps/desktop/src/lib/adb/`, `apps/desktop/src/lib/file-explorer/navigation/`), and what is deferred is in
-      `later/`. That wipe is a one-way door, so it waits for David.
+      are open.** SFTP and WebDAV were finished and invisible, ADB was silent at the one moment the user needs feedback,
+      and SMB signed in inside a pane where Tab can't mean two things. Shipped: one model (an account holds places, the
+      switcher shows pinned places), one modal sign-in sheet driven by a backend-owned `SignInShape`, one pane view for
+      every wait, a "Servers" hub pane state, and SMB and ADB migrated onto all four so S3 and OAuth inherit them.
+      Superseded and wiped `servers-in-the-sidebar.md`; it also absorbed the frontend half of the now-wiped ADB UI spec.
+      **Left**: M7, the real-server pass David runs by hand (a Hetzner storage box over both protocols, a Nextcloud, a
+      Synology, a VPS with key auth, Fastmail, and a phone with USB debugging off then on), and M8, the merged phone
+      row, deferred as `later/adb-merged-phone-row.md`. **Wipe per `DETAILS.md` § "Wiping a shipped spec"** once M7 has
+      run: the decisions already live beside the code (`apps/desktop/src/lib/servers/`, `apps/desktop/src/lib/adb/`,
+      `apps/desktop/src/lib/file-explorer/navigation/`), and what is deferred is in `later/`. That wipe is a one-way
+      door, so it waits for David.
 
 - [ ] 2026-09-06 `data-safety-hunt-follow-ups.md` - **What the transfer-engine hunt left open after its 15 findings were
       fixed.** Nine ranked entries in problem / impact / solution / size form: two high (a cross-FS move loses the bytes
@@ -98,11 +98,11 @@ below is met.
 - [ ] 2026-09-01 `android-adb-backend-follow-ups.md` - **The ADB backend is done and has never met a phone.**
       `crates/cmdr-adb` lists, streams, and writes as a device-anchored `Volume` beside MTP, over the seam MTP never had
       (`device_volumes.rs`, with `host:track-devices` as the first push-channel hotplug); it's all documented beside the
-      code. Three items left, in PISS form: the real-device pass that gates everything (authorize prompt,
-      `unauthorized` → `device` mid-session, a 2 GB transfer, a `/data` listing on a non-rooted phone), `sendrecv_v2`
-      compression off until measured, and wireless pairing left to the server. The UI shipped with
-      `servers-hub-plan.md`'s M5, and ⌘G takes an `adb://` path through the frontend scheme intercept rather than the
-      Rust resolver this file sketched. Indexing an ADB volume is a settled non-goal, not a gap.
+      code. Three items left, in PISS form: the real-device pass that gates everything (authorize prompt, `unauthorized`
+      → `device` mid-session, a 2 GB transfer, a `/data` listing on a non-rooted phone), `sendrecv_v2` compression off
+      until measured, and wireless pairing left to the server. The UI shipped with `servers-hub-plan.md`'s M5, and ⌘G
+      takes an `adb://` path through the frontend scheme intercept rather than the Rust resolver this file sketched.
+      Indexing an ADB volume is a settled non-goal, not a gap.
 
 - [ ] 2026-08-31 `rollback-recheck-plan.md` - **Cancelling an operation deletes files it no longer wrote, and the move
       case overwrites silently.** The history dialog's Roll back verifies every item against a recorded snapshot and
@@ -163,8 +163,8 @@ left, so the durable intent survives the wipe.
       and a per-row active protocol the pane remembers, and it retires the "(ADB)" name suffix and its ten translations.
       The last item of the shipped ADB work, deferred because it is the largest and nothing waits on it.
 
-- [ ] 2026-09-07 `later/smb-pinned-shares.md` - **An SMB share can't be pinned, so it leaves the switcher the moment
-      it unmounts.** An SFTP or WebDAV place keeps a greyed `saved` row that dials on activation; a share reaches the
+- [ ] 2026-09-07 `later/smb-pinned-shares.md` - **An SMB share can't be pinned, so it leaves the switcher the moment it
+      unmounts.** An SFTP or WebDAV place keeps a greyed `saved` row that dials on activation; a share reaches the
       switcher only while mounted, so the NAS someone uses daily is invisible until they walk the hub down to it again.
       Three facts block it, each verified: the known-shares store has no share rows (its one writer passes an empty
       share name), it has no port, and a mounted share's id comes from `statfs`, which normalizes an mDNS name to an IP
@@ -175,10 +175,10 @@ left, so the durable intent survives the wipe.
 - [ ] 2026-09-07 `later/sftp-follow-ups.md` - **What is left once the SFTP backend AND its frontend both ship.** The
       crate, its IPC surface, and the fixtures are documented in `crates/cmdr-sftp/DETAILS.md`; the frontend is
       `apps/desktop/src/lib/servers/DETAILS.md`, and § 1 is now a pointer at it rather than an open item. Three things
-      are open. Free space and non-UTF-8 filenames wait on the same vendoring of `openssh-sftp-protocol` +
-      `ssh_format`, so they're one job. Two backends still put their protocol's wording where `VolumeError::NotFound`
-      promises a path. And someone who reaches a box as `ssh naspi` still has to retype the endpoint, because nothing
-      reads `~/.ssh/config` for host aliases to offer as completions in the address field.
+      are open. Free space and non-UTF-8 filenames wait on the same vendoring of `openssh-sftp-protocol` + `ssh_format`,
+      so they're one job. Two backends still put their protocol's wording where `VolumeError::NotFound` promises a path.
+      And someone who reaches a box as `ssh naspi` still has to retype the endpoint, because nothing reads
+      `~/.ssh/config` for host aliases to offer as completions in the address field.
 
 - [ ] 2026-08-23 `later/ai/wake-loop-follow-ups.md` - What the shipped proactive agent deliberately left. Two interest
       tuning knobs and three cadence constants that want a week of real wakes before anyone moves them (the per-outcome

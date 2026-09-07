@@ -63,8 +63,8 @@ person. `friendly-error-style.test.ts` runs the whole table through the writing 
 ## Where a phone's first navigation lands
 
 The rule is in `../file-explorer/navigation/path-navigation.ts::firstLandingOn`, applied in `determineNavigationPath`'s
-default arm: the one reached only when there is no favorite target, no matching other-pane path, and no remembered
-path for the volume.
+default arm: the one reached only when there is no favorite target, no matching other-pane path, and no remembered path
+for the volume.
 
 An `adb://<serial>` volume path becomes `adb://<serial>/sdcard`. An Android device root is a kernel filesystem: `acct`,
 `apex`, `bin`, `proc`, forty entries a person mostly cannot read, and the user's own files are one level in.

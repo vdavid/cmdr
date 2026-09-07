@@ -24,8 +24,8 @@ differently misses the volume its own id names, which is the same tuple `sftp_vo
 **Matching is by whole components, never a string prefix.** `/srv/data-1` is a legal sibling of `/srv/data`, and a
 string-prefix containment test would strip the root off it and ask the server for `-1/photos`.
 `../file-explorer/pane/navigate.ts`'s `isUnderServerRoot` appends the separator for exactly that reason, and
-`RemoteRoot::to_remote_path` refuses the same
-three shapes (a bare server path, another server's prefix, a `..` escape) on the Rust side.
+`RemoteRoot::to_remote_path` refuses the same three shapes (a bare server path, another server's prefix, a `..` escape)
+on the Rust side.
 
 **The three root aliases** (`''`, `'/'`, `'.'`) all mean the volume root, on both sides. A backend's own code passes a
 bare `/` for its root, which is why the Rust side keeps them too.
@@ -37,8 +37,8 @@ bare `/` for its root, which is why the Rust side keeps them too.
 - **`direct`, `os_mount` → nothing** (`already_live`). There is a session serving right now.
 - **`disconnected` → `smbReconnectManager.startCycle`**, answering `reconnecting`. The volume is REGISTERED, so a dial
   would register a second one under a second id, and the backoff loop already owns recovery. The manager is idempotent,
-  so landing on the same place twice costs nothing. The cycle itself:
-  `../file-explorer/network/DETAILS.md` § "SMB live-reconnect flow".
+  so landing on the same place twice costs nothing. The cycle itself: `../file-explorer/network/DETAILS.md` § "SMB
+  live-reconnect flow".
 - **`needs_sign_in` → the sheet, as a REGISTERED place.** The backend stopped retrying because a credential is missing,
   so re-dialing can't help, and a re-dial of a registered volume is the second-volume bug again.
 - **`saved`, or nothing → `connectSavedPlace`.** Nothing is registered, so this is the first dial. If THAT answers
@@ -70,16 +70,15 @@ credentials, then connected), and a sheet that closed between them would lose wh
 somewhere other than under the field it belongs to. `connect-flow.ts` decides WHEN a human is needed; the sheet decides
 how many times to ask.
 
-**The three SMB sites, and what each `attempt` runs** (`../file-explorer/network/smb-sign-in.ts`
-builds all three requests, so the endpoint header, the remembered username, and the refusal vocabulary can't drift
-between them):
+**The three SMB sites, and what each `attempt` runs** (`../file-explorer/network/smb-sign-in.ts` builds all three
+requests, so the endpoint header, the remembered username, and the refusal vocabulary can't drift between them):
 
 - **A share listing** (`PlacesBrowser`) → `listSharesWithCredentials`. Server-level, so the header is `smb://<host>` and
   guest is offered where the host allows one. Cancelling goes back to the host list.
 - **A share mount** (`../file-explorer/pane/NetworkMountView.svelte`) → `mountNetworkShare`, then `saveSmbCredentials`
   ❗ only once it went through. Cancelling goes back to the share list.
-- **A "Connect directly" upgrade** (`../file-explorer/network/direct-connect.ts`) →
-  `upgradeToSmbVolumeWithCredentials`, which stores the credential backend-side when the box is checked.
+- **A "Connect directly" upgrade** (`../file-explorer/network/direct-connect.ts`) → `upgradeToSmbVolumeWithCredentials`,
+  which stores the credential backend-side when the box is checked.
 
 The last two pass `guestAllowed: false`: an unauthenticated attempt is what just came back refused, so offering it again
 would be inert. All three answer `handed_off` on success (none of them connects a VOLUME), and hand anything that isn't
@@ -156,9 +155,8 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
 
 Keys live in `$lib/intl/messages/en/servers.json` under `servers.refusal.*`, reached through a `Record` in
 `connect-refusals.ts` rather than a built string, which is what keeps `desktop-message-keys-unused` honest without a
-dynamic-prefix entry.
-`$lib/error-messages/friendly-error-style.test.ts` renders all of them and holds them to the same writing rules the
-friendly-error copy obeys: they are error copy however they are filed.
+dynamic-prefix entry. `$lib/error-messages/friendly-error-style.test.ts` renders all of them and holds them to the same
+writing rules the friendly-error copy obeys: they are error copy however they are filed.
 
 **A second `Record` says WHICH FIELD each sentence goes under** (`refusalField`): the secret for the two that are about
 a credential, the address for the four that are about the endpoint, and the form for the three no field can fix. ❗ A

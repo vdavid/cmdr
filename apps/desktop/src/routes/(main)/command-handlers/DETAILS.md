@@ -31,8 +31,8 @@ the union and the tuple in sync.
 - `applyZoomPreset` (`view-handlers.ts`) backs the four `view.zoom.setNN` presets.
 - `withEntryUnderCursor` (`file-handlers.ts`) backs every get-entry-then-act file and cloud arm. `file.copyPath` is the
   documented exception.
-- `copyPathAndAnnounce` (`file-handlers.ts`) does the clipboard write plus the copied-path toast for `file.copyPath`
-  and `file.copyCurrentDirectoryPath`.
+- `copyPathAndAnnounce` (`file-handlers.ts`) does the clipboard write plus the copied-path toast for `file.copyPath` and
+  `file.copyCurrentDirectoryPath`.
 
 ## Analytics from the file arms
 
