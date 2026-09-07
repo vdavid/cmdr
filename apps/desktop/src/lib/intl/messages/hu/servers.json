@@ -211,6 +211,10 @@
   "@servers.sheet.addressHelp": {
     "sourceHash": "f91dc8a"
   },
+  "servers.sheet.identityLocked": "A cím és a fiók azonosítja ezt a szervert. A módosításukhoz felejtsd el a szervert, és add hozzá újra.",
+  "@servers.sheet.identityLocked": {
+    "sourceHash": "c16657d"
+  },
   "servers.sheet.username": "Felhasználónév",
   "@servers.sheet.username": {
     "sourceHash": "e3b89e9"

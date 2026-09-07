@@ -212,6 +212,10 @@
   "@servers.sheet.addressHelp": {
     "sourceHash": "f91dc8a"
   },
+  "servers.sheet.identityLocked": "Adressen och kontot är det som identifierar den här servern. Glöm servern och lägg till den igen om du vill ändra dem.",
+  "@servers.sheet.identityLocked": {
+    "sourceHash": "c16657d"
+  },
   "servers.sheet.username": "Användarnamn",
   "@servers.sheet.username": {
     "sourceHash": "e3b89e9"

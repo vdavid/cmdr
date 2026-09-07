@@ -202,6 +202,13 @@ parallel":
   as a proper name inside the sentence, the way Apple refers to its own `Buscar` / `Localiser`. The same rule already
   applies to menu names (`menu.*`) in prose; this is it generalized to dialogs and panes.
 
+- **English's "name" as a verb collides with a `Name` FIELD on the same surface, and only translation exposes it.**
+  `servers.sheet.identityLocked` says the address and the account "are what name this server", on a sheet that also has
+  its own `Name` field (`servers.sheet.name`). English gets away with the pun; a translated "give it a name" /
+  "benennen" / "命名" reads as if the sentence were about that label. Every locale rendered the verb as IDENTIFY or
+  DETERMINE instead (de `machen … aus`, sv `identifierar`, nl `bepalen welke server dit is`, zh `决定了这是哪台服务器`).
+  Generalize: when the English verb doubles as a field label on the same screen, pick the sense-verb, not the cognate.
+
 ## Reference-pile notes
 
 - **macOS AppKit's save-changes dialog is the Tier-1 source for any "review pending changes before applying" surface.**

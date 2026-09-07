@@ -212,6 +212,10 @@
   "@servers.sheet.addressHelp": {
     "sourceHash": "f91dc8a"
   },
+  "servers.sheet.identityLocked": "O endereço e a conta identificam este servidor. Para mudá-los, esqueça este servidor e adicione-o de novo.",
+  "@servers.sheet.identityLocked": {
+    "sourceHash": "c16657d"
+  },
   "servers.sheet.username": "Nome de usuário",
   "@servers.sheet.username": {
     "sourceHash": "e3b89e9"

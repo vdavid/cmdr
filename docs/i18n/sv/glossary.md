@@ -2502,3 +2502,16 @@ LEVANDE macOS-paketen (macOS 26.6.2, build 25G83, läst 2026-09-07; `.loctable` 
 Ingen `sameAsSourceJustification` i passet (`adb.volumeLabelWithSuffix` bar redan sin från en tidigare omgång). Ingen
 apostrof i något värde, så ICU-dubbleringen `''` blir aldrig aktuell, och `{name}` står oförändrad i den enda nyckel som
 bär den.
+
+## Den låsta serveridentiteten (`servers.sheet.identityLocked`)
+
+De två raderna under de gråade fälten `Adress` och `Användarnamn`, när användaren REDIGERAR en sparad server.
+
+- **`the account` (fältet man loggar in på servern med) → `kontot`** · katalogen använder redan ordet i just den
+  betydelsen (sex träffar i `errors.json`, en i `onboarding.json`) · `high`.
+- **Hjälptexten namnger handlingarna exakt som knapparna den pekar på**: `glöm` från `menu.network.forgetServer`
+  ("Glöm servern") och `lägg till` från `servers.sheet.addTitle` ("Lägg till server"). Ett synonymval ("ta bort",
+  "skapa") skickar läsaren att leta efter en meny som inte finns.
+- **`are what name this server` → `är det som identifierar den här servern`** · arket har ett eget fält `Namn`
+  (`servers.sheet.name`), så meningen får inte bygga på "namnge": då låter det som om den handlade om den etiketten.
+  `identifiera` säger det som avses (de två värdena ÄR servern) · `high`.

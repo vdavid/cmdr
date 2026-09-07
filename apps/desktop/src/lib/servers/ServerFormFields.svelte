@@ -29,6 +29,18 @@
         disabled: boolean
         /** ❗ Off in edit mode: changing which protocol a saved server speaks makes it a different server. */
         protocolEditable: boolean
+        /**
+         * ❗ Off in edit mode, and the address and username go with the protocol
+         * toggle. Rust mints the volume id from `(host, port, username)` and
+         * `sftp_known_servers::remember` keys on the same tuple, so an edited one
+         * upserts a SECOND saved entry beside the first rather than moving
+         * anything: the hub grows a duplicate row and the old id's tabs are
+         * orphaned. The honest path to a new identity is Forget then Add, which
+         * `identityHint` says.
+         */
+        identityEditable: boolean
+        /** The two lines under the locked identity fields, saying what to do instead. */
+        identityHint?: string
         /** The sentence under the address field, when the last attempt was refused. */
         addressRefusal?: string
         /** Offered on `not_a_webdav_server`: appends the Nextcloud collection path. Nobody knows that path. */
@@ -46,6 +58,8 @@
         form,
         disabled,
         protocolEditable,
+        identityEditable,
+        identityHint,
         addressRefusal,
         onTryNextcloudAddress,
         secretRefusal,
@@ -89,7 +103,7 @@
         oninput={(e: Event) => {
             onChange({ address: (e.currentTarget as HTMLInputElement).value })
         }}
-        {disabled}
+        disabled={disabled || !identityEditable}
         invalid={addressRefusal !== undefined}
         aria-describedby={addressRefusal ? 'server-address-refusal' : 'server-address-help'}
         placeholder={tString('servers.sheet.addressPlaceholder')}
@@ -106,9 +120,12 @@
                 </Button>
             </div>
         {/if}
-    {:else}
+    {:else if identityEditable}
         <p id="server-address-help" class="field-help">{tString('servers.sheet.addressHelp')}</p>
     {/if}
+    <!-- ❗ No "paste whatever you have" line under a field nobody can type in.
+         The locked group's own sentence sits under the username instead, where
+         it covers all three of address, protocol, and account. -->
 </div>
 
 <div class="field">
@@ -134,11 +151,15 @@
             oninput={(e: Event) => {
                 onChange({ username: (e.currentTarget as HTMLInputElement).value })
             }}
-            {disabled}
+            disabled={disabled || !identityEditable}
+            aria-describedby={identityHint ? 'server-identity-hint' : undefined}
             autocomplete="username"
             autocapitalize="off"
             spellcheck={false}
         />
+        {#if identityHint}
+            <p id="server-identity-hint" class="field-help">{identityHint}</p>
+        {/if}
     </div>
 
     <div class="field">

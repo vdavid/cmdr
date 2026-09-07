@@ -2986,3 +2986,18 @@ Notities:
 - **`Hint voor USB-foutopsporing gesloten`** (`settings.behavior.adbHintDismissed.label`): interne sleutel, nooit in
   beeld. Het zusje zegt `getoond` omdat het Engels `shown` zegt; hier staat `dismissed`, dus `gesloten`. Bevestig dat
   het paar niet één werkwoord hoort te delen.
+
+## De vastgezette serveridentiteit (`servers.sheet.identityLocked`)
+
+De twee regels onder de grijze velden `Adres` en `Gebruikersnaam`, wanneer de gebruiker een bewaarde server WIJZIGT.
+
+- **`the account` (het veld waarmee je op de server inlogt) → `het account`** · de catalogus gebruikt het al in precies
+  die zin (vijf keer in `errors.json`, één keer in `onboarding.json`) · `high`.
+- **De hint noemt de acties precies zoals de knoppen waar hij naar verwijst**: `vergeten` uit
+  `menu.network.forgetServer` ("Vergeet server") en `toevoegen` uit `servers.sheet.addTitle` ("Voeg server toe"). Een
+  synoniem ("verwijder", "maak aan") stuurt de lezer op zoek naar een menu dat er niet is. Het scheidbare werkwoord
+  houdt zijn partikel aan het EIND: `voeg hem opnieuw toe`, niet "voeg opnieuw toe hem".
+- **`are what name this server` → `bepalen welke server dit is`** · het formulier heeft een eigen veld `Naam`
+  (`servers.sheet.name`), dus de zin mag niet op "noemen" leunen: dan lijkt het over dat label te gaan. De
+  welke-vraag zegt wat bedoeld is (die twee waarden ZIJN de server) en klinkt Nederlandser dan het Latijnse
+  "identificeren" · `high`.

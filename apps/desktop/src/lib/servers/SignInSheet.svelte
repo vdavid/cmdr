@@ -51,11 +51,13 @@
         getSftpUnattendedReconnect,
         getWebdavUnattendedReconnect,
         hasServerSecret,
+        saveSftpCredentials,
+        saveWebdavCredentials,
         updateSavedServer,
     } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
     import { getAppLogger } from '$lib/logging/logger'
-    import type { HostKeyPrompt, SavedServer } from '$lib/ipc/bindings'
+    import type { HostKeyPrompt, SavedServer, ServerTarget } from '$lib/ipc/bindings'
 
     interface Props {
         request: SignInSheetRequest
@@ -344,7 +346,14 @@
         await run(submission)
     }
 
-    /** Edit mode: write the target, then the Remember flip, deliberately and once. */
+    /**
+     * Edit mode: write the target, then the Remember flip, then whatever was
+     * typed into the password field. Each deliberately, and each once.
+     *
+     * ❗ The typed password lands LAST, so it wins over a box the same visit
+     * turned off. A password field with text in it and Save pressed stores that
+     * password; anything else is a field that doesn't do what it shows.
+     */
     async function save() {
         if (!editedServer) return
         const target = serverTargetFrom(form)
@@ -356,6 +365,7 @@
         try {
             await updateSavedServer(target)
             await writeRememberFlip(editedServer.id)
+            await writeTypedSecret(target)
             close({ kind: 'saved' })
         } catch (e) {
             log.warn('Saving the edited server broke down: {error}', { error: String(e) })
@@ -367,15 +377,38 @@
 
     /**
      * ❗ Turning Remember OFF forgets the secret NOW. Turning it on can't seed one
-     * (there is nothing typed to save), so it rides the next successful sign-in's
-     * offer instead. ❌ Neither ever happens as a side effect of a dial: a
-     * Keychain entry that exists because a connect happened to succeed is not the
-     * user's choice.
+     * by itself, so it rides either the typed password below or the next
+     * successful sign-in's offer. ❌ Neither ever happens as a side effect of a
+     * dial: a Keychain entry that exists because a connect happened to succeed is
+     * not the user's choice.
      */
     async function writeRememberFlip(id: string) {
         if (form.remember === rememberWhenOpened) return
         if (!form.remember) await forgetServerSecret(id)
         rememberWhenOpened = form.remember
+    }
+
+    /**
+     * The password field's own write.
+     *
+     * ❗ An EMPTY field means "I didn't come here to change the password", ❌
+     * never "store an empty one": the field opens empty every time, because a
+     * stored secret is never read back out of the Keychain to prefill it.
+     *
+     * ❗ Keyed on the TARGET's tuple, which is the one Rust mints the volume id
+     * from. Identity is locked in edit mode, so that tuple is the saved server's
+     * own and the entry this writes is the one the next dial reads.
+     */
+    async function writeTypedSecret(target: ServerTarget) {
+        if (form.secret === '') return
+        if (target.protocol === 'sftp') {
+            await saveSftpCredentials(target.host, target.port, target.username, form.secret)
+        } else {
+            await saveWebdavCredentials(target.url, target.username, form.secret)
+        }
+        // The store holds one now, which is exactly what the box means.
+        form.remember = true
+        rememberWhenOpened = true
     }
 
     function handleKeydown(event: KeyboardEvent) {
@@ -427,6 +460,8 @@
                 {form}
                 disabled={busy}
                 protocolEditable={!isEdit}
+                identityEditable={!isEdit}
+                identityHint={isEdit ? tString('servers.sheet.identityLocked') : undefined}
                 addressRefusal={refusalWhere === 'address' ? refusalText : undefined}
                 onTryNextcloudAddress={offersNextcloudRemedy
                     ? () => {

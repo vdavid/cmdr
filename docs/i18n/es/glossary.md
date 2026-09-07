@@ -2729,3 +2729,17 @@ cruzando el lado `en` con el `es`, 2026-09-07). El vocabulario propio de Android
 - `adb.volumeLabelWithSuffix` sigue con su `sameAsSourceJustification`: es un marcador más la sigla entre paréntesis.
 - Ni «error» ni «fallo» ni «no se pudo» aparecen en ninguna de las 19 cadenas: cada una dice qué está pasando
   (`no respondieron`, `ya no está conectado`, `no responde`, `perdió la conexión`) y, cuando la hay, cuál es la salida.
+
+## La identidad bloqueada del servidor (`servers.sheet.identityLocked`)
+
+Las dos líneas bajo los campos atenuados `Dirección` y `Nombre de usuario` al EDITAR un servidor guardado.
+
+- **`the account` (el campo con el que se inicia sesión en el servidor) → `la cuenta`** · el catálogo ya lo usa en este
+  mismo sentido: `servers.sheet.needsStoredSecret` («Para volver a conectar por su cuenta…») y las seis apariciones en
+  `errors.json` · `high`.
+- **El aviso nombra las acciones igual que los botones a los que apunta**: `olvidar` de `menu.network.forgetServer`
+  («Olvidar el servidor») y `añadir` de `servers.sheet.addTitle` («Añadir servidor»). Un sinónimo («eliminar», «agregar»)
+  manda al lector a buscar un menú que no existe; recuerda además que `agregar` tiene cero apariciones en macOS es.
+- **`are what name this server` → `son las que identifican este servidor`** · la hoja tiene su propio campo `Nombre`
+  (`servers.sheet.name`), así que la frase no puede usar «dar nombre»: se leería como si hablara de esa etiqueta.
+  «identificar» dice lo que se quiere decir (los dos valores SON el servidor) · `high`.

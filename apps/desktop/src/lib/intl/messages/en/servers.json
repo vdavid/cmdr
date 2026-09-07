@@ -235,6 +235,10 @@
   "@servers.sheet.addressHelp": {
     "description": "One line under the address field, telling the user they can paste whatever they have. “Cmdr” is the product name; “ssh” is a command name, keep it lowercase and untranslated."
   },
+  "servers.sheet.identityLocked": "The address and the account are what name this server. Forget this server and add it again to change them.",
+  "@servers.sheet.identityLocked": {
+    "description": "Two lines under the greyed-out address and username fields when the user is EDITING a saved server, explaining why those two can't be typed in and what to do instead. “Forget” is the exact word on the menu item and palette command that removes a saved server, so use the same word your translation uses there."
+  },
   "servers.sheet.username": "Username",
   "@servers.sheet.username": {
     "description": "Label of the account field. One word, NOUN."

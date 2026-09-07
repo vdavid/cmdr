@@ -2954,3 +2954,19 @@ Notes de formulation :
 English source. Both are ICU (the English body spells `Cmdr''s`), so they now read `d''une` and `L''interface`, matching
 the catalog-wide rule in § Apostrophe form. Confidence: high. A curly apostrophe is not an ICU escape, so it passes
 every check silently; the only defence is a periodic `rg '’' apps/desktop/src/lib/intl/messages/fr` sweep.
+
+## L'identité verrouillée du serveur (`servers.sheet.identityLocked`)
+
+Les deux lignes sous les champs grisés `Adresse` et `Nom d'utilisateur`, quand l'utilisateur MODIFIE un serveur
+enregistré.
+
+- **`the account` (le champ avec lequel on se connecte au serveur) → `le compte`** · le catalogue l'emploie déjà dans ce
+  sens (six occurrences dans `errors.json`, deux dans `fileExplorer.json`) · `high`.
+- **L'indication nomme les actions exactement comme les commandes vers lesquelles elle renvoie** : `oublier` de
+  `menu.network.forgetServer` (« Oublier le serveur ») et `ajouter` de `servers.sheet.addTitle` (« Ajouter un
+  serveur »). Un synonyme (« supprimer », « créer ») envoie le lecteur chercher un menu qui n'existe pas.
+- **`are what name this server` → `identifient ce serveur`** · la feuille possède son propre champ `Nom`
+  (`servers.sheet.name`), donc la phrase ne peut pas passer par « nommer » : on croirait qu'il s'agit de cette
+  étiquette. « identifier » dit ce qui est visé (ces deux valeurs SONT le serveur) · `high`.
+- **`add it again` → `ajoutez-le à nouveau`** · `à nouveau` est déjà la forme du fichier (`servers.json` l'emploie deux
+  fois) · `high`.

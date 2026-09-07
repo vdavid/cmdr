@@ -215,6 +215,10 @@
   "@servers.sheet.addressHelp": {
     "sourceHash": "f91dc8a"
   },
+  "servers.sheet.identityLocked": "Het adres en het account bepalen welke server dit is. Vergeet deze server en voeg hem opnieuw toe om ze te wijzigen.",
+  "@servers.sheet.identityLocked": {
+    "sourceHash": "c16657d"
+  },
   "servers.sheet.username": "Gebruikersnaam",
   "@servers.sheet.username": {
     "sourceHash": "e3b89e9"
