@@ -239,9 +239,10 @@ consumer reads THAT first: a "Forget server" takes the row out of the store, so 
 
 Right-clicking a dropdown row opens a NATIVE (muda) context menu via `show_volume_row_context_menu`: a favorite row gets
 `Rename` + `Remove`, an ejectable volume row gets `Eject ({name})`, a SERVER row (the `server` argument, a
-`ServerRowMenu` the caller fills from the row's own state) gets `Disconnect` / `Forget saved password` / `Forget server`
-instead, and anything else has no menu. A server never gets `Eject`: that word promises safe-to-unplug and a server has
-nothing to unplug. Right-clicking the closed header opens the native breadcrumb menu (`show_breadcrumb_context_menu`)
+`ServerRowMenu` the caller fills from the row's own state) gets `Disconnect` / `Pin to switcher` or `Unpin` /
+`Forget saved password` / `Forget server` instead, and anything else has no menu. A server never gets `Eject`: that word promises safe-to-unplug and a server has
+nothing to unplug. The pin item is the one server item `busy` never disables: a pin is a view preference the switcher
+reads, so moving it while a copy runs breaks nothing, where dropping the session or the credential under one does. Right-clicking the closed header opens the native breadcrumb menu (`show_breadcrumb_context_menu`)
 that adds `Eject ({name})` alongside "Copy path" when the pane's volume is ejectable. All these picks route back through
 the one `volume-context-action` Tauri event, whose `action` is the TYPED `VolumeContextActionKind` (`open`, `eject`,
 `disconnect`, `pin`, `unpin`, `edit`, `forget-secret`, `forget-server`, `rename-favorite`, `remove-favorite`), ❌ never
@@ -549,6 +550,23 @@ drop every CIFS mount off the switcher.
 The frontend synthesizes exactly ONE row of its own, the hub. `volume-grouping.test.ts` is what catches a future
 "helpful" `listSavedServers()` fetch here: the row already says whether it is pinned, and a second source of truth is
 how the two drift.
+
+### The pin hint, once ever
+
+Pins are the user's own cap on how long the Network group gets, so the app says once, at five, that the cap is theirs to
+move: a persistent INFO toast (`ServersPinHintToastContent.svelte`) naming the row's Unpin item and the palette's
+"Pin / unpin server", promising the server stays in the Servers list, plus one line about favorites when the user has
+three or more of those. "Got it" dismisses it; `behavior.serversPinHintSeen` (hidden, FE-owned) is what makes it
+once-ever.
+
+- **The decision is pure** (`should-show-pin-hint.ts`: at least five pins, the seen flag, three favorites adds the
+  line). ❗ "At least five", ❌ not "the fifth just landed": nothing records last launch's count, and a person whose
+  list was already long is exactly who the hint is for. The flag is what keeps it from nagging.
+- **It is raised from `$lib/stores/volume-store`**, where the published list lands, because that is the ONE place every
+  pin reaches whatever moved it: the hub, the row menu, the palette, or a first connect (which auto-pins). ❌ Not from a
+  component: the group is rendered by two breadcrumbs, and a hint tied to one of them would fire twice or not at all.
+- **The toast names the palette command through its own catalog key**, ❌ never a second copy of the words: a translated
+  toast pointing at an English command name sends the reader looking for something they can't find.
 
 ## `volume-space-manager.svelte.ts`
 

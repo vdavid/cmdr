@@ -47,8 +47,8 @@ export function isServerPlaceRow(volume: VolumeInfo): boolean {
 }
 
 /**
- * Raises the native menu for a server row: Disconnect, Forget saved password,
- * Forget server.
+ * Raises the native menu for a server row: Disconnect, Pin to switcher / Unpin,
+ * Forget saved password, Forget server.
  *
  * ❗ Which items apply is the CALLER's reading of the row, so the two store
  * questions are asked here rather than on Rust's popup path, where "is a secret
@@ -67,6 +67,7 @@ export async function openServerRowMenu(volume: VolumeInfo): Promise<void> {
     showsDisconnect: showsDisconnect(volume.connectionState),
     isSaved,
     hasSavedSecret,
+    pinned: volume.pinned === true,
   }
   await showVolumeRowContextMenu(volume.id, volume.name, false, false, server)
 }

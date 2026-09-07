@@ -134,6 +134,7 @@ describe('SignInSheet a11y', () => {
         id: 'sftp-nas',
         protocol: 'sftp',
         displayName: 'Naspolya',
+        nameSource: 'user',
         address: 'nas.local:22',
         username: 'ada',
         pinned: true,

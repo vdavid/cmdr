@@ -37,9 +37,9 @@ use super::{
     FAVORITE_REMOVE_ID, FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID,
     FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, ImageIndexMenuState, MenuItems,
     NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
-    SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID,
-    TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
-    image_index_menu_items,
+    SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_PIN_ID, SERVER_UNPIN_ID,
+    SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID,
+    ViewMode, ViewerMenuItems, image_index_menu_items,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -451,6 +451,9 @@ pub struct ServerRowMenu {
     pub is_saved: bool,
     /// Whether a credential is remembered for the place.
     pub has_saved_secret: bool,
+    /// Whether the place is in the volume switcher right now, which decides
+    /// whether the row offers "Pin to switcher" or "Unpin".
+    pub pinned: bool,
     /// Whether a write operation is touching the volume right now. ❗ Disables
     /// every destructive item exactly like the eject item, because dropping the
     /// session or the credential under a running copy breaks it.
@@ -458,8 +461,8 @@ pub struct ServerRowMenu {
 }
 
 /// Appends a server row's items, in the order `docs/specs/servers-hub-plan.md`
-/// § D6 sets: Disconnect (when live), Forget saved password (when one exists),
-/// Forget server (when it is saved).
+/// § D6 sets: Disconnect (when live), Pin to switcher / Unpin, Forget saved
+/// password (when one exists), Forget server (when it is saved).
 ///
 /// ❗ A server row shows Disconnect, ❌ never Eject: "Eject" promises
 /// safe-to-unplug, and a server has nothing to unplug.
@@ -477,6 +480,16 @@ fn append_server_row_items<R: Runtime>(
         let item = MenuItem::with_id(app, SERVER_DISCONNECT_ID, menu_t(key), !server.busy, None::<&str>)?;
         menu.append(&item)?;
     }
+    // ❗ Never disabled by `busy`, unlike the three below it: a pin is a view
+    // preference the switcher reads, so moving it while a copy runs breaks
+    // nothing.
+    let (pin_id, pin_key) = if server.pinned {
+        (SERVER_UNPIN_ID, "menu.network.unpin")
+    } else {
+        (SERVER_PIN_ID, "menu.network.pinToSwitcher")
+    };
+    let pin_item = MenuItem::with_id(app, pin_id, menu_t(pin_key), true, None::<&str>)?;
+    menu.append(&pin_item)?;
     if server.has_saved_secret {
         let key = if server.busy {
             "menu.volume.forgetSavedPasswordBusy"

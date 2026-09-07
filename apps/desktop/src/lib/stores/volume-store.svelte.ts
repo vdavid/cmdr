@@ -14,6 +14,10 @@ import type { VolumeConnection } from '$lib/ipc/bindings'
 import type { ConnectionState, VolumeInfo } from '$lib/file-explorer/types'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
+import { getSetting, setSetting } from '$lib/settings'
+import { addToast } from '$lib/ui/toast'
+import { shouldShowPinHint } from '$lib/file-explorer/navigation/should-show-pin-hint'
+import ServersPinHintToastContent from '$lib/file-explorer/navigation/ServersPinHintToastContent.svelte'
 
 const logger = getAppLogger('volume-store')
 
@@ -94,6 +98,30 @@ function dedupeById(list: VolumeInfo[]): VolumeInfo[] {
 }
 
 /**
+ * Teaches the user how to shorten the switcher's Network group, once, the first
+ * time it holds five pinned servers.
+ *
+ * ❗ Here because this is the ONE place the published list lands, so a pin made
+ * from the hub, the switcher's menu, the palette, or a first connect all reach
+ * it. The decision itself is `should-show-pin-hint.ts`; this counts and speaks.
+ */
+function notePinnedCount(list: VolumeInfo[]): void {
+  const hint = shouldShowPinHint({
+    pinnedCount: list.filter((volume) => volume.pinned === true).length,
+    favoriteCount: list.filter((volume) => volume.category === 'favorite').length,
+    seen: getSetting('behavior.serversPinHintSeen'),
+  })
+  if (!hint) return
+  setSetting('behavior.serversPinHintSeen', true)
+  addToast(ServersPinHintToastContent, {
+    level: 'info',
+    dismissal: 'persistent',
+    id: 'servers-pin-hint',
+    props: { mentionFavorites: hint.mentionFavorites },
+  })
+}
+
+/**
  * Widens a `volume-connection-changed` transition into the standing
  * `connectionState` the volume picker renders.
  *
@@ -141,6 +169,7 @@ export async function initVolumeStore(): Promise<void> {
     const published = dedupeById(payload.data)
     volumes = published
     timedOut = payload.timedOut
+    notePinnedCount(published)
 
     // Detect retry failure: we were refreshing and it's still timed out
     if (refreshing) {
@@ -185,6 +214,7 @@ export async function initVolumeStore(): Promise<void> {
     const published = dedupeById(result.data)
     volumes = published
     timedOut = result.timedOut
+    notePinnedCount(published)
     logger.debug('Bootstrap: {count} {volumesNoun}', {
       count: published.length,
       volumesNoun: pluralize(published.length, 'volume'),

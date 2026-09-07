@@ -32,7 +32,7 @@ function smbServer(overrides: Partial<SavedServer> = {}): SavedServer {
     id: 'manual-10-0-0-4-445',
     protocol: 'smb',
     displayName: 'Attic NAS',
-    nameSource: 'user',
+    nameSource: 'fallback',
     address: '10.0.0.4',
     username: null,
     pinned: false,
@@ -137,52 +137,68 @@ describe('buildHubRows: what appears', () => {
 })
 
 describe('buildHubRows: whose name the Name column shows', () => {
+  /** The label an SMB store carries: the mount's spelling, or a typed address. */
+  const standIn = (overrides: Partial<SavedServer> = {}): SavedServer =>
+    smbServer({
+      id: 'manual-smb-consumer-guest-445',
+      displayName: 'smb-consumer-guest',
+      address: 'smb-consumer-guest',
+      nameSource: 'fallback',
+      ...overrides,
+    })
+
   /**
    * Three ranks, and the top one is a fact the backend publishes (`nameSource`),
-   * ❌ never a guess at the string's shape: a name a person chose, then the
-   * Bonjour name mDNS found, then the name the SMB mount reported.
+   * ❌ never a guess at the string's shape: a name a PERSON chose, then the
+   * Bonjour name mDNS found, then the stand-in nobody chose.
    */
-  it('keeps the name the user typed, even when mDNS spells the same host differently', () => {
+  it('keeps the name the user chose, even when mDNS spells the same host differently', () => {
     const rows = buildHubRows({
-      saved: [smbServer({ id: 'manual-naspolya-445', displayName: 'Naspolya', address: 'naspolya.local' })],
+      saved: [
+        smbServer({
+          id: 'manual-naspolya-445',
+          displayName: 'Naspolya',
+          address: 'naspolya.local',
+          nameSource: 'user',
+        }),
+      ],
       hosts: [host({ id: 'bonjour-1', name: 'Naspolya Media Server', hostname: 'naspolya.local' })],
       volumes: [],
     })
     expect(rows.map((r) => r.name)).toEqual(['Naspolya'])
   })
 
-  it('shows the Bonjour name over the one the mount reported, which nobody chose', () => {
+  it('shows the Bonjour name over the stand-in, which nobody chose', () => {
     // Opening a host writes a `known_shares` row named the way `statfs` spells
     // the server, and the friendly name a person recognizes must survive that.
     const rows = buildHubRows({
-      saved: [
-        smbServer({
-          id: 'manual-smb-consumer-guest-445',
-          displayName: 'smb-consumer-guest',
-          address: 'smb-consumer-guest',
-          nameSource: 'reported',
-        }),
-      ],
+      saved: [standIn()],
       hosts: [host({ id: 'bonjour-1', name: 'SMB Test (Guest)', hostname: 'smb-consumer-guest' })],
       volumes: [],
     })
     expect(rows.map((r) => r.name)).toEqual(['SMB Test (Guest)'])
   })
 
-  it('falls back to the reported name when mDNS is seeing nothing', () => {
+  it('falls back to the stand-in when mDNS is seeing nothing', () => {
+    const rows = buildHubRows({ saved: [standIn()], hosts: [], volumes: [] })
+    expect(rows.map((r) => r.name)).toEqual(['smb-consumer-guest'])
+  })
+
+  /**
+   * ❗ Typing a host that mDNS already found puts the machine in the discovery
+   * list TWICE, under both spellings. One row, named the way a person would
+   * recognize it.
+   */
+  it('claims both spellings of one machine, and takes the discovered name', () => {
     const rows = buildHubRows({
-      saved: [
-        smbServer({
-          id: 'manual-smb-consumer-guest-445',
-          displayName: 'smb-consumer-guest',
-          address: 'smb-consumer-guest',
-          nameSource: 'reported',
-        }),
+      saved: [standIn()],
+      hosts: [
+        host({ id: 'manual-smb-consumer-guest-445', name: 'smb-consumer-guest', source: 'manual' }),
+        host({ id: 'bonjour-1', name: 'SMB Test (Guest)', hostname: 'smb-consumer-guest' }),
       ],
-      hosts: [],
       volumes: [],
     })
-    expect(rows.map((r) => r.name)).toEqual(['smb-consumer-guest'])
+    expect(rows.map((r) => r.name)).toEqual(['SMB Test (Guest)'])
   })
 })
 

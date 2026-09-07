@@ -7,12 +7,13 @@
  * volume list) and renders what comes back.
  *
  * ❗ **The merge is the part that goes quietly wrong.** A manually-typed SMB host
- * is BOTH a saved server and a discovered host — adding one injects it into the
- * discovery state — so concatenating the two sources shows a person's NAS twice.
+ * is BOTH a saved server and a discovered host (adding one injects it into the
+ * discovery state), so concatenating the two sources shows a person's NAS twice.
  * The dedup matches on the id first (a manual host keeps its store id in the
  * discovery list) and then on the name or resolved hostname, because
  * `known_shares` files a host under the server name statfs reported while mDNS
- * files the same machine under its Bonjour name.
+ * files the same machine under its Bonjour name. It claims EVERY host that
+ * matches, since one machine can be in the discovery list under both spellings.
  */
 
 import type { SavedPlace, SavedServer } from '$lib/tauri-commands'
@@ -106,9 +107,9 @@ export function buildHubRows(sources: HubRowSources): HubRow[] {
   }
 
   for (const server of sources.saved) {
-    const host = server.protocol === 'smb' ? matchHost(server, sources.hosts) : null
-    if (host) claimed.add(host.id)
-    add(savedRow(server, host, states))
+    const hosts = server.protocol === 'smb' ? matchingHosts(server, sources.hosts) : []
+    for (const host of hosts) claimed.add(host.id)
+    add(savedRow(server, primaryHost(hosts), states))
   }
 
   for (const host of sources.hosts) {
@@ -119,19 +120,34 @@ export function buildHubRows(sources: HubRowSources): HubRow[] {
   return rows.sort(compareRows)
 }
 
-/** The discovered host that IS this saved SMB server, if mDNS is seeing it. */
-function matchHost(server: SavedServer, hosts: NetworkHost[]): NetworkHost | null {
+/**
+ * Every host in the discovery list that IS this saved SMB server.
+ *
+ * ❗ Plural on purpose: ONE machine can be in that list twice, because adding a
+ * host by hand injects a `manual` host beside the `discovered` one mDNS already
+ * found. Claiming only the first would leave the other as a second row for the
+ * same NAS.
+ */
+function matchingHosts(server: SavedServer, hosts: NetworkHost[]): NetworkHost[] {
   const address = server.address.toLowerCase()
   const name = server.displayName.toLowerCase()
-  return (
-    hosts.find(
-      (host) =>
-        host.id === server.id ||
-        host.name.toLowerCase() === address ||
-        host.name.toLowerCase() === name ||
-        host.hostname?.toLowerCase() === address,
-    ) ?? null
+  return hosts.filter(
+    (host) =>
+      host.id === server.id ||
+      host.name.toLowerCase() === address ||
+      host.name.toLowerCase() === name ||
+      host.hostname?.toLowerCase() === address,
   )
+}
+
+/**
+ * Which of them the row speaks for.
+ *
+ * A DISCOVERED host wins: its name is the Bonjour name a person recognizes,
+ * where a manual host is named after the address they typed.
+ */
+function primaryHost(hosts: NetworkHost[]): NetworkHost | null {
+  return hosts.find((host) => host.source === 'discovered') ?? hosts[0] ?? null
 }
 
 function savedRow(server: SavedServer, host: NetworkHost | null, states: Map<string, ConnectionState | null>): HubRow {
@@ -155,13 +171,14 @@ function savedRow(server: SavedServer, host: NetworkHost | null, states: Map<str
 /**
  * Which of the three names the Name column shows.
  *
- * ❗ A name a person chose wins, then the Bonjour name mDNS found, then the one
- * the SMB mount reported. The top rank is a FACT the backend publishes
- * (`SavedServer.nameSource`), ❌ never a guess at the string's shape: opening a
- * host writes a `known_shares` row named the way `statfs` spells the server
- * (`smb-consumer-guest`), and without the rank the friendly name a person
- * recognizes (`SMB Test (Guest)`) would vanish from the column the first time
- * they used the host.
+ * ❗ A name a PERSON chose wins, then the Bonjour name mDNS found, then the
+ * stand-in nobody chose. The top rank is a FACT the backend publishes
+ * (`SavedServer.nameSource`), ❌ never a guess at the string's shape: an SMB
+ * host's label is either the way `statfs` spells the server
+ * (`smb-consumer-guest`, written to `known_shares` the first time the host is
+ * opened) or the address typed into "Add server". Without the rank, the friendly
+ * name a person recognizes (`SMB Test (Guest)`, `Naspolya`) would vanish from
+ * the column the moment they used the host.
  */
 function displayName(server: SavedServer, host: NetworkHost | null): string {
   if (server.nameSource === 'user') return server.displayName

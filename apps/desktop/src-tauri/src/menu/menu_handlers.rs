@@ -21,7 +21,8 @@ use super::{
     FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, MEDIA_INDEX_ADD_FOLDER_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID,
     MEDIA_INDEX_INCLUDE_FOLDER_ID, MEDIA_INDEX_REMOVE_FOLDER_ID, MediaIndexFolderChoice, MediaIndexFolderExclusion,
     MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID,
-    SELECT_ALL_ID, SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SHOW_HIDDEN_FILES_ID,
+    SELECT_ALL_ID, SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_PIN_ID,
+    SERVER_UNPIN_ID, SHOW_HIDDEN_FILES_ID,
     SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
     SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID,
     VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode,
@@ -503,6 +504,8 @@ fn volume_row_action(id: &str) -> Option<VolumeContextActionKind> {
         FAVORITE_RENAME_ID => Some(VolumeContextActionKind::RenameFavorite),
         FAVORITE_REMOVE_ID => Some(VolumeContextActionKind::RemoveFavorite),
         SERVER_DISCONNECT_ID => Some(VolumeContextActionKind::Disconnect),
+        SERVER_PIN_ID => Some(VolumeContextActionKind::Pin),
+        SERVER_UNPIN_ID => Some(VolumeContextActionKind::Unpin),
         SERVER_FORGET_SECRET_ID => Some(VolumeContextActionKind::ForgetSecret),
         SERVER_FORGET_ID => Some(VolumeContextActionKind::ForgetServer),
         _ => None,
@@ -528,6 +531,8 @@ mod volume_row_action_tests {
             volume_row_action(SERVER_DISCONNECT_ID),
             Some(VolumeContextActionKind::Disconnect)
         );
+        assert_eq!(volume_row_action(SERVER_PIN_ID), Some(VolumeContextActionKind::Pin));
+        assert_eq!(volume_row_action(SERVER_UNPIN_ID), Some(VolumeContextActionKind::Unpin));
         assert_eq!(
             volume_row_action(SERVER_FORGET_SECRET_ID),
             Some(VolumeContextActionKind::ForgetSecret)

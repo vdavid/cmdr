@@ -47,6 +47,21 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // Internal (FE-owned): whether the one-time "your Network group is getting
+    // long" toast has fired. Set the first time five server places are pinned.
+    // No UI row; hidden from search and the section tree, the way
+    // `behavior.doubleClickOnPaneNotificationSeen` is.
+    id: 'behavior.serversPinHintSeen',
+    section: ['Behavior', 'Navigation & file ops'],
+    labelKey: 'settings.behavior.serversPinHintSeen.label',
+    descriptionKey: 'settings.behavior.serversPinHintSeen.description',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+  {
     id: 'fileOperations.allowFileExtensionChanges',
     section: ['Behavior', 'Navigation & file ops'],
     cardKey: 'settings.navigationAndFileOps.card.fileOperations',

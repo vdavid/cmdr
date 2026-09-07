@@ -42,6 +42,7 @@ const savedSftp: SavedServer = {
   id: 'sftp-jump.local-22-ada',
   protocol: 'sftp',
   displayName: 'Jump box',
+  nameSource: 'user',
   address: 'jump.local:22',
   username: 'ada',
   pinned: true,

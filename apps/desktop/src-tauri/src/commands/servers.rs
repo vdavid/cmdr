@@ -45,22 +45,27 @@ pub enum ServerProtocol {
     Webdav,
 }
 
-/// Who chose a server's [`SavedServer::display_name`].
+/// Whether a person NAMED this server, or the label is a stand-in.
 ///
-/// ❗ The hub's Name column ranks three names (a name the user typed, the
-/// Bonjour name mDNS found, the name the SMB mount reported), and the top rank
-/// is a FACT this enum publishes, ❌ never a guess at the string's shape. Only
-/// the store that wrote the name knows who wrote it.
+/// ❗ The hub's Name column ranks three names (a name a person chose, the Bonjour
+/// name mDNS found, a stand-in nobody chose), and the top rank is a FACT this
+/// enum publishes, ❌ never a guess at the string's shape. Only the store that
+/// wrote the label knows where it came from.
+///
+/// ❗ Every SMB row is [`Fallback`](Self::Fallback) today, so this reads as "is
+/// it SMB?" — it isn't. SMB has no name field to fill in yet; adding one changes
+/// what a store answers here and nothing else, and until then the rule at the
+/// hub stays readable as what it means.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ServerNameSource {
-    /// A person chose it: an SFTP or WebDAV account's label, or the address
-    /// typed into "Add server", which is what a manual SMB host is named after.
+    /// A person typed the NAME itself, in the sign-in sheet's Name field.
     User,
-    /// The SMB mount reported it (`known_shares`' `server_name`, which `statfs`
-    /// spells as the server answered, `smb-consumer-guest` rather than
-    /// `SMB Test (Guest)`). Nobody chose it, so a friendlier name outranks it.
-    Reported,
+    /// A stand-in the app derived, because nothing better existed: the SMB
+    /// mount's `server_name` (which `statfs` spells as the server answered,
+    /// `smb-consumer-guest` rather than `SMB Test (Guest)`), or the address typed
+    /// into "Add server", which is all an SMB host is ever given.
+    Fallback,
 }
 
 /// One mountable thing under an account: an SFTP or WebDAV root, later an S3
@@ -108,8 +113,8 @@ pub struct SavedServer {
     pub protocol: ServerProtocol,
     /// The user's own label, falling back to the address.
     pub display_name: String,
-    /// Who chose that label, which is what lets the hub prefer a Bonjour name
-    /// over one only the mount ever said.
+    /// Whether a person named it, which is what lets the hub prefer a Bonjour
+    /// name over a stand-in nobody chose.
     pub name_source: ServerNameSource,
     /// What the user typed, near enough to paste back: `host:port` for SFTP, the
     /// base URL for WebDAV, the host for SMB.
@@ -353,7 +358,7 @@ fn smb_hosts(manual: Vec<manual_servers::ManualServerEntry>) -> Vec<SavedServer>
             display_name: share.server_name.clone(),
             // ❗ The mount's spelling, which nobody chose: the hub lets a
             // discovered Bonjour name outrank it.
-            name_source: ServerNameSource::Reported,
+            name_source: ServerNameSource::Fallback,
             address: share.server_name,
             // ❗ Not the share's username: that is per-share, and this row is the
             // HOST. A share's own account is asked for when it is mounted.
@@ -368,8 +373,10 @@ fn smb_hosts(manual: Vec<manual_servers::ManualServerEntry>) -> Vec<SavedServer>
             id: entry.id,
             protocol: ServerProtocol::Smb,
             display_name: entry.display_name,
-            // The address the person typed into "Add server" is the name.
-            name_source: ServerNameSource::User,
+            // ❗ The ADDRESS they typed, worn as a label: `manual_servers` derives
+            // it (`host` or `host:port`) because SMB's add flow asks for nothing
+            // else. So a Bonjour name outranks it, the same as a mount's.
+            name_source: ServerNameSource::Fallback,
             address: entry.address,
             username: None,
             pinned: false,
