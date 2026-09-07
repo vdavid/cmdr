@@ -93,6 +93,7 @@ describe('openServerRowMenu', () => {
       showsDisconnect: true,
       isSaved: true,
       hasSavedSecret: true,
+      pinned: false,
     })
   })
 

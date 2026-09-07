@@ -169,7 +169,6 @@ export async function initVolumeStore(): Promise<void> {
     const published = dedupeById(payload.data)
     volumes = published
     timedOut = payload.timedOut
-    notePinnedCount(published)
 
     // Detect retry failure: we were refreshing and it's still timed out
     if (refreshing) {
@@ -187,6 +186,11 @@ export async function initVolumeStore(): Promise<void> {
       volumesNoun: pluralize(published.length, 'volume'),
       timedOut: payload.timedOut,
     })
+
+    // ❗ Last, so the list, the timeout flag, and the retry state are all
+    // published before anything cosmetic runs: this reads a setting and can raise
+    // a toast, and neither belongs upstream of the store's own bookkeeping.
+    notePinnedCount(published)
   })
 
   // Subscribe to per-volume connection changes so the picker dot, the
@@ -214,11 +218,11 @@ export async function initVolumeStore(): Promise<void> {
     const published = dedupeById(result.data)
     volumes = published
     timedOut = result.timedOut
-    notePinnedCount(published)
     logger.debug('Bootstrap: {count} {volumesNoun}', {
       count: published.length,
       volumesNoun: pluralize(published.length, 'volume'),
     })
+    notePinnedCount(published)
   }
 
   initialized = true

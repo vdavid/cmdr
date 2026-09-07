@@ -111,6 +111,28 @@ export const fileSystemsSettings: SettingDefinitionSource[] = [
   },
 
   // ========================================================================
+  // File systems › Servers (SFTP, WebDAV)
+  //
+  // ❗ The page carries no setting: its whole content is the trusted-host-key
+  // list, one Forget button per row, and the saved servers live in the hub rather
+  // than here (`docs/specs/servers-hub-plan.md` § D11). So the one entry is a
+  // SECTION anchor: `hidden` (it renders no row) plus `sectionAnchor` (its section
+  // still gets a sidebar row and a summary card), never read or written.
+  // ========================================================================
+  {
+    id: 'network.trustedHostKeys',
+    section: ['File systems', 'Servers (SFTP, WebDAV)'],
+    labelKey: 'settings.servers.card.trustedHostKeys',
+    descriptionKey: 'settings.servers.trustedHostKeys.description',
+    cardKey: 'settings.servers.card.trustedHostKeys',
+    keywords: ['sftp', 'webdav', 'ssh', 'host key', 'fingerprint', 'trust', 'known hosts', 'server', 'forget'],
+    type: 'boolean',
+    default: false,
+    hidden: true,
+    sectionAnchor: true,
+  },
+
+  // ========================================================================
   // File systems › MTP (Android/Kindle/cameras)
   // ========================================================================
   {
@@ -136,15 +158,13 @@ export const fileSystemsSettings: SettingDefinitionSource[] = [
 
   // ========================================================================
   // File systems › Android (ADB)
+  //
+  // Both are live-applied together (`adb-settings.ts` re-reads and pushes both
+  // through `set_adb_settings`, wired in `settings-applier.ts`), because the
+  // backend restarts the device tracker under whichever binary the path names.
+  // `AdbSection.svelte` renders them, plus the status, Re-check, and Browse rows,
+  // which are not settings.
   // ========================================================================
-  // ❗ Both are `hidden` until the section component exists. They are fully live
-  // otherwise: persisted, synced across windows, and pushed to the backend by
-  // `adb-settings.ts` through `settings-applier.ts`. Without the flag the sidebar
-  // grows an "Android (ADB)" row that opens an empty page, because
-  // `SettingsContent.svelte` routes a section to a hand-written component and
-  // there isn't one yet (`docs/guides/adding-a-new-setting.md` step 2).
-  // Dropping `hidden` is what the section's own commit does, alongside adding the
-  // `<section>` and the `settings.spec.ts` order entry.
   {
     id: 'fileOperations.adbEnabled',
     section: ['File systems', 'Android (ADB)'],
@@ -154,7 +174,6 @@ export const fileSystemsSettings: SettingDefinitionSource[] = [
     type: 'boolean',
     default: true,
     component: 'switch',
-    hidden: true,
   },
   {
     id: 'fileOperations.adbBinaryPath',
@@ -165,7 +184,6 @@ export const fileSystemsSettings: SettingDefinitionSource[] = [
     type: 'string',
     default: '',
     component: 'text-input',
-    hidden: true,
   },
 
   // ========================================================================

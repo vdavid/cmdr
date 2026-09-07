@@ -277,7 +277,10 @@ export function buildSectionTree(): SettingsSection[] {
   const sectionMap = new Map<string, SettingsSection>()
 
   for (const setting of settingsRegistry) {
-    if (setting.hidden) continue // Internal-only settings (e.g., network.firstTriggerDone)
+    // Internal-only settings (e.g. `network.firstTriggerDone`) are not nav rows. A
+    // SECTION anchor is the exception: it carries a page whose content is action
+    // rows rather than controls, so it creates the node and still renders nothing.
+    if (setting.hidden && setting.sectionAnchor !== true) continue
 
     let currentLevel = root
     let currentPath: string[] = []
@@ -300,7 +303,7 @@ export function buildSectionTree(): SettingsSection[] {
       }
 
       if (i === setting.section.length - 1) {
-        section.settings.push(setting)
+        if (!setting.hidden) section.settings.push(setting)
       } else {
         currentLevel = section.subsections
       }

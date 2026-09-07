@@ -458,6 +458,15 @@ empty-card bug for non-registry and mirrored rows.
 **Decision / why: a non-setting row is a `SearchableRow`, never a setting.** See § "Searchable rows" below; a card that
 renders one puts its id in the card's `anyVisible(...)` guard exactly like a setting's.
 
+**Decision / why: a page with no control gets a SECTION anchor.** `File systems > Servers (SFTP, WebDAV)` renders one
+list (the trusted SSH host keys, a Forget button per row) and no setting at all, and `buildSectionTree` builds the
+sidebar from the registry, so nothing would put the page in the tree. `sectionAnchor: true` beside `hidden: true`
+(`network.trustedHostKeys`) is what does: the tree keeps the node, `section.settings` stays controls only (a hidden
+entry is never pushed), and the entry renders nothing and is never read or written. It is the search anchor above, one
+step further: from "a searchable row that isn't a setting" to "a whole page that isn't settings". ❌ Don't reach for it
+when the page HAS a control: that control's `section` already carries the page, and a second source of the node is how
+two disagree.
+
 **Decision / why: "subsection" stays the level-2 nav term.** The card axis is named `cardKey` (not `subsection`),
 because `subsection` already means the level-2 nav entry (`SettingsSection.subsections`, the page you click). The
 terminology group → subsection → card holds; cards are not a fourth `section[]` element (that would spawn a spurious nav

@@ -356,6 +356,7 @@ describe('VolumeBreadcrumb server rows', () => {
       showsDisconnect: true,
       isSaved: true,
       hasSavedSecret: true,
+      pinned: false,
     })
   })
 })

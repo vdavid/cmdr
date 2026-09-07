@@ -147,7 +147,11 @@ function matchingHosts(server: SavedServer, hosts: NetworkHost[]): NetworkHost[]
  * where a manual host is named after the address they typed.
  */
 function primaryHost(hosts: NetworkHost[]): NetworkHost | null {
-  return hosts.find((host) => host.source === 'discovered') ?? hosts[0] ?? null
+  const discovered = hosts.find((host) => host.source === 'discovered')
+  if (discovered) return discovered
+  // ❗ Length-checked, ❌ not `[0] ?? null`: the index signature types the gap
+  // away, so an empty list would hand back `undefined` wearing `NetworkHost`.
+  return hosts.length > 0 ? hosts[0] : null
 }
 
 function savedRow(server: SavedServer, host: NetworkHost | null, states: Map<string, ConnectionState | null>): HubRow {

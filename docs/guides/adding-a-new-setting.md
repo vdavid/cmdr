@@ -25,6 +25,12 @@ Add an entry to `settings-registry.ts`. Name the id after the UI vocabulary (`wh
 guide. ❌ Never model one as a `hidden: true` setting to make it findable — that's a `SettingsValues` key nothing ever
 reads or writes, and it's the pattern this replaced.
 
+**A whole PAGE that isn't settings (section anchor).** A page whose entire content is action rows (the trusted host
+keys, each with a Forget button) has no control whose `section` would put it in the sidebar. Give it one entry carrying
+`hidden: true` PLUS `sectionAnchor: true`: the section tree keeps the node (so the sidebar and the summary card show
+it), the entry renders no row, and it is never read or written. `network.trustedHostKeys` is the reference example. A
+page that does have a control needs none of this.
+
 Also add the key and its value type to the `SettingsValues` interface in `types.ts`. This isn't optional bookkeeping:
 `SettingDefinition.id` is typed as `SettingId` (= `keyof SettingsValues`), so a registry entry whose id is missing from
 `SettingsValues` fails `svelte-check` right at the registry entry. That compile error is the prompt to add the key (it's

@@ -2171,6 +2171,14 @@
     "description": "Settings subsection title under File systems: SMB/Network shares. \"SMB\" is a protocol name; keep it. Sidebar and page heading.",
     "screenshot": "settings-appearance.png"
   },
+  "settings.section.servers": "Servers (SFTP, WebDAV)",
+  "@settings.section.servers": {
+    "description": "Settings subsection title under File systems: the page listing the SSH host keys this Mac trusts. \"SFTP\" and \"WebDAV\" are protocol names; keep both as-is, parentheses included. Sidebar and page heading."
+  },
+  "settings.section.adb": "Android (ADB)",
+  "@settings.section.adb": {
+    "description": "Settings subsection title under File systems: browsing an Android phone over the Android Debug Bridge. \"Android\" is a product name and \"ADB\" its debug-bridge abbreviation; keep both as-is, parentheses included. Sidebar and page heading."
+  },
   "settings.section.mtp": "MTP (Android/Kindle/cameras)",
   "@settings.section.mtp": {
     "description": "Settings subsection title under File systems: MTP support for USB devices. \"MTP\" is a protocol abbreviation; \"Android\" and \"Kindle\" are product names; keep all three as-is. Sidebar and page heading.",
@@ -2327,6 +2335,14 @@
   "settings.summary.smbNetworkShares": "Enable networking, direct SMB connections, share cache, and timeouts.",
   "@settings.summary.smbNetworkShares": {
     "description": "One-line summary shown under the \"SMB/Network shares\" subsection heading. \"SMB\" is a protocol name; keep it."
+  },
+  "settings.summary.servers": "The SSH host keys you have trusted.",
+  "@settings.summary.servers": {
+    "description": "One-line summary shown on the \"Servers (SFTP, WebDAV)\" card in the File systems overview. A host key is the fingerprint a server proves its identity with; \"SSH\" is a protocol name (keep it)."
+  },
+  "settings.summary.adb": "Browse an Android phone that has USB debugging turned on.",
+  "@settings.summary.adb": {
+    "description": "One-line summary shown on the \"Android (ADB)\" card in the File systems overview. \"Android\" is a product name (keep it); \"USB debugging\" is a switch the reader finds on their own phone, so use the wording Android itself shows in your language."
   },
   "settings.summary.mtp": "Detect Android, Kindle, and camera devices over USB.",
   "@settings.summary.mtp": {
@@ -2921,5 +2937,79 @@
   "settings.window.loading": "Loading settings…",
   "@settings.window.loading": {
     "description": "Placeholder text filling the Settings window for the moment between it opening and its stored settings arriving. Usually invisible; on a slow disk it shows for a beat. A progress statement, not an instruction. The trailing character is a real ellipsis (…, U+2026), not three periods; keep it."
+  },
+  "settings.servers.card.trustedHostKeys": "Trusted host keys",
+  "@settings.servers.card.trustedHostKeys": {
+    "description": "Title of the only card on Settings > File systems > Servers: the list of SSH server keys this Mac has accepted. A host key is what a server proves its identity with, and \"trusted\" means the user said yes to it once. Three or four words."
+  },
+  "settings.servers.trustedHostKeys.description": "Cmdr asks before it trusts a server''s key the first time you connect, and remembers your answer here. Saved servers live in the Servers list, not on this page.",
+  "@settings.servers.trustedHostKeys.description": {
+    "description": "Help text under the \"Trusted host keys\" card title. \"Servers\" (capital S) is the name of the row in Cmdr''s volume switcher that lists saved servers; translate it the same way as servers.hub keys. \"Cmdr\" is the app name; keep it."
+  },
+  "settings.servers.trustedHostKeys.empty": "Nothing trusted yet. The first time you connect to an SFTP server, Cmdr shows you its fingerprint and asks.",
+  "@settings.servers.trustedHostKeys.empty": {
+    "description": "Shown in place of the list when no host key has been trusted. Reassuring, not a warning: nothing is wrong. \"SFTP\" is a protocol name and \"Cmdr\" the app name; keep both. A fingerprint is the short readable form of a key."
+  },
+  "settings.servers.trustedHostKeys.approvedPrefix": "Trusted",
+  "@settings.servers.trustedHostKeys.approvedPrefix": {
+    "description": "Label right before the date a host key was accepted, reading as \"Trusted 2026-09-07\". VERB in the past tense (the user trusted it then). One word if your language allows it; the date follows immediately."
+  },
+  "settings.servers.trustedHostKeys.forget": "Forget",
+  "@settings.servers.trustedHostKeys.forget": {
+    "description": "VERB (imperative), the button on each host-key row: stop remembering this key, so the next connection asks again. One word; the button sits at the end of a narrow row. Match the wording of the \"Forget server\" menu item (menu.network.forgetServer)."
+  },
+  "settings.servers.trustedHostKeys.confirmTitle": "Forget this key?",
+  "@settings.servers.trustedHostKeys.confirmTitle": {
+    "description": "Title of the confirmation asked before a host key is forgotten. A short question. Shown in a native macOS alert, so keep it to a few words."
+  },
+  "settings.servers.trustedHostKeys.confirm": "The next time you connect to {host}, Cmdr will show you its key fingerprint and ask whether to trust it.",
+  "@settings.servers.trustedHostKeys.confirm": {
+    "description": "Body of that confirmation: what changes if they go ahead. States a consequence rather than warning; nothing is lost. \"Cmdr\" is the app name; keep it.",
+    "placeholders": {
+      "host": "the server''s address, as the user typed it, for example nas.local"
+    }
+  },
+  "settings.adb.status.label": "Status",
+  "@settings.adb.status.label": {
+    "description": "Row label on Settings > File systems > Android (ADB), naming the row that says whether the \"adb\" command was found on this Mac. NOUN, one word."
+  },
+  "settings.adb.status.foundAt": "Found at {path}",
+  "@settings.adb.status.foundAt": {
+    "description": "The status value when the \"adb\" command was found: where on disk it lives. Short; the path can be long and wraps after it.",
+    "placeholders": {
+      "path": "the full path of the adb command, for example /opt/homebrew/bin/adb"
+    }
+  },
+  "settings.adb.status.notFound": "Not found",
+  "@settings.adb.status.notFound": {
+    "description": "The status value when the \"adb\" command is nowhere on this Mac. Factual, not alarming: the install line right below it says what to do. Two words at most."
+  },
+  "settings.adb.status.watching": "Watching for phones.",
+  "@settings.adb.status.watching": {
+    "description": "One quiet line under the status row: Cmdr is subscribed to the Android tools and notices a phone the moment it is plugged in. Never mention the ADB server, a subscription, or a socket; a person only needs to know phones will show up."
+  },
+  "settings.adb.status.notWatching": "Not watching for phones right now.",
+  "@settings.adb.status.notWatching": {
+    "description": "The same line when Cmdr is not subscribed, which is the normal state when the switch is off or the tools are missing. Factual, no blame, no alarm."
+  },
+  "settings.adb.recheck": "Re-check",
+  "@settings.adb.recheck": {
+    "description": "VERB (imperative), the button beside the status: look for the \"adb\" command again, which is what a person presses right after installing the Android tools. One or two words; the button is small."
+  },
+  "settings.adb.install.intro": "Install the Android platform tools, then press Re-check:",
+  "@settings.adb.install.intro": {
+    "description": "Line introducing a copyable terminal command, shown only when \"adb\" was not found. \"Re-check\" must match the button label settings.adb.recheck word for word. \"Android platform tools\" is the name of the download; use the wording Google''s own localized docs use. The command itself is never translated."
+  },
+  "settings.adb.pathPlaceholder": "Look for adb the usual way",
+  "@settings.adb.pathPlaceholder": {
+    "description": "Placeholder in the empty \"Location of adb\" field, saying what an empty field means: Cmdr searches the usual places itself. \"adb\" is a command name; keep it lowercase and as-is."
+  },
+  "settings.adb.browse": "Browse…",
+  "@settings.adb.browse": {
+    "description": "VERB (imperative), the button that opens a file picker for choosing the \"adb\" command by hand. The trailing … is the single character U+2026 and means \"this opens something\"; keep it. Match the word macOS uses for the same kind of button in this language."
+  },
+  "settings.adb.pickerTitle": "Choose the adb command",
+  "@settings.adb.pickerTitle": {
+    "description": "Title of the macOS file picker opened by that button. \"adb\" is a command name; keep it lowercase and as-is. VERB phrase, imperative."
   }
 }
