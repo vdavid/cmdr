@@ -24,7 +24,10 @@
      * ❌ No inert buttons. A refusal offers Try again (which really re-dials),
      * "Signed out" offers Sign in… (which opens the sheet), and a changed host
      * key offers Disconnect (which is what lets the next open show the
-     * fingerprint). Every one of them does the thing it says.
+     * fingerprint). Every one of them does the thing it says — which is also why
+     * a refusal with no move left (an unplugged phone) renders no action row at
+     * all, and why `waiting_for_device` offers only Cancel: the pane learns the
+     * phone was tapped from the volume list, not from a button.
      */
     interface Props {
         /** The place's display name, for the sentence and the aria live region. */
@@ -126,6 +129,19 @@
                     </span>
                 {/if}
             </div>
+        {:else if connectState.kind === 'waiting_for_device'}
+            <!-- A phone showing its own prompt. The spinner is honest: the pane
+                 IS waiting, and it walks in on its own once the row turns ready.
+                 ❌ No "I tapped it" button: nothing on this side would learn
+                 anything from it. -->
+            <h2 class="title">{connectState.reason}</h2>
+            <div class="spinner-row"><Spinner size="md" /></div>
+            <p class="hint">{connectState.hint}</p>
+            <div class="actions">
+                <Button variant="secondary" size="mini" onclick={connectState.cancel}>
+                    {tString('servers.paneState.cancel')}
+                </Button>
+            </div>
         {:else if connectState.kind === 'signed_out'}
             <span class="refusal-icon"><Icon name="lock" size={32} aria-hidden="true" /></span>
             <h2 class="title">{tString('servers.paneState.signedOut', { name })}</h2>
@@ -152,16 +168,27 @@
         {:else}
             <span class="refusal-icon"><Icon name="triangle-alert" size={32} aria-hidden="true" /></span>
             <h2 class="title">{connectState.refusal}</h2>
-            <div class="actions">
-                <Button variant="primary" size="mini" onclick={connectState.retry}>
-                    {tString('servers.paneState.tryAgain')}
-                </Button>
-                {#if connectState.disconnect}
-                    <Button variant="secondary" size="mini" onclick={connectState.disconnect}>
-                        {tString('servers.paneState.disconnect')}
-                    </Button>
-                {/if}
-            </div>
+            <!-- ❗ The row is absent, not empty, when nothing can be offered: a
+                 refusal with no move left says its sentence and stops there. -->
+            {#if connectState.retry || connectState.openSettings || connectState.disconnect}
+                <div class="actions">
+                    {#if connectState.retry}
+                        <Button variant="primary" size="mini" onclick={connectState.retry}>
+                            {tString('servers.paneState.tryAgain')}
+                        </Button>
+                    {/if}
+                    {#if connectState.openSettings}
+                        <Button variant="primary" size="mini" onclick={connectState.openSettings}>
+                            {tString('adb.connect.openSettings')}
+                        </Button>
+                    {/if}
+                    {#if connectState.disconnect}
+                        <Button variant="secondary" size="mini" onclick={connectState.disconnect}>
+                            {tString('servers.paneState.disconnect')}
+                        </Button>
+                    {/if}
+                </div>
+            {/if}
         {/if}
     </div>
 </div>

@@ -6,7 +6,7 @@
  *
  * ❗ A variant lands only once something can ACT on it. Adding one before its
  * handler puts a button on screen that does nothing, which is the one thing this
- * view refuses to do. `waiting_for_device` waits for the ADB work.
+ * view refuses to do.
  *
  * ❗ There is no `gave_up` variant on purpose. A cycle that ran out of attempts
  * renders `VolumeUnreachableBanner`'s `gaveUp` variant, which is the app's one
@@ -27,11 +27,39 @@ export type RemoteConnectState =
    */
   | { kind: 'connecting'; cancel: () => void; cycle?: RetryCycle }
   /**
-   * It stopped, with a reason worth reading. `refusal` is the finished sentence
-   * (`servers/connect-refusals.ts`), ❌ never a key or a backend string.
-   * `disconnect` is offered only where there is a session to drop.
+   * A device is present but not usable yet, and the thing that would change that
+   * happens on the DEVICE: a phone showing its "Allow USB debugging?" prompt.
+   *
+   * ❗ Nothing is dialing. The pane subscribes to the volume list and walks in by
+   * itself the moment the row turns ready, so this state carries ❌ no retry and
+   * ❌ no "I tapped it" button — both would be inert, and the second would be a
+   * lie about how the pane finds out.
+   *
+   * `reason` and `hint` are finished sentences from the provider that owns the
+   * device (`$lib/adb/adb-connect-errors.ts`), ❌ never keys: the view is generic
+   * and the words are Android's.
    */
-  | { kind: 'refused'; refusal: string; retry: () => void; disconnect?: () => void }
+  | { kind: 'waiting_for_device'; reason: string; hint: string; cancel: () => void }
+  /**
+   * It stopped, with a reason worth reading. `refusal` is the finished sentence
+   * (`servers/connect-refusals.ts`, `adb/adb-connect-errors.ts`), ❌ never a key
+   * or a backend string. `disconnect` is offered only where there is a session to
+   * drop.
+   *
+   * ❗ Every callback is optional because some refusals have no move left:
+   * an unplugged phone is fixed by the cable and an Android 6 phone by nothing,
+   * so those render the sentence ALONE. ❌ Never supply a `retry` that is
+   * guaranteed to fail again — an inert affordance is the one thing this view
+   * refuses. `openSettings` is for the refusals only Settings can clear (no
+   * `adb` on the machine) and never appears beside `retry`.
+   */
+  | {
+      kind: 'refused'
+      refusal: string
+      retry?: () => void
+      disconnect?: () => void
+      openSettings?: () => void
+    }
   /**
    * The session ended because a credential is what's missing. `signIn` opens the
    * sheet, which asks what the BACKEND said to ask.

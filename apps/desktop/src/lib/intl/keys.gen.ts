@@ -3,6 +3,23 @@
 
 /** Every key present in `messages/en/*.json`. A wrong key is a typecheck error. */
 export type MessageKey =
+  | 'adb.connect.adbNotInstalled'
+  | 'adb.connect.deviceGone'
+  | 'adb.connect.deviceTooOld'
+  | 'adb.connect.openSettings'
+  | 'adb.connect.serverUnreachable'
+  | 'adb.connect.timedOut'
+  | 'adb.connect.transport'
+  | 'adb.connect.unauthorized'
+  | 'adb.connect.waitingHint'
+  | 'adb.disconnectBusyTooltip'
+  | 'adb.disconnectDeviceAriaLabel'
+  | 'adb.hint.dismiss'
+  | 'adb.hint.how'
+  | 'adb.hint.text'
+  | 'adb.readiness.noPermissions'
+  | 'adb.readiness.offline'
+  | 'adb.readiness.waitingForAuthorization'
   | 'adb.volumeLabelWithSuffix'
   | 'ai.cloud.apiKeyDescription'
   | 'ai.cloud.apiKeyLabel'
