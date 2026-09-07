@@ -21,6 +21,11 @@ Writing, code, and design styles.
     catalog is the base the British and Australian overlays fork from, so the register is load-bearing there; the
     decision, the Apple precedent behind it, and the "don't “fix” a US spelling back to British" guardrail live in
     `docs/i18n/en/style.md`. The website and the docs follow the same spelling so one voice reads across all of them.
+  - **The disk picker is the "volume switcher", in every user-facing string.** It once answered to both "volume
+    chooser" and "volume switcher", which sent readers and translators looking for two surfaces. The message keys and
+    command ids keep `Chooser` (`shortcuts.scope.volumeChooser`, `pane.leftVolumeChooser`), because those are persisted
+    in everyone's shortcut settings and can't be renamed; translate the value and ignore the key. Per-locale
+    resolutions: `docs/i18n/<locale>/glossary.md`.
   - **Folder vs directory**: We know these mean the same. We allow both. Use whichever feels better in each situation.
     Like, on the backend, listing "folders" with `readdir` feels wrong, but also, "folder" comes more natural on the
     front-end and end-user docs.

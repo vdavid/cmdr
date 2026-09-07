@@ -1,8 +1,45 @@
 # Servers: details
 
-Depth for `CLAUDE.md`; read this before any non-trivial work here. The model (account → place → pin) and every decision
-behind it: `docs/specs/servers-hub-plan.md`. Backend contracts: `crates/cmdr-sftp/DETAILS.md`,
-`crates/cmdr-webdav/DETAILS.md`, and `apps/desktop/src-tauri/src/server_volumes.rs`.
+Depth for `CLAUDE.md`; read this before any non-trivial work here. Backend contracts:
+`crates/cmdr-sftp/DETAILS.md`, `crates/cmdr-webdav/DETAILS.md`, and
+`apps/desktop/src-tauri/src/server_volumes.rs`.
+
+## The model: account, place, pin
+
+Three levels. Every rule in this file is a consequence of them.
+
+1. **Account**: an endpoint plus an identity. An SMB host, an SFTP `user@host:port`, a WebDAV URL plus a username, later
+   an S3 endpoint plus an access key or a Google account. It owns the credential, the trust (host keys, certificates,
+   refresh tokens), and the auto-reconnect switch. Saved, and never itself navigable.
+2. **Place**: the mountable thing under an account. An SMB share, an SFTP or WebDAV root, later an S3 bucket or a shared
+   drive. A place becomes a `VolumeInfo`, and it is what tabs, favorites, and paths point at. SFTP and WebDAV have
+   exactly one place per account; SMB and S3 have many, which is why the SMB host → shares step is the general shape
+   rather than an oddity.
+3. **Pin**: whether a place shows in the volume switcher.
+
+❗ **Why three levels and not "a server is a volume".** A server is not plugged in, and nothing else reminds a person it
+exists, so the second use of one has to cost a single keystroke or the feature reads as "connect" rather than "my NAS is
+right there". That needs saved things on screen, and saved things on screen need a cap, or someone with twelve buckets
+scrolls past their own disks. The pin IS the cap, and the user holds it.
+
+### The four rules
+
+1. **The switcher's Network group holds three things and nothing else**: the hub row, every place connected right now,
+   and every pinned place (greyed, hollow dot). A place is pinned on its first successful connect, and Unpin lives in
+   the row's context menu. ❌ No "Connect to server…" row in the switcher: adding lives in the hub, the palette, and
+   ⌘K. Where the rule is applied, and why the LISTING hides nothing:
+   `../file-explorer/navigation/DETAILS.md` § "The three-things rule, and which side enforces it".
+2. **Every row in the switcher is a place, and opening one that isn't live brings it to life IN THE PANE, with a
+   cancel.** MTP already worked this way; SFTP, WebDAV, SMB, and ADB inherit it
+   (`../file-explorer/pane/DETAILS.md` § "A pane on a saved place").
+3. **Dialogs are for entering data; panes are for waiting.** The sheet exists to type a new server, edit one, or answer
+   a sign-in. Connecting, waiting for a phone's Allow tap, a refusal with a retry, a changed host key, and "signed out"
+   all render in the pane. That is what reconciles "a device never gets a modal" with having a connect dialog at all:
+   both are right once the two are split.
+4. **The sheet opens only on user intent**: activating a row that needs a sign-in, pressing Add, pressing "Sign in…".
+   ❌ Never on its own when a session drops. A modal stealing focus during a lid-open wake is the wrong thing, and a
+   reconnect stays silent (`../file-explorer/network/DETAILS.md` § "SMB live-reconnect flow"); the pane's banner is
+   where the button lives.
 
 ## The path grammar
 
@@ -265,3 +302,26 @@ Two details are load-bearing:
 The handlers themselves (`src/routes/(main)/command-handlers/servers-handlers.ts`) then route through
 `../file-explorer/navigation/server-row-actions.ts::runServerRowAction`, the same function the native menu's answer
 lands in, so a menu item and a palette command can't drift on a confirmation or a toast.
+
+## Deliberately not built
+
+Each of these was decided against with a reason, and a reason nobody can find gets re-derived. The pointer is to
+whichever doc owns the item now; ❌ nothing here restates a mechanism.
+
+- **Pinnable SMB shares**: `docs/specs/later/smb-pinned-shares.md`. `known_shares.rs` holds no share rows and no port,
+  and a mounted share's id comes from `statfs`, so a pin keyed on a stored row would never match the mounted volume.
+  SMB places keep reaching the switcher as mounted volumes instead.
+- **`~/.ssh/config` host aliases as address-field completions**: `docs/specs/later/sftp-follow-ups.md` § 4. It is a
+  backend parser with its own edge cases, and the add form is usable without it.
+- **One switcher row per phone** rather than one per protocol: `docs/specs/later/adb-merged-phone-row.md`. The "(ADB)"
+  name suffix is the stopgap.
+- **Certificate trust-on-first-use**, which is why a self-signed NAS lands on the honest `certificate_untrusted`
+  wording with no button that could work: `docs/specs/webdav-backend-follow-ups.md` § 2, backend work.
+- **A property-testing library on the frontend.** `proptest` stays Rust-only, and `address-parser.test.ts`'s example
+  table is the contract instead (§ "Add mode, address first").
+- **A fourth pane tint for the two new protocols.** `appearance.tintSmb` covers all three ("Tint server panes (SMB,
+  SFTP, WebDAV)"). A separate setting would be three definition sites, a section row, and two parity tests for a color
+  nobody asked to set apart.
+- **S3 and OAuth**, whose contracts shaped types that shipped and so are written beside those types: one more
+  `ServerTarget` arm (`../../src-tauri/src/commands/DETAILS.md` § `servers.rs`), one more renderer (§ "The renderer
+  table"), and the two reserved `SignInShape` variants (`crates/cmdr-fs/src/volume/connection.rs`).
