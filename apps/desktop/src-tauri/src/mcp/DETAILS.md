@@ -499,6 +499,10 @@ The live-control commands (`set_mcp_enabled`, `set_mcp_port`, no restart needed)
 
 Frontend calls `update_left_pane_state()` after loading files, but there's no guarantee it completes before an MCP resource read. In practice, updates are fast and this isn't an issue. If stale data is a concern, add explicit sync waits.
 
+### `PaneFileEntry` mirrors ANSWERS, not raw index fields
+
+`recursiveSizeUpdating` is the frontend's own per-row "can this size still move" answer (walk + aggregation + pending), not the raw `recursiveSizePending` field it superficially resembles. `pane_state.rs`'s field doc says what feeds it; `pane-mcp-sync.svelte.ts` composes it; `resources/DETAILS.md` § "Directory sizes say how much they're worth" renders it. The pattern generalizes: this store is a mirror of what the UI KNOWS, so a field here may fold several backend facts, and copying the nearest-named `FileEntry` field into one is how a marker ends up quietly narrower than the hourglass it claims to mirror.
+
 ### Dialog state is "soft"
 
 `SoftDialogTracker` stores which dialogs MCP thinks are open, but if a dialog is closed manually (not via MCP), the tracker isn't updated. The `cmdr://state` resource double-checks reality by querying Tauri windows.

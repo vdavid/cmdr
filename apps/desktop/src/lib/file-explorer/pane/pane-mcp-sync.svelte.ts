@@ -9,7 +9,32 @@ import { type CanonicalPath, parentOf } from '$lib/path/canonical'
 import type { ViewMode } from '$lib/app-status-store'
 import type { SearchResultEntry } from '$lib/ipc/bindings'
 import type { SnapshotSort } from '$lib/search/snapshot-store.svelte'
+import { getWalkedGround, isVolumeAggregating } from '$lib/indexing/index-state.svelte'
+import { isPathAffectedByWalk } from '$lib/indexing/walked-ground'
+import { isDirSizeUpdating } from '../views/full-list-utils'
 import { snapshotMcpRows } from './snapshot-mcp-rows'
+
+/** Whether one mirrored row's folder size can still move. */
+type InFluxAnswer = (entry: { path: string; recursiveSizePending?: boolean | null }) => boolean
+
+/**
+ * The pane's "can this number still move" answer, resolved ONCE per push and
+ * then asked per row — the same composition `FullList` renders its hourglass
+ * from (`aggregating || under a walk || this dir's own pending writes`), so a
+ * row marked `[size-unsettled]` in `cmdr://state` is exactly a row wearing the
+ * hourglass on screen.
+ *
+ * Read outside a reactive context on purpose: a push is triggered (navigation,
+ * selection, an `index-dir-updated` tick), not subscribed, so this wants the
+ * current value, not a subscription. The index storm that moves these numbers
+ * fires `index-dir-updated` throughout, which is what re-pushes.
+ */
+function inFluxAnswerFor(volumeId: string): InFluxAnswer {
+  const ground = getWalkedGround(volumeId)
+  const aggregating = isVolumeAggregating(volumeId)
+  return (entry) =>
+    isDirSizeUpdating(aggregating || isPathAffectedByWalk(ground, entry.path), entry.recursiveSizePending ?? false)
+}
 
 export interface PaneMcpSyncDeps {
   paneId: 'left' | 'right'
@@ -138,7 +163,10 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
    * `PaneFileEntry` uses `null` for absent fields (post-Group-A wire format)
    * while `FileEntry` uses `undefined`, so `?? null` coerces across both.
    */
-  function toMcpFileEntry(entry: Awaited<ReturnType<typeof getFileRange>>[number]): PaneFileEntry {
+  function toMcpFileEntry(
+    entry: Awaited<ReturnType<typeof getFileRange>>[number],
+    inFlux: InFluxAnswer,
+  ): PaneFileEntry {
     return {
       name: entry.name,
       path: entry.path,
@@ -147,8 +175,12 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
       recursiveSize: entry.recursiveSize ?? null,
       // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state, just formatting a timestamp
       modified: entry.modifiedAt != null ? new Date(entry.modifiedAt * 1000).toISOString() : null,
-      recursiveSizePending: entry.recursiveSizePending ?? null,
-      // The honest-sizes trio, so `cmdr://state` renders the same `≥` lower
+      // The SAME per-row answer the file list's hourglass renders from, ❌ never
+      // the raw `recursiveSizePending` field alone: that covers only this dir's
+      // own draining writes, and misses the walk that is rewriting it, which is
+      // exactly when the number is furthest from the truth.
+      recursiveSizeUpdating: inFlux(entry),
+      // The honest-sizes pair, so `cmdr://state` renders the same `≥` lower
       // bound and staleness the file list shows instead of passing a partial
       // total off as a settled one.
       recursiveSizeComplete: entry.recursiveSizeComplete ?? null,
@@ -193,7 +225,8 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
         size: null,
         recursiveSize: null,
         modified: null,
-        recursiveSizePending: null,
+        // The `..` row pushes no size, so there's nothing here that could move.
+        recursiveSizeUpdating: null,
         recursiveSizeComplete: null,
         recursiveSizeStale: null,
         recursivePhysicalSize: null,
@@ -211,7 +244,8 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
     const maxToFetch = Math.max(0, Math.min(backendEnd - backendStart, MAX_MIRRORED_ROWS, totalCount - backendStart))
     if (maxToFetch > 0) {
       const range = await getFileRange(listingId, backendStart, maxToFetch, includeHidden)
-      for (const entry of range) files.push(toMcpFileEntry(entry))
+      const inFlux = inFluxAnswerFor(deps.getVolumeId())
+      for (const entry of range) files.push(toMcpFileEntry(entry, inFlux))
     }
     return files
   }

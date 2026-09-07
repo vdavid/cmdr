@@ -41,7 +41,7 @@ export function snapshotMcpRows(
       size: entry.size ?? null,
       recursiveSize: null,
       modified: entry.modifiedAt != null ? new Date(entry.modifiedAt * 1000).toISOString() : null,
-      recursiveSizePending: null,
+      recursiveSizeUpdating: null,
       recursiveSizeComplete: null,
       recursiveSizeStale: null,
       recursivePhysicalSize: null,

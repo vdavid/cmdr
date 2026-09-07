@@ -186,7 +186,7 @@
                 size: null,
                 recursiveSize: null,
                 modified: null,
-                recursiveSizePending: null,
+                recursiveSizeUpdating: null,
             }))
 
             const state: PaneState = {

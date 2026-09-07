@@ -117,6 +117,21 @@ derive on a value is fine here; a presentation decision isn't.
 here with their serde shapes. `DebugStats` is the app-wide phase ring the debug window reads; `PhaseRecord.trigger` is a
 free-text English line rendered only in that developer panel.
 
+`IndexStatusResponse::walk_affects(walked_roots, path)` is the one predicate over `walked_roots`: whether the running
+walk can still move the recursive size the index serves for `path`. **Bidirectional** — the roll-up repairs the ancestor
+chain, so a walk below a folder moves that folder's total too, and a downward-only test calls every folder above the
+walked ground settled while its number is about to change. It's an ASSOCIATED function, not a `&self` method, so a
+caller asking it per row can hold the roots alone; it hangs off the type that owns them so neither can be found without
+the other, and it stays off `lib.rs` (a root promise there is capped by `index-crate-isolation`). Twin of the frontend's
+`isPathAffectedByWalk` (`$lib/indexing/walked-ground.ts`) — the file list's hourglass and an agent's `list_dir` have to
+answer alike about the same folder, so change the two together.
+
+⚠️ It answers for the WALK only. Aggregation (the window after the walk, when folder totals are computed) has released
+its ground by then and reports through no per-volume read, so a caller that needs the whole "still moving" answer adds
+its own terms: the frontend ORs in `isVolumeAggregating` plus the per-folder `recursiveSizePending`
+(`views/FullList.svelte`), and `list_dir` leans on its coverage block for that window
+(`apps/desktop/src-tauri/src/agent/tools/DETAILS.md` § The honesty (coverage) contract).
+
 `RescanReason` lives here too: `StaleIndex`, `JournalGap`, `ReplayOverflow`, `WatcherStartFailed`,
 `ReconcilerBufferOverflow`, `IncompletePreviousScan`, `WatcherChannelOverflow`, `IngestionBacklog`. Every path that
 falls back to a full rescan reports one through `emit_rescan_notification`, which also logs the reason; the frontend
