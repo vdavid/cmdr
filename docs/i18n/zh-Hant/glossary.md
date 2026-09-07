@@ -1092,19 +1092,20 @@ machine"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lpro
   `／`，照 `settings.selection.recentSelections.maxCount.description` 的 `「選取／取消選取檔案」`。
 - **volume switcher（挑磁碟的那個清單）** · `卷宗切換器` · `切換器`
   是目錄既有的 "switcher"（`commands.favoritesAdd.description` = `切換器的「喜好項目」`），`卷宗` 是既定的 volume ·
-  `confirmed`。英文原本同一個介面有兩個名字（"volume chooser" 與 "volume switcher"），中文也照著分成
-  `卷宗選擇器` 與 `卷宗切換器`；英文後來統一成 "volume switcher"，中文因此也統一成 `卷宗切換器`，
-  `shortcuts.scope.volumeChooser` 和兩個 `commands.pane*VolumeChooser.label` 都跟著改。訊息 KEY 仍拼作
-  `Chooser`，因為它對應存進設定檔的指令 id `pane.leftVolumeChooser` / `pane.rightVolumeChooser`，不能改名。
+  `confirmed`。英文原本同一個介面有兩個名字（"volume chooser" 與 "volume switcher"），中文也照著分成 `卷宗選擇器` 與
+  `卷宗切換器`；英文後來統一成 "volume switcher"，中文因此也統一成 `卷宗切換器`， `shortcuts.scope.volumeChooser` 和兩個
+  `commands.pane*VolumeChooser.label` 都跟著改。訊息 KEY 仍拼作 `Chooser`，因為它對應存進設定檔的指令 id
+  `pane.leftVolumeChooser` / `pane.rightVolumeChooser`，不能改名。
 - **Add server…（表格最後一列）** · `加入伺服器…` · Apple 的「加入+受詞」句式（系統設定 `ADD_DEVICE` "Add Device…" →
   `加入裝置⋯`、`MainMenu.loctable` "Add Account…" → `加入帳號⋯`，TW = HK）· `high`。刪節號照目錄慣例寫
   `…`（U+2026），不跟 Apple 的 `⋯`。
 - **local network（區域網路）** · `區域網路` · AP-TW 把隱私權面板的 `LOCAL_NETWORK` 鍵（"Local Network"）譯成
-  `區域網路`，整份 SystemSettings 的行文也一律 `區域網路`（HK 是 `本地網絡`，台灣優先取 `區域網路`）· `confirmed`。
-  整個目錄現在只有這一個寫法：早先自行組出來的 `本機網路` 已經從
+  `區域網路`，整份 SystemSettings 的行文也一律 `區域網路`（HK 是 `本地網絡`，台灣優先取 `區域網路`）·
+  `confirmed`。整個目錄現在只有這一個寫法：早先自行組出來的 `本機網路` 已經從
   `settings.network.enabled.description`、`settings.network.timeoutMode.optDesc.normal` 和
-  `onboarding.stepOptional.networking.desc` 換掉。onboarding 那一條是最關鍵的：它逐字引用 macOS 權限對話框上的標籤，
-  而那個對話框寫的就是「區域網路」，所以舊值等於叫使用者去找一個螢幕上不存在的字。❌ 不要再寫回 `本機網路`。
+  `onboarding.stepOptional.networking.desc`
+  換掉。onboarding 那一條是最關鍵的：它逐字引用 macOS 權限對話框上的標籤，而那個對話框寫的就是「區域網路」，所以舊值等於叫使用者去找一個螢幕上不存在的字。❌ 不要再寫回
+  `本機網路`。
 - **discovery（探索）** · `探索` · 目錄既有的 `settings.network.firstTriggerDone.label` = `網路探索已啟動`、
   `settings.network.enabled.description` = `探索 SMB 伺服器` · `high`。所以 "Local network discovery is off." 是
   `區域網路探索已關閉。`

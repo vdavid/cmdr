@@ -18,8 +18,8 @@ getAppLogger('feature')
 
 ## Decisions
 
-- **LogTape on the frontend**: it gives the `getAppLogger()` API, hierarchical categories, and per-feature debug
-  toggles (`debugCategories`); only the sink is ours.
+- **LogTape on the frontend**: it gives the `getAppLogger()` API, hierarchical categories, and per-feature debug toggles
+  (`debugCategories`); only the sink is ours.
 - **Custom batch IPC instead of the plugin JS API**: the bridge batches into one IPC call per 100 ms, with dedup and
   throttle (critical for infinite-loop protection).
 - **Hand-rolled fern dispatch instead of `tauri-plugin-log`**: the plugin routes everything through one shared level. We

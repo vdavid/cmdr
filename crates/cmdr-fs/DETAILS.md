@@ -16,12 +16,12 @@ backend, because none of them are in the dependency graph. That's the property t
 the next section.
 
 - `volume/`: the `Volume` trait and its types; `connection.rs` (the REMOTE vocabulary: `ConnectionState`,
-  `DeviceReadiness`, `BackendKind`, `SignInShape`, and `DeviceUnavailableReason`); `ids` + `canonical_root` +
-  `mtp_ids` (the ID funnel and double-mount collapse); `capabilities.rs`; `retirement.rs` (how background work learns
-  it stopped being the live volume); `channel_stream.rs` (a network backend's read path, consumer half);
-  `scan_boundary.rs` + `scan_stop.rs` (the one seam a copy scan touches per entry: counts, Cancel, and Pause);
-  `scan_walk.rs`, `mkdir_all.rs`, `patching.rs`, and `secret_store.rs` (the bodies a stat-and-listing backend gets for
-  free); `remote_paths.rs` (a server tree's `<scheme>://user@host:port` app spelling, and the ONE translation);
+  `DeviceReadiness`, `BackendKind`, `SignInShape`, and `DeviceUnavailableReason`); `ids` + `canonical_root` + `mtp_ids`
+  (the ID funnel and double-mount collapse); `capabilities.rs`; `retirement.rs` (how background work learns it stopped
+  being the live volume); `channel_stream.rs` (a network backend's read path, consumer half); `scan_boundary.rs` +
+  `scan_stop.rs` (the one seam a copy scan touches per entry: counts, Cancel, and Pause); `scan_walk.rs`,
+  `mkdir_all.rs`, `patching.rs`, and `secret_store.rs` (the bodies a stat-and-listing backend gets for free);
+  `remote_paths.rs` (a server tree's `<scheme>://user@host:port` app spelling, and the ONE translation);
   `friendly_error/` (typed, word-free classification); `usb_speed.rs` (❗ its doc comment reaches `bindings.ts`);
   `in_memory.rs`; `conformance.rs`; and `host/` (what a backend needs from the app, as named traits; read
   `src/volume/host/CLAUDE.md` before writing a backend).
@@ -61,10 +61,10 @@ through a local helper, a fully-qualified call inline in an expression, a `use` 
   purpose, so a window is the difference of two readings; the index writer's heartbeat is its one consumer today
   (`../cmdr-index/src/indexing/writer/probe_stats.rs`).
 - **`sqlite_util`.** A leaf over `std` + `rusqlite`, whose only two in-crate calls are `pluralize` and `ignore_poison`,
-  both already here. It belongs here because the stores that share it sit on both sides of the boundary: the
-  three index DBs live in `cmdr-index`, while the agent's and the operation log's stay app-side. Putting it in
-  `cmdr-index` would make `agent/` and `operation_log/` depend on the index for connection plumbing, and there is only
-  one `SQLITE_CONFIG_PAGECACHE` slab per process, so it genuinely has to be one instance both sides see.
+  both already here. It belongs here because the stores that share it sit on both sides of the boundary: the three index
+  DBs live in `cmdr-index`, while the agent's and the operation log's stay app-side. Putting it in `cmdr-index` would
+  make `agent/` and `operation_log/` depend on the index for connection plumbing, and there is only one
+  `SQLITE_CONFIG_PAGECACHE` slab per process, so it genuinely has to be one instance both sides see.
 - **`staging`.** The markers, the `StagingTemp` mint, and the in-flight registry. A mutating backend has to be able to
   stage a write, and the archive mutator already does; leaving the mint in the app would mean the first backend crate
   either reaches upward for it or grows a seam for something with no per-backend variation. The mint's only tie to
@@ -181,8 +181,8 @@ imports: a call through a local helper, a fully-qualified inline call, a `use` i
 `#[cfg(test)]` items are all invisible to a header grep.
 
 All three are pure name and path predicates with no I/O, a hard requirement since they run for every entry of a
-100k-entry listing, so they live here rather than being stripped or injected (stripping the two fields was never
-viable: `FileEntry::new` has 83 call sites):
+100k-entry listing, so they live here rather than being stripped or injected (stripping the two fields was never viable:
+`FileEntry::new` has 83 call sites):
 
 - `icons/special_folders.rs` is whole here; its only non-`std` dependency is `dirs`.
 - `icons/packages.rs` holds the package half of the per-path classification. The custom-icon half stays app-side: it

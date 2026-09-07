@@ -2529,8 +2529,8 @@ Notities:
 - **`Zet server vast / maak hem los`** (`commands.serversTogglePin.label`): 30 tekens tegen 18, en dat blijft zo. De
   twee bestaande schakelopdrachten kiezen de infinitiefvorm (`Tabblad vastzetten aan/uit`,
   `Verborgen bestanden aan/uit`) omdat hún Engels `Toggle X` zegt; dit Engels is gebiedend, net als de vier andere
-  `servers.*`-opdrachten, dus dit label ook. `hem` verwijst naar `server` (de-woord), dus de congruentie klopt ·
-  `high`. Zie `style.md` § Notes and decisions.
+  `servers.*`-opdrachten, dus dit label ook. `hem` verwijst naar `server` (de-woord), dus de congruentie klopt · `high`.
+  Zie `style.md` § Notes and decisions.
 - **`Lokale netwerkdetectie`** (`discoveryOff`): de twee helften zijn allebei gesourcet, de samenstelling niet.
   `Detectie in je lokale netwerk` is de omschrijvende variant en leest losser, maar is een stuk langer voor één regel
   onder een lijst.

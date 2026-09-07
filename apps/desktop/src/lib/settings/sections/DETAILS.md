@@ -212,8 +212,7 @@ sections compose).
   opt-out `analytics.enabled` default-on, the `analytics.email` contact field with its "never sent with your usage data"
   note, and the `updates.crashReports` / `updates.errorReports` opt-ins — Flow B auto-send; Flow A consent-on-click is
   always available). The cards are presentation only. Frames are gated via `anyVisible(shouldShow, ...)` (same pattern
-  as FSW above). The email field persists to
-  settings here; the beta-signup network call is wired separately
+  as FSW above). The email field persists to settings here; the beta-signup network call is wired separately
 - **`LicenseSection.svelte`**: `License`: special (non-registry), reads `getLicenseInfo` / `getLicenseStatus`. The info
   block + action buttons live in one unlabeled `SectionCard`; the personal / commercial / expired / loading states are
   presentational variants of that one block, all inside the one card (no `anyVisible` gate — it's not registry

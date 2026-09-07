@@ -231,19 +231,19 @@ second half is now a normal plural with a real verb
   `USB-foutopsporing`, the `Toestaan` button, `tik op`, and the `Zet … aan` imperative. Use them the way term-choice
   principle 1 uses Apple: the word in Cmdr has to be the word on the phone's screen. Evidence: `glossary.md` § Het
   telefoonpaneel via ADB.
-- **A command's register follows its ENGLISH SHAPE, not whether it toggles.** `commands.serversTogglePin.label`
-  ("Pin / unpin server") keeps the slash and the imperative: `Zet server vast / maak hem los`. The two `aan/uit`
-  commands answer a different English (`Toggle pin tab`, `Toggle hidden files`), which Dutch renders as
-  `<object> <infinitive> aan/uit`; an English imperative takes a Dutch imperative, as all four sibling `servers.*`
-  commands and both menu pin items already do. Confidence: high. Evidence: `glossary.md` § De serverhub.
+- **A command's register follows its ENGLISH SHAPE, not whether it toggles.** `commands.serversTogglePin.label` ("Pin /
+  unpin server") keeps the slash and the imperative: `Zet server vast / maak hem los`. The two `aan/uit` commands answer
+  a different English (`Toggle pin tab`, `Toggle hidden files`), which Dutch renders as `<object> <infinitive> aan/uit`;
+  an English imperative takes a Dutch imperative, as all four sibling `servers.*` commands and both menu pin items
+  already do. Confidence: high. Evidence: `glossary.md` § De serverhub.
 - **`vastzetten` en `vast maken` zijn één werkwoordpaar, geen twee.** Beide dragen hetzelfde partikel, en het hele
   catalogus-cluster staat op `vast` / `los`: `Maak tabblad vast` / `Maak tabblad los`, `Maak vast in volumekiezer` /
   `Maak los`, `Tabblad vastzetten aan/uit`, `Vastgezet`, `Zet server vast / maak hem los`. ❌ Veeg ze dus niet samen op
   één licht werkwoord: `Maak server vast / maak hem los` herhaalt `maak` in één label. Confidence: high. Bewijs:
   `glossary.md` § De vastzet-hint.
-- **"USB debugging" → `USB-foutopsporing`, settled.** It is what a Dutch Android phone shows, sourced straight from
-  AOSP (`SettingsLib` `enable_adb`), and the English `@key.description` now asks for exactly that: the phrase the way
-  the vendor's localized Android renders it. The `adb.*` pass reuses the same rendering. Confidence: high.
+- **"USB debugging" → `USB-foutopsporing`, settled.** It is what a Dutch Android phone shows, sourced straight from AOSP
+  (`SettingsLib` `enable_adb`), and the English `@key.description` now asks for exactly that: the phrase the way the
+  vendor's localized Android renders it. The `adb.*` pass reuses the same rendering. Confidence: high.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

@@ -173,19 +173,18 @@ the caller's `attempt` gets an `SmbCredentialAnswer` (`{ username, password, rem
 generic submission. ❗ `username: null` IS guest: all three SMB commands take a nullable username and read it that way,
 so a separate flag could only disagree with it.
 
-- **The username** is resolved in one order everywhere: what an earlier attempt tried, then
-  `getKnownShareByName()`'s last username for this share, then `getUsernameHint()`. ❗ Both lookups take the server BY
-  NAME and match on its stable identity in Rust, so a hint saved under one spelling (`Naspolya`) is found when the sheet
-  opens under another (`Naspolya._smb._tcp.local`). ❌ Don't rebuild the key in TypeScript: that is what made the two
-  sides disagree once.
+- **The username** is resolved in one order everywhere: what an earlier attempt tried, then `getKnownShareByName()`'s
+  last username for this share, then `getUsernameHint()`. ❗ Both lookups take the server BY NAME and match on its
+  stable identity in Rust, so a hint saved under one spelling (`Naspolya`) is found when the sheet opens under another
+  (`Naspolya._smb._tcp.local`). ❌ Don't rebuild the key in TypeScript: that is what made the two sides disagree once.
 - **Remember starts ON, and is ❌ never probed**, because `has_smb_credentials` is `get_credentials(…).is_ok()` and
   asking costs the same Keychain prompt as reading. Why the other protocols seed the box differently:
   `../../servers/DETAILS.md` § "The sheet contract".
 - **`guestAllowed` is a per-site call, ❌ not a property of SMB.** The listing offers guest where the host's `authMode`
   says one is allowed; the mount and the upgrade both pass `false`.
-- **`refusalForShareError` / `refusalForMountError`** put every SMB failure in
-  `../../servers/connect-refusals.ts`'s vocabulary, and ❗ `auth_required` stays distinct from `auth_failed`: telling
-  someone who has never entered a password that theirs is wrong is what collapsing the two does.
+- **`refusalForShareError` / `refusalForMountError`** put every SMB failure in `../../servers/connect-refusals.ts`'s
+  vocabulary, and ❗ `auth_required` stays distinct from `auth_failed`: telling someone who has never entered a password
+  that theirs is wrong is what collapsing the two does.
 
 ## Data flow
 

@@ -7,8 +7,8 @@ decide where and how it renders. Parents: `../CLAUDE.md` (registry, store, appli
 ## Module map
 
 - One `*Section.svelte` per sidebar entry, plus sibling `<Component>.rows.ts` search metadata and pure helpers.
-- AI and Indexing are card-menu parents: `AiSection` / `AskCmdrSection` / `McpServerSection`, and
-  `DriveIndexingSection` / `ImageIndexingSection` (which composes the `MediaIndex*` components).
+- AI and Indexing are card-menu parents: `AiSection` / `AskCmdrSection` / `McpServerSection`, and `DriveIndexingSection`
+  / `ImageIndexingSection` (which composes the `MediaIndex*` components).
 - Full file-and-responsibility map: DETAILS § File map.
 
 ## Must-knows

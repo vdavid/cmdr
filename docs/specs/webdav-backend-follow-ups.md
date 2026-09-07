@@ -65,12 +65,12 @@ Two smaller things the review pass flagged and did not settle, each an hour at m
 A saved WebDAV server gets a row in the volume switcher, a place in the servers hub, and the one sign-in sheet every
 credential ask in the app opens; paths carry a `webdav://` scheme so path resolution answers for one. What the frontend
 settled, and why, is `apps/desktop/src/lib/servers/DETAILS.md` (the path grammar, the three connect arms, the sheet
-contract, the renderer table, and the refusal table). The protocol side it builds against is this crate's
-§ "Connecting from the frontend".
+contract, the renderer table, and the refusal table). The protocol side it builds against is this crate's § "Connecting
+from the frontend".
 
 Two of this file's items are what the frontend has to word around today: a self-signed NAS certificate lands on
-`certificate_untrusted` with no way to trust it (§ 2), and a Digest-only server lands on a refusal rather than a
-prompt (§ 3).
+`certificate_untrusted` with no way to trust it (§ 2), and a Digest-only server lands on a refusal rather than a prompt
+(§ 3).
 
 ## 2. Certificate trust-on-first-use for self-signed NAS certificates
 
