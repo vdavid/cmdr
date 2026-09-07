@@ -59,12 +59,13 @@ pub(crate) struct ServerPlace {
 /// tab restored onto an unpinned server still has to find its way home. The
 /// listing filters; the resolver does not.
 ///
-/// ❗ The "registered volume nothing has saved" sweep is DEFENCE IN DEPTH, not
-/// the load-bearing path: `forget_server` drops the session and unregisters the
-/// volume before it removes the entry, so no such orphan should exist. It stays
-/// because the cost is one pass over a registry snapshot, and the failure it
-/// covers (a volume the stores don't know about) is one where the app would
-/// otherwise deny that a volume a pane is standing on exists at all.
+/// ❗ The "registered volume nothing has saved" sweep covers a REAL window, ❌
+/// not a hypothetical one: `forget_server` removes the store entry first, emits
+/// `VolumeUnmounted`, and only THEN disconnects, so between the removal and the
+/// disconnect a live session has no saved row. ❌ Don't delete the sweep on the
+/// reading that the order makes it unnecessary — it doesn't, and what a volume
+/// with no row costs is a pane standing on one the switcher denies exists. The
+/// cost of keeping it is one pass over a registry snapshot.
 pub(crate) fn server_places() -> Vec<ServerPlace> {
     let manager = crate::file_system::volume::manager::get_volume_manager();
     let registered = |id: &str, kind: BackendKind| {
@@ -113,9 +114,9 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
     }
 
     // ❗ And every REGISTERED server volume the stores don't know about, so a
-    // live session is never a ghost. `forget_server` drops the saved entry
-    // without dropping the session, and a volume with no row is one a pane can
-    // sit on while the switcher denies it exists.
+    // live session is never a ghost. `forget_server` removes the saved entry
+    // before it disconnects, and in that window a volume with no row is one a
+    // pane can sit on while the switcher denies it exists.
     for (id, volume) in manager.list_volumes_with_handles() {
         let fs_type = match volume.backend_kind() {
             BackendKind::Sftp => "sftp",

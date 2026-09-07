@@ -104,6 +104,25 @@ pub(crate) fn last_volume_gone() -> Option<(String, u64)> {
     VOLUMES_GONE.lock_ignore_poison().last().cloned()
 }
 
+/// The lock every cell that READS or BUMPS the two recorders above must hold for
+/// its whole body.
+///
+/// ❗ `GENERATION` and `VOLUMES_GONE` are process-global, and the cells about
+/// ordering assert on an EXACT generation ("the gone event went out before
+/// anything asked for a republish") or on "nothing was announced". A sibling cell
+/// forgetting or pinning in parallel bumps one and appends to the other, so under
+/// a thread-per-test runner those assertions read a neighbour's work. Same shape
+/// as `mcp/terminal_ops.rs`'s ring lock.
+///
+/// ❗ `pnpm check` will never catch a miss here: nextest is process-per-test, so
+/// each cell gets its own recorders. A bare `cargo test --lib commands::servers`
+/// is the run that fails, a few times in ten.
+#[cfg(test)]
+pub(crate) fn recorder_test_lock() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: Mutex<()> = Mutex::new(());
+    LOCK.lock_ignore_poison()
+}
+
 /// Tauri command: triggers a fresh `volumes-changed` broadcast.
 /// The result arrives via the event, not as a return value.
 /// Used by the frontend retry button when the initial listing timed out.

@@ -595,11 +595,16 @@ pub async fn forget_server(id: String) -> bool {
 
 /// Whether a secret is remembered for the place `id` names.
 ///
-/// ❗ The protocol-agnostic reader behind the "Forget saved password" item: the
-/// row's menu offers it only when there is one to forget, and a caller that
-/// branched on protocol to answer would be one more place that has to know SFTP
-/// from WebDAV. A store that didn't answer in time reads as `false`, the same
-/// harmless collapse the per-protocol readers make.
+/// ❗ The protocol-agnostic reader behind the sign-in sheet's Remember box: a
+/// caller that branched on protocol to answer would be one more place that has to
+/// know SFTP from WebDAV. A store that didn't answer in time reads as `false`,
+/// the same harmless collapse the per-protocol readers make.
+///
+/// ❌ **Not for a context menu.** It is `get_credentials(…).is_ok()` underneath,
+/// and every read of a Keychain entry can raise a system prompt. A sheet opening
+/// is a moment a person is already waiting through; a right-click is not, so the
+/// row's menu offers "Forget saved password" unconditionally and lets
+/// [`forget_server_secret`] report whether there was one.
 #[tauri::command]
 #[specta::specta]
 pub async fn has_server_secret(id: String) -> bool {

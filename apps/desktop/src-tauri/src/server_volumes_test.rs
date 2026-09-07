@@ -11,9 +11,18 @@ use cmdr_fs::volume::BackendKind;
 /// A host nobody else's cell will use, so this suite can share the
 /// process-global store with whatever runs beside it.
 ///
-/// ❗ `192.0.2.x` is reserved for documentation (RFC 5737) and routed nowhere, so
-/// a dial against it hangs rather than reaching a stranger's machine. That hang
-/// is what makes "the resolver never connects" assertable.
+/// ❗ **This suite owns `198.51.100.x` and `commands/servers_test.rs` owns
+/// `192.0.2.x`, one reserved block each.** Both write the same process-global
+/// `KNOWN` store, so under a thread-per-test runner (`cargo test --lib`, which
+/// nextest's process-per-test hides) a shared address is one cell removing the
+/// entry another is about to look up, or writing it with the other pin. Picking
+/// a free last octet inside your OWN block is what keeps that impossible; a
+/// number that merely looks unused across both files is how they collided.
+///
+/// ❗ Both blocks are reserved for documentation (RFC 5737) and routed nowhere,
+/// so a dial against one hangs rather than reaching a stranger's machine. That
+/// hang is what makes "the resolver never connects" assertable, which is why
+/// these are literal addresses rather than `.test` names that fail DNS instantly.
 fn saved_sftp(host: &str, pinned: bool) -> KnownSftpServer {
     KnownSftpServer {
         host: host.to_string(),
@@ -31,7 +40,7 @@ fn saved_sftp(host: &str, pinned: bool) -> KnownSftpServer {
 
 #[test]
 fn a_pinned_saved_server_answers_for_its_own_paths_without_connecting() {
-    let host = "192.0.2.11";
+    let host = "198.51.100.11";
     sftp_known_servers::remember(saved_sftp(host, true));
 
     let started = std::time::Instant::now();
@@ -59,7 +68,7 @@ fn a_pinned_saved_server_answers_for_its_own_paths_without_connecting() {
 /// server still has to find its way home.
 #[test]
 fn an_unpinned_saved_server_still_answers_for_its_paths() {
-    let host = "192.0.2.12";
+    let host = "198.51.100.12";
     sftp_known_servers::remember(saved_sftp(host, false));
 
     let volume = server_volume_for_path(&format!("sftp://ada@{host}:2222/srv/data"))
@@ -71,7 +80,7 @@ fn an_unpinned_saved_server_still_answers_for_its_paths() {
 
 #[test]
 fn a_saved_webdav_server_answers_for_its_own_paths() {
-    let host = "192.0.2.13";
+    let host = "198.51.100.13";
     webdav_known_servers::remember(KnownWebdavServer {
         url: format!("http://{host}:8080/dav/"),
         username: "ada".to_string(),
@@ -94,15 +103,15 @@ fn a_saved_webdav_server_answers_for_its_own_paths() {
 /// whole reason a remote path carries a scheme.
 #[test]
 fn an_unknown_prefix_is_nobodys_volume() {
-    assert!(server_volume_for_path("sftp://nobody@192.0.2.99:22/srv/data").is_none());
-    assert!(server_volume_for_path("webdav://nobody@192.0.2.99:80/dav").is_none());
+    assert!(server_volume_for_path("sftp://nobody@198.51.100.99:22/srv/data").is_none());
+    assert!(server_volume_for_path("webdav://nobody@198.51.100.99:80/dav").is_none());
 }
 
 /// The trap a raw string prefix compare falls into: a sibling root whose name
 /// merely starts with a saved one's.
 #[test]
 fn a_sibling_root_is_not_this_servers_path() {
-    let host = "192.0.2.14";
+    let host = "198.51.100.14";
     sftp_known_servers::remember(saved_sftp(host, true));
 
     assert!(
@@ -121,8 +130,8 @@ fn a_sibling_root_is_not_this_servers_path() {
 /// everything else.
 #[test]
 fn every_saved_server_gets_a_row_carrying_its_own_pin() {
-    let pinned_host = "192.0.2.41";
-    let unpinned_host = "192.0.2.42";
+    let pinned_host = "198.51.100.41";
+    let unpinned_host = "198.51.100.42";
     sftp_known_servers::remember(saved_sftp(pinned_host, true));
     sftp_known_servers::remember(saved_sftp(unpinned_host, false));
 
@@ -167,7 +176,7 @@ fn every_saved_server_gets_a_row_carrying_its_own_pin() {
 /// the cap, and it earns its switcher row through its live session instead.
 #[test]
 fn a_row_for_a_live_session_nothing_saved_reports_no_pin() {
-    let volume_id = cmdr_fs::volume::sftp_volume_id("192.0.2.47", 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id("198.51.100.47", 2222, "ada");
     let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.register(
         &volume_id,
@@ -197,7 +206,7 @@ fn a_row_for_a_live_session_nothing_saved_reports_no_pin() {
 /// `webdav://` path.
 #[test]
 fn a_pinned_webdav_server_gets_a_row_of_its_own_kind() {
-    let host = "192.0.2.43";
+    let host = "198.51.100.43";
     webdav_known_servers::remember(KnownWebdavServer {
         url: format!("http://{host}:8080/dav/"),
         username: "ada".to_string(),
@@ -223,7 +232,7 @@ fn a_pinned_webdav_server_gets_a_row_of_its_own_kind() {
 /// the same id the `saved` row carried, so a tab survives the dial.
 #[test]
 fn a_registered_volume_gets_a_row_under_the_id_its_saved_row_carried() {
-    let host = "192.0.2.44";
+    let host = "198.51.100.44";
     sftp_known_servers::remember(saved_sftp(host, false));
     let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
 
@@ -262,7 +271,7 @@ fn a_registered_volume_gets_a_row_under_the_id_its_saved_row_carried() {
 /// the whole reason `volume_listing::complete` exists.
 #[tokio::test]
 async fn a_live_servers_row_comes_out_of_the_pipeline_enriched() {
-    let host = "192.0.2.45";
+    let host = "198.51.100.45";
     sftp_known_servers::remember(saved_sftp(host, true));
     let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
 
@@ -297,7 +306,7 @@ async fn a_live_servers_row_comes_out_of_the_pipeline_enriched() {
 /// is worse than one the user can disconnect.
 #[test]
 fn a_registered_volume_nothing_saved_still_gets_a_row() {
-    let volume_id = cmdr_fs::volume::sftp_volume_id("192.0.2.46", 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id("198.51.100.46", 2222, "ada");
     let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.register(
         &volume_id,
@@ -305,7 +314,7 @@ fn a_registered_volume_nothing_saved_still_gets_a_row() {
             cmdr_fs::volume::InMemoryVolume::new("Forgotten but live")
                 .with_backend_kind(BackendKind::Sftp)
                 .with_connection_state(ConnectionState::Direct)
-                .with_root("sftp://ada@192.0.2.46:2222/srv/data"),
+                .with_root("sftp://ada@198.51.100.46:2222/srv/data"),
         ),
     );
 
@@ -320,7 +329,7 @@ fn a_registered_volume_nothing_saved_still_gets_a_row() {
         row.name, "Forgotten but live",
         "the volume's own name, since no entry has one"
     );
-    assert_eq!(row.path, "sftp://ada@192.0.2.46:2222/srv/data");
+    assert_eq!(row.path, "sftp://ada@198.51.100.46:2222/srv/data");
     assert_eq!(row.fs_type.as_deref(), Some("sftp"));
 
     manager.unregister(&volume_id);
