@@ -393,6 +393,15 @@ verification together.
 
 - Compare-then-`--last-failed`: it runs a normal comparison and only re-shoots baselines that actually fail the
   threshold, so passing (sub-threshold-noisy) shots aren't churned. Idempotent (a no-op when everything already passes).
+- `--force` sets `VISUAL_FORCE=1` and re-shoots everything with `--update-snapshots=all`, skipping the comparison. It
+  exists because compare-then-`--last-failed` can't see a real change that stays under `maxDiffPixelRatio`: swapping the
+  logo moved 0.08% of the 1280×533 footer shot against a 1% threshold, so all six baselines passed while two of them
+  still showed the old mark (2026-09-07). **`=all` is load-bearing** — bare `--update-snapshots` presets to mode
+  `changed`, which re-asks the same comparator and so skips exactly those diffs.
+  - ❌ **Don't commit everything it rewrites.** These renders aren't byte-deterministic: two forced runs of the same
+    commit in the same container differed by ~50 of 1,024,000 px in `home-fold`, and 5 of 6 baselines came back
+    modified with nothing changed between them. Keep only the shots containing what you changed, `git checkout --` the
+    rest, then run the script with no arguments; an empty "Changed baselines:" list is the proof CI will pass.
 - The container installs and builds into anonymous volumes and chowns the written PNGs back, so it never overwrites the
   caller's macOS `node_modules`/`dist`. Requires Docker; a stopped Docker aborts before any change.
 - `--full` sets `VISUAL_FULL=1`, which swaps in a `snapshotPathTemplate` (playwright.config.ts) pointing at the
