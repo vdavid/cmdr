@@ -49,6 +49,16 @@ The full top-level inventory is here:
   excludes itself by the filename `tests.rs`, so ❗ moving it to another file silently makes it fail on its own prose.
   Anything with a subject of its own lives next to that subject (`overwrite_tests.rs`, `ledger_tests.rs`,
   `delete/delete_cancel_tests.rs`).
+- **The scan is four files, and only one of them knows what a write operation is.** `scan_walker.rs` holds the shared
+  local-FS recursion (`WalkContext`, `walk_dir_recursive`, `walk_sources_with_per_path`, and the hardlink dedup): one
+  descent, parameterized by callbacks, so the copy scan, the delete scan, and the dry run share a symlink stance, cancel
+  checkpoints, and the authoritative-listing fast path. It names no operation type. `scan.rs` turns a walk into totals
+  (`scan_sources`, `scan_subtree_with_oracle`). `scan_source_tracker.rs` is the per-TOP-LEVEL-source bookkeeping over a
+  flat result (`SourceItemTracker`, `FileVerdict`, `top_level_source_path`), which is what makes
+  `write-source-item-done` fire once per source rather than once per file. `scan_dry_run.rs` is the preview that writes
+  nothing. They're flat siblings rather than a `scan/` directory, matching `scan_preview.rs` / `scan_cache.rs` /
+  `scan_bridge.rs` / `scan_watchdog.rs` — and because `pub(super)` here means "visible to `write_operations`", which a
+  directory would silently narrow.
 - Scan and preview: `scan.rs`, `scan_preview.rs`, `scan_cache.rs`, `scan_bridge.rs` (the scan-progress seam the drivers
   feed, and `ScanPause`, the park that lets a walk honor its owner's Pause), `scan_watchdog.rs` (the inactivity bound on
   a preview), `compress_estimate.rs`. Conflicts and overwrite:

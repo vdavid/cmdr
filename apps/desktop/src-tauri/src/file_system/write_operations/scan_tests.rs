@@ -1,9 +1,17 @@
-//! Unit tests for `scan.rs`, split out as a `#[path]` child so the module
-//! itself stays readable. `super::` here is `scan`, exactly as it was when
-//! these lived inline.
+//! Unit tests for the scan family, a `#[path]` child of `scan.rs` so the module
+//! itself stays readable. `super::` here is `scan` and `super::super::` is
+//! `write_operations`.
+//!
+//! It reaches across to `scan.rs`'s three siblings by name: the walk itself
+//! (`scan_walker.rs`), the per-source bookkeeping (`scan_source_tracker.rs`),
+//! and the write-nothing preview (`scan_dry_run.rs`).
 
+use super::super::scan_dry_run::dry_run_scan;
+use super::super::scan_source_tracker::{build_source_file_counts, top_level_source_path};
+use super::super::scan_walker::{WalkContext, walk_sources_with_per_path};
 use super::super::state::FileInfo;
 use super::*;
+use std::fs;
 
 fn make_file_info(path: &str, source_root: &str) -> FileInfo {
     FileInfo {

@@ -13,7 +13,6 @@
 //! - macOS copyfile(3) for full metadata preservation (xattrs, ACLs, resource forks)
 //! - Symlink preservation (not dereferenced)
 //! - Symlink loop detection to prevent infinite recursion
-//! - Copy rollback on failure (CopyTransaction)
 //! - Atomic cross-filesystem moves using staging directory
 
 mod analytics;
@@ -47,7 +46,10 @@ mod routing;
 mod scan;
 mod scan_bridge;
 mod scan_cache;
+mod scan_dry_run;
 mod scan_preview;
+mod scan_source_tracker;
+mod scan_walker;
 mod scan_watchdog;
 mod scratch_dir;
 mod source_binding;

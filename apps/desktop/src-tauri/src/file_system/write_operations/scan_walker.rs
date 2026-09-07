@@ -1,0 +1,386 @@
+//! The shared local-FS directory walk every scan is built on.
+//!
+//! One recursion, parameterized by a `WalkContext` of callbacks, so the copy
+//! scan, the delete scan, and the dry run all descend the same way: same
+//! symlink stance, same cancel checkpoints, same authoritative-listing fast
+//! path. It knows nothing about copy, move, delete, or conflicts.
+//!
+//! `scan.rs` is what turns a walk into a `ScanResult`; `scan_dry_run.rs` turns
+//! one into a conflict preview.
+
+use std::collections::HashSet;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
+
+use super::state::FileInfo;
+use super::validation::is_symlink_loop;
+use crate::file_system::listing::FileEntry;
+use crate::file_system::listing::caching::try_get_authoritative_listing;
+use crate::file_system::volume::CopyScanResult;
+/// Per-regular-file hook fired by the walk, receiving the file path and size (the `WalkContext::on_file` field).
+type OnFileHook<'a> = &'a dyn Fn(&Path, u64);
+
+/// Callbacks for customizing `walk_dir_recursive` behavior per caller.
+///
+/// `on_progress` is called as `(files_done, dirs_done, bytes_done, current_file, current_dir)`:
+/// - `current_file` is just the filename component of the entry being processed
+/// - `current_dir` is the absolute parent directory path, surfaced to the UI so the user sees "in
+///   directory: …" alongside the filename
+pub(super) struct WalkContext<'a, E> {
+    pub(super) progress_interval: Duration,
+    pub(super) is_cancelled: &'a dyn Fn() -> bool,
+    pub(super) on_io_error: &'a dyn Fn(&Path, std::io::Error) -> E,
+    pub(super) on_cancelled: &'a dyn Fn() -> E,
+    pub(super) on_symlink_loop: &'a dyn Fn(&Path) -> E,
+    pub(super) on_progress: &'a dyn Fn(usize, usize, u64, Option<String>, Option<String>),
+    /// Parks the walk while the owning operation is paused, called at every
+    /// boundary the cancel check uses. The scan is the minutes-long part of a
+    /// big transfer, so it is where Pause gets pressed; a walk that ran on
+    /// regardless made the button a lie for exactly as long as it mattered.
+    /// A walk with no operation behind it (a dry run, a test) passes a no-op.
+    /// See `super::scan_bridge::ScanPause`.
+    pub(super) park_while_paused: &'a dyn Fn(),
+    /// Optional per-regular-file hook `(path, size)`, fired once for each file
+    /// (not dirs or symlinks) as the walk discovers it. The compress-size
+    /// estimator uses it to feed a sampling worker off the walk thread; all
+    /// other callers pass `None`. Must stay cheap (a channel push) so it never
+    /// lands on the walk's critical path.
+    pub(super) on_file: Option<OnFileHook<'a>>,
+}
+
+/// Walks every top-level source in turn, accumulating the shared tallies AND
+/// one `CopyScanResult` per source.
+///
+/// The per-source breakdown is what a cross-volume copy or a volume delete
+/// reads back as its `source_hints` / fast-path data: whether each selected item
+/// is a directory, and how big it is. Without it every source arrives at the
+/// copy drivers as "unknown", and they pay a stat probe apiece to find out.
+///
+/// Everything else matches [`walk_dir_recursive`], which does the actual
+/// walking; this only brackets each source with a before/after snapshot of the
+/// shared counters.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Mirrors walk_dir_recursive's parameter list, which threads the shared tallies through the recursion"
+)]
+pub(super) fn walk_sources_with_per_path<E>(
+    sources: &[PathBuf],
+    files: &mut Vec<FileInfo>,
+    dirs: &mut Vec<PathBuf>,
+    total_bytes: &mut u64,
+    dedup_bytes: &mut u64,
+    last_progress_time: &mut Instant,
+    visited: &mut HashSet<PathBuf>,
+    seen_inodes: &mut HashSet<u64>,
+    volume_id: Option<&str>,
+    ctx: &WalkContext<'_, E>,
+) -> Result<Vec<(PathBuf, CopyScanResult)>, E> {
+    let mut per_path = Vec::with_capacity(sources.len());
+    for source in sources {
+        let source_root = source.parent().unwrap_or(source);
+        let files_before = files.len();
+        let dirs_before = dirs.len();
+        let total_bytes_before = *total_bytes;
+        let dedup_bytes_before = *dedup_bytes;
+
+        walk_dir_recursive(
+            source,
+            source_root,
+            files,
+            dirs,
+            total_bytes,
+            dedup_bytes,
+            last_progress_time,
+            visited,
+            seen_inodes,
+            volume_id,
+            ctx,
+        )?;
+
+        // `walk_dir_recursive` pushes a directory onto `dirs` before it
+        // descends, so the slot at `dirs_before` holds this source itself
+        // exactly when the source is a directory. A file leaves it untouched,
+        // and so does a symlink to a directory — which is right: a transfer
+        // never dereferences one, it copies the link.
+        let top_level_is_directory = dirs.get(dirs_before).is_some_and(|dir| dir == source);
+
+        per_path.push((
+            source.clone(),
+            CopyScanResult {
+                file_count: files.len() - files_before,
+                // Descendants only. `Volume::scan_for_copy` excludes the
+                // top-level path from its own `dir_count`, and these results
+                // are read interchangeably with its.
+                dir_count: dirs.len() - dirs_before - usize::from(top_level_is_directory),
+                total_bytes: *total_bytes - total_bytes_before,
+                // `seen_inodes` spans all sources (a hardlink crossing two
+                // selected roots counts once, matching the aggregate), so a
+                // later source's share can read low when it shares an inode
+                // with an earlier one. Informational only; `total_bytes` is
+                // what the copy reserves and fills against.
+                dedup_bytes: *dedup_bytes - dedup_bytes_before,
+                top_level_is_directory,
+            },
+        ));
+    }
+    Ok(per_path)
+}
+
+/// Recursively walks a directory tree, collecting files and directories.
+///
+/// Shared walker used by both scan preview and write operation scanning.
+/// Behavior is customized via `WalkContext` callbacks for error handling and progress reporting.
+///
+/// **Oracle reuse**: when `volume_id` is provided and the listing cache holds a
+/// watcher-backed listing for the directory currently being walked, the walker
+/// hydrates that level's entries from the cache instead of touching the disk.
+/// See `file_system::listing::caching::try_get_authoritative_listing` for the full
+/// freshness contract. Pass `None` for `volume_id` to opt out (no listing
+/// lookup is performed, behavior is identical to the pre-oracle walker).
+///
+/// **Two byte totals**: `total_bytes` is the **write footprint** — every file
+/// at full size, including each hardlink, because hardlinks don't survive a
+/// cross-volume copy. It's what a copy actually writes and what the
+/// disk-space check must reserve. `dedup_bytes` is the **`du`-equivalent
+/// source footprint** — each inode counted once. It's what a delete frees and
+/// what the scan-phase progress bar compares against the indexer's inode-
+/// dedup'd `dir_stats` estimate (so "X% of estimated" converges to ~100% on
+/// hardlink-heavy trees like cargo's `target/`). Dedup is Unix-only (non-Unix
+/// has no `nlink()`), where `dedup_bytes == total_bytes`. Copy consumes
+/// `total_bytes`; delete consumes `dedup_bytes`; the Copy dialog shows both.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Recursive fn requires passing state through multiple levels"
+)]
+pub(super) fn walk_dir_recursive<E>(
+    path: &Path,
+    source_root: &Path,
+    files: &mut Vec<FileInfo>,
+    dirs: &mut Vec<PathBuf>,
+    total_bytes: &mut u64,
+    dedup_bytes: &mut u64,
+    last_progress_time: &mut Instant,
+    visited: &mut HashSet<PathBuf>,
+    seen_inodes: &mut HashSet<u64>,
+    volume_id: Option<&str>,
+    ctx: &WalkContext<'_, E>,
+) -> Result<(), E> {
+    if (ctx.is_cancelled)() {
+        return Err((ctx.on_cancelled)());
+    }
+    // After the cancel check, never before it: cancel outranks pause, so a
+    // cancelled walk must never park on its way out.
+    (ctx.park_while_paused)();
+
+    let metadata = fs::symlink_metadata(path).map_err(|e| (ctx.on_io_error)(path, e))?;
+
+    if metadata.is_symlink() {
+        // Symlinks contribute their own (tiny) target-string length, never
+        // the target's bytes. No hardlink dedup: symlinks have distinct inodes.
+        *total_bytes += metadata.len();
+        *dedup_bytes += metadata.len();
+        files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
+    } else if metadata.is_file() {
+        // `total_bytes` is the write footprint (every file at full size, the
+        // bytes a copy actually writes and the disk-space check must reserve).
+        // `dedup_bytes` is the `du`-equivalent source footprint (each inode
+        // once) — what delete frees and what the scan-phase progress bar
+        // compares against the inode-dedup'd index estimate. `progress_bytes`
+        // mirrors `dedup_bytes` per file so the delete active phase can sum a
+        // running dedup'd total. See `CopyScanResult` for the consumer split.
+        let counts = file_bytes_count_toward_total(&metadata, seen_inodes);
+        let size = metadata.len();
+        *total_bytes += size;
+        if counts {
+            *dedup_bytes += size;
+        }
+        let info = FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata)
+            .with_progress_bytes(if counts { size } else { 0 });
+        files.push(info);
+        if let Some(on_file) = ctx.on_file {
+            on_file(path, size);
+        }
+    } else if metadata.is_dir() {
+        if is_symlink_loop(path, visited) {
+            return Err((ctx.on_symlink_loop)(path));
+        }
+
+        if let Ok(canonical) = path.canonicalize() {
+            visited.insert(canonical);
+        }
+
+        dirs.push(path.to_path_buf());
+
+        // Oracle short-circuit: if a watcher-backed listing exists for this dir,
+        // walk it from cache instead of hitting the disk. The recurse-into-files
+        // step below still goes through `walk_dir_recursive`, which re-applies
+        // the oracle at each level.
+        if let Some(vid) = volume_id
+            && let Some(cached_entries) = try_get_authoritative_listing(vid, path)
+        {
+            walk_cached_entries(
+                path,
+                source_root,
+                cached_entries,
+                files,
+                dirs,
+                total_bytes,
+                dedup_bytes,
+                last_progress_time,
+                visited,
+                seen_inodes,
+                volume_id,
+                ctx,
+            )?;
+        } else {
+            let entries = fs::read_dir(path).map_err(|e| (ctx.on_io_error)(path, e))?;
+            for entry in entries.flatten() {
+                walk_dir_recursive(
+                    &entry.path(),
+                    source_root,
+                    files,
+                    dirs,
+                    total_bytes,
+                    dedup_bytes,
+                    last_progress_time,
+                    visited,
+                    seen_inodes,
+                    volume_id,
+                    ctx,
+                )?;
+            }
+        }
+    } else {
+        log::debug!("scan: skipping special file: {}", path.display());
+    }
+
+    if last_progress_time.elapsed() >= ctx.progress_interval {
+        let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
+        let current_dir = path.parent().map(|p| p.display().to_string());
+        // Report the dedup'd running total: the scan-phase bar compares this
+        // against the index's inode-dedup'd estimate, so reporting the raw
+        // write footprint would overshoot 100% on hardlink-heavy trees.
+        (ctx.on_progress)(files.len(), dirs.len(), *dedup_bytes, current_file, current_dir);
+        *last_progress_time = Instant::now();
+    }
+
+    Ok(())
+}
+
+/// Walks a directory level using cached `FileEntry` entries instead of `fs::read_dir`.
+///
+/// Used when the oracle reports a watcher-backed listing exists for the current
+/// directory. For each cached entry: files are recorded with size from the
+/// cache; directories recurse via `walk_dir_recursive`, which re-applies the
+/// oracle (so subfolders open in another pane also short-circuit). Cached
+/// symlinks (`is_symlink == true`) are recorded as files without recursing,
+/// matching `walk_dir_recursive`'s symlink policy.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Mirrors `walk_dir_recursive`'s parameter list to keep state threading consistent."
+)]
+fn walk_cached_entries<E>(
+    parent_path: &Path,
+    source_root: &Path,
+    cached: Vec<FileEntry>,
+    files: &mut Vec<FileInfo>,
+    dirs: &mut Vec<PathBuf>,
+    total_bytes: &mut u64,
+    dedup_bytes: &mut u64,
+    last_progress_time: &mut Instant,
+    visited: &mut HashSet<PathBuf>,
+    seen_inodes: &mut HashSet<u64>,
+    volume_id: Option<&str>,
+    ctx: &WalkContext<'_, E>,
+) -> Result<(), E> {
+    for entry in cached {
+        if (ctx.is_cancelled)() {
+            return Err((ctx.on_cancelled)());
+        }
+        (ctx.park_while_paused)();
+        let child_path = PathBuf::from(&entry.path);
+        if entry.is_directory && !entry.is_symlink {
+            // Recurse: the oracle re-applies inside `walk_dir_recursive`, so a
+            // grandchild dir open in another pane is also short-circuited.
+            walk_dir_recursive(
+                &child_path,
+                source_root,
+                files,
+                dirs,
+                total_bytes,
+                dedup_bytes,
+                last_progress_time,
+                visited,
+                seen_inodes,
+                volume_id,
+                ctx,
+            )?;
+        } else {
+            // File or symlink: record from the cache, no I/O. We can't build a
+            // full `FileInfo` (no `std::fs::Metadata`), but we have everything
+            // the scan-preview caller actually consumes: path, size, the
+            // symlink flag, and inode for hardlink dedup.
+            let size = entry.size.unwrap_or(0);
+            // `total_bytes` (write footprint) counts every entry at full size.
+            // `dedup_bytes` (source footprint) counts each inode once: when the
+            // backend supplied an inode (`LocalPosixVolume` populates it for
+            // files with `nlink > 1`), only the first occurrence contributes.
+            // Backends without inode info leave `inode = None` so every entry
+            // is unique. `progress_bytes` mirrors `dedup_bytes` per file.
+            let counts = match entry.inode {
+                Some(ino) => seen_inodes.insert(ino),
+                None => true,
+            };
+            let progress_bytes = if counts { size } else { 0 };
+            *total_bytes += size;
+            if counts {
+                *dedup_bytes += size;
+            }
+            if let Some(on_file) = ctx.on_file
+                && !entry.is_symlink
+            {
+                on_file(&child_path, size);
+            }
+            files.push(FileInfo {
+                path: child_path,
+                source_root: source_root.to_path_buf(),
+                size,
+                progress_bytes,
+                modified: entry.modified_at.unwrap_or(0),
+                created: entry.created_at.unwrap_or(0),
+                is_symlink: entry.is_symlink,
+            });
+        }
+    }
+
+    if last_progress_time.elapsed() >= ctx.progress_interval {
+        let current_dir = Some(parent_path.display().to_string());
+        // Dedup'd running total — see the matching note in `walk_dir_recursive`.
+        (ctx.on_progress)(files.len(), dirs.len(), *dedup_bytes, None, current_dir);
+        *last_progress_time = Instant::now();
+    }
+
+    Ok(())
+}
+/// Returns `true` if this file's bytes should count toward the running scan
+/// total. On Unix, dedupes hardlinks via inode: a file with `nlink > 1` only
+/// contributes bytes the first time its inode is seen; subsequent occurrences
+/// of the same inode skip the addition. Files with `nlink == 1` (the vast
+/// majority) skip the `HashSet` check entirely. On non-Unix, always returns
+/// `true` (`std::fs::Metadata` has no `nlink` accessor there).
+fn file_bytes_count_toward_total(metadata: &fs::Metadata, seen_inodes: &mut HashSet<u64>) -> bool {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if metadata.nlink() <= 1 {
+            return true;
+        }
+        seen_inodes.insert(metadata.ino())
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = (metadata, seen_inodes);
+        true
+    }
+}
