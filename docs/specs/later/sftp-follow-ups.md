@@ -7,18 +7,10 @@ schedulable rather than only discoverable by someone already reading the crate.
 
 ❌ Nothing here restates a mechanism. Every item points at the doc that owns it.
 
-## 1. The frontend is built (kept as a pointer, not an open item)
+## 1. The frontend: shipped, ❌ not an open item
 
-A saved SFTP server gets a row in the volume switcher, a place in the servers hub, and the one sign-in sheet every
-credential ask in the app opens. `volume_listing::complete` has its servers arm, paths carry an `sftp://` scheme so
-`resolve_path_to_volume` answers for one, and a disconnected place comes back as a greyed `saved` row that dials on
-activation.
-
-**Where it is written down**: `apps/desktop/src/lib/servers/DETAILS.md` (the path grammar, the three connect arms, the
-sheet contract, the renderer table, and the refusal table) and
-`apps/desktop/src/lib/file-explorer/navigation/DETAILS.md` (which rows the switcher's Network group holds, and why a
-server row says Disconnect). The protocol side it builds against is still `crates/cmdr-sftp/DETAILS.md` § "Connecting
-from the frontend".
+Kept as a numbered placeholder so the § references elsewhere still land on the right sections. Where it is written down:
+`apps/desktop/src/lib/servers/DETAILS.md` and `apps/desktop/src/lib/file-explorer/navigation/DETAILS.md`.
 
 ## 2. Free space and non-UTF-8 filenames both wait on one vendoring
 

@@ -69,8 +69,8 @@ below is met.
       refusing it, launch dialing a phone with no way to call it off, and `VolumeBreadcrumb.svelte` sitting 206 lines
       over its allowlist entry. Three majors: the twenty pointers into `servers-hub-plan.md` that rot when that file is
       wiped, an SMB host on a non-445 port listed twice in the hub, and the disconnect-tells-the-panes guarantee having
-      no test. The rest is five minors and thirteen nits, mostly copy. Roughly three days for everything but the two
-      big product calls.
+      no test. The rest is five minors and thirteen nits, mostly copy. Roughly three days for everything but the two big
+      product calls.
 - [ ] 2026-09-06 `data-safety-hunt-follow-ups.md` - **What the transfer-engine hunt left open after its 15 findings were
       fixed.** Nine ranked entries in problem / impact / solution / size form: two high (a cross-FS move loses the bytes
       written to a file after its copy finished; a top-level folder symlink on a volume still merges through the link,
