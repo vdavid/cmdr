@@ -304,7 +304,10 @@
      */
     async function askForMountCredentials(share: ShareInfo, firstError: MountError) {
         const host = currentNetworkHost
-        if (!host) return
+        // ❗ One ask at a time. A second `openSignInSheet` closes the first as
+        // `cancelled`, and this caller reads that as "the user said no" and clears
+        // the failure behind a sheet that is still up.
+        if (!host || signingIn) return
         signingIn = true
         try {
             const result = await openSmbSignInSheet({

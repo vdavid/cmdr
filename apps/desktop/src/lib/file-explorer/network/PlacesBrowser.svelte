@@ -274,6 +274,10 @@
      * question, and `NetworkMountView` asks it.)
      */
     async function askForCredentials(refusal: ConnectRefusalKind) {
+        // ❗ One ask at a time. A second `openSignInSheet` closes the first as
+        // `cancelled`, and this caller reads that as "the user said no" and walks
+        // back to the host list from under a sheet that is still up.
+        if (signingIn) return
         signingIn = true
         try {
             const result = await openSmbSignInSheet({
