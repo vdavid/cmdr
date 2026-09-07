@@ -3,7 +3,7 @@
  *
  * A phone with USB debugging off is a plain MTP row and says nothing about ADB,
  * so nobody finds the feature. One quiet line in the pane header is the whole
- * discoverability story (`docs/specs/servers-hub-plan.md` § D12).
+ * discoverability story (`DETAILS.md` § "The line offering USB debugging").
  *
  * Pure, because the decision is the part worth pinning down: the pane component
  * reads the settings and the volume list and hands the answers in.

@@ -119,10 +119,10 @@ the scheme root itself.
 
 The restore path has a second rule, PATH-shaped rather than state-shaped, in
 `app-status-store.ts::resolvePersistedPath`: a `<scheme>://` path is returned UNPROBED. Launch must not dial a server to
-find out whether it is reachable — four saved servers waking a Mac would be four Keychain reads and four network waits
-nobody asked for. The tab comes back on its subpath, greyed as `saved`, and dials when the user activates it
-(`docs/specs/servers-hub-plan.md` § D14). The four `volumeId === 'network'` exemptions at that function's call sites are
-the same idea, one fixed volume id at a time.
+find out whether it is reachable: four saved servers waking a Mac would be four Keychain reads and four network waits
+nobody asked for. The tab comes back on its subpath, greyed as `saved`, and dials when the user activates it, which is
+what `../pane/place-connect.svelte.ts` watches for. The four `volumeId === 'network'` exemptions at that function's call
+sites are the same idea, one fixed volume id at a time.
 
 ### Non-blocking navigation pattern
 

@@ -81,7 +81,8 @@ async function getStore(): Promise<Store> {
  * every one of them at launch and probing can only ever shorten a path that was
  * right. Launch must NOT dial a server to find out either: four servers waking a
  * Mac would be four Keychain reads and four network waits nobody asked for
- * (`docs/specs/servers-hub-plan.md` § D14). The tab comes back on its subpath
+ * (`file-explorer/navigation/DETAILS.md` § "Restoring a remote path"). The tab
+ * comes back on its subpath
  * and dials when the user activates it. The `volumeId === 'network'` exemptions
  * at this function's four call sites are the same idea, one volume at a time;
  * this rule is PATH-shaped, so it covers the volumes that don't have a fixed id.

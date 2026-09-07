@@ -107,8 +107,8 @@ over a tilde-expanded, base-dir-joined path). A scheme input joins onto the pane
 
 **What each scheme means.**
 
-- `adb://`, `mtp://`: a device path already resolves, so it navigates (`docs/specs/android-adb-backend-follow-ups.md` §
-  3).
+- `adb://`, `mtp://`: a device path already resolves, so it navigates. The pane's own scheme guards then decide
+  reachability.
 - `sftp://`, `webdav://` matching a saved place's app root: navigates, showing the place's name. Matching is by whole
   components, per the grammar in `apps/desktop/src/lib/servers/DETAILS.md` § The path grammar.
 - Any other input carrying a scheme `address-parser.ts` parses: opens the sign-in sheet in add mode, prefilled. ❗ A

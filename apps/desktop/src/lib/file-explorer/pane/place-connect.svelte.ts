@@ -2,7 +2,7 @@
  * A pane standing on a saved place, and the dial that brings it to life.
  *
  * ❗ **Opening a place that isn't live brings it to life IN THE PANE, with a
- * cancel** (`docs/specs/servers-hub-plan.md` § "The four rules"). MTP already
+ * cancel** (`$lib/servers/DETAILS.md` § "The four rules", rule 2). MTP already
  * works this way; this is the same shape for a server, so activating a greyed
  * `saved` row in the switcher costs one keystroke and shows what it is doing.
  *

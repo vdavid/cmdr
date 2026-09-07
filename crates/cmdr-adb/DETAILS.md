@@ -3,7 +3,7 @@
 The depth behind `CLAUDE.md`: the shape of the crate, the wire contract it implements, what the `Volume` impl answers
 and why, the error policy, where a test lives, and what is deliberately not done yet. The app-side half (the tracker
 task, the device provider, eject, the IPC commands) is `apps/desktop/src-tauri/src/adb/DETAILS.md`; what the backend
-still owes is `docs/specs/android-adb-backend-follow-ups.md`.
+still owes is `docs/specs/later/adb-backend-follow-ups.md`.
 
 ## Why a second Android backend
 

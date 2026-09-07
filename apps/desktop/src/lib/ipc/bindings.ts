@@ -4098,7 +4098,8 @@ export const commands = {
    *  ❗ **Also drops the session and unregisters the volume**, because a forgotten
    *  server is gone: leaving the session up would keep a row in the switcher that
    *  no store knows about and no "Forget" can reach a second time. A tab standing
-   *  on it becomes a home tab (`docs/specs/servers-hub-plan.md` § D6).
+   *  on it becomes a home tab (`apps/desktop/src-tauri/src/commands/DETAILS.md`
+   *  § `servers.rs`).
    *
    *  ❗ **`VolumeUnmounted` goes out BEFORE `volumes-changed`.** The pane's
    *  consumer is what redirects it home, and `volumes-changed` is what takes the

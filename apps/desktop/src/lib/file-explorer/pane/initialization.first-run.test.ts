@@ -230,7 +230,8 @@ describe('loadPersistedState on a first run', () => {
  * what makes a `saved` row and the live volume it becomes interchangeable: both
  * carry the same id (`cmdr_fs::volume::ids`), and the resolver's `sftp://` arm
  * answers the saved entry without dialing. ❗ The dial happens when the user
- * ACTIVATES the tab, never at launch (`docs/specs/servers-hub-plan.md` § D14).
+ * ACTIVATES the tab, never at launch
+ * (`../navigation/DETAILS.md` § "Restoring a remote path").
  */
 describe('restoring a tab that stood on a server', () => {
   beforeEach(() => {

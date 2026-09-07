@@ -8,7 +8,7 @@
  * registers a SECOND one, and dialing a volume the backoff loop already owns
  * races it.
  *
- * Three arms (`docs/specs/servers-hub-plan.md` § D8):
+ * Three arms (`DETAILS.md` § "The three arms"):
  *
  *  1. registered and `disconnected` → the reconnect manager owns recovery, so
  *     this subscribes it and renders `connecting`. ❌ Never a dial.

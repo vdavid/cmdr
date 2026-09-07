@@ -128,7 +128,8 @@ describe('saveAppStatusNow', () => {
  * ❗ Launch must not dial: four saved servers waking a Mac would be four Keychain
  * reads and four network waits nobody asked for. So the path is taken as it
  * stands, and the pane dials only when the user activates the tab
- * (`docs/specs/servers-hub-plan.md` § D14). The failure this catches is quiet and
+ * (`src/lib/file-explorer/navigation/DETAILS.md` § "Restoring a remote path").
+ * The failure this catches is quiet and
  * total: probing a remote path answers false for every parent, the walk-up chops
  * the scheme, and the tab reopens on the boot disk's home folder.
  */

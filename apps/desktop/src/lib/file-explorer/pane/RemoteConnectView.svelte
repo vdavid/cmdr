@@ -12,7 +12,7 @@
      * The pane, while a remote place is on its way in or has stopped short.
      *
      * Panes are for waiting; dialogs are for entering data
-     * (`docs/specs/servers-hub-plan.md` § "The four rules"). This view is the
+     * (`$lib/servers/DETAILS.md` § "The four rules", rule 3). This view is the
      * waiting half, and it holds no state of its own: the caller hands it a
      * typed `state` and the callbacks that go with it.
      *

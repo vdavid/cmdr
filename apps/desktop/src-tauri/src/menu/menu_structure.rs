@@ -462,9 +462,10 @@ pub struct ServerRowMenu {
     pub busy: bool,
 }
 
-/// Appends a server row's items, in the order `docs/specs/servers-hub-plan.md`
-/// § D6 sets: Open, Edit…, Disconnect (when live), Pin to switcher / Unpin,
-/// Forget saved password, Forget server (when it is saved).
+/// Appends a server row's items, in the order
+/// `apps/desktop/src/lib/file-explorer/navigation/DETAILS.md` § "Eject button +
+/// row context menu" records: Open, Edit…, Disconnect (when live), Pin to
+/// switcher / Unpin, Forget saved password, Forget server (when it is saved).
 ///
 /// ❗ A server row shows Disconnect, ❌ never Eject: "Eject" promises
 /// safe-to-unplug, and a server has nothing to unplug.
