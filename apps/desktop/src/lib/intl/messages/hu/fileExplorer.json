@@ -1304,6 +1304,10 @@
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
     "sourceHash": "940eb59"
   },
+  "fileExplorer.navigation.forgetSecretNoneToast": "A(z) „{name}” szervernek nem volt mentett jelszava.",
+  "@fileExplorer.navigation.forgetSecretNoneToast": {
+    "sourceHash": "3d40a09"
+  },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "{name} kiadása",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"

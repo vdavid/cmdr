@@ -1895,6 +1895,13 @@
       "name": "the server's display name, like \"Naspolya\""
     }
   },
+  "fileExplorer.navigation.forgetSecretNoneToast": "There was no saved password for {name}.",
+  "@fileExplorer.navigation.forgetSecretNoneToast": {
+    "description": "Toast shown after the user confirmed \"Forget saved password\" on a server that turned out to have none stored. Matter-of-fact, past tense, no apology: nothing went wrong and nothing needed doing.",
+    "placeholders": {
+      "name": "the server's display name, like \"Naspolya\""
+    }
+  },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "Eject {name}",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "description": "Accessibility label and tooltip for the eject button on a volume in the breadcrumb and switcher. {name} is the volume''s display name.",

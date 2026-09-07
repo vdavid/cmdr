@@ -1306,6 +1306,10 @@
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
     "sourceHash": "940eb59"
   },
+  "fileExplorer.navigation.forgetSecretNoneToast": "No había ninguna contraseña guardada de {name}.",
+  "@fileExplorer.navigation.forgetSecretNoneToast": {
+    "sourceHash": "3d40a09"
+  },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "Expulsar {name}",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"

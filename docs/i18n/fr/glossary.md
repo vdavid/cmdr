@@ -2947,13 +2947,12 @@ Notes de formulation :
   l'acronyme `ADB`, rien à traduire.
 - Toutes les apostrophes des valeurs sont ASCII et doublées (`n''a`, `n''ont`, `n''est`, `d''Android`, `c''est`) : les
   deux fichiers sont ICU.
-- **`You stopped opening your phone.` → `Vous avez arrêté l''ouverture de votre téléphone.`**
-  (`adb.connect.cancelled`) · `arrêter`, comme la clé parallèle `search.coverage.walk.cancelled`
-  (« You stopped this search » → `Vous avez arrêté cette recherche`) · `high`. ❌ Pas `annulé` : `Annuler` est le
-  LIBELLÉ du bouton (`fileOperations.button.cancel`), et le français rend déjà `Undo` par le même mot, donc la phrase
-  deviendrait ambiguë. Le nom déverbal `l''ouverture` porte le gérondif anglais ; `ouvrir` est le verbe fixé pour
-  ouvrir un téléphone (`adb.connect.waitingHint`, `Cmdr ouvre votre téléphone…`). Apostrophe ASCII doublée, le fichier
-  est ICU.
+- **`You stopped opening your phone.` → `Vous avez arrêté l''ouverture de votre téléphone.`** (`adb.connect.cancelled`)
+  · `arrêter`, comme la clé parallèle `search.coverage.walk.cancelled` (« You stopped this search » →
+  `Vous avez arrêté cette recherche`) · `high`. ❌ Pas `annulé` : `Annuler` est le LIBELLÉ du bouton
+  (`fileOperations.button.cancel`), et le français rend déjà `Undo` par le même mot, donc la phrase deviendrait ambiguë.
+  Le nom déverbal `l''ouverture` porte le gérondif anglais ; `ouvrir` est le verbe fixé pour ouvrir un téléphone
+  (`adb.connect.waitingHint`, `Cmdr ouvre votre téléphone…`). Apostrophe ASCII doublée, le fichier est ICU.
 
 ## Apostrophe sweep over `main.oldWebkit.*`
 
@@ -2970,10 +2969,23 @@ enregistré.
 - **`the account` (le champ avec lequel on se connecte au serveur) → `le compte`** · le catalogue l'emploie déjà dans ce
   sens (six occurrences dans `errors.json`, deux dans `fileExplorer.json`) · `high`.
 - **L'indication nomme les actions exactement comme les commandes vers lesquelles elle renvoie** : `oublier` de
-  `menu.network.forgetServer` (« Oublier le serveur ») et `ajouter` de `servers.sheet.addTitle` (« Ajouter un
-  serveur »). Un synonyme (« supprimer », « créer ») envoie le lecteur chercher un menu qui n'existe pas.
+  `menu.network.forgetServer` (« Oublier le serveur ») et `ajouter` de `servers.sheet.addTitle` (« Ajouter un serveur
+  »). Un synonyme (« supprimer », « créer ») envoie le lecteur chercher un menu qui n'existe pas.
 - **`are what name this server` → `identifient ce serveur`** · la feuille possède son propre champ `Nom`
   (`servers.sheet.name`), donc la phrase ne peut pas passer par « nommer » : on croirait qu'il s'agit de cette
   étiquette. « identifier » dit ce qui est visé (ces deux valeurs SONT le serveur) · `high`.
 - **`add it again` → `ajoutez-le à nouveau`** · `à nouveau` est déjà la forme du fichier (`servers.json` l'emploie deux
   fois) · `high`.
+
+## L'avis quand aucun mot de passe n'était enregistré (`fileExplorer.navigation.forgetSecretNoneToast`)
+
+- **`There was no saved password for {name}.` → `Aucun mot de passe n''était enregistré pour {name}.`** · reprend
+  `mot de passe enregistré` et le `pour {name}` des trois clés sœurs déjà livrées (`menu.network.forgetSavedPassword` et
+  `fileExplorer.navigation.forgetSecretConfirmTitle` = « Oublier le mot de passe enregistré », `.forgetSecretConfirm`,
+  `.forgetSecretRefusedToast`) · `high`.
+- **L'imparfait porte le constat** que demande le `@key` (rien n'a échoué, il n'y avait rien à faire), donc pas d'excuse
+  et pas de « impossible ». `enregistré` s'accorde avec `mot de passe`, jamais avec `{name}`, qui reste dans une
+  position neutre derrière `pour`.
+- **Apostrophe doublée** (`n''était`) : `fileExplorer.json` passe par ICU, contrairement aux familles brutes.
+- La pile de référence était absente de cette machine (`_ignored/i18n/` n'existe pas non plus dans le clone principal) ;
+  la décision s'appuie donc sur le catalogue déjà livré et sur ce glossaire.

@@ -2878,10 +2878,25 @@ A két sor a kiszürkített `Cím` és `Felhasználónév` mezők alatt, amikor 
 ## Időtartam-helyőrző mellé kell a névutó (`servers.paneState.retryKeepsTrying`)
 
 `"Összesen {duration} próbálkozik tovább."` úgy olvasódik, hogy „összesen 2 perc próbálkozik tovább”: a `{duration}`
-alanyként áll, és a mondat azt állítja, hogy az idő próbálkozik. A javított alak `"Összesen {duration} ideig
-próbálkozik tovább."`.
+alanyként áll, és a mondat azt állítja, hogy az idő próbálkozik. A javított alak
+`"Összesen {duration} ideig próbálkozik tovább."`.
 
 **A szabály, nem csak ez az egy kulcs**: az angol `for a total of {duration}` az elöljárójával jelöli a szerepet, a
 magyarban viszont a `{duration}` egy nominatívuszi kifejezést (`2 perc`, `60 másodperc`) hoz, amit ragozni nem lehet
 (nem tudjuk, milyen szó áll benne). Ilyenkor **névutót kell tenni utána** (`ideig`, `alatt`, `múlva`), az mondja meg,
 hogy időtartamról van szó. ❌ Csupasz helyőrző időtartamra soha.
+
+## A toast, amikor nem is volt mentett jelszó (`fileExplorer.navigation.forgetSecretNoneToast`)
+
+- **`There was no saved password for {name}.` → `A(z) „{name}” szervernek nem volt mentett jelszava.`** · a szállított
+  testvérek szava (`menu.network.forgetSavedPassword` és `fileExplorer.navigation.forgetSecretConfirmTitle` =
+  `Mentett jelszó elfelejtése`, `.forgetSecretConfirm` = `Elfelejted a(z) „{name}” mentett jelszavát?`,
+  `.forgetSecretRefusedToast`) · `high`.
+- **A ragok a fejnévre kerülnek, a helyőrző ragozatlan marad**: a részes rag a `szerver`-re (`szervernek`), a birtokos
+  személyjel a `jelszó`-ra (`jelszava`). Ugyanaz a fogás, mint a megerősítő párbeszédben, ahol a rag a `jelszavát`
+  alakra megy. Az `a(z)` + `„…”` a ház alakja az ismeretlen kezdőhangú, felhasználó adta névre (§ style.md).
+- **Múlt idő, mentegetőzés nélkül**, ahogy az angol `@key` kéri: nem hibázott semmi, ezért se `nem sikerült`, se `hiba`.
+  A `nem volt` a katalógus meglévő tagadó egzisztenciális alakja (`fileOperations.trash.undoUnavailable`:
+  `Nincs mit visszahelyezni.`).
+- A referenciagyűjtemény ezen a gépen nem volt elérhető (`_ignored/i18n/` a fő klónban sincs meg), így a döntés a
+  szállított katalógusra és erre a szótárra támaszkodik.

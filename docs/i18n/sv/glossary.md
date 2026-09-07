@@ -2498,12 +2498,12 @@ LEVANDE macOS-paketen (macOS 26.6.2, build 25G83, läst 2026-09-07; `.loctable` 
   `Om engångsraden som erbjuder USB-felsökning har avfärdats.` speglar
   `Om engångstipset om att lossa servrar har visats.` · `high`. `avfärdat`/`avfärdats` i neutrum efter `Tips` respektive
   opersonlig passiv, samma mönster som syskonens `visat`/`visats`.
-- **`You stopped opening your phone.` → `Du stoppade öppnandet av din telefon.`** (`adb.connect.cancelled`) ·
-  `stoppa`, precis som systernyckeln `search.coverage.walk.cancelled` (`Du stoppade den här sökningen`) och
+- **`You stopped opening your phone.` → `Du stoppade öppnandet av din telefon.`** (`adb.connect.cancelled`) · `stoppa`,
+  precis som systernyckeln `search.coverage.walk.cancelled` (`Du stoppade den här sökningen`) och
   `errors.volume.cancelled` (`Cmdr stoppade det här på din begäran.`) · `high`. ❌ Inte `avbröt`: `Avbryt` är KNAPPENS
-  etikett (`fileOperations.button.cancel`), så meningen skulle läsas som en hänvisning till knappen.
-  Verbalsubstantivet `öppnandet av` följer katalogens egen form (`skapandet av mappen`, `borttagningen av originalen`),
-  och `öppna` är det satta verbet för en telefon (`adb.connect.waitingHint`).
+  etikett (`fileOperations.button.cancel`), så meningen skulle läsas som en hänvisning till knappen. Verbalsubstantivet
+  `öppnandet av` följer katalogens egen form (`skapandet av mappen`, `borttagningen av originalen`), och `öppna` är det
+  satta verbet för en telefon (`adb.connect.waitingHint`).
 
 Ingen `sameAsSourceJustification` i passet (`adb.volumeLabelWithSuffix` bar redan sin från en tidigare omgång). Ingen
 apostrof i något värde, så ICU-dubbleringen `''` blir aldrig aktuell, och `{name}` står oförändrad i den enda nyckel som
@@ -2515,9 +2515,23 @@ De två raderna under de gråade fälten `Adress` och `Användarnamn`, när anv�
 
 - **`the account` (fältet man loggar in på servern med) → `kontot`** · katalogen använder redan ordet i just den
   betydelsen (sex träffar i `errors.json`, en i `onboarding.json`) · `high`.
-- **Hjälptexten namnger handlingarna exakt som knapparna den pekar på**: `glöm` från `menu.network.forgetServer`
-  ("Glöm servern") och `lägg till` från `servers.sheet.addTitle` ("Lägg till server"). Ett synonymval ("ta bort",
-  "skapa") skickar läsaren att leta efter en meny som inte finns.
+- **Hjälptexten namnger handlingarna exakt som knapparna den pekar på**: `glöm` från `menu.network.forgetServer` ("Glöm
+  servern") och `lägg till` från `servers.sheet.addTitle` ("Lägg till server"). Ett synonymval ("ta bort", "skapa")
+  skickar läsaren att leta efter en meny som inte finns.
 - **`are what name this server` → `är det som identifierar den här servern`** · arket har ett eget fält `Namn`
   (`servers.sheet.name`), så meningen får inte bygga på "namnge": då låter det som om den handlade om den etiketten.
   `identifiera` säger det som avses (de två värdena ÄR servern) · `high`.
+
+## Toasten när det inte fanns något sparat lösenord (`fileExplorer.navigation.forgetSecretNoneToast`)
+
+- **`There was no saved password for {name}.` → `Det fanns inget sparat lösenord för {name}.`** · återanvänder
+  `sparat lösenord` och `för {name}` ordagrant från de tre levererade syskonen (`menu.network.forgetSavedPassword` och
+  `fileExplorer.navigation.forgetSecretConfirmTitle` = ”Glöm sparat lösenord”, `.forgetSecretConfirm`,
+  `.forgetSecretRefusedToast`) · `high`.
+- **`Det fanns …` är den svenska existenssatsen i preteritum**, samma konstruktion som
+  `fileOperations.trash.undoUnavailable` (”Det finns inget att lägga tillbaka.”). Obestämd form (`sparat lösenord`)
+  eftersom satsen nekar existensen; den bestämda formen `det sparade lösenordet` hör hemma i bekräftelsedialogen, där
+  lösenordet faktiskt finns.
+- Ingen ursäkt och inget `gick inte`: ingenting misslyckades, vilket är hela poängen med nyckeln.
+- Referenssamlingen fanns inte på den här maskinen (`_ignored/i18n/` saknas även i huvudklonen), så beslutet vilar på
+  den redan levererade katalogen och den här ordlistan.

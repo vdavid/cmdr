@@ -1248,6 +1248,7 @@ export type MessageKey =
   | 'fileExplorer.navigation.favoritesEmpty'
   | 'fileExplorer.navigation.forgetSecretConfirm'
   | 'fileExplorer.navigation.forgetSecretConfirmTitle'
+  | 'fileExplorer.navigation.forgetSecretNoneToast'
   | 'fileExplorer.navigation.forgetSecretRefusedToast'
   | 'fileExplorer.navigation.forgetServerConfirm'
   | 'fileExplorer.navigation.forgetServerConfirmTitle'

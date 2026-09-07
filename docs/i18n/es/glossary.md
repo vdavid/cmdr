@@ -2719,8 +2719,8 @@ cruzando el lado `en` con el `es`, 2026-09-07). El vocabulario propio de Android
   `Aviso de grupo Red largo mostrado` / `Si ya se mostró el aviso único sobre desfijar servidores.`, cambiando `mostrar`
   por `descartar` porque el inglés hace el mismo cambio. Nunca se ven en pantalla, pero se traducen para que la
   cobertura sea honesta · `high`.
-- **`You stopped opening your phone.` → `Detuviste la apertura de tu teléfono.`** (`adb.connect.cancelled`) ·
-  `detener` en pretérito, igual que la clave paralela `search.coverage.walk.cancelled` («You stopped this search» →
+- **`You stopped opening your phone.` → `Detuviste la apertura de tu teléfono.`** (`adb.connect.cancelled`) · `detener`
+  en pretérito, igual que la clave paralela `search.coverage.walk.cancelled` («You stopped this search» →
   `Detuviste esta búsqueda`) y que `errors.volume.cancelled` (`Cmdr detuvo esto porque se lo pediste.`); `style.md` §
   Notes and decisions ya autoriza `detener` justo para este caso (la persona SÍ paró algo y la línea cuenta el
   resultado) · `high`. ❌ No `Cancelaste`: `Cancelar` es la ETIQUETA del botón (`fileOperations.button.cancel`) y la
@@ -2746,8 +2746,22 @@ Las dos líneas bajo los campos atenuados `Dirección` y `Nombre de usuario` al 
   mismo sentido: `servers.sheet.needsStoredSecret` («Para volver a conectar por su cuenta…») y las seis apariciones en
   `errors.json` · `high`.
 - **El aviso nombra las acciones igual que los botones a los que apunta**: `olvidar` de `menu.network.forgetServer`
-  («Olvidar el servidor») y `añadir` de `servers.sheet.addTitle` («Añadir servidor»). Un sinónimo («eliminar», «agregar»)
-  manda al lector a buscar un menú que no existe; recuerda además que `agregar` tiene cero apariciones en macOS es.
+  («Olvidar el servidor») y `añadir` de `servers.sheet.addTitle` («Añadir servidor»). Un sinónimo («eliminar»,
+  «agregar») manda al lector a buscar un menú que no existe; recuerda además que `agregar` tiene cero apariciones en
+  macOS es.
 - **`are what name this server` → `son las que identifican este servidor`** · la hoja tiene su propio campo `Nombre`
   (`servers.sheet.name`), así que la frase no puede usar «dar nombre»: se leería como si hablara de esa etiqueta.
   «identificar» dice lo que se quiere decir (los dos valores SON el servidor) · `high`.
+
+## El aviso cuando no había ninguna contraseña guardada (`fileExplorer.navigation.forgetSecretNoneToast`)
+
+- **`There was no saved password for {name}.` → `No había ninguna contraseña guardada de {name}.`** · repite el término
+  de las tres claves hermanas ya publicadas (`menu.network.forgetSavedPassword` y
+  `fileExplorer.navigation.forgetSecretConfirmTitle` = `Olvidar la contraseña guardada`, `.forgetSecretConfirm` =
+  `¿Olvidar la contraseña guardada de {name}?`, `.forgetSecretRefusedToast`) · `high`. Se conserva `de {name}`, la misma
+  preposición de las dos hermanas, para que el aviso y el diálogo del que viene el usuario suenen igual.
+- **El imperfecto `No había` da el tono de constatación** que pide el `@key`: nada salió mal y no hacía falta hacer
+  nada, así que no hay disculpa ni la palabra `error`. `guardada` concuerda con `contraseña`, nunca con `{name}` (§
+  style.md, «Nothing may agree with a `{name}`»).
+- La pila de referencia no estaba en esta máquina (`_ignored/i18n/` tampoco existe en el clon principal), así que la
+  decisión se apoya en el catálogo ya publicado y en este glosario.

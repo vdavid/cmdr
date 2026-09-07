@@ -87,14 +87,25 @@ describe('isServerPlaceRow', () => {
 })
 
 describe('openServerRowMenu', () => {
-  it('reads the row and both stores, and hands the answer to the native menu', async () => {
+  it('reads the row and the saved-server store, and hands the answer to the native menu', async () => {
     await openServerRowMenu(place)
     expect(showVolumeRowContextMenu).toHaveBeenCalledWith('sftp-nas-local-22-ada', 'Naspolya', false, false, {
       showsDisconnect: true,
       isSaved: true,
-      hasSavedSecret: true,
       pinned: false,
     })
+  })
+
+  /**
+   * ❗ **No Keychain read on the way to a menu.** Every read of a Keychain entry
+   * can cost a system prompt, and a right-click is not a moment to spend one:
+   * the same rule `file-explorer/network/CLAUDE.md` states for SMB. "Forget
+   * saved password" is always offered, and the command it runs is what says
+   * whether there was one.
+   */
+  it('❌ never asks the Keychain to decide which items a right-click shows', async () => {
+    await openServerRowMenu(place)
+    expect(hasServerSecret).not.toHaveBeenCalled()
   })
 
   it('a saved row shows no Disconnect: there is no session to end', async () => {
@@ -109,7 +120,6 @@ describe('openServerRowMenu', () => {
   })
 
   it('a store that does not answer costs the row an item, never the menu', async () => {
-    hasServerSecret.mockRejectedValueOnce(new Error('keychain busy'))
     listSavedServers.mockRejectedValueOnce(new Error('store busy'))
     await openServerRowMenu(place)
     expect(showVolumeRowContextMenu).toHaveBeenCalledWith(
@@ -117,7 +127,7 @@ describe('openServerRowMenu', () => {
       'Naspolya',
       false,
       false,
-      expect.objectContaining({ isSaved: false, hasSavedSecret: false }),
+      expect.objectContaining({ isSaved: false }),
     )
   })
 })
@@ -141,6 +151,26 @@ describe('runServerRowAction', () => {
     expect(confirmDialog).toHaveBeenCalledTimes(2)
     expect(forgetServer).toHaveBeenCalledWith('sftp-nas-local-22-ada')
     expect(forgetServerSecret).toHaveBeenCalledWith('sftp-nas-local-22-ada')
+  })
+
+  /**
+   * ❗ The menu offers "Forget saved password" on every server row, because
+   * deciding otherwise means a Keychain read on the right-click path. So the
+   * COMMAND is what answers: `forget_server_secret` says whether an entry was
+   * there, and a `false` gets a sentence rather than silence.
+   */
+  it('says so when there was no saved password to forget', async () => {
+    forgetServerSecret.mockResolvedValueOnce(false)
+    await runServerRowAction(payload('forget-secret'))
+    expect(addToast).toHaveBeenCalledTimes(1)
+  })
+
+  it('says nothing when a password really was forgotten', async () => {
+    forgetServerSecret.mockResolvedValueOnce(true)
+    await runServerRowAction(payload('forget-secret'))
+    // The entry is gone, which is what the person asked for. A toast confirming
+    // an action they just took is noise.
+    expect(addToast).not.toHaveBeenCalled()
   })
 
   it('does nothing when the user says no', async () => {

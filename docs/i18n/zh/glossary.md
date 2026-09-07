@@ -2262,10 +2262,11 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   原样保留，句中位置对任意长度都成立；没有 plural 键。没有一个值与英文相同，不需要
   `sameAsSourceJustification`。窗格里那三条整版消息都不用 `错误` / `失败`，与目录的口径一致。
 - **`You stopped opening your phone.` → `你停止了打开手机。`**（`adb.connect.cancelled`）· 动词照平行键
-  `search.coverage.walk.cancelled`（`你停止了这次搜索`）和 `errors.volume.cancelled` 取 `停止` ·
-  `high`。❌ 不写 `取消`：`取消` 是按钮的标签（`fileOperations.button.cancel`），写成「你取消了…」会像在指那颗按钮，
-  而不是在说发生了什么。`停止` 后面直接带动词短语是目录里现成的写法（`停止建立索引`、`停止连接到 {name}`、`停止搜索`）。
-  `打开` 是已定的开手机动词（`adb.connect.waitingHint`）；主语已经是 `你`，所以不再写 `你的手机`。
+  `search.coverage.walk.cancelled`（`你停止了这次搜索`）和 `errors.volume.cancelled` 取 `停止` · `high`。❌ 不写
+  `取消`：`取消`
+  是按钮的标签（`fileOperations.button.cancel`），写成「你取消了…」会像在指那颗按钮，而不是在说发生了什么。`停止`
+  后面直接带动词短语是目录里现成的写法（`停止建立索引`、`停止连接到 {name}`、`停止搜索`）。 `打开`
+  是已定的开手机动词（`adb.connect.waitingHint`）；主语已经是 `你`，所以不再写 `你的手机`。
 
 ## 被锁住的服务器身份（`servers.sheet.identityLocked`）
 
@@ -2273,8 +2274,20 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 
 - **`the account`（用来登录服务器的那个输入框）→ `账户`** · 目录里已有同一含义的用法（`errors.json` 六处、
   `onboarding.json` 一处）· `high`。
-- **这行提示里的动作词必须和它指向的按钮一字不差**：`忘记` 取自 `menu.network.forgetServer`（「忘记服务器」），
-  `添加` 取自 `servers.sheet.addTitle`（「添加服务器」）。换成近义词（「删除」「新建」）会让读者去找一个根本不存在的菜单项。
-- **`are what name this server` → `决定了这是哪台服务器`** · 表单本身另有一个「名称」字段（`servers.sheet.name`），
-  所以这句不能用「命名」：那会被读成在讲那个标签。用「决定了这是哪台」说的才是原意（这两个值就是这台服务器本身）· `high`。
+- **这行提示里的动作词必须和它指向的按钮一字不差**：`忘记` 取自 `menu.network.forgetServer`（「忘记服务器」）， `添加`
+  取自 `servers.sheet.addTitle`（「添加服务器」）。换成近义词（「删除」「新建」）会让读者去找一个根本不存在的菜单项。
+- **`are what name this server` → `决定了这是哪台服务器`**
+  · 表单本身另有一个「名称」字段（`servers.sheet.name`），所以这句不能用「命名」：那会被读成在讲那个标签。用「决定了这是哪台」说的才是原意（这两个值就是这台服务器本身）·
+  `high`。
 - 量词沿用 `servers.json` 里已有的 `这台服务器`（六处）。
+
+## 本来就没有保存过密码时的提示（`fileExplorer.navigation.forgetSecretNoneToast`）
+
+- **`There was no saved password for {name}.` → `{name} 没有保存的密码。`**
+  · 「保存的密码」一字不差沿用已发布的三个兄弟键（`menu.network.forgetSavedPassword`、`fileExplorer.navigation.forgetSecretConfirmTitle`
+  = `清除保存的密码`， `.forgetSecretConfirm` = `要清除 {name} 保存的密码吗？`，`.forgetSecretRefusedToast`）·
+  `high`。用户刚从那个确认对话框过来，用词必须一致。
+- **`{name}`
+  放主语位置最自然**，也避开了「为 {name} 保存的密码」这类要补介词的说法。中文不标时态，英文的过去式由「没有」直接承担；不加「过」，否则会读成「从来没保存过」，而不是「这次查下来没有」。
+- 占位符后面留一个半角空格（§ style.md 的拉丁占位符间距规则）。不用「失败」「错误」：什么都没出错。
+- 这台机器上没有参考语料库（主克隆里也没有 `_ignored/i18n/`），所以这条决定依据的是已发布的目录和本词汇表。

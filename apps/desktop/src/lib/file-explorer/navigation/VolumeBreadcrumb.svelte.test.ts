@@ -349,14 +349,15 @@ describe('VolumeBreadcrumb server rows', () => {
     // Row 0 is the hub ("Servers"); the place is the one after it.
     const row = target.querySelectorAll('.volume-item')[1] as HTMLElement
     row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
-    // Two store reads run before the popup: let both settle.
+    // One store read runs before the popup: let it settle. ❗ One, ❌ not two —
+    // deciding whether a secret is stored would cost a Keychain read, and every
+    // read of one can raise a system prompt in front of the menu appearing.
     await vi.waitFor(() => {
       expect(showVolumeRowContextMenu).toHaveBeenCalled()
     })
     expect(showVolumeRowContextMenu).toHaveBeenCalledWith('sftp-nas-local-22-ada', 'Naspolya', false, false, {
       showsDisconnect: true,
       isSaved: true,
-      hasSavedSecret: true,
       pinned: false,
     })
   })
