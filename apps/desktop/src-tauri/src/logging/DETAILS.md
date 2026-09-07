@@ -163,10 +163,19 @@ rather than a glance.
 - **Palette**: 256-color mid-tones, no reds, yellows, or greens. Two reasons: the extremes vanish on one background or
   the other, and those three hues are the level colors sitting one column to the left, where a head that borrows one
   reads as a level at a glance.
-- **When ANSI is emitted**: `color_enabled()`, once at startup, requires stderr to be a terminal and `NO_COLOR` to be
-  unset or empty. `write_terminal_line` then substitutes empty strings for every sequence, so a redirected `pnpm dev`
-  yields plain text with the padding intact. Resolved once because it's a syscall and stderr can't become a terminal
-  mid-run.
+- **When ANSI is emitted**: `color_enabled()` runs once at startup (a syscall, and stderr can't become a terminal
+  mid-run) and delegates to `resolve_color`, which takes the environment as arguments so it's testable: `NO_COLOR`
+  non-empty wins and turns color off; then the first of `CLICOLOR_FORCE` / `FORCE_COLOR` that's set decides (`0` off,
+  anything else on); otherwise `stderr().is_terminal()`. `write_terminal_line` substitutes empty strings for every
+  sequence when it's off, so plain text keeps the padding.
+- **`is_terminal()` alone is wrong here, and the wrapper is why the force var exists.** The Tauri CLI spawns the dev
+  app with a piped stderr and forwards the bytes to its own, so from inside the app a real terminal and `2> log.txt`
+  are indistinguishable, and `pnpm dev` in a terminal would never colorize. `tauri-wrapper.ts` sets `CLICOLOR_FORCE=1`
+  when its own stderr is a TTY: it's the last process in the chain that can still see the truth, and it's the same move
+  the Tauri CLI itself makes when it hands cargo `--color always`. Stderr, not stdout, because that's the stream the
+  app's log lines come out on, so `pnpm dev > log.txt` correctly keeps its colors. (Verified 2026-09-07 against
+  `tauri-cli` 2.11.4: `tauri dev --runner <probe>` under a pty reports a piped stderr, and a run with the two
+  streams redirected separately shows the child's stderr arriving on the CLI's stderr.)
 - **No allocation**: the padding and the sequences go through `format_args!` as separate arguments, so the width applies
   to the head alone (a pre-assembled colored string would count the escape bytes as width) and nothing is built on the
   log path.

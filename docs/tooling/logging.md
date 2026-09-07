@@ -151,10 +151,13 @@ RUST_LOG=trace pnpm dev
 Format: `HH:MM:SS.mmm LEVEL target  message`. Frontend logs appear with an `FE:` prefix followed by the LogTape category
 name.
 
-The terminal adds ANSI on top of that, and only when stderr is a real terminal and `NO_COLOR` is unset: a piped or
-redirected `pnpm dev` gets the plain shape above. The target's head (everything before its first `::`) is padded to 14
-columns and painted a color derived from the head itself, so a subsystem keeps the same color across runs and machines;
-the module path after it goes gray. The head column makes the terminal shape
+The terminal adds ANSI on top of that, and only when there's a terminal to add it for: `NO_COLOR` turns it off,
+`CLICOLOR_FORCE` / `FORCE_COLOR` decide it outright (`0` off), and otherwise the app asks whether its own stderr is a
+terminal. Under `pnpm dev` that last question is useless, because the Tauri CLI hands the app a pipe either way, so
+`tauri-wrapper.ts` answers for it: it sets `CLICOLOR_FORCE=1` when the terminal you launched from is really there. So
+`pnpm dev` colorizes, `pnpm dev 2> log.txt` doesn't, and `NO_COLOR=1 pnpm dev` doesn't. The target's head (everything
+before its first `::`) is padded to 14 columns and painted a color derived from the head itself, so a subsystem keeps
+the same color across runs and machines; the module path after it goes gray. The head column makes the terminal shape
 `… INFO  downloads     ::watcher  Started watching …`. The log FILE is unaffected: no ANSI, no padding.
 
 ## RUST_LOG recipes
