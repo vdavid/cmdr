@@ -342,8 +342,13 @@ and asking one would be the first step toward putting a password box in front of
 `RemoteConnectView`'s `host_key_changed`, which offers Disconnect (`../pane/DETAILS.md` § the connect views says why
 that, and not "Trust it"). `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
 
-Lazy-nav path: opening a share that's already `Disconnected` (no fresh event in flight), the FilePane `$effect` notices
-`currentVolumeInfo?.connectionState === 'disconnected'` and calls `manager.startCycle(volumeId)` directly.
+Lazy-nav path: opening a share that's already `Disconnected` (no fresh event in flight), the `smb-view-state.svelte.ts`
+subscription `$effect` notices `currentVolumeInfo?.connectionState === 'disconnected'` and calls
+`connectPlace({ volumeId, connectionState: 'disconnected' })`. ❗ Through `$lib/servers/connect-flow.ts`'s arm 1 rather
+than `manager.startCycle` directly, because that module documents itself as the ONE caller of the manager's lazy start
+and a second caller makes the guardrail a lie. Arm 1 is that call and nothing else, and the manager is idempotent, so
+landing on the same share twice still costs nothing. The signed-out banner's Sign in goes through the same flow's arm 2,
+which is what carries the `needs_credentials` reason into the sheet's first round.
 
 Disconnect button: `disconnectSmbVolume(volumeId)` shells out to `diskutil unmount` (macOS) → FSEvents fires →
 `SmbVolume::on_unmount` → volume removed from `VolumeManager` → `volumes-changed` removes it from the picker.

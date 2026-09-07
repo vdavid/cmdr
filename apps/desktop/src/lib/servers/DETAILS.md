@@ -32,7 +32,9 @@ bare `/` for its root, which is why the Rust side keeps them too.
 
 ## The three arms
 
-`connectPlace({ volumeId, connectionState, onAttemptStarted, openSignIn })` picks by standing:
+`connectPlace({ volumeId, connectionState, onAttemptStarted, openSignIn })` picks by standing. Three production callers,
+one per arm: `../file-explorer/pane/place-connect.svelte.ts` for a `saved` row, and `../file-explorer/pane/smb-view-state.svelte.ts`
+for both the lazy-nav `disconnected` landing and the signed-out banner's Sign in.
 
 - **`direct`, `os_mount` → nothing** (`already_live`). There is a session serving right now.
 - **`disconnected` → `smbReconnectManager.startCycle`**, answering `reconnecting`. The volume is REGISTERED, so a dial
