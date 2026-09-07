@@ -53,8 +53,8 @@ below is met.
       finished and invisible, ADB is silent at the one moment the user needs feedback, and SMB signs in inside a pane
       where Tab can't mean two things. One model (an account holds places, the switcher shows pinned places), one modal
       sign-in sheet driven by a backend-owned `SignInShape`, one pane view for every wait, and a "Servers" hub pane
-      state; SMB migrates onto all four so S3 and OAuth inherit them. Supersedes `servers-in-the-sidebar.md` and the
-      frontend half of `android-adb-ui.md`. Eight milestones, sequential, roughly two weeks.
+      state; SMB migrates onto all four so S3 and OAuth inherit them. Superseded and wiped `servers-in-the-sidebar.md`;
+      it also absorbs the frontend half of `android-adb-ui.md`. Eight milestones, sequential, roughly two weeks.
 
 - [ ] 2026-09-06 `data-safety-hunt-follow-ups.md` - **What the transfer-engine hunt left open after its 15 findings were
       fixed.** Nine ranked entries in problem / impact / solution / size form: two high (a cross-FS move loses the bytes
@@ -89,15 +89,6 @@ below is met.
       connecting rendered in the pane, never a modal; a Settings section whose `adb` path override exists because a
       macOS GUI app never inherits the shell `PATH`; panes opening at `/sdcard`; ADB deliberately not indexed; and
       "Disconnect" rather than "Eject". Still gated on the real-device pass.
-
-- [ ] 2026-09-02 `servers-in-the-sidebar.md` - **Two finished backends nobody can reach.** SFTP and WebDAV connect,
-      list, read, write, and reconnect, and there is no way to open one: `volume_listing::complete` has no arm for
-      either, so nothing reaches the sidebar, and `resolve_path_volume` doesn't answer for a remote path, so a saved tab
-      couldn't be restored if it did. Five milestones, ❗ one design covering BOTH backends rather than two
-      half-matching dialogs: the sidebar section, path resolution riding with it, one protocol-first connect dialog
-      branching on typed outcomes, the sign-in banner, and SFTP's host-key step as an arm of the dialog. Every command,
-      outcome, and the reconnect model already exist and are typed; what's open is design (which section, what an eject
-      means, whether a saved-but-unconnected server shows) and copy, both David's. Roughly a week.
 
 - [ ] 2026-09-01 `webdav-backend-follow-ups.md` - **The WebDAV backend ships without a way to reach it, and trusts only
       what the system roots vouch for.** `crates/cmdr-webdav`, its IPC surface, and the Docker fixtures are done and
