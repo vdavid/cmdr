@@ -322,5 +322,5 @@ whichever doc owns the item now; ❌ nothing here restates a mechanism.
   SFTP, WebDAV)"). A separate setting would be three definition sites, a section row, and two parity tests for a color
   nobody asked to set apart.
 - **S3 and OAuth**, whose contracts shaped types that shipped and so are written beside those types: one more
-  `ServerTarget` arm (`../../src-tauri/src/commands/DETAILS.md` § `servers.rs`), one more renderer (§ "The renderer
-  table"), and the two reserved `SignInShape` variants (`crates/cmdr-fs/src/volume/connection.rs`).
+  `ServerTarget` arm (`apps/desktop/src-tauri/src/commands/DETAILS.md` § `servers.rs`), one more renderer (§ "The
+  renderer table"), and the two reserved `SignInShape` variants (`crates/cmdr-fs/src/volume/connection.rs`).
