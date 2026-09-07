@@ -2261,6 +2261,11 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **ICU** · 19 个值都不含撇号，没有转义问题；`{name}` 与 `{deviceName}`
   原样保留，句中位置对任意长度都成立；没有 plural 键。没有一个值与英文相同，不需要
   `sameAsSourceJustification`。窗格里那三条整版消息都不用 `错误` / `失败`，与目录的口径一致。
+- **`You stopped opening your phone.` → `你停止了打开手机。`**（`adb.connect.cancelled`）· 动词照平行键
+  `search.coverage.walk.cancelled`（`你停止了这次搜索`）和 `errors.volume.cancelled` 取 `停止` ·
+  `high`。❌ 不写 `取消`：`取消` 是按钮的标签（`fileOperations.button.cancel`），写成「你取消了…」会像在指那颗按钮，
+  而不是在说发生了什么。`停止` 后面直接带动词短语是目录里现成的写法（`停止建立索引`、`停止连接到 {name}`、`停止搜索`）。
+  `打开` 是已定的开手机动词（`adb.connect.waitingHint`）；主语已经是 `你`，所以不再写 `你的手机`。
 
 ## 被锁住的服务器身份（`servers.sheet.identityLocked`）
 

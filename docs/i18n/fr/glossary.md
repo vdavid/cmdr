@@ -2947,6 +2947,13 @@ Notes de formulation :
   l'acronyme `ADB`, rien à traduire.
 - Toutes les apostrophes des valeurs sont ASCII et doublées (`n''a`, `n''ont`, `n''est`, `d''Android`, `c''est`) : les
   deux fichiers sont ICU.
+- **`You stopped opening your phone.` → `Vous avez arrêté l''ouverture de votre téléphone.`**
+  (`adb.connect.cancelled`) · `arrêter`, comme la clé parallèle `search.coverage.walk.cancelled`
+  (« You stopped this search » → `Vous avez arrêté cette recherche`) · `high`. ❌ Pas `annulé` : `Annuler` est le
+  LIBELLÉ du bouton (`fileOperations.button.cancel`), et le français rend déjà `Undo` par le même mot, donc la phrase
+  deviendrait ambiguë. Le nom déverbal `l''ouverture` porte le gérondif anglais ; `ouvrir` est le verbe fixé pour
+  ouvrir un téléphone (`adb.connect.waitingHint`, `Cmdr ouvre votre téléphone…`). Apostrophe ASCII doublée, le fichier
+  est ICU.
 
 ## Apostrophe sweep over `main.oldWebkit.*`
 

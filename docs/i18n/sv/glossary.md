@@ -2498,6 +2498,12 @@ LEVANDE macOS-paketen (macOS 26.6.2, build 25G83, läst 2026-09-07; `.loctable` 
   `Om engångsraden som erbjuder USB-felsökning har avfärdats.` speglar
   `Om engångstipset om att lossa servrar har visats.` · `high`. `avfärdat`/`avfärdats` i neutrum efter `Tips` respektive
   opersonlig passiv, samma mönster som syskonens `visat`/`visats`.
+- **`You stopped opening your phone.` → `Du stoppade öppnandet av din telefon.`** (`adb.connect.cancelled`) ·
+  `stoppa`, precis som systernyckeln `search.coverage.walk.cancelled` (`Du stoppade den här sökningen`) och
+  `errors.volume.cancelled` (`Cmdr stoppade det här på din begäran.`) · `high`. ❌ Inte `avbröt`: `Avbryt` är KNAPPENS
+  etikett (`fileOperations.button.cancel`), så meningen skulle läsas som en hänvisning till knappen.
+  Verbalsubstantivet `öppnandet av` följer katalogens egen form (`skapandet av mappen`, `borttagningen av originalen`),
+  och `öppna` är det satta verbet för en telefon (`adb.connect.waitingHint`).
 
 Ingen `sameAsSourceJustification` i passet (`adb.volumeLabelWithSuffix` bar redan sin från en tidigare omgång). Ingen
 apostrof i något värde, så ICU-dubbleringen `''` blir aldrig aktuell, och `{name}` står oförändrad i den enda nyckel som

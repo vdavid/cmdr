@@ -145,21 +145,59 @@ describe('createDeviceConnect', () => {
     })
   })
 
-  it('aims Cancel at the id the dial was given', () => {
+  it('aims Cancel at the id the dial was given, and leaves a way back in', () => {
     const { sub } = create()
     const state = sub.state
     expect(state?.kind).toBe('connecting')
     if (state?.kind !== 'connecting') return
     state.cancel()
     expect(ipc.cancelAdbConnect).toHaveBeenCalledWith('adb-attempt-1')
+
+    // ❗ The pane is still HELD, so a `null` state renders NOTHING: no listing,
+    // no message, no button, and no way out but switching volumes. A cancel that
+    // says nothing has to leave something to press.
+    expect(sub.holdsListing).toBe(true)
+    expect(sub.state?.kind).toBe('refused')
+    if (sub.state?.kind !== 'refused') return
+    sub.state.retry?.()
+    expect(ipc.connectAdbDevice).toHaveBeenCalledTimes(2)
   })
 
-  it('says nothing about a dial the user called off', async () => {
+  it('leaves the same way back in when the dial itself comes back cancelled', async () => {
     ipc.connectAdbDevice.mockRejectedValueOnce({ failure: { type: 'cancelled' } })
     const { sub } = create()
     await vi.waitFor(() => {
-      expect(sub.state).toBeNull()
+      expect(sub.state?.kind).toBe('refused')
     })
+    if (sub.state?.kind !== 'refused') return
+    expect(sub.state.retry).toBeTypeOf('function')
+    expect(sub.holdsListing).toBe(true)
+  })
+
+  it('leaves a way back in when the dial breaks down without a typed reason', async () => {
+    // Not an `AdbConnectError` at all: the IPC transport itself. Its text is
+    // untranslated diagnostics, so the log gets it and the pane gets the one
+    // sentence that is true either way, with a Try again beside it.
+    ipc.connectAdbDevice.mockRejectedValueOnce(new Error('ipc went away'))
+    const { sub } = create()
+    await vi.waitFor(() => {
+      expect(sub.state?.kind).toBe('refused')
+    })
+    if (sub.state?.kind !== 'refused') return
+    expect(sub.state.refusal).toBe('adb.connect.transport')
+    expect(sub.holdsListing).toBe(true)
+    sub.state.retry?.()
+    expect(ipc.connectAdbDevice).toHaveBeenCalledTimes(2)
+  })
+
+  it('leaves a way back in when the waiting state is cancelled', () => {
+    const { sub } = create({ info: phone({ kind: 'waiting_for_authorization' }) })
+    const state = sub.state
+    expect(state?.kind).toBe('waiting_for_device')
+    if (state?.kind !== 'waiting_for_device') return
+    state.cancel()
+    expect(sub.state?.kind).toBe('refused')
+    expect(sub.holdsListing).toBe(true)
   })
 
   it('renders the waiting state when the dial itself comes back unauthorized', async () => {

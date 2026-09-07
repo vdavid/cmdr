@@ -392,6 +392,13 @@ questions").
   `adb-navigation:<serial>` attempt id — and Cancel, which aims at the id minted here, would call off the dial nobody
   was watching while the other quietly registered the volume. The hold is threaded through `path-sync.ts`'s
   `deviceIsConnecting` input (a `sync-path` arm, like device-only MTP's) and the mount-time load's own branch.
+- **❗ While the hold is on, a `null` state renders NOTHING**, so every way a dial can end has to leave a non-`null`
+  one: a `refused` with the reason and, where a second try could work, a Try again. That covers both cancels (the
+  button on `connecting` and the one on `waiting_for_device`), the backend's own `cancelled` answer, a failure with no
+  typed reason (which shows `adb.connect.transport`, because its own text is untranslated diagnostics that belong in
+  the log), and a device row whose path names no serial. ❌ Releasing the hold instead is NOT the escape hatch: nothing
+  re-runs the listing on that path, and if it did, `list_directory` would re-dial the very phone the user just called
+  off. "A cancel says nothing" means not scolding someone for what they did, ❌ not leaving them in an empty pane.
 - **`holdsListing` is a `$derived` off the volume id and the factory's own record, ❌ never off `state`.** The
   mount-time load runs before this factory's `$effect` has said anything, so a gate read from the view state would
   depend on `$effect` ordering — correct today, silently wrong after any reordering.

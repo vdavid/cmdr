@@ -2471,6 +2471,13 @@ Wortlaut-Entscheidungen:
   interne Flags und erscheinen nie in der Oberfläche, brauchen aber Deckung.
 - Kein neuer `sameAsSourceJustification`: `adb.volumeLabelWithSuffix` hatte schon einen, alle 18 anderen Werte weichen
   vom Englischen ab. Kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt.
+- **`You stopped opening your phone.` → `Du hast das Öffnen deines Telefons gestoppt.`** (`adb.connect.cancelled`) ·
+  `stoppen`, nicht `abbrechen`: die parallele Katalogzeile `search.coverage.walk.cancelled` („You stopped this search“)
+  steht schon als „Du hast diese Suche gestoppt“, und `Abbrechen` ist die BESCHRIFTUNG der Taste
+  (`fileOperations.button.cancel`), also läse „abgebrochen“ wie ein Verweis auf den Knopf statt wie eine Feststellung.
+  `stoppen` ist ohnehin macOS Finders Verb fürs Anhalten eines laufenden Vorgangs („Kopieren stoppen“) · `high`. Der
+  substantivierte Infinitiv `das Öffnen` trägt das englische Gerundium, `öffnen` ist das gesetzte Verb fürs Aufmachen
+  eines Telefons (`adb.connect.waitingHint`), und der Genitiv `deines Telefons` bleibt beim Katalogwort `Telefon`.
 
 ## Die gesperrte Server-Identität (`servers.sheet.identityLocked`)
 

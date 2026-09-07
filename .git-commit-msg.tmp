@@ -1,24 +1,27 @@
-fix(servers): the connect flow really is the one caller its guardrail claims to be
+fix(adb): cancelling a phone connect stops leaving the pane blank with no way out
 
-`connect-flow.ts`'s header and `servers/CLAUDE.md` both say it is the ONE caller of `connectSavedPlace` and of the
-reconnect manager's lazy start, and that it picks the move by a volume's standing. Two of its three arms had no
-production caller: `place-connect.svelte.ts` returns early unless the standing is `saved`, so only arm 3 was reachable,
-while `smb-view-state.svelte.ts` called `smbReconnectManager.startCycle` and `openSignInForPlace` directly. A guardrail
-doc describing a shape the code doesn't have is worse than no doc: the next person adds a fourth caller on its word.
+`device-connect.svelte.ts` holds the pane's listing while it works, so a `null` view state renders NOTHING: no file
+list, no sentence, no button. Four paths set exactly that. Both Cancel closures (the one on `connecting` and the one on
+`waiting_for_device`) and the backend's own `cancelled` answer left it, and `onMount` had already skipped
+`loadDirectory` while `path-sync` answers `none` at an unchanged path, so the effect would not re-dial either. The only
+escape was switching volumes. The untyped-failure branch released the hold instead and said the listing's error pane
+would take over, but only the success path calls `onConnected`, so nothing ever restarted the listing: the same empty
+pane, minus the message.
 
-Both pane paths now go through the flow.
+Every way a dial can end now leaves something to read and, where a second try could work, something to press.
 
-- The lazy-nav landing on an already-`Disconnected` share calls `connectPlace({ connectionState: 'disconnected' })`,
-  whose arm 1 is that `startCycle` and nothing else. The manager is idempotent, so landing on the same share twice
-  still costs nothing.
-- The signed-out banner's Sign in calls `connectPlace({ connectionState: 'needs_sign_in' })`, whose arm 2 supplies both
-  `registered: true` (the volume is filed under this id, so the sheet mends it rather than dialing a second one into
-  existence) and the `needs_credentials` reason the sheet's first round now says out loud. That is a real gain for the
-  user, not just for the doc: the banner is up because a credential is missing, and the sheet used to open silent about
-  it.
+- A cancel renders `refused` with the new `adb.connect.cancelled` ("You stopped opening your phone.") and a Try again.
+  Matter-of-fact, no scolding: "a cancel says nothing" is about not lecturing someone for what they did on purpose, not
+  about leaving them staring at an empty pane.
+- An untyped failure renders `adb.connect.transport` with a Try again. Its own text is untranslated diagnostics and
+  still goes only to the log.
+- A device row whose path names no serial renders `adb.connect.deviceGone` with no button, since nothing a person
+  presses fixes a malformed row. It used to release the hold and show nothing, the same bug one branch over.
 
-The manager's `needs-auth` IS the volume's `needs_sign_in`: that event is what flips the status.
+❗ Releasing the hold is deliberately NOT the escape hatch: `list_directory` on an `adb://` path re-dials the phone
+through the backend's own `adb-navigation:<serial>` id, so letting the listing run would redial the thing the user just
+called off.
 
-`network/DETAILS.md`'s lazy-nav paragraph and `servers/DETAILS.md`'s three-arms section now name the three callers,
-one per arm. New cell: the banner's Sign in reaching the sheet with its reason. The two existing `startCycle` cells
-pass unchanged, which is the proof arm 1 does the same thing.
+Four cells, plus the existing cancel cell rewritten from "says nothing" to "leaves a way back in". Translations for the
+new key in all ten locales, register matched to the `adb.connect.*` siblings and the verb taken from each locale's
+existing `search.coverage.walk.cancelled` rather than its Cancel-button label.

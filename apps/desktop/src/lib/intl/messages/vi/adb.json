@@ -31,6 +31,10 @@
   "@adb.connect.transport": {
     "sourceHash": "d90c37c"
   },
+  "adb.connect.cancelled": "Bạn đã dừng việc mở điện thoại.",
+  "@adb.connect.cancelled": {
+    "sourceHash": "bc525aa"
+  },
   "adb.connect.waitingHint": "Cmdr sẽ mở điện thoại ngay khi bạn nhấn.",
   "@adb.connect.waitingHint": {
     "sourceHash": "d1df048"
