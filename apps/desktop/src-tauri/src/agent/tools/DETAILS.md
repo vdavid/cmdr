@@ -394,6 +394,13 @@ when the error runs in both directions. `human_size` / `size_qualifier` / `quali
 one place that decides; `ChildEntry::new` / `set_size` are the only ways to set a size, so the number and its string
 can't drift apart.
 
+Both take the number and its two caveats as ONE `SizeClaim`, which is that contract as a type: `size_human` is derived
+from all three at once, and no caller can set a size while forgetting which uncertainty it carries. The flags mean
+opposite things (`≥` up only, `~` either way) and used to sit adjacent in an argument list, where swapping them was
+silent. A row's `RowKind` (`File` / `Folder` / `SymlinkToFile` / `SymlinkToFolder`) does the same for the other pair:
+the wire still carries `isDirectory` + `isSymlink`, but only `RowKind::Folder` earns a recursive total, since following
+a link can leave the tree or loop.
+
 **Motion outranks coverage** (`size_qualifier`): a size that is BOTH a lower bound and still updating reads `~`, never
 `≥`. `≥` is derived from unscanned subtrees alone, so it can't express the opposite error — an index entry for a
 subtree that's already gone, where the truth is far lower — and that's exactly what a running walk is correcting. A
