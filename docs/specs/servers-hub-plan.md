@@ -689,7 +689,7 @@ between fields, never switches panes). Docs: `servers/CLAUDE.md` + `DETAILS.md` 
 the renderer table, the reserved shapes), `docs/guides/building-ui.md` gains one line pointing at the sheet for any
 credential ask, `docs/architecture.md` row.
 
-### M3. SMB moves onto the sheet and the pane view
+### M3. SMB moves onto the sheet and the pane view ✅ LANDED
 
 ❗ **What M2 already took off this list.** `SmbReauthView.svelte` is gone: the `needs-auth` branch renders
 `RemoteConnectView`'s `signed_out`, whose button opens the sheet as a REGISTERED place. `needs_host_key_approval` has
@@ -700,6 +700,13 @@ its own manager status and its own pane state. So step 2 below is now `SmbReconn
 `ConnectRefusalKind` (one vocabulary for a refusal across the pane and the sheet, so the two can't drift), the attempt
 outcome keeps the two host-key payloads, and it gained `handed_off` for SMB's add path, whose connect is a share mount
 rather than a session. `servers/DETAILS.md` § "The sheet contract" is canonical.
+
+❗ **What landed differed in four places, each recorded beside the code.** One module builds all three SMB requests
+(`file-explorer/network/smb-sign-in.ts`) rather than three sites doing it each; the username hint lives THERE rather
+than in the sheet's renderer, which stays protocol-neutral; the sheet's sign-in request takes `remembered` and an
+optional `refusal` in place of `volumeId`, because probing SMB's Keychain costs a system prompt; and the mount and
+upgrade sites drop the guest radio, since an unauthenticated attempt is what just came back refused at both.
+`servers/DETAILS.md` § "The three SMB sites" is canonical.
 
 1. `ShareBrowser`'s listing auth, `NetworkMountView`'s mount auth, `SmbReauthView`, and `FilePane`'s `smbUpgradeLogin`
    branch all call `openSignInSheet({ mode: 'sign-in', shape: username_password, attempt })` with their own `attempt`.

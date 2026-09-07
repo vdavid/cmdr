@@ -15,6 +15,7 @@ the words for a connect that stopped. Up: `../../CLAUDE.md`. Backend contracts: 
   `sign-in-sheet-state.svelte.ts`. `sign-in-contract.ts`: what they hand each other.
 - `connect-refusals.ts`: one sentence per reason, and which field it goes under. `server-command-target.ts`: which
   server a palette command acts on.
+- SMB's side of the sheet is a sibling, ❌ not here: `../file-explorer/network/smb-sign-in.ts`.
 
 ## Must-knows
 
