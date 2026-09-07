@@ -29,9 +29,9 @@ pixel-accurate width measurement via `@chenglou/pretext`, and the `*-utils.ts` t
   is the one place; the renderer reaches it via `pickSizeDisplay`, the width measurer calls it directly. `DETAILS.md` §
   "Wording a git portal row".
 - **`getDirSizeDisplayState()` (`full-list-utils.ts`) is the single source of truth for a directory's size-column
-  state**, for both `FullList.svelte`'s cell and `measure-column-widths.ts`; re-inline it in either and text and width
-  drift. The hourglass on top is PER ROW: the measurer takes the pane's own `isSizeUpdating(entry)`, ❌ never a
-  per-volume flag, which clips the glyph on exactly the rows showing it.
+  state**; re-inline it in `FullList.svelte`'s cell or `measure-column-widths.ts` and text and width drift. Its
+  `updating` arg is PER ROW: the pane's own `isSizeUpdating(entry)`, ❌ never a per-volume flag. It gates the hourglass
+  AND the `≥` an in-flux row drops, so a wrong answer clips or over-reserves.
 - **Size and Modified render with `font-variant-numeric: tabular-nums`, which canvas/pretext can't measure.**
   `measure-column-widths.ts` substitutes the widest digit (`tabularize`), so the two move together: drop tabular figures
   from a numeric column and drop its `tabularize` call too, or it over-reserves.

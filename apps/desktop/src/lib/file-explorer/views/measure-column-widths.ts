@@ -204,6 +204,7 @@ function sizeTextForEntry(
   sizeDisplayMode: 'smart' | 'logical' | 'physical',
   sizeFormatOpts: SizeFormatOpts,
   isRestricted: boolean,
+  isUpdating: boolean,
 ): string {
   // TCC-restricted entries render `<no perms>` instead of the misleading `0`
   // the indexer recorded after a denied scan. Keep this BEFORE the git check:
@@ -222,7 +223,11 @@ function sizeTextForEntry(
     // `'dir'`/`'scanning'` (size unknown — not enriched yet, or an incomplete subtree
     // with nothing known below) → the `<dir>` placeholder; lower-bound → `≥` prefix +
     // size; otherwise the formatted size. The hourglass is reserved separately.
-    const state = getDirSizeDisplayState(s, entry.recursiveSizeComplete, entry.recursiveSizeStale)
+    //
+    // ⚠️ `isUpdating` has to reach this call: an in-flux row drops its `≥`, so
+    // measuring without the flag reserves a glyph the cell never draws and the
+    // shrink-wrapped column sits a character too wide on every such row.
+    const state = getDirSizeDisplayState(s, entry.recursiveSizeComplete, entry.recursiveSizeStale, isUpdating)
     if (state === 'dir' || state === 'scanning') return tString('fileExplorer.dirSize.dirPlaceholder')
     const prefix = state === 'lower-bound' ? LOWER_BOUND_GLYPH : ''
     return prefix + sizeCellText(s ?? 0, sizeFormatOpts)
@@ -232,12 +237,7 @@ function sizeTextForEntry(
 }
 
 /** Pixel width of the size-column icons that follow the text for this row. */
-function sizeIconSuffixForEntry(
-  entry: FileEntry,
-  sizeDisplayMode: 'smart' | 'logical' | 'physical',
-  isSizeUpdating: (entry: FileEntry) => boolean,
-  showSizeMismatchWarning: boolean,
-): number {
+function sizeIconSuffixForEntry(entry: FileEntry, showSizeMismatchWarning: boolean, isUpdating: boolean): number {
   let suffix = 0
   if (entry.isDirectory) {
     // FullList draws the hourglass whenever the dir's size is in flux: any
@@ -245,11 +245,11 @@ function sizeIconSuffixForEntry(
     // it. Reserve the icon width here so the shrink-wrapped column doesn't clip
     // the glyph.
     //
-    // ⚠️ The answer is PER ROW, and the caller passes the very function its size
-    // cell renders from. It has to be the same one: once a walk lights up some
-    // rows and not others, a per-volume answer here reserves width on the wrong
-    // ones and clips the glyph on exactly the rows that show it.
-    if (isSizeUpdating(entry)) suffix += SIZE_ICON_WIDTH
+    // ⚠️ The answer is PER ROW, and the caller derives it from the very function
+    // its size cell renders from. It has to be the same one: once a walk lights
+    // up some rows and not others, a per-volume answer here reserves width on the
+    // wrong ones and clips the glyph on exactly the rows that show it.
+    if (isUpdating) suffix += SIZE_ICON_WIDTH
   }
   if (showSizeMismatchWarning) {
     const logical = entry.isDirectory ? entry.recursiveSize : entry.size
@@ -406,18 +406,18 @@ function foldEntries(
       if (w > extMax) extMax = w
     }
 
+    // One per-row answer, read by both the text (does it carry a `≥`?) and the
+    // icon suffix (does it carry an hourglass?) — the same one the size cell
+    // renders from, or the two drift.
+    const updating = ctx.isSizeUpdating(entry)
     const sizeText = sizeTextForEntry(
       entry,
       ctx.sizeDisplayMode,
       ctx.sizeFormatOpts,
       ctx.isRestricted?.(entry.path) ?? false,
+      updating,
     )
-    const iconSuffix = sizeIconSuffixForEntry(
-      entry,
-      ctx.sizeDisplayMode,
-      ctx.isSizeUpdating,
-      ctx.showSizeMismatchWarning,
-    )
+    const iconSuffix = sizeIconSuffixForEntry(entry, ctx.showSizeMismatchWarning, updating)
     const rowSize = (sizeText ? ctx.measureNum(sizeText) : 0) + iconSuffix
     if (rowSize > sizeMax) sizeMax = rowSize
     if (iconSuffix > sizeIconSuffixMax) sizeIconSuffixMax = iconSuffix
