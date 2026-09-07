@@ -2,6 +2,7 @@
 
 pub mod backend_settings;
 pub mod cloud_actions;
+#[cfg(target_os = "macos")]
 pub mod cloud_provider;
 pub mod filesystem_kind;
 pub mod git;
