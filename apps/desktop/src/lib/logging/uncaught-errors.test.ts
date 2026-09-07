@@ -38,6 +38,21 @@ describe('uncaught error logging', () => {
     expect(ctx.detail).toContain('kaboom')
   })
 
+  it('keeps the message when the engine leaves it out of the stack', () => {
+    // ❗ WebKit's `error.stack` is FRAMES ONLY: no `Name: message` header, unlike
+    // V8's. Cmdr ships on WKWebView, so taking the stack verbatim logged every
+    // uncaught error as an anonymous pile of minified frames. That cost a real
+    // diagnosis: a Svelte flush throw in the servers hub logged nothing but
+    // offsets.
+    const boom = new Error('each_key_duplicate')
+    boom.stack = 'flush@app.js:1:17123\n@app.js:1:6396'
+    window.dispatchEvent(new ErrorEvent('error', { error: boom, message: '', filename: 'app.js', lineno: 1, colno: 1 }))
+
+    const [, ctx] = h.error.mock.calls[0] as [string, { detail: string }]
+    expect(ctx.detail).toContain('each_key_duplicate')
+    expect(ctx.detail).toContain('flush@app.js')
+  })
+
   it('logs an unhandled rejection', () => {
     // jsdom doesn't construct PromiseRejectionEvent, so dispatch the shape the
     // listener reads. A real rejection carries the same two fields.

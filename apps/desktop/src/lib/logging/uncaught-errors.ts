@@ -18,10 +18,23 @@ import { getAppLogger } from './logger'
 
 const log = getAppLogger('uncaught')
 
-/** Renders a thrown value for the log: an `Error` keeps its stack, anything else stringifies. */
+/**
+ * Renders a thrown value for the log: an `Error` keeps its stack, anything else
+ * stringifies.
+ *
+ * ❗ **The message is put back in front of the stack when the engine left it
+ * out.** WebKit's `error.stack` is FRAMES ONLY, where V8's opens with
+ * `Name: message`. Cmdr ships on WKWebView, so taking the stack verbatim logged
+ * every uncaught error as an anonymous pile of minified offsets — which is
+ * exactly what a Svelte flush throw in the servers hub looked like, and it cost a
+ * real diagnosis. (verified on macOS 26.6.2 / WKWebView and Linux WebKitGTK,
+ * reading E2E logs, 2026-09-07)
+ */
 function describe(value: unknown): string {
   if (value instanceof Error) {
-    return value.stack ?? `${value.name}: ${value.message}`
+    const header = `${value.name}: ${value.message}`
+    if (!value.stack) return header
+    return value.stack.startsWith(value.name) ? value.stack : `${header}\n${value.stack}`
   }
   try {
     return typeof value === 'string' ? value : JSON.stringify(value)
