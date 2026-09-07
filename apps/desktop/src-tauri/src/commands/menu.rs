@@ -69,7 +69,7 @@ pub fn show_file_context_menu<R: Runtime>(
     // which delays the popup; the cache (in `file_system::open_with`) keeps later
     // right-clicks fast.
     #[cfg(target_os = "macos")]
-    let info = build_file_context_info(&path, &context_paths);
+    let info = build_file_context_info(&path, &context_paths, is_directory);
     #[cfg(not(target_os = "macos"))]
     let info = FileContextInfo;
 
@@ -130,7 +130,7 @@ pub fn show_file_context_menu<R: Runtime>(
 const MENU_SYNC_STATUS_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(500);
 
 #[cfg(target_os = "macos")]
-fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileContextInfo {
+fn build_file_context_info(primary_path: &str, all_paths: &[String], is_directory: bool) -> FileContextInfo {
     use crate::file_system::cloud_actions::is_in_icloud_drive;
     use crate::file_system::open_with::compute_open_with_choices;
     use crate::file_system::sync_status::status_within_blocking;
@@ -148,6 +148,11 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileCont
         Default::default()
     };
 
+    // Google Drive link for the primary path. Two cheap local reads (a `getxattr`,
+    // or a couple of hundred bytes of JSON for a native-doc stub), so it stays on
+    // the menu-build path without a timeout of its own.
+    let google_drive_link = crate::file_system::google_drive::item_url(&path_buf, is_directory);
+
     let open_with = compute_open_with_choices(all_paths.iter().map(PathBuf::from).collect());
 
     // Which color tags the WHOLE selection already carries (drives the checked circle).
@@ -162,6 +167,7 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileCont
     FileContextInfo {
         sync_status,
         is_icloud_drive,
+        google_drive_link,
         open_with,
         applied_tag_colors,
     }

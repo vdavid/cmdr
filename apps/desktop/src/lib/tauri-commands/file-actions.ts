@@ -96,8 +96,19 @@ export async function showFileContextMenu(
 }
 
 /**
- * Make a cloud-managed file available offline (download it). macOS only. Talks to the
- * File Provider extension responsible for the file (iCloud Drive, Dropbox, GDrive, etc.).
+ * The web URL for a Google Drive item, or `null` when the path isn't one we can
+ * identify. Backs "Open in Google Drive" and "Copy Google Drive link"; a `null`
+ * simply means those actions have nothing to act on.
+ */
+export async function googleDriveLink(path: string): Promise<string | null> {
+  const res = await commands.googleDriveLink(path)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * Make a cloud-managed file available offline (download it). **iCloud Drive only** —
+ * it routes through the macOS ubiquity APIs, which reject third-party providers.
  */
 export async function cloudMakeAvailableOffline(path: string): Promise<void> {
   const res = await commands.cloudMakeAvailableOffline(path)

@@ -282,6 +282,9 @@ export const menuCommands = [
   // Cloud actions (macOS File Provider, items only show when the right-clicked file is in a cloud folder)
   'cloud.makeOffline',
   'cloud.removeDownload',
+  // Google Drive (items only show when the right-clicked item resolves to a Drive ID)
+  'cloud.openInGoogleDrive',
+  'cloud.copyGoogleDriveLink',
   // Selection
   'selection.selectAll',
   'selection.deselectAll',

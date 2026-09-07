@@ -365,6 +365,22 @@ export const fileListCommands: CommandSource[] = [
     shortcuts: [],
     descriptionKey: 'commands.cloudRemoveDownload.description',
   },
+  {
+    id: 'cloud.openInGoogleDrive',
+    nameKey: 'commands.cloudOpenInGoogleDrive.label',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    descriptionKey: 'commands.cloudOpenInGoogleDrive.description',
+  },
+  {
+    id: 'cloud.copyGoogleDriveLink',
+    nameKey: 'commands.cloudCopyGoogleDriveLink.label',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    descriptionKey: 'commands.cloudCopyGoogleDriveLink.description',
+  },
 
   // ============================================================================
   // File list - Finder tag colors (macOS). Toggle a system color tag on the

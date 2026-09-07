@@ -16,6 +16,8 @@ import {
   openInEditor,
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
+  googleDriveLink,
+  openExternalUrl,
 } from '$lib/tauri-commands'
 import {
   quickLookState,
@@ -271,6 +273,39 @@ export const fileHandlers = {
         await cloudRemoveDownload(entry.path)
       } catch (e) {
         addToast(tString('commands.handler.cloudRemoveDownloadFailed', { detail: String(e) }), { level: 'error' })
+      }
+    }),
+
+  // The two Drive arms re-resolve the link from the path rather than carrying one
+  // over from the context menu, so the command palette reaches them on equal
+  // footing. The menu only ever offers them when a link resolves, so the "no link"
+  // toast is the palette's case.
+  'cloud.openInGoogleDrive': (hctx) =>
+    withEntryUnderCursor(hctx, async (entry) => {
+      try {
+        const link = await googleDriveLink(entry.path)
+        if (!link) {
+          addToast(tString('commands.handler.googleDriveLinkMissing'), { level: 'warning' })
+          return
+        }
+        await openExternalUrl(link)
+      } catch (e) {
+        addToast(tString('commands.handler.googleDriveOpenFailed', { detail: String(e) }), { level: 'error' })
+      }
+    }),
+
+  'cloud.copyGoogleDriveLink': (hctx) =>
+    withEntryUnderCursor(hctx, async (entry) => {
+      try {
+        const link = await googleDriveLink(entry.path)
+        if (!link) {
+          addToast(tString('commands.handler.googleDriveLinkMissing'), { level: 'warning' })
+          return
+        }
+        await copyToClipboard(link)
+        addToast(tString('commands.handler.googleDriveLinkCopied'), { level: 'success' })
+      } catch (e) {
+        addToast(tString('commands.handler.googleDriveCopyFailed', { detail: String(e) }), { level: 'error' })
       }
     }),
 } satisfies Partial<CommandHandlerRecord>

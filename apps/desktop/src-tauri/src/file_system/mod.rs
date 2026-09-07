@@ -4,6 +4,8 @@ pub mod backend_settings;
 pub mod cloud_actions;
 pub mod filesystem_kind;
 pub mod git;
+/// Google Drive item links for the file context menu.
+pub mod google_drive;
 /// The app's `VolumeProvider`: what the index asks about mounted volumes.
 pub(crate) mod index_provider;
 #[cfg(target_os = "linux")]

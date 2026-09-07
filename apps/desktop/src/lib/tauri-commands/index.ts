@@ -111,6 +111,7 @@ export {
   asOpenTerminalError,
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
+  googleDriveLink,
 } from './file-actions'
 export type { OpenTerminalError, OpenTerminalOutcome, TerminalApp, TerminalAppList } from './file-actions'
 
