@@ -203,7 +203,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   a no-op off macOS / outside E2E, and the E2E branch of `show_main_window` orders back instead of showing.
 - **`file_actions.rs`**: direct file actions from the palette / menus: `show_in_finder`, `get_info`, `open_in_editor`,
   `copy_to_clipboard`, and `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive download/eviction via
-  `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`). Plus the "open terminal here" pair,
+  `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`). `google_drive_link(path)` returns a Drive item's web
+  URL or `None`, backing the two Drive menu items; resolution lives in `file_system/google_drive.rs`, and a timeout
+  yields `None` rather than an error because a missing link only means the caller shows nothing. Plus the "open terminal
+  here" pair,
   `list_terminal_apps(app_choice)`, `open_terminal_here(path, volume_id, app_choice)`, and the sync
   `terminal_app_display_name(app_choice)`, all pass-throughs to `../file_system/terminal.rs`, which owns the table, the
   recipes, and the volume gate. The chosen app arrives as an argument because the frontend owns the settings store.

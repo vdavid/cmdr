@@ -7,8 +7,9 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - Submodules with their own docs: `listing/`, `write_operations/`, `volume/`, `sync_status/` (cloud badges).
 - `watcher.rs` (FSEvents listing updates), `staging.rs` (scratch visibility; the `StagingTemp` mint itself is
   `cmdr_fs::staging`), `index_provider.rs` (the app's `VolumeProvider`, so the index never imports `VolumeManager`),
-  `backend_settings.rs` (live per-backend knobs), `cloud_actions.rs`, `open_with.rs`, `tags.rs` (Finder tags),
-  `terminal.rs` ("open terminal here").
+  `backend_settings.rs` (live per-backend knobs), `cloud_actions.rs`, `cloud_provider.rs` (who owns a path, and what
+  they can do), `google_drive.rs` (Drive item links), `open_with.rs`, `tags.rs` (Finder tags), `terminal.rs` ("open
+  terminal here").
 - `mod.rs` is a facade: it re-exports downward and bootstraps the volume registry (`init_volume_manager`), which is why
   it may know every backend.
 
@@ -43,8 +44,13 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - **"Open terminal here" asks `NSWorkspace` whether each known app is installed; ❌ never scans `/Applications`**, and
   its recipes are a pure `launch_argv` so every app's argv is unit-tested without launching anything. A new terminal is
   one entry in `KNOWN_TERMINALS`, and it owes the bundle id's verification source and date. § "Open terminal here".
-- **`cloud_actions.rs` is iCloud Drive only**, gated by `is_in_icloud_drive`; the cross-provider-looking
-  `NSFileProviderManager` methods need the bundled extension. Don't widen it.
+- **`cloud_actions.rs` is iCloud Drive only**, gated by `CloudProvider::supports_eviction`; the cross-provider-looking
+  `NSFileProviderManager` methods need the bundled extension. Don't widen it. Provider identity itself lives once, in
+  `cloud_provider.rs`; the volume switcher reads the same enum.
+- **Google Drive item IDs come from two places, and a path prefix is NOT one of them.** Drive's *mirror* mode keeps real
+  files outside `~/Library/CloudStorage` with no xattr at all, so `google_drive.rs` keys off the
+  `com.google.drivefs.item-id#S` xattr (stream mode, files and folders) or a `.gdoc`-family stub's `doc_id` (both
+  modes), and the menu offers its items only when one resolves. § "Google Drive links" in `DETAILS.md`.
 
 Open-with internals, cloud-actions rationale, and the full threading/watcher story: `DETAILS.md`. Read it before any
 non-trivial work here: editing, planning, reorganizing, or advising.

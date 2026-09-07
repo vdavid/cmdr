@@ -139,9 +139,16 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String], is_director
     let path_buf = PathBuf::from(primary_path);
     let is_icloud_drive = is_in_icloud_drive(&path_buf);
 
-    // Sync status of the primary path only (drives the cloud-action label). Bounded,
-    // because this runs before a context menu pops: a provider that stops answering
-    // must cost the menu a plain label, not a delay the user can feel.
+    // Sync status of the primary path only (drives the eviction pair's label).
+    // Bounded, because this runs before a context menu pops: a provider that stops
+    // answering must cost the menu a plain label, not a delay the user can feel.
+    //
+    // The probe itself is provider-agnostic and answers correctly for third-party
+    // providers (a streamed Google Drive file carries `SF_DATALESS` like any other
+    // stub, verified 2026-09-07 with `stat -f %Sf`). We skip it off iCloud anyway,
+    // because the only thing this value picks between is the eviction pair, and
+    // that pair is iCloud-only. Widening the menu, not this call, is what a
+    // third-party provider would need.
     let sync_status = if is_icloud_drive {
         status_within_blocking(primary_path, MENU_SYNC_STATUS_TIMEOUT)
     } else {

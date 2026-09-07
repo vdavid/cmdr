@@ -6,6 +6,7 @@ use super::{
     ICLOUD_VOLUME_ID, LocationCategory, LocationInfo, VolumeInfo, get_fs_type, get_icon_for_path,
     supports_trash_for_fs_type,
 };
+use crate::file_system::cloud_provider::{CloudProvider, ICLOUD_DRIVE_SUBPATH};
 use std::path::{Path, PathBuf};
 
 /// Get cloud drives (Dropbox, iCloud, Google Drive, etc.).
@@ -21,7 +22,7 @@ pub fn get_cloud_drives() -> Vec<LocationInfo> {
     let home = dirs::home_dir().unwrap_or_default();
 
     // iCloud Drive
-    let icloud_path = home.join("Library/Mobile Documents/com~apple~CloudDocs");
+    let icloud_path = home.join(ICLOUD_DRIVE_SUBPATH);
     if icloud_path.exists() {
         drives.push(cloud_volume_info(
             ICLOUD_VOLUME_ID.to_string(),
@@ -98,63 +99,37 @@ pub(crate) fn resolve_cloud_drive_for_path(path: &str) -> Option<VolumeInfo> {
 /// Pure (no I/O, matches by path prefix only) so it's unit-testable and cheap
 /// to call on every navigation. The I/O wrapper is [`resolve_cloud_drive_for_path`].
 fn match_cloud_drive_root(home: &Path, path: &str) -> Option<(String, String, PathBuf)> {
-    let candidate = Path::new(path);
-
-    // iCloud Drive: a fixed folder under the home directory.
-    let icloud_root = home.join("Library/Mobile Documents/com~apple~CloudDocs");
-    if candidate.starts_with(&icloud_root) {
-        return Some((ICLOUD_VOLUME_ID.to_string(), "iCloud Drive".to_string(), icloud_root));
-    }
-
-    // Other providers: ~/Library/CloudStorage/<provider-dir>/… The first path
-    // component under CloudStorage names the provider; deeper components are
-    // subfolders we want to attribute to that same drive.
-    let cloud_storage_root = home.join("Library/CloudStorage");
-    let rel = candidate.strip_prefix(&cloud_storage_root).ok()?;
-    let provider_dir = rel.components().next()?.as_os_str().to_str()?;
-    let (name, id) = parse_cloud_provider_name(provider_dir);
-    if name.is_empty() {
-        return None;
-    }
-    Some((id, name, cloud_storage_root.join(provider_dir)))
+    let found = crate::file_system::cloud_provider::locate(home, Path::new(path))?;
+    Some((
+        found.provider.volume_id(),
+        found.provider.display_name().to_string(),
+        found.root,
+    ))
 }
 
 /// Parse cloud provider name from CloudStorage directory name.
-/// E.g., "Dropbox" -> "Dropbox", "GoogleDrive-email@gmail.com" -> "Google Drive"
+/// E.g., "Dropbox" -> "Dropbox", "GoogleDrive-email@gmail.com" -> "Google Drive".
+///
+/// A thin adapter over [`CloudProvider`], which is where provider identity lives
+/// (`file_system/cloud_provider.rs`). Returns empty strings for a directory that
+/// names no provider, which is what the switcher treats as "not a cloud drive".
 fn parse_cloud_provider_name(dir_name: &str) -> (String, String) {
-    if dir_name.starts_with("Dropbox") {
-        return ("Dropbox".to_string(), "cloud-dropbox".to_string());
+    match CloudProvider::from_cloud_storage_dir(dir_name) {
+        Some(provider) => (provider.display_name().to_string(), provider.volume_id()),
+        None => (String::new(), String::new()),
     }
-    if dir_name.starts_with("GoogleDrive") {
-        return ("Google Drive".to_string(), "cloud-google-drive".to_string());
-    }
-    if dir_name.starts_with("OneDrive") {
-        // Handle OneDrive-Personal, OneDrive-Business, etc.
-        if dir_name.contains("Business") {
-            return (
-                "OneDrive for Business".to_string(),
-                "cloud-onedrive-business".to_string(),
-            );
-        }
-        return ("OneDrive".to_string(), "cloud-onedrive".to_string());
-    }
-    if dir_name.starts_with("Box") {
-        return ("Box".to_string(), "cloud-box".to_string());
-    }
-    if dir_name.starts_with("pCloud") {
-        return ("pCloud".to_string(), "cloud-pcloud".to_string());
-    }
-    // Generic cloud provider
-    if !dir_name.is_empty() {
-        let clean_name = dir_name.split('-').next().unwrap_or(dir_name);
-        return (clean_name.to_string(), format!("cloud-{}", clean_name.to_lowercase()));
-    }
-    (String::new(), String::new())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `volumes` and `cloud_provider` each name iCloud's volume ID. They have to
+    /// agree, or the switcher's checkmark lands nowhere.
+    #[test]
+    fn icloud_volume_id_agrees_with_the_provider_enum() {
+        assert_eq!(CloudProvider::ICloudDrive.volume_id(), ICLOUD_VOLUME_ID);
+    }
 
     #[test]
     fn test_parse_cloud_provider_name() {

@@ -22,10 +22,6 @@ use std::path::Path;
 #[cfg(target_os = "macos")]
 use std::path::PathBuf;
 
-/// Subdirectory under `$HOME` for iCloud Drive items.
-#[cfg(target_os = "macos")]
-pub const ICLOUD_DRIVE_SUBPATH: &str = "Library/Mobile Documents/com~apple~CloudDocs";
-
 #[cfg(target_os = "macos")]
 fn home_dir() -> Option<PathBuf> {
     std::env::var_os("HOME").map(PathBuf::from)
@@ -33,12 +29,16 @@ fn home_dir() -> Option<PathBuf> {
 
 /// Returns true only for paths inside iCloud Drive, the location where
 /// `FileManager.evictUbiquitousItem` / `startDownloadingUbiquitousItem` work.
+///
+/// Asks the provider whether it supports eviction rather than re-deriving the
+/// path rule, so "which providers can be evicted" is stated in exactly one place
+/// (`cloud_provider.rs`).
 #[cfg(target_os = "macos")]
 pub fn is_in_icloud_drive(path: &Path) -> bool {
     let Some(home) = home_dir() else {
         return false;
     };
-    path.starts_with(home.join(ICLOUD_DRIVE_SUBPATH))
+    super::cloud_provider::locate(&home, path).is_some_and(|found| found.provider.supports_eviction())
 }
 
 #[cfg(target_os = "macos")]
@@ -137,6 +137,7 @@ pub fn request_download(_path: &Path) -> Result<(), String> {
 #[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::*;
+    use crate::file_system::cloud_provider::ICLOUD_DRIVE_SUBPATH;
 
     /// The real home directory, which is what `is_in_icloud_drive` resolves.
     ///
