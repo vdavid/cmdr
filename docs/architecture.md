@@ -265,6 +265,9 @@ All under `apps/desktop/src-tauri/src/`.
   menu carries the "What's new" item (above "Send feedback…")
 - `whats_new/`: Parses the embedded `CHANGELOG.md` into the typed model behind the `get_whats_new` IPC that the frontend
   `whats-new/` popup renders. See `whats_new/CLAUDE.md`
+- `services_menu/`: macOS-only. Tells AppKit that Cmdr can hand files to a service, and answers with the pane's live
+  selection when one is picked, so `Cmdr > Services` lists what Finder lists. See
+  `apps/desktop/src-tauri/src/services_menu/CLAUDE.md`
 - `quick_look/`: macOS-only `QLPreviewPanel` integration (Shift+Space)
 - `drag_image_detection.rs`: macOS method swizzle for drag image size detection
 - `drag_image_swap.rs`: Rich/transparent drag image swap for self-drags

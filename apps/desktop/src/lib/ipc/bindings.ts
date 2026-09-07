@@ -4200,6 +4200,20 @@ export const commands = {
   terminalAppDisplayName: (appChoice: string) =>
     __TAURI_INVOKE<string | null>('terminal_app_display_name', { appChoice }),
   /**
+   *  Pushes what `Cmdr > Services` should act on: the focused pane's selection, or
+   *  its cursor row when nothing is selected.
+   *
+   *  Sync on purpose. It's a value store swap, no I/O and no AppKit, and it runs on
+   *  every selection change, so an `async` hop would cost more than the work.
+   *
+   *  Separate from `update_menu_context` because the two answer different questions
+   *  at different moments. That one is the RIGHT-CLICKED row and every context menu
+   *  overwrites it; this one is what is selected RIGHT NOW, which is what AppKit asks
+   *  for whenever the user opens the Services submenu.
+   */
+  updateServicesSelection: (selection: ServicesSelection) =>
+    __TAURI_INVOKE<void>('update_services_selection', { selection }),
+  /**
    *  Tauri command: returns whether macOS "reduce transparency" is enabled.
    *
    *  `NSWorkspace` accessibility queries are main-thread-only, so we hop to the
@@ -11585,6 +11599,26 @@ export type SeekTargetKind =
   // `target_value` is a fraction of the file (0.0 = start, 1.0 = end).
   | 'fraction'
 
+/**
+ *  Where a pane's selected rows live.
+ *
+ *  Two shapes because Cmdr has two kinds of pane, and the drag-out commands
+ *  already split the same way (`start_selection_drag` against `start_drag_paths`
+ *  in `commands/file_system/drag.rs`).
+ */
+export type SelectedRows =
+  /**
+   *  Frontend indices into a cached listing, resolved on demand. `has_parent`
+   *  says whether index 0 is the synthetic `..` row, exactly as
+   *  `get_paths_at_indices` means it.
+   */
+  | { kind: 'listing'; listingId: string; indices: number[]; includeHidden: boolean; hasParent: boolean }
+  /**
+   *  Paths by value. The search-results snapshot keeps its rows in the frontend
+   *  and has no cached listing to index into.
+   */
+  | { kind: 'paths'; paths: string[] }
+
 // A single recent-selection entry, persisted verbatim.
 export type SelectionHistoryEntry = {
   id: string
@@ -11812,6 +11846,24 @@ export type ServerTarget =
       // Whether Cmdr may re-probe unattended when a request finds it gone.
       autoReconnect: boolean
     }
+/**
+ *  The focused pane's answer to "what would a hand-off to macOS act on?".
+ *
+ *  `rows` is `None` when nothing is selected, which is the whole of Finder's rule:
+ *  with a selection, act on the selection; with none, act on the cursor row. The
+ *  frontend normalizes an empty selection to `None` so "selected nothing" can't be
+ *  spelled two ways here.
+ */
+export type ServicesSelection = {
+  /**
+   *  The cursor row, or empty when the pane has none a service could take: the
+   *  `..` row, an empty folder, or a pane whose rows have no file behind them
+   *  (a phone, an archive's insides, the host list).
+   */
+  cursorPath: string
+  // The selected rows, or `None` when the selection is empty.
+  rows: SelectedRows | null
+}
 
 /**
  *  `drag-out-session-complete`: the session drained (gesture ended AND no

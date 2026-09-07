@@ -729,6 +729,15 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
+            // `Cmdr > Services`: the live selection the system Services menu acts on.
+            // macOS only, mechanism and all (`services_menu/`); no other platform has
+            // a services menu to feed.
+            cfg(target_os = "macos") {
+                typed: [
+                    crate::commands::services_menu::update_services_selection,
+                ]
+                dispatch_only: []
+            }
             // Reduce transparency.
             cfg(target_os = "macos") {
                 typed: [

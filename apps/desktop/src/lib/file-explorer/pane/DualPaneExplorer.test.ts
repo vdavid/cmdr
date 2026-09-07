@@ -69,6 +69,7 @@ vi.mock('$lib/tauri-commands', () => ({
   listen: vi.fn(() => Promise.resolve(() => {})),
   showFileContextMenu: vi.fn(() => Promise.resolve()),
   updateMenuContext: vi.fn(() => Promise.resolve()),
+  updateServicesSelection: vi.fn(() => Promise.resolve()),
   getRestrictedPaths: vi.fn().mockResolvedValue([]),
   checkFullDiskAccessQuiet: vi.fn().mockResolvedValue(true),
   hasFontMetrics: vi.fn().mockResolvedValue(true),
