@@ -1116,8 +1116,10 @@ The servers themselves: `apps/desktop/test/sftp-servers/README.md`.
 
 `cmdr-sftp` is in `guardedIndexCrates`, so nothing here may name `cmdr`, `tauri`, or `tauri-specta`. It is also in
 `surfaceGuardedCrates`, capped at **10 root promises / 3 public modules / 25 items in them** (measured with the check's
-own `countSurface`). That's the shape `cmdr-smb` and `cmdr-archive` carry: no slack, so the first widening is a
-conversation rather than a silent drift, and raising it needs David's explicit say-so.
+own `countSurface`). That's the shape `cmdr-smb` and `cmdr-archive` carry: no slack, so the first widening is a decision
+rather than a silent drift. Raising it is allowed when the wider surface is genuinely the better design, said here and
+in the commit message; ❌ never to get the check green. Same contract as the index crates
+(`../cmdr-index/src/indexing/handle/DETAILS.md` § "The ceiling that keeps this honest").
 
 For scale, the same three buckets: `cmdr-smb` is 15 / 4 / 18, `cmdr-archive` 35 / 4 / 36.
 

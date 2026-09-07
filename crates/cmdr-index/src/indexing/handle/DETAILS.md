@@ -260,10 +260,24 @@ It counts source, not rustdoc JSON, because that output is nightly-only and a ch
 check CI skips. So the count is coarse by design: it has to be stable and it has to MOVE when the surface does, which is
 all a ceiling needs.
 
-**Raising a ceiling is a design decision, not a build fix.** It needs David's explicit say-so, like a `file-length`
-allowlist entry. Shrinking never fails. The same check asserts the other half of the boundary: neither `cmdr-index` nor
-`cmdr-fs` may reach `tauri`, `tauri-specta`, or `cmdr`, verified against the `cargo metadata` graph so the check catches
-a dependency that arrives through a helper crate rather than through the manifest.
+**Raising a ceiling is a design decision, not a build fix.** Reach for the four dispositions first (facade, fold,
+delete, gate) — the ceiling exists because a `pub` here is a promise a host may rely on forever, and "the check failed"
+is never the reason to widen one.
+
+An agent MAY raise a ceiling on its own when the new item is a genuine architectural win: it belongs in this crate, no
+disposition expresses it as well, and a reader would call the wider surface the better design. The bump then owes two
+things — a line in § "The three exceptions, named" (or the bucket's own paragraph) saying what was added and why, and a
+sentence in the commit message, so the widening arrives as a decision rather than as a diff nobody reads. ❌ Never bump
+to make a failing check pass, to avoid a rename, or because a call site would read slightly better; those are the cases
+the ceiling is for. Shrinking never fails.
+
+Worked example of the judgment: `IndexStatusResponse::walk_affects` (`../events/mod.rs`) stayed an ASSOCIATED function
+rather than becoming a root promise. A free `cmdr_index::walk_affects` would have read marginally better at its two call
+sites, and nothing else — while the associated form keeps the predicate glued to the type that owns `walked_roots`, so
+neither can be found without the other. That's a disposition beating a bump on the merits, which is the common case. The
+same check asserts the other half of the boundary: neither `cmdr-index` nor `cmdr-fs` may reach `tauri`, `tauri-specta`,
+or `cmdr`, verified against the `cargo metadata` graph so the check catches a dependency that arrives through a helper
+crate rather than through the manifest.
 
 ## The three exceptions, named
 

@@ -886,7 +886,9 @@ func RunIndexCrateIsolation(ctx *CheckContext) (CheckResult, error) {
 	if len(problems) > 0 {
 		return CheckResult{}, fmt.Errorf(
 			"%d crate-boundary %s:\n  %s\n\nThe audit behind the index's surface is `crates/cmdr-index/src/indexing/handle/DETAILS.md`; "+
-				"raising a ceiling needs David's explicit say-so, like a `file-length` allowlist entry",
+				"try the four dispositions first (facade, fold, delete, gate). Raising a ceiling is allowed when the wider "+
+				"surface is genuinely the better design — record what and why in that audit and in the commit message — but "+
+				"never to get this check green",
 			len(problems), Pluralize(len(problems), "problem", "problems"), strings.Join(problems, "\n  "))
 	}
 
