@@ -62,6 +62,20 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // Internal (FE-owned): whether the "turn on USB debugging" line in an MTP
+    // pane's header has been dismissed. Set once, by the line's own × button.
+    // No UI row; hidden the way the two seen-flags above it are.
+    id: 'behavior.adbHintDismissed',
+    section: ['Behavior', 'Navigation & file ops'],
+    labelKey: 'settings.behavior.adbHintDismissed.label',
+    descriptionKey: 'settings.behavior.adbHintDismissed.description',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+  {
     id: 'fileOperations.allowFileExtensionChanges',
     section: ['Behavior', 'Navigation & file ops'],
     cardKey: 'settings.navigationAndFileOps.card.fileOperations',

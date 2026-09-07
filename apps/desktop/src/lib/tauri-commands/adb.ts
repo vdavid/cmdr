@@ -35,6 +35,19 @@ export async function listAdbDevices(): Promise<AdbDevice[]> {
 }
 
 /**
+ * A name for one connect attempt, minted BEFORE the dial so a Cancel button is
+ * armed while the phone is still showing its "Allow USB debugging?" prompt.
+ * {@link cancelAdbConnect} takes the same one.
+ *
+ * ❗ Its own prefix, ❌ never `newServerAttemptId`'s: ADB files attempts in its
+ * own table (`adb/volume_wiring.rs`), so an id shaped like a server's would be
+ * cancelled against the wrong one and answer a silent `false`.
+ */
+export function newAdbAttemptId(): string {
+  return `adb-connect-${crypto.randomUUID()}`
+}
+
+/**
  * Connects a device and registers it as a volume. Resolves to the volume id
  * (`adb-…`); throws {@link AdbConnectFailure} with the typed reason otherwise.
  *

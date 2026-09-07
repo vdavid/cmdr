@@ -42,9 +42,7 @@ export function deviceRowState(readiness: DeviceReadiness | null | undefined): D
     case 'unavailable':
       return {
         openable: false,
-        tooltip: tString(
-          readiness.reason === 'offline' ? 'adb.readiness.offline' : 'adb.readiness.noPermissions',
-        ),
+        tooltip: tString(readiness.reason === 'offline' ? 'adb.readiness.offline' : 'adb.readiness.noPermissions'),
       }
   }
 }

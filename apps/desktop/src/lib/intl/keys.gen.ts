@@ -2768,6 +2768,8 @@ export type MessageKey =
   | 'settings.askCmdr.wakeDelay.summary'
   | 'settings.askCmdr.wakeToast.description'
   | 'settings.askCmdr.wakeToast.label'
+  | 'settings.behavior.adbHintDismissed.description'
+  | 'settings.behavior.adbHintDismissed.label'
   | 'settings.behavior.doubleClickOnPaneNotificationSeen.description'
   | 'settings.behavior.doubleClickOnPaneNotificationSeen.label'
   | 'settings.behavior.doubleClickPaneNavigatesToParent.description'

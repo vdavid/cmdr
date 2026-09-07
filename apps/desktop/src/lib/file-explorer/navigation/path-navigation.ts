@@ -6,6 +6,7 @@
  * The Rust backend also enforces a 2-second timeout per pathExists call.
  */
 
+import { constructAdbPath, parseAdbPath } from '$lib/adb/adb-path-utils'
 import { pathExists } from '$lib/tauri-commands'
 import { getLastUsedPathForVolume } from '$lib/app-status-store'
 import { DEFAULT_VOLUME_ID } from '$lib/tauri-commands'
@@ -72,5 +73,30 @@ export async function determineNavigationPath(args: DetermineNavigationPathArgs)
   if (lastUsedResult) return lastUsedResult
 
   // Default: ~ for main volume (root), volume path for others
-  return volumeId === DEFAULT_VOLUME_ID ? '~' : volumePath
+  return volumeId === DEFAULT_VOLUME_ID ? '~' : firstLandingOn(volumePath)
 }
+
+/**
+ * Where a volume with nothing remembered about it opens.
+ *
+ * ❗ A phone opens at `/sdcard`, not at `/`: an Android device root is a kernel
+ * filesystem (`acct`, `apex`, `proc`, forty entries a person mostly cannot
+ * read), and the user's own files live one level in. The ROOT is unchanged and
+ * one Backspace away, and the breadcrumb shows it, so nothing is hidden — this
+ * is a landing rule, ❌ never a different volume root.
+ *
+ * ❌ `/data` is deliberately NOT hidden or special-cased anywhere: it answers
+ * `PermissionDenied` on a locked phone and is exactly what someone came for on a
+ * rooted or debuggable one.
+ *
+ * MTP is not folded in: an MTP volume is already rooted at one STORAGE, so its
+ * root is the media tree rather than a kernel filesystem.
+ */
+function firstLandingOn(volumePath: string): string {
+  const parsed = parseAdbPath(volumePath)
+  if (!parsed || parsed.path !== '') return volumePath
+  return constructAdbPath(parsed.serial, ADB_FIRST_LANDING)
+}
+
+/** Where the user's own files are on every Android device. */
+const ADB_FIRST_LANDING = 'sdcard'

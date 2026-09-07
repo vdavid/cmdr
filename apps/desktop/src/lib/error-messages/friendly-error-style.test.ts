@@ -12,12 +12,16 @@
  * `servers.paneState.*` are what a person reads when a connect stopped, which
  * makes them error copy however they're filed, and they reach the screen through
  * a `Record` rather than the friendly-error pipeline this file was built for.
+ * `adb.connect.*` joins them: same surface (`RemoteConnectView`), same rules, and
+ * one more of its own — ❌ never a serial, a diagnostic, or a protocol word.
  */
 
 import { describe, expect, it, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
 import { tString } from '$lib/intl/messages.svelte'
 import { wordConnectRefusal, type ConnectRefusalKind } from '$lib/servers/connect-refusals'
+import { readAdbConnectOutcome } from '$lib/adb/adb-connect-errors'
+import type { AdbConnectOutcomeError } from '$lib/ipc/bindings'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import { getListingErrorMessage, type ListingErrorReason } from './listing-error-messages'
 import { getGitErrorMessage, type FriendlyGitErrorKind } from './git-error-messages'
@@ -213,6 +217,44 @@ const PANE_STATE_KEYS: MessageKey[] = [
   'servers.paneState.hostKeyChangedHint',
 ]
 
+/** The serial a refusal carries, which must never reach the sentence. */
+const ADB_SERIAL = 'R58M12345'
+
+/**
+ * Every variant the backend can answer. The list is spelled out rather than
+ * derived, so a new arm is a compile error here as well as in the `Record` the
+ * reader is built on.
+ */
+const ADB_CONNECT_ERRORS: AdbConnectOutcomeError[] = [
+  { type: 'adbNotInstalled' },
+  { type: 'serverUnreachable' },
+  { type: 'deviceGone', serial: ADB_SERIAL },
+  { type: 'unauthorized', serial: ADB_SERIAL },
+  { type: 'deviceTooOld', serial: ADB_SERIAL },
+  { type: 'timedOut' },
+  { type: 'cancelled' },
+  { type: 'transport' },
+]
+
+/** The rest of the phone copy a person reads on the same surfaces. */
+const ADB_PANE_KEYS: MessageKey[] = [
+  'adb.connect.openSettings',
+  'adb.readiness.waitingForAuthorization',
+  'adb.readiness.offline',
+  'adb.readiness.noPermissions',
+  'adb.hint.text',
+  'adb.hint.how',
+  'adb.disconnectDeviceAriaLabel',
+  'adb.disconnectBusyTooltip',
+]
+
+/**
+ * Backend vocabulary that must never surface in phone copy. "adb" and "sync"
+ * name the daemon and its service; "transport" and "unauthorized" are the wire's
+ * words for things the user experiences as a cable and a prompt.
+ */
+const ADB_LEAK_WORDS = ['adb', 'transport', 'daemon', 'unauthorized', 'socket']
+
 describe('servers copy obeys the writing rules', () => {
   beforeAll(() => {
     _setLocaleForTests('en-US')
@@ -234,6 +276,32 @@ describe('servers copy obeys the writing rules', () => {
     it(`pane state "${key}" is clean`, () => {
       const sentence = tString(key, { name: 'Naspolya' })
       for (const word of [...NEVER_WORDS, ...TRIVIALIZING_WORDS]) {
+        expect(containsWord(sentence, word), `${key} contains "${word}": ${sentence}`).toBe(false)
+      }
+    })
+  }
+
+  for (const error of ADB_CONNECT_ERRORS) {
+    it(`the phone refusal "${error.type}" is clean`, () => {
+      const outcome = readAdbConnectOutcome(error)
+      if (outcome.kind === 'silent') return
+      const sentences =
+        outcome.kind === 'waiting' ? [outcome.reason, outcome.hint] : [outcome.sentence]
+      for (const sentence of sentences) {
+        for (const word of [...NEVER_WORDS, ...TRIVIALIZING_WORDS, ...ADB_LEAK_WORDS]) {
+          expect(containsWord(sentence, word), `adb.connect.${error.type} contains "${word}": ${sentence}`).toBe(false)
+        }
+        // ❗ The serial is the one field these variants carry, and it means
+        // nothing to a reader. A leak would be a diagnostic in a sentence.
+        expect(sentence).not.toContain(ADB_SERIAL)
+      }
+    })
+  }
+
+  for (const key of ADB_PANE_KEYS) {
+    it(`the phone's "${key}" is clean`, () => {
+      const sentence = tString(key, { name: 'Pixel 7' })
+      for (const word of [...NEVER_WORDS, ...TRIVIALIZING_WORDS, ...ADB_LEAK_WORDS]) {
         expect(containsWord(sentence, word), `${key} contains "${word}": ${sentence}`).toBe(false)
       }
     })

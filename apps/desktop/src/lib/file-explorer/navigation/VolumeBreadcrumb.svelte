@@ -62,6 +62,8 @@
     const DISCONNECT_BUSY_TOOLTIP = $derived(tString('fileExplorer.navigation.disconnectBusyTooltip'))
     import { groupByCategory, getIconForVolume } from './volume-grouping'
     import { deviceVolumeLabel } from '$lib/adb/adb-volume-label'
+    import { deviceRowState } from '$lib/adb/device-readiness'
+    import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
     import { createDriveIndexManager, isDriveRow } from './drive-index-manager.svelte'
     import DriveIndexBadge from './DriveIndexBadge.svelte'
@@ -283,6 +285,12 @@
     }
 
     async function handleVolumeSelect(volume: VolumeInfo) {
+        // ❗ A device the daemon lists but can't use (a sleeping phone, a cable
+        // this Mac can't claim) has nothing to open. Its row is greyed and its
+        // reason is its tooltip; activating it does nothing rather than sending
+        // the pane somewhere that answers nothing. ❌ A `waiting_for_authorization`
+        // row is NOT one of these: opening it is what ends the silence.
+        if (!deviceRowState(volume.deviceReadiness).openable) return
         isOpen = false
 
         // Check if this is a favorite (shortcut) or an actual volume
@@ -826,6 +834,11 @@
                     {@const isFavorite = volume.category === 'favorite'}
                     {@const favIndex = isFavorite ? favorites.findIndex((f) => f.id === volume.id) : -1}
                     {@const fsLabel = filesystemLabel(volume)}
+                    <!-- What the DEVICE's presence makes of the row: openable or
+                         greyed, and the sentence that says why. `null` readiness
+                         (every disk, every server) answers "openable, nothing to
+                         say", so this costs non-device rows nothing. -->
+                    {@const rowState = deviceRowState(volume.deviceReadiness)}
                     <!-- svelte-ignore a11y_mouse_events_have_key_events -->
                     <div
                         class="volume-item"
@@ -840,13 +853,16 @@
                         class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex && !submenu.volumeId}
                         class:is-restricted={isRestricted(volume.path)}
                         class:is-saved-place={volume.connectionState === 'saved'}
+                        class:is-unavailable={!rowState.openable}
+                        aria-disabled={rowState.openable ? undefined : 'true'}
                         data-index={allVolumes.indexOf(volume)}
                         data-fav-id={isFavorite ? volume.id : undefined}
-                        use:tooltip={isRestricted(volume.path)
-                            ? RESTRICTED_FOLDER_TOOLTIP
-                            : isFavorite
-                              ? favoriteTooltip(volume)
-                              : ''}
+                        use:tooltip={rowState.tooltip ??
+                            (isRestricted(volume.path)
+                                ? RESTRICTED_FOLDER_TOOLTIP
+                                : isFavorite
+                                  ? favoriteTooltip(volume)
+                                  : '')}
                         onclick={() => {
                             // Favorites navigate from the pointer mouseup handler (it decides
                             // click-vs-drag), so skip the click path for them to avoid a double-fire.
@@ -941,7 +957,28 @@
                                 <ImageIndexDriveBadge volumeId={volume.id} volumeState={rowImageState} />
                             {/if}
                         {/if}
-                        {#if isServerPlaceRow(volume) && showsDisconnect(volume.connectionState)}
+                        {#if isAdbVolumeId(volume.id)}
+                            <!-- ❗ A phone says Disconnect, ❌ never Eject: `adb` has
+                                 no per-client detach, so nothing is made safe to
+                                 unplug — the device stays on the cable and the next
+                                 navigation re-dials it. The ACTION is the ordinary
+                                 eject path, which for ADB is `DeviceDisconnect`;
+                                 only the word and the icon differ. MTP keeps Eject,
+                                 which it earns by closing the device session. -->
+                            {@const deviceDisconnectLabel = isVolumeBusy(volume.id)
+                                ? tString('adb.disconnectBusyTooltip')
+                                : tString('adb.disconnectDeviceAriaLabel', { name: volume.name })}
+                            <button
+                                type="button"
+                                class="eject-button"
+                                aria-label={deviceDisconnectLabel}
+                                disabled={isVolumeBusy(volume.id)}
+                                use:tooltip={deviceDisconnectLabel}
+                                onclick={(e: MouseEvent) => { void handleEjectClick(volume, e) }}
+                            >
+                                <Icon name="unplug" size={14} aria-hidden="true" />
+                            </button>
+                        {:else if isServerPlaceRow(volume) && showsDisconnect(volume.connectionState)}
                             <!-- A server has nothing to unplug, so its slot says Disconnect
                                  (D6). The place stays saved; only the session goes. -->
                             {@const disconnectLabel = isVolumeBusy(volume.id)
@@ -1715,6 +1752,13 @@
 
     .breadcrumb-popup-item:hover {
         background-color: var(--color-accent-subtle);
+    }
+
+    /* A device the daemon lists but cannot use: present, explained by its
+       tooltip, and not openable. Same weight as a `saved` place's greying, so a
+       row that can't be entered reads the same wherever it comes from. */
+    .volume-item.is-unavailable {
+        opacity: 0.5;
     }
 
     /* ── Eject button ────────────────────────────────────────────────

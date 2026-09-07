@@ -169,6 +169,55 @@ describe('determineNavigationPath', () => {
     expect(result).toBe('~')
   })
 
+  it("lands a phone's first navigation on /sdcard, where the user's own files are", async () => {
+    // ❗ The device ROOT is a kernel filesystem: forty entries a person mostly
+    // cannot read. Backspace still goes there, so nothing is hidden.
+    mockPathExists.mockResolvedValue(false)
+    mockGetLastUsedPath.mockResolvedValue(undefined)
+
+    const resultPromise = determineNavigationPath({
+      volumeId: 'adb-pixel-7-a1b2c3d',
+      volumePath: 'adb://R58M12345',
+      targetPath: 'adb://R58M12345',
+      otherPane: defaultOtherPane,
+    })
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(await resultPromise).toBe('adb://R58M12345/sdcard')
+  })
+
+  it('leaves a remembered path on a phone alone, /sdcard or not', async () => {
+    mockGetLastUsedPath.mockResolvedValue('adb://R58M12345/data/local/tmp')
+    mockPathExists.mockImplementation((p: string): Promise<boolean> =>
+      Promise.resolve(p === 'adb://R58M12345/data/local/tmp'),
+    )
+
+    const resultPromise = determineNavigationPath({
+      volumeId: 'adb-pixel-7-a1b2c3d',
+      volumePath: 'adb://R58M12345',
+      targetPath: 'adb://R58M12345',
+      otherPane: defaultOtherPane,
+    })
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(await resultPromise).toBe('adb://R58M12345/data/local/tmp')
+  })
+
+  it('leaves an MTP device alone: its root is the storage, not a kernel filesystem', async () => {
+    mockPathExists.mockResolvedValue(false)
+    mockGetLastUsedPath.mockResolvedValue(undefined)
+
+    const resultPromise = determineNavigationPath({
+      volumeId: 'mtp-pixel:65537',
+      volumePath: 'mtp://pixel/65537',
+      targetPath: 'mtp://pixel/65537',
+      otherPane: defaultOtherPane,
+    })
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(await resultPromise).toBe('mtp://pixel/65537')
+  })
+
   it('returns volumePath when not default volume and no better option', async () => {
     mockPathExists.mockResolvedValue(false)
     mockGetLastUsedPath.mockResolvedValue(undefined)
