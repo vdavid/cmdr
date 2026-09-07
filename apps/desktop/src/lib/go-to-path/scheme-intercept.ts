@@ -92,14 +92,22 @@ export function previewSchemeInput(intent: SchemeIntent): string {
  * ❗ Only the jump calls this. Opening a modal from the debounced preview would
  * put a sheet on screen while someone is still typing the address for it.
  */
-export async function actOnSchemeInput(intent: SchemeIntent): Promise<GoToPathOutcome> {
+export async function actOnSchemeInput(
+  intent: SchemeIntent,
+  deps: {
+    /**
+     * Where an SMB address lands. ❗ Go to path is a NAVIGATION command, so it
+     * has to put the person somewhere: an SMB connect is a share MOUNT rather
+     * than a session, so there is no volume to go to and the host's places list
+     * is the destination. That is where ⌘K's own hand-off goes
+     * (`command-handlers/servers-handlers.ts`), and two entry points into one
+     * sheet ending differently for one input is what this exists to prevent.
+     */
+    onSmbHandOff: () => void
+  },
+): Promise<GoToPathOutcome> {
   if (intent.kind === 'place') return { kind: 'directory', path: intent.path }
-  await openAddServerSheet({
-    prefill: intent.address,
-    // Nothing to navigate to: an SMB add lands in the hub's list, and Go to path
-    // has already done its part by opening the sheet on the address.
-    onSmbHandOff: () => {},
-  })
+  await openAddServerSheet({ prefill: intent.address, onSmbHandOff: deps.onSmbHandOff })
   return { kind: 'handed_off' }
 }
 

@@ -112,7 +112,9 @@ describe('previewSchemeInput: what the box says under it', () => {
 
 describe('actOnSchemeInput: what the jump does', () => {
   it('reports a place as a directory, so the caller navigates the way it always has', async () => {
-    expect(await actOnSchemeInput({ kind: 'place', path: APP_ROOT, label: 'Naspolya' })).toEqual({
+    expect(
+      await actOnSchemeInput({ kind: 'place', path: APP_ROOT, label: 'Naspolya' }, { onSmbHandOff: () => {} }),
+    ).toEqual({
       kind: 'directory',
       path: APP_ROOT,
     })
@@ -120,7 +122,7 @@ describe('actOnSchemeInput: what the jump does', () => {
   })
 
   it('opens the sheet on the address, and answers that it handed over', async () => {
-    const acting = actOnSchemeInput({ kind: 'add', address: 'https://cloud.example.com' })
+    const acting = actOnSchemeInput({ kind: 'add', address: 'https://cloud.example.com' }, { onSmbHandOff: () => {} })
     for (let i = 0; i < 20 && !currentSignInRequest(); i++) {
       await new Promise((resolve) => setTimeout(resolve, 0))
     }
@@ -128,6 +130,37 @@ describe('actOnSchemeInput: what the jump does', () => {
     expect(request).toMatchObject({ mode: 'add', prefill: 'https://cloud.example.com' })
 
     closeSignInSheet({ kind: 'cancelled' })
+    expect(await acting).toEqual({ kind: 'handed_off' })
+  })
+
+  /**
+   * ❗ Go to path is a NAVIGATION command, so an SMB address has to land the
+   * person somewhere. Its connect is a share MOUNT rather than a session, so
+   * there is no volume to navigate to and the host's places list is the
+   * destination — which is exactly where ⌘K's own hand-off goes. Two entry points
+   * into one sheet ending differently for one input is the bug.
+   */
+  it('sends an SMB address on to the hub, the same place ⌘K does', async () => {
+    ipc.mock('connect_to_server', () => ({ host: { id: 'h1', name: 'naspolya' }, sharePath: null }))
+    let handedOver = 0
+    const acting = actOnSchemeInput(
+      { kind: 'add', address: 'smb://naspolya' },
+      {
+        onSmbHandOff: () => {
+          handedOver++
+        },
+      },
+    )
+    for (let i = 0; i < 20 && !currentSignInRequest(); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+    const request = currentSignInRequest()
+    if (request?.mode !== 'add') throw new Error('expected the add sheet')
+
+    expect(await request.attempt({ mode: 'add_smb', address: 'naspolya' })).toEqual({ kind: 'handed_off' })
+    expect(handedOver).toBe(1)
+
+    closeSignInSheet({ kind: 'handed_off' })
     expect(await acting).toEqual({ kind: 'handed_off' })
   })
 })

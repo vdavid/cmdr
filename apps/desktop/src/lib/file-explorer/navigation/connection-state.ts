@@ -48,10 +48,21 @@ export function isLiveSession(state: MaybeState): boolean {
 /**
  * Whether the row's eject slot shows Disconnect rather than Eject.
  *
- * `disconnected` is IN: the volume is still registered and disconnecting is what
- * takes it off the list. ❌ `saved` is out, and so are the two sign-in states:
- * there is no session to end.
+ * The real question is "is a volume REGISTERED under this id", because that is
+ * what `disconnect_place` takes away. `disconnected` is IN for that reason, and
+ * so are BOTH sign-in states: a session that stopped for a missing credential or
+ * a host key that no longer matches is still a session to drop, and refusing them
+ * left a reachable dead end — a share that fell to `needs_sign_in` could be
+ * signed into or forgotten and never simply dropped. The changed-key banner's own
+ * Disconnect is the documented way OUT of a key that stopped matching.
+ *
+ * ❌ `saved` is out: a greyed row was never connected, so the word would promise
+ * an action with no subject. ❌ `os_mount` is out too, and that one is about the
+ * WORD rather than the subject: an OS mount says Eject, and `isLiveSession` is
+ * what puts a control on it.
  */
 export function showsDisconnect(state: MaybeState): boolean {
-  return state === 'direct' || state === 'disconnected'
+  return (
+    state === 'direct' || state === 'disconnected' || state === 'needs_sign_in' || state === 'needs_host_key_approval'
+  )
 }

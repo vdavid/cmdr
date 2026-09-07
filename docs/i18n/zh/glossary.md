@@ -2294,17 +2294,17 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 
 ## 重试总时长、主机密钥标题，以及 Android 的“允许”按钮
 
-- **`{seconds}`/`{minutes}` 现在是带两个占位符的 ICU
-  复数块**（`servers.paneState.retryTotalSeconds`、`.retryTotalMinutes`）：`{seconds}` 只负责选分支，用户读到的是
-  `{secondsText}`，也就是已按语言格式化好的数字。中文只有 `other` 一个类别（CLDR，§
+- **`{seconds}`/`{minutes}`
+  现在是带两个占位符的 ICU 复数块**（`servers.paneState.retryTotalSeconds`、`.retryTotalMinutes`）：`{seconds}`
+  只负责选分支，用户读到的是 `{secondsText}`，也就是已按语言格式化好的数字。中文只有 `other` 一个类别（CLDR，§
   style.md），所以每块只写一个分支，但外层的 `{…, plural, other {…}}` 壳必须保留，否则占位符与英文对不上 · `high`。
 - **两个值都是
   `servers.paneState.retryKeepsTrying`（`会持续尝试，总共 {duration}。`）的句子零件**，所以不带介词也不带句号；`秒`、`分钟`
   沿用 `indexing.eta.*` 的写法，占位符和汉字之间留一个半角空格 · `high`。
 - **`Cmdr won't connect to {name}` → `Cmdr 不会连接到 {name}`** · 「不会连接到」一字不差沿用兄弟键
-  `servers.refusal.hostKeyRevoked`（`Cmdr 不会连接到它。`）。英文从 “stopped connecting”
-  改成了持续性的拒绝，所以去掉「已停止」，那读起来像是中断了一次尝试 · `high`。
+  `servers.refusal.hostKeyRevoked`（`Cmdr 不会连接到它。`）。英文从 “stopped
+  connecting”改成了持续性的拒绝，所以去掉「已停止」，那读起来像是中断了一次尝试 · `high`。
 - **`Allow` 是 Android 自己的按钮 → `“允许”`**，一字不差取自
-  `adb.connect.unauthorized`（`看一下你的手机，然后点按“允许”。`），连引号和动词「点按」一起沿用，这样用户在屏幕上能对上同一个词
-  · `high`。
+  `adb.connect.unauthorized`（`看一下你的手机，然后点按“允许”。`），连引号和动词「点按」一起沿用，这样用户在屏幕上能对上同一个词·
+  `high`。
 - 这台机器上没有参考语料库（主克隆里也没有 `_ignored/i18n/`），所以这条决定依据的是已发布的目录和本词汇表。

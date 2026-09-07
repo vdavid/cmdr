@@ -60,9 +60,44 @@ describe('isVolumeEjectable', () => {
     expect(isVolumeEjectable(makeVolume({ connectionState: 'saved' }))).toBe(false)
   })
 
-  it('returns false for a server waiting on a sign-in or a host key', () => {
-    expect(isVolumeEjectable(makeVolume({ connectionState: 'needs_sign_in' }))).toBe(false)
-    expect(isVolumeEjectable(makeVolume({ connectionState: 'needs_host_key_approval' }))).toBe(false)
+  /**
+   * ❗ Both sign-in states mean a REGISTERED volume whose session stopped, which
+   * is a thing to drop. Refusing them left a reachable dead end: an SMB share
+   * (whose `isEjectable` is `false` from NSURL) or an SFTP place that fell to
+   * `needs_sign_in` could be signed into or forgotten and never simply dropped,
+   * and the changed-key banner's own Disconnect is the documented way OUT of a
+   * host key that stopped matching.
+   */
+  it('returns true for a server waiting on a sign-in or a host key', () => {
+    expect(isVolumeEjectable(makeVolume({ connectionState: 'needs_sign_in' }))).toBe(true)
+    expect(isVolumeEjectable(makeVolume({ connectionState: 'needs_host_key_approval' }))).toBe(true)
+  })
+
+  /**
+   * ❗ A phone's row carries `isEjectable: true` unconditionally
+   * (`device_volumes.rs`) and its `connectionState` is ALWAYS `null` (readiness
+   * is presence, never session health), so the plain predicate offered a live
+   * Disconnect on every device row — including a greyed `unavailable` one that
+   * cannot even be opened. Readiness is what answers for a device.
+   */
+  it('offers a phone a Disconnect only once it is ready', () => {
+    const phone = (readiness: VolumeInfo['deviceReadiness']) =>
+      makeVolume({
+        id: 'adb-pixel-7-a1b2c3d',
+        path: 'adb://R58M12345',
+        category: 'mobile_device',
+        isEjectable: true,
+        deviceReadiness: readiness,
+      })
+    expect(isVolumeEjectable(phone({ kind: 'ready' }))).toBe(true)
+    expect(isVolumeEjectable(phone({ kind: 'waiting_for_authorization' }))).toBe(false)
+    expect(isVolumeEjectable(phone({ kind: 'unavailable', reason: 'offline' }))).toBe(false)
+  })
+
+  it('leaves an MTP device alone, which earns its Eject by closing the session', () => {
+    // MTP rows carry no `deviceReadiness` and a real `isEjectable`, so nothing
+    // about the device gate applies to them.
+    expect(isVolumeEjectable(makeVolume({ id: 'mtp-336592896:65537', isEjectable: true }))).toBe(true)
   })
 
   it('returns false for cloud drives (iCloud / Dropbox / etc.)', () => {

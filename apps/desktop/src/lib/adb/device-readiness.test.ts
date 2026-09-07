@@ -26,7 +26,9 @@ describe('deviceRowState', () => {
   it('keeps a phone waiting for its Allow tap openable, and says what it is waiting for', () => {
     expect(deviceRowState({ kind: 'waiting_for_authorization' })).toEqual({
       openable: true,
-      tooltip: 'Waiting for you to allow USB debugging',
+      // ❗ Names WHERE the user acts and WHAT they press, ❌ not the Android
+      // feature: someone staring at a greyed-looking row needs the next move.
+      tooltip: 'Waiting for you to tap Allow on your phone',
     })
   })
 

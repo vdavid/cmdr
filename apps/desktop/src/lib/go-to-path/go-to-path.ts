@@ -64,7 +64,14 @@ export async function goToPath(explorer: ExplorerAPI | undefined, input: string)
   // saved place, or opens the sheet on the address.
   const intent = await readSchemeInput(input)
   if (intent) {
-    const outcome = await actOnSchemeInput(intent)
+    const outcome = await actOnSchemeInput(intent, {
+      // ❗ The SAME destination ⌘K's hand-off uses. An SMB connect is a share
+      // MOUNT, so there is no volume to navigate to, and a navigation command
+      // that leaves the pane where it was has not navigated.
+      onSmbHandOff: () => {
+        explorer.showServersInFocusedPane()
+      },
+    })
     if (outcome.kind !== 'directory') return outcome
     const location = await resolveLocationOrToast(outcome.path)
     if (!location) return outcome
