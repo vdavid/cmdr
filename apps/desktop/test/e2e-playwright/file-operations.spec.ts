@@ -418,6 +418,19 @@ test.describe('Create folder round-trip', () => {
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
 
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} input.text-field-control`, 3000)
+
+    // The name box owns focus the moment the dialog opens, so F7 is followed by
+    // typing, never by a click into the field (#84).
+    await expect
+      .poll(
+        () =>
+          tauriPage.evaluate<boolean>(
+            `document.activeElement === document.querySelector('${MKDIR_DIALOG} input.text-field-control')`,
+          ),
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
+
     await tauriPage.fill(`${MKDIR_DIALOG} input.text-field-control`, folderName)
     // Wait for the OK button to enable in response to the typed name
     await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()

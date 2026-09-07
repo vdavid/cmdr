@@ -31,8 +31,8 @@
         'aria-describedby'?: string
         /**
          * Focus this button after mount. Uses `requestAnimationFrame` so it lands
-         * after a parent `ModalDialog`'s post-`tick()` overlay focus, which would
-         * otherwise win and steal focus to the scrim.
+         * after a parent `ModalDialog` has settled its own mount-time focus (the
+         * dialog leaves the scrim unfocused once something inside owns focus).
          */
         autoFocus?: boolean
         children: Snippet

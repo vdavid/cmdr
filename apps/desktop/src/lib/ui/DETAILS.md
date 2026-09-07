@@ -207,6 +207,13 @@ carries `use:trapFocus={{ onEscape: onclose }}` (see § "Focus trapping" below),
 containment and the Escape fallback for free. `trapFocus` deliberately doesn't move focus on mount, so the scrim KEEPS
 focus for the dialog's whole life unless a control takes it.
 
+**That mount focus is conditional: the scrim skips it when focus already sits inside the overlay.** Child components
+mount BEFORE their parent, so a field that autofocuses in its own `onMount` (`NewEntryNameField`, in the New folder and
+New file dialogs) resolves its post-`tick()` `.focus()` first, and an unconditional scrim focus would take it straight
+back — the F7 dialog opened with a dead name box that needed a click before typing (#84). A dialog that focuses a
+control from ITS own `onMount` (`GoToPathDialog`) runs AFTER the scrim and was never affected; `Button`'s `autoFocus`
+lands later still, on a `requestAnimationFrame`.
+
 **Gotcha: `.modal-overlay:focus` must keep `outline: none`.** The scrim is `inset: var(--titlebar-height) 0 0 0`, so
 three of its four edges sit outside the viewport and only the TOP ring edge is visible: the UA focus ring reads as a
 mystery 3px line spanning the whole window, tucked under the title bar (~2px above the content, the ring's offset). It
