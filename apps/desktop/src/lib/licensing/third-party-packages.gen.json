@@ -4317,7 +4317,7 @@
     },
     {
       "name": "wnaf",
-      "version": "0.14.0",
+      "version": "0.14.1",
       "license": "Apache-2.0 OR MIT",
       "url": "https://github.com/RustCrypto/elliptic-curves"
     },

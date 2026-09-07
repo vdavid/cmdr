@@ -9,8 +9,8 @@
 //! `volume` — the same one-level-shallower rule every other `*_tests.rs` in
 //! this directory follows.
 
-use super::*;
 use super::super::finalize::finalize_safe_replace;
+use super::*;
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use std::sync::Arc;

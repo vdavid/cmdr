@@ -292,4 +292,3 @@ pub(super) fn handle_dry_run(
     events.emit_dry_run_complete(result);
     Ok(true)
 }
-

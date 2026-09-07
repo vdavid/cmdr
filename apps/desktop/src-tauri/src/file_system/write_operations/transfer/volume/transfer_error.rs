@@ -161,11 +161,7 @@ impl PathedVolumeError {
     /// find on their own, so the DESTINATION is what they have to be pointed at
     /// (`at_destination`). Everything else is an ordinary transfer failure and
     /// gets the source item the walker was on, which is what `at()` is for.
-    pub(super) fn at_source_or_rescued_dest(
-        failure: FinalizeFailure,
-        source_path: &Path,
-        dest_path: &Path,
-    ) -> Self {
+    pub(super) fn at_source_or_rescued_dest(failure: FinalizeFailure, source_path: &Path, dest_path: &Path) -> Self {
         if failure.new_data_at.is_some() {
             return Self::at_destination(failure, dest_path);
         }

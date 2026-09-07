@@ -69,7 +69,7 @@ pub(super) async fn size_of_whatever_is_at(
 /// The caller writes streaming bytes to `write_path`. When `replace_after_write`
 /// is `Some(orig)`, `write_path` is a temp sibling on the destination volume:
 /// after the streaming write fully succeeds, the caller must call
-/// [`finalize_safe_replace`] to delete `orig` (which survived the whole write)
+/// [`super::finalize::finalize_safe_replace`] to delete `orig` (which survived the whole write)
 /// and rename `write_path` → `orig`. When `replace_after_write` is `None`,
 /// `write_path` is the final destination and the caller writes directly.
 #[derive(Debug)]

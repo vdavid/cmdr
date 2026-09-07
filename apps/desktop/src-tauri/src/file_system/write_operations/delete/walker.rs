@@ -8,8 +8,8 @@ use std::time::{Duration, Instant};
 use super::super::error_classification::IoResultExt;
 use super::super::event_sinks::OperationEventSink;
 use super::super::scan::scan_sources;
-use super::super::scan_source_tracker::{FileVerdict, SourceItemTracker};
 use super::super::scan_cache::take_cached_scan_result;
+use super::super::scan_source_tracker::{FileVerdict, SourceItemTracker};
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::transfer::volume::{PathRole, map_volume_error};
 use super::super::types::{

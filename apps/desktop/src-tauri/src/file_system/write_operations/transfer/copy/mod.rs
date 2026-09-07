@@ -17,9 +17,9 @@ use super::super::durability::flush_created_destinations;
 use super::super::event_sinks::OperationEventSink;
 use super::super::ledger::CopyTransaction;
 use super::super::scan::scan_sources;
+use super::super::scan_cache::take_cached_scan_result;
 use super::super::scan_dry_run::handle_dry_run;
 use super::super::scan_source_tracker::{FileVerdict, SourceItemTracker, top_level_source_path};
-use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::super::types::{
     CancelRollback, ConflictResolution, SourceItemOutcome, TopLevelSkipped, WriteCancelledEvent, WriteCompleteEvent,
