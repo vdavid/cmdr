@@ -2370,3 +2370,104 @@ Wortlaut-Entscheidungen:
   `servers.hub.colStatus`) und `settings.section.adb` („Android (ADB)“, Produktname plus Abkürzung aus Googles
   Sprachhoheit, wie schon `adb.volumeLabelWithSuffix`). Alle übrigen 25 Werte weichen vom Englischen ab.
 - Kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt; `menu.network.*` ist ohnehin eine RAW-Familie.
+
+## Das Telefon über ADB öffnen: Bereichsmeldungen, Zeilen-Tooltips und der Hinweisstreifen (`adb.*`, `settings.behavior.adbHintDismissed.*`)
+
+19 Schlüssel für die drei neuen ADB-Flächen: die Vollbild-Meldung im Bereich, wenn ein Android-Telefon nicht aufgeht,
+die Schwebehilfen auf der Telefonzeile in der Volume-Auswahl und die stille Hinweiszeile über einem MTP-Bereich. Der
+Referenz-Stapel fehlt auf dieser Maschine, also kommen die Apple-Belege direkt aus den installierten Bundles (Rezept:
+`../reference-pile/how-to-mine.md` § No pile on this machine?; alles auf **macOS 26.6.2, Build 25G83, 2026-09-07**
+geprüft). Für Androids eigene Wörter ist Google die Instanz, nicht Apple.
+
+Begriffe:
+
+- **`USB debugging` → `USB-Debugging`** · jetzt erstquellig belegt statt aus Googles Doku: AOSP
+  `frameworks/base/packages/SettingsLib/res/values-de/strings.xml`, `enable_adb` = „USB-Debugging“ (das Label des
+  Schalters in den Entwickleroptionen), `adb_warning_title` = „USB-Debugging zulassen?“; dieselbe Schreibweise in
+  SystemUI `usb_debugging_title` (abgerufen 2026-09-07, Zweig `main`) · `high`. Bestätigt die Zeile in `style.md` §
+  Terminology; der Nutzer findet den Schalter am Telefon wortgleich wieder.
+- **`Allow` (die Taste auf Androids eigenem Dialog) → `Erlauben`** · AOSP
+  `frameworks/base/packages/SystemUI/res/values-de/strings.xml`, `usb_debugging_allow` = „Erlauben“ (abgerufen
+  2026-09-07) · `high`. ❌ Nicht `Zulassen`: das ist die WLAN-Variante derselben Datei (`wifi_debugging_allow`), und der
+  Nutzer steckt am Kabel. Deckt sich mit der Katalogregel `allow → erlauben` (§ Wörter, die auseinandergelaufen sind).
+- **`tap` → `tippen auf`, mit dem Tastennamen in `„…“`** · AOSP `de` schreibt genau so („Tippe auf „Übersicht““,
+  Settings; „Tippe zum Fortfahren auf das Symbol „Entsperren““, SystemUI) · `high`. Kein Widerspruch zur Glossarzeile ❌
+  `tippen` in § Der Wiederverbindungs-Zyklus: die verbietet `tippen` fürs AUSFÜLLEN eines Felds (dort `eingeben`), hier
+  ist es die Fingergeste auf einem Touchscreen, für die Android selbst `tippen` sagt.
+- **`Android platform tools` → `Android Platform Tools`** · unverändert aus `style.md` § Terminology and glossary
+  (M4-Runde), developer.android.com/tools/adb?hl=de); `adb.connect.adbNotInstalled` übernimmt den Namen zeichengleich
+  von `settings.fileOperations.adbEnabled.description`.
+- **`the Android tools` (generisch, nicht der Produktname) → `die Android-Tools`** · schon im Katalog („Wenn du keine
+  Android-Tools installiert hast“, `settings.fileOperations.adbEnabled.description`) und die Glossarzeile
+  `tooling → Tools` · `high`. Der Produktname steht groß und ohne Bindestrich, das generische Wort klein mit: so bleiben
+  die beiden Schlüssel auseinanderzuhalten.
+- **`USB port` → `USB-Anschluss`, `another port` → `ein anderer Anschluss`** · macOS `de` durchweg: AirPort Utility
+  `SetupRecommendations.loctable` („USB port“ → „USB-Anschluss“), `AirPortSettings.loctable` („… an den USB-Anschluss
+  der Basisstation anschließt“), Mobile Device `Localizable.loctable` („… an einen USB-2.0-Anschluss … anschließen“) ·
+  `high`. ❌ Nicht `Port`: das reserviert macOS `de` für die NETZWERK-Portnummer („Wähle einen anderen Port“, derselbe
+  `AirPortSettings.loctable`).
+- **`cable` → `Kabel`, das Verb dazu `anschließen`** · macOS `de` `Localizable.loctable` („Schließe dieses iPad mit
+  einem USB-Kabel an …“, „Trenne das USB-Kabel von der Maus …“) · `high`. `reseat the cable` →
+  `schließe das Kabel neu an`: `tentative` für das `neu`, weil macOS `de` den Vorgang nur zweiteilig kennt („Trenne das
+  Kabel … Stecke das Ladegerät aus“) und die Schwebehilfe für zwei Sätze keinen Platz hat.
+- **`isn''t responding` → `reagiert nicht`** · macOS `de` HomeKit `HFLocalizable.loctable` („Your vacuum is not
+  responding.“ → „Der Staubsauger reagiert nicht.“, also GERÄT + `reagiert nicht`), loginwindow und LaunchErrors ebenso
+  · `high`. Die Variante `antwortet nicht` benutzt Apple fürs NETZ (NetAuth: „Der Server „%@“ … antwortet nicht.“), und
+  genau die trägt schon `servers.refusal.*`; das Telefon am Kabel nimmt daher `reagiert nicht`.
+- **`wake its screen` → `aktiviere seinen Bildschirm`** · Apples Verb fürs Aufwecken eines Geräts ist `aktivieren`:
+  Intents `Localizable.loctable` („Wake on Wrist Raise“ → „Durch Armheben aktivieren“), BatteryUI („Wake for network
+  access“ → „Ruhezustand … beenden“) · `high` fürs Verb. ❌ Kein `aufwecken`: macOS `de` spart es für den Schlaf eines
+  Menschen auf (Health, „bis du aufwachst“).
+- **`too old` → `zu alt`, im Apple-Satzbau `… kann nicht …, da seine … zu alt ist`** · Mobile Device
+  `Localizable.loctable` („The iPhone „%1$S“ cannot be synced because its software is too old.“ → „Das iPhone „%1$S“
+  kann nicht synchronisiert werden, da seine Software zu alt ist.“) · `high`. Deshalb steht in
+  `adb.connect.deviceTooOld` Cmdr vorn und der Grund hinten, obwohl das Englische umgekehrt baut: der Nebensatz mit `da`
+  ist die deutsche Normalform und vermeidet ein Genitiv-`{…}`-Konstrukt.
+- **`browse` (ein Telefon durchsehen) → `durchsehen`** · schon gesetzt in `settings.summary.adb` („Ein Android-Telefon
+  durchsehen, auf dem USB-Debugging eingeschaltet ist.“) · `high`.
+- **`phone` → `Telefon`** · das Katalogwort (§ Server fixieren und lösen …, `Cmdr achtet auf Telefone.`;
+  `settings.fileOperations.adbEnabled.description`: „eines Android-Telefons“) · `high`. `device` bleibt `Gerät`, und die
+  beiden Wörter folgen dem Englischen Schlüssel für Schlüssel: `adb.disconnectBusyTooltip` sagt `Gerät`, weil das
+  Englische `device` sagt.
+
+Wortlaut-Entscheidungen:
+
+- **`Disconnect {name}` → `Verbindung zu {name} trennen`, zeichengleich zum ausgelieferten
+  `fileExplorer.navigation.disconnectPlaceAriaLabel`** · beide Schlüssel tragen denselben englischen Wert, also muss
+  `i18n-terms` sie gleich sehen. Der `@key` begründet `Disconnect` statt `Eject` damit, dass nichts sicher zum Abziehen
+  gemacht wird; im Deutschen trägt `trennen` (Glossar: `disconnect → trennen`) genau das, während `auswerfen` das
+  Volume-Wort bliebe.
+- **`Can''t disconnect while operations are in progress on this device` →
+  `Trennen nicht möglich, während auf diesem Gerät Vorgänge laufen`** · Rahmen wortgleich aus dem Geschwisterschlüssel
+  `fileExplorer.navigation.disconnectBusyTooltip` („… während auf diesem Server Vorgänge laufen“); nur `Server` wird zu
+  `Gerät`. Kein Schlusspunkt, wie im Englischen.
+- **`Dismiss` (das × auf der Hinweiszeile) → `Ausblenden`** · der englische `@key` sagt selbst „hides that line for
+  good“, und die Glossarregel § Wörter, die auseinandergelaufen sind ordnet einer ZEILE `Ausblenden` zu (`Schließen`
+  schließt ein Fenster oder einen Toast). Die Zeile verschwindet dauerhaft, `Ausblenden` sagt genau das, und das
+  Einstellungs-Flag daneben heißt entsprechend `ausgeblendet`. Der nächste Nachbar auf einer Bereichsfläche,
+  `fileExplorer.network.osMountFallback.closeTooltip`, sagt dagegen `Schließen`: dessen Meldung kommt beim nächsten Mal
+  wieder, unsere nie. Die Grenze läuft also nicht an der Fläche, sondern daran, ob etwas geschlossen oder für immer
+  verborgen wird.
+- **`Waiting for you to allow USB debugging` → `Warten darauf, dass du USB-Debugging erlaubst`** · Apples Wartefragment
+  ist nominal-infinitivisch („Warten auf das Laufwerk …“, `style.md` § Notes), und das trägt hier den `dass`-Satz, ohne
+  ein Subjekt erfinden zu müssen. Keine Auslassungspunkte: das Englische hat keine, und die beiden
+  Geschwister-Schwebehilfen auf derselben Zeile sind ebenfalls punktlose Zustandssätze.
+- **`Want the whole filesystem?` → `Möchtest du das gesamte Dateisystem sehen?`** · das Verb muss dazu, weil ein
+  deutscher Fragesatz ohne Prädikat abgehackt klingt; `das gesamte Dateisystem` steht wortgleich in
+  `settings.fileOperations.adbEnabled.description`. `Turn on USB debugging.` → `Schalte USB-Debugging ein.`, weil der
+  Katalog `ein-/ausschalten` für Schalter führt („auf dem USB-Debugging eingeschaltet ist“); Androids eigenes
+  `aktivieren` bleibt Androids Wort für seinen eigenen Dialog.
+- **`How` → `Wie geht das?`** · der `@key` verlangt „the way a person asks ‚how do I do that?‘“; ein deutsches `Wie`
+  allein ist als Linktext kein Satz und liest sich wie ein abgeschnittenes Wort. Drei Wörter statt einem, dafür die
+  gemeinte Frage.
+- **`Check your phone and tap Allow.` → `Sieh auf dein Telefon und tippe auf „Erlauben“.`** · zwei Imperative wie im
+  Englischen; `Sieh auf …` heißt „schau hin“, was hier gemeint ist, während Apples `Überprüfe dein Gerät …` (MIDI-CI,
+  `Localizable.loctable`) das Nachprüfen einer Einstellung meint.
+- **`Cmdr opens your phone as soon as you do.` → `Sobald du das tust, öffnet Cmdr dein Telefon.`** · der Nebensatz nach
+  vorn, weil das englische Pro-Verb `do` im Deutschen kein Gegenstück am Satzende hat. Bleibt Zusicherung, keine
+  Aufforderung.
+- **Das Einstellungspaar folgt seinem Geschwister** (`settings.behavior.serversPinHintSeen.*`):
+  `Hinweis zu USB-Debugging ausgeblendet` / `Ob der einmalige Hinweis zu USB-Debugging ausgeblendet wurde.` Beide sind
+  interne Flags und erscheinen nie in der Oberfläche, brauchen aber Deckung.
+- Kein neuer `sameAsSourceJustification`: `adb.volumeLabelWithSuffix` hatte schon einen, alle 18 anderen Werte weichen
+  vom Englischen ab. Kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt.

@@ -1,4 +1,72 @@
 {
+  "adb.connect.adbNotInstalled": "Cmdr không tìm thấy bộ công cụ nền tảng Android.",
+  "@adb.connect.adbNotInstalled": {
+    "sourceHash": "4d83ac5"
+  },
+  "adb.connect.openSettings": "Mở cài đặt",
+  "@adb.connect.openSettings": {
+    "sourceHash": "3f94010"
+  },
+  "adb.connect.serverUnreachable": "Công cụ Android trên máy Mac này đã không phản hồi.",
+  "@adb.connect.serverUnreachable": {
+    "sourceHash": "154d824"
+  },
+  "adb.connect.deviceGone": "Điện thoại của bạn không còn kết nối nữa.",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "ce5e28e"
+  },
+  "adb.connect.unauthorized": "Hãy xem điện thoại của bạn rồi nhấn vào Cho phép.",
+  "@adb.connect.unauthorized": {
+    "sourceHash": "6c2cf77"
+  },
+  "adb.connect.deviceTooOld": "Phiên bản Android của điện thoại này quá cũ để Cmdr duyệt được.",
+  "@adb.connect.deviceTooOld": {
+    "sourceHash": "2e1b0c1"
+  },
+  "adb.connect.timedOut": "Điện thoại của bạn đã không phản hồi kịp thời.",
+  "@adb.connect.timedOut": {
+    "sourceHash": "5a90cf8"
+  },
+  "adb.connect.transport": "Cmdr đã mất kết nối tới điện thoại của bạn.",
+  "@adb.connect.transport": {
+    "sourceHash": "d90c37c"
+  },
+  "adb.connect.waitingHint": "Cmdr sẽ mở điện thoại ngay khi bạn nhấn.",
+  "@adb.connect.waitingHint": {
+    "sourceHash": "d1df048"
+  },
+  "adb.readiness.waitingForAuthorization": "Đang chờ bạn cho phép gỡ lỗi qua USB",
+  "@adb.readiness.waitingForAuthorization": {
+    "sourceHash": "73615e0"
+  },
+  "adb.readiness.offline": "Điện thoại của bạn không phản hồi. Hãy đánh thức màn hình, hoặc rút và cắm lại cáp.",
+  "@adb.readiness.offline": {
+    "sourceHash": "ef50e86"
+  },
+  "adb.readiness.noPermissions": "Máy Mac này không truy cập được điện thoại của bạn qua USB. Hãy thử cáp hoặc cổng khác.",
+  "@adb.readiness.noPermissions": {
+    "sourceHash": "ef170c7"
+  },
+  "adb.hint.text": "Muốn truy cập toàn bộ hệ thống tệp? Hãy bật Gỡ lỗi qua USB.",
+  "@adb.hint.text": {
+    "sourceHash": "51bd05a"
+  },
+  "adb.hint.how": "Cách làm",
+  "@adb.hint.how": {
+    "sourceHash": "7470bd3"
+  },
+  "adb.hint.dismiss": "Bỏ qua",
+  "@adb.hint.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "adb.disconnectDeviceAriaLabel": "Ngắt kết nối {name}",
+  "@adb.disconnectDeviceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "adb.disconnectBusyTooltip": "Không thể ngắt kết nối khi còn thao tác đang chạy trên thiết bị này",
+  "@adb.disconnectBusyTooltip": {
+    "sourceHash": "b42bed4"
+  },
   "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
   "@adb.volumeLabelWithSuffix": {
     "sourceHash": "98d6c20",

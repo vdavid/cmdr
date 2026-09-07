@@ -1,4 +1,72 @@
 {
+  "adb.connect.adbNotInstalled": "Cmdr 找不到 Android 平台工具。",
+  "@adb.connect.adbNotInstalled": {
+    "sourceHash": "4d83ac5"
+  },
+  "adb.connect.openSettings": "打开设置",
+  "@adb.connect.openSettings": {
+    "sourceHash": "3f94010"
+  },
+  "adb.connect.serverUnreachable": "这台 Mac 上的 Android 工具没有响应。",
+  "@adb.connect.serverUnreachable": {
+    "sourceHash": "154d824"
+  },
+  "adb.connect.deviceGone": "你的手机已经断开连接了。",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "ce5e28e"
+  },
+  "adb.connect.unauthorized": "看一下你的手机，然后点按“允许”。",
+  "@adb.connect.unauthorized": {
+    "sourceHash": "6c2cf77"
+  },
+  "adb.connect.deviceTooOld": "这部手机的 Android 版本太旧，Cmdr 无法浏览。",
+  "@adb.connect.deviceTooOld": {
+    "sourceHash": "2e1b0c1"
+  },
+  "adb.connect.timedOut": "你的手机没能及时响应。",
+  "@adb.connect.timedOut": {
+    "sourceHash": "5a90cf8"
+  },
+  "adb.connect.transport": "Cmdr 与你手机之间的连接中断了。",
+  "@adb.connect.transport": {
+    "sourceHash": "d90c37c"
+  },
+  "adb.connect.waitingHint": "你一点按，Cmdr 就会打开你的手机。",
+  "@adb.connect.waitingHint": {
+    "sourceHash": "d1df048"
+  },
+  "adb.readiness.waitingForAuthorization": "等你允许 USB 调试",
+  "@adb.readiness.waitingForAuthorization": {
+    "sourceHash": "73615e0"
+  },
+  "adb.readiness.offline": "你的手机没有响应。唤醒它的屏幕，或者把线缆拔下再插上。",
+  "@adb.readiness.offline": {
+    "sourceHash": "ef50e86"
+  },
+  "adb.readiness.noPermissions": "这台 Mac 无法通过 USB 连到你的手机。换一根线缆或另一个端口试试。",
+  "@adb.readiness.noPermissions": {
+    "sourceHash": "ef170c7"
+  },
+  "adb.hint.text": "想访问整个文件系统？开启 USB 调试。",
+  "@adb.hint.text": {
+    "sourceHash": "51bd05a"
+  },
+  "adb.hint.how": "怎么做",
+  "@adb.hint.how": {
+    "sourceHash": "7470bd3"
+  },
+  "adb.hint.dismiss": "关闭",
+  "@adb.hint.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "adb.disconnectDeviceAriaLabel": "断开连接：{name}",
+  "@adb.disconnectDeviceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "adb.disconnectBusyTooltip": "此设备上有操作正在进行，无法断开连接",
+  "@adb.disconnectBusyTooltip": {
+    "sourceHash": "b42bed4"
+  },
   "adb.volumeLabelWithSuffix": "{deviceName}（ADB）",
   "@adb.volumeLabelWithSuffix": {
     "sourceHash": "98d6c20"

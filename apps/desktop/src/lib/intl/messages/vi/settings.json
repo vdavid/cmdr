@@ -1041,7 +1041,7 @@
   "@settings.fileOperations.adbEnabled.label": {
     "sourceHash": "3651356"
   },
-  "settings.fileOperations.adbEnabled.description": "Truy cập toàn bộ hệ thống tệp của một điện thoại Android đang bật gỡ lỗi USB, phần mà MTP không cho bạn thấy. Cần có bộ công cụ nền tảng Android (lệnh \"adb\") trên máy Mac này. Cứ để bật cũng không tốn gì khi bạn chưa cài công cụ Android nào.",
+  "settings.fileOperations.adbEnabled.description": "Truy cập toàn bộ hệ thống tệp của một điện thoại Android đang bật gỡ lỗi qua USB, phần mà MTP không cho bạn thấy. Cần có bộ công cụ nền tảng Android (lệnh \"adb\") trên máy Mac này. Cứ để bật cũng không tốn gì khi bạn chưa cài công cụ Android nào.",
   "@settings.fileOperations.adbEnabled.description": {
     "sourceHash": "8577083"
   },
@@ -1538,6 +1538,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.adbHintDismissed.label": "Đã bỏ qua gợi ý về gỡ lỗi qua USB",
+  "@settings.behavior.adbHintDismissed.label": {
+    "sourceHash": "ba3d7fc"
+  },
+  "settings.behavior.adbHintDismissed.description": "Dòng gợi ý một lần về việc bật gỡ lỗi qua USB đã bị bỏ qua hay chưa.",
+  "@settings.behavior.adbHintDismissed.description": {
+    "sourceHash": "37afcbc"
+  },
   "settings.section.notifications": "Thông báo",
   "@settings.section.notifications": {
     "sourceHash": "7880118"
@@ -1872,7 +1880,7 @@
   "@settings.summary.servers": {
     "sourceHash": "40940fa"
   },
-  "settings.summary.adb": "Duyệt điện thoại Android đang bật gỡ lỗi USB.",
+  "settings.summary.adb": "Duyệt điện thoại Android đang bật gỡ lỗi qua USB.",
   "@settings.summary.adb": {
     "sourceHash": "fb69a13"
   },

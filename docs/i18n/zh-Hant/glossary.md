@@ -1306,3 +1306,70 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   share · `high`。英文從只講 SMB 擴成三種通訊協定，舊值的 `SMB/網路` 已經不對。
 - 這 29 個值都不含撇號（中文不需要，`''` 規則咬不到），也都和英文不同，所以沒有 `sameAsSourceJustification`。`menu.*`
   兩個鍵是 RAW 家族，值裡本來就沒有撇號和 ICU 結構。
+
+## Android 手機的連線窗格、就緒提示與那一行 USB 偵錯提示
+
+涵蓋 `adb.connect.*`、`adb.readiness.*`、`adb.hint.*`、`adb.disconnect*`，以及
+`settings.behavior.adbHintDismissed.*`（2026-09-07）。
+
+這一輪有兩類來源。macOS 的詞照 `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?"，直接掃這部 Mac 的
+`.loctable` 比對英文鍵（macOS 26.6.2、build
+25G83、2026-09-07）。**手機上那幾個字的權威來源不是 Apple 而是 Google**：使用者得在自己手機上找到那顆開關和那顆按鈕，所以字要跟 Android 自己的繁中一模一樣，來源是 AOSP 的
+`values-zh-rTW`（`frameworks/base/packages/SettingsLib` 和 `packages/SystemUI`，`refs/heads/main`，2026-09-07 取得）。
+
+- **USB debugging** · `「USB 偵錯」` · **AOSP 直接證實了 § Android and ADB terms 原本靠 Google 文件下的判斷**：
+  `SettingsLib/res/values-zh-rTW/strings.xml` 的 `enable_adb` 就是 `USB 偵錯`（同檔另有
+  `clear_adb_keys`「撤銷 USB 偵錯授權」、`adb_warning_title`「允許 USB 偵錯嗎？」）· `confirmed`（原本
+  `high`）。角括號照舊：這是使用者要在手機上找的標籤，和 `settings.fileOperations.mtpEnabled.description` 的
+  `「設定 > USB 偏好設定」`、`「檔案傳輸」` 同一個處理方式。
+- **Allow（Android 自己那個「允許 USB 偵錯嗎？」對話框上的按鈕）** · `「允許」` · AOSP
+  `SystemUI/res/values-zh-rTW/strings.xml` 的 `usb_debugging_allow` = `允許`，標題 `usb_debugging_title` =
+  `允許 USB 偵錯嗎？` · `confirmed`。加角括號，理由和上面那條一樣：這是手機螢幕上的字，不是 Cmdr 的按鈕。
+- **tap（在手機上點一下）** · `輕觸` · AOSP zh-rTW 通篇如此（`bluetooth_devices_card_off_summary`「Tap to turn on」→
+  `輕觸即可開啟`、`security_settings_remoteauth_enroll_introduction_animation_tap_notification`「Tap the notification」→
+  `輕觸通知`）· `high`。❗ 不寫 macOS 的 `點一下`：這個動作發生在 Android 手機上，字要跟手機一致。
+- **Android platform tools** · `Android 平台工具` · 沿用上一節既有的條目（英文自己省掉 SDK，中文照著省）· `high`
+- **phone 的量詞** · `這支手機` · AOSP zh-rTW 自己的用法（`packages/apps/Settings` 9 次 `這支手機` / 1 次
+  `這部手機`，SystemUI 1 次 `這支手機`）· `high`。Mac 仍照 `style.md` 寫 `這部 Mac`，兩個量詞各有各的來源。
+- **"is not responding"** · `沒有回應` · AP-TW live 在四份以上套件裡一致（`ABStrings.loctable`「The %@ server “%@” is
+  not responding.」→ `「%@」伺服器「%@」沒有回應。`、`HFLocalizable.loctable`「This accessory is not responding.」→
+  `此配件沒有回應。`）· `confirmed`。❗ 和 `didn't answer in time` 分開：後者照目錄既有的
+  `servers.refusal.timedOut`（`沒有及時回應`）寫，也對得上 Apple 的 `未及時回應`（`FoundationErrors.loctable`）。
+- **"too old"** · `太舊` · AP-TW live 十餘列一致（`Errors.loctable`「The device OS is too old for the installed version
+  of iTunes.」→ `裝置的OS版本太舊，不適用所安裝的iTunes版本。`）· `high`。Apple 的句式是 `無法…，因為…太舊`，我們照 §
+  Voice 的 `無法` 失敗句型寫成 `…版本太舊，Cmdr 無法瀏覽。`
+- **cable** · `連接線` · AP-TW live `Localizable.loctable`「Either the cable for %@ is not plugged in…」→
+  `%@的連接線沒有接上電源…` · `high`。目錄既有的 `USB 連接線`（`settings.fileOperations.mtpEnabled.description`）同源。
+- **reseat the cable** · `把連接線拔掉再插上` · 目錄既有的 `errors.provider.macDroid.transient`（`拔掉再插上 USB 線`）和
+  `mtp.permissionDialog.helpText`（`拔除並重新插上裝置`）·
+  `high`。英文的 "reseat" 是一個動作，中文照目錄拆成「拔掉再插上」，不自創 `重新插拔`。
+- **wake (a screen)** · `喚醒` · AP-TW live（`BatteryUI.loctable`「Start up or wake」→ `開機或喚醒`、
+  `DIErrors.loctable`「wake failed」→ `無法喚醒`）· `high`
+- **How（那行提示末端的連結）** · `怎麼開啟？` · **自行組出來的** · `medium-high`。Apple 只有 "How to X" →
+  `如何X`（`Localizable.loctable`「How to pair」→ `如何配對`），單獨一個 `如何`
+  在中文站不住；英文這裡是口語的「那要怎麼做？」，所以取口語的 `怎麼`，動詞直接回收前一句的 `開啟`
+  讓連結指向明確。問號是中文需要的，英文沒有。
+- **Dismiss** · `關閉` · 沿用既有條目（AP live 13 個 `Dismiss` 鍵全是 `關閉`，TW = HK）· `high`。目錄裡已有八個
+  `Dismiss` = `關閉`，`i18n-terms` 會盯同一句英文，所以 `adb.hint.dismiss` 非得同字不可。
+- **"Disconnect {name}"（無障礙名稱）** · `中斷連線：{name}` · **一字不差沿用
+  `fileExplorer.navigation.disconnectPlaceAriaLabel`** · `high`。兩個鍵的英文完全相同，`i18n-terms`
+  會要求同一個譯法；自然的中文 `中斷與 {name} 的連線` 會把標籤切成兩半，過不了 `*Aria`
+  包含規則，所以照冒號句式寫（`style.md` 裡 `*Aria` containment pairs 那一節已經記了這條）。
+- **"Can't disconnect while operations are in progress on this device"** · `這個裝置上有操作正在進行，無法中斷連線`
+  ·照既有的 `這個 X 上有操作正在進行，無法<verb>` 句型（`fileExplorer.navigation.ejectBusyTooltip` 是 `裝置` +
+  `退出`，`disconnectBusyTooltip` 是 `伺服器` + `中斷連線`，這裡是 `裝置` + `中斷連線`）· `high`
+- **Open Settings（窗格旁邊那顆按鈕）** · `開啟設定` · 目錄既有的 `commands.appSettings.label` 和
+  `commands.handler.openTerminalHere.openSettings`（英文是小寫的 "Open settings"）· `high`。英文大小寫不同所以
+  `i18n-terms` 不會比對，但同一顆功能的按鈕沒有理由兩種寫法。
+- **"the whole filesystem"** · `整個檔案系統` · 目錄既有的 `settings.fileOperations.adbEnabled.description`
+  （`存取它的整個檔案系統`）和 `settings.section.fileSystems`（`檔案系統`）· `high`
+- **"Waiting for you to allow…"（就緒狀態的浮動提示）** · `正在等你允許…` · `正在…`
+  是目錄一路在用的進行式句型（`servers.paneState.connecting`），第二人稱的等待句在伺服器中心也已經有一個（`等你確認主機金鑰`）·
+  `high`。英文沒有句號，中文也不加。
+- **"as soon as you do"（輕觸完就自己往下走）** · `你一輕觸，Cmdr 就會…` · 目錄既有的
+  `settings.adb.status.watching`（`手機一接上就會偵測到。`）已經在用 `一…就…` 這個句型 · `high`。
+- **`settings.behavior.adbHintDismissed.*`（內部旗標，不會出現在 UI）** · `已關閉「USB 偵錯」提示` /
+  `是否已關閉那則建議開啟「USB 偵錯」的一次性提示。` · 句式一字不差照同胞的 `settings.behavior.serversPinHintSeen.*`
+  （`已顯示「網路」群組過長的提示` / `是否已顯示過關於取消釘選伺服器的一次性提示。`）· `high`。英文從 `Seen` 換成
+  `Dismissed`，中文跟著從 `已顯示` 換成 `已關閉`，和上面的 Dismiss 條目同字。
+- 這 19 個值都不含撇號（中文不需要，ICU 的 `''` 規則咬不到），也都和英文不同，所以沒有 `sameAsSourceJustification`。

@@ -1,4 +1,72 @@
 {
+  "adb.connect.adbNotInstalled": "Cmdr kon de Android platform tools niet vinden.",
+  "@adb.connect.adbNotInstalled": {
+    "sourceHash": "4d83ac5"
+  },
+  "adb.connect.openSettings": "Open Instellingen",
+  "@adb.connect.openSettings": {
+    "sourceHash": "3f94010"
+  },
+  "adb.connect.serverUnreachable": "De Android-tools op deze Mac reageerden niet.",
+  "@adb.connect.serverUnreachable": {
+    "sourceHash": "154d824"
+  },
+  "adb.connect.deviceGone": "Je telefoon is niet meer aangesloten.",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "ce5e28e"
+  },
+  "adb.connect.unauthorized": "Kijk op je telefoon en tik op ‘Toestaan’.",
+  "@adb.connect.unauthorized": {
+    "sourceHash": "6c2cf77"
+  },
+  "adb.connect.deviceTooOld": "De Android-versie van deze telefoon is te oud; Cmdr kan er niet op bladeren.",
+  "@adb.connect.deviceTooOld": {
+    "sourceHash": "2e1b0c1"
+  },
+  "adb.connect.timedOut": "Je telefoon reageerde niet op tijd.",
+  "@adb.connect.timedOut": {
+    "sourceHash": "5a90cf8"
+  },
+  "adb.connect.transport": "De verbinding tussen Cmdr en je telefoon is verbroken.",
+  "@adb.connect.transport": {
+    "sourceHash": "d90c37c"
+  },
+  "adb.connect.waitingHint": "Zodra je dat doet, opent Cmdr je telefoon.",
+  "@adb.connect.waitingHint": {
+    "sourceHash": "d1df048"
+  },
+  "adb.readiness.waitingForAuthorization": "Wachten tot je USB-foutopsporing toestaat",
+  "@adb.readiness.waitingForAuthorization": {
+    "sourceHash": "73615e0"
+  },
+  "adb.readiness.offline": "Je telefoon reageert niet. Zet het scherm aan of sluit de kabel opnieuw aan.",
+  "@adb.readiness.offline": {
+    "sourceHash": "ef50e86"
+  },
+  "adb.readiness.noPermissions": "Deze Mac kan je telefoon niet via USB bereiken. Probeer een andere kabel of poort.",
+  "@adb.readiness.noPermissions": {
+    "sourceHash": "ef170c7"
+  },
+  "adb.hint.text": "Wil je het hele bestandssysteem? Zet USB-foutopsporing aan.",
+  "@adb.hint.text": {
+    "sourceHash": "51bd05a"
+  },
+  "adb.hint.how": "Hoe?",
+  "@adb.hint.how": {
+    "sourceHash": "7470bd3"
+  },
+  "adb.hint.dismiss": "Sluit",
+  "@adb.hint.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "adb.disconnectDeviceAriaLabel": "Verbreek de verbinding met {name}",
+  "@adb.disconnectDeviceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "adb.disconnectBusyTooltip": "Verbinding verbreken kan niet terwijl er bewerkingen op dit apparaat bezig zijn",
+  "@adb.disconnectBusyTooltip": {
+    "sourceHash": "b42bed4"
+  },
   "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
   "@adb.volumeLabelWithSuffix": {
     "sourceHash": "98d6c20",

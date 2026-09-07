@@ -1542,6 +1542,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.adbHintDismissed.label": "Dica de depuração USB dispensada",
+  "@settings.behavior.adbHintDismissed.label": {
+    "sourceHash": "ba3d7fc"
+  },
+  "settings.behavior.adbHintDismissed.description": "Se a linha única que oferece a depuração USB já foi dispensada.",
+  "@settings.behavior.adbHintDismissed.description": {
+    "sourceHash": "37afcbc"
+  },
   "settings.section.notifications": "Notificações",
   "@settings.section.notifications": {
     "sourceHash": "7880118"

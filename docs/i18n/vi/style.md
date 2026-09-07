@@ -115,10 +115,17 @@ Settled terms (sources agree):
 - **filesystem: `hệ thống tệp`** · macOS vi renders "file system"/"filesystem" as `hệ thống tệp` throughout Disk Utility
   and ASR (`Localizable.loctable`, `ASRLocalizable.loctable`: "Verifying file system." → `Đang xác minh hệ thống tệp.`),
   and the Cmdr catalog already uses it in `errors.listing.*`. `high`.
-- **debugging: `gỡ lỗi`; USB debugging: `gỡ lỗi USB`** · macOS vi Safari `DeveloperPreferences.strings` ("Enable … debug
-  mode" → `Bật chế độ gỡ lỗi …`), and the catalog's `settings.advanced.logLlmCalls.description` already says
-  `để gỡ lỗi`. Android's own Vietnamese phone UI shows `Gỡ lỗi USB`, so a Vietnamese reader finds the toggle by this
-  name. (verified on macOS 26.6.2 build 25G83, live-bundle mining, 2026-09-06.) `high`.
+- **debugging: `gỡ lỗi`; USB debugging: `gỡ lỗi qua USB`** · macOS vi Safari `DeveloperPreferences.strings` ("Enable …
+  debug mode" → `Bật chế độ gỡ lỗi …`, verified on macOS 26.6.2 build 25G83, live-bundle mining, 2026-09-06), and the
+  catalog's `settings.advanced.logLlmCalls.description` already says `để gỡ lỗi`. The Android toggle's own Vietnamese
+  name is `Gỡ lỗi qua USB`: AOSP `frameworks/base/packages/SettingsLib/res/values-vi/strings.xml`, key `enable_adb`,
+  with `usb_debugging_title` in `packages/SystemUI/res/values-vi/strings.xml` reading `Cho phép gỡ lỗi qua USB?`
+  (verified on `main`, 2026-09-07). Write it word for word so a reader finds the switch on their phone. `high`.
+- **Android platform tools: `bộ công cụ nền tảng Android`** · Google's own Vietnamese developer docs render "SDK
+  Platform-Tools" as `bộ công cụ nền tảng SDK` in the nav and in prose ("Xoá e2fsdroid khỏi công cụ nền tảng SDK"),
+  while the download buttons keep the product name `Android SDK Platform-Tools` in English
+  (`developer.android.com/tools/releases/platform-tools?hl=vi`, verified 2026-09-07). So the descriptive phrase is
+  `bộ công cụ nền tảng`; `Android` and the command name `adb` stay verbatim. `high`.
 - **command (a shell/CLI command): `lệnh`** · macOS vi loctables ("What command should be run?" → `Nên chạy lệnh nào?`,
   "Menu Command" → `Lệnh menu`), verified 2026-09-06. Name a specific one as `lệnh "adb"`. `high`.
 - **location (of a file or binary, as a field label): `vị trí`** · macOS Finder vi `Localizable.strings` ("Location" →
@@ -146,9 +153,6 @@ Tentative / needs a native check:
   this catalog uses for an OS process) and MS `Tiến độ`. Progress-the-bar stays `tiến trình`. `tentative`.
 - **"has stopped moving" (running but not advancing): `đang đứng yên`** · plain everyday Vietnamese; no source names the
   state. Avoids `treo` (hung), which reads as a crash. `tentative`.
-- **Android platform tools: `bộ công cụ nền tảng Android`** · the downloadable package Google calls "SDK
-  Platform-Tools"; no macOS/MS/file-manager source names it, so this is a descriptive rendering that keeps `Android` and
-  the command name `adb` verbatim. `tentative`.
 
 ## Brand and do-not-translate
 
@@ -252,12 +256,12 @@ Vietnamese has no grammatical number, so one form covers all counts.
   taken is `vị trí chụp` (never bare `vị trí`, which the catalog uses for a file's path). When "photo" lands right next
   to "camera", write `một bức ảnh` so `ảnh` doesn't double up; elsewhere keep bare `ảnh`. Evidence: `glossary.md` § Ask
   Cmdr xem bên trong tệp.
-- **`gỡ lỗi USB` and `bộ công cụ nền tảng Android` get translated, `adb` / `ADB` / `Android SDK` / `Homebrew` don't.**
-  The `en` `@key.description` on `settings.fileOperations.adbEnabled.*` calls "USB debugging" and "platform tools"
-  product names, but they're descriptive phrases that Android's own Vietnamese UI translates, so a Vietnamese reader
-  looking for the phone toggle needs `Gỡ lỗi USB`. What stays verbatim is the command (`adb`), the acronym (`ADB`), and
-  the packaged product names (`Android SDK`, `Homebrew`), matching how the sibling MTP strings keep quoted on-phone menu
-  labels English while translating the prose around them.
+- **`gỡ lỗi qua USB` and `bộ công cụ nền tảng Android` get translated, `adb` / `ADB` / `Android SDK` / `Homebrew`
+  don't.** The `en` `@key.description` on `settings.fileOperations.adbEnabled.*` calls "USB debugging" and "platform
+  tools" product names, but they're descriptive phrases that Android's own Vietnamese UI translates, so a Vietnamese
+  reader looking for the phone toggle needs `Gỡ lỗi qua USB`. What stays verbatim is the command (`adb`), the acronym
+  (`ADB`), and the packaged product names (`Android SDK`, `Homebrew`), matching how the sibling MTP strings keep quoted
+  on-phone menu labels English while translating the prose around them.
 - **The reference pile can be missing on the machine you're translating from.** The M1 agent box has no
   `_ignored/i18n/vi/` at all (it lives only on David's laptop). The fallback in
   `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" works and is Tier 1 all the same: mine the

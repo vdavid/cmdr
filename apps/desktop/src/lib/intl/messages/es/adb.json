@@ -1,4 +1,72 @@
 {
+  "adb.connect.adbNotInstalled": "Cmdr no pudo encontrar las herramientas de plataforma de Android.",
+  "@adb.connect.adbNotInstalled": {
+    "sourceHash": "4d83ac5"
+  },
+  "adb.connect.openSettings": "Abrir Ajustes",
+  "@adb.connect.openSettings": {
+    "sourceHash": "3f94010"
+  },
+  "adb.connect.serverUnreachable": "Las herramientas de Android en este Mac no respondieron.",
+  "@adb.connect.serverUnreachable": {
+    "sourceHash": "154d824"
+  },
+  "adb.connect.deviceGone": "Tu teléfono ya no está conectado.",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "ce5e28e"
+  },
+  "adb.connect.unauthorized": "Comprueba tu teléfono y toca Permitir.",
+  "@adb.connect.unauthorized": {
+    "sourceHash": "6c2cf77"
+  },
+  "adb.connect.deviceTooOld": "Este teléfono tiene una versión de Android demasiado antigua para que Cmdr pueda explorarlo.",
+  "@adb.connect.deviceTooOld": {
+    "sourceHash": "2e1b0c1"
+  },
+  "adb.connect.timedOut": "Tu teléfono no respondió a tiempo.",
+  "@adb.connect.timedOut": {
+    "sourceHash": "5a90cf8"
+  },
+  "adb.connect.transport": "Cmdr perdió la conexión con tu teléfono.",
+  "@adb.connect.transport": {
+    "sourceHash": "d90c37c"
+  },
+  "adb.connect.waitingHint": "Cmdr abrirá tu teléfono en cuanto lo hagas.",
+  "@adb.connect.waitingHint": {
+    "sourceHash": "d1df048"
+  },
+  "adb.readiness.waitingForAuthorization": "Esperando a que permitas la depuración por USB",
+  "@adb.readiness.waitingForAuthorization": {
+    "sourceHash": "73615e0"
+  },
+  "adb.readiness.offline": "Tu teléfono no responde. Activa su pantalla o vuelve a conectar el cable.",
+  "@adb.readiness.offline": {
+    "sourceHash": "ef50e86"
+  },
+  "adb.readiness.noPermissions": "Este Mac no puede acceder a tu teléfono por USB. Prueba con otro cable u otro puerto.",
+  "@adb.readiness.noPermissions": {
+    "sourceHash": "ef170c7"
+  },
+  "adb.hint.text": "¿Quieres todo el sistema de archivos? Activa la depuración por USB.",
+  "@adb.hint.text": {
+    "sourceHash": "51bd05a"
+  },
+  "adb.hint.how": "Cómo se hace",
+  "@adb.hint.how": {
+    "sourceHash": "7470bd3"
+  },
+  "adb.hint.dismiss": "Descartar",
+  "@adb.hint.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "adb.disconnectDeviceAriaLabel": "Desconectar {name}",
+  "@adb.disconnectDeviceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "adb.disconnectBusyTooltip": "No se puede desconectar mientras hay operaciones en curso en este dispositivo",
+  "@adb.disconnectBusyTooltip": {
+    "sourceHash": "b42bed4"
+  },
   "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
   "@adb.volumeLabelWithSuffix": {
     "sourceHash": "98d6c20",

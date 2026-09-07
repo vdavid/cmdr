@@ -2197,3 +2197,67 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   原样保留，句中位置对任意长度都成立；没有 plural 键。没有一个值与英文相同（`Android（ADB）`
   是全角括号，与英文不同），不需要 `sameAsSourceJustification`。`menu.network.*`
   两个键属于 RAW 家族，值里没有撇号，也没有 `{token}`。
+
+## Android（ADB）手机的窗格状态、卷切换器提示与那条一行提示（`adb.*`、`settings.behavior.adbHintDismissed.*`，2026-09-07）
+
+三个新界面：手机没打开成的时候窗格里那条整版消息（`adb.connect.*`）、宗卷选择器里手机那一行的悬停提示（`adb.readiness.*`、
+`adb.disconnect*`），以及手机走普通「照片和音乐」连接时窗格顶上那条安静的提示（`adb.hint.*`）。
+
+参考堆（`_ignored/i18n/zh-CN/`）在这台机器上不存在（`~/projects-git/vdavid/cmdr/_ignored/`
+整个目录都没有，不是 worktree 陷阱），所以两路取词：Apple 的词从实时 macOS 包取（`plutil` 扫 `.loctable` 的 `zh_CN`
+分支，验证于 macOS 26.6.2 / 25G83，2026-09-07）；Android 自己的词直接从 AOSP 的 `values-zh-rCN` 取（2026-09-07 抓取
+`main` 分支）。
+
+- **USB debugging → `USB 调试`** · AOSP `frameworks/base/packages/SettingsLib/res/values-zh-rCN/strings.xml` 的
+  `enable_adb` 就是 `USB 调试`，SystemUI 的 `usb_debugging_title` 写作 `允许 USB 调试吗？` ·
+  `confirmed`。手机上「开发者选项」里的开关一字不差就是这四个字，所以用户能照着 Cmdr 的话在手机上找到它。术语表里已有的 Google
+  zh-CN 文档来源这次由 AOSP 源码直接坐实。
+- **Allow（Android 自己那个对话框上的按钮）→ `允许`，并加全角引号** · AOSP SystemUI `values-zh-rCN` 的
+  `usb_debugging_allow` = `允许`（`wifi_debugging_allow` 同）·
+  `confirmed`。屏幕上是哪几个字，Cmdr就说哪几个字。引号沿用目录里引用界面名称的写法（`打开“钥匙串访问”`、`选择“取消固定”`）。
+- **tap（在手机上点一下）→ `点按`** · AOSP zh-CN 自己压倒性地用 `点按`（Settings 89 : 14，SystemUI 34 : 5压过
+  `点击`），与本文件已定的 macOS `点按` 一致 · `confirmed`。中英两边的动词碰巧同一个词，省了一次概念切换。
+- **Android platform tools → `Android 平台工具`；`adb` / `ADB` 保持拉丁**
+  · 术语表已定，来源是 Google 自己的 zh-CN 文档；这一批只是复用 · `confirmed`。
+- **phone 的量词是 `部`，不是 `台`** · AOSP zh-CN 只写 `这部手机`（Settings 里 8 处，`这台手机` 0 处，2026-09-07）·
+  `high`。⚠️ 与本文件已定的服务器量词 `台`（`这台服务器`）和目录里的 `这台 Mac`
+  并存，是有意的：手机随 Android 自己的说法。
+- **Cmdr couldn't find X → `Cmdr 找不到 X。`** · 目录里 `errors.listing.notFound.explanation`、
+  `errors.listing.pathNotFoundErrno.explanation` 都是 `Cmdr 找不到 …` · `confirmed`。没写成
+  `Cmdr 无法找到`：更啰嗦，而且这里不是「被拒绝」而是「没有」。
+- **didn't answer in time → `没能及时响应`** · 与 `servers.refusal.timedOut`（`{host} 没能及时响应。`）、
+  `errors.volume.connectionTimeout` 一个句式 · `confirmed`。
+- **三条「连不上」互相不重样，各用各的动词** · `deviceGone`（手机被拔了）→ `已经断开连接了`；`transport`（线掉了）→
+  `连接中断了`；`serverUnreachable`（这台 Mac 上的工具不吭声）→ `没有响应` ·
+  `high`。三条会在同一个位置轮流出现，动词一样的话用户分不出发生了什么。`中断`
+  在目录里有先例（`errors.listing.staleConnection.explanation` 的 `连接被中断`）。❗ 按英文的要求，`serverUnreachable`
+  只说 `Android 工具`，不提后台程序、协议或套接字。
+- **Waiting for you to X → `等你X`** · 沿用服务器中心已定的 `等你核对主机密钥`（英文同为 "Waiting for you to…"）·
+  `confirmed`。所以是 `等你允许 USB 调试`，不写 `正在等待用户授权`：那读起来像系统日志。
+- **Wake（唤醒屏幕）→ `唤醒`** · macOS `Localizable.loctable` 的 `str_mcx_EnergySaver_scheduletype_wake` （`Wake` →
+  `唤醒`）· `high`。
+- **reseat the cable → `把线缆拔下再插上`** · 目录里 `errors.provider.macDroid.transient` 已经写作
+  `拔下再插上 USB 线缆`；`拔下` 也是 Apple 的说法（AirPort 工具 `Unplug “%@”` → `拔下“%@”`）· `confirmed`。
+- **Try another cable or port → `换一根线缆或另一个端口试试`** · 目录里 `errors.listing.deviceProblem.suggestion` 的
+  `换一个 USB 端口或线缆` 同源，这里按中文量词分开写（线缆用 `根`，端口用 `个`）· `high`。
+- **How（那条提示末尾的链接）→ `怎么做`** · Apple 没有单独一个 "How" 链接可抄；`怎么做`
+  是目录里现成的口语问法（`你想怎么做？`、`要怎么做？`、`你想怎么处理？`）·
+  `high`。英文要的就是「这怎么弄？」的语气，`如何操作` 太书面，`了解更多` 又不是这个意思。
+- **Dismiss → `关闭`** · 目录里 9 个同英文的键（`queue.row.dismiss`、`crashReporter.dialog.dismiss`、
+  `downloads.fda.dismiss` 等）全是 `关闭`，`i18n-terms` 会比 · `confirmed`。
+- **Open Settings → `打开设置`** · 与 `commands.appSettings.label`、 `commands.handler.openTerminalHere.openSettings`
+  一字不差（英文同字，`i18n-terms` 会比）· `confirmed`。
+- **`adb.disconnectDeviceAriaLabel` → `断开连接：{name}`** · 英文与 `fileExplorer.navigation.disconnectPlaceAriaLabel`
+  一字不差（`Disconnect {name}`），所以中文必须同字，`i18n-terms` 会比 ·
+  `confirmed`。手机和服务器在同一个位置用同一个按钮，说法本来也该一样。
+- **`adb.disconnectBusyTooltip` → `此设备上有操作正在进行，无法断开连接`** · 把同一位置两个兄弟键拼起来：主语取
+  `fileExplorer.navigation.ejectBusyTooltip` 的 `此设备`（英文这里也是 "on this device"），谓语取
+  `fileExplorer.navigation.disconnectBusyTooltip` 的 `无法断开连接` · `confirmed`。保留 `此` 而不是
+  `这个`，与那两条一致。
+- **一次性提示的内部键跟着兄弟键的句式走** · `settings.behavior.serversPinHintSeen.label`/`.description`
+  是模板（`已显示“网络”分组过长提示` / `是否已显示过关于取消固定服务器的一次性提示。`），所以 `adbHintDismissed` 写成
+  `已关闭 USB 调试提示` / `是否已关闭那条建议开启 USB 调试的一次性提示。` ·
+  `high`。这两个键从不出现在界面上，但覆盖率检查要它们。动词跟着英文的 dismissed 走，用已定的 `关闭`。
+- **ICU** · 19 个值都不含撇号，没有转义问题；`{name}` 与 `{deviceName}`
+  原样保留，句中位置对任意长度都成立；没有 plural 键。没有一个值与英文相同，不需要
+  `sameAsSourceJustification`。窗格里那三条整版消息都不用 `错误` / `失败`，与目录的口径一致。

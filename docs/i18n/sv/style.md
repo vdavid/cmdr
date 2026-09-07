@@ -156,11 +156,11 @@ the documented fallback. Anchored to macOS 26.6.2, build 25G83, read 2026-09-06.
 
 - **debugging: `felsökning`** · Apple sv, Safari `sv.lproj/DeveloperPreferences.strings` ("Aktivera felsökningsläge för
   intelligent skydd mot spårning", "…för privat klickmätning"). `high`.
-- **USB debugging (the Android developer-options switch): `USB-felsökning`** · the `felsökning` root above plus the
-  catalog's settled `USB-` hyphenation (`USB-enhet`, `USB-kabel`, `USB-port`). No Android corpus is in the reference
-  pile, so the exact compound has no first-party source: `tentative`, low risk (it's the standard Swedish compound, and
-  it's what a Swedish Android phone shows in Utvecklaralternativ). Agreement is `en`-gender: "USB-felsökning aktiverad",
-  never "aktiverat".
+- **USB debugging (the Android developer-options switch): `USB-felsökning`** · AOSP's own Swedish, `SettingsLib`
+  `values-sv/strings.xml` `enable_adb` = "USB-felsökning" (read 2026-09-07), which is verbatim what a Swedish Android
+  phone shows in Utvecklaralternativ. `high`. Agreement is `en`-gender: "USB-felsökning aktiverad", never "aktiverat".
+  The `Allow` button on the phone's own prompt is `Tillåt` (SystemUI `usb_debugging_allow`); see `glossary.md` § Android
+  över ADB.
 - **turned on (a switch on the phone): `aktiverad`** · matches the catalog's own phone-context wording (`errors.*`:
   "Kontrollera att USB-filöverföringsläge är aktiverat på telefonen") and the settled `enable → aktivera`. `high`.
 - **"Location of adb" (a field holding a path to a binary): `Sökväg till adb`** · `path → sökväg` from the glossary,

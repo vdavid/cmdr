@@ -1551,6 +1551,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.adbHintDismissed.label": "Astuce sur le débogage USB ignorée",
+  "@settings.behavior.adbHintDismissed.label": {
+    "sourceHash": "ba3d7fc"
+  },
+  "settings.behavior.adbHintDismissed.description": "Indique si la ligne unique proposant le débogage USB a été ignorée.",
+  "@settings.behavior.adbHintDismissed.description": {
+    "sourceHash": "37afcbc"
+  },
   "settings.section.notifications": "Notifications",
   "@settings.section.notifications": {
     "sourceHash": "7880118",

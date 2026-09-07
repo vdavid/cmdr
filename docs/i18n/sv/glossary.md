@@ -2437,3 +2437,68 @@ inget däremellan finns kvar att översätta) och `settings.adb.status.label` (`
 `servers.hub.colStatus` och `licensing.section.labelStatus`). `settings.section.servers` blir däremot
 `Servrar (SFTP, WebDAV)`, eftersom huvudordet böjs. Ingen apostrof i något värde, så ICU-dubbleringen `''` blir aldrig
 aktuell, och `{command}`, `{host}` och `{path}` står oförändrade.
+
+## Android över ADB: panelen, volymväljaren och tipsraden (2026-09-07; 17 `adb.*` + 2 `settings.behavior.adbHintDismissed.*`)
+
+Tre ytor: helpanelsmeddelandet där fillistan skulle ha stått när en Android-telefon inte går att öppna (`adb.connect.*`,
+samma röst som `servers.refusal.*`/`servers.paneState.*`), inforutorna på telefonens rad i volymväljaren
+(`adb.readiness.*`) och den tysta raden överst i en MTP-panel som erbjuder den fullständiga vägen in (`adb.hint.*`),
+plus frånkopplingsknappen (`adb.disconnect*`).
+
+Referenshögen saknas på den här maskinen (`_ignored/i18n/` finns bara i en klon), så beläggen kommer dels från de
+LEVANDE macOS-paketen (macOS 26.6.2, build 25G83, läst 2026-09-07; `.loctable` läses med `plutil -convert json -o -`, ❗
+`grep` hittar ingenting inuti dem), dels — för Androids egen vokabulär — från AOSP:s egna svenska översättningar.
+
+- **USB debugging → `USB-felsökning`** · nu FÖRSTAHANDSBELAGT, inte längre `tentative`: AOSP
+  `frameworks/base/packages/SettingsLib/res/values-sv/strings.xml`, `enable_adb` = ”USB-felsökning” (och
+  `clear_adb_keys` = ”Återkalla åtkomst till USB-felsökning”, `enable_adb_wireless` = ”Trådlös felsökning”) · `high`.
+  Det är ordagrant etiketten användaren ser i Utvecklaralternativ på sin telefon, vilket är hela poängen med nyckeln.
+  Uppgraderar style.md § ”Android over ADB”-raden från `tentative` till `high`; `en`-genus står kvar (”USB-felsökning
+  aktiverad”).
+- **Allow (knappen på Androids egen ”Allow USB debugging?”-ruta) → `Tillåt`** · AOSP
+  `frameworks/base/packages/SystemUI/res/values-sv/strings.xml`, `usb_debugging_allow` = ”Tillåt” (rutans rubrik är ”Ska
+  USB-felsökning tillåtas?”, `usb_debugging_title`) · `high`. Verbformen i inforutan blir därför `tillåta`:
+  `adb.readiness.waitingForAuthorization` = ”Väntar på att du ska tillåta USB-felsökning”. ❌ Inte `Godkänn` eller
+  `Acceptera` — ordet måste stämma tecken för tecken med knappen på telefonens skärm.
+- **tap (på en telefonskärm) → `tryck på`** · Androids sv genomgående (`Tryck på …`) · `high`. Katalogens `klicka` hör
+  till musen på Macen; telefonen får `tryck på`.
+- **Android platform tools → `Android platform tools`, oböjt** · redan satt i
+  `settings.fileOperations.adbEnabled.description` (”Kräver Android platform tools (kommandot ”adb”)”) · `high`. Googles
+  egennamn på hämtningen; ingen genitiv-`s`, ingen bestämd form.
+- **”The Android tools on this Mac” → `Android-verktygen på den här Macen`** · `Android-verktyg` är katalogens eget ord
+  i samma beskrivning (”om du inte har några Android-verktyg installerade”), och `den här Macen` är den satta formen ·
+  `high`. ❗ Ingen diagnostik: inget om `adb`-servern, transporten eller demonen, precis som engelskan.
+- **”Cmdr couldn't find …” → `Cmdr kunde inte hitta …`** · katalogens egen formel
+  (`errors.listing.notFound.explanation`, `licensing.error.shortCodeNotFound`) · `high`.
+- **reseat the cable → `dra ur och sätt i kabeln igen`** · `dra ur` är det satta ordet för kabeln ur uttaget (style.md §
+  `koppla från`/`koppla ur`/`dra ur`), och katalogen har redan konstruktionen i `errors.provider.macDroid.transient`
+  (”Dra ur och anslut USB-kabeln igen”) · `high`. Ett ensamt `sätt i kabeln igen` skulle inte säga att den först ska ut.
+- **Disconnect {name} (telefonens knapp) → `Koppla från {name}`** · ordagrant systernyckeln
+  `fileExplorer.navigation.disconnectPlaceAriaLabel` för en server · `high`. De två SKA vara lika: engelskan valde
+  `Disconnect` framför `Eject` av samma skäl på båda ytorna (inget görs säkert att dra ur), och `mata ut` är reserverat
+  för utmatning. Motsvarande upptagen-inforuta tar systerformuleringen ordagrant från
+  `fileExplorer.navigation.ejectBusyTooltip`, som har exakt samma engelska slut (”on this device”):
+  `Det går inte att koppla från medan åtgärder pågår på den här enheten`.
+- **Dismiss → `Avfärda`** · katalogens genomgående form på sju systernycklar (`downloads.empty.dismiss`,
+  `crashReporter.dialog.dismiss`, `errorReporter.sentToast.dismiss`, `lowDiskSpace.toast.closeTooltip` med flera) ·
+  `high`. Skärmläsarnamn på ×-knappen, alltså imperativ.
+- **Turn on USB debugging → `Slå på USB-felsökning`** · `slå på` är katalogens och macOS sv:s verb för att slå på en
+  funktion (”Slå på Wi-Fi/AirDrop/fildelning”; katalogen: `fileExplorer.navigation.driveIndex.menuEnable`,
+  `servers.hub.discoveryOffLink`) · `high`. `Aktivera` är kvar för det som aktiveras en gång (en licens, en
+  AI-leverantör), och `har USB-felsökning aktiverad` står kvar som TILLSTÅND i inställningsraderna.
+- **How (länken som öppnar Androids egen instruktion) → `Hur?`** · `tentative`. Apple sv har ingen enordslänk för ”How”:
+  en svepning av 7 851 `.loctable`-filer i `/System` + `/Applications` gav noll träffar på ett ensamt `Hur`, `Så här`
+  eller `Så här gör du`. Apples enordsform för en dokumentationslänk är `Läs mer` (PassKit `LEARN_MORE_BUTTON_TITLE`
+  m.fl.), men det är ”Learn more”, inte ”How”, och engelskan valde medvetet frågeordet. `Hur?` behåller den talspråkliga
+  frågan som `@key`-beskrivningen ber om och håller sig till ett ord. Frågetecknet behövs: ett naket `Hur` läses som
+  avhugget.
+- **De två interna spårningsnycklarna följer sitt syskon ordagrant** · `settings.behavior.adbHintDismissed.label` =
+  `Tips om USB-felsökning avfärdat` speglar `settings.behavior.serversPinHintSeen.label` (”Tips om lång Nätverk-grupp
+  visat”) och `settings.behavior.openTerminalHereToastSeen.label`, och `.description` =
+  `Om engångsraden som erbjuder USB-felsökning har avfärdats.` speglar
+  `Om engångstipset om att lossa servrar har visats.` · `high`. `avfärdat`/`avfärdats` i neutrum efter `Tips` respektive
+  opersonlig passiv, samma mönster som syskonens `visat`/`visats`.
+
+Ingen `sameAsSourceJustification` i passet (`adb.volumeLabelWithSuffix` bar redan sin från en tidigare omgång). Ingen
+apostrof i något värde, så ICU-dubbleringen `''` blir aldrig aktuell, och `{name}` står oförändrad i den enda nyckel som
+bär den.
