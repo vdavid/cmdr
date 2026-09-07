@@ -94,6 +94,7 @@
         <TextInput
             id="sign-in-username"
             value={username}
+            placeholder={tString('servers.sheet.usernamePlaceholder')}
             oninput={(e: Event) => {
                 onChange({ username: (e.currentTarget as HTMLInputElement).value })
             }}

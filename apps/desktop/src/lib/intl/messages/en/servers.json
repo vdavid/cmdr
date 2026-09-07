@@ -1,4 +1,8 @@
 {
+  "servers.sheet.usernamePlaceholder": "Example: barry",
+  "@servers.sheet.usernamePlaceholder": {
+    "description": "Placeholder in the sign-in sheet's username field, shown when the server gave no hint about who signs in. \"barry\" is a sample first name; swap it for a typical sample name in the target language if appropriate. The word before it is the ordinary label your language puts in front of an example."
+  },
   "servers.pinHint.title": "Your Network group is getting long",
   "@servers.pinHint.title": {
     "description": "Title of a one-time notification, shown the first time five servers sit in the volume switcher's Network group. \"Network group\" is the heading in the switcher (the dropdown listing disks and servers) that servers are filed under; use the same wording as that heading. Friendly and factual, never a warning."

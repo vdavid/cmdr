@@ -1,4 +1,8 @@
 {
+  "servers.sheet.usernamePlaceholder": "範例：barry",
+  "@servers.sheet.usernamePlaceholder": {
+    "sourceHash": "1b5b09c"
+  },
   "servers.pinHint.title": "你的「網路」群組越來越長了",
   "@servers.pinHint.title": {
     "sourceHash": "0cf001a"

@@ -1,4 +1,8 @@
 {
+  "servers.sheet.usernamePlaceholder": "Ví dụ: barry",
+  "@servers.sheet.usernamePlaceholder": {
+    "sourceHash": "1b5b09c"
+  },
   "servers.pinHint.title": "Nhóm Mạng của bạn đang dài dần",
   "@servers.pinHint.title": {
     "sourceHash": "0cf001a"

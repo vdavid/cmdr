@@ -2551,6 +2551,7 @@ export type MessageKey =
   | 'servers.sheet.tryNextcloudAddress'
   | 'servers.sheet.useAgent'
   | 'servers.sheet.username'
+  | 'servers.sheet.usernamePlaceholder'
   | 'settings.adb.browse'
   | 'settings.adb.install.intro'
   | 'settings.adb.pathPlaceholder'
