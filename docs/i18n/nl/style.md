@@ -231,6 +231,19 @@ second half is now a normal plural with a real verb
   `USB-foutopsporing`, the `Toestaan` button, `tik op`, and the `Zet … aan` imperative. Use them the way term-choice
   principle 1 uses Apple: the word in Cmdr has to be the word on the phone's screen. Evidence: `glossary.md` § Het
   telefoonpaneel via ADB.
+- **A command's register follows its ENGLISH SHAPE, not whether it toggles.** `commands.serversTogglePin.label`
+  ("Pin / unpin server") keeps the slash and the imperative: `Zet server vast / maak hem los`. The two `aan/uit`
+  commands answer a different English (`Toggle pin tab`, `Toggle hidden files`), which Dutch renders as
+  `<object> <infinitive> aan/uit`; an English imperative takes a Dutch imperative, as all four sibling `servers.*`
+  commands and both menu pin items already do. Confidence: high. Evidence: `glossary.md` § De serverhub.
+- **`vastzetten` en `vast maken` zijn één werkwoordpaar, geen twee.** Beide dragen hetzelfde partikel, en het hele
+  catalogus-cluster staat op `vast` / `los`: `Maak tabblad vast` / `Maak tabblad los`, `Maak vast in volumekiezer` /
+  `Maak los`, `Tabblad vastzetten aan/uit`, `Vastgezet`, `Zet server vast / maak hem los`. ❌ Veeg ze dus niet samen op
+  één licht werkwoord: `Maak server vast / maak hem los` herhaalt `maak` in één label. Confidence: high. Bewijs:
+  `glossary.md` § De vastzet-hint.
+- **"USB debugging" → `USB-foutopsporing`, settled.** It is what a Dutch Android phone shows, sourced straight from
+  AOSP (`SettingsLib` `enable_adb`), and the English `@key.description` now asks for exactly that: the phrase the way
+  the vendor's localized Android renders it. The `adb.*` pass reuses the same rendering. Confidence: high.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -292,12 +305,6 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
 - **"platform tools" kept English, "Android tooling" → "Android-tools"**: no pile source (Google's Dutch pages keep the
   package name English, and the Tier-2 sources were unreachable on this machine). Confirm the split reads right, and
   that "de Android platform tools" doesn't want a hyphen.
-- **"USB debugging" translated to "USB-foutopsporing"** against the English `@key.description`'s "keep as-is": it's what
-  a Dutch Android phone shows, now sourced straight from AOSP (`SettingsLib` `enable_adb`). Recommendation: close this
-  flag and fix the `en` description. The `adb.*` pass reuses the same rendering.
-- **"Pin / unpin server" → `Zet server vast / maak hem los`**: imperative with the slash kept, against the two existing
-  toggle commands in `commands.json`, which use the infinitive (`Tabblad vastzetten aan/uit`). Confirm which register
-  wins for a toggle whose English is imperative. Evidence: `glossary.md` § De serverhub.
 - **"Places" → `Locaties`**: English picked `Places` over `Locations` on purpose, and Dutch has one word for both.
   Confirm `Locaties` reads right as a shortcuts-list heading next to `Volumekiezer` and `Servers`.
 - **"Found nearby" → `Gevonden in de buurt`**: `in de buurt` is Apple's own rendering of `nearby`, but the word order is
@@ -311,10 +318,6 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   Engels (de sleutel van de gebruiker tegenover die van de server, waar `hostKey.*` het over heeft). De twee
   paneelstanden zijn nooit tegelijk in beeld, dus de waarde blijft letterlijk. Bevestig, of kies `een SSH-sleutel` en
   wijk daarmee van het Engels af.
-- **`Maak vast in volumekiezer` / `Maak los` naast `Zet server vast / maak hem los`**: de menu-items zijn
-  Tier-1-gesourcet (Apples `Pin in Menu Bar` → `Maak vast in menubalk`) en gelijk aan `menu.tab.pinTab`/`.unpinTab`,
-  terwijl `commands.serversTogglePin.label` eerder `vastzetten` koos. Bevestig een veeg naar één werkwoordpaar. Bewijs:
-  `glossary.md` § De vastzet-hint.
 - **host key → `serversleutel`** (`settings.servers.card.trustedHostKeys`, `settings.summary.servers`): gemunt, alleen
   waar het Engels zélf `host key` zegt; in het serverpaneel blijft het `de sleutel`. Bevestig dat het niet leest als
   "sleutel tót de server".

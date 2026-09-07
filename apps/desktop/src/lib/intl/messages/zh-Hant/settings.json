@@ -939,7 +939,7 @@
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
   },
-  "settings.network.enabled.description": "在你的本機網路上探索 SMB 伺服器並連接它們。關閉時，Cmdr 仍可在已裝載的共享上讀寫檔案，但不會向 macOS 要求本機網路的存取權。",
+  "settings.network.enabled.description": "在你的區域網路上探索 SMB 伺服器並連接它們。關閉時，Cmdr 仍可在已裝載的共享上讀寫檔案，但不會向 macOS 要求區域網路的存取權。",
   "@settings.network.enabled.description": {
     "sourceHash": "3500345"
   },
@@ -999,7 +999,7 @@
   "@settings.network.timeoutMode.opt.normal": {
     "sourceHash": "a7248ee"
   },
-  "settings.network.timeoutMode.optDesc.normal": "適用於一般的本機網路（15s 逾時）",
+  "settings.network.timeoutMode.optDesc.normal": "適用於一般的區域網路（15s 逾時）",
   "@settings.network.timeoutMode.optDesc.normal": {
     "sourceHash": "e20eca1"
   },

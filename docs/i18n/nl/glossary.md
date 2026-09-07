@@ -2526,10 +2526,11 @@ Notities:
 - **`Gevonden in de buurt`** (`status.foundNearby`): 20 tekens tegen 12 in het Engels, in een smalle statuskolom.
   Alternatieven: `In de buurt gevonden` (even lang) of het kortere `In de buurt`, dat het `gevonden` laat vallen.
   Overloop-check dit tegen de pseudolocale.
-- **`Zet server vast / maak hem los`** (`commands.serversTogglePin.label`): 30 tekens tegen 18. De twee bestaande
-  schakelopdrachten in dit bestand kiezen de infinitiefvorm (`Tabblad vastzetten aan/uit`,
-  `Verborgen bestanden aan/uit`), dus `Server vastzetten / losmaken` zou daar beter bij passen; het Engels is hier
-  echter gebiedend, en de rest van deze vijf opdrachten ook. Bevestig welke van de twee registers wint.
+- **`Zet server vast / maak hem los`** (`commands.serversTogglePin.label`): 30 tekens tegen 18, en dat blijft zo. De
+  twee bestaande schakelopdrachten kiezen de infinitiefvorm (`Tabblad vastzetten aan/uit`,
+  `Verborgen bestanden aan/uit`) omdat hún Engels `Toggle X` zegt; dit Engels is gebiedend, net als de vier andere
+  `servers.*`-opdrachten, dus dit label ook. `hem` verwijst naar `server` (de-woord), dus de congruentie klopt ·
+  `high`. Zie `style.md` § Notes and decisions.
 - **`Lokale netwerkdetectie`** (`discoveryOff`): de twee helften zijn allebei gesourcet, de samenstelling niet.
   `Detectie in je lokale netwerk` is de omschrijvende variant en leest losser, maar is een stuk langer voor één regel
   onder een lijst.
