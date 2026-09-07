@@ -609,6 +609,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # The checkout is owned by the host runner's UID, but this job (alone among ci.yml's jobs)
+      # runs inside the pinned Playwright `container:`, whose process UID doesn't match. Git's
+      # dubious-ownership guard then refuses to read repo state, and `go build`'s VCS stamping
+      # fails with "error obtaining VCS status: exit status 128" before it ever reaches our code.
+      - name: Trust the checkout inside the container
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Install mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
 
