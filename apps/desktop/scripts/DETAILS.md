@@ -25,6 +25,19 @@ saved value on first run, and that saved `false` then beats the debug-build-on d
 setting, so the export wins; `CMDR_MCP_ENABLED=0` still exercises the off path. The deeper fix — not persisting registry
 defaults as explicit choices — is a known settings-store follow-up (see `src-tauri/src/settings/DETAILS.md`).
 
+### Dev answers the terminal question for the app (`CLICOLOR_FORCE=1`)
+
+For `pnpm dev` launches, when the wrapper's own stderr is a TTY and neither `CLICOLOR_FORCE` nor `FORCE_COLOR` is
+already set, the wrapper exports `CLICOLOR_FORCE=1`. The app's logger can't work this out for itself: the Tauri CLI
+spawns the dev app with a piped stderr and forwards the bytes to its own, so `is_terminal()` in the app says false in a
+real terminal and can't tell one from `2> log.txt`, and the terminal log would never colorize. The wrapper is the last
+process in the chain that still sees the real stderr. Stderr, not stdout, because that's where the app's log lines come
+out, so `pnpm dev > log.txt` keeps its colors while `pnpm dev 2> log.txt` doesn't.
+
+The same move happens one layer down: the Tauri CLI hands cargo `--color always`. Dev only, because a build launches no
+app, and forcing color on the tools a build runs would put escape sequences into a captured `pnpm build > build.log`.
+How the app reads it (and `NO_COLOR` outranking it): `src-tauri/src/logging/DETAILS.md` § "Terminal target column".
+
 ## The llama-server fetch
 
 `download-llama-server.go` runs from `src-tauri/build.rs` and puts the llama-server binaries where the build expects
