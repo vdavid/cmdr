@@ -18,6 +18,17 @@ vi.mock('$lib/tauri-commands', () => ({
 const titleSnippet = createRawSnippet(() => ({ render: () => `<span>Dialog title</span>` }))
 const bodySnippet = createRawSnippet(() => ({ render: () => `<p>Body.</p>` }))
 const footerSnippet = createRawSnippet(() => ({ render: () => `<button>OK</button>` }))
+/** Stands in for `NewEntryNameField`: body content that grabs focus as it mounts. */
+const autoFocusInputSnippet = createRawSnippet(() => ({
+  render: () => `<input class="auto-focused" />`,
+  // After the microtask that inserts it, matching a real child component's
+  // post-`tick()` focus (and beating `ModalDialog`'s own).
+  setup: (node: Element) => {
+    queueMicrotask(() => {
+      ;(node as HTMLInputElement).focus()
+    })
+  },
+}))
 
 /** The resize bands the panel exposes, in DOM order (which is also their hit-test order). */
 function bandDirections(target: HTMLElement): string[] {
@@ -95,6 +106,38 @@ describe('ModalDialog focus restoration', () => {
     }).not.toThrow()
     await tick()
 
+    target.remove()
+  })
+})
+
+describe('ModalDialog mount focus', () => {
+  it('focuses the scrim when nothing inside claims focus', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ModalDialog, {
+      target,
+      props: { titleId: 't', title: titleSnippet, children: bodySnippet },
+    })
+    await tick()
+    await tick()
+
+    expect(document.activeElement).toBe(target.querySelector('.modal-overlay'))
+    target.remove()
+  })
+
+  it('leaves focus alone when a child claimed it first', async () => {
+    // Children mount before this component, so an autofocusing field (the New folder
+    // name box) focuses first; the scrim must not take it back.
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ModalDialog, {
+      target,
+      props: { titleId: 't', title: titleSnippet, children: autoFocusInputSnippet },
+    })
+    await tick()
+    await tick()
+
+    expect(document.activeElement).toBe(target.querySelector('input'))
     target.remove()
   })
 })

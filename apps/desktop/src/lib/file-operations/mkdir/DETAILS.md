@@ -24,6 +24,12 @@ The dialog opens immediately with a focused input; AI runs in the background. If
 suggestion strip doesn't render and the dialog stays fully usable. `aiAvailable` starts at `null` ("checking") to avoid
 a flash-of-empty-strip on slow `getAiStatus()` responses.
 
+### The name box is typeable the instant F7 opens
+
+`../NewEntryNameField.svelte` focuses and selects the box in its own `onMount`, and `ModalDialog` skips its scrim focus
+when something inside already owns it (why, and the ordering that made this a bug: `$lib/ui/DETAILS.md` § ModalDialog).
+Guarded by `NewFolderDialog.focus.test.ts` and the F7 round-trip in `file-operations.spec.ts`.
+
 ### Timeout warning vs error
 
 A slow `createDirectory` returns a timeout-shaped error after the backend's deadline. Rather than a red "failed" error,
