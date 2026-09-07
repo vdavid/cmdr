@@ -54,7 +54,7 @@ below is met.
       where Tab can't mean two things. One model (an account holds places, the switcher shows pinned places), one modal
       sign-in sheet driven by a backend-owned `SignInShape`, one pane view for every wait, and a "Servers" hub pane
       state; SMB migrates onto all four so S3 and OAuth inherit them. Superseded and wiped `servers-in-the-sidebar.md`;
-      it also absorbs the frontend half of `android-adb-ui.md`. Eight milestones, sequential, roughly two weeks.
+      it also absorbed the frontend half of the now-wiped ADB UI spec. Eight milestones, sequential, roughly two weeks.
 
 - [ ] 2026-09-06 `data-safety-hunt-follow-ups.md` - **What the transfer-engine hunt left open after its 15 findings were
       fixed.** Nine ranked entries in problem / impact / solution / size form: two high (a cross-FS move loses the bytes
@@ -82,14 +82,6 @@ below is met.
       pane-only overlay seam that scans and walkers never see. Three rules become types. `display_size` becomes a typed
       `GitEntryMeta` the frontend words per locale; the watcher moves with a typed sink. Sequenced after
       `mtp-crate-extraction.md`; can go first if that stalls. About three days.
-- [ ] 2026-09-02 `android-adb-ui.md` - **The ADB backend works and nobody can reach it.** No connect flow, no device
-      picker, no settings, and no words for the six ways a connect refuses. Eight decisions, taken rather than listed:
-      one switcher row per phone with MTP as the default face and ADB a mode you switch it into; non-ready devices shown
-      disabled with their reason instead of hidden; the authorize prompt resolving itself off the `track-devices` push;
-      connecting rendered in the pane, never a modal; a Settings section whose `adb` path override exists because a
-      macOS GUI app never inherits the shell `PATH`; panes opening at `/sdcard`; ADB deliberately not indexed; and
-      "Disconnect" rather than "Eject". Still gated on the real-device pass.
-
 - [ ] 2026-09-01 `webdav-backend-follow-ups.md` - **The WebDAV backend ships without a way to reach it, and trusts only
       what the system roots vouch for.** `crates/cmdr-webdav`, its IPC surface, and the Docker fixtures are done and
       documented in `crates/cmdr-webdav/DETAILS.md`. Open: the sidebar and sign-in UI it shares with SFTP (the big one),
@@ -101,10 +93,10 @@ below is met.
       `crates/cmdr-adb` lists, streams, and writes as a device-anchored `Volume` beside MTP, over the seam MTP never had
       (`device_volumes.rs`, with `host:track-devices` as the first push-channel hotplug); it's all documented beside the
       code. Five items left, in PISS form: the real-device pass that gates everything (authorize prompt, `unauthorized`
-      → `device` mid-session, a 2 GB transfer, a `/data` listing on a non-rooted phone), the UI that `android-adb-ui.md`
-      owns, a `go_to_path` scheme short-circuit so ⌘G takes an `adb://` path (`mtp://` shares the hole), `sendrecv_v2`
-      compression off until measured, and wireless pairing left to the server. Indexing an ADB volume is a settled
-      non-goal, not a gap.
+      → `device` mid-session, a 2 GB transfer, a `/data` listing on a non-rooted phone), a `go_to_path` scheme
+      short-circuit so ⌘G takes an `adb://` path (`mtp://` shares the hole), `sendrecv_v2` compression off until
+      measured, and wireless pairing left to the server. The UI shipped with `servers-hub-plan.md`'s M5. Indexing an ADB
+      volume is a settled non-goal, not a gap.
 
 - [ ] 2026-08-31 `rollback-recheck-plan.md` - **Cancelling an operation deletes files it no longer wrote, and the move
       case overwrites silently.** The history dialog's Roll back verifies every item against a recorded snapshot and
@@ -156,6 +148,14 @@ left, so the durable intent survives the wipe.
       measured; the ~400 MB compute-unit trade, blocked on unmeasured enrichment throughput; an fp16 spike), the rescan
       threshold's week of churn data, one question for David about `SYSTEM_DIR_EXCLUDES` that gates nothing, and two
       smaller calls.
+
+- [ ] 2026-09-07 `later/adb-merged-phone-row.md` - **One switcher row per phone, not one per protocol.** A phone with
+      platform-tools installed is visible to Cmdr twice, over MTP and over ADB, and shipping two rows for one object on
+      the desk makes the user pick a protocol before they have a question. The decision is taken: one row per physical
+      device, matched by serial, with MTP as the default face and ADB a mode the row switches into from its menu and a
+      pane-header control ("Show the full filesystem"). It costs a cross-provider identity fold in `device_volumes.rs`
+      and a per-row active protocol the pane remembers, and it retires the "(ADB)" name suffix and its ten translations.
+      The last item of the shipped ADB work, deferred because it is the largest and nothing waits on it.
 
 - [ ] 2026-08-23 `later/sftp-follow-ups.md` - **The SFTP backend ships without a way to reach it.** The crate, its IPC
       surface, and the fixtures are done and documented in `crates/cmdr-sftp/DETAILS.md`; three things are open. The

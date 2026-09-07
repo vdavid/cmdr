@@ -78,7 +78,13 @@ volumes. Runs checks **in parallel** with 500ms frontend timeouts per check. Pri
 1. Favorite path (when `targetPath !== volumePath`)
 2. Other pane's path (if same volume and path exists)
 3. Stored `lastUsedPath` for this volume
-4. Default: `~` for `DEFAULT_VOLUME_ID`, else volume root
+4. Default: `~` for `DEFAULT_VOLUME_ID`, else `firstLandingOn(volumePath)`
+
+`firstLandingOn` is the volume root for everything but a phone: an `adb://<serial>` root becomes
+`adb://<serial>/sdcard`, where the user's own files are. ❗ It is a LANDING rule reached only by arm 4, ❌ never a
+different volume root: the root is unchanged, one Backspace away, and shown in the breadcrumb, and a remembered path
+(arm 3) still wins. Why, and why `/data` is never hidden: `$lib/adb/DETAILS.md` § "Where a phone's first navigation
+lands".
 
 `withTimeout(promise, ms, fallback)`: imported from `$lib/utils/timing` and re-exported. Races a promise against a
 timeout, returning the fallback on expiry. Used by `determineNavigationPath` and also by `VolumeBreadcrumb.svelte`
