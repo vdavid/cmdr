@@ -62,9 +62,10 @@ Two smaller things the review pass flagged and did not settle, each an hour at m
 
 ## 1. There is no WebDAV frontend (the bigger item, and shared with SFTP)
 
-`docs/specs/servers-in-the-sidebar.md` owns it: one design for both backends, five milestones, roughly a week. Nothing
-on the backend side is missing for it, and this crate's § "Connecting from the frontend" is the contract it builds
-against.
+`docs/specs/servers-hub-plan.md` owns it: one model for every remote thing, one sign-in sheet, one pane view for every
+wait. Nothing on the backend side is missing for it, and this crate's § "Connecting from the frontend" is the contract
+it builds against. What the frontend settled, and why, is
+`apps/desktop/src/lib/servers/DETAILS.md`.
 
 ## 2. Certificate trust-on-first-use for self-signed NAS certificates
 

@@ -11,7 +11,7 @@ one modal sheet for every sign-in (backend tells the sheet what to ask, the shee
 (connecting, waiting for the phone, signed out, refused), and a hub pane state that lists what the user has. SMB
 migrates onto all four so the next backend (S3, then an OAuth provider) inherits them instead of adding a fifth dialog.
 
-This plan supersedes `servers-in-the-sidebar.md` (wipe it when M3 lands) and absorbs the frontend half of
+This plan superseded `servers-in-the-sidebar.md`, wiped when M3 landed, and absorbs the frontend half of
 `android-adb-ui.md` (wipe it when M5 lands; its eight decisions are restated below only where this plan changes them).
 The backend contracts this builds on are canonical elsewhere and ❌ not restated here: `crates/cmdr-sftp/DETAILS.md` §
 "Connecting from the frontend", `crates/cmdr-webdav/DETAILS.md` § the same, `apps/desktop/src-tauri/src/adb/DETAILS.md`,
@@ -709,7 +709,9 @@ rather than a session. `servers/DETAILS.md` § "The sheet contract" is canonical
    `$derived.by` rule; the in-pane focus-trap `eslint-disable` goes rather than being carried over).
 2. `SmbReconnectingView` and `SmbReauthView` are replaced by `RemoteConnectView` states; the reconnect manager's
    `needs-auth` maps to `signed_out { shape }`. `VolumeUnreachableBanner`'s `smbGaveUp` variant becomes `gave_up`.
-3. Wipe `servers-in-the-sidebar.md` from `docs/specs/` (its intent now lives in `servers/DETAILS.md`).
+3. ✅ `servers-in-the-sidebar.md` is wiped: its durable intent lives in `servers/DETAILS.md` (the path grammar, the
+   sheet contract, the refusal table, the backend-owned unattended-reconnect warning) and
+   `file-explorer/navigation/DETAILS.md` (the Network group's three rows, and why a server row says Disconnect).
 
 Tests: the three site tests rewritten to assert the sheet request (not a rendered form); `smb-reconnect-manager` test
 for the shape hand-off; a11y blocks updated; the SMB E2E spec's login steps retargeted to the sheet. Docs:
