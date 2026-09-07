@@ -4,11 +4,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 
 ## File inventory
 
-- **`mod.rs`**: re-exports. `mtp` / `network` / `volumes` gated behind
-  `#[cfg(any(target_os = "macos", target_os = "linux"))]`. There's no `volumes_linux` module: the volume commands are
-  cross-platform, and `commands::volumes_linux` is a `#[cfg(target_os = "linux")] pub use volumes as volumes_linux;`
-  kept only until `ipc.rs` stops registering the Linux set under that path. See
-  `../volumes_linux/DETAILS.md` § "One command module".
+- **`mod.rs`**: re-exports. `mtp` / `network` / `sftp` / `webdav` / `volumes` gated behind
+  `#[cfg(any(target_os = "macos", target_os = "linux"))]`. There's no `volumes_linux` module and no alias for one: the
+  volume commands are cross-platform and `commands/volumes.rs` serves both. See `../volumes_linux/DETAILS.md` § "One
+  command module".
 - **`util.rs`**: `TimedOut<T>`, `DeadlineError`, `blocking_with_timeout`, `blocking_with_timeout_flag`,
   `blocking_typed_result_with_timeout`, `timeout_detached_typed`, `Deadline` (`elapsed` / `remaining` / `total` /
   `fraction`) + `timeout_detached_within`, and `BlockingBudget`.
@@ -60,17 +59,16 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`volumes_linux.rs`** (Linux): same interface as `volumes.rs` (including `resolve_location`), delegates to the
   `volumes_linux` module.
 - **`mtp.rs`**: full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan).
-- **`sftp.rs`**: the SFTP surface and the wire vocabulary it speaks — `connect_sftp_volume` (a tagged
+- **`sftp.rs`**: the SFTP surface and the wire vocabulary it speaks: `connect_sftp_volume` (a tagged
   `SftpConnectResult`, never a string), `cancel_sftp_connect`, `disconnect_sftp_volume`, `approve_sftp_host_key` / `forget_sftp_host_key` /
   `list_trusted_sftp_host_keys`, the credential trio (`save` / `has` / `delete`, keyed `host:port` + username, each on a
   blocking task because the Keychain can prompt), and the known-servers trio (`get` / `update` / `forget`). ❗ There is
   deliberately no command that returns a stored secret. The flow behind the commands is
   `network::sftp_volume_wiring`; the frontend contract is `crates/cmdr-sftp/DETAILS.md` § "Connecting from the
   frontend".
-  - ❗ **Reconnecting an SFTP volume, and asking what a sign-in would want, both go through `network.rs`**: the two
-    `reconnect_smb_*` commands and `get_volume_sign_in_state`. All three are backend-neutral (they delegate to a
-    `Volume` trait method on whatever is registered); renaming the two `smb`-prefixed ones is a cross-backend follow-up
-    rather than something SFTP does on its own.
+  - ❗ **Reconnecting an SFTP volume, and asking what a sign-in would want, both go through `network.rs`**:
+    `reconnect_volume`, `reconnect_volume_with_credentials`, and `get_volume_sign_in_state`. All three are
+    backend-neutral: they delegate to a `Volume` trait method on whatever is registered, so no backend owns a copy.
   - ❗ **`connect_sftp_volume`'s result carries `rung` and ❌ nothing about a later sign-in.** The rung is a fact about
     that dial; what a sign-in would ask for is decided per dial too, so it is a query, not a payload.
   - ❗ **`connect_sftp_volume`'s `attempt_id` is the CALLER's, made before the call**, and `cancel_sftp_connect` takes
@@ -112,7 +110,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   in-place reconnect (`reconnect_volume`: backend single-flighted via `Volume::attempt_reconnect`;
   `reconnect_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via
   `Volume::reconnect_with_credentials`), what FORM a sign-in takes (`get_volume_sign_in_state`, via
-  `Volume::sign_in_prompt` — a `SignInShape` tagged on `kind`, read live when a banner renders, ❌ never carried on a
+  `Volume::sign_in_prompt`, a `SignInShape` tagged on `kind`, read live when a banner renders, ❌ never carried on a
   connect result and ❌ never derived from the protocol or the sheet's mode; an unregistered id and a backend with no
   story of its own both answer `password`, the safe way to be wrong, and a share answers `username_password` because
   the share is the identity and the account is a field on it), per-volume disconnect (`disconnect_smb_volume`: macOS shells out to
@@ -128,7 +126,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `get_smb_diagnostics(volume_id)` (a snapshot of one volume's `smb2::SmbClient`). The snapshot DTOs mirror
   `smb2::Diagnostics` & friends with `specta::Type` derives (so `smb2` needn't depend on specta), one `impl From` per
   type.
-- **`memory_diagnostics.rs`** (macOS only): `get_memory_diagnostics(sizes_per_tag)` — one payload answering "what is
+- **`memory_diagnostics.rs`** (macOS only): `get_memory_diagnostics(sizes_per_tag)`, one payload answering "what is
   Cmdr holding right now, and what shape is it in?". Folds `cmdr_fs::process_memory`'s four readers together: the
   footprint, mimalloc's own accounting, the registered malloc zones, and the kernel's VM map by tag with a per-tag
   region-size histogram. That last field is why it exists: a repeated exact region size is a fingerprint of whatever
@@ -155,7 +153,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `refresh_directory_icons`, cache clear.
 - **`rename.rs`**: `move_to_trash` (delegates to `write_operations::trash::move_to_trash_sync`),
   `check_rename_permission`, `check_rename_validity`, `rename_file`. `rename_file` calls `notify_mutation` after success
-  to update the listing cache (both local and volume-aware paths).
+  to update the listing cache (both local and volume-aware paths). ❗ `check_rename_validity` and
+  `check_rename_permission` stay UNMANAGED: they answer while someone is typing, so they take the snappy read-only path
+  instead of `manager::run_instant`, which busy-marks the volume for a mutation that isn't happening yet.
 - **`volume_id` on the write commands.** `create_directory` / `create_file` / `rename_file` only expand tilde (root),
   resolve the `volume_id`, and apply the 5 s write timeout, shipping the typed `MutationError` unchanged; the logic and the managed instant op live
   in `file_system::write_operations::{create,rename}`. For a non-root `volume_id`, `delete_files` uses the volume-aware
@@ -171,7 +171,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `crate::restricted_paths` for the state machine and the `restricted-paths-changed` event payload.
 - **`file_viewer.rs`**: session lifecycle, regex/literal search with mode flags, word wrap, menu state, encoding pickers
   (`viewer_set_encoding` / `viewer_get_encoding_options`), tail mode (`viewer_set_tail_mode`), `viewer_reload`.
-- **`menu.rs`**: native menus and menu-bar state — the context menus (file / breadcrumb / volume row / parent row /
+- **`menu.rs`**: native menus and menu-bar state: the context menus (file / breadcrumb / volume row / parent row /
   tab / network host), the view-mode + hidden-files + pin-tab + reopen-tab sync commands, and `activate_window_menu`
   (per-window focus-gain: swaps the macOS app menu bar between main/viewer, then enables/disables file-scoped items via
   the private `set_menu_context` helper; see `menu/DETAILS.md`).
@@ -192,7 +192,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   window opens behind whatever is frontmost (verified on macOS 15.5 with Tauri 2.11.5, from a user-reported background
   start after "Restart now", 2026-08-27). `order_window_to_back` is E2E-only z-ordering (order to back without focus),
   a no-op off macOS / outside E2E, and the E2E branch of `show_main_window` orders back instead of showing.
-- **`file_actions.rs`**: direct file actions from the palette / menus — `show_in_finder`, `get_info`, `open_in_editor`,
+- **`file_actions.rs`**: direct file actions from the palette / menus: `show_in_finder`, `get_info`, `open_in_editor`,
   `copy_to_clipboard`, and `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive download/eviction via
   `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`). Plus the "open terminal here" pair,
   `list_terminal_apps(app_choice)`, `open_terminal_here(path, volume_id, app_choice)`, and the sync
@@ -224,9 +224,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   transport-neutrally, with `EnableIndexingOutcome::IndexingDisabled` so the FE has one shape to match. The other
   non-`Started` arms the FE must answer are the two deferrals: something else holds the drive (`DeferredUntilSearchEnds`
   a search walking it, `DeferredUntilScanEnds` a full walk already running), so the index remembers the request and runs
-  it when that holder ends (`indexing/lifecycle/DETAILS.md` § The one walk a volume remembers) — a promise the UI has to
+  it when that holder ends (`indexing/lifecycle/DETAILS.md` § The one walk a volume remembers), a promise the UI has to
   voice, since nothing else marks the wait, and they stay two variants because the user's next question differs.
-- **`media_index/`**: the media-index IPC surface, one module per family — `search.rs` (OCR, tag, semantic,
+- **`media_index/`**: the media-index IPC surface, one module per family: `search.rs` (OCR, tag, semantic,
   find-similar, dedup), `state.rs` (per-volume state + covered-count preview), `reclaim.rs` (preview + prune),
   `file_status.rs` (per-file overlay + per-folder badge), `clip_model.rs` (install state, download, delete),
   `thumbnail.rs` (grid tokens), and `policy.rs` (the coverage-CHANGING setters). `mod.rs` keeps the hit-limit clamp and
@@ -278,7 +278,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   pacing a reversal doesn't pace the copy that staged it), `set_test_scan_preview_delay`, `flush_file_watcher`, `force_agent_wake` (stages one folder's activity on the wake
   loop's real channel and makes it act now, on that folder alone; it skips the timer and the proactive toggle, never a
   gate, and its `quiet` flag picks which script the wake's fake assistant plays), `stage_agent_rollup` (the same
-  staging without the wake, so a spec can prove the force reports on its own folder) — both in
+  staging without the wake, so a spec can prove the force reports on its own folder). Both are in
   `agent/wake/DETAILS.md` § Forcing a wake.
 
 ## Decisions

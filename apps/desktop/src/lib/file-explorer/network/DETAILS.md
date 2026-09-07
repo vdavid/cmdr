@@ -97,7 +97,7 @@ unit-tested:
   `smb.spec.ts` polls on). ❗ The status token is locale-independent even though the column beside it is translated: an
   agent parses these strings and a translation landing in the wire would break both silently. A one-place row's path is
   the place's `appRoot` (from `SavedPlace`, which Rust mints in one function); an SMB host keeps the `smb://<address>`
-  spelling the host list has always published; the add row is `+ Add server…` at `smb://add`.
+  spelling the host list publishes; the add row is `+ Add server…` at `smb://add`.
 - **`servers-hub-actions.ts`**: F8, the two row menus, and the SMB host menu's answers, behind live getters (❌ never
   snapshots: the rows change under a menu that is still open). ❗ A one-place row and an SMB host take different paths
   at every branch, which is why they live in one unit: a one-place row is a PLACE the servers family speaks for, an SMB
@@ -110,8 +110,8 @@ unit-tested:
 
 `network.enabled` gates mDNS and SMB, which is what the macOS Local Network permission is about; SFTP and WebDAV need
 none of it. So the hub opens either way, keeps listing saved servers, and shows one line plus a link to the switch in
-place of the nearby hosts. ❗ There is no "(disabled)" label and no redirect to Settings any more;
-`network-toggle.spec.ts` is the regression guard.
+place of the nearby hosts. ❗ No "(disabled)" label, and no redirect to Settings; `network-toggle.spec.ts` is the
+regression guard.
 
 ### Context menu and F8
 
@@ -152,7 +152,7 @@ exercising Cmdr's own creds, so `authenticatedCredentials` is null even when a w
 buttons on its error and empty states). ❗ Cancelling goes BACK to the host list: this sheet is up because the listing
 itself can't be read, so "not now" leaves the user in a room with nothing in it. (Share-activation auth is the mount's
 question; `../pane/NetworkMountView.svelte` asks it.) Its `attempt` is `listWithCredentials`, which answers `handed_off`
-on success — nothing here connects a VOLUME, and the loaded list IS the result — keeps the sheet open on
+on success (nothing here connects a VOLUME, and the loaded list IS the result), keeps the sheet open on
 `authentication_rejected` / `needs_credentials`, and closes it onto the pane's own error state for anything else,
 because that is where the retry and a missing dependency's install command live.
 
@@ -165,32 +165,27 @@ another share on the same host.
 
 ## `smb-sign-in.ts`
 
-SMB's side of the one sign-in sheet.
+SMB's side of the one sign-in sheet. The sheet contract, the three SMB sites and what each `attempt` runs, and the
+endpoint header per site live in `../../servers/DETAILS.md`; this section is what SMB alone decides.
+
 `openSmbSignInSheet({ host, shareName?, guestAllowed, initialUsername?, refusal?, attempt })` builds the request, and
 the caller's `attempt` gets an `SmbCredentialAnswer` (`{ username, password, remember }`) rather than the sheet's
 generic submission. ❗ `username: null` IS guest: all three SMB commands take a nullable username and read it that way,
 so a separate flag could only disagree with it.
 
-**What it decides, and why:**
-
-- **The endpoint header** is `smb://<host>` for a listing and `smb://<host>/<share>` for a mount or an upgrade, and the
-  sheet's title names the same thing. The listing's question is server-level; the other two are about one share.
-- **The username** is resolved in the order the SMB form always used: what an earlier attempt tried, then
+- **The username** is resolved in one order everywhere: what an earlier attempt tried, then
   `getKnownShareByName()`'s last username for this share, then `getUsernameHint()`. ❗ Both lookups take the server BY
   NAME and match on its stable identity in Rust, so a hint saved under one spelling (`Naspolya`) is found when the sheet
   opens under another (`Naspolya._smb._tcp.local`). ❌ Don't rebuild the key in TypeScript: that is what made the two
   sides disagree once.
-- **Remember starts ON, and is ❌ never probed.** `has_smb_credentials` is `get_credentials(…).is_ok()`, so asking
-  whether a password is stored costs the same Keychain prompt as reading one. Nothing is written until a sign-in
-  actually works, and the caller writes it, so a checked box promises nothing that hasn't been shown. (SFTP and WebDAV
-  seed the box from `hasServerSecret` instead, because their backend can refresh a stored secret on its own; the seam is
-  the sheet request's `remembered` field, decided by the opener.)
+- **Remember starts ON, and is ❌ never probed**, because `has_smb_credentials` is `get_credentials(…).is_ok()` and
+  asking costs the same Keychain prompt as reading. Why the other protocols seed the box differently:
+  `../../servers/DETAILS.md` § "The sheet contract".
 - **`guestAllowed` is a per-site call, ❌ not a property of SMB.** The listing offers guest where the host's `authMode`
-  says one is allowed; the mount and the upgrade both pass `false`, because an unauthenticated attempt is exactly what
-  just came back refused and a second offer of it would be a button that cannot work.
-- **`refusalForShareError` / `refusalForMountError`** put every SMB failure in `connect-refusals.ts`'s vocabulary, and
-  ❗ `auth_required` stays distinct from `auth_failed`: telling someone who has never entered a password that theirs is
-  wrong is what collapsing the two does.
+  says one is allowed; the mount and the upgrade both pass `false`.
+- **`refusalForShareError` / `refusalForMountError`** put every SMB failure in
+  `../../servers/connect-refusals.ts`'s vocabulary, and ❗ `auth_required` stays distinct from `auth_failed`: telling
+  someone who has never entered a password that theirs is wrong is what collapsing the two does.
 
 ## Data flow
 
@@ -225,8 +220,8 @@ this OS-mounted share into a direct smb2 session" affordance: the yellow-dot pop
 
 The sequence, and who speaks at each step:
 
-1. `triggerNetworkDiscovery()` — the direct connect opens a TCP socket to a private IP, which fires the macOS Local
-   Network prompt anyway, so this is the honest moment to also start mDNS.
+1. `triggerNetworkDiscovery()`, because the direct connect opens a TCP socket to a private IP, which fires the macOS
+   Local Network prompt anyway, so this is the honest moment to also start mDNS.
 2. A persistent "Connecting directly…" toast goes up and comes down on every exit path.
 3. `upgradeToSmbVolume(volumeId)`. `success` → success toast + `requestVolumeRefresh()`. A typed `networkError` → the
    `upgrade-messages.ts` sentence for that `UpgradeFailure`.
@@ -280,16 +275,15 @@ one share is noise). A press while an attempt is in flight is ignored.
 
 `NetworkMountView.svelte` (in `../pane/`) opens the sign-in sheet instead of dead-ending in its error pane whenever
 `mountNetworkShare` rejects with an auth-class error (`auth_failed` / `auth_required`, including the NetAuth -6600 code
-the backend maps). The sheet opens carrying that refusal, pre-filled with the username the failed attempt tried, and its
-`attempt` re-runs the mount for as long as the user keeps answering; `saveSmbCredentials` runs ❗ only once a mount has
-actually gone through. ❗ Cancelling returns to the SHARE LIST, which is where the user was.
+the backend maps). The sheet opens carrying that refusal, pre-filled with the username the failed attempt tried; what
+its `attempt` then runs is `../../servers/DETAILS.md` § "The sheet contract".
 
 Two properties are load-bearing:
 
 - **`mountError` is set for an auth failure too**, so the pane behind the sheet holds the failure and the MCP mirror
   reports it. The error pane is what cancelling lands back on, cleared by `handleMountErrorBack`.
 - **Only a credential refusal keeps the sheet open.** A retry that comes back `share_not_found` or `host_unreachable`
-  answers `handed_off`, closing the sheet onto the pane's error state with its own "Try again" / "Back" — the sheet has
+  answers `handed_off`, closing the sheet onto the pane's error state with its own "Try again" / "Back": the sheet has
   no words for a share that went missing. Non-auth failures never open it in the first place. Pinned by
   `../pane/NetworkMountView.test.ts`.
 
@@ -325,7 +319,7 @@ When a direct-SMB session drops mid-use, four pieces coordinate to recover:
 Auth-failure give-up → "Sign in", not "unreachable" (`needs-auth` status): when reconnect fails on an auth error the
 saved password can't fix, the backend emits `state: "needs_credentials"`. The manager's `handleNeedsAuth` stops the
 backoff (retrying a stale password is futile) and flips to `needs-auth`; FilePane shows `RemoteConnectView`'s
-`signed_out`, whose button opens the one sign-in sheet as a REGISTERED place — ❗ or offers no button at all when the
+`signed_out`, whose button opens the one sign-in sheet as a REGISTERED place, ❗ or offers no button at all when the
 stored shape is `nothing`, since no secret a person could type would bring that session back. The sheet's attempt calls
 `reconnectVolumeWithCredentials(volumeId, …)`, which refreshes the stored password and reconnects; success arrives as a
 `connected` event that clears the state and reloads. Pinned by `smb-reconnect-manager.svelte.test.ts`.
@@ -397,7 +391,7 @@ opens a private-IP socket). Backend side: `src-tauri/src/network/DETAILS.md` § 
   vs DNS); the Bonjour service name is the stable identifier. Lowercasing avoids case mismatches.
 - **⌘R in `ServersHub` calls `stopPropagation()` too, and one round of shares depends on it.** The document-level
   dispatcher runs after this handler and has no `defaultPrevented` guard, so `pane.refresh` would ALSO dispatch into
-  `refreshPane` → `refreshNetworkHosts()` → `ServersHub.refresh()` — the same `handleRefreshClick()` the local branch
+  `refreshPane` → `refreshNetworkHosts()` → `ServersHub.refresh()`, the same `handleRefreshClick()` the local branch
   just ran, giving every host two `clearShareState` + `fetchShares` rounds per keypress. Pinned by `ServersHub.test.ts`;
   the general rule is in `$lib/shortcuts/DETAILS.md` § "Local handlers resolve through the registry too".
 - **Neither browser's `handleKeyDown` returns a "handled" boolean** (`BrowserAPI` in `../pane/types.ts`). Nothing above

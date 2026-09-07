@@ -96,6 +96,10 @@ All under `apps/desktop/src/lib/`.
 - `selection-dialog/`: "Select files…" / "Deselect files…" dialog (second `query-ui` consumer): pure glob/regex +
   size/date matcher, cloud AI translation
 - `mtp/`: MTP (Android device) file browsing UI
+- `adb/`: Everything the app SHOWS about a phone reached over ADB (`crates/cmdr-adb/` is the wire): the
+  `adb://<serial>/path` spelling, a row's device readiness, the words for a dial that stopped, the two settings,
+  and the line offering USB debugging on an MTP pane. The pane's side of a dial is a sibling
+  (`file-explorer/pane/device-connect.svelte.ts`). See `apps/desktop/src/lib/adb/CLAUDE.md`
 - `onboarding/`: Soft-sheet onboarding wizard: Full Disk Access, AI provider, open-beta analytics disclosure, optional
   settings
 - `ui/`: Shared UI primitives: ModalDialog, Button, AlertDialog, Notification, dialog registry, `SectionCard`

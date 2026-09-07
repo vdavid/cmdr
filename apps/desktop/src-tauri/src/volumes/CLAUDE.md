@@ -5,51 +5,37 @@ macOS volume and location discovery, plus live mount/unmount watching via `NSWor
 
 ## Module map
 
-Everything re-exports from `mod.rs` (`LocationInfo` / `LocationCategory`, consts, orchestrators), so
-`crate::volumes::X` stays stable: `ids.rs` (which identity a mount is keyed by), `fs_type.rs` / `nsurl.rs`
-(non-blocking `statfs` / blocking NSURL enrichment), `smb.rs` / `cloud.rs`, `mounts.rs` (`getfsstat` enumeration),
-`watcher.rs` (the `NSWorkspace` observer behind `volume-mounted` / `volume-unmounted`).
+`mod.rs` holds the model types and orchestrators and re-exports everything, so `crate::volumes::X` stays stable:
+`ids.rs` (ID derivation), `fs_type.rs` (non-blocking `statfs`) and `nsurl.rs` (blocking NSURL enrichment), `mounts.rs`
+(`getfsstat` enumeration), `smb.rs`, `cloud.rs`, `disk_image.rs`, `watcher.rs` (the `NSWorkspace` observer behind
+`volume-mounted` / `volume-unmounted`).
 
 ## Must-knows
 
-- **❌ Never derive a volume ID yourself; call `ids::volume_id_for`** (or `volume_id_for_mount` given only a path). An
-  ID keys the index DB, `lastUsedPaths`, tab state, and routing, so a lossy one sends reads and deletes to the wrong
-  disk. DETAILS § "A volume ID is derived from the volume's IDENTITY".
-- **One volume ID publishes ONE location, at ONE canonical root**: a filesystem mounted twice collapses to the
-  shortest path (`cmdr_fs::volume::canonical_root::collapse_by_volume_id`, shared with `volumes_linux/`: ❌ never
-  re-copy it here), and `list_locations` dedupes on ID, ❌ never on path alone. Publishing one location doesn't forget
-  the others; the registry keeps them. DETAILS § "One volume ID publishes one mount root".
-- **The unmount path can't use `volume_id_for_mount`** — neither `statfs` nor NSURL can identify a gone mount, so it
-  falls back to the wrong id. Use `VolumeManager::remove_root(volume_path)`: it promotes a sibling mount and
-  unregisters only on the last root. See `handle_volume_unmounted`.
-- **`resolve_path_volume_fast()` checks cloud-drive prefixes BEFORE `statfs`**: cloud drives are plain folders on the
-  data volume, so `statfs` resolves any path inside them to `/` and mis-highlights "Macintosh HD". It shares
-  `cloud_volume_info()` with `get_cloud_drives()`, so IDs and categories can't drift.
-- **Volume discovery must never block on a hung mount** (a wedged NAS once froze launch): enumerate with
-  `getfsstat(MNT_NOWAIT)`, never NSFileManager; run blocking NSURL / NSWorkspace / DiskArbitration enrichment for
-  LOCAL mounts only (❌ never ask a network mount for its UUID); never discover on the main thread. DETAILS § "Hung
-  mounts".
-- **Launch-time `NSWorkspace` icon or LaunchServices lookups and TCC-protected `read_dir` need the FDA gate**
-  (`crate::fda_gate::is_fda_pending_runtime()`), or onboarding stacks 5-10 TCC popups. While pending,
-  `get_icon_for_path()` returns `None` and `get_cloud_drives()` is empty; both re-emit after the decision.
-  `lib/onboarding/CLAUDE.md` § "FDA gate".
-- **Detect SMB with `is_smb_fs_type()`**, never raw `"smbfs"` / `"cifs"` comparisons: one place covers both platforms.
-- **`mount_is_read_only` (`MNT_RDONLY`) and `is_disk_image` (DiskArbitration) are set in BOTH
-  `get_attached_volumes` and `resolve_path_volume_fast`, or they drift.** Gate the disk-image probe to local mounts (it resolves the path, so a
-  hung mount stalls it), and don't read read-only as a disk-image proxy: a writable `.dmg` is read-write.
-- **`LocationInfo` enrichment from `VolumeManager` lives only in `enrich_from_volume_registry`**; new enrichment fields
-  go there once, in BOTH twins. It fills `capabilities` and `connection_state`. ❌ Never from a discovery
-  constructor: discovery knows the mount, the registry knows the backend.
-- **Assemble a published volume list through `volume_listing::complete`**: it holds the order (device volumes
-  appended from every `device_volumes::DeviceVolumeProvider`, MTP and ADB, then enrichment, or mobile devices publish
-  with no capabilities) and owns the only `device_volumes::append_device_volumes` call.
-- **`get_main_volume` / `get_attached_volumes` / `get_volume_space` wrap their bodies in
-  `objc2::rc::autoreleasepool`** (they run in `spawn_blocking`, so the per-call objc objects would leak), and
-  `start_volume_watcher`'s observer block runs on the main thread: keep it cheap, no blocking I/O.
-- **Location IDs**: `root`, `cloud-*`, and `fav-*` are literal; the rest are `{scheme}-{slug}-{digest}` from
-  `cmdr_fs::volume::ids` (`vol-` = UUID-keyed local, plus `path-`, `smb-`, `mtp-`). Only the scheme prefix means
-  anything: ❌ never match on the slug or rebuild an ID from parts. DETAILS § "Location IDs" also names the two
-  `friendly_error.rs` sync points.
+- **❌ Never derive or parse a volume ID yourself; call `ids::volume_id_for`** (or `volume_id_for_mount` given only a
+  path). An ID keys the index DB, `lastUsedPaths`, tabs, and routing, so a lossy one sends reads and deletes to the
+  wrong disk. Only its scheme prefix means anything: ❌ never match on the slug or rebuild one from parts.
+- **One volume ID publishes ONE location at ONE canonical root**: mounts sharing an ID collapse to the shortest path
+  via `cmdr_fs::volume::canonical_root::collapse_by_volume_id` (shared with `volumes_linux/`: ❌ never re-copy it here),
+  and `list_locations` dedupes on ID, ❌ never on path alone.
+- **The unmount path can't use `volume_id_for_mount`**: nothing identifies a gone mount, so it falls back to the wrong
+  id. Use `VolumeManager::remove_root(volume_path)` (`handle_volume_unmounted`).
+- **Check cloud-drive prefixes BEFORE `statfs` in `resolve_path_volume_fast()`**: a cloud drive is a folder on the data
+  volume, so `statfs` answers `/` for it and mis-highlights "Macintosh HD".
+- **Discovery must never block on a hung mount** (a wedged NAS once froze launch): enumerate with
+  `getfsstat(MNT_NOWAIT)`, ❌ never NSFileManager; run blocking NSURL / NSWorkspace / DiskArbitration enrichment for
+  LOCAL mounts only; never discover on the main thread.
+- **Launch-time icon, LaunchServices, and TCC-protected `read_dir` calls need the FDA gate**
+  (`crate::fda_gate::is_fda_pending_runtime()`), or onboarding stacks 5-10 native TCC popups.
+- **Detect SMB with `is_smb_fs_type()`**, ❌ never raw `"smbfs"` / `"cifs"`: one place covers both platforms.
+- **`mount_is_read_only` and `is_disk_image` are set in BOTH `get_attached_volumes` and `resolve_path_volume_fast`**, or
+  they drift. ❌ Read-only is not a disk-image proxy: a writable `.dmg` is read-write.
+- **Only `enrich_from_volume_registry` copies registry state onto a `LocationInfo`** (`capabilities` +
+  `connection_state`); a new field goes there once, in BOTH twins. ❌ Never from a discovery constructor.
+- **A published volume list is assembled by `volume_listing::complete`**, which owns the order (device providers,
+  servers arm, enrichment) and the only `append_device_volumes` call.
+- **Wrap every objc-touching `spawn_blocking` body in `objc2::rc::autoreleasepool`**, or the objects leak. Keep
+  `watcher.rs`'s observer block cheap: it runs on the main thread, so no blocking I/O.
 
-Decisions, edge cases, and the `Retained::cast_unchecked` contract: `DETAILS.md`. Read it before any non-trivial work
-here: editing, planning, reorganizing, or advising.
+Decisions, edge cases, the servers arm, and the `Retained::cast_unchecked` contract: `DETAILS.md`. Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.

@@ -19,11 +19,9 @@ Decision rationale. `CLAUDE.md` holds the must-knows.
 reached through one `#[cfg]`'d `platform` alias, and the only other divergence is `NETWORK_FS_TYPE` (`smbfs` / `cifs`),
 which the synthetic `network` volume reports.
 
-`commands::volumes_linux` still resolves, because `ipc.rs` and `ipc_collectors.rs` register the Linux command set under
-that path, but it's a `pub use volumes as volumes_linux;` in `commands/mod.rs` rather than a file. A file existing only
-to be a registration target reads like a Linux implementation and invites someone to put Linux behavior in it; a
-one-line alias sitting next to the `pub mod volumes` it points at can't. It goes away when those registrations move to
-`volumes`.
+❌ Don't add a second, Linux-only command module beside it. A file existing only to be a registration target reads
+like a Linux implementation and invites someone to put Linux behavior in it, which then has to be kept in step with the
+macOS twin by hand. Linux-only behavior belongs behind the `platform` alias, in THIS module.
 
 The pair of hand-maintained command modules this replaced had drifted: both `list_volumes` and `get_volume_space` ran
 their blocking work straight on the async thread with no deadline here, so one wedged CIFS mount or a stuck

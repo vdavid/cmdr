@@ -80,7 +80,7 @@ describe('isServerPlaceRow', () => {
 
   it('❌ leaves a mounted SMB share alone: its session is an OS mount', () => {
     // The failure this prevents: Disconnect on a share, calling a command that
-    // doesn't speak SMB, doing nothing at all. SMB joins the family in M3.
+    // doesn't speak SMB, doing nothing at all.
     expect(isServerPlaceRow({ ...place, id: 'smb-naspi-media', fsType: 'smbfs' })).toBe(false)
     expect(isServerPlaceRow({ ...place, id: 'root', category: 'main_volume' })).toBe(false)
   })

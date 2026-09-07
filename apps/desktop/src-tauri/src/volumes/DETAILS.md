@@ -10,7 +10,9 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the decision detail lives
 - **MainVolume**: root volume at `/`.
 - **AttachedVolume**: `/Volumes/*` (skips System, Preboot, Recovery, CloudStorage).
 - **CloudDrive**: iCloud at `~/Library/Mobile Documents/…`, providers at `~/Library/CloudStorage/`.
-- **Network**: variant exists but is currently unconstructed.
+- **Network**: SFTP and WebDAV places, from the servers arm below. (The synthetic `Servers` hub row carries it too, but
+  that row is minted in `commands/volumes.rs`, not by this module.)
+- **MobileDevice**: MTP and ADB storages, appended by `device_volumes.rs`.
 
 `parse_cloud_provider_name` maps `~/Library/CloudStorage/` dir prefixes to display names (Dropbox, GoogleDrive→Google
 Drive, OneDrive/Business, Box, pCloud, else the first `-`-segment).
@@ -28,8 +30,8 @@ Every other ID is minted by `cmdr_fs::volume::ids` (below).
 ## `list_locations()`
 
 Aggregates all `LocationCategory` entries in order and deduplicates by path AND by volume ID, two `HashSet<String>`s.
-The OS-level `/Network` browseable location doesn't surface as a sidebar entry yet, so `LocationCategory::Network`
-comes only from the servers arm below.
+Inside this listing, `LocationCategory::Network` comes only from the servers arm below: an OS-mounted SMB share is an
+`AttachedVolume` under `/Volumes/`, and the OS-level `/Network` browseable location has no sidebar entry.
 
 ### The servers arm
 
@@ -39,22 +41,21 @@ with the hollow dot). `category: Network`, `fs_type: "sftp"` / `"webdav"`, `is_e
 to unplug; its control says Disconnect), `supports_trash: false`, `pinned: Some(_)`.
 
 ❗ **A `saved` row and the volume it becomes share ONE id**, minted by `cmdr_fs::volume::sftp_volume_id` /
-`webdav_volume_id` — the same ids the registry keys on. That identity is what makes a tab restorable: a tab stores
+`webdav_volume_id`, the same ids the registry keys on. That identity is what makes a tab restorable: a tab stores
 `(volumeId, path)`, the switcher shows the same id greyed, and activating either dials the same saved entry.
 
-❗ **The pin filters the SWITCHER, not this list.** Pins are the cap that keeps a user with a dozen saved servers from
-scrolling past their own disks, and the user holds it — but a volume id with no row is one the app denies exists, and
-Enter on a hub row, a restored tab, a favorite inside a server, and the pane's own lookup all reach for a row by id. So
-every place gets a row carrying its own `pinned`, and `navigation/volume-grouping.ts::belongsInSwitcher` is where the
-cap is applied. `pinned` is `None` on every row the cap was never about (a local disk, a favorite, a mounted SMB
-share), and such a row shows unconditionally.
+❗ **The pin filters the SWITCHER, not this list.** A volume id with no row is one the app denies exists, and Enter on
+a hub row, a restored tab, a favorite inside a server, and the pane's own lookup all reach for a row by id. So every
+place gets a row carrying its own `pinned`, and `pinned` is `None` on every row the cap was never about (a local disk,
+a favorite, a mounted SMB share). Where the cap is applied and what the switcher does with it:
+`apps/desktop/src/lib/file-explorer/navigation/DETAILS.md` § "The three-things rule, and which side enforces it".
 
 ❗ **A registered volume nothing has saved still gets a row.** `forget_server` drops the saved entry without dropping
 the session, and a live volume with no row is one a pane can sit on while the switcher denies it exists; the row then
 takes its name and root from the volume itself.
 
 ❗ **Cached state only, ❌ never the wire**: the listing runs on every `volumes-changed`, so a probe here would turn a
-refresh into a round of network traffic. The device-provider seam is deliberately NOT reused —
+refresh into a round of network traffic. The device-provider seam is deliberately NOT reused;
 `crates/cmdr-sftp/DETAILS.md` says why: it lists things that appear and leave on their own.
 
 ### Enrichment has two twins
@@ -101,7 +102,7 @@ collapse stays purely about what the switcher SHOWS, and it still runs without t
 ## Hung mounts
 
 **The problem.** A network mount (SMB, NFS, …) can wedge so that every metadata syscall on it blocks in the kernel for
-30s–forever (uninterruptible — even `SIGKILL` won't land until the mount is force-unmounted). Volume discovery is riddled
+30s–forever (uninterruptible: even `SIGKILL` won't land until the mount is force-unmounted). Volume discovery is riddled
 with such syscalls, and a single dead mount used to take the whole app down at launch: `init_volume_manager` ran
 `get_attached_volumes` synchronously on the main thread (inside the Tauri `setup` closure), and NSFileManager's
 `mountedVolumeURLsIncludingResourceValuesForKeys` `getattrlist`s every mount to build the URL array. On a wedged
@@ -109,18 +110,18 @@ with such syscalls, and a single dead mount used to take the whole app down at l
 up behind the frozen process). The MCP `cmdr://state` resource hit the same wall through `list_locations`: reads took a
 flat ~30s (one smbfs kernel timeout). (Incident: live NAS QA, 2026-07-13.)
 
-**The fix — three layers.**
+**The fix, in three layers.**
 
 1. **Non-blocking enumeration.** `get_attached_volumes` enumerates via `getfsstat(MNT_NOWAIT)` (`enumerate_mounts`), not
    NSFileManager. `MNT_NOWAIT` returns the kernel's cached mount table (mount point, fs type, `MNT_RDONLY` flag, and the
-   `f_mntfromname` SMB source) without ever round-tripping to a filesystem, so a wedged mount can't stall it — this is
+   `f_mntfromname` SMB source) without ever round-tripping to a filesystem, so a wedged mount can't stall it: this is
    the difference between `df -n` and plain `df`. `getfsstat` was verified non-blocking on the exact wedged NAS state
    from the incident. Because fs type and read-only come straight from the snapshot, three former per-volume `statfs`
    calls (`get_fs_type`, `read_only_from_statfs`, `get_smb_mount_info`) are gone from this path.
 2. **Skip blocking enrichment for network mounts.** `build_attached_location` runs the blocking NSURL / NSWorkspace /
    DiskArbitration enrichment (`resolve_local`) ONLY for local mounts. Network mounts (`is_network_fs_type`) derive
    everything from the getfsstat snapshot: id/name from `f_mntfromname` (SMB → "share on server"), `is_ejectable = false`
-   (cosmetically moot — the eject affordance keys on `connectionState` and `eject.rs` forces it true for SMB), no icon,
+   (cosmetically moot: the eject affordance keys on `connectionState` and `eject.rs` forces it true for SMB), no icon,
    never a disk image. So a dead network mount contributes its entry and never blocks discovery of the healthy volumes
    beside it.
 3. **Off-main + timeout-guarded callers.** `init_volume_manager` registers root synchronously (cheap, `/` never hangs)
@@ -128,9 +129,9 @@ flat ~30s (one smbfs kernel timeout). (Incident: live NAS QA, 2026-07-13.)
    of `list_locations` is wrapped in a ~2s `spawn_blocking` timeout: `volume_listing::discover_local` is the only door
    for the `volumes-changed` push and the `list_volumes` IPC, and it has no unbounded path; the MCP
    `snapshot_volumes` guards its own. So the remaining unguarded blocking
-   paths inside `list_locations` — `get_favorites` and `get_cloud_drives`, which still `statfs`/icon per item and would
-   hang on a favorite or cloud folder that lives on a wedged mount — degrade to a bounded 2s partial result instead of an
-   infinite stall. `get_main_volume` no longer enumerates: it builds root directly from `/`.
+   paths inside `list_locations` (`get_favorites` and `get_cloud_drives`, which still `statfs`/icon per item and would
+   hang on a favorite or cloud folder that lives on a wedged mount) degrade to a bounded 2s partial result instead of an
+   infinite stall. `get_main_volume` builds root directly from `/`, never enumerating.
 4. **A timed-out listing publishes the LAST GOOD one.** `volume_broadcast` keeps the most recent successful
    `list_locations` and re-emits it (still flagged `timed_out`) when a later one misses the deadline. Publishing the
    empty list beside that flag told the frontend "you have no volumes", and since the picker's refresh button re-ran the
@@ -166,9 +167,9 @@ panes off ejected volumes.
 `LocationInfo::is_disk_image` (see `disk_image.rs`).
 **Why**: Disk images are transient install-style mounts, so the UI suppresses their index affordances and free-space
 bars (the frontend reads `isDiskImage`). The reliable signal is DiskArbitration: `DADeviceModel == "Disk Image"` for any
-`hdiutil`-attached image (verified on macOS 15.5, 2026-06-27). Read-only is NOT a usable proxy — a writable APFS `.dmg`
-reports `mount_is_read_only == false`, and conversely a locked SD card is read-only but not an image — so the two flags are
-independent. `fs_type`/`f_mntfromname` don't disambiguate either (a `.dmg` can be APFS/HFS and present a normal
+`hdiutil`-attached image (verified on macOS 15.5, 2026-06-27). Read-only is NOT a usable proxy: a writable APFS `.dmg`
+reports `mount_is_read_only == false`, and conversely a locked SD card is read-only but not an image, so the two flags
+are independent. `fs_type`/`f_mntfromname` don't disambiguate either (a `.dmg` can be APFS/HFS and present a normal
 `/dev/diskNsM` source). The DA call is synchronous (no run loop) and cheap next to the per-volume NSURL/icon work, but it
 resolves the volume path, so callers gate it to local (non-SMB) mounts to keep a hung network mount from stalling it.
 Both `get_attached_volumes` (the switcher list) and `resolve_path_volume_fast` (highlight + transfer-source) set the flag
@@ -239,7 +240,7 @@ meant to replace. Returning `icon: None` from `get_icon_for_path()` while the ga
 frontend falls back to a generic folder icon, so the sidebar still shows favorite/volume entries (just generic for the
 few seconds before the user decides). See `commands/indexing.rs::start_indexing_after_fda_decision` for the gate-clear +
 re-emit on the deny path; the allow path requires a restart, so re-entering `setup()` sets the gate to `false` via the
-OS probe.
+OS probe. The gate's frontend half is `apps/desktop/src/lib/onboarding/CLAUDE.md`.
 
 **Decision**: Use `NSWorkspace` notifications, not an FSEvents watcher on `/Volumes`.
 **Why**: FSEvents fires when the kernel writes a directory entry under `/Volumes`, which races the mount: `statfs` on the

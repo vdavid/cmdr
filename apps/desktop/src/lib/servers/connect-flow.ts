@@ -2,8 +2,8 @@
  * Bringing a place to life, whatever standing it is in.
  *
  * ❗ **The one caller of `connectSavedPlace` and the reconnect manager's lazy
- * start.** The switcher, the hub, the pane banner, and (from M2) the sheet's
- * Connect button all come through here, because the move depends on the volume's
+ * start.** The switcher, the hub, the pane banner, and the sheet's Connect
+ * button all come through here, because the move depends on the volume's
  * standing and picking it wrong is silent: re-dialing a registered volume
  * registers a SECOND one, and dialing a volume the backoff loop already owns
  * races it.
@@ -13,9 +13,9 @@
  *  1. registered and `disconnected` → the reconnect manager owns recovery, so
  *     this subscribes it and renders `connecting`. ❌ Never a dial.
  *  2. registered and `needs_sign_in` → the sign-in sheet, through the
- *     `openSignIn` seam. Until M2 supplies one, the flow refuses with the
- *     reason, which is the honest thing to show: the server is asking for a
- *     credential and nothing here can collect it yet.
+ *     `openSignIn` seam. A caller that supplies none gets the refusal instead,
+ *     which is the honest thing to show: the server is asking for a credential
+ *     and there is nowhere to type one.
  *  3. absent (a `saved` row) → a dial by saved entry.
  *
  * The attempt id is minted BEFORE the first dial and handed to the caller
@@ -92,8 +92,8 @@ export interface ConnectPlaceRequest {
   onAttemptStarted?: (attemptId: string) => void
   /**
    * The sign-in sheet, awaited when the backend says a human is what's missing.
-   * While it is absent the flow refuses with the reason instead, and ❌ never
-   * renders an inert "Sign in…" button.
+   * Every production caller supplies `openSignInForPlace`; a caller without one
+   * gets the refusal, and ❌ never an inert "Sign in…" button.
    */
   openSignIn?: SignInSeam
 }

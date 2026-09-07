@@ -1,55 +1,42 @@
 # Settings sections
 
 One Svelte component per settings sidebar entry. The registry says which setting exists and its UI hint; these files
-decide where and how it renders. `SettingsContent.svelte` routes each entry via `getSettingDefinition(id).section`.
-
-Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUDE.md` (row primitives).
+decide where and how it renders. Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUDE.md`
+(row primitives).
 
 ## Module map
 
-- One `*Section.svelte` per sidebar entry. AI is a card-menu parent: `AiSection` = `AI › Provider`, `AskCmdrSection` =
-  `AI › Ask Cmdr`, `McpServerSection` = `AI › MCP server`. Indexing is a card-menu parent too: `DriveIndexingSection` =
-  `Indexing › Drive indexing`, `ImageIndexingSection` = `Indexing › Image indexing` (on-device OCR; composes the
-  `MediaIndex*` components). `DeleteAiModelDialog.svelte` is `AiLocalSection`'s delete confirmation, split out so it's
-  independently mountable. `TerminalAppSelect.svelte` is the "Open terminal here uses" control. Pure helpers:
-  `ai-secret-error.ts`, `license-section-utils.ts`, `ram-gauge-utils.ts`, `keyboard-shortcuts-grouping.ts`,
-  `keyboard-shortcuts-banner.ts`, `terminal-app-options.ts`. Full file/responsibility table in DETAILS.md.
+- One `*Section.svelte` per sidebar entry, plus sibling `<Component>.rows.ts` search metadata and pure helpers.
+- AI and Indexing are card-menu parents: `AiSection` / `AskCmdrSection` / `McpServerSection`, and
+  `DriveIndexingSection` / `ImageIndexingSection` (which composes the `MediaIndex*` components).
+- Full file-and-responsibility map: DETAILS § File map.
 
 ## Must-knows
 
-- **`recheckAdbInstall` runs one call per CLICK** (`AdbSection`), ❌ never on mount or polled: it is the only path that
-  alone retries `adb start-server`. Mount reads `getAdbInstallStatus`, which looks nothing up.
-- **A registry entry alone doesn't render.** Hand-render the row here (`SettingRow` + control + `shouldShow(id)` guard),
-  or the setting is invisible. Only `AdvancedSection` auto-renders (`section: ['Advanced']`).
-  [Checklist](../../../../../../docs/guides/adding-a-new-setting.md).
-- **A row that isn't a setting declares a `SearchableRow` in the sibling `<Component>.rows.ts`** (aggregated by
-  `searchable-rows.ts`): a `row:`-prefixed id, the hosting page's `section`, the label key the markup renders. Gate it
-  on `shouldShow('row:…')` AND list it in its card's `anyVisible(...)`, or a hit filters every card away. It's search
-  metadata; ❌ it never decides what renders, and ❌ never model such a row as a `hidden` setting. Skip rows that only
-  appear under runtime state. A page with NO control (`ServersSection`) reaches the sidebar via a row's
+- **Rendering a registry setting here means a `SettingRow` + control + `shouldShow(id)` guard**, hand-written; without
+  it the setting is invisible. `AdvancedSection` is the one auto-renderer, so ❌ never hand-render a
+  `section: ['Advanced']` setting on a feature page (`../CLAUDE.md`: a setting's `section` is its ONE home). Checklist:
+  `docs/guides/adding-a-new-setting.md`.
+- **A row that isn't a setting declares a `SearchableRow` in the sibling `<Component>.rows.ts`.** Gate it on
+  `shouldShow('row:…')` AND list it in its card's `anyVisible(...)`, or a hit filters every card away. It's search
+  metadata; ❌ it never decides what renders. A page with NO control (`ServersSection`) reaches the sidebar via a row's
   `anchorsSection`. DETAILS § Searchable rows.
-- **New section = route in `SettingsContent.svelte` + entry in `TOP_LEVEL_ORDER` (`SettingsSidebar.svelte`) + mirror in
-  `settings.spec.ts`.** Routing is registry-driven, not string match.
-- **A toggle that can't use `SettingSwitch` still uses `$lib/ui/Switch`.** Never hand-roll Ark's `Switch.Root`/`Control`
-  here (it silently ships without the ARIA the primitive carries), and never `:global(.switch-control)` from a section:
-  those class names are the primitive's and leak app-wide. Test hooks ride `data-*` props onto the hidden input.
-- **Don't push AI config from a section.** Just `setSetting(...)`; `settings-applier.ts` →
-  `ai-config.ts::pushConfigToBackend()` hot-applies (re-reads fresh).
-- **Cloud AI keys never touch registry primitives.** `AiCloudSection` uses `SettingPasswordInput` in controlled mode;
-  keys live in the OS secret store (`saveAiApiKey` / `getAiApiKeyStatus`). ❌ Never pre-fill the field: a stored key is
-  not readable from a window. `docs/security.md` § "AI API keys".
-- **AI model picker (`ui/Combobox`) loads on open.** Don't zero `availableModels` mid-refetch (empty-list flash); the
-  cache key hashes the backend's key FINGERPRINT, never a raw key. DETAILS § model picker.
-- **Don't hand-render a `section: ['Advanced']` setting on a feature page.** It auto-renders in `AdvancedSection`; a
-  setting's `section` is its ONE home. (The mirror pattern is for two FEATURE pages only.)
-- **`KeyboardShortcutsSection` "+ add" is UI-only; never write a provisional `''` to the store.** Nothing hits
-  `shortcuts-store` until a key is confirmed; a placeholder `addShortcut(id, '')` leaks framed `(none)` pills
-  cross-window.
-- **macOS-native + `FIXED_KEY_COMMAND_IDS` rows render read-only** (badge, no edit/add/remove/reset). AppKit or
-  hardcoded handlers own them, and the store refuses these writes.
-- **Conflict-banner honesty:** native or fixed-key conflicts offer ONLY Cancel (no "Remove from other" / "Keep both" —
-  both would lie). Classify via the pure `classifyConflict`, not inline string checks.
-- **One group per `CommandScope` via the pure `groupCommandsByScope`.** Don't ad-hoc a title list; the group set must
-  stay the scope union or commands vanish. `keyboard-shortcuts-grouping.test.ts` guards it.
+- **New section = a route in `../components/SettingsContent.svelte` (registry-driven, via
+  `getSettingDefinition(id).section`, never a string match), an entry in `TOP_LEVEL_ORDER`
+  (`../components/SettingsSidebar.svelte`), and a mirror in `test/e2e-playwright/settings.spec.ts`.**
+- **A toggle that can't use `SettingSwitch` still uses `$lib/ui/Switch`**, never a hand-rolled Ark `Switch.Root` /
+  `Control` (it ships without the primitive's ARIA) and never `:global(.switch-control)` from a section: those class
+  names are the primitive's and leak app-wide.
+- **Cloud AI keys never touch registry primitives**: `AiCloudSection` uses `SettingPasswordInput` in controlled mode,
+  and ❌ never pre-fills it (the parent's `ai.*` bullet says why). The model picker's cache key hashes the backend's key
+  FINGERPRINT, never a raw key; don't zero `availableModels` mid-refetch. DETAILS § model picker.
+- **`recheckAdbInstall` runs one call per CLICK** (`AdbSection`), ❌ never on mount or polled: it is the only path that
+  retries `adb start-server`. Mount reads `getAdbInstallStatus`, which looks nothing up.
+- **`KeyboardShortcutsSection` "+ add" is UI-only; never write a provisional `''` to the store** (a placeholder
+  `addShortcut(id, '')` leaks framed `(none)` pills cross-window). macOS-native and `FIXED_KEY_COMMAND_IDS` rows render
+  read-only, and their conflicts offer ONLY Cancel because the other options would lie; classify with the pure
+  `classifyConflict`, never an inline string check. Groups come from `groupCommandsByScope`, one per `CommandScope`, or
+  commands vanish.
 
-Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here.
+Architecture, flows, conventions, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

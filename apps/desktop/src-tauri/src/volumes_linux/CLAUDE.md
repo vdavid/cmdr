@@ -49,8 +49,8 @@ re-exports every submodule item, keeping `crate::volumes_linux::X` paths stable.
   falls back `$USER` → `$LOGNAME` → empty; empty makes everything non-ejectable, the safe default.
 - **`is_submount()` filters bind mounts nested under a real mount**, so dev `node_modules` / build-dir bind mounts don't
   clutter the sidebar as separate volumes.
-- **The volume IPC commands aren't per-platform**: `commands/volumes.rs` serves both through one `platform` alias, and
-  `commands::volumes_linux` is a `pub use` of it, not a module. Linux-only behavior goes behind the alias. DETAILS §
-  "One command module".
+- **The volume IPC commands aren't per-platform**: one `commands/volumes.rs` serves both, reaching this module through
+  a `#[cfg]`'d `platform` alias. Linux-only behavior goes behind that alias, ❌ never into a second command module.
+  DETAILS § "One command module".
 
 Full details (decision rationale): `DETAILS.md`.

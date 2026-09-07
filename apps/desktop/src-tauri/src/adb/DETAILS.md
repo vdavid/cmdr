@@ -1,10 +1,10 @@
 # ADB (app side): details
 
-The app side of `crates/cmdr-adb/`: how a device reaches the sidebar, when a volume is dialed, what an eject does,
-what the frontend calls, and what is not wired yet. The wire contract, the `Volume` answers, and the error policy are
-the crate's (`crates/cmdr-adb/DETAILS.md`); what the backend still owes is
-`docs/specs/android-adb-backend-follow-ups.md`. The
-seam both device backends register through is `device_volumes.rs`, whose module doc is canonical for the trait.
+The app side of `crates/cmdr-adb/`: how a device reaches the sidebar, when a volume is dialed, what an eject does, and
+what the frontend calls. Read this before any non-trivial work here. The wire contract, the `Volume` answers, and the
+error policy are the crate's (`crates/cmdr-adb/DETAILS.md`); what the backend still owes is
+`docs/specs/android-adb-backend-follow-ups.md`. The seam both device backends register through is `device_volumes.rs`,
+whose module doc is canonical for the trait.
 
 ## Where each thing lives
 
@@ -40,16 +40,18 @@ its volumes registered, so a phone looks browsable and answers nothing. The path
 while it is RUNNABLE, so a path that went stale (an SDK moved, a typo saved) falls through to the search rather than
 making every Android device vanish.
 
-**The settings screen** (`apps/desktop/src/lib/settings/sections/AdbSection.svelte`, `File systems > Android (ADB)`) renders both
-settings plus three things that are not settings: the status (`get_adb_install_status`), a Re-check button, and, while
-no binary was found, a copyable `brew install android-platform-tools`. ❗ It calls `recheck_adb_install` once per CLICK
-and `get_adb_install_status` once on mount, which is the frontend half of the no-polling rule below.
+**The settings screen** (`apps/desktop/src/lib/settings/sections/AdbSection.svelte`, `File systems > Android (ADB)`)
+renders both settings plus three things that are not settings: the status (`get_adb_install_status`), a Re-check button,
+and, while no binary was found, a copyable `brew install android-platform-tools`. ❗ It calls `recheck_adb_install` once
+per CLICK and `get_adb_install_status` once on mount, which is the frontend half of the no-polling rule below.
 
-**Re-check** (`recheck_adb_install`): the one path allowed to retry `adb start-server`. It stands for a person saying
-"I installed it now", so it clears the crate's start-attempt memory (`cmdr_adb::forget_start_attempt`), starts a fresh
-tracker, and answers an `AdbInstallStatus` (`binaryPath`, `tracking`) for the settings screen to render.
-`get_adb_install_status` is the same answer without looking again. ❌ Nothing may poll either: one attempt per human
-action is what keeps the "never a retry loop that spawns processes" rule true.
+**Re-check** (`recheck_adb_install`): it stands for a person saying "I installed it now", so it clears the crate's
+start-attempt memory (`cmdr_adb::forget_start_attempt`), starts a fresh tracker, and answers an `AdbInstallStatus`
+(`binaryPath`, `tracking`) for the settings screen to render. `get_adb_install_status` is the same answer without
+looking again. `apply_settings_at` clears the same memory when ADB is turned on or the binary path changes, for the
+same reason: a newly named binary deserves the one attempt an existing one already spent. ❌ Nothing may poll any of
+them: one `adb start-server` attempt per human action is what keeps the "never a retry loop that spawns processes" rule
+true.
 
 **Hotplug**: every push from `cmdr_adb::track_devices` (the full `host:devices-l` list, refetched by the crate on each
 short-format push) lands in `device_provider::apply_device_list`, synchronously on the runtime. It stores the list,
@@ -115,9 +117,10 @@ for good is unplugged, or revoked on the phone.
 - `connect_adb_device(serial, attempt_id) -> Result<volume_id, AdbConnectOutcomeError>`, and
   `cancel_adb_connect(attempt_id) -> bool`.
 - `set_adb_settings(enabled, binary_path)`: the live apply above.
-- Frontend: `src/lib/adb/` (`adb-path-utils.ts` for the `adb://` scheme beside `mtp://`, `adb-volume-label.ts`,
-  `adb-connect-errors.ts`) and `tauri-commands/adb.ts`. The frontend is a passive consumer of `volumes-changed`, the
-  posture `src/lib/mtp/CLAUDE.md` describes for MTP; its one active step is the connect a navigation triggers.
+- Frontend: `src/lib/adb/` (`adb-path-utils.ts` for the `adb://` scheme beside `mtp://`, plus `adb-volume-label.ts`,
+  `adb-connect-errors.ts`, `device-readiness.ts`, `adb-settings.ts`, and the `AdbHint` pair) and
+  `tauri-commands/adb.ts`. The frontend is a passive consumer of `volumes-changed`, the posture `src/lib/mtp/CLAUDE.md`
+  describes for MTP; its one active step is the connect a navigation triggers.
 
 ## Testing
 
@@ -144,6 +147,7 @@ the kind of "oversight" someone will otherwise fix.
 - An " (ADB)" name suffix when the same phone is also listed over MTP (`entries()` names the model alone). The frontend
   applies one from the volume list (`src/lib/adb/adb-volume-label.ts`); the merged one-row-per-phone listing that
   retires it is `docs/specs/later/adb-merged-phone-row.md`.
-- Index routing for `adb:` volume ids, `go_to_path`, and the MCP `select_volume` tool don't answer for an `adb://`
-  path.
+- The MCP `select_volume` tool can't reach an ADB device: `mcp/executor/nav.rs` validates a name against
+  `volumes::list_locations` plus MTP, and a device row comes from the provider seam instead. (Go to path DOES answer
+  for an `adb://` path, through `src/lib/go-to-path/scheme-intercept.ts`.)
 - The real-device pass and the crate's own deferrals: `crates/cmdr-adb/DETAILS.md` § "Known gaps and follow-ups".
