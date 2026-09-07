@@ -18,6 +18,7 @@
 
 import { wordEjectRefusal } from '../navigation/eject-error-messages'
 import { disconnectPlace, disconnectSmbVolume } from '$lib/tauri-commands'
+import { connectPlace } from '$lib/servers/connect-flow'
 import { openSignInForPlace } from '$lib/servers/open-sign-in'
 import { reconnectCycleLines, smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
 import { resolveValidPath } from '../navigation/path-resolution'
@@ -145,21 +146,38 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
       deps.loadDirectory(path)
     }
     const unsubscribe = smbReconnectManager.subscribe(targetVolumeId, onSuccess)
-    // If we land on a Disconnected SMB share without a cycle running (e.g. user
-    // navigated to a share that was already broken), kick off the cycle ourselves.
+    // Landing on a Disconnected share with no cycle running (the user navigated
+    // to one that was already broken) starts it, through `connectPlace`'s arm 1.
+    // ❗ Through the FLOW rather than straight to `startCycle`, so the module
+    // that documents itself as the one caller of the manager's lazy start really
+    // is one. Arm 1 is that call and nothing else, and the manager is idempotent,
+    // so landing on the same share twice still costs nothing.
     if (isDisconnected) {
-      smbReconnectManager.startCycle(targetVolumeId)
+      void connectPlace({ volumeId: targetVolumeId, connectionState: 'disconnected' })
     }
     return unsubscribe
   })
 
   /**
-   * The signed-out banner's button. ❗ `registered: true`: a volume is filed
-   * under this id, so the sheet MENDS it with `reconnectVolumeWithCredentials`
-   * rather than dialing, which would register a second volume under a second id.
+   * The signed-out banner's button, through `connectPlace`'s arm 2.
+   *
+   * ❗ Through the FLOW rather than straight to the sheet, so the one place that
+   * picks a move by a volume's standing keeps picking it: arm 2 is what supplies
+   * `registered: true` (a volume is filed under this id, so the sheet MENDS it
+   * with `reconnectVolumeWithCredentials` rather than dialing, which would
+   * register a second volume under a second id) AND the `needs_credentials`
+   * reason the sheet's first round says out loud.
+   *
+   * The manager's `needs-auth` IS the volume's `needs_sign_in`: the backend
+   * stopped for a missing credential and said so, which is the event that
+   * flipped this status.
    */
   function handleSignIn(): void {
-    void openSignInForPlace({ volumeId: deps.getVolumeId(), registered: true })
+    void connectPlace({
+      volumeId: deps.getVolumeId(),
+      connectionState: 'needs_sign_in',
+      openSignIn: openSignInForPlace,
+    })
   }
 
   /**

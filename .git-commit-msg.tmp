@@ -1,21 +1,24 @@
-fix(servers): a sign-in sheet opened by a refusal says which one, and never opens over a server that asks nothing
+fix(servers): the connect flow really is the one caller its guardrail claims to be
 
-Two holes on the place path into the sheet.
+`connect-flow.ts`'s header and `servers/CLAUDE.md` both say it is the ONE caller of `connectSavedPlace` and of the
+reconnect manager's lazy start, and that it picks the move by a volume's standing. Two of its three arms had no
+production caller: `place-connect.svelte.ts` returns early unless the standing is `saved`, so only arm 3 was reachable,
+while `smb-view-state.svelte.ts` called `smbReconnectManager.startCycle` and `openSignInForPlace` directly. A guardrail
+doc describing a shape the code doesn't have is worse than no doc: the next person adds a fourth caller on its word.
 
-**The refusal never arrived.** `SignInSheetRequest.refusal` exists, the sheet seeds its first round from it, and SMB's
-side passes it, but `openSignInForPlace` forwarded only `firstOutcome` as `hostKey` and dropped everything else. So a
-person sent to the sheet by `authentication_rejected` or `needs_credentials` got an empty password box and no sentence
-saying why they were being asked, which is the exact failure the refusal-under-the-field design exists to prevent. It is
-now read off the dial through `server-outcomes.ts::readConnectOutcome`, the one reader, so the two keep their own
-sentences: "that password didn't work" for one that was offered and refused, "Cmdr needs a password" for one that was
-never offered. A REGISTERED volume in `needs_sign_in` had no dial to read, so `connect-flow.ts`'s arm 2 says
-`needs_credentials` itself through the seam's new `refusal` field.
+Both pane paths now go through the flow.
 
-**`nothing` could open the sheet.** Both `servers/DETAILS.md` and `SignInCredentialFields.svelte` state that a shape
-asking for nothing never reaches the sheet, but only one caller enforced it. `openSignInForPlace` opened on whatever
-`getVolumeSignInState` answered, and `nothing` fell through to the read-only-username plus password renderer: a password
-box over a key-only or agent-only server, whose `reconnect_with_credentials` answers `NotSupported` every time. The
-guard now lives at the seam, which answers `{ signedIn: false }` without opening anything, so the pane's `signed_out`
-banner with no button stays up and a new caller inherits the rule instead of having to remember it.
+- The lazy-nav landing on an already-`Disconnected` share calls `connectPlace({ connectionState: 'disconnected' })`,
+  whose arm 1 is that `startCycle` and nothing else. The manager is idempotent, so landing on the same share twice
+  still costs nothing.
+- The signed-out banner's Sign in calls `connectPlace({ connectionState: 'needs_sign_in' })`, whose arm 2 supplies both
+  `registered: true` (the volume is filed under this id, so the sheet mends it rather than dialing a second one into
+  existence) and the `needs_credentials` reason the sheet's first round now says out loud. That is a real gain for the
+  user, not just for the doc: the banner is up because a credential is missing, and the sheet used to open silent about
+  it.
 
-Three cells: the refusal reaching the sheet for each of the two kinds, and the seam refusing to open over `nothing`.
+The manager's `needs-auth` IS the volume's `needs_sign_in`: that event is what flips the status.
+
+`network/DETAILS.md`'s lazy-nav paragraph and `servers/DETAILS.md`'s three-arms section now name the three callers,
+one per arm. New cell: the banner's Sign in reaching the sheet with its reason. The two existing `startCycle` cells
+pass unchanged, which is the proof arm 1 does the same thing.

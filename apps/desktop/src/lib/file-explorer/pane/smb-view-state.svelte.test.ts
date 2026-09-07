@@ -185,6 +185,23 @@ describe('createSmbViewState', () => {
     expect(manager.startCycle).toHaveBeenCalledWith('smb-vol')
   })
 
+  it('opens the signed-out banner’s sheet through the connect flow, so it says WHY it is asking', async () => {
+    // ❗ The banner is up because the backend stopped for a missing credential.
+    // Routing through `connectPlace`'s arm 2 is what carries that reason into
+    // the sheet's first round, instead of an empty password box.
+    const { openSignInForPlace } = await import('$lib/servers/open-sign-in')
+    const { sub } = create({ volumeInfo: { connectionState: 'needs_sign_in' } as unknown as VolumeInfo })
+    sub.handleSignIn()
+    await vi.waitFor(() => {
+      expect(vi.mocked(openSignInForPlace)).toHaveBeenCalledWith({
+        volumeId: 'smb-vol',
+        // ❗ A dial would register a SECOND volume under a second id.
+        registered: true,
+        refusal: 'needs_credentials',
+      })
+    })
+  })
+
   it('does not subscribe off a volume with a session', () => {
     create({ volumeInfo: { connectionState: null } as unknown as VolumeInfo })
     expect(manager.subscribe).not.toHaveBeenCalled()
