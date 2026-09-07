@@ -777,14 +777,25 @@ Where the code differed from this plan, and why:
   is a Rust menu change (`menu_structure.rs`, the command signature, `bindings.ts`, and a `menu.*` key in eleven
   catalogs), outside this milestone. `later/adb-merged-phone-row.md` touches device rows anyway.
 
-### M6. Reconcile, docs pass, spec wipe
+### M6. Reconcile, docs pass, spec wipe ✅ LANDED
 
-1. Rebase on `main`, resolve, full `pnpm check --include-slow`.
-2. `docs/architecture.md`, every touched `C.md` at 300–400 words, `docs/specs/index.md` updated, the two superseded
-   specs wiped per `docs/specs/DETAILS.md` § "Wiping a shipped spec", `later/sftp-follow-ups.md` § 1 and
-   `webdav-backend-follow-ups.md` § 1 rewritten to point at `servers/DETAILS.md`, the `~/.ssh/config` autocomplete idea
-   recorded in `later/sftp-follow-ups.md`, and pinnable SMB shares (the share-level writer keyed the way statfs spells
-   the server, plus the port) recorded as a `later/` spec of its own.
+Both superseded specs were already wiped by the milestones that closed them (M3 took `servers-in-the-sidebar.md`, M5
+took the ADB UI spec), so this milestone rebased, reconciled, and cleaned up.
+
+❗ **Three things differed, each recorded beside the code.**
+
+- **Nine of the fourteen touched `CLAUDE.md`s reached the 300-400 band; five stopped between 401 and 470**, each
+  carrying only single-site guardrails whose failure is silent. `src-tauri/src/network/CLAUDE.md` is the densest at 447,
+  with twelve of them. Trimming further would delete an invariant, which `docs/doc-system.md` reads as a
+  split-the-module signal rather than a docs one.
+- **The phone's native context menu was fixed here, not in M8.** `later/adb-merged-phone-row.md` touches device rows
+  anyway, but a row whose inline control says Disconnect and whose right-click menu says "Eject (Pixel 8)" is a promise
+  ADB can't keep. `menu/menu_items.rs`'s `DetachWord` reads the word off the volume id so the three surfaces can't
+  drift; the menu ITEM stays `EJECT_VOLUME_ID`, which for ADB already routes to `DeviceDisconnect`.
+- **The English settled on one name for the disk picker.** It said both "volume chooser" (the shortcuts scope, two pane
+  commands, Close) and "volume switcher" (the pin toasts, `Pin to switcher`, this hub). Everything user-facing is now
+  "volume switcher"; the message keys and command ids keep `Chooser`, because `pane.leftVolumeChooser` is persisted in
+  everyone's shortcut settings.
 
 ### M7. Real-server pass (David, by hand; recorded here for the QA)
 
