@@ -393,6 +393,13 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   full-width parens follow § Punctuation. ❗ Don't invent a second marker (`忙碌中`, `處理中`) for a new pair, and don't
   reword the base half to make the compound shorter.
 
+- **A `正在…` progress heading with a target keeps ONE sentence shape across the family.** The pane's
+  `servers.paneState.connecting` / `.reconnecting` pair differs only in the verb (`正在連線到 {name}…` /
+  `正在重新連線到 {name}…`), and Apple's own Traditional progress strings are `正在重新連線⋯` in three separate bundles.
+  A new state in the family copies the shape rather than inventing a second one. ❗ Apple's `重新連接` is its imperative
+  form ("unplug it and reconnect the iPhone"); a STATE is always `重新連線`. Evidence and the rest of the pane family:
+  `glossary.md` § 自動重連的窗格與「沒東西可問」那一行.
+
 ### `*Aria` containment pairs that are load-bearing
 
 WCAG 2.5.3 asks an accessible name to CONTAIN its visible label verbatim. Chinese doesn't inflect, so this is usually

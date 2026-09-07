@@ -2324,3 +2324,38 @@ Fyra `sameAsSourceJustification` i passet: `servers.sheet.protocolSmb`, `.protoc
 (protokollnamn som macOS sv själv skriver latinskt, ”WebDAV-lösenord”/”AFP-lösenord” i NetAuthAgent) och
 `.addressPlaceholder` (`nas.local` är ett exempelvärdnamn med Bonjour-suffixet `.local`, identiskt på svenska). Ingen
 apostrof i något värde, så ICU-dubbleringen `''` blir aldrig aktuell.
+
+## Serverpanelen: återanslutningsloopen och den nyckelbaserade utloggningen (2026-09-07; `servers.paneState.reconnecting` + `.signedOutNothingToAsk`)
+
+Två rader i samma panelvy: rubriken medan Cmdr på egen hand försöker få tillbaka en tappad serveranslutning, och raden
+som står i stället för `Logga in…`-knappen när servern bevisar sig med en nyckel och det alltså inte finns något fält
+att fylla i. Ingen ny term behövde sättas: båda värdena är byggda av former katalogen redan hade. Apple-belägget nedan
+är läst i de LEVANDE paketen på macOS 26.6.2, build 25G83, 2026-09-07 (`_ignored/i18n/` finns inte på den här maskinen;
+reservvägen är `docs/i18n/reference-pile/how-to-mine.md` § ”No pile on this machine?”).
+
+- **Reconnecting to X… → `Återansluter till {name}…`** · ramen är ordagrant katalogens egen
+  `errors.listing.deviceReconnecting.title` (”Reconnecting to the device” = ”Återansluter till enheten”), och
+  presens-formen speglar systerraden `servers.paneState.connecting` (”Ansluter till {name}…”, från Finder sv
+  `LocalizableMerged.strings` `MN1` = ”Ansluter till ^0…”). Prepositionen `till` är Apples egen efter verbet: svensk
+  Finder har åtta `återansluta till …`-strängar (`MT38.3`, `MT41_V1`/`_V2`, `MT44_*`, `NE111.1`) · `high`. Termen
+  `återansluta` (presens `återansluter`) var redan satt i glossaret; den här nyckeln lägger bara till frasramen.
+- **”This server signs in with a key rather than a password” →
+  `Den här servern använder en nyckel i stället för ett lösenord`** · ramen `Den här servern använder …` är ordagrant
+  systerraden `servers.refusal.authMethodUnsupported` (”Den här servern använder en inloggningsmetod som Cmdr inte
+  stöder än”), som sitter i samma panelvy och svarar på samma fråga (vad servern vill ha) · `high`. ❌ Skriv inte
+  `Den här servern loggar in med …`: på svenska blir servern då den som loggar in någonstans. Huvudordet är `nyckel`
+  utan `värd`-led, enligt passet om SSH host key.
+- **”so there''s nothing to type” → `så det finns inget att skriva`** · glossarets satta mall
+  `”there''s nothing to …” → så det finns inget att …` (samma mall bär `errors.eject.volumeNotFound` och
+  `.notAnSmbVolume`), och verbet är katalogens eget för att mata in text i ett fält: `ui.combobox.emptyText` säger
+  ”Fortsätt skriva …” för ”Keep typing …” · `high`. ❌ Inte `Du behöver inte skriva något`: den formen hör till
+  `errors.listing.deviceReconnecting.suggestion` (”Du behöver inte koppla ur något”), där engelskan har en fristående
+  mening och inte ett `so there''s nothing to …`-led.
+- **”Open it again to retry.” → `Öppna servern igen för att försöka på nytt.`** · formeln
+  `<handling> igen för att försöka på nytt` är katalogens egen och står redan i ett dussin `errors.listing.*.suggestion`
+  (”Gå hit igen för att försöka på nytt”) · `high`. Huvudordet skrivs ut i stället för `den`, precis som systerraden
+  `servers.paneState.hostKeyChangedHint` (”… öppna servern igen för att kontrollera fingeravtrycket”): meningen före
+  slutar på `nyckel` och `lösenord`, så ett ensamt `den` skulle peka åt fel håll.
+
+Ingen `sameAsSourceJustification` i passet: båda värdena skiljer sig från engelskan. Ingen apostrof i något värde, så
+ICU-dubbleringen `''` blir aldrig aktuell, och `{name}` står kvar oförändrad i den enda nyckel som bär den.

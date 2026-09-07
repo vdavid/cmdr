@@ -3,7 +3,8 @@
  * They pin:
  * - the reconnect cancel + disconnect handlers (manager cancel, OS unmount, and the
  *   walk-up-to-valid-path fallback),
- * - the alt-view decision deriveds mapping the manager's cycle status,
+ * - the one `RemoteConnectState` the manager's cycle status maps onto (and the
+ *   gave-up status that deliberately maps to the banner instead),
  * - the subscribe `$effect` registering with the manager and kick-starting a cycle
  *   on a landed-broken share, and staying out of the way off an SMB volume.
  *
@@ -14,6 +15,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest'
 import { flushSync } from 'svelte'
 import type { VolumeInfo } from '../types'
+import type { SignInShape } from '$lib/ipc/bindings'
 
 const { ipc, manager, resolveValidPathSpy, addToastSpy } = vi.hoisted(() => ({
   ipc: {
@@ -21,6 +23,7 @@ const { ipc, manager, resolveValidPathSpy, addToastSpy } = vi.hoisted(() => ({
   },
   manager: {
     getState: vi.fn(),
+    getSignInShape: vi.fn<(volumeId: string) => SignInShape | null>(() => null),
     subscribe: vi.fn((_id: string, _cb: () => void) => vi.fn()),
     cancel: vi.fn(),
     startCycle: vi.fn(),
@@ -34,11 +37,14 @@ vi.mock('$lib/tauri-commands', () => ({
   disconnectSmbVolume: ipc.disconnectSmbVolume,
   disconnectPlace: vi.fn().mockResolvedValue(undefined),
 }))
-vi.mock('../network/smb-reconnect-manager.svelte', () => ({ smbReconnectManager: manager }))
 vi.mock('../navigation/path-resolution', () => ({ resolveValidPath: resolveValidPathSpy }))
 vi.mock('$lib/servers/open-sign-in', () => ({ openSignInForPlace: vi.fn().mockResolvedValue({ signedIn: false }) }))
 vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: (key: string) => key }))
+vi.mock('../network/smb-reconnect-manager.svelte', () => ({
+  smbReconnectManager: manager,
+  reconnectCycleLines: () => ['keeps trying'],
+}))
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
@@ -70,6 +76,7 @@ describe('createSmbViewState', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     manager.getState.mockReturnValue(null)
+    manager.getSignInShape.mockReturnValue(null)
     manager.subscribe.mockReturnValue(vi.fn())
     resolveValidPathSpy.mockResolvedValue('/valid')
   })
@@ -99,28 +106,77 @@ describe('createSmbViewState', () => {
     })
   })
 
-  it('maps the manager cycle status onto the view deriveds', () => {
-    manager.getState.mockReturnValue({ status: 'waiting' })
-    expect(create().sub.showSmbReconnecting).toBe(true)
-    dispose?.()
+  it('renders a waiting cycle as a countdown the user can skip or stop', () => {
+    manager.getState.mockReturnValue({ status: 'waiting', attemptIndex: 2, currentDelayMs: 8000, waitStartedAt: 1234 })
+    const state = create().sub.remoteConnectState
+    expect(state?.kind).toBe('connecting')
+    if (state?.kind !== 'connecting') throw new Error('unreachable')
+    // ❗ The countdown is what makes the wait honest: without it a person can't
+    // tell a slow handshake from a wedged one.
+    expect(state.cycle?.waiting).toEqual({ startedAt: 1234, durationMs: 8000 })
+    expect(state.cycle?.lines.length).toBeGreaterThan(0)
 
-    manager.getState.mockReturnValue({ status: 'attempting' })
-    expect(create().sub.showSmbReconnecting).toBe(true)
-    dispose?.()
+    state.cycle?.retryNow()
+    expect(manager.retryNow).toHaveBeenCalledWith('smb-vol')
+  })
 
-    manager.getState.mockReturnValue({ status: 'gave-up' })
-    expect(create().sub.showSmbGaveUp).toBe(true)
-    dispose?.()
+  it('drops the countdown while an attempt is in flight, so nothing pretends to be waiting', () => {
+    manager.getState.mockReturnValue({
+      status: 'attempting',
+      attemptIndex: 1,
+      currentDelayMs: 4000,
+      waitStartedAt: 1234,
+    })
+    const state = create().sub.remoteConnectState
+    expect(state?.kind).toBe('connecting')
+    if (state?.kind !== 'connecting') throw new Error('unreachable')
+    expect(state.cycle?.waiting).toBeNull()
+  })
 
-    manager.getState.mockReturnValue({ status: 'needs-auth' })
-    expect(create().sub.showSmbNeedsAuth).toBe(true)
-    dispose?.()
+  it('sends a gave-up cycle to the banner rather than a pane state of its own', () => {
+    manager.getState.mockReturnValue({ status: 'gave-up', attemptIndex: 4, currentDelayMs: 0, waitStartedAt: 0 })
+    const { sub } = create()
+    expect(sub.showGaveUp).toBe(true)
+    // ❗ Two renderers for one state is what this avoids.
+    expect(sub.remoteConnectState).toBeNull()
+  })
 
+  it('offers Sign in when a credential is what is missing', () => {
+    manager.getState.mockReturnValue({ status: 'needs-auth', attemptIndex: 0, currentDelayMs: 0, waitStartedAt: 0 })
+    manager.getSignInShape.mockReturnValue({ kind: 'username_password', guestAllowed: false })
+    const state = create().sub.remoteConnectState
+    expect(state?.kind).toBe('signed_out')
+    if (state?.kind !== 'signed_out') throw new Error('unreachable')
+    expect(state.signIn).toBeTypeOf('function')
+  })
+
+  it('offers no Sign in button when the backend says there is nothing to ask for', () => {
+    // ❌ No inert affordance: a `nothing` shape means no secret a person could
+    // type would bring the session back.
+    manager.getState.mockReturnValue({ status: 'needs-auth', attemptIndex: 0, currentDelayMs: 0, waitStartedAt: 0 })
+    manager.getSignInShape.mockReturnValue({ kind: 'nothing' })
+    const state = create().sub.remoteConnectState
+    expect(state).toEqual({ kind: 'signed_out', signIn: null })
+  })
+
+  it('shows the changed-key banner, whose only way out is Disconnect', () => {
+    manager.getState.mockReturnValue({
+      status: 'needs-host-key',
+      attemptIndex: 0,
+      currentDelayMs: 0,
+      waitStartedAt: 0,
+    })
+    const state = create().sub.remoteConnectState
+    expect(state?.kind).toBe('host_key_changed')
+    if (state?.kind !== 'host_key_changed') throw new Error('unreachable')
+    expect(state.disconnect).toBeTypeOf('function')
+  })
+
+  it('renders nothing when no cycle is running', () => {
     manager.getState.mockReturnValue(null)
     const { sub } = create()
-    expect(sub.showSmbReconnecting).toBe(false)
-    expect(sub.showSmbGaveUp).toBe(false)
-    expect(sub.showSmbNeedsAuth).toBe(false)
+    expect(sub.remoteConnectState).toBeNull()
+    expect(sub.showGaveUp).toBe(false)
   })
 
   it('subscribes to the manager and kick-starts a cycle on a landed-broken SMB share', () => {

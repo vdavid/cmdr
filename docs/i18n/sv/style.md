@@ -291,6 +291,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 - **Statuscellerna i en tabell är particip som böjs efter radens huvudord.** Serverhubbens rader är `en server`, alltså
   en-genus: `Ansluten`, `Sparad`, `Hittad i närheten`, `Utloggad`. Slår raden om till ett neutrumord någon gång måste
   hela kolumnen skrivas om, inte bara den nya statusen.
+- **En ”X again to retry”-mening tar `igen` en gång och `på nytt` för retry-ledet.** Engelskan kan upprepa `again`,
+  svenskan blir tramsig på `igen … igen`. Katalogens formel är `<handling> igen för att försöka på nytt` (ett dussin
+  `errors.listing.*.suggestion` säger ”Gå hit igen för att försöka på nytt”), och
+  `servers.paneState.signedOutNothingToAsk` följer den: ”Öppna servern igen för att försöka på nytt.” `Försök igen` står
+  kvar som knapptext för `Try again`, och `prova` hör till `try` i betydelsen testa något.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

@@ -236,10 +236,23 @@ Two mechanics that bite in Portuguese specifically:
   `Sessão encerrada` concorda com a SESSÃO, não com a pessoa, e diz que só falta iniciar sessão de novo;
   `Aguardando você conferir a chave` põe a pessoa como quem age. O verbo de uma verificação FEITA PELA PESSOA é
   `conferir`; `verificar` fica para o que o Cmdr faz sozinho.
+- **Uma manchete de progresso vai no gerúndio, e a irmã dela manda na preposição.** `Reconnecting to {name}…` sai como
+  `Reconectando a {name}…`: o gerúndio é a forma pt-BR (o `A reconectar` do pt-PT é marcador de variante, § acima), o
+  `Reconectando…` é literal da Apple, e o `a` vem da irmã `servers.paneState.connecting` (`Conectando a {name}…`), que
+  se alterna com ela no MESMO lugar do painel. Evidência: `glossary.md` § Duas linhas novas no painel.
+- **`então não há nada para …` é o molde fixo de "so there''s nothing to …".** Três chaves já o publicam (`ejetar`,
+  `desconectar`, `digitar`), e o `desktop-i18n-term-consistency` compara pelo inglês, então uma quarta copia o molde em
+  vez de reinventar a frase. O verbo de preencher uma credencial é `digitar`, o da Apple.
+- **Um pronome enclítico só entra quando o gênero fecha sozinho.** `Abra-o de novo para tentar conectar.` é seguro
+  porque `chave` e `senha` são femininas e `servidor` é o único masculino da frase; quando os candidatos empatam, a
+  linha escreve o substantivo (`abra o servidor de novo`, `A chave do servidor mudou`). Ênclise sempre, nunca próclise.
 
 ## Decisions to confirm with David
 
-- None open. (The `pt` = pt-BR question is settled; see the variant section above.)
+- **`uma chave` sem `SSH`** em `servers.paneState.signedOutNothingToAsk`: no mesmo painel, `chave` já é a chave DO HOST
+  (`paneState.hostKeyChangedHint`), e nesta linha é a do cliente. O inglês tem a mesma ambiguidade e os dois estados
+  nunca aparecem juntos, então a tradução ficou literal. Confirmar, ou trocar por `uma chave SSH`.
+- (The `pt` = pt-BR question is settled; see the variant section above.)
 
 ## Glossary
 

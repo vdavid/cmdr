@@ -273,6 +273,12 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   pedig a fájllista dátumoszlopai `-va/-ve` alakúak (`Módosítva`, `Létrehozva`): azoknál nincs Tier-1 forrás a konkrét
   szóra, itt van. Bizonyíték: `glossary.md` § A szerverközpont táblázata.
 - **A `Mac` tárgyesete `Macet`, kötőjel nélkül** (macOS-attesztált, 161 találat), a `Macen` alakkal egy tőről.
+- **A `reconnect` töve a katalógusé (`újracsatlakoz-`), a panelcím KERETE viszont a családé (`ide: {name}…`).** A
+  `servers.paneState.reconnecting` ezért `Újracsatlakozás ide: {name}…`: a tő a szállított
+  `errors.listing.deviceReconnecting.title` (`Újracsatlakozás az eszközhöz`) és a vele egy nézetben látszó két
+  testvérkulcs alakja, a keret a `servers.paneState.connecting` (`Kapcsolódás ide: {name}…`) idiómája. A macOS a másik
+  tőre is ad Tier-1 találatot (`Újrakapcsolódás…`), de a szállított alak nyer, és egy nézeten belüli tőváltás rosszabb,
+  mint két nézet közötti. Bizonyítékok: `glossary.md` § Az automatikus újracsatlakozás.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

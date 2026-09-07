@@ -2175,3 +2175,59 @@ falha do usuário: `O Cmdr parou de conectar a {name}` põe o Cmdr como sujeito,
 Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `ecrã`, `estar a` + infinitivo, `consoante`, `Rever`,
 `alterar o nome`, ou `você` omitido onde a forma verbal fica ambígua (`um endereço que você copiou`,
 `a que você recebeu`). Nenhum valor leva apóstrofo ASCII, então não há `''` a dobrar.
+
+## Duas linhas novas no painel: a reconexão automática e o login por chave (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`, 2026-09-07)
+
+Duas chaves do mesmo painel de servidor. A primeira é a manchete enquanto o Cmdr, sozinho e num laço de backoff, traz de
+volta uma conexão que caiu (embaixo dela: um indicador de atividade, a contagem regressiva até a próxima tentativa e os
+botões `Tentar agora` / `Cancelar` / `Desconectar`). A segunda é a linha que entra sob `Sessão encerrada em {name}` NO
+LUGAR do botão `Iniciar sessão…`, porque este servidor se identifica com uma chave SSH ou uma identidade do ssh-agent, e
+não há mesmo o que a pessoa preencher.
+
+A pilha de referência não existe nesta máquina, então o Tier 1 vem dos bundles do macOS instalado (26.6.2, build 25G83,
+lidos em 2026-09-07), o caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" descreve.
+
+- **Reconnecting… (manchete de progresso) → `Reconectando…`** · Apple pt-BR, literal:
+  `HomeDataModel.framework/…/HFLocalizable.loctable`, `HFServiceDescriptionReconnecting` (`Reconnecting…` →
+  `Reconectando…`), e `ConversationKit.framework/…/ConversationKit.loctable`, chave `Reconnecting` (`Reconnecting` →
+  `Reconectando`) · confirmed. O gerúndio é a forma pt-BR (o pt-PT diria `A reconectar`, marcador do style.md).
+- **Reconnecting to {name}… → `Reconectando a {name}…`** · a preposição é `a`, como no próprio Apple pt-BR
+  (`HFSymptomLongDescriptionProblemNeedCaptiveLeaseRenewalLinkString`: `Reconnect HomePod to “%@”` →
+  `Reconectar HomePod a “%@”`) · confirmed. É a irmã `servers.paneState.connecting` (`Conectando a {name}…`) com o
+  prefixo `Re-`, e as duas manchetes se alternam no mesmo lugar: qualquer outra forma leria como outra tela. Combina com
+  o `reconexão` que `retryProgressAriaLabel` já publica e com o `Reconectar automaticamente` do painel de edição.
+- **so there''s nothing to type → `então não há nada para digitar`** · o molde `então não há nada para …` já está
+  publicado duas vezes no catálogo, para o mesmo inglês (`so there's nothing to eject` →
+  `então não há nada para ejetar`; `so there's nothing to disconnect` → `então não há nada para desconectar`) ·
+  confirmed. `digitar` é o verbo da Apple para preencher uma credencial: `NetAuthAgent.app/…/Localizable.loctable`, o
+  próprio diálogo de conectar a servidor (`GENERIC_MSG_PASS`: `Enter your password to connect to “%@”.` →
+  `Digite sua senha para conectar-se a “%@”.`; `SMB_MSG`, `FS_MSG_PASS`, `EMSG_INVALID_NAME_PWD` na mesma linha), e o
+  catálogo já o publica em `errors.listing.authRequiredEauth.suggestion` (`digite seu nome de usuário e senha de novo`).
+- **signs in with a key rather than a password → `usa uma chave em vez de uma senha para iniciar a sessão`** · `chave` é
+  o termo do macOS pt-BR para chave criptográfica (linha já fixada na § do painel de adicionar servidor), `senha` vem do
+  `NetAuthAgent` acima e das irmãs do formulário (`fileExplorer.network.login.password`), `iniciar a sessão` é a forma
+  em texto corrido que a § do hub fixou, e `em vez de` é o que o catálogo já usa para `rather than` / `instead of` (sete
+  ocorrências já publicadas, em `ai.json`, `errors.json`, `indexing.json` e `settings.json`) · high. O sujeito é **o
+  servidor que usa uma chave**, não a pessoa que faz login: `Este servidor inicia a sessão…` personificaria o servidor
+  em português muito mais do que o inglês faz.
+- **`uma chave`, sem `SSH`** · o inglês para em `key`, e a linha vale igual para uma identidade do ssh-agent, que não é
+  um arquivo de chave. `chave SSH` fica para quando o inglês disser `SSH`. Ver a bandeira de revisão abaixo.
+- **Open it again to retry. → `Abra-o de novo para tentar conectar.`** · é o molde `Abra-o para conectar.` que
+  `fileExplorer.navigation.connectionTooltipSaved` já publica, mais o `de novo` da irmã duas chaves acima
+  (`paneState.hostKeyChangedHint`: `abra o servidor de novo para conferir a impressão digital`) · confirmed. O `tentar`
+  carrega o `retry` sem repetir `de novo`/`novamente` na mesma frase.
+  - **Aqui o pronome é seguro, ao contrário do de sempre.** `-o` é masculino e o único masculino da frase é `servidor`:
+    `chave` e `senha` são femininas, e o `{name}` está no título, fora desta string. Ênclise, como manda o pt-BR
+    (`Abra-o`, nunca `O abra`).
+
+Notas: nenhum dos dois valores leva apóstrofo ASCII, então não há `''` a dobrar (o `there''s` do inglês some na
+tradução). O `{name}` fica intacto e nada concorda com ele; a reticência é o caractere único `…` (U+2026). Nenhum
+`sameAsSourceJustification`: os dois valores diferem do inglês. Varredura pt-PT: zero `ficheiro`, `ecrã`, `estar a` +
+infinitivo, `consoante`, `Rever`, `alterar o nome` ou próclise.
+
+### Bandeira de revisão desta rodada
+
+- **`uma chave` sozinha, no mesmo painel onde `chave` é a chave DO HOST** (`paneState.signedOutNothingToAsk`): duas
+  chaves acima, `hostKeyChangedHint` diz `A chave do servidor mudou`, e ali `chave` é a do host; nesta linha é a do
+  cliente. O inglês tem exatamente a mesma ambiguidade e os dois estados nunca aparecem juntos na tela, então o valor
+  fica literal. Confirmar isso, ou escrever `uma chave SSH` e divergir do inglês.

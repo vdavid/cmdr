@@ -553,56 +553,12 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.smbReconnect.totalSeconds": "{seconds} Sekunden",
-  "@fileExplorer.smbReconnect.totalSeconds": {
-    "sourceHash": "86d62ab"
-  },
-  "fileExplorer.smbReconnect.totalMinutes": "{minutes} Minuten",
-  "@fileExplorer.smbReconnect.totalMinutes": {
-    "sourceHash": "fc339ba"
-  },
-  "fileExplorer.smbReconnect.title": "Verbindung zum Server wird wiederhergestellt …",
-  "@fileExplorer.smbReconnect.title": {
-    "sourceHash": "7562773"
-  },
-  "fileExplorer.smbReconnect.progressBarAriaLabel": "Zeit bis zum nächsten Verbindungsversuch",
-  "@fileExplorer.smbReconnect.progressBarAriaLabel": {
-    "sourceHash": "d4341c3"
-  },
-  "fileExplorer.smbReconnect.willKeepTrying": "Es wird insgesamt {duration} lang weiterversucht.",
-  "@fileExplorer.smbReconnect.willKeepTrying": {
-    "sourceHash": "e4d25b7"
-  },
-  "fileExplorer.smbReconnect.retryNowTooltip": "Sofort erneut verbinden.",
-  "@fileExplorer.smbReconnect.retryNowTooltip": {
-    "sourceHash": "11525f0"
-  },
-  "fileExplorer.smbReconnect.retryNow": "Jetzt erneut versuchen",
-  "@fileExplorer.smbReconnect.retryNow": {
-    "sourceHash": "5148c3e"
-  },
-  "fileExplorer.smbReconnect.cancelTooltip": "Vorerst aufhören. Die Verbindung bleibt verfügbar. Wechsle zurück, um es erneut zu versuchen.",
-  "@fileExplorer.smbReconnect.cancelTooltip": {
-    "sourceHash": "377638b"
-  },
-  "fileExplorer.smbReconnect.cancel": "Abbrechen",
-  "@fileExplorer.smbReconnect.cancel": {
-    "sourceHash": "19766ed"
-  },
-  "fileExplorer.smbReconnect.disconnectTooltip": "Aufhören und die Verbindung zum Server trennen.",
-  "@fileExplorer.smbReconnect.disconnectTooltip": {
-    "sourceHash": "8fba8b0"
-  },
-  "fileExplorer.smbReconnect.disconnect": "Trennen",
-  "@fileExplorer.smbReconnect.disconnect": {
-    "sourceHash": "acfc5be"
-  },
   "fileExplorer.unreachable.title": "{path} nicht erreichbar",
   "@fileExplorer.unreachable.title": {
     "sourceHash": "586e44c"
   },
-  "fileExplorer.unreachable.detailSmbGaveUp": "Cmdr hat mehrmals versucht, die Verbindung wiederherzustellen, aber der Server kam nicht zurück. Die Verbindung bleibt vorerst verfügbar. Versuche es erneut oder trenne die Verbindung, um sie zu verwerfen.",
-  "@fileExplorer.unreachable.detailSmbGaveUp": {
+  "fileExplorer.unreachable.detailGaveUp": "Cmdr hat mehrmals versucht, die Verbindung wiederherzustellen, aber der Server kam nicht zurück. Die Verbindung bleibt vorerst verfügbar. Versuche es erneut oder trenne die Verbindung, um sie zu verwerfen.",
+  "@fileExplorer.unreachable.detailGaveUp": {
     "sourceHash": "7d8c5fc"
   },
   "fileExplorer.unreachable.detailTimeout": "Das Volume für diesen Pfad hat nicht rechtzeitig geantwortet. Es ist vielleicht ein Netzlaufwerk, das gerade nicht verfügbar ist.",

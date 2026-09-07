@@ -288,6 +288,16 @@ Dateien".
 - **Ein Bedienelement trägt im Deutschen EINEN Namen, auch wenn das Englische zwei hat.** „volume chooser“ und „volume
   switcher“ meinen dasselbe Aufklappmenü und heißen beide `Volume-Auswahl`. Beim Übersetzen eines neuen Strings prüfen,
   ob der Katalog die Fläche schon benannt hat, statt das englische Synonym mitzuübersetzen.
+- **Ein Zustandsetikett mit Ziel nimmt den `Verbindung … wird …`-Rahmen, nicht Apples Kurzform.** macOS rendert das
+  zielose `Reconnecting…` als `Erneut verbinden …` (ScreenSharing, HomeDataModel, ConversationKit), und das ist als
+  Etikett auch richtig. Sobald ein `{name}` dranhängt, bricht der Satzbau, also übernimmt der Katalog den Rahmen, den
+  Apple selbst für die Langform nimmt: `Verbindung zu {name} wird wiederhergestellt …` neben dem Geschwister
+  `Verbindung zu {name} wird hergestellt …`. Das Präfix `wieder-` allein trägt den Unterschied
+  Erstverbindung/Rückholung. Belege: `glossary.md` § Der Wiederverbindungs-Zyklus.
+- **„There''s nothing to X.“ → `Du musst nichts X-en.`** Das unpersönliche englische „there's nothing to …“ wird im
+  Deutschen zur `du`-Entlastung, wie schon in `errors.listing.deviceReconnecting.suggestion` („There''s nothing to
+  unplug.“ → „Du musst nichts abziehen.“). Für Tastatureingabe heißt das Verb `eingeben` (Apples Wort in genau diesem
+  Dialog, NetAuthAgent `FS_MSG_PASS`), nicht `tippen`.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

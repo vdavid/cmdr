@@ -553,57 +553,12 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.smbReconnect.totalSeconds": "{seconds} secondes",
-  "@fileExplorer.smbReconnect.totalSeconds": {
-    "sourceHash": "86d62ab"
-  },
-  "fileExplorer.smbReconnect.totalMinutes": "{minutes} minutes",
-  "@fileExplorer.smbReconnect.totalMinutes": {
-    "sourceHash": "fc339ba",
-    "sameAsSourceJustification": "Placeholder + 'minutes', which is the same word in French ('{minutes} minutes'); no other translatable text."
-  },
-  "fileExplorer.smbReconnect.title": "Reconnexion au serveur…",
-  "@fileExplorer.smbReconnect.title": {
-    "sourceHash": "7562773"
-  },
-  "fileExplorer.smbReconnect.progressBarAriaLabel": "Temps avant la prochaine tentative de reconnexion",
-  "@fileExplorer.smbReconnect.progressBarAriaLabel": {
-    "sourceHash": "d4341c3"
-  },
-  "fileExplorer.smbReconnect.willKeepTrying": "Cmdr continuera d''essayer pendant {duration} au total.",
-  "@fileExplorer.smbReconnect.willKeepTrying": {
-    "sourceHash": "e4d25b7"
-  },
-  "fileExplorer.smbReconnect.retryNowTooltip": "Tenter une reconnexion immédiate.",
-  "@fileExplorer.smbReconnect.retryNowTooltip": {
-    "sourceHash": "11525f0"
-  },
-  "fileExplorer.smbReconnect.retryNow": "Réessayer maintenant",
-  "@fileExplorer.smbReconnect.retryNow": {
-    "sourceHash": "5148c3e"
-  },
-  "fileExplorer.smbReconnect.cancelTooltip": "Arrêter d''essayer pour l''instant. La connexion reste disponible. Revenez pour réessayer.",
-  "@fileExplorer.smbReconnect.cancelTooltip": {
-    "sourceHash": "377638b"
-  },
-  "fileExplorer.smbReconnect.cancel": "Annuler",
-  "@fileExplorer.smbReconnect.cancel": {
-    "sourceHash": "19766ed"
-  },
-  "fileExplorer.smbReconnect.disconnectTooltip": "Arrêter d''essayer et se déconnecter du serveur.",
-  "@fileExplorer.smbReconnect.disconnectTooltip": {
-    "sourceHash": "8fba8b0"
-  },
-  "fileExplorer.smbReconnect.disconnect": "Se déconnecter",
-  "@fileExplorer.smbReconnect.disconnect": {
-    "sourceHash": "acfc5be"
-  },
   "fileExplorer.unreachable.title": "Impossible d''atteindre {path}",
   "@fileExplorer.unreachable.title": {
     "sourceHash": "586e44c"
   },
-  "fileExplorer.unreachable.detailSmbGaveUp": "Cmdr a tenté de se reconnecter plusieurs fois, mais le serveur n''est pas revenu. La connexion reste disponible pour l''instant. Réessayez, ou déconnectez-vous pour l''abandonner.",
-  "@fileExplorer.unreachable.detailSmbGaveUp": {
+  "fileExplorer.unreachable.detailGaveUp": "Cmdr a tenté de se reconnecter plusieurs fois, mais le serveur n''est pas revenu. La connexion reste disponible pour l''instant. Réessayez, ou déconnectez-vous pour l''abandonner.",
+  "@fileExplorer.unreachable.detailGaveUp": {
     "sourceHash": "7d8c5fc"
   },
   "fileExplorer.unreachable.detailTimeout": "Le volume de ce chemin n''a pas répondu à temps. Il s''agit peut-être d''un disque réseau actuellement indisponible.",

@@ -50,8 +50,6 @@
     import MtpConnectionView from './MtpConnectionView.svelte'
     import RemoteConnectView from './RemoteConnectView.svelte'
     import { createPlaceConnect } from './place-connect.svelte'
-    import SmbReconnectingView from './SmbReconnectingView.svelte'
-    import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
     import { createSelectionState } from './selection-state.svelte'
     import { createPaneMcpSync } from './pane-mcp-sync.svelte'
     import { initListingDiffSync } from './listing-diff-sync.svelte'
@@ -1726,30 +1724,17 @@
             />
         {:else if placeConnect.state}
             <RemoteConnectView name={currentVolumeInfo?.name ?? volumeId} state={placeConnect.state} />
-        {:else if smbView.showSmbReconnecting && smbView.reconnectState}
-            <SmbReconnectingView
-                {volumeId}
-                shareName={currentVolumeInfo?.name ?? volumeId}
-                cycleState={smbView.reconnectState}
-                onCancel={smbView.handleSmbReconnectCancel}
-                onDisconnect={smbView.handleSmbReconnectDisconnect}
-            />
-        {:else if smbView.showSmbNeedsAuth}
+        {:else if smbView.remoteConnectState}
             <RemoteConnectView
                 name={currentVolumeInfo?.name ?? volumePath}
-                state={{ kind: 'signed_out', signIn: smbView.handleSignIn }}
+                state={smbView.remoteConnectState}
             />
-        {:else if smbView.showSmbNeedsHostKey}
-            <RemoteConnectView
-                name={currentVolumeInfo?.name ?? volumePath}
-                state={{ kind: 'host_key_changed', disconnect: smbView.handleDisconnectPlace }}
-            />
-        {:else if smbView.showSmbGaveUp}
+        {:else if smbView.showGaveUp}
             <VolumeUnreachableBanner
                 originalPath={currentVolumeInfo?.name ?? volumePath}
                 retrying={false}
-                onRetry={() => { smbReconnectManager.retryNow(volumeId); }}
-                smbGaveUp={true}
+                onRetry={smbView.handleRetryNow}
+                gaveUp={true}
                 onDisconnect={smbView.handleSmbReconnectDisconnect}
             />
         {:else if paneViewKind === 'network'}

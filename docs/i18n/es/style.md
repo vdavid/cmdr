@@ -264,6 +264,15 @@ strings are counted, so no plural branches are needed there.
   ejecutándose en segundo plano" (`transferProgress.backgroundedToast`), so an app that survived a problem
   `siguió funcionando`. Putting `ejecutándose` right after `en segundo plano` would read as the operation, not Cmdr.
   Evidence: `glossary.md` § El diálogo de fallos.
+- **Un gerundio de progreso con destino nombrado va en reflexivo; sin destino, no.** `Connecting to X…` →
+  `Conectándose a X…` y `Reconnecting to X…` → `Reconectándose a X…`, frente a `Connecting…` → `Conectando…` a secas. Lo
+  fija Finder (`MN1`) y lo mantiene el par `servers.paneState.connecting` / `.reconnecting`, que el usuario ve en el
+  mismo panel. macOS reparte el prefijo `re-` entre `Conectando de nuevo…` y `Reconectando…`, así que la elección entre
+  ellos la decide el paralelismo interno, no la fuente. Evidence: `glossary.md` § Las dos líneas nuevas del panel.
+- **`type` es `escribir`; `introducir` se reserva para las credenciales.** "nothing to type" →
+  `no hay nada que escribir`, pero "type your username and password" sigue siendo `introduce tu usuario y contraseña`
+  (`fileExplorer.network.*`). macOS hace el mismo reparto: `escribir` para el acto de teclear, `introducir` cuando el
+  objeto es una contraseña o el valor de un campo.
 
 ## Decisions to confirm with David
 

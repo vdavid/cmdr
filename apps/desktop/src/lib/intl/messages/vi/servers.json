@@ -302,5 +302,45 @@
   "servers.paneState.hostKeyChangedHint": "Khóa của máy chủ đã thay đổi. Có thể máy chủ đã được cài đặt lại, hoặc có gì đó đang nằm giữa bạn và máy chủ. Hãy ngắt kết nối, rồi mở lại để kiểm tra dấu vân tay.",
   "@servers.paneState.hostKeyChangedHint": {
     "sourceHash": "923de62"
+  },
+  "servers.paneState.reconnecting": "Đang kết nối lại tới {name}…",
+  "@servers.paneState.reconnecting": {
+    "sourceHash": "dce8cef"
+  },
+  "servers.paneState.signedOutNothingToAsk": "Máy chủ này dùng khóa thay vì mật khẩu để đăng nhập, nên không có gì để nhập. Hãy mở lại máy chủ để thử lại.",
+  "@servers.paneState.signedOutNothingToAsk": {
+    "sourceHash": "71d7eee"
+  },
+  "servers.paneState.retryProgressAriaLabel": "Thời gian đến lần thử kết nối lại tiếp theo",
+  "@servers.paneState.retryProgressAriaLabel": {
+    "sourceHash": "d4341c3"
+  },
+  "servers.paneState.retryNow": "Thử lại ngay",
+  "@servers.paneState.retryNow": {
+    "sourceHash": "5148c3e"
+  },
+  "servers.paneState.retryNowTooltip": "Thử kết nối lại ngay.",
+  "@servers.paneState.retryNowTooltip": {
+    "sourceHash": "11525f0"
+  },
+  "servers.paneState.cancelCycleTooltip": "Tạm ngừng thử. Kết nối vẫn khả dụng. Chuyển lại để thử lại.",
+  "@servers.paneState.cancelCycleTooltip": {
+    "sourceHash": "377638b"
+  },
+  "servers.paneState.disconnectCycleTooltip": "Ngừng thử và ngắt kết nối khỏi máy chủ.",
+  "@servers.paneState.disconnectCycleTooltip": {
+    "sourceHash": "8fba8b0"
+  },
+  "servers.paneState.retryKeepsTrying": "Sẽ tiếp tục thử trong tổng cộng {duration}.",
+  "@servers.paneState.retryKeepsTrying": {
+    "sourceHash": "e4d25b7"
+  },
+  "servers.paneState.retryTotalSeconds": "{seconds} giây",
+  "@servers.paneState.retryTotalSeconds": {
+    "sourceHash": "86d62ab"
+  },
+  "servers.paneState.retryTotalMinutes": "{minutes} phút",
+  "@servers.paneState.retryTotalMinutes": {
+    "sourceHash": "fc339ba"
   }
 }

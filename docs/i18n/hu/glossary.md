@@ -2621,3 +2621,62 @@ szentesített élő-macOS ága szerint közvetlenül a rendszer `.lproj` / `.loc
   `servers.refusal.notAWebdavServer` is `WebDAV-on` alakban ragozza) és `servers.sheet.addressPlaceholder` (`nas.local`,
   egy beviteli mező példa-gépneve, nem lefordítandó szöveg). A többi 42 érték eltér az angoltól. Aposztróf egyik magyar
   értékben sincs, tehát ICU-kettőzés sem kellett.
+
+## Az automatikus újracsatlakozás és a kulcsos bejelentkezés panelsora (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`, 2026-09-07)
+
+Két kulcs: a panelnézet címe, amíg a Cmdr magától visszaszerez egy megszakadt szerverkapcsolatot (alatta pörgő, a
+következő próbáig tartó visszaszámlálás, és az `Újra most` / `Mégsem` / `Leválasztás` gombok), plusz a
+`Kijelentkezve innen: {name}` cím alatti egy sor, amely a `Bejelentkezés…` gomb HELYETT jelenik meg, ha a szerver
+kulccsal (SSH-kulcs vagy ssh-agent) azonosít, tehát nincs mit begépelni.
+
+**A források ebben a passzban**: a `_ignored/i18n/hu/` referenciakupac ezen a gépen nincs meg, ezért a guide
+szentesített élő-macOS ága szerint közvetlenül a rendszer `.lproj` / `.loctable` fájljaiból bányásztunk (macOS 26.6.2,
+25G83, `plistlib`, 277 610 en→hu pár a `CoreServices`, `Frameworks`, `PrivateFrameworks`, `PreferencePanes`,
+`ExtensionKit`, `UserNotifications`, `/System/Applications` és `/Applications/Utilities` alól). Minden sor mellett a
+bundle és a kulcs neve.
+
+- **reconnect (a magától helyreálló hálózati kapcsolat) → `újracsatlakozás`, NEM `újrakapcsolódás`** · a katalógus
+  szállított családja (`errors.listing.deviceReconnecting.title`: `Reconnecting to the device` =
+  `Újracsatlakozás az eszközhöz`; `fileExplorer.unreachable.detailGaveUp`: `tried reconnecting` =
+  `megpróbált újracsatlakozni`; `indexing.enrich.pausedDisconnected` = `újracsatlakozáskor folytatódik`;
+  `servers.sheet.autoReconnect` = `Automatikus újracsatlakozás`) · `high`. ⚠️ A macOS ad Tier-1 találatot a másik tőre
+  is (`ScreenSharing.framework` `reconnectingMessage`: `Reconnecting…` = `Újrakapcsolódás…`, `ConversationKit`
+  `Reconnecting` = `Újrakapcsolódás`, `NetworkExtension` `Try reconnecting.` = `Próbáljon újrakapcsolódni.`), de a
+  szállított alak nyer, és itt ez különösen erős: a cím alatt EGYSZERRE látszik a két testvérkulcs, amely már
+  `újracsatlakoz-` tövű (`retryProgressAriaLabel` = `Idő a következő újracsatlakozási próbáig`, `retryNowTooltip` =
+  `Azonnali újracsatlakozás.`). Egy nézeten belüli tőváltás rosszabb, mint két nézet közötti.
+- **`Reconnecting to {name}…` → `Újracsatlakozás ide: {name}…`** · a tő a fenti sorból, a keret a panelcímek szállított
+  idiómája (`servers.paneState.connecting` = `Kapcsolódás ide: {name}…`, Finder `LocalizableMerged` `MN1`) · `high`. A
+  panelcímeket nem a TŐ köti össze (az angoljuk is más: `Connecting` vs `Reconnecting`), hanem az `ide: {name}…` keret,
+  amely egyben a ragozási csapdát is megoldja. Az Apple maga is kettősponttal kerüli ki a helyőrző ragozását
+  (`HomeDataModel` `Reconnect HomePod to “%@”` = `HomePod ismételt csatlakoztatása a következőhöz: „%@”`, Home
+  `Reconnect in %@` = `Újracsatlakozás: %@`).
+- **`This server signs in with a key rather than a password…` →
+  `Ez a szerver jelszó helyett kulcsot használ a bejelentkezéshez…`** · a mondatkezdet a szállított testvérek kötelező
+  alakja (`servers.refusal.needsCredentials` = `Ez a szerver jelszót kér.`, `servers.refusal.authMethodUnsupported` =
+  `Ez a szerver olyan bejelentkezési módot használ, amit a Cmdr még nem támogat.`) · `high`. A SZERVER marad az alany,
+  nem a felhasználó, és a `használ … a bejelentkezéshez` szerkezet elkerüli, hogy a szerver „jelentkezzen be” (a magyar
+  ige így visszahatóan olvasódna). ❌ Ne `Ehhez a szerverhez … jelentkezel be`: a `Ez a szerver …` a család mintája.
+- **rather than / instead of → `helyett`, a kiváltott dolog ELŐTT** · mac (`CommerceKit`
+  `TOUCHID_SETTINGS_FAILED_CONTINUE_BUY`: `will use your Apple Account and password instead of Touch ID` =
+  `a Touch ID helyett az Apple-fiókja és a jelszava lesz használva`) · `high`. Innen `jelszó helyett kulcsot`. Így a
+  mondat nem lesz „Y, nem X” alakú tagadás, ami a házi hangban kerülendő.
+- **there''s nothing to type → `nincs mit beírnod`** · a `Nincs mit + főnévi igenév` szerkezet Apple-attesztált
+  (`AppleIDSetup` `QR_CODE_SCANNING_DEVICE_TOAST_NO_COPY`: `Nothing to copy` = `Nincs mit másolni`, Calendar
+  `Printing.loctable`: `There is nothing to print.` = `Nincs mit kinyomtatni.`), a `beír` ige pedig a katalógus
+  szállított szava a `type`-ra (`ai.cloud.apiKeyPlaceholderSaved`: `Type a new one to replace it.` =
+  `Írj be egy újat a cseréjéhez.`) · `high`. A `-d` személyragot azért tesszük ki (`beírnod`), mert a mondat tegez; az
+  Apple ragtalan alakja az önöző regiszteréből jön, nem érv ellene.
+- **`Open it again to retry.` → `Nyisd meg újra a kapcsolódáshoz.`** · betű szerinti szállított minta
+  (`fileExplorer.navigation.connectionTooltipSaved`: `Saved. Open it to connect.` =
+  `Mentve. Nyisd meg a kapcsolódáshoz.`), plusz a szótár „Open X to Y → célhatározós `-hoz/-hez/-höz`” sora és a
+  szállított `servers.paneState.hostKeyChangedHint` (`… nyisd meg újra az ujjlenyomat ellenőrzéséhez.`) · `high`. A
+  `retry` ismétlését az igei `újra` viszi, ezért a célhatározó a puszta `kapcsolódás`; az `az újrapróbálkozáshoz` csak
+  megduplázná az `újra` tövet. Nem `az újbóli bejelentkezéshez` (az a
+  `fileExplorer.navigation.connectionTooltipNeedsSignIn` jelszavas esete, ahol tényleg be KELL jelentkezni).
+- Nincs `sameAsSourceJustification` ebben a passzban: mindkét érték eltér az angoltól. Aposztróf egyik magyar értékben
+  sincs, tehát ICU-kettőzés sem kellett.
+- **Nyitott követés**: a szerverpanel `Kapcsolódás` (`kapcsolód-`) és `Újracsatlakozás` (`csatlakoz-`) töve tudatosan
+  eltér, mert az angoljuk is más szó és mindkettőnek külön szállított horgonya van. Ha egy későbbi passz egységesíteni
+  akarja, a `retryProgressAriaLabel` / `retryNowTooltip` / `servers.sheet.autoReconnect` hármast kell hozzáigazítania,
+  nem ezt az egy címet.

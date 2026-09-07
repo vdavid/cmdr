@@ -291,16 +291,20 @@ When a direct-SMB session drops mid-use, four pieces coordinate to recover:
    this is user-facing: the reconnecting view, the gave-up banner, and the sign-in form each carry their own translated
    copy. The error-path map is `docs/guides/error-handling.md`.
 4. **`FilePane.svelte`** subscribes via `$effect` whenever the pane is on an SMB volume. Subscription is refcounted
-   (both panes on one share share a cycle). During an active cycle FilePane swaps the list for `SmbReconnectingView`; on
-   `gave-up` it swaps to `VolumeUnreachableBanner` (`smbGaveUp` variant); on `needs-auth` and `needs-host-key` it swaps
-   to `../pane/RemoteConnectView.svelte`; on success the `onSuccess` callback re-runs `loadDirectory`. ❗ The four
-   `show*` derivations are a POSITIVE list, so a FIFTH status without its own derivation renders a plain listing over a
-   dead session rather than saying anything.
+   (both panes on one share share a cycle), and on success the `onSuccess` callback re-runs `loadDirectory`.
+   `../pane/smb-view-state.svelte.ts` turns the manager's status into the ONE `RemoteConnectState` the pane renders, in
+   a single exhaustive `switch`: `waiting` / `attempting` become `connecting` carrying the cycle's own lines, its
+   countdown to the next attempt, and its Try now / Disconnect; `needs-auth` becomes `signed_out`; `needs-host-key`
+   becomes `host_key_changed`. ❗ `gave-up` maps to `null` on purpose, because `VolumeUnreachableBanner`'s `gaveUp`
+   variant is the app's one "couldn't reach this" surface, and two renderers for one state is worse than one in the file
+   next door. The exhaustive switch replaced a list of per-status booleans, where a new status silently rendered a plain
+   listing over a dead session.
 
 Auth-failure give-up → "Sign in", not "unreachable" (`needs-auth` status): when reconnect fails on an auth error the
 saved password can't fix, the backend emits `state: "needs_credentials"`. The manager's `handleNeedsAuth` stops the
 backoff (retrying a stale password is futile) and flips to `needs-auth`; FilePane shows `RemoteConnectView`'s
-`signed_out`, whose button opens the one sign-in sheet as a REGISTERED place. The sheet's attempt calls
+`signed_out`, whose button opens the one sign-in sheet as a REGISTERED place — ❗ or offers no button at all when the
+stored shape is `nothing`, since no secret a person could type would bring that session back. The sheet's attempt calls
 `reconnectVolumeWithCredentials(volumeId, …)`, which refreshes the stored password and reconnects; success arrives as a
 `connected` event that clears the state and reloads. Pinned by `smb-reconnect-manager.svelte.test.ts`.
 
@@ -354,10 +358,10 @@ opens a private-IP socket). Backend side: `src-tauri/src/network/DETAILS.md` § 
 - **`tryStoredCredentials` skips the `hasSmbCredentials` pre-check**: two Keychain calls = two system prompts; one
   direct call plus catch = one.
 - **A reconnect is silent: no toast fires for one.** The recovery already shows itself where the user is looking, in the
-  pane (`SmbReconnectingView`, then the give-up banner) and on the volume picker's dot, and every laptop lid-close drops
-  the session, so a toast per reconnect would fire on routine sleep/wake and teach the user to dismiss it unread. The
-  evidence stays available on demand instead: the debug window's SMB diagnostics dashboard reads the session counters
-  through `src-tauri/src/commands/smb_diagnostics.rs`.
+  pane (the reconnect cycle's countdown, then the give-up banner) and on the volume picker's dot, and every laptop
+  lid-close drops the session, so a toast per reconnect would fire on routine sleep/wake and teach the user to dismiss
+  it unread. The evidence stays available on demand instead: the debug window's SMB diagnostics dashboard reads the
+  session counters through `src-tauri/src/commands/smb_diagnostics.rs`.
 
 ## Gotchas
 

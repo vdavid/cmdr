@@ -1,7 +1,10 @@
 <script lang="ts">
+    import { onDestroy } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
     import type { RemoteConnectState } from './remote-connect-state'
 
@@ -29,47 +32,129 @@
         state: RemoteConnectState
     }
 
-    const { name, state }: Props = $props()
+    // ❗ Renamed on the way in: a local binding called `state` would make every
+    // `$state(...)` in this file read as a store subscription instead of a rune.
+    const { name, state: connectState }: Props = $props()
+
+    /** The backoff loop's face, when a loop is what's running. */
+    const cycle = $derived(connectState.kind === 'connecting' ? connectState.cycle : undefined)
+    const waiting = $derived(cycle?.waiting ?? null)
+
+    /**
+     * The countdown bar, 0..1 over the current wait. Animated with
+     * `requestAnimationFrame` so the bar drains smoothly without re-rendering
+     * the rest of the view on every frame.
+     */
+    let progress = $state(0)
+    let rafId: number | null = null
+
+    function tick() {
+        if (!waiting) {
+            progress = 0
+            rafId = null
+            return
+        }
+        progress = Math.min(1, (performance.now() - waiting.startedAt) / waiting.durationMs)
+        rafId = progress < 1 ? requestAnimationFrame(tick) : null
+    }
+
+    $effect(() => {
+        // Re-arm on each new wait. Reading both fields is what wires the effect
+        // to the phase change.
+        const armed = waiting ? `${String(waiting.startedAt)}:${String(waiting.durationMs)}` : null
+        void armed
+        if (rafId !== null) cancelAnimationFrame(rafId)
+        rafId = null
+        progress = 0
+        if (waiting) rafId = requestAnimationFrame(tick)
+    })
+
+    onDestroy(() => {
+        if (rafId !== null) cancelAnimationFrame(rafId)
+    })
 </script>
 
 <div class="remote-connect" role="status" aria-live="polite">
     <div class="content">
         <div class="place-name">{name}</div>
-        {#if state.kind === 'connecting'}
-            <h2 class="title">{tString('servers.paneState.connecting', { name })}</h2>
+        {#if connectState.kind === 'connecting'}
+            <h2 class="title">
+                {cycle
+                    ? tString('servers.paneState.reconnecting', { name })
+                    : tString('servers.paneState.connecting', { name })}
+            </h2>
             <div class="spinner-row"><Spinner size="md" /></div>
-            <p class="hint">{tString('servers.paneState.connectingHint')}</p>
+            {#if cycle}
+                <div class="progress-row">
+                    {#if waiting}
+                        <ProgressBar
+                            value={progress}
+                            ariaLabel={tString('servers.paneState.retryProgressAriaLabel')}
+                        />
+                    {:else}
+                        <!-- An attempt is in flight: the spinner carries the motion. -->
+                        <div class="progress-placeholder"></div>
+                    {/if}
+                </div>
+                {#each cycle.lines as line (line)}
+                    <p class="hint">{line}</p>
+                {/each}
+            {:else}
+                <p class="hint">{tString('servers.paneState.connectingHint')}</p>
+            {/if}
             <div class="actions">
-                <Button variant="secondary" size="mini" onclick={state.cancel}>
-                    {tString('servers.paneState.cancel')}
-                </Button>
+                {#if cycle}
+                    <span use:tooltip={tString('servers.paneState.retryNowTooltip')}>
+                        <Button variant="primary" size="mini" onclick={cycle.retryNow} disabled={!waiting}>
+                            {tString('servers.paneState.retryNow')}
+                        </Button>
+                    </span>
+                {/if}
+                <span use:tooltip={cycle ? tString('servers.paneState.cancelCycleTooltip') : undefined}>
+                    <Button variant="secondary" size="mini" onclick={connectState.cancel}>
+                        {tString('servers.paneState.cancel')}
+                    </Button>
+                </span>
+                {#if cycle}
+                    <span use:tooltip={tString('servers.paneState.disconnectCycleTooltip')}>
+                        <Button variant="secondary" size="mini" onclick={cycle.disconnect}>
+                            {tString('servers.paneState.disconnect')}
+                        </Button>
+                    </span>
+                {/if}
             </div>
-        {:else if state.kind === 'signed_out'}
+        {:else if connectState.kind === 'signed_out'}
             <span class="refusal-icon"><Icon name="lock" size={32} aria-hidden="true" /></span>
             <h2 class="title">{tString('servers.paneState.signedOut', { name })}</h2>
-            <div class="actions">
-                <Button variant="primary" size="mini" onclick={state.signIn}>
-                    {tString('servers.paneState.signIn')}
-                </Button>
-            </div>
-        {:else if state.kind === 'host_key_changed'}
+            {#if connectState.signIn}
+                <div class="actions">
+                    <Button variant="primary" size="mini" onclick={connectState.signIn}>
+                        {tString('servers.paneState.signIn')}
+                    </Button>
+                </div>
+            {:else}
+                <!-- ❌ No button: the backend's shape says there is no secret a
+                     person could type that would bring this session back. -->
+                <p class="hint">{tString('servers.paneState.signedOutNothingToAsk')}</p>
+            {/if}
+        {:else if connectState.kind === 'host_key_changed'}
             <span class="refusal-icon danger"><Icon name="triangle-alert" size={32} aria-hidden="true" /></span>
             <h2 class="title">{tString('servers.paneState.hostKeyChanged', { name })}</h2>
             <p class="hint">{tString('servers.paneState.hostKeyChangedHint')}</p>
             <div class="actions">
-                <Button variant="secondary" size="mini" onclick={state.disconnect}>
+                <Button variant="secondary" size="mini" onclick={connectState.disconnect}>
                     {tString('servers.paneState.disconnect')}
                 </Button>
             </div>
         {:else}
             <span class="refusal-icon"><Icon name="triangle-alert" size={32} aria-hidden="true" /></span>
-            <h2 class="title">{state.refusal}</h2>
+            <h2 class="title">{connectState.refusal}</h2>
             <div class="actions">
-                <Button variant="primary" size="mini" onclick={state.retry}>
+                <Button variant="primary" size="mini" onclick={connectState.retry}>
                     {tString('servers.paneState.tryAgain')}
                 </Button>
-                {#if state.disconnect}
-                    <Button variant="secondary" size="mini" onclick={state.disconnect}>
+                {#if connectState.disconnect}
+                    <Button variant="secondary" size="mini" onclick={connectState.disconnect}>
                         {tString('servers.paneState.disconnect')}
                     </Button>
                 {/if}
@@ -112,6 +197,17 @@
         display: flex;
         justify-content: center;
         margin-top: var(--spacing-sm);
+    }
+
+    .progress-row {
+        width: 240px;
+        display: flex;
+        align-items: center;
+    }
+
+    .progress-placeholder {
+        height: 8px;
+        width: 100%;
     }
 
     .hint {

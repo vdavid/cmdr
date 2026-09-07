@@ -1190,3 +1190,37 @@ label"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lproj`
 - **這一組有四個 `sameAsSourceJustification`**：`servers.sheet.protocolSmb` / `.protocolSftp` / `.protocolWebdav`
   （通訊協定名稱，Apple 的繁體套件也一律寫拉丁字母：`SMB密碼`、`WebDAV密碼`、`SSH通訊協定2`）和
   `.addressPlaceholder`（`nas.local` 是使用者會照打的主機名稱範例，翻了反而更難懂）。其餘 42 個值都和英文不同。
+
+## 自動重連的窗格與「沒東西可問」那一行
+
+涵蓋 `servers.paneState.reconnecting` 和 `servers.paneState.signedOutNothingToAsk`（2026-09-07）。
+
+這兩個鍵是「已登出／連線中」那組窗格的最後兩塊：一塊是連線自己斷掉、Cmdr 在退避迴圈裡自動要接回來時的標題（底下是轉圈圖示、下次重試的倒數，還有「立刻重試」／「取消」／「中斷連線」三顆按鈕），另一塊是伺服器用金鑰而不是密碼登入時，取代「登入…」按鈕的那一行說明。
+
+代理機上一樣沒有參考資料堆，所以詞照 `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?"，直接從這部 Mac 的 `.loctable` 比對英文鍵得來（macOS 26.6.2、build 25G83、2026-09-07）。
+
+- **Reconnecting…（標題）** · `正在重新連線…` · AP-TW = AP-HK，三份套件同一個值：「螢幕共享」的
+  `ControlCommand.loctable:reconnectingMessage`、FaceTime 和「電話」的
+  `RemotePeoplePicker.appex/Localizable.loctable:Reconnecting\U2026`，全部是 `正在重新連線⋯`（zh_CN 是
+  `正在重新连接…`）· `confirmed`。刪節號照目錄慣例寫 `…`（U+2026），不跟 Apple 的 `⋯`。帶受詞的整句照 sibling
+  `servers.paneState.connecting`（`正在連線到 {name}…`）寫成 `正在重新連線到 {name}…`。
+- **`重新連線` 和 `重新連接` 的分工，Apple 自己其實有規律** · 上一節記的「Apple 在兩者之間搖擺」可以講得更準：進行中的**狀態**一律
+  `重新連線`（上面三個 `Reconnecting…`），叫使用者**動手**把線插回去的祈使句才寫
+  `重新連接`（`AMPDevices.loctable` 的 "Disconnect and reconnect the iPhone…" → `請中斷連線後重新連接 iPhone`、
+  「藍牙檔案交換」的 "Reconnect" 按鈕 → `重新連接`）· `high`。目錄一律取 `重新連線`，而這兩個鍵都是狀態，所以剛好同向。
+- **key（用來登入的那把「自己的」金鑰，SSH 金鑰檔案或 ssh-agent 身分）** · 光一個 `金鑰` ·
+  沿用目錄保留給密碼學金鑰的字（見上面的 `金鑰檔案` / `金鑰密語` 條目）· `high`。❗ **這裡不能寫
+  `主機金鑰`**：`主機金鑰` 是伺服器亮出來給人核對的那把，這裡講的是使用者拿去登入的那把，兩者相反。同一句裡就有
+  `密碼` 對照，所以不會被讀成 API 金鑰。❗ 也不跟 Apple「捷徑」的 `SSH密鑰`（`ActionKitUI.framework` 一路寫
+  `SSH密鑰`、`公用密鑰`）：`密鑰` 已經在 `主機金鑰` 條目排除掉了。
+- **rather than / instead of（把兩個選項擺在一起對照）** · `而不是` · AP-TW 一致這樣寫
+  （`指定的是檔案而不是檔案夾。`、`設定無線路由器使用 %dGHz 而不是 %.1fGHz`、
+  `顯示指派給可點按元件的名稱，而不是你已在使用的數字`）· `high`。兩個對照項緊貼在同一個動詞底下（`用金鑰而不是密碼登入`），照 Apple
+  的排法，不要把否定的那半拖到句尾。
+- **Open it again to retry（第二句）** · `重新開啟它就會再試一次。` · `重新開啟它` 直接沿用同一族的
+  `servers.paneState.hostKeyChangedHint`（`再重新開啟它來核對指紋`），`再試一次` 是 `style.md` § Which Traditional norm
+  wins 判給 retry 的字，Apple 的 "…then try again" 也一路是 `然後再試一次` · `high`。用 `就會…` 直述會發生什麼，而不是用祈使句叫人做，符合英文不用允許語氣的規則。
+- ⚠️ **散文裡的 retry 寫 `再試一次`，`重試` 只留給那顆短按鈕。** `servers.paneState.retryNow` = `立刻重試`、
+  `.retryNowTooltip` = `立刻嘗試重新連線。` 已經出貨，按鈕求短可以留著，但 `style.md` 判的是 `再試一次`（MS 的 `重試`
+  是 Windows house style），所以新的句子一律 `再試一次`。
+- 這兩個值都不含撇號，也都和英文不同，沒有 `sameAsSourceJustification`。
