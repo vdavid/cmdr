@@ -2864,3 +2864,124 @@ Notities:
   nooit een waarschuwing.
 - **`Serverpanelen tinten (SMB, SFTP, WebDAV)`** (`settings.appearance.tintSmb.label`): 39 tekens tegen 37 in het
   Engels, in een instellingenrij met een kleurkiezer ernaast. Overloop-check tegen de pseudolocale.
+
+## Het telefoonpaneel via ADB (`adb.*`, `settings.behavior.adbHintDismissed.*`, 2026-09-07)
+
+Negentien sleutels: het volledige paneel dat in de plaats van een bestandslijst komt zodra het openen van een
+Android-telefoon strandt, de zweeftips op een telefoonrij in de volumekiezer, de stille regel bovenaan een
+MTP-telefoonpaneel, en het interne zie-vlaggetje van die regel.
+
+De referentiestapel (`_ignored/i18n/nl/`) ontbreekt op deze machine (de M1-agentbox), dus Tier 1 komt uit de LIVE
+macOS-bundels volgens `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?", alles geverifieerd op
+macOS 26.6.2, build 25G83, 2026-09-07. Voor de twee Android-termen is de leverancier zélf de bron: AOSP's eigen
+Nederlandse `values-nl/strings.xml`, opgehaald op 2026-09-07.
+
+Termen uit Androids eigen Nederlands (`android.googlesource.com`, branch `main`):
+
+- **USB debugging → `USB-foutopsporing`** · `frameworks/base/packages/SettingsLib/res/values-nl/strings.xml`,
+  `enable_adb` = `USB-foutopsporing` (en `enable_adb_summary` = `Foutopsporingsmodus bij USB-verbinding`) · `high`. Dit
+  tilt de eerdere `tentative`-keuze uit de ADB-instellingenpass naar Tier-1: dit is letterlijk het label dat op een
+  Nederlandse telefoon onder Ontwikkelaarsopties staat, dus de gebruiker vindt de schakelaar op de woorden die Cmdr
+  gebruikt. De Engelse `@key.description` vraagt om Engels te houden; de leverancier wint, zoals bij Apple
+  (term-keuzeprincipe 1). Zie de review-vlaggen.
+- **Allow (de knop op Androids eigen dialoog) → `Toestaan`** · `frameworks/base/packages/SystemUI/res/values-nl/`,
+  `usb_debugging_allow` = `Toestaan`, in de dialoog `usb_debugging_title` = `USB-foutopsporing toestaan?` · `high`.
+  Daarom `Kijk op je telefoon en tik op ‘Toestaan’.`: het woord in Cmdr is het woord op het scherm van de telefoon.
+- **tap → `tik op`** · AOSP `packages/apps/Settings/res/values-nl/` (`Tik op een melding`, `Tik op de zwevende knop`) ·
+  `high`. Androids werkwoord, niet dat van Apple, want de handeling gebeurt op de telefoon.
+- **Turn on <ding> → `Zet <ding> aan`** · AOSP `SettingsLib` `adb_wireless_list_empty_off`
+  (`Zet draadloze foutopsporing aan om beschikbare apparaten te bekijken`) · `high`. Dus `Turn on USB debugging.` →
+  `Zet USB-foutopsporing aan.` Het gevestigde `turned on → ingeschakeld` blijft voor het instellingenlabel zelf; een
+  aansporing in een hint gebruikt Androids eigen imperatief.
+- **wake its screen → `zet het scherm aan`** · AOSP `SettingsLib` `allow_turn_screen_on_description`
+  (`Sta toe dat een app het scherm aanzet`) · `high`. Apples eigen idioom is `uit de sluimerstand halen`
+  (`PhotosUICore.loctable`), maar dat is een Mac-zin van drie woorden lang voor een zweeftip; Androids
+  `het scherm aanzetten` beschrijft precies de handeling op de telefoon.
+
+Termen uit de live macOS-bundels:
+
+- **Open Settings → `Open Instellingen`** · letterlijk deze waarde in acht bundels tegelijk (FaceTime `General`,
+  ActionKit, SiriSettingsUI, AuthKit, GameStoreKit, WorkflowUI, AppStoreDaemon, SensitiveContentAnalysisUI, telkens
+  `Localizable.loctable`) · `high`. Hoofdletter op `Instellingen`, want het is de naam van het venster.
+- **is not responding → `reageert niet`** · `loginwindow.loctable` (`An app failed to quit and is not responding.` →
+  `Een app is niet gestopt en reageert niet.`) · `high`. Sluit aan op het al gevestigde `Waiting for X to respond` →
+  `Wachten tot X reageert`.
+- **the connection … was lost → `de verbinding … is verbroken`** · macOS `URL.loctable` (`Lost connection to host %@` →
+  `De verbinding met host '%@' is verbroken.`) en de synchronisatiefamilie
+  (`… omdat de verbinding met de iPhone is verbroken`) · `high`. Nederlands zet dit passief; het Engels heeft Cmdr als
+  onderwerp. Omdat een weggelaten merknaam door `desktop-i18n-dont-translate` wordt gemeld, blijft `Cmdr` als deelnemer
+  in de zin staan: `De verbinding tussen Cmdr en je telefoon is verbroken.`
+- **reseat the cable → `sluit de kabel opnieuw aan`** · macOS AirPort
+  (`Koppel de USB-kabel los van je %1$@ … en sluit hem aan op je %3$@`) plus de catalogus
+  (`errors.listing.deviceProblem.suggestion`, `Koppel het apparaat los en sluit het opnieuw aan`) · `high`.
+
+Vormen die uit de eigen catalogus kwamen (byte-identiek of parallel Engels wint van een frisse keuze):
+
+- `Dismiss` → **`Sluit`**, gelijk aan alle tien de bestaande `Dismiss`-sleutels (`queue.row.dismiss`,
+  `crashReporter.dialog.dismiss`, `lowDiskSpace.toast.closeTooltip`, …). Dit is de sluit-betekenis, niet de
+  wis-betekenis (`Wis`, voor een rij in een lijst).
+- `Disconnect {name}` → **`Verbreek de verbinding met {name}`**, byte-identiek aan
+  `fileExplorer.navigation.disconnectPlaceAriaLabel` voor een server, zoals de opdracht vraagt. Het is bewust géén
+  `Werp {name} uit`: er wordt niets veilig om los te koppelen gemaakt, de telefoon blijft aan de kabel.
+- `Can''t disconnect while operations are in progress on this device` →
+  **`Verbinding verbreken kan niet terwijl er bewerkingen op dit apparaat bezig zijn`**: de zinsbouw van
+  `fileExplorer.navigation.disconnectBusyTooltip` (server) met het zelfstandig naamwoord van
+  `fileExplorer.navigation.ejectBusyTooltip` (`dit apparaat`), precies zoals het Engels de twee combineert.
+- `{host} reageerde niet op tijd.` (`servers.refusal.timedOut`) levert **`Je telefoon reageerde niet op tijd.`**
+- `bladeren op een Android-telefoon` (`settings.summary.adb`) levert **`Cmdr kan er niet op bladeren`**.
+- `Android platform tools` blijft Engels en `Android tooling` → `Android-tools`, gelijk aan
+  `settings.fileOperations.adbEnabled.description` en `settings.adb.install.intro`.
+- Het interne hint-paar volgt `settings.behavior.serversPinHintSeen.*`: `Hint voor … gesloten` /
+  `Of de eenmalige regel over … is gesloten.` (`gesloten` in plaats van `getoond`, want het Engels zegt `dismissed`).
+
+Nieuw gemunte vormen, zonder bron in een bundel:
+
+- **`aangesloten` voor een telefoon aan een kabel** (`adb.connect.deviceGone`, `Je telefoon is niet meer aangesloten.`)
+  · `high` op het woord, `tentative` op de keuze hier. Het onderscheid is al vastgelegd in de catalogus:
+  `errors.listing.deviceReconnecting.explanation` zegt `Het apparaat is nog steeds aangesloten` over de fysieke kabel,
+  terwijl `verbonden` de logische verbinding is. Deze sleutel gaat over de stekker, dus `aangesloten`.
+- **`Hoe?`** (`adb.hint.how`) · `tentative`. Het Engelse `How` is één woord zonder vraagteken; het kale Nederlandse
+  `Hoe` leest als een afgekapte zin, dus het vraagteken maakt er de vraag van die de `@key` beschrijft ("how do I do
+  that?"). Geen bron: geen bundel heeft een linklabel van dit formaat.
+- **`Zodra je dat doet, opent Cmdr je telefoon.`** (`adb.connect.waitingHint`) · `tentative`. Het Engelse
+  `as soon as you do` leunt op het werkwoord van de vorige zin (`tap Allow`); Nederlands kan dat niet met één woord
+  overnemen, dus `dat doet` verwijst terug naar de handeling. De bijzin staat vooraan omdat de geruststelling ("er hoeft
+  niets meer") dan het eerst leest.
+
+Notities:
+
+- **Geen enkele Nederlandse waarde in deze pass bevat een ASCII-apostrof**, dus nergens ICU-verdubbeling, ook al doen
+  bijna alle Engelse waarden dat wel (`couldn''t`, `isn''t`, `didn''t`). De aanhalingstekens rond `‘Toestaan’` zijn de
+  enkele krulletjes van macOS-Nederlands (U+2018/U+2019), geen ICU-escapeteken.
+- **`adb.disconnectDeviceAriaLabel` is geen `*Aria`-paar in de WCAG-zin**: er is geen zichtbaar label naast (de knop is
+  een icoon), en het Engelse `fooAria` heeft geen `foo`-zusje, dus `desktop-i18n-aria-label` kijkt er niet naar. De
+  waarde is toch de volle zin, want hij dient óók als zweeftip.
+- **`adb.volumeLabelWithSuffix` was al vertaald** (`{deviceName} (ADB)`, met een `sameAsSourceJustification`) en is
+  ongemoeid gelaten.
+- **Nooit een diagnose noemen**: geen `adb-server`, geen `transport`, geen `daemon`, geen serienummer.
+  `adb.connect.serverUnreachable` zegt daarom `De Android-tools op deze Mac reageerden niet.` en noemt het
+  achtergrondprogramma niet.
+
+### Review-vlaggen van deze pass
+
+- **`USB-foutopsporing` tegen de Engelse `@key.description` in** (`adb.hint.text`,
+  `adb.readiness.waitingForAuthorization`): de `en`-beschrijving vraagt de leveranciersvorm, en die ís hier Nederlands.
+  Dezelfde vlag stond al open na de ADB-instellingenpass; hij is nu Tier-1-gesourcet uit AOSP, dus de aanbeveling is om
+  hem te sluiten en zo nodig de Engelse beschrijving bij te werken.
+- **`De verbinding tussen Cmdr en je telefoon is verbroken.`** (`adb.connect.transport`): het Engels maakt Cmdr het
+  onderwerp (`Cmdr lost the connection`), het Nederlandse idioom is passief.
+  `Cmdr heeft de verbinding met je telefoon verloren.` houdt het onderwerp maar klinkt als een verwijt aan Cmdr;
+  `De verbinding met je telefoon is verbroken.` leest het rustigst maar laat de merknaam vallen, wat de
+  don't-translate-check meldt. Bevestig de tussenweg.
+- **`De Android-versie van deze telefoon is te oud; Cmdr kan er niet op bladeren.`** (`adb.connect.deviceTooOld`): de
+  puntkomma splitst wat het Engels in één zin doet (`too old for Cmdr to browse`). De letterlijke vorm
+  `te oud voor Cmdr om erop te bladeren` bestaat, maar stapelt drie voorzetsels. Bevestig welke in een leeg paneel beter
+  leest.
+- **`Hoe?`** (`adb.hint.how`): één woord plus vraagteken in een stille regel, naast `Zet USB-foutopsporing aan.`
+  Alternatief `Hoe dan?` is spreektaliger en past bij Cmdrs warme toon; `Uitleg` is een label in plaats van een vraag.
+  Bevestig, en overloop-check de regel als geheel (61 tekens tegen 48 in het Engels).
+- **`Zet het scherm aan of sluit de kabel opnieuw aan.`** (`adb.readiness.offline`): 76 tekens tegen 65 in het Engels,
+  in een zweeftip op een grijze rij in de volumekiezer. Overloop-check tegen de pseudolocale.
+- **`Hint voor USB-foutopsporing gesloten`** (`settings.behavior.adbHintDismissed.label`): interne sleutel, nooit in
+  beeld. Het zusje zegt `getoond` omdat het Engels `shown` zegt; hier staat `dismissed`, dus `gesloten`. Bevestig dat
+  het paar niet één werkwoord hoort te delen.

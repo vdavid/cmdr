@@ -2843,3 +2843,107 @@ Notes de formulation :
   renvoie rien sur macOS 26.6.2 build 25G83), et le glossaire fixe déjà les deux mots comme verbatim.
 - Toutes les apostrophes des valeurs ICU sont ASCII et doublées (`s''allonge`, `D''accord`, `l''astuce`, `d''hôte`,
   `l''empreinte`, `l''approuvez`, `qu''il`, `l''instant`). Les deux clés `menu.*` sont RAW et n'en contiennent aucune.
+
+## Le téléphone Android : le panneau de connexion, les info-bulles et l'astuce ADB (2026-09-07, 19 clés `adb.*` + `settings.behavior.adbHintDismissed.*`)
+
+Trois surfaces : le panneau plein qui remplace la liste des fichiers quand l'ouverture d'un téléphone Android s'arrête
+(`adb.connect.*`, même voix que `servers.refusal.*` / `servers.paneState.*`), les info-bulles de la rangée du téléphone
+dans le sélecteur de volume (`adb.readiness.*`, `adb.disconnect*`), et la ligne discrète en haut d'un panneau MTP qui
+propose le débogage USB (`adb.hint.*`). Les deux clés `settings.behavior.adbHintDismissed.*` sont internes (un drapeau «
+déjà vu ») et calquent leur sœur `settings.behavior.serversPinHintSeen.*`.
+
+Le tas de références (`_ignored/i18n/fr/`) est absent de cette machine (`~/projects-git/vdavid/cmdr/_ignored/` n'existe
+pas, chemin absolu du clone principal vérifié). Deux replis, tous deux documentés par
+`docs/i18n/reference-pile/how-to-mine.md` § No pile on this machine? Mine the live macOS bundles instead : minage direct
+des paquets macOS installés (`plutil -convert json` sur les `.loctable`, macOS 26.6.2 build 25G83, 2026-09-07), et, pour
+le vocabulaire propre à Android, les chaînes traduites d'AOSP (`android.googlesource.com`, branche `main`, récupérées le
+2026-09-07).
+
+Termes :
+
+- **`Allow` (le bouton du dialogue Android) → `Autoriser`** · AOSP SystemUI `res/values-fr/strings.xml`,
+  `usb_debugging_allow` (`Allow` → `Autoriser`) et `usb_debugging_title` (`Allow USB debugging?` →
+  `Autoriser le débogage USB ?`) ; confirmé quatre fois par Settings `res/values-fr/` (`allow`,
+  `accessibility_dialog_button_allow`, `wifi_scan_always_confirm_allow`, `request_manage_credentials_allow`) · `high`.
+  C'est le mot exact que la personne lit sur son téléphone, donc jamais `Accepter` ni `Approuver` (ce dernier est
+  réservé aux clés d'hôte SSH, § Le hub des serveurs).
+- **`tap <bouton>` → `appuyez sur <bouton>`** · AOSP Settings `service_manage_description`
+  (`Tap Settings to control it.` → `Appuyez sur "Paramètres" pour contrôler ce client.`) et `tap_to_wake_summary`
+  (`Double-tap anywhere on the screen…` → `Appuyez deux fois n'importe où sur l'écran…`) · `high`. Sans guillemets
+  autour du nom du bouton : la source anglaise n'en met pas, et le catalogue a déjà fixé cette règle pour
+  `settings.adb.install.intro` (§ Épingler un serveur au sélecteur).
+- **`USB debugging` → `débogage USB`** · confirmé à la source cette fois : AOSP SettingsLib `res/values-fr/strings.xml`,
+  `enable_adb` (`USB debugging` → `Débogage USB`), `enable_adb_summary` (`Mode de débogage en connexion USB`),
+  `clear_adb_keys` (`Revoke USB debugging authorizations` → `Révoquer les autorisations de débogage USB`) · `high`.
+  Majuscule uniquement en tête de phrase ou comme libellé d'interrupteur ; `USB` toujours en capitales. Le style guide
+  citait la documentation Google ; ces trois clés sont l'interface elle-même.
+- **`allow USB debugging` (l'attente, côté Cmdr) → `votre autorisation de débogage USB`** · le nom vient mot pour mot de
+  `clear_adb_keys` ci-dessus (`les autorisations de débogage USB`) ; le moule `En attente de …` est déjà celui du
+  catalogue (style guide § Voix : « En attente d'une réponse de la destination ») · `high`. `votre` porte le « you » de
+  l'anglais sans nommer la personne, donc aucun accord de genre.
+- **`wake <the> screen` (d'un téléphone) → `activez son écran`** · AOSP Settings `ambient_display_wake_screen_title`
+  (`Wake up display` → `Activer l'écran`) et `doze_title` (`Wake screen for notifications` →
+  `Activer l'écran si notifications`) · `high`. Android rend le réveil de l'écran par `activer`, pas par `réveiller` ;
+  Apple n'a pas ce sens (un balayage complet des `.loctable` ne donne `réveiller` que pour le sommeil humain et les
+  réveils de l'app Horloge). Le sens « réveiller l'appareil » d'Android est `réactiver` (`tap_to_wake` →
+  `Appuyer pour réactiver`), qui ne convient pas ici : c'est l'écran qui est visé.
+- **`reseat the cable` → `rebranchez le câble`** · Apple AMPDevices `Localizable.loctable`, clé `etkzfs9ykr`
+  (`Please unplug and replug your iPod…` → `Veuillez le débrancher puis le rebrancher…`) · `high`. `rebrancher` dit à
+  lui seul « débrancher puis rebrancher », donc pas besoin des deux verbes.
+- **`cable` / `port` → `câble` / `port`, et `another` → `un autre`** · Apple AirPort Utility `SetupRecommendations`
+  (`USB port` → `Port USB`), `AirPortSettings` `ConflictingPortTCPACP` (`Choose a different port number.` →
+  `Choisissez un autre numéro de port.`), BluetoothSetupAssistant (`unplug the USB cable` → `débranchez le câble USB`) ·
+  `high`. `Try another cable or port.` répète le déterminant en français : `Essayez un autre câble ou un autre port.`
+- **`not responding` → `ne répond pas`** · Apple loginwindow `loginwindow.loctable`, `APP_NOT_RESPONDING_SUFFIX`
+  (`(not responding)` → `(ne répond pas)`) ; CoreServicesUIAgent `LaunchErrors.loctable`, clé `-1712.message.noname`
+  (`because it is not responding` → `car elle ne répond pas`) · `high`.
+- **`lost the connection` → `a perdu la connexion`** · Apple CFNetwork `Localizable.loctable`, `Err-1005`
+  (`The network connection was lost.` → `La connexion réseau a été perdue.`) · `high`. Cmdr garde la voix active
+  (`Cmdr a perdu la connexion avec votre téléphone.`) là où Apple passive. ❗ Frontière à tenir : `perdre` nomme une
+  rupture subie, `interrompre` une rupture décidée par Cmdr (`servers.paneState.hostKeyChanged` →
+  `Cmdr a interrompu la connexion à {name}`).
+- **`How` (le lien vers le mode d'emploi Android) → `Comment faire`** · le catalogue rend déjà `How to connect` par
+  `Comment se connecter` (`servers.sheet.connectionModeLegend`) · `high`. `Comment` seul reste suspendu en français ;
+  `Comment faire` est la forme minimale qui se tient. ⚠️ Deux mots là où l'anglais en a un, au bout d'une ligne déjà
+  longue : à repasser au pseudolocale `en-XA`.
+
+Notes de formulation :
+
+- **`Disconnect {name}` reprend MOT POUR MOT la clé serveur déjà livrée** : `Se déconnecter de {name}`, comme
+  `fileExplorer.navigation.disconnectPlaceAriaLabel`. Le bouton dit `Disconnect` et non `Eject` parce que rien n'est
+  rendu sûr à débrancher ; le français fait la même distinction (`se déconnecter` / `éjecter`, § Terms), donc les deux
+  surfaces s'accordent sans effort.
+- **L'info-bulle grisée croise ses deux sœurs déjà livrées** : `fileExplorer.navigation.disconnectBusyTooltip` donne
+  `Impossible de se déconnecter tant que des opérations sont en cours sur ce serveur`, `ejectBusyTooltip` donne
+  `… sur cet appareil` ; la clé ADB prend le verbe de la première et le complément de la seconde.
+- **`Open Settings` (le bouton du panneau) → `Ouvrir les réglages`**, mot pour mot les deux clés déjà livrées
+  (`commands.appSettings.label`, `commands.handler.openTerminalHere.openSettings`). La majuscule de l'anglais ne change
+  rien : c'est la fenêtre de Cmdr, pas l'app d'Apple (style guide § Notes).
+- **`The Android tools on this Mac` reste générique** : `Les outils Android de ce Mac`, jamais
+  `les Android Platform Tools`. L'anglais choisit délibérément le mot générique ici, et
+  `settings.fileOperations.adbEnabled.description` livre déjà `si vous n'avez aucun outil Android installé`. La
+  description interdit de nommer le programme d'arrière-plan ou le protocole : la valeur française ne dit donc ni
+  `serveur adb`, ni `démon`, ni `transport`.
+- **`too old for Cmdr to browse` suit le moule de `servers.refusal.authMethodUnsupported`** :
+  `Ce téléphone utilise une version d'Android trop ancienne pour que Cmdr puisse le parcourir.` calque
+  `Ce serveur utilise une méthode d'identification que Cmdr ne prend pas encore en charge.` Le sujet est le téléphone,
+  donc `le parcourir` s'y rattache sans ambiguïté ; on ne parcourt pas une version. `ancienne`, pas `vieille`, comme
+  `main.oldWebkit.body` (`une version plus ancienne`).
+- **`as soon as you do` → `dès que c'est fait`** : la subordonnée anglaise reprend le verbe de la phrase précédente
+  (`tap Allow`), ce que le français ne peut pas faire. `dès que` est déjà le connecteur de
+  `settings.adb.status.watching` (`dès qu'il est branché`). Rassurance, pas consigne : pas d'impératif.
+- **`Check your phone` → `Regardez votre téléphone`** : la personne doit lever les yeux vers un écran qui affiche déjà
+  une question. `Vérifiez` (le moule Apple, BluetoothSetupAssistant `kPair_Device_InstructionTextKey`) suggère une
+  inspection ; `Consultez` sonne administratif. `Regardez` est plus court et plus juste. `tentative` sur le seul choix
+  du verbe d'ouverture ; `appuyez sur Autoriser` est, lui, sourcé.
+- **`Want the whole filesystem?` → `Besoin de tout le système de fichiers ?`** : tournure elliptique, comme l'anglais.
+  `système de fichiers` est le terme fixé (§ Terms) et `tout le` reprend `l'ensemble du système de fichiers` de
+  `settings.fileOperations.adbEnabled.description`. Espace ASCII avant le `?`, comme tout le set `fr`.
+- **Le drapeau interne calque sa sœur `serversPinHintSeen`** : `Astuce sur le débogage USB ignorée` /
+  `Indique si la ligne unique proposant le débogage USB a été ignorée.` — même structure `Indique si … a été …`, et
+  `ignorée` parce que la ligne se ferme d'un `Dismiss` (rendu `Ignorer` par onze clés du catalogue), là où l'astuce des
+  serveurs se contentait d'être `affichée`.
+- **`adb.volumeLabelWithSuffix` garde sa `sameAsSourceJustification`** d'une passe précédente : un espace réservé plus
+  l'acronyme `ADB`, rien à traduire.
+- Toutes les apostrophes des valeurs sont ASCII et doublées (`n''a`, `n''ont`, `n''est`, `d''Android`, `c''est`) : les
+  deux fichiers sont ICU.

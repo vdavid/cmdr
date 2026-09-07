@@ -2586,3 +2586,146 @@ por nib del sistema, 2026-09-07).
 - `“{command}”` va entre comillas curvas porque cita una etiqueta que Cmdr enseña en pantalla, según la regla de las dos
   comillas del `style.md`. `Desfijar` y `Comprobar de nuevo` van sin comillas porque el inglés tampoco las pone.
 - `Explorar…` copia el `…` (U+2026) del inglés y repite el valor de `servers.sheet.browse`, que `i18n-terms` obliga.
+
+## El teléfono Android por ADB: el panel de conexión, los avisos del selector y la línea de invitación (`adb.*`, `settings.behavior.adbHintDismissed.*`, 2026-09-07)
+
+Las 19 cadenas del acceso a un teléfono Android por ADB: los nueve estados del panel donde iría el listado
+(`adb.connect.*`), las tres ayudas emergentes de la fila del teléfono en el selector de volúmenes (`adb.readiness.*`),
+la línea única que ofrece la vía completa cuando el teléfono está abierto por MTP (`adb.hint.*`), el botón que cierra el
+teléfono (`adb.disconnect*`) y el par de claves internas que recuerda que esa línea ya se descartó.
+
+El montón de referencia sigue sin estar en esta máquina, así que las fuentes de Tier 1 salen del propio Mac (macOS
+26.6.2, build 25G83, barrido de `plutil -convert json` sobre todos los `.loctable` de `/System/**` y `/Applications`
+cruzando el lado `en` con el `es`, 2026-09-07). El vocabulario propio de Android sale de AOSP `main`
+(`android.googlesource.com`, 2026-09-07), que es la autoridad para lo que el usuario lee EN SU TELÉFONO.
+
+### Los dos términos de Android (fuente: AOSP, no Apple)
+
+- **`USB debugging` → `Depuración por USB` (en frase: `la depuración por USB`)** · AOSP
+  `frameworks/base/packages/SettingsLib/res/values-es/strings.xml`, `enable_adb` = «USB debugging» → «Depuración por
+  USB»; lo repiten `clear_adb_keys` («Revocar autorizaciones de depuración por USB») y el propio diálogo de SystemUI
+  (`usb_debugging_title` = «¿Permitir depuración por USB?»). `values-es-rUS` dice exactamente lo mismo, así que la forma
+  vale igual a los dos lados del Atlántico · `high`. Coincide palabra por palabra con lo que `style.md` ya había
+  compuesto desde Apple (`depuración` de Safari + el `por USB` del catálogo), así que la entrada sube de `compuesta` a
+  `verificada en la fuente`. ❌ No `depuración USB` (sin `por`): ni AOSP ni el catálogo la usan.
+- **`Allow` (el botón del diálogo del teléfono) → `Permitir`** · AOSP
+  `frameworks/base/packages/SystemUI/res/values-es/strings.xml`, `usb_debugging_allow` = «Allow» → «Permitir»; idéntico
+  en `values-es-rUS` · `high`. Va sin comillas en `adb.connect.unauthorized`, como el `Comprobar de nuevo` de la tanda
+  anterior, porque el inglés tampoco las pone. Es el único caso del catálogo donde una palabra se cita porque el usuario
+  tiene que encontrarla en OTRA pantalla, así que no se puede sustituir por un sinónimo.
+- **`tap` → `tocar`** · AOSP `es` lo usa por todas partes en imperativo («Toca el sensor», «Toca para activarlo», «Toca
+  el botón flotante») · `high`. macOS no tiene el verbo porque no tiene pantalla táctil, así que aquí la fuente correcta
+  es Android, no Apple.
+- **`Android platform tools` → `herramientas de plataforma de Android`** · se reutiliza sin cambios la forma corta ya
+  publicada en `settings.fileOperations.adbEnabled.description` y `settings.adb.*` · sigue `tentative` frente al
+  «Herramientas de la plataforma del SDK de Android» de Google (ver `style.md` § Decisions to confirm with David). Las
+  tres claves cambiarían juntas si se prefiere la forma larga.
+
+### Términos de Tier 1 (macOS en vivo)
+
+- **`Waiting for X` → `Esperando X`** · patrón unánime en el barrido: `FaceTime.app/General.loctable` («Waiting for
+  activation…» → «Esperando activación…»), `Freeform` («Waiting for Approval» → «Esperando aprobación»), `FindMy`,
+  `Maps`, `Podcasts` («Waiting…» → «Esperando…») · `high`. ❌ No `A la espera de` ni `Pendiente de` (esta última ya
+  vetada en la tanda de servidores: en el macOS en español solo significa «sin resolver»).
+- **`wake` (un aparato o una pantalla) → `activar`** · `ManagedClient.app/mcx.profileDomainPlugin` («Wake Or Power-On» →
+  «Activar o arrancar»), `PowerPreferences.appex/BatteryUI.loctable` («Wake for network access» → «Activar el ordenador
+  para permitir el acceso a la red») · `high`. ❌ No `despertar`: macOS lo reserva para el despertador de Reloj («Wake
+  Up» → «Despertarse»), que es la persona, no el aparato.
+- **`is not responding` → `no responde`** · `%@ is not responding` → «%@ no responde», `(not responding)` → «(no
+  responde)», «An app failed to quit and is not responding» → «Una app no se ha podido cerrar y no responde» · `high`.
+- **`no longer connected` → `ya no está conectado`** · `Localizable.loctable` de Apple Watch («Apple Watch is no longer
+  connected to iPhone» → «El Apple Watch ya no está conectado al iPhone») · `high`.
+- **`too old` → `demasiado antiguo/a`** · tres fuentes coincidentes: «System version is too old to run…» → «La versión
+  del sistema es demasiado antigua para ejecutar…», «the software on the iPhone is too old» → «el software del iPhone es
+  demasiado antiguo», «The device OS is too old for…» → «El sistema operativo del dispositivo es demasiado antiguo
+  para…» · `high`.
+- **`Try another X` → `Prueba con otro X`** · macOS lo escribe siempre con `con`: «Try a different disk» → «Prueba con
+  otro disco», «Try a different password» → «Prueba con otra contraseña», y el escueto «Try another» → «Prueba con otro»
+  · `high`. ❌ No `Prueba otro cable` a secas.
+- **`reconnect the cable` / `reseat` → `vuelve a conectar el cable`** · «Disconnect and reconnect the iPhone, then try
+  again» → «Desconecta el iPhone, vuelve a conectarlo e inténtalo de nuevo» · `high`. `reseat` no tiene verbo propio en
+  español de UI; `volver a conectar` es lo que macOS dice para el mismo gesto.
+- **`Check your X` → `Comprueba tu X`** · patrón masivo en el barrido («Check your Internet connection, then try again»
+  → «Comprueba la conexión a internet e inténtalo de nuevo», «Check your Wi‑Fi connection or…» → «Comprueba tu conexión
+  Wi‑Fi o…») · `high`. Aquí `Check your phone` no es «revisa si algo va mal», es «mira la pantalla del teléfono», y
+  `Comprueba tu teléfono` lo dice sin añadir alarma.
+- **`port` (el conector físico) → `puerto`** · `AirPortBaseStationAgent` («A cable has been connected to the Ethernet
+  WAN port…» → «Se ha conectado un cable al puerto WAN Ethernet…») · `high`.
+- **`lost the connection to X` → `perdió la conexión con X`** · macOS escribe la preposición `con`, no `a` («Lost
+  connection to host %@» → «Se ha perdido la conexión con el host %@») · `high` (la preposición). La forma verbal es
+  nuestra: macOS usa el impersonal `se ha perdido`, y Cmdr conserva a `Cmdr` como sujeto en pretérito, según la regla
+  del pretérito panregional del `style.md`.
+
+### Decisiones
+
+- **`Cmdr couldn''t find the Android platform tools.` →
+  `Cmdr no pudo encontrar las herramientas de plataforma de Android.`** · el catálogo ya publicó dos veces
+  `Cmdr no pudo encontrar` (`errors.json`), y macOS dice lo mismo en impersonal («Could not find…» → «No se ha podido
+  encontrar…»). Cmdr mantiene el sujeto explícito porque es su voz · `high`.
+- **`Open Settings` → `Abrir Ajustes`, con mayúscula y sin artículo** · nombra la VENTANA, cuyo título es exactamente
+  `Ajustes` (`settings.window.title`), igual que `downloads.fda.openSystemSettings` = `Abrir Ajustes del Sistema`.
+  Difiere a propósito de `commands.appSettings.label` y `commands.handler.openTerminalHere.openSettings`, que traducen
+  el inglés en minúscula (`Open settings`) por `Abrir los ajustes`: ahí la paleta nombra el concepto, aquí el botón
+  nombra la ventana. El inglés hace el mismo reparto con la mayúscula, así que `i18n-terms` no ve conflicto (son dos
+  cadenas fuente distintas). Si algún día se unifican, hay que mover las tres a la vez · `high`.
+- **`The Android tools on this Mac didn''t answer.` → `Las herramientas de Android en este Mac no respondieron.`** ·
+  `en este Mac` copia el molde de `servers.refusal.hostKeyRevoked` (`Tus ajustes de SSH en este Mac marcan…`), que es el
+  mismo sintagma nominal con complemento locativo; `de este Mac` obligaría a un doble `de` («herramientas de Android de
+  este Mac») · `high`. Nombra las herramientas, nunca el programa de fondo ni el protocolo, que es lo que el `@key`
+  prohíbe.
+- **`This phone''s Android version is too old for Cmdr to browse.` →
+  `Este teléfono tiene una versión de Android demasiado antigua para que Cmdr pueda explorarlo.`** · el inglés pone la
+  versión de sujeto pero lo que Cmdr explora es el teléfono; el español deja el teléfono de sujeto y `-lo` concuerda con
+  `teléfono`, masculino fijo, así que no hay trampa de género. `explorar` es el verbo del catálogo para «browse»
+  (`settings.fileOperations.mtpEnabled.description`, «para explorar archivos y transferirlos») · `high`.
+- **`Cmdr opens your phone as soon as you do.` → `Cmdr abrirá tu teléfono en cuanto lo hagas.`** · futuro, no presente:
+  es una promesa sobre lo que va a pasar, y el presente leería como una descripción del funcionamiento, igual que en la
+  regla del imperativo-más-futuro del `style.md`. `en cuanto` ya es el molde asentado para «the moment that»
+  (`settings.adb.*`, «en cuanto los conectas»), y `lo hagas` remite a la línea de encima sin repetir `Permitir` ·
+  `high`.
+- **`Waiting for you to allow USB debugging` → `Esperando a que permitas la depuración por USB`** · `esperar a que` rige
+  subjuntivo; el `a` no es opcional cuando lo que sigue es una oración. Sin punto final, como el inglés: es una ayuda
+  emergente de una sola frase, igual que sus dos hermanas · `high`.
+- **`Wake its screen, or reseat the cable.` → `Activa su pantalla o vuelve a conectar el cable.`** · el español no pone
+  coma delante de `o` en una disyuntiva de dos miembros cortos; `su` ata la pantalla al teléfono que acaba de nombrar la
+  primera frase · `high`.
+- **`Try another cable or port.` → `Prueba con otro cable u otro puerto.`** · `o` se convierte en `u` delante de una
+  palabra que empieza por `o-`, y aquí la siguiente palabra es `otro`. Se repite `otro` porque
+  `Prueba con otro cable o puerto` dejaría `puerto` colgando del primer `otro` de forma ambigua · `high`.
+- **`Want the whole filesystem? Turn on USB debugging.` →
+  `¿Quieres todo el sistema de archivos? Activa la depuración por USB.`** · abre con `¿`; `sistema de archivos` y
+  `activar` ya estaban asentados, y la frase entera calca a `settings.fileOperations.adbEnabled.description` («Accede a
+  todo el sistema de archivos de un teléfono Android que tenga activada la depuración por USB»), que es la descripción
+  del mismo ajuste que esta línea invita a encender · `high`.
+- **`How` → `Cómo se hace`** · el inglés se permite un adverbio suelto de una palabra; el español no: `Cómo` a secas no
+  es una etiqueta de enlace idiomática, y en el barrido de macOS no aparece ni una sola vez como etiqueta autónoma
+  (siempre `Cómo` + verbo, «¿Cómo quieres cambiarla?»). `Cómo se hace` conserva el registro de pregunta llana que pide
+  el `@key` («the way a person asks how do I do that?») y sigue cabiendo al final de una línea discreta · `high` (que
+  hace falta un verbo), `tentative` (la elección entre `Cómo se hace` y `Más información`; se prefiere la primera porque
+  el enlace lleva a INSTRUCCIONES concretas, no a una página informativa).
+- **`Dismiss` → `Descartar`** · ya asentado (macOS AppKit); es el nombre accesible de la × que esconde la línea para
+  siempre, y no tiene etiqueta visible que contener, así que `i18n-aria` no interviene · `high`.
+- **`Disconnect {name}` → `Desconectar {name}`, idéntico a su hermano de servidores** ·
+  `fileExplorer.navigation. disconnectPlaceAriaLabel` ya dice exactamente eso, y el `@key` pide que los dos coincidan;
+  el infinitivo no concuerda con nada, así que `{name}` (que puede ser cualquier modelo de teléfono) no arrastra género
+  · `high`.
+- **`…while operations are in progress on this device` → `…en curso en este dispositivo`** · copia palabra por palabra
+  `fileExplorer.navigation.disconnectBusyTooltip` («No se puede desconectar mientras hay operaciones en curso en este
+  servidor») y solo cambia el sustantivo final, porque el inglés hace ese mismo cambio · `high`. `dispositivo` es la
+  palabra del catálogo para un aparato conectado (`settings.fileOperations.mtpConnectionWarning.description`); no se
+  dice `teléfono` porque la clave también sirve a una tableta.
+- **Las dos claves internas siguen a su hermana `serversPinHintSeen.*`** · `Aviso de depuración por USB descartado` y
+  `Si ya se descartó el aviso único que propone activar la depuración por USB.` calcan la forma de
+  `Aviso de grupo Red largo mostrado` / `Si ya se mostró el aviso único sobre desfijar servidores.`, cambiando `mostrar`
+  por `descartar` porque el inglés hace el mismo cambio. Nunca se ven en pantalla, pero se traducen para que la
+  cobertura sea honesta · `high`.
+
+### Notas de forma
+
+- Ningún valor español lleva apóstrofo, así que no hay ninguna duplicación ICU (`''`) que hacer, aunque cinco valores
+  ingleses sí la llevan (`couldn''t`, `didn''t`, `isn''t`, `phone''s`, `Can''t`).
+- Verbatim: `Cmdr`, `Android`, `ADB`, `Mac`, `USB`. `{name}` y `{deviceName}` se conservan tal cual; nada concuerda con
+  ellos.
+- `adb.volumeLabelWithSuffix` sigue con su `sameAsSourceJustification`: es un marcador más la sigla entre paréntesis.
+- Ni «error» ni «fallo» ni «no se pudo» aparecen en ninguna de las 19 cadenas: cada una dice qué está pasando
+  (`no respondieron`, `ya no está conectado`, `no responde`, `perdió la conexión`) y, cuando la hay, cuál es la salida.

@@ -127,9 +127,15 @@ GNOME/Xfce (Tier 3). Confidence: `confirmed` (human signed off), `high` (authori
 - debugging (a mode you switch on) → depuración · Apple's own Safari `es` UI ("Enable … debug mode" → "Activar modo de
   depuración …", verified on macOS 26.6.2, 2026-09-06); the catalog already uses "nivel de depuración"
   (`settings.developer.verboseLogging.description`) · high
-- USB debugging (the Android developer setting) → depuración por USB · composed: "depuración" from Apple above, and the
-  catalog's own `por USB` attachment (`settings.fileOperations.mtpConnectionWarning.description` "se conecta por USB",
-  `errors.provider.macDroid.needsAction` "el modo de transferencia de archivos por USB") · high
+- USB debugging (the Android developer setting) → depuración por USB · AOSP `main`,
+  `SettingsLib/res/values-es/ strings.xml` `enable_adb` = "Depuración por USB" and SystemUI `usb_debugging_title` =
+  "¿Permitir depuración por USB?"; `values-es-rUS` is identical, so the form is pan-regional (verified 2026-09-07).
+  Matches what Apple + the catalog had already composed ("depuración" from Safari es, `por USB` from
+  `settings.fileOperations.mtpConnectionWarning.description`) · high
+- Allow (the button on Android's own "Allow USB debugging?" dialog) → Permitir · AOSP `main`, SystemUI
+  `res/values-es/strings.xml` `usb_debugging_allow`; identical in `values-es-rUS` (verified 2026-09-07) · high
+- tap (on a phone screen) → tocar · AOSP `es` throughout ("Toca el sensor", "Toca para activarlo"); macOS has no touch
+  verb, so Android is the right source here · high
 - over ADB / over USB (the transport in a label) → por ADB / por USB · the catalog's compact `por USB` pattern above;
   keep "a través de un cable USB" for the physical-cable sense (`settings.fileOperations.mtpEnabled.description`) · high
 - Android phone → teléfono Android · the catalog throughout (`settings.fileOperations.mtpEnabled.description`,

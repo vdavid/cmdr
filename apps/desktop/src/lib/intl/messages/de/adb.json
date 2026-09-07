@@ -1,4 +1,72 @@
 {
+  "adb.connect.adbNotInstalled": "Cmdr hat die Android Platform Tools nicht gefunden.",
+  "@adb.connect.adbNotInstalled": {
+    "sourceHash": "4d83ac5"
+  },
+  "adb.connect.openSettings": "Einstellungen öffnen",
+  "@adb.connect.openSettings": {
+    "sourceHash": "3f94010"
+  },
+  "adb.connect.serverUnreachable": "Die Android-Tools auf diesem Mac haben nicht geantwortet.",
+  "@adb.connect.serverUnreachable": {
+    "sourceHash": "154d824"
+  },
+  "adb.connect.deviceGone": "Dein Telefon ist nicht mehr verbunden.",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "ce5e28e"
+  },
+  "adb.connect.unauthorized": "Sieh auf dein Telefon und tippe auf „Erlauben“.",
+  "@adb.connect.unauthorized": {
+    "sourceHash": "6c2cf77"
+  },
+  "adb.connect.deviceTooOld": "Cmdr kann dieses Telefon nicht durchsehen, da seine Android-Version zu alt ist.",
+  "@adb.connect.deviceTooOld": {
+    "sourceHash": "2e1b0c1"
+  },
+  "adb.connect.timedOut": "Dein Telefon hat nicht rechtzeitig geantwortet.",
+  "@adb.connect.timedOut": {
+    "sourceHash": "5a90cf8"
+  },
+  "adb.connect.transport": "Cmdr hat die Verbindung zu deinem Telefon verloren.",
+  "@adb.connect.transport": {
+    "sourceHash": "d90c37c"
+  },
+  "adb.connect.waitingHint": "Sobald du das tust, öffnet Cmdr dein Telefon.",
+  "@adb.connect.waitingHint": {
+    "sourceHash": "d1df048"
+  },
+  "adb.readiness.waitingForAuthorization": "Warten darauf, dass du USB-Debugging erlaubst",
+  "@adb.readiness.waitingForAuthorization": {
+    "sourceHash": "73615e0"
+  },
+  "adb.readiness.offline": "Dein Telefon reagiert nicht. Aktiviere seinen Bildschirm oder schließe das Kabel neu an.",
+  "@adb.readiness.offline": {
+    "sourceHash": "ef50e86"
+  },
+  "adb.readiness.noPermissions": "Dieser Mac kann dein Telefon nicht über USB erreichen. Versuche ein anderes Kabel oder einen anderen Anschluss.",
+  "@adb.readiness.noPermissions": {
+    "sourceHash": "ef170c7"
+  },
+  "adb.hint.text": "Möchtest du das gesamte Dateisystem sehen? Schalte USB-Debugging ein.",
+  "@adb.hint.text": {
+    "sourceHash": "51bd05a"
+  },
+  "adb.hint.how": "Wie geht das?",
+  "@adb.hint.how": {
+    "sourceHash": "7470bd3"
+  },
+  "adb.hint.dismiss": "Ausblenden",
+  "@adb.hint.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "adb.disconnectDeviceAriaLabel": "Verbindung zu {name} trennen",
+  "@adb.disconnectDeviceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "adb.disconnectBusyTooltip": "Trennen nicht möglich, während auf diesem Gerät Vorgänge laufen",
+  "@adb.disconnectBusyTooltip": {
+    "sourceHash": "b42bed4"
+  },
   "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
   "@adb.volumeLabelWithSuffix": {
     "sourceHash": "98d6c20",

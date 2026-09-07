@@ -2788,3 +2788,67 @@ alól). Minden sor mellett a bundle és a kulcs neve.
   az angoltól.
 - Aposztróf egyik magyar értékben sincs, tehát ICU-kettőzés sem kellett; a két `menu.*` kulcs RAW családba tartozik, és
   ott sincs aposztróf.
+
+## Az Android-telefon panelüzenetei, elemleírásai és a hibakeresés-tipp (`adb.connect.*`, `adb.readiness.*`, `adb.hint.*`, `adb.disconnect*`, `settings.behavior.adbHintDismissed.*`, 2026-09-07)
+
+A telefonpanel 17 sora és a hozzájuk tartozó két belső beállításkulcs. A referenciahalom (`_ignored/i18n/hu/`) ezen a
+gépen nincs meg (ez a `Davids-M1-MBP`, csak a `cmdr` és az `infra` van klónozva), ezért a Tier-1 bizonyíték a TELEPÍTETT
+macOS-ből jön (`.loctable`-söprés, macOS 26.6.2, build 25G83, 2026-09-07), az Android saját szavai pedig az AOSP magyar
+fordításából.
+
+- **Allow (az Android saját párbeszédének gombja): `Engedélyezés`** · AOSP `frameworks/base/packages/SystemUI`
+  `values-hu/strings.xml`, `usb_debugging_allow` = „Engedélyezés” (a `usb_debugging_title` = „Engedélyezi az USB
+  hibakeresést?” ugyanezen a párbeszéden), plusz a macOS `.loctable`-söprés, amely az angol `Allow`-ra `Engedélyezés` és
+  `Engedélyez` alakot ad · `high`. A két forrás egyezik, tehát a szó, amit a felhasználó a telefonján lát, ugyanaz, amit
+  a Cmdr mond. Prózában idézőjelbe kerül (`az „Engedélyezés” gombra`) a szótár UI-címke-idézési szabálya szerint
+  (`„Zárolt”`, `„Fájlátvitel”`), és a névelő `az`, mert a szó ismert és magánhangzóval kezdődik: itt nincs mit
+  hedge-elni.
+- **USB debugging: marad `USB-hibakeresés`** (a `style.md` szótársora), a `settings.summary.adb` és a
+  `settings.fileOperations.adbEnabled.description` szállított alakjával egyezően. Újraellenőrizve: AOSP
+  `SettingsLib/res/values-hu/strings.xml` `enable_adb` = „USB hibakeresés”, `clear_adb_keys` = „USB-s hibakeresésre
+  vonatkozó engedélyek visszavonása” · `high`. A kötőjel továbbra is a miénk (AkH + a katalógus `USB-kábel`,
+  `USB-eszköz`, `USB-fájlátviteli mód` sorai).
+- **Android platform tools: marad `az Android platform tools csomag`** (a `style.md` szótársora), ahogy a szállított
+  `settings.adb.install.intro` és `settings.fileOperations.adbEnabled.description` írja. Az
+  `adb.connect.adbNotInstalled` ezért `A Cmdr nem találja az Android platform tools csomagot.` — az alaptag viszi a
+  ragot, a név ragozatlan · `high`.
+- **„The Android tools on this Mac”: `Az Android-fejlesztőeszközök`** · a `style.md` `Android tooling` sora és a
+  szállított `settings.fileOperations.adbEnabled.description` („Ha nincs telepítve Android-fejlesztőeszköz”) · `high`. A
+  puszta `Android-eszköz` tilos, mert az `Android device`-t jelentene. A helyhatározó a többségi `Macen` alak.
+- **How (a hibakeresés-tipp végén álló hivatkozás): `Hogyan?`** · nincs Tier-1 találat: a teljes macOS-söprés (minden
+  `.loctable` `/System/Library/{CoreServices,Frameworks,PrivateFrameworks}`, `/System/Applications`, `/Applications`
+  alatt) az önálló `How` sztringre NULLA magyar párt ad; ami van, az a `Learn More` = `Bővebben` / `További információ`
+  és a `Dismiss` = `Elvetés` / `Bezárás` · `tentative`. A `Bővebben` a „Learn more” szava, és elnyelné a kérdés
+  hangsúlyát, amit az angol `How` visz; a `Hogyan?` az a magyar alak, ahogy egy ember rákérdez. Ha valaha natív
+  ellenőrzés lesz, ez az egy sor az, amit érdemes megnézni.
+- **Dismiss: `Elvetés`** · a katalógus 10 másik `Dismiss` kulcsa mind `Elvetés`, és a macOS-söprés is adja (`Dismiss` =
+  `Elvetés`) · `high`. A `desktop-i18n-term-consistency` egyébként is kényszeríti: az angol betű szerint azonos.
+- **`adb.disconnectDeviceAriaLabel` betű szerint a szerveres testvéréé**: `{name} leválasztása`, mert az angol
+  (`Disconnect {name}`) betű szerint azonos a `fileExplorer.navigation.disconnectPlaceAriaLabel`-lel, tehát a
+  `desktop-i18n-term-consistency` egyetlen magyar alakot követel. Ez amúgy is a helyes döntés: a `leválasztás` a szótár
+  `disconnect` szava, és tudatosan NEM `kiadás` (`eject`), mert a telefon a kábelen marad, semmi nem lesz biztonságosan
+  kihúzható.
+- **`adb.disconnectBusyTooltip` a „busy” elemleírások keretét hozza**:
+  `Nem választható le, amíg ezen az eszközön műveletek vannak folyamatban` · a szállított
+  `fileExplorer.navigation.disconnectBusyTooltip` (`… ezen a szerveren …`) és `fileExplorer.navigation.ejectBusyTooltip`
+  (`… ezen az eszközön …`) keveréke, pontosan ahogy az angolja is az · `high`.
+- **A panelsorok hangja a `servers.*` panelállapotoké**: rövid, tegező, nem hibáztat.
+  `A telefonod nem válaszolt időben.` a `servers.refusal.timedOut` (`{host} nem válaszolt időben.`) mintája;
+  `A Cmdr elvesztette a kapcsolatot a telefonoddal.` a `servers.refusal.unreachable` alanyi szerkezetéé. A `hiba` /
+  `sikertelen` regiszter egyik sorban sem jelenik meg.
+- **`adb.connect.waitingHint`: `Amint megteszed, a Cmdr megnyitja a telefonodat.`** Az angol „as soon as you do” a
+  fölötte álló mondat („koppints az „Engedélyezés” gombra”) igéjére utal vissza; magyarul a `megteszed` viszi ezt, mert
+  a `koppintasz` megismétlése a két sorban egymás után szóismétlés lenne. Megnyugtatás, nem utasítás · `high`.
+- **`adb.readiness.offline` a szállított kábeles mondatot használja**: `húzd ki és dugd vissza a kábelt` · a
+  `errors.provider.macDroid.transient` szállított sora („Húzd ki és dugd vissza az USB-kábelt”) · `high`. A `reseat`-re
+  nincs egyszavas magyar UI-alak; ez a kétigés szerkezet a katalógus sajátja.
+- **`adb.readiness.noPermissions`: `USB-n keresztül`** · a szállított `fileExplorer.navigation.spaceMtpHint` („USB-n
+  keresztül a Cmdr csak…”) · `high`. A `port` marad `port` (az Android magyar `adb_wireless_ip_addr_preference_title` =
+  „IP-cím és port”).
+- **A két belső beállításkulcs a testvérét másolja**: a `settings.behavior.serversPinHintSeen.*` mintájára
+  `Az USB-hibakeresés tippje elvetve` + `Elvetették-e már az USB-hibakeresést felajánló egyszeri sort.` Sosem látszik a
+  felületen, de a lefedettség miatt le kell fordítani; a személytelen alak a testvérétől jön („Megjelent-e már…”).
+- **`adb.volumeLabelWithSuffix` változatlan**: egy helyőrző plusz az `ADB` betűszó, a `sameAsSourceJustification` már
+  korábbról áll rajta.
+- Aposztróf egyik magyar értékben sincs, tehát ICU-kettőzés sem kellett. A `{name}` és a `{deviceName}` halmaza
+  megegyezik az angoléval.

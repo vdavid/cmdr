@@ -120,9 +120,10 @@ this machine?", all verified on macOS 26.6.2, build 25G83, 2026-09-06):
   the document type"→"laat dit leeg om het documenttype te behouden"), verbatim including the `dit` · high
 - installed → geïnstalleerd · macOS System Settings ("… is installed with macOS"→"… wordt samen met macOS
   geïnstalleerd") · high
-- debugging → foutopsporing; USB debugging → USB-foutopsporing · Apple Dutch (Safari `DeveloperPreferences.strings`,
-  "debug mode"→"foutopsporingsmodus"), and it is also what a Dutch Android phone shows under Ontwikkelaarsopties. `USB`
-  stays, the rest is localized, so the user sees their own phone's wording · high
+- debugging → foutopsporing; USB debugging → USB-foutopsporing · AOSP's own Dutch, `SettingsLib`
+  `res/values-nl/strings.xml` `enable_adb` = "USB-foutopsporing" (fetched 2026-09-07), matching Apple Dutch's
+  "foutopsporingsmodus" (Safari `DeveloperPreferences.strings`). `USB` stays, the rest is localized, so the user sees
+  their own phone's wording · high
 - Android platform tools → Android platform tools (kept English) · the download package's own name; Google keeps it
   English in Dutch. Two words, so the Dutch compound-concatenation rule does not apply · tentative
 - Android tooling (the general "you have no Android tooling installed") → Android-tools · distinct from the specific
@@ -224,6 +225,12 @@ second half is now a normal plural with a real verb
 - **Een zin die naar de server terugwijst, herhaalt het naamwoord.** `Open de server opnieuw om …`, niet
   `Open hem opnieuw`: in een paneel waar ook `de sleutel` staat, is `hem` dubbelzinnig. De vorm komt uit
   `paneState.hostKeyChangedHint` en `fileExplorer.navigation.connectionTooltipNeedsSignIn`.
+- **Android's own Dutch is Tier 1 for anything the user will read on their phone.** The AOSP catalogs are fetchable from
+  `android.googlesource.com` (`packages/apps/Settings`, `frameworks/base/packages/SettingsLib`, and
+  `frameworks/base/packages/SystemUI`, each `res/values-nl/strings.xml`, base64 via `?format=TEXT`), and they settle
+  `USB-foutopsporing`, the `Toestaan` button, `tik op`, and the `Zet … aan` imperative. Use them the way term-choice
+  principle 1 uses Apple: the word in Cmdr has to be the word on the phone's screen. Evidence: `glossary.md` § Het
+  telefoonpaneel via ADB.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -286,7 +293,8 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   package name English, and the Tier-2 sources were unreachable on this machine). Confirm the split reads right, and
   that "de Android platform tools" doesn't want a hyphen.
 - **"USB debugging" translated to "USB-foutopsporing"** against the English `@key.description`'s "keep as-is": it's what
-  a Dutch Android phone shows. Confirm, and consider fixing the `en` description.
+  a Dutch Android phone shows, now sourced straight from AOSP (`SettingsLib` `enable_adb`). Recommendation: close this
+  flag and fix the `en` description. The `adb.*` pass reuses the same rendering.
 - **"Pin / unpin server" → `Zet server vast / maak hem los`**: imperative with the slash kept, against the two existing
   toggle commands in `commands.json`, which use the infinitive (`Tabblad vastzetten aan/uit`). Confirm which register
   wins for a toggle whose English is imperative. Evidence: `glossary.md` § De serverhub.

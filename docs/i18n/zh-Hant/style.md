@@ -295,10 +295,11 @@ and extend it as you settle terms. The highest-traffic head terms, for orientati
 Settled while translating `settings.fileOperations.adb*`. Google is the vendor here, so its own Traditional Chinese docs
 are the Tier-1 source, the way Apple is for macOS terms; the reference pile carries no Android corpus.
 
-- **USB debugging (the on-phone developer option)** · `「USB 偵錯」`, in corner brackets · Google's zh-TW developer docs
-  (`developer.android.com/tools/adb?hl=zh-tw`) · `high`. It's a label the reader has to find on their own phone, so it
-  takes the phone's own wording, and it's quoted like the other on-phone labels in
-  `settings.fileOperations.mtpEnabled.description` (`「設定 > USB 偏好設定」`, `「檔案傳輸」`).
+- **USB debugging (the on-phone developer option)** · `「USB 偵錯」`, in corner brackets · AOSP's own zh-rTW strings
+  (`frameworks/base/packages/SettingsLib/res/values-zh-rTW/strings.xml`, key `enable_adb`, `refs/heads/main`,
+  2026-09-07), matching Google's zh-TW developer docs (`developer.android.com/tools/adb?hl=zh-tw`) · `confirmed`. It's a
+  label the reader has to find on their own phone, so it takes the phone's own wording, and it's quoted like the other
+  on-phone labels in `settings.fileOperations.mtpEnabled.description` (`「設定 > USB 偏好設定」`, `「檔案傳輸」`).
 - **debug / debugging (the generic verb)** · `除錯` · already shipped in `settings.advanced.logLlmCalls.description` and
   `errorReporter.dialog.saveToDisk` · `tentative` (unsourced, inherited from an earlier pass). ❗ **The boundary**: the
   Android option is `偵錯` because that is the string on the device; everything else in the catalog stays `除錯`. Don't
@@ -308,6 +309,12 @@ are the Tier-1 source, the way Apple is for macOS terms; the reference pile carr
   bare · `high`. A second mention in the same string shortens to `平台工具`, as the English does.
 - **adb / ADB** · kept verbatim, lowercase `adb` for the command and uppercase `ADB` for the protocol · Google keeps
   both Latin in zh-TW · `high`. Spaced against Han like every Latin run: `adb 指令`, `透過 ADB 存取`.
+- **Allow (the button on Android's own "Allow USB debugging?" prompt)** · `「允許」` · AOSP
+  `frameworks/base/packages/SystemUI/res/values-zh-rTW/strings.xml`, key `usb_debugging_allow` (the title
+  `usb_debugging_title` is `允許 USB 偵錯嗎？`) · `confirmed`. Corner brackets, for the same reason `「USB 偵錯」` takes
+  them: it is a word the reader has to find on their own phone.
+- **tap (on the phone)** · `輕觸` · AOSP zh-rTW throughout · `high`. ❗ Not macOS's `點一下`: the action happens on the
+  Android device, so the verb follows the device.
 - **access (a filesystem, a device)** · `存取` · already the catalog's word throughout `mtp.json` (`無法存取 USB 裝置`,
   `存取這個裝置的權限`) · `high`.
 - **"costs nothing" (leaving a toggle on)** · `不會有任何代價` · reuses the catalog's own `代價` from

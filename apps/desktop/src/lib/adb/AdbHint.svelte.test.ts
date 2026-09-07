@@ -13,7 +13,9 @@ import AdbHint from './AdbHint.svelte'
 const { stubs } = vi.hoisted(() => ({
   stubs: {
     volumes: [] as unknown[],
-    settings: {} as Record<string, unknown>,
+    // A `Map`, not an object literal: it carries its own type parameters, so the
+    // formatter has no redundant cast to strip and `getSetting` stays typed.
+    settings: new Map<string, boolean>(),
     setSetting: vi.fn(),
     openExternalUrl: vi.fn(),
   },
@@ -21,10 +23,18 @@ const { stubs } = vi.hoisted(() => ({
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => stubs.volumes }))
 vi.mock('$lib/settings', () => ({
-  getSetting: (id: string) => stubs.settings[id],
-  setSetting: (...args: unknown[]) => stubs.setSetting(...(args as [])),
+  getSetting: (id: string) => stubs.settings.get(id),
+  // Braces, not an expression body: an untyped `vi.fn()` answers `any`, and
+  // returning it is what `no-unsafe-return` is about. Nothing reads the answer.
+  setSetting: (...args: unknown[]) => {
+    stubs.setSetting(...(args as []))
+  },
 }))
-vi.mock('$lib/tauri-commands', () => ({ openExternalUrl: (...a: unknown[]) => stubs.openExternalUrl(...(a as [])) }))
+vi.mock('$lib/tauri-commands', () => ({
+  openExternalUrl: (...args: unknown[]) => {
+    stubs.openExternalUrl(...(args as []))
+  },
+}))
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: (key: string) => key }))
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
@@ -48,7 +58,10 @@ describe('AdbHint', () => {
     document.body.innerHTML = ''
     vi.clearAllMocks()
     stubs.volumes = [phoneOverMtp()]
-    stubs.settings = { 'fileOperations.adbEnabled': true, 'behavior.adbHintDismissed': false }
+    stubs.settings = new Map([
+      ['fileOperations.adbEnabled', true],
+      ['behavior.adbHintDismissed', false],
+    ])
   })
 
   it('offers the fuller way in on a phone reached over MTP', () => {
@@ -63,7 +76,7 @@ describe('AdbHint', () => {
   })
 
   it('stays away once the flag is set, so it is said once ever', () => {
-    stubs.settings['behavior.adbHintDismissed'] = true
+    stubs.settings.set('behavior.adbHintDismissed', true)
     expect(render().querySelector('.adb-hint')).toBeNull()
   })
 

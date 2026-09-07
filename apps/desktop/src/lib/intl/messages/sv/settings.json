@@ -1547,6 +1547,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.adbHintDismissed.label": "Tips om USB-felsökning avfärdat",
+  "@settings.behavior.adbHintDismissed.label": {
+    "sourceHash": "ba3d7fc"
+  },
+  "settings.behavior.adbHintDismissed.description": "Om engångsraden som erbjuder USB-felsökning har avfärdats.",
+  "@settings.behavior.adbHintDismissed.description": {
+    "sourceHash": "37afcbc"
+  },
   "settings.section.notifications": "Aviseringar",
   "@settings.section.notifications": {
     "sourceHash": "7880118"

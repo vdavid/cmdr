@@ -1540,6 +1540,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.adbHintDismissed.label": "Az USB-hibakeresés tippje elvetve",
+  "@settings.behavior.adbHintDismissed.label": {
+    "sourceHash": "ba3d7fc"
+  },
+  "settings.behavior.adbHintDismissed.description": "Elvetették-e már az USB-hibakeresést felajánló egyszeri sort.",
+  "@settings.behavior.adbHintDismissed.description": {
+    "sourceHash": "37afcbc"
+  },
   "settings.section.notifications": "Értesítések",
   "@settings.section.notifications": {
     "sourceHash": "7880118"

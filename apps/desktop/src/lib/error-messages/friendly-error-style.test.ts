@@ -285,8 +285,7 @@ describe('servers copy obeys the writing rules', () => {
     it(`the phone refusal "${error.type}" is clean`, () => {
       const outcome = readAdbConnectOutcome(error)
       if (outcome.kind === 'silent') return
-      const sentences =
-        outcome.kind === 'waiting' ? [outcome.reason, outcome.hint] : [outcome.sentence]
+      const sentences = outcome.kind === 'waiting' ? [outcome.reason, outcome.hint] : [outcome.sentence]
       for (const sentence of sentences) {
         for (const word of [...NEVER_WORDS, ...TRIVIALIZING_WORDS, ...ADB_LEAK_WORDS]) {
           expect(containsWord(sentence, word), `adb.connect.${error.type} contains "${word}": ${sentence}`).toBe(false)

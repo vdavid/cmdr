@@ -1548,6 +1548,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.adbHintDismissed.label": "Hinweis zu USB-Debugging ausgeblendet",
+  "@settings.behavior.adbHintDismissed.label": {
+    "sourceHash": "ba3d7fc"
+  },
+  "settings.behavior.adbHintDismissed.description": "Ob der einmalige Hinweis zu USB-Debugging ausgeblendet wurde.",
+  "@settings.behavior.adbHintDismissed.description": {
+    "sourceHash": "37afcbc"
+  },
   "settings.section.notifications": "Benachrichtigungen",
   "@settings.section.notifications": {
     "sourceHash": "7880118"

@@ -1546,6 +1546,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.adbHintDismissed.label": "Hint voor USB-foutopsporing gesloten",
+  "@settings.behavior.adbHintDismissed.label": {
+    "sourceHash": "ba3d7fc"
+  },
+  "settings.behavior.adbHintDismissed.description": "Of de eenmalige regel over USB-foutopsporing is gesloten.",
+  "@settings.behavior.adbHintDismissed.description": {
+    "sourceHash": "37afcbc"
+  },
   "settings.section.notifications": "Meldingen",
   "@settings.section.notifications": {
     "sourceHash": "7880118"

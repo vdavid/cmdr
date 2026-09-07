@@ -27,7 +27,6 @@ import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
 import { ensureAppReady, escapeOverlayUntilGone } from './helpers.js'
 import {
-  openVolumePicker,
   publishSyntheticVolumes,
   restoreRealVolumes as dropSyntheticVolumes,
   switcherNames,

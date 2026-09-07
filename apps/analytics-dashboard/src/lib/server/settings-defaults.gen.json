@@ -1376,6 +1376,7 @@
     "askCmdr.proactive": true,
     "askCmdr.wakeDelay": 5,
     "askCmdr.wakeToast": true,
+    "behavior.adbHintDismissed": false,
     "behavior.archiveCompressionLevel": 6,
     "behavior.archiveEnter.bundle": "ask",
     "behavior.archiveEnter.ooxml": "open",

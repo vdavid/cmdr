@@ -2531,3 +2531,76 @@ Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1). Mọi dẫn ch�
 - Ngoài `settings.section.adb`, không khóa nào trong đợt này mang `sameAsSourceJustification`, và không giá trị nào chứa
   dấu nháy đơn nên không có dấu nháy nào phải nhân đôi. Hai khóa `menu.*` thuộc họ RAW (không ICU) và cũng không có dấu
   nháy.
+
+## Điện thoại Android qua ADB: khung kết nối, chú giải bộ chọn ổ đĩa, dòng gợi ý (19 khóa `adb.*` + `settings.behavior.adbHintDismissed.*`, 2026-09-07)
+
+Nguồn của đợt này khác thường: máy dịch (M1 agent box) không có `_ignored/i18n/vi/`, nên bằng chứng macOS lấy trực tiếp
+từ bundle đang cài (macOS 26.6.2 build 25G83, quét `.loctable`, 2026-09-07), còn hai thuật ngữ của Android thì lấy từ
+chính bản dịch tiếng Việt của AOSP.
+
+- **USB debugging: `gỡ lỗi qua USB`** · AOSP `frameworks/base/packages/SettingsLib/res/values-vi/strings.xml`,
+  `enable_adb` = `Gỡ lỗi qua USB` (và `enable_adb_summary` = `Bật chế độ gỡ lỗi khi kết nối USB`); hộp thoại trên máy là
+  `usb_debugging_title` = `Cho phép gỡ lỗi qua USB?` (`frameworks/base/packages/SystemUI/res/values-vi/strings.xml`),
+  nhánh `main`, kiểm chứng 2026-09-07. `high`. Đợt trước ghi `gỡ lỗi USB` từ trí nhớ về giao diện điện thoại, không có
+  tệp nguồn; nay đã sửa cả hai chuỗi đã ship (`settings.fileOperations.adbEnabled.description`, `settings.summary.adb`)
+  cho khớp, vì người đọc phải tìm đúng công tắc bằng đúng chữ trên máy mình.
+- **Allow (nút trên hộp thoại của Android): `Cho phép`** · AOSP `usb_debugging_allow` = `Cho phép`. Viết hoa chữ đầu và
+  không đặt trong ngoặc kép, đúng như Android tiếng Việt tự nhắc tới nút của mình
+  (`Nhấn vào Cài đặt để kiểm soát dịch vụ.`). `high`.
+- **tap (chạm vào một nút có tên): `nhấn vào`** · AOSP tiếng Việt dùng `Nhấn vào <Tên>` khi nhắc tới một nút hay một mục
+  (`Nhấn vào Menu để được trợ giúp.`, `Nhấn vào Cài đặt…`); `chạm vào` để dành cho bề mặt phần cứng
+  (`Chạm vào cảm biến`). `high`.
+- **Android platform tools: `bộ công cụ nền tảng Android`** · nâng từ `tentative` lên `high`: tài liệu tiếng Việt của
+  chính Google gọi "SDK Platform-Tools" là `bộ công cụ nền tảng SDK`
+  (`developer.android.com/tools/releases/platform-tools?hl=vi`, kiểm chứng 2026-09-07), nên `bộ công cụ nền tảng` là cụm
+  mô tả đúng; `Android` và tên lệnh `adb` giữ nguyên.
+- **wake (đánh thức thiết bị đang ngủ): `đánh thức`** · macOS vi `PhotosUICore.loctable` ("everytime you wake from
+  sleep" → `mỗi lần bạn đánh thức từ chế độ ngủ`), `DIErrors.loctable` ("wake failed" → `đánh thức không thành công`).
+  `high`.
+- **reseat the cable: `rút và cắm lại cáp`** · macOS vi ("Please unplug and replug the %@…" →
+  `Vui lòng rút và cắm lại %@…`), và catalog đã ship đúng cụm ở `mtp.permissionDialog.helpText`
+  (`hãy rút và cắm lại thiết bị`). `high`.
+- **How (liên kết một chữ, "làm thế nào?"): `Cách làm`** · macOS vi dịch "How to X" thành `Cách X` (`How to Use` →
+  `Cách sử dụng`, `How to pair` → `Cách ghép đôi`, `How to open it` → `Cách mở`), và catalog đã có
+  `servers.sheet.connectionModeLegend` = `Cách kết nối`. Không nguồn nào có một chữ "How" trần, nên `Cách làm` là dạng
+  ngắn nhất giữ được nghĩa. `tentative`.
+
+Các quyết định theo từng chuỗi:
+
+- **`adb.connect.*` đi theo giọng của `servers.refusal.*` / `servers.paneState.*`**, vì cùng một bề mặt (cả khung thay
+  cho danh sách tệp). `adb.connect.timedOut` = `Điện thoại của bạn đã không phản hồi kịp thời.` dùng lại nguyên khuôn
+  `servers.refusal.timedOut` (`{host} đã không phản hồi kịp thời.`).
+- **`adb.connect.transport` → `Cmdr đã mất kết nối tới điện thoại của bạn.`** · luật đã ghi trong `style.md`: một cú rớt
+  kết nối là `mất kết nối`, còn `ngắt` để dành cho hành động chủ ý (`Ngắt kết nối`). Không nhắc tới giao thức hay bất kỳ
+  thông tin chẩn đoán nào, đúng yêu cầu của `en`.
+- **`adb.connect.serverUnreachable` → `Công cụ Android trên máy Mac này đã không phản hồi.`** · `công cụ Android` là chữ
+  catalog đã ship (`settings.fileOperations.adbEnabled.description`: `chưa cài công cụ Android nào`). ❌ Không nhắc tới
+  máy chủ adb, transport, hay daemon.
+- **`adb.readiness.noPermissions` → `Máy Mac này không truy cập được điện thoại của bạn qua USB.`** · một THIẾT BỊ USB
+  đi với `truy cập` (`mtp.permissionDialog.title` = `Không thể truy cập thiết bị USB`), khác với luật
+  `không kết nối được tới` dành cho MÁY CHỦ. Câu sau (`Hãy thử cáp hoặc cổng khác.`) giữ thứ tự cáp-rồi-cổng của bản
+  tiếng Anh; catalog cũng đã có `Thử một cổng USB hoặc cáp khác` ở `errors.listing.deviceProblem.suggestion`.
+- **`adb.hint.text` → `Muốn truy cập toàn bộ hệ thống tệp? Hãy bật Gỡ lỗi qua USB.`** · `truy cập toàn bộ hệ thống tệp`
+  là nguyên văn cụm đã ship ở `settings.fileOperations.adbEnabled.description`. Viết hoa `Gỡ lỗi qua USB` ở ĐÂY vì đây
+  là chuỗi duy nhất bảo người đọc đi tìm và bật đúng công tắc đó; mọi chỗ khác trong catalog viết thường
+  (`đang bật gỡ lỗi qua USB`, `cho phép gỡ lỗi qua USB`), đúng như AOSP tự viết thường trong câu.
+- **`adb.hint.dismiss` → `Bỏ qua`** · bắt buộc: 11 khóa khác có cùng bản tiếng Anh `Dismiss` đều là `Bỏ qua`, nên
+  `i18n-terms` sẽ báo nếu lệch.
+- **`adb.disconnectDeviceAriaLabel` → `Ngắt kết nối {name}`** · trùng khít
+  `fileExplorer.navigation.disconnectPlaceAriaLabel`, cũng cùng bản tiếng Anh; hai nút này phải đọc y hệt nhau.
+- **`adb.disconnectBusyTooltip` → `Không thể ngắt kết nối khi còn thao tác đang chạy trên thiết bị này`** · lấy khuôn
+  của chuỗi chị em cùng động từ `fileExplorer.navigation.disconnectBusyTooltip` (`…trên máy chủ này`) và chỉ đổi danh
+  từ. Lưu ý sẵn: `fileExplorer.navigation.ejectBusyTooltip` đang dùng một khuôn thứ hai
+  (`trong khi có thao tác đang diễn ra trên thiết bị này`) cho cùng một ý; đó là trôi có sẵn từ trước, chưa sửa trong
+  đợt này.
+- **`adb.connect.openSettings` → `Mở cài đặt`** · dùng lại nguyên văn ba khóa đã ship (`commands.appSettings.label`,
+  `commands.handler.openTerminalHere.openSettings`, `askCmdr.wake.needsApiKey`). Viết thường theo luật sentence case của
+  tiếng Việt, dù bản tiếng Anh viết hoa `Settings`.
+- **`adb.connect.waitingHint` → `Cmdr sẽ mở điện thoại ngay khi bạn nhấn.`** · bỏ `của bạn` vì dòng ngay trên đã nói
+  `điện thoại của bạn`; đây là câu trấn an, không phải chỉ dẫn, nên không có `Hãy`.
+- **`settings.behavior.adbHintDismissed.*` đi theo khuôn của cặp chị em `settings.behavior.serversPinHintSeen.*`**: nhãn
+  `Đã bỏ qua gợi ý về gỡ lỗi qua USB`, mô tả `Dòng gợi ý một lần về việc bật gỡ lỗi qua USB đã bị bỏ qua hay chưa.` Khác
+  chị em ở chỗ tiếng Anh là "dismissed" (người dùng tự tắt) chứ không phải "shown", nên động từ là `bỏ qua`, khớp với
+  `adb.hint.dismiss`. Hai khóa này không bao giờ hiện trên giao diện.
+- Không giá trị nào trong đợt này chứa dấu nháy đơn, nên không có dấu nháy nào phải nhân đôi. Chỉ
+  `adb.volumeLabelWithSuffix` (đã dịch từ đợt trước) mang `sameAsSourceJustification`.

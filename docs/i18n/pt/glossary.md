@@ -2310,3 +2310,80 @@ nada concorda com eles.
 - **`Fixar no seletor`, com `seletor` sozinho** (`menu.network.pinToSwitcher`): o termo cheio publicado é
   `seletor de volumes`, e aqui ele aparece cortado, seguindo o `switcher` do inglês. Confirmar, ou escrever
   `Fixar no seletor de volumes` e aceitar um item de menu de cinco palavras.
+
+## O painel do celular Android e a dica de depuração USB (`adb.*`, `settings.behavior.adbHintDismissed.*`, 2026-09-07)
+
+As 19 chaves novas do ADB: o painel cheio que substitui a listagem quando um celular não abre (`adb.connect.*`), as
+dicas de passar o mouse na linha do celular dentro do seletor de volumes (`adb.readiness.*`), a linha discreta no topo
+de um painel que já mostra o celular por MTP (`adb.hint.*`), o botão que fecha o celular (`adb.disconnect*`), e o par
+interno que só guarda se a dica já foi dispensada.
+
+A pilha de referência não existe nesta máquina, então o Tier 1 do macOS vem dos bundles instalados (26.6.2, build 25G83,
+lidos em 2026-09-07), o caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" descreve. Os
+termos do Android vêm do AOSP, que é a fonte autoritativa da tradução do próprio sistema.
+
+- **`USB debugging` → `depuração USB`** · AOSP, `frameworks/base/packages/SystemUI/res/values-pt-rBR/strings.xml`
+  (`usb_debugging_title` = `Permitir a depuração USB?`, `usb_debugging_secondary_user_title` =
+  `Depuração USB não permitida`, `main`, lido em 2026-09-07) · confirmed. Casa com o `depuração` da Apple (Safari
+  `DeveloperPreferences.strings`) já registrado na § Terminology and glossary do `style.md`, e é palavra por palavra o
+  que a pessoa lê no próprio celular. Fica em minúscula no meio da frase, como no Android.
+- **`Allow` (o botão do próprio Android) → `Permitir`** · AOSP, mesmo arquivo, `usb_debugging_allow` = `Permitir` (e
+  `allow` = `Permitir` em `packages/apps/Settings/res/values-pt-rBR/strings.xml`) · confirmed. É o botão que a pessoa vê
+  na tela do celular, então `adb.connect.unauthorized` escreve exatamente essa palavra: `toque em Permitir`.
+- **`Cmdr opens your phone as soon as you do.` → `O Cmdr abre o seu celular assim que você permitir.`** · o inglês elide
+  o objeto (`as soon as you do`), que em português deixa a frase pendurada; `permitir` fecha a frase E ecoa o botão
+  `Permitir` da linha de cima, que é a mesma palavra na tela do celular · high
+- **`Android platform tools` → `ferramentas de plataforma do Android`** · reúso da rodada de
+  `settings.fileOperations.adb*` (§ Terminology and glossary do `style.md`), onde ficou `tentative` por ser termo do
+  Google sem fonte no macOS nem na Microsoft; `settings.adb.install.intro` já publica a mesma forma · tentative
+- **`phone` → `celular`** · pt-BR, já publicado em `settings.summary.adb`,
+  `settings.fileOperations.mtpEnabled.description` e `errors.listing.deviceDisconnected.explanation` · confirmed.
+  Marcador de variante: o pt-PT diz `telemóvel`.
+- **`isn''t responding` → `não está respondendo`** · macOS pt-BR, várias fontes de primeira mão (`loginwindow.loctable`
+  `INTERRUPT_NOT_RESPONDING_TITLE_LOGOUT_STANDARD`, `ScreenReader.framework/SCRGeneral.loctable` `%@ is not responding`,
+  `OpenDirectoryConfigUI` `kStatusDisplayStringODDown` = `Este servidor não está respondendo.`, 26.6.2, 2026-09-07) ·
+  confirmed
+- **`Open Settings` → `Abrir Ajustes`** · macOS pt-BR, o rótulo de botão da Apple em vários frameworks (`ActionKit`,
+  `SiriSettingsUI` `OPEN_SETTINGS`, `AuthKit` `AUTH_ERROR_BUTTON_OPEN_PASSCODE_SETUP`, `SensitiveContentAnalysisUI`
+  `AGE_VERIFICATION_ALERT_OPEN_SETTINGS`, 26.6.2, 2026-09-07) · confirmed. Sem artigo, porque é botão; a forma com
+  artigo (`Abra os Ajustes`) é a da Apple em texto corrido, e o catálogo já a usa lá (`notifications.permissionDenied`).
+  `Ajustes` é a janela de ajustes do próprio app (`settings.window.title`).
+- **`How` (o link) → `Saiba como`** · macOS pt-BR, o molde de link da Apple para `Learn how`
+  (`Ecosystem.framework/Localizable.loctable`: `Learn how to update to an Apple silicon version.` →
+  `Saiba como atualizar para uma versão compatível com Apple Silicon.`; `AuthKitUI`
+  `AUTHORIZATION_PRIVACY_LEARN_HOW_FORMAT`, 26.6.2, 2026-09-07) · high. Uma palavra só (`Como`) não funciona como link
+  em português; `Saiba como` é o mínimo que se lê como link e emenda na frase anterior
+  (`… Ative a depuração USB. Saiba como`).
+- **`Dismiss` → `Dispensar`** · cópia byte a byte das dez irmãs já publicadas com o mesmo inglês
+  (`crashReporter.dialog.dismiss`, `queue.row.dismiss`, `downloads.fda.dismiss`, …) · confirmed. O
+  `desktop-i18n-term-consistency` pareia pelo inglês, então tem que bater.
+- **`Disconnect {name}` → `Desconectar {name}`** · cópia byte a byte de
+  `fileExplorer.navigation.disconnectPlaceAriaLabel`, que tem o MESMO inglês e é o mesmo botão num servidor · confirmed.
+  O botão diz `Desconectar` e não `Ejetar` de propósito: nada fica seguro para desligar, o celular continua no cabo.
+  `adb.disconnectBusyTooltip` segue a irmã `fileExplorer.navigation.disconnectBusyTooltip` e só troca `neste servidor`
+  por `neste dispositivo`, porque o inglês também trocou.
+- **`reach` (alcançar um dispositivo) → `alcançar`** · molde já publicado em `servers.refusal.unreachable`
+  (`O Cmdr não conseguiu alcançar {host}.`) · confirmed
+- **`didn''t answer in time` → `não respondeu a tempo`** · cópia do molde de `servers.refusal.timedOut`
+  (`{host} não respondeu a tempo.`), que aparece no MESMO painel · confirmed
+- **`over USB` → `pelo USB`** · o `por USB` / `pelo USB` que o catálogo já publica
+  (`settings.fileOperations.mtpConnectionWarning.description`, `fileExplorer.navigation.spaceMtpHint`) · high
+- **`the whole filesystem` → `o sistema de arquivos inteiro`** · byte a byte com
+  `settings.fileOperations.adbEnabled.description`, que já publica
+  `o sistema de arquivos inteiro de um celular Android`; `sistema de arquivos` é o termo do Utilitário de Disco (§
+  Terminology and glossary do `style.md`) · confirmed
+- **`Wake its screen` → `Ative a tela dele`** · `ativar` é o verbo da Apple para tirar do repouso, e o `dele` aponta
+  para `celular` (masculino, único candidato na frase) · high. Sem vírgula antes do `ou`: o português não a usa numa
+  lista de dois, mesmo onde o inglês põe.
+- **`This phone''s Android version is too old` → `A versão do Android deste celular é antiga demais`** · a concordância
+  cai em `versão` (feminino), que é o sujeito; `navegar por ele` é o verbo de `settings.summary.adb`
+  (`Navegue por um celular Android…`) · high
+
+O par interno (`settings.behavior.adbHintDismissed.*`) copia o molde da irmã `serversPinHintSeen.*`:
+`Dica de … dispensada` e `Se a linha única que oferece … já foi dispensada.`. Ele nunca aparece na interface, mas
+traduzir mantém a cobertura honesta.
+
+Nenhuma linha diz `erro` nem `falhou`, nenhuma expõe o servidor do ADB, o transporte, o daemon ou um número de série, e
+nenhuma usa `só`, `simples` ou `fácil`. Varredura pt-PT do lote: zero `ficheiro`, `telemóvel`, `ecrã`, `estar a` +
+infinitivo, `consoante`, `Rever`, `alterar o nome` ou próclise. Nenhum valor leva apóstrofo, então não há `''` a dobrar;
+`{name}` e `{deviceName}` ficam intactos e nada concorda com eles.
