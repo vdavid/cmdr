@@ -2874,3 +2874,14 @@ A két sor a kiszürkített `Cím` és `Felhasználónév` mezők alatt, amikor 
   Az „azonosít” azt mondja, amit kell (a két érték MAGA a szerver) · `high`.
 - **`to change them` → `a módosításukhoz`** · a `módosít` tő a katalógus szava a beállítások megváltoztatására
   (`settings.json` „módosításához”, `onboarding.json` „módosíthatod”) · `high`.
+
+## Időtartam-helyőrző mellé kell a névutó (`servers.paneState.retryKeepsTrying`)
+
+`"Összesen {duration} próbálkozik tovább."` úgy olvasódik, hogy „összesen 2 perc próbálkozik tovább”: a `{duration}`
+alanyként áll, és a mondat azt állítja, hogy az idő próbálkozik. A javított alak `"Összesen {duration} ideig
+próbálkozik tovább."`.
+
+**A szabály, nem csak ez az egy kulcs**: az angol `for a total of {duration}` az elöljárójával jelöli a szerepet, a
+magyarban viszont a `{duration}` egy nominatívuszi kifejezést (`2 perc`, `60 másodperc`) hoz, amit ragozni nem lehet
+(nem tudjuk, milyen szó áll benne). Ilyenkor **névutót kell tenni utána** (`ideig`, `alatt`, `múlva`), az mondja meg,
+hogy időtartamról van szó. ❌ Csupasz helyőrző időtartamra soha.
