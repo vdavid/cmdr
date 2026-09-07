@@ -149,7 +149,7 @@
                     size: null,
                     recursiveSize: null,
                     modified: null,
-                    recursiveSizePending: null,                }
+                    recursiveSizeUpdating: null,                }
             })
 
             // Add the "Connect to server..." pseudo-row for MCP visibility
@@ -160,7 +160,7 @@
                 size: null,
                 recursiveSize: null,
                 modified: null,
-                recursiveSizePending: null,            })
+                recursiveSizeUpdating: null,            })
 
             const state: PaneState = {
                 path: 'smb://',

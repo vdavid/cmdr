@@ -274,3 +274,67 @@ fn a_whole_volume_walk_leaves_its_end_to_the_run_that_owns_it() {
             .any(|e| e.kind() == IndexEventKind::CoverageBranchEnded),
     );
 }
+
+// ── `IndexStatusResponse::walk_affects` ───────────────────────────────────────
+//
+// The Rust twin of the frontend's `isPathAffectedByWalk`
+// (`$lib/indexing/walked-ground.ts`); the two have to answer alike, or the file
+// list's hourglass and an agent's `list_dir` disagree about the same folder.
+
+/// Whether a walk on `roots` moves `path`'s total, in the shape
+/// `IndexStatusResponse::walked_roots` carries the ground.
+fn moves(roots: &[&str], path: &str) -> bool {
+    let ground: Vec<String> = roots.iter().map(|r| (*r).to_string()).collect();
+    IndexStatusResponse::walk_affects(&ground, path)
+}
+
+#[test]
+fn a_walk_moves_the_folder_it_is_on_and_everything_under_it() {
+    assert!(moves(&["/Users/me/Downloads"], "/Users/me/Downloads"));
+    assert!(moves(&["/Users/me/Downloads"], "/Users/me/Downloads/big/deeper"));
+}
+
+/// The roll-up repairs the ancestor chain, so a walk BELOW a folder moves that
+/// folder's total too. A downward-only test leaves every folder above the walked
+/// ground looking settled while its number is about to change.
+#[test]
+fn a_walk_below_a_folder_moves_that_folder_too() {
+    let walking = ["/Users/me/projects/cmdr/target"];
+
+    assert!(moves(&walking, "/Users/me/projects"));
+    assert!(moves(&walking, "/Users/me"));
+    assert!(moves(&walking, "/"));
+}
+
+#[test]
+fn an_unrelated_branch_is_settled() {
+    assert!(!moves(&["/Users/me/Downloads"], "/Users/me/Documents"));
+    assert!(!moves(&["/Users/me/Downloads"], "/Users/other"));
+}
+
+/// Whole segments, so a shared name prefix is not containment.
+#[test]
+fn a_shared_name_prefix_is_not_inside() {
+    assert!(!moves(&["/Users/me/Downloads"], "/Users/me/Downloads2"));
+    assert!(!moves(&["/Users/me/Downloads"], "/Users/me/Downloads-old"));
+}
+
+/// A run that takes the volume whole announces the volume root, and that reaches
+/// every row on the drive through the same predicate.
+#[test]
+fn a_whole_volume_walk_moves_every_row_on_the_drive() {
+    assert!(moves(&["/"], "/Users/me/Documents"));
+    assert!(moves(&["/"], "/"));
+}
+
+#[test]
+fn a_trailing_separator_names_the_same_folder() {
+    assert!(moves(&["/Users/me/Downloads/"], "/Users/me/Downloads"));
+    assert!(moves(&["/Users/me/Downloads"], "/Users/me/Downloads/"));
+}
+
+#[test]
+fn nothing_moves_when_no_walk_holds_ground() {
+    assert!(!moves(&[], "/Users/me/Downloads"));
+    assert!(!moves(&[], "/"));
+}

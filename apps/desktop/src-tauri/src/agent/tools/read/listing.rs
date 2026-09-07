@@ -38,8 +38,8 @@ use crate::index_host::index;
 use crate::mcp::resources::indexing::status_token;
 use crate::mcp::{ToolError, ToolResult};
 use crate::search::{format_size, format_timestamp};
-use cmdr_index::Freshness;
 use cmdr_index::store::DirStats;
+use cmdr_index::{Freshness, IndexStatusResponse};
 
 /// Rows per page when the caller doesn't say. Comfortably under the result budget
 /// for a normal folder, so the common call is one round trip.
@@ -105,12 +105,34 @@ fn qualified_size(bytes: u64, qualifier: Option<&str>) -> String {
     }
 }
 
-/// A size for a model to read out: `format_size`, carrying `≥` when it's only a
-/// lower bound. Single-sourced on the `search` table's formatter, so a size reads
-/// the same wherever it surfaces (and, like that table, it doesn't consult the
-/// user's SI-vs-binary setting — MCP output stays internally consistent).
-pub(crate) fn human_size(bytes: u64, is_lower_bound: bool) -> String {
-    qualified_size(bytes, is_lower_bound.then_some("≥"))
+/// A size for a model to read out: `format_size`, carrying the qualifier its two
+/// honesty flags earn. Single-sourced on the `search` table's formatter, so a size
+/// reads the same wherever it surfaces (and, like that table, it doesn't consult
+/// the user's SI-vs-binary setting — MCP output stays internally consistent).
+pub(crate) fn human_size(bytes: u64, is_lower_bound: bool, is_updating: bool) -> String {
+    qualified_size(bytes, size_qualifier(is_lower_bound, is_updating))
+}
+
+/// Which uncertainty a size wears in front of it, if any.
+///
+/// **Motion outranks coverage.** `≥` says "the truth is at least this", which is
+/// only defensible once the number has stopped: it's derived from unscanned
+/// subtrees alone and can't express the opposite error, an index entry for a
+/// subtree that's already gone, where the truth is far LOWER. That's exactly what
+/// a running walk is busy correcting, so an in-flux total reads `~`: approximate,
+/// direction unknown. The flags themselves stay separate on the wire, so an agent
+/// that wants to know WHICH uncertainty this is still can.
+///
+/// The frontend's size column resolves the same collision by dropping its `≥` and
+/// leaving the hourglass to speak (`views/full-list-utils.ts`); there a third
+/// glyph would compete with the hourglass in a dense column, which is why the two
+/// surfaces share the rule but not the symbol.
+fn size_qualifier(is_lower_bound: bool, is_updating: bool) -> Option<&'static str> {
+    match (is_updating, is_lower_bound) {
+        (true, _) => Some("~"),
+        (false, true) => Some("≥"),
+        (false, false) => None,
+    }
 }
 
 /// One child row, shaped for the model.
@@ -135,15 +157,22 @@ pub struct ChildEntry {
     /// never a wrong zero.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
-    /// `size`, spelled out (`"4.2 GB"`, or `"≥ 1.8 TB"` when it's a lower bound).
-    /// Absent exactly when `size` is: an unknown size gets no string, never a
-    /// `"0 B"` that would read as an empty folder.
+    /// `size`, spelled out (`"4.2 GB"`, `"≥ 1.8 TB"` for a settled lower bound,
+    /// `"~ 1.8 TB"` while the number is still moving). Absent exactly when `size`
+    /// is: an unknown size gets no string, never a `"0 B"` that would read as an
+    /// empty folder.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size_human: Option<String>,
     /// `true` when a folder's `size` is a lower bound (some subtree was never
     /// fully listed), so the model says "at least" rather than stating a total.
     #[serde(skip_serializing_if = "crate::agent::tools::read::is_false")]
     pub size_is_lower_bound: bool,
+    /// `true` while the indexer can still move this folder's total: a walk is on
+    /// it, above it, or below it (the roll-up repairs ancestors), or its own index
+    /// writes are still draining. The number can go DOWN as well as up, which is
+    /// why `size_human` reads `~` here rather than claiming a floor.
+    #[serde(skip_serializing_if = "crate::agent::tools::read::is_false")]
+    pub size_is_updating: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub modified: Option<u64>,
     /// `modified` as a date (`"2023-11-14"`). Absent exactly when `modified` is.
@@ -160,6 +189,7 @@ impl ChildEntry {
         is_symlink: bool,
         size: Option<u64>,
         size_is_lower_bound: bool,
+        size_is_updating: bool,
         modified: Option<u64>,
     ) -> Self {
         Self {
@@ -167,20 +197,22 @@ impl ChildEntry {
             is_directory,
             is_symlink,
             size,
-            size_human: size.map(|b| human_size(b, size_is_lower_bound)),
+            size_human: size.map(|b| human_size(b, size_is_lower_bound, size_is_updating)),
             size_is_lower_bound,
+            size_is_updating,
             modified,
             modified_human: modified.map(format_timestamp),
         }
     }
 
-    /// Replace the size (and its lower-bound flag), re-deriving `size_human`. The
+    /// Replace the size (and both honesty flags), re-deriving `size_human`. The
     /// only way to change a size after construction — assigning the field alone
-    /// would leave the string behind, stating the old number.
-    fn set_size(&mut self, size: Option<u64>, is_lower_bound: bool) {
+    /// would leave the string behind, stating the old number with the old caveat.
+    fn set_size(&mut self, size: Option<u64>, is_lower_bound: bool, is_updating: bool) {
         self.size = size;
-        self.size_human = size.map(|b| human_size(b, is_lower_bound));
+        self.size_human = size.map(|b| human_size(b, is_lower_bound, is_updating));
         self.size_is_lower_bound = is_lower_bound;
+        self.size_is_updating = is_updating;
     }
 }
 
@@ -307,8 +339,8 @@ impl ListOptions {
 #[serde(rename_all = "camelCase")]
 pub struct SizeStats {
     pub recursive_size: u64,
-    /// `recursive_size`, spelled out — with `≥` inside the string when it's a lower
-    /// bound, so a quoted total can't pass for an exact one.
+    /// `recursive_size`, spelled out — with `≥` (settled lower bound) or `~` (still
+    /// moving) inside the string, so a quoted total can't shed its caveat.
     pub recursive_size_human: String,
     pub recursive_file_count: u64,
     pub recursive_dir_count: u64,
@@ -317,22 +349,29 @@ pub struct SizeStats {
     pub size_is_lower_bound: bool,
     /// `true` when the exact size was computed at an older volume epoch (stale).
     pub size_is_stale: bool,
-    /// `true` while the indexer is still applying writes affecting this subtree.
+    /// `true` while the indexer can still move this total: a walk is on this
+    /// folder, above it, or below it (the roll-up repairs ancestors), or its own
+    /// index writes are still draining. ⚠️ Both halves matter — reading only the
+    /// per-folder pending flag calls a folder settled through the whole walk that
+    /// is rewriting it, which is when its number is furthest from the truth.
     pub size_is_updating: bool,
     /// `true` if a descendant is a symlink (so the size may omit linked content).
     pub has_symlinks: bool,
 }
 
 impl SizeStats {
-    fn from_dir_stats(s: &DirStats) -> Self {
+    /// `walk_moves_it` is the volume-level half of "still moving" (see
+    /// [`IndexStatusResponse::walk_affects`]); `DirStats` carries the per-folder half.
+    fn from_dir_stats(s: &DirStats, walk_moves_it: bool) -> Self {
+        let is_updating = s.recursive_size_pending || walk_moves_it;
         Self {
             recursive_size: s.recursive_size,
-            recursive_size_human: human_size(s.recursive_size, !s.recursive_size_complete),
+            recursive_size_human: human_size(s.recursive_size, !s.recursive_size_complete, is_updating),
             recursive_file_count: s.recursive_file_count,
             recursive_dir_count: s.recursive_dir_count,
             size_is_lower_bound: !s.recursive_size_complete,
             size_is_stale: s.recursive_size_stale,
-            size_is_updating: s.recursive_size_pending,
+            size_is_updating: is_updating,
             has_symlinks: s.recursive_has_symlinks,
         }
     }
@@ -552,6 +591,7 @@ pub(crate) fn build_list_dir(
     freshness: Option<Freshness>,
     volume: VolumeBlock,
     opts: &ListOptions,
+    walked_roots: &[String],
 ) -> ListDirResult {
     let indexed = page.is_some();
     let total = page.as_ref().map(|p| p.total);
@@ -571,7 +611,7 @@ pub(crate) fn build_list_dir(
         path: path.to_string(),
         coverage: coverage(enabled, freshness, indexed),
         volume,
-        size: stats.map(SizeStats::from_dir_stats),
+        size: stats.map(|s| SizeStats::from_dir_stats(s, IndexStatusResponse::walk_affects(walked_roots, path))),
         total,
         returned,
         offset: opts.offset,
@@ -613,12 +653,21 @@ pub async fn execute_list_dir<R: Runtime>(_app: &AppHandle<R>, params: &Value) -
         .map_err(|e| ToolError::internal(e.to_string()))?;
     let status = index().volume_status_for_path(&path);
     let space = crate::mcp::resources::volumes::space_summary(&status.volume_id);
+    // The ground a walker holds on this volume right now, resolved ONCE and then
+    // asked per row. Every size below is only as honest as this: without it a
+    // folder mid-walk reads as a settled floor, which is when its number is
+    // furthest from the truth. An unreadable status means "nothing is walking",
+    // the same answer as an idle volume — a missing status must not invent motion.
+    let walked_roots = index()
+        .status(&status.volume_id)
+        .map(|s| s.walked_roots)
+        .unwrap_or_default();
 
     let page = match rows {
         None => None,
         Some(rows) => {
             let children: Vec<ChildEntry> = rows.iter().map(child_from_row).collect();
-            Some(page_with_folder_sizes(&path, children, &opts)?)
+            Some(page_with_folder_sizes(&path, children, &opts, &walked_roots)?)
         }
     };
     let volume = VolumeBlock::new(status.volume_id.clone(), space);
@@ -630,6 +679,7 @@ pub async fn execute_list_dir<R: Runtime>(_app: &AppHandle<R>, params: &Value) -
         status.freshness,
         volume,
         &opts,
+        &walked_roots,
     );
     serde_json::to_value(&result).map_err(|e| ToolError::internal(e.to_string()))
 }
@@ -642,22 +692,36 @@ pub async fn execute_list_dir<R: Runtime>(_app: &AppHandle<R>, params: &Value) -
 /// other order pages first and enriches only the rows that survived, which keeps a
 /// browse of a 20k-entry folder to one small batch. Same rows either way — only the
 /// number of `dir_stats` lookups differs.
-fn page_with_folder_sizes(path: &str, children: Vec<ChildEntry>, opts: &ListOptions) -> Result<Page, ToolError> {
+fn page_with_folder_sizes(
+    path: &str,
+    children: Vec<ChildEntry>,
+    opts: &ListOptions,
+    walked_roots: &[String],
+) -> Result<Page, ToolError> {
     if opts.sort_by == SortBy::Size {
-        let children = with_folder_sizes(path, children)?;
+        let children = with_folder_sizes(path, children, walked_roots)?;
         return Ok(sort_and_page(children, opts));
     }
     let page = sort_and_page(children, opts);
     Ok(Page {
-        rows: with_folder_sizes(path, page.rows)?,
+        rows: with_folder_sizes(path, page.rows, walked_roots)?,
         total: page.total,
     })
 }
 
 /// Replace each folder row's own inode size with its recursive total from
-/// `dir_stats`, flagging the ones that are lower bounds. Files pass through
-/// untouched; a folder with no stats row keeps `size: None` (unknown, never zero).
-fn with_folder_sizes(path: &str, mut children: Vec<ChildEntry>) -> Result<Vec<ChildEntry>, ToolError> {
+/// `dir_stats`, flagging the ones that are lower bounds and the ones still moving.
+/// Files pass through untouched; a folder with no stats row keeps `size: None`
+/// (unknown, never zero).
+///
+/// The walk test is PER CHILD, not inherited from the listed folder: a walker deep
+/// inside one child moves that child and the folder above it, and leaves its
+/// siblings settled.
+fn with_folder_sizes(
+    path: &str,
+    mut children: Vec<ChildEntry>,
+    walked_roots: &[String],
+) -> Result<Vec<ChildEntry>, ToolError> {
     let dir_indices: Vec<usize> = children
         .iter()
         .enumerate()
@@ -674,12 +738,16 @@ fn with_folder_sizes(path: &str, mut children: Vec<ChildEntry>) -> Result<Vec<Ch
     let stats = index()
         .dir_stats_batch(&paths)
         .map_err(|e| ToolError::internal(e.to_string()))?;
-    for (&i, stats) in dir_indices.iter().zip(stats) {
+    for ((&i, stats), child_path) in dir_indices.iter().zip(stats).zip(&paths) {
         match stats {
-            Some(stats) => children[i].set_size(Some(stats.recursive_size), !stats.recursive_size_complete),
+            Some(stats) => children[i].set_size(
+                Some(stats.recursive_size),
+                !stats.recursive_size_complete,
+                stats.recursive_size_pending || IndexStatusResponse::walk_affects(walked_roots, child_path),
+            ),
             // No stats row: the index knows the folder but not its total. Say
             // nothing rather than pass its inode size off as a total.
-            None => children[i].set_size(None, false),
+            None => children[i].set_size(None, false, false),
         }
     }
     Ok(children)
@@ -701,11 +769,15 @@ fn required_path(params: &Value) -> Result<String, ToolError> {
 /// row's fields. A folder's `size` starts as its own logical size and is replaced
 /// by the recursive total in [`with_folder_sizes`]; a file's is already final.
 fn child_from_row(row: &cmdr_index::store::EntryRow) -> ChildEntry {
+    // Both honesty flags start false: this is the row's own inode size, which is
+    // exact and settled. A folder's recursive total (and its caveats) arrives in
+    // `with_folder_sizes`.
     ChildEntry::new(
         row.name.clone(),
         row.is_directory,
         row.is_symlink,
         row.logical_size,
+        false,
         false,
         row.modified_at,
     )

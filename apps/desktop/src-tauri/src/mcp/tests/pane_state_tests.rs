@@ -27,7 +27,7 @@ fn test_pane_state_store_update_left() {
             size: Some(1024),
             recursive_size: None,
             modified: Some("2024-01-01T00:00:00Z".to_string()),
-            recursive_size_pending: None,
+            recursive_size_updating: None,
             tags: vec![],
             ..Default::default()
         }],
@@ -94,7 +94,7 @@ fn test_pane_state_cursor_index_bounds() {
             size: None,
             recursive_size: None,
             modified: None,
-            recursive_size_pending: None,
+            recursive_size_updating: None,
             tags: vec![],
             ..Default::default()
         }],
@@ -133,7 +133,7 @@ fn test_file_entry_serialization() {
         size: Some(42),
         recursive_size: None,
         modified: Some("2024-01-01T00:00:00Z".to_string()),
-        recursive_size_pending: None,
+        recursive_size_updating: None,
         tags: vec![],
         ..Default::default()
     };
@@ -153,7 +153,7 @@ fn test_file_entry_optional_fields_serialize_as_null() {
         size: None,
         recursive_size: None,
         modified: None,
-        recursive_size_pending: None,
+        recursive_size_updating: None,
         tags: vec![],
         ..Default::default()
     };
@@ -190,7 +190,7 @@ fn test_unicode_in_file_entries() {
         size: Some(100),
         recursive_size: None,
         modified: None,
-        recursive_size_pending: None,
+        recursive_size_updating: None,
         tags: vec![],
         ..Default::default()
     };
@@ -210,7 +210,7 @@ fn test_special_chars_in_file_paths() {
             size: None,
             recursive_size: None,
             modified: None,
-            recursive_size_pending: None,
+            recursive_size_updating: None,
             tags: vec![],
             ..Default::default()
         },
@@ -221,7 +221,7 @@ fn test_special_chars_in_file_paths() {
             size: None,
             recursive_size: None,
             modified: None,
-            recursive_size_pending: None,
+            recursive_size_updating: None,
             tags: vec![],
             ..Default::default()
         },
@@ -232,7 +232,7 @@ fn test_special_chars_in_file_paths() {
             size: None,
             recursive_size: None,
             modified: None,
-            recursive_size_pending: None,
+            recursive_size_updating: None,
             tags: vec![],
             ..Default::default()
         },
@@ -282,7 +282,7 @@ fn test_large_file_count() {
             size: Some(i as u64 * 100),
             recursive_size: None,
             modified: None,
-            recursive_size_pending: None,
+            recursive_size_updating: None,
             tags: vec![],
             ..Default::default()
         })

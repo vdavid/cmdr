@@ -58,15 +58,22 @@ This prevents overwhelming agents with data they can't see in the UI.
 
 A directory's recursive size is a claim of varying strength, and `cmdr://state` renders the same distinctions the file list does (`resources/mod.rs`: `recursive_size_text`, `on_disk_marker`; the model itself is `crates/cmdr-index/src/indexing/writer/DETAILS.md` § "Honest sizes"):
 
-- **`≥4 GB`** — the indexer hasn't finished covering the subtree, so this is a LOWER BOUND, not a total. Same `≥` glyph as the UI's `LOWER_BOUND_GLYPH`.
+- **`≥4 GB`** — the indexer hasn't finished covering the subtree, so this is a SETTLED LOWER BOUND, not a total. Same `≥` glyph as the UI's `LOWER_BOUND_GLYPH`.
+- **`~4 GB`** — the number is still moving, so it has no floor to promise (see below). Wins over `≥`.
 - **no size at all** — incomplete AND nothing known below yet. `≥0 B` would read as a measurement; the UI shows its `<dir>` placeholder for the same reason.
-- **`[size-pending]`** — writes in flight for this dir or a descendant (the "size updating" hourglass). A status, so it shows with or without details.
+- **`[size-unsettled]`** — the number can still move: a walk is on this dir, above it, or below it (the roll-up repairs ancestors), the volume is aggregating, or its own writes are in flight. The "size updating" hourglass, verbatim. A status, so it shows with or without details.
 - **`[size-stale]`** — exact, but computed at an older volume epoch.
 - **`(1 GB on disk)`** — the allocated-blocks total (`recursivePhysicalSize`), included only when it diverges from the logical total by BOTH ≥50% relative and ≥200 MB absolute. Same threshold as the UI's `hasSizeMismatch` (`full-list-utils.ts`), so the two surfaces never disagree about which folders are worth a second look; below it the second number is pure tokens.
 
 **Gotcha**: on-disk counts every hard link and every APFS clone in full, so it is NOT "what deleting this would free". A `target/` dir with rustc's hard-linked codegen objects, or an APFS-cloned worktree, reports the same bytes twice over. Deduplicating needs `DISTINCT inode` over the subtree, which doesn't roll up into `dir_stats` the way a sum does.
 
+**Motion outranks coverage, and that's why `~` exists.** `≥` claims a floor, and that claim is derived from unscanned subtrees alone. It cannot express the opposite error: an index entry for a subtree that's already GONE, where the truth is far lower. A running walk is busy correcting exactly that, which is how `.claude` once read `≥422 GB` on its way down to 56 KB (2026-09-07). So while a total moves it wears `~` (approximate, direction unknown) and `≥` waits its turn. The flags stay separate on the wire, so an agent that wants to know which uncertainty it has still can.
+
+The UI resolves the same collision by dropping its `≥` and leaving the hourglass to speak (`views/full-list-utils.ts` § `getDirSizeDisplayState`): there a third glyph would compete with the hourglass in a dense column. **Same rule, different symbol** — don't "unify" them by putting `~` in the Size column or by dropping the qualifier here.
+
 **Why this is sharper for agents than for people**: someone watching a folder mid-scan sees the hourglass and waits. An agent reads the number and acts on it, so an uncounted total presented as settled becomes a confident wrong answer (a 129 GB tree reported as 28.8 GB).
+
+**Gotcha — `[size-unsettled]` is only as good as its INPUT.** The frontend computes the whole answer (`pane-mcp-sync.svelte.ts`'s `inFluxAnswerFor`) and pushes it as `recursiveSizeUpdating`; this file only renders it. Mirroring the raw per-folder `recursiveSizePending` field instead calls a folder settled through the entire walk that is rewriting it, which is precisely when its number is furthest from the truth. Pushes are triggered (navigation, selection, `index-dir-updated`), not subscribed, so the marker tracks a storm because the storm itself keeps re-pushing.
 
 ### The `sort:` line, and the `relevance` value
 

@@ -348,9 +348,21 @@ double-counting its bytes.
 
 `read/listing.rs::coverage` is the single builder for index freshness honesty: it reuses `status_token` +
 `Freshness::is_authoritative` (never re-derives the tokens) and attaches a plain-language note when a read isn't
-authoritative or the path isn't indexed. `SizeStats::from_dir_stats` carries the exact-vs-lower-bound / stale / updating
-/ has-symlinks flags verbatim from `DirStats`. Importance staleness is `asOfGeneration < recomputeGeneration`. These are
+authoritative or the path isn't indexed. `SizeStats::from_dir_stats` carries the exact-vs-lower-bound / stale /
+has-symlinks flags verbatim from `DirStats`. Importance staleness is `asOfGeneration < recomputeGeneration`. These are
 the flags spec §2.4 makes load-bearing; the system prompt requires the model to voice them.
+
+**`sizeIsUpdating` is the one flag `DirStats` can't answer alone.** A folder's total also moves while a walk is on it,
+above it, or below it (the roll-up repairs ancestors), and `DirStats.recursive_size_pending` only knows about that
+folder's own draining writes. So `execute_list_dir` resolves the volume's walked ground once
+(`IndexStatusResponse::walked_roots`) and `cmdr_index::walk_affects` answers per row — the folder's own total and each
+child folder's, since a walker deep inside one child leaves its siblings settled. ❌ Reading the pending flag alone
+calls a folder settled through the whole walk that's rewriting it, which is when its number is furthest from the truth.
+
+Aggregation (the 12–19 s after a first index's walk, when the drive's folder totals are computed) is deliberately NOT
+in that answer: the walker has released its ground by then, and nothing queryable per volume reports it. The `coverage`
+block already carries that window (`indexStatus` isn't `fresh`, `authoritative` is false), which is the same warning at
+a coarser grain. Revisit if a per-volume aggregation read ever exists.
 
 **A caveat that lives only in a sibling flag is a caveat the model can shed.** A flag is honest only while the reader
 carries it alongside the number, and an agent restating "1.8 TB" has already dropped `sizeIsLowerBound: true`. So the
@@ -369,9 +381,16 @@ instead of the other, since the raw value is what anything downstream computes w
 - `VolumeBlock.totalHuman` / `availableHuman`, present exactly when their byte counterparts are.
 - `ListDirResult.remainder` (below).
 
-**Uncertainty is inside the string.** `≥ 1.8 TB` when the number can only be higher (a lower bound), `~ 40 GB` when the
-error runs in both directions. `human_size` / `qualified_size` (`read/listing.rs`) are the one place that decides;
-`ChildEntry::new` / `set_size` are the only ways to set a size, so the number and its string can't drift apart.
+**Uncertainty is inside the string.** `≥ 1.8 TB` when the number can only be higher (a settled lower bound), `~ 40 GB`
+when the error runs in both directions. `human_size` / `size_qualifier` / `qualified_size` (`read/listing.rs`) are the
+one place that decides; `ChildEntry::new` / `set_size` are the only ways to set a size, so the number and its string
+can't drift apart.
+
+**Motion outranks coverage** (`size_qualifier`): a size that is BOTH a lower bound and still updating reads `~`, never
+`≥`. `≥` is derived from unscanned subtrees alone, so it can't express the opposite error — an index entry for a
+subtree that's already gone, where the truth is far lower — and that's exactly what a running walk is correcting. A
+folder read `≥422 GB` on its way down to 56 KB (2026-09-07). Both booleans still ship, so a caller that wants to know
+which uncertainty it has can look.
 
 **One formatter, `search::format_size` + `format_timestamp`.** ❌ Never a second one: two would round differently and
 the same folder would read two sizes across two surfaces. Like the `search` results table, this path does NOT consult

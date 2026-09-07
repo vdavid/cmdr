@@ -8,9 +8,11 @@ dispatch, and the `cmdr://state` builder); the independently-evolving builders s
 ## Must-knows
 
 - **An agent ACTS on what it reads here, so a number has to say how strong it is.** A directory size is never bare:
-  `≥` means lower bound, `[size-pending]` / `[size-stale]` qualify it, and `(N on disk)` counts hard links and clones
-  in FULL, so it isn't "what deleting frees". ❌ Don't strip a qualifier to save tokens: an uncounted total presented
-  as settled becomes a confident wrong answer (a 129 GB tree once read as 28.8 GB).
+  `≥` is a SETTLED lower bound, `~` a number still moving (it wins over `≥`, which has no floor to promise while a walk
+  rewrites it), `[size-unsettled]` / `[size-stale]` qualify it, and `(N on disk)` counts hard links and clones in FULL,
+  so it isn't "what deleting frees". ❌ Don't strip a qualifier to save tokens: an uncounted total presented as settled
+  becomes a confident wrong answer (a 129 GB tree once read as 28.8 GB). ❌ Don't derive `[size-unsettled]` from the raw
+  per-folder pending flag: the frontend pushes the whole answer as `recursiveSizeUpdating`.
 - **Capacity and free space come from the space poller's CACHE, ❌ never a `statfs` here**: that syscall blocks
   30–120 s on a hung mount, and `cmdr://state` is read constantly. An unwatched volume omits both fields, ❌ never
   renders a zero that reads as a full disk.
