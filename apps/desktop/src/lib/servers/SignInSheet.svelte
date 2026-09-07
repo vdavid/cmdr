@@ -440,6 +440,11 @@
                 bind:addressInput
                 onChange={(patch: Partial<ServerForm>) => {
                     form = { ...form, ...patch }
+                    // A refusal describes the attempt that earned it, and its
+                    // sentence names the host off the LIVE form. Editing the form
+                    // would otherwise leave that sentence on screen accusing a
+                    // host Cmdr never contacted, so the edit retires it.
+                    refusal = null
                     // Address first, protocol second: what was typed decides the
                     // toggle, and the toggle stays editable afterwards.
                     if (patch.address !== undefined) form = applyParsedAddress(form, parseServerAddress(patch.address))

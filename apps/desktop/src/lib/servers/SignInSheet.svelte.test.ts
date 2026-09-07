@@ -260,3 +260,30 @@ describe('SignInSheet: add mode', () => {
     expect(done).toEqual([{ kind: 'handed_off' }])
   })
 })
+
+describe('SignInSheet: a refusal and the address that earned it', () => {
+  it('stops accusing the old host once the address is corrected', async () => {
+    const attempt = (submission: SignInSubmission): Promise<SignInAttemptOutcome> => {
+      submissions.push(submission)
+      return Promise.resolve({ kind: 'refused', refusal: 'unreachable' })
+    }
+    await renderSheet({ mode: 'add', attempt })
+
+    const address = document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement
+    typeInto(address, 'ada@typo.local:22')
+    await tick()
+    buttonSaying('Connect').click()
+    await flush()
+
+    // The refusal names the host that was actually dialed.
+    expect(document.body.textContent).toContain('typo.local')
+
+    // Correcting the address retires it. Pre-fix the sentence survived AND
+    // re-interpolated the live field, so a host Cmdr never contacted was on
+    // screen being called unreachable.
+    typeInto(address, 'ada@nas.local:22')
+    await tick()
+    expect(document.body.textContent).not.toContain('nas.local.')
+    expect(document.body.textContent).not.toContain('typo.local')
+  })
+})
