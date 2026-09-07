@@ -360,14 +360,36 @@ everything else, and every one of those diffs was an intentional copy change rat
 also re-rendered the same 5,722 px page to record one open dropdown. The current set stays still when you publish a
 post, edit marketing copy, or ship a release.
 
-**Baselines are Linux-only.** CI runs ubuntu-latest and macOS renders different font antialiasing, so a `-darwin` set
-would be a second copy of every byte that CI never checks (it was half the old 16 MB). `visual.spec.ts` calls
-`test.skip()` on other platforms, which is what stops the darwin set from reappearing the next time the suite runs on a
-Mac; the trade is that `pnpm --filter @cmdr/website test:e2e` no longer covers visual regressions locally.
+**Baselines are Linux-only.** CI runs Linux and macOS renders different font antialiasing, so a `-darwin` set would be a
+second copy of every byte that CI never checks (it was half the old 16 MB). `visual.spec.ts` calls `test.skip()` on
+other platforms, which is what stops the darwin set from reappearing the next time the suite runs on a Mac; the trade is
+that `pnpm --filter @cmdr/website test:e2e` no longer covers visual regressions locally.
 
-**`scripts/update-visual-baselines.sh`** renders them in `mcr.microsoft.com/playwright:v<version>-noble`, pinned
-(derived, not hardcoded) to the installed `@playwright/test` so chromium and the Noble fonts track CI's runner. The
-ultimate check that the container matches the runner is CI itself passing against the committed baselines.
+**One renderer shoots and verifies.** `scripts/update-visual-baselines.sh` captures in
+`mcr.microsoft.com/playwright:v<version>-noble`, and ci.yml's Website job runs inside that same image. Both derive
+`<version>` from the resolved `@playwright/test` rather than naming it (the script from the installed package, CI from
+`pnpm-lock.yaml` in the `changes` job, whose `playwright-image` output feeds `container:` — that key is evaluated before
+a job starts, so the tag can only reach it from an earlier job). A Renovate bump therefore moves capture and
+verification together.
+
+- **Gotcha:** a bare `ubuntu-latest` runner is NOT that renderer, even running the same Chromium build. On the host font
+  stack the two densest region shots went over the threshold with nothing behind them (`fixture-dropdown`: 4,103 px, 10%
+  of its 244×183 clip; `pricing-tiers`: 6,751 px, 2%), while the whitespace-heavy shots stayed under it. The ratio is
+  per clip, so tight component shots feel a systematic text-render difference that a full-viewport shot dilutes. The CPU
+  is NOT the variable: the same image renders the whole set within threshold on arm64 and on amd64 (verified on
+  `mcr.microsoft.com/playwright:v1.62.1-noble`, both architectures, 2026-09-07), so shooting them from an Apple Silicon
+  Mac is fine.
+- ❌ Never add a `playwright install` step to that job. The image already carries the browsers at
+  `PLAYWRIGHT_BROWSERS_PATH`; installing fetches a build for whatever npm resolved, which is how a render quietly stops
+  matching the image the baselines were shot in. A genuine mismatch instead fails loudly ("Executable doesn't exist at
+  /ms-playwright/chromium-…").
+- Lighthouse runs in that container too, so it needs `CHROME_PATH` pointed at the image's Chromium and `--no-sandbox`
+  (`lighthouserc.cjs`), because the container runs as root.
+- A failed Website job uploads `apps/website/test-results/` as the `website-playwright-results` artifact: the `-actual`
+  / `-expected` / `-diff` PNGs and the retry traces. Without it a red visual lane can only be guessed at, since the
+  `github` reporter prints pixel counts and no images.
+
+**How the refresh script behaves:**
 
 - Compare-then-`--last-failed`: it runs a normal comparison and only re-shoots baselines that actually fail the
   threshold, so passing (sub-threshold-noisy) shots aren't churned. Idempotent (a no-op when everything already passes).

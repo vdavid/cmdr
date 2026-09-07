@@ -21,10 +21,8 @@ Marketing site and blog for Cmdr. Astro + Tailwind v4 (CSS-first config in `src/
 ## Deployment
 
 Auto-deploys on push to `main` touching `apps/website/**` (the `deploy-website` job in `ci.yml`, a signed webhook to the
-Hetzner VPS). This is the ONLY deploy path; `release.yml` hits the same hook after a desktop release. Steps and
-fallback: `docs/guides/deploy-website.md`.
-
-- **Deploy order:** always `docker compose build` before `down`; building first avoids ~15s downtime.
+Hetzner VPS). This is the ONLY deploy path; `release.yml` hits the same hook after a desktop release. Steps, fallback,
+and the build-before-`down` order: `docs/guides/deploy-website.md`.
 
 ## Analytics (must-knows)
 
@@ -60,11 +58,11 @@ Color scheme.
 
 ## Gotchas
 
-- **Visual baselines (`e2e/visual.spec.ts`) shoot machinery, never content.** Six Linux-only region shots anchored on
-  `/visual-fixture`. ❌ Never shoot a marketing page or real post full-page: they churn on every copy edit. New markdown
-  transform → add a block to `src/fixtures/visual-fixture.md`. Refresh:
-  `apps/website/scripts/update-visual-baselines.sh` (Docker; `scripts/release.sh` auto-runs it).
-  [DETAILS.md](DETAILS.md) § Visual baselines.
+- **Visual baselines (`e2e/visual.spec.ts`) shoot machinery, never content.** Six Linux-only region shots on
+  `/visual-fixture`; ❌ never shoot a marketing page or post full-page (they churn on copy edits). New markdown
+  transform → add a block to `src/fixtures/visual-fixture.md`. Refresh with
+  `apps/website/scripts/update-visual-baselines.sh`; CI verifies inside that same container, so ❌ never move that job
+  to the bare runner or install browsers in it. [DETAILS.md](DETAILS.md) § Visual baselines.
 - **Keep TS generic calls single-line in `.astro` `<script>` blocks** — the astro-eslint parser chokes on multi-line,
   cascade-blocking build/deploy.
 - **Typed lint needs `astro sync` first**, and the `.astro` block deliberately omits the `no-unsafe-*` rules (they

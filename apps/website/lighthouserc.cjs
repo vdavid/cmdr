@@ -5,6 +5,10 @@ module.exports = {
       startServerReadyPattern: 'Local',
       url: ['http://localhost:4322/'],
       numberOfRuns: 3,
+      // CI runs this inside the Playwright container (ci.yml's Website job, so the visual
+      // baselines render where they were shot), which means Chrome runs as root and refuses to
+      // start with its own sandbox. Harmless locally.
+      settings: { chromeFlags: '--no-sandbox' },
     },
     assert: {
       assertions: {

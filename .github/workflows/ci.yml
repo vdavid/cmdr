@@ -33,6 +33,7 @@ jobs:
       api-server: ${{ steps.filter.outputs.api-server }}
       dashboard: ${{ steps.filter.outputs.dashboard }}
       scripts: ${{ steps.filter.outputs.scripts }}
+      playwright-image: ${{ steps.playwright-image.outputs.image }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -114,6 +115,36 @@ jobs:
               - 'apps/desktop/scripts/**'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
+
+      # The Website job runs inside this image. Its visual baselines
+      # (`apps/website/e2e/visual.spec.ts`) are pixel comparisons, so the renderer that verifies
+      # them has to be the renderer that shot them, and
+      # `apps/website/scripts/update-visual-baselines.sh` shoots them in the pinned Playwright
+      # container. Verifying on the bare runner instead put ~10% of the pixels in the tightest
+      # region shots over the threshold with no change behind them: same Chromium build, different
+      # host font stack.
+      #
+      # Both sides DERIVE the tag from the resolved `@playwright/test` version instead of naming
+      # it (the script from the installed package, this from the lockfile), so a Renovate bump
+      # moves capture and verification together and neither can silently drift onto another
+      # renderer. This lives here because `container:` is evaluated before a job starts, so the
+      # image can only come from an earlier job's output.
+      - name: Resolve the Playwright container image
+        id: playwright-image
+        run: |
+          version=$(awk '
+            /^  apps\/website:$/ { site = 1; next }
+            site && /^  [^ ]/ { exit }
+            site && /^      .@playwright\/test.:$/ { want = 1; next }
+            want && /^        version:/ { print $2; exit }
+          ' pnpm-lock.yaml)
+          if [[ -z "$version" ]]; then
+            echo "Could not read apps/website's resolved @playwright/test version from pnpm-lock.yaml." >&2
+            echo "The lockfile layout likely changed; fix this step and update-visual-baselines.sh together." >&2
+            exit 1
+          fi
+          echo "image=mcr.microsoft.com/playwright:v$version-noble" >>"$GITHUB_OUTPUT"
+          echo "Website renderer: mcr.microsoft.com/playwright:v$version-noble"
 
   # ===========================================
   # Desktop app - Rust backend
@@ -563,6 +594,13 @@ jobs:
   website:
     name: Website
     runs-on: ubuntu-latest
+    # Everything in this job runs inside the pinned Playwright image, so the E2E lane renders the
+    # visual baselines in the same environment that shot them (see the `Resolve the Playwright
+    # container image` step in `changes` for why, and `apps/website/DETAILS.md` § Visual baselines).
+    # The build steps ride along rather than running on the host: one toolchain per job is simpler
+    # than two, and the site the baselines are shot against is then built by the same Node.
+    container:
+      image: ${{ needs.changes.outputs.playwright-image }}
     timeout-minutes: 20
     needs: changes
     if: inputs.run_all || needs.changes.outputs.website == 'true'
@@ -611,12 +649,37 @@ jobs:
       - name: Check analytics injection
         run: ./scripts/check/check --check website-analytics-injection --ci
 
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
-        working-directory: ./apps/website
-
+      # No browser install step: the container image ships the browsers this Playwright version
+      # pins, at `PLAYWRIGHT_BROWSERS_PATH`. Installing them again would download a build for
+      # whatever version npm resolved, which is how a render could quietly stop matching the image
+      # the baselines were shot in. If the two ever disagree, Playwright says so ("Executable
+      # doesn't exist at /ms-playwright/chromium-…") instead of rendering on the wrong Chromium.
       - name: Run E2E tests
         run: ./scripts/check/check --check website-e2e --ci
+
+      # A visual failure is unreadable without the images: `test-results/` carries the `-actual`,
+      # `-expected`, and `-diff` PNGs plus the retry traces.
+      - name: Upload Playwright results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: failure()
+        with:
+          name: website-playwright-results
+          path: apps/website/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Lighthouse hunts for a system Chrome, which this image doesn't carry: it ships the
+      # browsers Playwright pins, under `PLAYWRIGHT_BROWSERS_PATH`. Point it at that one rather
+      # than installing a second Chrome. (`chromium_headless_shell-*` deliberately doesn't match
+      # the glob; Lighthouse wants the full browser.)
+      - name: Point Lighthouse at the container's Chromium
+        run: |
+          chromes=("$PLAYWRIGHT_BROWSERS_PATH"/chromium-*/chrome-linux/chrome)
+          if [[ ! -x "${chromes[0]}" ]]; then
+            echo "No Chromium under $PLAYWRIGHT_BROWSERS_PATH; the image layout changed." >&2
+            exit 1
+          fi
+          echo "CHROME_PATH=${chromes[0]}" >>"$GITHUB_ENV"
 
       - name: Run Lighthouse CI
         run: pnpm test:lighthouse

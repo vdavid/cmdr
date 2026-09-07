@@ -5,10 +5,13 @@
 #   update-visual-baselines.sh          Refresh the committed baselines that are actually stale.
 #   update-visual-baselines.sh --full   Capture the gitignored full-page set (upgrade diffing).
 #
-# Why Docker: baselines are Linux-only (`*-chromium-linux.png`), because CI runs ubuntu-latest and
-# macOS renders different font antialiasing. `visual.spec.ts` skips itself on other platforms, so
-# the only way to shoot them is the pinned Playwright container, which matches CI's chromium version
-# and Noble fonts. Pinning is derived from the installed @playwright/test, so Renovate bumps carry.
+# Why Docker: baselines are Linux-only (`*-chromium-linux.png`) because macOS renders different font
+# antialiasing, and `visual.spec.ts` skips itself on other platforms. This container is not just *a*
+# Linux renderer, it is THE one: ci.yml's Website job runs inside the same image, so the run that
+# verifies a baseline is the run that could have shot it. Both sides derive the tag from the
+# resolved @playwright/test (here from the installed package, there from pnpm-lock.yaml) instead of
+# naming it, so a Renovate bump moves them together. Verifying on the bare runner instead reddens
+# the tightest region shots with nothing behind them; see apps/website/DETAILS.md § Visual baselines.
 #
 # Why compare-then-update-failures (not a blind `--update-snapshots`): a blind update rewrites every
 # snapshot whose render isn't byte-identical, including ones that still pass CI's `maxDiffPixelRatio`
