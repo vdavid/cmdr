@@ -274,10 +274,6 @@
   "@fileExplorer.searchResults.unavailableBody": {
     "sourceHash": "3e4cfa2"
   },
-  "fileExplorer.network.cancel": "Annuleer",
-  "@fileExplorer.network.cancel": {
-    "sourceHash": "19766ed"
-  },
   "fileExplorer.network.connect": "Verbind",
   "@fileExplorer.network.connect": {
     "sourceHash": "1a2303e"
@@ -297,10 +293,6 @@
   "fileExplorer.network.signIn": "Log in",
   "@fileExplorer.network.signIn": {
     "sourceHash": "bfd402b"
-  },
-  "fileExplorer.network.authFailed": "Inloggen lukte niet",
-  "@fileExplorer.network.authFailed": {
-    "sourceHash": "93821eb"
   },
   "fileExplorer.network.osMountFallback.message": "Direct verbinden met <shareName>{share}</shareName> lukte niet. Je bent verbonden, maar alleen via de systeemeigen SMB-netwerkverbinding van macOS, die voor de meeste verbindingen 4x zo langzaam is als de directe verbinding van Cmdr (soms 100x). Klik op de knop hieronder om het opnieuw te proberen.",
   "@fileExplorer.network.osMountFallback.message": {
@@ -450,46 +442,6 @@
   "@fileExplorer.network.browser.disconnectFailed": {
     "sourceHash": "ac9e8e0"
   },
-  "fileExplorer.network.login.title": "Inloggen op ‘{target}’",
-  "@fileExplorer.network.login.title": {
-    "sourceHash": "53a4feb"
-  },
-  "fileExplorer.network.login.guestNowAuth": "Je was eerder als gast verbonden. Je kunt nu inloggen voor meer toegang.",
-  "@fileExplorer.network.login.guestNowAuth": {
-    "sourceHash": "4a0ed4d"
-  },
-  "fileExplorer.network.login.connectionModeLegend": "Verbindingsmodus",
-  "@fileExplorer.network.login.connectionModeLegend": {
-    "sourceHash": "72c0943"
-  },
-  "fileExplorer.network.login.connectAsGuest": "Verbind als gast",
-  "@fileExplorer.network.login.connectAsGuest": {
-    "sourceHash": "d3cee9e"
-  },
-  "fileExplorer.network.login.signInWithCredentials": "Log in met inloggegevens",
-  "@fileExplorer.network.login.signInWithCredentials": {
-    "sourceHash": "dda85fa"
-  },
-  "fileExplorer.network.login.username": "Gebruikersnaam",
-  "@fileExplorer.network.login.username": {
-    "sourceHash": "e3b89e9"
-  },
-  "fileExplorer.network.login.usernamePlaceholderDefault": "Voorbeeld: bram",
-  "@fileExplorer.network.login.usernamePlaceholderDefault": {
-    "sourceHash": "1b5b09c"
-  },
-  "fileExplorer.network.login.password": "Wachtwoord",
-  "@fileExplorer.network.login.password": {
-    "sourceHash": "e7cf3ef"
-  },
-  "fileExplorer.network.login.passwordPlaceholder": "Voer wachtwoord in",
-  "@fileExplorer.network.login.passwordPlaceholder": {
-    "sourceHash": "7014aff"
-  },
-  "fileExplorer.network.login.rememberInKeychain": "Onthoud in Sleutelhanger",
-  "@fileExplorer.network.login.rememberInKeychain": {
-    "sourceHash": "3fd7384"
-  },
   "fileExplorer.network.share.credentialsStoredLocally": "Inloggegevens lokaal opgeslagen (geen systeemsleutelhanger gevonden)",
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
@@ -497,18 +449,6 @@
   "fileExplorer.network.share.notFound": "Gedeelde map ''{shareName}'' niet gevonden op {hostName}",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
-  },
-  "fileExplorer.network.share.invalidCredentials": "Ongeldige gebruikersnaam of wachtwoord. Probeer opnieuw.",
-  "@fileExplorer.network.share.invalidCredentials": {
-    "sourceHash": "846d862"
-  },
-  "fileExplorer.network.share.authRequired": "Inloggen vereist. Voer je inloggegevens in.",
-  "@fileExplorer.network.share.authRequired": {
-    "sourceHash": "0bb6039"
-  },
-  "fileExplorer.network.share.connectionFailed": "Verbinding kwam niet tot stand: {reason}",
-  "@fileExplorer.network.share.connectionFailed": {
-    "sourceHash": "800132e"
   },
   "fileExplorer.network.share.connecting": "Verbinden met {hostName}...",
   "@fileExplorer.network.share.connecting": {

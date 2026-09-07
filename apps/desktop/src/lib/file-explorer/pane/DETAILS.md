@@ -854,12 +854,11 @@ injected accessors (the `type-to-jump-controller` idiom, not a state-owning `.sv
 `adoptListing` share `loadGeneration`, so they live in the loader too. `cleanup()` (called from FilePane's `onDestroy`)
 owns the full listing teardown (`cancelListing` + `listDirectoryEnd` + `evictPerPathIconsForDir` + the six `unlisten*`).
 
-**Every pane offers itself as a host for the SMB credential form (`smb-view-state.svelte.ts`).** `createSmbViewState`
-registers `handleSmbUpgradeLogin` into `../network/smb-login-hosts.ts` for the pane's whole life. `NetworkLoginForm`
-renders inside a pane, so anything app-global that hits `credentialsNeeded` — the OS-mount fallback notice's retry
-button — has no surface of its own; the registry hands it one, preferring a pane already showing that volume. The
-registering `$effect` deliberately reads nothing reactive (the volume is read live through `getVolumeId` at prompt
-time), so a navigation doesn't churn the registration.
+**No pane hosts a credential form.** Every credential ask in the app is the one modal sign-in sheet
+(`$lib/servers/sign-in-sheet-state.svelte.ts`), raised for SMB through `../network/smb-sign-in.ts`. A pane that could
+render one made "which pane hosts it right now" a question the app had to answer for anything app-global (the OS-mount
+fallback notice's retry button had no surface of its own), and Tab meant two different things inside a form that was
+also a pane. ❌ Don't reintroduce an in-pane form: `smb-view-state.svelte.ts` owns waiting states only.
 
 **The walk-up fallback re-resolves the target's OWNING volume (`listing-loader.ts::navigateToFallback`).** All four
 "what I'm showing is gone" recoveries funnel here — the `onListingError` deleted-path branch, `deleted-dir-poll.ts`, the

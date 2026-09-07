@@ -51,6 +51,7 @@ beforeEach(() => {
   ipc = installIpcMock()
   ipc.mock('list_saved_servers', () => [SAVED_SERVER])
   ipc.mock('get_volume_sign_in_state', () => ({ kind: 'password' }))
+  ipc.mock('has_server_secret', () => false)
 })
 afterEach(() => {
   closeSignInSheet({ kind: 'cancelled' })

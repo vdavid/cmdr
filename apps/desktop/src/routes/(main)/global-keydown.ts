@@ -82,8 +82,8 @@ function commandForCombo(combo: string): CommandId | undefined {
   if ((combo === '⌘←' || combo === '⌘→') && isTextInputFocused()) return undefined
   // Typing wins in text inputs: a bare-key (or shift-only) Tier 1 binding — Tab →
   // switch pane being the built-in case — must not fire mid-typing. Individual
-  // inputs used to shield themselves with stopPropagation (NetworkLoginForm still
-  // does); this guard protects every current and future text input centrally.
+  // inputs used to shield themselves with stopPropagation; this guard protects
+  // every current and future text input centrally.
   // ⌘ / ⌃ / ⌥ combos and F-keys stay live.
   if (isTextInputFocused() && isTypingKeyCombo(combo)) return undefined
   return lookupCommand(combo)

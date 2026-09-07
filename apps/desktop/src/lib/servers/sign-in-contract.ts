@@ -58,11 +58,17 @@ export type SignInSubmission =
   | { mode: 'add_smb'; address: string }
   | {
       mode: 'sign-in'
+      /**
+       * ❗ `null` means GUEST: the shape offered it and the user picked it. It
+       * cannot mean "nothing typed" — the sheet's submit stays disabled until
+       * one or the other is true.
+       */
       secret: SecretOffer | null
       /**
        * ❗ Present only when the SHAPE says the username is editable
-       * (`username_password`). SFTP and WebDAV refuse a changed username because
-       * the volume id IS the account, so the sheet sends none for them.
+       * (`username_password`) AND the user is signing in as themselves. SFTP and
+       * WebDAV refuse a changed username because the volume id IS the account,
+       * and a guest has no account to send.
        */
       username: string | null
     }
@@ -78,7 +84,12 @@ export type SignInAttemptOutcome =
   | { kind: 'connected'; volumeId: string }
   /**
    * The caller took it from here and the sheet closes with nothing more to say.
-   * SMB's add path, which lands in the places browser rather than on a volume.
+   *
+   * Two shapes of that: SMB's add path, which lands in the places browser rather
+   * than on a volume, and an SMB site whose round ended somewhere the sheet has
+   * no words for — a share list that loaded, a mount that went through, or a
+   * refusal about the SHARE rather than the credential, which the pane renders
+   * with its own retry.
    */
   | { kind: 'handed_off' }
   | { kind: 'needs_host_key'; prompt: HostKeyPrompt }
@@ -117,8 +128,23 @@ export type SignInSheetRequest =
       shape: SignInShape
       /** Opens on the key step instead of the fields, when a key is what's in the way. */
       hostKey?: HostKeyPrompt
-      /** The place, for the two switches and the remembered-secret reads. */
-      volumeId: string
+      /**
+       * Where the Remember box starts.
+       *
+       * ❗ The OPENER decides, ❌ never the sheet: an SFTP place is asked
+       * (`hasServerSecret`), and an SMB host is ❌ never asked at all, because
+       * every read of its Keychain entry can cost a system prompt
+       * (`file-explorer/network/CLAUDE.md`'s never-pre-check rule). ❗ For the
+       * protocols the backend can seed a secret for, an attended sign-in
+       * REFRESHES a remembered one and never seeds one, so passing `true` there
+       * would seed a secret the user already declined.
+       */
+      remembered: boolean
+      /**
+       * The refusal that opened the sheet, so the first round already says why
+       * a person is being asked. ❗ A typed kind, ❌ never a backend sentence.
+       */
+      refusal?: ConnectRefusalKind
     }
   /** Change a saved server: the add form prefilled, plus the two switches. */
   | { mode: 'edit'; server: SavedServer }

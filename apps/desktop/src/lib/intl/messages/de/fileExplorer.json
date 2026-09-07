@@ -273,10 +273,6 @@
   "@fileExplorer.searchResults.unavailableBody": {
     "sourceHash": "3e4cfa2"
   },
-  "fileExplorer.network.cancel": "Abbrechen",
-  "@fileExplorer.network.cancel": {
-    "sourceHash": "19766ed"
-  },
   "fileExplorer.network.connect": "Verbinden",
   "@fileExplorer.network.connect": {
     "sourceHash": "1a2303e"
@@ -296,10 +292,6 @@
   "fileExplorer.network.signIn": "Anmelden",
   "@fileExplorer.network.signIn": {
     "sourceHash": "bfd402b"
-  },
-  "fileExplorer.network.authFailed": "Anmeldung nicht möglich",
-  "@fileExplorer.network.authFailed": {
-    "sourceHash": "93821eb"
   },
   "fileExplorer.network.osMountFallback.message": "Die direkte Verbindung zu <shareName>{share}</shareName> kam nicht zustande. Du bist verbunden, aber nur über die eigene SMB-Netzwerkverbindung von macOS, die bei den meisten Verbindungen 4-mal langsamer ist als die direkte Verbindung von Cmdr, manchmal sogar 100-mal. Klicke unten auf die Taste, um es noch einmal zu versuchen.",
   "@fileExplorer.network.osMountFallback.message": {
@@ -449,46 +441,6 @@
   "@fileExplorer.network.browser.disconnectFailed": {
     "sourceHash": "ac9e8e0"
   },
-  "fileExplorer.network.login.title": "Bei „{target}“ anmelden",
-  "@fileExplorer.network.login.title": {
-    "sourceHash": "53a4feb"
-  },
-  "fileExplorer.network.login.guestNowAuth": "Du hast dich zuvor als Gast verbunden. Du kannst dich jetzt anmelden, um mehr Zugriff zu erhalten.",
-  "@fileExplorer.network.login.guestNowAuth": {
-    "sourceHash": "4a0ed4d"
-  },
-  "fileExplorer.network.login.connectionModeLegend": "Verbindungsmodus",
-  "@fileExplorer.network.login.connectionModeLegend": {
-    "sourceHash": "72c0943"
-  },
-  "fileExplorer.network.login.connectAsGuest": "Als Gast verbinden",
-  "@fileExplorer.network.login.connectAsGuest": {
-    "sourceHash": "d3cee9e"
-  },
-  "fileExplorer.network.login.signInWithCredentials": "Mit Anmeldedaten anmelden",
-  "@fileExplorer.network.login.signInWithCredentials": {
-    "sourceHash": "dda85fa"
-  },
-  "fileExplorer.network.login.username": "Benutzername",
-  "@fileExplorer.network.login.username": {
-    "sourceHash": "e3b89e9"
-  },
-  "fileExplorer.network.login.usernamePlaceholderDefault": "Beispiel: barry",
-  "@fileExplorer.network.login.usernamePlaceholderDefault": {
-    "sourceHash": "1b5b09c"
-  },
-  "fileExplorer.network.login.password": "Passwort",
-  "@fileExplorer.network.login.password": {
-    "sourceHash": "e7cf3ef"
-  },
-  "fileExplorer.network.login.passwordPlaceholder": "Passwort eingeben",
-  "@fileExplorer.network.login.passwordPlaceholder": {
-    "sourceHash": "7014aff"
-  },
-  "fileExplorer.network.login.rememberInKeychain": "Im Schlüsselbund merken",
-  "@fileExplorer.network.login.rememberInKeychain": {
-    "sourceHash": "3fd7384"
-  },
   "fileExplorer.network.share.credentialsStoredLocally": "Anmeldedaten lokal gespeichert (kein System-Schlüsselbund erkannt)",
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
@@ -496,18 +448,6 @@
   "fileExplorer.network.share.notFound": "Freigabe ''{shareName}'' auf {hostName} nicht gefunden",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
-  },
-  "fileExplorer.network.share.invalidCredentials": "Benutzername oder Passwort ungültig. Versuche es erneut.",
-  "@fileExplorer.network.share.invalidCredentials": {
-    "sourceHash": "846d862"
-  },
-  "fileExplorer.network.share.authRequired": "Anmeldung erforderlich. Gib deine Anmeldedaten ein.",
-  "@fileExplorer.network.share.authRequired": {
-    "sourceHash": "0bb6039"
-  },
-  "fileExplorer.network.share.connectionFailed": "Verbindung nicht möglich: {reason}",
-  "@fileExplorer.network.share.connectionFailed": {
-    "sourceHash": "800132e"
   },
   "fileExplorer.network.share.connecting": "Verbindung zu {hostName} wird hergestellt …",
   "@fileExplorer.network.share.connecting": {

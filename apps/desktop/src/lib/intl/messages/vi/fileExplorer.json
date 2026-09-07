@@ -273,10 +273,6 @@
   "@fileExplorer.searchResults.unavailableBody": {
     "sourceHash": "3e4cfa2"
   },
-  "fileExplorer.network.cancel": "Hủy",
-  "@fileExplorer.network.cancel": {
-    "sourceHash": "19766ed"
-  },
   "fileExplorer.network.connect": "Kết nối",
   "@fileExplorer.network.connect": {
     "sourceHash": "1a2303e"
@@ -296,10 +292,6 @@
   "fileExplorer.network.signIn": "Đăng nhập",
   "@fileExplorer.network.signIn": {
     "sourceHash": "bfd402b"
-  },
-  "fileExplorer.network.authFailed": "Xác thực không thành công",
-  "@fileExplorer.network.authFailed": {
-    "sourceHash": "93821eb"
   },
   "fileExplorer.network.osMountFallback.message": "Không thể kết nối trực tiếp tới <shareName>{share}</shareName>. Bạn vẫn đang kết nối, nhưng chỉ qua kết nối mạng SMB tích hợp sẵn của macOS, vốn chậm hơn 4 lần so với kết nối trực tiếp của Cmdr ở hầu hết các kết nối (đôi khi là 100 lần). Hãy bấm nút bên dưới để thử lại.",
   "@fileExplorer.network.osMountFallback.message": {
@@ -449,46 +441,6 @@
   "@fileExplorer.network.browser.disconnectFailed": {
     "sourceHash": "ac9e8e0"
   },
-  "fileExplorer.network.login.title": "Đăng nhập vào \"{target}\"",
-  "@fileExplorer.network.login.title": {
-    "sourceHash": "53a4feb"
-  },
-  "fileExplorer.network.login.guestNowAuth": "Bạn đã kết nối với tư cách khách trước đó. Giờ bạn có thể đăng nhập để có thêm quyền truy cập.",
-  "@fileExplorer.network.login.guestNowAuth": {
-    "sourceHash": "4a0ed4d"
-  },
-  "fileExplorer.network.login.connectionModeLegend": "Chế độ kết nối",
-  "@fileExplorer.network.login.connectionModeLegend": {
-    "sourceHash": "72c0943"
-  },
-  "fileExplorer.network.login.connectAsGuest": "Kết nối với tư cách khách",
-  "@fileExplorer.network.login.connectAsGuest": {
-    "sourceHash": "d3cee9e"
-  },
-  "fileExplorer.network.login.signInWithCredentials": "Đăng nhập bằng thông tin đăng nhập",
-  "@fileExplorer.network.login.signInWithCredentials": {
-    "sourceHash": "dda85fa"
-  },
-  "fileExplorer.network.login.username": "Tên người dùng",
-  "@fileExplorer.network.login.username": {
-    "sourceHash": "e3b89e9"
-  },
-  "fileExplorer.network.login.usernamePlaceholderDefault": "Ví dụ: barry",
-  "@fileExplorer.network.login.usernamePlaceholderDefault": {
-    "sourceHash": "1b5b09c"
-  },
-  "fileExplorer.network.login.password": "Mật khẩu",
-  "@fileExplorer.network.login.password": {
-    "sourceHash": "e7cf3ef"
-  },
-  "fileExplorer.network.login.passwordPlaceholder": "Nhập mật khẩu",
-  "@fileExplorer.network.login.passwordPlaceholder": {
-    "sourceHash": "7014aff"
-  },
-  "fileExplorer.network.login.rememberInKeychain": "Ghi nhớ trong chuỗi khóa",
-  "@fileExplorer.network.login.rememberInKeychain": {
-    "sourceHash": "3fd7384"
-  },
   "fileExplorer.network.share.credentialsStoredLocally": "Thông tin đăng nhập được lưu cục bộ (không phát hiện thấy kho khóa hệ thống)",
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
@@ -496,18 +448,6 @@
   "fileExplorer.network.share.notFound": "Không tìm thấy mục chia sẻ ''{shareName}'' trên {hostName}",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
-  },
-  "fileExplorer.network.share.invalidCredentials": "Tên người dùng hoặc mật khẩu không đúng. Hãy thử lại.",
-  "@fileExplorer.network.share.invalidCredentials": {
-    "sourceHash": "846d862"
-  },
-  "fileExplorer.network.share.authRequired": "Cần xác thực. Hãy nhập thông tin đăng nhập của bạn.",
-  "@fileExplorer.network.share.authRequired": {
-    "sourceHash": "0bb6039"
-  },
-  "fileExplorer.network.share.connectionFailed": "Kết nối không thành công: {reason}",
-  "@fileExplorer.network.share.connectionFailed": {
-    "sourceHash": "800132e"
   },
   "fileExplorer.network.share.connecting": "Đang kết nối tới {hostName}...",
   "@fileExplorer.network.share.connecting": {

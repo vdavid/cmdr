@@ -76,7 +76,7 @@ describe('SignInSheet a11y', () => {
   it('sign-in mode with a read-only account has no violations', async () => {
     await renderSheet({
       mode: 'sign-in',
-      volumeId: 'sftp-nas',
+      remembered: false,
       endpoint,
       shape: { kind: 'password' },
       attempt: refusing,
@@ -87,9 +87,23 @@ describe('SignInSheet a11y', () => {
   it('sign-in mode with an editable account and a guest choice has no violations', async () => {
     await renderSheet({
       mode: 'sign-in',
-      volumeId: 'smb-nas',
+      remembered: true,
       endpoint: { ...endpoint, protocol: 'smb' },
       shape: { kind: 'username_password', guestAllowed: true },
+      attempt: refusing,
+    })
+    await expectNoA11yViolations()
+  })
+
+  it('an SMB sign-in opened by a refusal has no violations', async () => {
+    // What the retired in-pane SMB form covered: an editable account, a guest
+    // choice, and the reason the sheet opened already on screen.
+    await renderSheet({
+      mode: 'sign-in',
+      remembered: true,
+      endpoint: { ...endpoint, protocol: 'smb', displayName: 'Naspolya/naspi', address: 'smb://Naspolya/naspi' },
+      shape: { kind: 'username_password', guestAllowed: false },
+      refusal: 'authentication_rejected',
       attempt: refusing,
     })
     await expectNoA11yViolations()
@@ -98,7 +112,7 @@ describe('SignInSheet a11y', () => {
   it('the changed-key step has no violations', async () => {
     await renderSheet({
       mode: 'sign-in',
-      volumeId: 'sftp-nas',
+      remembered: false,
       endpoint,
       shape: { kind: 'password' },
       hostKey: {

@@ -52,7 +52,6 @@
     import { createPlaceConnect } from './place-connect.svelte'
     import SmbReconnectingView from './SmbReconnectingView.svelte'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
-    import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
     import { createSelectionState } from './selection-state.svelte'
     import { createPaneMcpSync } from './pane-mcp-sync.svelte'
     import { initListingDiffSync } from './listing-diff-sync.svelte'
@@ -1700,7 +1699,6 @@
             {volumeId}
             {currentPath}
             onVolumeChange={breadcrumb.handleVolumeChange}
-            onSmbUpgradeLogin={smbView.handleSmbUpgradeLogin}
         />
         <span class="path">{#each clickableBreadcrumbSegments as seg, i (i)}{#if i > 0 && seg.text !== ''}<span class="path-sep">/</span>{/if}{#if seg.target !== null}<button
                     type="button"
@@ -1783,21 +1781,6 @@
             />
         {:else if paneViewKind === 'mtp-connect'}
             <MtpConnectionView {volumeId} {onVolumeChange} />
-        {:else if smbView.smbUpgradeLogin}
-            <NetworkLoginForm
-                host={{
-                    id: smbView.smbUpgradeLogin.volumeId,
-                    name: smbView.smbUpgradeLogin.displayName,
-                    port: smbView.smbUpgradeLogin.port,
-                }}
-                shareName={smbView.smbUpgradeLogin.share}
-                authMode="guest_allowed"
-                defaultConnectionMode="credentials"
-                errorMessage={smbView.smbUpgradeLogin.errorMessage}
-                isConnecting={smbView.smbUpgradeLogin.isConnecting}
-                onConnect={smbView.handleSmbUpgradeConnect}
-                onCancel={smbView.handleSmbUpgradeCancel}
-            />
         {:else if loading}
             <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
         {:else if friendlyError}

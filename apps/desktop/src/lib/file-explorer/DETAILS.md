@@ -194,7 +194,7 @@ For the full module map, decisions, and gotchas, see `git/CLAUDE.md`.
 
 - **ServersHub.svelte**: Top-level network view; lists discovered servers
 - **PlacesBrowser.svelte**: Lists shares on a selected server
-- **NetworkLoginForm.svelte**: Credential entry for authenticated SMB connections
+- **smb-sign-in.ts**: SMB's side of the one sign-in sheet (`$lib/servers`), shared by its three credential sites
 - **network-store.svelte.ts**: Reactive state for discovered servers, selected server/share, and auth mode
 
 ## Search-results virtual volume (`pane/SearchResultsView.svelte`)

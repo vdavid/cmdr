@@ -66,6 +66,21 @@ credentials, then connected — and a sheet that closed between them would lose 
 somewhere other than under the field it belongs to. `connect-flow.ts` decides WHEN a human is needed; the sheet decides
 how many times to ask.
 
+**The three SMB sites, and what each `attempt` runs** (`apps/desktop/src/lib/file-explorer/network/smb-sign-in.ts`
+builds all three requests, so the endpoint header, the remembered username, and the refusal vocabulary can't drift
+between them):
+
+- **A share listing** (`PlacesBrowser`) → `listSharesWithCredentials`. Server-level, so the header is `smb://<host>` and
+  guest is offered where the host allows one. Cancelling goes back to the host list.
+- **A share mount** (`pane/NetworkMountView.svelte`) → `mountNetworkShare`, then `saveSmbCredentials` ❗ only once it
+  went through. Cancelling goes back to the share list.
+- **A "Connect directly" upgrade** (`network/direct-connect.ts`) → `upgradeToSmbVolumeWithCredentials`, which stores the
+  credential backend-side when the box is checked.
+
+The last two pass `guestAllowed: false`: an unauthenticated attempt is what just came back refused, so offering it again
+would be inert. All three answer `handed_off` on success — none of them connects a VOLUME — and hand anything that isn't
+a credential refusal back to the pane, which has the words and the retry for it.
+
 ❗ **`open-sign-in.ts` is where the standing picks the command**: a REGISTERED volume is mended with
 `reconnectVolumeWithCredentials`, an absent one is dialed with `connectSavedPlace`, and a typed server goes through
 `connectServer`. SMB's add path has no target at all (its connect is a share MOUNT), so it answers `handed_off` and the
@@ -148,9 +163,6 @@ shape that reaches the field and isn't in it is a shape nobody decided.
 
 ## What later milestones fill in
 
-- SMB's three credential sites move onto the sheet, `NetworkLoginForm`'s in-pane rendering and `smb-login-hosts.ts` go,
-  and `RemoteConnectView` gains `gave_up` when `VolumeUnreachableBanner`'s `smbGaveUp` variant retires with it. Two
-  renderers for one state would be worse than one in the wrong file.
 - `waiting_for_device`, with the ADB work that produces it. ❗ A state added before its handler puts a button on screen
   that does nothing.
 - A backend command handing back the PENDING host-key prompt for a registered volume. Until then the changed-key banner

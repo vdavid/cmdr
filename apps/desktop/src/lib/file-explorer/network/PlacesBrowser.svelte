@@ -8,7 +8,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import CopyBox from '$lib/ui/CopyBox.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
-    import type { AuthMode, NetworkLoginSubmitPayload, PlacesAccount, ShareInfo, ShareListError } from '../types'
+    import type { AuthMode, PlacesAccount, ShareInfo, ShareListError } from '../types'
     import {
         getShareState,
         fetchShares,
@@ -29,7 +29,9 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
-    import NetworkLoginForm from './NetworkLoginForm.svelte'
+    import { openSmbSignInSheet, refusalForShareError } from './smb-sign-in'
+    import type { ConnectRefusalKind } from '$lib/servers/connect-refusals'
+    import type { SignInAttemptOutcome } from '$lib/servers/sign-in-contract'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { eventMatchesCommand } from '$lib/shortcuts'
     import { updateLeftPaneState, updateRightPaneState, type PaneState, type PaneFileEntry } from '$lib/tauri-commands'
@@ -79,10 +81,12 @@
         [...shares].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
     )
 
-    // Login form state
-    let showLoginForm = $state(false)
-    let loginError = $state<string | undefined>()
-    let isConnecting = $state(false)
+    /**
+     * True while the sign-in sheet is up for this host. The pane behind it keeps
+     * whatever it was showing; this only stops the cursor exports from offering
+     * rows nobody can reach past a modal.
+     */
+    let signingIn = $state(false)
 
     // Track authenticated credentials for mounting
     let authenticatedCredentials = $state<{ username: string; password: string } | null>(null)
@@ -228,10 +232,9 @@
                     loading = false
                     return
                 }
-                // No stored credentials, show login form
-                showLoginForm = true
                 error = cachedState.error
                 loading = false
+                await askForCredentials(refusalForShareError(cachedState.error))
                 return
             }
             // Non-auth error (host_unreachable, timeout, etc.): the user is
@@ -254,14 +257,41 @@
                     loading = false
                     return
                 }
-                // No stored credentials, show login form
-                showLoginForm = true
+                error = shareError
+                loading = false
+                await askForCredentials(refusalForShareError(shareError))
+                return
             }
             error = shareError
         } finally {
             loading = false
         }
     }
+
+    /**
+     * Hands the listing's credential question to the one sign-in sheet.
+     *
+     * ❗ Cancelling goes BACK to the host list. This sheet only ever opens
+     * because the share LISTING itself needs a sign-in, so "not now" means the
+     * user has no business on this host — leaving them on a list they can't read
+     * would be an empty room with no exit. (Share-activation auth is the mount's
+     * question, and `NetworkMountView` asks it.)
+     */
+    async function askForCredentials(refusal: ConnectRefusalKind) {
+        signingIn = true
+        try {
+            const result = await openSmbSignInSheet({
+                host,
+                guestAllowed: authMode === 'guest_allowed',
+                refusal,
+                attempt: (answer) => listWithCredentials(answer.username, answer.password, answer.remember),
+            })
+            if (result.kind === 'cancelled') onBack?.()
+        } finally {
+            signingIn = false
+        }
+    }
+
 
     /** Try to use stored credentials. Returns true if shares were loaded. */
     async function tryStoredCredentials(): Promise<boolean> {
@@ -273,9 +303,9 @@
             const creds = await getSmbCredentials(serverName, null)
             // Store credentials in memory for mounting later
             authenticatedCredentials = { username: creds.username, password: creds.password }
-            await connectWithCredentials(creds.username, creds.password, false)
-            // connectWithCredentials never throws. It sets loginError on failure.
-            // Only return true if shares were actually loaded.
+            await listWithCredentials(creds.username, creds.password, false)
+            // `listWithCredentials` never throws; it answers an outcome. Only
+            // report success if shares were actually loaded.
             return shares.length > 0
         } catch {
             // No stored credentials or retrieval failed
@@ -283,14 +313,19 @@
         }
     }
 
-    async function connectWithCredentials(
+    /**
+     * One listing round-trip with what the user offered.
+     *
+     * ❗ Answers `handed_off` on success: nothing here connects a VOLUME, so the
+     * sheet has nothing more to say and the share list it just loaded is the
+     * result. A refusal about the credential keeps the sheet open; anything else
+     * closes it onto the pane's own error state, which has the retry.
+     */
+    async function listWithCredentials(
         username: string | null,
         password: string | null,
         rememberInKeychain: boolean,
-    ) {
-        isConnecting = true
-        loginError = undefined
-
+    ): Promise<SignInAttemptOutcome> {
         try {
             // Clear cached state to force refetch
             clearShareState(host.id)
@@ -309,7 +344,6 @@
             shares = result.shares
             authMode = result.authMode
             error = null
-            showLoginForm = false
 
             // Update global share state so ServersHub shows correct info
             setShareState(host.id, result)
@@ -338,41 +372,20 @@
                 authMode === 'guest_allowed' ? 'guest_or_credentials' : 'credentials_only',
                 username,
             )
+            return { kind: 'handed_off' }
         } catch (e) {
             const shareError = e as ShareListError
             if (shareError.type === 'auth_failed') {
                 // Mark credentials as failed
                 setCredentialStatus(host.name, 'failed')
             }
-            loginError = loginErrorMessageFor(shareError)
-        } finally {
-            isConnecting = false
+            const refusal = refusalForShareError(shareError)
+            if (refusal === 'authentication_rejected' || refusal === 'needs_credentials') {
+                return { kind: 'refused', refusal }
+            }
+            error = shareError
+            return { kind: 'handed_off' }
         }
-    }
-
-    /** User-facing message for a failed sign-in attempt. */
-    function loginErrorMessageFor(shareError: ShareListError): string {
-        if (shareError.type === 'auth_failed') {
-            return tString('fileExplorer.network.share.invalidCredentials')
-        }
-        if (shareError.type === 'auth_required' || shareError.type === 'signing_required') {
-            return tString('fileExplorer.network.share.authRequired')
-        }
-        return shareError.message || tString('fileExplorer.network.share.connectionFailed', { reason: shareError.type })
-    }
-
-    function handleConnect({ username, password, rememberInKeychain }: NetworkLoginSubmitPayload) {
-        void connectWithCredentials(username, password, rememberInKeychain)
-    }
-
-    function handleCancel() {
-        // The PlacesBrowser login form only appears when the share LISTING itself needs
-        // auth (see `loadShares`); cancelling it means "don't sign in" → back to the
-        // host list. (Share-activation auth is handled by NetworkMountView's
-        // mount-failure form, not here.)
-        showLoginForm = false
-        loginError = undefined
-        onBack?.()
     }
 
     /** Move cursor to a specific index (used by MCP move_cursor tool). */
@@ -386,21 +399,21 @@
         return sortedShares.findIndex((s) => s.name.toLowerCase() === name.toLowerCase())
     }
 
-    /** The shares on offer; `0` while the login form is up or the host listed nothing. */
+    /** The shares on offer; `0` while the sign-in sheet is up or the host listed nothing. */
     // noinspection JSUnusedGlobalSymbols -- used dynamically by MCP move_cursor's range check
     export function getItemCount(): number {
-        return showLoginForm ? 0 : sortedShares.length
+        return signingIn ? 0 : sortedShares.length
     }
 
     /**
      * Returns the share under the cursor, or `null` when nothing valid is highlighted
-     * (login form, empty list, out-of-range index). Consumed by the
+     * (sign-in sheet up, empty list, out-of-range index). Consumed by the
      * "Copy path between panes" command so cursor-on-share mounts that share on the
      * target pane.
      */
     // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView
     export function getShareUnderCursor(): ShareInfo | null {
-        if (showLoginForm) return null
+        if (signingIn) return null
         if (cursorIndex < 0 || cursorIndex >= sortedShares.length) return null
         return sortedShares[cursorIndex]
     }
@@ -479,11 +492,8 @@
      * `stopPropagation` is how a branch says it claimed the key.
      */
     export function handleKeyDown(e: KeyboardEvent): void {
-        if (showLoginForm) {
-            // Login form handles its own keyboard events
-            if (e.key === 'Escape') handleCancel()
-            return
-        }
+        // The sign-in sheet is modal and owns the keyboard while it is up.
+        if (signingIn) return
 
         if (sortedShares.length === 0) return
 
@@ -535,28 +545,18 @@
 
     function handleRetry() {
         error = null
-        showLoginForm = false
         clearShareState(host.id)
         void loadShares()
     }
 </script>
 
 <div class="share-browser" class:is-focused={isFocused}>
-    {#if showLoginForm}
-        <NetworkLoginForm
-            {host}
-            {authMode}
-            errorMessage={loginError}
-            {isConnecting}
-            onConnect={handleConnect}
-            onCancel={handleCancel}
-        />
-    {:else if loading}
+    {#if loading}
         <div class="loading-state">
             <Spinner size="md" />
             {tString('fileExplorer.network.share.connecting', { hostName: host.name })}
         </div>
-    {:else if error && !showLoginForm}
+    {:else if error}
         <div class="error-state">
             <div class="error-icon"><Icon name="circle-alert" size={32} aria-hidden="true" /></div>
             <div class="error-title">
@@ -572,7 +572,7 @@
             {:else}
                 <div class="error-actions">
                     <Button variant="secondary" onclick={handleRetry}>{tString('fileExplorer.network.retry')}</Button>
-                    <Button variant="secondary" onclick={() => (showLoginForm = true)}
+                    <Button variant="secondary" onclick={() => void askForCredentials('needs_credentials')}
                         >{tString('fileExplorer.network.signIn')}</Button
                     >
                     <Button variant="secondary" onclick={onBack}>{tString('fileExplorer.network.back')}</Button>
@@ -585,7 +585,7 @@
             <div class="empty-title">{tString('fileExplorer.network.share.noSharesTitle')}</div>
             <div class="empty-message">{tString('fileExplorer.network.share.noSharesMessage')}</div>
             <div class="error-actions">
-                <Button variant="secondary" onclick={() => (showLoginForm = true)}
+                <Button variant="secondary" onclick={() => void askForCredentials('needs_credentials')}
                     >{tString('fileExplorer.network.signIn')}</Button
                 >
                 <Button variant="secondary" onclick={onBack}>{tString('fileExplorer.network.back')}</Button>

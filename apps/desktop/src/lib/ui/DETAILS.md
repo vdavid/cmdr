@@ -277,11 +277,11 @@ starve the trap.
 
 **Enforced by**: `cmdr/dialog-needs-focus-trap` (ESLint) — any element with a static `role="dialog"` /
 `role="alertdialog"` must carry `use:trapFocus` on the same element. Opt out with an
-`<!-- eslint-disable-next-line cmdr/dialog-needs-focus-trap -- <reason> -->` comment above the element; the one
-sanctioned case today is `NetworkLoginForm` (an in-pane, non-modal form where the rest of the app stays interactive).
-Components passing `role` to `ModalDialog` as a prop don't repeat the directive — the primitive owns it. Tier-2
-Playwright coverage lives in `test/e2e-playwright/focus-trap.spec.ts`; the action's unit tests sit next to it in
-`focus-trap.test.ts`.
+`<!-- eslint-disable-next-line cmdr/dialog-needs-focus-trap -- <reason> -->` comment above the element; nothing opts out
+today, and the case that used to (an in-pane, non-modal SMB credential form, where trapping Tab would have walled off
+the other pane) is gone: every credential ask is the modal sign-in sheet now. Components passing `role` to `ModalDialog`
+as a prop don't repeat the directive — the primitive owns it. Tier-2 Playwright coverage lives in
+`test/e2e-playwright/focus-trap.spec.ts`; the action's unit tests sit next to it in `focus-trap.test.ts`.
 
 ## Dialog registry
 

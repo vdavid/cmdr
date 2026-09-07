@@ -1,49 +1,33 @@
 /**
- * SMB reconnect + direct-upgrade view state for a file pane. Owns the reactive
- * derivations that pick the SMB alt-views (reconnecting spinner / gave-up banner
- * / sign-in prompt), the reconnect-manager subscription `$effect`, and the
- * handlers behind those views (cancel / disconnect) plus the inline
- * "Connect directly" credential-upgrade flow.
+ * SMB reconnect view state for a file pane. Owns the reactive derivations that
+ * pick the pane's alt-views (the reconnect cycle, the gave-up banner, the
+ * signed-out and changed-key banners), the reconnect-manager subscription
+ * `$effect`, and the handlers behind those views (cancel / disconnect).
  *
  * Lifted out of `FilePane.svelte` into a `*.svelte.ts` factory owning its
  * `$effect` (created synchronously during component init, the
  * `initListingDiffSync` pattern). The pane keeps the shared `currentVolumeInfo`
  * derived (tint + disk-image + eject read it too) and passes it in; the SMB
  * decision deriveds and handlers live here.
+ *
+ * ❗ The credential ask is ❌ NOT here: it is the one app-global sign-in sheet,
+ * raised by `network/direct-connect.ts` and `servers/open-sign-in.ts`. A pane
+ * that hosted a form was what made "which pane can render it right now" a
+ * question at all.
  */
 
 import { wordEjectRefusal } from '../navigation/eject-error-messages'
-import {
-  disconnectPlace,
-  disconnectSmbVolume,
-  upgradeToSmbVolumeWithCredentials,
-  type UpgradeResult,
-} from '$lib/tauri-commands'
+import { disconnectPlace, disconnectSmbVolume } from '$lib/tauri-commands'
 import { openSignInForPlace } from '$lib/servers/open-sign-in'
-import { directConnectionUnavailableMessage } from '../network/upgrade-messages'
-import { registerSmbLoginHost } from '../network/smb-login-hosts'
 import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
 import { resolveValidPath } from '../navigation/path-resolution'
 import { hasReconnectLoop } from '../navigation/connection-state'
-import { requestVolumeRefresh } from '$lib/stores/volume-store.svelte'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
-import type { NetworkLoginSubmitPayload, VolumeInfo } from '../types'
+import type { VolumeInfo } from '../types'
 
 const log = getAppLogger('fileExplorer')
-
-/** Props for the inline SMB "Connect directly" login form (null when hidden). */
-export interface SmbUpgradeLoginState {
-  volumeId: string
-  server: string
-  share: string
-  port: number
-  displayName: string
-  usernameHint: string | null
-  errorMessage?: string
-  isConnecting: boolean
-}
 
 export interface SmbViewStateDeps {
   getVolumeId: () => string
@@ -58,8 +42,6 @@ export interface SmbViewStateDeps {
 }
 
 export interface SmbViewState {
-  /** Props for the inline "Connect directly" login form, or null when hidden. */
-  readonly smbUpgradeLogin: SmbUpgradeLoginState | null
   /** Reconnect cycle state for this pane's volume, or null when no cycle is running. */
   readonly reconnectState: ReturnType<typeof smbReconnectManager.getState>
   /** Show the reconnecting spinner (cycle waiting / attempting). */
@@ -85,17 +67,9 @@ export interface SmbViewState {
   handleSmbReconnectCancel: () => void
   /** Cancel the cycle, OS-unmount the share, and navigate away immediately. */
   handleSmbReconnectDisconnect: () => void
-  /** Open the inline login form for a "Connect directly" upgrade that needs credentials. */
-  handleSmbUpgradeLogin: (info: UpgradeResult & { status: 'credentialsNeeded' }, vid: string) => void
-  /** Submit the inline login form: upgrade the OS-mount share to a direct connection. */
-  handleSmbUpgradeConnect: (submission: NetworkLoginSubmitPayload) => Promise<void>
-  /** Dismiss the inline login form. */
-  handleSmbUpgradeCancel: () => void
 }
 
 export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
-  let smbUpgradeLogin = $state<SmbUpgradeLoginState | null>(null)
-
   /**
    * True when the per-volume reconnect manager owns this pane's volume, so the
    * pane subscribes. ❗ Not a `!= null` test on the state any more: a saved server
@@ -144,13 +118,6 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
     }
     return unsubscribe
   })
-
-  // Offer this pane as a place to render the credential form. Anything outside a
-  // pane that hits `credentialsNeeded` — the OS-mount fallback notice's retry
-  // button — has nowhere else to raise it. Deliberately reads nothing reactive, so
-  // the registration lasts the pane's whole life; `getVolumeId` is read live at
-  // prompt time.
-  $effect(() => registerSmbLoginHost({ getVolumeId: deps.getVolumeId, open: handleSmbUpgradeLogin }))
 
   /**
    * The signed-out banner's button. ❗ `registered: true`: a volume is filed
@@ -207,63 +174,7 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
     })
   }
 
-  function handleSmbUpgradeLogin(info: UpgradeResult & { status: 'credentialsNeeded' }, vid: string): void {
-    smbUpgradeLogin = {
-      volumeId: vid,
-      server: info.server,
-      share: info.share,
-      port: info.port,
-      displayName: info.displayName,
-      usernameHint: info.usernameHint,
-      errorMessage: info.message ?? undefined,
-      isConnecting: false,
-    }
-  }
-
-  async function handleSmbUpgradeConnect({
-    username,
-    password,
-    rememberInKeychain,
-  }: NetworkLoginSubmitPayload): Promise<void> {
-    if (!smbUpgradeLogin) return
-    smbUpgradeLogin = { ...smbUpgradeLogin, isConnecting: true, errorMessage: undefined }
-
-    try {
-      const result = await upgradeToSmbVolumeWithCredentials(
-        smbUpgradeLogin.volumeId,
-        username,
-        password,
-        rememberInKeychain,
-      )
-      if (result.status === 'success') {
-        smbUpgradeLogin = null
-        requestVolumeRefresh()
-        addToast(tString('fileExplorer.pane.connectedDirectlyToast'), { level: 'success' })
-      } else if (result.status === 'credentialsNeeded') {
-        smbUpgradeLogin = {
-          ...smbUpgradeLogin,
-          isConnecting: false,
-          errorMessage: result.message ?? tString('fileExplorer.network.authFailed'),
-        }
-      } else {
-        smbUpgradeLogin = null
-        addToast(directConnectionUnavailableMessage(result.reason, result.displayName), { level: 'error' })
-      }
-    } catch (e) {
-      smbUpgradeLogin = null
-      log.error('Direct SMB connection attempt broke down', { error: String(e) })
-      addToast(tString('fileExplorer.pane.directConnectionUnavailableToast'), { level: 'error' })
-    }
-  }
-
-  function handleSmbUpgradeCancel(): void {
-    smbUpgradeLogin = null
-  }
-
   return {
-    get smbUpgradeLogin() {
-      return smbUpgradeLogin
-    },
     get reconnectState() {
       return reconnectState
     },
@@ -283,8 +194,5 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
     handleDisconnectPlace,
     handleSmbReconnectCancel,
     handleSmbReconnectDisconnect,
-    handleSmbUpgradeLogin,
-    handleSmbUpgradeConnect,
-    handleSmbUpgradeCancel,
   }
 }

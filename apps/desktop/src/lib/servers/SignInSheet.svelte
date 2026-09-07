@@ -72,10 +72,24 @@
     let step = $state<Step>(request.mode === 'sign-in' && request.hostKey ? 'host_key' : 'form')
     let hostKeyPrompt = $state<HostKeyPrompt | null>(request.mode === 'sign-in' ? (request.hostKey ?? null) : null)
     let busy = $state(false)
-    let refusal = $state<ConnectRefusalKind | null>(null)
+    // Seeded from the request: the refusal that opened the sheet is why the person
+    // is being asked, and the first round should already say so.
+    let refusal = $state<ConnectRefusalKind | null>(request.mode === 'sign-in' ? (request.refusal ?? null) : null)
     let form = $state<ServerForm>(emptyServerForm())
-    /** Sign-in mode's own fields; the add form holds its own. */
-    let credentials = $state({ username: '', secret: '', remember: false, guest: false })
+    /**
+     * Sign-in mode's own fields; the add form holds its own.
+     *
+     * ❗ `guest` starts ON where the shape allows it: a share that lets anyone in
+     * usually means to, and the account fields are one click away. ❌ Not a mode
+     * rule — `guestAllowed` is the SHAPE's word, and a site that shouldn't offer
+     * guest says so by passing `false` rather than by preselecting around it.
+     */
+    let credentials = $state({
+        username: '',
+        secret: '',
+        remember: false,
+        guest: request.mode === 'sign-in' && request.shape.kind === 'username_password' && request.shape.guestAllowed,
+    })
     /** Edit mode's warning, when the backend says unattended reconnect can't work as things stand. */
     let storedSecretWarning = $state<string | null>(null)
     /** What Remember said when the sheet opened, so a flip can be written once, deliberately. */
@@ -148,11 +162,10 @@
         }
         if (request.mode === 'sign-in') {
             credentials.username = request.endpoint.username ?? ''
-            // ❗ Seeded from what is STORED, ❌ never defaulted on: an attended
-            // sign-in refreshes a remembered secret and never seeds one, so a
-            // default-on box would seed one the user already declined.
-            credentials.remember = await hasServerSecret(request.volumeId)
-            rememberWhenOpened = credentials.remember
+            // ❗ The OPENER decided this, ❌ not the sheet: what "remembered"
+            // costs to find out is the protocol's business (`sign-in-contract.ts`).
+            credentials.remember = request.remembered
+            rememberWhenOpened = request.remembered
             await tick()
             secretInput?.focus()
             return
@@ -231,10 +244,12 @@
             return {
                 mode: 'sign-in',
                 secret: credentials.guest ? null : { secret: credentials.secret, remember: credentials.remember },
-                // ❗ Only where the VARIANT says the username is editable: SFTP's
-                // and WebDAV's reconnect refuse a changed one, because the volume
-                // id IS the account.
-                username: shape?.kind === 'username_password' ? credentials.username.trim() : null,
+                // ❗ Only where the VARIANT says the username is editable, and
+                // only for a real account: SFTP's and WebDAV's reconnect refuse a
+                // changed username because the volume id IS the account, and a
+                // guest has none to send.
+                username:
+                    shape?.kind === 'username_password' && !credentials.guest ? credentials.username.trim() : null,
             }
         }
         if (form.protocol === 'smb') return { mode: 'add_smb', address: form.address.trim() }

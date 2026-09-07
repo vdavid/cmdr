@@ -11,7 +11,6 @@
         resolvePathVolume,
         showVolumeRowContextMenu,
         type MediaIndexVolumeState,
-        type UpgradeResult,
     } from '$lib/tauri-commands'
     import { getEnrichingVolumes } from '$lib/indexing/media-enrich-state.svelte'
     import { SvelteMap } from 'svelte/reactivity'
@@ -92,11 +91,9 @@
         volumeId: string
         currentPath: string
         onVolumeChange?: (change: VolumeChangePayload) => void
-        /** Called when the upgrade flow needs the user to enter SMB credentials. */
-        onSmbUpgradeLogin?: (info: UpgradeResult & { status: 'credentialsNeeded' }, volumeId: string) => void
     }
 
-    const { volumeId, currentPath, onVolumeChange, onSmbUpgradeLogin }: Props = $props()
+    const { volumeId, currentPath, onVolumeChange }: Props = $props()
 
     // Volumes come from the shared store (pushed by backend)
     const volumes = $derived(getVolumes())
@@ -563,13 +560,9 @@
         if (!vid) return
 
         // The flow itself lives in `../network/direct-connect`, shared with the retry
-        // button on the OS-mount fallback notice. Credentials land in THIS pane's login
-        // form: the dropdown can list any volume, and the form belongs where the click was.
-        await connectDirectly(vid, (info, volumeId) => {
-            if (!onSmbUpgradeLogin) return false
-            onSmbUpgradeLogin(info, volumeId)
-            return true
-        })
+        // button on the OS-mount fallback notice. It raises the one sign-in sheet
+        // itself when a credential is what's missing.
+        await connectDirectly(vid)
     }
 
     // Per-row right-click context menu. Favorites get Rename / Remove; ejectable

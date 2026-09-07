@@ -90,7 +90,7 @@ describe('SignInSheet: a refusal', () => {
       submissions.push(submission)
       return Promise.resolve({ kind: 'refused', refusal: 'authentication_rejected' })
     }
-    await renderSheet({ mode: 'sign-in', volumeId: 'sftp-nas', endpoint, shape: { kind: 'password' }, attempt })
+    await renderSheet({ mode: 'sign-in', remembered: false, endpoint, shape: { kind: 'password' }, attempt })
 
     const secret = document.body.querySelector<HTMLInputElement>('#sign-in-secret')
     expect(secret).not.toBeNull()
@@ -118,7 +118,7 @@ describe('SignInSheet: a refusal', () => {
       submissions.push(submission)
       return Promise.resolve({ kind: 'refused', refusal: 'authentication_rejected' })
     }
-    await renderSheet({ mode: 'sign-in', volumeId: 'sftp-nas', endpoint, shape: { kind: 'password' }, attempt })
+    await renderSheet({ mode: 'sign-in', remembered: false, endpoint, shape: { kind: 'password' }, attempt })
 
     typeInto(document.body.querySelector<HTMLInputElement>('#sign-in-secret') as HTMLInputElement, 'hunter2')
     await tick()
@@ -152,7 +152,7 @@ describe('SignInSheet: the host-key step', () => {
 
     await renderSheet({
       mode: 'sign-in',
-      volumeId: 'sftp-nas',
+      remembered: false,
       endpoint,
       shape: { kind: 'password' },
       hostKey: {
@@ -183,7 +183,7 @@ describe('SignInSheet: the keyboard', () => {
     const attempt = (): Promise<SignInAttemptOutcome> => Promise.resolve({ kind: 'cancelled' })
     await renderSheet({
       mode: 'sign-in',
-      volumeId: 'smb-nas',
+      remembered: false,
       endpoint,
       shape: { kind: 'username_password', guestAllowed: false },
       attempt,

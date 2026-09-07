@@ -271,10 +271,6 @@
   "@fileExplorer.searchResults.unavailableBody": {
     "sourceHash": "3e4cfa2"
   },
-  "fileExplorer.network.cancel": "取消",
-  "@fileExplorer.network.cancel": {
-    "sourceHash": "19766ed"
-  },
   "fileExplorer.network.connect": "连接",
   "@fileExplorer.network.connect": {
     "sourceHash": "1a2303e"
@@ -294,10 +290,6 @@
   "fileExplorer.network.signIn": "登录",
   "@fileExplorer.network.signIn": {
     "sourceHash": "bfd402b"
-  },
-  "fileExplorer.network.authFailed": "无法通过身份验证",
-  "@fileExplorer.network.authFailed": {
-    "sourceHash": "93821eb"
   },
   "fileExplorer.network.osMountFallback.message": "无法直接连接到 <shareName>{share}</shareName>。你已经连上了，但用的是 macOS 内建的 SMB 网络连接，大多数情况下它比 Cmdr 的直接连接慢 4 倍（有时能慢 100 倍）。点按下方的按钮再试一次。",
   "@fileExplorer.network.osMountFallback.message": {
@@ -447,46 +439,6 @@
   "@fileExplorer.network.browser.disconnectFailed": {
     "sourceHash": "ac9e8e0"
   },
-  "fileExplorer.network.login.title": "登录“{target}”",
-  "@fileExplorer.network.login.title": {
-    "sourceHash": "53a4feb"
-  },
-  "fileExplorer.network.login.guestNowAuth": "你之前以来宾身份连接。现在可以登录以获得更多访问权限。",
-  "@fileExplorer.network.login.guestNowAuth": {
-    "sourceHash": "4a0ed4d"
-  },
-  "fileExplorer.network.login.connectionModeLegend": "连接方式",
-  "@fileExplorer.network.login.connectionModeLegend": {
-    "sourceHash": "72c0943"
-  },
-  "fileExplorer.network.login.connectAsGuest": "以来宾身份连接",
-  "@fileExplorer.network.login.connectAsGuest": {
-    "sourceHash": "d3cee9e"
-  },
-  "fileExplorer.network.login.signInWithCredentials": "使用登录信息登录",
-  "@fileExplorer.network.login.signInWithCredentials": {
-    "sourceHash": "dda85fa"
-  },
-  "fileExplorer.network.login.username": "用户名",
-  "@fileExplorer.network.login.username": {
-    "sourceHash": "e3b89e9"
-  },
-  "fileExplorer.network.login.usernamePlaceholderDefault": "示例：barry",
-  "@fileExplorer.network.login.usernamePlaceholderDefault": {
-    "sourceHash": "1b5b09c"
-  },
-  "fileExplorer.network.login.password": "密码",
-  "@fileExplorer.network.login.password": {
-    "sourceHash": "e7cf3ef"
-  },
-  "fileExplorer.network.login.passwordPlaceholder": "输入密码",
-  "@fileExplorer.network.login.passwordPlaceholder": {
-    "sourceHash": "7014aff"
-  },
-  "fileExplorer.network.login.rememberInKeychain": "记住到钥匙串",
-  "@fileExplorer.network.login.rememberInKeychain": {
-    "sourceHash": "3fd7384"
-  },
   "fileExplorer.network.share.credentialsStoredLocally": "登录信息已保存在本地（未检测到系统钥匙串）",
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
@@ -494,18 +446,6 @@
   "fileExplorer.network.share.notFound": "在 {hostName} 上找不到共享“{shareName}”",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
-  },
-  "fileExplorer.network.share.invalidCredentials": "用户名或密码不正确。请重试。",
-  "@fileExplorer.network.share.invalidCredentials": {
-    "sourceHash": "846d862"
-  },
-  "fileExplorer.network.share.authRequired": "需要身份验证。请输入你的登录信息。",
-  "@fileExplorer.network.share.authRequired": {
-    "sourceHash": "0bb6039"
-  },
-  "fileExplorer.network.share.connectionFailed": "无法连接：{reason}",
-  "@fileExplorer.network.share.connectionFailed": {
-    "sourceHash": "800132e"
   },
   "fileExplorer.network.share.connecting": "正在连接到 {hostName}…",
   "@fileExplorer.network.share.connecting": {

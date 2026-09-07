@@ -271,10 +271,6 @@
   "@fileExplorer.searchResults.unavailableBody": {
     "sourceHash": "3e4cfa2"
   },
-  "fileExplorer.network.cancel": "取消",
-  "@fileExplorer.network.cancel": {
-    "sourceHash": "19766ed"
-  },
   "fileExplorer.network.connect": "連線",
   "@fileExplorer.network.connect": {
     "sourceHash": "1a2303e"
@@ -294,10 +290,6 @@
   "fileExplorer.network.signIn": "登入",
   "@fileExplorer.network.signIn": {
     "sourceHash": "bfd402b"
-  },
-  "fileExplorer.network.authFailed": "無法通過驗證",
-  "@fileExplorer.network.authFailed": {
-    "sourceHash": "93821eb"
   },
   "fileExplorer.network.osMountFallback.message": "無法直接連線到 <shareName>{share}</shareName>。你已經連上了，但用的是 macOS 內建的 SMB 網路連線，大多數情況下比 Cmdr 的直接連線慢 4 倍（有時候慢 100 倍）。請按下方的按鈕再試一次。",
   "@fileExplorer.network.osMountFallback.message": {
@@ -447,46 +439,6 @@
   "@fileExplorer.network.browser.disconnectFailed": {
     "sourceHash": "ac9e8e0"
   },
-  "fileExplorer.network.login.title": "登入「{target}」",
-  "@fileExplorer.network.login.title": {
-    "sourceHash": "53a4feb"
-  },
-  "fileExplorer.network.login.guestNowAuth": "你先前是以訪客身分連線。現在可以登入取得更多存取權。",
-  "@fileExplorer.network.login.guestNowAuth": {
-    "sourceHash": "4a0ed4d"
-  },
-  "fileExplorer.network.login.connectionModeLegend": "連線方式",
-  "@fileExplorer.network.login.connectionModeLegend": {
-    "sourceHash": "72c0943"
-  },
-  "fileExplorer.network.login.connectAsGuest": "以訪客身分連線",
-  "@fileExplorer.network.login.connectAsGuest": {
-    "sourceHash": "d3cee9e"
-  },
-  "fileExplorer.network.login.signInWithCredentials": "用登入資訊登入",
-  "@fileExplorer.network.login.signInWithCredentials": {
-    "sourceHash": "dda85fa"
-  },
-  "fileExplorer.network.login.username": "使用者名稱",
-  "@fileExplorer.network.login.username": {
-    "sourceHash": "e3b89e9"
-  },
-  "fileExplorer.network.login.usernamePlaceholderDefault": "範例：barry",
-  "@fileExplorer.network.login.usernamePlaceholderDefault": {
-    "sourceHash": "1b5b09c"
-  },
-  "fileExplorer.network.login.password": "密碼",
-  "@fileExplorer.network.login.password": {
-    "sourceHash": "e7cf3ef"
-  },
-  "fileExplorer.network.login.passwordPlaceholder": "輸入密碼",
-  "@fileExplorer.network.login.passwordPlaceholder": {
-    "sourceHash": "7014aff"
-  },
-  "fileExplorer.network.login.rememberInKeychain": "記住在鑰匙圈中",
-  "@fileExplorer.network.login.rememberInKeychain": {
-    "sourceHash": "3fd7384"
-  },
   "fileExplorer.network.share.credentialsStoredLocally": "登入資訊已儲存在本機（沒有偵測到系統鑰匙圈）",
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
@@ -494,18 +446,6 @@
   "fileExplorer.network.share.notFound": "在 {hostName} 上找不到共享資料夾「{shareName}」",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
-  },
-  "fileExplorer.network.share.invalidCredentials": "使用者名稱或密碼不正確。請再試一次。",
-  "@fileExplorer.network.share.invalidCredentials": {
-    "sourceHash": "846d862"
-  },
-  "fileExplorer.network.share.authRequired": "需要通過驗證。請輸入你的登入資訊。",
-  "@fileExplorer.network.share.authRequired": {
-    "sourceHash": "0bb6039"
-  },
-  "fileExplorer.network.share.connectionFailed": "無法連線：{reason}",
-  "@fileExplorer.network.share.connectionFailed": {
-    "sourceHash": "800132e"
   },
   "fileExplorer.network.share.connecting": "正在連線到 {hostName}…",
   "@fileExplorer.network.share.connecting": {

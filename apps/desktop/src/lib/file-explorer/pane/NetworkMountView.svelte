@@ -1,7 +1,7 @@
 <script lang="ts">
     import { tick } from 'svelte'
     import { openAddServerSheet } from '$lib/servers/open-sign-in'
-    import type { MountError, NetworkHost, NetworkLoginSubmitPayload, PlacesAccount, ShareInfo } from '../types'
+    import type { MountError, NetworkHost, PlacesAccount, ShareInfo } from '../types'
     import {
         mountNetworkShare,
         resolvePathVolume,
@@ -15,7 +15,8 @@
     import ServersHub from '../network/ServersHub.svelte'
     import type { HubRow } from '../network/servers-hub-rows'
     import PlacesBrowser from '../network/PlacesBrowser.svelte'
-    import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
+    import { isMountAuthError, openSmbSignInSheet, refusalForMountError } from '../network/smb-sign-in'
+    import type { SignInAttemptOutcome } from '$lib/servers/sign-in-contract'
     import Button from '$lib/ui/Button.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -83,13 +84,17 @@
         credentials: { username: string; password: string } | null
     } | null>(null)
 
-    // Auth-class mount failures render the login form instead of the dead-end error
-    // pane: the user can fix the credentials right there, and the retry mounts with
-    // what they entered. Non-auth failures (unreachable, timeout, ...) keep the error
-    // pane with "Try again".
-    const showMountLoginForm = $derived(
-        (mountError?.type === 'auth_failed' || mountError?.type === 'auth_required') && currentNetworkHost !== null,
-    )
+    /**
+     * True while the sign-in sheet is up over this pane. The error pane behind it
+     * still holds the mount that didn't go through, which is what the MCP mirror
+     * reads and what cancelling lands back on.
+     */
+    let signingIn = $state(false)
+
+    // ❗ Auth-class mount failures ASK (the one sign-in sheet) instead of
+    // dead-ending in the error pane: "Try again" there replayed the identical
+    // credentials, which is the "Naspolya dead end". `isMountAuthError` and the
+    // refusal vocabulary live in `../network/smb-sign-in`.
 
     // Component refs for keyboard navigation
     let serversHubRef: ServersHubAPI | undefined = $state()
@@ -210,8 +215,16 @@
         return (isLoopback ? networkHost.hostname : ip) ?? networkHost.hostname ?? networkHost.name
     }
 
-    async function handleShareSelect(share: ShareInfo, credentials: { username: string; password: string } | null) {
-        if (!currentNetworkHost) return
+    /**
+     * Mounts `share` and takes the pane to it. Answers the failure rather than
+     * throwing, so a caller inside the sign-in sheet can offer a retry and a
+     * caller outside it can render the error pane.
+     */
+    async function mountShare(
+        share: ShareInfo,
+        credentials: { username: string; password: string } | null,
+    ): Promise<MountError | null> {
+        if (!currentNetworkHost) return null
 
         // Store for retry
         lastMountAttempt = { share, credentials }
@@ -257,6 +270,7 @@
                 // This can happen if the volume list hasn't refreshed yet
                 onVolumeChange?.({ volumeId: mountPath, volumePath: mountPath, targetPath: mountPath })
             }
+            return null
         } catch (e) {
             mountError = e as MountError
             // WARN, not ERROR: the pane below renders this failure with a retry, so
@@ -268,9 +282,72 @@
                 host: currentNetworkHost?.name ?? 'unknown host',
                 error: mountError,
             })
+            return mountError
         } finally {
             isMounting = false
         }
+    }
+
+    /** Mounts a share the user picked, and asks for a credential if that is what's missing. */
+    async function handleShareSelect(share: ShareInfo, credentials: { username: string; password: string } | null) {
+        const error = await mountShare(share, credentials)
+        if (error && isMountAuthError(error)) await askForMountCredentials(share, error)
+    }
+
+    /**
+     * Hands a mount's credential question to the one sign-in sheet, retrying the
+     * mount inside it for as long as the user keeps answering.
+     *
+     * ❗ Cancelling goes back to the SHARE LIST (`handleMountErrorBack`), which is
+     * where the user was: they picked a share, and the one they wanted is still on
+     * screen behind the sheet.
+     */
+    async function askForMountCredentials(share: ShareInfo, firstError: MountError) {
+        const host = currentNetworkHost
+        if (!host) return
+        signingIn = true
+        try {
+            const result = await openSmbSignInSheet({
+                host,
+                shareName: share.name,
+                // ❗ No guest option: an unauthenticated mount is exactly what just
+                // came back refused, so offering it again would be inert.
+                guestAllowed: false,
+                initialUsername: lastMountAttempt?.credentials?.username,
+                refusal: refusalForMountError(firstError),
+                attempt: (answer) => remountWith(share, host.name, answer),
+            })
+            if (result.kind === 'cancelled') handleMountErrorBack()
+        } finally {
+            signingIn = false
+        }
+    }
+
+    /**
+     * One mount round-trip with what the user offered, remembering the credential
+     * ❗ only once the mount has actually gone through.
+     */
+    async function remountWith(
+        share: ShareInfo,
+        hostName: string,
+        answer: { username: string | null; password: string | null; remember: boolean },
+    ): Promise<SignInAttemptOutcome> {
+        const credentials = answer.username === null ? null : { username: answer.username, password: answer.password ?? '' }
+        const error = await mountShare(share, credentials)
+        if (!error) {
+            if (credentials && answer.remember && answer.password !== null) {
+                try {
+                    await saveSmbCredentials(hostName, null, credentials.username, answer.password)
+                } catch (e) {
+                    log.warn('Mount succeeded but saving credentials failed: {error}', { error: e })
+                }
+            }
+            return { kind: 'handed_off' }
+        }
+        // ❗ Only a credential refusal keeps the sheet open. Anything else is about
+        // the SHARE, and the pane's error state is what has the words and the retry.
+        if (!isMountAuthError(error)) return { kind: 'handed_off' }
+        return { kind: 'refused', refusal: refusalForMountError(error) }
     }
 
     function handleMountRetry() {
@@ -279,42 +356,9 @@
         }
     }
 
-    /** Sync form-submit wrapper around the async retry (the form's `onConnect` returns void). */
-    function handleMountLoginConnect({ username, password, rememberInKeychain }: NetworkLoginSubmitPayload) {
-        void retryMountWithCredentials(username, password, rememberInKeychain)
-    }
-
-    /** Retries the failed mount with credentials from the login form; saves them on success. */
-    async function retryMountWithCredentials(
-        username: string | null,
-        password: string | null,
-        rememberInKeychain: boolean,
-    ) {
-        if (!lastMountAttempt || !currentNetworkHost) return
-        const hostName = currentNetworkHost.name
-        const credentials = username === null ? null : { username, password: password ?? '' }
-
-        await handleShareSelect(lastMountAttempt.share, credentials)
-
-        // handleShareSelect cleared mountError on success; persist the working credentials.
-        if (mountError === null && credentials && rememberInKeychain && password !== null) {
-            try {
-                await saveSmbCredentials(hostName, null, credentials.username, password)
-            } catch (e) {
-                log.warn('Mount succeeded but saving credentials failed: {error}', { error: e })
-            }
-        }
-    }
-
     export function handleKeyDown(e: KeyboardEvent) {
-        if (showMountLoginForm) {
-            // The form's own inputs handle their keys; Escape returns to the share list.
-            if (e.key === 'Escape') {
-                e.preventDefault()
-                handleMountErrorBack()
-            }
-            return
-        }
+        // The sign-in sheet is modal and owns the keyboard while it is up.
+        if (signingIn) return
         if (mountError) {
             // The error pane replaced the share list, so neither browser is mounted and
             // the delegation below would land on nothing: without this branch the whole
@@ -416,16 +460,6 @@
             })}</span
         >
     </div>
-{:else if showMountLoginForm && currentNetworkHost}
-    <NetworkLoginForm
-        host={currentNetworkHost}
-        shareName={lastMountAttempt?.share.name}
-        authMode="creds_required"
-        initialUsername={lastMountAttempt?.credentials?.username}
-        errorMessage={mountError?.message}
-        onConnect={handleMountLoginConnect}
-        onCancel={handleMountErrorBack}
-    />
 {:else if mountError}
     <div class="mount-error-state">
         <div class="error-icon">&#x274C;</div>

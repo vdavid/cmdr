@@ -42,7 +42,7 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
   'sign-in': {
     request: {
       mode: 'sign-in',
-      volumeId: 'sftp-gallery-fixture',
+      remembered: false,
       endpoint,
       shape: { kind: 'password' },
       attempt: answering({ kind: 'refused', refusal: 'authentication_rejected' }),
@@ -51,7 +51,7 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
   'sign-in-guest': {
     request: {
       mode: 'sign-in',
-      volumeId: 'smb-gallery-fixture',
+      remembered: true,
       endpoint: { ...endpoint, protocol: 'smb', displayName: 'media', address: 'naspolya/media' },
       shape: { kind: 'username_password', guestAllowed: true },
       attempt: answering({ kind: 'refused', refusal: 'authentication_rejected' }),
@@ -60,7 +60,7 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
   'host-key-first-contact': {
     request: {
       mode: 'sign-in',
-      volumeId: 'sftp-gallery-fixture',
+      remembered: false,
       endpoint,
       shape: { kind: 'password' },
       hostKey: {
@@ -76,7 +76,7 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
   'host-key-changed': {
     request: {
       mode: 'sign-in',
-      volumeId: 'sftp-gallery-fixture',
+      remembered: false,
       endpoint,
       shape: { kind: 'password' },
       hostKey: {

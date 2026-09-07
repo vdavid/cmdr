@@ -320,7 +320,7 @@ resolving through the registry, precedence is an explicit per-handler decision r
 Typing wins in text inputs: before the lookup, `handleGlobalKeyDown` bails when focus is in a text-editing element and
 the combo `isTypingKeyCombo` (no ⌘/⌃/⌥, not an F-key or Escape — shift-only counts as typing). Without this, a bare-key
 Tier 1 binding (Tab → switch pane) fires mid-typing in any in-pane text input that forgets to `stopPropagation`. The
-guard is central so new inputs are protected by default; `NetworkLoginForm`'s own Tab shielding remains as before.
+guard is central so new inputs are protected by default.
 
 ### Keyboard shortcuts help window (read-only)
 

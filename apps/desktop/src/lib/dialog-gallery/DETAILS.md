@@ -355,11 +355,10 @@ internals has to be able to tell a real obstacle from a choice we made.
   technical obstacle: publishing a false reason inside an instrument whose thesis is "must not lie" is the worst
   available outcome, and it would be invisible to everyone who doesn't already know the dialog.
 
-The three `UNREGISTERED_OVERLAY_ENTRIES` rows exist so the inventory can't imply nothing else is modal-looking. Each
-says why it isn't a registered soft dialog and how to evoke it by hand: the command palette is its own overlay (⌘⇧P by
-default) and reports nothing to the dialog tracker; `NetworkLoginForm` isn't modal at all (it renders inside a pane,
-which is why it's the one sanctioned opt-out from the dialog focus trap); the pane volume chooser is a pane-owned
-dropdown (⌥F1 / ⌥F2). Keep the shortcuts honest: they're user-rebindable defaults.
+The two `UNREGISTERED_OVERLAY_ENTRIES` rows exist so the inventory can't imply nothing else is modal-looking. Each says
+why it isn't a registered soft dialog and how to evoke it by hand: the command palette is its own overlay (⌘⇧P by
+default) and reports nothing to the dialog tracker; the pane volume chooser is a pane-owned dropdown (⌥F1 / ⌥F2). Keep
+the shortcuts honest: they're user-rebindable defaults.
 
 ## A prop that IS the state: `rollback-confirmation`
 

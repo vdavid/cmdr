@@ -1,13 +1,17 @@
 /**
- * Behavior tests for PlacesBrowser's credential gate.
+ * Behavior tests for PlacesBrowser's credential gate and its sign-in hand-off.
  *
  * Regression (the "Naspolya dead end"): a share list can load successfully while Cmdr
  * holds no credentials. On macOS, the listing fallback (`smbutil view -N`) reads the
  * SYSTEM Keychain, so the backend returns shares with `authMode: 'creds_required'`
  * but the frontend never collected a username or password. Activating a share in that
  * state used to call `onShareSelect` with `null` credentials, producing a doomed
- * guest mount and a dead-end error pane. The gate shows the login form first and
- * fires the share selection only after credentials are validated.
+ * guest mount and a dead-end error pane. Activation must NOT pre-prompt: it attempts
+ * the mount, and the mount's own refusal is what asks.
+ *
+ * ❗ The sign-in itself is the one sheet, so these assert the REQUEST the browser
+ * makes (its shape, its endpoint, and what its `attempt` calls), ❌ never a form
+ * rendered in the pane.
  */
 
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest'
@@ -20,6 +24,7 @@ const h = vi.hoisted(() => ({
   listSharesWithCredentials: vi.fn(),
   getSmbCredentials: vi.fn(),
   saveSmbCredentials: vi.fn(),
+  openSignInSheet: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -45,6 +50,8 @@ vi.mock('./network-store.svelte', () => ({
 
 vi.mock('$lib/ui/toast', () => ({ addToast: vi.fn(() => 'id') }))
 
+vi.mock('$lib/servers/sign-in-sheet-state.svelte', () => ({ openSignInSheet: h.openSignInSheet }))
+
 vi.mock('$lib/settings/network-settings', () => ({
   getNetworkTimeoutMs: () => 5000,
   getShareCacheTtlMs: () => 30000,
@@ -60,6 +67,25 @@ const host: NetworkHost = {
 }
 
 const naspi: ShareInfo = { name: 'naspi', isDisk: true, comment: null }
+
+/** The sheet request under test, as much of it as these assert. */
+interface SheetRequest {
+  mode: string
+  shape: { kind: string; guestAllowed?: boolean }
+  endpoint: { address: string; host: string; username?: string }
+  refusal?: string
+  attempt: (submission: {
+    mode: 'sign-in'
+    secret: { secret: string; remember: boolean } | null
+    username: string | null
+  }) => Promise<{ kind: string; refusal?: string }>
+}
+
+/** Narrows a queried element, failing the test with a readable message when absent. */
+function must<T>(value: T | null | undefined, what: string): T {
+  expect(value, `expected ${what} to be present`).toBeTruthy()
+  return value as T
+}
 
 /** The exported PlacesBrowser API surface the tests drive. */
 interface PlacesBrowserApi {
@@ -102,6 +128,7 @@ describe('PlacesBrowser credential gate', () => {
     document.body.innerHTML = ''
     // No stored credentials anywhere (the incident state).
     h.getSmbCredentials.mockRejectedValue(new Error('not found'))
+    h.openSignInSheet.mockResolvedValue({ kind: 'cancelled' })
   })
 
   it('attempts the mount (no in-pane prompt) when creds are required and none are stored', async () => {
@@ -119,7 +146,7 @@ describe('PlacesBrowser credential gate', () => {
     await vi.waitFor(() => {
       expect(onShareSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'naspi' }), null)
     })
-    expect(target.querySelector('.login-title'), 'must not show an in-pane prompt on activation').toBeNull()
+    expect(h.openSignInSheet, 'must not pre-prompt on activation').not.toHaveBeenCalled()
 
     await unmount(component)
   })
@@ -140,7 +167,7 @@ describe('PlacesBrowser credential gate', () => {
         password: 'hunter2',
       })
     })
-    expect(target.querySelector('.login-title'), 'must not prompt when stored creds exist').toBeNull()
+    expect(h.openSignInSheet, 'must not prompt when stored creds exist').not.toHaveBeenCalled()
 
     await unmount(component)
   })
@@ -165,6 +192,7 @@ describe('PlacesBrowser back-navigation', () => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
     h.getSmbCredentials.mockRejectedValue(new Error('not found'))
+    h.openSignInSheet.mockResolvedValue({ kind: 'cancelled' })
   })
 
   it('⌘↑ goes back to the host list (like Escape / Backspace), not a cursor move', async () => {
@@ -179,6 +207,145 @@ describe('PlacesBrowser back-navigation', () => {
     expect(onBack).toHaveBeenCalledOnce()
     // The cursor-move path must NOT have fired (no share got activated).
     expect(onShareSelect).not.toHaveBeenCalled()
+
+    await unmount(component)
+  })
+})
+
+describe('PlacesBrowser listing sign-in', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    document.body.innerHTML = ''
+    h.getSmbCredentials.mockRejectedValue(new Error('not found'))
+    h.openSignInSheet.mockResolvedValue({ kind: 'cancelled' })
+  })
+
+  /** The one request the browser made of the sign-in sheet. */
+  function sheetRequest(): SheetRequest {
+    expect(h.openSignInSheet, 'the sheet to have been asked for').toHaveBeenCalledTimes(1)
+    return h.openSignInSheet.mock.calls[0][0] as SheetRequest
+  }
+
+  it('asks the sheet for a username and a password when the LISTING needs one', async () => {
+    h.fetchShares.mockRejectedValue({ type: 'auth_required', message: 'Authentication required' })
+    const { target, component } = mountBrowser(vi.fn())
+
+    await vi.waitFor(() => {
+      expect(h.openSignInSheet).toHaveBeenCalled()
+    })
+    const request = sheetRequest()
+    expect(request.mode).toBe('sign-in')
+    expect(request.shape).toEqual({ kind: 'username_password', guestAllowed: false })
+    // The header names the SERVER, not a share: listing auth is server-level.
+    expect(request.endpoint.address).toBe('smb://Naspolya')
+    expect(request.endpoint.host).toBe('Naspolya')
+    expect(request.refusal).toBe('needs_credentials')
+    expect(target.querySelector('.login-container'), 'no form renders in the pane').toBeNull()
+
+    await unmount(component)
+  })
+
+  it('offers guest where the host allows one, so a shy share is one click away', async () => {
+    // A listing that needs auth on a host whose cached state says guest is allowed.
+    h.fetchShares.mockResolvedValueOnce({ shares: [], authMode: 'guest_allowed', fromCache: false })
+    const { component, target } = mountBrowser(vi.fn())
+    await vi.waitFor(() => {
+      expect(target.querySelector('.empty-state')).toBeTruthy()
+    })
+
+    must(target.querySelector<HTMLButtonElement>('.empty-state button'), 'the Sign in button').click()
+
+    await vi.waitFor(() => {
+      expect(h.openSignInSheet).toHaveBeenCalled()
+    })
+    expect(sheetRequest().shape).toEqual({ kind: 'username_password', guestAllowed: true })
+
+    await unmount(component)
+  })
+
+  it('lists with what the user typed, and remembers it only once the listing works', async () => {
+    h.fetchShares.mockRejectedValue({ type: 'auth_required', message: 'Authentication required' })
+    h.listSharesWithCredentials.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
+    const { component } = mountBrowser(vi.fn())
+    await vi.waitFor(() => {
+      expect(h.openSignInSheet).toHaveBeenCalled()
+    })
+
+    const outcome = await sheetRequest().attempt({
+      mode: 'sign-in',
+      secret: { secret: 'hunter2', remember: true },
+      username: 'david',
+    })
+
+    expect(outcome).toEqual({ kind: 'handed_off' })
+    expect(h.listSharesWithCredentials).toHaveBeenCalledWith(
+      'naspolya-id',
+      'Naspolya.local',
+      '192.168.1.111',
+      445,
+      'david',
+      'hunter2',
+      5000,
+      30000,
+    )
+    expect(h.saveSmbCredentials).toHaveBeenCalledWith('Naspolya', null, 'david', 'hunter2')
+
+    await unmount(component)
+  })
+
+  it('keeps the sheet open on a password the server refused, with the reason it gave', async () => {
+    h.fetchShares.mockRejectedValue({ type: 'auth_required', message: 'Authentication required' })
+    h.listSharesWithCredentials.mockRejectedValue({ type: 'auth_failed', message: 'Invalid username or password' })
+    const { component } = mountBrowser(vi.fn())
+    await vi.waitFor(() => {
+      expect(h.openSignInSheet).toHaveBeenCalled()
+    })
+
+    const outcome = await sheetRequest().attempt({
+      mode: 'sign-in',
+      secret: { secret: 'wrong', remember: true },
+      username: 'david',
+    })
+
+    expect(outcome).toEqual({ kind: 'refused', refusal: 'authentication_rejected' })
+    // ❗ Nothing saved: a credential is written only once it has worked.
+    expect(h.saveSmbCredentials).not.toHaveBeenCalled()
+
+    await unmount(component)
+  })
+
+  it('sends no account for guest, so the server is asked for exactly what was offered', async () => {
+    h.fetchShares.mockRejectedValue({ type: 'auth_required', message: 'Authentication required' })
+    h.listSharesWithCredentials.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    const { component } = mountBrowser(vi.fn())
+    await vi.waitFor(() => {
+      expect(h.openSignInSheet).toHaveBeenCalled()
+    })
+
+    await sheetRequest().attempt({ mode: 'sign-in', secret: null, username: null })
+
+    expect(h.listSharesWithCredentials).toHaveBeenCalledWith(
+      'naspolya-id',
+      'Naspolya.local',
+      '192.168.1.111',
+      445,
+      null,
+      null,
+      5000,
+      30000,
+    )
+
+    await unmount(component)
+  })
+
+  it('goes back to the host list when the sign-in is cancelled, rather than sitting on a locked list', async () => {
+    h.fetchShares.mockRejectedValue({ type: 'auth_required', message: 'Authentication required' })
+    const onBack = vi.fn()
+    const { component } = mountBrowser(vi.fn(), onBack)
+
+    await vi.waitFor(() => {
+      expect(onBack).toHaveBeenCalledOnce()
+    })
 
     await unmount(component)
   })
