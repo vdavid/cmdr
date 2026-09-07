@@ -150,13 +150,13 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "SMB-/netwerkpanelen tinten",
+  "settings.appearance.tintSmb.label": "Serverpanelen tinten (SMB, SFTP, WebDAV)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "66fd4a8"
+    "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "Achtergrondtint voor panelen die een SMB- of netwerkshare tonen.",
+  "settings.appearance.tintSmb.description": "Achtergrondtint voor panelen die een SMB-share, een SFTP-server of een WebDAV-server tonen.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "cf3a857"
+    "sourceHash": "2e071d3"
   },
   "settings.appearance.tintMtp.label": "MTP-panelen tinten",
   "@settings.appearance.tintMtp.label": {
@@ -1538,6 +1538,14 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.serversPinHintSeen.label": "Hint voor lange groep Netwerk getoond",
+  "@settings.behavior.serversPinHintSeen.label": {
+    "sourceHash": "8d632ca"
+  },
+  "settings.behavior.serversPinHintSeen.description": "Of de eenmalige hint over het losmaken van servers is getoond.",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "sourceHash": "fc0722f"
+  },
   "settings.section.notifications": "Meldingen",
   "@settings.section.notifications": {
     "sourceHash": "7880118"
@@ -1720,6 +1728,16 @@
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
+  "settings.section.servers": "Servers (SFTP, WebDAV)",
+  "@settings.section.servers": {
+    "sourceHash": "58704f8",
+    "sameAsSourceJustification": "Dutch keeps this subsection title as-is: the plural of \"server\" is \"servers\" in Dutch (macOS AppKit Menus.loctable renders \"Servers\"→\"Servers\"), and \"SFTP\" and \"WebDAV\" are protocol names Apple leaves untranslated (verified on macOS 26.6.2, build 25G83, 2026-09-07)."
+  },
+  "settings.section.adb": "Android (ADB)",
+  "@settings.section.adb": {
+    "sourceHash": "bc9c1a1",
+    "sameAsSourceJustification": "Dutch keeps this subsection title as-is: \"Android\" is a product name and \"ADB\" its abbreviation, both untranslated in Dutch (the catalog already writes \"Android\" verbatim in settings.fileOperations.adbEnabled.label)."
+  },
   "settings.section.mtp": "MTP (Android/Kindle/camera''s)",
   "@settings.section.mtp": {
     "sourceHash": "a68fa47"
@@ -1858,6 +1876,14 @@
   "settings.summary.smbNetworkShares": "Netwerk inschakelen, rechtstreekse SMB-verbindingen, share-cache, en time-outs.",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
+  },
+  "settings.summary.servers": "De SSH-serversleutels die je hebt vertrouwd.",
+  "@settings.summary.servers": {
+    "sourceHash": "40940fa"
+  },
+  "settings.summary.adb": "Blader op een Android-telefoon waarop USB-foutopsporing is ingeschakeld.",
+  "@settings.summary.adb": {
+    "sourceHash": "fb69a13"
   },
   "settings.summary.mtp": "Detecteer Android-, Kindle- en cameratoestellen via USB.",
   "@settings.summary.mtp": {
@@ -2335,5 +2361,74 @@
   "settings.window.loading": "Instellingen laden…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.servers.card.trustedHostKeys": "Vertrouwde serversleutels",
+  "@settings.servers.card.trustedHostKeys": {
+    "sourceHash": "46c5c9d"
+  },
+  "settings.servers.trustedHostKeys.description": "De eerste keer dat je verbinding maakt met een server, vraagt Cmdr of je de sleutel vertrouwt, en het onthoudt je antwoord hier. Opgeslagen servers staan in de lijst Servers, niet op deze pagina.",
+  "@settings.servers.trustedHostKeys.description": {
+    "sourceHash": "bbbed1a"
+  },
+  "settings.servers.trustedHostKeys.empty": "Nog niets vertrouwd. De eerste keer dat je verbinding maakt met een SFTP-server, laat Cmdr je de vingerafdruk zien en vraagt het of je die vertrouwt.",
+  "@settings.servers.trustedHostKeys.empty": {
+    "sourceHash": "7bc982e"
+  },
+  "settings.servers.trustedHostKeys.approvedPrefix": "Vertrouwd op",
+  "@settings.servers.trustedHostKeys.approvedPrefix": {
+    "sourceHash": "639538c"
+  },
+  "settings.servers.trustedHostKeys.forget": "Vergeet",
+  "@settings.servers.trustedHostKeys.forget": {
+    "sourceHash": "a6bd489"
+  },
+  "settings.servers.trustedHostKeys.confirmTitle": "Deze sleutel vergeten?",
+  "@settings.servers.trustedHostKeys.confirmTitle": {
+    "sourceHash": "524bfa5"
+  },
+  "settings.servers.trustedHostKeys.confirm": "De volgende keer dat je verbinding maakt met {host}, laat Cmdr je de vingerafdruk van de sleutel zien en vraagt het of je die vertrouwt.",
+  "@settings.servers.trustedHostKeys.confirm": {
+    "sourceHash": "6db1a3f"
+  },
+  "settings.adb.status.label": "Status",
+  "@settings.adb.status.label": {
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "Dutch for this row label is \"Status\": macOS System Settings Localizable.loctable renders \"Status\"→\"Status\" (verified on macOS 26.6.2, build 25G83, 2026-09-07), the same source servers.hub.colStatus cites."
+  },
+  "settings.adb.status.foundAt": "Gevonden: {path}",
+  "@settings.adb.status.foundAt": {
+    "sourceHash": "c49cc6a"
+  },
+  "settings.adb.status.notFound": "Niet gevonden",
+  "@settings.adb.status.notFound": {
+    "sourceHash": "e3ebaa1"
+  },
+  "settings.adb.status.watching": "Cmdr let op telefoons.",
+  "@settings.adb.status.watching": {
+    "sourceHash": "d1538e3"
+  },
+  "settings.adb.status.notWatching": "Cmdr let nu niet op telefoons.",
+  "@settings.adb.status.notWatching": {
+    "sourceHash": "6e1936c"
+  },
+  "settings.adb.recheck": "Controleer opnieuw",
+  "@settings.adb.recheck": {
+    "sourceHash": "24fcca0"
+  },
+  "settings.adb.install.intro": "Installeer de Android platform tools en druk daarna op ‘Controleer opnieuw’:",
+  "@settings.adb.install.intro": {
+    "sourceHash": "5a82ea4"
+  },
+  "settings.adb.pathPlaceholder": "Zoek op de gebruikelijke manier naar adb",
+  "@settings.adb.pathPlaceholder": {
+    "sourceHash": "e236ef2"
+  },
+  "settings.adb.browse": "Blader…",
+  "@settings.adb.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "settings.adb.pickerTitle": "Kies de opdracht adb",
+  "@settings.adb.pickerTitle": {
+    "sourceHash": "d6fc142"
   }
 }

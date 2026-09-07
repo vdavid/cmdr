@@ -150,13 +150,13 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "为 SMB/网络窗格着色",
+  "settings.appearance.tintSmb.label": "为服务器窗格着色（SMB、SFTP、WebDAV）",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "66fd4a8"
+    "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "为显示 SMB 或网络共享的窗格添加的背景着色。",
+  "settings.appearance.tintSmb.description": "为显示 SMB 共享、SFTP 服务器或 WebDAV 服务器的窗格添加的背景着色。",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "cf3a857"
+    "sourceHash": "2e071d3"
   },
   "settings.appearance.tintMtp.label": "为 MTP 窗格着色",
   "@settings.appearance.tintMtp.label": {
@@ -1531,6 +1531,14 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.serversPinHintSeen.label": "已显示“网络”分组过长提示",
+  "@settings.behavior.serversPinHintSeen.label": {
+    "sourceHash": "8d632ca"
+  },
+  "settings.behavior.serversPinHintSeen.description": "是否已显示过关于取消固定服务器的一次性提示。",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "sourceHash": "fc0722f"
+  },
   "settings.section.notifications": "通知",
   "@settings.section.notifications": {
     "sourceHash": "7880118"
@@ -1713,6 +1721,14 @@
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
+  "settings.section.servers": "服务器（SFTP、WebDAV）",
+  "@settings.section.servers": {
+    "sourceHash": "58704f8"
+  },
+  "settings.section.adb": "Android（ADB）",
+  "@settings.section.adb": {
+    "sourceHash": "bc9c1a1"
+  },
   "settings.section.mtp": "MTP（Android/Kindle/相机）",
   "@settings.section.mtp": {
     "sourceHash": "a68fa47"
@@ -1851,6 +1867,14 @@
   "settings.summary.smbNetworkShares": "启用网络、直接 SMB 连接、共享缓存和超时。",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
+  },
+  "settings.summary.servers": "你信任过的 SSH 主机密钥。",
+  "@settings.summary.servers": {
+    "sourceHash": "40940fa"
+  },
+  "settings.summary.adb": "浏览已开启 USB 调试的 Android 手机。",
+  "@settings.summary.adb": {
+    "sourceHash": "fb69a13"
   },
   "settings.summary.mtp": "通过 USB 检测 Android、Kindle 和相机设备。",
   "@settings.summary.mtp": {
@@ -2326,5 +2350,73 @@
   "settings.window.loading": "正在加载设置…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.servers.card.trustedHostKeys": "受信任的主机密钥",
+  "@settings.servers.card.trustedHostKeys": {
+    "sourceHash": "46c5c9d"
+  },
+  "settings.servers.trustedHostKeys.description": "第一次连接某台服务器时，Cmdr 会先问你要不要信任它的密钥，并把你的答复记在这里。保存过的服务器在“服务器”列表里，不在这个页面。",
+  "@settings.servers.trustedHostKeys.description": {
+    "sourceHash": "bbbed1a"
+  },
+  "settings.servers.trustedHostKeys.empty": "还没有信任过任何密钥。第一次连接 SFTP 服务器时，Cmdr 会给你看它的指纹并询问你。",
+  "@settings.servers.trustedHostKeys.empty": {
+    "sourceHash": "7bc982e"
+  },
+  "settings.servers.trustedHostKeys.approvedPrefix": "已信任",
+  "@settings.servers.trustedHostKeys.approvedPrefix": {
+    "sourceHash": "639538c"
+  },
+  "settings.servers.trustedHostKeys.forget": "忘记",
+  "@settings.servers.trustedHostKeys.forget": {
+    "sourceHash": "a6bd489"
+  },
+  "settings.servers.trustedHostKeys.confirmTitle": "忘记这个密钥？",
+  "@settings.servers.trustedHostKeys.confirmTitle": {
+    "sourceHash": "524bfa5"
+  },
+  "settings.servers.trustedHostKeys.confirm": "下次连接 {host} 时，Cmdr 会给你看它的密钥指纹，并问你要不要信任它。",
+  "@settings.servers.trustedHostKeys.confirm": {
+    "sourceHash": "6db1a3f"
+  },
+  "settings.adb.status.label": "状态",
+  "@settings.adb.status.label": {
+    "sourceHash": "920e413"
+  },
+  "settings.adb.status.foundAt": "已找到：{path}",
+  "@settings.adb.status.foundAt": {
+    "sourceHash": "c49cc6a"
+  },
+  "settings.adb.status.notFound": "未找到",
+  "@settings.adb.status.notFound": {
+    "sourceHash": "e3ebaa1"
+  },
+  "settings.adb.status.watching": "正在留意接入的手机。",
+  "@settings.adb.status.watching": {
+    "sourceHash": "d1538e3"
+  },
+  "settings.adb.status.notWatching": "目前没有在留意接入的手机。",
+  "@settings.adb.status.notWatching": {
+    "sourceHash": "6e1936c"
+  },
+  "settings.adb.recheck": "再次检查",
+  "@settings.adb.recheck": {
+    "sourceHash": "24fcca0"
+  },
+  "settings.adb.install.intro": "安装 Android 平台工具，然后点按“再次检查”：",
+  "@settings.adb.install.intro": {
+    "sourceHash": "5a82ea4"
+  },
+  "settings.adb.pathPlaceholder": "按常规方式查找 adb",
+  "@settings.adb.pathPlaceholder": {
+    "sourceHash": "e236ef2"
+  },
+  "settings.adb.browse": "浏览…",
+  "@settings.adb.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "settings.adb.pickerTitle": "选取 adb 命令",
+  "@settings.adb.pickerTitle": {
+    "sourceHash": "d6fc142"
   }
 }

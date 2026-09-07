@@ -150,13 +150,13 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Teinter les panneaux SMB/réseau",
+  "settings.appearance.tintSmb.label": "Teinter les panneaux de serveur (SMB, SFTP, WebDAV)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "66fd4a8"
+    "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "Teinte de fond appliquée aux panneaux affichant un partage SMB ou réseau.",
+  "settings.appearance.tintSmb.description": "Teinte de fond appliquée aux panneaux affichant un partage SMB, un serveur SFTP, ou un serveur WebDAV.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "cf3a857"
+    "sourceHash": "2e071d3"
   },
   "settings.appearance.tintMtp.label": "Teinter les panneaux MTP",
   "@settings.appearance.tintMtp.label": {
@@ -1543,6 +1543,14 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.serversPinHintSeen.label": "Astuce sur la longueur du groupe Réseau affichée",
+  "@settings.behavior.serversPinHintSeen.label": {
+    "sourceHash": "8d632ca"
+  },
+  "settings.behavior.serversPinHintSeen.description": "Indique si l''astuce unique sur la façon de désépingler un serveur a été affichée.",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "sourceHash": "fc0722f"
+  },
   "settings.section.notifications": "Notifications",
   "@settings.section.notifications": {
     "sourceHash": "7880118",
@@ -1725,6 +1733,15 @@
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
+  "settings.section.servers": "Serveurs (SFTP, WebDAV)",
+  "@settings.section.servers": {
+    "sourceHash": "58704f8"
+  },
+  "settings.section.adb": "Android (ADB)",
+  "@settings.section.adb": {
+    "sourceHash": "bc9c1a1",
+    "sameAsSourceJustification": "Deliberately identical: both words are product/abbreviation names the fr glossary already settles as verbatim (\"Android SDK, Homebrew, ADB, adb -> verbatim\", docs/i18n/fr/glossary.md), and the shipped siblings keep them unchanged (`settings.section.mtp` -> \"MTP (Android/Kindle/appareils photo)\", `settings.fileOperations.adbEnabled.label` -> \"Accès aux fichiers Android via ADB\"). Apple offers no counterpart: a grep for \"Android\" over every `.loctable` under /System/Library/{Frameworks,PrivateFrameworks,CoreServices} and /System/Applications returns nothing on macOS 26.6.2 build 25G83 (2026-09-07), so there is nothing to localize toward."
+  },
   "settings.section.mtp": "MTP (Android/Kindle/appareils photo)",
   "@settings.section.mtp": {
     "sourceHash": "a68fa47"
@@ -1863,6 +1880,14 @@
   "settings.summary.smbNetworkShares": "Activer le réseau, connexions SMB directes, cache des partages, et délais d''attente.",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
+  },
+  "settings.summary.servers": "Les clés d''hôte SSH que vous avez approuvées.",
+  "@settings.summary.servers": {
+    "sourceHash": "40940fa"
+  },
+  "settings.summary.adb": "Parcourir un téléphone Android dont le débogage USB est activé.",
+  "@settings.summary.adb": {
+    "sourceHash": "fb69a13"
   },
   "settings.summary.mtp": "Détecter les appareils Android, Kindle, et appareils photo via USB.",
   "@settings.summary.mtp": {
@@ -2338,5 +2363,73 @@
   "settings.window.loading": "Chargement des réglages…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.servers.card.trustedHostKeys": "Clés d''hôte approuvées",
+  "@settings.servers.card.trustedHostKeys": {
+    "sourceHash": "46c5c9d"
+  },
+  "settings.servers.trustedHostKeys.description": "La première fois que vous vous connectez à un serveur, Cmdr vous demande d''approuver sa clé et mémorise votre réponse ici. Les serveurs enregistrés se trouvent dans la liste Serveurs, pas sur cette page.",
+  "@settings.servers.trustedHostKeys.description": {
+    "sourceHash": "bbbed1a"
+  },
+  "settings.servers.trustedHostKeys.empty": "Pas encore de clé approuvée. La première fois que vous vous connectez à un serveur SFTP, Cmdr vous montre l''empreinte de sa clé et vous demande votre accord.",
+  "@settings.servers.trustedHostKeys.empty": {
+    "sourceHash": "7bc982e"
+  },
+  "settings.servers.trustedHostKeys.approvedPrefix": "Approuvée le",
+  "@settings.servers.trustedHostKeys.approvedPrefix": {
+    "sourceHash": "639538c"
+  },
+  "settings.servers.trustedHostKeys.forget": "Oublier",
+  "@settings.servers.trustedHostKeys.forget": {
+    "sourceHash": "a6bd489"
+  },
+  "settings.servers.trustedHostKeys.confirmTitle": "Oublier cette clé ?",
+  "@settings.servers.trustedHostKeys.confirmTitle": {
+    "sourceHash": "524bfa5"
+  },
+  "settings.servers.trustedHostKeys.confirm": "La prochaine fois que vous vous connecterez à {host}, Cmdr vous montrera l''empreinte de sa clé et vous demandera si vous l''approuvez.",
+  "@settings.servers.trustedHostKeys.confirm": {
+    "sourceHash": "6db1a3f"
+  },
+  "settings.adb.status.label": "État",
+  "@settings.adb.status.label": {
+    "sourceHash": "920e413"
+  },
+  "settings.adb.status.foundAt": "Trouvé : {path}",
+  "@settings.adb.status.foundAt": {
+    "sourceHash": "c49cc6a"
+  },
+  "settings.adb.status.notFound": "Introuvable",
+  "@settings.adb.status.notFound": {
+    "sourceHash": "e3ebaa1"
+  },
+  "settings.adb.status.watching": "Cmdr détecte un téléphone dès qu''il est branché.",
+  "@settings.adb.status.watching": {
+    "sourceHash": "d1538e3"
+  },
+  "settings.adb.status.notWatching": "Cmdr ne détecte pas les téléphones pour l''instant.",
+  "@settings.adb.status.notWatching": {
+    "sourceHash": "6e1936c"
+  },
+  "settings.adb.recheck": "Rechercher à nouveau",
+  "@settings.adb.recheck": {
+    "sourceHash": "24fcca0"
+  },
+  "settings.adb.install.intro": "Installez les Android Platform Tools, puis cliquez sur Rechercher à nouveau :",
+  "@settings.adb.install.intro": {
+    "sourceHash": "5a82ea4"
+  },
+  "settings.adb.pathPlaceholder": "Chercher adb de la manière habituelle",
+  "@settings.adb.pathPlaceholder": {
+    "sourceHash": "e236ef2"
+  },
+  "settings.adb.browse": "Parcourir…",
+  "@settings.adb.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "settings.adb.pickerTitle": "Choisir la commande adb",
+  "@settings.adb.pickerTitle": {
+    "sourceHash": "d6fc142"
   }
 }

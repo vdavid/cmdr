@@ -303,6 +303,16 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   Engels (de sleutel van de gebruiker tegenover die van de server, waar `hostKey.*` het over heeft). De twee
   paneelstanden zijn nooit tegelijk in beeld, dus de waarde blijft letterlijk. Bevestig, of kies `een SSH-sleutel` en
   wijk daarmee van het Engels af.
+- **`Maak vast in volumekiezer` / `Maak los` naast `Zet server vast / maak hem los`**: de menu-items zijn
+  Tier-1-gesourcet (Apples `Pin in Menu Bar` → `Maak vast in menubalk`) en gelijk aan `menu.tab.pinTab`/`.unpinTab`,
+  terwijl `commands.serversTogglePin.label` eerder `vastzetten` koos. Bevestig een veeg naar één werkwoordpaar. Bewijs:
+  `glossary.md` § De vastzet-hint.
+- **host key → `serversleutel`** (`settings.servers.card.trustedHostKeys`, `settings.summary.servers`): gemunt, alleen
+  waar het Engels zélf `host key` zegt; in het serverpaneel blijft het `de sleutel`. Bevestig dat het niet leest als
+  "sleutel tót de server".
+- **"Watching for phones." → `Cmdr let op telefoons.`**: het Nederlands heeft een onderwerp nodig waar het Engels er
+  geen heeft. Bevestig de toon tegenover `Cmdr houdt in de gaten of er een telefoon wordt aangesloten.` (Apples idioom,
+  twee keer zo lang).
 - **"camera details" → `cameragegevens`** (`askCmdr.consent.item.contents`, `contentsRule`, `whatsNew.body`): a coined
   compound for a photo's EXIF block, no source has a collective noun for it. Confirm it reads as "what the camera
   recorded", not "data about the camera". Evidence and the fallback: `glossary.md` § Ask Cmdr looks inside files.

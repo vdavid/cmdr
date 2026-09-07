@@ -1,4 +1,20 @@
 {
+  "servers.pinHint.title": "Kezd hosszúra nyúlni a Hálózat csoportod",
+  "@servers.pinHint.title": {
+    "sourceHash": "0cf001a"
+  },
+  "servers.pinHint.body": "Kattints jobb gombbal egy szerverre, és válaszd a „Rögzítés feloldása” lehetőséget, vagy futtasd a parancspalettából a(z) „{command}” parancsot. Továbbra is ott marad a Szerverek listában.",
+  "@servers.pinHint.body": {
+    "sourceHash": "0663b02"
+  },
+  "servers.pinHint.favorites": "A Kedvencek is ugyanígy működnek.",
+  "@servers.pinHint.favorites": {
+    "sourceHash": "932faeb"
+  },
+  "servers.pinHint.gotIt": "Értem",
+  "@servers.pinHint.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "servers.hub.colName": "Név",
   "@servers.hub.colName": {
     "sourceHash": "dcd1d52"

@@ -1,4 +1,20 @@
 {
+  "servers.pinHint.title": "Je groep Netwerk wordt lang",
+  "@servers.pinHint.title": {
+    "sourceHash": "0cf001a"
+  },
+  "servers.pinHint.body": "Klik met de rechtermuisknop op een server en kies ‘Maak los’, of gebruik ‘{command}’ in het opdrachtenpalet. De server blijft in de lijst Servers staan.",
+  "@servers.pinHint.body": {
+    "sourceHash": "0663b02"
+  },
+  "servers.pinHint.favorites": "Favorieten werken op dezelfde manier.",
+  "@servers.pinHint.favorites": {
+    "sourceHash": "932faeb"
+  },
+  "servers.pinHint.gotIt": "Begrepen",
+  "@servers.pinHint.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "servers.hub.colName": "Naam",
   "@servers.hub.colName": {
     "sourceHash": "dcd1d52"

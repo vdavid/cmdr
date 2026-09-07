@@ -150,13 +150,13 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "SMB-/hálózati panelek színezése",
+  "settings.appearance.tintSmb.label": "Szerverpanelek színezése (SMB, SFTP, WebDAV)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "66fd4a8"
+    "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "Háttérszínezés az SMB- vagy hálózati megosztást mutató paneleken.",
+  "settings.appearance.tintSmb.description": "Háttérszínezés az SMB-megosztást, SFTP- vagy WebDAV-szervert mutató paneleken.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "cf3a857"
+    "sourceHash": "2e071d3"
   },
   "settings.appearance.tintMtp.label": "MTP-panelek színezése",
   "@settings.appearance.tintMtp.label": {
@@ -1532,6 +1532,14 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.serversPinHintSeen.label": "A hosszú Hálózat csoport tippje megjelent",
+  "@settings.behavior.serversPinHintSeen.label": {
+    "sourceHash": "8d632ca"
+  },
+  "settings.behavior.serversPinHintSeen.description": "Megjelent-e már az egyszeri tipp a szerverek rögzítésének feloldásáról.",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "sourceHash": "fc0722f"
+  },
   "settings.section.notifications": "Értesítések",
   "@settings.section.notifications": {
     "sourceHash": "7880118"
@@ -1714,6 +1722,15 @@
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
+  "settings.section.servers": "Szerverek (SFTP, WebDAV)",
+  "@settings.section.servers": {
+    "sourceHash": "58704f8"
+  },
+  "settings.section.adb": "Android (ADB)",
+  "@settings.section.adb": {
+    "sourceHash": "bc9c1a1",
+    "sameAsSourceJustification": "„Android (ADB)” beállítási alszakaszcím: az `Android` terméknév és az `ADB` a hozzá tartozó betűszó, a magyar Android is változatlanul hozza mindkettőt (`SettingsLib` `enable_adb` = „USB hibakeresés”, az `Android` név ragozatlanul), és a katalógus szállított magyar sorai is így írják (`settings.fileOperations.adbEnabled.label` = „Android-fájlok elérése ADB-n át”). A zárójeles szerkezet a testvér `settings.section.mtp` mintája."
+  },
   "settings.section.mtp": "MTP (Android/Kindle/kamerák)",
   "@settings.section.mtp": {
     "sourceHash": "a68fa47"
@@ -1852,6 +1869,14 @@
   "settings.summary.smbNetworkShares": "Hálózatkezelés bekapcsolása, közvetlen SMB-kapcsolatok, megosztásgyorsítótár és időtúllépések.",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
+  },
+  "settings.summary.servers": "A megbízhatónak tekintett SSH-szerverkulcsok.",
+  "@settings.summary.servers": {
+    "sourceHash": "40940fa"
+  },
+  "settings.summary.adb": "Böngéssz egy olyan Android-telefont, amelyen be van kapcsolva az USB-hibakeresés.",
+  "@settings.summary.adb": {
+    "sourceHash": "fb69a13"
   },
   "settings.summary.mtp": "Android-, Kindle- és kameraeszközök felismerése USB-n át.",
   "@settings.summary.mtp": {
@@ -2326,5 +2351,73 @@
   "settings.window.loading": "Beállítások betöltése…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.servers.card.trustedHostKeys": "Megbízható szerverkulcsok",
+  "@settings.servers.card.trustedHostKeys": {
+    "sourceHash": "46c5c9d"
+  },
+  "settings.servers.trustedHostKeys.description": "Az első kapcsolódáskor a Cmdr rákérdez, mielőtt megbízhatónak tekintené egy szerver kulcsát, és itt jegyzi meg a válaszodat. A mentett szervereidet a Szerverek listában találod; ez az oldal csak a kulcsokról szól.",
+  "@settings.servers.trustedHostKeys.description": {
+    "sourceHash": "bbbed1a"
+  },
+  "settings.servers.trustedHostKeys.empty": "Még nincs megbízhatónak tekintett kulcs. Amikor először kapcsolódsz egy SFTP-szerverre, a Cmdr megmutatja az ujjlenyomatát, és rákérdez.",
+  "@settings.servers.trustedHostKeys.empty": {
+    "sourceHash": "7bc982e"
+  },
+  "settings.servers.trustedHostKeys.approvedPrefix": "Megbízhatóként jelölve",
+  "@settings.servers.trustedHostKeys.approvedPrefix": {
+    "sourceHash": "639538c"
+  },
+  "settings.servers.trustedHostKeys.forget": "Elfelejtés",
+  "@settings.servers.trustedHostKeys.forget": {
+    "sourceHash": "a6bd489"
+  },
+  "settings.servers.trustedHostKeys.confirmTitle": "Elfelejted ezt a kulcsot?",
+  "@settings.servers.trustedHostKeys.confirmTitle": {
+    "sourceHash": "524bfa5"
+  },
+  "settings.servers.trustedHostKeys.confirm": "A következő kapcsolódáskor a Cmdr megmutatja {host} kulcsának ujjlenyomatát, és rákérdez, megbízol-e benne.",
+  "@settings.servers.trustedHostKeys.confirm": {
+    "sourceHash": "6db1a3f"
+  },
+  "settings.adb.status.label": "Állapot",
+  "@settings.adb.status.label": {
+    "sourceHash": "920e413"
+  },
+  "settings.adb.status.foundAt": "Megtalálva itt: {path}",
+  "@settings.adb.status.foundAt": {
+    "sourceHash": "c49cc6a"
+  },
+  "settings.adb.status.notFound": "Nem található",
+  "@settings.adb.status.notFound": {
+    "sourceHash": "e3ebaa1"
+  },
+  "settings.adb.status.watching": "A Cmdr figyeli a csatlakozó telefonokat.",
+  "@settings.adb.status.watching": {
+    "sourceHash": "d1538e3"
+  },
+  "settings.adb.status.notWatching": "A Cmdr most nem figyeli a csatlakozó telefonokat.",
+  "@settings.adb.status.notWatching": {
+    "sourceHash": "6e1936c"
+  },
+  "settings.adb.recheck": "Újraellenőrzés",
+  "@settings.adb.recheck": {
+    "sourceHash": "24fcca0"
+  },
+  "settings.adb.install.intro": "Telepítsd az Android platform tools csomagot, majd nyomd meg az Újraellenőrzés gombot:",
+  "@settings.adb.install.intro": {
+    "sourceHash": "5a82ea4"
+  },
+  "settings.adb.pathPlaceholder": "Az adb keresése a szokásos módon",
+  "@settings.adb.pathPlaceholder": {
+    "sourceHash": "e236ef2"
+  },
+  "settings.adb.browse": "Böngészés…",
+  "@settings.adb.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "settings.adb.pickerTitle": "Az adb parancs kiválasztása",
+  "@settings.adb.pickerTitle": {
+    "sourceHash": "d6fc142"
   }
 }

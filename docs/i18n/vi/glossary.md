@@ -2434,3 +2434,99 @@ làm: `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
   Assistant viết y vậy: `Hãy kết nối lại vào mạng và thử cập nhật lại.`
 - Không khóa nào trong hai khóa mang `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn, nên không có dấu
   nháy nào phải nhân đôi.
+
+## Trung tâm máy chủ, đợt 5: ghim/bỏ ghim + trang Cài đặt cho máy chủ và ADB (`menu.network.pinToSwitcher`, `.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section|summary.servers|adb`, `settings.appearance.tintSmb.*`, 2026-09-07)
+
+Bề mặt: (1) hai mục menu chuột phải trên hàng máy chủ trong bộ chọn ổ đĩa; (2) một thông báo một lần khi nhóm `Mạng`
+trong bộ chọn có tới năm máy chủ; (3) hai tiểu mục mới của Cài đặt > Hệ thống tệp (`Máy chủ (SFTP, WebDAV)` và
+`Android (ADB)`) cùng toàn bộ nội dung của chúng; (4) nhãn phủ màu khung máy chủ, nay phủ cả SFTP và WebDAV chứ không
+riêng SMB.
+
+Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1). Mọi dẫn chứng Apple lấy trực tiếp từ bundle macOS đang cài
+(`.loctable` qua `plistlib.load(f)['vi']` so với `['en']`, và `.lproj/*.strings` qua `plutil -convert json`), macOS
+26.6.2 build 25G83, 2026-09-07. Cách làm: `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" và §
+"Menu-bar labels".
+
+### Thuật ngữ chốt trong đợt này
+
+- **pin / unpin → `ghim` / `bỏ ghim`** · macOS AppKit `MenuCommands.loctable` (`Pin Tab` → `Ghim tab`, `Unpin Tab` →
+  `Bỏ ghim tab`) — đây là bộ lệnh menu chuẩn của hệ thống, nên nó thắng các biến thể lẻ trong Notes (`Gỡ ghim`),
+  StorageUI (`Hủy ghim`) hay Maps (`Gỡ ghim tuyến`) · `high`. Khớp luôn với chuỗi catalog đã ship
+  `commands.serversTogglePin.label` = `Ghim / bỏ ghim máy chủ`. ❌ Đừng viết `gỡ ghim` hay `hủy ghim` cho khóa mới: ba
+  bề mặt (mục menu, thân thông báo, mô tả cài đặt nội bộ) phải đọc y hệt nhau.
+- **group (một nhóm mục trong danh sách) → `nhóm`** · macOS Finder `vi.lproj/LocalizableMerged.strings` khóa `TL29`
+  (`Group` → `Nhóm`) và `vi.lproj/AFPUserGroupSheet.strings` khóa `ze7-Ht-Q14.title` · `high`. Tiêu đề nhóm trong bộ
+  chọn giữ nguyên chữ của `fileExplorer.navigation.groupNetwork` = `Mạng`, nên cả cụm là `nhóm Mạng`.
+- **Browse… (nút mở bộ chọn tệp) → `Duyệt…`** · macOS Finder `vi.lproj/ConnectToWindow.strings` khóa `48.title`
+  (`Browse` → `Duyệt`) — đúng bề mặt: nút `Duyệt` trong cửa sổ "Kết nối tới máy chủ" · `high`. Catalog đã ship
+  `servers.sheet.browse` = `Duyệt…`; giữ dấu … (U+2026).
+- **Not found (giá trị của một ô trạng thái) → `Không tìm thấy`** · macOS `PhotosGraph.framework` khóa
+  `PGErrorFormatNotFound`, `Stickies.app` khóa `NOT_FOUND`, và AppKit `AppKitErrors.loctable` dùng đúng động từ này ở
+  mọi câu "was not found" (`… vì không tìm thấy tệp.`) · `high`.
+- **Check Again → `Kiểm tra lại`** · macOS `Mail.app/ConnectionDoctor.loctable` khóa `100017.title` (`Check Again` →
+  `Kiểm tra lại`); `SoftwareUpdate.framework` khóa `CheckAgain` viết hoa `Lại` nhưng Cmdr dùng sentence case nên lấy
+  dạng của Mail · `high`. Dùng cho `settings.adb.recheck`, và `settings.adb.install.intro` phải nhắc lại ĐÚNG chữ này.
+- **trust (động từ) → `tin cậy`; trusted X → `X được tin cậy`; đã tin cậy rồi → `Đã tin cậy`** · macOS Setup Assistant
+  `To Another Mac View.loctable` khóa `89.label` (`Trust` → `Tin cậy`), Find My `Localizable-MOONDRAGON.loctable`
+  (`Trusted Locations` → `Vị trí được tin cậy`), Certificate Assistant (`Trusted Root` → `Gốc được Tin cậy`) · `high`.
+  Catalog đã ship `servers.hostKey.trustAndConnect` = `Tin cậy và kết nối`, nên `Trusted host keys` thành
+  `Khóa máy chủ được tin cậy`, còn tiền tố đứng trước ngày (`Trusted 2026-09-07`) thành `Đã tin cậy`, cùng khuôn với
+  `Đã kết nối` / `Đã lưu` / `Đã ghim` trong catalog.
+- **host key → `khóa máy chủ`, và trong câu thì chỉ là `khóa`** · catalog đã đặt lối này ở đợt 3
+  (`servers.refusal.hostKeyUntrusted` = `Cmdr chưa tin cậy khóa của {host}.`, `servers.hostKey.fingerprintLabel` =
+  `Dấu vân tay của khóa`) · `high`. `fingerprint` giữ `dấu vân tay`. Không có chuỗi macOS nào nói "host key", nên đây là
+  nhất quán catalog chứ không phải dẫn chứng Apple.
+- **Got it (nút đóng thông báo) → `Đã hiểu`** · ba chuỗi chị em đã ship trong catalog (`ai.toast.gotIt`,
+  `main.oldMacos.gotIt`, `updates.moveToApplicationsDialog.gotIt`) · `high`. ❌ Đừng nghĩ ra `Đã rõ` cho khóa mới:
+  `Đã rõ` chỉ dùng ở `whatsNew.optOutToast`, nơi tiếng Anh là "Got it, no more…" trong một câu chứ không phải nhãn nút.
+
+### Ghi chú theo chuỗi
+
+- **`menu.network.pinToSwitcher` → `Ghim vào bộ chọn ổ đĩa`** · tiếng Anh gọi danh sách này là "switcher", nhưng tiếng
+  Việt chỉ có MỘT tên cho nó, `bộ chọn ổ đĩa` (luật đã ghi trong `style.md`: một bề mặt, một tên tiếng Việt). Nhãn dài
+  hơn tiếng Anh, đó là mức giãn bình thường của tiếng Việt; menu chuột phải không bị bó chiều ngang như ô trong hàng.
+- **`servers.pinHint.body` →
+  `Bấm chuột phải vào một máy chủ rồi chọn Bỏ ghim, hoặc dùng “{command}” trong bảng lệnh. Máy chủ vẫn nằm trong danh sách Máy chủ.`**
+  · `Bỏ ghim` phải khớp TỪNG CHỮ với `menu.network.unpin`; `bảng lệnh` là chữ catalog dùng cho command palette
+  (`commands.appCommandPalette.label` = `Mở bảng lệnh`); `danh sách Máy chủ` lấy tên hàng trong bộ chọn từ
+  `fileExplorer.navigation.networkVolume` = `Máy chủ`. Dấu nháy quanh `{command}` là nháy kép cong “…” theo `style.md`,
+  không phải `"` thẳng của bản tiếng Anh. Câu cuối viết rõ chủ ngữ `Máy chủ` thay vì "It" trần, vì một `Nó vẫn nằm…` có
+  thể đọc thành cái nhóm chứ không phải máy chủ vừa bỏ ghim.
+- **`servers.pinHint.favorites` → `Mục ưa thích cũng làm tương tự.`** · `Mục ưa thích` lấy đúng tên nhóm trong bộ chọn
+  (`fileExplorer.navigation.groupFavorites`). `làm tương tự` giữ đúng nghĩa "cùng một cách làm" mà không phải nhắc lại
+  cả thao tác.
+- **`settings.behavior.serversPinHintSeen.*` đi theo khuôn của cặp chị em đã ship**
+  (`settings.behavior.openTerminalHereToastSeen.label` = `Đã hiện gợi ý về “Mở terminal tại đây”` / `.description` =
+  `Gợi ý một lần về việc chọn ứng dụng terminal đã hiện hay chưa.`), nên nhãn là `Đã hiện gợi ý về nhóm Mạng dài` và mô
+  tả là `Gợi ý một lần về việc bỏ ghim máy chủ đã hiện hay chưa.` Hai khóa này không bao giờ hiện trên giao diện.
+- **`settings.section.servers` → `Máy chủ (SFTP, WebDAV)`** · phần trong ngoặc là tên giao thức nên giữ nguyên, nhưng
+  `Servers` thì dịch: nó là tên một tiểu mục Cài đặt, đứng cạnh `Bản chia sẻ SMB/mạng` và `MTP (Android/Kindle/máy ảnh)`
+  vốn đã dịch phần mô tả.
+- **`settings.section.adb` giữ nguyên `Android (ADB)`** và mang `sameAsSourceJustification`: cả tên sản phẩm lẫn từ viết
+  tắt đều thuộc danh sách không dịch, y như `settings.section.git` và `settings.section.ai`. Đây là khóa DUY NHẤT của
+  đợt này giống hệt bản tiếng Anh.
+- **`settings.summary.adb` → `Duyệt điện thoại Android đang bật gỡ lỗi USB.`** · `gỡ lỗi USB` là chữ chính giao diện
+  Android tiếng Việt hiển thị (luật đã ghi trong `style.md`), và catalog đã ship đúng cụm
+  `một điện thoại Android đang bật gỡ lỗi USB` ở `settings.fileOperations.adbEnabled.description`.
+- **`settings.adb.status.watching` / `.notWatching` → `Đang theo dõi để phát hiện điện thoại.` /
+  `Hiện không theo dõi để phát hiện điện thoại.`** · `theo dõi` là chữ catalog dùng cho "watch"
+  (`common.downloadsFdaHint`, `settings.advanced.card.fileWatching` = `Theo dõi tệp`), nhưng một `theo dõi điện thoại`
+  trần đọc thành "giám sát cái điện thoại"; thêm `để phát hiện` (chữ của `settings.summary.mtp` =
+  `Phát hiện thiết bị Android…`) là đủ để trả lại nghĩa "chờ điện thoại xuất hiện". Không nhắc tới máy chủ ADB, đăng ký
+  hay socket, đúng yêu cầu của `en`.
+- **`settings.adb.pathPlaceholder` → `Tìm adb theo cách thông thường`** · dùng lại nguyên văn cụm đã ship ở
+  `settings.fileOperations.adbBinaryPath.description` (`Cmdr tìm adb theo cách thông thường`), vì ô này chính là ô mà mô
+  tả kia nói tới. `adb` giữ chữ thường.
+- **`settings.servers.trustedHostKeys.forget` → `Quên`** · ngoại lệ có chủ ý của luật `xóa` / `gỡ bỏ`, đã ghi trong
+  `style.md`; phải khớp với `menu.network.forgetServer` = `Quên máy chủ`. Tiêu đề xác nhận là `Quên khóa này?`.
+- **`settings.servers.trustedHostKeys.confirm` → `Lần tới khi bạn kết nối tới {host}, …`** · giới từ `tới` cho MÁY CHỦ,
+  theo đúng `servers.paneState.connecting` và `servers.hostKey.firstContactTitle` = `Lần đầu kết nối tới {host}`.
+  `{host}` là địa chỉ người dùng tự gõ, nên câu không giả định gì về độ dài hay dạng của nó.
+- **`settings.appearance.tintSmb.*` dịch lại theo bản tiếng Anh MỚI** (phủ màu nay tính cả SFTP và WebDAV, không riêng
+  SMB): nhãn `Phủ màu cho khung máy chủ (SMB, SFTP, WebDAV)` giữ khuôn của hai nhãn chị em
+  (`Phủ màu cho khung ổ đĩa cục bộ`, `Phủ màu cho khung MTP`), mô tả
+  `Màu nền phủ lên các khung hiển thị bản chia sẻ SMB, máy chủ SFTP, hoặc máy chủ WebDAV.` giữ khuôn liệt kê của
+  `settings.appearance.tintMtp.description`. `bản chia sẻ` là chữ catalog dùng cho "share".
+- Ngoài `settings.section.adb`, không khóa nào trong đợt này mang `sameAsSourceJustification`, và không giá trị nào chứa
+  dấu nháy đơn nên không có dấu nháy nào phải nhân đôi. Hai khóa `menu.*` thuộc họ RAW (không ICU) và cũng không có dấu
+  nháy.

@@ -521,6 +521,14 @@
   "@menu.network.disconnect": {
     "sourceHash": "acfc5be"
   },
+  "menu.network.pinToSwitcher": "Maak vast in volumekiezer",
+  "@menu.network.pinToSwitcher": {
+    "sourceHash": "868b68d"
+  },
+  "menu.network.unpin": "Maak los",
+  "@menu.network.unpin": {
+    "sourceHash": "ee3c716"
+  },
   "menu.network.forgetServer": "Vergeet server",
   "@menu.network.forgetServer": {
     "sourceHash": "e43c85d"

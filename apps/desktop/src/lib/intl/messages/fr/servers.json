@@ -1,4 +1,20 @@
 {
+  "servers.pinHint.title": "Votre groupe Réseau s''allonge",
+  "@servers.pinHint.title": {
+    "sourceHash": "0cf001a"
+  },
+  "servers.pinHint.body": "Faites un clic droit sur un serveur et choisissez Désépingler, ou utilisez « {command} » dans la palette de commandes. Le serveur reste dans la liste Serveurs.",
+  "@servers.pinHint.body": {
+    "sourceHash": "0663b02"
+  },
+  "servers.pinHint.favorites": "Les favoris fonctionnent de la même façon.",
+  "@servers.pinHint.favorites": {
+    "sourceHash": "932faeb"
+  },
+  "servers.pinHint.gotIt": "D''accord",
+  "@servers.pinHint.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "servers.hub.colName": "Nom",
   "@servers.hub.colName": {
     "sourceHash": "dcd1d52"

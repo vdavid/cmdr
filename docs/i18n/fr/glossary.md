@@ -2752,3 +2752,93 @@ Notes de formulation :
   `Ce serveur` (masculin), sûr côté accord. `réessayer` est le terme du glossaire (§ Terms).
 - Le `…` de `reconnecting` est U+2026, comme la source anglaise et comme `Connexion à {name}…`. Toutes les apostrophes
   sont ASCII et doublées (`n''y`).
+
+## Épingler un serveur au sélecteur, les clés d'hôte approuvées, et la ligne ADB des réglages (2026-09-07, `menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.appearance.tintSmb.*`)
+
+Trois surfaces : les deux éléments de menu contextuel qui épinglent ou retirent un serveur du sélecteur de volume plus
+la notification ponctuelle qui les explique ; la page Réglages > Systèmes de fichiers > Serveurs, qui liste les clés
+d'hôte SSH approuvées ; et la page Android (ADB), qui dit où se trouve la commande `adb`.
+
+Le tas de références (`_ignored/i18n/fr/`) est absent de cette machine (`~/projects-git/vdavid/cmdr/_ignored/` n'existe
+pas, chemin absolu du clone principal vérifié). Repli documenté : `docs/i18n/reference-pile/how-to-mine.md` § "No pile
+on this machine?" décrit ce repli. Minage direct des paquets macOS installés, `plutil -convert json` sur les
+`.loctable`, macOS 26.6.2 build 25G83, 2026-09-07. Termes :
+
+- **not found (une commande absente) → `Introuvable`** · AppKit `FindPanel.loctable`, clé `Not found` → `Introuvable` ;
+  PhotosGraph `Localizable.loctable`, clé `PGErrorFormatNotFound` → `Introuvable` ; PrintCore `cups.loctable`,
+  `Not Found` → `Introuvable` · `high`. Reprend le `not found → introuvable` déjà fixé au § passe `errors`.
+- **found at {path} (la valeur d'état quand la commande existe) → `Trouvé : {path}`** · Apple rend ce genre de valeur
+  d'état par `<mot> : %@` : PassKit `Localizable.loctable`, `SEARCH_PASS_ADDED` (`Added %@` → `Ajout : %@`),
+  SpotlightServices `SpotlightServices.loctable`, `DATE_MODIFIED_FORMAT` (`Modified %@` → `Modification : %@`) · `high`.
+  La paire `Trouvé` / `Introuvable` partage sa racine, exactement comme `Found` / `Not found` en anglais. Espace ASCII
+  avant le deux-points, comme tout le set `fr`.
+- **Re-check (le bouton qui relance la recherche de `adb`) → `Rechercher à nouveau`** · le verbe vient d'Apple, qui rend
+  `Check for X` par `Rechercher X` (AMPDevices `Localizable.loctable`, clé `6bm5j9gkkw` : `Check for Update` →
+  `Rechercher les mises à jour`) ; la reprise vient de PassKit `Localizable.loctable`,
+  `IDENTITY_VERIFICATION_ID_SCAN_AGAIN_BUTTON_TITLE` (`Scan Again` → `Scanner à nouveau`) · `high`. ❗ Pas `Vérifier` :
+  le catalogue a déjà écarté ce verbe pour `Check for updates` (§ `Check for updates`). ⚠️ Trois mots pour un bouton
+  étroit : à repasser au pseudolocale `en-XA`.
+- **trusted (une clé approuvée) → `approuvé` / `approuvée`** · confirme le `to trust → approuver` déjà fixé (§ Le hub
+  des serveurs : panneau de connexion) : PrintCore `cups.loctable` (`untrusted certificate` →
+  `certificat non approuvé`), Security `SecErrorMessages.loctable` clé `-66996` (`signer is not trusted` →
+  `le signataire n''est pas approuvé`) · `high`. L'accord porte sur `la clé` (féminin), jamais sur la personne.
+- **`Trusted <date>` (l'étiquette juste avant la date) → `Approuvée le`** · Apple met la date derrière une préposition
+  ou un deux-points, jamais collée au participe : PaperKit et AnnotationKit `AKSignature.loctable` (`Created %@` →
+  `Création le %@`), PassKit `LAST_UPDATED_FORMAT` (`Updated %@` → `Mise à jour : %@`) · `high`. `le` est obligatoire en
+  français ; `Approuvée 2026-09-07` serait agrammatical.
+- **fingerprint (l'empreinte d'une clé) → `empreinte`** · source plus proche que le Safari cité au § feuille de
+  connexion : Security `Certificate.loctable` et SecurityFoundation `Certificate.loctable`, clé `Fingerprints` →
+  `Empreintes`, et Security `Trust.loctable` (`Anchor does not match pinned fingerprint` →
+  `Le point d''ancrage ne correspond pas à l''empreinte épinglée.`) · `high`. Féminin, donc `l''approuvez` / `vérifiée`
+  s'accordent sans risque.
+- **plugged in (un téléphone branché en USB) → `branché`** · Setup Assistant `Localizable.loctable`
+  (`Make sure your Mac is plugged in…` → `Assurez-vous que votre Mac est branché…`), AMPDevices
+  (`is connected to a low-speed USB 1.1 port` → `est branché sur un port USB 1.1 à faible vitesse`) · `high`.
+- **Choose the adb command → `Choisir la commande adb`** · moule `Choose X…` → `Choisir X…` d'Apple (clé `N137` du
+  Finder, `Choose Application…` → `Choisir une application…`), déjà repris par `settings.behavior.openTerminalHereApp`
+  (§ « Ouvrir un terminal ici ») · `high`. `adb` reste en minuscules : c'est le nom de la commande.
+
+Notes de formulation :
+
+- **`Pin to switcher` raccourcit `sélecteur de volume` en `sélecteur`, exactement comme l'anglais.** Le terme complet
+  reste `le sélecteur de volume` (§ Le hub des serveurs : la table), mais l'élément de menu vit dans une liste
+  déroulante étroite et l'anglais y écrit `switcher` tout court : `Épingler au sélecteur`. Le verbe est celui déjà fixé
+  pour les onglets et les serveurs (`commands.serversTogglePin.label` → `Épingler ou désépingler le serveur`).
+- **`Unpin` → `Désépingler`**, jamais `Ne plus épingler` (la forme AppKit) ni `Retirer` : `retirer` se lirait comme une
+  suppression, et le serveur reste enregistré. Les trois clés livrées (`menu.tab.unpinTab`, `commands.tabTogglePin`,
+  `commands.serversTogglePin`) font foi.
+- **Le corps de la notification nomme le serveur, jamais un pronom accordé** : `It stays in the Servers list.` devient
+  `Le serveur reste dans la liste Serveurs.`, sur le moule déjà fixé (`It''s still saved.` →
+  `Le serveur reste enregistré.`). `Serveurs` en capitale nomme la rangée du sélecteur, comme `servers.hub.*`.
+- **Le nom de commande inséré prend les guillemets français** avec espace intérieure :
+  `utilisez « {command} » dans la palette de commandes` (style guide § Notes ; la source anglaise met déjà des
+  guillemets droits).
+- **`Got it` → `D''accord`**, mot pour mot les trois clés livrées (`ai.toast.gotIt`,
+  `updates.moveToApplicationsDialog.gotIt`, `main.oldMacos.gotIt`), sinon `desktop-i18n-term-consistency` compte une
+  divergence.
+- **`Your Network group is getting long` → `Votre groupe Réseau s''allonge`.** `Réseau` reprend mot pour mot l'en-tête
+  du sélecteur (`fileExplorer.navigation.groupNetwork`). Constat, pas avertissement : ni `trop long`, ni
+  `commence à être`.
+- **L'état vide de la page des clés suit `askCmdr.sessions.empty`** : `Nothing trusted yet.` →
+  `Pas encore de clé approuvée.`, comme `Pas encore de serveur` et `Pas encore de conversation`.
+- **`and asks` a besoin d'un objet en français** : `vous demande votre accord`. `demander` seul resterait suspendu.
+- **`Watching for phones.` ne nomme ni l'abonnement ni le serveur ADB** :
+  `Cmdr détecte un téléphone dès qu''il est branché.` / `Cmdr ne détecte pas les téléphones pour l''instant.` Voix
+  active, verbe `détecter` déjà employé par les voisins MTP (`settings.summary.mtp` → `Détecter les appareils Android…`,
+  `mtpEnabled.description` → `Détecte et se connecte…`), et `branché` sourcé chez Apple. Pas de
+  `Surveillance des téléphones`, qui se lirait comme un module technique.
+- **Le champ vide reprend MOT POUR MOT la description livrée** : `Chercher adb de la manière habituelle` calque
+  `settings.fileOperations.adbBinaryPath.description` (« … Cmdr cherche adb de la manière habituelle … »).
+- **`then press Re-check:` devient `puis cliquez sur Rechercher à nouveau :`**, sans guillemets : l'anglais n'en met pas
+  et Apple écrit la même phrase nue (AMPDevices, clé `rr4pkgnu56` :
+  `Cliquez sur Rechercher les mises à jour pour vérifier…`). Espace ASCII avant le deux-points.
+- **`Android platform tools` garde sa capitale de produit** : `les Android Platform Tools`, comme
+  `settings.fileOperations.adbEnabled.description` déjà livrée (§ Terms, style guide).
+- **La teinte des panneaux couvre maintenant trois protocoles.** `settings.appearance.tintSmb.*` ne dit plus
+  `panneaux SMB/réseau` : le libellé devient `Teinter les panneaux de serveur (SMB, SFTP, WebDAV)` et la description
+  calque la structure de sa sœur `tintMtp.description` (`Teinte de fond appliquée aux panneaux affichant …`).
+- **Une seule valeur est identique à l'anglais** (`settings.section.adb`, « Android (ADB) ») et porte sa
+  `sameAsSourceJustification` : Apple n'a aucun équivalent (un grep de `Android` sur tous les `.loctable` du système ne
+  renvoie rien sur macOS 26.6.2 build 25G83), et le glossaire fixe déjà les deux mots comme verbatim.
+- Toutes les apostrophes des valeurs ICU sont ASCII et doublées (`s''allonge`, `D''accord`, `l''astuce`, `d''hôte`,
+  `l''empreinte`, `l''approuvez`, `qu''il`, `l''instant`). Les deux clés `menu.*` sont RAW et n'en contiennent aucune.

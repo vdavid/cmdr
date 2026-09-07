@@ -516,6 +516,14 @@
   "@menu.network.disconnect": {
     "sourceHash": "acfc5be"
   },
+  "menu.network.pinToSwitcher": "Rögzítés a kötetválasztóban",
+  "@menu.network.pinToSwitcher": {
+    "sourceHash": "868b68d"
+  },
+  "menu.network.unpin": "Rögzítés feloldása",
+  "@menu.network.unpin": {
+    "sourceHash": "ee3c716"
+  },
   "menu.network.forgetServer": "Szerver elfelejtése",
   "@menu.network.forgetServer": {
     "sourceHash": "e43c85d"

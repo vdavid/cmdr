@@ -1,4 +1,20 @@
 {
+  "servers.pinHint.title": "Seu grupo Rede está ficando grande",
+  "@servers.pinHint.title": {
+    "sourceHash": "0cf001a"
+  },
+  "servers.pinHint.body": "Clique em um servidor com o botão direito e escolha Desafixar, ou use “{command}” na paleta de comandos. O servidor continua na lista Servidores.",
+  "@servers.pinHint.body": {
+    "sourceHash": "0663b02"
+  },
+  "servers.pinHint.favorites": "Os Favoritos funcionam do mesmo jeito.",
+  "@servers.pinHint.favorites": {
+    "sourceHash": "932faeb"
+  },
+  "servers.pinHint.gotIt": "Entendi",
+  "@servers.pinHint.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "servers.hub.colName": "Nome",
   "@servers.hub.colName": {
     "sourceHash": "dcd1d52"

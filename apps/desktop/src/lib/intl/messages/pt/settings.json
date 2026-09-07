@@ -150,13 +150,13 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Matizar painéis SMB/rede",
+  "settings.appearance.tintSmb.label": "Matizar painéis de servidor (SMB, SFTP, WebDAV)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "66fd4a8"
+    "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "Matiz de fundo aplicado a painéis que mostram um compartilhamento SMB ou de rede.",
+  "settings.appearance.tintSmb.description": "Matiz de fundo aplicado a painéis que mostram um compartilhamento SMB, um servidor SFTP ou um servidor WebDAV.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "cf3a857"
+    "sourceHash": "2e071d3"
   },
   "settings.appearance.tintMtp.label": "Matizar painéis MTP",
   "@settings.appearance.tintMtp.label": {
@@ -1534,6 +1534,14 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.serversPinHintSeen.label": "Dica de grupo Rede grande exibida",
+  "@settings.behavior.serversPinHintSeen.label": {
+    "sourceHash": "8d632ca"
+  },
+  "settings.behavior.serversPinHintSeen.description": "Se a dica única sobre desafixar servidores já foi exibida.",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "sourceHash": "fc0722f"
+  },
   "settings.section.notifications": "Notificações",
   "@settings.section.notifications": {
     "sourceHash": "7880118"
@@ -1715,6 +1723,15 @@
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
+  "settings.section.servers": "Servidores (SFTP, WebDAV)",
+  "@settings.section.servers": {
+    "sourceHash": "58704f8"
+  },
+  "settings.section.adb": "Android (ADB)",
+  "@settings.section.adb": {
+    "sourceHash": "bc9c1a1",
+    "sameAsSourceJustification": "Product name plus its debug-bridge abbreviation: 'Android' and 'ADB' are on the do-not-translate list and macOS pt-BR keeps both verbatim, so the whole label (parentheses included) is deliberately identical. The sibling section settings.section.mtp is translated where it has translatable words ('MTP (Android/Kindle/câmeras)'), so this is a genuine brand string, not an untranslated default."
+  },
   "settings.section.mtp": "MTP (Android/Kindle/câmeras)",
   "@settings.section.mtp": {
     "sourceHash": "a68fa47"
@@ -1853,6 +1870,14 @@
   "settings.summary.smbNetworkShares": "Ativar rede, conexões SMB diretas, cache de compartilhamentos e tempos limite.",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
+  },
+  "settings.summary.servers": "As chaves de host SSH em que você confiou.",
+  "@settings.summary.servers": {
+    "sourceHash": "40940fa"
+  },
+  "settings.summary.adb": "Navegue por um celular Android com a depuração USB ativada.",
+  "@settings.summary.adb": {
+    "sourceHash": "fb69a13"
   },
   "settings.summary.mtp": "Detecta dispositivos Android, Kindle e câmera por USB.",
   "@settings.summary.mtp": {
@@ -2328,5 +2353,74 @@
   "settings.window.loading": "Carregando ajustes…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.servers.card.trustedHostKeys": "Chaves de host confiáveis",
+  "@settings.servers.card.trustedHostKeys": {
+    "sourceHash": "46c5c9d"
+  },
+  "settings.servers.trustedHostKeys.description": "O Cmdr pergunta antes de confiar na chave de um servidor na primeira vez que você conecta, e guarda sua resposta aqui. Os servidores salvos ficam na lista Servidores, e não nesta página.",
+  "@settings.servers.trustedHostKeys.description": {
+    "sourceHash": "bbbed1a"
+  },
+  "settings.servers.trustedHostKeys.empty": "Nenhuma chave confiável ainda. Na primeira vez que você conectar a um servidor SFTP, o Cmdr mostra a impressão digital da chave e pergunta se você confia nela.",
+  "@settings.servers.trustedHostKeys.empty": {
+    "sourceHash": "7bc982e"
+  },
+  "settings.servers.trustedHostKeys.approvedPrefix": "Confiável desde",
+  "@settings.servers.trustedHostKeys.approvedPrefix": {
+    "sourceHash": "639538c"
+  },
+  "settings.servers.trustedHostKeys.forget": "Esquecer",
+  "@settings.servers.trustedHostKeys.forget": {
+    "sourceHash": "a6bd489"
+  },
+  "settings.servers.trustedHostKeys.confirmTitle": "Esquecer esta chave?",
+  "@settings.servers.trustedHostKeys.confirmTitle": {
+    "sourceHash": "524bfa5"
+  },
+  "settings.servers.trustedHostKeys.confirm": "Na próxima vez que você conectar a {host}, o Cmdr vai mostrar a impressão digital da chave e perguntar se você confia nela.",
+  "@settings.servers.trustedHostKeys.confirm": {
+    "sourceHash": "6db1a3f"
+  },
+  "settings.adb.status.label": "Status",
+  "@settings.adb.status.label": {
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "Glossary-locked: 'Status' kept verbatim, naturalized in pt-BR tech UI and used consistently across pt (glossary 'status . Status (kept verbatim)'); byte-identical to the shipped siblings licensing.section.labelStatus and servers.hub.colStatus, which carry the same English."
+  },
+  "settings.adb.status.foundAt": "Encontrado em {path}",
+  "@settings.adb.status.foundAt": {
+    "sourceHash": "c49cc6a"
+  },
+  "settings.adb.status.notFound": "Não encontrado",
+  "@settings.adb.status.notFound": {
+    "sourceHash": "e3ebaa1"
+  },
+  "settings.adb.status.watching": "O Cmdr está aguardando celulares.",
+  "@settings.adb.status.watching": {
+    "sourceHash": "d1538e3"
+  },
+  "settings.adb.status.notWatching": "O Cmdr não está aguardando celulares no momento.",
+  "@settings.adb.status.notWatching": {
+    "sourceHash": "6e1936c"
+  },
+  "settings.adb.recheck": "Verificar novamente",
+  "@settings.adb.recheck": {
+    "sourceHash": "24fcca0"
+  },
+  "settings.adb.install.intro": "Instale as ferramentas de plataforma do Android e depois pressione Verificar novamente:",
+  "@settings.adb.install.intro": {
+    "sourceHash": "5a82ea4"
+  },
+  "settings.adb.pathPlaceholder": "Procurar o adb nos lugares de sempre",
+  "@settings.adb.pathPlaceholder": {
+    "sourceHash": "e236ef2"
+  },
+  "settings.adb.browse": "Escolher…",
+  "@settings.adb.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "settings.adb.pickerTitle": "Escolher o comando adb",
+  "@settings.adb.pickerTitle": {
+    "sourceHash": "d6fc142"
   }
 }

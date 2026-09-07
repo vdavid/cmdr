@@ -2737,3 +2737,129 @@ van het Engels.
 - **`er valt niets te typen`** (`paneState.signedOutNothingToAsk`): ongesourcete wending. `hoef je niets in te vullen`
   is warmer en gangbaarder in het Nederlands, maar verschuift de zin van "er is niets" naar "jij hoeft niets". Bevestig
   welke van de twee in een klein paneel beter leest.
+
+## De vastzet-hint, de vertrouwde serversleutels en het ADB-paneel (`menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.summary.servers`/`.adb`, `settings.appearance.tintSmb.*`, 2026-09-07)
+
+Eenendertig sleutels: de twee contextmenu-items op een serverrij in de volumekiezer, de eenmalige melding die verschijnt
+zodra er vijf servers in de groep `Netwerk` staan, de instellingenpagina met de sleutels die deze Mac van servers
+vertrouwt, de instellingenpagina voor Android via ADB, en het hernoemde tintlabel dat nu ook SFTP en WebDAV dekt.
+
+De referentiestapel (`_ignored/i18n/nl/`) ontbreekt op deze machine (de M1-agentbox), dus Tier 1 komt uit de LIVE
+macOS-bundels volgens `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?". Alles geverifieerd op
+macOS 26.6.2, build 25G83, 2026-09-07. Tier 2 (Microsoft) was onbereikbaar; wat alleen daarmee te beslissen viel, staat
+op `tentative`.
+
+Termen die letterlijk uit de bundels kwamen:
+
+- **Unpin → `Maak los`** · exact dit Engels, exact deze waarde, in acht bundels tegelijk (Maps, Shortcuts, MapKit,
+  NotesShared, PhotosUICore, RemindersAppIntents, ScreenReaderOutput, VideosUI, telkens `Localizable.loctable` /
+  `MapKit.loctable`) · `high`. Gelijk aan het al aanwezige `menu.tab.unpinTab` (`Maak tabblad los`).
+- **Pin → `Maak vast`; Pin to <plek> → `Maak vast in <plek>`** · macOS `Localizable.loctable` (`Pin`→`Maak vast`,
+  `Pin in Menu Bar`→`Maak vast in menubalk`, `Pin Tab`→`Maak tabblad vast`) · `high`. Dus `Pin to switcher` →
+  **`Maak vast in volumekiezer`**: Apples eigen `Maak vast in <plek>`-vorm met de al vastgelegde naam `volumekiezer`.
+  Het partikel staat hier vóór de plaatsbepaling omdat Apple dat zelf zo schrijft; de partikel-achteraan-regel in
+  `style.md` gaat over `Voeg … toe`, waar de voorzetselgroep een complement van het werkwoord is.
+- **Check Again → `Controleer opnieuw`** · Mail `ConnectionDoctor.loctable`, SoftwareUpdate
+  `SUSoftwareUpdateController.loctable`, VoiceBankingUI · `high`. Dus `Re-check` → `Controleer opnieuw`: het Engels is
+  ander woordgebruik voor precies dezelfde knop.
+- **Not found → `Niet gevonden`** · macOS `Localizable.loctable` (`Not found`→`Niet gevonden`, `Not Found`→
+  `Niet gevonden`, `Not found in keychain`→`Niet gevonden in sleutelhanger`) · `high`.
+- **Forget (knop) → `Vergeet`** · macOS `Localizable.loctable` (`Forget`→`Vergeet`, `Forget This Device`→
+  `Vergeet dit apparaat`, `Forget This Network`→`Vergeet dit netwerk`) · `high`. Gelijk aan `menu.network.forgetServer`
+  (`Vergeet server`), zoals de `@key` vraagt.
+- **Trusted <ding> → `Vertrouwde <ding>`** · macOS `Localizable.loctable` (`Trusted servers`→`Vertrouwde servers`,
+  `Trusted certificate`→`Vertrouwd certificaat`, `Trusted Locations`→`Vertrouwde locaties`) · `high`.
+- **Choose the <ding> → `Kies de/het <ding>`** · macOS `Localizable.loctable`, tientallen zinnen
+  (`Choose the volume you would like to restore to '%@'.`→`Kies het volume dat je wilt terugzetten op '%@'.`) · `high`.
+- **Browse → `Blader`; Browse <plek> → `Blader op <plek>`** · Finder `nl.lproj/ConnectToWindow.strings` `48.title` en
+  macOS `Localizable.loctable` (`Browse %@`→`Blader op %@`) · `high`. `Browse…` blijft `Blader…`, gelijk aan
+  `servers.sheet.browse`.
+- **in de gaten houden** als Apples weergave van doorlopend meekijken (`Keep track of your everyday items`→
+  `Houd je veelgebruikte objecten in de gaten`) · `high` op het idioom, maar niet gebruikt: zie `Cmdr let op telefoons.`
+  bij de review-vlaggen hieronder.
+
+Vormen die uit de eigen catalogus kwamen (byte-identiek Engels wint van een frisse keuze):
+
+- `Got it` → **`Begrepen`**, byte-identiek aan `ai.toast.gotIt`, `main.oldMacos.gotIt` en
+  `updates.moveToApplicationsDialog.gotIt`.
+- `Right-click <ding>` → **`Klik met de rechtermuisknop op <ding>`** (`errors.listing.*.suggestion`,
+  `fileExplorer.navigation.favoriteTooltip`); `command palette` → **`opdrachtenpalet`** (`menu.view.commandPalette`,
+  `shortcuts.scope.commandPalette`), met `in het opdrachtenpalet` zoals `main.upgradeNudge.other`.
+- `Favorites` (de groep in de volumekiezer) → **`Favorieten`** (`fileExplorer.navigation.groupFavorites`); de groep
+  `Network` heet **`Netwerk`** (`fileExplorer.navigation.groupNetwork`), dus de meldingskop noemt hem
+  `de groep Netwerk`.
+- `USB debugging` → **`USB-foutopsporing`** en `turned on` → **`ingeschakeld`**, gelijk aan
+  `settings.fileOperations.adbEnabled.description`; `Android platform tools` blijft Engels, gelijk aan diezelfde
+  sleutel; `de opdracht adb` volgt `settings.fileOperations.adbBinaryPath.*`.
+- `Look for adb the usual way` → **`Zoek op de gebruikelijke manier naar adb`**, dezelfde woorden als
+  `settings.fileOperations.adbBinaryPath.description` (`dan zoekt Cmdr op de gebruikelijke manier naar adb`).
+- Het interne hint-paar volgt `settings.behavior.openTerminalHereToastSeen.*` en `.doubleClickOnPaneNotificationSeen.*`:
+  `Hint voor … getoond` / `Of de eenmalige hint over … is getoond.`
+- Het tintlabel volgt zijn twee zusjes (`tintLocal`, `tintMtp`): `<soort>panelen tinten` plus
+  `Achtergrondtint voor panelen die … tonen.`, met de opsomming zonder komma vóór `of`, zoals `tintMtp.description`.
+
+Nieuw gemunte vormen, zonder bron in een bundel:
+
+- **host key → `serversleutel`** · `tentative`. Het glossariumrijtje `host key → de sleutel` blijft gelden waar het
+  Engels alleen `key` zegt (het serverpaneel, `hostKey.*`); hier zégt het Engels `host key`, en een instellingenpagina
+  met een lijst heeft een zelfstandig naamwoord nodig. `hostsleutel` was al afgewezen; `serversleutel` sluit aan bij de
+  paginanaam `Servers (SFTP, WebDAV)` en bij Apples eigen bezitsvorm (`de sleutel van de host`,
+  `Vertrouwde certificaten voor server`). Dus `Trusted host keys` → `Vertrouwde serversleutels` en
+  `The SSH host keys you have trusted.` → `De SSH-serversleutels die je hebt vertrouwd.`
+- **Trusted <datum> → `Vertrouwd op`** · `high` op `Vertrouwd`, `tentative` op het voorzetsel. `Vertrouwd 2026-09-07`
+  bestaat niet in het Nederlands, en `DateLabel` zet er een absolute datum achter (geen `vandaag`), dus `op` kan er
+  veilig bij.
+- **Found at {path} → `Gevonden: {path}`** · `tentative`. Apple heeft geen `Found at`; wel `Location: %@` →
+  `Locatie: %@`, en die dubbelepunt-vorm ontwijkt de vraag of een pad `op` of `in` krijgt (`in` hoort bij een map, en
+  `{path}` eindigt op het programma zelf). Werkt ook bij een lang pad dat erachter afbreekt.
+- **Watching for phones. → `Cmdr let op telefoons.`** · `tentative`, zie de review-vlaggen.
+
+Notities:
+
+- **`menu.network.*` is een RAW-familie**: gewone apostroffen, geen ICU-verdubbeling. Geen van beide waarden bevat er
+  een.
+- **Geen enkele ICU-waarde in deze pass bevat een ASCII-apostrof**, dus nergens verdubbeling. De aanhalingstekens in
+  `servers.pinHint.body` en `settings.adb.install.intro` zijn de enkele krulletjes `‘…’` van macOS-Nederlands
+  (U+2018/U+2019, geen ICU-escapeteken). Het Engels zet `Unpin` en `Re-check` zónder aanhalingstekens in de zin; het
+  Nederlands zet ze er wél omheen, zoals Finder dat doet (`Klik op ‘Ga door’`), en de labels staan er woord voor woord
+  in: `Maak los` en `Controleer opnieuw`.
+- **`{command}`, `{path}` en `{host}` zijn ongecontroleerde invoegingen** en krijgen geen voornaamwoord.
+  `trustedHostKeys.confirm` zegt daarom `de vingerafdruk van de sleutel` in plaats van `zijn vingerafdruk`, en
+  `servers.pinHint.body` sluit af met `De server blijft in de lijst Servers staan.` in plaats van `Hij blijft …`.
+- **`vraagt het of je die vertrouwt`**: het Engels laat `and asks` zonder object staan; het Nederlands kan dat niet, dus
+  de vraag wordt uitgeschreven. `het` is Cmdr, zoals in `settings.behavior.openTerminalHereApp.description`
+  (`de terminal-apps die het op deze Mac vindt`).
+- **`Deze sleutel vergeten?`** staat in de infinitief-eindvorm van een bevestigingsvraag
+  (`fileExplorer.network.browser.removeHostConfirm`), wat Apple ook doet (`Forget %lld Wi‑Fi networks?` →
+  `%lld WLAN-netwerken vergeten?`), met de knop ernaast in de imperatief (`Vergeet`).
+- **`sameAsSourceJustification` staat op drie sleutels**: `settings.section.servers` (`Servers` is ook het Nederlandse
+  meervoud, en `SFTP`/`WebDAV` zijn protocolnamen), `settings.section.adb` (`Android` is een productnaam, `ADB` de
+  afkorting) en `settings.adb.status.label` (`Status`→`Status`, dezelfde bron als `servers.hub.colStatus`).
+
+### Review-vlaggen van deze pass
+
+- **`Maak vast in volumekiezer` / `Maak los` tegenover `Zet server vast / maak hem los`**
+  (`commands.serversTogglePin.label`): één begrip, twee werkwoordparen. De menu-items zijn nu Tier-1-gesourcet
+  (`Pin in Menu Bar` → `Maak vast in menubalk`) en gelijk aan `menu.tab.pinTab`/`.unpinTab`; de opdracht in het palet
+  koos eerder `vastzetten`. `servers.pinHint.body` verwijst naar het menu-item, dus die zegt `Maak los`. Aanbeveling:
+  veeg de opdracht mee naar `Maak server vast / maak hem los`, of leg vast dat het palet een eigen register houdt.
+- **`serversleutel`** (`settings.servers.card.trustedHostKeys`, `settings.summary.servers`): gemunt, geen bron. Het
+  alternatief `Vertrouwde sleutels van servers` is ondubbelzinniger maar langer, en in de samenvattingsregel hangt de
+  bijzin dan aan `servers` in plaats van aan de sleutels. Bevestig dat `serversleutel` niet leest als "sleutel tót de
+  server".
+- **`Cmdr let op telefoons.` / `Cmdr let nu niet op telefoons.`** (`settings.adb.status.watching`/`.notWatching`):
+  ongesourcet. Het Engels heeft geen onderwerp, het Nederlands heeft er een nodig. Alternatieven:
+  `Cmdr houdt in de gaten of er een telefoon wordt aangesloten.` (Apples idioom, maar twee keer zo lang voor een stille
+  regel) of `Cmdr ziet het meteen als je een telefoon aansluit.` (warmer, maar de ontkenning wordt stroef). Bevestig
+  welke in een rustige regel onder de statusrij het beste leest.
+- **`Gevonden: {path}`** (`settings.adb.status.foundAt`): de dubbelepunt-vorm wijkt af van het Engelse `Found at`.
+  `Gevonden op {path}` is dichter bij het Engels; `op` vóór een absoluut pad naar een programma is alleen niet stevig
+  gesourcet. Bevestig welke naast de rij `Status` beter leest.
+- **`Vertrouwd op`** (`settings.servers.trustedHostKeys.approvedPrefix`): het voorzetsel is toegevoegd omdat Nederlands
+  het nodig heeft. Controleer dit tegen elke datumnotatie uit `appearance.dateTimeFormat`.
+- **`Je groep Netwerk wordt lang`** (`servers.pinHint.title`): het bezittelijk voornaamwoord vóór een appositie
+  (`je groep Netwerk`) is een letterlijke overname van het Engels. `De groep Netwerk wordt lang` is neutraler;
+  `Je groep Netwerk begint lang te worden` ligt dichter bij `is getting`. Bevestig de toon: vriendelijk en feitelijk,
+  nooit een waarschuwing.
+- **`Serverpanelen tinten (SMB, SFTP, WebDAV)`** (`settings.appearance.tintSmb.label`): 39 tekens tegen 37 in het
+  Engels, in een instellingenrij met een kleurkiezer ernaast. Overloop-check tegen de pseudolocale.

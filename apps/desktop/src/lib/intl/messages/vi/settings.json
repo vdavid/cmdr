@@ -148,13 +148,13 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Phủ màu cho khung SMB/mạng",
+  "settings.appearance.tintSmb.label": "Phủ màu cho khung máy chủ (SMB, SFTP, WebDAV)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "66fd4a8"
+    "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "Màu nền phủ lên các khung hiển thị bản chia sẻ SMB hoặc mạng.",
+  "settings.appearance.tintSmb.description": "Màu nền phủ lên các khung hiển thị bản chia sẻ SMB, máy chủ SFTP, hoặc máy chủ WebDAV.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "cf3a857"
+    "sourceHash": "2e071d3"
   },
   "settings.appearance.tintMtp.label": "Phủ màu cho khung MTP",
   "@settings.appearance.tintMtp.label": {
@@ -1530,6 +1530,14 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.serversPinHintSeen.label": "Đã hiện gợi ý về nhóm Mạng dài",
+  "@settings.behavior.serversPinHintSeen.label": {
+    "sourceHash": "8d632ca"
+  },
+  "settings.behavior.serversPinHintSeen.description": "Gợi ý một lần về việc bỏ ghim máy chủ đã hiện hay chưa.",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "sourceHash": "fc0722f"
+  },
   "settings.section.notifications": "Thông báo",
   "@settings.section.notifications": {
     "sourceHash": "7880118"
@@ -1712,6 +1720,15 @@
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
+  "settings.section.servers": "Máy chủ (SFTP, WebDAV)",
+  "@settings.section.servers": {
+    "sourceHash": "58704f8"
+  },
+  "settings.section.adb": "Android (ADB)",
+  "@settings.section.adb": {
+    "sourceHash": "bc9c1a1",
+    "sameAsSourceJustification": "Product name 'Android' plus its debug-bridge acronym 'ADB' in parentheses, both kept verbatim per the do-not-translate rule; the sibling section titles settings.section.git and settings.section.ai are identical for the same reason. Nothing else in the string to translate."
+  },
   "settings.section.mtp": "MTP (Android/Kindle/máy ảnh)",
   "@settings.section.mtp": {
     "sourceHash": "a68fa47"
@@ -1850,6 +1867,14 @@
   "settings.summary.smbNetworkShares": "Bật kết nối mạng, kết nối SMB trực tiếp, bộ đệm bản chia sẻ, và thời gian chờ.",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
+  },
+  "settings.summary.servers": "Các khóa máy chủ SSH mà bạn đã tin cậy.",
+  "@settings.summary.servers": {
+    "sourceHash": "40940fa"
+  },
+  "settings.summary.adb": "Duyệt điện thoại Android đang bật gỡ lỗi USB.",
+  "@settings.summary.adb": {
+    "sourceHash": "fb69a13"
   },
   "settings.summary.mtp": "Phát hiện thiết bị Android, Kindle, và máy ảnh qua USB.",
   "@settings.summary.mtp": {
@@ -2324,5 +2349,73 @@
   "settings.window.loading": "Đang tải cài đặt…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.servers.card.trustedHostKeys": "Khóa máy chủ được tin cậy",
+  "@settings.servers.card.trustedHostKeys": {
+    "sourceHash": "46c5c9d"
+  },
+  "settings.servers.trustedHostKeys.description": "Cmdr hỏi trước khi tin cậy khóa của một máy chủ vào lần đầu bạn kết nối, và ghi nhớ câu trả lời của bạn ở đây. Máy chủ đã lưu nằm trong danh sách Máy chủ, không phải ở trang này.",
+  "@settings.servers.trustedHostKeys.description": {
+    "sourceHash": "bbbed1a"
+  },
+  "settings.servers.trustedHostKeys.empty": "Chưa tin cậy khóa nào. Lần đầu bạn kết nối tới một máy chủ SFTP, Cmdr sẽ cho bạn xem dấu vân tay của khóa rồi hỏi bạn.",
+  "@settings.servers.trustedHostKeys.empty": {
+    "sourceHash": "7bc982e"
+  },
+  "settings.servers.trustedHostKeys.approvedPrefix": "Đã tin cậy",
+  "@settings.servers.trustedHostKeys.approvedPrefix": {
+    "sourceHash": "639538c"
+  },
+  "settings.servers.trustedHostKeys.forget": "Quên",
+  "@settings.servers.trustedHostKeys.forget": {
+    "sourceHash": "a6bd489"
+  },
+  "settings.servers.trustedHostKeys.confirmTitle": "Quên khóa này?",
+  "@settings.servers.trustedHostKeys.confirmTitle": {
+    "sourceHash": "524bfa5"
+  },
+  "settings.servers.trustedHostKeys.confirm": "Lần tới khi bạn kết nối tới {host}, Cmdr sẽ cho bạn xem dấu vân tay khóa của máy chủ và hỏi bạn có tin cậy khóa đó không.",
+  "@settings.servers.trustedHostKeys.confirm": {
+    "sourceHash": "6db1a3f"
+  },
+  "settings.adb.status.label": "Trạng thái",
+  "@settings.adb.status.label": {
+    "sourceHash": "920e413"
+  },
+  "settings.adb.status.foundAt": "Tìm thấy tại {path}",
+  "@settings.adb.status.foundAt": {
+    "sourceHash": "c49cc6a"
+  },
+  "settings.adb.status.notFound": "Không tìm thấy",
+  "@settings.adb.status.notFound": {
+    "sourceHash": "e3ebaa1"
+  },
+  "settings.adb.status.watching": "Đang theo dõi để phát hiện điện thoại.",
+  "@settings.adb.status.watching": {
+    "sourceHash": "d1538e3"
+  },
+  "settings.adb.status.notWatching": "Hiện không theo dõi để phát hiện điện thoại.",
+  "@settings.adb.status.notWatching": {
+    "sourceHash": "6e1936c"
+  },
+  "settings.adb.recheck": "Kiểm tra lại",
+  "@settings.adb.recheck": {
+    "sourceHash": "24fcca0"
+  },
+  "settings.adb.install.intro": "Hãy cài bộ công cụ nền tảng Android, rồi nhấn Kiểm tra lại:",
+  "@settings.adb.install.intro": {
+    "sourceHash": "5a82ea4"
+  },
+  "settings.adb.pathPlaceholder": "Tìm adb theo cách thông thường",
+  "@settings.adb.pathPlaceholder": {
+    "sourceHash": "e236ef2"
+  },
+  "settings.adb.browse": "Duyệt…",
+  "@settings.adb.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "settings.adb.pickerTitle": "Chọn lệnh adb",
+  "@settings.adb.pickerTitle": {
+    "sourceHash": "d6fc142"
   }
 }

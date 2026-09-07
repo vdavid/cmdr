@@ -150,13 +150,13 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "為 SMB/網路窗格著色",
+  "settings.appearance.tintSmb.label": "為伺服器窗格著色（SMB、SFTP、WebDAV）",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "66fd4a8"
+    "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "為顯示 SMB 或網路共享的窗格加上的背景著色。",
+  "settings.appearance.tintSmb.description": "為顯示 SMB 共享資料夾、SFTP 伺服器或 WebDAV 伺服器的窗格加上的背景著色。",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "cf3a857"
+    "sourceHash": "2e071d3"
   },
   "settings.appearance.tintMtp.label": "為 MTP 窗格著色",
   "@settings.appearance.tintMtp.label": {
@@ -1531,6 +1531,14 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.serversPinHintSeen.label": "已顯示「網路」群組過長的提示",
+  "@settings.behavior.serversPinHintSeen.label": {
+    "sourceHash": "8d632ca"
+  },
+  "settings.behavior.serversPinHintSeen.description": "是否已顯示過關於取消釘選伺服器的一次性提示。",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "sourceHash": "fc0722f"
+  },
   "settings.section.notifications": "通知",
   "@settings.section.notifications": {
     "sourceHash": "7880118"
@@ -1713,6 +1721,14 @@
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
+  "settings.section.servers": "伺服器（SFTP、WebDAV）",
+  "@settings.section.servers": {
+    "sourceHash": "58704f8"
+  },
+  "settings.section.adb": "Android（ADB）",
+  "@settings.section.adb": {
+    "sourceHash": "bc9c1a1"
+  },
   "settings.section.mtp": "MTP（Android/Kindle/相機）",
   "@settings.section.mtp": {
     "sourceHash": "a68fa47"
@@ -1851,6 +1867,14 @@
   "settings.summary.smbNetworkShares": "啟用網路功能、直接 SMB 連線、共享快取和逾時。",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
+  },
+  "settings.summary.servers": "你已信任的 SSH 主機金鑰。",
+  "@settings.summary.servers": {
+    "sourceHash": "40940fa"
+  },
+  "settings.summary.adb": "瀏覽已開啟「USB 偵錯」的 Android 手機。",
+  "@settings.summary.adb": {
+    "sourceHash": "fb69a13"
   },
   "settings.summary.mtp": "透過 USB 偵測 Android、Kindle 和相機裝置。",
   "@settings.summary.mtp": {
@@ -2326,5 +2350,73 @@
   "settings.window.loading": "正在載入設定…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.servers.card.trustedHostKeys": "信任的主機金鑰",
+  "@settings.servers.card.trustedHostKeys": {
+    "sourceHash": "46c5c9d"
+  },
+  "settings.servers.trustedHostKeys.description": "第一次連線時，Cmdr 會先問你要不要信任這部伺服器的主機金鑰，並把你的答案記在這裡。已儲存的伺服器放在「伺服器」列表裡，不在這一頁。",
+  "@settings.servers.trustedHostKeys.description": {
+    "sourceHash": "bbbed1a"
+  },
+  "settings.servers.trustedHostKeys.empty": "目前還沒有信任任何金鑰。第一次連線到 SFTP 伺服器時，Cmdr 會顯示它的金鑰指紋並問你要不要信任。",
+  "@settings.servers.trustedHostKeys.empty": {
+    "sourceHash": "7bc982e"
+  },
+  "settings.servers.trustedHostKeys.approvedPrefix": "已信任",
+  "@settings.servers.trustedHostKeys.approvedPrefix": {
+    "sourceHash": "639538c"
+  },
+  "settings.servers.trustedHostKeys.forget": "忘記",
+  "@settings.servers.trustedHostKeys.forget": {
+    "sourceHash": "a6bd489"
+  },
+  "settings.servers.trustedHostKeys.confirmTitle": "要忘記這把主機金鑰嗎？",
+  "@settings.servers.trustedHostKeys.confirmTitle": {
+    "sourceHash": "524bfa5"
+  },
+  "settings.servers.trustedHostKeys.confirm": "下次連線到 {host} 時，Cmdr 會顯示它的金鑰指紋，並問你要不要信任。",
+  "@settings.servers.trustedHostKeys.confirm": {
+    "sourceHash": "6db1a3f"
+  },
+  "settings.adb.status.label": "狀態",
+  "@settings.adb.status.label": {
+    "sourceHash": "920e413"
+  },
+  "settings.adb.status.foundAt": "已找到，位於 {path}",
+  "@settings.adb.status.foundAt": {
+    "sourceHash": "c49cc6a"
+  },
+  "settings.adb.status.notFound": "找不到",
+  "@settings.adb.status.notFound": {
+    "sourceHash": "e3ebaa1"
+  },
+  "settings.adb.status.watching": "手機一接上就會偵測到。",
+  "@settings.adb.status.watching": {
+    "sourceHash": "d1538e3"
+  },
+  "settings.adb.status.notWatching": "目前不會偵測有沒有手機接上。",
+  "@settings.adb.status.notWatching": {
+    "sourceHash": "6e1936c"
+  },
+  "settings.adb.recheck": "重新檢查",
+  "@settings.adb.recheck": {
+    "sourceHash": "24fcca0"
+  },
+  "settings.adb.install.intro": "安裝 Android 平台工具，然後按「重新檢查」：",
+  "@settings.adb.install.intro": {
+    "sourceHash": "5a82ea4"
+  },
+  "settings.adb.pathPlaceholder": "用一般的方式尋找 adb",
+  "@settings.adb.pathPlaceholder": {
+    "sourceHash": "e236ef2"
+  },
+  "settings.adb.browse": "瀏覽…",
+  "@settings.adb.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "settings.adb.pickerTitle": "選擇 adb 指令",
+  "@settings.adb.pickerTitle": {
+    "sourceHash": "d6fc142"
   }
 }

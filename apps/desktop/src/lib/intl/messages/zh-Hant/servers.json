@@ -1,4 +1,20 @@
 {
+  "servers.pinHint.title": "你的「網路」群組越來越長了",
+  "@servers.pinHint.title": {
+    "sourceHash": "0cf001a"
+  },
+  "servers.pinHint.body": "在伺服器上按右鍵並選擇「取消釘選」，或在指令面板中使用「{command}」。它仍會留在「伺服器」列表裡。",
+  "@servers.pinHint.body": {
+    "sourceHash": "0663b02"
+  },
+  "servers.pinHint.favorites": "「喜好項目」也是同樣的做法。",
+  "@servers.pinHint.favorites": {
+    "sourceHash": "932faeb"
+  },
+  "servers.pinHint.gotIt": "知道了",
+  "@servers.pinHint.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
   "servers.hub.colName": "名稱",
   "@servers.hub.colName": {
     "sourceHash": "dcd1d52"
