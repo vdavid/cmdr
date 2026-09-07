@@ -38,8 +38,10 @@ vi.mock('$lib/tauri-commands', () => ({
   recheckAdbInstall: () => recheckAdbInstall(),
 }))
 
+const openDialog = vi.fn<() => Promise<string | null>>()
+
 vi.mock('@tauri-apps/plugin-dialog', () => ({
-  open: vi.fn(() => Promise.resolve(null)),
+  open: () => openDialog(),
 }))
 
 const missing: InstallStatus = { binaryPath: null, tracking: false }
@@ -105,6 +107,25 @@ describe('Re-check', () => {
     vi.clearAllMocks()
     getAdbInstallStatus.mockResolvedValue(missing)
     recheckAdbInstall.mockResolvedValue(found)
+  })
+
+  /**
+   * Picking a binary is a person saying "look here now", and the path only takes
+   * effect once the tracker restarts under it — so the status has to be asked
+   * again, ❌ never read stale.
+   */
+  it('re-checks after a Browse pick, so the status is about the new binary', async () => {
+    openDialog.mockResolvedValue('/opt/android/platform-tools/adb')
+    const target = await mountSection()
+
+    const browse = Array.from(target.querySelectorAll('.path-field button'))[0] as HTMLButtonElement | undefined
+    browse?.click()
+    await tick()
+    await tick()
+    await tick()
+
+    expect(recheckAdbInstall).toHaveBeenCalledTimes(1)
+    target.remove()
   })
 
   it('runs one call per click and shows what came back', async () => {

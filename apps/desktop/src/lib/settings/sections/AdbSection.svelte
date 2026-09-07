@@ -88,10 +88,12 @@
             const picked = await open({ multiple: false, directory: false, title: tString('settings.adb.pickerTitle') })
             if (typeof picked !== 'string') return
             commitPath(picked)
-            // The path only takes effect once the tracker restarts under it, which
-            // the applier does; asking again is how the row stops lying about where
-            // `adb` is.
-            await refreshStatus()
+            // ❗ A re-check, ❌ not a status read: the path only takes effect once
+            // the tracker restarts under it, so `getAdbInstallStatus` here would
+            // answer about the OLD binary. Choosing a file is a person saying "look
+            // here now", which is exactly the human action `recheckAdbInstall` is
+            // budgeted per.
+            await handleRecheck()
         } catch (error) {
             log.warn('Could not open the adb file picker', { error })
         }
