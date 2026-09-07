@@ -137,9 +137,13 @@ describe('a place that is asking, with nothing registered', () => {
     expect(await attempt(wrong)).toEqual({ kind: 'refused', refusal: 'authentication_rejected' })
     expect(currentSignInRequest()).toBe(request)
 
+    // The third round turns Remember on, which is a write of its own before the
+    // dial: the box is the user's act, ❌ never a side effect of the dial.
+    ipc.mock('save_sftp_credentials', () => null)
     const right = { mode: 'sign-in' as const, secret: { secret: 'hunter2', remember: true }, username: null }
     expect(await attempt(right)).toEqual({ kind: 'connected', volumeId: VOLUME_ID })
     expect(ipc.callCount('connect_saved_place')).toBe(2)
+    expect(ipc.callCount('save_sftp_credentials')).toBe(1)
 
     closeSignInSheet({ kind: 'connected', volumeId: VOLUME_ID })
     expect(await seam).toEqual({ signedIn: true, volumeId: VOLUME_ID })
@@ -240,5 +244,115 @@ describe('add mode', () => {
 
     closeSignInSheet({ kind: 'handed_off' })
     await sheet
+  })
+})
+
+/**
+ * ❗ "Remember" means exactly "the Keychain holds a secret for this account"
+ * (`crates/cmdr-sftp/DETAILS.md` § "The two switches"). The box is the user's
+ * explicit act, so a flip is WRITTEN here, and ❌ never left to a dial's side
+ * effect: an attended sign-in refreshes a remembered secret and never seeds one,
+ * so turning the box ON without a write buys nothing, and turning it OFF without
+ * one leaves `refresh_remembered_secret` free to put the typed password straight
+ * back into the entry the user just declined.
+ */
+describe('the Remember box in sign-in mode', () => {
+  /** Where a command first ran, so a cell can say which of two landed first. */
+  const firstRan = (command: string) => ipc.calls.findIndex((call) => call.command === command)
+
+  it('starts where the STORE stands, so the box reports rather than proposes', async () => {
+    ipc.mock('has_server_secret', () => true)
+    const seam = openSignInForPlace({ volumeId: VOLUME_ID, registered: true })
+    const request = await parkedRequest()
+    if (request.mode !== 'sign-in') throw new Error('unreachable')
+    expect(request.remembered).toBe(true)
+    closeSignInSheet({ kind: 'cancelled' })
+    await seam
+  })
+
+  it('forgets the stored secret the moment the box goes OFF, and saves nothing', async () => {
+    ipc.mock('has_server_secret', () => true)
+    ipc.mock('forget_server_secret', () => true)
+    ipc.mock('reconnect_volume_with_credentials', () => null)
+    const seam = openSignInForPlace({ volumeId: VOLUME_ID, registered: true })
+    const request = await parkedRequest()
+
+    const outcome = await attemptOf(request)({
+      mode: 'sign-in',
+      secret: { secret: 'hunter2', remember: false },
+      username: null,
+    })
+    expect(outcome).toEqual({ kind: 'connected', volumeId: VOLUME_ID })
+    expect(ipc.lastCall('forget_server_secret')?.payload).toMatchObject({ id: VOLUME_ID })
+    // ❗ The delete lands BEFORE the mend: `refresh_remembered_secret` writes
+    // wherever the store already holds something, so a mend over a live entry
+    // would put the typed password straight back.
+    expect(firstRan('forget_server_secret')).toBeLessThan(firstRan('reconnect_volume_with_credentials'))
+    expect(ipc.callCount('save_sftp_credentials')).toBe(0)
+
+    closeSignInSheet({ kind: 'connected', volumeId: VOLUME_ID })
+    await seam
+  })
+
+  it('files the typed secret when the box goes ON over an empty store, so the mend can refresh it', async () => {
+    ipc.mock('save_sftp_credentials', () => null)
+    ipc.mock('reconnect_volume_with_credentials', () => null)
+    const seam = openSignInForPlace({ volumeId: VOLUME_ID, registered: true })
+    const request = await parkedRequest()
+
+    await attemptOf(request)({
+      mode: 'sign-in',
+      secret: { secret: 'hunter2', remember: true },
+      username: null,
+    })
+    // The whole tuple the volume id is minted from, so the entry this writes is
+    // the one the next dial reads.
+    expect(ipc.lastCall('save_sftp_credentials')?.payload).toMatchObject({
+      host: 'nas.local',
+      port: 22,
+      username: 'ada',
+      secret: 'hunter2',
+    })
+    expect(firstRan('save_sftp_credentials')).toBeLessThan(firstRan('reconnect_volume_with_credentials'))
+    expect(ipc.callCount('forget_server_secret')).toBe(0)
+
+    closeSignInSheet({ kind: 'connected', volumeId: VOLUME_ID })
+    await seam
+  })
+
+  it('writes nothing at all when the box is left where it started', async () => {
+    ipc.mock('has_server_secret', () => true)
+    ipc.mock('reconnect_volume_with_credentials', () => null)
+    const seam = openSignInForPlace({ volumeId: VOLUME_ID, registered: true })
+    const request = await parkedRequest()
+
+    await attemptOf(request)({
+      mode: 'sign-in',
+      secret: { secret: 'hunter2', remember: true },
+      username: null,
+    })
+    expect(ipc.callCount('save_sftp_credentials')).toBe(0)
+    expect(ipc.callCount('forget_server_secret')).toBe(0)
+
+    closeSignInSheet({ kind: 'connected', volumeId: VOLUME_ID })
+    await seam
+  })
+
+  it('writes the flip once, however many rounds the sheet takes', async () => {
+    ipc.mock('has_server_secret', () => true)
+    ipc.mock('forget_server_secret', () => true)
+    const answers = [{ outcome: 'authentication_rejected' }, { outcome: 'connected', volumeId: VOLUME_ID }]
+    ipc.mock('connect_saved_place', () => answers.shift() ?? { outcome: 'unreachable' })
+    const seam = openSignInForPlace({ volumeId: VOLUME_ID, registered: false })
+    const request = await parkedRequest()
+    const attempt = attemptOf(request)
+
+    await attempt({ mode: 'sign-in', secret: { secret: 'nope', remember: false }, username: null })
+    await attempt({ mode: 'sign-in', secret: { secret: 'hunter2', remember: false }, username: null })
+    // The store is off after the first round, so the second has nothing to flip.
+    expect(ipc.callCount('forget_server_secret')).toBe(1)
+
+    closeSignInSheet({ kind: 'connected', volumeId: VOLUME_ID })
+    await seam
   })
 })

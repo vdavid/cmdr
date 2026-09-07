@@ -19,11 +19,14 @@ import {
   connectSavedPlace,
   connectServer,
   connectToServer,
+  forgetServerSecret,
   getVolumeSignInState,
   hasServerSecret,
   listSavedServers,
   newServerAttemptId,
   reconnectVolumeWithCredentials,
+  saveSftpCredentials,
+  saveWebdavCredentials,
   type SavedServer,
 } from '$lib/tauri-commands'
 import { asReconnectError } from '$lib/file-explorer/network/reconnect-error'
@@ -87,20 +90,66 @@ export async function openEditServerSheet(server: SavedServer): Promise<SignInSh
 export async function openSignInForPlace(request: SignInSeamRequest): Promise<SignInSeamResult> {
   const { volumeId, registered, firstOutcome } = request
   const shape = await getVolumeSignInState(volumeId)
-  const endpoint = await endpointFor(volumeId)
+  const identity = await identityFor(volumeId)
+  const { endpoint } = identity
+  // ❗ Seeded from what is STORED, ❌ never defaulted on: an attended sign-in
+  // REFRESHES a remembered secret and never seeds one, so a default-on box would
+  // seed one the user already declined.
+  const remembered = await hasServerSecret(volumeId)
 
   const result = await openSignInSheet({
     mode: 'sign-in',
     endpoint,
     shape,
-    // ❗ Seeded from what is STORED, ❌ never defaulted on: an attended sign-in
-    // REFRESHES a remembered secret and never seeds one, so a default-on box
-    // would seed one the user already declined.
-    remembered: await hasServerSecret(volumeId),
+    remembered,
     hostKey: firstOutcome?.outcome === 'needs_host_key_approval' ? firstOutcome : undefined,
-    attempt: registered ? mendAttempt(volumeId, endpoint) : dialSavedPlaceAttempt(volumeId),
+    attempt: withRememberFlip({
+      volumeId,
+      identity,
+      remembered,
+      attempt: registered ? mendAttempt(volumeId, endpoint) : dialSavedPlaceAttempt(volumeId),
+    }),
   })
   return result.kind === 'connected' ? { signedIn: true, volumeId: result.volumeId } : { signedIn: false }
+}
+
+/**
+ * Writes the Remember box's flip, then runs the round it belongs to.
+ *
+ * ❗ **The write lands BEFORE the attempt, and it is the whole mechanism.**
+ * "Remember" means exactly "the Keychain holds a secret for this account"
+ * (`crates/cmdr-sftp/DETAILS.md` § "The two switches"), so:
+ *
+ * - Turned OFF, the entry goes NOW. Waiting would leave `refresh_remembered_secret`
+ *   a live entry to write the typed password back into, which is the dial
+ *   changing a switch behind the user's back.
+ * - Turned ON over an empty store, the typed secret is filed NOW, so the mend
+ *   has something to refresh. An attended sign-in never seeds one, so a box
+ *   flipped on with nothing written would promise a thing that never happens.
+ *
+ * ❗ Once per flip, ❌ not once per round: the local reading moves with the
+ * store, so a second retry after a delete has nothing left to do.
+ */
+function withRememberFlip(options: {
+  volumeId: string
+  identity: PlaceIdentity
+  remembered: boolean
+  attempt: SignInAttempt
+}): SignInAttempt {
+  let stored = options.remembered
+  return async (submission) => {
+    const wanted = submission.mode === 'sign-in' ? (submission.secret?.remember ?? stored) : stored
+    if (wanted !== stored) {
+      if (!wanted) {
+        await forgetServerSecret(options.volumeId)
+        stored = false
+      } else if (submission.mode === 'sign-in' && submission.secret && options.identity.saveSecret) {
+        await options.identity.saveSecret(submission.secret.secret)
+        stored = true
+      }
+    }
+    return await options.attempt(submission)
+  }
 }
 
 /** Add mode's attempt: a brand-new server, or SMB's hand-off. */
@@ -145,8 +194,8 @@ function dialSavedPlaceAttempt(volumeId: string): SignInAttempt {
  *
  * ❗ It refreshes a remembered secret and never seeds one — that rule lives in
  * the backend, which writes the store only where it already holds a secret for
- * this account. The sheet's Remember box is what the user uses to change that,
- * and it writes through `save_*` / `delete_*` explicitly.
+ * this account. The Remember box is what the user changes that with, and
+ * `withRememberFlip` has already written it by the time this runs.
  */
 function mendAttempt(volumeId: string, endpoint: SignInEndpoint): SignInAttempt {
   return async (submission) => {
@@ -179,26 +228,71 @@ function mendRefusal(error: unknown): ConnectRefusalKind {
   }
 }
 
+/** Who the sheet says is asking, and where a secret for them is filed. */
+interface PlaceIdentity {
+  /** The read-only header the sheet shows. */
+  endpoint: SignInEndpoint
+  /**
+   * Files the Keychain entry the next dial reads, or `null` when no saved server
+   * claims this place and there is nothing to key one on.
+   *
+   * ❗ It takes the whole tuple the volume id is minted from, ❌ never a host
+   * plus a default port: an entry written under a different key is one the dial
+   * never finds, and the box would then be lying in the other direction.
+   */
+  saveSecret: ((secret: string) => Promise<void>) | null
+}
+
 /**
- * The endpoint the sheet shows as its header.
+ * The endpoint the sheet shows as its header, and the secret writer beside it.
  *
  * ❗ Read from `listSavedServers()` rather than parsed out of a volume id: the id
  * is a hash minted in Rust from `(host, port, username)`, and nothing on this
  * side can take it apart.
  */
-async function endpointFor(volumeId: string): Promise<SignInEndpoint> {
+async function identityFor(volumeId: string): Promise<PlaceIdentity> {
   const servers = await listSavedServers()
   const owner = servers.find((server) => server.places.some((place) => place.volumeId === volumeId))
-  if (!owner) return unknownEndpoint(volumeId)
+  if (!owner) return { endpoint: unknownEndpoint(volumeId), saveSecret: null }
   const place = owner.places.find((p) => p.volumeId === volumeId)
   const parsed = place ? parseServerPath(place.appRoot) : null
-  return {
+  const endpoint: SignInEndpoint = {
     protocol: owner.protocol,
     displayName: place?.name ?? owner.displayName,
     address: owner.address,
     host: parsed?.host ?? owner.address,
     username: parsed?.username ?? owner.username ?? undefined,
   }
+  return { endpoint, saveSecret: secretWriterFor(owner, parsed) }
+}
+
+/**
+ * How each protocol files a secret: SFTP keys on `(host, port, username)`, the
+ * same tuple its volume id hashes; WebDAV keys on the base URL and the account.
+ *
+ * A path that didn't parse leaves SFTP without a port, and a made-up one would
+ * write an entry nothing reads, so it answers `null` instead.
+ */
+function secretWriterFor(
+  owner: SavedServer,
+  parsed: ReturnType<typeof parseServerPath>,
+): ((secret: string) => Promise<void>) | null {
+  const username = parsed?.username ?? owner.username
+  if (username === null || username === undefined) return null
+  if (owner.protocol === 'sftp') {
+    if (!parsed) return null
+    const { host, port } = parsed
+    return async (secret) => {
+      await saveSftpCredentials(host, port, username, secret)
+    }
+  }
+  if (owner.protocol === 'webdav') {
+    const url = owner.address
+    return async (secret) => {
+      await saveWebdavCredentials(url, username, secret)
+    }
+  }
+  return null
 }
 
 /**
