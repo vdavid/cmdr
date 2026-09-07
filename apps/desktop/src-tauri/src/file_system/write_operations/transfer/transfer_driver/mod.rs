@@ -202,7 +202,7 @@ pub(super) struct TransferContext<'a> {
     /// File→file safe-replace target. When `Some(orig)`, `dest_path` is a temp
     /// sibling: after a successful streaming write, the closure must finalize by
     /// deleting `orig` and renaming `dest_path` → `orig` (see
-    /// `volume::conflict::finalize_safe_replace`). `None` ⇒ write `dest_path`
+    /// `volume::finalize::finalize_safe_replace`). `None` ⇒ write `dest_path`
     /// directly. Only set by the async driver from
     /// `ConflictDecision::Proceed`; always `None` for the sync driver and for
     /// no-conflict paths.
@@ -431,7 +431,7 @@ pub(super) enum ConflictDecision {
     /// `Some(orig)`, `dest_path` is a temp sibling the closure streams into,
     /// and after a successful write the closure must finalize by deleting
     /// `orig` and renaming the temp into place (see
-    /// `volume::conflict::finalize_safe_replace`). `None` ⇒ write `dest_path`
+    /// `volume::finalize::finalize_safe_replace`). `None` ⇒ write `dest_path`
     /// directly. The driver passes `dest_path` through `TransferContext`
     /// unchanged; only the closure acts on `replace_after_write`, so the driver
     /// stays agnostic to the safe-replace mechanism.

@@ -21,6 +21,12 @@ mod copy_serial;
 /// The destination a same-volume Overwrite is replacing, held aside until the
 /// rename that replaces it lands.
 mod displaced_destination;
+/// Landing a written temp at its final name. The resolver decides that a
+/// replace happens; the five write sites call this once their stream is done.
+mod finalize;
+/// Do two paths name the same item? Asked by callers that resolve no conflict
+/// at all, which is why it isn't the resolver's.
+mod item_identity;
 /// What mode a file lands with on a LOCAL destination. The volumes report a
 /// mode; this is the layer that applies it.
 mod landed_mode;
@@ -50,7 +56,7 @@ pub use r#move::move_between_volumes;
 pub(in crate::file_system::write_operations) use cleanup::{TreeRemoval, remove_tree};
 /// The cross-volume copy body, reused as the extract phase of an out-of-zip
 /// move (`archive_edit`).
-pub(crate) use conflict::is_the_same_item;
+pub(crate) use item_identity::is_the_same_item;
 pub(crate) use copy::copy_volumes_with_progress;
 /// Move ONE file across two volumes, staged and mid-file cancelable, with no
 /// driver above it (the operation-log rollback's cross-volume restore).

@@ -1,7 +1,7 @@
 //! The destination a same-volume Overwrite is replacing, held aside until the
 //! rename that replaces it has landed.
 //!
-//! The cross-volume side's twin is `conflict.rs::finalize_safe_replace` (a temp
+//! The cross-volume side's twin is `finalize.rs::finalize_safe_replace` (a temp
 //! holding the NEW bytes); the local-FS side's is
 //! `write_operations/overwrite.rs::DisplacedEntry`. This is the one for a move
 //! that replaces by RENAMING, where the new bytes need no temp at all and the

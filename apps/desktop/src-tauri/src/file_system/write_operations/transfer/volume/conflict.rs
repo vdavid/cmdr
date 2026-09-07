@@ -29,9 +29,8 @@ use super::super::super::types::{
     ConflictResolution, VolumeCopyConfig, WriteConflictEvent, WriteConflictResolvedEvent, WriteOperationError,
 };
 use super::super::super::unique_name::ClaimedNames;
-use super::super::dest_name_index::fold;
-use super::super::recovered_name::FinalizeFailure;
-use super::super::recovered_name::rescue_out_of_temp_space;
+use super::finalize::temp_sibling_path;
+use super::item_identity::is_the_same_item;
 use super::naming::find_unique_volume_name;
 use super::transfer_error::{PathRole, map_volume_error};
 use crate::file_system::volume::{Volume, VolumeError};
@@ -650,158 +649,6 @@ async fn apply_volume_conflict_resolution(
     }
 }
 
-/// Builds a temp sibling path next to `dest_path` for a staged write.
-///
-/// Uses the recognizable `.cmdr-tmp-<uuid>` marker (matches the project's temp
-/// convention, so a leftover after a crash is identifiable and cleanup helpers
-/// recognize it). The temp lives in the same parent directory as the original
-/// so the finalize step's `rename` stays within one directory (no cross-dir
-/// rename, which some backends refuse).
-///
-/// Shared with `staged_write.rs`, which stages EVERY cross-volume file write on
-/// one of these, not only the conflict-driven safe-replace.
-pub(super) fn temp_sibling_path(dest_path: &Path) -> PathBuf {
-    let parent = dest_path.parent().unwrap_or(Path::new(""));
-    let filename = dest_path
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_default();
-    parent.join(format!("{filename}.cmdr-tmp-{}", uuid::Uuid::new_v4()))
-}
-
-/// Lands a fully-written temp at its final name: deletes whatever is at `orig`
-/// (which survived the entire streaming write) and renames the temp into its
-/// place.
-///
-/// Two callers, one shape: the conflict layer's file→file safe-replace, and
-/// `staged_write.rs`'s landing of an ordinary staged write (where `orig` usually
-/// doesn't exist yet and the delete is a tolerated `NotFound`).
-///
-/// Order matters and is the whole point of safe-replace: the temp holds the
-/// COMPLETE new data the moment this is called, and `orig` still holds the
-/// complete old data. We delete `orig` first, then `rename(temp, orig, false)`
-/// into the now-absent slot. We do NOT use `rename(force=true)` to replace:
-/// MTP's `rename(force=true)` does NOT delete an existing destination (it can
-/// create a duplicate), so an explicit delete-then-rename is the only shape
-/// that's correct and uniform across Local / SMB / MTP / InMemory.
-///
-/// There is a tiny window between the delete and the rename where neither name
-/// resolves to a file on disk — but the complete new data lives in `temp`
-/// throughout, so a crash in that window leaves a recoverable `.cmdr-tmp-*`
-/// sibling rather than data loss. We tolerate `NotFound` on the delete (the
-/// original may have vanished out from under us). If the delete fails for any
-/// other reason we return the error WITHOUT deleting the temp — the new data
-/// must survive so the user (or a retry) can recover it.
-///
-/// CALLER CONTRACT: when this returns `Err` the new data is somewhere the caller
-/// must NOT clean up, and [`FinalizeFailure::new_data_at`] says where. If the
-/// DELETE failed, nothing moved: the destination still holds the user's file and
-/// the temp is an ordinary partial. If the delete SUCCEEDED and the rename
-/// failed, the temp holds the only complete copy of the new data and the
-/// original is gone, so this rescues it out of temp space (see
-/// [`rescue_out_of_temp_space`]) and reports where it went. The write sites
-/// enforce the no-cleanup half by stopping their partial-cleanup tracking from
-/// designating the temp the moment the streaming write succeeded, before this
-/// function runs. See `transfer/CLAUDE.md` § "The post-write temp is committed
-/// data" and the `*_preserves_new_data_on_finalize_failure` tests.
-pub(super) async fn finalize_safe_replace(
-    dest_volume: &Arc<dyn Volume>,
-    temp: &Path,
-    orig: &Path,
-) -> Result<(), FinalizeFailure> {
-    match dest_volume.delete(orig).await {
-        Ok(()) => {}
-        Err(VolumeError::NotFound(_)) => {
-            // Already gone; the rename below will land the new data anyway.
-        }
-        Err(e) => {
-            log::warn!(
-                "finalize_safe_replace: couldn't delete the original {} before the rename, so the destination still holds it and the temp {} is an ordinary partial: {}",
-                orig.display(),
-                temp.display(),
-                e
-            );
-            return Err(FinalizeFailure {
-                error: e,
-                new_data_at: None,
-            });
-        }
-    }
-    match dest_volume.rename(temp, orig, false).await {
-        Ok(()) => Ok(()),
-        Err(error) => {
-            let new_data_at = rescue_out_of_temp_space(dest_volume, temp, orig).await;
-            log::warn!(
-                "finalize_safe_replace: the original {} is gone and the new data couldn't take its name, so it is at {} now: {}",
-                orig.display(),
-                new_data_at.display(),
-                error
-            );
-            Err(FinalizeFailure {
-                error,
-                new_data_at: Some(new_data_at),
-            })
-        }
-    }
-}
-
-/// Whether `source_path` and `dest_path` name the same item: the question
-/// `validation::is_same_file` settles with `dev+ino` on the local-FS side, asked
-/// the only way a volume can answer it.
-///
-/// Same volume is `Arc::ptr_eq`, which is what every path in this directory
-/// already means by it (the dest-inside-source guard included): the command
-/// layer hands one `Arc` for a same-volume-id transfer.
-///
-/// `copy.rs` asks it too, to keep the sources it covers out of the pre-known-conflict
-/// bulk skip, and so does `routing::transfer_would_land_on_its_source`, which
-/// gives the pre-flight conflict scan the answer this engine will give.
-pub(crate) fn is_the_same_item(
-    source_volume: &Arc<dyn Volume>,
-    source_path: &Path,
-    dest_volume: &Arc<dyn Volume>,
-    dest_path: &Path,
-) -> bool {
-    Arc::ptr_eq(source_volume, dest_volume) && is_the_same_volume_path(source_path, dest_path)
-}
-
-/// Whether two paths on ONE volume name the same item: the SAME parent
-/// directory, and a final component the destination's backend would resolve onto
-/// one entry.
-///
-/// The leaf is compared folded (NFC + lowercase), the key `DestNameIndex` buckets
-/// destination names under, so a case-differing route (SMB shares, macOS
-/// volumes) or an NFC/NFD-differing one (macOS and SMB move paths between the two
-/// routinely) counts. That fold answers exactly one question — "would this
-/// backend treat these two NAMES as the same, in one listing" — and the leaf is
-/// the only component we ever have a listing for.
-///
-/// ❌ The parents are NOT folded. Whether `/DCIM` and `/dcim` are one directory
-/// is the backend's call, and a case-sensitive one (MTP is; an SMB share can be)
-/// says no, so folding them turns a genuine cross-folder transfer into a
-/// self-collision: the move writes nothing, reports `Done`, and the user is told
-/// an item moved that didn't. Being wrong the other way costs the ordinary
-/// conflict path on a case-insensitive backend reached by a differently-cased
-/// route, which is where such a transfer landed before this rule existed.
-///
-/// A non-UTF-8 leaf can't be folded the way a backend would, so there only a
-/// byte-exact match counts — the same stance `DestNameIndex::lookup` takes.
-///
-/// The same-volume move drops its self-colliding sources with this before any
-/// engine runs (`move_same.rs`), which is why it isn't private to the resolver.
-pub(super) fn is_the_same_volume_path(source_path: &Path, dest_path: &Path) -> bool {
-    if source_path.parent() != dest_path.parent() {
-        return false;
-    }
-    match (
-        source_path.file_name().and_then(|name| name.to_str()),
-        dest_path.file_name().and_then(|name| name.to_str()),
-    ) {
-        (Some(source), Some(dest)) => fold(source) == fold(dest),
-        _ => source_path == dest_path,
-    }
-}
-
 /// Merge safety, the overwrite ordering, and the finalize swap.
 #[cfg(test)]
 #[path = "conflict_tests.rs"]
@@ -811,11 +658,6 @@ mod tests;
 #[cfg(test)]
 #[path = "conflict_conditional_tests.rs"]
 mod conditional_tests;
-
-/// `is_the_same_volume_path`: one volume, two paths, one item?
-#[cfg(test)]
-#[path = "conflict_same_item_tests.rs"]
-mod same_item_tests;
 
 /// A blanket policy never replaces one KIND of entry with another.
 #[cfg(test)]

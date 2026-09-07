@@ -1,17 +1,14 @@
-//! Identity tests for `conflict.rs::is_the_same_volume_path`. A `#[path]` child
-//! of `conflict.rs`, so `super::` is `conflict` and `super::super::` is
-//! `volume` — the same one-level-shallower rule every `*_tests.rs` in this
-//! directory follows.
+//! Identity tests for `item_identity.rs::is_the_same_volume_path`. A `#[path]`
+//! child of `item_identity.rs`, so `super::` is `item_identity` and
+//! `super::super::` is `volume` — the same one-level-shallower rule every
+//! `*_tests.rs` in this directory follows.
+//!
+//! The leaf is folded (the question one destination listing answers); the
+//! parents are not, because whether two differently-cased directories are one is
+//! the backend's call. See the function's own doc comment for what each mistake
+//! costs.
 
 use super::*;
-
-// ============================================================================
-// is_the_same_volume_path — one volume, two paths, one item?
-// ============================================================================
-//
-// The leaf is folded (the question one destination listing answers); the parents
-// are not, because whether two differently-cased directories are one is the
-// backend's call. See the function's own doc comment for what each mistake costs.
 
 #[test]
 fn the_same_path_names_the_same_item() {

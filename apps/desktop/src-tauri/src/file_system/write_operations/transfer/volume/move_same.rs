@@ -27,7 +27,8 @@ use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, FetchFut, PostLoopIntent, ResolveFut, TransferContext,
     TransferFut, TransferOutcome, build_pre_skip_set, drive_transfer_serial_async,
 };
-use super::conflict::{is_the_same_volume_path, resolve_volume_conflict};
+use super::conflict::resolve_volume_conflict;
+use super::item_identity::is_the_same_volume_path;
 use super::displaced_destination::{DisplacedDestination, displace_destination};
 use super::preflight::{SourceHint, top_level_move_hints};
 use super::rename_merge::{RenameMergeCtx, rename_merge_directory};

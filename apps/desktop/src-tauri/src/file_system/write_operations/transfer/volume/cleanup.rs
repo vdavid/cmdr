@@ -351,7 +351,7 @@ pub(super) async fn clean_abandoned_staged_writes(
 /// ❗ **Nothing may leave committed data under a temp name.** This sweep is
 /// name-and-age based and knows nothing about any ledger, so a `.cmdr-tmp-*`
 /// that holds the only copy of something is deleted here an hour later.
-/// `conflict::finalize_safe_replace` is where that could happen, and it renames
+/// `finalize::finalize_safe_replace` is where that could happen, and it renames
 /// its temp to a ` (recovered)` name before returning for exactly this reason.
 ///
 /// Best-effort throughout: a listing or delete failure is logged at debug and

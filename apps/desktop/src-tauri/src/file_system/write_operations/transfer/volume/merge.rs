@@ -262,7 +262,7 @@ async fn copy_leaf<'a>(
     // is preserved as committed data (see `finalize_safe_replace`).
     let recorded = match replace_after_write {
         Some(orig) => {
-            super::conflict::finalize_safe_replace(dest_volume, &write_dest, &orig)
+            super::finalize::finalize_safe_replace(dest_volume, &write_dest, &orig)
                 .await
                 .map_err(|e| PathedVolumeError::at_destination(e, &orig))?;
             // A deep-merge child that replaced an existing dest file: record the

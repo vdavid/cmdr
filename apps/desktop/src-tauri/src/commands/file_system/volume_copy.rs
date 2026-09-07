@@ -737,7 +737,7 @@ mod tests {
     /// inode, so identity is one volume, the same parent, and a folded LEAF, and
     /// that fold is what makes a case-differing name (an SMB share, a macOS
     /// volume) count. A case-differing PARENT deliberately does not: see
-    /// `transfer/volume/conflict.rs::is_the_same_volume_path`.
+    /// `transfer/volume/item_identity.rs::is_the_same_volume_path`.
     #[tokio::test]
     async fn a_same_folder_copy_on_a_remote_volume_finds_no_conflicts() {
         let volume = Arc::new(InMemoryVolume::new("Device")) as Arc<dyn Volume>;
