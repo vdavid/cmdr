@@ -70,8 +70,60 @@ offer "Make available offline" and "Remove download". **iCloud Drive only.**
 `NSFileProviderErrorProviderNotFound` ("The application cannot be used right now") on the enumerate / evict / download
 calls. The `FileManager` ubiquity APIs route through iCloud's separate code path and accept any URL inside an iCloud
 container, so the menu items are offered only for paths under `~/Library/Mobile Documents/com~apple~CloudDocs/`.
-`is_in_icloud_drive` (strict path-prefix check) gates them. The module-doc comment in `cloud_actions.rs` has the full
-story.
+`is_in_icloud_drive` gates them, by asking `CloudProvider::supports_eviction` rather than re-deriving the path rule. The
+module-doc comment in `cloud_actions.rs` has the full story.
+
+## Cloud providers (`cloud_provider.rs`)
+
+One source of truth for "is this path in a cloud folder, and whose?", shared by the volume switcher (which wants a
+display name and a stable volume ID) and the file context menu (which wants to know what the provider can do).
+`locate(home, path)` is pure, so it's cheap on every navigation and unit-testable without a real cloud folder;
+`volumes/cloud.rs` is a thin adapter over it, and a test pins `CloudProvider::ICloudDrive.volume_id()` against
+`ICLOUD_VOLUME_ID` so the two can't drift.
+
+`supports_eviction()` is the point of the enum: it states once that the eviction pair is iCloud's alone, so a provider
+added later can't silently inherit actions it can't perform.
+
+**It sees Google Drive's stream mode only.** Drive for desktop runs in one of two modes. In *stream* mode it lives under
+`~/Library/CloudStorage/GoogleDrive-<account>/`. In *mirror* mode the files are ordinary local files in a folder the
+user picks (`~/My Drive` by default), indistinguishable from any other directory by path. So a `None` from `locate` does
+not prove a path is outside Google Drive.
+
+## Google Drive links (`google_drive.rs`)
+
+Backs "Open in Google Drive" and "Copy Google Drive link". Drive registers no URL scheme (no `CFBundleURLTypes`, no
+`NSServices` in its `Info.plist`) and its Finder items are File Provider custom actions only Finder can render, so
+there's no way to reach Drive's own Share sheet from another app. The web page, where Share is one click away, is the
+reachable equivalent.
+
+**Two ID sources, in this order:**
+
+1. **Google-native stubs** (`.gdoc`, `.gsheet`, `.gslides`, `.gform`, …) are small JSON files carrying `doc_id`. They
+   work in BOTH Drive modes, and they're first because a native doc's canonical URL is on `docs.google.com`, which the
+   bare ID can't tell us. They carry `resource_key` (empty unless the item is shared through a resource-key link) and
+   the account `email`; there is **no** `url` field, so the URL has to be built.
+2. **The `com.google.drivefs.item-id#S` xattr.** The `#S` suffix is macOS's File Provider syncable-attribute marker and
+   part of the name: a `getxattr` for the bare name finds nothing.
+
+**Gotcha: the xattr exists in stream mode only.** Verified 2026-09-07 with `xattr -r -l`: present throughout
+`~/Library/CloudStorage/GoogleDrive-…` on files AND directories, absent on every file in a mirrored `~/My Drive`. A
+stream-mode `.gdoc` carries both sources, holding the identical ID. That's why nothing here gates on a path prefix: the
+menu offers its items when an ID resolves, which is self-validating and still works in mirror mode for native docs.
+
+**URL shapes** are each item's `viewUrl` as Google's own Drive API returns it, checked against real items (2026-09-07),
+not copied from documentation:
+
+- binary file → `https://drive.google.com/file/d/<id>/view`
+- folder → `https://drive.google.com/drive/folders/<id>`
+- Doc / Sheet / Slides / Form → `https://docs.google.com/{document,spreadsheets,presentation,forms}/d/<id>/edit`
+
+A Google-native type with no verified editor path (`.gdraw` and friends) falls back to Drive's type-agnostic
+`https://drive.google.com/open?id=<id>` resolver rather than an invented editor segment.
+
+**What we deliberately don't offer.** Drive's pin-offline toggle and its Share sheet are File Provider custom actions
+reserved for the app that bundles the extension, so the eviction pair stays iCloud-only. Sync status, by contrast, is
+already provider-agnostic: a streamed Drive file carries `SF_DATALESS` like any other stub (verified 2026-09-07 with
+`stat -f %Sf`), so `sync_status/` answers for Drive without changes.
 
 ## Open with (`open_with.rs`)
 

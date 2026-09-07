@@ -380,6 +380,20 @@ both create into the active pane's folder, so they read as a pair and stay adjac
 sit behind `restrict_destination_actions` and vanish on the search-results virtual pane, which has no destination folder
 of its own. macOS SF Symbols are `folder.badge.plus` and `document.badge.plus`.
 
+The file context menu's **cloud group** (macOS) is provider-aware: a concatenation of what each provider can actually
+do, rather than one iCloud-shaped block.
+
+- **Google Drive** contributes `Open in Google Drive` and `Copy Google Drive link`, shown whenever
+  `FileContextInfo.google_drive_link` is `Some`. That gate is a resolved Drive item ID, NOT a path prefix, because
+  Drive's mirror mode keeps real files outside `~/Library/CloudStorage` (`file_system/google_drive.rs`). Neither label
+  takes an ellipsis: each acts on the item it was invoked on and picks nothing.
+- **iCloud Drive** contributes the eviction pair, `Make available offline` / `Remove download`, exactly one of them,
+  keyed on `SyncStatus`. ❌ Don't widen it to other providers: the `FileManager` ubiquity APIs behind it reject
+  everything but iCloud, and a provider's own pin/unpin is a File Provider custom action reserved for the app that
+  bundles the extension. `CloudProvider::supports_eviction` is where that limit is stated.
+
+Both Drive items also reach the command palette, re-resolving the link from the path so the palette and the menu agree.
+
 The **Select** submenu (between Edit and View) holds the five selection commands: `Select all` (⌘A), `Deselect all`
 (⌘⇧A), `Invert selection` (no menu accelerator: neither of its defaults, `⇧8` and the numpad `*`, carries ⌘, and a
 bare `Shift+8` or `*` accelerator would swallow `*` in every text field, so `FilePane`'s keydown handler binds them,

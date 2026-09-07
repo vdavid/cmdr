@@ -156,8 +156,8 @@ pub fn item_url(path: &Path, is_directory: bool) -> Option<String> {
 
     // Native shortcut stubs first: they resolve in both Drive modes, and only
     // the extension tells us the item is native rather than a plain file.
-    if !is_directory && is_native_shortcut_extension(&extension) {
-        if let Some(shortcut) = read_native_shortcut(path) {
+    if !is_directory && is_native_shortcut_extension(&extension)
+        && let Some(shortcut) = read_native_shortcut(path) {
             let kind = match native_editor_segment(&extension) {
                 Some(editor) => DriveItemKind::Native(editor),
                 None => DriveItemKind::NativeUnknown,
@@ -171,7 +171,6 @@ pub fn item_url(path: &Path, is_directory: bool) -> Option<String> {
             }
             return Some(url);
         }
-    }
 
     let id = read_item_id_xattr(path)?;
     let kind = if is_directory {
