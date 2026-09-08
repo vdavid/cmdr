@@ -70,7 +70,6 @@ const typeAwareRuleNames = [
   '@typescript-eslint/no-base-to-string',
   '@typescript-eslint/no-duplicate-type-constituents',
   '@typescript-eslint/no-redundant-type-constituents',
-  '@typescript-eslint/no-meaningless-void-operator',
   '@typescript-eslint/no-mixed-enums',
   '@typescript-eslint/no-unnecessary-boolean-literal-compare',
   '@typescript-eslint/no-unnecessary-template-expression',
@@ -118,14 +117,26 @@ const sharedTypeAwareRules = {
   '@typescript-eslint/require-await': 'error',
 }
 
+// Preset rules we deliberately switch off. Spread into every section the preset reaches
+// (`.ts`, `.svelte.ts`, AND `.svelte`), or a lane that misses one stays red on its own.
+const deliberatelyOffRules = {
+  // `strictTypeChecked` turns this on, and since typescript-eslint 8.69.0 it flags `void` on ANY
+  // non-call expression ("it should only discard a call's return value"). That's our deliberate
+  // reactivity touch: `void version` / `void tabMgr.activeTabId` reads a value purely to register a
+  // Svelte `$derived` / `$effect` dependency. Worse, the two rules deadlock: this rule's autofix
+  // strips the `void`, and `no-unused-expressions` then rejects the bare expression it leaves behind,
+  // so `eslint --fix` produced a tree that couldn't lint clean.
+  '@typescript-eslint/no-meaningless-void-operator': 'off',
+}
+
 // Build rule sets based on mode.
 function buildTsRules() {
   if (noTypecheck) {
     // All rules except type-aware ones.
-    return { ...sharedNonTypeAwareRules, ...typeAwareRulesOff }
+    return { ...sharedNonTypeAwareRules, ...typeAwareRulesOff, ...deliberatelyOffRules }
   }
   // Full: all rules.
-  return { ...sharedNonTypeAwareRules, ...sharedTypeAwareRules }
+  return { ...sharedNonTypeAwareRules, ...sharedTypeAwareRules, ...deliberatelyOffRules }
 }
 
 // projectService config: only enabled when type checking is needed.
@@ -231,6 +242,7 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': unusedVarsRule,
       'no-console': 'warn',
       complexity: ['error', { max: 15 }],
+      ...deliberatelyOffRules,
     },
   },
   {
