@@ -67,6 +67,37 @@ func Report(violations []Finding, warnings []string, rootDir string, verbose boo
 	return len(violations) > 0
 }
 
+// ReportOpacity prints every unmodeled opacity dimming found by
+// `AnalyzeOpacity` and returns true if any were found. It participates in
+// the overall exit code alongside the WCAG and APCA gates: an opacity dim on
+// live text is exactly as invisible to a user as a bad color pairing, which
+// is the whole reason this check exists (see `opacity_check.go`).
+func ReportOpacity(findings []OpacityFinding, rootDir string) bool {
+	if len(findings) == 0 {
+		return false
+	}
+
+	sort.SliceStable(findings, func(i, j int) bool {
+		if findings[i].File != findings[j].File {
+			return findings[i].File < findings[j].File
+		}
+		return findings[i].Line < findings[j].Line
+	})
+
+	fmt.Printf("%s=== Unmodeled opacity (contrast not verified) ===%s\n", colorYellow, colorReset)
+	for _, f := range findings {
+		fmt.Printf(
+			"  %s%s:%d%s  %s%s%s  opacity=%.2g  fix: express as a color token (e.g. --color-text-quiet) so the walker sees it, or hand-model it in a synthesizer (dropdown_states.go / query_dialog_states.go)\n",
+			colorRed, RelPath(rootDir, f.File), f.Line, colorReset,
+			colorDim, f.Selector, colorReset,
+			f.Opacity,
+		)
+	}
+	fmt.Println()
+
+	return true
+}
+
 // Summary returns a one-line summary for the final status line.
 func Summary(fileCount, ruleCount, findingCount, violationCount int) string {
 	return fmt.Sprintf(

@@ -57,6 +57,14 @@ type Rule struct {
 	// HasBackgroundColorProp tracks whether the property was explicitly
 	// `background-color` vs the shorthand `background`. Purely informational.
 	HasBackgroundColorProp bool
+	// Opacity is the parsed `opacity` declared directly on this rule (only
+	// set when HasOpacity is true). A static literal in [0, 1]; `var(...)`,
+	// `calc(...)`, and other non-literal values are left unresolved (see
+	// `parseOpacity`). See `opacity_check.go`: the rule walker pairs `color`
+	// and `background` on the SAME selector and never folds `opacity`, so a
+	// text-dimming opacity is otherwise invisible to this checker.
+	Opacity    float64
+	HasOpacity bool
 	// ModeOnly restricts this rule to one color-scheme mode. Empty means
 	// "applies to all modes". Rules inside `@media (prefers-color-scheme: X)`
 	// carry this tag so overrides don't pollute the other mode.
@@ -484,6 +492,11 @@ func buildRule(file string, line int, sel, decls string) *Rule {
 			r.FontSizePx = parseFontSizePx(val)
 		case "font-weight":
 			r.FontWeight = parseFontWeight(val)
+		case "opacity":
+			if v, ok := parseOpacity(val); ok {
+				r.Opacity = v
+				r.HasOpacity = true
+			}
 		}
 	}
 	return r
@@ -631,6 +644,30 @@ func fontSizeFromVar(v string) float64 {
 		return 20
 	}
 	return 0
+}
+
+// parseOpacity parses a static `opacity` value. Only a bare numeric literal
+// (`0`, `0.5`, `1`) resolves; `var(...)`, `calc(...)`, and anything else
+// non-literal returns ok=false so the caller leaves the rule's opacity
+// unset rather than guessing.
+func parseOpacity(v string) (float64, bool) {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return 0, false
+	}
+	for _, r := range v {
+		if (r < '0' || r > '9') && r != '.' {
+			return 0, false
+		}
+	}
+	var f float64
+	if _, err := fmt.Sscanf(v, "%f", &f); err != nil {
+		return 0, false
+	}
+	if f < 0 || f > 1 {
+		return 0, false
+	}
+	return f, true
 }
 
 func parseFontWeight(v string) int {

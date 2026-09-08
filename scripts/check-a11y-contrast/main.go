@@ -40,6 +40,7 @@ func main() {
 	srcDir := filepath.Join(rootDir, "apps", "desktop", "src")
 
 	var allFindings []Finding
+	var opacityFindings []OpacityFinding
 	fileCount := 0
 
 	err = filepath.Walk(srcDir, func(path string, info os.FileInfo, walkErr error) error {
@@ -49,19 +50,15 @@ func main() {
 		if info.IsDir() {
 			return nil
 		}
-		if filepath.Ext(path) != ".svelte" {
-			return nil
-		}
-		content, readErr := os.ReadFile(path)
+		result, readErr := analyzeSourceFile(analyzer, path, appCSSPath)
 		if readErr != nil {
 			return readErr
 		}
-		parsed := ParseSvelteFile(path, string(content))
-		if len(parsed.Rules) == 0 {
-			return nil
+		if result.isSvelteFile {
+			fileCount++
 		}
-		fileCount++
-		allFindings = append(allFindings, analyzer.AnalyzeFile(parsed)...)
+		allFindings = append(allFindings, result.findings...)
+		opacityFindings = append(opacityFindings, result.opacityFindings...)
 		return nil
 	})
 	if err != nil {
@@ -75,6 +72,7 @@ func main() {
 	if len(appCSSRules) > 0 {
 		pf := &ParsedFile{Path: appCSSPath, Rules: appCSSRules}
 		allFindings = append(allFindings, analyzer.AnalyzeFile(pf)...)
+		opacityFindings = append(opacityFindings, analyzer.AnalyzeOpacity(pf)...)
 	}
 
 	// Size tier utility classes (`.size-bytes` .. `.size-tb`) declare only a
@@ -113,12 +111,74 @@ func main() {
 	// enforce the Lc-45 floor alongside the WCAG gate. See apca.go.
 	apcaFloorFail := ReportAPCA(allFindings, rootDir, *verbose)
 
+	// Unmodeled `opacity` dimming: a rule the rule walker can't fold into its
+	// color/background pairing (see opacity_check.go). Enforced alongside
+	// WCAG and APCA: an opacity dim on live text is exactly as invisible to a
+	// user as a bad color pairing.
+	opacityFail := ReportOpacity(opacityFindings, rootDir)
+
 	summary := Summary(fileCount, analyzer.RulesEvaluated, len(allFindings), len(violations))
-	if hasViolations || apcaFloorFail {
-		fmt.Printf("%s❌ %s%s\n", colorRed, summary, colorReset)
+	if hasViolations || apcaFloorFail || opacityFail {
+		extra := ""
+		if opacityFail {
+			extra = fmt.Sprintf(", %d unmodeled %s", len(opacityFindings), plural(len(opacityFindings), "opacity dim", "opacity dims"))
+		}
+		fmt.Printf("%s❌ %s%s%s\n", colorRed, summary, extra, colorReset)
 		os.Exit(1)
 	}
 	fmt.Printf("%s✅ No contrast violations. %s%s\n", colorGreen, summary, colorReset)
+}
+
+// sourceFileResult is what one file contributes to the walk in main(): WCAG
+// findings (Svelte components only), opacity findings (both), and whether it
+// counted toward the Svelte file total in the summary line.
+type sourceFileResult struct {
+	findings        []Finding
+	opacityFindings []OpacityFinding
+	isSvelteFile    bool
+}
+
+// analyzeSourceFile handles one file from the `apps/desktop/src` walk in
+// main(): a `.svelte` component feeds both the WCAG rule walker and the
+// opacity check; a `.css` file other than app.css (`app-field.css`,
+// `app-file-list.css`, a component-local `filter-popover.css`, ...) feeds
+// only the opacity check, since these global stylesheets are imported
+// directly by `+layout.svelte` rather than scoped to a component and aren't
+// covered by the WCAG walker below (app.css's own global class rules are
+// handled separately via `parseRulesFromCSS` in main()). Extracted out of
+// main()'s filepath.Walk callback to keep that function's complexity down.
+func analyzeSourceFile(analyzer *Analyzer, path, appCSSPath string) (sourceFileResult, error) {
+	switch filepath.Ext(path) {
+	case ".svelte":
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return sourceFileResult{}, err
+		}
+		parsed := ParseSvelteFile(path, string(content))
+		if len(parsed.Rules) == 0 {
+			return sourceFileResult{}, nil
+		}
+		return sourceFileResult{
+			findings:        analyzer.AnalyzeFile(parsed),
+			opacityFindings: analyzer.AnalyzeOpacity(parsed),
+			isSvelteFile:    true,
+		}, nil
+	case ".css":
+		if path == appCSSPath {
+			return sourceFileResult{}, nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return sourceFileResult{}, err
+		}
+		parsed := &ParsedFile{Path: path, Rules: parseRulesFromCSS(path, string(content))}
+		if len(parsed.Rules) == 0 {
+			return sourceFileResult{}, nil
+		}
+		return sourceFileResult{opacityFindings: analyzer.AnalyzeOpacity(parsed)}, nil
+	default:
+		return sourceFileResult{}, nil
+	}
 }
 
 // parseRulesFromCSS reuses the Svelte rule parser on a raw CSS file.

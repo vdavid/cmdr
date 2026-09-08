@@ -47,8 +47,12 @@ both a text color and a background, the tool:
    the static `app.css` fallback (`#d4a006`) and silently miss issues that surface when the user's macOS accent is Apple
    Blue, Purple, Graphite, etc. See `accent_matrix.go` for the variant list.
 
-In addition to the rule walker, two scenario synthesizers cover cases where the text color and the background are set on
-different selectors — cases the walker can't pair on its own:
+The rule walker pairs `color` and `background`, full stop: it has no notion of CSS `opacity`, so a translucent text
+color composited via `opacity` is invisible to steps 1-6 above. A separate pass, `AnalyzeOpacity`, flags any such rule
+it can't otherwise account for — see "Opacity (detect, don't compute)" below.
+
+In addition to the rule walker, three scenario synthesizers cover cases where the text color and the background are set
+on different selectors — cases the walker can't pair on its own:
 
 - **Row state matrix** (`row_state_matrix.go`): the file-list's selected-row text colors (`--color-selection-fg` and the
   `--color-size-*-selected` mixes, on `.is-selected` descendants) and its unselected-row text colors (today:
@@ -67,6 +71,49 @@ different selectors — cases the walker can't pair on its own:
   fold through `opacity` and the rule walker can't see: the `ToggleGroup` "AI" badge + shortcut hint, the under-cursor
   result row's muted columns on the accent-tinted cursor bg, and the footer shortcut hints (on the dialog surface and on
   the primary button). Reuses the `dropdown_states.go` scenario type and accent-matrix sweep.
+
+## Opacity (detect, don't compute)
+
+The rule walker pairs a `color` and a `background` declared on the SAME selector; it has no notion of CSS `opacity` at
+all, so a rule like `.foo { color: var(--color-text-primary); opacity: 0.6; }` composites a translucent glyph against
+whatever is behind it at runtime, and the walker never evaluates the result. This is a real hole, not a theoretical
+one: a hidden/restricted file-list row composited to about Lc 44 in dark mode (under the enforced APCA floor) via
+exactly this pattern, and nothing caught it for as long as it shipped (fixed in `4cdc00c0a`, converted to the
+`--color-text-quiet` token).
+
+Rather than resolve the CSS cascade to compute what an `opacity` rule actually composites against (which needs a
+browser, the thing tier 1 exists to avoid), `opacity_check.go` detects the gap instead: `AnalyzeOpacity` reports any
+rule with a static `opacity: N < 1` UNLESS it's one of:
+
+- **A disabled or inactive UI component** (`opacityInactiveSelector` in `opacity_check.go`): `:disabled`, `[disabled]`,
+  `aria-disabled`, `data-disabled`, `data-gated`, or a `.disabled` / `.is-disabled*` / `*-disabled` class. WCAG 1.4.3
+  explicitly exempts inactive components, and this is where most of the codebase's `opacity` dimming lives.
+- **A hand-verified non-text element** (`opacityDecorativeAllowlist`): an `<Icon>` wrapper, an empty CSS-shape status
+  indicator (a colored dot/bar/swatch with no child content), or an aria-hidden punctuation divider with no
+  informational content. None of these render a text glyph, so this checker's text-contrast scope doesn't apply. Each
+  entry was verified by reading the component's markup, not guessed from the class name — see "Add a new opacity
+  exemption" below.
+- **Already hand-modeled** by a scenario synthesizer (`opacityModeledElsewhere`), so it isn't double-reported.
+- **`opacity: 0`**: renders nothing, so there's no visible glyph to have a contrast ratio against anything (the CSS
+  idiom for "hidden until `:hover`/`:focus`/a state class reveals it," not a dimmed-but-readable case). The revealed
+  state is a separate rule, evaluated on its own merits.
+
+A reported finding isn't a computed WCAG/APCA verdict like `Finding` (there's no FG/BG/ratio to show): it's a
+structural "the walker can't see this" flag. The fix is one of the two the message states: express the dimming as a
+color token (so the walker's normal color/background pairing sees it) or hand-model the composited pair in a
+synthesizer.
+
+Feeds the WCAG walker's own violations into the exit code (`hasViolations || apcaFloorFail || opacityFail`): an
+opacity dim on live text is exactly as invisible to a user as a bad color pairing.
+
+Only literal numeric `opacity` values resolve (`parseOpacity` in `parser.go`); `var(...)`, `calc(...)`, and other
+non-literal values are left unparsed rather than guessed (none exist in the codebase today).
+
+**File coverage**: this pass also walks every `.css` file under `apps/desktop/src` (not just `.svelte` components and
+`app.css`), since a global stylesheet like `app-field.css`, `app-file-list.css`, or a component-local
+`filter-popover.css` is imported directly by `+layout.svelte` rather than scoped to a component and the WCAG rule
+walker below doesn't reach it. The WCAG/APCA gate's own file scope is unchanged; only the opacity check sees these
+extra files.
 
 The parser also normalizes `app.css` before extracting vars: every `@supports not (color: color-mix(...))` block is
 stripped (those carry old-WebKit hex fallbacks that would otherwise overwrite the modern `color-mix` formulas), and
@@ -154,6 +201,12 @@ dropdown_states.go   Hand-listed (descendant-text-var, ancestor-bg-var) tuples
 query_dialog_states.go  Search / Select dialog pairs the walker can't pair:
                      ToggleGroup badge + hint, under-cursor result row, footer
                      shortcut hints. Reuses the dropdown_states scenario type.
+opacity_check.go     Detects (doesn't compute) a static `opacity: N < 1` the
+                     rule walker can't fold into its color/background
+                     pairing. Exempts disabled/inactive components, a
+                     hand-verified non-text allowlist, and anything already
+                     hand-modeled; reports everything else. See "Opacity
+                     (detect, don't compute)" above.
 ```
 
 Tests:
@@ -165,6 +218,9 @@ Tests:
 - `accent_matrix_test.go`: variant sweep + per-variant resolution.
 - `apca_test.go`: APCA reference values (black-on-white ≈ Lc 106, white-on-black ≈ −108), polarity asymmetry, target
   ladder.
+- `opacity_check_test.go`: disabled/inactive exemption, decorative allowlist exemption, `opacity: 0` and `opacity: 1`
+  are non-findings, a plain-text opacity dim is reported, a re-declared selector (for example a
+  `prefers-reduced-motion` override) dedupes to one finding, and `parseOpacity`'s literal-only contract.
 
 Diagnostic helpers (skipped by default; gated on env vars):
 
@@ -214,6 +270,30 @@ walker doesn't traverse), reach for one of the synthesizers:
 
 If the scenario depends on the active accent, you don't need to do anything special — the synthesizers iterate
 `AccentVariants` automatically.
+
+If the pair composites through an `opacity: N` on the fg or bg side (rather than only `color-mix(...)`), mirror it in
+the scenario's `FgExpr` / `BgExpr` with a `color-mix(in srgb, var(--token), transparent (1-N)%)` term, then add the
+same `(file-suffix, selector)` pair to `opacityModeledElsewhere` in `opacity_check.go` so the opacity check doesn't
+also report what the synthesizer now verifies.
+
+### Add a new opacity exemption
+
+When `AnalyzeOpacity` (`opacity_check.go`) reports a rule that's genuinely out of scope:
+
+- **Disabled/inactive component** (a new attribute or class shape beyond `:disabled` / `[data-disabled]` /
+  `aria-disabled` / `data-gated` / `.disabled` / `.is-disabled*` / `*-disabled`): extend `opacityInactiveSelector`'s
+  pattern list. This is a general rule, not a per-component allowlist — prefer widening the pattern over adding a
+  one-off entry.
+- **Non-text/decorative element**: add an entry to `opacityDecorativeAllowlist`, but only after reading the
+  component's markup (never infer from the selector or class name alone). The bar is: does this selector's element
+  render an `<Icon>`, an empty CSS-shape indicator with no child content, or an aria-hidden punctuation divider with no
+  informational content? If you can't tell, don't add it — leave the rule reported instead; a false exemption hides a
+  real contrast bug the way `opacity` itself did before this check existed.
+- **Already hand-modeled**: see the synthesizer note just above.
+
+Never widen an exemption just to make a survivor go quiet. A real informational-text case that opacity-dims without
+being disabled or decorative is a finding: either convert it to a color token (see `--color-text-quiet`) or hand-model
+it in a synthesizer.
 
 ## Known trade-offs
 
