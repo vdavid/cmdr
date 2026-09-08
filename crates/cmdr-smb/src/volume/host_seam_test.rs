@@ -104,7 +104,15 @@ async fn unwatched_docker_volume(host: VolumeHost) -> SmbVolume {
         .await
         .unwrap_or_else(|e| panic!("no fixture container at 127.0.0.1:{port} ({e:?})"));
     let volume_id = cmdr_fs::volume::smb_volume_id("127.0.0.1", port, "public");
-    SmbVolume::new("public", TEST_MOUNT_ROOT, &volume_id, params, client, tree, "", host)
+    SmbVolume::new(
+        "public",
+        MountAnchor::at_share_root(TEST_MOUNT_ROOT),
+        &volume_id,
+        params,
+        client,
+        tree,
+        host,
+    )
 }
 
 /// How many files the walked fixture holds. Big enough that one call per entry is

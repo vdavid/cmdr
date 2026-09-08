@@ -107,10 +107,9 @@ async fn make_docker_auth_volume() -> SmbVolume {
     let params = SmbConnectionParams::new("127.0.0.1", "private", port, Some("testuser"), Some("testpass"));
     connect_smb_volume(
         "private",
-        "/tmp/smb-soak-mount",
+        MountAnchor::at_share_root("/tmp/smb-soak-mount"),
         &volume_id,
         params,
-        "",
         crate::volume_host::host(),
     )
     .await

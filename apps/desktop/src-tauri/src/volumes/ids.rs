@@ -124,7 +124,12 @@ mod tests {
     #[test]
     fn a_subdirectory_mount_is_the_same_volume_as_its_share() {
         assert_eq!(
-            volume_id_for("/Volumes/SYSVOL", Some("smbfs"), Some(&smb_info("dc", 445, "SYSVOL")), None),
+            volume_id_for(
+                "/Volumes/SYSVOL",
+                Some("smbfs"),
+                Some(&smb_info("dc", 445, "SYSVOL")),
+                None
+            ),
             volume_id_for(
                 "/Volumes/SYSVOL/lgs-net.com",
                 Some("smbfs"),

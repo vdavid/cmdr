@@ -27,6 +27,7 @@ use cmdr_index::store::{IndexStore, ROOT_ID};
 use cmdr_index::testing::scan::IndexWriter;
 use cmdr_index::testing::scan::ScanProgress;
 use cmdr_index::testing::scan::scan_volume_via_trait;
+use cmdr_smb::volume::MountAnchor;
 use cmdr_smb::volume::{SmbConnectionParams, connect_smb_volume};
 
 /// Where the test volume is mounted. Every path handed to it must be absolute
@@ -49,10 +50,9 @@ async fn connect_public() -> Arc<dyn Volume> {
     let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
     let vol = connect_smb_volume(
         "public",
-        TEST_MOUNT_ROOT,
+        MountAnchor::at_share_root(TEST_MOUNT_ROOT),
         &volume_id,
         params,
-        "",
         crate::volume_host::host(),
     )
     .await

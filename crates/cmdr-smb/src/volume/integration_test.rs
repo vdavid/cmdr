@@ -508,7 +508,10 @@ async fn smb_integration_anchored_mount_lists_its_own_root() {
     let dir = test_dir_name();
     ensure_clean(&share, &dir).await;
     share.create_directory(Path::new(&dir)).await.unwrap();
-    share.create_directory(Path::new(&format!("{dir}/inside"))).await.unwrap();
+    share
+        .create_directory(Path::new(&format!("{dir}/inside")))
+        .await
+        .unwrap();
     share
         .create_file(Path::new(&format!("{dir}/marker.txt")), b"anchored")
         .await

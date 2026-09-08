@@ -118,6 +118,48 @@ pub struct SmbConnectionParams {
     pub password: String,
 }
 
+/// Where one mount of a share is: the OS mount point, and where that point sits
+/// INSIDE the share.
+///
+/// The two travel together because addressing a mount needs both, and a caller
+/// that has one always has the other. Keeping them apart is what let a mount be
+/// keyed as one place and addressed as another (ERR-48RZX).
+#[derive(Debug, Clone)]
+pub struct MountAnchor {
+    /// The OS mount point (for example, `/Volumes/SYSVOL/lgs-net.com`).
+    pub mount_path: PathBuf,
+    /// Where that mount point sits inside the share: `/`-separated, no leading or
+    /// trailing separator, empty for the ordinary mount at the share root. See
+    /// [`SmbVolume::share_root`].
+    pub share_root: String,
+}
+
+impl MountAnchor {
+    /// A mount of the whole share, which is every ordinary one.
+    pub fn at_share_root(mount_path: impl Into<PathBuf>) -> Self {
+        Self {
+            mount_path: mount_path.into(),
+            share_root: String::new(),
+        }
+    }
+
+    /// A mount anchored `share_root` deep inside the share. Empty means the share
+    /// root, so this covers both shapes.
+    ///
+    /// **`share_root` is NFC-folded here**, for the reason
+    /// [`SmbConnectionParams::new`] folds the share name: macOS `statfs` hands out
+    /// decomposed names while SMB servers store and answer with composed ones, and
+    /// every wire use of the anchor reads it off this struct.
+    pub fn new(mount_path: impl Into<PathBuf>, share_root: &str) -> Self {
+        use unicode_normalization::UnicodeNormalization;
+
+        Self {
+            mount_path: mount_path.into(),
+            share_root: share_root.trim_matches('/').nfc().collect(),
+        }
+    }
+}
+
 /// A `Volume` instance addressing one mount root of a share, over the shared
 /// per-share state (`SmbVolumeInner`) every instance of that share rides.
 ///
@@ -276,28 +318,19 @@ impl SmbVolume {
     ///   current session and to rebuild it on `attempt_reconnect`
     /// * `client` - Connected `SmbClient`
     /// * `tree` - Connected `Tree` for the share
-    /// * `share_root` - Where `mount_path` sits inside the share, empty for the
-    ///   ordinary mount at the share root (see [`SmbVolume::share_root`])
     /// * `host` - Everything the backend asks the app around it (see [`VolumeHost`])
     pub fn new(
         name: impl Into<String>,
-        mount_path: impl Into<PathBuf>,
+        anchor: MountAnchor,
         volume_id: impl Into<String>,
         params: SmbConnectionParams,
         client: SmbClient,
         tree: Tree,
-        share_root: &str,
         host: VolumeHost,
     ) -> Self {
-        use unicode_normalization::UnicodeNormalization;
-
         let share_name = params.share_name.clone();
-        let mount_path = mount_path.into();
+        let MountAnchor { mount_path, share_root } = anchor;
         let volume_id = volume_id.into();
-        // Folded here for the reason `SmbConnectionParams::new` folds the share
-        // name: macOS hands out decomposed names and the server answers composed
-        // ones. Every wire use of the anchor reads this field.
-        let share_root: String = share_root.trim_matches('/').nfc().collect();
         Self {
             name: name.into(),
             mount_path: mount_path.clone(),
@@ -419,14 +452,11 @@ impl SmbVolume {
     /// The app calls this as it registers each root, so a later promotion
     /// ([`instance_at_root`](Self::instance_at_root)) can look the anchor up
     /// instead of assuming the one it already has.
-    pub fn note_mount_root(&self, mount_path: impl Into<PathBuf>, share_root: &str) {
-        use unicode_normalization::UnicodeNormalization;
-
-        let share_root: String = share_root.trim_matches('/').nfc().collect();
+    pub fn note_mount_root(&self, anchor: MountAnchor) {
         self.inner
             .share_root_by_mount
             .write_ignore_poison()
-            .insert(mount_path.into(), share_root);
+            .insert(anchor.mount_path, anchor.share_root);
     }
 
     /// Takes over every mount root `predecessor` knew about.
@@ -480,14 +510,13 @@ impl SmbVolume {
 /// tests typically pass `smb_volume_id(server, port, share)` directly.
 pub async fn connect_smb_volume(
     name: &str,
-    mount_path: &str,
+    anchor: MountAnchor,
     volume_id: &str,
     params: SmbConnectionParams,
-    share_root: &str,
     host: VolumeHost,
 ) -> Result<SmbVolume, smb2::Error> {
     let (client, tree) = build_session(&params).await?;
-    let vol = SmbVolume::new(name, mount_path, volume_id, params.clone(), client, tree, share_root, host);
+    let vol = SmbVolume::new(name, anchor, volume_id, params.clone(), client, tree, host);
     vol.inner.spawn_watcher(&params);
     // PII-free analytics: a direct SMB connection succeeded. No host / share / credential
     // identifiers ever cross.

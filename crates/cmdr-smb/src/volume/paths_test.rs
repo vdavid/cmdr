@@ -119,7 +119,8 @@ fn to_display_path_with_subpath() {
 fn an_anchored_mount_joins_its_share_root_onto_the_wire_path() {
     let vol = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
     assert_eq!(
-        vol.to_smb_path(Path::new("/Volumes/SYSVOL/lgs-net.com/Policies")).unwrap(),
+        vol.to_smb_path(Path::new("/Volumes/SYSVOL/lgs-net.com/Policies"))
+            .unwrap(),
         "lgs-net.com/Policies"
     );
     assert_eq!(
@@ -134,7 +135,10 @@ fn an_anchored_mount_root_is_the_share_root_itself() {
     // The mount root is not the share root: asking for "" would list the whole
     // share instead of the directory the pane is actually showing.
     let vol = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
-    assert_eq!(vol.to_smb_path(Path::new("/Volumes/SYSVOL/lgs-net.com")).unwrap(), "lgs-net.com");
+    assert_eq!(
+        vol.to_smb_path(Path::new("/Volumes/SYSVOL/lgs-net.com")).unwrap(),
+        "lgs-net.com"
+    );
     assert_eq!(vol.to_smb_path(Path::new("/")).unwrap(), "lgs-net.com");
     assert_eq!(vol.to_smb_path(Path::new("")).unwrap(), "lgs-net.com");
 }
@@ -144,7 +148,10 @@ fn an_anchored_mount_joins_relative_paths_too() {
     // The trait contract's relative form is relative to the VOLUME root, which on
     // an anchored mount is already inside the share.
     let vol = make_test_volume_anchored("photos/2026", "/Volumes/2026");
-    assert_eq!(vol.to_smb_path(Path::new("June/IMG_1.jpg")).unwrap(), "photos/2026/June/IMG_1.jpg");
+    assert_eq!(
+        vol.to_smb_path(Path::new("June/IMG_1.jpg")).unwrap(),
+        "photos/2026/June/IMG_1.jpg"
+    );
 }
 
 #[test]

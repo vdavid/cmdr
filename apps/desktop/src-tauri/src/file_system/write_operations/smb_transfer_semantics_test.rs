@@ -694,10 +694,9 @@ async fn smb_integration_a_running_copy_survives_the_volume_being_replaced() {
     let in_flight_at_swap = landed.load(Ordering::Relaxed);
     let successor = connect_smb_volume(
         "public",
-        "/tmp/smb-test-mount",
+        MountAnchor::at_share_root("/tmp/smb-test-mount"),
         &volume_id,
         docker_guest_params(),
-        "",
         crate::volume_host::host(),
     )
     .await

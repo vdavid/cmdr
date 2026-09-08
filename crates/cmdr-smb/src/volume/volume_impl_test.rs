@@ -347,10 +347,13 @@ fn a_share_opened_with_credentials_offers_no_guest_option() {
 #[test]
 fn a_promotion_uses_the_anchor_recorded_for_the_target_root() {
     let vol = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
-    vol.note_mount_root("/Volumes/SYSVOL", "");
+    vol.note_mount_root(MountAnchor::at_share_root("/Volumes/SYSVOL"));
 
     let promoted = vol.rerooted(Path::new("/Volumes/SYSVOL")).expect("a recorded root");
-    let promoted = promoted.as_any().downcast_ref::<SmbVolume>().expect("still an SmbVolume");
+    let promoted = promoted
+        .as_any()
+        .downcast_ref::<SmbVolume>()
+        .expect("still an SmbVolume");
 
     assert_eq!(promoted.share_root(), "", "the target root sits at the share root");
     assert_eq!(
@@ -396,7 +399,7 @@ fn an_unanchored_share_still_promotes_to_an_unrecorded_root() {
 #[test]
 fn a_successor_inherits_the_mount_roots_its_predecessor_knew() {
     let predecessor = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
-    predecessor.note_mount_root("/Volumes/SYSVOL", "");
+    predecessor.note_mount_root(MountAnchor::at_share_root("/Volumes/SYSVOL"));
 
     let successor = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
     assert!(

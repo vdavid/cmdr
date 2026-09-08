@@ -34,6 +34,7 @@ async fn phase4_bench_baseline_smb_to_local_100_tiny_files() {
     use crate::file_system::volume::LocalPosixVolume;
     use crate::file_system::volume::smb_volume_id;
     use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+    use cmdr_smb::volume::MountAnchor;
     use cmdr_smb::volume::{SmbConnectionParams, connect_smb_volume};
 
     const FILE_COUNT: usize = 100;
@@ -52,10 +53,9 @@ async fn phase4_bench_baseline_smb_to_local_100_tiny_files() {
     let params = SmbConnectionParams::new(&host, "naspi", 445, Some("david"), Some(password.as_str()));
     let smb_volume = connect_smb_volume(
         "naspi",
-        "/Volumes/naspi-bench-p4",
+        MountAnchor::at_share_root("/Volumes/naspi-bench-p4"),
         &smb_volume_id,
         params,
-        "",
         crate::volume_host::host(),
     )
     .await

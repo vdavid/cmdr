@@ -85,6 +85,7 @@ use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::ConflictResolution;
 use crate::file_system::{set_smb_concurrency, smb_concurrency};
 use crate::ignore_poison::IgnorePoison;
+use cmdr_smb::volume::MountAnchor;
 use cmdr_smb::volume::{SmbConnectionParams, connect_smb_volume};
 use std::future::Future;
 use std::pin::Pin as StdPin;
@@ -585,10 +586,9 @@ async fn connect_target() -> Target {
             let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
             let volume = connect_smb_volume(
                 "public",
-                "/tmp/smb-bench-mount",
+                MountAnchor::at_share_root("/tmp/smb-bench-mount"),
                 &volume_id,
                 params,
-                "",
                 crate::volume_host::host(),
             )
             .await
@@ -616,10 +616,9 @@ async fn connect_target() -> Target {
             let params = SmbConnectionParams::new(&host, &share, 445, Some(user.as_str()), Some(password.as_str()));
             let volume = connect_smb_volume(
                 &share,
-                "/Volumes/naspi-m43-bench",
+                MountAnchor::at_share_root("/Volumes/naspi-m43-bench"),
                 &volume_id,
                 params,
-                "",
                 crate::volume_host::host(),
             )
             .await

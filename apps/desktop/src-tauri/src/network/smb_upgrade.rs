@@ -393,7 +393,7 @@ fn carry_mount_roots(
         return;
     };
     newcomer.adopt_mount_roots_from(incumbent);
-    incumbent.note_mount_root(newcomer_root, newcomer.share_root());
+    incumbent.note_mount_root(cmdr_smb::volume::MountAnchor::new(newcomer_root, newcomer.share_root()));
 }
 
 /// Tries to establish a direct smb2 connection and register as `SmbVolume`.
@@ -447,10 +447,9 @@ pub(crate) async fn register_smb_volume(
     match connect_with_retry(|| {
         connect_smb_volume(
             share,
-            mount_path,
+            cmdr_smb::volume::MountAnchor::new(mount_path, &share_root),
             &volume_id,
             params.clone(),
-            &share_root,
             crate::volume_host::host(),
         )
     })
@@ -544,10 +543,9 @@ pub(crate) async fn try_smb_upgrade(
     match connect_with_retry(|| {
         connect_smb_volume(
             share,
-            mount_path,
+            cmdr_smb::volume::MountAnchor::new(mount_path, &share_root),
             volume_id,
             params.clone(),
-            &share_root,
             crate::volume_host::host(),
         )
     })

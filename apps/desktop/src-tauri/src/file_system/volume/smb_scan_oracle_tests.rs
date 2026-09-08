@@ -26,6 +26,7 @@ use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::smb_volume_id;
+use cmdr_smb::volume::MountAnchor;
 use cmdr_smb::volume::{SmbConnectionParams, SmbVolume, connect_smb_volume};
 
 fn make_file_entry(name: &str, parent: &str, size: u64) -> FileEntry {
@@ -64,10 +65,9 @@ async fn make_docker_volume() -> SmbVolume {
     let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
     connect_smb_volume(
         "public",
-        "/tmp/smb-test-mount",
+        MountAnchor::at_share_root("/tmp/smb-test-mount"),
         &volume_id,
         params,
-        "",
         crate::volume_host::host(),
     )
     .await

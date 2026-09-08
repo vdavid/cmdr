@@ -23,7 +23,7 @@ use std::sync::atomic::Ordering;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::{Volume, VolumeReadStream};
 
-use super::{SmbConnectionParams, SmbVolume, connect_smb_volume};
+use super::{MountAnchor, SmbConnectionParams, SmbVolume, connect_smb_volume};
 
 /// Where the fixture share is mounted, as far as every suite is concerned.
 ///
@@ -64,11 +64,15 @@ pub async fn make_docker_volume_with_host(host: VolumeHost) -> SmbVolume {
     let params = docker_guest_params();
     let port = params.port;
     let volume_id = cmdr_fs::volume::smb_volume_id("127.0.0.1", port, "public");
-    connect_smb_volume("public", TEST_MOUNT_ROOT, &volume_id, params, "", host)
-        .await
-        .unwrap_or_else(|e| {
-            panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})")
-        })
+    connect_smb_volume(
+        "public",
+        MountAnchor::at_share_root(TEST_MOUNT_ROOT),
+        &volume_id,
+        params,
+        host,
+    )
+    .await
+    .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})"))
 }
 
 /// Connects to the fixture container's `public` share as a mount ANCHORED at
@@ -82,11 +86,15 @@ pub async fn make_docker_volume_anchored(share_root: &str, mount_root: &str) -> 
     let params = docker_guest_params();
     let port = params.port;
     let volume_id = cmdr_fs::volume::smb_volume_id("127.0.0.1", port, "public");
-    connect_smb_volume("public", mount_root, &volume_id, params, share_root, VolumeHost::detached())
-        .await
-        .unwrap_or_else(|e| {
-            panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})")
-        })
+    connect_smb_volume(
+        "public",
+        MountAnchor::new(mount_root, share_root),
+        &volume_id,
+        params,
+        VolumeHost::detached(),
+    )
+    .await
+    .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})"))
 }
 
 /// An absolute share path the way production builds one: `{mount root}/{relative}`.

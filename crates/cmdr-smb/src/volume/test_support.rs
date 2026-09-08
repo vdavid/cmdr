@@ -11,6 +11,7 @@
 
 use super::*;
 
+pub(super) use super::MountAnchor;
 pub(super) use super::testing::*;
 
 // The vocabulary the suites speak, re-exported so one glob covers it. It lives
