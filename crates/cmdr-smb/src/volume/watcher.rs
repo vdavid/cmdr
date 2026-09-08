@@ -14,7 +14,7 @@
 //! state machine, just now backend-triggered on watcher death (not only on the
 //! next FE backoff tick / hot-path op).
 
-use super::SmbVolumeInner;
+use super::{MountAnchor, SmbVolumeInner};
 use cmdr_fs::archive_format::has_supported_archive_extension;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
@@ -35,15 +35,26 @@ const WATCHER_BATCH_THRESHOLD: usize = 50;
 /// Debounce window: after receiving a batch of events, wait this long for more.
 const WATCHER_DEBOUNCE: Duration = Duration::from_millis(200);
 
-/// Converts a watcher filename (NFC from server) to an NFD display path
-/// suitable for macOS mount paths.
-fn to_nfd_display_path(mount_path: &Path, relative: &str) -> PathBuf {
-    let nfd: String = relative.nfd().collect();
-    if nfd.is_empty() {
-        mount_path.to_path_buf()
-    } else {
-        mount_path.join(&nfd)
-    }
+/// Converts a SHARE-relative watcher path (NFC from server) to the NFD display
+/// path under this mount that the listing cache is keyed on.
+///
+/// `None` when the path isn't under this mount's anchor. The watch covers the
+/// whole share (one recursive `CHANGE_NOTIFY` on the share root, shared by every
+/// mount of it), so a mount anchored inside the share hears about changes in the
+/// rest of it too. Those belong to no listing under this mount, and joining them
+/// on anyway would invalidate a path that doesn't exist while leaving the one
+/// that changed stale.
+///
+/// The anchor is stripped BEFORE the NFD fold, because it's stored NFC (see
+/// `paths.rs`) and the server speaks NFC; only what's left becomes a macOS-shaped
+/// path.
+fn to_nfd_display_path(anchor: &MountAnchor, relative: &str) -> Option<PathBuf> {
+    let below = super::paths::below_share_root(&anchor.share_root, relative)?;
+    let nfd: String = below.nfd().collect();
+    Some(match nfd.is_empty() {
+        true => anchor.mount_path.clone(),
+        false => anchor.mount_path.join(&nfd),
+    })
 }
 
 /// Stats a file over the share's MAIN session, deliberately not this watcher's
@@ -90,7 +101,7 @@ async fn process_event_batch(
     events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>>,
     volume_id: &str,
     share: &SelfHandle<SmbVolumeInner>,
-    mount_path: &Path,
+    anchor: &MountAnchor,
 ) {
     // One seam call per event, never per directory ENTRY: a batch past
     // `WATCHER_BATCH_THRESHOLD` collapses to a single `FullRefresh`.
@@ -116,7 +127,9 @@ async fn process_event_batch(
 
             match action {
                 FileNotifyAction::Added => {
-                    let entry_path = to_nfd_display_path(mount_path, filename);
+                    let Some(entry_path) = to_nfd_display_path(anchor, filename) else {
+                        continue;
+                    };
                     match stat_via_share(share, &entry_path).await {
                         Some(entry) => {
                             listings.directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
@@ -133,7 +146,9 @@ async fn process_event_batch(
                     listings.directory_changed(volume_id, parent_path, DirectoryChange::Removed(file_name_only));
                 }
                 FileNotifyAction::Modified => {
-                    let entry_path = to_nfd_display_path(mount_path, filename);
+                    let Some(entry_path) = to_nfd_display_path(anchor, filename) else {
+                        continue;
+                    };
                     match stat_via_share(share, &entry_path).await {
                         Some(entry) => {
                             listings.directory_changed(volume_id, parent_path, DirectoryChange::Modified(entry));
@@ -155,7 +170,9 @@ async fn process_event_batch(
                     pending_old_name = Some(file_name_only);
                 }
                 FileNotifyAction::RenamedNewName => {
-                    let entry_path = to_nfd_display_path(mount_path, filename);
+                    let Some(entry_path) = to_nfd_display_path(anchor, filename) else {
+                        continue;
+                    };
                     if let Some(old_name) = pending_old_name.take() {
                         match stat_via_share(share, &entry_path).await {
                             Some(new_entry) => {
@@ -307,7 +324,19 @@ pub(super) async fn run_smb_watcher(
 
         // One snapshot per batch: a promotion between batches moves the share's
         // active root, and every path built below has to come from the same one.
-        let mount_path = active_mount_path.read_ignore_poison().clone();
+        // The anchor comes with it, because a promotion can move the share to a
+        // root sitting somewhere else inside it.
+        let anchor = {
+            let mount_path = active_mount_path.read_ignore_poison().clone();
+            let share_root = share
+                .live()
+                .and_then(|inner| inner.share_root_for(&mount_path))
+                .unwrap_or_default();
+            MountAnchor {
+                mount_path,
+                share_root,
+            }
+        };
 
         match events_result {
             Ok(events) => {
@@ -324,7 +353,9 @@ pub(super) async fn run_smb_watcher(
                         .parent()
                         .map(|p| p.to_string_lossy().to_string())
                         .unwrap_or_default();
-                    let parent_display = to_nfd_display_path(&mount_path, &parent);
+                    let Some(parent_display) = to_nfd_display_path(&anchor, &parent) else {
+                        continue;
+                    };
 
                     events_by_dir
                         .entry(parent_display)
@@ -348,7 +379,7 @@ pub(super) async fn run_smb_watcher(
                         },
                         _ = &mut cancel_rx => {
                             // Process what we have, then exit
-                            process_event_batch(&host, events_by_dir, &volume_id, &share, &mount_path).await;
+                            process_event_batch(&host, events_by_dir, &volume_id, &share, &anchor).await;
                             debug!("smb_watcher({}): cancelled during debounce, closing", share_name);
                             if let Err(e) = watcher.close().await {
                                 debug!("smb_watcher({}): error closing watcher: {}", share_name, e);
@@ -365,7 +396,9 @@ pub(super) async fn run_smb_watcher(
                                     .parent()
                                     .map(|p| p.to_string_lossy().to_string())
                                     .unwrap_or_default();
-                                let parent_display = to_nfd_display_path(&mount_path, &parent);
+                                let Some(parent_display) = to_nfd_display_path(&anchor, &parent) else {
+                                    continue;
+                                };
 
                                 events_by_dir
                                     .entry(parent_display)
@@ -385,7 +418,7 @@ pub(super) async fn run_smb_watcher(
                     events_by_dir.len()
                 );
 
-                process_event_batch(&host, events_by_dir, &volume_id, &share, &mount_path).await;
+                process_event_batch(&host, events_by_dir, &volume_id, &share, &anchor).await;
             }
             Err(e) => {
                 // Check for STATUS_NOTIFY_ENUM_DIR (buffer overflow).
@@ -401,7 +434,7 @@ pub(super) async fn run_smb_watcher(
                         share_name
                     );
                     host.listings()
-                        .directory_changed(&volume_id, &mount_path, DirectoryChange::FullRefresh);
+                        .directory_changed(&volume_id, &anchor.mount_path, DirectoryChange::FullRefresh);
                     // Index freshness: overflow means the server dropped change
                     // records we can't recover, so the index may have drifted.
                     // Mark it Stale (the index's overflow policy; the watcher

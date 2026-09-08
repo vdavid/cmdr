@@ -95,16 +95,30 @@ impl SmbVolume {
 
     /// A share-relative path re-expressed relative to this mount's anchor.
     fn below_share_root<'a>(&self, smb_path: &'a str) -> &'a str {
-        if self.share_root.is_empty() {
-            return smb_path;
-        }
-        match smb_path.strip_prefix(&self.share_root) {
-            // The anchor itself, or a whole component below it. A shared name
-            // prefix (`domain.old`) fails this and falls through untouched.
-            Some("") => "",
-            Some(rest) => rest.strip_prefix('/').unwrap_or(smb_path),
-            None => smb_path,
-        }
+        below_share_root(&self.share_root, smb_path).unwrap_or(smb_path)
+    }
+}
+
+/// `smb_path` re-expressed relative to `share_root`, or `None` when it isn't
+/// inside that anchor at all.
+///
+/// Matches whole COMPONENTS: `domain.old/x` starts with `domain` as a string but
+/// is a different directory, and stripping it would name a path on a directory
+/// nobody mounted. An empty `share_root` is the share itself, so everything is
+/// inside it and comes back unchanged.
+///
+/// Shared with the watcher, which turns share-relative event paths into the
+/// mount-relative ones the listing cache is keyed on. ❌ Not two copies of this
+/// rule: they would drift, and each direction of a path conversion that
+/// disagrees with the other patches a cache key nothing is watching.
+pub(super) fn below_share_root<'a>(share_root: &str, smb_path: &'a str) -> Option<&'a str> {
+    if share_root.is_empty() {
+        return Some(smb_path);
+    }
+    match smb_path.strip_prefix(share_root) {
+        Some("") => Some(""),
+        Some(rest) => rest.strip_prefix('/'),
+        None => None,
     }
 }
 

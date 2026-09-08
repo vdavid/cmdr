@@ -19,7 +19,7 @@
 //! deliberately independent of that stat.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use cmdr_fs::volume::SelfHandle;
@@ -27,6 +27,7 @@ use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::listings::RecordingListings;
 use smb2::FileNotifyAction;
 
+use super::super::MountAnchor;
 use super::process_event_batch;
 
 /// The mount root every case builds its paths under. Never touched on disk.
@@ -57,15 +58,14 @@ fn batch(action: FileNotifyAction, filename: &str) -> HashMap<PathBuf, Vec<(File
 /// Drives one event through the batch processor and answers every archive
 /// refresh it asked for.
 async fn archive_refreshes_for(action: FileNotifyAction, filename: &str) -> Vec<(String, PathBuf)> {
+    refreshes_through(MountAnchor::at_share_root(MOUNT), action, filename).await
+}
+
+/// Same, for a mount anchored inside the share: the filename the server sends is
+/// SHARE-relative, so it carries the anchor.
+async fn refreshes_through(anchor: MountAnchor, action: FileNotifyAction, filename: &str) -> Vec<(String, PathBuf)> {
     let (host, listings) = recording_host();
-    process_event_batch(
-        &host,
-        batch(action, filename),
-        VOLUME_ID,
-        &no_live_share(),
-        Path::new(MOUNT),
-    )
-    .await;
+    process_event_batch(&host, batch(action, filename), VOLUME_ID, &no_live_share(), &anchor).await;
     listings.archive_refreshes()
 }
 
@@ -127,5 +127,66 @@ async fn the_refreshed_path_is_normalized_the_way_the_cache_keys_are() {
         // …and decomposed (e + U+0301) on the way to the cache.
         vec![(VOLUME_ID.to_string(), PathBuf::from(MOUNT).join("cafe\u{0301}.zip"))],
         "the refreshed path must carry the same NFD normalization the listing cache keys on"
+    );
+}
+
+// ── Mounts anchored inside the share ──────────────────────────────────────────
+//
+// The watch is ONE recursive `CHANGE_NOTIFY` on the share root, so its event
+// paths are share-relative and a mount anchored inside the share hears about the
+// whole share. Both halves matter: paths inside the anchor must lose it, and
+// paths outside it belong to no listing here.
+
+/// An event inside the anchor is reported at its path under THIS mount, with the
+/// anchor taken off. Leaving it on names `/Volumes/SYSVOL/domain/domain/x`, which
+/// no pane has open, so the listing that did change silently stays stale.
+#[tokio::test]
+async fn an_event_inside_the_anchor_is_reported_under_this_mount() {
+    let refreshes = refreshes_through(
+        MountAnchor::new(MOUNT, "team/archive"),
+        FileNotifyAction::Modified,
+        "team/archive/bundle.zip",
+    )
+    .await;
+    assert_eq!(
+        refreshes,
+        vec![(VOLUME_ID.to_string(), PathBuf::from(MOUNT).join("bundle.zip"))]
+    );
+}
+
+/// An event elsewhere in the share is not this mount's business. Joining it on
+/// anyway would invalidate a path that doesn't exist under this mount.
+#[tokio::test]
+async fn an_event_outside_the_anchor_is_ignored() {
+    for elsewhere in ["other/bundle.zip", "team/archive-old/bundle.zip", "bundle.zip"] {
+        assert!(
+            refreshes_through(
+                MountAnchor::new(MOUNT, "team/archive"),
+                FileNotifyAction::Modified,
+                elsewhere
+            )
+            .await
+            .is_empty(),
+            "{elsewhere} is outside this mount's anchor"
+        );
+    }
+}
+
+/// The anchor is stored NFC (the server's spelling) and stripped before the NFD
+/// fold, so an accented anchor still matches what the server sends.
+#[tokio::test]
+async fn an_accented_anchor_still_matches_what_the_server_sends() {
+    let refreshes = refreshes_through(
+        // Anchor given decomposed, the way macOS `statfs` spells it…
+        MountAnchor::new(MOUNT, "arme\u{0301}e"),
+        FileNotifyAction::Modified,
+        // …and composed, the way the server reports the event.
+        "arm\u{00e9}e/bundle.zip",
+    )
+    .await;
+    assert_eq!(
+        refreshes,
+        vec![(VOLUME_ID.to_string(), PathBuf::from(MOUNT).join("bundle.zip"))],
+        "MountAnchor::new folds the anchor to NFC, which is what the event path is in"
     );
 }
