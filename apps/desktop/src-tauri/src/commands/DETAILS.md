@@ -185,6 +185,11 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
     borrowed for the life of the menu and pointed at the right-clicked rows. `popup()` runs the whole tracking loop, so
     the binding is `let _services_loan = …` and ❌ never `let _ = …`; see `menu/DETAILS.md` § Services in the
     right-click menu.
+  - ❗ **`build_file_context_info` enumerates the share services on THIS thread** (macOS), taking its own
+    `MainThreadMarker` rather than hopping: `file_system::share` pairs the offer with the click by index through a
+    thread-local, and `on_menu_event` reads it back on the main thread. A sync `#[tauri::command]` runs there, which is
+    also what lets `popup()` work; with no marker the `Share` submenu is simply absent. `file_system/DETAILS.md` § "The
+    Share submenu".
   - ❗ **`show_volume_row_context_menu` takes an optional `ServerRowMenu`**, and a server row gets Open / Edit server… /
     Disconnect / Pin or Unpin / Forget saved password / Forget server instead of Eject: "Eject" promises safe-to-unplug
     and a server has nothing to unplug. The CALLER says which items apply (this command is synchronous, and a

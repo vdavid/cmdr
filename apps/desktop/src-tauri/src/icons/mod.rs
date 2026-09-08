@@ -29,6 +29,9 @@ use std::sync::{LazyLock, RwLock};
 // from a rayon or tokio worker.
 #[cfg(target_os = "macos")]
 use macos_workspace::render_file_icon;
+// The `Share` submenu needs the same NSImage → RGBA draw for each service's own icon.
+#[cfg(target_os = "macos")]
+pub(crate) use macos_workspace::render_ns_image;
 
 /// Prefix marking per-path (per-folder) icon keys. Unlike `dir` / `ext:*` / `file`
 /// (an inherently bounded set), `path:` keys grow with the number of distinct

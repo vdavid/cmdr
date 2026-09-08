@@ -285,14 +285,14 @@ volume-id string. The record has two halves, and which half answers is the whole
   and otherwise defers to `capabilitiesFor`. ❌ Neither routed branch folds in the parent drive's published
   capabilities: those answer for the drive, and the pane is inside something ON it.
 - **`rowIsOsVisible(volumeId, rowPath)`** answers ONE row's "is there a real file behind this", the gate behind the
-  context menu's `Share…` (see § "Sharing a row" below). ❌ It is NOT `capabilitiesForPane`: that one uses the WIDE
+  context menu's `Share` (see § "Sharing a row" below). ❌ It is NOT `capabilitiesForPane`: that one uses the WIDE
   archive check, so it would call a `.zip` FILE unshareable, and sharing a freshly-made archive is the point.
 - **❗ Nothing switches exhaustively over `VolumeKind`.** Every consumer is a positive-list comparison, so a new member
   compiles clean everywhere and silently falls out of each list. The five to walk when you add one:
   `pane/clipboard-operations.ts` (the system-clipboard refusal — a missed kind puts an unusable scheme path on the OS
   clipboard), `volume-tint.svelte.ts::tintForKind` (falls through to `'none'`), `search/search-target-volume.ts` (a
   missed remote kind gets the LOCAL coverage voice), `open-terminal/terminal-target.ts::canOpenTerminalIn`, and
-  `rowIsOsVisible` (a missed kind reaches the share sheet with no file behind it).
+  `rowIsOsVisible` (a missed kind offers `Share` on a row with no file behind it).
 - **To add virtual volume #3:** add a `VolumeKind` member, a table row, and a `volumeKindOf` branch, then walk those
   five.
 - **To add a real backend:** override `is_writable` in Rust and there's nothing to do on this side.
@@ -1333,13 +1333,14 @@ open in the default app, or ask. The decision is a pure function; the UI is a sm
 
 ## Sharing a row
 
-The native context menu's `Share…` (macOS) opens the system share sheet on the right-clicked selection. The picker and
-its anchoring live in Rust (`src-tauri/src/file_system/DETAILS.md` § "Share sheet"); what this directory owns is WHETHER
-the item appears, pushed as `PaneContextMenuFacts.canShare` from `pane-pointer.ts::handleContextMenu`. The same flag
-gates the context menu's `Services` submenu, which asks the same question for the same reason (a macOS service takes
-file URLs too): `src-tauri/src/menu/DETAILS.md` § "Services in the right-click menu".
+The native context menu's `Share` (macOS) is a submenu listing what macOS can send the right-clicked selection to. The
+services and the submenu live in Rust (`src-tauri/src/file_system/DETAILS.md` § "The Share submenu"); what this
+directory owns is whether the item MAY appear, pushed as `PaneContextMenuFacts.canShare` from
+`pane-pointer.ts::handleContextMenu`. Rust adds one more condition of its own: macOS has to actually offer a service.
+The same flag gates the context menu's `Services` submenu, which asks the same question for the same reason (a macOS
+service takes file URLs too): `src-tauri/src/menu/DETAILS.md` § "Services in the right-click menu".
 
-The share sheet takes file URLs, so the question is whether the right-clicked ROW has a real file behind it, and it
+A share service takes file URLs, so the question is whether the right-clicked ROW has a real file behind it, and it
 needs three inputs rather than one kind lookup (`rowIsOsVisible` in `volume-capabilities.ts`):
 
 1. The VOLUME's kind, via the pure `paneRowsAreOsVisible`: `local`, `smb`, and `search-results` yes; `mtp`, `adb`,
@@ -1354,7 +1355,7 @@ archive-inner pane answers yes (the terminal opens the folder holding the `.zip`
 them. Folding them into one flag would be wrong for both panes.
 
 Surfaces other than the two file panes leave `canShare` at its `false` default, so the Search dialog's row menu carries
-no `Share…` today. Not a considered no: it's the "a surface that can't answer says nothing" default the whole
+no `Share` today. Not a considered no: it's the "a surface that can't answer says nothing" default the whole
 `PaneContextMenuFacts` object takes.
 
 ## Feeding the macOS Services menu

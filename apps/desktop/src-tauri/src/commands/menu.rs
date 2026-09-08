@@ -44,7 +44,7 @@ pub struct PaneContextMenuFacts {
     /// Whether "Open terminal here" is clickable. It opens the PANE's folder, not
     /// the right-clicked file, so only a pane on OS-visible paths offers it.
     pub can_open_terminal_here: bool,
-    /// Whether this pane's ROWS are real OS paths, which is what the share sheet
+    /// Whether this pane's ROWS are real OS paths, which is what a share service
     /// needs. Not the same question as `can_open_terminal_here`: the search-results
     /// snapshot has no folder of its own yet lists real files.
     pub can_share: bool,
@@ -74,14 +74,30 @@ pub fn show_file_context_menu<R: Runtime>(
     // which delays the popup; the cache (in `file_system::open_with`) keeps later
     // right-clicks fast.
     #[cfg(target_os = "macos")]
-    let info = build_file_context_info(&path, &context_paths, is_directory);
+    let mut info = build_file_context_info(&path, &context_paths, is_directory);
     #[cfg(not(target_os = "macos"))]
     let info = FileContextInfo;
 
-    // What a macOS service would act on: the same rows, as paths, taken before
-    // `context_paths` moves into `MenuState`.
+    // What a macOS service, or a share service, would act on: the same rows, as paths,
+    // taken before `context_paths` moves into `MenuState`.
     #[cfg(target_os = "macos")]
     let services_paths: Vec<std::path::PathBuf> = context_paths.iter().map(std::path::PathBuf::from).collect();
+
+    // The services macOS offers for those rows, one `Share` submenu item each. Left
+    // empty when the pane's rows aren't OS paths, and empty is also macOS's own answer
+    // for a row it can't share — either way the item is left out entirely.
+    //
+    // ⚠️ The marker has to come from THIS thread, not a hop: `services_for` arms the
+    // click side by index, and `on_menu_event` reads it back on the main thread. A sync
+    // `#[tauri::command]` runs there, which is also why `popup()` works below; without a
+    // marker the submenu is simply absent, like a pane that can't share.
+    #[cfg(target_os = "macos")]
+    if pane.can_share {
+        match objc2::MainThreadMarker::new() {
+            Some(mtm) => info.share_services = crate::file_system::share::services_for(mtm, &services_paths),
+            None => log::warn!(target: "menu", "Not on the main thread; the context menu offers no Share submenu"),
+        }
+    }
 
     // Update menu context so on_menu_event has paths + bundle map for the new items.
     {
@@ -197,6 +213,9 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String], is_director
         is_icloud_drive,
         google_drive_link,
         open_with,
+        // Filled in by the caller, which holds the main-thread marker the enumeration
+        // has to share with the click handler.
+        share_services: Vec::new(),
         applied_tag_colors,
     }
 }

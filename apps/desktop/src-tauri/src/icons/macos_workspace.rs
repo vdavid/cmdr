@@ -1,4 +1,4 @@
-//! Asks macOS for a file's icon and renders it into an RGBA buffer.
+//! Asks macOS for a file's icon, and renders an `NSImage` into an RGBA buffer.
 //!
 //! `NSWorkspace` hands back an `NSImage`, which is a resolution-independent recipe
 //! rather than pixels. Getting pixels out means drawing it: allocate an
@@ -32,7 +32,16 @@ use std::path::Path;
 /// logged at debug, not as a failure).
 pub(super) fn render_file_icon(path: &Path, size: u16) -> Option<RgbaImage> {
     let file_path = path_to_nsstring(path)?;
-    let image = NSWorkspace::sharedWorkspace().iconForFile(&file_path);
+    render_ns_image(&NSWorkspace::sharedWorkspace().iconForFile(&file_path), size)
+}
+
+/// Renders any `NSImage` into a `size`×`size` RGBA buffer.
+///
+/// The half of this module that isn't about files: `NSSharingService` hands out its own
+/// `NSImage` for the `Share` submenu (`file_system/share.rs`), and it needs the same
+/// draw. ⚠️ It SETS the image's size as part of drawing, so an `NSImage` shared with
+/// something else on screen comes back resized.
+pub(crate) fn render_ns_image(image: &NSImage, size: u16) -> Option<RgbaImage> {
     let bitmap = create_bitmap_representation(size)?;
     let context = NSGraphicsContext::graphicsContextWithBitmapImageRep(&bitmap).or_else(|| {
         error!("Failed to create a graphics context for an icon bitmap");
@@ -40,7 +49,7 @@ pub(super) fn render_file_icon(path: &Path, size: u16) -> Option<RgbaImage> {
     })?;
 
     let side = u32::from(size);
-    let pixels = draw_into_bitmap(&image, &context, &bitmap, side)?;
+    let pixels = draw_into_bitmap(image, &context, &bitmap, side)?;
     RgbaImage::from_raw(side, side, pixels)
 }
 

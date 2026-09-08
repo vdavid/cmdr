@@ -8,7 +8,7 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - `watcher.rs` (FSEvents listing updates), `staging.rs` (scratch visibility; the `StagingTemp` mint itself is
   `cmdr_fs::staging`), `index_provider.rs` (the app's `VolumeProvider`, so the index never imports `VolumeManager`),
   `backend_settings.rs` (live per-backend knobs), `cloud_actions.rs`, `cloud_provider.rs` (who owns a path, and what
-  they can do), `google_drive.rs` (Drive item links), `open_with.rs`, `share.rs` (share sheet), `tags.rs` (Finder
+  they can do), `google_drive.rs` (Drive item links), `open_with.rs`, `share.rs` (the `Share` submenu's services), `tags.rs` (Finder
   tags), `terminal.rs` ("open terminal here").
 - `mod.rs` is a facade: it re-exports downward and bootstraps the volume registry (`init_volume_manager`), which is why
   it may know every backend.

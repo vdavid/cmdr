@@ -448,54 +448,31 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
-    // === Share…: the system share sheet over the right-clicked selection ===
-    // Like the tag colors, it acts on `MenuState.context.paths` rather than the
-    // focused-pane selection, so it can't route through `execute-command`. The
-    // picker is a popover, so it's presented from the window the menu popped from.
+    // === Share → one service: run it on the rows the submenu was built from ===
+    // The ID carries an index into the offer `show_file_context_menu` enumerated, so
+    // this needs no path lookup at all: the service performs on the very `NSURL`s
+    // macOS vetted, which is also what keeps it on the RIGHT-CLICKED rows rather than
+    // the focused-pane selection.
     //
-    // Deferred one main-thread turn instead of presented inline: we're inside
-    // muda's action while the menu's own tracking loop is still unwinding, and a
-    // popover put up there can be dismissed by the very click that opened it.
+    // Deferred one main-thread turn instead of performed inline: we're inside muda's
+    // action while the menu's own tracking loop is still unwinding, and a service
+    // usually puts a window or sheet up, which that unwind can dismiss.
     #[cfg(target_os = "macos")]
-    if id == super::SHARE_ID {
-        use crate::file_system::share::{ShareError, show_share_sheet};
-        use std::path::PathBuf;
+    if let Some(index) = super::share_submenu::share_service_index(id) {
+        use crate::file_system::share::{ShareError, perform_offered};
 
-        let menu_state = app.state::<MenuState<tauri::Wry>>();
-        let paths: Vec<PathBuf> = menu_state
-            .context
-            .lock_ignore_poison()
-            .paths
-            .iter()
-            .map(PathBuf::from)
-            .collect();
-        let handle = app.clone();
         if let Err(e) = app.run_on_main_thread(move || {
-            let Some(window) = handle.get_webview_window("main") else {
+            let Some(mtm) = objc2::MainThreadMarker::new() else {
+                log::warn!(target: "menu", "Share: the main-thread hop didn't land on the main thread");
                 return;
             };
-            let ns_window = match window.ns_window() {
-                Ok(ptr) => ptr,
-                Err(e) => {
-                    log::warn!(target: "menu", "Share: no NSWindow for the main window: {e}");
-                    return;
-                }
-            };
-            // SAFETY: `ns_window` is the live, non-null `NSWindow` Tauri owns for the
-            // main webview, read on the main thread inside this closure, so the window
-            // can't be torn down while `show_share_sheet` holds the reference. Null is
-            // answered by `show_share_sheet` itself.
-            let outcome = unsafe { show_share_sheet(ns_window, &paths) };
-            if let Err(reason) = outcome {
-                // A refusal is a sheet that never appeared, which the user sees as
+            if let Err(reason) = perform_offered(mtm, index) {
+                // A refusal is a share that never happened, which the user sees as
                 // nothing happening; naming the state is what makes that debuggable.
                 let state = match reason {
-                    ShareError::NothingToShare => "no shareable paths",
-                    ShareError::WindowUnavailable => "window unavailable",
-                    ShareError::NoContentView => "no content view",
-                    ShareError::NotOnMainThread => "off the main thread",
+                    ShareError::NoSuchService => "no service at that index",
                 };
-                log::warn!(target: "menu", "Share sheet didn't open: {state}");
+                log::warn!(target: "menu", "Share didn't start: {state}");
             }
         }) {
             log::warn!(target: "menu", "Share: couldn't reach the main thread: {e}");

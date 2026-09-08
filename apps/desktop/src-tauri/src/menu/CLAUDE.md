@@ -10,20 +10,21 @@ and focus-based enabling.
   `menu_handlers.rs`: clicks; `accelerators.rs` and `view_mode_items.rs`: live updates. `media_index_items.rs`: the
   image-search-items decider. `macos.rs` / `linux.rs`: platform menu bars, assembling shared pieces around their
   layouts. `macos_appkit.rs`: the objc2 fix-up passes. `open_with.rs`: the macOS "Open with" submenu.
-  `services_context.rs`: the right-click `Services`. `rebuild.rs`: rebuilding in a new language. `mnemonics.rs`: the
-  Linux underline-letter allocator.
+  `services_context.rs`: the right-click `Services`. `share_submenu.rs`: the right-click `Share`. `rebuild.rs`:
+  rebuilding in a new language. `mnemonics.rs`: the Linux underline-letter allocator.
 
 ## Must-knows
 
 - **Build menus from scratch; never `Menu::default()`.** It inherits OS-injected Edit items that can't be removed
   before display. `cleanup_macos_menus` only strips what AppKit injects *after* it.
-- **AppKit owns ONE Services menu; the app menu and the right-click menu share it.** `cleanup_macos_menus` hangs it on
-  one; `ServicesLoan` borrows it for the other, aimed at the RIGHT-CLICKED rows. ❗ The loan must outlive `popup()`: ❌
-  never `let _ =`. `DETAILS.md`.
-- **Accelerator changes go remove/recreate/reinsert** (Tauri has no `set_accelerator()`). `MenuState` tracks each item's
-  submenu and index, so **adding or moving one item shifts every `register_item` index after it**, mangling a different
-  item on the first rebind. `register_item_positions_match_submenu_order` catches that by parsing both platform files,
-  which is why their near-identical blocks stay. Keep the position comments truthful.
+- **The two macOS right-click submenus, both `DETAILS.md`.** `Services`: AppKit owns ONE such menu and the app menu
+  already has it, so `ServicesLoan` borrows it, aimed at the RIGHT-CLICKED rows — ❗ the loan must outlive `popup()`, ❌
+  never `let _ =`. `Share`: ours, item by item from `file_system/share.rs`'s enumeration, ids `share-service:<index>`,
+  and ❌ never empty (no service offered, no item).
+- **Accelerator changes go remove/recreate/reinsert** (Tauri has no `set_accelerator()`), and `MenuState` tracks each
+  item's submenu and index — so **adding or moving one item shifts every later `register_item` index**, mangling a
+  different item on the first rebind. `register_item_positions_match_submenu_order` catches that, which is why both
+  platform files keep their near-identical blocks. Keep the position comments truthful.
 - **CheckMenuItems (view modes, show hidden) must NOT use `"execute-command"`.** They auto-toggle on click, so emitting
   it too double-toggles; they emit `"settings-changed"` / `"view-mode-changed"`. Sort emits `"menu-sort"`; close-tab and
   "Open with" have own paths.
@@ -41,12 +42,11 @@ and focus-based enabling.
 - **Custom (not Predefined) MenuItems for Cut/Copy/Paste/Move here/Select all**: in non-main windows they forward the
   native selector via `send_native_edit_action()`, or ⌘A and the clipboard are dead in settings/viewer text fields. ❌
   Don't swap to `PredefinedMenuItem::select_all`: it conflicts. Predefined items need explicit text (muda's is English).
-- **`Select all` / `Deselect all` live in `Select`, not `Edit`**: they act on files, not text.
 - **Linux omits F-key, Tab, Space, and `Cmd+Plus`/`Cmd+Minus` accelerators** (GTK intercepts them); they dispatch
   through JS keydown there.
 - **Every label comes from `menu_t("menu.…")`, ❌ never a literal.** `rebuild.rs` rebuilds the whole bar when the
-  language moves, re-running cleanup + icons and emitting `menu-bar-rebuilt` so the frontend re-pushes what only it
-  knows. Linux mnemonics are ALLOCATED per submenu from the translated labels: a free letter depends on the language.
+  language moves and emits `menu-bar-rebuilt` so the frontend re-pushes what only it knows. Linux mnemonics are
+  ALLOCATED per submenu from the translated labels: a free letter depends on the language.
 - **Trailing `…` means the dialog can change WHAT the command acts on** (`Copy…` takes a destination), not merely that
   it confirms (`Delete`). Always U+2026 (`menu_labels_end_with_the_ellipsis_character`). Verdicts: `DETAILS.md`.
 - **Menus and items are keyed by ID, never title** (titles get translated); `macos_appkit.rs` resolves IDs to live

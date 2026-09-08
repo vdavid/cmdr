@@ -43,6 +43,8 @@ mod rebuild;
 #[cfg(target_os = "macos")]
 mod services_context;
 #[cfg(target_os = "macos")]
+pub mod share_submenu;
+#[cfg(target_os = "macos")]
 mod tag_icons;
 mod view_mode_items;
 

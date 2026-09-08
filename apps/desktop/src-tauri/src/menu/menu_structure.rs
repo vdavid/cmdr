@@ -18,6 +18,8 @@ use tauri::{
 #[cfg(target_os = "macos")]
 use crate::file_system::open_with::OpenWithChoices;
 #[cfg(target_os = "macos")]
+use crate::file_system::share::ShareService;
+#[cfg(target_os = "macos")]
 use crate::file_system::sync_status::SyncStatus;
 
 use crate::intl::{menu_t, menu_t_with};
@@ -33,7 +35,7 @@ use super::menu_items::{
 #[cfg(target_os = "macos")]
 use super::{
     CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, DRIVE_COPY_LINK_ID, DRIVE_OPEN_ID, GET_INFO_ID, HELP_MENU_ID,
-    QUICK_LOOK_ID, SHARE_ID,
+    QUICK_LOOK_ID,
 };
 use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EDIT_MENU_ID, EJECT_VOLUME_ID,
@@ -65,6 +67,11 @@ pub struct FileContextInfo {
     /// mirror mode puts real files outside `~/Library/CloudStorage`).
     pub google_drive_link: Option<String>,
     pub open_with: OpenWithChoices,
+    /// The services macOS offers for this selection, in its own order, one `Share`
+    /// submenu item each. EMPTY means macOS offers none and the whole item is left
+    /// out: an empty share sheet holding only `Edit Extensions…` is the symptom the
+    /// submenu replaced. Filled by `file_system::share::services_for`.
+    pub share_services: Vec<ShareService>,
     /// Which of the seven Finder color tags (index 1..=7) the selection already carries.
     /// "Applied" = EVERY selected path has a tag of that color, so the menu shows a
     /// checked (checkmark-composited) circle and the click toggles it off. Index 0 is
@@ -122,11 +129,12 @@ pub struct ContextMenuPaneFacts {
     /// this file, so a pane on MTP or ADB shows it greyed out; the snapshot pane and
     /// the Search dialog pass `false` too, having no folder of their own to open.
     pub can_open_terminal_here: bool,
-    /// Whether "Share…" and `Services` appear at all. The pane's answer too, but to a
-    /// different question: whether its ROWS are real OS paths, which is what both the
-    /// share sheet and a macOS service need (each takes file URLs). The search-results
+    /// Whether `Share` and `Services` may appear at all. The pane's answer too, but to
+    /// a different question: whether its ROWS are real OS paths, which is what both a
+    /// share service and a macOS service need (each takes file URLs). The search-results
     /// snapshot says yes (its rows are real files) where `can_open_terminal_here` says
-    /// no, so the two can't be folded into one flag.
+    /// no, so the two can't be folded into one flag. `Share` needs one more yes on top:
+    /// macOS has to actually offer a service (`FileContextInfo::share_services`).
     pub can_share: bool,
 }
 
@@ -283,14 +291,18 @@ pub fn build_context_menu<R: Runtime>(
             Some("Alt+Cmd+T"),
         )?;
         menu.append(&open_terminal_here_item)?;
-        // "Share…" rides with them for the same reason: all three hand the selection
-        // to something outside Cmdr. It's ABSENT rather than greyed when the pane's
-        // rows don't live on the OS filesystem (a phone, an archive's insides): the
-        // share sheet takes file URLs, and there's no way to word a greyed item that
-        // explains "this row isn't a file yet" better than its absence does.
-        if can_share {
-            let share_item = MenuItem::with_id(app, SHARE_ID, menu_t("menu.context.share"), true, None::<&str>)?;
-            menu.append(&share_item)?;
+        // `Share` rides with them for the same reason: all three hand the selection to
+        // something outside Cmdr. It's ABSENT, never greyed, on two counts, and the
+        // second is why it's a submenu at all:
+        // - the pane's rows don't live on the OS filesystem (a phone, an archive's
+        //   insides), so there are no file URLs to hand over, and no wording of a greyed
+        //   item explains "this row isn't a file yet" better than its absence does;
+        // - macOS offers no service for this selection (a path that vanished, a broken
+        //   symlink), which only an enumeration can answer. The system popover can't:
+        //   it comes up empty but for `Edit Extensions…`, which is the bug that put the
+        //   list in a submenu.
+        if can_share && !info.share_services.is_empty() {
+            menu.append(&super::share_submenu::build_share_submenu(app, &info.share_services)?)?;
         }
     }
     menu.append(&copy_filename_item)?;

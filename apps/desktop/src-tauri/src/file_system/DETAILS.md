@@ -142,45 +142,57 @@ already provider-agnostic: a streamed Drive file carries `SF_DATALESS` like any 
 - `pick_app_via_open_panel` shows an `NSOpenPanel` filtered to `.app` bundles for the "Open with → Other…" entry.
 - Worker threads use 8 MB stacks (FileProvider XPC depth), per the gotcha in `CLAUDE.md`.
 
-## Share sheet (`share.rs`)
+## The Share submenu (`share.rs`)
 
-`show_share_sheet` builds an `NSSharingServicePicker` over the selection and shows it as a popover. AirDrop, Mail,
-Messages, Notes, and every installed share extension come from the system; Cmdr contributes the items and the anchor.
-Reached only from the file context menu's `Share…` (`menu/DETAILS.md`), which is also where the deferral to the next
-main-thread turn is explained.
+The file context menu's `Share` is an inline submenu, one item per service macOS offers for the right-clicked rows, the
+way Finder and Nimble Commander draw it. `services_for` enumerates; `../menu/share_submenu.rs` draws; `perform_offered`
+runs the pick. AirDrop, Mail, Messages, Notes, and every installed share extension come from the system; Cmdr
+contributes the file URLs and the item order macOS gave it.
 
-**Items are `NSURL` file URLs.** `initWithItems:` takes anything conforming to `NSPasteboardWriting`; a file URL is what
-makes every service send the FILE rather than a rendering of it, and it's what Finder hands over for the same gesture.
-A path that isn't valid UTF-8 is dropped from the list rather than sinking the whole share.
+**Decision: hand-build it, and take the deprecation.** `NSSharingService.sharingServicesForItems:` is deprecated (macOS
+13, in favour of `NSSharingServicePicker.standardShareMenuItem`) and it is still the only API that hands over the LIST.
+`standardShareMenuItem` is a plain action item: `hasSubmenu=false`, `submenu=nil`, title `Share…`, action
+`_performStandardShareMenuItem:`, and clicking it opens the same popover (measured on macOS 26.6.2 by interrogating the
+item and popping it up for real, 2026-09-09). So there is no modern equivalent to reach for, and no availability gate to
+write either: the enumeration is 10.8+. Nimble Commander, whose submenu this matches, references
+`NSSharingServicePicker` nowhere and hand-builds from the same call.
 
-**Decision: anchor to the pointer, clamped into the window's content view.**
-`showRelativeToRect:ofView:preferredEdge:` needs a rect in some view's coordinates, and Cmdr has exactly one view to
-offer: the file list is DOM inside a single `WKWebView`, so there is no per-row `NSView`. That leaves the question of
-WHERE in that view, and the pointer answers it: the user just clicked `Share…` in a menu that opened at their
-right-click, so the pointer is the closest thing to "what they are looking at", and it needs no extra IPC field that
-could go stale between the right-click and the click. `NSEvent::mouseLocation` (screen) → `convertPointFromScreen`
-(window) → `convertPoint:fromView:nil` (view). `anchor_rect_in_view` then CLAMPS it into the view's bounds, because
-`showRelativeToRect:` takes the rect literally and a stray point puts the popover in a corner the user isn't looking at.
-`NSRectEdge::MinY` is the bottom edge in AppKit's unflipped view coordinates, so the popover opens downward like a menu;
-AppKit flips it up itself when the screen has no room.
+**Why it stopped being a popover.** A picker can't say whether it has anything to offer before it's on screen, so a
+selection macOS offers nothing for came up as a sheet holding only `Edit Extensions…`. An enumeration answers first, and
+an empty answer leaves the whole `Share` item out (`menu_structure.rs`). ⚠️ That empty case is real and reachable: a
+broken symlink and a path that has since vanished both enumerate to zero, while an unreadable file, a FIFO, a device
+node, and a directory all still offer services (verified on macOS 26.6.2 across those shapes, 2026-09-09).
 
-⚠️ **The clamp is the NORMAL path here, not a rare guard.** The file context menu is taller than the pane it pops from,
-so `Share…` usually sits BELOW the window's bottom edge and the raw pointer lands outside the content view. What the
-user sees is the popover's arrow on their pointer's x, pinned to the window's nearest edge. Verified on macOS 26.5.2 by
-right-clicking a file in a 1080×720 window and clicking `Share…`: the pointer was 10 pt below the content view, the
-arrow landed on the window's bottom edge at exactly the pointer's x, and the sheet hung BELOW it (which also confirms
-the content view is unflipped, so `MinY` does open downward) (2026-09-07). ❌ Don't "simplify" the clamp away as
-defensive coding — without it the popover goes to a corner on nearly every share.
+**What we gave up with the popover**: the system sheet's `Edit Extensions…` row, which opens the Sharing pane of System
+Settings. Nothing in the submenu replaces it today; a `More…` item at the bottom would, at the cost of one catalog key
+in every locale.
 
-**The picker is kept alive in a thread-local.** `showRelativeToRect:` does not take ownership, so a picker whose only
-strong reference is a local is released the moment the function returns, and the popover can vanish before it draws.
-`LIVE_PICKER` holds the last one; the next share replaces it. Thread-local rather than a `static`, because `Retained` is
-neither `Send` nor `Sync` and this only ever runs on the main thread.
+**Items are `NSURL` file URLs.** Both calls take `NSArray *` with no element type (anything conforming to
+`NSPasteboardWriting`); a file URL is what makes every service send the FILE rather than a rendering of it, and it's what
+Finder hands over for the same gesture. A path that isn't valid UTF-8 is dropped from the list rather than sinking the
+whole share.
 
-**Which rows may be shared is the FRONTEND's answer**, arriving as `PaneContextMenuFacts.canShare`. The share sheet
+**A click is routed by INDEX, and the offer is kept alive in a thread-local.** Menu ids are `share-service:<index>` into
+the offer that filled the menu, and `OFFERED` holds both the `Retained<NSSharingService>` list and the very `NSArray`
+they were enumerated for, so the pick performs on the items macOS vetted rather than on a re-read of the selection. The
+index (not the title) is the key for the house reason: a title is macOS copy in the system language, and two extensions
+may well share one. Thread-local rather than a `static` because `Retained` is neither `Send` nor `Sync`; both ends take a
+`MainThreadMarker`, which is also what pins fill and read to the same thread.
+
+**Cost on the popup path**: about 11 ms warm, ~190 ms on the first enumeration of the process while LaunchServices wakes
+up, plus under 1 ms to draw the icons (measured on macOS 26.6.2, 2026-09-09). Uncached on purpose: the enumeration is
+per-selection and must be fresh, and the cold bill is the same one `compute_open_with_choices` already pays here.
+
+**Each item's icon is the service's own `NSImage`, drawn to 16×16 RGBA** through `icons::render_ns_image`, then fed to
+`IconMenuItem` — the same route "Open with" takes for app-bundle icons, and full-colour non-template pixels are the
+shape a context menu renders correctly (`menu/DETAILS.md` § SF Symbol icons). macOS already reports 16×16 for every
+service image, so nothing is resampled.
+
+**Which rows may be shared at all is the FRONTEND's answer**, arriving as `PaneContextMenuFacts.canShare`. A service
 needs a real file behind the URL, which rules out phones, the SMB host list, an archive's insides, and the virtual
 `.git` portal, while the search-results snapshot (real files, no folder of its own) is fine. That mix isn't a single
-volume-kind lookup, so it lives in `src/lib/file-explorer/pane/volume-capabilities.ts::rowIsOsVisible`.
+volume-kind lookup, so it lives in `src/lib/file-explorer/pane/volume-capabilities.ts::rowIsOsVisible`. `Share` needs one
+more yes on top of it: a non-empty enumeration.
 
 ## Open terminal here (`terminal.rs`)
 

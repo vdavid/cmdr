@@ -94,14 +94,6 @@ pub const CLOUD_REMOVE_DOWNLOAD_ID: &str = "cloud_remove_download";
 pub const DRIVE_OPEN_ID: &str = "drive_open";
 pub const DRIVE_COPY_LINK_ID: &str = "drive_copy_link";
 
-/// Menu item ID for "Share…" (macOS): opens the system share sheet
-/// (`NSSharingServicePicker`) on the right-clicked selection. Handled in
-/// `handle_menu_event` like the tag colors, NOT via `menu_id_to_command`: the sheet
-/// acts on `MenuState.context.paths`, and it has to be presented from the menu
-/// thread, which no frontend command can do.
-#[cfg(target_os = "macos")]
-pub const SHARE_ID: &str = "share";
-
 /// Submenu ID for `Services` in the file context menu (macOS). Never handled: AppKit
 /// fills the submenu and performs the pick, so the item itself is never clicked. It
 /// carries an ID at all so `menu.get()` can find it and the id stays out of the

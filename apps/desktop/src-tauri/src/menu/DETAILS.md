@@ -46,6 +46,10 @@ window focus context.
   submenu. Returns the submenu plus a `bundle_id → app_path` map that callers stash in
   `MenuState.context.open_with_apps` so `on_menu_event` can resolve dynamic `open-with:<bundle-id>`
   click targets.
+- `share_submenu.rs` (macOS): `build_share_submenu` for the file context menu's `Share`, one
+  `IconMenuItem` per service in `FileContextInfo::share_services`, plus the `share-service:<index>` id
+  pair (`share_service_id` / `share_service_index`). The services themselves and the click side live in
+  `file_system/share.rs`.
 - `linux.rs`: `build_menu_linux` (full Linux/GTK menu bar with mnemonics, no F-key accelerators).
 - `rebuild.rs`: `rebuild_menu_bar`, which throws the bar away and builds a new one in the current UI language.
 - `mnemonics.rs`: `Mnemonics`, the per-submenu allocator for the Linux underline letter.
@@ -158,15 +162,16 @@ Exceptions that do NOT use `"execute-command"`:
     (yellow) reads on light/dark menus; colors mirror the light-mode `--color-tag-*` tokens. The 14
     bitmaps (7 colors × {normal, checked}) are cached once in a `LazyLock`. macOS-only — Linux menus
     carry no icons.
-- **Share…** (macOS): the file context menu's `SHARE_ID` item opens `NSSharingServicePicker` over the
-  RIGHT-CLICKED selection (`MenuState.context.paths`), which is why it's special-cased in
-  `handle_menu_event` rather than listed in `menu_id_to_command` — the same reason the tag colors are.
-  The picker itself is `file_system/share.rs`; the anchoring decision and the pane gate behind the
-  item are documented there and in `src/lib/file-explorer/pane/DETAILS.md` § "Sharing a row".
+- **Share** (macOS): a submenu of one item per service macOS offers for the RIGHT-CLICKED rows, built by
+  `share_submenu.rs` from the enumeration `show_file_context_menu` made. Ids are
+  `share-service:<index>` into that offer, prefix-routed in `handle_menu_event` rather than listed in
+  `menu_id_to_command` — the same reason `open-with:` and the tag colors are. Why it's hand-built,
+  what the empty case is, and where the offer lives: `file_system/DETAILS.md` § "The Share submenu",
+  plus `src/lib/file-explorer/pane/DETAILS.md` § "Sharing a row" for the pane gate.
 
-  **The click is deferred one main-thread turn** (`run_on_main_thread`) rather than presented inline.
-  `on_menu_event` runs while muda's own menu-tracking loop is still unwinding, and a popover put up
-  inside it can be dismissed by the very click that opened it.
+  **The click is deferred one main-thread turn** (`run_on_main_thread`) rather than performed inline.
+  `on_menu_event` runs while muda's own menu-tracking loop is still unwinding, and a service usually
+  puts a window or sheet up, which that unwind can dismiss.
 - **Image-search group** (media_index): a folder's context menu carries TWO items, shown only while
   image indexing is enabled: chosen-folder membership ("Add to indexed folders" / "Remove from indexed
   folders", `media_index_{add,remove}_folder`) and the privacy veto ("Don't index images in this
@@ -387,7 +392,7 @@ selection acts on that row alone. `services_menu::selection`'s context target ca
 for the loan's lifetime; the reasoning and what it costs are in `../services_menu/DETAILS.md`.
 
 The item shows whenever the pane's rows are real OS paths (`ContextMenuPaneFacts::can_share`, the
-same fact "Share…" rides on: both hand file URLs to something outside Cmdr).
+same fact `Share` rides on: both hand file URLs to something outside Cmdr).
 
 ### SF Symbol icons (macOS only)
 
@@ -447,11 +452,11 @@ both create into the active pane's folder, so they read as a pair and stay adjac
 sit behind `restrict_destination_actions` and vanish on the search-results virtual pane, which has no destination folder
 of its own. macOS SF Symbols are `folder.badge.plus` and `document.badge.plus`.
 
-The file context menu's **hand-it-elsewhere group** runs `Show in Finder`, `Open terminal here`, `Share…`, then the
+The file context menu's **hand-it-elsewhere group** runs `Show in Finder`, `Open terminal here`, `Share`, then the
 clipboard pair `Copy "name"` / `Copy path`. All three of the first ones give the selection to something outside Cmdr, so
-they read as one row of choices. `Share…` is macOS-only and takes the ellipsis, because the sheet it opens decides where
-the file goes. It is ABSENT rather than greyed when `can_share` is false: a greyed item would have to explain "this row
-isn't a file yet", which no label does better than its absence.
+they read as one row of choices. `Share` is macOS-only and carries no ellipsis, being a submenu. It is ABSENT rather than
+greyed on two counts: `can_share` is false (a greyed item would have to explain "this row isn't a file yet", which no
+label does better than its absence), or macOS offers no service for the selection at all.
 
 The file context menu's **cloud group** (macOS) is provider-aware: a concatenation of what each provider can actually
 do, rather than one iCloud-shaped block.
@@ -558,7 +563,7 @@ filename/Search files) plus Undo/Redo. Don't move them back without re-reading t
 distinction is the load-bearing reason.
 
 **Decision**: A menu label ends with `…` when the dialog it opens can change WHAT the command acts on, not merely whether it runs.
-**Why**: Apple's own phrasing ("requires further input") doesn't decide Cmdr's cases, because both of our big confirmations arrive pre-filled and are usually dismissed with Return. The copy/move dialog takes a destination that is genuinely steerable (it's the focused control, and confirm is blocked while the path is invalid), so the destination pane is a suggestion, not the command. The delete dialog can't retarget anything: the file set is fixed, and its trash-vs-permanent switch only picks between two commands that already exist as two menu items (`Delete` / `Delete permanently`), so flipping it is switching command, not steering this one. Hence `Copy…` / `Move…` / `Compress…` / `New folder…` / `New file…` / `Search files…` / `Go to path…` / `Select files…` / `Share…` (the sheet picks where the file goes, and Finder writes it the same way), and bare `Delete`, `Rename` (inline edit, no dialog), `Add to favorites`, `Operation log`, `What's new`, `Acknowledgements`, `Get info`. The looser reading ("a dialog appears") was rejected: nearly every destructive command in Cmdr shows something, so under it the mark lands on almost everything in the File menu and stops carrying information. `Check for updates…` is the one deliberate exception to the rule, kept because Sparkle-style updaters have made that exact label near-universal on macOS and dropping the ellipsis reads as a typo.
+**Why**: Apple's own phrasing ("requires further input") doesn't decide Cmdr's cases, because both of our big confirmations arrive pre-filled and are usually dismissed with Return. The copy/move dialog takes a destination that is genuinely steerable (it's the focused control, and confirm is blocked while the path is invalid), so the destination pane is a suggestion, not the command. The delete dialog can't retarget anything: the file set is fixed, and its trash-vs-permanent switch only picks between two commands that already exist as two menu items (`Delete` / `Delete permanently`), so flipping it is switching command, not steering this one. Hence `Copy…` / `Move…` / `Compress…` / `New folder…` / `New file…` / `Search files…` / `Go to path…` / `Select files…`, and bare `Share` (a submenu opens no dialog and changes nothing about what the command acts on), `Delete`, `Rename` (inline edit, no dialog), `Add to favorites`, `Operation log`, `What's new`, `Acknowledgements`, `Get info`. The looser reading ("a dialog appears") was rejected: nearly every destructive command in Cmdr shows something, so under it the mark lands on almost everything in the File menu and stops carrying information. `Check for updates…` is the one deliberate exception to the rule, kept because Sparkle-style updaters have made that exact label near-universal on macOS and dropping the ellipsis reads as a typo.
 
 **Decision**: SF Symbol icons only on the menu bar, not on context menus.
 **Why**: Tauri doesn't support SF Symbols natively. For the menu bar, we walk `NSApplication.mainMenu()` post-construction via objc2 FFI and set SF Symbols directly on `NSMenuItem` objects, producing true template images that auto-tint correctly. Context menus don't get icons because Tauri doesn't expose the raw `NSMenu` pointer, and the alternative (rasterized bitmaps via `IconMenuItem`) produces visually poor results (no template tinting, wrong size/weight).
