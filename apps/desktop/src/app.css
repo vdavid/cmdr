@@ -90,16 +90,18 @@
   --color-text-primary: #1a1a1a;
   --color-text-secondary: #666666;
   --color-text-tertiary: #666666;
-  /* Hidden-entry name text (dotfiles, `UF_HIDDEN`, root `/.hidden`), shown when
-     "show hidden files" is on. Its own token, not `--color-text-secondary`:
-     that pair steps 34 L* down from `--color-text-primary` in light but only 13
-     L* in dark, so reusing it would dim hard in light and barely at all in
-     dark. Light/dark here are each calibrated to ~22 L* down instead, so the
-     "this one's normally out of sight" cue reads the same weight in both
-     modes. Headroom: 8.4:1 on `#ffffff`, Lc 88 worst-case (verified with a
-     WCAG/APCA contrast calculator, 2026-09-09). Don't reuse this for
-     anything else without re-checking the light/dark symmetry holds. */
-  --color-text-hidden: #4d4d4d;
+  /* Quiet, de-emphasized text: hidden-entry names (dotfiles, `UF_HIDDEN`, root
+     `/.hidden`) when "show hidden files" is on, and TCC-restricted rows'
+     name/size/date cells (paired with `font-style: italic` there). Its own
+     token, not `--color-text-secondary`: that pair steps 34 L* down from
+     `--color-text-primary` in light but only 13 L* in dark, so reusing it
+     would dim hard in light and barely at all in dark. Light/dark here are
+     each calibrated to ~22 L* down instead, so the "de-emphasized" cue reads
+     the same weight in both modes. Headroom: 8.4:1 on `#ffffff`, Lc 88
+     worst-case (verified with a WCAG/APCA contrast calculator, 2026-09-09).
+     Don't reuse this for anything else without re-checking the light/dark
+     symmetry holds. */
+  --color-text-quiet: #4d4d4d;
 
   /* === macOS system accent colors (for reference / testing) ===
      * These are the fixed colors returned by NSColor.controlAccentColor().
@@ -731,9 +733,10 @@
        tight side: 7.2:1 on `#1e1e1e`, but only Lc 50 worst-case on
        `#333333` (verified with a WCAG/APCA contrast calculator, 2026-09-09)
        against the enforced APCA Lc-45 floor (`scripts/check-a11y-contrast`),
-       which starts failing around `#9e9e9e` — about 5 Lc of slack. ❌ Don't
-       darken this value. */
-    --color-text-hidden: #aaaaaa;
+       which starts failing around `#9e9e9e` — about 5 Lc of slack. There's no
+       room here for a second, dimmer tone: that's why restricted rows share
+       this token rather than getting their own. ❌ Don't darken this value. */
+    --color-text-quiet: #aaaaaa;
 
     /* === Interactive States (fallbacks; see light-mode comment above) === */
     --color-accent: #ffc206;

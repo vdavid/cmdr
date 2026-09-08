@@ -50,12 +50,14 @@ both a text color and a background, the tool:
 In addition to the rule walker, two scenario synthesizers cover cases where the text color and the background are set on
 different selectors — cases the walker can't pair on its own:
 
-- **Row state matrix** (`row_state_matrix.go`): the file-list selected-row text colors (`--color-selection-fg` and the
-  `--color-size-*-selected` mixes) are set on `.is-selected` descendants while the row bg is set elsewhere (the pane,
-  the stripe rule, or the cursor rules). The synthesizer composites the bg the row will actually render with — pane tint
-  × stripe × cursor state × accent variant — and pairs each text role against it. About 1000 pairs evaluated;
-  worst-case-per-(role, mode, tint, variant) reported. Mirrors the three-tier selection-fg cascade in `app.css` (primary
-  → cursor → fallback) so the synthesizer's verdict matches what the runtime actually paints.
+- **Row state matrix** (`row_state_matrix.go`): the file-list's selected-row text colors (`--color-selection-fg` and the
+  `--color-size-*-selected` mixes, on `.is-selected` descendants) and its unselected-row text colors (today:
+  `--color-text-quiet`, shared by the hidden-entry dim and the TCC-restricted row treatment) are both set on a
+  descendant selector while the row bg is set elsewhere (the pane, the stripe rule, or the cursor rules). The
+  synthesizer composites the bg the row will actually render with — pane tint × stripe × cursor state × accent variant —
+  and pairs each text role in `rowRoleGroups` against it. About 1000 pairs evaluated; worst-case-per-(role, mode, tint,
+  variant) reported. Mirrors the three-tier selection-fg cascade in `app.css` (primary → cursor → fallback) for selected
+  roles, so the synthesizer's verdict matches what the runtime actually paints.
 - **Dropdown ancestor-bg matrix** (`dropdown_states.go`): hand-listed `(descendant-text-var, ancestor-bg-var)` tuples
   for cases where bg comes from an ancestor selector and `[data-highlighted]` (the dropdown options today; designed for
   easy extension). Runs every entry against the accent matrix + both modes. Each tuple supports a `FgExpr` / `BgExpr`

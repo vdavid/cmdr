@@ -1078,11 +1078,25 @@
         overflow: hidden;
     }
 
-    /* TCC-restricted rows: italic + opacity to match the sidebar treatment.
-       The (i) icon next to the name carries the tooltip pointing at System Settings. */
+    /* TCC-restricted rows: italic + the quiet text token to match the
+       sidebar treatment. Color, not `opacity`, so the a11y-contrast walker
+       can verify it (opacity composited to an unmeasured, sub-floor gray in
+       dark mode). The (i) icon next to the name carries the tooltip pointing
+       at System Settings. */
     .file-entry.is-restricted .name {
         font-style: italic;
-        opacity: 0.6;
+        color: var(--color-text-quiet);
+    }
+
+    /* Under an active cursor (pane focused), a restricted row keeps its
+       italic marker but returns to full-strength text: see `FullList.svelte`'s
+       twin rule for the full rationale (the accent-tinted cursor-active
+       overlay can drop the quiet token below the enforced contrast floor
+       under some accent/tint combinations). Placed before the "selection
+       color is preserved even under cursor" rule below so a row that's both
+       selected and restricted still resolves to the selection color there. */
+    .brief-list-container.is-focused .file-entry.is-under-cursor.is-restricted .name {
+        color: var(--color-text-primary);
     }
 
     /* `.restricted-indicator`'s own chrome, the stripe / selection / cursor
@@ -1090,11 +1104,11 @@
        they live in `src/app-file-list.css`. */
 
     /* Hidden-entry name dim: see `FullList.svelte`'s twin rule for the full
-       rationale (quieter, not invisible; color only, never `opacity`;
-       `.is-hidden` already excludes selected/cursor/restricted rows via the
-       `nameIsHiddenDimmed` const above). */
+       rationale (the same quiet token restricted rows use above; color only,
+       never `opacity`; `.is-hidden` already excludes selected/cursor/restricted
+       rows via the `nameIsHiddenDimmed` const above). */
     .name.is-hidden {
-        color: var(--color-text-hidden);
+        color: var(--color-text-quiet);
     }
 
     .name {

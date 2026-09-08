@@ -26,7 +26,7 @@ pixel-accurate width measurement via `@chenglou/pretext`, and the `*-utils.ts` t
   `scrollTop` and the spacer offset: the clamp hides row 0, the `..` cursor. Pinned by `FullListHeader.test.ts` and
   `test/e2e-playwright/full-cursor-page-nav.spec.ts`.
 - **A git portal row's Size cell is WORDED here, from the typed `gitMeta` fact.** `wordGitMeta` (`full-list-utils.ts`)
-  is the one place; the renderer reaches it via `pickSizeDisplay`, the width measurer calls it directly. `DETAILS.md` §
+  is the one place; the renderer reaches it via `pickSizeDisplay`, the measurer calls it directly. `DETAILS.md` §
   "Wording a git portal row".
 - **`getDirSizeDisplayState()` (`full-list-utils.ts`) is the single source of truth for a directory's size-column
   state**; re-inline it in `FullList.svelte`'s cell or `measure-column-widths.ts` and text and width drift. Its
@@ -36,21 +36,20 @@ pixel-accurate width measurement via `@chenglou/pretext`, and the `*-utils.ts` t
   `measure-column-widths.ts` substitutes the widest digit (`tabularize`), so the two move together: drop tabular figures
   from a numeric column and drop its `tabularize` call too, or it over-reserves.
 - **Paired-constant gotcha in `measure-column-widths.ts`**: `HEADER_CHROME_ACTIVE/INACTIVE` mirror `SortableHeader`'s
-  gap + caret. Change that CSS and change the constant too, or header widths drift (pretext has no reference element to
-  derive from).
+  gap + caret; change both together or header widths drift.
 - **Nothing visible in Brief mode may wait on the width IPC** (how the cursor went invisible in prod). ❌ Don't gate
-  `is-under-cursor` on widths, fall back to `capPx` (use `provisionalColumnWidth`), infer readiness from
-  `rawWidths.length`, or make `capPx` a fetch trigger.
-- **Index-size refresh (`refresh_listing_index_sizes`) refetches column widths through the existing `cacheGeneration`
-  reset path**; a separate trigger double-fetches.
+  `is-under-cursor` on widths, fall back to `capPx`, infer readiness from `rawWidths.length`, or make `capPx` a fetch
+  trigger.
+- **Index-size refresh (`refresh_listing_index_sizes`) refetches column widths through its `cacheGeneration` reset
+  path**; a separate trigger double-fetches.
 - **A row-asserting unit test mounts through `mountFullList()` / `mountBriefList()`** (`test-full-list.ts` /
-  `test-brief-list.ts`): unmeasured, the surface renders zero rows and a negative assertion passes for free.
+  `test-brief-list.ts`): unmeasured, it renders zero rows so a negative assertion passes for free.
 - **`listing.showExtensionInName` must stay in lockstep across the renderer and the measurer**: on, `gridTemplate` drops
   the Ext track and `computeFullListColumnWidths` returns `ext: 0`, so changing one side drifts every column. ❌ Don't
   "clean up" `FullListHeader`'s `.header-name-ext` split: it's the only way left to CLICK sort-by-extension in that
   mode.
 - **A hidden entry's name dims via `full-list-utils.ts::isHiddenNameDimmed`**: selected/cursor rows stay full-strength;
-  a restricted row's italic+opacity wins over the dim. `DETAILS.md` § "Hidden-entry name dim".
+  a restricted row's own italic + quiet-token styling wins instead. `DETAILS.md` § "Hidden-entry name dim".
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

@@ -961,31 +961,52 @@
         transition: grid-template-columns 300ms ease;
     }
 
-    /* TCC-restricted rows: italic + opacity to match the sidebar treatment.
-       The (i) icon next to the name carries the tooltip pointing at System Settings. */
+    /* TCC-restricted rows: italic + the quiet text token to match the
+       sidebar treatment. Color, not `opacity`, so the a11y-contrast walker
+       can verify it (opacity composited to an unmeasured, sub-floor gray in
+       dark mode). The (i) icon next to the name carries the tooltip pointing
+       at System Settings. */
     .file-entry.is-restricted .col-name,
     .file-entry.is-restricted .col-size,
     .file-entry.is-restricted .col-date {
         font-style: italic;
-        opacity: 0.6;
+        color: var(--color-text-quiet);
+    }
+
+    /* Under an active cursor (pane focused), a restricted row keeps its
+       italic marker but returns to full-strength text: the same "the row
+       the user is standing on renders at full strength" principle already
+       applied to the hidden-entry dim below. Without this, the quiet token
+       composited against the accent-tinted cursor-active overlay drops
+       below the enforced contrast floor for some accent/tint combinations
+       (Apple Yellow + a warm tint, confirmed via `row_state_matrix.go`'s
+       unselected-row coverage). Placed before the "selection colors
+       preserved even under cursor" rule below so a row that's both selected
+       and restricted still resolves to the selection color there, same as
+       today. */
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-restricted .col-name,
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-restricted .col-size,
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-restricted .col-date {
+        color: var(--color-text-primary);
     }
 
     /* `.restricted-indicator`'s own chrome, the stripe / selection / cursor
        fills, and the selected-row hairline are identical in `BriefList`, so
        they live in `src/app-file-list.css`. */
 
-    /* Hidden-entry name dim: a quieter text color for dotfiles / `UF_HIDDEN` /
-       root-`/.hidden` entries once "show hidden files" is on, so they read as
-       "normally out of sight" without disappearing (Finder makes them nearly
-       invisible; we deliberately don't). `.is-hidden` lands only when
-       `nameIsHiddenDimmed` is true (see the row template above), which already
-       excludes selected rows, the cursor row, and restricted rows, so no
-       cascade fight with `.is-selected` / `.is-restricted` below is needed.
-       Color only, never `opacity`: the walker behind `pnpm check
-       a11y-contrast` doesn't fold `opacity` into its check. */
+    /* Hidden-entry name dim: the same quiet text token as restricted rows
+       above, for dotfiles / `UF_HIDDEN` / root-`/.hidden` entries once "show
+       hidden files" is on, so they read as "normally out of sight" without
+       disappearing (Finder makes them nearly invisible; we deliberately
+       don't). `.is-hidden` lands only when `nameIsHiddenDimmed` is true (see
+       the row template above), which already excludes selected rows, the
+       cursor row, and restricted rows, so no cascade fight with
+       `.is-selected` / `.is-restricted` below is needed. Color only, never
+       `opacity`: the walker behind `pnpm check a11y-contrast` doesn't fold
+       `opacity` into its check. */
     .col-name-text.is-hidden,
     .col-ext.is-hidden {
-        color: var(--color-text-hidden);
+        color: var(--color-text-quiet);
     }
 
     .file-entry.no-transition {

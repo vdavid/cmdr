@@ -313,7 +313,7 @@ export function pickSizeDisplay(entry: FileEntry, isRestricted = false): SizeDis
 
 /**
  * Whether a hidden entry's name should render in the quieter
- * `--color-text-hidden` tone, shared by `FullList.svelte` and
+ * `--color-text-quiet` tone, shared by `FullList.svelte` and
  * `BriefList.svelte` so the precedence lives in one place.
  *
  * Dims only when `entry.isHidden` is true AND none of the three exclusions
@@ -321,8 +321,7 @@ export function pickSizeDisplay(entry: FileEntry, isRestricted = false): SizeDis
  * - `isSelected` / `isUnderCursor`: the row the user is standing on (or has
  *   selected) stays at full strength, never dimmed.
  * - `isRestricted`: a TCC-restricted row already carries its own italic +
- *   opacity treatment. Stacking the hidden-dim color on top of that would
- *   fade toward the contrast floor the opacity treatment already skirts, so
+ *   `--color-text-quiet` treatment (the same token this dim would apply), so
  *   restricted wins and the row shows only its restricted styling.
  */
 export function isHiddenNameDimmed(

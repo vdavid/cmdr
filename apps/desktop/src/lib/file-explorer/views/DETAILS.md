@@ -128,7 +128,7 @@ hottest render path.
 ### Hidden-entry name dim
 
 **Decision**: `full-list-utils.ts::isHiddenNameDimmed(entry, { isRestricted, isSelected, isUnderCursor })` is the ONE
-place that decides whether a hidden entry's name renders in the quieter `--color-text-hidden` tone (`app.css`), and both
+place that decides whether a hidden entry's name renders in the quiet `--color-text-quiet` tone (`app.css`), and both
 `FullList.svelte` and `BriefList.svelte` compute their `nameIsHiddenDimmed` const by calling it, never by re-deriving
 the boolean inline. **Why**: the precedence has three exclusions that are easy to get subtly wrong per view, so it lives
 in one tested function (`full-list-utils.test.ts`) rather than two copies that could drift.
@@ -136,20 +136,33 @@ in one tested function (`full-list-utils.test.ts`) rather than two copies that c
 - A selected row or the cursor row always renders at full strength: the row the user is standing on (or has selected)
   stays maximally legible, and dimming it would drag the nine-accent selection matrix into the contrast budget for no
   benefit.
-- A TCC-restricted row (`.is-restricted`, italic + `opacity: 0.6`) is NOT also dimmed: restricted wins. Stacking the
-  hidden-dim color under that opacity would fade the text toward the contrast floor the opacity treatment already skirts
-  (opacity-based dimming is a known gap the `pnpm check a11y-contrast` walker doesn't fold into its check; that's a
-  separate follow-up, not something this dim adds to).
-- `--color-text-hidden` (light `#4d4d4d`, dark `#aaaaaa`) is its own token, not `--color-text-secondary`: that pair
+- A TCC-restricted row (`.is-restricted`, italic + `--color-text-quiet`) is NOT also dimmed: restricted wins, though
+  since both treatments resolve to the same token this only matters for the italic. Hidden rows and restricted rows
+  share one quiet-text token rather than each getting their own: in dark mode there's no room for two dim levels above
+  the enforced APCA Lc-45 floor (the floor bites around `#9e9e9e`), so italic is the sole differentiator between the two
+  row kinds.
+- `--color-text-quiet` (light `#4d4d4d`, dark `#aaaaaa`) is its own token, not `--color-text-secondary`: that pair
   steps 34 L* down from `--color-text-primary` in light but only 13 L* in dark, so reusing it would dim hard in light
   and barely at all in dark. Both values here step ~22 L* down instead, so the cue reads the same weight in both modes.
   Dark is the tight side against the enforced APCA Lc-45 floor (about 5 Lc of slack); see the token's comment in
   `app.css` for the measured numbers.
-- Scope is the name text only (`.col-name-text` / `.col-ext` in Full, `.name` in Brief), never the row's other cells,
-  and never the file icon: icon dimming is a deliberate follow-up, judged separately once the text-only dim has been
-  seen in the app.
-- Color only, never `opacity`, so the change is visible to the a11y-contrast walker (which doesn't fold `opacity` into
-  its check).
+- Scope is the name text only (`.col-name-text` / `.col-ext` in Full, `.name` in Brief) for the hidden-dim, and the
+  name/size/date cells for the restricted treatment (its existing, wider scope); neither ever reaches the row's other
+  cells or the file icon: icon dimming is a deliberate follow-up, judged separately once the text-only dim has been seen
+  in the app.
+- Color only, never `opacity`, so the change is visible to the a11y-contrast walker: the restricted treatment used to be
+  `opacity: 0.6`, which the walker's generic rule pairing doesn't fold into its check and which measured below the
+  enforced Lc-45 floor in dark mode (about Lc 44 on `#1e1e1e`, Lc 41 on `#333333`, composited to roughly `#979797`). The
+  row-state matrix (`row_state_matrix.go`, unselected roles) is what caught this; see its own doc for the unselected-row
+  bg composition.
+- A restricted row under an ACTIVE cursor (pane focused) reverts `--color-text-quiet` back to `--color-text-primary`
+  (italic stays) via `.file-entry.is-under-cursor.is-restricted` in each view. This isn't cosmetic: the row-state
+  matrix's unselected-role sweep found `--color-text-quiet` composited against the accent-tinted cursor-active overlay
+  drops below both WCAG AA and the Lc-45 floor for several tint combinations under the Apple Yellow system accent.
+  `rowUnselectedVariants` in `row_state_matrix.go` excludes "cursor-active" from the sweep to match: extend both the CSS
+  exclusion and that variant list together if a future unselected-row role needs to render there. Cursor-INACTIVE
+  (pane unfocused) isn't affected — its bg is dark enough that the quiet token clears both bars — so only that one
+  variant is excluded.
 
 ### Data flow
 

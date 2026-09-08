@@ -17,14 +17,25 @@ import (
 //   - the active macOS accent (cursor-active is `color-mix(in oklch,
 //     var(--color-accent), transparent 80%)`).
 //
-// The text on a selected row comes from a different selector
-// (`.file-entry.is-selected .col-name { color: var(--color-selection-fg) }`),
-// so the static checker doesn't pair them in `evaluate`. This synthesizer
-// composes the bg the row will actually render with — pane tint, optional
-// stripe, optional cursor overlay — and pairs each text role against it.
+// Row text comes from a different selector than the bg in two shapes the
+// rule walker can't pair on its own:
+//   - Selected-row text (`.file-entry.is-selected .col-name { color:
+//     var(--color-selection-fg) }`): the bg is on the row, the color on a
+//     `.is-selected` descendant.
+//   - Unselected-row text that isn't `--color-text-primary` (today: the
+//     shared quiet-text token `--color-text-quiet`, which both the
+//     hidden-entry name dim and the TCC-restricted row treatment set):
+//     the bg is on the row, the color on a plain descendant with no
+//     selection state involved at all.
 //
-// We report the worst-case finding per (textRole, mode) so the output stays
-// small even though the synthesizer evaluates a few thousand combos.
+// This synthesizer composes the bg the row will actually render with — pane
+// tint, optional stripe, optional cursor overlay, and (selected roles only)
+// the selection-bg override — and pairs each text role in `rowRoleGroups`
+// against it.
+//
+// We report the worst-case finding per (textRole, mode, tint, variant) so the
+// output stays small even though the synthesizer evaluates a few thousand
+// combos.
 
 type paneTintHue struct {
 	// Name is the human-readable tint label (matches the user setting value).
@@ -66,7 +77,9 @@ var rowBgVariants = []string{
 // rowSelectedTextRoles are the tokens the file-list selection styling reads.
 // They are NOT paired with any bg by `.svelte` rules in our codebase
 // (the rule that sets them only sets `color`, leaving bg to ancestors), so
-// the generic walker skips them — hence this scenario list.
+// the generic walker skips them — hence this scenario list. They render only
+// on `.is-selected` rows, so their bg composition includes the
+// `--color-selection-bg` override (see `resolveRowBg`'s `selected` arg).
 var rowSelectedTextRoles = []string{
 	"color-selection-fg",
 	"color-size-bytes-selected",
@@ -76,17 +89,72 @@ var rowSelectedTextRoles = []string{
 	"color-size-tb-selected",
 }
 
-// AnalyzeRowStates evaluates every (mode × pane tint × bg variant × accent ×
-// text role) combination and returns the worst-case Finding per (textRole,
-// mode, tint, variant) — accent is collapsed into the worst variant
-// internally. The result is roughly 600 findings (well under the rule walker's
-// total) and surfaces every failing combo without exploding the report.
+// rowUnselectedTextRoles are text roles set on a plain (non-`.is-selected`)
+// row descendant, so their bg is pane tint × stripe × cursor state with no
+// selection fill — a shape the generic rule walker never pairs either, since
+// the color and the bg still live on different selectors.
+//
+// Today this holds the shared quiet-text token (`--color-text-quiet`,
+// `app.css`): both the hidden-entry name dim and the TCC-restricted row
+// treatment set it, and neither is on a selector the walker can pair with its
+// actual row bg. Extend this list when another unselected-row text role needs
+// the same treatment.
+var rowUnselectedTextRoles = []string{
+	"color-text-quiet",
+}
+
+// rowUnselectedVariants excludes "cursor-active" from the unselected-role
+// sweep: a restricted row (the only unselected-row use of the quiet token
+// that ever reaches an active cursor — the hidden-entry dim already excludes
+// every cursor state in `isHiddenNameDimmed`) reverts to full-strength text
+// there, via `.file-entry.is-under-cursor.is-restricted` in `FullList.svelte`
+// / `BriefList.svelte`. That rule exists BECAUSE the quiet token composited
+// against the accent-tinted cursor-active overlay drops below the enforced
+// floor for some accent/tint combinations (Apple Yellow + a warm tint).
+// Evaluating "cursor-active" here would check a bg the renderer no longer
+// pairs with this token; re-add it (and re-add the CSS rule that excludes it)
+// together if a future unselected-row role needs to render under an active
+// cursor.
+var rowUnselectedVariants = []string{"plain", "striped", "cursor-inactive"}
+
+// rowRoleGroup pairs a set of text-role tokens with whether they render only
+// on selected rows, and the bg variants they're actually evaluated against.
+// `selected` governs two things downstream: whether `resolveRowBg` may
+// substitute `--color-selection-bg` for the pane/stripe bg, and whether the
+// three-tier `--color-selection-fg` cascade override applies (irrelevant to a
+// role that isn't derived from selection-fg).
+type rowRoleGroup struct {
+	roles    []string
+	selected bool
+	variants []string // nil means every `rowBgVariants` entry
+}
+
+func (g rowRoleGroup) bgVariants() []string {
+	if g.variants != nil {
+		return g.variants
+	}
+	return rowBgVariants
+}
+
+var rowRoleGroups = []rowRoleGroup{
+	{roles: rowSelectedTextRoles, selected: true},
+	{roles: rowUnselectedTextRoles, selected: false, variants: rowUnselectedVariants},
+}
+
+// AnalyzeRowStates evaluates every (mode × pane tint × bg variant × role
+// group × accent × text role) combination and returns the worst-case Finding
+// per (textRole, mode, tint, variant) — accent is collapsed into the worst
+// variant internally. The result is roughly 700 findings (well under the rule
+// walker's total) and surfaces every failing combo without exploding the
+// report.
 func (a *Analyzer) AnalyzeRowStates() []Finding {
 	worst, evaluated := make(map[rowWorstKey]Finding), 0
 	for _, mode := range []Mode{ModeLight, ModeDark} {
 		for _, tint := range rowPaneTints {
-			for _, variant := range rowBgVariants {
-				evaluated += a.evalRowCell(mode, tint, variant, worst)
+			for _, group := range rowRoleGroups {
+				for _, variant := range group.bgVariants() {
+					evaluated += a.evalRowCell(mode, tint, variant, group, worst)
+				}
 			}
 		}
 	}
@@ -100,61 +168,59 @@ func (a *Analyzer) AnalyzeRowStates() []Finding {
 
 // resolveRowBg composes the row's bg from the pane-tint layer + the optional
 // stripe override or cursor overlay. Returns the opaque RGBA the renderer
-// would actually paint.
-func resolveRowBg(vars *VarTable, mode Mode, tint paneTintHue, variant string) (RGBA, bool) {
+// would actually paint. `selected` is the role group's `selected` flag: only
+// a role that renders on `.is-selected` rows may see `--color-selection-bg`
+// substituted in; an unselected-row role always renders on the plain
+// pane/stripe/cursor bg, even in the "plain"/"striped" variants.
+func resolveRowBg(vars *VarTable, mode Mode, tint paneTintHue, variant string, selected bool) (RGBA, bool) {
 	paneBg, ok := resolvePaneBg(vars, mode, tint)
 	if !ok {
 		return RGBA{}, false
 	}
 	switch variant {
 	case "plain":
-		// Selected rows get a darker bg via `--color-selection-bg`
-		// (dark mode only; transparent in light). Since the matrix's
-		// text roles (`color-selection-fg` and `color-size-*-selected`)
-		// only render on SELECTED rows, the relevant bg here is the
-		// selection-bg if defined.
-		if sel, ok := resolveSelectionBg(vars, mode, paneBg); ok {
-			return sel, true
-		}
-		return paneBg, true
+		return resolvePlainOrStripedBg(vars, mode, paneBg, selected, "")
 	case "striped":
-		// On a selected row the stripe is overridden by the selection
-		// bg (same specificity, but `.is-selected` appears later in
-		// `apps/desktop/src/app-file-list.css`). The matrix's text
-		// roles only apply to selected rows, so model that.
-		if sel, ok := resolveSelectionBg(vars, mode, paneBg); ok {
-			return sel, true
-		}
-		// Fallback for modes where selection-bg is transparent (light):
-		// render the stripe color on top of the pane bg.
-		c, ok := resolveVar(vars, mode, "color-bg-stripe")
-		if !ok {
-			return RGBA{}, false
-		}
-		if !c.Opaque() {
-			c = CompositeOver(c, paneBg)
-		}
-		return c, true
+		return resolvePlainOrStripedBg(vars, mode, paneBg, selected, "color-bg-stripe")
 	case "cursor-inactive":
-		c, ok := resolveVar(vars, mode, "color-cursor-inactive")
-		if !ok {
-			return RGBA{}, false
-		}
-		if !c.Opaque() {
-			c = CompositeOver(c, paneBg)
-		}
-		return c, true
+		return resolveOverlayBg(vars, mode, paneBg, "color-cursor-inactive")
 	case "cursor-active":
-		c, ok := resolveVar(vars, mode, "color-cursor-active")
-		if !ok {
-			return RGBA{}, false
-		}
-		if !c.Opaque() {
-			c = CompositeOver(c, paneBg)
-		}
-		return c, true
+		return resolveOverlayBg(vars, mode, paneBg, "color-cursor-active")
 	}
 	return RGBA{}, false
+}
+
+// resolvePlainOrStripedBg handles the "plain" (`stripeVar == ""`) and
+// "striped" variants, which share the same selected-row override: a selected
+// row gets a darker bg via `--color-selection-bg` (dark mode only;
+// transparent in light) regardless of stripe, since the stripe rule and the
+// selection-bg rule carry the same specificity and `.is-selected` appears
+// later in `apps/desktop/src/app-file-list.css`. Unselected rows never see
+// selection-bg — they render the pane bg, or the stripe color on top of it.
+func resolvePlainOrStripedBg(vars *VarTable, mode Mode, paneBg RGBA, selected bool, stripeVar string) (RGBA, bool) {
+	if selected {
+		if sel, ok := resolveSelectionBg(vars, mode, paneBg); ok {
+			return sel, true
+		}
+	}
+	if stripeVar == "" {
+		return paneBg, true
+	}
+	return resolveOverlayBg(vars, mode, paneBg, stripeVar)
+}
+
+// resolveOverlayBg resolves a translucent overlay var (the stripe color or a
+// cursor highlight) and composites it over paneBg when it isn't already
+// opaque. Shared by the stripe fallback and both cursor variants.
+func resolveOverlayBg(vars *VarTable, mode Mode, paneBg RGBA, varName string) (RGBA, bool) {
+	c, ok := resolveVar(vars, mode, varName)
+	if !ok {
+		return RGBA{}, false
+	}
+	if !c.Opaque() {
+		c = CompositeOver(c, paneBg)
+	}
+	return c, true
 }
 
 // resolveSelectionBg returns the opaque selection bg for selected rows, or
@@ -234,43 +300,47 @@ type rowWorstKey struct {
 	variant string
 }
 
-// evalRowCell evaluates one (mode, tint, variant) cell across all roles and
-// all relevant accent variants. Returns how many (role × accent) pairs were
-// evaluated, and updates `worst` in place with the lowest-ratio finding per
-// (role × mode × tint × variant) tuple.
-func (a *Analyzer) evalRowCell(mode Mode, tint paneTintHue, variant string, worst map[rowWorstKey]Finding) int {
+// evalRowCell evaluates one (mode, tint, variant, group) cell across the
+// group's roles and all relevant accent variants. Returns how many
+// (role × accent) pairs were evaluated, and updates `worst` in place with the
+// lowest-ratio finding per (role × mode × tint × variant) tuple.
+func (a *Analyzer) evalRowCell(mode Mode, tint paneTintHue, variant string, group rowRoleGroup, worst map[rowWorstKey]Finding) int {
 	accents := []AccentVariant{{Name: "default", IsDefault: true}}
 	if variant == "cursor-active" {
 		accents = AccentVariants
 	}
 	evaluated := 0
 	for _, accent := range accents {
-		evaluated += a.evalRowCellForAccent(mode, tint, variant, accent, worst)
+		evaluated += a.evalRowCellForAccent(mode, tint, variant, accent, group, worst)
 	}
 	return evaluated
 }
 
 // evalRowCellForAccent runs one (mode, tint, variant, accent) sample across
-// every text role. Splits out of `evalRowCell` so gocyclo doesn't fire.
+// every role in `group`. Splits out of `evalRowCell` so gocyclo doesn't fire.
 func (a *Analyzer) evalRowCellForAccent(
-	mode Mode, tint paneTintHue, variant string, accent AccentVariant,
+	mode Mode, tint paneTintHue, variant string, accent AccentVariant, group rowRoleGroup,
 	worst map[rowWorstKey]Finding,
 ) int {
 	vars := a.Vars
 	if !accent.IsDefault {
 		vars = withAccentOverride(a.Vars, accent)
 	}
-	// Mirror the three-tier `--color-selection-fg` cascade from `app.css`
-	// + `app-file-list.css`. The resolver doesn't model rule-level CSS
-	// overrides, so apply the right tier by hand per scenario.
-	vars = withSelectionFgVariant(vars, selectionFgTokenFor(mode, tint, variant))
-	bg, ok := resolveRowBg(vars, mode, tint, variant)
+	if group.selected {
+		// Mirror the three-tier `--color-selection-fg` cascade from
+		// `app.css` + `app-file-list.css`. The resolver doesn't model
+		// rule-level CSS overrides, so apply the right tier by hand per
+		// scenario. Irrelevant to an unselected-row role: none of them
+		// derive from `--color-selection-fg`.
+		vars = withSelectionFgVariant(vars, selectionFgTokenFor(mode, tint, variant))
+	}
+	bg, ok := resolveRowBg(vars, mode, tint, variant, group.selected)
 	if !ok {
 		return 0
 	}
 	evaluated := 0
-	for _, role := range rowSelectedTextRoles {
-		f, ok := evalRowText(vars, mode, role, bg, accent, tint, variant)
+	for _, role := range group.roles {
+		f, ok := evalRowText(vars, mode, role, bg, accent, tint, variant, group.selected)
 		if !ok {
 			continue
 		}
@@ -287,7 +357,7 @@ func (a *Analyzer) evalRowCellForAccent(
 // scenario coordinates.
 func evalRowText(
 	vars *VarTable, mode Mode, role string, bg RGBA,
-	accent AccentVariant, tint paneTintHue, variant string,
+	accent AccentVariant, tint paneTintHue, variant string, selected bool,
 ) (Finding, bool) {
 	fg, ok := resolveTextRole(vars, mode, role)
 	if !ok {
@@ -304,7 +374,7 @@ func evalRowText(
 	return Finding{
 		File:          syntheticRowMatrixPath(),
 		Line:          0,
-		Selector:      describeRowScenario(role, tint, variant),
+		Selector:      describeRowScenario(role, tint, variant, selected),
 		Mode:          mode,
 		FG:            fg,
 		BG:            bg,
@@ -352,8 +422,12 @@ func withSelectionFgVariant(v *VarTable, tokenName string) *VarTable {
 	return out
 }
 
-func describeRowScenario(role string, tint paneTintHue, variant string) string {
-	return fmt.Sprintf(".file-entry.is-selected .%s (tint=%s, %s)", role, tint.Name, variant)
+func describeRowScenario(role string, tint paneTintHue, variant string, selected bool) string {
+	scope := ".file-entry"
+	if selected {
+		scope += ".is-selected"
+	}
+	return fmt.Sprintf("%s .%s (tint=%s, %s)", scope, role, tint.Name, variant)
 }
 
 // syntheticRowMatrixPath is the marker path embedded in synthesized Findings
