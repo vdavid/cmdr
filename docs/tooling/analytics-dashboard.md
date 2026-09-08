@@ -19,18 +19,17 @@ Accepts `range` query param: `24h`, `7d` (default), `30d`.
 
 ❌ **"New installs" means two different things in this report; read the right one.** The **Daily funnel**'s `installs`
 column counts install ids whose first-ever heartbeat landed that day, so it's people who actually launched Cmdr, and
-it's the number to quote for adoption (~110/month as of 2026-09-08). The **Download** section's "New installs
-(deduped)" is deduplicated download *requests* (1,855 over the same 30 days), inflated by mirrors and scrapers the
-user-agent filter misses. Same words, ~10x apart. Background:
-`apps/analytics-dashboard/DETAILS.md`.
+it's the number to quote for adoption (~110/month as of 2026-09-08). The **Download** section's "New installs (deduped)"
+is deduplicated download _requests_ (1,855 over the same 30 days), inflated by mirrors and scrapers the user-agent
+filter misses. Same words, ~10x apart. Background: `apps/analytics-dashboard/DETAILS.md`.
 
 The report includes:
 
 - **Awareness**: page views, visitors, referrers (with percentages and deltas vs prior period)
 - **Interest**: product page views, bounce rate, download button clicks, top pages, visitors by country
 - **Download**: "new installs" (deduped same-day-distinct, bots dropped, auto-updates excluded) and raw request totals;
-  by source (website/Homebrew/other) and per day; totals by version, architecture, and country; daily
-  breakdown; cross-breakdowns (country × architecture, country × version, daily × version)
+  by source (website/Homebrew/other) and per day; totals by version, architecture, and country; daily breakdown;
+  cross-breakdowns (country × architecture, country × version, daily × version)
 - **Active use**: daily active installs (heartbeat); got-the-latest-release per day by version (distinct update-enabled
   installs that checked); license activations, active devices
 - **Payment**: revenue, transactions, active subscriptions

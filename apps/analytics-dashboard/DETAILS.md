@@ -412,8 +412,8 @@ have a happy-path test carrying the real `type: 'app'` stamp, so the discriminat
   Daily funnel's `newInstalls` is install ids whose first-ever heartbeat landed that day, so it counts people who
   actually launched the app. Measured 2026-09-08 over 30 days: 1,855 vs ~110/month, because most download requests are
   mirrors, scrapers, and bots that the UA filter doesn't catch (43% of them arrive with no `ref` and no referer).
-  **Quote the funnel number for anything that matters, and never let the Download figure stand in for adoption.** It
-  has already misled an agent into reporting a 10x-inflated user count. Renaming the Download label to something like
+  **Quote the funnel number for anything that matters, and never let the Download figure stand in for adoption.** It has
+  already misled an agent into reporting a 10x-inflated user count. Renaming the Download label to something like
   "distinct downloaders" is a pending fix.
 - **"Feedback & errors" reads the app's own stores via two worker admin endpoints** (`/admin/feedback` from D1,
   `/admin/error-reports` from R2 `list` with `customMetadata`), not Discord (the `#feedback`/`#error-reports` channels
