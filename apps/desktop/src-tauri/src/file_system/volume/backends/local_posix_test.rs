@@ -79,6 +79,43 @@ async fn test_list_directory_nonexistent_returns_error() {
     }
 }
 
+/// Finder's legacy `/.hidden` file only means anything at a volume's root: the
+/// same name one level down is an ordinary, visible entry. `list_directory`
+/// decides "is this a root listing" by comparing the resolved path against
+/// `self.root`, so this exercises that wiring end to end rather than
+/// `reading::list_directory_core_with_tally`'s `is_volume_root` flag in
+/// isolation.
+#[tokio::test]
+async fn test_dot_hidden_file_hides_a_name_at_the_volume_root_only() {
+    let test_dir = TestDir::new("dot_hidden_root_test");
+    std::fs::write(test_dir.join(".hidden"), "secret_dir\n").unwrap();
+    std::fs::create_dir(test_dir.join("secret_dir")).unwrap();
+    std::fs::create_dir(test_dir.join("sub")).unwrap();
+    std::fs::create_dir(test_dir.join("sub/secret_dir")).unwrap();
+
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    let root_entries = volume.list_directory(Path::new(""), None).await.unwrap();
+    let root_secret = root_entries
+        .iter()
+        .find(|e| e.name == "secret_dir")
+        .expect("secret_dir exists at the root");
+    assert!(
+        root_secret.is_hidden,
+        "a name listed in the root's /.hidden must be hidden"
+    );
+
+    let sub_entries = volume.list_directory(Path::new("sub"), None).await.unwrap();
+    let sub_secret = sub_entries
+        .iter()
+        .find(|e| e.name == "secret_dir")
+        .expect("the identically-named entry exists one level down");
+    assert!(
+        !sub_secret.is_hidden,
+        "/.hidden only applies at a volume root, not a directory under it"
+    );
+}
+
 #[tokio::test]
 async fn test_get_metadata_returns_entry() {
     let volume = LocalPosixVolume::new("Temp", "/tmp");

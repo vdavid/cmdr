@@ -49,6 +49,17 @@ pub fn get_group_name(gid: u32) -> String {
     name
 }
 
+/// Whether a name alone marks an entry hidden: a leading dot, the universal
+/// Unix convention every backend understands with no I/O at all.
+///
+/// This is [`FileEntry::new`]'s default for [`FileEntry::is_hidden`], and the
+/// whole answer for every backend except local POSIX (SMB, MTP, ADB, SFTP,
+/// WebDAV, archive, git, in-memory). `LocalPosixVolume` ORs in two more macOS
+/// mechanisms after construction: see `is_hidden`'s doc.
+pub fn is_hidden_by_name(name: &str) -> bool {
+    name.starts_with('.')
+}
+
 /// Generates icon ID based on file type, extension, and (for directories) the
 /// folder's well-known path and package extension.
 ///
@@ -113,6 +124,22 @@ pub struct FileEntry {
     pub is_directory: bool,
     /// `true` when the entry itself is a symlink.
     pub is_symlink: bool,
+    /// `true` when a pane that isn't showing hidden files should leave this entry
+    /// out.
+    ///
+    /// [`FileEntry::new`] defaults this to [`is_hidden_by_name`] (a leading dot),
+    /// which is the whole answer for every backend except local POSIX.
+    /// `LocalPosixVolume` additionally ORs in `UF_HIDDEN` (`st_flags`, what
+    /// `chflags hidden` sets; macOS only, always `false` on Linux) and, at a
+    /// volume root only, membership in that root's `/.hidden` file (Finder's
+    /// legacy per-volume hide list, which is why `~/Library`, `/usr`, `/bin`,
+    /// `/private`, and `/Volumes` are invisible in Finder despite carrying no
+    /// dot). Both cost no extra I/O: the flag rides on the `stat`/`lstat` the
+    /// listing already does, and `/.hidden` is read at most once per
+    /// root-directory listing. The `com.apple.FinderInfo` `kIsInvisible` bit is
+    /// deliberately excluded: it needs a `getxattr` per entry, too costly to run
+    /// inline over a 100k-entry directory.
+    pub is_hidden: bool,
     /// `true` when this entry is a file whose extension is a supported browsable
     /// archive (zip today). Computed extension-only at listing time — no per-file
     /// byte read, which would be a round-trip-per-file on a remote backend. It
@@ -210,6 +237,7 @@ impl FileEntry {
             // Extension-only, and never for a directory (a folder named
             // `foo.zip` is browsed as itself, not as an archive).
             is_archive: !is_dir && crate::archive_format::has_supported_archive_extension(&name),
+            is_hidden: is_hidden_by_name(&name),
             name,
             path,
             is_directory: is_dir,

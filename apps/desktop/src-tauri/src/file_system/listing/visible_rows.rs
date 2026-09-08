@@ -2,9 +2,10 @@
 //!
 //! A pane numbers its rows over the entries it is SHOWING, so row 7 is the
 //! seventh visible entry and not `entries[7]`. Two things can leave an entry out:
-//! it's a dotfile and the user hasn't asked for hidden files, or it's scratch a
-//! running operation owns (`file_system::staging`). Answering "which entry is
-//! row 7" by walking the entries and counting is what a listing accessor used to
+//! it's hidden (`FileEntry::is_hidden`: a dotfile, macOS's `UF_HIDDEN` flag, or
+//! `/.hidden` membership at a volume root) and the user hasn't asked for hidden
+//! files, or it's scratch a running operation owns (`file_system::staging`).
+//! Answering "which entry is row 7" by walking the entries and counting is what a listing accessor used to
 //! do, and at the bottom of a 74,144-entry directory that walk, times the ~100
 //! rows a visible range covers, times an index event every couple of seconds,
 //! stopped the app answering IPC at all
@@ -14,7 +15,10 @@
 //!
 //! ## Why the map splits settled rows from candidates
 //!
-//! Most of the predicate is stable: a name's dotfile-ness never changes, and
+//! Most of the predicate is stable: `is_hidden` is captured at stat time and
+//! never changes for the lifetime of an entry in a listing (a mutation that
+//! could change it — a rename across the dot boundary, a `chflags` — goes
+//! through `entries_mut`, which invalidates this whole cache), and
 //! `include_hidden` is part of the cache key. The scratch half is NOT — a copy
 //! finishing un-hides its leftover with no change to the listing at all, and
 //! nothing calls us when that happens (the ownership signal is a `Weak` that just
@@ -114,7 +118,7 @@ impl VisibleMap {
         for (index, entry) in entries.iter().enumerate() {
             #[cfg(test)]
             scan_probe::record();
-            if !include_hidden && entry.name.starts_with('.') {
+            if !include_hidden && entry.is_hidden {
                 continue;
             }
             if staging::could_be_hidden_from_listings(&entry.name) {

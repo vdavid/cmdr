@@ -183,6 +183,10 @@ impl Volume for LocalPosixVolume {
             }
         }
         let abs_path = self.resolve(path);
+        // The one place Cmdr knows a directory IS a volume root, not merely
+        // somewhere under one: `/.hidden` (`read_dot_hidden_names`) means nothing
+        // anywhere else, so this is threaded through rather than re-derived below.
+        let is_volume_root = abs_path == self.root;
         Box::pin(async move {
             // `on_progress` is `Sync` but not `Send`, so it can't ride into `spawn_blocking`
             // with the lister. Instead the lister publishes into a shared `ListingTally` and
@@ -192,7 +196,7 @@ impl Volume for LocalPosixVolume {
             let tally = Arc::new(ListingTally::default());
             let tally_for_listing = Arc::clone(&tally);
             let mut listing = spawn_blocking(move || {
-                list_directory_core_with_tally(&abs_path, &tally_for_listing)
+                list_directory_core_with_tally(&abs_path, &tally_for_listing, is_volume_root)
                     .map_err(|e| VolumeError::from_io_at(&e, &abs_path))
             });
 

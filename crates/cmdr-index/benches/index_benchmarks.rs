@@ -183,6 +183,7 @@ fn listing_entry(path: &str) -> FileEntry {
         path: path.to_string(),
         is_directory: true,
         is_symlink: false,
+        is_hidden: false,
         is_archive: false,
         size: None,
         physical_size: None,

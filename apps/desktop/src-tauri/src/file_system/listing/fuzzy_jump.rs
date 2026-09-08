@@ -40,8 +40,8 @@ use crate::file_system::listing::metadata::FileEntry;
 /// rows a pane is showing, or `None` if no entry matches.
 ///
 /// Rules:
-/// - `rows` is the pane's visible sequence, so what it leaves out (dotfiles, in-flight scratch)
-///   never matches and never shifts the answer.
+/// - `rows` is the pane's visible sequence, so what it leaves out (hidden entries
+///   per `FileEntry::is_hidden`, in-flight scratch) never matches and never shifts the answer.
 /// - The match runs against the whole filename (including extension); fuzzy scoring already rewards
 ///   prefix and word-boundary matches, so we don't split on the dot.
 /// - Smart-case: an all-lowercase query matches case-insensitively; any uppercase character makes
@@ -163,9 +163,7 @@ mod tests {
     /// needs a real listing, which `the_jump_lands_on_the_row_the_pane_shows`
     /// covers.
     fn rows(entries: &[FileEntry], include_hidden: bool) -> impl Iterator<Item = &FileEntry> {
-        entries
-            .iter()
-            .filter(move |e| include_hidden || !e.name.starts_with('.'))
+        entries.iter().filter(move |e| include_hidden || !e.is_hidden)
     }
 
     #[test]

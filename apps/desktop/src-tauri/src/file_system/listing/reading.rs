@@ -8,15 +8,54 @@
     reason = "list_directory and get_extended_metadata_batch are part of the two-phase loading API"
 )]
 
+use std::collections::HashSet;
 use std::fs;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 use crate::benchmark;
-use crate::file_system::listing::metadata::{ExtendedMetadata, FileEntry, get_group_name, get_owner_name};
+use crate::file_system::listing::metadata::{
+    ExtendedMetadata, FileEntry, get_group_name, get_owner_name, is_hidden_by_name,
+};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::volume::ListingProgress;
+
+/// Whether a POSIX entry's `st_flags` carries `UF_HIDDEN`, what `chflags hidden`
+/// sets. macOS only; the flag doesn't exist on Linux, so this is always `false`
+/// there. Reads a field the `stat`/`lstat` call that produced `metadata` already
+/// fetched, so checking it costs no extra syscall.
+#[cfg(target_os = "macos")]
+fn has_uf_hidden(metadata: &fs::Metadata) -> bool {
+    use std::os::macos::fs::MetadataExt as _;
+    metadata.st_flags() & libc::UF_HIDDEN != 0
+}
+
+#[cfg(not(target_os = "macos"))]
+fn has_uf_hidden(_metadata: &fs::Metadata) -> bool {
+    false
+}
+
+/// Reads a volume root's `/.hidden` file (Finder's legacy per-volume hide list,
+/// still honored today) into the set of names it hides in that one directory.
+/// Empty when the file doesn't exist or fails to read, which is the common case:
+/// most directories, and most volumes, have none.
+///
+/// ❗ Call this only for the directory a listing has established IS a volume
+/// root (`abs_path == volume.root()`); `/.hidden` has no meaning partway down a
+/// tree, and reading a file that isn't there on every listing would be wasted
+/// I/O for no benefit.
+fn read_dot_hidden_names(root_dir: &Path) -> HashSet<String> {
+    match fs::read_to_string(root_dir.join(".hidden")) {
+        Ok(contents) => contents
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(str::to_string)
+            .collect(),
+        Err(_) => HashSet::new(),
+    }
+}
 
 /// Lists the contents of a directory with full metadata (including macOS extended metadata).
 ///
@@ -65,7 +104,7 @@ pub fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
 ///
 /// Use `get_extended_metadata_batch()` to fetch extended metadata later.
 pub fn list_directory_core(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
-    list_directory_core_impl(path, None)
+    list_directory_core_impl(path, None, false)
 }
 
 /// Like `list_directory_core`, but publishes a running count into `tally` as it stats.
@@ -75,8 +114,17 @@ pub fn list_directory_core(path: &Path) -> Result<Vec<FileEntry>, std::io::Error
 /// thread, so the lister publishes here and the async side samples and forwards on its
 /// own cadence. Publishing is unthrottled (a relaxed store is nothing next to the `stat`
 /// it accompanies); deciding how often the user sees a number belongs to the sampler.
-pub fn list_directory_core_with_tally(path: &Path, tally: &ListingTally) -> Result<Vec<FileEntry>, std::io::Error> {
-    list_directory_core_impl(path, Some(tally))
+///
+/// `is_volume_root` gates the `/.hidden` read (see `read_dot_hidden_names`):
+/// `LocalPosixVolume::list_directory` is the only caller, and it passes
+/// `abs_path == self.root()`, the one place Cmdr knows a directory IS a volume
+/// root rather than merely a directory somewhere under one.
+pub fn list_directory_core_with_tally(
+    path: &Path,
+    tally: &ListingTally,
+    is_volume_root: bool,
+) -> Result<Vec<FileEntry>, std::io::Error> {
+    list_directory_core_impl(path, Some(tally), is_volume_root)
 }
 
 /// A listing's running entry counts, readable from another thread while the stat loop
@@ -112,10 +160,23 @@ impl ListingTally {
     }
 }
 
-fn list_directory_core_impl(path: &Path, tally: Option<&ListingTally>) -> Result<Vec<FileEntry>, std::io::Error> {
+fn list_directory_core_impl(
+    path: &Path,
+    tally: Option<&ListingTally>,
+    is_volume_root: bool,
+) -> Result<Vec<FileEntry>, std::io::Error> {
     benchmark::log_event("list_directory_core START");
     let overall_start = std::time::Instant::now();
     let mut entries = Vec::new();
+
+    // Read once per listing, never per entry: at a volume root only (see this
+    // function's `is_volume_root` doc on the caller side), `/.hidden` names the
+    // few entries Finder hides that carry no dot and no `UF_HIDDEN` flag.
+    let dot_hidden_names = if is_volume_root {
+        read_dot_hidden_names(path)
+    } else {
+        HashSet::new()
+    };
 
     benchmark::log_event("readdir START");
     let read_start = std::time::Instant::now();
@@ -126,7 +187,7 @@ fn list_directory_core_impl(path: &Path, tally: Option<&ListingTally>) -> Result
     benchmark::log_event("stat_loop START");
     for entry in dir_entries {
         let entry = entry?;
-        let file_entry = match process_dir_entry(&entry) {
+        let file_entry = match process_dir_entry(&entry, &dot_hidden_names) {
             Some(file_entry) => file_entry,
             None => {
                 // Permission denied or broken symlink: return minimal entry
@@ -138,6 +199,7 @@ fn list_directory_core_impl(path: &Path, tally: Option<&ListingTally>) -> Result
                     } else {
                         "file".to_string()
                     },
+                    is_hidden: is_hidden_by_name(&name) || dot_hidden_names.contains(&name),
                     extended_metadata_loaded: true, // Nothing to load for broken entries
                     ..FileEntry::new(name, entry.path().to_string_lossy().to_string(), false, is_symlink)
                 }
@@ -266,13 +328,19 @@ pub fn get_single_entry(path: &Path) -> Result<FileEntry, std::io::Error> {
         permissions: metadata.permissions().mode(),
         owner,
         group,
+        is_hidden: is_hidden_by_name(&name) || has_uf_hidden(metadata),
         ..FileEntry::new(name, path.to_string_lossy().to_string(), is_dir, is_symlink)
     })
 }
 
 /// Process a single directory entry into a FileEntry.
+///
+/// `dot_hidden_names` is the listing's `/.hidden` set (empty outside a volume
+/// root; see `read_dot_hidden_names`), asked once per entry here rather than
+/// re-read per entry by the caller.
+///
 /// Returns None if the entry cannot be processed (permissions, etc).
-pub(crate) fn process_dir_entry(entry: &fs::DirEntry) -> Option<FileEntry> {
+pub(crate) fn process_dir_entry(entry: &fs::DirEntry, dot_hidden_names: &HashSet<String>) -> Option<FileEntry> {
     let file_type = entry.file_type().ok()?;
     let is_symlink = file_type.is_symlink();
 
@@ -332,6 +400,7 @@ pub(crate) fn process_dir_entry(entry: &fs::DirEntry) -> Option<FileEntry> {
         permissions: metadata.permissions().mode(),
         owner,
         group,
+        is_hidden: is_hidden_by_name(&name) || has_uf_hidden(&metadata) || dot_hidden_names.contains(&name),
         ..FileEntry::new(name, entry.path().to_string_lossy().to_string(), is_dir, is_symlink)
     })
 }

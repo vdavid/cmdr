@@ -32,6 +32,8 @@ MTP is `crates/cmdr-mtp` now; the two below are what a caller reaching it from t
   off as unresponsive.
 - **`LocalPosixVolume::write_from_stream` `sync_data`s each file** (+ best-effort parent-dir fsync) before returning:
   every cross-volume copy landing on local disk flows through it, and `flush()` alone loses data on eject.
+- **`FileEntry::is_hidden` folds in `UF_HIDDEN` and root-only `/.hidden` on top of the dot check**, both read from data
+  `reading.rs` already has at listing/stat time (no extra syscall). See `FileEntry::is_hidden`'s doc in `cmdr-fs`.
 - **MTP has no single-file stat**, so `get_metadata` lists the whole parent: avoid it in hot paths. Ranged reads and
   read sessions are canonical in `crates/cmdr-mtp/src/connection/CLAUDE.md`.
 - **`cmdr_mtp::volume::testing` is the ONLY way a test outside the backend reads it**: two numbers out

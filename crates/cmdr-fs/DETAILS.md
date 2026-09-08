@@ -172,16 +172,17 @@ Why this over the alternatives:
 **Guardrail this leaves behind**: a new mutable backend that forgets to override `notify_mutation` gets a silently stale
 pane instead of a free correct one. That's why the trait doc says so and why the backends checklist repeats it.
 
-### 2. `FileEntry::new`'s three predicates live here
+### 2. `FileEntry::new`'s pure predicates live here
 
 `FileEntry::new` sets `icon_id` through a local `get_icon_id` helper (which calls `icons::special_folders` and
-`icons::per_path`) and `is_archive` from a fully-qualified inline call into the archive vocabulary. None of the three
-appear in any header `use` line, which is exactly why the closure is derived by `cargo check` rather than by grepping
-imports: a call through a local helper, a fully-qualified inline call, a `use` inside a function body, and
-`#[cfg(test)]` items are all invisible to a header grep.
+`icons::per_path`), `is_archive` from a fully-qualified inline call into the archive vocabulary, and `is_hidden` from
+`is_hidden_by_name` (the dot check), defined right beside it. None of these appear in any header `use` line, which is
+exactly why the closure is derived by `cargo check` rather than by grepping imports: a call through a local helper, a
+fully-qualified inline call, a `use` inside a function body, and `#[cfg(test)]` items are all invisible to a header
+grep.
 
-All three are pure name and path predicates with no I/O, a hard requirement since they run for every entry of a
-100k-entry listing, so they live here rather than being stripped or injected (stripping the two fields was never viable:
+Every one is a pure name and path predicate with no I/O, a hard requirement since they run for every entry of a
+100k-entry listing, so they live here rather than being stripped or injected (stripping the fields was never viable:
 `FileEntry::new` has 83 call sites):
 
 - `icons/special_folders.rs` is whole here; its only non-`std` dependency is `dirs`.
@@ -191,6 +192,9 @@ All three are pure name and path predicates with no I/O, a hard requirement sinc
   (`ArchiveFormat`, `TarCodec`, `format_for_name`, `format_for_path`, `is_sequential`). The decoders that unwrap a tar's
   outer compression stay with the archive reading core. The split line is "naming vs machinery", and it keeps
   `format_for_name` the single source of truth rather than forking a second suffix table.
+- `is_hidden_by_name` needs no file of its own (a one-line dot check), but it's the same shape: local POSIX later ORs in
+  two I/O-cheap macOS mechanisms (`UF_HIDDEN`, root `/.hidden`) app-side, in `reading.rs`, where the `stat` and the
+  volume-root context already are. See `FileEntry::is_hidden`'s doc for the full split.
 
   One consequence is worth following: because the format a name maps to decides WRITABILITY, the enum carries a variant
   whose whole reason for existing lives in the consumer crate. `ArchiveFormat::Ooxml` is a zip in every respect the

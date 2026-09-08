@@ -13,7 +13,7 @@ Backend directory reading, caching, sorting, and streaming: 100k+ entries, non-b
 
 ## Invariants and gotchas
 
-- **Neither a row number nor a path indexes `entries`.** Rows drop dotfiles and in-flight scratch, so
+- **Neither a row number nor a path indexes `entries`.** Rows drop hidden entries and in-flight scratch, so
   `CachedListing::rows` is the ONLY filter point, on READ; by-path callers go through `index_of_path` /
   `indices_of_paths`. ❗ A MUTATING caller resolves BEFORE `entries_mut`, which drops both maps. `entries` stays
   private: three accessors that grew their own filter were each a row off, and a per-item re-derivation wedged a 74k

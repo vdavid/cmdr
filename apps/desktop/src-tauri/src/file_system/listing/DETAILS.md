@@ -157,7 +157,7 @@ handle threaded through its callers needs none of it.
 ## Row numbers (visible_rows.rs)
 
 A pane numbers its rows over what it is SHOWING, so row 7 is the seventh visible entry and not `entries[7]`. Two things
-leave an entry out: the dotfile filter (when `include_hidden` is off) and scratch a running operation owns
+leave an entry out: `FileEntry::is_hidden` (when `include_hidden` is off) and scratch a running operation owns
 (`file_system::staging`).
 
 **Answering "which entry is row N" by walking and counting is what wedged the app.** The MCP pane mirror fetches ~100
@@ -171,7 +171,7 @@ settled rows ahead of each. A read re-asks `is_hidden_from_listings` about the c
 none — and merges them back by row number, so a lookup is an array index plus a binary search over a list that is
 almost always empty.
 
-**Why the split rather than an invalidation hook.** The dotfile half is stable, but the scratch half is not: an
+**Why the split rather than an invalidation hook.** The `is_hidden` half is stable, but the scratch half is not: an
 operation settling un-hides its leftover with no change to the listing and nothing to notify anyone, because the
 ownership signal is a `Weak` that simply stops upgrading (`cmdr_fs::staging`). Hunting for every event that could flip
 it is exactly the kind of invariant that rots; re-asking about the few names it could apply to cannot. What makes it

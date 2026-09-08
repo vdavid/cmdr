@@ -238,6 +238,52 @@ async fn test_get_file_at_index_0_with_hidden_disabled() {
 }
 
 // ============================================================================
+// `is_hidden` beyond the dot convention
+// ============================================================================
+
+/// What a `UF_HIDDEN`-flagged or root `/.hidden`-listed local entry looks like
+/// once `LocalPosixVolume` builds it: `is_hidden` is `true`, but the name
+/// carries no dot. `visible_rows` (behind `get_total_count`/`get_file_range`)
+/// and `fuzzy_jump`'s pane-facing `find_first_match` both key off
+/// `FileEntry::is_hidden`, never the name, so a pane's row count and its
+/// type-to-jump must agree on whether this entry is showing.
+#[tokio::test]
+async fn test_visible_rows_and_fuzzy_jump_agree_on_a_non_dot_hidden_entry() {
+    let hidden_no_dot = FileEntry {
+        is_hidden: true,
+        ..FileEntry::new("secret_folder".to_string(), "/secret_folder".to_string(), true, false)
+    };
+    let entries = vec![hidden_no_dot, make_entry("visible.txt", false)];
+    let volume = Arc::new(InMemoryVolume::with_entries("TestVolume", entries));
+
+    let entries = volume.list_directory(Path::new(""), None).await.unwrap();
+    let listing = insert_test_listing("test-non-dot-hidden-agree", entries);
+
+    assert_eq!(
+        get_total_count(listing.id(), false).unwrap(),
+        1,
+        "the hidden, dotless entry is excluded from the row count"
+    );
+    assert_eq!(
+        super::fuzzy_find_first_match_in_listing(listing.id(), "secret", false).unwrap(),
+        None,
+        "the hidden, dotless entry is excluded from the fuzzy jump"
+    );
+
+    assert_eq!(
+        get_total_count(listing.id(), true).unwrap(),
+        2,
+        "the entry is counted once hidden files are shown"
+    );
+    assert!(
+        super::fuzzy_find_first_match_in_listing(listing.id(), "secret", true)
+            .unwrap()
+            .is_some(),
+        "the entry becomes fuzzy-matchable once hidden files are shown"
+    );
+}
+
+// ============================================================================
 // Edge cases
 // ============================================================================
 

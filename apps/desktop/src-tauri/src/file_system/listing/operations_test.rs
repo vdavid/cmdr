@@ -200,7 +200,7 @@ fn test_process_dir_entry_returns_file_entry() {
     let entries: Vec<_> = fs::read_dir(&temp_dir).unwrap().filter_map(|e| e.ok()).collect();
     let dir_entry = entries.iter().find(|e| e.file_name() == "process_test.txt").unwrap();
 
-    let file_entry = process_dir_entry(dir_entry);
+    let file_entry = process_dir_entry(dir_entry, &std::collections::HashSet::new());
 
     assert!(file_entry.is_some());
     let entry = file_entry.unwrap();
@@ -223,13 +223,81 @@ fn test_process_dir_entry_handles_directory() {
     let entries: Vec<_> = fs::read_dir(&temp_dir).unwrap().filter_map(|e| e.ok()).collect();
     let dir_entry = entries.iter().find(|e| e.file_name() == "sub_directory").unwrap();
 
-    let file_entry = process_dir_entry(dir_entry);
+    let file_entry = process_dir_entry(dir_entry, &std::collections::HashSet::new());
 
     assert!(file_entry.is_some());
     let entry = file_entry.unwrap();
     assert_eq!(entry.name, "sub_directory");
     assert!(entry.is_directory);
     assert!(entry.size.is_none());
+}
+
+// ============================================================================
+// Tests for `is_hidden`: name, and (macOS) `UF_HIDDEN`
+// ============================================================================
+
+#[test]
+fn test_process_dir_entry_marks_a_dotfile_hidden() {
+    use super::reading::process_dir_entry;
+
+    let temp_dir = TestDir::new("dotfile_hidden_test");
+    fs::write(temp_dir.join(".secret"), "x").unwrap();
+
+    let entries: Vec<_> = fs::read_dir(&temp_dir).unwrap().filter_map(|e| e.ok()).collect();
+    let dir_entry = entries.iter().find(|e| e.file_name() == ".secret").unwrap();
+
+    let file_entry = process_dir_entry(dir_entry, &std::collections::HashSet::new()).expect("entry reads");
+    assert!(file_entry.is_hidden, "a dotfile must be marked hidden");
+}
+
+#[test]
+fn test_process_dir_entry_leaves_an_ordinary_file_visible() {
+    use super::reading::process_dir_entry;
+
+    let temp_dir = TestDir::new("ordinary_not_hidden_test");
+    fs::write(temp_dir.join("visible.txt"), "x").unwrap();
+
+    let entries: Vec<_> = fs::read_dir(&temp_dir).unwrap().filter_map(|e| e.ok()).collect();
+    let dir_entry = entries.iter().find(|e| e.file_name() == "visible.txt").unwrap();
+
+    let file_entry = process_dir_entry(dir_entry, &std::collections::HashSet::new()).expect("entry reads");
+    assert!(!file_entry.is_hidden, "an ordinary file must not be marked hidden");
+}
+
+/// `chflags hidden` sets `UF_HIDDEN` in `st_flags`, and macOS honors it with no
+/// dot in the name at all. `LocalPosixVolume` must too.
+#[cfg(target_os = "macos")]
+#[test]
+fn test_process_dir_entry_honors_uf_hidden_with_no_dot_in_the_name() {
+    use super::reading::process_dir_entry;
+    use std::ffi::CString;
+    use std::os::unix::ffi::OsStrExt;
+
+    let temp_dir = TestDir::new("uf_hidden_test");
+    let file_path = temp_dir.join("no_dot_but_hidden.txt");
+    fs::write(&file_path, "x").unwrap();
+
+    let c_path = CString::new(file_path.as_os_str().as_bytes()).expect("path has no interior NUL");
+    // SAFETY: `c_path` is a live, NUL-terminated C string naming a regular file
+    // this test just created and owns for its whole body; `chflags` only writes
+    // that file's on-disk flags, nothing is read back through the pointer.
+    let result = unsafe { libc::chflags(c_path.as_ptr(), libc::UF_HIDDEN) };
+    assert_eq!(
+        result, 0,
+        "chflags(UF_HIDDEN) must succeed on a file this test just created"
+    );
+
+    let entries: Vec<_> = fs::read_dir(&temp_dir).unwrap().filter_map(|e| e.ok()).collect();
+    let dir_entry = entries
+        .iter()
+        .find(|e| e.file_name() == "no_dot_but_hidden.txt")
+        .unwrap();
+
+    let file_entry = process_dir_entry(dir_entry, &std::collections::HashSet::new()).expect("entry reads");
+    assert!(
+        file_entry.is_hidden,
+        "UF_HIDDEN must mark an entry hidden even though its name carries no dot"
+    );
 }
 
 // ============================================================================

@@ -112,6 +112,24 @@ export const commands = {
         // `true` when the entry itself is a symlink.
         isSymlink: boolean
         /**
+         *  `true` when a pane that isn't showing hidden files should leave this entry
+         *  out.
+         *
+         *  [`FileEntry::new`] defaults this to [`is_hidden_by_name`] (a leading dot),
+         *  which is the whole answer for every backend except local POSIX.
+         *  `LocalPosixVolume` additionally ORs in `UF_HIDDEN` (`st_flags`, what
+         *  `chflags hidden` sets; macOS only, always `false` on Linux) and, at a
+         *  volume root only, membership in that root's `/.hidden` file (Finder's
+         *  legacy per-volume hide list, which is why `~/Library`, `/usr`, `/bin`,
+         *  `/private`, and `/Volumes` are invisible in Finder despite carrying no
+         *  dot). Both cost no extra I/O: the flag rides on the `stat`/`lstat` the
+         *  listing already does, and `/.hidden` is read at most once per
+         *  root-directory listing. The `com.apple.FinderInfo` `kIsInvisible` bit is
+         *  deliberately excluded: it needs a `getxattr` per entry, too costly to run
+         *  inline over a 100k-entry directory.
+         */
+        isHidden: boolean
+        /**
          *  `true` when this entry is a file whose extension is a supported browsable
          *  archive (zip today). Computed extension-only at listing time — no per-file
          *  byte read, which would be a round-trip-per-file on a remote backend. It
@@ -237,6 +255,24 @@ export const commands = {
         isDirectory: boolean
         // `true` when the entry itself is a symlink.
         isSymlink: boolean
+        /**
+         *  `true` when a pane that isn't showing hidden files should leave this entry
+         *  out.
+         *
+         *  [`FileEntry::new`] defaults this to [`is_hidden_by_name`] (a leading dot),
+         *  which is the whole answer for every backend except local POSIX.
+         *  `LocalPosixVolume` additionally ORs in `UF_HIDDEN` (`st_flags`, what
+         *  `chflags hidden` sets; macOS only, always `false` on Linux) and, at a
+         *  volume root only, membership in that root's `/.hidden` file (Finder's
+         *  legacy per-volume hide list, which is why `~/Library`, `/usr`, `/bin`,
+         *  `/private`, and `/Volumes` are invisible in Finder despite carrying no
+         *  dot). Both cost no extra I/O: the flag rides on the `stat`/`lstat` the
+         *  listing already does, and `/.hidden` is read at most once per
+         *  root-directory listing. The `com.apple.FinderInfo` `kIsInvisible` bit is
+         *  deliberately excluded: it needs a `getxattr` per entry, too costly to run
+         *  inline over a 100k-entry directory.
+         */
+        isHidden: boolean
         /**
          *  `true` when this entry is a file whose extension is a supported browsable
          *  archive (zip today). Computed extension-only at listing time — no per-file
@@ -6600,6 +6636,24 @@ export type FileEntry = {
   isDirectory: boolean
   // `true` when the entry itself is a symlink.
   isSymlink: boolean
+  /**
+   *  `true` when a pane that isn't showing hidden files should leave this entry
+   *  out.
+   *
+   *  [`FileEntry::new`] defaults this to [`is_hidden_by_name`] (a leading dot),
+   *  which is the whole answer for every backend except local POSIX.
+   *  `LocalPosixVolume` additionally ORs in `UF_HIDDEN` (`st_flags`, what
+   *  `chflags hidden` sets; macOS only, always `false` on Linux) and, at a
+   *  volume root only, membership in that root's `/.hidden` file (Finder's
+   *  legacy per-volume hide list, which is why `~/Library`, `/usr`, `/bin`,
+   *  `/private`, and `/Volumes` are invisible in Finder despite carrying no
+   *  dot). Both cost no extra I/O: the flag rides on the `stat`/`lstat` the
+   *  listing already does, and `/.hidden` is read at most once per
+   *  root-directory listing. The `com.apple.FinderInfo` `kIsInvisible` bit is
+   *  deliberately excluded: it needs a `getxattr` per entry, too costly to run
+   *  inline over a 100k-entry directory.
+   */
+  isHidden: boolean
   /**
    *  `true` when this entry is a file whose extension is a supported browsable
    *  archive (zip today). Computed extension-only at listing time — no per-file
