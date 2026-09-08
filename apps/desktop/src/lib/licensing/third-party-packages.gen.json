@@ -80,12 +80,6 @@
       "url": "https://github.com/zakarumych/allocator-api2"
     },
     {
-      "name": "alphanumeric-sort",
-      "version": "1.5.8",
-      "license": "MIT",
-      "url": "https://github.com/magiclen/alphanumeric-sort"
-    },
-    {
       "name": "anyhow",
       "version": "1.0.103",
       "license": "MIT OR Apache-2.0",
@@ -1868,44 +1862,68 @@
       "url": "https://github.com/mdsteele/rust-ico"
     },
     {
+      "name": "icu_collator",
+      "version": "2.3.1",
+      "license": "Unicode-3.0",
+      "url": "https://github.com/unicode-org/icu4x"
+    },
+    {
+      "name": "icu_collator_data",
+      "version": "2.3.0",
+      "license": "Unicode-3.0",
+      "url": "https://github.com/unicode-org/icu4x"
+    },
+    {
       "name": "icu_collections",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },
     {
       "name": "icu_locale_core",
-      "version": "2.2.0",
+      "version": "2.3.0",
+      "license": "Unicode-3.0",
+      "url": "https://github.com/unicode-org/icu4x"
+    },
+    {
+      "name": "icu_locale_fallback",
+      "version": "2.3.0",
+      "license": "Unicode-3.0",
+      "url": "https://github.com/unicode-org/icu4x"
+    },
+    {
+      "name": "icu_locale_fallback_data",
+      "version": "2.3.0",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },
     {
       "name": "icu_normalizer",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },
     {
       "name": "icu_normalizer_data",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },
     {
       "name": "icu_properties",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },
     {
       "name": "icu_properties_data",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },
     {
       "name": "icu_provider",
-      "version": "2.2.0",
+      "version": "2.3.1",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },
@@ -3879,7 +3897,7 @@
     },
     {
       "name": "tinystr",
-      "version": "0.8.3",
+      "version": "0.8.4",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },
@@ -4220,6 +4238,12 @@
       "url": "https://github.com/SimonSapin/rust-utf8"
     },
     {
+      "name": "utf16_iter",
+      "version": "1.0.5",
+      "license": "Apache-2.0 OR MIT",
+      "url": "https://github.com/hsivonen/utf16_iter"
+    },
+    {
       "name": "utf8_iter",
       "version": "1.0.4",
       "license": "Apache-2.0 OR MIT",
@@ -4322,8 +4346,14 @@
       "url": "https://github.com/RustCrypto/elliptic-curves"
     },
     {
+      "name": "write16",
+      "version": "1.0.0",
+      "license": "Apache-2.0 OR MIT",
+      "url": "https://github.com/hsivonen/write16"
+    },
+    {
       "name": "writeable",
-      "version": "0.6.3",
+      "version": "0.6.4",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },
@@ -4389,19 +4419,19 @@
     },
     {
       "name": "zerotrie",
-      "version": "0.2.4",
+      "version": "0.2.5",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },
     {
       "name": "zerovec",
-      "version": "0.11.6",
+      "version": "0.11.8",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },
     {
       "name": "zerovec-derive",
-      "version": "0.11.3",
+      "version": "0.11.6",
       "license": "Unicode-3.0",
       "url": "https://github.com/unicode-org/icu4x"
     },

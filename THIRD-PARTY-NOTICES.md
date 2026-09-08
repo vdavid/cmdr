@@ -6,9 +6,9 @@ the app, with its license, and reproduces the license texts in full.
 Generated from `Cargo.lock` and `pnpm-lock.yaml` by `pnpm check third-party-notices`. Don't edit it
 by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices.go` instead.
 
-- Rust crates: 744
+- Rust crates: 749
 - npm packages: 125
-- Distinct license texts: 331
+- Distinct license texts: 330
 
 ## Rust crates
 
@@ -25,7 +25,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **alloc-no-stdlib** 2.0.4, BSD-3-Clause, <https://github.com/dropbox/rust-alloc-no-stdlib>
 - **alloc-stdlib** 0.2.4, BSD-3-Clause, <https://github.com/dropbox/rust-alloc-no-stdlib>
 - **allocator-api2** 0.2.21, MIT OR Apache-2.0, <https://github.com/zakarumych/allocator-api2>
-- **alphanumeric-sort** 1.5.8, MIT, <https://github.com/magiclen/alphanumeric-sort>
 - **anyhow** 1.0.103, MIT OR Apache-2.0, <https://github.com/dtolnay/anyhow>
 - **arboard** 3.6.1, MIT OR Apache-2.0, <https://github.com/1Password/arboard>
 - **arc-swap** 1.9.2, MIT OR Apache-2.0, <https://github.com/vorner/arc-swap>
@@ -323,13 +322,17 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **iana-time-zone** 0.1.65, MIT OR Apache-2.0, <https://github.com/strawlab/iana-time-zone>
 - **icns** 0.4.0, MIT, <https://github.com/mdsteele/rust-icns>
 - **ico** 0.5.0, MIT, <https://github.com/mdsteele/rust-ico>
-- **icu_collections** 2.2.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
-- **icu_locale_core** 2.2.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
-- **icu_normalizer** 2.2.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
-- **icu_normalizer_data** 2.2.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
-- **icu_properties** 2.2.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
-- **icu_properties_data** 2.2.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
-- **icu_provider** 2.2.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **icu_collator** 2.3.1, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **icu_collator_data** 2.3.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **icu_collections** 2.3.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **icu_locale_core** 2.3.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **icu_locale_fallback** 2.3.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **icu_locale_fallback_data** 2.3.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **icu_normalizer** 2.3.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **icu_normalizer_data** 2.3.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **icu_properties** 2.3.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **icu_properties_data** 2.3.0, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **icu_provider** 2.3.1, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **ident_case** 1.0.1, MIT OR Apache-2.0, <https://github.com/TedDriggs/ident_case>
 - **idna** 1.1.0, MIT OR Apache-2.0, <https://github.com/servo/rust-url/>
 - **idna_adapter** 1.2.2, Apache-2.0 OR MIT, <https://github.com/hsivonen/idna_adapter>
@@ -658,7 +661,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **time** 0.3.55, MIT OR Apache-2.0, <https://github.com/time-rs/time>
 - **time-core** 0.1.9, MIT OR Apache-2.0, <https://github.com/time-rs/time>
 - **time-macros** 0.2.32, MIT OR Apache-2.0, <https://github.com/time-rs/time>
-- **tinystr** 0.8.3, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **tinystr** 0.8.4, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **tinyvec** 1.11.0, Zlib OR Apache-2.0 OR MIT, <https://github.com/Lokathor/tinyvec>
 - **tinyvec_macros** 0.1.1, MIT OR Apache-2.0 OR Zlib, <https://github.com/Soveu/tinyvec_macros>
 - **tokio** 1.53.1, MIT, <https://github.com/tokio-rs/tokio>
@@ -715,6 +718,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **urlpattern** 0.3.0, MIT, <https://github.com/denoland/rust-urlpattern>
 - **usearch** 2.26.0, Apache-2.0, <https://github.com/unum-cloud/USearch>
 - **utf-8** 0.7.6, MIT OR Apache-2.0, <https://github.com/SimonSapin/rust-utf8>
+- **utf16_iter** 1.0.5, Apache-2.0 OR MIT, <https://github.com/hsivonen/utf16_iter>
 - **utf8_iter** 1.0.4, Apache-2.0 OR MIT, <https://github.com/hsivonen/utf8_iter>
 - **uuid** 1.24.0, Apache-2.0 OR MIT, <https://github.com/uuid-rs/uuid>
 - **uzers** 0.12.2, MIT, <https://github.com/rustadopt/uzers-rs>
@@ -732,7 +736,8 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **winnow** 0.7.15, MIT, <https://github.com/winnow-rs/winnow>
 - **winnow** 1.0.3, MIT, <https://github.com/winnow-rs/winnow>
 - **wnaf** 0.14.1, Apache-2.0 OR MIT, <https://github.com/RustCrypto/elliptic-curves>
-- **writeable** 0.6.3, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **write16** 1.0.0, Apache-2.0 OR MIT, <https://github.com/hsivonen/write16>
+- **writeable** 0.6.4, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **wry** 0.55.1, Apache-2.0 OR MIT, <https://github.com/tauri-apps/wry>
 - **xattr** 1.6.1, MIT OR Apache-2.0, <https://github.com/Stebalien/xattr>
 - **y4m** 0.8.0, MIT, <https://github.com/image-rs/y4m.git>
@@ -743,9 +748,9 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **zerofrom** 0.1.8, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **zerofrom-derive** 0.1.7, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **zeroize** 1.9.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/utils>
-- **zerotrie** 0.2.4, Unicode-3.0, <https://github.com/unicode-org/icu4x>
-- **zerovec** 0.11.6, Unicode-3.0, <https://github.com/unicode-org/icu4x>
-- **zerovec-derive** 0.11.3, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **zerotrie** 0.2.5, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **zerovec** 0.11.8, Unicode-3.0, <https://github.com/unicode-org/icu4x>
+- **zerovec-derive** 0.11.6, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **zip** 8.6.0, MIT, <https://github.com/zip-rs/zip2>
 - **zlib-rs** 0.6.5, Zlib, <https://github.com/trifectatechfoundation/zlib-rs>
 - **zmij** 1.0.21, MIT, <https://github.com/dtolnay/zmij>
@@ -3954,36 +3959,6 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: alphanumeric-sort 1.5.8
-
-Text from: `LICENSE`
-
-```text
-MIT License
-
-Copyright (c) 2018 magiclen.org (Ron Li)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
 Covers: arboard 3.6.1
 
 Text from: `LICENSE-MIT.txt`
@@ -5257,7 +5232,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ### MIT
 
-Covers: chardetng 0.1.17, encoding_rs 0.8.35, utf8_iter 1.0.4
+Covers: chardetng 0.1.17, encoding_rs 0.8.35, utf16_iter 1.0.5, utf8_iter 1.0.4, write16 1.0.0
 
 Text from: `LICENSE-MIT`
 
@@ -14072,7 +14047,7 @@ defined by the Mozilla Public License, v. 2.0.
 
 ### Unicode-3.0
 
-Covers: icu_collections 2.2.0, icu_locale_core 2.2.0, icu_normalizer 2.2.0, icu_normalizer_data 2.2.0, icu_properties 2.2.0, icu_properties_data 2.2.0, icu_provider 2.2.0, litemap 0.8.2, potential_utf 0.1.5, tinystr 0.8.3, writeable 0.6.3, yoke 0.8.3, yoke-derive 0.8.2, zerofrom 0.1.8, zerofrom-derive 0.1.7, zerotrie 0.2.4, zerovec 0.11.6, zerovec-derive 0.11.3
+Covers: icu_collator 2.3.1, icu_collator_data 2.3.0, icu_collections 2.3.0, icu_locale_core 2.3.0, icu_locale_fallback 2.3.0, icu_locale_fallback_data 2.3.0, icu_normalizer 2.3.0, icu_normalizer_data 2.3.0, icu_properties 2.3.0, icu_properties_data 2.3.0, icu_provider 2.3.1, litemap 0.8.2, potential_utf 0.1.5, tinystr 0.8.4, writeable 0.6.4, yoke 0.8.3, yoke-derive 0.8.2, zerofrom 0.1.8, zerofrom-derive 0.1.7, zerotrie 0.2.5, zerovec 0.11.8, zerovec-derive 0.11.6
 
 Text from: `LICENSE`
 
