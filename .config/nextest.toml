@@ -156,6 +156,27 @@ slow-timeout = { period = "75s", terminate-after = 1 }
 filter = 'test(smb_integration_)'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
+[[profile.default.overrides]]
+# `cmdr-git`'s virtual-category tests, which build their fixtures by shelling out to
+# real `git` (stash create, worktree add, submodule add — `test_fixtures::git_cli`,
+# because gix exposes no public API for those three). Each test pays a handful of
+# process spawns before it asserts anything, and spawning is the first thing to
+# degrade once the suite saturates every core.
+#
+# The 8 s default is sized for an in-process test and leaves them no margin. Measured
+# 2026-09-08 on an M3 Max, `cargo nextest run -p cmdr-git -E '<this filter>'` runs all
+# 23 in 0.50 s wall-clock, the slowest single test being 0.50 s — yet a loaded
+# full-suite run had 11 of them killed at the 8 s cap, and `profile.contention-probe`
+# then cleared every one alone at that same cap. Starved, not slow. 30 s is ~60x the
+# slowest real runtime: enough that only a genuine hang (a `git` blocking on a
+# credential prompt, say) fails, which is what the `smb_integration_` block above buys
+# for the same reason.
+#
+# ❗ Not a runtime. If these ever stop shelling out to `git`, delete this block rather
+# than keep the headroom.
+filter = 'package(cmdr-git) & (test(category_tests::) + test(column_meta_tests::))'
+slow-timeout = { period = "30s", terminate-after = 1 }
+
 # Real OS file-watcher delivery is inherently laggy AND lossy under load on
 # macOS: FSEvents is documented as "~100 ms idle, seconds under load" (see
 # `file_viewer/CLAUDE.md`). Under a saturated full-suite run (every core busy)
