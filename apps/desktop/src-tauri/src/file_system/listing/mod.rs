@@ -3,6 +3,7 @@
 pub(crate) mod brief_columns;
 pub(crate) mod cached_listing;
 pub(crate) mod caching;
+pub(crate) mod collation;
 pub(crate) mod diff;
 pub(crate) mod diff_emitter;
 pub(crate) mod fuzzy_jump;

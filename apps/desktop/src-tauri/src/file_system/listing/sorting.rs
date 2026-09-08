@@ -1,7 +1,10 @@
 //! Sorting configuration and logic for file listings.
 
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
 
+use crate::file_system::listing::collation::{NameCollator, NameKey, active_collator};
 use crate::file_system::listing::metadata::FileEntry;
 
 // ============================================================================
@@ -60,6 +63,16 @@ pub enum DirectorySortMode {
 pub trait SortableEntry {
     /// The row's own file name (the last path component).
     fn name(&self) -> &str;
+    /// How this row's name ranks against another's.
+    ///
+    /// The default asks the collator live, which is what the one-off callers
+    /// want (`insert_entry_sorted` probes ~17 rows to place one entry in a 100k
+    /// listing). [`sort_entries`] overrides it through [`Keyed`], answering from
+    /// a key built once per row, so a bulk sort pays one key per row instead of
+    /// one collation per comparison. `DETAILS.md` § "Collating names".
+    fn compare_name(&self, other: &Self, collator: &NameCollator) -> std::cmp::Ordering {
+        collator.compare(self.name(), other.name())
+    }
     fn is_directory(&self) -> bool;
     /// Logical size in bytes, `None` when unknown.
     fn size(&self) -> Option<u64>;
@@ -119,9 +132,46 @@ fn extract_extension_for_sort(name: &str) -> (bool, bool, String) {
     (false, false, String::new())
 }
 
-/// Compares two strings using natural (alphanumeric) sort, case-insensitive.
-fn compare_names_natural(a: &str, b: &str) -> std::cmp::Ordering {
-    alphanumeric_sort::compare_str(a.to_lowercase(), b.to_lowercase())
+/// A row paired with the collation key for its name, so a bulk sort collates
+/// each name once instead of once per comparison.
+///
+/// Private on purpose: it exists to feed [`entry_comparator`], never to become a
+/// second way to describe a row.
+struct Keyed<'a, E: ?Sized> {
+    row: &'a E,
+    name_key: NameKey,
+}
+
+impl<E: SortableEntry + ?Sized> SortableEntry for Keyed<'_, E> {
+    fn name(&self) -> &str {
+        self.row.name()
+    }
+    /// The whole point of the wrapper: rank on the prebuilt keys, then apply the
+    /// same raw-name tiebreak [`NameCollator::compare`] ends with, so both
+    /// readings of the order stay identical.
+    fn compare_name(&self, other: &Self, _collator: &NameCollator) -> std::cmp::Ordering {
+        self.name_key
+            .compare(&other.name_key)
+            .then_with(|| self.name().as_bytes().cmp(other.name().as_bytes()))
+    }
+    fn is_directory(&self) -> bool {
+        self.row.is_directory()
+    }
+    fn size(&self) -> Option<u64> {
+        self.row.size()
+    }
+    fn modified_at(&self) -> Option<u64> {
+        self.row.modified_at()
+    }
+    fn created_at(&self) -> Option<u64> {
+        self.row.created_at()
+    }
+    fn recursive_size(&self) -> Option<u64> {
+        self.row.recursive_size()
+    }
+    fn recursive_size_complete(&self) -> Option<bool> {
+        self.row.recursive_size_complete()
+    }
 }
 
 /// The directory's recursive size for sorting, or `None` when it's unknown.
@@ -145,11 +195,20 @@ fn known_dir_size<E: SortableEntry + ?Sized>(e: &E) -> Option<u64> {
 /// Directories always come first, then files. Within each group the comparator
 /// applies the requested column, order, and directory sort mode (including the
 /// `recursive_size: None` sorts-last rule for Size).
+///
+/// Names rank by Unicode collation, resolved through [`SortableEntry::compare_name`]
+/// so a caller that prebuilt its keys and one comparing live get the same order.
+/// `collation.rs`, and `DETAILS.md` § "Collating names".
 pub fn entry_comparator<E: SortableEntry + ?Sized>(
     sort_by: SortColumn,
     sort_order: SortOrder,
     dir_sort_mode: DirectorySortMode,
 ) -> impl Fn(&E, &E) -> std::cmp::Ordering {
+    // Resolved once per sort, not once per comparison: `active_collator` reads
+    // the live UI locale, and a language switch mid-sort would otherwise reorder
+    // rows against each other and break the strict-weak-ordering `sort_by` needs.
+    let collator: Arc<NameCollator> = active_collator();
+
     move |a, b| {
         // Directories always come first
         match (a.is_directory(), b.is_directory()) {
@@ -160,7 +219,7 @@ pub fn entry_comparator<E: SortableEntry + ?Sized>(
 
         // For directories in AlwaysByName mode, sort by name regardless of column
         if a.is_directory() && b.is_directory() && dir_sort_mode == DirectorySortMode::AlwaysByName {
-            let name_cmp = compare_names_natural(a.name(), b.name());
+            let name_cmp = a.compare_name(b, &collator);
             return match sort_order {
                 SortOrder::Ascending => name_cmp,
                 SortOrder::Descending => name_cmp.reverse(),
@@ -185,7 +244,7 @@ pub fn entry_comparator<E: SortableEntry + ?Sized>(
             return match (a_known, b_known) {
                 (None, None) => {
                     // Both unknown: sort by name, respecting sort order
-                    let cmp = compare_names_natural(a.name(), b.name());
+                    let cmp = a.compare_name(b, &collator);
                     match sort_order {
                         SortOrder::Ascending => cmp,
                         SortOrder::Descending => cmp.reverse(),
@@ -196,7 +255,7 @@ pub fn entry_comparator<E: SortableEntry + ?Sized>(
                 (Some(a_size), Some(b_size)) => {
                     let cmp = a_size.cmp(&b_size);
                     let cmp = if cmp == std::cmp::Ordering::Equal {
-                        compare_names_natural(a.name(), b.name())
+                        a.compare_name(b, &collator)
                     } else {
                         cmp
                     };
@@ -210,7 +269,7 @@ pub fn entry_comparator<E: SortableEntry + ?Sized>(
 
         // Compare by the active sorting column
         let primary = match sort_by {
-            SortColumn::Name => compare_names_natural(a.name(), b.name()),
+            SortColumn::Name => a.compare_name(b, &collator),
             SortColumn::Extension => {
                 let (a_dotfile, a_has_ext, a_ext) = extract_extension_for_sort(a.name());
                 let (b_dotfile, b_has_ext, b_ext) = extract_extension_for_sort(b.name());
@@ -219,15 +278,15 @@ pub fn entry_comparator<E: SortableEntry + ?Sized>(
                 match (a_dotfile, b_dotfile) {
                     (true, false) => std::cmp::Ordering::Less,
                     (false, true) => std::cmp::Ordering::Greater,
-                    (true, true) => compare_names_natural(a.name(), b.name()),
+                    (true, true) => a.compare_name(b, &collator),
                     (false, false) => match (a_has_ext, b_has_ext) {
                         (false, true) => std::cmp::Ordering::Less,
                         (true, false) => std::cmp::Ordering::Greater,
-                        (false, false) => compare_names_natural(a.name(), b.name()),
+                        (false, false) => a.compare_name(b, &collator),
                         (true, true) => {
-                            let ext_cmp = alphanumeric_sort::compare_str(&a_ext, &b_ext);
+                            let ext_cmp = collator.compare(&a_ext, &b_ext);
                             if ext_cmp == std::cmp::Ordering::Equal {
-                                compare_names_natural(a.name(), b.name())
+                                a.compare_name(b, &collator)
                             } else {
                                 ext_cmp
                             }
@@ -236,19 +295,19 @@ pub fn entry_comparator<E: SortableEntry + ?Sized>(
                 }
             }
             SortColumn::Size => match (a.size(), b.size()) {
-                (None, None) => compare_names_natural(a.name(), b.name()),
+                (None, None) => a.compare_name(b, &collator),
                 (None, Some(_)) => std::cmp::Ordering::Less,
                 (Some(_), None) => std::cmp::Ordering::Greater,
                 (Some(a_size), Some(b_size)) => a_size.cmp(&b_size),
             },
             SortColumn::Modified => match (a.modified_at(), b.modified_at()) {
-                (None, None) => compare_names_natural(a.name(), b.name()),
+                (None, None) => a.compare_name(b, &collator),
                 (None, Some(_)) => std::cmp::Ordering::Less,
                 (Some(_), None) => std::cmp::Ordering::Greater,
                 (Some(a_time), Some(b_time)) => a_time.cmp(&b_time),
             },
             SortColumn::Created => match (a.created_at(), b.created_at()) {
-                (None, None) => compare_names_natural(a.name(), b.name()),
+                (None, None) => a.compare_name(b, &collator),
                 (None, Some(_)) => std::cmp::Ordering::Less,
                 (Some(_), None) => std::cmp::Ordering::Greater,
                 (Some(a_time), Some(b_time)) => a_time.cmp(&b_time),
@@ -265,16 +324,95 @@ pub fn entry_comparator<E: SortableEntry + ?Sized>(
 
 /// Sorts file entries by the specified column and order.
 /// Directories always come first, then files.
-/// Uses natural sorting for string comparisons (for example, "img_2" before "img_10").
+/// Names order by Unicode collation, so digit runs compare numerically ("img_2"
+/// before "img_10") and an accent's spelling doesn't decide anything.
 ///
 /// `dir_sort_mode` controls how directories are sorted among themselves:
 /// - `LikeFiles`: directories sort by the same column as files (using `recursive_size` for Size)
 /// - `AlwaysByName`: directories always sort by name, regardless of the active sort column
+///
+/// Collates each name ONCE into a [`NameKey`] and sorts on those, rather than
+/// collating a pair per comparison: a 100k listing does 100k collations instead
+/// of ~1.7M. `DETAILS.md` § "Collating names" carries the measurement.
 pub fn sort_entries(
     entries: &mut [FileEntry],
     sort_by: SortColumn,
     sort_order: SortOrder,
     dir_sort_mode: DirectorySortMode,
 ) {
-    entries.sort_by(entry_comparator(sort_by, sort_order, dir_sort_mode));
+    let mut order: Vec<u32> = (0..entries.len() as u32).collect();
+
+    // Scoped so the keys (and the comparator holding their lifetime) release
+    // their borrow of `entries` before the permutation moves rows around.
+    {
+        let collator = active_collator();
+        let keyed: Vec<Keyed<'_, FileEntry>> = entries
+            .iter()
+            .map(|row| Keyed {
+                row,
+                name_key: collator.key(&row.name),
+            })
+            .collect();
+
+        let comparator = entry_comparator::<Keyed<'_, FileEntry>>(sort_by, sort_order, dir_sort_mode);
+        order.sort_by(|a, b| comparator(&keyed[*a as usize], &keyed[*b as usize]));
+    }
+
+    // `order[i]` names the row that belongs AT position `i`; the applier below
+    // wants the other direction, where each row currently sitting at `i` GOES.
+    let mut destination = vec![0u32; order.len()];
+    for (position, &source) in order.iter().enumerate() {
+        destination[source as usize] = position as u32;
+    }
+    apply_permutation(entries, &mut destination);
+}
+
+/// Moves the row at each index `i` to `destination[i]`.
+///
+/// Follows each cycle rather than allocating a second `Vec<FileEntry>`: a 100k
+/// listing's rows are large enough that cloning them costs more than the sort
+/// does. `destination` is scratch and ends as the identity permutation.
+fn apply_permutation(entries: &mut [FileEntry], destination: &mut [u32]) {
+    for start in 0..destination.len() {
+        // Walk this cycle until the slot holds the row that belongs in it. Every
+        // swap puts one row home, so the whole pass is O(n) moves.
+        while destination[start] != start as u32 {
+            let target = destination[start] as usize;
+            entries.swap(start, target);
+            destination.swap(start, target);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entry(name: &str) -> FileEntry {
+        FileEntry::new(name.to_string(), format!("/{name}"), false, false)
+    }
+
+    /// Reads as if it moved row `i` to `destination[i]`, in every direction a
+    /// cycle can run. The inverse of this permutation is a different order, and
+    /// applying that one instead is a silent, whole-listing scramble.
+    #[test]
+    fn apply_permutation_moves_each_row_to_its_destination() {
+        // A 3-cycle: A goes to slot 2, B to slot 0, C to slot 1.
+        let cases: [(&[u32], &[&str]); 4] = [
+            (&[2, 0, 1], &["B", "C", "A"]),
+            (&[1, 2, 0], &["C", "A", "B"]),
+            (&[0, 1, 2], &["A", "B", "C"]),
+            (&[1, 0, 2], &["B", "A", "C"]),
+        ];
+
+        for (destination, expected) in cases {
+            let mut entries = vec![entry("A"), entry("B"), entry("C")];
+            let mut scratch = destination.to_vec();
+            apply_permutation(&mut entries, &mut scratch);
+
+            let names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+            assert_eq!(names, expected, "applying {destination:?}");
+            assert_eq!(scratch, [0, 1, 2], "{destination:?} left scratch dirty");
+        }
+    }
 }

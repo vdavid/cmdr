@@ -44,7 +44,7 @@ pub use live_locale::observe_os_locale_changes;
 // `refresh_active_locale` is deliberately NOT re-exported: its only caller is
 // `live_locale.rs`, one module down, and re-exporting it would leave a dead
 // public name on every platform that has no live-locale observer.
-pub use native_strings::{menu_t, menu_t_with, set_language_preference};
+pub use native_strings::{active_locale, menu_t, menu_t_with, set_language_preference};
 
 /// One catalog we ship, plus the CLDR facts the resolver needs.
 ///

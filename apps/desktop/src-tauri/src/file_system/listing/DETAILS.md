@@ -298,6 +298,57 @@ order, and the caller re-orders the rows it already holds. The frontend delibera
 snapshot store's sort round-trips through this command. `apps/desktop/src/lib/search/DETAILS.md` § "The snapshot pane's
 row order".
 
+### Collating names
+
+`collation.rs` owns the one answer to "how do two names rank". It wraps an ICU4X `Collator` built for the locale
+`intl::active_locale()` reports, with numeric ordering on.
+
+**Why a collator and not code-point order.** macOS stores whatever bytes a writer hands it, so a single folder holds
+both spellings of an accented name: Cocoa writers emit NFD (`a` + U+0301), browsers and most others NFC (U+00E1).
+Comparing code points decides at that character and orders by the SPELLING, which put `…Dávid…-signed.pdf` above
+`…Dáviad…-araw.pdf` in a real `~/Downloads` (5 of its names were NFD, 7 NFC). Code points also rank by number rather
+than by category, which stranded every accented letter after `z` and every `_name` below every `2026-…` name, where
+Finder, Total Commander, and Explorer all put `_` first.
+
+**One order, two readings.** `NameCollator::compare` collates a pair live; `NameCollator::key` serializes one name's
+weights to bytes that sort the same way. The bulk `sort_entries` builds a key per row and sorts on those, so a 100k
+listing collates 100k times instead of ~1.7M; the incremental `insert_entry_sorted` compares live, because
+`partition_point` only probes ~17 rows to place one entry. `SortableEntry::compare_name` is where the two meet: the
+default asks the collator, and the private `Keyed` wrapper overrides it to read prebuilt keys.
+
+Prebuilt keys are what keep the collator affordable: collating live on every comparison measured ~4x SLOWER than the
+code-point comparator it replaced, and keying once per row lands ahead of it instead. On 100k synthetic names, sorting
+by Name, release build, M-series laptop, 2026-09-08: **105 ms, against 228 ms** for the previous
+`to_lowercase` + `alphanumeric-sort` comparator on the same rows. The new figure covers the whole of `sort_entries`
+(key building, the index sort, and the permutation).
+`sorting_test::the_bulk_sort_and_the_live_comparator_agree_on_unicode_names` and
+`collation::tests::a_key_ranks_names_the_way_compare_does` pin that they never diverge.
+
+**Both readings end with a raw-bytes tiebreak**, because the NFC and NFD spellings of one name carry identical
+collation weights and would otherwise compare `Equal`. Without a total order the watcher's re-read could order such a
+pair either way between two passes, and `compute_diff` would report a `DiffChangeType::Move` for a row that never
+moved.
+
+**❌ Never persist a `NameKey`.** The bytes are ICU4X's internal encoding, and a library or CLDR update may re-tune
+them. That is harmless while every key in a comparison came from the running binary, and silently wrong the moment a
+stored key meets a fresh one.
+
+**On the `unstable` feature.** `write_sort_key_to` sits behind `icu_collator`'s `unstable` flag, which ICU4X exempts
+from semver (it may change in a minor release). Every shape that change can take is a compile error, since the only
+surface used is that one call and `Vec<u8>`'s upstream `CollationKeySink` impl; `Cargo.lock` is committed, so a break
+arrives as a red Renovate PR rather than on `main`. What type checking cannot see is a change to the key BYTES, which
+is what the never-persist rule and the ordering tests above cover.
+
+**Locale changes are pulled, not pushed.** `active_collator` caches one collator per locale tag and re-reads
+`intl::active_locale()` on each call, so the next sort after an OS language switch uses the new language. Listings
+already sorted keep their order until something re-reads them, exactly as they do when the sort column changes.
+
+`sort_entries` sorts indices and then permutes the rows in place by cycle-following, rather than building a second
+`Vec<FileEntry>`: a row is large enough that cloning 100k of them would cost more than the sort. Note the direction
+flip before `apply_permutation` — `order[i]` names the row that belongs AT `i`, and the applier wants where the row
+currently at `i` GOES. Applying the un-inverted permutation scrambles the whole listing without failing anything
+loudly, so `sorting::tests::apply_permutation_moves_each_row_to_its_destination` covers each cycle shape.
+
 ## Decisions
 
 - **Streaming with a background task, not chunked IPC**: chunked needs multiple IPC calls and complex state tracking.
@@ -307,8 +358,9 @@ row order".
 - **Three-stage progress (opening → progress → read-complete → complete)**: `listing-opening` (about to start slow
   I/O), `listing-progress` (loaded N, every 200 ms via `list_directory_core_with_progress`), `listing-read-complete`
   (all read, sorting now), `listing-complete` (ready to render).
-- **Sort after read, before caching**: the frontend expects sorted order. Sorting 50k entries takes ~15 ms, done in the
-  background task after all entries are collected.
+- **Sort after read, before caching**: the frontend expects sorted order, and the sort runs in the background task
+  after all entries are collected. Cost is ~105 ms per 100k entries (§ "Collating names"), well under the I/O it
+  follows.
 - **Enrichment at cache-write time, not on `get_file_range`**: every path that stores entries (streaming, watcher
   update, re-sort) enriches first. Index freshness is event-driven: `index-dir-updated` → `refreshIndexSizes` →
   `refresh_listing_index_sizes` (write-locks the cache, re-enriches entries). This keeps `get_listing_stats` read-only
