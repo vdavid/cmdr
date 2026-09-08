@@ -372,8 +372,8 @@ fn find_ns_submenu(parent: &NSMenu, title: &str) -> Option<Retained<NSMenu>> {
 ///
 /// Re-pointing `NSApplication.servicesMenu` at the displayed menu does NOT work — the setter is
 /// ignored once AppKit owns one — so this goes the other way and hangs AppKit's own menu off the
-/// displayed item. The managed menu is still a submenu of muda's build-time menu, and AppKit raises
-/// `NSInternalInconsistencyException` on a second parent, so it is detached first.
+/// displayed item, via `detach_from_supermenu` (it is still muda's build-time submenu at that
+/// point).
 ///
 /// Runs with the rest of this pass after every `app.set_menu()`, because a swap installs a fresh
 /// item. Idempotent, and a no-op while the viewer menu is up (it has no Services item).
@@ -407,21 +407,31 @@ fn adopt_installed_services_menu<R: Runtime>(mtm: MainThreadMarker, menu: &Menu<
     {
         return;
     }
-    // SAFETY: `supermenu` is unsafe only because the reference is unretained; it is read and used
-    // inside this synchronous main-thread call, so the parent can't go away underneath it.
-    if let Some(parent) = unsafe { managed.supermenu() } {
-        let index = parent.indexOfItemWithSubmenu(Some(&managed));
-        if index >= 0
-            && let Some(owner) = parent.itemAtIndex(index)
-        {
-            owner.setSubmenu(None);
-        }
-    }
+    detach_from_supermenu(&managed);
     item.setSubmenu(Some(&managed));
 }
 
+/// Takes `menu` off whatever item currently shows it, and hands that item back.
+///
+/// An `NSMenu` can have exactly one supermenu, and AppKit raises
+/// `NSInternalInconsistencyException` ("Menu to be set as submenu is already a submenu of some
+/// menu") when a second item claims it, so every re-parent starts here. The returned item is who
+/// to hand it back to; `services_context.rs` restores the loan with it.
+pub(super) fn detach_from_supermenu(menu: &NSMenu) -> Option<Retained<NSMenuItemAppKit>> {
+    // SAFETY: `supermenu` is unsafe only because the reference is unretained; it is read and used
+    // inside this synchronous main-thread call, so the parent can't go away underneath it.
+    let parent = unsafe { menu.supermenu() }?;
+    let index = parent.indexOfItemWithSubmenu(Some(menu));
+    if index < 0 {
+        return None;
+    }
+    let owner = parent.itemAtIndex(index)?;
+    owner.setSubmenu(None);
+    Some(owner)
+}
+
 /// The item in `menu` with this title. Separators carry an empty title, so they never match.
-fn find_ns_item(menu: &NSMenu, title: &str) -> Option<Retained<NSMenuItemAppKit>> {
+pub(super) fn find_ns_item(menu: &NSMenu, title: &str) -> Option<Retained<NSMenuItemAppKit>> {
     (0..menu.numberOfItems())
         .filter_map(|index| menu.itemAtIndex(index))
         .find(|item| !item.isSeparatorItem() && item.title().to_string() == title)

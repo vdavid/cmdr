@@ -41,6 +41,8 @@ mod mnemonics;
 pub mod open_with;
 mod rebuild;
 #[cfg(target_os = "macos")]
+mod services_context;
+#[cfg(target_os = "macos")]
 mod tag_icons;
 mod view_mode_items;
 
@@ -75,6 +77,8 @@ pub use menu_structure::{
     build_tab_context_menu, build_viewer_menu, build_volume_row_context_menu,
 };
 pub use rebuild::rebuild_menu_bar;
+#[cfg(target_os = "macos")]
+pub use services_context::lend_services_menu;
 pub use view_mode_items::{rebuild_view_mode_items, sync_view_mode_check_states};
 
 /// `settings-changed`: a CheckMenuItem toggle (currently only "Show hidden

@@ -102,6 +102,13 @@ pub const DRIVE_COPY_LINK_ID: &str = "drive_copy_link";
 #[cfg(target_os = "macos")]
 pub const SHARE_ID: &str = "share";
 
+/// Submenu ID for `Services` in the file context menu (macOS). Never handled: AppKit
+/// fills the submenu and performs the pick, so the item itself is never clicked. It
+/// carries an ID at all so `menu.get()` can find it and the id stays out of the
+/// auto-generated space. `menu/services_context.rs`.
+#[cfg(target_os = "macos")]
+pub const SERVICES_CONTEXT_ID: &str = "services_context";
+
 /// Menu item IDs for the per-folder image-search exclusion (media_index privacy veto).
 /// Shown on a folder's context menu only while image indexing is enabled; exactly one
 /// of the two appears, keyed on whether the folder is already excluded. Handled

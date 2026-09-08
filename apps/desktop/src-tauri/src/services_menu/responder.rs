@@ -107,6 +107,12 @@ define_class!(
                 log::debug!(target: "services_menu", "A service asked for the selection and there was none");
                 return Bool::NO;
             }
+            log::debug!(
+                target: "services_menu",
+                "Writing {} path(s) to the services pasteboard, starting with {}",
+                paths.len(),
+                paths.first().map_or("", String::as_str)
+            );
             let items = build_pasteboard_items(&paths);
             pboard.clearContents();
             Bool::new(pboard.writeObjects(&items))

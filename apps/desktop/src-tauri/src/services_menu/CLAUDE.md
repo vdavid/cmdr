@@ -1,16 +1,19 @@
 # Services menu (macOS)
 
-Makes `Cmdr > Services` show the file services Finder shows. macOS only; nothing else has one.
+Makes `Cmdr > Services` and the right-click menu's `Services` show the file services Finder shows. macOS only; nothing
+else has one.
 
 ## Module map
 
 - `mod.rs`: `install()`, called from `setup` BEFORE the menu bar is built (`lib.rs`).
 - `responder.rs`: the send-type registration and `CmdrServicesResponder`, the `NSResponder` subclass that answers
   `validRequestorForSendType:returnType:` and writes the pasteboard. All AppKit, all main-thread.
-- `selection.rs`: what the menu acts on, pushed by the frontend. No AppKit, fully unit-tested.
+- `selection.rs`: what the menu acts on, pushed by the frontend, plus the context-menu override. No AppKit, fully
+  unit-tested.
 
-The third piece lives elsewhere: `menu/macos_appkit.rs`'s `adopt_installed_services_menu`, because it's a menu-bar
-fix-up that has to re-run after every `app.set_menu()`.
+Two pieces live elsewhere, both menu-side: `../menu/macos_appkit.rs`'s `adopt_installed_services_menu` (a menu-bar
+fix-up that re-runs after every `app.set_menu()`) and `../menu/services_context.rs` (the right-click menu's item, and
+the loan of AppKit's menu to it).
 
 ## Must-knows
 
@@ -32,6 +35,9 @@ fix-up that has to re-run after every `app.set_menu()`.
 - **The frontend decides whether a pane may offer rows at all** (`paneRowsAreOsVisible` over `capabilitiesForPane`), so
   a phone, an archive's insides, the `.git` portal, and the host list push nothing.
 - **Finder's rule, both ends**: with a selection, act on the selection; with none, act on the cursor row.
+- **A context menu OVERRIDES all of that with the right-clicked rows** (`set_context_target`), because right-clicking
+  a row outside the selection acts on that row alone. ❌ Never set it without the `ServicesLoan` that clears it: a
+  leftover target would aim the menu bar's Services at a file the user has moved on from.
 - **Main window only.** Settings and the viewer have no pane selection, so they keep the plain menu.
 
 Why each of those, the responder-chain measurements, what was rejected, and what is deliberately still out:

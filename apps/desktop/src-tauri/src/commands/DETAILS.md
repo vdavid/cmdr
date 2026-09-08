@@ -181,6 +181,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   tab / network host), the view-mode + hidden-files + pin-tab + reopen-tab sync commands, and `activate_window_menu`
   (per-window focus-gain: swaps the macOS app menu bar between main/viewer, then enables/disables file-scoped items via
   the private `set_menu_context` helper; see `menu/DETAILS.md`).
+  - ❗ **`show_file_context_menu` holds a `ServicesLoan` across `popup()`** (macOS): AppKit's one Services menu is
+    borrowed for the life of the menu and pointed at the right-clicked rows. `popup()` runs the whole tracking loop, so
+    the binding is `let _services_loan = …` and ❌ never `let _ = …`; see `menu/DETAILS.md` § Services in the
+    right-click menu.
   - ❗ **`show_volume_row_context_menu` takes an optional `ServerRowMenu`**, and a server row gets Open / Edit server… /
     Disconnect / Pin or Unpin / Forget saved password / Forget server instead of Eject: "Eject" promises safe-to-unplug
     and a server has nothing to unplug. The CALLER says which items apply (this command is synchronous, and a

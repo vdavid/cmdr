@@ -153,9 +153,34 @@ Development:       Activity Monitor, Allocations & Leaks, File Activity, System 
 On the `..` row with nothing selected, the pane offers nothing and the menu correctly falls back to the four
 Development items — the same list it showed before this feature, which is what "no files to give" should look like.
 
+## The right-click menu's Services submenu
+
+The file context menu carries the same submenu, and the mechanism that gets AppKit's menu onto it lives in
+`../menu/services_context.rs` (see `../menu/DETAILS.md` § "Services in the right-click menu"). What belongs to this
+module is the answer it acts on.
+
+**A context menu asks a different question than the menu bar does.** Finder's rule has two halves, and only the first
+one is what `SELECTION` holds: right-clicking a row that IS part of the selection acts on the whole selection, and
+right-clicking one that ISN'T acts on that row alone. So while a context menu is up, the pane selection is the wrong
+answer — a user who right-clicks one file and gets another one AirDropped has lost a file to the wrong person, which is
+the kind of bug this module exists to not have.
+
+`CONTEXT_TARGET` carries the right-clicked rows for exactly as long as the menu is up. It is set and cleared by
+`ServicesLoan`, which also owns the borrowed `NSMenu`, so the two can't drift apart. `resolve_target` prefers it over
+everything: it REPLACES the selection rather than standing in for a missing one, so § Fallbacks' cursor row never
+applies to a context menu (the frontend has already resolved what was right-clicked).
+
+Resolved paths, not indices, unlike the pane push: `MenuState.context.paths` is already resolved by the time the menu
+is built, and a context menu is one gesture rather than a stream of them, so the reason for indices doesn't apply.
+
+**Why the loan can be cleared the moment `popup()` returns**, rather than deferred in case AppKit performs the service
+later: it doesn't. Measured on macOS 26.6.2, 2026-09-09, picking "Reveal in Nimble Commander" from the context menu's
+submenu: the pasteboard write landed at `00:39:59.141` and the hand-back at `00:39:59.243`, 102 ms later, so the whole
+service performance happens inside the tracking loop. The same run confirmed both halves of the rule end to end (a
+right-click on an unselected folder wrote that folder's path with two other rows selected; a right-click inside a
+two-row selection wrote both), and that `Cmdr > Services` was back on the pane selection immediately afterwards.
+
 ## Deliberately out of scope
 
-- **The Services submenu inside Cmdr's own right-click menu.** It would need the `NSApp.servicesMenu` swap trick and is
-  a separate step.
 - **A "Quick Actions" submenu.**
 - **`NSApp.servicesProvider`**, the other direction: publishing Cmdr's own services so it appears in other apps' menus.

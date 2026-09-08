@@ -1335,7 +1335,9 @@ open in the default app, or ask. The decision is a pure function; the UI is a sm
 
 The native context menu's `Share…` (macOS) opens the system share sheet on the right-clicked selection. The picker and
 its anchoring live in Rust (`src-tauri/src/file_system/DETAILS.md` § "Share sheet"); what this directory owns is WHETHER
-the item appears, pushed as `PaneContextMenuFacts.canShare` from `pane-pointer.ts::handleContextMenu`.
+the item appears, pushed as `PaneContextMenuFacts.canShare` from `pane-pointer.ts::handleContextMenu`. The same flag
+gates the context menu's `Services` submenu, which asks the same question for the same reason (a macOS service takes
+file URLs too): `src-tauri/src/menu/DETAILS.md` § "Services in the right-click menu".
 
 The share sheet takes file URLs, so the question is whether the right-clicked ROW has a real file behind it, and it
 needs three inputs rather than one kind lookup (`rowIsOsVisible` in `volume-capabilities.ts`):
@@ -1380,6 +1382,10 @@ What this directory owns is the payload, built by the pure `services-selection.t
   fields empty, leaving the Services menu exactly as it was before this feature.
 - **Both panes run the effect; only the focused one pushes**, same as the menu context. Taking focus is itself a
   trigger, so the newly-focused pane overwrites the other's push.
+
+This push is the MENU BAR's answer. The right-click menu's `Services` submenu overrides it with the right-clicked rows
+for as long as that menu is up, out of the `paths` argument `handleContextMenu` already computes; nothing extra is
+pushed for it (`src-tauri/src/services_menu/DETAILS.md` § "The right-click menu's Services submenu").
 
 ## Analytics emitted from this directory
 

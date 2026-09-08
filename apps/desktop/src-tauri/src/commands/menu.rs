@@ -78,6 +78,11 @@ pub fn show_file_context_menu<R: Runtime>(
     #[cfg(not(target_os = "macos"))]
     let info = FileContextInfo;
 
+    // What a macOS service would act on: the same rows, as paths, taken before
+    // `context_paths` moves into `MenuState`.
+    #[cfg(target_os = "macos")]
+    let services_paths: Vec<std::path::PathBuf> = context_paths.iter().map(std::path::PathBuf::from).collect();
+
     // Update menu context so on_menu_event has paths + bundle map for the new items.
     {
         let state = app.state::<MenuState<R>>();
@@ -126,6 +131,14 @@ pub fn show_file_context_menu<R: Runtime>(
         let mut context = state.context.lock_ignore_poison();
         context.open_with_apps = result.open_with_apps;
     }
+
+    // AppKit's Services menu, borrowed for as long as this menu is up, pointed at the
+    // right-clicked rows rather than the pane selection. Answers `None` when the menu
+    // carries no Services item. ❗ The binding has to outlive `popup()` (which runs the
+    // tracking loop), so ❌ never `let _ =`: that would hand the menu back before it
+    // was ever shown.
+    #[cfg(target_os = "macos")]
+    let _services_loan = crate::menu::lend_services_menu(&result.menu, services_paths);
 
     result.menu.popup(window).map_err(|e| e.to_string())?;
 

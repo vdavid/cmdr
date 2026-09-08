@@ -122,10 +122,11 @@ pub struct ContextMenuPaneFacts {
     /// this file, so a pane on MTP or ADB shows it greyed out; the snapshot pane and
     /// the Search dialog pass `false` too, having no folder of their own to open.
     pub can_open_terminal_here: bool,
-    /// Whether "Share…" appears at all. The pane's answer too, but to a different
-    /// question: whether its ROWS are real OS paths, which is what the share sheet
-    /// needs. The search-results snapshot says yes (its rows are real files) where
-    /// `can_open_terminal_here` says no, so the two can't be folded into one flag.
+    /// Whether "Share…" and `Services` appear at all. The pane's answer too, but to a
+    /// different question: whether its ROWS are real OS paths, which is what both the
+    /// share sheet and a macOS service need (each takes file URLs). The search-results
+    /// snapshot says yes (its rows are real files) where `can_open_terminal_here` says
+    /// no, so the two can't be folded into one flag.
     pub can_share: bool,
 }
 
@@ -394,6 +395,13 @@ pub fn build_context_menu<R: Runtime>(
         menu.append(&PredefinedMenuItem::separator(app)?)?;
         menu.append(&get_info_item)?;
         menu.append(&quick_look_item)?;
+        // `Services` goes last, where Finder puts it, and rides on the same fact as
+        // "Share…": AppKit hands a service file URLs, so a pane whose rows aren't OS
+        // paths has nothing to offer. Only the item is built here — AppKit's own menu
+        // is borrowed while the menu is up (`services_context.rs`).
+        if can_share {
+            super::services_context::append_services_submenu(app, &menu)?;
+        }
     }
 
     Ok(ContextMenuResult {

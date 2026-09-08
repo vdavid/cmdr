@@ -39,6 +39,9 @@ window focus context.
 - `macos_appkit.rs`: the two passes that reach past Tauri into AppKit once the bar is built:
   `cleanup_macos_menus` (removes system-injected Edit items, registers the Help menu) and
   `set_macos_menu_icons` (SF Symbol icons via objc2 FFI) with its `MENU_BAR_ICONS` table.
+- `services_context.rs` (macOS): `Services` in the file context menu. `append_services_submenu` puts
+  the (empty) item there; `lend_services_menu` borrows AppKit's own Services menu onto it for as long
+  as the menu is up, and points it at the right-clicked rows. See "Services in the right-click menu".
 - `open_with.rs` (macOS): `build_open_with_submenu` for the file context menu's "Open with"
   submenu. Returns the submenu plus a `bundle_id → app_path` map that callers stash in
   `MenuState.context.open_with_apps` so `on_menu_event` can resolve dynamic `open-with:<bundle-id>`
@@ -342,6 +345,49 @@ the first.
 
 Uses `objc2::exception::catch` because NSMenu operations can raise ObjC exceptions inside Tauri's
 `did_finish_launching` callback, which aborts on panic.
+
+### Services in the right-click menu
+
+The file context menu ends with `Services`, the same list `Cmdr > Services` shows, acting on the row
+that was right-clicked. `services_context.rs` owns it, and two facts shape all of it.
+
+**AppKit owns exactly ONE Services menu, and the menu bar already has it.**
+`NSApplication.servicesMenu` is the only `NSMenu` AppKit fills, and an `NSMenu` has at most one
+supermenu — a second parent raises `NSInternalInconsistencyException`. So the context menu BORROWS
+it: `ServicesLoan` takes it off the menu bar's Services item, hangs it on the context menu's, and
+hands it back when it drops. ❗ The loan must outlive `popup()`, which runs AppKit's whole tracking
+loop, so the binding in `commands/menu.rs` is `let _services_loan = …` and never `let _ = …`.
+`detach_from_supermenu` in `macos_appkit.rs` is the single place a detach happens, shared with
+`adopt_installed_services_menu`.
+
+**Tauri hands out no `NSMenu` for a context menu.** muda has `ContextMenu::ns_menu()`, but Tauri
+reaches it only through `pub(crate) mod sealed`, and `tauri::menu::Menu` exposes no equivalent. So
+there is nothing to attach the borrowed menu to before `popup()`. The handle comes from AppKit
+instead: `NSMenuDidBeginTrackingNotification` carries the `NSMenu` about to be tracked, so the swap
+happens in that observer, on whichever tracking menu holds an item titled with the live `Services`
+label. The observer registers on the first right-click and lives for the process, like the
+accent-color one.
+
+What was rejected:
+
+- **`NSApplication.setServicesMenu:` pointed at a menu of ours.** Ignored once AppKit owns one, the
+  same wall `adopt_installed_services_menu` hit (`../services_menu/DETAILS.md`).
+- **Copying the managed menu** into our own submenu. Its contents are computed per open: AppKit
+  writes the selection to a scratch pasteboard once per candidate service while the menu opens, and
+  filters on each service's `NSRequiredContext`. A copy is a snapshot of a different selection —
+  and often of nothing at all, since on a fresh launch the menu still holds 0 items at the moment
+  it is lent (logged, macOS 26.6.2, 2026-09-09) and fills only when it opens.
+- **Installing the context menu as the main menu bar for an instant** to read `NSApp.mainMenu`. A
+  menu-bar swap re-runs AppKit's app-menu discovery, and keeping the Services registration alive
+  through that is the fight this feature already won once; not worth re-opening for a handle.
+
+**The submenu acts on the right-clicked row, not the pane selection.** That's Finder's rule and the
+one the rest of the context menu follows, and it genuinely differs: right-clicking a row OUTSIDE the
+selection acts on that row alone. `services_menu::selection`'s context target carries the override
+for the loan's lifetime; the reasoning and what it costs are in `../services_menu/DETAILS.md`.
+
+The item shows whenever the pane's rows are real OS paths (`ContextMenuPaneFacts::can_share`, the
+same fact "Share…" rides on: both hand file URLs to something outside Cmdr).
 
 ### SF Symbol icons (macOS only)
 

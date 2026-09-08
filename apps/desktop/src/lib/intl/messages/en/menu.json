@@ -81,7 +81,7 @@
 
   "menu.app.services": "Services",
   "@menu.app.services": {
-    "description": "NOUN (plural). Title of the macOS Services submenu in the app menu, which the system fills with actions other apps offer. Use the exact word macOS uses for this submenu in this language; a made-up translation makes a system feature unrecognizable."
+    "description": "NOUN (plural). Title of the macOS Services submenu, which the system fills with actions other apps offer. Used twice, for the same submenu: in the app menu and at the bottom of the right-click menu on a file. Use the exact word macOS uses for this submenu in this language; a made-up translation makes a system feature unrecognizable."
   },
 
   "menu.app.hide": "Hide Cmdr",
