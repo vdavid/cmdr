@@ -43,13 +43,14 @@ pixel-accurate width measurement via `@chenglou/pretext`, and the `*-utils.ts` t
   `rawWidths.length`, or make `capPx` a fetch trigger.
 - **Index-size refresh (`refresh_listing_index_sizes`) refetches column widths through the existing `cacheGeneration`
   reset path**; a separate trigger double-fetches.
-- **A unit test asserting on ROWS must mount through `mountFullList()` (`test-full-list.ts`).** Without a measured
-  surface the list silently renders nothing, so every negative assertion passes for free. Assert the rows are on screen
-  first.
+- **A row-asserting unit test mounts through `mountFullList()` / `mountBriefList()`** (`test-full-list.ts` /
+  `test-brief-list.ts`): unmeasured, the surface renders zero rows and a negative assertion passes for free.
 - **`listing.showExtensionInName` must stay in lockstep across the renderer and the measurer**: on, `gridTemplate` drops
   the Ext track and `computeFullListColumnWidths` returns `ext: 0`, so changing one side drifts every column. ❌ Don't
   "clean up" `FullListHeader`'s `.header-name-ext` split: it's the only way left to CLICK sort-by-extension in that
   mode.
+- **A hidden entry's name dims via `full-list-utils.ts::isHiddenNameDimmed`**: selected/cursor rows stay full-strength;
+  a restricted row's italic+opacity wins over the dim. `DETAILS.md` § "Hidden-entry name dim".
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

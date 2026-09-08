@@ -10,6 +10,7 @@ import {
   getDisplayName,
   getNameColumnText,
   pickSizeDisplay,
+  isHiddenNameDimmed,
 } from './full-list-utils'
 import type { SizeDisplayPick } from './full-list-utils'
 import type { FileEntry } from '../types'
@@ -278,5 +279,33 @@ describe('pickSizeDisplay across locales', () => {
     expect(cell('branches', 1).override).toBe('1 个分支')
     expect(cell('branches', 7).override).toBe('7 个分支')
     expect(cell('commits', 7).tooltip).toBe('从 HEAD 可追溯到 7 次提交')
+  })
+})
+
+describe('isHiddenNameDimmed', () => {
+  const noExclusions = { isRestricted: false, isSelected: false, isUnderCursor: false }
+
+  it('dims a hidden entry with none of the exclusions', () => {
+    expect(isHiddenNameDimmed({ isHidden: true }, noExclusions)).toBe(true)
+  })
+
+  it('does not dim an entry that is not hidden', () => {
+    expect(isHiddenNameDimmed({ isHidden: false }, noExclusions)).toBe(false)
+    expect(isHiddenNameDimmed({}, noExclusions)).toBe(false)
+  })
+
+  it('does not dim a hidden entry that is selected', () => {
+    expect(isHiddenNameDimmed({ isHidden: true }, { ...noExclusions, isSelected: true })).toBe(false)
+  })
+
+  it('does not dim a hidden entry that is under the cursor', () => {
+    expect(isHiddenNameDimmed({ isHidden: true }, { ...noExclusions, isUnderCursor: true })).toBe(false)
+  })
+
+  it('does not dim a hidden entry that is also TCC-restricted', () => {
+    // Restricted rows already carry their own italic + opacity treatment;
+    // stacking the hidden-dim color on top would fade toward the contrast
+    // floor that opacity treatment already skirts. Restricted wins.
+    expect(isHiddenNameDimmed({ isHidden: true }, { ...noExclusions, isRestricted: true })).toBe(false)
   })
 })

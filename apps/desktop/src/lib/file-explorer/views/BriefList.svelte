@@ -39,7 +39,7 @@
         provisionalColumnWidth,
     } from './brief-column-widths.svelte'
     import { getDirStatsBatch } from '$lib/tauri-commands'
-    import { buildDirSizeTooltip, hasSizeMismatch, isDirSizeUpdating } from './full-list-utils'
+    import { buildDirSizeTooltip, hasSizeMismatch, isDirSizeUpdating, isHiddenNameDimmed } from './full-list-utils'
     import {
         getRowHeight,
         getSizeMismatchWarning,
@@ -901,6 +901,11 @@
                                 ? getFolderCoverageBadge(folderCoverageMap[file.path], tString)
                                 : getImageIndexBadge(indexStatusMap[file.path])}
                             {@const fileIsRestricted = isRestricted(file.path)}
+                            {@const nameIsHiddenDimmed = isHiddenNameDimmed(file, {
+                                isRestricted: fileIsRestricted,
+                                isSelected: selectedIndices.has(globalIndex),
+                                isUnderCursor: globalIndex === cursorIndex,
+                            })}
                             <!-- svelte-ignore a11y_click_events_have_key_events,a11y_interactive_supports_focus -->
                             <div
                                 id={`file-${String(globalIndex)}`}
@@ -950,7 +955,10 @@
                                         onShakeEnd={() => onRenameShakeEnd?.()}
                                     />
                                 {:else}
-                                    <span class="name" use:tooltip={buildNameTooltip(file)}
+                                    <span
+                                        class="name"
+                                        class:is-hidden={nameIsHiddenDimmed}
+                                        use:tooltip={buildNameTooltip(file)}
                                         >{file.name}{#if fileIsRestricted}<span
                                                 class="restricted-indicator"
                                                 aria-hidden="true"
@@ -1080,6 +1088,14 @@
     /* `.restricted-indicator`'s own chrome, the stripe / selection / cursor
        fills, and the selected-row hairline are identical in `FullList`, so
        they live in `src/app-file-list.css`. */
+
+    /* Hidden-entry name dim: see `FullList.svelte`'s twin rule for the full
+       rationale (quieter, not invisible; color only, never `opacity`;
+       `.is-hidden` already excludes selected/cursor/restricted rows via the
+       `nameIsHiddenDimmed` const above). */
+    .name.is-hidden {
+        color: var(--color-text-hidden);
+    }
 
     .name {
         overflow: hidden;

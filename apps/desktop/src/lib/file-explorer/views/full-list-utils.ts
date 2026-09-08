@@ -311,6 +311,27 @@ export function pickSizeDisplay(entry: FileEntry, isRestricted = false): SizeDis
   return {}
 }
 
+/**
+ * Whether a hidden entry's name should render in the quieter
+ * `--color-text-hidden` tone, shared by `FullList.svelte` and
+ * `BriefList.svelte` so the precedence lives in one place.
+ *
+ * Dims only when `entry.isHidden` is true AND none of the three exclusions
+ * hold:
+ * - `isSelected` / `isUnderCursor`: the row the user is standing on (or has
+ *   selected) stays at full strength, never dimmed.
+ * - `isRestricted`: a TCC-restricted row already carries its own italic +
+ *   opacity treatment. Stacking the hidden-dim color on top of that would
+ *   fade toward the contrast floor the opacity treatment already skirts, so
+ *   restricted wins and the row shows only its restricted styling.
+ */
+export function isHiddenNameDimmed(
+  entry: Pick<FileEntry, 'isHidden'>,
+  opts: { isRestricted: boolean; isSelected: boolean; isUnderCursor: boolean },
+): boolean {
+  return entry.isHidden === true && !opts.isRestricted && !opts.isSelected && !opts.isUnderCursor
+}
+
 // ============================================================================
 // Size Display Mode Helpers
 // ============================================================================

@@ -95,6 +95,15 @@ export interface FileEntry {
    * `TagDots` treats absent as none.
    */
   tags?: TagRef[]
+  /**
+   * True when this entry should be hidden unless "show hidden files" is on:
+   * a dotfile, a macOS `UF_HIDDEN` entry, or a name listed in a volume root's
+   * `/.hidden` (see `cmdr-fs::FileEntry::is_hidden`). Drives the dimmed name
+   * treatment in `views/FullList.svelte` / `BriefList.svelte`. Optional here
+   * so synthetic entries (the `..` row, search-results adapters) don't have
+   * to set it; absent renders like `false` (never dimmed).
+   */
+  isHidden?: boolean
 }
 
 /** Cloud sync status for files in Dropbox/iCloud/etc. folders */

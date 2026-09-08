@@ -40,6 +40,7 @@
         getDisplayExtension,
         getNameColumnText,
         pickSizeDisplay,
+        isHiddenNameDimmed,
     } from './full-list-utils'
     import { computeFullListColumnWidths } from './measure-column-widths'
     import {
@@ -685,6 +686,11 @@
                         : undefined}
                     {@const fileIsRestricted = isRestricted(file.path)}
                     {@const sizeOverride = pickSizeDisplay(file, fileIsRestricted)}
+                    {@const nameIsHiddenDimmed = isHiddenNameDimmed(file, {
+                        isRestricted: fileIsRestricted,
+                        isSelected: selectedIndices.has(globalIndex),
+                        isUnderCursor: globalIndex === cursorIndex,
+                    })}
                     {@const date = formattedDate(file.modifiedAt)}
                     <!-- svelte-ignore a11y_interactive_supports_focus -->
                     <div
@@ -741,6 +747,7 @@
                             <span class="col-name">
                                 <span
                                     class="col-name-text"
+                                    class:is-hidden={nameIsHiddenDimmed}
                                     use:useShortenMiddle={{
                                         text: getNameColumnText(file.name, file.isDirectory, showExtensionInName),
                                         preferBreakAt: file.name.includes('/') ? '/' : '.',
@@ -766,6 +773,7 @@
                             {#if !showExtensionInName}
                                 <span
                                     class="col-ext"
+                                    class:is-hidden={nameIsHiddenDimmed}
                                     use:useShortenMiddle={{
                                         text: getDisplayExtension(file.name, file.isDirectory),
                                         tooltipWhenTruncated: true,
@@ -965,6 +973,20 @@
     /* `.restricted-indicator`'s own chrome, the stripe / selection / cursor
        fills, and the selected-row hairline are identical in `BriefList`, so
        they live in `src/app-file-list.css`. */
+
+    /* Hidden-entry name dim: a quieter text color for dotfiles / `UF_HIDDEN` /
+       root-`/.hidden` entries once "show hidden files" is on, so they read as
+       "normally out of sight" without disappearing (Finder makes them nearly
+       invisible; we deliberately don't). `.is-hidden` lands only when
+       `nameIsHiddenDimmed` is true (see the row template above), which already
+       excludes selected rows, the cursor row, and restricted rows, so no
+       cascade fight with `.is-selected` / `.is-restricted` below is needed.
+       Color only, never `opacity`: the walker behind `pnpm check
+       a11y-contrast` doesn't fold `opacity` into its check. */
+    .col-name-text.is-hidden,
+    .col-ext.is-hidden {
+        color: var(--color-text-hidden);
+    }
 
     .file-entry.no-transition {
         transition: none;

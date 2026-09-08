@@ -125,6 +125,32 @@ Everything else stays per-view, deliberately:
 Don't move the per-view cascade into a row component either: that's ~50 component instances per frame on the app's
 hottest render path.
 
+### Hidden-entry name dim
+
+**Decision**: `full-list-utils.ts::isHiddenNameDimmed(entry, { isRestricted, isSelected, isUnderCursor })` is the ONE
+place that decides whether a hidden entry's name renders in the quieter `--color-text-hidden` tone (`app.css`), and both
+`FullList.svelte` and `BriefList.svelte` compute their `nameIsHiddenDimmed` const by calling it, never by re-deriving
+the boolean inline. **Why**: the precedence has three exclusions that are easy to get subtly wrong per view, so it lives
+in one tested function (`full-list-utils.test.ts`) rather than two copies that could drift.
+
+- A selected row or the cursor row always renders at full strength: the row the user is standing on (or has selected)
+  stays maximally legible, and dimming it would drag the nine-accent selection matrix into the contrast budget for no
+  benefit.
+- A TCC-restricted row (`.is-restricted`, italic + `opacity: 0.6`) is NOT also dimmed: restricted wins. Stacking the
+  hidden-dim color under that opacity would fade the text toward the contrast floor the opacity treatment already skirts
+  (opacity-based dimming is a known gap the `pnpm check a11y-contrast` walker doesn't fold into its check; that's a
+  separate follow-up, not something this dim adds to).
+- `--color-text-hidden` (light `#4d4d4d`, dark `#aaaaaa`) is its own token, not `--color-text-secondary`: that pair
+  steps 34 L* down from `--color-text-primary` in light but only 13 L* in dark, so reusing it would dim hard in light
+  and barely at all in dark. Both values here step ~22 L* down instead, so the cue reads the same weight in both modes.
+  Dark is the tight side against the enforced APCA Lc-45 floor (about 5 Lc of slack); see the token's comment in
+  `app.css` for the measured numbers.
+- Scope is the name text only (`.col-name-text` / `.col-ext` in Full, `.name` in Brief), never the row's other cells,
+  and never the file icon: icon dimming is a deliberate follow-up, judged separately once the text-only dim has been
+  seen in the app.
+- Color only, never `opacity`, so the change is visible to the a11y-contrast walker (which doesn't fold `opacity` into
+  its check).
+
 ### Data flow
 
 ```
