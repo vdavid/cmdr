@@ -9,7 +9,7 @@ import (
 
 // RunNilaway detects potential nil pointer dereferences.
 func RunNilaway(ctx *CheckContext) (CheckResult, error) {
-	nilawayBin, err := EnsureGoTool("nilaway", "go.uber.org/nilaway/cmd/nilaway@v0.0.0-20260808063849-8649a03c818a")
+	nilawayBin, err := EnsureGoTool(ctx.RootDir, "nilaway", "go.uber.org/nilaway/cmd/nilaway@v0.0.0-20260808063849-8649a03c818a")
 	if err != nil {
 		return CheckResult{}, err
 	}

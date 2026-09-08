@@ -452,54 +452,106 @@ func EnsureCargoNextest() error {
 	return nil
 }
 
-// EnsureGoTool ensures a Go tool is installed and returns the path to the binary.
-// If the tool is already in PATH, returns just the name. Otherwise installs it
-// and returns the full path to the installed binary.
-func EnsureGoTool(name, installPath string) (string, error) {
-	if CommandExists(name) {
-		return name, nil
-	}
+// GoToolsBinPath is where the pinned Go analyzers live, alongside the check cache in the one
+// scratch directory the repo already ignores. Repo-local on purpose: `go install` into the user's
+// `~/go/bin` would fight whatever versions they keep there for other projects.
+const GoToolsBinPath = "node_modules/.cache/cmdr-go-tools"
 
-	// Get Go's bin directory
-	goBin := getGoBinDir()
-	if goBin == "" {
-		return "", fmt.Errorf("could not determine Go bin directory")
-	}
-
-	// Install the tool
-	installCmd := exec.Command("go", "install", installPath)
-	if _, err := RunCommand(installCmd, true); err != nil {
-		return "", fmt.Errorf("failed to install %s: %w", name, err)
-	}
-
-	// Return full path to the binary
-	return filepath.Join(goBin, name), nil
+// goToolBuildInfo is what `go version -m <binary>` says about how a tool was built: the module
+// version it came from, and the Go toolchain that compiled it. Both decide a reinstall.
+type goToolBuildInfo struct {
+	ModuleVersion string
+	GoVersion     string
 }
 
-// getGoBinDir returns the directory where go install puts binaries.
-func getGoBinDir() string {
-	// First check GOBIN
-	cmd := exec.Command("go", "env", "GOBIN")
-	if output, err := RunCommand(cmd, true); err == nil {
-		if bin := strings.TrimSpace(output); bin != "" {
-			return bin
+// EnsureGoTool returns the path to a Go tool built from the module version the caller pins,
+// installing it when what's on disk doesn't match that pin or was built by a different Go than
+// `.mise.toml` names.
+//
+// ❗ It deliberately ignores whatever binary happens to be named `<name>` on PATH. Trusting PATH
+// made the version pins decorative on a developer machine: a `~/go/bin` holding x/tools v0.42.0
+// silently answered every local run while the repo pinned v0.49.0, so local checks ran months-old
+// analyzers, and the supply-chain reasoning behind pinning (DETAILS § Key decisions) held only in
+// CI, where no such binary exists. It also breaks loudly rather than usefully: a tool built by an
+// older Go can't parse the newer stdlib, which surfaces as "method must have no type parameters"
+// inside `math/rand` rather than as "your tool is stale".
+func EnsureGoTool(rootDir, name, installPath string) (string, error) {
+	wantModuleVersion, err := pinnedModuleVersion(installPath)
+	if err != nil {
+		return "", err
+	}
+	goVersion, err := MiseGoVersion(rootDir)
+	if err != nil {
+		return "", fmt.Errorf("cannot decide whether %s is current: %w", name, err)
+	}
+
+	binDir := filepath.Join(rootDir, GoToolsBinPath)
+	binPath := filepath.Join(binDir, name)
+	if goToolIsCurrent(binPath, wantModuleVersion, "go"+goVersion) {
+		return binPath, nil
+	}
+
+	installCmd := exec.Command("go", "install", installPath)
+	installCmd.Dir = rootDir
+	installCmd.Env = append(os.Environ(), "GOBIN="+binDir)
+	if output, err := RunCommand(installCmd, true); err != nil {
+		return "", fmt.Errorf("failed to install %s (%s): %w\n%s", name, installPath, err, output)
+	}
+
+	return binPath, nil
+}
+
+// goToolIsCurrent reports whether the binary on disk came from the pinned module version and was
+// built by the wanted Go. Anything it can't read (missing file, unreadable build info) counts as
+// "not current", so the caller reinstalls rather than running something unidentified.
+func goToolIsCurrent(binPath, wantModuleVersion, wantGoVersion string) bool {
+	if _, err := os.Stat(binPath); err != nil {
+		return false
+	}
+	output, err := RunCommand(exec.Command("go", "version", "-m", binPath), true)
+	if err != nil {
+		return false
+	}
+	info, ok := parseGoToolBuildInfo(output)
+	if !ok {
+		return false
+	}
+	return info.ModuleVersion == wantModuleVersion && info.GoVersion == wantGoVersion
+}
+
+// parseGoToolBuildInfo reads `go version -m` output, whose first line ends in the Go toolchain
+// (`/path/to/deadcode: go1.27.1`) and whose `mod` line carries the module and its version
+// (`\tmod\tgolang.org/x/tools\tv0.49.0\th1:...`).
+func parseGoToolBuildInfo(output string) (goToolBuildInfo, bool) {
+	var info goToolBuildInfo
+	for line := range strings.SplitSeq(output, "\n") {
+		fields := strings.Fields(line)
+		if info.GoVersion == "" && len(fields) >= 2 && strings.HasSuffix(fields[0], ":") {
+			if last := fields[len(fields)-1]; strings.HasPrefix(last, "go1.") {
+				info.GoVersion = last
+			}
+			continue
+		}
+		if len(fields) >= 3 && fields[0] == "mod" {
+			info.ModuleVersion = fields[2]
 		}
 	}
+	return info, info.GoVersion != "" && info.ModuleVersion != ""
+}
 
-	// Fall back to GOPATH/bin
-	cmd = exec.Command("go", "env", "GOPATH")
-	if output, err := RunCommand(cmd, true); err == nil {
-		if gopath := strings.TrimSpace(output); gopath != "" {
-			return filepath.Join(gopath, "bin")
-		}
+// pinnedModuleVersion pulls the `@version` off an install path. An unpinned path (or `@latest`) is
+// an error rather than a fallback: without an exact version there's nothing to compare an installed
+// binary against, and a fresh checkout would pull whatever is newest, which is the supply-chain hole
+// the pins exist to close.
+func pinnedModuleVersion(installPath string) (string, error) {
+	module, version, found := strings.Cut(installPath, "@")
+	if !found || version == "" {
+		return "", fmt.Errorf("tool install path %q must pin an exact version (`@vX.Y.Z`)", installPath)
 	}
-
-	// Last resort: ~/go/bin
-	if home, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(home, "go", "bin")
+	if version == "latest" {
+		return "", fmt.Errorf("tool install path %q must pin an exact version, never `@latest`", module)
 	}
-
-	return ""
+	return version, nil
 }
 
 // indentOutput indents each non-empty line of output.
