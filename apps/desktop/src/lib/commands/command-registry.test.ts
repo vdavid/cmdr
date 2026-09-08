@@ -268,8 +268,7 @@ describe('CommandId is a closed union (compile-time)', () => {
     const argValue: CommandArgs['view.setMode'] = { pane: 'right', mode: 'brief', fromMenu: false }
 
     // @ts-expect-error -- an arg-carrying id can't be dispatched with no payload.
-    const missing: CommandDispatchArgs<'view.setMode'> = []
-    void missing
+    const _missing: CommandDispatchArgs<'view.setMode'> = []
 
     expect(withArgs[0]).toEqual({ pane: 'left', mode: 'full', fromMenu: true })
     expect(argValue.pane).toBe('right')

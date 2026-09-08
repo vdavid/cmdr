@@ -32,6 +32,7 @@
     import { formatUsdMicros } from '$lib/ask-cmdr/ask-cmdr-cost'
     import ForgetMemoryDialog from './ForgetMemoryDialog.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
+    import { dependOn } from '$lib/utils/reactivity'
 
     interface Props {
         searchQuery: string
@@ -96,8 +97,7 @@
     $effect(() => onSpecificSettingChange('askCmdr.chatMemorySize', (v) => { chatMemorySize = v }))
     let knownWindowTokens = $state<number | null>(null)
     $effect(() => {
-        void provider // a provider or model change moves the window this compares against
-        void model
+        dependOn(provider, model) // a provider or model change moves the window this compares against
         void askCmdrModelWindow().then(
             (w) => { knownWindowTokens = w.knownWindowTokens },
             (e: unknown) => { log.warn('reading the model window failed: {error}', { error: String(e) }) },
@@ -173,7 +173,7 @@
     // The per-day spend rollup (loaded on mount; refreshed when the section re-enables).
     let spend = $state<CostSummary | null>(null)
     $effect(() => {
-        void enabled // reload after turning on, so a first chat's cost appears
+        dependOn(enabled) // reload after turning on, so a first chat's cost appears
         void askCmdrCostSummary().then(
             (s) => { spend = s },
             (e: unknown) => { log.warn('reading spend failed: {error}', { error: String(e) }) },

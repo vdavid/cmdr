@@ -4,6 +4,7 @@
      * account's buckets later. Raises the sign-in form when the listing needs one.
      */
     import { onMount } from 'svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import CopyBox from '$lib/ui/CopyBox.svelte'
@@ -107,9 +108,7 @@
 
     // Sync share list to MCP when shares or cursor change
     $effect(() => {
-        void sortedShares.length
-        void cursorIndex
-        void loading
+        dependOn(sortedShares.length, cursorIndex, loading)
         void syncPaneStateToMcp()
     })
 

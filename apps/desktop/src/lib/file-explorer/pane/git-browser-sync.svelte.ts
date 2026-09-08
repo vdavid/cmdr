@@ -15,6 +15,7 @@
 
 import { lookupRepoInfo, subscribeToRepo, unsubscribeFromRepo, type RepoInfo } from '../git/git-store.svelte'
 import { getSetting, onSpecificSettingChange } from '$lib/settings'
+import { dependOn } from '$lib/utils/reactivity'
 import { isMtpVolumeId } from '$lib/mtp'
 import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
 import { pathCrossesArchiveBoundary } from './volume-capabilities'
@@ -125,8 +126,7 @@ export function createGitBrowserSync(deps: GitBrowserSyncDeps): GitBrowserSync {
   // `syncGitState` so it can be exercised without a reactive context.
   $effect(() => {
     const path = deps.getCurrentPath()
-    void showRepoChip
-    void showGitStatusColumn
+    dependOn(showRepoChip, showGitStatusColumn)
     void syncGitState(path)
   })
 

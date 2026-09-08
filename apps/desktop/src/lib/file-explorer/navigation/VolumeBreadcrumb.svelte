@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy, tick, untrack } from 'svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import {
         disableDriveIndex,
         ejectVolume,
@@ -202,7 +203,7 @@
     // icon is sampled from `~`, which isn't TCC-protected, so prefetching is always safe.
     // Reading `$iconCacheVersion` re-evaluates the derived value once the icon lands.
     const dirIconFallback = $derived.by(() => {
-        void $iconCacheVersion
+        dependOn($iconCacheVersion)
         return getCachedIcon('dir')
     })
 
@@ -678,9 +679,8 @@
                     addToast(tString(feedback.key, { name }), { level: feedback.level })
                 }
             }
-        } catch (e) {
+        } catch (_e) {
             addToast(tString('fileExplorer.navigation.driveIndex.refusedGeneric', { name }), { level: 'error' })
-            void e
         }
         await driveIndex.fetchStatus(vid)
     }

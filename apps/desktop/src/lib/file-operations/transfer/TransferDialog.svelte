@@ -37,6 +37,7 @@
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import Trans from '$lib/intl/Trans.svelte'
     import { t, tString } from '$lib/intl/messages.svelte'
+    import { dependOn } from '$lib/utils/reactivity'
 
     const log = getAppLogger('transferDialog')
 
@@ -347,7 +348,7 @@
     let isInitialVolumeEffect = true
     $effect(() => {
         // Watch for volume changes - read the reactive value to track it
-        void selectedVolumeId
+        dependOn(selectedVolumeId)
         if (isInitialVolumeEffect) {
             // Skip the first run: editedPath is already initialized with the correct volume-relative path.
             // Only load volume space on init.

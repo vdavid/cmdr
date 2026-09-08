@@ -4,6 +4,7 @@ import { getAppLogger } from '$lib/logging/logger'
 import { createLineHeightMap, getLineHeight } from './viewer-line-heights.svelte'
 import { onDebouncedScaleChange } from '$lib/text-size.svelte'
 import { pluralize } from '$lib/utils/pluralize'
+import { dependOn } from '$lib/utils/reactivity'
 import { ensureVisibleOffset, recenterOffset } from './viewer-search-scroll'
 import { caretRectFor, measureColumnWidth } from './viewer-pointer'
 import { EOF_LINE, type LineOffset } from './selection.svelte'
@@ -402,7 +403,7 @@ export function createViewerScroll(deps: ScrollDeps) {
 
   function runContentWidthEffect() {
     if (wordWrap) return
-    void visibleLines
+    dependOn(visibleLines)
     const rafId = requestAnimationFrame(() => {
       if (linesContainerRef) {
         const w = linesContainerRef.scrollWidth
@@ -420,7 +421,7 @@ export function createViewerScroll(deps: ScrollDeps) {
     if (!wordWrap) return
 
     if (heightMap.ready) return // Height map replaces DOM-based averaging
-    void scrollTop
+    dependOn(scrollTop)
     const rafId = requestAnimationFrame(() => {
       if (!linesContainerRef) return
       const lineCount = linesContainerRef.children.length

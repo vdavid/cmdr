@@ -7,7 +7,8 @@ Small stateless helpers. Pure, no Svelte state, safe to import from plain `.ts` 
 `filename-validation.ts` (client-side name and path validation), `timing.ts` (`withTimeout`, `createDebounce`,
 `createThrottle`, `createCoalesced`, `waitForNextPaint`), `shorten-middle.ts` + `shorten-middle-action.ts`
 (mid-truncation and its Svelte action), `srgb-mix.ts` + `webkit-compat.ts` (sRGB color math, `color-mix()` detection),
-`confirm-dialog.ts`, `pluralize.ts`, `text-input-focus.ts`, `version.ts` (semver `major.minor.patch` ordering),
+`confirm-dialog.ts`, `pluralize.ts`, `text-input-focus.ts`, `reactivity.ts` (`dependOn`), `version.ts` (semver
+`major.minor.patch` ordering),
 `inline-size-action.ts` (the container-query stand-in), `boot-guard-keys.ts` (the three catalog keys the `app.html` boot
 guard shows). Per-file export catalogs: `DETAILS.md`.
 
@@ -20,6 +21,9 @@ guard shows). Per-file export catalogs: `DETAILS.md`.
 - **`validateConflict` is case-insensitive (APFS)**: pass `originalName` correctly, or a case-only rename false-flags.
 - **`validateFilename` returns the FIRST error or warning**, never a list: inline rename UI has room for one message.
 - **`getExtension` includes the dot** (`.txt`) and returns `''` for dotfiles (`.gitignore`).
+- **An effect that must re-run on a value it never reads calls `dependOn(a, b)`** (`reactivity.ts`), ❌ never
+  `void a`: the `void` form is a lint error, and its autofix leaves a bare expression that's a second lint error.
+  A deliberately unused BINDING is a `^_` name instead. DETAILS § reactivity.ts.
 - **Use `confirmDialog`, ❌ never `window.confirm()`** (unreliable in Tauri); it also labels Cancel so Escape works.
 - **Two old-WebKit answers, don't confuse them.** `hasColorMix` is "degraded but working"; `meetsWebkitFloor` is "below
   Safari 15.4, can't work at all", and `isBelowSupportedMacOs(major)` is "older than the macOS we test on", which is the

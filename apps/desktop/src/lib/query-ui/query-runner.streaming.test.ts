@@ -418,7 +418,7 @@ describe('adopting a run that outlived the last dialog', () => {
 
   it('drops the adopted run when the user asks a new question', async () => {
     const h = makeStreamRunner({
-      resume: (callbacks) => ({
+      resume: (_callbacks) => ({
         runId: 'handed-over',
         view: {
           phase: 'walking',
@@ -431,9 +431,7 @@ describe('adopting a run that outlived the last dialog', () => {
           incomplete: false,
         },
         missedEntries: [],
-        stop: () => {
-          void callbacks
-        },
+        stop: () => {},
       }),
     })
     h.runner.resumeLive()

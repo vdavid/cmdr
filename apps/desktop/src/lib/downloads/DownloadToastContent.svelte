@@ -157,22 +157,23 @@
     `fileChip` wraps the filename (the tag's inner text) in monospace. The chip
     snippets render a literal `ShortcutChip` from the snapshotted binding and
     discard the tag's inner text (the key glyph, present so the ICU tag has a
-    body and to document the key for translators) via `{void children}`.
+    body and to document the key for translators) by naming the parameter
+    `_children`, the house marker for a deliberately unused one.
 -->
 {#snippet fileChip(children: Snippet)}
     <code class="file">{@render children()}</code>
 {/snippet}
-{#snippet inAppChip(children: Snippet)}
-    {void children}<ShortcutChip key={shortcutHint} />
+{#snippet inAppChip(_children: Snippet)}
+    <ShortcutChip key={shortcutHint} />
 {/snippet}
-{#snippet globalChip(children: Snippet)}
-    {void children}<ShortcutChip key={globalBinding} />
+{#snippet globalChip(_children: Snippet)}
+    <ShortcutChip key={globalBinding} />
 {/snippet}
-{#snippet summaryInAppChip(children: Snippet)}
-    {void children}<ShortcutChip key={summary.inApp ?? ''} />
+{#snippet summaryInAppChip(_children: Snippet)}
+    <ShortcutChip key={summary.inApp ?? ''} />
 {/snippet}
-{#snippet summaryGlobalChip(children: Snippet)}
-    {void children}<ShortcutChip key={summary.global ?? ''} />
+{#snippet summaryGlobalChip(_children: Snippet)}
+    <ShortcutChip key={summary.global ?? ''} />
 {/snippet}
 {#snippet emphasis(children: Snippet)}
     <em>{@render children()}</em>

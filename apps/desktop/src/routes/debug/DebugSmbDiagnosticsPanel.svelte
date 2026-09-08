@@ -2,6 +2,7 @@
     import { onDestroy, onMount } from 'svelte'
     import { commands, type SmbDiagnosticsDto, type SmbVolumeRef } from '$lib/ipc/bindings'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { dependOn } from '$lib/utils/reactivity'
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
     import { formatInteger } from '$lib/intl/number-format'
@@ -43,8 +44,7 @@
         // Restart polling when toggle or interval changes. The bare reads
         // register reactive dependencies for Svelte 5's $effect; the `void`
         // tells ESLint they're intentional, not orphan expressions.
-        void autoRefresh
-        void intervalMs
+        dependOn(autoRefresh, intervalMs)
         startPolling()
     })
 
@@ -150,7 +150,7 @@
     // Reference nowTick so the $effect recomputes "Updated Xs ago" each tick.
     // `void` documents the intentional reactive-dependency read for ESLint.
     $effect(() => {
-        void nowTick
+        dependOn(nowTick)
     })
 </script>
 

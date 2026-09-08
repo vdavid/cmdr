@@ -23,6 +23,7 @@
     import { getEnabledMediaIndexVolumeIds } from '$lib/media-index/enabled-volumes'
     import { mediaIndexReclaimPreview, mediaIndexPruneBelowThreshold, type ReclaimPreview } from '$lib/tauri-commands'
     import Button from '$lib/ui/Button.svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import { shouldOfferReclaim } from './media-index-reclaim'
 
     const log = getAppLogger('media-index')
@@ -57,7 +58,7 @@
     // Refetch when the threshold changes or the block clears; drop the stale count while
     // blocked so a superseded number never flashes.
     $effect(() => {
-        void threshold
+        dependOn(threshold)
         if (blocked) {
             preview = null
             return

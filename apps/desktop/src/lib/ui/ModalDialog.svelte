@@ -7,6 +7,7 @@
     import { registerDialogClose, unregisterDialogClose } from './dialog-close-registry'
     import { markDialogOpen, markDialogClosed } from './open-dialogs.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { dependOn } from '$lib/utils/reactivity'
 
     interface Props {
         titleId: string
@@ -188,7 +189,7 @@
         if (!el) return
         // Read so that a `containerStyle` change — which rewrites the attribute and wipes
         // these properties with it — re-applies them.
-        void containerStyle
+        dependOn(containerStyle)
         // Only ever SET these: removing them would delete `containerStyle`'s own width or
         // height along with ours, since both land on the same inline declaration.
         if (resizedSize.width !== null) el.style.width = `${String(resizedSize.width)}px`

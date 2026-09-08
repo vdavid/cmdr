@@ -63,7 +63,7 @@ export async function openSettingsWindowViaProd(tauriPage: TauriPage): Promise<T
  * may not have focus when afterEach kicks in. The window-close call has no
  * such gating and works regardless of in-page state.
  */
-export async function closeScopedWindow(mainPage: TauriPage, scoped: TauriPage, label: string): Promise<void> {
+export async function closeScopedWindow(mainPage: TauriPage, _scoped: TauriPage, label: string): Promise<void> {
   // Close the scoped window from the MAIN page, not the scoped page itself.
   // If we eval into the scoped window and call `plugin:window|close` there,
   // the window closes mid-script and never returns the pw_result IPC, so the
@@ -73,7 +73,6 @@ export async function closeScopedWindow(mainPage: TauriPage, scoped: TauriPage, 
   // immediately, and the target window dies independently. (Touched arg
   // `scoped` is referenced to keep the API symmetrical with future helpers
   // that may need both pages.)
-  void scoped
   const labelJson = JSON.stringify(label)
   try {
     await mainPage.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|close', { label: ${labelJson} })`)

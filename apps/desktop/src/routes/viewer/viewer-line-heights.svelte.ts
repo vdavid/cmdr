@@ -1,6 +1,7 @@
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
 import { pluralize } from '$lib/utils/pluralize'
+import { dependOn } from '$lib/utils/reactivity'
 
 const log = getAppLogger('viewer')
 
@@ -159,7 +160,7 @@ export function createLineHeightMap(options: LineHeightMapOptions = {}) {
 
   /** O(1): returns the Y offset of the top edge of line n. */
   function getLineTop(n: number): number {
-    void version // Reactive dependency: ensures $derived expressions recompute after reflow
+    dependOn(version) // Reactive dependency: ensures $derived expressions recompute after reflow
     if (!ready || n < 0) return 0
     if (n >= cumHeight.length) return cumHeight[cumHeight.length - 1]
     return cumHeight[n]
@@ -167,7 +168,7 @@ export function createLineHeightMap(options: LineHeightMapOptions = {}) {
 
   /** O(log n) binary search: returns the line index at scroll position y. */
   function getLineAtPosition(y: number): number {
-    void version // Reactive dependency: ensures $derived expressions recompute after reflow
+    dependOn(version) // Reactive dependency: ensures $derived expressions recompute after reflow
     if (!ready || cumHeight.length <= 1) return 0
     const maxLine = cumHeight.length - 2 // last valid line index
     if (y <= 0) return 0
@@ -189,7 +190,7 @@ export function createLineHeightMap(options: LineHeightMapOptions = {}) {
 
   /** Returns the total height of all lines. */
   function getTotalHeight(): number {
-    void version // Reactive dependency: ensures $derived expressions recompute after reflow
+    dependOn(version) // Reactive dependency: ensures $derived expressions recompute after reflow
     if (!ready || cumHeight.length === 0) return 0
     return cumHeight[cumHeight.length - 1]
   }

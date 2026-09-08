@@ -1,5 +1,6 @@
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import type { FileEntry, SelectPayload, SortColumn, SortOrder, SyncStatus, VisibleRangePayload } from '../types'
     import type { FileIndexState, FolderCoverage } from '$lib/tauri-commands'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
@@ -311,7 +312,7 @@
     const gitColumn = createGitStatusColumn()
     $effect(() => {
         // Tracking `cacheGeneration` makes an explicit refresh reload the map.
-        void cacheGeneration
+        dependOn(cacheGeneration)
         return gitColumn.watch(gitColumnVisible ? gitRepoRoot : null, currentPath)
     })
 
@@ -399,7 +400,7 @@
     $effect(() => {
         // Re-run when the scale settles (canvas measurer was just invalidated).
         // Reading the tick keeps it as a Svelte dep without affecting any logic.
-        void scaleSettleTick
+        dependOn(scaleSettleTick)
         const first = firstVisibleGlobalIndex
         const last = lastVisibleGlobalIndex
         const parentOffset = hasParent ? 1 : 0
@@ -607,7 +608,7 @@
 
     // Re-fetch icons when the icon cache is cleared (settings or theme change)
     $effect(() => {
-        void $iconCacheCleared // Track the store value
+        dependOn($iconCacheCleared) // Track the store value
         cache.refetchIcons()
     })
 
@@ -616,7 +617,7 @@
     $effect(() => {
         // Re-run when cacheGeneration bumps (sort, refresh). `currentPath`,
         // `hasParent`, and `staticEntries` are subscribed inside the call.
-        void cacheGeneration
+        dependOn(cacheGeneration)
         cache.syncParentDirStats()
     })
 

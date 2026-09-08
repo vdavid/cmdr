@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onDestroy } from 'svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
@@ -65,7 +66,7 @@
         // Re-arm on each new wait. Reading both fields is what wires the effect
         // to the phase change.
         const armed = waiting ? `${String(waiting.startedAt)}:${String(waiting.durationMs)}` : null
-        void armed
+        dependOn(armed)
         if (rafId !== null) cancelAnimationFrame(rafId)
         rafId = null
         progress = 0

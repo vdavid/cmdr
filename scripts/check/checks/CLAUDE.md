@@ -28,10 +28,8 @@ One Go file per check, registered in `registry.go`'s `AllChecks`. Runner: `../CL
   ❌ never by line count.
 - **A test lane calls `ctx.RecordTests(...)` BEFORE its pass/fail branch** (`test-log.go`), or a red run never says
   WHICH test failed.
-- **Pin every tool install** (❌ never `@latest`), or a compromised tool repo reaches every fresh checkout. `EnsureGoTool`
-  enforces it: an unpinned path errors, and it reinstalls repo-locally whenever the binary's `go version -m` disagrees
-  with the pin or with `MiseGoVersion`, so a `PATH` tool never decides what runs. Versions, sha256s, and the dated
-  nightly: DETAILS § "Key decisions".
+- **Pin every tool install** (❌ never `@latest`), or a compromised tool repo reaches every fresh checkout;
+  `EnsureGoTool` enforces the pin. Versions, sha256s, and the dated nightly: DETAILS § "Key decisions".
 - **Need a Go version? Call `MiseGoVersion(rootDir)`** — ❌ never a literal. `go-version-single-source` enforces it.
 - **A Rust check never hardcodes a source path, its own features, its `Inputs`, or a `cmd.Dir`.** Cargo lanes take both
   from `HostCargoLaneArgs` + `rustCompileInputs`; scanners take `ScannerRoots` / `ScannerMemberKinds` +

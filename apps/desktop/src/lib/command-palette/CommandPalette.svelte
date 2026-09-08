@@ -18,6 +18,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import TextInput from '$lib/ui/TextInput.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { dependOn } from '$lib/utils/reactivity'
 
     /** How many shortcut chips a palette row shows (power users discover alternates). */
     const MAX_SHORTCUTS_SHOWN = 3
@@ -75,7 +76,7 @@
 
     // Reset cursor position when query changes
     $effect(() => {
-        void query // Track
+        dependOn(query)
         cursorIndex = 0
         hoveredIndex = null
     })

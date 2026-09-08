@@ -11,6 +11,7 @@
     import { getBadgeStatus } from '$lib/feature-status'
     import { tString } from '$lib/intl/messages.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { dependOn } from '$lib/utils/reactivity'
     import AskCmdrComposer from './AskCmdrComposer.svelte'
     import AskCmdrMessage from './AskCmdrMessage.svelte'
     import AskCmdrSessions from './AskCmdrSessions.svelte'
@@ -48,8 +49,7 @@
     const lastText = $derived(askCmdrState.messages.at(-1))
     $effect(() => {
         // Track the message count and the live tail so streaming deltas also scroll.
-        void askCmdrState.messages.length
-        void (lastText && lastText.kind === 'assistant' ? lastText.text : '')
+        dependOn(askCmdrState.messages.length, lastText && lastText.kind === 'assistant' ? lastText.text : '')
         if (!wasNearBottom) return
         void tick().then(() => {
             if (listElement) listElement.scrollTop = listElement.scrollHeight

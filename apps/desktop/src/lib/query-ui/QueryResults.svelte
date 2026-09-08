@@ -22,6 +22,7 @@
      */
     import { onDestroy, tick } from 'svelte'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
+    import { dependOn } from '$lib/utils/reactivity'
     import Icon from '$lib/ui/Icon.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { tString } from '$lib/intl/messages.svelte'
@@ -132,7 +133,7 @@
         onShowResults,
         live = null,
         onStopLive,
-        iconCacheVersion: _iconVersionProp,
+        iconCacheVersion: iconVersionProp,
         aiEnabled,
         showPathColumn = true,
         onResultClick,
@@ -146,11 +147,10 @@
     let resultsContainer: HTMLDivElement | undefined = $state()
 
     // Subscribe to icon cache version for reactivity
-    const _iconVersion = $derived($iconCacheVersion)
+    const iconVersion = $derived($iconCacheVersion)
 
     function getIconUrl(iconId: string): string | undefined {
-        void _iconVersion
-        void _iconVersionProp
+        dependOn(iconVersion, iconVersionProp)
         return getCachedIcon(iconId)
     }
 

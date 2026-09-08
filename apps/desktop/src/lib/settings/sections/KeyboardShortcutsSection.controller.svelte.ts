@@ -38,6 +38,7 @@ import {
   getConflictCount,
 } from '$lib/shortcuts'
 import { confirmDialog } from '$lib/utils/confirm-dialog'
+import { dependOn } from '$lib/utils/reactivity'
 import { groupCommandsByScope } from './keyboard-shortcuts-grouping'
 import { classifyConflict, classifySystemShortcut, type ConflictKind } from './keyboard-shortcuts-banner'
 
@@ -100,19 +101,19 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
 
   // Conflict count for the badge.
   const conflictCount = $derived.by(() => {
-    void shortcutChangeCounter // Trigger on shortcut changes
+    dependOn(shortcutChangeCounter) // Trigger on shortcut changes
     return getConflictCount()
   })
 
   // Conflicting command ids for filtering and the per-row warning icon.
   const conflictingIds = $derived.by(() => {
-    void shortcutChangeCounter // Trigger on shortcut changes
+    dependOn(shortcutChangeCounter) // Trigger on shortcut changes
     return getConflictingCommandIds()
   })
 
   // Commands filtered by search and the active filter chip.
   const filteredCommands = $derived.by(() => {
-    void shortcutChangeCounter // Trigger on shortcut changes
+    dependOn(shortcutChangeCounter) // Trigger on shortcut changes
 
     let cmds = [...commands]
 

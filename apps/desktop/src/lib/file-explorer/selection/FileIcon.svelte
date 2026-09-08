@@ -2,6 +2,7 @@
     import type { FileEntry } from '../types'
     import { getCachedIcon, getCachedCustomFolderIcon, iconCacheVersion } from '$lib/icon-cache'
     import { getIsCmdrGold } from '$lib/settings/reactive-settings.svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import Icon from '$lib/ui/Icon.svelte'
     import type { IconName } from '$lib/ui/icons/icon-map'
     import type { ImageIndexBadge } from '../views/file-list-utils'
@@ -28,7 +29,7 @@
     // Mirrors that prefetch's own filter — real directories only, symlinks keep
     // their link-badged glyph.
     const customFolderIconUrl = $derived.by((): string | undefined => {
-        void _cacheVersion // Track cache version for reactivity
+        dependOn(_cacheVersion) // Track cache version for reactivity
         if (!file.isDirectory || file.isSymlink) return undefined
         return getCachedCustomFolderIcon(file.path)
     })
@@ -37,7 +38,7 @@
     // that stays `undefined` for ~99% of rows, so a cache update wouldn't
     // propagate through it and the generic icon would never swap in.
     const iconUrl = $derived.by((): string | undefined => {
-        void _cacheVersion // Track cache version for reactivity
+        dependOn(_cacheVersion) // Track cache version for reactivity
         return customFolderIconUrl ?? getCachedIcon(file.iconId)
     })
 

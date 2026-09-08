@@ -23,6 +23,7 @@
     import { getAppLogger } from '$lib/logging/logger'
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import type { Snippet } from 'svelte'
 
     /**
@@ -150,7 +151,7 @@
 
     // Re-register on `advanceBusy` / `termsAccepted` change so the blocked state stays fresh.
     $effect(() => {
-        void advanceBusy
+        dependOn(advanceBusy)
         // `blockedReason` (not `disabled`) so the press still reaches the handler above.
         const blockedReason = termsAccepted ? undefined : tString('onboarding.stepBeta.terms.blockedTooltip')
         setFooterOverride([

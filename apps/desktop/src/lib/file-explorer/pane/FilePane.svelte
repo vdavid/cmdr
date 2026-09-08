@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onDestroy, onMount, tick, untrack } from 'svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import type {
         FileEntry,
         FriendlyError,
@@ -1568,12 +1569,7 @@
     // is itself a trigger, so the newly-focused pane overwrites the other's push.
     $effect(() => {
         if (!isFocused) return
-        void selectionInfo.entry
-        void caps.kind
-        void listingId
-        void includeHidden
-        void hasParent
-        void searchSnapshot
+        dependOn(selectionInfo.entry, caps.kind, listingId, includeHidden, hasParent, searchSnapshot)
         debouncedServicesSelection.call()
     })
 
@@ -1600,7 +1596,7 @@
 
     // Scroll the entry under the cursor into view when view mode changes
     $effect(() => {
-        void viewMode
+        dependOn(viewMode)
         void tick().then(() => {
             const listRef = viewMode === 'brief' ? briefListRef : fullListRef
             listRef?.scrollToIndex(cursorIndex)

@@ -18,6 +18,7 @@
  */
 
 import { untrack } from 'svelte'
+import { dependOn } from '$lib/utils/reactivity'
 import { updatePaneTabs } from '$lib/tauri-commands'
 import { getAllTabs, type TabManager } from '../tabs/tab-state-manager.svelte'
 
@@ -69,10 +70,12 @@ export function initTabMcpSync(deps: TabMcpSyncDeps): TabMcpSync {
     const rightTabMgr = deps.getRightTabMgr()
     // Read reactive values to establish Svelte reactivity dependencies.
     // Include path so MCP state updates when the active tab navigates.
-    void getAllTabs(leftTabMgr).map((t) => `${t.id}:${t.pinned ? 'p' : ''}:${t.path}`)
-    void getAllTabs(rightTabMgr).map((t) => `${t.id}:${t.pinned ? 'p' : ''}:${t.path}`)
-    void leftTabMgr.activeTabId
-    void rightTabMgr.activeTabId
+    dependOn(
+      getAllTabs(leftTabMgr).map((t) => `${t.id}:${t.pinned ? 'p' : ''}:${t.path}`),
+      getAllTabs(rightTabMgr).map((t) => `${t.id}:${t.pinned ? 'p' : ''}:${t.path}`),
+      leftTabMgr.activeTabId,
+      rightTabMgr.activeTabId,
+    )
 
     if (!deps.getInitialized()) return
 

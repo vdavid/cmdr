@@ -30,6 +30,7 @@ import { isMtpVolumeId } from '$lib/mtp/mtp-path-utils'
 import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
 import type { LocationCategory } from '$lib/file-explorer/types'
 import { hasColorMix } from '$lib/utils/webkit-compat'
+import { dependOn } from '$lib/utils/reactivity'
 import { mixSrgb } from '$lib/utils/srgb-mix'
 
 let tintLocal = $state<VolumeTintColor>('none')
@@ -189,7 +190,7 @@ export function getPaneTintBg(
     return `color-mix(in oklch, var(--color-bg-primary) var(--pane-tint-bg-pct, 90%), var(--color-tint-${tint}) var(--pane-tint-fg-pct, 10%))`
   }
   // Touch the reactive trigger so $derived callers recompute on media flips.
-  void mediaTick
+  dependOn(mediaTick)
   return computeTintHex(tint)
 }
 
@@ -210,6 +211,6 @@ export function getPaneTintName(
   if (tint === 'none') return null
   // Touch the reactive trigger for the old-WebKit path so callers stay
   // reactive to media flips (same rationale as `getPaneTintBg`).
-  if (!hasColorMix) void mediaTick
+  if (!hasColorMix) dependOn(mediaTick)
   return tint
 }

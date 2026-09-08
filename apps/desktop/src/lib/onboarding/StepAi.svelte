@@ -22,6 +22,7 @@
     import { getAppLogger } from '$lib/logging/logger'
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import type { Snippet } from 'svelte'
 
     /**
@@ -189,9 +190,7 @@
      */
     $effect(() => {
         // Track the reactive bits the closure reads so the effect re-runs.
-        void choice
-        void cloudProviderId
-        void advanceBusy
+        dependOn(choice, cloudProviderId, advanceBusy)
         setFooterOverride([
             {
                 label: tString('onboarding.wizard.next'),

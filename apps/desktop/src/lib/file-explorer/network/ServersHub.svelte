@@ -8,6 +8,7 @@
      * cursor, and the keys.
      */
     import { onMount, onDestroy } from 'svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
@@ -109,7 +110,7 @@
      * Reading it here is the whole subscription.
      */
     $effect(() => {
-        void volumes
+        dependOn(volumes)
         void refreshSavedServers()
     })
 
@@ -132,8 +133,7 @@
 
     // Re-sync MCP state when the rows or the cursor change.
     $effect(() => {
-        void rows
-        void cursorIndex
+        dependOn(rows, cursorIndex)
         void syncPaneStateToMcp()
     })
 

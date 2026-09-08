@@ -61,6 +61,27 @@ native warning dialog with OK/Cancel and resolves `true` on confirm.
 flight, with the latest argument queued behind it. A debounce bounds only how often work STARTS, so slower calls stack
 up. The two compose.
 
+## reactivity.ts
+
+`dependOn(...values)` declares a reactive dependency the surrounding code doesn't otherwise read: a version counter, a
+setting whose change invalidates a cached answer, a prop that moves the window a comparison is made against. Its body is
+empty, and that's the whole design. Evaluating the arguments at the call site, synchronously inside the effect, is what
+registers the dependency.
+
+It works from a plain helper function too, not only lexically inside `$effect` / `$derived`: what matters is the
+reactive context on the STACK when the read happens. `viewer-line-heights.svelte.ts` relies on that, with `getLineTop`
+and friends calling `dependOn(version)` so every `$derived` that calls them recomputes after a reflow.
+
+**❌ Never spell this as `void someValue`.** `@typescript-eslint/no-meaningless-void-operator` rejects `void` on a
+non-call expression, and its autofix leaves a bare expression statement that `no-unused-expressions` rejects in turn, so
+the two rules together leave the old idiom no legal spelling: `eslint --fix` produced a tree that couldn't lint clean
+either way. With the reads named, `void` is left meaning exactly one thing across the frontend, discarding a floating
+promise (`void somePromise()`), which stays correct and untouched.
+
+Related but different: a deliberately unused BINDING (a `<Trans>` snippet that ignores its `_children` because a chip
+replaces the tag's content, or a mock's `..._args` kept for its type) is marked by the `^_` name prefix that
+`eslint.config.js` ignores, not by `dependOn` and not by `void`.
+
 ## pluralize.ts / text-input-focus.ts
 
 `pluralize(count, singular, plural?)` formats a count with its noun ("1 user" / "3 users"). `text-input-focus.ts`

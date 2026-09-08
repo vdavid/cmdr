@@ -19,6 +19,7 @@
     import { getDefaultShortcuts, getEffectiveShortcuts, onShortcutChange, toDisplayShortcut } from '$lib/shortcuts'
     import { groupCommandsByScope } from '$lib/settings/sections/keyboard-shortcuts-grouping'
     import { tString } from '$lib/intl/messages.svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import { diffShortcuts } from './shortcut-diff'
 
     interface Props {
@@ -38,7 +39,7 @@
     )
 
     const groups = $derived.by(() => {
-        void shortcutChangeCounter
+        dependOn(shortcutChangeCounter)
         const visible = hideEmpty ? commands.filter((c) => getEffectiveShortcuts(c.id).length > 0) : commands
         return groupCommandsByScope(visible)
     })

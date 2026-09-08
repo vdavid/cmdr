@@ -3,13 +3,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 // usage. The actual test cases dynamically re-import after stubbing `CSS`.
 import * as webkitCompatModule from './webkit-compat'
 
-// Sanity touch — also asserts the public API shape stays in sync.
-void webkitCompatModule.hasColorMix
-void webkitCompatModule.logWebkitCompat
-void webkitCompatModule.meetsWebkitFloor
-void webkitCompatModule.isBelowSupportedMacOs
-void webkitCompatModule.SUPPORTED_MACOS_MAJOR
-
 // We don't read `hasColorMix` from the static import in the cases because it's
 // evaluated once at module load. Instead, each test stubs `CSS.supports`
 // *before* a dynamic import, then reads the exported boolean.
@@ -37,6 +30,18 @@ beforeEach(() => {
 afterEach(() => {
   // @ts-expect-error - we deliberately reset the stub
   delete globalThis.CSS
+})
+
+// The static import is what shows `no-isolated-tests` that this file tests real source code, and
+// asserting its shape means the module's public API is actually checked rather than only mentioned.
+describe('public API', () => {
+  it('exports the shape the dynamic-import cases below rely on', () => {
+    expect(typeof webkitCompatModule.hasColorMix).toBe('boolean')
+    expect(typeof webkitCompatModule.meetsWebkitFloor).toBe('boolean')
+    expect(typeof webkitCompatModule.SUPPORTED_MACOS_MAJOR).toBe('number')
+    expect(typeof webkitCompatModule.isBelowSupportedMacOs).toBe('function')
+    expect(typeof webkitCompatModule.logWebkitCompat).toBe('function')
+  })
 })
 
 describe('hasColorMix', () => {

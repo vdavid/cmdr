@@ -25,6 +25,7 @@
 import { getEffectiveShortcuts, onShortcutChange } from './shortcuts-store'
 import { comboHasShift, toDisplayShortcut } from './key-capture'
 import type { CommandId } from '$lib/commands/command-ids'
+import { dependOn } from '$lib/utils/reactivity'
 
 let version = $state(0)
 let subscribed = false
@@ -47,7 +48,7 @@ function ensureSubscribed(): void {
  */
 export function getEffectiveShortcutsReactive(commandId: CommandId): string[] {
   ensureSubscribed()
-  void version // Subscribe $derived/$effect consumers to shortcut changes
+  dependOn(version) // Subscribe $derived/$effect consumers to shortcut changes
   return getEffectiveShortcuts(commandId).map(toDisplayShortcut)
 }
 
@@ -70,7 +71,7 @@ export function getFirstShortcutReactive(commandId: string): string | undefined 
  */
 export function getFirstShiftShortcutReactive(commandId: CommandId): string | undefined {
   ensureSubscribed()
-  void version // Subscribe $derived/$effect consumers to shortcut changes
+  dependOn(version) // Subscribe $derived/$effect consumers to shortcut changes
   const shifted = getEffectiveShortcuts(commandId).find(comboHasShift)
   return shifted === undefined ? undefined : toDisplayShortcut(shifted)
 }

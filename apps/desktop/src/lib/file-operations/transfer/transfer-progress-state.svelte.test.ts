@@ -575,7 +575,6 @@ describe('createTransferProgressState: cancel + settle close-out', () => {
     // this out in practice: the dialog's Close button dismisses immediately.
     vi.advanceTimersByTime(20_000)
     expect(config.onCancelled).toHaveBeenCalledWith(0)
-    void state // keep reference
   })
 
   it('stops waiting when the backend refuses the cancel', async () => {

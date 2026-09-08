@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, tick } from 'svelte'
     import { getExtension } from '$lib/utils/filename-validation'
+    import { dependOn } from '$lib/utils/reactivity'
     import type { RenameSessionId } from './rename-state.svelte'
     import { renameStepDirection, type RenameStepDirection } from './rename-step'
 
@@ -159,7 +160,7 @@
 
     // Re-focus when focusTrigger increments (after a dialog closes and returns to editing)
     $effect(() => {
-        void focusTrigger
+        dependOn(focusTrigger)
         if (focusTrigger > 0) {
             void tick().then(() => {
                 focusAndSelect()

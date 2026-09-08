@@ -1,5 +1,6 @@
 <script lang="ts">
     import { untrack } from 'svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import type { FileEntry, SelectPayload, SortColumn, SortOrder, SyncStatus, VisibleRangePayload } from '../types'
     import type { FileIndexState, FolderCoverage } from '$lib/tauri-commands'
     import { calculateVirtualWindowVariable, getScrollToPositionVariable } from './virtual-scroll'
@@ -730,10 +731,7 @@
      * dependencies above should trigger this effect.
      */
     $effect(() => {
-        void cursorIndex
-        void containerWidth
-        void containerHeight
-        void columnWidths
+        dependOn(cursorIndex, containerWidth, containerHeight, columnWidths)
         if (containerHeight > 0 && containerWidth > 0) {
             untrack(() => {
                 scrollToIndex(cursorIndex)
@@ -743,7 +741,7 @@
 
     // Re-fetch icons when the icon cache is cleared (settings or theme change)
     $effect(() => {
-        void $iconCacheCleared // Track the store value
+        dependOn($iconCacheCleared) // Track the store value
         // Re-fetch icons for all cached entries
         if (cachedEntries.length > 0) {
             refetchIconsForEntries(cachedEntries)
@@ -757,7 +755,7 @@
             parentDirStats = null
             return
         }
-        void cacheGeneration
+        dependOn(cacheGeneration)
         void getDirStatsBatch([currentPath])
             .then((results) => {
                 parentDirStats = results[0] ?? null
