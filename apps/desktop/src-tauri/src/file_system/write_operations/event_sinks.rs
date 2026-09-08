@@ -177,6 +177,28 @@ impl OperationEventSink for TauriEventSink {
             event.operation_type,
             crate::mcp::terminal_ops::TerminalStatus::Failed,
         );
+        // The one place a failing write operation writes its technical reason
+        // down. Everything else about the failure travels as the typed variant:
+        // the frontend logs `error.type` alone, and the detail string reaches
+        // only the error dialog's collapsed "Technical details". Without this
+        // line an error-report bundle records `Trash error: io_error` and the
+        // OS's actual words are gone (ERR-BPAPM, 2026-09-08).
+        //
+        // WARN, not `log_error!`, deliberately: the frontend already raises this
+        // same failure at error level, and a second error-level line would push
+        // one user-visible failure over the auto-dispatcher's "2 errors within
+        // 60s" threshold on its own. The file target is always Debug, so a warn
+        // still lands in every bundle.
+        //
+        // `{:?}` over a hand-written sentence: the variant carries the path and
+        // the message in named fields, and Debug can't drift from them.
+        log::warn!(
+            target: "write_operations",
+            "op {} ({:?}) failed: {:?}",
+            event.operation_id,
+            event.operation_type,
+            event.error
+        );
         // Retain the failure so it outlives the record the manager is about to
         // remove: a backgrounded operation that fails while the queue window is
         // closed must still be able to say why. Same emit-site pattern as the
