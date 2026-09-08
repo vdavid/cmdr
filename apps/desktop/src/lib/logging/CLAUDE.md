@@ -21,6 +21,11 @@ Usage (adding logging, `RUST_LOG` recipes, the verbose toggle): `docs/tooling/lo
 - **`debugCategories` only affects the console sink** (browser devtools). The tauriBridge sink always sends debug+ to
   Rust in dev, so `RUST_LOG=FE:fileExplorer=debug,info` works without touching `debugCategories`. The verbose-logging
   toggle enables debug for both sinks.
+- **The bridge forwards the rendered message and nothing else, so every property must appear in the template.**
+  `FrontendLogEntry` is level + category + message; nothing reads `record.properties`. A field the message never names
+  is discarded at the IPC boundary and reaches neither the log file nor a bundle. `cmdr/no-unrendered-log-fields`
+  enforces it at every level (`debug` and `info` drop properties the same way). Note `String(obj)` renders
+  `[object Object]`, so interpolate a field you can read: `{error.message}`, or a pre-stringified value.
 - **The bridge dedups and throttles to protect against infinite-loop log floods.** Consecutive identical messages get
   ` (×N, deduplicated)` appended. Above 200 FE logs/s the excess is dropped with an "Excessive frontend logging
   detected" warning naming the top three dropped-from categories. Don't remove these guards; an unthrottled FE loop

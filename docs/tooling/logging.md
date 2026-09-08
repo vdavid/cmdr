@@ -27,8 +27,22 @@ Logs are sent to the Rust backend via a batching bridge (`log-bridge.ts`):
 - **Deduplication**: Consecutive identical `(level, category, message)` tuples collapse into one with a
   `(xN, deduplicated)` suffix
 - **Throttle**: Max 200 entries/second; excess entries are dropped with a warning
+- **Message only**: the bridge sends the rendered string. `FrontendLogEntry` carries level, category, and message, and
+  nothing reads `record.properties`, so a field the template never names is dropped here and appears in no log file and
+  no error-report bundle. `cmdr/no-unrendered-log-fields` fails the build on one.
 
 Logs appear in both the **browser console** (via LogTape's console sink) AND the **terminal/log file** (via the bridge).
+
+Because the message is the whole payload, write templates that render what you'd want at triage time:
+
+```typescript
+log.error('Trash refused it: {errorType}', { errorType: error.type, error }) // ❌ `error` is discarded
+log.error('Trash refused it: {errorType} ({detail})', { errorType: error.type, detail: error.message }) // ✅
+```
+
+A placeholder renders through `String(value)`, so an object interpolates as `[object Object]`. Name a readable field
+(`{error.message}`, which LogTape resolves as a path) or stringify before passing it. `{*}` renders the whole property
+bag and satisfies the rule, but it's a blunt instrument: prefer naming what matters.
 
 ### Log levels
 

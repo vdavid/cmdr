@@ -26,6 +26,7 @@ import { getForegroundOperationId } from '$lib/file-operations/foreground-operat
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { composeTransferCompleteToast } from '$lib/file-operations/transfer/transfer-complete-toast'
+import { getTechnicalDetails } from '$lib/file-operations/transfer/transfer-error-messages'
 import { getAppLogger } from '$lib/logging/logger'
 import { formatByteSize } from '$lib/units'
 import { transferOpLabel } from './transfer-op-label'
@@ -164,7 +165,13 @@ export function createAdoptedOperation(deps: AdoptedOperationDeps) {
     handleError(error: WriteOperationError): void {
       const op = adoptedProps?.operationType ?? 'copy'
       const failedOperationId = getForegroundOperationId()
-      log.error('{op} failed (adopted): {errorType}', { op: transferOpLabel(op), errorType: error.type, error })
+      // The same technical lines the error dialog shows, ending with the variant.
+      // The bridge forwards only the rendered message, so a payload passed as a
+      // bare property would never reach the log or a bundle.
+      log.error('{op} failed (adopted): {detail}', {
+        op: transferOpLabel(op),
+        detail: getTechnicalDetails(error).replaceAll('\n', '; '),
+      })
 
       settle()
       deps.openTransferError(op, error, failedOperationId)

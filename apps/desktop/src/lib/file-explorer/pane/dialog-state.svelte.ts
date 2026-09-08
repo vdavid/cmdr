@@ -27,6 +27,7 @@ import {
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { composeTransferCompleteToast } from '$lib/file-operations/transfer/transfer-complete-toast'
+import { getTechnicalDetails } from '$lib/file-operations/transfer/transfer-error-messages'
 import TrashCompleteToastContent from '$lib/file-operations/delete/TrashCompleteToastContent.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
@@ -573,10 +574,12 @@ export function createDialogState(deps: DialogStateDeps) {
         return
       }
 
-      log.error('{op} failed: {errorType}', {
+      // The same technical lines the error dialog shows, ending with the variant.
+      // The bridge forwards only the rendered message, so a payload passed as a
+      // bare property would never reach the log or a bundle.
+      log.error('{op} failed: {detail}', {
         op: transferOpLabel(op),
-        errorType: error.type,
-        error,
+        detail: getTechnicalDetails(error).replaceAll('\n', '; '),
       })
 
       paneEffects.refreshPanesAfterTransfer()

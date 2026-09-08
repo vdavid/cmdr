@@ -179,7 +179,7 @@ async function upgradeWithCredentials(volumeId: string, answer: SmbCredentialAns
 }
 
 function announceBreakdown(e: unknown): DirectConnectOutcome {
-  log.error('Direct SMB connection attempt broke down', { error: String(e) })
+  log.error('Direct SMB connection attempt broke down: {error}', { error: String(e) })
   addToast(tString('fileExplorer.pane.directConnectionUnavailableToast'), { level: 'error' })
   return 'stillOnOsMount'
 }

@@ -74,6 +74,7 @@ import { bindOperationSession } from '../operation-session/bind-operation-sessio
 import type { OperationOutcome, ScanReadout } from '../operation-session/operation-session.svelte'
 import { dispatchTransferOperation, type TransferDispatchConfig } from './transfer-dispatch'
 import { raiseCancelRollbackToast } from './cancel-rollback-toast'
+import { getTechnicalDetails } from './transfer-error-messages'
 
 export interface TransferProgressStateConfig extends TransferDispatchConfig {
   /** An operation already running that this view ADOPTS instead of starting one
@@ -371,13 +372,23 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
           // Expected, recoverable flow: the write-error only exists to prompt for
           // a password and retry (intercepted upstream in `handleTransferError`),
           // so log at warn to keep it out of prod error-report bundles (error+).
-          log.warn('{op} operation needs an archive password: {errorType}', {
+          // `wrongAttempt` separates the first prompt from a retry after a bad
+          // password, which is the only thing that distinguishes two of these.
+          log.warn('{op} operation needs an archive password (wrongAttempt={wrongAttempt})', {
             op: operationLabel,
-            errorType: error.type,
-            error,
+            wrongAttempt: error.wrongAttempt,
           })
         } else {
-          log.error('{op} error: {errorType}', { op: operationLabel, errorType: error.type, error })
+          // `getTechnicalDetails` is what the error dialog puts under "Technical
+          // details", and it ends with `Error type: <variant>`. Logging it means
+          // the log file and every error-report bundle carry the same reason the
+          // user could read on screen. Logging the variant alone once cost us the
+          // OS's words for a refused trash (ERR-BPAPM, 2026-09-08): the payload
+          // rode along as a property, and the bridge forwards only the message.
+          log.error('{op} error: {detail}', {
+            op: operationLabel,
+            detail: getTechnicalDetails(error).replaceAll('\n', '; '),
+          })
         }
         // No floor: the error dialog takes this dialog's place, so there is
         // nothing that could flash.

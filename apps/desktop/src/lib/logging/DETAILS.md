@@ -32,3 +32,15 @@ getAppLogger('feature')
   is unchanged.
 - **Rotation, the log-size cap, and the restart-to-apply transitions are the Rust side's**, single-sourced in
   `apps/desktop/src-tauri/src/logging/DETAILS.md`. Nothing on the frontend reads or reconfigures them.
+- **The bridge carries the rendered message and not `record.properties`, and a lint rule closes the gap rather than the
+  bridge widening.** `cmdr/no-unrendered-log-fields` fails the build on a property the template never names. The
+  alternative considered was serializing the property bag into the entry, and it loses on three counts:
+  `JSON.stringify(new Error(...))` is `{}` (the non-enumerable `message` and `stack` drop out), so the single most
+  common payload would arrive empty; arbitrary values need depth and cycle caps, and inflate a file target that is
+  always Debug under a 200 MB roof; and an uploaded bundle's redaction contract (`src-tauri/src/redact/`) is reasoned
+  about over strings a developer wrote, not over whatever an object happens to hold. Making the author name what
+  matters also reads better at triage time than an appended blob. Cost: the fix at a call site is a judgment call, not
+  a mechanical one, since a placeholder renders through `String(value)`.
+- **A structured-log pipeline is the thing that would change this answer.** If logs ever need to be queried rather than
+  read, carrying properties end to end becomes the right shape, and the rule becomes redundant. That is a different
+  project, not an incremental widening of the bridge.

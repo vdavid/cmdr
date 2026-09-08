@@ -63,7 +63,7 @@
         try {
             status = await getAdbInstallStatus()
         } catch (error) {
-            log.warn('Could not read the ADB install status', { error })
+            log.warn('Could not read the ADB install status: {error}', { error: String(error) })
         }
     }
 
@@ -73,7 +73,7 @@
         try {
             status = await recheckAdbInstall()
         } catch (error) {
-            log.warn('Could not re-check for adb', { error })
+            log.warn('Could not re-check for adb: {error}', { error: String(error) })
         } finally {
             rechecking = false
         }
@@ -103,7 +103,7 @@
             // budgeted per.
             await handleRecheck()
         } catch (error) {
-            log.warn('Could not open the adb file picker', { error })
+            log.warn('Could not open the adb file picker: {error}', { error: String(error) })
         }
     }
 </script>

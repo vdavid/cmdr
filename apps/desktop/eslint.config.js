@@ -44,6 +44,7 @@ import dialogNeedsFocusTrap from './eslint-plugins/dialog-needs-focus-trap.js'
 import preferUiPrimitive from './eslint-plugins/prefer-ui-primitive.js'
 import noTitleAttribute from './eslint-plugins/no-title-attribute.js'
 import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js'
+import noUnrenderedLogFields from './eslint-plugins/no-unrendered-log-fields.js'
 
 /* global process */
 const noTypecheck = process.env.ESLINT_NO_TYPECHECK === '1'
@@ -282,6 +283,7 @@ export default tseslint.config(
           'dialog-needs-focus-trap': dialogNeedsFocusTrap,
           'prefer-ui-primitive': preferUiPrimitive,
           'no-title-attribute': noTitleAttribute,
+          'no-unrendered-log-fields': noUnrenderedLogFields,
         },
       },
     },
@@ -341,6 +343,13 @@ export default tseslint.config(
       // the accessible name (`iframe`/`embed`/`object`) or a term's expansion
       // (`abbr`/`dfn`) are exempt inside the rule.
       'cmdr/no-title-attribute': 'error',
+      // Every property handed to a logger has to appear in that call's message.
+      // The log bridge forwards only the rendered string (`FrontendLogEntry` is
+      // level + category + message), so an unrendered field is discarded at the
+      // IPC boundary and reaches neither the log file nor an error-report
+      // bundle. ERR-BPAPM lost the OS's reason for a refused trash exactly this
+      // way. Applies at every level: `debug`/`info` drop properties too.
+      'cmdr/no-unrendered-log-fields': 'error',
     },
   },
   {

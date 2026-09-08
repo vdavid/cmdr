@@ -47,7 +47,7 @@
         try {
             keys = await listTrustedSftpHostKeys()
         } catch (error) {
-            log.warn('Could not read the trusted host keys', { error })
+            log.warn('Could not read the trusted host keys: {error}', { error: String(error) })
             keys = []
         }
     }
@@ -69,7 +69,7 @@
             await forgetSftpHostKey(key.host, key.port, key.algorithm)
             await load()
         } catch (error) {
-            log.warn('Could not forget a trusted host key', { error })
+            log.warn('Could not forget a trusted host key: {error}', { error: String(error) })
         } finally {
             forgetting = null
         }
