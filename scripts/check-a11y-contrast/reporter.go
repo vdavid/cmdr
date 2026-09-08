@@ -68,10 +68,14 @@ func Report(violations []Finding, warnings []string, rootDir string, verbose boo
 }
 
 // ReportOpacity prints every unmodeled opacity dimming found by
-// `AnalyzeOpacity` and returns true if any were found. It participates in
-// the overall exit code alongside the WCAG and APCA gates: an opacity dim on
-// live text is exactly as invisible to a user as a bad color pairing, which
-// is the whole reason this check exists (see `opacity_check.go`).
+// `AnalyzeOpacity` and returns true if any were found. Unlike the WCAG and
+// APCA gates, this is advisory, not a hard failure (see the exit-code
+// contract in main.go's package doc comment): the tool can't verify a
+// dimmed text color's real contrast without a browser, so a reported case
+// might be a real bug or might be fine — it's surfaced for triage, not
+// blocked on. Always printed regardless of exit code, so findings stay
+// visible every run until each is converted to a color token (which lets
+// the rule walker verify it directly) or hand-modeled in a synthesizer.
 func ReportOpacity(findings []OpacityFinding, rootDir string) bool {
 	if len(findings) == 0 {
 		return false

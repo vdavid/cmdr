@@ -28,7 +28,9 @@ pnpm check a11y-contrast
 go run ./scripts/check-a11y-contrast -- --verbose
 ```
 
-Exit code 0 on clean, 1 on any violation (a WCAG pair below threshold OR an APCA pair below the Lc-45 floor).
+Exit code 0 on clean, 1 on any violation (a WCAG pair below threshold OR an APCA pair below the Lc-45 floor). Unmodeled
+`opacity` dimming (see "Opacity (detect, don't compute)" below) is a third, advisory category: always printed, never
+part of the exit code.
 
 ## What it checks
 
@@ -101,10 +103,19 @@ rule with a static `opacity: N < 1` UNLESS it's one of:
 A reported finding isn't a computed WCAG/APCA verdict like `Finding` (there's no FG/BG/ratio to show): it's a
 structural "the walker can't see this" flag. The fix is one of the two the message states: express the dimming as a
 color token (so the walker's normal color/background pairing sees it) or hand-model the composited pair in a
-synthesizer.
+synthesizer. Converting a survivor to a color token is what promotes it into the set the WCAG/APCA gate actually
+verifies — it doesn't just quiet this check, it makes the pair provably fine (or catches it if it isn't).
 
-Feeds the WCAG walker's own violations into the exit code (`hasViolations || apcaFloorFail || opacityFail`): an
-opacity dim on live text is exactly as invisible to a user as a bad color pairing.
+**Advisory, not a hard gate** — unlike the WCAG violations and the APCA Lc-45 floor, which stay hard failures.
+`AnalyzeOpacity` reports what the walker *can't verify*, not a computed failure: a reported rule might be a real
+contrast bug (the file-list row above genuinely was) or might be perfectly fine once you look at what's actually
+behind it — the tool has no way to tell the two apart without a browser. Blocking every build on that would be
+indistinguishable from blocking on noise, so opacity findings never fail the exit code (for a direct `go run` or
+through the check runner). They're always printed, though — every run, in full, with no allowlist or baseline that
+can quiet an entry — so they stay visible until someone looks and either converts the rule or hand-models it. See
+`scripts/check/checks/desktop-svelte-a11y-contrast.go` for how the check runner surfaces this as a `warn` (yellow, not
+red; doesn't fail `pnpm check`) via a `CMDR_A11Y_OPACITY_STATUS_FILE` side channel — `go run` collapses any non-zero
+exit to 1, so the exit code alone can't tell "clean" apart from "clean of hard failures, but opacity findings remain."
 
 Only literal numeric `opacity` values resolve (`parseOpacity` in `parser.go`); `var(...)`, `calc(...)`, and other
 non-literal values are left unparsed rather than guessed (none exist in the codebase today).

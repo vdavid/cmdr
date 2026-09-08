@@ -6,7 +6,20 @@
 // ratio in both modes. Flags pairs below 4.5:1 (3:1 for large text).
 //
 // Run: go run ./scripts/check-a11y-contrast
-// Exit: 0 on clean, 1 on violations.
+// Exit: 0 on clean of WCAG + the APCA floor, 1 on either violating.
+//
+// A third category, unmodeled `opacity` dimming (opacity_check.go), is
+// advisory: it never fails the exit code (for any caller, direct or via the
+// check runner), since the tool can't verify a dimmed text color's real
+// contrast without a browser — a reported case might be a real bug or might
+// be fine. It's always printed, though, so the findings stay visible until
+// each is triaged. `go run` collapses any non-zero exit to 1 (a documented
+// Go limitation, not something we control), so opacity findings can't ride
+// the exit code as a THIRD state anyway; when `CMDR_A11Y_OPACITY_STATUS_FILE`
+// is set, this tool also writes the finding count there as a side channel —
+// see `scripts/check/checks/desktop-svelte-a11y-contrast.go`, which reads it
+// to tell "clean" apart from "clean of hard failures, but opacity findings
+// remain" without parsing this tool's human-readable stdout.
 package main
 
 import (
@@ -14,6 +27,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -112,21 +126,51 @@ func main() {
 	apcaFloorFail := ReportAPCA(allFindings, rootDir, *verbose)
 
 	// Unmodeled `opacity` dimming: a rule the rule walker can't fold into its
-	// color/background pairing (see opacity_check.go). Enforced alongside
-	// WCAG and APCA: an opacity dim on live text is exactly as invisible to a
-	// user as a bad color pairing.
-	opacityFail := ReportOpacity(opacityFindings, rootDir)
+	// color/background pairing (see opacity_check.go). Advisory, not a hard
+	// gate (see the exit-code contract in the package doc comment above): the
+	// tool can't verify a dimmed text color's real contrast without a
+	// browser, so a reported case might be a real bug or might be fine.
+	// Always printed, whether or not it changes the exit code, so the
+	// findings stay visible every run until each is triaged.
+	opacityFound := ReportOpacity(opacityFindings, rootDir)
+
+	// Side channel for the check-runner wrapper (see the package doc comment):
+	// `go run` collapses any non-zero exit to 1, so opacity-only findings
+	// can't signal a distinct exit code. Written whenever there are findings,
+	// independent of the hard-failure branches below.
+	writeOpacityStatusFile(len(opacityFindings))
 
 	summary := Summary(fileCount, analyzer.RulesEvaluated, len(allFindings), len(violations))
-	if hasViolations || apcaFloorFail || opacityFail {
-		extra := ""
-		if opacityFail {
-			extra = fmt.Sprintf(", %d unmodeled %s", len(opacityFindings), plural(len(opacityFindings), "opacity dim", "opacity dims"))
-		}
-		fmt.Printf("%s❌ %s%s%s\n", colorRed, summary, extra, colorReset)
+	if hasViolations || apcaFloorFail {
+		fmt.Printf("%s❌ %s%s\n", colorRed, summary, colorReset)
 		os.Exit(1)
 	}
+	if opacityFound {
+		extra := fmt.Sprintf(", %d unmodeled %s (advisory)", len(opacityFindings), plural(len(opacityFindings), "opacity dim", "opacity dims"))
+		fmt.Printf("%s⚠️  %s%s%s\n", colorYellow, summary, extra, colorReset)
+		return
+	}
 	fmt.Printf("%s✅ No contrast violations. %s%s\n", colorGreen, summary, colorReset)
+}
+
+// writeOpacityStatusFile writes the opacity finding count to the path named
+// by CMDR_A11Y_OPACITY_STATUS_FILE, if set and count > 0. See the package doc
+// comment: this is how the check-runner wrapper tells "clean" apart from
+// "clean of hard failures, but opacity findings remain" without parsing
+// stdout. A no-op (not a failure) when the env var is unset, for a
+// direct/manual `go run` — and a write failure is a warning, not fatal: the
+// human-readable report already printed either way.
+func writeOpacityStatusFile(count int) {
+	if count == 0 {
+		return
+	}
+	path := os.Getenv("CMDR_A11Y_OPACITY_STATUS_FILE")
+	if path == "" {
+		return
+	}
+	if err := os.WriteFile(path, []byte(strconv.Itoa(count)+"\n"), 0o644); err != nil {
+		fmt.Fprintf(os.Stderr, "%swarning: couldn't write opacity status file %s: %v%s\n", colorYellow, path, err, colorReset)
+	}
 }
 
 // sourceFileResult is what one file contributes to the walk in main(): WCAG
