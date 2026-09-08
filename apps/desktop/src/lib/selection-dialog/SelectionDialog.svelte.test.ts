@@ -23,19 +23,21 @@ const aiProviderListeners = new Set<(value: unknown) => void>()
 
 const { translateSelectionMock, addRecentMock, getRecentMock } = vi.hoisted(() => ({
   // Typed signature so `mock.calls[0]` is a positional tuple rather than `[]`.
-  translateSelectionMock: vi.fn((..._args: [string, string[], (boolean | null)?]): Promise<SelectionTranslateResult> => {
-    return Promise.resolve({
-      pattern: '*.png',
-      kind: 'glob',
-      isDirectory: null,
-      sizeMin: null,
-      sizeMax: null,
-      modifiedAfter: null,
-      modifiedBefore: null,
-      caveat: null,
-      label: null,
-    } as SelectionTranslateResult)
-  }),
+  translateSelectionMock: vi.fn(
+    (..._args: [string, string[], (boolean | null)?]): Promise<SelectionTranslateResult> => {
+      return Promise.resolve({
+        pattern: '*.png',
+        kind: 'glob',
+        isDirectory: null,
+        sizeMin: null,
+        sizeMax: null,
+        modifiedAfter: null,
+        modifiedBefore: null,
+        caveat: null,
+        label: null,
+      } as SelectionTranslateResult)
+    },
+  ),
   addRecentMock: vi.fn(() => Promise.resolve()),
   getRecentMock: vi.fn(() => Promise.resolve([] as SelectionHistoryEntry[])),
 }))

@@ -189,15 +189,15 @@ below for the section-aware patterns to follow.
 - **`RunCommand(ctx, name, args...)`** — wraps `exec.Cmd` with the runner's working dir, captured output, and timeout
   hooks.
 - **`CommandExists(name)`** — checks `PATH` before invoking.
-- **`EnsureGoTool(rootDir, name, installPath)`** — returns the path to the tool built from the pinned version, installing
-  it into `node_modules/.cache/cmdr-go-tools` when what's there doesn't match. Used for staticcheck, nilaway, etc.
-  `installPath` MUST pin a specific version (`@vX.Y.Z` or a pseudo-version); an unpinned path or `@latest` is a hard
-  error, not a fallback. Same rule applies to `cargo install` calls inside checks: pin both `--version` and `--locked`.
-  It ignores a same-named binary on `PATH` and installs repo-locally, so a bumped pin takes effect on the next run with
-  nothing to do by hand, and the user's own `~/go/bin` is left alone. Currency is decided by `go version -m` on the
-  binary: the module version must equal the pin AND the recorded Go toolchain must equal `MiseGoVersion`, since a tool
-  built by an older Go can't parse a newer stdlib (that mismatch reads as `method must have no type parameters` inside
-  `math/rand`, which names neither the tool nor its age).
+- **`EnsureGoTool(rootDir, name, installPath)`** — returns the path to the tool built from the pinned version,
+  installing it into `node_modules/.cache/cmdr-go-tools` when what's there doesn't match. Used for staticcheck, nilaway,
+  etc. `installPath` MUST pin a specific version (`@vX.Y.Z` or a pseudo-version); an unpinned path or `@latest` is a
+  hard error, not a fallback. Same rule applies to `cargo install` calls inside checks: pin both `--version` and
+  `--locked`. It ignores a same-named binary on `PATH` and installs repo-locally, so a bumped pin takes effect on the
+  next run with nothing to do by hand, and the user's own `~/go/bin` is left alone. Currency is decided by
+  `go version -m` on the binary: the module version must equal the pin AND the recorded Go toolchain must equal
+  `MiseGoVersion`, since a tool built by an older Go can't parse a newer stdlib (that mismatch reads as
+  `method must have no type parameters` inside `math/rand`, which names neither the tool nor its age).
 - **`runPrettierCheck(ctx, ...)`** / **`runESLintCheck(ctx, ...)`** — auto-fix locally, check-only under `--ci`.
   Centralizes the dual-mode behavior so individual checks don't reinvent it.
 - **`indentOutput(s)`** — indents captured stdout/stderr for error messages.

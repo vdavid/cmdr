@@ -41,9 +41,7 @@
     }
 
     $effect(() => {
-        // Restart polling when toggle or interval changes. The bare reads
-        // register reactive dependencies for Svelte 5's $effect; the `void`
-        // tells ESLint they're intentional, not orphan expressions.
+        // Restart polling when the toggle or the interval changes.
         dependOn(autoRefresh, intervalMs)
         startPolling()
     })
@@ -148,7 +146,6 @@
         if (tickInterval) clearInterval(tickInterval)
     })
     // Reference nowTick so the $effect recomputes "Updated Xs ago" each tick.
-    // `void` documents the intentional reactive-dependency read for ESLint.
     $effect(() => {
         dependOn(nowTick)
     })

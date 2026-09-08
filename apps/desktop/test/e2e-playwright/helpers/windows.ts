@@ -55,7 +55,9 @@ export async function openSettingsWindowViaProd(tauriPage: TauriPage): Promise<T
 /**
  * Closes a scoped window (viewer or settings) and waits for it to disappear
  * from the window list. `mainPage` is needed for the post-close `listWindows()`
- * poll because the scoped page is gone once the window closes.
+ * poll because the scoped page is gone once the window closes, which is also
+ * why the scoped page itself goes unused (`_scoped`): callers still pass it, so
+ * the signature keeps the pair together.
  *
  * Uses the Tauri window-close IPC directly instead of synthesizing Escape:
  * the viewer's Escape handler closes an open search bar first (one extra
