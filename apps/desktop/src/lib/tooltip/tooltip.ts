@@ -21,6 +21,16 @@ let timerNode: HTMLElement | null = null
 let tooltipContainer: HTMLDivElement | null = null
 
 /**
+ * Set by any non-modifier keypress and cleared by the next real pointer move: while it's on, hovering
+ * can't show a tooltip. See `installGlobalDismissListeners` for why the flag exists at all.
+ */
+let hoverSuppressed = false
+let globalDismissListenersInstalled = false
+
+/** Keys that are a modifier and nothing else, so holding one isn't "the user started typing". */
+const BARE_MODIFIER_KEYS = new Set(['Shift', 'Alt', 'Control', 'Meta', 'CapsLock', 'AltGraph'])
+
+/**
  * When a `contentEl` param adopts a caller-owned element into the shared tooltip, we record the
  * element and the host it came from so we can put it back. The tooltip element is a single app-wide
  * singleton, so any other trigger showing (or a live `update()`) must return this element first,
@@ -221,6 +231,44 @@ function cancelTimer(): void {
   timerNode = null
 }
 
+/**
+ * App-wide dismiss-on-keypress, matching OS-native tooltips: once the user touches the keyboard, the
+ * tooltip is in the way (arrowing down the file list, a tooltip parked over the rows you're reading).
+ *
+ * Hiding alone isn't enough for the panes. The mouse doesn't move while you arrow around, but arrowing
+ * past the last visible row SCROLLS the list, so a different row slides under the motionless pointer
+ * and fires `mouseenter` — the tooltip would pop back up over a file the user never pointed at. Hence
+ * `hoverSuppressed`, cleared only by a real pointer move.
+ *
+ * Suppression gates the HOVER path only. Tab fires `keydown` before the `focus` it causes, so gating
+ * the focus path too would silently kill keyboard-focus tooltips.
+ *
+ * Installed lazily from the action (never at module scope): prerendering runs this module in Node,
+ * where there's no `document`.
+ */
+function installGlobalDismissListeners(): void {
+  if (globalDismissListenersInstalled) return
+  globalDismissListenersInstalled = true
+
+  // Capture phase, so a feature handler calling `stopPropagation()` on its own keydown (the panes and
+  // dialogs do) can't leave a tooltip stranded on screen.
+  document.addEventListener(
+    'keydown',
+    (event: KeyboardEvent) => {
+      // A bare modifier isn't typing: holding ⌥ to read the favorites tooltip's own "⌥↑ / ⌥↓ to
+      // reorder" hint must not wipe that hint off the screen.
+      if (BARE_MODIFIER_KEYS.has(event.key)) return
+      hoverSuppressed = true
+      hideTooltip()
+    },
+    { capture: true },
+  )
+
+  document.addEventListener('mousemove', () => {
+    hoverSuppressed = false
+  })
+}
+
 function startShowTimer(triggerEl: HTMLElement, param: TooltipParam): void {
   cancelTimer()
   timerNode = triggerEl
@@ -245,10 +293,13 @@ function shouldShow(el: HTMLElement, param: TooltipParam): boolean {
 export function tooltip(node: HTMLElement, param: TooltipParam): ActionReturn<TooltipParam> {
   let currentParam = param
 
+  installGlobalDismissListeners()
+
   // Remove native title to prevent double-tooltip
   node.removeAttribute('title')
 
   const handleMouseEnter = (): void => {
+    if (hoverSuppressed) return
     if (!isEmptyParam(currentParam) && shouldShow(node, currentParam)) {
       startShowTimer(node, currentParam)
     }
@@ -268,17 +319,10 @@ export function tooltip(node: HTMLElement, param: TooltipParam): ActionReturn<To
     hideTooltip()
   }
 
-  const handleKeyDown = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape') {
-      hideTooltip()
-    }
-  }
-
   node.addEventListener('mouseenter', handleMouseEnter)
   node.addEventListener('mouseleave', handleMouseLeave)
   node.addEventListener('focus', handleFocus)
   node.addEventListener('blur', handleBlur)
-  node.addEventListener('keydown', handleKeyDown)
 
   return {
     update(newParam: TooltipParam) {
@@ -300,7 +344,6 @@ export function tooltip(node: HTMLElement, param: TooltipParam): ActionReturn<To
       node.removeEventListener('mouseleave', handleMouseLeave)
       node.removeEventListener('focus', handleFocus)
       node.removeEventListener('blur', handleBlur)
-      node.removeEventListener('keydown', handleKeyDown)
 
       // Cancel a pending show-timer owned by this node. Svelte removes a virtual-scroll row's DOM node
       // without firing `mouseleave`, so without this the timer would fire later against a detached node

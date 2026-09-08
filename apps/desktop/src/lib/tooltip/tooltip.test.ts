@@ -5,6 +5,9 @@ describe('tooltip', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     vi.useFakeTimers()
+    // The action's module state is app-wide and survives between tests, so clear any hover
+    // suppression a previous test's keypress left behind (a real pointer move does the same).
+    document.dispatchEvent(new MouseEvent('mousemove'))
   })
 
   afterEach(() => {
@@ -83,6 +86,94 @@ describe('tooltip', () => {
     expect(tip?.classList.contains('visible')).toBe(true)
     expect(tip?.textContent).toBe('Folder info')
     expect((tip as HTMLElement).style.top).not.toBe('0px')
+  })
+
+  // Typing or moving the pane cursor must clear the tooltip the way OS-native ones do: a tooltip
+  // hovering over the file list obstructs the very rows you're arrowing through.
+  describe('hides on keypress', () => {
+    it('hides a visible tooltip when a key is pressed', () => {
+      const el = makeTrigger()
+      tooltip(el, 'Folder info')
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+      expect(document.querySelector('.cmdr-tooltip.visible')).not.toBeNull()
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+
+      expect(document.querySelector('.cmdr-tooltip.visible')).toBeNull()
+    })
+
+    it('cancels a pending show timer, so a keypress during the delay shows nothing', () => {
+      const el = makeTrigger()
+      tooltip(el, 'Folder info')
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(100)
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+      vi.advanceTimersByTime(500)
+
+      expect(document.querySelector('.cmdr-tooltip.visible')).toBeNull()
+    })
+
+    // A bare modifier isn't "typing": holding ⌥ to read the favorites tooltip's own "⌥↑ / ⌥↓ to
+    // reorder" hint must not wipe that hint off the screen. Matches macOS.
+    it('keeps the tooltip up for a bare modifier keydown', () => {
+      const el = makeTrigger()
+      tooltip(el, 'Folder info')
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+
+      for (const key of ['Shift', 'Alt', 'Control', 'Meta']) {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key }))
+        expect(document.querySelector('.cmdr-tooltip.visible')).not.toBeNull()
+      }
+    })
+
+    // The pane case that plain hiding misses: arrowing past the last visible row scrolls the list, so
+    // a DIFFERENT row slides under the motionless pointer and fires `mouseenter`. Without suppression
+    // the tooltip pops back 400ms later, over a file the user never pointed at.
+    it('stays hidden when a row slides under the motionless pointer', () => {
+      const el = makeTrigger()
+      tooltip(el, 'Folder info')
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+
+      // The scrolled-in row's own trigger enters under the stationary mouse.
+      const scrolledInRow = makeTrigger()
+      tooltip(scrolledInRow, 'Another folder')
+      scrolledInRow.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+
+      expect(document.querySelector('.cmdr-tooltip.visible')).toBeNull()
+    })
+
+    it('shows again on hover once the pointer actually moves', () => {
+      const el = makeTrigger()
+      tooltip(el, 'Folder info')
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+
+      document.dispatchEvent(new MouseEvent('mousemove'))
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+
+      expect(document.querySelector('.cmdr-tooltip.visible')).not.toBeNull()
+    })
+
+    // Suppression covers the HOVER path only. Tab fires keydown before the `focus` it causes, so
+    // gating focus too would silently kill keyboard-focus tooltips.
+    it('still shows on keyboard focus right after the keypress', () => {
+      const el = makeTrigger()
+      tooltip(el, 'Folder info')
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+      el.dispatchEvent(new FocusEvent('focus'))
+      vi.advanceTimersByTime(500)
+
+      expect(document.querySelector('.cmdr-tooltip.visible')).not.toBeNull()
+    })
   })
 
   describe('contentEl (rich live content)', () => {

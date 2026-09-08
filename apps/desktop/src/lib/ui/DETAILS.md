@@ -420,6 +420,27 @@ corner. Two guards prevent this and must both stay: (1) the action's `destroy()`
 zero-rect heuristic — happy-dom reports zero rects for every connected element, so it false-positives the whole test
 suite. Covered by `tooltip.test.ts`.
 
+### Dismiss on keypress
+
+Any non-modifier keydown hides the tooltip app-wide, the way OS-native tooltips behave: a tooltip parked over the file
+list obstructs the rows the user is arrowing through. Two document-level listeners in `tooltip.ts`
+(`installGlobalDismissListeners`, installed lazily on first action use because prerendering evaluates the module in Node
+where there's no `document`) carry the whole behavior:
+
+- **Hiding alone isn't enough for the panes.** The mouse doesn't move while arrowing, but arrowing past the last visible
+  row scrolls the list, so a different row slides under the motionless pointer and fires `mouseenter`, and the tooltip
+  reappears over a file the user never pointed at. So a keypress also sets `hoverSuppressed`, which blocks hover-shows
+  until a real `mousemove` clears it.
+- **Suppression gates the hover path only.** Tab fires `keydown` before the `focus` it causes, so gating the focus path
+  too would silently kill keyboard-focus tooltips.
+- **Bare modifiers don't dismiss** (`BARE_MODIFIER_KEYS`): holding ⌥ to read the favorites tooltip's own "⌥↑ / ⌥↓ to
+  reorder" hint must not wipe that hint. Matches macOS.
+- The keydown listener is on the **capture** phase, so a feature handler calling `stopPropagation()` can't strand a
+  tooltip on screen. Escape needs no special case; it's just another key.
+
+Covered by `tooltip.test.ts` § "hides on keypress". Its `beforeEach` dispatches a `mousemove` because `hoverSuppressed`
+is module state that outlives a single test.
+
 ## Button
 
 Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (default) | `mini`. ⚠️ Props are declared one
