@@ -96,7 +96,21 @@ describe('verifyAccessJwt', () => {
     })
   })
 
-  it('accepts a service token, the machine caller Access mints for `type: app`', async () => {
+  it('accepts a browser login, which Access also stamps `type: app`', async () => {
+    // Access puts `type: 'app'` on EVERY application token, a user login included; only
+    // `common_name` tells a service token apart. Verified against Cloudflare's own payload
+    // examples (developers.cloudflare.com application-token reference, 2026-09-08).
+    const token = await makeToken(keys.privateKey, {
+      payload: { type: 'app', identity_nonce: '6ei69kawdKzMIAPF', country: 'SE' },
+    })
+    await expect(verifyAccessJwt(requestWithHeader(token))).resolves.toEqual({
+      kind: 'user',
+      email: 'veszelovszki@gmail.com',
+      sub: 'user-123',
+    })
+  })
+
+  it('accepts a service token, the machine caller Access names by `common_name`', async () => {
     // A real service-token payload: no `email`, an empty `sub`, and the token named by `common_name`.
     const token = await makeToken(keys.privateKey, {
       payload: {

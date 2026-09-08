@@ -344,17 +344,23 @@ check `iss`, `aud`, `exp`, and `nbf` (60s clock skew). Keys are cached for an ho
 exactly one refetch, so a Cloudflare key rotation doesn't lock everyone out and a bogus `kid` can't drive unbounded
 fetches at the certs endpoint.
 
-**Two kinds of caller, one gate.** Access mints a user token on a browser login and a `type: 'app'` token for a service
-token (the `CF-Access-Client-Id` / `CF-Access-Client-Secret` pair the agent-readable `/api/report` recipe uses, see
+**Two kinds of caller, one gate.** Access mints a user token on a browser login and a service token for the
+`CF-Access-Client-Id` / `CF-Access-Client-Secret` pair the agent-readable `/api/report` recipe uses (see
 `docs/tooling/analytics-dashboard.md`). Both are signed by the same keys and go through the identical checks; only the
 last step differs, mapping a verified payload to an identity. A machine token has no `email` claim at all and an empty
 `sub`, and is named by `common_name`, so `verifyAccessJwt` returns a discriminated union:
 `{ kind: 'user', email, sub } | { kind: 'service', commonName }`, landing on `event.locals.identity`. The union is the
 point: a bare email string would have to be empty or synthetic for a machine, and a route wanting a real person could
-then read it as one by accident. `type` is checked first, so a machine token can never come back as a user whatever else
-it carries; each branch then needs its own identifying claim, and a payload with neither is refused. That mapping step
-is the last place a payload can still be rejected, so it fails closed both ways: a `type: 'app'` token with no
-`common_name` is refused, as is a user token with no `email`.
+then read it as one by accident.
+
+❌ **`type` cannot discriminate the two.** Access stamps `type: 'app'` on _every_ application token, a browser login
+included; `type: 'org'` is the team-wide session token, which never reaches an application. `common_name` is the only
+claim unique to a service token, so `identityFromPayload` tests it first (a machine that somehow also carried an `email`
+still reads as a machine), then falls through to `email` for a person. That mapping step is the last place a payload can
+still be rejected, so it fails closed both ways: a token with neither claim is refused. Claim shapes verified against
+Cloudflare's own payload examples (`developers.cloudflare.com` application-token reference, 2026-09-08); branching on
+`type` instead 403'd every browser login while service tokens sailed through, which is exactly the asymmetry to watch
+for if this ever regresses.
 
 **Constants, not env vars.** The team domain and audience tag live in `access-jwt.ts` as constants. Both are public (the
 audience tag appears in Access's own login-redirect URL), and a missing env var would fail _open_ on a deploy slip,
@@ -370,8 +376,9 @@ works with no token. `wrangler pages dev` serves a built bundle, so it enforces 
 Cloudflare's own guidance describes. `src/lib/server/access-jwt.test.ts` covers the attack cases directly: `alg: none`,
 HS256 confusion, foreign signing key, tampered payload, wrong audience, wrong issuer, expired, not-yet-valid, malformed,
 and certs-endpoint failure (must reject, never fail open). The service-token path carries the same set: a self-minted
-`type: 'app'` payload spliced onto a real signature, an unsigned one, and one minted for another Access application all
-have to be refused, or the machine path would be a way around the gate rather than a way through it.
+`common_name` payload spliced onto a real signature, an unsigned one, and one minted for another Access application all
+have to be refused, or the machine path would be a way around the gate rather than a way through it. Both kinds also
+have a happy-path test carrying the real `type: 'app'` stamp, so the discriminator can't quietly regress to `type`.
 
 ## Key decisions
 
