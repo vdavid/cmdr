@@ -110,6 +110,7 @@ async fn make_docker_auth_volume() -> SmbVolume {
         "/tmp/smb-soak-mount",
         &volume_id,
         params,
+        "",
         crate::volume_host::host(),
     )
     .await

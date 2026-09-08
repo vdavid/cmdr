@@ -32,8 +32,15 @@ pub fn enrich_from_volume_registry(volumes: &mut [LocationInfo]) {
 pub struct SmbMountInfo {
     /// Server hostname or IP (for example, "192.168.1.111").
     pub server: String,
-    /// Share name (for example, "naspi").
+    /// Share name, ONE path segment (for example, "naspi"). This is what goes to
+    /// TreeConnect, so it can never carry a separator.
     pub share: String,
+    /// Where inside the share this mount is anchored, `/`-separated and without
+    /// leading or trailing separators. `None` for the ordinary mount at the share
+    /// root. `mount -t cifs //server/share/sub` records the whole path in the
+    /// device field. Same field, same meaning as the macOS twin's; see
+    /// `volumes/smb.rs`.
+    pub subpath: Option<String>,
     /// Username if present in the mount source (for example, "david").
     pub username: Option<String>,
     /// Port from the mount source (for example, 10480). Defaults to 445.
@@ -56,13 +63,17 @@ pub fn get_smb_mount_info(mount_path: &str) -> Option<SmbMountInfo> {
     parse_smb_mount_source(&entry.device)
 }
 
-/// Parses an SMB mount source string like `//user@host/share` or `//host/share`.
+/// Parses an SMB mount source string like `//user@host/share`, `//host/share`, or
+/// `//host/share/dir/below` for a mount anchored inside the share.
 pub(super) fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
     let rest = source.strip_prefix("//")?;
-    let (server_part, share) = rest.split_once('/')?;
-    if share.is_empty() {
-        return None;
-    }
+    let (server_part, share_path) = rest.split_once('/')?;
+
+    // A share is ONE path segment; everything below it is a directory inside the
+    // share. See `SmbMountInfo::subpath`.
+    let mut segments = share_path.split('/').filter(|segment| !segment.is_empty());
+    let share = segments.next()?.to_string();
+    let subpath = segments.collect::<Vec<_>>().join("/");
 
     let (username, server) = if let Some((user, host)) = server_part.split_once('@') {
         (Some(user.to_string()), host.to_string())
@@ -79,7 +90,8 @@ pub(super) fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
 
     Some(SmbMountInfo {
         server,
-        share: share.to_string(),
+        share,
+        subpath: (!subpath.is_empty()).then_some(subpath),
         username,
         port,
     })
@@ -237,5 +249,34 @@ mod tests {
         assert_eq!(parse_gvfs_smb_dirname("smb-share:server=192.168.1.1"), None);
         assert_eq!(parse_gvfs_smb_dirname("smb-share:share=data"), None);
         assert_eq!(parse_gvfs_smb_dirname("smb-share:"), None);
+    }
+
+    #[test]
+    fn parses_a_plain_share_mount() {
+        let info = parse_smb_mount_source("//192.168.1.111/naspi").expect("a well-formed source");
+        assert_eq!(info.server, "192.168.1.111");
+        assert_eq!(info.share, "naspi");
+        assert_eq!(info.subpath, None);
+        assert_eq!(info.port, 445);
+    }
+
+    /// `mount -t cifs //server/share/sub` records the whole path in the device
+    /// field, and a share is ONE segment: the rest is a directory inside it. The
+    /// macOS twin has the same rule, for the DFS sub-mount that reported ERR-48RZX
+    /// (`volumes/smb.rs`); keeping the two parsers in step is the point.
+    #[test]
+    fn a_subdirectory_mount_keeps_only_the_first_segment_as_the_share() {
+        let info = parse_smb_mount_source("//alice@nas.local/media/photos/2026").expect("a well-formed source");
+        assert_eq!(info.server, "nas.local");
+        assert_eq!(info.share, "media");
+        assert_eq!(info.subpath.as_deref(), Some("photos/2026"));
+        assert_eq!(info.username.as_deref(), Some("alice"));
+    }
+
+    #[test]
+    fn a_trailing_slash_is_not_an_empty_component() {
+        let info = parse_smb_mount_source("//nas/media/").expect("a well-formed source");
+        assert_eq!(info.share, "media");
+        assert_eq!(info.subpath, None);
     }
 }

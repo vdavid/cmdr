@@ -487,3 +487,138 @@ async fn smb_integration_space_info() {
     assert!(available_bytes > 0);
     assert!(used_bytes <= total_bytes);
 }
+
+// ── A mount anchored inside the share ─────────────────────────────────────────
+//
+// macOS follows a DFS referral by mounting the target underneath the namespace
+// root, and a subdirectory mount looks identical: the volume root is a DIRECTORY
+// in the share. Everything below proves the anchor against a real server, because
+// the failure mode it guards is a real request landing at a real, wrong place —
+// which unit tests over a pure function can pin but not disprove. Reported as
+// ERR-48RZX.
+
+/// A mount anchored inside the share lists what's at its own root, not the
+/// share's, and the paths it hands back are under its own mount.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_anchored_mount_lists_its_own_root() {
+    const ANCHORED_MOUNT: &str = "/tmp/smb-anchored-mount";
+
+    let share = make_docker_volume().await;
+    let dir = test_dir_name();
+    ensure_clean(&share, &dir).await;
+    share.create_directory(Path::new(&dir)).await.unwrap();
+    share.create_directory(Path::new(&format!("{dir}/inside"))).await.unwrap();
+    share
+        .create_file(Path::new(&format!("{dir}/marker.txt")), b"anchored")
+        .await
+        .unwrap();
+
+    let anchored = make_docker_volume_anchored(&dir, ANCHORED_MOUNT).await;
+
+    let entries = anchored.list_directory(Path::new(ANCHORED_MOUNT), None).await.unwrap();
+    let mut names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+    names.sort_unstable();
+    assert_eq!(
+        names,
+        ["inside", "marker.txt"],
+        "the anchored mount lists the directory it is anchored at, not the whole share"
+    );
+    assert!(
+        entries.iter().all(|e| e.path.starts_with(ANCHORED_MOUNT)),
+        "every path it hands back is addressable under its own mount root: {entries:#?}"
+    );
+
+    let meta = anchored
+        .get_metadata(Path::new(&format!("{ANCHORED_MOUNT}/marker.txt")))
+        .await
+        .unwrap();
+    assert_eq!(meta.size, Some(8), "it stats the file inside the anchor");
+
+    ensure_clean(&share, &dir).await;
+}
+
+/// The bytes an anchored mount writes land inside its anchor, which only the
+/// share-rooted volume can confirm: a missing join would have created
+/// `/marker.txt` at the top of the share instead, and the write would still have
+/// reported success.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_an_anchored_write_lands_inside_the_anchor() {
+    const ANCHORED_MOUNT: &str = "/tmp/smb-anchored-write-mount";
+
+    let share = make_docker_volume().await;
+    let dir = test_dir_name();
+    ensure_clean(&share, &dir).await;
+    share.create_directory(Path::new(&dir)).await.unwrap();
+
+    // Unique inside the anchor too, so the "not at the top of the share" checks
+    // below can't be answered by some other test's leftovers on this fixture.
+    let inner = format!("inner-{dir}");
+
+    let anchored = make_docker_volume_anchored(&dir, ANCHORED_MOUNT).await;
+    anchored
+        .create_directory(Path::new(&format!("{ANCHORED_MOUNT}/{inner}")))
+        .await
+        .unwrap();
+    anchored
+        .create_file(
+            Path::new(&format!("{ANCHORED_MOUNT}/{inner}/written.txt")),
+            b"landed here",
+        )
+        .await
+        .unwrap();
+
+    // Read back through the SHARE-rooted volume, at the full share-relative path.
+    let landed = share
+        .open_read_stream(Path::new(&format!("{dir}/{inner}/written.txt")))
+        .await
+        .expect("the file is inside the anchor, where the anchored mount put it");
+    assert_eq!(drain(landed).await, b"landed here", "and it holds what was written");
+
+    assert!(
+        !share.exists(Path::new(&inner)).await,
+        "the anchor was applied, not dropped: nothing was created at the top of the share"
+    );
+
+    ensure_clean(&share, &dir).await;
+}
+
+/// Deleting through an anchored mount reaches the file inside the anchor. The
+/// dangerous inverse of the write case: a dropped anchor would have aimed a
+/// delete at a same-named path at the top of the share.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_an_anchored_delete_stays_inside_the_anchor() {
+    const ANCHORED_MOUNT: &str = "/tmp/smb-anchored-delete-mount";
+
+    let share = make_docker_volume().await;
+    let dir = test_dir_name();
+    let decoy = format!("{dir}-decoy.txt");
+    ensure_clean(&share, &dir).await;
+    share.create_directory(Path::new(&dir)).await.unwrap();
+    share
+        .create_file(Path::new(&format!("{dir}/doomed.txt")), b"delete me")
+        .await
+        .unwrap();
+    // A same-named file one level up is what a dropped anchor would hit instead.
+    share.create_file(Path::new(&decoy), b"leave me alone").await.unwrap();
+
+    let anchored = make_docker_volume_anchored(&dir, ANCHORED_MOUNT).await;
+    anchored
+        .delete(Path::new(&format!("{ANCHORED_MOUNT}/doomed.txt")))
+        .await
+        .unwrap();
+
+    assert!(
+        !share.exists(Path::new(&format!("{dir}/doomed.txt"))).await,
+        "the file inside the anchor is gone"
+    );
+    assert!(
+        share.exists(Path::new(&decoy)).await,
+        "and nothing outside the anchor was touched"
+    );
+
+    let _ = share.delete(Path::new(&decoy)).await;
+    ensure_clean(&share, &dir).await;
+}

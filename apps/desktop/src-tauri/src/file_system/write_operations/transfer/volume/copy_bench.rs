@@ -55,6 +55,7 @@ async fn phase4_bench_baseline_smb_to_local_100_tiny_files() {
         "/Volumes/naspi-bench-p4",
         &smb_volume_id,
         params,
+        "",
         crate::volume_host::host(),
     )
     .await

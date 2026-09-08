@@ -588,6 +588,7 @@ async fn connect_target() -> Target {
                 "/tmp/smb-bench-mount",
                 &volume_id,
                 params,
+                "",
                 crate::volume_host::host(),
             )
             .await
@@ -618,6 +619,7 @@ async fn connect_target() -> Target {
                 "/Volumes/naspi-m43-bench",
                 &volume_id,
                 params,
+                "",
                 crate::volume_host::host(),
             )
             .await

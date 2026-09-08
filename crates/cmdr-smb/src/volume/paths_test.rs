@@ -105,3 +105,93 @@ fn to_display_path_with_subpath() {
         "/Volumes/TestShare/Documents/report.pdf"
     );
 }
+
+// ── Mounts anchored INSIDE the share ──────────────────────────────────────────
+//
+// macOS follows a DFS referral by mounting the target underneath the namespace
+// root, and a subdirectory mount looks the same: the mount is a directory inside
+// the share, not the share root. The share is what TreeConnect gets; the anchor
+// is what every path on the wire has to be joined onto. Getting this wrong is the
+// "real request at a real, wrong place" failure this whole module guards against,
+// so both directions are pinned. Reported as ERR-48RZX.
+
+#[test]
+fn an_anchored_mount_joins_its_share_root_onto_the_wire_path() {
+    let vol = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
+    assert_eq!(
+        vol.to_smb_path(Path::new("/Volumes/SYSVOL/lgs-net.com/Policies")).unwrap(),
+        "lgs-net.com/Policies"
+    );
+    assert_eq!(
+        vol.to_smb_path(Path::new("/Volumes/SYSVOL/lgs-net.com/Policies/GPT.INI"))
+            .unwrap(),
+        "lgs-net.com/Policies/GPT.INI"
+    );
+}
+
+#[test]
+fn an_anchored_mount_root_is_the_share_root_itself() {
+    // The mount root is not the share root: asking for "" would list the whole
+    // share instead of the directory the pane is actually showing.
+    let vol = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
+    assert_eq!(vol.to_smb_path(Path::new("/Volumes/SYSVOL/lgs-net.com")).unwrap(), "lgs-net.com");
+    assert_eq!(vol.to_smb_path(Path::new("/")).unwrap(), "lgs-net.com");
+    assert_eq!(vol.to_smb_path(Path::new("")).unwrap(), "lgs-net.com");
+}
+
+#[test]
+fn an_anchored_mount_joins_relative_paths_too() {
+    // The trait contract's relative form is relative to the VOLUME root, which on
+    // an anchored mount is already inside the share.
+    let vol = make_test_volume_anchored("photos/2026", "/Volumes/2026");
+    assert_eq!(vol.to_smb_path(Path::new("June/IMG_1.jpg")).unwrap(), "photos/2026/June/IMG_1.jpg");
+}
+
+#[test]
+fn an_anchored_mount_still_rejects_a_path_outside_its_mount() {
+    // The anchor must not become a way to reach the rest of the share: a path
+    // that isn't under this mount is still `NotFound`, not a join.
+    let vol = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
+    for outside in ["/Volumes/SYSVOL/other", "/Volumes/SYSVOL", "/Users/andrew/notes.txt"] {
+        assert!(
+            matches!(vol.to_smb_path(Path::new(outside)), Err(VolumeError::NotFound(_))),
+            "{outside} is not on this mount"
+        );
+    }
+}
+
+#[test]
+fn an_anchored_mount_strips_its_share_root_back_off_for_display() {
+    // The inverse of `to_smb_path`: a watcher event or an error message names a
+    // share-relative path, and the pane only knows mount-relative ones.
+    let vol = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
+    assert_eq!(vol.to_display_path("lgs-net.com"), "/Volumes/SYSVOL/lgs-net.com");
+    assert_eq!(
+        vol.to_display_path("lgs-net.com/Policies/GPT.INI"),
+        "/Volumes/SYSVOL/lgs-net.com/Policies/GPT.INI"
+    );
+}
+
+#[test]
+fn the_two_directions_round_trip_on_an_anchored_mount() {
+    // The pair has to compose, or a mutation patches a listing-cache key nothing
+    // is watching and the pane goes stale after a write that worked.
+    let vol = make_test_volume_anchored("photos/2026", "/Volumes/2026");
+    for display in ["/Volumes/2026", "/Volumes/2026/June", "/Volumes/2026/June/IMG_1.jpg"] {
+        let wire = vol.to_smb_path(Path::new(display)).expect("on this mount");
+        assert_eq!(vol.to_display_path(&wire), display, "round trip through {wire}");
+    }
+}
+
+#[test]
+fn a_share_root_anchor_never_matches_a_sibling_by_name_prefix() {
+    // The same whole-component rule the mount root gets: `lgs-net.com.old` starts
+    // with `lgs-net.com` as a string, and stripping it would name a path on a
+    // directory the user never mounted.
+    let vol = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
+    assert_eq!(
+        vol.to_display_path("lgs-net.com.old/GPT.INI"),
+        "/Volumes/SYSVOL/lgs-net.com/lgs-net.com.old/GPT.INI",
+        "an unrelated share-relative path stays under the mount rather than being mis-stripped"
+    );
+}

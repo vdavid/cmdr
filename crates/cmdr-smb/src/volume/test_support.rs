@@ -36,9 +36,19 @@ pub(super) fn make_test_volume_with_id(volume_id: &str) -> SmbVolume {
     make_test_volume_with(volume_id, VolumeHost::detached())
 }
 
+/// A disconnected test volume for a mount anchored INSIDE the share, the shape a
+/// DFS sub-mount and a subdirectory mount both take.
+pub(super) fn make_test_volume_anchored(share_root: &str, mount_path: &str) -> SmbVolume {
+    make_test_volume_full("volumestestshare", VolumeHost::detached(), share_root, mount_path)
+}
+
 /// A disconnected test volume over a host the caller wired, for the tests that
 /// assert on what the backend told a seam.
 pub(super) fn make_test_volume_with(volume_id: &str, host: VolumeHost) -> SmbVolume {
+    make_test_volume_full(volume_id, host, "", "/Volumes/TestShare")
+}
+
+fn make_test_volume_full(volume_id: &str, host: VolumeHost, share_root: &str, mount_path: &str) -> SmbVolume {
     let params = SmbConnectionParams {
         server: "192.168.1.100".to_string(),
         share_name: "TestShare".to_string(),
@@ -46,13 +56,16 @@ pub(super) fn make_test_volume_with(volume_id: &str, host: VolumeHost) -> SmbVol
         username: "Guest".to_string(),
         password: String::new(),
     };
-    let mount_path = PathBuf::from("/Volumes/TestShare");
+    let mount_path = PathBuf::from(mount_path);
+    let share_root = share_root.to_string();
     let volume_id = volume_id.to_string();
     SmbVolume {
         name: "TestShare".to_string(),
         mount_path: mount_path.clone(),
+        share_root: share_root.clone(),
         mount_root_gone: AtomicBool::new(false),
         inner: Arc::new_cyclic(|me| SmbVolumeInner {
+            share_root_by_mount: StdRwLock::new(std::collections::HashMap::from([(mount_path.clone(), share_root)])),
             share_name: "TestShare".to_string(),
             volume_id,
             params: Arc::new(tokio::sync::RwLock::new(params)),

@@ -52,6 +52,7 @@ async fn connect_public() -> Arc<dyn Volume> {
         TEST_MOUNT_ROOT,
         &volume_id,
         params,
+        "",
         crate::volume_host::host(),
     )
     .await

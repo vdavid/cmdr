@@ -339,3 +339,80 @@ fn a_share_opened_with_credentials_offers_no_guest_option() {
         SignInShape::UsernamePassword { guest_allowed: false }
     );
 }
+
+// ── Promoting a mount anchored inside the share ───────────────────────────────
+
+/// A recorded root promotes to ITS anchor, not the one the current instance
+/// happens to hold: two mounts of one share need not sit at the same place in it.
+#[test]
+fn a_promotion_uses_the_anchor_recorded_for_the_target_root() {
+    let vol = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
+    vol.note_mount_root("/Volumes/SYSVOL", "");
+
+    let promoted = vol.rerooted(Path::new("/Volumes/SYSVOL")).expect("a recorded root");
+    let promoted = promoted.as_any().downcast_ref::<SmbVolume>().expect("still an SmbVolume");
+
+    assert_eq!(promoted.share_root(), "", "the target root sits at the share root");
+    assert_eq!(
+        promoted
+            .to_smb_path(Path::new("/Volumes/SYSVOL/lgs-net.com/Policies"))
+            .expect("a path inside the new mount"),
+        "lgs-net.com/Policies",
+        "carrying the old anchor over would have asked for lgs-net.com/lgs-net.com/Policies"
+    );
+}
+
+/// An anchored instance refuses a root nobody placed, rather than joining its own
+/// anchor onto a mount that may not share it: that addresses a real path on the
+/// share nobody asked for. The registry reads `None` as "can't re-root".
+#[test]
+fn an_anchored_share_refuses_to_promote_to_an_unrecorded_root() {
+    let vol = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
+    assert!(vol.rerooted(Path::new("/Volumes/SomewhereElse")).is_none());
+}
+
+/// The ordinary share keeps promoting to any root the registry hands it. Roots
+/// reach the registry from paths that never touch the SMB upgrade, so this is the
+/// common case, and an unanchored mount has no anchor to get wrong.
+#[test]
+fn an_unanchored_share_still_promotes_to_an_unrecorded_root() {
+    let vol = make_test_volume();
+    let promoted = vol
+        .rerooted(Path::new("/Volumes/TestShare-1"))
+        .expect("an unanchored share re-roots to any root");
+    assert_eq!(
+        promoted
+            .as_any()
+            .downcast_ref::<SmbVolume>()
+            .expect("still an SmbVolume")
+            .share_root(),
+        ""
+    );
+}
+
+/// A reconnect builds a new instance over a new session while the registry keeps
+/// the roots it already had. Without inheriting them the successor would refuse a
+/// promotion its predecessor would have allowed.
+#[test]
+fn a_successor_inherits_the_mount_roots_its_predecessor_knew() {
+    let predecessor = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
+    predecessor.note_mount_root("/Volumes/SYSVOL", "");
+
+    let successor = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
+    assert!(
+        successor.rerooted(Path::new("/Volumes/SYSVOL")).is_none(),
+        "nothing told the successor about that root yet"
+    );
+
+    successor.adopt_mount_roots_from(&predecessor);
+
+    let promoted = successor.rerooted(Path::new("/Volumes/SYSVOL")).expect("now recorded");
+    assert_eq!(
+        promoted
+            .as_any()
+            .downcast_ref::<SmbVolume>()
+            .expect("still an SmbVolume")
+            .share_root(),
+        ""
+    );
+}

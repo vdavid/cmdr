@@ -13,7 +13,11 @@ impl SmbVolume {
     /// Converts a volume-relative path to the SMB relative path string.
     ///
     /// The frontend sends paths relative to the volume root (which is the mount path).
-    /// smb2 expects paths relative to the share root with `/` separators.
+    /// smb2 expects paths relative to the SHARE root with `/` separators, and the
+    /// two are the same place only when this mount sits at the share root: an
+    /// anchored mount (a DFS sub-mount, a subdirectory mount) has the volume root
+    /// a directory or more inside the share, so its
+    /// [`share_root`](SmbVolume::share_root) is joined on here.
     /// NFC-normalizes the result because macOS sends NFD (decomposed) paths
     /// but SMB servers expect NFC (composed). Without this, paths with accented
     /// characters (like "ä") fail with STATUS_OBJECT_PATH_NOT_FOUND.
@@ -27,20 +31,33 @@ impl SmbVolume {
 
         let path_str = path.to_string_lossy();
 
-        // Empty, `.`, and `/` all mean the volume root.
+        // Empty, `.`, and `/` all mean the volume root, which is where this mount
+        // is anchored inside the share.
         if path_str.is_empty() || path_str == "/" || path_str == "." {
-            return Ok(String::new());
+            return Ok(self.share_root.clone());
         }
 
-        // Relative paths are what the trait contract asks for: use them as-is.
+        // Relative paths are what the trait contract asks for, and they're relative
+        // to the VOLUME root, so they get the anchor too.
         if !path.is_absolute() {
-            return Ok(path_str.nfc().collect());
+            return Ok(self.under_share_root(&path_str.nfc().collect::<String>()));
         }
 
         // Absolute (the frontend does send these): must be inside the mount.
         match path.strip_prefix(&self.mount_path) {
-            Ok(relative) => Ok(relative.to_string_lossy().nfc().collect()),
+            Ok(relative) => Ok(self.under_share_root(&relative.to_string_lossy().nfc().collect::<String>())),
             Err(_) => Err(VolumeError::NotFound(path_str.into_owned())),
+        }
+    }
+
+    /// Joins a mount-relative path onto this mount's anchor inside the share.
+    ///
+    /// Free when the mount sits at the share root, which is every ordinary mount.
+    fn under_share_root(&self, mount_relative: &str) -> String {
+        match (self.share_root.as_str(), mount_relative) {
+            ("", _) => mount_relative.to_string(),
+            (anchor, "") => anchor.to_string(),
+            (anchor, rest) => format!("{anchor}/{rest}"),
         }
     }
 
@@ -56,12 +73,37 @@ impl SmbVolume {
             .map(|smb_path| PathBuf::from(self.to_display_path(&smb_path)))
     }
 
-    /// Returns the full absolute path for a relative SMB path (under mount point).
+    /// Returns the full absolute path for a share-relative SMB path (under the
+    /// mount point).
+    ///
+    /// The inverse of [`to_smb_path`](Self::to_smb_path): this mount's anchor
+    /// inside the share comes back off, by whole COMPONENTS, so a sibling that
+    /// merely shares a name prefix (`domain.old` beside `domain`) can't be
+    /// mis-stripped into a path on a directory nobody mounted.
+    ///
+    /// Callers pass a path this instance's `to_smb_path` produced, so it's always
+    /// under the anchor. One that isn't stays under the mount root unchanged,
+    /// which is what an unanchored mount does with every path anyway.
     pub(super) fn to_display_path(&self, smb_path: &str) -> String {
-        if smb_path.is_empty() {
+        let mount_relative = self.below_share_root(smb_path);
+        if mount_relative.is_empty() {
             self.mount_path.to_string_lossy().to_string()
         } else {
-            format!("{}/{}", self.mount_path.display(), smb_path)
+            format!("{}/{}", self.mount_path.display(), mount_relative)
+        }
+    }
+
+    /// A share-relative path re-expressed relative to this mount's anchor.
+    fn below_share_root<'a>(&self, smb_path: &'a str) -> &'a str {
+        if self.share_root.is_empty() {
+            return smb_path;
+        }
+        match smb_path.strip_prefix(&self.share_root) {
+            // The anchor itself, or a whole component below it. A shared name
+            // prefix (`domain.old`) fails this and falls through untouched.
+            Some("") => "",
+            Some(rest) => rest.strip_prefix('/').unwrap_or(smb_path),
+            None => smb_path,
         }
     }
 }

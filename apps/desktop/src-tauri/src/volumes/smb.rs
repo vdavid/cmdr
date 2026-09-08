@@ -43,8 +43,20 @@ pub fn enrich_from_volume_registry(volumes: &mut [LocationInfo]) {
 pub struct SmbMountInfo {
     /// Server hostname or IP (for example, "192.168.1.111").
     pub server: String,
-    /// Share name (for example, "naspi").
+    /// Share name, ONE path segment (for example, "naspi"). This is what goes to
+    /// TreeConnect, so it can never carry a separator.
     pub share: String,
+    /// Where inside the share this mount is anchored, `/`-separated and without
+    /// leading or trailing separators (for example, "lgs-net.com"). `None` for the
+    /// ordinary mount, which sits at the share root.
+    ///
+    /// macOS follows a DFS referral by making a SECOND mount underneath the
+    /// namespace root (`/Volumes/SYSVOL/lgs-net.com` beside `/Volumes/SYSVOL`),
+    /// and a subdirectory mount looks the same. Both are the same SHARE, so both
+    /// derive the same volume ID and ride one session; the anchor is what a path
+    /// on this mount has to be joined onto before it goes on the wire, and it
+    /// reaches the backend as `SmbVolume`'s `share_root`.
+    pub subpath: Option<String>,
     /// Username if present in the mount source (for example, "david").
     pub username: Option<String>,
     /// Port from the mount source (for example, 10480). Defaults to 445.
@@ -100,18 +112,25 @@ fn decode_mount_field(field: &str) -> String {
     }
 }
 
-/// Parses an SMB mount source string like `//user@host/share` or `//host/share`.
+/// Parses an SMB mount source string like `//user@host/share`, `//host/share`, or
+/// `//user@host/share/dir/below` for a mount anchored inside the share.
 ///
-/// Fields come back percent-decoded; see [`decode_mount_field`].
+/// Fields come back percent-decoded; see [`decode_mount_field`]. Decoding happens
+/// per SEGMENT, after the split: an encoded separator inside a name would
+/// otherwise become a split point that was never in the path.
 pub(crate) fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
     // Strip leading "//"
     let rest = source.strip_prefix("//")?;
 
-    // Split into "user@host/share" or "host/share"
-    let (server_part, share) = rest.split_once('/')?;
-    if share.is_empty() {
-        return None;
-    }
+    // Split into "user@host/share/..." or "host/share/..."
+    let (server_part, share_path) = rest.split_once('/')?;
+
+    // A share is ONE path segment. Everything below it is a directory INSIDE the
+    // share, which is what a DFS sub-mount and a subdirectory mount both look
+    // like; see `SmbMountInfo::subpath`.
+    let mut segments = share_path.split('/').filter(|segment| !segment.is_empty());
+    let share = decode_mount_field(segments.next()?);
+    let subpath = segments.map(decode_mount_field).collect::<Vec<_>>().join("/");
 
     let (username, server) = if let Some((user, host)) = server_part.split_once('@') {
         (Some(user.to_string()), host.to_string())
@@ -128,7 +147,8 @@ pub(crate) fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
 
     Some(SmbMountInfo {
         server: decode_mount_field(&server),
-        share: decode_mount_field(share),
+        share,
+        subpath: (!subpath.is_empty()).then_some(subpath),
         username: username.map(|u| decode_mount_field(&u)),
         port,
     })
@@ -198,6 +218,61 @@ mod mount_source_tests {
     fn keeps_an_undecodable_source_verbatim() {
         let info = parse_smb_mount_source("//nas/100%zz").expect("a well-formed SMB source");
         assert_eq!(info.share, "100%zz");
+    }
+
+    /// A share is ONE path segment; anything after it is a directory inside that
+    /// share, not part of its name.
+    ///
+    /// macOS follows a DFS referral by making a SECOND mount underneath the
+    /// namespace root, and records it as `//user@domain/SYSVOL/domain`. Swallowing
+    /// the whole tail into `share` sends `SYSVOL/domain` to TreeConnect, which no
+    /// server has a share for: `STATUS_BAD_NETWORK_NAME`, the share stays on the
+    /// kernel mount, and the same share gets a second volume ID. Reported as
+    /// ERR-48RZX.
+    #[test]
+    fn a_subdirectory_mount_keeps_only_the_first_segment_as_the_share() {
+        let info = parse_smb_mount_source("//andrew@lgs-net.com/SYSVOL/lgs-net.com").expect("a well-formed source");
+        assert_eq!(info.server, "lgs-net.com");
+        assert_eq!(info.share, "SYSVOL");
+        assert_eq!(info.subpath.as_deref(), Some("lgs-net.com"));
+        assert_eq!(info.username.as_deref(), Some("andrew"));
+    }
+
+    /// A plain share mount anchors at the share root, so there's no subpath to
+    /// carry: `None`, never `Some("")`, which would make the join prepend a `/`.
+    #[test]
+    fn a_plain_share_mount_has_no_subpath() {
+        let info = parse_smb_mount_source("//david@192.168.1.111/naspi").expect("a well-formed source");
+        assert_eq!(info.share, "naspi");
+        assert_eq!(info.subpath, None);
+    }
+
+    /// Nesting can go deeper than one level, and a trailing slash is noise rather
+    /// than an empty final component.
+    #[test]
+    fn a_deeper_subdirectory_mount_keeps_every_segment_below_the_share() {
+        let info = parse_smb_mount_source("//nas/media/photos/2026").expect("a well-formed source");
+        assert_eq!(info.share, "media");
+        assert_eq!(info.subpath.as_deref(), Some("photos/2026"));
+
+        let info = parse_smb_mount_source("//nas/media/photos/").expect("a well-formed source");
+        assert_eq!(info.share, "media");
+        assert_eq!(info.subpath.as_deref(), Some("photos"));
+    }
+
+    /// Each segment is escaped on its own, so decoding has to happen per segment.
+    /// Decoding the tail as one string would turn an encoded `%2F` inside a
+    /// directory name into a separator that was never there.
+    #[test]
+    fn decodes_each_segment_separately() {
+        let info = parse_smb_mount_source("//nas/caf%C3%A9/%E5%85%AC%E9%96%8B").expect("a well-formed source");
+        assert_eq!(info.share, "café");
+        assert_eq!(info.subpath.as_deref(), Some("公開"));
+
+        // `%2F` is a slash INSIDE a directory name, not a path separator.
+        let info = parse_smb_mount_source("//nas/share/Q%26A%2F1").expect("a well-formed source");
+        assert_eq!(info.share, "share");
+        assert_eq!(info.subpath.as_deref(), Some("Q&A/1"));
     }
 }
 

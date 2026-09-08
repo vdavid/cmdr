@@ -49,7 +49,7 @@ impl Volume for SmbVolume {
     /// so the overlap is transient by construction. `DETAILS.md` § "Re-rooting
     /// a share".
     fn rerooted(&self, new_root: &Path) -> Option<std::sync::Arc<dyn Volume>> {
-        Some(std::sync::Arc::new(self.instance_at_root(new_root)))
+        Some(std::sync::Arc::new(self.instance_at_root(new_root)?) as std::sync::Arc<dyn Volume>)
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

@@ -67,8 +67,16 @@ mod tests {
         SmbMountInfo {
             server: server.to_string(),
             share: share.to_string(),
+            subpath: None,
             username: None,
             port,
+        }
+    }
+
+    fn smb_info_at(server: &str, port: u16, share: &str, subpath: &str) -> SmbMountInfo {
+        SmbMountInfo {
+            subpath: Some(subpath.to_string()),
+            ..smb_info(server, port, share)
         }
     }
 
@@ -101,6 +109,26 @@ mod tests {
                 "/Volumes/public",
                 Some("smbfs"),
                 Some(&smb_info("localhost", 10494, "public")),
+                None
+            ),
+        );
+    }
+
+    /// A directory inside a share is the SAME volume as the share: one session,
+    /// one index, one set of saved paths.
+    ///
+    /// macOS makes a second mount underneath a DFS namespace root, so both roots
+    /// are live at once. Keying the deeper one on `SYSVOL/domain` gave the share
+    /// two IDs, which is what put a second (and broken) connection next to a
+    /// working one in ERR-48RZX.
+    #[test]
+    fn a_subdirectory_mount_is_the_same_volume_as_its_share() {
+        assert_eq!(
+            volume_id_for("/Volumes/SYSVOL", Some("smbfs"), Some(&smb_info("dc", 445, "SYSVOL")), None),
+            volume_id_for(
+                "/Volumes/SYSVOL/lgs-net.com",
+                Some("smbfs"),
+                Some(&smb_info_at("dc", 445, "SYSVOL", "lgs-net.com")),
                 None
             ),
         );

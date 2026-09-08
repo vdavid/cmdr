@@ -67,6 +67,7 @@ async fn make_docker_volume() -> SmbVolume {
         "/tmp/smb-test-mount",
         &volume_id,
         params,
+        "",
         crate::volume_host::host(),
     )
     .await

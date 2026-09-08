@@ -135,6 +135,21 @@ pub struct SmbVolume {
     /// "/Volumes/Documents"). Immutable: a different root means a different
     /// instance, so `root()` stays a plain `&Path` borrow.
     mount_path: PathBuf,
+    /// Where [`mount_path`](Self::mount_path) sits INSIDE the share: `/`-separated,
+    /// no leading or trailing separator, and empty for the ordinary mount at the
+    /// share root.
+    ///
+    /// A mount is not always the share root. macOS follows a DFS referral by
+    /// mounting the target underneath the namespace root, and a subdirectory
+    /// mount does the same thing deliberately; both address a DIRECTORY in the
+    /// share, over the same session and the same volume ID as the share itself.
+    /// So the wire path for a mount-relative path is this joined onto it, and
+    /// `to_display_path` strips it back off. Per instance, because it belongs to
+    /// the mount root rather than to the share.
+    ///
+    /// NFC-normalized for the same reason `SmbConnectionParams::share_name` is:
+    /// it goes on the wire, and macOS hands out decomposed names.
+    share_root: String,
     /// Set once the registry has proven this instance's `mount_path` is gone and
     /// had no live sibling mount to move the ID to. The smb2 session is unaffected
     /// (Cmdr's own I/O never touches the mount), but a `file://` URL under a dead
@@ -222,6 +237,18 @@ struct SmbVolumeInner {
     /// of leaving the watcher feeding a mount that's gone. ❌ Not a second source
     /// of truth for `root()`: an instance's own `mount_path` is what it addresses.
     active_mount_path: Arc<StdRwLock<PathBuf>>,
+    /// Every mount root this share is known at, and where each one sits inside the
+    /// share (see [`SmbVolume::share_root`]).
+    ///
+    /// The registry promotes a volume between mount roots by path alone
+    /// (`Volume::rerooted`), and two roots of one share need not share an anchor:
+    /// `/Volumes/SYSVOL` sits at the share root while `/Volumes/SYSVOL/domain`
+    /// sits a directory in. Deriving the new anchor from the path is impossible,
+    /// and assuming the old one would put a real request at a real, wrong place,
+    /// so the answer is looked up here and a root nobody recorded refuses to be
+    /// promoted to instead. The app records each root as it registers it
+    /// (`note_mount_root`).
+    share_root_by_mount: StdRwLock<std::collections::HashMap<PathBuf, String>>,
     /// What the live connection's credit window can carry, in concurrent copy
     /// requests of [`REPRESENTATIVE_COPY_REQUEST_BYTES`], as last measured.
     ///
@@ -249,6 +276,8 @@ impl SmbVolume {
     ///   current session and to rebuild it on `attempt_reconnect`
     /// * `client` - Connected `SmbClient`
     /// * `tree` - Connected `Tree` for the share
+    /// * `share_root` - Where `mount_path` sits inside the share, empty for the
+    ///   ordinary mount at the share root (see [`SmbVolume::share_root`])
     /// * `host` - Everything the backend asks the app around it (see [`VolumeHost`])
     pub fn new(
         name: impl Into<String>,
@@ -257,18 +286,30 @@ impl SmbVolume {
         params: SmbConnectionParams,
         client: SmbClient,
         tree: Tree,
+        share_root: &str,
         host: VolumeHost,
     ) -> Self {
+        use unicode_normalization::UnicodeNormalization;
+
         let share_name = params.share_name.clone();
         let mount_path = mount_path.into();
         let volume_id = volume_id.into();
+        // Folded here for the reason `SmbConnectionParams::new` folds the share
+        // name: macOS hands out decomposed names and the server answers composed
+        // ones. Every wire use of the anchor reads this field.
+        let share_root: String = share_root.trim_matches('/').nfc().collect();
         Self {
             name: name.into(),
             mount_path: mount_path.clone(),
+            share_root: share_root.clone(),
             mount_root_gone: AtomicBool::new(false),
             inner: Arc::new_cyclic(|me| SmbVolumeInner {
                 share_name,
                 volume_id,
+                share_root_by_mount: StdRwLock::new(std::collections::HashMap::from([(
+                    mount_path.clone(),
+                    share_root,
+                )])),
                 params: Arc::new(tokio::sync::RwLock::new(params)),
                 client: Arc::new(tokio::sync::Mutex::new(Some(client))),
                 tree: Arc::new(tokio::sync::RwLock::new(Some(Arc::new(tree)))),
@@ -299,12 +340,24 @@ impl SmbVolumeInner {
     /// session, the same state — so this is one allocation and no I/O.
     pub(super) fn at_active_root(self: Arc<Self>) -> SmbVolume {
         let mount_path = self.active_mount_path.read_ignore_poison().clone();
+        let share_root = self.share_root_for(&mount_path).unwrap_or_default();
         SmbVolume {
             name: self.share_name.clone(),
             mount_path,
+            share_root,
             mount_root_gone: AtomicBool::new(false),
             inner: self,
         }
+    }
+
+    /// Where a known mount root of this share sits inside it, or `None` for a root
+    /// this share was never told about.
+    ///
+    /// `None` is the honest answer, not an invitation to default: two roots of one
+    /// share can have different anchors, so guessing one addresses a real path on
+    /// the share that the caller never asked for.
+    fn share_root_for(&self, mount_path: &Path) -> Option<String> {
+        self.share_root_by_mount.read_ignore_poison().get(mount_path).cloned()
     }
 }
 
@@ -316,13 +369,78 @@ impl SmbVolume {
     /// so this is one allocation
     /// and no I/O; the share-scoped watcher is re-pointed at the new root so its
     /// listing-cache notifications keep landing where the panes are.
-    fn instance_at_root(&self, new_root: &Path) -> Self {
+    ///
+    /// An unrecorded `new_root` is treated as another mount of the SHARE ROOT,
+    /// which is what every ordinary mount is and what this method assumed before
+    /// anchored mounts existed at all (`/Volumes/naspi-1` beside `/Volumes/naspi`).
+    /// Roots reach the registry from more places than the SMB upgrade path (the
+    /// FSEvents watcher registers a fallback volume too), so refusing an
+    /// unrecorded one would strand a share on a dead mount for the common case.
+    ///
+    /// An ANCHORED instance can't make that assumption: its paths carry an anchor,
+    /// and applying it to a root that may not share one addresses a real path on
+    /// the share nobody asked for. That case returns `None`, which the registry
+    /// reads as `BackendCantReroot` and leaves the volume where it is — still
+    /// browsable over smb2, just no longer claiming its paths are OS-openable.
+    fn instance_at_root(&self, new_root: &Path) -> Option<Self> {
+        let share_root = match self.inner.share_root_for(new_root) {
+            Some(known) => known,
+            None if self.share_root.is_empty() => String::new(),
+            None => {
+                log::warn!(
+                    target: "smb_reroot",
+                    "{}: not promoting to {} — this mount sits at '{}' inside the share and nothing recorded where that root sits",
+                    self.inner.share_name,
+                    new_root.display(),
+                    self.share_root
+                );
+                return None;
+            }
+        };
         *self.inner.active_mount_path.write_ignore_poison() = new_root.to_path_buf();
-        Self {
+        Some(Self {
             name: self.name.clone(),
             mount_path: new_root.to_path_buf(),
+            share_root,
             mount_root_gone: AtomicBool::new(false),
             inner: Arc::clone(&self.inner),
+        })
+    }
+
+    /// Where this instance's mount root sits inside the share, empty when it IS
+    /// the share root. See [`share_root`](Self::share_root).
+    pub fn share_root(&self) -> &str {
+        &self.share_root
+    }
+
+    /// Records a mount root this share is also reachable at, and where that root
+    /// sits inside the share.
+    ///
+    /// The app calls this as it registers each root, so a later promotion
+    /// ([`instance_at_root`](Self::instance_at_root)) can look the anchor up
+    /// instead of assuming the one it already has.
+    pub fn note_mount_root(&self, mount_path: impl Into<PathBuf>, share_root: &str) {
+        use unicode_normalization::UnicodeNormalization;
+
+        let share_root: String = share_root.trim_matches('/').nfc().collect();
+        self.inner
+            .share_root_by_mount
+            .write_ignore_poison()
+            .insert(mount_path.into(), share_root);
+    }
+
+    /// Takes over every mount root `predecessor` knew about.
+    ///
+    /// A re-connect builds a whole new session and a whole new instance, while the
+    /// registry keeps the ROOTS it already had for this ID. Without this the
+    /// successor could be asked to promote to a root only its predecessor was told
+    /// about, and would have to refuse. Existing entries win: this instance's own
+    /// root is the one that was just proven.
+    pub fn adopt_mount_roots_from(&self, predecessor: &Self) {
+        let inherited = predecessor.inner.share_root_by_mount.read_ignore_poison().clone();
+        let mut mine = self.inner.share_root_by_mount.write_ignore_poison();
+        for (mount_path, share_root) in inherited {
+            mine.entry(mount_path).or_insert(share_root);
         }
     }
 
@@ -365,10 +483,11 @@ pub async fn connect_smb_volume(
     mount_path: &str,
     volume_id: &str,
     params: SmbConnectionParams,
+    share_root: &str,
     host: VolumeHost,
 ) -> Result<SmbVolume, smb2::Error> {
     let (client, tree) = build_session(&params).await?;
-    let vol = SmbVolume::new(name, mount_path, volume_id, params.clone(), client, tree, host);
+    let vol = SmbVolume::new(name, mount_path, volume_id, params.clone(), client, tree, share_root, host);
     vol.inner.spawn_watcher(&params);
     // PII-free analytics: a direct SMB connection succeeded. No host / share / credential
     // identifiers ever cross.

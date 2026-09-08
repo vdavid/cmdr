@@ -8,30 +8,58 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::network::get_discovered_hosts;
 
-/// Derives the SMB volume ID from `statfs(mount_path)` (macOS) or
-/// `/proc/mounts` (Linux). Returns `None` if the path isn't an SMB mount.
+/// What a mount is, as the OS records it: which volume it belongs to, and where
+/// it sits inside that volume's share.
+///
+/// The two travel together because they come from the same `statfs` row and are
+/// answers to the same question. Deriving them apart is how a mount ends up
+/// keyed as one share and addressed as another.
+struct MountIdentity {
+    /// From `smb_volume_id(server, port, share)`: the SHARE's identity, so a mount
+    /// anchored inside a share is the same volume as the share itself.
+    volume_id: String,
+    /// Where the mount sits inside the share (`SmbVolume`'s `share_root`), empty
+    /// for the ordinary mount at the share root.
+    share_root: String,
+}
+
+/// Reads a mount's identity from `statfs(mount_path)` (macOS) or `/proc/mounts`
+/// (Linux). Returns `None` if the path isn't an SMB mount.
 ///
 /// Used so the mount-time `register_smb_volume` derives the same canonical ID
 /// as the OS-event watcher (which only has the mount path to work with). The
 /// caller passed `server` may be an mDNS service name or display string that
 /// statfs would normalize to an IP, so deriving from statfs is what makes the
-/// two sites agree.
+/// two sites agree. The anchor rides along for the same reason: the caller knows
+/// which share it ASKED for, only the mount knows where the OS put it (a DFS
+/// referral lands a second mount a directory inside the namespace root).
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-fn volume_id_from_statfs(mount_path: &str) -> Option<String> {
+fn identity_from_statfs(mount_path: &str) -> Option<MountIdentity> {
     #[cfg(target_os = "macos")]
     let info = crate::volumes::get_smb_mount_info(mount_path)?;
     #[cfg(target_os = "linux")]
     let info = crate::volumes_linux::get_smb_mount_info(mount_path)?;
-    Some(crate::file_system::volume::smb_volume_id(
-        &info.server,
-        info.port,
-        &info.share,
-    ))
+    Some(MountIdentity {
+        volume_id: crate::file_system::volume::smb_volume_id(&info.server, info.port, &info.share),
+        share_root: info.subpath.unwrap_or_default(),
+    })
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-fn volume_id_from_statfs(_mount_path: &str) -> Option<String> {
+fn identity_from_statfs(_mount_path: &str) -> Option<MountIdentity> {
     None
+}
+
+/// Where `mount_path` sits inside its share, empty when it's the share root or
+/// when the mount can't be read (gone, or not SMB).
+///
+/// Empty is the right fallback rather than a failure: it's what every ordinary
+/// mount has, and it's exactly what this code assumed before anchored mounts were
+/// understood at all.
+fn share_root_from_statfs(mount_path: &str) -> String {
+    identity_from_statfs(mount_path)
+        .map(|identity| identity.share_root)
+        .unwrap_or_default()
 }
 
 /// Why a direct connection couldn't be established, as a typed reason rather
@@ -323,6 +351,11 @@ pub(crate) async fn register_replacing_predecessor(
     // pointing at a volume whose watcher we just stopped: the share stays listed
     // and silently stops seeing its own changes.
     let refused = manager.would_keep_incumbent(volume_id, new_volume.root());
+    // Carry the mount roots across before anyone is retired. The registry keeps
+    // the roots it has for this ID either way, so whichever instance ends up
+    // holding it has to know where each of them sits inside the share, or a later
+    // promotion has to refuse a root that is perfectly good.
+    carry_mount_roots(manager.get(volume_id).as_deref(), new_volume.as_ref());
     if !refused && let Some(prev) = manager.get(volume_id) {
         log::debug!("Replacing existing volume at id={volume_id}; retiring the predecessor (session stays up)");
         let _ = tokio::task::spawn_blocking(move || prev.on_superseded()).await;
@@ -334,6 +367,33 @@ pub(crate) async fn register_replacing_predecessor(
     // a broadcast anyway, but the after-sign-in and already-mounted paths have no
     // mount event at all: without this, the picker keeps the stale os_mount dot.
     crate::volume_broadcast::emit_volumes_changed();
+}
+
+/// Hands the incoming SMB volume every mount root the outgoing one knew about,
+/// and tells it where the incoming root sits inside the share.
+///
+/// Both directions matter, and which one applies depends on whether the registry
+/// keeps the incumbent: a successor needs its predecessor's roots, and an
+/// incumbent that stays needs the root the newcomer just brought. Doing both
+/// unconditionally is cheaper than deciding, and idempotent.
+///
+/// A no-op unless both sides are `SmbVolume`s. The registry deals in
+/// `dyn Volume`, and a mount anchor is a notion only this backend has.
+fn carry_mount_roots(
+    incumbent: Option<&dyn crate::file_system::volume::Volume>,
+    newcomer: &dyn crate::file_system::volume::Volume,
+) {
+    use cmdr_smb::volume::SmbVolume;
+
+    let newcomer_root = newcomer.root().to_path_buf();
+    let (Some(incumbent), Some(newcomer)) = (
+        incumbent.and_then(|v| v.as_any().downcast_ref::<SmbVolume>()),
+        newcomer.as_any().downcast_ref::<SmbVolume>(),
+    ) else {
+        return;
+    };
+    newcomer.adopt_mount_roots_from(incumbent);
+    incumbent.note_mount_root(newcomer_root, newcomer.share_root());
 }
 
 /// Tries to establish a direct smb2 connection and register as `SmbVolume`.
@@ -359,7 +419,10 @@ pub(crate) async fn register_smb_volume(
     // computes via `volume_id_for_mount` all agree. Statfs is the canonical
     // source — `server` as passed in may be an mDNS service name or display
     // string that wouldn't match what the watcher later sees.
-    let volume_id = volume_id_from_statfs(mount_path)
+    let identity = identity_from_statfs(mount_path);
+    let share_root = identity.as_ref().map(|i| i.share_root.clone()).unwrap_or_default();
+    let volume_id = identity
+        .map(|i| i.volume_id)
         .unwrap_or_else(|| crate::file_system::volume::smb_volume_id(server, port, share));
 
     // Serialize against any other attempt on this same volume, then re-check under
@@ -387,6 +450,7 @@ pub(crate) async fn register_smb_volume(
             mount_path,
             &volume_id,
             params.clone(),
+            &share_root,
             crate::volume_host::host(),
         )
     })
@@ -476,8 +540,16 @@ pub(crate) async fn try_smb_upgrade(
     }
 
     let params = cmdr_smb::volume::SmbConnectionParams::new(&resolved_server, share, port, username, password);
+    let share_root = share_root_from_statfs(mount_path);
     match connect_with_retry(|| {
-        connect_smb_volume(share, mount_path, volume_id, params.clone(), crate::volume_host::host())
+        connect_smb_volume(
+            share,
+            mount_path,
+            volume_id,
+            params.clone(),
+            &share_root,
+            crate::volume_host::host(),
+        )
     })
     .await
     {

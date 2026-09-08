@@ -64,7 +64,25 @@ pub async fn make_docker_volume_with_host(host: VolumeHost) -> SmbVolume {
     let params = docker_guest_params();
     let port = params.port;
     let volume_id = cmdr_fs::volume::smb_volume_id("127.0.0.1", port, "public");
-    connect_smb_volume("public", TEST_MOUNT_ROOT, &volume_id, params, host)
+    connect_smb_volume("public", TEST_MOUNT_ROOT, &volume_id, params, "", host)
+        .await
+        .unwrap_or_else(|e| {
+            panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})")
+        })
+}
+
+/// Connects to the fixture container's `public` share as a mount ANCHORED at
+/// `share_root` inside it, addressed at `mount_root`.
+///
+/// The shape macOS produces for a DFS sub-mount and for a subdirectory mount: the
+/// volume root is a directory in the share, so every path it puts on the wire has
+/// to be joined onto `share_root` and every path it hands back has to have it
+/// taken off. `share_root` must already exist on the share.
+pub async fn make_docker_volume_anchored(share_root: &str, mount_root: &str) -> SmbVolume {
+    let params = docker_guest_params();
+    let port = params.port;
+    let volume_id = cmdr_fs::volume::smb_volume_id("127.0.0.1", port, "public");
+    connect_smb_volume("public", mount_root, &volume_id, params, share_root, VolumeHost::detached())
         .await
         .unwrap_or_else(|e| {
             panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})")
