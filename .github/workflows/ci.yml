@@ -679,14 +679,21 @@ jobs:
       # browsers Playwright pins, under `PLAYWRIGHT_BROWSERS_PATH`. Point it at that one rather
       # than installing a second Chrome. (`chromium_headless_shell-*` deliberately doesn't match
       # the glob; Lighthouse wants the full browser.)
+      #
+      # The build dir is `chrome-linux64` on amd64 (the runner) and `chrome-linux` on arm64
+      # (a local `docker run` on an Apple Silicon laptop), so the glob has to cover both
+      # (verified against `mcr.microsoft.com/playwright:v1.62.1-noble` on both arches,
+      # `docker run ... ls /ms-playwright/chromium-*/`, 2026-09-08).
       - name: Point Lighthouse at the container's Chromium
         # Bash arrays and `[[`: this container's default `run:` shell is `sh` (dash), which has
         # neither, and silently ran this as a syntax error once the job got far enough to reach it.
         shell: bash
         run: |
-          chromes=("$PLAYWRIGHT_BROWSERS_PATH"/chromium-*/chrome-linux/chrome)
-          if [[ ! -x "${chromes[0]}" ]]; then
+          shopt -s nullglob
+          chromes=("$PLAYWRIGHT_BROWSERS_PATH"/chromium-*/chrome-linux*/chrome)
+          if [[ ${#chromes[@]} -eq 0 || ! -x "${chromes[0]}" ]]; then
             echo "No Chromium under $PLAYWRIGHT_BROWSERS_PATH; the image layout changed." >&2
+            ls -la "$PLAYWRIGHT_BROWSERS_PATH" >&2 || true
             exit 1
           fi
           echo "CHROME_PATH=${chromes[0]}" >>"$GITHUB_ENV"
