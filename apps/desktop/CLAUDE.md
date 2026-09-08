@@ -17,9 +17,10 @@ in `DETAILS.md`. Feature must-knows in the colocated `CLAUDE.md`s.
   `src-tauri/`: the Tauri watcher also watches the workspace crates, and one matcher covers them all. A new
   always-edited non-build file type goes in `.taurignore`, not into a "don't save" habit. See `DETAILS.md` § Dev
   watcher.
-- **Data dirs are separate** for prod, plain dev, and each `--worktree` slug, and an FF-merge leaves the worktree's dev
-  data dir behind (~1 GB) to clean up by hand. Debugging, logging (`RUST_LOG=cmdr_lib::…`), crash/error reports, and dev
-  mock flags: `DETAILS.md` § Debugging.
+- **Data dirs are separate** for prod, plain dev, and each `--worktree` slug, and a slug's state lives OUTSIDE the repo
+  where git can't see it (~1 GB). Tear a worktree down with `~/.claude/scripts/remove-worktree.sh <slug>`, ❌ never by
+  hand: `DETAILS.md` § Worktree setup. Debugging, logging (`RUST_LOG=cmdr_lib::…`), crash/error reports, and dev mock
+  flags: `DETAILS.md` § Debugging.
 - **Run Playwright E2E via `pnpm check desktop-e2e-playwright`** (full lifecycle: build, launch, run, teardown). Raw
   `npx playwright test` fails with `ECONNREFUSED` — the suite connects to a running app over a socket, it doesn't launch
   one. Single-spec iteration and the manual launch + kill-the-recorded-pid recipe: `test/e2e-playwright/CLAUDE.md`.

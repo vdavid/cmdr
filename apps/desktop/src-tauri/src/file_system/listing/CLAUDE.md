@@ -10,8 +10,7 @@ Backend directory reading, caching, sorting, and streaming: 100k+ entries, non-b
 - **diff.rs** the `DiffChange` vocabulary plus `compute_diff`, **diff_emitter.rs** coalescing (50 ms trailing window),
   **visible_rows.rs** / **path_index.rs** row and path maps, materialized once so accessors index instead of walk,
   **listing_host.rs** `AppListings` for out-of-crate backends, **sorting.rs** (`SortableEntry` + the one comparator),
-  **collation.rs** (the one name order: an ICU collator, live `compare` plus prebuilt `key`),
-  **brief_columns.rs**, **fuzzy_jump.rs**.
+  **collation.rs** (the one name order, an ICU collator), **brief_columns.rs**, **fuzzy_jump.rs**.
   `FileEntry` is `cmdr-fs`'s, aliased as `listing::metadata`.
 
 ## Invariants and gotchas
@@ -47,11 +46,9 @@ Backend directory reading, caching, sorting, and streaming: 100k+ entries, non-b
   row). ❌ Never add a second. The watcher's full re-read re-sorts `new_entries` before `compute_diff` (not a
   double-sort: `list_directory_core` returns Name/Asc), and a sort change invalidates the frontend's cached range, so
   bump `cacheGeneration`. DETAILS § Sorting.
-- **Names rank by Unicode collation (`collation.rs`), ❌ never by code point or `to_lowercase`**: macOS stores NFC and
-  NFD spellings side by side, so comparing code points orders by an accent's SPELLING (a real `~/Downloads` sorted
-  `…Dávid…-signed` above `…Dáviad…-araw`), strands accented letters after `z`, and puts `_name` below `2026-…`. Both
-  readings of the order (live `compare`, prebuilt `key`) end with a raw-bytes tiebreak, or two spellings of one name
-  tie and the watcher sees a phantom `Move`. ❌ Never persist a `NameKey`. DETAILS § "Collating names".
+- **Names rank by Unicode collation (`collation.rs`), ❌ never code points or `to_lowercase`** (macOS holds NFC and NFD
+  side by side). Both readings, live `compare` and prebuilt `key`, end with a raw-bytes tiebreak, else two spellings of
+  one name tie and the watcher sees a phantom `Move`. ❌ Never persist a `NameKey`. DETAILS § "Collating names".
 - **New listing state hangs off a struct, not a `static`**; fixtures use `caching_test_support::TestListing`.
 - **Finder tags are deferred.** `list_directory_core` never reads them, and every modify path calls
   `carry_forward_tags` BEFORE storing, else an mtime touch blanks a file's dots. ❌ Never route enrich through it.

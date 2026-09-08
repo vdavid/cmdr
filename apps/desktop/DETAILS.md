@@ -214,6 +214,12 @@ The repo-wide worktree workflow is in `AGENTS.md` § Workflow. Desktop-specific 
   — a self-contained copy, so the worktree also works bind-mounted into the Linux-E2E Docker container), else downloads.
   So raw `cargo check` works in a fresh worktree.
 
-When FF-ing `main`, delete the worktree + branch AND remove the orphaned dev data dir
-(`~/Library/Application Support/com.veszelovszki.cmdr-dev-<slug>`, often ~1 GB once its drive index builds): nothing
-cleans it up otherwise and they pile up.
+When FF-ing `main`, tear the worktree down with `~/.claude/scripts/remove-worktree.sh <slug>`, which takes the three
+pieces together: the worktree directory, the `worktree-<slug>` branch, and the dev state that lives OUTSIDE the repo as
+`~/Library/{Application Support,Preferences,Caches}/com.veszelovszki.cmdr-dev-<slug>` (the data dir is often ~1 GB once
+its drive index builds). Git never sees that third piece, and nothing else collects it, so by-hand teardowns pile it up.
+
+Doing the three by hand also has a trap: `git worktree remove` unregisters the worktree BEFORE deleting its directory,
+and the delete can still fail with "Directory not empty" (a cloned `target/` is enough). That leaves the worst state —
+git no longer lists it, so nothing prompts anyone to finish, while the branch and the gigabyte stay. The script finishes
+that job and is safe to re-run on a half-removed worktree.
