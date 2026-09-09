@@ -354,6 +354,26 @@ Two rules:
   path where the test fails partway. Prefer an id no real thing can claim, so a leak can't be mistaken for the app's own
   state and can't disturb it.
 
+## Keyboard: no press in this suite is a real one
+
+`tauriPage.keyboard.press('Tab')` looks like Playwright's, but `@srsholmes/tauri-playwright` implements it as
+`document.activeElement.dispatchEvent(new KeyboardEvent(...))` inside the webview (read its `TauriKeyboard` class,
+verified on 0.4.1). Two consequences, and both have burned a test into looking right while measuring nothing:
+
+- **No press triggers a browser default.** Native tabbing never happens, so "Tab moved focus to the next control" is not
+  assertable here. `focus-trap.spec.ts` says the same in its header and asserts only what the trap moves ITSELF.
+- **The event isn't `cancelable`**, so `preventDefault()` on it is a no-op and `defaultPrevented` stays `false`
+  regardless. A spec that needs that signal has to build and dispatch its own event with `cancelable: true`.
+
+**And `defaultPrevented` on a Tab you dispatched yourself says almost nothing**, because `focus-trap.ts` registers a
+CAPTURE-phase `keydown` listener on `document` for as long as any trap is up. An event dispatched ON `document` has
+`document` as its target, which the trap reads as "focus has leaked", so it prevents the default and restores focus
+before the app's own bubble-phase handler ever runs. It reads `true` whether or not the global handler claimed the key.
+
+The way to tell whether a keypress reached a command is its EFFECT, and the effect is an async dispatch, so it can't be
+asserted by polling for an absence. `onboarding.spec.ts`'s Tab test shows the shape that works: arrange two presses so
+that the correct behavior and the broken one end in DIFFERENT states, then poll positively for the correct one.
+
 ## Multi-window testing
 
 The viewer (label `viewer-<timestamp>`) and settings (label `settings`) UIs run in their own Tauri `WebviewWindow` in
