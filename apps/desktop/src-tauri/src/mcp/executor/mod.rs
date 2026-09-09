@@ -421,7 +421,23 @@ async fn mcp_round_trip<R: Runtime>(
     payload: Value,
     success_msg: String,
 ) -> ToolResult {
-    mcp_round_trip_with_timeout(app, event, payload, success_msg, 5).await
+    mcp_round_trip_with_timeout(app, event, payload, success_msg, ROUND_TRIP_TIMEOUT_SECS).await
+}
+
+/// Default budget for an `mcp-response` round-trip that isn't a navigation.
+const ROUND_TRIP_TIMEOUT_SECS: u64 = 5;
+
+/// A round-trip whose only answer is "the frontend accepted it".
+///
+/// Same wait and budget as [`mcp_round_trip`], minus the success wording: callers that
+/// aren't an MCP tool have nobody to say it to, and inventing a message to throw away is
+/// how a caller ends up reporting an outcome it never checked.
+pub(crate) async fn mcp_round_trip_ack<R: Runtime>(
+    app: &AppHandle<R>,
+    event: &str,
+    payload: Value,
+) -> Result<(), ToolError> {
+    mcp_round_trip_parsed(app, event, payload, ROUND_TRIP_TIMEOUT_SECS, parse_mcp_response).await
 }
 
 /// Parse an `mcp-response` event payload against the request ID we're waiting for.

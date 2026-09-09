@@ -5,7 +5,8 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{
     AckSignal, NAV_ACK_TIMEOUT, NavAck, PaneStateStore, ToolError, ToolResult, mcp_nav_round_trip, mcp_round_trip,
-    mcp_round_trip_with_timeout, snapshot_generation, user_path_param, validate_path_exists, wait_for_ack,
+    mcp_round_trip_ack, mcp_round_trip_with_timeout, snapshot_generation, user_path_param, validate_path_exists,
+    wait_for_ack,
 };
 
 /// Round-trip budget for `nav_to_path`. Generous because the FE waits for the listing to
@@ -39,6 +40,53 @@ pub(super) fn nav_result(pane: &str, requested: &str, ack: NavAck) -> ToolResult
             landed_or(path)
         ))),
     }
+}
+
+/// Take the focused pane to `dir` and point it at `entries`: cursor on the first, all of
+/// them selected when there's more than one. An empty `entries` just opens `dir`.
+///
+/// The one implementation of "go there and show me that", shared by the
+/// `go_to_latest_download` tool and the OS reveal handler (`crate::reveal`). Both drive
+/// the same three frontend events, and a second copy would drift on the parts that are
+/// easy to get wrong: the typed landing check that stops a cursor move in the wrong
+/// directory, and the pane the move applies to.
+///
+/// Ordering is load-bearing: the cursor moves before the multi-select, because the
+/// frontend's cursor move resets the selection.
+pub(crate) async fn go_to_in_focused_pane<R: Runtime>(
+    app: &AppHandle<R>,
+    dir: &str,
+    entries: &[String],
+) -> Result<(), ToolError> {
+    let pane = app
+        .try_state::<PaneStateStore>()
+        .map(|store| store.get_focused_pane())
+        .unwrap_or_else(|| "left".to_string());
+
+    // Reuses the FE's `mcp-nav-to-path` handler, so every volume / listing edge case it
+    // already handles applies here too — including the typed landing outcome, so a pane
+    // that fell back somewhere else stops the flow instead of moving a cursor in the
+    // wrong directory.
+    let ack = mcp_nav_round_trip(app, json!({"pane": pane, "path": dir}), NAV_TO_PATH_TIMEOUT_SECS).await?;
+    nav_result(&pane, dir, ack)?;
+
+    let Some(first) = entries.first() else {
+        return Ok(());
+    };
+    // If the entry vanished between resolving it and the FE placing the cursor, the FE
+    // says so through `mcp-response` and the caller reports it. Jump-then-vanish is
+    // acceptable to leak through: the navigation completed, only the cursor missed.
+    mcp_round_trip_ack(app, "mcp-move-cursor", json!({"pane": pane, "to": first})).await?;
+
+    if entries.len() > 1 {
+        mcp_round_trip_ack(
+            app,
+            "mcp-select-names",
+            json!({"pane": pane, "names": entries, "mode": "replace"}),
+        )
+        .await?;
+    }
+    Ok(())
 }
 
 /// Execute a navigation command without parameters.

@@ -7,10 +7,10 @@
 //! the toast UI — agents drive navigation, the toasts are for humans.
 
 use serde_json::json;
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Runtime};
 
-use super::nav::{NAV_TO_PATH_TIMEOUT_SECS, nav_result};
-use super::{PaneStateStore, ToolError, ToolResult, mcp_nav_round_trip, mcp_round_trip};
+use super::nav::go_to_in_focused_pane;
+use super::{ToolError, ToolResult};
 
 /// `go_to_latest_download` MCP tool. No parameters in v1 (the `index`
 /// argument from the plan is deferred until the scan fallback returns a
@@ -20,11 +20,9 @@ use super::{PaneStateStore, ToolError, ToolResult, mcp_nav_round_trip, mcp_round
 /// 1. Resolve the latest eligible download via the same code path as the
 ///    Tauri command — typed `GoToLatestError` branches map directly onto
 ///    MCP error responses with descriptive messages.
-/// 2. Navigate the focused pane to `parent_dir` via `mcp-nav-to-path`
-///    (30 s timeout, matches `nav_to_path`'s budget — Downloads is local
-///    but the round-trip waits for listing completion).
-/// 3. Move the cursor to `file_name` via `mcp-move-cursor` (5 s timeout).
-/// 4. Return the absolute path as the tool result so agents can chain on it.
+/// 2. Hand the parent dir + file name to `go_to_in_focused_pane`, the shared
+///    navigate-then-cursor primitive (`../nav.rs`) the OS reveal handler uses too.
+/// 3. Return the absolute path as the tool result so agents can chain on it.
 pub async fn execute_go_to_latest_download<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
     let latest = crate::downloads::commands::go_to_latest_download()
         .await
@@ -40,35 +38,6 @@ pub async fn execute_go_to_latest_download<R: Runtime>(app: &AppHandle<R>) -> To
             }
         })?;
 
-    let pane = app
-        .try_state::<PaneStateStore>()
-        .map(|store| store.get_focused_pane())
-        .unwrap_or_else(|| "left".to_string());
-
-    // Navigate the focused pane to the parent dir. Reuses the FE's existing
-    // `mcp-nav-to-path` handler (the one the `nav_to_path` tool drives), so
-    // any volume / listing edge cases the FE already handles apply uniformly —
-    // including the typed landing outcome, so a pane that fell back somewhere
-    // else stops the flow here instead of moving a cursor in the wrong directory.
-    let ack = mcp_nav_round_trip(
-        app,
-        json!({"pane": pane, "path": latest.parent_dir}),
-        NAV_TO_PATH_TIMEOUT_SECS,
-    )
-    .await?;
-    nav_result(&pane, &latest.parent_dir, ack)?;
-
-    // Move the cursor onto the target file. If the file disappeared
-    // between the resolve call and the FE's cursor placement (race against
-    // a fresh download that bumped the ring while we were navigating),
-    // the FE surfaces the failure through `mcp-response` and we report it
-    // as a tool error. Jump-then-vanish is acceptable to leak through —
-    // the navigation completed, only the cursor placement missed.
-    mcp_round_trip(
-        app,
-        "mcp-move-cursor",
-        json!({"pane": pane, "to": latest.file_name}),
-        format!("OK: Went to {}", latest.path),
-    )
-    .await
+    go_to_in_focused_pane(app, &latest.parent_dir, std::slice::from_ref(&latest.file_name)).await?;
+    Ok(json!(format!("OK: Went to {}", latest.path)))
 }
