@@ -48,8 +48,9 @@ pixel-accurate width measurement via `@chenglou/pretext`, and the `*-utils.ts` t
   the Ext track and `computeFullListColumnWidths` returns `ext: 0`, so changing one side drifts every column. ❌ Don't
   "clean up" `FullListHeader`'s `.header-name-ext` split: it's the only way left to CLICK sort-by-extension in that
   mode.
-- **A hidden entry's name dims via `full-list-utils.ts::isHiddenNameDimmed`**: selected/cursor rows stay full-strength;
-  a restricted row's own italic + quiet-token styling wins instead. `DETAILS.md` § "Hidden-entry name dim".
+- **A hidden entry dims via `full-list-utils.ts::isHiddenRowDimmed`**, one answer driving both the name's quiet tone and
+  `FileIcon`'s `dimmed` prop: selected/cursor rows stay full-strength; a restricted row's own italic + quiet-token
+  styling wins instead. `DETAILS.md` § "Hidden-entry dim".
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

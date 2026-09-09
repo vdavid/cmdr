@@ -40,7 +40,7 @@
         getDisplayExtension,
         getNameColumnText,
         pickSizeDisplay,
-        isHiddenNameDimmed,
+        isHiddenRowDimmed,
     } from './full-list-utils'
     import { computeFullListColumnWidths } from './measure-column-widths'
     import {
@@ -686,7 +686,7 @@
                         : undefined}
                     {@const fileIsRestricted = isRestricted(file.path)}
                     {@const sizeOverride = pickSizeDisplay(file, fileIsRestricted)}
-                    {@const nameIsHiddenDimmed = isHiddenNameDimmed(file, {
+                    {@const rowIsHiddenDimmed = isHiddenRowDimmed(file, {
                         isRestricted: fileIsRestricted,
                         isSelected: selectedIndices.has(globalIndex),
                         isUnderCursor: globalIndex === cursorIndex,
@@ -718,7 +718,7 @@
                         role="option"
                         aria-selected={globalIndex === cursorIndex}
                     >
-                        <FileIcon {file} {syncIcon} {imageIndexBadge} />
+                        <FileIcon {file} {syncIcon} {imageIndexBadge} dimmed={rowIsHiddenDimmed} />
                         {#if renameState?.active && shouldMountRenameEditor(renameState.target, { path: file.path })}
                             <div
                                 class="col-rename"
@@ -747,7 +747,7 @@
                             <span class="col-name">
                                 <span
                                     class="col-name-text"
-                                    class:is-hidden={nameIsHiddenDimmed}
+                                    class:is-hidden={rowIsHiddenDimmed}
                                     use:useShortenMiddle={{
                                         text: getNameColumnText(file.name, file.isDirectory, showExtensionInName),
                                         preferBreakAt: file.name.includes('/') ? '/' : '.',
@@ -773,7 +773,7 @@
                             {#if !showExtensionInName}
                                 <span
                                     class="col-ext"
-                                    class:is-hidden={nameIsHiddenDimmed}
+                                    class:is-hidden={rowIsHiddenDimmed}
                                     use:useShortenMiddle={{
                                         text: getDisplayExtension(file.name, file.isDirectory),
                                         tooltipWhenTruncated: true,
@@ -998,7 +998,7 @@
        above, for dotfiles / `UF_HIDDEN` / root-`/.hidden` entries once "show
        hidden files" is on, so they read as "normally out of sight" without
        disappearing (Finder makes them nearly invisible; we deliberately
-       don't). `.is-hidden` lands only when `nameIsHiddenDimmed` is true (see
+       don't). `.is-hidden` lands only when `rowIsHiddenDimmed` is true (see
        the row template above), which already excludes selected rows, the
        cursor row, and restricted rows, so no cascade fight with
        `.is-selected` / `.is-restricted` below is needed. Color only, never

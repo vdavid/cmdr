@@ -39,7 +39,7 @@
         provisionalColumnWidth,
     } from './brief-column-widths.svelte'
     import { getDirStatsBatch } from '$lib/tauri-commands'
-    import { buildDirSizeTooltip, hasSizeMismatch, isDirSizeUpdating, isHiddenNameDimmed } from './full-list-utils'
+    import { buildDirSizeTooltip, hasSizeMismatch, isDirSizeUpdating, isHiddenRowDimmed } from './full-list-utils'
     import {
         getRowHeight,
         getSizeMismatchWarning,
@@ -901,7 +901,7 @@
                                 ? getFolderCoverageBadge(folderCoverageMap[file.path], tString)
                                 : getImageIndexBadge(indexStatusMap[file.path])}
                             {@const fileIsRestricted = isRestricted(file.path)}
-                            {@const nameIsHiddenDimmed = isHiddenNameDimmed(file, {
+                            {@const rowIsHiddenDimmed = isHiddenRowDimmed(file, {
                                 isRestricted: fileIsRestricted,
                                 isSelected: selectedIndices.has(globalIndex),
                                 isUnderCursor: globalIndex === cursorIndex,
@@ -935,7 +935,7 @@
                                 role="option"
                                 aria-selected={globalIndex === cursorIndex}
                             >
-                                <FileIcon {file} {syncIcon} {imageIndexBadge} />
+                                <FileIcon {file} {syncIcon} {imageIndexBadge} dimmed={rowIsHiddenDimmed} />
                                 {#if renameState?.active && shouldMountRenameEditor(renameState.target, { path: file.path })}
                                     <InlineRenameEditor
                                         value={renameState.currentName}
@@ -957,7 +957,7 @@
                                 {:else}
                                     <span
                                         class="name"
-                                        class:is-hidden={nameIsHiddenDimmed}
+                                        class:is-hidden={rowIsHiddenDimmed}
                                         use:tooltip={buildNameTooltip(file)}
                                         >{file.name}{#if fileIsRestricted}<span
                                                 class="restricted-indicator"
@@ -1106,7 +1106,7 @@
     /* Hidden-entry name dim: see `FullList.svelte`'s twin rule for the full
        rationale (the same quiet token restricted rows use above; color only,
        never `opacity`; `.is-hidden` already excludes selected/cursor/restricted
-       rows via the `nameIsHiddenDimmed` const above). */
+       rows via the `rowIsHiddenDimmed` const above). */
     .name.is-hidden {
         color: var(--color-text-quiet);
     }

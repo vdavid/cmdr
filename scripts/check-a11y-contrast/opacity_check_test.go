@@ -63,6 +63,10 @@ func TestAnalyzeOpacity_DecorativeExempt(t *testing.T) {
 		{File: "apps/desktop/src/app-file-list.css", Line: 29, Selector: ".file-entry .restricted-indicator", Classes: []string{"restricted-indicator"}, Opacity: 0.7, HasOpacity: true},
 		{File: "apps/desktop/src/lib/file-explorer/navigation/VolumeBreadcrumb.svelte", Line: 1369, Selector: ".restricted-indicator", Classes: []string{"restricted-indicator"}, Opacity: 0.6, HasOpacity: true},
 		{File: "apps/desktop/src/lib/ask-cmdr/AskCmdrCostFooter.svelte", Line: 100, Selector: ".dot", Classes: []string{"dot"}, Opacity: 0.6, HasOpacity: true},
+		// The hidden-entry icon dim: a raster OS icon plus badge glyphs, with the
+		// row's own name carrying the meaning. It is the one allowlisted entry
+		// that exists to make something LESS visible on purpose, so pin it.
+		{File: "apps/desktop/src/lib/file-explorer/selection/FileIcon.svelte", Line: 142, Selector: ".icon-wrapper.is-dimmed", Classes: []string{"icon-wrapper", "is-dimmed"}, Opacity: 0.5, HasOpacity: true},
 	}
 	a := NewAnalyzer(NewVarTable())
 	for _, rule := range cases {

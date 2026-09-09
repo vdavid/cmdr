@@ -14,9 +14,16 @@
         syncIcon?: string
         /** Resolved image-index overlay for this row (glyph + tooltip key), or null for none. */
         imageIndexBadge?: ImageIndexBadge | null
+        /**
+         * Renders the whole glyph stack at half strength, the icon half of the
+         * hidden-entry de-emphasis. The caller owns the decision (both list views
+         * ask `full-list-utils.ts::isHiddenRowDimmed`), so this component never
+         * reads `file.isHidden` itself.
+         */
+        dimmed?: boolean
     }
 
-    const { file, syncIcon, imageIndexBadge = null }: Props = $props()
+    const { file, syncIcon, imageIndexBadge = null, dimmed = false }: Props = $props()
 
     // Subscribe to cache version - this makes getIconUrl reactive
     const _cacheVersion = $derived($iconCacheVersion)
@@ -82,7 +89,7 @@
     })
 </script>
 
-<span class="icon-wrapper">
+<span class="icon-wrapper" class:is-dimmed={dimmed}>
     {#if isGitIcon}
         <span class="git-icon">
             <Icon name={gitIconName} size={16} />
@@ -129,6 +136,20 @@
         width: var(--spacing-icon-size);
         height: var(--spacing-icon-size);
         flex-shrink: 0;
+    }
+
+    /* The icon half of the hidden-entry de-emphasis. `opacity` rather than a
+       color token because these are raster OS icons and badge glyphs, not text:
+       nothing here carries a `color` a token could quiet, and no text-contrast
+       bar applies to a decorative image whose row already spells the name out.
+       It carries the weight the name's own dim can't: `--color-text-quiet` is
+       capped by the APCA floor (~5 Lc of slack in dark mode), so the text alone
+       reads too close to an ordinary row, especially in light mode.
+       `.icon-wrapper.is-dimmed` is listed in `opacity_check.go`'s decorative
+       allowlist for exactly that reason; the whole stack fades together so a
+       badge never floats at full strength over a faded icon. */
+    .icon-wrapper.is-dimmed {
+        opacity: 0.5;
     }
 
     .icon {

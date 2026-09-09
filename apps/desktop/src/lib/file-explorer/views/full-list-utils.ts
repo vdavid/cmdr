@@ -324,7 +324,7 @@ export function pickSizeDisplay(entry: FileEntry, isRestricted = false): SizeDis
  *   `--color-text-quiet` treatment (the same token this dim would apply), so
  *   restricted wins and the row shows only its restricted styling.
  */
-export function isHiddenNameDimmed(
+export function isHiddenRowDimmed(
   entry: Pick<FileEntry, 'isHidden'>,
   opts: { isRestricted: boolean; isSelected: boolean; isUnderCursor: boolean },
 ): boolean {

@@ -1,8 +1,8 @@
 /**
  * `BriefList`'s hidden-entry name dim: `.name.is-hidden` lands only on a
  * hidden row that is neither selected nor under the cursor. See
- * `BriefList.svelte`'s `nameIsHiddenDimmed` const, which delegates to
- * `full-list-utils.ts::isHiddenNameDimmed` — the restricted-row precedence is
+ * `BriefList.svelte`'s `rowIsHiddenDimmed` const, which delegates to
+ * `full-list-utils.ts::isHiddenRowDimmed` — the restricted-row precedence is
  * covered there directly (`full-list-utils.test.ts`), not by a mount here.
  */
 
@@ -64,5 +64,30 @@ describe('BriefList hidden-entry name dim', () => {
     const list = await mountBriefList({ entries, props: { cursorIndex: 0 } })
 
     expect(nameCellFor(list.rows(), '.hidden.txt').classList.contains('is-hidden')).toBe(false)
+  })
+})
+
+describe('BriefList hidden-entry icon dim', () => {
+  function iconWrapperFor(rows: HTMLElement[], filename: string): HTMLElement {
+    const row = rows.find((r) => r.dataset.filename === filename)
+    if (!row) throw new Error(`no row rendered for ${filename}`)
+    const wrapper = row.querySelector<HTMLElement>('.icon-wrapper')
+    if (!wrapper) throw new Error(`row for ${filename} has no .icon-wrapper`)
+    return wrapper
+  }
+
+  it('dims the icon of a hidden entry, in step with its name', async () => {
+    const entries = [fileEntry({ name: 'visible.txt' }), fileEntry({ name: '.hidden.txt', isHidden: true })]
+    const list = await mountBriefList({ entries, props: { cursorIndex: -1 } })
+
+    expect(iconWrapperFor(list.rows(), '.hidden.txt').classList.contains('is-dimmed')).toBe(true)
+    expect(iconWrapperFor(list.rows(), 'visible.txt').classList.contains('is-dimmed')).toBe(false)
+  })
+
+  it('does not dim the icon of a hidden entry under the cursor', async () => {
+    const entries = [fileEntry({ name: '.hidden.txt', isHidden: true })]
+    const list = await mountBriefList({ entries, props: { cursorIndex: 0 } })
+
+    expect(iconWrapperFor(list.rows(), '.hidden.txt').classList.contains('is-dimmed')).toBe(false)
   })
 })

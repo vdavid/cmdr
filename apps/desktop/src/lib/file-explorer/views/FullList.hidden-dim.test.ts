@@ -1,8 +1,8 @@
 /**
  * `FullList`'s hidden-entry name dim: `.col-name-text.is-hidden` /
  * `.col-ext.is-hidden` land only on a hidden row that is neither selected nor
- * under the cursor. See `FullList.svelte`'s `nameIsHiddenDimmed` const, which
- * delegates to `full-list-utils.ts::isHiddenNameDimmed` — the restricted-row
+ * under the cursor. See `FullList.svelte`'s `rowIsHiddenDimmed` const, which
+ * delegates to `full-list-utils.ts::isHiddenRowDimmed` — the restricted-row
  * precedence is covered there directly (`full-list-utils.test.ts`), not by a
  * mount here, matching how `pickSizeDisplay`'s own restricted branch is
  * tested.
@@ -25,6 +25,14 @@ function nameCellFor(rows: HTMLElement[], filename: string): HTMLElement {
   const cell = row.querySelector<HTMLElement>('.col-name-text')
   if (!cell) throw new Error(`row for ${filename} has no .col-name-text`)
   return cell
+}
+
+function iconWrapperFor(rows: HTMLElement[], filename: string): HTMLElement {
+  const row = rows.find((r) => r.dataset.filename === filename)
+  if (!row) throw new Error(`no row rendered for ${filename}`)
+  const wrapper = row.querySelector<HTMLElement>('.icon-wrapper')
+  if (!wrapper) throw new Error(`row for ${filename} has no .icon-wrapper`)
+  return wrapper
 }
 
 describe('FullList hidden-entry name dim', () => {
@@ -70,5 +78,35 @@ describe('FullList hidden-entry name dim', () => {
     const list = await mountFullList({ entries, props: { cursorIndex: -1 } })
 
     expect(nameCellFor(list.rows(), '.Trash').classList.contains('is-hidden')).toBe(true)
+  })
+})
+
+describe('FullList hidden-entry icon dim', () => {
+  it('dims the icon of a hidden entry, alongside its name', async () => {
+    const entries = [fileEntry({ name: 'visible.txt' }), fileEntry({ name: '.hidden.txt', isHidden: true })]
+    const list = await mountFullList({ entries, props: { cursorIndex: -1 } })
+
+    expect(iconWrapperFor(list.rows(), '.hidden.txt').classList.contains('is-dimmed')).toBe(true)
+  })
+
+  it("does not dim an ordinary entry's icon", async () => {
+    const entries = [fileEntry({ name: 'visible.txt' })]
+    const list = await mountFullList({ entries, props: { cursorIndex: -1 } })
+
+    expect(iconWrapperFor(list.rows(), 'visible.txt').classList.contains('is-dimmed')).toBe(false)
+  })
+
+  it('does not dim the icon of a hidden entry under the cursor', async () => {
+    const entries = [fileEntry({ name: '.hidden.txt', isHidden: true })]
+    const list = await mountFullList({ entries, props: { cursorIndex: 0 } })
+
+    expect(iconWrapperFor(list.rows(), '.hidden.txt').classList.contains('is-dimmed')).toBe(false)
+  })
+
+  it('dims a hidden directory icon too', async () => {
+    const entries = [dirEntry({ name: '.Trash', isHidden: true })]
+    const list = await mountFullList({ entries, props: { cursorIndex: -1 } })
+
+    expect(iconWrapperFor(list.rows(), '.Trash').classList.contains('is-dimmed')).toBe(true)
   })
 })

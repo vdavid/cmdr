@@ -125,13 +125,21 @@ Everything else stays per-view, deliberately:
 Don't move the per-view cascade into a row component either: that's ~50 component instances per frame on the app's
 hottest render path.
 
-### Hidden-entry name dim
+### Hidden-entry dim
 
-**Decision**: `full-list-utils.ts::isHiddenNameDimmed(entry, { isRestricted, isSelected, isUnderCursor })` is the ONE
-place that decides whether a hidden entry's name renders in the quiet `--color-text-quiet` tone (`app.css`), and both
-`FullList.svelte` and `BriefList.svelte` compute their `nameIsHiddenDimmed` const by calling it, never by re-deriving
-the boolean inline. **Why**: the precedence has three exclusions that are easy to get subtly wrong per view, so it lives
-in one tested function (`full-list-utils.test.ts`) rather than two copies that could drift.
+**Decision**: `full-list-utils.ts::isHiddenRowDimmed(entry, { isRestricted, isSelected, isUnderCursor })` is the ONE
+place that decides whether a hidden entry is de-emphasized, and both `FullList.svelte` and `BriefList.svelte` compute
+their `rowIsHiddenDimmed` const by calling it, never by re-deriving the boolean inline. **Why**: the precedence has
+three exclusions that are easy to get subtly wrong per view, so it lives in one tested function
+(`full-list-utils.test.ts`) rather than two copies that could drift.
+
+The one answer drives two treatments, which is why the predicate is named for the ROW rather than the name: the name
+(and Ext) cell renders in the quiet `--color-text-quiet` tone (`app.css`), and `FileIcon.svelte`'s whole glyph stack
+renders at `opacity: 0.5` via its `dimmed` prop. **Why both**: the text tone alone reads too close to an ordinary row,
+especially in light mode, and it can't go further — `--color-text-quiet` is already near the APCA Lc-45 floor in dark
+mode (about 5 Lc of slack). The icon carries no text, so it's free of that ceiling and can take the weight the text
+can't. `FileIcon` never reads `file.isHidden` itself; the caller owns the decision, so the two treatments can't
+disagree.
 
 - A selected row or the cursor row always renders at full strength: the row the user is standing on (or has selected)
   stays maximally legible, and dimming it would drag the nine-accent selection matrix into the contrast budget for no

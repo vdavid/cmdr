@@ -86,6 +86,7 @@ var opacityDecorativeAllowlist = []opacityDecorativeEntry{
 	{"AskCmdrCostFooter.svelte", ".dot", `aria-hidden "·" divider, no informational content`},
 	{"RepoChip.svelte", ".sep", `aria-hidden "·" divider, no informational content`},
 	{"IndexingStatusBody.svelte", ".step-pending .step-marker", "wraps a <Spinner>/<Icon>, aria-hidden"},
+	{"FileIcon.svelte", ".icon-wrapper.is-dimmed", `holds an alt="" <img> plus badge glyphs, no text; the row's name carries the meaning`},
 }
 
 func opacityDecorativeReason(rule Rule) (string, bool) {

@@ -10,7 +10,7 @@ import {
   getDisplayName,
   getNameColumnText,
   pickSizeDisplay,
-  isHiddenNameDimmed,
+  isHiddenRowDimmed,
 } from './full-list-utils'
 import type { SizeDisplayPick } from './full-list-utils'
 import type { FileEntry } from '../types'
@@ -282,30 +282,30 @@ describe('pickSizeDisplay across locales', () => {
   })
 })
 
-describe('isHiddenNameDimmed', () => {
+describe('isHiddenRowDimmed', () => {
   const noExclusions = { isRestricted: false, isSelected: false, isUnderCursor: false }
 
   it('dims a hidden entry with none of the exclusions', () => {
-    expect(isHiddenNameDimmed({ isHidden: true }, noExclusions)).toBe(true)
+    expect(isHiddenRowDimmed({ isHidden: true }, noExclusions)).toBe(true)
   })
 
   it('does not dim an entry that is not hidden', () => {
-    expect(isHiddenNameDimmed({ isHidden: false }, noExclusions)).toBe(false)
-    expect(isHiddenNameDimmed({}, noExclusions)).toBe(false)
+    expect(isHiddenRowDimmed({ isHidden: false }, noExclusions)).toBe(false)
+    expect(isHiddenRowDimmed({}, noExclusions)).toBe(false)
   })
 
   it('does not dim a hidden entry that is selected', () => {
-    expect(isHiddenNameDimmed({ isHidden: true }, { ...noExclusions, isSelected: true })).toBe(false)
+    expect(isHiddenRowDimmed({ isHidden: true }, { ...noExclusions, isSelected: true })).toBe(false)
   })
 
   it('does not dim a hidden entry that is under the cursor', () => {
-    expect(isHiddenNameDimmed({ isHidden: true }, { ...noExclusions, isUnderCursor: true })).toBe(false)
+    expect(isHiddenRowDimmed({ isHidden: true }, { ...noExclusions, isUnderCursor: true })).toBe(false)
   })
 
   it('does not dim a hidden entry that is also TCC-restricted', () => {
     // Restricted rows already carry their own italic + opacity treatment;
     // stacking the hidden-dim color on top would fade toward the contrast
     // floor that opacity treatment already skirts. Restricted wins.
-    expect(isHiddenNameDimmed({ isHidden: true }, { ...noExclusions, isRestricted: true })).toBe(false)
+    expect(isHiddenRowDimmed({ isHidden: true }, { ...noExclusions, isRestricted: true })).toBe(false)
   })
 })
