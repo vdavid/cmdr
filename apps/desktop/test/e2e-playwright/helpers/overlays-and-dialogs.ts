@@ -147,21 +147,107 @@ export async function escapeOverlayUntilGone(tauriPage: PageLike, selector: stri
     .toBe(0)
 }
 
+/** The onboarding wizard's panel, mounted in the main window while the wizard is up. */
+export const ONBOARDING_WIZARD = '[data-dialog-id="onboarding"]'
+
+/** The terms card's anchor id, `StepBeta.svelte`'s `TERMS_BLOCK_ID`. */
+const TERMS_BLOCK_SELECTOR = `${ONBOARDING_WIZARD} #onboarding-terms-block input[type="checkbox"]`
+
 /**
  * Ticks the onboarding wizard's terms checkbox if it's on screen and still unticked.
  *
  * The Beta step (step 3) blocks BOTH of its footer buttons until the user accepts the
  * terms, so any walk through the wizard has to pass this gate exactly like a person does.
- * Safe to call on any step and with the wizard closed: it's a no-op when the checkbox
- * isn't rendered, and when a previous run already accepted (the acceptance persists to the
+ * Safe to call on any step and with the wizard closed: it's a no-op when the wizard isn't
+ * on step 3, and when a previous run already accepted (the acceptance persists to the
  * store, so the box comes back pre-ticked). See `lib/onboarding/DETAILS.md` § "Terms
  * acceptance".
+ *
+ * ❗ Throws when the wizard IS on step 3 and the box isn't there. A silent no-op here reads
+ * as success and then blocks the walk two steps later, which is how one stale selector left
+ * the wizard open and failed 82 tests on the shard behind it.
  */
 export async function acceptOnboardingTermsIfPresent(tauriPage: PageLike): Promise<void> {
-  await tauriPage.evaluate(`(function(){
-        var box = document.querySelector('[data-dialog-id="onboarding"] .terms-block input[type="checkbox"]');
-        if (box && !box.checked) box.click();
+  const outcome = await tauriPage.evaluate<'ticked' | 'already' | 'absent' | 'other-step'>(`(function(){
+        var wizard = document.querySelector('${ONBOARDING_WIZARD}');
+        if (!wizard) return 'other-step';
+        var box = document.querySelector('${TERMS_BLOCK_SELECTOR}');
+        if (!box) {
+            // The step dots are 1-based; step 3 is the only one carrying the terms card.
+            var dots = wizard.querySelectorAll('.step-dot');
+            for (var i = 0; i < dots.length; i++) {
+                if (dots[i].getAttribute('aria-current') === 'step') return i === 2 ? 'absent' : 'other-step';
+            }
+            return 'other-step';
+        }
+        if (box.checked) return 'already';
+        box.click();
+        return 'ticked';
     })()`)
+  if (outcome === 'absent') {
+    throw new Error(
+      `The onboarding wizard is on step 3 but no terms checkbox matched \`${TERMS_BLOCK_SELECTOR}\`. ` +
+        'The markup moved: repoint this selector rather than letting the walk stall on a blocked footer.',
+    )
+  }
+}
+
+/** Whether the onboarding wizard is currently mounted in the main window. */
+export async function onboardingWizardIsOpen(tauriPage: PageLike): Promise<boolean> {
+  return tauriPage.isVisible(ONBOARDING_WIZARD)
+}
+
+/** The active wizard step (1-4), read from the `aria-current="step"` dot. `null` when closed. */
+export async function onboardingActiveStep(tauriPage: PageLike): Promise<number | null> {
+  return tauriPage.evaluate<number | null>(`(function() {
+    var dots = document.querySelectorAll('${ONBOARDING_WIZARD} .step-dot');
+    for (var i = 0; i < dots.length; i++) {
+      if (dots[i].getAttribute('aria-current') === 'step') return i + 1;
+    }
+    return null;
+  })()`)
+}
+
+/** Clicks the last (forward / primary) button in the wizard footer's primary slot. */
+export async function clickOnboardingForwardButton(tauriPage: PageLike): Promise<void> {
+  await tauriPage.evaluate(`(function() {
+    var btns = document.querySelectorAll('${ONBOARDING_WIZARD} .primary-slot button');
+    if (btns.length > 0) btns[btns.length - 1].click();
+  })()`)
+}
+
+/**
+ * Closes the wizard if it's open. The wizard swallows Escape on purpose, so this walks the
+ * 4-step flow forward and lets the final step finish it. The last button in each footer is
+ * the forward action: step 1 (already-granted) "Next", step 2 "Next", step 3 "One more
+ * optional setup step" (the Beta page's primary; its secondary "Start using Cmdr!" would
+ * finish early), step 4 "Start using Cmdr". Linux opens at step 2, so the macOS-only step 1
+ * hop is skipped. Step 3 blocks both buttons until the terms are ticked, so each pass clears
+ * that gate first (a no-op on every other step).
+ *
+ * ❗ Every spec that OPENS the wizard owes this call from a `finally`. The app is shared per
+ * shard and the wizard refuses every MCP operation and swallows every keystroke behind it,
+ * so one left up doesn't fail its own test twice, it fails every test after it.
+ */
+export async function closeOnboardingWizardIfOpen(tauriPage: PageLike): Promise<void> {
+  if (!(await onboardingWizardIsOpen(tauriPage))) return
+  // Advance one step at a time, re-reading the active step each iteration. The wizard has
+  // four dots; the last step finishes (closes) on click rather than advancing, so cap the
+  // loop a little above the step count so a no-op click can't spin.
+  for (let i = 0; i < 6; i++) {
+    if (!(await onboardingWizardIsOpen(tauriPage))) return
+    const before = await onboardingActiveStep(tauriPage)
+    await acceptOnboardingTermsIfPresent(tauriPage)
+    await clickOnboardingForwardButton(tauriPage)
+    // Either the wizard closed (final step) or the step advanced. Wait for one to happen.
+    await expect
+      .poll(
+        async () => !(await onboardingWizardIsOpen(tauriPage)) || (await onboardingActiveStep(tauriPage)) !== before,
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
+  }
+  await expect.poll(async () => !(await onboardingWizardIsOpen(tauriPage)), { timeout: 3000 }).toBeTruthy()
 }
 
 // ── Pressing buttons ─────────────────────────────────────────────────────────

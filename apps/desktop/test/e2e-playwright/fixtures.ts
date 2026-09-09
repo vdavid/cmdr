@@ -311,6 +311,29 @@ async function breakTheCascade(tauriPage: EvaluatablePage): Promise<string | nul
   if ((await stillOpen()).length === 0) return null
 
   try {
+    // The onboarding wizard is the OTHER shape Escape can't clear: it swallows Escape on
+    // purpose, so a half-finished first run isn't dismissible. Left up, it refuses every
+    // MCP operation and swallows every keystroke, which is a dead shard by a different
+    // road than the transfer dialog's. So walk it out the way a person would: tick step
+    // 3's terms gate (both its buttons are blocked until then), press the footer's
+    // forward button, repeat until it unmounts on the last step.
+    await tauriPage.evaluate(`(async function(){
+            var WIZARD = '[data-dialog-id="onboarding"]';
+            for (var i = 0; i < 6; i++) {
+                var wizard = document.querySelector(WIZARD);
+                if (!wizard) break;
+                var terms = wizard.querySelector('#onboarding-terms-block input[type="checkbox"]');
+                if (terms && !terms.checked) terms.click();
+                var btns = wizard.querySelectorAll('.primary-slot button');
+                if (btns.length > 0) btns[btns.length - 1].click();
+                await new Promise(function(r) { setTimeout(r, 150); });
+            }
+        })()`)
+  } catch {
+    // Best-effort; the operation drain below and the report are the load-bearing parts.
+  }
+
+  try {
     // Mirrors `operation-queue.spec.ts`'s drain: cancellation is REQUESTED, not
     // finished, when the call returns, so wait for the lane to empty, and dismiss
     // retained failures inside the loop (a retained row never clears itself, and

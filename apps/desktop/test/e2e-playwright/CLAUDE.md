@@ -22,6 +22,10 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcod
   `dismissAllToasts` clears nothing before the toast lands, so END an op with `expectAndDismissToast`. And the file and
   the row land BEFORE the op does, so `waitForOperationsToSettle` first, or its toast and the next op both go missing.
   DETAILS § "Waiting for a write to settle".
+- **Open the onboarding wizard? Close it from a `finally`**, with `closeOnboardingWizardIfOpen`. It refuses every MCP
+  operation ("the onboarding dialog is open") and swallows every keystroke, so on a shared shard one left up doesn't
+  fail its own test, it fails all 82 after it. ❌ Never match its rows by label: `data-checklist-item` and
+  `#onboarding-terms-block` are the handles, and a stale selector here is what left it open.
 - **Exercise viewer + settings through the production multi-window flow** (`openViewerWindow` /
   `openSettingsWindowViaProd` / `closeScopedWindow`), ❌ never by routing the main window there: that hides a scoped
   page that can't call a Tauri command.

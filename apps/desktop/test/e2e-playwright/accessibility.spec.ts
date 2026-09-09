@@ -17,6 +17,7 @@ import { fileURLToPath } from 'url'
 import { test, expect } from './fixtures.js'
 import {
   acceptOnboardingTermsIfPresent,
+  closeOnboardingWizardIfOpen,
   closeScopedWindow,
   dismissOverlay,
   dispatchMenuCommand,
@@ -454,69 +455,82 @@ for (const mode of ['light', 'dark'] as const) {
       await dispatchMenuCommand(tauriPage, 'cmdr.openOnboarding')
       await tauriPage.waitForSelector(WIZARD_SELECTOR, 3000)
 
-      // The wizard has four step dots (FDA, AI, Open beta, Optional).
-      const dotCount = await tauriPage.evaluate<number>(
-        `document.querySelectorAll('${WIZARD_SELECTOR} .step-dot').length`,
-      )
-      expect(dotCount, `Wizard should render four step dots (${mode})`).toBe(4)
+      // Everything from here runs under a `finally` that closes the wizard. The app is shared
+      // across the shard, and the wizard refuses every MCP operation and swallows every
+      // keystroke behind it, so an assertion that escaped this block wouldn't fail one test,
+      // it would fail every test after it.
+      try {
+        // The wizard has four step dots (FDA, AI, Open beta, Optional).
+        const dotCount = await tauriPage.evaluate<number>(
+          `document.querySelectorAll('${WIZARD_SELECTOR} .step-dot').length`,
+        )
+        expect(dotCount, `Wizard should render four step dots (${mode})`).toBe(4)
 
-      // Scan the wizard at its opening step (step 1 on macOS, step 2 on Linux).
-      const { all: openingViolations } = await runAxeAudit(
-        tauriPage,
-        `Onboarding wizard opening (${mode})`,
-        WIZARD_SELECTOR,
-      )
-      expect(openingViolations, `Violations on wizard opening step (${mode})`).toHaveLength(0)
-
-      const isMac = process.platform === 'darwin'
-      if (isMac) {
-        // Advance step 1 (already-granted) → step 2 so we can scan it too.
-        await advanceTo(2)
-        const { all: step2Violations } = await runAxeAudit(
+        // Scan the wizard at its opening step (step 1 on macOS, step 2 on Linux).
+        const { all: openingViolations } = await runAxeAudit(
           tauriPage,
-          `Onboarding wizard step 2 (${mode})`,
+          `Onboarding wizard opening (${mode})`,
           WIZARD_SELECTOR,
         )
-        expect(step2Violations, `Violations on wizard step 2 (${mode})`).toHaveLength(0)
+        expect(openingViolations, `Violations on wizard opening step (${mode})`).toHaveLength(0)
+
+        const isMac = process.platform === 'darwin'
+        if (isMac) {
+          // Advance step 1 (already-granted) → step 2 so we can scan it too.
+          await advanceTo(2)
+          const { all: step2Violations } = await runAxeAudit(
+            tauriPage,
+            `Onboarding wizard step 2 (${mode})`,
+            WIZARD_SELECTOR,
+          )
+          expect(step2Violations, `Violations on wizard step 2 (${mode})`).toHaveLength(0)
+        }
+
+        // Advance step 2 → step 3 (Open beta) via the "Go to open beta" forward button (primary slot, last).
+        await advanceTo(3)
+        // The Open beta step leads with the four-row checklist, and its first row IS the
+        // usage-stats opt-out: an opt-out default is fair consent only if everyone saw it.
+        // Rows are matched by `data-checklist-item`, never by their translated label.
+        const checklistItems = await tauriPage.evaluate<string>(
+          `Array.prototype.map.call(
+            document.querySelectorAll('${WIZARD_SELECTOR} .checklist [data-checklist-item]'),
+            function (row) { return row.getAttribute('data-checklist-item'); },
+          ).join(',')`,
+        )
+        expect(checklistItems, `Open beta step should render the four checklist rows (${mode})`).toBe(
+          'analytics,star,alternativeTo,email',
+        )
+        const hasAnalyticsToggle = await tauriPage.evaluate<boolean>(
+          `!!document.querySelector('${WIZARD_SELECTOR} [data-checklist-item="analytics"] input[type="checkbox"]')`,
+        )
+        expect(hasAnalyticsToggle, `The usage-stats row should render its opt-out checkbox (${mode})`).toBe(true)
+        const { all: step3Violations } = await runAxeAudit(
+          tauriPage,
+          `Onboarding wizard step 3 (${mode})`,
+          WIZARD_SELECTOR,
+        )
+        expect(step3Violations, `Violations on wizard step 3 (${mode})`).toHaveLength(0)
+
+        // The step also renders the required terms checkbox, and the audit above ran with it
+        // still unticked, so the blocked-footer state is what axe just scanned.
+        const hasTermsCheckbox = await tauriPage.evaluate<boolean>(
+          `!!document.querySelector('${WIZARD_SELECTOR} #onboarding-terms-block input[type="checkbox"][aria-required="true"]')`,
+        )
+        expect(hasTermsCheckbox, `Open beta step should render the required terms checkbox (${mode})`).toBe(true)
+
+        // Advance step 3 → step 4 (Optional). Both of its buttons are blocked until the terms
+        // are accepted, so tick the box first.
+        await acceptOnboardingTermsIfPresent(tauriPage)
+        await advanceTo(4)
+        const { all: step4Violations } = await runAxeAudit(
+          tauriPage,
+          `Onboarding wizard step 4 (${mode})`,
+          WIZARD_SELECTOR,
+        )
+        expect(step4Violations, `Violations on wizard step 4 (${mode})`).toHaveLength(0)
+      } finally {
+        await closeOnboardingWizardIfOpen(tauriPage)
       }
-
-      // Advance step 2 → step 3 (Open beta) via the "Go to open beta" forward button (primary slot, last).
-      await advanceTo(3)
-      // The Open beta step renders the usage-stats opt-out toggle.
-      const hasAnalyticsToggle = await tauriPage.evaluate<boolean>(
-        `!!document.querySelector('${WIZARD_SELECTOR} [aria-labelledby="toggle-analytics-title"]')`,
-      )
-      expect(hasAnalyticsToggle, `Open beta step should render the analytics opt-out toggle (${mode})`).toBe(true)
-      const { all: step3Violations } = await runAxeAudit(
-        tauriPage,
-        `Onboarding wizard step 3 (${mode})`,
-        WIZARD_SELECTOR,
-      )
-      expect(step3Violations, `Violations on wizard step 3 (${mode})`).toHaveLength(0)
-
-      // The step also renders the required terms checkbox, and the audit above ran with it
-      // still unticked, so the blocked-footer state is what axe just scanned.
-      const hasTermsCheckbox = await tauriPage.evaluate<boolean>(
-        `!!document.querySelector('${WIZARD_SELECTOR} .terms-block input[type="checkbox"][aria-required="true"]')`,
-      )
-      expect(hasTermsCheckbox, `Open beta step should render the required terms checkbox (${mode})`).toBe(true)
-
-      // Advance step 3 → step 4 (Optional). Both of its buttons are blocked until the terms
-      // are accepted, so tick the box first.
-      await acceptOnboardingTermsIfPresent(tauriPage)
-      await advanceTo(4)
-      const { all: step4Violations } = await runAxeAudit(
-        tauriPage,
-        `Onboarding wizard step 4 (${mode})`,
-        WIZARD_SELECTOR,
-      )
-      expect(step4Violations, `Violations on wizard step 4 (${mode})`).toHaveLength(0)
-
-      // Finish so the wizard doesn't leak into the next test (the safety net would otherwise fire).
-      await tauriPage.evaluate(`(function() {
-        var btns = document.querySelectorAll('${WIZARD_SELECTOR} .primary-slot button');
-        if (btns.length > 0) btns[btns.length - 1].click();
-      })()`)
       await expect.poll(async () => !(await tauriPage.isVisible(WIZARD_SELECTOR)), { timeout: 3000 }).toBeTruthy()
     })
 

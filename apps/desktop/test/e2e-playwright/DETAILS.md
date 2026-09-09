@@ -754,6 +754,14 @@ way"). One test that lost a conflict answer therefore parked its operation for 2
 it: 196 of 197 failures on that run reported the same leaked `.modal-overlay`, 79 of them as a missing
 `transfer-confirmation` dialog, and the suite went from 5.8 to 33.1 minutes (CI run 32090060740).
 
+The onboarding wizard is the second shape of the same wedge, by a different road: it swallows Escape on purpose (a
+half-finished first run shouldn't be dismissible), and while it's up the backend refuses every operation ("the
+onboarding dialog is open") and the panes never see a keystroke. A stale selector in the a11y wizard walk left it
+standing once and cost 84 of 348 tests on three consecutive CI runs, the failures spread across 20 unrelated specs and
+reading as keyboard and MTP regressions. So `breakTheCascade` walks the wizard out first: tick the terms gate, press the
+footer's forward button, repeat until it unmounts. The spec that opened it still owes a `closeOnboardingWizardIfOpen` in
+a `finally`; this is the backstop.
+
 So when the Escape rounds leave an overlay standing, `breakTheCascade` in `fixtures.ts` cancels every operation the
 dialog could be waiting on (the same drain `operation-queue.spec.ts` documents: cancel, then poll `list_operations`
 empty while dismissing retained failures) and Escapes again. The culprit's own failure is recorded either way; this only

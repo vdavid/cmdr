@@ -39,7 +39,7 @@
  */
 
 import { expect } from './fixtures.js'
-import { ensureAppReady, dismissOverlay } from './helpers.js'
+import { ensureAppReady, dismissOverlay, closeOnboardingWizardIfOpen } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import {
   type SurfaceEntry,
@@ -128,26 +128,13 @@ async function openGalleryState(
  */
 async function closePreview(main: TauriPage, dialogId: string): Promise<void> {
   const selector = `[data-dialog-id="${dialogId}"]`
-  // The onboarding wizard swallows Escape on purpose (a half-finished first run
-  // shouldn't be dismissible), so it needs its own exit: click the last button in
-  // the primary slot, which is Next on every step and Finish on the last. Leaving
-  // it up would be worse than a stray image: `rerender` re-resolves every MOUNTED
-  // string, so the wizard's keys would record against the NEXT dialog's surface
-  // and couple onboarding copy to a screenshot of the operation log.
+  // The onboarding wizard swallows Escape on purpose (a half-finished first run shouldn't be
+  // dismissible), so it needs its own exit: the shared closer walks the steps the way a person
+  // does, terms gate included. Leaving it up would be worse than a stray image: `rerender`
+  // re-resolves every MOUNTED string, so the wizard's keys would record against the NEXT
+  // dialog's surface and couple onboarding copy to a screenshot of the operation log.
   if (dialogId === 'onboarding') {
-    for (let i = 0; i < 8; i++) {
-      if (!(await main.isVisible(selector).catch(() => false))) break
-      await main
-        .evaluate(`(function(){
-          var btns = document.querySelectorAll('${selector} .primary-slot button');
-          if (btns.length > 0) btns[btns.length - 1].click();
-        })()`)
-        .catch(() => {})
-      await expect
-        .poll(async () => !(await main.isVisible(selector).catch(() => false)), { timeout: 1500 })
-        .toBeTruthy()
-        .catch(() => {})
-    }
+    await closeOnboardingWizardIfOpen(main).catch(() => {})
   }
   await dismissOverlay(main).catch(() => {})
   const closed = await expect
