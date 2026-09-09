@@ -208,6 +208,40 @@ the right column is feedback enough; forcing valid key entry as a precondition w
 key later. The user can re-enter via `Cmdr > Onboarding…` or fix it in Settings; first AI use surfaces the standard
 `NotConfigured` error path.
 
+### What "off" turns off
+
+"Thanks but no thanks" is the clearest answer a user can give, so `StepAi.persist()` lands it on every piece of state
+that says AI is on, not just the one radio it came from. Three of them exist, in two different stores:
+
+1. **`ai.provider = 'off'`** (registry setting).
+2. **Ask Cmdr consent, revoked** via `ask-cmdr/ask-cmdr-consent.svelte::revokeConsent()`. This is NOT a setting: it's a
+   record in `main.db` behind the consent commands, and it's what `settings/sections/AskCmdrSection.svelte`'s "Ask Cmdr
+   is on / off" status reads. Without this step, a user who declined AI in the wizard still found Settings saying "Ask
+   Cmdr is on".
+3. **`askCmdr.proactive = false`**. The registry ships it `default: true` on purpose (the other gates keep it harmless
+   for someone who never opted into AI), so it stays armed unless something explicitly turns it off. An explicit "no AI"
+   is exactly that something.
+
+The end state is `NeedsConsent` for `WakeReadiness`, so the status corner's wake indicator stays silent.
+
+**❌ Picking cloud or local never grants consent.** Only the `'off'` branch touches consent, and only in the revoking
+direction. Consent is a separate deliberate act behind the disclosure copy (`askCmdr.consent.*`, shown in the rail's
+gate and the settings section), and the backend enforces it structurally in the send path; granting it as a side effect
+of choosing a provider would be a consent bypass. `StepAi.test.ts` asserts the absence explicitly for both branches.
+
+**❌ Switching back from `'off'` to a provider does not re-arm `askCmdr.proactive`.** Turning AI on again shouldn't
+silently restart an agent that starts conversations on its own; Settings › AI › Ask Cmdr is where that goes back on.
+
+**Revoking has a real backend side effect, by design**: `agent::wake::inbox::Inbox::purge_if_consent_withdrawn` drops
+the proactive pipeline's stored rows once readiness no longer permits them. That's the point of an explicit "no", and
+it's why the cloud/local branches must not reach this call.
+
+**Neither failure strands the user.** `revokeConsent()` is a no-op for someone who never consented (the store deletes
+two absent `meta` rows), and both it and the surrounding persist are wrapped: a revoke that throws is logged through the
+module's `getAppLogger` and the rest of the persist still runs, and any other persist failure is logged and still
+advances. The footer's `advanceBusy` guard always clears in a `finally`. Same reasoning as the no-key-blocks-advance
+rule above: the wizard never traps someone on a step.
+
 ### Connection-check pipeline
 
 `CloudProviderSetup.svelte` mirrors `lib/settings/sections/AiCloudSection.svelte`'s pipeline rather than forking it: 300

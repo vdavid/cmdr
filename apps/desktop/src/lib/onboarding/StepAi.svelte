@@ -15,6 +15,7 @@
     import { systemStrings } from '$lib/system-strings.svelte'
     import { getSetting, setSetting, type AiProvider } from '$lib/settings'
     import { pushConfigToBackend } from '$lib/settings/ai-config'
+    import { revokeConsent } from '$lib/ask-cmdr/ask-cmdr-consent.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
@@ -45,6 +46,9 @@
      *   - `ai.provider` (always)
      *   - `ai.cloudProvider` + `ai.cloudProviderConfigs` (when cloud is picked; the API
      *     key is already persisted live by `CloudProviderSetup`)
+     *   - on 'off' only: Ask Cmdr consent revoked + `askCmdr.proactive = false`, so the
+     *     answer lands on all three pieces of state that say AI is on (see `persist()`
+     *     and DETAILS § "What 'off' turns off")
      *   - `pushConfigToBackend()` (belt + braces; the applier listener also fires on the
      *     same setting changes, but we await this here so backend state is fresh by the
      *     time the user lands in the app)
@@ -169,11 +173,35 @@
         })
     }
 
+    /**
+     * Commit the user's pick. "Thanks but no thanks" is the clearest answer a user can
+     * give, so it lands on all THREE pieces of state that say AI is on, not only the
+     * provider row: `ai.provider`, the Ask Cmdr consent record in `main.db`, and the
+     * `askCmdr.proactive` setting (which ships ON).
+     *
+     * ❌ The reverse never happens: picking cloud or local ACCEPTS nothing. Consent is a
+     * separate, explicit act behind the disclosure copy, and the backend enforces it in
+     * the send path. Switching back off 'off' also leaves `askCmdr.proactive` off:
+     * turning AI on again shouldn't silently re-arm an agent that starts conversations
+     * on its own.
+     */
     async function persist(): Promise<void> {
         const provider: AiProvider = choice
         setSetting('ai.provider', provider)
         if (provider === 'cloud') {
             setSetting('ai.cloudProvider', cloudProviderId)
+        }
+        if (provider === 'off') {
+            setSetting('askCmdr.proactive', false)
+            // Revoking also purges the proactive pipeline's stored rows in the backend,
+            // which is the intent of an explicit "no". It's a no-op for someone who never
+            // consented (the store just deletes two absent rows). Never fatal: a wizard
+            // that traps the user because `main.db` hiccuped is worse than a logged warning.
+            try {
+                await revokeConsent()
+            } catch (error) {
+                log.warn("Couldn't turn Ask Cmdr off for a 'no AI' pick: {error}", { error })
+            }
         }
         // Belt-and-braces: the applier listener fires on each setSetting above, but we
         // await this explicitly so the backend is reconfigured before the user lands in
@@ -206,6 +234,11 @@
         advanceBusy = true
         try {
             await persist()
+        } catch (error) {
+            // The wizard never traps the user on a step (same reasoning as the
+            // no-key-blocks-advance rule). A persist that fell over is worth a log line,
+            // not a dead end: Settings is the way to fix whatever didn't land.
+            log.warn("Couldn't persist the AI choice: {error}", { error })
         } finally {
             advanceBusy = false
         }

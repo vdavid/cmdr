@@ -17,6 +17,10 @@
  *   never completes onboarding: the Beta page is non-skippable.
  * - No-API-key-blocks-advance rule: cloud + empty key still advances; `pushConfigToBackend`
  *   still fires.
+ * - "Thanks but no thanks" lands on all three pieces of state: `ai.provider = 'off'`,
+ *   Ask Cmdr consent revoked, `askCmdr.proactive = false`. Picking a provider touches
+ *   NEITHER of the last two (the consent-bypass guard), and a failing revoke still lets
+ *   the user move on.
  *
  * Axe coverage lives in `StepAi.a11y.test.ts`.
  */
@@ -96,6 +100,9 @@ function resetSettings(): void {
   settingsMap['ai.cloudProvider'] = 'openai'
   settingsMap['ai.cloudProviderConfigs'] = '{}'
   settingsMap['ai.localContextSize'] = '4096'
+  // Mirrors the registry: `askCmdr.proactive` ships ON, so it's armed unless something
+  // turns it off.
+  settingsMap['askCmdr.proactive'] = true
 }
 
 vi.mock('$lib/settings', async (importOriginal) => {
@@ -113,6 +120,15 @@ vi.mock('$lib/settings', async (importOriginal) => {
 const pushConfigToBackend = vi.fn(() => Promise.resolve())
 vi.mock('$lib/settings/ai-config', () => ({
   pushConfigToBackend: () => pushConfigToBackend(),
+}))
+
+// Ask Cmdr consent lives in `main.db`, not the registry, so the step drives it through
+// these commands. The wizard may only ever REVOKE (see the consent-bypass guard below).
+const revokeConsent = vi.fn<() => Promise<void>>(() => Promise.resolve())
+const acceptConsent = vi.fn<() => Promise<boolean>>(() => Promise.resolve(true))
+vi.mock('$lib/ask-cmdr/ask-cmdr-consent.svelte', () => ({
+  revokeConsent: () => revokeConsent(),
+  acceptConsent: () => acceptConsent(),
 }))
 
 // Cloud setup component reaches into the secret store; the parent test mocks above
@@ -158,6 +174,9 @@ describe('StepAi', () => {
     getAiApiKeyStatus.mockResolvedValue({ isSet: false, fingerprint: '' })
     openExternalUrl.mockClear()
     pushConfigToBackend.mockClear()
+    revokeConsent.mockReset()
+    revokeConsent.mockResolvedValue(undefined)
+    acceptConsent.mockClear()
     settingsMap['onboarding.fullDiskAccessChoice'] = 'allow'
     settingsMap['onboarding.completed'] = false
     getAiRuntimeStatus.mockReset()
@@ -302,6 +321,65 @@ describe('StepAi', () => {
     // Beta is non-skippable: this advances to step 3, it does NOT request wizard finish.
     expect(getOnboardingState().currentStep).toBe(3)
     expect(getOnboardingState().finishRequestTick).toBe(initialTick)
+  })
+
+  it('"Thanks but no thanks" revokes Ask Cmdr consent and disarms askCmdr.proactive', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    // Start from cloud so the pick to 'off' is a real choice change, not the default.
+    radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
+    await waitForAsync()
+    radioByValue(mounted.target, 'off')?.dispatchEvent(new Event('change', { bubbles: true }))
+    await waitForAsync()
+    getOnboardingState().footerOverride?.[0].onclick()
+    await waitForAsync()
+    expect(settingsMap['ai.provider']).toBe('off')
+    expect(revokeConsent).toHaveBeenCalledTimes(1)
+    expect(settingsMap['askCmdr.proactive']).toBe(false)
+    expect(getOnboardingState().currentStep).toBe(3)
+  })
+
+  it('picking cloud NEVER grants consent and leaves askCmdr.proactive alone (consent-bypass guard)', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
+    await waitForAsync()
+    getOnboardingState().footerOverride?.[0].onclick()
+    await waitForAsync()
+    expect(settingsMap['ai.provider']).toBe('cloud')
+    expect(acceptConsent).not.toHaveBeenCalled()
+    expect(revokeConsent).not.toHaveBeenCalled()
+    expect(settingsMap['askCmdr.proactive']).toBe(true)
+  })
+
+  it('picking local NEVER grants consent and leaves askCmdr.proactive alone', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    radioByValue(mounted.target, 'local')?.dispatchEvent(new Event('change', { bubbles: true }))
+    await waitForAsync()
+    getOnboardingState().footerOverride?.[0].onclick()
+    await waitForAsync()
+    expect(settingsMap['ai.provider']).toBe('local')
+    expect(acceptConsent).not.toHaveBeenCalled()
+    expect(revokeConsent).not.toHaveBeenCalled()
+    expect(settingsMap['askCmdr.proactive']).toBe(true)
+  })
+
+  it('a failing revoke still advances and leaves the forward button usable', async () => {
+    revokeConsent.mockRejectedValue(new Error('main.db is unreachable'))
+    mounted = mountStep()
+    await waitForAsync()
+    radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
+    await waitForAsync()
+    radioByValue(mounted.target, 'off')?.dispatchEvent(new Event('change', { bubbles: true }))
+    await waitForAsync()
+    getOnboardingState().footerOverride?.[0].onclick()
+    await waitForAsync()
+    expect(getOnboardingState().currentStep).toBe(3)
+    expect(getOnboardingState().footerOverride?.[0].disabled).toBe(false)
+    // The rest of the persist still runs: a hiccup in `main.db` doesn't cost the user
+    // their provider choice.
+    expect(pushConfigToBackend).toHaveBeenCalled()
   })
 
   it('No-key-blocks-advance: cloud with empty key still calls pushConfigToBackend', async () => {

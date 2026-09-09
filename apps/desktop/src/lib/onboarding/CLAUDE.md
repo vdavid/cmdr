@@ -25,6 +25,9 @@ Optional (4); Linux skips step 1 and resumes at step 2.
 - **Step 3's terms checkbox gates both footer buttons.** ❌ Never pre-tick or route around it: it's the assent the terms
   rest on. Unticked, the buttons take `blockedReason`, ❌ not `disabled`, so a press still fires and scrolls to the
   checkbox. Acceptance stores `TERMS_VERSION` + timestamp; bumping it re-asks everyone.
+- **"Thanks but no thanks" lands on THREE things**: `StepAi.persist()` writes `ai.provider = 'off'`, revokes Ask Cmdr
+  consent (a `main.db` record, not a setting), and clears `askCmdr.proactive` (which ships ON). ❌ Picking cloud or
+  local must NEVER grant consent. DETAILS § "What 'off' turns off".
 - **Allow (FDA) requires a restart before advancing past step 1**: the footer flips to "Restart Cmdr" and does NOT
   advance in-session, because the gate (`fda_gate::FDA_PENDING`) is set once at boot and clearing it at runtime races
   the TCC popups it suppresses (we hit 5-10 stacked popups once). Deny advances normally.
