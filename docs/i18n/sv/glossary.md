@@ -2464,9 +2464,10 @@ LEVANDE macOS-paketen (macOS 26.6.2, build 25G83, läst 2026-09-07; `.loctable` 
   aktiverad”).
 - **Allow (knappen på Androids egen ”Allow USB debugging?”-ruta) → `Tillåt`** · AOSP
   `frameworks/base/packages/SystemUI/res/values-sv/strings.xml`, `usb_debugging_allow` = ”Tillåt” (rutans rubrik är ”Ska
-  USB-felsökning tillåtas?”, `usb_debugging_title`) · `high`. Verbformen i inforutan blir därför `tillåta`:
-  `adb.readiness.waitingForAuthorization` = ”Väntar på att du ska tillåta USB-felsökning”. ❌ Inte `Godkänn` eller
-  `Acceptera` — ordet måste stämma tecken för tecken med knappen på telefonens skärm.
+  USB-felsökning tillåtas?”, `usb_debugging_title`) · `high`. Ordet citeras som egennamn, aldrig böjt till ett verb,
+  precis som engelskan gör: `adb.readiness.waitingForAuthorization` = ”Väntar på att du trycker på Tillåt i telefonen”
+  och `adb.connect.unauthorized` = ”Titta på din telefon och tryck på Tillåt.”, båda med tryckverbet från nästa punkt.
+  ❌ Inte `Godkänn` eller `Acceptera` — ordet måste stämma tecken för tecken med knappen på telefonens skärm.
 - **tap (på en telefonskärm) → `tryck på`** · Androids sv genomgående (`Tryck på …`) · `high`. Katalogens `klicka` hör
   till musen på Macen; telefonen får `tryck på`.
 - **Android platform tools → `Android platform tools`, oböjt** · redan satt i
