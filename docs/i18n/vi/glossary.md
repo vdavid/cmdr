@@ -395,9 +395,9 @@ Tier 2; macOS wins ties. Reuses prior terms (sao chép/di chuyển/xóa, thùng 
 
 Wave-1-prep phrasings settled (keep consistent): "Waiting" (queued status) → `Đang chờ`; "Running" → `Đang chạy`; "Done"
 → `Xong`; "Cancelled" → `Đã hủy`; "Couldn''t finish" (gentle failed wording) → `Chưa hoàn tất được` (negative-capability
-framing per the error voice, avoids a bare "lỗi"/"thất bại"). "Cancel selected" → `Hủy mục đã chọn`. (The command label
-that once sat here, "Show transfer queue" → `Hiện hàng đợi truyền`, is SUPERSEDED: the command now reads exactly like
-the window title, `Hàng đợi thao tác`. See the 2026-08-08 rename section at the end of this file.)
+framing per the error voice, avoids a bare "lỗi"/"thất bại"). "Cancel selected" → `Hủy mục đã chọn`. The command that
+opens the window (`commands.queueShow.label`) reads exactly like the window title, `Hàng đợi thao tác`; the 2026-08-08
+rename section at the end of this file argues that name.
 
 Added during the navigation-and-file-ops pass (2026-06-26): the new `settings` Navigation & file ops section + the
 `fileExplorer` breadcrumb tooltip and double-click-to-parent hint toast. RE-VALIDATED against the reference pile
@@ -880,7 +880,7 @@ Commander Tier 3). Reuses settled terms (close → `đóng`, cancel → `hủy`,
 - **"partly written": `đã được ghi một phần`** · `ghi` is the settled write verb (`ghi đè` = overwrite, macOS Finder).
   The `được` passive is natural here and keeps the file (not Cmdr) as the subject. `high`.
 - **"The log has the details.": `Chi tiết có trong nhật ký.`** · `nhật ký` (log, settled) + GNOME Nautilus's
-  `Chi tiết: ` / macOS `Hiện chi tiết`. Fronting `Chi tiết` keeps it short and puts the useful noun first. `high`.
+  `Chi tiết: `. Fronting `Chi tiết` keeps it short and puts the useful noun first. `high`.
 - No `sameAsSourceJustification` needed: all eight values differ from English.
 
 Phrasings settled (keep consistent): "No progress for {duration}" → `Không có tiến triển trong {duration}` (with the
@@ -992,9 +992,10 @@ re-derives them.
   carries the "couldn't" (inability) that English says and plain `chưa hoàn tất` ("didn't finish") drops. `high`.
 - **"Open the operation queue to see why.": `Mở hàng đợi thao tác để xem lý do.`** · `mở` (settled open verb, macOS
   AppKit) + the window name lowercased mid-sentence, same as the rename pass's `Tìm nó trong hàng đợi thao tác.` `high`.
-- **"Show in operation queue" (the toast's button): `Hiện trong hàng đợi thao tác`** · `Hiện trong X` is the catalog's
-  settled "Show in X" shape (`commands.fileShowInFinder.mac.label` and `errorReporter.bundleSavedToast.reveal`, both
-  `Hiện trong Finder`). `high`.
+- **"Show in operation queue" (the toast's button): `Hiển thị trong hàng đợi thao tác`** · `Hiển thị trong X` is the
+  catalog's settled "Show in X" shape, on all six such keys (`commands.fileShowInFinder.mac.label`,
+  `.other.label`, `menu.file.showInFinder`, `.showInFileManager`, `errorReporter.bundleSavedToast.reveal`, and this
+  one). The verb comes from the `show → hiển thị, KHÔNG hiện` ruling in the 2026-08-30 drift audit below. `high`.
 - **"percent" spelled as a word for screen readers: `phần trăm`** · MS terminology (`phần trăm`,
   `phần trăm hoàn thành`). `{percentText} phần trăm` puts the number first, as Vietnamese does. Used ONLY in
   `chip.ariaLabel`; the visible tooltip keeps the `%` sign. `high`.
@@ -1013,8 +1014,8 @@ re-derives them.
   space (` {countText} mục`, ` vào {destination}`, ` · {detail}`) so the four combinations never produce a double space
   or a dangling `·`. Verified by formatting all four.
 - **The chip word itself (`huy hiệu`) appears in no value.** It's only the surface's name; recorded here because the
-  Settings labels that name Cmdr's other chips already use it (`Hiện huy hiệu kho`,
-  `Hiện huy hiệu trạng thái trên tệp hình ảnh`), so a future string that has to SAY "chip" should say `huy hiệu`.
+  Settings labels that name Cmdr's other chips already use it (`Hiển thị huy hiệu kho`,
+  `Hiển thị huy hiệu trạng thái trên tệp hình ảnh`), so a future string that has to SAY "chip" should say `huy hiệu`.
   `tentative`.
 - ETA / time-left inside `{detail}` is formatted elsewhere and arrives as the settled `còn {duration}`; these keys pass
   it through untouched.
@@ -1201,7 +1202,8 @@ is exactly what the copy avoids.
 - **"so far" → `đến giờ`** · the catalog's own phrase (`search` result counter "# kết quả đến giờ") · high
 - **the files an operation overwrote → `những tệp bị ghi đè`** · the settled `ghi đè` (overwrite) · high
 - `foregroundBusyToast` no longer claims another operation holds the window ("Ở đây đang mở một thứ khác"): the blocker
-  can be any dialog. "bring this one up" → `hiện thao tác này lên`, tying to the row's `Hiện` (Show) button · high
+  can be any dialog. "bring this one up" → `hiện thao tác này lên`, the phrasal `hiện … lên` (bring up) rather than the
+  standalone Show verb, which is `Hiển thị` on the row's button (`queue.row.foreground`) · high
 - No `sameAsSourceJustification` needed: all eight values differ from English.
 
 ## Đổi tên liên tiếp: thông báo gộp khi nhiều tệp giữ nguyên tên (2026-08-18; `fileExplorer.rename.chainKeptOriginalNameAndOthers`)
@@ -1668,7 +1670,7 @@ những gì đã gửi và viết thêm ghi chú **vào chính báo cáo đó**;
 - **Tooltip KHÔNG bắt buộc phải chứa nhãn** (`selection.action.*`). Tên trợ năng của nút lấy từ khóa nhãn
   (`QueryDialog.svelte`: `aria-label={config.primaryAction.ariaLabel ?? config.primaryAction.label}`), còn tooltip là
   một `use:tooltip` trên `span` bên trong, nên WCAG 2.5.3 đã thỏa mãn sẵn. Tiền lệ trong catalog cũng vậy:
-  `search.action.showAll.label` (`Hiện tất cả trong cửa sổ chính`) và `.tooltip`
+  `search.action.showAll.label` (`Hiển thị tất cả trong cửa sổ chính`) và `.tooltip`
   (`Mở kết quả tìm kiếm trong khung đang hoạt động`) cố ý dùng chữ khác nhau. Tooltip chỉ cần gọi đúng thao tác của nhãn
   và nói rõ thay đổi rơi vào khung đang hoạt động.
 - **Dù vậy hai tooltip vẫn mở đầu bằng nhãn**, vì đó là khuôn của hai khóa anh em gần nhất
@@ -1677,7 +1679,7 @@ những gì đã gửi và viết thêm ghi chú **vào chính báo cáo đó**;
 - **`selection.runHint` theo khuôn `search.runHint`**: `Nhấn Enter để lọc` (song sinh với `Nhấn Enter để tìm kiếm`). Tên
   phím giữ nguyên `Enter`, đúng quy ước `nhấn Enter` đã ghi ở mục trên.
 - **`selection.recent.*` là bản sao của `queryUi.recent.*`**, chỉ đổi "tìm kiếm" thành `lựa chọn`:
-  `Hiện tất cả lựa chọn gần đây`, `Tất cả lựa chọn gần đây`, `Lọc các lựa chọn gần đây`,
+  `Hiển thị tất cả lựa chọn gần đây`, `Tất cả lựa chọn gần đây`, `Lọc các lựa chọn gần đây`,
   `Không có lựa chọn gần đây nào khớp với bộ lọc đó.`, `Lựa chọn gần đây` (bản tiếng Anh cố ý để popover và listbox
   trùng nhau). `applyAria` theo khuôn `search.recent.runAria` (`Chạy lại tìm kiếm {mode} gần đây: {query}`):
   `Áp dụng lựa chọn {mode} gần đây: {query}`. `{query}` là chữ người dùng tự gõ nên đặt cuối câu, sau dấu hai chấm, để
@@ -2507,9 +2509,10 @@ Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1). Mọi dẫn ch�
 - **`settings.section.adb` giữ nguyên `Android (ADB)`** và mang `sameAsSourceJustification`: cả tên sản phẩm lẫn từ viết
   tắt đều thuộc danh sách không dịch, y như `settings.section.git` và `settings.section.ai`. Đây là khóa DUY NHẤT của
   đợt này giống hệt bản tiếng Anh.
-- **`settings.summary.adb` → `Duyệt điện thoại Android đang bật gỡ lỗi USB.`** · `gỡ lỗi USB` là chữ chính giao diện
-  Android tiếng Việt hiển thị (luật đã ghi trong `style.md`), và catalog đã ship đúng cụm
-  `một điện thoại Android đang bật gỡ lỗi USB` ở `settings.fileOperations.adbEnabled.description`.
+- **`settings.summary.adb` → `Duyệt điện thoại Android đang bật gỡ lỗi qua USB.`** · `gỡ lỗi qua USB` là chữ AOSP
+  tiếng Việt dùng cho chính công tắc đó (nguồn ở khối 2026-09-07 cuối tệp; luật cũng đã ghi trong `style.md`), và
+  catalog ship đúng cụm `một điện thoại Android đang bật gỡ lỗi qua USB` ở
+  `settings.fileOperations.adbEnabled.description`.
 - **`settings.adb.status.watching` / `.notWatching` → `Đang theo dõi để phát hiện điện thoại.` /
   `Hiện không theo dõi để phát hiện điện thoại.`** · `theo dõi` là chữ catalog dùng cho "watch"
   (`common.downloadsFdaHint`, `settings.advanced.card.fileWatching` = `Theo dõi tệp`), nhưng một `theo dõi điện thoại`
@@ -2542,9 +2545,9 @@ chính bản dịch tiếng Việt của AOSP.
 - **USB debugging: `gỡ lỗi qua USB`** · AOSP `frameworks/base/packages/SettingsLib/res/values-vi/strings.xml`,
   `enable_adb` = `Gỡ lỗi qua USB` (và `enable_adb_summary` = `Bật chế độ gỡ lỗi khi kết nối USB`); hộp thoại trên máy là
   `usb_debugging_title` = `Cho phép gỡ lỗi qua USB?` (`frameworks/base/packages/SystemUI/res/values-vi/strings.xml`),
-  nhánh `main`, kiểm chứng 2026-09-07. `high`. Đợt trước ghi `gỡ lỗi USB` từ trí nhớ về giao diện điện thoại, không có
-  tệp nguồn; nay đã sửa cả hai chuỗi đã ship (`settings.fileOperations.adbEnabled.description`, `settings.summary.adb`)
-  cho khớp, vì người đọc phải tìm đúng công tắc bằng đúng chữ trên máy mình.
+  nhánh `main`, kiểm chứng 2026-09-07. `high`. ❌ Không viết `gỡ lỗi USB`: người đọc phải tìm đúng công tắc bằng đúng
+  chữ trên máy mình, và cả `settings.fileOperations.adbEnabled.description` lẫn `settings.summary.adb` đều ship dạng có
+  `qua`.
 - **Allow (nút trên hộp thoại của Android): `Cho phép`** · AOSP `usb_debugging_allow` = `Cho phép`. Viết hoa chữ đầu và
   không đặt trong ngoặc kép, đúng như Android tiếng Việt tự nhắc tới nút của mình
   (`Nhấn vào Cài đặt để kiểm soát dịch vụ.`). `high`.
