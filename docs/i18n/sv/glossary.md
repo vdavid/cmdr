@@ -2208,8 +2208,8 @@ läst på macOS 26.6.2, build 25G83, 2026-09-06.
 - **Never (i kolumnen `Senast använd`) → `Aldrig`** · `Keychain Access.app` sv `KeychainFirstAid.loctable` `never` =
   ”aldrig” · `high`. Versal här bara för att det är cellens första ord.
 - **Address (kolumnrubrik) → `Adress`** · Finder `ConnectToWindow.strings` `YEA-3L-WnW.placeholderString` skriver ut
-  ”Serveradress”, men kolumnen står redan under rubriken `Servrar`, så förleden behövs inte · `high`. Samma kortform
-  som anslutningsarkets fält (`servers.sheet.address`).
+  ”Serveradress”, men kolumnen står redan under rubriken `Servrar`, så förleden behövs inte · `high`. Samma kortform som
+  anslutningsarkets fält (`servers.sheet.address`).
 - **Type (kolumnrubrik) → `Typ`** · katalogens `queryUi.ai.filter.type` · `high`.
 - **Status (kolumnrubrik) → `Status`, identiskt med engelskan** · katalogens `licensing.section.labelStatus` har redan
   formen med sin egen `sameAsSourceJustification`; `style.md` listar `Status` bland det som står kvar ordagrant ·
@@ -2324,9 +2324,8 @@ Rikaste källan för hela arket är Apples egen anslutningsdialog:
   hör till knappen · `high`.
 - **Opens X / Adds a server (förhandsrader under Gå till sökväg) → `Öppnar {name}` / `Lägger till en server`** · presens
   tredje person, som engelskan; obestämd artikel i den andra eftersom det är en ny server · `high`.
-- **Remember in Keychain (kryssrutan) → `Kom ihåg i nyckelringen`** · `nyckelring` är BEHÅLLAREN, satt i §
-  Serverhubben: anslutningsläget · `high`. `servers.sheet.needsStoredSecret` citerar etiketten ordagrant, så de två
-  måste ändras ihop.
+- **Remember in Keychain (kryssrutan) → `Kom ihåg i nyckelringen`** · `nyckelring` är BEHÅLLAREN, satt i § Serverhubben:
+  anslutningsläget · `high`. `servers.sheet.needsStoredSecret` citerar etiketten ordagrant, så de två måste ändras ihop.
 
 Återanvänt ordagrant från katalogen, så ingen ny termdrift uppstår: `Avbryt`, `Anslut` (`fileExplorer.network.connect`),
 `Logga in` (`.signIn`), `Spara`, `Namn`, `Adress`, `Avancerat` (`settings.section.advanced`), `Användarnamn`,
