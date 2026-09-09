@@ -170,7 +170,7 @@ describe('disclosure', () => {
     const host = mountDialog()
 
     expect(host.textContent).toContain('They all look like invoices to me.')
-    expect(host.textContent).toContain("The AI’s reason")
+    expect(host.textContent).toContain('The AI’s reason')
   })
 
   it("labels Cmdr's own facts as Cmdr's, so the two sit side by side", () => {

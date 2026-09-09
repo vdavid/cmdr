@@ -94,11 +94,11 @@ sections compose).
   onboarding wizard shows (`$lib/ai-provider-setup/`), then the connection-status block, all in one unlabeled
   `SectionCard` (no `anyVisible` gate: the section mounts only when `provider === 'cloud'`). Endpoint, key, and model
   are controls inside those steps now, not three `SettingRow`s; they were all one setting (`ai.cloudProviderConfigs`)
-  before, so the block's single `shouldShow('ai.cloudProviderConfigs')` gate is the same search visibility the rows
-  had. See § "The setup steps are shared with onboarding". It holds the only hand-rolled `Select` in
-  settings (the provider row; every other dropdown here goes through `SettingSelect`), so it carries the `portal` prop
-  itself — without it the menu is trapped in `.settings-content-wrapper`'s mask and `overflow`, which is exactly how the
-  provider pop-up's top rows became unclickable. `../../ui/DETAILS.md` § Select → Portal.
+  before, so the block's single `shouldShow('ai.cloudProviderConfigs')` gate is the same search visibility the rows had.
+  See § "The setup steps are shared with onboarding". It holds the only hand-rolled `Select` in settings (the provider
+  row; every other dropdown here goes through `SettingSelect`), so it carries the `portal` prop itself — without it the
+  menu is trapped in `.settings-content-wrapper`'s mask and `overflow`, which is exactly how the provider pop-up's top
+  rows became unclickable. `../../ui/DETAILS.md` § Select → Portal.
 - **`AiLocalSection.svelte`**: Local llama-server lifecycle, model install with multi-step tracking, context window
   "Apply" (server restart), RAM gauge, delete confirmation. Only the context-window registry-row cluster (`SettingRow`
   - the RAM gauge) is wrapped in an unlabeled `SectionCard`, and that wrapper sits INSIDE the
@@ -371,18 +371,18 @@ Settings AI changes hot-apply because `settings-applier.ts` routes `ai.provider`
 ### The setup steps are shared with onboarding
 
 The service picker, the recheck buttons, the Ask Cmdr model-override note, the secret-error toast, and the
-settings-search gating are this section's. Everything else belongs to `$lib/ai-provider-setup/`: the numbered steps
-with their per-provider links, the endpoint / key / model controls, the API-key debounce and persist, the connection
-check and its model-list cache, and the provider-switch race guards. That module's `DETAILS.md` owns the mechanism,
-including the model picker's cache and the "never zero `availableModels` mid-refetch" rule; ❌ don't restate it here.
+settings-search gating are this section's. Everything else belongs to `$lib/ai-provider-setup/`: the numbered steps with
+their per-provider links, the endpoint / key / model controls, the API-key debounce and persist, the connection check
+and its model-list cache, and the provider-switch race guards. That module's `DETAILS.md` owns the mechanism, including
+the model picker's cache and the "never zero `availableModels` mid-refetch" rule; ❌ don't restate it here.
 
 Two things this section still has to get right:
 
 - **Pass `onSecretErrorChange` and `onKeyPersisted`.** They're what make the persistent toast and the
   `pushConfigToBackend()` re-push happen; the wizard deliberately passes neither.
 - **Drive the controller from `onSpecificSettingChange('ai.cloudProvider', …)`**, not from the `Select`'s `onChange`.
-  The `Select` only writes the setting, so a provider switch made anywhere (MCP, another window) reloads the section
-  the same way.
+  The `Select` only writes the setting, so a provider switch made anywhere (MCP, another window) reloads the section the
+  same way.
 
 ### Every command groups by scope (one group per `CommandScope`)
 
