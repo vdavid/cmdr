@@ -114,9 +114,9 @@ favorites). Reuses the terms above; new ones:
 - **sign in / log in: `logga in`** · macOS Finder ("Logga in"), MS ("logga in"). Same verb for Cmdr''s "Sign in"/"Log
   in" in the SMB flow. Auth-failure phrased calmly ("Det gick inte att logga in"), never a bare "fel". `high`.
 - **guest: `gäst`** · MS terminology ("gäst"). Connect as guest = "Anslut som gäst". `high`.
-- **share (SMB, network): `delad mapp`** · per style guide''s share entry; plural "delade mappar". The host-list column
-  "Shares" (count of shares) is rendered as "Delningar" to stay short; the mounted share itself is a "delad mapp".
-  `high`.
+- **share (SMB, network): `delad mapp`** · per style guide''s share entry; plural "delade mappar". The share counter
+  (`fileExplorer.network.share.shareCount`) uses the short "delning"/"delningar" to fit; the mounted share itself is a
+  "delad mapp". `high`.
 - **copy / cut / paste: `kopiera` / `klipp ut` / `klistra in`** · macOS AppKit. `high`.
 - **clipboard: `urklipp`** · macOS/Windows Swedish standard ("Urklipp"). "Inga filer i urklipp." `high`.
 - **favorites / favorite: `favoriter` / `favorit`** · macOS Finder ("Favoriter"). Section heading + the favorite-row
@@ -645,7 +645,8 @@ one-time consent screen, the per-chat cost footer, and the settings section + LL
   `askCmdr.tool.importantFolders.*` already uses `viktig`. `tentative` (Cmdr-coined feature; review).
 - **Cmdr repeated instead of a bare pronoun, when the sentence names Cmdr's own behavior**: per the established sv
   catalog convention (errors.json etc. always re-use "Cmdr" rather than "den"/"det"), `askCmdr.empty.hint` and
-  `askCmdr.consent.noContents` repeat "Cmdr" across sentences rather than introducing an ambiguous pronoun. Where the
+  `askCmdr.consent.contentsRule` repeat "Cmdr" across sentences rather than introducing an ambiguous pronoun (the
+  English `contentsRule` switches to "it" in its second sentence; the Swedish says "Cmdr" all four times). Where the
   antecedent is unambiguous within the same sentence (`settings.askCmdr.intro`'s "Ask Cmdr är skrivskyddad: den
   läser…"), a pronoun is fine.
 
@@ -730,20 +731,21 @@ A re-translation review of the 54 keys added for natural-language bulk rename (`
   `cachar`). "It's usually caches full of small files" means cache DIRECTORIES, so `cachemappar fulla med små filer`
   sidesteps the plural and reads concretely in a sentence about folder sizes. `high`.
 - **percent sign: always a space before `%`** · Swedish typography (and the rest of the sv catalog: "Zooma till 100 %",
-  "{percentText} %", "Zoom återställd till 100 %."). `fileExplorer.imageIndex.indexingTooltip` had `{percent}%`; fixed
-  to `{percent} %`. Note the contradicting `sameAsSourceJustification` on the out-of-scope key
-  `indexing.progress.percentEta` ("this locale uses the same percent spacing and comma as English") — that justification
-  is wrong for sv on both counts and is flagged for David. `high`.
+  "{percentText} %", "Zoom återställd till 100 %."). The space survives interpolation too:
+  `fileExplorer.summary.percentSelectedIn` renders `({percent} %) markerat i` where English writes `({percent}%)`. Note
+  the contradicting `sameAsSourceJustification` on the out-of-scope key `indexing.progress.percentEta` ("this locale
+  uses the same percent spacing and comma as English") — that justification is wrong for sv on both counts and is
+  flagged for David. `high`.
 - **"Ask Cmdr to prepare it again" → `Be Cmdr att förbereda den igen`** · the EN "Ask" is the sentence-initial
   imperative verb, not the feature name (the feature name would not be capitalized mid-sentence anywhere else in the
   string). Rendering it as "Be Ask Cmdr att…" stacked the verb on the product name. The user is inside the Ask Cmdr
   rail, so the referent is unambiguous. `high`.
 - **photo → `bild`, uniformly** · re-confirms the network-drive pass's decision (Apple localizes the Photos app to
   "Bilder"). The four Ask Cmdr tool labels had drifted to `foton`; aligned to `bilder` so the whole photo-indexing
-  surface ("Bildsökning", "Bilder indexerade", "Indexera bildinnehåll") reads as one feature. ⚠️ Four OUT-OF-SCOPE
-  shipped keys still say `foton`/`Fotosökningen`: `askCmdr.consent.noContents`, `settings.mediaIndex.clip.description`,
-  `settings.mediaIndex.clip.ready`, and `onboarding.stepOptional.mtp.desc` (that last one is fine as-is, it's about
-  copying photos off a phone, not the search feature). They should be aligned in a follow-up. `high`.
+  surface ("Bildsökning", "Bilder indexerade", "Indexera bildinnehåll") reads as one feature. ⚠️ Three OUT-OF-SCOPE
+  shipped keys still say `foton`: `settings.mediaIndex.clip.description`, `settings.mediaIndex.clip.ready`, and
+  `onboarding.stepOptional.mtp.desc` (that last one is fine as-is, it's about copying photos off a phone, not the search
+  feature). The first two should be aligned in a follow-up. `high`.
 
 No `sameAsSourceJustification` needed: all 54 values differ from English.
 
@@ -874,10 +876,11 @@ No `sameAsSourceJustification` needed: all five values differ from English.
   settled word for a full check (`tooltipCoalesced`: "Cmdrs nästa fullständiga genomsökning") and that string's closing
   `rättar till det` · high.
 
-## Stalled-transfer notice (2026-07-31; the 7 `fileOperations.transferProgress.stall*`/`.close` keys + `queue.row.stalled`)
+## Stalled-transfer notice (2026-07-31; the 7 `fileOperations.transferProgress.stall*`/`.close` keys)
 
-The copy/move dialog and the queue row when a transfer has stopped moving (a parked SMB share or phone). The notice
-replaces the ETA line, so it must stay calm and never reach for `fel`/`misslyckades`.
+The copy/move dialog and the queue row when a transfer has stopped moving (a parked SMB share or phone). One string,
+`.stallNotice`, feeds both surfaces, so it has to fit the narrow row. The notice replaces the ETA line, so it must stay
+calm and never reach for `fel`/`misslyckades`.
 
 - **"stalled" / "no progress" → `Inget har hänt på {duration}`** · the pile has NO term for a stalled transfer: macOS
   has no "stalled" string at all, and `förlopp` (macOS "Visa kopieringsförlopp", "stoppa förlopp") is the
@@ -1718,8 +1721,7 @@ körande systemet (macOS 26.6.2, build 25G83, 2026-08-30) via `Finder.app`/`Safa
 
 ### Gränser: båda formerna är rätt, platta inte ut dem
 
-Var och en av de tio första raderna motsvarar en post i `i18n-term-consistency-allowlist.json`; den engelska
-källsträngen står i parentes.
+Varje rad som har en engelsk källsträng i parentes motsvarar en post i `i18n-term-consistency-allowlist.json`.
 
 - **`Checking` → `Kontrollerar` när något verifieras, `Söker` när något letas fram** (`"Checking"`) · `high`.
   `ai.cloud.checking` och `licensing.dialog.checking` prövar en nyckel man redan har; `updates.status.checking` letar
@@ -1736,11 +1738,10 @@ källsträngen står i parentes.
   en diagnostikrad och engelskans `@key` säger rakt ut att ordet är okej där;
   `fileExplorer.network.browser.status.error` står bland `Kan inte nås`, `Tidsgränsen nåddes` och
   `Inloggningen gick inte`, där `style.md` förbjuder etiketten `fel`.
-- **`(unknown)` böjs efter det underförstådda huvudordet** (`"(unknown)"`) · `high`.
-  `fileExplorer.network.browser.unknown` ersätter ett `antal` (neutrum) → `(okänt)`;
-  `fileOperations.transferProgress.sizeUnknown` ersätter en `storlek` (utrum) → `(okänd)`. Katalogen gör redan samma sak
-  utanför checkens synfält: `ai.cloud.unknownError` = `Okänt fel`, `ai.local.modelUnknown` = `Okänd`,
-  `askCmdr.cost.unknown` = `kostnad okänd`.
+- **`unknown` böjs efter det underförstådda huvudordet** · `high`. `fileOperations.transferProgress.sizeUnknown`
+  ersätter en `storlek` (utrum) → `(okänd)`, och katalogen gör likadant där ordet står för sig: `ai.local.modelUnknown`
+  = `Okänd` (en `modell`), `askCmdr.cost.unknown` = `kostnad okänd`. Allt som levereras i dag har ett utrumshuvudord och
+  tar alltså `okänd`; ett neutrumhuvudord (`ett antal`, `ett fel`) skulle ta `okänt`.
 - **`Modified` → `Ändrad` som attribut, `Ändrade` som filterpastill** (`"Modified"`) · `high`.
   `fileExplorer.columns.modified` och syskonen beskriver EN fils datum; `shortcuts.section.filterModified` står bredvid
   `Alla` och `Konflikter` och filtrerar en mängd kommandon, så pluralen kongruerar med mängden. Radmärket intill heter
@@ -1760,14 +1761,14 @@ källsträngen står i parentes.
   § Markeringsdialogen; `ui.select.placeholder` är en rullgardins platshållare.
 - **`Zoom` → `Zoom` (substantiv, textzoom-undermenyn) mot `Zooma` (verb, Fönster-menyn)** (`"Zoom"`) · `high`. Redan
   satt i § Inbyggda menyer (Finder `300667.title`).
-- **`share` → `delad mapp` fritt stående, `-resurs` bara inne i en sammansättning, `Delningar` bara i värdlistans
-  kolumn** · `high`. Svenskan kan inte sammansätta en tvåordsfras, så Microsofts `-resurs` står kvar där en
-  sammansättning krävs: `settings.section.smbNetworkShares` (`SMB-/nätverksresurser`),
-  `settings.appearance.tintSmb.description`, `settings.network.directSmbConnection.*`,
-  `settings.network.timeoutMode.description`, `settings.advanced.mountTimeout.description`,
-  `settings.summary.smbNetworkShares` (`resurscache`), `settings.indexing.askForEachDrive.description`. Kolumnrubriken
-  `fileExplorer.network.browser.colShares` (`Delningar`) och dess räknare `fileExplorer.network.share.shareCount`
-  behåller kortformen av breddskäl, precis som § Terms redan tillåter. Allt annat är `delad mapp` / `delade mappar`.
+- **`share` → `delad mapp` fritt stående, `-resurs` bara inne i en sammansättning, `delning` bara i räknaren** · `high`.
+  Svenskan kan inte sammansätta en tvåordsfras, så Microsofts `-resurs` står kvar där en sammansättning krävs:
+  `settings.section.smbNetworkShares` (`SMB-/nätverksresurser`), `settings.appearance.tintSmb.description`,
+  `settings.network.directSmbConnection.*`, `settings.network.timeoutMode.description`,
+  `settings.advanced.mountTimeout.description`, `settings.summary.smbNetworkShares` (`resurscache`),
+  `settings.indexing.askForEachDrive.description`. Räknaren `fileExplorer.network.share.shareCount` behåller kortformen
+  (`{countText} delning` / `delningar`), precis som § Terms redan tillåter. Allt annat är `delad mapp` /
+  `delade mappar`.
 
 ### Konvention: ett naket engelskt `All` blir `allt`, inte `alla`
 
@@ -2132,7 +2133,9 @@ machine?” är den dokumenterade reservvägen. Allt nedan är läst på macOS 2
   (och `PW28` = ”Ansluter till server”). Katalogen säger redan samma sak i `fileExplorer.network.share.connecting` ·
   `high`.
 - **server address → `serveradress`** · Finder `ConnectToWindow.strings` `YEA-3L-WnW.placeholderString` =
-  ”Serveradress”; katalogens `fileExplorer.network.connectDialog.addressAriaLabel` har det redan · `high`.
+  ”Serveradress”; katalogen har det redan i `errors.listing.connectionRefused.suggestion` (”Kontrollera att
+  serveradressen och porten stämmer”) · `high`. Arkets fält heter kortare `Adress` (`servers.sheet.address`), eftersom
+  sammanhanget redan är givet där.
 - **disconnect → `koppla från`** · Finder `LocalizableMerged.strings` `MR10.1` = ”Koppla från”, och katalogens
   `fileExplorer.unreachable.disconnect`/`servers.paneState.disconnect` säger samma · `high`. Aria-etiketten
   `fileExplorer.navigation.disconnectPlaceAriaLabel` blir därför `Koppla från {name}`, byggd precis som systerraden
@@ -2204,9 +2207,9 @@ läst på macOS 26.6.2, build 25G83, 2026-09-06.
   `använd`, inte `använt`.
 - **Never (i kolumnen `Senast använd`) → `Aldrig`** · `Keychain Access.app` sv `KeychainFirstAid.loctable` `never` =
   ”aldrig” · `high`. Versal här bara för att det är cellens första ord.
-- **Address (kolumnrubrik) → `Adress`** · katalogens `fileExplorer.network.connectDialog.addressAriaLabel`
-  (”Serveradress”, från Finder `ConnectToWindow.strings` `YEA-3L-WnW.placeholderString`); kolumnen står redan under
-  rubriken `Servrar`, så förleden behövs inte · `high`.
+- **Address (kolumnrubrik) → `Adress`** · Finder `ConnectToWindow.strings` `YEA-3L-WnW.placeholderString` skriver ut
+  ”Serveradress”, men kolumnen står redan under rubriken `Servrar`, så förleden behövs inte · `high`. Samma kortform
+  som anslutningsarkets fält (`servers.sheet.address`).
 - **Type (kolumnrubrik) → `Typ`** · katalogens `queryUi.ai.filter.type` · `high`.
 - **Status (kolumnrubrik) → `Status`, identiskt med engelskan** · katalogens `licensing.section.labelStatus` har redan
   formen med sin egen `sameAsSourceJustification`; `style.md` listar `Status` bland det som står kvar ordagrant ·
@@ -2283,8 +2286,8 @@ Rikaste källan för hela arket är Apples egen anslutningsdialog:
 - **`Key passphrase` → `Nyckelns lösenfras`; `Key fingerprint` → `Nyckelns fingeravtryck`** · genitivform på båda, så de
   två `Key …`-etiketterna i samma ark läses som ett par. En sammansättning (`nyckellösenfras`) blir ogenomskinlig, och
   `Lösenfras för nyckeln` är för lång för en fältetikett bredvid `Namn` och `Adress` · `high`.
-- **Sign in to X → `Logga in på X`** · katalogens `fileExplorer.network.login.title` (”Logga in på ”{target}””) och
-  Setup Assistant `ICLOUD_ONLY_LOGIN_TITLE` (”Sign In to iCloud” = ”Logga in på iCloud”) · `high`. Knappen `Sign in…`
+- **Sign in to X → `Logga in på X`** · Setup Assistant `ICLOUD_ONLY_LOGIN_TITLE` (”Sign In to iCloud” = ”Logga in på
+  iCloud”) · `high`. Arkets rubrik blir alltså `Logga in på {name}`, utan citattecken kring namnet. Knappen `Sign in…`
   blir `Logga in…`, ordagrant ConfigurationProfilesUI `str_SignInToWorkOrSchoolAccount_Button`.
 - **Signed out of X → `Utloggad från X`** · `Utloggad` var satt i hubbpasset; `från` är Apples preposition för
   riktningen (ConfigurationProfilesUI `str_BMAIDSignIn_Progress_SignOut` = ”Loggar ut från ”%@”…”) · `high`.
@@ -2310,9 +2313,9 @@ Rikaste källan för hela arket är Apples egen anslutningsdialog:
 - **Reconnect (imperativ) → `Återanslut`** · FinanceKitUI `RECONNECT_ACCOUNTS_TITLE` (”Reconnect Your Existing Accounts”
   = ”Återanslut dina befintliga konton”) · `high`. `Reconnect automatically` följer Apples ordföljd verb + `automatiskt`
   (Dock: ”Automatically hide and show the Dock” = ”Göm och visa Dock automatiskt”), alltså `Återanslut automatiskt`.
-- **How to connect (dolt gruppnamn) → `Hur du ansluter`** · systerraden
-  `fileExplorer.network.login.connectionModeLegend` heter `Anslutningsläge`, men engelskan har medvetet bytt till en
-  fråga här, så svenskan gör samma sak; `du`-tilltalet är katalogens (style-guiden § Formality) · `high`.
+- **How to connect (dolt gruppnamn) → `Hur du ansluter`** · engelskan väljer medvetet en fråga i stället för ett
+  substantiv här, så svenskan gör samma sak; grannlegenden i samma ark heter däremot kort `Protokoll`
+  (`servers.sheet.protocolLegend`). `du`-tilltalet är katalogens (style-guiden § Formality) · `high`.
 - **Try the Nextcloud address → `Prova Nextcloud-adressen`** · `prova` är katalogens verb för att testa något
   (`errors.*`: ”Så här kan du prova”, `viewer.saveAs.*`: ”Prova en mindre markering?”), medan `Försök igen` är
   reserverat för `Try again`. Varumärket tar bindestreck i sammansättningen, som Apples `Time Machine-skiva` · `high`.
@@ -2321,11 +2324,13 @@ Rikaste källan för hela arket är Apples egen anslutningsdialog:
   hör till knappen · `high`.
 - **Opens X / Adds a server (förhandsrader under Gå till sökväg) → `Öppnar {name}` / `Lägger till en server`** · presens
   tredje person, som engelskan; obestämd artikel i den andra eftersom det är en ny server · `high`.
+- **Remember in Keychain (kryssrutan) → `Kom ihåg i nyckelringen`** · `nyckelring` är BEHÅLLAREN, satt i §
+  Serverhubben: anslutningsläget · `high`. `servers.sheet.needsStoredSecret` citerar etiketten ordagrant, så de två
+  måste ändras ihop.
 
 Återanvänt ordagrant från katalogen, så ingen ny termdrift uppstår: `Avbryt`, `Anslut` (`fileExplorer.network.connect`),
 `Logga in` (`.signIn`), `Spara`, `Namn`, `Adress`, `Avancerat` (`settings.section.advanced`), `Användarnamn`,
-`Lösenord`, `Anslut som gäst`, `Kom ihåg i nyckelringen` (`fileExplorer.network.login.rememberInKeychain`),
-`Lägg till server` (`servers.hub.addServer` utan punkterna), `Anslut till server…`
+`Lösenord`, `Anslut som gäst`, `Lägg till server` (`servers.hub.addServer` utan punkterna), `Anslut till server…`
 (`settings.network.permissionIntroConnectLink`) och `Redigera` (`menu.bar.edit`).
 
 Fyra `sameAsSourceJustification` i passet: `servers.sheet.protocolSmb`, `.protocolSftp`, `.protocolWebdav`
