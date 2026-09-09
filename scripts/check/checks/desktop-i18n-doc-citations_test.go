@@ -24,8 +24,8 @@ var testCitationKeys = []string{
 	"menu.tag.red",
 }
 
-func TestCatalogKeyIndexMatchesSegmentAligned(t *testing.T) {
-	ix := newCatalogKeyIndex(testCitationKeys)
+func TestDottedKeyIndexMatchesSegmentAligned(t *testing.T) {
+	ix := testCitationIndex(testCitationKeys)
 
 	cases := []struct {
 		name  string
@@ -55,15 +55,15 @@ func TestCatalogKeyIndexMatchesSegmentAligned(t *testing.T) {
 // `ai.endpoint` must not be satisfied by `settings.aiendpoint.label`: a raw
 // substring matcher accepts it, and then a citation naming a key that no longer
 // exists reads as verified.
-func TestCatalogKeyIndexRejectsRawSubstringMatches(t *testing.T) {
-	ix := newCatalogKeyIndex([]string{"settings.aiendpoint.label"})
+func TestDottedKeyIndexRejectsRawSubstringMatches(t *testing.T) {
+	ix := testCitationIndex([]string{"settings.aiendpoint.label"})
 	if ix.resolves("ai.endpoint") {
 		t.Error("`ai.endpoint` matched `settings.aiendpoint.label` as a raw substring")
 	}
 }
 
-func TestScanDocForCitationsGatesOnCatalogNamespaces(t *testing.T) {
-	ix := newCatalogKeyIndex(testCitationKeys)
+func TestScanDocForCitationsGatesOnLaneNamespaces(t *testing.T) {
+	ix := testCitationIndex(testCitationKeys)
 	content := strings.Join([]string{
 		"Finder `LocalizableMerged.strings` `MR10.1` and NetAuthAgent `PHL-pS-ELV.title`.",
 		"Dates render as `dd.MM.yyyy`, hosts as `example.com`.",
@@ -71,7 +71,7 @@ func TestScanDocForCitationsGatesOnCatalogNamespaces(t *testing.T) {
 		"Nothing backticked here: settings.section.advanced.",
 	}, "\n")
 
-	got := scanDocForCitations("docs/i18n/de/glossary.md", content, ix)
+	got := scanDocForCitations("docs/i18n/de/glossary.md", content, messageKeyCitationLane, ix)
 	if len(got) != 1 {
 		t.Fatalf("expected exactly the one catalog-namespaced token, got %v", citationTokens(got))
 	}
@@ -85,14 +85,14 @@ func TestScanDocForCitationsGatesOnCatalogNamespaces(t *testing.T) {
 // a LIVE key (`mtp.tryAgain` for `fileExplorer.mtp.tryAgain`) can't be reported,
 // while the same shorthand under a real namespace still resolves as a suffix.
 func TestScanDocForCitationsComposesGateWithSuffixMatching(t *testing.T) {
-	ix := newCatalogKeyIndex(testCitationKeys)
+	ix := testCitationIndex(testCitationKeys)
 	content := strings.Join([]string{
 		"The retry button is `network.tryAgain`.",
 		"The guest row is `sheet.connectAsGuest`.",
 		"The dead one is `mtp.permissionDialog.title`.",
 	}, "\n")
 
-	got := scanDocForCitations("docs/i18n/de/glossary.md", content, ix)
+	got := scanDocForCitations("docs/i18n/de/glossary.md", content, messageKeyCitationLane, ix)
 	tokens := citationTokens(got)
 	// `network.tryAgain` is gated out (`network` is no namespace), and
 	// `sheet.connectAsGuest` is gated out for the same reason even though it
@@ -106,7 +106,7 @@ func TestScanDocForCitationsComposesGateWithSuffixMatching(t *testing.T) {
 }
 
 func TestNearestKeysPointsAtTheRenamedFamily(t *testing.T) {
-	ix := newCatalogKeyIndex(testCitationKeys)
+	ix := testCitationIndex(testCitationKeys)
 
 	cases := []struct {
 		token string
@@ -131,7 +131,7 @@ func TestNearestKeysPointsAtTheRenamedFamily(t *testing.T) {
 // runes of `rememberInKeychain`, and ranking it as a near miss buries the rename
 // the reader is looking for.
 func TestNearestKeysIgnoresAccidentalShortPrefixes(t *testing.T) {
-	ix := newCatalogKeyIndex(testCitationKeys)
+	ix := testCitationIndex(testCitationKeys)
 	got := ix.nearestKeys("fileExplorer.network.login.rememberInKeychain", 3)
 	for _, key := range got {
 		if key == "menu.tag.red" {
@@ -189,6 +189,12 @@ func TestDocCitationAllowlistIgnoresBlankReasons(t *testing.T) {
 	if verdict := list.judge(dead); len(verdict.reported) != 1 || verdict.retired != 0 {
 		t.Errorf("a blank reason allowlisted a citation: %+v", verdict)
 	}
+}
+
+// testCitationIndex builds an index the way the message-key lane does, so the
+// tests exercise the real namespace rule rather than a hand-written set.
+func testCitationIndex(keys []string) *dottedKeyIndex {
+	return newDottedKeyIndex(keys, messageKeyCitationLane.namespaces(keys))
 }
 
 func citationTokens(citations []docCitation) []string {

@@ -586,11 +586,24 @@ by pointing at shipped copy ("the sheet copies `servers.sheet.remember`"), so a 
 orphaned one either invents authority for a value that never shipped, or talks a translator out of a correct fix. ERROR
 class on David's call, since it's a doc asserting something false about the app rather than a maintenance signal.
 
+**Default lane, and cheap enough to belong there** (60-77 ms over six uncached runs, measured 2026-09-09 on 28,263 lines
+of per-locale guides plus 3,426 keys). Its whole value is firing on the day somebody renames a key, while they still
+have the context; in the slow lane it degrades back into archaeology. Keep it out of `--only-slow` unless a measurement
+says otherwise.
+
+**Message keys are the first entity class, not the only conceivable one.** Setting keys are cited the same way and rot
+the same way, and `analytics-settings-defaults.go` already maintains their real set. So the two questions that vary by
+entity class are a `citationLane` value (same shape as `jscpdLane`) rather than constants in the scan: `keys` says where
+the real key set comes from, `namespaces` derives the gate from that set, and `notACitation` vetoes a domain's
+non-citation shapes. `runCitationLane` is the whole check over whichever lane it's handed, so a second entity class is a
+lane value plus a registry entry. `messageKeyCitationLane` is the only one today; nothing is abstracted past what that
+seam needs.
+
 **The namespace gate is the design.** A token is a candidate only when it's backtick-delimited, splits into two or more
 identifier segments, isn't a catalog FILENAME (`errors.json`), and its FIRST segment opens a real catalog namespace.
 Without that last clause the check fires 1,924 times to find 10 real problems, because the guides are built from mined
 evidence and are full of foreign string ids (`MR10.1`, `PHL-pS-ELV.title`), date patterns (`dd.MM.yyyy`), hostnames, and
-reference-pile filenames. With it, 4,288 candidates yield the ~90 findings that are actually about our catalog. A
+reference-pile filenames. With it, 4,335 candidates yield the ~90 findings that are actually about our catalog. A
 denylist of foreign id shapes would need feeding every time a translator mines a new bundle; the allowlist of our own
 namespaces does not. Namespaces come from the KEYS (every key's first segment), not the catalog filenames, so there's
 one source of truth if a catalog file is ever split.

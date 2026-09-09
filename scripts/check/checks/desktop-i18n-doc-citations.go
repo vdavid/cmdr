@@ -11,32 +11,72 @@ import (
 	"strings"
 )
 
-// The per-language translator guides under `docs/i18n/<locale>/` justify a term
-// choice by citing the message catalog as evidence: "the shipped
-// `settings.ai.endpoint.label` already says Endpunkt, so the sheet copies it".
-// Nothing verified those keys, so a rename orphaned 83 of them in one afternoon
-// and an agent invented a few more out of thin air. Both failure modes hand the
-// next translator false authority: they either trust a value that was never
-// shipped, or revert a correct fix because a doc says the old wording is settled.
+// Docs cite dotted keys as evidence, and nothing verified them. The per-language
+// translator guides under `docs/i18n/<locale>/` justify a term choice by pointing
+// at shipped copy ("the shipped `settings.ai.endpoint.label` already says
+// Endpunkt, so the sheet copies it"), so a rename orphaned 83 of those in one
+// afternoon and an agent invented a few more out of thin air. Both failure modes
+// hand the next translator false authority: they either trust a value that was
+// never shipped, or revert a correct fix because a doc says the old wording is
+// settled.
 //
-// The check reads every backticked dotted token in `docs/i18n/**/*.md` and
-// requires it to name a real key in the English catalogs.
+// Message keys are the first entity class this covers, not the only conceivable
+// one (setting keys rot the same way, and `analytics-settings-defaults.go` already
+// maintains their real set). So the two questions that vary by entity class are a
+// `citationLane` value rather than constants in the scan: where the valid keys
+// come from, and which namespaces gate a token. Same shape as `jscpdLane`.
 
-const (
-	i18nDocCitationsDocsRelDir   = "docs/i18n"
-	i18nDocCitationsEnRelDir     = "apps/desktop/src/lib/intl/messages/en"
-	i18nDocCitationsAllowlistRel = "scripts/check/checks/desktop-i18n-doc-citations-allowlist.json"
-)
+// citationLane is one entity class of cited key: what the docs are, where the real
+// keys come from, and what a token has to look like to be a citation of one.
+type citationLane struct {
+	// what names the cited entity in prose ("message key").
+	what string
+	// docsRelDir is the doc tree to scan, and docWhat names one of its files
+	// ("translator guide").
+	docsRelDir string
+	docWhat    string
+	// allowlistRelPath is the lane's `<check>-allowlist.json`, named in findings
+	// and declared in the check's `Inputs` via `runnerDataInputs`.
+	allowlistRelPath string
+	// keys returns every real key of this entity class. The lane's whole
+	// relationship with its source of truth: nothing else here reads a catalog.
+	keys func(rootDir string) ([]string, error)
+	// namespaces decides which first segments open a citation. Derived from the
+	// keys rather than passed in, so a lane can't drift from its own source.
+	namespaces func(keys []string) map[string]struct{}
+	// notACitation vetoes a token that passed the namespace gate but names
+	// something else in this domain (a catalog FILENAME, `errors.json`). nil when
+	// the domain has no such shape.
+	notACitation func(token string) bool
+}
 
-// i18nDocBacktickedToken matches one backtick-delimited span. Markdown fences and
-// prose are irrelevant here: the guides put every key inside single backticks, and
+// messageKeyCitationLane holds the i18n translator guides to citing real English
+// message keys.
+var messageKeyCitationLane = citationLane{
+	what:             "message key",
+	docsRelDir:       "docs/i18n",
+	docWhat:          "translator guide",
+	allowlistRelPath: "scripts/check/checks/desktop-i18n-doc-citations-allowlist.json",
+	keys: func(rootDir string) ([]string, error) {
+		return readEnglishCatalogKeys(filepath.Join(rootDir, enMessagesRelDir))
+	},
+	namespaces:   namespacesFromKeyRoots,
+	notACitation: namesCatalogFile,
+}
+
+// enMessagesRelDir is the English catalog directory, the message lane's source of
+// truth for both the key set and the namespace set.
+const enMessagesRelDir = "apps/desktop/src/lib/intl/messages/en"
+
+// docBacktickedToken matches one backtick-delimited span. Markdown fences and
+// prose are irrelevant here: the docs put every key inside single backticks, and
 // a token that isn't backticked isn't a citation.
-var i18nDocBacktickedToken = regexp.MustCompile("`([^`\n]+)`")
+var docBacktickedToken = regexp.MustCompile("`([^`\n]+)`")
 
-// i18nDocIdentifierSegment is what a key segment looks like. Anything else (a
-// space, a slash, a digit-leading macOS string id like `600218`) disqualifies the
-// whole token, which is how `PHL-pS-ELV.title` survives but `MR10.1` doesn't.
-var i18nDocIdentifierSegment = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*$`)
+// docIdentifierSegment is what a key segment looks like. Anything else (a space, a
+// slash, a digit-leading macOS string id like `600218`) disqualifies the whole
+// token, which is how `PHL-pS-ELV.title` survives but `MR10.1` doesn't.
+var docIdentifierSegment = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*$`)
 
 // docCitation is one backticked dotted token that passed the namespace gate, kept
 // with where it sits so a finding can be opened directly.
@@ -46,10 +86,10 @@ type docCitation struct {
 	token   string
 }
 
-// catalogKeyIndex is the English catalogs, indexed for the two questions this
-// check asks: "is this first segment a real namespace?" and "does this dotted
-// token name part of a real key?".
-type catalogKeyIndex struct {
+// dottedKeyIndex is one lane's key set, indexed for the two questions the scan
+// asks: "is this first segment a real namespace?" and "does this dotted token name
+// part of a real key?".
+type dottedKeyIndex struct {
 	namespaces map[string]struct{}
 	keys       []string
 	// runs holds every contiguous segment run of every key, joined by dots. A
@@ -60,19 +100,28 @@ type catalogKeyIndex struct {
 	runs map[string]struct{}
 }
 
-// newCatalogKeyIndex builds the index from the full key list. The namespace set
-// comes from the keys themselves rather than the catalog filenames, so there's one
-// source of truth even if a catalog file is ever split or renamed.
-func newCatalogKeyIndex(keys []string) *catalogKeyIndex {
-	ix := &catalogKeyIndex{
-		namespaces: make(map[string]struct{}, 64),
+// namespacesFromKeyRoots is the default namespace rule: every key's first segment
+// opens a namespace. Deriving from the KEYS rather than, say, the catalog
+// filenames keeps one source of truth even if a catalog file is split or renamed.
+func namespacesFromKeyRoots(keys []string) map[string]struct{} {
+	namespaces := make(map[string]struct{}, 64)
+	for _, key := range keys {
+		namespaces[strings.Split(key, ".")[0]] = struct{}{}
+	}
+	return namespaces
+}
+
+// newDottedKeyIndex builds the index from a lane's key set and the namespaces its
+// rule derived from them.
+func newDottedKeyIndex(keys []string, namespaces map[string]struct{}) *dottedKeyIndex {
+	ix := &dottedKeyIndex{
+		namespaces: namespaces,
 		keys:       append([]string(nil), keys...),
 		runs:       make(map[string]struct{}, len(keys)*8),
 	}
 	sort.Strings(ix.keys)
 	for _, key := range ix.keys {
 		segs := strings.Split(key, ".")
-		ix.namespaces[segs[0]] = struct{}{}
 		for start := range segs {
 			for end := start + 2; end <= len(segs); end++ {
 				ix.runs[strings.Join(segs[start:end], ".")] = struct{}{}
@@ -85,13 +134,13 @@ func newCatalogKeyIndex(keys []string) *catalogKeyIndex {
 // resolves reports whether the token names part of a real key: the whole key, a
 // leading run of it (`settings.ai` for `settings.ai.endpoint.label`), a trailing
 // one (the guides routinely elide the namespace), or a run in the middle.
-func (ix *catalogKeyIndex) resolves(token string) bool {
+func (ix *dottedKeyIndex) resolves(token string) bool {
 	_, ok := ix.runs[token]
 	return ok
 }
 
-// isNamespace reports whether the segment opens a real catalog namespace.
-func (ix *catalogKeyIndex) isNamespace(segment string) bool {
+// isNamespace reports whether the segment opens a real namespace in this lane.
+func (ix *dottedKeyIndex) isNamespace(segment string) bool {
 	_, ok := ix.namespaces[segment]
 	return ok
 }
@@ -109,7 +158,7 @@ const i18nCitationLeafWeight = 0.85
 // another parent and keeps (or barely edits) its last segment, which is exactly
 // the case the suggestion has to solve. Path overlap only breaks ties, because the
 // path is the part that died.
-func (ix *catalogKeyIndex) nearestKeys(token string, want int) []string {
+func (ix *dottedKeyIndex) nearestKeys(token string, want int) []string {
 	tokenSegs := strings.Split(token, ".")
 	tokenLeaf := tokenSegs[len(tokenSegs)-1]
 	tokenPath := tokenSegs[:len(tokenSegs)-1]
@@ -235,12 +284,15 @@ func citationEditDistance(a, b string) int {
 // `fileExplorer.mtp.tryAgain`) is never considered. That's the right trade: those
 // are unverifiable either way, and a wrong one misleads nobody about which key
 // shipped.
-func scanDocForCitations(relPath, content string, ix *catalogKeyIndex) []docCitation {
+func scanDocForCitations(relPath, content string, lane citationLane, ix *dottedKeyIndex) []docCitation {
 	var found []docCitation
 	for i, line := range strings.Split(content, "\n") {
-		for _, match := range i18nDocBacktickedToken.FindAllStringSubmatch(line, -1) {
+		for _, match := range docBacktickedToken.FindAllStringSubmatch(line, -1) {
 			token := match[1]
-			if !isCitationShaped(token) || namesCatalogFile(token) {
+			if !isCitationShaped(token) {
+				continue
+			}
+			if lane.notACitation != nil && lane.notACitation(token) {
 				continue
 			}
 			if !ix.isNamespace(strings.Split(token, ".")[0]) {
@@ -252,15 +304,15 @@ func scanDocForCitations(relPath, content string, ix *catalogKeyIndex) []docCita
 	return found
 }
 
-// isCitationShaped reports whether the token looks like a dotted message key: at
-// least two segments, each one an identifier.
+// isCitationShaped reports whether the token looks like a dotted key: at least two
+// segments, each one an identifier.
 func isCitationShaped(token string) bool {
 	segs := strings.Split(token, ".")
 	if len(segs) < 2 {
 		return false
 	}
 	for _, seg := range segs {
-		if !i18nDocIdentifierSegment.MatchString(seg) {
+		if !docIdentifierSegment.MatchString(seg) {
 			return false
 		}
 	}
@@ -340,23 +392,28 @@ func (list docCitationAllowlist) judge(dead []docCitation) deadDocCitationVerdic
 // translator acts on it. The one legitimate exception (naming a retired key on
 // purpose) is a written-down allowlist entry, not a softer verdict.
 func RunDesktopI18nDocCitations(ctx *CheckContext) (CheckResult, error) {
-	keys, err := readEnglishCatalogKeys(filepath.Join(ctx.RootDir, i18nDocCitationsEnRelDir))
+	return runCitationLane(ctx, messageKeyCitationLane)
+}
+
+// runCitationLane is the whole check, over whichever entity class the lane names.
+func runCitationLane(ctx *CheckContext, lane citationLane) (CheckResult, error) {
+	keys, err := lane.keys(ctx.RootDir)
 	if err != nil {
 		return CheckResult{}, err
 	}
 	if len(keys) == 0 {
-		return Skipped("no English catalogs to cite"), nil
+		return Skipped(fmt.Sprintf("no %ss to cite", lane.what)), nil
 	}
-	index := newCatalogKeyIndex(keys)
+	index := newDottedKeyIndex(keys, lane.namespaces(keys))
 
-	citations, docsScanned, err := scanI18nDocsForCitations(ctx.RootDir, index)
+	citations, docsScanned, err := scanDocsForCitations(ctx.RootDir, lane, index)
 	if err != nil {
 		return CheckResult{}, err
 	}
 
 	dead, live := splitDeadDocCitations(citations, index)
 
-	allowlist, staleChanges, madeChanges, err := syncDocCitationAllowlist(ctx, live)
+	allowlist, staleChanges, madeChanges, err := syncDocCitationAllowlist(ctx, lane, live)
 	if err != nil {
 		return CheckResult{}, err
 	}
@@ -364,19 +421,19 @@ func RunDesktopI18nDocCitations(ctx *CheckContext) (CheckResult, error) {
 	staleMsg := formatDocCitationStaleness(staleChanges, ctx.CI)
 
 	if len(verdict.reported) > 0 {
-		msg := formatDeadDocCitations(verdict.reported, index)
+		msg := formatDeadDocCitations(verdict.reported, lane, index)
 		if staleMsg != "" {
 			msg += "\n" + staleMsg
 		}
 		return CheckResult{}, fmt.Errorf("%s", msg)
 	}
 
-	guides := fmt.Sprintf("%d translator %s", docsScanned, Pluralize(docsScanned, "guide", "guides"))
-	okMsg := fmt.Sprintf("%d catalog %s in %s all name real keys",
-		len(citations), Pluralize(len(citations), "citation", "citations"), guides)
+	docs := fmt.Sprintf("%d %s", docsScanned, Pluralize(docsScanned, lane.docWhat, lane.docWhat+"s"))
+	okMsg := fmt.Sprintf("%d %s %s in %s all name real keys",
+		len(citations), lane.what, Pluralize(len(citations), "citation", "citations"), docs)
 	if len(dead) > 0 {
-		okMsg = fmt.Sprintf("%d of %d catalog citations in %s name a real key; %d allowlisted (%d deliberate, %d pending a fix)",
-			len(citations)-len(dead), len(citations), guides, len(dead), verdict.retired, verdict.pending)
+		okMsg = fmt.Sprintf("%d of %d %s citations in %s name a real key; %d allowlisted (%d deliberate, %d pending a fix)",
+			len(citations)-len(dead), len(citations), lane.what, docs, len(dead), verdict.retired, verdict.pending)
 	}
 	if staleMsg != "" {
 		return SuccessWithChanges(okMsg + "; " + staleMsg), nil
@@ -389,7 +446,7 @@ func RunDesktopI18nDocCitations(ctx *CheckContext) (CheckResult, error) {
 
 // splitDeadDocCitations returns the citations that name no real key, plus the
 // (doc, token) set the allowlist shrink-wraps against.
-func splitDeadDocCitations(citations []docCitation, index *catalogKeyIndex) ([]docCitation, map[string]map[string]bool) {
+func splitDeadDocCitations(citations []docCitation, index *dottedKeyIndex) ([]docCitation, map[string]map[string]bool) {
 	var dead []docCitation
 	live := map[string]map[string]bool{}
 	for _, citation := range citations {
@@ -407,16 +464,16 @@ func splitDeadDocCitations(citations []docCitation, index *catalogKeyIndex) ([]d
 
 // syncDocCitationAllowlist loads the allowlist, drops what the tree no longer
 // needs, and (outside CI) writes the shrunk file back.
-func syncDocCitationAllowlist(ctx *CheckContext, live map[string]map[string]bool) (docCitationAllowlist, []string, bool, error) {
-	allowlist := loadDocCitationAllowlist(ctx.RootDir)
+func syncDocCitationAllowlist(ctx *CheckContext, lane citationLane, live map[string]map[string]bool) (docCitationAllowlist, []string, bool, error) {
+	allowlist := loadDocCitationAllowlist(ctx.RootDir, lane)
 	staleChanges := shrinkwrapDocCitationAllowlist(&allowlist, live)
 	if len(staleChanges) == 0 || ctx.CI {
 		return allowlist, staleChanges, false, nil
 	}
-	if err := writeJSONAllowlist(filepath.Join(ctx.RootDir, i18nDocCitationsAllowlistRel), allowlist); err != nil {
+	if err := writeJSONAllowlist(filepath.Join(ctx.RootDir, lane.allowlistRelPath), allowlist); err != nil {
 		return allowlist, staleChanges, false, err
 	}
-	reformatWithOxfmt(ctx.RootDir, i18nDocCitationsAllowlistRel)
+	reformatWithOxfmt(ctx.RootDir, lane.allowlistRelPath)
 	return allowlist, staleChanges, true, nil
 }
 
@@ -453,10 +510,10 @@ func readEnglishCatalogKeys(enDir string) ([]string, error) {
 	return keys, nil
 }
 
-// scanI18nDocsForCitations walks the translator guides and returns every citation
-// they make, plus how many guides carried at least one.
-func scanI18nDocsForCitations(rootDir string, index *catalogKeyIndex) ([]docCitation, int, error) {
-	docsDir := filepath.Join(rootDir, i18nDocCitationsDocsRelDir)
+// scanDocsForCitations walks the lane's doc tree and returns every citation the
+// docs make, plus how many docs carried at least one.
+func scanDocsForCitations(rootDir string, lane citationLane, index *dottedKeyIndex) ([]docCitation, int, error) {
+	docsDir := filepath.Join(rootDir, lane.docsRelDir)
 	var citations []docCitation
 	docsScanned := 0
 	err := filepath.WalkDir(docsDir, func(path string, entry fs.DirEntry, err error) error {
@@ -474,7 +531,7 @@ func scanI18nDocsForCitations(rootDir string, index *catalogKeyIndex) ([]docCita
 		if err != nil {
 			return err
 		}
-		found := scanDocForCitations(filepath.ToSlash(relPath), string(data), index)
+		found := scanDocForCitations(filepath.ToSlash(relPath), string(data), lane, index)
 		if len(found) > 0 {
 			docsScanned++
 		}
@@ -485,14 +542,14 @@ func scanI18nDocsForCitations(rootDir string, index *catalogKeyIndex) ([]docCita
 		if os.IsNotExist(err) {
 			return nil, 0, nil
 		}
-		return nil, 0, fmt.Errorf("couldn't scan the translator guides: %w", err)
+		return nil, 0, fmt.Errorf("couldn't scan %s: %w", lane.docsRelDir, err)
 	}
 	return citations, docsScanned, nil
 }
 
 // formatDeadDocCitations reports every unexcused citation with the nearest real
 // keys, so the reader can tell a rename from an invention without a search.
-func formatDeadDocCitations(citations []docCitation, index *catalogKeyIndex) string {
+func formatDeadDocCitations(citations []docCitation, lane citationLane, index *dottedKeyIndex) string {
 	sort.Slice(citations, func(i, j int) bool {
 		if citations[i].relPath != citations[j].relPath {
 			return citations[i].relPath < citations[j].relPath
@@ -510,19 +567,18 @@ func formatDeadDocCitations(citations []docCitation, index *catalogKeyIndex) str
 		if _, done := suggestions[citation.token]; !done {
 			suggestions[citation.token] = index.nearestKeys(citation.token, 3)
 		}
-		sb.WriteString(fmt.Sprintf("  %s:%d cites `%s`, which is not a message key\n",
-			citation.relPath, citation.line, citation.token))
+		sb.WriteString(fmt.Sprintf("  %s:%d cites `%s`, which is not a %s\n",
+			citation.relPath, citation.line, citation.token, lane.what))
 		if nearest := suggestions[citation.token]; len(nearest) > 0 {
 			sb.WriteString(fmt.Sprintf("      nearest real keys: %s\n", strings.Join(nearest, ", ")))
 		}
 	}
 	return fmt.Sprintf(
-		"%d translator-guide %s name a message key that doesn't exist. A citation is the evidence a term "+
-			"choice rests on, so a dead one either invents authority or points at a wording that shipped under "+
-			"another name. Repoint each to the live key, or record a deliberate reference to a retired key in "+
-			"%s:\n%s",
-		len(citations), Pluralize(len(citations), "citation", "citations"),
-		i18nDocCitationsAllowlistRel, strings.TrimRight(sb.String(), "\n"))
+		"%d %s %s a %s that doesn't exist. A citation is the evidence a term choice rests on, so a dead "+
+			"one either invents authority or points at a wording that shipped under another name. Repoint each "+
+			"to the live key, or record a deliberate reference to a retired key in %s:\n%s",
+		len(citations), lane.docWhat, Pluralize(len(citations), "citation names", "citations name"), lane.what,
+		lane.allowlistRelPath, strings.TrimRight(sb.String(), "\n"))
 }
 
 func formatDocCitationStaleness(changes []string, ci bool) string {
@@ -538,9 +594,9 @@ func formatDocCitationStaleness(changes []string, ci bool) string {
 
 // loadDocCitationAllowlist reads the allowlist. A missing or unparsable file
 // yields an empty one, so every dead citation gets reported.
-func loadDocCitationAllowlist(rootDir string) docCitationAllowlist {
+func loadDocCitationAllowlist(rootDir string, lane citationLane) docCitationAllowlist {
 	var list docCitationAllowlist
-	data, err := os.ReadFile(filepath.Join(rootDir, i18nDocCitationsAllowlistRel))
+	data, err := os.ReadFile(filepath.Join(rootDir, lane.allowlistRelPath))
 	if err != nil {
 		return list
 	}
