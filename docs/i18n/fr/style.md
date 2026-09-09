@@ -157,6 +157,27 @@ Straightforward (sources agree, `high`):
   "les Platform Tools" · high
 - Android SDK, Homebrew, ADB, adb → verbatim · product and command names; `adb` stays lowercase (it's the command),
   `ADB` uppercase (the protocol/feature name, as in the section title) · high
+- chat (une conversation avec l'assistant, et le panneau qui les héberge) → conversation · le catalogue lui-même
+  (`askCmdr.newChat` « Nouvelle conversation », `askCmdr.sessions.back` « Retour à la conversation »,
+  `askCmdr.consent.local` « Vos conversations restent sur votre Mac ») · high. Un seul mot rend `chat` ET
+  `conversation` : le français ne distingue pas les deux, et l'anglais les emploie indifféremment d'une clé à l'autre
+  (`proactive.description` « starts a chat » face à `consent.proactive` « starts a conversation »). Voir la note «
+  discussion » plus bas.
+- AI / the AI → IA / l'IA · le catalogue (`ai.translateError.timeout.title` « L'IA a mis trop de temps »,
+  `parseError.title` « Lecture de la réponse de l'IA impossible ») · high
+- AI features → fonctionnalités d'IA · le catalogue (`settings.ai.tooltipOff` « Les fonctionnalités d'IA sont
+  désactivées », `settings.ai.provider.description`, `onboarding.stepAi.intro`) · high
+- (AI) provider → fournisseur (d'IA) · le catalogue (`ai.translateError.unavailable.title` « Impossible de joindre votre
+  fournisseur d'IA », `askCmdr.composer.providerOff`) · high
+- Click to <verb> → Cliquez pour <verbe à l'infinitif> · le catalogue (`fileExplorer.breadcrumb.navigateTooltip` «
+  Cliquez pour accéder à {path} », `fileExplorer.navigation.spaceStillUnavailable` « Cliquez pour réessayer ») · high
+- endpoint (une adresse d'API) → point de terminaison · MS terminology FRA, entrée « The logical representation of a
+  location, typically expressed in URL form » (id 535789 → « point de terminaison », FRA/BEL/CAN/CHE/LUX/DZA, relevé
+  dans le tas de références 2026-09-09) · high
+- placeholder (l'exemple pré-rempli qu'on remplace dans un champ) → espace réservé · MS terminology FRA (ids 146440 et
+  2129624, relevé 2026-09-09) · high
+- deployment (Azure : le nom qu'on donne à un modèle déployé) → déploiement · MS terminology FRA (ids 44577, 1579561,
+  1759289, relevé 2026-09-09) · high
 
 Contested or sense-specific (read the block):
 
@@ -328,6 +349,29 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   `errors.eject.*` (« … il n'y a donc rien à éjecter. ») et repris par `servers.paneState.signedOutNothingToAsk` (« … il
   n'y a donc rien à saisir. »). Ni excuse ni « erreur » : c'est un constat. Le verbe pour remplir un champ est `saisir`
   (Finder), jamais `taper`.
+- **« Ask Cmdr » ne nomme QUE le panneau de discussion, jamais l'IA en général.** La marque survit là où elle désigne la
+  surface elle-même : le titre du panneau (`askCmdr.title`), l'élément du menu Présentation (`menu.view.askCmdr`), la
+  commande de la palette (`commands.askCmdrToggle.label`), la section des réglages (`settings.section.askCmdr`),
+  l'interrupteur qui l'active (`settings.askCmdr.turnOn` / `turnOff`), et toute phrase qui renvoie à cette section («
+  dans les réglages d'Ask Cmdr », « dans la section Ask Cmdr »). Partout ailleurs, la phrase décrit ce que fait le
+  produit et le sujet est **Cmdr** (« Cmdr surveille les dossiers… », « Ce que Cmdr envoie ») ou, quand elle parle du
+  modèle plutôt que de l'app, **l'IA** (« L'IA a suggéré ceci », « Raison donnée par l'IA »). L'anglais fait exactement
+  ce partage clé par clé : suivez-le, ne réintroduisez pas la marque dans une phrase descriptive et ne la retirez pas
+  d'un renvoi à la section.
+- **« discussion » est banni : on écrit « conversation ».** Trois clés (`askCmdr.consent.proactive`,
+  `settings.askCmdr.proactive.description`, `askCmdr.forget.message`) disaient « discussion » là où tout le reste du
+  catalogue dit « conversation » ; elles ont été alignées. Un seul mot pour la chose que l'utilisateur voit dans la
+  liste des conversations, sinon deux surfaces voisines se contredisent.
+- **⚠️ `token` est encore partagé entre « jeton » et « token » dans le catalogue `fr`.** « jeton » dans
+  `askCmdr.cost.tokens`, `askCmdr.context.tooltip`, `settings.askCmdr.spend.empty` et
+  `askCmdr.error.localWindowTooSmall` ; « token » dans `askCmdr.event.chatMemoryChanged` et
+  `settings.ai.localContextSize.description`. Rien ne tranche encore ; « jeton » est majoritaire et c'est la forme
+  gardée pour les clés retouchées. À unifier lors d'une passe d'audit de dérive terminologique (guide § Auditing a
+  finished locale for term drift), pas clé par clé.
+- **Un renvoi à un réglage macOS réutilise le libellé du bouton qui l'ouvre, mot pour mot.** « Click to set up full disk
+  access. » se termine par « Cliquez pour configurer l'accès complet au disque. », où « configurer l'accès complet au
+  disque » est exactement `search.coverage.setUpFullDiskAccess` : les deux surfaces mènent au même panneau des Réglages
+  Système et doivent le nommer pareil.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

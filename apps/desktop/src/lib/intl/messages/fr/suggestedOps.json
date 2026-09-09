@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "4f24ca6"
   },
-  "suggestedOps.description": "Ask Cmdr a suggéré ceci. Rien ne s''exécute tant que vous ne l''avez pas approuvé.",
+  "suggestedOps.description": "L''IA a suggéré ceci. Rien ne s''exécute tant que vous ne l''avez pas approuvé.",
   "@suggestedOps.description": {
-    "sourceHash": "d70e5f0"
+    "sourceHash": "73255a0"
   },
   "suggestedOps.empty": "Rien ne vous attend pour le moment.",
   "@suggestedOps.empty": {
@@ -15,9 +15,9 @@
   "@suggestedOps.loadFailed": {
     "sourceHash": "3d3af5a"
   },
-  "suggestedOps.agentReason": "Raison donnée par Ask Cmdr",
+  "suggestedOps.agentReason": "Raison donnée par l''IA",
   "@suggestedOps.agentReason": {
-    "sourceHash": "0768c36"
+    "sourceHash": "e3acab8"
   },
   "suggestedOps.cmdrFacts": "Ce que Cmdr sait",
   "@suggestedOps.cmdrFacts": {
@@ -75,9 +75,9 @@
   "@suggestedOps.fromPattern": {
     "sourceHash": "20e88a9"
   },
-  "suggestedOps.changedUnderReview": "Ask Cmdr a modifié cette suggestion pendant votre lecture.",
+  "suggestedOps.changedUnderReview": "L''IA a modifié cette suggestion pendant votre lecture.",
   "@suggestedOps.changedUnderReview": {
-    "sourceHash": "fd6b2ac"
+    "sourceHash": "5d07c7c"
   },
   "suggestedOps.showNewVersion": "Afficher la nouvelle version",
   "@suggestedOps.showNewVersion": {
@@ -111,8 +111,8 @@
   "@suggestedOps.loadingFiles": {
     "sourceHash": "83257e6"
   },
-  "suggestedOps.indicatorTooltip": "Ask Cmdr a des suggestions pour vous. Cliquez pour les examiner.",
+  "suggestedOps.indicatorTooltip": "Des suggestions de l''IA vous attendent. Cliquez pour les examiner.",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "dc423e6"
+    "sourceHash": "4508b0b"
   }
 }

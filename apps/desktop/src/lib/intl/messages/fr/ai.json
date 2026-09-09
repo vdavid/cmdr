@@ -135,9 +135,9 @@
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "sourceHash": "5a4d18d"
   },
-  "ai.cloud.askCmdrOverrideHint": "Ask Cmdr utilise son propre modèle ({model}) au lieu de celui-ci. Modifiez-le dans la section Ask Cmdr.",
+  "ai.cloud.askCmdrOverrideHint": "La conversation utilise son propre modèle ({model}) au lieu de celui-ci. Modifiez-le dans la section Ask Cmdr.",
   "@ai.cloud.askCmdrOverrideHint": {
-    "sourceHash": "0d278f6"
+    "sourceHash": "5a5539a"
   },
   "ai.cloud.modelPlaceholderExample": "Exemple : {model}",
   "@ai.cloud.modelPlaceholderExample": {

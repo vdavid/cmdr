@@ -461,7 +461,7 @@
     "sourceHash": "cd0221c"
   },
 
-  "onboarding.cloudSetup.step.ollamaModel": "Descarga un modelo en el terminal con ollama pull llama3.2, o <libraryLink>explora la biblioteca</libraryLink>",
+  "onboarding.cloudSetup.step.ollamaModel": "Descarga un modelo en un terminal con ollama pull llama3.2, o <libraryLink>explora la biblioteca</libraryLink>",
   "@onboarding.cloudSetup.step.ollamaModel": {
     "sourceHash": "5999d6a"
   },
@@ -471,7 +471,7 @@
     "sourceHash": "447957a"
   },
 
-  "onboarding.cloudSetup.hint.azureEndpoint": "Sustituye el marcador de posición de la dirección por el nombre de tu recurso de Azure OpenAI. Este extremo no necesita el parámetro api-version.",
+  "onboarding.cloudSetup.hint.azureEndpoint": "Sustituye el marcador de posición de la dirección por el nombre de tu recurso de Azure OpenAI. Este punto de conexión no necesita el parámetro api-version.",
   "@onboarding.cloudSetup.hint.azureEndpoint": {
     "sourceHash": "b1d408e"
   },

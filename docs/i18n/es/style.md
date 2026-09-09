@@ -150,6 +150,29 @@ GNOME/Xfce (Tier 3). Confidence: `confirmed` (human signed off), `high` (authori
   for a settings row · tentative
 - the usual way (where a program is normally found) → en los sitios habituales · "habitual" is the catalog's adjective
   for the default/expected case (`search.systemDirExclude.default` "las carpetas habituales del sistema") · high
+- chat (una conversación con el asistente, y el panel que las guarda) → chat · the catalog itself (`askCmdr.threads.open`
+  "Chats", `askCmdr.sessions.back` "Volver al chat", `askCmdr.consent.local` "Tus chats se quedan en tu Mac") · high.
+  `conversación` stays available for the times English itself says "conversation" (`askCmdr.consent.proactive` "abre una
+  conversación"); both are shipped and neither is wrong, the English picks which.
+- AI / the AI → IA / la IA · the catalog (`ai.translateError.timeout.title` "La IA tardó demasiado",
+  `parseError.title` "No se pudo leer la respuesta de la IA") · high
+- AI features → funciones de IA · the catalog (`settings.ai.tooltipOff` "Las funciones de IA están desactivadas",
+  `settings.ai.provider.description`, `onboarding.stepAi.intro`) · high
+- (AI) provider → proveedor (de IA) · the catalog (`ai.translateError.unavailable.title` "No se puede acceder a tu
+  proveedor de IA", `askCmdr.composer.providerOff`) · high
+- Click to <verb> → Haz clic para <infinitivo> · the catalog (`fileExplorer.breadcrumb.navigateTooltip` "Haz clic para
+  ir a {path}", `fileExplorer.navigation.spaceStillUnavailable` "Haz clic para reintentar") · high
+- endpoint (an API address) → punto de conexión · MS terminology, entry "The logical representation of a location,
+  typically expressed in URL form" (id 535789 → "punto de conexión", tagged for ESP, MEX, ARG, 419 and every other
+  Spanish region, so it is pan-regional; mined from the reference pile 2026-09-09) · high. **NOT "extremo"**, which the
+  catalog briefly carried: it is a literal rendering with no source behind it.
+- placeholder (the pre-filled example you replace in a field) → marcador de posición · MS terminology (ids 146442 and
+  92736, mined 2026-09-09) · high
+- deployment (Azure: the name you give a deployed model) → implementación · MS terminology (ids 44583, 542746, 1579560,
+  1758508, 2133305, mined 2026-09-09) · high
+- terminal (a shell window) → **el** terminal, masculine · the explorer-family corpora are unanimous ("del terminal" ×9,
+  "un terminal" ×1, no feminine hit; mined 2026-09-09). Spain says `el terminal`, parts of Latin America say
+  `la terminal`; the sourced masculine is what the pan-regional base ships · high
 
 Add rows as terms come up, each with sources and a confidence.
 
@@ -279,6 +302,23 @@ strings are counted, so no plural branches are needed there.
   `no hay nada que escribir`, pero "type your username and password" sigue siendo `introduce tu usuario y contraseña`
   (`fileExplorer.network.*`). macOS hace el mismo reparto: `escribir` para el acto de teclear, `introducir` cuando el
   objeto es una contraseña o el valor de un campo.
+
+- **"Ask Cmdr" names ONLY the chat panel, never the AI in general.** The brand survives where it names the surface
+  itself: the panel title (`askCmdr.title`), the View-menu item (`menu.view.askCmdr`), the palette command
+  (`commands.askCmdrToggle.label`), the settings section (`settings.section.askCmdr`), the switch that turns it on
+  (`settings.askCmdr.turnOn` / `turnOff`), and any sentence pointing back at that section ("en los ajustes de Ask Cmdr",
+  "en la sección Ask Cmdr"). Everywhere else the sentence describes what the product does, and the subject is **Cmdr**
+  ("Cmdr observa las carpetas…", "Qué envía Cmdr") or, when it is the model rather than the app, **la IA** ("La IA
+  sugirió esto", "Motivo de la IA"). English makes exactly this split key by key: follow it, don't put the brand back
+  into a descriptive sentence and don't strip it from a pointer to the section.
+- **A pointer to a macOS setting reuses the label of the button that opens it, word for word.** "Click to set up full
+  disk access." ends as "Haz clic para configurar el acceso a todo el disco.", where "configurar el acceso a todo el
+  disco" is exactly `search.coverage.setUpFullDiskAccess`: both surfaces lead to the same System Settings pane and have
+  to name it the same way.
+- **The preterite rule reaches the AI copy too.** `suggestedOps.description` and `suggestedOps.changedUnderReview` had
+  shipped `ha sugerido` / `ha cambiado`; they are now `sugirió` / `cambió`, and `askCmdr.wake.thinking` says
+  `lo que cambió`, not `lo que ha cambiado`. Same reasoning as the note above: the preterite reads right on both sides
+  of the Atlantic, which is what the pan-regional base wants.
 
 ## Decisions to confirm with David
 

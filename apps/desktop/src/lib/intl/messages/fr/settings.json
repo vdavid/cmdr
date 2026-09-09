@@ -1593,9 +1593,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (\"Ask Cmdr\" is the feature's brand name); kept verbatim in every locale per the @key description."
   },
-  "settings.askCmdr.intro": "Discutez avec une IA à propos de vos fichiers, disques et historique. Ask Cmdr lit les noms, chemins et tailles pour répondre, ne regarde à l''intérieur d''un fichier que lorsque vous lui posez une question à son sujet, et ne modifie jamais un fichier sans votre approbation.",
+  "settings.askCmdr.intro": "Discutez avec une IA à propos de vos fichiers, disques et historique. Cmdr lit les noms, chemins et tailles pour répondre, ne regarde à l''intérieur d''un fichier que lorsque vous lui posez une question à son sujet, et ne modifie jamais un fichier sans votre approbation.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "5a81d7a"
+    "sourceHash": "3b16f89"
   },
   "settings.askCmdr.status.on": "Ask Cmdr est activé",
   "@settings.askCmdr.status.on": {
@@ -1629,29 +1629,29 @@
   "@settings.askCmdr.turnOff": {
     "sourceHash": "eb03374"
   },
-  "settings.askCmdr.disclosure.title": "Ce qu''Ask Cmdr envoie",
+  "settings.askCmdr.disclosure.title": "Ce que Cmdr envoie",
   "@settings.askCmdr.disclosure.title": {
-    "sourceHash": "8ccd3b9"
+    "sourceHash": "6907e64"
   },
   "settings.askCmdr.provider.title": "Fournisseur et modèle",
   "@settings.askCmdr.provider.title": {
     "sourceHash": "b9fdc88"
   },
-  "settings.askCmdr.provider.shared": "Ask Cmdr utilise le fournisseur d''IA et la clé que vous avez configurés dans Réglages › IA ({provider}).",
+  "settings.askCmdr.provider.shared": "Cmdr utilise le fournisseur d''IA et la clé que vous avez configurés dans Réglages › IA ({provider}).",
   "@settings.askCmdr.provider.shared": {
-    "sourceHash": "c84fd32"
+    "sourceHash": "9442b09"
   },
-  "settings.askCmdr.provider.off": "Activez un fournisseur d''IA dans Réglages › IA pour utiliser Ask Cmdr.",
+  "settings.askCmdr.provider.off": "Activez un fournisseur d''IA dans Réglages › IA pour commencer à discuter.",
   "@settings.askCmdr.provider.off": {
-    "sourceHash": "8b378ae"
+    "sourceHash": "5cc1481"
   },
   "settings.askCmdr.interactiveModel.label": "Modèle d''Ask Cmdr",
   "@settings.askCmdr.interactiveModel.label": {
     "sourceHash": "194255a"
   },
-  "settings.askCmdr.interactiveModel.description": "Le modèle avec lequel Ask Cmdr discute. Laissez vide pour utiliser le même modèle que les autres fonctionnalités d''IA de Cmdr. Exemple : claude-sonnet-4-5",
+  "settings.askCmdr.interactiveModel.description": "Le modèle utilisé par la conversation. Laissez vide pour utiliser le même modèle que les autres fonctionnalités d''IA de Cmdr. Exemple : claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
-    "sourceHash": "e3f64a5"
+    "sourceHash": "881f8a4"
   },
   "settings.askCmdr.interactiveModel.placeholder": "Identique à l''IA de Cmdr",
   "@settings.askCmdr.interactiveModel.placeholder": {
@@ -1677,21 +1677,21 @@
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
   },
-  "settings.askCmdr.proactive.label": "Autoriser Ask Cmdr à lancer des conversations",
+  "settings.askCmdr.proactive.label": "Autoriser Cmdr à lancer des conversations",
   "@settings.askCmdr.proactive.label": {
-    "sourceHash": "1db4497"
+    "sourceHash": "a85ef48"
   },
-  "settings.askCmdr.proactive.description": "Ask Cmdr surveille les dossiers dans lesquels vous travaillez et lance une discussion quand il a quelque chose à suggérer. Rien ne s''exécute tant que vous ne l''avez pas approuvé.",
+  "settings.askCmdr.proactive.description": "Cmdr surveille les dossiers dans lesquels vous travaillez et lance une conversation quand il a quelque chose à suggérer. Rien ne s''exécute tant que vous ne l''avez pas approuvé.",
   "@settings.askCmdr.proactive.description": {
-    "sourceHash": "9bf4e15"
+    "sourceHash": "556f155"
   },
-  "settings.askCmdr.wakeDelay.label": "Délai de réaction d''Ask Cmdr",
+  "settings.askCmdr.wakeDelay.label": "Délai de réaction de Cmdr",
   "@settings.askCmdr.wakeDelay.label": {
-    "sourceHash": "f80bb5a"
+    "sourceHash": "a7368d0"
   },
-  "settings.askCmdr.wakeDelay.description": "Le délai avant qu''Ask Cmdr regarde un dossier qui vient de changer. Plus long, c''est un assistant plus calme.",
+  "settings.askCmdr.wakeDelay.description": "Le délai avant que Cmdr regarde un dossier qui vient de changer. Plus long, c''est un assistant plus calme.",
   "@settings.askCmdr.wakeDelay.description": {
-    "sourceHash": "b53dd9b"
+    "sourceHash": "08790da"
   },
   "settings.askCmdr.wakeDelay.summary": "Les dossiers actifs sont regardés sous {hot}, les plus calmes sous {warm}.",
   "@settings.askCmdr.wakeDelay.summary": {
@@ -1701,25 +1701,25 @@
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
   },
-  "settings.askCmdr.wakeToast.description": "Un petit message dans le coin quand Ask Cmdr prépare quelque chose à examiner.",
+  "settings.askCmdr.wakeToast.description": "Un petit message dans le coin quand Cmdr prépare quelque chose à examiner.",
   "@settings.askCmdr.wakeToast.description": {
-    "sourceHash": "f07a46e"
+    "sourceHash": "dd04b0a"
   },
-  "settings.askCmdr.memory.title": "Ce dont Ask Cmdr se souvient",
+  "settings.askCmdr.memory.title": "Ce dont Cmdr se souvient",
   "@settings.askCmdr.memory.title": {
-    "sourceHash": "4b102db"
+    "sourceHash": "be6fce6"
   },
-  "settings.askCmdr.memory.description": "Ask Cmdr conserve un petit dossier de notes sur vous et l''envoie avec chaque message. Jetez-y un œil, ou repartez de zéro.",
+  "settings.askCmdr.memory.description": "Cmdr conserve un petit dossier de notes sur vous et l''envoie avec chaque message. Jetez-y un œil, ou repartez de zéro.",
   "@settings.askCmdr.memory.description": {
-    "sourceHash": "bcd73ea"
+    "sourceHash": "0948ddb"
   },
   "settings.askCmdr.memory.open": "Ouvrir le dossier de notes",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.memory.forgotten": "Les notes d''Ask Cmdr ont disparu. Il repart de zéro à partir d''ici.",
+  "settings.askCmdr.memory.forgotten": "Les notes de Cmdr ont disparu. Il repart de zéro à partir d''ici.",
   "@settings.askCmdr.memory.forgotten": {
-    "sourceHash": "a50ed99"
+    "sourceHash": "f3d9022"
   },
   "settings.askCmdr.spend.title": "Dépenses",
   "@settings.askCmdr.spend.title": {

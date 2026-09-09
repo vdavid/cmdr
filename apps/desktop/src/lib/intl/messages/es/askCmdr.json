@@ -208,17 +208,17 @@
   "@askCmdr.error.noKey": {
     "sourceHash": "0a78f37"
   },
-  "askCmdr.error.notConfigured": "Activa un proveedor de IA en Ajustes para usar Ask Cmdr.",
+  "askCmdr.error.notConfigured": "Para chatear necesitas un proveedor de IA. Activa uno en Ajustes.",
   "@askCmdr.error.notConfigured": {
-    "sourceHash": "b84c5f4"
+    "sourceHash": "2d55d2c"
   },
   "askCmdr.error.noConsent": "Activa Ask Cmdr para empezar a chatear. Primero eliges tú qué puede ver.",
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr necesita una ventana de contexto más grande que la de tu modelo local. Elige 32 768 tokens o más en Ajustes, en IA.",
+  "askCmdr.error.localWindowTooSmall": "Cmdr necesita una ventana de contexto más grande que la de tu modelo local. Elige 32 768 tokens o más en Ajustes, en IA.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "6c2334b"
+    "sourceHash": "8ac7452"
   },
   "askCmdr.error.unavailable": "No se pudo conectar con el proveedor de IA. Revisa tu conexión e inténtalo de nuevo.",
   "@askCmdr.error.unavailable": {
@@ -358,9 +358,9 @@
   "@askCmdr.consent.title": {
     "sourceHash": "59b4ca9"
   },
-  "askCmdr.consent.intro": "Ask Cmdr envía tus preguntas al proveedor de IA que elijas, usando tu propia clave de API. Esto es exactamente lo que sale de tu Mac cuando chateas:",
+  "askCmdr.consent.intro": "Cmdr envía tus preguntas al proveedor de IA que elijas, usando tu propia clave de API. Esto es exactamente lo que sale de tu Mac cuando chateas:",
   "@askCmdr.consent.intro": {
-    "sourceHash": "4366272"
+    "sourceHash": "3b5eac1"
   },
   "askCmdr.consent.item.messages": "Tus mensajes",
   "@askCmdr.consent.item.messages": {
@@ -386,21 +386,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.item.memory": "Las notas que Ask Cmdr guarda sobre ti, enviadas de nuevo con cada mensaje",
+  "askCmdr.consent.item.memory": "Las notas que Cmdr guarda sobre ti, enviadas de nuevo con cada mensaje",
   "@askCmdr.consent.item.memory": {
-    "sourceHash": "54bee04"
+    "sourceHash": "7779513"
   },
-  "askCmdr.consent.contentsRule": "Cmdr nunca envía archivos completos, fotos ni miniaturas. Cuando preguntas por un archivo, puede leer una parte limitada de su contenido: algunas líneas de texto, unas pocas páginas de un PDF junto con su título y su autor, la lista de archivos que contiene un archivo comprimido o los datos de la cámara de una foto, incluido el lugar donde se tomó. La búsqueda de fotos funciona igual: el texto que Cmdr reconoció dentro de las fotos coincidentes y sus etiquetas se envían a tu proveedor para que pueda encontrarlas. Ask Cmdr puede sugerir cambios de nombre, movimientos y limpiezas, y no le pasa nada a ningún archivo hasta que tú lo apruebas.",
+  "askCmdr.consent.contentsRule": "Cmdr nunca envía archivos completos, fotos ni miniaturas. Cuando preguntas por un archivo, puede leer una parte limitada de su contenido: algunas líneas de texto, unas pocas páginas de un PDF junto con su título y su autor, la lista de archivos que contiene un archivo comprimido o los datos de la cámara de una foto, incluido el lugar donde se tomó. La búsqueda de fotos funciona igual: el texto que Cmdr reconoció dentro de las fotos coincidentes y sus etiquetas se envían a tu proveedor para que pueda encontrarlas. Cmdr puede sugerir cambios de nombre, movimientos y limpiezas, y no le pasa nada a ningún archivo hasta que tú lo apruebas.",
   "@askCmdr.consent.contentsRule": {
-    "sourceHash": "11b2e0a"
+    "sourceHash": "5a378c1"
   },
-  "askCmdr.consent.memory": "Ask Cmdr se escribe notas sobre ti: cómo te gusta tener las cosas organizadas, qué has rechazado antes, todo lo que le pidas que recuerde. Esas notas viajan con cada mensaje que envías, mientras existan, y pueden incluir texto que Cmdr reconoció dentro de tus fotos. Puedes leerlas, o borrarlas, cuando quieras en los ajustes de Ask Cmdr.",
+  "askCmdr.consent.memory": "Cmdr se escribe notas sobre ti: cómo te gusta tener las cosas organizadas, qué rechazaste antes, todo lo que le pidas que recuerde. Esas notas viajan con cada mensaje que envías, mientras existan, y pueden incluir texto que Cmdr reconoció dentro de tus fotos. Puedes leerlas, o borrarlas, cuando quieras en los ajustes de Ask Cmdr.",
   "@askCmdr.consent.memory": {
-    "sourceHash": "80facfd"
+    "sourceHash": "496c78d"
   },
-  "askCmdr.consent.proactive": "Ask Cmdr también observa las carpetas que usas y abre una conversación cuando tiene algo que sugerir, así que pueden salir mensajes hacia tu proveedor sin que tú lo pidas. Puedes desactivarlo en los ajustes de Ask Cmdr, en “Por su cuenta”.",
+  "askCmdr.consent.proactive": "Cmdr también observa las carpetas que usas y abre una conversación cuando tiene algo que sugerir, así que pueden salir mensajes hacia tu proveedor sin que tú lo pidas. Puedes desactivarlo en los ajustes de Ask Cmdr, en “Por su cuenta”.",
   "@askCmdr.consent.proactive": {
-    "sourceHash": "1d0b671"
+    "sourceHash": "abfa80b"
   },
   "askCmdr.consent.local": "Tus chats se quedan en tu Mac, en una base de datos local que puedes abrir y leer. Eliges el proveedor y el modelo, y puedes ver cuánto cuesta cada conversación.",
   "@askCmdr.consent.local": {
@@ -422,17 +422,17 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr ahora puede mirar dentro de un archivo por el que preguntes: parte de su texto, unas pocas páginas de un PDF, la lista de archivos que contiene un archivo comprimido o los datos de la cámara y la ubicación de una foto. Es más de lo que aceptaste en su día, así que aquí lo tienes todo otra vez.",
+  "askCmdr.consent.whatsNew.body": "Cmdr ahora puede mirar dentro de un archivo por el que preguntes: parte de su texto, unas pocas páginas de un PDF, la lista de archivos que contiene un archivo comprimido o los datos de la cámara y la ubicación de una foto. Es una promesa más amplia que la que aceptaste, así que aquí la tienes entera otra vez.",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "fd59b19"
+    "sourceHash": "1af51d8"
   },
-  "askCmdr.forget.title": "¿Olvidar todo lo que Ask Cmdr recuerda?",
+  "askCmdr.forget.title": "¿Olvidar todo lo que Cmdr recuerda sobre ti?",
   "@askCmdr.forget.title": {
-    "sourceHash": "95f576a"
+    "sourceHash": "e83c997"
   },
-  "askCmdr.forget.message": "Ask Cmdr tira sus notas sobre ti y empieza con una página en blanco. Tus chats y tus archivos se quedan exactamente como están.",
+  "askCmdr.forget.message": "Cmdr tira sus notas sobre ti y empieza con una página en blanco. Tus chats y tus archivos se quedan exactamente como están.",
   "@askCmdr.forget.message": {
-    "sourceHash": "5687160"
+    "sourceHash": "5a390a8"
   },
   "askCmdr.forget.confirm": "Olvidar todo",
   "@askCmdr.forget.confirm": {
@@ -711,21 +711,21 @@
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
   },
-  "askCmdr.wake.thinking": "Ask Cmdr está echando un vistazo a lo que ha cambiado. Abre el chat.",
+  "askCmdr.wake.thinking": "Cmdr está echando un vistazo a lo que cambió. Abre el chat.",
   "@askCmdr.wake.thinking": {
-    "sourceHash": "c4367ad"
+    "sourceHash": "772ca6e"
   },
-  "askCmdr.wake.stop": "Detener lo que está haciendo Ask Cmdr",
+  "askCmdr.wake.stop": "Detener lo que está haciendo Cmdr",
   "@askCmdr.wake.stop": {
-    "sourceHash": "6559df8"
+    "sourceHash": "1eae5cb"
   },
-  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr solo puede vigilar las carpetas que puede ver. Configura el acceso a todo el disco.",
+  "askCmdr.wake.needsFullDiskAccess": "Las funciones de IA aún no ven tus carpetas. Haz clic para configurar el acceso a todo el disco.",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "fd24fd2"
+    "sourceHash": "0c301b5"
   },
-  "askCmdr.wake.needsApiKey": "Ask Cmdr está vigilando, pero necesita una clave de API para pensar. Abre los ajustes.",
+  "askCmdr.wake.needsApiKey": "Las funciones de IA están activadas, pero necesitan un proveedor para funcionar. Haz clic para configurar uno en Ajustes.",
   "@askCmdr.wake.needsApiKey": {
-    "sourceHash": "e9b96e6"
+    "sourceHash": "0f71f75"
   },
   "askCmdr.wakeDigest.summary": "Qué cambió en {foldersText} {folders, plural, one {carpeta} many {carpetas} other {carpetas}}",
   "@askCmdr.wakeDigest.summary": {
@@ -755,13 +755,13 @@
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
   },
-  "askCmdr.sessions.wakeThread": "Este chat lo empezó Ask Cmdr",
+  "askCmdr.sessions.wakeThread": "Este chat lo empezó Cmdr",
   "@askCmdr.sessions.wakeThread": {
-    "sourceHash": "ba3d8fa"
+    "sourceHash": "5a27703"
   },
-  "askCmdr.wakeToast.title": "Ask Cmdr tiene {countText} {count, plural, one {sugerencia} many {sugerencias} other {sugerencias}} para ti",
+  "askCmdr.wakeToast.title": "Cmdr tiene {countText} {count, plural, one {sugerencia} many {sugerencias} other {sugerencias}} para ti",
   "@askCmdr.wakeToast.title": {
-    "sourceHash": "08b3d32"
+    "sourceHash": "881baf8"
   },
   "askCmdr.wakeToast.action": "Revisar",
   "@askCmdr.wakeToast.action": {
