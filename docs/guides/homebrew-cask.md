@@ -52,10 +52,10 @@ This shape also satisfies a future `Homebrew/homebrew-cask` resubmission, so kee
   call in current Homebrew and raises `Error: Calling depends_on macos: :catalina is disabled!` when the cask loads, so
   the whole cask fails to parse and `brew install` dies. Catalina can no longer be expressed at all
   (`MacOSVersion::SYMBOLS` starts at `:big_sur`, verified Homebrew 6.0.22, 2026-09-09), and Homebrew itself no longer
-  runs there, so nobody loses a working install path. ❗ Don't "correct" this back down to match
-  `minimumSystemVersion`: any symbol below `:big_sur` breaks every `brew install`. A Catalina user installs by
-  downloading from the site, where the app's own launch warning about old WebKit still applies. Everything up to
-  Monterey stays best-effort. Floor rationale: `../notes/system-requirements-and-es2025.md`.
+  runs there, so nobody loses a working install path. ❗ Don't "correct" this back down to match `minimumSystemVersion`:
+  any symbol below `:big_sur` breaks every `brew install`. A Catalina user installs by downloading from the site, where
+  the app's own launch warning about old WebKit still applies. Everything up to Monterey stays best-effort. Floor
+  rationale: `../notes/system-requirements-and-es2025.md`.
 - **`uninstall script:` hands "Show in Finder" back.** If the user switched on the reveal handler, Cmdr's bundle id sits
   in the machine-wide `NSFileViewer` preference, and macOS does NOT fall back to Finder when that id names an app that's
   gone: the command silently does nothing everywhere (`apps/desktop/src-tauri/src/reveal/DETAILS.md` § "The uninstall
