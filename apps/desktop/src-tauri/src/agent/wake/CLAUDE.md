@@ -1,51 +1,43 @@
 # Wake pipeline (`agent/wake/`)
 
-How the agent decides it has something worth saying, then says it. Change events become per-folder counters, counters
+How the agent decides it has something worth saying, then says it: change events become per-folder counters, counters
 an interest score, scores deadlines, and a wake turns what waits into one budgeted digest and turn.
 
 ## Module map
 
-- The pure core: `coalesce.rs` (counters), `interest.rs` (score, tier, delay), `compact.rs` (the digest), `inbox.rs`
-  (what waits and when), `readiness.rs` (the gates), `job.rs` (`prepare_wake` / `run_prepared_wake`). `persist.rs` is
-  the one file here taking a `Connection`.
-- The driver: `channel.rs` (the tap's lane), `writer.rs` (the thread owning the `Inbox`, its connection, the timer),
-  `runner.rs` (the background turn), `schedule.rs` (when it may speak) + `spend.rs` (what it may spend), `snapshot.rs`
-  (cached readiness), `indicator.rs` + `staged.rs` (the corner's event, the toast's), `importance.rs` (cached
-  weights), `settings.rs` (cadence, `proactive`), `quiet.rs` (a wake with nothing to say), `followup.rs` (the
-  rejected-sweep turn).
+- **Pure core**: `coalesce.rs` (counters) → `interest.rs` (score, tier, delay) → `inbox.rs` (what waits, when) →
+  `compact.rs` (the digest); `job.rs` runs one, `persist.rs` alone holds a `Connection`.
+- **Driver**: `writer.rs` owns the `Inbox` and the timer, fed by `channel.rs`, gated by `readiness.rs` +
+  `snapshot.rs`, paced by `schedule.rs` + `spend.rs`, weighted by `importance.rs`, run by `runner.rs`, announced by
+  `indicator.rs` + `staged.rs`.
 
 ## Must-knows
 
-- ❌ **Nothing on the live-loop thread may take a lock or touch SQLite.** The tap builds a `FolderActivity`, sends it, returns. A mutex there blocks every live batch for a model call; a per-admit connection runs the
-  migration ladder against a 5 s busy timeout.
-- **Bundles carry counters, never file names.** Names grow memory with the EVENT count, on a path that must survive
-  five million. The digest says WHERE and HOW MUCH; the agent looks up WHAT.
-- **Floored never gets in; unscored always does.** `admit_if_permitted` refuses `Floored`: weight 0 earns no deadline,
-  so the row is dead tokens in every digest. Cmdr's own data dir floors under `~/Library`, needing no self-naming
-  exclusion. ❌ Never refuse `Unknown`: collapsing the two ignores every new folder.
-- **Consent > AI-off > disk access > key** (`snapshot.rs` caches it). ❌ Never fold `Off` (`ai.provider = "off"`) into
-  `NeedsApiKey`: the corner would nag for a provider the user switched off. Neither stores new rows; ❌ only lost
-  consent purges stored ones (`permits_stored_signal`, never `admits_to_inbox`). No key: signal accumulates.
-- **A merge only pulls a deadline earlier**, or a trickle postpones a folder forever. ⚠️ **A cold row's deadline is
-  `None`, and no-deadline LOSES every merge**: `Option::min` compiles, reads right, does the opposite.
+- ❌ **Nothing on the live-loop thread may take a lock or touch SQLite.** The tap builds a `FolderActivity`, sends it,
+  returns; a mutex there stalls every live batch on a model call.
+- **Bundles carry counters, never file names**: this path must survive five million events. The digest says WHERE and
+  HOW MUCH; the agent looks up WHAT.
+- **Floored never gets in; unscored always does.** `admit_if_permitted` refuses `Floored`. ❌ Never refuse `Unknown`:
+  that ignores every new folder.
+- **Consent > AI-off > disk access > key** (`snapshot.rs` caches it). ❌ Never fold `Off` into `NeedsApiKey`, or the
+  corner nags for a provider the user switched off. ❌ Only lost consent purges stored rows.
+- **A merge only pulls a deadline earlier**, or a trickle postpones a folder forever; a cadence change re-prices the
+  whole inbox (`Inbox::reprice`), not just the timer. ⚠️ A cold row's deadline is `None`, which `Option::min` ranks
+  FIRST: it compiles, reads right, does the opposite.
 - **The tap is a second observer inside `process_live_batch`**, after rename detection and storm coalescing. ❌ Never
-  a parallel FSEvents subscription. Three of its four counters are wired crate-side by hand.
-- **A wake reuses `ChatRuntime`** on its own thread (`ConversationOrigin::Notification`), streaming on the rail's
-  transport, bracketed by `Started` and, when quiet, `Discarded`. Its first message is the digest as STRUCTURE, outliving
-  every locale pass.
+  a parallel FSEvents subscription.
+- **A wake reuses `ChatRuntime`** on its own thread (`ConversationOrigin::Notification`). Its first message is the
+  digest as STRUCTURE, outliving every locale pass.
 - **The corner hears on its OWN event** (`indicator.rs`): ❌ clear it on every exit, or a stale spinner clicks into a
   deleted thread.
 - **`askCmdr.proactive` ships TRUE** (`settings.rs`). ⚠️ `settings.json` is sparse: spell defaults out, or
   `unwrap_or_default()` silently ships it off at zero cadence.
-- **A cadence change RE-PRICES the inbox, not just the timer** (`Inbox::reprice`): the merge is min-only.
-- **A wake with nothing to say deletes its own thread, and only a wake does** (`quiet.rs`). ❌ Never log the reason;
+- **A wake with nothing to say deletes its own thread, and only a wake does** (`quiet.rs`). ❌ Never log its reason;
   fold its cost onto the reserved row first, or the agent's spend reads zero.
 - **A rejected sweep earns ONE follow-up turn** (`followup.rs`), coalesced per SWEEP. ❌ It never discards its
-  thread: that thread is the user's, and a closed gate DROPS the ask.
-- **Three seatbelts cap PROACTIVE spend, all backstops rather than calibration** (`schedule.rs` + `spend.rs`): a
-  15-minute `MIN_WAKE_SPACING`, a 200,000-token daily ceiling scoped by `ConversationOrigin`, and a six-hour backoff on
-  a typed auth or quota refusal. ⚠️ Spacing is NOT the cadence slider (how fast it reacts vs how often it speaks).
-  ❌ Nothing the user types is throttled or capped. A force and a follow-up skip spacing; settings and readiness
-  changes clear it.
+  thread: that thread is the user's.
+- **Three seatbelts cap PROACTIVE spend** (`schedule.rs` + `spend.rs`): minimum spacing between wakes, a daily token
+  ceiling, a backoff on a typed auth or quota refusal. ⚠️ Spacing is NOT the cadence slider. ❌ Nothing the user types
+  is capped.
 
 Depth: `DETAILS.md`. What it produces: `../suggested_ops/CLAUDE.md`. The store: `../store/proposals/CLAUDE.md`.
