@@ -228,6 +228,11 @@ export async function clickOnboardingForwardButton(tauriPage: PageLike): Promise
  * ❗ Every spec that OPENS the wizard owes this call from a `finally`. The app is shared per
  * shard and the wizard refuses every MCP operation and swallows every keystroke behind it,
  * so one left up doesn't fail its own test twice, it fails every test after it.
+ *
+ * ❗ Which is also why the terms tick can't throw out of here the way it does for a spec
+ * driving the walk: a throw raised inside a `finally` REPLACES the failure that sent us here
+ * and abandons the close half-done, leaving the wizard up. The closing `expect.poll` is the
+ * honest verdict on whether the wizard actually went.
  */
 export async function closeOnboardingWizardIfOpen(tauriPage: PageLike): Promise<void> {
   if (!(await onboardingWizardIsOpen(tauriPage))) return
@@ -237,7 +242,7 @@ export async function closeOnboardingWizardIfOpen(tauriPage: PageLike): Promise<
   for (let i = 0; i < 6; i++) {
     if (!(await onboardingWizardIsOpen(tauriPage))) return
     const before = await onboardingActiveStep(tauriPage)
-    await acceptOnboardingTermsIfPresent(tauriPage)
+    await acceptOnboardingTermsIfPresent(tauriPage).catch(() => {})
     await clickOnboardingForwardButton(tauriPage)
     // Either the wizard closed (final step) or the step advanced. Wait for one to happen.
     await expect
