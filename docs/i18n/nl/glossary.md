@@ -1692,11 +1692,6 @@ REVIEW FLAGS (prullenmandweigeringen):
   (`ai.secretError.keychainTitle`: "de macOS-sleutelhanger weigerde toegang"), en de sleutel heet `trashRefused`.
   `macOS weigerde dit naar de prullenmand te verplaatsen.` is dus verdedigbaar, maar klinkt harder dan het Engelse
   `wouldn't`. Bevestig welke van de twee in een melding beter valt.
-- **`Verwijder permanent` vs `Definitief verwijderen` in de catalogus.** `menu.file.deletePermanently` en
-  `commands.fileDeletePermanently.label` zeggen `Verwijder permanent`, terwijl
-  `fileExplorer.functionKeyBar.deletePermanentlyAction` en het glossarium `definitief verwijderen` aanhouden (macOS Tier
-  1). Deze nieuwe regel volgt het glossarium. Een locale-brede veegbeurt naar `definitief` is de aanbeveling; buiten het
-  bestek van deze pass.
 
 ## De drie crashdialoog-openingen (`crashReporter.dialog.body.ended`/`.keptRunning`/`.unknown`)
 
