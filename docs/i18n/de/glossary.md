@@ -572,8 +572,10 @@ Terms settled while translating the network-drive image-indexing opt-in (`settin
   `Bildinhalte`/`Bildersuche`). ❌ Don't collapse both to `Bild`
 - network drive → `Netzlaufwerk` · Microsoft terminology (network drive → Netzlaufwerk) · high. An SMB-mounted drive
   Cmdr can index; distinct from the settled `network share → Netzwerkfreigabe` (the exported share itself)
-- image indexing → `Bildindizierung` · already shipped in the de catalog (`search.imageResults.off`), reused for the
-  card/settings label and the search hint · high
+- image indexing → `Bildindizierung` · already shipped in the de catalog (`settings.section.imageIndexing` =
+  `Bildindizierung`), reused for the card/settings label and the search hint · high. ❌ Don't swap in `Bildersuche`:
+  that's the settled word for the search the index feeds (`fileExplorer.imageIndex.drive.off` = „Die Bildersuche ist für
+  dieses Laufwerk deaktiviert.“), not for the indexing itself
 - photo archive → `Fotoarchiv` · compound of `Foto` + `Archiv` (archive → Archiv, glossary) · high. The rarely-browsed
   NAS photo store the "always index" switch targets
 - indexing paused (auto-pause when a network drive disconnects) → `Angehalten` (status) / `hält an` (prose, verb
@@ -774,9 +776,10 @@ Terms settled while reviewing the five strings the master-toggle feature added
 
 ## Stalled transfer: the honest-stall notice (2026-07-31)
 
-Terms and phrasings settled for the eight stall strings (`fileOperations.transferProgress.close` / `.stallNotice` /
-`.stallWaitingDestination` / `.stallWaitingSource` / `.stallUnknown` / `.stallInFlight` / `.stallLogHint`, plus
-`queue.row.stalled`). These replace a confident countdown on a transfer that has stopped moving.
+Terms and phrasings settled for the seven stall strings (`fileOperations.transferProgress.close` / `.stallNotice` /
+`.stallWaitingDestination` / `.stallWaitingSource` / `.stallUnknown` / `.stallInFlight` / `.stallLogHint`). These
+replace a confident countdown on a transfer that has stopped moving. `.stallNotice` renders on both surfaces, the
+progress dialog and the narrow queue row, so it has to fit the row.
 
 - **stalled / "no progress" (a transfer) → `Kein Fortschritt seit {duration}`** · `Fortschritt` is the settled progress
   noun across the tiers: macOS DE ("Kopierfortschritt anzeigen", "Fortschrittsfenster einblenden"), Double Commander
@@ -2040,7 +2043,8 @@ der Referenz-Stapel auf der M1-Kiste fehlt.
   · `high`. ❌ Kein `ungültig` wie bei Apple (`EMSG_INVALID_PWD`): der `@key` sagt ausdrücklich, dass niemandem ein
   Vorwurf gemacht wird.
 - **„server address“ → `Serveradresse`** · Finder `ConnectToWindow.strings` `de` (`YEA-3L-WnW.placeholderString` =
-  „Serveradresse“), deckt sich mit `fileExplorer.network.connectDialog.addressAriaLabel` · `high`.
+  „Serveradresse“), deckt sich mit dem ausgelieferten `servers.refusal.invalidUrl` („Das sieht nicht nach einer
+  Serveradresse aus.“) · `high`. Abgrenzung: das Feld im Blatt heißt kürzer `Adresse` (`servers.sheet.address`).
 - **„stops listing it“ (der Server verschwindet aus dem Umschalter) → `zeigt den Server nicht mehr an`** · gesetztes
   `show → anzeigen`, und der Rückverweis nimmt das Nomen statt eines Pronomens, weil davor der Platzhalter `{name}`
   steht (`style.md` § Ein Rückverweis auf `{name}`) · `high`.
@@ -2134,19 +2138,19 @@ Begriffe:
 - **`Connect` → `Verbinden`** · Finder `ConnectToWindow.strings` `46.title`, NetAuthAgent `AuthDialog` `600218.title`,
   `Localizable` `CONNECT` · `high`. Zeichengleich zum schon ausgelieferten `fileExplorer.network.connect`.
 - **`Sign in` → `Anmelden`**, **`Sign in to {name}` → `Bei {name} anmelden`** · AppSSOKerberos `MainMenu.loctable`
-  („Sign In“ → „Anmelden“), CloudSharing („sign in to your Apple Account“ → „melde dich bei deinem Apple Account an“);
-  zeichengleich zum ausgelieferten `fileExplorer.network.login.title` („Bei „{target}“ anmelden“) · `high`.
+  („Sign In“ → „Anmelden“), CloudSharing („sign in to your Apple Account“ → „melde dich bei deinem Apple Account an“) ·
+  `high`. Der Titel stellt den Server voran (`Bei {name} anmelden`), weil das Verb im Deutschen ans Satzende gehört.
 - **`Save` → `Sichern`** · AppKit `Document`/`SavePanel`/`Preferences`/`Printing.loctable` („Save“ → „Sichern“) ·
   `high`. ❌ Nicht `Speichern`, das ist die Microsoft-Konvention.
 - **`Guest` → `Gast`, `Connect as guest` → `Als Gast verbinden`** · NetAuthAgent `AuthDialog` `RiA-l0-ASw.title`,
-  `Localizable` `GUEST`; zeichengleich zum ausgelieferten `fileExplorer.network.login.connectAsGuest` · `high`.
+  `Localizable` `GUEST` · `high`. Das gesetzte `connect → verbinden` trägt die zweite Hälfte.
 - **`Sign in with a username and password` → `Mit Benutzername und Passwort anmelden`** · Apples Gegenstück heißt
   `Registrierte:r Benutzer:in` (NetAuthAgent `REGISTERED_USER`), also mit Gender-Doppelpunkt, den die Stilregel wegen
   Screenreadern verbietet. Die Handlung statt der Person zu benennen umgeht das sauber und deckt sich mit Apples eigenem
   Fließtext „Gib Benutzername und Passwort für den Server „%@“ ein.“ (`PS_MSG_BOTH`) · `high`.
 - **`Keychain` → `Schlüsselbund`** · NetAuthAgent `AuthDialog` `600268.title` („Remember this password in my keychain“ →
-  „Passwort im Schlüsselbund sichern“) · `high`. Der Katalog beschriftet die Checkbox schon als
-  `Im Schlüsselbund merken` (`fileExplorer.network.login.rememberInKeychain`); das Blatt übernimmt sie zeichengleich.
+  „Passwort im Schlüsselbund sichern“) · `high`. Die Checkbox heißt `Im Schlüsselbund merken`
+  (`servers.sheet.remember`), und `servers.sheet.needsStoredSecret` zitiert sie im Fließtext wortgleich.
 - **`Advanced` → `Erweitert`** · AppKit `AccessibilityImageDescriptions.loctable` `NSAdvanced`, ImageKit
   `kIKScannerDeviceView_Advanced`; zeichengleich zum ausgelieferten `settings.section.advanced` · `high`.
 - **`Protocol` → `Protokoll`** · `AddPrinter.app` IP-Plug-in `100268.title` („Protocol:“ → „Protokoll:“) · `high`.
@@ -2189,11 +2193,10 @@ Begriffe:
 
 Wortlaut-Entscheidungen:
 
-- **Die Legende der Gast-oder-Konto-Auswahl heißt `Verbindungsmodus`**, obwohl das Englische hier `How to connect` sagt
-  und beim Geschwisterschlüssel `Connection mode`. Es ist dieselbe Fläche, und die Stilregel „Ein Bedienelement trägt im
-  Deutschen EINEN Namen“ zieht den schon ausgelieferten Namen (`fileExplorer.network.login.connectionModeLegend`) vor.
-  Apples Alternative wäre `Verbinden als:` (NetAuthAgent `CONNECT_AS`), passt aber nicht über beide Optionen, weil die
-  zweite ein `anmelden` ist.
+- **Die Legende der Gast-oder-Konto-Auswahl heißt `Verbindungsmodus`**, obwohl das Englische hier mit `How to connect`
+  fragt. Deutsche Legenden benennen das Bedienelement, statt eine Frage zu stellen: die Nachbarlegende im selben Blatt
+  heißt schlicht `Protokoll` (`servers.sheet.protocolLegend`). Apples Alternative wäre `Verbinden als:` (NetAuthAgent
+  `CONNECT_AS`), passt aber nicht über beide Optionen, weil die zweite ein `anmelden` ist.
 - **`First time connecting to {host}` → `Erste Verbindung zu {host}`**, kein „Zum ersten Mal mit {host} verbinden“: die
   Überschrift beschreibt eine Lage, sie fordert nichts. Der `@key` verlangt „routine, not alarming“, und ein Nominalsatz
   ist hier ruhiger als ein Imperativ.
