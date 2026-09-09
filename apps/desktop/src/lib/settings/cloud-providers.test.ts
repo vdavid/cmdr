@@ -28,7 +28,7 @@ describe('cloudProviderPresets', () => {
       expect(preset.name).toBeTruthy()
       expect(typeof preset.requiresApiKey).toBe('boolean')
       expect(typeof preset.supportsModelList).toBe('boolean')
-      expect(typeof preset.isLocal).toBe('boolean')
+      expect(['cloud', 'local', 'byoEndpoint']).toContain(preset.setup.kind)
       expect(preset.description).toBeTruthy()
     }
   })
