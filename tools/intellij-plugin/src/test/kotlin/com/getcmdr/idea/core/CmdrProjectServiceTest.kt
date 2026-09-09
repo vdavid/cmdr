@@ -9,7 +9,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 /** Detection and config loading: the seam every feature opens with. */
 class CmdrProjectServiceTest : BasePlatformTestCase() {
     fun testAProjectWithoutTheMarkerIsNotACmdrCheckout() {
-        myFixture.addFileToProject("CHANGELOG.md", "- Add a setting (75121419)\n")
+        myFixture.addFileToProject("CHANGELOG.md", "- Add a setting (751214190)\n")
 
         assertNull(service.config)
     }

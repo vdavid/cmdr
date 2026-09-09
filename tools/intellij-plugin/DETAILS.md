@@ -73,7 +73,7 @@ what fails when one goes missing.
 
 ## Commit-hash links
 
-`ChangelogRefs` is the pure text rule: a parenthesized, comma-separated group of `[0-9a-f]{8}` hashes anchored to the
+`ChangelogRefs` is the pure text rule: a parenthesized, comma-separated group of `[0-9a-f]{9}` hashes anchored to the
 **end** of a logical entry. Anchoring is the whole safety story, since entries close on asides like `(~40x speed-up!)`.
 `ChangelogLinks.commitLinksIn` is the PSI-side bridge both extension points call, so the annotator's color and the goto
 handler's target can't disagree about which hashes are links.
@@ -367,9 +367,9 @@ Four things cost real time to discover; none of them are guessable:
 
 ### Tier 2: a real sandboxed IDE. Works, with honest limits.
 
-Confirmed 2026-08-04: `CHANGELOG.md` opens with every eight-character trailing hash link-colored, the seven-character
-one and the `(~40x speed-up!)` and mid-sentence `(deadbeef)` asides left as plain prose, and ⌘-hover over a hash showing
-the platform's own "Open in browser" affordance.
+Confirmed 2026-08-04 (at the eight-character width the file used then): `CHANGELOG.md` opens with every trailing hash
+link-colored, the off-length one and the `(~40x speed-up!)` and mid-sentence `(deadbeef)` asides left as plain prose,
+and ⌘-hover over a hash showing the platform's own "Open in browser" affordance.
 
 Confirmed 2026-08-04 for the folding too: `sample.ts` opens with every resolvable key already collapsed to its sentence
 in curly quotes, `labelKey:` and `descriptionKey:` still showing their names in front of the folded value, `Here''s`

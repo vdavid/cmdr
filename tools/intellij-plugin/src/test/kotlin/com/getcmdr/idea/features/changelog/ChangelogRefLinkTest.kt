@@ -23,10 +23,10 @@ import java.nio.file.Path
  */
 class ChangelogRefLinkTest : BasePlatformTestCase() {
     fun testAHashNavigatesToItsGithubCommit() {
-        val text = changelog("## 0.37.0\n\n- Add a \"Chat memory size\" setting (75121419, 14aacf89)\n")
+        val text = changelog("## 0.37.0\n\n- Add a \"Chat memory size\" setting (751214190, 14aacf891)\n")
 
-        assertEquals(commitUrl("75121419"), linkAt(text.indexOf("75121419") + 2))
-        assertEquals(commitUrl("14aacf89"), linkAt(text.indexOf("14aacf89") + 2))
+        assertEquals(commitUrl("751214190"), linkAt(text.indexOf("751214190") + 2))
+        assertEquals(commitUrl("14aacf891"), linkAt(text.indexOf("14aacf891") + 2))
         assertNull("the prose before the group isn't a link", linkAt(text.indexOf("Chat memory")))
     }
 
@@ -36,8 +36,8 @@ class ChangelogRefLinkTest : BasePlatformTestCase() {
      * what ⌘-click actually runs, finds the target.
      */
     fun testGotoDeclarationFindsTheCommitTarget() {
-        val text = changelog("- Add a setting (75121419)\n")
-        val offset = text.indexOf("75121419") + 2
+        val text = changelog("- Add a setting (751214190)\n")
+        val offset = text.indexOf("751214190") + 2
 
         val targets = GotoDeclarationAction.findAllTargetElements(project, myFixture.editor, offset)
 
@@ -54,18 +54,18 @@ class ChangelogRefLinkTest : BasePlatformTestCase() {
     fun testGoToDeclarationAsksTheBrowserForTheCommitPage() {
         val browser = RecordingBrowserLauncher()
         ApplicationManager.getApplication().replaceService(BrowserLauncher::class.java, browser, testRootDisposable)
-        val text = changelog("- Add a setting (75121419)\n")
-        myFixture.editor.caretModel.moveToOffset(text.indexOf("75121419") + 2)
+        val text = changelog("- Add a setting (751214190)\n")
+        myFixture.editor.caretModel.moveToOffset(text.indexOf("751214190") + 2)
 
         myFixture.performEditorAction(IdeActions.ACTION_GOTO_DECLARATION)
 
-        assertEquals(listOf(commitUrl("75121419")), browser.urls)
+        assertEquals(listOf(commitUrl("751214190")), browser.urls)
     }
 
     fun testAHashIsPaintedWithTheLinkColor() {
-        val text = changelog("- Add a setting (75121419)\n")
+        val text = changelog("- Add a setting (751214190)\n")
 
-        assertEquals(listOf("75121419"), paintedAsLinks(text))
+        assertEquals(listOf("751214190"), paintedAsLinks(text))
     }
 
     /**
@@ -75,33 +75,33 @@ class ChangelogRefLinkTest : BasePlatformTestCase() {
      */
     fun testAGroupWrappedAcrossTwoSourceLinesStillLinks() {
         val text = changelog(
-            "- Credit all 775 open-source packages Cmdr ships (b626d7a4, 2d41cc14,\n  18add0b0, 42f76971)\n",
+            "- Credit all 775 open-source packages Cmdr ships (b626d7a4b, 2d41cc147,\n  18add0b0c, 42f76971d)\n",
         )
 
-        assertEquals(listOf("b626d7a4", "2d41cc14", "18add0b0", "42f76971"), paintedAsLinks(text))
-        assertEquals(commitUrl("42f76971"), linkAt(text.indexOf("42f76971") + 2))
+        assertEquals(listOf("b626d7a4b", "2d41cc147", "18add0b0c", "42f76971d"), paintedAsLinks(text))
+        assertEquals(commitUrl("42f76971d"), linkAt(text.indexOf("42f76971d") + 2))
     }
 
     /** A nested bullet is its own entry, which is only true because Markdown gives it its own paragraph. */
     fun testAnIndentedNestedBulletLinksOnItsOwn() {
-        val text = changelog("- A parent entry with prose and no group\n  - A nested detail (deadbeef)\n")
+        val text = changelog("- A parent entry with prose and no group\n  - A nested detail (deadbeef1)\n")
 
-        assertEquals(listOf("deadbeef"), paintedAsLinks(text))
-        assertEquals(commitUrl("deadbeef"), linkAt(text.indexOf("deadbeef") + 2))
+        assertEquals(listOf("deadbeef1"), paintedAsLinks(text))
+        assertEquals(commitUrl("deadbeef1"), linkAt(text.indexOf("deadbeef1") + 2))
     }
 
     fun testProseThatOnlyLooksLikeARefIsLeftAlone() {
         val text = changelog(
             "- Return a broad search in half a second (~40x speed-up!)\n" +
                 "- Stop the (deadbeef) case crashing the parser on load\n" +
-                "- Fix the thing (fd6fc29)\n",
+                "- Fix the thing (fd6fc293)\n",
         )
 
         assertNull(linkAt(text.indexOf("40x") + 1))
         assertNull("a hex-looking word mid-sentence is prose", linkAt(text.indexOf("deadbeef") + 2))
         assertNull(
-            "a seven-character ref isn't one; the file is normalized to eight",
-            linkAt(text.indexOf("fd6fc29") + 2),
+            "an eight-character ref isn't one; the file is normalized to nine",
+            linkAt(text.indexOf("fd6fc293") + 2),
         )
         assertEmpty(paintedAsLinks(text))
     }
@@ -120,26 +120,26 @@ class ChangelogRefLinkTest : BasePlatformTestCase() {
         println("[perf] highlighted ${text.lines().size} lines in ${(System.nanoTime() - started) / 1_000_000} ms")
 
         assertTrue("the real changelog should be nearly all links, got ${painted.size}", painted.size > 900)
-        val eightHex = Regex("[0-9a-f]{8}")
-        assertEmpty("painted something that isn't an eight-character hash", painted.filterNot(eightHex::matches))
+        val nineHex = Regex("[0-9a-f]{9}")
+        assertEmpty("painted something that isn't a nine-character hash", painted.filterNot(nineHex::matches))
     }
 
     fun testAMarkdownFileThatIsNotAConfiguredChangelogIsLeftAlone() {
         markProjectAsCmdrCheckout()
-        val text = "- Add a setting (75121419)\n"
+        val text = "- Add a setting (751214190)\n"
         myFixture.configureByText("README.md", text)
 
-        assertNull(linkAt(text.indexOf("75121419") + 2))
+        assertNull(linkAt(text.indexOf("751214190") + 2))
         assertEmpty(paintedAsLinks(text))
     }
 
     fun testAProjectWithoutTheMarkerIsLeftAlone() {
         // No `markProjectAsCmdrCheckout()`: the plugin has to be inert in every project that isn't this repo.
-        val text = "- Add a setting (75121419)\n"
+        val text = "- Add a setting (751214190)\n"
         myFixture.configureByText(CHANGELOG, text)
 
         assertNull(CmdrProjectService.getInstance(project).config)
-        assertNull(linkAt(text.indexOf("75121419") + 2))
+        assertNull(linkAt(text.indexOf("751214190") + 2))
         assertEmpty(paintedAsLinks(text))
     }
 

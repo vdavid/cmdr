@@ -11,7 +11,7 @@ class CmdrPluginConfigTest : TestCase() {
 
         assertNotNull("the shipped config no longer has a changelog section", changelog)
         assertEquals(listOf("CHANGELOG.md"), changelog!!.files)
-        assertEquals("https://github.com/vdavid/cmdr/commit/75121419", changelog.commitUrl("75121419"))
+        assertEquals("https://github.com/vdavid/cmdr/commit/751214190", changelog.commitUrl("751214190"))
     }
 
     fun testAFeatureIsOffWhenItsSectionIsAbsent() {
@@ -46,7 +46,7 @@ class CmdrPluginConfigTest : TestCase() {
         val changelog = CmdrPluginConfig.parse(section).get(ChangelogConfig)
 
         assertNotNull(changelog)
-        assertTrue(changelog!!.trailingGroupPattern.containsMatchIn("Add a setting (75121419)"))
+        assertTrue(changelog!!.trailingGroupPattern.containsMatchIn("Add a setting (751214190)"))
     }
 
     private fun assertEmpty(actual: Collection<*>) = assertTrue("expected empty, got $actual", actual.isEmpty())

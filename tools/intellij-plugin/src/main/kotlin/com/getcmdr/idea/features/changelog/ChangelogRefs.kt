@@ -9,7 +9,7 @@ data class CommitRef(val hash: String, val startOffset: Int) {
 
 /**
  * The recognition rule for the commit hashes `CHANGELOG.md` carries: a parenthesized, comma-separated group of bare
- * hashes closing a logical entry, as in `- Add a thing (75121419, 14aacf89)`.
+ * hashes closing a logical entry, as in `- Add a thing (751214190, 14aacf891)`.
  *
  * Anchoring to the END of the entry is the whole safety story. Entries routinely close on an aside like
  * `(~40x speed-up!)` or `(smb2 0.8.0)`, and a hex-looking word mid-sentence must never be touched.
@@ -20,12 +20,12 @@ data class CommitRef(val hash: String, val startOffset: Int) {
  */
 object ChangelogRefs {
     /**
-     * Used when `cmdr-plugin.json` names no pattern of its own. Exactly eight lowercase hex characters, because the
+     * Used when `cmdr-plugin.json` names no pattern of its own. Exactly nine lowercase hex characters, because the
      * file is normalized to that length and the check enforces it.
      *
      * Group 1 must capture the comma-separated hash list; that's the contract a configured pattern has to honor.
      */
-    const val DEFAULT_TRAILING_GROUP_PATTERN: String = """\(([0-9a-f]{8}(?:,\s*[0-9a-f]{8})*)\)$"""
+    const val DEFAULT_TRAILING_GROUP_PATTERN: String = """\(([0-9a-f]{9}(?:,\s*[0-9a-f]{9})*)\)$"""
 
     /**
      * The hashes in [entryText]'s trailing group, in document order, with offsets relative to [entryText].
