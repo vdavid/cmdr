@@ -101,9 +101,10 @@ commands, and notable non-obvious placements.
 - **`downloads.ts`**: downloads-watcher commands (`downloadsWatcherStatus`, `goToLatestDownload`,
   `setGlobalGoToLatestShortcut`, `recheckDownloadsWatcherGate`) plus `onDownloadDetected` / `onGlobalShortcutFired` over
   the downloads-watcher + global-hotkey events.
-- **`reveal.ts`**: "Reveal in Cmdr" (macOS). `drainPendingReveals` today; the Settings row's `getRevealHandlerState` /
-  `setRevealHandlerEnabled` belong here too when that row exists. Every wrapper swallows the missing-command rejection
-  other platforms give.
+- **`reveal.ts`**: "Reveal in Cmdr" (macOS). `drainPendingReveals`, the Settings row's `getRevealHandlerState` /
+  `setRevealHandlerEnabled`, and `onRevealDelivered` over the payloadless `reveal-delivered` event (a reveal that
+  actually moved a pane, which is what the first-landing notice listens for). Every command wrapper swallows the
+  missing-command rejection other platforms give.
 - **`restricted-paths.ts`**: `onRestrictedPathsChanged` over the TCC-restricted-path-set event.
 - **`dialog-events.ts`**: window-management events: `onExecuteCommand` + `emitExecuteCommand` (the unified
   menu/cross-window relay), the MCP `dialog` lifecycle (`on{Open,Focus,Close}Settings` / `…FileViewer` / `…About` /

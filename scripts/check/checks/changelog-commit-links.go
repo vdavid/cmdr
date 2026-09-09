@@ -337,7 +337,11 @@ func feedShasAsync(stdin io.WriteCloser, shas []string) *error {
 	go func() {
 		w := bufio.NewWriter(stdin)
 		for _, sha := range shas {
-			if _, err := fmt.Fprintln(w, sha); err != nil {
+			// `^{commit}` peels to the commit an abbreviated SHA names. Without it an
+			// 8-char prefix that a TREE also happens to share reads as "ambiguous",
+			// and a changelog entry naming a real commit fails the check for a
+			// coincidence that gets likelier as the repo grows.
+			if _, err := fmt.Fprintf(w, "%s^{commit}\n", sha); err != nil {
 				writeErr = err
 				break
 			}

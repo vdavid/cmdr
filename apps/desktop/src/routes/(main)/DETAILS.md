@@ -34,9 +34,11 @@ here:
   `startWindowServices(ctx)` runs AFTER the document-level key handlers, because its first `listen` rejects outside
   Tauri (the Playwright smoke tests) and the handlers have to survive that. `stopWindowServices()` drains both plus the
   module-owned `unlistenFns` array. Same context discipline as `listener-setup.ts`: getters in, callbacks out, no
-  captured `$state`. Phase 2 ends with `drainPendingReveals()`, which tells the backend this window can now be handed an
-  OS reveal that landed before it existed. ❌ It can't move to phase 1: the reveal is delivered over `mcp-nav-to-path`,
-  so it has to sit after `setupMcpListeners`. See `apps/desktop/src-tauri/src/reveal/CLAUDE.md`.
+  captured `$state`. Phase 2 ends with `startRevealActivationNotice()` and then `drainPendingReveals()`, which tells the
+  backend this window can now be handed an OS reveal that landed before it existed. ❌ Neither can move to phase 1: the
+  reveal is delivered over `mcp-nav-to-path`, so the drain has to sit after `setupMcpListeners`. ❌ And the notice has
+  to be subscribed BEFORE the drain, or a cold-launch reveal announces itself with nobody listening. See
+  `apps/desktop/src-tauri/src/reveal/CLAUDE.md` and `apps/desktop/src/lib/reveal/CLAUDE.md`.
 - **The window hands out TWO dispatchers, and which one a caller gets is a correctness question.** `dispatchFromUi`
   absorbs the rejection: a few handlers reject on purpose, a user gesture has nobody to hand that to, and the handler
   has already said its piece in a toast, so the alternative is an unhandled rejection. `handleCommandExecute` propagates
@@ -82,7 +84,7 @@ of either data point.
 
 ## Startup gates
 
-`startup-gates.ts` holds the five decisions that determine what a launch actually shows, so each is exercisable without
+`startup-gates.ts` holds the decisions that determine what a launch actually shows, so each is exercisable without
 mounting the shell (`startup-gates.test.ts`). They're the highest-stakes branches in the route: getting one wrong either
 re-prompts someone who already answered the FDA question, or drops a first-run user into an explorer with no disk
 access, and neither is visible from a passing type-check.
@@ -105,11 +107,16 @@ access, and neither is visible from a passing type-check.
   `src/app.html`.
 - **`maybeRunWhatsNew(ctx, force)`**: the boot check plus the re-attempt after the wizard closes. It only gathers the
   gate inputs; the decision is `whats-new-trigger`'s.
-- **`maybeOfferDockPin(ctx)`**: the once-per-install "keep Cmdr in your Dock?" offer, boot plus the same wizard-close
-  re-attempt. It only gathers inputs; the rule is `lib/dock/should-show-dock-nudge.ts` and the toast is
-  `lib/dock/dock-nudge.ts`. Cheapest-first like the old-macOS notice, so a launch where the offer has already been made
-  pays for neither of its two IPC round trips. Why the rule splits in two, and why `DockPinState` is asked once and
-  believed: `lib/dock/DETAILS.md`.
+- **`maybeOfferNudges(ctx)`**: the two once-per-install offers, boot plus the same wizard-close re-attempt. It awaits
+  `maybeOfferRevealHandler` and then `maybeOfferDockPin`, ❌ never `Promise.all`: each stamps the shared nudge ledger
+  only after its own IPC round trips, so two started together both read an unstamped ledger and both speak on the same
+  launch. Reveal goes first because it's the more valuable offer. The shared rule, the three-day cooldown, and why the
+  cooldown outranks either threshold: `lib/nudges/DETAILS.md`.
+- **`maybeOfferRevealHandler(ctx)` / `maybeOfferDockPin(ctx)`**: each gathers inputs only; the rules are
+  `lib/reveal/should-show-reveal-nudge.ts` and `lib/dock/should-show-dock-nudge.ts`, the toasts
+  `lib/reveal/reveal-nudge.ts` and `lib/dock/dock-nudge.ts`. Cheapest-first like the old-macOS notice, so a launch where
+  an offer has already been made pays for neither of its two IPC round trips. Why `DockPinState` is asked once and
+  believed: `lib/dock/DETAILS.md`; why only `notRegistered` earns the reveal offer: `lib/reveal/DETAILS.md`.
 - **`openOnboardingFromMenuOrPalette(ctx, source)`**: re-entry. Both `menu` and `palette` open at the first reachable
   step (`openWizard` enforces that per-source), so this only guards against re-opening an open wizard.
 

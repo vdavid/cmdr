@@ -565,6 +565,9 @@ Three consequences fall out of that shape, all accepted deliberately:
 
 - **It can't use `SettingRow`.** That component's `id` is a `SettingId`, and its reset pip, modified dot, and change
   subscription are all registry reads. An OS-backed row hand-builds the same frame.
+- **It carries its own DOM anchor.** With no `SettingId`, `settingAnchorId` has nothing to derive one from, so the card
+  takes an `id` that lives beside its only deep-linker: `$lib/reveal/reveal-settings-link.ts`. Same shape as the
+  sub-group anchors (`settings-downloads-notifications`).
 - **It isn't searchable.** Registering a `SearchableRow` would put a hit in the index for a row this machine may not
   render (see below), which the searchable-row guardrails already forbid. So it hides under any non-empty query, which
   falls out for free: `shouldShow` answers `false` for an id the index has never seen. Honest state beat searchability.
