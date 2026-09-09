@@ -11,6 +11,7 @@ use tokio::time::Duration;
 
 #[cfg(target_os = "macos")]
 use super::util::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
+use crate::file_system::google_drive::DriveItemLinks;
 #[cfg(target_os = "macos")]
 use crate::file_system::terminal::{OpenTerminalError, OpenTerminalOutcome, TerminalAppList};
 
@@ -261,19 +262,21 @@ pub fn copy_to_clipboard<R: Runtime>(app: AppHandle<R>, text: String) -> Result<
     app.clipboard().write_text(text).map_err(|e| e.to_string())
 }
 
-/// The web URL for a Google Drive item, or `None` when the path isn't one we can
-/// identify. Backs "Open in Google Drive" and "Copy Google Drive link".
+/// The Google Drive web URLs for an item, or `None` when the path isn't one we can
+/// identify. Backs "Open in Google Drive", "Copy Google Drive link", and "Ask Gemini".
 ///
-/// Resolution (an xattr read, or a small JSON stub for Google-native docs) lives in
+/// One call, one resolution: the caller picks the URL its command needs rather than
+/// asking again per action. Resolution (an xattr read, or a small JSON stub for
+/// Google-native docs, or Drive's mirror databases) lives in
 /// `file_system::google_drive`; this is the pass-through. Async with the usual
 /// blocking hop because it touches the filesystem.
 #[tauri::command]
 #[specta::specta]
-pub async fn google_drive_link(path: String) -> Result<Option<String>, String> {
+pub async fn google_drive_links(path: String) -> Result<Option<DriveItemLinks>, String> {
     let work = tokio::task::spawn_blocking(move || {
         let path = std::path::PathBuf::from(path);
         let is_directory = path.is_dir();
-        crate::file_system::google_drive::item_url(&path, is_directory)
+        crate::file_system::google_drive::item_links(&path, is_directory)
     });
     match tokio::time::timeout(Duration::from_secs(30), work).await {
         Ok(joined) => joined.map_err(|e| e.to_string()),

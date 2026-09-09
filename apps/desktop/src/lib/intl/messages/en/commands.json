@@ -641,6 +641,15 @@
   "@commands.cloudCopyGoogleDriveLink.description": {
     "description": "Longer help text for the \"Copy Google Drive link\" command, shown as a secondary line in the command palette."
   },
+  "commands.cloudAskGemini.label": "Ask Gemini",
+  "@commands.cloudAskGemini.label": {
+    "description": "Command name that opens Google Drive's Gemini AI assistant in the browser with the selected Drive file as its subject, so the user can ask questions about it. \"Gemini\" is a product name and stays in English; only the verb around it moves. Appears in the command palette.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.cloudAskGemini.description": "Opens Google Drive's Gemini assistant with the selected file as its subject",
+  "@commands.cloudAskGemini.description": {
+    "description": "Longer help text for the \"Ask Gemini\" command, shown as a secondary line in the command palette."
+  },
   "commands.tagsToggleGrey.label": "Toggle gray tag",
   "@commands.tagsToggleGrey.label": {
     "description": "Command name that adds or removes the gray macOS Finder color tag on the selected files. \"Gray\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",

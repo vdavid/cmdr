@@ -111,9 +111,15 @@ export {
   asOpenTerminalError,
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
-  googleDriveLink,
+  googleDriveLinks,
 } from './file-actions'
-export type { OpenTerminalError, OpenTerminalOutcome, TerminalApp, TerminalAppList } from './file-actions'
+export type {
+  DriveItemLinks,
+  OpenTerminalError,
+  OpenTerminalOutcome,
+  TerminalApp,
+  TerminalAppList,
+} from './file-actions'
 
 // Favorites (user-editable switcher favorites)
 export { addFavorite, removeFavorite, renameFavorite, reorderFavorites, stripFavoritePrefix } from './favorites'

@@ -105,10 +105,27 @@ not prove a path is outside Google Drive.
 
 ## Google Drive links (`google_drive/`)
 
-Backs "Open in Google Drive" and "Copy Google Drive link". Drive registers no URL scheme (no `CFBundleURLTypes`, no
-`NSServices` in its `Info.plist`) and its Finder items are File Provider custom actions only Finder can render, so
-there's no way to reach Drive's own Share sheet from another app. The web page, where Share is one click away, is the
-reachable equivalent.
+Backs "Open in Google Drive", "Copy Google Drive link", and "Ask Gemini". Drive registers no URL scheme (no
+`CFBundleURLTypes`, no `NSServices` in its `Info.plist`) and its Finder items are File Provider custom actions only
+Finder can render, so there's no way to reach Drive's own Share sheet from another app. The web page, where Share is one
+click away, is the reachable equivalent.
+
+**One resolution, every URL.** `item_links()` resolves the item ONCE into a private `ResolvedItem` (id + kind +
+resource key) and formats each URL from it, so a context menu never pays two xattr reads or two SQLite round-trips for
+the same file. The public answer is a `DriveItemLinks { view_url, gemini_url }`, and `None` still means "not a Drive
+item, offer nothing".
+
+- `view_url` is the item's own page, in the shape its kind takes (see `mod.rs` for the per-kind table). A resource key,
+  which only items shared through a resource-key link carry, qualifies this URL alone.
+- `gemini_url` is `https://drive.google.com/drive/ai?di=<id>`, captured from the `Ask Gemini` entry in Drive for
+  desktop's own Finder menu (2026-09-09) beside its `Open with Google Drive` link, which resolved the same id. It's
+  `None` for folders: `?di=` names a document, and Drive's own menu leaves the action out there too. No resource key
+  rides along, because Drive's own link carries none.
+
+**Gotcha: our `Ask Gemini` shows for every resolvable Drive FILE, Drive's own shows for fewer.** Drive gates its Finder
+entry on an account flag (`domainUserInfo.CONTEXT_MENU_OPEN_GEMINI_WEB`) that lives inside its own process and no API
+exposes. On an account without Gemini, ours opens a Drive page saying so. Accepted deliberately (2026-09-09): a link
+that occasionally lands on an explanation beats hiding the action from everyone who does have it.
 
 **Three ID sources, in this order** — cheapest and most certain first, and the first one to answer wins:
 

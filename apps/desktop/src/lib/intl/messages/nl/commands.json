@@ -538,6 +538,14 @@
   "@commands.cloudCopyGoogleDriveLink.description": {
     "sourceHash": "920f0d4"
   },
+  "commands.cloudAskGemini.label": "Vraag Gemini",
+  "@commands.cloudAskGemini.label": {
+    "sourceHash": "7eec77f"
+  },
+  "commands.cloudAskGemini.description": "Opent de Gemini-assistent van Google Drive met het geselecteerde bestand als onderwerp",
+  "@commands.cloudAskGemini.description": {
+    "sourceHash": "3b425f6"
+  },
   "commands.tagsToggleGrey.label": "Tag ''Grijs'' in-/uitschakelen",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"

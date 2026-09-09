@@ -536,6 +536,14 @@
   "@commands.cloudCopyGoogleDriveLink.description": {
     "sourceHash": "920f0d4"
   },
+  "commands.cloudAskGemini.label": "Hỏi Gemini",
+  "@commands.cloudAskGemini.label": {
+    "sourceHash": "7eec77f"
+  },
+  "commands.cloudAskGemini.description": "Mở trợ lý Gemini của Google Drive với tệp đã chọn làm chủ đề",
+  "@commands.cloudAskGemini.description": {
+    "sourceHash": "3b425f6"
+  },
   "commands.tagsToggleGrey.label": "Bật/tắt thẻ Xám",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"

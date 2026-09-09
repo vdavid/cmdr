@@ -16,7 +16,7 @@ import {
   openInEditor,
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
-  googleDriveLink,
+  googleDriveLinks,
   openExternalUrl,
 } from '$lib/tauri-commands'
 import {
@@ -276,19 +276,19 @@ export const fileHandlers = {
       }
     }),
 
-  // The two Drive arms re-resolve the link from the path rather than carrying one
-  // over from the context menu, so the command palette reaches them on equal
+  // The three Drive arms re-resolve the links from the path rather than carrying
+  // them over from the context menu, so the command palette reaches them on equal
   // footing. The menu only ever offers them when a link resolves, so the "no link"
   // toast is the palette's case.
   'cloud.openInGoogleDrive': (hctx) =>
     withEntryUnderCursor(hctx, async (entry) => {
       try {
-        const link = await googleDriveLink(entry.path)
-        if (!link) {
+        const links = await googleDriveLinks(entry.path)
+        if (!links) {
           addToast(tString('commands.handler.googleDriveLinkMissing'), { level: 'warn' })
           return
         }
-        await openExternalUrl(link)
+        await openExternalUrl(links.viewUrl)
       } catch (e) {
         addToast(tString('commands.handler.googleDriveOpenFailed', { detail: String(e) }), { level: 'error' })
       }
@@ -297,15 +297,31 @@ export const fileHandlers = {
   'cloud.copyGoogleDriveLink': (hctx) =>
     withEntryUnderCursor(hctx, async (entry) => {
       try {
-        const link = await googleDriveLink(entry.path)
-        if (!link) {
+        const links = await googleDriveLinks(entry.path)
+        if (!links) {
           addToast(tString('commands.handler.googleDriveLinkMissing'), { level: 'warn' })
           return
         }
-        await copyToClipboard(link)
+        await copyToClipboard(links.viewUrl)
         addToast(tString('commands.handler.googleDriveLinkCopied'), { level: 'success' })
       } catch (e) {
         addToast(tString('commands.handler.googleDriveCopyFailed', { detail: String(e) }), { level: 'error' })
+      }
+    }),
+
+  // A folder resolves a view link but no Gemini one, so the same "nothing to act
+  // on" toast covers both misses from the palette.
+  'cloud.askGemini': (hctx) =>
+    withEntryUnderCursor(hctx, async (entry) => {
+      try {
+        const links = await googleDriveLinks(entry.path)
+        if (!links?.geminiUrl) {
+          addToast(tString('commands.handler.googleDriveLinkMissing'), { level: 'warn' })
+          return
+        }
+        await openExternalUrl(links.geminiUrl)
+      } catch (e) {
+        addToast(tString('commands.handler.googleDriveOpenFailed', { detail: String(e) }), { level: 'error' })
       }
     }),
 } satisfies Partial<CommandHandlerRecord>

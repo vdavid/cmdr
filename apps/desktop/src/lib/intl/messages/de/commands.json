@@ -536,6 +536,14 @@
   "@commands.cloudCopyGoogleDriveLink.description": {
     "sourceHash": "920f0d4"
   },
+  "commands.cloudAskGemini.label": "Gemini fragen",
+  "@commands.cloudAskGemini.label": {
+    "sourceHash": "7eec77f"
+  },
+  "commands.cloudAskGemini.description": "Öffnet den Gemini-Assistenten von Google Drive mit der ausgewählten Datei als Thema",
+  "@commands.cloudAskGemini.description": {
+    "sourceHash": "3b425f6"
+  },
   "commands.tagsToggleGrey.label": "Tag „Grau“ umschalten",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"

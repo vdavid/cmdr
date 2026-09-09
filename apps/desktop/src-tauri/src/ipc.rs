@@ -246,7 +246,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::file_actions::get_info,
                     crate::commands::file_actions::open_in_editor,
                     crate::commands::file_actions::open_path,
-                    crate::commands::file_actions::google_drive_link,
+                    crate::commands::file_actions::google_drive_links,
                     crate::commands::file_actions::cloud_make_available_offline,
                     crate::commands::file_actions::cloud_remove_download,
                     crate::mcp::pane_state::update_left_pane_state,

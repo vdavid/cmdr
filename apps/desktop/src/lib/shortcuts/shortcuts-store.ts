@@ -285,6 +285,7 @@ export const menuCommands = [
   // Google Drive (items only show when the right-clicked item resolves to a Drive ID)
   'cloud.openInGoogleDrive',
   'cloud.copyGoogleDriveLink',
+  'cloud.askGemini',
   // Selection
   'selection.selectAll',
   'selection.deselectAll',

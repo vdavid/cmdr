@@ -536,6 +536,14 @@
   "@commands.cloudCopyGoogleDriveLink.description": {
     "sourceHash": "920f0d4"
   },
+  "commands.cloudAskGemini.label": "詢問 Gemini",
+  "@commands.cloudAskGemini.label": {
+    "sourceHash": "7eec77f"
+  },
+  "commands.cloudAskGemini.description": "開啟 Google Drive 的 Gemini 助理，以所選檔案為主題",
+  "@commands.cloudAskGemini.description": {
+    "sourceHash": "3b425f6"
+  },
   "commands.tagsToggleGrey.label": "切換灰色標籤",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"

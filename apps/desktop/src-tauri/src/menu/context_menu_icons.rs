@@ -30,7 +30,7 @@ use tauri::Runtime;
 use tauri::menu::Menu;
 
 use super::macos_appkit::{find_ns_item, menu_item_text, observe_menu_tracking, set_sf_symbol, tracking_menu};
-use super::{DRIVE_COPY_LINK_ID, DRIVE_OPEN_ID};
+use super::{DRIVE_ASK_GEMINI_ID, DRIVE_COPY_LINK_ID, DRIVE_OPEN_ID};
 
 /// `(menu item ID, SF Symbol name)` for the file context menu.
 ///
@@ -39,10 +39,15 @@ use super::{DRIVE_COPY_LINK_ID, DRIVE_OPEN_ID};
 /// Items with no entry show no icon, which is the norm — icons mark the actions worth
 /// spotting at a glance, not every line.
 ///
-/// The two Drive items are the whole list today. `link` is the same symbol the menu
+/// The three Drive items are the whole list today. `link` is the same symbol the menu
 /// bar's `Copy path` carries, on purpose: the same concept gets the same glyph, which is
-/// already how `Copy` shares `document.on.document` across two menus.
-const FILE_CONTEXT_ICONS: &[(&str, &str)] = &[(DRIVE_OPEN_ID, "arrow.up.forward.app"), (DRIVE_COPY_LINK_ID, "link")];
+/// already how `Copy` shares `document.on.document` across two menus. `sparkles` is what
+/// Apple and Google both spell AI with, so `Ask Gemini` reads as one at a glance.
+const FILE_CONTEXT_ICONS: &[(&str, &str)] = &[
+    (DRIVE_OPEN_ID, "arrow.up.forward.app"),
+    (DRIVE_COPY_LINK_ID, "link"),
+    (DRIVE_ASK_GEMINI_ID, "sparkles"),
+];
 
 /// Icons armed for the next context menu to open.
 ///
@@ -155,12 +160,16 @@ mod tests {
     }
 
     /// A symbol name is a string AppKit looks up at runtime, so a typo is silent. Pin
-    /// the two we ship so a rename has to be deliberate.
+    /// the three we ship so a rename has to be deliberate.
     #[test]
     fn the_symbols_are_the_ones_we_chose() {
         assert_eq!(
             FILE_CONTEXT_ICONS,
-            &[(DRIVE_OPEN_ID, "arrow.up.forward.app"), (DRIVE_COPY_LINK_ID, "link"),]
+            &[
+                (DRIVE_OPEN_ID, "arrow.up.forward.app"),
+                (DRIVE_COPY_LINK_ID, "link"),
+                (DRIVE_ASK_GEMINI_ID, "sparkles"),
+            ]
         );
     }
 

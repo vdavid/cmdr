@@ -441,11 +441,12 @@ out, which is why an image set there still gets its gutter. ❗ The returned `Ic
 `macos_appkit.rs` owns `observe_menu_tracking`, `tracking_menu`, `find_ns_item`, and `set_sf_symbol`,
 shared by both consumers.
 
-Today the table is the two Google Drive items: `arrow.up.forward.app` for "Open in Google Drive"
-(distinct from the menu bar's plain `arrow.up.forward` on `Open`) and `link` for "Copy Google Drive
+Today the table is the three Google Drive items: `arrow.up.forward.app` for "Open in Google Drive"
+(distinct from the menu bar's plain `arrow.up.forward` on `Open`), `link` for "Copy Google Drive
 link" — deliberately the same symbol the menu bar's `Copy path` carries, since `Copy` already shares
-`document.on.document` across two menus. Both verified present with `NSImage(systemSymbolName:)` on
-macOS 26.6.2, 2026-09-09.
+`document.on.document` across two menus — and `sparkles` for "Ask Gemini", the glyph Apple and Google
+both spell AI with, shared with `Ask Cmdr` in the menu bar. All verified present with
+`NSImage(systemSymbolName:)` on macOS 26.6.2, 2026-09-09.
 
 **Full-color non-template images do render correctly** through `IconMenuItem`, and that is what stays
 there: app-bundle icons in "Open with" (via `file_system::open_with::load_app_icon`), each
@@ -490,15 +491,17 @@ The file context menu's **cloud group** (macOS) is provider-aware: a concatenati
 do, rather than one iCloud-shaped block.
 
 - **Google Drive** contributes `Open in Google Drive` and `Copy Google Drive link`, shown whenever
-  `FileContextInfo.google_drive_link` is `Some`. That gate is a resolved Drive item ID, NOT a path prefix, because
-  Drive's mirror mode keeps real files outside `~/Library/CloudStorage` (`file_system/google_drive/`). Neither label
-  takes an ellipsis: each acts on the item it was invoked on and picks nothing.
+  `FileContextInfo.google_drive_links` is `Some`, plus `Ask Gemini` when that value's `gemini_url` is also `Some`
+  (files only). That gate is a resolved Drive item ID, NOT a path prefix, because Drive's mirror mode keeps real files
+  outside `~/Library/CloudStorage` (`file_system/google_drive/`). No label takes an ellipsis: each acts on the item it
+  was invoked on and picks nothing.
 - **iCloud Drive** contributes the eviction pair, `Make available offline` / `Remove download`, exactly one of them,
   keyed on `SyncStatus`. ❌ Don't widen it to other providers: the `FileManager` ubiquity APIs behind it reject
   everything but iCloud, and a provider's own pin/unpin is a File Provider custom action reserved for the app that
   bundles the extension. `CloudProvider::supports_eviction` is where that limit is stated.
 
-Both Drive items also reach the command palette, re-resolving the link from the path so the palette and the menu agree.
+All three Drive items also reach the command palette, re-resolving the links from the path so the palette and the menu
+agree.
 
 The **Select** submenu (between Edit and View) holds the five selection commands: `Select all` (⌘A), `Deselect all`
 (⌘⇧A), `Invert selection` (no menu accelerator: neither of its defaults, `⇧8` and the numpad `*`, carries ⌘, and a

@@ -183,6 +183,7 @@ export const COMMAND_IDS = [
   'cloud.removeDownload',
   'cloud.openInGoogleDrive',
   'cloud.copyGoogleDriveLink',
+  'cloud.askGemini',
 
   // Finder tag colors (macOS): toggle a system color tag on the focused selection.
   // No default shortcut; the user can bind one. The context-menu circles route

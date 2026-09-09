@@ -16,6 +16,8 @@ use tauri::{
 };
 
 #[cfg(target_os = "macos")]
+use crate::file_system::google_drive::DriveItemLinks;
+#[cfg(target_os = "macos")]
 use crate::file_system::open_with::OpenWithChoices;
 #[cfg(target_os = "macos")]
 use crate::file_system::share::ShareService;
@@ -34,8 +36,8 @@ use super::menu_items::{
 };
 #[cfg(target_os = "macos")]
 use super::{
-    CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, DRIVE_COPY_LINK_ID, DRIVE_OPEN_ID, GET_INFO_ID, HELP_MENU_ID,
-    QUICK_LOOK_ID,
+    CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, DRIVE_ASK_GEMINI_ID, DRIVE_COPY_LINK_ID, DRIVE_OPEN_ID,
+    GET_INFO_ID, HELP_MENU_ID, QUICK_LOOK_ID,
 };
 use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EDIT_MENU_ID, EJECT_VOLUME_ID,
@@ -61,11 +63,12 @@ pub struct FileContextInfo {
     /// items. Eviction / download work via `FileManager` ubiquity APIs, which only
     /// support iCloud (not third-party File Providers). See `cloud_actions.rs` for why.
     pub is_icloud_drive: bool,
-    /// The web URL for this item in Google Drive, when it resolves to one. `Some`
-    /// gates both Drive menu items, which is self-validating: no ID, no item. See
+    /// The Google Drive web URLs for this item, when it resolves to one. `Some`
+    /// gates the Drive menu group, which is self-validating: no ID, no item; its
+    /// `gemini_url` gates `Ask Gemini` alone, since folders have none. See
     /// `file_system/google_drive/` for why this isn't a path-prefix check (Drive's
     /// mirror mode puts real files outside `~/Library/CloudStorage`).
-    pub google_drive_link: Option<String>,
+    pub google_drive_links: Option<DriveItemLinks>,
     pub open_with: OpenWithChoices,
     /// The services macOS offers for this selection, in its own order, one `Share`
     /// submenu item each. EMPTY means macOS offers none and the whole item is left
@@ -342,12 +345,12 @@ pub fn build_context_menu<R: Runtime>(
     // actions it can actually carry out, so the group is a concatenation rather
     // than one iCloud-shaped block.
     //
-    // Google Drive: open on the web / copy the link. Drive's own Share sheet and
-    // its pin-offline toggle are File Provider custom actions only Finder can
-    // invoke, so the web page (where Share is one click away) is the honest
-    // equivalent. `file_system/google_drive/` has the full story.
+    // Google Drive: open on the web / copy the link / ask Gemini about it. Drive's
+    // own Share sheet and its pin-offline toggle are File Provider custom actions
+    // only Finder can invoke, so the web page (where Share is one click away) is
+    // the honest equivalent. `file_system/google_drive/` has the full story.
     #[cfg(target_os = "macos")]
-    if info.google_drive_link.is_some() {
+    if let Some(links) = &info.google_drive_links {
         let open_item = MenuItem::with_id(
             app,
             DRIVE_OPEN_ID,
@@ -365,6 +368,18 @@ pub fn build_context_menu<R: Runtime>(
         menu.append(&PredefinedMenuItem::separator(app)?)?;
         menu.append(&open_item)?;
         menu.append(&copy_link_item)?;
+        // Files only: Gemini's `?di=` names a document, and a folder resolves no
+        // Gemini URL at all.
+        if links.gemini_url.is_some() {
+            let ask_gemini_item = MenuItem::with_id(
+                app,
+                DRIVE_ASK_GEMINI_ID,
+                menu_t("menu.context.askGemini"),
+                true,
+                None::<&str>,
+            )?;
+            menu.append(&ask_gemini_item)?;
+        }
     }
 
     // Eviction pair: iCloud Drive ONLY, and gated by sync status. The

@@ -381,6 +381,14 @@ export const fileListCommands: CommandSource[] = [
     shortcuts: [],
     descriptionKey: 'commands.cloudCopyGoogleDriveLink.description',
   },
+  {
+    id: 'cloud.askGemini',
+    nameKey: 'commands.cloudAskGemini.label',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    descriptionKey: 'commands.cloudAskGemini.description',
+  },
 
   // ============================================================================
   // File list - Finder tag colors (macOS). Toggle a system color tag on the

@@ -93,6 +93,8 @@ pub const CLOUD_REMOVE_DOWNLOAD_ID: &str = "cloud_remove_download";
 /// item resolves to a Drive ID (`file_system/google_drive/`).
 pub const DRIVE_OPEN_ID: &str = "drive_open";
 pub const DRIVE_COPY_LINK_ID: &str = "drive_copy_link";
+/// Files only: Gemini's `?di=` names a document, so a folder never gets this one.
+pub const DRIVE_ASK_GEMINI_ID: &str = "drive_ask_gemini";
 
 /// Submenu ID for `Services` in the file context menu (macOS). Never handled: AppKit
 /// fills the submenu and performs the pick, so the item itself is never clicked. It
@@ -366,6 +368,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         CLOUD_REMOVE_DOWNLOAD_ID => Some(("cloud.removeDownload", CommandScope::FileScoped)),
         DRIVE_OPEN_ID => Some(("cloud.openInGoogleDrive", CommandScope::FileScoped)),
         DRIVE_COPY_LINK_ID => Some(("cloud.copyGoogleDriveLink", CommandScope::FileScoped)),
+        DRIVE_ASK_GEMINI_ID => Some(("cloud.askGemini", CommandScope::FileScoped)),
 
         // Zoom (text size): App scope so ⌘0/⌘+/⌘- work in any focused window.
         VIEW_ZOOM_75_ID => Some(("view.zoom.set75", CommandScope::App)),
@@ -466,6 +469,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "cloud.removeDownload" => Some(CLOUD_REMOVE_DOWNLOAD_ID),
         "cloud.openInGoogleDrive" => Some(DRIVE_OPEN_ID),
         "cloud.copyGoogleDriveLink" => Some(DRIVE_COPY_LINK_ID),
+        "cloud.askGemini" => Some(DRIVE_ASK_GEMINI_ID),
         "sort.byName" => Some(SORT_BY_NAME_ID),
         "sort.byExtension" => Some(SORT_BY_EXTENSION_ID),
         "sort.byModified" => Some(SORT_BY_MODIFIED_ID),

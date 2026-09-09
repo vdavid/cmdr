@@ -1,5 +1,9 @@
 //! Google Drive item links: turning a local path inside Google Drive into the
-//! `drive.google.com` / `docs.google.com` URL for the same item.
+//! `drive.google.com` / `docs.google.com` URLs for the same item.
+//!
+//! [`item_links`] is the whole surface. It resolves the item ONCE and formats
+//! every URL from that one answer, because resolution is the expensive half and
+//! a context menu asks for all of them at once.
 //!
 //! Drive for desktop never registers a URL scheme (its `Info.plist` carries no
 //! `CFBundleURLTypes` and no `NSServices`, verified on Drive for desktop
@@ -51,6 +55,18 @@ use std::path::Path;
 /// part of the name: `xattr::get` with the bare name finds nothing.
 #[cfg(target_os = "macos")]
 pub const DRIVE_ITEM_ID_XATTR: &str = "com.google.drivefs.item-id#S";
+
+/// The Drive URLs one resolved item offers, all built from a single resolution.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct DriveItemLinks {
+    /// Where the item opens on the web. Always present: an item that resolves
+    /// has a page.
+    pub view_url: String,
+    /// Where Drive opens Gemini with this item as its subject. `None` for
+    /// folders, which Gemini's `?di=` parameter can't name.
+    pub gemini_url: Option<String>,
+}
 
 /// The canonical web URL for a Drive item, by item kind.
 ///
@@ -166,12 +182,63 @@ fn read_item_id_xattr(_path: &Path) -> Option<String> {
     None
 }
 
-/// The web URL for the Drive item at `path`, or `None` when the path isn't a
-/// Drive item we can identify.
+/// A Drive item, resolved from a local path: everything any of its URLs needs.
+///
+/// Resolution is the expensive half (an xattr read, a JSON stub, or two SQLite
+/// queries), so it happens ONCE and every URL shape is formatted from this.
+struct ResolvedItem {
+    /// The Drive file ID.
+    id: String,
+    /// Which URL shape the item's view link takes.
+    kind: DriveItemKind,
+    /// Required to open items shared through a resource-key link; empty on
+    /// everything else, which is nearly everything.
+    resource_key: String,
+}
+
+impl ResolvedItem {
+    /// Where the item opens on the web, in the shape its kind takes.
+    fn view_url(&self) -> String {
+        let mut url = self.kind.url_for(&self.id);
+        if !self.resource_key.is_empty() {
+            let separator = if url.contains('?') { '&' } else { '?' };
+            url.push_str(&format!("{separator}resourcekey={}", self.resource_key));
+        }
+        url
+    }
+
+    /// Where Drive opens Gemini with this item as its subject, for the items
+    /// that have one.
+    ///
+    /// The shape is Drive's own, captured from the `Ask Gemini` entry in Drive
+    /// for desktop's Finder menu (2026-09-09): the same item ID the view URL
+    /// uses, on `drive.google.com/drive/ai`. No resource key rides along —
+    /// Drive's own link carries none, and inventing one isn't ours to do.
+    fn gemini_url(&self) -> Option<String> {
+        // `?di=` names a DOCUMENT. A folder has nothing for Gemini to read, and
+        // Drive's own menu leaves the action out there too.
+        (self.kind != DriveItemKind::Folder).then(|| format!("https://drive.google.com/drive/ai?di={}", self.id))
+    }
+}
+
+/// The Drive URLs for one item, or `None` when the path isn't a Drive item we
+/// can identify.
 ///
 /// `is_directory` is passed in rather than stat'd here: the menu already knows
 /// it, and this runs while the user waits for a context menu.
-pub fn item_url(path: &Path, is_directory: bool) -> Option<String> {
+pub fn item_links(path: &Path, is_directory: bool) -> Option<DriveItemLinks> {
+    let item = resolve_item(path, is_directory)?;
+    Some(DriveItemLinks {
+        view_url: item.view_url(),
+        // Belt and braces on the folder gate: `is_directory` is what the caller
+        // knows, `kind` is what Drive's own metadata said, and Gemini is offered
+        // only when both agree this is a file.
+        gemini_url: if is_directory { None } else { item.gemini_url() },
+    })
+}
+
+/// The Drive item at `path`, from the cheapest and most certain source that answers.
+fn resolve_item(path: &Path, is_directory: bool) -> Option<ResolvedItem> {
     let extension = path
         .extension()
         .and_then(|e| e.to_str())
@@ -188,14 +255,11 @@ pub fn item_url(path: &Path, is_directory: bool) -> Option<String> {
             Some(editor) => DriveItemKind::Native(editor),
             None => DriveItemKind::NativeUnknown,
         };
-        let mut url = kind.url_for(&shortcut.doc_id);
-        // A resource key is required to open items shared through a
-        // resource-key link; it's empty on everything else.
-        if !shortcut.resource_key.is_empty() {
-            let separator = if url.contains('?') { '&' } else { '?' };
-            url.push_str(&format!("{separator}resourcekey={}", shortcut.resource_key));
-        }
-        return Some(url);
+        return Some(ResolvedItem {
+            id: shortcut.doc_id,
+            kind,
+            resource_key: shortcut.resource_key,
+        });
     }
 
     if let Some(id) = read_item_id_xattr(path) {
@@ -204,14 +268,22 @@ pub fn item_url(path: &Path, is_directory: bool) -> Option<String> {
         } else {
             DriveItemKind::Binary
         };
-        return Some(kind.url_for(&id));
+        return Some(ResolvedItem {
+            id,
+            kind,
+            resource_key: String::new(),
+        });
     }
 
     // Mirror mode: the file itself says nothing, so ask Drive's own local databases.
     // Last because it's the expensive one, and skipped entirely once either source
     // above answered.
     let item = mirror_db::resolve(path)?;
-    Some(item.kind.url_for(&item.id))
+    Some(ResolvedItem {
+        id: item.id,
+        kind: item.kind,
+        resource_key: String::new(),
+    })
 }
 
 #[cfg(test)]
@@ -219,6 +291,11 @@ mod tests {
     use super::*;
     use std::fs;
     use tempfile::TempDir;
+
+    /// The view URL alone, which most of these tests are about.
+    fn item_url(path: &Path, is_directory: bool) -> Option<String> {
+        item_links(path, is_directory).map(|links| links.view_url)
+    }
 
     fn write_shortcut(dir: &TempDir, name: &str, body: &str) -> std::path::PathBuf {
         let path = dir.path().join(name);
@@ -346,6 +423,72 @@ mod tests {
         let padding = " ".repeat(MAX_NATIVE_SHORTCUT_BYTES);
         let huge = write_shortcut(&dir, "huge.gdoc", &format!("{padding}{}", stub_json("DOC3")));
         assert_eq!(item_url(&huge, false), None);
+    }
+
+    /// Gemini takes the same item ID the view URL does, whatever shape that URL
+    /// took. A native doc lives on `docs.google.com` and still asks Gemini on
+    /// `drive.google.com`, which is the pairing worth pinning.
+    #[test]
+    fn a_native_doc_offers_gemini_on_the_same_item_id() {
+        let dir = TempDir::new().unwrap();
+        let doc = write_shortcut(&dir, "notes.gdoc", &stub_json("DOC4"));
+
+        let links = item_links(&doc, false).expect("a stub resolves");
+        assert_eq!(links.view_url, "https://docs.google.com/document/d/DOC4/edit");
+        assert_eq!(
+            links.gemini_url.as_deref(),
+            Some("https://drive.google.com/drive/ai?di=DOC4")
+        );
+    }
+
+    /// The stream-mode binary case, which is the one captured from Drive's own
+    /// Finder menu.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn a_plain_drive_file_offers_gemini() {
+        let dir = TempDir::new().unwrap();
+        let file = write_shortcut(&dir, "report.pdf", "not really a pdf");
+        xattr::set(&file, DRIVE_ITEM_ID_XATTR, b"1BtmyCwXjCCV-Ugimx4Iem0YZhuC6XXp1").expect("set xattr");
+
+        let links = item_links(&file, false).expect("the xattr resolves");
+        assert_eq!(
+            links.gemini_url.as_deref(),
+            Some("https://drive.google.com/drive/ai?di=1BtmyCwXjCCV-Ugimx4Iem0YZhuC6XXp1")
+        );
+    }
+
+    /// A folder keeps its view link and offers no Gemini one: `?di=` names a
+    /// document.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn a_folder_offers_no_gemini_link() {
+        let dir = TempDir::new().unwrap();
+        let folder = dir.path().join("subfolder");
+        fs::create_dir(&folder).unwrap();
+        xattr::set(&folder, DRIVE_ITEM_ID_XATTR, b"FOLDERID").expect("set xattr on folder");
+
+        let links = item_links(&folder, true).expect("the xattr resolves");
+        assert_eq!(links.view_url, "https://drive.google.com/drive/folders/FOLDERID");
+        assert_eq!(links.gemini_url, None);
+    }
+
+    /// A resource key qualifies the VIEW link only. Drive's own Gemini link
+    /// carries none, so ours doesn't invent one.
+    #[test]
+    fn a_resource_key_stays_out_of_the_gemini_link() {
+        let dir = TempDir::new().unwrap();
+        let body = r#"{"doc_id":"DOC5","resource_key":"KEY5","email":"x@example.com"}"#;
+        let doc = write_shortcut(&dir, "shared.gdoc", body);
+
+        let links = item_links(&doc, false).expect("a stub resolves");
+        assert_eq!(
+            links.view_url,
+            "https://docs.google.com/document/d/DOC5/edit?resourcekey=KEY5"
+        );
+        assert_eq!(
+            links.gemini_url.as_deref(),
+            Some("https://drive.google.com/drive/ai?di=DOC5")
+        );
     }
 
     /// An empty xattr is not an ID.

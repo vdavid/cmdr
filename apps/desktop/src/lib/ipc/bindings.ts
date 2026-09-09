@@ -1425,14 +1425,31 @@ export const commands = {
    */
   openPath: (path: string) => typedError<null, string>(__TAURI_INVOKE('open_path', { path })),
   /**
-   *  The web URL for a Google Drive item, or `None` when the path isn't one we can
-   *  identify. Backs "Open in Google Drive" and "Copy Google Drive link".
+   *  The Google Drive web URLs for an item, or `None` when the path isn't one we can
+   *  identify. Backs "Open in Google Drive", "Copy Google Drive link", and "Ask Gemini".
    *
-   *  Resolution (an xattr read, or a small JSON stub for Google-native docs) lives in
+   *  One call, one resolution: the caller picks the URL its command needs rather than
+   *  asking again per action. Resolution (an xattr read, or a small JSON stub for
+   *  Google-native docs, or Drive's mirror databases) lives in
    *  `file_system::google_drive`; this is the pass-through. Async with the usual
    *  blocking hop because it touches the filesystem.
    */
-  googleDriveLink: (path: string) => typedError<string | null, string>(__TAURI_INVOKE('google_drive_link', { path })),
+  googleDriveLinks: (path: string) =>
+    typedError<
+      {
+        /**
+         *  Where the item opens on the web. Always present: an item that resolves
+         *  has a page.
+         */
+        viewUrl: string
+        /**
+         *  Where Drive opens Gemini with this item as its subject. `None` for
+         *  folders, which Gemini's `?di=` parameter can't name.
+         */
+        geminiUrl: string | null
+      } | null,
+      string
+    >(__TAURI_INVOKE('google_drive_links', { path })),
   /**
    *  Make a cloud-managed file available offline (download it). **iCloud Drive only**:
    *  this routes through the `FileManager` ubiquity APIs, which accept iCloud URLs and
@@ -6291,6 +6308,20 @@ export type DragModifiers = {
   altHeld: boolean
   cmdHeld: boolean
   shiftHeld: boolean
+}
+
+// The Drive URLs one resolved item offers, all built from a single resolution.
+export type DriveItemLinks = {
+  /**
+   *  Where the item opens on the web. Always present: an item that resolves
+   *  has a page.
+   */
+  viewUrl: string
+  /**
+   *  Where Drive opens Gemini with this item as its subject. `None` for
+   *  folders, which Gemini's `?di=` parameter can't name.
+   */
+  geminiUrl: string | null
 }
 
 // Result of a dry-run operation.

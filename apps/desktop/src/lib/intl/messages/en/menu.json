@@ -546,6 +546,11 @@
     "description": "VERB phrase (imperative). Right-click menu on a file or folder stored in Google Drive: copies the web address of that item to the clipboard, so it can be pasted into a message. It copies a link, not the file. \"Google Drive\" is a product name and stays in English."
   },
 
+  "menu.context.askGemini": "Ask Gemini",
+  "@menu.context.askGemini": {
+    "description": "VERB phrase (imperative). Right-click menu on a FILE stored in Google Drive, next to \"Open in Google Drive\": opens Google Drive's Gemini AI assistant in the browser with that file as its subject, so the user can ask questions about it. \"Gemini\" is a product name and stays in English; only the verb around it moves. ❌ No trailing …: it opens a web page, not a dialog."
+  },
+
   "menu.context.share": "Share",
   "@menu.context.share": {
     "description": "VERB (imperative). Right-click menu on a file or folder, next to \"Show in Finder\": the title of a SUBMENU listing the ways macOS can send the file onward (AirDrop, Mail, Messages, Notes, and any share extension the user has installed). Use the exact word your macOS Finder uses for its own \"Share\" item, so the two menus read the same. ❌ No trailing …: it opens a submenu, not a dialog."

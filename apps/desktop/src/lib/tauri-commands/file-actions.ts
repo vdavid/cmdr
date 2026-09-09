@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import {
   commands,
+  type DriveItemLinks,
   type OpenTerminalError,
   type OpenTerminalOutcome,
   type TerminalAppList,
@@ -12,7 +13,13 @@ import {
 import { TypedFailure } from '$lib/ipc/typed-failure'
 import { throwIpcError } from './ipc-types'
 
-export type { OpenTerminalError, OpenTerminalOutcome, TerminalApp, TerminalAppList } from '$lib/ipc/bindings'
+export type {
+  DriveItemLinks,
+  OpenTerminalError,
+  OpenTerminalOutcome,
+  TerminalApp,
+  TerminalAppList,
+} from '$lib/ipc/bindings'
 
 /**
  * Opens a file with the system's default application.
@@ -104,12 +111,14 @@ export async function showFileContextMenu(
 }
 
 /**
- * The web URL for a Google Drive item, or `null` when the path isn't one we can
- * identify. Backs "Open in Google Drive" and "Copy Google Drive link"; a `null`
- * simply means those actions have nothing to act on.
+ * The Google Drive web URLs for an item, or `null` when the path isn't one we can
+ * identify. Backs "Open in Google Drive", "Copy Google Drive link", and "Ask Gemini";
+ * a `null` simply means those actions have nothing to act on. One call resolves the
+ * Drive item once, and each caller picks the URL it needs — `geminiUrl` is absent for
+ * folders, which Gemini can't take as a subject.
  */
-export async function googleDriveLink(path: string): Promise<string | null> {
-  const res = await commands.googleDriveLink(path)
+export async function googleDriveLinks(path: string): Promise<DriveItemLinks | null> {
+  const res = await commands.googleDriveLinks(path)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
