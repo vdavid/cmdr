@@ -71,21 +71,20 @@
             use:tooltip={gapLabel}
             aria-label={gapLabel}
         >
-            <Icon name="brain-circuit" size={14} />
+            <Icon name="triangle-alert" size={14} />
         </button>
     </span>
 {/if}
 
 <style>
+    /* A bare glyph, no chip: the corner sits over the titlebar, where a bordered box on a lone
+       icon reads as a blob rather than as status. The hourglass next to it presents itself the
+       same way. In the thinking state the span holds two buttons, and the gap alone is what makes
+       them read as one pair. */
     .wake-indicator {
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xxs);
-        height: 20px;
-        padding: 0 var(--spacing-xs);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
     }
 
@@ -100,6 +99,12 @@
 
     .glyph:hover {
         color: var(--color-text-primary);
+    }
+
+    .glyph:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+        border-radius: var(--radius-xs);
     }
 
     /* A wake is spending the user's money right now, so the glyph has to read as active rather

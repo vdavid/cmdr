@@ -5,7 +5,6 @@ import IconArchiveRestore from '~icons/lucide/archive-restore'
 import IconArrowLeft from '~icons/lucide/arrow-left'
 import IconArrowRight from '~icons/lucide/arrow-right'
 import IconBot from '~icons/lucide/bot'
-import IconBrainCircuit from '~icons/lucide/brain-circuit'
 import IconCheck from '~icons/lucide/check'
 import IconChevronDown from '~icons/lucide/chevron-down'
 import IconChevronRight from '~icons/lucide/chevron-right'
@@ -83,7 +82,6 @@ export const ICON_COMPONENTS = {
   'arrow-left': IconArrowLeft,
   'arrow-right': IconArrowRight,
   bot: IconBot,
-  'brain-circuit': IconBrainCircuit,
   check: IconCheck,
   'chevron-down': IconChevronDown,
   'chevron-right': IconChevronRight,

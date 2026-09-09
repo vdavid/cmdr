@@ -182,7 +182,13 @@ The resolution: a gap is reported to somebody who opted IN and hit a wall, and t
 - `thinking` — a wake is on a provider right now. ⚠️ This one renders REGARDLESS of the setting: it is spending the
   user's money at that moment, and a forced wake (or a setting turned off mid-turn) must not be able to run invisibly.
 - `needsFullDiskAccess` / `needsApiKey` — the two closable gaps, each with the screen that closes it (the system privacy
-  pane, and AI > Provider).
+  pane, and AI > Provider). Both wear the same `triangle-alert` glyph in `--color-warning-text`; the TOOLTIP is what
+  separates them, so each gap's sentence has to name its own screen. Warning tint, never error: the gap is a step left
+  to finish.
+
+Every state renders as a bare tinted glyph with no chip around it. The corner overlays the titlebar, where a bordered
+box on a lone icon reads as a blob; the hourglass beside it presents itself the same way. The `thinking` state is two
+buttons (bot + stop) held together by the span's `--spacing-xxs` gap alone.
 
 ### Its two actions
 

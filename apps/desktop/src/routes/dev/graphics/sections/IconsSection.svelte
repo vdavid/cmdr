@@ -12,7 +12,6 @@
         'arrow-left': 'Back button in the onboarding wizard.',
         'arrow-right': 'Rename metaphor between the current and new name in the Ask Cmdr bulk-rename review dialog.',
         bot: 'The status-corner wake indicator while Ask Cmdr is running a conversation it started on its own.',
-        'brain-circuit': 'The status-corner wake indicator when Ask Cmdr is allowed to watch but a gate (Full Disk Access, or an API key) still stands in the way.',
         check: 'Selected-state check in onboarding cloud-provider rows, the settings checkbox, the select and combobox dropdowns, the breadcrumb volume menu, and the transfer scan-complete marker.',
         'chevron-down': 'Closed-state indicator on the combobox trigger, and the expand toggle in the download toast.',
         'chevron-right': 'Expand toggle for the per-file error list in the transfer error dialog.',
@@ -71,7 +70,7 @@
         tag: 'Tag portal entry inside a virtual `.git` directory.',
         'trash-2': 'Type marker for a delete or trash operation row in the operation queue window.',
         'triangle-alert':
-            'Warning marker in the delete and transfer dialogs, the onboarding AI step, unreachable tabs, the Advanced and Keyboard-shortcuts settings banners, the MTP connection error, and the SMB login form.',
+            'Warning marker in the delete and transfer dialogs, the onboarding AI step, unreachable tabs, the Advanced and Keyboard-shortcuts settings banners, the MTP connection error, and the SMB login form. Also the status-corner wake indicator when Ask Cmdr is allowed to watch but a gate (Full Disk Access, or a provider) still stands in the way.',
         unplug: 'Disconnect control on a server row in the volume switcher, where a removable drive shows Eject.',
         x: 'Clear-field button in the go-to-path dialog, and the dismiss button on toasts.',
     }

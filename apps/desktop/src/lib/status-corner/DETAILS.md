@@ -33,6 +33,10 @@ One absolutely positioned flex row, right-aligned by virtue of `right: var(--spa
 row grows leftward as members join, so the hourglass keeps the exact pixels it had when it positioned itself. Members
 are separated by `--spacing-xs`.
 
+`top` is `calc(var(--spacing-sm) - var(--spacing-xxs))`, 2px above the inset `right` uses: the row overlays the 29px
+titlebar (`--titlebar-height`) and its 14px glyphs have to land on that bar's optical centre, which the plain corner
+inset misses. There is no 6px token, so the value is composed from two rather than hardcoded.
+
 The row sits in the initial containing block because no ancestor between it and the viewport is positioned
 (`.main-content` in `routes/(main)/+page.svelte` is static). That's inherited behavior, not an accident: the hourglass
 resolved its own `top`/`right` against the same box before the corner existed, and reproducing it is what makes the

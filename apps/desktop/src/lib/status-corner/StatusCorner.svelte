@@ -47,7 +47,11 @@
            exactly where the hourglass has always sat. Don't "fix" that by
            making an ancestor relative; it would move the corner. */
         position: absolute;
-        top: var(--spacing-sm);
+        /* 6px, two above the inset `right` uses: the row's 14px glyphs have to land on the
+           optical centre of the 29px titlebar (`--titlebar-height`), and the plain corner inset
+           sits them below it. Written as the token minus `--spacing-xxs` rather than a raw `6px`
+           so the nudge stays visibly relative to that inset. */
+        top: calc(var(--spacing-sm) - var(--spacing-xxs));
         right: var(--spacing-sm);
         display: flex;
         align-items: center;
