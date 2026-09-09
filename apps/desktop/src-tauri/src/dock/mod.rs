@@ -26,7 +26,7 @@ const DOCK_DOMAIN: &str = "com.apple.dock";
 /// One state rather than two booleans: "already pinned" and "can't pin" are different answers and
 /// the caller shouldn't be able to hold both.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "kind", rename_all = "camelCase")]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum DockPinState {
     /// Cmdr is installed where a tile can point at it, and no Cmdr tile is there yet.
     Offerable,
@@ -54,7 +54,7 @@ pub enum DockPinBlocker {
 
 /// Why a pin didn't happen.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "kind", rename_all = "camelCase")]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum DockPinFailure {
     /// The pin was asked for in a situation where we'd never have offered it.
     Blocked { reason: DockPinBlocker },
