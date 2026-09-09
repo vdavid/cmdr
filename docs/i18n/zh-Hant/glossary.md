@@ -240,11 +240,12 @@ reference pile is absent on the agent box, so these were verified against the LI
   `servers.refusal.hostKeyRevoked` for a key the user's own `known_hosts` marks `@revoked`. ❌ Not `失敗` / `錯誤` (§
   Voice), and not `遭到入侵`, which is the systems-and-accounts sense.
 - **sign in / signed out** · `登入` / `已登出` · the catalog's own `fileExplorer.network.signIn` = `登入` and
-  `fileExplorer.network.login.title` = `登入「{target}」`; Apple's NetAuthAgent uses `登入` for a file server
+  `servers.sheet.signInTitle` = `登入「{name}」`; Apple's NetAuthAgent uses `登入` for a file server
   (`This file server will not allow any additional users to log on.` → `檔案伺服器不允許其他使用者登入。`) · `high`
-- **server address** · `伺服器位址` · the catalog's own `fileExplorer.network.connectDialog.addressAriaLabel` · `high`.
-  ❗ `位址` for a network address, `地址` only for an email address (`common.attachEmail*`). Apple zh-HK's
-  `ConnectToWindow.strings` says `伺服器地址`, and we don't follow it.
+- **server address** · `伺服器位址` · the catalog's own `servers.refusal.invalidUrl`
+  (`That doesn't look like a server address.` = `這看起來不像伺服器位址。`) · `high`. ❗ `位址` for a network address,
+  `地址` only for an email address (`common.attachEmail*`). Apple zh-HK's `ConnectToWindow.strings` says `伺服器地址`,
+  and we don't follow it.
 - **"this Mac"** · `這部 Mac` · AP-TW live 8 `這部Mac` / 1 `這台Mac`, and `style.md` § Plurals names `部` as the Mac's
   classifier · `high`. ⚠️ The catalog has drifted to `這台 Mac` in four values (`main.oldWebkit.body`,
   `errors.listing.connectionRefused.explanation`, two `settings.*`); `settings.mediaIndex.progress.local` already says
@@ -342,10 +343,9 @@ key-match, 2026-08-29).
 - **metadata** · `中繼資料` · MS (tagged HKG + TWN) · `high`. **Apple splits and so cannot settle this**: AP-TW says
   `後設資料` (Photos), AP-HK says `元數據`. macOS-first assumes Apple speaks with one voice for Traditional Chinese, and
   here it doesn't, so following it would pick a form that is wrong for half the audience of a catalog we ship once for
-  both markets. MS's form is the only candidate tagged for both. Ships in
-  `errors.listing.attributeNotFound.explanation` and `.suggestion`. ❌ **Don't "fix" this to `後設資料` by citing
-  macOS-first**: the rule is a tiebreaker among sources, not among Apple's own regions, and it has nothing to say when
-  AP-TW and AP-HK disagree.
+  both markets. MS's form is the only candidate tagged for both. Ships in `errors.listing.attributeNotFound.explanation`
+  and `.suggestion`. ❌ **Don't "fix" this to `後設資料` by citing macOS-first**: the rule is a tiebreaker among
+  sources, not among Apple's own regions, and it has nothing to say when AP-TW and AP-HK disagree.
 - **EXIF** · `EXIF`, kept Latin · MS (HKG, TWN); Apple ships no localized label · `high`
 - **exposure / ISO / aperture** · `曝光` / `ISO 感光度` / `光圈值` · AP Preview + Spotlight (TW = HK) · `high`
 - **duration (of media)** · `播放時間` · AP QuickTime panel label (TW = HK) · `high`. ❗ Apple has three renderings;
@@ -384,9 +384,9 @@ Confirms the terms agent 3 settled, and adds what the AI rail needed. Sources as
   `必須先結束「系統設定」，然後將它重新打開` · `tentative`. The button string itself is in no bundle in the pile.
 - **Spotlight** · `Spotlight`, kept English · AP-TW = AP-HK (`NSTouchBarControlStripSpotlightTemplate` = `Spotlight` in
   both) · `confirmed`. Verified rather than assumed, since Apple DOES localize it into some other languages.
-- **Local network (the macOS permission)** · `區域網路` · AP-TW renders the privacy pane's `LOCAL_NETWORK` key that
-  way, and it is the exact label the dialog puts on screen · `confirmed`. The `local network（區域網路）` entry below
-  carries the argument and the do-not marker.
+- **Local network (the macOS permission)** · `區域網路` · AP-TW renders the privacy pane's `LOCAL_NETWORK` key that way,
+  and it is the exact label the dialog puts on screen · `confirmed`. The `local network（區域網路）` entry below carries
+  the argument and the do-not marker.
 - **Accepting incoming connections (the macOS prompt)** · `接受傳入連線` · **composed** from `連線` plus standard
   Traditional `傳入`; unattested as a whole string · `tentative`
 
@@ -1148,20 +1148,25 @@ label"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lproj`
   `SSH Protocol 2` 譯成 `SSH通訊協定2`） · `confirmed`
 - **hostname** · `主機名稱` · AP-TW = AP-HK（`AirPortSettings.loctable:wbHN`「Hostname」、多個 `Host Name:` →
   `主機名稱：`） · `confirmed`。`host` 本身仍是既有的 `主機`。
-- **Username** · `使用者名稱` · 目錄既有的 `fileExplorer.network.login.username`；AP-TW 的 NetAuthAgent 也一路寫
-  `使用者名稱`（HK 是 `用户名稱`，依台灣優先） · `confirmed`
-- **Guest / Connect as guest** · `訪客` / `以訪客身分連線` · `訪客` 是 AP-TW = AP-HK
-  (`AuthDialog.loctable:RiA-l0-ASw.title`、`GUEST`)，整句沿用目錄既有的 `fileExplorer.network.login.connectAsGuest` ·
+- **Username** · `使用者名稱` · 目錄既有的
+  `errors.listing.authRequiredEauth.suggestion`（`enter your username and password again` =
+  `重新輸入你的使用者名稱和密碼`）；AP-TW 的 NetAuthAgent 也一路寫 `使用者名稱`（HK 是 `用户名稱`，依台灣優先） ·
   `confirmed`
-- **How to connect（挑訪客或帳號的那組選項的無障礙名稱）** · `連線方式` · 沿用目錄既有的
-  `fileExplorer.network.login.connectionModeLegend`（英文是 "Connection mode"，同一個介面概念） · `high`
+- **Guest / Connect as guest** · `訪客` / `以訪客身分連線` · `訪客` 是 AP-TW = AP-HK
+  (`AuthDialog.loctable:RiA-l0-ASw.title`、`GUEST`)，整句是 `以…身分` + 上面那顆 `連線` 按鈕**自行組出來的** · `high`
+- **How to connect（挑訪客或帳號的那組選項的無障礙名稱）** · `連線方式` · **自行組出來的**：上面那顆 `連線`
+  加上目錄把英文 "How to X" 一律寫成 `X方式`
+  的既有作法（`settings.appearance.dateTimeFormat.description`：`How to display dates and times in the file list.` =
+  `檔案列表中日期和時間的顯示方式。`、`menu.view.sortBy`「Sort by」→ `排序方式`） · `high`
 - **Advanced（收合起來的進階區塊）** · `進階` · AP-TW = AP-HK（數十處，含系統設定的
   `ADVANCED_PANE_TITLE`），也是目錄既有的 `settings.section.advanced` · `confirmed`
 - **Browse…（開啟系統檔案選擇器的按鈕）** · `瀏覽…` · Finder `ConnectToWindow.strings:48.title`「Browse」→ `瀏覽`（TW =
   HK），同一張「連接伺服器」對話框上的按鈕 · `confirmed`
-- **Keychain（單獨的那個字）** · `鑰匙圈` · AP-TW = AP-HK（`MainMenu.loctable:825.title`、`Keychain` 鍵本身）；"Remember
-  in Keychain" 直接沿用目錄既有的 `fileExplorer.network.login.rememberInKeychain` = `記住在鑰匙圈中` ·
-  `confirmed`。App 名稱仍是 `「鑰匙圈存取」`。
+- **Keychain（單獨的那個字）** · `鑰匙圈` · AP-TW = AP-HK（`MainMenu.loctable:825.title`、`Keychain` 鍵本身）·
+  `confirmed`。"Remember in Keychain" = `記住在鑰匙圈中`，是這個字加上目錄既有的
+  `記住`（`settings.search.recentSearches.maxCount.label`：`Recent searches to remember` =
+  `要記住的最近搜尋數`）組出來的；同一張表單的 `servers.sheet.needsStoredSecret`
+  一字不差地引用這個標籤（`請開啟「記住在鑰匙圈中」`）。App 名稱仍是 `「鑰匙圈存取」`。
 - **passphrase** · `密語` · AP-TW = AP-HK，數量很多且一致（`P12Password.loctable:23.title`「Enter Passphrase:」→
   `輸入密語：`、`SecErrorMessages.loctable:-25260`、DiskManagement 的一整組 FileVault 字串） · `confirmed`。❗ 不寫
   `通行密碼`，Apple 的繁體套件裡零次。
@@ -1182,8 +1187,8 @@ label"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lproj`
 - **Remote folder（伺服器上要開啟的那個資料夾）** · `遠端資料夾` · `遠端` 是詞彙表既有的 remote（台灣優先，HK 是
   `遙距`），`資料夾` 是既定的 folder · `high`
 - **Reconnect automatically** · `自動重新連線` · `自動` 是 AP-TW = AP-HK 的 "Automatically"（數十處），`重新連線`
-  是目錄既有的用法（`fileExplorer.smbReconnect.title` = `正在重新連線到伺服器…`） · `high`。⚠️ Apple 自己在
-  `重新連接`（`MainMenu.loctable:Ozt-wA-9P8.title`）和
+  是目錄既有的用法（`errors.listing.deviceReconnecting.title` = `正在重新連線到裝置`、`servers.paneState.reconnecting` =
+  `正在重新連線到 {name}…`） · `high`。⚠️ Apple 自己在 `重新連接`（`MainMenu.loctable:Ozt-wA-9P8.title`）和
   `重新連線`（`ScreenSharing.loctable:RECONNECTBUTTON`）之間搖擺，目錄一律取 `重新連線`。
 - **reinstalled（伺服器重灌過，主機金鑰才會變）** · `重新安裝過` · Apple 的 "reinstall" 一律 `重新安裝` ·
   `high`。❗ 不寫口語的 `重灌`，和目錄的書面語氣不合。
@@ -1195,8 +1200,9 @@ label"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lproj`
   都不適合，因為 Cmdr 是「主動停下」而不是「辦不到」，所以取中性的 `停止`。
 - **"Signed out of {name}"（窗格標題）** · `已從 {name} 登出` · `已登出`
   是伺服器中心那一組已經確認過的狀態詞，標題形只是把受詞補回去 · `high`
-- **Sign in to {name} / Edit {name}（表單標題）** · `登入「{name}」` / `編輯「{name}」` · 沿用目錄既有的
-  `fileExplorer.network.login.title` = `登入「{target}」`；名稱照 § Punctuation 加角括號 · `high`
+- **Sign in to {name} / Edit {name}（表單標題）** · `登入「{name}」` / `編輯「{name}」` · 動詞沿用目錄既有的
+  `fileExplorer.network.signIn` = `登入`；名稱照 § Punctuation 加角括號 · `high`。英文的 `Sign in to {name}`
+  沒有引號，角括號是中文這一側加的：§ Punctuation 要求檔名、選單名和設定名都用 `「…」` 框起來，伺服器名稱同理。
 - **這一組有四個 `sameAsSourceJustification`**：`servers.sheet.protocolSmb` / `.protocolSftp` / `.protocolWebdav`
   （通訊協定名稱，Apple 的繁體套件也一律寫拉丁字母：`SMB密碼`、`WebDAV密碼`、`SSH通訊協定2`）和
   `.addressPlaceholder`（`nas.local` 是使用者會照打的主機名稱範例，翻了反而更難懂）。其餘 42 個值都和英文不同。
@@ -1490,10 +1496,10 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   `high`。❗ 不是 macOS zh-CN 的 `點按`，那是簡體那邊的詞。
 - **approve → `同意`，整本目錄一致** · 詞彙表上面已定 `approve` → `同意`；`settings.askCmdr.proactive.description`
   原本寫 `批准`，這輪跟 `suggestedOps.description` 對齊成 `在你同意之前，什麼都不會執行。` · `high`
-- **context → `上下文`；context window → `上下文視窗`；context size → `上下文大小`**
-  · Apple 的兩套繁中語料完全沒有這個 LLM 概念（zh-TW 與 zh-HK 的 `脈絡` 都是 0 次、`上下文` 都是 0 次，2026-09-09
-  量測），所以只剩 MS zh-Hant TBX：五條 `context` 詞條裡四條是同形異義的 `內容` / `執行內容`，只有 id 38882 →
-  `上下文` 是我們要的那個意思 · `tentative`（一級來源整個缺席）。四個鍵一致：
+- **context → `上下文`；context window → `上下文視窗`；context size → `上下文大小`** ·
+  Apple 的兩套繁中語料完全沒有這個 LLM 概念（zh-TW 與 zh-HK 的 `脈絡` 都是 0 次、`上下文`
+  都是 0 次，2026-09-09 量測），所以只剩 MS zh-Hant TBX：五條 `context` 詞條裡四條是同形異義的 `內容` /
+  `執行內容`，只有 id 38882 → `上下文` 是我們要的那個意思 · `tentative`（一級來源整個缺席）。四個鍵一致：
   `settings.ai.localContextSize.label` = `上下文視窗`、`settings.ai.tooltipLocal` 裡的 `隨上下文大小而變`、
   `askCmdr.error.localWindowTooSmall` = `上下文視窗`、`askCmdr.event.contextTrimmed` = `模型的上下文`。
 
