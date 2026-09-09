@@ -15,6 +15,42 @@
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
   },
+  "main.dockPinNudge.title": "Garder Cmdr dans votre Dock ?",
+  "@main.dockPinNudge.title": {
+    "sourceHash": "3a6ce9f"
+  },
+  "main.dockPinNudge.body": "Vous utilisez Cmdr depuis quelques jours, il semble donc vous convenir. Vous voulez qu''il reste en bas, juste à côté du Finder ?",
+  "@main.dockPinNudge.body": {
+    "sourceHash": "1718271"
+  },
+  "main.dockPinNudge.unpinNote": "Vous pourrez le supprimer du Dock à tout moment si vous changez d''avis.",
+  "@main.dockPinNudge.unpinNote": {
+    "sourceHash": "28748d3"
+  },
+  "main.dockPinNudge.decline": "Non, merci",
+  "@main.dockPinNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.dockPinNudge.accept": "Oui, ajouter au Dock",
+  "@main.dockPinNudge.accept": {
+    "sourceHash": "8fbdc76"
+  },
+  "main.dockPinNudge.added": "Cmdr est maintenant dans votre Dock.",
+  "@main.dockPinNudge.added": {
+    "sourceHash": "61bec58"
+  },
+  "main.dockPinNudge.addedButDockDidNotRestart": "L''icône de Cmdr est en place, mais le Dock ne s''est pas rechargé. Elle apparaîtra à votre prochaine ouverture de session.",
+  "@main.dockPinNudge.addedButDockDidNotRestart": {
+    "sourceHash": "b035470"
+  },
+  "main.dockPinNudge.managedDock": "Votre Dock est géré par un profil de configuration, Cmdr ne peut donc pas s''y ajouter. La personne qui gère ce Mac peut modifier ce réglage.",
+  "@main.dockPinNudge.managedDock": {
+    "sourceHash": "dae0836"
+  },
+  "main.dockPinNudge.notAdded": "Cmdr n''a pas pu s''ajouter au Dock cette fois-ci. Vous pouvez l''y faire glisser depuis votre dossier Applications quand vous voulez.",
+  "@main.dockPinNudge.notAdded": {
+    "sourceHash": "0d122cb"
+  },
   "main.quit.title": "{count, plural, one {Quitter alors qu''une opération est en cours ?} many {Quitter alors que {countText} opérations sont en cours ?} other {Quitter alors que {countText} opérations sont en cours ?}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"

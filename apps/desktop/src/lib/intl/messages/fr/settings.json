@@ -1551,6 +1551,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.dockPinNudgeSeen.label": "Proposition d''ajout au Dock faite",
+  "@settings.behavior.dockPinNudgeSeen.label": {
+    "sourceHash": "1f2e4f3"
+  },
+  "settings.behavior.dockPinNudgeSeen.description": "Indique si la proposition unique d''ajouter Cmdr au Dock a été faite.",
+  "@settings.behavior.dockPinNudgeSeen.description": {
+    "sourceHash": "2d62f23"
+  },
   "settings.behavior.adbHintDismissed.label": "Astuce sur le débogage USB ignorée",
   "@settings.behavior.adbHintDismissed.label": {
     "sourceHash": "ba3d7fc"

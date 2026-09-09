@@ -1542,6 +1542,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.dockPinNudgeSeen.label": "Oferta do Dock feita",
+  "@settings.behavior.dockPinNudgeSeen.label": {
+    "sourceHash": "1f2e4f3"
+  },
+  "settings.behavior.dockPinNudgeSeen.description": "Se a oferta única de adicionar o Cmdr ao Dock já foi feita.",
+  "@settings.behavior.dockPinNudgeSeen.description": {
+    "sourceHash": "2d62f23"
+  },
   "settings.behavior.adbHintDismissed.label": "Dica de depuração USB dispensada",
   "@settings.behavior.adbHintDismissed.label": {
     "sourceHash": "ba3d7fc"

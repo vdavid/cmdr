@@ -2676,3 +2676,78 @@ Hai dòng dưới hai ô đã bị làm mờ `Địa chỉ` và `Tên người d
 
 - function key bar (hàng nút lệnh phím chức năng ở cuối cửa sổ) → thanh phím chức năng · đã được chốt trong danh mục
   (`settings.appearance.showFunctionKeyBar.label`); dùng lại cho mục menu ngữ cảnh và thông báo đi kèm · high
+
+## Lời mời ghim Cmdr vào Dock (`main.dockPinNudge.*` 9 khóa + `settings.behavior.dockPinNudgeSeen.*`, 2026-09-09)
+
+Bề mặt: một thông báo một lần, hiện ra sau vài ngày dùng Cmdr, hỏi xem ứng dụng có được tự thêm biểu tượng của mình vào
+Dock macOS hay không, cộng bốn câu ngắn báo kết quả sau khi người dùng đồng ý. Hai khóa `settings.*` là cờ nội bộ, người
+dùng không bao giờ nhìn thấy.
+
+Nguồn: kho tham chiếu `_ignored/i18n/vi/` (đọc được, macOS/Finder + AppKit + SystemSettings, MS terminology) cộng bằng
+chứng Tier 1 lấy thẳng từ `Dock.app` đang cài (`vi.lproj/DockMenus.strings` so với `en.lproj`, qua
+`plutil -convert json`), macOS 26.6.2, đọc ngày 2026-09-09.
+
+### Thuật ngữ chốt trong đợt này
+
+- **Dock → `Dock`, giữ nguyên tiếng Anh** · macOS vi không bao giờ dịch tên này: Finder `MenuBar` khóa `300772.title`
+  (`Add to Dock` → `Thêm vào Dock`), `Dock.app/vi.lproj/DockMenus.strings` (`Dock Settings…` → `Cài đặt Dock…`,
+  `Remove from Dock` → `Xóa khỏi Dock`), AppKit `Common` (`… from Dock` → `… từ Dock`). Catalog cũng đã ship
+  `errors.listing.diskFullErrno.suggestion` = `… biểu tượng Thùng rác trên Dock`. ❌ Đừng lấy `thanh dock` hay `đế cắm`
+  của Microsoft · `high`.
+- **Finder → `Finder`, giữ nguyên** · `Dock.app/vi.lproj/Localizable.strings` khóa `FinderName` (`Finder` → `Finder`),
+  AppKit `Menus` (`Show in Finder` → `Hiển thị “%@” trong Finder`), Finder `Localizable` (`Search in Finder` →
+  `Tìm kiếm trong Finder`) · `high`.
+- **thư mục Applications → `thư mục Ứng dụng`** · Apple DỊCH tên thư mục này: Finder `Localizable` (`Applications` →
+  `Ứng dụng`), `LocalizableMerged` (`Go to Applications Folder` → `Đi tới thư mục Ứng dụng`), và AppKit `AppKitErrors`
+  cho gần đúng câu của ta: `Thử kéo “%@” từ Thùng rác vào thư mục Ứng dụng của bạn.` · `high`.
+- **Keep in Dock → `Giữ lại trong Dock`** · `Dock.app/vi.lproj/DockMenus.strings` khóa `KEEP_IN_DOCK` — đúng lệnh mà
+  người dùng thấy khi bấm chuột phải vào một biểu tượng trong Dock, nên tiêu đề thông báo mượn nguyên chữ này · `high`.
+- **configuration profile → `hồ sơ cấu hình`** (chữ thường trong câu) · SystemSettings `InfoPlist`
+  (`Configuration Profile` → `Hồ sơ Cấu hình`) cộng hàng chục câu trong `ErrorStrings.loctable` /
+  `authorization.prompts.loctable` viết thường trong văn xuôi (`Không thể cài đặt hồ sơ cấu hình.`,
+  `… từ hồ sơ cấu hình người dùng.`) · `high`.
+- **X is managed by Y → `X được Y quản lý`** · khuôn bị động chuẩn của Apple:
+  `Không thể đồng bộ hóa iPad “^FILENAME” vì thiết bị này được quản trị viên quản lý.` (Localizable.loctable) · `high`.
+  Tác nhân đứng GIỮA `được` và `quản lý`, đừng viết `được quản lý bởi …` cho câu ngắn.
+- **log in → `đăng nhập`** · `Dock.app/DockMenus` khóa `OPEN_AT_LOGIN` (`Open at Login` → `Mở khi đăng nhập`), AppKit
+  `Menus` (`Log Out` → `Đăng xuất`), MS terminology (`log in` / `log on` / `sign in` → `đăng nhập`) · `high`.
+- **reload → `tải lại`** · MS terminology (`reload` → `tải lại`; biến thể `nạp lại` thua vì catalog và macOS đều dùng
+  `tải`) · `high`. Khác `khởi động lại` (restart), là việc ta KHÔNG nói ở đây.
+- **offer (lời mời một lần của ứng dụng) → `đề nghị`** · MS terminology (`offer` → `đề nghị`) · `high`. Chỉ dùng cho hai
+  khóa nội bộ; câu người dùng đọc thì viết thẳng hành động (`Ghim nó cạnh Finder…`) chứ không gọi tên "lời mời".
+
+### Ghi chú theo chuỗi
+
+- **`title` → `Giữ lại Cmdr trong Dock?`** · mượn nguyên `Giữ lại trong Dock` của Dock.app rồi chèn tên sản phẩm. Bỏ
+  `của bạn` theo luật trong `style.md` (đừng rải sở hữu khi quyền sở hữu đã hiển nhiên); tiêu đề vẫn là một câu hỏi
+  thật, giữ dấu `?`.
+- **`body` → `Bạn đã dùng Cmdr được vài ngày rồi, có vẻ nó hợp với bạn. Ghim nó cạnh Finder ở dưới đó nhé?`** ·
+  `vài ngày` là cách nói mơ hồ đúng ý bản gốc; ❌ tuyệt đối không thay bằng một con số, vì ngưỡng có thể đổi. Tiếng Anh
+  nối hai vế bằng "so"; tiếng Việt để dấu phẩy gánh, câu ngắn hơn và đọc tự nhiên hơn. Tiểu từ `nhé` giữ đúng giọng mời
+  nhẹ nhàng, không ép.
+- **`unpinNote` → `Bạn có thể bỏ ghim bất cứ lúc nào nếu đổi ý.`** · `ghim` / `bỏ ghim` là cặp đã chốt ở § "Trung tâm
+  máy chủ, đợt 5", nên thân thông báo và dòng trấn an dùng chung một gốc từ, đúng như tiếng Anh ("pinned" / "unpin").
+  `bất cứ lúc nào` khớp chín chuỗi đã ship trong catalog (macOS hay viết `bất kỳ lúc nào`, nhưng nhất quán catalog thắng
+  ở đây). `đổi ý` đã có trong `onboarding.stepFda.postAction.body`.
+- **`decline` → `Không, cảm ơn`; `accept` → `Có, thêm vào Dock`** · lời từ chối lịch sự thường ngày, và vế đồng ý mượn
+  nguyên mục menu `Thêm vào Dock` của Finder. Catalog đã có khuôn `Có, …` cho nút đồng ý (`Có, tôi muốn AI`). ❌ Đừng
+  dùng `Để sau` (macOS `Not Now`): Cmdr KHÔNG hỏi lại lần nữa, nên "để sau" sẽ là nói dối.
+- **`addedButDockDidNotRestart` →
+  `Biểu tượng Cmdr đã nằm đúng chỗ, nhưng Dock chưa tải lại. Nó sẽ xuất hiện trong lần đăng nhập tới.`** · đây là chuỗi
+  dễ dịch ngược nghĩa nhất trong đợt: việc ghim ĐÃ xong, chỉ thiếu lần vẽ lại. Dùng `chưa` (chưa xảy ra, sẽ xảy ra) chứ
+  không phải `không` (đã hỏng), và mở câu bằng `đã nằm đúng chỗ` để sự thật tích cực đứng trước. Không có chữ `lỗi` hay
+  `thất bại` nào.
+- **`managedDock` →
+  `Dock của bạn được một hồ sơ cấu hình quản lý, nên Cmdr không thể tự thêm vào. Người quản lý máy Mac này có thể thay đổi điều đó.`**
+  · giữ `của bạn` ở đây vì nó mang thông tin (Dock của người này, không phải Dock nói chung).
+  `Người quản lý máy Mac này` dịch "whoever manages this Mac": nêu ai gỡ được hạn chế, không đổ lỗi và không bày cách
+  lách.
+- **`notAdded` → `Lần này Cmdr chưa vào được Dock. Bạn có thể kéo nó từ thư mục Ứng dụng vào Dock bất cứ lúc nào.`** ·
+  câu thứ hai dựng theo khuôn AppKit `Thử kéo “%@” … vào thư mục Ứng dụng của bạn.`, đảo chiều nguồn/đích. Viết rõ
+  `vào Dock` thay vì `vào đó` vì đích đã cách xa chủ ngữ. Lại dùng `chưa` để câu không đọc thành một lời tuyên bố hỏng.
+- **`settings.behavior.dockPinNudgeSeen.*` → `Đã đề nghị thêm vào Dock` /
+  `Đề nghị một lần về việc thêm Cmdr vào Dock đã được đưa ra hay chưa.`** · chép đúng khuôn của cặp khóa nội bộ hàng xóm
+  `settings.behavior.adbHintDismissed.*` (`Đã bỏ qua gợi ý về gỡ lỗi qua USB` /
+  `Dòng gợi ý một lần … đã bị bỏ qua hay chưa.`), để hai cờ đọc như một họ.
+- **Không giá trị nào có dấu nháy đơn**, nên phần nhân đôi `''` của ICU không đụng tới đợt này. Không có placeholder,
+  không có `<tag>`, không có plural/select.

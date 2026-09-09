@@ -2808,3 +2808,52 @@ Las dos líneas bajo los campos atenuados `Dirección` y `Nombre de usuario` al 
 - function key bar (la fila de botones de comando de teclas de función en la parte inferior de la ventana) → barra de
   teclas de función · ya establecido en el catálogo (`settings.appearance.showFunctionKeyBar.label`); reutilizado para
   el elemento del menú contextual y su aviso · high
+
+## El aviso de «¿dejamos Cmdr en el Dock?» (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`, 2026-09-09)
+
+- **`Dock` → `Dock`, verbatim y en masculino (`el Dock`, `al Dock`)** · Finder `LocalizableMerged` `N169.13` y `MenuBar`
+  `300772.title`, ambos «Añadir al Dock»; AppKit `Common` lo deja igual en prosa («la imagen del escritorio del Dock»).
+  Apple no traduce el nombre en ningún locale español · `high`.
+- **`Finder` → `el Finder`, con artículo** · Finder `LocalizableMerged` `A34` («Mostrar en el Finder»), AppKit `Menus`
+  («Mostrar “%@” en el Finder») y decenas más («las ventanas del Finder»). Ya asentado en el glosario; se reafirma aquí
+  porque el cuerpo del aviso lo nombra en prosa: «junto al Finder» · `high`.
+- **`Applications` folder → `la carpeta Aplicaciones`** (sin comillas ni preposición) · Finder `LocalizableMerged`
+  `TL_HELP_APPS` («Ir a la carpeta Aplicaciones») y AppKit `AppKitErrors` («Arrastra “%@” desde la papelera hasta la
+  carpeta Aplicaciones»), que además es el modelo exacto de la frase de `notAdded`, solo que en el sentido contrario ·
+  `high`.
+- **`configuration profile` → `perfil de configuración`** · SystemSettings `InfoPlist`, entrada literal «Configuration
+  Profile» → «Perfil de configuración». El verbo lo da `Localizable` `MDMDisabledSettingsPane` («Un perfil controla
+  estos ajustes.»), de ahí el `controla` de `managedDock` en vez de un `gestiona` inventado · `high`.
+- **`pin` / `unpin` (en el Dock) → `fijar` / `desfijar`**, no el `Mantener en el Dock` / `Quitar del Dock` del propio
+  menú del Dock · el catálogo ya publicó toda la familia con `fijar`/`desfijar` (`menu.tab.pinTab`,
+  `commands.tabTogglePin.label`, `commands.serversTogglePin.label`, `menu.network.pinToSwitcher`), y el inglés de estas
+  dos claves usa `pinned`/`unpin`, no el verbo de Apple. Mantener la familia unida pesa más que copiar el menú del Dock,
+  que además no está en la pila (Dock.app no se mina aquí) · `high`.
+- **`Cmdr` es masculino cuando lo sustituye un pronombre**: `fijarlo`, `desfijarlo`, `arrastrarlo`. Concuerda con
+  `el Finder` y `el Dock`, y evita el choque con `la app` · `high`.
+- **«a few days» nunca se convierte en un número: `Llevas unos días usando Cmdr`** · `unos días` es la cantidad vaga
+  idiomática, y `llevar` + gerundio es la forma española natural para una acción que sigue en curso (el `desde hace` del
+  `style.md` sirve para una duración con cifra, no para esta). El umbral real puede moverse, así que cualquier cifra
+  sería mentira · `high`.
+- **Las cuatro claves de resultado no dicen que algo falló, dicen qué pasa** (regla de la casa, sin «error», «fallo» ni
+  «no se pudo» a secas):
+  - `addedButDockDidNotRestart` afirma el hecho positivo primero, «El icono de Cmdr ya está en su sitio», y solo después
+    nombra lo que falta, «pero el Dock todavía no lo muestra». El `todavía` es lo que impide leerlo como «no se fijó»:
+    el icono SÍ está, únicamente falta el redibujado. La forma negativa («el Dock no se ha recargado») invierte el
+    sentido de la clave y es el peor error posible aquí. `a su sitio` reutiliza el patrón del catálogo
+    (`devolver … a su sitio`) · `high`.
+  - `managedDock` nombra quién puede levantar la restricción con un relativo neutro, `Quien administre este Mac`, en vez
+    del gendered `el administrador` de AppKit («Ponte en contacto con el administrador…») · `high`.
+  - `notAdded` usa `Cmdr no pudo entrar en el Dock esta vez`: `no pudo` + sujeto nombrado es el patrón calmado del
+    catálogo (`Cmdr no pudo eliminar {name}`), y `esta vez` conserva el matiz de que no es permanente · `high`.
+- **`Yes, add it to my Dock` → `Sí, añadir a mi Dock`, en infinitivo** · la convención de botones del `style.md`
+  (infinitivo) más la elipsis que Finder licencia con «Añadir al Dock» / «Añadir a favoritos»: el español admite aquí
+  `añadir` sin objeto directo. Un `Sí, añádelo…` imperativo se leería como si la app mandara al usuario · `high`.
+- **`No, thanks` → `No, gracias`** · rechazo cortés cotidiano, la forma que usa cualquier hispanohablante · `high`.
+- **`change your mind` → `cambiar de idea`** · locución fija y sin género, frente a `cambiar de opinión` (más formal) ·
+  `high`.
+- **Las dos claves internas siguen el patrón de sus hermanas**: etiqueta = sintagma nominal + participio
+  (`Oferta del Dock hecha`, junto a `Aviso de macOS antiguo mostrado`), descripción = `Si ya se hizo …` en pretérito
+  (junto a `Si ya se mostró el aviso único sobre desfijar servidores.`) · `high`.
+- Ninguno de los once valores lleva apóstrofo, así que no hay nada que doblar para ICU, y ninguno coincide con el
+  inglés, así que no hace falta `sameAsSourceJustification`.

@@ -1540,6 +1540,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.dockPinNudgeSeen.label": "A Dock-ajánlat megjelent",
+  "@settings.behavior.dockPinNudgeSeen.label": {
+    "sourceHash": "1f2e4f3"
+  },
+  "settings.behavior.dockPinNudgeSeen.description": "Megjelent-e már az egyszeri ajánlat, hogy a Cmdr bekerüljön a Dockba.",
+  "@settings.behavior.dockPinNudgeSeen.description": {
+    "sourceHash": "2d62f23"
+  },
   "settings.behavior.adbHintDismissed.label": "Az USB-hibakeresés tippje elvetve",
   "@settings.behavior.adbHintDismissed.label": {
     "sourceHash": "ba3d7fc"

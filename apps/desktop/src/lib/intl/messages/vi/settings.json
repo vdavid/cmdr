@@ -1538,6 +1538,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.dockPinNudgeSeen.label": "Đã đề nghị thêm vào Dock",
+  "@settings.behavior.dockPinNudgeSeen.label": {
+    "sourceHash": "1f2e4f3"
+  },
+  "settings.behavior.dockPinNudgeSeen.description": "Đề nghị một lần về việc thêm Cmdr vào Dock đã được đưa ra hay chưa.",
+  "@settings.behavior.dockPinNudgeSeen.description": {
+    "sourceHash": "2d62f23"
+  },
   "settings.behavior.adbHintDismissed.label": "Đã bỏ qua gợi ý về gỡ lỗi qua USB",
   "@settings.behavior.adbHintDismissed.label": {
     "sourceHash": "ba3d7fc"

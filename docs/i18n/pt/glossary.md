@@ -2515,3 +2515,97 @@ Chaves `onboarding.cloudSetup.*`, revistas contra a pilha de referência (`pt-BR
 - **`then` de um passo em duas etapas vira `e depois`**, não some: `onboarding.cloudSetup.step.lmStudioServer` diz
   `Carregue um modelo no LM Studio e depois inicie o servidor local`, porque a ordem é a informação do passo.
 - `Ollama`, `LM Studio`, `Azure OpenAI`, `Azure`, `api-version` e o comando `ollama pull llama3.2` ficam verbatim.
+  contexto e o respectivo toast · high
+
+## O convite para fixar o Cmdr no Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`, 2026-09-09)
+
+Pilha de referência lida em `_ignored/i18n/pt-BR/` (o conjunto brasileiro; o `pt/` nu é europeu, § style.md).
+
+### Os três nomes da Apple
+
+- **`Dock` → `Dock`, verbatim.** O macOS pt-BR não traduz: o Finder publica `Add to Dock` → **`Adicionar ao Dock`**
+  (`macOS/Finder/LocalizableMerged.json` `N169.13` e `macOS/Finder/MenuBar.json` `300772.title`, lidos em 2026-09-09). É
+  a única ocorrência de `Dock` em toda a pilha macOS pt-BR, e ela mantém a palavra inglesa · confirmed
+- **`Finder` → `Finder`, verbatim**, masculino e com artigo (`no Finder`, `do Finder`, `ao lado do Finder`) ·
+  `macOS/Finder/Localizable.json` (`Search for files and folders in Finder` → `Busca arquivos e pastas no Finder`;
+  `New Finder windows show:` → `Novas janelas do Finder mostram:`) · confirmed
+- **A pasta `Applications` → `pasta Aplicativos`** · `macOS/Finder/LocalizableMerged.json` `TL_HELP_APPS`
+  (`Ir para a pasta Aplicativos`), `TL5` e `GROUP_APPLICATIONS`, mais `macOS/Finder/Localizable.json` (`Applications` →
+  `Aplicativos`). O catálogo já publica a forma com possessivo em `updates.moveToApplicationsDialog.howTo`
+  (`arraste-o para a sua pasta Aplicativos`), e `notAdded` copia esse molde · confirmed
+- **`configuration profile` → `perfil de configuração`** · Apple, `macOS/Finder/InfoPlist.json` (`Configuration Profile`
+  → `Perfil de Configuração`); a Microsoft pt-BR usa a mesma forma. Em caixa de frase aqui, como o resto do catálogo ·
+  confirmed
+- **`managed` → `gerenciado`** · macOS pt-BR (`Managed iCloud Drive` → `iCloud Drive Gerenciado`) e o próprio catálogo
+  (`errors.provider.*`: `Esta pasta é gerenciada pelo …`). O agente que administra vira `Quem gerencia este Mac`, o
+  mesmo verbo, para a frase não trocar de família no meio · confirmed
+- **`log in` (na conta do Mac) → `iniciar a sessão`** · o termo Apple já travado neste glossário para `Sign in`
+  (`Iniciar Sessão…`, Finder `NE104`) e já publicado em `fileExplorer.navigation.connectionTooltipNeedsSignIn` e
+  `servers.paneState.signedOutNothingToAsk` · confirmed
+
+### `pin` / `unpin` no Dock: `fixar` / `desafixar`
+
+O par já é o do catálogo (`menu.tab.pinTab`/`unpinTab`, `menu.network.pinToSwitcher`/`unpin`,
+`commands.tabTogglePin.label`, `servers.pinHint.body`) e o da Microsoft pt-BR (`fixar` / `desafixar`, TBX). O inglês
+pede que `pinned` (body) e `unpin` (unpinNote) continuem parentes, e `fixado` / `desafixar` são a mesma raiz · confirmed
+
+O botão de aceitar NÃO usa esse par: ele copia o rótulo da Apple, **`Sim, adicionar ao Dock`**, porque é literalmente a
+ação que o Finder chama de `Adicionar ao Dock`. Quatro palavras, cabe no botão. O possessivo do inglês (`my Dock`) cai,
+como cai em quase todo rótulo de ação em pt-BR.
+
+### `No, thanks` → `Não precisa`, e por que não `Não, obrigado`
+
+`obrigado` concorda com QUEM FALA, então num botão ele impõe um gênero ao usuário. A § "Gender and inclusive language"
+do `style.md` manda reestruturar para o neutro sempre que o resultado ainda soe natural, e `Não precisa` é uma recusa
+educada corriqueira em pt-BR, sem gênero, curta e definitiva (o Cmdr não pergunta de novo). Recusadas:
+
+- `Não, obrigado` · gendered · o motivo acima.
+- `Agora não` · é a tradução já publicada de `Not now` (`askCmdr.consent.decline`) e promete uma próxima vez que não
+  existe: depois deste botão o convite nunca mais aparece.
+- `Não, valeu` · gíria demais para o registro do catálogo.
+
+Confiança: `high` no neutro, `medium` em `Não precisa` ser a melhor das neutras.
+
+### As quatro linhas de desfecho não podem soar como falha
+
+Regra da casa (nenhuma mensagem de resultado usa `erro` nem `falha`, em nenhuma língua), então nenhuma das quatro traz
+`erro`, `falha`, `falhou`, `não foi possível` nem culpa alguém:
+
+- `added` · **`O Cmdr agora está no Dock.`** · fato consumado, sem parabéns. O sujeito vem por extenso (`O Cmdr`), como
+  manda a § "Uma frase de resultado nunca fica sem sujeito" do `style.md`.
+- `addedButDockDidNotRestart` ·
+  **`O ícone do Cmdr já está no lugar, mas o Dock não recarregou. Ele vai aparecer na próxima vez que você iniciar a sessão.`**
+  · o `já está no lugar` é o ponto inteiro da chave: a fixação ACONTECEU, só o redesenho ficou faltando.
+  `não recarregou` descreve o Dock, não uma falha do Cmdr. ❌ Nunca escrever `não foi adicionado` aqui.
+- `managedDock` ·
+  **`Seu Dock é gerenciado por um perfil de configuração, então o Cmdr não consegue se adicionar. Quem gerencia este Mac pode mudar isso.`**
+  · `não consegue` (capacidade) em vez de `não pode` (permissão), que soaria a proibição pessoal; a segunda frase nomeia
+  quem levanta a restrição, sem sugerir contorno.
+- `notAdded` ·
+  **`O Cmdr não entrou no Dock desta vez. Você pode arrastá-lo da sua pasta Aplicativos até o Dock quando quiser.`** ·
+  `não entrou … desta vez` é factual e não acusa ninguém; a saída manual vem no molde já publicado de
+  `updates.moveToApplicationsDialog.howTo`. O `Dock` repete de propósito: sem ele, `arrastá-lo` fica sem destino.
+
+### `a few days` fica vago
+
+**`há alguns dias`**, nunca um número. O limiar pode mudar e o contador só começou a existir quando a funcionalidade
+saiu, então qualquer numeral seria mentira para metade de quem lê. O progressivo é **gerúndio** (`vem usando`), a forma
+pt-BR; `está a usar` seria marcador pt-PT (§ style.md).
+
+### Ênclise nesta família
+
+`deixá-lo`, `desafixá-lo` e `arrastá-lo` são seguros porque o único antecedente possível no toast é masculino (`o Cmdr`,
+`o ícone`), o critério que o `style.md` já fixa em "Um pronome enclítico só entra quando o gênero fecha sozinho".
+Ênclise sempre, nunca próclise.
+
+### As duas chaves internas
+
+`settings.behavior.dockPinNudgeSeen.*` nunca aparece na tela. Seguem o molde das irmãs `*Seen`
+(`openTerminalHereToastSeen`, `doubleClickOnPaneNotificationSeen`, `serversPinHintSeen`): rótulo em frase nominal
+(`Oferta do Dock feita`) e descrição no formato `Se a … única … já foi …`
+(`Se a oferta única de adicionar o Cmdr ao Dock já foi feita.`) · high
+
+### Bandeira de revisão desta rodada
+
+- `Não precisa` para `No, thanks`: neutro e natural, mas é a escolha menos literal das onze. Se David preferir o
+  literal, a alternativa é `Não, obrigado`, com o custo de gênero descrito acima.

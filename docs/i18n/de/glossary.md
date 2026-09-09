@@ -2555,3 +2555,62 @@ wird.
 - function key bar (die Zeile mit den Funktionstasten-Befehlsschaltflächen am unteren Fensterrand) →
   Funktionstastenleiste · bereits im Katalog festgelegt (`settings.appearance.showFunctionKeyBar.label`); für das
   Kontextmenü-Element und den zugehörigen Toast wiederverwendet · high
+
+## Das Dock-Angebot (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`, 2026-09-09)
+
+Ein einmaliger Toast, der nach ein paar Tagen fragt, ob Cmdr sein Symbol im Dock behalten darf, plus die vier
+Ergebnismeldungen danach. Apples eigenes Dock-Menü liefert für fast jeden Begriff die fertige deutsche Formulierung, und
+zwar als geschlossenes Wortpaar — deshalb ist hier praktisch nichts konstruiert.
+
+Quelle für den ganzen Block: `/System/Library/CoreServices/Dock.app/Contents/Resources/{en,de}.lproj/DockMenus.strings`
+(`plutil -convert json`, live macOS 26.6.2, Build 25G83, 2026-09-09), ergänzt um die Referenzsammlung
+(`_ignored/i18n/de/macOS/`).
+
+- **`Dock` bleibt `Dock`** und ist NEUTRUM: Apple schreibt „Im Dock behalten“, „Aus dem Dock entfernen“, „Zum Dock
+  hinzufügen“, „aus dem Dock“ · `DockMenus` `KEEP_IN_DOCK`/`REMOVE_FROM_DOCK`, Finder `de` `N169.13`/`300772.title`,
+  AppKit („Beim Abrufen des Schreibtischbilds aus dem Dock …“) · high. Der Katalog benutzt es schon so
+  (`errors.listing.diskFullErrno.suggestion`: „das Papierkorb-Symbol im Dock“).
+- **`Finder` bleibt `Finder`** · `DockMenus` `SHOW_IN_FINDER` → „Im Finder anzeigen“, `OPEN_IN_FINDER` → „Im Finder
+  öffnen“ · high.
+- **`Applications` (der Ordner) → `Ordner „Programme“`** · Finder `de` `TL_HELP_APPS` („Go to the Applications folder“ →
+  „Gehe zum Ordner „Programme““), Finder-Seitenleiste `Applications` → `Programme`, AppKit („Versuche, „%@“ aus dem
+  Papierkorb in deinen „Programme“-Ordner zu bewegen.“) · high. Apple schreibt beide Stellungen; die Form mit
+  vorangestelltem `Ordner` liest sich im Fließtext besser und steht so auch im Katalog
+  (`…downloadsNotifications.description`: „deinem Ordner „Downloads““).
+- **`pin` / `unpin` (Dock-Sinn) → `im Dock behalten` / `aus dem Dock entfernen`** · `DockMenus` `KEEP_IN_DOCK` („Im Dock
+  behalten“) und `REMOVE_FROM_DOCK` („Aus dem Dock entfernen“) · high. Apples Paar trägt denselben Gegensatz wie das
+  englische `pinned`/`unpin`, deshalb übernimmt der Toast es wörtlich: der Titel ist zeichengleich
+  `Cmdr im Dock behalten?`, und `unpinNote` sagt „wieder aus dem Dock entfernen“. ❌ NICHT `fixieren`/`lösen`: das ist
+  im Katalog schon der Server- und Tab-Sinn (`menu.tab.unpinTab`, `commands.serversTogglePin.label`), und Apple selbst
+  benutzt `fixieren` nur für Safari-Tabs (`MainMenu.strings` `PrR-Dj-zwG.title` „Pin Tab“ → „Tab fixieren“).
+- **`Add to Dock` → `Zum Dock hinzufügen`** · Finder `de` `300772.title` · high. Die Zustimmungstaste wird damit
+  `Ja, zum Dock hinzufügen` (vier Wörter, passt in eine schmale Taste). Das englische Possessiv „my Dock“ fällt weg:
+  Apple behält im Deutschen durchweg den Artikel, nie ein Possessiv (§ Terms, „Add to X“).
+- **`log in` (sich am Mac anmelden) → `Anmeldung`** · `DockMenus` `OPEN_AT_LOGIN` → „Bei der Anmeldung öffnen“ · high.
+  Daher `Bei deiner nächsten Anmeldung ist es da.`
+- **`configuration profile` → `Konfigurationsprofil`** · macOS-Referenzsammlung, Schlüssel `Configuration Profile` in
+  `de/macOS/` · high.
+- **`drag` (etwas mit der Maus irgendwohin ziehen) → `ziehen`** · AppKit `de` („Ziehe deine Favoriten unten aus dem
+  Bildschirm in die Touch Bar …“, „Du kannst das Symbol eines Dokuments nicht aus diesem Fenster ziehen …“) · high.
+- **`Whoever manages this Mac` → `Wer diesen Mac verwaltet`** · Finder `de` `LA32` nennt genau diese Rolle („… oder an
+  die Person, die deinen Computer verwaltet.“) · high. Der `Wer …`-Relativsatz ist die kürzere neutrale Form; ❌ Apples
+  `deine:n Netzwerkadmin` aus derselben Zeile NICHT übernehmen, Gender-Glyphen sind wegen der Screenreader gesperrt.
+
+Formulierungsentscheidungen in diesem Set:
+
+- **„ein paar Tage“ trägt die Vagheit, nie eine Zahl.** Die Schwelle kann sich verschieben, also steht im Body
+  `seit ein paar Tagen` und sonst nichts.
+- **`addedButDockDidNotRestart` darf NICHT nach Misserfolg klingen**, denn das Symbol liegt schon im Dock; es fehlt nur
+  das Neuzeichnen. Deshalb die Reihenfolge „liegt schon im Dock, … hat es nur noch nicht neu geladen“: das Ergebnis
+  zuerst, die Einschränkung als Nebensatz. Kein `Fehler`, kein `fehlgeschlagen` (Cmdr-Stilregel, gilt auch für die
+  anderen drei Ergebnismeldungen).
+- **`notAdded` sagt, was geht, statt was nicht ging**: „Cmdr ist diesmal nicht ins Dock gekommen.“ und danach der
+  Handweg. `dorthin` zeigt auf das Dock zurück und spart die zweite Nennung.
+- **Rückverweis über `das Symbol`, nicht über ein Pronomen an Cmdr.** Der Body führt `das Symbol` ein, `unpinNote` und
+  `notAdded` greifen es auf. Damit hängt kein `es` in der Luft, und der Genitiv `Cmdrs` bleibt draußen (Stilregel: „von
+  Cmdr“).
+- **`No, thanks` → `Nein, danke`, ❌ nicht `Später` / `Nicht jetzt`.** Cmdr fragt danach nie wieder, ein Aufschub-Wort
+  wäre also gelogen. Apples `Not Now` → `Später` und der Katalogeintrag `askCmdr.consent.decline` („Nicht jetzt“) meinen
+  beide den vertagten Fall, nicht diesen.
+- **Die zwei `settings.behavior.dockPinNudgeSeen.*`-Werte sind intern** und folgen dem Nachbarpaar
+  `settings.behavior.adbHintDismissed.*` in der Form (Partizip-Label, `Ob das einmalige …`-Beschreibung).

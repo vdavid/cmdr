@@ -283,6 +283,13 @@ second half is now a normal plural with a real verb
   een per-rij goedkeur-of-weiger-dialoog, dus `Beoordeel de bestandsbewerkingen …`, in lijn met de al vastgelegde keuze
   voor "Review file renames". De buurman `commands.logOperationLog.description` houdt `Bekijk`, want zijn Engels is "See
   a history of your file operations…": alleen kijken, geen goedkeuringsstap.
+- **`Dock` blijft Engels en krijgt het lidwoord `het`.** Apple laat het lidwoord weg in korte labels
+  (`Voeg toe aan Dock`, `Verwijder uit Dock`), maar zet het er in een zin wél bij (`Toon/verberg het Dock automatisch`,
+  Systeeminstellingen). Kies op de vorm: label zonder, zin met. De bezittelijke vorm `je Dock` mag waar het Engels
+  `your Dock` zegt. Bewijs: `glossary.md` § Het Dock-aanbod.
+- **De map Applications heet in het Nederlandse macOS `Apps`, niet `Programma's`.** Finder gebruikt `Apps` in de
+  navigatiekolom, het Ga-menu en de knopbaltip `Ga naar de map ‘Apps’`; `Programma's` leeft alleen nog in
+  `Hulpprogramma's`. Schrijf `de map ‘Apps’`, met de enkele krulaanhalingstekens die deze gids voorschrijft.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -369,6 +376,11 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
 - **"Click to set one up in settings." → `Klik om er een te kiezen in instellingen.`** (`askCmdr.wake.needsApiKey`): the
   literal `in te stellen in instellingen` jangles, so the verb follows what the key's description says actually happens
   (the settings screen is where the provider is picked). Confirm the swap from "set up" to "kiezen".
+- **`pin` in het Dock → `vastzetten` / `losmaken`** (`main.dockPinNudge.body`, `.unpinNote`): het paar dat de rest van
+  de catalogus gebruikt, maar Apples eigen Dock-menu zegt `Permanent in Dock` en `Verwijder uit Dock`. Bevestig dat de
+  catalogusconsistentie hier zwaarder weegt dan Apples woorden voor dezelfde handeling.
+- **`dus het lijkt goed te bevallen`** (`main.dockPinNudge.body`): vrijere weergave van "so it seems to be working for
+  you". Letterlijker is `dus het werkt blijkbaar goed voor je`, wat stroever leest. Bevestig de toon.
 - **"camera details" → `cameragegevens`** (`askCmdr.consent.item.contents`, `contentsRule`, `whatsNew.body`): a coined
   compound for a photo's EXIF block, no source has a collective noun for it. Confirm it reads as "what the camera
   recorded", not "data about the camera". Evidence and the fallback: `glossary.md` § Ask Cmdr looks inside files.

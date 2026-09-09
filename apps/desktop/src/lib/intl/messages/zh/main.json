@@ -15,6 +15,42 @@
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
   },
+  "main.dockPinNudge.title": "要把 Cmdr 留在程序坞里吗？",
+  "@main.dockPinNudge.title": {
+    "sourceHash": "3a6ce9f"
+  },
+  "main.dockPinNudge.body": "你已经用了 Cmdr 好几天了，看来还挺顺手。要不要把它固定在下面的 Finder 旁边？",
+  "@main.dockPinNudge.body": {
+    "sourceHash": "1718271"
+  },
+  "main.dockPinNudge.unpinNote": "改主意的话，随时都能取消固定。",
+  "@main.dockPinNudge.unpinNote": {
+    "sourceHash": "28748d3"
+  },
+  "main.dockPinNudge.decline": "不用了，谢谢",
+  "@main.dockPinNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.dockPinNudge.accept": "好，添加到程序坞",
+  "@main.dockPinNudge.accept": {
+    "sourceHash": "8fbdc76"
+  },
+  "main.dockPinNudge.added": "Cmdr 已经在程序坞里了。",
+  "@main.dockPinNudge.added": {
+    "sourceHash": "61bec58"
+  },
+  "main.dockPinNudge.addedButDockDidNotRestart": "Cmdr 的图标已经放好了，只是程序坞还没刷新。下次登录 Mac 时它就会出现。",
+  "@main.dockPinNudge.addedButDockDidNotRestart": {
+    "sourceHash": "b035470"
+  },
+  "main.dockPinNudge.managedDock": "程序坞由配置描述文件管理，所以 Cmdr 无法把自己加进去。管理这台 Mac 的人可以更改这项设置。",
+  "@main.dockPinNudge.managedDock": {
+    "sourceHash": "dae0836"
+  },
+  "main.dockPinNudge.notAdded": "Cmdr 这次没能添加到程序坞。你随时可以把它从“应用程序”文件夹拖过去。",
+  "@main.dockPinNudge.notAdded": {
+    "sourceHash": "0d122cb"
+  },
   "main.quit.title": "{count, plural, other {有 {countText} 项操作仍在进行，要退出吗？}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"

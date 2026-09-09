@@ -322,6 +322,13 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   nem áll szigorúan szemben egymással, a magyar viszont a szállított katalógusban végig így osztja:
   `Nyisd meg a csevegést` (panel), `Új csevegés`, de `Ezt a beszélgetést a Cmdr kezdte` és
   `A Cmdr kezdeményezhet beszélgetést` (egy konkrét szál). Új kulcs ezt kövesse.
+- **A `Dock` és a `Finder` angolul marad, és a ragjuk kötőjel nélkül tapad**: `a Dockban`, `a Dockodban`, `a Dockomba`,
+  `a Finderben`, `a Finder mellé`. Mindkettő végi betű a kiejtett hangot írja, tehát az AkH kötőjelszabálya nem lép be.
+  Összetételben viszont kötőjel jár (`Finder-ablak`, `Dock-ajánlat`). Az `Applications` mappa magyar neve `Alkalmazások`
+  (az Apple lefordítja). Bizonyítékok: `glossary.md` § A Dockba kerülés egyszeri ajánlata.
+- **⚠️ A `Programok mappa` a katalógus régi elsodródása**, nem a mai macOS neve; három szállított kulcs viszi még
+  (`updates.moveToApplicationsDialog.title`/`.howTo`, `onboarding.stepFda.step2.tip`). Új szövegbe `Alkalmazások` megy;
+  a hármat egy külön menetnek kell átsöpörnie.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

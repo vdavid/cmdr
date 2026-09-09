@@ -15,6 +15,42 @@
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
   },
+  "main.dockPinNudge.title": "Cmdr im Dock behalten?",
+  "@main.dockPinNudge.title": {
+    "sourceHash": "3a6ce9f"
+  },
+  "main.dockPinNudge.body": "Du benutzt Cmdr jetzt seit ein paar Tagen, es scheint dir also zu gefallen. Soll das Symbol unten neben dem Finder bleiben?",
+  "@main.dockPinNudge.body": {
+    "sourceHash": "1718271"
+  },
+  "main.dockPinNudge.unpinNote": "Du kannst es jederzeit wieder aus dem Dock entfernen, wenn du es dir anders überlegst.",
+  "@main.dockPinNudge.unpinNote": {
+    "sourceHash": "28748d3"
+  },
+  "main.dockPinNudge.decline": "Nein, danke",
+  "@main.dockPinNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.dockPinNudge.accept": "Ja, zum Dock hinzufügen",
+  "@main.dockPinNudge.accept": {
+    "sourceHash": "8fbdc76"
+  },
+  "main.dockPinNudge.added": "Cmdr ist jetzt im Dock.",
+  "@main.dockPinNudge.added": {
+    "sourceHash": "61bec58"
+  },
+  "main.dockPinNudge.addedButDockDidNotRestart": "Das Symbol von Cmdr liegt schon im Dock, das Dock hat es nur noch nicht neu geladen. Bei deiner nächsten Anmeldung ist es da.",
+  "@main.dockPinNudge.addedButDockDidNotRestart": {
+    "sourceHash": "b035470"
+  },
+  "main.dockPinNudge.managedDock": "Dein Dock wird von einem Konfigurationsprofil verwaltet, deshalb kann Cmdr sich nicht selbst hinzufügen. Wer diesen Mac verwaltet, kann das ändern.",
+  "@main.dockPinNudge.managedDock": {
+    "sourceHash": "dae0836"
+  },
+  "main.dockPinNudge.notAdded": "Cmdr ist diesmal nicht ins Dock gekommen. Du kannst das Symbol jederzeit aus dem Ordner „Programme“ dorthin ziehen.",
+  "@main.dockPinNudge.notAdded": {
+    "sourceHash": "0d122cb"
+  },
   "main.quit.title": "{count, plural, one {Ein Vorgang läuft noch. Trotzdem beenden?} other {{countText} Vorgänge laufen noch. Trotzdem beenden?}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"

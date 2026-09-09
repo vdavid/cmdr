@@ -2489,6 +2489,54 @@ LEVANDE macOS-paketen (macOS 26.6.2, build 25G83, läst 2026-09-07; `.loctable` 
 - **Dismiss → `Avfärda`** · katalogens genomgående form på sju systernycklar (`downloads.empty.dismiss`,
   `crashReporter.dialog.dismiss`, `errorReporter.sentToast.dismiss`, `lowDiskSpace.toast.closeTooltip` med flera) ·
   `high`. Skärmläsarnamn på ×-knappen, alltså imperativ.
+
+## Dock-erbjudandet: engångsfrågan om att lägga Cmdr i Dock (2026-09-09; 9 `main.dockPinNudge.*` + 2 `settings.behavior.dockPinNudgeSeen.*`)
+
+En avisering som dyker upp några dagar in i användningen och frågar om Cmdr får lägga sig i Dock, plus de fyra korta
+beskeden efter ett ja. Hela ytan pekar på macOS egna Dock, så macOS ordval vinner enligt style.md § ”Copy som pekar på
+en systemyta stavas som macOS stavar den”. Belägg dels ur referenshögen (`_ignored/i18n/sv/`, läst 2026-09-09), dels ur
+det LEVANDE systemet (macOS 26.6.2, build 25G83, läst 2026-09-09) där högen inte har Dock.app.
+
+- **Dock → `Dock`, oböjt, utan artikel och utan possessiv** · Dock.app `sv.lproj/DockMenus.strings`: `KEEP_IN_DOCK` =
+  ”Behåll i Dock”, `REMOVE_FROM_DOCK` = ”Ta bort från Dock”, `DOCK_SETTINGS` = ”Dock-inställningar…”; Finder
+  `MenuBar.json` `300772.title` = ”Lägg till i Dock”; AppKit `Common.json` ”…hämtades från Dock” · `high`. Alltså
+  `i Dock` / `från Dock`, aldrig `i Docken` eller `i din Dock`. Engelskans ”your Dock” tappar possessiven i svenskan,
+  eftersom Apple aldrig sätter en. Sammansättningar bindestrecksbinds (`Dock-inställningar`, `Dock-erbjudande`).
+- **Keep in Dock → `Behåll i Dock`; Remove from Dock → `Ta bort från Dock`** · Dock.app `DockMenus.strings`, ordagrant ·
+  `high`. Det är parets kanoniska form, så `pin`/`unpin` på DENNA yta blir `behåll` / `ta bort`, ❌ inte katalogens
+  `fäst` / `lossa`. De två hör till Cmdrs egna ytor (flikar, servrar; se § Inbyggda menyer och
+  `commands.serversTogglePin.label`); Dock är Apples yta och tar Apples verb. `ta bort` krockar inte med style.md:s
+  ”reservera `ta bort` för att plocka ur en lista” — en symbol ur Dock ÄR den betydelsen, inte radering från disk.
+- **Add to Dock → `Lägg till i Dock`** · Finder `MenuBar.json` `300772.title` · `high`. Ja-knappen blir därför
+  `Ja, lägg till i Dock` (fem ord, ryms på en knapp).
+- **Applications folder → `mappen Appar`** · macOS 26 har bytt namn på mappen: Finder `Localizable.json`
+  `Applications`/`Apps` → ”Appar”, `LocalizableMerged.json` `GROUP_APPLICATIONS` → ”Appar”, Finder `MenuBar.json`
+  `258.title` → ”Appar”, AppKit `Menus.json` `Applications` → ”Appar” · `high`. ❌ Inte längre `Program`. AppKit
+  `AppKitErrors.json` ger dessutom hela dra-meningen som modell: ”Försök med att dra ”%@” från papperskorgen till mappen
+  Appar.” — alltså `dra … från mappen Appar`, med `mappen` framför namnet.
+- **Finder → `Finder`, oböjt** · Finder `MenuBar.json` genomgående (”Nytt Finder-fönster”, ”Om Finder”, ”Avsluta
+  Finder”) · `high`. Redan katalogens form.
+- **configuration profile → `konfigurationsprofil`** · SystemSettings `InfoPlist.json`, ”Configuration Profile” =
+  ”Konfigurationsprofil” · `high`. Gemen mitt i mening (svensk meningsversalisering).
+- **managed by (en MDM-styrd inställning) → `styrs av`** · SystemSettings `Localizable.json` `MDMDisabledSettingsPane` =
+  ”De här inställningarna styrs av en profil.” · `high`. Apples egen formel för exakt den här situationen. `hanteras av`
+  sparas till personen som administrerar maskinen (”Den som hanterar den här Macen”), så engelskans avsiktliga
+  upprepning managed/manages överlever som styrs/hanterar.
+- **icon (appens symbol i Dock) → `symbol`** · katalogens satta ord (`useAppIconsForDocuments`: ”appsymboler”,
+  ”filtypssymboler”; § statussymbol) och macOS Finder (”Öka symbolstorlek”, ”Som symboler”) · `high`. Genitiv på
+  varumärket enligt style.md: `Cmdrs symbol` (konsonantslut tar naket `-s`).
+- **the Dock didn't reload → `Dock startade inte om`** · Dock.app `DockMenus.strings` `RELAUNCH` = ”Starta om” · `high`.
+  Det som faktiskt inte hände är att Dock-processen inte startade om. ❗ Meningen får ALDRIG säga att fästningen
+  uteblev: symbolen ÄR på plats, bara omritningen saknas. Därför `Cmdrs symbol är på plats, men Dock startade inte om.`
+  — påståendet om att den är på plats står först och är det som bär.
+- **”No, thanks” → `Nej tack`** · svensk standardform, utan komma (Språkrådet) · `high`. ❌ Inte katalogens `Inte nu`
+  (`askCmdr.consent.decline`): den lovar en ny fråga senare, och Cmdr frågar aldrig igen efter det här nejet.
+- **Engångsflaggan i Inställningar följer systerraderna** · `Erbjudande om Dock visat` speglar
+  `Tips om lång Nätverk-grupp visat` och `Tips om USB-felsökning avfärdat` (obestämt huvudord + particip;
+  `ett erbjudande` → neutrum → `visat`), och beskrivningen speglar `Om engångstipset om att lossa servrar har visats` ·
+  `high`. `engångserbjudandet att lägga till …` utan andra `om`, för att slippa `om … om`.
+- **”a few days” → `några dagar`, aldrig ett tal** · tröskeln kan flyttas, så en siffra skulle bli osann. Vag småmängd,
+  precis som engelskan.
 - **Turn on USB debugging → `Slå på USB-felsökning`** · `slå på` är katalogens och macOS sv:s verb för att slå på en
   funktion (”Slå på Wi-Fi/AirDrop/fildelning”; katalogen: `fileExplorer.navigation.driveIndex.menuEnable`,
   `servers.hub.discoveryOffLink`) · `high`. `Aktivera` är kvar för det som aktiveras en gång (en licens, en

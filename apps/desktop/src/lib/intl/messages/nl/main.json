@@ -15,6 +15,42 @@
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
   },
+  "main.dockPinNudge.title": "Cmdr in je Dock houden?",
+  "@main.dockPinNudge.title": {
+    "sourceHash": "3a6ce9f"
+  },
+  "main.dockPinNudge.body": "Je gebruikt Cmdr nu al een paar dagen, dus het lijkt goed te bevallen. Wil je het daar onderin naast Finder vastzetten?",
+  "@main.dockPinNudge.body": {
+    "sourceHash": "1718271"
+  },
+  "main.dockPinNudge.unpinNote": "Je kunt het altijd weer losmaken als je van gedachten verandert.",
+  "@main.dockPinNudge.unpinNote": {
+    "sourceHash": "28748d3"
+  },
+  "main.dockPinNudge.decline": "Nee, bedankt",
+  "@main.dockPinNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.dockPinNudge.accept": "Ja, voeg toe aan mijn Dock",
+  "@main.dockPinNudge.accept": {
+    "sourceHash": "8fbdc76"
+  },
+  "main.dockPinNudge.added": "Cmdr staat nu in je Dock.",
+  "@main.dockPinNudge.added": {
+    "sourceHash": "61bec58"
+  },
+  "main.dockPinNudge.addedButDockDidNotRestart": "Cmdrs symbool staat klaar, maar het Dock is nog niet opnieuw geladen. Je ziet het de volgende keer dat je inlogt.",
+  "@main.dockPinNudge.addedButDockDidNotRestart": {
+    "sourceHash": "b035470"
+  },
+  "main.dockPinNudge.managedDock": "Je Dock wordt beheerd door een configuratieprofiel, dus Cmdr kan zichzelf niet toevoegen. Wie deze Mac beheert, kan dat aanpassen.",
+  "@main.dockPinNudge.managedDock": {
+    "sourceHash": "dae0836"
+  },
+  "main.dockPinNudge.notAdded": "Cmdr is deze keer niet in het Dock terechtgekomen. Je kunt het zelf vanuit de map ‘Apps’ erin slepen wanneer je wilt.",
+  "@main.dockPinNudge.notAdded": {
+    "sourceHash": "0d122cb"
+  },
   "main.quit.title": "Stoppen terwijl er nog {count, plural, one {een bewerking wordt} other {{countText} bewerkingen worden}} uitgevoerd?",
   "@main.quit.title": {
     "sourceHash": "2671a89"

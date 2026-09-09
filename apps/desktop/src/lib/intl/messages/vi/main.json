@@ -15,6 +15,42 @@
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
   },
+  "main.dockPinNudge.title": "Giữ lại Cmdr trong Dock?",
+  "@main.dockPinNudge.title": {
+    "sourceHash": "3a6ce9f"
+  },
+  "main.dockPinNudge.body": "Bạn đã dùng Cmdr được vài ngày rồi, có vẻ nó hợp với bạn. Ghim nó cạnh Finder ở dưới đó nhé?",
+  "@main.dockPinNudge.body": {
+    "sourceHash": "1718271"
+  },
+  "main.dockPinNudge.unpinNote": "Bạn có thể bỏ ghim bất cứ lúc nào nếu đổi ý.",
+  "@main.dockPinNudge.unpinNote": {
+    "sourceHash": "28748d3"
+  },
+  "main.dockPinNudge.decline": "Không, cảm ơn",
+  "@main.dockPinNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.dockPinNudge.accept": "Có, thêm vào Dock",
+  "@main.dockPinNudge.accept": {
+    "sourceHash": "8fbdc76"
+  },
+  "main.dockPinNudge.added": "Cmdr giờ đã có trong Dock.",
+  "@main.dockPinNudge.added": {
+    "sourceHash": "61bec58"
+  },
+  "main.dockPinNudge.addedButDockDidNotRestart": "Biểu tượng Cmdr đã nằm đúng chỗ, nhưng Dock chưa tải lại. Nó sẽ xuất hiện trong lần đăng nhập tới.",
+  "@main.dockPinNudge.addedButDockDidNotRestart": {
+    "sourceHash": "b035470"
+  },
+  "main.dockPinNudge.managedDock": "Dock của bạn được một hồ sơ cấu hình quản lý, nên Cmdr không thể tự thêm vào. Người quản lý máy Mac này có thể thay đổi điều đó.",
+  "@main.dockPinNudge.managedDock": {
+    "sourceHash": "dae0836"
+  },
+  "main.dockPinNudge.notAdded": "Lần này Cmdr chưa vào được Dock. Bạn có thể kéo nó từ thư mục Ứng dụng vào Dock bất cứ lúc nào.",
+  "@main.dockPinNudge.notAdded": {
+    "sourceHash": "0d122cb"
+  },
   "main.quit.title": "{count, plural, other {Thoát trong khi {countText} thao tác đang chạy?}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"

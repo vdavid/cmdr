@@ -1548,6 +1548,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.dockPinNudgeSeen.label": "Dock-Angebot gemacht",
+  "@settings.behavior.dockPinNudgeSeen.label": {
+    "sourceHash": "1f2e4f3"
+  },
+  "settings.behavior.dockPinNudgeSeen.description": "Ob das einmalige Angebot, Cmdr zum Dock hinzuzufügen, gemacht wurde.",
+  "@settings.behavior.dockPinNudgeSeen.description": {
+    "sourceHash": "2d62f23"
+  },
   "settings.behavior.adbHintDismissed.label": "Hinweis zu USB-Debugging ausgeblendet",
   "@settings.behavior.adbHintDismissed.label": {
     "sourceHash": "ba3d7fc"

@@ -15,6 +15,42 @@
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
   },
+  "main.dockPinNudge.title": "Maradjon a Cmdr a Dockodban?",
+  "@main.dockPinNudge.title": {
+    "sourceHash": "3a6ce9f"
+  },
+  "main.dockPinNudge.body": "Néhány napja használod a Cmdrt, szóval úgy tűnik, bevált. Rögzítsük odalent, a Finder mellé?",
+  "@main.dockPinNudge.body": {
+    "sourceHash": "1718271"
+  },
+  "main.dockPinNudge.unpinNote": "Bármikor feloldhatod a rögzítést, ha meggondolod magad.",
+  "@main.dockPinNudge.unpinNote": {
+    "sourceHash": "28748d3"
+  },
+  "main.dockPinNudge.decline": "Nem, köszönöm",
+  "@main.dockPinNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.dockPinNudge.accept": "Igen, kerüljön a Dockomba",
+  "@main.dockPinNudge.accept": {
+    "sourceHash": "8fbdc76"
+  },
+  "main.dockPinNudge.added": "A Cmdr mostantól ott van a Dockodban.",
+  "@main.dockPinNudge.added": {
+    "sourceHash": "61bec58"
+  },
+  "main.dockPinNudge.addedButDockDidNotRestart": "A Cmdr ikonja a helyén van, csak a Dock nem töltődött újra. A következő bejelentkezéskor megjelenik.",
+  "@main.dockPinNudge.addedButDockDidNotRestart": {
+    "sourceHash": "b035470"
+  },
+  "main.dockPinNudge.managedDock": "A Dockodat egy konfigurációs profil kezeli, így a Cmdr nem tudja hozzáadni magát. Ezen az tud változtatni, aki ezt a Macet felügyeli.",
+  "@main.dockPinNudge.managedDock": {
+    "sourceHash": "dae0836"
+  },
+  "main.dockPinNudge.notAdded": "A Cmdr most nem került be a Dockba. Bármikor behúzhatod oda az Alkalmazások mappádból.",
+  "@main.dockPinNudge.notAdded": {
+    "sourceHash": "0d122cb"
+  },
   "main.quit.title": "{count, plural, one {Kilépsz, amíg egy művelet folyamatban van?} other {Kilépsz, amíg {countText} művelet folyamatban van?}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"

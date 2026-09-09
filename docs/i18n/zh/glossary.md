@@ -2372,3 +2372,45 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **terminal → `终端`**（App 时写 `终端 App`）· 沿用 `commands.fileOpenTerminalHere.*` · `high`
 - **pull（`ollama pull`）→ `拉取`** · Microsoft zh-Hans 术语库的现代条目（id 2306935 / 2309495 → `拉取`）；早期的 `请求`
   是 pull request 的一半，不适用 · `high`
+## 程序坞邀请（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeSeen.*`，2026-09-09）
+
+用了几天之后弹一次的通知：问用户要不要把 Cmdr 放进 macOS 的程序坞，加上答应之后的四条结果提示。设置里那两个键是内部状态，界面上永远看不到。
+
+参考堆这次**在这台机器上**（`_ignored/i18n/zh/`
+是把简体来源汇总起来的软链接目录，可读），另外 Dock 自己的菜单不在堆里，直接从系统包取：`plutil` 读
+`/System/Library/CoreServices/Dock.app/Contents/Resources/zh_CN.lproj/DockMenus.strings`（macOS 26.6.2，2026-09-09）。
+
+- **Dock → `程序坞`** · Apple 一级证据三处对上：Finder `LocalizableMerged` `N169.13`（`Add to Dock` →
+  `添加到程序坞`）、Finder `MenuBar` `300772.title`、AppKit `Common`（`…getting the desktop image from Dock` →
+  `…从程序坞获取桌面图像…`）· `confirmed`。中文这个词一律译出，不留拉丁字母的 `Dock`。
+- **Add to Dock（接受按钮）→ `添加到程序坞`** · 逐字用 Finder `N169.13` 的标签，用户在 Finder 里就是看到这几个字 ·
+  `confirmed`。按钮整体写 `好，添加到程序坞`（`好` = OK，本文件已定的 macOS 肯定式）。
+- **Keep in Dock（标题的说法）→ `留在程序坞里`** · Dock 自己的菜单项 `KEEP_IN_DOCK` 是
+  `在程序坞中保留`；标题要读成一句口语问句，所以改成 `要把 Cmdr 留在程序坞里吗？`，动词 `留` 与 Apple 的 `保留` 同根 ·
+  `high`。
+- **pin / unpin（在程序坞里固定）→ `固定` / `取消固定`** · 沿用本文件 § 固定/取消固定 已定的那一对（Safari
+  `固定标签页`、`固定/取消固定服务器`），正文写 `固定在下面的 Finder 旁边`，提示行写 `取消固定` · `high`。⚠️
+  Dock 菜单自己是 `在程序坞中保留` / `从程序坞中移除`（`KEEP_IN_DOCK` /
+  `REMOVE_FROM_DOCK`），不是一对可配的词；这里取目录内已定的 `固定`/`取消固定`，因为英文那两句要求两个词看得出是一对。
+- **Finder → `Finder`（保持拉丁字母）** · 本文件 § 原生菜单 的既定取舍：Apple 简体叫「访达」，整个 zh 目录仍写 `Finder`
+  · `high`。这次不破例。
+- **Applications（文件夹）→ `“应用程序”文件夹`** · AppKit
+  `AppKitErrors`（`Try dragging “%@” from the Trash to your Applications folder.` →
+  `请尝试将%[tt]@从废纸篓拖到你的“应用程序”文件夹中。`），引号形式与本文件的 `“下载”文件夹` 一致 ·
+  `confirmed`。那句 Apple 原文也是 `从 X 拖到 Y` 这个句式的出处。
+- **configuration profile → `配置描述文件`** · SystemSettings `InfoPlist`（`Configuration Profile` →
+  `配置描述文件`）；同一个包的 `MDMDisabledSettingsPane`（`These settings are controlled by a profile.` →
+  `这些设置受描述文件控制。`）是这句话的句式范本 · `confirmed`。
+- **log in（登录这台 Mac）→ `登录`，写成 `下次登录 Mac 时`** · Dock `OPEN_AT_LOGIN` → `登录时打开`；AppKit `Menus`
+  `Log Out` → `退出登录` · `confirmed`。加上 `Mac` 是为了和目录里「登录服务器」的那些串分开，跟本文件
+  `系统重新启动或退出登录` 加 `系统` 是同一个理由。
+- **the Dock didn''t reload → `程序坞还没刷新`** · `刷新` 是目录已定的 refresh（macOS AppKit）· `high`。⚠️
+  **这条绝不能写成「没固定上」**：图标其实已经写进去了，缺的只是重画，所以中文先说 `图标已经放好了`，再用
+  `只是…还没刷新` 交代那半件事。
+- **四条结果串都不许出现 `失败`/`错误`** · 按 style.md：`无法把自己加进去`（受管的程序坞）、`这次没能添加到程序坞`
+  （没落地）。`没能` 带「这一次没成」的意味，正好对上英文的 `couldn''t … this time`；`无法` 留给持续性的限制 · `high`。
+- **offer（这次邀请，内部设置用词）→ `邀请`** · 描述性选词，堆里没有对应项；标签 `已发出程序坞邀请`，说明
+  `是否已经发出过将 Cmdr 添加到程序坞的一次性邀请。`，句式抄 `settings.behavior.serversPinHintSeen.description`
+  （`是否已显示过关于取消固定服务器的一次性提示。`）· `tentative`。
+- **「a few days」不许变成数字 → `好几天`** · 阈值会改，写成「三天」对一半人就是假话；`好几天`
+  是中文里正好的模糊小量词 · `high`。

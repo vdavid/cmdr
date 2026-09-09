@@ -341,6 +341,11 @@ Vietnamese has no grammatical number, so one form covers all counts.
   one on in settings", "Click to set one up in settings"); repeating `một nhà cung cấp` in the second sentence is heavy
   in Vietnamese, so `Hãy bật một cái trong cài đặt` / `Nhấp để thiết lập một cái trong cài đặt`. Both keys use the same
   shape on purpose (`askCmdr.error.notConfigured`, `askCmdr.wake.needsApiKey`).
+- **Tên bề mặt của macOS: `Dock` và `Finder` giữ tiếng Anh, `Applications` thì dịch.** Apple quyết định từng nhãn một,
+  nên đừng suy từ nhãn này sang nhãn kia: `Dock` và `Finder` không bao giờ được dịch trong macOS `vi`, còn thư mục
+  `Applications` luôn là `thư mục Ứng dụng`. Bằng chứng: `glossary.md` § Lời mời ghim Cmdr vào Dock.
+- **"at any time" → `bất cứ lúc nào`, kể cả khi macOS viết `bất kỳ lúc nào`.** Cả hai đều đúng tiếng Việt, nhưng catalog
+  đã ship `bất cứ lúc nào` ở chín chỗ; một chuỗi mới đi lệch sẽ làm hai câu chị em đọc như hai giọng khác nhau.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

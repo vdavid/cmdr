@@ -1539,6 +1539,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.dockPinNudgeSeen.label": "已发出程序坞邀请",
+  "@settings.behavior.dockPinNudgeSeen.label": {
+    "sourceHash": "1f2e4f3"
+  },
+  "settings.behavior.dockPinNudgeSeen.description": "是否已经发出过将 Cmdr 添加到程序坞的一次性邀请。",
+  "@settings.behavior.dockPinNudgeSeen.description": {
+    "sourceHash": "2d62f23"
+  },
   "settings.behavior.adbHintDismissed.label": "已关闭 USB 调试提示",
   "@settings.behavior.adbHintDismissed.label": {
     "sourceHash": "ba3d7fc"

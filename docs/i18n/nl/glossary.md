@@ -3063,3 +3063,45 @@ De twee regels onder de grijze velden `Adres` en `Gebruikersnaam`, wanneer de ge
 - function key bar (de rij met functietoets-commandoknoppen onderin het venster) → functietoetsbalk · al vastgelegd in
   de catalogus (`settings.appearance.showFunctionKeyBar.label`); hergebruikt voor het contextmenu-item en de
   bijbehorende toast · high
+
+## Het Dock-aanbod (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`)
+
+- Dock → `Dock`, onvertaald, MET het lidwoord `het` in lopende tekst · macOS Finder (`Voeg toe aan Dock`,
+  `LocalizableMerged` `N169.13` en `MenuBar` `300772.title`), `Dock.app` `nl.lproj/DockMenus.strings`
+  (`REMOVE_FROM_DOCK` = `Verwijder uit Dock`, `DOCK_SETTINGS` = `Dock-instellingen…`) en Systeeminstellingen
+  (`DesktopSettings.appex` `Localizable.loctable`, `Automatically hide and show the Dock` →
+  `Toon/verberg **het** Dock automatisch`). De catalogus zegt het al zo (`errors.listing.storageFull.suggestion`:
+  `het Prullenmand-symbool in het Dock`). Apple laat het lidwoord weg in korte labels, maar niet in zinnen · `high`
+  (macOS 26.6.2, build 25G83, gelezen 2026-09-09)
+- Finder → `Finder`, onvertaald · al vastgelegd in § Native menu's; macOS Dutch zegt `Verberg Finder`, `Toon in Finder`
+  · `high`
+- Applications (de map met geïnstalleerde apps) → `de map ‘Apps’` · macOS Finder heet die map in het Nederlands `Apps`,
+  niet `Programma's`: `LocalizableMerged` `TL5` / `GROUP_APPLICATIONS` = `Apps`, `MenuBar` `258.title` (het Ga-menu) =
+  `Apps`, en de knopbaltip `TL_HELP_APPS` = `Ga naar de map 'Apps'`, precies deze constructie · `high`. `Programma's`
+  komt in het Nederlandse macOS alleen nog voor in `Hulpprogramma's` (Utilities)
+- configuration profile → `configuratieprofiel` · Systeeminstellingen `InfoPlist.json` (`Configuratieprofiel`) plus
+  Microsoft-terminologie (`configuratieprofiel`); twee tiers zijn het eens · `high`
+- pin / unpin (in het Dock) → `vastzetten` / `losmaken` · het paar dat de catalogus overal gebruikt (`menu.tab.pinTab` =
+  `Maak tabblad vast`, `menu.tab.unpinTab` = `Maak tabblad los`, `menu.network.pinToSwitcher`,
+  `commands.serversTogglePin.label`), zodat `vastzetten` in de body en `losmaken` in de losmaakregel als één paar lezen
+  · `high`. Apples eigen Dock-menu zegt `Permanent in Dock` (`KEEP_IN_DOCK`) en `Verwijder uit Dock`; dat zijn labels
+  van menu-items, geen werkwoordpaar, dus ze winnen hier niet van de catalogusconsistentie
+- icon → `symbool` · macOS Finder (`symboolweergave`) en de catalogus zelf
+  (`settings.appearance.useAppIconsForDocuments.description`: `het symbool van de app`) · `high`
+- log in (bij je Mac) → `inloggen` · `Dock.app` `DockMenus.strings` `OPEN_AT_LOGIN` = `Open na inloggen`; sluit aan op
+  de al vastgelegde `Log in` · `high`
+- add to the Dock (knop) → `Voeg toe aan Dock` · macOS Finder woordelijk. ❗ Let op: Apple zet het partikel hier NIET
+  achteraan, tegen de algemene regel in § Formality mechanics in; een woordelijk Tier-1-citaat voor precies dit label
+  wint van de algemene regel. `main.dockPinNudge.accept` = `Ja, voeg toe aan mijn Dock` · `high`
+
+Toonkeuzes in deze negen strings:
+
+- **`een paar dagen`, nooit een getal.** Het Engels houdt de drempel expres vaag; `een paar dagen` doet hetzelfde.
+- **Geen enkele uitkomststring noemt `fout` of `mislukt`.** `addedButDockDidNotRestart` zegt dat het symbool al
+  klaarstaat en alleen het Dock nog niet opnieuw geladen is (`nog niet` in plaats van `niet`, zodat het als tijdelijk
+  leest en niet als weigering); `notAdded` zegt `is deze keer niet in het Dock terechtgekomen` en wijst meteen de
+  handmatige weg; `managedDock` noemt de beheerder zonder verwijt.
+- **`Wie deze Mac beheert, kan dat aanpassen.`** houdt de zin geslachtsneutraal zonder typografische trucs: het Engelse
+  `whoever` wordt een vrije relatieve bijzin, geen `hij/zij`.
+- **`erin slepen`** (`notAdded`) vermijdt dat `het Dock` twee keer in twee zinnen staat; het voornaamwoordelijk bijwoord
+  werkt hier omdat het Dock in de vorige zin genoemd is.

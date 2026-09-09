@@ -309,6 +309,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   `onboarding.cloudSetup.step.install` var enda stället som sa `Ladda ner` mot 43 `hämta` i resten av katalogen; det var
   drift, inte ett val. Kolla alltid hur ofta en form redan förekommer innan du skriver en ny. Belägg: `glossary.md` §
   Stegen för att sätta upp en AI-leverantör.
+- **`Dock` är Apples yta, så `fäst`/`lossa` gäller inte där.** Katalogens pin/unpin-par hör till Cmdrs egna ytor
+  (flikar, servrar); i Dock skriver macOS `Behåll i Dock` / `Ta bort från Dock`, och `Dock` står oböjt utan artikel och
+  utan possessiv (`i Dock`, inte `i Docken` eller `i din Dock`). Belägg: `glossary.md` § Dock-erbjudandet.
+- **Mappen `Applications` heter `Appar` sedan macOS 26, inte `Program`.** Finder, AppKit och Go-menyn säger alla
+  ”Appar”, och dra-meningen skrivs `dra … från mappen Appar`. Belägg: `glossary.md` § Dock-erbjudandet.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

@@ -3045,3 +3045,62 @@ enregistré.
 - function key bar (la rangée de boutons de commande des touches de fonction en bas de la fenêtre) → barre des touches
   de fonction · déjà fixé dans le catalogue (`settings.appearance.showFunctionKeyBar.label`) ; réutilisé pour l'élément
   du menu contextuel et son toast · high
+
+## La proposition d'ajout au Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`)
+
+Termes fixés (source de niveau 1 : le paquet `Dock.app` du système, `fr.lproj/DockMenus.strings`, macOS 26.6.2 build
+25G83, lu le 2026-09-09 ; plus la pile `fr/macOS/`).
+
+- Dock → **le Dock**, mot anglais, masculin, majuscule · Finder `MenuBar.json` `300772.title` et `LocalizableMerged`
+  `N169.13` (« Add to Dock » → « Ajouter au Dock ») ; `Dock.app` `DOCK_SETTINGS` → « Réglages du Dock… » · high
+- Finder → **le Finder**, mot anglais, masculin, toujours précédé de l'article · Finder `LocalizableMerged` (« Afficher
+  dans le Finder », « Réglages du Finder », « les fenêtres du Finder ») · high
+- Applications folder → **le dossier Applications**, le nom du dossier reste en anglais · AppKit `AppKitErrors.json` («
+  Try dragging “%@” from the Trash to your Applications folder. » → « Essayez de faire glisser l'application « %@ » de
+  la corbeille vers votre dossier Applications. ») ; Finder `TL5` / `GROUP_APPLICATIONS` → « Applications » · high
+- keep in the Dock / pin to the Dock → **garder dans le Dock**, et son inverse unpin → **supprimer du Dock** ·
+  `Dock.app` `DockMenus.strings` `KEEP_IN_DOCK` → « Garder dans le Dock », `REMOVE_FROM_DOCK` → « Supprimer du Dock » ·
+  high. ❌ Ne pas réutiliser ici la paire `épingler` / `désépingler` du catalogue (onglets, serveurs) : elle est juste
+  pour un onglet ou une ligne de serveur, mais Apple nomme l'action du Dock autrement, et l'utilisateur lit le menu du
+  Dock à côté de notre notification. La paire garder/supprimer reste liée par le complément « du Dock », ce que la
+  description de `unpinNote` demande.
+- add to the Dock → **ajouter au Dock** · Finder `MenuBar.json` `300772.title` · high. Le bouton d'acceptation prend
+  l'infinitif nu (« Oui, ajouter au Dock ») : convention des libellés d'action, et le possessif anglais « my Dock » ne
+  se rend pas (le français laisse tomber le possessif dans une étiquette de bouton, comme Apple).
+- configuration profile → **profil de configuration** · Réglages Système `InfoPlist.json` (« Configuration Profile » → «
+  Profil de configuration ») ; confirmé par la terminologie Microsoft FRA. Apple décrit d'ailleurs le cas avec le même
+  mot : `SystemSettings/Localizable.json` `MDMDisabledSettingsPane` → « Ces réglages sont contrôlés par un profil. » ·
+  high
+- (when you) log in → **à l'ouverture de session** · `LoginItems.appex` `Localizable.loctable`, fr (« These items will
+  open automatically when you log in. » → « Ces éléments s'ouvriront automatiquement à l'ouverture de session. » ; «
+  Open at Login » → « Ouvrir avec la session ») ; AppKit `Menus.json` « Log Out » → « Fermer la session ». Lu sur le
+  système, macOS 26.6.2 build 25G83, 2026-09-09 · high. ❌ Pas « quand vous vous reconnectez » : « se connecter » est
+  déjà pris par les serveurs dans ce catalogue.
+
+Décisions de formulation :
+
+- **`No, thanks` → « Non, merci », et surtout PAS « Plus tard ».** Le catalogue rend `Not now` par « Plus tard »
+  (`askCmdr.consent.decline`, `updates.toast.later`). Ici le refus est définitif : Cmdr ne repose jamais la question.
+  Deux refus de nature différente doivent se lire différemment · high
+- **« quelques jours » ne devient jamais un nombre.** Le seuil peut bouger et le compteur n'a commencé qu'à la
+  livraison. « depuis quelques jours » porte le vague de l'anglais « for a few days now ».
+- **`down there` → « en bas ».** Le Dock est en bas par défaut (`Dock.app` `BOTTOM` → « En bas »), mais il peut être
+  placé à gauche ou à droite : la formulation française porte exactement le même pari que l'anglaise, volontairement. Le
+  corps ne redit pas « Dock » (le titre et le bouton le disent déjà) ; « qu'il reste » porte le sens de `pinned`,
+  c'est-à-dire que l'icône demeure même app fermée.
+- **`addedButDockDidNotRestart` ne dit surtout pas que l'ajout a échoué**, parce qu'il a eu lieu : « L'icône de Cmdr est
+  en place, mais le Dock ne s'est pas rechargé. » Le sujet de la deuxième phrase est « Elle » = l'icône (féminin), pas
+  Cmdr. Aucun mot de la liste noire (« erreur », « échec », « a échoué », « bloqué »).
+- **`notAdded` suit le moule sanctionné « n'a pas pu »** (§ style.md, « N'a pas pu se terminer »), pas « n'a pas réussi
+  », trop proche de « échec » : « Cmdr n'a pas pu s'ajouter au Dock cette fois-ci. » La sortie manuelle reprend le geste
+  d'Apple (« faire glisser … depuis votre dossier Applications »), avec le `y` qui renvoie au Dock nommé juste avant.
+- **`managedDock` nomme une personne sans la genrer** : « La personne qui gère ce Mac peut modifier ce réglage. » Ni «
+  l'administrateur », ni un point médian ; c'est la restructuration prévue par la règle d'inclusivité.
+- **Les deux clés `settings.behavior.dockPinNudgeSeen.*` sont internes** et copient le moule des voisines
+  (`serversPinHintSeen`, `doubleClickOnPaneNotificationSeen`) : libellé en syntagme nominal terminé par un participe («
+  Proposition d'ajout au Dock faite »), description en « Indique si … a été … ».
+- **Apostrophes ICU doublées partout** (`qu''il`, `d''avis`, `L''icône`, `s''est`, `s''y`, `n''a`, `s''ajouter`, `l''y`,
+  `d''ajout`, `d''ajouter`), toutes en ASCII U+0027. Espace ASCII simple avant les `?`.
+- La pile de référence était bien lisible sur cette machine
+  (`/Users/veszelovszki/projects-git/vdavid/cmdr/_ignored/i18n/fr/`), complétée par les paquets système pour `Dock.app`
+  et `LoginItems.appex`, que la pile ne contient pas.

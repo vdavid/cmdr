@@ -15,6 +15,42 @@
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
   },
+  "main.dockPinNudge.title": "要把 Cmdr 保留在 Dock 上嗎？",
+  "@main.dockPinNudge.title": {
+    "sourceHash": "3a6ce9f"
+  },
+  "main.dockPinNudge.body": "你已經用 Cmdr 好幾天了，看來很順手。要不要把它保留在下面的 Dock 上，就在 Finder 旁邊？",
+  "@main.dockPinNudge.body": {
+    "sourceHash": "1718271"
+  },
+  "main.dockPinNudge.unpinNote": "如果之後改變主意，隨時可以把它從 Dock 中移除。",
+  "@main.dockPinNudge.unpinNote": {
+    "sourceHash": "28748d3"
+  },
+  "main.dockPinNudge.decline": "不，謝謝",
+  "@main.dockPinNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.dockPinNudge.accept": "好，加入 Dock",
+  "@main.dockPinNudge.accept": {
+    "sourceHash": "8fbdc76"
+  },
+  "main.dockPinNudge.added": "Cmdr 已經在 Dock 上了。",
+  "@main.dockPinNudge.added": {
+    "sourceHash": "61bec58"
+  },
+  "main.dockPinNudge.addedButDockDidNotRestart": "Cmdr 的圖像已經放好了，只是 Dock 還沒重新載入。下次登入時就會出現。",
+  "@main.dockPinNudge.addedButDockDidNotRestart": {
+    "sourceHash": "b035470"
+  },
+  "main.dockPinNudge.managedDock": "你的 Dock 由設定描述檔管理，所以 Cmdr 無法自己加進去。管理這部 Mac 的人可以更改這項設定。",
+  "@main.dockPinNudge.managedDock": {
+    "sourceHash": "dae0836"
+  },
+  "main.dockPinNudge.notAdded": "Cmdr 這次無法加入 Dock。你隨時可以從「應用程式」資料夾把它拖到 Dock 上。",
+  "@main.dockPinNudge.notAdded": {
+    "sourceHash": "0d122cb"
+  },
   "main.quit.title": "{count, plural, other {有 {countText} 項操作仍在進行，要結束嗎？}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"

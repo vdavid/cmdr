@@ -336,6 +336,15 @@ Dateien".
   auflösen, den `search.coverage.setUpFullDiskAccess` nicht kennt.
 - **„to start chatting“ → „um loszuchatten“.** `askCmdr.error.noConsent` hatte die Wendung schon für genau dasselbe
   Englisch; `settings.askCmdr.provider.off` übernimmt sie, statt ein zweites Wort dafür zu erfinden.
+- **`pin`/`unpin` hat im Deutschen ZWEI Wortpaare, je nach Fläche.** Für Tabs und Server heißt es `fixieren` / `lösen`
+  (`menu.tab.unpinTab`, `commands.serversTogglePin.label`, Safari `de` „Tab fixieren“); für das Dock heißt es
+  `im Dock behalten` / `aus dem Dock entfernen`, weil Apples Dock-Menü genau dieses Paar führt
+  (`Dock.app/…/DockMenus.strings` `KEEP_IN_DOCK`/`REMOVE_FROM_DOCK`). Beim Übersetzen eines neuen `pin`-Strings also
+  erst schauen, um welche Fläche es geht. Belege: `glossary.md` § Das Dock-Angebot.
+- **Wo Apple ein Kontextmenü für dieselbe Handlung hat, gewinnt sein Wortlaut auch im Fließtext.** Der Dock-Toast
+  übernimmt `Im Dock behalten`, `Aus dem Dock entfernen` und `Zum Dock hinzufügen` zeichengleich aus dem Dock-Menü, das
+  der Nutzer beim Rechtsklick auf dasselbe Symbol sieht. Dieselbe Logik wie bei den nativen Menüs oben, nur eine Ebene
+  weiter: die Fläche muss nicht Cmdrs eigene sein.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

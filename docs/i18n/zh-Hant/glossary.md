@@ -1507,3 +1507,52 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 - **pull（`ollama pull`）→ `提取`**（原本寫的是沒來源的 `拉`）· Microsoft zh-Hant 術語庫四條 `pull` 有三條是 `提取`（id
   95960 / 151531 / 2309059；剩下那條 `扣動` 是扣扳機的意思）· `high`。整句同時補上 `裡`：
   `在終端機裡用 ollama pull llama3.2 提取一個模型…`
+## 「要不要把 Cmdr 留在 Dock 上」那則提示（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeSeen.*`）
+
+- **`Dock` 保持原文，前後留空格** · Apple 的正體中文從不翻譯它：zh-TW `加入Dock中`、zh-HK `加至Dock`（Finder `MenuBar`
+  `300772.title`，英文側 `en_GB.lproj` 為 `Add to Dock`），Dock.app 自己的 `從Dock中移除`、`Dock設定⋯`
+  也一樣。空格照 style.md §
+  Spacing 加，目錄本來就這樣寫（`errors.listing.storageFull.suggestion`：`在 Dock 裡的垃圾桶圖像上按右鍵`）·
+  `confirmed`。
+- **`Finder` 保持原文** · Apple zh-TW 與 zh-HK 皆同（`CFBundleDisplayName` = `Finder`，`在Finder中搜尋`）· `confirmed`。
+- **`Applications`（那個檔案夾）→ `「應用程式」資料夾`** · Apple zh-TW = zh-HK的側邊欄標籤是 `應用程式`（Finder
+  `Localizable` 鍵 `Applications`）；`資料夾` 是本目錄對 folder 的定案（§ 五個共識覆寫），而 Apple zh-TW 的 `檔案夾`
+  是那組離群值之一。整串一字不差沿用 `updates.moveToApplicationsDialog.howTo`（`把它拖到「應用程式」資料夾`）· `high`。
+- **`configuration profile` → `設定描述檔`** · Apple zh-TW 與 zh-HK 的 SystemSettings 同鍵 `Configuration Profile` 都是
+  `設定描述檔`。Microsoft zh-Hant 的 `組態設定檔`（TBX，標 `HKG, TWN`）落敗：一級來源兩邊一致時 Apple 勝 · `high`。
+- **`No Thanks` → `不，謝謝`** · Apple 自己的字，zh-TW = zh-HK，出現在
+  `Problem Reporter.app`、`AppStoreDaemon.framework`、`PassKit.framework` 三個 `Localizable.loctable`（macOS
+  26.6.2，版本號 25G83，2026-09-09 讀取）· `confirmed`。
+
+### ❗ Dock 上的 pin / unpin 不用 `釘選`／`取消釘選`
+
+目錄裡的 `釘選`／`取消釘選` 是
+**Cmdr 自己介面**的詞（分頁、側邊欄的伺服器：`commands.tabPin.label`、`settings.behavior.serversPinHintSeen.description`）。
+**Dock 是 macOS 的介面，所以用 Apple 自己在 Dock 選單裡的那兩個詞**：
+
+- pin（把圖像留在 Dock 上）→ **`保留在 Dock 上`**（Dock.app `DockMenus`，`Keep in Dock`，zh-TW = zh-HK）
+- unpin（把它拿出來）→ **`從 Dock 中移除`**（同檔，`Remove from Dock`，zh-TW = zh-HK）
+
+`unpinNote` 就是在告訴使用者怎麼反悔，而他要去按的正是 Dock 選單裡的那一項；寫 `取消釘選`
+會讓他在 Dock 選單上找不到對應的字。這兩個詞在同一份選單裡就是一組相反詞，英文 pinned / unpin 的對應關係因此還在 ·
+`high`。界線很好套用：**Cmdr 自己的東西用 `釘選`，macOS 的 Dock 用 `保留`／`移除`**，跟 § Android 那條 `偵錯`／`除錯`
+的界線是同一個形狀。
+
+### 四則結果訊息不准說「失敗」
+
+`added`、`addedButDockDidNotRestart`、`managedDock`、`notAdded` 都是錯誤類訊息，照 style.md § Voice and tone 一律走
+`無法` + 動詞，不寫 `失敗`、`錯誤`：
+
+- `notAdded` → `Cmdr 這次無法加入 Dock。`，後半給手動的做法（從「應用程式」資料夾拖到 Dock 上）。
+- `managedDock` → `…所以 Cmdr 無法自己加進去。`，再點名誰能解（`管理這部 Mac 的人`），不出主意繞過去。`部`
+  是 Mac 的量詞（§ style.md Plurals）。
+- ❗ **`addedButDockDidNotRestart` 不可以寫成沒加成功** ——圖像已經放好了，少的只是重畫。所以寫
+  `Cmdr 的圖像已經放好了，只是 Dock 還沒重新載入。`：`只是…還沒…` 讀起來是「還在路上」，不是「沒做到」。`圖像`
+  是 icon（Apple zh-TW `圖像大小`、`Finder圖像`；目錄已在用），`登入` 是 log in（Apple `在登入時打開`）· `high`。
+
+### 「幾天」不准變成數字
+
+`body` 的 `a few days` 寫成 **`好幾天`**，絕不寫「三天」：門檻會變，而且 ledger 是上線那天才開始數的。`down there` →
+`下面的 Dock 上`（Dock 預設就在螢幕底部，中文講得出來，所以留著）。`Yes, add it to my Dock` →
+`好，加入 Dock`：中文自己的東西通常不帶所有格， `我的` 加上去反而不自然；動詞取 Apple 的
+`加入`（`加入Dock中`），按鈕上省掉 `中` 比較好唸 · `high`。

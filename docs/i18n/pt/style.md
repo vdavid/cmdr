@@ -203,6 +203,15 @@ Two mechanics that bite in Portuguese specifically:
 - **Nada concorda com um `{name}`**: ele pode ser arquivo ou pasta, então nenhum particípio, adjetivo ou possessivo pode
   se apoiar nele; só verbos e preposições sem artigo. Quando a linha precisa do gênero, ela escreve o substantivo
   (`a pasta {name}`). Mesma lógica dos tokens de painel do macOS, § acima.
+- **`obrigado` num botão impõe um gênero ao usuário**, porque concorda com quem fala. `No, thanks` sai como
+  **`Não precisa`**, uma recusa educada corriqueira e sem gênero; `Agora não` fica reservado ao `Not now`, que promete
+  uma próxima vez. É o caso típico do "reestruture para o neutro" da § Gender acima: a saída neutra existe e soa
+  natural, então ela ganha do masculino não marcado. Evidência e as formas recusadas: `glossary.md` § O convite para
+  fixar o Cmdr no Dock.
+- **`Dock`, `Finder` e `Mac` ficam em inglês; `Applications` vira `pasta Aplicativos`.** O macOS pt-BR decide isso
+  rótulo a rótulo, e a pilha fecha os três: `Adicionar ao Dock` mantém `Dock`, `Busca … no Finder` mantém `Finder`, e
+  `Ir para a pasta Aplicativos` traduz a pasta. `configuration profile` é `perfil de configuração` (Apple) e `managed` é
+  `gerenciado`. Evidência por chave: `glossary.md` § O convite para fixar o Cmdr no Dock.
 
 - **Android por ADB: `depuração USB` e `ferramentas de plataforma` traduzem; `adb`, `ADB`, `Android SDK` e `Homebrew`
   ficam.** As duas linhas de `settings.fileOperations.adb*` chamam o campo de `Localização do adb` (o `localização` do

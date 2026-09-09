@@ -1539,6 +1539,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
+  "settings.behavior.dockPinNudgeSeen.label": "已提出加入 Dock 的詢問",
+  "@settings.behavior.dockPinNudgeSeen.label": {
+    "sourceHash": "1f2e4f3"
+  },
+  "settings.behavior.dockPinNudgeSeen.description": "是否已提出過關於把 Cmdr 加入 Dock 的一次性詢問。",
+  "@settings.behavior.dockPinNudgeSeen.description": {
+    "sourceHash": "2d62f23"
+  },
   "settings.behavior.adbHintDismissed.label": "已關閉「USB 偵錯」提示",
   "@settings.behavior.adbHintDismissed.label": {
     "sourceHash": "ba3d7fc"

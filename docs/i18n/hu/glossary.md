@@ -2945,3 +2945,85 @@ hogy időtartamról van szó. ❌ Csupasz helyőrző időtartamra soha.
 - function key bar (az ablak alján lévő F-billentyűs parancsgombok sora) → funkcióbillentyű-sáv · már rögzítve a
   katalógusban (`settings.appearance.showFunctionKeyBar.label`); újrafelhasználva a helyi menü elemhez és a hozzá
   tartozó toasthoz · high
+
+## A Dockba kerülés egyszeri ajánlata (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`, 2026-09-09)
+
+Kilenc sor egy értesítésre (cím, törzs, megnyugtató harmadik sor, két gomb, négy kimeneti üzenet), plus a két belső
+beállításkulcs. A `_ignored/i18n/hu/` referenciakupac ezen a gépen MEGVAN, és abból dolgoztunk (macOS Finder + AppKit +
+System Settings JSON-dumpok, Microsoft-terminológia `HUNGARIAN.tbx`, GNOME Nautilus, Xfce Thunar, KDE Dolphin, Total
+Commander, Double Commander).
+
+### A három macOS-felületnév
+
+- **Dock → `Dock`, ragozva kötőjel nélkül** (`a Dockban`, `a Dockba`, `a Dockodban`, `a Dockomba`, `a Dockodat`) · mac
+  (Finder `LocalizableMerged` `N169.13` és System Settings `300772.title`: `Add to Dock` = „Hozzáadás a Dockhoz”;
+  AppKit: „…háttérképét a Dockról”), plusz a szállított katalógus (`errors.listing.diskFullErrno.suggestion`,
+  `errors.listing.storageFull.suggestion`: „kattints jobb gombbal a Kuka ikonra a Dockban”) · `high`. Az Apple NEM
+  fordítja le, és a `Dock` végi `k` a kiejtett hangot írja, tehát az AkH kötőjelszabálya nem lép be. A
+  magánhangzó-illeszkedés a kiejtett „dokk” hátsó hangrendjéhez igazodik: `-ban`, `-ba`, `-hoz`, `-om`, `-od`.
+- **Finder → `Finder`, ragozva kötőjel nélkül** (`a Finderben`, `a Finder mellé`) · mac (Finder `CFBundleDisplayName` =
+  „Finder”, „Megjelenítés a Finderben”, „Fájlok és mappák keresése a Finderben”), plusz a szállított
+  `commands.fileShowInFinder.mac.label` · `high`. Összetételben viszont kötőjeles (`Finder-ablak`, `Finder-elem`,
+  `Finder-címke`), ahogy az Apple is írja.
+- **Applications (a mappa) → `Alkalmazások`** · mac (Finder `Applications` = „Alkalmazások”, `TL5` oldalsávcímke,
+  `GROUP_APPLICATIONS`, `TL_HELP_APPS` = „Ugrás az Alkalmazások mappába”; AppKit: „Try dragging „%@” from the Trash to
+  your Applications folder.” = „Próbálja a(z) „%@” alkalmazást a kukából az **Alkalmazások mappába** húzni.”) · `high`.
+  A kupacban NULLA `Programok` találat van.
+  - ⚠️ **A szállított katalógus itt elsodródott**: három kulcs `Programok mappa` alakot visz
+    (`updates.moveToApplicationsDialog.title`, `.howTo`, `onboarding.stepFda.step2.tip`). Az a régi Mac OS X-es magyar
+    név; a mai macOS `Alkalmazások`. Az 1. szintű, betű szerinti Apple-találat veri a katalógus családi mintáját (§ „A
+    szerverközpont táblázata” precedense), ezért a `notAdded` `az Alkalmazások mappádból` alakot visz. A három régi
+    kulcsot egy külön menetnek kell átsöpörnie: a `desktop-i18n-term-consistency` nem fogja el, mert az angoljuk nem
+    betű szerint azonos.
+
+### A többi eldöntött szó
+
+- **pin / unpin → `rögzítés` / `rögzítés feloldása`** · mac (AppKit `MenuCommands` `Pin Tab` = „Lap rögzítése”,
+  `Unpin Tab` = „Lap rögzítésének feloldása”), ms (`pin` = `rögzítés`/`rögzít`, `unpin` = `rögzítés feloldása`) ·
+  `high`. Már rögzített döntés (§ „A rögzítési tipp…”), itt csak újrahasznosítjuk. Ez tartja rokonságban az angol
+  `pinned` ↔ `unpin` párt: `Rögzítsük odalent…` ↔ `feloldhatod a rögzítést`.
+- **configuration profile → `konfigurációs profil`** · ms (`HUNGARIAN.tbx`, `configuration profile` = „konfigurációs
+  profil”, HUN) · `high`. A macOS-kupacban nincs rá találat (a `Profiles`/`Device Management` panel nincs a dumpban),
+  tehát ez a 2. szintű forrás dönt; egybevág az Apple magyar támogatási szóhasználatával.
+- **log in (bejelentkezés a Mac-fiókba) → `bejelentkezés`, időhatározóként `a következő bejelentkezéskor`** · mac
+  (`Bejelentkezés…`, `Log Out` = „Kijelentkezés”) · `high`. A `következő …kor` keret a szállított
+  `fileExplorer.navigation.forgetSecretConfirm` („A Cmdr a következő kapcsolódáskor újra elkéri.”) idiómája.
+- **No, thanks → `Nem, köszönöm`** · nincs OS-forrás (sem a macOS-dumpban, sem a Microsoft-terminológiában nincs
+  udvarias elutasító gomb) · `tentative` a forrás hiánya miatt, de a jelentés nem kétséges: ez a magyar köznyelv
+  udvarias visszautasítása, és pontosan az a regiszter, amit a style.md fogyasztói-márkás `te`-hangja kér. ❌ NEM
+  `Most nem`: az a szállított `askCmdr.consent.decline`, más angolra (`Not now`), és „később talán”-t ígér, amit ez a
+  gomb nem tesz (a Cmdr soha többé nem kérdez).
+- **Yes, … (igenlő gomb a felhasználó szájából) → `Igen, …`** · a szállított `onboarding.stepAi.cloud.label`
+  (`Yes, I want AI` = „Igen, szeretnék AI-t”) · `high`. Innen `Igen, kerüljön a Dockomba` (négy szó, gombba fér). A
+  kötőmód (`kerüljön`) azért jó, mert nem kell megnevezni a cselekvőt: a `tedd` a Cmdrt tegezné, pedig a katalógusban a
+  felhasználót tegezzük.
+
+### Mondatszintű döntések
+
+- **A cím a macOS „Keep in Dock” jelentését viszi**: `Maradjon a Cmdr a Dockodban?` Az app futás közben amúgy is ott van
+  az ikonsávban, a kérdés az, hogy KINT MARADJON-e; a `maradjon` pont ezt mondja, és valódi kérdés marad, nem
+  felszólítás. A birtokos (`Dockodban`) a szállított `fileExplorer.navigation.serverPinnedToast` („… ott van a
+  kötetválasztódban”) mintája: ahol az angol `your`-t mond, a magyar birtokos személyjelet tesz.
+- **„a few days” → `Néhány napja`**, szám nélkül · a `néhány` a kupac és a katalógus bevett homályos kis mennyisége
+  (mac: „Távolítson el néhány fájlt”; katalógus: „várj néhány másodpercet”) · `high`. ❌ Soha nem `három napja`: a
+  küszöb mozoghat.
+- **„down there” → `odalent`**, megtartva: a magyar Dock is alapból a képernyő alján ül, és a
+  `Rögzítsük odalent, a Finder mellé?` sorrend a helyhatározót teszi előre, ahogy a magyar szórend kéri.
+- **A négy kimeneti üzenet EGYIKE SEM hibaüzenet-regiszterű**: se `hiba`, se `sikertelen`, se `nem sikerült`. A
+  `notAdded` nyitánya a szállított `fileExplorer.pane.directConnectionUnavailableToast` („Most nem jött létre közvetlen
+  kapcsolat, …”) mintája: `A Cmdr most nem került be a Dockba.` A `most` viszi az angol `this time`-ot, és tényt közöl,
+  nem kudarcot.
+- **`addedButDockDidNotRestart` nem tagadhatja le a rögzítést**, mert az megtörtént:
+  `A Cmdr ikonja a helyén van, csak a Dock nem töltődött újra.` A `csak` (nem `de`) az a kötőszó, ami a magyarban azt
+  mondja, hogy egyetlen apróság hiányzik; a `de` szembeállítana, és a rögzítés meghiúsulásának olvasatát erősítené. Ez a
+  passz legkockázatosabb sora.
+- **`managedDock` megnevezi, ki oldhatja fel, és nem hibáztat**: `Ezen az tud változtatni, aki ezt a Macet felügyeli.` A
+  `felügyeli` (nem a mondat elején már használt `kezeli`) kerüli a szóismétlést, és az adminisztrátori szerepet nevezi
+  meg. A `Macet` tárgyeset kötőjel nélkül, a style.md szerint.
+- **A két belső kulcs a `settings.behavior.*Seen.*` család alakját másolja** (`serversPinHintSeen`,
+  `openTerminalHereToastSeen`, `doubleClickOnPaneNotificationSeen`): a címke `A <valami> megjelent`, a leírás
+  `Megjelent-e már az egyszeri …`. Innen `A Dock-ajánlat megjelent` és
+  `Megjelent-e már az egyszeri ajánlat, hogy a Cmdr bekerüljön a Dockba.` A `Dock-ajánlat` kötőjeles, mert tulajdonnév +
+  köznév összetétele (`Finder-címke`, `USB-kábel` mintája). Sosem látszik a felületen, de a lefedettség kéri.
+- Aposztróf egyik magyar értékben sincs, tehát ICU-kettőzés sem kellett. Helyőrző, `<tag>`, plural és select egyikben
+  sincs, ahogy az angolban sem. Egyik érték sem azonos az angollal, tehát `sameAsSourceJustification` sem kellett.
