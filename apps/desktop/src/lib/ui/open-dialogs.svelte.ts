@@ -1,12 +1,18 @@
 /**
  * Which soft dialogs are on screen in THIS window right now.
  *
- * `ModalDialog` is the sole registrar, from the same mount/destroy pair that tells
- * the Rust `SoftDialogTracker`. That's what makes the set EXHAUSTIVE without anyone
- * maintaining a list: rendering a soft dialog means rendering a `ModalDialog` with a
- * `SoftDialogId`, so a dialog nobody remembered to mention still shows up here.
- * Svelte guarantees the pairing, which a hand-written open/close pair would not:
- * a missed close would leave file operations blocked for the rest of the session.
+ * `ModalDialog` registers every dialog it renders, from the same mount/destroy pair
+ * that tells the Rust `SoftDialogTracker`. That's what makes the set EXHAUSTIVE
+ * without anyone maintaining a list: rendering a soft dialog means rendering a
+ * `ModalDialog` with a `SoftDialogId`, so a dialog nobody remembered to mention still
+ * shows up here. Svelte guarantees the pairing, and a missed close would leave file
+ * operations blocked for the rest of the session.
+ *
+ * `OnboardingWizard.svelte` is the ONE other registrar: it wears `ModalDialog`'s
+ * chrome but not the component (bespoke sheet, no Escape, a portal target of its own),
+ * so it makes the same paired `onMount` / `onDestroy` announcement by hand. A third
+ * one would be a bad sign — reach for `ModalDialog` instead. ❌ Never mark a dialog
+ * open from anywhere else.
  *
  * Per-window by construction: each webview evaluates its own copy of this module,
  * so the viewer's dialogs never appear in the main window's set. The Rust tracker
@@ -18,12 +24,12 @@ import { dialogBlocksOperations, type SoftDialogId } from './dialog-registry'
 
 const openDialogs = new SvelteSet<SoftDialogId>()
 
-/** Called by `ModalDialog` on mount. */
+/** Called by `ModalDialog` (and `OnboardingWizard`) on mount. */
 export function markDialogOpen(id: SoftDialogId): void {
   openDialogs.add(id)
 }
 
-/** Called by `ModalDialog` on destroy. */
+/** Called by `ModalDialog` (and `OnboardingWizard`) on destroy. */
 export function markDialogClosed(id: SoftDialogId): void {
   openDialogs.delete(id)
 }

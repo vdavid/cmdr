@@ -584,6 +584,20 @@ through `+page.svelte`'s `setOnboardingVisible()`, the single seam for opening a
 `routes/(main)/DETAILS.md` § Startup gates), and `handleWizardComplete` flips it back. See `$lib/updates/CLAUDE.md` §
 "Onboarding gating".
 
+### The wizard announces itself twice, by hand
+
+`OnboardingWizard`'s `onMount` calls both `markDialogOpen('onboarding')` (the frontend inventory,
+`$lib/ui/open-dialogs.svelte`) and `notifyDialogOpened('onboarding')` (the Rust `SoftDialogTracker`), and `onDestroy`
+the two closes. Every other soft dialog gets both for free from `ModalDialog`; the wizard wears that component's chrome
+without being it (a bespoke sheet with no Escape, its own portal target for the language picker), so it makes the pair
+itself. ❌ Never drop one half: an unpaired close blocks every file operation until restart, and an unpaired open makes
+`+page.svelte` treat the panes as unreachable forever.
+
+The frontend half is what decides whether a keypress belongs to the wizard or to the panes. Unregistered, `Tab` resolved
+to the Tier 1 `pane.switch` binding, so `+page.svelte` called `preventDefault()` (killing the native focus move), the
+command focused a pane behind the overlay, and `focus-trap.ts`'s leak guard pulled focus back where it started: Tab did
+nothing while `⇧Tab`, bound to no command, walked backwards normally.
+
 ## Testing
 
 Two env vars (mirror `CMDR_MOCK_LICENSE`):

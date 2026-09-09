@@ -3,6 +3,7 @@
     import { relaunch } from '@tauri-apps/plugin-process'
     import Icon from '$lib/ui/Icon.svelte'
     import { notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
+    import { markDialogOpen, markDialogClosed } from '$lib/ui/open-dialogs.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
     import { tooltip, showTooltipNow, hideTooltipFor } from '$lib/tooltip/tooltip'
@@ -66,6 +67,12 @@
             openWizard('force')
         }
 
+        // Both halves of the same announcement, and the wizard is the ONE component that
+        // makes it outside `ModalDialog`: `markDialogOpen` is the frontend inventory
+        // (`+page.svelte` asks it whether a keypress is a pane shortcut or the dialog's),
+        // `notifyDialogOpened` the Rust tracker MCP reads. Keep them paired with the
+        // `onDestroy` below: an unpaired close blocks every file operation until restart.
+        markDialogOpen('onboarding')
         void notifyDialogOpened('onboarding')
 
         // Wait for layout, then focus the panel so our keydown handler captures Tab.
@@ -74,6 +81,7 @@
     })
 
     onDestroy(() => {
+        markDialogClosed('onboarding')
         void notifyDialogClosed('onboarding')
         if (previousActiveElement?.isConnected) {
             previousActiveElement.focus()

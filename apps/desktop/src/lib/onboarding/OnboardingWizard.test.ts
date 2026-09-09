@@ -11,6 +11,7 @@
  *   "One more optional setup step" (continue to Optional).
  * - Back from step 2 returns to step 1 and resets the footer to `decide` mode.
  * - The hand-rolled focus trap wraps Tab and Shift+Tab through the panel's focusables.
+ * - The wizard registers in the `open-dialogs` inventory for as long as it is up.
  *
  * Axe-based a11y coverage lives in `OnboardingWizard.a11y.test.ts`.
  * Per-step component behaviour lives in `StepFda.test.ts` etc.
@@ -28,6 +29,7 @@ import {
   setStep1Restart,
   setCurrentStep,
 } from './onboarding-state.svelte'
+import { blockingSoftDialog, isAnySoftDialogOpen, _resetOpenDialogsForTesting } from '$lib/ui/open-dialogs.svelte'
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
@@ -130,6 +132,7 @@ describe('OnboardingWizard', () => {
   beforeEach(() => {
     closeWizard()
     resetForTesting()
+    _resetOpenDialogsForTesting()
   })
 
   afterEach(async () => {
@@ -310,6 +313,31 @@ describe('OnboardingWizard', () => {
     expect(event.defaultPrevented).toBe(true)
     expect(getOnboardingState().currentStep).toBe(initialStep)
     expect(mounted.target.querySelector('.wizard-panel')).not.toBeNull()
+  })
+
+  // The wizard is a soft dialog that doesn't use `ModalDialog`, so it registers in the
+  // `open-dialogs` inventory itself. That inventory is what `+page.svelte` asks before it
+  // lets a bare-key Tier 1 shortcut through: unregistered, Tab reached `pane.switch`, which
+  // ate the `preventDefault` and left focus pinned inside the wizard.
+  it('registers in the open-dialogs inventory for as long as it is up', async () => {
+    expect(isAnySoftDialogOpen()).toBe(false)
+    mounted = mountWizard()
+    await tick()
+    expect(isAnySoftDialogOpen()).toBe(true)
+    expect(blockingSoftDialog()).toBe('onboarding')
+
+    // Let the language picker's Ark portal finish mounting into the overlay before we
+    // pull the DOM out from under it; its `tick().then(...)` would otherwise land on a
+    // detached container and reject.
+    for (let i = 0; i < 10; i++) await Promise.resolve()
+    await tick()
+
+    // An unpaired close would block every file operation until restart, so the
+    // unregistration is worth pinning too.
+    await unmount(mounted.instance)
+    mounted.target.remove()
+    mounted = undefined
+    expect(isAnySoftDialogOpen()).toBe(false)
   })
 
   // Focus trap wrap-around. We assert structurally (first ↔ last focusable) rather than

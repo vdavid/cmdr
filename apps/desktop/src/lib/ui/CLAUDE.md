@@ -22,8 +22,8 @@ Reusable components; only silent-breakage rules live here. Ark UI backs the comp
   `dialogId`, and add a gallery row (type error + `dialog-gallery-coverage`). Its `whileOpen` verdict is REQUIRED (won't
   compile until answered): it decides whether a file operation may start behind your dialog. Scope:
   `$lib/file-explorer/pane/DETAILS.md` § "The operation-start gate".
-- **`ModalDialog` is `open-dialogs.svelte.ts`'s only registrar**, keeping that set exhaustive. ❌ Never mark a dialog
-  open elsewhere: an unpaired close blocks every file operation until restart.
+- **`ModalDialog` registers what it renders in `open-dialogs.svelte.ts`**, keeping that set exhaustive;
+  `OnboardingWizard` is the only hand-registrar. ❌ An unpaired close blocks file operations until restart.
 - **`ModalDialog`'s overlay starts at `inset: var(--titlebar-height) 0 0 0`**, keeping the macOS window-drag region
   live; any full-window backdrop must too. ❌ Keep the drag offset and dragged size OFF the `style` attribute
   (`containerStyle` owns it), ❌ never restore `overflow: hidden` on `.modal-dialog` (resize bands hang over its edge),
