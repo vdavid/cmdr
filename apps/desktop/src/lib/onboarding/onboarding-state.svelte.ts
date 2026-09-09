@@ -125,12 +125,17 @@ interface OnboardingStateData {
    */
   footerOverride: WizardFooterButton[] | null
   /**
-   * A warning the wizard renders to the LEFT of the footer buttons, or `null` for none.
-   * It belongs to the footer rather than the step body because it answers a press on a
+   * A warning the wizard shows ON the footer's forward button, or `null` for none. It
+   * belongs to the footer rather than the step body because it answers a press on a
    * footer button ("you enabled AI but entered no API key"), and an answer that appears
    * a screenful away from the button reads as nothing happening at all.
+   *
+   * It's the ELEMENT, not a string: the note wants a warning glyph and emphasis, and the
+   * step that owns the copy is the one that can render it (`<Trans>` needs its snippets
+   * at the call site). The step keeps it in a `<div hidden>` host and the tooltip borrows
+   * it, exactly like every other `contentEl` tooltip.
    */
-  footerNote: string | null
+  footerNote: HTMLElement | null
   /**
    * Monotonic tick. A step bumps this via `requestWizardComplete()` to ask the wizard
    * shell to fire `onComplete` and close the wizard. The wizard's `$effect` watches
@@ -367,11 +372,12 @@ export function setFooterOverride(buttons: WizardFooterButton[] | null): void {
 }
 
 /**
- * Step-controlled warning beside the footer buttons; `null` clears it. The AI step uses
- * it to say "you picked cloud AI but stored no API key" the moment the user presses
- * Next, and clears it again on the user's next interaction.
+ * Step-controlled warning shown on the footer's forward button; `null` clears it. Takes
+ * the rendered element (see `footerNote`), so the step owning the copy also owns its
+ * markup. The AI step uses it to say "you picked cloud AI but stored no API key" the
+ * moment the user presses Next, and clears it again on their next interaction.
  */
-export function setFooterNote(note: string | null): void {
+export function setFooterNote(note: HTMLElement | null): void {
   state.footerNote = note
 }
 

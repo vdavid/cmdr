@@ -71,6 +71,11 @@ tight row. It now reaches the user as a tooltip ON the button that was pressed, 
 since the pointer is already over the button and a keyboard press has just suppressed hover tooltips. The note stays on
 that button as `tooltipContent` too, so hovering back re-shows it while the note stands.
 
+`footerNote` holds the rendered ELEMENT, not a string, and the tooltip borrows it as a `contentEl`. A note worth
+interrupting someone for wants a warning glyph and emphasis on the way out, and the STEP is what can render that: its
+`<Trans>` snippets only exist at its own call site. So the step keeps the note in a `<div hidden>` host, exactly like
+every other rich tooltip, and hands the wizard the element.
+
 The wizard finds the button by `querySelector` on its own primary slot rather than taking a ref from `Button`, which
 exposes none; the note always belongs to the LAST (forward-most) button in the slot.
 
@@ -240,10 +245,16 @@ Three pieces stacked top to bottom:
 
    They render through the house `RadioGroup`, not the bordered, tinted radio CARDS they used to be: on a page that
    already carries a banner and a comparison table, three filled blocks made the actual question the heaviest thing on
-   screen. Each option's trade-off is quiet text on its own line via `itemTrailing`, except the local model's, which is
-   long enough to sit behind an info glyph (`onboarding.stepAi.local.tooltip`). ❌ That glyph is a `<button>` in
-   `itemTrailing`, never inside the option: a focusable control nested in a `role="radio"` element trips axe's
-   nested-interactive rule, which is exactly what the snippet exists for.
+   screen. Each option's trade-off is quiet text on its own line, except the local model's, which is long enough to sit
+   behind an info glyph (`onboarding.stepAi.local.tooltip`).
+
+   **Which snippet each piece uses is an accessibility decision, not a layout one.** The helper text and the
+   recommendation badge go in `itemInline`, INSIDE the label, so clicking either picks the option and both join the
+   radio's accessible name — they read as part of the choice, and a user who aims at the sentence rather than the dot
+   gets what they expected. ❌ The info glyph can't go there: it's a `<button>`, and a focusable control nested in a
+   `role="radio"` element trips axe's nested-interactive rule, so it sits in `itemTrailing` beside the option. The
+   download note uses `itemFooter` rather than the group `footer`, or it would hang under the CLOUD option (the last
+   one) while describing the local one.
 
    The recommendation is a gold badge (a sparkle plus one word) rather than a parenthetical, because it's the one steer
    the step gives and it should be findable without reading. Brand `--color-cmdr-gold` at 18% for the fill with the

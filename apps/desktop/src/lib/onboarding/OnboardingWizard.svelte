@@ -198,7 +198,7 @@
             hideTooltipFor(buttonEl)
             return
         }
-        showTooltipNow(buttonEl, note)
+        showTooltipNow(buttonEl, { contentEl: note })
     })
 
     /**
@@ -314,7 +314,9 @@
                         disabled={button.disabled ?? false}
                         ariaDisabled={button.blockedReason !== undefined}
                         tooltipContent={button.blockedReason ??
-                            (i === footerButtons.length - 1 ? (onboardingState.footerNote ?? undefined) : undefined)}
+                            (i === footerButtons.length - 1 && onboardingState.footerNote !== null
+                                ? { contentEl: onboardingState.footerNote }
+                                : undefined)}
                         onclick={button.onclick}
                         aria-label={button.ariaLabel ?? button.label}
                     >

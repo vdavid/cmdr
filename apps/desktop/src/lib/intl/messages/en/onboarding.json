@@ -446,9 +446,12 @@
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
-  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Pls fix this above or click Next again to accept and go on.",
+  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Please fix this above.\n\n<strong>Click \"{nextLabel}\" again to ignore this and go on.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "description": "Warning shown beside the Next button on the AI step when the user picked a cloud provider but stored no API key. The press doesn't advance; the next one does. Casual, not scolding (\"Pls\" is a deliberately informal \"Please\"). \"API key\" is a technical credential term; \"Next\" is the footer button's own label, so match onboarding.wizard.next. \"above\" points at the provider setup higher up the same page.",
+    "description": "Warning shown on the Next button on the AI step when the user picked a cloud provider but stored no API key. The press doesn't advance; the next one does. Matter-of-fact, not scolding. <strong> bolds the way out, which is the sentence the user acts on. {nextLabel} is that button's own label, supplied from onboarding.wizard.next so the two can't drift; keep the quotes around it. \"API key\" is a technical credential term. \"above\" points at the provider setup higher up the same page. The blank line is a real paragraph break in the tooltip; keep it.",
+    "placeholders": {
+      "nextLabel": "the forward button's label, already translated (for example \"Next\")"
+    },
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },

@@ -52,6 +52,22 @@
          * element trips axe's nested-interactive rule.
          */
         itemTrailing?: Snippet<[string]>
+        /**
+         * Rendered INSIDE the option's label, right after the label text, receiving that option's
+         * `value`. Use it for a badge or a run of helper text that should read as part of the
+         * option: everything in here is clickable (the label is what selects the radio) and joins
+         * the control's accessible name, which `itemTrailing` does neither of.
+         *
+         * ❌ Nothing focusable — that's what `itemTrailing` is for. A `string` description goes in
+         * the item's `description` field instead; this is for markup.
+         */
+        itemInline?: Snippet<[string]>
+        /**
+         * Rendered under one option, receiving that option's `value`. For a note or panel that
+         * belongs to a single choice, where the group-level `footer` would strand it at the bottom
+         * of the list under whichever option happens to be last.
+         */
+        itemFooter?: Snippet<[string]>
     }
 
     /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
@@ -65,6 +81,8 @@
         ariaLabel,
         footer,
         itemTrailing,
+        itemInline,
+        itemFooter,
     }: Props = $props()
     /* eslint-enable prefer-const */
 
@@ -84,27 +102,44 @@
         style={columns === undefined ? undefined : `grid-template-columns: repeat(${String(columns)}, minmax(0, 1fr))`}
     >
         {#each items as item (item.value)}
-            <div class="radio-row">
-                <!-- The described case is a DATA ATTRIBUTE, not a second class: a
-                     computed `class` string hides the name from the unused-CSS
-                     scanner, which then reads every `.radio-*` rule as dead. -->
-                <RadioGroup.Item
-                    value={item.value}
-                    class="radio-item"
-                    data-described={item.description ? 'true' : undefined}
-                    disabled={disabled || item.disabled}
-                >
-                    <RadioGroup.ItemControl class="radio-control" />
-                    <RadioGroup.ItemText class="radio-text">
-                        <span class="radio-label">{item.label}</span>
-                        {#if item.description}
-                            <span class="radio-description">{item.description}</span>
-                        {/if}
-                    </RadioGroup.ItemText>
-                    <RadioGroup.ItemHiddenInput />
-                </RadioGroup.Item>
-                {#if itemTrailing}
-                    {@render itemTrailing(item.value)}
+            <!-- The cell is `display: contents` unless someone asked for a per-option footer,
+                 so a group without one lays out exactly as it did before the wrapper existed:
+                 the row itself stays the flex / grid item. -->
+            <div class="radio-cell" class:has-footer={itemFooter !== undefined}>
+                <div class="radio-row">
+                    <!-- The described case is a DATA ATTRIBUTE, not a second class: a
+                         computed `class` string hides the name from the unused-CSS
+                         scanner, which then reads every `.radio-*` rule as dead. -->
+                    <RadioGroup.Item
+                        value={item.value}
+                        class="radio-item"
+                        data-described={item.description ? 'true' : undefined}
+                        disabled={disabled || item.disabled}
+                    >
+                        <RadioGroup.ItemControl class="radio-control" />
+                        <RadioGroup.ItemText class="radio-text">
+                            {#if itemInline}
+                                <!-- `.radio-text` is a COLUMN (label over description), so inline
+                                     content needs its own row or it would stack under the label. -->
+                                <span class="radio-label-line">
+                                    <span class="radio-label">{item.label}</span>
+                                    {@render itemInline(item.value)}
+                                </span>
+                            {:else}
+                                <span class="radio-label">{item.label}</span>
+                            {/if}
+                            {#if item.description}
+                                <span class="radio-description">{item.description}</span>
+                            {/if}
+                        </RadioGroup.ItemText>
+                        <RadioGroup.ItemHiddenInput />
+                    </RadioGroup.Item>
+                    {#if itemTrailing}
+                        {@render itemTrailing(item.value)}
+                    {/if}
+                </div>
+                {#if itemFooter}
+                    {@render itemFooter(item.value)}
                 {/if}
             </div>
         {/each}
@@ -216,6 +251,31 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-xxs);
+    }
+
+    /* `display: contents` is the default on purpose: a group with no `itemFooter` keeps
+       `.radio-row` as the flex / grid item, so the wrapper costs no layout at all. Only a
+       group that asked for per-option footers becomes a real box, holding the option and
+       its footer as one unit through the column or the grid. */
+    .radio-cell {
+        display: contents;
+    }
+
+    .radio-cell.has-footer {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    /* Label plus `itemInline` content on one line. `baseline` so a badge sits on the
+       label's own baseline rather than the middle of its box; the run wraps as a whole
+       when the row runs out of width. */
+    .radio-label-line {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+        min-width: 0;
     }
 
     .radio-label {

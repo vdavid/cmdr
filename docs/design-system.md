@@ -695,12 +695,23 @@ guessing. The onboarding beta step's terms checkbox is the reference implementat
 label), `onValueChange`, `disabled` (group-level), `orientation` (`'vertical'` stacks, `'horizontal'` wraps in a row),
 `columns` (N equal full-width grid columns filling row by row, so five options over three columns read as 3 + 2;
 overrides `orientation`, and beats `'horizontal'` whenever a wrapping row would break somewhere arbitrary), `ariaLabel`,
-a `footer` snippet rendered after the items with the current `value` (for custom content when a specific option is
-selected), and an `itemTrailing` snippet rendered on one option's own line (Brief mode's "Limit to" carries its width
-field that way). `itemTrailing` renders BESIDE the option, never inside it: a focusable control nested in a
-`role="radio"` element trips axe's nested-interactive rule. An option's dot CENTERS on its label; only an option that
-carries a `description` top-aligns (it emits `data-described`), because there the dot belongs beside the label line
-rather than the block's middle.
+and four content snippets, each receiving the value of the option it renders for (return content for the one option it
+belongs to, nothing for the rest):
+
+- `footer` — after ALL the items, with the current `value`. For content that belongs to the group ("when cloud is
+  picked, show the provider panel").
+- `itemFooter` — under ONE option. Reach for it over `footer` whenever the content belongs to a single choice, or it
+  gets stranded at the bottom of the list under whichever option happens to be last.
+- `itemTrailing` — on the option's own line, BESIDE it, never inside (Brief mode's "Limit to" carries its width field
+  that way). This is where anything FOCUSABLE goes: a focusable control nested in a `role="radio"` element trips axe's
+  nested-interactive rule.
+- `itemInline` — INSIDE the option's label, right after the label text. The mirror image of `itemTrailing`: everything
+  here is clickable (the label is what selects the radio) and joins the control's accessible name, so it's where a
+  badge or a run of helper markup belongs. ❌ Nothing focusable. A plain `string` description goes in the item's
+  `description` field instead; this is for markup.
+
+An option's dot CENTERS on its label; only an option that carries a `description` top-aligns (it emits
+`data-described`), because there the dot belongs beside the label line rather than the block's middle.
 
 **`Switch`** (`lib/ui/Switch.svelte`) is the track-and-thumb on/off control: a thin wrapper over Ark UI's `Switch`, with
 the same prop shape as `Checkbox` minus `indeterminate` (`checked` bindable, `disabled`, `id`, `ariaLabel`,

@@ -139,6 +139,8 @@
      */
     let keyWarningShown = $state(false)
     let dismissKeyWarning: () => void = () => undefined
+    /** The warning's rendered body, handed to the wizard so it can show it on the button. */
+    let keyWarningEl = $state<HTMLDivElement>()
 
     /**
      * Show the warning and arm the "anything the user does next clears it" listeners.
@@ -155,7 +157,7 @@
      */
     function showKeyWarning(): void {
         keyWarningShown = true
-        setFooterNote(tString('onboarding.stepAi.missingKeyWarning'))
+        if (keyWarningEl) setFooterNote(keyWarningEl)
 
         const clear = (event: Event): void => {
             const target = event.target
@@ -343,6 +345,9 @@
 
     /** The local option's long explanation, adopted by the tooltip (never the hidden host). */
     let localDetailsEl = $state<HTMLDivElement>()
+
+    /** The forward button's own label, so the warning can name the button by its real name. */
+    const nextLabel = $derived(tString('onboarding.wizard.next'))
 </script>
 
 {#snippet em(children: Snippet)}<em>{@render children()}</em>{/snippet}
@@ -481,23 +486,14 @@
         }}
         ariaLabel={tString('onboarding.stepAi.choiceGroupAria')}
     >
-        {#snippet itemTrailing(value: string)}
+        <!-- The badge and the helper text live INSIDE the label, so clicking either picks the
+             option and both join its accessible name. Only the info button has to sit outside:
+             a focusable control nested in a `role="radio"` element trips axe's
+             nested-interactive rule, which is what `itemTrailing` exists for. -->
+        {#snippet itemInline(value: string)}
             {#if value === 'off'}
                 <span class="choice-help">{tString('onboarding.stepAi.off.help')}</span>
             {:else if value === 'local'}
-                <!-- A `<button>` BESIDE the option, never inside it: a focusable control nested
-                     in a `role="radio"` element trips axe's nested-interactive rule, which is
-                     what `itemTrailing` exists for. -->
-                <button
-                    type="button"
-                    class="choice-info"
-                    aria-label={tString('onboarding.moreAbout', {
-                        topic: tString('onboarding.stepAi.local.label'),
-                    })}
-                    use:tooltip={{ contentEl: localDetailsEl }}
-                >
-                    <Icon name="info" size={14} aria-hidden="true" />
-                </button>
                 {#if !localAiSupported}
                     <!-- Visible, ❌ not a tooltip on a control the user can't reach: the reason
                          an option is greyed out is the one thing they most need to read. -->
@@ -512,10 +508,30 @@
             {/if}
         {/snippet}
 
-        {#snippet footer(value: string)}
-            {#if value === 'local' && didStartLocalDownload}
+        {#snippet itemTrailing(value: string)}
+            {#if value === 'local'}
+                <button
+                    type="button"
+                    class="choice-info"
+                    aria-label={tString('onboarding.moreAbout', {
+                        topic: tString('onboarding.stepAi.local.label'),
+                    })}
+                    use:tooltip={{ contentEl: localDetailsEl }}
+                >
+                    <Icon name="info" size={14} aria-hidden="true" />
+                </button>
+            {/if}
+        {/snippet}
+
+        <!-- The download note belongs to the LOCAL option, so it hangs under that row rather
+             than in the group footer, which would strand it below the cloud option. -->
+        {#snippet itemFooter(value: string)}
+            {#if value === 'local' && choice === 'local' && didStartLocalDownload}
                 <p class="local-note">{tString('onboarding.stepAi.local.note')}</p>
             {/if}
+        {/snippet}
+
+        {#snippet footer(value: string)}
             {#if value === 'cloud'}
                 <div class="cloud-grid">
                     <div class="cloud-grid-picker">
@@ -540,6 +556,12 @@
     <div hidden>
         <div bind:this={localDetailsEl} class="choice-details">
             <p><Trans key="onboarding.stepAi.local.tooltip" snippets={{ strong, em }} /></p>
+        </div>
+        <!-- The missing-key warning, rendered here so the step that owns the copy owns its
+             markup too, and handed to the wizard through `setFooterNote`. -->
+        <div bind:this={keyWarningEl} class="key-warning">
+            <span class="key-warning-icon"><Icon name="triangle-alert" size={16} aria-hidden="true" /></span>
+            <p><Trans key="onboarding.stepAi.missingKeyWarning" snippets={{ strong }} params={{ nextLabel }} /></p>
         </div>
     </div>
 </OnboardingStepShell>
@@ -734,12 +756,19 @@
         color: var(--color-cmdr-gold);
     }
 
+    /* The glyph sits on the LABEL's line, not the row's middle. `.radio-item` carries its
+       own vertical padding, so centring the button against the whole row left the glyph
+       hanging a couple of pixels below the words it belongs to. Matching the row's own
+       padding and giving the button the text's line box lines the two up. */
     .choice-info {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        align-self: flex-start;
         flex: none;
-        padding: 0;
+        height: calc(var(--font-size-sm) * var(--font-line-height-prose));
+        padding: var(--spacing-xs) 0;
+        box-sizing: content-box;
         border: none;
         background: transparent;
         color: var(--color-text-tertiary);
@@ -759,6 +788,26 @@
     /* The local option's long explanation, adopted into the tooltip. One sentence per
        line, same as step 4's info tooltips. */
     .choice-details p {
+        margin: 0;
+        white-space: pre-line;
+    }
+
+    /* The missing-key warning, adopted into the tooltip on the forward button. The glyph
+       hangs beside the text rather than above it, and top-aligns so it marks the first
+       line of a note that runs to three. */
+    .key-warning {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+
+    .key-warning-icon {
+        display: inline-flex;
+        flex: none;
+        color: var(--color-warning);
+    }
+
+    .key-warning p {
         margin: 0;
         white-space: pre-line;
     }
