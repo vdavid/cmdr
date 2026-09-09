@@ -10,9 +10,9 @@
  *
  * `OnboardingWizard.svelte` is the ONE other registrar: it wears `ModalDialog`'s
  * chrome but not the component (bespoke sheet, no Escape, a portal target of its own),
- * so it makes the same paired `onMount` / `onDestroy` announcement by hand. A third
- * one would be a bad sign — reach for `ModalDialog` instead. ❌ Never mark a dialog
- * open from anywhere else.
+ * so it makes the same paired `onMount` / `onDestroy` announcement by hand. A third one
+ * would be a bad sign; reach for `ModalDialog` instead. ❌ Never mark a dialog open from
+ * anywhere else.
  *
  * Per-window by construction: each webview evaluates its own copy of this module,
  * so the viewer's dialogs never appear in the main window's set. The Rust tracker

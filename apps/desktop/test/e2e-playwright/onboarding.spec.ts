@@ -1,5 +1,5 @@
 /**
- * E2E tests for onboarding wizard re-entry.
+ * E2E tests for onboarding wizard re-entry, plus its keyboard contract.
  *
  * Covers the user-visible re-entry surfaces: the macOS menu item, the command
  * palette command (both platforms), and the MCP `dialog open onboarding` path. Walks the resume rule's already-granted variant (the
@@ -99,6 +99,46 @@ test.describe('Onboarding wizard re-entry', () => {
     // The palette closes itself on execute; the wizard mounts.
     await tauriPage.waitForSelector(WIZARD_SELECTOR, 3000)
     expect(await wizardIsOpen(tauriPage)).toBe(true)
+  })
+
+  // Regression anchor for the Tab lockout, and the only test that runs the real chain: the
+  // document keydown handler, `isModalDialogOpen()`, and the wizard's registration in the
+  // frontend dialog inventory. Unregistered, Tab resolved to the Tier 1 `pane.switch`
+  // binding, so the handler killed the browser's focus move, the command focused a pane
+  // behind the overlay, and `focus-trap.ts`'s leak guard pulled focus back where it
+  // started. Tab looked like a dead key, while `⇧Tab`, bound to no command, worked.
+  //
+  // Two presses, one assertion, because "the pane did NOT switch" alone can only be
+  // checked by waiting for an absence, which passes before an async dispatch could land.
+  // With the fix, press 1 does nothing and press 2 switches, so the run ends on the OTHER
+  // pane. Without it, press 1 switches and press 2 switches back, ending where it started,
+  // and the poll below times out. `defaultPrevented` can't stand in: `focus-trap.ts` has
+  // its own document-level Tab handler that prevents the default whenever a trap is up,
+  // so it reads the same either way.
+  test('Tab does not reach pane.switch behind the wizard', async ({ tauriPage }) => {
+    const pressTab = `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }))`
+    const paneFocused = (index: 0 | 1) =>
+      tauriPage.evaluate<boolean>(
+        `(document.querySelectorAll('.file-pane')[${String(index)}]?.getAttribute('class') || '').includes('is-focused')`,
+      )
+
+    // `ensureAppReady` clicks the left pane, so that's where a correct run starts and,
+    // one swallowed press plus one live press later, is NOT where it ends.
+    expect(await paneFocused(0), 'the left pane did not start focused').toBe(true)
+
+    await dispatchMenuCommand(tauriPage, 'cmdr.openOnboarding')
+    await tauriPage.waitForSelector(WIZARD_SELECTOR, 3000)
+    await tauriPage.evaluate(pressTab)
+
+    await closeWizardIfOpen(tauriPage)
+    await expect.poll(async () => wizardIsOpen(tauriPage), { timeout: 3000 }).toBe(false)
+    await tauriPage.evaluate(pressTab)
+
+    await expect.poll(() => paneFocused(1), { timeout: 3000 }).toBe(true)
+
+    // Hand the next spec the left-focused pane `ensureAppReady` promises.
+    await tauriPage.evaluate(pressTab)
+    await expect.poll(() => paneFocused(0), { timeout: 3000 }).toBe(true)
   })
 
   test('Escape does not close the wizard (round-3 #9: must commit to a step)', async ({ tauriPage }) => {
