@@ -77,7 +77,7 @@ fn run(app: AppHandle, db_path: PathBuf, data_dir: PathBuf, receiver: Receiver<W
     // gates just before this thread comes up, so this is the first moment a launch can tell
     // that the rows it just read back belong to a purpose nobody has agreed to — which is what
     // every user looks like the launch after a `CONSENT_COPY_VERSION` bump.
-    loop_state.purge_inbox_if_not_permitted();
+    loop_state.purge_inbox_if_consent_withdrawn();
     if let Err(e) = persist::save_all(&loop_state.conn, &loop_state.inbox) {
         log::warn!(target: LOG_TARGET, "the reconciled inbox was not written back: {e}");
     }
@@ -210,7 +210,7 @@ impl WakeLoop {
         let stamped = schedule::stamp_after(&control, self.not_before, now_secs());
         match control {
             WakeControl::SettingsChanged => self.reload_settings(),
-            WakeControl::ReadinessChanged => self.purge_inbox_if_not_permitted(),
+            WakeControl::ReadinessChanged => self.purge_inbox_if_consent_withdrawn(),
             WakeControl::WakeFinished(_) => self.wake_in_flight = false,
             WakeControl::ForceWake(request) => self.forced = Some(request),
             WakeControl::SweepRejected { set_id } => self.note_rejection(set_id),
@@ -218,15 +218,16 @@ impl WakeLoop {
         self.not_before = stamped;
     }
 
-    /// Throw the backlog away, on disk as well as in memory, when the gates stopped permitting
-    /// it to be stored.
+    /// Throw the backlog away, on disk as well as in memory, when consent stopped permitting it
+    /// to be kept.
     ///
     /// ⚠️ **The disk half is the point.** `agent_inbox` rows are folder paths, counts, and
     /// timestamps: a record of what the user has been doing. A revoke, or the bump that
     /// un-accepts everybody when the consent copy changes, withdraws the purpose that record
-    /// was kept for, so it goes rather than sitting there until somebody re-accepts.
-    fn purge_inbox_if_not_permitted(&mut self) {
-        let dropped = self.inbox.purge_if_not_permitted(readiness_snapshot());
+    /// was kept for, so it goes rather than sitting there until somebody re-accepts. Turning AI
+    /// off withdraws no purpose, so it takes nothing away.
+    fn purge_inbox_if_consent_withdrawn(&mut self) {
+        let dropped = self.inbox.purge_if_consent_withdrawn(readiness_snapshot());
         if dropped == 0 {
             return;
         }

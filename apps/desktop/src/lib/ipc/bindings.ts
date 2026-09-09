@@ -13865,7 +13865,7 @@ export type WakePhase =
  *  serde derives on purpose: `readiness.rs` is values-in-values-out and knows nothing about a
  *  wire.
  */
-export type WakeReadinessView = 'ready' | 'needsConsent' | 'needsFullDiskAccess' | 'needsApiKey'
+export type WakeReadinessView = 'ready' | 'needsConsent' | 'off' | 'needsFullDiskAccess' | 'needsApiKey'
 
 /**
  *  How a live search's walk ended. Typed, because three of the four leave the

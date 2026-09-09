@@ -78,7 +78,7 @@ pub use job::{
 };
 pub use persist::{clear, load, save_all, save_row};
 pub use quiet::discard_quiet_thread;
-pub use readiness::{AgentGates, WakeReadiness, readiness};
+pub use readiness::{AgentGates, ProviderGate, WakeReadiness, readiness};
 pub use settings::WakeSettings;
 pub use snapshot::{readiness_snapshot, refresh_readiness};
 pub use staged::{AgentWakeStaged, init_wake_staged_emitter};

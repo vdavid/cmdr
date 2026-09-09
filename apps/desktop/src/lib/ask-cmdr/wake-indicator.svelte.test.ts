@@ -49,7 +49,7 @@ beforeEach(() => {
 
 describe('what the corner shows', () => {
   it('says nothing to somebody who never opted in, whatever the gates report', () => {
-    for (const readiness of ['ready', 'needsConsent', 'needsFullDiskAccess', 'needsApiKey'] as const) {
+    for (const readiness of ['ready', 'needsConsent', 'off', 'needsFullDiskAccess', 'needsApiKey'] as const) {
       wakeIndicator.readiness = readiness
       expect(wakeIndicatorMode(wakeIndicator)).toBe('silent')
     }
@@ -58,6 +58,13 @@ describe('what the corner shows', () => {
   it('still says nothing once they opt in but consent is missing', () => {
     wakeIndicator.proactive = true
     wakeIndicator.readiness = 'needsConsent'
+
+    expect(wakeIndicatorMode(wakeIndicator)).toBe('silent')
+  })
+
+  it('says nothing to somebody who turned AI off, rather than nagging them to finish setting it up', () => {
+    wakeIndicator.proactive = true
+    wakeIndicator.readiness = 'off'
 
     expect(wakeIndicatorMode(wakeIndicator)).toBe('silent')
   })

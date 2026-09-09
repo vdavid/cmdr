@@ -73,6 +73,7 @@ pub enum WakePhase {
 pub enum WakeReadinessView {
     Ready,
     NeedsConsent,
+    Off,
     NeedsFullDiskAccess,
     NeedsApiKey,
 }
@@ -82,6 +83,7 @@ impl From<WakeReadiness> for WakeReadinessView {
         match readiness {
             WakeReadiness::Ready => Self::Ready,
             WakeReadiness::NeedsConsent => Self::NeedsConsent,
+            WakeReadiness::Off => Self::Off,
             WakeReadiness::NeedsFullDiskAccess => Self::NeedsFullDiskAccess,
             WakeReadiness::NeedsApiKey => Self::NeedsApiKey,
         }
@@ -165,6 +167,7 @@ mod tests {
             WakeReadinessView::from(WakeReadiness::NeedsConsent),
             WakeReadinessView::NeedsConsent
         );
+        assert_eq!(WakeReadinessView::from(WakeReadiness::Off), WakeReadinessView::Off);
         assert_eq!(
             WakeReadinessView::from(WakeReadiness::NeedsFullDiskAccess),
             WakeReadinessView::NeedsFullDiskAccess

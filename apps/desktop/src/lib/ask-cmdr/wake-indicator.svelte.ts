@@ -41,13 +41,15 @@ export const wakeIndicator = $state<WakeIndicatorState>({
 /**
  * What the corner should render, as one token.
  *
- * ⚠️ **`'silent'` covers two cases on purpose**, and it is the resolution of a contradiction the
- * two halves of this feature used to state differently. `readiness.rs` says every gap is worth
+ * ⚠️ **`'silent'` covers several cases on purpose**, and it is the resolution of a contradiction
+ * the two halves of this feature used to state differently. `readiness.rs` says every gap is worth
  * reporting, because a user who declined disk access and a user with a tidy Downloads folder
  * otherwise see the identical nothing. `SuggestedOpsIndicator` says a control for a feature with
  * nothing to say is noise. Both are right, about different users: the gap is for somebody who
- * opted IN and hit a wall. Somebody who never consented, or who turned the proactive loop off,
- * gets nothing — an always-present AI nag is exactly what they said no to.
+ * opted IN and hit a wall. Somebody who never consented, who turned AI itself off (`'off'`), or
+ * who turned the proactive loop off gets nothing — an always-present AI nag is exactly what they
+ * said no to. `'off'` is the sharpest case of that rule: naming a gap there would ask them to
+ * finish setting up a provider they deliberately switched off.
  *
  * A running wake shows REGARDLESS of the setting: it is spending the user's money right now and
  * has to be visible and stoppable, however it was started (a forced wake, or a setting turned off
@@ -57,8 +59,10 @@ export type WakeIndicatorMode = 'silent' | 'thinking' | 'needsFullDiskAccess' | 
 
 export function wakeIndicatorMode(state: WakeIndicatorState): WakeIndicatorMode {
   if (state.thinkingIn !== null) return 'thinking'
-  if (!state.proactive || state.readiness === 'needsConsent' || state.readiness === 'ready') return 'silent'
-  return state.readiness
+  if (!state.proactive) return 'silent'
+  const { readiness } = state
+  if (readiness === 'ready' || readiness === 'needsConsent' || readiness === 'off') return 'silent'
+  return readiness
 }
 
 let unlisten: UnlistenFn | null = null

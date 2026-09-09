@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use tauri::{AppHandle, Manager, Runtime};
 
 use super::channel::{WakeControl, send_control};
-use super::{AgentGates, WakeReadiness, readiness};
+use super::{AgentGates, ProviderGate, WakeReadiness, readiness};
 use crate::agent::AgentDb;
 use crate::agent::consent::has_current_consent;
 
@@ -25,6 +25,7 @@ const NEEDS_CONSENT: u8 = 0;
 const NEEDS_FULL_DISK_ACCESS: u8 = 1;
 const NEEDS_API_KEY: u8 = 2;
 const READY: u8 = 3;
+const OFF: u8 = 4;
 
 /// Starts closed. Before `agent::start` has run there is no store to read consent from, and
 /// "we haven't looked yet" must not read as "the user said yes".
@@ -36,6 +37,7 @@ fn as_code(readiness: WakeReadiness) -> u8 {
         WakeReadiness::NeedsFullDiskAccess => NEEDS_FULL_DISK_ACCESS,
         WakeReadiness::NeedsApiKey => NEEDS_API_KEY,
         WakeReadiness::Ready => READY,
+        WakeReadiness::Off => OFF,
     }
 }
 
@@ -44,6 +46,7 @@ fn from_code(code: u8) -> WakeReadiness {
         NEEDS_FULL_DISK_ACCESS => WakeReadiness::NeedsFullDiskAccess,
         NEEDS_API_KEY => WakeReadiness::NeedsApiKey,
         READY => WakeReadiness::Ready,
+        OFF => WakeReadiness::Off,
         // Anything unrecognized is the closed answer, which is also the initial one.
         _ => WakeReadiness::NeedsConsent,
     }
@@ -68,7 +71,7 @@ pub fn refresh_readiness<R: Runtime>(app: &AppHandle<R>) {
     let gates = AgentGates {
         consented: consented(app),
         fda_pending: crate::fda_gate::is_fda_pending_runtime(),
-        has_api_key: has_api_key(app),
+        provider: provider_gate(app),
     };
     let next = readiness(gates);
     let previous = READINESS.swap(as_code(next), Ordering::Relaxed);
@@ -97,23 +100,25 @@ fn consented<R: Runtime>(app: &AppHandle<R>) -> bool {
     }
 }
 
-/// Whether a usable provider is configured for the interactive slot — the same resolution a
-/// send performs, so the indicator can never say "ready" for a slot that would refuse.
+/// What the interactive slot's provider would do with a send — the same resolution a send
+/// performs, so the indicator can never say "ready" for a slot that would refuse, nor name a gap
+/// to somebody who turned AI off.
 ///
-/// ⚠️ That includes the E2E fake's short-circuit. `resolve_agent_llm` answers `Ok` under
-/// `CMDR_E2E_ASK_CMDR_FAKE` with `ai.provider` still off, so without the same branch here the
-/// gate would report `NeedsApiKey` for a slot that resolves fine, and no wake could ever run
-/// under the harness.
-fn has_api_key<R: Runtime>(app: &AppHandle<R>) -> bool {
+/// ⚠️ That includes the E2E fake's short-circuit, which resolves as [`ProviderGate::Ready`].
+/// `resolve_agent_llm` answers `Ok` under `CMDR_E2E_ASK_CMDR_FAKE` with `ai.provider` still off,
+/// so without the same branch here the gate would report `Off` for a slot that resolves fine, and
+/// no wake could ever run under the harness.
+fn provider_gate<R: Runtime>(app: &AppHandle<R>) -> ProviderGate {
     if crate::test_mode::ask_cmdr_fake_active() {
-        return true;
+        return ProviderGate::Ready;
     }
     use crate::ai::manager::BackendResolution;
     let model_override = crate::settings::load_ask_cmdr_interactive_model(app);
-    matches!(
-        crate::ai::manager::resolve_backend_with_model(model_override.as_deref()),
-        BackendResolution::Ready(_)
-    )
+    match crate::ai::manager::resolve_backend_with_model(model_override.as_deref()) {
+        BackendResolution::Ready(_) => ProviderGate::Ready,
+        BackendResolution::Off => ProviderGate::Off,
+        BackendResolution::NotConfigured(_) | BackendResolution::UnknownProvider(_) => ProviderGate::NotConfigured,
+    }
 }
 
 #[cfg(test)]
@@ -127,6 +132,7 @@ mod tests {
         for state in [
             WakeReadiness::Ready,
             WakeReadiness::NeedsConsent,
+            WakeReadiness::Off,
             WakeReadiness::NeedsFullDiskAccess,
             WakeReadiness::NeedsApiKey,
         ] {

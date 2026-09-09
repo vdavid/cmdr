@@ -158,9 +158,10 @@ So `ForcedWake::only_folder` carries the staged folder, and `WakeLoop::isolate_i
   ❌ Don't drop those decoys as redundant: without them the narrowing is untested and the premise silently returns to
   luck.
 
-⚠️ **The E2E fake counts as a configured provider** (`snapshot.rs::has_api_key`), because `resolve_agent_llm` answers
-`Ok` under `CMDR_E2E_ASK_CMDR_FAKE` with `ai.provider` still off. Without that branch the gate would report
-`NeedsApiKey` for a slot that resolves fine, and no wake could run under the harness at all.
+⚠️ **The E2E fake resolves as a ready provider** (`snapshot.rs::provider_gate`), because `resolve_agent_llm` answers
+`Ok` under `CMDR_E2E_ASK_CMDR_FAKE` with `ai.provider` still off. Without that branch the gate would read the raw
+`BackendResolution::Off` and report `WakeReadiness::Off` for a slot that resolves fine, and no wake could run under the
+harness at all.
 
 ⚠️ **A wake's scripted fake says something different from the rail's** (`chat/session.rs`, selected by `AgentSlot`).
 The rail's E2E specs count replies by matching their exact sentence, so one shared script would both break them on any
@@ -286,34 +287,53 @@ bundle is archaeology and the folder state today is something the agent can look
 
 ## Degraded modes
 
-`readiness(AgentGates) -> WakeReadiness`, in precedence order: consent, then disk access, then the key.
+`readiness(AgentGates) -> WakeReadiness`, in precedence order: consent, then AI being off, then disk access, then the
+key.
 
-The order is the design, because each state asks the user for something. Asking somebody to grant Full Disk Access, or
-to paste a key, for a feature they have not opted into is asking them to widen access for something they may not want.
-Disk access outranks the key because it decides whether the agent can SEE anything.
+The order is the design, because each state either asks the user for something or records that they already answered.
+Asking somebody to grant Full Disk Access, or to paste a key, for a feature they have not opted into is asking them to
+widen access for something they may not want. `Off` comes next because there is nothing to ask somebody who turned the
+feature off, and both remaining gaps would be noise about a feature they are not using. Disk access outranks the key
+because it decides whether the agent can SEE anything.
+
+**`AgentGates.provider` is a tri-state `ProviderGate`, not a `has_api_key: bool`.** The bool collapsed
+`BackendResolution::Off` into the same `false` as a cloud provider with a blank key, so a user who had turned AI off was
+told to finish setting up a provider. `ProviderGate` mirrors `BackendResolution` (`Off` / `NotConfigured` / `Ready`)
+rather than re-deciding the distinction the backend already models, and `provider_gate` in `snapshot.rs` is the one
+mapping.
 
 **Silence lies under a pending FDA decision**: a user who declined and a user with a tidy Downloads folder see the
 identical nothing, and only one of those is the feature working. So `NeedsFullDiskAccess` and `NeedsApiKey` both render
 in the status corner, each with the action that closes them.
 
-⚠️ **`NeedsConsent` is the one state that renders as silence**, and `askCmdr.proactive` being off silences the corner
-the same way. Read literally, rendering every state puts a permanent AI nag in front of every user who never wanted AI,
-which is the noise `SuggestedOpsIndicator` hides at zero to avoid. The gap is for a user who opted IN and hit a wall.
-Both gates live in the frontend's wake indicator; the enum here stays complete, because the writer thread and the
-inbox still need all four answers.
+⚠️ **`NeedsConsent` and `Off` are the two states that render as silence**, and `askCmdr.proactive` being off silences
+the corner the same way. Read literally, rendering every state puts a permanent AI nag in front of every user who never
+wanted AI, which is the noise `SuggestedOpsIndicator` hides at zero to avoid. The gap is for a user who opted IN and hit
+a wall. All those gates live in the frontend's wake indicator; the enum here stays complete, because the writer thread
+and the inbox still need every answer.
 
-**Without consent the pipeline stores nothing** (`admits_to_inbox`). Admitting rows means keeping a record of what the
-user has been doing with their files for a purpose they have not agreed to, and it would mean consenting on a Tuesday
-hands somebody a backlog of everything they did since installing. With consent but no key, signal accumulates: the gap
-is one the user can close and the backlog is theirs, bounded by the staleness horizon.
+⚠️ **Consent outranks `Off` even though both render the same**, so the ordering between them is invisible to the user
+and is decided entirely by what each state DOES: only `NeedsConsent` takes the stored backlog away. Ordering `Off` first
+would let the AI toggle mask a withdrawn consent and leave that record on disk.
+
+**Storing and KEEPING are separate gates.** `admits_to_inbox` (may we ADD) refuses both `NeedsConsent` and `Off`:
+without consent, admitting rows means keeping a record of what the user has been doing with their files for a purpose
+they have not agreed to, and it would mean consenting on a Tuesday hands somebody a backlog of everything they did since
+installing; with AI off, the pile could only grow for a feature that is switched off and nothing may ever read it. With
+consent and AI on but no key, signal accumulates: the gap is one the user can close and the backlog is theirs, bounded
+by the staleness horizon.
 
 ⚠️ **Refusing new rows is only half of that, so consent going away takes the backlog with it.**
-`Inbox::purge_if_not_permitted` drops everything waiting, and the writer thread clears `agent_inbox` with it, on two
+`Inbox::purge_if_consent_withdrawn` drops everything waiting, and the writer thread clears `agent_inbox` with it, on two
 occasions: at launch, right after the reconcile and before the write-back (`agent::start` refreshes the gates just
 before the thread comes up, so that is the first moment a launch can tell), and on every `ReadinessChanged`. Both
 matter, and the launch one is what a `CONSENT_COPY_VERSION` bump needs: it un-accepts everybody at once, and their rows
-would otherwise sit on disk until somebody re-accepted. Only `NeedsConsent` purges. The other two are gaps the user can
-close, not a purpose they withdrew.
+would otherwise sit on disk until somebody re-accepted.
+
+❌ **That purge keys on `permits_stored_signal`, never on `admits_to_inbox`.** The two predicates differ by exactly
+`Off`: sharing one would start deleting somebody's stored signal the moment they turned AI off for an afternoon. Consent
+is the purpose those rows were kept for, so only `NeedsConsent` purges. Every other state is a gap the user can close or
+a switch they can flip back, not a purpose they withdrew.
 
 ## Persistence
 
@@ -753,9 +773,10 @@ rescan (the anchor contributes one `removed` instead), and directory creations s
 vector. A directory's own event counts in its PARENT, matching this module's rule that a bundle
 describes the folder a change happened IN.
 
-**Every `WakeReadiness` gap is a state the indicator renders with an action; none of them is
-silence.** A user who declined Full Disk Access and a user with a tidy Downloads folder otherwise
-see the identical nothing, and only one of those is the feature working.
+**Every `WakeReadiness` gap the user can CLOSE is a state the indicator renders with an action.** A
+user who declined Full Disk Access and a user with a tidy Downloads folder otherwise see the
+identical nothing, and only one of those is the feature working. The two states that are answers
+rather than gaps, `NeedsConsent` and `Off`, render as silence instead (see § Degraded modes).
 
 **A wake creates a conversation, so wake threads appear in the rail session list.** Ten wakes over
 a quiet week is ten threads the user never started, interleaved with their own. The `origin`

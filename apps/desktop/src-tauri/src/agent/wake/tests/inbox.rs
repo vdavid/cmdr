@@ -440,6 +440,24 @@ fn an_unconsented_agent_stores_nothing() {
     assert_eq!(inbox.len(), 0, "no row, not even a deferred one");
 }
 
+/// The other gate at the storing end: AI turned off means nothing new is recorded either. The
+/// pile could only grow for a feature that is switched off, and nothing may ever read it.
+#[test]
+fn an_agent_with_ai_off_stores_nothing_new() {
+    let mut inbox = Inbox::default();
+
+    let admitted = inbox.admit_if_permitted(
+        WakeReadiness::Off,
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+
+    assert!(!admitted);
+    assert_eq!(inbox.len(), 0, "no row, not even a deferred one");
+}
+
 /// A missing key is a different kind of gap: the user opted in, so signal accumulates and
 /// waits for them to close it.
 #[test]
@@ -657,19 +675,25 @@ fn losing_consent_drops_what_was_already_waiting() {
         1_000,
     );
 
-    let dropped = inbox.purge_if_not_permitted(WakeReadiness::NeedsConsent);
+    let dropped = inbox.purge_if_consent_withdrawn(WakeReadiness::NeedsConsent);
 
     assert_eq!(dropped, 2, "and it says how many, so the log can be honest about it");
     assert!(inbox.is_empty());
     assert_eq!(inbox.next_deadline(), None, "so nothing is left to wake against");
 }
 
-/// The other three states are gaps the user can close, not a purpose they withdrew, so the
-/// backlog waiting for them is theirs and stays put.
+/// Every other state is a gap the user can close or a switch they can flip back, not a purpose
+/// they withdrew, so the backlog waiting for them is theirs and stays put.
+///
+/// ⚠️ **`Off` is in here on purpose, and it is the one a later reader would move.** It refuses
+/// NEW rows like `NeedsConsent` does, so keying the purge on `admits_to_inbox` would start
+/// deleting somebody's stored signal the moment they turned AI off for an afternoon. Only
+/// consent, the purpose those rows were kept for, takes them away.
 #[test]
-fn a_closable_gap_keeps_the_backlog() {
+fn a_closable_gap_or_a_flipped_switch_keeps_the_backlog() {
     for readiness in [
         WakeReadiness::Ready,
+        WakeReadiness::Off,
         WakeReadiness::NeedsFullDiskAccess,
         WakeReadiness::NeedsApiKey,
     ] {
@@ -682,7 +706,7 @@ fn a_closable_gap_keeps_the_backlog() {
         );
 
         assert_eq!(
-            inbox.purge_if_not_permitted(readiness),
+            inbox.purge_if_consent_withdrawn(readiness),
             0,
             "{readiness:?} drops nothing"
         );

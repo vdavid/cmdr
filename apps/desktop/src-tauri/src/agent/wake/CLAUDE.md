@@ -23,8 +23,9 @@ an interest score, scores deadlines, and a wake turns what waits into one budget
 - **Floored never gets in; unscored always does.** `admit_if_permitted` refuses `Floored`: weight 0 earns no deadline,
   so the row is dead tokens in every digest. Cmdr's own data dir floors under `~/Library`, needing no self-naming
   exclusion. ❌ Never refuse `Unknown`: collapsing the two ignores every new folder.
-- **Consent outranks disk access outranks the key**, cached in `snapshot.rs`. Without consent the pipeline stores
-  nothing and **purges what it stored** (`purge_if_not_permitted`). No key: signal accumulates.
+- **Consent > AI-off > disk access > key** (`snapshot.rs` caches it). ❌ Never fold `Off` (`ai.provider = "off"`) into
+  `NeedsApiKey`: the corner would nag for a provider the user switched off. Neither stores new rows; ❌ only lost
+  consent purges stored ones (`permits_stored_signal`, never `admits_to_inbox`). No key: signal accumulates.
 - **A merge only pulls a deadline earlier**, or a trickle postpones a folder forever. ⚠️ **A cold row's deadline is
   `None`, and no-deadline LOSES every merge**: `Option::min` compiles, reads right, does the opposite.
 - **The tap is a second observer inside `process_live_batch`**, after rename detection and storm coalescing. ❌ Never

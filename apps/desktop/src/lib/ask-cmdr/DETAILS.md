@@ -177,8 +177,9 @@ literally, they put a permanent AI nag in front of every user who never wanted A
 
 The resolution: a gap is reported to somebody who opted IN and hit a wall, and to nobody else.
 
-- `silent` — no consent, or `askCmdr.proactive` off, or ready and idle. Nothing is being watched, or nothing has
-  happened, so the corner says nothing.
+- `silent` — no consent, AI itself turned off (`'off'`), `askCmdr.proactive` off, or ready and idle. Nothing is being
+  watched, or nothing has happened, so the corner says nothing. ⚠️ `'off'` is the sharpest case of the rule above:
+  naming a gap there would tell somebody to finish setting up a provider they deliberately switched off.
 - `thinking` — a wake is on a provider right now. ⚠️ This one renders REGARDLESS of the setting: it is spending the
   user's money at that moment, and a forced wake (or a setting turned off mid-turn) must not be able to run invisibly.
 - `needsFullDiskAccess` / `needsApiKey` — the two closable gaps, each with the screen that closes it (the system privacy
