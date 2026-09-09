@@ -2372,6 +2372,7 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **terminal → `终端`**（App 时写 `终端 App`）· 沿用 `commands.fileOpenTerminalHere.*` · `high`
 - **pull（`ollama pull`）→ `拉取`** · Microsoft zh-Hans 术语库的现代条目（id 2306935 / 2309495 → `拉取`）；早期的 `请求`
   是 pull request 的一半，不适用 · `high`
+
 ## 程序坞邀请（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeSeen.*`，2026-09-09）
 
 用了几天之后弹一次的通知：问用户要不要把 Cmdr 放进 macOS 的程序坞，加上答应之后的四条结果提示。设置里那两个键是内部状态，界面上永远看不到。

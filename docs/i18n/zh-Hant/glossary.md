@@ -1507,6 +1507,7 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 - **pull（`ollama pull`）→ `提取`**（原本寫的是沒來源的 `拉`）· Microsoft zh-Hant 術語庫四條 `pull` 有三條是 `提取`（id
   95960 / 151531 / 2309059；剩下那條 `扣動` 是扣扳機的意思）· `high`。整句同時補上 `裡`：
   `在終端機裡用 ollama pull llama3.2 提取一個模型…`
+
 ## 「要不要把 Cmdr 留在 Dock 上」那則提示（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeSeen.*`）
 
 - **`Dock` 保持原文，前後留空格** · Apple 的正體中文從不翻譯它：zh-TW `加入Dock中`、zh-HK `加至Dock`（Finder `MenuBar`
