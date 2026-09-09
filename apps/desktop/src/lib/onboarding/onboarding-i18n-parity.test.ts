@@ -268,8 +268,10 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
       "Hi, I'm <david>David</david>! I build Cmdr, and you're one of the very first people using it. Thanks for your trust! ❤️",
     )
     expect(renderRich('onboarding.stepBeta.openBeta', ['alpha'])).toBe(
-      "Cmdr is in open beta, which means it's overall solid and usable, but some parts are still rough. See any <alpha></alpha> badges marking the most work-in-progress areas.",
+      "Cmdr is in open beta: it's overall solid and usable, but some parts are rough. <alpha></alpha> badges mark the most work-in-progress areas. Your feedback helps me fix bugs and prioritize features.",
     )
+    // The feedback-channel copy is parked behind `SHOW_FEEDBACK_CHANNELS`, not deleted, so
+    // it still has to resolve: bringing the list back shouldn't turn up a broken sentence.
     expect(tString('onboarding.stepBeta.feedbackIntro')).toBe(
       'Your feedback helps me spot bugs and prioritize features. Here is how you can engage:',
     )
@@ -293,13 +295,45 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
     )
   })
 
+  it('resolves the checklist rows', () => {
+    expect(tString('onboarding.stepBeta.checklist.title')).toBe('Onboarding checklist, each takes 30 seconds:')
+    expect(tString('onboarding.stepBeta.checklist.star')).toBe('Star the repo on GitHub')
+    expect(renderRich('onboarding.stepBeta.checklist.starNote', ['code'])).toBe(
+      'Homebrew needs Cmdr to have 225 stars to enable <code>brew install cmdr</code>',
+    )
+    expect(tString('onboarding.stepBeta.checklist.alternativeTo')).toBe('Like Cmdr on AlternativeTo')
+    expect(tString('onboarding.stepBeta.checklist.alternativeToNote')).toBe(
+      'At the very top of the page, next to the "Cmdr" title. This helps people and Google notice Cmdr!',
+    )
+    expect(renderRich('onboarding.stepBeta.checklist.email', ['field'])).toBe(
+      'Enter your email address <field></field> to get very occasional updates and questions',
+    )
+    expect(tString('onboarding.stepBeta.checklist.emailSave')).toBe('Save')
+    expect(tString('onboarding.stepBeta.checklist.emailMark')).toBe('Email address saved')
+  })
+
+  // A setback names itself and offers a way on; "try again?" alone was a dead end.
+  it('resolves both signup setbacks with something to do next', () => {
+    expect(tString('onboarding.stepBeta.signup.rejected')).toBe(
+      "The mailing list didn't accept that address. Worth a look for a typo, then hit Save again.",
+    )
+    expect(tString('onboarding.stepBeta.signup.unreachable')).toBe(
+      "Couldn't reach the signup server just now, so you're not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+    )
+  })
+
+  // The four disclosure paragraphs behind the usage-stats info tip. Each sentence sits on
+  // its own line (the tooltip renders them `pre-line`), so the newlines are part of the copy.
   it('resolves the analytics and email blocks', () => {
     expect(tString('onboarding.stepBeta.analyticsLede')).toBe(
-      "To learn what's working and what isn't, during the open beta Cmdr sends usage stats: which features get used and how often, never anything from your files. They're tied to a random id, not to your name or email. It's on now, and you can turn it off anytime.",
+      "To learn what's working and what isn't, during the open beta Cmdr sends usage stats: which features get used and how often, never anything from your files.\nThey're tied to a random id, not to your name or email.\nIt's on now, and you can turn it off anytime.",
     )
     expect(tString('onboarding.stepBeta.analyticsTitle')).toBe('Send usage stats')
     expect(tString('onboarding.stepBeta.analyticsCaption')).toBe(
-      "Note that it's ON by default to encourage people to send me data during the Beta. You can change this any time in Settings.",
+      "Note that it's ON by default to encourage people to send me data during the Beta.\nYou can change this any time in Settings.",
+    )
+    expect(tString('onboarding.stepBeta.crashReportsNote')).toBe(
+      'Crash reports are on too: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.',
     )
     expect(tString('onboarding.stepBeta.emailTitle')).toBe('Stay in touch (optional)')
     expect(tString('onboarding.stepBeta.emailPlaceholder')).toBe('you@example.com')
@@ -308,7 +342,7 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
     )
     expect(tString('onboarding.stepBeta.signup.failure')).toBe("Sorry, we couldn't sign you up right now. Try again?")
     expect(tString('onboarding.stepBeta.emailNote')).toBe(
-      "Drop your email and I'll reach out with the occasional question or update. The email address you enter here is stored only on your Mac and it's never connected to your usage stats, the two are intentionally two separate subsystems.",
+      "Drop your email and I'll reach out with the occasional question or update.\nThe email address you enter here is stored only on your Mac and it's never connected to your usage stats, the two are intentionally two separate subsystems.",
     )
   })
 

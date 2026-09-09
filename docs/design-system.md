@@ -706,9 +706,9 @@ belongs to, nothing for the rest):
   that way). This is where anything FOCUSABLE goes: a focusable control nested in a `role="radio"` element trips axe's
   nested-interactive rule.
 - `itemInline` — INSIDE the option's label, right after the label text. The mirror image of `itemTrailing`: everything
-  here is clickable (the label is what selects the radio) and joins the control's accessible name, so it's where a
-  badge or a run of helper markup belongs. ❌ Nothing focusable. A plain `string` description goes in the item's
-  `description` field instead; this is for markup.
+  here is clickable (the label is what selects the radio) and joins the control's accessible name, so it's where a badge
+  or a run of helper markup belongs. ❌ Nothing focusable. A plain `string` description goes in the item's `description`
+  field instead; this is for markup.
 
 An option's dot CENTERS on its label; only an option that carries a `description` top-aligns (it emits
 `data-described`), because there the dot belongs beside the label line rather than the block's middle.

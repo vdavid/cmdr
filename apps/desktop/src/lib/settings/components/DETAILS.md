@@ -7,9 +7,9 @@ Depth and rationale for the setting-row primitives. `CLAUDE.md` holds the must-k
 Every row is a `SettingRow` (label + description + control + reset pip + restart-required badge; it also carries `split`
 and `searchQuery`, and its description text spans the full width regardless of `split`). Two snippets escape the plain
 shape: `descriptionContent` replaces the description text with markup, and `labelTrailing` lands right after the label,
-ahead of the pip and the badges, for a small adornment belonging to the label rather than the control (an
-`<InfoTip>` carrying the long version of the description, say — onboarding's step 4 does exactly that). Pick the inner
-control by shape:
+ahead of the pip and the badges, for a small adornment belonging to the label rather than the control (an `<InfoTip>`
+carrying the long version of the description, say — onboarding's step 4 does exactly that). Pick the inner control by
+shape:
 
 - `SettingSwitch`: the primary boolean, wrapping `lib/ui/Switch`.
 - `SettingCheckbox`: a secondary boolean, for one hanging off a switch or in a denser layout.

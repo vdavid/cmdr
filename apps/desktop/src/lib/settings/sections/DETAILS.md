@@ -251,8 +251,13 @@ sections compose).
 - **`ram-gauge-utils.ts`**: Pure stacked-bar segment math for `AiLocalSection`'s memory gauge (used → projected → free,
   plus warning thresholds)
 - **`beta-email-signup.svelte.ts`**: `createBetaEmailSignup()`, the beta contact email field's per-mount state and
-  handlers (persist on keystroke, `betaSignup` on commit of a valid address, typed success/failure feedback), shared by
-  `UpdatesSection` and `$lib/onboarding/StepBeta.svelte`
+  handlers (persist on keystroke, `betaSignup` on commit of a valid address, typed feedback), shared by `UpdatesSection`
+  and `$lib/onboarding/StepBeta.svelte`. What counts as a commit differs by surface, which is what `commitOnBlur` is
+  for: Settings submits on blur like every other row there, onboarding's checklist has an explicit Save (a row that
+  ticked itself as the user tabbed past would claim they asked for something). `onSubscribed` fires only on an accepted
+  signup, which is what onboarding ticks its row on. A failure carries a `reason` (`invalidEmail` = fix the typo,
+  `unreachable` = nothing lost, retry), so a surface can say what to do next; one that only has a single failure line
+  still branches on `kind` alone
 - **`ShortcutPill.svelte`**: the shortcut chip of a `KeyboardShortcutsSection` row and of
   `lib/downloads/GlobalShortcutRow.svelte` (editable button with `editing` / `pendingConflict` / `empty` states and the
   hover-only × via `remove`, or a `readOnly` span), so the two rows look the same

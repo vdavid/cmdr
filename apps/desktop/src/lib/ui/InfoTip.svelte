@@ -52,6 +52,9 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        /* It always follows something it belongs to, and a word space alone leaves it
+           crowding the last letter. Small enough that a flex row's own gap stays in charge. */
+        margin-left: var(--spacing-xs);
         padding: 0;
         border: none;
         background: transparent;

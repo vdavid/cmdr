@@ -47,6 +47,13 @@
   transform: translateY(0);
 }
 
+/* A tooltip holding adopted rich content (`contentEl`): several paragraphs of prose, often a
+   sentence per line. The label-width measure above breaks those into a column of stubs, so
+   this case gets a real reading width. The tooltip action sets the class, never a caller. */
+.cmdr-tooltip.cmdr-tooltip-rich {
+  max-width: 460px;
+}
+
 /* Reduced transparency: the `--color-bg-glass` token already flips to opaque above;
    here we only drop the blur. */
 html.reduce-transparency .cmdr-tooltip {

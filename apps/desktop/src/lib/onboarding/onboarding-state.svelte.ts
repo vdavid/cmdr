@@ -97,6 +97,13 @@ export interface WizardFooterButton {
   ariaLabel?: string
 }
 
+/**
+ * The step-3 checklist rows whose "done" the row itself can't re-derive: two acts that happen
+ * in a browser, and one signup whose success is a moment in time rather than a stored value
+ * (the address lands in `analytics.email` on every keystroke, saved or not).
+ */
+export type BetaChecklistItem = 'star' | 'alternativeTo' | 'email'
+
 interface OnboardingStateData {
   /** `null` when the wizard is closed; an integer step when open. */
   currentStep: OnboardingStep | null
@@ -137,6 +144,12 @@ interface OnboardingStateData {
    */
   footerNote: HTMLElement | null
   /**
+   * Step 3's checklist ticks. They live here rather than in the step so a Back into step 2
+   * and forward again doesn't forget what the user just did. The usage-stats row reads its
+   * own setting, so it needs no flag.
+   */
+  betaChecklist: Record<BetaChecklistItem, boolean>
+  /**
    * Monotonic tick. A step bumps this via `requestWizardComplete()` to ask the wizard
    * shell to fire `onComplete` and close the wizard. The wizard's `$effect` watches
    * this value (not a boolean, so repeated requests within the same session still
@@ -156,6 +169,7 @@ const state = $state<OnboardingStateData>({
   stepTwoBanner: 'stuck',
   footerOverride: null,
   footerNote: null,
+  betaChecklist: { star: false, alternativeTo: false, email: false },
   finishRequestTick: 0,
 })
 
@@ -234,6 +248,7 @@ export function openWizard(source: OnboardingSource, ctx: ResumeContext | null =
   state.source = source
   state.footerOverride = null
   state.footerNote = null
+  state.betaChecklist = { star: false, alternativeTo: false, email: false }
   // Reset the finish-request counter. The wizard's `$effect` watching this counter has
   // its own local "last seen" cursor that resets on remount; without resetting the
   // module-level counter here, a re-entry after a previous Start/Finish would fire
@@ -277,6 +292,7 @@ export function closeWizard(): void {
   state.stepTwoBanner = 'stuck'
   state.footerOverride = null
   state.footerNote = null
+  state.betaChecklist = { star: false, alternativeTo: false, email: false }
   state.finishRequestTick = 0
 }
 
@@ -377,6 +393,16 @@ export function setFooterOverride(buttons: WizardFooterButton[] | null): void {
  * markup. The AI step uses it to say "you picked cloud AI but stored no API key" the
  * moment the user presses Next, and clears it again on their next interaction.
  */
+/**
+ * Tick or untick one of step 3's checklist rows. The two link rows are set from the link's
+ * own click (after a delay long enough for the page to have opened) and from their checkbox,
+ * so someone who starred the repo last week can just say so; the email row is set only by a
+ * signup the mailing list accepted.
+ */
+export function setBetaChecklistItem(item: BetaChecklistItem, done: boolean): void {
+  state.betaChecklist[item] = done
+}
+
 export function setFooterNote(note: HTMLElement | null): void {
   state.footerNote = note
 }
@@ -400,5 +426,6 @@ export function resetForTesting(): void {
   state.stepTwoBanner = 'stuck'
   state.footerOverride = null
   state.footerNote = null
+  state.betaChecklist = { star: false, alternativeTo: false, email: false }
   state.finishRequestTick = 0
 }

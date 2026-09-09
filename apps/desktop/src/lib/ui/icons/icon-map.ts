@@ -5,6 +5,7 @@ import IconArchiveRestore from '~icons/lucide/archive-restore'
 import IconArrowLeft from '~icons/lucide/arrow-left'
 import IconArrowRight from '~icons/lucide/arrow-right'
 import IconBot from '~icons/lucide/bot'
+import IconChartNoAxesColumn from '~icons/lucide/chart-no-axes-column'
 import IconCheck from '~icons/lucide/check'
 import IconChevronDown from '~icons/lucide/chevron-down'
 import IconChevronRight from '~icons/lucide/chevron-right'
@@ -32,6 +33,7 @@ import IconGitBranch from '~icons/lucide/git-branch'
 import IconGitCommitHorizontal from '~icons/lucide/git-commit-horizontal'
 import IconGitFork from '~icons/lucide/git-fork'
 import IconGlobe from '~icons/lucide/globe'
+import IconHeart from '~icons/lucide/heart'
 import IconHourglass from '~icons/lucide/hourglass'
 import IconInfo from '~icons/lucide/info'
 import IconKey from '~icons/lucide/key'
@@ -39,6 +41,7 @@ import IconLink from '~icons/lucide/link'
 import IconList from '~icons/lucide/list'
 import IconListChecks from '~icons/lucide/list-checks'
 import IconLock from '~icons/lucide/lock'
+import IconMail from '~icons/lucide/mail'
 import IconMessagesSquare from '~icons/lucide/messages-square'
 import IconMonitor from '~icons/lucide/monitor'
 import IconMoon from '~icons/lucide/moon'
@@ -56,6 +59,7 @@ import IconShieldCheck from '~icons/lucide/shield-check'
 import IconShieldOff from '~icons/lucide/shield-off'
 import IconSparkles from '~icons/lucide/sparkles'
 import IconDownload from '~icons/lucide/download'
+import IconStar from '~icons/lucide/star'
 import IconSquare from '~icons/lucide/square'
 import IconSun from '~icons/lucide/sun'
 import IconTag from '~icons/lucide/tag'
@@ -83,6 +87,7 @@ export const ICON_COMPONENTS = {
   'arrow-left': IconArrowLeft,
   'arrow-right': IconArrowRight,
   bot: IconBot,
+  'chart-no-axes-column': IconChartNoAxesColumn,
   check: IconCheck,
   'chevron-down': IconChevronDown,
   'chevron-right': IconChevronRight,
@@ -111,6 +116,7 @@ export const ICON_COMPONENTS = {
   'git-commit-horizontal': IconGitCommitHorizontal,
   'git-fork': IconGitFork,
   globe: IconGlobe,
+  heart: IconHeart,
   hourglass: IconHourglass,
   info: IconInfo,
   key: IconKey,
@@ -118,6 +124,7 @@ export const ICON_COMPONENTS = {
   list: IconList,
   'list-checks': IconListChecks,
   lock: IconLock,
+  mail: IconMail,
   'messages-square': IconMessagesSquare,
   monitor: IconMonitor,
   moon: IconMoon,
@@ -136,6 +143,7 @@ export const ICON_COMPONENTS = {
   sparkles: IconSparkles,
   download: IconDownload,
   square: IconSquare,
+  star: IconStar,
   sun: IconSun,
   tag: IconTag,
   'trash-2': IconTrash2,

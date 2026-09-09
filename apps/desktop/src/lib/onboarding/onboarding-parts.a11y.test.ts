@@ -184,4 +184,3 @@ describe('OnboardingStepShell a11y', () => {
     await expectNoA11yViolations(target)
   })
 })
-

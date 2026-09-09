@@ -391,10 +391,10 @@ inside `{ html }` tooltips. The `html` variant renders via `innerHTML`; only use
 takes it down again, and only if that node is the one showing. The element joins the normal bookkeeping, so its own
 `mouseleave` / `blur`, the next keypress, and any other trigger's show all dismiss it the usual way.
 
-It exists for one shape of problem: the app has something to say in answer to a press the user just made, and the
-answer belongs on the control they pressed. The onboarding wizard's missing-API-key warning is the case that motivated
-it. Neither event path can fire there — the pointer is already sitting on the button, so no `mouseenter` is coming, and
-a keyboard press has just set `hoverSuppressed` — which is why the function clears that flag: this is the app speaking,
+It exists for one shape of problem: the app has something to say in answer to a press the user just made, and the answer
+belongs on the control they pressed. The onboarding wizard's missing-API-key warning is the case that motivated it.
+Neither event path can fire there — the pointer is already sitting on the button, so no `mouseenter` is coming, and a
+keyboard press has just set `hoverSuppressed` — which is why the function clears that flag: this is the app speaking,
 not a hover the user didn't ask for.
 
 ❌ Never reach for it to show something a hover or focus would have shown anyway. An unrequested tooltip is a popup; it
@@ -445,6 +445,12 @@ glyph carries no visible text.
 
 Reach for it wherever a surface would otherwise lead with a paragraph nobody asked for: onboarding's step 4 puts one on
 each of its four `SettingRow`s (through `labelTrailing`) and leads with a half-line instead.
+
+Adopted content also widens the tooltip: `setTooltipContent` stamps `cmdr-tooltip-rich` whenever it takes a `contentEl`,
+and that class raises the box from the 320px label measure to 460px. Several paragraphs at label width wrap into a
+column of stubs; 460px at 12px is about 75 characters, the top of a comfortable reading measure. The class is the
+action's to set, ❌ never a caller's, and it's in `check-css-unused`'s allowlist with the tooltip's other runtime
+classes.
 
 ### Dismiss on keypress
 

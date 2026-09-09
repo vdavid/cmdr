@@ -74,10 +74,6 @@
 {#snippet strong(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
 {#snippet code(children: Snippet)}<code>{@render children()}</code>{/snippet}
 
-<!-- The verdict reads as the switch's own label rather than a footnote under it, so it
-     rides in the control slot beside it. -->
-{#snippet recommendation()}<span class="row-caption">{recommendedOn}</span>{/snippet}
-
 <OnboardingStepShell>
     <h2 class="step-title">{tString('onboarding.stepOptional.title')}</h2>
     <p class="lede">{tString('onboarding.stepOptional.lede')}</p>
@@ -95,7 +91,8 @@
                 </InfoTip>
             {/snippet}
             <div class="row-control">
-                {@render recommendation()}
+                <!-- The verdict reads as the switch's own label rather than a footnote under it. -->
+                <span class="row-caption">{recommendedOn}</span>
                 <SettingSwitch id="network.enabled" />
             </div>
         </SettingRow>
@@ -125,7 +122,8 @@
                 </InfoTip>
             {/snippet}
             <div class="row-control">
-                {@render recommendation()}
+                <!-- The verdict reads as the switch's own label rather than a footnote under it. -->
+                <span class="row-caption">{recommendedOn}</span>
                 <SettingSwitch id="indexing.enabled" />
             </div>
         </SettingRow>
@@ -142,7 +140,8 @@
                 </InfoTip>
             {/snippet}
             <div class="row-control">
-                {@render recommendation()}
+                <!-- The verdict reads as the switch's own label rather than a footnote under it. -->
+                <span class="row-caption">{recommendedOn}</span>
                 <SettingSwitch id="updates.autoCheck" />
             </div>
         </SettingRow>
@@ -159,7 +158,8 @@
                 </InfoTip>
             {/snippet}
             <div class="row-control">
-                {@render recommendation()}
+                <!-- The verdict reads as the switch's own label rather than a footnote under it. -->
+                <span class="row-caption">{recommendedOn}</span>
                 <SettingSwitch id="fileOperations.mtpEnabled" />
             </div>
         </SettingRow>

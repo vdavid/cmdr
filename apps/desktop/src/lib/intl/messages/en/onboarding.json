@@ -405,7 +405,6 @@
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
-
   "onboarding.stepAi.choiceGroupAria": "AI choice",
   "@onboarding.stepAi.choiceGroupAria": {
     "description": "Accessible group label for the set of AI radio options (cloud / local / off).",
@@ -510,9 +509,57 @@
     "screenshot": "onboarding-beta.png"
   },
 
-  "onboarding.stepBeta.openBeta": "Cmdr is in open beta, which means it''s overall solid and usable, but some parts are still rough. See any <alpha></alpha> badges marking the most work-in-progress areas.",
+  "onboarding.stepBeta.openBeta": "Cmdr is in open beta: it''s overall solid and usable, but some parts are rough. <alpha></alpha> badges mark the most work-in-progress areas. Your feedback helps me fix bugs and prioritize features.",
   "@onboarding.stepBeta.openBeta": {
-    "description": "Explains the app is in open beta: usable but unfinished in places, with ALPHA badges marking rough areas. <alpha> wraps the visual ALPHA status badge component (it has no inner text; leave it empty). \"Cmdr\" is the product name; \"open beta\" is the release stage.",
+    "description": "Explains the app is in open beta: usable but unfinished in places, with ALPHA badges marking rough areas, and that feedback shapes what gets fixed next. First person (David speaking). <alpha> wraps the visual ALPHA status badge component (it has no inner text; leave it empty). \"Cmdr\" is the product name; \"open beta\" is the release stage.",
+    "screenshot": "onboarding-beta.png"
+  },
+
+  "onboarding.stepBeta.checklist.title": "Onboarding checklist, each takes 30 seconds:",
+  "@onboarding.stepBeta.checklist.title": {
+    "description": "Heading over a short list of small favors the user can do right now (share usage stats, star the repo, like the app on a listing site, leave an email address). The \"30 seconds\" promise is the point: keep it.",
+    "screenshot": "onboarding-beta.png"
+  },
+
+  "onboarding.stepBeta.checklist.star": "Star the repo on GitHub",
+  "@onboarding.stepBeta.checklist.star": {
+    "description": "Link text on the checklist row that opens Cmdr's GitHub repository so the user can star it. \"star\" is GitHub's own verb for bookmarking a repository; use whatever GitHub calls it in your locale. \"repo\" is short for repository. \"GitHub\" is the product name and stays untranslated.",
+    "screenshot": "onboarding-beta.png"
+  },
+
+  "onboarding.stepBeta.checklist.starNote": "Homebrew needs Cmdr to have 225 stars to enable <code>brew install cmdr</code>",
+  "@onboarding.stepBeta.checklist.starNote": {
+    "description": "Quieter explanation beside the GitHub-star link, saying why the stars matter. <code> wraps the literal terminal command, which stays exactly as written. \"Homebrew\" is the macOS package manager's name and \"Cmdr\" is the product name; both stay untranslated. 225 is the star count Homebrew requires.",
+    "screenshot": "onboarding-beta.png"
+  },
+
+  "onboarding.stepBeta.checklist.alternativeTo": "Like Cmdr on AlternativeTo",
+  "@onboarding.stepBeta.checklist.alternativeTo": {
+    "description": "Link text on the checklist row that opens Cmdr's page on the AlternativeTo software directory so the user can like it. \"Like\" is that site's own verb for an upvote. \"Cmdr\" and \"AlternativeTo\" are names and stay untranslated.",
+    "screenshot": "onboarding-beta.png"
+  },
+
+  "onboarding.stepBeta.checklist.alternativeToNote": "At the very top of the page, next to the \"Cmdr\" title. This helps people and Google notice Cmdr!",
+  "@onboarding.stepBeta.checklist.alternativeToNote": {
+    "description": "Quieter explanation beside the AlternativeTo link: where the Like button is on that page, and why liking helps. \"Cmdr\" is the product name and \"Google\" is the search engine's name; both stay untranslated.",
+    "screenshot": "onboarding-beta.png"
+  },
+
+  "onboarding.stepBeta.checklist.email": "Enter your email address <field></field> to get very occasional updates and questions",
+  "@onboarding.stepBeta.checklist.email": {
+    "description": "The email row of the checklist, wrapped around the input field and its Save button. <field> is the input rendered inline mid-sentence (it has no inner text; leave it empty), so the words before and after it have to read as one sentence with a box in the middle. Keep the promise of rarity: this is an occasional mailing list, not a newsletter.",
+    "screenshot": "onboarding-beta.png"
+  },
+
+  "onboarding.stepBeta.checklist.emailSave": "Save",
+  "@onboarding.stepBeta.checklist.emailSave": {
+    "description": "Button beside the email field that submits the address to the mailing list. One word, a plain commit action.",
+    "screenshot": "onboarding-beta.png"
+  },
+
+  "onboarding.stepBeta.checklist.emailMark": "Email address saved",
+  "@onboarding.stepBeta.checklist.emailMark": {
+    "description": "Screen-reader name for the tick beside the email row of the checklist. It's a progress mark, not a control: it ticks itself once the mailing list has accepted the address. Not shown visually.",
     "screenshot": "onboarding-beta.png"
   },
 
@@ -557,7 +604,7 @@
     "screenshot": "onboarding-beta.png"
   },
 
-  "onboarding.stepBeta.analyticsLede": "To learn what''s working and what isn''t, during the open beta Cmdr sends usage stats: which features get used and how often, never anything from your files. They''re tied to a random id, not to your name or email. It''s on now, and you can turn it off anytime.",
+  "onboarding.stepBeta.analyticsLede": "To learn what''s working and what isn''t, during the open beta Cmdr sends usage stats: which features get used and how often, never anything from your files.\nThey''re tied to a random id, not to your name or email.\nIt''s on now, and you can turn it off anytime.",
   "@onboarding.stepBeta.analyticsLede": {
     "description": "Discloses that the app sends usage statistics during the beta, says what they're tied to, and promises it never reads file contents. Transparent, reassuring tone. \"random id\" = a randomly generated identifier stored on the user's Mac, not linked to their identity; keep it plain rather than reaching for a technical term like \"pseudonymous\". \"Cmdr\" is the product name; \"open beta\" is the release stage.",
     "screenshot": "onboarding-beta.png"
@@ -569,13 +616,13 @@
     "screenshot": "onboarding-beta.png"
   },
 
-  "onboarding.stepBeta.analyticsCaption": "Note that it''s ON by default to encourage people to send me data during the Beta. You can change this any time in Settings.",
+  "onboarding.stepBeta.analyticsCaption": "Note that it''s ON by default to encourage people to send me data during the Beta.\nYou can change this any time in Settings.",
   "@onboarding.stepBeta.analyticsCaption": {
     "description": "Small caption beside the analytics toggle explaining it defaults on during the beta. First-person (David). Keep \"ON\" emphasized in feel (it's the switch state). \"Beta\" is the release stage; \"Settings\" is the app's settings screen.",
     "screenshot": "onboarding-beta.png"
   },
 
-  "onboarding.stepBeta.crashReportsNote": "Crash reports are on too: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped. Never your files. You can turn both of these off in Settings whenever you like.",
+  "onboarding.stepBeta.crashReportsNote": "Crash reports are on too: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.",
   "@onboarding.stepBeta.crashReportsNote": {
     "description": "Caption on the open-beta onboarding step, right after the usage-stats disclosure, telling a new user that crash reports are also on by default and what one carries. Transparent and calm. \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Settings\" is the app's settings screen.",
     "screenshot": "onboarding-beta.png"
@@ -600,10 +647,20 @@
 
   "onboarding.stepBeta.signup.failure": "Sorry, we couldn''t sign you up right now. Try again?",
   "@onboarding.stepBeta.signup.failure": {
-    "description": "Gentle inline message shown when the email signup didn't go through, inviting another attempt. Soft, non-alarming tone (avoid the words \"error\" or \"failed\")."
+    "description": "Gentle inline message shown when the email signup didn't go through, inviting another attempt. Soft, non-alarming tone (avoid the words \"error\" or \"failed\"). Used by the Settings copy of this field, which has one line for every kind of setback; onboarding's checklist splits it into the two below."
   },
 
-  "onboarding.stepBeta.emailNote": "Drop your email and I''ll reach out with the occasional question or update. The email address you enter here is stored only on your Mac and it''s never connected to your usage stats, the two are intentionally two separate subsystems.",
+  "onboarding.stepBeta.signup.rejected": "The mailing list didn''t accept that address. Worth a look for a typo, then hit Save again.",
+  "@onboarding.stepBeta.signup.rejected": {
+    "description": "Shown when the mailing list itself turned the address down, which almost always means a typo. Says what happened and exactly what to do. \"Save\" names the button beside the field, so match onboarding.stepBeta.checklist.emailSave. Soft, non-alarming tone (avoid the words \"error\" or \"failed\")."
+  },
+
+  "onboarding.stepBeta.signup.unreachable": "Couldn''t reach the signup server just now, so you''re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+  "@onboarding.stepBeta.signup.unreachable": {
+    "description": "Shown when the signup request never got through (offline, server down). Transparent about what did and didn't happen, and offers two ways on. \"Save\" names the button beside the field, so match onboarding.stepBeta.checklist.emailSave. \"Settings › Updates & privacy\" is a path through the app's own Settings window; translate both names to match how they appear there. Soft, non-alarming tone (avoid the words \"error\" or \"failed\")."
+  },
+
+  "onboarding.stepBeta.emailNote": "Drop your email and I''ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your Mac and it''s never connected to your usage stats, the two are intentionally two separate subsystems.",
   "@onboarding.stepBeta.emailNote": {
     "description": "Privacy note under the optional email field: David may reach out, and the email is stored locally and never linked to usage stats. First-person, reassuring. \"Mac\" is the device name and stays untranslated.",
     "screenshot": "onboarding-beta.png"

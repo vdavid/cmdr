@@ -29,11 +29,10 @@ finishes onboarding.
 - **`CloudProviderSetup.svelte`**: Step 2 right column: the provider header and status line around the shared
   `$lib/ai-provider-setup/ProviderSetupSteps`. Providers with editable OpenAI-compatible endpoints, including Custom,
   still require a stored API key before the endpoint check runs.
-- **`StepBeta.svelte`**: Step 3 (Open beta, non-skippable): personal open-beta intro (feedback channels: in-app, GitHub,
-  Discord, book-a-call) + usage-stats disclosure + `analytics.enabled` opt-out switch + the crash-report disclosure +
-  optional `analytics.email` contact field + the required terms checkbox. Footer = "Start using Cmdr!" (finish here) +
-  "One more optional setup step" (continue), both gated on the terms. Reuses the Settings `UpdatesSection`
-  email/`betaSignup` wiring.
+- **`StepBeta.svelte`**: Step 3 (Open beta, non-skippable): personal open-beta intro + the checklist (usage stats
+  carrying the whole disclosure behind its info tip, a GitHub star, an AlternativeTo like, an `analytics.email` address
+  with its own Save) + the required terms checkbox. Footer = "Start using Cmdr!" (finish here) + "One more optional
+  setup step" (continue), both gated on the terms. Reuses the Settings `UpdatesSection` email/`betaSignup` wiring.
 - **`StepOptional.svelte`**: Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry
   settings.
 - **`onboarding-state.svelte.ts`**: Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner
@@ -62,10 +61,10 @@ shadow here read as a different, cheaper kind of window than the app's other dia
 ### A step's answer to a press
 
 `onboarding-state`'s `footerNote` used to paint a sentence beside the buttons, which pushed them around in an already
-tight row. It now reaches the user as a tooltip ON the button that was pressed, forced open through
-`showTooltipNow` (`ui/DETAILS.md` § "Showing one without a hover"): neither a `mouseenter` nor a `focus` is coming,
-since the pointer is already over the button and a keyboard press has just suppressed hover tooltips. The note stays on
-that button as `tooltipContent` too, so hovering back re-shows it while the note stands.
+tight row. It now reaches the user as a tooltip ON the button that was pressed, forced open through `showTooltipNow`
+(`ui/DETAILS.md` § "Showing one without a hover"): neither a `mouseenter` nor a `focus` is coming, since the pointer is
+already over the button and a keyboard press has just suppressed hover tooltips. The note stays on that button as
+`tooltipContent` too, so hovering back re-shows it while the note stands.
 
 `footerNote` holds the rendered ELEMENT, not a string, and the tooltip borrows it as a `contentEl`. A note worth
 interrupting someone for wants a warning glyph and emphasis on the way out, and the STEP is what can render that: its
@@ -177,9 +176,9 @@ The revoked variant keeps its pros and cons in the open, because its own lede en
 Inside that card the two sit in a `<dl>` laid out as a two-column grid: "Pro:" and "Con:" are a column of their own, so
 a wrapped line never runs under its own label and the two read as headers rather than list markers.
 
-The buttons sit on the panel's floor (`.fda-body` is a `min-height: 100%` flex column, `.buttons` takes `margin-top:
-auto`). `min-height` rather than `height`, so taller copy grows the column and the shell scrolls; an auto height also
-means nothing inside ever gets squashed to fit, which a plain flex column would do.
+The buttons sit on the panel's floor (`.fda-body` is a `min-height: 100%` flex column, `.buttons` takes
+`margin-top: auto`). `min-height` rather than `height`, so taller copy grows the column and the shell scrolls; an auto
+height also means nothing inside ever gets squashed to fit, which a plain flex column would do.
 
 ### Live grant detection
 
@@ -244,8 +243,8 @@ Three pieces stacked top to bottom:
    column is the rightmost and carries the accent flair (tint + sparkle) to draw the eye. The feature column's header is
    `sr-only`: the row labels say what each row is, so a visible "Feature" over them was noise, but the header still has
    to EXIST or a screen reader hears a blank with every cell in that column.
-3. **Three plain radio rows, in the order no AI → local → cloud.** Cheapest commitment first, so all three fit above
-   the fold and only the last one opens a provider panel underneath it; before, cloud sat first and its panel pushed the
+3. **Three plain radio rows, in the order no AI → local → cloud.** Cheapest commitment first, so all three fit above the
+   fold and only the last one opens a provider panel underneath it; before, cloud sat first and its panel pushed the
    other two options off screen. The pre-selection comes from the persisted `ai.provider` (default `off`), so a
    crash-then-resume user lands on their previous pick. Picking cloud reveals `CloudProviderPicker.svelte` (left) and
    `CloudProviderSetup.svelte` (right) through the group's `footer` snippet. Picking local kicks off `startAiDownload()`
@@ -319,6 +318,7 @@ two absent `meta` rows), and both it and the surrounding persist are wrapped: a 
 module's `getAppLogger` and the rest of the persist still runs, and any other persist failure is logged and still
 advances. The footer's `advanceBusy` guard always clears in a `finally`. Same reasoning as the no-key-blocks-advance
 rule above: the wizard never traps someone on a step.
+
 ### The missing-API-key gate (confirm once, never block)
 
 Cloud picked, the provider's `requiresApiKey` set, and `getAiApiKeyStatus(providerId).isSet === false`: the first Next
@@ -355,32 +355,59 @@ the backend reconfigure before the user lands in the app deterministically.
 
 ## Step 3 (Open beta)
 
-`StepBeta.svelte`: David's personal open-beta intro, the analytics disclosure, an optional contact channel, and the
-required terms acceptance. Four blocks:
+`StepBeta.svelte`: David's personal open-beta intro, the open-beta checklist, and the required terms acceptance.
 
-1. **Personal intro**: first-person welcome (solo dev, rough parts marked with an inline `StatusBadge status="alpha"`,
-   feedback shapes the roadmap) plus the feedback channels as a numbered list: the `Help > Send feedback…` menu item
-   (with the `app.commandPalette` `ShortcutChip`), GitHub issues, Discord, a book-a-call link, and a star/watch/fork CTA
-   (helps Cmdr reach Homebrew's notability bar for a tap-free `brew install`). The URLs come from the shared
-   `$lib/beta-links.ts` constants (also used by `AboutWindow.svelte`); the links render as `LinkButton`s routed through
-   `openExternalUrl`.
-2. **Anonymous-analytics opt-out**: the registry-backed `<SettingSwitch id="analytics.enabled">` (default on). Flipping
-   it writes the setting immediately, exactly like the same switch in Settings.
-3. **Optional contact email**: an email field bound to `analytics.email`. It persists locally on every keystroke and, on
-   commit (blur / Enter) of a valid address, calls the typed `betaSignup` wrapper (which POSTs only the email, never an
-   install id) and renders a gentle inline result.
+1. **Personal intro**: first-person welcome, what "open beta" means here (rough parts marked with an inline
+   `StatusBadge status="alpha"`), and that feedback shapes what gets fixed.
+2. **The checklist**: four small favors, each a tick, each about half a minute.
+3. **Terms acceptance**: the one gate on this page (§ below).
 
-Between 2 and 3 sits the **crash-report disclosure**, a caption with no switch of its own. `updates.crashReports`
-defaults ON, and a default that sends something has to be disclosed where the analytics one is rather than only in
-Settings. It carries no toggle deliberately: the switch lives in Settings > Updates & privacy, and this step already
-asks enough of a first launch. It IS, though, the only place a first launch hears about that default at all (an existing
-install gets the CHANGELOG instead, and there's no in-app notice), so ❌ don't drop the caption without giving new users
-that disclosure somewhere else.
+### The checklist
 
-The analytics and email blocks reuse `settings/sections/UpdatesSection.svelte`'s exact wiring: the email field runs on
-the shared `settings/sections/beta-email-signup.svelte.ts` (`createBetaEmailSignup()`: the `betaSignup` call, the
-email-pattern + `lastSubmittedEmail` resend guard, the typed success/failure feedback), so the onboarding page and
-Settings behave identically.
+Everything the middle of this page asks for used to be a paragraph of prose apiece, and the step read as a wall to get
+past rather than four things to just do. Now each row leads with one line and parks its detail behind an `<InfoTip>`.
+The rows are one grid of three columns (tick, glyph, text) with each `<li>` at `display: contents`, so all four line up
+on the same edges however far any of them wraps.
+
+- **Send usage stats** — the tick IS `analytics.enabled` (via `useBooleanSetting`, the wiring `<SettingSwitch>` uses),
+  so unticking it opts out exactly as the Settings switch does. Its info tip carries the whole disclosure in four
+  paragraphs: what the stats are, the registry description, the on-by-default note, and the crash-report note.
+- **Star the repo on GitHub** / **Like Cmdr on AlternativeTo** — the app can't see what happened in a browser, so the
+  row ticks itself `CHECKLIST_TICK_DELAY_MS` (3 s) after the click: long enough not to land while the page is still
+  opening. Both are real checkboxes too, so someone who starred it last week can just say so. The ticks live in
+  `onboarding-state`'s `betaChecklist`, ❌ not in the step, or a Back into step 2 would forget them.
+- **Email address** — an inline field plus a Save button.
+
+❌ **The analytics disclosure must keep saying all four things**, wherever it lives. `updates.crashReports` defaults ON
+too, and this step is the only place a first launch hears about that default at all (an existing install gets the
+CHANGELOG instead, and there's no in-app notice). It carries no toggle deliberately: that switch lives in Settings >
+Updates & privacy, and a first launch is asked enough already.
+
+### The email row
+
+The field runs on the shared `settings/sections/beta-email-signup.svelte.ts` (`createBetaEmailSignup()`: the
+`betaSignup` call, the email-pattern + `lastSubmittedEmail` resend guard, the typed feedback), same as Settings, with
+two differences the factory takes as options:
+
+- **`commitOnBlur: false`.** Settings submits on blur the way its other rows apply themselves; a checklist row that did
+  that would claim the user asked for something they only tabbed through. Here an explicit **Save** commits (Enter works
+  too), and it's disabled until there's a fresh valid address to send.
+- **`onSubscribed`** ticks the row. ❌ The tick follows the mailing list's own answer, never a valid-looking address:
+  `analytics.email` is written on every keystroke, so a stored address proves nothing about whether it was ever sent.
+  That's why the mark is a `disabled` `<Checkbox>` (with a local `opacity: 1`, since `disabled` is there to say "not a
+  control", not to grey it out).
+
+A filled-in address that isn't one wears the field's error ring (`showInvalid`); an EMPTY field never does, because an
+empty optional field is an answer rather than a mistake.
+
+A setback says which one it was: the list rejected the address (look for a typo, Save again) or we never reached the
+list (nothing lost, the address is on this Mac, retry here or in Settings). One "try again?" for both was a dead end.
+
+### Parked, not deleted
+
+Two blocks sit behind `const SHOW_… = false` flags with their copy still in the catalog: the feedback-channel list
+(in-app, GitHub issues, Discord, book-a-call), whose introducing paragraph went in the rewrite, and the "Stay in touch"
+card the checklist's email row replaced. Flip a flag to bring one back.
 
 The footer has two buttons: a secondary **Start using Cmdr!** that finishes onboarding right here (skipping the optional
 step, via `requestWizardComplete()`) and a primary **One more optional setup step** that `nextStep()`s to the Optional
@@ -448,10 +475,10 @@ in it. `SectionCard`'s `--color-bg-secondary` is what the dialog token was tuned
 
 ### The info glyph
 
-Each row shows a half-line `*.summary` and parks its full `*.desc` behind an `<InfoTip>` beside the label (`SettingRow`'s
-`labelTrailing` snippet). Four paragraphs of prose made the LAST step of onboarding a wall of text, which is the worst
-place for one: the user is trying to get into the app. The summary carries the trade-off in a line; the tip is there for
-whoever wants the why.
+Each row shows a half-line `*.summary` and parks its full `*.desc` behind an `<InfoTip>` beside the label
+(`SettingRow`'s `labelTrailing` snippet). Four paragraphs of prose made the LAST step of onboarding a wall of text,
+which is the worst place for one: the user is trying to get into the app. The summary carries the trade-off in a line;
+the tip is there for whoever wants the why.
 
 `InfoTip` is a `<button>`, not a decorated span, so it opens on Tab as well as hover (the tooltip action fires on
 `focus`, which is also why a native `title` is banned app-wide), and its body goes through the action's `contentEl`, so
@@ -470,8 +497,8 @@ break at sentence boundaries. A translation without the newlines still renders, 
 with the paragraphs around them, and only a wrapped line hangs in under the words. ❌ Not `text-indent`, the obvious way
 to write that: it INHERITS, reaches the anonymous flex item inside any `inline-flex` descendant, and pulled the keys out
 of a `ShortcutChip` and across the sentence beside it. And the sentence needs its span because flex makes every element
-child its own item, so a leading `<LinkButton>` would be cut off from the ": …" after it by the row's own gap
-("GitHub : Add issues").
+child its own item, so a leading `<LinkButton>` would be cut off from the ": …" after it by the row's own gap ("GitHub :
+Add issues").
 
 Copy that reaches a tooltip goes through `<Trans>`, which renders TEXT, never HTML, so an HTML entity in the catalog
 shows up literally: `&lt;DIR&gt;` used to render as `&lt;DIR&gt;` on screen, and `2&ndash;3` as `2&ndash;3`. The en dash

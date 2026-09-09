@@ -1436,7 +1436,7 @@
     "description": "Label for the usage-stats opt-in toggle. In Settings > Updates & privacy. \"stats\" = statistics.",
     "screenshot": "settings-updates.png"
   },
-  "settings.analytics.enabled.description": "Please enable this to help us see which features matter during the open beta. It''s not tied to your name or email but a random id. Cmdr never sends file names, paths, search terms, or prompts. When off, Cmdr doesn''t send any stats.",
+  "settings.analytics.enabled.description": "Please enable this to help us see which features matter during the open beta.\nIt''s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn''t send any stats.",
   "@settings.analytics.enabled.description": {
     "description": "Help text for the usage-stats toggle, written in a reassuring privacy-first voice. It asks the user to leave the toggle on, then says what the stats are tied to and what is never sent. \"open beta\" = the public testing phase. \"random id\" = a randomly generated identifier stored on the user's Mac, not linked to their identity; keep it plain rather than reaching for a technical term like \"pseudonymous\". \"Cmdr\" is the product name; keep it. \"prompts\" = AI prompts.",
     "screenshot": "settings-updates.png"

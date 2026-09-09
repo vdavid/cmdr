@@ -30,7 +30,10 @@ const { betaSignupMock, settingsMap, setSetting, forceSaveMock } = vi.hoisted(()
     'onboarding.termsAcceptedAt': '',
   }
   return {
-    betaSignupMock: vi.fn(() => Promise.resolve({ kind: 'subscribed' as const })),
+    // Typed on the wrapper's own union, so a test can hand back a setback kind too.
+    betaSignupMock: vi.fn((): Promise<{ kind: 'subscribed' | 'invalidEmail' | 'softFailure' }> =>
+      Promise.resolve({ kind: 'subscribed' }),
+    ),
     settingsMap,
     // `setSetting` mutates the map AND records the call so we can assert which ids got written.
     setSetting: vi.fn((id: string, value: unknown) => {
@@ -93,6 +96,30 @@ async function waitForAsync(): Promise<void> {
 function getEmailInput(target: HTMLElement): HTMLInputElement {
   const input = target.querySelector<HTMLInputElement>('input[type="email"]')
   if (!input) throw new Error('Email input missing')
+  return input
+}
+
+/** The Save button beside the checklist's email field. */
+function getSaveButton(target: HTMLElement): HTMLButtonElement {
+  const button = [...target.querySelectorAll<HTMLButtonElement>('.checklist button')].find(
+    (b) => b.textContent.trim() === 'Save',
+  )
+  if (!button) throw new Error('Save button missing')
+  return button
+}
+
+/** Types into the email field the way a user would, then lets the reactive graph settle. */
+async function typeEmail(target: HTMLElement, value: string): Promise<void> {
+  const input = getEmailInput(target)
+  input.value = value
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  await waitForAsync()
+}
+
+/** A checklist row's tick, found by the accessible name Ark puts on its hidden input. */
+function getChecklistCheckbox(target: HTMLElement, label: string): HTMLInputElement {
+  const input = target.querySelector<HTMLInputElement>(`.checklist input[aria-label="${label}"]`)
+  if (!input) throw new Error(`Checklist checkbox "${label}" missing`)
   return input
 }
 
@@ -206,10 +233,13 @@ describe('StepBeta', () => {
   it('commits a valid email through betaSignup and shows the success copy', async () => {
     mounted = mountStep()
     await waitForAsync()
-    const input = getEmailInput(mounted.target)
-    input.value = 'tester@example.com'
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-    input.dispatchEvent(new Event('blur', { bubbles: true }))
+    await typeEmail(mounted.target, 'tester@example.com')
+    // Blur alone must NOT send: on a checklist, tabbing past a row isn't asking for it.
+    getEmailInput(mounted.target).dispatchEvent(new Event('blur', { bubbles: true }))
+    await waitForAsync()
+    expect(betaSignupMock).not.toHaveBeenCalled()
+
+    getSaveButton(mounted.target).click()
     await waitForAsync()
 
     expect(setSetting).toHaveBeenCalledWith('analytics.email', 'tester@example.com')
@@ -217,14 +247,90 @@ describe('StepBeta', () => {
     expect(mounted.target.textContent).toContain('Check your inbox to confirm your email')
   })
 
-  it('renders the GitHub-stars CTA linking the repo (helps Cmdr reach Homebrew)', async () => {
+  it('wears the error ring for a filled-in address that is not one, and refuses to send it', async () => {
     mounted = mountStep()
     await waitForAsync()
-    const link = mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/vdavid/cmdr"]')
-    expect(link).not.toBeNull()
-    expect(link?.textContent).toContain('here on GitHub')
-    // The CTA sentence names the star ask around the link (the fork/watch claim was dropped).
-    expect(mounted.target.textContent).toContain('star the repo')
+    await typeEmail(mounted.target, 'tester@')
+    expect(mounted.target.querySelector('.text-field-invalid')).not.toBeNull()
+    expect(getSaveButton(mounted.target).disabled).toBe(true)
+    // An empty optional field is an answer, not a mistake.
+    await typeEmail(mounted.target, '')
+    expect(mounted.target.querySelector('.text-field-invalid')).toBeNull()
+  })
+
+  it('says what went wrong and what to do about it, per kind of setback', async () => {
+    betaSignupMock.mockResolvedValueOnce({ kind: 'invalidEmail' as const })
+    mounted = mountStep()
+    await waitForAsync()
+    await typeEmail(mounted.target, 'tester@example.com')
+    getSaveButton(mounted.target).click()
+    await waitForAsync()
+    expect(mounted.target.textContent).toContain("didn't accept that address")
+
+    betaSignupMock.mockResolvedValueOnce({ kind: 'softFailure' as const })
+    await typeEmail(mounted.target, 'other@example.com')
+    getSaveButton(mounted.target).click()
+    await waitForAsync()
+    expect(mounted.target.textContent).toContain('Settings › Updates & privacy')
+  })
+
+  it('renders the checklist: the two link rows, their reasons, and the email field', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    const star = mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/vdavid/cmdr"]')
+    expect(star?.textContent).toContain('Star the repo on GitHub')
+    const like = mounted.target.querySelector<HTMLAnchorElement>(
+      'a[href="https://alternativeto.net/software/cmdr/about/"]',
+    )
+    expect(like?.textContent).toContain('Like Cmdr on AlternativeTo')
+    // Each ask says why it's worth 30 seconds; that's what makes it a checklist and not a beg.
+    expect(mounted.target.textContent).toContain('brew install cmdr')
+    expect(mounted.target.textContent).toContain('helps people and Google notice Cmdr')
+    expect(getEmailInput(mounted.target)).not.toBeNull()
+  })
+
+  it('ticks a link row only after the delay, so the tick means "you had time to do it"', async () => {
+    vi.useFakeTimers()
+    try {
+      mounted = mountStep()
+      await waitForAsync()
+      const star = mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/vdavid/cmdr"]')
+      const box = getChecklistCheckbox(mounted.target, 'Star the repo on GitHub')
+      expect(box.checked).toBe(false)
+      star?.click()
+      flushSync()
+      // Still unticked right after the click: the page has only just opened.
+      expect(getChecklistCheckbox(mounted.target, 'Star the repo on GitHub').checked).toBe(false)
+      vi.advanceTimersByTime(3_000)
+      flushSync()
+      expect(getChecklistCheckbox(mounted.target, 'Star the repo on GitHub').checked).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('lets someone who already starred the repo just say so', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    getChecklistCheckbox(mounted.target, 'Star the repo on GitHub').click()
+    await waitForAsync()
+    expect(getChecklistCheckbox(mounted.target, 'Star the repo on GitHub').checked).toBe(true)
+  })
+
+  it('ticks the email row on a signup the list accepted, never on a typed-in address', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    const mark = getChecklistCheckbox(mounted.target, 'Email address saved')
+    expect(mark.checked).toBe(false)
+    // Not a control: `analytics.email` is written on every keystroke, so a filled-in field
+    // proves nothing about whether it ever reached the list.
+    expect(mark.disabled).toBe(true)
+    await typeEmail(mounted.target, 'tester@example.com')
+    expect(getChecklistCheckbox(mounted.target, 'Email address saved').checked).toBe(false)
+
+    getSaveButton(mounted.target).click()
+    await waitForAsync()
+    expect(getChecklistCheckbox(mounted.target, 'Email address saved').checked).toBe(true)
   })
 
   it('marks the terms checkbox required for screen readers, not only with the asterisk', async () => {

@@ -121,8 +121,14 @@ function setTooltipContent(el: HTMLDivElement, param: TooltipParam): void {
       el.replaceChildren(nextContentEl)
       adoptedContentEl = nextContentEl
     }
+    // Rich content is prose, often several paragraphs, and the label-width box wraps it into
+    // a column of stubs. The class is what lets the stylesheet widen the box for this case
+    // alone, so a one-line label tooltip keeps its tight measure.
+    el.classList.add('cmdr-tooltip-rich')
     return
   }
+
+  el.classList.remove('cmdr-tooltip-rich')
 
   if (typeof param === 'string') {
     el.textContent = param

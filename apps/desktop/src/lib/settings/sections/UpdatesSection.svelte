@@ -116,7 +116,7 @@
                         placeholder={tString('settings.updates.emailPlaceholder')}
                         value={emailSignup.email}
                         oninput={emailSignup.handleInput}
-                        onblur={emailSignup.handleCommit}
+                        onblur={emailSignup.handleBlur}
                         onkeydown={emailSignup.handleKeydown}
                         disabled={emailSignup.signupInFlight}
                         ariaLabel={emailDef.label}

@@ -63,6 +63,7 @@
      * per-mount, so a Back into step 1 folds it away again.
      */
     let whyOpen = $state(false)
+    const isRevoked = $derived(onboardingState.step1Variant === 'revoked')
     /**
      * Default to Ventura+ (alphabetical list) until the backend reports the real version.
      * macOS 12 and older append new entries at the end of the FDA list, so the
@@ -198,17 +199,6 @@
         }}>{@render children()}</LinkButton
     >{/snippet}
 
-<!-- Two rows of an invisible grid: the labels are a column of their own, so a wrapped
-     upside never runs under "Pro:" and the two read as headers rather than list markers. -->
-{#snippet prosAndCons()}
-    <dl class="pro-con">
-        <dt>{tString('onboarding.stepFda.pro.label')}</dt>
-        <dd>{tString('onboarding.stepFda.pro.body')}</dd>
-        <dt>{tString('onboarding.stepFda.con.label')}</dt>
-        <dd><Trans key="onboarding.stepFda.con.body" snippets={{ sourceLink }} /></dd>
-    </dl>
-{/snippet}
-
 {#if renderable}
     <OnboardingStepShell>
         {#if onboardingState.step1Granted}
@@ -224,14 +214,13 @@
             <div class="fda-body">
                 <h2 class="welcome">{tString('onboarding.stepFda.welcome.title')}</h2>
 
-                {#if onboardingState.step1Variant === 'revoked'}
+                {#if isRevoked}
                     <p>{tString('onboarding.stepFda.revoked.intro')}</p>
                     <p><strong>{tString('onboarding.stepFda.revoked.noAccess')}</strong></p>
                     <p><Trans key="onboarding.stepFda.revoked.ifIntentional" snippets={{ deny }} /></p>
-                    <!-- This lede ends on "here are the pros and cons", so they stay in the open;
-                         only the first ask, where the user hasn't asked anything yet, folds them. -->
+                    <!-- This lede ends on "here are the pros and cons", which is why the revoked
+                         variant never folds them away; only the first ask does. -->
                     <p><Trans key="onboarding.stepFda.revoked.ifNot" snippets={{ em }} /></p>
-                    <SectionCard>{@render prosAndCons()}</SectionCard>
                 {:else}
                     <p>
                         <Trans key="onboarding.stepFda.firstAsk.lede" snippets={{ strong }} />
@@ -241,15 +230,26 @@
                             onclick={() => (whyOpen = !whyOpen)}>{tString('onboarding.stepFda.why')}</LinkButton
                         >
                     </p>
-                    {#if whyOpen}
-                        <div id="fda-why">
-                            <SectionCard>
+                {/if}
+
+                {#if isRevoked || whyOpen}
+                    <div id="fda-why">
+                        <SectionCard>
+                            {#if !isRevoked}
                                 <p>{tString('onboarding.stepFda.firstAsk.explain')}</p>
                                 <p>{tString('onboarding.stepFda.firstAsk.askPermission')}</p>
-                                {@render prosAndCons()}
-                            </SectionCard>
-                        </div>
-                    {/if}
+                            {/if}
+                            <!-- Two rows of an invisible grid: the labels are a column of their
+                                 own, so a wrapped upside never runs under "Pro:" and the two read
+                                 as headers rather than list markers. -->
+                            <dl class="pro-con">
+                                <dt>{tString('onboarding.stepFda.pro.label')}</dt>
+                                <dd>{tString('onboarding.stepFda.pro.body')}</dd>
+                                <dt>{tString('onboarding.stepFda.con.label')}</dt>
+                                <dd><Trans key="onboarding.stepFda.con.body" snippets={{ sourceLink }} /></dd>
+                            </dl>
+                        </SectionCard>
+                    </div>
                 {/if}
 
                 <p>{tString('onboarding.stepFda.ifAllow')}</p>

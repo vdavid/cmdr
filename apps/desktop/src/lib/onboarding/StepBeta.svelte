@@ -2,15 +2,24 @@
     import { onDestroy, onMount } from 'svelte'
     import OnboardingStepShell from './OnboardingStepShell.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
-    import SettingRow from '$lib/settings/components/SettingRow.svelte'
-    import SettingSwitch from '$lib/settings/components/SettingSwitch.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
+    import InfoTip from '$lib/ui/InfoTip.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
-    import { setFooterOverride, nextStep, requestWizardComplete } from './onboarding-state.svelte'
+    import {
+        setFooterOverride,
+        nextStep,
+        requestWizardComplete,
+        getOnboardingState,
+        setBetaChecklistItem,
+        type BetaChecklistItem,
+    } from './onboarding-state.svelte'
     import { forceSave, getSetting, getSettingDefinition, setSetting } from '$lib/settings'
+    import { useBooleanSetting } from '$lib/settings/components/boolean-setting.svelte'
     import { createBetaEmailSignup } from '$lib/settings/sections/beta-email-signup.svelte'
     import { openExternalUrl } from '$lib/tauri-commands'
     import {
@@ -19,6 +28,7 @@
         BOOK_A_CALL_URL,
         ABOUT_DAVID_URL,
         DISCORD_INVITE_URL,
+        ALTERNATIVE_TO_URL,
     } from '$lib/beta-links'
     import { TERMS_URL, TERMS_VERSION } from '$lib/legal/terms'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
@@ -31,23 +41,29 @@
     /**
      * Step 3: Open beta disclosure.
      *
-     * Four parts:
+     * Three parts:
      *
-     *   [Personal open-beta intro: David's first-person welcome + the three feedback
-     *    channels (Help > Send feedback…, GitHub issues, book-a-call), linked through
-     *    the shared `$lib/beta-links` constants]
-     *   [Anonymous-analytics disclosure + an opt-out switch bound to `analytics.enabled`]
-     *   [Optional contact email]
+     *   [David's first-person welcome and what "open beta" means here]
+     *   [The open-beta checklist: usage stats, a GitHub star, an AlternativeTo like, an
+     *    email address. Four small favors, each a tick, each about half a minute]
      *   [Required terms acceptance: the one gate on this page]
      *
-     * The analytics + email parts reuse the exact wiring `settings/sections/UpdatesSection.svelte`
-     * uses, so the Settings page and this onboarding page behave identically:
-     *   - the opt-out switch is the registry-backed `<SettingSwitch id="analytics.enabled">`
-     *     (default on; flipping it writes the setting immediately, like everywhere else),
-     *   - the email field runs on the shared `createBetaEmailSignup()`: it persists to
-     *     `analytics.email` on every keystroke (local only) and, on commit of a valid address,
-     *     calls the typed `betaSignup` wrapper, which POSTs ONLY the email (never an install
-     *     id) and returns a typed result mapped to a gentle inline note.
+     * The checklist is the whole middle of the page on purpose. Everything it asks for used
+     * to be a paragraph of prose apiece, and the step read as a wall the user had to get
+     * past rather than four things they could just do. Every row leads with a line and parks
+     * its detail behind an `<InfoTip>`, and the analytics disclosure is a full four
+     * paragraphs in there: an opt-out default has to be disclosed, but it doesn't have to be
+     * the first thing on the screen.
+     *
+     * The two link rows tick themselves `CHECKLIST_TICK_DELAY_MS` after the click, since the
+     * app can't see what happened in the browser; their ticks live in `onboarding-state` so a
+     * Back and forward doesn't forget. Both are real checkboxes too, so someone who starred
+     * the repo last week can just say so.
+     *
+     * The email field runs on the shared `createBetaEmailSignup()`, exactly as
+     * `settings/sections/UpdatesSection.svelte` does: it persists to `analytics.email` on
+     * every keystroke (local only) and, on commit of a valid address, calls the typed
+     * `betaSignup` wrapper, which POSTs ONLY the email (never an install id).
      *
      * This page is non-skippable: the AI step's forward button lands the user here. The
      * footer offers two ways forward: a secondary "Start using Cmdr!" that finishes
@@ -56,9 +72,42 @@
      * terms checkbox is ticked. See `lib/onboarding/CLAUDE.md` § "Step 3 (Open beta)".
      */
 
+    /**
+     * The feedback-channel list (in-app, GitHub issues, Discord, book-a-call). Parked rather
+     * than deleted: the checklist took the middle of the page and the paragraph that used to
+     * introduce this list ("here is how you can engage:") went with the rewrite, so the list
+     * has nothing to hang off. Flip to `true` to bring it back.
+     */
+    const SHOW_FEEDBACK_CHANNELS = false
+    /**
+     * The "Stay in touch (optional)" card. Parked, not deleted: the checklist's inline email
+     * field replaced it. Flip to `true` to bring it back.
+     */
+    const SHOW_STAY_IN_TOUCH_CARD = false
+
+    /**
+     * How long after following a checklist link before its row ticks itself. The app can't
+     * see what happened in the browser, so this is a "you've had time to do it" delay, not a
+     * confirmation: long enough that the tick doesn't land while the page is still opening,
+     * short enough that the user is still looking at the row when it does.
+     */
+    const CHECKLIST_TICK_DELAY_MS = 3_000
+
     const log = getAppLogger('onboarding-beta')
+    const onboardingState = getOnboardingState()
 
     const analyticsDef = getSettingDefinition('analytics.enabled') ?? { label: '', description: '' }
+    /** The usage-stats row's tick IS the setting, on the same wiring `<SettingSwitch>` uses. */
+    const analytics = useBooleanSetting('analytics.enabled')
+
+    const statsLabel = $derived(tString('onboarding.stepBeta.analyticsTitle'))
+    const starLabel = $derived(tString('onboarding.stepBeta.checklist.star'))
+    const alternativeToLabel = $derived(tString('onboarding.stepBeta.checklist.alternativeTo'))
+
+    /** Accessible name for a row's info glyph, which has no visible text of its own. */
+    function moreAbout(topic: string): string {
+        return tString('onboarding.moreAbout', { topic })
+    }
 
     // Drives the command-palette mention: when `app.commandPalette` is unbound the chip
     // renders nothing, so we drop the "with <chip>" tail rather than leave a gap.
@@ -72,6 +121,30 @@
             void openExternalUrl(url).catch((error: unknown) => {
                 log.warn('openExternalUrl({url}) failed: {error}', { url, error })
             })
+        }
+    }
+
+    /**
+     * Timers armed by `openAndTick`, cleared on destroy. A tick landing after the wizard
+     * closed would write into state `closeWizard()` has already reset, so the next launch
+     * would open on a checklist that ticks itself.
+     */
+    const tickTimers: number[] = []
+
+    /**
+     * Click handler for a checklist link: open the page, then tick the row once the user has
+     * had time to act on it. Ticking on the click itself would claim they did something they
+     * hadn't yet even seen.
+     */
+    function openAndTick(url: string, item: BetaChecklistItem) {
+        const open = openLink(url)
+        return (event: MouseEvent) => {
+            open(event)
+            tickTimers.push(
+                window.setTimeout(() => {
+                    setBetaChecklistItem(item, true)
+                }, CHECKLIST_TICK_DELAY_MS),
+            )
         }
     }
 
@@ -189,10 +262,23 @@
         // Clear the footer override so other steps' default buttons render again, and so a
         // teardown-then-remount doesn't leak stale closures.
         setFooterOverride(null)
+        for (const timer of tickTimers) window.clearTimeout(timer)
+        tickTimers.length = 0
     })
 
-    // The beta contact email field, on the same logic as `UpdatesSection.svelte`.
-    const emailSignup = createBetaEmailSignup()
+    /**
+     * The beta contact email field, on the same logic as `UpdatesSection.svelte` but with an
+     * explicit Save: a checklist row that ticked itself as the user tabbed past would claim
+     * they asked for something they only walked through. The tick follows the mailing list's
+     * own answer, ❌ never a valid-looking address: `analytics.email` is written on every
+     * keystroke, so a stored address proves nothing about whether it was ever sent.
+     */
+    const emailSignup = createBetaEmailSignup({
+        commitOnBlur: false,
+        onSubscribed: () => {
+            setBetaChecklistItem('email', true)
+        },
+    })
 </script>
 
 {#snippet david(children: Snippet)}<LinkButton
@@ -236,73 +322,181 @@
         onclick={openLink(GITHUB_REPO_URL)}>{@render children()}</LinkButton
     >{/snippet}
 
-<OnboardingStepShell>
-    <h2 class="step-title">{tString('onboarding.stepBeta.title')}</h2>
-    <p class="lede"><Trans key="onboarding.stepBeta.greeting" snippets={{ david }} /></p>
-    <p class="lede"><Trans key="onboarding.stepBeta.openBeta" snippets={{ alpha }} /></p>
-    <p class="lede">{tString('onboarding.stepBeta.feedbackIntro')}</p>
-    <!-- Each row's sentence lives in ONE span. The `<li>` is a flex row (marker + text),
-         and flex makes every ELEMENT child its own item: without the span, the leading
-         `<LinkButton>` would be separated from the ": …" after it by the row's own gap,
-         and the list read "GitHub : Add issues". -->
-    <ol class="feedback-list">
-        <li>
-            <span class="feedback-text">
-                {#if commandPaletteShortcut}
-                    <Trans key="onboarding.stepBeta.feedback.inAppBound" snippets={{ strong, chip }} />
-                {:else}
-                    <Trans key="onboarding.stepBeta.feedback.inAppUnbound" snippets={{ strong }} />
-                {/if}
-            </span>
-        </li>
-        <li>
-            <span class="feedback-text"><Trans key="onboarding.stepBeta.feedback.github" snippets={{ github }} /></span>
-        </li>
-        <li>
-            <span class="feedback-text"><Trans key="onboarding.stepBeta.feedback.discord" snippets={{ discord }} /></span>
-        </li>
-        <li>
-            <span class="feedback-text"><Trans key="onboarding.stepBeta.feedback.call" snippets={{ call }} /></span>
-        </li>
-    </ol>
-    <p class="lede"><Trans key="onboarding.stepBeta.star" snippets={{ github: repoLink, code }} /></p>
-
-    <p class="lede analytics-lede">{tString('onboarding.stepBeta.analyticsLede')}</p>
-
-    <SectionCard>
-        <SettingRow
-            id="analytics.enabled"
-            label={tString('onboarding.stepBeta.analyticsTitle')}
-            description={analyticsDef.description}
-        >
-            <SettingSwitch id="analytics.enabled" />
-        </SettingRow>
-        <p class="card-note">{tString('onboarding.stepBeta.analyticsCaption')}</p>
-    </SectionCard>
-
-    <!-- Crash reports default on too, and a default that sends something has to be disclosed
-         where the analytics one is, not only in Settings. No toggle: the switch lives in
-         Settings > Updates & privacy, and this step already asks enough of a first launch. -->
-    <p class="lede crash-reports-note">{tString('onboarding.stepBeta.crashReportsNote')}</p>
-
-    <SectionCard label={tString('onboarding.stepBeta.emailTitle')}>
+<!-- The field and its Save button ride INSIDE the sentence, so the row reads as one line
+     with a box in it. `baseline` on the wrapper is what puts the text inside the box on the
+     same line as the words around it. -->
+{#snippet emailField(children: Snippet)}<span class="email-control">
         <TextInput
             type="email"
             placeholder={tString('onboarding.stepBeta.emailPlaceholder')}
             value={emailSignup.email}
             oninput={emailSignup.handleInput}
-            onblur={emailSignup.handleCommit}
+            onblur={emailSignup.handleBlur}
             onkeydown={emailSignup.handleKeydown}
+            invalid={emailSignup.showInvalid}
             disabled={emailSignup.signupInFlight}
             ariaLabel={tString('onboarding.stepBeta.emailTitle')}
         />
-        {#if emailSignup.signupFeedback?.kind === 'success'}
-            <p class="signup-feedback success" role="status">{tString('onboarding.stepBeta.signup.success')}</p>
-        {:else if emailSignup.signupFeedback?.kind === 'failure'}
-            <p class="signup-feedback failure" role="status">{tString('onboarding.stepBeta.signup.failure')}</p>
-        {/if}
-        <p class="card-note">{tString('onboarding.stepBeta.emailNote')}</p>
-    </SectionCard>
+        <Button
+            variant="secondary"
+            size="mini"
+            disabled={!emailSignup.canSubmit}
+            onclick={() => {
+                void emailSignup.handleCommit()
+            }}>{tString('onboarding.stepBeta.checklist.emailSave')}</Button
+        >
+    </span>{@render children()}{/snippet}
+
+<OnboardingStepShell>
+    <h2 class="step-title">{tString('onboarding.stepBeta.title')}</h2>
+    <p class="lede"><Trans key="onboarding.stepBeta.greeting" snippets={{ david }} /></p>
+    <p class="lede"><Trans key="onboarding.stepBeta.openBeta" snippets={{ alpha }} /></p>
+
+    {#if SHOW_FEEDBACK_CHANNELS}
+        <p class="lede">{tString('onboarding.stepBeta.feedbackIntro')}</p>
+        <!-- Each row's sentence lives in ONE span. The `<li>` is a flex row (marker + text),
+             and flex makes every ELEMENT child its own item: without the span, the leading
+             `<LinkButton>` would be separated from the ": …" after it by the row's own gap,
+             and the list read "GitHub : Add issues". -->
+        <ol class="feedback-list">
+            <li>
+                <span class="feedback-text">
+                    {#if commandPaletteShortcut}
+                        <Trans key="onboarding.stepBeta.feedback.inAppBound" snippets={{ strong, chip }} />
+                    {:else}
+                        <Trans key="onboarding.stepBeta.feedback.inAppUnbound" snippets={{ strong }} />
+                    {/if}
+                </span>
+            </li>
+            <li>
+                <span class="feedback-text"
+                    ><Trans key="onboarding.stepBeta.feedback.github" snippets={{ github }} /></span
+                >
+            </li>
+            <li>
+                <span class="feedback-text"
+                    ><Trans key="onboarding.stepBeta.feedback.discord" snippets={{ discord }} /></span
+                >
+            </li>
+            <li>
+                <span class="feedback-text"><Trans key="onboarding.stepBeta.feedback.call" snippets={{ call }} /></span>
+            </li>
+        </ol>
+        <p class="lede"><Trans key="onboarding.stepBeta.star" snippets={{ github: repoLink, code }} /></p>
+    {/if}
+
+    <p class="lede checklist-title">{tString('onboarding.stepBeta.checklist.title')}</p>
+    <!-- One grid, three columns (tick, glyph, text), with each row `display: contents` so
+         all four line up on the same three edges however far the text wraps. -->
+    <ul class="checklist">
+        <li class="checklist-row">
+            <Checkbox
+                checked={analytics.checked}
+                ariaLabel={statsLabel}
+                onCheckedChange={(checked: boolean) => { analytics.set(checked); }}
+            />
+            <span class="row-glyph"><Icon name="chart-no-axes-column" size={16} aria-hidden="true" /></span>
+            <span class="row-text">
+                {statsLabel}
+                <InfoTip label={moreAbout(statsLabel)}>
+                    <p class="tip-para">{tString('onboarding.stepBeta.analyticsLede')}</p>
+                    <p class="tip-para">{analyticsDef.description}</p>
+                    <p class="tip-para">{tString('onboarding.stepBeta.analyticsCaption')}</p>
+                    <!-- Crash reports default on too, and a default that sends something has to
+                         be disclosed beside the analytics one, not only in Settings. No toggle:
+                         that switch lives in Settings > Updates & privacy. -->
+                    <p class="tip-para">{tString('onboarding.stepBeta.crashReportsNote')}</p>
+                </InfoTip>
+            </span>
+        </li>
+
+        <li class="checklist-row">
+            <Checkbox
+                checked={onboardingState.betaChecklist.star}
+                ariaLabel={starLabel}
+                onCheckedChange={(checked: boolean) => { setBetaChecklistItem('star', checked); }}
+            />
+            <span class="row-glyph"><Icon name="star" size={16} aria-hidden="true" /></span>
+            <span class="row-text">
+                <LinkButton
+                    href={GITHUB_REPO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onclick={openAndTick(GITHUB_REPO_URL, 'star')}>{starLabel}</LinkButton
+                >
+                <span class="row-note"><Trans key="onboarding.stepBeta.checklist.starNote" snippets={{ code }} /></span>
+            </span>
+        </li>
+
+        <li class="checklist-row">
+            <Checkbox
+                checked={onboardingState.betaChecklist.alternativeTo}
+                ariaLabel={alternativeToLabel}
+                onCheckedChange={(checked: boolean) => { setBetaChecklistItem('alternativeTo', checked); }}
+            />
+            <span class="row-glyph"><Icon name="heart" size={16} aria-hidden="true" /></span>
+            <span class="row-text">
+                <LinkButton
+                    href={ALTERNATIVE_TO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onclick={openAndTick(ALTERNATIVE_TO_URL, 'alternativeTo')}>{alternativeToLabel}</LinkButton
+                >
+                <span class="row-note">{tString('onboarding.stepBeta.checklist.alternativeToNote')}</span>
+            </span>
+        </li>
+
+        <li class="checklist-row">
+            <!-- A progress mark, not a control: the field beside it is what ticks it, so it
+                 takes no clicks. `disabled` is how that's said to a screen reader; the local
+                 style below keeps it from also looking switched off. -->
+            <span class="derived-mark">
+                <Checkbox
+                    checked={onboardingState.betaChecklist.email}
+                    disabled
+                    ariaLabel={tString('onboarding.stepBeta.checklist.emailMark')}
+                />
+            </span>
+            <span class="row-glyph"><Icon name="mail" size={16} aria-hidden="true" /></span>
+            <span class="row-text">
+                <Trans key="onboarding.stepBeta.checklist.email" snippets={{ field: emailField }} />
+                <InfoTip label={moreAbout(tString('onboarding.stepBeta.emailTitle'))}>
+                    <p class="tip-para">{tString('onboarding.stepBeta.emailNote')}</p>
+                </InfoTip>
+                <!-- A setback says which one it was and what to do next: a typo and an
+                     unreachable server want completely different moves from the user. -->
+                {#if emailSignup.signupFeedback?.kind === 'success'}
+                    <span class="signup-feedback success" role="status"
+                        >{tString('onboarding.stepBeta.signup.success')}</span
+                    >
+                {:else if emailSignup.signupFeedback?.reason === 'invalidEmail'}
+                    <span class="signup-feedback failure" role="status"
+                        >{tString('onboarding.stepBeta.signup.rejected')}</span
+                    >
+                {:else if emailSignup.signupFeedback?.reason === 'unreachable'}
+                    <span class="signup-feedback failure" role="status"
+                        >{tString('onboarding.stepBeta.signup.unreachable')}</span
+                    >
+                {/if}
+            </span>
+        </li>
+    </ul>
+
+    {#if SHOW_STAY_IN_TOUCH_CARD}
+        <SectionCard label={tString('onboarding.stepBeta.emailTitle')}>
+            <TextInput
+                type="email"
+                placeholder={tString('onboarding.stepBeta.emailPlaceholder')}
+                value={emailSignup.email}
+                oninput={emailSignup.handleInput}
+                onblur={emailSignup.handleCommit}
+                onkeydown={emailSignup.handleKeydown}
+                disabled={emailSignup.signupInFlight}
+                ariaLabel={tString('onboarding.stepBeta.emailTitle')}
+            />
+            <p class="card-note">{tString('onboarding.stepBeta.emailNote')}</p>
+        </SectionCard>
+    {/if}
 
     <!-- The card carries the id a blocked footer press scrolls back to; that's what
          `SectionCard`'s `id` is for. -->
@@ -341,13 +535,96 @@
         vertical-align: middle;
     }
 
-    .analytics-lede {
-        margin-bottom: var(--spacing-lg);
+    .checklist-title {
+        margin-top: var(--spacing-lg);
     }
 
-    .crash-reports-note {
-        margin-top: var(--spacing-lg);
-        margin-bottom: var(--spacing-lg);
+    /* Three columns shared by all four rows (tick, glyph, text), so the rows line up on the
+       same edges however far any of them wraps. Each `<li>` is `display: contents`, which
+       makes its three children the grid's own items instead of one box per row. */
+    .checklist {
+        display: grid;
+        grid-template-columns: auto auto 1fr;
+        align-items: start;
+        gap: var(--spacing-md) var(--spacing-sm);
+        margin: 0 0 var(--spacing-xl);
+        padding: 0;
+        list-style: none;
+    }
+
+    .checklist-row {
+        display: contents;
+    }
+
+    /* The tick and the glyph are 16px next to a ~21px line, so they sit a hair high without
+       this. Both cells take the same nudge, so they stay level with each other. */
+    .checklist :global(.checkbox-root),
+    .row-glyph {
+        margin-top: var(--spacing-xxs);
+    }
+
+    /* The field, its Save button, and the words around them share one baseline, so the row
+       reads as a sentence with a box in it rather than a control dropped into a paragraph. */
+    .email-control {
+        display: inline-flex;
+        align-items: baseline;
+        gap: var(--spacing-sm);
+        /* A little air on each side, so the box never touches the words. */
+        margin: 0 var(--spacing-xs);
+    }
+
+    /* The stock field's padding is sized for a form row. Trimmed here so the email row ends
+       up the same height as the three plain rows above it, which is what keeps the run of
+       ticks evenly spaced. */
+    .email-control :global(.text-field) {
+        width: 14rem;
+        padding: var(--spacing-xxs) var(--spacing-sm);
+    }
+
+    .row-glyph {
+        display: flex;
+        color: var(--color-accent-text);
+    }
+
+    .row-text {
+        min-width: 0;
+        line-height: var(--font-line-height-prose);
+        color: var(--color-text-primary);
+    }
+
+    /* The explanation after a checklist link: same line, quieter, wrapping under it. */
+    .row-note {
+        color: var(--color-text-secondary);
+    }
+
+    .row-note code {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        background: var(--color-bg-tertiary);
+        padding: var(--spacing-xxs) var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        color: var(--color-text-primary);
+    }
+
+    /* A tick the user can't set by hand still shouldn't look switched off: `disabled` is
+       here to say "not a control" to a screen reader, not to grey the mark out. */
+    .derived-mark :global(.checkbox-control[data-disabled]) {
+        opacity: 1;
+        cursor: default;
+    }
+
+    /* One sentence per line inside the info tips, which is what the `\n`s in the catalog
+       are for; a tooltip has the vertical room a paragraph of six sentences doesn't. */
+    .tip-para {
+        margin: 0 0 var(--spacing-md);
+        font-size: var(--font-size-sm);
+        line-height: var(--font-line-height-prose);
+        color: var(--color-text-secondary);
+        white-space: pre-line;
+    }
+
+    .tip-para:last-child {
+        margin-bottom: 0;
     }
 
     /* The list belongs to the paragraphs around it, so its numbers start on the same
@@ -402,11 +679,6 @@
         color: var(--color-text-secondary);
     }
 
-    /* The row above already ends on its own divider, so the note only needs air. */
-    :global(.setting-row) + .card-note {
-        margin-top: var(--spacing-sm);
-    }
-
     .terms-consent {
         margin-top: var(--spacing-md);
         line-height: var(--font-line-height-prose);
@@ -422,8 +694,10 @@
         color: var(--color-error-text);
     }
 
+    /* Its own line under the email row, so a verdict never squeezes in beside the field. */
     .signup-feedback {
-        margin: var(--spacing-xs) 0 0;
+        display: block;
+        margin-top: var(--spacing-xs);
         font-size: var(--font-size-sm);
     }
 
@@ -435,9 +709,8 @@
         color: var(--color-text-primary);
     }
 
-    /* The email field and its inline verdict both sit above the small print. */
-    :global(.text-field) + .card-note,
-    .signup-feedback + .card-note {
+    /* The parked "Stay in touch" card stacks its field over its small print. */
+    :global(.text-field) + .card-note {
         margin-top: var(--spacing-sm);
     }
 </style>
