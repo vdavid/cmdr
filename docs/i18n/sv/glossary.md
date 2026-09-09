@@ -2576,3 +2576,42 @@ De två raderna under de gråade fälten `Adress` och `Användarnamn`, när anv�
 - function key bar (raden med funktionstangent-kommandoknappar längst ned i fönstret) → funktionstangentsraden · redan
   fastställt i katalogen (`settings.appearance.showFunctionKeyBar.label`); återanvänt för snabbmenyalternativet och
   tillhörande meddelande · high
+
+## AI:n slutade heta Ask Cmdr utanför chattpanelen (2026-09-09)
+
+Engelskan behåller nu `Ask Cmdr` bara där namnet pekar på själva CHATTPANELEN (dess rubrik, alternativet i Visa-menyn,
+palettkommandot, inställningsavsnittet, av/på-reglaget). Varje mening som bara beskrev vad AI:n gör bytte subjekt: de
+flesta säger `Cmdr`, ett fåtal säger `the AI`. Det är engelskan i nyckeln som bestämmer, aldrig minnet av hur nyckeln
+såg ut förut.
+
+- the AI (satsens subjekt) · **AI:n** · katalogens egen form i `ai.translateError.*` (`AI:n tog för lång tid`,
+  `AI:n kom tillbaka tom`, genitiven `AI:ns svar`) · `high`
+- AI features · **AI-funktioner**, obestämd form · `settings.ai.tooltipOff` (`AI-funktioner är avstängda.`) och
+  `settings.ai.provider.description` (`Välj hur AI-funktioner drivs.`) · `high`
+- chat (panelen, substantiv) · **chatt** · Microsoft sv terminology (`chat` → `chatt`, verbet → `chatta`), och katalogen
+  har redan `chatten` och `chattar` · `high`
+- **`chatt` och `samtal` är inte utbytbara: var och en följer sin egen nyckels engelska.** `chat` är `chatt`
+  (`startar en chatt`, `settings.askCmdr.proactive.description`), `conversation` är `samtal` (`startar ett samtal`,
+  `askCmdr.consent.proactive`). Engelskan skiljer på dem i grannycklar, så svenskan gör det också.
+- provider (av AI) · **leverantör** · Microsoft sv terminology listar både `leverantör` och `provider`; katalogen kör
+  `AI-leverantör` genomgående, och `leverantör` är det ord Apple-svenskan skulle välja · `high`
+- **Andra meningen i `askCmdr.wake.needsFullDiskAccess` kopierar `search.coverage.setUpFullDiskAccess`**
+  (`Ställ in full skivtillgång`), eftersom `@key` kräver att de två ytorna säger samma sak. Det blir
+  `Klicka för att ställa in full skivtillgång.` · `high`. ⚠ `settings.onboarding.fullDiskAccessChoice.label` säger
+  fortfarande `Fullständig diskåtkomst`; den avvikelsen låg utanför den här omgången och är kvar att rätta.
+- **`Cmdr` tar plain `-s` i genitiv** (`Cmdrs anteckningar`), enligt § "Genitiv på ett varumärke" i `style.md`.
+
+## Stegen för att sätta upp en AI-leverantör (2026-09-09)
+
+Nycklarna `onboarding.cloudSetup.*`, granskade mot referenssamlingen (`sv/microsoft-terminology/`).
+
+- download (verb) · **hämta** · `onboarding.cloudSetup.step.install` var katalogens ENDA `Ladda ner` mot 43 `hämta`, och
+  är nu `Hämta och installera`. Apple sv säger `Hämta` (`Hämtade filer`, `Hämtningar`), och macOS vinner över Microsofts
+  delade `ladda ned` / `nedladdning` / `hämtning` (termvalsprincip 2) · `high`
+- placeholder (exempeltexten i ett fält) · **platshållare** · Microsoft sv terminology · `high`
+- deployment (i Azure) · **distribution** · Microsoft sv terminology (`deployment` → `distribution`, tre poster) ·
+  `high`
+- endpoint · **slutpunkt** · Microsoft sv terminology (fem poster), och rubriken strax ovanför legenden är redan
+  `Slutpunkts-URL` (`onboarding.cloudSetup.step.endpoint`) · `high`
+- `Ollama`, `LM Studio`, `Azure OpenAI`, `Azure`, `api-version` och kommandot `ollama pull llama3.2` står kvar
+  ordagrant.

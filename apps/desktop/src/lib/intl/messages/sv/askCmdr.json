@@ -208,17 +208,17 @@
   "@askCmdr.error.noKey": {
     "sourceHash": "0a78f37"
   },
-  "askCmdr.error.notConfigured": "Aktivera en AI-leverantör i inställningarna för att använda Ask Cmdr.",
+  "askCmdr.error.notConfigured": "Chatten behöver en AI-leverantör. Aktivera en i inställningarna.",
   "@askCmdr.error.notConfigured": {
-    "sourceHash": "b84c5f4"
+    "sourceHash": "2d55d2c"
   },
   "askCmdr.error.noConsent": "Aktivera Ask Cmdr för att börja chatta. Du väljer först vad det får se.",
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr behöver ett större kontextfönster än din lokala modell har. Välj 32 768 token eller mer i inställningarna, under AI.",
+  "askCmdr.error.localWindowTooSmall": "Cmdr behöver ett större kontextfönster än din lokala modell har. Välj 32 768 token eller mer i inställningarna, under AI.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "6c2334b"
+    "sourceHash": "8ac7452"
   },
   "askCmdr.error.unavailable": "Det gick inte att nå AI-leverantören. Kontrollera din anslutning och försök igen.",
   "@askCmdr.error.unavailable": {
@@ -356,9 +356,9 @@
   "@askCmdr.consent.title": {
     "sourceHash": "59b4ca9"
   },
-  "askCmdr.consent.intro": "Ask Cmdr skickar dina frågor till den AI-leverantör du väljer, med din egen API-nyckel. Här är exakt vad som lämnar din Mac när du chattar:",
+  "askCmdr.consent.intro": "Cmdr skickar dina frågor till den AI-leverantör du väljer, med din egen API-nyckel. Här är exakt vad som lämnar din Mac när du chattar:",
   "@askCmdr.consent.intro": {
-    "sourceHash": "4366272"
+    "sourceHash": "3b5eac1"
   },
   "askCmdr.consent.item.messages": "Dina meddelanden",
   "@askCmdr.consent.item.messages": {
@@ -384,21 +384,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.item.memory": "Anteckningarna som Ask Cmdr för om dig, som skickas med igen vid varje meddelande",
+  "askCmdr.consent.item.memory": "Anteckningarna som Cmdr för om dig, som skickas med igen vid varje meddelande",
   "@askCmdr.consent.item.memory": {
-    "sourceHash": "54bee04"
+    "sourceHash": "7779513"
   },
-  "askCmdr.consent.contentsRule": "Cmdr skickar aldrig hela filer, bilder eller miniatyrer. När du frågar om en fil kan Cmdr läsa en begränsad del av den: några rader text, några sidor ur en PDF tillsammans med dess titel och författare, vilka filer som finns i ett arkiv, eller en bilds kamerauppgifter, inklusive var den togs. Bildsökningen fungerar på samma sätt: texten som Cmdr känt igen i de matchande bilderna och deras taggar skickas till din leverantör så att den kan hitta dem. Ask Cmdr kan föreslå namnbyten, flyttar och upprensningar, och ingenting händer med en fil förrän du godkänner det.",
+  "askCmdr.consent.contentsRule": "Cmdr skickar aldrig hela filer, bilder eller miniatyrer. När du frågar om en fil kan Cmdr läsa en begränsad del av den: några rader text, några sidor ur en PDF tillsammans med dess titel och författare, vilka filer som finns i ett arkiv, eller en bilds kamerauppgifter, inklusive var den togs. Bildsökningen fungerar på samma sätt: texten som Cmdr känt igen i de matchande bilderna och deras taggar skickas till din leverantör så att den kan hitta dem. Cmdr kan föreslå namnbyten, flyttar och upprensningar, och ingenting händer med en fil förrän du godkänner det.",
   "@askCmdr.consent.contentsRule": {
-    "sourceHash": "11b2e0a"
+    "sourceHash": "5a378c1"
   },
-  "askCmdr.consent.memory": "Ask Cmdr skriver anteckningar om dig: hur du gillar att ha saker ordnade, vad du har tackat nej till förut, och allt du ber den komma ihåg. Anteckningarna följer med varje meddelande du skickar, så länge de finns, och de kan innehålla text som Cmdr känt igen inuti dina foton. Du kan läsa dem, eller radera dem, när som helst i inställningarna för Ask Cmdr.",
+  "askCmdr.consent.memory": "Cmdr skriver anteckningar om dig: hur du gillar att ha saker ordnade, vad du har tackat nej till förut, och allt du ber den komma ihåg. Anteckningarna följer med varje meddelande du skickar, så länge de finns, och de kan innehålla text som Cmdr känt igen inuti dina foton. Du kan läsa dem, eller radera dem, när som helst i inställningarna för Ask Cmdr.",
   "@askCmdr.consent.memory": {
-    "sourceHash": "80facfd"
+    "sourceHash": "496c78d"
   },
-  "askCmdr.consent.proactive": "Ask Cmdr håller också koll på mapparna du använder och startar ett samtal när den har något att föreslå, så meddelanden kan gå till din leverantör utan att du frågat om något. Du kan stänga av det i inställningarna för Ask Cmdr, under ”På eget initiativ”.",
+  "askCmdr.consent.proactive": "Cmdr håller också koll på mapparna du använder och startar ett samtal när den har något att föreslå, så meddelanden kan gå till din leverantör utan att du frågat om något. Du kan stänga av det i inställningarna för Ask Cmdr, under ”På eget initiativ”.",
   "@askCmdr.consent.proactive": {
-    "sourceHash": "1d0b671"
+    "sourceHash": "abfa80b"
   },
   "askCmdr.consent.local": "Dina chattar stannar på din Mac, i en lokal databas du kan öppna och läsa. Du väljer leverantör och modell, och du kan se vad varje chatt kostar.",
   "@askCmdr.consent.local": {
@@ -420,17 +420,17 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr kan nu titta in i en fil du frågar om: en del av texten, några sidor ur en PDF, vilka filer som finns i ett arkiv eller en bilds kamerauppgifter och var den togs. Det är ett större löfte än det du sa ja till, så här kommer alltihop igen.",
+  "askCmdr.consent.whatsNew.body": "Cmdr kan nu titta in i en fil du frågar om: en del av texten, några sidor ur en PDF, vilka filer som finns i ett arkiv eller en bilds kamerauppgifter och var den togs. Det är ett större löfte än det du sa ja till, så här kommer alltihop igen.",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "fd59b19"
+    "sourceHash": "1af51d8"
   },
-  "askCmdr.forget.title": "Glömma allt som Ask Cmdr minns?",
+  "askCmdr.forget.title": "Glömma allt som Cmdr minns om dig?",
   "@askCmdr.forget.title": {
-    "sourceHash": "95f576a"
+    "sourceHash": "e83c997"
   },
-  "askCmdr.forget.message": "Ask Cmdr slänger sina anteckningar om dig och börjar med ett blankt blad. Dina chattar och dina filer är kvar precis som de är.",
+  "askCmdr.forget.message": "Cmdr slänger sina anteckningar om dig och börjar med ett blankt blad. Dina chattar och dina filer är kvar precis som de är.",
   "@askCmdr.forget.message": {
-    "sourceHash": "5687160"
+    "sourceHash": "5a390a8"
   },
   "askCmdr.forget.confirm": "Glöm allt",
   "@askCmdr.forget.confirm": {
@@ -709,21 +709,21 @@
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
   },
-  "askCmdr.wake.thinking": "Ask Cmdr tittar på vad som har ändrats. Öppna chatten.",
+  "askCmdr.wake.thinking": "Cmdr tar en titt på vad som har ändrats. Öppna chatten.",
   "@askCmdr.wake.thinking": {
-    "sourceHash": "c4367ad"
+    "sourceHash": "772ca6e"
   },
-  "askCmdr.wake.stop": "Stoppa det Ask Cmdr håller på med",
+  "askCmdr.wake.stop": "Stoppa det Cmdr håller på med",
   "@askCmdr.wake.stop": {
-    "sourceHash": "6559df8"
+    "sourceHash": "1eae5cb"
   },
-  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr kan bara bevaka mappar den kan se. Ställ in full skivtillgång.",
+  "askCmdr.wake.needsFullDiskAccess": "AI-funktioner kan inte se dina mappar än. Klicka för att ställa in full skivtillgång.",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "fd24fd2"
+    "sourceHash": "0c301b5"
   },
-  "askCmdr.wake.needsApiKey": "Ask Cmdr bevakar, men behöver en API-nyckel för att tänka. Öppna inställningarna.",
+  "askCmdr.wake.needsApiKey": "AI-funktioner är på, men de behöver en leverantör för att fungera. Klicka för att ställa in en i inställningarna.",
   "@askCmdr.wake.needsApiKey": {
-    "sourceHash": "e9b96e6"
+    "sourceHash": "0f71f75"
   },
   "askCmdr.wakeDigest.summary": "Det här har ändrats i {foldersText} {folders, plural, one {mapp} other {mappar}}",
   "@askCmdr.wakeDigest.summary": {
@@ -753,13 +753,13 @@
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
   },
-  "askCmdr.sessions.wakeThread": "Ask Cmdr startade den här chatten",
+  "askCmdr.sessions.wakeThread": "Cmdr startade den här chatten",
   "@askCmdr.sessions.wakeThread": {
-    "sourceHash": "ba3d8fa"
+    "sourceHash": "5a27703"
   },
-  "askCmdr.wakeToast.title": "Ask Cmdr har {countText} {count, plural, one {förslag} other {förslag}} till dig",
+  "askCmdr.wakeToast.title": "Cmdr har {countText} {count, plural, one {förslag} other {förslag}} till dig",
   "@askCmdr.wakeToast.title": {
-    "sourceHash": "08b3d32"
+    "sourceHash": "881baf8"
   },
   "askCmdr.wakeToast.action": "Granska",
   "@askCmdr.wakeToast.action": {

@@ -456,7 +456,7 @@
     "sourceHash": "5705da6"
   },
 
-  "onboarding.cloudSetup.step.install": "Ladda ner och installera <installLink>{provider}</installLink>",
+  "onboarding.cloudSetup.step.install": "Hämta och installera <installLink>{provider}</installLink>",
   "@onboarding.cloudSetup.step.install": {
     "sourceHash": "cd0221c"
   },

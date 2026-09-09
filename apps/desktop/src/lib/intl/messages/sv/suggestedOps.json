@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "4f24ca6"
   },
-  "suggestedOps.description": "Ask Cmdr föreslår det här. Inget körs förrän du godkänner det.",
+  "suggestedOps.description": "AI:n föreslog det här. Inget körs förrän du godkänner det.",
   "@suggestedOps.description": {
-    "sourceHash": "d70e5f0"
+    "sourceHash": "73255a0"
   },
   "suggestedOps.empty": "Inget väntar på dig just nu.",
   "@suggestedOps.empty": {
@@ -15,9 +15,9 @@
   "@suggestedOps.loadFailed": {
     "sourceHash": "3d3af5a"
   },
-  "suggestedOps.agentReason": "Ask Cmdrs skäl",
+  "suggestedOps.agentReason": "AI:ns skäl",
   "@suggestedOps.agentReason": {
-    "sourceHash": "0768c36"
+    "sourceHash": "e3acab8"
   },
   "suggestedOps.cmdrFacts": "Det här vet Cmdr",
   "@suggestedOps.cmdrFacts": {
@@ -75,9 +75,9 @@
   "@suggestedOps.fromPattern": {
     "sourceHash": "20e88a9"
   },
-  "suggestedOps.changedUnderReview": "Ask Cmdr ändrade det här förslaget medan du läste det.",
+  "suggestedOps.changedUnderReview": "AI:n ändrade det här förslaget medan du läste det.",
   "@suggestedOps.changedUnderReview": {
-    "sourceHash": "fd6b2ac"
+    "sourceHash": "5d07c7c"
   },
   "suggestedOps.showNewVersion": "Visa den nya versionen",
   "@suggestedOps.showNewVersion": {
@@ -111,8 +111,8 @@
   "@suggestedOps.loadingFiles": {
     "sourceHash": "83257e6"
   },
-  "suggestedOps.indicatorTooltip": "Ask Cmdr har förslag åt dig. Klicka för att granska dem.",
+  "suggestedOps.indicatorTooltip": "AI-förslag väntar. Klicka för att granska dem.",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "dc423e6"
+    "sourceHash": "4508b0b"
   }
 }

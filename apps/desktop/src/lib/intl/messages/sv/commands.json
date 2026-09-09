@@ -828,8 +828,8 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "4f24ca6"
   },
-  "commands.suggestedOpsShow.description": "Granska filåtgärderna som Ask Cmdr föreslår och bestäm vad som körs",
+  "commands.suggestedOpsShow.description": "Granska filåtgärderna som AI:n föreslog och bestäm vad som körs",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "cf24a4f"
+    "sourceHash": "7efe8c9"
   }
 }

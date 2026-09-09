@@ -828,8 +828,8 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "4f24ca6"
   },
-  "commands.suggestedOpsShow.description": "Revise as operações de arquivo que o Ask Cmdr sugeriu e decida o que é executado",
+  "commands.suggestedOpsShow.description": "Revise as operações de arquivo que a IA sugeriu e decida o que é executado",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "cf24a4f"
+    "sourceHash": "7efe8c9"
   }
 }

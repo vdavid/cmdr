@@ -2462,3 +2462,50 @@ As duas linhas abaixo dos campos esmaecidos `Endereço` e `Nome de usuário`, qu
 - function key bar (a linha de botões de comando das teclas de função na parte inferior da janela) → barra de teclas de
   função · já definido no catálogo (`settings.appearance.showFunctionKeyBar.label`); reutilizado para o item do menu de
   contexto e o respetivo toast · high
+
+## A IA deixou de se chamar Ask Cmdr fora do painel de chat (2026-09-09)
+
+O inglês passou a guardar `Ask Cmdr` só onde o nome aponta para o PAINEL de chat em si (o título dele, o item do menu
+Visualizar, o comando da paleta, a seção de ajustes, o interruptor que liga e desliga). Toda frase que apenas descrevia
+o que a IA faz trocou o sujeito: a maioria diz `Cmdr`, algumas dizem `the AI`. Quem manda é o inglês da chave, nunca a
+memória de como a chave era antes.
+
+- the AI (sujeito de uma frase) · **a IA** · forma que o catálogo já publica em `ai.translateError.*`
+  (`A IA demorou demais`, `A IA retornou vazia`, `A IA está desativada`) · `high`
+- AI features · **os recursos de IA** · `settings.ai.tooltipOff` (`Os recursos de IA estão desativados.`) e
+  `settings.ai.provider.description` (`Escolha como os recursos de IA são alimentados.`) · `high`
+- chat (o painel, como substantivo) · **o chat** · Microsoft pt-BR terminology (`chat` → `chat`), e o catálogo já diz
+  `Abra o chat` e `Seus chats` · `high`
+- **`chat`, `conversar` e `conversa` convivem, e cada um segue o inglês da SUA chave.** `chat` (substantivo) é `o chat`
+  (`abre um chat`, em `settings.askCmdr.proactive.description`); `to chat` é `conversar` (`Converse com uma IA…`);
+  `conversation` é `conversa` (`abre uma conversa`, em `askCmdr.consent.proactive`). O inglês separa os três em chaves
+  vizinhas, então o português separa também. Por isso `askCmdr.sessions.wakeThread` virou `este chat`: o inglês diz
+  `chat`, e a tradução antiga dizia `conversa`.
+- provider (de IA) · **provedor** · Microsoft pt-BR terminology (`provider` → `provedor`), já a forma do catálogo ·
+  `high`
+- **`Cmdr` como sujeito leva artigo: `O Cmdr`.** É o que o catálogo já faz (`O Cmdr nunca envia arquivos inteiros`,
+  `O Cmdr tem vários recursos de IA`), e a § "Uma frase de resultado nunca fica sem sujeito" do `style.md` pede o
+  sujeito por extenso mesmo quando o inglês o elide.
+- **A segunda frase de `askCmdr.wake.needsFullDiskAccess` copia `search.coverage.setUpFullDiskAccess`**
+  (`Configurar o acesso total ao disco`), porque a `@key` manda as duas telas dizerem a mesma coisa. Fica
+  `Clique para configurar o acesso total ao disco.` · `high`
+- **`para ti` era resíduo pt-PT** em `askCmdr.wakeToast.title`; virou `para você`, o pronome pt-BR que a § Variant do
+  `style.md` já lista como marcador de variante.
+
+## Os passos de configuração de provedor de IA (2026-09-09)
+
+Chaves `onboarding.cloudSetup.*`, revistas contra a pilha de referência (`pt-BR/microsoft-terminology/`).
+
+- placeholder (o texto de exemplo dentro de um campo) · **espaço reservado** · Microsoft pt-BR terminology
+  (`placeholder` → `espaço reservado`) · `high`
+- deployment (do Azure) · **implantação** · Microsoft pt-BR terminology (`deployment` → `implantação`, três entradas) ·
+  `high`
+- download (verbo) · **baixar** · Microsoft pt-BR terminology (`download` → `baixar`) e o catálogo
+  (`downloads.toast.downloaded`: `{fileName} baixado`) · `high`
+- endpoint · **endpoint**, mantido em inglês · `tentative`. A Microsoft pt-BR diz `ponto de extremidade`, mas o rótulo
+  que fica logo acima da legenda na MESMA tela já está publicado como `URL do endpoint`
+  (`onboarding.cloudSetup.step.endpoint`), e uma legenda que trocasse a palavra leria como outro campo. Trocar os dois
+  de uma vez é uma decisão à parte, não uma correção desta rodada.
+- **`then` de um passo em duas etapas vira `e depois`**, não some: `onboarding.cloudSetup.step.lmStudioServer` diz
+  `Carregue um modelo no LM Studio e depois inicie o servidor local`, porque a ordem é a informação do passo.
+- `Ollama`, `LM Studio`, `Azure OpenAI`, `Azure`, `api-version` e o comando `ollama pull llama3.2` ficam verbatim.

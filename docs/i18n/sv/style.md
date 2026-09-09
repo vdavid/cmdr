@@ -301,6 +301,14 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   `errors.listing.*.suggestion` säger ”Gå hit igen för att försöka på nytt”), och
   `servers.paneState.signedOutNothingToAsk` följer den: ”Öppna servern igen för att försöka på nytt.” `Försök igen` står
   kvar som knapptext för `Try again`, och `prova` hör till `try` i betydelsen testa något.
+- **`Ask Cmdr` står kvar bara där engelskan har kvar det, och där namnger det numera bara CHATTPANELEN.** I övrigt är
+  subjektet `Cmdr` eller `AI:n`, efter vad nyckelns engelska säger; `AI features` blir `AI-funktioner`. Översätt aldrig
+  efter minnet av hur nyckeln såg ut förut, läs den aktuella engelskan. Termer, belägg och skillnaden mellan `chatt` och
+  `samtal`: `glossary.md` § AI:n slutade heta Ask Cmdr utanför chattpanelen.
+- **En engelsk term som katalogen redan har ett settlat ord för vinner över en engångsformulering.**
+  `onboarding.cloudSetup.step.install` var enda stället som sa `Ladda ner` mot 43 `hämta` i resten av katalogen; det var
+  drift, inte ett val. Kolla alltid hur ofta en form redan förekommer innan du skriver en ny. Belägg: `glossary.md` §
+  Stegen för att sätta upp en AI-leverantör.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

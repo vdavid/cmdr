@@ -466,7 +466,7 @@
     "sourceHash": "5999d6a"
   },
 
-  "onboarding.cloudSetup.step.lmStudioServer": "Carregue um modelo no LM Studio e inicie o <serverLink>servidor local</serverLink>",
+  "onboarding.cloudSetup.step.lmStudioServer": "Carregue um modelo no LM Studio e depois inicie o <serverLink>servidor local</serverLink>",
   "@onboarding.cloudSetup.step.lmStudioServer": {
     "sourceHash": "447957a"
   },

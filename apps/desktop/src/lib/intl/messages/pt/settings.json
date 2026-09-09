@@ -1583,9 +1583,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the Ask Cmdr chat rail); kept verbatim in every locale (do-not-translate list)."
   },
-  "settings.askCmdr.intro": "Converse com uma IA sobre seus arquivos, discos e histórico. O Ask Cmdr lê nomes, caminhos e tamanhos para responder, só olha dentro de um arquivo quando você pergunta sobre ele e nunca muda um arquivo sem a sua aprovação.",
+  "settings.askCmdr.intro": "Converse com uma IA sobre seus arquivos, discos e histórico. O Cmdr lê nomes, caminhos e tamanhos para responder, só olha dentro de um arquivo quando você pergunta sobre ele e nunca muda um arquivo sem a sua aprovação.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "5a81d7a"
+    "sourceHash": "3b16f89"
   },
   "settings.askCmdr.status.on": "O Ask Cmdr está ativado",
   "@settings.askCmdr.status.on": {
@@ -1619,29 +1619,29 @@
   "@settings.askCmdr.turnOff": {
     "sourceHash": "eb03374"
   },
-  "settings.askCmdr.disclosure.title": "O que o Ask Cmdr envia",
+  "settings.askCmdr.disclosure.title": "O que o Cmdr envia",
   "@settings.askCmdr.disclosure.title": {
-    "sourceHash": "8ccd3b9"
+    "sourceHash": "6907e64"
   },
   "settings.askCmdr.provider.title": "Provedor e modelo",
   "@settings.askCmdr.provider.title": {
     "sourceHash": "b9fdc88"
   },
-  "settings.askCmdr.provider.shared": "O Ask Cmdr usa o provedor de IA e a chave que você configurou em Ajustes › IA ({provider}).",
+  "settings.askCmdr.provider.shared": "O Cmdr usa o provedor de IA e a chave que você configurou em Ajustes › IA ({provider}).",
   "@settings.askCmdr.provider.shared": {
-    "sourceHash": "c84fd32"
+    "sourceHash": "9442b09"
   },
-  "settings.askCmdr.provider.off": "Ative um provedor de IA em Ajustes › IA para usar o Ask Cmdr.",
+  "settings.askCmdr.provider.off": "Ative um provedor de IA em Ajustes › IA para começar a conversar.",
   "@settings.askCmdr.provider.off": {
-    "sourceHash": "8b378ae"
+    "sourceHash": "5cc1481"
   },
   "settings.askCmdr.interactiveModel.label": "Modelo do Ask Cmdr",
   "@settings.askCmdr.interactiveModel.label": {
     "sourceHash": "194255a"
   },
-  "settings.askCmdr.interactiveModel.description": "O modelo com o qual o Ask Cmdr conversa. Deixe em branco para usar o mesmo modelo dos outros recursos de IA do Cmdr. Exemplo: claude-sonnet-4-5",
+  "settings.askCmdr.interactiveModel.description": "O modelo que o chat usa. Deixe em branco para usar o mesmo modelo dos outros recursos de IA do Cmdr. Exemplo: claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
-    "sourceHash": "e3f64a5"
+    "sourceHash": "881f8a4"
   },
   "settings.askCmdr.interactiveModel.placeholder": "Igual à IA do Cmdr",
   "@settings.askCmdr.interactiveModel.placeholder": {
@@ -1667,21 +1667,21 @@
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
   },
-  "settings.askCmdr.proactive.label": "Permitir que o Ask Cmdr inicie conversas",
+  "settings.askCmdr.proactive.label": "Permitir que o Cmdr inicie conversas",
   "@settings.askCmdr.proactive.label": {
-    "sourceHash": "1db4497"
+    "sourceHash": "a85ef48"
   },
-  "settings.askCmdr.proactive.description": "O Ask Cmdr acompanha as pastas em que você trabalha e abre um chat quando tem algo a sugerir. Nada é executado até você aprovar.",
+  "settings.askCmdr.proactive.description": "O Cmdr acompanha as pastas em que você trabalha e abre um chat quando tem algo a sugerir. Nada é executado até você aprovar.",
   "@settings.askCmdr.proactive.description": {
-    "sourceHash": "9bf4e15"
+    "sourceHash": "556f155"
   },
-  "settings.askCmdr.wakeDelay.label": "Com que rapidez o Ask Cmdr olha",
+  "settings.askCmdr.wakeDelay.label": "Com que rapidez o Cmdr olha",
   "@settings.askCmdr.wakeDelay.label": {
-    "sourceHash": "f80bb5a"
+    "sourceHash": "a7368d0"
   },
-  "settings.askCmdr.wakeDelay.description": "Com que rapidez o Ask Cmdr olha para uma pasta que acabou de mudar. Mais tempo significa um assistente mais calmo.",
+  "settings.askCmdr.wakeDelay.description": "Com que rapidez o Cmdr olha para uma pasta que acabou de mudar. Mais tempo significa um assistente mais calmo.",
   "@settings.askCmdr.wakeDelay.description": {
-    "sourceHash": "b53dd9b"
+    "sourceHash": "08790da"
   },
   "settings.askCmdr.wakeDelay.summary": "Pastas movimentadas são vistas em até {hot}; as mais calmas, em até {warm}.",
   "@settings.askCmdr.wakeDelay.summary": {
@@ -1691,25 +1691,25 @@
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
   },
-  "settings.askCmdr.wakeToast.description": "Uma mensagem pequena no canto quando o Ask Cmdr deixa algo pronto para você revisar.",
+  "settings.askCmdr.wakeToast.description": "Uma mensagem pequena no canto quando o Cmdr deixa algo pronto para você revisar.",
   "@settings.askCmdr.wakeToast.description": {
-    "sourceHash": "f07a46e"
+    "sourceHash": "dd04b0a"
   },
-  "settings.askCmdr.memory.title": "O que o Ask Cmdr lembra",
+  "settings.askCmdr.memory.title": "O que o Cmdr lembra",
   "@settings.askCmdr.memory.title": {
-    "sourceHash": "4b102db"
+    "sourceHash": "be6fce6"
   },
-  "settings.askCmdr.memory.description": "O Ask Cmdr mantém uma pequena pasta de anotações sobre você e a envia com cada mensagem. Dê uma olhada, ou comece do zero.",
+  "settings.askCmdr.memory.description": "O Cmdr mantém uma pequena pasta de anotações sobre você e a envia com cada mensagem. Dê uma olhada, ou comece do zero.",
   "@settings.askCmdr.memory.description": {
-    "sourceHash": "bcd73ea"
+    "sourceHash": "0948ddb"
   },
   "settings.askCmdr.memory.open": "Abrir pasta de anotações",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.memory.forgotten": "As anotações do Ask Cmdr foram apagadas. Ele começa do zero a partir daqui.",
+  "settings.askCmdr.memory.forgotten": "As anotações do Cmdr foram apagadas. Ele começa do zero a partir daqui.",
   "@settings.askCmdr.memory.forgotten": {
-    "sourceHash": "a50ed99"
+    "sourceHash": "f3d9022"
   },
   "settings.askCmdr.spend.title": "Gastos",
   "@settings.askCmdr.spend.title": {

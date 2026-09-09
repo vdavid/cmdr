@@ -1589,9 +1589,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name; kept verbatim in every locale (do-not-translate list)."
   },
-  "settings.askCmdr.intro": "Chatta med en AI om dina filer, enheter och historik. Ask Cmdr läser namn, sökvägar och storlekar för att svara, tittar in i en fil bara när du frågar om den, och ändrar aldrig en fil utan ditt godkännande.",
+  "settings.askCmdr.intro": "Chatta med en AI om dina filer, enheter och historik. Cmdr läser namn, sökvägar och storlekar för att svara, tittar in i en fil bara när du frågar om den, och ändrar aldrig en fil utan ditt godkännande.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "5a81d7a"
+    "sourceHash": "3b16f89"
   },
   "settings.askCmdr.status.on": "Ask Cmdr är på",
   "@settings.askCmdr.status.on": {
@@ -1625,29 +1625,29 @@
   "@settings.askCmdr.turnOff": {
     "sourceHash": "eb03374"
   },
-  "settings.askCmdr.disclosure.title": "Vad Ask Cmdr skickar",
+  "settings.askCmdr.disclosure.title": "Vad Cmdr skickar",
   "@settings.askCmdr.disclosure.title": {
-    "sourceHash": "8ccd3b9"
+    "sourceHash": "6907e64"
   },
   "settings.askCmdr.provider.title": "Leverantör och modell",
   "@settings.askCmdr.provider.title": {
     "sourceHash": "b9fdc88"
   },
-  "settings.askCmdr.provider.shared": "Ask Cmdr använder AI-leverantören och nyckeln du har konfigurerat i Inställningar › AI ({provider}).",
+  "settings.askCmdr.provider.shared": "Cmdr använder AI-leverantören och nyckeln du har konfigurerat i Inställningar › AI ({provider}).",
   "@settings.askCmdr.provider.shared": {
-    "sourceHash": "c84fd32"
+    "sourceHash": "9442b09"
   },
-  "settings.askCmdr.provider.off": "Aktivera en AI-leverantör i Inställningar › AI för att använda Ask Cmdr.",
+  "settings.askCmdr.provider.off": "Aktivera en AI-leverantör i Inställningar › AI för att börja chatta.",
   "@settings.askCmdr.provider.off": {
-    "sourceHash": "8b378ae"
+    "sourceHash": "5cc1481"
   },
   "settings.askCmdr.interactiveModel.label": "Ask Cmdr-modell",
   "@settings.askCmdr.interactiveModel.label": {
     "sourceHash": "194255a"
   },
-  "settings.askCmdr.interactiveModel.description": "Modellen Ask Cmdr chattar med. Lämna tomt för att använda samma modell som Cmdrs andra AI-funktioner. Exempel: claude-sonnet-4-5",
+  "settings.askCmdr.interactiveModel.description": "Modellen chatten använder. Lämna tomt för att använda samma modell som Cmdrs andra AI-funktioner. Exempel: claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
-    "sourceHash": "e3f64a5"
+    "sourceHash": "881f8a4"
   },
   "settings.askCmdr.interactiveModel.placeholder": "Samma som Cmdrs AI",
   "@settings.askCmdr.interactiveModel.placeholder": {
@@ -1673,21 +1673,21 @@
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
   },
-  "settings.askCmdr.proactive.label": "Låt Ask Cmdr starta samtal",
+  "settings.askCmdr.proactive.label": "Låt Cmdr starta samtal",
   "@settings.askCmdr.proactive.label": {
-    "sourceHash": "1db4497"
+    "sourceHash": "a85ef48"
   },
-  "settings.askCmdr.proactive.description": "Ask Cmdr håller koll på mapparna du arbetar i och startar ett samtal när den har något att föreslå. Inget körs förrän du godkänner det.",
+  "settings.askCmdr.proactive.description": "Cmdr håller koll på mapparna du arbetar i och startar en chatt när den har något att föreslå. Inget körs förrän du godkänner det.",
   "@settings.askCmdr.proactive.description": {
-    "sourceHash": "9bf4e15"
+    "sourceHash": "556f155"
   },
-  "settings.askCmdr.wakeDelay.label": "Hur snabbt Ask Cmdr tittar",
+  "settings.askCmdr.wakeDelay.label": "Hur snabbt Cmdr tittar",
   "@settings.askCmdr.wakeDelay.label": {
-    "sourceHash": "f80bb5a"
+    "sourceHash": "a7368d0"
   },
-  "settings.askCmdr.wakeDelay.description": "Hur snabbt Ask Cmdr tittar på en mapp som just har ändrats. Längre betyder en lugnare assistent.",
+  "settings.askCmdr.wakeDelay.description": "Hur snabbt Cmdr tittar på en mapp som just har ändrats. Längre betyder en lugnare assistent.",
   "@settings.askCmdr.wakeDelay.description": {
-    "sourceHash": "b53dd9b"
+    "sourceHash": "08790da"
   },
   "settings.askCmdr.wakeDelay.summary": "Aktiva mappar tittas på inom {hot}, lugnare inom {warm}.",
   "@settings.askCmdr.wakeDelay.summary": {
@@ -1697,25 +1697,25 @@
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
   },
-  "settings.askCmdr.wakeToast.description": "Ett litet meddelande i hörnet när Ask Cmdr lägger fram något att granska.",
+  "settings.askCmdr.wakeToast.description": "Ett litet meddelande i hörnet när Cmdr lägger fram något att granska.",
   "@settings.askCmdr.wakeToast.description": {
-    "sourceHash": "f07a46e"
+    "sourceHash": "dd04b0a"
   },
-  "settings.askCmdr.memory.title": "Vad Ask Cmdr minns",
+  "settings.askCmdr.memory.title": "Vad Cmdr minns",
   "@settings.askCmdr.memory.title": {
-    "sourceHash": "4b102db"
+    "sourceHash": "be6fce6"
   },
-  "settings.askCmdr.memory.description": "Ask Cmdr har en liten mapp med anteckningar om dig och skickar med den i varje meddelande. Ta en titt, eller börja om.",
+  "settings.askCmdr.memory.description": "Cmdr har en liten mapp med anteckningar om dig och skickar med den i varje meddelande. Ta en titt, eller börja om.",
   "@settings.askCmdr.memory.description": {
-    "sourceHash": "bcd73ea"
+    "sourceHash": "0948ddb"
   },
   "settings.askCmdr.memory.open": "Öppna anteckningsmappen",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.memory.forgotten": "Ask Cmdrs anteckningar är borta. Den börjar om härifrån.",
+  "settings.askCmdr.memory.forgotten": "Cmdrs anteckningar är borta. Den börjar om härifrån.",
   "@settings.askCmdr.memory.forgotten": {
-    "sourceHash": "a50ed99"
+    "sourceHash": "f3d9022"
   },
   "settings.askCmdr.spend.title": "Utgifter",
   "@settings.askCmdr.spend.title": {
