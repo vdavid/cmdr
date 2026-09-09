@@ -553,12 +553,18 @@ require that the entry ENDS with a parenthetical whose every comma-separated ite
 to the end of the entry is what keeps prose safe: entries routinely close on `(~40x speed-up!)`, `(smb2 0.8.0)`, or
 `(photo.JPG to photo.jpg)`, and a hex-looking word mid-sentence is never even considered.
 
-**Every ref must be exactly 8 characters**, which is what `.claude/commands/release.md` produces
-(`git log --format='%h' --abbrev=8`) and what the whole file is normalized to. A wrong length is a finding at every site
+**Every ref must be exactly 9 characters**, which is what `.claude/commands/release.md` produces
+(`git log --format='%h' --abbrev=9`) and what the whole file is normalized to. A wrong length is a finding at every site
 it appears, not once per unique hash, so one pass fixes them all.
 
+**Nine, because the repo outgrew eight.** At ~2,800 refs an 8-character prefix started colliding with other objects:
+`0139b44a` matches both a commit and a tree, so `git rev-parse` calls it ambiguous and the check fails with no fix
+available at that width. Nine buys headroom without making the file noisier. Widening again means re-deriving every ref
+from its real object (`git cat-file --batch-check`, peeling an ambiguous one with `<hash>^{commit}`), never appending a
+guessed character.
+
 **Recognize loosely, enforce the length strictly.** The recognition pattern deliberately stays `{6,40}` rather than
-becoming `{8}`. Narrowing it would make a stray 7-character ref stop being a ref at all: it'd be read as prose, silently
+becoming `{9}`. Narrowing it would make a stray 8-character ref stop being a ref at all: it'd be read as prose, silently
 skip SHA validation, and quietly fail to render in anything matching the convention. Recognizing wide and then failing
 on the length is the loud version of the same rule.
 

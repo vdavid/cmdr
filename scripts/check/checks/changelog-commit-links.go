@@ -23,14 +23,16 @@ import (
 // mid-sentence is never even considered.
 //
 // Recognition stays deliberately wider than the changelogRefLength rule the check
-// enforces. Narrowing it to {8} would make a stray 7-character ref stop being a ref:
+// enforces. Narrowing it to {9} would make a stray 8-character ref stop being a ref:
 // it'd be read as prose, silently skip SHA validation, and quietly fail to render in
 // anything matching the convention. Recognize loosely, then fail loudly on the length.
 var changelogTrailingRefsPattern = regexp.MustCompile(`\(([0-9a-f]{6,40}(?:,\s*[0-9a-f]{6,40})*)\)$`)
 
 // changelogRefLength is the exact length every commit ref must have. `release.md`
-// produces it with `git log --abbrev=8`, and the whole file is normalized to it.
-const changelogRefLength = 8
+// produces it with `git log --abbrev=9`, and the whole file is normalized to it.
+// Nine, not eight: the repo has outgrown 8-character prefixes, where a hash can
+// collide with a tree object and stop resolving unambiguously.
+const changelogRefLength = 9
 
 // changelogCommitURLPattern matches the deprecated `…/commit/<sha>` URL form in any
 // shape (bare, or wrapped in a markdown link). The changelog stores bare hashes and

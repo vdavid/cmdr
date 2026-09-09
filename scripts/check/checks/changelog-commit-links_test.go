@@ -77,11 +77,11 @@ func TestRunChangelogCommitLinks_MissingChangelogIsSuccess(t *testing.T) {
 func TestRunChangelogCommitLinks_HappyPath(t *testing.T) {
 	tmp := t.TempDir()
 	fullSHA := initTempGitRepo(t, tmp)
-	// A one-commit repo can't produce two distinct 8-char refs, so the second ref is
-	// a second commit. Both are 8 characters, the only length the check accepts.
+	// A one-commit repo can't produce two distinct 9-char refs, so the second ref is
+	// a second commit. Both are 9 characters, the only length the check accepts.
 	otherSHA := addTempCommit(t, tmp, "second.txt")
-	refA := fullSHA[:8]
-	refB := otherSHA[:8]
+	refA := fullSHA[:9]
+	refB := otherSHA[:9]
 
 	content := `# Changelog
 
@@ -110,25 +110,25 @@ func TestRunChangelogCommitLinks_HappyPath(t *testing.T) {
 }
 
 func TestRunChangelogCommitLinks_RejectsShortRef(t *testing.T) {
-	// The convention is exactly 8. A 7-char ref resolves fine, so only the length
+	// The convention is exactly 9. An 8-char ref resolves fine, so only the length
 	// rule catches it; recognition deliberately stays loose so it can be caught at
 	// all instead of being silently read as prose.
 	tmp := t.TempDir()
 	fullSHA := initTempGitRepo(t, tmp)
-	short := fullSHA[:7]
+	short := fullSHA[:8]
 
 	writeChangelog(t, tmp, "# Changelog\n\n- Short ref ("+short+")\n")
 
 	ctx := &CheckContext{RootDir: tmp}
 	_, err := RunChangelogCommitLinks(ctx)
 	if err == nil {
-		t.Fatal("expected failure for a 7-character ref, got success")
+		t.Fatal("expected failure for an 8-character ref, got success")
 	}
 	if !strings.Contains(err.Error(), short) {
 		t.Errorf("expected error to mention %q, got: %v", short, err)
 	}
-	if !strings.Contains(err.Error(), "8 characters") {
-		t.Errorf("expected error to state the 8-character rule, got: %v", err)
+	if !strings.Contains(err.Error(), "9 characters") {
+		t.Errorf("expected error to state the 9-character rule, got: %v", err)
 	}
 	if !strings.Contains(err.Error(), "CHANGELOG.md:3") {
 		t.Errorf("expected error to cite line 3, got: %v", err)
@@ -136,24 +136,24 @@ func TestRunChangelogCommitLinks_RejectsShortRef(t *testing.T) {
 }
 
 func TestRunChangelogCommitLinks_RejectsLongRef(t *testing.T) {
-	// A 9-char ref also resolves, and is just as much a convention break as a
-	// 7-char one: the plugin's `{8}` pattern renders neither.
+	// A 10-char ref also resolves, and is just as much a convention break as an
+	// 8-char one: the plugin's `{9}` pattern renders neither.
 	tmp := t.TempDir()
 	fullSHA := initTempGitRepo(t, tmp)
-	long := fullSHA[:9]
+	long := fullSHA[:10]
 
 	writeChangelog(t, tmp, "# Changelog\n\n- Long ref ("+long+")\n")
 
 	ctx := &CheckContext{RootDir: tmp}
 	_, err := RunChangelogCommitLinks(ctx)
 	if err == nil {
-		t.Fatal("expected failure for a 9-character ref, got success")
+		t.Fatal("expected failure for a 10-character ref, got success")
 	}
 	if !strings.Contains(err.Error(), long) {
 		t.Errorf("expected error to mention %q, got: %v", long, err)
 	}
-	if !strings.Contains(err.Error(), "8 characters") {
-		t.Errorf("expected error to state the 8-character rule, got: %v", err)
+	if !strings.Contains(err.Error(), "9 characters") {
+		t.Errorf("expected error to state the 9-character rule, got: %v", err)
 	}
 }
 
@@ -164,7 +164,7 @@ func TestRunChangelogCommitLinks_LengthFindingCitesWrappedLine(t *testing.T) {
 	fullSHA := initTempGitRepo(t, tmp)
 
 	content := "# Changelog\n\n" +
-		"- An entry long enough that its commit refs wrap onto the next source line (" + fullSHA[:8] + ",\n" +
+		"- An entry long enough that its commit refs wrap onto the next source line (" + fullSHA[:9] + ",\n" +
 		"  " + fullSHA[:6] + ")\n"
 	writeChangelog(t, tmp, content)
 
@@ -177,7 +177,7 @@ func TestRunChangelogCommitLinks_LengthFindingCitesWrappedLine(t *testing.T) {
 		t.Errorf("expected error to cite line 4, got: %v", err)
 	}
 	if strings.Contains(err.Error(), "CHANGELOG.md:3") {
-		t.Errorf("the 8-character ref on line 3 must not be flagged, got: %v", err)
+		t.Errorf("the 9-character ref on line 3 must not be flagged, got: %v", err)
 	}
 }
 
@@ -186,8 +186,8 @@ func TestRunChangelogCommitLinks_WrappedGroupIsRecognized(t *testing.T) {
 	// be recognized, and each SHA reported at the line it actually appears on.
 	tmp := t.TempDir()
 	fullSHA := initTempGitRepo(t, tmp)
-	good := fullSHA[:8]
-	bad := "deadbeef"
+	good := fullSHA[:9]
+	bad := "deadbeef1"
 
 	content := "# Changelog\n\n" +
 		"- An entry long enough that its commit refs wrap onto the next source line (" + good + ",\n" +
@@ -212,9 +212,9 @@ func TestRunChangelogCommitLinks_BadSHA(t *testing.T) {
 	tmp := t.TempDir()
 	initTempGitRepo(t, tmp)
 
-	// A hex SHA that definitely won't resolve in a fresh one-commit repo. Kept at 8
+	// A hex SHA that definitely won't resolve in a fresh one-commit repo. Kept at 9
 	// characters so the failure is unambiguously about resolution, not length.
-	badSHA := "deadbeef"
+	badSHA := "deadbeef1"
 	content := "# Changelog\n\n- Bad ref (" + badSHA + ")\n"
 	writeChangelog(t, tmp, content)
 
@@ -237,7 +237,7 @@ func TestRunChangelogCommitLinks_RejectsLinkedForm(t *testing.T) {
 	// loudly rather than bloat the file again.
 	tmp := t.TempDir()
 	fullSHA := initTempGitRepo(t, tmp)
-	sha := fullSHA[:8]
+	sha := fullSHA[:9]
 
 	content := "# Changelog\n\n- Linked ref ([" + sha + "](https://github.com/vdavid/cmdr/commit/" + sha + "))\n"
 	writeChangelog(t, tmp, content)
@@ -278,7 +278,7 @@ func TestRunChangelogCommitLinks_UnreachableFromHEAD(t *testing.T) {
 		t.Fatal("doomed commit should NOT be ancestor of HEAD")
 	}
 
-	content := "# Changelog\n\n- Dangling ref (" + doomedSHA[:8] + ")\n"
+	content := "# Changelog\n\n- Dangling ref (" + doomedSHA[:9] + ")\n"
 	writeChangelog(t, tmp, content)
 
 	ctx := &CheckContext{RootDir: tmp}
@@ -289,8 +289,8 @@ func TestRunChangelogCommitLinks_UnreachableFromHEAD(t *testing.T) {
 	if !strings.Contains(err.Error(), "not reachable from HEAD") {
 		t.Errorf("expected 'not reachable from HEAD' in error, got: %v", err)
 	}
-	if !strings.Contains(err.Error(), doomedSHA[:8]) {
-		t.Errorf("expected error to mention dangling SHA %q, got: %v", doomedSHA[:8], err)
+	if !strings.Contains(err.Error(), doomedSHA[:9]) {
+		t.Errorf("expected error to mention dangling SHA %q, got: %v", doomedSHA[:9], err)
 	}
 }
 

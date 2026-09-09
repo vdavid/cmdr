@@ -6,12 +6,14 @@ Prepare a release based on docs/guides/releasing.md.
    - Commits have title + body. Read all!
    - You can reference multiple commits for changelog items if needed.
    - List major but non-app changes in a "Non-app" section.
-   - **Reference commits as bare hashes in a trailing group**: `- Some change (b626d7a4, 2d41cc14)`. Never write a
+   - **Reference commits as bare hashes in a trailing group**: `- Some change (b626d7a4b, 2d41cc147)`. Never write a
      markdown link; the website and the What's new popup linkify (or strip) the hashes themselves, and the
      `changelog-links` check rejects a `…/commit/<sha>` URL.
-   - **Get commit SHAs via `git log --format='%h' --abbrev=8`**. Never extend a 7-char prefix from `git log --oneline`
-     by guessing the next character. The committed changelog convention is 8 chars; let git produce them. The
+   - **Get commit SHAs via `git log --format='%h' --abbrev=9`**. Never extend a 7-char prefix from `git log --oneline`
+     by guessing the next characters. The committed changelog convention is 9 chars; let git produce them. The
      `changelog-links` check enforces that length exactly, and rejects fabricated SHAs, aborting the release either way.
+     git widens `%h` past the requested width when a prefix would be ambiguous, so if one comes back at 10 characters,
+     don't trim it by hand: that's the signal the whole file needs re-deriving one character wider. Raise it with David.
    - **Add a `## [Unreleased]` heading** right after the format preamble (before the first versioned section), then put
      entries under it. The release script replaces this heading with the versioned one. The committed changelog has no
      `[Unreleased]` section between releases. You're creating it fresh each time.
