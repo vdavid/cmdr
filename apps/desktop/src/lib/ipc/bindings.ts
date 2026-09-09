@@ -10980,14 +10980,14 @@ export type RevealHandlerState =
   | { kind: 'unavailable' }
 
 /**
- *  `reveal-path`: show a folder in the main window's focused pane. Emitted by
+ *  `reveal-path`: show a folder in the main window's focused pane. Two emitters:
  *  the settings window's "Open memory folder" button, which knows only that it
- *  wants the folder shown: the path itself comes from Rust
- *  (`ask_cmdr_memory_folder`), because it moves with `CMDR_DATA_DIR`.
+ *  wants the folder shown (the path comes from Rust's `ask_cmdr_memory_folder`,
+ *  because it moves with `CMDR_DATA_DIR`), and the Dock tile menu's bookmark and
+ *  tab rows (`dock/menu/`), where the path is the row the user clicked.
  *
  *  ⚠️ The payload is why this isn't `execute-command`, which carries a bare
- *  `command_id` and nothing else. Rust never emits this one, exactly like
- *  `execute-command` from the settings window.
+ *  `command_id` and nothing else.
  */
 export type RevealPath = {
   path: string

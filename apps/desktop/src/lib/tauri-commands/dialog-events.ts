@@ -178,8 +178,10 @@ export function onForegroundOperationRequested(handler: (payload: ForegroundOper
 }
 
 /**
- * Ask the main window to show a folder in its focused pane. Emitted by the
- * settings window's "Open memory folder" button; only the main window listens.
+ * Ask the main window to show a folder in its focused pane. Only the main window
+ * listens. Two emitters: this wrapper, from the settings window's "Open memory
+ * folder" button, and Rust's Dock tile menu, whose bookmark and tab rows carry
+ * the clicked path (`src-tauri/src/dock/menu/`).
  *
  * Distinct from `execute-command`, which carries a bare `commandId` and no
  * payload: the path is resolved in Rust (`askCmdrMemoryFolder`) because it moves
