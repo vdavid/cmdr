@@ -213,10 +213,12 @@ Vietnamese has no grammatical number, so one form covers all counts.
   few bytes were dropped by the original bad conversion, so about 700 characters stay unrecoverable (`ỏ` in `bỏ qua`,
   the initial `Đ`); read around the holes rather than trusting a single line. Don't write the decoded copy into the
   pile; decode to a scratch file.
-- **Text expansion bites the queue-row status cell.** `queue.row.stalled` is `Không có tiến triển trong {duration}`
-  against English's `No progress for {duration}` (~3× the character count) in a narrow row that otherwise shows
-  `còn {duration}`. Overflow-check that cell specifically; if it clips, shorten the ROW string alone (for example
-  `Đứng yên {duration}`) and keep the dialog line full, rather than trimming both.
+- **Text expansion bites the queue-row status cell.** `fileOperations.transferProgress.stallNotice` is
+  `Không có tiến triển trong {duration}` against English's `No progress for {duration}` (~3× the character count), and
+  one key feeds two surfaces: the progress dialog and the narrow queue row, which otherwise shows `còn {duration}`. The
+  row is the tighter of the two, so the translation has to fit it. Overflow-check that cell against the pseudolocale
+  (`en-XA`); if it clips, shorten the string (for example `Đứng yên {duration}`) and accept that the dialog line gets
+  the same short text.
 - **Multipliers (`4x`, `100x`) spell out as `<số> lần`**: `4x slower` → `chậm hơn 4 lần`, with the compared thing
   trailing (`so với kết nối trực tiếp của Cmdr`). Vietnamese has no `x` multiplier notation in UI text, and no pile
   source attests one; `lần` is the standard counter. Prefer `chậm hơn N lần` over `chậm gấp N lần` when two things are

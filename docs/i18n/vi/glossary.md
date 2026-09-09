@@ -849,9 +849,9 @@ settled head terms (index/indexing → `chỉ mục`/`lập chỉ mục`, indexe
 
 ## Lần truyền bị đứng yên: thông báo trên hộp thoại + hàng đợi (2026-07-31)
 
-The eight stalled-transfer strings (`fileOperations.transferProgress.stall*` + `close`, `queue.row.stalled`). Mined
-2026-07-31 against `_ignored/i18n/vi/` (macOS Finder/AppKit Tier 1, MS terminology Tier 2, GNOME Nautilus + Total
-Commander Tier 3). Reuses settled terms (close → `đóng`, cancel → `hủy`, destination/source → `đích`/`nguồn`, log →
+The seven stalled-transfer strings (`fileOperations.transferProgress.stall*` + `close`). Mined 2026-07-31 against
+`_ignored/i18n/vi/` (macOS Finder/AppKit Tier 1, MS terminology Tier 2, GNOME Nautilus + Total Commander Tier 3).
+Reuses settled terms (close → `đóng`, cancel → `hủy`, destination/source → `đích`/`nguồn`, log →
 `nhật ký`, transfer (countable) → `lần truyền`, background → `chạy ở chế độ nền`, file → `tệp`).
 
 - **progress (advancement, in "no progress"): `tiến triển`** · shared-root pick (mining gotcha 4): macOS renders the
@@ -881,12 +881,13 @@ Commander Tier 3). Reuses settled terms (close → `đóng`, cancel → `hủy`,
   The `được` passive is natural here and keeps the file (not Cmdr) as the subject. `high`.
 - **"The log has the details.": `Chi tiết có trong nhật ký.`** · `nhật ký` (log, settled) + GNOME Nautilus's
   `Chi tiết: `. Fronting `Chi tiết` keeps it short and puts the useful noun first. `high`.
-- No `sameAsSourceJustification` needed: all eight values differ from English.
+- No `sameAsSourceJustification` needed: all seven values differ from English.
 
-Phrasings settled (keep consistent): "No progress for {duration}" → `Không có tiến triển trong {duration}` (with the
-period on the dialog line, without it on the queue row, matching English); "Cancel it, or leave it running in the
-background." → `Hãy hủy, hoặc để nó tiếp tục chạy ở chế độ nền.` (`tiếp tục chạy ở chế độ nền` composed from the
-catalog's `Giữ chạy ở chế độ nền` + `Vẫn đang chạy ở chế độ nền`).
+Phrasings settled (keep consistent): "No progress for {duration}" → `Không có tiến triển trong {duration}` (one value
+on `fileOperations.transferProgress.stallNotice`, no final period, shown on both the progress dialog and the queue row,
+matching English); "Cancel it, or leave it running in the background." →
+`Hãy hủy, hoặc để nó tiếp tục chạy ở chế độ nền.` (`tiếp tục chạy ở chế độ nền` composed from the catalog's
+`Giữ chạy ở chế độ nền` + `Vẫn đang chạy ở chế độ nền`).
 
 ## Đường dẫn đã sao chép: xác nhận bảng nhớ tạm (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
@@ -2295,8 +2296,8 @@ tấm của Cmdr cần.
   `ibExternalAccessibilityDescription` `Protocol` → `Giao thức` — đúng y bề mặt của ta, một tên phụ trợ cho bộ chọn) ·
   `high`. Catalog đã dùng `giao thức` ở `servers.refusal.notAWebdavServer`.
 - **sign in to X → `Đăng nhập vào X`** · macOS Setup Assistant (`Sign In to iCloud` → `Đăng nhập vào iCloud`), CloudKit
-  (`Sign in to %1$@.` → `Đăng nhập vào %1$@.`), và catalog đã ship `fileExplorer.network.login.title`
-  (`Sign in to "{target}"` → `Đăng nhập vào "{target}"`) · `high`.
+  (`Sign in to %1$@.` → `Đăng nhập vào %1$@.`) · `high`. `servers.sheet.signInTitle` (`Sign in to {name}`) theo đúng
+  khuôn này: `Đăng nhập vào {name}`, không thêm dấu nháy quanh tên máy chủ.
 - **passphrase → `cụm từ mật khẩu`; "Key passphrase" → `Cụm từ mật khẩu của khóa`** · macOS Certificate Assistant
   (`Enter Passphrase:` → `Nhập Cụm từ mật khẩu:`), `DiskManagement` và `DiskImages2` dùng `cụm từ mật khẩu` xuyên suốt ·
   `high`. Thêm `của khóa` vì tiếng Anh cố tình phân biệt nó với mật khẩu của TÀI KHOẢN ở ngay trên; bỏ đi thì hai ô
@@ -2310,9 +2311,9 @@ tấm của Cmdr cần.
   với `tin cậy` / `không tin cậy` đã chốt ở đợt 1 · `high`.
 - **Keychain (tính năng, trong một ô đánh dấu) → `chuỗi khóa`** · macOS Certificate Assistant (`Keychain` →
   `Chuỗi khóa`, `in your keychain` → `trong chuỗi khóa của bạn`), NetAuthAgent (`Remember this password in my keychain`
-  → `Nhớ mật khẩu này trong chuỗi khóa của tôi`) · `high`. `servers.sheet.remember` có tiếng Anh y hệt
-  `fileExplorer.network.login.rememberInKeychain`, nên phải dùng đúng giá trị đã ship: `Ghi nhớ trong chuỗi khóa`
-  (`desktop-i18n-term-consistency` bắt lỗi nếu lệch).
+  → `Nhớ mật khẩu này trong chuỗi khóa của tôi`) · `high`. Nhãn ô đánh dấu `servers.sheet.remember` là
+  `Ghi nhớ trong chuỗi khóa`, và `servers.sheet.needsStoredSecret` trích lại đúng từng chữ, nên hai chuỗi phải đi cùng
+  nhau (`desktop-i18n-term-consistency` bắt lỗi nếu lệch).
 - **Advanced (mục gập lại) → `Nâng cao`** · macOS Finder `vi.lproj/PreferencesWindow.strings` (`Advanced` → `Nâng cao`),
   và catalog đã có `settings.section.advanced` cùng tiếng Anh · `high`.
 - **Browse… (nút mở bộ chọn tệp) → `Duyệt…`** · macOS `StandardAdditions.osax/ChooseApplication` (`Browse...` →
@@ -2346,8 +2347,8 @@ tấm của Cmdr cần.
   về tấn công xen giữa, nên đây là lối tả bằng tiếng Việt đời thường, giữ nguyên hình ảnh của bản gốc thay vì gọi tên
   thuật ngữ (`tấn công xen giữa`) mà người đọc phổ thông không cần · `tentative`.
 - **guest → `khách`; "Connect as guest" → `Kết nối với tư cách khách`** · macOS `SystemFolderLocalizations` (`Guest` →
-  `Khách`), loginwindow (`logged in as a guest user` → `đăng nhập với tư cách người dùng khách`); catalog đã ship đúng
-  giá trị này ở `fileExplorer.network.login.connectAsGuest` và `fileExplorer.network.browser.status.guest` · `high`.
+  `Khách`), loginwindow (`logged in as a guest user` → `đăng nhập với tư cách người dùng khách`); catalog đã ship
+  `khách` ở `fileExplorer.network.browser.status.guest` (`Guest` → `Khách`) · `high`.
 
 ### Ghi chú theo chuỗi
 
