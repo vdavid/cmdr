@@ -463,7 +463,7 @@ do, rather than one iCloud-shaped block.
 
 - **Google Drive** contributes `Open in Google Drive` and `Copy Google Drive link`, shown whenever
   `FileContextInfo.google_drive_link` is `Some`. That gate is a resolved Drive item ID, NOT a path prefix, because
-  Drive's mirror mode keeps real files outside `~/Library/CloudStorage` (`file_system/google_drive.rs`). Neither label
+  Drive's mirror mode keeps real files outside `~/Library/CloudStorage` (`file_system/google_drive/`). Neither label
   takes an ellipsis: each acts on the item it was invoked on and picks nothing.
 - **iCloud Drive** contributes the eviction pair, `Make available offline` / `Remove download`, exactly one of them,
   keyed on `SyncStatus`. ❌ Don't widen it to other providers: the `FileManager` ubiquity APIs behind it reject

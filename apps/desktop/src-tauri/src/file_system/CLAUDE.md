@@ -8,8 +8,8 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - `watcher.rs` (FSEvents listing updates), `staging.rs` (scratch visibility; the `StagingTemp` mint itself is
   `cmdr_fs::staging`), `index_provider.rs` (the app's `VolumeProvider`, so the index never imports `VolumeManager`),
   `backend_settings.rs` (live per-backend knobs), `cloud_actions.rs`, `cloud_provider.rs` (who owns a path, and what
-  they can do), `google_drive.rs` (Drive item links), `open_with.rs`, `share.rs` (the `Share` submenu's services), `tags.rs` (Finder
-  tags), `terminal.rs` ("open terminal here").
+  they can do), `google_drive/` (Drive item links; `mirror_db.rs` is the mirror-mode fallback), `open_with.rs`,
+  `share.rs` (the `Share` submenu's services), `tags.rs` (Finder tags), `terminal.rs` ("open terminal here").
 - `mod.rs` is a facade: it re-exports downward and bootstraps the volume registry (`init_volume_manager`), which is why
   it may know every backend.
 
@@ -48,7 +48,11 @@ Directory listing, file writing, sync status, volume management, and file watchi
   `NSFileProviderManager` methods need the bundled extension. Don't widen it. Provider identity lives once, in
   `cloud_provider.rs`, which the volume switcher reads too.
 - **❌ Never gate a Google Drive action on a path prefix.** Drive's mirror mode keeps real files outside
-  `~/Library/CloudStorage`, carrying no xattr, so `google_drive.rs` gates on a resolved item ID instead.
+  `~/Library/CloudStorage`, carrying no xattr, so `google_drive/` gates on a resolved item ID instead.
+- **Drive's mirror DBs: ❌ never resolve by name, and ❌ never read the mirror `stable_id` out of the stream-mode
+  `metadata_sqlite_db`** (different id space — the same file was `330816` vs `324388`). `mirror_db.rs` walks up to a root
+  by INODE, down by indexed `(parent, name)`, then proves the row with the file's inode; every failure means no menu
+  item, because a wrong link points at someone else's file. Read-only forever. § "Mirror mode".
 
 Open-with internals, cloud-actions rationale, and the full threading/watcher story: `DETAILS.md`. Read it before any
 non-trivial work here: editing, planning, reorganizing, or advising.

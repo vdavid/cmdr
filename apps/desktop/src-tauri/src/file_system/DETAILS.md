@@ -89,14 +89,14 @@ added later can't silently inherit actions it can't perform.
 user picks (`~/My Drive` by default), indistinguishable from any other directory by path. So a `None` from `locate` does
 not prove a path is outside Google Drive.
 
-## Google Drive links (`google_drive.rs`)
+## Google Drive links (`google_drive/`)
 
 Backs "Open in Google Drive" and "Copy Google Drive link". Drive registers no URL scheme (no `CFBundleURLTypes`, no
 `NSServices` in its `Info.plist`) and its Finder items are File Provider custom actions only Finder can render, so
 there's no way to reach Drive's own Share sheet from another app. The web page, where Share is one click away, is the
 reachable equivalent.
 
-**Two ID sources, in this order:**
+**Three ID sources, in this order** — cheapest and most certain first, and the first one to answer wins:
 
 1. **Google-native stubs** (`.gdoc`, `.gsheet`, `.gslides`, `.gform`, …) are small JSON files carrying `doc_id`. They
    work in BOTH Drive modes, and they're first because a native doc's canonical URL is on `docs.google.com`, which the
@@ -104,11 +104,54 @@ reachable equivalent.
    the account `email`; there is **no** `url` field, so the URL has to be built.
 2. **The `com.google.drivefs.item-id#S` xattr.** The `#S` suffix is macOS's File Provider syncable-attribute marker and
    part of the name: a `getxattr` for the bare name finds nothing.
+3. **Drive's mirror-mode metadata databases** (`google_drive/mirror_db.rs`), the only source that answers for an
+   ordinary mirrored file. Its own module header carries the mechanism, the schema, and the fail-closed rules; the
+   section below is what a reader needs before touching it.
 
 **Gotcha: the xattr exists in stream mode only.** Verified 2026-09-07 with `xattr -r -l`: present throughout
 `~/Library/CloudStorage/GoogleDrive-…` on files AND directories, absent on every file in a mirrored `~/My Drive`. A
 stream-mode `.gdoc` carries both sources, holding the identical ID. That's why nothing here gates on a path prefix: the
-menu offers its items when an ID resolves, which is self-validating and still works in mirror mode for native docs.
+menu offers its items when an ID resolves, which is self-validating in every Drive setup.
+
+### Mirror mode: resolving through Drive's own databases
+
+A mirrored file is an ordinary local file. No xattr, and `NSFileProviderManager.getIdentifierForUserVisibleFile` answers
+"the file doesn't exist" for both `~/My Drive/…` and the `~/Library/CloudStorage/GoogleDrive-…/My Drive/…` symlink that
+points at it, while correctly answering `dbitem:17720` for a Dropbox file (verified 2026-09-08). Finder shows Drive
+actions there through a Finder Sync extension (`com.google.drivefs.finderhelper.findersync`), which only Finder can
+host. So the databases are the only route, and Drive keeps a **pair** of them per account in
+`~/Library/Application Support/Google/DriveFS/<account-id>/` (a numeric directory we enumerate, never hardcode):
+`mirror_sqlite.db` maps the local tree, `mirror_metadata_sqlite.db` maps a `stable_id` to the Drive item.
+
+**❗ The mirror pair's `stable_id` space is NOT the stream-mode one.** The same file was `330816` in
+`mirror_metadata_sqlite.db` and `324388` in the `metadata_sqlite_db` sitting beside it (verified on Drive for desktop
+130.0, macOS 26.6.2, 2026-09-09). Reading a mirror id out of the stream-mode database silently hands back a different
+file.
+
+**❌ Never resolve by name.** `local_filename` repeats (`_archive` three times in a real 3,268-row mirror) and carries no
+index of its own. Resolution is: walk UP the path until an ancestor's inode is a mirror root's (inodes rather than a path
+prefix, so both spellings of a mirrored path work), then walk back DOWN one indexed
+`UNIQUE (parent_local_stable_id, local_filename)` lookup per component, then **prove it** — the row we land on must
+carry the inode the file actually has. A stale row describing the previous file at that path fails the proof.
+
+**Fail closed at every step.** A missing or locked database, a changed schema, a trashed or tombstoned row, an
+unresolvable shortcut, an inode mismatch: all produce no menu item, which is exactly what these files got before. The
+downside of every failure is bounded at "no worse than not trying"; a wrong link would not be.
+
+**Read-only, forever.** `open_read_only` is the only door (`desktop-rust-sqlite-open-direct` enforces the factory). A
+read-only WAL reader does touch the `-shm` sidecar to register a read mark — WAL index bookkeeping, not database
+content, and it can't block Drive's writer. `?immutable=1` would avoid even that but ignores the WAL, and the WAL held
+222 MB against a 220 MB database here, so it would answer from last month.
+
+**Cost** (measured 2026-09-09 on the real 3,268-item mirror, debug build): 12 µs for a path outside Drive, 0.5 ms for
+one inside it, 9.8 ms on the first call of a 30-second window, which is when the account scan runs. The account and root
+scan is cached for that window precisely so an ordinary right-click anywhere doesn't open a multi-megabyte SQLite
+database to learn nothing.
+
+**Shared drives** need nothing special: a mirrored one is another root row and its files take the same
+`drive.google.com/file/d/<id>/view` shape. **Shortcuts** resolve one hop through `shortcut_details` to their target, so
+the link opens the file the pane shows rather than the pointer; a shortcut to a shortcut, or one whose target row is
+gone, resolves to nothing.
 
 **URL shapes** are each item's `viewUrl` as Google's own Drive API returns it, checked against real items (2026-09-07),
 not copied from documentation:

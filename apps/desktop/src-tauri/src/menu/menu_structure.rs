@@ -63,7 +63,7 @@ pub struct FileContextInfo {
     pub is_icloud_drive: bool,
     /// The web URL for this item in Google Drive, when it resolves to one. `Some`
     /// gates both Drive menu items, which is self-validating: no ID, no item. See
-    /// `file_system/google_drive.rs` for why this isn't a path-prefix check (Drive's
+    /// `file_system/google_drive/` for why this isn't a path-prefix check (Drive's
     /// mirror mode puts real files outside `~/Library/CloudStorage`).
     pub google_drive_link: Option<String>,
     pub open_with: OpenWithChoices,
@@ -345,7 +345,7 @@ pub fn build_context_menu<R: Runtime>(
     // Google Drive: open on the web / copy the link. Drive's own Share sheet and
     // its pin-offline toggle are File Provider custom actions only Finder can
     // invoke, so the web page (where Share is one click away) is the honest
-    // equivalent. `file_system/google_drive.rs` has the full story.
+    // equivalent. `file_system/google_drive/` has the full story.
     #[cfg(target_os = "macos")]
     if info.google_drive_link.is_some() {
         let open_item = MenuItem::with_id(

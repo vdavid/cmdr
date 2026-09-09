@@ -192,9 +192,13 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String], is_director
         Default::default()
     };
 
-    // Google Drive link for the primary path. Two cheap local reads (a `getxattr`,
-    // or a couple of hundred bytes of JSON for a native-doc stub), so it stays on
-    // the menu-build path without a timeout of its own.
+    // Google Drive link for the primary path. Cheap enough to stay on the menu-build
+    // path without a timeout of its own: a `getxattr`, or a couple of hundred bytes of
+    // JSON for a native-doc stub, or — for a MIRRORED file, where neither exists — two
+    // indexed reads of Drive's own local databases. Measured 2026-09-09 on a real
+    // 3,268-item mirror: 12 µs for a path outside Drive, 0.5 ms for one inside it, and
+    // 9.8 ms on the first call of a 30-second window (`google_drive/mirror_db.rs`
+    // caches the account scan for exactly that reason).
     let google_drive_link = crate::file_system::google_drive::item_url(&path_buf, is_directory);
 
     let open_with = compute_open_with_choices(all_paths.iter().map(PathBuf::from).collect());

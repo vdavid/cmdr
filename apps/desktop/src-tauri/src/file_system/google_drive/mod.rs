@@ -10,14 +10,17 @@
 //!
 //! ## Where the item ID comes from
 //!
-//! Two sources, in this order, because they cover different Drive setups:
+//! Three sources, in this order, cheapest and most certain first:
 //!
 //! 1. **Google-native shortcut files** (`.gdoc`, `.gsheet`, `.gslides`, `.gform`,
 //!    …) are small JSON stubs carrying `doc_id`. They work in BOTH of Drive's
 //!    modes, and they're checked first because a native doc's canonical URL is
 //!    on `docs.google.com`, which the ID alone can't tell us.
 //! 2. **The `com.google.drivefs.item-id#S` extended attribute**, which Drive
-//!    stamps on every file and folder it streams.
+//!    stamps on every file and folder it streams. One `getxattr`.
+//! 3. **Drive's own mirror-mode metadata databases** ([`mirror_db`]), which is
+//!    the only thing that answers for an ordinary mirrored file. Last, because
+//!    it costs a path walk and two SQLite reads.
 //!
 //! ## Gotcha: the xattr only exists in "stream" mode
 //!
@@ -25,15 +28,21 @@
 //! `~/Library/CloudStorage/GoogleDrive-<account>/` and every file AND folder
 //! carries the item-id xattr. In **mirror** mode the files are ordinary local
 //! files (`~/My Drive` by default, but the user picks the folder) and they
-//! carry NO xattr at all, so only the `.gdoc`-family stubs resolve there.
+//! carry NO xattr at all, so a mirrored PDF has nothing on it to go by.
 //!
 //! Verified on this machine 2026-09-07 with `xattr -r -l`: present throughout
 //! `~/Library/CloudStorage/GoogleDrive-…` (including on directories), and
-//! absent on every file in the mirrored `~/My Drive`.
+//! absent on every file in the mirrored `~/My Drive`. Finder shows Drive actions
+//! there anyway, through a Finder Sync extension
+//! (`com.google.drivefs.finderhelper.findersync`) that only Finder can host, and
+//! `NSFileProviderManager.getIdentifierForUserVisibleFile` answers "the file
+//! doesn't exist" for both spellings of a mirrored path (verified 2026-09-08).
+//! [`mirror_db`] is what closes that gap.
 //!
 //! That's why nothing here gates on a path prefix. We offer the menu items when
-//! an ID actually resolves, which is self-validating and works in mirror mode
-//! for native docs.
+//! an ID actually resolves, which is self-validating in every Drive setup.
+
+mod mirror_db;
 
 use std::path::Path;
 
@@ -189,13 +198,20 @@ pub fn item_url(path: &Path, is_directory: bool) -> Option<String> {
         return Some(url);
     }
 
-    let id = read_item_id_xattr(path)?;
-    let kind = if is_directory {
-        DriveItemKind::Folder
-    } else {
-        DriveItemKind::Binary
-    };
-    Some(kind.url_for(&id))
+    if let Some(id) = read_item_id_xattr(path) {
+        let kind = if is_directory {
+            DriveItemKind::Folder
+        } else {
+            DriveItemKind::Binary
+        };
+        return Some(kind.url_for(&id));
+    }
+
+    // Mirror mode: the file itself says nothing, so ask Drive's own local databases.
+    // Last because it's the expensive one, and skipped entirely once either source
+    // above answered.
+    let item = mirror_db::resolve(path)?;
+    Some(item.kind.url_for(&item.id))
 }
 
 #[cfg(test)]

@@ -20,7 +20,7 @@
 //! the user picks (`~/My Drive` by default), indistinguishable from any other
 //! directory by path alone. So a `None` from [`locate`] does NOT prove a path
 //! is outside Google Drive. The Drive menu items deliberately don't rely on
-//! this: they key off a resolved item ID instead (`google_drive.rs`).
+//! this: they key off a resolved item ID instead (`google_drive/`).
 
 use std::path::{Path, PathBuf};
 

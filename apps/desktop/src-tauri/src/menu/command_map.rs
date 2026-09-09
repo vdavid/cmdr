@@ -90,7 +90,7 @@ pub const CLOUD_MAKE_OFFLINE_ID: &str = "cloud_make_offline";
 pub const CLOUD_REMOVE_DOWNLOAD_ID: &str = "cloud_remove_download";
 
 /// Menu item IDs for the Google Drive items. Shown only when the right-clicked
-/// item resolves to a Drive ID (`file_system/google_drive.rs`).
+/// item resolves to a Drive ID (`file_system/google_drive/`).
 pub const DRIVE_OPEN_ID: &str = "drive_open";
 pub const DRIVE_COPY_LINK_ID: &str = "drive_copy_link";
 

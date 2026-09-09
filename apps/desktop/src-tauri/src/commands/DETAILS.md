@@ -213,7 +213,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`file_actions.rs`**: direct file actions from the palette / menus: `show_in_finder`, `get_info`, `open_in_editor`,
   `copy_to_clipboard`, and `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive download/eviction via
   `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`). `google_drive_link(path)` returns a Drive item's web
-  URL or `None`, backing the two Drive menu items; resolution lives in `file_system/google_drive.rs`, and a timeout
+  URL or `None`, backing the two Drive menu items; resolution lives in `file_system/google_drive/`, and a timeout
   yields `None` rather than an error because a missing link only means the caller shows nothing. Plus the "open terminal
   here" pair,
   `list_terminal_apps(app_choice)`, `open_terminal_here(path, volume_id, app_choice)`, and the sync
