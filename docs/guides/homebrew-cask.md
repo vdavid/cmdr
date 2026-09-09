@@ -47,10 +47,15 @@ This shape also satisfies a future `Homebrew/homebrew-cask` resubmission, so kee
 - **`livecheck` reads `https://getcmdr.com/latest.json`**, the same Tauri updater manifest the app polls. The release
   flow already publishes it.
 - **`auto_updates true`**: Cmdr ships its own updater, so `brew upgrade` skips it unless `--greedy`.
-- **`depends_on macos: :catalina`** means "Catalina or later" (current Homebrew semantics) and matches
-  `minimumSystemVersion` in `tauri.conf.json`. Everything from Catalina up to Monterey is best-effort, and the app
-  itself says so at launch when the WebKit under it is too old. Floor rationale:
-  `../notes/system-requirements-and-es2025.md`.
+- **`depends_on macos: :big_sur`** means "Big Sur or later", and it sits one release ABOVE the app's own floor
+  (`minimumSystemVersion` is `10.15` in `tauri.conf.json`). That gap is Homebrew's, not ours: `:catalina` is a disabled
+  call in current Homebrew and raises `Error: Calling depends_on macos: :catalina is disabled!` when the cask loads, so
+  the whole cask fails to parse and `brew install` dies. Catalina can no longer be expressed at all
+  (`MacOSVersion::SYMBOLS` starts at `:big_sur`, verified Homebrew 6.0.22, 2026-09-09), and Homebrew itself no longer
+  runs there, so nobody loses a working install path. ❗ Don't "correct" this back down to match
+  `minimumSystemVersion`: any symbol below `:big_sur` breaks every `brew install`. A Catalina user installs by
+  downloading from the site, where the app's own launch warning about old WebKit still applies. Everything up to
+  Monterey stays best-effort. Floor rationale: `../notes/system-requirements-and-es2025.md`.
 - **`uninstall script:` hands "Show in Finder" back.** If the user switched on the reveal handler, Cmdr's bundle id sits
   in the machine-wide `NSFileViewer` preference, and macOS does NOT fall back to Finder when that id names an app that's
   gone: the command silently does nothing everywhere (`apps/desktop/src-tauri/src/reveal/DETAILS.md` § "The uninstall
