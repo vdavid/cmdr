@@ -4,10 +4,10 @@
 
 ## The problem
 
-`docs/i18n/<locale>/glossary.md` and `style.md` are 28,263 lines of hand-maintained prose across 13 locales
-(`nl` 3,065, `fr` 3,047, `hu` 2,947, `es` 2,810). Only agents read them. Every load-bearing fact in them is really a
-typed field wearing prose: a term, its translation, the catalog keys it governs, the shipped English and translated
-values, the evidence, a confidence, and whether a later decision superseded it.
+`docs/i18n/<locale>/glossary.md` and `style.md` are 28,263 lines of hand-maintained prose across 13 locales (`nl` 3,065,
+`fr` 3,047, `hu` 2,947, `es` 2,810). Only agents read them. Every load-bearing fact in them is really a typed field
+wearing prose: a term, its translation, the catalog keys it governs, the shipped English and translated values, the
+evidence, a confidence, and whether a later decision superseded it.
 
 Because those fields are prose, nothing can check them, and three classes of rot have already happened:
 
@@ -63,9 +63,9 @@ One row per term per locale, as data. Same entry:
     Double Commander's file-manager-native `Sor` beats Microsoft's generic `várólista`.
   evidence:
     - source: double-commander
-      cite: "operations viewer `Queue` = `Sor`, `New queue` = `Új sor`"
+      cite: 'operations viewer `Queue` = `Sor`, `New queue` = `Új sor`'
     - source: microsoft-tbx
-      cite: "várólista, várakozási sor"
+      cite: 'várólista, várakozási sor'
   governs:
     - queue.windowTitle
     - commands.queueShow.label
@@ -92,19 +92,19 @@ catalogs at render time.** Everything else follows.
   guide never stored one. Class 2 stops being a thing we fix and starts being a thing that cannot occur. This is the
   whole argument; the rest is bonus.
 - **Citation checking loses its heuristics.** `governs:` is a typed list of keys, so verifying it is a set lookup.
-  `desktop-i18n-doc-citations` currently needs a backtick scanner, a namespace allowlist derived from catalog
-  basenames, and exact/prefix/suffix/infix segment matching, all to recover a type that prose threw away. Without the
-  gate the naive scan fires 1,924 times to find 10 real problems. Against `governs:` the false-positive rate is zero by
+  `desktop-i18n-doc-citations` currently needs a backtick scanner, a namespace allowlist derived from catalog basenames,
+  and exact/prefix/suffix/infix segment matching, all to recover a type that prose threw away. Without the gate the
+  naive scan fires 1,924 times to find 10 real problems. Against `governs:` the false-positive rate is zero by
   construction, and the check shrinks to a few lines.
-- **An entry cannot contradict itself.** A term has one current translation. A retired form is a comment or a dated
-  note on the row that replaced it, and it has no `governs:` list of its own, so it cannot prescribe anything. The
-  Hungarian bullet above is not expressible.
+- **An entry cannot contradict itself.** A term has one current translation. A retired form is a comment or a dated note
+  on the row that replaced it, and it has no `governs:` list of its own, so it cannot prescribe anything. The Hungarian
+  bullet above is not expressible.
 - **Supersession stops duplicating.** Today a new decision writes a dated section AND edits the old bullet, so the fact
-  lives twice. In the new shape you edit the row. Git holds the history, which is what
-  `describe-current-not-history` asks for.
-- **Renames become mechanical.** A key rename can rewrite `governs:` lists directly. Today it silently rots 33
-  citations and someone reconstructs them from `git log -S` days later.
-- **Cross-locale questions become queryable.** "Which locales still translate *dismiss* as an ignore-word?" is a filter
+  lives twice. In the new shape you edit the row. Git holds the history, which is what `describe-current-not-history`
+  asks for.
+- **Renames become mechanical.** A key rename can rewrite `governs:` lists directly. Today it silently rots 33 citations
+  and someone reconstructs them from `git log -S` days later.
+- **Cross-locale questions become queryable.** "Which locales still translate _dismiss_ as an ignore-word?" is a filter
   over rows. Today it is 13 greps and a judgment call per hit.
 
 Two smaller wins worth naming: the reverse index (which terms govern a given key) is free, and per-locale coverage
@@ -115,8 +115,8 @@ Two smaller wins worth naming: the reverse index (which terms govern a given key
 - The prose rationale stays prose, and it can still go stale. It is genuinely unstructured, and that is fine; the
   rationale is the part a human would want to read.
 - Nothing here judges translation quality. `desktop-i18n-term-consistency` still owns that.
-- The evidence citations (Microsoft TBX ids, macOS bundle paths) point outside the repo and stay unverifiable. Trap 4
-  in `docs/i18n/how-to-mine.md` (the first TBX hit is often the wrong sense) is a human problem, not a schema problem.
+- The evidence citations (Microsoft TBX ids, macOS bundle paths) point outside the repo and stay unverifiable. Trap 4 in
+  `docs/i18n/how-to-mine.md` (the first TBX hit is often the wrong sense) is a human problem, not a schema problem.
 
 ## Cost, honestly
 
@@ -146,5 +146,5 @@ prose is less regular than it looks.
   cases by hand, and class 3 stays. Cheapest, and the rot resumes.
 - **Fix the citation format only.** Require the key, the English value, and the translated value in one fixed slot
   rather than free prose, so a check can verify all three. This catches classes 1 and 2 without a migration, and it is
-  the sensible middle option. It does not fix class 3, and it still stores a value that has to be maintained, so it
-  buys detection where the full migration buys impossibility.
+  the sensible middle option. It does not fix class 3, and it still stores a value that has to be maintained, so it buys
+  detection where the full migration buys impossibility.
