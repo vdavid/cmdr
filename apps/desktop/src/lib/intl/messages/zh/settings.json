@@ -1555,27 +1555,27 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
-  "settings.behavior.dockPinNudgeOfferedAt.label": "Dock offer made at",
+  "settings.behavior.dockPinNudgeOfferedAt.label": "程序坞邀请发出时间",
   "@settings.behavior.dockPinNudgeOfferedAt.label": {
     "sourceHash": "2d422fb"
   },
-  "settings.behavior.dockPinNudgeOfferedAt.description": "When the one-time offer to add Cmdr to the Dock was made.",
+  "settings.behavior.dockPinNudgeOfferedAt.description": "将 Cmdr 添加到程序坞的一次性邀请是什么时候发出的。",
   "@settings.behavior.dockPinNudgeOfferedAt.description": {
     "sourceHash": "fa3d324"
   },
-  "settings.behavior.revealNudgeOfferedAt.label": "Show in Finder offer made at",
+  "settings.behavior.revealNudgeOfferedAt.label": "“在 Finder 中显示”邀请发出时间",
   "@settings.behavior.revealNudgeOfferedAt.label": {
     "sourceHash": "aaae0a8"
   },
-  "settings.behavior.revealNudgeOfferedAt.description": "When the one-time offer to open \"Show in Finder\" in Cmdr was made.",
+  "settings.behavior.revealNudgeOfferedAt.description": "在 Cmdr 中打开“在 Finder 中显示”的一次性邀请是什么时候发出的。",
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "2b9d5b4"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "First reveal notice shown",
+  "settings.behavior.revealActivationNoticeSeen.label": "已显示首次接手提示",
   "@settings.behavior.revealActivationNoticeSeen.label": {
     "sourceHash": "a62b8f1"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Whether the notice about the first \"Show in Finder\" landing in Cmdr has been shown.",
+  "settings.behavior.revealActivationNoticeSeen.description": "是否已经显示过关于首次在 Cmdr 中打开“在 Finder 中显示”的提示。",
   "@settings.behavior.revealActivationNoticeSeen.description": {
     "sourceHash": "f2107a5"
   },

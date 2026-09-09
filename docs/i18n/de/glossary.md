@@ -2559,7 +2559,7 @@ wird.
   Funktionstastenleiste · bereits im Katalog festgelegt (`settings.appearance.showFunctionKeyBar.label`); für das
   Kontextmenü-Element und den zugehörigen Toast wiederverwendet · high
 
-## Das Dock-Angebot (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`, 2026-09-09)
+## Das Dock-Angebot (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`, 2026-09-09)
 
 Ein einmaliger Toast, der nach ein paar Tagen fragt, ob Cmdr sein Symbol im Dock behalten darf, plus die vier
 Ergebnismeldungen danach. Apples eigenes Dock-Menü liefert für fast jeden Begriff die fertige deutsche Formulierung, und
@@ -2615,7 +2615,7 @@ Formulierungsentscheidungen in diesem Set:
 - **`No, thanks` → `Nein, danke`, ❌ nicht `Später` / `Nicht jetzt`.** Cmdr fragt danach nie wieder, ein Aufschub-Wort
   wäre also gelogen. Apples `Not Now` → `Später` und der Katalogeintrag `askCmdr.consent.decline` („Nicht jetzt“) meinen
   beide den vertagten Fall, nicht diesen.
-- **Die zwei `settings.behavior.dockPinNudgeSeen.*`-Werte sind intern** und folgen dem Nachbarpaar
+- **Die zwei `settings.behavior.dockPinNudgeOfferedAt.*`-Werte sind intern** und folgen dem Nachbarpaar
   `settings.behavior.adbHintDismissed.*` in der Form (Partizip-Label, `Ob das einmalige …`-Beschreibung).
 
 ## Das Dock-Menü von Cmdr (`menu.dock.*`, 2026-09-09)
@@ -2647,3 +2647,20 @@ live macOS 26.6.2, Build 25G83, 2026-09-09) und Finders Menüleiste (`de/macOS/F
 - **`{name} ({parent})` bleibt zeichengleich** und trägt deshalb eine `sameAsSourceJustification` · Finder
   `LocalizableMerged` `IN_G6_V1` („^2 (^3)“), AppKit `Menus` („Location (%@)“ → „Umgebung (%@)“) · high. Deutsch
   qualifiziert einen Namen mit demselben Klammerzusatz in derselben Reihenfolge; es gibt nichts umzustellen.
+
+## Das „Im Finder anzeigen“-Angebot und der Ersttreffer-Hinweis (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`, 2026-09-09)
+
+Zwei Momente derselben Funktion: das einmalige Angebot, „Im Finder anzeigen“ aus anderen Apps in Cmdr zu öffnen, und der
+einmalige Hinweis beim ersten Mal, dass so eine Anfrage hier landet. Beide Oberflächen zeigen auf macOS-eigene Befehle,
+also gewinnt die macOS-Wortwahl (style.md § Systemoberflächen).
+
+- **„Show in Finder“ → `„Im Finder anzeigen“`, in deutschen Anführungszeichen** · Bereits gesetzt in
+  `settings.navigationAndFileOps.card.showInFinder` und `settings.revealHandler.description` · `high`. Die Toast-Strings
+  übernehmen exakt diese Form, damit Karte und Hinweis dieselbe Aktion beim selben Namen nennen.
+- **pane → `Bereich`** · Katalogform aus `fileExplorer.doubleClickHint.body` („Bereichshintergrund“) · `high`. ❌ Nicht
+  `Fenster`, ❌ nicht `Panel`.
+- **Settings (Cmdrs eigenes Fenster) → `Einstellungen`** · `settings.window.title` · `high`.
+- **„for a while now“ → `schon eine Weile`** · Bewusst vage: die Schwelle kann sich verschieben, also ❌ nie eine Zahl
+  einsetzen. Gleiche Regel wie `main.dockPinNudge.body` („ein paar Tage“) · `high`.
+- **Der Ersttreffer-Hinweis ist ❌ keine Entschuldigung** · Er sagt, was passiert ist und warum, und wo der Schalter
+  sitzt. Deshalb `Cmdr ist so eingestellt, dass es das übernimmt.`, ❌ nicht „Entschuldigung“ oder „Leider“ · `high`.

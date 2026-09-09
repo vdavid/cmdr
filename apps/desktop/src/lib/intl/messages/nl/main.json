@@ -51,47 +51,47 @@
   "@main.dockPinNudge.notAdded": {
     "sourceHash": "0d122cb"
   },
-  "main.revealNudge.title": "Open \"Show in Finder\" in Cmdr?",
+  "main.revealNudge.title": "‘Toon in Finder’ in Cmdr openen?",
   "@main.revealNudge.title": {
     "sourceHash": "c92e1b7"
   },
-  "main.revealNudge.body": "You''ve been using Cmdr for a while now. When another app runs \"Show in Finder\", Cmdr can open that folder instead, with the file already under the cursor.",
+  "main.revealNudge.body": "Je gebruikt Cmdr nu al een tijdje. Wanneer een andere app ‘Toon in Finder’ uitvoert, kan Cmdr die map openen, met het bestand meteen onder de cursor.",
   "@main.revealNudge.body": {
     "sourceHash": "fe4072b"
   },
-  "main.revealNudge.switchBackNote": "You can switch this back any time in Settings.",
+  "main.revealNudge.switchBackNote": "Je kunt dit altijd terugzetten in Instellingen.",
   "@main.revealNudge.switchBackNote": {
     "sourceHash": "48c2bca"
   },
-  "main.revealNudge.decline": "No, thanks",
+  "main.revealNudge.decline": "Nee, bedankt",
   "@main.revealNudge.decline": {
     "sourceHash": "e1a0936"
   },
-  "main.revealNudge.accept": "Yes, open them in Cmdr",
+  "main.revealNudge.accept": "Ja, open ze in Cmdr",
   "@main.revealNudge.accept": {
     "sourceHash": "3291bb4"
   },
-  "main.revealNudge.turnedOn": "Cmdr now opens \"Show in Finder\" from other apps.",
+  "main.revealNudge.turnedOn": "Cmdr opent ‘Toon in Finder’ nu vanuit andere apps.",
   "@main.revealNudge.turnedOn": {
     "sourceHash": "8eab42b"
   },
-  "main.revealNudge.heldByOtherApp": "{app} has \"Show in Finder\" right now. You can hand it to Cmdr in Settings whenever you like.",
+  "main.revealNudge.heldByOtherApp": "‘Toon in Finder’ is op dit moment van {app}. Je kunt het in Instellingen aan Cmdr geven wanneer je wilt.",
   "@main.revealNudge.heldByOtherApp": {
     "sourceHash": "3f513b0"
   },
-  "main.revealNudge.notTurnedOn": "Cmdr couldn''t take \"Show in Finder\" this time. The switch is in Settings whenever you want to try again.",
+  "main.revealNudge.notTurnedOn": "Cmdr kon ‘Toon in Finder’ deze keer niet overnemen. De schakelaar staat in Instellingen als je het opnieuw wilt proberen.",
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "4a9920d"
   },
-  "main.revealActivation.title": "\"Show in Finder\" opened here",
+  "main.revealActivation.title": "‘Toon in Finder’ is hier geopend",
   "@main.revealActivation.title": {
     "sourceHash": "23d50e1"
   },
-  "main.revealActivation.body": "Cmdr is set to catch these, so the file landed in a pane instead of in Finder. Everything else still opens the way it did.",
+  "main.revealActivation.body": "Cmdr staat ingesteld om deze op te vangen, dus het bestand kwam in een paneel terecht in plaats van in Finder. Al het andere opent nog steeds zoals eerst.",
   "@main.revealActivation.body": {
     "sourceHash": "19ea7d6"
   },
-  "main.revealActivation.openSettings": "Change this in Settings",
+  "main.revealActivation.openSettings": "Wijzig dit in Instellingen",
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },

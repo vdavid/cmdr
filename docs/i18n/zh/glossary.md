@@ -2373,7 +2373,7 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **pull（`ollama pull`）→ `拉取`** · Microsoft zh-Hans 术语库的现代条目（id 2306935 / 2309495 → `拉取`）；早期的 `请求`
   是 pull request 的一半，不适用 · `high`
 
-## 程序坞邀请（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeSeen.*`，2026-09-09）
+## 程序坞邀请（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeOfferedAt.*`，2026-09-09）
 
 用了几天之后弹一次的通知：问用户要不要把 Cmdr 放进 macOS 的程序坞，加上答应之后的四条结果提示。设置里那两个键是内部状态，界面上永远看不到。
 
@@ -2447,3 +2447,17 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   `menu.context.openWithDefault`（`{app}（默认）`）同样 · `high`。
 - **省略号照旧是单个全角 `…`（U+2026）**，见本文件 § Ellipsis normalization。`menu.*`
   是 RAW 家族，不过 Chinese 这五条里没有撇号，ICU 转义无关。
+
+## “在 Finder 中显示”的邀请与首次接手提示（`main.revealNudge.*`、`main.revealActivation.*`、`settings.behavior.reveal*`，2026-09-09）
+
+同一个功能的两个时刻：一次性地询问是否让其他 App 的“在 Finder 中显示”改在 Cmdr 中打开，以及这类请求第一次落到这里时的一次性提示。两处都指向 macOS 自己的命令，所以按 style.md
+§ 系统界面，采用 macOS 的说法。
+
+- **“Show in Finder” → `“在 Finder 中显示”`，用中文弯引号** · 已在 `settings.navigationAndFileOps.card.showInFinder` 和
+  `settings.revealHandler.description` 中定稿 · `high`。提示条照抄这个形式，让设置卡片和提示用同一个名字称呼同一个动作。
+- **pane → `窗格`** · 目录既有形式：`fileExplorer.doubleClickHint.body`（“窗格背景”）· `high`。
+- **Settings（Cmdr 自己的窗口）→ `设置`** · `settings.window.title` · `high`。
+- **“for a while now” → `有一阵子了`** · 故意含糊：阈值可能变动，所以 ❌ 绝不写具体天数。与
+  `main.dockPinNudge.body`（“好几天了”）同一条规则 · `high`。
+- **首次接手提示 ❌ 不是道歉** · 它说明刚才发生了什么、为什么，以及开关在哪里。所以写
+  `Cmdr 设置成了接手这类请求`，❌ 不写“抱歉”· `high`。

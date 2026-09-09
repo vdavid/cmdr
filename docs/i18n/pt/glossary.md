@@ -2524,7 +2524,7 @@ Chaves `onboarding.cloudSetup.*`, revistas contra a pilha de referência (`pt-BR
 - `Ollama`, `LM Studio`, `Azure OpenAI`, `Azure`, `api-version` e o comando `ollama pull llama3.2` ficam verbatim.
   contexto e o respectivo toast · high
 
-## O convite para fixar o Cmdr no Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`, 2026-09-09)
+## O convite para fixar o Cmdr no Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`, 2026-09-09)
 
 Pilha de referência lida em `_ignored/i18n/pt-BR/` (o conjunto brasileiro; o `pt/` nu é europeu, § style.md).
 
@@ -2607,7 +2607,7 @@ pt-BR; `está a usar` seria marcador pt-PT (§ style.md).
 
 ### As duas chaves internas
 
-`settings.behavior.dockPinNudgeSeen.*` nunca aparece na tela. Seguem o molde das irmãs `*Seen`
+`settings.behavior.dockPinNudgeOfferedAt.*` nunca aparece na tela. Seguem o molde das irmãs `*Seen`
 (`openTerminalHereToastSeen`, `doubleClickOnPaneNotificationSeen`, `serversPinHintSeen`): rótulo em frase nominal
 (`Oferta do Dock feita`) e descrição no formato `Se a … única … já foi …`
 (`Se a oferta única de adicionar o Cmdr ao Dock já foi feita.`) · high
@@ -2668,3 +2668,19 @@ particípio nem adjetivo (a mesma regra do § "Nada concorda com um `{name}`" do
 `ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`, `alterar o nome`, `você`
 omitido: zero ocorrências. `Ir para pasta…` e `Conectar ao servidor…` vêm do `pt_BR.lproj` e do `pt-BR/` da pilha, nunca
 do europeu.
+
+## A oferta de “Mostrar no Finder” e o aviso da primeira vez (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`, 2026-09-09)
+
+Dois momentos da mesma função: a oferta única de abrir no Cmdr o “Mostrar no Finder” de outros apps, e o aviso único na
+primeira vez que um desses pedidos cai aqui. As duas superfícies apontam para comandos do próprio macOS, então a
+terminologia da Apple vence (style.md § superfícies do sistema).
+
+- **“Show in Finder” → `“Mostrar no Finder”`, com aspas curvas duplas** · Já fixado em
+  `settings.navigationAndFileOps.card.showInFinder` e `settings.revealHandler.description` · `high`. Os toasts copiam
+  essa forma exata, para que o cartão dos ajustes e o aviso chamem a mesma ação do mesmo jeito.
+- **pane → `painel`** · Forma do catálogo em `fileExplorer.doubleClickHint.body` · `high`.
+- **Settings (a janela do próprio Cmdr) → `os Ajustes`** · `settings.window.title` = “Ajustes” · `high`.
+- **“for a while now” → `há um tempo`** · Deliberadamente vago: o limite pode mudar, então ❌ nunca um número. Mesma
+  regra de `main.dockPinNudge.body` (“há alguns dias”) · `high`.
+- **O aviso da primeira vez ❌ não é um pedido de desculpas** · Ele diz o que acabou de acontecer, por quê, e onde fica
+  o botão. Daí `O Cmdr está configurado para receber esses pedidos`, ❌ nunca “desculpe” · `high`.

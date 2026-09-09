@@ -1563,27 +1563,27 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
-  "settings.behavior.dockPinNudgeOfferedAt.label": "Dock offer made at",
+  "settings.behavior.dockPinNudgeOfferedAt.label": "Erbjudande om Dock visat den",
   "@settings.behavior.dockPinNudgeOfferedAt.label": {
     "sourceHash": "2d422fb"
   },
-  "settings.behavior.dockPinNudgeOfferedAt.description": "When the one-time offer to add Cmdr to the Dock was made.",
+  "settings.behavior.dockPinNudgeOfferedAt.description": "När engångserbjudandet att lägga till Cmdr i Dock visades.",
   "@settings.behavior.dockPinNudgeOfferedAt.description": {
     "sourceHash": "fa3d324"
   },
-  "settings.behavior.revealNudgeOfferedAt.label": "Show in Finder offer made at",
+  "settings.behavior.revealNudgeOfferedAt.label": "Erbjudande om ”Visa i Finder” visat den",
   "@settings.behavior.revealNudgeOfferedAt.label": {
     "sourceHash": "aaae0a8"
   },
-  "settings.behavior.revealNudgeOfferedAt.description": "When the one-time offer to open \"Show in Finder\" in Cmdr was made.",
+  "settings.behavior.revealNudgeOfferedAt.description": "När engångserbjudandet att öppna ”Visa i Finder” i Cmdr visades.",
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "2b9d5b4"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "First reveal notice shown",
+  "settings.behavior.revealActivationNoticeSeen.label": "Avisering om första visningen visad",
   "@settings.behavior.revealActivationNoticeSeen.label": {
     "sourceHash": "a62b8f1"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Whether the notice about the first \"Show in Finder\" landing in Cmdr has been shown.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Om aviseringen om den första ”Visa i Finder” som öppnades i Cmdr har visats.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
     "sourceHash": "f2107a5"
   },

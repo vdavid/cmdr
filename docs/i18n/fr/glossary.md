@@ -3055,7 +3055,7 @@ enregistré.
   de fonction · déjà fixé dans le catalogue (`settings.appearance.showFunctionKeyBar.label`) ; réutilisé pour l'élément
   du menu contextuel et son toast · high
 
-## La proposition d'ajout au Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`)
+## La proposition d'ajout au Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)
 
 Termes fixés (source de niveau 1 : le paquet `Dock.app` du système, `fr.lproj/DockMenus.strings`, macOS 26.6.2 build
 25G83, lu le 2026-09-09 ; plus la pile `fr/macOS/`).
@@ -3105,7 +3105,7 @@ Décisions de formulation :
   d'Apple (« faire glisser … depuis votre dossier Applications »), avec le `y` qui renvoie au Dock nommé juste avant.
 - **`managedDock` nomme une personne sans la genrer** : « La personne qui gère ce Mac peut modifier ce réglage. » Ni «
   l'administrateur », ni un point médian ; c'est la restructuration prévue par la règle d'inclusivité.
-- **Les deux clés `settings.behavior.dockPinNudgeSeen.*` sont internes** et copient le moule des voisines
+- **Les deux clés `settings.behavior.dockPinNudgeOfferedAt.*` sont internes** et copient le moule des voisines
   (`serversPinHintSeen`, `doubleClickOnPaneNotificationSeen`) : libellé en syntagme nominal terminé par un participe («
   Proposition d'ajout au Dock faite »), description en « Indique si … a été … ».
 - **Apostrophes ICU doublées partout** (`qu''il`, `d''avis`, `L''icône`, `s''est`, `s''y`, `n''a`, `s''ajouter`, `l''y`,
@@ -3147,3 +3147,19 @@ Décisions de formulation :
   caractère » de `style.md`, et comme le Finder français qui écrit lui aussi U+2026 dans ces deux éléments.
 - **Aucune apostrophe dans les cinq valeurs**, donc le piège du doublage ICU ne se pose pas ici ; il se poserait si un
   jour un libellé du menu du Dock prenait une élision, et la réponse serait alors l'apostrophe SIMPLE (famille RAW).
+
+## La proposition « Afficher dans le Finder » et l'avis de première fois (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`, 2026-09-09)
+
+Deux moments de la même fonction : la proposition unique d'ouvrir dans Cmdr le « Afficher dans le Finder » des autres
+apps, et l'avis unique la première fois qu'une de ces demandes arrive ici. Les deux surfaces désignent des commandes
+propres à macOS, donc la terminologie macOS l'emporte (style.md § surfaces système).
+
+- **“Show in Finder” → `« Afficher dans le Finder »`, guillemets français avec espaces insécables** · Déjà fixé dans
+  `settings.navigationAndFileOps.card.showInFinder` et `settings.revealHandler.description` · `high`. Les toasts
+  reprennent exactement cette forme, pour que la fiche des réglages et l'avis nomment la même action pareil.
+- **pane → `panneau`** · Forme du catalogue dans `fileExplorer.doubleClickHint.body` · `high`.
+- **Settings (la fenêtre propre à Cmdr) → `les Réglages`** · `settings.window.title` = « Réglages » · `high`.
+- **“for a while now” → `depuis un moment`** · Volontairement vague : le seuil peut bouger, donc ❌ jamais de chiffre.
+  Même règle que `main.dockPinNudge.body` (« quelques jours ») · `high`.
+- **L'avis de première fois ❌ n'est pas une excuse** · Il dit ce qui vient de se passer, pourquoi, et où se trouve
+  l'option. D'où `Cmdr est configuré pour les récupérer`, ❌ jamais « désolé » · `high`.

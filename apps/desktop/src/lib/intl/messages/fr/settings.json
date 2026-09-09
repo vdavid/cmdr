@@ -1567,27 +1567,27 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
-  "settings.behavior.dockPinNudgeOfferedAt.label": "Dock offer made at",
+  "settings.behavior.dockPinNudgeOfferedAt.label": "Date de la proposition d''ajout au Dock",
   "@settings.behavior.dockPinNudgeOfferedAt.label": {
     "sourceHash": "2d422fb"
   },
-  "settings.behavior.dockPinNudgeOfferedAt.description": "When the one-time offer to add Cmdr to the Dock was made.",
+  "settings.behavior.dockPinNudgeOfferedAt.description": "Quand la proposition unique d''ajouter Cmdr au Dock a été faite.",
   "@settings.behavior.dockPinNudgeOfferedAt.description": {
     "sourceHash": "fa3d324"
   },
-  "settings.behavior.revealNudgeOfferedAt.label": "Show in Finder offer made at",
+  "settings.behavior.revealNudgeOfferedAt.label": "Date de la proposition « Afficher dans le Finder »",
   "@settings.behavior.revealNudgeOfferedAt.label": {
     "sourceHash": "aaae0a8"
   },
-  "settings.behavior.revealNudgeOfferedAt.description": "When the one-time offer to open \"Show in Finder\" in Cmdr was made.",
+  "settings.behavior.revealNudgeOfferedAt.description": "Quand la proposition unique d''ouvrir « Afficher dans le Finder » dans Cmdr a été faite.",
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "2b9d5b4"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "First reveal notice shown",
+  "settings.behavior.revealActivationNoticeSeen.label": "Avis du premier affichage montré",
   "@settings.behavior.revealActivationNoticeSeen.label": {
     "sourceHash": "a62b8f1"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Whether the notice about the first \"Show in Finder\" landing in Cmdr has been shown.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Indique si l''avis sur le premier « Afficher dans le Finder » ouvert dans Cmdr a été montré.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
     "sourceHash": "f2107a5"
   },

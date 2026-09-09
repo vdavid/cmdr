@@ -2495,7 +2495,7 @@ LEVANDE macOS-paketen (macOS 26.6.2, build 25G83, läst 2026-09-07; `.loctable` 
   `crashReporter.dialog.dismiss`, `errorReporter.sentToast.dismiss`, `lowDiskSpace.toast.closeTooltip` med flera) ·
   `high`. Skärmläsarnamn på ×-knappen, alltså imperativ.
 
-## Dock-erbjudandet: engångsfrågan om att lägga Cmdr i Dock (2026-09-09; 9 `main.dockPinNudge.*` + 2 `settings.behavior.dockPinNudgeSeen.*`)
+## Dock-erbjudandet: engångsfrågan om att lägga Cmdr i Dock (2026-09-09; 9 `main.dockPinNudge.*` + 2 `settings.behavior.dockPinNudgeOfferedAt.*`)
 
 En avisering som dyker upp några dagar in i användningen och frågar om Cmdr får lägga sig i Dock, plus de fyra korta
 beskeden efter ett ja. Hela ytan pekar på macOS egna Dock, så macOS ordval vinner enligt style.md § ”Copy som pekar på
@@ -2699,3 +2699,19 @@ inte i referenssamlingen: `_ignored/i18n/sv/` bär Finder, AppKit och Systeminst
   en `sameAsSourceJustification`. `high`.
 
 `Dock` böjs inte och tar ingen artikel (`i Dock`), enligt § Dock-erbjudandet ovan.
+
+## Erbjudandet om ”Visa i Finder” och aviseringen vid första träffen (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`, 2026-09-09)
+
+Två ögonblick i samma funktion: engångsfrågan om ”Visa i Finder” från andra appar får öppnas i Cmdr, och
+engångsaviseringen första gången en sådan begäran landar här. Båda ytorna pekar på macOS egna kommandon, så macOS ordval
+vinner enligt style.md § ”Copy som pekar på en systemyta stavas som macOS stavar den”.
+
+- **”Show in Finder” → `”Visa i Finder”`, med svenska citattecken** · Redan satt i
+  `settings.navigationAndFileOps.card.showInFinder` och `settings.revealHandler.description` · `high`. Aviseringarna
+  återanvänder exakt den formen, så att inställningskortet och aviseringen kallar samma sak samma sak.
+- **pane → `panel`** · Katalogens form i `fileExplorer.doubleClickHint.body` (”panelens bakgrund”) · `high`.
+- **Settings (Cmdrs eget fönster) → `Inställningar`** · `settings.window.title` · `high`.
+- **”for a while now” → `ett tag nu`** · Avsiktligt vagt: tröskeln kan flyttas, så ❌ aldrig en siffra. Samma regel som
+  `main.dockPinNudge.body` (”i några dagar nu”) · `high`.
+- **Aviseringen vid första träffen är ❌ ingen ursäkt** · Den säger vad som just hände, varför, och var reglaget finns.
+  Därav `Cmdr är inställd på att fånga upp dem`, ❌ aldrig ”tyvärr” · `high`.

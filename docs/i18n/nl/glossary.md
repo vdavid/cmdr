@@ -3056,7 +3056,7 @@ De twee regels onder de grijze velden `Adres` en `Gebruikersnaam`, wanneer de ge
   de catalogus (`settings.appearance.showFunctionKeyBar.label`); hergebruikt voor het contextmenu-item en de
   bijbehorende toast · high
 
-## Het Dock-aanbod (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`)
+## Het Dock-aanbod (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)
 
 - Dock → `Dock`, onvertaald, MET het lidwoord `het` in lopende tekst · macOS Finder (`Voeg toe aan Dock`,
   `LocalizableMerged` `N169.13` en `MenuBar` `300772.title`), `Dock.app` `nl.lproj/DockMenus.strings`
@@ -3123,3 +3123,19 @@ het Dock zelf, in de live bundels (macOS 26.6.2, build 25G83, gelezen 2026-09-09
 
 Merk op dat Apples Dock-menu voor `eject` `Verwijder` zegt (`DockMenus.strings` `EJECT`); dat bevestigt de al
 vastgelegde uitzondering in § Native menu's, waar Cmdr `Werp uit` gebruikt om de botsing met _delete_ te vermijden.
+
+## Het ‘Toon in Finder’-aanbod en de melding bij de eerste keer (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`, 2026-09-09)
+
+Twee momenten van dezelfde functie: het eenmalige aanbod om ‘Toon in Finder’ uit andere apps in Cmdr te openen, en de
+eenmalige melding wanneer zo'n verzoek hier voor het eerst binnenkomt. Beide oppervlakken wijzen naar macOS' eigen
+opdrachten, dus de macOS-terminologie wint (style.md § systeemoppervlakken).
+
+- **“Show in Finder” → `‘Toon in Finder’`, met enkele typografische aanhalingstekens** · Al vastgelegd in
+  `settings.navigationAndFileOps.card.showInFinder` en `settings.revealHandler.description` · `high`. De toasts nemen
+  precies die vorm over, zodat de instellingenkaart en de melding dezelfde actie hetzelfde noemen.
+- **pane → `paneel`** · Catalogusvorm in `fileExplorer.doubleClickHint.body` (‘paneelachtergrond’) · `high`.
+- **Settings (Cmdrs eigen venster) → `Instellingen`, met hoofdletter** · `settings.window.title` · `high`.
+- **“for a while now” → `al een tijdje`** · Bewust vaag: de drempel kan verschuiven, dus ❌ nooit een getal. Zelfde
+  regel als `main.dockPinNudge.body` (‘een paar dagen’) · `high`.
+- **De melding bij de eerste keer is ❌ geen excuus** · Ze zegt wat er net gebeurde, waarom, en waar de schakelaar
+  staat. Vandaar `Cmdr staat ingesteld om deze op te vangen`, ❌ nooit ‘sorry’ · `high`.

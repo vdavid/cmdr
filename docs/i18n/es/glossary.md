@@ -2811,7 +2811,7 @@ Las dos líneas bajo los campos atenuados `Dirección` y `Nombre de usuario` al 
   teclas de función · ya establecido en el catálogo (`settings.appearance.showFunctionKeyBar.label`); reutilizado para
   el elemento del menú contextual y su aviso · high
 
-## El aviso de «¿dejamos Cmdr en el Dock?» (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`, 2026-09-09)
+## El aviso de «¿dejamos Cmdr en el Dock?» (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`, 2026-09-09)
 
 - **`Dock` → `Dock`, verbatim y en masculino (`el Dock`, `al Dock`)** · Finder `LocalizableMerged` `N169.13` y `MenuBar`
   `300772.title`, ambos «Añadir al Dock»; AppKit `Common` lo deja igual en prosa («la imagen del escritorio del Dock»).
@@ -2887,3 +2887,19 @@ grupo: el propio **Dock** (`/System/Library/CoreServices/Dock.app/Contents/Resou
   agregarse nada que concuerde: `{name}` puede ser archivo o carpeta (regla «Nothing may agree with a `{name}`» del
   `style.md`), así que una variante tipo `{name} (en {parent})` tampoco aportaría nada y alargaría un ítem de menú ·
   `high`.
+
+## La oferta de «Mostrar en el Finder» y el aviso de la primera vez (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`, 2026-09-09)
+
+Dos momentos de la misma función: la oferta única de abrir en Cmdr el «Mostrar en el Finder» de otras apps, y el aviso
+único la primera vez que una de esas peticiones aterriza aquí. Ambas superficies apuntan a comandos propios de macOS,
+así que gana la terminología de macOS (style.md § superficies del sistema).
+
+- **“Show in Finder” → `“Mostrar en el Finder”`, con comillas tipográficas dobles** · Ya fijado en
+  `settings.navigationAndFileOps.card.showInFinder` y `settings.revealHandler.description` · `high`. Los toasts copian
+  esa forma exacta para que la tarjeta y el aviso llamen igual a la misma acción.
+- **pane → `panel`** · Forma del catálogo en `fileExplorer.doubleClickHint.body` · `high`.
+- **Settings (la ventana propia de Cmdr) → `los Ajustes`** · `settings.window.title` = «Ajustes» · `high`.
+- **“for a while now” → `un tiempo`** · Deliberadamente vago: el umbral puede moverse, así que ❌ nunca poner un número.
+  Misma regla que `main.dockPinNudge.body` («unos días») · `high`.
+- **El aviso de la primera vez ❌ no es una disculpa** · Dice qué pasó, por qué, y dónde está el interruptor. De ahí
+  `Cmdr está configurado para recogerlos`, ❌ nunca «lo sentimos» · `high`.

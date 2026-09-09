@@ -1517,7 +1517,7 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   95960 / 151531 / 2309059；剩下那條 `扣動` 是扣扳機的意思）· `high`。整句同時補上 `裡`：
   `在終端機裡用 ollama pull llama3.2 提取一個模型…`
 
-## 「要不要把 Cmdr 留在 Dock 上」那則提示（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeSeen.*`）
+## 「要不要把 Cmdr 留在 Dock 上」那則提示（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeOfferedAt.*`）
 
 - **`Dock` 保持原文，前後留空格** · Apple 的正體中文從不翻譯它：zh-TW `加入Dock中`、zh-HK `加至Dock`（Finder `MenuBar`
   `300772.title`，英文側 `en_GB.lproj` 為 `Add to Dock`），Dock.app 自己的 `從Dock中移除`、`Dock設定⋯`
@@ -1595,3 +1595,18 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   `fileExplorer.renameConflict.yours`（`{name}（你的）`）、
   `menu.context.openWithDefault`（`{app}（預設）`）、`menu.volume.eject`（`退出（{name}）`）·
   `high`。兩個 token 的順序跟英文一樣，名字在前、所在位置在後：中文這個位置本來就是後置限定，不需要倒過來，也不用補介詞（補了會變成一句話，而這是一列選單項目）。
+
+## 「在 Finder 中顯示」的詢問與首次接手提示（`main.revealNudge.*`、`main.revealActivation.*`、`settings.behavior.reveal*`，2026-09-09）
+
+同一個功能的兩個時刻：一次性地詢問要不要讓其他 App 的「在 Finder 中顯示」改在 Cmdr 中開啟，以及這類要求第一次落到這裡時的一次性提示。兩處都指向 macOS 自己的指令，所以依 style.md
+§ 系統介面，採用 macOS 的說法。
+
+- **「Show in Finder」→ `「在 Finder 中顯示」`，用直角引號** · 已在 `settings.navigationAndFileOps.card.showInFinder` 與
+  `settings.revealHandler.description` 中定稿 ·
+  `high`。提示訊息沿用這個形式，讓設定卡片與提示用同一個名字稱呼同一個動作。
+- **pane → `窗格`** · 目錄既有形式：`fileExplorer.doubleClickHint.body`（「窗格背景」）· `high`。
+- **Settings（Cmdr 自己的視窗）→ `設定`** · `settings.window.title` · `high`。
+- **「for a while now」→ `有一陣子了`** · 刻意含糊：門檻可能變動，所以 ❌ 絕不寫出天數。與
+  `main.dockPinNudge.body`（「好幾天了」）同一條規則 · `high`。
+- **首次接手提示 ❌ 不是道歉** · 它說明剛才發生了什麼、為什麼，以及開關在哪裡。所以寫
+  `Cmdr 設定成接手這類要求`，❌ 不寫「抱歉」· `high`。

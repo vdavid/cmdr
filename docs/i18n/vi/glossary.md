@@ -2680,7 +2680,7 @@ Hai dòng dưới hai ô đã bị làm mờ `Địa chỉ` và `Tên người d
 - function key bar (hàng nút lệnh phím chức năng ở cuối cửa sổ) → thanh phím chức năng · đã được chốt trong danh mục
   (`settings.appearance.showFunctionKeyBar.label`); dùng lại cho mục menu ngữ cảnh và thông báo đi kèm · high
 
-## Lời mời ghim Cmdr vào Dock (`main.dockPinNudge.*` 9 khóa + `settings.behavior.dockPinNudgeSeen.*`, 2026-09-09)
+## Lời mời ghim Cmdr vào Dock (`main.dockPinNudge.*` 9 khóa + `settings.behavior.dockPinNudgeOfferedAt.*`, 2026-09-09)
 
 Bề mặt: một thông báo một lần, hiện ra sau vài ngày dùng Cmdr, hỏi xem ứng dụng có được tự thêm biểu tượng của mình vào
 Dock macOS hay không, cộng bốn câu ngắn báo kết quả sau khi người dùng đồng ý. Hai khóa `settings.*` là cờ nội bộ, người
@@ -2748,7 +2748,7 @@ chứng Tier 1 lấy thẳng từ `Dock.app` đang cài (`vi.lproj/DockMenus.str
 - **`notAdded` → `Lần này Cmdr chưa vào được Dock. Bạn có thể kéo nó từ thư mục Ứng dụng vào Dock bất cứ lúc nào.`** ·
   câu thứ hai dựng theo khuôn AppKit `Thử kéo “%@” … vào thư mục Ứng dụng của bạn.`, đảo chiều nguồn/đích. Viết rõ
   `vào Dock` thay vì `vào đó` vì đích đã cách xa chủ ngữ. Lại dùng `chưa` để câu không đọc thành một lời tuyên bố hỏng.
-- **`settings.behavior.dockPinNudgeSeen.*` → `Đã đề nghị thêm vào Dock` /
+- **`settings.behavior.dockPinNudgeOfferedAt.*` → `Đã đề nghị thêm vào Dock` /
   `Đề nghị một lần về việc thêm Cmdr vào Dock đã được đưa ra hay chưa.`** · chép đúng khuôn của cặp khóa nội bộ hàng xóm
   `settings.behavior.adbHintDismissed.*` (`Đã bỏ qua gợi ý về gỡ lỗi qua USB` /
   `Dòng gợi ý một lần … đã bị bỏ qua hay chưa.`), để hai cờ đọc như một họ.
@@ -2794,3 +2794,19 @@ Nguồn Tier 1, đọc thẳng từ macOS 26.6.2 đang cài, ngày 2026-09-09:
 - **Không viết dấu gạch dưới `_` hay `&` làm phím tắt.** Trên Linux, gạch chân được cấp phát từ nhãn ĐÃ DỊCH theo từng
   menu con.
 - **Không có `bạn` trong bất kỳ nhãn nào**: nhãn hành động là động từ trần, đúng luật trong `style.md` § Formality.
+
+## Lời mời về “Hiển thị trong Finder” và thông báo lần đầu (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`, 2026-09-09)
+
+Hai thời điểm của cùng một tính năng: lời mời một lần để “Hiển thị trong Finder” từ ứng dụng khác mở trong Cmdr, và
+thông báo một lần vào lần đầu một yêu cầu như vậy rơi vào đây. Cả hai bề mặt đều trỏ tới lệnh của chính macOS, nên cách
+dùng từ của macOS thắng (style.md § bề mặt hệ thống).
+
+- **“Show in Finder” → `“Hiển thị trong Finder”`, dùng dấu ngoặc kép cong** · Đã chốt ở
+  `settings.navigationAndFileOps.card.showInFinder` và `settings.revealHandler.description` · `high`. Các thông báo lấy
+  đúng dạng đó, để thẻ cài đặt và thông báo gọi cùng một hành động bằng cùng một tên.
+- **pane → `khung`** · Dạng trong catalog: `fileExplorer.doubleClickHint.body` (“nền khung”) · `high`.
+- **Settings (cửa sổ riêng của Cmdr) → `Cài đặt`** · `settings.window.title` · `high`.
+- **“for a while now” → `một thời gian rồi`** · Cố ý mơ hồ: ngưỡng có thể đổi, nên ❌ không bao giờ ghi con số. Cùng quy
+  tắc với `main.dockPinNudge.body` (“được vài ngày rồi”) · `high`.
+- **Thông báo lần đầu ❌ không phải lời xin lỗi** · Nó nói vừa xảy ra chuyện gì, vì sao, và công tắc nằm ở đâu. Vì thế
+  `Cmdr được đặt để nhận những lệnh này`, ❌ không dùng “xin lỗi” · `high`.

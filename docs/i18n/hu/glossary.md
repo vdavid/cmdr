@@ -2943,7 +2943,7 @@ hogy időtartamról van szó. ❌ Csupasz helyőrző időtartamra soha.
   katalógusban (`settings.appearance.showFunctionKeyBar.label`); újrafelhasználva a helyi menü elemhez és a hozzá
   tartozó toasthoz · high
 
-## A Dockba kerülés egyszeri ajánlata (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeSeen.*`, 2026-09-09)
+## A Dockba kerülés egyszeri ajánlata (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`, 2026-09-09)
 
 Kilenc sor egy értesítésre (cím, törzs, megnyugtató harmadik sor, két gomb, négy kimeneti üzenet), plus a két belső
 beállításkulcs. A `_ignored/i18n/hu/` referenciakupac ezen a gépen MEGVAN, és abból dolgoztunk (macOS Finder + AppKit +
@@ -3055,3 +3055,21 @@ kell kiolvasni. (macOS 26.6.2, build 25G83, `plutil` + `jq`, 2026-09-09.)
   `SB_iCloudDetail` = „^0 (^1)”, `IN_G6_V1` = „^2 (^3)”) · `high`. A magyar ugyanabban a sorrendben és ugyanazzal a
   zárójelezéssel írja a név + minősítő párost, mint az angol, tehát nincs mit átrendezni. Toldalék egyik helyőrzőre sem
   kerülhet (mindkettő ismeretlen végű mappanév, `style.md` § Agglutination), így valóban nem marad változtatnivaló.
+
+## A „Megjelenítés a Finderben” ajánlat és az első találat értesítése (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`, 2026-09-09)
+
+Ugyanannak a funkciónak két pillanata: az egyszeri ajánlat, hogy a más appokból érkező „Megjelenítés a Finderben” a
+Cmdrben nyíljon meg, és az egyszeri értesítés, amikor egy ilyen kérés először landol itt. Mindkét felület macOS saját
+parancsára mutat, tehát a macOS szóhasználata nyer (style.md § rendszerfelületek).
+
+- **„Show in Finder” → `„Megjelenítés a Finderben”`, magyar idézőjelekkel** · Már rögzítve:
+  `settings.navigationAndFileOps.card.showInFinder` és `settings.revealHandler.description` · `high`. A toastok pontosan
+  ezt a formát veszik át, hogy a beállítási kártya és az értesítés ugyanazt az akciót ugyanúgy nevezze.
+- **pane → `panel`** · A katalógus formája: `fileExplorer.doubleClickHint.body` („panel hátterére”) · `high`.
+- **Settings (a Cmdr saját ablaka) → `Beállítások`** · `settings.window.title` · `high`.
+- **„for a while now” → `már egy ideje`** · Szándékosan homályos: a küszöb mozoghat, ezért ❌ soha nem szám. Ugyanaz a
+  szabály, mint a `main.dockPinNudge.body`-nál („néhány napja”) · `high`.
+- **A márkanév ragozódik** · `a Cmdrben`, `a Cmdrnek` — a kiejtés („kommander”) szerinti magas hangrendű toldalék,
+  style.md § márkanevek · `high`.
+- **Az első találat értesítése ❌ nem bocsánatkérés** · Azt mondja el, mi történt, miért, és hol a kapcsoló. Innen az
+  `A Cmdr úgy van beállítva, hogy elkapja ezeket`, ❌ nem „sajnáljuk” · `high`.
