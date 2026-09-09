@@ -441,7 +441,10 @@ pub fn list() -> Vec<Favorite> {
 ///
 /// Written for the Dock tile menu, which AppKit builds on the main thread while the
 /// Dock waits on the answer. Rationale and the rest of that contract:
-/// `../dock/menu/DETAILS.md`.
+/// `../dock/menu/DETAILS.md`. That menu is the only caller, and only macOS has a Dock,
+/// so this is gated the same way `mod dock` is: without the gate it's dead code on Linux
+/// and `-D unused` fails the build there.
+#[cfg(target_os = "macos")]
 pub fn list_cached() -> Option<Vec<Favorite>> {
     let guard = match cache().try_lock() {
         Ok(guard) => guard,

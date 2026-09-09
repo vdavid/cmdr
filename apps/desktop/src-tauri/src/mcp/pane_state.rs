@@ -239,7 +239,10 @@ impl PaneStateStore {
     /// menu reads this from AppKit's `applicationDockMenu:`, which runs on the main
     /// thread while the Dock is blocked on the answer, so a `read()` queued behind a
     /// pane push would stall the Dock itself. A menu that lists no tabs once costs
-    /// nothing. Full contract: `dock/menu/DETAILS.md`.
+    /// nothing. Full contract: `dock/menu/DETAILS.md`. That menu is the only caller, and
+    /// only macOS has a Dock, so this is gated the same way `mod dock` is: without the
+    /// gate it's dead code on Linux and `-D unused` fails the build there.
+    #[cfg(target_os = "macos")]
     pub fn tabs_focused_first(&self) -> Option<Vec<TabInfo>> {
         let focused_is_right = *try_read(&self.focused_pane)? == "right";
         let (first, second) = if focused_is_right {
@@ -258,6 +261,9 @@ impl PaneStateStore {
 /// Poison is ignored rather than propagated, matching `read_ignore_poison` above: a
 /// `PaneState` is a plain mirror of what the frontend last pushed, so the value a
 /// panicking thread left behind is still the best answer available.
+///
+/// Gated with its only caller, [`PaneStateStore::tabs_focused_first`].
+#[cfg(target_os = "macos")]
 fn try_read<T>(lock: &RwLock<T>) -> Option<std::sync::RwLockReadGuard<'_, T>> {
     match lock.try_read() {
         Ok(guard) => Some(guard),
