@@ -563,11 +563,13 @@
         margin-top: var(--spacing-xxs);
     }
 
-    /* The field, its Save button, and the words around them share one baseline, so the row
-       reads as a sentence with a box in it rather than a control dropped into a paragraph. */
+    /* The field and its Save button read as ONE control in the middle of a sentence, so
+       `stretch` gives them a shared top and bottom edge (they're a pixel apart on their own
+       padding and leading). The sentence still aligns on the field's text: an inline-flex box
+       takes its baseline from its first item, which is the field. */
     .email-control {
         display: inline-flex;
-        align-items: baseline;
+        align-items: stretch;
         gap: var(--spacing-sm);
         /* A little air on each side, so the box never touches the words. */
         margin: 0 var(--spacing-xs);

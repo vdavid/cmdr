@@ -55,6 +55,14 @@
         /* It always follows something it belongs to, and a word space alone leaves it
            crowding the last letter. Small enough that a flex row's own gap stays in charge. */
         margin-left: var(--spacing-xs);
+        /* Drops the glyph onto the optical middle of the line it follows. ❌ Padding can't do
+           this: an `inline-flex` box takes its baseline from its first item, and an `<svg>`
+           has no text baseline, so the browser synthesizes one from the box's bottom edge —
+           padding then grows the box and the line box slides it right back up, for no visible
+           change at all. A length `vertical-align` moves the box itself, which is the only
+           thing that shifts the glyph. Inert wherever the tip is a flex item (settings rows),
+           where the container's own alignment is in charge. */
+        vertical-align: calc(-1 * var(--spacing-xxs));
         padding: 0;
         border: none;
         background: transparent;
