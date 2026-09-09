@@ -135,16 +135,16 @@ From the AI-copy sweep and the provider-setup pass (the app stopped calling its 
 - AI features → AI-functies · the catalog itself (`settings.ai.tooltipOff` "AI-functies staan uit",
   `settings.ai.provider.description` "Kies hoe AI-functies worden aangedreven.", `onboarding.stepAi.intro`) · high
 - the AI (as the acting subject, where the English deliberately doesn't say "Cmdr") → de AI · the catalog
-  (`settings.askCmdr.intro` "Chat met een AI …") · high. Boundary: `Cmdr` stays `Cmdr` and `Ask Cmdr` stays
-  `Ask Cmdr`; see the note below on which of the three names goes where
+  (`settings.askCmdr.intro` "Chat met een AI …") · high. Boundary: `Cmdr` stays `Cmdr` and `Ask Cmdr` stays `Ask Cmdr`;
+  see the note below on which of the three names goes where
 - AI provider → AI-aanbieder · the catalog throughout (`askCmdr.error.notConfigured`, `askCmdr.consent.intro`) · high
-- file operations → bestandsbewerkingen · the catalog (`commands.operationLogShow.description`,
-  `fileExplorer` "snelle bestandsbewerkingen", `settings` several) · high
+- file operations → bestandsbewerkingen · the catalog (`commands.operationLogShow.description`, `fileExplorer` "snelle
+  bestandsbewerkingen", `settings` several) · high
 - placeholder → tijdelijke aanduiding · Microsoft terminology (`DUTCH.tbx`, both senses, NLD + BEL) · high
-- deployment (an Azure deployment) → implementatie · Microsoft terminology (`DUTCH.tbx`; the third sense, `inzetten`,
-  is the verb) · high
-- resource (an Azure resource) → resource (kept English) · Microsoft terminology (`DUTCH.tbx` keeps `resource` in
-  three of four senses; only one reads `bron`) · high
+- deployment (an Azure deployment) → implementatie · Microsoft terminology (`DUTCH.tbx`; the third sense, `inzetten`, is
+  the verb) · high
+- resource (an Azure resource) → resource (kept English) · Microsoft terminology (`DUTCH.tbx` keeps `resource` in three
+  of four senses; only one reads `bron`) · high
 - endpoint → endpoint (kept English) · **tentative, and it conflicts with Tier 2**: Microsoft terminology renders it
   `eindpunt` in seven of eight senses (`DUTCH.tbx`). The catalog keeps the loanword because the visible field label
   right above the hint is `Endpoint-URL` (`onboarding.cloudSetup.step.endpoint`), and a caption reading "Dit eindpunt"
@@ -269,18 +269,18 @@ second half is now a normal plural with a real verb
   (`SettingsLib` `enable_adb`), and the English `@key.description` now asks for exactly that: the phrase the way the
   vendor's localized Android renders it. The `adb.*` pass reuses the same rendering. Confidence: high.
 - **Three names, three jobs: `Ask Cmdr`, `Cmdr`, `de AI`.** `Ask Cmdr` now names ONLY the chat panel itself (its title,
-  the View-menu item, the palette command, the Settings section, the on/off switch) and stays verbatim there. The
-  moment a sentence merely describes what the AI does, it says `Cmdr` (the product acting) or `de AI` (the outside
-  model, as in `suggestedOps.*`). Translate what the English says at that spot and don't re-add `Ask Cmdr` out of
-  habit: "Wat Cmdr verstuurt", not "Wat Ask Cmdr verstuurt". Compounds on the panel name take a hyphen before the
-  Dutch part: `het Ask Cmdr-gedeelte`, `de Ask Cmdr-instellingen`.
+  the View-menu item, the palette command, the Settings section, the on/off switch) and stays verbatim there. The moment
+  a sentence merely describes what the AI does, it says `Cmdr` (the product acting) or `de AI` (the outside model, as in
+  `suggestedOps.*`). Translate what the English says at that spot and don't re-add `Ask Cmdr` out of habit: "Wat Cmdr
+  verstuurt", not "Wat Ask Cmdr verstuurt". Compounds on the panel name take a hyphen before the Dutch part:
+  `het Ask Cmdr-gedeelte`, `de Ask Cmdr-instellingen`.
 - **Een knoplabel dat een handeling stopt, staat in de stam-imperatief, ook als het onzichtbaar is.**
-  `askCmdr.wake.stop` is de toegankelijke naam van een echte knop, dus `Stop waar Cmdr mee bezig is`, niet de
-  infinitief `Stoppen …`. De knopregel hierboven geldt net zo goed voor een label dat alleen een schermlezer uitspreekt.
-- **"Review" in een goedkeuringsscherm is `beoordelen`, niet `bekijken`.** `commands.suggestedOpsShow.description`
-  opent een per-rij goedkeur-of-weiger-dialoog, dus `Beoordeel de bestandsbewerkingen …`, in lijn met de al vastgelegde
-  keuze voor "Review file renames". De buurman `commands.operationLogShow.description` houdt `Bekijk`, want zijn Engels
-  is "Browse".
+  `askCmdr.wake.stop` is de toegankelijke naam van een echte knop, dus `Stop waar Cmdr mee bezig is`, niet de infinitief
+  `Stoppen …`. De knopregel hierboven geldt net zo goed voor een label dat alleen een schermlezer uitspreekt.
+- **"Review" in een goedkeuringsscherm is `beoordelen`, niet `bekijken`.** `commands.suggestedOpsShow.description` opent
+  een per-rij goedkeur-of-weiger-dialoog, dus `Beoordeel de bestandsbewerkingen …`, in lijn met de al vastgelegde keuze
+  voor "Review file renames". De buurman `commands.operationLogShow.description` houdt `Bekijk`, want zijn Engels is
+  "Browse".
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -364,15 +364,14 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
 - **`endpoint` vs Microsoft's `eindpunt`**: two keys carry the word, the field label
   `onboarding.cloudSetup.step.endpoint` ("Endpoint-URL") and the caption under it
   (`onboarding.cloudSetup.hint.azureEndpoint`). Microsoft terminology says `eindpunt`; both keys currently keep the
-  loanword so the caption matches the label the reader can see. Confirm, or approve a two-key sweep to
-  `Eindpunt-URL` / "Dit eindpunt".
+  loanword so the caption matches the label the reader can see. Confirm, or approve a two-key sweep to `Eindpunt-URL` /
+  "Dit eindpunt".
 - **"AI suggestions are waiting." → `Er staan AI-suggesties klaar.`** (`suggestedOps.indicatorTooltip`): nothing in the
   pile phrases waiting suggestions, so the `staan klaar` shape is a judgment call over the flatter "Er wachten
   AI-suggesties". Confirm which reads better in the status corner.
-- **"Click to set one up in settings." → `Klik om er een te kiezen in instellingen.`**
-  (`askCmdr.wake.needsApiKey`): the literal `in te stellen in instellingen` jangles, so the verb follows what the key's
-  description says actually happens (the settings screen is where the provider is picked). Confirm the swap from
-  "set up" to "kiezen".
+- **"Click to set one up in settings." → `Klik om er een te kiezen in instellingen.`** (`askCmdr.wake.needsApiKey`): the
+  literal `in te stellen in instellingen` jangles, so the verb follows what the key's description says actually happens
+  (the settings screen is where the provider is picked). Confirm the swap from "set up" to "kiezen".
 - **"camera details" → `cameragegevens`** (`askCmdr.consent.item.contents`, `contentsRule`, `whatsNew.body`): a coined
   compound for a photo's EXIF block, no source has a collective noun for it. Confirm it reads as "what the camera
   recorded", not "data about the camera". Evidence and the fallback: `glossary.md` § Ask Cmdr looks inside files.

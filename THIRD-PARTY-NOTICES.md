@@ -6,9 +6,9 @@ the app, with its license, and reproduces the license texts in full.
 Generated from `Cargo.lock` and `pnpm-lock.yaml` by `pnpm check third-party-notices`. Don't edit it
 by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices.go` instead.
 
-- Rust crates: 749
+- Rust crates: 721
 - npm packages: 125
-- Distinct license texts: 330
+- Distinct license texts: 313
 
 ## Rust crates
 
@@ -20,26 +20,19 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **aes-gcm** 0.11.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/AEADs>
 - **ahash** 0.8.12, MIT OR Apache-2.0, <https://github.com/tkaitchuck/ahash>
 - **aho-corasick** 1.1.4, Unlicense OR MIT, <https://github.com/BurntSushi/aho-corasick>
-- **aligned** 0.4.3, MIT OR Apache-2.0, <https://github.com/rust-embedded-community/aligned>
-- **aligned-vec** 0.6.4, MIT, <https://github.com/sarah-ek/aligned-vec/>
 - **alloc-no-stdlib** 2.0.4, BSD-3-Clause, <https://github.com/dropbox/rust-alloc-no-stdlib>
 - **alloc-stdlib** 0.2.4, BSD-3-Clause, <https://github.com/dropbox/rust-alloc-no-stdlib>
 - **allocator-api2** 0.2.21, MIT OR Apache-2.0, <https://github.com/zakarumych/allocator-api2>
 - **anyhow** 1.0.103, MIT OR Apache-2.0, <https://github.com/dtolnay/anyhow>
 - **arboard** 3.6.1, MIT OR Apache-2.0, <https://github.com/1Password/arboard>
 - **arc-swap** 1.9.2, MIT OR Apache-2.0, <https://github.com/vorner/arc-swap>
-- **arg_enum_proc_macro** 0.3.4, MIT, <https://github.com/lu-zero/arg_enum_proc_macro>
 - **argon2** 0.6.0-rc.8, MIT OR Apache-2.0, <https://github.com/RustCrypto/password-hashes>
 - **arrayref** 0.3.9, BSD-2-Clause, <https://github.com/droundy/arrayref>
 - **arrayvec** 0.7.8, MIT OR Apache-2.0, <https://github.com/bluss/arrayvec>
-- **as-slice** 0.2.1, MIT OR Apache-2.0, <https://github.com/japaric/as-slice>
 - **async-compression** 0.4.42, MIT OR Apache-2.0, <https://github.com/Nullus157/async-compression>
 - **async-trait** 0.1.89, MIT OR Apache-2.0, <https://github.com/dtolnay/async-trait>
 - **atomic-waker** 1.1.2, Apache-2.0 OR MIT, <https://github.com/smol-rs/atomic-waker>
 - **autocfg** 1.5.1, Apache-2.0 OR MIT, <https://github.com/cuviper/autocfg>
-- **av-scenechange** 0.14.1, MIT, <https://github.com/rust-av/av-scenechange>
-- **av1-grain** 0.2.5, BSD-2-Clause, <https://github.com/rust-av/av1-grain>
-- **avif-serialize** 0.8.9, BSD-3-Clause, <https://github.com/kornelski/avif-serialize>
 - **awaitable** 0.4.0, MIT, <https://github.com/NobodyXu/awaitable>
 - **awaitable-error** 0.1.0, MIT, <https://github.com/NobodyXu/awaitable>
 - **aws-lc-rs** 1.17.1, ISC AND (Apache-2.0 OR ISC), <https://github.com/aws/aws-lc-rs>
@@ -58,7 +51,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **bit_field** 0.10.3, Apache-2.0 OR MIT, <https://github.com/phil-opp/rust-bit-field>
 - **bitflags** 1.3.2, MIT OR Apache-2.0, <https://github.com/bitflags/bitflags>
 - **bitflags** 2.13.1, MIT OR Apache-2.0, <https://github.com/bitflags/bitflags>
-- **bitstream-io** 4.10.0, MIT OR Apache-2.0, <https://github.com/tuffy/bitstream-io>
 - **blake2** 0.11.0-rc.6, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
 - **blake3** 1.8.6, CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception, <https://github.com/BLAKE3-team/BLAKE3>
 - **block-buffer** 0.10.4, MIT OR Apache-2.0, <https://github.com/RustCrypto/utils>
@@ -71,7 +63,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **brotli** 8.0.4, BSD-3-Clause AND MIT, <https://github.com/dropbox/rust-brotli>
 - **brotli-decompressor** 5.0.3, BSD-3-Clause OR MIT, <https://github.com/dropbox/rust-brotli-decompressor>
 - **bstr** 1.12.3, MIT OR Apache-2.0, <https://github.com/BurntSushi/bstr>
-- **built** 0.8.1, MIT, <https://github.com/lukaslueg/built>
 - **bumpalo** 3.20.3, MIT OR Apache-2.0, <https://github.com/fitzgen/bumpalo>
 - **bytemuck** 1.25.0, Zlib OR Apache-2.0 OR MIT, <https://github.com/Lokathor/bytemuck>
 - **byteorder** 1.5.0, Unlicense OR MIT, <https://github.com/BurntSushi/byteorder>
@@ -180,8 +171,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **embed_plist** 1.2.2, MIT OR Apache-2.0, <https://github.com/nvzqz/embed-plist-rs>
 - **encoding_rs** 0.8.35, (Apache-2.0 OR MIT) AND BSD-3-Clause, <https://github.com/hsivonen/encoding_rs>
 - **enum_dispatch** 0.3.13, MIT OR Apache-2.0, <https://gitlab.com/antonok/enum_dispatch>
-- **equator** 0.4.2, MIT, <https://github.com/sarah-ek/equator/>
-- **equator-macro** 0.4.2, MIT, <https://github.com/sarah-ek/equator/>
 - **equivalent** 1.0.2, Apache-2.0 OR MIT, <https://github.com/indexmap-rs/equivalent>
 - **erased-serde** 0.4.10, MIT OR Apache-2.0, <https://github.com/dtolnay/erased-serde>
 - **errno** 0.3.14, MIT OR Apache-2.0, <https://github.com/lambda-fairy/rust-errno>
@@ -339,7 +328,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **if-addrs** 0.15.0, MIT OR BSD-3-Clause, <https://github.com/messense/if-addrs>
 - **image** 0.25.10, MIT OR Apache-2.0, <https://github.com/image-rs/image>
 - **image-webp** 0.2.4, MIT OR Apache-2.0, <https://github.com/image-rs/image-webp>
-- **imgref** 1.12.2, CC0-1.0 OR Apache-2.0, <https://github.com/kornelski/imgref>
 - **indexmap** 1.9.3, Apache-2.0 OR MIT, <https://github.com/bluss/indexmap>
 - **indexmap** 2.14.0, Apache-2.0 OR MIT, <https://github.com/indexmap-rs/indexmap>
 - **infer** 0.19.0, MIT, <https://github.com/bojand/infer>
@@ -351,7 +339,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **io-close** 0.3.7, MIT OR Apache-2.0, <https://gitlab.com/wufz/io-close>
 - **io-kit-sys** 0.5.0, MIT OR Apache-2.0, <https://github.com/jtakakura/io-kit-rs>
 - **ipnet** 2.12.0, MIT OR Apache-2.0, <https://github.com/krisprice/ipnet>
-- **itertools** 0.14.0, MIT OR Apache-2.0, <https://github.com/rust-itertools/itertools>
 - **itoa** 1.0.18, MIT OR Apache-2.0, <https://github.com/dtolnay/itoa>
 - **jiff** 0.2.31, Unlicense OR MIT, <https://github.com/BurntSushi/jiff>
 - **jobserver** 0.1.34, MIT OR Apache-2.0, <https://github.com/rust-lang/jobserver-rs>
@@ -370,7 +357,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **litemap** 0.8.2, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **lock_api** 0.4.14, MIT OR Apache-2.0, <https://github.com/Amanieu/parking_lot>
 - **log** 0.4.33, MIT OR Apache-2.0, <https://github.com/rust-lang/log>
-- **loop9** 0.1.5, MIT, <https://gitlab.com/kornelski/loop9.git>
 - **lopdf** 0.42.0, MIT, <https://github.com/J-F-Liu/lopdf.git>
 - **lz4_flex** 0.13.1, MIT, <https://github.com/pseitz/lz4_flex>
 - **lzma-rs** 0.3.0, MIT, <https://github.com/gendx/lzma-rs>
@@ -379,7 +365,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **mach2** 0.5.0, BSD-2-Clause OR MIT OR Apache-2.0, <https://github.com/JohnTitor/mach2>
 - **markup5ever** 0.38.0, MIT OR Apache-2.0, <https://github.com/servo/html5ever>
 - **matchit** 0.8.4, MIT AND BSD-3-Clause, <https://github.com/ibraheemdev/matchit>
-- **maybe-rayon** 0.1.1, MIT, <https://github.com/shssoichiro/maybe-rayon>
 - **md-5** 0.10.6, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
 - **md-5** 0.11.0, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
 - **md4** 0.11.0, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
@@ -402,11 +387,9 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **mutate_once** 0.1.2, BSD-2-Clause, <https://github.com/kamadak/mutate_once-rs>
 - **new_debug_unreachable** 1.0.6, MIT, <https://github.com/mbrubeck/rust-debug-unreachable>
 - **nix** 0.31.3, MIT, <https://github.com/nix-rust/nix>
-- **no_std_io2** 0.9.4, Apache-2.0 OR MIT, <https://github.com/wcampbell0x2a/no-std-io2>
 - **nom** 7.1.3, MIT, <https://github.com/Geal/nom>
 - **nom** 8.0.0, MIT, <https://github.com/rust-bakery/nom>
 - **nonempty** 0.12.0, MIT, <https://github.com/cloudhead/nonempty>
-- **noop_proc_macro** 0.3.0, MIT, <https://github.com/lu-zero/noop_proc_macro>
 - **notify** 8.2.0, CC0-1.0, <https://github.com/notify-rs/notify.git>
 - **notify-debouncer-full** 0.7.0, MIT OR Apache-2.0, <https://github.com/notify-rs/notify.git>
 - **notify-rust** 4.18.0, MIT OR Apache-2.0, <https://github.com/hoodie/notify-rust>
@@ -414,10 +397,8 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **nucleo-matcher** 0.3.1, MPL-2.0, <https://github.com/helix-editor/nucleo>
 - **num-bigint** 0.4.8, MIT OR Apache-2.0, <https://github.com/rust-num/num-bigint>
 - **num-conv** 0.2.2, MIT OR Apache-2.0, <https://github.com/jhpratt/num-conv>
-- **num-derive** 0.4.2, MIT OR Apache-2.0, <https://github.com/rust-num/num-derive>
 - **num-derive** 0.5.1, MIT OR Apache-2.0, <https://github.com/rust-num/num-derive>
 - **num-integer** 0.1.46, MIT OR Apache-2.0, <https://github.com/rust-num/num-integer>
-- **num-rational** 0.4.2, MIT OR Apache-2.0, <https://github.com/rust-num/num-rational>
 - **num-traits** 0.2.19, MIT OR Apache-2.0, <https://github.com/rust-num/num-traits>
 - **num_enum** 0.7.6, BSD-3-Clause OR MIT OR Apache-2.0, <https://github.com/illicitonion/num_enum>
 - **num_enum_derive** 0.7.6, BSD-3-Clause OR MIT OR Apache-2.0, <https://github.com/illicitonion/num_enum>
@@ -470,7 +451,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **parking_lot** 0.12.5, MIT OR Apache-2.0, <https://github.com/Amanieu/parking_lot>
 - **parking_lot_core** 0.9.12, MIT OR Apache-2.0, <https://github.com/Amanieu/parking_lot>
 - **paste** 1.0.15, MIT OR Apache-2.0, <https://github.com/dtolnay/paste>
-- **pastey** 0.1.1, MIT OR Apache-2.0, <https://github.com/as1100k/pastey>
 - **pbkdf2** 0.13.0, MIT OR Apache-2.0, <https://github.com/RustCrypto/password-hashes>
 - **pdf-extract** 0.12.0, MIT, <https://github.com/jrmuizel/pdf-extract>
 - **pem-rfc7468** 1.0.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/formats>
@@ -507,8 +487,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **proc-macro-crate** 3.5.0, MIT OR Apache-2.0, <https://github.com/bkchr/proc-macro-crate>
 - **proc-macro2** 1.0.106, MIT OR Apache-2.0, <https://github.com/dtolnay/proc-macro2>
 - **prodash** 31.0.0, MIT, <https://github.com/GitoxideLabs/prodash>
-- **profiling** 1.0.18, MIT OR Apache-2.0, <https://github.com/aclysma/profiling>
-- **profiling-procmacros** 1.0.18, MIT OR Apache-2.0, <https://github.com/aclysma/profiling>
 - **pxfm** 0.1.29, BSD-3-Clause OR Apache-2.0, <https://github.com/awxkee/pxfm>
 - **qoi** 0.4.1, MIT OR Apache-2.0, <https://github.com/aldanor/qoi-rust>
 - **quick-error** 2.0.1, MIT OR Apache-2.0, <http://github.com/tailhook/quick-error>
@@ -520,8 +498,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **rand_core** 0.10.1, MIT OR Apache-2.0, <https://github.com/rust-random/rand_core>
 - **rand_core** 0.9.5, MIT OR Apache-2.0, <https://github.com/rust-random/rand>
 - **rangemap** 1.8.0, MIT OR Apache-2.0, <https://github.com/jeffparsons/rangemap>
-- **rav1e** 0.8.1, BSD-2-Clause, <https://github.com/xiph/rav1e/>
-- **ravif** 0.13.0, BSD-3-Clause, <https://github.com/kornelski/cavif-rs>
 - **raw-window-handle** 0.6.2, MIT OR Apache-2.0 OR Zlib, <https://github.com/rust-windowing/raw-window-handle>
 - **rayon** 1.12.0, MIT OR Apache-2.0, <https://github.com/rayon-rs/rayon>
 - **rayon-core** 1.13.0, MIT OR Apache-2.0, <https://github.com/rayon-rs/rayon>
@@ -532,7 +508,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **reqwest** 0.13.4, MIT OR Apache-2.0, <https://github.com/seanmonstar/reqwest>
 - **rfc6979** 0.6.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/signatures>
 - **rfd** 0.16.0, MIT, <https://github.com/PolyMeilex/rfd>
-- **rgb** 0.8.53, MIT, <https://github.com/kornelski/rust-rgb>
 - **ring** 0.17.14, Apache-2.0 AND ISC, <https://github.com/briansmith/ring>
 - **rsa** 0.10.0-rc.18, MIT OR Apache-2.0, <https://github.com/RustCrypto/RSA>
 - **rusqlite** 0.40.1, MIT, <https://github.com/rusqlite/rusqlite>
@@ -590,7 +565,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **signal-hook-registry** 1.4.8, MIT OR Apache-2.0, <https://github.com/vorner/signal-hook>
 - **signature** 3.0.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/traits>
 - **simd-adler32** 0.3.9, MIT, <https://github.com/mcountryman/simd-adler32>
-- **simd_helpers** 0.1.0, MIT, <https://github.com/lu-zero/simd_helpers>
 - **siphasher** 1.0.3, MIT OR Apache-2.0, <https://github.com/jedisct1/rust-siphash>
 - **slab** 0.4.12, MIT, <https://github.com/tokio-rs/slab>
 - **smallvec** 1.15.2, MIT OR Apache-2.0, <https://github.com/servo/rust-smallvec>
@@ -722,7 +696,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **utf8_iter** 1.0.4, Apache-2.0 OR MIT, <https://github.com/hsivonen/utf8_iter>
 - **uuid** 1.24.0, Apache-2.0 OR MIT, <https://github.com/uuid-rs/uuid>
 - **uzers** 0.12.2, MIT, <https://github.com/rustadopt/uzers-rs>
-- **v_frame** 0.3.9, BSD-2-Clause, <https://github.com/rust-av/v_frame>
 - **value-ext** 0.1.5, MIT OR Apache-2.0, <https://github.com/jeremychone/rust-value-ext>
 - **vcpkg** 0.2.15, MIT OR Apache-2.0, <https://github.com/mcgoo/vcpkg-rs>
 - **vec-strings** 0.4.8, MIT, <https://github.com/NobodyXu/vec-strings>
@@ -740,7 +713,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **writeable** 0.6.4, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **wry** 0.55.1, Apache-2.0 OR MIT, <https://github.com/tauri-apps/wry>
 - **xattr** 1.6.1, MIT OR Apache-2.0, <https://github.com/Stebalien/xattr>
-- **y4m** 0.8.0, MIT, <https://github.com/image-rs/y4m.git>
 - **yoke** 0.8.3, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **yoke-derive** 0.8.2, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **zerocopy** 0.8.52, BSD-2-Clause OR Apache-2.0 OR MIT, <https://github.com/google/zerocopy>
@@ -1188,7 +1160,7 @@ Text from: `LICENSE`
 
 ### Apache-2.0
 
-Covers: codespan-reporting 0.13.1, imgref 1.12.2
+Covers: codespan-reporting 0.13.1
 
 Text from: `LICENSE`
 
@@ -2709,40 +2681,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ### BSD-2-Clause
 
-Covers: av1-grain 0.2.5
-
-Text from: `LICENSE`
-
-```text
-BSD 2-Clause License
-
-Copyright (c) 2022-2022, the rav1e contributors
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-- Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-- Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-### BSD-2-Clause
-
 Covers: kamadak-exif 0.6.1
 
 Text from: `LICENSE`
@@ -2805,74 +2743,6 @@ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
 ```
 
-### BSD-2-Clause
-
-Covers: rav1e 0.8.1
-
-Text from: `LICENSE`
-
-```text
-BSD 2-Clause License
-
-Copyright (c) 2017-2023, the rav1e contributors
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-### BSD-2-Clause
-
-Covers: v_frame 0.3.9
-
-Text from: `LICENSE`
-
-```text
-BSD 2-Clause License
-
-Copyright (c) 2017-2022, the rav1e contributors
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-- Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-- Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
 ### BSD-3-Clause
 
 Covers: alloc-no-stdlib 2.0.4, brotli 8.0.4
@@ -2910,44 +2780,6 @@ Redistribution and use in source and binary forms, with or without modification,
 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-### BSD-3-Clause
-
-Covers: avif-serialize 0.8.9
-
-Text from: `LICENSE`
-
-```text
-BSD 3-Clause License
-
-Copyright (c) 2020, Cloudflare, Inc.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
 ### BSD-3-Clause
@@ -3105,44 +2937,6 @@ Text from: `LICENSE.httprouter`
 BSD 3-Clause License
 
 Copyright (c) 2013, Julien Schmidt
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-### BSD-3-Clause
-
-Covers: ravif 0.13.0
-
-Text from: `LICENSE`
-
-```text
-BSD 3-Clause License
-
-Copyright (c) 2020, Kornel
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -3604,7 +3398,7 @@ Text from: `LICENSE.txt`
 
 ### MIT
 
-Covers: adler2 2.0.1, anyhow 1.0.103, async-trait 0.1.89, atomic-waker 1.1.2, camino 1.2.4, cargo-platform 0.1.9, cargo_metadata 0.19.2, curve25519-dalek-derive 0.1.1, cxx 1.0.198, cxx-build 1.0.198, cxxbridge-flags 1.0.198, cxxbridge-macro 1.0.198, displaydoc 0.2.6, dtoa 1.0.11, dyn-clone 1.0.20, erased-serde 0.4.10, fastrand 2.4.1, group 0.14.0, itoa 1.0.18, link-cplusplus 1.0.12, minimal-lexical 0.2.1, num_enum 0.7.6, num_enum_derive 0.7.6, nusb 0.2.7, once_cell 1.21.4, paste 1.0.15, pastey 0.1.1, pin-project 1.1.13, pin-project-internal 1.1.13, pin-project-lite 0.2.17, proc-macro-crate 3.5.0, proc-macro2 1.0.106, quote 1.0.46, rustix 1.1.4, rustversion 1.0.22, scratch 1.0.9, semver 1.0.28, serde 1.0.229, serde-untagged 0.1.9, serde_core 1.0.229, serde_derive 1.0.229, serde_derive_internals 0.29.1, serde_json 1.0.151, serde_path_to_error 0.1.20, serde_repr 0.1.20, servo_arc 0.4.3, syn 2.0.118, syn 3.0.3, thin-vec 0.2.19, thiserror 1.0.69, thiserror 2.0.18, thiserror-impl 1.0.69, thiserror-impl 2.0.18, typed-path 0.12.3, typeid 1.0.3, unicode-ident 1.0.24, utf-8 0.7.6, zmij 1.0.21
+Covers: adler2 2.0.1, anyhow 1.0.103, async-trait 0.1.89, atomic-waker 1.1.2, camino 1.2.4, cargo-platform 0.1.9, cargo_metadata 0.19.2, curve25519-dalek-derive 0.1.1, cxx 1.0.198, cxx-build 1.0.198, cxxbridge-flags 1.0.198, cxxbridge-macro 1.0.198, displaydoc 0.2.6, dtoa 1.0.11, dyn-clone 1.0.20, erased-serde 0.4.10, fastrand 2.4.1, group 0.14.0, itoa 1.0.18, link-cplusplus 1.0.12, minimal-lexical 0.2.1, num_enum 0.7.6, num_enum_derive 0.7.6, nusb 0.2.7, once_cell 1.21.4, paste 1.0.15, pin-project 1.1.13, pin-project-internal 1.1.13, pin-project-lite 0.2.17, proc-macro-crate 3.5.0, proc-macro2 1.0.106, quote 1.0.46, rustix 1.1.4, rustversion 1.0.22, scratch 1.0.9, semver 1.0.28, serde 1.0.229, serde-untagged 0.1.9, serde_core 1.0.229, serde_derive 1.0.229, serde_derive_internals 0.29.1, serde_json 1.0.151, serde_path_to_error 0.1.20, serde_repr 0.1.20, servo_arc 0.4.3, syn 2.0.118, syn 3.0.3, thin-vec 0.2.19, thiserror 1.0.69, thiserror 2.0.18, thiserror-impl 1.0.69, thiserror-impl 2.0.18, typed-path 0.12.3, typeid 1.0.3, unicode-ident 1.0.24, utf-8 0.7.6, zmij 1.0.21
 
 Text from: `LICENSE-MIT`
 
@@ -3636,7 +3430,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: adobe-cmap-parser 0.4.1, awaitable-error 0.1.0, block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, delegate 0.13.5, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, md5 0.8.1, minisign-verify 0.2.5, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, openssh-sftp-protocol-error 0.1.1, pdf-extract 0.12.0, postscript 0.14.1, profiling 1.0.18, profiling-procmacros 1.0.18, rc-zip 5.4.1, simd_helpers 0.1.0, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.2, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.4, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, type1-encoding-parser 0.1.1, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
+Covers: adobe-cmap-parser 0.4.1, awaitable-error 0.1.0, block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, delegate 0.13.5, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, md5 0.8.1, minisign-verify 0.2.5, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, openssh-sftp-protocol-error 0.1.1, pdf-extract 0.12.0, postscript 0.14.1, rc-zip 5.4.1, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.2, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.4, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, type1-encoding-parser 0.1.1, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
 
 ```text
 MIT License
@@ -3863,70 +3657,6 @@ THE SOFTWARE.
 
 ### MIT
 
-Covers: aligned 0.4.3, cty 0.2.2, heapless 0.8.0
-
-Text from: `LICENSE-MIT`
-
-```text
-Copyright (c) 2017 Jorge Aparicio
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### MIT
-
-Covers: aligned-vec 0.6.4
-
-Text from: `LICENSE`
-
-```text
-MIT License
-
-Copyright (c) 2022 sarah
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
 Covers: allocator-api2 0.2.21
 
 Text from: `LICENSE-MIT`
@@ -4023,36 +3753,6 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: arg_enum_proc_macro 0.3.4
-
-Text from: `LICENSE`
-
-```text
-MIT License
-
-Copyright (c) 2018 Luca Barbato
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
 Covers: argon2 0.6.0-rc.8
 
 Text from: `LICENSE-MIT`
@@ -4093,40 +3793,6 @@ Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) Ulrik Sverdrup "bluss" 2015-2023
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### MIT
-
-Covers: as-slice 0.2.1, hash32 0.3.1
-
-Text from: `LICENSE-MIT`
-
-```text
-Copyright (c) 2018 Jorge Aparicio
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated
@@ -4215,36 +3881,6 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
-```
-
-### MIT
-
-Covers: av-scenechange 0.14.1
-
-Text from: `LICENSE`
-
-```text
-MIT License
-
-Copyright (c) 2019 Multimedia and Rust
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### MIT
@@ -4639,46 +4275,12 @@ SOFTWARE.
 
 ### MIT
 
-Covers: bitflags 1.3.2, bitflags 2.13.1, glob 0.3.3, internal-russh-num-bigint 0.5.0, log 0.4.33, num-bigint 0.4.8, num-derive 0.4.2, num-derive 0.5.1, num-integer 0.1.46, num-rational 0.4.2, num-traits 0.2.19, regex 1.13.1, regex-automata 0.4.16, regex-syntax 0.8.11
+Covers: bitflags 1.3.2, bitflags 2.13.1, glob 0.3.3, internal-russh-num-bigint 0.5.0, log 0.4.33, num-bigint 0.4.8, num-derive 0.5.1, num-integer 0.1.46, num-traits 0.2.19, regex 1.13.1, regex-automata 0.4.16, regex-syntax 0.8.11
 
 Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2014 The Rust Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### MIT
-
-Covers: bitstream-io 4.10.0
-
-Text from: `LICENSE-MIT`
-
-```text
-Copyright (c) 2017 Brian Langenberger
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated
@@ -4899,36 +4501,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-```
-
-### MIT
-
-Covers: built 0.8.1
-
-Text from: `LICENSE`
-
-```text
-MIT License
-
-Copyright (c) 2017-2023 Lukas Lueg
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### MIT
@@ -5983,6 +5555,40 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
+Covers: cty 0.2.2, heapless 0.8.0
+
+Text from: `LICENSE-MIT`
+
+```text
+Copyright (c) 2017 Jorge Aparicio
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+```
+
+### MIT
+
 Covers: darling 0.21.3, darling 0.23.0, darling_core 0.21.3, darling_core 0.23.0, darling_macro 0.21.3, darling_macro 0.23.0
 
 Text from: `LICENSE`
@@ -6327,7 +5933,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: either 1.16.0, itertools 0.14.0, serde_with 3.21.0, serde_with_macros 3.21.0
+Covers: either 1.16.0, serde_with 3.21.0, serde_with_macros 3.21.0
 
 Text from: `LICENSE-MIT`
 
@@ -6463,36 +6069,6 @@ Text from: `LICENSE`
 MIT License
 
 Copyright (c) 2019 Anton Lazarev
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
-Covers: equator 0.4.2, equator-macro 0.4.2
-
-Text from: `LICENSE`
-
-```text
-MIT License
-
-Copyright (c) 2023 sarah
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -7425,6 +7001,40 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+### MIT
+
+Covers: hash32 0.3.1
+
+Text from: `LICENSE-MIT`
+
+```text
+Copyright (c) 2018 Jorge Aparicio
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
 ```
 
 ### MIT
@@ -8586,22 +8196,6 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: loop9 0.1.5
-
-Text from: `LICENSE`
-
-```text
-© Kornel Lesiński
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-### MIT
-
 Covers: lopdf 0.42.0, pom 1.1.0
 
 Text from: `LICENSE`
@@ -8733,36 +8327,6 @@ Text from: `LICENSE`
 MIT License
 
 Copyright (c) 2022 Ibraheem Ahmed
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
-Covers: maybe-rayon 0.1.1
-
-Text from: `LICENSE`
-
-```text
-MIT License
-
-Copyright (c) 2021 Joshua Holmer
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -9200,34 +8764,6 @@ THE SOFTWARE.
 
 ### MIT
 
-Covers: no_std_io2 0.9.4
-
-Text from: `LICENSE-MIT`
-
-```text
-Copyright (c) 2020-2021  Brendan Molloy <brendan@bbqsrc.net>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
 Covers: nom 7.1.3, nom 8.0.0
 
 Text from: `LICENSE`
@@ -9270,36 +8806,6 @@ the Software without restriction, including without limitation the rights to
 use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
 of the Software, and to permit persons to whom the Software is furnished to do
 so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
-Covers: noop_proc_macro 0.3.0
-
-Text from: `LICENSE`
-
-```text
-MIT License
-
-Copyright (c) 2019 Luca Barbato
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
@@ -10247,36 +9753,6 @@ Text from: `LICENSE`
 MIT License
 
 Copyright (c) 2022 Bartłomiej Maryńczak
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
-Covers: rgb 0.8.53
-
-Text from: `LICENSE`
-
-```text
-MIT License
-
-Copyright (c) 2019 Kornel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -12355,37 +11831,6 @@ Text from: `LICENSE-MIT`
 MIT License
 
 Copyright (c) 2020-2023 Ngo Iok Ui & Tauri Programme within The Commons Conservancy
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
-Covers: y4m 0.8.0
-
-Text from: `LICENSE`
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2015-2019 PistonDevelopers
-Copyright (c) 2019 image-rs contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

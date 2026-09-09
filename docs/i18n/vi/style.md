@@ -143,13 +143,13 @@ Settled terms (sources agree):
 
 - **AI provider: `nhà cung cấp AI`; provider on its own: `nhà cung cấp`** · Microsoft terminology ("A company that
   provides services or content for its customers" → `nhà cung cấp`), and the catalog already ships it. `high`.
-- **AI features: `các tính năng AI`** · the catalog's own
-  `settings.askCmdr.interactiveModel.description` (`các tính năng AI khác của Cmdr`). `high`.
+- **AI features: `các tính năng AI`** · the catalog's own `settings.askCmdr.interactiveModel.description`
+  (`các tính năng AI khác của Cmdr`). `high`.
 - **model (an LLM): `mô hình`** · Microsoft terminology, machine-learning sense ("An artifact resulting from running a
   machine learning algorithm…" → `mô hình`). `high`.
 - **endpoint (an API URL): `điểm cuối`** · Microsoft terminology, three separate senses all render `điểm cuối`. `high`.
-- **deployment (Azure OpenAI's named model instance): `bản triển khai`** · Microsoft terminology
-  (`deployment` / `deploy` → `triển khai`). Azure is Microsoft's own product, so Microsoft outranks macOS here. `high`.
+- **deployment (Azure OpenAI's named model instance): `bản triển khai`** · Microsoft terminology (`deployment` /
+  `deploy` → `triển khai`). Azure is Microsoft's own product, so Microsoft outranks macOS here. `high`.
 - **resource (an Azure resource): `tài nguyên`** · Microsoft terminology (three senses agree). `high`.
 - **library (a catalog of things to pick from, like Ollama's model list): `thư viện`** · Microsoft terminology and macOS
   vi (`thư viện` in several senses). `high`. Qualify it when the surrounding screen has no other library:
@@ -334,9 +334,9 @@ Vietnamese has no grammatical number, so one form covers all counts.
   `AI đã đề xuất những thao tác này`) deliberately names the model, because its neighbour `suggestedOps.cmdrFacts`
   (`Những gì Cmdr biết`) claims the opposite thing (what the app VERIFIED). Collapsing the two subjects destroys the
   whole point of the pair.
-- **`tải về` caught a real regression, so re-check it on every new download string.** `onboarding.cloudSetup.step.install`
-  shipped as `Tải xuống và cài đặt` against the documented rule above (macOS vi: 35 `tải về`, zero `tải xuống`); it now
-  reads `Tải về và cài đặt`. The separable form is normal: `tải một mô hình về`.
+- **`tải về` caught a real regression, so re-check it on every new download string.**
+  `onboarding.cloudSetup.step.install` shipped as `Tải xuống và cài đặt` against the documented rule above (macOS vi: 35
+  `tải về`, zero `tải xuống`); it now reads `Tải về và cài đặt`. The separable form is normal: `tải một mô hình về`.
 - **"one" standing in for a just-named countable thing is `một cái`.** English leans on it twice in the AI copy ("Turn
   one on in settings", "Click to set one up in settings"); repeating `một nhà cung cấp` in the second sentence is heavy
   in Vietnamese, so `Hãy bật một cái trong cài đặt` / `Nhấp để thiết lập một cái trong cài đặt`. Both keys use the same

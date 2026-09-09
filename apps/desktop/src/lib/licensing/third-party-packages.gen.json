@@ -50,18 +50,6 @@
       "url": "https://github.com/BurntSushi/aho-corasick"
     },
     {
-      "name": "aligned",
-      "version": "0.4.3",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/rust-embedded-community/aligned"
-    },
-    {
-      "name": "aligned-vec",
-      "version": "0.6.4",
-      "license": "MIT",
-      "url": "https://github.com/sarah-ek/aligned-vec/"
-    },
-    {
       "name": "alloc-no-stdlib",
       "version": "2.0.4",
       "license": "BSD-3-Clause",
@@ -98,12 +86,6 @@
       "url": "https://github.com/vorner/arc-swap"
     },
     {
-      "name": "arg_enum_proc_macro",
-      "version": "0.3.4",
-      "license": "MIT",
-      "url": "https://github.com/lu-zero/arg_enum_proc_macro"
-    },
-    {
       "name": "argon2",
       "version": "0.6.0-rc.8",
       "license": "MIT OR Apache-2.0",
@@ -120,12 +102,6 @@
       "version": "0.7.8",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/bluss/arrayvec"
-    },
-    {
-      "name": "as-slice",
-      "version": "0.2.1",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/japaric/as-slice"
     },
     {
       "name": "async-compression",
@@ -150,24 +126,6 @@
       "version": "1.5.1",
       "license": "Apache-2.0 OR MIT",
       "url": "https://github.com/cuviper/autocfg"
-    },
-    {
-      "name": "av-scenechange",
-      "version": "0.14.1",
-      "license": "MIT",
-      "url": "https://github.com/rust-av/av-scenechange"
-    },
-    {
-      "name": "av1-grain",
-      "version": "0.2.5",
-      "license": "BSD-2-Clause",
-      "url": "https://github.com/rust-av/av1-grain"
-    },
-    {
-      "name": "avif-serialize",
-      "version": "0.8.9",
-      "license": "BSD-3-Clause",
-      "url": "https://github.com/kornelski/avif-serialize"
     },
     {
       "name": "awaitable",
@@ -278,12 +236,6 @@
       "url": "https://github.com/bitflags/bitflags"
     },
     {
-      "name": "bitstream-io",
-      "version": "4.10.0",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/tuffy/bitstream-io"
-    },
-    {
       "name": "blake2",
       "version": "0.11.0-rc.6",
       "license": "MIT OR Apache-2.0",
@@ -354,12 +306,6 @@
       "version": "1.12.3",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/BurntSushi/bstr"
-    },
-    {
-      "name": "built",
-      "version": "0.8.1",
-      "license": "MIT",
-      "url": "https://github.com/lukaslueg/built"
     },
     {
       "name": "bumpalo",
@@ -1008,18 +954,6 @@
       "version": "0.3.13",
       "license": "MIT OR Apache-2.0",
       "url": "https://gitlab.com/antonok/enum_dispatch"
-    },
-    {
-      "name": "equator",
-      "version": "0.4.2",
-      "license": "MIT",
-      "url": "https://github.com/sarah-ek/equator/"
-    },
-    {
-      "name": "equator-macro",
-      "version": "0.4.2",
-      "license": "MIT",
-      "url": "https://github.com/sarah-ek/equator/"
     },
     {
       "name": "equivalent",
@@ -1964,12 +1898,6 @@
       "url": "https://github.com/image-rs/image-webp"
     },
     {
-      "name": "imgref",
-      "version": "1.12.2",
-      "license": "CC0-1.0 OR Apache-2.0",
-      "url": "https://github.com/kornelski/imgref"
-    },
-    {
       "name": "indexmap",
       "version": "1.9.3",
       "license": "Apache-2.0 OR MIT",
@@ -2034,12 +1962,6 @@
       "version": "2.12.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/krisprice/ipnet"
-    },
-    {
-      "name": "itertools",
-      "version": "0.14.0",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/rust-itertools/itertools"
     },
     {
       "name": "itoa",
@@ -2150,12 +2072,6 @@
       "url": "https://github.com/rust-lang/log"
     },
     {
-      "name": "loop9",
-      "version": "0.1.5",
-      "license": "MIT",
-      "url": "https://gitlab.com/kornelski/loop9.git"
-    },
-    {
       "name": "lopdf",
       "version": "0.42.0",
       "license": "MIT",
@@ -2202,12 +2118,6 @@
       "version": "0.8.4",
       "license": "MIT AND BSD-3-Clause",
       "url": "https://github.com/ibraheemdev/matchit"
-    },
-    {
-      "name": "maybe-rayon",
-      "version": "0.1.1",
-      "license": "MIT",
-      "url": "https://github.com/shssoichiro/maybe-rayon"
     },
     {
       "name": "md-5",
@@ -2342,12 +2252,6 @@
       "url": "https://github.com/nix-rust/nix"
     },
     {
-      "name": "no_std_io2",
-      "version": "0.9.4",
-      "license": "Apache-2.0 OR MIT",
-      "url": "https://github.com/wcampbell0x2a/no-std-io2"
-    },
-    {
       "name": "nom",
       "version": "7.1.3",
       "license": "MIT",
@@ -2364,12 +2268,6 @@
       "version": "0.12.0",
       "license": "MIT",
       "url": "https://github.com/cloudhead/nonempty"
-    },
-    {
-      "name": "noop_proc_macro",
-      "version": "0.3.0",
-      "license": "MIT",
-      "url": "https://github.com/lu-zero/noop_proc_macro"
     },
     {
       "name": "notify",
@@ -2415,12 +2313,6 @@
     },
     {
       "name": "num-derive",
-      "version": "0.4.2",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/rust-num/num-derive"
-    },
-    {
-      "name": "num-derive",
       "version": "0.5.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/rust-num/num-derive"
@@ -2430,12 +2322,6 @@
       "version": "0.1.46",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/rust-num/num-integer"
-    },
-    {
-      "name": "num-rational",
-      "version": "0.4.2",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/rust-num/num-rational"
     },
     {
       "name": "num-traits",
@@ -2750,12 +2636,6 @@
       "url": "https://github.com/dtolnay/paste"
     },
     {
-      "name": "pastey",
-      "version": "0.1.1",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/as1100k/pastey"
-    },
-    {
       "name": "pbkdf2",
       "version": "0.13.0",
       "license": "MIT OR Apache-2.0",
@@ -2972,18 +2852,6 @@
       "url": "https://github.com/GitoxideLabs/prodash"
     },
     {
-      "name": "profiling",
-      "version": "1.0.18",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/aclysma/profiling"
-    },
-    {
-      "name": "profiling-procmacros",
-      "version": "1.0.18",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/aclysma/profiling"
-    },
-    {
       "name": "pxfm",
       "version": "0.1.29",
       "license": "BSD-3-Clause OR Apache-2.0",
@@ -3050,18 +2918,6 @@
       "url": "https://github.com/jeffparsons/rangemap"
     },
     {
-      "name": "rav1e",
-      "version": "0.8.1",
-      "license": "BSD-2-Clause",
-      "url": "https://github.com/xiph/rav1e/"
-    },
-    {
-      "name": "ravif",
-      "version": "0.13.0",
-      "license": "BSD-3-Clause",
-      "url": "https://github.com/kornelski/cavif-rs"
-    },
-    {
       "name": "raw-window-handle",
       "version": "0.6.2",
       "license": "MIT OR Apache-2.0 OR Zlib",
@@ -3120,12 +2976,6 @@
       "version": "0.16.0",
       "license": "MIT",
       "url": "https://github.com/PolyMeilex/rfd"
-    },
-    {
-      "name": "rgb",
-      "version": "0.8.53",
-      "license": "MIT",
-      "url": "https://github.com/kornelski/rust-rgb"
     },
     {
       "name": "ring",
@@ -3468,12 +3318,6 @@
       "version": "0.3.9",
       "license": "MIT",
       "url": "https://github.com/mcountryman/simd-adler32"
-    },
-    {
-      "name": "simd_helpers",
-      "version": "0.1.0",
-      "license": "MIT",
-      "url": "https://github.com/lu-zero/simd_helpers"
     },
     {
       "name": "siphasher",
@@ -4262,12 +4106,6 @@
       "url": "https://github.com/rustadopt/uzers-rs"
     },
     {
-      "name": "v_frame",
-      "version": "0.3.9",
-      "license": "BSD-2-Clause",
-      "url": "https://github.com/rust-av/v_frame"
-    },
-    {
       "name": "value-ext",
       "version": "0.1.5",
       "license": "MIT OR Apache-2.0",
@@ -4368,12 +4206,6 @@
       "version": "1.6.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/Stebalien/xattr"
-    },
-    {
-      "name": "y4m",
-      "version": "0.8.0",
-      "license": "MIT",
-      "url": "https://github.com/image-rs/y4m.git"
     },
     {
       "name": "yoke",

@@ -159,8 +159,8 @@ Straightforward (sources agree, `high`):
   `ADB` uppercase (the protocol/feature name, as in the section title) · high
 - chat (une conversation avec l'assistant, et le panneau qui les héberge) → conversation · le catalogue lui-même
   (`askCmdr.newChat` « Nouvelle conversation », `askCmdr.sessions.back` « Retour à la conversation »,
-  `askCmdr.consent.local` « Vos conversations restent sur votre Mac ») · high. Un seul mot rend `chat` ET
-  `conversation` : le français ne distingue pas les deux, et l'anglais les emploie indifféremment d'une clé à l'autre
+  `askCmdr.consent.local` « Vos conversations restent sur votre Mac ») · high. Un seul mot rend `chat` ET `conversation`
+  : le français ne distingue pas les deux, et l'anglais les emploie indifféremment d'une clé à l'autre
   (`proactive.description` « starts a chat » face à `consent.proactive` « starts a conversation »). Voir la note «
   discussion » plus bas.
 - AI / the AI → IA / l'IA · le catalogue (`ai.translateError.timeout.title` « L'IA a mis trop de temps »,

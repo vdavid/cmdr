@@ -150,12 +150,12 @@ GNOME/Xfce (Tier 3). Confidence: `confirmed` (human signed off), `high` (authori
   for a settings row · tentative
 - the usual way (where a program is normally found) → en los sitios habituales · "habitual" is the catalog's adjective
   for the default/expected case (`search.systemDirExclude.default` "las carpetas habituales del sistema") · high
-- chat (una conversación con el asistente, y el panel que las guarda) → chat · the catalog itself (`askCmdr.threads.open`
-  "Chats", `askCmdr.sessions.back` "Volver al chat", `askCmdr.consent.local` "Tus chats se quedan en tu Mac") · high.
-  `conversación` stays available for the times English itself says "conversation" (`askCmdr.consent.proactive` "abre una
-  conversación"); both are shipped and neither is wrong, the English picks which.
-- AI / the AI → IA / la IA · the catalog (`ai.translateError.timeout.title` "La IA tardó demasiado",
-  `parseError.title` "No se pudo leer la respuesta de la IA") · high
+- chat (una conversación con el asistente, y el panel que las guarda) → chat · the catalog itself
+  (`askCmdr.threads.open` "Chats", `askCmdr.sessions.back` "Volver al chat", `askCmdr.consent.local` "Tus chats se
+  quedan en tu Mac") · high. `conversación` stays available for the times English itself says "conversation"
+  (`askCmdr.consent.proactive` "abre una conversación"); both are shipped and neither is wrong, the English picks which.
+- AI / the AI → IA / la IA · the catalog (`ai.translateError.timeout.title` "La IA tardó demasiado", `parseError.title`
+  "No se pudo leer la respuesta de la IA") · high
 - AI features → funciones de IA · the catalog (`settings.ai.tooltipOff` "Las funciones de IA están desactivadas",
   `settings.ai.provider.description`, `onboarding.stepAi.intro`) · high
 - (AI) provider → proveedor (de IA) · the catalog (`ai.translateError.unavailable.title` "No se puede acceder a tu

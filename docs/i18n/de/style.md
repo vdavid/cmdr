@@ -167,12 +167,12 @@ From the AI-copy sweep and the provider-setup pass (the app stopped calling its 
   (`settings.askCmdr.intro` „Chatte mit einer KI …“) · high. Abgrenzung: `Cmdr` bleibt `Cmdr`, und `Ask Cmdr` bleibt
   `Ask Cmdr`; siehe die Notiz unten dazu, welcher der drei Namen wann steht
 - AI provider → KI-Anbieter · der Katalog durchgehend (`askCmdr.error.notConfigured`, `askCmdr.consent.intro`) · high
-- file operations → Dateivorgänge · der Katalog (`commands.operationLogShow.description` „Verlauf deiner
-  Dateivorgänge“, `fileExplorer` „schnelle Dateivorgänge“, `settings` mehrfach) · high. Die Settings-Karte heißt
-  dagegen `Dateioperationen`, weil sie eine Rubrik benennt, keine laufenden Vorgänge
+- file operations → Dateivorgänge · der Katalog (`commands.operationLogShow.description` „Verlauf deiner Dateivorgänge“,
+  `fileExplorer` „schnelle Dateivorgänge“, `settings` mehrfach) · high. Die Settings-Karte heißt dagegen
+  `Dateioperationen`, weil sie eine Rubrik benennt, keine laufenden Vorgänge
 - placeholder → Platzhalter · Microsoft terminology (`GERMAN.tbx`, beide Sinne) · high
-- endpoint → Endpunkt · Microsoft terminology (`GERMAN.tbx`, 4 von 6 Sinnen; `Teilnehmer`/`Endgerät` sind die
-  Telefonie- und Geräte-Sinne) · high
+- endpoint → Endpunkt · Microsoft terminology (`GERMAN.tbx`, 4 von 6 Sinnen; `Teilnehmer`/`Endgerät` sind die Telefonie-
+  und Geräte-Sinne) · high
 - deployment (eine Azure-Bereitstellung) → Bereitstellung · Microsoft terminology (`GERMAN.tbx`, 5 Sinne) · high
 - resource (eine Azure-Ressource) → Ressource · Microsoft terminology (`GERMAN.tbx`, 4 Sinne) · high
 
@@ -356,9 +356,9 @@ The formality and move calls are now settled from the sources (see above); the o
 - **„AI suggestions are waiting.“ → „KI-Vorschläge warten auf dich.“** (`suggestedOps.indicatorTooltip`, tentative):
   nichts im Referenz-Stapel formuliert wartende Vorschläge, also ist die Wendung gemünzt. Die Alternative „Es liegen
   KI-Vorschläge bereit.“ klingt sachlicher und weniger nach Anstupsen; bestätige, welche im Statuseck besser wirkt.
-- **`Klicken, um in den Einstellungen einen einzurichten.`** (`askCmdr.wake.needsApiKey`, tentative): das englische
-  „set one up“ verweist mit `one` auf den Anbieter aus dem ersten Satz, und das Deutsche gibt das mit dem bloßen
-  Pronomen `einen` wieder. Grammatisch einwandfrei, aber am Satzende etwas kahl; die Alternative wiederholt schlicht
+- **`Klicken, um in den Einstellungen einen einzurichten.`** (`askCmdr.wake.needsApiKey`, tentative): das englische „set
+  one up“ verweist mit `one` auf den Anbieter aus dem ersten Satz, und das Deutsche gibt das mit dem bloßen Pronomen
+  `einen` wieder. Grammatisch einwandfrei, aber am Satzende etwas kahl; die Alternative wiederholt schlicht
   `einen Anbieter`. Bestätige, welche in einem Tooltip besser liest.
 - **`Systemintegritätsschutz` vs Apple's on-screen `System-Integrationsschutz`** (product-voice call, currently shipping
   the first). `errors.mutation.sipProtected` uses Apple's German DOCUMENTATION name for System Integrity Protection.
