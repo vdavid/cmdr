@@ -251,14 +251,14 @@ Two mechanics that bite in Portuguese specifically:
   `O Cmdr` ou `a IA`, conforme a chave em inglês; `AI features` é `os recursos de IA`. Nunca traduza pela memória de
   como a chave era antes: leia o inglês atual. Termos, fontes e as três palavras que não se confundem (`chat`,
   `conversar`, `conversa`): `glossary.md` § A IA deixou de se chamar Ask Cmdr fora do painel de chat.
-- **Uma legenda de configuração não troca a palavra do rótulo que está logo acima dela.** É por isso que `endpoint` fica
-  em inglês nas dicas do Azure, contra a Microsoft: o campo já se chama `URL do endpoint` na mesma tela. Evidência e a
-  confiança (`tentative`): `glossary.md` § Os passos de configuração de provedor de IA.
+- **Uma legenda de configuração não troca a palavra do rótulo que está logo acima dela: mova as duas juntas.** Quando o
+  rótulo e a legenda dividem um termo, trocar só uma delas faz o leitor achar que são dois campos diferentes, e é por
+  isso que o termo pareceu intocável por um tempo. O rótulo também é uma string traduzível: `endpoint` virou
+  `ponto de extremidade` no rótulo E na legenda de uma vez só. Evidência e a confiança (`high`): `glossary.md` § Os
+  passos de configuração de provedor de IA.
 
 ## Decisions to confirm with David
 
-- **`endpoint` ou `ponto de extremidade`?** A Microsoft pt-BR diz `ponto de extremidade`; o catálogo diz `endpoint` no
-  rótulo e agora também na legenda. Trocar os dois de uma vez é uma decisão de produto, não uma correção de tradução.
 - **`uma chave` sem `SSH`** em `servers.paneState.signedOutNothingToAsk`: no mesmo painel, `chave` já é a chave DO HOST
   (`paneState.hostKeyChangedHint`), e nesta linha é a do cliente. O inglês tem a mesma ambiguidade e os dois estados
   nunca aparecem juntos, então a tradução ficou literal. Confirmar, ou trocar por `uma chave SSH`.

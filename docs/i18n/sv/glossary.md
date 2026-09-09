@@ -81,7 +81,10 @@ server, bokmärke, etc.) live in `style.md` § Terminology; this list is the set
   the OS), so a paraphrase elsewhere left the app calling one setting two names. Capitalized in English ("Requires Full
   Disk Access") = the setting name, so `Full skivtillgång`; lowercase in running prose keeps the same words
   uncapitalized (`full skivtillgång`), which is what makes the setting findable. Agreement note: `tillgång` is an
-  en-word, so `Full skivtillgång är ganska kraftfull`, never `kraftfullt`.
+  en-word, so `Full skivtillgång är ganska kraftfull`, never `kraftfullt`. The last holdout was
+  `settings.onboarding.fullDiskAccessChoice.label`, a settings-search-only string that read `Fullständig diskåtkomst`
+  while all 19 of its siblings said `skivtillgång`; a key nobody sees in the UI is exactly where a stray form survives a
+  sweep, so grep the whole locale for the rejected forms, not just the visible screens.
 - **Local Network (macOS permission): `Lokalt nätverk`** · live macOS `SecurityPrivacyExtension.appex` (2026-08-30).
   `high`.
 - **Privacy & Security (macOS pane): `Integritet och säkerhet`; Quick Look: `Överblick`** · both re-verified live on
@@ -139,8 +142,10 @@ favorites). Reuses the terms above; new ones:
 
 From the `onboarding.json` + `fileOperations.json` pass (2026-06-21). Reuses all terms above; new ones:
 
-- **full disk access (macOS permission): `fullständig åtkomst till skivan`** · lowercase in running copy; matches the
-  `Fullständig åtkomst till skivan` SystemSettings pane name (style.md glossary). `high`.
+- **full disk access (macOS permission): `full skivtillgång`** · lowercase in running copy, capitalized as
+  `Full skivtillgång` where English capitalizes the setting name. See the `Full Disk Access` entry above for the live
+  macOS evidence. `high`. ❌ Not `fullständig åtkomst till skivan`, and not `Fullständig diskåtkomst`: neither names a
+  pane Apple ships, so both send the user hunting in System Settings for something that isn't there.
 - **grant (a permission): `ge` / `bevilja`** · "ge fullständig åtkomst" for the user action, "beviljad" as a status
   label ("Fullständig åtkomst till skivan beviljad"). macOS uses "bevilja"; "ge" reads warmer in body copy. `high`.
 - **revoke (a permission): `återkalla`** · MS terminology ("återkalla"); natural Swedish for turning a granted

@@ -682,10 +682,17 @@ every apostrophe is doubled in the catalog:
 - chat (verb, casually "to chat with the AI") → `discuter` · distinct from the noun above; matches the EN source's own
   verb choice ("Ask Cmdr **chats** with", "start **chatting**") and macOS/MS''s general "discuter"/"conversation"
   family; keeps `conversation` free for the noun sense (a saved thread) so the two senses don''t collide · high.
-- token (AI usage-cost unit) → `jeton` · MS terminology FRA (plain `token` → "jeton", masc.; distinct from "jeton de
-  sécurité"/"jeton d''authentification" which are the auth-token senses, wrong here) · high. FR CLDR
-  `one`/`many`/`other` written for `askCmdr.cost.tokens` (`many` identical to `other`, matching the catalog-wide
-  plain-integer convention).
+- token (the LLM unit: usage cost, context size, token budgets) → `jeton` · MS terminology FRA (plain `token` → "jeton",
+  masc.; distinct from "jeton de sécurité"/"jeton d''authentification", the auth-token senses, wrong here) · high.
+  Applies to the AI sense across the board: `FRENCH.tbx` has no entry reserving the English for it, and its closest
+  sense — "A nonreducible textual element in data that is being parsed" — is `jeton` too; the `fr` macOS corpus
+  publishes neither word, so Tier 2 decides alone. All six keys carrying it now say `jeton` (`askCmdr.cost.tokens`,
+  `askCmdr.context.tooltip`, `askCmdr.error.localWindowTooSmall`, `settings.askCmdr.spend.empty`, plus
+  `settings.ai.localContextSize.description` and `askCmdr.event.chatMemoryChanged`, which held out on the loanword). The
+  last two mattered most: the error already told the reader to pick "32 768 jetons" in the very setting whose
+  description said "tokens". FR CLDR `one`/`many`/`other` written for `askCmdr.cost.tokens` (`many` identical to
+  `other`, matching the catalog-wide plain-integer convention); `chatMemoryChanged` needs no plural, its count is always
+  in the thousands.
 - archive (verb, put a chat away without deleting it) → `archiver`; unarchive → `désarchiver` · MS terminology FRA
   (`archive` verb → "archiver", high); no pile hit for the un- form, but `désarchiver` is the standard, unambiguous FR
   antonym (same des- + verb pattern as `désélectionner`/`désactiver` already in this catalog) · high for archiver,

@@ -471,7 +471,7 @@
     "sourceHash": "447957a"
   },
 
-  "onboarding.cloudSetup.hint.azureEndpoint": "Substitua o espaço reservado no endereço pelo nome do seu recurso do Azure OpenAI. Este endpoint não precisa do parâmetro api-version.",
+  "onboarding.cloudSetup.hint.azureEndpoint": "Substitua o espaço reservado no endereço pelo nome do seu recurso do Azure OpenAI. Este ponto de extremidade não precisa do parâmetro api-version.",
   "@onboarding.cloudSetup.hint.azureEndpoint": {
     "sourceHash": "b1d408e"
   },
@@ -480,7 +480,7 @@
   "@onboarding.cloudSetup.hint.azureModel": {
     "sourceHash": "e856224"
   },
-  "onboarding.cloudSetup.step.endpoint": "URL do endpoint",
+  "onboarding.cloudSetup.step.endpoint": "URL do ponto de extremidade",
   "@onboarding.cloudSetup.step.endpoint": {
     "sourceHash": "2578179"
   },

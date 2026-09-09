@@ -362,12 +362,14 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   `settings.askCmdr.proactive.description`, `askCmdr.forget.message`) disaient « discussion » là où tout le reste du
   catalogue dit « conversation » ; elles ont été alignées. Un seul mot pour la chose que l'utilisateur voit dans la
   liste des conversations, sinon deux surfaces voisines se contredisent.
-- **⚠️ `token` est encore partagé entre « jeton » et « token » dans le catalogue `fr`.** « jeton » dans
-  `askCmdr.cost.tokens`, `askCmdr.context.tooltip`, `settings.askCmdr.spend.empty` et
-  `askCmdr.error.localWindowTooSmall` ; « token » dans `askCmdr.event.chatMemoryChanged` et
-  `settings.ai.localContextSize.description`. Rien ne tranche encore ; « jeton » est majoritaire et c'est la forme
-  gardée pour les clés retouchées. À unifier lors d'une passe d'audit de dérive terminologique (guide § Auditing a
-  finished locale for term drift), pas clé par clé.
+- **`token` (au sens IA) s'écrit « jeton » partout, sur les six clés.** La Microsoft française rend `token` par « jeton
+  » dans tous les sens techniques du `FRENCH.tbx`, y compris le plus proche du nôtre (« A nonreducible textual element
+  in data that is being parsed ») ; aucune entrée ne réserve l'anglais au sens IA, et le macOS français ne publie ni «
+  jeton » ni « token ». Le catalogue se contredisait sur deux écrans voisins : `askCmdr.error.localWindowTooSmall`
+  envoyait l'utilisateur « choisir 32 768 jetons » dans un réglage dont la description parlait de « tokens ».
+  `settings.ai.localContextSize.description` et `askCmdr.event.chatMemoryChanged` sont donc passés à « jetons »,
+  rejoignant `askCmdr.cost.tokens`, `askCmdr.context.tooltip`, `settings.askCmdr.spend.empty` et
+  `askCmdr.error.localWindowTooSmall`. `high`.
 - **Un renvoi à un réglage macOS réutilise le libellé du bouton qui l'ouvre, mot pour mot.** « Click to set up full disk
   access. » se termine par « Cliquez pour configurer l'accès complet au disque. », où « configurer l'accès complet au
   disque » est exactement `search.coverage.setUpFullDiskAccess` : les deux surfaces mènent au même panneau des Réglages

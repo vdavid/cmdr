@@ -132,7 +132,8 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
   "Abrir página de upgrade" · high
 - server · **Servidor** · macOS Finder ("Conectar ao Servidor") · confirmed
 - provider (AI / cloud) · **provedor** · standard pt-BR · high
-- endpoint · **Endpoint** (kept verbatim) · matches Apple pt-BR usage; `ai.cloud.endpointLabel` · high
+- endpoint · **ponto de extremidade** · Microsoft pt-BR terminology; a Apple não publica a palavra em pt-BR · high ·
+  detalhes e as chaves afetadas: § Os passos de configuração de provedor de IA
 - remaining · **restante** · standard pt-BR (AI download progress) · high
 - memory (RAM) · **memória** · standard · confirmed
 - path · **caminho** · macOS Finder; `goToPath.*` · high
@@ -2502,10 +2503,15 @@ Chaves `onboarding.cloudSetup.*`, revistas contra a pilha de referência (`pt-BR
   `high`
 - download (verbo) · **baixar** · Microsoft pt-BR terminology (`download` → `baixar`) e o catálogo
   (`downloads.toast.downloaded`: `{fileName} baixado`) · `high`
-- endpoint · **endpoint**, mantido em inglês · `tentative`. A Microsoft pt-BR diz `ponto de extremidade`, mas o rótulo
-  que fica logo acima da legenda na MESMA tela já está publicado como `URL do endpoint`
-  (`onboarding.cloudSetup.step.endpoint`), e uma legenda que trocasse a palavra leria como outro campo. Trocar os dois
-  de uma vez é uma decisão à parte, não uma correção desta rodada.
+- endpoint · **ponto de extremidade** · Microsoft pt-BR terminology, entrada `endpoint` no sentido exato daqui ("The
+  logical representation of a location, typically expressed in URL form"), mais `endpoint address` →
+  `endereço do ponto de extremidade` e `API Endpoint` → `Ponto de Extremidade de API`, que dão a forma do rótulo. A
+  Apple é muda: nem `endpoint` nem `extremidade` aparecem em `pt-BR/macOS/`, então o Tier 2 decide. `high`. As duas
+  chaves que carregam a palavra mudaram JUNTAS (`onboarding.cloudSetup.step.endpoint` → `URL do ponto de extremidade`, e
+  a legenda `onboarding.cloudSetup.hint.azureEndpoint`), porque um rótulo em inglês sobre uma legenda em português lê
+  como dois campos. O empréstimo também era minoria: 9 dos 11 catálogos completos já usavam o termo nativo (de
+  `Endpunkt`, fr `point de terminaison`, es `extremo`, sv `slutpunkt`, hu `végpont`, vi `điểm cuối`, zh `端点`, zh-Hant
+  `端點`).
 - **`then` de um passo em duas etapas vira `e depois`**, não some: `onboarding.cloudSetup.step.lmStudioServer` diz
   `Carregue um modelo no LM Studio e depois inicie o servidor local`, porque a ordem é a informação do passo.
 - `Ollama`, `LM Studio`, `Azure OpenAI`, `Azure`, `api-version` e o comando `ollama pull llama3.2` ficam verbatim.

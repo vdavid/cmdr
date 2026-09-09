@@ -934,7 +934,7 @@
   "@settings.ai.localContextSize.label": {
     "sourceHash": "7696d08"
   },
-  "settings.ai.localContextSize.description": "Nombre de tokens que le modèle local peut traiter à la fois. Des valeurs plus élevées utilisent plus de mémoire.",
+  "settings.ai.localContextSize.description": "Nombre de jetons que le modèle local peut traiter à la fois. Des valeurs plus élevées utilisent plus de mémoire.",
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },

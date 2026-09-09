@@ -145,11 +145,13 @@ From the AI-copy sweep and the provider-setup pass (the app stopped calling its 
   the verb) · high
 - resource (an Azure resource) → resource (kept English) · Microsoft terminology (`DUTCH.tbx` keeps `resource` in three
   of four senses; only one reads `bron`) · high
-- endpoint → endpoint (kept English) · **tentative, and it conflicts with Tier 2**: Microsoft terminology renders it
-  `eindpunt` in seven of eight senses (`DUTCH.tbx`). The catalog keeps the loanword because the visible field label
-  right above the hint is `Endpoint-URL` (`onboarding.cloudSetup.step.endpoint`), and a caption reading "Dit eindpunt"
-  under a field labelled "Endpoint-URL" reads as two different things. Dutch developer usage keeps `endpoint` too.
-  Sweeping both keys to `eindpunt` is the alternative; see "Decisions to confirm with David"
+- endpoint → eindpunt · Microsoft terminology (`DUTCH.tbx`), including the exact sense used here ("The logical
+  representation of a location, typically expressed in URL form"), plus `API Endpoint` → `API-eindpunt` and
+  `endpoint address` → `eindpuntadres`, which give the label its shape. Apple is silent: neither `endpoint` nor
+  `eindpunt` appears anywhere in `nl/macOS/`, so Tier 2 decides · high. Both keys carrying the word moved TOGETHER
+  (`onboarding.cloudSetup.step.endpoint` → `Eindpunt-URL`, and the caption `onboarding.cloudSetup.hint.azureEndpoint` →
+  "Dit eindpunt …"), because a native caption under an English label reads as two different fields. `eindpunt` is a
+  het-word, so "dit eindpunt"; the hyphen before the initialism follows the same rule as `API-eindpunt`
 - in Azure (never "op Azure") · Microsoft's own Dutch style guide writes "de servers in Azure"
   (`microsoft-style-guides/StyleGuide.pdf`, its gender-neutral-writing examples) · high
 
@@ -361,11 +363,6 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
 - **"Watching for phones." → `Cmdr let op telefoons.`**: het Nederlands heeft een onderwerp nodig waar het Engels er
   geen heeft. Bevestig de toon tegenover `Cmdr houdt in de gaten of er een telefoon wordt aangesloten.` (Apples idioom,
   twee keer zo lang).
-- **`endpoint` vs Microsoft's `eindpunt`**: two keys carry the word, the field label
-  `onboarding.cloudSetup.step.endpoint` ("Endpoint-URL") and the caption under it
-  (`onboarding.cloudSetup.hint.azureEndpoint`). Microsoft terminology says `eindpunt`; both keys currently keep the
-  loanword so the caption matches the label the reader can see. Confirm, or approve a two-key sweep to `Eindpunt-URL` /
-  "Dit eindpunt".
 - **"AI suggestions are waiting." → `Er staan AI-suggesties klaar.`** (`suggestedOps.indicatorTooltip`): nothing in the
   pile phrases waiting suggestions, so the `staan klaar` shape is a judgment call over the flatter "Er wachten
   AI-suggesties". Confirm which reads better in the status corner.

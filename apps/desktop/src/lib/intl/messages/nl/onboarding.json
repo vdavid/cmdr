@@ -473,7 +473,7 @@
     "sourceHash": "447957a"
   },
 
-  "onboarding.cloudSetup.hint.azureEndpoint": "Vervang de tijdelijke aanduiding in het adres door de naam van je eigen Azure OpenAI-resource. Dit endpoint heeft geen api-version-parameter nodig.",
+  "onboarding.cloudSetup.hint.azureEndpoint": "Vervang de tijdelijke aanduiding in het adres door de naam van je eigen Azure OpenAI-resource. Dit eindpunt heeft geen api-version-parameter nodig.",
   "@onboarding.cloudSetup.hint.azureEndpoint": {
     "sourceHash": "b1d408e"
   },
@@ -482,7 +482,7 @@
   "@onboarding.cloudSetup.hint.azureModel": {
     "sourceHash": "e856224"
   },
-  "onboarding.cloudSetup.step.endpoint": "Endpoint-URL",
+  "onboarding.cloudSetup.step.endpoint": "Eindpunt-URL",
   "@onboarding.cloudSetup.step.endpoint": {
     "sourceHash": "2578179"
   },

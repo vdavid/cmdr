@@ -252,7 +252,7 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
-  "askCmdr.event.chatMemoryChanged": "La mémoire du chat contient maintenant {tokens, number} tokens",
+  "askCmdr.event.chatMemoryChanged": "La mémoire du chat contient maintenant {tokens, number} jetons",
   "@askCmdr.event.chatMemoryChanged": {
     "sourceHash": "7dea8f2"
   },
