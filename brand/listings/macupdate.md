@@ -141,7 +141,7 @@ through 0.40.0, since none of those refreshes was ever submitted; the 0.36 line 
     open and wipe whenever you like.
   </li>
   <li>
-    Suggested ops: ask for something and Ask Cmdr proposes the file operations, each reviewable beside what Cmdr knows
+    Suggested ops: ask for something and the AI proposes the file operations, each reviewable beside what Cmdr knows
     about the file.
   </li>
   <li>

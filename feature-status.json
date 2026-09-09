@@ -131,7 +131,7 @@
       "id": "ai-rename",
       "name": "AI rename",
       "status": "alpha",
-      "note": "Describe the names you want and Ask Cmdr proposes them, reading the text inside your images. Every row shows the file and the evidence behind its name, you allow, edit, or deny each one, and the whole batch is one click from undone."
+      "note": "Describe the names you want and Cmdr proposes them, reading the text inside your images. Every row shows the file and the evidence behind its name, you allow, edit, or deny each one, and the whole batch is one click from undone."
     },
     {
       "id": "ai-batch",
