@@ -1588,9 +1588,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the Ask Cmdr Settings section); kept verbatim in every locale, matches askCmdr.title and commands.askCmdrToggle.label."
   },
-  "settings.askCmdr.intro": "Chat met een AI over je bestanden, schijven en geschiedenis. Ask Cmdr leest namen, paden en groottes om te antwoorden, kijkt alleen in een bestand als je ernaar vraagt, en verandert nooit een bestand zonder jouw goedkeuring.",
+  "settings.askCmdr.intro": "Chat met een AI over je bestanden, schijven en geschiedenis. Cmdr leest namen, paden en groottes om te antwoorden, kijkt alleen in een bestand als je ernaar vraagt, en verandert nooit een bestand zonder jouw goedkeuring.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "5a81d7a"
+    "sourceHash": "3b16f89"
   },
   "settings.askCmdr.status.on": "Ask Cmdr staat aan",
   "@settings.askCmdr.status.on": {
@@ -1624,29 +1624,29 @@
   "@settings.askCmdr.turnOff": {
     "sourceHash": "eb03374"
   },
-  "settings.askCmdr.disclosure.title": "Wat Ask Cmdr verstuurt",
+  "settings.askCmdr.disclosure.title": "Wat Cmdr verstuurt",
   "@settings.askCmdr.disclosure.title": {
-    "sourceHash": "8ccd3b9"
+    "sourceHash": "6907e64"
   },
   "settings.askCmdr.provider.title": "Aanbieder en model",
   "@settings.askCmdr.provider.title": {
     "sourceHash": "b9fdc88"
   },
-  "settings.askCmdr.provider.shared": "Ask Cmdr gebruikt de AI-aanbieder en -sleutel die je hebt ingesteld in Instellingen › AI ({provider}).",
+  "settings.askCmdr.provider.shared": "Cmdr gebruikt de AI-aanbieder en -sleutel die je hebt ingesteld in Instellingen › AI ({provider}).",
   "@settings.askCmdr.provider.shared": {
-    "sourceHash": "c84fd32"
+    "sourceHash": "9442b09"
   },
-  "settings.askCmdr.provider.off": "Zet een AI-aanbieder aan in Instellingen › AI om Ask Cmdr te gebruiken.",
+  "settings.askCmdr.provider.off": "Zet een AI-aanbieder aan in Instellingen › AI om te beginnen met chatten.",
   "@settings.askCmdr.provider.off": {
-    "sourceHash": "8b378ae"
+    "sourceHash": "5cc1481"
   },
   "settings.askCmdr.interactiveModel.label": "Ask Cmdr-model",
   "@settings.askCmdr.interactiveModel.label": {
     "sourceHash": "194255a"
   },
-  "settings.askCmdr.interactiveModel.description": "Het model waarmee Ask Cmdr chat. Laat leeg om hetzelfde model te gebruiken als de andere AI-functies van Cmdr. Voorbeeld: claude-sonnet-4-5",
+  "settings.askCmdr.interactiveModel.description": "Het model waarmee de chat werkt. Laat leeg om hetzelfde model te gebruiken als de andere AI-functies van Cmdr. Voorbeeld: claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
-    "sourceHash": "e3f64a5"
+    "sourceHash": "881f8a4"
   },
   "settings.askCmdr.interactiveModel.placeholder": "Hetzelfde als de AI van Cmdr",
   "@settings.askCmdr.interactiveModel.placeholder": {
@@ -1672,21 +1672,21 @@
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
   },
-  "settings.askCmdr.proactive.label": "Ask Cmdr mag gesprekken beginnen",
+  "settings.askCmdr.proactive.label": "Cmdr mag gesprekken beginnen",
   "@settings.askCmdr.proactive.label": {
-    "sourceHash": "1db4497"
+    "sourceHash": "a85ef48"
   },
-  "settings.askCmdr.proactive.description": "Ask Cmdr houdt de mappen in de gaten waarin je werkt en begint een chat zodra het iets voor te stellen heeft. Er gebeurt niets tot je het goedkeurt.",
+  "settings.askCmdr.proactive.description": "Cmdr houdt de mappen in de gaten waarin je werkt en begint een chat zodra het iets voor te stellen heeft. Er gebeurt niets tot je het goedkeurt.",
   "@settings.askCmdr.proactive.description": {
-    "sourceHash": "9bf4e15"
+    "sourceHash": "556f155"
   },
-  "settings.askCmdr.wakeDelay.label": "Hoe snel Ask Cmdr kijkt",
+  "settings.askCmdr.wakeDelay.label": "Hoe snel Cmdr kijkt",
   "@settings.askCmdr.wakeDelay.label": {
-    "sourceHash": "f80bb5a"
+    "sourceHash": "a7368d0"
   },
-  "settings.askCmdr.wakeDelay.description": "Hoe snel Ask Cmdr kijkt naar een map die net is veranderd. Langer betekent een rustigere assistent.",
+  "settings.askCmdr.wakeDelay.description": "Hoe snel Cmdr kijkt naar een map die net is veranderd. Langer betekent een rustigere assistent.",
   "@settings.askCmdr.wakeDelay.description": {
-    "sourceHash": "b53dd9b"
+    "sourceHash": "08790da"
   },
   "settings.askCmdr.wakeDelay.summary": "Drukke mappen worden binnen {hot} bekeken, rustigere binnen {warm}.",
   "@settings.askCmdr.wakeDelay.summary": {
@@ -1696,25 +1696,25 @@
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
   },
-  "settings.askCmdr.wakeToast.description": "Een klein bericht in de hoek wanneer Ask Cmdr iets klaarzet om te bekijken.",
+  "settings.askCmdr.wakeToast.description": "Een klein bericht in de hoek wanneer Cmdr iets klaarzet om te bekijken.",
   "@settings.askCmdr.wakeToast.description": {
-    "sourceHash": "f07a46e"
+    "sourceHash": "dd04b0a"
   },
-  "settings.askCmdr.memory.title": "Wat Ask Cmdr onthoudt",
+  "settings.askCmdr.memory.title": "Wat Cmdr onthoudt",
   "@settings.askCmdr.memory.title": {
-    "sourceHash": "4b102db"
+    "sourceHash": "be6fce6"
   },
-  "settings.askCmdr.memory.description": "Ask Cmdr houdt een klein mapje met notities over je bij en stuurt dat met elk bericht mee. Neem een kijkje, of begin opnieuw.",
+  "settings.askCmdr.memory.description": "Cmdr houdt een klein mapje met notities over je bij en stuurt dat met elk bericht mee. Neem een kijkje, of begin opnieuw.",
   "@settings.askCmdr.memory.description": {
-    "sourceHash": "bcd73ea"
+    "sourceHash": "0948ddb"
   },
   "settings.askCmdr.memory.open": "Notitiemap openen",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.memory.forgotten": "De notities van Ask Cmdr zijn weg. Vanaf hier begint het opnieuw.",
+  "settings.askCmdr.memory.forgotten": "De notities van Cmdr zijn weg. Vanaf hier begint het opnieuw.",
   "@settings.askCmdr.memory.forgotten": {
-    "sourceHash": "a50ed99"
+    "sourceHash": "f3d9022"
   },
   "settings.askCmdr.spend.title": "Uitgaven",
   "@settings.askCmdr.spend.title": {

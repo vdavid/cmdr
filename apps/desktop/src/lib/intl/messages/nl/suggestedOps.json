@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "4f24ca6"
   },
-  "suggestedOps.description": "Ask Cmdr stelt dit voor. Er gebeurt niets tot je het goedkeurt.",
+  "suggestedOps.description": "De AI heeft dit voorgesteld. Er gebeurt niets tot je het goedkeurt.",
   "@suggestedOps.description": {
-    "sourceHash": "d70e5f0"
+    "sourceHash": "73255a0"
   },
   "suggestedOps.empty": "Er wacht nu niets op je.",
   "@suggestedOps.empty": {
@@ -15,9 +15,9 @@
   "@suggestedOps.loadFailed": {
     "sourceHash": "3d3af5a"
   },
-  "suggestedOps.agentReason": "Reden van Ask Cmdr",
+  "suggestedOps.agentReason": "Reden van de AI",
   "@suggestedOps.agentReason": {
-    "sourceHash": "0768c36"
+    "sourceHash": "e3acab8"
   },
   "suggestedOps.cmdrFacts": "Wat Cmdr weet",
   "@suggestedOps.cmdrFacts": {
@@ -75,9 +75,9 @@
   "@suggestedOps.fromPattern": {
     "sourceHash": "20e88a9"
   },
-  "suggestedOps.changedUnderReview": "Ask Cmdr heeft deze suggestie gewijzigd terwijl je hem las.",
+  "suggestedOps.changedUnderReview": "De AI heeft deze suggestie gewijzigd terwijl je hem las.",
   "@suggestedOps.changedUnderReview": {
-    "sourceHash": "fd6b2ac"
+    "sourceHash": "5d07c7c"
   },
   "suggestedOps.showNewVersion": "Nieuwe versie tonen",
   "@suggestedOps.showNewVersion": {
@@ -111,8 +111,8 @@
   "@suggestedOps.loadingFiles": {
     "sourceHash": "83257e6"
   },
-  "suggestedOps.indicatorTooltip": "Ask Cmdr heeft suggesties voor je. Klik om ze te bekijken.",
+  "suggestedOps.indicatorTooltip": "Er staan AI-suggesties klaar. Klik om ze te bekijken.",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "dc423e6"
+    "sourceHash": "4508b0b"
   }
 }

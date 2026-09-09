@@ -1589,9 +1589,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Brand/product name, kept verbatim in every locale (do-not-translate list)."
   },
-  "settings.askCmdr.intro": "Chatte mit einer KI über deine Dateien, Laufwerke und deinen Verlauf. Ask Cmdr liest Namen, Pfade und Größen, um zu antworten, schaut nur dann in eine Datei hinein, wenn du nach ihr fragst, und verändert nie eine Datei ohne deine Zustimmung.",
+  "settings.askCmdr.intro": "Chatte mit einer KI über deine Dateien, Laufwerke und deinen Verlauf. Cmdr liest Namen, Pfade und Größen, um zu antworten, schaut nur dann in eine Datei hinein, wenn du nach ihr fragst, und verändert nie eine Datei ohne deine Zustimmung.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "5a81d7a"
+    "sourceHash": "3b16f89"
   },
   "settings.askCmdr.status.on": "Ask Cmdr ist aktiviert",
   "@settings.askCmdr.status.on": {
@@ -1625,29 +1625,29 @@
   "@settings.askCmdr.turnOff": {
     "sourceHash": "eb03374"
   },
-  "settings.askCmdr.disclosure.title": "Was Ask Cmdr sendet",
+  "settings.askCmdr.disclosure.title": "Was Cmdr sendet",
   "@settings.askCmdr.disclosure.title": {
-    "sourceHash": "8ccd3b9"
+    "sourceHash": "6907e64"
   },
   "settings.askCmdr.provider.title": "Anbieter und Modell",
   "@settings.askCmdr.provider.title": {
     "sourceHash": "b9fdc88"
   },
-  "settings.askCmdr.provider.shared": "Ask Cmdr verwendet den Anbieter und Schlüssel, die du unter Einstellungen › KI eingerichtet hast ({provider}).",
+  "settings.askCmdr.provider.shared": "Cmdr verwendet den KI-Anbieter und den Schlüssel, die du unter Einstellungen › KI eingerichtet hast ({provider}).",
   "@settings.askCmdr.provider.shared": {
-    "sourceHash": "c84fd32"
+    "sourceHash": "9442b09"
   },
-  "settings.askCmdr.provider.off": "Aktiviere unter Einstellungen › KI einen Anbieter, um Ask Cmdr zu nutzen.",
+  "settings.askCmdr.provider.off": "Aktiviere unter Einstellungen › KI einen KI-Anbieter, um loszuchatten.",
   "@settings.askCmdr.provider.off": {
-    "sourceHash": "8b378ae"
+    "sourceHash": "5cc1481"
   },
   "settings.askCmdr.interactiveModel.label": "Ask Cmdr-Modell",
   "@settings.askCmdr.interactiveModel.label": {
     "sourceHash": "194255a"
   },
-  "settings.askCmdr.interactiveModel.description": "Das Modell, mit dem Ask Cmdr chattet. Leer lassen, um dasselbe Modell wie bei den anderen KI-Funktionen von Cmdr zu verwenden. Beispiel: claude-sonnet-4-5",
+  "settings.askCmdr.interactiveModel.description": "Das Modell, das der Chat nutzt. Leer lassen, um dasselbe Modell wie bei den anderen KI-Funktionen von Cmdr zu verwenden. Beispiel: claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
-    "sourceHash": "e3f64a5"
+    "sourceHash": "881f8a4"
   },
   "settings.askCmdr.interactiveModel.placeholder": "Wie die KI von Cmdr",
   "@settings.askCmdr.interactiveModel.placeholder": {
@@ -1673,21 +1673,21 @@
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
   },
-  "settings.askCmdr.proactive.label": "Ask Cmdr darf Unterhaltungen beginnen",
+  "settings.askCmdr.proactive.label": "Cmdr darf Unterhaltungen beginnen",
   "@settings.askCmdr.proactive.label": {
-    "sourceHash": "1db4497"
+    "sourceHash": "a85ef48"
   },
-  "settings.askCmdr.proactive.description": "Ask Cmdr behält die Ordner im Blick, in denen du arbeitest, und beginnt einen Chat, wenn es etwas vorzuschlagen hat. Nichts läuft, bevor du zustimmst.",
+  "settings.askCmdr.proactive.description": "Cmdr behält die Ordner im Blick, in denen du arbeitest, und beginnt einen Chat, wenn es etwas vorzuschlagen hat. Nichts läuft, bevor du zustimmst.",
   "@settings.askCmdr.proactive.description": {
-    "sourceHash": "9bf4e15"
+    "sourceHash": "556f155"
   },
-  "settings.askCmdr.wakeDelay.label": "Wie schnell Ask Cmdr nachschaut",
+  "settings.askCmdr.wakeDelay.label": "Wie schnell Cmdr nachschaut",
   "@settings.askCmdr.wakeDelay.label": {
-    "sourceHash": "f80bb5a"
+    "sourceHash": "a7368d0"
   },
-  "settings.askCmdr.wakeDelay.description": "Wie schnell Ask Cmdr sich einen gerade geänderten Ordner ansieht. Länger heißt ruhigerer Assistent.",
+  "settings.askCmdr.wakeDelay.description": "Wie schnell Cmdr sich einen gerade geänderten Ordner ansieht. Länger heißt ruhigerer Assistent.",
   "@settings.askCmdr.wakeDelay.description": {
-    "sourceHash": "b53dd9b"
+    "sourceHash": "08790da"
   },
   "settings.askCmdr.wakeDelay.summary": "Aktive Ordner werden innerhalb von {hot} angesehen, ruhigere innerhalb von {warm}.",
   "@settings.askCmdr.wakeDelay.summary": {
@@ -1697,25 +1697,25 @@
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
   },
-  "settings.askCmdr.wakeToast.description": "Eine kleine Meldung in der Ecke, wenn Ask Cmdr etwas zum Prüfen bereitlegt.",
+  "settings.askCmdr.wakeToast.description": "Eine kleine Meldung in der Ecke, wenn Cmdr etwas zum Prüfen bereitlegt.",
   "@settings.askCmdr.wakeToast.description": {
-    "sourceHash": "f07a46e"
+    "sourceHash": "dd04b0a"
   },
-  "settings.askCmdr.memory.title": "Woran sich Ask Cmdr erinnert",
+  "settings.askCmdr.memory.title": "Woran sich Cmdr erinnert",
   "@settings.askCmdr.memory.title": {
-    "sourceHash": "4b102db"
+    "sourceHash": "be6fce6"
   },
-  "settings.askCmdr.memory.description": "Ask Cmdr führt einen kleinen Ordner mit Notizen über dich und sendet ihn mit jeder Nachricht mit. Schau hinein, oder fang neu an.",
+  "settings.askCmdr.memory.description": "Cmdr führt einen kleinen Ordner mit Notizen über dich und sendet ihn mit jeder Nachricht mit. Schau hinein, oder fang neu an.",
   "@settings.askCmdr.memory.description": {
-    "sourceHash": "bcd73ea"
+    "sourceHash": "0948ddb"
   },
   "settings.askCmdr.memory.open": "Notizordner öffnen",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.memory.forgotten": "Die Notizen von Ask Cmdr sind weg. Es fängt ab hier neu an.",
+  "settings.askCmdr.memory.forgotten": "Die Notizen von Cmdr sind weg. Es fängt ab hier neu an.",
   "@settings.askCmdr.memory.forgotten": {
-    "sourceHash": "a50ed99"
+    "sourceHash": "f3d9022"
   },
   "settings.askCmdr.spend.title": "Ausgaben",
   "@settings.askCmdr.spend.title": {

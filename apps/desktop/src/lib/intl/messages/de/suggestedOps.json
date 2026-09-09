@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "4f24ca6"
   },
-  "suggestedOps.description": "Ask Cmdr hat das vorgeschlagen. Nichts läuft, bevor du zustimmst.",
+  "suggestedOps.description": "Die KI hat das vorgeschlagen. Nichts läuft, bevor du zustimmst.",
   "@suggestedOps.description": {
-    "sourceHash": "d70e5f0"
+    "sourceHash": "73255a0"
   },
   "suggestedOps.empty": "Im Moment wartet nichts auf dich.",
   "@suggestedOps.empty": {
@@ -15,9 +15,9 @@
   "@suggestedOps.loadFailed": {
     "sourceHash": "3d3af5a"
   },
-  "suggestedOps.agentReason": "Begründung von Ask Cmdr",
+  "suggestedOps.agentReason": "Begründung der KI",
   "@suggestedOps.agentReason": {
-    "sourceHash": "0768c36"
+    "sourceHash": "e3acab8"
   },
   "suggestedOps.cmdrFacts": "Was Cmdr weiß",
   "@suggestedOps.cmdrFacts": {
@@ -75,9 +75,9 @@
   "@suggestedOps.fromPattern": {
     "sourceHash": "20e88a9"
   },
-  "suggestedOps.changedUnderReview": "Ask Cmdr hat diesen Vorschlag geändert, während du ihn gelesen hast.",
+  "suggestedOps.changedUnderReview": "Die KI hat diesen Vorschlag geändert, während du ihn gelesen hast.",
   "@suggestedOps.changedUnderReview": {
-    "sourceHash": "fd6b2ac"
+    "sourceHash": "5d07c7c"
   },
   "suggestedOps.showNewVersion": "Neue Fassung anzeigen",
   "@suggestedOps.showNewVersion": {
@@ -111,8 +111,8 @@
   "@suggestedOps.loadingFiles": {
     "sourceHash": "83257e6"
   },
-  "suggestedOps.indicatorTooltip": "Ask Cmdr hat Vorschläge für dich. Zum Ansehen klicken.",
+  "suggestedOps.indicatorTooltip": "KI-Vorschläge warten auf dich. Zum Ansehen klicken.",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "dc423e6"
+    "sourceHash": "4508b0b"
   }
 }

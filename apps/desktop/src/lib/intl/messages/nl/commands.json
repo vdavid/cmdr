@@ -831,8 +831,8 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "4f24ca6"
   },
-  "commands.suggestedOpsShow.description": "Bekijk de bestandsbewerkingen die Ask Cmdr voorstelt en bepaal wat er gebeurt",
+  "commands.suggestedOpsShow.description": "Beoordeel de bestandsbewerkingen die de AI heeft voorgesteld en bepaal wat er gebeurt",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "cf24a4f"
+    "sourceHash": "7efe8c9"
   }
 }

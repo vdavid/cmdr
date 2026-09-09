@@ -158,6 +158,24 @@ Contested or sense-specific (read the block):
   `errors.listing.lockUnavailable.suggestion`, „externe Tools“ in `settings.developer.mcpPort.description`); NICHT
   `Werkzeuge`, das der Katalog für die Werkzeuge eines KI-Agenten reserviert (`askCmdr.tool.unknown.done`) · high
 
+From the AI-copy sweep and the provider-setup pass (the app stopped calling its AI „Ask Cmdr“ everywhere it just meant
+„AI“; the name now survives only where it names the chat panel):
+
+- AI features → KI-Funktionen · der Katalog selbst (`settings.ai.tooltipOff` „KI-Funktionen sind ausgeschaltet“,
+  `settings.ai.provider.description` „Wähle, wie KI-Funktionen betrieben werden.“, `onboarding.stepAi.intro`) · high
+- the AI (als handelndes Subjekt, wo das Englische bewusst nicht „Cmdr“ sagt) → die KI · der Katalog
+  (`settings.askCmdr.intro` „Chatte mit einer KI …“) · high. Abgrenzung: `Cmdr` bleibt `Cmdr`, und `Ask Cmdr` bleibt
+  `Ask Cmdr`; siehe die Notiz unten dazu, welcher der drei Namen wann steht
+- AI provider → KI-Anbieter · der Katalog durchgehend (`askCmdr.error.notConfigured`, `askCmdr.consent.intro`) · high
+- file operations → Dateivorgänge · der Katalog (`commands.operationLogShow.description` „Verlauf deiner
+  Dateivorgänge“, `fileExplorer` „schnelle Dateivorgänge“, `settings` mehrfach) · high. Die Settings-Karte heißt
+  dagegen `Dateioperationen`, weil sie eine Rubrik benennt, keine laufenden Vorgänge
+- placeholder → Platzhalter · Microsoft terminology (`GERMAN.tbx`, beide Sinne) · high
+- endpoint → Endpunkt · Microsoft terminology (`GERMAN.tbx`, 4 von 6 Sinnen; `Teilnehmer`/`Endgerät` sind die
+  Telefonie- und Geräte-Sinne) · high
+- deployment (eine Azure-Bereitstellung) → Bereitstellung · Microsoft terminology (`GERMAN.tbx`, 5 Sinne) · high
+- resource (eine Azure-Ressource) → Ressource · Microsoft terminology (`GERMAN.tbx`, 4 Sinne) · high
+
 Add rows as terms come up, each with sources and a confidence.
 
 ## Brand and do-not-translate
@@ -298,6 +316,26 @@ Dateien".
   Deutschen zur `du`-Entlastung, wie schon in `errors.listing.deviceReconnecting.suggestion` („There''s nothing to
   unplug.“ → „Du musst nichts abziehen.“). Für Tastatureingabe heißt das Verb `eingeben` (Apples Wort in genau diesem
   Dialog, NetAuthAgent `FS_MSG_PASS`), nicht `tippen`.
+- **Drei Namen, drei Rollen: `Ask Cmdr`, `Cmdr`, `die KI`.** `Ask Cmdr` benennt NUR noch das Chat-Panel selbst (sein
+  Titel, der Eintrag im Menü `Darstellung`, der Paletten-Befehl, die Settings-Rubrik, der Ein/Aus-Schalter) und bleibt
+  dort unübersetzt. Sobald ein Satz nur beschreibt, was die KI tut, steht dort `Cmdr` (das Produkt handelt) oder
+  `die KI` (die fremde Modell-Instanz, etwa in `suggestedOps.*`). Übersetze, was das Englische an der Stelle sagt, und
+  ergänze `Ask Cmdr` NICHT aus alter Gewohnheit: „Was Cmdr sendet“, nicht „Was Ask Cmdr sendet“. Zusammensetzungen mit
+  dem Panelnamen werden durchgekoppelt: `im Ask-Cmdr-Bereich`, `in den Ask-Cmdr-Einstellungen` (`Cmdr` steht darin als
+  ganzes Wort, also greift `desktop-i18n-dont-translate` nicht).
+- **`moves` als Nomen hat kein brauchbares deutsches Nomen.** `Bewegungen` liest sich als Fortbewegung, und
+  `Verschiebungen` widerspricht dem Glossar-Verb `bewegen` (macOS Finder). Wo das Englische Operationen aufzählt
+  („renames, moves, and cleanups“), bau die Aufzählung aus Verben: „Cmdr kann vorschlagen, Dateien umzubenennen, zu
+  bewegen und aufzuräumen“ (`askCmdr.consent.contentsRule`). Das deckt sich mit der Stilregel „lieber ein Verb als ein
+  Verbalsubstantiv“.
+- **„Click to X“ hat zwei Formen, und die Länge entscheidet.** Eine kurze Nominalisierung nimmt „Zum X klicken“
+  (`suggestedOps.indicatorTooltip` „Zum Ansehen klicken.“, `fileExplorer.navigation.spaceFetchFailed` „Zum erneuten
+  Versuch klicken“); eine längere Verbalphrase nimmt „Klicken, um … zu …“ (`fileExplorer.breadcrumb.navigateTooltip`,
+  `askCmdr.wake.needsFullDiskAccess` „Klicken, um den Festplattenzugriff einzurichten.“). Ein erzwungenes „Zum
+  Einrichten des Festplattenzugriffs klicken“ würde den Terminus `Festplattenzugriff einrichten` in einen Genitiv
+  auflösen, den `search.coverage.setUpFullDiskAccess` nicht kennt.
+- **„to start chatting“ → „um loszuchatten“.** `askCmdr.error.noConsent` hatte die Wendung schon für genau dasselbe
+  Englisch; `settings.askCmdr.provider.off` übernimmt sie, statt ein zweites Wort dafür zu erfinden.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -315,6 +353,13 @@ The formality and move calls are now settled from the sources (see above); the o
   Preview inspector, and the gender-glyph ban (screen readers) rules that form out. Shipping the bare field name
   `Autor`; the neutral rewrites („wer es verfasst hat“, „Verfasserangabe“) read stilted inside the list. Confirm, or
   pick a rewrite. Evidence: `glossary.md` § Ask Cmdr schaut jetzt in Dateien hinein.
+- **„AI suggestions are waiting.“ → „KI-Vorschläge warten auf dich.“** (`suggestedOps.indicatorTooltip`, tentative):
+  nichts im Referenz-Stapel formuliert wartende Vorschläge, also ist die Wendung gemünzt. Die Alternative „Es liegen
+  KI-Vorschläge bereit.“ klingt sachlicher und weniger nach Anstupsen; bestätige, welche im Statuseck besser wirkt.
+- **`Klicken, um in den Einstellungen einen einzurichten.`** (`askCmdr.wake.needsApiKey`, tentative): das englische
+  „set one up“ verweist mit `one` auf den Anbieter aus dem ersten Satz, und das Deutsche gibt das mit dem bloßen
+  Pronomen `einen` wieder. Grammatisch einwandfrei, aber am Satzende etwas kahl; die Alternative wiederholt schlicht
+  `einen Anbieter`. Bestätige, welche in einem Tooltip besser liest.
 - **`Systemintegritätsschutz` vs Apple's on-screen `System-Integrationsschutz`** (product-voice call, currently shipping
   the first). `errors.mutation.sipProtected` uses Apple's German DOCUMENTATION name for System Integrity Protection.
   Apple's German Finder shows a different word in exactly one string, and it's a visible mistranslation (Integration

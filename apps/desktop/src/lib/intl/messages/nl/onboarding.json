@@ -478,7 +478,7 @@
     "sourceHash": "b1d408e"
   },
 
-  "onboarding.cloudSetup.hint.azureModel": "Op Azure is dit de naam van je implementatie, die kan afwijken van de naam van het model dat erachter draait.",
+  "onboarding.cloudSetup.hint.azureModel": "In Azure is dit de naam van je implementatie, die kan afwijken van de naam van het model dat erachter draait.",
   "@onboarding.cloudSetup.hint.azureModel": {
     "sourceHash": "e856224"
   },
