@@ -27,8 +27,8 @@ translators.
 - **Copy here stays raw and out of the i18n catalog**, which is why fixtures live under `lib/`, not i18n-enforced
   `routes/(main)/`.
 - **The harness, its fixtures, and the dialogs they pull in tree-shake out of prod**; `gallery-registry.ts` doesn't (it
-  rides the Debug route's chunk). Keep `gallery-state.svelte.ts`, the only module `+page.svelte` imports,
-  dependency-free: no registry, no fixtures, no dialog imports.
+  rides the Debug route's chunk). The main window's own graph imports nothing from here: a preview suppresses global
+  shortcuts by registering in `$lib/ui/open-dialogs.svelte`, like the shipping dialog it is.
 - **The gate is `import.meta.env.DEV || __CMDR_DIALOG_GALLERY__`** (`+layout.svelte`, `listener-setup.ts`), the define
   every capture AND E2E build sets. ❌ Never narrow a site to `DEV` or to `__CMDR_I18N_CAPTURE__`: both of those builds
   are prod Vite builds, so the dialog screenshots go silently to zero and `dialog-inset.spec.ts` stops measuring.

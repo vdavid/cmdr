@@ -1,11 +1,12 @@
 /**
  * Which gallery dialog the main window is currently previewing.
  *
- * Deliberately tiny and dependency-free: `routes/(main)/+page.svelte` imports
- * `isGalleryDialogOpen()`, so this module is the only part of the gallery a
- * production bundle can even see, and it pulls in no fixtures, no registry, and no
- * dialog components. Nothing writes the store outside dev, so the getter is a
- * constant `false` there. Type-only imports are fine here: they're erased.
+ * Read only by `DialogGallery.svelte`, which the app mounts behind the
+ * `import.meta.env.DEV || __CMDR_DIALOG_GALLERY__` gate, so the whole module tree
+ * tree-shakes out of a plain production build. Nothing in the main window's own
+ * graph reads it: a previewed dialog suppresses shortcuts by registering in
+ * `$lib/ui/open-dialogs.svelte` like any other soft dialog, since the gallery
+ * renders the SHIPPING component.
  */
 
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
@@ -70,13 +71,4 @@ export function closeGalleryDialog(): void {
 /** The current preview, or `null`. Read reactively by `DialogGallery.svelte`. */
 export function getOpenGalleryDialog(): OpenGalleryDialog | null {
   return galleryState.open
-}
-
-/**
- * True while a gallery preview is up. `+page.svelte`'s `isModalDialogOpen()` reads
- * this so global shortcuts don't fire behind a previewed dialog, which would look
- * like a dialog bug and poison the design review.
- */
-export function isGalleryDialogOpen(): boolean {
-  return galleryState.open !== null
 }

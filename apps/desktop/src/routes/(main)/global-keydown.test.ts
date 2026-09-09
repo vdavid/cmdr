@@ -25,6 +25,11 @@ function cmd(key: string): KeyboardEvent {
   return new KeyboardEvent('keydown', { key, metaKey: true })
 }
 
+/** An unmodified keydown for `key`. */
+function bare(key: string): KeyboardEvent {
+  return new KeyboardEvent('keydown', { key })
+}
+
 /** Mounts a focused element of `tag` and returns its cleanup. */
 function focus(tag: 'input' | 'textarea' | 'button'): () => void {
   const el = document.createElement(tag)
@@ -70,6 +75,11 @@ describe('resolveGlobalKeyAction', () => {
       expect(resolveGlobalKeyAction(new KeyboardEvent('keydown', { key: 'Tab' }), false)).toEqual({ kind: 'ignore' })
     })
 
+    it('dispatches the bare-key pane commands', () => {
+      expect(resolveGlobalKeyAction(bare('Tab'), false)).toEqual({ kind: 'dispatch', commandId: 'pane.switch' })
+      expect(resolveGlobalKeyAction(bare(' '), false)).toEqual({ kind: 'dispatch', commandId: 'selection.toggle' })
+    })
+
     it('ignores a combo no command claims', () => {
       expect(resolveGlobalKeyAction(new KeyboardEvent('keydown', { key: 'q' }), false)).toEqual({ kind: 'ignore' })
     })
@@ -80,6 +90,15 @@ describe('resolveGlobalKeyAction', () => {
       // ⌘T (new tab) fires with nothing open, and must not fire behind a dialog.
       expect(resolveGlobalKeyAction(cmd('t'), false)).toEqual({ kind: 'dispatch', commandId: 'tab.new' })
       expect(resolveGlobalKeyAction(cmd('t'), true)).toEqual({ kind: 'ignore' })
+    })
+
+    it('blocks the BARE-key pane commands, so Tab moves focus inside the dialog', () => {
+      // The asymmetry a caller that under-reports its dialogs produces: ⇧Tab is bound to
+      // nothing, so it resolves to `ignore` and the browser moves focus, while Tab reaches
+      // `pane.switch`, gets `preventDefault`ed, and focus never moves at all. Space is the
+      // same shape (`selection.toggle`), and so are F5 / F6 / F7 / Insert.
+      expect(resolveGlobalKeyAction(bare('Tab'), true)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(bare(' '), true)).toEqual({ kind: 'ignore' })
     })
 
     it('dispatches edit.paste when focus is in a text input, so WebKit does not ALSO paste', () => {

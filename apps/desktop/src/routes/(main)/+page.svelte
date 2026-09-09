@@ -61,7 +61,7 @@
         stopWindowServices,
     } from './window-services'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
-    import { isGalleryDialogOpen } from '$lib/dialog-gallery/gallery-state.svelte'
+    import { isAnySoftDialogOpen } from '$lib/ui/open-dialogs.svelte'
     import { notifyOnboardingComplete, setOnboardingShowing } from '$lib/updates/updater.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { getShowFunctionKeyBar } from '$lib/settings/reactive-settings.svelte'
@@ -163,22 +163,28 @@
         return explorerRef.isConfirmationDialogOpen() || explorerRef.isRenaming() || explorerRef.isVolumeChooserOpen()
     }
 
-    /** Check if any modal dialog is open that should suppress centralized dispatch. */
+    /**
+     * Whether something on screen should suppress centralized dispatch, so a bare-key
+     * Tier 1 binding (Tab, Space, F5, Insert) stays inert behind it.
+     *
+     * The INVENTORY is `$lib/ui/open-dialogs.svelte`, exhaustive by construction because
+     * every soft dialog registers from its own mount/destroy pair. ❌ Never go back to
+     * naming dialogs here: the hand-written list this replaced missed most of the ~35
+     * dialogs the main window renders, and each miss let Tab reach `pane.switch` behind
+     * the dialog, whose `preventDefault` then froze focus where it stood.
+     *
+     * The two arms beside it are the things that are NOT soft dialogs and so register
+     * nowhere: the explorer's own overlays (inline rename, the volume chooser, a
+     * confirmation), and the command palette, which is its own overlay rather than a
+     * `ModalDialog` (`$lib/dialog-gallery/gallery-registry.ts` § `UNREGISTERED_OVERLAY_ENTRIES`
+     * is the standing list of those two).
+     *
+     * No same-tick guard is needed here, unlike `$lib/file-explorer/pane/dialog-state.svelte.ts`:
+     * every caller is an event handler (keydown, mouseup, the Tauri mouse-nav event), so a
+     * `show* = true` set in an earlier turn has long since mounted and registered.
+     */
     function isModalDialogOpen(): boolean {
-        return (
-            showCommandPalette ||
-            showSearchDialog ||
-            showGoToPathDialog ||
-            showAboutWindow ||
-            showLicenseKeyDialog ||
-            showExpiredModal ||
-            showCommercialReminder ||
-            whatsNewState.open ||
-            acknowledgementsState.open ||
-            operationLogState.open ||
-            isGalleryDialogOpen() || // Dev-only in practice; ❌ don't add a build-time DEV guard (breaks knip, see dialog-gallery/DETAILS.md)
-            isExplorerOverlayOpen()
-        )
+        return showCommandPalette || isAnySoftDialogOpen() || isExplorerOverlayOpen()
     }
 
     /**

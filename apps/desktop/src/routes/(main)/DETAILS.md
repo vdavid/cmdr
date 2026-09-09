@@ -21,9 +21,9 @@ here:
 - **`global-keydown.ts` owns the keydown DECISION, `+page.svelte` owns the side effects.**
   `resolveGlobalKeyAction(event, isModalOpen)` is pure (`dispatch` / `openDebugWindow` / `suppress` / `ignore`), so
   every branch is unit-testable without mounting the shell; the component supplies `isModalDialogOpen()` (the only
-  reactive input) and then runs `preventDefault`, `markDispatchSource('keyboard')`, and the dispatch. Keeping the
-  decision out of the component is also what stops the `file-length`-flagged `+page.svelte` from growing per keyboard
-  rule.
+  reactive input, § What `isModalDialogOpen()` is made of) and then runs `preventDefault`,
+  `markDispatchSource('keyboard')`, and the dispatch. Keeping the decision out of the component is also what stops the
+  `file-length`-flagged `+page.svelte` from growing per keyboard rule.
 - **`global-contextmenu.ts` is the same split for the right-click**: `resolveGlobalContextMenuAction(event)` is pure
   (`native-text-menu` / `suppress`), `+page.svelte` runs `stopPropagation` or `preventDefault`. § Right-click ownership.
 - **`startup-gates.ts` owns what a launch SHOWS.** § Startup gates.
@@ -290,6 +290,36 @@ the middle button included, is handed straight back.
   halves stay split across the two events. Suppression runs even while a modal is open (we never want the webview
   navigating itself); only the dispatch is gated. On macOS the AppKit monitor above swallows the events first, so these
   two listeners are the Linux path's alone.
+
+## What `isModalDialogOpen()` is made of
+
+The one reactive input `resolveGlobalKeyAction` takes, and the same guard the two mouse-nav roads consult. Three arms,
+and the shape of the list is the point:
+
+```ts
+showCommandPalette || isAnySoftDialogOpen() || isExplorerOverlayOpen()
+```
+
+**`isAnySoftDialogOpen()` (`$lib/ui/open-dialogs.svelte`) covers every registered soft dialog**, roughly 35 of them in
+the main window, and it is exhaustive by construction because each one registers from its own mount/destroy pair.
+`$lib/file-explorer/pane/DETAILS.md` § "The operation-start gate" owns that mechanism.
+
+**❌ Never name a dialog here again.** A hand-written list of `show*` booleans stood in this spot and named about a
+dozen, so every dialog nobody remembered leaked the bare-key Tier 1 bindings: `Tab` → `pane.switch`, `Space` →
+`selection.toggle`, `F5` / `F6` / `F7` / `Insert` / `+` / `-`. `Tab` was the visible one, and it read as a dead key
+rather than a wrong command: this handler `preventDefault()`s the native focus move, `pane.switch` focuses a pane behind
+the dialog, and `focus-trap.ts`'s leak guard yanks focus back to where it started. `⇧Tab` is bound to nothing, resolves
+to `ignore`, and walks backwards normally, which is the asymmetry that gives this class of bug away.
+
+**The other two arms are the things that are not soft dialogs**, so they register nowhere and have to be asked directly:
+the command palette (its own overlay, never a `ModalDialog`) and the explorer's own overlays (inline rename, the volume
+chooser, a confirmation). `$lib/dialog-gallery/gallery-registry.ts`'s `UNREGISTERED_OVERLAY_ENTRIES` is the standing
+list of modal-looking things outside the registry, and it holds exactly those two.
+
+**No same-tick guard is needed**, unlike `anyDialogOpen()` in `$lib/file-explorer/pane/dialog-state.svelte.ts`, which
+keeps local flags for the window between `show* = true` and the mount that registers it. Every caller here is an event
+handler (document `keydown`, document `mouseup`, the Tauri `mouse-nav` event), so any flip that opened a dialog happened
+in an earlier turn and has long since mounted.
 
 ## Right-click ownership
 

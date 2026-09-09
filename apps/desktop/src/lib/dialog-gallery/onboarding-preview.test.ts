@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { getOnboardingState, resetForTesting, setCurrentStep } from '$lib/onboarding/onboarding-state.svelte'
 import { openOnboardingPreview } from './onboarding-preview'
 import { onboardingFixtures } from './fixtures/onboarding'
-import { isGalleryDialogOpen, openGalleryDialog } from './gallery-state.svelte'
+import { getOpenGalleryDialog, openGalleryDialog } from './gallery-state.svelte'
 
 type Dispatch = Parameters<typeof openOnboardingPreview>[1]
 
@@ -54,7 +54,7 @@ describe('openOnboardingPreview', () => {
     openGalleryDialog('alert', 'short')
     await openOnboardingPreview('step-2-ai', fakeDispatch())
 
-    expect(isGalleryDialogOpen()).toBe(false)
+    expect(getOpenGalleryDialog()).toBeNull()
     expect(getOnboardingState().currentStep).toBe(2)
   })
 

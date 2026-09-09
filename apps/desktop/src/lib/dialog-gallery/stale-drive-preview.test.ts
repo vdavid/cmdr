@@ -58,7 +58,7 @@ vi.mock('$lib/logging/logger', () => ({
 // Deliberately NOT mocked: `drive-index-prefs` (over the mocked settings store,
 // so the reset provably clears what the dialog reads) and `gallery-state`.
 import { hasShownFirstStaleDialog, markFirstStaleDialogShown } from '$lib/indexing/drive-index-prefs'
-import { isGalleryDialogOpen, openGalleryDialog, closeGalleryDialog } from './gallery-state.svelte'
+import { getOpenGalleryDialog, openGalleryDialog, closeGalleryDialog } from './gallery-state.svelte'
 import { openStaleDrivePreview } from './stale-drive-preview'
 
 function volume(overrides: Partial<VolumeInfo> & { id: string }): VolumeInfo {
@@ -162,6 +162,6 @@ describe('openStaleDrivePreview', () => {
 
     await openStaleDrivePreview('default')
 
-    expect(isGalleryDialogOpen()).toBe(false)
+    expect(getOpenGalleryDialog()).toBeNull()
   })
 })

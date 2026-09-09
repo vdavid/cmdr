@@ -68,17 +68,11 @@ was broken too.
 `error-report`, `feedback`, `mtp-permission`, `ptpcamerad`). Not `+page.svelte`: it's already over its `file-length`
 allowlist entry.
 
-`+page.svelte` still reads `isGalleryDialogOpen()` in `isModalDialogOpen()`. Without it, global shortcuts fire behind
-the previewed dialog, which looks like a dialog bug and would poison the review. That call is the only thing the
-MAIN-WINDOW graph imports from this directory, which is why `gallery-state.svelte.ts` pulls in nothing else (its
-type-only imports are erased, so the disk-fixture shape can live there without pulling anything in).
-
-**Gotcha: don't wrap that call in a build-time `DEV` guard.** Guarding it with `import.meta.env.DEV &&` makes knip stop
-seeing `+page.svelte`'s dynamic `import('$lib/debug/debug-window')` and report `lib/debug/debug-window.ts` as an unused
-file (reproduced on knip 6.27.0, 2026-07-22: adding and removing that one guard flips the failure on and off with
-everything else identical; a bare `import.meta.env` elsewhere in the file is fine, and the file already has two). The
-guard buys nothing anyway: nothing writes the store outside the gated listener, so the getter is already a constant
-`false` in production.
+The main-window graph imports nothing from this directory. A previewed dialog suppresses global shortcuts the same way a
+real one does: `+page.svelte`'s `isModalDialogOpen()` asks `$lib/ui/open-dialogs.svelte`, and the gallery renders the
+SHIPPING component, which registers there on mount. The one case that falls through is a request whose fixture is
+missing, where the harness renders nothing and logs a warning; nothing is on screen to shadow, so nothing should be
+suppressed.
 
 ## Two more callers: the screenshot driver and the inset check
 

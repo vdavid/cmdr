@@ -27,6 +27,9 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
   `startup-gates.ts`. ❌ Never capture a `$state` value; `isOnboardingVisible()` reads live.
 - **The old-macOS notice is `topmost` AND rendered after `<OnboardingWizard>`**: that order is the only reason it clears
   the wizard's overlay. ❌ Don't move it or drop the prop. DETAILS § Startup gates.
+- **`isModalDialogOpen()` reads the `open-dialogs` INVENTORY, ❌ never a list of `show*` booleans**: a hand list misses
+  dialogs, and each miss lets a bare key (Tab, Space, F5) fire behind one. Its other arms, the palette and the explorer
+  overlays, register nowhere. DETAILS § What `isModalDialogOpen()` is made of.
 - **Text-region intercept (⌘C / ⌘A)**: `handleTextRegionShortcut` short-circuits `edit.copy` / `selection.selectAll`
   inside `.error-pane` or `[data-text-region]`, so copying error text doesn't copy files.
 - **Gate on capabilities, ❌ never a `volumeId` compare**: `blockedByCapabilities` bails pre-dispatch for

@@ -15,7 +15,7 @@ import { writable } from 'svelte/store'
 import DialogGallery from './DialogGallery.svelte'
 import {
   closeGalleryDialog,
-  isGalleryDialogOpen,
+  getOpenGalleryDialog,
   openGalleryDialog,
   type GalleryDiskFixture,
 } from './gallery-state.svelte'
@@ -302,7 +302,7 @@ describe('store-seeded previews clean up on their own', () => {
 
     closeWhatsNew()
     await tick()
-    expect(isGalleryDialogOpen(), 'the gallery still thinks a preview is up').toBe(false)
+    expect(getOpenGalleryDialog(), 'the gallery still thinks a preview is up').toBeNull()
     expect(whatsNewState.releases).toEqual([])
   })
 
