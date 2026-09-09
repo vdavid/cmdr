@@ -323,6 +323,8 @@ it goes straight to the archive volume. § "Answering the archive password" has 
 
 Frontend syncs state to these stores via Tauri commands (`update_left_pane_state`, `update_pane_tabs`, etc.). Settings are fetched on-demand via round-trip to the frontend rather than stored in a state store.
 
+`PaneStateStore` has one reader outside MCP: the Dock tile menu lists the open tabs, through `tabs_focused_first()`. That accessor is `try_read`-only and clones just the tab lists (❌ never `files`), because it runs inside AppKit's `applicationDockMenu:` while the Dock waits on the answer — a plain `read()` queued behind a pane push would stall the Dock itself. Contract and rationale: `../dock/menu/DETAILS.md`. Nothing else about the store changes for it; it stays the mirror of what the UI knows.
+
 ### Tests (`tests/`)
 
 Directory module split by test category:

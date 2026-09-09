@@ -12,13 +12,33 @@ What is being built (four pieces):
    machine-facing half) and `apps/desktop/src/lib/dock/CLAUDE.md` (the decision, the toast, the events). Conditions (b)
    and (c) below turned out to be one answer, `DockPinState`, not two; both Applications folders count, not just
    `/Applications`.
-3. ⏳ **Not started.** A Dock tile context menu, live only while the app runs (no `NSDockTilePlugIn`). §§ A and B are
-   still the map for it, and are the reason this file is still here.
+3. ✅ **Landed.** A Dock tile context menu, live only while the app runs (no `NSDockTilePlugIn`). Authority:
+   `apps/desktop/src-tauri/src/dock/menu/CLAUDE.md` + `DETAILS.md`. Route (a) from § A was taken; the corrections § A
+   and § B needed are below.
 4. ✅ **Landed** with piece 2. Three PostHog events: `dock_pin_offered`, `dock_pin_answered` (`answer`:
    yes|no|dismissed), `dock_pin_failed` (typed reason).
 
 **Where a landed piece and this file disagree, the colocated `CLAUDE.md` / `DETAILS.md` wins.** The corrections below
 are the ones that cost real time to rediscover; everything else in §§ C–G is now background.
+
+## Corrections from building piece 3
+
+- **§ B's "recent locations" question never had to be answered.** David's final spec asks for the open TABS, and the
+  live source for those is `mcp::pane_state::PaneStateStore` — the backend's mirror of both panes, pushed by the
+  frontend on every tab change. In-memory, always current, and readable with `try_read`, which is strictly better than
+  `go_to_path/history.rs` (sparse) or `app-status.json` (a disk read on the main thread).
+- **§ B's `CommandScope::FileScoped` fix is unnecessary once the menu is hand-built.** Route (a) never produces a muda
+  `MenuEvent`, so a click doesn't reach `handle_menu_event` at all and the focus guard has nothing to drop. No `dock:*`
+  id namespace, no branch ahead of the unified dispatch.
+- **No new IPC type, no bindings regen, no frontend code.** `execute-command` and `reveal-path` both already exist and
+  both already have a main-window listener (`routes/(main)/listener-setup.ts`), so § B's "how Rust asks the frontend to
+  act" is answered by two events that were already there. § G's `bindings-fresh` note doesn't apply.
+- **§ G's biggest hidden cost is confirmed but small here.** Four new `menu.dock.*` labels plus one qualifier key, so
+  `i18n-coverage` fails for all ten translated locales until the translator fan-out lands. That's the whole i18n bill.
+- **§ A's `favorites::store::list()` is NOT safe to call from the menu build.** It's sync and `AppHandle`-free as § B
+  says, but on a cold cache it reads the file, seeds it, and holds the store's disk lock while it does. The menu needs
+  the added `list_cached()` (`try_lock`, `None` rather than waiting).
+- **`macos_appkit::set_sf_symbol` needed widening to `pub(crate)`**, which § A's route (a) assumed was already free.
 
 ## Corrections from building pieces 1, 2, and 4
 
@@ -696,22 +716,22 @@ and commit `apps/desktop/src/lib/ipc/bindings.ts` (`bindings-fresh` guards it). 
 
 ## Open questions for David
 
-Both remaining ones belong to piece 3, the Dock tile menu.
+1. **The Dock menu says "Go to folder…" where the menu bar says "Go to path…"**, for the same `nav.goToPath` command.
+   David's spec spelled the Dock row that way (it's what Finder calls its ⇧⌘G item), so that's what shipped, but two
+   labels for one command is a wart. Say the word and both become one wording.
 
-1. **"New window"** has no meaning today: closing the main window quits the app, and there is only ever one `"main"`
-   window. Should the item bring the existing window forward (and be renamed), or is a real second-window feature in
-   scope?
-2. **"Recent locations"** would come from the Go-to-path dialog's history (`go_to_path/history.rs`, cap 10), which
-   records only explicit dialog jumps — not ordinary pane navigation. Accept that, or add a new list?
-
-Two more are settled, and the answers live in the code: `usage.json` uses `_schemaVersion` (the house convention), and
-both `/Applications` and `~/Applications` count as an Applications folder (`dock/location.rs`).
+Settled, with the answers in the code: `usage.json` uses `_schemaVersion` (the house convention); both `/Applications`
+and `~/Applications` count as an Applications folder (`dock/location.rs`); "New window" is out (the Dock menu opens the
+existing main window, and macOS's own `Show All Windows` reaches the rest); "Recent locations" is out, replaced by the
+open TABS, which have a live in-memory source.
 
 ## Still unverified
 
-- Whether a muda-built menu returned from `applicationDockMenu:` actually posts its `MenuEvent` (the global handler is
-  installed process-wide, so it should, but AppKit tracks a Dock menu in its own context and this was not tested). The
-  one open item for piece 3.
+- **The Dock tile menu has not been seen on a real Dock.** Everything up to the AppKit boundary is tested, but no run
+  has right-clicked the tile. `apps/desktop/src-tauri/src/dock/menu/DETAILS.md` § "Still unverified" says what to look
+  for, and carries the second open item (whether SF Symbols render the same in a Dock menu as on the menu bar).
+- Whether a muda-built menu posts its `MenuEvent` from `applicationDockMenu:` is now moot: the shipped menu is
+  hand-built and routes its own clicks.
 
-The other two are answered: the real `persistent-apps` entry shape and the TCC findings for writing `com.apple.dock`
-from a signed build are recorded, with their evidence, in `apps/desktop/src-tauri/src/dock/DETAILS.md`.
+The `persistent-apps` entry shape and the TCC findings for writing `com.apple.dock` from a signed build are recorded,
+with their evidence, in `apps/desktop/src-tauri/src/dock/DETAILS.md`.

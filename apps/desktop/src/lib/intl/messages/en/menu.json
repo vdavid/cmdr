@@ -729,5 +729,38 @@
   "menu.viewer.wordWrap": "Word wrap",
   "@menu.viewer.wordWrap": {
     "description": "NOUN phrase on a checkable item in a viewer window's View menu: ticked, long lines fold onto the next line instead of running off to the right. Use the term text editors in this language use for line wrapping."
+  },
+
+  "menu.dock.openCmdr": "Open Cmdr",
+  "@menu.dock.openCmdr": {
+    "description": "VERB phrase (imperative). Top item of the menu that appears when someone right-clicks Cmdr's icon in the macOS Dock: brings Cmdr's main window to the front. \"Cmdr\" is the app's name and stays in English. This is a native menu, so no screenshot can show it."
+  },
+
+  "menu.dock.searchFiles": "Search files\u2026",
+  "@menu.dock.searchFiles": {
+    "description": "VERB phrase (imperative). Item in the menu that appears when someone right-clicks Cmdr's icon in the macOS Dock: opens the dialog for searching files. The trailing \u2026 means a dialog opens first; keep it. Word it the same way as menu.edit.searchFiles, which is the same command in the menu bar. This is a native menu, so no screenshot can show it."
+  },
+
+  "menu.dock.goToFolder": "Go to folder\u2026",
+  "@menu.dock.goToFolder": {
+    "description": "VERB phrase (imperative). Item in the menu that appears when someone right-clicks Cmdr's icon in the macOS Dock: opens a dialog where a folder path can be typed, then shows that folder. The trailing \u2026 means a dialog opens first; keep it. Use the wording macOS Finder uses for its \"Go to Folder\u2026\" item in this language. This is a native menu, so no screenshot can show it."
+  },
+
+  "menu.dock.connectToServer": "Connect to server\u2026",
+  "@menu.dock.connectToServer": {
+    "description": "VERB phrase (imperative). Item in the menu that appears when someone right-clicks Cmdr's icon in the macOS Dock: starts connecting to a network file server (SMB, SFTP, WebDAV). The trailing \u2026 means a dialog opens first; keep it. Use the wording macOS Finder uses for its \"Connect to Server\u2026\" item in this language. This is a native menu, so no screenshot can show it."
+  },
+
+  "menu.dock.locationInParent": "{name} ({parent})",
+  "@menu.dock.locationInParent": {
+    "description": "Label for one folder row in the menu that appears when someone right-clicks Cmdr's icon in the macOS Dock. Used only when two rows would otherwise read the same, to say which one this is. Both {name} and {parent} are folder names taken from the user's disk, inserted literally. Reorder them, and change the punctuation around them, to whatever reads naturally in this language; some languages put the qualifier first. Keep both tokens spelled exactly as they are. This is a native menu, so no screenshot can show it.",
+    "placeholders": {
+      "name": {
+        "description": "The folder's own name, for example Projects."
+      },
+      "parent": {
+        "description": "The name of the folder that holds it, for example Documents."
+      }
+    }
   }
 }

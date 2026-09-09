@@ -513,7 +513,7 @@ pub(super) fn observe_menu_tracking(
 ///
 /// They arrived with macOS 11, and the bundle's floor is 10.15, so Catalina gets
 /// menu items with no icons rather than an unrecognized-selector abort.
-pub(super) fn set_sf_symbol(item: &NSMenuItemAppKit, symbol_name: &str) {
+pub(crate) fn set_sf_symbol(item: &NSMenuItemAppKit, symbol_name: &str) {
     if !macos_at_least(11, 0) {
         return;
     }

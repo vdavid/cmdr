@@ -447,6 +447,12 @@ out, which is why an image set there still gets its gutter. ❗ The returned `Ic
 `macos_appkit.rs` owns `observe_menu_tracking`, `tracking_menu`, `find_ns_item`, and `set_sf_symbol`,
 shared by both consumers.
 
+`set_sf_symbol` is the one thing here that's `pub(crate)`, for a third consumer outside this module:
+`../dock/menu/native.rs` hand-builds the Dock tile's `NSMenu` (Tauri exposes no `NSMenu` and a Dock
+menu never enters the menu bar, so none of the resolution machinery above transfers) and puts symbols
+on its bare `NSMenuItem`s directly — no arming, no tracking observer, because it owns the items rather
+than borrowing Tauri's. That menu's own rules: `../dock/menu/CLAUDE.md`.
+
 Today the table is the three Google Drive items: `arrow.up.forward.app` for "Open in Google Drive"
 (distinct from the menu bar's plain `arrow.up.forward` on `Open`), `link` for "Copy Google Drive
 link" — deliberately the same symbol the menu bar's `Copy path` carries, since `Copy` already shares

@@ -283,6 +283,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `dock/`: macOS-only. Whether Cmdr may be offered a place in the Dock, whether it's already there, and putting it in as
   the leftmost app tile: `com.apple.dock`'s `persistent-apps` through CFPreferences, then a Dock restart. See
   `apps/desktop/src-tauri/src/dock/CLAUDE.md`
+- `dock/menu/`: macOS-only. The Dock tile's right-click menu (four commands, then the bookmarks and open tabs), built as
+  a raw `NSMenu` from an `applicationDockMenu:` we add to tao's app delegate. Runs inside an AppKit callback, so it may
+  neither panic nor block. See `apps/desktop/src-tauri/src/dock/menu/CLAUDE.md`
 - `quick_look/`: macOS-only `QLPreviewPanel` integration (Shift+Space)
 - `drag_image_detection.rs`: macOS method swizzle for drag image size detection
 - `drag_image_swap.rs`: Rich/transparent drag image swap for self-drags

@@ -90,6 +90,12 @@ would resolve symlinks and require the path to exist).
 - The disk lock is never held across an `.await`; the in-memory guard is always dropped before any
   `fs` call. (The commands themselves run the store calls inside `spawn_blocking`, so even the
   synchronous store API never blocks the IPC thread.)
+- `list_cached()` is the never-waiting read: a `try_lock` on the in-memory cache alone, answering
+  `None` when the cache is still cold or another thread is mid-mutation. It exists for the Dock tile
+  menu, which AppKit builds on the main thread while the Dock holds the user's mouse-down, so ❌ it
+  must not fall back to `list()` on a `None` — that seeds the file behind the disk lock. The
+  guard-never-held-across-I/O rule above is exactly what makes the `try_lock` sound. Full contract:
+  `../dock/menu/DETAILS.md`.
 
 ## IPC contract (`commands/favorites.rs`)
 

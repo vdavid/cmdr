@@ -10,6 +10,7 @@
 
 mod entries;
 mod location;
+pub mod menu;
 mod prefs;
 mod restart;
 

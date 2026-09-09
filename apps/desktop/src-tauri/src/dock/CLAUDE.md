@@ -1,8 +1,8 @@
 # Dock
 
-Putting Cmdr in the macOS Dock. Answers three questions and performs one action, all typed: may we
-offer the pin, is Cmdr already down there, and put it there as the leftmost app tile. macOS-only.
-The nudge that asks lives in the frontend; every decision that has to look at the machine is here.
+Cmdr's relationship with the macOS Dock: getting the app's tile down there, and what
+that tile's right-click menu says. macOS-only. The nudge that asks lives in the
+frontend; every decision that has to look at the machine is here.
 
 ## Module map
 
@@ -12,6 +12,9 @@ The nudge that asks lives in the frontend; every decision that has to look at th
   app is in the array, put a tile first.
 - **`location.rs`**: is this copy of Cmdr somewhere a tile may point at?
 - **`prefs.rs`**: the CFPreferences boundary. **`restart.rs`**: asking the Dock to reload.
+- **`menu/`**: the tile's context menu, with its own `CLAUDE.md`. Separate concern,
+  separate rules — it runs inside an AppKit callback where a panic is undefined
+  behavior and a blocking read beachballs the Dock.
 
 ## Must-knows
 

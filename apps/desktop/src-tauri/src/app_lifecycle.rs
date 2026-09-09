@@ -17,7 +17,7 @@ use crate::downloads;
 use crate::network;
 use crate::{ai, crash_reporter, file_viewer, mcp, quit, search, window_state};
 #[cfg(target_os = "macos")]
-use crate::{drag_image_detection, mtp, reveal};
+use crate::{dock, drag_image_detection, mtp, reveal};
 
 /// Stop the three services that outlive a window: the local LLM, the MCP server, and mDNS.
 ///
@@ -99,6 +99,11 @@ pub fn on_run_event(app: &AppHandle<Wry>, event: tauri::RunEvent) {
             // discover wry's ObjC class, so it runs at Ready (not setup).
             #[cfg(target_os = "macos")]
             drag_image_detection::install(app.clone());
+            // Teach the app delegate to answer `applicationDockMenu:`. Ready, because
+            // tao has installed the delegate by then and AppKit only asks for the menu
+            // on a right-click, so the timing is generous either way.
+            #[cfg(target_os = "macos")]
+            dock::menu::install(app.clone());
         }
         // Another app asked the OS to show a file, and the OS picked us
         // (`NSFileViewer`, see `reveal/`). It arrives as an open-documents

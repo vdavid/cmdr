@@ -37,8 +37,11 @@ pub mod install;
 mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
+// `pub(crate)` for one helper: `dock::menu` builds its own `NSMenu` by hand (Tauri
+// exposes none) and puts SF Symbols on it with `set_sf_symbol`, so the same glyph
+// rules cover the menu bar and the Dock tile menu. Everything else here stays internal.
 #[cfg(target_os = "macos")]
-mod macos_appkit;
+pub(crate) mod macos_appkit;
 mod media_index_items;
 mod menu_handlers;
 mod menu_items;

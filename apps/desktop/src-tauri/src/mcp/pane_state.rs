@@ -231,6 +231,39 @@ impl PaneStateStore {
     pub fn set_focused_pane(&self, pane: String) {
         *self.focused_pane.write_ignore_poison() = pane;
     }
+
+    /// Both panes' tabs, the focused pane's first, or `None` while any of the three
+    /// locks is held by a writer.
+    ///
+    /// ❗ Never waits, and clones only the tab lists (never `files`). The Dock tile
+    /// menu reads this from AppKit's `applicationDockMenu:`, which runs on the main
+    /// thread while the Dock is blocked on the answer, so a `read()` queued behind a
+    /// pane push would stall the Dock itself. A menu that lists no tabs once costs
+    /// nothing. Full contract: `dock/menu/DETAILS.md`.
+    pub fn tabs_focused_first(&self) -> Option<Vec<TabInfo>> {
+        let focused_is_right = *try_read(&self.focused_pane)? == "right";
+        let (first, second) = if focused_is_right {
+            (&self.right, &self.left)
+        } else {
+            (&self.left, &self.right)
+        };
+        let mut tabs = try_read(first)?.tabs.clone();
+        tabs.extend(try_read(second)?.tabs.iter().cloned());
+        Some(tabs)
+    }
+}
+
+/// A read guard if one is free this instant, `None` if a writer holds the lock.
+///
+/// Poison is ignored rather than propagated, matching `read_ignore_poison` above: a
+/// `PaneState` is a plain mirror of what the frontend last pushed, so the value a
+/// panicking thread left behind is still the best answer available.
+fn try_read<T>(lock: &RwLock<T>) -> Option<std::sync::RwLockReadGuard<'_, T>> {
+    match lock.try_read() {
+        Ok(guard) => Some(guard),
+        Err(std::sync::TryLockError::Poisoned(poisoned)) => Some(poisoned.into_inner()),
+        Err(std::sync::TryLockError::WouldBlock) => None,
+    }
 }
 
 /// Tauri command to update left pane state from frontend.

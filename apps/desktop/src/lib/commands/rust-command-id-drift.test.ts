@@ -9,15 +9,18 @@
  * `COMMAND_IDS`, so renaming a registry id without updating Rust (or vice versa)
  * fails here.
  *
- * Mechanism: parse the two Rust/Svelte source files for their command-id string
+ * Mechanism: parse the Rust/Svelte source files for their command-id string
  * literals rather than maintaining a hand-copied list (which would itself drift).
- * `menu/command_map.rs`'s `menu_id_to_command` is the source of truth for
- * menu-emitted ids; `LicenseSection.svelte` is the only cross-window
- * `execute-command` emit.
+ * Three emit sites: `menu/command_map.rs`'s `menu_id_to_command` (the menu bar and
+ * the right-click menus), `dock/menu/rows.rs`'s `DockCommand::command_id` (the Dock
+ * tile menu, which builds its own `NSMenu` and so never passes through
+ * `command_map`), and `LicenseSection.svelte` (the only cross-window
+ * `execute-command` emit).
  *
- * Cross-pointers: `src-tauri/src/menu/command_map.rs` § `menu_id_to_command` and
- * `LicenseSection.svelte` § the `emitTo('main', 'execute-command', …)` call both
- * carry a comment pointing back here.
+ * Cross-pointers: `src-tauri/src/menu/command_map.rs` § `menu_id_to_command`,
+ * `src-tauri/src/dock/menu/rows.rs` § `command_id`, and `LicenseSection.svelte` §
+ * the `emitTo('main', 'execute-command', …)` call all carry a comment pointing
+ * back here.
  */
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -51,6 +54,27 @@ function menuEmittedCommandIds(): string[] {
   return [...ids]
 }
 
+/** Command ids the Dock tile menu emits (`DockCommand::command_id`'s `Some("…")` literals). */
+function dockEmittedCommandIds(): string[] {
+  const source = readFileSync(path.join(desktopRoot, 'src-tauri/src/dock/menu/rows.rs'), 'utf8')
+  // Isolate `command_id`'s body, so the neighbouring `label_key` (whose arms are
+  // `menu.*` catalog keys, not command ids) can't be mistaken for one.
+  const fnStart = source.indexOf('pub fn command_id(')
+  expect(fnStart, 'command_id not found in dock/menu/rows.rs').toBeGreaterThan(-1)
+  const fnEnd = source.indexOf('pub fn label_key(', fnStart)
+  expect(fnEnd, 'label_key not found after command_id').toBeGreaterThan(fnStart)
+  const body = source.slice(fnStart, fnEnd)
+
+  // Match `DockCommand::SearchFiles => Some("search.open"),` → capture `search.open`.
+  const ids = new Set<string>()
+  const re = /Some\("([^"]+)"\)/g
+  let match: RegExpExecArray | null
+  while ((match = re.exec(body)) !== null) {
+    ids.add(match[1])
+  }
+  return [...ids]
+}
+
 /** Command ids cross-window-emitted from settings windows via `execute-command`. */
 function crossWindowEmittedCommandIds(): string[] {
   const source = readFileSync(path.join(desktopRoot, 'src/lib/settings/sections/LicenseSection.svelte'), 'utf8')
@@ -74,6 +98,16 @@ describe('Rust↔FE command-id drift', () => {
 
     const unknown = menuIds.filter((id) => !isCommandId(id))
     expect(unknown, 'menu-emitted ids not present in COMMAND_IDS').toEqual([])
+  })
+
+  it('every Dock-tile-menu command id is a registry CommandId', () => {
+    const dockIds = dockEmittedCommandIds()
+    // The Dock menu's four rows are `Open Cmdr` (handled entirely in Rust, so no id)
+    // plus these three. A regex that silently stopped matching would pass vacuously.
+    expect(dockIds).toEqual(['search.open', 'nav.goToPath', 'servers.connect'])
+
+    const unknown = dockIds.filter((id) => !isCommandId(id))
+    expect(unknown, 'Dock-emitted ids not present in COMMAND_IDS').toEqual([])
   })
 
   it('every cross-window-emitted command id is a registry CommandId', () => {

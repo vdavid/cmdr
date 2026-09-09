@@ -431,6 +431,29 @@ pub fn list() -> Vec<Favorite> {
     load_or_seed()
 }
 
+/// The favorites the in-memory cache already holds, without touching disk and without
+/// ever waiting for a lock.
+///
+/// `None` means there is no answer RIGHT NOW: the cache is still cold, or another
+/// thread is inside a mutation. Both are the caller's cue to offer nothing. ❗ Never
+/// fall back to [`list`] on a `None`: that seeds the file on a cold cache and takes
+/// the disk lock behind it, which is exactly what this exists to avoid.
+///
+/// Written for the Dock tile menu, which AppKit builds on the main thread while the
+/// Dock waits on the answer. Rationale and the rest of that contract:
+/// `../dock/menu/DETAILS.md`.
+pub fn list_cached() -> Option<Vec<Favorite>> {
+    let guard = match cache().try_lock() {
+        Ok(guard) => guard,
+        // Poisoned: some other thread panicked mid-mutation. The store is a plain value
+        // holder, so the list it left behind is still the best answer there is — the
+        // same call `lock_ignore_poison` makes everywhere else in this file.
+        Err(std::sync::TryLockError::Poisoned(poisoned)) => poisoned.into_inner(),
+        Err(std::sync::TryLockError::WouldBlock) => return None,
+    };
+    guard.as_ref().map(|store| store.favorites.clone())
+}
+
 /// Adds a favorite for `path`, deduping by normalized path (a re-add moves the existing entry to the
 /// end). When `name` is `None`, the label defaults to the path's file name.
 pub fn add(path: &str, name: Option<String>) {
