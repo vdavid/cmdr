@@ -629,6 +629,12 @@ when the sign-in sheet moved to `servers.sheet.*` and the image-index keys moved
 live key to repoint at. Local runs drop an entry the moment its doc stops citing the key, so `pending` drains itself and
 can't quietly become a second permanent section.
 
+❗ **The check ships green only because the allowlist excuses every finding it has.** Empty the allowlist and it reports
+**91 dead citations, 24 distinct keys, 12 files** (measured 2026-09-09 at `ce0d112ab`); with it, zero. That is the whole
+of the gap, and it's 79 entries seeded in one sitting rather than accrued, so treat the `pending` count as a debt with a
+date on it: the check protects the line from here, and only the burn-down makes it protect what's behind it. The
+`retired` six are the only ones that are genuinely finished.
+
 ## CLAUDE.md / DETAILS.md sibling
 
 `claude-md-details-sibling` (`IsFast`, an **error** like `docs-reachable`: the C/D pair is structural) enforces that
