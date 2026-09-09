@@ -429,7 +429,9 @@ mod tests {
         // The variant is what the pass branches on, and the message proves it came from
         // the TIMEOUT arm rather than an errno the open happened to return instead.
         match &err {
-            FetchError::Disconnected(msg) => assert!(msg.contains("timed out"), "expected the timeout arm, got {msg:?}"),
+            FetchError::Disconnected(msg) => {
+                assert!(msg.contains("timed out"), "expected the timeout arm, got {msg:?}")
+            }
             other => panic!("a hung read must classify as Disconnected, got {other:?}"),
         }
         // And it gave up on the budget instead of blocking. Generous upper bound: this
