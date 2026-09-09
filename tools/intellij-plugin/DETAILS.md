@@ -349,6 +349,15 @@ property: the real `CHANGELOG.md`, the real `messages/en/`, `settings/definition
 that changed any of them, `test` is still up to date and prints `BUILD SUCCESSFUL` in under a second without running a
 thing. **Use `test --rerun` whenever the repo moved under you**, which is exactly when those tests are worth something.
 
+**A busy machine wedges the `BasePlatformTestCase` classes, and it looks like your change broke them.** They start,
+throw `NullPointerException` at `NestedLocksThreadingSupport.kt:718`, then park in `IndexWaiter.waitNow` inside
+`LightPlatformTestCase.doSetup` at ~0% CPU, with `Cannot execute background write action in 10 seconds` in the log. The
+worker sits there indefinitely: 17 minutes of wall clock for 21 seconds of CPU, against a suite that finishes in ~10 s
+cold. IntelliJ's indexing waiter is wall-clock bounded, so it loses to load rather than to anything in the code. Run an
+unrelated platform test as a control before believing a failure here (`I18nKeyNavigationTest` wedges identically), check
+`uptime` (this reproduces around load 16+, on a 2026 M3), and re-run when the machine is quiet. Two agents spent about
+40 minutes on this on 2026-09-09 before running the control.
+
 Four things cost real time to discover; none of them are guessable:
 
 - **`CodeFoldingManager.updateFoldRegions(editor)` is the only call that populates the folding model.**
