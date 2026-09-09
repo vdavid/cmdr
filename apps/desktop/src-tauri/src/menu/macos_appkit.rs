@@ -13,12 +13,13 @@
 use std::panic::AssertUnwindSafe;
 
 use crate::platform::macos_at_least;
-use objc2::MainThreadMarker;
 use objc2::rc::Retained;
+use objc2::{ClassType, MainThreadMarker};
 use objc2_app_kit::{
-    NSApplication, NSImage, NSMenu, NSMenuItem as NSMenuItemAppKit, NSUserInterfaceItemIdentification,
+    NSApplication, NSImage, NSMenu, NSMenuDidBeginTrackingNotification, NSMenuItem as NSMenuItemAppKit,
+    NSUserInterfaceItemIdentification,
 };
-use objc2_foundation::NSString;
+use objc2_foundation::{NSNotification, NSNotificationCenter, NSString};
 use tauri::{
     AppHandle, Runtime,
     menu::{Menu, MenuItemKind, Submenu},
@@ -437,11 +438,79 @@ pub(super) fn find_ns_item(menu: &NSMenu, title: &str) -> Option<Retained<NSMenu
         .find(|item| !item.isSeparatorItem() && item.title().to_string() == title)
 }
 
+/// The `NSMenu` an `NSMenuDidBeginTrackingNotification` is about, or `None` when the
+/// notification is about something else.
+///
+/// Shared by the two things that can only reach a CONTEXT menu's `NSMenu` through that
+/// notification, because Tauri exposes none for one (muda's `ns_menu()` sits behind a
+/// sealed trait): `services_context.rs` borrows AppKit's Services menu into it, and
+/// `context_menu_icons.rs` puts SF Symbols on its items.
+///
+/// Takes the marker because the `Retained<NSMenu>` it mints is a main-thread-only
+/// object.
+pub(super) fn tracking_menu(_mtm: MainThreadMarker, notification: &NSNotification) -> Option<Retained<NSMenu>> {
+    let object = notification.object()?;
+    // Walking the chain rather than comparing the class outright: AppKit tracks
+    // private `NSMenu` subclasses (the menu bar's own, for one), and `isKindOfClass:`
+    // isn't reachable on an `AnyObject` without dropping into `msg_send!`.
+    let is_menu =
+        std::iter::successors(Some(object.class()), |class| class.superclass()).any(|class| class == NSMenu::class());
+    if !is_menu {
+        return None;
+    }
+    // SAFETY: the walk above proves the object's class descends from `NSMenu`, and an
+    // `NSMenu` can only exist on the main thread, which the caller holds a marker for.
+    Some(unsafe { Retained::cast_unchecked::<NSMenu>(object) })
+}
+
+/// Registers a block to run whenever any of the app's menus begins tracking.
+///
+/// ❗ Call it ONCE per caller (each guards with its own `OBSERVING` flag): the observer
+/// is deliberately never removed, so it lives for the process, like the accent-color one
+/// in `accent_color.rs`, and registering twice would run the work twice per menu.
+///
+/// `what` finishes the sentence "Couldn't …", so phrase it as a verb phrase.
+///
+/// Takes the marker to pin registration to the menu thread, which is where the callers'
+/// thread-locals live and where the callback expects to run.
+pub(super) fn observe_menu_tracking(
+    _mtm: MainThreadMarker,
+    what: &'static str,
+    on_tracking: impl Fn(MainThreadMarker, &NSNotification) + 'static,
+) {
+    let block = block2::RcBlock::new(move |notification: std::ptr::NonNull<NSNotification>| {
+        // SAFETY: `NSNotificationCenter` hands the callback a live notification for the
+        // duration of the call, and this observer asked for no queue, so it is
+        // delivered synchronously on the thread that posted — the menu thread.
+        let notification = unsafe { notification.as_ref() };
+        let Some(mtm) = MainThreadMarker::new() else {
+            log::warn!(target: "menu", "Menu tracking began off the main thread; {what} doesn't happen");
+            return;
+        };
+        // In a `catch` because this frame is called from ObjC, where an escaping Rust
+        // panic or an ObjC raise would abort the app.
+        if let Err(e) = objc2::exception::catch(AssertUnwindSafe(|| on_tracking(mtm, notification))) {
+            log::warn!(target: "menu", "Couldn't {what}: {e:?}");
+        }
+    });
+    // SAFETY: `NSMenuDidBeginTrackingNotification` is AppKit's own name constant, and
+    // the block outlives the call because `addObserverForName_object_queue_usingBlock`
+    // retains it for as long as the observer exists, which is the process's life.
+    unsafe {
+        NSNotificationCenter::defaultCenter().addObserverForName_object_queue_usingBlock(
+            Some(NSMenuDidBeginTrackingNotification),
+            None,
+            None,
+            &block,
+        );
+    }
+}
+
 /// Puts an SF Symbol on a menu item, where the OS has SF Symbols at all.
 ///
 /// They arrived with macOS 11, and the bundle's floor is 10.15, so Catalina gets
 /// menu items with no icons rather than an unrecognized-selector abort.
-fn set_sf_symbol(item: &NSMenuItemAppKit, symbol_name: &str) {
+pub(super) fn set_sf_symbol(item: &NSMenuItemAppKit, symbol_name: &str) {
     if !macos_at_least(11, 0) {
         return;
     }

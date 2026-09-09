@@ -156,6 +156,12 @@ pub fn show_file_context_menu<R: Runtime>(
     #[cfg(target_os = "macos")]
     let _services_loan = crate::menu::lend_services_menu(&result.menu, services_paths);
 
+    // SF Symbols on the items worth spotting at a glance. Same story as the loan above:
+    // Tauri hands out no `NSMenu` for a context menu, so the icons land when the menu
+    // starts tracking, which happens inside `popup()`. ❌ Never `let _ =`.
+    #[cfg(target_os = "macos")]
+    let _icon_loan = crate::menu::lend_context_menu_icons(&result.menu);
+
     result.menu.popup(window).map_err(|e| e.to_string())?;
 
     Ok(())

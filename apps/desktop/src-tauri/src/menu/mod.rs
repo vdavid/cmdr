@@ -22,9 +22,13 @@
 //! - `macos_appkit.rs`: the objc2 passes that fix the built menu bar up (`cleanup_macos_menus`,
 //!   `set_macos_menu_icons`), plus the `MENU_BAR_ICONS` table.
 //! - `open_with.rs` (macOS): "Open with" submenu builder.
+//! - `context_menu_icons.rs` (macOS): SF Symbols on right-click items, which needs the tracking
+//!   notification because Tauri exposes no `NSMenu` for a context menu.
 
 mod accelerators;
 mod command_map;
+#[cfg(target_os = "macos")]
+mod context_menu_icons;
 pub mod install;
 #[cfg(not(target_os = "macos"))]
 mod linux;
@@ -65,6 +69,8 @@ use tauri::{
 // `command_map`; the glob keeps every existing `crate::menu::…` / `super::…` import path valid.
 pub use accelerators::{frontend_shortcut_to_accelerator, update_menu_item_accelerator};
 pub use command_map::*;
+#[cfg(target_os = "macos")]
+pub use context_menu_icons::lend_context_menu_icons;
 pub use media_index_items::{ImageIndexMenuState, image_index_menu_items};
 pub use menu_handlers::handle_menu_event;
 #[cfg(target_os = "macos")]

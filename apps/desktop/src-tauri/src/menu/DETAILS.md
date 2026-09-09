@@ -417,11 +417,34 @@ would raise an unrecognized-selector exception and abort the process instead. Th
 `allowed-newer-selector` marker on the call is what tells `desktop-rust-macos-availability` the gate
 exists, since it reads lines rather than control flow.
 
-Context menus don't get SF Symbols for our own items because Tauri doesn't expose the raw `NSMenu`
-pointer for context menus, and rasterized SF Symbol bitmaps via `IconMenuItem` look poor (no
-template auto-tinting). However, **full-color non-template images do render correctly** through
-`IconMenuItem`, and that's what the "Open with" submenu uses for app-bundle icons (loaded via
-`file_system::open_with::load_app_icon` from the `.icns` in each app's `Contents/Resources`).
+#### SF Symbols on a CONTEXT menu
+
+`context_menu_icons.rs`, and it needs its own mechanism because Tauri hands out no `NSMenu` for a
+context menu (the same wall the Services loan hit, above). ❌ **`IconMenuItem` is not the answer**:
+muda turns the RGBA it is given into a PNG and hands `NSImage` that, never calling `setTemplate:`, so
+the bitmap draws as literal pixels. A monochrome glyph baked for light mode disappears in dark mode,
+and it stays dark on the accent-coloured fill of a highlighted row while the label beside it turns
+white. Only `NSMenuItem.setImage:` with a real symbol image gets AppKit's tinting for light, dark,
+and highlight.
+
+So the icons ride the same handle the loan does: `lend_context_menu_icons` reads the live title off
+each item in the `FILE_CONTEXT_ICONS` table (`(item ID, symbol name)`, IDs only — a title is
+translated text), arms them, and the `NSMenuDidBeginTrackingNotification` observer sets the images on
+whichever tracking menu carries those titles. AppKit posts that notification before it lays the menu
+out, which is why an image set there still gets its gutter. ❗ The returned `IconLoan` must outlive
+`popup()`, same as `ServicesLoan`; its `Drop` disarms so a later menu can't inherit stale titles.
+`macos_appkit.rs` owns `observe_menu_tracking`, `tracking_menu`, `find_ns_item`, and `set_sf_symbol`,
+shared by both consumers.
+
+Today the table is the two Google Drive items: `arrow.up.forward.app` for "Open in Google Drive"
+(distinct from the menu bar's plain `arrow.up.forward` on `Open`) and `link` for "Copy Google Drive
+link" — deliberately the same symbol the menu bar's `Copy path` carries, since `Copy` already shares
+`document.on.document` across two menus. Both verified present with `NSImage(systemSymbolName:)` on
+macOS 26.6.2, 2026-09-09.
+
+**Full-color non-template images do render correctly** through `IconMenuItem`, and that is what stays
+there: app-bundle icons in "Open with" (via `file_system::open_with::load_app_icon`), each
+`NSSharingService`'s own icon in `Share`, and the tag colour circles.
 
 ## Platform differences
 
@@ -433,7 +456,7 @@ template auto-tinting). However, **full-color non-template images do render corr
 | Mnemonics | Not used | `&` prefixes for GTK keyboard navigation, unique per submenu |
 | Help search | Native NSMenu search field via `setHelpMenu:` | Not available |
 | System cleanup | objc2 strips injected Edit items | Not needed |
-| Menu icons | SF Symbols via objc2 (menu bar) and IconMenuItem (context menus) | Not supported |
+| Menu icons | SF Symbols via objc2 (menu bar and context menus), IconMenuItem for pixel icons | Not supported |
 
 ## Menu structure
 

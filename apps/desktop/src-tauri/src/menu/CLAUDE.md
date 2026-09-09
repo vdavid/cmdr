@@ -10,8 +10,9 @@ and focus-based enabling.
   `menu_handlers.rs`: clicks; `accelerators.rs` and `view_mode_items.rs`: live updates. `media_index_items.rs`: the
   image-search-items decider. `macos.rs` / `linux.rs`: platform menu bars, assembling shared pieces around their
   layouts. `macos_appkit.rs`: the objc2 fix-up passes. `open_with.rs`: the macOS "Open with" submenu.
-  `services_context.rs`: the right-click `Services`. `share_submenu.rs`: the right-click `Share`. `rebuild.rs`:
-  rebuilding in a new language. `mnemonics.rs`: the Linux underline-letter allocator.
+  `services_context.rs`: the right-click `Services`. `share_submenu.rs`: the right-click `Share`.
+  `context_menu_icons.rs`: SF Symbols on right-click items. `rebuild.rs`: rebuilding in a new language.
+  `mnemonics.rs`: the Linux underline-letter allocator.
 
 ## Must-knows
 
@@ -21,6 +22,10 @@ and focus-based enabling.
   already has it, so `ServicesLoan` borrows it, aimed at the RIGHT-CLICKED rows — ❗ the loan must outlive `popup()`, ❌
   never `let _ =`. `Share`: ours, item by item from `file_system/share.rs`'s enumeration, ids `share-service:<index>`,
   and ❌ never empty (no service offered, no item).
+- **A right-click item's SF Symbol lands on `NSMenuDidBeginTrackingNotification`, ❌ never through `IconMenuItem`**:
+  Tauri hands out no `NSMenu` for a context menu, and muda's bitmap path can't make a TEMPLATE image, so a monochrome
+  glyph would vanish in one appearance and go dark on a highlighted row. `context_menu_icons.rs`; its `IconLoan` must
+  outlive `popup()` too. `IconMenuItem` stays right for real pixels (app icons, share icons, tag circles).
 - **Accelerator changes go remove/recreate/reinsert** (Tauri has no `set_accelerator()`), and `MenuState` tracks each
   item's submenu and index — so **adding or moving one item shifts every later `register_item` index**, mangling a
   different item on the first rebind. `register_item_positions_match_submenu_order` catches that, which is why both

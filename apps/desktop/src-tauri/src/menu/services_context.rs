@@ -17,17 +17,18 @@
 //! Tauri's sealed `ContextMenuBase`), so the borrow can't happen before `popup()`.
 //! `NSMenuDidBeginTrackingNotification` is the handle: AppKit posts it with the menu
 //! it is about to track, which is where [`on_menu_did_begin_tracking`] does the swap.
+//! `macos_appkit.rs` owns that registration, because `context_menu_icons.rs` needs the
+//! identical hook for the identical reason.
 //! Details and what else was tried: `DETAILS.md` § "Services in the right-click menu".
 
 use std::cell::{Cell, RefCell};
 use std::panic::AssertUnwindSafe;
 use std::path::PathBuf;
-use std::ptr::NonNull;
 
+use objc2::MainThreadMarker;
 use objc2::rc::Retained;
-use objc2::{ClassType, MainThreadMarker};
-use objc2_app_kit::{NSApplication, NSMenu, NSMenuDidBeginTrackingNotification, NSMenuItem};
-use objc2_foundation::{NSNotification, NSNotificationCenter};
+use objc2_app_kit::{NSApplication, NSMenu, NSMenuItem};
+use objc2_foundation::NSNotification;
 use tauri::menu::{Menu, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Runtime};
 
@@ -35,7 +36,7 @@ use crate::intl::menu_t;
 use crate::services_menu::selection;
 
 use super::SERVICES_CONTEXT_ID;
-use super::macos_appkit::{detach_from_supermenu, find_ns_item};
+use super::macos_appkit::{detach_from_supermenu, find_ns_item, observe_menu_tracking, tracking_menu};
 
 /// The app menu's own catalog key: the same word for the same system feature, and
 /// macOS spells Finder's context-menu item the same way.
@@ -137,42 +138,15 @@ thread_local! {
     static OBSERVING: Cell<bool> = const { Cell::new(false) };
 }
 
-/// Registers the tracking observer, once per process.
-///
-/// Takes the marker to pin registration to the menu thread, which is where
-/// `OBSERVING` and `LOAN` live and where the callback expects to run.
-fn ensure_observing(_mtm: MainThreadMarker) {
+/// Registers the tracking observer, once per process. `macos_appkit.rs` owns the
+/// registration itself, because the icon pass needs the identical hook.
+fn ensure_observing(mtm: MainThreadMarker) {
     if OBSERVING.replace(true) {
         return;
     }
-    let block = block2::RcBlock::new(move |notification: NonNull<NSNotification>| {
-        // SAFETY: `NSNotificationCenter` hands the callback a live notification for the
-        // duration of the call, and this observer asked for no queue, so it is
-        // delivered synchronously on the thread that posted — the menu thread.
-        let notification = unsafe { notification.as_ref() };
-        let Some(mtm) = MainThreadMarker::new() else {
-            log::warn!(target: "menu", "Menu tracking began off the main thread; Services stays empty");
-            return;
-        };
-        // The same `catch` reasoning as `ServicesLoan::drop`: this frame is called
-        // from ObjC and an escaping raise would abort.
-        if let Err(e) = objc2::exception::catch(AssertUnwindSafe(|| {
-            on_menu_did_begin_tracking(mtm, notification);
-        })) {
-            log::warn!(target: "menu", "Couldn't lend AppKit's Services menu to the context menu: {e:?}");
-        }
+    observe_menu_tracking(mtm, "lend AppKit's Services menu to the context menu", |mtm, note| {
+        on_menu_did_begin_tracking(mtm, note);
     });
-    // SAFETY: `NSMenuDidBeginTrackingNotification` is AppKit's own name constant, and
-    // the observer is deliberately never removed: it lives for the process, like the
-    // accent-color one in `accent_color.rs`.
-    unsafe {
-        NSNotificationCenter::defaultCenter().addObserverForName_object_queue_usingBlock(
-            Some(NSMenuDidBeginTrackingNotification),
-            None,
-            None,
-            &block,
-        );
-    }
 }
 
 /// Hangs AppKit's Services menu off the context menu's Services item, the moment that
@@ -216,23 +190,6 @@ fn on_menu_did_begin_tracking(mtm: MainThreadMarker, notification: &NSNotificati
             });
         }
     });
-}
-
-/// The `NSMenu` a tracking notification is about. Takes the marker because the
-/// `Retained<NSMenu>` it mints is a main-thread-only object.
-fn tracking_menu(_mtm: MainThreadMarker, notification: &NSNotification) -> Option<Retained<NSMenu>> {
-    let object = notification.object()?;
-    // Walking the chain rather than comparing the class outright: AppKit tracks
-    // private `NSMenu` subclasses (the menu bar's own, for one), and `isKindOfClass:`
-    // isn't reachable on an `AnyObject` without dropping into `msg_send!`.
-    let is_menu =
-        std::iter::successors(Some(object.class()), |class| class.superclass()).any(|class| class == NSMenu::class());
-    if !is_menu {
-        return None;
-    }
-    // SAFETY: the walk above proves the object's class descends from `NSMenu`, and an
-    // `NSMenu` can only exist on the main thread, which the caller holds a marker for.
-    Some(unsafe { Retained::cast_unchecked::<NSMenu>(object) })
 }
 
 /// Puts AppKit's Services menu back on the menu bar's Services item.
