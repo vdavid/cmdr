@@ -17,12 +17,9 @@ Optional (4); Linux skips step 1 and resumes at step 2.
   the Mac's language preferences, so a first launch can land in a language the user can't read while every other way out
   is labeled in it. `OnboardingLanguagePicker` is `SettingSelect` on `appearance.language` (the Settings wiring, not a
   fork), portaled into the wizard OVERLAY so the menu escapes the panel's `overflow: hidden` without leaving the focus
-  trap. David cut the one-time banner for already-onboarded users: silent is fine, Settings is their way out. DETAILS §
-  "The language escape hatch".
-- **The per-provider setup steps are NOT ours: they live in `$lib/ai-provider-setup/`**, shared with Settings › AI ›
-  Provider. `CloudProviderSetup.svelte` is a header plus a status line around them, so a new provider or a copy change
-  goes there, ❌ never here. Its `$effect` mounting the controller uses `untrack` for a reason the module's `CLAUDE.md`
-  spells out.
+  trap. DETAILS § "The language escape hatch".
+- **The per-provider setup steps live in `$lib/ai-provider-setup/`**, shared with Settings › AI › Provider. A provider,
+  link, or copy change goes there, ❌ never here.
 - **The Open beta page (step 3) is non-skippable, and the AI step has no skip-to-finish.** Every first-launch user has
   to see the usage-stats disclosure once: the opt-out default only reads as fair consent if it was shown. ❌ Don't
   re-add a skip-to-finish on the AI step.
@@ -37,14 +34,13 @@ Optional (4); Linux skips step 1 and resumes at step 2.
   the TCC popups it suppresses (we hit 5-10 stacked popups once). Deny advances normally.
 - **Step 1's live-grant poller calls `checkFullDiskAccessQuiet`, ❌ never `checkFullDiskAccess`**, which fires a TCC
   registration storm on every denial. It runs only while the Allow/Deny variants are open on macOS, and stops on grant.
-- **Two things stay gated on the FDA decision at boot**: the drive indexer and the path-based icon fetches in
-  `volumes::list_locations`, both via `crate::fda_gate::is_fda_pending(...)`. On Deny, `startIndexingAfterFdaDecision()`
-  clears the runtime gate and starts them; on Allow, the relaunch opens the gate.
+- **Two things stay gated on the FDA decision at boot**: the drive indexer and `volumes::list_locations`' path-based
+  icon fetches, both via `crate::fda_gate::is_fda_pending(...)`. Deny clears the runtime gate through
+  `startIndexingAfterFdaDecision()`; Allow opens it on relaunch.
 - **FDA stays a three-state setting** (`notAskedYet` / `allow` / `deny`), never a boolean: the app must tell "never
   asked" from "granted-then-revoked" from "explicitly declined".
 - **`StepBeta` and `StepOptional` reuse existing Settings wiring** (`UpdatesSection`'s `betaSignup` / email path,
-  `<SettingSwitch>` via `setSetting()`), and that email path POSTs only the email, never an install id. ❌ Don't fork
-  it.
+  `<SettingSwitch>` via `setSetting()`); that path POSTs only the email, never an install id. ❌ Don't fork it.
 - **Search's coverage note routes INTO step 1** when a walk was refused a folder and Cmdr lacks FDA
   (`coverage-note.ts::offersFullDiskAccess`): ❌ no second FDA prompt, ❌ never over a snapshot folder. DETAILS owns the
   rest, including what stays fixed for a reason: no Escape handler, the always-enabled AI forward button, the step-2
