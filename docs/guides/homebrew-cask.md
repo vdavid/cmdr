@@ -55,8 +55,8 @@ This shape also satisfies a future `Homebrew/homebrew-cask` resubmission, so kee
   in the machine-wide `NSFileViewer` preference, and macOS does NOT fall back to Finder when that id names an app that's
   gone: the command silently does nothing everywhere (`apps/desktop/src-tauri/src/reveal/DETAILS.md` § "The uninstall
   problem"). The one-liner clears the key, and ONLY when it still holds a Cmdr bundle id: Path Finder and ForkLift write
-  the same key, so a blind `defaults delete` would unregister theirs. It never touches
-  `.GlobalPreferences.plist` itself.
+  the same key, so a blind `defaults delete` would unregister theirs. It never touches `.GlobalPreferences.plist`
+  itself.
   - **In `uninstall`, ❌ never only in `zap`.** `zap` runs on `brew uninstall --zap` alone, so a plain
     `brew uninstall cmdr` would leave the key dangling, and that's the case that breaks somebody's Mac.
   - **Known cost: it also runs on `brew reinstall` and on a `--greedy` upgrade.** Homebrew passes `upgrade:` and

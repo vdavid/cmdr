@@ -2717,6 +2717,7 @@ vinner enligt style.md § ”Copy som pekar på en systemyta stavas som macOS st
   `main.dockPinNudge.body` (”i några dagar nu”) · `high`.
 - **Aviseringen vid första träffen är ❌ ingen ursäkt** · Den säger vad som just hände, varför, och var reglaget finns.
   Därav `Cmdr är inställd på att fånga upp dem`, ❌ aldrig ”tyvärr” · `high`.
+
 ## Introduktionsguidens omskrivning: checklistan, AI-steget och sammanfattningarna (2026-09-09)
 
 De 23 nyckarna i `onboarding.json` som steg 1–4 fick när guiden skrevs om: kryssrutelistan i beta-steget, AI-stegets

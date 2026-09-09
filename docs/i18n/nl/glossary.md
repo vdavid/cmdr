@@ -3138,6 +3138,7 @@ opdrachten, dus de macOS-terminologie wint (style.md § systeemoppervlakken).
   regel als `main.dockPinNudge.body` (‘een paar dagen’) · `high`.
 - **De melding bij de eerste keer is ❌ geen excuus** · Ze zegt wat er net gebeurde, waarom, en waar de schakelaar
   staat. Vandaar `Cmdr staat ingesteld om deze op te vangen`, ❌ nooit ‘sorry’ · `high`.
+
 ## De onboarding-herschrijving: de checklist, de stapteller en de vier verdictregels (2026-09-09)
 
 23 sleutels uit `onboarding.json`: stap 1 en het wizardframe, de AI-stap, de checklist van stap 3, de vier

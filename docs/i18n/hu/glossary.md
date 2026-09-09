@@ -3073,6 +3073,7 @@ parancsára mutat, tehát a macOS szóhasználata nyer (style.md § rendszerfel�
   style.md § márkanevek · `high`.
 - **Az első találat értesítése ❌ nem bocsánatkérés** · Azt mondja el, mi történt, miért, és hol a kapcsoló. Innen az
   `A Cmdr úgy van beállítva, hogy elkapja ezeket`, ❌ nem „sajnáljuk” · `high`.
+
 ## A bevezető átírt lépései: ellenőrzőlista, lépésbuborék, összefoglalók (`onboarding.*`, 2026-09-09)
 
 Huszonhárom kulcs a bevezető varázsló négy lépéséről: a lépésjelző buboréka, az FDA-lépés `Miért?` linkje, az AI-lépés

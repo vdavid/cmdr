@@ -59,7 +59,9 @@ describe('shouldShowRevealNudge', () => {
   })
 
   it('says nothing when reveals already land here', () => {
-    expect(shouldShowRevealNudge({ ...ready, handlerStatus: { state: { kind: 'registered' }, blockedBy: null } })).toBe(false)
+    expect(shouldShowRevealNudge({ ...ready, handlerStatus: { state: { kind: 'registered' }, blockedBy: null } })).toBe(
+      false,
+    )
   })
 
   /**
@@ -82,7 +84,9 @@ describe('shouldShowRevealNudge', () => {
    * something the click cannot deliver.
    */
   it('says nothing where the key cannot be written at all', () => {
-    expect(shouldShowRevealNudge({ ...ready, handlerStatus: { state: { kind: 'unavailable' }, blockedBy: null } })).toBe(false)
+    expect(
+      shouldShowRevealNudge({ ...ready, handlerStatus: { state: { kind: 'unavailable' }, blockedBy: null } }),
+    ).toBe(false)
   })
 
   /**

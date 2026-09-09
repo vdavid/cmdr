@@ -2810,6 +2810,7 @@ dùng từ của macOS thắng (style.md § bề mặt hệ thống).
   tắc với `main.dockPinNudge.body` (“được vài ngày rồi”) · `high`.
 - **Thông báo lần đầu ❌ không phải lời xin lỗi** · Nó nói vừa xảy ra chuyện gì, vì sao, và công tắc nằm ở đâu. Vì thế
   `Cmdr được đặt để nhận những lệnh này`, ❌ không dùng “xin lỗi” · `high`.
+
 ## Viết lại phần thiết lập ban đầu: bảng kiểm, chú giải bước, tóm tắt tùy chọn (23 khóa `onboarding.*`, 2026-09-09)
 
 Bề mặt: bốn bước của trình thiết lập ban đầu. Mới hoàn toàn là chú giải hàng chấm tiến độ, nhãn trợ năng của biểu tượng

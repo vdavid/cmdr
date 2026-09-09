@@ -2664,6 +2664,7 @@ also gewinnt die macOS-Wortwahl (style.md § Systemoberflächen).
   einsetzen. Gleiche Regel wie `main.dockPinNudge.body` („ein paar Tage“) · `high`.
 - **Der Ersttreffer-Hinweis ist ❌ keine Entschuldigung** · Er sagt, was passiert ist und warum, und wo der Schalter
   sitzt. Deshalb `Cmdr ist so eingestellt, dass es das übernimmt.`, ❌ nicht „Entschuldigung“ oder „Leider“ · `high`.
+
 ## Die Einführungs-Checkliste, der Schritt-Tooltip und die vier Kurzfazits (`onboarding.*`, 2026-09-09)
 
 Der umgeschriebene Einführungsassistent: die vier Zeilen der Mitmach-Checkliste in Schritt 3, die beiden Meldungen unter

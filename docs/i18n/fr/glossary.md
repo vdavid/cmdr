@@ -3163,6 +3163,7 @@ propres à macOS, donc la terminologie macOS l'emporte (style.md § surfaces sys
   Même règle que `main.dockPinNudge.body` (« quelques jours ») · `high`.
 - **L'avis de première fois ❌ n'est pas une excuse** · Il dit ce qui vient de se passer, pourquoi, et où se trouve
   l'option. D'où `Cmdr est configuré pour les récupérer`, ❌ jamais « désolé » · `high`.
+
 ## La réécriture de la prise en main : 23 clés `onboarding.*` (2026-09-09)
 
 Famille ICU : apostrophes DOUBLÉES partout. Dix-neuf clés neuves (étape 1 et le cadre de l'assistant, l'étape IA, la

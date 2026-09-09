@@ -2903,6 +2903,7 @@ así que gana la terminología de macOS (style.md § superficies del sistema).
   Misma regla que `main.dockPinNudge.body` («unos días») · `high`.
 - **El aviso de la primera vez ❌ no es una disculpa** · Dice qué pasó, por qué, y dónde está el interruptor. De ahí
   `Cmdr está configurado para recogerlos`, ❌ nunca «lo sentimos» · `high`.
+
 ## Las 23 claves del rediseño de la introducción (`onboarding.*`, 2026-09-09)
 
 Los 19 textos nuevos y los 4 reescritos del asistente de bienvenida: la ayuda emergente de los pasos, la lista de tareas

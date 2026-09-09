@@ -2684,6 +2684,7 @@ terminologia da Apple vence (style.md § superfícies do sistema).
   regra de `main.dockPinNudge.body` (“há alguns dias”) · `high`.
 - **O aviso da primeira vez ❌ não é um pedido de desculpas** · Ele diz o que acabou de acontecer, por quê, e onde fica
   o botão. Daí `O Cmdr está configurado para receber esses pedidos`, ❌ nunca “desculpe” · `high`.
+
 ### Termos da reescrita da introdução (`onboarding.moreAbout`, `onboarding.wizard.stepTooltip`, `onboarding.stepFda.why`/`.ifAllow`, `onboarding.stepAi.*`, `onboarding.stepBeta.checklist.*`/`.signup.*`/`.openBeta`, `onboarding.stepOptional.*.summary`)
 
 - star (o BOTÃO do GitHub) · **Adicionar aos favoritos** · o próprio GitHub em português chama assim

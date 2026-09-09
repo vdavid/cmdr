@@ -2461,6 +2461,7 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   `main.dockPinNudge.body`（“好几天了”）同一条规则 · `high`。
 - **首次接手提示 ❌ 不是道歉** · 它说明刚才发生了什么、为什么，以及开关在哪里。所以写
   `Cmdr 设置成了接手这类请求`，❌ 不写“抱歉”· `high`。
+
 ### 入门引导改版：清单、步骤提示、可选项摘要（2026-09-09）
 
 覆盖 `onboarding.moreAbout`、`onboarding.wizard.stepTooltip`、`onboarding.stepFda.*`、`onboarding.stepAi.*`、
