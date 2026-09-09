@@ -49,6 +49,16 @@ below is met.
 
 ## In progress
 
+- [ ] 2026-09-09 `dock-integration.md` - **Cmdr has no presence in the Dock beyond its running tile.** A read-only
+      implementation map (no code yet) for four pieces: a `usage.json` launch-day ledger, a one-time "add Cmdr to your
+      Dock" nudge that writes `com.apple.dock`'s `persistent-apps` through CFPreferences, a Dock-tile context menu built
+      on demand, and three PostHog events. Every seam is named with a path and a symbol: tao's `TaoAppDelegateParent`
+      never implements `applicationDockMenu:` so the selector can simply be added, `objc2-core-foundation` already
+      carries CFPreferences behind one unused feature flag, and favorites plus recents are both readable from Rust
+      synchronously. Two findings change the plan: `CommandScope::FileScoped` silently drops a Dock click because the
+      main window isn't focused, and Tauri exposes no `NSMenu*` from a `Submenu`, so the menu has to be hand-built with
+      objc2. Four open questions for David (what "New window" means with one window, what "Recent locations" draws from,
+      the `_schemaVersion` naming, and whether `~/Applications` counts).
 - [ ] 2026-09-07 `servers-hub-review-follow-ups.md` - **What the servers branch's pre-merge review left open once its
       fixes landed.** Twenty-four entries in problem / impact / solution / size form, verified against the code as it
       stands. Four are decisions rather than fixes and wait for David: the SMB sheet seeding "Remember in Keychain" ON
