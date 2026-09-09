@@ -330,11 +330,6 @@ strings are counted, so no plural branches are needed there.
 
 ## Decisions to confirm with David
 
-- **`informe de error` vs `informe de fallos` is a live seam.** The `errorReporter.*` dialog says `informe de error`
-  while the menu item that opens it (`menu.help.sendErrorReport`) says `Enviar informe de fallos…`, so the same feature
-  has two names on screen. English has one ("error report") and one for crashes ("crash report"), so this is ours to
-  fix, not a source problem. Copy written since then routes around it (`errorReporter.amend.unavailable` says "envía un
-  informe nuevo" without naming the type). Pick one and sweep both families.
 - **"Android platform tools" → "herramientas de plataforma de Android"** (tentative): no macOS or Microsoft source names
   this Android SDK component, and Google's own Spanish string is "Herramientas de la plataforma del SDK de Android",
   which is too long for a settings row. The short form is in `settings.fileOperations.adbEnabled.description` and

@@ -1399,7 +1399,7 @@ siendo citar a los hermanos largos del catálogo.
   asentado `move → mover` en toda la familia ("Mover a la papelera", "No se pudo mover a la papelera"), y las dos frases
   se leen juntas · high (consistencia)
 - **"has no Trash" → `no tiene papelera`** · el inglés varía a propósito entre el diálogo largo ("doesn't support trash"
-  → `Este volumen no admite papelera.`, `fileOperations.delete.noTrashWarningStrong`) y este aviso corto; el giro
+  → `Este volumen no admite la papelera.`, `fileOperations.delete.noTrashWarningStrong`) y este aviso corto; el giro
   `no hay papelera` ya está en el catálogo (`fileOperations.delete.archiveWarningStrong`, "Dentro de un archivo
   comprimido no hay papelera."), así que `no tiene papelera` es el mismo idioma del catálogo y además es más directo que
   el técnico `no admite` · high
@@ -1532,8 +1532,8 @@ papelera"), y el mismo comando está en la paleta de comandos.
   reservado en el catálogo para deshacer un renombrado (`askCmdr.renameUndo.undone`), así que se mantiene la distinción
   entre devolver un SITIO y restaurar un NOMBRE.
 - **`This drive doesn't keep a trash.` → `Esta unidad no tiene papelera.`** · dato sobre la unidad, sin veredicto, en la
-  línea de `fileOperations.delete.noTrashWarningStrong` ("Este volumen no admite papelera."). El inglés dice `drive`, y
-  `unidad` es lo que el catálogo usa para eso (`askCmdr.renameUndo.unavailable`, "su unidad no esté conectada") · high
+  línea de `fileOperations.delete.noTrashWarningStrong` ("Este volumen no admite la papelera."). El inglés dice
+  `drive`, y `unidad` es lo que el catálogo usa para eso (`askCmdr.renameUndo.unavailable`, "su unidad no esté conectada") · high
 - **`Nothing to put back.` → `No hay nada que devolver.`** · el giro `no hay nada que + infinitivo` ya está asentado
   (`askCmdr.renameUndo.unavailable`, "No hay nada que restaurar.") · high
 - **La segunda mitad trae su propio parámetro de cantidad (`{skipped}`)**, así que conjuga con normalidad: "… a su
@@ -1561,11 +1561,11 @@ informe ya no admite añadidos, el diálogo lo dice y remite al menú Ayuda.
   `errorReporter.dialog.title` (`Enviar informe de error`) y `feedback.dialog.title` (`Enviar comentarios`) · high. El
   imperativo de `updates.moveToApplicationsDialog.title` ("Mueve Cmdr a…") es la excepción de un título que da una
   instrucción, no la norma.
-- **`error report` sigue siendo `informe de error`** aquí, por coherencia con las claves vecinas de `errorReporter.*` ·
-  tentative (heredado). ⚠️ Costura conocida: el ítem de menú `menu.help.sendErrorReport` dice
-  `Enviar informe de fallos…` mientras que este diálogo dice `informe de error`. Por eso `amend.unavailable` remite al
-  menú SIN nombrar el tipo de informe (`envía un informe nuevo desde el menú Ayuda`): así no elige bando en una costura
-  que nadie ha resuelto todavía. Si algún día se unifica, esta clave no hay que tocarla.
+- **`error report` es `informe de error` en todo el catálogo**: este diálogo, el ítem de menú
+  `menu.help.sendErrorReport` y `commands.helpSendErrorReport.label` dicen los tres `informe de error…`, frente al
+  `informe de fallos` que el glosario reserva para el CRASH report · high. `amend.unavailable` remite al menú sin
+  nombrar el tipo de informe (`envía un informe nuevo desde el menú Ayuda`) porque el inglés tampoco lo nombra
+  ("send a new report from the Help menu").
 - **`the Help menu` → `el menú Ayuda`** · el nombre del menú es `Ayuda` en macOS (Finder `MenuBar` `300630`/`300631`,
   AppKit `MenuCommands`/`HelpManager`) y el catálogo ya lo fija en `menu.bar.help` · high. Sin comillas: macOS escribe
   `selecciona menú Apple > Ajustes del Sistema` (entrecomilla los paneles, no los menús).
@@ -1678,7 +1678,7 @@ están; las trece restantes son fronteras DELIBERADAS y quedan anotadas abajo pa
   `commands.helpSendErrorReport.label` y `menu.help.sendErrorReport` decían `Enviar informe de fallos…`, que es el
   término de CRASH report (glosario: crash report → `informe de fallos`, error report → `informe de error`). O sea: el
   menú prometía un informe de fallos y abría un diálogo titulado `Enviar informe de error`, y de paso llamaba "fallo" a
-  algo que no lo es · `high`. La entrada del glosario ya avisaba de esta grieta; ahora está cerrada.
+  algo que no lo es · `high`.
 - **`Zoom in` / `Zoom out` → `Aumentar el zoom` / `Reducir el zoom`**, en el menú y en la paleta · `menu.zoom.in`/`.out`
   decían `Ampliar`/`Reducir` y la paleta decía otra cosa · `high`. macOS `es` usa el escueto `Aumentar`/`Reducir`, y ahí
   funciona porque el submenú Zoom ya pone el objeto; la paleta de comandos no tiene ese contexto, así que gana la forma
