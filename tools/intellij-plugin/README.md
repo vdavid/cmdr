@@ -51,9 +51,9 @@ mise exec -- ./gradlew runIde
 
 This starts a second, sandboxed IDE with its own settings and plugins, opened on three files from `sandbox-project/`:
 `sample.ts` and `Sample.svelte`, where the message keys show up folded to their English text, and `CHANGELOG.md`, where
-the nine-character trailing hashes show up link-colored. It can't touch the IDE you already have running, and closing
-it leaves no trace. The sandbox does remember which folds you opened, so a second run opens the files the way you left
-them rather than freshly collapsed.
+the nine-character trailing hashes show up link-colored. It can't touch the IDE you already have running, and closing it
+leaves no trace. The sandbox does remember which folds you opened, so a second run opens the files the way you left them
+rather than freshly collapsed.
 
 The sandbox copies your IDE's license file in on the way up, so Ultimate-only plugins load there too, Svelte among them.
 That's what makes `.svelte` folding visible without sideloading, and it's a read: your own IDE never notices.
