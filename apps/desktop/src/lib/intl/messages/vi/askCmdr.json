@@ -208,17 +208,17 @@
   "@askCmdr.error.noKey": {
     "sourceHash": "0a78f37"
   },
-  "askCmdr.error.notConfigured": "Bật một nhà cung cấp AI trong cài đặt để dùng Ask Cmdr.",
+  "askCmdr.error.notConfigured": "Trò chuyện cần một nhà cung cấp AI. Hãy bật một cái trong cài đặt.",
   "@askCmdr.error.notConfigured": {
-    "sourceHash": "b84c5f4"
+    "sourceHash": "2d55d2c"
   },
   "askCmdr.error.noConsent": "Bật Ask Cmdr để bắt đầu trò chuyện. Bạn chọn trước những gì nó có thể xem.",
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr cần cửa sổ ngữ cảnh lớn hơn mức mô hình cục bộ của bạn đang chạy. Hãy chọn 32.768 token trở lên trong cài đặt, ở phần AI.",
+  "askCmdr.error.localWindowTooSmall": "Cmdr cần cửa sổ ngữ cảnh lớn hơn mức mô hình cục bộ của bạn có. Hãy chọn 32.768 token trở lên trong cài đặt, ở phần AI.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "6c2334b"
+    "sourceHash": "8ac7452"
   },
   "askCmdr.error.unavailable": "Không thể kết nối với nhà cung cấp AI. Kiểm tra kết nối của bạn rồi thử lại.",
   "@askCmdr.error.unavailable": {
@@ -356,9 +356,9 @@
   "@askCmdr.consent.title": {
     "sourceHash": "59b4ca9"
   },
-  "askCmdr.consent.intro": "Ask Cmdr gửi câu hỏi của bạn đến nhà cung cấp AI mà bạn chọn, dùng khóa API của riêng bạn. Đây là chính xác những gì rời khỏi Mac của bạn khi bạn trò chuyện:",
+  "askCmdr.consent.intro": "Cmdr gửi câu hỏi của bạn đến nhà cung cấp AI mà bạn chọn, dùng khóa API của riêng bạn. Đây là chính xác những gì rời khỏi Mac của bạn khi bạn trò chuyện:",
   "@askCmdr.consent.intro": {
-    "sourceHash": "4366272"
+    "sourceHash": "3b5eac1"
   },
   "askCmdr.consent.item.messages": "Tin nhắn của bạn",
   "@askCmdr.consent.item.messages": {
@@ -384,21 +384,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.item.memory": "Các ghi chú mà Ask Cmdr lưu về bạn, được gửi lại cùng mỗi tin nhắn",
+  "askCmdr.consent.item.memory": "Các ghi chú mà Cmdr lưu về bạn, được gửi lại cùng mỗi tin nhắn",
   "@askCmdr.consent.item.memory": {
-    "sourceHash": "54bee04"
+    "sourceHash": "7779513"
   },
-  "askCmdr.consent.contentsRule": "Cmdr không bao giờ gửi toàn bộ tệp, ảnh hay hình thu nhỏ. Khi bạn hỏi về một tệp, nó có thể đọc một phần có giới hạn của tệp đó: vài dòng văn bản, vài trang của một tệp PDF cùng với tiêu đề và tác giả của nó, danh sách các tệp bên trong một tệp nén, hoặc thông tin máy ảnh của một bức ảnh, kể cả vị trí chụp. Tìm kiếm ảnh cũng hoạt động theo cách đó: văn bản mà Cmdr nhận dạng được bên trong các ảnh khớp cùng thẻ của chúng sẽ được gửi đến nhà cung cấp của bạn để có thể tìm thấy chúng. Ask Cmdr có thể đề xuất đổi tên, di chuyển và dọn dẹp, và không có gì xảy ra với tệp nào cho đến khi bạn phê duyệt.",
+  "askCmdr.consent.contentsRule": "Cmdr không bao giờ gửi toàn bộ tệp, ảnh hay hình thu nhỏ. Khi bạn hỏi về một tệp, nó có thể đọc một phần có giới hạn của tệp đó: vài dòng văn bản, vài trang của một tệp PDF cùng với tiêu đề và tác giả của nó, danh sách các tệp bên trong một tệp nén, hoặc thông tin máy ảnh của một bức ảnh, kể cả vị trí chụp. Tìm kiếm ảnh cũng hoạt động theo cách đó: văn bản mà Cmdr nhận dạng được bên trong các ảnh khớp cùng thẻ của chúng sẽ được gửi đến nhà cung cấp của bạn để có thể tìm thấy chúng. Cmdr có thể đề xuất đổi tên, di chuyển và dọn dẹp, và không có gì xảy ra với tệp nào cho đến khi bạn phê duyệt.",
   "@askCmdr.consent.contentsRule": {
-    "sourceHash": "11b2e0a"
+    "sourceHash": "5a378c1"
   },
-  "askCmdr.consent.memory": "Ask Cmdr tự viết ghi chú về bạn: bạn thích sắp xếp mọi thứ ra sao, trước đây bạn đã từ chối điều gì, và bất cứ điều gì bạn nhờ nó nhớ. Những ghi chú đó đi kèm mọi tin nhắn bạn gửi, chừng nào chúng còn tồn tại, và có thể chứa văn bản mà Cmdr nhận dạng được bên trong ảnh của bạn. Bạn có thể đọc hoặc xóa chúng bất cứ lúc nào trong cài đặt Ask Cmdr.",
+  "askCmdr.consent.memory": "Cmdr tự viết ghi chú về bạn: bạn thích sắp xếp mọi thứ ra sao, trước đây bạn đã từ chối điều gì, và bất cứ điều gì bạn nhờ nó nhớ. Những ghi chú đó đi kèm mọi tin nhắn bạn gửi, chừng nào chúng còn tồn tại, và có thể chứa văn bản mà Cmdr nhận dạng được bên trong ảnh của bạn. Bạn có thể đọc hoặc xóa chúng bất cứ lúc nào trong cài đặt Ask Cmdr.",
   "@askCmdr.consent.memory": {
-    "sourceHash": "80facfd"
+    "sourceHash": "496c78d"
   },
-  "askCmdr.consent.proactive": "Ask Cmdr cũng theo dõi các thư mục bạn dùng và bắt đầu một cuộc trò chuyện khi có điều gì đó để đề xuất, nên tin nhắn có thể đến nhà cung cấp của bạn mà bạn không hỏi gì trước. Bạn có thể tắt điều đó trong cài đặt Ask Cmdr, ở mục “Tự chủ động”.",
+  "askCmdr.consent.proactive": "Cmdr cũng theo dõi các thư mục bạn dùng và bắt đầu một cuộc trò chuyện khi có điều gì đó để đề xuất, nên tin nhắn có thể đến nhà cung cấp của bạn mà bạn không hỏi gì trước. Bạn có thể tắt điều đó trong cài đặt Ask Cmdr, ở mục “Tự chủ động”.",
   "@askCmdr.consent.proactive": {
-    "sourceHash": "1d0b671"
+    "sourceHash": "abfa80b"
   },
   "askCmdr.consent.local": "Các cuộc trò chuyện của bạn ở lại trên Mac, trong một cơ sở dữ liệu cục bộ mà bạn có thể mở và đọc. Bạn chọn nhà cung cấp và mô hình, và bạn có thể xem chi phí của mỗi cuộc trò chuyện.",
   "@askCmdr.consent.local": {
@@ -420,17 +420,17 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr giờ đây có thể xem bên trong tệp mà bạn hỏi đến: một phần văn bản của tệp, vài trang của một tệp PDF, danh sách các tệp bên trong một tệp nén, hoặc thông tin máy ảnh và vị trí chụp của một bức ảnh. Đó là lời hứa rộng hơn điều bạn đã đồng ý, nên đây là toàn bộ nội dung một lần nữa.",
+  "askCmdr.consent.whatsNew.body": "Cmdr giờ đây có thể xem bên trong tệp mà bạn hỏi đến: một phần văn bản của tệp, vài trang của một tệp PDF, danh sách các tệp bên trong một tệp nén, hoặc thông tin máy ảnh và vị trí chụp của một bức ảnh. Đó là lời hứa rộng hơn điều bạn đã đồng ý, nên đây là toàn bộ nội dung một lần nữa.",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "fd59b19"
+    "sourceHash": "1af51d8"
   },
-  "askCmdr.forget.title": "Quên mọi thứ Ask Cmdr đang nhớ?",
+  "askCmdr.forget.title": "Quên mọi thứ Cmdr đang nhớ về bạn?",
   "@askCmdr.forget.title": {
-    "sourceHash": "95f576a"
+    "sourceHash": "e83c997"
   },
-  "askCmdr.forget.message": "Ask Cmdr vứt bỏ các ghi chú về bạn và bắt đầu lại từ trang trắng. Các cuộc trò chuyện và tệp của bạn vẫn nguyên như cũ.",
+  "askCmdr.forget.message": "Cmdr vứt bỏ các ghi chú về bạn và bắt đầu lại từ trang trắng. Các cuộc trò chuyện và tệp của bạn vẫn nguyên như cũ.",
   "@askCmdr.forget.message": {
-    "sourceHash": "5687160"
+    "sourceHash": "5a390a8"
   },
   "askCmdr.forget.confirm": "Quên mọi thứ",
   "@askCmdr.forget.confirm": {
@@ -709,21 +709,21 @@
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
   },
-  "askCmdr.wake.thinking": "Ask Cmdr đang xem qua những gì đã thay đổi. Mở cuộc trò chuyện.",
+  "askCmdr.wake.thinking": "Cmdr đang xem qua những gì đã thay đổi. Mở cuộc trò chuyện.",
   "@askCmdr.wake.thinking": {
-    "sourceHash": "c4367ad"
+    "sourceHash": "772ca6e"
   },
-  "askCmdr.wake.stop": "Dừng việc Ask Cmdr đang làm",
+  "askCmdr.wake.stop": "Dừng việc Cmdr đang làm",
   "@askCmdr.wake.stop": {
-    "sourceHash": "6559df8"
+    "sourceHash": "1eae5cb"
   },
-  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr chỉ theo dõi được những thư mục nó nhìn thấy. Thiết lập quyền truy cập toàn bộ đĩa.",
+  "askCmdr.wake.needsFullDiskAccess": "Các tính năng AI chưa nhìn thấy được thư mục của bạn. Nhấp để thiết lập quyền truy cập toàn bộ đĩa.",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "fd24fd2"
+    "sourceHash": "0c301b5"
   },
-  "askCmdr.wake.needsApiKey": "Ask Cmdr đang theo dõi, nhưng cần khóa API để suy nghĩ. Mở cài đặt.",
+  "askCmdr.wake.needsApiKey": "Các tính năng AI đang bật, nhưng cần một nhà cung cấp mới hoạt động được. Nhấp để thiết lập một cái trong cài đặt.",
   "@askCmdr.wake.needsApiKey": {
-    "sourceHash": "e9b96e6"
+    "sourceHash": "0f71f75"
   },
   "askCmdr.wakeDigest.summary": "Những thay đổi trong {foldersText} {folders, plural, other {thư mục}}",
   "@askCmdr.wakeDigest.summary": {
@@ -753,13 +753,13 @@
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
   },
-  "askCmdr.sessions.wakeThread": "Ask Cmdr đã bắt đầu cuộc trò chuyện này",
+  "askCmdr.sessions.wakeThread": "Cmdr đã bắt đầu cuộc trò chuyện này",
   "@askCmdr.sessions.wakeThread": {
-    "sourceHash": "ba3d8fa"
+    "sourceHash": "5a27703"
   },
-  "askCmdr.wakeToast.title": "Ask Cmdr có {countText} {count, plural, other {gợi ý}} cho bạn",
+  "askCmdr.wakeToast.title": "Cmdr có {countText} {count, plural, other {gợi ý}} cho bạn",
   "@askCmdr.wakeToast.title": {
-    "sourceHash": "08b3d32"
+    "sourceHash": "881baf8"
   },
   "askCmdr.wakeToast.action": "Xem lại",
   "@askCmdr.wakeToast.action": {

@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "4f24ca6"
   },
-  "suggestedOps.description": "Ask Cmdr đã đề xuất những thao tác này. Không có gì chạy cho đến khi bạn phê duyệt.",
+  "suggestedOps.description": "AI đã đề xuất những thao tác này. Không có gì chạy cho đến khi bạn phê duyệt.",
   "@suggestedOps.description": {
-    "sourceHash": "d70e5f0"
+    "sourceHash": "73255a0"
   },
   "suggestedOps.empty": "Hiện không có gì đang chờ bạn.",
   "@suggestedOps.empty": {
@@ -15,9 +15,9 @@
   "@suggestedOps.loadFailed": {
     "sourceHash": "3d3af5a"
   },
-  "suggestedOps.agentReason": "Lý do của Ask Cmdr",
+  "suggestedOps.agentReason": "Lý do của AI",
   "@suggestedOps.agentReason": {
-    "sourceHash": "0768c36"
+    "sourceHash": "e3acab8"
   },
   "suggestedOps.cmdrFacts": "Những gì Cmdr biết",
   "@suggestedOps.cmdrFacts": {
@@ -75,9 +75,9 @@
   "@suggestedOps.fromPattern": {
     "sourceHash": "20e88a9"
   },
-  "suggestedOps.changedUnderReview": "Ask Cmdr đã thay đổi đề xuất này trong lúc bạn đang đọc.",
+  "suggestedOps.changedUnderReview": "AI đã thay đổi đề xuất này trong lúc bạn đang đọc.",
   "@suggestedOps.changedUnderReview": {
-    "sourceHash": "fd6b2ac"
+    "sourceHash": "5d07c7c"
   },
   "suggestedOps.showNewVersion": "Hiển thị phiên bản mới",
   "@suggestedOps.showNewVersion": {
@@ -111,8 +111,8 @@
   "@suggestedOps.loadingFiles": {
     "sourceHash": "83257e6"
   },
-  "suggestedOps.indicatorTooltip": "Ask Cmdr có đề xuất đang chờ. Nhấp để xem lại.",
+  "suggestedOps.indicatorTooltip": "Có đề xuất từ AI đang chờ. Nhấp để xem lại.",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "dc423e6"
+    "sourceHash": "4508b0b"
   }
 }

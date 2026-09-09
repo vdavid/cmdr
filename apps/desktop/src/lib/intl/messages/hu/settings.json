@@ -1582,9 +1582,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the read-only AI chat rail); kept verbatim in every locale, per the en @key note."
   },
-  "settings.askCmdr.intro": "Csevegj egy AI-val a fájljaidról, meghajtóidról és előzményeidről. Az Ask Cmdr a válaszadáshoz neveket, útvonalakat és méreteket olvas, egy fájlba csak akkor néz bele, ha arról kérdezed, és a jóváhagyásod nélkül egyetlen fájlt sem változtat meg.",
+  "settings.askCmdr.intro": "Csevegj egy AI-val a fájljaidról, meghajtóidról és előzményeidről. A Cmdr a válaszadáshoz neveket, útvonalakat és méreteket olvas, egy fájlba csak akkor néz bele, ha arról kérdezed, és a jóváhagyásod nélkül egyetlen fájlt sem változtat meg.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "5a81d7a"
+    "sourceHash": "3b16f89"
   },
   "settings.askCmdr.status.on": "Az Ask Cmdr be van kapcsolva",
   "@settings.askCmdr.status.on": {
@@ -1618,29 +1618,29 @@
   "@settings.askCmdr.turnOff": {
     "sourceHash": "eb03374"
   },
-  "settings.askCmdr.disclosure.title": "Amit az Ask Cmdr elküld",
+  "settings.askCmdr.disclosure.title": "Amit a Cmdr elküld",
   "@settings.askCmdr.disclosure.title": {
-    "sourceHash": "8ccd3b9"
+    "sourceHash": "6907e64"
   },
   "settings.askCmdr.provider.title": "Szolgáltató és modell",
   "@settings.askCmdr.provider.title": {
     "sourceHash": "b9fdc88"
   },
-  "settings.askCmdr.provider.shared": "Az Ask Cmdr azt az AI-szolgáltatót és kulcsot használja, amit itt állítottál be: Beállítások › AI ({provider}).",
+  "settings.askCmdr.provider.shared": "A Cmdr azt az AI-szolgáltatót és kulcsot használja, amit itt állítottál be: Beállítások › AI ({provider}).",
   "@settings.askCmdr.provider.shared": {
-    "sourceHash": "c84fd32"
+    "sourceHash": "9442b09"
   },
-  "settings.askCmdr.provider.off": "Kapcsolj be egy AI-szolgáltatót itt: Beállítások › AI, hogy használhasd az Ask Cmdrt.",
+  "settings.askCmdr.provider.off": "Kapcsolj be egy AI-szolgáltatót itt: Beállítások › AI, hogy elkezdhess csevegni.",
   "@settings.askCmdr.provider.off": {
-    "sourceHash": "8b378ae"
+    "sourceHash": "5cc1481"
   },
   "settings.askCmdr.interactiveModel.label": "Ask Cmdr modellje",
   "@settings.askCmdr.interactiveModel.label": {
     "sourceHash": "194255a"
   },
-  "settings.askCmdr.interactiveModel.description": "Az a modell, amivel az Ask Cmdr csevegni fog. Hagyd üresen, hogy ugyanazt a modellt használja, mint a Cmdr többi AI-funkciója. Példa: claude-sonnet-4-5",
+  "settings.askCmdr.interactiveModel.description": "Az a modell, amit a csevegés használ. Hagyd üresen, hogy ugyanazt a modellt használja, mint a Cmdr többi AI-funkciója. Példa: claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
-    "sourceHash": "e3f64a5"
+    "sourceHash": "881f8a4"
   },
   "settings.askCmdr.interactiveModel.placeholder": "Mint a Cmdr más AI-funkciói",
   "@settings.askCmdr.interactiveModel.placeholder": {
@@ -1666,21 +1666,21 @@
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
   },
-  "settings.askCmdr.proactive.label": "Az Ask Cmdr kezdeményezhet beszélgetést",
+  "settings.askCmdr.proactive.label": "A Cmdr kezdeményezhet beszélgetést",
   "@settings.askCmdr.proactive.label": {
-    "sourceHash": "1db4497"
+    "sourceHash": "a85ef48"
   },
-  "settings.askCmdr.proactive.description": "Az Ask Cmdr figyeli azokat a mappákat, amikben dolgozol, és elkezd egy beszélgetést, ha van mit javasolnia. Semmi nem indul el, amíg jóvá nem hagyod.",
+  "settings.askCmdr.proactive.description": "A Cmdr figyeli azokat a mappákat, amikben dolgozol, és elkezd egy beszélgetést, ha van mit javasolnia. Semmi nem indul el, amíg jóvá nem hagyod.",
   "@settings.askCmdr.proactive.description": {
-    "sourceHash": "9bf4e15"
+    "sourceHash": "556f155"
   },
-  "settings.askCmdr.wakeDelay.label": "Milyen hamar néz rá az Ask Cmdr",
+  "settings.askCmdr.wakeDelay.label": "Milyen hamar néz rá a Cmdr",
   "@settings.askCmdr.wakeDelay.label": {
-    "sourceHash": "f80bb5a"
+    "sourceHash": "a7368d0"
   },
-  "settings.askCmdr.wakeDelay.description": "Milyen hamar nézi meg az Ask Cmdr az imént megváltozott mappát. A hosszabb idő nyugodtabb segítőt jelent.",
+  "settings.askCmdr.wakeDelay.description": "Milyen hamar nézi meg a Cmdr az imént megváltozott mappát. A hosszabb idő nyugodtabb segítőt jelent.",
   "@settings.askCmdr.wakeDelay.description": {
-    "sourceHash": "b53dd9b"
+    "sourceHash": "08790da"
   },
   "settings.askCmdr.wakeDelay.summary": "A mozgalmas mappákra {hot} időn belül néz rá, a csendesebbekre {warm} időn belül.",
   "@settings.askCmdr.wakeDelay.summary": {
@@ -1690,25 +1690,25 @@
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
   },
-  "settings.askCmdr.wakeToast.description": "Egy apró üzenet a sarokban, amikor az Ask Cmdr előkészít valamit átnézésre.",
+  "settings.askCmdr.wakeToast.description": "Egy apró üzenet a sarokban, amikor a Cmdr előkészít valamit átnézésre.",
   "@settings.askCmdr.wakeToast.description": {
-    "sourceHash": "f07a46e"
+    "sourceHash": "dd04b0a"
   },
-  "settings.askCmdr.memory.title": "Amire az Ask Cmdr emlékszik",
+  "settings.askCmdr.memory.title": "Amire a Cmdr emlékszik",
   "@settings.askCmdr.memory.title": {
-    "sourceHash": "4b102db"
+    "sourceHash": "be6fce6"
   },
-  "settings.askCmdr.memory.description": "Az Ask Cmdr egy kis mappányi jegyzetet vezet rólad, és minden üzenettel elküldi. Nézz bele, vagy kezdd elölről.",
+  "settings.askCmdr.memory.description": "A Cmdr egy kis mappányi jegyzetet vezet rólad, és minden üzenettel elküldi. Nézz bele, vagy kezdd elölről.",
   "@settings.askCmdr.memory.description": {
-    "sourceHash": "bcd73ea"
+    "sourceHash": "0948ddb"
   },
   "settings.askCmdr.memory.open": "Jegyzetmappa megnyitása",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.memory.forgotten": "Az Ask Cmdr jegyzetei eltűntek. Innentől tiszta lappal indul.",
+  "settings.askCmdr.memory.forgotten": "A Cmdr jegyzetei eltűntek. Innentől tiszta lappal indul.",
   "@settings.askCmdr.memory.forgotten": {
-    "sourceHash": "a50ed99"
+    "sourceHash": "f3d9022"
   },
   "settings.askCmdr.spend.title": "Kiadás",
   "@settings.askCmdr.spend.title": {

@@ -135,9 +135,9 @@
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "sourceHash": "5a4d18d"
   },
-  "ai.cloud.askCmdrOverrideHint": "Ask Cmdr dùng mô hình riêng ({model}) thay vì mô hình này. Thay đổi trong phần Ask Cmdr.",
+  "ai.cloud.askCmdrOverrideHint": "Cuộc trò chuyện dùng mô hình riêng ({model}) thay vì mô hình này. Thay đổi trong phần Ask Cmdr.",
   "@ai.cloud.askCmdrOverrideHint": {
-    "sourceHash": "0d278f6"
+    "sourceHash": "5a5539a"
   },
   "ai.cloud.modelPlaceholderExample": "Ví dụ: {model}",
   "@ai.cloud.modelPlaceholderExample": {

@@ -828,8 +828,8 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "4f24ca6"
   },
-  "commands.suggestedOpsShow.description": "Tekintsd át az Ask Cmdr által javasolt fájlműveleteket, és döntsd el, mi fusson",
+  "commands.suggestedOpsShow.description": "Tekintsd át az AI által javasolt fájlműveleteket, és döntsd el, mi fusson",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "cf24a4f"
+    "sourceHash": "7efe8c9"
   }
 }

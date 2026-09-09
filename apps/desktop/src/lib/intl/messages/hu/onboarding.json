@@ -461,12 +461,12 @@
     "sourceHash": "cd0221c"
   },
 
-  "onboarding.cloudSetup.step.ollamaModel": "Tölts le egy modellt a terminálban az ollama pull llama3.2 paranccsal, vagy <libraryLink>böngészd a könyvtárat</libraryLink>",
+  "onboarding.cloudSetup.step.ollamaModel": "Tölts le egy modellt a Terminálban az ollama pull llama3.2 paranccsal, vagy <libraryLink>böngészd a modellkönyvtárat</libraryLink>",
   "@onboarding.cloudSetup.step.ollamaModel": {
     "sourceHash": "5999d6a"
   },
 
-  "onboarding.cloudSetup.step.lmStudioServer": "Tölts be egy modellt az LM Studióban, majd indítsd el a <serverLink>helyi kiszolgálót</serverLink>",
+  "onboarding.cloudSetup.step.lmStudioServer": "Tölts be egy modellt az LM Studióban, majd indítsd el a <serverLink>helyi szerverét</serverLink>",
   "@onboarding.cloudSetup.step.lmStudioServer": {
     "sourceHash": "447957a"
   },
@@ -476,7 +476,7 @@
     "sourceHash": "b1d408e"
   },
 
-  "onboarding.cloudSetup.hint.azureModel": "Az Azure-ban ez a telepítésed neve, ami eltérhet a futtatott modell nevétől.",
+  "onboarding.cloudSetup.hint.azureModel": "Az Azure-ban ez az üzembe helyezésed neve, ami eltérhet a futtatott modell nevétől.",
   "@onboarding.cloudSetup.hint.azureModel": {
     "sourceHash": "e856224"
   },

@@ -141,6 +141,24 @@ Settled terms (sources agree):
   both, so ❌ never leave "Get Info" or "Locked" in English inside Vietnamese prose, whatever an `en` `@key.description`
   says. `high`.
 
+- **AI provider: `nhà cung cấp AI`; provider on its own: `nhà cung cấp`** · Microsoft terminology ("A company that
+  provides services or content for its customers" → `nhà cung cấp`), and the catalog already ships it. `high`.
+- **AI features: `các tính năng AI`** · the catalog's own
+  `settings.askCmdr.interactiveModel.description` (`các tính năng AI khác của Cmdr`). `high`.
+- **model (an LLM): `mô hình`** · Microsoft terminology, machine-learning sense ("An artifact resulting from running a
+  machine learning algorithm…" → `mô hình`). `high`.
+- **endpoint (an API URL): `điểm cuối`** · Microsoft terminology, three separate senses all render `điểm cuối`. `high`.
+- **deployment (Azure OpenAI's named model instance): `bản triển khai`** · Microsoft terminology
+  (`deployment` / `deploy` → `triển khai`). Azure is Microsoft's own product, so Microsoft outranks macOS here. `high`.
+- **resource (an Azure resource): `tài nguyên`** · Microsoft terminology (three senses agree). `high`.
+- **library (a catalog of things to pick from, like Ollama's model list): `thư viện`** · Microsoft terminology and macOS
+  vi (`thư viện` in several senses). `high`. Qualify it when the surrounding screen has no other library:
+  `thư viện mô hình` in `onboarding.cloudSetup.step.ollamaModel`, because bare `thư viện` collides with macOS vi's
+  `chế độ xem thư viện` (Finder's gallery view).
+- **Terminal (the command-line app): `Terminal`, capitalized, kept verbatim** · macOS vi Finder (`Mở trong Terminal`),
+  verified 2026-09-09. `high`. ❌ Not KDE Dolphin's `dòng lệnh`: that names the command line, and macOS is Tier 1 for an
+  app the user actually opens. `lệnh` still stays the word for one command, per the entry above.
+
 Tentative / needs a native check:
 
 - **volume: `ổ đĩa` / `phân vùng`** · no clean macOS "volume" string in the pile; "ổ đĩa" (drive) reads natural for a
@@ -149,6 +167,9 @@ Tentative / needs a native check:
   catalog uses `khung`. No macOS "pane" string exists. `khung` stays for catalog consistency. `tentative`.
 - **bookmark: `dấu trang`** · GNOME phrasing for bookmarking; "đánh dấu" is the verb. `tentative`.
 - **listing: `danh sách tệp`** · reads natural for the file list; no single canonical source term. `tentative`.
+- **placeholder (a template token in an address or a format string): `phần giữ chỗ`** · no macOS source; Microsoft says
+  `chỗ dành sẵn`, which reads as "reserved space" and fits a slide layout better than a URL token. Catalog consistency
+  picks `phần giữ chỗ` (`indexing.json`, `onboarding.cloudSetup.hint.azureEndpoint`). `tentative`.
 - **progress (advancement, in a negated "no progress"): `tiến triển`** · shared-root pick over macOS `tiến trình` (which
   this catalog uses for an OS process) and MS `Tiến độ`. Progress-the-bar stays `tiến trình`. `tentative`.
 - **"has stopped moving" (running but not advancing): `đang đứng yên`** · plain everyday Vietnamese; no source names the
@@ -304,6 +325,22 @@ Vietnamese has no grammatical number, so one form covers all counts.
 - **"rather than" / "instead of" là `thay vì`, và "type/enter vào một ô" là `nhập`.** Cả hai đã ship nhiều chỗ trong
   catalog; đừng nghĩ ra `chứ không phải` hay `gõ` cho chuỗi mới (`gõ ký tự` của macOS dành cho việc gõ trên bàn phím).
   Bằng chứng: `glossary.md` § Trung tâm máy chủ, đợt 4.
+- **`Ask Cmdr` names the chat panel only; prose about what the assistant DOES says `Cmdr`, and prose about the model
+  says `AI`.** English draws the same line: `Ask Cmdr` survives in the panel title, the View menu, the palette command,
+  the settings section, and the on/off switch, and is gone from every sentence that merely described the behavior. So a
+  sentence subject is `Cmdr` (`Cmdr theo dõi các thư mục…`) while a surface name stays `cài đặt Ask Cmdr`. ❌ Don't put
+  `Ask Cmdr` back into the sentences.
+- **Where English says "the AI", Vietnamese says `AI`, not `Cmdr`.** The `suggestedOps.*` family (`Lý do của AI`,
+  `AI đã đề xuất những thao tác này`) deliberately names the model, because its neighbour `suggestedOps.cmdrFacts`
+  (`Những gì Cmdr biết`) claims the opposite thing (what the app VERIFIED). Collapsing the two subjects destroys the
+  whole point of the pair.
+- **`tải về` caught a real regression, so re-check it on every new download string.** `onboarding.cloudSetup.step.install`
+  shipped as `Tải xuống và cài đặt` against the documented rule above (macOS vi: 35 `tải về`, zero `tải xuống`); it now
+  reads `Tải về và cài đặt`. The separable form is normal: `tải một mô hình về`.
+- **"one" standing in for a just-named countable thing is `một cái`.** English leans on it twice in the AI copy ("Turn
+  one on in settings", "Click to set one up in settings"); repeating `một nhà cung cấp` in the second sentence is heavy
+  in Vietnamese, so `Hãy bật một cái trong cài đặt` / `Nhấp để thiết lập một cái trong cài đặt`. Both keys use the same
+  shape on purpose (`askCmdr.error.notConfigured`, `askCmdr.wake.needsApiKey`).
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

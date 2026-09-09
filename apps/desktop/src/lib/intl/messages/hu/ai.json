@@ -135,9 +135,9 @@
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "sourceHash": "5a4d18d"
   },
-  "ai.cloud.askCmdrOverrideHint": "Az Ask Cmdr saját modellt használ ({model}), nem ezt. Az Ask Cmdr szakaszban módosíthatod.",
+  "ai.cloud.askCmdrOverrideHint": "A csevegés saját modellt használ ({model}), nem ezt. Az Ask Cmdr szakaszban módosíthatod.",
   "@ai.cloud.askCmdrOverrideHint": {
-    "sourceHash": "0d278f6"
+    "sourceHash": "5a5539a"
   },
   "ai.cloud.modelPlaceholderExample": "Példa: {model}",
   "@ai.cloud.modelPlaceholderExample": {

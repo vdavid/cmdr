@@ -828,8 +828,8 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "4f24ca6"
   },
-  "commands.suggestedOpsShow.description": "Xem lại các thao tác tệp mà Ask Cmdr đề xuất và quyết định điều gì sẽ chạy",
+  "commands.suggestedOpsShow.description": "Xem lại các thao tác tệp mà AI đề xuất và quyết định điều gì sẽ chạy",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "cf24a4f"
+    "sourceHash": "7efe8c9"
   }
 }

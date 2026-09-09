@@ -1580,9 +1580,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (Ask Cmdr); kept verbatim in every locale per the do-not-translate rule."
   },
-  "settings.askCmdr.intro": "Trò chuyện với AI về tệp, ổ đĩa và lịch sử của bạn. Ask Cmdr đọc tên, đường dẫn và kích cỡ để trả lời, chỉ xem bên trong một tệp khi bạn hỏi về tệp đó, và không bao giờ thay đổi một tệp khi chưa được bạn phê duyệt.",
+  "settings.askCmdr.intro": "Trò chuyện với AI về tệp, ổ đĩa và lịch sử của bạn. Cmdr đọc tên, đường dẫn và kích cỡ để trả lời, chỉ xem bên trong một tệp khi bạn hỏi về tệp đó, và không bao giờ thay đổi một tệp khi chưa được bạn phê duyệt.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "5a81d7a"
+    "sourceHash": "3b16f89"
   },
   "settings.askCmdr.status.on": "Ask Cmdr đang bật",
   "@settings.askCmdr.status.on": {
@@ -1616,29 +1616,29 @@
   "@settings.askCmdr.turnOff": {
     "sourceHash": "eb03374"
   },
-  "settings.askCmdr.disclosure.title": "Những gì Ask Cmdr gửi đi",
+  "settings.askCmdr.disclosure.title": "Những gì Cmdr gửi đi",
   "@settings.askCmdr.disclosure.title": {
-    "sourceHash": "8ccd3b9"
+    "sourceHash": "6907e64"
   },
   "settings.askCmdr.provider.title": "Nhà cung cấp và mô hình",
   "@settings.askCmdr.provider.title": {
     "sourceHash": "b9fdc88"
   },
-  "settings.askCmdr.provider.shared": "Ask Cmdr dùng nhà cung cấp AI và khóa mà bạn đã thiết lập trong Cài đặt › AI ({provider}).",
+  "settings.askCmdr.provider.shared": "Cmdr dùng nhà cung cấp AI và khóa mà bạn đã thiết lập trong Cài đặt › AI ({provider}).",
   "@settings.askCmdr.provider.shared": {
-    "sourceHash": "c84fd32"
+    "sourceHash": "9442b09"
   },
-  "settings.askCmdr.provider.off": "Bật một nhà cung cấp AI trong Cài đặt › AI để dùng Ask Cmdr.",
+  "settings.askCmdr.provider.off": "Bật một nhà cung cấp AI trong Cài đặt › AI để bắt đầu trò chuyện.",
   "@settings.askCmdr.provider.off": {
-    "sourceHash": "8b378ae"
+    "sourceHash": "5cc1481"
   },
   "settings.askCmdr.interactiveModel.label": "Mô hình Ask Cmdr",
   "@settings.askCmdr.interactiveModel.label": {
     "sourceHash": "194255a"
   },
-  "settings.askCmdr.interactiveModel.description": "Mô hình mà Ask Cmdr trò chuyện cùng. Để trống để dùng chung mô hình với các tính năng AI khác của Cmdr. Ví dụ: claude-sonnet-4-5",
+  "settings.askCmdr.interactiveModel.description": "Mô hình mà cuộc trò chuyện dùng. Để trống để dùng chung mô hình với các tính năng AI khác của Cmdr. Ví dụ: claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
-    "sourceHash": "e3f64a5"
+    "sourceHash": "881f8a4"
   },
   "settings.askCmdr.interactiveModel.placeholder": "Giống AI của Cmdr",
   "@settings.askCmdr.interactiveModel.placeholder": {
@@ -1664,21 +1664,21 @@
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
   },
-  "settings.askCmdr.proactive.label": "Cho phép Ask Cmdr bắt đầu cuộc trò chuyện",
+  "settings.askCmdr.proactive.label": "Cho phép Cmdr bắt đầu cuộc trò chuyện",
   "@settings.askCmdr.proactive.label": {
-    "sourceHash": "1db4497"
+    "sourceHash": "a85ef48"
   },
-  "settings.askCmdr.proactive.description": "Ask Cmdr theo dõi các thư mục bạn đang làm việc và bắt đầu một cuộc trò chuyện khi có điều gì đó để đề xuất. Không có gì chạy cho đến khi bạn phê duyệt.",
+  "settings.askCmdr.proactive.description": "Cmdr theo dõi các thư mục bạn đang làm việc và bắt đầu một cuộc trò chuyện khi có điều gì đó để đề xuất. Không có gì chạy cho đến khi bạn phê duyệt.",
   "@settings.askCmdr.proactive.description": {
-    "sourceHash": "9bf4e15"
+    "sourceHash": "556f155"
   },
-  "settings.askCmdr.wakeDelay.label": "Ask Cmdr xem xét sớm đến mức nào",
+  "settings.askCmdr.wakeDelay.label": "Cmdr xem xét sớm đến mức nào",
   "@settings.askCmdr.wakeDelay.label": {
-    "sourceHash": "f80bb5a"
+    "sourceHash": "a7368d0"
   },
-  "settings.askCmdr.wakeDelay.description": "Ask Cmdr xem xét một thư mục vừa thay đổi sớm đến mức nào. Càng lâu thì trợ lý càng điềm tĩnh.",
+  "settings.askCmdr.wakeDelay.description": "Cmdr xem xét một thư mục vừa thay đổi sớm đến mức nào. Càng lâu thì trợ lý càng điềm tĩnh.",
   "@settings.askCmdr.wakeDelay.description": {
-    "sourceHash": "b53dd9b"
+    "sourceHash": "08790da"
   },
   "settings.askCmdr.wakeDelay.summary": "Thư mục bận rộn được xem trong vòng {hot}, thư mục yên ắng hơn trong vòng {warm}.",
   "@settings.askCmdr.wakeDelay.summary": {
@@ -1688,25 +1688,25 @@
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
   },
-  "settings.askCmdr.wakeToast.description": "Một thông báo nhỏ ở góc màn hình khi Ask Cmdr chuẩn bị sẵn điều gì đó để bạn xem lại.",
+  "settings.askCmdr.wakeToast.description": "Một thông báo nhỏ ở góc màn hình khi Cmdr chuẩn bị sẵn điều gì đó để bạn xem lại.",
   "@settings.askCmdr.wakeToast.description": {
-    "sourceHash": "f07a46e"
+    "sourceHash": "dd04b0a"
   },
-  "settings.askCmdr.memory.title": "Những gì Ask Cmdr nhớ",
+  "settings.askCmdr.memory.title": "Những gì Cmdr nhớ",
   "@settings.askCmdr.memory.title": {
-    "sourceHash": "4b102db"
+    "sourceHash": "be6fce6"
   },
-  "settings.askCmdr.memory.description": "Ask Cmdr giữ một thư mục nhỏ chứa ghi chú về bạn và gửi kèm mọi tin nhắn. Hãy xem thử, hoặc bắt đầu lại từ đầu.",
+  "settings.askCmdr.memory.description": "Cmdr giữ một thư mục nhỏ chứa ghi chú về bạn và gửi kèm mọi tin nhắn. Hãy xem thử, hoặc bắt đầu lại từ đầu.",
   "@settings.askCmdr.memory.description": {
-    "sourceHash": "bcd73ea"
+    "sourceHash": "0948ddb"
   },
   "settings.askCmdr.memory.open": "Mở thư mục ghi chú",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.memory.forgotten": "Các ghi chú của Ask Cmdr đã biến mất. Nó bắt đầu lại từ đây.",
+  "settings.askCmdr.memory.forgotten": "Các ghi chú của Cmdr đã biến mất. Nó bắt đầu lại từ đây.",
   "@settings.askCmdr.memory.forgotten": {
-    "sourceHash": "a50ed99"
+    "sourceHash": "f3d9022"
   },
   "settings.askCmdr.spend.title": "Chi tiêu",
   "@settings.askCmdr.spend.title": {

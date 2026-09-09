@@ -456,12 +456,12 @@
     "sourceHash": "5705da6"
   },
 
-  "onboarding.cloudSetup.step.install": "Tải xuống và cài đặt <installLink>{provider}</installLink>",
+  "onboarding.cloudSetup.step.install": "Tải về và cài đặt <installLink>{provider}</installLink>",
   "@onboarding.cloudSetup.step.install": {
     "sourceHash": "cd0221c"
   },
 
-  "onboarding.cloudSetup.step.ollamaModel": "Tải một mô hình trong terminal bằng ollama pull llama3.2, hoặc <libraryLink>duyệt thư viện</libraryLink>",
+  "onboarding.cloudSetup.step.ollamaModel": "Trong Terminal, tải một mô hình về bằng ollama pull llama3.2, hoặc <libraryLink>duyệt thư viện mô hình</libraryLink>",
   "@onboarding.cloudSetup.step.ollamaModel": {
     "sourceHash": "5999d6a"
   },

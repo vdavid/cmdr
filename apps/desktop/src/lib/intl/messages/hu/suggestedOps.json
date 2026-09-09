@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "4f24ca6"
   },
-  "suggestedOps.description": "Ezt az Ask Cmdr javasolta. Semmi nem indul el, amíg jóvá nem hagyod.",
+  "suggestedOps.description": "Ezeket az AI javasolta. Semmi nem indul el, amíg jóvá nem hagyod.",
   "@suggestedOps.description": {
-    "sourceHash": "d70e5f0"
+    "sourceHash": "73255a0"
   },
   "suggestedOps.empty": "Most nem vár rád semmi.",
   "@suggestedOps.empty": {
@@ -15,9 +15,9 @@
   "@suggestedOps.loadFailed": {
     "sourceHash": "3d3af5a"
   },
-  "suggestedOps.agentReason": "Az Ask Cmdr indoka",
+  "suggestedOps.agentReason": "Az AI indoka",
   "@suggestedOps.agentReason": {
-    "sourceHash": "0768c36"
+    "sourceHash": "e3acab8"
   },
   "suggestedOps.cmdrFacts": "Amit a Cmdr tud",
   "@suggestedOps.cmdrFacts": {
@@ -75,9 +75,9 @@
   "@suggestedOps.fromPattern": {
     "sourceHash": "20e88a9"
   },
-  "suggestedOps.changedUnderReview": "Az Ask Cmdr módosította ezt a javaslatot, miközben olvastad.",
+  "suggestedOps.changedUnderReview": "Az AI módosította ezt a javaslatot, miközben olvastad.",
   "@suggestedOps.changedUnderReview": {
-    "sourceHash": "fd6b2ac"
+    "sourceHash": "5d07c7c"
   },
   "suggestedOps.showNewVersion": "Új változat megjelenítése",
   "@suggestedOps.showNewVersion": {
@@ -111,8 +111,8 @@
   "@suggestedOps.loadingFiles": {
     "sourceHash": "83257e6"
   },
-  "suggestedOps.indicatorTooltip": "Az Ask Cmdr javaslatokat tett. Kattints az áttekintésükhöz.",
+  "suggestedOps.indicatorTooltip": "AI-javaslatok várnak rád. Kattints az áttekintésükhöz.",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "dc423e6"
+    "sourceHash": "4508b0b"
   }
 }

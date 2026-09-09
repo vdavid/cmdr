@@ -101,6 +101,27 @@ Format: each line is `English: chosen · sources · confidence`. Confidence is `
   `device` szava.
 - Android tooling (a gépre telepített Android-parancssori csomagok): `Android-fejlesztőeszköz` · katalógusbelső döntés ·
   high. A puszta `Android-eszköz` tilos, mert az `Android device`-t jelentene; a `fejlesztő` előtag oldja fel.
+- AI provider: `AI-szolgáltató` · ms (`provider` → `szolgáltató`, HUN), katalógus · high. A betűszós összetétel
+  kötőjeles, ahogy az `USB-` családé.
+- the AI (puszta főnévként, ahol az angol „the AI”-t mond a termék neve helyett): `az AI` · katalógus (`AI-szolgáltató`,
+  `AI-funkció`, `az AI résznél`) · high. A névelő `az`, mert a betűszó kiejtése magánhangzóval kezdődik.
+- AI features: `AI-funkciók` · katalógus (`settings.askCmdr.interactiveModel.description`) · high.
+- model (egy LLM): `modell` · ms (`model`, gépi tanulási jelentés is), katalógus · high.
+- endpoint (egy API URL-je): `végpont` · ms (HUN; a „logical representation of a location, typically expressed in URL
+  form” jelentésre) · high.
+- placeholder (sablonhely egy címben vagy formátumsztringben): `helyőrző` · ms (HUN, két jelentésre is), katalógus
+  (`settings.appearance.formatPlaceholdersTitle`) · high.
+- deployment (az Azure OpenAI névvel ellátott modellpéldánya): `üzembe helyezés` · ms (`deploy` → `üzembe helyez` a
+  „roll out a software package as a cloud service” és az Azure App Service jelentésre; `deployment slot` → `üzembe
+  helyezési pont`) · high. ❌ NEM `telepítés` (az az `install`), és nem `központi telepítés` (az a szervezetszintű
+  kiosztás). Az Azure a Microsoft saját terméke, tehát itt a Microsoft az elsődleges forrás, nem a macOS.
+- terminal (a parancssori alkalmazás): `Terminál`, nagy kezdőbetűvel · kde-dolphin hu („Terminál megnyitása”), xfce hu,
+  Total Commander hu („&Végrehajtás terminálban”), katalógus (`errors.listing.notPermitted.suggestion`: „A Terminálban
+  add ki az `ls -la` parancsot”) · high.
+- local server (egy gépen futó LLM-kiszolgáló): `helyi szerver` · a fenti `server → szerver` döntés (macOS Tier 1) ·
+  high. ❌ NEM `helyi kiszolgáló`: az a Microsoft-alak, és a katalógus máshol mindenütt `szerver`.
+- model library (az Ollama modellgyűjteménye): `modellkönyvtár` · nincs forrás · tentative. Lásd lent, miért nem puszta
+  `könyvtár`.
 
 Contested or split, with the per-source evidence:
 
@@ -279,6 +300,26 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   testvérkulcs alakja, a keret a `servers.paneState.connecting` (`Kapcsolódás ide: {name}…`) idiómája. A macOS a másik
   tőre is ad Tier-1 találatot (`Újrakapcsolódás…`), de a szállított alak nyer, és egy nézeten belüli tőváltás rosszabb,
   mint két nézet közötti. Bizonyítékok: `glossary.md` § Az automatikus újracsatlakozás.
+- **Az `Ask Cmdr` MÁRKANÉV csak a csevegőpanelt nevezi meg, a próza `a Cmdr`-ről vagy `az AI`-ról beszél.** Az angol
+  ugyanezt a vonalat húzza: `Ask Cmdr` maradt a panel címében, a Nézet menüben, a parancspalettán, a beállítási
+  szakaszban és a be-/kikapcsolóban, mindenhol máshol `Cmdr` vagy `the AI` áll. A magyarban ez azt jelenti, hogy egy
+  mondat alanya `a Cmdr` (`A Cmdr figyeli azokat a mappákat…`), egy felületnév viszont marad `az Ask Cmdr beállításai`.
+  ❌ Ne írd vissza az `Az Ask Cmdr…` alakot a mondatokba: ott már nem a panelről van szó, hanem arról, amit az app csinál.
+- **Ahol az angol `the AI`-t mond, a magyar `az AI`, nem `a Cmdr`.** A `suggestedOps.*` család (`Az AI indoka`,
+  `Ezeket az AI javasolta`) szándékosan a modellt nevezi meg, nem az appot: a szomszédos `suggestedOps.cmdrFacts`
+  (`Amit a Cmdr tud`) épp az ellentétét állítja (amit az app ELLENŐRZÖTT), és a kettőnek különböző alanyt kell kapnia,
+  különben elveszik a kulcs egész értelme.
+- **A `könyvtár` a katalógusban a `directory` szava, ezért egy „library” sosem lehet puszta `könyvtár`.** Az Ollama
+  modellgyűjteményére ezért `modellkönyvtár` áll (`onboarding.cloudSetup.step.ollamaModel`): a `modell-` előtag oldja
+  fel az ütközést, és egy fájlkezelőben a puszta „böngészd a könyvtárat” tényleg mappaböngészésnek olvasódik. Ugyanez a
+  minta, mint az `Android-fejlesztőeszköz`-nél: az előtag menti meg a foglalt szót.
+- **Az `LM Studio` ragozva `LM Studióban`, kötőjel nélkül**, mert a magyar a végső `-o`-t megnyújtja a toldalék előtt
+  (`Chicagóban`, `Oslóban`). Nem szerepel a `BRAND_WORDS` listán, tehát a don't-translate ellenőrzés nem is nézi, de a
+  márkanév felismerhető marad.
+- **`csevegés` = a csevegés mint tevékenység és a panel; `beszélgetés` = egy szál.** Az angol `chat` és `conversation`
+  nem áll szigorúan szemben egymással, a magyar viszont a szállított katalógusban végig így osztja: `Nyisd meg a
+  csevegést` (panel), `Új csevegés`, de `Ezt a beszélgetést a Cmdr kezdte` és `A Cmdr kezdeményezhet beszélgetést` (egy
+  konkrét szál). Új kulcs ezt kövesse.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)
