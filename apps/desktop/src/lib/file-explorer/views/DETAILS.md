@@ -289,6 +289,11 @@ edge, over the scrollbar's column, as a native list header does. It travels as a
 ready-made `padding-right` so the `calc` stays in the stylesheet, and because jsdom drops an inline `calc()` containing
 a `var()` (which is why `FullListHeader.test.ts` asserts on the property).
 
+❌ Don't move the header back inside the scroller, and ❌ don't reintroduce a header-HEIGHT offset between `scrollTop`
+and the spacer: the two differ by the gutter alone (above), and adding the header's height on top makes the clamp eat
+row 0, the `..` cursor. Both halves are pinned, by `FullListHeader.test.ts` and
+`test/e2e-playwright/full-cursor-page-nav.spec.ts`.
+
 Virtual-scroll math: `.full-list`'s own `clientHeight` IS the row area, bound straight to `rowAreaHeight` and fed to
 `calculateVirtualWindow` / `getScrollToPosition` / `firstVisibleGlobalIndex` / `lastVisibleGlobalIndex` /
 `getVisibleItemsCountUtil`. `scrollTop` and the spacer's offset differ only by `.listbox-region`'s gutter (see the
@@ -459,6 +464,11 @@ catching it (the contract is covered in `pane/pane-background-dblclick.test.ts`)
 
 **Gotcha**: `$state()` cannot live in `.ts` files **Why**: `virtual-scroll.ts` is pure functions. Reactive state must be
 in `.svelte` or `.svelte.ts`. Math functions return plain objects consumed by `$derived` in components.
+
+**Gotcha**: `full-list-cache.svelte.ts` takes ONE GETTER PER DEPENDENCY, never a single getter returning a bag of them.
+**Why**: a bag is read whole, so every host `$effect` subscribes to every field in it, and an unrelated field moving
+re-runs all of them — concretely, the `..` row's stats were refetched on every `directory-diff` tick. Separate getters
+let each effect subscribe to only what it reads. The same shape applies to any store this file grows.
 
 **Gotcha**: File watcher diffs shift indices while scrolled **Why**: If 20 files added before cursor, visible range
 shifts by 20. Must recalculate virtual window when `totalCount` changes.
