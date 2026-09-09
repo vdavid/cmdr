@@ -231,10 +231,6 @@
   "@onboarding.stepAi.resumeCue": {
     "sourceHash": "586e2ae"
   },
-  "onboarding.stepAi.choiceLegend": "Ezek alapján szeretnél AI-t, vagy sem?",
-  "@onboarding.stepAi.choiceLegend": {
-    "sourceHash": "0748af8"
-  },
   "onboarding.stepAi.choiceGroupAria": "AI-választás",
   "@onboarding.stepAi.choiceGroupAria": {
     "sourceHash": "9083caa"
@@ -258,10 +254,6 @@
   "onboarding.stepAi.local.label": "Igen, szeretnék AI-t, de szuper diszkrét akarok maradni",
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
-  },
-  "onboarding.stepAi.local.help": "Egy kicsit butább modell, ami nagyjából 2 GB helyet és minden használatkor egy kis CPU-t igényel. Még mindig oké megoldás. Egyetlen adat sem hagyja el a gépedet. A Cmdr igyekszik az elérhető legjobb kis helyi modellhez frissítéseket biztosítani.",
-  "@onboarding.stepAi.local.help": {
-    "sourceHash": "fd47d34"
   },
   "onboarding.stepAi.local.note": "A helyi modell letöltése elindult a háttérben. Most már befejezheted a bevezetőt; a sarokban lévő buborék tájékoztat majd.",
   "@onboarding.stepAi.local.note": {

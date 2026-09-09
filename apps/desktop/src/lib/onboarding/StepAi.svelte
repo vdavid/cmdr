@@ -24,6 +24,7 @@
     import { pushConfigToBackend } from '$lib/settings/ai-config'
     import { revokeConsent } from '$lib/ask-cmdr/ask-cmdr-consent.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import RadioGroup from '$lib/ui/RadioGroup.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
@@ -326,9 +327,26 @@
     // Banner copy lives in the catalog (`onboarding.stepAi.bannerTitle.*` / `bannerBody.*`);
     // see `lib/onboarding/CLAUDE.md` § "Step 2 (AI provider)" for the three FDA-outcome modes.
     const localTooltip = $derived(tString('onboarding.stepAi.localTooltip'))
+
+    /**
+     * Plain radio rows, in the order no AI → local → cloud. They used to be bordered,
+     * tinted cards, which on a page that already carries a banner and a comparison table
+     * made the actual question the heaviest thing on screen. The trade-off each option
+     * carries reads as quiet text beside its label instead (`itemTrailing`), except the
+     * local model's, which is long enough to belong behind an info glyph.
+     */
+    const aiOptions = $derived([
+        { value: 'off', label: tString('onboarding.stepAi.off.label') },
+        { value: 'local', label: tString('onboarding.stepAi.local.label'), disabled: !localAiSupported },
+        { value: 'cloud', label: tString('onboarding.stepAi.cloud.label') },
+    ])
+
+    /** The local option's long explanation, adopted by the tooltip (never the hidden host). */
+    let localDetailsEl = $state<HTMLDivElement>()
 </script>
 
 {#snippet em(children: Snippet)}<em>{@render children()}</em>{/snippet}
+{#snippet strong(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
 {#snippet code(children: Snippet)}<code>{@render children()}</code>{/snippet}
 {#snippet chip(children: Snippet)}<ShortcutChip commandId="selection.selectFiles" clickable={false} />{@render children()}{/snippet}
 {#snippet settingsLink(children: Snippet)}<LinkButton
@@ -453,92 +471,77 @@
         <p class="resume-cue">{tString('onboarding.stepAi.resumeCue')}</p>
     {/if}
 
-    <fieldset class="choices" role="radiogroup" aria-label={tString('onboarding.stepAi.choiceGroupAria')}>
-        <legend class="sr-only">{tString('onboarding.stepAi.choiceLegend')}</legend>
+    <!-- Order runs off → local → cloud, cheapest commitment first, so all three options fit
+         above the fold and only the LAST one opens a provider panel underneath. -->
+    <RadioGroup
+        value={choice}
+        items={aiOptions}
+        onValueChange={(next: string) => {
+            handleChoiceChange(next as WizardChoice)
+        }}
+        ariaLabel={tString('onboarding.stepAi.choiceGroupAria')}
+    >
+        {#snippet itemTrailing(value: string)}
+            {#if value === 'off'}
+                <span class="choice-help">{tString('onboarding.stepAi.off.help')}</span>
+            {:else if value === 'local'}
+                <!-- A `<button>` BESIDE the option, never inside it: a focusable control nested
+                     in a `role="radio"` element trips axe's nested-interactive rule, which is
+                     what `itemTrailing` exists for. -->
+                <button
+                    type="button"
+                    class="choice-info"
+                    aria-label={tString('onboarding.moreAbout', {
+                        topic: tString('onboarding.stepAi.local.label'),
+                    })}
+                    use:tooltip={{ contentEl: localDetailsEl }}
+                >
+                    <Icon name="info" size={14} aria-hidden="true" />
+                </button>
+                {#if !localAiSupported}
+                    <!-- Visible, ❌ not a tooltip on a control the user can't reach: the reason
+                         an option is greyed out is the one thing they most need to read. -->
+                    <span class="choice-help">{localTooltip}</span>
+                {/if}
+            {:else if value === 'cloud'}
+                <span class="choice-badge">
+                    <span class="choice-badge-icon"><Icon name="sparkles" size={12} aria-hidden="true" /></span>
+                    {tString('onboarding.stepAi.cloud.recommended')}
+                </span>
+                <span class="choice-help">{tString('onboarding.stepAi.cloud.help')}</span>
+            {/if}
+        {/snippet}
 
-        <!-- Order runs off → local → cloud, cheapest commitment first, so all three cards
-             fit above the fold and only the LAST one opens a provider panel underneath.
-             Cloud is still the pre-selected default. -->
-        <label class="choice" class:active={choice === 'off'}>
-            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke radio-cards: each option is a rich card (label + help text), which a plain RadioGroup option list can't express; already keyboard-accessible via the fieldset radiogroup. -->
-            <input
-                type="radio"
-                name="onboarding-ai-choice"
-                value="off"
-                checked={choice === 'off'}
-                onchange={() => {
-                    handleChoiceChange('off')
-                }}
-            />
-            <span class="choice-label"><strong>{tString('onboarding.stepAi.off.label')}</strong></span>
-            <span class="choice-help">{tString('onboarding.stepAi.off.help')}</span>
-        </label>
-
-        <label
-            class="choice"
-            class:active={choice === 'local'}
-            class:disabled={!localAiSupported}
-        >
-            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke radio-cards: each option is a rich card (label, help text, disabled/tooltip states), which a plain RadioGroup option list can't express; already keyboard-accessible via the fieldset radiogroup. -->
-            <input
-                type="radio"
-                name="onboarding-ai-choice"
-                value="local"
-                checked={choice === 'local'}
-                disabled={!localAiSupported}
-                onchange={() => {
-                    handleChoiceChange('local')
-                }}
-            />
-            <span
-                class="choice-label"
-                use:tooltip={!localAiSupported ? localTooltip : undefined}
-            >
-                <strong>{tString('onboarding.stepAi.local.label')}</strong>
-            </span>
-            <span class="choice-help">{tString('onboarding.stepAi.local.help')}</span>
-        </label>
-
-        {#if choice === 'local' && didStartLocalDownload}
-            <p class="local-note">{tString('onboarding.stepAi.local.note')}</p>
-        {/if}
-
-        <label class="choice" class:active={choice === 'cloud'}>
-            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke radio-cards: each option is a rich card (label, "recommended" tag, help text, and an inline provider picker), which a plain RadioGroup option list can't express; already keyboard-accessible via the fieldset radiogroup. -->
-            <input
-                type="radio"
-                name="onboarding-ai-choice"
-                value="cloud"
-                checked={choice === 'cloud'}
-                onchange={() => {
-                    handleChoiceChange('cloud')
-                }}
-            />
-            <span class="choice-label">
-                <strong>{tString('onboarding.stepAi.cloud.label')}</strong>
-                <span class="choice-recommended">{tString('onboarding.stepAi.cloud.recommended')}</span>
-            </span>
-            <span class="choice-help">{tString('onboarding.stepAi.cloud.help')}</span>
-        </label>
-
-        {#if choice === 'cloud'}
-            <div class="cloud-grid">
-                <div class="cloud-grid-picker">
-                    <h3 class="picker-title">{tString('onboarding.stepAi.cloud.pickerTitle')}</h3>
-                    <CloudProviderPicker
-                        value={cloudProviderId}
-                        onChange={(id: string) => {
-                            cloudProviderId = id
-                            setSetting('ai.cloudProvider', id)
-                        }}
-                    />
+        {#snippet footer(value: string)}
+            {#if value === 'local' && didStartLocalDownload}
+                <p class="local-note">{tString('onboarding.stepAi.local.note')}</p>
+            {/if}
+            {#if value === 'cloud'}
+                <div class="cloud-grid">
+                    <div class="cloud-grid-picker">
+                        <h3 class="picker-title">{tString('onboarding.stepAi.cloud.pickerTitle')}</h3>
+                        <CloudProviderPicker
+                            value={cloudProviderId}
+                            onChange={(id: string) => {
+                                cloudProviderId = id
+                                setSetting('ai.cloudProvider', id)
+                            }}
+                        />
+                    </div>
+                    <div class="cloud-grid-setup">
+                        <CloudProviderSetup providerId={cloudProviderId} />
+                    </div>
                 </div>
-                <div class="cloud-grid-setup">
-                    <CloudProviderSetup providerId={cloudProviderId} />
-                </div>
-            </div>
-        {/if}
-    </fieldset>
+            {/if}
+        {/snippet}
+    </RadioGroup>
+
+    <!-- The tooltip adopts the INNER element; a hidden host handed over would render empty. -->
+    <div hidden>
+        <div bind:this={localDetailsEl} class="choice-details">
+            <p><Trans key="onboarding.stepAi.local.tooltip" snippets={{ strong, em }} /></p>
+        </div>
+    </div>
 </OnboardingStepShell>
 
 <style>
@@ -699,67 +702,65 @@
         font-size: var(--font-size-sm);
     }
 
-    .choices {
-        border: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-md);
+    /* The trade-off runs on the option's own line in quieter text, so the three choices
+       read as three lines rather than three blocks. */
+    .choice-help {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        min-width: 0;
     }
 
-    .choice {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        grid-template-rows: auto auto;
-        column-gap: var(--spacing-sm);
-        row-gap: var(--spacing-xs);
-        padding: var(--spacing-md) var(--spacing-lg);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        background: var(--color-bg-primary);
-        transition: border-color var(--transition-base), background var(--transition-base);
-    }
-
-    .choice:hover:not(.disabled) {
-        border-color: var(--color-border-strong);
-    }
-
-    .choice.active {
-        border-color: var(--color-accent);
-        background: var(--color-accent-subtle);
-    }
-
-    .choice.disabled {
-        opacity: 0.5;
-    }
-
-    .choice input[type='radio'] {
-        grid-row: 1 / span 2;
-        align-self: center;
-        margin: 0;
-    }
-
-    .choice-label {
-        grid-column: 2;
-        grid-row: 1;
+    /* The recommendation earns a mark of its own rather than a parenthetical: it's the
+       one steer the step gives, and it should be findable without reading. Brand gold on
+       a tint of itself, with the label in normal text so the contrast floor is never in
+       question. */
+    .choice-badge {
         display: inline-flex;
-        align-items: baseline;
-        gap: var(--spacing-xs);
-        font-size: var(--font-size-md);
+        align-items: center;
+        gap: var(--spacing-xxs);
+        flex: none;
+        padding: var(--spacing-xxs) var(--spacing-xs);
+        border-radius: var(--radius-xs);
+        background: color-mix(in srgb, var(--color-cmdr-gold), transparent 82%);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        line-height: var(--font-line-height-flat);
+        white-space: nowrap;
+    }
+
+    .choice-badge-icon {
+        display: inline-flex;
+        color: var(--color-cmdr-gold);
+    }
+
+    .choice-info {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: var(--color-text-tertiary);
+        transition: color var(--transition-base);
+    }
+
+    .choice-info:hover {
         color: var(--color-text-primary);
     }
 
-    .choice-recommended {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
+    .choice-info:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+        border-radius: var(--radius-xs);
     }
 
-    .choice-help {
-        grid-column: 2;
-        grid-row: 2;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
+    /* The local option's long explanation, adopted into the tooltip. One sentence per
+       line, same as step 4's info tooltips. */
+    .choice-details p {
+        margin: 0;
+        white-space: pre-line;
     }
 
     .cloud-grid {

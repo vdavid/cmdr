@@ -232,6 +232,34 @@ function cancelTimer(): void {
 }
 
 /**
+ * Show a tooltip on `node` RIGHT NOW: no hover, no focus, no 400 ms delay.
+ *
+ * For the rare case where the app has something to say in answer to a press the user
+ * just made, and the answer belongs on the control they pressed. The onboarding wizard
+ * uses it for the AI step's missing-API-key warning: the pointer is already sitting on
+ * the button, so no `mouseenter` is coming, and a keyboard press has just set
+ * `hoverSuppressed`. It clears that flag, since this is the app speaking rather than a
+ * hover the user didn't ask for.
+ *
+ * ❌ Not for anything a hover or focus would have shown anyway. An unrequested tooltip
+ * is a popup; it earns its place only as a direct answer to an action.
+ *
+ * The element joins the normal bookkeeping, so its own `mouseleave` / `blur`, the next
+ * keypress, and any other trigger's show all dismiss it the usual way.
+ */
+export function showTooltipNow(node: HTMLElement, param: TooltipParam): void {
+  if (isEmptyParam(param)) return
+  cancelTimer()
+  hoverSuppressed = false
+  showTooltip(node, param)
+}
+
+/** Hide the tooltip, but only if `node` is the one currently showing it. */
+export function hideTooltipFor(node: HTMLElement): void {
+  if (activeElement === node) hideTooltip()
+}
+
+/**
  * App-wide dismiss-on-keypress, matching OS-native tooltips: once the user touches the keyboard, the
  * tooltip is in the way (arrowing down the file list, a tooltip parked over the rows you're reading).
  *

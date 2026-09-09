@@ -72,6 +72,15 @@ describe('onboarding wizard chrome parity (en)', () => {
     )
   })
 
+  it('resolves the step-dot tooltip, whose count reads "3+1" rather than "4"', () => {
+    const at = (step: number, note: string): string =>
+      tString('onboarding.wizard.stepTooltip', { step, mandatory: 3, note })
+    expect(at(1, 'none')).toBe('Step 1 of 3+1')
+    expect(at(2, 'none')).toBe('Step 2 of 3+1')
+    expect(at(3, 'remaining')).toBe('Step 3 of 3+1, one optional step remains')
+    expect(at(4, 'last')).toBe('Step 4 of 3+1, this is the last, optional step')
+  })
+
   it('resolves the footer button labels', () => {
     expect(tString('onboarding.wizard.back')).toBe('Back')
     expect(tString('onboarding.wizard.backAria')).toBe('Go to previous step')
@@ -218,17 +227,20 @@ describe('onboarding step 2 (AI) parity (en)', () => {
 
   it('resolves the resume cue, legend, and the three choices', () => {
     expect(tString('onboarding.stepAi.resumeCue')).toBe('You picked this last time. Confirm or change below.')
-    expect(tString('onboarding.stepAi.choiceLegend')).toBe('Based on this, do you want AI or not?')
     expect(tString('onboarding.stepAi.choiceGroupAria')).toBe('AI choice')
     expect(tString('onboarding.stepAi.cloud.label')).toBe('Yes, I want AI')
-    expect(tString('onboarding.stepAi.cloud.recommended')).toBe('(recommended)')
+    expect(tString('onboarding.stepAi.cloud.recommended')).toBe('Recommended')
     expect(tString('onboarding.stepAi.cloud.help')).toBe(
-      'Use any cloud provider with your own API key. Fast, high-quality models. Pick a provider below.',
+      'Use any cloud provider with your own API key, or your own ollama/custom LLM. Configure it below.',
     )
     expect(tString('onboarding.stepAi.cloud.pickerTitle')).toBe('Select a provider')
-    expect(tString('onboarding.stepAi.local.label')).toBe('Yes, I want AI, but I want to be super private')
-    expect(tString('onboarding.stepAi.local.help')).toBe(
-      'A bit dumber model that takes up about 2 GB of space and a bit of CPU at every use. Still an okay solution. No data leaves your machine. Cmdr tries to deliver updates for the best small local model available.',
+    expect(tString('onboarding.stepAi.local.label')).toBe(
+      'Yes, I want AI, but I want it to be super private with a simple local model.',
+    )
+    // The local option's trade-off moved behind an info glyph, one sentence per line.
+    // `<strong>` names the cloud option, so the two must stay in step.
+    expect(renderRich('onboarding.stepAi.local.tooltip', ['strong', 'em'])).toBe(
+      "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that's available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
     )
     expect(tString('onboarding.stepAi.local.note')).toBe(
       'Started downloading the local model in the background. You can finish onboarding now; the toast in the corner will keep you posted.',
@@ -322,7 +334,7 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
 
   it('resolves the four summaries and the info-glyph label', () => {
     // Each card leads with one of these and parks its `desc` behind the info glyph.
-    expect(tString('onboarding.stepOptional.moreAbout', { topic: 'Drive indexing' })).toBe('More about Drive indexing')
+    expect(tString('onboarding.moreAbout', { topic: 'Drive indexing' })).toBe('More about Drive indexing')
     expect(tString('onboarding.stepOptional.networking.summary')).toBe('Needs accepting "Local network access" once')
     expect(tString('onboarding.stepOptional.indexing.summary')).toBe(
       'Takes 1 GB space, speeds up searches, shows folder sizes',

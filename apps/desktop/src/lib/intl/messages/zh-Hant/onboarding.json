@@ -231,10 +231,6 @@
   "@onboarding.stepAi.resumeCue": {
     "sourceHash": "586e2ae"
   },
-  "onboarding.stepAi.choiceLegend": "看完這些，你想要 AI 嗎？",
-  "@onboarding.stepAi.choiceLegend": {
-    "sourceHash": "0748af8"
-  },
   "onboarding.stepAi.choiceGroupAria": "AI 的選擇",
   "@onboarding.stepAi.choiceGroupAria": {
     "sourceHash": "9083caa"
@@ -258,10 +254,6 @@
   "onboarding.stepAi.local.label": "要，我想用 AI，但我想要超級注重隱私",
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
-  },
-  "onboarding.stepAi.local.help": "一個稍微笨一點的模型，佔大約 2 GB 空間，每次用會吃掉一點 CPU。還是個不錯的方案。沒有任何資料離開你的機器。Cmdr 會盡量把現有最好的小型本機模型更新給你。",
-  "@onboarding.stepAi.local.help": {
-    "sourceHash": "fd47d34"
   },
   "onboarding.stepAi.local.note": "已經開始在背景下載本機模型了。你現在就可以把入門引導走完，角落的通知會告訴你進度。",
   "@onboarding.stepAi.local.note": {

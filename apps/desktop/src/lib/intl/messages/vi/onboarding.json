@@ -231,10 +231,6 @@
   "@onboarding.stepAi.resumeCue": {
     "sourceHash": "586e2ae"
   },
-  "onboarding.stepAi.choiceLegend": "Dựa trên điều này, bạn có muốn AI không?",
-  "@onboarding.stepAi.choiceLegend": {
-    "sourceHash": "0748af8"
-  },
   "onboarding.stepAi.choiceGroupAria": "Lựa chọn AI",
   "@onboarding.stepAi.choiceGroupAria": {
     "sourceHash": "9083caa"
@@ -258,10 +254,6 @@
   "onboarding.stepAi.local.label": "Có, tôi muốn AI, nhưng tôi muốn thật riêng tư",
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
-  },
-  "onboarding.stepAi.local.help": "Một mô hình hơi kém hơn một chút, chiếm khoảng 2 GB dung lượng và một ít CPU mỗi lần dùng. Vẫn là một giải pháp ổn. Không dữ liệu nào rời khỏi máy của bạn. Cmdr cố gắng cung cấp bản cập nhật cho mô hình cục bộ nhỏ tốt nhất hiện có.",
-  "@onboarding.stepAi.local.help": {
-    "sourceHash": "fd47d34"
   },
   "onboarding.stepAi.local.note": "Đã bắt đầu tải mô hình cục bộ ở chế độ nền. Bạn có thể hoàn tất thiết lập ngay bây giờ; thông báo nhỏ ở góc màn hình sẽ cập nhật tình hình cho bạn.",
   "@onboarding.stepAi.local.note": {

@@ -231,10 +231,6 @@
   "@onboarding.stepAi.resumeCue": {
     "sourceHash": "586e2ae"
   },
-  "onboarding.stepAi.choiceLegend": "D''après ceci, voulez-vous l''IA ou non ?",
-  "@onboarding.stepAi.choiceLegend": {
-    "sourceHash": "0748af8"
-  },
   "onboarding.stepAi.choiceGroupAria": "Choix de l''IA",
   "@onboarding.stepAi.choiceGroupAria": {
     "sourceHash": "9083caa"
@@ -258,10 +254,6 @@
   "onboarding.stepAi.local.label": "Oui, je veux l''IA, mais je tiens à une confidentialité maximale",
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
-  },
-  "onboarding.stepAi.local.help": "Un modèle un peu moins intelligent qui occupe environ 2 Go d''espace et un peu de CPU à chaque utilisation. Reste une solution correcte. Aucune donnée ne quitte votre machine. Cmdr s''efforce de fournir des mises à jour du meilleur petit modèle local disponible.",
-  "@onboarding.stepAi.local.help": {
-    "sourceHash": "fd47d34"
   },
   "onboarding.stepAi.local.note": "Le téléchargement du modèle local a démarré en arrière-plan. Vous pouvez terminer la configuration maintenant ; la notification dans le coin vous tiendra informé.",
   "@onboarding.stepAi.local.note": {

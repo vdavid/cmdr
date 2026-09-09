@@ -13,9 +13,9 @@ finishes onboarding.
 
 ## Key files
 
-- **`OnboardingWizard.svelte`**: Soft-sheet wizard shell: backdrop, step-dot indicator, Back button, primary footer
-  button, Escape-swallow. Tab containment via the shared `use:trapFocus` (no `onEscape` — dismissal requires committing
-  to a step).
+- **`OnboardingWizard.svelte`**: Soft-sheet wizard shell: backdrop, footer (Back, the language picker, the step dots,
+  the forward buttons), Escape-swallow. Tab containment via the shared `use:trapFocus` (no `onEscape` — dismissal
+  requires committing to a step). See § "The frame lives in the footer".
 - **`OnboardingStepShell.svelte`**: Per-step inner frame (padding, scroll container). Steps render their body inside.
 - **`OnboardingLanguagePicker.svelte`**: The language escape hatch in the wizard header's right cell (a globe glyph plus
   `SettingSelect` on `appearance.language`). See "The language escape hatch" below. It overrides `SettingSelect`'s
@@ -42,6 +42,37 @@ finishes onboarding.
   optional `details` snippet + `detailsLabel` adds the info glyph beside the title (see § "The info glyph").
 - **`onboarding-state.svelte.ts`**: Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner
   mode, `openWizard()` / `resumeStepFor()` etc.
+
+## The frame lives in the footer
+
+Nothing frames the flow from the top: Back, the language picker, the step dots, and the forward buttons all sit in one
+footer row, and the step body owns the whole panel above it. A header carrying dots and a picker cost a band of vertical
+space on every step to say something the footer could say once.
+
+The footer is a `1fr auto 1fr` grid, so the dots land on the panel's centre line rather than the middle of whatever the
+two side groups leave over. ❌ Not an absolutely-centred dot row: on a step with two forward buttons the right group
+reaches past the middle, and absolute centring would let the two overlap where the grid pushes the dots aside instead.
+
+The dots carry a tooltip naming the step (`onboarding.wizard.stepTooltip`), whose count reads "3+1" rather than "4"
+because the last step is optional and "of 4" would promise one more required page than there is. It's hover-only by
+design: the same fact is already in the a11y tree, as each dot's `sr-only` text plus the list's `aria-label`, so making
+a progress indicator a tab stop would add a keyboard stop that tells a screen-reader user nothing new.
+
+The panel wears `ModalDialog`'s chrome exactly: `--color-bg-dialog`, the macOS pair of hairlines (a darker one outside
+as the border, a lighter one just inside as an inset ring, both alpha), `--shadow-dialog`, and `--sheet-radius`, which
+is `--radius-dialog`. A sheet is the largest thing the app floats over the canvas, so a tighter corner or a flatter
+shadow here read as a different, cheaper kind of window than the app's other dialogs.
+
+### A step's answer to a press
+
+`onboarding-state`'s `footerNote` used to paint a sentence beside the buttons, which pushed them around in an already
+tight row. It now reaches the user as a tooltip ON the button that was pressed, forced open through
+`showTooltipNow` (`ui/DETAILS.md` § "Showing one without a hover"): neither a `mouseenter` nor a `focus` is coming,
+since the pointer is already over the button and a keyboard press has just suppressed hover tooltips. The note stays on
+that button as `tooltipContent` too, so hovering back re-shows it while the note stands.
+
+The wizard finds the button by `querySelector` on its own primary slot rather than taking a ref from `Button`, which
+exposes none; the note always belongs to the LAST (forward-most) button in the slot.
 
 ## Status
 
@@ -197,13 +228,30 @@ Three pieces stacked top to bottom:
    column is the rightmost and carries the accent flair (tint + sparkle) to draw the eye. The feature column's header is
    `sr-only`: the row labels say what each row is, so a visible "Feature" over them was noise, but the header still has
    to EXIST or a screen reader hears a blank with every cell in that column.
-3. **Three radio choices, in the order no AI → local → cloud.** Cheapest commitment first, so all three cards fit above
+3. **Three plain radio rows, in the order no AI → local → cloud.** Cheapest commitment first, so all three fit above
    the fold and only the last one opens a provider panel underneath it; before, cloud sat first and its panel pushed the
    other two options off screen. The pre-selection comes from the persisted `ai.provider` (default `off`), so a
    crash-then-resume user lands on their previous pick. Picking cloud reveals `CloudProviderPicker.svelte` (left) and
-   `CloudProviderSetup.svelte` (right). Picking local kicks off `startAiDownload()` in the background; switching away
-   cancels (HTTP-Range resume picks up on switch-back). Intel Macs see the local radio disabled with a tooltip ("Local
-   LLM requires Apple Silicon. Cloud works on Intel.") driven by `getAiRuntimeStatus().localAiSupported`.
+   `CloudProviderSetup.svelte` (right) through the group's `footer` snippet. Picking local kicks off `startAiDownload()`
+   in the background; switching away cancels (HTTP-Range resume picks up on switch-back). Intel Macs get the local
+   option disabled, with the reason ("Local LLM requires Apple Silicon. Cloud works on Intel.",
+   `getAiRuntimeStatus().localAiSupported`) in VISIBLE text beside it: why an option is greyed out is the one thing the
+   user most needs to read, and a tooltip on a control they can't reach is the worst place to put it.
+
+   They render through the house `RadioGroup`, not the bordered, tinted radio CARDS they used to be: on a page that
+   already carries a banner and a comparison table, three filled blocks made the actual question the heaviest thing on
+   screen. Each option's trade-off is quiet text on its own line via `itemTrailing`, except the local model's, which is
+   long enough to sit behind an info glyph (`onboarding.stepAi.local.tooltip`). ❌ That glyph is a `<button>` in
+   `itemTrailing`, never inside the option: a focusable control nested in a `role="radio"` element trips axe's
+   nested-interactive rule, which is exactly what the snippet exists for.
+
+   The recommendation is a gold badge (a sparkle plus one word) rather than a parenthetical, because it's the one steer
+   the step gives and it should be findable without reading. Brand `--color-cmdr-gold` at 18% for the fill with the
+   label in ordinary text, so the contrast floor is never in question; ❌ don't recolor the label to the gold itself.
+
+   A test drives an option by clicking its `<label class="radio-item">`, found through the visually-hidden
+   `input[value=…]` inside it. Ark fires no `change` event to dispatch, its generated ids are an implementation detail,
+   and matching on the label text breaks on the next copy edit.
 
 ### Forward footer (single "Next" button)
 

@@ -515,7 +515,11 @@
   --sheet-height-fraction: 90vh;
   --sheet-max-width: 1200px;
   --sheet-max-height: 900px;
-  --sheet-radius: var(--radius-lg);
+  /* Same corner as a modal dialog: a sheet is the biggest panel the app ever floats
+     over the canvas, and a tighter radius on the bigger surface read as a different,
+     cheaper kind of window. The panel wears `--color-bg-dialog` and the dialog
+     hairline pair to match. */
+  --sheet-radius: var(--radius-dialog);
   --sheet-backdrop-blur: 10px;
   --sheet-backdrop-color: var(--color-overlay-heavy);
 }

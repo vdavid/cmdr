@@ -231,10 +231,6 @@
   "@onboarding.stepAi.resumeCue": {
     "sourceHash": "586e2ae"
   },
-  "onboarding.stepAi.choiceLegend": "Was meinst du dazu, willst du KI oder nicht?",
-  "@onboarding.stepAi.choiceLegend": {
-    "sourceHash": "0748af8"
-  },
   "onboarding.stepAi.choiceGroupAria": "KI-Auswahl",
   "@onboarding.stepAi.choiceGroupAria": {
     "sourceHash": "9083caa"
@@ -258,10 +254,6 @@
   "onboarding.stepAi.local.label": "Ja, ich will KI, aber ich will besonders privat bleiben",
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
-  },
-  "onboarding.stepAi.local.help": "Ein etwas dümmeres Modell, das rund 2 GB Speicherplatz und bei jeder Nutzung etwas CPU braucht. Trotzdem eine okaye Lösung. Keine Daten verlassen dein Gerät. Cmdr versucht, Updates für das jeweils beste kleine lokale Modell zu liefern.",
-  "@onboarding.stepAi.local.help": {
-    "sourceHash": "fd47d34"
   },
   "onboarding.stepAi.local.note": "Das lokale Modell wird im Hintergrund geladen. Du kannst die Einführung jetzt abschließen; der Hinweis in der Ecke hält dich auf dem Laufenden.",
   "@onboarding.stepAi.local.note": {

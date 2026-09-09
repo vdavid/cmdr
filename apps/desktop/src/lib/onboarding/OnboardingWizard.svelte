@@ -5,7 +5,7 @@
     import { notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
     import Button from '$lib/ui/Button.svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
-    import { tooltip } from '$lib/tooltip/tooltip'
+    import { tooltip, showTooltipNow, hideTooltipFor } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
     import { tString } from '$lib/intl/messages.svelte'
     import {
@@ -51,6 +51,8 @@
      * keyboard input flows back to wherever it came from after close.
      */
     let previousActiveElement: HTMLElement | null = null
+    /** The footer's forward-button group, so a note can be shown ON the button it answers. */
+    let primarySlotEl: HTMLDivElement | undefined = $state()
 
     const onboardingState = getOnboardingState()
 
@@ -181,6 +183,25 @@
     }
 
     /**
+     * A step's answer to a press lands as a tooltip ON the button that was pressed, not
+     * as text painted beside it: the footer is a tight row, and a sentence long enough to
+     * be useful pushed the buttons around. The tooltip has to be forced open, because the
+     * pointer is already over the button (no `mouseenter` is coming) and a keyboard press
+     * has just set the hover-suppress flag. It stays as the button's `tooltipContent` too,
+     * so hovering back re-shows it while the note stands.
+     */
+    $effect(() => {
+        const note = onboardingState.footerNote
+        const buttonEl = primarySlotEl?.querySelector<HTMLElement>('button:last-of-type')
+        if (!buttonEl) return
+        if (note === null) {
+            hideTooltipFor(buttonEl)
+            return
+        }
+        showTooltipNow(buttonEl, note)
+    })
+
+    /**
      * Step-dot indicator. The last step (Optional) is rendered with a muted/open style
      * so users see "mandatory steps plus one optional," not an endless wizard. The Beta
      * page (step 3) is a normal mandatory dot.
@@ -189,6 +210,21 @@
         index: (i + 1) as OnboardingStep,
         isOptional: i === ONBOARDING_STEP_COUNT - 1,
     }))
+
+    /**
+     * What the dots say when you point at them. The count reads "3+1" rather than "4",
+     * because the last step is optional and a plain "of 4" would promise one more
+     * required page than there is.
+     */
+    const stepTooltip = $derived.by(() => {
+        const step = onboardingState.currentStep
+        if (step === null) return undefined
+        return tString('onboarding.wizard.stepTooltip', {
+            step,
+            mandatory: ONBOARDING_STEP_COUNT - 1,
+            note: step === ONBOARDING_STEP_COUNT ? 'last' : step === ONBOARDING_STEP_COUNT - 1 ? 'remaining' : 'none',
+        })
+    })
 </script>
 
 <!-- No `onEscape` on the trap: the wizard must swallow Escape (see `handleKeydown`). -->
@@ -209,12 +245,49 @@
         tabindex="-1"
         onkeydown={handleKeydown}
     >
-        <header class="wizard-header">
-            <h2 id="onboarding-wizard-title" class="sr-only">{tString('onboarding.wizard.title')}</h2>
-            <!-- Empty left cell: the three-column grid is what keeps the dots centred
-                 while the language picker sits at the right edge. -->
-            <div class="header-slot"></div>
-            <ol class="step-dots" aria-label={tString('onboarding.wizard.progressLabel')}>
+        <h2 id="onboarding-wizard-title" class="sr-only">{tString('onboarding.wizard.title')}</h2>
+
+        <div class="wizard-body">
+            {#if onboardingState.currentStep === 1}
+                <StepFda />
+            {:else if onboardingState.currentStep === 2}
+                <StepAi />
+            {:else if onboardingState.currentStep === 3}
+                <StepBeta />
+            {:else if onboardingState.currentStep === 4}
+                <StepOptional />
+            {/if}
+        </div>
+
+        <!-- Everything that frames the flow lives down here, so the step body owns the
+             whole top of the panel: Back and the language escape hatch on the left, the
+             step dots centred, the forward buttons on the right. -->
+        <footer class="wizard-footer">
+            <div class="footer-start">
+                {#if !isAtFirstStep()}
+                    <button
+                        type="button"
+                        class="back-button"
+                        onclick={handleBack}
+                        aria-label={tString('onboarding.wizard.backAria')}
+                        use:tooltip={tString('onboarding.wizard.back')}
+                    >
+                        <Icon name="arrow-left" size={16} />
+                    </button>
+                {/if}
+                <!-- Rendered only once the overlay ref is bound, so the portal target is stable
+                     from the picker's first render. Without the guard the menu mounts into
+                     `document.body` for one pass and Ark's Portal then re-mounts it. See
+                     `OnboardingLanguagePicker.svelte` for why it isn't a step. -->
+                {#if overlayEl}
+                    <OnboardingLanguagePicker portalContainer={overlayEl} />
+                {/if}
+            </div>
+            <ol
+                class="step-dots"
+                aria-label={tString('onboarding.wizard.progressLabel')}
+                use:tooltip={stepTooltip}
+            >
                 {#each stepDots as dot (dot.index)}
                     <li
                         class="step-dot"
@@ -232,53 +305,7 @@
                     </li>
                 {/each}
             </ol>
-            <!-- The escape hatch, in the frame from step 1 on. See
-                 `OnboardingLanguagePicker.svelte` for why it isn't a step. -->
-            <div class="header-slot header-slot-end">
-                <!-- Rendered only once the overlay ref is bound, so the portal target is stable
-                     from the picker's first render. Without the guard the menu mounts into
-                     `document.body` for one pass and Ark's Portal then re-mounts it. -->
-                {#if overlayEl}
-                    <OnboardingLanguagePicker portalContainer={overlayEl} />
-                {/if}
-            </div>
-        </header>
-
-        <div class="wizard-body">
-            {#if onboardingState.currentStep === 1}
-                <StepFda />
-            {:else if onboardingState.currentStep === 2}
-                <StepAi />
-            {:else if onboardingState.currentStep === 3}
-                <StepBeta />
-            {:else if onboardingState.currentStep === 4}
-                <StepOptional />
-            {/if}
-        </div>
-
-        <footer class="wizard-footer">
-            <div class="back-slot">
-                {#if !isAtFirstStep()}
-                    <button
-                        type="button"
-                        class="back-button"
-                        onclick={handleBack}
-                        aria-label={tString('onboarding.wizard.backAria')}
-                        use:tooltip={tString('onboarding.wizard.back')}
-                    >
-                        <Icon name="arrow-left" size={16} />
-                    </button>
-                {/if}
-            </div>
-            <div class="primary-slot">
-                {#if onboardingState.footerNote}
-                    <!-- `role="alert"` so a screen reader hears the reason the press didn't
-                         move, the same moment a sighted user reads it next to the button. -->
-                    <p class="footer-note" role="alert">
-                        <span class="footer-note-icon"><Icon name="triangle-alert" size={16} /></span>
-                        <span>{onboardingState.footerNote}</span>
-                    </p>
-                {/if}
+            <div class="primary-slot" bind:this={primarySlotEl}>
                 {#each footerButtons as button, i (`${String(i)}-${button.label}`)}
                     <!-- A blocked button keeps its click and its place in the tab order on
                          purpose: pressing it is how the user finds out what's missing. -->
@@ -286,7 +313,8 @@
                         variant={button.variant}
                         disabled={button.disabled ?? false}
                         ariaDisabled={button.blockedReason !== undefined}
-                        tooltipContent={button.blockedReason}
+                        tooltipContent={button.blockedReason ??
+                            (i === footerButtons.length - 1 ? (onboardingState.footerNote ?? undefined) : undefined)}
                         onclick={button.onclick}
                         aria-label={button.ariaLabel ?? button.label}
                     >
@@ -320,13 +348,20 @@
         -webkit-backdrop-filter: none;
     }
 
+    /* Chrome identical to `ModalDialog`'s panel: same surface, the same macOS pair of
+       hairlines (a darker one outside, a lighter one just inside, both alpha so they
+       work over whatever shows through), and the same three-layer shadow. A sheet is
+       the largest thing the app floats over the canvas, so anything cheaper here reads
+       as a different kind of window than the rest of the app's dialogs. */
     .wizard-panel {
         width: min(var(--sheet-max-width), var(--sheet-width-fraction));
         height: min(var(--sheet-max-height), var(--sheet-height-fraction));
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-strong);
+        background: var(--color-bg-dialog);
+        border: 1px solid var(--color-dialog-border-outer);
         border-radius: var(--sheet-radius);
-        box-shadow: var(--shadow-lg);
+        box-shadow:
+            inset 0 0 0 1px var(--color-dialog-border-inner),
+            var(--shadow-dialog);
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -337,32 +372,14 @@
         outline-offset: -2px;
     }
 
-    /* Three columns so the step dots stay centred on the panel however wide the
-       language picker's current value renders. */
-    .wizard-header {
-        padding: var(--spacing-lg) var(--spacing-2xl) 0;
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
-        align-items: center;
-        gap: var(--spacing-md);
-    }
-
-    .header-slot {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-    }
-
-    .header-slot-end {
-        justify-content: flex-end;
-    }
-
     .step-dots {
         display: flex;
         gap: var(--spacing-sm);
         list-style: none;
         margin: 0;
-        padding: 0;
+        /* Vertical padding widens the hover target: the dots are 8px tall, and a
+           tooltip you have to hit within 8px is a tooltip nobody reads. */
+        padding: var(--spacing-sm) 0;
     }
 
     .step-dot {
@@ -398,45 +415,33 @@
         flex-direction: column;
     }
 
+    /* Three columns, so the dots sit on the panel's centre line rather than the middle of
+       whatever space the two side groups leave. `1fr auto 1fr` also degrades the right
+       way: a footer whose buttons outgrow their column pushes the dots off-centre instead
+       of letting the two overlap. */
     .wizard-footer {
-        display: flex;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
         align-items: center;
-        justify-content: space-between;
+        gap: var(--spacing-md);
         padding: var(--spacing-lg) var(--spacing-2xl);
         border-top: 1px solid var(--color-border-subtle);
-        background: var(--color-bg-secondary);
     }
 
-    .back-slot,
+    .footer-start,
     .primary-slot {
         display: flex;
         align-items: center;
+        min-width: 0;
+    }
+
+    .footer-start {
+        gap: var(--spacing-sm);
     }
 
     .primary-slot {
         gap: var(--spacing-md);
-    }
-
-    /* The note sits left of the buttons and wraps rather than pushing them off the
-       panel. `align-items: center` twice over is what keeps the layout calm at either
-       height: the note's own box centres on the button row, and the icon centres on
-       the text block, so a one-liner and a two-liner both read as one line of thought
-       next to the button label. */
-    .footer-note {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        max-width: 30rem;
-        margin: 0;
-        font-size: var(--font-size-sm);
-        line-height: var(--font-line-height-normal);
-        color: var(--color-warning-text);
-    }
-
-    .footer-note-icon {
-        display: inline-flex;
-        flex: none;
-        color: var(--color-warning);
+        justify-content: flex-end;
     }
 
     .back-button {

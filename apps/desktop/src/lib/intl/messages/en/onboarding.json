@@ -22,6 +22,26 @@
     "screenshot": "onboarding-fda.png"
   },
 
+  "onboarding.moreAbout": "More about {topic}",
+  "@onboarding.moreAbout": {
+    "description": "Accessible name for a small info glyph beside a label, used on the AI step and the optional-setup step. Pressing or hovering it shows the long explanation. {topic} is the thing the glyph explains, already translated.",
+    "placeholders": {
+      "topic": "the label the glyph sits beside, already translated (for example \"Drive indexing\")"
+    },
+    "screenshot": "onboarding-optional.png"
+  },
+
+  "onboarding.wizard.stepTooltip": "Step {step} of {mandatory}+1{note, select, remaining {, one optional step remains} last {, this is the last, optional step} other {}}",
+  "@onboarding.wizard.stepTooltip": {
+    "description": "Tooltip on the row of step dots at the bottom of the onboarding sheet, naming where the user is. The count reads \"3+1\" rather than \"4\" because the last step is optional, so keep the \"+1\" shape: it's the whole point of the wording. The suffix appears only on the last two steps.",
+    "placeholders": {
+      "step": "the current step number, starting at 1 (for example 2)",
+      "mandatory": "how many steps are required, the optional one excluded (for example 3)",
+      "note": "which tail to add: \"remaining\" for the step before the optional one, \"last\" on the optional step itself, anything else for no tail"
+    },
+    "screenshot": "onboarding-ai.png"
+  },
+
   "onboarding.wizard.back": "Back",
   "@onboarding.wizard.back": {
     "description": "Tooltip on the back arrow button in the onboarding sheet footer. Goes to the previous step. Very short.",
@@ -367,11 +387,6 @@
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
-  "onboarding.stepAi.choiceLegend": "Based on this, do you want AI or not?",
-  "@onboarding.stepAi.choiceLegend": {
-    "description": "Screen-reader-only legend for the radio group of AI choices (it follows the comparison table). Frames the decision the user is making.",
-    "screenshot": "onboarding-ai.png"
-  },
 
   "onboarding.stepAi.choiceGroupAria": "AI choice",
   "@onboarding.stepAi.choiceGroupAria": {
@@ -385,15 +400,15 @@
     "screenshot": "onboarding-ai.png"
   },
 
-  "onboarding.stepAi.cloud.recommended": "(recommended)",
+  "onboarding.stepAi.cloud.recommended": "Recommended",
   "@onboarding.stepAi.cloud.recommended": {
-    "description": "Small parenthetical marking the cloud-AI option as the recommended choice, shown right after its label.",
+    "description": "Text of the gold badge marking the cloud-AI option as the recommended choice, shown right after its label with a sparkle glyph. One word if your language allows it: it shares a line with the option and doesn't wrap.",
     "screenshot": "onboarding-ai.png"
   },
 
-  "onboarding.stepAi.cloud.help": "Use any cloud provider with your own API key. Fast, high-quality models. Pick a provider below.",
+  "onboarding.stepAi.cloud.help": "Use any cloud provider with your own API key, or your own ollama/custom LLM. Configure it below.",
   "@onboarding.stepAi.cloud.help": {
-    "description": "Helper text under the cloud-AI radio option, explaining it uses the user's own API key with any cloud provider. \"API key\" is a technical credential term; \"cloud provider\" is a company offering AI models online.",
+    "description": "Quiet text on the same line as the cloud-AI option, saying what it takes to use. \"API key\" is a technical credential term; \"cloud provider\" is a company offering AI models online; \"ollama\" is a product name and \"LLM\" (large language model) stays as-is. \"below\" points at the provider panel this option opens.",
     "screenshot": "onboarding-ai.png"
   },
 
@@ -404,16 +419,17 @@
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
-  "onboarding.stepAi.local.label": "Yes, I want AI, but I want to be super private",
+  "onboarding.stepAi.local.label": "Yes, I want AI, but I want it to be super private with a simple local model.",
   "@onboarding.stepAi.local.label": {
-    "description": "Label for the radio option that runs AI locally on the device (more private, no data leaves the machine). Friendly, casual phrasing.",
+    "description": "Label for the radio option that runs AI locally on the device (more private, no data leaves the machine). Friendly, casual phrasing. The trade-off it carries lives behind the info glyph beside it (onboarding.stepAi.local.tooltip), so this line stands alone.",
     "screenshot": "onboarding-ai.png"
   },
 
-  "onboarding.stepAi.local.help": "A bit dumber model that takes up about 2 GB of space and a bit of CPU at every use. Still an okay solution. No data leaves your machine. Cmdr tries to deliver updates for the best small local model available.",
-  "@onboarding.stepAi.local.help": {
-    "description": "Helper text under the local-AI radio option: a smaller, weaker model that keeps everything on-device. Honest, plain tone (\"a bit dumber\" is deliberate). \"Cmdr\" is the product name; \"GB\" is the gigabytes unit; \"CPU\" is the processor. \"2 GB\" is an approximate disk-size figure.",
-    "screenshot": "onboarding-ai.png"
+  "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that''s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
+  "@onboarding.stepAi.local.tooltip": {
+    "description": "The local-AI option's full explanation, in the tooltip behind the info glyph beside it: a weaker on-device model that keeps everything local, and the better route for someone who wants both privacy and quality. Honest, plain tone (\"dumber\" is deliberate). <em> emphasizes \"and\"; <strong> wraps the name of the cloud option below, so keep that wording matching onboarding.stepAi.cloud.label. \"Cmdr\" is the product name; \"GB\" is gigabytes; \"RAM\" and \"CPU\" are the memory and the processor; \"ollama\" is a product name; all stay untranslated. \"2 GB\" is an approximate disk-size figure. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.local.note": "Started downloading the local model in the background. You can finish onboarding now; the toast in the corner will keep you posted.",
@@ -623,15 +639,6 @@
   "onboarding.stepOptional.changeAnytime": "You can change this any time in Settings.",
   "@onboarding.stepOptional.changeAnytime": {
     "description": "Closing line of each optional toggle's info tooltip, reassuring the user the choice isn't final. \"Settings\" is the app's settings screen.",
-    "screenshot": "onboarding-optional.png"
-  },
-
-  "onboarding.stepOptional.moreAbout": "More about {topic}",
-  "@onboarding.stepOptional.moreAbout": {
-    "description": "Accessible name for the small info glyph beside a toggle's title on the optional-setup step. Pressing or hovering it shows the long explanation. {topic} is that toggle's own title, already translated.",
-    "placeholders": {
-      "topic": "the toggle's title, already translated (for example \"Drive indexing\")"
-    },
     "screenshot": "onboarding-optional.png"
   },
 

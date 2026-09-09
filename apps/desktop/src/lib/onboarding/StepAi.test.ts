@@ -150,8 +150,22 @@ async function waitForAsync(): Promise<void> {
   flushSync()
 }
 
-function radioByValue(target: HTMLElement, value: string): HTMLInputElement | null {
-  return target.querySelector<HTMLInputElement>(`input[type="radio"][value="${value}"]`)
+/**
+ * The three AI options render through the house `RadioGroup` (Ark UI). An option is a
+ * `<label class="radio-item">` wrapping a visually-hidden `<input type=radio value=…>`;
+ * the input's `value` is the stable identity, so tests key off it rather than the label
+ * copy (which changes) or Ark's generated ids (which are an implementation detail).
+ * Picking one is a click on the LABEL: there is no `change` event to dispatch.
+ */
+function radioByValue(target: HTMLElement, value: string): HTMLElement | null {
+  const input = target.querySelector<HTMLInputElement>(`.radio-item input[type="radio"][value="${value}"]`)
+  return input?.closest<HTMLElement>('.radio-item') ?? null
+}
+
+function pickChoice(target: HTMLElement, value: string): void {
+  const radio = radioByValue(target, value)
+  if (!radio) throw new Error(`no AI option with value "${value}"`)
+  radio.click()
 }
 
 describe('StepAi', () => {
@@ -244,10 +258,7 @@ describe('StepAi', () => {
   it('picking cloud reveals the provider picker and setup grid', async () => {
     mounted = mountStep()
     await waitForAsync()
-    const cloud = radioByValue(mounted.target, 'cloud')
-    if (!cloud) throw new Error('cloud radio missing')
-    cloud.checked = true
-    cloud.dispatchEvent(new Event('change', { bubbles: true }))
+    pickChoice(mounted.target, 'cloud')
     await waitForAsync()
     expect(mounted.target.querySelector('[aria-label="Cloud AI providers"]')).not.toBeNull()
   })
@@ -255,9 +266,7 @@ describe('StepAi', () => {
   it('picking local fires startAiDownload when localAiSupported is true', async () => {
     mounted = mountStep()
     await waitForAsync()
-    const local = radioByValue(mounted.target, 'local')
-    if (!local) throw new Error('local radio missing')
-    local.dispatchEvent(new Event('change', { bubbles: true }))
+    pickChoice(mounted.target, 'local')
     await waitForAsync()
     expect(startAiDownload).toHaveBeenCalled()
   })
@@ -265,10 +274,10 @@ describe('StepAi', () => {
   it('switching away from local calls cancelAiDownload', async () => {
     mounted = mountStep()
     await waitForAsync()
-    radioByValue(mounted.target, 'local')?.dispatchEvent(new Event('change', { bubbles: true }))
+    pickChoice(mounted.target, 'local')
     await waitForAsync()
     startAiDownload.mockClear()
-    radioByValue(mounted.target, 'off')?.dispatchEvent(new Event('change', { bubbles: true }))
+    pickChoice(mounted.target, 'off')
     await waitForAsync()
     expect(cancelAiDownload).toHaveBeenCalled()
   })
@@ -292,9 +301,9 @@ describe('StepAi', () => {
     await waitForAsync()
     const local = radioByValue(mounted.target, 'local')
     if (!local) throw new Error('local radio missing')
-    expect(local.disabled).toBe(true)
-    // Force-dispatch change even though native UI would skip; assert no side effects.
-    local.dispatchEvent(new Event('change', { bubbles: true }))
+    expect(local.getAttribute('data-disabled')).not.toBeNull()
+    // Click it anyway, the way a stray press would, and assert no side effects.
+    local.click()
     await waitForAsync()
     expect(startAiDownload).not.toHaveBeenCalled()
     expect(settingsMap['ai.provider']).toBe('off')
@@ -315,7 +324,7 @@ describe('StepAi', () => {
     getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'abc' })
     mounted = mountStep()
     await waitForAsync()
-    radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
+    pickChoice(mounted.target, 'cloud')
     await waitForAsync()
     const initialTick = getOnboardingState().finishRequestTick
     getOnboardingState().footerOverride?.[0].onclick()
@@ -390,7 +399,7 @@ describe('StepAi', () => {
     // Default mocks: no key is stored for the provider.
     mounted = mountStep()
     await waitForAsync()
-    radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
+    pickChoice(mounted.target, 'cloud')
     await waitForAsync()
     getOnboardingState().footerOverride?.[0].onclick()
     await waitForAsync()
@@ -402,7 +411,7 @@ describe('StepAi', () => {
   it('cloud with no stored key: the second Next goes through, warning and all', async () => {
     mounted = mountStep()
     await waitForAsync()
-    radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
+    pickChoice(mounted.target, 'cloud')
     await waitForAsync()
     getOnboardingState().footerOverride?.[0].onclick()
     await waitForAsync()
@@ -417,7 +426,7 @@ describe('StepAi', () => {
   it('the warning clears on the next thing the user does, so the gate asks again', async () => {
     mounted = mountStep()
     await waitForAsync()
-    radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
+    pickChoice(mounted.target, 'cloud')
     await waitForAsync()
     getOnboardingState().footerOverride?.[0].onclick()
     await waitForAsync()
@@ -437,7 +446,7 @@ describe('StepAi', () => {
   it('no gate when the picked provider needs no key, or when AI is off', async () => {
     mounted = mountStep()
     await waitForAsync()
-    radioByValue(mounted.target, 'off')?.dispatchEvent(new Event('change', { bubbles: true }))
+    pickChoice(mounted.target, 'off')
     await waitForAsync()
     getOnboardingState().footerOverride?.[0].onclick()
     await waitForAsync()

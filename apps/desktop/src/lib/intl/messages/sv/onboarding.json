@@ -231,10 +231,6 @@
   "@onboarding.stepAi.resumeCue": {
     "sourceHash": "586e2ae"
   },
-  "onboarding.stepAi.choiceLegend": "Utifrån det här, vill du ha AI eller inte?",
-  "@onboarding.stepAi.choiceLegend": {
-    "sourceHash": "0748af8"
-  },
   "onboarding.stepAi.choiceGroupAria": "AI-val",
   "@onboarding.stepAi.choiceGroupAria": {
     "sourceHash": "9083caa"
@@ -258,10 +254,6 @@
   "onboarding.stepAi.local.label": "Ja, jag vill ha AI, men jag vill vara superprivat",
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
-  },
-  "onboarding.stepAi.local.help": "En lite dummare modell som tar upp ungefär 2 GB utrymme och lite CPU vid varje användning. Ändå en helt okej lösning. Inga data lämnar din maskin. Cmdr försöker leverera uppdateringar för den bästa lilla lokala modellen som finns.",
-  "@onboarding.stepAi.local.help": {
-    "sourceHash": "fd47d34"
   },
   "onboarding.stepAi.local.note": "Började hämta den lokala modellen i bakgrunden. Du kan slutföra guiden nu; avisering i hörnet håller dig uppdaterad.",
   "@onboarding.stepAi.local.note": {

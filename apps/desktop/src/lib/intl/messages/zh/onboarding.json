@@ -231,10 +231,6 @@
   "@onboarding.stepAi.resumeCue": {
     "sourceHash": "586e2ae"
   },
-  "onboarding.stepAi.choiceLegend": "看完这些，你想要 AI 吗？",
-  "@onboarding.stepAi.choiceLegend": {
-    "sourceHash": "0748af8"
-  },
   "onboarding.stepAi.choiceGroupAria": "AI 选择",
   "@onboarding.stepAi.choiceGroupAria": {
     "sourceHash": "9083caa"
@@ -258,10 +254,6 @@
   "onboarding.stepAi.local.label": "要，我想用 AI，但我想要超级注重隐私",
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
-  },
-  "onboarding.stepAi.local.help": "一个稍微笨一点的模型，占用约 2 GB 空间，每次使用会用一点 CPU。仍然是个不错的方案。没有数据离开你的设备。Cmdr 会尽量为现有最佳的小型本地模型提供更新。",
-  "@onboarding.stepAi.local.help": {
-    "sourceHash": "fd47d34"
   },
   "onboarding.stepAi.local.note": "已经开始在后台下载本地模型。你现在就可以完成入门引导；角落里的提示会随时告诉你进展。",
   "@onboarding.stepAi.local.note": {

@@ -233,10 +233,6 @@
   "@onboarding.stepAi.resumeCue": {
     "sourceHash": "586e2ae"
   },
-  "onboarding.stepAi.choiceLegend": "Wil je op basis hiervan AI of niet?",
-  "@onboarding.stepAi.choiceLegend": {
-    "sourceHash": "0748af8"
-  },
   "onboarding.stepAi.choiceGroupAria": "AI-keuze",
   "@onboarding.stepAi.choiceGroupAria": {
     "sourceHash": "9083caa"
@@ -260,10 +256,6 @@
   "onboarding.stepAi.local.label": "Ja, ik wil AI, maar ik wil supergeprivacyd zijn",
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
-  },
-  "onboarding.stepAi.local.help": "Een wat dommer model dat ongeveer 2 GB ruimte inneemt en bij elk gebruik een beetje CPU. Nog steeds een prima oplossing. Er verlaten geen gegevens je machine. Cmdr probeert updates te leveren voor het beste kleine lokale model dat beschikbaar is.",
-  "@onboarding.stepAi.local.help": {
-    "sourceHash": "fd47d34"
   },
   "onboarding.stepAi.local.note": "Het lokale model wordt op de achtergrond gedownload. Je kunt de onboarding nu afronden; de melding in de hoek houdt je op de hoogte.",
   "@onboarding.stepAi.local.note": {

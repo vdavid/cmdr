@@ -384,6 +384,21 @@ import { tooltip } from '$lib/tooltip/tooltip'
 The tooltip element has `white-space: pre-line` and uses global CSS classes, so `<span class="size-mb">` etc. work
 inside `{ html }` tooltips. The `html` variant renders via `innerHTML`; only use with trusted content.
 
+### Showing one without a hover (`showTooltipNow`)
+
+`showTooltipNow(node, param)` puts a tooltip up immediately: no hover, no focus, no 400 ms delay. `hideTooltipFor(node)`
+takes it down again, and only if that node is the one showing. The element joins the normal bookkeeping, so its own
+`mouseleave` / `blur`, the next keypress, and any other trigger's show all dismiss it the usual way.
+
+It exists for one shape of problem: the app has something to say in answer to a press the user just made, and the
+answer belongs on the control they pressed. The onboarding wizard's missing-API-key warning is the case that motivated
+it. Neither event path can fire there — the pointer is already sitting on the button, so no `mouseenter` is coming, and
+a keyboard press has just set `hoverSuppressed` — which is why the function clears that flag: this is the app speaking,
+not a hover the user didn't ask for.
+
+❌ Never reach for it to show something a hover or focus would have shown anyway. An unrequested tooltip is a popup; it
+earns its place only as a direct answer to an action.
+
 ### Live rich content (`contentEl`)
 
 For a tooltip whose content updates while it's shown (a ticking counter, a `ProgressBar` whose width transition must
