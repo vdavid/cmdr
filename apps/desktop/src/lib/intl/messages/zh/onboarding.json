@@ -456,27 +456,22 @@
   "@onboarding.cloudSetup.step.createKey": {
     "sourceHash": "5705da6"
   },
-
   "onboarding.cloudSetup.step.install": "下载并安装 <installLink>{provider}</installLink>",
   "@onboarding.cloudSetup.step.install": {
     "sourceHash": "cd0221c"
   },
-
   "onboarding.cloudSetup.step.ollamaModel": "在终端里用 ollama pull llama3.2 拉取一个模型，或者<libraryLink>浏览模型库</libraryLink>",
   "@onboarding.cloudSetup.step.ollamaModel": {
     "sourceHash": "5999d6a"
   },
-
   "onboarding.cloudSetup.step.lmStudioServer": "在 LM Studio 里加载一个模型，然后启动它的<serverLink>本地服务器</serverLink>",
   "@onboarding.cloudSetup.step.lmStudioServer": {
     "sourceHash": "447957a"
   },
-
   "onboarding.cloudSetup.hint.azureEndpoint": "把地址里的占位符换成你自己的 Azure OpenAI 资源名称。这个端点不需要 api-version 参数。",
   "@onboarding.cloudSetup.hint.azureEndpoint": {
     "sourceHash": "b1d408e"
   },
-
   "onboarding.cloudSetup.hint.azureModel": "在 Azure 上，这里填的是你的部署名称，它可能和实际运行的模型名不一样。",
   "@onboarding.cloudSetup.hint.azureModel": {
     "sourceHash": "e856224"

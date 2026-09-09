@@ -457,27 +457,22 @@
   "@onboarding.cloudSetup.step.createKey": {
     "sourceHash": "5705da6"
   },
-
   "onboarding.cloudSetup.step.install": "Download en installeer <installLink>{provider}</installLink>",
   "@onboarding.cloudSetup.step.install": {
     "sourceHash": "cd0221c"
   },
-
   "onboarding.cloudSetup.step.ollamaModel": "Haal een model op in een terminal met ollama pull llama3.2, of <libraryLink>blader door de bibliotheek</libraryLink>",
   "@onboarding.cloudSetup.step.ollamaModel": {
     "sourceHash": "5999d6a"
   },
-
   "onboarding.cloudSetup.step.lmStudioServer": "Laad een model in LM Studio en start daarna de <serverLink>lokale server</serverLink>",
   "@onboarding.cloudSetup.step.lmStudioServer": {
     "sourceHash": "447957a"
   },
-
   "onboarding.cloudSetup.hint.azureEndpoint": "Vervang de tijdelijke aanduiding in het adres door de naam van je eigen Azure OpenAI-resource. Dit eindpunt heeft geen api-version-parameter nodig.",
   "@onboarding.cloudSetup.hint.azureEndpoint": {
     "sourceHash": "b1d408e"
   },
-
   "onboarding.cloudSetup.hint.azureModel": "In Azure is dit de naam van je implementatie, die kan afwijken van de naam van het model dat erachter draait.",
   "@onboarding.cloudSetup.hint.azureModel": {
     "sourceHash": "e856224"

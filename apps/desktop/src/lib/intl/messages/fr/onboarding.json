@@ -455,27 +455,22 @@
   "@onboarding.cloudSetup.step.createKey": {
     "sourceHash": "5705da6"
   },
-
   "onboarding.cloudSetup.step.install": "Téléchargez et installez <installLink>{provider}</installLink>",
   "@onboarding.cloudSetup.step.install": {
     "sourceHash": "cd0221c"
   },
-
   "onboarding.cloudSetup.step.ollamaModel": "Récupérez un modèle dans un terminal avec ollama pull llama3.2, ou <libraryLink>parcourez la bibliothèque</libraryLink>",
   "@onboarding.cloudSetup.step.ollamaModel": {
     "sourceHash": "5999d6a"
   },
-
   "onboarding.cloudSetup.step.lmStudioServer": "Chargez un modèle dans LM Studio, puis démarrez son <serverLink>serveur local</serverLink>",
   "@onboarding.cloudSetup.step.lmStudioServer": {
     "sourceHash": "447957a"
   },
-
   "onboarding.cloudSetup.hint.azureEndpoint": "Remplacez l''espace réservé dans l''adresse par le nom de votre ressource Azure OpenAI. Ce point de terminaison n''a pas besoin du paramètre api-version.",
   "@onboarding.cloudSetup.hint.azureEndpoint": {
     "sourceHash": "b1d408e"
   },
-
   "onboarding.cloudSetup.hint.azureModel": "Sur Azure, il s''agit du nom de votre déploiement, qui peut différer de celui du modèle qu''il exécute.",
   "@onboarding.cloudSetup.hint.azureModel": {
     "sourceHash": "e856224"

@@ -455,27 +455,22 @@
   "@onboarding.cloudSetup.step.createKey": {
     "sourceHash": "5705da6"
   },
-
   "onboarding.cloudSetup.step.install": "Töltsd le és telepítsd a(z) <installLink>{provider}</installLink> alkalmazást",
   "@onboarding.cloudSetup.step.install": {
     "sourceHash": "cd0221c"
   },
-
   "onboarding.cloudSetup.step.ollamaModel": "Tölts le egy modellt a Terminálban az ollama pull llama3.2 paranccsal, vagy <libraryLink>böngészd a modellkönyvtárat</libraryLink>",
   "@onboarding.cloudSetup.step.ollamaModel": {
     "sourceHash": "5999d6a"
   },
-
   "onboarding.cloudSetup.step.lmStudioServer": "Tölts be egy modellt az LM Studióban, majd indítsd el a <serverLink>helyi szerverét</serverLink>",
   "@onboarding.cloudSetup.step.lmStudioServer": {
     "sourceHash": "447957a"
   },
-
   "onboarding.cloudSetup.hint.azureEndpoint": "Cseréld a címben lévő helyőrzőt a saját Azure OpenAI-erőforrásod nevére. Ehhez a végponthoz nem kell api-version paraméter.",
   "@onboarding.cloudSetup.hint.azureEndpoint": {
     "sourceHash": "b1d408e"
   },
-
   "onboarding.cloudSetup.hint.azureModel": "Az Azure-ban ez az üzembe helyezésed neve, ami eltérhet a futtatott modell nevétől.",
   "@onboarding.cloudSetup.hint.azureModel": {
     "sourceHash": "e856224"
