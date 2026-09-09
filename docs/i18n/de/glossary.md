@@ -2679,7 +2679,7 @@ und `stepFda.why`. Onboarding ist die eine Fläche, auf der Cmdr in der Ich-Form
   konnte nicht gesichert werden.“, „Die letzten Änderungen werden im Versionsverlauf gesichert.“) · high. Abgrenzung:
   der Katalog sagt `gespeichert`, wo es ums bloße ABLEGEN von Daten geht („Anmeldedaten gespeichert“, „Notiz über dich
   gespeichert“). Hier hängt das Partizip aber direkt an der Taste `Sichern`, also gewinnt die Wortfamilie der Taste
-  (`style.md` § „Eine Wortfamilie pro Dialog durchhalten“): `E-Mail-Adresse gesichert`,
+  (`style.md` § Eine Wortfamilie pro Dialog durchhalten): `E-Mail-Adresse gesichert`,
   `Deine Adresse ist auf diesem Mac gesichert`.
 - **`star` (GitHubs eigenes Verb) → `Stern`, als Handlung `einen Stern vergeben`** · GitHub lokalisiert seine Oberfläche
   NICHT ins Deutsche (die Einstellung „Preferred spoken language“ betrifft nur Kommunikationsfunktionen), es gibt also

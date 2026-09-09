@@ -2859,7 +2859,7 @@ cài, quét toàn bộ `*.loctable` theo công thức trong `docs/i18n/reference
   nhất trí (`AppSystemSettingsUI.framework` và hai `.loctable` khác, khóa `Local Network` / `LOCAL_NETWORK`), cùng
   `TCC.framework` (`…devices on your local network` → `…thiết bị trên mạng cục bộ của bạn`), macOS 26.6.2 build 25G83,
   2026-09-09 · `high`. `networking.summary` dùng lại y nguyên chữ của khóa anh em `networking.desc`.
-- **native (của hệ điều hành) → `gốc`** · `style.md` § Notes đã chốt `menu gốc` cho native menu; `mtp.summary` viết
+- **native (của hệ điều hành) → `gốc`** · `style.md` § Notes and decisions: đã chốt `menu gốc` cho native menu; `mtp.summary` viết
   `trình xử lý gốc của macOS` · `high`.
 - **warning → `cảnh báo`** · Xfce Thunar và KDE Dolphin đều `Cảnh báo` · `high`.
 

@@ -1633,7 +1633,7 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 - **typo** · `打錯字` · 五份語料都沒有，就是日常國語的講法 · `tentative`
 - **bug（要修的那種缺陷）** · `問題` · 目錄自己的 `onboarding.stepBeta.feedbackIntro` 已經把 `spot bugs` 寫成
   `幫我找出問題`，同一段話的第二句（`openBeta` 的 `fix bugs`）就跟著寫 `修正問題` · `high`。❗ 不取術語庫的 `錯誤`（id
-  24563）：`錯誤` 在本目錄留給 `錯誤報告` 那種終局狀態名詞，`style.md` § Voice and tone禁的是拿它當句子的動詞。
+  24563）：`錯誤` 在本目錄留給 `錯誤報告` 那種終局狀態名詞，`style.md` § "Voice and tone" 禁的是拿它當句子的動詞。
 - **More about X（資訊圖示的無障礙名稱）** · `進一步了解「{topic}」` · Apple zh-HK Finder
   `ICloudNoDocumentsView`（`進一步了解iCloud`）、`ICloudUpgradeView`（`進一步了解⋯`）、`LocalizableMerged`
   NE115（`進一步了解`）· `high`。**角括號是刻意的**：`{topic}`
