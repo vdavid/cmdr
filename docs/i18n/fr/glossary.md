@@ -1973,10 +1973,13 @@ Les 11 valeurs sont ICU (apostrophes doublées), espace ASCII avant `:`, aucun U
 - **`View or add notes to the report` → `Voir le rapport ou y ajouter des notes`** · les deux moitiés (regarder ET
   ajouter) sont tenues, et le pronom `y` évite de répéter « au rapport », ce qui garde le bouton court (38 caractères
   contre 31 en anglais) dans une notification où il voisine « Modifier les réglages » · high. `Voir` plutôt
-  qu'`Afficher` : le catalogue réserve `Afficher` à l'ouverture d'un contenu (`fileExplorer.functionKeyBar.viewAction` «
-  Afficher le fichier ») et utilise `Voir` pour consulter une information (`menu.app.licenseDetails` « Voir les détails
-  de la licence », `whatsNew.dialog.seeFullChangelog`), ce qui est le sens ici. `Afficher` coûterait aussi trois
-  caractères de plus.
+  qu'`Afficher` : dans le catalogue, `Afficher` rend l'anglais **Show**, faire apparaître quelque chose à l'écran
+  (`menu.view.showHiddenFiles` « Afficher les fichiers cachés », `queue.row.foreground` « Afficher »,
+  `crashReporter.dialog.showDetails` « Afficher les détails du rapport »), alors que `Voir` rend **See**, consulter une
+  information (`menu.app.licenseDetails` et `commands.appLicenseKey.seeDetails.label` « Voir les détails de la
+  licence », `whatsNew.dialog.seeFullChangelog`, `askCmdr.wakeToast.openThread` « Voir pourquoi »), et c'est le sens
+  ici. `Afficher` coûterait aussi trois caractères de plus. Le `View` de la barre des touches F est un troisième verbe,
+  `Visualiser`, propre à la visionneuse (`fileExplorer.functionKeyBar.viewLabel` / `.viewAction`).
 
 ## La fenêtre sélectionner / désélectionner des fichiers (`selection.*`, 2026-08-29)
 
@@ -2141,9 +2144,9 @@ seule la passe manuelle les trouve. Toutes sont corrigées.
   (`menu.context.openWithDefault` « {app} (par défaut) », `settings.control.resetToDefault`). Ce n'était pas une dérive
   de terme mais une erreur de traduction.
 - **`View` → `Visualiser` aussi dans les deux clés que le vérificateur ne voit pas** ·
-  `fileExplorer.functionKeyBar.viewAction` (« Afficher le fichier ») et
-  `settings.appearance.showFunctionKeyBar.description`, qui énumère les touches F comme « (Renommer, **Afficher**,
-  Copier, etc.) » alors que le bouton s'appelle maintenant `Visualiser` · `high`.
+  `fileExplorer.functionKeyBar.viewAction` (« Visualiser le fichier ») et
+  `settings.appearance.showFunctionKeyBar.description`, qui énumère les touches F comme « (Renommer, **Visualiser**,
+  Copier, etc.) » : l'énumération reprend le nom du bouton · `high`.
 - **`error report` → `rapport d'incident` jusque dans les réglages** · `settings.updates.errorReports.label`,
   `settings.developer.verboseLogging.description` et `settings.advanced.maxLogStorageMb.description` disaient
   `rapport d'erreur` · `high`. Le français fond `crash report` et `error report` dans un seul terme (c'est la décision
