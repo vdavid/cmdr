@@ -3113,6 +3113,8 @@ export type MessageKey =
   | 'settings.revealHandler.description'
   | 'settings.revealHandler.heldByOtherApp'
   | 'settings.revealHandler.label'
+  | 'settings.revealHandler.notInApplications'
+  | 'settings.revealHandler.uninstallWarning'
   | 'settings.search.autoApply.description'
   | 'settings.search.autoApply.label'
   | 'settings.search.recentSearches.maxCount.description'

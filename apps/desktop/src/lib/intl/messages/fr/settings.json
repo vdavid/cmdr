@@ -1510,6 +1510,14 @@
   "@settings.revealHandler.heldByOtherApp": {
     "sourceHash": "d0aa283"
   },
+  "settings.revealHandler.uninstallWarning": "<lead>Désactivez ceci avant de désinstaller Cmdr.</lead> macOS continue d''envoyer « Afficher dans le Finder » ici, et sans Cmdr ces clics ne font plus rien, sans rien dire.",
+  "@settings.revealHandler.uninstallWarning": {
+    "sourceHash": "3c10fd3"
+  },
+  "settings.revealHandler.notInApplications": "Déplacez Cmdr dans votre dossier Applications pour pouvoir activer ceci. Depuis son emplacement actuel, déplacer ou supprimer Cmdr laisserait chaque clic sur « Afficher dans le Finder » sans destination.",
+  "@settings.revealHandler.notInApplications": {
+    "sourceHash": "dc15ebf"
+  },
   "settings.behavior.openTerminalHereApp.label": "« Ouvrir un terminal ici » utilise",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

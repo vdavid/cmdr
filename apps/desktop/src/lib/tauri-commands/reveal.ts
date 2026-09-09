@@ -5,7 +5,7 @@
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '$lib/ipc/bindings'
-import type { RevealHandlerState } from '$lib/ipc/bindings'
+import type { RevealHandlerStatus } from '$lib/ipc/bindings'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('reveal')
@@ -26,8 +26,12 @@ export async function drainPendingReveals(): Promise<void> {
   }
 }
 
+/** What every wrapper here answers when the backend can't be reached at all. */
+const UNAVAILABLE: RevealHandlerStatus = { state: { kind: 'unavailable' }, blockedBy: null }
+
 /**
- * Who currently owns the `NSFileViewer` key: us, nobody, or another app.
+ * Who currently owns the `NSFileViewer` key — us, nobody, or another app — and whether
+ * this copy of Cmdr may take it.
  *
  * Reads through to the OS on every call. ❌ Never cache it in a setting: the key is
  * machine state anyone can change from outside Cmdr, so a stored flag would show a
@@ -36,12 +40,12 @@ export async function drainPendingReveals(): Promise<void> {
  * `unavailable` covers every build that must not write the key (a debug, worktree, or
  * E2E instance) as well as every non-macOS platform, where the command doesn't exist.
  */
-export async function getRevealHandlerState(): Promise<RevealHandlerState> {
+export async function getRevealHandlerState(): Promise<RevealHandlerStatus> {
   try {
     return await commands.getRevealHandlerState()
   } catch (error) {
     log.debug('Reveal handler state is unavailable: {error}', { error })
-    return { kind: 'unavailable' }
+    return UNAVAILABLE
   }
 }
 
@@ -50,13 +54,14 @@ export async function getRevealHandlerState(): Promise<RevealHandlerState> {
  *
  * Returns the state the OS was left in, not the state that was asked for: another app
  * can hold the key by the time the click lands, and the row has to render the truth.
+ * A `blockedBy` answer means the backend refused and touched nothing.
  */
-export async function setRevealHandlerEnabled(enabled: boolean): Promise<RevealHandlerState> {
+export async function setRevealHandlerEnabled(enabled: boolean): Promise<RevealHandlerStatus> {
   try {
     return await commands.setRevealHandlerEnabled(enabled)
   } catch (error) {
     log.debug('Could not set the reveal handler: {error}', { error })
-    return { kind: 'unavailable' }
+    return UNAVAILABLE
   }
 }
 

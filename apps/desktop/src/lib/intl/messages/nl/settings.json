@@ -1506,6 +1506,14 @@
   "@settings.revealHandler.heldByOtherApp": {
     "sourceHash": "d0aa283"
   },
+  "settings.revealHandler.uninstallWarning": "<lead>Zet dit uit voordat je Cmdr verwijdert.</lead> macOS blijft ‘Toon in Finder’ hierheen sturen, en zonder Cmdr doen die klikken stilletjes niets.",
+  "@settings.revealHandler.uninstallWarning": {
+    "sourceHash": "3c10fd3"
+  },
+  "settings.revealHandler.notInApplications": "Verplaats Cmdr naar je map Programma''s om dit aan te kunnen zetten. Vanaf de plek waar het nu draait, zou het verplaatsen of verwijderen van Cmdr elke klik op ‘Toon in Finder’ naar niets laten wijzen.",
+  "@settings.revealHandler.notInApplications": {
+    "sourceHash": "dc15ebf"
+  },
   "settings.behavior.openTerminalHereApp.label": "‘Terminal hier openen’ gebruikt",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

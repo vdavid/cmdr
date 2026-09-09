@@ -45,7 +45,7 @@ export async function acceptRevealNudge(toastId: string): Promise<void> {
   dismissToast(toastId)
   recordRevealNudgeAnswer('yes')
 
-  const state = await setRevealHandlerEnabled(true)
+  const { state } = await setRevealHandlerEnabled(true)
   if (state.kind === 'registered') {
     addToast(tString('main.revealNudge.turnedOn'), { level: 'success' })
     return

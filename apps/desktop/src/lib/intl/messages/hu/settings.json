@@ -1500,6 +1500,14 @@
   "@settings.revealHandler.heldByOtherApp": {
     "sourceHash": "d0aa283"
   },
+  "settings.revealHandler.uninstallWarning": "<lead>Mielőtt eltávolítod a Cmdrt, kapcsold ki ezt.</lead> A macOS továbbra is ide küldi a „Megjelenítés a Finderben” parancsot, és Cmdr nélkül ezek a kattintások csendben nem csinálnak semmit.",
+  "@settings.revealHandler.uninstallWarning": {
+    "sourceHash": "3c10fd3"
+  },
+  "settings.revealHandler.notInApplications": "Helyezd át a Cmdr appot az Alkalmazások mappádba, hogy bekapcsolhasd. Onnan, ahol most fut, a Cmdr áthelyezése vagy törlése után minden „Megjelenítés a Finderben” kattintás a semmibe mutatna.",
+  "@settings.revealHandler.notInApplications": {
+    "sourceHash": "dc15ebf"
+  },
   "settings.behavior.openTerminalHereApp.label": "A „Terminál megnyitása itt” appja",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

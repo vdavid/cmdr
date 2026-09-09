@@ -221,8 +221,8 @@ export async function maybeOfferRevealHandler(ctx: StartupGatesContext): Promise
   const context = nudgeContext(ctx)
   if (!nudgeCouldFire(context, 'reveal')) return
 
-  const [launchDayCount, handlerState] = await Promise.all([getLaunchDayCount(), getRevealHandlerState()])
-  if (!shouldShowRevealNudge({ ...context, launchDayCount, handlerState })) return
+  const [launchDayCount, handlerStatus] = await Promise.all([getLaunchDayCount(), getRevealHandlerState()])
+  if (!shouldShowRevealNudge({ ...context, launchDayCount, handlerStatus })) return
 
   log.info(`Offering the reveal handler after ${String(launchDayCount)} launch days`)
   offerRevealHandler()

@@ -48,6 +48,25 @@ pub enum RevealHandlerState {
     Unavailable,
 }
 
+/// Everything the Settings row needs: where the key stands, and whether this copy of Cmdr
+/// may change it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RevealHandlerStatus {
+    pub state: RevealHandlerState,
+    /// Why the switch won't take a yes, or `None` when the user may operate it.
+    pub blocked_by: Option<RevealHandlerBlocker>,
+}
+
+/// Why Cmdr won't take the `NSFileViewer` key right now.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum RevealHandlerBlocker {
+    /// This copy of Cmdr isn't in `/Applications` or `~/Applications`, so it's one of the
+    /// copies that gets moved or deleted. Registering it would leave a dangling key.
+    NotInApplications,
+}
+
 /// The global preferences domain, behind a seam.
 ///
 /// Reads and writes are separate so the state machine can enforce "clear only what's
@@ -71,15 +90,44 @@ pub struct RevealRegistration<P: ViewerPreference> {
     prefs: P,
     /// The bundle id this build may claim, or `None` when it may never write the key.
     own_bundle_id: Option<String>,
+    /// What the machine says about where this copy sits, before the never-block-off rule
+    /// in [`Self::blocked_by`] has its say.
+    install_blocker: Option<RevealHandlerBlocker>,
 }
 
 impl<P: ViewerPreference> RevealRegistration<P> {
-    pub fn new(prefs: P, own_bundle_id: Option<String>) -> Self {
-        Self { prefs, own_bundle_id }
+    pub fn new(prefs: P, own_bundle_id: Option<String>, install_blocker: Option<RevealHandlerBlocker>) -> Self {
+        Self {
+            prefs,
+            own_bundle_id,
+            install_blocker,
+        }
+    }
+
+    /// Where the key stands, and whether the user may move it.
+    pub fn status(&self) -> RevealHandlerStatus {
+        let state = self.state();
+        RevealHandlerStatus {
+            blocked_by: self.blocked_by(&state),
+            state,
+        }
+    }
+
+    /// Why the switch won't take a yes, or `None` when it will.
+    ///
+    /// ❗ Holding the key beats every blocker: handing it back has to stay possible from
+    /// wherever this copy has ended up. Someone who switched this on and then moved Cmdr
+    /// out of `/Applications` would otherwise be stranded registered, which is the exact
+    /// dangling key the blocker exists to prevent.
+    fn blocked_by(&self, state: &RevealHandlerState) -> Option<RevealHandlerBlocker> {
+        if matches!(state, RevealHandlerState::Registered) {
+            return None;
+        }
+        self.install_blocker
     }
 
     /// Read through to the OS and word what it says.
-    pub fn state(&self) -> RevealHandlerState {
+    fn state(&self) -> RevealHandlerState {
         let Some(own) = self.own_bundle_id.as_deref() else {
             return RevealHandlerState::Unavailable;
         };
@@ -103,16 +151,24 @@ impl<P: ViewerPreference> RevealRegistration<P> {
     /// somebody else's file manager.
     ///
     /// A build that isn't allowed to write returns `Unavailable` and touches nothing.
-    pub fn set_enabled(&self, enabled: bool) -> RevealHandlerState {
+    pub fn set_enabled(&self, enabled: bool) -> RevealHandlerStatus {
         let Some(own) = self.own_bundle_id.as_deref() else {
-            return RevealHandlerState::Unavailable;
+            return RevealHandlerStatus {
+                state: RevealHandlerState::Unavailable,
+                blocked_by: None,
+            };
         };
         if enabled {
+            let status = self.status();
+            if let Some(blocker) = status.blocked_by {
+                log::warn!(target: "reveal::registration", "Not taking the reveal handler: {blocker:?}");
+                return status;
+            }
             self.prefs.write(own);
         } else if self.prefs.read().as_deref() == Some(own) {
             self.prefs.clear();
         }
-        self.state()
+        self.status()
     }
 }
 
@@ -275,32 +331,60 @@ mod tests {
         }
     }
 
+    /// A copy installed in an Applications folder: nothing standing in the way.
     fn ours(prefs: &FakePreference) -> RevealRegistration<&FakePreference> {
-        RevealRegistration::new(prefs, Some(OURS.to_string()))
+        RevealRegistration::new(prefs, Some(OURS.to_string()), None)
+    }
+
+    /// The same copy, running from `~/Downloads`, a mounted disk image, or Gatekeeper's
+    /// translocated shadow copy.
+    fn ours_uninstalled(prefs: &FakePreference) -> RevealRegistration<&FakePreference> {
+        RevealRegistration::new(
+            prefs,
+            Some(OURS.to_string()),
+            Some(RevealHandlerBlocker::NotInApplications),
+        )
+    }
+
+    /// The status of a switch the user may operate.
+    fn unblocked(state: RevealHandlerState) -> RevealHandlerStatus {
+        RevealHandlerStatus {
+            state,
+            blocked_by: None,
+        }
+    }
+
+    /// The status of a switch that won't take a yes.
+    fn blocked(state: RevealHandlerState) -> RevealHandlerStatus {
+        RevealHandlerStatus {
+            state,
+            blocked_by: Some(RevealHandlerBlocker::NotInApplications),
+        }
+    }
+
+    fn held_by_path_finder() -> RevealHandlerState {
+        RevealHandlerState::HeldByOtherApp {
+            bundle_id: THEIRS.to_string(),
+            display_name: Some("Path Finder".to_string()),
+        }
     }
 
     #[test]
     fn an_absent_key_reads_as_not_registered() {
         let prefs = FakePreference::default();
-        assert_eq!(ours(&prefs).state(), RevealHandlerState::NotRegistered);
+        assert_eq!(ours(&prefs).status(), unblocked(RevealHandlerState::NotRegistered));
     }
 
     #[test]
     fn our_own_bundle_id_reads_as_registered() {
         let prefs = FakePreference::holding(OURS);
-        assert_eq!(ours(&prefs).state(), RevealHandlerState::Registered);
+        assert_eq!(ours(&prefs).status(), unblocked(RevealHandlerState::Registered));
     }
 
     #[test]
     fn another_app_reads_as_held_by_it_and_names_it() {
         let prefs = FakePreference::holding(THEIRS);
-        assert_eq!(
-            ours(&prefs).state(),
-            RevealHandlerState::HeldByOtherApp {
-                bundle_id: THEIRS.to_string(),
-                display_name: Some("Path Finder".to_string()),
-            }
-        );
+        assert_eq!(ours(&prefs).status(), unblocked(held_by_path_finder()));
     }
 
     #[test]
@@ -309,18 +393,21 @@ mod tests {
         // truthful, so the id stands in for the name.
         let prefs = FakePreference::holding("com.example.deleted");
         assert_eq!(
-            ours(&prefs).state(),
-            RevealHandlerState::HeldByOtherApp {
+            ours(&prefs).status(),
+            unblocked(RevealHandlerState::HeldByOtherApp {
                 bundle_id: "com.example.deleted".to_string(),
                 display_name: None,
-            }
+            })
         );
     }
 
     #[test]
     fn enabling_writes_our_bundle_id_and_reports_registered() {
         let prefs = FakePreference::default();
-        assert_eq!(ours(&prefs).set_enabled(true), RevealHandlerState::Registered);
+        assert_eq!(
+            ours(&prefs).set_enabled(true),
+            unblocked(RevealHandlerState::Registered)
+        );
         assert_eq!(prefs.writes(), vec![OURS]);
     }
 
@@ -329,14 +416,20 @@ mod tests {
         // Deliberate: the Settings row names the incumbent, and taking over is one click.
         // Nothing here happens without the user asking.
         let prefs = FakePreference::holding(THEIRS);
-        assert_eq!(ours(&prefs).set_enabled(true), RevealHandlerState::Registered);
+        assert_eq!(
+            ours(&prefs).set_enabled(true),
+            unblocked(RevealHandlerState::Registered)
+        );
         assert_eq!(prefs.writes(), vec![OURS]);
     }
 
     #[test]
     fn disabling_clears_the_key_when_it_is_ours() {
         let prefs = FakePreference::holding(OURS);
-        assert_eq!(ours(&prefs).set_enabled(false), RevealHandlerState::NotRegistered);
+        assert_eq!(
+            ours(&prefs).set_enabled(false),
+            unblocked(RevealHandlerState::NotRegistered)
+        );
         assert_eq!(prefs.clears(), 1);
         assert!(prefs.writes().is_empty(), "clearing must never write a replacement");
     }
@@ -346,13 +439,7 @@ mod tests {
         // The user turned Cmdr off after somebody else took the key. Clearing here would
         // unregister THEIR file manager.
         let prefs = FakePreference::holding(THEIRS);
-        assert_eq!(
-            ours(&prefs).set_enabled(false),
-            RevealHandlerState::HeldByOtherApp {
-                bundle_id: THEIRS.to_string(),
-                display_name: Some("Path Finder".to_string()),
-            }
-        );
+        assert_eq!(ours(&prefs).set_enabled(false), unblocked(held_by_path_finder()));
         assert_eq!(prefs.clears(), 0);
         assert!(prefs.writes().is_empty());
     }
@@ -360,7 +447,10 @@ mod tests {
     #[test]
     fn disabling_an_absent_key_is_a_no_op() {
         let prefs = FakePreference::default();
-        assert_eq!(ours(&prefs).set_enabled(false), RevealHandlerState::NotRegistered);
+        assert_eq!(
+            ours(&prefs).set_enabled(false),
+            unblocked(RevealHandlerState::NotRegistered)
+        );
         assert_eq!(prefs.clears(), 0);
     }
 
@@ -369,11 +459,60 @@ mod tests {
         // A dev or E2E build. It must be structurally incapable of rewiring the user's
         // Mac: a dangling `NSFileViewer` left by a deleted build breaks reveal everywhere.
         let prefs = FakePreference::default();
-        let registration = RevealRegistration::new(&prefs, None);
-        assert_eq!(registration.state(), RevealHandlerState::Unavailable);
-        assert_eq!(registration.set_enabled(true), RevealHandlerState::Unavailable);
-        assert_eq!(registration.set_enabled(false), RevealHandlerState::Unavailable);
+        let registration = RevealRegistration::new(&prefs, None, None);
+        assert_eq!(registration.status(), unblocked(RevealHandlerState::Unavailable));
+        assert_eq!(
+            registration.set_enabled(true),
+            unblocked(RevealHandlerState::Unavailable)
+        );
+        assert_eq!(
+            registration.set_enabled(false),
+            unblocked(RevealHandlerState::Unavailable)
+        );
         assert!(prefs.writes().is_empty());
         assert_eq!(prefs.clears(), 0);
+    }
+
+    #[test]
+    fn a_copy_outside_applications_refuses_to_take_the_key() {
+        // The copy most likely to be deleted is the one nothing should point at. A
+        // deleted holder leaves a dangling key, and reveal stops working machine-wide.
+        let prefs = FakePreference::default();
+        assert_eq!(
+            ours_uninstalled(&prefs).set_enabled(true),
+            blocked(RevealHandlerState::NotRegistered)
+        );
+        assert!(prefs.writes().is_empty());
+    }
+
+    #[test]
+    fn a_copy_outside_applications_refuses_to_take_the_key_from_another_app() {
+        let prefs = FakePreference::holding(THEIRS);
+        assert_eq!(
+            ours_uninstalled(&prefs).set_enabled(true),
+            blocked(held_by_path_finder())
+        );
+        assert!(prefs.writes().is_empty());
+        assert_eq!(prefs.clears(), 0);
+    }
+
+    #[test]
+    fn a_copy_outside_applications_that_holds_the_key_may_still_hand_it_back() {
+        // ❗ The gate blocks taking the key, never giving it up. Somebody who switched
+        // this on and then moved Cmdr out of Applications must not be stranded
+        // registered: that IS the dangling key.
+        let prefs = FakePreference::holding(OURS);
+        let registration = ours_uninstalled(&prefs);
+
+        assert_eq!(
+            registration.status(),
+            unblocked(RevealHandlerState::Registered),
+            "a switch the user can't touch would strand them registered"
+        );
+        assert_eq!(
+            registration.set_enabled(false),
+            blocked(RevealHandlerState::NotRegistered)
+        );
+        assert_eq!(prefs.clears(), 1);
     }
 }

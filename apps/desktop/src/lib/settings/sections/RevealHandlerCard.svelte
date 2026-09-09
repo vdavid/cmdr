@@ -28,15 +28,25 @@
      * holder ("Currently: Path Finder", falling back to the raw bundle id when
      * that app isn't installed any more). Switching on takes the key over: one
      * explicit click, never silently.
+     *
+     * ❗ **The switch is disabled when `blockedBy` is set**, which the backend
+     * reports for a copy of Cmdr outside an Applications folder. It never blocks
+     * switching OFF: `blockedBy` comes back `null` while Cmdr holds the key, so a
+     * copy that was registered and then moved can always hand it back. A fully
+     * dead switch there would strand someone registered, which is the dangling
+     * key the block exists to prevent.
      */
-    import { onMount } from 'svelte'
+    import { onMount, type Snippet } from 'svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Switch from '$lib/ui/Switch.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import { getRevealHandlerState, setRevealHandlerEnabled } from '$lib/tauri-commands'
     import { REVEAL_HANDLER_ANCHOR_ID } from '$lib/reveal/reveal-settings-link'
-    import type { RevealHandlerState } from '$lib/ipc/bindings'
+    import type { MessageKey } from '$lib/intl/keys.gen'
+    import type { RevealHandlerBlocker, RevealHandlerStatus } from '$lib/ipc/bindings'
 
     interface Props {
         searchQuery: string
@@ -48,7 +58,7 @@
     const SWITCH_ID = 'reveal-handler-switch'
 
     /** `null` until the OS has answered, so no switch flashes the wrong way first. */
-    let handlerState = $state<RevealHandlerState | null>(null)
+    let handlerStatus = $state<RevealHandlerStatus | null>(null)
     /** True while a take-over or hand-back is in flight; the switch stays put meanwhile. */
     let applying = $state(false)
 
@@ -57,7 +67,7 @@
         // would answer `unavailable` and the card would hide either way.
         if (!isMacOS()) return
         void (async () => {
-            handlerState = await getRevealHandlerState()
+            handlerStatus = await getRevealHandlerState()
         })()
     })
 
@@ -69,18 +79,34 @@
      * and discard that write). ❌ Not a plain prop: the switch would sit there
      * reading "on" while the key belongs to someone else.
      */
-    let switchOn = $derived(handlerState?.kind === 'registered')
+    let switchOn = $derived(handlerStatus?.state.kind === 'registered')
 
-    const otherHolder = $derived(
-        handlerState?.kind === 'heldByOtherApp' ? (handlerState.displayName ?? handlerState.bundleId) : null,
-    )
+    const otherHolder = $derived.by(() => {
+        const state = handlerStatus?.state
+        if (state?.kind !== 'heldByOtherApp') return null
+        return state.displayName ?? state.bundleId
+    })
     const visible = $derived(
-        !searchQuery.trim() && handlerState !== null && handlerState.kind !== 'unavailable',
+        !searchQuery.trim() && handlerStatus !== null && handlerStatus.state.kind !== 'unavailable',
     )
+
+    /** Why the switch won't take a yes, or `null` while it will. */
+    const blockedBy = $derived(handlerStatus?.blockedBy ?? null)
 
     // `$derived` so a live language switch re-renders the label and the accessible
     // name together; `t()` reads the locale-version rune.
     const label = $derived(tString('settings.revealHandler.label'))
+
+    /**
+     * The reason, worded. Keyed on the typed variant, ❌ never on a message the backend
+     * sent (`cmdr/no-error-string-match`); a `Record` over the union means a new variant
+     * is a compile error here rather than a silently unexplained disabled switch.
+     */
+    const BLOCKER_MESSAGES: Record<RevealHandlerBlocker, MessageKey> = {
+        notInApplications: 'settings.revealHandler.notInApplications',
+    }
+
+    const blockedReason = $derived(blockedBy === null ? null : tString(BLOCKER_MESSAGES[blockedBy]))
 
     async function handleChange(next: boolean): Promise<void> {
         if (applying) return
@@ -88,8 +114,9 @@
         try {
             // The command answers with the state the OS was LEFT in, not the one
             // asked for: another app can take the key between the read and the
-            // click, and the row has to render the truth.
-            handlerState = await setRevealHandlerEnabled(next)
+            // click, and the row has to render the truth. It refuses outright when
+            // `blockedBy` is set, and the answer says so.
+            handlerStatus = await setRevealHandlerEnabled(next)
         } finally {
             applying = false
         }
@@ -103,19 +130,33 @@
         id={REVEAL_HANDLER_ANCHOR_ID}
         label={tString('settings.navigationAndFileOps.card.showInFinder')}
     >
-        <div class="reveal-row">
+        <!-- The tooltip sits on the whole row, not the switch: a disabled control takes no
+             pointer events, so a tooltip on it would never show. The same sentence is in the
+             row as `sr-only` text, so the reason isn't hover-only. -->
+        <div class="reveal-row" use:tooltip={blockedReason ?? ''}>
             <div class="reveal-header">
                 <label class="reveal-label" for={SWITCH_ID}>{label}</label>
                 <Switch
                     id={SWITCH_ID}
                     bind:checked={switchOn}
-                    disabled={applying}
+                    disabled={applying || blockedBy !== null}
                     ariaLabel={label}
                     onCheckedChange={(next: boolean) => void handleChange(next)}
                     data-test="reveal-handler-switch"
                 />
             </div>
             <p class="reveal-description">{tString('settings.revealHandler.description')}</p>
+            {#if blockedReason}
+                <p class="sr-only" data-test="reveal-handler-blocked">{blockedReason}</p>
+            {/if}
+            {#if switchOn}
+                <!-- Only once it's ON. Before that it's friction on a decision nobody has
+                     made yet; after it, it's the one thing that matters, because nothing of
+                     ours runs at uninstall to clear the key. -->
+                <p class="reveal-warning" data-test="reveal-handler-warning">
+                    <Trans key="settings.revealHandler.uninstallWarning" snippets={{ lead }} />
+                </p>
+            {/if}
             {#if otherHolder}
                 <p class="reveal-holder">
                     {tString('settings.revealHandler.heldByOtherApp', { app: otherHolder })}
@@ -124,6 +165,10 @@
         </div>
     </SectionCard>
 {/if}
+
+{#snippet lead(children: Snippet)}
+    <strong>{@render children()}</strong>
+{/snippet}
 
 <style>
     /* Mirrors `SettingRow`'s frame. The row can't use that component (its `id` is a
@@ -145,9 +190,16 @@
     }
 
     .reveal-description,
-    .reveal-holder {
+    .reveal-holder,
+    .reveal-warning {
         margin: var(--spacing-xs) 0 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
+    }
+
+    /* The uninstall warning is the one line here that costs something to miss, so it takes
+       the warning tint the rest of the app uses for "read this before you act". */
+    .reveal-warning {
+        color: var(--color-warning-text);
     }
 </style>

@@ -1507,6 +1507,14 @@
   "@settings.revealHandler.heldByOtherApp": {
     "sourceHash": "d0aa283"
   },
+  "settings.revealHandler.uninstallWarning": "<lead>Stäng av det här innan du avinstallerar Cmdr.</lead> macOS fortsätter skicka ”Visa i Finder” hit, och utan Cmdr händer det ingenting alls när du klickar.",
+  "@settings.revealHandler.uninstallWarning": {
+    "sourceHash": "3c10fd3"
+  },
+  "settings.revealHandler.notInApplications": "Flytta Cmdr till din mapp Program för att kunna slå på det här. Där appen körs nu skulle en flytt eller radering av Cmdr göra att varje klick på ”Visa i Finder” pekar på ingenting.",
+  "@settings.revealHandler.notInApplications": {
+    "sourceHash": "dc15ebf"
+  },
   "settings.behavior.openTerminalHereApp.label": "”Öppna terminal här” använder",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

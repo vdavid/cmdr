@@ -9,7 +9,16 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { RevealHandlerState } from '$lib/ipc/bindings'
+import type { RevealHandlerState, RevealHandlerStatus } from '$lib/ipc/bindings'
+
+/**
+ * What the command answers on a machine where nothing stands in the way. The
+ * Applications-folder gate has its own coverage in `should-show-reveal-nudge.test.ts`;
+ * the offer never reaches this file's flow while it's set.
+ */
+function unblocked(state: RevealHandlerState): RevealHandlerStatus {
+  return { state, blockedBy: null }
+}
 
 const mocks = vi.hoisted(() => ({
   addToast: vi.fn(),
@@ -44,7 +53,7 @@ function raiseOptions(): { onDismiss?: () => void; level?: string; dismissal?: s
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.setRevealHandlerEnabled.mockResolvedValue({ kind: 'registered' } satisfies RevealHandlerState)
+  mocks.setRevealHandlerEnabled.mockResolvedValue(unblocked({ kind: 'registered' }))
 })
 
 describe('offerRevealHandler', () => {
@@ -115,7 +124,7 @@ describe('acceptRevealNudge', () => {
   ]
 
   it.each(refusals)('reports %o as a typed reason and words it for the user', async (state, reason, key) => {
-    mocks.setRevealHandlerEnabled.mockResolvedValue(state)
+    mocks.setRevealHandlerEnabled.mockResolvedValue(unblocked(state))
 
     await acceptRevealNudge(REVEAL_NUDGE_TOAST_ID)
 
@@ -129,11 +138,9 @@ describe('acceptRevealNudge', () => {
    * pressed, and saying "done" then would be a lie.
    */
   it('names the app that got there first rather than claiming success', async () => {
-    mocks.setRevealHandlerEnabled.mockResolvedValue({
-      kind: 'heldByOtherApp',
-      bundleId: 'com.cocoatech.PathFinder',
-      displayName: 'Path Finder',
-    })
+    mocks.setRevealHandlerEnabled.mockResolvedValue(
+      unblocked({ kind: 'heldByOtherApp', bundleId: 'com.cocoatech.PathFinder', displayName: 'Path Finder' }),
+    )
 
     await acceptRevealNudge(REVEAL_NUDGE_TOAST_ID)
 
@@ -146,11 +153,9 @@ describe('acceptRevealNudge', () => {
 
   /** A holder that isn't installed any more has no name, so the raw id is all there is. */
   it('falls back to the bundle id when the holder has no display name', async () => {
-    mocks.setRevealHandlerEnabled.mockResolvedValue({
-      kind: 'heldByOtherApp',
-      bundleId: 'com.example.Gone',
-      displayName: null,
-    })
+    mocks.setRevealHandlerEnabled.mockResolvedValue(
+      unblocked({ kind: 'heldByOtherApp', bundleId: 'com.example.Gone', displayName: null }),
+    )
 
     await acceptRevealNudge(REVEAL_NUDGE_TOAST_ID)
 
@@ -161,7 +166,7 @@ describe('acceptRevealNudge', () => {
   })
 
   it('answers yes exactly once, even when the key does not end up ours', async () => {
-    mocks.setRevealHandlerEnabled.mockResolvedValue({ kind: 'notRegistered' })
+    mocks.setRevealHandlerEnabled.mockResolvedValue(unblocked({ kind: 'notRegistered' }))
 
     await acceptRevealNudge(REVEAL_NUDGE_TOAST_ID)
 

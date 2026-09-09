@@ -70,6 +70,11 @@ mod go_to_path;
 pub mod icons;
 mod index_host;
 mod install_id;
+// Is this copy of Cmdr in an Applications folder? Shared by the Dock pin and the reveal handler,
+// which must not disagree about it. macOS-only, like both of them and the `running_bundle()` it
+// asks.
+#[cfg(target_os = "macos")]
+mod install_location;
 mod instance_lock;
 mod intl;
 pub mod licensing;

@@ -1499,6 +1499,14 @@
   "@settings.revealHandler.heldByOtherApp": {
     "sourceHash": "d0aa283"
   },
+  "settings.revealHandler.uninstallWarning": "<lead>卸载 Cmdr 之前，请先关闭这一项。</lead>macOS 仍会把“在 Finder 中显示”送到这里，而 Cmdr 一旦不在了，这些点击就悄悄没了反应。",
+  "@settings.revealHandler.uninstallWarning": {
+    "sourceHash": "3c10fd3"
+  },
+  "settings.revealHandler.notInApplications": "把 Cmdr 移到你的应用程序文件夹，才能开启这一项。从它现在运行的位置，移动或删除 Cmdr 会让每一次“在 Finder 中显示”的点击都指向空处。",
+  "@settings.revealHandler.notInApplications": {
+    "sourceHash": "dc15ebf"
+  },
   "settings.behavior.openTerminalHereApp.label": "“在此处打开终端”使用",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

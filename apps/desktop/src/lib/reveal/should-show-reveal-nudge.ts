@@ -10,7 +10,7 @@
  * share is in `$lib/nudges/nudge-ledger.ts`.
  */
 
-import type { RevealHandlerState } from '$lib/ipc/bindings'
+import type { RevealHandlerStatus } from '$lib/ipc/bindings'
 import { nudgeCouldFire, type NudgeContext } from '$lib/nudges/nudge-ledger'
 
 /**
@@ -26,8 +26,11 @@ export const REVEAL_NUDGE_AFTER_DAYS = 2
 export interface RevealNudgeInputs extends NudgeContext {
   /** Distinct local calendar days in the launch-day ledger. */
   launchDayCount: number
-  /** `get_reveal_handler_state()`: who holds the `NSFileViewer` key right now. */
-  handlerState: RevealHandlerState
+  /**
+   * `get_reveal_handler_state()`: who holds the `NSFileViewer` key right now, and
+   * whether this copy of Cmdr may take it.
+   */
+  handlerStatus: RevealHandlerStatus
 }
 
 /**
@@ -42,9 +45,14 @@ export interface RevealNudgeInputs extends NudgeContext {
  *   take-over belongs in the Settings row, where the person asked for it.
  * - `unavailable`: a build that must never write the key (debug, worktree, E2E)
  *   or a platform with no mechanism, so the click couldn't deliver anything.
+ *
+ * A `blockedBy` answer is a fifth silence: the backend refuses to register a copy
+ * that isn't in an Applications folder, so offering would be offering a click that
+ * gets refused.
  */
 export function shouldShowRevealNudge(inputs: RevealNudgeInputs): boolean {
   if (!nudgeCouldFire(inputs, 'reveal')) return false
   if (inputs.launchDayCount < REVEAL_NUDGE_AFTER_DAYS) return false
-  return inputs.handlerState.kind === 'notRegistered'
+  if (inputs.handlerStatus.blockedBy !== null) return false
+  return inputs.handlerStatus.state.kind === 'notRegistered'
 }

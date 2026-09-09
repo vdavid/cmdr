@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import type { RevealHandlerState } from '$lib/ipc/bindings'
+import type { RevealHandlerState, RevealHandlerStatus } from '$lib/ipc/bindings'
 import { emptyNudgeLedger } from '$lib/nudges/nudge-ledger'
 import { REVEAL_NUDGE_AFTER_DAYS, shouldShowRevealNudge, type RevealNudgeInputs } from './should-show-reveal-nudge'
 
@@ -27,7 +27,7 @@ const ready: RevealNudgeInputs = {
   ledger: emptyNudgeLedger(),
   now: NOW,
   launchDayCount: REVEAL_NUDGE_AFTER_DAYS,
-  handlerState: { kind: 'notRegistered' } satisfies RevealHandlerState,
+  handlerStatus: { state: { kind: 'notRegistered' }, blockedBy: null } satisfies RevealHandlerStatus,
 }
 
 describe('shouldShowRevealNudge', () => {
@@ -59,7 +59,7 @@ describe('shouldShowRevealNudge', () => {
   })
 
   it('says nothing when reveals already land here', () => {
-    expect(shouldShowRevealNudge({ ...ready, handlerState: { kind: 'registered' } })).toBe(false)
+    expect(shouldShowRevealNudge({ ...ready, handlerStatus: { state: { kind: 'registered' }, blockedBy: null } })).toBe(false)
   })
 
   /**
@@ -68,12 +68,12 @@ describe('shouldShowRevealNudge', () => {
    * take-over belongs, because there the person asked.
    */
   it('leaves another file manager alone rather than offering to take its key', () => {
-    const handlerState: RevealHandlerState = {
+    const state: RevealHandlerState = {
       kind: 'heldByOtherApp',
       bundleId: 'com.cocoatech.PathFinder',
       displayName: 'Path Finder',
     }
-    expect(shouldShowRevealNudge({ ...ready, handlerState })).toBe(false)
+    expect(shouldShowRevealNudge({ ...ready, handlerStatus: { state, blockedBy: null } })).toBe(false)
   })
 
   /**
@@ -82,7 +82,18 @@ describe('shouldShowRevealNudge', () => {
    * something the click cannot deliver.
    */
   it('says nothing where the key cannot be written at all', () => {
-    expect(shouldShowRevealNudge({ ...ready, handlerState: { kind: 'unavailable' } })).toBe(false)
+    expect(shouldShowRevealNudge({ ...ready, handlerStatus: { state: { kind: 'unavailable' }, blockedBy: null } })).toBe(false)
+  })
+
+  /**
+   * A copy in `~/Downloads`, on a mounted disk image, or in Gatekeeper's
+   * translocated shadow is the one most likely to be deleted, and a deleted
+   * holder leaves a dangling key that breaks reveal machine-wide. The Settings
+   * switch refuses there too; offering would be offering a click that's refused.
+   */
+  it('says nothing from a copy that is not installed in an Applications folder', () => {
+    const handlerStatus: RevealHandlerStatus = { state: { kind: 'notRegistered' }, blockedBy: 'notInApplications' }
+    expect(shouldShowRevealNudge({ ...ready, handlerStatus })).toBe(false)
   })
 
   it('stays quiet under an automated run, so it cannot leak into the first spec', () => {

@@ -134,7 +134,7 @@ beforeEach(() => {
   mocks.getMacosMajorVersion.mockResolvedValue(15)
   mocks.getLaunchDayCount.mockResolvedValue(9)
   mocks.getDockPinState.mockResolvedValue({ kind: 'offerable' })
-  mocks.getRevealHandlerState.mockResolvedValue({ kind: 'notRegistered' })
+  mocks.getRevealHandlerState.mockResolvedValue({ state: { kind: 'notRegistered' }, blockedBy: null })
   mocks.forceSave.mockResolvedValue(true)
   mocks.notifyOnboardingComplete.mockResolvedValue(undefined)
   mocks.runWhatsNewStartupTrigger.mockResolvedValue(undefined)
@@ -474,9 +474,8 @@ describe('maybeOfferRevealHandler', () => {
   it('leaves another file manager holding the key alone', async () => {
     settings('allow', true)
     mocks.getRevealHandlerState.mockResolvedValue({
-      kind: 'heldByOtherApp',
-      bundleId: 'com.cocoatech.PathFinder',
-      displayName: 'Path Finder',
+      state: { kind: 'heldByOtherApp', bundleId: 'com.cocoatech.PathFinder', displayName: 'Path Finder' },
+      blockedBy: null,
     })
 
     await maybeOfferRevealHandler(ctx)

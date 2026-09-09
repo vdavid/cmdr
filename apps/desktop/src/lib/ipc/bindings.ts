@@ -4372,14 +4372,17 @@ export const commands = {
    */
   getMemoryDiagnostics: (sizesPerTag: number) =>
     __TAURI_INVOKE<MemoryDiagnostics>('get_memory_diagnostics', { sizesPerTag }),
-  // Whether reveals from other apps currently land in Cmdr, and who holds the key if not.
-  getRevealHandlerState: () => __TAURI_INVOKE<RevealHandlerState>('get_reveal_handler_state'),
+  /**
+   *  Whether reveals from other apps currently land in Cmdr, who holds the key if not, and
+   *  whether this copy may take it.
+   */
+  getRevealHandlerState: () => __TAURI_INVOKE<RevealHandlerStatus>('get_reveal_handler_state'),
   /**
    *  Take the `NSFileViewer` key, or give it up. Returns the state the OS is left in, so
    *  the Settings row renders the truth rather than what it asked for.
    */
   setRevealHandlerEnabled: (enabled: boolean) =>
-    __TAURI_INVOKE<RevealHandlerState>('set_reveal_handler_enabled', { enabled }),
+    __TAURI_INVOKE<RevealHandlerStatus>('set_reveal_handler_enabled', { enabled }),
   /**
    *  Deliver any reveal that arrived before this window could act on it.
    *
@@ -10963,6 +10966,14 @@ export type RestrictedWindowSettings = {
  */
 export type RevealDelivered = Record<string, never>
 
+// Why Cmdr won't take the `NSFileViewer` key right now.
+export type RevealHandlerBlocker =
+  /**
+   *  This copy of Cmdr isn't in `/Applications` or `~/Applications`, so it's one of the
+   *  copies that gets moved or deleted. Registering it would leave a dangling key.
+   */
+  'notInApplications'
+
 /**
  *  What the Settings row shows, read through to the OS every time it asks.
  *
@@ -10995,14 +11006,24 @@ export type RevealHandlerState =
   | { kind: 'unavailable' }
 
 /**
- *  `reveal-path`: show a folder in the main window's focused pane. Two emitters:
+ *  Everything the Settings row needs: where the key stands, and whether this copy of Cmdr
+ *  may change it.
+ */
+export type RevealHandlerStatus = {
+  state: RevealHandlerState
+  // Why the switch won't take a yes, or `None` when the user may operate it.
+  blockedBy: RevealHandlerBlocker | null
+}
+
+/**
+ *  `reveal-path`: show a folder in the main window's focused pane. Emitted by
  *  the settings window's "Open memory folder" button, which knows only that it
- *  wants the folder shown (the path comes from Rust's `ask_cmdr_memory_folder`,
- *  because it moves with `CMDR_DATA_DIR`), and the Dock tile menu's bookmark and
- *  tab rows (`dock/menu/`), where the path is the row the user clicked.
+ *  wants the folder shown: the path itself comes from Rust
+ *  (`ask_cmdr_memory_folder`), because it moves with `CMDR_DATA_DIR`.
  *
  *  ⚠️ The payload is why this isn't `execute-command`, which carries a bare
- *  `command_id` and nothing else.
+ *  `command_id` and nothing else. Rust never emits this one, exactly like
+ *  `execute-command` from the settings window.
  */
 export type RevealPath = {
   path: string

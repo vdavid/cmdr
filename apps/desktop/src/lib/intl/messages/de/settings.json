@@ -1508,6 +1508,14 @@
   "@settings.revealHandler.heldByOtherApp": {
     "sourceHash": "d0aa283"
   },
+  "settings.revealHandler.uninstallWarning": "<lead>Schalte das aus, bevor du Cmdr deinstallierst.</lead> macOS schickt „Im Finder anzeigen“ weiterhin hierher, und ohne Cmdr passiert bei diesen Klicks stillschweigend nichts.",
+  "@settings.revealHandler.uninstallWarning": {
+    "sourceHash": "3c10fd3"
+  },
+  "settings.revealHandler.notInApplications": "Verschiebe Cmdr in deinen Ordner „Programme“, um das einzuschalten. Von hier aus würde ein Verschieben oder Löschen von Cmdr jeden Klick auf „Im Finder anzeigen“ ins Leere laufen lassen.",
+  "@settings.revealHandler.notInApplications": {
+    "sourceHash": "dc15ebf"
+  },
   "settings.behavior.openTerminalHereApp.label": "„Terminal hier öffnen“ verwendet",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

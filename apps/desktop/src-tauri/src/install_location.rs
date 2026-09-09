@@ -1,4 +1,18 @@
-//! Whether the running copy of Cmdr sits somewhere we're willing to pin.
+//! Whether the running copy of Cmdr sits somewhere it's safe to point other things at.
+//!
+//! Two features ask exactly this, and they must not disagree:
+//!
+//! - `dock/` pins a tile, which is dead the moment the copy it names moves.
+//! - `reveal/` writes our bundle id into the machine-wide `NSFileViewer` key, and a copy that
+//!   gets deleted leaves that key dangling: macOS does NOT fall back to Finder, so "Show in
+//!   Finder" silently stops working in every app (measured on macOS 26.6, 2026-09-09).
+//!
+//! Both dangers are the same danger — a copy that's about to move or be thrown away — so the rule
+//! lives here once.
+//!
+//! ❌ Not the same question as `updater::bundle_location::classify`, which asks whether an update
+//! can be WRITTEN into the bundle. A copy in `~/Applications` is writable and installed; a copy on
+//! a mounted disk image is neither.
 
 use std::path::Path;
 
@@ -8,18 +22,27 @@ const APPLICATIONS: &str = "Applications";
 /// Whether the bundle at `bundle_path` sits in an Applications folder: `/Applications`, or the
 /// current user's `~/Applications` (`home`).
 ///
-/// Anywhere else, we stay quiet. Pinning a tile that points into `~/Downloads`, a mounted disk
-/// image, or a translocated `…/AppTranslocation/<uuid>/d/Cmdr.app` leaves a tile that stops working
-/// the moment the copy moves, which is worse than never offering.
+/// Anywhere else, we stay quiet. `~/Downloads`, a mounted disk image, and Gatekeeper's
+/// translocated `…/AppTranslocation/<uuid>/d/Cmdr.app` shadow copy are all places a copy is about
+/// to move away from.
 ///
 /// Nested is fine (`/Applications/Utilities/Cmdr.app`): people organize their Applications folder,
 /// and a bundle under one is still installed. Comparison is component-wise, so `/ApplicationsOld`
 /// isn't an Applications folder.
-pub(super) fn in_an_applications_folder(bundle_path: &Path, home: Option<&Path>) -> bool {
+pub fn in_an_applications_folder(bundle_path: &Path, home: Option<&Path>) -> bool {
     if bundle_path.starts_with(Path::new("/").join(APPLICATIONS)) {
         return true;
     }
     home.is_some_and(|home| bundle_path.starts_with(home.join(APPLICATIONS)))
+}
+
+/// Whether THIS process is running from a bundle in an Applications folder.
+///
+/// A copy that isn't a `.app` at all (a dev build out of `target/`) answers `false` for the same
+/// reason a copy in `~/Downloads` does: nothing should point at it.
+pub fn running_copy_is_installed() -> bool {
+    crate::updater::installer::running_bundle()
+        .is_ok_and(|bundle| in_an_applications_folder(&bundle, dirs::home_dir().as_deref()))
 }
 
 #[cfg(test)]
@@ -65,8 +88,8 @@ mod tests {
 
     #[test]
     fn a_translocated_bundle_does_not_count() {
-        // Gatekeeper runs a freshly-downloaded app from a read-only shadow copy. A tile pointing
-        // there is dead the moment the quarantine clears.
+        // Gatekeeper runs a freshly-downloaded app from a read-only shadow copy. Anything
+        // pointing there is dead the moment the quarantine clears.
         assert!(!in_an_applications_folder(
             Path::new("/private/var/folders/hz/x/T/AppTranslocation/1E2D/d/Cmdr.app"),
             Some(&home())
@@ -109,5 +132,12 @@ mod tests {
             Path::new("/Users/jane/Applications/Cmdr.app"),
             None
         ));
+    }
+
+    #[test]
+    fn the_test_binary_is_not_an_installed_copy() {
+        // The suite runs out of `target/`, with no `.app` ancestor. Every feature gated on this
+        // is therefore off in development without anything having to remember to switch it off.
+        assert!(!running_copy_is_installed());
     }
 }

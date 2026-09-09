@@ -1849,6 +1849,14 @@
       }
     }
   },
+  "settings.revealHandler.uninstallWarning": "<lead>Before you uninstall Cmdr, switch this off.</lead> macOS keeps sending \"Show in Finder\" here, and with Cmdr gone those clicks quietly do nothing.",
+  "@settings.revealHandler.uninstallWarning": {
+    "description": "Warning under the \"Let other apps show files in Cmdr\" switch in Settings > Behavior > Navigation & file ops, shown only while the switch is ON. macOS remembers the choice in a system-wide setting that nothing clears when an app is deleted, and it does NOT fall back to Finder, so deleting Cmdr while this is on breaks \"Show in Finder\" in every app until the user turns it off first. The <lead> tag makes the first sentence bold; keep the tag around whichever words start the sentence in your locale. \"Show in Finder\" is the macOS command name and \"Cmdr\" the product name; keep both as your locale's macOS spells them."
+  },
+  "settings.revealHandler.notInApplications": "Move Cmdr to your Applications folder to switch this on. From where it runs now, moving or deleting Cmdr would leave every \"Show in Finder\" click pointing at nothing.",
+  "@settings.revealHandler.notInApplications": {
+    "description": "Tooltip on the \"Let other apps show files in Cmdr\" row in Settings > Behavior > Navigation & file ops, shown while the switch is disabled because this copy of Cmdr is running from somewhere other than an Applications folder (the Downloads folder, a mounted disk image, or the read-only copy macOS makes for a freshly downloaded app). Says what to do first, then why. \"Applications folder\" is the macOS folder of that name; use your locale's macOS name for it. \"Show in Finder\" is the macOS command name and \"Cmdr\" the product name; keep both."
+  },
   "settings.behavior.openTerminalHereApp.label": "Open terminal here uses",
   "@settings.behavior.openTerminalHereApp.label": {
     "description": "Label of the dropdown that picks which terminal app the \"Open terminal here\" action launches, in Settings > Behavior > Navigation & file ops. \"Open terminal here\" is Cmdr's own command name (it opens a terminal at the folder you're looking at), so translate it the same way as the command of that name. The sentence continues in the dropdown beside it, which names an app: \"Open terminal here uses [Ghostty]\".",

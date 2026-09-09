@@ -9,7 +9,6 @@
 //! (`prefs.rs`), and the real thing is a manual check (`DETAILS.md`).
 
 mod entries;
-mod location;
 pub mod menu;
 mod prefs;
 mod restart;
@@ -144,7 +143,7 @@ pub fn pin_cmdr() -> Result<(), DockPinFailure> {
 fn installed_bundle() -> Result<PathBuf, DockPinBlocker> {
     let bundle_path = crate::updater::installer::running_bundle().map_err(|_| DockPinBlocker::NotABundle)?;
 
-    if location::in_an_applications_folder(&bundle_path, dirs::home_dir().as_deref()) {
+    if crate::install_location::in_an_applications_folder(&bundle_path, dirs::home_dir().as_deref()) {
         Ok(bundle_path)
     } else {
         Err(DockPinBlocker::OutsideApplications)

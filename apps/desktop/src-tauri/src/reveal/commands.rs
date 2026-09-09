@@ -9,28 +9,38 @@
 use tauri::AppHandle;
 
 use super::delivery::{PENDING, spawn_delivery};
-use super::registration::{GlobalDomain, RevealHandlerState, RevealRegistration, own_bundle_id};
+use super::registration::{GlobalDomain, RevealHandlerBlocker, RevealHandlerStatus, RevealRegistration, own_bundle_id};
 
 /// Build the registration state machine over the real global domain.
 fn registration() -> RevealRegistration<GlobalDomain> {
-    RevealRegistration::new(GlobalDomain, own_bundle_id())
+    RevealRegistration::new(GlobalDomain, own_bundle_id(), install_blocker())
 }
 
-/// Whether reveals from other apps currently land in Cmdr, and who holds the key if not.
+/// Whether this copy of Cmdr is one we're willing to write into a machine-wide key.
+///
+/// Nothing runs at uninstall, so a copy in `~/Downloads`, on a mounted disk image, or in
+/// Gatekeeper's translocated shadow would take the key and keep it after being deleted.
+/// `crate::install_location` holds the rule, shared with the Dock pin.
+fn install_blocker() -> Option<RevealHandlerBlocker> {
+    (!crate::install_location::running_copy_is_installed()).then_some(RevealHandlerBlocker::NotInApplications)
+}
+
+/// Whether reveals from other apps currently land in Cmdr, who holds the key if not, and
+/// whether this copy may take it.
 #[tauri::command]
 #[specta::specta]
-pub async fn get_reveal_handler_state() -> RevealHandlerState {
-    registration().state()
+pub async fn get_reveal_handler_state() -> RevealHandlerStatus {
+    registration().status()
 }
 
 /// Take the `NSFileViewer` key, or give it up. Returns the state the OS is left in, so
 /// the Settings row renders the truth rather than what it asked for.
 #[tauri::command]
 #[specta::specta]
-pub async fn set_reveal_handler_enabled(enabled: bool) -> RevealHandlerState {
-    let state = registration().set_enabled(enabled);
-    log::info!(target: "reveal::registration", "Reveal handler set to enabled={enabled}: {state:?}");
-    state
+pub async fn set_reveal_handler_enabled(enabled: bool) -> RevealHandlerStatus {
+    let status = registration().set_enabled(enabled);
+    log::info!(target: "reveal::registration", "Reveal handler set to enabled={enabled}: {status:?}");
+    status
 }
 
 /// Deliver any reveal that arrived before this window could act on it.
