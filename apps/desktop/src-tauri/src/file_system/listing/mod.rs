@@ -67,6 +67,10 @@ mod caching_replacement_test;
 mod caching_test;
 #[cfg(test)]
 pub(crate) mod caching_test_support;
+// Name order itself, split from `sorting_test` because it pins the process-wide
+// reading language and shares that lock with `intl::native_strings`.
+#[cfg(test)]
+mod collation_test;
 #[cfg(test)]
 mod diff_emitter_test;
 #[cfg(test)]
@@ -87,7 +91,11 @@ mod row_beside_test;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod smb_pane_close_watch_integration_test;
 #[cfg(test)]
+mod sorting_dir_mode_test;
+#[cfg(test)]
 mod sorting_test;
+#[cfg(test)]
+mod sorting_test_support;
 #[cfg(test)]
 mod staging_temps_test;
 #[cfg(test)]

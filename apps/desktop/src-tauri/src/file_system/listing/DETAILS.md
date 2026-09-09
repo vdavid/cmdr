@@ -321,8 +321,20 @@ code-point comparator it replaced, and keying once per row lands ahead of it ins
 by Name, release build, M-series laptop, 2026-09-08: **105 ms, against 228 ms** for the previous
 `to_lowercase` + `alphanumeric-sort` comparator on the same rows. The new figure covers the whole of `sort_entries`
 (key building, the index sort, and the permutation).
-`sorting_test::the_bulk_sort_and_the_live_comparator_agree_on_unicode_names` and
+`collation_test::the_bulk_sort_and_the_live_comparator_agree_on_unicode_names` and
 `collation::tests::a_key_ranks_names_the_way_compare_does` pin that they never diverge.
+
+Sorting is covered by three suites, split along the questions they answer rather than by size: `sorting_test` (which
+column, which direction, and the edge cases), `sorting_dir_mode_test` (`DirectorySortMode`, so how a directory ranks
+against the files beside it, including the honest-size coverage flags), and `collation_test` (the order names
+themselves come out in). `sorting_test_support` holds the two builders more than one of them needs; a builder used by
+one suite stays in that suite.
+
+The fixture each suite needs is what marks the seam. `collation_test` pins the process-wide reading language under a
+lock shared with `intl::native_strings`, which is why case-insensitive ordering is tested THERE and not beside the
+other column tests: case folding is a collation question, so `to_lowercase` would answer it wrongly (see the
+raw-bytes-tiebreak note above). `sorting_dir_mode_test` owns the honest-size directory builder. Each file's header
+names its two neighbours, so the boundary is legible from whichever one you open first.
 
 **Both readings end with a raw-bytes tiebreak**, because the NFC and NFD spellings of one name carry identical
 collation weights and would otherwise compare `Equal`. Without a total order the watcher's re-read could order such a
