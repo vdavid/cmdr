@@ -455,6 +455,31 @@
   "@onboarding.cloudSetup.step.createKey": {
     "sourceHash": "5705da6"
   },
+
+  "onboarding.cloudSetup.step.install": "Descarga e instala <installLink>{provider}</installLink>",
+  "@onboarding.cloudSetup.step.install": {
+    "sourceHash": "cd0221c"
+  },
+
+  "onboarding.cloudSetup.step.ollamaModel": "Descarga un modelo en el terminal con ollama pull llama3.2, o <libraryLink>explora la biblioteca</libraryLink>",
+  "@onboarding.cloudSetup.step.ollamaModel": {
+    "sourceHash": "5999d6a"
+  },
+
+  "onboarding.cloudSetup.step.lmStudioServer": "Carga un modelo en LM Studio y luego inicia su <serverLink>servidor local</serverLink>",
+  "@onboarding.cloudSetup.step.lmStudioServer": {
+    "sourceHash": "447957a"
+  },
+
+  "onboarding.cloudSetup.hint.azureEndpoint": "Sustituye el marcador de posición de la dirección por el nombre de tu recurso de Azure OpenAI. Este extremo no necesita el parámetro api-version.",
+  "@onboarding.cloudSetup.hint.azureEndpoint": {
+    "sourceHash": "b1d408e"
+  },
+
+  "onboarding.cloudSetup.hint.azureModel": "En Azure este es el nombre de tu implementación, que puede no coincidir con el nombre del modelo que ejecuta.",
+  "@onboarding.cloudSetup.hint.azureModel": {
+    "sourceHash": "e856224"
+  },
   "onboarding.cloudSetup.step.endpoint": "URL del extremo",
   "@onboarding.cloudSetup.step.endpoint": {
     "sourceHash": "2578179"

@@ -1,30 +1,27 @@
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte'
     import SettingRow from '../components/SettingRow.svelte'
-    import TextInput from '$lib/ui/TextInput.svelte'
-    import SettingPasswordInput from '../components/SettingPasswordInput.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
-    import Combobox, { type ComboboxItem } from '$lib/ui/Combobox.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
-    import {
-        getSetting,
-        setSetting,
-        onSpecificSettingChange,
-        getCloudProvider,
-        getProviderConfigs,
-        setProviderConfig,
-        cloudProviderPresets,
-    } from '$lib/settings'
-    import { checkAiConnection, getAiApiKeyStatus, saveAiApiKey } from '$lib/tauri-commands'
+    import ProviderSetupSteps from '$lib/ai-provider-setup/ProviderSetupSteps.svelte'
+    import { ProviderSetupController } from '$lib/ai-provider-setup/provider-setup.svelte'
+    import { getSetting, setSetting, onSpecificSettingChange, cloudProviderPresets } from '$lib/settings'
     import { pushConfigToBackend } from '$lib/settings/ai-config'
-    import { computeModelCacheKey, getCachedModels, setCachedModels } from '$lib/settings/ai-model-cache'
-    import { isE2eRun } from '$lib/app-mode'
-    import { describeSecretError, type SecretErrorMessage } from './ai-secret-error'
+    import type { SecretErrorMessage } from './ai-secret-error'
     import { addToast, dismissToast } from '$lib/ui/toast'
     import { tString } from '$lib/intl/messages.svelte'
 
+    /**
+     * Settings › AI › Provider. The service picker, then the SAME numbered setup steps the
+     * onboarding wizard shows (`$lib/ai-provider-setup/`), then the connection status.
+     *
+     * Everything stateful (key persist, connection check, model cache, provider-switch race
+     * guards) lives in the shared controller; this file owns the settings chrome: the
+     * service row, the recheck buttons, the Ask Cmdr override note, and mirroring a
+     * secret-store failure into a persistent toast.
+     */
     interface Props {
         searchQuery: string
         shouldShow: (id: string) => boolean
@@ -32,74 +29,45 @@
 
     const { searchQuery, shouldShow }: Props = $props()
 
-    // Cloud provider state
     let cloudProviderId = $state(getSetting('ai.cloudProvider'))
-    // What the user has TYPED this session. A saved key never comes back from the backend (see
-    // `docs/security.md` § "AI API keys"), so this stays empty until they type, and the field
-    // shows a "your key is saved" placeholder instead of dots standing in for a real key.
-    let currentApiKey = $state('')
-    // What the backend will tell us about the saved key: that there is one, and a fingerprint that
-    // changes when it does. The fingerprint feeds the model-list cache, which must miss on a new key.
-    let keyIsSet = $state(false)
-    let keyFingerprint = $state('')
-    let currentModel = $state('')
-    let currentBaseUrl = $state('')
 
-    // Connection check state
-    type ConnectionStatus =
-        | 'idle'
-        | 'checking'
-        | 'connected'
-        | 'connected-no-models'
-        | 'auth-error'
-        | 'connection-error'
-        | 'error'
-    let connectionStatus = $state<ConnectionStatus>('idle')
-    let connectionError = $state<string | null>(null)
-    let availableModels = $state<string[]>([])
-    let connectionCheckTimer: ReturnType<typeof setTimeout> | null = null
-
-    // Secret store error (read or save failed). Shown inline above the connection status, and
-    // re-emitted as a persistent toast so the user can act on it without re-opening Settings.
-    // Reused across save/read attempts via a stable toast id, so we replace in place instead of
-    // stacking duplicates.
-    let secretError = $state<SecretErrorMessage | null>(null)
+    // A secret-store failure is also re-emitted as a persistent toast, so the user can act
+    // on it after closing Settings. One stable id, so repeated attempts replace in place
+    // instead of stacking duplicates.
     const secretErrorToastId = 'ai-secret-store-error'
 
-    // Debounce API key saves so manual typing doesn't fire one secret-store write per keystroke
-    // (especially relevant on Linux where every Secret Service call is a D-Bus round trip).
-    // Paste arrives as a single oninput so it sees no added latency. 300 ms is short enough that
-    // the save feels instantaneous after the user pauses, and well under the connection-check
-    // debounce (1000 ms) so the order is: type → save → check.
-    const API_KEY_SAVE_DEBOUNCE_MS = 300
-    let apiKeySaveTimer: ReturnType<typeof setTimeout> | null = null
-    // Captured at schedule time so a switch-provider-mid-typing flushes against the right key.
-    let pendingApiKeySave: { providerId: string; value: string } | null = null
-
-    // Event listeners cleanup
-    const unlistenFns: Array<() => void> = []
-
-    // Load current cloud provider config into local state, then populate the model list on open
-    // (cache hit → instant; cold + checkable → one debounced check). The API key is async (lives in
-    // the OS secret store, not settings.json) so the field shows the saved model immediately while
-    // the key fetch resolves; the model list fills in once we know the config is checkable.
-    onMount(() => {
-        void loadCloudProviderConfig(cloudProviderId).then(() => void populateModelsOnOpen())
+    const controller = new ProviderSetupController({
+        logScope: 'ai-settings-cloud',
+        onSecretErrorChange: (error: SecretErrorMessage | null) => {
+            if (!error) {
+                dismissToast(secretErrorToastId)
+                return
+            }
+            const body = error.body ? `\n${error.body}` : ''
+            addToast(`${error.title}${body}`, {
+                level: error.level,
+                dismissal: 'persistent',
+                id: secretErrorToastId,
+            })
+        },
+        onKeyPersisted: () => void pushConfigToBackend(),
     })
 
-    // Subscribe to cloud provider changes
+    const unlistenFns: Array<() => void> = []
+
+    onMount(() => {
+        controller.setProvider(cloudProviderId)
+    })
+
     const unsubCloudProvider = onSpecificSettingChange('ai.cloudProvider', (newValue) => {
-        // Commit any in-flight typing to the OLD provider's keychain entry before we switch;
-        // otherwise the pending save would silently target the wrong provider after `cloudProviderId`
-        // changes below.
-        flushPendingApiKeySave()
         cloudProviderId = newValue
-        void loadCloudProviderConfig(cloudProviderId)
+        // `setProvider` flushes any in-flight typing against the OLD provider's keychain
+        // entry before it switches, so a trailing keystroke can't land on the wrong one.
+        controller.setProvider(newValue)
         void pushConfigToBackend()
     })
     unlistenFns.push(unsubCloudProvider)
 
-    // Subscribe to cloud provider configs changes (push to backend)
     const unsubCloudConfigs = onSpecificSettingChange('ai.cloudProviderConfigs', () => {
         void pushConfigToBackend()
     })
@@ -114,274 +82,16 @@
     unlistenFns.push(unsubAskCmdrModel)
 
     onDestroy(() => {
-        // Flush any in-flight typing before tearing down: closing Settings (or navigating to a
-        // different section) shouldn't drop a key the user already typed.
-        flushPendingApiKeySave()
+        // Flush in-flight typing before teardown: closing Settings (or moving to another
+        // section) shouldn't drop a key the user already typed.
+        controller.destroy()
         for (const fn of unlistenFns) {
             fn()
         }
-        if (connectionCheckTimer) {
-            clearTimeout(connectionCheckTimer)
-        }
     })
 
-    function scheduleConnectionCheck(delayMs: number = 1000): void {
-        if (connectionCheckTimer) {
-            clearTimeout(connectionCheckTimer)
-        }
-        connectionCheckTimer = setTimeout(() => {
-            connectionCheckTimer = null
-            void triggerConnectionCheck()
-        }, delayMs)
-    }
-
-    async function triggerConnectionCheck(): Promise<void> {
-        if (connectionCheckTimer) {
-            clearTimeout(connectionCheckTimer)
-            connectionCheckTimer = null
-        }
-
-        if (!hasCheckableConfig) return
-
-        // Capture the config we're checking so we can cache the result under the right fingerprint
-        // even if the user keeps typing while the request is in flight.
-        const baseUrlAtStart = resolvedBaseUrl
-        const fingerprintAtStart = keyFingerprint
-        const providerIdAtStart = cloudProviderId
-
-        connectionStatus = 'checking'
-        connectionError = null
-        // Keep the prior list during a refetch: the field text is `inputValue`-driven, but a
-        // flashing-empty suggestion list mid-check is a regression we forbid (finding #4).
-
-        try {
-            // The backend reads the saved key for this provider, so anything the user just typed
-            // has to be committed first. `persistApiKey` is what schedules this check after a save.
-            const result = await checkAiConnection(baseUrlAtStart, providerIdAtStart)
-
-            if (result.authError) {
-                connectionStatus = 'auth-error'
-                connectionError = result.error
-            } else if (!result.connected) {
-                connectionStatus = 'connection-error'
-                connectionError = result.error
-            } else if (result.error) {
-                connectionStatus = 'error'
-                connectionError = result.error
-            } else if (result.models.length > 0) {
-                connectionStatus = 'connected'
-                availableModels = result.models
-                void cacheModels(providerIdAtStart, baseUrlAtStart, fingerprintAtStart, result.models)
-            } else {
-                connectionStatus = 'connected-no-models'
-            }
-        } catch (e) {
-            connectionStatus = 'error'
-            connectionError = e instanceof Error ? e.message : tString('ai.cloud.unknownError')
-        }
-    }
-
-    /**
-     * On open, serve the model list from the session cache instantly, or kick off a check that
-     * fills it (dev and prod both auto-load; only automated E2E is suppressed, since it has no real
-     * provider). A warm cache hit still works everywhere, including E2E. Also skips when a check is
-     * already scheduled (for example from a just-handled provider switch) so we don't double-fire.
-     */
-    async function populateModelsOnOpen(): Promise<void> {
-        if (!hasCheckableConfig) return
-        const fingerprint = await computeModelCacheKey(cloudProviderId, resolvedBaseUrl, keyFingerprint)
-        const cached = getCachedModels(fingerprint)
-        if (cached) {
-            availableModels = cached
-            connectionStatus = 'connected'
-            return
-        }
-        // Auto-loading the list is the only request that fires without a user action; suppress it
-        // only in automated E2E (no real provider there, so it'd just add network flakiness). Dev and
-        // prod both auto-load. Cache hits above still work everywhere, including E2E.
-        if (isE2eRun()) return
-        if (connectionCheckTimer || connectionStatus === 'checking') return
-        scheduleConnectionCheck()
-    }
-
-    async function cacheModels(
-        providerId: string,
-        baseUrl: string,
-        keyFingerprintForCheck: string,
-        models: string[],
-    ): Promise<void> {
-        const fingerprint = await computeModelCacheKey(providerId, baseUrl, keyFingerprintForCheck)
-        setCachedModels(fingerprint, models)
-    }
-
-    function resetConnectionState(): void {
-        connectionStatus = 'idle'
-        connectionError = null
-        availableModels = []
-        if (connectionCheckTimer) {
-            clearTimeout(connectionCheckTimer)
-            connectionCheckTimer = null
-        }
-    }
-
-    async function loadCloudProviderConfig(providerId: string): Promise<void> {
-        const configsJson = getSetting('ai.cloudProviderConfigs')
-        const configs = getProviderConfigs(configsJson)
-        const providerConfig = configs[providerId]
-        const preset = getCloudProvider(providerId)
-
-        currentModel = providerConfig?.model ?? preset?.defaultModel ?? ''
-        currentBaseUrl =
-            providerId === 'custom' || providerId === 'azure-openai'
-                ? (providerConfig?.baseUrl ?? preset?.baseUrl ?? '')
-                : (preset?.baseUrl ?? '')
-
-        // Reset eagerly so a stale key from the previous provider doesn't flash while the secret
-        // store read is in flight.
-        currentApiKey = ''
-        keyIsSet = false
-        keyFingerprint = ''
-        clearSecretError()
-        await loadKeyStatusForProvider(providerId)
-    }
-
-    async function loadKeyStatusForProvider(providerId: string): Promise<void> {
-        try {
-            const status = await getAiApiKeyStatus(providerId)
-            // Bail out if the user switched providers again before the fetch resolved.
-            if (providerId !== cloudProviderId) return
-            keyIsSet = status.isSet
-            keyFingerprint = status.fingerprint
-        } catch (e) {
-            if (providerId !== cloudProviderId) return
-            // "No key" is the right user-visible state when the read fails, so the user can re-enter
-            // one. We surface the failure inline + via toast so the cause is actionable.
-            keyIsSet = false
-            keyFingerprint = ''
-            setSecretError(describeSecretError(e, 'read'))
-        }
-    }
-
-    function saveCloudProviderField(field: 'model' | 'baseUrl', value: string): void {
-        const configsJson = getSetting('ai.cloudProviderConfigs')
-        const configs = getProviderConfigs(configsJson)
-        const existing = configs[cloudProviderId] ?? { model: '' }
-
-        if (field === 'model') existing.model = value
-        else existing.baseUrl = value
-
-        const newJson = setProviderConfig(configsJson, cloudProviderId, existing)
-        setSetting('ai.cloudProviderConfigs', newJson)
-
-        // Trigger debounced connection check on base URL change (model changes don't affect connectivity).
-        if (field === 'baseUrl') {
-            scheduleConnectionCheck()
-        }
-    }
-
-    function handleApiKeyChange(value: string): void {
-        // Reflect the typed value locally so the input stays in sync regardless of save outcome.
-        currentApiKey = value
-        clearSecretError()
-        // Capture the provider at schedule time. If the user switches providers before the timer
-        // fires, the trailing keystroke from the previous provider still targets the right entry.
-        pendingApiKeySave = { providerId: cloudProviderId, value }
-        if (apiKeySaveTimer) clearTimeout(apiKeySaveTimer)
-        apiKeySaveTimer = setTimeout(() => {
-            const pending = pendingApiKeySave
-            apiKeySaveTimer = null
-            pendingApiKeySave = null
-            if (pending) void persistApiKey(pending.providerId, pending.value)
-        }, API_KEY_SAVE_DEBOUNCE_MS)
-    }
-
-    /** Immediately commit any pending API key save. Idempotent, safe to call when nothing's queued. */
-    function flushPendingApiKeySave(): void {
-        if (!apiKeySaveTimer || !pendingApiKeySave) return
-        clearTimeout(apiKeySaveTimer)
-        const pending = pendingApiKeySave
-        apiKeySaveTimer = null
-        pendingApiKeySave = null
-        void persistApiKey(pending.providerId, pending.value)
-    }
-
-    async function persistApiKey(providerId: string, value: string): Promise<void> {
-        try {
-            await saveAiApiKey(providerId, value)
-        } catch (e) {
-            // Failed to persist: surface it visibly and SKIP pushing config + scheduling the
-            // connection check. The in-memory value would mislead the user into thinking it worked.
-            setSecretError(describeSecretError(e, 'save'))
-            return
-        }
-        // Only sync the backend if the user is still on this provider. Otherwise the new
-        // provider's pushConfigToBackend (triggered by the switch) is the authoritative push.
-        if (providerId !== cloudProviderId) return
-        // Re-read the status so the fingerprint matches the key we just stored: the connection
-        // check below caches its model list under that fingerprint, and a stale one would serve
-        // the old provider's models after a key change.
-        await loadKeyStatusForProvider(providerId)
-        void pushConfigToBackend()
-        scheduleConnectionCheck()
-    }
-
-    function setSecretError(msg: SecretErrorMessage): void {
-        secretError = msg
-        const body = msg.body ? `\n${msg.body}` : ''
-        addToast(`${msg.title}${body}`, {
-            level: msg.level,
-            dismissal: 'persistent',
-            id: secretErrorToastId,
-        })
-    }
-
-    function clearSecretError(): void {
-        if (secretError !== null) {
-            secretError = null
-            dismissToast(secretErrorToastId)
-        }
-    }
-
-    function handleCloudProviderChange(newProviderId: string): void {
-        setSetting('ai.cloudProvider', newProviderId)
-        // Reset and re-check with new provider config
-        resetConnectionState()
-        // Trigger immediate check after provider config loads (next tick)
-        setTimeout(() => {
-            if (hasCheckableConfig) {
-                void triggerConnectionCheck()
-            }
-        }, 0)
-    }
-
-    function handleModelInputChange(model: string): void {
-        currentModel = model
-        saveCloudProviderField('model', model)
-    }
-
-    // Derived state
-    const currentPreset = $derived(getCloudProvider(cloudProviderId))
     const providerSelectItems = $derived<SelectItem[]>(
         cloudProviderPresets.map((preset) => ({ value: preset.id, label: preset.name })),
-    )
-    const modelComboboxItems = $derived<ComboboxItem[]>(availableModels.map((m) => ({ value: m, label: m })))
-    const modelPlaceholder = $derived(
-        currentPreset?.defaultModel
-            ? tString('ai.cloud.modelPlaceholderExample', { model: currentPreset.defaultModel })
-            : tString('ai.cloud.modelPlaceholderGeneric'),
-    )
-    const showEditableBaseUrl = $derived(cloudProviderId === 'custom' || cloudProviderId === 'azure-openai')
-    const resolvedBaseUrl = $derived(showEditableBaseUrl ? currentBaseUrl : (currentPreset?.baseUrl ?? ''))
-    const requiresApiKey = $derived(currentPreset?.requiresApiKey ?? false)
-    const hasCheckableConfig = $derived(requiresApiKey ? keyIsSet || currentApiKey !== '' : resolvedBaseUrl !== '')
-    const apiKeyPlaceholder = $derived(
-        keyIsSet
-            ? tString('ai.cloud.apiKeyPlaceholderSaved')
-            : cloudProviderId === 'openai'
-              ? tString('ai.cloud.apiKeyPlaceholderOpenai')
-              : cloudProviderId === 'anthropic'
-                ? tString('ai.cloud.apiKeyPlaceholderAnthropic')
-                : tString('ai.cloud.apiKeyPlaceholderGeneric'),
     )
 </script>
 
@@ -401,81 +111,24 @@
             <Select
                 items={providerSelectItems}
                 value={cloudProviderId}
-                onChange={handleCloudProviderChange}
+                onChange={(newProviderId: string) => { setSetting('ai.cloudProvider', newProviderId); }}
                 ariaLabel={tString('ai.cloud.serviceAria')}
                 portal
             />
         </SettingRow>
-        {#if currentPreset?.description}
-            <p class="provider-description">{currentPreset.description}</p>
+        {#if controller.preset?.description}
+            <p class="provider-description">{controller.preset.description}</p>
         {/if}
     {/if}
 
-    <SettingRow
-        id="ai.cloudProviderConfigs"
-        label={tString('ai.cloud.endpointLabel')}
-        description={tString('ai.cloud.endpointDescription')}
-        split
-        {searchQuery}
-    >
-        {#if showEditableBaseUrl}
-            <TextInput
-                type="url"
-                value={currentBaseUrl}
-                oninput={(e: Event) => {
-                    const target = e.target as HTMLInputElement
-                    currentBaseUrl = target.value
-                    saveCloudProviderField('baseUrl', target.value)
-                }}
-                placeholder={tString('ai.cloud.endpointPlaceholder')}
-                ariaLabel={tString('ai.cloud.endpointAria')}
-                autocomplete="off"
-                spellcheck={false}
-            />
-        {:else}
-            <TextInput
-                value={resolvedBaseUrl}
-                readonly
-                ariaLabel={tString('ai.cloud.endpointAria')}
-                tabindex={-1}
-            />
-        {/if}
-    </SettingRow>
-
-    {#if requiresApiKey}
-        <SettingRow
-            id="ai.cloudProviderConfigs"
-            label={tString('ai.cloud.apiKeyLabel')}
-            description={tString('ai.cloud.apiKeyDescription')}
-            split
-            {searchQuery}
-        >
-            <SettingPasswordInput
-                id="ai.cloudProviderConfigs"
-                placeholder={apiKeyPlaceholder}
-                ariaLabel={tString('ai.cloud.apiKeyLabel')}
-                value={currentApiKey}
-                onchange={handleApiKeyChange}
-            />
-        </SettingRow>
+    <!-- The endpoint, key, and model controls all live inside the shared steps, and all
+         three are the one `ai.cloudProviderConfigs` setting, so this single gate is exactly
+         the search visibility the three separate rows used to have between them. -->
+    {#if shouldShow('ai.cloudProviderConfigs')}
+        <div class="setup-steps-block">
+            <ProviderSetupSteps {controller} idPrefix="settings-cloud" />
+        </div>
     {/if}
-
-    <SettingRow
-        id="ai.cloudProviderConfigs"
-        label={tString('ai.cloud.modelLabel')}
-        description={tString('ai.cloud.modelDescription')}
-        split
-        {searchQuery}
-    >
-        <Combobox
-            items={modelComboboxItems}
-            inputValue={currentModel}
-            onInputValueChange={handleModelInputChange}
-            loading={connectionStatus === 'checking'}
-            placeholder={modelPlaceholder}
-            ariaLabel={tString('ai.cloud.modelLabel')}
-        />
-    </SettingRow>
 
     {#if askCmdrModelOverride}
         <p class="askcmdr-override-hint" role="note">
@@ -484,64 +137,62 @@
     {/if}
 
     <!-- Connection status -->
-    {#if secretError}
+    {#if controller.secretError}
         <div class="secret-error" role="alert">
             <span class="connection-status-icon connection-status-error">&#x2717;</span>
             <span class="secret-error-text">
-                <span class="secret-error-title">{secretError.title}</span>
-                {#if secretError.body}
-                    <span class="secret-error-body">{secretError.body}</span>
+                <span class="secret-error-title">{controller.secretError.title}</span>
+                {#if controller.secretError.body}
+                    <span class="secret-error-body">{controller.secretError.body}</span>
                 {/if}
             </span>
         </div>
     {/if}
 
-    {#if connectionStatus === 'checking'}
+    {#if controller.status === 'checking'}
         <div class="connection-status">
             <Spinner size="sm" />
             <span class="connection-status-text">{tString('ai.cloud.checking')}</span>
         </div>
-    {:else if connectionStatus === 'connected'}
+    {:else if controller.status === 'connected'}
         <div class="connection-status">
             <span class="connection-status-icon connection-status-ok">&#x2713;</span>
             <span class="connection-status-text">{tString('ai.cloud.connected')}</span>
-            <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
+            <Button size="mini" onclick={() => { controller.checkNow(); }}>{tString('ai.cloud.recheck')}</Button>
         </div>
-    {:else if connectionStatus === 'connected-no-models'}
+    {:else if controller.status === 'connected-no-models'}
         <div class="connection-status">
             <span class="connection-status-icon connection-status-ok">&#x2713;</span>
             <span class="connection-status-text">{tString('ai.cloud.connectedNoModels')}</span>
-            <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
+            <Button size="mini" onclick={() => { controller.checkNow(); }}>{tString('ai.cloud.recheck')}</Button>
         </div>
-    {:else if connectionStatus === 'auth-error'}
+    {:else if controller.status === 'auth-error'}
         <div class="connection-status">
             <span class="connection-status-icon connection-status-error">&#x2717;</span>
             <span class="connection-status-text connection-status-error-text"
-                >{connectionError ?? tString('ai.cloud.authError')}</span
+                >{controller.error ?? tString('ai.cloud.authError')}</span
             >
-            <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
+            <Button size="mini" onclick={() => { controller.checkNow(); }}>{tString('ai.cloud.recheck')}</Button>
         </div>
-    {:else if connectionStatus === 'connection-error'}
+    {:else if controller.status === 'connection-error'}
         <div class="connection-status">
             <span class="connection-status-icon connection-status-error">&#x2717;</span>
             <span class="connection-status-text connection-status-error-text"
-                >{connectionError ?? tString('ai.cloud.connectionError')}</span
+                >{controller.error ?? tString('ai.cloud.connectionError')}</span
             >
-            <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
+            <Button size="mini" onclick={() => { controller.checkNow(); }}>{tString('ai.cloud.recheck')}</Button>
         </div>
-    {:else if connectionStatus === 'error'}
+    {:else if controller.status === 'error'}
         <div class="connection-status">
             <span class="connection-status-icon connection-status-error">&#x2717;</span>
             <span class="connection-status-text connection-status-error-text"
-                >{connectionError ?? tString('ai.cloud.genericError')}</span
+                >{controller.error ?? tString('ai.cloud.genericError')}</span
             >
-            <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
+            <Button size="mini" onclick={() => { controller.checkNow(); }}>{tString('ai.cloud.recheck')}</Button>
         </div>
-    {:else if connectionStatus === 'idle' && hasCheckableConfig}
+    {:else if controller.status === 'idle' && controller.hasCheckableConfig}
         <div class="connection-status">
-            <Button size="mini" onclick={() => void triggerConnectionCheck()}
-                >{tString('ai.cloud.testConnection')}</Button
-            >
+            <Button size="mini" onclick={() => { controller.checkNow(); }}>{tString('ai.cloud.testConnection')}</Button>
         </div>
     {/if}
 </SectionCard>
@@ -553,6 +204,12 @@
         margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-md);
     }
 
+    /* The steps carry their own vertical rhythm; this only keeps them off the rows
+       above and below them. */
+    .setup-steps-block {
+        margin: var(--spacing-sm) 0 var(--spacing-md);
+    }
+
     .askcmdr-override-hint {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
@@ -560,7 +217,6 @@
         overflow-wrap: anywhere;
     }
 
-    /* Text input (same style as other setting inputs) */
     /* Connection status */
     .connection-status {
         display: flex;

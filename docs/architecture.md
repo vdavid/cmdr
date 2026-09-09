@@ -79,6 +79,9 @@ All under `apps/desktop/src/lib/`.
   `apps/desktop/src/lib/attach-email/CLAUDE.md`
 - `ai/`: Local LLM features (folder suggestions), download flow. Runtime states only; first-launch consent owned by
   `onboarding/`
+- `ai-provider-setup/`: The "point Cmdr at an AI provider" flow (numbered per-provider steps, API key, connection
+  check, model picker), shared by the onboarding wizard's step 2 and Settings › AI › Provider so neither forks it.
+  See `apps/desktop/src/lib/ai-provider-setup/CLAUDE.md`
 - `indexing/`: Drive index state, events, priority triggers, scan status overlay
 - `status-corner/`: The main window's top-right ambient-status row: owns the corner placement, hosts the
   backgrounded-operation chip and the indexing hourglass. See `apps/desktop/src/lib/status-corner/CLAUDE.md`

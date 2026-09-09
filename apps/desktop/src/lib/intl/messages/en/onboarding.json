@@ -711,6 +711,44 @@
     "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
+  "onboarding.cloudSetup.step.install": "Download and install <installLink>{provider}</installLink>",
+  "@onboarding.cloudSetup.step.install": {
+    "description": "First setup step for a provider that runs on the user's own machine (Ollama, LM Studio): there's no account to create, you install the app. <installLink> wraps the link; keep the provider name inside it. {provider} is the provider's brand name and must NOT be translated.",
+    "placeholders": {
+      "provider": "the chosen local AI app's name, a brand name (for example \"Ollama\")"
+    },
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
+  },
+
+  "onboarding.cloudSetup.step.ollamaModel": "Pull a model in a terminal with ollama pull llama3.2, or <libraryLink>browse the library</libraryLink>",
+  "@onboarding.cloudSetup.step.ollamaModel": {
+    "description": "Ollama-specific setup step: the user downloads a model from the command line. \"ollama pull llama3.2\" is a literal command and must NOT be translated. <libraryLink> wraps the words that link to Ollama's model list.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
+  },
+
+  "onboarding.cloudSetup.step.lmStudioServer": "Load a model in LM Studio, then start its <serverLink>local server</serverLink>",
+  "@onboarding.cloudSetup.step.lmStudioServer": {
+    "description": "LM Studio-specific setup step: the app serves models only once its built-in server is switched on. \"LM Studio\" is a brand name and must NOT be translated. <serverLink> wraps the words that link to LM Studio's server docs.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
+  },
+
+  "onboarding.cloudSetup.hint.azureEndpoint": "Replace the placeholder in the address with your own Azure OpenAI resource name. This endpoint needs no api-version parameter.",
+  "@onboarding.cloudSetup.hint.azureEndpoint": {
+    "description": "Caption under the endpoint input for Azure OpenAI, explaining that the pre-filled URL is a template. \"Azure OpenAI\" is a product name and \"api-version\" is a literal URL parameter; keep both as-is.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
+  },
+
+  "onboarding.cloudSetup.hint.azureModel": "On Azure this is your deployment name, which can differ from the name of the model it runs.",
+  "@onboarding.cloudSetup.hint.azureModel": {
+    "description": "Caption under the model picker for Azure OpenAI. On Azure you name a \"deployment\" when you set a model up, and that name is what the API expects. \"Azure\" is a product name.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
+  },
+
   "onboarding.cloudSetup.step.endpoint": "Endpoint URL",
   "@onboarding.cloudSetup.step.endpoint": {
     "description": "Label for the input where the user enters a custom API endpoint URL (shown for custom or Azure providers). \"URL\" stays as-is.",

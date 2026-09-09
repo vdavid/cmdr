@@ -31,6 +31,15 @@ const getAiApiKeyStatus = vi.fn<(id: string) => Promise<{ isSet: boolean; finger
 )
 const openExternalUrl = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
 
+// Unit tests run with `__CMDR_I18N_CAPTURE__` baked in, so the real `isE2eRun()` answers
+// true and the shared controller suppresses its auto-check on open. These tests are about
+// the everyday path, so they answer false; the suppression itself is covered in
+// `$lib/ai-provider-setup/provider-setup.svelte.test.ts`.
+vi.mock('$lib/app-mode', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  isE2eRun: () => false,
+}))
+
 vi.mock('$lib/tauri-commands', () => ({
   checkAiConnection: (baseUrl: string, providerId: string) => checkAiConnection({ baseUrl, providerId }),
   saveAiApiKey: (providerId: string, apiKey: string) => saveAiApiKey({ providerId, apiKey }),
@@ -177,7 +186,9 @@ describe('CloudProviderSetup', () => {
   it('checks the connection on open when a key is already stored', async () => {
     getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'abc123' })
     mountSetup('openai')
-    await settle()
+    // The on-open path asks the model cache first, and its key is a Web Crypto digest, so
+    // the check lands a macrotask later than the mount.
+    await advanceTimers(1)
     expect(checkAiConnection).toHaveBeenCalledWith({
       baseUrl: expect.stringContaining('openai.com') as string,
       providerId: 'openai',

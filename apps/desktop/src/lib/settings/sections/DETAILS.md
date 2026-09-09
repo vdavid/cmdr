@@ -90,10 +90,12 @@ sections compose).
   "tasteful, not one-big-card" choice: only the registry-row clusters are card-framed; the AI status blocks, gauge,
   action buttons, and the delete modal stay full-bleed (they already read as distinct blocks and don't belong inside a
   card).
-- **`AiCloudSection.svelte`**: Cloud provider config: preset dropdown, per-provider endpoint/model in
-  `ai.cloudProviderConfigs`, API key in OS secret store, two-step connection check. Its whole row list plus the
-  connection-status block live in one unlabeled `SectionCard` (no `anyVisible` gate: the section mounts only when
-  `provider === 'cloud'` and its rows aren't search-gated as a group). It holds the only hand-rolled `Select` in
+- **`AiCloudSection.svelte`**: Cloud provider config: the preset dropdown, then the SAME numbered setup steps the
+  onboarding wizard shows (`$lib/ai-provider-setup/`), then the connection-status block, all in one unlabeled
+  `SectionCard` (no `anyVisible` gate: the section mounts only when `provider === 'cloud'`). Endpoint, key, and model
+  are controls inside those steps now, not three `SettingRow`s; they were all one setting (`ai.cloudProviderConfigs`)
+  before, so the block's single `shouldShow('ai.cloudProviderConfigs')` gate is the same search visibility the rows
+  had. See § "The setup steps are shared with onboarding". It holds the only hand-rolled `Select` in
   settings (the provider row; every other dropdown here goes through `SettingSelect`), so it carries the `portal` prop
   itself — without it the menu is trapped in `.settings-content-wrapper`'s mask and `overflow`, which is exactly how the
   provider pop-up's top rows became unclickable. `../../ui/DETAILS.md` § Select → Portal.
@@ -366,30 +368,21 @@ Settings AI changes hot-apply because `settings-applier.ts` routes `ai.provider`
 `ai.cloudProviderConfigs` to `ai-config.ts::pushConfigToBackend()`, which re-reads everything fresh. Sections just call
 `setSetting(...)`; don't try to push the AI config from the section component.
 
-### The model picker loads on open and caches across reopens
+### The setup steps are shared with onboarding
 
-`AiCloudSection` renders the model field through the shared `$lib/ui/Combobox` (a text-field-with-suggestions, not a
-value-bound select), fed by `availableModels`. On mount, after the saved key resolves from the secret store,
-`populateModelsOnOpen()` runs: a warm hit from `$lib/settings/ai-model-cache.ts` populates the list instantly; a cold
-miss schedules the same debounced connection check the key/URL editors use, and a successful check writes the result
-back into the cache. The cache key is a SHA-256 digest of `providerId \0 baseUrl \0 apiKey` (collision-free across
-equal-length keys, so a revoked-vs-new key can't serve a stale list); the raw key and the digest input are never stored
-or logged.
+The service picker, the recheck buttons, the Ask Cmdr model-override note, the secret-error toast, and the
+settings-search gating are this section's. Everything else belongs to `$lib/ai-provider-setup/`: the numbered steps
+with their per-provider links, the endpoint / key / model controls, the API-key debounce and persist, the connection
+check and its model-list cache, and the provider-switch race guards. That module's `DETAILS.md` owns the mechanism,
+including the model picker's cache and the "never zero `availableModels` mid-refetch" rule; ❌ don't restate it here.
 
-Two things keep the field honest, both load-bearing:
+Two things this section still has to get right:
 
-- **`triggerConnectionCheck()` must NOT zero `availableModels` at the start of a refetch.** The field text is
-  `inputValue`-driven (the saved/typed model), but flashing an empty suggestion list mid-check is the regression we
-  forbid. A genuine config change (provider switch) still drops the list via `resetConnectionState()`.
-- **The mount-trigger fires in dev and prod, suppressed only in automated E2E (`isE2eRun()`).** E2E has no real
-  provider, and for no-key providers (`custom`/`ollama`/`lm-studio`) `hasCheckableConfig` is true with just the preset
-  base URL, so an unguarded trigger would add network flakiness there. Warm cache hits still work everywhere, including
-  E2E (no network). The mount-trigger also bails when a check is already scheduled or in flight, so it can't double-fire
-  with `handleCloudProviderChange`'s `setTimeout(0)` check.
-
-`CloudProviderSetup` (onboarding) uses the same `ui/Combobox` but gets **no** mount-trigger: it already loads on open
-(`loadApiKeyForProvider` triggers a check when a stored key resolves), so a second trigger would double-fire. The
-session cache is process-lifetime and shared by both consumers.
+- **Pass `onSecretErrorChange` and `onKeyPersisted`.** They're what make the persistent toast and the
+  `pushConfigToBackend()` re-push happen; the wizard deliberately passes neither.
+- **Drive the controller from `onSpecificSettingChange('ai.cloudProvider', …)`**, not from the `Select`'s `onChange`.
+  The `Select` only writes the setting, so a provider switch made anywhere (MCP, another window) reloads the section
+  the same way.
 
 ### Every command groups by scope (one group per `CommandScope`)
 

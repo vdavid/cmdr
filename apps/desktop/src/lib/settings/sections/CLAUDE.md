@@ -27,9 +27,10 @@ decide where and how it renders. Parents: `../CLAUDE.md` (registry, store, appli
 - **A toggle that can't use `SettingSwitch` still uses `$lib/ui/Switch`**, never a hand-rolled Ark `Switch.Root` /
   `Control` (it ships without the primitive's ARIA) and never `:global(.switch-control)` from a section: those class
   names are the primitive's and leak app-wide.
-- **Cloud AI keys never touch registry primitives**: `AiCloudSection` uses `SettingPasswordInput` in controlled mode,
-  and ❌ never pre-fills it (the parent's `ai.*` bullet says why). The model picker's cache key hashes the backend's key
-  FINGERPRINT, never a raw key; don't zero `availableModels` mid-refetch. DETAILS § model picker.
+- **`AiCloudSection`'s endpoint, key, and model controls are NOT ours: they live in `$lib/ai-provider-setup/`**, shared
+  with the onboarding wizard, and this section keeps the service row, the recheck buttons, the toast, and the search
+  gate. A per-provider copy or link change goes there, ❌ never here. Cloud AI keys still never touch registry
+  primitives (the parent's `ai.*` bullet says why). DETAILS § "The setup steps are shared with onboarding".
 - **`recheckAdbInstall` runs one call per CLICK** (`AdbSection`), ❌ never on mount or polled: it is the only path that
   retries `adb start-server`. Mount reads `getAdbInstallStatus`, which looks nothing up.
 - **`KeyboardShortcutsSection` "+ add" is UI-only; never write a provisional `''` to the store** (a placeholder

@@ -1,370 +1,46 @@
 <script lang="ts">
-    import { onDestroy } from 'svelte'
-    import Icon from '$lib/ui/Icon.svelte'
-    import {
-        getCloudProvider,
-        getProviderConfigs,
-        setProviderConfig,
-        getSetting,
-        setSetting,
-    } from '$lib/settings'
-    import {
-        checkAiConnection,
-        getAiApiKeyStatus,
-        saveAiApiKey,
-        openExternalUrl,
-    } from '$lib/tauri-commands'
-    import SettingPasswordInput from '$lib/settings/components/SettingPasswordInput.svelte'
-    import LinkButton from '$lib/ui/LinkButton.svelte'
-    import TextInput from '$lib/ui/TextInput.svelte'
-    import Combobox, { type ComboboxItem } from '$lib/ui/Combobox.svelte'
-    import { describeSecretError, type SecretErrorMessage } from '$lib/settings/sections/ai-secret-error'
-    import { getAppLogger } from '$lib/logging/logger'
+    import { onDestroy, untrack } from 'svelte'
+    import ProviderSetupSteps from '$lib/ai-provider-setup/ProviderSetupSteps.svelte'
+    import { ProviderSetupController } from '$lib/ai-provider-setup/provider-setup.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import Trans from '$lib/intl/Trans.svelte'
-    import type { Snippet } from 'svelte'
 
     /**
-     * Per-provider tutorial in the onboarding wizard's step 2 right column.
+     * Per-provider tutorial in the onboarding wizard's step 2 right column: a provider
+     * header plus the shared numbered steps, with a quiet status line underneath.
      *
-     * Numbered steps, each with a checkmark that flips on when the step is satisfied:
+     * The steps, the API-key persist, and the connection check all live in
+     * `$lib/ai-provider-setup/`, shared with Settings › AI › Provider. Only the header and
+     * the status line are the wizard's own, and the status line is deliberately quieter
+     * than Settings': the wizard never blocks advance on a key, so a failed check is
+     * feedback, not something to act on right now.
      *
-     *   1. Sign up at <provider>: always ✓ (informational link, can't fail here)
-     *   2. Create an API key: link to the provider's API-key console; always ✓
-     *   3. Paste your API key: ✓ when `connectionStatus === 'connected'`
-     *   4. Pick a model: ✓ when the user has picked a non-empty model
-     *
-     * The connection-check pipeline mirrors `AiCloudSection.svelte`: 1 s debounce on
-     * key/base-URL change, calls `checkAiConnection(baseUrl, providerId)` (the backend
-     * reads the saved key itself), surfaces the model list through the shared
-     * `ui/Combobox`. Unlike the settings section, the model list already loads on open
-     * here (a stored key triggers a check in `loadKeyStatusForProvider`), so there's no
-     * separate mount-trigger to add.
-     *
-     * Provider switching is owned by the parent (`StepAi.svelte`); on `providerId`
-     * change we reload the per-provider state from the store + secret keychain. Keys
-     * already typed for previous providers stay in the secret store so users can hop
-     * back without re-entering.
+     * Provider switching is owned by the parent (`StepAi.svelte`); on a `providerId` change
+     * the controller reloads from the store and the secret keychain. Keys typed for earlier
+     * providers stay in the secret store, so hopping back doesn't mean re-entering them.
      */
-
     interface Props {
         providerId: string
     }
 
     const { providerId }: Props = $props()
-    const log = getAppLogger('onboarding-ai-setup')
 
-    type ConnectionStatus =
-        | 'idle'
-        | 'checking'
-        | 'connected'
-        | 'connected-no-models'
-        | 'auth-error'
-        | 'connection-error'
-        | 'error'
+    const controller = new ProviderSetupController({ logScope: 'onboarding-ai-setup' })
 
-    // What the user has TYPED this session. A saved key never comes back from the backend
-    // (see `docs/security.md` § "AI API keys"), so this stays empty until they type.
-    let currentApiKey = $state('')
-    // Whether a key is already stored for this provider. Drives the "your key is saved"
-    // placeholder and the checkable-config gate.
-    let keyIsSet = $state(false)
-    let currentModel = $state('')
-    let currentBaseUrl = $state('')
-    let connectionStatus = $state<ConnectionStatus>('idle')
-    let connectionError = $state<string | null>(null)
-    let availableModels = $state<string[]>([])
-    let secretError = $state<SecretErrorMessage | null>(null)
-
-    const API_KEY_SAVE_DEBOUNCE_MS = 300
-    const CONNECTION_CHECK_DEBOUNCE_MS = 1000
-
-    let apiKeySaveTimer: ReturnType<typeof setTimeout> | null = null
-    let connectionCheckTimer: ReturnType<typeof setTimeout> | null = null
-    // Captured at schedule time so a switch-provider-mid-typing flushes against the
-    // right keychain entry (mirrors `AiCloudSection.flushPendingApiKeySave`).
-    let pendingApiKeySave: { providerId: string; value: string } | null = null
-    // Latest in-flight providerId, so a slow keychain read for a stale provider can
-    // be dropped after the user clicks another row.
-    let activeProviderId = $state(providerId)
-
-    // Reload state whenever the parent picks a different provider.
+    // Point the controller at whichever provider the parent has selected. `untrack` is
+    // load-bearing: `setProvider` both reads and writes the controller's `$state`, so a
+    // tracked call would re-run itself the moment a check or a keychain read lands, and
+    // reset the state it just produced.
     $effect(() => {
         const id = providerId
-        activeProviderId = id
-        // Flush any in-flight typing to the OLD provider so we don't lose those chars
-        // by clearing `currentApiKey` below.
-        flushPendingApiKeySave()
-        resetConnectionState()
-        loadFromStore(id)
-        void loadKeyStatusForProvider(id)
+        untrack(() => { controller.setProvider(id); })
     })
 
-    onDestroy(() => {
-        flushPendingApiKeySave()
-        if (connectionCheckTimer) clearTimeout(connectionCheckTimer)
-    })
+    onDestroy(() => { controller.destroy(); })
 
-    function loadFromStore(id: string): void {
-        const preset = getCloudProvider(id)
-        const configsJson = getSetting('ai.cloudProviderConfigs')
-        const configs = getProviderConfigs(configsJson)
-        const providerConfig = configs[id]
-
-        currentModel = providerConfig?.model ?? preset?.defaultModel ?? ''
-        currentBaseUrl =
-            id === 'custom' || id === 'azure-openai'
-                ? (providerConfig?.baseUrl ?? preset?.baseUrl ?? '')
-                : (preset?.baseUrl ?? '')
-        currentApiKey = ''
-        keyIsSet = false
-        secretError = null
-    }
-
-    async function loadKeyStatusForProvider(id: string): Promise<void> {
-        try {
-            const status = await getAiApiKeyStatus(id)
-            if (id !== activeProviderId) return
-            keyIsSet = status.isSet
-            // If a key is already stored, trigger an immediate check (no debounce):
-            // the user expects "I came back; tell me if my key still works."
-            if (keyIsSet && hasCheckableConfig()) {
-                void triggerConnectionCheck()
-            }
-        } catch (e) {
-            if (id !== activeProviderId) return
-            keyIsSet = false
-            secretError = describeSecretError(e, 'read')
-        }
-    }
-
-    function hasCheckableConfig(): boolean {
-        const preset = getCloudProvider(activeProviderId)
-        const requiresApiKey = preset?.requiresApiKey ?? false
-        const baseUrl = resolvedBaseUrl()
-        if (requiresApiKey && !keyIsSet && currentApiKey === '') return false
-        return baseUrl !== ''
-    }
-
-    function resolvedBaseUrl(): string {
-        const preset = getCloudProvider(activeProviderId)
-        if (activeProviderId === 'custom' || activeProviderId === 'azure-openai') {
-            return currentBaseUrl
-        }
-        return preset?.baseUrl ?? ''
-    }
-
-    function scheduleConnectionCheck(delayMs: number = CONNECTION_CHECK_DEBOUNCE_MS): void {
-        if (connectionCheckTimer) clearTimeout(connectionCheckTimer)
-        connectionCheckTimer = setTimeout(() => {
-            connectionCheckTimer = null
-            void triggerConnectionCheck()
-        }, delayMs)
-    }
-
-    async function triggerConnectionCheck(): Promise<void> {
-        if (connectionCheckTimer) {
-            clearTimeout(connectionCheckTimer)
-            connectionCheckTimer = null
-        }
-        if (!hasCheckableConfig()) return
-
-        const baseUrl = resolvedBaseUrl()
-        const idAtStart = activeProviderId
-        connectionStatus = 'checking'
-        connectionError = null
-        // Keep the prior list during a refetch so the model combobox never blanks mid-check.
-
-        try {
-            // The backend reads the saved key for this provider, so anything the user just
-            // typed has to be committed first. `persistApiKey` schedules this check after a save.
-            const result = await checkAiConnection(baseUrl, idAtStart)
-            // Drop the result if the user switched providers mid-flight.
-            if (idAtStart !== activeProviderId) return
-            if (result.authError) {
-                connectionStatus = 'auth-error'
-                connectionError = result.error
-            } else if (!result.connected) {
-                connectionStatus = 'connection-error'
-                connectionError = result.error
-            } else if (result.error) {
-                connectionStatus = 'error'
-                connectionError = result.error
-            } else if (result.models.length > 0) {
-                connectionStatus = 'connected'
-                availableModels = result.models
-            } else {
-                connectionStatus = 'connected-no-models'
-            }
-        } catch (e) {
-            if (idAtStart !== activeProviderId) return
-            connectionStatus = 'error'
-            connectionError = e instanceof Error ? e.message : tString('onboarding.cloudSetup.status.genericError')
-        }
-    }
-
-    function resetConnectionState(): void {
-        connectionStatus = 'idle'
-        connectionError = null
-        availableModels = []
-        if (connectionCheckTimer) {
-            clearTimeout(connectionCheckTimer)
-            connectionCheckTimer = null
-        }
-    }
-
-    function handleApiKeyChange(value: string): void {
-        currentApiKey = value
-        secretError = null
-        pendingApiKeySave = { providerId: activeProviderId, value }
-        if (apiKeySaveTimer) clearTimeout(apiKeySaveTimer)
-        apiKeySaveTimer = setTimeout(() => {
-            const pending = pendingApiKeySave
-            apiKeySaveTimer = null
-            pendingApiKeySave = null
-            if (pending) void persistApiKey(pending.providerId, pending.value)
-        }, API_KEY_SAVE_DEBOUNCE_MS)
-    }
-
-    function flushPendingApiKeySave(): void {
-        if (!apiKeySaveTimer || !pendingApiKeySave) return
-        clearTimeout(apiKeySaveTimer)
-        const pending = pendingApiKeySave
-        apiKeySaveTimer = null
-        pendingApiKeySave = null
-        void persistApiKey(pending.providerId, pending.value)
-    }
-
-    async function persistApiKey(id: string, value: string): Promise<void> {
-        try {
-            await saveAiApiKey(id, value)
-        } catch (e) {
-            secretError = describeSecretError(e, 'save')
-            log.warn("Couldn't save AI API key from wizard for provider {provider}: {error}", {
-                provider: id,
-                error: e,
-            })
-            return
-        }
-        // Only check if we're still on this provider.
-        if (id !== activeProviderId) return
-        keyIsSet = value !== ''
-        scheduleConnectionCheck()
-    }
-
-    function saveModel(value: string): void {
-        currentModel = value
-        const configsJson = getSetting('ai.cloudProviderConfigs')
-        const configs = getProviderConfigs(configsJson)
-        const existing = configs[activeProviderId] ?? { model: '' }
-        existing.model = value
-        const updated = setProviderConfig(configsJson, activeProviderId, existing)
-        setSetting('ai.cloudProviderConfigs', updated)
-    }
-
-    function saveBaseUrl(value: string): void {
-        currentBaseUrl = value
-        const configsJson = getSetting('ai.cloudProviderConfigs')
-        const configs = getProviderConfigs(configsJson)
-        const existing = configs[activeProviderId] ?? { model: currentModel }
-        existing.baseUrl = value
-        const updated = setProviderConfig(configsJson, activeProviderId, existing)
-        setSetting('ai.cloudProviderConfigs', updated)
-        scheduleConnectionCheck()
-    }
-
-    function openProviderUrl(url: string): void {
-        if (!url) return
-        void openExternalUrl(url).catch((error: unknown) => {
-            log.warn('openExternalUrl({url}) failed: {error}', { url, error })
-        })
-    }
-
-    // Derived view state.
-    const preset = $derived(getCloudProvider(activeProviderId))
-    const showEditableBaseUrl = $derived(
-        activeProviderId === 'custom' || activeProviderId === 'azure-openai',
-    )
-    const requiresApiKey = $derived(preset?.requiresApiKey ?? false)
-    const apiKeyChecked = $derived(connectionStatus === 'connected' || connectionStatus === 'connected-no-models')
-    const modelChecked = $derived(currentModel.trim() !== '')
-    const modelComboboxItems = $derived<ComboboxItem[]>(availableModels.map((m) => ({ value: m, label: m })))
-    const modelPlaceholder = $derived(
-        preset?.defaultModel
-            ? tString('onboarding.cloudSetup.modelPlaceholderExample', { model: preset.defaultModel })
-            : tString('onboarding.cloudSetup.modelPlaceholder'),
-    )
-
-    // Per-provider sign-up and API-key console URLs. Kept inline because they're tied
-    // to provider names a registry would just mirror; one source of truth per row.
-    const providerLinksById: Record<string, { signup: string; apiKeys: string }> = {
-        openai: { signup: 'https://platform.openai.com/signup', apiKeys: 'https://platform.openai.com/api-keys' },
-        anthropic: {
-            signup: 'https://platform.claude.com/login',
-            apiKeys: 'https://platform.claude.com/settings/keys',
-        },
-        'google-gemini': {
-            signup: 'https://aistudio.google.com/',
-            apiKeys: 'https://aistudio.google.com/app/apikey',
-        },
-        groq: { signup: 'https://console.groq.com/login', apiKeys: 'https://console.groq.com/keys' },
-        'together-ai': {
-            signup: 'https://api.together.xyz/',
-            apiKeys: 'https://api.together.xyz/settings/api-keys',
-        },
-        'fireworks-ai': {
-            signup: 'https://app.fireworks.ai/login',
-            apiKeys: 'https://app.fireworks.ai/settings/users/api-keys',
-        },
-        mistral: { signup: 'https://console.mistral.ai/', apiKeys: 'https://console.mistral.ai/api-keys/' },
-        openrouter: { signup: 'https://openrouter.ai/', apiKeys: 'https://openrouter.ai/keys' },
-        deepseek: { signup: 'https://platform.deepseek.com/', apiKeys: 'https://platform.deepseek.com/api_keys' },
-        xai: { signup: 'https://console.x.ai/', apiKeys: 'https://console.x.ai/' },
-        perplexity: {
-            signup: 'https://www.perplexity.ai/settings/api',
-            apiKeys: 'https://www.perplexity.ai/settings/api',
-        },
-        'azure-openai': {
-            signup: 'https://azure.microsoft.com/en-us/products/ai-services/openai-service',
-            apiKeys: 'https://portal.azure.com/',
-        },
-        ollama: { signup: 'https://ollama.com/download', apiKeys: 'https://ollama.com/' },
-        'lm-studio': { signup: 'https://lmstudio.ai/', apiKeys: 'https://lmstudio.ai/docs/local-server' },
-        custom: { signup: '', apiKeys: '' },
-    }
-
-    const links = $derived(providerLinksById[activeProviderId] ?? { signup: '', apiKeys: '' })
-    const apiKeyPlaceholder = $derived(
-        keyIsSet
-            ? tString('onboarding.cloudSetup.apiKeyPlaceholder.saved')
-            : activeProviderId === 'openai'
-              ? tString('onboarding.cloudSetup.apiKeyPlaceholder.openai')
-              : activeProviderId === 'anthropic'
-                ? tString('onboarding.cloudSetup.apiKeyPlaceholder.anthropic')
-                : tString('onboarding.cloudSetup.apiKeyPlaceholder.generic'),
-    )
+    const preset = $derived(controller.preset)
 </script>
 
-{#snippet signupLink(children: Snippet)}<LinkButton
-        href={links.signup}
-        target="_blank"
-        rel="noopener noreferrer"
-        onclick={(event: MouseEvent) => {
-            event.preventDefault()
-            openProviderUrl(links.signup)
-        }}>{@render children()}</LinkButton
-    >{/snippet}
-{#snippet keyLink(children: Snippet)}<LinkButton
-        href={links.apiKeys}
-        target="_blank"
-        rel="noopener noreferrer"
-        onclick={(event: MouseEvent) => {
-            event.preventDefault()
-            openProviderUrl(links.apiKeys)
-        }}>{@render children()}</LinkButton
-    >{/snippet}
-
-<div class="setup-panel" data-provider-id={activeProviderId}>
+<div class="setup-panel" data-provider-id={controller.providerId}>
     {#if preset}
         <header class="provider-header">
             <h3 class="provider-title">{tString('onboarding.cloudSetup.title', { provider: preset.name })}</h3>
@@ -373,124 +49,27 @@
             {/if}
         </header>
 
-        <ol class="setup-steps">
-            {#if links.signup}
-                <li class="setup-step done">
-                    <span class="step-marker" aria-hidden="true">
-                        <Icon name="check" size={14} />
-                    </span>
-                    <div class="step-body">
-                        <span class="step-label">
-                            <Trans
-                                key="onboarding.cloudSetup.step.signup"
-                                snippets={{ signupLink }}
-                                params={{ provider: preset.name }}
-                            />
-                        </span>
-                    </div>
-                </li>
-            {/if}
+        <ProviderSetupSteps {controller} idPrefix="onboarding-cloud" />
 
-            {#if requiresApiKey && links.apiKeys}
-                <li class="setup-step done">
-                    <span class="step-marker" aria-hidden="true">
-                        <Icon name="check" size={14} />
-                    </span>
-                    <div class="step-body">
-                        <span class="step-label">
-                            <Trans key="onboarding.cloudSetup.step.createKey" snippets={{ keyLink }} />
-                        </span>
-                    </div>
-                </li>
-            {/if}
-
-            {#if showEditableBaseUrl}
-                <li class="setup-step" class:done={currentBaseUrl.trim() !== ''}>
-                    <span class="step-marker" aria-hidden="true">
-                        {#if currentBaseUrl.trim() !== ''}
-                            <Icon name="check" size={14} />
-                        {/if}
-                    </span>
-                    <div class="step-body">
-                        <label class="step-label" for="onboarding-cloud-base-url"
-                            >{tString('onboarding.cloudSetup.step.endpoint')}</label
-                        >
-                        <TextInput
-                            id="onboarding-cloud-base-url"
-                            type="url"
-                            value={currentBaseUrl}
-                            oninput={(event: Event) => {
-                                const target = event.currentTarget as HTMLInputElement
-                                saveBaseUrl(target.value)
-                            }}
-                            placeholder={tString('onboarding.cloudSetup.step.endpointPlaceholder')}
-                            autocomplete="off"
-                            spellcheck={false}
-                        />
-                    </div>
-                </li>
-            {/if}
-
-            {#if requiresApiKey}
-                <li class="setup-step" class:done={apiKeyChecked}>
-                    <span class="step-marker" aria-hidden="true">
-                        {#if apiKeyChecked}
-                            <Icon name="check" size={14} />
-                        {/if}
-                    </span>
-                    <div class="step-body">
-                        <label class="step-label" for="onboarding-cloud-api-key"
-                            >{tString('onboarding.cloudSetup.step.pasteKey')}</label
-                        >
-                        <SettingPasswordInput
-                            id="ai.cloudProviderConfigs"
-                            placeholder={apiKeyPlaceholder}
-                            ariaLabel={tString('onboarding.cloudSetup.apiKeyAria')}
-                            value={currentApiKey}
-                            onchange={handleApiKeyChange}
-                        />
-                        {#if secretError}
-                            <p class="status status-error" role="alert">{secretError.title}</p>
-                        {:else if connectionStatus === 'checking'}
-                            <p class="status status-checking">{tString('onboarding.cloudSetup.status.checking')}</p>
-                        {:else if connectionStatus === 'auth-error'}
-                            <p class="status status-error">
-                                {connectionError ?? tString('onboarding.cloudSetup.status.authError')}
-                            </p>
-                        {:else if connectionStatus === 'connection-error'}
-                            <p class="status status-error">
-                                {connectionError ?? tString('onboarding.cloudSetup.status.connectionError')}
-                            </p>
-                        {:else if connectionStatus === 'error'}
-                            <p class="status status-error">
-                                {connectionError ?? tString('onboarding.cloudSetup.status.genericError')}
-                            </p>
-                        {:else if apiKeyChecked}
-                            <p class="status status-ok">{tString('onboarding.cloudSetup.status.connected')}</p>
-                        {/if}
-                    </div>
-                </li>
-            {/if}
-
-            <li class="setup-step" class:done={modelChecked}>
-                <span class="step-marker" aria-hidden="true">
-                    {#if modelChecked}
-                        <Icon name="check" size={14} />
-                    {/if}
-                </span>
-                <div class="step-body">
-                    <span class="step-label">{tString('onboarding.cloudSetup.step.pickModel')}</span>
-                    <Combobox
-                        items={modelComboboxItems}
-                        inputValue={currentModel}
-                        onInputValueChange={saveModel}
-                        loading={connectionStatus === 'checking'}
-                        placeholder={modelPlaceholder}
-                        ariaLabel={tString('onboarding.cloudSetup.modelAria')}
-                    />
-                </div>
-            </li>
-        </ol>
+        {#if controller.secretError}
+            <p class="status status-error" role="alert">{controller.secretError.title}</p>
+        {:else if controller.status === 'checking'}
+            <p class="status status-checking">{tString('onboarding.cloudSetup.status.checking')}</p>
+        {:else if controller.status === 'auth-error'}
+            <p class="status status-error">
+                {controller.error ?? tString('onboarding.cloudSetup.status.authError')}
+            </p>
+        {:else if controller.status === 'connection-error'}
+            <p class="status status-error">
+                {controller.error ?? tString('onboarding.cloudSetup.status.connectionError')}
+            </p>
+        {:else if controller.status === 'error'}
+            <p class="status status-error">
+                {controller.error ?? tString('onboarding.cloudSetup.status.genericError')}
+            </p>
+        {:else if controller.isConnected}
+            <p class="status status-ok">{tString('onboarding.cloudSetup.status.connected')}</p>
+        {/if}
     {/if}
 </div>
 
@@ -519,67 +98,6 @@
         margin: 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-    }
-
-    .setup-steps {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-md);
-        counter-reset: setup-step;
-    }
-
-    .setup-step {
-        display: grid;
-        grid-template-columns: 24px 1fr;
-        gap: var(--spacing-sm);
-        align-items: start;
-        counter-increment: setup-step;
-    }
-
-    .step-marker {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 22px;
-        height: 22px;
-        border-radius: var(--radius-full);
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
-        font-weight: 600;
-        line-height: var(--font-line-height-flat);
-    }
-
-    .step-marker::before {
-        content: counter(setup-step);
-    }
-
-    .setup-step.done .step-marker {
-        /* Tinted bg + check icon in the allow color. Keep contrast over neutral text
-           bg primary; the icon is decorative (the step status is also conveyed by the
-           bolder body text), so we don't need a 4.5:1 token-pair. */
-        background: transparent;
-        color: var(--color-allow);
-        border: 1px solid var(--color-allow);
-    }
-
-    .setup-step.done .step-marker::before {
-        content: '';
-    }
-
-    .step-body {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-        min-width: 0;
-    }
-
-    .step-label {
-        font-size: var(--font-size-md);
-        color: var(--color-text-primary);
     }
 
     .status {

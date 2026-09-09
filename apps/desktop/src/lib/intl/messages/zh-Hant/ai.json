@@ -131,65 +131,17 @@
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
   },
-  "ai.cloud.endpointLabel": "端點",
-  "@ai.cloud.endpointLabel": {
-    "sourceHash": "3df9726"
-  },
-  "ai.cloud.endpointDescription": "所選服務的 API 端點網址。",
-  "@ai.cloud.endpointDescription": {
-    "sourceHash": "884632b"
-  },
-  "ai.cloud.endpointPlaceholder": "例如：https://api.example.com/v1",
-  "@ai.cloud.endpointPlaceholder": {
-    "sourceHash": "dbc7343"
-  },
-  "ai.cloud.endpointAria": "端點網址",
-  "@ai.cloud.endpointAria": {
-    "sourceHash": "2578179"
-  },
-  "ai.cloud.apiKeyLabel": "API 金鑰",
-  "@ai.cloud.apiKeyLabel": {
-    "sourceHash": "16f0ee4"
-  },
-  "ai.cloud.apiKeyDescription": "你在這個服務的 API 金鑰。",
-  "@ai.cloud.apiKeyDescription": {
-    "sourceHash": "6a95580"
-  },
-  "ai.cloud.apiKeyPlaceholderOpenai": "例如：sk-abc123...",
-  "@ai.cloud.apiKeyPlaceholderOpenai": {
-    "sourceHash": "f9701a2"
-  },
   "ai.cloud.apiKeyPlaceholderAnthropic": "例如：sk-ant-abc123...",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "sourceHash": "5a4d18d"
-  },
-  "ai.cloud.apiKeyPlaceholderGeneric": "API 金鑰",
-  "@ai.cloud.apiKeyPlaceholderGeneric": {
-    "sourceHash": "16f0ee4"
-  },
-  "ai.cloud.apiKeyPlaceholderSaved": "你的金鑰已儲存。輸入新的就會取代它。",
-  "@ai.cloud.apiKeyPlaceholderSaved": {
-    "sourceHash": "974ffdf"
-  },
-  "ai.cloud.modelLabel": "模型",
-  "@ai.cloud.modelLabel": {
-    "sourceHash": "5e2c614"
   },
   "ai.cloud.askCmdrOverrideHint": "Ask Cmdr 用的是它自己的模型（{model}），不是這一個。可以在「Ask Cmdr」區段裡更改。",
   "@ai.cloud.askCmdrOverrideHint": {
     "sourceHash": "0d278f6"
   },
-  "ai.cloud.modelDescription": "用來生成回應的模型名稱。",
-  "@ai.cloud.modelDescription": {
-    "sourceHash": "809fa50"
-  },
   "ai.cloud.modelPlaceholderExample": "例如：{model}",
   "@ai.cloud.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
-  },
-  "ai.cloud.modelPlaceholderGeneric": "模型名稱",
-  "@ai.cloud.modelPlaceholderGeneric": {
-    "sourceHash": "a3c3370"
   },
   "ai.cloud.checking": "正在檢查…",
   "@ai.cloud.checking": {
@@ -222,10 +174,6 @@
   "ai.cloud.testConnection": "測試連線",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"
-  },
-  "ai.cloud.unknownError": "未知的狀況",
-  "@ai.cloud.unknownError": {
-    "sourceHash": "27c2ccd"
   },
   "ai.local.memoryWarningAria": "記憶體警告",
   "@ai.local.memoryWarningAria": {

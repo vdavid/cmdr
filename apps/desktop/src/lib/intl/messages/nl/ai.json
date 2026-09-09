@@ -131,67 +131,17 @@
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
   },
-  "ai.cloud.endpointLabel": "Endpoint",
-  "@ai.cloud.endpointLabel": {
-    "sourceHash": "3df9726",
-    "sameAsSourceJustification": "Dutch keeps 'Endpoint' for an API endpoint URL field; the shipped sibling ai.cloud.endpointAria uses 'Endpoint-URL' and endpointDescription 'API-endpoint-URL', so 'Endpoint' is the chosen Dutch term (glossary: Endpoint kept, MS literal 'eindpunt' not used for an API URL field)."
-  },
-  "ai.cloud.endpointDescription": "API-endpoint-URL voor de geselecteerde service.",
-  "@ai.cloud.endpointDescription": {
-    "sourceHash": "884632b"
-  },
-  "ai.cloud.endpointPlaceholder": "Voorbeeld: https://api.example.com/v1",
-  "@ai.cloud.endpointPlaceholder": {
-    "sourceHash": "dbc7343"
-  },
-  "ai.cloud.endpointAria": "Endpoint-URL",
-  "@ai.cloud.endpointAria": {
-    "sourceHash": "2578179"
-  },
-  "ai.cloud.apiKeyLabel": "API-sleutel",
-  "@ai.cloud.apiKeyLabel": {
-    "sourceHash": "16f0ee4"
-  },
-  "ai.cloud.apiKeyDescription": "Je API-sleutel voor deze service.",
-  "@ai.cloud.apiKeyDescription": {
-    "sourceHash": "6a95580"
-  },
-  "ai.cloud.apiKeyPlaceholderOpenai": "Voorbeeld: sk-abc123...",
-  "@ai.cloud.apiKeyPlaceholderOpenai": {
-    "sourceHash": "f9701a2"
-  },
   "ai.cloud.apiKeyPlaceholderAnthropic": "Voorbeeld: sk-ant-abc123...",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "sourceHash": "5a4d18d"
-  },
-  "ai.cloud.apiKeyPlaceholderGeneric": "API-sleutel",
-  "@ai.cloud.apiKeyPlaceholderGeneric": {
-    "sourceHash": "16f0ee4"
-  },
-  "ai.cloud.apiKeyPlaceholderSaved": "Je sleutel is opgeslagen. Typ een nieuwe om deze te vervangen.",
-  "@ai.cloud.apiKeyPlaceholderSaved": {
-    "sourceHash": "974ffdf"
-  },
-  "ai.cloud.modelLabel": "Model",
-  "@ai.cloud.modelLabel": {
-    "sourceHash": "5e2c614",
-    "sameAsSourceJustification": "'Model' is a genuine Dutch word for an AI model (MS NL terminology: model -> model). Kept across the AI surface in Dutch."
   },
   "ai.cloud.askCmdrOverrideHint": "Ask Cmdr gebruikt een eigen model ({model}) in plaats van dit model. Wijzig het in het Ask Cmdr-gedeelte.",
   "@ai.cloud.askCmdrOverrideHint": {
     "sourceHash": "0d278f6"
   },
-  "ai.cloud.modelDescription": "De modelnaam die voor completions wordt gebruikt.",
-  "@ai.cloud.modelDescription": {
-    "sourceHash": "809fa50"
-  },
   "ai.cloud.modelPlaceholderExample": "Voorbeeld: {model}",
   "@ai.cloud.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
-  },
-  "ai.cloud.modelPlaceholderGeneric": "Modelnaam",
-  "@ai.cloud.modelPlaceholderGeneric": {
-    "sourceHash": "a3c3370"
   },
   "ai.cloud.checking": "Controleren...",
   "@ai.cloud.checking": {
@@ -224,10 +174,6 @@
   "ai.cloud.testConnection": "Test verbinding",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"
-  },
-  "ai.cloud.unknownError": "Onbekend probleem",
-  "@ai.cloud.unknownError": {
-    "sourceHash": "27c2ccd"
   },
   "ai.local.memoryWarningAria": "Geheugenwaarschuwing",
   "@ai.local.memoryWarningAria": {

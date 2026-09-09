@@ -455,6 +455,31 @@
   "@onboarding.cloudSetup.step.createKey": {
     "sourceHash": "5705da6"
   },
+
+  "onboarding.cloudSetup.step.install": "Ladda ner och installera <installLink>{provider}</installLink>",
+  "@onboarding.cloudSetup.step.install": {
+    "sourceHash": "cd0221c"
+  },
+
+  "onboarding.cloudSetup.step.ollamaModel": "Hämta en modell i terminalen med ollama pull llama3.2, eller <libraryLink>bläddra i biblioteket</libraryLink>",
+  "@onboarding.cloudSetup.step.ollamaModel": {
+    "sourceHash": "5999d6a"
+  },
+
+  "onboarding.cloudSetup.step.lmStudioServer": "Ladda en modell i LM Studio och starta sedan dess <serverLink>lokala server</serverLink>",
+  "@onboarding.cloudSetup.step.lmStudioServer": {
+    "sourceHash": "447957a"
+  },
+
+  "onboarding.cloudSetup.hint.azureEndpoint": "Byt ut platshållaren i adressen mot namnet på din egen Azure OpenAI-resurs. Den här slutpunkten behöver ingen api-version-parameter.",
+  "@onboarding.cloudSetup.hint.azureEndpoint": {
+    "sourceHash": "b1d408e"
+  },
+
+  "onboarding.cloudSetup.hint.azureModel": "På Azure är det här namnet på din distribution, som kan skilja sig från namnet på modellen den kör.",
+  "@onboarding.cloudSetup.hint.azureModel": {
+    "sourceHash": "e856224"
+  },
   "onboarding.cloudSetup.step.endpoint": "Slutpunkts-URL",
   "@onboarding.cloudSetup.step.endpoint": {
     "sourceHash": "2578179"

@@ -131,65 +131,17 @@
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
   },
-  "ai.cloud.endpointLabel": "Endpunkt",
-  "@ai.cloud.endpointLabel": {
-    "sourceHash": "3df9726"
-  },
-  "ai.cloud.endpointDescription": "URL des API-Endpunkts für den ausgewählten Dienst.",
-  "@ai.cloud.endpointDescription": {
-    "sourceHash": "884632b"
-  },
-  "ai.cloud.endpointPlaceholder": "Beispiel: https://api.example.com/v1",
-  "@ai.cloud.endpointPlaceholder": {
-    "sourceHash": "dbc7343"
-  },
-  "ai.cloud.endpointAria": "Endpunkt-URL",
-  "@ai.cloud.endpointAria": {
-    "sourceHash": "2578179"
-  },
-  "ai.cloud.apiKeyLabel": "API-Schlüssel",
-  "@ai.cloud.apiKeyLabel": {
-    "sourceHash": "16f0ee4"
-  },
-  "ai.cloud.apiKeyDescription": "Dein API-Schlüssel für diesen Dienst.",
-  "@ai.cloud.apiKeyDescription": {
-    "sourceHash": "6a95580"
-  },
-  "ai.cloud.apiKeyPlaceholderOpenai": "Beispiel: sk-abc123...",
-  "@ai.cloud.apiKeyPlaceholderOpenai": {
-    "sourceHash": "f9701a2"
-  },
   "ai.cloud.apiKeyPlaceholderAnthropic": "Beispiel: sk-ant-abc123...",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "sourceHash": "5a4d18d"
-  },
-  "ai.cloud.apiKeyPlaceholderGeneric": "API-Schlüssel",
-  "@ai.cloud.apiKeyPlaceholderGeneric": {
-    "sourceHash": "16f0ee4"
-  },
-  "ai.cloud.apiKeyPlaceholderSaved": "Dein Schlüssel ist gespeichert. Tippe einen neuen ein, um ihn zu ersetzen.",
-  "@ai.cloud.apiKeyPlaceholderSaved": {
-    "sourceHash": "974ffdf"
-  },
-  "ai.cloud.modelLabel": "Modell",
-  "@ai.cloud.modelLabel": {
-    "sourceHash": "5e2c614"
   },
   "ai.cloud.askCmdrOverrideHint": "Ask Cmdr verwendet ein eigenes Modell ({model}) statt diesem. Ändere es im Ask-Cmdr-Bereich.",
   "@ai.cloud.askCmdrOverrideHint": {
     "sourceHash": "0d278f6"
   },
-  "ai.cloud.modelDescription": "Der Name des Modells für Vervollständigungen.",
-  "@ai.cloud.modelDescription": {
-    "sourceHash": "809fa50"
-  },
   "ai.cloud.modelPlaceholderExample": "Beispiel: {model}",
   "@ai.cloud.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
-  },
-  "ai.cloud.modelPlaceholderGeneric": "Modellname",
-  "@ai.cloud.modelPlaceholderGeneric": {
-    "sourceHash": "a3c3370"
   },
   "ai.cloud.checking": "Wird geprüft …",
   "@ai.cloud.checking": {
@@ -222,10 +174,6 @@
   "ai.cloud.testConnection": "Verbindung testen",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"
-  },
-  "ai.cloud.unknownError": "Unbekanntes Problem",
-  "@ai.cloud.unknownError": {
-    "sourceHash": "27c2ccd"
   },
   "ai.local.memoryWarningAria": "Speicherwarnung",
   "@ai.local.memoryWarningAria": {

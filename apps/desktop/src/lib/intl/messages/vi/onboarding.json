@@ -455,6 +455,31 @@
   "@onboarding.cloudSetup.step.createKey": {
     "sourceHash": "5705da6"
   },
+
+  "onboarding.cloudSetup.step.install": "Tải xuống và cài đặt <installLink>{provider}</installLink>",
+  "@onboarding.cloudSetup.step.install": {
+    "sourceHash": "cd0221c"
+  },
+
+  "onboarding.cloudSetup.step.ollamaModel": "Tải một mô hình trong terminal bằng ollama pull llama3.2, hoặc <libraryLink>duyệt thư viện</libraryLink>",
+  "@onboarding.cloudSetup.step.ollamaModel": {
+    "sourceHash": "5999d6a"
+  },
+
+  "onboarding.cloudSetup.step.lmStudioServer": "Tải một mô hình trong LM Studio, rồi khởi động <serverLink>máy chủ cục bộ</serverLink> của nó",
+  "@onboarding.cloudSetup.step.lmStudioServer": {
+    "sourceHash": "447957a"
+  },
+
+  "onboarding.cloudSetup.hint.azureEndpoint": "Thay phần giữ chỗ trong địa chỉ bằng tên tài nguyên Azure OpenAI của bạn. Điểm cuối này không cần tham số api-version.",
+  "@onboarding.cloudSetup.hint.azureEndpoint": {
+    "sourceHash": "b1d408e"
+  },
+
+  "onboarding.cloudSetup.hint.azureModel": "Trên Azure, đây là tên bản triển khai của bạn, có thể khác với tên mô hình mà nó chạy.",
+  "@onboarding.cloudSetup.hint.azureModel": {
+    "sourceHash": "e856224"
+  },
   "onboarding.cloudSetup.step.endpoint": "URL điểm cuối",
   "@onboarding.cloudSetup.step.endpoint": {
     "sourceHash": "2578179"

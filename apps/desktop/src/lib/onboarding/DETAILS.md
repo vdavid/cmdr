@@ -24,9 +24,9 @@ finishes onboarding.
   AI), three radio choices, single "Next" forward button.
 - **`CloudProviderPicker.svelte`**: Step 2 left column: scrollable listbox of all 15 cloud providers. Single tab stop
   via `aria-activedescendant` (no roving focus); Arrow / Home / End / type-to-jump move the active option.
-- **`CloudProviderSetup.svelte`**: Step 2 right column: per-provider numbered tutorial with API-key persist +
-  auto-check + model combobox. Providers with editable OpenAI-compatible endpoints, including Custom, still require a
-  stored API key before the endpoint check runs.
+- **`CloudProviderSetup.svelte`**: Step 2 right column: the provider header and status line around the shared
+  `$lib/ai-provider-setup/ProviderSetupSteps`. Providers with editable OpenAI-compatible endpoints, including Custom,
+  still require a stored API key before the endpoint check runs.
 - **`StepBeta.svelte`**: Step 3 (Open beta, non-skippable): personal open-beta intro (feedback channels: in-app, GitHub,
   Discord, book-a-call) + usage-stats disclosure + `analytics.enabled` opt-out switch + the crash-report disclosure +
   optional `analytics.email` contact field + the required terms checkbox. Footer = "Start using Cmdr!" (finish here) +
@@ -244,14 +244,13 @@ rule above: the wizard never traps someone on a step.
 
 ### Connection-check pipeline
 
-`CloudProviderSetup.svelte` mirrors `lib/settings/sections/AiCloudSection.svelte`'s pipeline rather than forking it: 300
-ms debounce on API-key persist, 1 s debounce on `checkAiConnection(baseUrl, providerId)`. The check takes a provider id
-because the backend reads the stored key itself (`docs/security.md` § "AI API keys"), so the key persist has to land
-first; that's why the check is scheduled from `persistApiKey`, never straight off a keystroke. The field is likewise
-never pre-filled with a stored key: `keyIsSet` from `getAiApiKeyStatus` drives the "your key is saved" placeholder and
-the checkable-config gate. On `connected`, the right column reveals the model combobox populated from `/models` and the
-API-key step gets a green check. The wizard never disables advance based on connection status; the auto-check is purely
-informational.
+The steps, the key persist, and the connection check all belong to `$lib/ai-provider-setup/`, shared with Settings ›
+AI › Provider; `apps/desktop/src/lib/ai-provider-setup/DETAILS.md` owns the mechanism. `CloudProviderSetup.svelte` is
+the wizard's frame around it: the provider header, and a quiet status line reading `controller.status` /
+`controller.error` (Settings renders the same states as a row with recheck buttons).
+
+The one rule that's the wizard's own: it never disables advance based on connection status. The auto-check is purely
+informational, so a user who wants to fetch their key later isn't trapped on step 2.
 
 ### `pushConfigToBackend()` belt-and-braces
 

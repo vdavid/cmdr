@@ -131,65 +131,17 @@
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
   },
-  "ai.cloud.endpointLabel": "Điểm cuối",
-  "@ai.cloud.endpointLabel": {
-    "sourceHash": "3df9726"
-  },
-  "ai.cloud.endpointDescription": "URL điểm cuối API cho dịch vụ đã chọn.",
-  "@ai.cloud.endpointDescription": {
-    "sourceHash": "884632b"
-  },
-  "ai.cloud.endpointPlaceholder": "Ví dụ: https://api.example.com/v1",
-  "@ai.cloud.endpointPlaceholder": {
-    "sourceHash": "dbc7343"
-  },
-  "ai.cloud.endpointAria": "URL điểm cuối",
-  "@ai.cloud.endpointAria": {
-    "sourceHash": "2578179"
-  },
-  "ai.cloud.apiKeyLabel": "Khóa API",
-  "@ai.cloud.apiKeyLabel": {
-    "sourceHash": "16f0ee4"
-  },
-  "ai.cloud.apiKeyDescription": "Khóa API của bạn cho dịch vụ này.",
-  "@ai.cloud.apiKeyDescription": {
-    "sourceHash": "6a95580"
-  },
-  "ai.cloud.apiKeyPlaceholderOpenai": "Ví dụ: sk-abc123...",
-  "@ai.cloud.apiKeyPlaceholderOpenai": {
-    "sourceHash": "f9701a2"
-  },
   "ai.cloud.apiKeyPlaceholderAnthropic": "Ví dụ: sk-ant-abc123...",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "sourceHash": "5a4d18d"
-  },
-  "ai.cloud.apiKeyPlaceholderGeneric": "Khóa API",
-  "@ai.cloud.apiKeyPlaceholderGeneric": {
-    "sourceHash": "16f0ee4"
-  },
-  "ai.cloud.apiKeyPlaceholderSaved": "Khóa của bạn đã được lưu. Nhập khóa mới để thay thế.",
-  "@ai.cloud.apiKeyPlaceholderSaved": {
-    "sourceHash": "974ffdf"
-  },
-  "ai.cloud.modelLabel": "Mô hình",
-  "@ai.cloud.modelLabel": {
-    "sourceHash": "5e2c614"
   },
   "ai.cloud.askCmdrOverrideHint": "Ask Cmdr dùng mô hình riêng ({model}) thay vì mô hình này. Thay đổi trong phần Ask Cmdr.",
   "@ai.cloud.askCmdrOverrideHint": {
     "sourceHash": "0d278f6"
   },
-  "ai.cloud.modelDescription": "Tên mô hình dùng để hoàn thành.",
-  "@ai.cloud.modelDescription": {
-    "sourceHash": "809fa50"
-  },
   "ai.cloud.modelPlaceholderExample": "Ví dụ: {model}",
   "@ai.cloud.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
-  },
-  "ai.cloud.modelPlaceholderGeneric": "Tên mô hình",
-  "@ai.cloud.modelPlaceholderGeneric": {
-    "sourceHash": "a3c3370"
   },
   "ai.cloud.checking": "Đang kiểm tra...",
   "@ai.cloud.checking": {
@@ -222,10 +174,6 @@
   "ai.cloud.testConnection": "Kiểm tra kết nối",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"
-  },
-  "ai.cloud.unknownError": "Lỗi không xác định",
-  "@ai.cloud.unknownError": {
-    "sourceHash": "27c2ccd"
   },
   "ai.local.memoryWarningAria": "Cảnh báo bộ nhớ",
   "@ai.local.memoryWarningAria": {

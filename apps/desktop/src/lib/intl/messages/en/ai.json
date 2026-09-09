@@ -206,69 +206,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloud.endpointLabel": "Endpoint",
-  "@ai.cloud.endpointLabel": {
-    "description": "Setting row label for the cloud AI provider's API endpoint URL field.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
-  "ai.cloud.endpointDescription": "API endpoint URL for the selected service.",
-  "@ai.cloud.endpointDescription": {
-    "description": "Description under the Endpoint setting row for cloud AI.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
-  "ai.cloud.endpointPlaceholder": "Example: https://api.example.com/v1",
-  "@ai.cloud.endpointPlaceholder": {
-    "description": "Placeholder in the cloud AI endpoint URL field, showing an example URL shape. Keep the example URL literal.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
-  "ai.cloud.endpointAria": "Endpoint URL",
-  "@ai.cloud.endpointAria": {
-    "description": "aria-label for the cloud AI endpoint URL input.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
-  "ai.cloud.apiKeyLabel": "API key",
-  "@ai.cloud.apiKeyLabel": {
-    "description": "Setting row label and aria-label for the cloud AI provider's API key field.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
-  "ai.cloud.apiKeyDescription": "Your API key for this service.",
-  "@ai.cloud.apiKeyDescription": {
-    "description": "Description under the API key setting row for cloud AI.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
-  "ai.cloud.apiKeyPlaceholderOpenai": "Example: sk-abc123...",
-  "@ai.cloud.apiKeyPlaceholderOpenai": {
-    "description": "Placeholder in the API key field for OpenAI, showing the typical key prefix. Keep the example token literal.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
   "ai.cloud.apiKeyPlaceholderAnthropic": "Example: sk-ant-abc123...",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "description": "Placeholder in the API key field for Anthropic, showing the typical key prefix. Keep the example token literal.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
-  "ai.cloud.apiKeyPlaceholderGeneric": "API key",
-  "@ai.cloud.apiKeyPlaceholderGeneric": {
-    "description": "Generic placeholder in the API key field when the provider has no known key-prefix example.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
-  "ai.cloud.apiKeyPlaceholderSaved": "Your key is saved. Type a new one to replace it.",
-  "@ai.cloud.apiKeyPlaceholderSaved": {
-    "description": "Placeholder in the API key field when a key is already stored in the OS secret store. The field starts empty because a saved key is never read back into the window, so this tells the user their key is still there.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
-  "ai.cloud.modelLabel": "Model",
-  "@ai.cloud.modelLabel": {
-    "description": "Setting row label and aria-label for the cloud AI model picker (a combobox of available model names).",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -278,24 +218,12 @@
     "screenshot": "settings-ai-ask-cmdr.png",
     "screenshotNote": "The hint renders under the model picker in the Settings > AI > Ask Cmdr subsection pictured here (only while the Ask Cmdr override is set, so the screenshot may not show it)."
   },
-  "ai.cloud.modelDescription": "The model name to use for completions.",
-  "@ai.cloud.modelDescription": {
-    "description": "Description under the Model setting row for cloud AI.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
   "ai.cloud.modelPlaceholderExample": "Example: {model}",
   "@ai.cloud.modelPlaceholderExample": {
     "description": "Placeholder in the cloud AI model field showing the provider's default model as an example.",
     "placeholders": {
       "model": "the provider's default model name (a literal identifier, not translated)"
     },
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
-  "ai.cloud.modelPlaceholderGeneric": "Model name",
-  "@ai.cloud.modelPlaceholderGeneric": {
-    "description": "Generic placeholder in the cloud AI model field when the provider has no default model to suggest.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -344,12 +272,6 @@
   "ai.cloud.testConnection": "Test connection",
   "@ai.cloud.testConnection": {
     "description": "Button that runs the cloud AI connection test for the first time (idle state). Tight mini button.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
-  },
-  "ai.cloud.unknownError": "Unknown error",
-  "@ai.cloud.unknownError": {
-    "description": "Fallback message stored as the connection error when a thrown value carried no message.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

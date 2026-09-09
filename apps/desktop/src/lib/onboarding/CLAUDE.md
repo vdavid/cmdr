@@ -19,6 +19,10 @@ Optional (4); Linux skips step 1 and resumes at step 2.
   fork), portaled into the wizard OVERLAY so the menu escapes the panel's `overflow: hidden` without leaving the focus
   trap. David cut the one-time banner for already-onboarded users: silent is fine, Settings is their way out. DETAILS §
   "The language escape hatch".
+- **The per-provider setup steps are NOT ours: they live in `$lib/ai-provider-setup/`**, shared with Settings › AI ›
+  Provider. `CloudProviderSetup.svelte` is a header plus a status line around them, so a new provider or a copy change
+  goes there, ❌ never here. Its `$effect` mounting the controller uses `untrack` for a reason the module's `CLAUDE.md`
+  spells out.
 - **The Open beta page (step 3) is non-skippable, and the AI step has no skip-to-finish.** Every first-launch user has
   to see the usage-stats disclosure once: the opt-out default only reads as fair consent if it was shown. ❌ Don't
   re-add a skip-to-finish on the AI step.
