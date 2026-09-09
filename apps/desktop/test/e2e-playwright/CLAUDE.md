@@ -15,12 +15,13 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcod
 - **❌ Never `keyboard.press('Escape')`** to close an overlay: under Linux Xvfb it can vanish as an opaque timeout. Use
   `dismissOverlay` / `expectAndDismissToast` / `dismissAllToasts`, or `escapeOverlayUntilGone` when press one isn't a
   close; no double-Escape in `beforeEach`.
-- **Four ways a helper claims success it never got.** Bare `await pollUntil(...)` returns `false` on timeout, so the
+- **Five ways a helper claims success it never got.** Bare `await pollUntil(...)` returns `false` on timeout, so the
   test goes green: use `expect.poll(...).toBeTruthy()` (`bare-poll` flags it). `.click()` on a `disabled` button
   dispatches NOTHING yet returns normally: press via `clickButtonByText` / `resolveConflict`. `.click()` drives no Ark
-  `Select` (its trigger toggles on `pointerdown`): use `pointerClick`, and assert its `'clicked'`. One lost answer
-  wedged 196 tests. And `dismissAllToasts` clears nothing before the toast lands: a write op's toast trails the pane by
-  the progress dialog's 400 ms floor, so END an op with `expectAndDismissToast`.
+  `Select` (`pointerdown`): use `pointerClick`, and assert its `'clicked'`. One lost answer wedged 196 tests.
+  `dismissAllToasts` clears nothing before the toast lands, so END an op with `expectAndDismissToast`. And the file and
+  the row land BEFORE the op does, so `waitForOperationsToSettle` first, or its toast and the next op both go missing.
+  DETAILS § "Waiting for a write to settle".
 - **Exercise viewer + settings through the production multi-window flow** (`openViewerWindow` /
   `openSettingsWindowViaProd` / `closeScopedWindow`), ❌ never by routing the main window there: that hides a scoped
   page that can't call a Tauri command.

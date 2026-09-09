@@ -1164,3 +1164,47 @@ best-effort so a teardown never masks the test's own verdict.
 It exists because `conflict-move`'s `afterEach` restored the fixture tree while a deliberately paused move still held
 its sources: the restore deleted them, and the retained `SourceNotFound` queued ahead of the NEXT test's transfer, which
 then saw "1 operation ahead of this one" and never opened its conflict dialog. One leak, three red tests.
+
+### Waiting for a write to settle
+
+`waitForOperationsToSettle(tauriPage)` (`helpers/app-lifecycle.ts`) is `drainOperations`'s non-destructive sibling: it
+polls `list_operations` until it is empty and cancels nothing, so it is what a spec asserting on the OUTCOME of a write
+uses. Reach for it before asserting a completion toast or the follow-up rename editor, and before firing the next write.
+
+**The trap it closes is that a write op looks finished long before it is.** Two things a spec naturally waits for both
+land mid-operation:
+
+- the copy is on disk early, because every write lands by temp+rename and the closing `fdatasync` pass runs AFTER the
+  bytes are in place (`write_operations/durability.rs`; it is the user-visible "Writing the last piece...");
+- the new row is in the pane early too, because the pane gets it from its filesystem watcher, not from the operation.
+
+So a spec that waits for the file, waits for the row, and then allows a toast the three seconds a toast needs is really
+allowing the whole operation three seconds, and on the Linux Docker lane that is nowhere near enough. One `⌘D` duplicate
+of a 1 KB file took **9.0 s** end to end, with the dialog sitting in the `Flushing` phase for most of it (verified in
+the container on Ubuntu 26.04 / overlayfs, `admit op=` → `copy_files_with_progress: completed op=` in the run log,
+2026-09-09).
+
+That time is the closing flush waiting on the filesystem, and how far it stretches depends entirely on what else is
+running. The `fdatasync` + parent-dir `fsync` pair `durability.rs` performs, sampled every 200 ms from inside the
+container (same overlayfs, C probe, 2026-09-09):
+
+- **~6 ms** on an idle machine, and insensitive to dirty page cache (unchanged after writing 64 MB into the same
+  directory);
+- **up to 829 ms** sampled across the test phase, while the suite drove the app;
+- **up to 9.9 s** (`fdatasync` alone 9.0 s) sampled while a concurrent `cargo build --release` hammered the same
+  filesystem — a heavier load than the suite's own, and the closest match to the 9.0 s operation above.
+
+❗ So don't read the 829 ms as the ceiling. The lane shares a machine with builds and with other worktrees' runs, and
+the operation that actually failed took 9.0 s.
+
+**And the operation after it pays too.** A write reserves every lane it touches and the next one admits on settle, so a
+second gesture fired in the window between `write-complete` and `write-settled` is admitted QUEUED. The progress dialog
+answers a queued operation by handing it to the queue window (`handleAutoQueued`), so it closes with no toast raised in
+the main window at all, and the spec fails on an outcome it never had. That window is normally milliseconds, which is
+exactly why it reads as a flake.
+
+Both halves bit `duplicate-in-place.spec.ts`'s `⌘D` test at once: the first press failed on the toast while the op was
+still flushing, and the retry's press was auto-queued behind the op the first attempt had left running.
+
+❌ Don't answer either one by raising a timeout. The budget is not what is wrong — nothing in the spec was waiting for
+the operation at all.

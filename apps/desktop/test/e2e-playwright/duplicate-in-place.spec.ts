@@ -28,6 +28,7 @@ import {
   moveCursorToFile,
   pressKey,
   renameEditorValue,
+  waitForOperationsToSettle,
   TRANSFER_DIALOG,
   CTRL_OR_META,
 } from './helpers.js'
@@ -72,6 +73,9 @@ test.describe('Duplicate in place', () => {
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(true)
     await expect.poll(async () => fileExistsInPane(tauriPage, 'file-a (1).txt', 0), { timeout: 5000 }).toBeTruthy()
 
+    // The progress dialog is up until the operation ends, so both the modal check
+    // and the toast below are asking about a finished operation.
+    await waitForOperationsToSettle(tauriPage)
     expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
     await expectAndDismissToast(tauriPage, 'Copied 1 file.')
 
@@ -101,6 +105,10 @@ test.describe('Duplicate in place', () => {
       .toBeTruthy()
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(true)
     await expect.poll(async () => fileExistsInPane(tauriPage, 'file-a (1).txt', 0), { timeout: 5000 }).toBeTruthy()
+    // Neither wait above says the operation is OVER (the copy is on disk before the
+    // closing flush, and the row comes from the pane's watcher), and the toast is
+    // raised by the completion. `waitForOperationsToSettle` has the whole argument.
+    await waitForOperationsToSettle(tauriPage)
     // Wait out the completion toast BEFORE asking about the editor: the rename
     // follow-up would open just after it, so asking earlier would pass vacuously.
     await expectAndDismissToast(tauriPage, 'Copied 1 file.')
@@ -120,6 +128,7 @@ test.describe('Duplicate in place', () => {
     await expect
       .poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'file-a (2).txt')), { timeout: 8000 })
       .toBeTruthy()
+    await waitForOperationsToSettle(tauriPage)
     await expectAndDismissToast(tauriPage, 'Copied 1 file.')
   })
 
@@ -145,6 +154,7 @@ test.describe('Duplicate in place', () => {
         { timeout: 8000 },
       )
       .toBeTruthy()
+    await waitForOperationsToSettle(tauriPage)
     await expectAndDismissToast(tauriPage, 'Copied 2 files.')
     expect(await tauriPage.isVisible('.rename-input')).toBe(false)
 
@@ -156,6 +166,7 @@ test.describe('Duplicate in place', () => {
     await expect
       .poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'file-b (2).txt')), { timeout: 8000 })
       .toBeTruthy()
+    await waitForOperationsToSettle(tauriPage)
     await expectAndDismissToast(tauriPage, 'Copied 1 file.')
   })
 
@@ -187,9 +198,16 @@ test.describe('Duplicate in place', () => {
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .path-error`)).toBe(false)
 
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
+
+    // The progress dialog takes the setup dialog's place, so `.modal-overlay` is
+    // continuous from here until the operation ends: asking for it to be gone is
+    // asking for the operation to be over, and it's asked below, once the
+    // operation itself says so. The file lands before the operation ends and
+    // proves it started, so the settle wait can't pass vacuously here.
+    await expect.poll(() => fs.existsSync(path.join(leftDir, 'file-b (1).txt')), { timeout: 8000 }).toBeTruthy()
+    await waitForOperationsToSettle(tauriPage)
     await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
 
-    await expect.poll(() => fs.existsSync(path.join(leftDir, 'file-b (1).txt')), { timeout: 8000 }).toBeTruthy()
     expect(fs.existsSync(path.join(leftDir, 'file-b.txt'))).toBe(true)
     await expectAndDismissToast(tauriPage, 'Copied 1 file.')
 

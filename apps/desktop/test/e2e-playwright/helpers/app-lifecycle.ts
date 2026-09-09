@@ -9,6 +9,7 @@
 
 import fs from 'fs'
 import path from 'path'
+import { expect } from '@playwright/test'
 import { ensureMcpClient, mcpReadResource } from '../../e2e-shared/mcp-client.js'
 import {
   type PageLike,
@@ -313,6 +314,66 @@ export async function ensureAppReady(
       `ensureAppReady: focus did not land inside .dual-pane-explorer with the left pane active after 6s. State: ${diag}`,
     )
   }
+}
+
+/**
+ * Waits until the backend's operation registry is empty, so every operation the
+ * test started has emitted its terminal event AND settled (its lane released).
+ *
+ * The non-destructive sibling of {@link drainOperations}, which CANCELS what it
+ * finds: this one waits for operations to finish on their own, and is what a
+ * spec asserting on the OUTCOME of a write needs.
+ *
+ * ❗ Reach for this before asserting anything a write operation's COMPLETION
+ * produces (its toast, its follow-up editor, the next operation starting
+ * un-queued). The obvious waits do not stand in for it, because both can pass
+ * while the operation is still running:
+ *
+ * - the copy is on disk well before the operation ends — every write lands by
+ *   temp+rename and the closing `fdatasync` pass (`write_operations/durability.rs`,
+ *   the user-visible "Writing the last piece...") runs AFTER the bytes are in
+ *   place, and on a loaded Linux Docker box that flush has been measured taking
+ *   seconds;
+ * - the new row is in the pane before it ends too, because the pane gets it from
+ *   its filesystem watcher rather than from the operation.
+ *
+ * So a spec that waits for the file and the row and then allows a toast the
+ * three seconds a toast needs is really allowing the whole operation three
+ * seconds, and it fails whenever the box is slow enough — with the progress
+ * dialog still up and the toast, correctly, not yet raised.
+ *
+ * Waiting for the lane matters just as much for the operation AFTER this one: a
+ * write reserves every lane it touches and the next one admits on settle, so a
+ * second gesture fired between complete and settle is admitted QUEUED, and the
+ * dialog hands it to the queue window instead of showing it (`handleAutoQueued`).
+ * No toast is raised in this window at all, and the spec fails on an outcome it
+ * never had.
+ *
+ * The default budget is deliberately far above any bound the app itself places
+ * on winding down (the backend's 15 s `CANCEL_DRAIN_DEADLINE`, the frontend's
+ * 20 s `CANCEL_SETTLE_FALLBACK_MS`), because it is not timing anything: a
+ * settled registry ends the poll at once, so the number is only the point at
+ * which "the operation never finished" is the honest verdict.
+ *
+ * ❌ Not a teardown helper: it never cancels and never dismisses a retained
+ * failure, so a failed operation makes it time out and say so rather than
+ * quietly tidying the evidence away. `drainOperations` is teardown's.
+ */
+export async function waitForOperationsToSettle(
+  tauriPage: PageLike,
+  options: { timeout?: number } = {},
+): Promise<void> {
+  const timeout = options.timeout ?? 30000
+  await expect
+    .poll(
+      async () =>
+        tauriPage.evaluate<number>(`(async function() {
+            var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
+            return ops ? ops.length : 0;
+        })()`),
+      { timeout },
+    )
+    .toBe(0)
 }
 
 /**
