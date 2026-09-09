@@ -143,7 +143,7 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
   high
 - Force Quit · **Forçar Encerramento** · macOS pt-BR · high
 - status · **Status** (kept verbatim) · naturalized in pt-BR tech UI; used consistently across pt
-  (`licensing.section.labelStatus`, `fileExplorer.network.browser.colStatus`, `ai.local.status*`) · high
+  (`licensing.section.labelStatus`, `servers.hub.colStatus`, `ai.local.status*`) · high
 - Ext / DIR (column tags) · **Ext** / **DIR** (kept verbatim) · short column-header abbreviations; pt-BR keeps these
   terse tags (matches es); `fileExplorer.columns.ext`, `fileExplorer.selectionInfo.dir` · high
 - pause (transfer) · **Pausar** (verb) / **Pausado** (status) · MS terminology (Pause→"Pausar"), Total Commander pt-BR
@@ -1948,9 +1948,9 @@ o caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this mach
   `Conectar ao Servidor`, `YEA-3L-WnW.placeholderString` `Server Address` → `Endereço do Servidor`) e
   `LocalizableMerged.strings` (`FR15`, `N84`, `SD13` `Connected servers` → `Servidores conectados`) · confirmed
 - **disconnect → `Desconectar`** · Finder pt-BR `LocalizableMerged.strings` `MR10.1` e `N200` (`Disconnect` →
-  `Desconectar`); é o que o catálogo já publica em `fileExplorer.smbReconnect.disconnect`,
-  `fileExplorer.unreachable.disconnect` e `menu.network.disconnect`, então `servers.paneState.disconnect` copia byte a
-  byte · confirmed. ❌ Nunca `Ejetar` num servidor: não há nada para desplugar.
+  `Desconectar`); é o que o catálogo já publica em `fileExplorer.unreachable.disconnect` e `menu.network.disconnect`,
+  então `servers.paneState.disconnect` copia byte a byte · confirmed. ❌ Nunca `Ejetar` num servidor: não há nada para
+  desplugar.
 - **Keychain Access → `Acesso às Chaves`; certificate → `certificado`** · o próprio app, `InfoPlist.loctable` do
   `Keychain Access.app` (`CFBundleDisplayName` pt_BR = `Acesso às Chaves`, `certificate` = `certificado`) · confirmed. O
   catálogo já usava a forma em `fileExplorer.network.share.forgetPasswordTooltip` e `ai.secretError.keychainBody`.
@@ -1979,7 +1979,7 @@ o caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this mach
   (`settings.mediaIndex.reclaim.couldNotDelete`, `errors.listing.notFound.explanation`), e o `O Cmdr` por extenso é a
   regra do style.md § "Uma frase de resultado nunca fica sem sujeito" · confirmed
 - **drop the connection → `encerrar a conexão`** · o catálogo já publica `desconecte para encerrá-la` em
-  `fileExplorer.unreachable.detailSmbGaveUp` · high
+  `fileExplorer.unreachable.detailGaveUp` · high
 - **A dica do botão desligado copia a irmã do ejetar, trocando só o verbo e o substantivo do alvo.**
   `disconnectBusyTooltip` = `Não é possível desconectar enquanto há operações em andamento neste servidor`, palavra por
   palavra o `fileExplorer.navigation.ejectBusyTooltip` já publicado (`… ejetar … neste dispositivo`). As duas ocupam o
@@ -1996,7 +1996,7 @@ das chaves irmãs já publicadas): `Forget server` → `Esquecer servidor` (`men
 
 `fileExplorer.navigation.disconnectPlaceAriaLabel` = `Desconectar {name}`, e a substring que satisfaz a contenção WCAG
 2.5.3 é **`Desconectar`**, exatamente o rótulo visível de `servers.paneState.disconnect` e
-`fileExplorer.smbReconnect.disconnect`.
+`fileExplorer.unreachable.disconnect`.
 
 Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `estar a` + infinitivo (o progressivo saiu como gerúndio,
 `está trabalhando`), `consoante`, `Rever`, ou `você` omitido onde a forma verbal fica ambígua

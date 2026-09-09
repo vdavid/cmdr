@@ -167,7 +167,7 @@ From the AI-copy sweep and the provider-setup pass (the app stopped calling its 
   (`settings.askCmdr.intro` „Chatte mit einer KI …“) · high. Abgrenzung: `Cmdr` bleibt `Cmdr`, und `Ask Cmdr` bleibt
   `Ask Cmdr`; siehe die Notiz unten dazu, welcher der drei Namen wann steht
 - AI provider → KI-Anbieter · der Katalog durchgehend (`askCmdr.error.notConfigured`, `askCmdr.consent.intro`) · high
-- file operations → Dateivorgänge · der Katalog (`commands.operationLogShow.description` „Verlauf deiner Dateivorgänge“,
+- file operations → Dateivorgänge · der Katalog (`commands.logOperationLog.description` „Verlauf deiner Dateivorgänge“,
   `fileExplorer` „schnelle Dateivorgänge“, `settings` mehrfach) · high. Die Settings-Karte heißt dagegen
   `Dateioperationen`, weil sie eine Rubrik benennt, keine laufenden Vorgänge
 - placeholder → Platzhalter · Microsoft terminology (`GERMAN.tbx`, beide Sinne) · high

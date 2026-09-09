@@ -1147,7 +1147,7 @@ buttons. Reuses the settled head terms (operation → `thao tác`, item → `m�
   `Mọi thứ`, which scopes to the whole app (the trap the 2026-08-09 conflict-prompt pass recorded for "Everything else
   is paused"). `high`.
 - **"Quitting in {secondsText} seconds": `Sẽ thoát sau {secondsText} giây`** · subject-drop under a sentence-initial
-  `Sẽ` is the catalog's own shape for a future statement about Cmdr (`fileExplorer.smbReconnect.willKeepTrying` =
+  `Sẽ` is the catalog's own shape for a future statement about Cmdr (`servers.paneState.retryKeepsTrying` =
   `Sẽ tiếp tục thử trong tổng cộng {duration}.`); `sau N giây` is macOS-attested (`sau 15 giây`, `sau 30 giây`) and
   `giây` is the settled seconds noun. One `other` branch, both placeholders kept. `high`.
 - **"a restart or logout" gets an explicit `máy`: `việc khởi động lại máy hoặc đăng xuất`** · the en `@key` states these
@@ -2133,7 +2133,8 @@ Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1), nên toàn bộ
 
 - **disconnect (động từ, nhãn nút) → `Ngắt kết nối`; disconnect from X → `ngắt kết nối khỏi X`** · macOS `IOBluetoothUI`
   (`Disconnect` → `Ngắt kết nối`, `Disconnect from Network` → `Ngắt kết nối khỏi Mạng`), và catalog đã dùng đúng từ này
-  ở `fileExplorer.smbReconnect.disconnect`, `.unreachable.disconnect`, `.pane.disconnectFailedToast` · `high`.
+  ở `fileExplorer.unreachable.disconnect`, `fileExplorer.pane.disconnectFailedToast`, `servers.paneState.disconnect` ·
+  `high`.
 - **the connection dropped (mất ngoài ý muốn) → `Đã mất kết nối`** · macOS `CFNetwork`
   (`The network connection was lost.` → `Đã mất kết nối mạng.`) · `high`. ❗ Đừng viết `Kết nối đã bị ngắt`: `ngắt` là
   từ dành cho hành động CHỦ Ý của người dùng (`Ngắt kết nối`), nên dùng nó cho một cú rớt mạng sẽ khiến hai trạng thái
@@ -2192,7 +2193,7 @@ Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1), nên toàn bộ
   biến mất khỏi bộ chuyển ổ đĩa, nên `hiển thị` (từ đã chốt cho "show") tự nhiên hơn `liệt kê`. Câu cuối
   (`Các tệp của bạn vẫn ở trên máy chủ.`) là câu trấn an quan trọng nhất; đừng rút gọn.
 - **`disconnectPlaceAriaLabel` → `Ngắt kết nối {name}`** · tên phụ trợ chứa nguyên văn nhãn nhìn thấy được
-  `Ngắt kết nối` (`servers.paneState.disconnect`, `fileExplorer.smbReconnect.disconnect`), đúng WCAG 2.5.3. Cùng khuôn
+  `Ngắt kết nối` (`servers.paneState.disconnect`, `fileExplorer.unreachable.disconnect`), đúng WCAG 2.5.3. Cùng khuôn
   với chuỗi anh em `ejectVolumeAriaLabel` = `Tháo {name}`.
 - **`on this Mac` → `trên máy Mac này`** · macOS `IOBluetoothUI`, `FileProvider` · `high`.
 - Không khóa nào trong 28 khóa mang `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn.

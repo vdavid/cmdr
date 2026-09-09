@@ -1353,8 +1353,8 @@ come from the operation-queue rename pass above; this section records what was n
   `doorwerken`, the same shape as macOS's `Ga door` (Continue) and Double Commander's `Werk op de achtergrond` ·
   `tentative` (no pile string carries this exact button).
   - ❌ NOT `Annuleer`: the queue rows and the progress dialog next to it use `Annuleer` for cancelling the OPERATIONS,
-    which is the opposite outcome. ❌ NOT `Later` (the settled dismiss-for-now word, `updates.later`): the countdown is
-    deleted, not deferred. ❌ NOT `Behoud` (macOS's "Keep"), which is the keep-this-file sense.
+    which is the opposite outcome. ❌ NOT `Later` (the settled dismiss-for-now word, `updates.toast.later`): the
+    countdown is deleted, not deferred. ❌ NOT `Behoud` (macOS's "Keep"), which is the keep-this-file sense.
   - `Stop niet` (macOS Finder `BN63` "Don't Stop" → "Stop niet") is the attested negative twin and would be defensible,
     but English deliberately frames this positively, and `Werk door` reads as the friendlier of the two.
 - **"Quit now" (primary, destructive) → `Stop nu`** · `Stop` (above) plus `nu`, which does the same load-bearing work as
@@ -1667,9 +1667,10 @@ Twee sleutels die na de pass hierboven zijn toegevoegd, met dezelfde vorm: één
 korte melding, RAW-familie, enkele apostroffen. Gemijnd in `_ignored/i18n/nl/`, 2026-08-23.
 
 - **"This volume has no Trash" → `Dit volume heeft geen prullenmand`** · `prullenmand` is de gevestigde rij (macOS
-  Finder Tier 1) en `volume` de gevestigde rij; `dit volume` sluit aan op de zusterregel `errors.volume.noRoom` ("Er is
-  geen ruimte meer op dit volume.") · high. Bewust anders dan het oudere `errors.write.trashNotSupported.message` ("Dit
-  volume ondersteunt de prullenmand niet."), want het Engels zegt hier ook `has no`, niet `doesn't support`.
+  Finder Tier 1) en `volume` de gevestigde rij; `dit volume` sluit aan op de zusterregel `errors.volume.storageFull`
+  ("Er is geen ruimte meer op dit volume.") · high. Bewust anders dan het oudere
+  `errors.write.trashNotSupported.message` ("Dit volume ondersteunt de prullenmand niet."), want het Engels zegt hier
+  ook `has no`, niet `doesn't support`.
 - **"the only way is to delete permanently" → `dus definitief verwijderen is de enige manier`** ·
   `definitief verwijderen` is de gevestigde rij (macOS "definitief"), woordelijk gelijk aan de knop
   `fileExplorer.functionKeyBar.deletePermanentlyAction` waar de zin de gebruiker naartoe stuurt · high op de term,
@@ -2377,8 +2378,8 @@ Termen die uit de bundels kwamen:
 Vormen die uit de eigen catalogus kwamen, niet uit de bundels (consistentie wint van een frisse keuze, en
 `desktop-i18n-term-consistency` telt dezelfde Engelse bron als één term):
 
-- `Disconnect` → **`Verbreek`**, byte-identiek aan `menu.network.disconnect`, `fileExplorer.smbReconnect.disconnect` en
-  `fileExplorer.unreachable.disconnect` (en aan Finder `MR10.1` / `N200`).
+- `Disconnect` → **`Verbreek`**, byte-identiek aan `menu.network.disconnect`, `fileExplorer.unreachable.disconnect` en
+  `servers.paneState.disconnect` (en aan Finder `MR10.1` / `N200`).
 - `Cancel` → **`Annuleer`** (18 zusjes, plus NetAuthAgent `CANCEL`), `Try again` → **`Probeer opnieuw`** (5 zusjes).
 - `Forget server` → **`Vergeet server`** en `Forget saved password` → **`Vergeet opgeslagen wachtwoord`**, gelijk aan
   `menu.network.forgetServer` / `menu.network.forgetSavedPassword` / `fileExplorer.network.share.forgetPassword`. De
@@ -2394,10 +2395,10 @@ Vormen die uit de eigen catalogus kwamen, niet uit de bundels (consistentie wint
   serverrij verdwijnt letterlijk uit die lijst · `high`.
 
 De ARIA-regel: **`disconnectPlaceAriaLabel` → `Verbreek de verbinding met {name}`**. Het zichtbare label van deze actie
-is `Verbreek` (`servers.paneState.disconnect`, `fileExplorer.smbReconnect.disconnect`), en dat woord staat als eerste
+is `Verbreek` (`servers.paneState.disconnect`, `fileExplorer.unreachable.disconnect`), en dat woord staat als eerste
 woord letterlijk in de toegankelijke naam, dus WCAG 2.5.3 (Label in Name) klopt. Het letterlijke zusjespatroon
 (`ejectVolumeAriaLabel` → `Werp {name} uit`) kan hier niet: je verbreekt in het Nederlands een verbinding, geen server.
-De zin volgt daarom `fileExplorer.smbReconnect.disconnectTooltip` (`… en verbreek de verbinding met de server`).
+De zin volgt daarom `servers.paneState.disconnectCycleTooltip` (`… en verbreek de verbinding met de server`).
 
 Nieuw gemunte vormen, zonder bron in een bundel:
 

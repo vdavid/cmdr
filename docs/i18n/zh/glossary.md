@@ -811,7 +811,7 @@ term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card title
   keywords, the natural modern collocation; Microsoft TBX also attests `关键字`, both understood) + settled `标签`
   (tags, from `settings.listing.showTags.description` `macOS Finder 标签`) · `high`
 - **"couldn't be removed just now" (delete-failure toast)** · `暂时无法删除模型。请稍后重试。` · `暂时无法…` (can't for
-  now, calm) + `请稍后重试` reused from `operationLog.loadError`; no bare 失败/错误 per style.md · `high`
+  now, calm) + `请稍后重试` reused from `operationLog.dialog.loadError`; no bare 失败/错误 per style.md · `high`
 - No `sameAsSourceJustification` needed: every value differs from English; only `Apple`/`Mac`/`Cmdr` and the `{size}`
   placeholder stay verbatim.
 
@@ -1510,7 +1510,7 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
 - **计数名词要带量词** · `个文件` / `个目录` · `fileExplorer.summary.fileNoun`／`dirNoun` 原为光秃的
   `文件`／`目录`，拼出来是「3 / 10 文件」——中文数词后面必须有量词，这不只是不一致，是不合语法 ·
   `confirmed`。目录其余每一处计数都写
-  `个文件`／`个目录`（`transferDialog.filesPart`、`dirSize.fileCount`、`scanPhase.throughputFiles` `个文件/秒`）。
+  `个文件`／`个目录`（`transferDialog.filesPart`、`dirSize.fileCount`、`fileOperations.shared.fileRate` `个文件/秒`）。
 - **两条重复的散文** · `onboarding.stepBeta.signup.success` 与 `settings.updates.emailConfirmHint` 是同一句英文，统一为
   `请查看收件箱，确认你的邮箱。谢谢你的帮助！`；`onboarding.stepBeta.signup.failure` 与
   `settings.updates.emailSignupError` 统一为 `抱歉，我们现在没能帮你注册。要再试一次吗？`（`没能` 比 `无法`
@@ -1916,8 +1916,8 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
 - **connect → `连接`；Connecting to X… → `正在连接到 {name}…`** · Finder zh_CN `Connect` → `连接`；句式沿用同胞键
   `fileExplorer.network.share.connecting`（`正在连接到 {hostName}…`）· `confirmed`。
 - **disconnect → `断开连接`** · Finder zh_CN `Disconnect` → `断开连接`，目录里
-  `fileExplorer.smbReconnect.disconnect`、`unreachable.disconnect`、`menu.network.disconnect` 都是它 ·
-  `confirmed`。`servers.paneState.disconnect` 必须与它们一字不差（`i18n-terms` 会比）。
+  `fileExplorer.unreachable.disconnect`、`menu.network.disconnect` 都是它 · `confirmed`。`servers.paneState.disconnect`
+  必须与它们一字不差（`i18n-terms` 会比）。
 - **Try again（按钮）→ `重试`** · Finder zh_CN `Try Again` → `重试`；目录里
   `fileExplorer.errorPane.tryAgain`、`mtp.tryAgain`、`networkMount.tryAgain`、`licensing.dialog.tryAgain` 全是 `重试` ·
   `confirmed`。❌ 别写 `再试一次`（那是 `zh-Hant` 的选择）。

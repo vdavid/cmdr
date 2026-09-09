@@ -467,10 +467,11 @@ INTO a zip/tar/7z the way it steps into a folder, and offers browse/open/ask on 
 - **read-only archive: `skrivskyddat arkiv`** · `skrivskyddad` (glossary read-only) + neuter agreement on `arkiv` (`-t`
   → `skrivskyddat`). `high`.
 - **bundle / app bundle: `paket` (generic bundle) / `appaket` (app bundle)** · macOS = "paket" ("Visa paketets innehåll"
-  = Show Package Contents, the Finder term for a bundle/app). Generic "bundle" (keys `archiveEnterMenu.ariaLabel`,
-  `enterBehavior.label`) → `paket`; "App bundles" (the card/section grouping .app/.bundle/.framework) → `appaket` (app +
-  paket, Swedish three-p reduction: appp→app). Faithfully mirrors EN's own split ("bundles" vs "app bundles"). `appaket`
-  is a convention-composed compound (macOS-backed `paket`, not directly attested as a compound), so `tentative` (review
+  = Show Package Contents, the Finder term for a bundle/app). Generic "bundle" (key
+  `fileExplorer.archiveEnterMenu.ariaLabel` = ”Öppna arkiv eller paket”) → `paket`; "App bundles" (the card/section
+  grouping .app/.bundle/.framework, `settings.archives.card.bundles`) → `appaket` (app + paket, Swedish three-p
+  reduction: appp→app). Faithfully mirrors EN's own split ("bundles" vs "app bundles"). `appaket` is a
+  convention-composed compound (macOS-backed `paket`, not directly attested as a compound), so `tentative` (review
   whether `appaket` reads cleanly vs. `programpaket`).
 - **browse (step inside like a folder): `bläddra`; "browse like a folder" → `bläddra som en mapp`** · macOS "Bläddra i
   listvy/kolumnvy", "bläddra i ditt filsystem"; TC "…som på en mapp". Short segmented-control cell "Browse" → `Bläddra`.
@@ -549,10 +550,11 @@ dialog listing recent file operations (copy/move/delete/rename/…) with per-op 
 (`Kopierade`/`Flyttade`/`Raderade`/`Komprimerade`/`Bytte namn på`), the queue-status words, and the rollback family; new
 ones:
 
-- **operation log (the feature/dialog): `Åtgärdslogg`** · reuses the ALREADY-SHIPPED `settings.section.operationLog` =
-  "Åtgärdslogg" in `sv/settings.json` (åtgärd = action/operation per the `Åtgärd:` field-label entry + MS/macOS; logg =
-  log). Applied to `operationLog.dialog.title` and `commands.logOperationLog.label` so the command, the settings
-  section, and the dialog title all read the same word. `high`.
+- **operation log (the feature/dialog): `Åtgärdslogg`** · reuses the ALREADY-SHIPPED
+  `settings.navigationAndFileOps.card.operationLog` = "Åtgärdslogg" in `sv/settings.json` (åtgärd = action/operation per
+  the `Åtgärd:` field-label entry + MS/macOS; logg = log). Applied to `operationLog.dialog.title` and
+  `commands.logOperationLog.label` so the command, the settings section, and the dialog title all read the same word.
+  `high`.
 - **operation (a logged file operation): `åtgärd`** (definite `åtgärden`, plural `åtgärder`) · matches
   `settings.operationLog.*` ("loggade åtgärder", "gå igenom din historik") and the `åtgärden {verb}` framing. `high`.
 - **history (operation history): `historik`; "operation history" → `åtgärdshistorik`** · `settings.operationLog` uses
@@ -934,9 +936,9 @@ narrow word to the CATEGORY word, and Swedish widens the same way. This is a mea
 
 - **operation (the category word for a copy, move, delete, trash, rename, create, or archive edit): `åtgärd`** (common
   gender: en åtgärd, definite `åtgärden`, plural `åtgärder`) · already this catalog's settled head noun
-  (`operationLog.*` → `Åtgärdslogg`, `settings.section.operationLog`, `åtgärdshistorik`, the `Åtgärd:` field label), and
-  macOS Finder sv confirms it in exactly Cmdr's sense: "Du kan inte byta namn på ”^0” eftersom **en annan åtgärd** pågår
-  just nu, t.ex. flytt eller kopiering av ett objekt eller tömning av papperskorgen"
+  (`operationLog.*` → `Åtgärdslogg`, `settings.navigationAndFileOps.card.operationLog`, `åtgärdshistorik`, the `Åtgärd:`
+  field label), and macOS Finder sv confirms it in exactly Cmdr's sense: "Du kan inte byta namn på ”^0” eftersom **en
+  annan åtgärd** pågår just nu, t.ex. flytt eller kopiering av ett objekt eller tömning av papperskorgen"
   (`sv/macOS/Finder/LocalizableMerged.json`), plus "Åtgärden kan inte slutföras eftersom …" throughout. MS terminology
   gives operation → `åtgärd` and the compound pattern `operation code` → `åtgärdskod`, `operation type` → `åtgärdstyp`.
   `high`.
@@ -2132,7 +2134,7 @@ machine?” är den dokumenterade reservvägen. Allt nedan är läst på macOS 2
 - **server address → `serveradress`** · Finder `ConnectToWindow.strings` `YEA-3L-WnW.placeholderString` =
   ”Serveradress”; katalogens `fileExplorer.network.connectDialog.addressAriaLabel` har det redan · `high`.
 - **disconnect → `koppla från`** · Finder `LocalizableMerged.strings` `MR10.1` = ”Koppla från”, och katalogens
-  `fileExplorer.smbReconnect.disconnect`/`unreachable.disconnect` säger samma · `high`. Aria-etiketten
+  `fileExplorer.unreachable.disconnect`/`servers.paneState.disconnect` säger samma · `high`. Aria-etiketten
   `fileExplorer.navigation.disconnectPlaceAriaLabel` blir därför `Koppla från {name}`, byggd precis som systerraden
   `ejectVolumeAriaLabel` (”Mata ut {name}”). Delsträngen som uppfyller WCAG 2.5.3 är `Koppla från`, ordagrant och i
   ordning.
@@ -2171,7 +2173,7 @@ machine?” är den dokumenterade reservvägen. Allt nedan är läst på macOS 2
   och `fileExplorer.network.share.forgetPassword`; dialogrubrikerna ärver dem ordagrant så samma handling heter samma
   sak i meny och dialog · `high`.
 - **drops the connection → `släpper anslutningen`; stops listing it → `slutar visa servern i listan`** · `släppa` är
-  katalogens verb för att ge upp en anslutning (`reconnect.finalAttempt`, `unreachable.detailSmbGaveUp`), och huvudordet
+  katalogens verb för att ge upp en anslutning (`reconnect.finalAttempt`, `unreachable.detailGaveUp`), och huvudordet
   skrivs ut eftersom både `anslutningen` och `servern` är en-genus och ett ensamt `den` skulle bli tvetydigt · `high`.
 - **Your files stay on the server → `Dina filer ligger kvar på servern`** · `ligga kvar` är katalogens satta bild för
   det som blir orört (`trash.undonePartial`, `pane.directConnection*Toast`) · `high`.
@@ -2302,9 +2304,9 @@ Rikaste källan för hela arket är Apples egen anslutningsdialog:
   finns inte i något läst paket och läser som jargong i en fältetikett. `@key` säger uttryckligen ”which folder ON THE
   SERVER”, och katalogen skriver redan `på servern` (`errors.listing.remotePermissionDenied.suggestion`,
   `fileExplorer.navigation.forgetServerConfirm`) · `high`.
-- **Key file → `Nyckelfil`** · sammansättning av katalogens satta `nyckel` (`ai.cloud.apiKeyLabel` = ”API-nyckel”) och
-  `fil`; ingen förstahandskälla har termen · `tentative`, låg risk (samma slags konventionssammansättning som
-  `fillista`).
+- **Key file → `Nyckelfil`** · sammansättning av katalogens satta `nyckel` (`onboarding.cloudSetup.apiKeyAria` =
+  ”API-nyckel”) och `fil`; ingen förstahandskälla har termen · `tentative`, låg risk (samma slags
+  konventionssammansättning som `fillista`).
 - **Reconnect (imperativ) → `Återanslut`** · FinanceKitUI `RECONNECT_ACCOUNTS_TITLE` (”Reconnect Your Existing Accounts”
   = ”Återanslut dina befintliga konton”) · `high`. `Reconnect automatically` följer Apples ordföljd verb + `automatiskt`
   (Dock: ”Automatically hide and show the Dock” = ”Göm och visa Dock automatiskt”), alltså `Återanslut automatiskt`.

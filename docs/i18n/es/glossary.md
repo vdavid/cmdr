@@ -2106,7 +2106,7 @@ no está en esta máquina, así que las fuentes de Tier 1 se sacaron del propio 
 ### Términos de Tier 1 (macOS en vivo)
 
 - **Disconnect → `Desconectar`** · Finder `es.lproj/LocalizableMerged.strings`, claves `MR10.1` y `N200` · `high`. Ya
-  era la forma del catálogo (`fileExplorer.smbReconnect.disconnect`, `menu.network.disconnect`); esto la reafirma.
+  era la forma del catálogo (`fileExplorer.unreachable.disconnect`, `menu.network.disconnect`); esto la reafirma.
 - **Connect → `Conectar`** · Finder `ConnectToWindow.strings` (`46.title`) + `LocalizableMerged` `TL13` · `high`.
 - **Connecting to X… → `Conectándose a X…`** · Finder `MN1` = «Conectándose a ^0 …» (y `PW28`, «Conectándose al
   servidor») · `high`. Se copia el gerundio reflexivo, no `Conectando a`.
@@ -2179,7 +2179,7 @@ no está en esta máquina, así que las fuentes de Tier 1 se sacaron del propio 
 - `fileExplorer.navigation.disconnectPlaceAriaLabel` = **`Desconectar {name}`**, calcado de su hermano
   `fileExplorer.navigation.ejectVolumeAriaLabel` (`Expulsar {name}`). El substring que satisface la contención de WCAG
   2.5.3 es **`Desconectar`**, la misma palabra exacta que publican `servers.paneState.disconnect`,
-  `fileExplorer.smbReconnect.disconnect` y `menu.network.disconnect`.
+  `fileExplorer.unreachable.disconnect` y `menu.network.disconnect`.
 
 ### Notas de forma
 

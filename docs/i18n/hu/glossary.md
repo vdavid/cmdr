@@ -610,8 +610,9 @@ Settled while translating the Compress feature:
 Settled while translating the Operation log feature (`operationLog.json` + `commands.logOperationLog.*`, 2026-07-09):
 
 - operation log (the feature / dialog title / command) → `Műveletnapló` · REUSED verbatim from the already-shipped
-  `settings.section.operationLog` = `Műveletnapló` · high. Transparent compound on settled `operation/action → művelet`
-  (Fájlműveletek) + `log → napló`. Do NOT fork it — the settings section and the dialog name the same feature.
+  `settings.navigationAndFileOps.card.operationLog` = `Műveletnapló` · high. Transparent compound on settled
+  `operation/action → művelet` (Fájlműveletek) + `log → napló`. Do NOT fork it — the settings section and the dialog
+  name the same feature.
 - roll back / rolling back / rolled back / rollback (the operation-log reversal action + statuses) → `visszagörgetés`
   (verb `visszagörget`) · RECONCILED to the shipped `fileOperations.transferProgress.*` rollback strings
   (`titleRollingBack` = "Visszagörgetés…", `conflictRollback` = "Visszagörgetés", `rollbackUnavailableTooltip`,
@@ -2399,10 +2400,10 @@ kötetváltó szerversorainak buboréksúgói és a két „elfelejtés” meger
   megoldja a ragozási csapdát is (a `{name}` semmilyen toldalékot nem kap). Idézőjel nincs benne: a katalógus akkor
   idéz, ha az ANGOL is idéz (`fileExplorer.network.login.title`), itt pedig nem.
 - **Disconnect → `Leválasztás`; Cancel → `Mégsem`; Try again → `Próbáld újra`** · a szállított alakok nyernek
-  (`fileExplorer.smbReconnect.disconnect`, `fileExplorer.unreachable.disconnect`, `menu.network.disconnect`; 15+
-  `Mégsem`; 5 `Próbáld újra`), és mind macOS-megerősített (Finder `MR10.1`/`N200` = „Leválasztás”, NetAuthAgent `CANCEL`
-  = „Mégsem” pont a szerverre kapcsolódás lapján) · `high`. A `queue.row.cancel` `Megszakítás` alakja továbbra is a futó
-  művelet megszakítása, nem párbeszédgomb; a szerverpanel gombja az utóbbi, tehát `Mégsem`.
+  (`fileExplorer.unreachable.disconnect`, `servers.paneState.disconnect`, `menu.network.disconnect`; 15+ `Mégsem`; 5
+  `Próbáld újra`), és mind macOS-megerősített (Finder `MR10.1`/`N200` = „Leválasztás”, NetAuthAgent `CANCEL` = „Mégsem”
+  pont a szerverre kapcsolódás lapján) · `high`. A `queue.row.cancel` `Megszakítás` alakja továbbra is a futó művelet
+  megszakítása, nem párbeszédgomb; a szerverpanel gombja az utóbbi, tehát `Mégsem`.
 - **server address → `szervercím`** · mac (Finder `ConnectToWindow` `YEA-3L-WnW.placeholderString` = „Szervercím”) ·
   `high`.
 - **certificate → `tanúsítvány`; trust (megbízhatóság) → `megbízik benne` / `megbízható`** · mac (Kulcskarika-elérés
@@ -2442,7 +2443,7 @@ kötetváltó szerversorainak buboréksúgói és a két „elfelejtés” meger
   felhasználó saját nevét jelöli, a birtokos rag pedig a `jelszó`-ra kerül (`jelszavát`), nem a helyőrzőre.
 - **`{name} leválasztása` az aria-címke** · a szállított `ejectVolumeAriaLabel` („{name} kiadása”) mintája · `high`. A
   WCAG 2.5.3 tartalmazás a `leválasztás` ⊂ `leválasztása` részkarakterláncon áll (a látható címke a
-  `servers.paneState.disconnect` / `fileExplorer.smbReconnect.disconnect` = `Leválasztás`).
+  `servers.paneState.disconnect` / `fileExplorer.unreachable.disconnect` = `Leválasztás`).
 - **`Cmdr couldn't …` → `A Cmdr nem tudta …`, a helyőrző kettőspont mögé** (`… ezt: {name}`) · a szállított család
   (`operationLog.rollback.refusalUnexpected`, `suggestedOps.destinationUnknown`,
   `fileExplorer.navigation.driveIndex.refusedUpgradeFailed`) · `high`.
@@ -2665,7 +2666,7 @@ bundle és a kulcs neve.
 - **there''s nothing to type → `nincs mit beírnod`** · a `Nincs mit + főnévi igenév` szerkezet Apple-attesztált
   (`AppleIDSetup` `QR_CODE_SCANNING_DEVICE_TOAST_NO_COPY`: `Nothing to copy` = `Nincs mit másolni`, Calendar
   `Printing.loctable`: `There is nothing to print.` = `Nincs mit kinyomtatni.`), a `beír` ige pedig a katalógus
-  szállított szava a `type`-ra (`ai.cloud.apiKeyPlaceholderSaved`: `Type a new one to replace it.` =
+  szállított szava a `type`-ra (`onboarding.cloudSetup.apiKeyPlaceholder.saved`: `Type a new one to replace it.` =
   `Írj be egy újat a cseréjéhez.`) · `high`. A `-d` személyragot azért tesszük ki (`beírnod`), mert a mondat tegez; az
   Apple ragtalan alakja az önöző regiszteréből jön, nem érv ellene.
 - **`Open it again to retry.` → `Nyisd meg újra a kapcsolódáshoz.`** · betű szerinti szállított minta

@@ -653,7 +653,8 @@ apostrophes are doubled in the catalog:
   per the style guide).
 - Per-item outcomes: Done → `Terminé`; Skipped → `Ignoré` (settled `skip → ignorer`); Didn''t finish → `Non terminé`;
   Rolled back → `Restauré` · high. `status.done`/`outcome.done` (same sourceHash) and `status.failed`/`outcome.failed`
-  and `status.rolledBack`/`outcome.rolledBack` render identically, as their shared hashes require.
+  render identically, as their shared hashes require. `outcome.rolledBack` has no `status.*` twin: the status set stops
+  at queued/running/done/failed/canceled.
 - summary lines (one-line op summaries) → count-led past participle agreeing masc. with `élément`/`fichier`/`dossier`:
   Copied → "{countText} élément(s) copié(s)", Moved → "…déplacé(s)", Deleted → "…supprimé(s)", Moved to trash →
   "…placé(s) dans la corbeille" (settled `move to trash → placer dans la corbeille`), Renamed → "…renommé(s)",
@@ -2524,11 +2525,10 @@ de cette machine ; les termes ci-dessous viennent donc des paquets macOS install
 Notes de formulation :
 
 - **L'étiquette d'accessibilité `disconnectPlaceAriaLabel` doit CONTENIR le libellé visible** (WCAG 2.5.3). Le libellé
-  de l'action est `Se déconnecter` (`servers.paneState.disconnect`, `fileExplorer.smbReconnect.disconnect`,
-  `fileExplorer.unreachable.disconnect`), donc l'étiquette est `Se déconnecter de {name}` : la sous-chaîne
-  `Se déconnecter` y figure telle quelle et dans l'ordre. ❌ Ne reprenez PAS le `Déconnecter` transitif du Finder
-  (`LocalizableMerged.strings`, clés `MR10.1` / `N200`) : il casse la containment et divergerait des trois clés déjà
-  livrées.
+  de l'action est `Se déconnecter` (`servers.paneState.disconnect`, `fileExplorer.unreachable.disconnect`,
+  `menu.network.disconnect`), donc l'étiquette est `Se déconnecter de {name}` : la sous-chaîne `Se déconnecter` y figure
+  telle quelle et dans l'ordre. ❌ Ne reprenez PAS le `Déconnecter` transitif du Finder (`LocalizableMerged.strings`,
+  clés `MR10.1` / `N200`) : il casse la containment et divergerait des trois clés déjà livrées.
 - **L'info-bulle grisée calque sa sœur `eject`.** `disconnectBusyTooltip` reprend mot pour mot la structure de
   `fileExplorer.navigation.ejectBusyTooltip`
   (`Impossible d''éjecter tant que des opérations sont en cours sur cet appareil`), en changeant seulement le verbe et
@@ -2732,7 +2732,8 @@ Termes :
 - **to type / to enter (une valeur dans un champ) → `saisir`** · Finder `fr.lproj/LocalizableMerged.strings`, série
   `Enter the name of…` → `Saisissez le nom de…` et `enter the name and password for an administrator` →
   `saisir le nom et le mot de passe d''un administrateur` · `high`. Déjà livré dans
-  `fileExplorer.network.connectionTooltipNeedsLogin` (« Double-cliquez pour saisir vos identifiants »).
+  `fileExplorer.network.browser.tooltip.requiresLogin` (« Cet hôte demande une connexion. Double-cliquez pour saisir vos
+  identifiants. »).
 - **SSH key → `clé SSH` ; public key → `clé publique` ; private key → `clé privée`** · ActionKitUI
   `Localizable.loctable` (`SSH Key` → `Clé SSH`, `No SSH Key` → `Aucune clé SSH`, `Copy Public Key` →
   `Copier la clé publique`, `Replace SSH Key` → `Remplacer la clé SSH`) et ActionKit `Localizable.loctable`

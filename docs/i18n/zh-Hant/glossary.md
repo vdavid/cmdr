@@ -217,7 +217,7 @@ reference pile is absent on the agent box, so these were verified against the LI
 26.6.2, build 25G83, 2026-09-06) using `plutil -convert json` over `zh_TW.lproj` / `zh_HK.lproj`.
 
 - **Disconnect (the action)** · `中斷連線` · Finder `LocalizableMerged.strings:MR10.1` = `中斷連線`, TW = HK, and the
-  catalog already ships it in `fileExplorer.smbReconnect.disconnect`, `.unreachable.disconnect`, and
+  catalog already ships it in `fileExplorer.unreachable.disconnect`, `servers.paneState.disconnect`, and
   `menu.network.disconnect` · `confirmed`. In a sentence with a named target it becomes `中斷與 X 的連線`
   (`fileExplorer.network.browser.disconnected` already does this), and the failure shape is `無法中斷連線`.
 - **Keychain Access (the macOS app)** · `「鑰匙圈存取」` · `Keychain Access.app/…/InfoPlist.loctable` `CFBundleName` and

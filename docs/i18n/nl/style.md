@@ -138,7 +138,7 @@ From the AI-copy sweep and the provider-setup pass (the app stopped calling its 
   (`settings.askCmdr.intro` "Chat met een AI …") · high. Boundary: `Cmdr` stays `Cmdr` and `Ask Cmdr` stays `Ask Cmdr`;
   see the note below on which of the three names goes where
 - AI provider → AI-aanbieder · the catalog throughout (`askCmdr.error.notConfigured`, `askCmdr.consent.intro`) · high
-- file operations → bestandsbewerkingen · the catalog (`commands.operationLogShow.description`, `fileExplorer` "snelle
+- file operations → bestandsbewerkingen · the catalog (`commands.logOperationLog.description`, `fileExplorer` "snelle
   bestandsbewerkingen", `settings` several) · high
 - placeholder → tijdelijke aanduiding · Microsoft terminology (`DUTCH.tbx`, both senses, NLD + BEL) · high
 - deployment (an Azure deployment) → implementatie · Microsoft terminology (`DUTCH.tbx`; the third sense, `inzetten`, is
@@ -281,8 +281,8 @@ second half is now a normal plural with a real verb
   `Stoppen …`. De knopregel hierboven geldt net zo goed voor een label dat alleen een schermlezer uitspreekt.
 - **"Review" in een goedkeuringsscherm is `beoordelen`, niet `bekijken`.** `commands.suggestedOpsShow.description` opent
   een per-rij goedkeur-of-weiger-dialoog, dus `Beoordeel de bestandsbewerkingen …`, in lijn met de al vastgelegde keuze
-  voor "Review file renames". De buurman `commands.operationLogShow.description` houdt `Bekijk`, want zijn Engels is
-  "Browse".
+  voor "Review file renames". De buurman `commands.logOperationLog.description` houdt `Bekijk`, want zijn Engels is "See
+  a history of your file operations…": alleen kijken, geen goedkeuringsstap.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

@@ -474,9 +474,10 @@ confirms `Vorgang`).
   `settings.navigationAndFileOps.card.fileOperations`, `settings.advanced.card.fileOperations` = "Dateioperationen").
   Anything a USER started is a `Vorgang`, including in a tooltip or a settings DESCRIPTION: those had leaked to
   "Operationen" and are back.
-- operation log → `Vorgangsprotokoll` · already settled with the retention settings (`settings.section.operationLog` →
-  "Vorgangsprotokoll", log → Protokoll) · high. The dialog title (`operationLog.dialog.title`) and the command label
-  (`commands.logOperationLog.label`) MUST match this Settings-section name.
+- operation log → `Vorgangsprotokoll` · already settled with the retention settings
+  (`settings.navigationAndFileOps.card.operationLog` → "Vorgangsprotokoll", log → Protokoll) · high. The dialog title
+  (`operationLog.dialog.title`) and the command label (`commands.logOperationLog.label`) MUST match this
+  Settings-section name.
 - history (of operations) → `Verlauf` · `settings.operationLog.intro` "damit du deinen Verlauf ansehen … kannst",
   `maxAge.label` "Verlauf aufbewahren für"; macOS uses "Verlauf" for history · high. Used in the load-error string.
 - file operations (the user's ops collectively) → `Dateivorgänge` · `settings.operationLog.intro` "Cmdr protokolliert
@@ -1999,7 +2000,7 @@ der Referenz-Stapel auf der M1-Kiste fehlt.
   wie der Nachbar `fileExplorer.pane.disconnectFailedToast` („Trennen nicht möglich: …“).
 - **`disconnectPlaceAriaLabel` → `Verbindung zu {name} trennen`** · derselbe Apple-Rahmen; enthält `trennen` und erfüllt
   damit die Aria-Containment-Regel gegenüber der sichtbaren Beschriftung `Trennen` (`servers.paneState.disconnect`,
-  `fileExplorer.smbReconnect.disconnect`), da der Vergleich Groß-/Kleinschreibung ignoriert · `high`. ❌ Nicht
+  `fileExplorer.unreachable.disconnect`), da der Vergleich Groß-/Kleinschreibung ignoriert · `high`. ❌ Nicht
   `{name} trennen` nach dem Muster von `ejectVolumeAriaLabel` („{name} auswerfen“): ein Server wird nicht getrennt,
   sondern die Verbindung zu ihm.
 - **`disconnectBusyTooltip` → `Trennen nicht möglich, während auf diesem Server Vorgänge laufen`** · wortgleicher Rahmen
