@@ -44,6 +44,18 @@
  * state, keyboard, and focus wiring the primitive already owns and tests, and
  * they drift from its tokens and geometry. That table is `ROLE_MAPPINGS`.
  *
+ * 3. A hand-rolled glyph affordance: a `<button>` whose only meaningful child is
+ *    one bare glyph a primitive already owns:
+ *
+ *   - `<Icon name="info">` → `InfoTip`
+ *
+ * A button with nothing in it but an info glyph IS an info tip, whatever the
+ * class on it says, and the primitive already carries the accessible name, the
+ * tooltip wiring, the hover and `:focus-visible` treatment, and the glyph size.
+ * A clone drifts on every one of those: the eight info glyphs in the tree had
+ * grown four different sizes before the primitive existed. That table is
+ * `GLYPH_MAPPINGS`.
+ *
  * ## What it deliberately does NOT catch
  *
  * - Dynamic `<input type={x}>` / `<button role={r}>`: the control kind can't be
@@ -61,6 +73,17 @@
  *   render Ark UI's `HiddenInput` (a component, not a literal `<input>`), so
  *   they need no exception. `TextInput` / `TextArea` DO render the literal
  *   element they replace, so they carry a file-level opt-out in `eslint.config.js`.
+ *   `InfoTip` is the same case and carries one too.
+ * - A glyph that isn't in a `<button>`. `<span><Icon name="info" /></span>` is a
+ *   decorative or status marker, not an affordance: `AdbHint`'s banner glyph and
+ *   `TransferErrorDialog`'s header glyph are both that, and the restricted /
+ *   symlink markers in the file lists are `StatusMarker`. Only a real button is
+ *   the interactive thing `InfoTip` replaces.
+ * - A button that also carries a visible label, another element, or a second
+ *   glyph. Then it's an ordinary labelled action that happens to lead with a
+ *   glyph, and no primitive owns that shape.
+ * - A dynamic glyph name (`<Icon name={glyph} />`): unresolvable statically, the
+ *   same way a dynamic `type` / `role` is skipped above.
  *
  * Opt out per-element for a genuinely bespoke raw control (for example the
  * onboarding radio-cards and the appearance color-swatch picker, whose
@@ -115,6 +138,10 @@ const ROLE_MAPPINGS = [
   { role: 'radio', primitive: 'RadioGroup', path: '$lib/ui/RadioGroup.svelte' },
 ]
 
+// `<Icon name>` glyph → the primitive that owns a `<button>` wrapping it alone.
+// Extend by adding a row when a new bare-glyph affordance gets a primitive.
+const GLYPH_MAPPINGS = [{ icon: 'info', primitive: 'InfoTip', path: '$lib/ui/InfoTip.svelte' }]
+
 /**
  * Resolve a Svelte element's named static attribute. Three outcomes, and keeping
  * them apart is what lets a typeless `<input>` be flagged while a dynamic
@@ -132,6 +159,22 @@ function staticAttributeOf(node, name) {
   const value = attribute.value
   // A single static text chunk counts; `{type}` / `type={x}` are dynamic.
   return value.length === 1 && value[0].type === 'SvelteLiteral' ? value[0].value : undefined
+}
+
+/**
+ * The `<Icon name>` of the ONE glyph a `<button>` wraps, or `null` when the
+ * button holds anything else. Whitespace between tags and template comments
+ * don't count as children: a glyph on its own line is still a lone glyph.
+ */
+function loneGlyphOf(node) {
+  const meaningful = node.children.filter((child) =>
+    child.type === 'SvelteText' ? child.value.trim() !== '' : child.type !== 'SvelteHTMLComment',
+  )
+  if (meaningful.length !== 1) return null
+  const only = meaningful[0]
+  // `kind === 'html'` would be a literal `<icon>` element, not our component.
+  if (only.type !== 'SvelteElement' || only.kind === 'html' || only.name?.name !== 'Icon') return null
+  return staticAttributeOf(only, 'name')
 }
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -155,6 +198,14 @@ export default {
         'wiring this role promises, and keeps the tokens and geometry consistent. Browse the primitives in ' +
         'Debug > Components and see `docs/design-system.md`. If a bespoke control is genuinely needed, opt out ' +
         'per-element: `<!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- <reason> -->`.',
+      preferPrimitiveForGlyph:
+        'Use the house `{{ primitive }}` primitive (`{{ path }}`) instead of a `<button>` wrapping a bare ' +
+        '`<Icon name="{{ icon }}">`. The primitive already owns the accessible name, the tooltip wiring (plain text ' +
+        'or a rich snippet), the hover and `:focus-visible` treatment, and the glyph size, all of which a clone ' +
+        'drifts from. Browse the primitives in Debug > Components and see `docs/design-system.md`. A glyph that ' +
+        "isn't an affordance belongs in a `<span>` (decorative) or in `StatusMarker` (a status marker), not in a " +
+        'button. If a bespoke button is genuinely needed, opt out per-element: ' +
+        '`<!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- <reason> -->`.',
     },
     schema: [],
   },
@@ -174,6 +225,20 @@ export default {
               node: node.startTag,
               messageId: 'preferPrimitiveForRole',
               data: { element: elementName, role: role.role, primitive: role.primitive, path: role.path },
+            })
+            return
+          }
+        }
+
+        // A `<button>` holding nothing but one glyph is a hand-rolled version of
+        // whichever primitive owns that glyph.
+        if (elementName === 'button') {
+          const glyph = GLYPH_MAPPINGS.find((mapping) => mapping.icon === loneGlyphOf(node))
+          if (glyph) {
+            context.report({
+              node: node.startTag,
+              messageId: 'preferPrimitiveForGlyph',
+              data: { icon: glyph.icon, primitive: glyph.primitive, path: glyph.path },
             })
             return
           }

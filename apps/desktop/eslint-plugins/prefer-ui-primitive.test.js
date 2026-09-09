@@ -87,6 +87,42 @@ ruleTester.run('prefer-ui-primitive', rule, {
       code: `<span role="switch" aria-checked={on}>x</span>`,
       filename: 'src/lib/whatever/Row.svelte',
     },
+    // A lone info glyph that ISN'T a button is a decorative or status marker,
+    // not an info tip: `AdbHint`'s banner glyph and `TransferErrorDialog`'s
+    // header glyph both look like this, and both must stay untouched.
+    {
+      code: `<span class="hint-icon"><Icon name="info" size={13} aria-hidden="true" /></span>`,
+      filename: 'src/lib/adb/AdbHint.svelte',
+    },
+    {
+      code: `<Icon name="info" size={22} />`,
+      filename: 'src/lib/whatever/Dialog.svelte',
+    },
+    // A button with a visible label alongside the glyph is a labelled action,
+    // not a bare info affordance.
+    {
+      code: `<button type="button"><Icon name="info" size={14} /> Learn more</button>`,
+      filename: 'src/lib/whatever/Row.svelte',
+    },
+    {
+      code: `<button type="button"><Icon name="info" size={14} /><span>Why?</span></button>`,
+      filename: 'src/lib/whatever/Row.svelte',
+    },
+    // Any other glyph in a bare icon button is an ordinary icon action.
+    {
+      code: `<button type="button" aria-label="Star"><Icon name="star" size={14} /></button>`,
+      filename: 'src/lib/whatever/Row.svelte',
+    },
+    // A dynamic glyph name can't be classified statically, so we don't guess.
+    {
+      code: `<button type="button"><Icon name={glyph} size={14} /></button>`,
+      filename: 'src/lib/whatever/Row.svelte',
+    },
+    // Rendering the primitive is the intended path.
+    {
+      code: `<InfoTip label="Analytics" text="What we collect." />`,
+      filename: 'src/lib/whatever/Row.svelte',
+    },
     // (The per-element opt-out comment is exercised end-to-end by the real
     // eslint config against the bespoke source sites, not here: RuleTester
     // registers the rule under a `rule-to-test/*` id, so a `cmdr/*` disable
@@ -272,6 +308,40 @@ ruleTester.run('prefer-ui-primitive', rule, {
         {
           messageId: 'preferPrimitive',
           data: { control: '<input type="checkbox">', primitive: 'Checkbox', path: '$lib/ui/Checkbox.svelte' },
+        },
+      ],
+    },
+    // A hand-rolled info tip: a bare `<button>` whose only meaningful child is
+    // the info glyph. This is the `StepAi` shape, tooltip wiring and all.
+    {
+      code: `<button type="button" class="choice-info" aria-label={label} use:tooltip={{ contentEl }}><Icon name="info" size={14} aria-hidden="true" /></button>`,
+      filename: 'src/lib/onboarding/StepAi.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitiveForGlyph',
+          data: { icon: 'info', primitive: 'InfoTip', path: '$lib/ui/InfoTip.svelte' },
+        },
+      ],
+    },
+    // Whitespace and newlines around the glyph don't make it a second child.
+    {
+      code: `<button type="button" aria-label="More">\n    <Icon name="info" size={14} />\n</button>`,
+      filename: 'src/lib/whatever/Row.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitiveForGlyph',
+          data: { icon: 'info', primitive: 'InfoTip', path: '$lib/ui/InfoTip.svelte' },
+        },
+      ],
+    },
+    // A comment beside the glyph isn't a second child either.
+    {
+      code: `<button type="button" aria-label="More"><!-- why --><Icon name="info" size={14} /></button>`,
+      filename: 'src/lib/whatever/Row.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitiveForGlyph',
+          data: { icon: 'info', primitive: 'InfoTip', path: '$lib/ui/InfoTip.svelte' },
         },
       ],
     },

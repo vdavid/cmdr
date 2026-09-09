@@ -353,12 +353,13 @@ export default tseslint.config(
     },
   },
   {
-    // `TextInput` / `TextArea` ARE the primitives that replace `<input>` /
-    // `<textarea>`, so they're the one place those elements may be written
-    // literally. Unlike `Checkbox` / `RadioGroup` (which render Ark's
-    // `HiddenInput` component and so never trip the rule), these two render the
-    // native element themselves and need the file-level opt-out.
-    files: ['src/lib/ui/TextInput.svelte', 'src/lib/ui/TextArea.svelte'],
+    // `TextInput` / `TextArea` / `InfoTip` ARE the primitives that replace
+    // `<input>` / `<textarea>` / a lone-info-glyph `<button>`, so they're the
+    // one place those shapes may be written literally. Unlike `Checkbox` /
+    // `RadioGroup` (which render Ark's `HiddenInput` component and so never trip
+    // the rule), these three render the shape themselves and need the
+    // file-level opt-out.
+    files: ['src/lib/ui/TextInput.svelte', 'src/lib/ui/TextArea.svelte', 'src/lib/ui/InfoTip.svelte'],
     rules: {
       'cmdr/prefer-ui-primitive': 'off',
     },
