@@ -28,6 +28,30 @@ pub fn update_menu_context<R: Runtime>(app: AppHandle<R>, path: String, filename
     context.filename = filename;
 }
 
+/// Makes `window` the focused one, on the way to popping a context menu up over it.
+///
+/// ❗ Load-bearing, not politeness. `handle_menu_event` refuses every
+/// `CommandScope::FileScoped` command unless the MAIN window has focus, because an
+/// accelerator reaches that handler whatever is in front. A context menu is the one case
+/// where the test asks the wrong question: this menu was popped from a named window over
+/// a named row, so that window IS the target however focus stood a moment ago. Without
+/// this call, right-clicking a pane row while Settings or the viewer is in front draws a
+/// menu whose file items (`Copy path`, `Show in Finder`, `Copy`, `Move`, `Delete`) are
+/// all enabled and all silently do nothing — a right-click doesn't make a window key.
+///
+/// ❌ Don't replace it with a "a context menu is up" flag: `popup()` returns BEFORE the
+/// event loop processes muda's `MenuEvent` (see [`show_tab_context_menu`]), so a flag
+/// scoped to the popup is already cleared when the click arrives, and one that outlives
+/// the popup would switch the guard off for the next accelerator.
+///
+/// A failure only costs the focus, so it's logged rather than propagated: the menu still
+/// opens, and the guard still logs its own refusal if the click then goes nowhere.
+fn focus_for_context_menu<R: Runtime>(window: &Window<R>) {
+    if let Err(e) = window.set_focus() {
+        log::warn!(target: "menu", "couldn't focus `{}` before its context menu: {e}", window.label());
+    }
+}
+
 /// What the PANE contributes to a file context menu, as opposed to the file that
 /// was right-clicked. Grouped because they answer one question each about the
 /// surface the click landed in, and because the frontend fills them all from the
@@ -176,6 +200,7 @@ pub fn show_file_context_menu<R: Runtime>(
     #[cfg(target_os = "macos")]
     let _header_loan = crate::menu::lend_context_menu_header(&result.menu);
 
+    focus_for_context_menu(&window);
     result.menu.popup(window).map_err(|e| e.to_string())?;
 
     Ok(())
@@ -288,6 +313,7 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(
         }
     }
 
+    focus_for_context_menu(&window);
     menu.popup(window).map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -340,6 +366,7 @@ pub fn show_volume_row_context_menu<R: Runtime>(
         ctx.volume_name = volume_name;
     }
 
+    focus_for_context_menu(&window);
     menu.popup(window).map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -360,6 +387,7 @@ pub fn show_parent_row_context_menu<R: Runtime>(window: Window<R>, parent_path: 
         context.filename = "..".to_string();
     }
     let menu = build_parent_row_context_menu(app).map_err(|e| e.to_string())?;
+    focus_for_context_menu(&window);
     menu.popup(window).map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -483,6 +511,7 @@ pub fn show_tab_context_menu(
 
     let menu =
         build_tab_context_menu(&app, is_pinned, can_close, has_other_unpinned_tabs).map_err(|e| e.to_string())?;
+    focus_for_context_menu(&window);
     menu.popup(window).map_err(|e| e.to_string())?;
 
     Ok(())
@@ -497,6 +526,7 @@ pub fn show_tab_context_menu(
 pub fn show_function_key_bar_context_menu(window: Window<tauri::Wry>) -> Result<(), String> {
     let app = window.app_handle().clone();
     let menu = build_function_key_bar_context_menu(&app).map_err(|e| e.to_string())?;
+    focus_for_context_menu(&window);
     menu.popup(window).map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -525,6 +555,7 @@ pub fn show_network_host_context_menu(
         ctx.host_name = host_name;
     }
 
+    focus_for_context_menu(&window);
     menu.popup(window).map_err(|e| e.to_string())?;
 
     Ok(())

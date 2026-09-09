@@ -530,11 +530,22 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     // === Unified dispatch: look up command ID from the mapping ===
     if let Some((command_id, scope)) = menu_id_to_command(id) {
         if scope == CommandScope::FileScoped {
-            // Focus guard: only emit if main window has focus
+            // Focus guard: a file command acts on the main window's pane, so it must not
+            // fire while the user is in Settings or the viewer — an accelerator reaches
+            // this handler whatever has focus, and a greyed-looking item is only a hint.
             let focused = app
                 .get_webview_window("main")
                 .is_some_and(|w| w.is_focused().unwrap_or(false));
             if !focused {
+                // ❗ Say so. This refuses a click the user just made and shows them
+                // nothing, so with no line here the symptom is "the menu did nothing"
+                // and the log holds no trace of it at all: the context menu had already
+                // drawn the item as enabled, and the drop happens after that. Cost one
+                // debug line rather than another blind bug report.
+                log::debug!(
+                    target: "menu",
+                    "dropped `{command_id}`: file-scoped, and the main window doesn't have focus"
+                );
                 return;
             }
         }
