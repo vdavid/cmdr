@@ -6,6 +6,9 @@ pub mod beta_signup;
 pub mod child_window_state;
 pub mod clipboard;
 pub mod crash_reporter;
+// The macOS Dock. macOS only, mechanism and all (`../dock/`); no other platform has one to pin to.
+#[cfg(target_os = "macos")]
+pub mod dock;
 pub mod e2e;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod eject;

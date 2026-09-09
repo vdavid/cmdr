@@ -10,7 +10,9 @@
 //! - `install_update`: extracts and syncs into the running `.app` bundle
 
 mod bundle_location;
-mod installer;
+// Crate-visible for `installer::running_bundle`, which `dock/` needs to decide whether a Dock tile
+// could point at this copy. Nothing else outside `updater` reaches in.
+pub(crate) mod installer;
 mod manifest;
 mod signature;
 

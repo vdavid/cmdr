@@ -50,6 +50,9 @@ mod crate_deps;
 pub mod dev_fixtures;
 mod device_volumes;
 mod diagnostics_snapshot;
+// The macOS Dock: reading `persistent-apps` and putting Cmdr in it. No other platform has one.
+#[cfg(target_os = "macos")]
+mod dock;
 mod downloads;
 #[cfg(target_os = "macos")]
 mod drag_image_detection;

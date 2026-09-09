@@ -399,7 +399,10 @@ security-framework-sys = "2.17"
 minisign-verify = "0.2"
 # `CFUserNotification` (+ its `CFDate` / `CFURL` prerequisites) powers the instance-lock refusal
 # alert: it's the one alert API that doesn't pump our run loop (see `instance_lock.rs`).
-objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary", "CFString", "CFNumber", "CFBase", "CFCGTypes", "CFUserNotification", "CFDate", "CFURL"] }
+# `CFPreferences` (+ `CFPropertyList` and its `CFError` prerequisite) is how `dock/` reads and
+# writes the Dock's `persistent-apps` through `cfprefsd`, which owns that plist and would clobber a
+# direct file write (see `dock/DETAILS.md`).
+objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary", "CFString", "CFNumber", "CFBase", "CFCGTypes", "CFUserNotification", "CFDate", "CFURL", "CFPreferences", "CFPropertyList", "CFError"] }
 
 
 [dev-dependencies]

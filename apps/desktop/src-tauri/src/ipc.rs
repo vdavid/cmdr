@@ -740,6 +740,15 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
+            // "Add Cmdr to your Dock". macOS only, mechanism and all (`dock/`): no other
+            // platform has a Dock, and the nudge that calls these no-ops elsewhere.
+            cfg(target_os = "macos") {
+                typed: [
+                    crate::commands::dock::get_dock_pin_state,
+                    crate::commands::dock::add_cmdr_to_dock,
+                ]
+                dispatch_only: []
+            }
             // Reduce transparency.
             cfg(target_os = "macos") {
                 typed: [

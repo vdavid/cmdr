@@ -167,7 +167,10 @@ fn extract_tarball(tarball_path: &Path, dest_dir: &Path) -> Result<(), String> {
 }
 
 /// Finds the running app's `.app` bundle path by walking up from `current_exe()`.
-pub(super) fn running_bundle() -> Result<PathBuf, String> {
+///
+/// Crate-visible rather than `pub(super)`: `dock/` needs the same answer to decide whether a Dock
+/// tile could point at this copy.
+pub(crate) fn running_bundle() -> Result<PathBuf, String> {
     let exe = std::env::current_exe().map_err(|e| format!("Couldn't get current exe: {e}"))?;
     find_app_bundle_above(&exe).ok_or_else(|| format!("Couldn't find .app bundle in path: {}", exe.display()))
 }

@@ -274,6 +274,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `services_menu/`: macOS-only. Tells AppKit that Cmdr can hand files to a service, and answers with the pane's live
   selection when one is picked, so `Cmdr > Services` lists what Finder lists. See
   `apps/desktop/src-tauri/src/services_menu/CLAUDE.md`
+- `dock/`: macOS-only. Whether Cmdr may be offered a place in the Dock, whether it's already there, and putting it in
+  as the leftmost app tile: `com.apple.dock`'s `persistent-apps` through CFPreferences, then a Dock restart. See
+  `apps/desktop/src-tauri/src/dock/CLAUDE.md`
 - `quick_look/`: macOS-only `QLPreviewPanel` integration (Shift+Space)
 - `drag_image_detection.rs`: macOS method swizzle for drag image size detection
 - `drag_image_swap.rs`: Rich/transparent drag image swap for self-drags

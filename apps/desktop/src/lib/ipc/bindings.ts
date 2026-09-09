@@ -4282,6 +4282,21 @@ export const commands = {
   updateServicesSelection: (selection: ServicesSelection) =>
     __TAURI_INVOKE<void>('update_services_selection', { selection }),
   /**
+   *  Whether we may offer to put Cmdr in the Dock, and whether it's already there.
+   *
+   *  A slow or unreachable `cfprefsd` answers `PreferencesUnreadable`, which keeps the nudge silent
+   *  rather than firing on a guess.
+   */
+  getDockPinState: () => __TAURI_INVOKE<DockPinState>('get_dock_pin_state'),
+  /**
+   *  Adds Cmdr to the Dock as the first tile and restarts the Dock so it appears.
+   *
+   *  Only ever called after the person says yes to the nudge. It re-checks everything
+   *  [`get_dock_pin_state`] checked, so a stale answer can't turn into a write we'd never have
+   *  offered.
+   */
+  addCmdrToDock: () => typedError<null, DockPinFailure>(__TAURI_INVOKE('add_cmdr_to_dock')),
+  /**
    *  Tauri command: returns whether macOS "reduce transparency" is enabled.
    *
    *  `NSWorkspace` accessibility queries are main-thread-only, so we hop to the
@@ -6246,6 +6261,51 @@ export type DiscoveryState =
   | 'searching'
   // Initial burst is complete, still listening.
   | 'active'
+
+// Why we won't offer, or why a pin can't go ahead.
+export type DockPinBlocker =
+  /**
+   *  Cmdr isn't running from a `.app` at all: a dev build out of `target/`, which conveniently
+   *  keeps the whole feature out of development.
+   */
+  | 'notABundle'
+  /**
+   *  The bundle is somewhere a Dock tile shouldn't point: `~/Downloads`, a mounted disk image,
+   *  or a Gatekeeper-translocated copy. A tile there dies as soon as the copy moves.
+   */
+  | 'outsideApplications'
+  // A configuration profile manages the Dock, so a write would be silently swallowed.
+  | 'managedDock'
+  // The Dock's `persistent-apps` couldn't be read, so we don't know what's down there.
+  | 'preferencesUnreadable'
+
+// Why a pin didn't happen.
+export type DockPinFailure =
+  // The pin was asked for in a situation where we'd never have offered it.
+  | { kind: 'blocked'; reason: DockPinBlocker }
+  // The new tile list didn't reach `cfprefsd`, so nothing changed.
+  | { kind: 'writeRejected' }
+  // The tile is stored, but the Dock didn't restart, so it won't show up until it next does.
+  | { kind: 'dockNotRestarted' }
+  /**
+   *  The whole thing ran past its deadline, so nobody knows whether the tile landed. Minted by
+   *  the IPC command rather than by [`pin_cmdr`], which has no deadline of its own.
+   */
+  | { kind: 'timedOut' }
+
+/**
+ *  Whether we may offer to put Cmdr in the Dock.
+ *
+ *  One state rather than two booleans: "already pinned" and "can't pin" are different answers and
+ *  the caller shouldn't be able to hold both.
+ */
+export type DockPinState =
+  // Cmdr is installed where a tile can point at it, and no Cmdr tile is there yet.
+  | { kind: 'offerable' }
+  // A Cmdr tile is already in the Dock. Nothing to offer.
+  | { kind: 'alreadyPinned' }
+  // We're staying quiet, for `reason`.
+  | { kind: 'unavailable'; reason: DockPinBlocker }
 
 /**
  *  Payload of the `download-detected` Tauri event. Typed via `tauri_specta`;

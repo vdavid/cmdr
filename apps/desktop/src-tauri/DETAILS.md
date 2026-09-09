@@ -51,7 +51,9 @@ the OS.
 
 `CLAUDE.md` requires an `objc2::MainThreadMarker` for AppKit/Cocoa main-thread-only calls. These are thread-safe and
 carry no such requirement, so demanding a marker for them would be busywork: NSURL resource values, `NSFileManager`,
-`NSUserDefaults`, LaunchServices, Keychain, IOKit, and Mach.
+`NSUserDefaults`, CFPreferences (the same store's C face), `NSBundle`, `NSRunningApplication`, LaunchServices,
+Keychain, IOKit, and Mach. That's what lets `src/dock/` read the Dock's preferences and ask it to restart from the
+blocking pool.
 
 ## Where the app answers a subsystem's seams (`index_host.rs`, `volume_host.rs`)
 
