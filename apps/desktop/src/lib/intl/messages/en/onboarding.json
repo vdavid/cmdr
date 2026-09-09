@@ -146,19 +146,37 @@
     "description": "Question leading into the pros/cons list on the first-ask Full Disk Access step. \"full disk access\" is the macOS permission name."
   },
 
-  "onboarding.stepFda.pro": "<strong>Pro:</strong> The app will access your entire disk without nagging you for permissions to each folder like Downloads, Documents, and Desktop.",
-  "@onboarding.stepFda.pro": {
-    "description": "The \"pro\" bullet for granting Full Disk Access. <strong> bolds the leading \"Pro:\" label. \"Downloads\", \"Documents\", and \"Desktop\" are macOS folder names, already localized by the OS in the real UI; translate them to your locale's standard macOS folder names.",
+  "onboarding.stepFda.why": "Why?",
+  "@onboarding.stepFda.why": {
+    "description": "A link after the opening apology on the Full Disk Access step. Clicking it reveals the explanation and the pros and cons below. One word, curious rather than demanding.",
     "screenshot": "onboarding-fda-notgranted.png"
   },
 
-  "onboarding.stepFda.con": "<strong>Con:</strong> Full disk access is pretty powerful. It lets the app read any file on your Mac. Only grant this if you trust Cmdr. Cmdr uses this right respectfully, and is <sourceLink>source-available</sourceLink> if you feel unsure.",
-  "@onboarding.stepFda.con": {
-    "description": "The \"con\" bullet for granting Full Disk Access: it's powerful, grant only if you trust the app. <strong> bolds the leading \"Con:\" label. <sourceLink> wraps the words linking to the public source code. \"Cmdr\" is the product name; \"Mac\" is the device name; both stay untranslated. \"source-available\" means the source code can be viewed publicly.",
+  "onboarding.stepFda.pro.label": "Pro:",
+  "@onboarding.stepFda.pro.label": {
+    "description": "Header of the upside column in the Full Disk Access pros-and-cons grid, sitting to the left of onboarding.stepFda.pro.body. Short label, keep the trailing colon.",
     "screenshot": "onboarding-fda-notgranted.png"
   },
 
-  "onboarding.stepFda.ifAllow": "If you decide to allow:",
+  "onboarding.stepFda.pro.body": "The app will access your entire disk without nagging you for permissions to each folder like Downloads, Documents, and Desktop.",
+  "@onboarding.stepFda.pro.body": {
+    "description": "The upside of granting Full Disk Access, shown beside the \"Pro:\" header. \"Downloads\", \"Documents\", and \"Desktop\" are macOS folder names, already localized by the OS in the real UI; translate them to your locale's standard macOS folder names.",
+    "screenshot": "onboarding-fda-notgranted.png"
+  },
+
+  "onboarding.stepFda.con.label": "Con:",
+  "@onboarding.stepFda.con.label": {
+    "description": "Header of the downside column in the Full Disk Access pros-and-cons grid, sitting to the left of onboarding.stepFda.con.body. Short label, keep the trailing colon.",
+    "screenshot": "onboarding-fda-notgranted.png"
+  },
+
+  "onboarding.stepFda.con.body": "Full disk access is pretty powerful. It lets the app read any file on your Mac. Only grant this if you trust Cmdr. Cmdr uses this right respectfully, and is <sourceLink>source-available</sourceLink> if you feel unsure.",
+  "@onboarding.stepFda.con.body": {
+    "description": "The downside of granting Full Disk Access, shown beside the \"Con:\" header: it's powerful, grant only if you trust the app. <sourceLink> wraps the words linking to the public source code. \"Cmdr\" is the product name; \"Mac\" is the device name; both stay untranslated. \"source-available\" means the source code can be viewed publicly.",
+    "screenshot": "onboarding-fda-notgranted.png"
+  },
+
+  "onboarding.stepFda.ifAllow": "Three easy steps:",
   "@onboarding.stepFda.ifAllow": {
     "description": "Short heading introducing the numbered steps for turning on Full Disk Access in System Settings.",
     "screenshot": "onboarding-fda-notgranted.png"
@@ -193,7 +211,7 @@
     "description": "Second numbered instruction, for macOS 12 and older, where a newly-added app appears at the end of the Full Disk Access list. <strong> bolds the app name. \"Cmdr\" is the product name and stays untranslated."
   },
 
-  "onboarding.stepFda.step2.tip": "Tip: Is Cmdr not in the list? Click the \"+\" button at the bottom, and choose <strong>Cmdr</strong> from your <strong>Applications</strong> folder.",
+  "onboarding.stepFda.step2.tip": "Is Cmdr not in the list? Click the \"+\" button at the bottom, and choose <strong>Cmdr</strong> from your <strong>Applications</strong> folder.",
   "@onboarding.stepFda.step2.tip": {
     "description": "Helper tip under the second instruction, for when the app isn't listed yet: add it manually with the plus button. <strong> bolds \"Cmdr\" and the \"Applications\" folder name. \"Cmdr\" is the product name; \"Applications\" is the macOS folder name (use your locale's standard macOS name). Keep the literal \"+\" character.",
     "screenshot": "onboarding-fda-notgranted.png"

@@ -83,13 +83,21 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.pro": "<strong>Előny:</strong> Az app a teljes lemezedhez hozzáfér anélkül, hogy minden egyes mappához (Letöltések, Dokumentumok, Asztal) külön engedélyért zaklatna.",
-  "@onboarding.stepFda.pro": {
-    "sourceHash": "e00bada"
+  "onboarding.stepFda.pro.label": "Előny:",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.con": "<strong>Hátrány:</strong> A teljes lemezhozzáférés elég erős jogosultság. Lehetővé teszi, hogy az app bármelyik fájlt elolvassa a Mac-eden. Csak akkor add meg, ha megbízol a Cmdrben. A Cmdr tisztelettel él ezzel a joggal, és <sourceLink>nyílt forráskódú</sourceLink>, ha bizonytalan lennél.",
-  "@onboarding.stepFda.con": {
-    "sourceHash": "745753e"
+  "onboarding.stepFda.pro.body": "Az app a teljes lemezedhez hozzáfér anélkül, hogy minden egyes mappához (Letöltések, Dokumentumok, Asztal) külön engedélyért zaklatna.",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "Hátrány:",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "A teljes lemezhozzáférés elég erős jogosultság. Lehetővé teszi, hogy az app bármelyik fájlt elolvassa a Mac-eden. Csak akkor add meg, ha megbízol a Cmdrben. A Cmdr tisztelettel él ezzel a joggal, és <sourceLink>nyílt forráskódú</sourceLink>, ha bizonytalan lennél.",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
   },
   "onboarding.stepFda.ifAllow": "Ha az engedélyezés mellett döntesz:",
   "@onboarding.stepFda.ifAllow": {
@@ -111,9 +119,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Tipp: Nincs a listában a Cmdr? Kattints alul a „+” gombra, és válaszd ki a <strong>Cmdr</strong> appot az <strong>Alkalmazások</strong> mappádból.",
+  "onboarding.stepFda.step2.tip": "Nincs a listában a Cmdr? Kattints alul a „+” gombra, és válaszd ki a <strong>Cmdr</strong> appot az <strong>Alkalmazások</strong> mappádból.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "1bdc656"
+    "sourceHash": "30d0299"
   },
   "onboarding.stepFda.step3": "Erősítsd meg, és kattints a <strong>Kilépés és újranyitás</strong> gombra",
   "@onboarding.stepFda.step3": {

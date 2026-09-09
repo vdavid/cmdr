@@ -83,13 +83,21 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.pro": "<strong>好处：</strong>应用可以访问你的整个磁盘，不用每访问一个文件夹（比如下载、文稿、桌面）都来向你索取权限。",
-  "@onboarding.stepFda.pro": {
-    "sourceHash": "e00bada"
+  "onboarding.stepFda.pro.label": "好处：",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.con": "<strong>代价：</strong>完全磁盘访问权限相当强大，它让应用能读取你 Mac 上的任何文件。只有在你信任 Cmdr 时才授予它。Cmdr 会克制地使用这项权限，如果你心里没底，它的源代码是 <sourceLink>公开可查</sourceLink>的。",
-  "@onboarding.stepFda.con": {
-    "sourceHash": "745753e"
+  "onboarding.stepFda.pro.body": "应用可以访问你的整个磁盘，不用每访问一个文件夹（比如下载、文稿、桌面）都来向你索取权限。",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "代价：",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "完全磁盘访问权限相当强大，它让应用能读取你 Mac 上的任何文件。只有在你信任 Cmdr 时才授予它。Cmdr 会克制地使用这项权限，如果你心里没底，它的源代码是 <sourceLink>公开可查</sourceLink>的。",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
   },
   "onboarding.stepFda.ifAllow": "如果你决定允许：",
   "@onboarding.stepFda.ifAllow": {
@@ -111,9 +119,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "提示：列表里没有 Cmdr？点按底部的“+”按钮，从你的<strong>应用程序</strong>文件夹中选择 <strong>Cmdr</strong>。",
+  "onboarding.stepFda.step2.tip": "列表里没有 Cmdr？点按底部的“+”按钮，从你的<strong>应用程序</strong>文件夹中选择 <strong>Cmdr</strong>。",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "1bdc656"
+    "sourceHash": "30d0299"
   },
   "onboarding.stepFda.step3": "确认并点按 <strong>退出并重新打开</strong>",
   "@onboarding.stepFda.step3": {

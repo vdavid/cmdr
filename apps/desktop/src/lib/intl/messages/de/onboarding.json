@@ -83,13 +83,21 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.pro": "<strong>Vorteil:</strong> Die App greift auf deine gesamte Festplatte zu, ohne dich für jeden Ordner wie Downloads, Dokumente und Schreibtisch um Erlaubnis zu bitten.",
-  "@onboarding.stepFda.pro": {
-    "sourceHash": "e00bada"
+  "onboarding.stepFda.pro.label": "Vorteil:",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.con": "<strong>Nachteil:</strong> Vollständiger Festplattenzugriff ist ziemlich mächtig. Er lässt die App jede Datei auf deinem Mac lesen. Gewähre ihn nur, wenn du Cmdr vertraust. Cmdr nutzt dieses Recht respektvoll und ist <sourceLink>im Quelltext einsehbar</sourceLink>, falls du unsicher bist.",
-  "@onboarding.stepFda.con": {
-    "sourceHash": "745753e"
+  "onboarding.stepFda.pro.body": "Die App greift auf deine gesamte Festplatte zu, ohne dich für jeden Ordner wie Downloads, Dokumente und Schreibtisch um Erlaubnis zu bitten.",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "Nachteil:",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "Vollständiger Festplattenzugriff ist ziemlich mächtig. Er lässt die App jede Datei auf deinem Mac lesen. Gewähre ihn nur, wenn du Cmdr vertraust. Cmdr nutzt dieses Recht respektvoll und ist <sourceLink>im Quelltext einsehbar</sourceLink>, falls du unsicher bist.",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
   },
   "onboarding.stepFda.ifAllow": "Wenn du dich fürs Erlauben entscheidest:",
   "@onboarding.stepFda.ifAllow": {
@@ -111,9 +119,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Tipp: Ist Cmdr nicht in der Liste? Klicke unten auf die Taste „+“ und wähle <strong>Cmdr</strong> aus deinem Ordner <strong>Programme</strong>.",
+  "onboarding.stepFda.step2.tip": "Ist Cmdr nicht in der Liste? Klicke unten auf die Taste „+“ und wähle <strong>Cmdr</strong> aus deinem Ordner <strong>Programme</strong>.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "1bdc656"
+    "sourceHash": "30d0299"
   },
   "onboarding.stepFda.step3": "Bestätige und klicke auf <strong>Beenden & erneut öffnen</strong>",
   "@onboarding.stepFda.step3": {

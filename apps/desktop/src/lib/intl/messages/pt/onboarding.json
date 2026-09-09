@@ -83,13 +83,21 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.pro": "<strong>Prós:</strong> O app vai acessar todo o seu disco sem ficar pedindo permissão para cada pasta, como Transferências, Documentos e Mesa.",
-  "@onboarding.stepFda.pro": {
-    "sourceHash": "e00bada"
+  "onboarding.stepFda.pro.label": "Prós:",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.con": "<strong>Contras:</strong> O acesso total ao disco é bem poderoso. Ele permite que o app leia qualquer arquivo no seu Mac. Só conceda isto se você confia no Cmdr. O Cmdr usa esse direito com respeito e tem o <sourceLink>código aberto para consulta</sourceLink> caso você fique em dúvida.",
-  "@onboarding.stepFda.con": {
-    "sourceHash": "745753e"
+  "onboarding.stepFda.pro.body": "O app vai acessar todo o seu disco sem ficar pedindo permissão para cada pasta, como Transferências, Documentos e Mesa.",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "Contras:",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "O acesso total ao disco é bem poderoso. Ele permite que o app leia qualquer arquivo no seu Mac. Só conceda isto se você confia no Cmdr. O Cmdr usa esse direito com respeito e tem o <sourceLink>código aberto para consulta</sourceLink> caso você fique em dúvida.",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
   },
   "onboarding.stepFda.ifAllow": "Se você decidir permitir:",
   "@onboarding.stepFda.ifAllow": {
@@ -111,9 +119,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Dica: O Cmdr não está na lista? Clique no botão \"+\" embaixo e escolha o <strong>Cmdr</strong> na sua pasta <strong>Aplicativos</strong>.",
+  "onboarding.stepFda.step2.tip": "O Cmdr não está na lista? Clique no botão \"+\" embaixo e escolha o <strong>Cmdr</strong> na sua pasta <strong>Aplicativos</strong>.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "1bdc656"
+    "sourceHash": "30d0299"
   },
   "onboarding.stepFda.step3": "Confirme e clique em <strong>Encerrar e Reabrir</strong>",
   "@onboarding.stepFda.step3": {

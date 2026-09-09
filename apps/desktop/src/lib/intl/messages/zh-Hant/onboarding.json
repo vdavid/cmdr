@@ -83,13 +83,21 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.pro": "<strong>好處：</strong>這個 App 可以取用你的整個磁碟，不必每進一個資料夾（像「下載項目」、「文件」、「桌面」）就來跟你要一次權限。",
-  "@onboarding.stepFda.pro": {
-    "sourceHash": "e00bada"
+  "onboarding.stepFda.pro.label": "好處：",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.con": "<strong>代價：</strong>「完全取用磁碟」相當強大，它讓 App 能讀取你 Mac 上的任何檔案。只有在你信任 Cmdr 的時候才給。Cmdr 會謹慎地使用這項權限，如果你還不太放心，它的<sourceLink>原始碼是公開的</sourceLink>。",
-  "@onboarding.stepFda.con": {
-    "sourceHash": "745753e"
+  "onboarding.stepFda.pro.body": "這個 App 可以取用你的整個磁碟，不必每進一個資料夾（像「下載項目」、「文件」、「桌面」）就來跟你要一次權限。",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "代價：",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "「完全取用磁碟」相當強大，它讓 App 能讀取你 Mac 上的任何檔案。只有在你信任 Cmdr 的時候才給。Cmdr 會謹慎地使用這項權限，如果你還不太放心，它的<sourceLink>原始碼是公開的</sourceLink>。",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
   },
   "onboarding.stepFda.ifAllow": "如果你決定允許：",
   "@onboarding.stepFda.ifAllow": {
@@ -111,9 +119,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "提示：列表裡沒有 Cmdr 嗎？按一下底部的「+」按鈕，從你的<strong>應用程式</strong>資料夾裡選 <strong>Cmdr</strong>。",
+  "onboarding.stepFda.step2.tip": "列表裡沒有 Cmdr 嗎？按一下底部的「+」按鈕，從你的<strong>應用程式</strong>資料夾裡選 <strong>Cmdr</strong>。",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "1bdc656"
+    "sourceHash": "30d0299"
   },
   "onboarding.stepFda.step3": "確認後按一下 <strong>結束並重新打開</strong>",
   "@onboarding.stepFda.step3": {

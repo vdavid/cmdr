@@ -6,8 +6,8 @@ analytics disclosure and the terms (3) → Optional settings (4). Linux starts a
 ## Module map
 
 `OnboardingWizard` (shell) + `OnboardingStepShell` (per-step frame), `StepFda` / `StepAi` / `StepBeta` / `StepOptional`,
-`OnboardingToggleCard` (steps 3 and 4 share it), `CloudProviderPicker` / `CloudProviderSetup`,
-`OnboardingLanguagePicker`, `onboarding-state.svelte.ts` (the state machine).
+`CloudProviderPicker` / `CloudProviderSetup`, `OnboardingLanguagePicker`, `onboarding-state.svelte.ts` (the state
+machine).
 
 ## Must-knows
 
@@ -17,8 +17,8 @@ analytics disclosure and the terms (3) → Optional settings (4). Linux starts a
   labeled in it. It's `SettingSelect` on `appearance.language` (❌ not a fork), portaled into the wizard OVERLAY.
 - **The per-provider setup steps live in `$lib/ai-provider-setup/`**, shared with Settings › AI › Provider: a provider,
   link, or copy change goes there, ❌ never here.
-- **The Open beta page (step 3) is non-skippable, and the AI step has ❌ no skip-to-finish**: an opt-out analytics
-  default only reads as fair consent if every first-launch user was shown it.
+- **Step 3 is non-skippable and the AI step has ❌ no skip-to-finish**: an opt-out analytics default only reads as fair
+  consent if every first-launch user saw it.
 - **Step 3's terms checkbox gates both footer buttons.** ❌ Never pre-tick or route around it. Unticked, they take
   `blockedReason`, ❌ not `disabled`, so a press still reveals the box — focusing it with `preventScroll: true`, ❌ never
   a plain `focus()`, whose own scroll cancels the deliberate one.
@@ -29,8 +29,11 @@ analytics disclosure and the terms (3) → Optional settings (4). Linux starts a
   goes through on the second, as a forced-open tooltip on the button (`showTooltipNow`). ❌ Its clearing listeners must
   keep exempting the wizard FOOTER, or that second press (and Enter, whose `keydown` beats its click) disarms the gate
   instead of passing it.
-- **Long copy hides behind an info glyph, ❌ never back in the body**: step 4's cards and step 2's local option lead
-  with a line, the rest in a `contentEl` tooltip.
+- **Steps 3 and 4 ARE Settings surfaces**: `<SectionCard>` + `<SettingRow>` + `<SettingSwitch>`, plus
+  `UpdatesSection`'s email path (which POSTs only the email, ❌ never an install id). ❌ Never hand-roll a frame here:
+  onboarding's own filled on `--color-bg-primary`, a HOLE in the `--color-bg-dialog` panel.
+- **Long copy hides behind an `<InfoTip>` or a fold, ❌ never in the body**: step 4's rows, step 2's local option, step
+  1's "Why?".
 - **Step 2's options are plain `RadioGroup` rows, and each piece's snippet is an a11y call**: helper text and the
   Recommended badge go in `itemInline` (inside the label, so a click on either picks the option), the info `<button>`
   in `itemTrailing`, ❌ never inside the `role="radio"` element.
@@ -40,8 +43,6 @@ analytics disclosure and the terms (3) → Optional settings (4). Linux starts a
   registration storm per denial. It runs only while Allow/Deny is open, and stops on grant.
 - **The drive indexer and `volumes::list_locations`' icon fetches stay gated at boot** on
   `crate::fda_gate::is_fda_pending(...)`. Deny clears it (`startIndexingAfterFdaDecision()`), Allow on relaunch.
-- **`StepBeta` / `StepOptional` reuse existing Settings wiring** (`UpdatesSection`'s email path, `<SettingSwitch>`),
-  and that path POSTs only the email, ❌ never an install id.
 - **Search's coverage note routes INTO step 1** (`coverage-note.ts::offersFullDiskAccess`): ❌ no second FDA prompt,
   ❌ never over a snapshot folder.
 

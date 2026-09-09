@@ -11,6 +11,7 @@
     } from '$lib/tauri-commands'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import OnboardingStepShell from './OnboardingStepShell.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { systemStrings } from '$lib/system-strings.svelte'
@@ -56,6 +57,12 @@
 
     /** Has the user clicked "Open System Settings" this session? Drives the post-action hint. */
     let hasClickedOpenSettings = $state(false)
+    /**
+     * Is the "Why?" disclosure open? Closed by default: a first launch opens on an apology
+     * and three buttons, and the reasoning is there for whoever wants it. The state is
+     * per-mount, so a Back into step 1 folds it away again.
+     */
+    let whyOpen = $state(false)
     /**
      * Default to Ventura+ (alphabetical list) until the backend reports the real version.
      * macOS 12 and older append new entries at the end of the FDA list, so the
@@ -191,6 +198,17 @@
         }}>{@render children()}</LinkButton
     >{/snippet}
 
+<!-- Two rows of an invisible grid: the labels are a column of their own, so a wrapped
+     upside never runs under "Pro:" and the two read as headers rather than list markers. -->
+{#snippet prosAndCons()}
+    <dl class="pro-con">
+        <dt>{tString('onboarding.stepFda.pro.label')}</dt>
+        <dd>{tString('onboarding.stepFda.pro.body')}</dd>
+        <dt>{tString('onboarding.stepFda.con.label')}</dt>
+        <dd><Trans key="onboarding.stepFda.con.body" snippets={{ sourceLink }} /></dd>
+    </dl>
+{/snippet}
+
 {#if renderable}
     <OnboardingStepShell>
         {#if onboardingState.step1Granted}
@@ -201,59 +219,85 @@
             <h2 class="welcome">{tString('onboarding.stepFda.alreadyGranted.title')}</h2>
             <p>{tString('onboarding.stepFda.alreadyGranted.body', { systemSettings: systemStrings.systemSettings })}</p>
         {:else}
-            <h2 class="welcome">{tString('onboarding.stepFda.welcome.title')}</h2>
+            <!-- A column that fills the shell, so the decision buttons can sit on its floor
+                 however short the copy above them runs. -->
+            <div class="fda-body">
+                <h2 class="welcome">{tString('onboarding.stepFda.welcome.title')}</h2>
 
-            {#if onboardingState.step1Variant === 'revoked'}
-                <p>{tString('onboarding.stepFda.revoked.intro')}</p>
-                <p><strong>{tString('onboarding.stepFda.revoked.noAccess')}</strong></p>
-                <p><Trans key="onboarding.stepFda.revoked.ifIntentional" snippets={{ deny }} /></p>
-                <p><Trans key="onboarding.stepFda.revoked.ifNot" snippets={{ em }} /></p>
-            {:else}
-                <p><Trans key="onboarding.stepFda.firstAsk.lede" snippets={{ strong }} /></p>
-                <p>{tString('onboarding.stepFda.firstAsk.explain')}</p>
-                <p>{tString('onboarding.stepFda.firstAsk.askPermission')}</p>
-            {/if}
-
-            <ul class="bullets">
-                <li><Trans key="onboarding.stepFda.pro" snippets={{ strong }} /></li>
-                <li><Trans key="onboarding.stepFda.con" snippets={{ strong, sourceLink }} /></li>
-            </ul>
-
-            <p>{tString('onboarding.stepFda.ifAllow')}</p>
-
-            <ol class="steps">
-                <li>
-                    <Trans
-                        key="onboarding.stepFda.step1"
-                        snippets={{ strong }}
-                        params={{ systemSettings: systemStrings.systemSettings }}
-                    />
-                </li>
-                <li>
-                    {#if isVenturaOrNewer}
-                        <Trans key="onboarding.stepFda.step2.ventura" snippets={{ strong }} />
-                    {:else}
-                        <Trans key="onboarding.stepFda.step2.older" snippets={{ strong }} />
+                {#if onboardingState.step1Variant === 'revoked'}
+                    <p>{tString('onboarding.stepFda.revoked.intro')}</p>
+                    <p><strong>{tString('onboarding.stepFda.revoked.noAccess')}</strong></p>
+                    <p><Trans key="onboarding.stepFda.revoked.ifIntentional" snippets={{ deny }} /></p>
+                    <!-- This lede ends on "here are the pros and cons", so they stay in the open;
+                         only the first ask, where the user hasn't asked anything yet, folds them. -->
+                    <p><Trans key="onboarding.stepFda.revoked.ifNot" snippets={{ em }} /></p>
+                    <SectionCard>{@render prosAndCons()}</SectionCard>
+                {:else}
+                    <p>
+                        <Trans key="onboarding.stepFda.firstAsk.lede" snippets={{ strong }} />
+                        <LinkButton
+                            aria-expanded={whyOpen}
+                            aria-controls="fda-why"
+                            onclick={() => (whyOpen = !whyOpen)}>{tString('onboarding.stepFda.why')}</LinkButton
+                        >
+                    </p>
+                    {#if whyOpen}
+                        <div id="fda-why">
+                            <SectionCard>
+                                <p>{tString('onboarding.stepFda.firstAsk.explain')}</p>
+                                <p>{tString('onboarding.stepFda.firstAsk.askPermission')}</p>
+                                {@render prosAndCons()}
+                            </SectionCard>
+                        </div>
                     {/if}
-                    <p class="step-tip"><Trans key="onboarding.stepFda.step2.tip" snippets={{ strong }} /></p>
-                </li>
-                <li><Trans key="onboarding.stepFda.step3" snippets={{ strong }} /></li>
-            </ol>
+                {/if}
 
-            <div class="buttons">
-                <Button variant="primary" onclick={handleAllow}
-                    >{tString('onboarding.stepFda.openSettings', {
-                        systemSettings: systemStrings.systemSettings,
-                    })}</Button
-                >
-                <Button variant="danger" onclick={handleDeny}>{tString('onboarding.stepFda.deny')}</Button>
-            </div>
-            {#if hasClickedOpenSettings && onboardingState.step1FooterMode === 'restart'}
-                <div class="post-action">
-                    <p>{tString('onboarding.stepFda.postAction.intro')}</p>
-                    <p><Trans key="onboarding.stepFda.postAction.body" snippets={{ restart, deny }} /></p>
+                <p>{tString('onboarding.stepFda.ifAllow')}</p>
+
+                <!-- The marker is a counter in a flex row, not a list marker in a padded
+                     indent, so the tip under step 2 starts on the same left edge as the step
+                     text above it. ❌ Not `text-indent`, which is inherited and displaces the
+                     content of every inline-flex descendant. -->
+                <ol class="steps">
+                    <li>
+                        <span class="step-text">
+                            <Trans
+                                key="onboarding.stepFda.step1"
+                                snippets={{ strong }}
+                                params={{ systemSettings: systemStrings.systemSettings }}
+                            />
+                        </span>
+                    </li>
+                    <li>
+                        <span class="step-text">
+                            {#if isVenturaOrNewer}
+                                <Trans key="onboarding.stepFda.step2.ventura" snippets={{ strong }} />
+                            {:else}
+                                <Trans key="onboarding.stepFda.step2.older" snippets={{ strong }} />
+                            {/if}
+                            <span class="step-tip"
+                                ><Trans key="onboarding.stepFda.step2.tip" snippets={{ strong }} /></span
+                            >
+                        </span>
+                    </li>
+                    <li><span class="step-text"><Trans key="onboarding.stepFda.step3" snippets={{ strong }} /></span></li>
+                </ol>
+
+                <div class="buttons">
+                    <Button variant="primary" onclick={handleAllow}
+                        >{tString('onboarding.stepFda.openSettings', {
+                            systemSettings: systemStrings.systemSettings,
+                        })}</Button
+                    >
+                    <Button variant="danger" onclick={handleDeny}>{tString('onboarding.stepFda.deny')}</Button>
                 </div>
-            {/if}
+                {#if hasClickedOpenSettings && onboardingState.step1FooterMode === 'restart'}
+                    <div class="post-action">
+                        <p>{tString('onboarding.stepFda.postAction.intro')}</p>
+                        <p><Trans key="onboarding.stepFda.postAction.body" snippets={{ restart, deny }} /></p>
+                    </div>
+                {/if}
+            </div>
         {/if}
     </OnboardingStepShell>
 {/if}
@@ -278,32 +322,72 @@
         margin-bottom: 0;
     }
 
-    .bullets,
+    /* Fills the shell's content box, so `margin-top: auto` on the buttons can drop them to
+       its floor. `min-height` rather than `height`: taller copy grows the column and the
+       shell scrolls, and an auto height means nothing inside ever gets squashed to fit. */
+    .fda-body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+    }
+
+    /* Labels in their own column, so a wrapped upside stays clear of "Pro:". */
+    .pro-con {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: var(--spacing-sm) var(--spacing-md);
+        margin: 0;
+    }
+
+    .pro-con dt {
+        font-weight: 600;
+    }
+
+    .pro-con dd {
+        margin: 0;
+    }
+
     .steps {
         margin: 0 0 var(--spacing-lg) 0;
-        padding-left: var(--spacing-xl);
+        padding-left: 0;
+        list-style: none;
+        counter-reset: fda-step;
     }
 
-    .bullets li,
     .steps li {
+        display: flex;
+        gap: var(--spacing-xs);
         margin-bottom: var(--spacing-sm);
+        counter-increment: fda-step;
     }
 
-    .bullets li:last-child,
+    .steps li::before {
+        content: counter(fda-step) '.';
+        flex: none;
+    }
+
     .steps li:last-child {
         margin-bottom: 0;
     }
 
+    .step-text {
+        min-width: 0;
+    }
+
     .step-tip {
-        margin: var(--spacing-xs) 0 0 0;
+        display: block;
+        margin-top: var(--spacing-xs);
         color: var(--color-text-secondary);
     }
 
+    /* `auto` is what puts the decision on the panel's floor: everything above keeps its own
+       rhythm, and the slack collects here. */
     .buttons {
         display: flex;
         gap: var(--spacing-md);
         justify-content: center;
-        margin-top: var(--spacing-lg);
+        margin-top: auto;
+        padding-top: var(--spacing-lg);
     }
 
     .post-action {

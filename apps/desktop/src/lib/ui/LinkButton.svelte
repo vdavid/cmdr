@@ -20,6 +20,12 @@
         disabled?: boolean
         onclick?: (e: MouseEvent) => void
         'aria-label'?: string
+        /**
+         * For a link that toggles a disclosure below it: the pair tells a screen reader
+         * that the link opens something and whether it's open. Button form only.
+         */
+        'aria-expanded'?: boolean
+        'aria-controls'?: string
         children: Snippet
     }
 
@@ -31,6 +37,8 @@
         disabled = false,
         onclick,
         'aria-label': ariaLabel,
+        'aria-expanded': ariaExpanded,
+        'aria-controls': ariaControls,
         children,
     }: Props = $props()
 </script>
@@ -41,7 +49,15 @@
         {@render children()}
     </a>
 {:else}
-    <button class="link-button" {type} {disabled} {onclick} aria-label={ariaLabel}>
+    <button
+        class="link-button"
+        {type}
+        {disabled}
+        {onclick}
+        aria-label={ariaLabel}
+        aria-expanded={ariaExpanded}
+        aria-controls={ariaControls}
+    >
         {@render children()}
     </button>
 {/if}

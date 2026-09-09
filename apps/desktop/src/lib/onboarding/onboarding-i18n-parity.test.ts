@@ -134,17 +134,20 @@ describe('onboarding step 1 (FDA) parity (en)', () => {
     )
   })
 
-  it('resolves the pros/cons bullets', () => {
-    expect(renderRich('onboarding.stepFda.pro', ['strong'])).toBe(
-      '<strong>Pro:</strong> The app will access your entire disk without nagging you for permissions to each folder like Downloads, Documents, and Desktop.',
+  it('resolves the pros/cons grid, label and body apart', () => {
+    expect(tString('onboarding.stepFda.why')).toBe('Why?')
+    expect(tString('onboarding.stepFda.pro.label')).toBe('Pro:')
+    expect(tString('onboarding.stepFda.pro.body')).toBe(
+      'The app will access your entire disk without nagging you for permissions to each folder like Downloads, Documents, and Desktop.',
     )
-    expect(renderRich('onboarding.stepFda.con', ['strong', 'sourceLink'])).toBe(
-      '<strong>Con:</strong> Full disk access is pretty powerful. It lets the app read any file on your Mac. Only grant this if you trust Cmdr. Cmdr uses this right respectfully, and is <sourceLink>source-available</sourceLink> if you feel unsure.',
+    expect(tString('onboarding.stepFda.con.label')).toBe('Con:')
+    expect(renderRich('onboarding.stepFda.con.body', ['sourceLink'])).toBe(
+      'Full disk access is pretty powerful. It lets the app read any file on your Mac. Only grant this if you trust Cmdr. Cmdr uses this right respectfully, and is <sourceLink>source-available</sourceLink> if you feel unsure.',
     )
   })
 
   it('resolves the allow-steps and the settings buttons', () => {
-    expect(tString('onboarding.stepFda.ifAllow')).toBe('If you decide to allow:')
+    expect(tString('onboarding.stepFda.ifAllow')).toBe('Three easy steps:')
     expect(tString('onboarding.stepFda.openSettings', { systemSettings: SYS_SETTINGS })).toBe('Open System Settings')
     expect(renderRich('onboarding.stepFda.step1', ['strong'], { systemSettings: SYS_SETTINGS })).toBe(
       'Click <strong>Open System Settings</strong> below',
@@ -156,7 +159,7 @@ describe('onboarding step 1 (FDA) parity (en)', () => {
       'Find <strong>Cmdr</strong> at the end of the list and toggle it on',
     )
     expect(renderRich('onboarding.stepFda.step2.tip', ['strong'])).toBe(
-      'Tip: Is Cmdr not in the list? Click the "+" button at the bottom, and choose <strong>Cmdr</strong> from your <strong>Applications</strong> folder.',
+      'Is Cmdr not in the list? Click the "+" button at the bottom, and choose <strong>Cmdr</strong> from your <strong>Applications</strong> folder.',
     )
     expect(renderRich('onboarding.stepFda.step3', ['strong'])).toBe('Confirm and click <strong>Quit & Reopen</strong>')
     expect(tString('onboarding.stepFda.deny')).toBe('Deny')

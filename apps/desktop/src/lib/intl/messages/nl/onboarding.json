@@ -84,13 +84,21 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.pro": "<strong>Voordeel:</strong> De app krijgt toegang tot je hele schijf zonder je voor elke map zoals Downloads, Documenten en Bureaublad om toestemming te vragen.",
-  "@onboarding.stepFda.pro": {
-    "sourceHash": "e00bada"
+  "onboarding.stepFda.pro.label": "Voordeel:",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.con": "<strong>Nadeel:</strong> Volledige schijftoegang is behoorlijk krachtig. Hiermee kan de app elk bestand op je Mac lezen. Verleen dit alleen als je Cmdr vertrouwt. Cmdr gaat respectvol met dit recht om en is <sourceLink>source-available</sourceLink> als je twijfelt.",
-  "@onboarding.stepFda.con": {
-    "sourceHash": "745753e"
+  "onboarding.stepFda.pro.body": "De app krijgt toegang tot je hele schijf zonder je voor elke map zoals Downloads, Documenten en Bureaublad om toestemming te vragen.",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "Nadeel:",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "Volledige schijftoegang is behoorlijk krachtig. Hiermee kan de app elk bestand op je Mac lezen. Verleen dit alleen als je Cmdr vertrouwt. Cmdr gaat respectvol met dit recht om en is <sourceLink>source-available</sourceLink> als je twijfelt.",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
   },
   "onboarding.stepFda.ifAllow": "Als je besluit toe te staan:",
   "@onboarding.stepFda.ifAllow": {
@@ -113,9 +121,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Tip: staat Cmdr niet in de lijst? Klik op de knop ‘+’ onderaan en kies <strong>Cmdr</strong> uit je map <strong>Programma''s</strong>.",
+  "onboarding.stepFda.step2.tip": "Staat Cmdr niet in de lijst? Klik op de knop ‘+’ onderaan en kies <strong>Cmdr</strong> uit je map <strong>Programma''s</strong>.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "1bdc656"
+    "sourceHash": "30d0299"
   },
   "onboarding.stepFda.step3": "Bevestig en klik op <strong>Stop en open opnieuw</strong>",
   "@onboarding.stepFda.step3": {

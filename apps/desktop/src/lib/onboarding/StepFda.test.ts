@@ -107,14 +107,30 @@ describe('StepFda', () => {
     resetForTesting()
   })
 
-  it('first-ask variant renders the welcome + pros/cons + Allow + Deny', async () => {
+  it('first-ask variant opens on the apology and the decision, pros and cons folded away', async () => {
     setStep1Variant('first-ask')
     mounted = mountStep()
     await tick()
     expect(mounted.target.textContent).toContain('Welcome to Cmdr!')
-    expect(mounted.target.textContent).toContain('full disk access')
+    expect(mounted.target.textContent).toContain('Sorry to bother you with this first')
+    // The reasoning is a click away, not on screen: a first launch shouldn't open on it.
+    expect(mounted.target.textContent).not.toContain('Pro:')
     expect(findButtonContaining(mounted.target, 'Open')).not.toBeNull()
     expect(findButton(mounted.target, 'Deny')).not.toBeNull()
+  })
+
+  it('"Why?" unfolds the explanation and the pros-and-cons grid', async () => {
+    setStep1Variant('first-ask')
+    mounted = mountStep()
+    await tick()
+    const why = findButton(mounted.target, 'Why?')
+    expect(why?.getAttribute('aria-expanded')).toBe('false')
+    why?.click()
+    flushSync()
+    expect(why?.getAttribute('aria-expanded')).toBe('true')
+    expect(mounted.target.textContent).toContain('Cmdr is a file manager')
+    expect(mounted.target.textContent).toContain('Pro:')
+    expect(mounted.target.textContent).toContain('Con:')
   })
 
   it('revoked variant renders the "previously revoked" framing', async () => {

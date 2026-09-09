@@ -83,13 +83,21 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.pro": "<strong>Fördel:</strong> Appen kommer åt hela din skiva utan att tjata om behörigheter till varje mapp, som Hämtade filer, Dokument och Skrivbord.",
-  "@onboarding.stepFda.pro": {
-    "sourceHash": "e00bada"
+  "onboarding.stepFda.pro.label": "Fördel:",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.con": "<strong>Nackdel:</strong> Full skivtillgång är ganska kraftfull. Den låter appen läsa vilken fil som helst på din Mac. Ge bara detta om du litar på Cmdr. Cmdr använder den här rätten respektfullt och är <sourceLink>källtillgänglig</sourceLink> om du känner dig osäker.",
-  "@onboarding.stepFda.con": {
-    "sourceHash": "745753e"
+  "onboarding.stepFda.pro.body": "Appen kommer åt hela din skiva utan att tjata om behörigheter till varje mapp, som Hämtade filer, Dokument och Skrivbord.",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "Nackdel:",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "Full skivtillgång är ganska kraftfull. Den låter appen läsa vilken fil som helst på din Mac. Ge bara detta om du litar på Cmdr. Cmdr använder den här rätten respektfullt och är <sourceLink>källtillgänglig</sourceLink> om du känner dig osäker.",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
   },
   "onboarding.stepFda.ifAllow": "Om du bestämmer dig för att tillåta:",
   "@onboarding.stepFda.ifAllow": {
@@ -111,9 +119,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Tips: Finns inte Cmdr i listan? Klicka på ”+”-knappen längst ner och välj <strong>Cmdr</strong> från din mapp <strong>Program</strong>.",
+  "onboarding.stepFda.step2.tip": "Finns inte Cmdr i listan? Klicka på ”+”-knappen längst ner och välj <strong>Cmdr</strong> från din mapp <strong>Program</strong>.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "1bdc656"
+    "sourceHash": "30d0299"
   },
   "onboarding.stepFda.step3": "Bekräfta och klicka på <strong>Avsluta och öppna igen</strong>",
   "@onboarding.stepFda.step3": {

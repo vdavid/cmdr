@@ -83,13 +83,21 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.pro": "<strong>Avantage :</strong> l''app accédera à l''intégralité de votre disque sans vous réclamer une autorisation pour chaque dossier comme Téléchargements, Documents et Bureau.",
-  "@onboarding.stepFda.pro": {
-    "sourceHash": "e00bada"
+  "onboarding.stepFda.pro.label": "Avantage :",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.con": "<strong>Inconvénient :</strong> l''accès complet au disque est plutôt puissant. Il permet à l''app de lire n''importe quel fichier de votre Mac. N''accordez ceci que si vous faites confiance à Cmdr. Cmdr utilise ce droit avec respect, et son code est <sourceLink>consultable publiquement</sourceLink> si vous avez un doute.",
-  "@onboarding.stepFda.con": {
-    "sourceHash": "745753e"
+  "onboarding.stepFda.pro.body": "L''app accédera à l''intégralité de votre disque sans vous réclamer une autorisation pour chaque dossier comme Téléchargements, Documents et Bureau.",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "Inconvénient :",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "L''accès complet au disque est plutôt puissant. Il permet à l''app de lire n''importe quel fichier de votre Mac. N''accordez ceci que si vous faites confiance à Cmdr. Cmdr utilise ce droit avec respect, et son code est <sourceLink>consultable publiquement</sourceLink> si vous avez un doute.",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
   },
   "onboarding.stepFda.ifAllow": "Si vous décidez d''autoriser :",
   "@onboarding.stepFda.ifAllow": {
@@ -111,9 +119,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Astuce : Cmdr n''est pas dans la liste ? Cliquez sur le bouton « + » en bas, et choisissez <strong>Cmdr</strong> dans votre dossier <strong>Applications</strong>.",
+  "onboarding.stepFda.step2.tip": "Cmdr n''est pas dans la liste ? Cliquez sur le bouton « + » en bas, et choisissez <strong>Cmdr</strong> dans votre dossier <strong>Applications</strong>.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "1bdc656"
+    "sourceHash": "30d0299"
   },
   "onboarding.stepFda.step3": "Confirmez et cliquez sur <strong>Quitter et rouvrir</strong>",
   "@onboarding.stepFda.step3": {

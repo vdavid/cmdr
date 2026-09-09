@@ -36,14 +36,6 @@ finishes onboarding.
   email/`betaSignup` wiring.
 - **`StepOptional.svelte`**: Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry
   settings.
-- **`OnboardingToggleCard.svelte`**: one registry-backed `<SettingSwitch>` with its title, description snippet, and
-  caption, rendered by both `StepBeta`'s analytics opt-out and `StepOptional`'s four toggles so the two steps agree on
-  layout. `appearance` picks the chrome: `'card'` (default) draws the bordered, filled block that sets ONE toggle apart
-  from the prose around it; `'plain'` keeps the layout and rhythm but drops the frame, which is what a RUN of toggles
-  needs — four filled blocks stack into a wall, and a frame stops separating anything once every row has one. Plain also
-  drops the horizontal inset, so a title lines up with the step's own heading. `captionPlacement` puts the caption under
-  the switch or on its left, and an optional `details` snippet + `detailsLabel` adds the info glyph beside the title
-  (see § "The info glyph"). The description snippet is styled by the parent's own `.toggle-desc` / `.toggle-list`.
 - **`onboarding-state.svelte.ts`**: Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner
   mode, `openWizard()` / `resumeStepFor()` etc.
 
@@ -166,13 +158,28 @@ macOS only. Linux skips the step entirely (the resume rule lands Linux users on 
 
 The step has three opening copy variants, picked by `step1VariantFor()` in `onboarding-state.svelte.ts`:
 
-- **first-ask** (`fullDiskAccessChoice === 'notAskedYet'`): welcome + pros/cons + how-to + Allow / Deny.
+- **first-ask** (`fullDiskAccessChoice === 'notAskedYet'`): welcome + a folded "Why?" + how-to + Allow / Deny.
 - **revoked** (`'allow' && !hasFda && isOnboarded`): "Cmdr previously had FDA but you revoked it…" framing.
 - **already-granted** (`hasFda === true`, menu / palette re-entry): single line + a Next footer button.
 
 The buttons inside the step body (`Open System Settings`, `Deny`) own the Allow / Deny flow; the wizard's footer primary
 button is hidden in `decide` mode and reads `Restart Cmdr` in `restart` mode (set after Allow). The `already-granted`
 variant has no in-body buttons; the wizard's footer renders a single `Next`.
+
+### What a first launch opens on
+
+The apology, three numbered steps, and the two buttons. Nothing else: the screen the user actually has to act on is a
+decision plus an instruction, and everything that explains WHY is one "Why?" link away, in a `SectionCard` that unfolds
+under the lede. The reasoning is real and worth reading, it just isn't what someone wants first.
+
+The revoked variant keeps its pros and cons in the open, because its own lede ends on "here are the pros and cons".
+
+Inside that card the two sit in a `<dl>` laid out as a two-column grid: "Pro:" and "Con:" are a column of their own, so
+a wrapped line never runs under its own label and the two read as headers rather than list markers.
+
+The buttons sit on the panel's floor (`.fda-body` is a `min-height: 100%` flex column, `.buttons` takes `margin-top:
+auto`). `min-height` rather than `height`, so taller copy grows the column and the shell scrolls; an auto height also
+means nothing inside ever gets squashed to fit, which a plain flex column would do.
 
 ### Live grant detection
 
@@ -425,23 +432,35 @@ puts `aria-required` on the control, which is what a screen reader announces. Ne
 Four toggle blocks, each bound to an existing registry setting via `<SettingSwitch>`. Defaults stay ON; the step is
 about letting the user turn things OFF with full context, not about asking for opt-in.
 
+### Settings' own grouping, not a bespoke one
+
+The four toggles are one `<SectionCard>` of `<SettingRow>`s, which is exactly how Settings frames a run of rows: the
+card groups, the rows divide themselves. Step 3's analytics toggle, contact email, and terms each get a card of their
+own for the same reason.
+
+Onboarding passes its own friendlier `label` / `description` instead of the registry's copy, which is the one place it
+diverges from a Settings page. Everything else (the reset pip, the anchor id, the divider rhythm) it takes as-is.
+
+❌ Don't hand-roll a frame here again. The one that used to live in `OnboardingToggleCard` filled with
+`--color-bg-primary`, the app's RECESSED surface, so on the `--color-bg-dialog` panel each block read as a hole punched
+in it. `SectionCard`'s `--color-bg-secondary` is what the dialog token was tuned against (`app.css`, the
+`--color-bg-dialog` comment).
+
 ### The info glyph
 
-Each card shows a half-line `*.summary` and parks its full `*.desc` in a tooltip behind an info glyph beside the title.
-Four paragraphs of prose made the LAST step of onboarding a wall of text, which is the worst place for one: the user is
-trying to get into the app. The summary carries the trade-off in a line; the tooltip is there for whoever wants the why.
+Each row shows a half-line `*.summary` and parks its full `*.desc` behind an `<InfoTip>` beside the label (`SettingRow`'s
+`labelTrailing` snippet). Four paragraphs of prose made the LAST step of onboarding a wall of text, which is the worst
+place for one: the user is trying to get into the app. The summary carries the trade-off in a line; the tip is there for
+whoever wants the why.
 
-The glyph is a `<button>`, not a decorated span, so the tooltip opens on Tab as well as hover (the action fires on
-`focus`, which is also why a native `title` is banned app-wide). Its content goes through the tooltip action's
-`contentEl`, so it can carry real `<p>` and `<ol>` elements rather than one run-on line; `OnboardingToggleCard` renders
-it into a `<div hidden>` host and hands over the INNER element, since an adopted element keeps its own `hidden`.
+`InfoTip` is a `<button>`, not a decorated span, so it opens on Tab as well as hover (the tooltip action fires on
+`focus`, which is also why a native `title` is banned app-wide), and its body goes through the action's `contentEl`, so
+it can carry real `<p>` and `<ol>` elements rather than one run-on line. The step owns that markup and its
+`.toggle-desc` / `.toggle-list` styling.
 
-That host sits outside `.toggle-text` on purpose: a hidden sibling in there would still count for `:last-child`, and the
-summary above it would keep a paragraph gap under it with nothing to separate.
-
-The card's `captionPlacement="inline"` moves "Recommended: on" onto the switch's left, so the verdict reads as the
-switch's own label instead of a footnote under it. The rest of that caption ("You can change this any time in Settings")
-closes each tooltip as its own paragraph, where there's room for it.
+"Recommended: on" rides in the control slot on the switch's left, so the verdict reads as the switch's own label instead
+of a footnote under it. The rest of that caption ("You can change this any time in Settings") closes each tip as its own
+paragraph, where there's room for it.
 
 Each sentence of the tooltip copy sits on its own line: the catalog values carry real `\n`s and `.toggle-desc` is
 `white-space: pre-line`. Six sentences in one block is the wall of text the info glyph existed to avoid, and CSS can't

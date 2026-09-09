@@ -83,13 +83,21 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.pro": "<strong>A favor:</strong> La app accederá a todo tu disco sin pedirte permisos para cada carpeta como Descargas, Documentos y Escritorio.",
-  "@onboarding.stepFda.pro": {
-    "sourceHash": "e00bada"
+  "onboarding.stepFda.pro.label": "A favor:",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.con": "<strong>En contra:</strong> El acceso a todo el disco es bastante potente. Permite que la app lea cualquier archivo de tu Mac. Concédelo solo si confías en Cmdr. Cmdr usa este derecho con respeto, y es de <sourceLink>código abierto</sourceLink> si tienes dudas.",
-  "@onboarding.stepFda.con": {
-    "sourceHash": "745753e"
+  "onboarding.stepFda.pro.body": "La app accederá a todo tu disco sin pedirte permisos para cada carpeta como Descargas, Documentos y Escritorio.",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "En contra:",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "El acceso a todo el disco es bastante potente. Permite que la app lea cualquier archivo de tu Mac. Concédelo solo si confías en Cmdr. Cmdr usa este derecho con respeto, y es de <sourceLink>código abierto</sourceLink> si tienes dudas.",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
   },
   "onboarding.stepFda.ifAllow": "Si decides permitirlo:",
   "@onboarding.stepFda.ifAllow": {
@@ -111,9 +119,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Consejo: ¿Cmdr no está en la lista? Haz clic en el botón \"+\" de abajo y elige <strong>Cmdr</strong> en tu carpeta <strong>Aplicaciones</strong>.",
+  "onboarding.stepFda.step2.tip": "¿Cmdr no está en la lista? Haz clic en el botón \"+\" de abajo y elige <strong>Cmdr</strong> en tu carpeta <strong>Aplicaciones</strong>.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "1bdc656"
+    "sourceHash": "30d0299"
   },
   "onboarding.stepFda.step3": "Confirma y haz clic en <strong>Salir y volver a abrir</strong>",
   "@onboarding.stepFda.step3": {

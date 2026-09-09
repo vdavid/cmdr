@@ -83,13 +83,21 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.pro": "<strong>Lợi:</strong> Ứng dụng sẽ truy cập toàn bộ đĩa mà không phải xin phép từng thư mục như Tải về, Tài liệu, và Màn hình nền.",
-  "@onboarding.stepFda.pro": {
-    "sourceHash": "e00bada"
+  "onboarding.stepFda.pro.label": "Lợi:",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.con": "<strong>Hại:</strong> Quyền truy cập toàn bộ đĩa khá mạnh. Nó cho phép ứng dụng đọc bất kỳ tệp nào trên máy Mac của bạn. Chỉ cấp quyền này nếu bạn tin tưởng Cmdr. Cmdr dùng quyền này một cách tôn trọng, và <sourceLink>mã nguồn có thể xem được</sourceLink> nếu bạn còn băn khoăn.",
-  "@onboarding.stepFda.con": {
-    "sourceHash": "745753e"
+  "onboarding.stepFda.pro.body": "Ứng dụng sẽ truy cập toàn bộ đĩa mà không phải xin phép từng thư mục như Tải về, Tài liệu, và Màn hình nền.",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "Hại:",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "Quyền truy cập toàn bộ đĩa khá mạnh. Nó cho phép ứng dụng đọc bất kỳ tệp nào trên máy Mac của bạn. Chỉ cấp quyền này nếu bạn tin tưởng Cmdr. Cmdr dùng quyền này một cách tôn trọng, và <sourceLink>mã nguồn có thể xem được</sourceLink> nếu bạn còn băn khoăn.",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
   },
   "onboarding.stepFda.ifAllow": "Nếu bạn quyết định cho phép:",
   "@onboarding.stepFda.ifAllow": {
@@ -111,9 +119,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Mẹo: Cmdr không có trong danh sách? Nhấn nút \"+\" ở dưới cùng, rồi chọn <strong>Cmdr</strong> từ thư mục <strong>Ứng dụng</strong> của bạn.",
+  "onboarding.stepFda.step2.tip": "Cmdr không có trong danh sách? Nhấn nút \"+\" ở dưới cùng, rồi chọn <strong>Cmdr</strong> từ thư mục <strong>Ứng dụng</strong> của bạn.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "1bdc656"
+    "sourceHash": "30d0299"
   },
   "onboarding.stepFda.step3": "Xác nhận và nhấn <strong>Thoát & Mở lại</strong>",
   "@onboarding.stepFda.step3": {
