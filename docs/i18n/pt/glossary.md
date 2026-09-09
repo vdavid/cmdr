@@ -534,10 +534,11 @@ The Ask Cmdr rename-proposal modal: a table of proposed renames the user allows 
   `chosenFolders.help`): it's a property of the indexed item, not the feature name.
 - indexing (in progress) · **Indexando** · pt-BR gerund, matching every sibling progress label (Copiando/Movendo/
   Analisando/Baixando) and the shipped `search.imageResults.indexing` ("ainda estão sendo indexadas") · confirmed. ❌
-  Never the pt-PT `A indexar` / `está a indexar`. `fileExplorer.imageIndex.indexing`, `indexingTooltip*`.
+  Never the pt-PT `A indexar` / `está a indexar`. `fileExplorer.imageIndex.file.indexing` = `Indexando agora`.
 - indexing pass (one sweep of the image indexer) · **rodada** ("on the next pass" → "na próxima rodada") · standard
   pt-BR for a periodic batch run; chosen over "passagem" (reads as passage/ticket) and over **varredura**, which is
-  reserved for the drive scan · high. `fileExplorer.imageIndex.indexedTooltip`.
+  reserved for the drive scan · high. No shipped string names an indexing pass, so this row is a decision held ready for
+  the first one that does.
 - full check (the drive index's next scheduled full walk) · **varredura completa** · the settled drive-scan noun; the
   sibling drive-index tooltips already say "Faça uma nova varredura" / "Refaça a varredura" · confirmed. ❌ Not "análise
   completa": **Análise/Analisar** is reserved for the transfer/delete pre-count sense.
@@ -689,7 +690,7 @@ para um zip." Re-check any other row whose sources name the bare `pt` pile.
   settled word for a full check (`tooltipCoalesced`: "a próxima varredura completa do Cmdr") and that string's closing
   `vai corrigir isso` · high.
 
-### Stalled-transfer notice terms (`fileOperations.transferProgress.close`/`stall*` + `queue.row.stalled`, 2026-07-31)
+### Stalled-transfer notice terms (`fileOperations.transferProgress.close`/`stall*`, 2026-07-31)
 
 The copy/move dialog stops showing an ETA it no longer believes and explains the stall instead. Whole batch avoids
 "erro"/"falhou" (and any bare "Erro"), per the no-bare-error voice rule.
@@ -701,9 +702,9 @@ The copy/move dialog stops showing an ETA it no longer believes and explains the
 - "No progress for {duration}" (the line that replaces the ETA on a stalled transfer) · **Sem progresso há {duration}**
   · `progresso` is macOS Finder pt-BR ("Show Copy Progress" → "Mostrar Progresso da Cópia", "Show Progress Window" →
   "Mostrar Janela de Progresso") · high. **`há`, not `por`/`durante`**: pt-BR expresses an elapsed stretch running up to
-  now with `há` ("Sem progresso há 45s"), and `{duration}` is always an already-formatted elapsed span. Same value in
-  both surfaces, with the dialog's period and without it on the queue row, matching English
-  (`transferProgress.stallNotice`, `queue.row.stalled`).
+  now with `há` ("Sem progresso há 45s"), and `{duration}` is always an already-formatted elapsed span. One key,
+  `transferProgress.stallNotice`, feeds both the progress dialog and the queue row, and its value carries no final
+  period, matching English.
 - "Waiting for the {destination,source} to respond" · **Aguardando resposta do destino** / **Aguardando resposta da
   origem** · the noun-phrase shape is Double Commander pt-BR's ("Waiting for user response" → "Aguardando resposta do
   usuário", "Waiting for access to file source" → "Aguardando acesso à origem do arquivo") and Total Commander pt-BR's
@@ -733,7 +734,7 @@ The copy/move dialog stops showing an ETA it no longer believes and explains the
   de operações tem os detalhes."); **arquivo de registro** is catalog-settled (`settings.json` "Abrir arquivo de
   registro", `errorReporter` "arquivos de registro") · confirmed. Keeping the head noun `arquivo de` is what separates
   the log file from the `registro de operações` feature; MS terminology's "arquivo de log" loses to catalog consistency.
-- No `sameAsSourceJustification` needed: all eight values differ from English.
+- No `sameAsSourceJustification` needed: all seven values differ from English.
 
 ## Caminho copiado: a confirmação da área de transferência (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
@@ -1229,9 +1230,9 @@ qualquer script), então nenhuma frase depende do gênero, do número ou da inic
 - **"The destination can't hold that name." → `O destino não consegue armazenar esse nome.`** · reusa o verbo do irmão
   `errors.write.invalidName.message` ("um nome que o destino não consegue armazenar") · confirmed. O conserto é sempre
   outro nome, nunca repetir: **Escolha outro.**
-- **"That password didn't work." → `Essa senha não funcionou.`** · `fileExplorer.smbReauth.savedPasswordFailed` ("Sua
-  senha salva não funcionou.") · confirmed. Culpa a senha, não a pessoa. **password-protected → `protegido por senha`**
-  (linha do glossário, diálogo de senha de zip).
+- **"That password didn't work." → `Essa senha não funcionou.`** · do irmão já publicado
+  `servers.refusal.authenticationRejected` ("Essa senha não funcionou para {username}.") · confirmed. Culpa a senha, não
+  a pessoa. **password-protected → `protegido por senha`** (linha do glossário, diálogo de senha de zip).
 - **"the change" (a renomeação/criação pedida) → `a alteração`** · usado em `timedOut` e em `deviceDisconnected` ("antes
   de a alteração ser concluída") · high. Distinto de **as mudanças** do sistema de arquivos (`fileExplorer.imageIndex`),
   que é o outro sentido de "changes" no catálogo.
@@ -1963,9 +1964,9 @@ o caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this mach
   (`Ajustes do Sistema`, `Ajustes de Confiança`), e o catálogo já a publica em
   `settings.appearance.appColor.description` · high
 - **sign in → `iniciar sessão` (com artigo em texto corrido: `iniciar a sessão`)** · o catálogo já assentou
-  (`fileExplorer.network.signIn` = `Iniciar sessão`, `fileExplorer.smbReauth.savedPasswordFailed` =
-  `Inicie a sessão para reconectar.`) · confirmed. Daí `sign-in method` → **`método de início de sessão`**, na forma
-  nominal que a Apple usa em `Itens de Início de Sessão`.
+  (`fileExplorer.network.signIn` = `Iniciar sessão`; em texto corrido, `servers.sheet.needsStoredSecret` =
+  `… e inicie a sessão uma vez.`) · confirmed. Daí `sign-in method` → **`método de início de sessão`**, na forma nominal
+  que a Apple usa em `Itens de Início de Sessão`.
 - **Signed out → `Sessão encerrada.`** · estado que concorda com a SESSÃO, não com a pessoa, que é como esta § evita
   gênero sem glifo nenhum · high
 - **doesn't support → `não oferece suporte a`** · forma já publicada em `errors.volume.notSupported` e
@@ -1973,8 +1974,9 @@ o caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this mach
   (`O Cmdr ainda não oferece suporte ao método de início de sessão que este servidor usa.`): manter o servidor como
   sujeito exigiria um `a que` que trava a leitura.
 - **That doesn't look like … → `Isso não parece …`** · molde já publicado em `common.attachEmailInvalid`
-  (`That doesn't look like an email address` → `Isso não parece um e-mail`), e `endereço de servidor` vem do
-  `fileExplorer.network.connectDialog.addressAriaLabel` (`Endereço do servidor`) · confirmed
+  (`That doesn't look like an email address` → `Isso não parece um e-mail`), e `endereço de servidor` compõe o
+  `endereço` já assentado (`servers.sheet.address` e `servers.hub.colAddress` = `Endereço`) com a linha `server` →
+  **servidor** do glossário · confirmed
 - **Cmdr couldn't X → `O Cmdr não conseguiu X`** · o molde do catálogo inteiro
   (`settings.mediaIndex.reclaim.couldNotDelete`, `errors.listing.notFound.explanation`), e o `O Cmdr` por extenso é a
   regra do style.md § "Uma frase de resultado nunca fica sem sujeito" · confirmed
@@ -2139,16 +2141,17 @@ nesta máquina, então as fontes vêm do macOS instalado (26.6.2, build 25G83, 2
   `DisplaysSettingsIntentsExtension.appex/Localizable.loctable` (`Automatically reconnect` →
   `Reconectar automaticamente`) · confirmed.
 - **Connect → `Conectar`; Guest → `Convidado`** · `NetAuthAgent.app/AuthDialog.loctable`, o próprio diálogo de conectar
-  a servidor da Apple (`600218.title` `Connect` → `Conectar`, `RiA-l0-ASw.title` `Guest` → `Convidado`) · confirmed. As
-  duas já eram o que o catálogo publica (`fileExplorer.network.connect`, `fileExplorer.network.login.connectAsGuest`),
-  então as chaves do painel copiam byte a byte.
+  a servidor da Apple (`600218.title` `Connect` → `Conectar`, `RiA-l0-ASw.title` `Guest` → `Convidado`) · confirmed.
+  `servers.sheet.connect` copia byte a byte o `Conectar` que `fileExplorer.network.connect` publica; `Connect as guest`
+  → `Conectar como convidado` compõe os dois termos da Apple, já que nenhuma outra chave publica esse inglês.
 - **How to connect (nome acessível da escolha convidado-ou-conta) → `Como conectar`** · o grupo equivalente da Apple se
   chama `Connect As:` → `Conectar como:` (`AuthDialog.loctable` `PHL-pS-ELV.title`), e `conectar` sem objeto é a forma
   que o catálogo já publica (`fileExplorer.navigation.connectionTooltipSaved` = `Salvo. Abra-o para conectar.`) · high
-- **Sign in with a username and password → `Iniciar sessão com nome de usuário e senha`** · a irmã
-  `fileExplorer.network.login.signInWithCredentials` tem OUTRO inglês (`Sign in with credentials`), então não é cópia
-  byte a byte; `nome de usuário` e `senha` vêm das próprias irmãs do formulário (`login.username`, `login.password`) ·
-  confirmed. O português dispensa o artigo indefinido que o inglês usa.
+- **Sign in with a username and password → `Iniciar sessão com nome de usuário e senha`** · nenhuma outra chave publica
+  esse inglês, então não há cópia byte a byte a respeitar; `iniciar sessão` é a forma que o catálogo assentou
+  (`fileExplorer.network.signIn`), e `nome de usuário` e `senha` vêm das próprias irmãs do formulário
+  (`servers.sheet.username`, `servers.sheet.password`) · confirmed. O português dispensa o artigo indefinido que o
+  inglês usa.
 - **ssh-agent, Nextcloud, SFTP, WebDAV, SMB e `ssh` ficam verbatim.** `Use ssh-agent` → **`Usar o ssh-agent`**, no molde
   `Usar …` que o catálogo publica em `settings.mcp.usePortInstead` e `fileExplorer.navigation.useSavedPasswordConfirm`;
   o artigo entra porque o nome do programa é um substantivo masculino na frase.
@@ -2162,11 +2165,15 @@ nesta máquina, então as fontes vêm do macOS instalado (26.6.2, build 25G83, 2
 Consistência de valor idêntico (`desktop-i18n-term-consistency` pareia pelo inglês, então estas são cópias byte a byte
 das irmãs já publicadas): `Connect` → `Conectar` (`fileExplorer.network.connect`), `Sign in` → `Iniciar sessão`
 (`fileExplorer.network.signIn`), `Cancel` → `Cancelar`, `Address` → `Endereço` (`servers.hub.colAddress`), `Name` →
-`Nome` (`servers.hub.colName`), `Username` → `Nome de usuário` (`fileExplorer.network.login.username`), `Password` →
-`Senha` (`fileExplorer.network.login.password`), `Remember in Keychain` → `Lembrar no Acesso às Chaves`
-(`fileExplorer.network.login.rememberInKeychain`), `Connect as guest` → `Conectar como convidado`
-(`fileExplorer.network.login.connectAsGuest`), `Advanced` → `Avançado` (`settings.section.advanced`),
-`Connect to server…` → `Conectar ao servidor…` (`settings.network.permissionIntroConnectLink`).
+`Nome` (`servers.hub.colName`), `Password` → `Senha` (`fileOperations.archivePassword.placeholder`), `Advanced` →
+`Avançado` (`settings.section.advanced`), `Connect to server…` → `Conectar ao servidor…`
+(`settings.network.permissionIntroConnectLink`).
+
+`Username` → `Nome de usuário` e `Remember in Keychain` → `Lembrar no Acesso às Chaves` são os únicos valores do
+catálogo com esse inglês, então não há irmã para parear. Cada um se apoia num texto corrido já publicado:
+`errors.listing.authRequiredEauth.suggestion` (`digite seu nome de usuário e senha de novo`) e
+`servers.sheet.needsStoredSecret`, que cita o rótulo do interruptor palavra por palavra
+(`Ative “Lembrar no Acesso às Chaves” e inicie a sessão uma vez.`).
 
 Quatro `sameAsSourceJustification`: `servers.sheet.protocolSmb`, `protocolSftp`, `protocolWebdav` (nomes de protocolo,
 que o macOS pt-BR também não traduz) e `addressPlaceholder` (`nas.local`, um nome mDNS literal).
@@ -2209,8 +2216,8 @@ lidos em 2026-09-07), o caminho que `docs/i18n/reference-pile/how-to-mine.md` §
   catálogo já o publica em `errors.listing.authRequiredEauth.suggestion` (`digite seu nome de usuário e senha de novo`).
 - **signs in with a key rather than a password → `usa uma chave em vez de uma senha para iniciar a sessão`** · `chave` é
   o termo do macOS pt-BR para chave criptográfica (linha já fixada na § do painel de adicionar servidor), `senha` vem do
-  `NetAuthAgent` acima e das irmãs do formulário (`fileExplorer.network.login.password`), `iniciar a sessão` é a forma
-  em texto corrido que a § do hub fixou, e `em vez de` é o que o catálogo já usa para `rather than` / `instead of` (sete
+  `NetAuthAgent` acima e da irmã do formulário (`servers.sheet.password` = `Senha`), `iniciar a sessão` é a forma em
+  texto corrido que a § do hub fixou, e `em vez de` é o que o catálogo já usa para `rather than` / `instead of` (sete
   ocorrências já publicadas, em `ai.json`, `errors.json`, `indexing.json` e `settings.json`) · high. O sujeito é **o
   servidor que usa uma chave**, não a pessoa que faz login: `Este servidor inicia a sessão…` personificaria o servidor
   em português muito mais do que o inglês faz.
