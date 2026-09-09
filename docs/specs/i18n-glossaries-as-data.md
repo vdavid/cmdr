@@ -11,8 +11,9 @@ evidence, a confidence, and whether a later decision superseded it.
 
 Because those fields are prose, nothing can check them, and three classes of rot have already happened:
 
-1. **Dead citations.** A citation names a catalog key that no longer exists, or never existed. 41 found: 8 invented by
-   an agent, 33 orphaned by the renames in `c33a47512` and `181ebf6ee`. `desktop-i18n-doc-citations` now catches these.
+1. **Dead citations.** A citation names a catalog key that no longer exists, or never existed. 91 found across 24
+   distinct keys and 13 files, most of them orphaned by the renames in `c33a47512` and `181ebf6ee`.
+   `desktop-i18n-doc-citations` now catches these.
 2. **Value drift.** The key exists, but the value quoted beside it is not what the app ships. 20 locations across 14
    term families. No check can catch this today, because the quote is free prose and legitimate elision is common.
 3. **Self-contradiction.** The guides are append-only: a new decision gets a new dated section, and the old entry gets a
