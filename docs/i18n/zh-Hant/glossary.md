@@ -364,8 +364,9 @@ Confirms the terms agent 3 settled, and adds what the AI rail needed. Sources as
   throughout (`停止生成`, `重新生成`) rather than mixing the two.
 - **rate limit / quota** · `速率限制` / `配額` · MS (HKG, TWN) · `high`
 - **offline** · `離線` · MS (HKG, TWN) · `high`
-- **context window** · `上下文長度` · composed from MS `context` → 上下文 · `tentative`. ❗ Three of the TBX's four
-  `context` entries give `內容`, the "content" homograph; only one is right.
+- **context window** · `上下文視窗` (context size → `上下文大小`, the head `context` → `上下文`) · MS zh-Hant TBX id
+  38882, the only one of its `context` entries in this sense · `tentative`. The AI-terms block below carries the
+  measurement and the homograph warning.
 - **temperature (sampling)** · unattested; MS's `temperature` is `色溫`, colour temperature · `tentative`
 - **approve** · `同意` · already shipped in `askCmdr.decision.approved` and `askCmdr.consent.*` · `high`. Apple's own
   register for permitting an action is `允許`, and MS's `核准` is the manager-approval sense; `同意` is kept because the
@@ -378,8 +379,9 @@ Confirms the terms agent 3 settled, and adds what the AI rail needed. Sources as
   `必須先結束「系統設定」，然後將它重新打開` · `tentative`. The button string itself is in no bundle in the pile.
 - **Spotlight** · `Spotlight`, kept English · AP-TW = AP-HK (`NSTouchBarControlStripSpotlightTemplate` = `Spotlight` in
   both) · `confirmed`. Verified rather than assumed, since Apple DOES localize it into some other languages.
-- **Local network (the macOS permission)** · `本機網路` · agent 1 shipped it in `settings.network.enabled.description`;
-  MS agrees on `本機` · `high`
+- **Local network (the macOS permission)** · `區域網路` · AP-TW renders the privacy pane's `LOCAL_NETWORK` key that
+  way, and it is the exact label the dialog puts on screen · `confirmed`. The `local network（區域網路）` entry below
+  carries the argument and the do-not marker.
 - **Accepting incoming connections (the macOS prompt)** · `接受傳入連線` · **composed** from `連線` plus standard
   Traditional `傳入`; unattested as a whole string · `tentative`
 
@@ -1101,10 +1103,9 @@ machine"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lpro
   `…`（U+2026），不跟 Apple 的 `⋯`。
 - **local network（區域網路）** · `區域網路` · AP-TW 把隱私權面板的 `LOCAL_NETWORK` 鍵（"Local Network"）譯成
   `區域網路`，整份 SystemSettings 的行文也一律 `區域網路`（HK 是 `本地網絡`，台灣優先取 `區域網路`）·
-  `confirmed`。整個目錄現在只有這一個寫法：早先自行組出來的 `本機網路` 已經從
-  `settings.network.enabled.description`、`settings.network.timeoutMode.optDesc.normal` 和
-  `onboarding.stepOptional.networking.desc`
-  換掉。onboarding 那一條是最關鍵的：它逐字引用 macOS 權限對話框上的標籤，而那個對話框寫的就是「區域網路」，所以舊值等於叫使用者去找一個螢幕上不存在的字。❌ 不要再寫回
+  `confirmed`。整個目錄只有這一個寫法：`settings.network.enabled.description`、
+  `settings.network.timeoutMode.optDesc.normal` 和 `onboarding.stepOptional.networking.desc`
+  都是它。onboarding 那一條最要緊：它逐字引用 macOS 權限對話框上的標籤，而那個對話框寫的就是「區域網路」，換成別的字等於叫使用者去找一個螢幕上不存在的字。❌ 不要寫成
   `本機網路`。
 - **discovery（探索）** · `探索` · 目錄既有的 `settings.network.firstTriggerDone.label` = `網路探索已啟動`、
   `settings.network.enabled.description` = `探索 SMB 伺服器` · `high`。所以 "Local network discovery is off." 是
@@ -1485,14 +1486,11 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 - **approve → `同意`，整本目錄一致** · 詞彙表上面已定 `approve` → `同意`；`settings.askCmdr.proactive.description`
   原本寫 `批准`，這輪跟 `suggestedOps.description` 對齊成 `在你同意之前，什麼都不會執行。` · `high`
 - **context → `上下文`；context window → `上下文視窗`；context size → `上下文大小`**
-  · 目錄原本三種寫法並存（`settings.ai.localContextSize.label` = `脈絡視窗`、`settings.ai.tooltipLocal` = `脈絡大小`、
-  `askCmdr.error.localWindowTooSmall` = `上下文視窗`，而詞彙表寫的是第四種
-  `上下文長度`）。Apple 的兩套繁中語料完全沒有這個 LLM 概念（zh-TW 與 zh-HK 的 `脈絡` 都是 0 次、`上下文`
-  都是 0 次，2026-09-09 量測），所以只剩 MS zh-Hant TBX：五條 `context` 詞條裡四條是同形異義的 `內容` /
-  `執行內容`，只有 id 38882 → `上下文` 是我們要的那個意思。取這一條，再加上目錄裡本來就有的
-  `askCmdr.event.contextTrimmed`（`模型的上下文`），三個鍵一起改齊 ·
-  `tentative`（一級來源整個缺席）。❗ 這條取代詞彙表 § AI and chat, second pass 裡的 `上下文長度`
-  （那個形式沒有任何鍵在用）。
+  · Apple 的兩套繁中語料完全沒有這個 LLM 概念（zh-TW 與 zh-HK 的 `脈絡` 都是 0 次、`上下文` 都是 0 次，2026-09-09
+  量測），所以只剩 MS zh-Hant TBX：五條 `context` 詞條裡四條是同形異義的 `內容` / `執行內容`，只有 id 38882 →
+  `上下文` 是我們要的那個意思 · `tentative`（一級來源整個缺席）。四個鍵一致：
+  `settings.ai.localContextSize.label` = `上下文視窗`、`settings.ai.tooltipLocal` 裡的 `隨上下文大小而變`、
+  `askCmdr.error.localWindowTooSmall` = `上下文視窗`、`askCmdr.event.contextTrimmed` = `模型的上下文`。
 
 ## AI 提供者設定精靈的用詞（`onboarding.cloudSetup.*`，2026-09-09 複核）
 
