@@ -354,6 +354,13 @@ export interface SettingsValues {
   'behavior.serversPinHintSeen': boolean
 
   /**
+   * Whether the once-ever "keep Cmdr in your Dock?" offer has been made. Spent
+   * by `$lib/dock/dock-nudge` when the toast is raised, never when it's
+   * answered. macOS-only.
+   */
+  'behavior.dockPinNudgeSeen': boolean
+
+  /**
    * Internal (FE-owned): whether the user has dismissed the line offering USB
    * debugging in an MTP pane's header. Set by the line's own × and never read
    * anywhere else.

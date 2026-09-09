@@ -1381,6 +1381,7 @@
     "behavior.archiveEnter.bundle": "ask",
     "behavior.archiveEnter.ooxml": "open",
     "behavior.archiveEnter.zip": "ask",
+    "behavior.dockPinNudgeSeen": false,
     "behavior.doubleClickOnPaneNotificationSeen": false,
     "behavior.doubleClickPaneNavigatesToParent": true,
     "behavior.fileSystemWatching.downloadsNotifications": "in-app",

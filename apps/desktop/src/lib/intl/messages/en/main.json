@@ -15,6 +15,42 @@
   "@main.upgradeNudge.other": {
     "description": "Info toast (non-macOS) shown once to existing users after an update, pointing them at the new onboarding options. \"Command palette\" and \"Onboarding…\" match the names used elsewhere in the app (keep the trailing ellipsis on \"Onboarding…\"). Paired with main.upgradeNudge.mac for macOS."
   },
+  "main.dockPinNudge.title": "Keep Cmdr in your Dock?",
+  "@main.dockPinNudge.title": {
+    "description": "Title of a one-time notification, shown a few days into using Cmdr on macOS, asking whether the app may add itself to the Dock. The Dock is the row of app icons along the edge of a macOS screen; use the name Apple uses for it in your language. \"Cmdr\" is the product name and stays verbatim. A genuine question, warm and low-pressure, never a prompt the user has to escape from."
+  },
+  "main.dockPinNudge.body": "You''ve been using Cmdr for a few days now, so it seems to be working for you. Want it pinned next to Finder down there?",
+  "@main.dockPinNudge.body": {
+    "description": "Body of that notification. Two beats: the app noticed the person keeps coming back, and the offer itself. \"Finder\" is Apple's file manager and keeps the name Apple uses in your language; \"pinned\" means the icon stays in the Dock even when the app is closed. \"a few days\" is deliberately vague and must NOT be replaced with a number: the exact threshold can move. \"down there\" points at the Dock, which usually sits at the bottom of the screen; drop the direction if it would be wrong or odd in your language."
+  },
+  "main.dockPinNudge.unpinNote": "You can unpin it any time if you change your mind.",
+  "@main.dockPinNudge.unpinNote": {
+    "description": "Third line of that notification, reassuring the user the choice is not permanent: an icon added to the Dock can be taken out again through the Dock's own menu. \"unpin\" is the opposite of the \"pinned\" in main.dockPinNudge.body; keep the two words related in your language."
+  },
+  "main.dockPinNudge.decline": "No, thanks",
+  "@main.dockPinNudge.decline": {
+    "description": "Secondary button on that notification, declining the offer. Cmdr never asks again after this. An everyday polite refusal, the way a person turns down an offer in conversation; keep it short."
+  },
+  "main.dockPinNudge.accept": "Yes, add it to my Dock",
+  "@main.dockPinNudge.accept": {
+    "description": "Primary button on that notification, accepting the offer. Pressing it puts the Cmdr icon in the Dock straight away. \"my Dock\" reads as the person's own Dock; use the possessive that sounds natural in your language, and keep it under about five words so the button fits."
+  },
+  "main.dockPinNudge.added": "Cmdr is in your Dock now.",
+  "@main.dockPinNudge.added": {
+    "description": "Brief success notification after the user accepts the Dock offer and the icon lands. It disappears on its own. States the finished fact; no congratulations and nothing further to do."
+  },
+  "main.dockPinNudge.addedButDockDidNotRestart": "Cmdr''s icon is in place, but the Dock didn''t reload. It''ll appear the next time you log in.",
+  "@main.dockPinNudge.addedButDockDidNotRestart": {
+    "description": "Notification shown when the Dock icon was stored but the Dock itself did not reload, so nothing visibly changed yet. It must NOT say the pinning did not happen, because it did: the only thing missing is the redraw, and logging out and back in supplies it. \"log in\" is signing in to the Mac account."
+  },
+  "main.dockPinNudge.managedDock": "Your Dock is managed by a configuration profile, so Cmdr can''t add itself. Whoever manages this Mac can change that.",
+  "@main.dockPinNudge.managedDock": {
+    "description": "Notification shown when the offer was accepted but the Mac's Dock is controlled centrally, usually by a workplace or school. \"Configuration profile\" is the macOS term for those centrally-managed settings; use Apple's wording in your language. Factual and blame-free: it names who can lift the restriction rather than suggesting a workaround that would not stick."
+  },
+  "main.dockPinNudge.notAdded": "Cmdr couldn''t get into the Dock this time. You can drag it in from your Applications folder whenever you like.",
+  "@main.dockPinNudge.notAdded": {
+    "description": "Notification shown when the offer was accepted but the icon did not land, for a reason the user can do nothing about. It gives the manual way in instead: dragging the app out of the Applications folder onto the Dock, which is how a macOS user does this by hand. \"Applications\" is the macOS folder holding installed apps; use Apple's name for it in your language."
+  },
   "main.quit.title": "{count, plural, one {Quit while an operation is running?} other {Quit while {countText} operations are running?}}",
   "@main.quit.title": {
     "description": "Title of the dialog that appears when the user quits Cmdr (⌘Q, the menu, or closing the main window) while copies, moves, deletes, or trash operations are still going. It asks whether to go ahead. \"Operation\" is the category word covering all of them, the same one the operation queue window uses; keep the two consistent in your language. Near-instant things like renaming never reach this dialog.",

@@ -290,6 +290,19 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   `covering` bool. See below for its population.
 - `language_resolved` / `language_changed` (frontend, `$lib/intl/language-analytics.ts`): shipped catalog tags only.
   See below.
+- `dock_pin_offered` (frontend, `$lib/dock/dock-nudge.ts` `offerDockPin`): no props. Fires once per install at most, as
+  the "keep Cmdr in your Dock?" toast goes up, so it's the denominator of the pin funnel. macOS-only.
+- `dock_pin_answered` (frontend, `$lib/dock/dock-pin-answer.ts`): `answer` (`yes` / `no` / `dismissed`). Every way out
+  of the toast lands
+  here, and the toast frame's × reports `dismissed` rather than `no`: "read it and declined" and "swept it away" are
+  different answers, and the split is the interesting half of the question. `yes` is recorded when the person presses
+  the button, ❌ never conditioned on the pin succeeding — the intent is what's being measured, and
+  `dock_pin_failed` carries the rest.
+- `dock_pin_failed` (frontend, same file as `dock_pin_answered`): `reason`, the typed refusal from Rust — the `DockPinBlocker` variant for a
+  `blocked`, otherwise the `DockPinFailure` variant (`notABundle` / `outsideApplications` / `managedDock` /
+  `preferencesUnreadable` / `writeRejected` / `dockNotRestarted` / `timedOut`). ❌ Never a message string
+  (`error-string-match`). `dockNotRestarted` counts here even though the tile IS stored: the person didn't get what
+  they asked for on the spot.
 
 ## Session length, in detail
 

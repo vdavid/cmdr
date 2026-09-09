@@ -330,6 +330,8 @@ export type {
 export { trackEvent, itemCountBucket } from './analytics'
 // Launch-day ledger (on-device only; the gate for usage-gated hints)
 export { getLaunchDayCount } from './usage'
+// macOS Dock (whether Cmdr may be offered a tile, and putting it there)
+export { getDockPinState, addCmdrToDock } from './dock'
 // Beta-tester signup (subscribes the contact email; sends NO install id)
 export { betaSignup } from './beta-signup'
 export type { BetaSignupResult } from './beta-signup'

@@ -124,6 +124,10 @@ commands, and notable non-obvious placements.
   on-device launch-day ledger Rust appends at startup; answers 0 when it can't, so a hint stays silent rather than
   firing on a guess. The ledger never leaves the Mac and is deliberately not a setting:
   `../../../src-tauri/src/usage/CLAUDE.md`.
+- **`dock.ts`**: macOS Dock: `getDockPinState` (may we offer a tile, and is Cmdr already down there) and
+  `addCmdrToDock`. Both turn an unreachable backend into a typed answer rather than a throw — `preferencesUnreadable`
+  and `timedOut` — because their callers are a startup gate and a toast button, neither of which can hold an exception.
+  `../../../src-tauri/src/dock/CLAUDE.md`.
 
 ## Where to put new commands
 

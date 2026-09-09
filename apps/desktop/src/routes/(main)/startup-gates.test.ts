@@ -26,13 +26,19 @@ const mocks = vi.hoisted(() => ({
   isMacOS: vi.fn(),
   addToast: vi.fn(),
   warn: vi.fn(),
+  getLaunchDayCount: vi.fn(),
+  getDockPinState: vi.fn(),
+  offerDockPin: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
   isForceOnboarding: mocks.isForceOnboarding,
   checkFullDiskAccess: mocks.checkFullDiskAccess,
   getMacosMajorVersion: mocks.getMacosMajorVersion,
+  getLaunchDayCount: mocks.getLaunchDayCount,
+  getDockPinState: mocks.getDockPinState,
 }))
+vi.mock('$lib/dock/dock-nudge', () => ({ offerDockPin: mocks.offerDockPin }))
 vi.mock('$lib/onboarding/onboarding-state.svelte', () => ({ openWizard: mocks.openWizard }))
 vi.mock('$lib/whats-new/whats-new-trigger.svelte', () => ({
   runWhatsNewStartupTrigger: mocks.runWhatsNewStartupTrigger,
@@ -57,6 +63,7 @@ vi.mock('$lib/logging/logger', () => ({
 
 import {
   maybeFireUpgradeNudge,
+  maybeOfferDockPin,
   maybeRunWhatsNew,
   maybeShowOldMacosNotice,
   openOnboardingFromMenuOrPalette,
@@ -72,7 +79,13 @@ let oldMacosNoticeVersion: string | null
 let ctx: StartupGatesContext
 
 /** The settings the gates read, backing the keyed `getSetting` stub below. */
-let stored: { choice: FullDiskAccessChoice; onboarded: boolean; nudgeShown: boolean; oldMacosNoticeShown: boolean }
+let stored: {
+  choice: FullDiskAccessChoice
+  onboarded: boolean
+  nudgeShown: boolean
+  oldMacosNoticeShown: boolean
+  dockPinNudgeSeen: boolean
+}
 
 /** Puts the gates on one row of the truth table. */
 function settings(fullDiskAccessChoice: FullDiskAccessChoice, isOnboarded: boolean): void {
@@ -101,8 +114,16 @@ beforeEach(() => {
   }
   mocks.isForceOnboarding.mockResolvedValue(false)
   mocks.checkFullDiskAccess.mockResolvedValue(false)
-  stored = { choice: 'notAskedYet', onboarded: false, nudgeShown: false, oldMacosNoticeShown: false }
+  stored = {
+    choice: 'notAskedYet',
+    onboarded: false,
+    nudgeShown: false,
+    oldMacosNoticeShown: false,
+    dockPinNudgeSeen: false,
+  }
   mocks.getMacosMajorVersion.mockResolvedValue(15)
+  mocks.getLaunchDayCount.mockResolvedValue(9)
+  mocks.getDockPinState.mockResolvedValue({ kind: 'offerable' })
   mocks.forceSave.mockResolvedValue(true)
   mocks.notifyOnboardingComplete.mockResolvedValue(undefined)
   mocks.runWhatsNewStartupTrigger.mockResolvedValue(undefined)
@@ -114,6 +135,7 @@ beforeEach(() => {
     if (id === 'onboarding.completed') return stored.onboarded
     if (id === 'onboarding.upgradeNudgeShown') return stored.nudgeShown
     if (id === 'advanced.oldMacosNoticeShown') return stored.oldMacosNoticeShown
+    if (id === 'behavior.dockPinNudgeSeen') return stored.dockPinNudgeSeen
     throw new Error(`Unexpected getSetting(${id})`)
   })
   mocks.isMacOS.mockReturnValue(true)
@@ -325,6 +347,85 @@ describe('maybeRunWhatsNew', () => {
     await maybeRunWhatsNew(ctx, true)
 
     expect(mocks.runWhatsNewStartupTrigger).toHaveBeenCalledOnce()
+  })
+})
+
+describe('maybeOfferDockPin', () => {
+  it('raises the offer on a settled Mac that has been used for days', async () => {
+    settings('allow', true)
+
+    await maybeOfferDockPin(ctx)
+
+    expect(mocks.offerDockPin).toHaveBeenCalledOnce()
+  })
+
+  it('turns around before either IPC once the offer has been made', async () => {
+    settings('allow', true)
+    stored.dockPinNudgeSeen = true
+
+    await maybeOfferDockPin(ctx)
+
+    expect(mocks.getLaunchDayCount).not.toHaveBeenCalled()
+    expect(mocks.getDockPinState).not.toHaveBeenCalled()
+    expect(mocks.offerDockPin).not.toHaveBeenCalled()
+  })
+
+  it('never asks the backend anything off macOS', async () => {
+    settings('allow', true)
+    mocks.isMacOS.mockReturnValue(false)
+
+    await maybeOfferDockPin(ctx)
+
+    expect(mocks.getDockPinState).not.toHaveBeenCalled()
+    expect(mocks.offerDockPin).not.toHaveBeenCalled()
+  })
+
+  it('waits while the onboarding wizard is still up', async () => {
+    settings('allow', true)
+    onboardingVisible = true
+
+    await maybeOfferDockPin(ctx)
+
+    expect(mocks.offerDockPin).not.toHaveBeenCalled()
+  })
+
+  it('reads the wizard flag live, so the re-attempt after it closes can fire', async () => {
+    settings('allow', true)
+    onboardingVisible = true
+    await maybeOfferDockPin(ctx)
+    onboardingVisible = false
+    await maybeOfferDockPin(ctx)
+
+    expect(mocks.offerDockPin).toHaveBeenCalledOnce()
+  })
+
+  it('stays quiet while the ledger is still short', async () => {
+    settings('allow', true)
+    mocks.getLaunchDayCount.mockResolvedValue(2)
+
+    await maybeOfferDockPin(ctx)
+
+    expect(mocks.offerDockPin).not.toHaveBeenCalled()
+  })
+
+  it('stays quiet when Cmdr is already down there', async () => {
+    settings('allow', true)
+    mocks.getDockPinState.mockResolvedValue({ kind: 'alreadyPinned' })
+
+    await maybeOfferDockPin(ctx)
+
+    expect(mocks.offerDockPin).not.toHaveBeenCalled()
+  })
+
+  it('stays quiet under E2E mode so it cannot leak into the first spec', async () => {
+    settings('allow', true)
+    mocks.getAppMode.mockReturnValue('e2e')
+
+    await maybeOfferDockPin(ctx)
+
+    expect(mocks.getLaunchDayCount).not.toHaveBeenCalled()
+    expect(mocks.getDockPinState).not.toHaveBeenCalled()
+    expect(mocks.offerDockPin).not.toHaveBeenCalled()
   })
 })
 

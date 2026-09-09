@@ -62,6 +62,21 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // Internal (FE-owned): whether the one-time "keep Cmdr in your Dock?" offer
+    // has been made. Spent when the toast is RAISED, so a crash mid-toast can't
+    // make it reappear forever. No UI row; hidden the way the seen-flags above
+    // it are.
+    id: 'behavior.dockPinNudgeSeen',
+    section: ['Behavior', 'Navigation & file ops'],
+    labelKey: 'settings.behavior.dockPinNudgeSeen.label',
+    descriptionKey: 'settings.behavior.dockPinNudgeSeen.description',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+  {
     // Internal (FE-owned): whether the "turn on USB debugging" line in an MTP
     // pane's header has been dismissed. Set once, by the line's own × button.
     // No UI row; hidden the way the two seen-flags above it are.

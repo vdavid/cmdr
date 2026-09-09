@@ -1891,6 +1891,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "description": "Internal, never shown in the UI. Pairs with the long-Network-group hint label."
   },
+  "settings.behavior.dockPinNudgeSeen.label": "Dock offer made",
+  "@settings.behavior.dockPinNudgeSeen.label": {
+    "description": "Internal, never shown in the UI: tracks whether the one-time offer to add Cmdr to the macOS Dock has been made."
+  },
+  "settings.behavior.dockPinNudgeSeen.description": "Whether the one-time offer to add Cmdr to the Dock has been made.",
+  "@settings.behavior.dockPinNudgeSeen.description": {
+    "description": "Internal, never shown in the UI. Pairs with the Dock offer label."
+  },
   "settings.behavior.adbHintDismissed.label": "USB debugging hint dismissed",
   "@settings.behavior.adbHintDismissed.label": {
     "description": "Internal, never shown in the UI: tracks whether the user has dismissed the line offering USB debugging at the top of an Android phone pane."

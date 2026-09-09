@@ -105,6 +105,9 @@ All under `apps/desktop/src/lib/`.
   (`file-explorer/pane/device-connect.svelte.ts`). See `apps/desktop/src/lib/adb/CLAUDE.md`
 - `onboarding/`: Soft-sheet onboarding wizard: Full Disk Access, AI provider, open-beta analytics disclosure, optional
   settings
+- `dock/`: macOS-only. The once-per-install "keep Cmdr in your Dock?" offer: when it's earned (the launch-day ledger
+  plus `get_dock_pin_state`), the toast that asks, and its three PostHog events. The machine-facing half is
+  `src-tauri/src/dock/`. See `apps/desktop/src/lib/dock/CLAUDE.md`
 - `ui/`: Shared UI primitives: ModalDialog, Button, AlertDialog, Notification, dialog registry, `SectionCard`
 - `routes/(main)/`: The main route: app orchestrator mounting the dual-pane explorer plus top-level dialogs
 - `routes/dev/components/`: Dev-only catalog of every `lib/ui/` primitive (Storybook replacement), in the Debug window
@@ -274,8 +277,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `services_menu/`: macOS-only. Tells AppKit that Cmdr can hand files to a service, and answers with the pane's live
   selection when one is picked, so `Cmdr > Services` lists what Finder lists. See
   `apps/desktop/src-tauri/src/services_menu/CLAUDE.md`
-- `dock/`: macOS-only. Whether Cmdr may be offered a place in the Dock, whether it's already there, and putting it in
-  as the leftmost app tile: `com.apple.dock`'s `persistent-apps` through CFPreferences, then a Dock restart. See
+- `dock/`: macOS-only. Whether Cmdr may be offered a place in the Dock, whether it's already there, and putting it in as
+  the leftmost app tile: `com.apple.dock`'s `persistent-apps` through CFPreferences, then a Dock restart. See
   `apps/desktop/src-tauri/src/dock/CLAUDE.md`
 - `quick_look/`: macOS-only `QLPreviewPanel` integration (Shift+Space)
 - `drag_image_detection.rs`: macOS method swizzle for drag image size detection

@@ -103,6 +103,11 @@ access, and neither is visible from a passing type-check.
   `src/app.html`.
 - **`maybeRunWhatsNew(ctx, force)`**: the boot check plus the re-attempt after the wizard closes. It only gathers the
   gate inputs; the decision is `whats-new-trigger`'s.
+- **`maybeOfferDockPin(ctx)`**: the once-per-install "keep Cmdr in your Dock?" offer, boot plus the same wizard-close
+  re-attempt. It only gathers inputs; the rule is `lib/dock/should-show-dock-nudge.ts` and the toast is
+  `lib/dock/dock-nudge.ts`. Cheapest-first like the old-macOS notice, so a launch where the offer has already been made
+  pays for neither of its two IPC round trips. Why the rule splits in two, and why `DockPinState` is asked once and
+  believed: `lib/dock/DETAILS.md`.
 - **`openOnboardingFromMenuOrPalette(ctx, source)`**: re-entry. Both `menu` and `palette` open at the first reachable
   step (`openWizard` enforces that per-source), so this only guards against re-opening an open wizard.
 

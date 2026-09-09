@@ -11,7 +11,13 @@
  * closure can't answer "is the wizard up?" from a setup-time snapshot.
  */
 
-import { isForceOnboarding, checkFullDiskAccess, getMacosMajorVersion } from '$lib/tauri-commands'
+import {
+  isForceOnboarding,
+  checkFullDiskAccess,
+  getMacosMajorVersion,
+  getLaunchDayCount,
+  getDockPinState,
+} from '$lib/tauri-commands'
 import { openWizard as openOnboardingWizard } from '$lib/onboarding/onboarding-state.svelte'
 import { runWhatsNewStartupTrigger } from '$lib/whats-new/whats-new-trigger.svelte'
 import { forceSave, getSetting, setSetting } from '$lib/settings'
@@ -22,6 +28,8 @@ import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { isBelowSupportedMacOs, macosVersionLabel } from '$lib/utils/webkit-compat'
+import { dockNudgeCouldFire, shouldShowDockNudge } from '$lib/dock/should-show-dock-nudge'
+import { offerDockPin } from '$lib/dock/dock-nudge'
 
 // Same category as the rest of the app shell's logging: these gates read as
 // `+page.svelte`'s startup in a log file, wherever the code sits.
@@ -157,6 +165,39 @@ export async function maybeShowOldMacosNotice(ctx: StartupGatesContext): Promise
   log.info(`macOS ${macosVersionLabel(major)} is below the supported floor; showing the best-effort notice once`)
   setSetting('advanced.oldMacosNoticeShown', true)
   ctx.showOldMacosNotice(macosVersionLabel(major))
+}
+
+/**
+ * Offers to put Cmdr in the Dock, once, a few days into using it.
+ *
+ * Async because the decision needs two backend answers: how many days the
+ * launch-day ledger holds, and whether a Cmdr tile could go in the Dock at all.
+ * `dockNudgeCouldFire` runs first so the ordinary launch — the offer already
+ * made, or a machine with no Dock — pays for neither round trip.
+ *
+ * Spends `behavior.dockPinNudgeSeen` when the toast is RAISED (inside
+ * `offerDockPin`), not when it's answered, matching `maybeFireUpgradeNudge`: a
+ * crash between the two costs one offer, where the other order risks repeating
+ * the toast forever.
+ *
+ * Re-attempted when the wizard closes, so a person finishing onboarding on their
+ * third day isn't quietly skipped (mirrors the "What's new" re-attempt).
+ */
+export async function maybeOfferDockPin(ctx: StartupGatesContext): Promise<void> {
+  const context = {
+    automatedRun: isE2eRun(),
+    onMacOs: isMacOS(),
+    seen: getSetting('behavior.dockPinNudgeSeen'),
+    onboarded: getSetting('onboarding.completed'),
+    onboardingShowing: ctx.isOnboardingVisible(),
+  }
+  if (!dockNudgeCouldFire(context)) return
+
+  const [launchDayCount, pinState] = await Promise.all([getLaunchDayCount(), getDockPinState()])
+  if (!shouldShowDockNudge({ ...context, launchDayCount, pinState })) return
+
+  log.info(`Offering the Dock pin after ${String(launchDayCount)} launch days`)
+  offerDockPin()
 }
 
 /**
