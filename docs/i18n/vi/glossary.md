@@ -850,9 +850,9 @@ settled head terms (index/indexing → `chỉ mục`/`lập chỉ mục`, indexe
 ## Lần truyền bị đứng yên: thông báo trên hộp thoại + hàng đợi (2026-07-31)
 
 The seven stalled-transfer strings (`fileOperations.transferProgress.stall*` + `close`). Mined 2026-07-31 against
-`_ignored/i18n/vi/` (macOS Finder/AppKit Tier 1, MS terminology Tier 2, GNOME Nautilus + Total Commander Tier 3).
-Reuses settled terms (close → `đóng`, cancel → `hủy`, destination/source → `đích`/`nguồn`, log →
-`nhật ký`, transfer (countable) → `lần truyền`, background → `chạy ở chế độ nền`, file → `tệp`).
+`_ignored/i18n/vi/` (macOS Finder/AppKit Tier 1, MS terminology Tier 2, GNOME Nautilus + Total Commander Tier 3). Reuses
+settled terms (close → `đóng`, cancel → `hủy`, destination/source → `đích`/`nguồn`, log → `nhật ký`, transfer
+(countable) → `lần truyền`, background → `chạy ở chế độ nền`, file → `tệp`).
 
 - **progress (advancement, in "no progress"): `tiến triển`** · shared-root pick (mining gotcha 4): macOS renders the
   progress noun as `tiến trình` (Finder SD24 "Hiển thị tiến trình sao chép", PW60 "Hiển thị cửa sổ tiến trình") and MS
@@ -883,8 +883,8 @@ Reuses settled terms (close → `đóng`, cancel → `hủy`, destination/source
   `Chi tiết: `. Fronting `Chi tiết` keeps it short and puts the useful noun first. `high`.
 - No `sameAsSourceJustification` needed: all seven values differ from English.
 
-Phrasings settled (keep consistent): "No progress for {duration}" → `Không có tiến triển trong {duration}` (one value
-on `fileOperations.transferProgress.stallNotice`, no final period, shown on both the progress dialog and the queue row,
+Phrasings settled (keep consistent): "No progress for {duration}" → `Không có tiến triển trong {duration}` (one value on
+`fileOperations.transferProgress.stallNotice`, no final period, shown on both the progress dialog and the queue row,
 matching English); "Cancel it, or leave it running in the background." →
 `Hãy hủy, hoặc để nó tiếp tục chạy ở chế độ nền.` (`tiếp tục chạy ở chế độ nền` composed from the catalog's
 `Giữ chạy ở chế độ nền` + `Vẫn đang chạy ở chế độ nền`).
@@ -994,9 +994,9 @@ re-derives them.
 - **"Open the operation queue to see why.": `Mở hàng đợi thao tác để xem lý do.`** · `mở` (settled open verb, macOS
   AppKit) + the window name lowercased mid-sentence, same as the rename pass's `Tìm nó trong hàng đợi thao tác.` `high`.
 - **"Show in operation queue" (the toast's button): `Hiển thị trong hàng đợi thao tác`** · `Hiển thị trong X` is the
-  catalog's settled "Show in X" shape, on all six such keys (`commands.fileShowInFinder.mac.label`,
-  `.other.label`, `menu.file.showInFinder`, `.showInFileManager`, `errorReporter.bundleSavedToast.reveal`, and this
-  one). The verb comes from the `show → hiển thị, KHÔNG hiện` ruling in the 2026-08-30 drift audit below. `high`.
+  catalog's settled "Show in X" shape, on all six such keys (`commands.fileShowInFinder.mac.label`, `.other.label`,
+  `menu.file.showInFinder`, `.showInFileManager`, `errorReporter.bundleSavedToast.reveal`, and this one). The verb comes
+  from the `show → hiển thị, KHÔNG hiện` ruling in the 2026-08-30 drift audit below. `high`.
 - **"percent" spelled as a word for screen readers: `phần trăm`** · MS terminology (`phần trăm`,
   `phần trăm hoàn thành`). `{percentText} phần trăm` puts the number first, as Vietnamese does. Used ONLY in
   `chip.ariaLabel`; the visible tooltip keeps the `%` sign. `high`.
@@ -2510,10 +2510,9 @@ Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1). Mọi dẫn ch�
 - **`settings.section.adb` giữ nguyên `Android (ADB)`** và mang `sameAsSourceJustification`: cả tên sản phẩm lẫn từ viết
   tắt đều thuộc danh sách không dịch, y như `settings.section.git` và `settings.section.ai`. Đây là khóa DUY NHẤT của
   đợt này giống hệt bản tiếng Anh.
-- **`settings.summary.adb` → `Duyệt điện thoại Android đang bật gỡ lỗi qua USB.`** · `gỡ lỗi qua USB` là chữ AOSP
-  tiếng Việt dùng cho chính công tắc đó (nguồn ở khối 2026-09-07 cuối tệp; luật cũng đã ghi trong `style.md`), và
-  catalog ship đúng cụm `một điện thoại Android đang bật gỡ lỗi qua USB` ở
-  `settings.fileOperations.adbEnabled.description`.
+- **`settings.summary.adb` → `Duyệt điện thoại Android đang bật gỡ lỗi qua USB.`** · `gỡ lỗi qua USB` là chữ AOSP tiếng
+  Việt dùng cho chính công tắc đó (nguồn ở khối 2026-09-07 cuối tệp; luật cũng đã ghi trong `style.md`), và catalog ship
+  đúng cụm `một điện thoại Android đang bật gỡ lỗi qua USB` ở `settings.fileOperations.adbEnabled.description`.
 - **`settings.adb.status.watching` / `.notWatching` → `Đang theo dõi để phát hiện điện thoại.` /
   `Hiện không theo dõi để phát hiện điện thoại.`** · `theo dõi` là chữ catalog dùng cho "watch"
   (`common.downloadsFdaHint`, `settings.advanced.card.fileWatching` = `Theo dõi tệp`), nhưng một `theo dõi điện thoại`

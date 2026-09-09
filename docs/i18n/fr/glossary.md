@@ -735,8 +735,8 @@ every apostrophe is doubled in the catalog:
   (reuses the settled `logging → journalisation` term).
 - drop to attach (a drag-and-drop hint on the composer) → `Déposer pour joindre` · `déposer` from macOS''s "Boîte de
   dépôt" (Drop box, the only pile hit for "drop"); `joindre` from the catalog''s existing attach-an-email-address
-  precedent (`common.attachEmailPrompt` → "Joindre mon adresse e-mail pour que vous puissiez me répondre") ·
-  tentative (composed from two separately-sourced roots, no single pile phrase for the whole hint).
+  precedent (`common.attachEmailPrompt` → "Joindre mon adresse e-mail pour que vous puissiez me répondre") · tentative
+  (composed from two separately-sourced roots, no single pile phrase for the whole hint).
 - attachment (a file/folder staged onto a chat message) → `pièce jointe` (noun); remove attachment →
   `Retirer la pièce jointe` · MS terminology FRA (`attachment` → "pièce jointe", fem.); `retirer` matches macOS''s
   sidebar-removal register · high.
@@ -1976,9 +1976,9 @@ Les 11 valeurs sont ICU (apostrophes doublées), espace ASCII avant `:`, aucun U
   qu'`Afficher` : dans le catalogue, `Afficher` rend l'anglais **Show**, faire apparaître quelque chose à l'écran
   (`menu.view.showHiddenFiles` « Afficher les fichiers cachés », `queue.row.foreground` « Afficher »,
   `crashReporter.dialog.showDetails` « Afficher les détails du rapport »), alors que `Voir` rend **See**, consulter une
-  information (`menu.app.licenseDetails` et `commands.appLicenseKey.seeDetails.label` « Voir les détails de la
-  licence », `whatsNew.dialog.seeFullChangelog`, `askCmdr.wakeToast.openThread` « Voir pourquoi »), et c'est le sens
-  ici. `Afficher` coûterait aussi trois caractères de plus. Le `View` de la barre des touches F est un troisième verbe,
+  information (`menu.app.licenseDetails` et `commands.appLicenseKey.seeDetails.label` « Voir les détails de la licence
+  », `whatsNew.dialog.seeFullChangelog`, `askCmdr.wakeToast.openThread` « Voir pourquoi »), et c'est le sens ici.
+  `Afficher` coûterait aussi trois caractères de plus. Le `View` de la barre des touches F est un troisième verbe,
   `Visualiser`, propre à la visionneuse (`fileExplorer.functionKeyBar.viewLabel` / `.viewAction`).
 
 ## La fenêtre sélectionner / désélectionner des fichiers (`selection.*`, 2026-08-29)
@@ -2035,8 +2035,8 @@ Le catalogue portait 38 endroits où `fr` donnait deux noms différents au même
 qu'une passe tardive avait touché `menu.json` en laissant `commands.json` sur l'ancienne formulation. Treize étaient de
 vraies dérives et ont disparu ; vingt-quatre sont des frontières VOLONTAIRES (ou des angles morts du vérificateur) et
 sont décrites plus bas pour que la prochaine passe ne les « uniformise » pas. La trente-huitième, `Connect to server`,
-n'est plus une frontière du tout : le catalogue ne garde que la forme verbale, et le terme vit désormais dans la liste
-§ Termes.
+n'est plus une frontière du tout : le catalogue ne garde que la forme verbale, et le terme vit désormais dans la liste §
+Termes.
 
 ### Corrigé
 
@@ -2090,9 +2090,9 @@ n'est plus une frontière du tout : le catalogue ne garde que la forme verbale, 
 - **`Zoom` : `Zoom` est la taille du texte, `Réduire/agrandir` est la fenêtre** · macOS `fr` nomme l'action de la
   pastille verte `Réduire/agrandir`, et le `@key` dit d'employer le mot de macOS ICI même s'il diffère · `high`.
 - **`Unknown` employé seul s'accorde avec ce qu'il remplace** · `ai.local.modelUnknown` = `Inconnu` (le modèle,
-  masculin) ; `fileOperations.transferProgress.sizeUnknown` = `(inconnue)` (la taille, féminin). Les deux sont justes
-  et aucune ne va à la place de l'autre · `high`. Seule la seconde porte les parenthèses de la source ; ne les ajoutez
-  ni ne les retirez, l'accord et la ponctuation sont deux décisions séparées.
+  masculin) ; `fileOperations.transferProgress.sizeUnknown` = `(inconnue)` (la taille, féminin). Les deux sont justes et
+  aucune ne va à la place de l'autre · `high`. Seule la seconde porte les parenthèses de la source ; ne les ajoutez ni
+  ne les retirez, l'accord et la ponctuation sont deux décisions séparées.
 - **`App` : `App` est la couleur de l'app, `Application` est la portée** · les options de couleurs désignent l'app comme
   SOURCE d'une teinte (étiquette de bouton très courte) ; `shortcuts.scope.app` désigne les raccourcis valables dans
   toute l'application · `high`.
@@ -2681,17 +2681,17 @@ Notes de formulation :
 
 - **Les titres de la feuille sont des infinitifs**, comme tous les libellés d'action du set `fr` (style guide §
   Formality) : `Ajouter un serveur`, `Modifier {name}`, `S''identifier sur {name}`. Le verbe `s''identifier` vient du
-  glossaire (§ Terms) et de la clé livrée `fileExplorer.network.signIn` (`S''identifier`) ; `se connecter` reste
-  réservé à l'action réseau (`fileExplorer.network.connect` → `Se connecter`).
+  glossaire (§ Terms) et de la clé livrée `fileExplorer.network.signIn` (`S''identifier`) ; `se connecter` reste réservé
+  à l'action réseau (`fileExplorer.network.connect` → `Se connecter`).
 - **Trois libellés reprennent MOT POUR MOT une clé livrée AILLEURS**, sinon `desktop-i18n-term-consistency` compte une
   divergence : `Se connecter` (`fileExplorer.network.connect`), `S''identifier` (`fileExplorer.network.signIn`),
-  `Avancé` (`settings.section.advanced`). Deux autres n'existent que sur la feuille et fixent donc leur formulation
-  ici : `Mémoriser dans le trousseau` (`servers.sheet.remember`) et `Se connecter en tant qu''invité`
+  `Avancé` (`settings.section.advanced`). Deux autres n'existent que sur la feuille et fixent donc leur formulation ici
+  : `Mémoriser dans le trousseau` (`servers.sheet.remember`) et `Se connecter en tant qu''invité`
   (`servers.sheet.connectAsGuest`).
 - **`Sign in with a username and password` s'écrit en toutes lettres** : `servers.sheet.signInWithCredentials` →
-  `S''identifier avec un nom d''utilisateur et un mot de passe`. Pas d'abrégé en `identifiants`, qui en français
-  désigne aussi bien le seul nom d'utilisateur que le couple entier ; la source nomme les deux champs, le français
-  les nomme aussi (`servers.sheet.username` → `Nom d''utilisateur`, `servers.sheet.password` → `Mot de passe`).
+  `S''identifier avec un nom d''utilisateur et un mot de passe`. Pas d'abrégé en `identifiants`, qui en français désigne
+  aussi bien le seul nom d'utilisateur que le couple entier ; la source nomme les deux champs, le français les nomme
+  aussi (`servers.sheet.username` → `Nom d''utilisateur`, `servers.sheet.password` → `Mot de passe`).
 - **`How to connect` pose une question, ce n'est pas un nom de champ** : `servers.sheet.connectionModeLegend` →
   `Comment se connecter`. Pas `Mode de connexion`, qui nommerait un réglage alors que la légende demande de choisir.
 - **La citation d'un libellé de case à cocher garde les guillemets français** avec espace intérieure :

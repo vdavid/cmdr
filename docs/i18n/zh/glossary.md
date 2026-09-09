@@ -1262,8 +1262,8 @@ Cmdr 没能建立自己的直接连接，共享改走 macOS 提供的连接时�
   是口语里现成的说法，比 `句柄失效` 这类术语更贴 style.md 的声音。后半句 "Open it again" 指重新进入这个文件夹，写
   `请再次进入这个文件夹`，沿用 `errors.listing.*` 的 `再次进入这里` · `high`
 - **"didn''t work"（密码被拒）→ `不起作用`** · 目录里 `errors.volume.passwordRejected` 就是
-  `这个密码不起作用。`；`fileOperations.archivePassword.retryMessage` 的 `这个密码没能解锁…`
-  是同一件事的长版本。❌ 不写 `密码错误` · `confirmed`
+  `这个密码不起作用。`；`fileOperations.archivePassword.retryMessage` 的 `这个密码没能解锁…` 是同一件事的长版本。❌ 不写
+  `密码错误` · `confirmed`
 - **"couldn''t tell what"（说不出具体原因的兜底）→ `也说不清是什么`** · `出了点问题`
   是目录里已定的兜底说法（5 处，`ai.cloud.genericError`、`updates.checkToast.errorPrefix` 等），`说不清`
   是日常口语，承接英文有意的谦虚语气 · `high`
@@ -2055,8 +2055,8 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   `confirmed`。带 `sameAsSourceJustification`。
 - **hostname → `主机名`** · Automator `Variables.loctable`、Security `OID.loctable`、Terminal `ServiceBrowser`
   （`host name` → `主机名`），目录里 `fileExplorer.network.browser.tooltip.resolving` 已经是它 · `confirmed`。
-- **Username → `用户名`；Password → `密码`；Name → `名称`；Address → `地址`；Advanced → `高级`；Cancel → `取消`**
-  ·除 `用户名` 外，都与目录里同英文的键一字不差（`fileOperations.archivePassword.placeholder`、
+- **Username → `用户名`；Password → `密码`；Name → `名称`；Address → `地址`；Advanced → `高级`；Cancel → `取消`** ·除
+  `用户名` 外，都与目录里同英文的键一字不差（`fileOperations.archivePassword.placeholder`、
   `fileExplorer.columns.name`、`servers.hub.colAddress`、`settings.section.advanced`、`fileOperations.button.cancel`）；
   `Username` 在目录里只此一处，取 NetAuthAgent `GENERIC_MSG_NONAME`（`Enter your user name and password.` →
   `输入你的用户名和密码。`）· `confirmed`。`i18n-terms` 会比这几组。
@@ -2071,9 +2071,9 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **Remember in Keychain → `记住到钥匙串`** · Apple 自己的说法是 `在我的钥匙串中记住此密码` （NetAuthAgent
   `AuthDialog.loctable`），词根 `钥匙串` 一致 · `confirmed`。`servers.sheet.needsStoredSecret` 正文里引用这个复选框时用
   `“记住到钥匙串”`，必须与复选框同字，`i18n-terms` 会比。
-- **Connect as guest → `以来宾身份连接`** · 词根 `来宾` 与目录里的 `fileExplorer.network.browser.status.guest`
-  （`Guest` → `来宾`）一致 · `high`。⚠️ 分歧待复审：macOS `zh_CN` 里 Guest 一律是 `客人`（NetAuthAgent `GUEST`、
-  LoginUIKit `GUEST_ACCOUNT_RECORD_NAME`、AppKit `NSUserGuest`），微软才用 `来宾`。真要按「macOS 优先」改，得
+- **Connect as guest → `以来宾身份连接`** · 词根 `来宾` 与目录里的 `fileExplorer.network.browser.status.guest` （`Guest`
+  → `来宾`）一致 · `high`。⚠️ 分歧待复审：macOS `zh_CN` 里 Guest 一律是 `客人`（NetAuthAgent `GUEST`、LoginUIKit
+  `GUEST_ACCOUNT_RECORD_NAME`、AppKit `NSUserGuest`），微软才用 `来宾`。真要按「macOS 优先」改，得
   `servers.sheet.connectAsGuest` 和 `fileExplorer.network.browser.status.guest`
   两个键一起改，属于单独一趟收敛，别只改一边（`i18n-terms` 会立刻报新分歧）。
 - **Sign in with a username and password → `用用户名和密码登录`** · NetAuthAgent `GENERIC_MSG_NONAME`

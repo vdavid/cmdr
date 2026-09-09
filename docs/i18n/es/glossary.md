@@ -844,8 +844,8 @@ sessions, attachments, consent screen, cost footer, settings section; macOS AppK
 ## Transferencia atascada: el aviso de "sin progreso" (2026-07-31)
 
 Settled while translating the six `fileOperations.transferProgress.stall*` strings plus `close` (the notice that
-replaces the ETA countdown when a copy/move stops moving). Mined from macOS Finder/AppKit, MS terminology, Nautilus,
-and Total/Double Commander.
+replaces the ETA countdown when a copy/move stops moving). Mined from macOS Finder/AppKit, MS terminology, Nautilus, and
+Total/Double Commander.
 
 - **"No progress for {duration}" → `Sin progreso desde hace {duration}`** · `progress`→`progreso` is MS terminology (id
   2371066/2375015) and matches the catalog's own `Progreso del tamaño` / `Progreso de archivos`. The "for X (up to now)"
@@ -1532,9 +1532,8 @@ papelera"), y el mismo comando está en la paleta de comandos.
   reservado en el catálogo para deshacer un renombrado (`askCmdr.renameUndo.undone`), así que se mantiene la distinción
   entre devolver un SITIO y restaurar un NOMBRE.
 - **`This drive doesn't keep a trash.` → `Esta unidad no tiene papelera.`** · dato sobre la unidad, sin veredicto, en la
-  línea de `fileOperations.delete.noTrashWarningStrong` ("Este volumen no admite la papelera."). El inglés dice
-  `drive`, y `unidad` es lo que el catálogo usa para eso (`askCmdr.renameUndo.unavailable`, "su unidad no esté
-  conectada") · high
+  línea de `fileOperations.delete.noTrashWarningStrong` ("Este volumen no admite la papelera."). El inglés dice `drive`,
+  y `unidad` es lo que el catálogo usa para eso (`askCmdr.renameUndo.unavailable`, "su unidad no esté conectada") · high
 - **`Nothing to put back.` → `No hay nada que devolver.`** · el giro `no hay nada que + infinitivo` ya está asentado
   (`askCmdr.renameUndo.unavailable`, "No hay nada que restaurar.") · high
 - **La segunda mitad trae su propio parámetro de cantidad (`{skipped}`)**, así que conjuga con normalidad: "… a su
@@ -1565,8 +1564,8 @@ informe ya no admite añadidos, el diálogo lo dice y remite al menú Ayuda.
 - **`error report` es `informe de error` en todo el catálogo**: este diálogo, el ítem de menú
   `menu.help.sendErrorReport` y `commands.helpSendErrorReport.label` dicen los tres `informe de error…`, frente al
   `informe de fallos` que el glosario reserva para el CRASH report · high. `amend.unavailable` remite al menú sin
-  nombrar el tipo de informe (`envía un informe nuevo desde el menú Ayuda`) porque el inglés tampoco lo nombra
-  ("send a new report from the Help menu").
+  nombrar el tipo de informe (`envía un informe nuevo desde el menú Ayuda`) porque el inglés tampoco lo nombra ("send a
+  new report from the Help menu").
 - **`the Help menu` → `el menú Ayuda`** · el nombre del menú es `Ayuda` en macOS (Finder `MenuBar` `300630`/`300631`,
   AppKit `MenuCommands`/`HelpManager`) y el catálogo ya lo fija en `menu.bar.help` · high. Sin comillas: macOS escribe
   `selecciona menú Apple > Ajustes del Sistema` (entrecomilla los paneles, no los menús).
@@ -2324,8 +2323,8 @@ ruta». El montón de referencia sigue sin estar en esta máquina, así que las 
   preposición de `servers.paneState.signedOut`: `Sesión cerrada de {name}`, no `en {name}`.
 - **Remember this password in my keychain → `Guardar esta contraseña en mi llavero`** · NetAuthAgent
   `AuthDialog.loctable`, `600268.title` · `high`. Cmdr publica la forma corta, `Recordar en el Llavero`
-  (`servers.sheet.remember`). `servers.sheet.needsStoredSecret` la cita entre comillas («Activa “Recordar en el
-  Llavero” e inicia sesión una vez.»), así que las dos cadenas tienen que decir exactamente lo mismo.
+  (`servers.sheet.remember`). `servers.sheet.needsStoredSecret` la cita entre comillas («Activa “Recordar en el Llavero”
+  e inicia sesión una vez.»), así que las dos cadenas tienen que decir exactamente lo mismo.
 - **Guest → `Invitado`; Connect As: → `Conectar como:`** · NetAuthAgent `AuthDialog.loctable` (`RiA-l0-ASw.title`,
   `PHL-pS-ELV.title`) y `Localizable.loctable` (`GUEST`, `CONNECT_AS`) · `high`.
 - **passphrase → `contraseña`** · Apple no distingue: `Security.framework/OID.loctable` («Passphrase» → «Contraseña»),

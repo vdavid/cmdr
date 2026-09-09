@@ -281,10 +281,10 @@ strings are counted, so no plural branches are needed there.
   no estás usando el Mac". Same rule as the gendered-grammar decision above, but the trap hides in ordinary emphasis
   rather than in role nouns.
 - **Length: Spanish runs ~15–25% longer than English.** Overflow-check tight buttons ("Copiar", "Descartar", "Enviar
-  informe") against the pseudolocale (`en-XA`). Watch `fileOperations.transferProgress.stallNotice` in particular:
-  "Sin progreso desde hace 45 s" runs ~40% longer than the English, and the one key renders on two surfaces, the
-  progress dialog and the narrow ETA slot of a queue row. Fit the narrow one; the dialog then shows the same short
-  text, and there is no separate row string to trim on its own.
+  informe") against the pseudolocale (`en-XA`). Watch `fileOperations.transferProgress.stallNotice` in particular: "Sin
+  progreso desde hace 45 s" runs ~40% longer than the English, and the one key renders on two surfaces, the progress
+  dialog and the narrow ETA slot of a queue row. Fit the narrow one; the dialog then shows the same short text, and
+  there is no separate row string to trim on its own.
 - **Photos are "taken" with `tomar`, never `hacer` or `sacar`.** "where it was taken" → `el lugar donde se tomó`
   (`askCmdr.consent.contentsRule`). Spain says `hacer una foto` and Latin America `tomar una foto`; `tomar` reads fine
   on both sides, which is what the pan-regional base wants, and `sacar` is the colloquial one. Same shape as the `coste`
