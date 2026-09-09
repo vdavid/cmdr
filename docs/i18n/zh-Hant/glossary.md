@@ -339,8 +339,13 @@ key-match, 2026-08-29).
   "resolving/settlement" sense.
 - **dimensions** · `尺寸` (an image's own → `影像大小`) · AP Finder Get Info + Preview (TW = HK) · `high`
 - **aspect ratio** · `顯示比例` · AP Photos + Preview (TW = HK) · `high`. MS's `外觀比例` was passed over.
-- **metadata** · `後設資料` · AP-TW (Photos) · `tentative`. **A genuine three-way split**: AP-HK says `元數據`, MS says
-  `中繼資料` (tagged HKG + TWN). No consensus exists; macOS-first picks Apple's TW form. Worth a reviewer's eye.
+- **metadata** · `中繼資料` · MS (tagged HKG + TWN) · `high`. **Apple splits and so cannot settle this**: AP-TW says
+  `後設資料` (Photos), AP-HK says `元數據`. macOS-first assumes Apple speaks with one voice for Traditional Chinese, and
+  here it doesn't, so following it would pick a form that is wrong for half the audience of a catalog we ship once for
+  both markets. MS's form is the only candidate tagged for both. Ships in
+  `errors.listing.attributeNotFound.explanation` and `.suggestion`. ❌ **Don't "fix" this to `後設資料` by citing
+  macOS-first**: the rule is a tiebreaker among sources, not among Apple's own regions, and it has nothing to say when
+  AP-TW and AP-HK disagree.
 - **EXIF** · `EXIF`, kept Latin · MS (HKG, TWN); Apple ships no localized label · `high`
 - **exposure / ISO / aperture** · `曝光` / `ISO 感光度` / `光圈值` · AP Preview + Spotlight (TW = HK) · `high`
 - **duration (of media)** · `播放時間` · AP QuickTime panel label (TW = HK) · `high`. ❗ Apple has three renderings;
