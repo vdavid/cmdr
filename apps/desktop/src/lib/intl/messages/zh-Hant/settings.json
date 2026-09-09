@@ -1155,9 +1155,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "請開啟這一項，幫助我們在公開測試期間了解哪些功能重要。統計不會關聯到你的姓名或電子郵件，而是關聯到一個隨機識別碼。Cmdr 絕不會傳送檔名、路徑、搜尋字詞或提示詞。關閉後，Cmdr 不會傳送任何統計。",
+  "settings.analytics.enabled.description": "請開啟這一項，幫助我們在公開測試期間了解哪些功能重要。\n統計不會關聯到你的姓名或電子郵件，而是關聯到一個隨機識別碼。\nCmdr 絕不會傳送檔名、路徑、搜尋字詞或提示詞。\n關閉後，Cmdr 不會傳送任何統計。",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "7c67750"
+    "sourceHash": "23bafcb"
   },
   "settings.analytics.email.label": "測試版聯絡用電子郵件",
   "@settings.analytics.email.label": {

@@ -1159,9 +1159,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Bitte aktiviere das, damit wir sehen, welche Funktionen während der offenen Beta wichtig sind. Die Statistiken sind nicht mit deinem Namen oder deiner E-Mail-Adresse verknüpft, sondern mit einer zufälligen ID. Cmdr sendet nie Dateinamen, Pfade, Suchbegriffe oder Prompts. Wenn es aus ist, sendet Cmdr gar keine Statistiken.",
+  "settings.analytics.enabled.description": "Bitte aktiviere das, damit wir sehen, welche Funktionen während der offenen Beta wichtig sind.\nDie Statistiken sind nicht mit deinem Namen oder deiner E-Mail-Adresse verknüpft, sondern mit einer zufälligen ID.\nCmdr sendet nie Dateinamen, Pfade, Suchbegriffe oder Prompts.\nWenn es aus ist, sendet Cmdr gar keine Statistiken.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "7c67750"
+    "sourceHash": "23bafcb"
   },
   "settings.analytics.email.label": "Beta-Kontakt-E-Mail",
   "@settings.analytics.email.label": {

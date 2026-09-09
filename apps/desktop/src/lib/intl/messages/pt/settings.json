@@ -1157,9 +1157,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Ative isto para nos ajudar a ver quais recursos importam durante o beta aberto. As estatísticas não são ligadas ao seu nome nem ao seu e-mail, e sim a um identificador aleatório. O Cmdr nunca envia nomes de arquivo, caminhos, termos de busca nem prompts. Com isto desativado, o Cmdr não envia nenhuma estatística.",
+  "settings.analytics.enabled.description": "Ative isto para nos ajudar a ver quais recursos importam durante o beta aberto.\nAs estatísticas não são ligadas ao seu nome nem ao seu e-mail, e sim a um identificador aleatório.\nO Cmdr nunca envia nomes de arquivo, caminhos, termos de busca nem prompts.\nCom isto desativado, o Cmdr não envia nenhuma estatística.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "7c67750"
+    "sourceHash": "23bafcb"
   },
   "settings.analytics.email.label": "E-mail de contato do beta",
   "@settings.analytics.email.label": {

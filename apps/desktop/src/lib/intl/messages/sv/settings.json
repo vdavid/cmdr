@@ -1158,9 +1158,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Slå på det här så hjälper du oss se vilka funktioner som spelar roll under den öppna betan. Statistiken är inte kopplad till ditt namn eller din e-post utan till ett slumpmässigt id. Cmdr skickar aldrig filnamn, sökvägar, sökord eller prompter. När det är avstängt skickar Cmdr ingen statistik alls.",
+  "settings.analytics.enabled.description": "Slå på det här så hjälper du oss se vilka funktioner som spelar roll under den öppna betan.\nStatistiken är inte kopplad till ditt namn eller din e-post utan till ett slumpmässigt id.\nCmdr skickar aldrig filnamn, sökvägar, sökord eller prompter.\nNär det är avstängt skickar Cmdr ingen statistik alls.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "7c67750"
+    "sourceHash": "23bafcb"
   },
   "settings.analytics.email.label": "Kontakt-e-post för beta",
   "@settings.analytics.email.label": {

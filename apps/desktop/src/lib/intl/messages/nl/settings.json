@@ -1159,9 +1159,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Zet dit aan om ons te helpen zien welke functies ertoe doen tijdens de open bèta. De statistieken zijn niet gekoppeld aan je naam of e-mailadres, maar aan een willekeurige id. Cmdr stuurt nooit bestandsnamen, paden, zoektermen of prompts. Staat het uit, dan stuurt Cmdr helemaal geen statistieken.",
+  "settings.analytics.enabled.description": "Zet dit aan om ons te helpen zien welke functies ertoe doen tijdens de open bèta.\nDe statistieken zijn niet gekoppeld aan je naam of e-mailadres, maar aan een willekeurige id.\nCmdr stuurt nooit bestandsnamen, paden, zoektermen of prompts.\nStaat het uit, dan stuurt Cmdr helemaal geen statistieken.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "7c67750"
+    "sourceHash": "23bafcb"
   },
   "settings.analytics.email.label": "Contact-e-mail voor de bèta",
   "@settings.analytics.email.label": {

@@ -1156,9 +1156,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Kérlek, kapcsold be, hogy lássuk, mely funkciók számítanak a nyílt béta alatt. A statisztika nem a nevedhez vagy az e-mail-címedhez kötődik, hanem egy véletlenszerű azonosítóhoz. A Cmdr sosem küld fájlneveket, útvonalakat, keresési kifejezéseket vagy promptokat. Kikapcsolva a Cmdr semmilyen statisztikát nem küld.",
+  "settings.analytics.enabled.description": "Kérlek, kapcsold be, hogy lássuk, mely funkciók számítanak a nyílt béta alatt.\nA statisztika nem a nevedhez vagy az e-mail-címedhez kötődik, hanem egy véletlenszerű azonosítóhoz.\nA Cmdr sosem küld fájlneveket, útvonalakat, keresési kifejezéseket vagy promptokat.\nKikapcsolva a Cmdr semmilyen statisztikát nem küld.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "7c67750"
+    "sourceHash": "23bafcb"
   },
   "settings.analytics.email.label": "Bétakapcsolattartási e-mail",
   "@settings.analytics.email.label": {

@@ -1155,9 +1155,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "请打开这一项，帮助我们在公开测试期间了解哪些功能更重要。统计不会关联到你的姓名或邮箱，而是关联到一个随机标识符。Cmdr 绝不会发送文件名、路径、搜索词或提示词。关闭后，Cmdr 不会发送任何统计。",
+  "settings.analytics.enabled.description": "请打开这一项，帮助我们在公开测试期间了解哪些功能更重要。\n统计不会关联到你的姓名或邮箱，而是关联到一个随机标识符。\nCmdr 绝不会发送文件名、路径、搜索词或提示词。\n关闭后，Cmdr 不会发送任何统计。",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "7c67750"
+    "sourceHash": "23bafcb"
   },
   "settings.analytics.email.label": "测试联系邮箱",
   "@settings.analytics.email.label": {

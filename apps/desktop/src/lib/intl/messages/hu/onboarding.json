@@ -11,6 +11,14 @@
   "@onboarding.wizard.stepProgress": {
     "sourceHash": "41705d0"
   },
+  "onboarding.moreAbout": "More about {topic}",
+  "@onboarding.moreAbout": {
+    "sourceHash": "b4d183a"
+  },
+  "onboarding.wizard.stepTooltip": "Step {step} of {mandatory}+1{note, select, remaining {, one optional step remains} last {, this is the last, optional step} other {}}",
+  "@onboarding.wizard.stepTooltip": {
+    "sourceHash": "53f848a"
+  },
   "onboarding.wizard.back": "Vissza",
   "@onboarding.wizard.back": {
     "sourceHash": "76900f1"
@@ -82,6 +90,10 @@
   "onboarding.stepFda.firstAsk.askPermission": "Szeretnél teljes lemezhozzáférést adni ennek az appnak? Íme, mit jelent ez:",
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
+  },
+  "onboarding.stepFda.why": "Why?",
+  "@onboarding.stepFda.why": {
+    "sourceHash": "5d8a995"
   },
   "onboarding.stepFda.pro.label": "Előny:",
   "@onboarding.stepFda.pro.label": {
@@ -247,9 +259,9 @@
   "@onboarding.stepAi.cloud.label": {
     "sourceHash": "ba08450"
   },
-  "onboarding.stepAi.cloud.recommended": "(ajánlott)",
+  "onboarding.stepAi.cloud.recommended": "Ajánlott",
   "@onboarding.stepAi.cloud.recommended": {
-    "sourceHash": "1185133"
+    "sourceHash": "d70604e"
   },
   "onboarding.stepAi.cloud.help": "Használj bármilyen felhőszolgáltatót a saját API-kulcsoddal. Gyors, jó minőségű modellek. Válassz lent egy szolgáltatót.",
   "@onboarding.stepAi.cloud.help": {
@@ -263,6 +275,10 @@
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
   },
+  "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that''s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
+  "@onboarding.stepAi.local.tooltip": {
+    "sourceHash": "c3fa36a"
+  },
   "onboarding.stepAi.local.note": "A helyi modell letöltése elindult a háttérben. Most már befejezheted a bevezetőt; a sarokban lévő buborék tájékoztat majd.",
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
@@ -270,6 +286,10 @@
   "onboarding.stepAi.localTooltip": "A helyi LLM-hez Apple Silicon szükséges. A felhő Intelen is működik.",
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "dc194e8"
+  },
+  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Please fix this above.\n\n<strong>Click \"{nextLabel}\" again to ignore this and go on.</strong>",
+  "@onboarding.stepAi.missingKeyWarning": {
+    "sourceHash": "3d66d11"
   },
   "onboarding.stepAi.off.label": "Kösz, de nem kérek, AI-t nem nekem való",
   "@onboarding.stepAi.off.label": {
@@ -299,6 +319,38 @@
   "@onboarding.stepBeta.openBeta": {
     "sourceHash": "5b0a107"
   },
+  "onboarding.stepBeta.checklist.title": "Onboarding checklist, each takes 30 seconds:",
+  "@onboarding.stepBeta.checklist.title": {
+    "sourceHash": "6c0fc62"
+  },
+  "onboarding.stepBeta.checklist.star": "Star the repo on GitHub",
+  "@onboarding.stepBeta.checklist.star": {
+    "sourceHash": "c271317"
+  },
+  "onboarding.stepBeta.checklist.starNote": "Homebrew needs Cmdr to have 225 stars to enable <code>brew install cmdr</code>",
+  "@onboarding.stepBeta.checklist.starNote": {
+    "sourceHash": "6553ce2"
+  },
+  "onboarding.stepBeta.checklist.alternativeTo": "Like Cmdr on AlternativeTo",
+  "@onboarding.stepBeta.checklist.alternativeTo": {
+    "sourceHash": "c9b1e1e"
+  },
+  "onboarding.stepBeta.checklist.alternativeToNote": "At the very top of the page, next to the \"Cmdr\" title. This helps people and Google notice Cmdr!",
+  "@onboarding.stepBeta.checklist.alternativeToNote": {
+    "sourceHash": "ea4903a"
+  },
+  "onboarding.stepBeta.checklist.email": "Enter your email address <field></field> to get very occasional updates and questions",
+  "@onboarding.stepBeta.checklist.email": {
+    "sourceHash": "e53bd44"
+  },
+  "onboarding.stepBeta.checklist.emailSave": "Save",
+  "@onboarding.stepBeta.checklist.emailSave": {
+    "sourceHash": "1509f56"
+  },
+  "onboarding.stepBeta.checklist.emailMark": "Email address saved",
+  "@onboarding.stepBeta.checklist.emailMark": {
+    "sourceHash": "1bf8647"
+  },
   "onboarding.stepBeta.feedbackIntro": "A visszajelzésed segít, hogy észrevegyem a hibákat és rangsoroljam a funkciókat. Így kapcsolódhatsz be:",
   "@onboarding.stepBeta.feedbackIntro": {
     "sourceHash": "4e238dd"
@@ -327,21 +379,21 @@
   "@onboarding.stepBeta.star": {
     "sourceHash": "30c25f2"
   },
-  "onboarding.stepBeta.analyticsLede": "Hogy megtudjuk, mi működik és mi nem, a Cmdr a nyílt béta alatt használati statisztikát küld: mely funkciókat használják és milyen gyakran, soha semmit a fájljaidból. Ez egy véletlenszerű azonosítóhoz kötődik, nem a nevedhez vagy az e-mail-címedhez. Most be van kapcsolva, és bármikor kikapcsolhatod.",
+  "onboarding.stepBeta.analyticsLede": "Hogy megtudjuk, mi működik és mi nem, a Cmdr a nyílt béta alatt használati statisztikát küld: mely funkciókat használják és milyen gyakran, soha semmit a fájljaidból.\nEz egy véletlenszerű azonosítóhoz kötődik, nem a nevedhez vagy az e-mail-címedhez.\nMost be van kapcsolva, és bármikor kikapcsolhatod.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "0c76239"
+    "sourceHash": "edd95b4"
   },
   "onboarding.stepBeta.analyticsTitle": "Használati statisztika küldése",
   "@onboarding.stepBeta.analyticsTitle": {
     "sourceHash": "89b309e"
   },
-  "onboarding.stepBeta.analyticsCaption": "Vedd figyelembe, hogy alapból BE van kapcsolva, hogy a béta alatt ösztönözzem az adatküldést. Ezt bármikor módosíthatod a Beállításokban.",
+  "onboarding.stepBeta.analyticsCaption": "Vedd figyelembe, hogy alapból BE van kapcsolva, hogy a béta alatt ösztönözzem az adatküldést.\nEzt bármikor módosíthatod a Beállításokban.",
   "@onboarding.stepBeta.analyticsCaption": {
-    "sourceHash": "9821e5d"
+    "sourceHash": "cfd1e86"
   },
-  "onboarding.stepBeta.crashReportsNote": "Az összeomlás-jelentések is be vannak kapcsolva: ha a Cmdr összeomlik, elküldi az app verzióját, a macOS-verziódat és azt a pontot a kódban, ahol megállt. A fájljaidat soha. Mindkettőt kikapcsolhatod a Beállításokban, amikor csak akarod.",
+  "onboarding.stepBeta.crashReportsNote": "Az összeomlás-jelentések is be vannak kapcsolva: ha a Cmdr összeomlik, elküldi az app verzióját, a macOS-verziódat és azt a pontot a kódban, ahol megállt.\nA fájljaidat soha.\nMindkettőt kikapcsolhatod a Beállításokban, amikor csak akarod.",
   "@onboarding.stepBeta.crashReportsNote": {
-    "sourceHash": "18cd0b3"
+    "sourceHash": "9be0be1"
   },
   "onboarding.stepBeta.emailTitle": "Maradjunk kapcsolatban (választható)",
   "@onboarding.stepBeta.emailTitle": {
@@ -359,9 +411,17 @@
   "@onboarding.stepBeta.signup.failure": {
     "sourceHash": "0aac3a9"
   },
-  "onboarding.stepBeta.emailNote": "Add meg az e-mail-címedet, és időnként megkereslek egy-egy kérdéssel vagy hírrel. Az itt megadott e-mail-cím csak a Mac-eden tárolódik, és soha nem kapcsolódik a használati statisztikádhoz: a kettő szándékosan két külön alrendszer.",
+  "onboarding.stepBeta.signup.rejected": "The mailing list didn''t accept that address. Worth a look for a typo, then hit Save again.",
+  "@onboarding.stepBeta.signup.rejected": {
+    "sourceHash": "05ccee5"
+  },
+  "onboarding.stepBeta.signup.unreachable": "Couldn''t reach the signup server just now, so you''re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+  "@onboarding.stepBeta.signup.unreachable": {
+    "sourceHash": "8036aad"
+  },
+  "onboarding.stepBeta.emailNote": "Add meg az e-mail-címedet, és időnként megkereslek egy-egy kérdéssel vagy hírrel.\nAz itt megadott e-mail-cím csak a Mac-eden tárolódik, és soha nem kapcsolódik a használati statisztikádhoz: a kettő szándékosan két külön alrendszer.",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "9d262c8"
+    "sourceHash": "f256066"
   },
   "onboarding.stepBeta.terms.title": "Ja, és ez is, légy szíves",
   "@onboarding.stepBeta.terms.title": {
@@ -391,21 +451,33 @@
   "@onboarding.stepOptional.lede": {
     "sourceHash": "b1242c9"
   },
-  "onboarding.stepOptional.recommendedOn": "Ajánlott: bekapcsolva. Ezt bármikor módosíthatod a Beállításokban.",
+  "onboarding.stepOptional.recommendedOn": "Ajánlott: bekapcsolva",
   "@onboarding.stepOptional.recommendedOn": {
-    "sourceHash": "05e5598"
+    "sourceHash": "d91a6df"
+  },
+  "onboarding.stepOptional.changeAnytime": "Ezt bármikor módosíthatod a Beállításokban.",
+  "@onboarding.stepOptional.changeAnytime": {
+    "sourceHash": "895d675"
   },
   "onboarding.stepOptional.networking.title": "Hálózat",
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.desc": "Ha ez <em>be</em> van kapcsolva, csatlakozhatsz SMB-szerverekhez, például céges hálózati megosztásokhoz, otthoni NAS-hoz és hasonlókhoz. Az egyetlen ára egy macOS engedélykérő ablak, amely felugrik, és a „Helyi hálózat elérése” engedélyezését kéri, plusz egy a „Bejövő kapcsolatok elfogadásához”. Mindkét ablak ártalmatlan, de ha nem tudod, mik ezek, ijesztőek vagy bosszantóak lehetnek.",
+  "onboarding.stepOptional.networking.summary": "Needs accepting \"Local network access\" once",
+  "@onboarding.stepOptional.networking.summary": {
+    "sourceHash": "84f3716"
+  },
+  "onboarding.stepOptional.networking.desc": "Ha ez <em>be</em> van kapcsolva, csatlakozhatsz SMB-szerverekhez, például céges hálózati megosztásokhoz, otthoni NAS-hoz és hasonlókhoz.\nAz egyetlen ára egy macOS engedélykérő ablak, amely felugrik, és a „Helyi hálózat elérése” engedélyezését kéri, plusz egy a „Bejövő kapcsolatok elfogadásához”.\nMindkét ablak ártalmatlan, de ha nem tudod, mik ezek, ijesztőek vagy bosszantóak lehetnek.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "a27866b"
+    "sourceHash": "0403490"
   },
   "onboarding.stepOptional.indexing.title": "Meghajtó indexelése",
   "@onboarding.stepOptional.indexing.title": {
     "sourceHash": "38d916b"
+  },
+  "onboarding.stepOptional.indexing.summary": "Takes 1 GB space, speeds up searches, shows folder sizes",
+  "@onboarding.stepOptional.indexing.summary": {
+    "sourceHash": "6413c6f"
   },
   "onboarding.stepOptional.indexing.descIntro": "A meghajtó indexelése kifejezetten klassz! Két fő dolgot ad:",
   "@onboarding.stepOptional.indexing.descIntro": {
@@ -419,25 +491,33 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Ha ezt kikapcsolod, a méretek helyett csak <code>{dirPlaceholder}</code> jelenik meg. Az ára nagyjából 1 GB index a meghajtódon néhány millió fájl esetén, de nincs extra CPU- vagy memóriahasználat, miután lefutott az app első indításakor (vagy hosszú szünet utáni indításkor) az első 2–3 perc. Az előnyökhöz képest olcsó funkció.",
+  "onboarding.stepOptional.indexing.descCost": "Ha ezt kikapcsolod, a méretek helyett csak <code>{dirPlaceholder}</code> jelenik meg.\nAz ára nagyjából 1 GB index a meghajtódon néhány millió fájl esetén, de nincs extra CPU- vagy memóriahasználat, miután lefutott az app első indításakor (vagy hosszú szünet utáni indításkor) az első 2–3 perc.\nAz előnyökhöz képest olcsó funkció.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "739f4f8"
+    "sourceHash": "0b60064"
   },
   "onboarding.stepOptional.updates.title": "Automatikus frissítések",
   "@onboarding.stepOptional.updates.title": {
     "sourceHash": "147b1b6"
   },
-  "onboarding.stepOptional.updates.desc": "Ha ezt engedélyezed, a Cmdr minden appindításkor, plusz 24 óránként egyszer egy apró hálózati kérést küld egy központi licencszervernek, és mindig megkapod a legfrissebb frissítéseket. Ha letiltod, megtartod a jelenlegi verziódat, és nulla automatikus hálózati kérés indul (kivéve az időszakos licencellenőrzéseket, ha van kereskedelmi licenced).",
+  "onboarding.stepOptional.updates.summary": "One tiny check at app start and once a day, so you stay on the latest version",
+  "@onboarding.stepOptional.updates.summary": {
+    "sourceHash": "c44fcd4"
+  },
+  "onboarding.stepOptional.updates.desc": "Ha ezt engedélyezed, a Cmdr minden appindításkor, plusz 24 óránként egyszer egy apró hálózati kérést küld egy központi licencszervernek, és mindig megkapod a legfrissebb frissítéseket.\nHa letiltod, megtartod a jelenlegi verziódat, és nulla automatikus hálózati kérés indul (kivéve az időszakos licencellenőrzéseket, ha van kereskedelmi licenced).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "81147a5"
+    "sourceHash": "12b7f08"
   },
   "onboarding.stepOptional.mtp.title": "MTP (Android-telefonok, Kindle-ök, kamerák)",
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.desc": "Ha ezt engedélyezed, a Cmdr <strong>csatlakozhat Android-telefonokhoz, Kindle-ökhöz, kamerákhoz</strong>, néhány zenelejátszóhoz és bármilyen más eszközhöz, amely támogatja az MTP vagy PTP nevű protokollt. Az ára az, hogy a macOS <em>is</em> csatlakozni szeretne ezekhez (és ez általában nem sikerül neki, ezért nem tudsz csak úgy a Finderrel fotókat másolni Android-telefonokról), így a Cmdrnek el kell nyomnia azt a macOS folyamatot, amíg fut. Amikor kilépsz a Cmdrből, ezt udvariasan visszaállítja. De ennek azért van némi ára, szóval:",
+  "onboarding.stepOptional.mtp.summary": "Lets you connect Android phones and the such, suppresses macOS native handler",
+  "@onboarding.stepOptional.mtp.summary": {
+    "sourceHash": "d5b9a6e"
+  },
+  "onboarding.stepOptional.mtp.desc": "Ha ezt engedélyezed, a Cmdr <strong>csatlakozhat Android-telefonokhoz, Kindle-ökhöz, kamerákhoz</strong>, néhány zenelejátszóhoz és bármilyen más eszközhöz, amely támogatja az MTP vagy PTP nevű protokollt.\nAz ára az, hogy a macOS <em>is</em> csatlakozni szeretne ezekhez (és ez általában nem sikerül neki, ezért nem tudsz csak úgy a Finderrel fotókat másolni Android-telefonokról), így a Cmdrnek el kell nyomnia azt a macOS folyamatot, amíg fut.\nAmikor kilépsz a Cmdrből, ezt udvariasan visszaállítja.",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "ba2265d"
+    "sourceHash": "9563b7b"
   },
   "onboarding.cloudPicker.listAria": "Felhőalapú AI-szolgáltatók",
   "@onboarding.cloudPicker.listAria": {

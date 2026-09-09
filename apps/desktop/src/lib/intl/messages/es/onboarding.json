@@ -11,6 +11,14 @@
   "@onboarding.wizard.stepProgress": {
     "sourceHash": "41705d0"
   },
+  "onboarding.moreAbout": "More about {topic}",
+  "@onboarding.moreAbout": {
+    "sourceHash": "b4d183a"
+  },
+  "onboarding.wizard.stepTooltip": "Step {step} of {mandatory}+1{note, select, remaining {, one optional step remains} last {, this is the last, optional step} other {}}",
+  "@onboarding.wizard.stepTooltip": {
+    "sourceHash": "53f848a"
+  },
   "onboarding.wizard.back": "Atrás",
   "@onboarding.wizard.back": {
     "sourceHash": "76900f1"
@@ -82,6 +90,10 @@
   "onboarding.stepFda.firstAsk.askPermission": "¿Quieres darle a esta app acceso a todo el disco? Esto es lo que significa:",
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
+  },
+  "onboarding.stepFda.why": "Why?",
+  "@onboarding.stepFda.why": {
+    "sourceHash": "5d8a995"
   },
   "onboarding.stepFda.pro.label": "A favor:",
   "@onboarding.stepFda.pro.label": {
@@ -247,9 +259,9 @@
   "@onboarding.stepAi.cloud.label": {
     "sourceHash": "ba08450"
   },
-  "onboarding.stepAi.cloud.recommended": "(recomendado)",
+  "onboarding.stepAi.cloud.recommended": "Recomendado",
   "@onboarding.stepAi.cloud.recommended": {
-    "sourceHash": "1185133"
+    "sourceHash": "d70604e"
   },
   "onboarding.stepAi.cloud.help": "Usa cualquier proveedor en la nube con tu propia clave de API. Modelos rápidos y de alta calidad. Elige un proveedor abajo.",
   "@onboarding.stepAi.cloud.help": {
@@ -263,6 +275,10 @@
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
   },
+  "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that''s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
+  "@onboarding.stepAi.local.tooltip": {
+    "sourceHash": "c3fa36a"
+  },
   "onboarding.stepAi.local.note": "Se ha empezado a descargar el modelo local en segundo plano. Ya puedes terminar la introducción; el aviso de la esquina te mantendrá al tanto.",
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
@@ -270,6 +286,10 @@
   "onboarding.stepAi.localTooltip": "El LLM local necesita Apple Silicon. La nube funciona en Intel.",
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "dc194e8"
+  },
+  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Please fix this above.\n\n<strong>Click \"{nextLabel}\" again to ignore this and go on.</strong>",
+  "@onboarding.stepAi.missingKeyWarning": {
+    "sourceHash": "3d66d11"
   },
   "onboarding.stepAi.off.label": "Gracias, pero no, nada de IA para mí",
   "@onboarding.stepAi.off.label": {
@@ -299,6 +319,38 @@
   "@onboarding.stepBeta.openBeta": {
     "sourceHash": "5b0a107"
   },
+  "onboarding.stepBeta.checklist.title": "Onboarding checklist, each takes 30 seconds:",
+  "@onboarding.stepBeta.checklist.title": {
+    "sourceHash": "6c0fc62"
+  },
+  "onboarding.stepBeta.checklist.star": "Star the repo on GitHub",
+  "@onboarding.stepBeta.checklist.star": {
+    "sourceHash": "c271317"
+  },
+  "onboarding.stepBeta.checklist.starNote": "Homebrew needs Cmdr to have 225 stars to enable <code>brew install cmdr</code>",
+  "@onboarding.stepBeta.checklist.starNote": {
+    "sourceHash": "6553ce2"
+  },
+  "onboarding.stepBeta.checklist.alternativeTo": "Like Cmdr on AlternativeTo",
+  "@onboarding.stepBeta.checklist.alternativeTo": {
+    "sourceHash": "c9b1e1e"
+  },
+  "onboarding.stepBeta.checklist.alternativeToNote": "At the very top of the page, next to the \"Cmdr\" title. This helps people and Google notice Cmdr!",
+  "@onboarding.stepBeta.checklist.alternativeToNote": {
+    "sourceHash": "ea4903a"
+  },
+  "onboarding.stepBeta.checklist.email": "Enter your email address <field></field> to get very occasional updates and questions",
+  "@onboarding.stepBeta.checklist.email": {
+    "sourceHash": "e53bd44"
+  },
+  "onboarding.stepBeta.checklist.emailSave": "Save",
+  "@onboarding.stepBeta.checklist.emailSave": {
+    "sourceHash": "1509f56"
+  },
+  "onboarding.stepBeta.checklist.emailMark": "Email address saved",
+  "@onboarding.stepBeta.checklist.emailMark": {
+    "sourceHash": "1bf8647"
+  },
   "onboarding.stepBeta.feedbackIntro": "Tus comentarios me ayudan a detectar errores y a priorizar funciones. Así puedes participar:",
   "@onboarding.stepBeta.feedbackIntro": {
     "sourceHash": "4e238dd"
@@ -327,21 +379,21 @@
   "@onboarding.stepBeta.star": {
     "sourceHash": "30c25f2"
   },
-  "onboarding.stepBeta.analyticsLede": "Para saber qué funciona y qué no, durante la beta abierta Cmdr envía estadísticas de uso: qué funciones se usan y con qué frecuencia, nunca nada de tus archivos. Se vinculan a un identificador aleatorio, no a tu nombre ni a tu correo. Está activado ahora, y puedes desactivarlo cuando quieras.",
+  "onboarding.stepBeta.analyticsLede": "Para saber qué funciona y qué no, durante la beta abierta Cmdr envía estadísticas de uso: qué funciones se usan y con qué frecuencia, nunca nada de tus archivos.\nSe vinculan a un identificador aleatorio, no a tu nombre ni a tu correo.\nEstá activado ahora, y puedes desactivarlo cuando quieras.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "0c76239"
+    "sourceHash": "edd95b4"
   },
   "onboarding.stepBeta.analyticsTitle": "Enviar estadísticas de uso",
   "@onboarding.stepBeta.analyticsTitle": {
     "sourceHash": "89b309e"
   },
-  "onboarding.stepBeta.analyticsCaption": "Ten en cuenta que está ACTIVADO por omisión para animar a la gente a enviarme datos durante la beta. Puedes cambiarlo cuando quieras en Ajustes.",
+  "onboarding.stepBeta.analyticsCaption": "Ten en cuenta que está ACTIVADO por omisión para animar a la gente a enviarme datos durante la beta.\nPuedes cambiarlo cuando quieras en Ajustes.",
   "@onboarding.stepBeta.analyticsCaption": {
-    "sourceHash": "9821e5d"
+    "sourceHash": "cfd1e86"
   },
-  "onboarding.stepBeta.crashReportsNote": "Los informes de fallo también están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo. Nunca tus archivos. Puedes desactivar ambas cosas en Ajustes cuando quieras.",
+  "onboarding.stepBeta.crashReportsNote": "Los informes de fallo también están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivar ambas cosas en Ajustes cuando quieras.",
   "@onboarding.stepBeta.crashReportsNote": {
-    "sourceHash": "18cd0b3"
+    "sourceHash": "9be0be1"
   },
   "onboarding.stepBeta.emailTitle": "Sigamos en contacto (opcional)",
   "@onboarding.stepBeta.emailTitle": {
@@ -359,9 +411,17 @@
   "@onboarding.stepBeta.signup.failure": {
     "sourceHash": "0aac3a9"
   },
-  "onboarding.stepBeta.emailNote": "Déjame tu correo y te escribiré con alguna pregunta o novedad de vez en cuando. La dirección de correo que pongas aquí se guarda solo en tu Mac y nunca se vincula a tus estadísticas de uso; son dos subsistemas intencionadamente separados.",
+  "onboarding.stepBeta.signup.rejected": "The mailing list didn''t accept that address. Worth a look for a typo, then hit Save again.",
+  "@onboarding.stepBeta.signup.rejected": {
+    "sourceHash": "05ccee5"
+  },
+  "onboarding.stepBeta.signup.unreachable": "Couldn''t reach the signup server just now, so you''re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+  "@onboarding.stepBeta.signup.unreachable": {
+    "sourceHash": "8036aad"
+  },
+  "onboarding.stepBeta.emailNote": "Déjame tu correo y te escribiré con alguna pregunta o novedad de vez en cuando.\nLa dirección de correo que pongas aquí se guarda solo en tu Mac y nunca se vincula a tus estadísticas de uso; son dos subsistemas intencionadamente separados.",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "9d262c8"
+    "sourceHash": "f256066"
   },
   "onboarding.stepBeta.terms.title": "Ah, y esto también, por favor",
   "@onboarding.stepBeta.terms.title": {
@@ -391,21 +451,33 @@
   "@onboarding.stepOptional.lede": {
     "sourceHash": "b1242c9"
   },
-  "onboarding.stepOptional.recommendedOn": "Recomendado: activado. Puedes cambiarlo cuando quieras en Ajustes.",
+  "onboarding.stepOptional.recommendedOn": "Recomendado: activado",
   "@onboarding.stepOptional.recommendedOn": {
-    "sourceHash": "05e5598"
+    "sourceHash": "d91a6df"
+  },
+  "onboarding.stepOptional.changeAnytime": "Puedes cambiarlo cuando quieras en Ajustes.",
+  "@onboarding.stepOptional.changeAnytime": {
+    "sourceHash": "895d675"
   },
   "onboarding.stepOptional.networking.title": "Red",
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.desc": "Tener esto <em>activado</em> significa que puedes conectarte a servidores SMB como recursos compartidos de una empresa, un NAS doméstico y similares. El único coste es un diálogo de permiso de macOS que aparece y te pide permitir el \"Acceso a la red local\", y otro para \"Aceptar conexiones entrantes\". Ambos diálogos son inofensivos, pero si no sabes qué son, pueden dar miedo o resultar molestos.",
+  "onboarding.stepOptional.networking.summary": "Needs accepting \"Local network access\" once",
+  "@onboarding.stepOptional.networking.summary": {
+    "sourceHash": "84f3716"
+  },
+  "onboarding.stepOptional.networking.desc": "Tener esto <em>activado</em> significa que puedes conectarte a servidores SMB como recursos compartidos de una empresa, un NAS doméstico y similares.\nEl único coste es un diálogo de permiso de macOS que aparece y te pide permitir el \"Acceso a la red local\", y otro para \"Aceptar conexiones entrantes\".\nAmbos diálogos son inofensivos, pero si no sabes qué son, pueden dar miedo o resultar molestos.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "a27866b"
+    "sourceHash": "0403490"
   },
   "onboarding.stepOptional.indexing.title": "Indexación de unidades",
   "@onboarding.stepOptional.indexing.title": {
     "sourceHash": "38d916b"
+  },
+  "onboarding.stepOptional.indexing.summary": "Takes 1 GB space, speeds up searches, shows folder sizes",
+  "@onboarding.stepOptional.indexing.summary": {
+    "sourceHash": "6413c6f"
   },
   "onboarding.stepOptional.indexing.descIntro": "¡La indexación de la unidad es genial! Te da dos cosas principales:",
   "@onboarding.stepOptional.indexing.descIntro": {
@@ -419,25 +491,33 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Si lo desactivas, solo obtienes <code>{dirPlaceholder}</code> en lugar de los tamaños. El coste es alrededor de 1 GB de índice en tu unidad para unos pocos millones de archivos, pero ningún uso extra de CPU ni de memoria tras los primeros 2–3 minutos al iniciar la app por primera vez, o al iniciarla después de mucho tiempo. Es una función barata teniendo en cuenta las ventajas.",
+  "onboarding.stepOptional.indexing.descCost": "Si lo desactivas, solo obtienes <code>{dirPlaceholder}</code> en lugar de los tamaños.\nEl coste es alrededor de 1 GB de índice en tu unidad para unos pocos millones de archivos, pero ningún uso extra de CPU ni de memoria tras los primeros 2–3 minutos al iniciar la app por primera vez, o al iniciarla después de mucho tiempo.\nEs una función barata teniendo en cuenta las ventajas.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "739f4f8"
+    "sourceHash": "0b60064"
   },
   "onboarding.stepOptional.updates.title": "Actualizaciones automáticas",
   "@onboarding.stepOptional.updates.title": {
     "sourceHash": "147b1b6"
   },
-  "onboarding.stepOptional.updates.desc": "Si activas esto, Cmdr hace una pequeña petición de red a un servidor central de licencias en cada inicio de la app y una vez cada 24 horas, y siempre recibes las últimas actualizaciones. Si lo desactivas, mantendrás tu versión actual y cero peticiones de red automáticas (salvo las comprobaciones periódicas de licencia, si tienes una licencia comercial).",
+  "onboarding.stepOptional.updates.summary": "One tiny check at app start and once a day, so you stay on the latest version",
+  "@onboarding.stepOptional.updates.summary": {
+    "sourceHash": "c44fcd4"
+  },
+  "onboarding.stepOptional.updates.desc": "Si activas esto, Cmdr hace una pequeña petición de red a un servidor central de licencias en cada inicio de la app y una vez cada 24 horas, y siempre recibes las últimas actualizaciones.\nSi lo desactivas, mantendrás tu versión actual y cero peticiones de red automáticas (salvo las comprobaciones periódicas de licencia, si tienes una licencia comercial).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "81147a5"
+    "sourceHash": "12b7f08"
   },
   "onboarding.stepOptional.mtp.title": "MTP (teléfonos Android, Kindles, cámaras)",
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.desc": "Si activas esto, Cmdr puede <strong>conectarse a teléfonos Android, Kindles, cámaras</strong>, algunos reproductores de música y cualquier otro dispositivo compatible con los protocolos llamados MTP o PTP. El coste es que macOS <em>también</em> quiere conectarse a estos (y suele fallar, por eso no puedes usar simplemente el Finder para copiar fotos de teléfonos Android), así que Cmdr tiene que suprimir ese proceso de macOS mientras se ejecuta. Cuando cierras Cmdr, se restaura con cuidado. Pero tiene cierto coste, así que:",
+  "onboarding.stepOptional.mtp.summary": "Lets you connect Android phones and the such, suppresses macOS native handler",
+  "@onboarding.stepOptional.mtp.summary": {
+    "sourceHash": "d5b9a6e"
+  },
+  "onboarding.stepOptional.mtp.desc": "Si activas esto, Cmdr puede <strong>conectarse a teléfonos Android, Kindles, cámaras</strong>, algunos reproductores de música y cualquier otro dispositivo compatible con los protocolos llamados MTP o PTP.\nEl coste es que macOS <em>también</em> quiere conectarse a estos (y suele fallar, por eso no puedes usar simplemente el Finder para copiar fotos de teléfonos Android), así que Cmdr tiene que suprimir ese proceso de macOS mientras se ejecuta.\nCuando cierras Cmdr, se restaura con cuidado.",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "ba2265d"
+    "sourceHash": "9563b7b"
   },
   "onboarding.cloudPicker.listAria": "Proveedores de IA en la nube",
   "@onboarding.cloudPicker.listAria": {

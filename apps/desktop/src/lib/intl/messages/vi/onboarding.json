@@ -11,6 +11,14 @@
   "@onboarding.wizard.stepProgress": {
     "sourceHash": "41705d0"
   },
+  "onboarding.moreAbout": "More about {topic}",
+  "@onboarding.moreAbout": {
+    "sourceHash": "b4d183a"
+  },
+  "onboarding.wizard.stepTooltip": "Step {step} of {mandatory}+1{note, select, remaining {, one optional step remains} last {, this is the last, optional step} other {}}",
+  "@onboarding.wizard.stepTooltip": {
+    "sourceHash": "53f848a"
+  },
   "onboarding.wizard.back": "Quay lại",
   "@onboarding.wizard.back": {
     "sourceHash": "76900f1"
@@ -82,6 +90,10 @@
   "onboarding.stepFda.firstAsk.askPermission": "Bạn có muốn cấp cho ứng dụng này quyền truy cập toàn bộ đĩa không? Điều đó có nghĩa là:",
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
+  },
+  "onboarding.stepFda.why": "Why?",
+  "@onboarding.stepFda.why": {
+    "sourceHash": "5d8a995"
   },
   "onboarding.stepFda.pro.label": "Lợi:",
   "@onboarding.stepFda.pro.label": {
@@ -247,9 +259,9 @@
   "@onboarding.stepAi.cloud.label": {
     "sourceHash": "ba08450"
   },
-  "onboarding.stepAi.cloud.recommended": "(khuyến nghị)",
+  "onboarding.stepAi.cloud.recommended": "Khuyến nghị",
   "@onboarding.stepAi.cloud.recommended": {
-    "sourceHash": "1185133"
+    "sourceHash": "d70604e"
   },
   "onboarding.stepAi.cloud.help": "Dùng bất kỳ nhà cung cấp đám mây nào với khóa API của riêng bạn. Mô hình nhanh, chất lượng cao. Chọn một nhà cung cấp bên dưới.",
   "@onboarding.stepAi.cloud.help": {
@@ -263,6 +275,10 @@
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
   },
+  "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that''s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
+  "@onboarding.stepAi.local.tooltip": {
+    "sourceHash": "c3fa36a"
+  },
   "onboarding.stepAi.local.note": "Đã bắt đầu tải mô hình cục bộ ở chế độ nền. Bạn có thể hoàn tất thiết lập ngay bây giờ; thông báo nhỏ ở góc màn hình sẽ cập nhật tình hình cho bạn.",
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
@@ -270,6 +286,10 @@
   "onboarding.stepAi.localTooltip": "LLM cục bộ cần Apple Silicon. Đám mây hoạt động trên Intel.",
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "dc194e8"
+  },
+  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Please fix this above.\n\n<strong>Click \"{nextLabel}\" again to ignore this and go on.</strong>",
+  "@onboarding.stepAi.missingKeyWarning": {
+    "sourceHash": "3d66d11"
   },
   "onboarding.stepAi.off.label": "Cảm ơn nhưng thôi, tôi không cần AI",
   "@onboarding.stepAi.off.label": {
@@ -299,6 +319,38 @@
   "@onboarding.stepBeta.openBeta": {
     "sourceHash": "5b0a107"
   },
+  "onboarding.stepBeta.checklist.title": "Onboarding checklist, each takes 30 seconds:",
+  "@onboarding.stepBeta.checklist.title": {
+    "sourceHash": "6c0fc62"
+  },
+  "onboarding.stepBeta.checklist.star": "Star the repo on GitHub",
+  "@onboarding.stepBeta.checklist.star": {
+    "sourceHash": "c271317"
+  },
+  "onboarding.stepBeta.checklist.starNote": "Homebrew needs Cmdr to have 225 stars to enable <code>brew install cmdr</code>",
+  "@onboarding.stepBeta.checklist.starNote": {
+    "sourceHash": "6553ce2"
+  },
+  "onboarding.stepBeta.checklist.alternativeTo": "Like Cmdr on AlternativeTo",
+  "@onboarding.stepBeta.checklist.alternativeTo": {
+    "sourceHash": "c9b1e1e"
+  },
+  "onboarding.stepBeta.checklist.alternativeToNote": "At the very top of the page, next to the \"Cmdr\" title. This helps people and Google notice Cmdr!",
+  "@onboarding.stepBeta.checklist.alternativeToNote": {
+    "sourceHash": "ea4903a"
+  },
+  "onboarding.stepBeta.checklist.email": "Enter your email address <field></field> to get very occasional updates and questions",
+  "@onboarding.stepBeta.checklist.email": {
+    "sourceHash": "e53bd44"
+  },
+  "onboarding.stepBeta.checklist.emailSave": "Save",
+  "@onboarding.stepBeta.checklist.emailSave": {
+    "sourceHash": "1509f56"
+  },
+  "onboarding.stepBeta.checklist.emailMark": "Email address saved",
+  "@onboarding.stepBeta.checklist.emailMark": {
+    "sourceHash": "1bf8647"
+  },
   "onboarding.stepBeta.feedbackIntro": "Phản hồi của bạn giúp mình phát hiện lỗi và ưu tiên tính năng. Đây là cách bạn có thể tham gia:",
   "@onboarding.stepBeta.feedbackIntro": {
     "sourceHash": "4e238dd"
@@ -327,21 +379,21 @@
   "@onboarding.stepBeta.star": {
     "sourceHash": "30c25f2"
   },
-  "onboarding.stepBeta.analyticsLede": "Để biết điều gì hiệu quả và điều gì không, trong giai đoạn open beta Cmdr gửi thống kê sử dụng: tính năng nào được dùng và dùng bao nhiêu lần, không bao giờ gửi bất cứ thứ gì từ các tệp của bạn. Thống kê gắn với một mã định danh ngẫu nhiên, không gắn với tên hay email của bạn. Nó đang bật, và bạn có thể tắt bất cứ lúc nào.",
+  "onboarding.stepBeta.analyticsLede": "Để biết điều gì hiệu quả và điều gì không, trong giai đoạn open beta Cmdr gửi thống kê sử dụng: tính năng nào được dùng và dùng bao nhiêu lần, không bao giờ gửi bất cứ thứ gì từ các tệp của bạn.\nThống kê gắn với một mã định danh ngẫu nhiên, không gắn với tên hay email của bạn.\nNó đang bật, và bạn có thể tắt bất cứ lúc nào.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "0c76239"
+    "sourceHash": "edd95b4"
   },
   "onboarding.stepBeta.analyticsTitle": "Gửi thống kê sử dụng",
   "@onboarding.stepBeta.analyticsTitle": {
     "sourceHash": "89b309e"
   },
-  "onboarding.stepBeta.analyticsCaption": "Lưu ý rằng nó được BẬT theo mặc định để khuyến khích mọi người gửi dữ liệu cho mình trong giai đoạn Beta. Bạn có thể thay đổi điều này bất cứ lúc nào trong Cài đặt.",
+  "onboarding.stepBeta.analyticsCaption": "Lưu ý rằng nó được BẬT theo mặc định để khuyến khích mọi người gửi dữ liệu cho mình trong giai đoạn Beta.\nBạn có thể thay đổi điều này bất cứ lúc nào trong Cài đặt.",
   "@onboarding.stepBeta.analyticsCaption": {
-    "sourceHash": "9821e5d"
+    "sourceHash": "cfd1e86"
   },
-  "onboarding.stepBeta.crashReportsNote": "Báo cáo sự cố cũng đang bật: nếu Cmdr sập, ứng dụng gửi phiên bản ứng dụng, phiên bản macOS của bạn và chỗ mã dừng lại. Không bao giờ gồm tệp của bạn. Bạn có thể tắt cả hai trong Cài đặt bất cứ lúc nào.",
+  "onboarding.stepBeta.crashReportsNote": "Báo cáo sự cố cũng đang bật: nếu Cmdr sập, ứng dụng gửi phiên bản ứng dụng, phiên bản macOS của bạn và chỗ mã dừng lại.\nKhông bao giờ gồm tệp của bạn.\nBạn có thể tắt cả hai trong Cài đặt bất cứ lúc nào.",
   "@onboarding.stepBeta.crashReportsNote": {
-    "sourceHash": "18cd0b3"
+    "sourceHash": "9be0be1"
   },
   "onboarding.stepBeta.emailTitle": "Giữ liên lạc (tùy chọn)",
   "@onboarding.stepBeta.emailTitle": {
@@ -359,9 +411,17 @@
   "@onboarding.stepBeta.signup.failure": {
     "sourceHash": "0aac3a9"
   },
-  "onboarding.stepBeta.emailNote": "Để lại email của bạn và thi thoảng mình sẽ liên hệ với một câu hỏi hoặc bản cập nhật. Địa chỉ email bạn nhập ở đây chỉ được lưu trên máy Mac của bạn và không bao giờ liên kết với số liệu sử dụng của bạn, hai thứ này cố ý là hai hệ thống con riêng biệt.",
+  "onboarding.stepBeta.signup.rejected": "The mailing list didn''t accept that address. Worth a look for a typo, then hit Save again.",
+  "@onboarding.stepBeta.signup.rejected": {
+    "sourceHash": "05ccee5"
+  },
+  "onboarding.stepBeta.signup.unreachable": "Couldn''t reach the signup server just now, so you''re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+  "@onboarding.stepBeta.signup.unreachable": {
+    "sourceHash": "8036aad"
+  },
+  "onboarding.stepBeta.emailNote": "Để lại email của bạn và thi thoảng mình sẽ liên hệ với một câu hỏi hoặc bản cập nhật.\nĐịa chỉ email bạn nhập ở đây chỉ được lưu trên máy Mac của bạn và không bao giờ liên kết với số liệu sử dụng của bạn, hai thứ này cố ý là hai hệ thống con riêng biệt.",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "9d262c8"
+    "sourceHash": "f256066"
   },
   "onboarding.stepBeta.terms.title": "À, và cả điều này nữa nhé",
   "@onboarding.stepBeta.terms.title": {
@@ -391,21 +451,33 @@
   "@onboarding.stepOptional.lede": {
     "sourceHash": "b1242c9"
   },
-  "onboarding.stepOptional.recommendedOn": "Khuyến nghị: bật. Bạn có thể thay đổi điều này bất cứ lúc nào trong Cài đặt.",
+  "onboarding.stepOptional.recommendedOn": "Khuyến nghị: bật",
   "@onboarding.stepOptional.recommendedOn": {
-    "sourceHash": "05e5598"
+    "sourceHash": "d91a6df"
+  },
+  "onboarding.stepOptional.changeAnytime": "Bạn có thể thay đổi điều này bất cứ lúc nào trong Cài đặt.",
+  "@onboarding.stepOptional.changeAnytime": {
+    "sourceHash": "895d675"
   },
   "onboarding.stepOptional.networking.title": "Kết nối mạng",
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.desc": "Để cái này <em>bật</em> nghĩa là bạn có thể kết nối tới các máy chủ SMB như thư mục chia sẻ của công ty, một NAS ở nhà, và những thứ tương tự. Cái giá duy nhất là một hộp thoại cấp quyền của macOS bật lên và yêu cầu bạn cho phép \"Truy cập mạng cục bộ\", và một hộp thoại cho \"Chấp nhận kết nối đến\". Cả hai hộp thoại đều vô hại, nhưng nếu bạn không biết chúng là gì, chúng có thể đáng sợ hoặc gây phiền.",
+  "onboarding.stepOptional.networking.summary": "Needs accepting \"Local network access\" once",
+  "@onboarding.stepOptional.networking.summary": {
+    "sourceHash": "84f3716"
+  },
+  "onboarding.stepOptional.networking.desc": "Để cái này <em>bật</em> nghĩa là bạn có thể kết nối tới các máy chủ SMB như thư mục chia sẻ của công ty, một NAS ở nhà, và những thứ tương tự.\nCái giá duy nhất là một hộp thoại cấp quyền của macOS bật lên và yêu cầu bạn cho phép \"Truy cập mạng cục bộ\", và một hộp thoại cho \"Chấp nhận kết nối đến\".\nCả hai hộp thoại đều vô hại, nhưng nếu bạn không biết chúng là gì, chúng có thể đáng sợ hoặc gây phiền.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "a27866b"
+    "sourceHash": "0403490"
   },
   "onboarding.stepOptional.indexing.title": "Lập chỉ mục ổ đĩa",
   "@onboarding.stepOptional.indexing.title": {
     "sourceHash": "38d916b"
+  },
+  "onboarding.stepOptional.indexing.summary": "Takes 1 GB space, speeds up searches, shows folder sizes",
+  "@onboarding.stepOptional.indexing.summary": {
+    "sourceHash": "6413c6f"
   },
   "onboarding.stepOptional.indexing.descIntro": "Lập chỉ mục ổ đĩa cực kỳ hay! Mang lại cho bạn hai thứ chính:",
   "@onboarding.stepOptional.indexing.descIntro": {
@@ -419,25 +491,33 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Nếu bạn tắt cái này, bạn chỉ thấy <code>{dirPlaceholder}</code> thay cho kích cỡ. Cái giá là khoảng 1 GB chỉ mục trên ổ đĩa của bạn với vài triệu tệp, nhưng không tốn thêm CPU hay bộ nhớ sau 2–3 phút đầu tiên khi bạn khởi động ứng dụng lần đầu, hoặc khởi động lại sau một thời gian dài. Đây là một tính năng rẻ so với những lợi ích nó mang lại.",
+  "onboarding.stepOptional.indexing.descCost": "Nếu bạn tắt cái này, bạn chỉ thấy <code>{dirPlaceholder}</code> thay cho kích cỡ.\nCái giá là khoảng 1 GB chỉ mục trên ổ đĩa của bạn với vài triệu tệp, nhưng không tốn thêm CPU hay bộ nhớ sau 2–3 phút đầu tiên khi bạn khởi động ứng dụng lần đầu, hoặc khởi động lại sau một thời gian dài.\nĐây là một tính năng rẻ so với những lợi ích nó mang lại.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "739f4f8"
+    "sourceHash": "0b60064"
   },
   "onboarding.stepOptional.updates.title": "Cập nhật tự động",
   "@onboarding.stepOptional.updates.title": {
     "sourceHash": "147b1b6"
   },
-  "onboarding.stepOptional.updates.desc": "Nếu bạn bật cái này, Cmdr gửi một yêu cầu mạng nhỏ tới máy chủ giấy phép trung tâm mỗi khi khởi động ứng dụng cộng với một lần mỗi 24 giờ, và bạn luôn nhận được các bản cập nhật mới nhất. Nếu tắt, bạn sẽ giữ phiên bản hiện tại, và không có yêu cầu mạng tự động nào (trừ các lần kiểm tra giấy phép định kỳ, nếu bạn có giấy phép thương mại).",
+  "onboarding.stepOptional.updates.summary": "One tiny check at app start and once a day, so you stay on the latest version",
+  "@onboarding.stepOptional.updates.summary": {
+    "sourceHash": "c44fcd4"
+  },
+  "onboarding.stepOptional.updates.desc": "Nếu bạn bật cái này, Cmdr gửi một yêu cầu mạng nhỏ tới máy chủ giấy phép trung tâm mỗi khi khởi động ứng dụng cộng với một lần mỗi 24 giờ, và bạn luôn nhận được các bản cập nhật mới nhất.\nNếu tắt, bạn sẽ giữ phiên bản hiện tại, và không có yêu cầu mạng tự động nào (trừ các lần kiểm tra giấy phép định kỳ, nếu bạn có giấy phép thương mại).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "81147a5"
+    "sourceHash": "12b7f08"
   },
   "onboarding.stepOptional.mtp.title": "MTP (điện thoại Android, Kindle, máy ảnh)",
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.desc": "Nếu bạn bật cái này, Cmdr có thể <strong>kết nối tới điện thoại Android, Kindle, máy ảnh</strong>, một số máy nghe nhạc, và bất kỳ thiết bị nào hỗ trợ các giao thức gọi là MTP hoặc PTP. Cái giá là macOS <em>cũng</em> muốn kết nối tới những thiết bị này (và nó thường thất bại, đó là lý do bạn không thể chỉ dùng Finder để chép ảnh từ điện thoại Android), nên Cmdr phải ngăn tiến trình macOS đó trong khi nó chạy. Khi bạn thoát Cmdr, điều này được khôi phục một cách lịch sự. Nhưng đó vẫn là một cái giá nhỏ, nên:",
+  "onboarding.stepOptional.mtp.summary": "Lets you connect Android phones and the such, suppresses macOS native handler",
+  "@onboarding.stepOptional.mtp.summary": {
+    "sourceHash": "d5b9a6e"
+  },
+  "onboarding.stepOptional.mtp.desc": "Nếu bạn bật cái này, Cmdr có thể <strong>kết nối tới điện thoại Android, Kindle, máy ảnh</strong>, một số máy nghe nhạc, và bất kỳ thiết bị nào hỗ trợ các giao thức gọi là MTP hoặc PTP.\nCái giá là macOS <em>cũng</em> muốn kết nối tới những thiết bị này (và nó thường thất bại, đó là lý do bạn không thể chỉ dùng Finder để chép ảnh từ điện thoại Android), nên Cmdr phải ngăn tiến trình macOS đó trong khi nó chạy.\nKhi bạn thoát Cmdr, điều này được khôi phục một cách lịch sự.",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "ba2265d"
+    "sourceHash": "9563b7b"
   },
   "onboarding.cloudPicker.listAria": "Các nhà cung cấp AI đám mây",
   "@onboarding.cloudPicker.listAria": {

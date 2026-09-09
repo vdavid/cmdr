@@ -1161,9 +1161,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Activez ceci pour nous aider à voir quelles fonctionnalités comptent pendant la bêta ouverte. Les statistiques ne sont pas reliées à votre nom ni à votre e-mail, mais à un identifiant aléatoire. Cmdr n''envoie jamais les noms de fichiers, les chemins, les termes de recherche ou les prompts. Quand c''est désactivé, Cmdr n''envoie aucune statistique.",
+  "settings.analytics.enabled.description": "Activez ceci pour nous aider à voir quelles fonctionnalités comptent pendant la bêta ouverte.\nLes statistiques ne sont pas reliées à votre nom ni à votre e-mail, mais à un identifiant aléatoire.\nCmdr n''envoie jamais les noms de fichiers, les chemins, les termes de recherche ou les prompts.\nQuand c''est désactivé, Cmdr n''envoie aucune statistique.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "7c67750"
+    "sourceHash": "23bafcb"
   },
   "settings.analytics.email.label": "E-mail de contact bêta",
   "@settings.analytics.email.label": {

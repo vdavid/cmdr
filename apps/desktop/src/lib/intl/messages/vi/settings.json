@@ -1153,9 +1153,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Hãy bật mục này để giúp chúng tôi thấy tính năng nào quan trọng trong giai đoạn beta mở. Thống kê không gắn với tên hay email của bạn, mà gắn với một mã định danh ngẫu nhiên. Cmdr không bao giờ gửi tên tệp, đường dẫn, từ khóa tìm kiếm hay câu lệnh. Khi tắt, Cmdr không gửi bất kỳ thống kê nào.",
+  "settings.analytics.enabled.description": "Hãy bật mục này để giúp chúng tôi thấy tính năng nào quan trọng trong giai đoạn beta mở.\nThống kê không gắn với tên hay email của bạn, mà gắn với một mã định danh ngẫu nhiên.\nCmdr không bao giờ gửi tên tệp, đường dẫn, từ khóa tìm kiếm hay câu lệnh.\nKhi tắt, Cmdr không gửi bất kỳ thống kê nào.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "7c67750"
+    "sourceHash": "23bafcb"
   },
   "settings.analytics.email.label": "Email liên hệ beta",
   "@settings.analytics.email.label": {

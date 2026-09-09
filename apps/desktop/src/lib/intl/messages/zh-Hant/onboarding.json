@@ -11,6 +11,14 @@
   "@onboarding.wizard.stepProgress": {
     "sourceHash": "41705d0"
   },
+  "onboarding.moreAbout": "More about {topic}",
+  "@onboarding.moreAbout": {
+    "sourceHash": "b4d183a"
+  },
+  "onboarding.wizard.stepTooltip": "Step {step} of {mandatory}+1{note, select, remaining {, one optional step remains} last {, this is the last, optional step} other {}}",
+  "@onboarding.wizard.stepTooltip": {
+    "sourceHash": "53f848a"
+  },
   "onboarding.wizard.back": "上一步",
   "@onboarding.wizard.back": {
     "sourceHash": "76900f1"
@@ -82,6 +90,10 @@
   "onboarding.stepFda.firstAsk.askPermission": "你願意給這個 App「完全取用磁碟」權限嗎？它的意思是：",
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
+  },
+  "onboarding.stepFda.why": "Why?",
+  "@onboarding.stepFda.why": {
+    "sourceHash": "5d8a995"
   },
   "onboarding.stepFda.pro.label": "好處：",
   "@onboarding.stepFda.pro.label": {
@@ -247,9 +259,9 @@
   "@onboarding.stepAi.cloud.label": {
     "sourceHash": "ba08450"
   },
-  "onboarding.stepAi.cloud.recommended": "（推薦）",
+  "onboarding.stepAi.cloud.recommended": "推薦",
   "@onboarding.stepAi.cloud.recommended": {
-    "sourceHash": "1185133"
+    "sourceHash": "d70604e"
   },
   "onboarding.stepAi.cloud.help": "用你自己的 API 金鑰連任何一家雲端提供者。模型又快又好。在下面挑一家吧。",
   "@onboarding.stepAi.cloud.help": {
@@ -263,6 +275,10 @@
   "@onboarding.stepAi.local.label": {
     "sourceHash": "f371401"
   },
+  "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that''s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
+  "@onboarding.stepAi.local.tooltip": {
+    "sourceHash": "c3fa36a"
+  },
   "onboarding.stepAi.local.note": "已經開始在背景下載本機模型了。你現在就可以把入門引導走完，角落的通知會告訴你進度。",
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
@@ -270,6 +286,10 @@
   "onboarding.stepAi.localTooltip": "本機 LLM 需要 Apple Silicon。雲端在 Intel 上也能用。",
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "dc194e8"
+  },
+  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Please fix this above.\n\n<strong>Click \"{nextLabel}\" again to ignore this and go on.</strong>",
+  "@onboarding.stepAi.missingKeyWarning": {
+    "sourceHash": "3d66d11"
   },
   "onboarding.stepAi.off.label": "謝謝，還是算了，我不用 AI",
   "@onboarding.stepAi.off.label": {
@@ -299,6 +319,38 @@
   "@onboarding.stepBeta.openBeta": {
     "sourceHash": "5b0a107"
   },
+  "onboarding.stepBeta.checklist.title": "Onboarding checklist, each takes 30 seconds:",
+  "@onboarding.stepBeta.checklist.title": {
+    "sourceHash": "6c0fc62"
+  },
+  "onboarding.stepBeta.checklist.star": "Star the repo on GitHub",
+  "@onboarding.stepBeta.checklist.star": {
+    "sourceHash": "c271317"
+  },
+  "onboarding.stepBeta.checklist.starNote": "Homebrew needs Cmdr to have 225 stars to enable <code>brew install cmdr</code>",
+  "@onboarding.stepBeta.checklist.starNote": {
+    "sourceHash": "6553ce2"
+  },
+  "onboarding.stepBeta.checklist.alternativeTo": "Like Cmdr on AlternativeTo",
+  "@onboarding.stepBeta.checklist.alternativeTo": {
+    "sourceHash": "c9b1e1e"
+  },
+  "onboarding.stepBeta.checklist.alternativeToNote": "At the very top of the page, next to the \"Cmdr\" title. This helps people and Google notice Cmdr!",
+  "@onboarding.stepBeta.checklist.alternativeToNote": {
+    "sourceHash": "ea4903a"
+  },
+  "onboarding.stepBeta.checklist.email": "Enter your email address <field></field> to get very occasional updates and questions",
+  "@onboarding.stepBeta.checklist.email": {
+    "sourceHash": "e53bd44"
+  },
+  "onboarding.stepBeta.checklist.emailSave": "Save",
+  "@onboarding.stepBeta.checklist.emailSave": {
+    "sourceHash": "1509f56"
+  },
+  "onboarding.stepBeta.checklist.emailMark": "Email address saved",
+  "@onboarding.stepBeta.checklist.emailMark": {
+    "sourceHash": "1bf8647"
+  },
   "onboarding.stepBeta.feedbackIntro": "你的意見反應能幫我找出問題、決定功能的先後順序。你可以這樣參與：",
   "@onboarding.stepBeta.feedbackIntro": {
     "sourceHash": "4e238dd"
@@ -327,21 +379,21 @@
   "@onboarding.stepBeta.star": {
     "sourceHash": "30c25f2"
   },
-  "onboarding.stepBeta.analyticsLede": "為了知道哪些做對了、哪些沒有，公開測試期間 Cmdr 會傳送使用統計：哪些功能被用到、用得多頻繁，絕不會有你檔案裡的任何東西。它們對應的是一組隨機產生的識別碼，不是你的姓名或電子郵件地址。現在是開著的，你隨時可以關掉。",
+  "onboarding.stepBeta.analyticsLede": "為了知道哪些做對了、哪些沒有，公開測試期間 Cmdr 會傳送使用統計：哪些功能被用到、用得多頻繁，絕不會有你檔案裡的任何東西。\n它們對應的是一組隨機產生的識別碼，不是你的姓名或電子郵件地址。\n現在是開著的，你隨時可以關掉。",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "0c76239"
+    "sourceHash": "edd95b4"
   },
   "onboarding.stepBeta.analyticsTitle": "傳送使用統計",
   "@onboarding.stepBeta.analyticsTitle": {
     "sourceHash": "89b309e"
   },
-  "onboarding.stepBeta.analyticsCaption": "注意，它預設是開著的，好鼓勵大家在測試期間把資料傳給我。你隨時可以在「設定」裡改。",
+  "onboarding.stepBeta.analyticsCaption": "注意，它預設是開著的，好鼓勵大家在測試期間把資料傳給我。\n你隨時可以在「設定」裡改。",
   "@onboarding.stepBeta.analyticsCaption": {
-    "sourceHash": "9821e5d"
+    "sourceHash": "cfd1e86"
   },
-  "onboarding.stepBeta.crashReportsNote": "當機報告也是開著的：Cmdr 要是掛了，它會傳送 App 版本、你的 macOS 版本，還有程式碼停在哪裡。絕不會有你的檔案。這兩項你隨時都能在「設定」裡關掉。",
+  "onboarding.stepBeta.crashReportsNote": "當機報告也是開著的：Cmdr 要是掛了，它會傳送 App 版本、你的 macOS 版本，還有程式碼停在哪裡。\n絕不會有你的檔案。\n這兩項你隨時都能在「設定」裡關掉。",
   "@onboarding.stepBeta.crashReportsNote": {
-    "sourceHash": "18cd0b3"
+    "sourceHash": "9be0be1"
   },
   "onboarding.stepBeta.emailTitle": "保持聯絡（可選）",
   "@onboarding.stepBeta.emailTitle": {
@@ -360,9 +412,17 @@
   "@onboarding.stepBeta.signup.failure": {
     "sourceHash": "0aac3a9"
   },
-  "onboarding.stepBeta.emailNote": "留下你的電子郵件地址，我會偶爾來問個問題或報個近況。你在這裡填的地址只留在你的 Mac 上，絕不會和你的使用統計串在一起，這兩個是刻意分開的子系統。",
+  "onboarding.stepBeta.signup.rejected": "The mailing list didn''t accept that address. Worth a look for a typo, then hit Save again.",
+  "@onboarding.stepBeta.signup.rejected": {
+    "sourceHash": "05ccee5"
+  },
+  "onboarding.stepBeta.signup.unreachable": "Couldn''t reach the signup server just now, so you''re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+  "@onboarding.stepBeta.signup.unreachable": {
+    "sourceHash": "8036aad"
+  },
+  "onboarding.stepBeta.emailNote": "留下你的電子郵件地址，我會偶爾來問個問題或報個近況。\n你在這裡填的地址只留在你的 Mac 上，絕不會和你的使用統計串在一起，這兩個是刻意分開的子系統。",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "9d262c8"
+    "sourceHash": "f256066"
   },
   "onboarding.stepBeta.terms.title": "喔，還有這個，麻煩你了",
   "@onboarding.stepBeta.terms.title": {
@@ -392,21 +452,33 @@
   "@onboarding.stepOptional.lede": {
     "sourceHash": "b1242c9"
   },
-  "onboarding.stepOptional.recommendedOn": "建議：開啟。你隨時可以在「設定」裡改。",
+  "onboarding.stepOptional.recommendedOn": "建議：開啟",
   "@onboarding.stepOptional.recommendedOn": {
-    "sourceHash": "05e5598"
+    "sourceHash": "d91a6df"
+  },
+  "onboarding.stepOptional.changeAnytime": "你隨時可以在「設定」裡改。",
+  "@onboarding.stepOptional.changeAnytime": {
+    "sourceHash": "895d675"
   },
   "onboarding.stepOptional.networking.title": "網路",
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.desc": "<em>開著</em>這一項，你就能連到 SMB 伺服器，像公司的網路共享資料夾、家裡的 NAS 之類的。唯一的代價是 macOS 會跳出一個權限對話框，請你允許「區域網路」取用，還有一個請你允許「接受傳入連線」。這兩個對話框都無害，但如果你不曉得它們是什麼，可能會覺得嚇人或煩人。",
+  "onboarding.stepOptional.networking.summary": "Needs accepting \"Local network access\" once",
+  "@onboarding.stepOptional.networking.summary": {
+    "sourceHash": "84f3716"
+  },
+  "onboarding.stepOptional.networking.desc": "<em>開著</em>這一項，你就能連到 SMB 伺服器，像公司的網路共享資料夾、家裡的 NAS 之類的。\n唯一的代價是 macOS 會跳出一個權限對話框，請你允許「區域網路」取用，還有一個請你允許「接受傳入連線」。\n這兩個對話框都無害，但如果你不曉得它們是什麼，可能會覺得嚇人或煩人。",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "a27866b"
+    "sourceHash": "0403490"
   },
   "onboarding.stepOptional.indexing.title": "磁碟機索引",
   "@onboarding.stepOptional.indexing.title": {
     "sourceHash": "38d916b"
+  },
+  "onboarding.stepOptional.indexing.summary": "Takes 1 GB space, speeds up searches, shows folder sizes",
+  "@onboarding.stepOptional.indexing.summary": {
+    "sourceHash": "6413c6f"
   },
   "onboarding.stepOptional.indexing.descIntro": "磁碟機索引真的很棒！它主要給你兩樣東西：",
   "@onboarding.stepOptional.indexing.descIntro": {
@@ -420,25 +492,33 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "如果你關掉這一項，資料夾大小就只會顯示 <code>{dirPlaceholder}</code>。代價是幾百萬個檔案大約要在你的磁碟機上放 1 GB 的索引，但除了第一次開 App、或很久沒開再開的頭 2–3 分鐘之外，不會多吃 CPU 或記憶體。以它帶來的好處來看，這個代價很划算。",
+  "onboarding.stepOptional.indexing.descCost": "如果你關掉這一項，資料夾大小就只會顯示 <code>{dirPlaceholder}</code>。\n代價是幾百萬個檔案大約要在你的磁碟機上放 1 GB 的索引，但除了第一次開 App、或很久沒開再開的頭 2–3 分鐘之外，不會多吃 CPU 或記憶體。\n以它帶來的好處來看，這個代價很划算。",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "739f4f8"
+    "sourceHash": "0b60064"
   },
   "onboarding.stepOptional.updates.title": "自動更新",
   "@onboarding.stepOptional.updates.title": {
     "sourceHash": "147b1b6"
   },
-  "onboarding.stepOptional.updates.desc": "開啟這一項，Cmdr 會在每次 App 啟動時、外加每 24 小時一次，向中央授權伺服器發一個很小的網路請求，這樣你總能拿到最新的更新。關掉的話，你會停在目前的版本，而且零自動網路請求（如果你有商業授權，定期的授權檢查除外）。",
+  "onboarding.stepOptional.updates.summary": "One tiny check at app start and once a day, so you stay on the latest version",
+  "@onboarding.stepOptional.updates.summary": {
+    "sourceHash": "c44fcd4"
+  },
+  "onboarding.stepOptional.updates.desc": "開啟這一項，Cmdr 會在每次 App 啟動時、外加每 24 小時一次，向中央授權伺服器發一個很小的網路請求，這樣你總能拿到最新的更新。\n關掉的話，你會停在目前的版本，而且零自動網路請求（如果你有商業授權，定期的授權檢查除外）。",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "81147a5"
+    "sourceHash": "12b7f08"
   },
   "onboarding.stepOptional.mtp.title": "MTP（Android 手機、Kindle、相機）",
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.desc": "開啟這一項，Cmdr 就能<strong>連到 Android 手機、Kindle、相機</strong>、一些音樂播放器，以及任何支援 MTP 或 PTP 協定的裝置。代價是 macOS <em>也</em>想連這些裝置（而且通常連不成，這就是為什麼你沒辦法直接用 Finder 從 Android 手機複製照片），所以 Cmdr 執行的時候得把 macOS 的那個程序壓下去。你結束 Cmdr 時，它會被好好地還原回去。不過這確實算是一點代價，所以：",
+  "onboarding.stepOptional.mtp.summary": "Lets you connect Android phones and the such, suppresses macOS native handler",
+  "@onboarding.stepOptional.mtp.summary": {
+    "sourceHash": "d5b9a6e"
+  },
+  "onboarding.stepOptional.mtp.desc": "開啟這一項，Cmdr 就能<strong>連到 Android 手機、Kindle、相機</strong>、一些音樂播放器，以及任何支援 MTP 或 PTP 協定的裝置。\n代價是 macOS <em>也</em>想連這些裝置（而且通常連不成，這就是為什麼你沒辦法直接用 Finder 從 Android 手機複製照片），所以 Cmdr 執行的時候得把 macOS 的那個程序壓下去。\n你結束 Cmdr 時，它會被好好地還原回去。",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "ba2265d"
+    "sourceHash": "9563b7b"
   },
   "onboarding.cloudPicker.listAria": "雲端 AI 提供者",
   "@onboarding.cloudPicker.listAria": {
