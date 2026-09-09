@@ -120,6 +120,10 @@ commands, and notable non-obvious placements.
 - **`updates.ts`**: macOS custom updater: `checkForUpdate` / `updateWriteBlocker` / `downloadUpdate` / `installUpdate`
   (see `$lib/updates/updater.svelte.ts` for the full flow and the non-macOS Tauri-plugin fallback).
 - **`debug.ts`**: dev/benchmark IPC: `benchmarkLog` (join a frontend timing into the Rust benchmark timeline).
+- **`usage.ts`**: `getLaunchDayCount`, the gate for usage-gated hints ("you've used Cmdr for a few days now"). Reads the
+  on-device launch-day ledger Rust appends at startup; answers 0 when it can't, so a hint stays silent rather than
+  firing on a guess. The ledger never leaves the Mac and is deliberately not a setting:
+  `../../../src-tauri/src/usage/CLAUDE.md`.
 
 ## Where to put new commands
 

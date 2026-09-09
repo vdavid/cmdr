@@ -454,6 +454,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::clipboard::read_clipboard_text,
                     crate::commands::clipboard::paste_clipboard_as_file,
                     crate::commands::clipboard::clear_clipboard_cut_state,
+                    crate::commands::usage::get_launch_day_count,
                 ]
                 dispatch_only: [
                     // Generic over `R: tauri::Runtime`, which `collect_functions!` can't take.

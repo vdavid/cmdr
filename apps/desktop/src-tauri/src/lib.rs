@@ -138,6 +138,7 @@ pub(crate) mod test_support;
 mod text_size;
 #[cfg(target_os = "macos")]
 mod updater;
+mod usage;
 mod usb_speed;
 mod volume_broadcast;
 mod volume_host;
@@ -715,9 +716,14 @@ pub fn run() {
                     // `ai::client` can write there. Enablement is separate (the `logLlmCalls`
                     // setting, dev-default-on); this only records where.
                     ai::llm_log::init(&data_dir);
+                    // Note today's local calendar day in `usage.json`, the ledger usage-gated
+                    // hints read. Once per launch, and it only writes on the first launch of a
+                    // day. The data dir is the isolated one for a dev or E2E instance, so those
+                    // runs can't pollute the real ledger. See `usage/CLAUDE.md`.
+                    usage::record_launch(&data_dir);
                     search::start_importance_weight_subscriber(data_dir);
                 }
-                Err(e) => log::warn!("search importance weights not wired: {e}"),
+                Err(e) => log::warn!("search importance weights and the launch-day ledger not wired: {e}"),
             }
 
             // Open the durable operation log and spawn its writer thread. Nothing

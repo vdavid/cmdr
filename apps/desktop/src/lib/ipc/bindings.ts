@@ -3118,6 +3118,14 @@ export const commands = {
   // Clears the in-process cut state without touching the system clipboard.
   clearClipboardCutState: () => __TAURI_INVOKE<void>('clear_clipboard_cut_state'),
   /**
+   *  How many distinct local calendar days Cmdr has been launched on.
+   *
+   *  The gate for usage-gated hints ("you've used Cmdr for a few days now"). A missing, unreadable,
+   *  or slow ledger answers 0, which keeps every hint that reads this silent rather than firing on a
+   *  guess.
+   */
+  getLaunchDayCount: () => __TAURI_INVOKE<number>('get_launch_day_count'),
+  /**
    *  Enables or disables MTP support at runtime.
    *
    *  When disabled: disconnects all devices, stops auto-connecting, and restores

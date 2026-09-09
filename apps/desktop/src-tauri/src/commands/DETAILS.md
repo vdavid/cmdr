@@ -279,6 +279,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   holds a `serde_json::Value`, which specta can't describe), so the frontend reaches them by raw invoke.
 - **`analytics.rs`**: `track_event(name, props_json)`, a thin pass-through to `posthog::capture` for the open set of
   frontend feature events. No capability entry; the PII-free prop contract lives in `analytics/CLAUDE.md`.
+- **`usage.rs`**: `get_launch_day_count()`, the read seam over the on-device launch-day ledger, so the frontend can gate
+  a hint on "at least N days of use". Read-only (Rust appends at startup) and 2 s-deadlined; a missing, unreadable, or
+  slow ledger answers 0 so a hint stays silent. Not telemetry and deliberately not a setting: `../usage/CLAUDE.md`.
 - **`feedback.rs`**: `send_feedback(feedback_text, email?)` POSTs to `/feedback` via `crate::feedback`, returning a
   typed `SendFeedbackResult` (`Invalid` on a bad email, etc.). Network, not filesystem, so no `blocking_with_timeout`
   (the `reqwest` client carries its own 10 s timeout).
