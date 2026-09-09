@@ -544,6 +544,40 @@ element and widen that signature — deliberately not done for an unused capabil
   the CLIP model's download/delete, everything behind the image-index master toggle) stay unregistered: a hit that
   scrolls to a row that isn't rendered is worse than no hit.
 
+## OS-backed rows (a control whose value lives outside Cmdr)
+
+A third kind of row, beside a registry setting and a `SearchableRow`: a control the user operates, whose value is a
+piece of machine state Cmdr doesn't own. `RevealHandlerCard` (`sections/RevealHandlerCard.svelte`) is the first and,
+today, only one. Its switch reads and writes the macOS `NSFileViewer` preference, which decides whether another app's
+"Show in Finder" lands in a Cmdr pane; the mechanism and its own decisions are `src-tauri/src/reveal/DETAILS.md`.
+
+**When to reach for it.** All three must hold, or it's a normal setting: (a) something outside Cmdr can change the
+value, (b) nothing tells us when it does, and (c) rendering a stale answer would mislead rather than merely lag. Miss
+(a) and a registry entry is simpler and better in every way.
+
+**What it looks like.** No `settings.json` key, no `SettingsValues` entry, no `settings-applier.ts` case. The component
+reads the state through IPC on mount, and re-reads whatever the write returns instead of assuming the write did what it
+asked (`set_reveal_handler_enabled` answers with the state the OS was LEFT in: another app can take the key between the
+render and the click). The closest existing shape is `get_restricted_window_settings`, a live read with no stored
+mirror.
+
+Three consequences fall out of that shape, all accepted deliberately:
+
+- **It can't use `SettingRow`.** That component's `id` is a `SettingId`, and its reset pip, modified dot, and change
+  subscription are all registry reads. An OS-backed row hand-builds the same frame.
+- **It isn't searchable.** Registering a `SearchableRow` would put a hit in the index for a row this machine may not
+  render (see below), which the searchable-row guardrails already forbid. So it hides under any non-empty query, which
+  falls out for free: `shouldShow` answers `false` for an id the index has never seen. Honest state beat searchability.
+- **It hides itself rather than explaining itself.** The reveal row renders nothing when the backend answers
+  `unavailable` (a debug, worktree, or E2E build that must never write the key) or when this isn't a Mac. A disabled row
+  with an explanation would be copy shipped only to us, and it can't appear in a dev build at all, so verify its states
+  from the component tests rather than by driving the app.
+
+**Guardrail: the switch is bound, not derived.** Ark's `Switch` flips itself locally on click, and a refused take-over
+comes back on the same `false` the row started from, so a `$derived(state.kind === 'registered')` would never flow back
+down and the switch would sit reading "on" while the key belongs to someone else. `RevealHandlerCard` binds `checked` to
+a `$state` and re-reads it from an `$effect` on every answer, including one that lands on the value it started from.
+
 ## Key decisions
 
 ### Why hybrid declarative registry with custom UI?

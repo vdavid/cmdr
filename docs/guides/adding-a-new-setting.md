@@ -92,7 +92,10 @@ just one: a registry entry alone passes the search-index test but renders nothin
 
 Which mechanism? **A setting** stores a user choice: it has a value, a default, and someone reads it. **A searchable
 row** is a button or a readout the section hand-renders, with nothing to store: "Clear index", "Check for updates",
-"Forget everything". If you can't name what `getSetting(id)` would return, it's a row.
+"Forget everything". If you can't name what `getSetting(id)` would return, it's a row. **An OS-backed row** is the third
+answer, for a control whose value is machine state Cmdr doesn't own and can't be told about (the "Show in Finder"
+switch): no registry entry, no store key, read through to the OS on every mount, and not searchable. It's the rarest of
+the three and the easiest to reach for wrongly, so before building one read `lib/settings/DETAILS.md` § OS-backed rows.
 
 1. Add a `SearchableRow` to the `<Component>.rows.ts` beside the section component (create the file and add it to
    `lib/settings/sections/searchable-rows.ts` if the section has none yet). Give it a `row:`-prefixed id, the hosting

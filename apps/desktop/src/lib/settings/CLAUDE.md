@@ -30,6 +30,9 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
   is additive, no bump). DETAILS § Schema version.
 - **Card visibility is section-owned**, never re-derived from the registry `card` field (the empty-card bug); a row that
   isn't a setting is a `SearchableRow`, ❌ never a `hidden` setting. DETAILS §§ Card groups, Searchable rows.
+- **A control whose value lives in the OS is an OS-backed row**: no registry entry, no store key, read through on every
+  mount, and it hides rather than explains where the state can't exist. `RevealHandlerCard` is the only one. Reach for
+  it ONLY when something outside Cmdr can change the value and nothing tells us. DETAILS § OS-backed rows.
 - **Every window gets settings from `initWindowSettings()`** in the ROOT `routes/+layout.svelte`, ❌ never
   `initializeSettings()`: skip it and the window renders everything at its default. DETAILS § Per-window initialization.
 - **Dates have one source of truth**: `formatDateForDisplay()` → `formattedDate()` → `<DateLabel>`. ❌ No second

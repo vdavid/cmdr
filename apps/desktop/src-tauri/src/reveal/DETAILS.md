@@ -164,7 +164,17 @@ Display names come from `NSWorkspace URLForApplicationWithBundleIdentifier:` plu
 `file_system::open_with::read_app_display_name` (a plist read), so the row can say "Currently: Path Finder". A holder
 that isn't installed reports `None` and the UI falls back to the raw bundle id.
 
+## The Settings row
+
+`Settings > Behavior > Navigation & file ops > Show in Finder`, built as
+`apps/desktop/src/lib/settings/sections/RevealHandlerCard.svelte`. It's the settings system's only OS-BACKED row (no
+registry entry, no `settings.json` key), so what that pattern is and when to reach for it lives over there:
+`apps/desktop/src/lib/settings/DETAILS.md` § OS-backed rows. Two things worth knowing from this side: the row renders
+nothing on an `Unavailable` answer, so it never appears in a dev, worktree, or E2E build, and it renders the state
+`set_reveal_handler_enabled` RETURNS rather than the one the click asked for, which is what makes the
+"another app took the key first" case honest.
+
 ## What's not built
 
-The Settings UI. Mechanism B (the `public.folder` LaunchServices handler), the onboarding step, the first-activation notice, and the
-Settings UI itself. See the spec.
+Mechanism B (the `public.folder` LaunchServices handler), the onboarding step, and the first-activation notice. See the
+spec.
