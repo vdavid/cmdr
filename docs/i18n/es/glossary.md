@@ -843,9 +843,9 @@ sessions, attachments, consent screen, cost footer, settings section; macOS AppK
 
 ## Transferencia atascada: el aviso de "sin progreso" (2026-07-31)
 
-Settled while translating the seven `fileOperations.transferProgress.stall*` strings plus `queue.row.stalled` (the
-notice that replaces the ETA countdown when a copy/move stops moving). Mined from macOS Finder/AppKit, MS terminology,
-Nautilus, and Total/Double Commander.
+Settled while translating the six `fileOperations.transferProgress.stall*` strings plus `close` (the notice that
+replaces the ETA countdown when a copy/move stops moving). Mined from macOS Finder/AppKit, MS terminology, Nautilus,
+and Total/Double Commander.
 
 - **"No progress for {duration}" → `Sin progreso desde hace {duration}`** · `progress`→`progreso` is MS terminology (id
   2371066/2375015) and matches the catalog's own `Progreso del tamaño` / `Progreso de archivos`. The "for X (up to now)"
@@ -2112,7 +2112,8 @@ no está en esta máquina, así que las fuentes de Tier 1 se sacaron del propio 
 - **Connecting to X… → `Conectándose a X…`** · Finder `MN1` = «Conectándose a ^0 …» (y `PW28`, «Conectándose al
   servidor») · `high`. Se copia el gerundio reflexivo, no `Conectando a`.
 - **Connect to a server → `Conectarse a un servidor`** · Finder `TL_HELP_CNCT` / `FR15` / `ConnectToWindow` `1.title`;
-  ya asentado en `fileExplorer.network.connectDialog.title` · `high` (se reafirma).
+  ya asentado en `commands.serversConnect.label` y `settings.network.permissionIntroConnectLink`, que publican
+  `Conectarse a un servidor…` · `high` (se reafirma).
 - **key (la clave criptográfica de un servidor SSH) → `clave`** · Acceso a Llaveros `Localizable.loctable`:
   `private key` → `clave privada`, `public key` → `clave pública`, `Keys` → `Claves` · `high`. ❌ No `llave`: en el
   macOS en español `llave` solo aparece en `llaves de acceso` (passkeys) y en `llavero`.
@@ -2322,8 +2323,9 @@ ruta». El montón de referencia sigue sin estar en esta máquina, así que las 
 - **«X is signed out» → `Se ha cerrado la sesión de “X”`** · Finder `NE103` / `NE103.1` · `high`. De ahí sale la
   preposición de `servers.paneState.signedOut`: `Sesión cerrada de {name}`, no `en {name}`.
 - **Remember this password in my keychain → `Guardar esta contraseña en mi llavero`** · NetAuthAgent
-  `AuthDialog.loctable`, `600268.title` · `high`. Cmdr publica la forma corta ya asentada, `Recordar en el Llavero`
-  (`fileExplorer.network.login.rememberInKeychain`), que `i18n-terms` obliga a repetir.
+  `AuthDialog.loctable`, `600268.title` · `high`. Cmdr publica la forma corta, `Recordar en el Llavero`
+  (`servers.sheet.remember`). `servers.sheet.needsStoredSecret` la cita entre comillas («Activa “Recordar en el
+  Llavero” e inicia sesión una vez.»), así que las dos cadenas tienen que decir exactamente lo mismo.
 - **Guest → `Invitado`; Connect As: → `Conectar como:`** · NetAuthAgent `AuthDialog.loctable` (`RiA-l0-ASw.title`,
   `PHL-pS-ELV.title`) y `Localizable.loctable` (`GUEST`, `CONNECT_AS`) · `high`.
 - **passphrase → `contraseña`** · Apple no distingue: `Security.framework/OID.loctable` («Passphrase» → «Contraseña»),
