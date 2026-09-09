@@ -547,12 +547,23 @@ export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
  * real toggle, so the redundant call used to be heavy enough to occasionally
  * starve a concurrent `mcp_round_trip` waiting on `mcp-response`.
  *
- * `===` is the right comparator here: every registered setting is a primitive
- * (`boolean | number | string`) or a pinned-shape JSON object that callers
- * replace by reference when they mutate, so same-reference always means
- * no-change. If you add a setting that requires deep-equality, narrow the
- * comparison here instead of dropping the guard.
+ * `===` carries the primitive settings (`boolean | number | string`). It cannot
+ * carry the four `string[]` ones, which never arrive by the same reference
+ * twice: every writer builds a fresh array, and an MCP `set_setting` gets one
+ * out of JSON. `isUnchanged` compares those element-wise so the guard covers
+ * them too. If you add a setting whose shape neither branch settles, narrow the
+ * comparison further rather than dropping the guard.
  */
+function isUnchanged(cached: unknown, value: unknown): boolean {
+  if (cached === value) return true
+  // Order-sensitive on purpose: these lists render in the order they're stored,
+  // so a reorder is a real change.
+  if (Array.isArray(cached) && Array.isArray(value)) {
+    return cached.length === value.length && cached.every((entry, at) => entry === value[at])
+  }
+  return false
+}
+
 export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K]): void {
   log.debug('setSetting({id}, {value})', { id, value })
 
@@ -560,7 +571,7 @@ export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K])
   validateSettingValue(id, value)
 
   // Idempotency: skip the cascade when nothing actually changed.
-  if (settingsCache.get(id) === value) {
+  if (isUnchanged(settingsCache.get(id), value)) {
     log.debug('setSetting({id}): unchanged, skipping notify+save+emit', { id })
     return
   }
