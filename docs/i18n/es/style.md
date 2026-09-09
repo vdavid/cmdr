@@ -324,7 +324,7 @@ strings are counted, so no plural branches are needed there.
 - **Un nombre de botón que llega por marcador (`{nextLabel}`) va entre comillas curvas.** Es una etiqueta que Cmdr pinta
   en pantalla, así que cae del lado curvo de la frontera de comillas de más arriba, aunque el inglés use las rectas.
   Worked example: `onboarding.stepAi.missingKeyWarning`. Un literal ajeno (el título `"Cmdr"` de una página de
-  AlternativeTo, el nombre `"Acceso a la red local"` de un diálogo de macOS) conserva las rectas del inglés.
+  AlternativeTo, la etiqueta `"Red local"` del panel de privacidad de macOS) conserva las rectas del inglés.
 - **Un resumen de una línea junto a un interruptor no puede envolver, así que se recorta antes que alargarse.** Las
   cuatro claves `onboarding.stepOptional.*.summary` son telegráficas en inglés y lo siguen siendo en español: verbo en
   tercera persona, lista con comas, sin subordinadas («Ocupa 1 GB, acelera las búsquedas y muestra tamaños de carpeta»).

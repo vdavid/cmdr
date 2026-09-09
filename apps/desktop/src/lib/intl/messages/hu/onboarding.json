@@ -111,9 +111,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "Három egyszerű lépés:",
+  "onboarding.stepFda.ifAllow": "Három lépés:",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "32358ef"
+    "sourceHash": "2e6fb66"
   },
   "onboarding.stepFda.openSettings": "{systemSettings} megnyitása",
   "@onboarding.stepFda.openSettings": {
@@ -463,13 +463,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Egyszer el kell fogadnod a „Helyi hálózat elérése” kérést",
+  "onboarding.stepOptional.networking.summary": "Egyszer engedélyezned kell a „Helyi hálózat” hozzáférést",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "84f3716"
+    "sourceHash": "5006f53"
   },
-  "onboarding.stepOptional.networking.desc": "Ha ez <em>be</em> van kapcsolva, csatlakozhatsz SMB-szerverekhez, például céges hálózati megosztásokhoz, otthoni NAS-hoz és hasonlókhoz.\nAz egyetlen ára egy macOS engedélykérő ablak, amely felugrik, és a „Helyi hálózat elérése” engedélyezését kéri, plusz egy a „Bejövő kapcsolatok elfogadásához”.\nMindkét ablak ártalmatlan, de ha nem tudod, mik ezek, ijesztőek vagy bosszantóak lehetnek.",
+  "onboarding.stepOptional.networking.desc": "Ha ez <em>be</em> van kapcsolva, csatlakozhatsz SMB-szerverekhez, például céges hálózati megosztásokhoz, otthoni NAS-hoz és hasonlókhoz.\nAz egyetlen ára egy macOS engedélykérő ablak, amely felugrik, és a „Helyi hálózat” engedélyezését kéri, plusz egy a „Bejövő kapcsolatok elfogadásához”.\nMindkét ablak ártalmatlan, de ha nem tudod, mik ezek, ijesztőek vagy bosszantóak lehetnek.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "0403490"
+    "sourceHash": "089707f"
   },
   "onboarding.stepOptional.indexing.title": "Meghajtó indexelése",
   "@onboarding.stepOptional.indexing.title": {

@@ -147,7 +147,7 @@ describe('onboarding step 1 (FDA) parity (en)', () => {
   })
 
   it('resolves the allow-steps and the settings buttons', () => {
-    expect(tString('onboarding.stepFda.ifAllow')).toBe('Three easy steps:')
+    expect(tString('onboarding.stepFda.ifAllow')).toBe('Three steps:')
     expect(tString('onboarding.stepFda.openSettings', { systemSettings: SYS_SETTINGS })).toBe('Open System Settings')
     expect(renderRich('onboarding.stepFda.step1', ['strong'], { systemSettings: SYS_SETTINGS })).toBe(
       'Click <strong>Open System Settings</strong> below',
@@ -372,7 +372,7 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
   it('resolves the four summaries and the info-glyph label', () => {
     // Each card leads with one of these and parks its `desc` behind the info glyph.
     expect(tString('onboarding.moreAbout', { topic: 'Drive indexing' })).toBe('More about Drive indexing')
-    expect(tString('onboarding.stepOptional.networking.summary')).toBe('Needs accepting "Local network access" once')
+    expect(tString('onboarding.stepOptional.networking.summary')).toBe('Needs accepting "Local Network" once')
     expect(tString('onboarding.stepOptional.indexing.summary')).toBe(
       'Takes 1 GB space, speeds up searches, shows folder sizes',
     )
@@ -387,7 +387,7 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
   it('resolves the four toggle blocks', () => {
     expect(tString('onboarding.stepOptional.networking.title')).toBe('Networking')
     expect(renderRich('onboarding.stepOptional.networking.desc', ['em'])).toBe(
-      'Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow "Local network access", and one for "Accepting incoming connections".\nBoth dialogs are harmless, but if you don\'t know what these are, they might be scary or annoying.',
+      'Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow "Local Network", and one for "Accepting incoming connections".\nBoth dialogs are harmless, but if you don\'t know what these are, they might be scary or annoying.',
     )
     expect(tString('onboarding.stepOptional.indexing.title')).toBe('Drive indexing')
     expect(tString('onboarding.stepOptional.indexing.descIntro')).toBe(

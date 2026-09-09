@@ -111,9 +111,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "三个简单步骤：",
+  "onboarding.stepFda.ifAllow": "三个步骤：",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "32358ef"
+    "sourceHash": "2e6fb66"
   },
   "onboarding.stepFda.openSettings": "打开{systemSettings}",
   "@onboarding.stepFda.openSettings": {
@@ -464,13 +464,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "需要同意一次“本地网络访问”",
+  "onboarding.stepOptional.networking.summary": "需要同意一次“本地网络”访问",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "84f3716"
+    "sourceHash": "5006f53"
   },
-  "onboarding.stepOptional.networking.desc": "<em>开启</em>这一项，你就能连接到 SMB 服务器，比如公司的网络共享、家里的 NAS 等等。\n唯一的代价是会弹出一个 macOS 权限对话框，请你允许“本地网络访问”，以及一个请你允许“接受传入连接”的对话框。\n这两个对话框都无害，但如果你不知道它们是什么，可能会觉得吓人或烦人。",
+  "onboarding.stepOptional.networking.desc": "<em>开启</em>这一项，你就能连接到 SMB 服务器，比如公司的网络共享、家里的 NAS 等等。\n唯一的代价是会弹出一个 macOS 权限对话框，请你允许“本地网络”访问，以及一个请你允许“接受传入连接”的对话框。\n这两个对话框都无害，但如果你不知道它们是什么，可能会觉得吓人或烦人。",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "0403490"
+    "sourceHash": "089707f"
   },
   "onboarding.stepOptional.indexing.title": "驱动器索引",
   "@onboarding.stepOptional.indexing.title": {

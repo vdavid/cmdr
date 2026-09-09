@@ -46,7 +46,7 @@
             <span class="anchor">
                 Networking
                 <InfoTip label="More about networking">
-                    <p class="tip-line">Needs accepting "Local network access" once.</p>
+                    <p class="tip-line">Needs accepting "Local Network" once.</p>
                     <p class="tip-line">You can change this any time in Settings.</p>
                 </InfoTip>
             </span>

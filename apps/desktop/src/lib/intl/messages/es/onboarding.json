@@ -111,9 +111,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "Tres pasos sencillos:",
+  "onboarding.stepFda.ifAllow": "Tres pasos:",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "32358ef"
+    "sourceHash": "2e6fb66"
   },
   "onboarding.stepFda.openSettings": "Abrir {systemSettings}",
   "@onboarding.stepFda.openSettings": {
@@ -463,13 +463,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Hay que aceptar el \"Acceso a la red local\" una vez",
+  "onboarding.stepOptional.networking.summary": "Hay que aceptar la \"Red local\" una vez",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "84f3716"
+    "sourceHash": "5006f53"
   },
-  "onboarding.stepOptional.networking.desc": "Tener esto <em>activado</em> significa que puedes conectarte a servidores SMB como recursos compartidos de una empresa, un NAS doméstico y similares.\nEl único coste es un diálogo de permiso de macOS que aparece y te pide permitir el \"Acceso a la red local\", y otro para \"Aceptar conexiones entrantes\".\nAmbos diálogos son inofensivos, pero si no sabes qué son, pueden dar miedo o resultar molestos.",
+  "onboarding.stepOptional.networking.desc": "Tener esto <em>activado</em> significa que puedes conectarte a servidores SMB como recursos compartidos de una empresa, un NAS doméstico y similares.\nEl único coste es un diálogo de permiso de macOS que aparece y te pide permitir la \"Red local\", y otro para \"Aceptar conexiones entrantes\".\nAmbos diálogos son inofensivos, pero si no sabes qué son, pueden dar miedo o resultar molestos.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "0403490"
+    "sourceHash": "089707f"
   },
   "onboarding.stepOptional.indexing.title": "Indexación de unidades",
   "@onboarding.stepOptional.indexing.title": {

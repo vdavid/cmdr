@@ -111,9 +111,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "Ba bước đơn giản:",
+  "onboarding.stepFda.ifAllow": "Ba bước:",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "32358ef"
+    "sourceHash": "2e6fb66"
   },
   "onboarding.stepFda.openSettings": "Mở {systemSettings}",
   "@onboarding.stepFda.openSettings": {
@@ -463,13 +463,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Cần chấp nhận \"Truy cập mạng cục bộ\" một lần",
+  "onboarding.stepOptional.networking.summary": "Cần chấp nhận \"Mạng cục bộ\" một lần",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "84f3716"
+    "sourceHash": "5006f53"
   },
-  "onboarding.stepOptional.networking.desc": "Để cái này <em>bật</em> nghĩa là bạn có thể kết nối tới các máy chủ SMB như thư mục chia sẻ của công ty, một NAS ở nhà, và những thứ tương tự.\nCái giá duy nhất là một hộp thoại cấp quyền của macOS bật lên và yêu cầu bạn cho phép \"Truy cập mạng cục bộ\", và một hộp thoại cho \"Chấp nhận kết nối đến\".\nCả hai hộp thoại đều vô hại, nhưng nếu bạn không biết chúng là gì, chúng có thể đáng sợ hoặc gây phiền.",
+  "onboarding.stepOptional.networking.desc": "Để cái này <em>bật</em> nghĩa là bạn có thể kết nối tới các máy chủ SMB như thư mục chia sẻ của công ty, một NAS ở nhà, và những thứ tương tự.\nCái giá duy nhất là một hộp thoại cấp quyền của macOS bật lên và yêu cầu bạn cho phép \"Mạng cục bộ\", và một hộp thoại cho \"Chấp nhận kết nối đến\".\nCả hai hộp thoại đều vô hại, nhưng nếu bạn không biết chúng là gì, chúng có thể đáng sợ hoặc gây phiền.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "0403490"
+    "sourceHash": "089707f"
   },
   "onboarding.stepOptional.indexing.title": "Lập chỉ mục ổ đĩa",
   "@onboarding.stepOptional.indexing.title": {

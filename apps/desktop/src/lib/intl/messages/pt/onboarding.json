@@ -111,9 +111,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "Três etapas fáceis:",
+  "onboarding.stepFda.ifAllow": "Três etapas:",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "32358ef"
+    "sourceHash": "2e6fb66"
   },
   "onboarding.stepFda.openSettings": "Abrir {systemSettings}",
   "@onboarding.stepFda.openSettings": {
@@ -463,13 +463,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Precisa aceitar o \"Acesso à rede local\" uma vez",
+  "onboarding.stepOptional.networking.summary": "Precisa aceitar a \"Rede Local\" uma vez",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "84f3716"
+    "sourceHash": "5006f53"
   },
-  "onboarding.stepOptional.networking.desc": "Ter isto <em>ativado</em> significa que você pode se conectar a servidores SMB como compartilhamentos de rede da empresa, um NAS doméstico e afins.\nO único custo é um diálogo de permissão do macOS que aparece pedindo para você permitir o \"Acesso à rede local\" e outro para \"Aceitar conexões de entrada\".\nOs dois diálogos são inofensivos, mas se você não sabe o que são, eles podem assustar ou incomodar.",
+  "onboarding.stepOptional.networking.desc": "Ter isto <em>ativado</em> significa que você pode se conectar a servidores SMB como compartilhamentos de rede da empresa, um NAS doméstico e afins.\nO único custo é um diálogo de permissão do macOS que aparece pedindo para você permitir a \"Rede Local\" e outro para \"Aceitar conexões de entrada\".\nOs dois diálogos são inofensivos, mas se você não sabe o que são, eles podem assustar ou incomodar.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "0403490"
+    "sourceHash": "089707f"
   },
   "onboarding.stepOptional.indexing.title": "Indexação de disco",
   "@onboarding.stepOptional.indexing.title": {

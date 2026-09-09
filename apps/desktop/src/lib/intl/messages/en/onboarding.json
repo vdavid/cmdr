@@ -176,7 +176,7 @@
     "screenshot": "onboarding-fda-notgranted.png"
   },
 
-  "onboarding.stepFda.ifAllow": "Three easy steps:",
+  "onboarding.stepFda.ifAllow": "Three steps:",
   "@onboarding.stepFda.ifAllow": {
     "description": "Short heading introducing the numbered steps for turning on Full Disk Access in System Settings.",
     "screenshot": "onboarding-fda-notgranted.png"
@@ -726,15 +726,15 @@
     "screenshot": "onboarding-optional.png"
   },
 
-  "onboarding.stepOptional.networking.summary": "Needs accepting \"Local network access\" once",
+  "onboarding.stepOptional.networking.summary": "Needs accepting \"Local Network\" once",
   "@onboarding.stepOptional.networking.summary": {
-    "description": "Half-line summary under the networking toggle's title, naming its one cost. The full explanation sits behind the info glyph beside the title. \"Local network access\" is the exact macOS permission-prompt name (use macOS's wording in your locale). Keep it to one short line.",
+    "description": "Half-line summary under the networking toggle's title, naming its one cost. The full explanation sits behind the info glyph beside the title. \"Local Network\" is the name of the row in macOS's Privacy & Security settings, so use Apple's own label for your locale verbatim (the `LOCAL_NETWORK` key in SecurityPrivacyExtension.appex), not a paraphrase: it's what the user has to go find. Keep it to one short line.",
     "screenshot": "onboarding-optional.png"
   },
 
-  "onboarding.stepOptional.networking.desc": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow \"Local network access\", and one for \"Accepting incoming connections\".\nBoth dialogs are harmless, but if you don''t know what these are, they might be scary or annoying.",
+  "onboarding.stepOptional.networking.desc": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow \"Local Network\", and one for \"Accepting incoming connections\".\nBoth dialogs are harmless, but if you don''t know what these are, they might be scary or annoying.",
   "@onboarding.stepOptional.networking.desc": {
-    "description": "Long explanation of the networking toggle, shown in the tooltip behind its info glyph: enables SMB shares at the cost of two macOS permission prompts. <em> emphasizes \"on\". \"SMB\" is the file-sharing protocol; \"NAS\" is a network storage device; \"macOS\" is the operating system; all stay untranslated. \"Local network access\" and \"Accepting incoming connections\" are the exact macOS permission-prompt names (use macOS's wording in your locale). Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
+    "description": "Long explanation of the networking toggle, shown in the tooltip behind its info glyph: enables SMB shares at the cost of two macOS permission prompts. <em> emphasizes \"on\". \"SMB\" is the file-sharing protocol; \"NAS\" is a network storage device; \"macOS\" is the operating system; all stay untranslated. \"Local Network\" is the name of the row in macOS's Privacy & Security settings, so use Apple's own label for your locale verbatim (the `LOCAL_NETWORK` key in SecurityPrivacyExtension.appex), not a paraphrase; it must match onboarding.stepOptional.networking.summary. \"Accepting incoming connections\" describes the firewall prompt rather than quoting a label, so translate it as prose. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"
   },
 

@@ -1645,8 +1645,9 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 - **`Settings › X` 這種路徑** · `「設定 › 更新與隱私」`，`›` 原樣保留 · 形狀抄目錄自己的
   `settings.askCmdr.provider.off`（`在「設定 › AI」中…`）；`更新與隱私` 逐字取自 `settings.section.updatesAndPrivacy` ·
   `high`
-- **"Local network access"（macOS 的那個權限）** · `「區域網路」取用` · 逐字沿用同一步的長版說明
-  `onboarding.stepOptional.networking.desc`（`請你允許「區域網路」取用`），詞本身在上面 § macOS surfaces named in
-  onboarding 已定為 `區域網路` · `high`
+- **"Local Network"（macOS 隱私面板裡的那一列）** · `「區域網路」` · 引號裡只放 Apple 的名字，`取用`
+  留在引號外面當動詞： `onboarding.stepOptional.networking.summary` 與 `…networking.desc`
+  一致（`請你允許「區域網路」取用`）。英文那邊也在 2026-09-09 從 `Local network access` 改成 Apple 自己的
+  `Local Network`，理由相同：使用者要在系統設定裡找得到這個名字 · `high`
 - **`{mandatory}+1` 的 `+1` 是字面的** · `第 {step} 步，共 {mandatory}+1 步` · 英文刻意寫 `3+1` 而不是
   `4`（最後一步是可選的），中文照搬；量詞用 `步`，形狀抄隔壁的 `onboarding.wizard.stepProgress` · `high`

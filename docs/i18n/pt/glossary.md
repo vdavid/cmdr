@@ -2720,12 +2720,12 @@ terminologia da Apple vence (style.md § superfícies do sistema).
 - signup server · **servidor de inscrição** · MS terminology pt-BR (`sign up` → `inscrever-se`) · high. A abertura da
   linha copia o molde já publicado de `onboarding.cloudSetup.status.connectionError` ("Não dá para acessar…"), no
   passado: `Não deu para acessar o servidor de inscrição agora` — nada de `falha` nem `erro`.
-- "Local network access" (o texto do pedido de permissão do macOS) · **Acesso à rede local** · o
-  `stepOptional.networking.desc` já publica exatamente essa forma, e o macOS pt-BR sustenta: o painel se chama
-  `Rede Local` e o resumo dele fala em "permissão para buscar e se comunicar com dispositivos na sua rede local"
-  (`SecurityPrivacyExtension.appex/Contents/Resources/Localizable.loctable`, chaves `LOCAL_NETWORK` e
-  `LOCAL_NETWORK_SUMMARY`, macOS 26.6.2 build 25G83, lido em 2026-09-09) · confirmed. O resumo de meia linha e a legenda
-  longa atrás do glifo de informação ficam a dois cliques um do outro, então têm de dizer a mesma coisa.
+- "Local Network" (a linha do painel de privacidade do macOS) · **Rede Local** · citada ao pé da letra, tal como o macOS
+  pt-BR a publica (`SecurityPrivacyExtension.appex/Contents/Resources/Localizable.loctable`, chave `LOCAL_NETWORK`; o
+  resumo `LOCAL_NETWORK_SUMMARY` fala em "permissão para buscar e se comunicar com dispositivos na sua rede local",
+  macOS 26.6.2 build 25G83, lido em 2026-09-09) · confirmed. O resumo de meia linha e a legenda longa atrás do glifo de
+  informação ficam a dois cliques um do outro, então dizem a mesma coisa. ❌ Não a paráfrase `Acesso à rede local`: esse
+  nome não existe nos Ajustes do Sistema, então quem for procurar não acha.
 - step (uma etapa numerada de instrução) · **etapa** · o catálogo já usa `etapa` para as etapas do assistente
   (`wizard.stepProgress`, `wizard.backAria`, `stepBeta.footer.continue`) e nunca `passo`; a pilha não decide (o macOS
   pt-BR não tem a palavra em contexto de instrução) · high. Daí `stepFda.ifAllow` = `Três etapas fáceis:`: a introdução

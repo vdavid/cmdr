@@ -2707,10 +2707,9 @@ und `stepFda.why`. Onboarding ist die eine Fläche, auf der Cmdr in der Ich-Form
   Anmeldung hat gerade nicht geklappt“) · high.
 - **Die macOS-Berechtigung `Local Network` → `Lokales Netzwerk`** · `SecurityPrivacyExtension.appex`
   `Localizable.loctable`, Schlüssel `LOCAL_NETWORK`, und `AppSystemSettingsUI.framework` `Local Network`
-  (`plutil -convert json`, live macOS 26.6.2, Build 25G83, 2026-09-09) · high. Abgrenzung: die Nachbarzeile
-  `stepOptional.networking.desc` beschreibt den DIALOG („bittet dich um Erlaubnis für „Zugriff auf das lokale
-  Netzwerk““) und darf das ruhig ausformulieren; das Kurzfazit nennt die Berechtigung so, wie sie in den
-  Systemeinstellungen steht.
+  (`plutil -convert json`, live macOS 26.6.2, Build 25G83, 2026-09-09) · high. Beide Nachbarn zitieren die Zeile
+  wörtlich, das Kurzfazit `stepOptional.networking.summary` wie die lange `…networking.desc`. ❌ Nicht die beschreibende
+  Form „Zugriff auf das lokale Netzwerk“: unter diesem Namen steht die Berechtigung in den Systemeinstellungen nicht.
 - **`space` (Plattenplatz in einer Zeile, die nicht umbrechen darf) → `Platz`** · Finder `de` („Kein Platz mehr“, „Das
   Objekt „^0“ kann nicht kopiert werden, da nicht genügend freier Platz zur Verfügung steht.“) · high. `Speicherplatz`
   bleibt die Langform für Fließtext (macOS nutzt beide); in `stepOptional.indexing.summary` und `stepAi.local.tooltip`

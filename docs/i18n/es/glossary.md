@@ -2957,8 +2957,11 @@ Familia ICU normal: apóstrofos dobles, aunque al final ningún valor español l
 - **`{nextLabel}` va entre comillas curvas `“…”`** · es una etiqueta que Cmdr pinta en pantalla (sale de
   `onboarding.wizard.next`), y esa es justo la frontera del `style.md`: curvas para lo que Cmdr muestra, rectas para un
   literal que el inglés ya entrecomilla. Por eso `checklist.alternativeToNote` conserva las rectas alrededor de `"Cmdr"`
-  (es el título de una página ajena) y `networking.summary` las conserva alrededor de `"Acceso a la red local"` (es el
-  nombre del diálogo de macOS, ya fijado por `networking.desc`) · `high`.
+  (es el título de una página ajena) y `networking.summary` las conserva alrededor de `"Red local"` · `high`.
+- **`Local Network` → `"Red local"`, la etiqueta literal de Apple** · leída en vivo de `SecurityPrivacyExtension.appex`
+  (clave `LOCAL_NETWORK`, macOS 26.6.2 build 25G83, 2026-09-09). La citan igual `networking.summary` y `networking.desc`
+  · `high`. ❌ No la paráfrasis `Acceso a la red local`: ese nombre no aparece en Ajustes del Sistema, así que quien lo
+  busque no lo encuentra.
 - **`superprivate` → `superprivada`, concordando con `la IA`** · la reescritura del inglés
   (`onboarding.stepAi.local.label`) permitió por fin quitar el `superprivado` que generaba a quien lee. El adjetivo
   concuerda ahora con `IA`, no con la persona: misma jugada que la regla de género del `style.md`, pero aplicada a un

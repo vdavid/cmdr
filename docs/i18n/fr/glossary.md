@@ -3205,9 +3205,10 @@ Décisions de formulation :
   processus macOS pendant son exécution » : le nom partagé (« le processus macOS ») fait le lien, et `suspendre` est le
   sens réel de `suppress` ici (macOS le retrouve à la fermeture de Cmdr). ❌ `supprimer` seul, sans le contexte de la
   description, se lirait « effacer ».
-- **Le nom d'une autorisation macOS cité dans un résumé garde les guillemets de la source**, sans imbrication puisque la
-  valeur elle-même n'est pas entre guillemets : `stepOptional.networking.summary` = « Demande d'accepter une fois l'«
-  accès au réseau local » », la formulation exacte déjà livrée par `.desc`.
+- **Le nom d'une autorisation macOS se cite mot pour mot, jamais paraphrasé.** L'étiquette d'Apple est « Réseau local »
+  (clé `LOCAL_NETWORK` de `SecurityPrivacyExtension.appex`, macOS 26.6.2 build 25G83, lue le 2026-09-09), et
+  `stepOptional.networking.summary` comme `.desc` la reprennent telle quelle, entre guillemets français. ❌ Pas « accès
+  au réseau local » : ce nom-là ne se trouve nulle part dans Réglages, donc l'utilisateur le cherche en vain.
 - **`<field></field>` se place après l'objet, pas en fin de phrase.** La balise est un champ de saisie rendu au milieu
   de la phrase : « Saisissez votre adresse e-mail <field></field> pour recevoir… ». Le verbe reste `saisir` (Finder),
   jamais `taper`.

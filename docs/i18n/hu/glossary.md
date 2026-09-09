@@ -3146,11 +3146,12 @@ aposztrófot. Négy kulcs angolja átíródott, ezért a tárolt hash `sync-loca
   `settings.section.updatesAndPrivacy` (`Frissítések és adatvédelem`) és a katalógus `Beállítások ›` mintája
   (`settings.askCmdr.provider.shared`/`.off`). Az útvonal nem kap ragot: a mondat `itt:` kettősponttal vezeti fel
   (`vagy bármikor később itt: Beállítások › Frissítések és adatvédelem`), ugyanaz a kerülőút, mint az `itt: {path}`-nál.
-- **`Local network access` → `Helyi hálózat elérése`, a testvér `desc`-ből.** A kupac `hu/macOS/SystemSettings/` dumpja
-  csak a Rendszerbeállítások keretszövegeit tartalmazza, az Adatvédelem panel engedélyneveit nem, tehát erre nincs
-  Tier-1 találat. A szállított `onboarding.stepOptional.networking.desc` viszont már idézi a promptot („a »Helyi hálózat
-  elérése« engedélyezését kéri”), és a `summary` pont annak a hosszú változatnak a rövid verdiktje, tehát kötelező
-  egyezniük.
+- **`Local Network` → `Helyi hálózat`, szó szerint az Apple saját címkéje.** A kupac `hu/macOS/SystemSettings/` dumpja
+  csak a Rendszerbeállítások keretszövegeit tartalmazza, az Adatvédelem panel engedélyneveit nem, ezért ez élőben
+  olvasva jött: `SecurityPrivacyExtension.appex/…/Localizable.loctable`, `LOCAL_NETWORK` kulcs (macOS 26.6.2, 25G83
+  build, `plutil`, 2026-09-09). Az `onboarding.stepOptional.networking.summary` és a `…desc` is ezt idézi, a ragozás
+  (`engedélyezését`, `hozzáférést`) az idézőjelen kívülre kerül. ❌ Nem `Helyi hálózat elérése`: azt a nevet a
+  felhasználó nem találja meg az Adatvédelem panelen.
 - **A négy `stepOptional.*.summary` a testvér `desc` szavait viszi, és nem érhet túl az angol hosszán.** Egy sorba kell
   férniük a kapcsoló mellett: `1 GB helyet foglal…` (a `descCost` „nagyjából 1 GB index” szava),
   `…elnyomja a macOS kezelőjét` (a `mtp.desc` „el kell nyomnia azt a macOS folyamatot” igéje). Az `mtp.summary`-ból a

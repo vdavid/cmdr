@@ -174,8 +174,9 @@ Settled terms (sources agree):
 - **mailing list: `danh sách gửi thư`** · Microsoft terminology. `high`.
 - **Local Network (the macOS permission's name): `Mạng cục bộ`** · three macOS bundles agree (`AppSystemSettingsUI` and
   two more, key `Local Network` / `LOCAL_NETWORK`), plus `TCC.framework` for the prose form (`mạng cục bộ`), macOS
-  26.6.2 build 25G83, verified 2026-09-09. The catalog's phrase for the permission itself is `Truy cập mạng cục bộ`.
-  `high`.
+  26.6.2 build 25G83, verified 2026-09-09. Both `onboarding.stepOptional.networking.summary` and `…networking.desc`
+  quote that label verbatim; ❌ never the paraphrase `Truy cập mạng cục bộ`, which is not what the user finds in System
+  Settings. `high`.
 - **native (belonging to the OS): `gốc`** · matches the settled `menu gốc`; used in
   `onboarding.stepOptional.mtp.summary` as `trình xử lý gốc của macOS`. `high`.
 - **warning: `cảnh báo`** · Xfce Thunar and KDE Dolphin agree. `high`.

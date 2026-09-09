@@ -3203,11 +3203,10 @@ samenvattingen van stap 4, plus vier sleutels waarvan het Engels herschreven wer
 Elke regel staat naast een schakelaar en mag niet omlopen, dus ze blijven kort en volgen de terminologie van hun lange
 `…desc`-tegenhanger.
 
-- **"Local network access" → `‘Lokale netwerktoegang’`** · byte-identiek aan wat `stepOptional.networking.desc` al zegt
-  · `high`. Apples eigen paneelrij heet `Lokaal netwerk` (live `Security.prefPane` `Localizable.loctable`,
-  `LOCAL_NETWORK`, gelezen 2026-09-09), maar het Engels citeert de toestemmingsvraag, niet de paneelnaam, en de tooltip
-  ernaast draagt de langere vorm al. Grens: wie ooit naar de **paneelrij** in Systeeminstellingen verwijst, schrijft
-  `Lokaal netwerk`.
+- **"Local Network" → `‘Lokaal netwerk’`** · Apples eigen paneelrij, live gelezen (`Localizable.loctable`,
+  `LOCAL_NETWORK`, macOS 26.6.2 build 25G83, 2026-09-09) · `high`. Zowel `stepOptional.networking.summary` als
+  `…networking.desc` citeren die rij letterlijk; ❌ niet de omschrijving `Lokale netwerktoegang`, want die naam vindt de
+  gebruiker niet terug in Systeeminstellingen.
 - **folder sizes → `mapgroottes`** · al overal in de catalogus (`settings.indexing.enabled.description`,
   `indexing.step.findFilesChangeCheck`, `settings.section.fileAndFolderSizes`) · `high`
 - **native handler (het macOS-proces dat MTP-apparaten inpikt) → `de macOS-afhandeling`** · `stepOptional.mtp.desc`

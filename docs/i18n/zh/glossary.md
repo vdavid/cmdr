@@ -181,8 +181,9 @@ zh-Hans cross-check.
 - **endpoint** · `端点` · Microsoft TBX · `high`
 - **command palette** · `命令面板` · standard · `high`
 - **open beta** · `公开测试` · standard · `high`
-- **Local network access / Accepting incoming connections (macOS prompt labels)** · `本地网络访问` / `接受传入连接` ·
-  macOS firewall/privacy prompt wording (not in this pile slice; standard macOS labels) · `tentative`
+- **Local Network / Accepting incoming connections** · `本地网络` / `接受传入连接` · the first is Apple's own
+  Privacy-pane row, read live from `LOCAL_NETWORK` (superseded the paraphrase `本地网络访问`; see the onboarding-rewrite
+  section below); the second describes the firewall prompt rather than quoting a label · `high` / `tentative`
 
 ### Search UI + commands catalog (first pass, 2026-06-21)
 
@@ -2490,11 +2491,11 @@ zh-CN 为 Tier 1，GitHub 自家中文文档用于 GitHub 专有动词，Microso
 - **typo（提示用户检查拼写）** · `看看是不是打错了` · 按 style.md 的口语register改写成动作，不落 `错误` 这个词 · `high`
 - **Local Network（macOS 隐私面板里的项目）** · `本地网络` · 实机
   `SecurityPrivacyExtension.appex/.../Localizable.loctable` 的 `LOCAL_NETWORK` 键（macOS
-  26.6.2，`plutil`，2026-09-09）；同一文件里 `ALL_FILES` = `完全磁盘访问权限`，与本文件已定的说法对上。⚠️
-  `onboarding.stepOptional.networking.summary` 仍写 `“本地网络访问”`，因为兄弟键
-  `onboarding.stepOptional.networking.desc`
-  已经这么写，一行摘要必须跟长说明同词；macOS的权限弹窗本身没有这个名词短语（弹窗是整句「想要查找并连接到本地网络上的设备」）。哪天统一时两条一起改成
-  `本地网络` · `tentative`
+  26.6.2，`plutil`，2026-09-09）；同一文件里 `ALL_FILES` =
+  `完全磁盘访问权限`，与本文件已定的说法对上。`onboarding.stepOptional.networking.summary` 和
+  `onboarding.stepOptional.networking.desc` 现在都逐字引用 `“本地网络”`，`访问` 二字留在引号外面当动词。❌不要写成
+  `“本地网络访问”`：那不是用户在系统设置里能找到的名字（权限弹窗本身是整句「想要查找并连接到本地网络上的设备」，压根没有名词短语）·
+  `high`
 - **Settings › Updates & privacy（句中引用应用自己的设置路径）** · `“设置 › 更新与隐私”` ·
   `settings.section.updatesAndPrivacy` = `更新与隐私`；整条路径加全角引号、分隔符照抄英文原文（英文写 `›` 就写 `›`，写
   `>` 就写 `>`），与 `whatsNew.optOutToast`（`“设置 > 更新与隐私”`）、

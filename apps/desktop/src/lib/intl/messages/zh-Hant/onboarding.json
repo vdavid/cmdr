@@ -111,9 +111,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "三個步驟就好：",
+  "onboarding.stepFda.ifAllow": "三個步驟：",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "32358ef"
+    "sourceHash": "2e6fb66"
   },
   "onboarding.stepFda.openSettings": "開啟 {systemSettings}",
   "@onboarding.stepFda.openSettings": {
@@ -466,11 +466,11 @@
   },
   "onboarding.stepOptional.networking.summary": "需要允許一次「區域網路」取用",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "84f3716"
+    "sourceHash": "5006f53"
   },
   "onboarding.stepOptional.networking.desc": "<em>開著</em>這一項，你就能連到 SMB 伺服器，像公司的網路共享資料夾、家裡的 NAS 之類的。\n唯一的代價是 macOS 會跳出一個權限對話框，請你允許「區域網路」取用，還有一個請你允許「接受傳入連線」。\n這兩個對話框都無害，但如果你不曉得它們是什麼，可能會覺得嚇人或煩人。",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "0403490"
+    "sourceHash": "089707f"
   },
   "onboarding.stepOptional.indexing.title": "磁碟機索引",
   "@onboarding.stepOptional.indexing.title": {

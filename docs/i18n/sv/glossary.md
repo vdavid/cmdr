@@ -2811,8 +2811,8 @@ terminologin från syskonnyckelns `…desc`.
   lokala nätverket.”, macOS 26.6.2 build 25G83, läst 2026-09-09); referenssamlingens `macOS/`-bunt bär den inte, så
   detta är den dokumenterade live-fallbacken. `high`. ❌ Inte den beskrivande `Lokal nätverksåtkomst`: det är samma
   feltyp som `fullständig åtkomst till skivan` mot Apples `Full skivtillgång`, alltså ett namn användaren inte hittar i
-  Integritet och säkerhet. Se rapportanteckningen om att `onboarding.stepOptional.networking.desc` fortfarande säger
-  `Lokal nätverksåtkomst` och behöver samma rättelse.
+  Integritet och säkerhet. `onboarding.stepOptional.networking.desc` är rättad till samma etikett, så syskonnycklarna
+  citerar nu Apples namn ordagrant båda två; engelskan citerar `Local Network` av samma skäl.
 - **`speeds up searches` · `snabbar upp sökningar`** · `sökning` per `style.md`s search-post. `high`.
 - **`check` (uppdateringskontrollen) · `kontroll`** · syskonnyckeln `onboarding.stepOptional.updates.desc` säger redan
   `licenskontroller` för samma sorts anrop. `high`.

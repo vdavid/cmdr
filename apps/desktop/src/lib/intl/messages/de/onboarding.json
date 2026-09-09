@@ -111,9 +111,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "Drei einfache Schritte:",
+  "onboarding.stepFda.ifAllow": "Drei Schritte:",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "32358ef"
+    "sourceHash": "2e6fb66"
   },
   "onboarding.stepFda.openSettings": "{systemSettings} öffnen",
   "@onboarding.stepFda.openSettings": {
@@ -465,11 +465,11 @@
   },
   "onboarding.stepOptional.networking.summary": "Braucht einmal die Berechtigung „Lokales Netzwerk“",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "84f3716"
+    "sourceHash": "5006f53"
   },
-  "onboarding.stepOptional.networking.desc": "Ist das <em>an</em>, kannst du dich mit SMB-Servern verbinden, etwa mit Firmennetzwerkfreigaben, einem heimischen NAS und Ähnlichem.\nDer einzige Haken ist ein macOS-Berechtigungsdialog, der auftaucht und dich um Erlaubnis für „Zugriff auf das lokale Netzwerk“ bittet, sowie einer für „Eingehende Verbindungen annehmen“.\nBeide Dialoge sind harmlos, aber wenn du nicht weißt, was das ist, können sie beängstigend oder lästig wirken.",
+  "onboarding.stepOptional.networking.desc": "Ist das <em>an</em>, kannst du dich mit SMB-Servern verbinden, etwa mit Firmennetzwerkfreigaben, einem heimischen NAS und Ähnlichem.\nDer einzige Haken ist ein macOS-Berechtigungsdialog, der auftaucht und dich um Erlaubnis für „Lokales Netzwerk“ bittet, sowie einer für „Eingehende Verbindungen annehmen“.\nBeide Dialoge sind harmlos, aber wenn du nicht weißt, was das ist, können sie beängstigend oder lästig wirken.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "0403490"
+    "sourceHash": "089707f"
   },
   "onboarding.stepOptional.indexing.title": "Laufwerksindizierung",
   "@onboarding.stepOptional.indexing.title": {

@@ -111,9 +111,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "Tre enkla steg:",
+  "onboarding.stepFda.ifAllow": "Tre steg:",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "32358ef"
+    "sourceHash": "2e6fb66"
   },
   "onboarding.stepFda.openSettings": "Öppna {systemSettings}",
   "@onboarding.stepFda.openSettings": {
@@ -465,11 +465,11 @@
   },
   "onboarding.stepOptional.networking.summary": "Kräver att du godkänner ”Lokalt nätverk” en gång",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "84f3716"
+    "sourceHash": "5006f53"
   },
-  "onboarding.stepOptional.networking.desc": "Att ha det här <em>på</em> betyder att du kan ansluta till SMB-servrar som företagets nätverksmappar, en NAS hemma och liknande.\nDen enda kostnaden är en macOS-behörighetsdialog som dyker upp och ber dig tillåta ”Lokal nätverksåtkomst”, och en för ”Acceptera inkommande anslutningar”.\nBåda dialogerna är ofarliga, men om du inte vet vad de är kan de verka skrämmande eller irriterande.",
+  "onboarding.stepOptional.networking.desc": "Att ha det här <em>på</em> betyder att du kan ansluta till SMB-servrar som företagets nätverksmappar, en NAS hemma och liknande.\nDen enda kostnaden är en macOS-behörighetsdialog som dyker upp och ber dig tillåta ”Lokalt nätverk”, och en för ”Acceptera inkommande anslutningar”.\nBåda dialogerna är ofarliga, men om du inte vet vad de är kan de verka skrämmande eller irriterande.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "0403490"
+    "sourceHash": "089707f"
   },
   "onboarding.stepOptional.indexing.title": "Enhetsindexering",
   "@onboarding.stepOptional.indexing.title": {

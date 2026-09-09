@@ -327,9 +327,9 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   `onboarding.stepAi.local.tooltip` säger `<strong>Ja, jag vill ha AI</strong>` och pekar därmed på
   `onboarding.stepAi.cloud.label`, som måste stå ordagrant likadant; `signup.rejected`/`.unreachable` citerar
   `checklist.emailSave` (`Spara`) på samma sätt. Skriv om båda samtidigt eller ingen.
-- **En systembehörighets namn hämtas från Apple även när syskonnyckeln parafraserar det.** Sammanfattningen bredvid
-  nätverksströmbrytaren säger `Lokalt nätverk` (Apples egen etikett), inte den beskrivande `Lokal nätverksåtkomst` som
-  `…networking.desc` fortfarande bär. Ett namn användaren inte hittar i Systeminställningar är samma feltyp som
+- **En systembehörighets namn hämtas från Apple, ordagrant, aldrig som parafras.** Både sammanfattningen bredvid
+  nätverksströmbrytaren och `…networking.desc` säger `Lokalt nätverk`, Apples egen etikett, inte den beskrivande
+  `Lokal nätverksåtkomst`. Ett namn användaren inte hittar i Systeminställningar är samma feltyp som
   `fullständig åtkomst till skivan` var. Belägg och den live lästa bunten: `glossary.md` § Introduktionsguidens
   omskrivning.
 - **Referenssamlingen bär falska vänner; kolla vad strängen sitter bland innan du lånar den.** Total Commanders

@@ -112,9 +112,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "Drie eenvoudige stappen:",
+  "onboarding.stepFda.ifAllow": "Drie stappen:",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "32358ef"
+    "sourceHash": "2e6fb66"
   },
   "onboarding.stepFda.openSettings": "Open {systemSettings}",
   "@onboarding.stepFda.openSettings": {
@@ -465,13 +465,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Eén keer ‘Lokale netwerktoegang’ toestaan",
+  "onboarding.stepOptional.networking.summary": "Eén keer ‘Lokaal netwerk’ toestaan",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "84f3716"
+    "sourceHash": "5006f53"
   },
-  "onboarding.stepOptional.networking.desc": "Met dit <em>aan</em> kun je verbinding maken met SMB-servers zoals bedrijfsnetwerkshares, een thuis-NAS en dergelijke.\nDe enige kostenpost is een macOS-toegangsvenster dat verschijnt en je vraagt ‘Lokale netwerktoegang’ toe te staan, en nog één voor ‘Inkomende verbindingen accepteren’.\nBeide vensters zijn onschadelijk, maar als je niet weet wat dit is, kunnen ze eng of vervelend overkomen.",
+  "onboarding.stepOptional.networking.desc": "Met dit <em>aan</em> kun je verbinding maken met SMB-servers zoals bedrijfsnetwerkshares, een thuis-NAS en dergelijke.\nDe enige kostenpost is een macOS-toegangsvenster dat verschijnt en je vraagt ‘Lokaal netwerk’ toe te staan, en nog één voor ‘Inkomende verbindingen accepteren’.\nBeide vensters zijn onschadelijk, maar als je niet weet wat dit is, kunnen ze eng of vervelend overkomen.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "0403490"
+    "sourceHash": "089707f"
   },
   "onboarding.stepOptional.indexing.title": "Schijf indexeren",
   "@onboarding.stepOptional.indexing.title": {
