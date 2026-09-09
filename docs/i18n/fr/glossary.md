@@ -2033,8 +2033,10 @@ donc les apostrophes se doubleraient ; aucune valeur du lot n'en contient (les t
 
 Le catalogue portait 38 endroits où `fr` donnait deux noms différents au même texte anglais, le plus souvent parce
 qu'une passe tardive avait touché `menu.json` en laissant `commands.json` sur l'ancienne formulation. Treize étaient de
-vraies dérives et ont disparu ; les vingt-cinq restantes sont des frontières VOLONTAIRES (ou des angles morts du
-vérificateur) et sont décrites plus bas pour que la prochaine passe ne les « uniformise » pas.
+vraies dérives et ont disparu ; vingt-quatre sont des frontières VOLONTAIRES (ou des angles morts du vérificateur) et
+sont décrites plus bas pour que la prochaine passe ne les « uniformise » pas. La trente-huitième, `Connect to server`,
+n'est plus une frontière du tout : le catalogue ne garde que la forme verbale, et le terme vit désormais dans la liste
+§ Termes.
 
 ### Corrigé
 
