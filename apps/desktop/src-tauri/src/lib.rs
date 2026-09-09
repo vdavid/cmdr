@@ -110,6 +110,8 @@ mod redact;
 #[cfg(target_os = "macos")]
 mod reduce_transparency;
 mod restricted_paths;
+#[cfg(target_os = "macos")]
+mod reveal;
 pub mod search;
 mod secrets;
 pub mod selection;
@@ -645,6 +647,12 @@ pub fn run() {
             // What the encrypted-archive password prompt is asking, so `cmdr://state`
             // can name the archive and `unlock_archive` can answer it.
             app.manage(mcp::ArchivePasswordPromptStore::new());
+
+            // Reveals ("Show in Cmdr" from another app) that land before the webview
+            // exists. A cold launch delivers the event first and mounts the frontend
+            // after, so they wait here until it drains them. See `reveal/CLAUDE.md`.
+            #[cfg(target_os = "macos")]
+            app.manage(reveal::PendingReveals::new());
 
             // Start MCP server for AI agent integration
             // Use settings from user preferences, with env vars as override for dev

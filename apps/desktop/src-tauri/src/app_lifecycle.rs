@@ -17,7 +17,7 @@ use crate::downloads;
 use crate::network;
 use crate::{ai, crash_reporter, file_viewer, mcp, quit, search, window_state};
 #[cfg(target_os = "macos")]
-use crate::{drag_image_detection, mtp};
+use crate::{drag_image_detection, mtp, reveal};
 
 /// Stop the three services that outlive a window: the local LLM, the MCP server, and mDNS.
 ///
@@ -90,8 +90,8 @@ pub fn on_window_event(window: &Window, event: &tauri::WindowEvent) {
     }
 }
 
-/// Process-level signals: the first webview being ready, a quit being requested,
-/// and the process actually going away.
+/// Process-level signals: the first webview being ready, a reveal arriving from another
+/// app, a quit being requested, and the process actually going away.
 pub fn on_run_event(app: &AppHandle<Wry>, event: tauri::RunEvent) {
     match event {
         tauri::RunEvent::Ready => {
@@ -99,6 +99,16 @@ pub fn on_run_event(app: &AppHandle<Wry>, event: tauri::RunEvent) {
             // discover wry's ObjC class, so it runs at Ready (not setup).
             #[cfg(target_os = "macos")]
             drag_image_detection::install(app.clone());
+        }
+        // Another app asked the OS to show a file, and the OS picked us
+        // (`NSFileViewer`, see `reveal/`). It arrives as an open-documents
+        // Apple Event, which AppKit hands to `application:openURLs:` and
+        // Tauri surfaces here — cold launch and already-running alike, so
+        // there is no argv path to cover. macOS and iOS only: no other
+        // platform emits this variant.
+        #[cfg(target_os = "macos")]
+        tauri::RunEvent::Opened { urls } => {
+            reveal::on_urls_opened(app, urls);
         }
         // ⌘Q, the app menu's Quit, the Dock's Quit, a logout or
         // restart, and every `AppHandle::exit` in the app all land

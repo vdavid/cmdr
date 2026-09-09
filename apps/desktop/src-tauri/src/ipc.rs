@@ -820,6 +820,16 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
+            // "Reveal in Cmdr": the `NSFileViewer` row plus the cold-launch drain.
+            // macOS only, mechanism and all (`reveal/`); the key exists nowhere else.
+            cfg(target_os = "macos") {
+                typed: [
+                    crate::reveal::commands::get_reveal_handler_state,
+                    crate::reveal::commands::set_reveal_handler_enabled,
+                    crate::reveal::commands::drain_pending_reveals,
+                ]
+                dispatch_only: []
+            }
             // The custom updater.
             cfg(target_os = "macos") {
                 typed: [

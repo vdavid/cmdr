@@ -46,6 +46,7 @@ import { startLowDiskSpaceEventBridge } from '$lib/low-disk-space/event-bridge.s
 import { startOpenTerminalMenuGate } from '$lib/open-terminal/menu-gate.svelte'
 import { initSnapshotPurge, destroySnapshotPurge } from '$lib/search/snapshot-purge'
 import { getSetting } from '$lib/settings'
+import { drainPendingReveals } from '$lib/tauri-commands'
 import {
   startOperationFailureWatch,
   stopOperationFailureWatch,
@@ -213,6 +214,12 @@ export async function startWindowServices(ctx: WindowServicesContext): Promise<v
   // pair per drag session, turned into a single signs-of-life → completion toast (downloading a
   // phone/NAS file to Finder shows nothing on Finder's side; this is our feedback surface).
   unlistenFns.push(await startDragOutEventBridge())
+  // A "Show in Cmdr" that arrived before this window existed: a cold launch delivers the OS
+  // event long before we mount, so the backend parks it and this drains it. ⚠️ Must stay AFTER
+  // `setupMcpListeners` — the reveal is delivered over `mcp-nav-to-path`, so draining earlier
+  // would emit into a window with no listener. Fire-and-forget: the backend answers straight
+  // away and does the pane move on its own runtime. See `src-tauri/src/reveal/CLAUDE.md`.
+  void drainPendingReveals()
 }
 
 /** Tear down everything both phases started. Safe to call when neither ran. */

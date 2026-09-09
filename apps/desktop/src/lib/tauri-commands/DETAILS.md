@@ -101,6 +101,9 @@ commands, and notable non-obvious placements.
 - **`downloads.ts`**: downloads-watcher commands (`downloadsWatcherStatus`, `goToLatestDownload`,
   `setGlobalGoToLatestShortcut`, `recheckDownloadsWatcherGate`) plus `onDownloadDetected` / `onGlobalShortcutFired` over
   the downloads-watcher + global-hotkey events.
+- **`reveal.ts`**: "Reveal in Cmdr" (macOS). `drainPendingReveals` today; the Settings row's
+  `getRevealHandlerState` / `setRevealHandlerEnabled` belong here too when that row exists. Every wrapper swallows the
+  missing-command rejection other platforms give.
 - **`restricted-paths.ts`**: `onRestrictedPathsChanged` over the TCC-restricted-path-set event.
 - **`dialog-events.ts`**: window-management events: `onExecuteCommand` + `emitExecuteCommand` (the unified
   menu/cross-window relay), the MCP `dialog` lifecycle (`on{Open,Focus,Close}Settings` / `…FileViewer` / `…About` /
@@ -149,6 +152,7 @@ commands, and notable non-obvious placements.
 - Drive indexing (status, enable/disable/rescan) → `indexing.ts`.
 - Git browser (repo info, live state subscription, per-path status) → `git.ts`.
 - Downloads watcher (status, go-to-latest, global hotkey) → `downloads.ts`.
+- "Reveal in Cmdr" (`NSFileViewer` registration, the cold-start drain) → `reveal.ts`.
 - ⌘G path resolution and recent paths → `go-to-path.ts`.
 - macOS Finder color tags → `tags.ts`.
 - App updater → `updates.ts`.

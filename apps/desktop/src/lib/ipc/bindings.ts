@@ -4372,6 +4372,25 @@ export const commands = {
    */
   getMemoryDiagnostics: (sizesPerTag: number) =>
     __TAURI_INVOKE<MemoryDiagnostics>('get_memory_diagnostics', { sizesPerTag }),
+  // Whether reveals from other apps currently land in Cmdr, and who holds the key if not.
+  getRevealHandlerState: () => __TAURI_INVOKE<RevealHandlerState>('get_reveal_handler_state'),
+  /**
+   *  Take the `NSFileViewer` key, or give it up. Returns the state the OS is left in, so
+   *  the Settings row renders the truth rather than what it asked for.
+   */
+  setRevealHandlerEnabled: (enabled: boolean) =>
+    __TAURI_INVOKE<RevealHandlerState>('set_reveal_handler_enabled', { enabled }),
+  /**
+   *  Deliver any reveal that arrived before this window could act on it.
+   *
+   *  Called once per main-window lifetime, after the `mcp-*` listeners are up. It also
+   *  arms the direct path: from here on a reveal is delivered as it arrives instead of
+   *  being parked.
+   *
+   *  Returns immediately; the pane move runs on the async runtime, because the frontend
+   *  that has to answer it is the same frontend that would be waiting on this call.
+   */
+  drainPendingReveals: () => __TAURI_INVOKE<void>('drain_pending_reveals'),
   /**
    *  Fetches `latest.json` (via the update check proxy for analytics) and returns update info
    *  if a newer version is available.
@@ -10928,6 +10947,37 @@ export type RestrictedWindowSettings = {
    */
   appearanceLanguage: string | null
 }
+
+/**
+ *  What the Settings row shows, read through to the OS every time it asks.
+ *
+ *  Not a stored setting: the user can hand the key to another app from outside Cmdr,
+ *  so a cached flag would lie. `DETAILS.md` § "Not a stored setting".
+ */
+export type RevealHandlerState =
+  // Cmdr holds the key: reveals from other apps land here.
+  | { kind: 'registered' }
+  // Nobody holds it. Reveals go to Finder, which is the true default.
+  | { kind: 'notRegistered' }
+  /**
+   *  Another file manager holds it. Turning Cmdr on takes it over, one click,
+   *  but nothing does so silently.
+   */
+  | {
+      kind: 'heldByOtherApp'
+      bundleId: string
+      /**
+       *  `None` when the holder isn't installed any more (a stale key), so the UI
+       *  can fall back to the raw id.
+       */
+      displayName: string | null
+    }
+  /**
+   *  This build must never write the key: a debug build, a dev / E2E instance, or a
+   *  platform without the mechanism. A dev build that grabbed the key and then got
+   *  deleted would leave a dangling `NSFileViewer` that breaks reveal machine-wide.
+   */
+  | { kind: 'unavailable' }
 
 /**
  *  `reveal-path`: show a folder in the main window's focused pane. Emitted by

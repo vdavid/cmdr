@@ -401,7 +401,9 @@ minisign-verify = "0.2"
 # alert: it's the one alert API that doesn't pump our run loop (see `instance_lock.rs`).
 # `CFPreferences` (+ `CFPropertyList` and its `CFError` prerequisite) is how `dock/` reads and
 # writes the Dock's `persistent-apps` through `cfprefsd`, which owns that plist and would clobber a
-# direct file write (see `dock/DETAILS.md`).
+# direct file write (see `dock/DETAILS.md`). `CFPreferences` also carries the `NSFileViewer` global
+# default behind "Reveal in Cmdr" (`reveal/registration.rs`); shelling out to `defaults` is not the
+# sanctioned way to write it.
 objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary", "CFString", "CFNumber", "CFBase", "CFCGTypes", "CFUserNotification", "CFDate", "CFURL", "CFPreferences", "CFPropertyList", "CFError"] }
 
 
