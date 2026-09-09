@@ -266,12 +266,12 @@ fn write_terminal_line(
 }
 
 /// The terminal color for a level. Basic ANSI (not the 256-color cube the target column
-/// uses) so it lands on whatever red/yellow/green the dev's theme defines.
+/// uses) so it lands on whatever red/yellow/blue the dev's theme defines.
 fn level_color(level: log::Level) -> &'static str {
     match level {
         log::Level::Error => "\x1b[31m", // red
         log::Level::Warn => "\x1b[33m",  // yellow
-        log::Level::Info => "\x1b[32m",  // green
+        log::Level::Info => "\x1b[34m",  // blue
         log::Level::Debug => "\x1b[36m", // cyan
         log::Level::Trace => "\x1b[35m", // magenta
     }
