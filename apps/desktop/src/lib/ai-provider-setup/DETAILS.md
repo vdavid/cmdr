@@ -80,13 +80,11 @@ carrying the SAME id, `ai.cloudProviderConfigs`; the steps block that replaced t
 `setup.kind` on the preset picks the opening pair of steps; the rest follows from `requiresApiKey` and whether the
 endpoint is the user's to fill in.
 
-| Provider shape                | Steps                                                              |
-| ----------------------------- | ------------------------------------------------------------------ |
-| Cloud (12 presets)            | signup → createKey → apiKey → model                                 |
-| Azure OpenAI                  | signup → createKey → endpoint (+hint) → apiKey → model (+hint)      |
-| Custom                        | endpoint → apiKey → model                                           |
-| Ollama                        | install → ollamaModel → model                                       |
-| LM Studio                     | install → lmStudioServer → model                                    |
+- **Cloud (12 presets)**: signup → createKey → apiKey → model
+- **Azure OpenAI**: signup → createKey → endpoint (+hint) → apiKey → model (+hint)
+- **Custom**: endpoint → apiKey → model
+- **Ollama**: install → ollamaModel → model
+- **LM Studio**: install → lmStudioServer → model
 
 ### Azure OpenAI needs guidance, not fields
 
