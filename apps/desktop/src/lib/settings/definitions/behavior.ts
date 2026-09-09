@@ -62,14 +62,43 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
-    // Internal (FE-owned): whether the one-time "keep Cmdr in your Dock?" offer
-    // has been made. Spent when the toast is RAISED, so a crash mid-toast can't
-    // make it reappear forever. No UI row; hidden the way the seen-flags above
-    // it are.
-    id: 'behavior.dockPinNudgeSeen',
+    // Internal (FE-owned): when the one-time "keep Cmdr in your Dock?" offer was
+    // made, as an ISO 8601 instant. Stamped when the toast is RAISED, so a crash
+    // mid-toast can't make it reappear forever. A date rather than a flag because
+    // it also feeds the shared nudge cooldown (`$lib/nudges/CLAUDE.md`). No UI
+    // row; hidden the way the seen-flags above it are.
+    id: 'behavior.dockPinNudgeOfferedAt',
     section: ['Behavior', 'Navigation & file ops'],
-    labelKey: 'settings.behavior.dockPinNudgeSeen.label',
-    descriptionKey: 'settings.behavior.dockPinNudgeSeen.description',
+    labelKey: 'settings.behavior.dockPinNudgeOfferedAt.label',
+    descriptionKey: 'settings.behavior.dockPinNudgeOfferedAt.description',
+    keywords: [],
+    type: 'string',
+    default: '',
+    component: 'text-input',
+    hidden: true,
+  },
+  {
+    // Internal (FE-owned): when the one-time "open Show in Finder in Cmdr?" offer
+    // was made, as an ISO 8601 instant. Same shape and the same cooldown as the
+    // Dock stamp above.
+    id: 'behavior.revealNudgeOfferedAt',
+    section: ['Behavior', 'Navigation & file ops'],
+    labelKey: 'settings.behavior.revealNudgeOfferedAt.label',
+    descriptionKey: 'settings.behavior.revealNudgeOfferedAt.description',
+    keywords: [],
+    type: 'string',
+    default: '',
+    component: 'text-input',
+    hidden: true,
+  },
+  {
+    // Internal (FE-owned): whether the once-ever notice that fires the FIRST time
+    // a reveal actually lands in Cmdr has been shown. ❌ Not a nudge: it answers
+    // something the user set up themselves, so it takes no part in the cooldown.
+    id: 'behavior.revealActivationNoticeSeen',
+    section: ['Behavior', 'Navigation & file ops'],
+    labelKey: 'settings.behavior.revealActivationNoticeSeen.label',
+    descriptionKey: 'settings.behavior.revealActivationNoticeSeen.description',
     keywords: [],
     type: 'boolean',
     default: false,

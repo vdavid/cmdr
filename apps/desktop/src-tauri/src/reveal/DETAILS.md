@@ -75,6 +75,10 @@ Neither is needed. `RunEvent::Opened` is the whole delivery mechanism.
    launch there is no window yet and this does nothing, which is correct: the window is on its way up anyway.
 3. Park the paths in `PendingReveals`, and deliver them right away if the frontend has drained at least once.
 4. `plan_reveal` decides the pane move, then `crate::mcp::go_to_in_focused_pane` makes it.
+5. On success, `RevealDelivered` goes out. **Decision: after the move, ❌ never before it.** The frontend spends a
+   once-ever notice on the first one it sees (`apps/desktop/src/lib/reveal/DETAILS.md`), and a reveal onto a dead mount
+   or an unreadable path must not be what spends it. It carries no payload: the paths are already crossing over
+   `mcp-nav-to-path`, and a second copy would be a second thing that can disagree.
 
 Verified end to end on macOS 26.6 (bundled debug build, `open -R`, 2026-09-09): cold launch with a file, already
 running with a file in another directory, already running with a folder, and two siblings at once. `open -R` with
@@ -174,7 +178,12 @@ nothing on an `Unavailable` answer, so it never appears in a dev, worktree, or E
 `set_reveal_handler_enabled` RETURNS rather than the one the click asked for, which is what makes the
 "another app took the key first" case honest.
 
+## How the feature is offered
+
+The Settings row is not the only way in. `apps/desktop/src/lib/reveal/DETAILS.md` owns both moments a person meets this:
+the once-ever offer a couple of launch days in (one of the two nudges, `apps/desktop/src/lib/nudges/DETAILS.md`), and
+the once-ever notice the first time a reveal actually lands.
+
 ## What's not built
 
-Mechanism B (the `public.folder` LaunchServices handler), the onboarding step, and the first-activation notice. See the
-spec.
+Mechanism B (the `public.folder` LaunchServices handler) and the onboarding step. See the spec.

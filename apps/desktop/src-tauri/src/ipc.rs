@@ -75,6 +75,7 @@ use crate::network::{
     NetworkDiscoveryStateChanged, NetworkHostContextAction, NetworkHostFound, NetworkHostLost, NetworkHostResolved,
     SmbFellBackToOsMount, VolumeConnectionChanged,
 };
+use crate::reveal::RevealDelivered;
 use crate::search::live::events::{SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchProgressEvent};
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
 use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounted, VolumesChanged};
@@ -1006,6 +1007,10 @@ pub fn builder() -> Builder<tauri::Wry> {
             // reason this type lives in `network/mod.rs`: it has to resolve here on
             // every platform.
             SmbFellBackToOsMount,
+            // A reveal from another app just moved a pane ("Reveal in Cmdr").
+            // The mechanism is macOS-only but the type resolves everywhere, for
+            // the same reason the two above it do.
+            RevealDelivered,
             // Indexing (indexing/, commands/search.rs). Each pins its wire name
             // via `event_name` because the struct names carry an `…Event` suffix
             // (or live in a differently-named module) that wouldn't kebab-case to

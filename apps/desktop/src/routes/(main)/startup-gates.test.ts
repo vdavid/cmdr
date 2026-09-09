@@ -28,7 +28,9 @@ const mocks = vi.hoisted(() => ({
   warn: vi.fn(),
   getLaunchDayCount: vi.fn(),
   getDockPinState: vi.fn(),
+  getRevealHandlerState: vi.fn(),
   offerDockPin: vi.fn(),
+  offerRevealHandler: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -37,8 +39,10 @@ vi.mock('$lib/tauri-commands', () => ({
   getMacosMajorVersion: mocks.getMacosMajorVersion,
   getLaunchDayCount: mocks.getLaunchDayCount,
   getDockPinState: mocks.getDockPinState,
+  getRevealHandlerState: mocks.getRevealHandlerState,
 }))
 vi.mock('$lib/dock/dock-nudge', () => ({ offerDockPin: mocks.offerDockPin }))
+vi.mock('$lib/reveal/reveal-nudge', () => ({ offerRevealHandler: mocks.offerRevealHandler }))
 vi.mock('$lib/onboarding/onboarding-state.svelte', () => ({ openWizard: mocks.openWizard }))
 vi.mock('$lib/whats-new/whats-new-trigger.svelte', () => ({
   runWhatsNewStartupTrigger: mocks.runWhatsNewStartupTrigger,
@@ -64,6 +68,8 @@ vi.mock('$lib/logging/logger', () => ({
 import {
   maybeFireUpgradeNudge,
   maybeOfferDockPin,
+  maybeOfferNudges,
+  maybeOfferRevealHandler,
   maybeRunWhatsNew,
   maybeShowOldMacosNotice,
   openOnboardingFromMenuOrPalette,
@@ -84,7 +90,10 @@ let stored: {
   onboarded: boolean
   nudgeShown: boolean
   oldMacosNoticeShown: boolean
-  dockPinNudgeSeen: boolean
+  /** `behavior.dockPinNudgeOfferedAt`: an ISO instant, or `''` for "never asked". */
+  dockPinNudgeOfferedAt: string
+  /** `behavior.revealNudgeOfferedAt`: same shape, the other half of the shared cooldown. */
+  revealNudgeOfferedAt: string
 }
 
 /** Puts the gates on one row of the truth table. */
@@ -119,11 +128,13 @@ beforeEach(() => {
     onboarded: false,
     nudgeShown: false,
     oldMacosNoticeShown: false,
-    dockPinNudgeSeen: false,
+    dockPinNudgeOfferedAt: '',
+    revealNudgeOfferedAt: '',
   }
   mocks.getMacosMajorVersion.mockResolvedValue(15)
   mocks.getLaunchDayCount.mockResolvedValue(9)
   mocks.getDockPinState.mockResolvedValue({ kind: 'offerable' })
+  mocks.getRevealHandlerState.mockResolvedValue({ kind: 'notRegistered' })
   mocks.forceSave.mockResolvedValue(true)
   mocks.notifyOnboardingComplete.mockResolvedValue(undefined)
   mocks.runWhatsNewStartupTrigger.mockResolvedValue(undefined)
@@ -135,7 +146,8 @@ beforeEach(() => {
     if (id === 'onboarding.completed') return stored.onboarded
     if (id === 'onboarding.upgradeNudgeShown') return stored.nudgeShown
     if (id === 'advanced.oldMacosNoticeShown') return stored.oldMacosNoticeShown
-    if (id === 'behavior.dockPinNudgeSeen') return stored.dockPinNudgeSeen
+    if (id === 'behavior.dockPinNudgeOfferedAt') return stored.dockPinNudgeOfferedAt
+    if (id === 'behavior.revealNudgeOfferedAt') return stored.revealNudgeOfferedAt
     throw new Error(`Unexpected getSetting(${id})`)
   })
   mocks.isMacOS.mockReturnValue(true)
@@ -361,7 +373,7 @@ describe('maybeOfferDockPin', () => {
 
   it('turns around before either IPC once the offer has been made', async () => {
     settings('allow', true)
-    stored.dockPinNudgeSeen = true
+    stored.dockPinNudgeOfferedAt = new Date().toISOString()
 
     await maybeOfferDockPin(ctx)
 
@@ -426,6 +438,102 @@ describe('maybeOfferDockPin', () => {
     expect(mocks.getLaunchDayCount).not.toHaveBeenCalled()
     expect(mocks.getDockPinState).not.toHaveBeenCalled()
     expect(mocks.offerDockPin).not.toHaveBeenCalled()
+  })
+})
+
+describe('maybeOfferRevealHandler', () => {
+  it('raises the offer on a settled Mac that has been used for days', async () => {
+    settings('allow', true)
+
+    await maybeOfferRevealHandler(ctx)
+
+    expect(mocks.offerRevealHandler).toHaveBeenCalledOnce()
+  })
+
+  it('turns around before either IPC once the offer has been made', async () => {
+    settings('allow', true)
+    stored.revealNudgeOfferedAt = new Date().toISOString()
+
+    await maybeOfferRevealHandler(ctx)
+
+    expect(mocks.getLaunchDayCount).not.toHaveBeenCalled()
+    expect(mocks.getRevealHandlerState).not.toHaveBeenCalled()
+    expect(mocks.offerRevealHandler).not.toHaveBeenCalled()
+  })
+
+  it('never asks the backend anything off macOS', async () => {
+    settings('allow', true)
+    mocks.isMacOS.mockReturnValue(false)
+
+    await maybeOfferRevealHandler(ctx)
+
+    expect(mocks.getRevealHandlerState).not.toHaveBeenCalled()
+    expect(mocks.offerRevealHandler).not.toHaveBeenCalled()
+  })
+
+  it('leaves another file manager holding the key alone', async () => {
+    settings('allow', true)
+    mocks.getRevealHandlerState.mockResolvedValue({
+      kind: 'heldByOtherApp',
+      bundleId: 'com.cocoatech.PathFinder',
+      displayName: 'Path Finder',
+    })
+
+    await maybeOfferRevealHandler(ctx)
+
+    expect(mocks.offerRevealHandler).not.toHaveBeenCalled()
+  })
+
+  it('stays quiet while the ledger is still short', async () => {
+    settings('allow', true)
+    mocks.getLaunchDayCount.mockResolvedValue(1)
+
+    await maybeOfferRevealHandler(ctx)
+
+    expect(mocks.offerRevealHandler).not.toHaveBeenCalled()
+  })
+
+  it('stays quiet under E2E mode so it cannot leak into the first spec', async () => {
+    settings('allow', true)
+    mocks.getAppMode.mockReturnValue('e2e')
+
+    await maybeOfferRevealHandler(ctx)
+
+    expect(mocks.getLaunchDayCount).not.toHaveBeenCalled()
+    expect(mocks.getRevealHandlerState).not.toHaveBeenCalled()
+    expect(mocks.offerRevealHandler).not.toHaveBeenCalled()
+  })
+})
+
+describe('maybeOfferNudges', () => {
+  /**
+   * The load-bearing row: on a machine eligible for BOTH offers, exactly one
+   * speaks. Running them concurrently would have each read an unstamped ledger
+   * and both would fire on the same launch, which is what the shared cooldown
+   * exists to prevent.
+   */
+  it('raises one offer, not two, when both are due on the same launch', async () => {
+    settings('allow', true)
+    // What `markNudgeOffered` does inside the mocked-away `offerRevealHandler`.
+    mocks.offerRevealHandler.mockImplementation(() => {
+      stored.revealNudgeOfferedAt = new Date().toISOString()
+    })
+
+    await maybeOfferNudges(ctx)
+
+    expect(mocks.offerRevealHandler).toHaveBeenCalledOnce()
+    expect(mocks.offerDockPin).not.toHaveBeenCalled()
+  })
+
+  it('lets the Dock offer through once the reveal offer is out of its cooldown', async () => {
+    settings('allow', true)
+    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+    stored.revealNudgeOfferedAt = eightDaysAgo.toISOString()
+
+    await maybeOfferNudges(ctx)
+
+    expect(mocks.offerRevealHandler).not.toHaveBeenCalled()
+    expect(mocks.offerDockPin).toHaveBeenCalledOnce()
   })
 })
 

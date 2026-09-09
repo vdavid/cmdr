@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('$lib/ui/toast', () => ({ addToast: mocks.addToast, dismissToast: mocks.dismissToast }))
-vi.mock('$lib/settings', () => ({ setSetting: mocks.setSetting }))
+vi.mock('$lib/settings', () => ({ setSetting: mocks.setSetting, getSetting: vi.fn(() => '') }))
 vi.mock('$lib/tauri-commands', () => ({ trackEvent: mocks.trackEvent, addCmdrToDock: mocks.addCmdrToDock }))
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: (key: string) => key }))
 vi.mock('$lib/logging/logger', () => ({
@@ -43,10 +43,14 @@ beforeEach(() => {
 })
 
 describe('offerDockPin', () => {
-  it('spends the once-ever flag as the toast goes UP, never when it is answered', () => {
+  it('stamps the nudge ledger as the toast goes UP, never when it is answered', () => {
     offerDockPin()
 
-    expect(mocks.setSetting).toHaveBeenCalledWith('behavior.dockPinNudgeSeen', true)
+    expect(mocks.setSetting).toHaveBeenCalledWith(
+      'behavior.dockPinNudgeOfferedAt',
+      // An instant, so the next nudge can measure how long ago this one spoke.
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+    )
   })
 
   it('raises a persistent info toast, so a glance away cannot eat the offer', () => {

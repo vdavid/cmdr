@@ -3,7 +3,8 @@
 // macOS only, mechanism and all (`src-tauri/src/reveal/`), so each wrapper swallows the
 // missing-command rejection other platforms give and does nothing there.
 
-import { commands } from '$lib/ipc/bindings'
+import type { UnlistenFn } from '@tauri-apps/api/event'
+import { commands, events } from '$lib/ipc/bindings'
 import type { RevealHandlerState } from '$lib/ipc/bindings'
 import { getAppLogger } from '$lib/logging/logger'
 
@@ -57,4 +58,17 @@ export async function setRevealHandlerEnabled(enabled: boolean): Promise<RevealH
     log.debug('Could not set the reveal handler: {error}', { error })
     return { kind: 'unavailable' }
   }
+}
+
+/**
+ * Fires each time a reveal from another app actually moves a pane.
+ *
+ * ❗ "It landed", ❌ never "one arrived": the backend emits only after the pane move
+ * succeeds, so a reveal onto a dead mount doesn't announce anything. Payloadless — the
+ * paths reach this window over `mcp-nav-to-path` and a second copy could disagree.
+ */
+export function onRevealDelivered(handler: () => void): Promise<UnlistenFn> {
+  return events.revealDelivered.listen(() => {
+    handler()
+  })
 }

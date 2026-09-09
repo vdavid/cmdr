@@ -105,9 +105,14 @@ All under `apps/desktop/src/lib/`.
   (`file-explorer/pane/device-connect.svelte.ts`). See `apps/desktop/src/lib/adb/CLAUDE.md`
 - `onboarding/`: Soft-sheet onboarding wizard: Full Disk Access, AI provider, open-beta analytics disclosure, optional
   settings
+- `nudges/`: The rule every once-per-install offer obeys: the dated ledger of what's been asked, the three-day cooldown
+  one offer puts on the next, and the toast body they share. See `apps/desktop/src/lib/nudges/CLAUDE.md`
 - `dock/`: macOS-only. The once-per-install "keep Cmdr in your Dock?" offer: when it's earned (the launch-day ledger
   plus `get_dock_pin_state`), the toast that asks, and its three PostHog events. The machine-facing half is
   `src-tauri/src/dock/`. See `apps/desktop/src/lib/dock/CLAUDE.md`
+- `reveal/`: macOS-only. How "Reveal in Cmdr" reaches a person: the once-per-install offer to catch "Show in Finder",
+  and the once-ever notice the first time one lands. The machine-facing half is `src-tauri/src/reveal/`. See
+  `apps/desktop/src/lib/reveal/CLAUDE.md`
 - `ui/`: Shared UI primitives: ModalDialog, Button, AlertDialog, Notification, dialog registry, `SectionCard`
 - `routes/(main)/`: The main route: app orchestrator mounting the dual-pane explorer plus top-level dialogs
 - `routes/dev/components/`: Dev-only catalog of every `lib/ui/` primitive (Storybook replacement), in the Debug window
@@ -269,9 +274,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `app_lifecycle.rs`: The two Tauri builder handlers `lib.rs` names: `on_window_event` (main-window focus, close, and
   destroy; viewer-window teardown) and `on_run_event` (ready, an OS reveal arriving, exit requested, exit), plus the
   shared stop-background-services path all three shutdown routes take
-- `reveal/`: macOS-only. "Reveal in Cmdr": another app's "Show in Finder" lands in a pane instead, via the undocumented
-  `NSFileViewer` global default. Owns the registration state machine, the arriving-reveal dispatch, and the cold-start
-  buffer. See `apps/desktop/src-tauri/src/reveal/CLAUDE.md`
+- `reveal/`: "Reveal in Cmdr": another app's "Show in Finder" lands in a pane instead, via the undocumented
+  `NSFileViewer` global default. Owns the registration state machine (macOS-only), the arriving-reveal dispatch, the
+  cold-start buffer, and the `RevealDelivered` announcement. See `apps/desktop/src-tauri/src/reveal/CLAUDE.md`
 - `stubs/`: Linux compilation stubs for macOS-only modules (Docker E2E pipeline)
 - `menu/`: Native menu bar: construction, dispatch mapping, accelerator sync, context-aware enable/disable. The Help
   menu carries the "What's new" item (above "Send feedback…")

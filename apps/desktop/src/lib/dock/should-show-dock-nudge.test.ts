@@ -1,24 +1,34 @@
 /**
  * When Cmdr may ask to be kept in the Dock, and when it must stay quiet.
  *
- * The once-ever flag makes every row here a one-shot: a decision that fires on
+ * The once-ever stamp makes every row here a one-shot: a decision that fires on
  * the wrong launch can't be taken back, and one that never fires is a feature
- * nobody is offered.
+ * nobody is offered. The gates this shares with the reveal offer are covered in
+ * `$lib/nudges/nudge-ledger.test.ts`; these rows are the Dock's own.
  */
 
 import { describe, it, expect } from 'vitest'
 import type { DockPinState } from '$lib/ipc/bindings'
-import { shouldShowDockNudge, dockNudgeCouldFire, DOCK_NUDGE_AFTER_DAYS } from './should-show-dock-nudge'
+import { emptyNudgeLedger } from '$lib/nudges/nudge-ledger'
+import { shouldShowDockNudge, DOCK_NUDGE_AFTER_DAYS, type DockNudgeInputs } from './should-show-dock-nudge'
 
-/** A settled Mac on its third day, with room in the Dock: the one case that speaks up. */
-const ready = {
+const NOW = new Date('2026-09-09T12:00:00Z')
+
+/** `days` before {@link NOW}, as the ISO instant the nudge ledger stores. */
+function daysAgo(days: number): string {
+  return new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000).toISOString()
+}
+
+/** A settled Mac on its fourth day, with room in the Dock: the one case that speaks up. */
+const ready: DockNudgeInputs = {
   automatedRun: false,
   onMacOs: true,
-  seen: false,
   onboarded: true,
   onboardingShowing: false,
+  ledger: emptyNudgeLedger(),
+  now: NOW,
   launchDayCount: DOCK_NUDGE_AFTER_DAYS,
-  pinState: { kind: 'offerable' } as DockPinState,
+  pinState: { kind: 'offerable' } satisfies DockPinState,
 }
 
 describe('shouldShowDockNudge', () => {
@@ -31,7 +41,7 @@ describe('shouldShowDockNudge', () => {
   })
 
   /**
-   * "At least three days", ❌ not "the third day is today": the ledger started
+   * "At least four days", ❌ not "the fourth day is today": the ledger started
    * counting when it shipped, and someone who has been here for months is
    * exactly who the offer is for.
    */
@@ -40,7 +50,19 @@ describe('shouldShowDockNudge', () => {
   })
 
   it('never asks twice, however long the ledger gets', () => {
-    expect(shouldShowDockNudge({ ...ready, seen: true, launchDayCount: 400 })).toBe(false)
+    const ledger = { dockPin: daysAgo(900), reveal: '' }
+    expect(shouldShowDockNudge({ ...ready, ledger, launchDayCount: 400 })).toBe(false)
+  })
+
+  /**
+   * The known interaction, and it's the cooldown working as intended: a daily
+   * user hears about the reveal handler on launch day two, so the Dock offer
+   * lands three days after that rather than exactly on launch day four. ❌ Don't
+   * exempt the Dock from the floor to "fix" this.
+   */
+  it('waits three days after the reveal offer rather than firing on its own day', () => {
+    const ledger = { dockPin: '', reveal: daysAgo(1) }
+    expect(shouldShowDockNudge({ ...ready, ledger, launchDayCount: 400 })).toBe(false)
   })
 
   it('says nothing while Cmdr is already down there', () => {
@@ -70,21 +92,5 @@ describe('shouldShowDockNudge', () => {
 
   it('waits for the wizard to leave the screen', () => {
     expect(shouldShowDockNudge({ ...ready, onboardingShowing: true })).toBe(false)
-  })
-})
-
-describe('dockNudgeCouldFire', () => {
-  it('lets a settled Mac through, so the gate goes on to ask the backend', () => {
-    expect(dockNudgeCouldFire(ready)).toBe(true)
-  })
-
-  it.each([
-    ['an automated run', { automatedRun: true }],
-    ['a machine with no Dock', { onMacOs: false }],
-    ['an offer already made', { seen: true }],
-    ['onboarding still unfinished', { onboarded: false }],
-    ['the wizard on screen', { onboardingShowing: true }],
-  ] as const)('turns around on %s, before any IPC is paid for', (_case, override) => {
-    expect(dockNudgeCouldFire({ ...ready, ...override })).toBe(false)
   })
 })

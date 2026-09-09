@@ -1912,13 +1912,29 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "description": "Internal, never shown in the UI. Pairs with the long-Network-group hint label."
   },
-  "settings.behavior.dockPinNudgeSeen.label": "Dock offer made",
-  "@settings.behavior.dockPinNudgeSeen.label": {
-    "description": "Internal, never shown in the UI: tracks whether the one-time offer to add Cmdr to the macOS Dock has been made."
+  "settings.behavior.dockPinNudgeOfferedAt.label": "Dock offer made at",
+  "@settings.behavior.dockPinNudgeOfferedAt.label": {
+    "description": "Internal, never shown in the UI: records when the one-time offer to add Cmdr to the macOS Dock was made."
   },
-  "settings.behavior.dockPinNudgeSeen.description": "Whether the one-time offer to add Cmdr to the Dock has been made.",
-  "@settings.behavior.dockPinNudgeSeen.description": {
+  "settings.behavior.dockPinNudgeOfferedAt.description": "When the one-time offer to add Cmdr to the Dock was made.",
+  "@settings.behavior.dockPinNudgeOfferedAt.description": {
     "description": "Internal, never shown in the UI. Pairs with the Dock offer label."
+  },
+  "settings.behavior.revealNudgeOfferedAt.label": "Show in Finder offer made at",
+  "@settings.behavior.revealNudgeOfferedAt.label": {
+    "description": "Internal, never shown in the UI: records when the one-time offer to open \"Show in Finder\" in Cmdr was made."
+  },
+  "settings.behavior.revealNudgeOfferedAt.description": "When the one-time offer to open \"Show in Finder\" in Cmdr was made.",
+  "@settings.behavior.revealNudgeOfferedAt.description": {
+    "description": "Internal, never shown in the UI. Pairs with the Show in Finder offer label."
+  },
+  "settings.behavior.revealActivationNoticeSeen.label": "First reveal notice shown",
+  "@settings.behavior.revealActivationNoticeSeen.label": {
+    "description": "Internal, never shown in the UI: tracks whether the one-time notice about the first \"Show in Finder\" landing in Cmdr has been shown."
+  },
+  "settings.behavior.revealActivationNoticeSeen.description": "Whether the notice about the first \"Show in Finder\" landing in Cmdr has been shown.",
+  "@settings.behavior.revealActivationNoticeSeen.description": {
+    "description": "Internal, never shown in the UI. Pairs with the first reveal notice label."
   },
   "settings.behavior.adbHintDismissed.label": "USB debugging hint dismissed",
   "@settings.behavior.adbHintDismissed.label": {

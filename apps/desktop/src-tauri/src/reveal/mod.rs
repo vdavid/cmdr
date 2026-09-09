@@ -14,12 +14,33 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{LazyLock, Mutex};
 use std::time::Duration;
 
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, Runtime, Wry};
+use tauri_specta::Event;
 
 use crate::ignore_poison::IgnorePoison;
 
+// The two halves that talk to macOS. This module itself is platform-neutral (path
+// planning, the buffer, the pane move) so [`RevealDelivered`] resolves everywhere
+// `collect_events!` needs it, and so the planning tests run on the Linux lane too.
+#[cfg(target_os = "macos")]
 pub mod commands;
+#[cfg(target_os = "macos")]
 pub mod registration;
+
+/// Typed `reveal-delivered` Tauri event: a reveal from another app just moved a pane.
+///
+/// Emitted only when the move actually landed, so it means "the feature just did its
+/// thing", ❌ never "a reveal arrived". The frontend's one subscriber turns the FIRST of
+/// these into a once-ever notice (`apps/desktop/src/lib/reveal/CLAUDE.md`), because cause
+/// and effect here can be a week apart: someone switches this on, then an app they didn't
+/// invoke jumps in front of them and nothing says why.
+///
+/// ❗ Payloadless on purpose. The paths are already on their way over `mcp-nav-to-path`,
+/// and a second copy of them would be a second thing that can disagree.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct RevealDelivered {}
 
 /// The one buffer, and process-global on purpose.
 ///
@@ -179,6 +200,12 @@ async fn deliver<R: Runtime>(app: &AppHandle<R>, paths: Vec<PathBuf>) {
     let dir = plan.dir.to_string_lossy().to_string();
     if let Err(err) = crate::mcp::go_to_in_focused_pane(app, &dir, &plan.entries).await {
         log::warn!(target: "reveal", "Couldn't show {dir}: {}", err.message);
+        return;
+    }
+    // Announced only once the pane has actually moved: the frontend turns the first of
+    // these into a once-ever notice, and a reveal that went nowhere would spend it.
+    if let Err(err) = (RevealDelivered {}).emit(app) {
+        log::warn!(target: "reveal", "Couldn't announce the delivered reveal: {err}");
     }
 }
 

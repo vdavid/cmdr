@@ -35,6 +35,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import { getRevealHandlerState, setRevealHandlerEnabled } from '$lib/tauri-commands'
+    import { REVEAL_HANDLER_ANCHOR_ID } from '$lib/reveal/reveal-settings-link'
     import type { RevealHandlerState } from '$lib/ipc/bindings'
 
     interface Props {
@@ -96,7 +97,12 @@
 </script>
 
 {#if visible}
-    <SectionCard label={tString('settings.navigationAndFileOps.card.showInFinder')}>
+    <!-- The id is the deep-link target for the first-reveal notice; an OS-backed row has
+         no `SettingId` for `settingAnchorId` to derive one from. -->
+    <SectionCard
+        id={REVEAL_HANDLER_ANCHOR_ID}
+        label={tString('settings.navigationAndFileOps.card.showInFinder')}
+    >
         <div class="reveal-row">
             <div class="reveal-header">
                 <label class="reveal-label" for={SWITCH_ID}>{label}</label>

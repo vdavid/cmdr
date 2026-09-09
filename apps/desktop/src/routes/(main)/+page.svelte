@@ -48,7 +48,7 @@
     import { showMainOnMount } from './show-main-on-mount'
     import {
         type StartupGatesContext,
-        maybeOfferDockPin,
+        maybeOfferNudges,
         maybeRunWhatsNew,
         maybeShowOldMacosNotice,
         openOnboardingFromMenuOrPalette,
@@ -346,10 +346,10 @@
         // and re-attempts on `handleWizardComplete`.
         void maybeRunWhatsNew(startupGatesCtx)
 
-        // The once-ever "keep Cmdr in your Dock?" offer. Fire-and-forget: it costs two IPC
-        // round trips only on a Mac that hasn't been asked yet, and nothing below waits on it.
-        // Re-attempted on `handleWizardComplete` if the wizard was up.
-        void maybeOfferDockPin(startupGatesCtx)
+        // The two once-ever offers: "Show in Finder", then the Dock. Fire-and-forget: they cost
+        // two IPC round trips only on a Mac that hasn't been asked yet, and nothing below waits
+        // on them. Re-attempted on `handleWizardComplete` if the wizard was up.
+        void maybeOfferNudges(startupGatesCtx)
 
         // Show the window once the webview has actually painted (avoids a blank-window race); fire-and-forget.
         void showMainOnMount()
@@ -420,9 +420,10 @@
         // Re-attempt the "What's new" check now that onboarding is closed: a popup that
         // `wait`ed on the wizard can show on this pass (matches the update-toast re-attempt).
         void maybeRunWhatsNew(startupGatesCtx)
-        // Same for the Dock offer, so someone finishing onboarding on their third day
-        // isn't quietly skipped. `notifyOnboardingComplete` sets the flag synchronously.
-        void maybeOfferDockPin(startupGatesCtx)
+        // Same for the two offers, so someone finishing onboarding on the day one of them
+        // comes due isn't quietly skipped. `notifyOnboardingComplete` sets the flag
+        // synchronously, so this pass sees it.
+        void maybeOfferNudges(startupGatesCtx)
     }
 
     function handleExpirationModalClose() {

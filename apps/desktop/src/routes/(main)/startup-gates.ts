@@ -17,6 +17,7 @@ import {
   getMacosMajorVersion,
   getLaunchDayCount,
   getDockPinState,
+  getRevealHandlerState,
 } from '$lib/tauri-commands'
 import { openWizard as openOnboardingWizard } from '$lib/onboarding/onboarding-state.svelte'
 import { runWhatsNewStartupTrigger } from '$lib/whats-new/whats-new-trigger.svelte'
@@ -28,8 +29,12 @@ import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { isBelowSupportedMacOs, macosVersionLabel } from '$lib/utils/webkit-compat'
-import { dockNudgeCouldFire, shouldShowDockNudge } from '$lib/dock/should-show-dock-nudge'
+import { shouldShowDockNudge } from '$lib/dock/should-show-dock-nudge'
 import { offerDockPin } from '$lib/dock/dock-nudge'
+import { nudgeCouldFire, type NudgeContext } from '$lib/nudges/nudge-ledger'
+import { readNudgeLedger } from '$lib/nudges/nudge-store'
+import { shouldShowRevealNudge } from '$lib/reveal/should-show-reveal-nudge'
+import { offerRevealHandler } from '$lib/reveal/reveal-nudge'
 
 // Same category as the rest of the app shell's logging: these gates read as
 // `+page.svelte`'s startup in a log file, wherever the code sits.
@@ -168,30 +173,80 @@ export async function maybeShowOldMacosNotice(ctx: StartupGatesContext): Promise
 }
 
 /**
+ * The free half of every nudge's decision, read fresh.
+ *
+ * A getter rather than a value because both offers run twice per launch (boot
+ * and the wizard re-attempt), and the wizard flag and the ledger both move
+ * between the two.
+ */
+function nudgeContext(ctx: StartupGatesContext): NudgeContext {
+  return {
+    automatedRun: isE2eRun(),
+    onMacOs: isMacOS(),
+    onboarded: getSetting('onboarding.completed'),
+    onboardingShowing: ctx.isOnboardingVisible(),
+    ledger: readNudgeLedger(),
+    now: new Date(),
+  }
+}
+
+/**
+ * Runs the once-ever offers, in the order they earn their slot.
+ *
+ * ❗ Sequential, ❌ never `Promise.all`: each offer stamps the shared ledger only
+ * after its own IPC round trips, so two started together would both read an
+ * unstamped ledger and both speak on the same launch — exactly what the cooldown
+ * exists to prevent. The reveal handler goes first because it's the more
+ * valuable offer; the Dock then waits out the cooldown.
+ */
+export async function maybeOfferNudges(ctx: StartupGatesContext): Promise<void> {
+  await maybeOfferRevealHandler(ctx)
+  await maybeOfferDockPin(ctx)
+}
+
+/**
+ * Offers to catch "Show in Finder", once, a couple of days into using it.
+ *
+ * The first of the two offers, because it's the more valuable one; the shared
+ * cooldown in `$lib/nudges/` then holds the Dock offer back for three days.
+ *
+ * Async because the decision needs two backend answers: how many days the
+ * launch-day ledger holds, and who holds the `NSFileViewer` key. `nudgeCouldFire`
+ * runs first so the ordinary launch — the offer already made, or a machine with
+ * no such key — pays for neither round trip.
+ *
+ * Re-attempted when the wizard closes, for the reason `maybeOfferDockPin` is.
+ */
+export async function maybeOfferRevealHandler(ctx: StartupGatesContext): Promise<void> {
+  const context = nudgeContext(ctx)
+  if (!nudgeCouldFire(context, 'reveal')) return
+
+  const [launchDayCount, handlerState] = await Promise.all([getLaunchDayCount(), getRevealHandlerState()])
+  if (!shouldShowRevealNudge({ ...context, launchDayCount, handlerState })) return
+
+  log.info(`Offering the reveal handler after ${String(launchDayCount)} launch days`)
+  offerRevealHandler()
+}
+
+/**
  * Offers to put Cmdr in the Dock, once, a few days into using it.
  *
  * Async because the decision needs two backend answers: how many days the
  * launch-day ledger holds, and whether a Cmdr tile could go in the Dock at all.
- * `dockNudgeCouldFire` runs first so the ordinary launch — the offer already
- * made, or a machine with no Dock — pays for neither round trip.
+ * `nudgeCouldFire` runs first so the ordinary launch — the offer already made,
+ * or a machine with no Dock — pays for neither round trip.
  *
- * Spends `behavior.dockPinNudgeSeen` when the toast is RAISED (inside
+ * Stamps `behavior.dockPinNudgeOfferedAt` when the toast is RAISED (inside
  * `offerDockPin`), not when it's answered, matching `maybeFireUpgradeNudge`: a
  * crash between the two costs one offer, where the other order risks repeating
  * the toast forever.
  *
  * Re-attempted when the wizard closes, so a person finishing onboarding on their
- * third day isn't quietly skipped (mirrors the "What's new" re-attempt).
+ * fourth day isn't quietly skipped (mirrors the "What's new" re-attempt).
  */
 export async function maybeOfferDockPin(ctx: StartupGatesContext): Promise<void> {
-  const context = {
-    automatedRun: isE2eRun(),
-    onMacOs: isMacOS(),
-    seen: getSetting('behavior.dockPinNudgeSeen'),
-    onboarded: getSetting('onboarding.completed'),
-    onboardingShowing: ctx.isOnboardingVisible(),
-  }
-  if (!dockNudgeCouldFire(context)) return
+  const context = nudgeContext(ctx)
+  if (!nudgeCouldFire(context, 'dockPin')) return
 
   const [launchDayCount, pinState] = await Promise.all([getLaunchDayCount(), getDockPinState()])
   if (!shouldShowDockNudge({ ...context, launchDayCount, pinState })) return

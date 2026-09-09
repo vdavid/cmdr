@@ -278,7 +278,7 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   a drive.
 - `settings_opened` (frontend, `$lib/settings/settings-window.ts` `openSettingsWindow`): `surface` enum (`command` /
   `ipc` / `crash-toast` / `error-toast` / `wake-indicator` / `paste-toast` / `enter-menu` / `volume-breadcrumb` /
-  `downloads-toast` / `low-disk-toast` / `shortcut-chip` / `quick-look-toast` / `attach-email`); never the section. It sits in the
+  `downloads-toast` / `low-disk-toast` / `shortcut-chip` / `quick-look-toast` / `attach-email` / `reveal-toast`); never the section. It sits in the
   window helper every entry point funnels through, so it counts all dozen of them and covers a new one for free. Why
   `surface` is a required first param and why `section` stays out: `apps/desktop/src/lib/settings/DETAILS.md` § "Every
   open funnels through `openSettingsWindow`".
@@ -303,6 +303,16 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   `preferencesUnreadable` / `writeRejected` / `dockNotRestarted` / `timedOut`). ❌ Never a message string
   (`error-string-match`). `dockNotRestarted` counts here even though the tile IS stored: the person didn't get what
   they asked for on the spot.
+- `reveal_handler_offered` (frontend, `$lib/reveal/reveal-nudge.ts` `offerRevealHandler`): no props. Fires once per
+  install at most, as the "open Show in Finder in Cmdr?" toast goes up, so it's the denominator of the reveal funnel.
+  macOS-only.
+- `reveal_handler_answered` (frontend, `$lib/reveal/reveal-nudge-answer.ts`): `answer` (`yes` / `no` / `dismissed`).
+  Same three-way split, and for the same reason, as `dock_pin_answered`; `yes` records the press, ❌ never the outcome.
+- `reveal_handler_not_taken` (frontend, same file): `reason`, the `RevealHandlerState` variant the OS was LEFT in
+  (`notRegistered` / `heldByOtherApp` / `unavailable`) after an accepted offer. ❌ Never a message string. Read it
+  against `reveal_handler_answered{answer: yes}`: `heldByOtherApp` here is another file manager winning the race
+  between the toast being drawn and the button being pressed, which is the one number that would justify re-reading the
+  state at click time.
 
 ## Session length, in detail
 

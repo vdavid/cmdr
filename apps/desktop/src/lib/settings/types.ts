@@ -354,11 +354,28 @@ export interface SettingsValues {
   'behavior.serversPinHintSeen': boolean
 
   /**
-   * Whether the once-ever "keep Cmdr in your Dock?" offer has been made. Spent
-   * by `$lib/dock/dock-nudge` when the toast is raised, never when it's
-   * answered. macOS-only.
+   * When the once-ever "keep Cmdr in your Dock?" offer was made, as an ISO 8601
+   * instant, or `''` when it never was. Stamped by `$lib/dock/dock-nudge` as the
+   * toast is raised, never when it's answered. macOS-only.
+   *
+   * A date rather than a flag because it's half of the shared nudge cooldown:
+   * one offer keeps every other offer quiet for a few days (`$lib/nudges/`).
    */
-  'behavior.dockPinNudgeSeen': boolean
+  'behavior.dockPinNudgeOfferedAt': string
+
+  /**
+   * When the once-ever "open Show in Finder in Cmdr?" offer was made, as an ISO
+   * 8601 instant, or `''` when it never was. The other half of the same
+   * cooldown, stamped by `$lib/reveal/reveal-nudge`. macOS-only.
+   */
+  'behavior.revealNudgeOfferedAt': string
+
+  /**
+   * Whether the once-ever notice that fires the FIRST time a reveal from another
+   * app lands in Cmdr has been shown. ❌ Not a nudge: it explains something the
+   * user turned on themselves, so it takes no part in the nudge cooldown.
+   */
+  'behavior.revealActivationNoticeSeen': boolean
 
   /**
    * Internal (FE-owned): whether the user has dismissed the line offering USB

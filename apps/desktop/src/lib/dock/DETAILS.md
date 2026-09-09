@@ -1,36 +1,21 @@
 # Dock nudge: architecture and decisions
 
 The frontend half of the Dock integration. Must-knows: `CLAUDE.md`. The backend half (CFPreferences, the tile shape, the
-Dock restart): `apps/desktop/src-tauri/src/dock/DETAILS.md`. The ledger the gate counts days from:
-`apps/desktop/src-tauri/src/usage/DETAILS.md`.
+Dock restart): `apps/desktop/src-tauri/src/dock/DETAILS.md`. The launch-day ledger the gate counts from:
+`apps/desktop/src-tauri/src/usage/DETAILS.md`. The offer machinery this shares with the "Show in Finder" offer — the
+raise-time stamp, the free prefix of the rule, the three-day cooldown, and the toast body:
+`apps/desktop/src/lib/nudges/DETAILS.md`.
 
-## The flow, end to end
+## What's this offer's own
 
-1. `routes/(main)/+page.svelte` calls `maybeOfferDockPin(startupGatesCtx)` after `resolveOnboardingMount`,
-   fire-and-forget, and again from `handleWizardComplete`.
-2. `startup-gates.ts::maybeOfferDockPin` gathers the five free inputs and runs `dockNudgeCouldFire`. Most launches stop
-   here.
-3. Otherwise it awaits `getLaunchDayCount()` and `getDockPinState()` in parallel and runs `shouldShowDockNudge`.
-4. `dock-nudge.ts::offerDockPin` spends `behavior.dockPinNudgeSeen`, sends `dock_pin_offered`, and raises the persistent
-   INFO toast.
-5. The toast's buttons call `dock-pin-answer.ts`'s `declineDockPin` / `acceptDockPin`; the frame's × runs the
-   `onDismiss` the raise installed, which calls `recordDockPinAnswer('dismissed')`.
+The shape of a nudge, end to end, is in `apps/desktop/src/lib/nudges/DETAILS.md`. Only two things here are the Dock's:
 
-The answers live in their own module because the toast body has to reach them, and the body is what `offerDockPin`
-mounts: one module holding both would be a cycle, which `import-cycles` fails.
+- **`DOCK_NUDGE_AFTER_DAYS` is 4**, one behind the reveal offer, which is the more valuable of the two and takes the
+  earlier slot. "At least four days", ❌ not "the fourth day is today".
+- **`pinState.kind === 'offerable'`** is the second condition, and the whole of it (below).
 
-## Decision: the decision splits into two functions, not one
-
-`shouldShowDockNudge` is the whole rule, and it's what the tests pin. But two of its seven inputs cost an IPC round trip
-each, and after the first offer the answer is `false` forever — so paying for them on every launch of every install
-would be a permanent tax for a question already settled.
-
-`dockNudgeCouldFire` is the prefix of the rule that needs nothing from the backend, and `shouldShowDockNudge` starts by
-calling it. So the gate can turn around early without a second copy of the rule to keep in sync. The house precedent is
-`maybeShowOldMacosNotice`, which orders its guards cheapest-first for exactly this reason.
-
-The five free inputs are the automated-run gate, macOS, the seen flag, onboarding finished, and the wizard being off
-screen. The two paid ones are the ledger's day count and `DockPinState`.
+`dock-pin-answer.ts` is separate from `dock-nudge.ts` because the toast body has to reach the answers, and the body is
+what `offerDockPin` mounts: one module holding both would be a cycle, which `import-cycles` fails.
 
 ## Decision: `DockPinState` is asked once and believed
 
@@ -44,10 +29,11 @@ same machine that could disagree with the one the pin itself re-checks. So the f
 
 ## Decision: the wizard re-attempt
 
-A person can reach their third launch day and finish onboarding on the same launch. The boot call runs after
+A person can reach their fourth launch day and finish onboarding on the same launch. The boot call runs after
 `resolveOnboardingMount`, which may have just opened the wizard, so the gate would see `onboardingShowing: true` and
 quietly skip — and the flag is unspent, so it would come back next launch. That's survivable but wasteful, so
-`handleWizardComplete` re-attempts, mirroring the "What's new" and update-toast re-attempts.
+`handleWizardComplete` re-attempts, mirroring the "What's new" and update-toast re-attempts. It goes through
+`maybeOfferNudges`, so the re-attempt keeps the offers in order and one at a time.
 
 `ctx.isOnboardingVisible()` is a live getter, ❌ never a captured value: the re-attempt reads it after
 `setOnboardingVisible(false)` in the same handler, and a snapshot would answer `true`. `notifyOnboardingComplete()`
@@ -81,9 +67,10 @@ in the dashboard under its own name rather than folding into an existing bucket.
 
 ## Testing
 
-- `should-show-dock-nudge.test.ts`: the rule, including each `DockPinState` variant and both sides of the threshold.
-- `dock-nudge.test.ts`: both modules, since they're one flow — the flag spend, the toast options (so the `onDismiss`
+- `should-show-dock-nudge.test.ts`: the rule, including each `DockPinState` variant, both sides of the threshold, and
+  the reveal offer holding this one back.
+- `dock-nudge.test.ts`: both modules, since they're one flow — the ledger stamp, the toast options (so the `onDismiss`
   wiring can't be lost), and one row per failure variant tying a typed reason to its copy.
 - `DockPinNudgeToastContent.a11y.test.ts`: axe over the mounted body, like every other toast content component.
-- `routes/(main)/startup-gates.test.ts` § `maybeOfferDockPin`: the wiring, including that a spent flag costs no IPC and
+- `routes/(main)/startup-gates.test.ts` § `maybeOfferDockPin`: the wiring, including that a spent stamp costs no IPC and
   that the wizard flag is read live.

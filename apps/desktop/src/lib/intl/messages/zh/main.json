@@ -51,6 +51,50 @@
   "@main.dockPinNudge.notAdded": {
     "sourceHash": "0d122cb"
   },
+  "main.revealNudge.title": "Open \"Show in Finder\" in Cmdr?",
+  "@main.revealNudge.title": {
+    "sourceHash": "c92e1b7"
+  },
+  "main.revealNudge.body": "You''ve been using Cmdr for a while now. When another app runs \"Show in Finder\", Cmdr can open that folder instead, with the file already under the cursor.",
+  "@main.revealNudge.body": {
+    "sourceHash": "fe4072b"
+  },
+  "main.revealNudge.switchBackNote": "You can switch this back any time in Settings.",
+  "@main.revealNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.revealNudge.decline": "No, thanks",
+  "@main.revealNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.revealNudge.accept": "Yes, open them in Cmdr",
+  "@main.revealNudge.accept": {
+    "sourceHash": "3291bb4"
+  },
+  "main.revealNudge.turnedOn": "Cmdr now opens \"Show in Finder\" from other apps.",
+  "@main.revealNudge.turnedOn": {
+    "sourceHash": "8eab42b"
+  },
+  "main.revealNudge.heldByOtherApp": "{app} has \"Show in Finder\" right now. You can hand it to Cmdr in Settings whenever you like.",
+  "@main.revealNudge.heldByOtherApp": {
+    "sourceHash": "3f513b0"
+  },
+  "main.revealNudge.notTurnedOn": "Cmdr couldn''t take \"Show in Finder\" this time. The switch is in Settings whenever you want to try again.",
+  "@main.revealNudge.notTurnedOn": {
+    "sourceHash": "4a9920d"
+  },
+  "main.revealActivation.title": "\"Show in Finder\" opened here",
+  "@main.revealActivation.title": {
+    "sourceHash": "23d50e1"
+  },
+  "main.revealActivation.body": "Cmdr is set to catch these, so the file landed in a pane instead of in Finder. Everything else still opens the way it did.",
+  "@main.revealActivation.body": {
+    "sourceHash": "19ea7d6"
+  },
+  "main.revealActivation.openSettings": "Change this in Settings",
+  "@main.revealActivation.openSettings": {
+    "sourceHash": "673f711"
+  },
   "main.quit.title": "{count, plural, other {有 {countText} 项操作仍在进行，要退出吗？}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"

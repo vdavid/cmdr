@@ -96,6 +96,8 @@ export type SettingsSurface =
   | 'attach-email'
   /** The function-key-bar-hidden toast, deep-linking to the "Show function key bar" row. */
   | 'function-key-bar-toast'
+  /** The first-reveal notice, deep-linking to the "Show in Finder" card. */
+  | 'reveal-toast'
 
 /**
  * Opens the settings window, or focuses it if already open. When `section` is provided,

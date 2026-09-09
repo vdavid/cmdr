@@ -51,6 +51,53 @@
   "@main.dockPinNudge.notAdded": {
     "description": "Notification shown when the offer was accepted but the icon did not land, for a reason the user can do nothing about. It gives the manual way in instead: dragging the app out of the Applications folder onto the Dock, which is how a macOS user does this by hand. \"Applications\" is the macOS folder holding installed apps; use Apple's name for it in your language."
   },
+  "main.revealNudge.title": "Open \"Show in Finder\" in Cmdr?",
+  "@main.revealNudge.title": {
+    "description": "Title of a one-time notification, shown a couple of days into using Cmdr on macOS, asking whether another app's \"Show in Finder\" command may open the folder in Cmdr instead of in Finder. \"Show in Finder\" is the macOS command name that apps like Chrome and Slack put on their downloads, and \"Finder\" is Apple's file manager; use the wording your locale's macOS and its apps use for both. \"Cmdr\" is the product name and stays verbatim. A genuine question, warm and low-pressure, never a prompt the user has to escape from."
+  },
+  "main.revealNudge.body": "You''ve been using Cmdr for a while now. When another app runs \"Show in Finder\", Cmdr can open that folder instead, with the file already under the cursor.",
+  "@main.revealNudge.body": {
+    "description": "Body of that notification. Two beats: the app noticed the person keeps coming back, and the offer itself. \"for a while now\" is deliberately vague and must NOT be replaced with a number: the exact threshold can move, so a number would make the sentence a lie for half the users. \"Show in Finder\" is the macOS command name; use your locale's macOS wording. \"under the cursor\" means the file is already highlighted in the file list when the folder opens, so nobody has to look for it."
+  },
+  "main.revealNudge.switchBackNote": "You can switch this back any time in Settings.",
+  "@main.revealNudge.switchBackNote": {
+    "description": "Third line of that notification, reassuring the user the choice is not permanent: the same switch lives in Cmdr's Settings and turns it off again. \"Settings\" is Cmdr's own settings window; use the word your locale's macOS apps use for an app's preferences."
+  },
+  "main.revealNudge.decline": "No, thanks",
+  "@main.revealNudge.decline": {
+    "description": "Secondary button on that notification, declining the offer. Cmdr never asks again after this. An everyday polite refusal, the way a person turns down an offer in conversation; keep it short."
+  },
+  "main.revealNudge.accept": "Yes, open them in Cmdr",
+  "@main.revealNudge.accept": {
+    "description": "Primary button on that notification, accepting the offer. Pressing it makes Cmdr the app that receives \"Show in Finder\" from then on. \"them\" refers to the folders other apps ask to show. \"Cmdr\" is the product name; keep it, and keep the button under about five words so it fits."
+  },
+  "main.revealNudge.turnedOn": "Cmdr now opens \"Show in Finder\" from other apps.",
+  "@main.revealNudge.turnedOn": {
+    "description": "Brief success notification after the user accepts the offer and the change lands. It disappears on its own. States the finished fact; no congratulations and nothing further to do. \"Show in Finder\" is the macOS command name; use your locale's macOS wording."
+  },
+  "main.revealNudge.heldByOtherApp": "{app} has \"Show in Finder\" right now. You can hand it to Cmdr in Settings whenever you like.",
+  "@main.revealNudge.heldByOtherApp": {
+    "description": "Notification shown when the user accepted the offer but another file manager (Path Finder, ForkLift, and the like) claimed the macOS setting first, so Cmdr did not get it. Factual and blame-free: it names who has it and where the user can still take it over. \"Show in Finder\" is the macOS command name; use your locale's macOS wording. \"Settings\" is Cmdr's own settings window.",
+    "placeholders": {
+      "app": "The name of the app that currently receives \"Show in Finder\", for example \"Path Finder\". A bundle identifier like \"com.cocoatech.PathFinder\" appears instead when that app is no longer installed."
+    }
+  },
+  "main.revealNudge.notTurnedOn": "Cmdr couldn''t take \"Show in Finder\" this time. The switch is in Settings whenever you want to try again.",
+  "@main.revealNudge.notTurnedOn": {
+    "description": "Notification shown when the user accepted the offer but the macOS setting did not change, for a reason the user can do nothing about here. It points at the switch in Cmdr's Settings as the way to try again. Must not use the words \"error\" or \"failed\". \"Show in Finder\" is the macOS command name; use your locale's macOS wording."
+  },
+  "main.revealActivation.title": "\"Show in Finder\" opened here",
+  "@main.revealActivation.title": {
+    "description": "Title of a one-time notification that appears the first time another app's \"Show in Finder\" actually opens a folder in Cmdr, which can be days or weeks after the user turned the option on. It disappears on its own after ten seconds. States what just happened, calmly; it is not an apology and not a warning. \"Show in Finder\" is the macOS command name; use your locale's macOS wording."
+  },
+  "main.revealActivation.body": "Cmdr is set to catch these, so the file landed in a pane instead of in Finder. Everything else still opens the way it did.",
+  "@main.revealActivation.body": {
+    "description": "Body of that notification. Two beats: why Cmdr appeared uninvited (the user switched this on earlier), and the reassurance that nothing else about their Mac changed. \"pane\" is one of Cmdr's two side-by-side file lists; use the word the rest of this locale's Cmdr uses for it. \"Finder\" is Apple's file manager; use Apple's name for it in your language."
+  },
+  "main.revealActivation.openSettings": "Change this in Settings",
+  "@main.revealActivation.openSettings": {
+    "description": "The only button on that notification. It opens Cmdr's Settings at the switch that controls this; it does NOT turn the option off on its own, which is deliberate. \"Settings\" is Cmdr's own settings window; use the word your locale's macOS apps use for an app's preferences. Keep it under about five words so the button fits."
+  },
   "main.quit.title": "{count, plural, one {Quit while an operation is running?} other {Quit while {countText} operations are running?}}",
   "@main.quit.title": {
     "description": "Title of the dialog that appears when the user quits Cmdr (⌘Q, the menu, or closing the main window) while copies, moves, deletes, or trash operations are still going. It asks whether to go ahead. \"Operation\" is the category word covering all of them, the same one the operation queue window uses; keep the two consistent in your language. Near-instant things like renaming never reach this dialog.",

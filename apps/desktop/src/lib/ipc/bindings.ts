@@ -4576,6 +4576,7 @@ export const events = {
   quitRequested: makeEvent<QuitRequested>('quit-requested'),
   reduceTransparencyChanged: makeEvent<ReduceTransparencyChanged>('reduce-transparency-changed'),
   restrictedPathsChanged: makeEvent<RestrictedPathsChangedPayload>('restricted-paths-changed'),
+  revealDelivered: makeEvent<RevealDelivered>('reveal-delivered'),
   revealPath: makeEvent<RevealPath>('reveal-path'),
   scanConflict: makeEvent<ConflictInfo>('scan-conflict'),
   scanPreviewCancelled: makeEvent<ScanPreviewCancelledEvent>('scan-preview-cancelled'),
@@ -10947,6 +10948,20 @@ export type RestrictedWindowSettings = {
    */
   appearanceLanguage: string | null
 }
+
+/**
+ *  Typed `reveal-delivered` Tauri event: a reveal from another app just moved a pane.
+ *
+ *  Emitted only when the move actually landed, so it means "the feature just did its
+ *  thing", ❌ never "a reveal arrived". The frontend's one subscriber turns the FIRST of
+ *  these into a once-ever notice (`apps/desktop/src/lib/reveal/CLAUDE.md`), because cause
+ *  and effect here can be a week apart: someone switches this on, then an app they didn't
+ *  invoke jumps in front of them and nothing says why.
+ *
+ *  ❗ Payloadless on purpose. The paths are already on their way over `mcp-nav-to-path`,
+ *  and a second copy of them would be a second thing that can disagree.
+ */
+export type RevealDelivered = Record<string, never>
 
 /**
  *  What the Settings row shows, read through to the OS every time it asks.

@@ -1558,13 +1558,29 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
-  "settings.behavior.dockPinNudgeSeen.label": "Oferta del Dock hecha",
-  "@settings.behavior.dockPinNudgeSeen.label": {
-    "sourceHash": "1f2e4f3"
+  "settings.behavior.dockPinNudgeOfferedAt.label": "Dock offer made at",
+  "@settings.behavior.dockPinNudgeOfferedAt.label": {
+    "sourceHash": "2d422fb"
   },
-  "settings.behavior.dockPinNudgeSeen.description": "Si ya se hizo la oferta única de añadir Cmdr al Dock.",
-  "@settings.behavior.dockPinNudgeSeen.description": {
-    "sourceHash": "2d62f23"
+  "settings.behavior.dockPinNudgeOfferedAt.description": "When the one-time offer to add Cmdr to the Dock was made.",
+  "@settings.behavior.dockPinNudgeOfferedAt.description": {
+    "sourceHash": "fa3d324"
+  },
+  "settings.behavior.revealNudgeOfferedAt.label": "Show in Finder offer made at",
+  "@settings.behavior.revealNudgeOfferedAt.label": {
+    "sourceHash": "aaae0a8"
+  },
+  "settings.behavior.revealNudgeOfferedAt.description": "When the one-time offer to open \"Show in Finder\" in Cmdr was made.",
+  "@settings.behavior.revealNudgeOfferedAt.description": {
+    "sourceHash": "2b9d5b4"
+  },
+  "settings.behavior.revealActivationNoticeSeen.label": "First reveal notice shown",
+  "@settings.behavior.revealActivationNoticeSeen.label": {
+    "sourceHash": "a62b8f1"
+  },
+  "settings.behavior.revealActivationNoticeSeen.description": "Whether the notice about the first \"Show in Finder\" landing in Cmdr has been shown.",
+  "@settings.behavior.revealActivationNoticeSeen.description": {
+    "sourceHash": "f2107a5"
   },
   "settings.behavior.adbHintDismissed.label": "Aviso de depuración por USB descartado",
   "@settings.behavior.adbHintDismissed.label": {

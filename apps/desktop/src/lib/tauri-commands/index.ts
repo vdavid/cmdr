@@ -499,7 +499,7 @@ export {
 } from './downloads'
 
 // "Reveal in Cmdr" (macOS)
-export { drainPendingReveals, getRevealHandlerState, setRevealHandlerEnabled } from './reveal'
+export { drainPendingReveals, getRevealHandlerState, onRevealDelivered, setRevealHandlerEnabled } from './reveal'
 
 // Restricted-paths event
 export { onRestrictedPathsChanged } from './restricted-paths'

@@ -47,6 +47,7 @@ import { startOpenTerminalMenuGate } from '$lib/open-terminal/menu-gate.svelte'
 import { initSnapshotPurge, destroySnapshotPurge } from '$lib/search/snapshot-purge'
 import { getSetting } from '$lib/settings'
 import { drainPendingReveals } from '$lib/tauri-commands'
+import { startRevealActivationNotice } from '$lib/reveal/reveal-activation-notice'
 import {
   startOperationFailureWatch,
   stopOperationFailureWatch,
@@ -214,6 +215,10 @@ export async function startWindowServices(ctx: WindowServicesContext): Promise<v
   // pair per drag session, turned into a single signs-of-life → completion toast (downloading a
   // phone/NAS file to Finder shows nothing on Finder's side; this is our feedback surface).
   unlistenFns.push(await startDragOutEventBridge())
+  // The once-ever notice for the first reveal that actually lands here. ⚠️ Must be
+  // subscribed BEFORE the drain below, or a cold-launch reveal — the very first one many
+  // people ever see — delivers with nobody listening. See `$lib/reveal/CLAUDE.md`.
+  unlistenFns.push(await startRevealActivationNotice())
   // A "Show in Cmdr" that arrived before this window existed: a cold launch delivers the OS
   // event long before we mount, so the backend parks it and this drains it. ⚠️ Must stay AFTER
   // `setupMcpListeners` — the reveal is delivered over `mcp-nav-to-path`, so draining earlier
