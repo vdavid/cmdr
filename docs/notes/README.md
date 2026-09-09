@@ -181,6 +181,14 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   zero repeats), that the concurrency bugs were worth about one point of it, and that the post-fix sample is still too
   small to quote a new number. Carries the queries and the sample size that would settle it.
 
+- `e2e-readiness-and-state-leaks-2026-09-09.md` — the third in that set, and the one to read when a specific failure
+  looks like load. It confirms the width finding on four more runs (four disjoint victim sets), then shows two failures
+  that presented as saturation and weren't: `ensureAppReady` polls a VIRTUALIZED list, so it proves rows are painted
+  rather than that a listing is complete; and a teardown aborting halfway leaves shared settings dirty, which is what
+  makes a retry fail deterministically on a precondition. Carries the tells that separate the two (what a retry failing
+  at a DIFFERENT assertion means, why `1 flaky` and `1 failed` don't rank by severity) and the load threshold below
+  which a local run measures nothing.
+
 - `silent-inertness-hunt-2026-08-08.md` — a sweep for mechanisms that look active but aren't reaching their subject
   (inert guards, tests that can't touch their code, unanswerable questions turned into facts). Carries the two
   capability flags a backend answers wrongly today, the shared `volume::conformance` assertions added to fence the

@@ -1118,6 +1118,16 @@ landed second, overwriting the cache with its staler snapshot and emitting remov
 per-directory turnstile now makes read-then-write atomic: `apps/desktop/src-tauri/src/file_system/listing/DETAILS.md` §
 "Serializing full refreshes".
 
+**A third face is the probe itself, and no backend fix reaches it.** The poll asks the DOM for a `[data-filename="…"]`
+row, but `views/FullList.svelte` renders only the virtual window's rows (`visibleFiles`, from `cache.windowRows` plus
+`getVirtualizationBufferRows()`), so it measures what the pane DRAWS, not what it holds. A wide expectation is therefore
+satisfiable only while the window is tall enough to show it: `expectedLeftPaneEntries` returns every non-dotfile in
+`left/` (17 today), and a `rename-chaining` run reported 14 of them, cut at the alphabetical viewport edge, with a
+leaked "show hidden files" supplying the extra row that pushed the tail out. ❌ Don't answer this one with a longer
+deadline either — the rows are never coming. Reading the pane's model instead of its DOM is the fix, and it's a design
+call, since `ensureAppReady` deliberately avoids MCP. Evidence:
+`docs/notes/e2e-readiness-and-state-leaks-2026-09-09.md`.
+
 A recurrence shows up two ways, not one. Rows that readiness confirmed go missing and never come back; and an open
 inline rename editor VANISHES, because `pane/listing-diff-sync.svelte.ts` cancels a rename when a diff carries a
 `remove` for the path under the editor, so a spurious removal reads to it as "the user's file just disappeared". A
@@ -1125,6 +1135,21 @@ inline rename editor VANISHES, because `pane/listing-diff-sync.svelte.ts` cancel
 paper over either one with a longer wait or a retry inside `selectItemsByName` — the pane never self-corrects, so no
 wait is long enough, and the same defect is reachable by a user during any heavy external burst (an unzip, a
 `git checkout`, an rsync into a watched folder).
+
+### A teardown that aborts halfway leaves the app dirty for the retry
+
+`afterEach` hooks here write state that outlives the test: one app process serves the whole run. A hook that resets two
+things with bare sequential `await`s stops at the first failure, so the rest of the reset never happens and the NEXT
+attempt inherits it. `media-index-network`'s ack timeout in its first reset left `mediaIndex.enabled` on, and the retry
+then failed on a precondition rather than on the thing under test — a retry can't rescue a test whose own teardown left
+the state that makes it fail. It's also why one spec reads `1 failed` and another `1 flaky` in the same run: the
+difference is whether cleanup finished, not how bad the bug is.
+
+So a teardown touching shared state runs EVERY step and reports the failures together, rather than short-circuiting; the
+spec's `runAllSteps` is the shape. ❌ Don't swallow the errors instead — a failing reset still has to fail the test. And
+have `beforeEach` establish its own preconditions rather than trusting the previous spec's cleanup.
+`docs/notes/e2e-readiness-and-state-leaks-2026-09-09.md` carries the case and the generalization to the fixture-tree
+leak.
 
 ### An index assertion has to make its own ground current
 
