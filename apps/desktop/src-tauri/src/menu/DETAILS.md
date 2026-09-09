@@ -50,6 +50,11 @@ window focus context.
   `IconMenuItem` per service in `FileContextInfo::share_services`, plus the `share-service:<index>` id
   pair (`share_service_id` / `share_service_index`). The services themselves and the click side live in
   `file_system/share.rs`.
+- `context_menu_icons.rs` (macOS): `lend_context_menu_icons` and the `FILE_CONTEXT_ICONS` table, the SF Symbols the
+  file context menu carries. See "SF Symbols on a CONTEXT menu" for why the images land on the tracking notification
+  rather than through `IconMenuItem`.
+- `media_index_items.rs`: `image_index_menu_items`, which decides the image-search group's labels and which of them are
+  clickable.
 - `linux.rs`: `build_menu_linux` (full Linux/GTK menu bar with mnemonics, no F-key accelerators).
 - `rebuild.rs`: `rebuild_menu_bar`, which throws the bar away and builds a new one in the current UI language.
 - `mnemonics.rs`: `Mnemonics`, the per-submenu allocator for the Linux underline letter.

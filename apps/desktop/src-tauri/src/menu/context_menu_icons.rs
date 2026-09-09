@@ -27,9 +27,9 @@ use objc2::MainThreadMarker;
 use objc2_app_kit::NSMenu;
 use objc2_foundation::NSNotification;
 use tauri::Runtime;
-use tauri::menu::{Menu, MenuItemKind};
+use tauri::menu::Menu;
 
-use super::macos_appkit::{find_ns_item, observe_menu_tracking, set_sf_symbol, tracking_menu};
+use super::macos_appkit::{find_ns_item, menu_item_text, observe_menu_tracking, set_sf_symbol, tracking_menu};
 use super::{DRIVE_COPY_LINK_ID, DRIVE_OPEN_ID};
 
 /// `(menu item ID, SF Symbol name)` for the file context menu.
@@ -90,17 +90,6 @@ pub fn lend_context_menu_icons<R: Runtime>(menu: &Menu<R>) -> Option<IconLoan> {
     ensure_observing(mtm);
     ARMED.with(|slot| *slot.borrow_mut() = armed);
     Some(IconLoan(mtm))
-}
-
-/// The title a menu item currently shows, whichever kind of item it is.
-fn menu_item_text<R: Runtime>(item: &MenuItemKind<R>) -> Option<String> {
-    match item {
-        MenuItemKind::MenuItem(item) => item.text().ok(),
-        MenuItemKind::Submenu(item) => item.text().ok(),
-        MenuItemKind::Predefined(item) => item.text().ok(),
-        MenuItemKind::Check(item) => item.text().ok(),
-        MenuItemKind::Icon(item) => item.text().ok(),
-    }
 }
 
 /// Registers the tracking observer, once per process.

@@ -3,6 +3,20 @@
 Depth and rationale. `CLAUDE.md` holds the must-knows; this is everything else. Submodule depth lives in each
 submodule's own `DETAILS.md` (`listing/`, `write_operations/`, `volume/`).
 
+## Module map
+
+Four submodules carry their own docs: `listing/`, `write_operations/`, `volume/`, and `sync_status/` (the cloud
+badges). The leaves beside them:
+
+- `watcher.rs`: FSEvents-driven listing updates.
+- `staging.rs`: scratch visibility. The `StagingTemp` mint itself is `cmdr_fs::staging`.
+- `index_provider.rs`: the app's `VolumeProvider`, so the index never has to import `VolumeManager`.
+- `backend_settings.rs`: live per-backend knobs.
+- `cloud_actions.rs`: iCloud download and eviction. `cloud_provider.rs`: who owns a path, and what they can do.
+- `google_drive/`: Drive item links, with `mirror_db.rs` as the mirror-mode fallback.
+- `open_with.rs`: the "Open with" candidate apps. `share.rs`: the `Share` submenu's services.
+- `tags.rs`: Finder tags. `terminal.rs`: "open terminal here".
+
 ## What `mod.rs` is for
 
 `mod.rs` is a facade: it re-exports the listing, write-operation, volume, and watcher surfaces upward, and it owns

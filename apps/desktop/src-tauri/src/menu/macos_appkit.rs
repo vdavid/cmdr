@@ -345,7 +345,10 @@ fn submenu_by_id<R: Runtime>(menu: &Menu<R>, id: &str) -> Option<Submenu<R>> {
 }
 
 /// The title a menu item currently shows, whichever kind of item it is.
-fn menu_item_text<R: Runtime>(item: &MenuItemKind<R>) -> Option<String> {
+///
+/// The one copy: both this file's icon pass and `context_menu_icons.rs` resolve a Tauri
+/// ID to a live title before crossing into AppKit, which has never heard of a menu ID.
+pub(super) fn menu_item_text<R: Runtime>(item: &MenuItemKind<R>) -> Option<String> {
     match item {
         MenuItemKind::MenuItem(item) => item.text().ok(),
         MenuItemKind::Submenu(item) => item.text().ok(),
