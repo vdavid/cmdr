@@ -75,20 +75,32 @@ Whichever crate's test target enables the feature, the one `smb2` gets it.
 
 ## The public surface is capped
 
-`index-crate-isolation` holds this crate to 15 root promises, 4 public modules, and 18 public items inside them, set on
-2026-08-22 to exactly what the crate exposed the day the extraction finished — no headroom, so the first addition has to
-be argued for.
+`index-crate-isolation` holds this crate to 15 root promises, 4 public modules, and 21 public items inside them. The
+first two were set on 2026-08-22 to exactly what the crate exposed the day the extraction finished, with no headroom, so
+an addition has to be argued for.
 
 **A backend's API is the `Volume` trait it implements**, which is `cmdr-fs`'s promise rather than this crate's, so none
 of its methods are counted here. Everything that IS counted exists because something outside has to build a share or ask
-after one, and a new item should name which of two audiences it serves:
+after one, and a new item should name which of three audiences it serves:
 
 - **The protocol layer**, for `network/`'s discovery and share-listing passes: `build_smb_addr`, the two
   `try_list_shares_*` calls, the three `classify_*` / `is_auth_error` readers, `convert_shares`, and the four vocabulary
   types that cross IPC.
 - **Constructing and asking after a share**, for `network/smb_upgrade.rs` and the debug window's diagnostics dashboard:
-  `connect_smb_volume`, `SmbVolume` with `new` / `volume_id` / `session_state` / `diagnostics`, `SmbConnectionParams`
-  with its five fields, and `ConnectionState`.
+  `connect_smb_volume`, `SmbVolume` with `volume_id` / `session_state` / `diagnostics`, `SmbConnectionParams` with its
+  five fields, and `ConnectionState`. `SmbVolume::new` is `pub(crate)`: outside, a share is dialed, which is the only
+  way to get the connected client and tree it takes.
+- **Placing a mount inside its share**, for the same upgrade path: `MountAnchor` with `at_share_root` and `new`, and
+  `SmbVolume::exchange_mount_roots_with`. § "A mount anchored inside the share" has what they're for.
+
+**The item bucket was raised 18 → 21 on 2026-09-09**, with David's say-so, for that third audience: four items in, one
+back. The anchor concept is worth a bump because the app is exactly the caller that got it wrong. `smb_upgrade.rs` read
+a mount path off `statfs` and passed it alone, which keyed a DFS sub-mount as one place and addressed it as another
+(ERR-48RZX); a pair of adjacent parameters would let the same thing happen again at the same seam. `MountAnchor` makes
+that unrepresentable, so it earns its place at the boundary the app crosses rather than only inside the crate. The
+constructors come with it: `at_share_root` names the ordinary mount, which is nearly every call site, and `new` folds
+the anchor to NFC, which no caller may skip. `exchange_mount_roots_with` replaced three narrower methods, so the
+bookkeeping the registry needs crosses the boundary once.
 
 Four public modules is the whole tree a host can name a path into: `connection`, `errors`, `types`, `volume`. Everything
 under `volume` except the four items above is private, `SmbVolumeInner` included. `volume::testing` and

@@ -271,6 +271,10 @@ sentence in the commit message, so the widening arrives as a decision rather tha
 to make a failing check pass, to avoid a rename, or because a call site would read slightly better; those are the cases
 the ceiling is for. Shrinking never fails.
 
+The other guarded crates owe the same two things, written where each one's item-by-item reasoning already lives rather
+than here: `crates/cmdr-smb/DETAILS.md` § "The public surface is capped", and the section of the same name in
+`crates/cmdr-sftp/DETAILS.md`.
+
 Worked example of the judgment: `IndexStatusResponse::walk_affects` (`../events/mod.rs`) stayed an ASSOCIATED function
 rather than becoming a root promise. A free `cmdr_index::walk_affects` would have read marginally better at its two call
 sites, and nothing else — while the associated form keeps the predicate glued to the type that owns `walked_roots`, so

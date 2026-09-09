@@ -159,11 +159,20 @@ var surfaceGuardedCrates = []struct {
 	{
 		// Measured 2026-08-22, at the extraction, with no headroom. What each item is
 		// for: `crates/cmdr-smb/DETAILS.md` § "The public surface is capped".
+		//
+		// Raised on 2026-09-09, with David's say-so, `SubsystemItems` 18 -> 21, for
+		// ONE concept: a mount's ANCHOR, where its mount point sits inside the share.
+		// Four items in (`MountAnchor` with its two constructors, and
+		// `SmbVolume::exchange_mount_roots_with`), one back (`SmbVolume::new` is
+		// `pub(crate)`; outside, a volume is dialed). The app is the caller that got
+		// this wrong (ERR-48RZX), so the type that forces the mount path and the
+		// anchor to travel together belongs at the boundary the app crosses. The
+		// argument item by item: the crate DETAILS section above.
 		Name: "cmdr-smb",
 		Ceilings: surfaceCeilings{
 			RootPromises:   15,
 			PublicModules:  4,
-			SubsystemItems: 18,
+			SubsystemItems: 21,
 		},
 	},
 	{
