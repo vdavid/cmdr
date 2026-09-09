@@ -448,9 +448,9 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
-  "menu.context.editExtensions": "Bővítmények szerkesztése",
+  "menu.context.editExtensions": "Bővítmények szerkesztése…",
   "@menu.context.editExtensions": {
-    "sourceHash": "e996d1a"
+    "sourceHash": "c1d99c8"
   },
   "menu.context.openWith": "Megnyitás ezzel",
   "@menu.context.openWith": {

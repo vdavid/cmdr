@@ -445,9 +445,9 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
-  "menu.context.editExtensions": "Redigera tillägg",
+  "menu.context.editExtensions": "Redigera tillägg…",
   "@menu.context.editExtensions": {
-    "sourceHash": "e996d1a"
+    "sourceHash": "c1d99c8"
   },
   "menu.context.openWith": "Öppna med",
   "@menu.context.openWith": {

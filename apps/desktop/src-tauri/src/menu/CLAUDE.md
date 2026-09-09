@@ -16,7 +16,7 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
 - **The macOS right-click extras, all `DETAILS.md`, and ❗ every loan must outlive `popup()` — ❌ never
   `let _ =`.** `Services`: AppKit owns ONE, already in the app menu, so `ServicesLoan` borrows it, aimed at the
   RIGHT-CLICKED rows. `Share`: ours, from `file_system/share.rs`'s enumeration, ids
-  `share-service:<index>`, closing with `Edit extensions`, ❌ never empty. SF Symbols: set on
+  `share-service:<index>`, closing with `Edit extensions…`, ❌ never empty. SF Symbols: set on
   `NSMenuDidBeginTrackingNotification`, ❌ never `IconMenuItem` — muda's bitmaps can't be TEMPLATE images, so a glyph
   vanishes in one appearance and goes dark when highlighted. `IconMenuItem` stays right for real pixels.
 - **The context menu's first line is a disabled HEADER naming what it acts on** (the selection vs the clicked row). Rust

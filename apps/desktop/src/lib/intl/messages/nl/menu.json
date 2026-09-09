@@ -453,9 +453,9 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
-  "menu.context.editExtensions": "Bewerk extensies",
+  "menu.context.editExtensions": "Bewerk extensies…",
   "@menu.context.editExtensions": {
-    "sourceHash": "e996d1a"
+    "sourceHash": "c1d99c8"
   },
   "menu.context.openWith": "Open met",
   "@menu.context.openWith": {
