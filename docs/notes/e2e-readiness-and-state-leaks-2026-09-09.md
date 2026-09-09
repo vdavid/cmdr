@@ -22,8 +22,8 @@ property of the red rate, not a diagnosis of any single failure**, and it's the 
 | local, re-run     | `network-toggle` ×3, `servers` ×3 | `search-walk-handoff`         |
 
 Four disjoint victim sets. `conflict-dialog-matrix:190` took 748 ms in CI and 11.1 s locally; the two local runs took
-7m31s and 17m25s on the same commit, the slow one while an IntelliJ platform-test JVM was running. Load is real and it
-moves the wall clock by 2×. It still didn't explain either failure below.
+7m31s and 17m25s on the same commit, with several other agent sessions live throughout. Load is real and it moves the
+wall clock by 2×. It still didn't explain either failure below.
 
 ## Finding 1: `ensureAppReady` polls a VIRTUALIZED list, so it can't prove a listing is complete
 

@@ -349,14 +349,26 @@ property: the real `CHANGELOG.md`, the real `messages/en/`, `settings/definition
 that changed any of them, `test` is still up to date and prints `BUILD SUCCESSFUL` in under a second without running a
 thing. **Use `test --rerun` whenever the repo moved under you**, which is exactly when those tests are worth something.
 
-**A busy machine wedges the `BasePlatformTestCase` classes, and it looks like your change broke them.** They start,
-throw `NullPointerException` at `NestedLocksThreadingSupport.kt:718`, then park in `IndexWaiter.waitNow` inside
-`LightPlatformTestCase.doSetup` at ~0% CPU, with `Cannot execute background write action in 10 seconds` in the log. The
-worker sits there indefinitely: 17 minutes of wall clock for 21 seconds of CPU, against a suite that finishes in ~10 s
-cold. IntelliJ's indexing waiter is wall-clock bounded, so it loses to load rather than to anything in the code. Run an
-unrelated platform test as a control before believing a failure here (`I18nKeyNavigationTest` wedges identically), check
-`uptime` (this reproduces around load 16+, on a 2026 M3), and re-run when the machine is quiet. Two agents spent about
-40 minutes on this on 2026-09-09 before running the control.
+⚠️ **Every `BasePlatformTestCase` class hangs in setup against IDEA 2026.2.2 EAP, and it looks like your change broke
+them.** Measured 2026-09-09 on `IU-2026.2.2` (`cmdrIdePath` points at `IntelliJ IDEA 2026.2 EAP.app`). The class never
+starts a test: the EDT parks in `IndexWaiter.waitNow` → `PlatformTestUtil.waitWithEventsDispatching`, reached from
+`LightProjectDescriptor.setUpProject`'s write action via `afterWriteActionFinished`, while the test thread waits on
+`runInEdtAndWait`. Gradle writes no result XML at all, so the whole `test` task stalls on the first such class and the
+plain `TestCase` classes behind it never run either.
+
+**It is not machine load**, however much it looks like one: both threads sleep at ~0% CPU (21 s of CPU per 10 minutes of
+wall clock), and starvation would burn CPU and crawl instead. The waiter is also waiting for nothing — `idea.log` shows
+scanning complete 48 ms in, `Number of scanned files: 488; number of files for indexing: 0`, and then silence.
+Reproduced at load 8.5 with the machine otherwise quiet, on a class running alone.
+
+**`I18nKeyNavigationTest` is the control**: unrelated to changelog refs, wedges at the identical stack. Run it before
+believing any failure in this tier, and don't spend the afternoon bisecting your change — two agents lost about 40
+minutes to this on 2026-09-09. The suspect is the EAP itself (tier 1's ~10 s figure above was measured on build
+262.8665.176); a stable IDE at `cmdrIdePath` is the first thing to try.
+
+**What still works**: every plain `junit.framework.TestCase` class, which is where the pure rules live
+(`ChangelogRefsTest`, `CmdrPluginConfigTest`, both ~2 s via `--tests "*ClassName"`). Reach for a `--tests` filter to get
+those, since a full `test` run can't get past the hang.
 
 Four things cost real time to discover; none of them are guessable:
 
