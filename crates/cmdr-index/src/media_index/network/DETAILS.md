@@ -39,6 +39,22 @@ misread dead mount completes honestly and re-enriches next scan; a misread per-f
 condition that never clears — exactly the TCC-EPERM stall this fixes. Without this line, an all-EPERM mount would either
 stall forever or silently "complete"; the skip count keeps it loud.
 
+**The hung-read test proves its arm by the CLOCK, and ❌ must not go back to reading the message.**
+`fs_fetch_times_out_on_a_hung_read_and_reports_a_disconnect` needs to know that `recv_timeout`'s TIMEOUT arm fired, not
+an errno arm — a FIFO with no writer is only *expected* to block, and an `open` that returned a plain errno instead would
+also land on `FetchError::Disconnected`, so `matches!` on the variant can't tell the two apart. It asserts
+`elapsed >= budget`: `recv_timeout` reaches that arm only once its deadline has passed, while an errno or a dropped
+sender returns at once. A LOWER bound, so a slow machine can't make it flake, and the deadline starts after the
+`Instant` is taken, so it holds strictly.
+❌ Don't "simplify" it into `detail.contains("timed out")`. That's a string match on our own `format!` (which
+`error-string-match` fails, correctly), and it is also WEAKER: `classify_io_error` renders `ETIMEDOUT` as
+`read '/x.jpg': Operation timed out`, so the substring accepts the very errno arm the assertion exists to exclude. The
+one thing the clock can't rule out is a genuinely fast errno path taking longer than the budget to get through
+spawn-send-recv on a heavily loaded machine — a silent weakening, never a red build. If a future change makes an errno
+arm slow on purpose (a retry, a backoff), the inference breaks and the distinction has to become typed: give
+`Disconnected` a cause field rather than another variant, since every cause gets the same pause and siblings would let a
+`match` handle one and skip another.
+
 **Path mapping.** An SMB index's `ROOT_ID` is the mount root, so `walk_image_entries` reconstructs MOUNT-RELATIVE paths
 (`/DCIM/x.jpg`). `os_join(mount_root, rel)` prepends the mount root to reach the real file
 (`/Volumes/naspi/DCIM/x.jpg`); for the `root`/local volume the mount root is `/`, so the path passes through unchanged.
