@@ -267,6 +267,8 @@ Every one of these folds NFC, and a new use of a name has to join them:
 - **The wire.** `cmdr_smb::SmbConnectionParams::new` folds `server` and `share_name`, which is what both `connect_share`
   calls read (the session and the watcher's own session). ❌ Never build those params by struct literal from a raw
   `statfs` name. Paths under the share are folded separately by `cmdr_smb::volume::paths`.
+- **The mount anchor.** `cmdr_smb::volume::MountAnchor::new` folds where a mount sits inside its share, because that
+  gets joined onto every path the mount sends (§ "A mount's identity comes off the mount, not the request").
 - **Identity.** `cmdr_fs::volume::ids::smb_volume_id` folds both halves before it case-folds, so a share gets one
   `index-{id}.db`, one set of `lastUsedPaths`, and one `volumeId` however it was registered.
 - **Credentials.** `keychain::make_account_name` folds the share half; `server_identity::normalize` folds the server
@@ -277,6 +279,54 @@ Every one of these folds NFC, and a new use of a name has to join them:
 Two places deliberately stay byte-exact: `path_volume_id` (the kernel is self-consistent about how it spells a mount
 point) and `mount_linux::derive_gvfs_path` (it has to match the path GVFS actually created, which is GVFS's convention
 to set, not ours).
+
+## A mount's identity comes off the mount, not the request
+
+`smb_upgrade::identity_from_statfs` answers with a `MountIdentity`: the volume ID and the mount's anchor inside the
+share, both read from one `statfs` row (one `/proc/mounts` row on Linux). They belong together because the caller and
+the OS know different halves of the question. The caller knows which share it ASKED for; only the mount knows where the
+OS actually put it, since macOS follows a DFS referral by making a second mount a directory inside the namespace root.
+Deriving the two apart is how a mount ends up keyed as one share and addressed as another, which is what ERR-48RZX was.
+
+Statfs is also what makes the two registration sites agree on the ID at all: the `server` a caller passes may be an
+mDNS service name or a display string that statfs would normalize to an IP, while the OS-event watcher has nothing but
+a mount path. Both connect sites then build a `cmdr_smb::volume::MountAnchor` from the path and that anchor.
+
+**An unreadable mount answers "share root", not "failure"** (`share_root_from_statfs`). That's what every ordinary
+mount has, and a mount that's gone or isn't SMB has no anchor to honor anyway.
+
+**`carry_mount_roots` hands anchors across a volume swap, in both directions.** `register_replacing_predecessor` runs it
+before anyone is retired: the newcomer adopts every root its predecessor knew (`adopt_mount_roots_from`) and the
+incumbent is told the newcomer's own root (`note_mount_root`). Which direction matters depends on whether the registry
+keeps the incumbent, so doing both unconditionally is cheaper than deciding and is idempotent. It's a no-op unless both
+sides are `SmbVolume`s, since the registry deals in `dyn Volume` and an anchor is a notion only that backend has.
+Without it, a promotion the predecessor would have allowed gets refused: `crates/cmdr-smb/DETAILS.md` § "Re-rooting a
+share".
+
+## A server nothing has discovered is not dialed
+
+`resolve_server_address` answers with a `ServerAddress`, and `UndiscoveredService` is a real answer rather than a
+degraded one. An mDNS SERVICE instance name (`DS220j._smb._tcp.local.`) names a service, not a host, so `getaddrinfo`
+can never resolve it: handing it to the dialer spends the resolver's whole timeout and fails every time. Measured at
+8.2 s on the ERR-48RZX log, which also cost that user a "stuck on the kernel mount" warning and a retry offer for a
+share that connected normally 30 s later, once discovery went active.
+
+The two upgrade paths answer it differently, because they owe different things:
+
+- The AUTO path returns without dialing, at DEBUG. An upgrade pass that runs before discovery settles hits this
+  routinely and the pass after it connects, so a WARN here would cry wolf on the common case.
+- The MANUAL path ("Connect directly") answers the user immediately with `UpgradeFailure::Unreachable`, which is what it
+  means: we can't find this server on the network right now. Spending the resolver timeout first would reach the same
+  answer, slower.
+
+## An auth rejection says what was actually rejected
+
+With nothing in the secret store the connection goes out as `Guest` (`SmbConnectionParams::new`'s no-username default),
+so a server with guest access turned off rejects it. That is not a wrong password: there was no password, and the
+setting belongs to the server's admin. `smb_upgrade::AttemptedAs` carries which identity the attempt used, and
+`rejection_advice` says the matching thing, because the log line is what the next reader of an error report acts on.
+Telling someone to fix a saved password they never saved sends them into Keychain looking for an entry that isn't there
+(ERR-48RZX again).
 
 ## Server-keyed answers are lookups, never maps
 

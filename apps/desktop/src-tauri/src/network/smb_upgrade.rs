@@ -144,8 +144,12 @@ impl AttemptedAs {
     /// for an entry that isn't there (ERR-48RZX).
     fn rejection_advice(self) -> &'static str {
         match self {
-            Self::SavedCredentials => "The saved password for this share isn't being accepted; correcting it restores the direct connection.",
-            Self::Guest => "Nothing is saved for this share, so the attempt went out as a guest and the server has guest access turned off. Signing in gets the direct connection.",
+            Self::SavedCredentials => {
+                "The saved password for this share isn't being accepted; correcting it restores the direct connection."
+            }
+            Self::Guest => {
+                "Nothing is saved for this share, so the attempt went out as a guest and the server has guest access turned off. Signing in gets the direct connection."
+            }
         }
     }
 }

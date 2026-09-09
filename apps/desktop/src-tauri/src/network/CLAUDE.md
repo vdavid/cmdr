@@ -34,6 +34,10 @@ WebDAV (host keys, a saved-server store each, a `*_volume_wiring.rs` that dials 
   out from under in-flight transfers.
 - **Decide at ACT time, under the lock**: re-check `is_already_direct` right before connecting, holding
   `lock_volume_upgrade`. A stale decision once replaced a healthy volume three times in 15 s, one mid-copy.
+- **A mount's volume ID and its anchor inside the share come off ONE `statfs` row** (`identity_from_statfs`): the caller
+  knows which share it ASKED for, only the mount knows where the OS put it (a DFS referral lands a second mount a
+  directory inside the namespace root). ❌ Never derive the two apart, or a mount gets keyed as one share and addressed
+  as another (ERR-48RZX).
 - **Every SMB subprocess takes a deadline** via `crate::subprocess::output_within`: `smbutil` / `smbclient` never give
   up on a quiet server. ❌ Not a bare `Command::output()`, ❌ not a `timeout` around `spawn_blocking`.
 - **❌ A `network` type must not be constructible from a backend type**: a `From` impl silently welds the two into one

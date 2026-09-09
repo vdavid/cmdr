@@ -28,6 +28,11 @@ macOS volume and location discovery, plus live mount/unmount watching via `NSWor
 - **Launch-time icon, LaunchServices, and TCC-protected `read_dir` calls need the FDA gate**
   (`crate::fda_gate::is_fda_pending_runtime()`), or onboarding stacks 5-10 native TCC popups.
 - **Detect SMB with `is_smb_fs_type()`**, ❌ never raw `"smbfs"` / `"cifs"`: one place covers both platforms.
+- **An SMB share is ONE path segment; everything below it is a directory INSIDE the share** (`SmbMountInfo::subpath`,
+  filled by `parse_smb_mount_source`). ❌ Never split a mount source on the first `/`: a DFS sub-mount records
+  `//user@domain/SYSVOL/domain`, and sending that tail to TreeConnect earns `STATUS_BAD_NETWORK_NAME` while the share
+  picks up a second volume ID (ERR-48RZX). Such a mount is the SAME volume as its share. `DETAILS.md` § "A mount can
+  sit inside its share".
 - **`mount_is_read_only` and `is_disk_image` are set in BOTH `get_attached_volumes` and `resolve_path_volume_fast`**, or
   they drift. ❌ Read-only is not a disk-image proxy: a writable `.dmg` is read-write.
 - **Only `enrich_from_volume_registry` copies registry state onto a `LocationInfo`** (`capabilities` +

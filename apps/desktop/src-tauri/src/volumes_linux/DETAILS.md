@@ -42,7 +42,8 @@ answering `None` for archive-inner paths.
 individual SMB shares are subdirectories of that FUSE mount, so a share mount/unmount is a directory create/remove,
 invisible to `/proc/mounts`. Watching both sources is the only way to detect all volume changes.
 
-**Decision**: filter virtual filesystems by an explicit fstype allowlist, not by mount-path patterns.
+**Decision**: filter virtual filesystems by an explicit fstype allowlist (proc, sysfs, devpts, tmpfs, cgroup/cgroup2,
+devtmpfs, and similar), not by mount-path patterns.
 **Why**: filtering by path (skip `/proc`, `/sys`) misses virtual filesystems mounted at unusual locations (bind mounts,
 containers) and is fragile across distros. Filtering by `fstype` is definitive: `tmpfs` is always `tmpfs` regardless of
 mount point.
@@ -68,6 +69,18 @@ unmounts via `gio mount -u`).
 **Decision**: `is_submount()` filters bind mounts nested under another real mount.
 **Why**: dev setups commonly bind-mount `node_modules` or build dirs as separate partitions for performance. Without the
 filter, every bind mount shows as a separate "volume" in the sidebar, cluttering it with build-system internals.
+
+## A CIFS mount source can name a directory inside the share
+
+`mount -t cifs //server/share/sub /mnt/x` records the whole path in the `/proc/mounts` device field, exactly as macOS
+records a DFS sub-mount, so `parse_smb_mount_source` here splits it the same way its macOS twin does: `share` is the
+first segment, `SmbMountInfo::subpath` is everything below it. Same field, same meaning, so a share reached this way
+derives the share's own volume ID and the backend addresses it through the same anchor. The rule and the incident
+behind it live once, in `volumes/DETAILS.md` § "A mount can sit inside its share".
+
+Two differences from the macOS twin, both pre-existing: the segments are taken verbatim (percent-decoding is a macOS
+mount-source concern, `volumes/DETAILS.md` § "SMB mount sources are percent-escaped"), and GVFS shares don't come
+through this parser at all but through `parse_gvfs_smb_dirname`, which carries no subpath.
 
 ## One volume ID publishes one mount root
 

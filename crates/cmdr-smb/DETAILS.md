@@ -323,6 +323,44 @@ Tests, split along the seam: the ROUTING (which events reach `refresh_archive_li
 filesystem in it; what a refresh DOES to the cache is
 `listing/listing_host.rs::the_archive_refresh_re_reads_the_listings_under_its_path`.
 
+## A mount anchored inside the share
+
+A mount is not always the share ROOT. macOS follows a DFS referral by making a SECOND mount underneath the namespace
+root: `smb://lgs-net.com/SYSVOL` leaves `/Volumes/SYSVOL/lgs-net.com` beside `/Volumes/SYSVOL`, carrying
+`//user@lgs-net.com/SYSVOL/lgs-net.com` in its `f_mntfromname`. A subdirectory mount (`mount_smbfs //server/share/sub`,
+or `mount -t cifs` on Linux) makes the identical shape on purpose. Both address a DIRECTORY inside the share.
+
+**A share is ONE path segment, and the anchor is everything below it.** `MountAnchor` (`volume/mod.rs`) pairs a mount
+path with the `share_root` that mount sits at inside the share: `/`-separated, no leading or trailing separator, empty
+for the ordinary mount. The two travel as one value because a caller holding one always holds the other, and splitting
+them is what lets a mount be keyed as one place and addressed as another. Reported as ERR-48RZX: `SYSVOL/lgs-net.com`
+reached TreeConnect as a share name, the server answered `STATUS_BAD_NETWORK_NAME`, so the share stayed on the slow
+kernel mount, picked up a second volume ID, and warned the user about a share already connected directly one level up.
+`MountAnchor::new` NFC-folds the anchor in one place, for the reason `SmbConnectionParams::new` folds the share name.
+
+**The anchor lives on the INSTANCE** (`SmbVolume::share_root`), not on the shared inner: it is a fact about one mount
+root, and one share can be mounted at roots that sit at different depths.
+
+**Both path directions carry it** (`paths.rs`). `to_smb_path` joins the anchor onto a mount-relative path on the way to
+the wire; `to_display_path` takes it back off. Stripping matches WHOLE COMPONENTS, so a sibling that merely shares a
+name prefix (`domain.old` beside `domain`) can't be mis-stripped onto a directory nobody mounted. A path that isn't
+under the anchor is left alone, which is what an unanchored mount does with every path anyway.
+
+**The watcher carries it too, and it is the one place the anchor also FILTERS.** The change watch is a single recursive
+`CHANGE_NOTIFY` on the share root shared by every mount of that share, so its event paths are share-relative. An
+anchored mount therefore hears about the whole share: `watcher.rs` strips the anchor to get the mount-relative path the
+listing cache is keyed on, and skips an event that isn't under the anchor at all rather than joining it on. Joining it
+on names a path no pane has open, which leaves the listing that did change stale while invalidating one that doesn't
+exist. The strip happens BEFORE the NFC→NFD fold, because the anchor is stored NFC and that is the spelling the server
+sends. One implementation of the rule, `paths::below_share_root`, serves both this and `to_display_path`: two copies
+would drift, and the two directions disagreeing is exactly what patches a cache key nothing is watching.
+
+**An anchored mount is the SAME volume as its share.** The ID keys on `(server, port, share)` and leaves the anchor out,
+so the nested mount and the namespace root share one ID, one session, one index, and one set of saved paths, and a
+redundant upgrade attempt short-circuits on `is_already_direct` rather than opening a second connection. Where the
+anchor is read off the mount: `apps/desktop/src-tauri/src/network/DETAILS.md`. How a mount source is parsed into share
+plus subpath, on both platform twins: `apps/desktop/src-tauri/src/volumes/DETAILS.md`.
+
 ## Re-rooting a share
 
 macOS mounts one share at several roots (`/Volumes/naspi` AND `/Volumes/naspi-1`) and they all derive one volume ID, so
@@ -338,6 +376,26 @@ allocation over the same inner: no re-auth, no transport rebuild, no session chu
 **Why the instance's root is immutable**: `Volume::root()` hands out a `&Path`, with ~115 call sites. Making the root
 interior-mutable to reroot in place would either change that signature across the codebase or hand out a borrow that can
 change under the caller. A new instance moves the root without either.
+
+**A promotion looks the anchor up per root.** Two roots of one share need not sit at the same depth inside it
+(`/Volumes/SYSVOL` is the share root while `/Volumes/SYSVOL/lgs-net.com` is a directory in; § "A mount anchored inside
+the share"), and nothing about a path reveals its anchor. So `SmbVolumeInner::share_root_by_mount` records where each
+known root sits, the app fills it in as it registers each root (`SmbVolume::note_mount_root`), and `rerooted` reads the
+answer there:
+
+- An UNANCHORED instance promotes to any root, recorded or not, treating an unknown one as another mount of the share
+  root. That's every ordinary mount, and roots reach the registry from places that never touch the SMB upgrade (the
+  FSEvents watcher registers a fallback volume too), so refusing an unrecorded root would strand a share on a dead mount
+  in the common case.
+- An ANCHORED instance refuses a root nobody recorded, returning `None`. Applying its own anchor to a root that may sit
+  somewhere else addresses a real path on the share that nobody asked for. The registry reads the `None` as
+  `Promotion::BackendCantReroot` and leaves the volume where it is (`RootRemoval::ActiveRootStranded`): still browsable
+  over smb2, no longer claiming its paths are OS-openable.
+
+A reconnect builds a whole new instance while the registry keeps the roots it already had for that ID, so
+`register_replacing_predecessor` hands the roots across in both directions before anyone is retired
+(`SmbVolume::adopt_mount_roots_from`, plus a `note_mount_root` for the newcomer's own root). Without it a successor
+would have to refuse a promotion its predecessor would have allowed.
 
 **The two instances overlap, briefly and by design.** For the moment between `rerooted` returning and the registry
 dropping the old one, both address the same live session — and whoever grabbed the old one earlier (a running transfer,
@@ -706,7 +764,8 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   `RecordingListings::change_count` doesn't move, which is what would catch a `notify_mutation` drifting into an entry
   loop. The rule and the instrument: `crates/cmdr-fs/src/volume/host/DETAILS.md`.
 - `integration_test.rs` — what a share does with FILES against a real server: core CRUD, single-chunk streaming smoke,
-  the copy and conflict scans, space info.
+  the copy and conflict scans, space info, and an anchored mount (`make_docker_volume_anchored`) listing, writing, and
+  deleting inside its own directory rather than at the top of the share.
 - `session_integration_test.rs` — what the SESSION does: the connection gate the fresh-listing oracle reads, the
   reconnect cycle, the refcounted scan pool, and what a supersede leaves alone.
 - **The byte path is three files split by contract**, all declared from `volume/mod.rs`. A new byte-path cell adds

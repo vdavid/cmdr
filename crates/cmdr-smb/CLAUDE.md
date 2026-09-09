@@ -30,16 +30,17 @@ Discovery, the keychain, mounts, upgrades, and every human-facing word stay in t
   stay.
 - **Streaming-write progress reports `FileWriter::bytes_written()`** (server-confirmed), ❌ never bytes handed to the
   pipeline: `write_chunk` returns on ACCEPTANCE.
-- **A read that knows its size sends `read_file_compound_sized`**: unsized it charges credits for a whole `max_read`
-  (130 for a 4 MB file), which parked seven of ten slots on a 300 GB copy. ❌ Don't tune `max_concurrent_ops`'s credit
-  clamp; it divides a constant, so it's inert.
-- **`scan_recursive` asks its `ScanBoundary` per entry, `dir()` BEFORE the listing** (`DETAILS.md` § "Scanning", which
-  also says what the batch scan owns and what it borrows from `cmdr_fs::volume::scan_walk`).
+- **A read that knows its size sends `read_file_compound_sized`**: unsized it charges credits for a whole `max_read`,
+  which parked seven of ten copy slots on a 300 GB copy. ❌ Don't tune `max_concurrent_ops`'s credit clamp; it divides a
+  constant, so it's inert.
+- **`scan_recursive` asks its `ScanBoundary` per entry, `dir()` BEFORE the listing** (`DETAILS.md` § "Scanning").
 - **Bulk work draws on the refcounted pool of extra sessions** (`scan_pool.rs`); a dead member retries on a sibling, ❌
   never moving the MAIN volume's connection state.
 - **smb2 bounds every wait itself**: ❌ no timeout layer of ours, never a missed keepalive read as death.
-- **`to_smb_path` matches the root by COMPONENT and `NotFound`s anything outside it**; guessing sent real requests
-  somewhere wrong.
+- **Path conversion matches whole COMPONENTS both ways**: `to_smb_path` `NotFound`s anything outside the root and joins
+  on the instance's `share_root`; `to_display_path` strips it back off. ❌ Build a volume through `MountAnchor`, never a
+  bare mount path: an anchored mount (DFS sub-mount, subdirectory mount) that loses its anchor addresses the top of the
+  share instead (ERR-48RZX).
 - **Watcher filenames need NFC→NFD normalizing and ❌ nothing else**: smb2 already decodes separators, so a `\` in a
   filename is part of its NAME; re-normalizing loses the entry.
 
@@ -51,5 +52,5 @@ Discovery, the keychain, mounts, upgrades, and every human-facing word stay in t
 - ❌ Never gate behavior on `cfg(test)`; use `any(test, feature = "testing")`, or it flips silently when a consumer
   compiles this crate.
 
-Reconnect and scan-pool lifecycles, `rerooted`, credits and copy concurrency, the `specta` pin, NFC share names, test
-placement, decisions, and suites: `DETAILS.md`. Read it first.
+Reconnect and scan-pool lifecycles, anchored mounts, `rerooted`, credits and copy concurrency, the `specta` pin, NFC
+share names, test placement, decisions, and suites: `DETAILS.md`. Read it first.

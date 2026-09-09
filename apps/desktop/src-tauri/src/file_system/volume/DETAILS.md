@@ -316,7 +316,7 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 | `notify_mutation` | default (std::fs) | yes: MTP `get_metadata` | yes: smb2 `get_metadata` | yes: in-memory | n/a (read-only) |
 | `create_directory_errors_on_existing_dir` | yes (default) | no (protocol allows dup names) | yes (default) | yes (default) | n/a (read-only) |
 | `scanner` / `watcher` (indexing) | yes / yes | no | no | no | no |
-| `rerooted` | yes: new instance | `None` (device-anchored) | yes: new instance, shared session | `None` (default) | `None` (inner paths) |
+| `rerooted` | yes: new instance | `None` (device-anchored) | yes: new instance, shared session; `None` for an unrecorded root when anchored inside the share | `None` (default) | `None` (inner paths) |
 | `on_unmount` | default | default | yes: drops smb2 session | default | default |
 | `on_superseded` | default | default | yes: retires id, keeps session | default | default |
 | `connection_state` | `None` | `None` | yes | `None` | `None` |
@@ -534,8 +534,9 @@ The rules over the set:
   healthy volume's index.
 - **Promotion**: carried out through `Volume::rerooted`. On a backend that declines, the entry stays where it is
   (`RootRemoval::ActiveRootStranded`) rather than being unregistered, because a backend can decline precisely when its
-  transport doesn't ride the OS mount, and then it keeps serving. The two backends that can be doubly mounted
-  (`LocalPosixVolume`, `SmbVolume`) both re-root, so nothing takes that arm today.
+  transport doesn't ride the OS mount, and then it keeps serving. `LocalPosixVolume` always re-roots; `SmbVolume`
+  re-roots except when it is anchored inside its share and nothing recorded where the target root sits, since applying
+  the wrong anchor would address a real path nobody asked for (`crates/cmdr-smb/DETAILS.md` § "Re-rooting a share").
 - **Two triggers, no probe.** The unmount watcher calls `remove_root`; a failed operation calls
   `volume::note_root_failure`, which marks the root stale on a mount-is-gone errno (`ENOTCONN`, `ETIMEDOUT`,
   `EHOSTDOWN`, `EHOSTUNREACH`, `ENETDOWN`, `ENETUNREACH`, `ESTALE`; typed errno, never message text) and promotes. ❌

@@ -299,6 +299,32 @@ rather than dropping the mount.
 
 The escaping half lives with the mount: `network/mount.rs::build_smb_mount_url`.
 
+## A mount can sit inside its share
+
+A share name is ONE path segment: it's what goes to TreeConnect, so it can never carry a separator. A mount source with
+more segments than that (`//andrew@lgs-net.com/SYSVOL/lgs-net.com`) names a DIRECTORY inside the share, and
+`parse_smb_mount_source` splits it accordingly into `share` plus `SmbMountInfo::subpath` (`None` at the share root,
+never `Some("")`, which would make the downstream join prepend a `/`).
+
+macOS produces this shape on its own: it follows a DFS referral by making a SECOND mount underneath the namespace root,
+so `smb://lgs-net.com/SYSVOL` leaves `/Volumes/SYSVOL/lgs-net.com` live beside `/Volumes/SYSVOL`. A subdirectory mount
+(`mount_smbfs //server/share/sub`) is the same shape asked for deliberately, and Linux's `mount -t cifs` records it the
+same way, which is why `volumes_linux/smb.rs` parses identically.
+
+Swallowing the whole tail into `share` sent `SYSVOL/lgs-net.com` to TreeConnect, which no server has a share for:
+`STATUS_BAD_NETWORK_NAME`, so the share stayed on the slow kernel mount and the user was warned about a share already
+connected directly one level up (reported as ERR-48RZX).
+
+**Decoding happens per SEGMENT, after the split.** Each segment is escaped on its own
+(§ "SMB mount sources are percent-escaped"), so decoding the tail as one string would turn a `%2F` inside a directory
+name into a separator that was never in the path.
+
+**A mount anchored inside a share is the SAME volume as the share.** `volume_id_for` keys on `(server, port, share)`
+and ignores the subpath, so the nested mount and the namespace root collapse to one ID, one session, one index, and one
+set of saved paths, and the redundant upgrade attempt short-circuits as already-direct. What the backend then does with
+the anchor (both path directions, and how a promotion between mount roots resolves one): `crates/cmdr-smb/DETAILS.md`
+§ "A mount anchored inside the share".
+
 ## Gotchas
 
 **Gotcha**: `VolumeInfo` is a type alias for `LocationInfo`, not a separate type.

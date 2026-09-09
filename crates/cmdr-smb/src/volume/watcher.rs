@@ -332,10 +332,7 @@ pub(super) async fn run_smb_watcher(
                 .live()
                 .and_then(|inner| inner.share_root_for(&mount_path))
                 .unwrap_or_default();
-            MountAnchor {
-                mount_path,
-                share_root,
-            }
+            MountAnchor { mount_path, share_root }
         };
 
         match events_result {
