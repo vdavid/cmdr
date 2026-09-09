@@ -1007,18 +1007,18 @@ REVIEW FLAGS (drive-indexing master-switch review):
 
 ## Vastgelopen overdracht: het stall-bericht (2026-07-31)
 
-Eight keys for the stalled-transfer notice (`fileOperations.transferProgress.close`/`.stallNotice`/
-`.stallWaitingDestination`/`.stallWaitingSource`/`.stallUnknown`/`.stallInFlight`/`.stallLogHint`, `queue.row.stalled`);
-mined `_ignored/i18n/nl/`, 2026-07-31.
+Seven keys for the stalled-transfer notice (`fileOperations.transferProgress.close`/`.stallNotice`/
+`.stallWaitingDestination`/`.stallWaitingSource`/`.stallUnknown`/`.stallInFlight`/`.stallLogHint`); mined
+`_ignored/i18n/nl/`, 2026-07-31.
 
 - progress (of a transfer) → `voortgang` · macOS AppKit/Finder ("Progress"→"Voortgang", "Toon kopieervoortgang"),
   Microsoft terminology ("Progress"→"Voortgang", NLD/BEL), Thunar ("File Operation Progress"→"Voortgang van
   bestandbewerking"), Double Commander ("Show operations progress"→"Toon voortgang van bewerkingen); already in-catalog
   as `Voortgang grootte` / `Voortgang bestanden` · high
 - "No progress for {duration}" → `Al {duration} geen voortgang` · the "al X geen Y" construction is the natural Dutch
-  for an elapsed-since-anything-happened line; the literal `Geen voortgang gedurende …` reads bureaucratic. Used for
-  BOTH the dialog line (with a period) and the queue row (without), matching the EN pair · high on the term, `tentative`
-  on the construction
+  for an elapsed-since-anything-happened line; the literal `Geen voortgang gedurende …` reads bureaucratic. One key,
+  `stallNotice`, feeds both the progress dialog and the queue row, and its value carries no final period, matching
+  English · high on the term, `tentative` on the construction
 - respond (a device/share answering) → `reageren` · macOS AppKit ("… did not respond to the request for services"→"…
   reageert niet op het verzoek om voorzieningen"). Microsoft's `beantwoorden` is the reply-to-a-message sense, not this
   one; macOS is Tier 1 · high
@@ -1053,8 +1053,8 @@ Notes:
   ("Vind hem in de bewerkingenwachtrij"), and reuses `laat … op de achtergrond doorlopen` verbatim from `queueTooltip`.
   The comma before `of` follows both the EN source and the in-catalog habit ("Probeer opnieuw, of verbreek de
   verbinding").
-- Voice rule held: no `fout` / `mislukt` anywhere in the eight values.
-- No `sameAsSourceJustification` needed: all eight values differ from English.
+- Voice rule held: no `fout` / `mislukt` anywhere in the seven values.
+- No `sameAsSourceJustification` needed: all seven values differ from English.
 
 REVIEW FLAGS (stalled-transfer pass):
 
@@ -2353,7 +2353,7 @@ Termen die uit de bundels kwamen:
 - **Keychain Access (de app) → `Sleutelhangertoegang`** · `Keychain Access.app/Contents/Resources/InfoPlist.loctable`,
   `nl` → `CFBundleName: "Sleutelhangertoegang"` · `high`. De catalogus schreef dit al zo in
   `ai.secretError.keychainBody`, dus de nieuwe zin sluit daarop aan. `Keychain` alleen blijft `Sleutelhanger`
-  (`fileExplorer.network.login.rememberInKeychain`).
+  (`servers.sheet.remember` = `Onthoud in Sleutelhanger`).
 - **Connecting to X… → `Verbinden met {name}…`** · Finder `LocalizableMerged` `MN1` (`Verbinden met '^0'…`) en
   NetAuthAgent `Localizable.loctable` `CONNECTING_TO_HOST` (`Verbinden met '%@'.`) · `high`. Geen aanhalingstekens om
   `{name}`, omdat het Engels ze ook niet heeft.
@@ -2445,7 +2445,8 @@ Termen:
   van `Locations`, maar het Nederlands heeft geen tweede kort woord voor hetzelfde begrip, en `Locatie` is al de
   gevestigde vertaling van `location` in deze catalogus.
 - **Address (kolomkop) → `Adres`** · macOS Network-paneel (`Server Address:`→`Serveradres:`, `IP Address`→`IP-adres`),
-  al in de catalogus als `Serveradres` (`fileExplorer.network.connectDialog.addressAriaLabel`) · high.
+  en `serveradres` staat al in de catalogus (`servers.refusal.invalidUrl` = `Dat lijkt geen serveradres te zijn.`) ·
+  high.
 - **Type (kolomkop, het protocol) → `Type`** · macOS Systeeminstellingen `Localizable.loctable` (`Type`→`Type`) · high.
   ❌ NIET `Soort`: dat is Finders kolom `Kind` voor een bestandssoort, en Apple zelf laat `Type` staan.
 - **Status (kolomkop) → `Status`** · macOS Systeeminstellingen `Localizable.loctable` (`Status`→`Status`) · high.
@@ -2556,21 +2557,19 @@ Termen die letterlijk uit de bundels kwamen:
   daar hetzelfde doet: een bladervenster openen · high. ❌ NIET `Bladeren`: dat is de infinitief die Safari's menubalk
   gebruikt, en dit is een knop (imperatiefregel in `style.md`).
 - **Sign in to X → `Log in bij X`** · CloudKit `Localizable.loctable` (`Sign In to %1$@`→`Log in bij %1$@`), plus tien
-  gelijkvormige zinnen (`Log in bij iCloud`, `Log in bij je Apple Account`, `Log in bij de App Store`) · high. ⚠️ Het al
-  aanwezige `fileExplorer.network.login.title` zegt `Inloggen op ‘{target}’`; het Engels daarvan verschilt
-  (aanhalingstekens, `{target}`), dus de consistentiecontrole telt ze niet als één term. `bij` is beter gesourcet dan
-  `op`; een sweep over die ene oudere sleutel staat in de review-vlaggen.
+  gelijkvormige zinnen (`Log in bij iCloud`, `Log in bij je Apple Account`, `Log in bij de App Store`) · high. Eén
+  sleutel draagt deze kop: `servers.sheet.signInTitle` = `Log in bij {name}`, gebiedend en zonder aanhalingstekens,
+  precies zoals het Engels (`Sign in to {name}`).
 - **Signed out of X → `Uitgelogd bij X`** · macOS `Localizable.loctable` (`iCloud Signed Out`→`Uitgelogd bij iCloud`),
   en `Uitgelogd` was al de gevestigde toestandsnaam (`servers.hub.status.signedOut`) · high.
 - **Sign In → `Log in`; Log In → `Log in`** · macOS `Localizable.loctable`, gelijk aan de catalogus
   (`fileExplorer.network.signIn`) · high.
 - **Guest → `Gast`; Connect As → `Verbind als`** · NetAuthAgent `AuthDialog.loctable` `RiA-l0-ASw.title` /
-  `PHL-pS-ELV.title` · high. `Connect as guest` blijft byte-identiek aan `fileExplorer.network.login.connectAsGuest`
-  (`Verbind als gast`).
-- **Remember in Keychain → `Onthoud in Sleutelhanger`** · byte-identiek Engels aan
-  `fileExplorer.network.login.rememberInKeychain`, dus die waarde wint van een frisse keuze. Apples eigen zin is
+  `PHL-pS-ELV.title` · high. Daaruit stelt `Connect as guest` → `Verbind als gast` zich samen; geen andere sleutel
+  levert dit Engels, dus er is geen zusterwaarde om mee te pareren.
+- **Remember in Keychain → `Onthoud in Sleutelhanger`** · Apples eigen zin is
   `Remember this password in my keychain`→`Bewaar wachtwoord in mijn sleutelhanger` (NetAuthAgent `AuthDialog.loctable`
-  `600268.title`), wat `sleutelhanger` bevestigt · high.
+  `600268.title`), wat `sleutelhanger` bevestigt · high. Ook hier levert geen andere sleutel dit Engels.
 - **passphrase → `wachtzin`; Key passphrase → `Sleutelwachtzin`** · Apple schrijft overal `wachtzin`
   (`SecErrorMessages.loctable`, `P12Password.loctable` `Enter Passphrase:`→`Geef wachtzin op:`, DiskImages
   `Incorrect passphrase`→`Onjuiste wachtzin`) en maakt er samenstellingen mee
@@ -2611,20 +2610,23 @@ Termen die letterlijk uit de bundels kwamen:
 
 Vormen die uit de eigen catalogus kwamen (byte-identiek Engels wint van een frisse keuze):
 
-- `Cancel` → `Annuleer`, `Username` → `Gebruikersnaam`, `Password` → `Wachtwoord`, `Name` → `Naam`, `Address` → `Adres`
-  (`servers.hub.colAddress`), `Advanced` → `Geavanceerd` (`settings.section.advanced`), `Connect as guest` →
-  `Verbind als gast`, `Remember in Keychain` → `Onthoud in Sleutelhanger`, `Sign in` → `Log in`, `Connect` → `Verbind`,
-  `Connect to server…` → `Verbind met server…` (`settings.network.permissionIntroConnectLink`, en gelijk aan Finders
-  `Verbind met server`).
+- `Cancel` → `Annuleer`, `Password` → `Wachtwoord` (`fileOperations.archivePassword.placeholder`), `Name` → `Naam`,
+  `Address` → `Adres` (`servers.hub.colAddress`), `Advanced` → `Geavanceerd` (`settings.section.advanced`), `Sign in` →
+  `Log in` (`fileExplorer.network.signIn`), `Connect` → `Verbind` (`fileExplorer.network.connect`), `Connect to server…`
+  → `Verbind met server…` (`settings.network.permissionIntroConnectLink`, en gelijk aan Finders `Verbind met server`).
+- `Username` → `Gebruikersnaam`, `Connect as guest` → `Verbind als gast` en `Remember in Keychain` →
+  `Onthoud in Sleutelhanger` staan alleen op dit venster, dus er is geen zusterwaarde om mee te pareren. De twee
+  NetAuthAgent-regels hierboven dragen de laatste twee, en `gebruikersnaam` staat al in lopende tekst in
+  `errors.listing.authRequiredEauth.suggestion` (`voer je gebruikersnaam en wachtwoord opnieuw in`); `needsStoredSecret`
+  citeert het schakelaarlabel woord voor woord (`Zet ‘Onthoud in Sleutelhanger’ aan en log één keer in.`).
 
 Nieuw gemunte vormen, zonder bron in een bundel:
 
 - **Key file → `Sleutelbestand`** · de gebruikelijke Nederlandse samenstelling, in lijn met Apples `known_hosts-bestand`
   en `SSH-sleutel` · `tentative`.
 - **How to connect → `Manier van verbinden`** · toegankelijke naam van de gast-of-account-keuze, alleen voor
-  schermlezers. Letterlijk `Hoe verbinden` leest niet; de zelfstandige groep wel. Het zusje
-  `fileExplorer.network.login.connectionModeLegend` (`Connection mode`) blijft `Verbindingsmodus`, want dat is ander
-  Engels · `tentative`.
+  schermlezers, op `servers.sheet.connectionModeLegend`. Letterlijk `Hoe verbinden` leest niet; de zelfstandige groep
+  wel · `tentative`.
 - **server's owner → `de servereigenaar`** · gewone Nederlandse samenstelling; het alternatief
   `de eigenaar van de server` maakte de zin twaalf tekens langer in een regel die het Engels in één adem zegt ·
   `tentative`.
@@ -2664,13 +2666,8 @@ Notities:
   gebruiker die een `SHA256:`-string vergelijkt `vingerafdruk` herkent.
 - **`Sleutelwachtzin`** (`sheet.passphrase`): `wachtzin` is stevig gesourcet, de samenstelling niet. Alternatief:
   `Wachtzin voor de sleutel` (langer, maar ondubbelzinnig naast het veld `Sleutelbestand` eronder).
-- **`Log in bij {name}` vs. het oudere `Inloggen op ‘{target}’`** (`sheet.signInTitle` tegenover
-  `fileExplorer.network.login.title`): twee inlogvensters met twee voorzetsels én twee registers (gebiedend tegenover
-  infinitief). Het nieuwe is Tier-1-gesourcet en volgt de `@key`-instructie ("VERB phrase, imperative"). Bevestig een
-  sweep van het oudere naar `Log in bij ‘{target}’`.
-- **`Manier van verbinden`** (`sheet.connectionModeLegend`): alleen-schermlezerlabel, geen bron. Alternatieven:
-  `Hoe je verbinding maakt` (dichter bij het Engels, langer) of hergebruik van `Verbindingsmodus`, dat het zusje al zegt
-  maar ander Engels vertaalt.
+- **`Manier van verbinden`** (`sheet.connectionModeLegend`): alleen-schermlezerlabel, geen bron. Alternatief:
+  `Hoe je verbinding maakt`, dichter bij het Engels maar langer.
 - **`Cmdr verbindt niet meer met {name}`** (`paneState.hostKeyChanged`): Apples vorm voor dit Engels, maar hij zegt
   tegenwoordige tijd waar het Engels verleden tijd zegt. Bevestig dat de kop niet leest als "Cmdr ondersteunt deze
   server niet meer" in plaats van "dit is nu geblokkeerd".
