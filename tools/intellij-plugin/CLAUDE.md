@@ -24,26 +24,27 @@ opens its catalog entry.
 - **Run everything through mise**: `mise exec -- ./gradlew …`. The JDK is pinned in this directory's scoped
   `.mise.toml`, never the root one; a bare `./gradlew` takes whatever JDK is on `PATH`.
 - **Config-driven, or it silently dies.** Every extension point opens by asking `CmdrProjectService`; an absent
-  `cmdr-plugin.json` section means the feature is off. That file is both marker and config: no settings panel.
+  `cmdr-plugin.json` section means the feature is off. Marker and config in one file: no settings panel. A value there
+  BEATS the Kotlin default, so a rule change edits both, and no rebuild is needed.
 - **A fold region keeps the placeholder it was built with**, so dropping the index isn't enough when copy changes under
   an open editor. `MessageCatalogService.refoldOpenEditors` gets past it, only via `scheduleAsyncFoldingUpdate`; never
   `updateFoldRegions`.
-- **A `psi.referenceContributor` never reaches Markdown**: the reference gets built and nothing ever asks the registry
-  for it. Use a `gotoDeclarationHandler` there. JS literals and XML attribute values do ask, so key navigation is one
+- **A `psi.referenceContributor` never reaches Markdown**: the reference gets built and nothing asks the registry for
+  it, so use a `gotoDeclarationHandler` there. JS literals and XML attribute values do ask, so key navigation is one
   contributor with no `language` attribute, covering every language at once.
 - **The catalog index carries no offsets**: `messageDeclaration` finds the line through the file's own JSON PSI at click
   time, so nothing positional goes stale.
 - **A `build.gradle.kts` task action may only capture locals**, never a script-level `val`: the configuration cache
-  can't serialize a script reference, and `runIde` then won't configure.
+  can't serialize a script reference, so `runIde` won't configure.
 - **Tier 2 is licensed, so it sees `.svelte`**: `seedIdeSandbox` copies the IDE's `idea.key` in, without which
-  Ultimate-only plugins won't load. Confirm every `.svelte` change there; headless can't see this one. It still can't
-  confirm either ⌘-click (no page opens, the caret needs input), so assert those headless.
-- **Don't raise the sandbox window**: it takes the keyboard from whoever's at the machine, and their typing lands in the
-  fixture. `screencapture -l $(swift scripts/sandbox-window-id.swift | head -1 | cut -f1)` needs no focus.
-- **Folding registration cuts both ways.** It doesn't merge _down_ the base-language chain (`JavaScript`'s is invisible
-  to `TypeScript`, so register per language and list it in `LanguageCoverageSpikeTest.FOLDING_LANGUAGES`), yet a dialect
-  with no registration of its own does inherit (`SvelteTS` reaches ours through `TypeScript`). So **fold `PsiFile` roots
-  only**: `.svelte` offers embedded roots too, and two regions over one range leave none.
+  Ultimate-only plugins won't load. Confirm every `.svelte` change there; headless can't. It can't confirm either
+  ⌘-click though (no page opens, the caret needs input), so assert those headless.
+- **Don't raise the sandbox window**: it takes the keyboard, and the typing lands in the fixture.
+  `screencapture -l $(swift scripts/sandbox-window-id.swift | head -1 | cut -f1)` needs no focus.
+- **Folding registration cuts both ways**: it doesn't merge _down_ the base-language chain, yet a dialect with no
+  registration of its own inherits. So register per language, list it in `LanguageCoverageSpikeTest.FOLDING_LANGUAGES`,
+  and **fold `PsiFile` roots only** (`.svelte` offers embedded roots too, and two regions over one range leave none).
+  Chains and the trap: `DETAILS.md`.
 - **Folding assertions need `CodeFoldingManager.updateFoldRegions`**: `buildInitialFoldings` and `doHighlighting()`
   leave the model empty, which reads as a passing test that asserts nothing. `FoldingHarnessTest` pins it.
 - **Not wired into `pnpm check`**, and the runner must never learn about this directory. Gradle doesn't track the repo

@@ -55,6 +55,23 @@ running against a fixture project in a temp directory under a generated name.
 Locating the file happens on every call (two VFS lookups), so a marker that appears or disappears with a branch switch
 is picked up with no listener to keep in sync. Only the **parse** is cached, keyed by the file's modification stamp.
 
+### `cmdr-plugin.json` beats the compiled default, which cuts both ways
+
+A value in the repo's `cmdr-plugin.json` wins over the Kotlin default beside the code it configures, and the compiled
+one is only the fallback for an absent or unparseable entry
+(`CmdrPluginConfigTest.testAnInvalidPatternFallsBackToTheBuiltInRule`). Two consequences, and the second is easy to miss
+in both directions:
+
+- **Changing a rule means changing BOTH.** Editing only the Kotlin constant leaves the shipped config overriding it, so
+  the feature keeps the old behavior while the tests covering the constant go green. The 8→9 character widening of the
+  changelog refs had to touch `ChangelogRefs.DEFAULT_TRAILING_GROUP_PATTERN` and `trailingGroupPattern` in
+  `cmdr-plugin.json`; either alone is a silent half-change.
+- **A config-only change needs NO rebuild or re-sideload.** The service re-reads the file from the repo (stamp-keyed
+  parse), so an already-installed plugin picks up a new pattern on the next branch switch or IDE restart. When the
+  changelog moved to 9 characters on 2026-09-09, the copy sideloaded on 2026-08-05 kept linking hashes correctly,
+  because it reads the repo's `{9}` rather than its own compiled `{8}`. ❗ So don't tell anyone to rebuild for a config
+  change; and don't take "it works in my IDE" as evidence that the compiled default is right.
+
 Adding a feature is three things and no core changes:
 
 1. A package under `features/<name>/`.
