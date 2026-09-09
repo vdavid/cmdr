@@ -60,6 +60,15 @@ below is met.
       The file now leads with the corrections the build turned up (the toast raise/answer import cycle, the `onDismiss`
       seam that tells a dismissal from a refusal, `i18n-coverage` as the real cost of new copy, and the per-file
       coverage floor on new IPC wrappers); where it and a colocated `CLAUDE.md` disagree, the colocated doc wins.
+- [ ] 2026-09-09 `i18n-glossaries-as-data.md` - **Turn the translator glossaries into data and generate the markdown
+      from it.** Proposed, not started, and it needs David's go-ahead before any migration work. The 28,263 lines of
+      per-locale guides carry typed facts as prose, so nothing can check them, and three classes of rot have already
+      landed: 91 dead citations (now caught by `desktop-i18n-doc-citations`), 20 locations of value drift no check can
+      catch, and self-contradicting entries the append-only format allows (`docs/i18n/hu/glossary.md:366` retires
+      `Átviteli sor` and then prescribes it four lines later). The decisive change is that shipped values get read from
+      the catalogs at render time instead of transcribed, which makes drift unrepresentable rather than merely
+      detectable, and shrinks the citation check to a set lookup. Expensive: a per-locale migration whose payoff is
+      tooling quality, not product. The spec names two cheaper alternatives and a go/no-go gate after the first locale.
 - [ ] 2026-09-07 `servers-hub-review-follow-ups.md` - **What the servers branch's pre-merge review left open once its
       fixes landed.** Twenty-four entries in problem / impact / solution / size form, verified against the code as it
       stands. Four are decisions rather than fixes and wait for David: the SMB sheet seeding "Remember in Keychain" ON
