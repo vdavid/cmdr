@@ -396,6 +396,51 @@ mod tests {
         assert_eq!(bytes, b"hello bytes");
     }
 
+    /// The hung-mount backstop: a read that never returns must come back as a
+    /// `Disconnected` (pause the pass, resume on reconnect) rather than wedge the
+    /// enrichment thread forever. The branch a dead NAS reaches in production, where
+    /// `std::fs` blocks in the kernel with no errno ever arriving.
+    ///
+    /// A FIFO with no writer stands in for it: `File::open` on the read end blocks
+    /// until someone opens the write end, which nothing here ever does. Deterministic
+    /// and local — the previous cover for this path was a real-NAS test that handed a
+    /// working mount a 30 s budget, so it never actually reached the timeout.
+    ///
+    /// The detached reader thread stays parked on that open for the rest of the
+    /// process. It holds no lock and nextest forks a process per test, so it goes away
+    /// with the test; under a shared-process `cargo test` it idles until the run ends.
+    #[test]
+    #[cfg(unix)]
+    fn fs_fetch_times_out_on_a_hung_read_and_reports_a_disconnect() {
+        use std::os::unix::ffi::OsStrExt;
+        let dir = tempfile::tempdir().expect("temp");
+        let fifo = dir.path().join("hung.jpg");
+        let c_path = std::ffi::CString::new(fifo.as_os_str().as_bytes()).expect("path has no interior NUL");
+        // SAFETY: `c_path` is a NUL-terminated C string that outlives the call, and
+        // `mkfifo` only reads it. A non-zero return is a plain errno, checked below.
+        let made = unsafe { libc::mkfifo(c_path.as_ptr(), 0o600) };
+        assert_eq!(made, 0, "mkfifo failed: {}", std::io::Error::last_os_error());
+
+        let started = std::time::Instant::now();
+        let err = FsByteFetcher
+            .fetch(&fifo.to_string_lossy(), None, Duration::from_millis(50))
+            .expect_err("a read that never returns must not yield bytes");
+
+        // The variant is what the pass branches on, and the message proves it came from
+        // the TIMEOUT arm rather than an errno the open happened to return instead.
+        match &err {
+            FetchError::Disconnected(msg) => assert!(msg.contains("timed out"), "expected the timeout arm, got {msg:?}"),
+            other => panic!("a hung read must classify as Disconnected, got {other:?}"),
+        }
+        // And it gave up on the budget instead of blocking. Generous upper bound: this
+        // asserts "bounded", not a scheduling deadline.
+        assert!(
+            started.elapsed() < Duration::from_secs(5),
+            "the fetch should return on its 50ms budget, took {:?}",
+            started.elapsed()
+        );
+    }
+
     #[test]
     fn fs_fetch_missing_file_is_not_found() {
         let err = FsByteFetcher
