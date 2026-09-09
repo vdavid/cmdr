@@ -393,9 +393,10 @@ answer there:
   over smb2, no longer claiming its paths are OS-openable.
 
 A reconnect builds a whole new instance while the registry keeps the roots it already had for that ID, so
-`register_replacing_predecessor` hands the roots across in both directions before anyone is retired
-(`SmbVolume::adopt_mount_roots_from`, plus a `note_mount_root` for the newcomer's own root). Without it a successor
-would have to refuse a promotion its predecessor would have allowed.
+`register_replacing_predecessor` trades the roots in both directions before anyone is retired
+(`SmbVolume::exchange_mount_roots_with`: the newcomer adopts every root the incumbent knew, and the incumbent learns
+where the newcomer's own root sits). Both directions ship together because which instance survives is the registry's
+call. Without it, whichever one it keeps would refuse a promotion the other would have allowed.
 
 **The two instances overlap, briefly and by design.** For the moment between `rerooted` returning and the registry
 dropping the old one, both address the same live session — and whoever grabbed the old one earlier (a running transfer,

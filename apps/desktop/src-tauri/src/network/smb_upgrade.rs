@@ -420,30 +420,24 @@ pub(crate) async fn register_replacing_predecessor(
 }
 
 /// Hands the incoming SMB volume every mount root the outgoing one knew about,
-/// and tells it where the incoming root sits inside the share.
-///
-/// Both directions matter, and which one applies depends on whether the registry
-/// keeps the incumbent: a successor needs its predecessor's roots, and an
-/// incumbent that stays needs the root the newcomer just brought. Doing both
-/// unconditionally is cheaper than deciding, and idempotent.
+/// and tells the outgoing one where the incoming root sits inside the share.
 ///
 /// A no-op unless both sides are `SmbVolume`s. The registry deals in
-/// `dyn Volume`, and a mount anchor is a notion only this backend has.
+/// `dyn Volume`, and a mount anchor is a notion only this backend has. Why the
+/// exchange goes both ways: `SmbVolume::exchange_mount_roots_with`.
 fn carry_mount_roots(
     incumbent: Option<&dyn crate::file_system::volume::Volume>,
     newcomer: &dyn crate::file_system::volume::Volume,
 ) {
     use cmdr_smb::volume::SmbVolume;
 
-    let newcomer_root = newcomer.root().to_path_buf();
     let (Some(incumbent), Some(newcomer)) = (
         incumbent.and_then(|v| v.as_any().downcast_ref::<SmbVolume>()),
         newcomer.as_any().downcast_ref::<SmbVolume>(),
     ) else {
         return;
     };
-    newcomer.adopt_mount_roots_from(incumbent);
-    incumbent.note_mount_root(cmdr_smb::volume::MountAnchor::new(newcomer_root, newcomer.share_root()));
+    newcomer.exchange_mount_roots_with(incumbent);
 }
 
 /// Tries to establish a direct smb2 connection and register as `SmbVolume`.

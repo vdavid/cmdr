@@ -129,8 +129,8 @@ pub struct MountAnchor {
     /// The OS mount point (for example, `/Volumes/SYSVOL/lgs-net.com`).
     pub mount_path: PathBuf,
     /// Where that mount point sits inside the share: `/`-separated, no leading or
-    /// trailing separator, empty for the ordinary mount at the share root. See
-    /// [`SmbVolume::share_root`].
+    /// trailing separator, empty for the ordinary mount at the share root, which is
+    /// nearly every one. `DETAILS.md` § "A mount anchored inside the share".
     pub share_root: String,
 }
 
@@ -319,7 +319,11 @@ impl SmbVolume {
     /// * `client` - Connected `SmbClient`
     /// * `tree` - Connected `Tree` for the share
     /// * `host` - Everything the backend asks the app around it (see [`VolumeHost`])
-    pub fn new(
+    ///
+    /// Crate-private: outside, a volume is built by dialing
+    /// ([`connect_smb_volume`]), which is the only way to get the `client` and
+    /// `tree` this takes.
+    pub(crate) fn new(
         name: impl Into<String>,
         anchor: MountAnchor,
         volume_id: impl Into<String>,
@@ -440,38 +444,43 @@ impl SmbVolume {
         })
     }
 
-    /// Where this instance's mount root sits inside the share, empty when it IS
-    /// the share root. See [`share_root`](Self::share_root).
-    pub fn share_root(&self) -> &str {
-        &self.share_root
-    }
-
     /// Records a mount root this share is also reachable at, and where that root
-    /// sits inside the share.
-    ///
-    /// The app calls this as it registers each root, so a later promotion
+    /// sits inside the share, so a later promotion
     /// ([`instance_at_root`](Self::instance_at_root)) can look the anchor up
     /// instead of assuming the one it already has.
-    pub fn note_mount_root(&self, anchor: MountAnchor) {
+    pub(crate) fn note_mount_root(&self, anchor: MountAnchor) {
         self.inner
             .share_root_by_mount
             .write_ignore_poison()
             .insert(anchor.mount_path, anchor.share_root);
     }
 
-    /// Takes over every mount root `predecessor` knew about.
+    /// Trades known mount roots with another instance of the SAME share, so
+    /// whichever one the registry keeps knows where every root sits inside it.
     ///
-    /// A re-connect builds a whole new session and a whole new instance, while the
-    /// registry keeps the ROOTS it already had for this ID. Without this the
-    /// successor could be asked to promote to a root only its predecessor was told
-    /// about, and would have to refuse. Existing entries win: this instance's own
-    /// root is the one that was just proven.
-    pub fn adopt_mount_roots_from(&self, predecessor: &Self) {
-        let inherited = predecessor.inner.share_root_by_mount.read_ignore_poison().clone();
-        let mut mine = self.inner.share_root_by_mount.write_ignore_poison();
-        for (mount_path, share_root) in inherited {
-            mine.entry(mount_path).or_insert(share_root);
+    /// `self` takes over every root `other` was told about, and `other` learns
+    /// where `self`'s own root sits. Both directions matter because which instance
+    /// survives is the registry's call: a re-connect builds a whole new instance
+    /// that needs its predecessor's roots, while a registry that keeps the
+    /// incumbent needs the root the newcomer just brought. Doing both is cheaper
+    /// than deciding, and idempotent.
+    ///
+    /// Existing entries win on the way in: a root this instance already knows was
+    /// proven by this instance, so a stale anchor for it can't overwrite one.
+    /// Without the exchange, either side could be asked to promote to a root only
+    /// the other was told about, and would have to refuse a perfectly good one.
+    pub fn exchange_mount_roots_with(&self, other: &Self) {
+        let inherited = other.inner.share_root_by_mount.read_ignore_poison().clone();
+        {
+            let mut mine = self.inner.share_root_by_mount.write_ignore_poison();
+            for (mount_path, share_root) in inherited {
+                mine.entry(mount_path).or_insert(share_root);
+            }
         }
+        other.note_mount_root(MountAnchor {
+            mount_path: self.mount_path.clone(),
+            share_root: self.share_root.clone(),
+        });
     }
 
     /// Returns the volume ID (mirrors

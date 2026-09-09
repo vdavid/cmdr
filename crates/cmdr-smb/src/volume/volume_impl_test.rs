@@ -355,7 +355,7 @@ fn a_promotion_uses_the_anchor_recorded_for_the_target_root() {
         .downcast_ref::<SmbVolume>()
         .expect("still an SmbVolume");
 
-    assert_eq!(promoted.share_root(), "", "the target root sits at the share root");
+    assert_eq!(promoted.share_root, "", "the target root sits at the share root");
     assert_eq!(
         promoted
             .to_smb_path(Path::new("/Volumes/SYSVOL/lgs-net.com/Policies"))
@@ -388,7 +388,7 @@ fn an_unanchored_share_still_promotes_to_an_unrecorded_root() {
             .as_any()
             .downcast_ref::<SmbVolume>()
             .expect("still an SmbVolume")
-            .share_root(),
+            .share_root,
         ""
     );
 }
@@ -407,7 +407,7 @@ fn a_successor_inherits_the_mount_roots_its_predecessor_knew() {
         "nothing told the successor about that root yet"
     );
 
-    successor.adopt_mount_roots_from(&predecessor);
+    successor.exchange_mount_roots_with(&predecessor);
 
     let promoted = successor.rerooted(Path::new("/Volumes/SYSVOL")).expect("now recorded");
     assert_eq!(
@@ -415,7 +415,35 @@ fn a_successor_inherits_the_mount_roots_its_predecessor_knew() {
             .as_any()
             .downcast_ref::<SmbVolume>()
             .expect("still an SmbVolume")
-            .share_root(),
+            .share_root,
         ""
+    );
+}
+
+/// The other direction of the same exchange. When the registry keeps the
+/// incumbent, the newcomer is dropped and its root would go with it, leaving the
+/// surviving volume unable to promote to a mount that is right there.
+#[test]
+fn the_incumbent_learns_where_the_newcomer_sits_inside_the_share() {
+    let incumbent = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL/lgs-net.com");
+    let newcomer = make_test_volume_anchored("lgs-net.com", "/Volumes/SYSVOL-1/lgs-net.com");
+    assert!(
+        incumbent.rerooted(Path::new("/Volumes/SYSVOL-1/lgs-net.com")).is_none(),
+        "nothing told the incumbent about the second mount yet"
+    );
+
+    newcomer.exchange_mount_roots_with(&incumbent);
+
+    let promoted = incumbent
+        .rerooted(Path::new("/Volumes/SYSVOL-1/lgs-net.com"))
+        .expect("the newcomer's own root reached the incumbent");
+    assert_eq!(
+        promoted
+            .as_any()
+            .downcast_ref::<SmbVolume>()
+            .expect("still an SmbVolume")
+            .share_root,
+        "lgs-net.com",
+        "and it arrived with the anchor the newcomer proved, not an assumed one"
     );
 }

@@ -296,10 +296,11 @@ a mount path. Both connect sites then build a `cmdr_smb::volume::MountAnchor` fr
 mount has, and a mount that's gone or isn't SMB has no anchor to honor anyway.
 
 **`carry_mount_roots` hands anchors across a volume swap, in both directions.** `register_replacing_predecessor` runs it
-before anyone is retired: the newcomer adopts every root its predecessor knew (`adopt_mount_roots_from`) and the
-incumbent is told the newcomer's own root (`note_mount_root`). Which direction matters depends on whether the registry
-keeps the incumbent, so doing both unconditionally is cheaper than deciding and is idempotent. It's a no-op unless both
-sides are `SmbVolume`s, since the registry deals in `dyn Volume` and an anchor is a notion only that backend has.
+before anyone is retired, over `SmbVolume::exchange_mount_roots_with`: the newcomer adopts every root its predecessor
+knew, and the incumbent is told where the newcomer's own root sits. Which direction matters depends on whether the
+registry keeps the incumbent, so doing both unconditionally is cheaper than deciding and is idempotent. It's a no-op
+unless both sides are `SmbVolume`s, since the registry deals in `dyn Volume` and an anchor is a notion only that backend
+has.
 Without it, a promotion the predecessor would have allowed gets refused: `crates/cmdr-smb/DETAILS.md` § "Re-rooting a
 share".
 
