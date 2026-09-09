@@ -4,16 +4,23 @@
     import CloudProviderPicker from './CloudProviderPicker.svelte'
     import CloudProviderSetup from './CloudProviderSetup.svelte'
     import Icon from '$lib/ui/Icon.svelte'
-    import { getOnboardingState, setFooterOverride, setStepTwoBanner, nextStep } from './onboarding-state.svelte'
+    import {
+        getOnboardingState,
+        setFooterOverride,
+        setFooterNote,
+        setStepTwoBanner,
+        nextStep,
+    } from './onboarding-state.svelte'
     import {
         checkFullDiskAccess,
+        getAiApiKeyStatus,
         getAiRuntimeStatus,
         startAiDownload,
         cancelAiDownload,
         openPrivacySettings,
     } from '$lib/tauri-commands'
     import { systemStrings } from '$lib/system-strings.svelte'
-    import { getSetting, setSetting, type AiProvider } from '$lib/settings'
+    import { getCloudProvider, getSetting, setSetting, type AiProvider } from '$lib/settings'
     import { pushConfigToBackend } from '$lib/settings/ai-config'
     import { revokeConsent } from '$lib/ask-cmdr/ask-cmdr-consent.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -117,7 +124,73 @@
         // Clear the footer override so the wizard's default buttons render on other steps
         // (and so a teardown-then-remount doesn't leak stale closures).
         setFooterOverride(null)
+        dismissKeyWarning()
     })
+
+    /**
+     * The missing-API-key warning is a CONFIRM-ONCE gate, not a block: the first Next
+     * with cloud picked and no key stored stops and says so, the second one goes through.
+     * That keeps the no-key-blocks-advance rule (a user who wants to paste the key later
+     * still gets out of the step) while making sure nobody sails past a half-configured
+     * AI setup without being told.
+     *
+     * `true` means the warning is up and the next press is the confirmation.
+     */
+    let keyWarningShown = $state(false)
+    let dismissKeyWarning: () => void = () => undefined
+
+    /**
+     * Show the warning and arm the "anything the user does next clears it" listeners.
+     *
+     * Events inside the wizard FOOTER are exempt, and that exemption is what makes the
+     * confirm-once flow work at all: pressing Next again (pointer or keyboard) has to
+     * reach `handleGoToBeta` with the flag still set. Keyboard is why the exemption can't
+     * be "ignore the click that opened this" — Enter on the button fires `keydown` BEFORE
+     * the click, so a blanket clear would disarm the gate a beat before the press it
+     * belongs to.
+     *
+     * Capture phase, on `document`: a step control that stops propagation (the provider
+     * listbox does) still counts as the user moving on.
+     */
+    function showKeyWarning(): void {
+        keyWarningShown = true
+        setFooterNote(tString('onboarding.stepAi.missingKeyWarning'))
+
+        const clear = (event: Event): void => {
+            const target = event.target
+            if (target instanceof Element && target.closest('.wizard-footer') !== null) return
+            dismissKeyWarning()
+        }
+        document.addEventListener('click', clear, true)
+        document.addEventListener('keydown', clear, true)
+
+        dismissKeyWarning = () => {
+            document.removeEventListener('click', clear, true)
+            document.removeEventListener('keydown', clear, true)
+            dismissKeyWarning = () => undefined
+            keyWarningShown = false
+            setFooterNote(null)
+        }
+    }
+
+    /**
+     * True when the user picked cloud AI, the chosen provider needs a key, and none is
+     * stored for it. Reads the OS secret store rather than any local field: a key the
+     * user pasted earlier in the session is already persisted there, and one is never
+     * read back into the window (`docs/security.md` § "AI API keys").
+     */
+    async function isMissingCloudApiKey(): Promise<boolean> {
+        if (choice !== 'cloud') return false
+        if (!(getCloudProvider(cloudProviderId)?.requiresApiKey ?? false)) return false
+        try {
+            const status = await getAiApiKeyStatus(cloudProviderId)
+            return !status.isSet
+        } catch (error) {
+            // Don't turn a failed keychain read into a blocked wizard.
+            log.warn('getAiApiKeyStatus() before advancing failed: {error}', { error })
+            return false
+        }
+    }
 
     async function refreshFdaBanner(): Promise<void> {
         // Skip on Linux: the resume rule sets `linux` and there's no banner to render.
@@ -233,6 +306,10 @@
         if (advanceBusy) return
         advanceBusy = true
         try {
+            if (!keyWarningShown && (await isMissingCloudApiKey())) {
+                showKeyWarning()
+                return
+            }
             await persist()
         } catch (error) {
             // The wizard never traps the user on a step (same reasoning as the
@@ -242,6 +319,7 @@
         } finally {
             advanceBusy = false
         }
+        dismissKeyWarning()
         nextStep()
     }
 
@@ -312,7 +390,10 @@
     <table class="comparison">
         <thead>
             <tr>
-                <th scope="col">{tString('onboarding.stepAi.table.colFeature')}</th>
+                <!-- The row labels say what each row is, so a visible "Feature" heading over
+                     them is noise. The header still EXISTS for screen readers, which announce
+                     it with every cell in the column and would otherwise hear a blank. -->
+                <th scope="col"><span class="sr-only">{tString('onboarding.stepAi.table.colFeature')}</span></th>
                 <th scope="col">{tString('onboarding.stepAi.table.colWithout')}</th>
                 <th scope="col" class="with-ai">
                     <span class="with-ai-head">
@@ -324,17 +405,32 @@
         </thead>
         <tbody>
             <tr>
-                <th scope="row">{tString('onboarding.stepAi.table.rowSearch')}</th>
+                <th scope="row">
+                    <span class="row-head">
+                        <span class="row-head-icon"><Icon name="search" size={14} aria-hidden="true" /></span>
+                        {tString('onboarding.stepAi.table.rowSearch')}
+                    </span>
+                </th>
                 <td><Trans key="onboarding.stepAi.table.searchWithout" snippets={{ code }} /></td>
                 <td class="with-ai">{tString('onboarding.stepAi.table.searchWith')}</td>
             </tr>
             <tr>
-                <th scope="row">{tString('onboarding.stepAi.table.rowRename')}</th>
+                <th scope="row">
+                    <span class="row-head">
+                        <span class="row-head-icon"><Icon name="pencil" size={14} aria-hidden="true" /></span>
+                        {tString('onboarding.stepAi.table.rowRename')}
+                    </span>
+                </th>
                 <td>{tString('onboarding.stepAi.table.renameWithout')}</td>
                 <td class="with-ai">{tString('onboarding.stepAi.table.renameWith')}</td>
             </tr>
             <tr>
-                <th scope="row">{tString('onboarding.stepAi.table.rowSelect')}</th>
+                <th scope="row">
+                    <span class="row-head">
+                        <span class="row-head-icon"><Icon name="list-checks" size={14} aria-hidden="true" /></span>
+                        {tString('onboarding.stepAi.table.rowSelect')}
+                    </span>
+                </th>
                 <td>
                     <!-- The chip reads the real `selection.selectFiles` binding (bare `+`),
                          not a hardcoded combo. Non-clickable: this is onboarding prose, and
@@ -359,6 +455,53 @@
 
     <fieldset class="choices" role="radiogroup" aria-label={tString('onboarding.stepAi.choiceGroupAria')}>
         <legend class="sr-only">{tString('onboarding.stepAi.choiceLegend')}</legend>
+
+        <!-- Order runs off → local → cloud, cheapest commitment first, so all three cards
+             fit above the fold and only the LAST one opens a provider panel underneath.
+             Cloud is still the pre-selected default. -->
+        <label class="choice" class:active={choice === 'off'}>
+            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke radio-cards: each option is a rich card (label + help text), which a plain RadioGroup option list can't express; already keyboard-accessible via the fieldset radiogroup. -->
+            <input
+                type="radio"
+                name="onboarding-ai-choice"
+                value="off"
+                checked={choice === 'off'}
+                onchange={() => {
+                    handleChoiceChange('off')
+                }}
+            />
+            <span class="choice-label"><strong>{tString('onboarding.stepAi.off.label')}</strong></span>
+            <span class="choice-help">{tString('onboarding.stepAi.off.help')}</span>
+        </label>
+
+        <label
+            class="choice"
+            class:active={choice === 'local'}
+            class:disabled={!localAiSupported}
+        >
+            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke radio-cards: each option is a rich card (label, help text, disabled/tooltip states), which a plain RadioGroup option list can't express; already keyboard-accessible via the fieldset radiogroup. -->
+            <input
+                type="radio"
+                name="onboarding-ai-choice"
+                value="local"
+                checked={choice === 'local'}
+                disabled={!localAiSupported}
+                onchange={() => {
+                    handleChoiceChange('local')
+                }}
+            />
+            <span
+                class="choice-label"
+                use:tooltip={!localAiSupported ? localTooltip : undefined}
+            >
+                <strong>{tString('onboarding.stepAi.local.label')}</strong>
+            </span>
+            <span class="choice-help">{tString('onboarding.stepAi.local.help')}</span>
+        </label>
+
+        {#if choice === 'local' && didStartLocalDownload}
+            <p class="local-note">{tString('onboarding.stepAi.local.note')}</p>
+        {/if}
 
         <label class="choice" class:active={choice === 'cloud'}>
             <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke radio-cards: each option is a rich card (label, "recommended" tag, help text, and an inline provider picker), which a plain RadioGroup option list can't express; already keyboard-accessible via the fieldset radiogroup. -->
@@ -395,50 +538,6 @@
                 </div>
             </div>
         {/if}
-
-        <label
-            class="choice"
-            class:active={choice === 'local'}
-            class:disabled={!localAiSupported}
-        >
-            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke radio-cards: each option is a rich card (label, help text, disabled/tooltip states), which a plain RadioGroup option list can't express; already keyboard-accessible via the fieldset radiogroup. -->
-            <input
-                type="radio"
-                name="onboarding-ai-choice"
-                value="local"
-                checked={choice === 'local'}
-                disabled={!localAiSupported}
-                onchange={() => {
-                    handleChoiceChange('local')
-                }}
-            />
-            <span
-                class="choice-label"
-                use:tooltip={!localAiSupported ? localTooltip : undefined}
-            >
-                <strong>{tString('onboarding.stepAi.local.label')}</strong>
-            </span>
-            <span class="choice-help">{tString('onboarding.stepAi.local.help')}</span>
-        </label>
-
-        {#if choice === 'local' && didStartLocalDownload}
-            <p class="local-note">{tString('onboarding.stepAi.local.note')}</p>
-        {/if}
-
-        <label class="choice" class:active={choice === 'off'}>
-            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke radio-cards: each option is a rich card (label + help text), which a plain RadioGroup option list can't express; already keyboard-accessible via the fieldset radiogroup. -->
-            <input
-                type="radio"
-                name="onboarding-ai-choice"
-                value="off"
-                checked={choice === 'off'}
-                onchange={() => {
-                    handleChoiceChange('off')
-                }}
-            />
-            <span class="choice-label"><strong>{tString('onboarding.stepAi.off.label')}</strong></span>
-            <span class="choice-help">{tString('onboarding.stepAi.off.help')}</span>
-        </label>
     </fieldset>
 </OnboardingStepShell>
 
@@ -574,6 +673,21 @@
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xxs);
+    }
+
+    /* The glyph carries the row's meaning at a glance; the label right after it is what
+       actually names the row, so the icon stays decorative (`aria-hidden`) and one step
+       quieter than the label it sits beside. */
+    .row-head {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+
+    .row-head-icon {
+        display: inline-flex;
+        flex: none;
+        color: var(--color-text-secondary);
     }
 
     .resume-cue {

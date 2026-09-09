@@ -89,6 +89,15 @@
         position: relative;
     }
 
+    /* A 16px box is a small pointer target, so a labeled checkbox grows its clickable
+       band all round. The padding is cancelled by an equal negative margin, so nothing
+       moves. A BARE box (dense list rows, grids) keeps its exact footprint: there, an
+       overhang would reach into the neighbouring row and steal its clicks. */
+    :global(.checkbox-root:has(.checkbox-label)) {
+        padding: var(--spacing-xs);
+        margin: calc(-1 * var(--spacing-xs));
+    }
+
     :global(.checkbox-control) {
         flex-shrink: 0;
         display: inline-flex;
@@ -129,40 +138,51 @@
         opacity: 0.5;
     }
 
+    /* ❌ Never let the glyphs decide this box's size, and ❌ never hide one with
+       `display: none`. The root is inline-flex, so the line it sits on takes its
+       baseline from the first flex item's first child — the indicator. An empty
+       indicator has no baseline to give and the browser synthesizes one from the
+       border box instead, which sat ~6px off: the whole control (and any prose
+       around it) hopped every time the user ticked the box. A fixed indicator with
+       both glyphs absolutely centred inside makes all three states one layout. */
     :global(.checkbox-indicator) {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        position: relative;
+        width: 12px;
+        height: 12px;
         color: var(--color-accent-fg);
     }
 
-    .checkbox-check {
+    .checkbox-check,
+    .checkbox-dash {
+        position: absolute;
         display: flex;
         align-items: center;
         justify-content: center;
+        inset: 0;
     }
 
     /* Unchecked reads as an empty square. Ark keeps the indicator mounted in every
        state, so hide the glyph ourselves instead of relying on it to unmount. */
-    :global(.checkbox-control[data-state='unchecked']) .checkbox-check {
-        display: none;
+    :global(.checkbox-control[data-state='unchecked']) .checkbox-check,
+    :global(.checkbox-control[data-state='indeterminate']) .checkbox-check {
+        visibility: hidden;
     }
 
     /* Indeterminate: hide the check, show a horizontal bar. */
     .checkbox-dash {
-        display: none;
+        visibility: hidden;
+    }
+
+    .checkbox-dash::before {
+        content: '';
         width: 8px;
         height: 2px;
         border-radius: var(--radius-xs);
         background: var(--color-accent-fg);
     }
 
-    :global(.checkbox-control[data-state='indeterminate']) .checkbox-check {
-        display: none;
-    }
-
     :global(.checkbox-control[data-state='indeterminate']) .checkbox-dash {
-        display: block;
+        visibility: visible;
     }
 
     :global(.checkbox-label) {

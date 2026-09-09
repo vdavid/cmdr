@@ -52,9 +52,15 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
-        /* Wide enough for the longest endonym plus the resolved "System default
-           (…)" label, narrow enough to stay a frame control rather than a field. */
-        width: 220px;
+    }
+
+    /* The trigger is a borderless macOS pop-up button that hugs its own text, so the
+       picker has to hug too: `SettingSelect`'s default `min-width` would pad the row
+       out to a fixed width and leave the visible control floating short of the
+       panel's right edge. */
+    .language-picker :global(.select-wrapper) {
+        min-width: 0;
+        width: auto;
     }
 
     .globe {

@@ -15,8 +15,9 @@
  * - The single forward footer button ("Next") registers via `setFooterOverride`. Clicking
  *   it persists + calls `pushConfigToBackend` + advances to the Beta page (step 3). It
  *   never completes onboarding: the Beta page is non-skippable.
- * - No-API-key-blocks-advance rule: cloud + empty key still advances; `pushConfigToBackend`
- *   still fires.
+ * - The missing-API-key confirm-once gate: cloud with no stored key warns on the first
+ *   Next and goes through on the second, so nothing is ever hard-blocked (the
+ *   no-key-blocks-advance rule) but nobody sails past a half-configured AI setup either.
  * - "Thanks but no thanks" lands on all three pieces of state: `ai.provider = 'off'`,
  *   Ask Cmdr consent revoked, `askCmdr.proactive = false`. Picking a provider touches
  *   NEITHER of the last two (the consent-bypass guard), and a failing revoke still lets
@@ -309,6 +310,9 @@ describe('StepAi', () => {
   })
 
   it('Next persists the choice, pushes config to backend, and advances to the Beta page (step 3) without finishing', async () => {
+    // A stored key, so the missing-key gate stays out of the way and this test is about
+    // the forward button alone.
+    getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'abc' })
     mounted = mountStep()
     await waitForAsync()
     radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
@@ -382,15 +386,62 @@ describe('StepAi', () => {
     expect(pushConfigToBackend).toHaveBeenCalled()
   })
 
-  it('No-key-blocks-advance: cloud with empty key still calls pushConfigToBackend', async () => {
-    // Default mocks: no key is stored, so the key field stays empty.
+  it('cloud with no stored key: the first Next warns instead of advancing', async () => {
+    // Default mocks: no key is stored for the provider.
     mounted = mountStep()
     await waitForAsync()
     radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
     await waitForAsync()
     getOnboardingState().footerOverride?.[0].onclick()
     await waitForAsync()
+    expect(getOnboardingState().footerNote).toContain('API key')
+    expect(getOnboardingState().currentStep).toBe(2)
+    expect(pushConfigToBackend).not.toHaveBeenCalled()
+  })
+
+  it('cloud with no stored key: the second Next goes through, warning and all', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
+    await waitForAsync()
+    getOnboardingState().footerOverride?.[0].onclick()
+    await waitForAsync()
+    getOnboardingState().footerOverride?.[0].onclick()
+    await waitForAsync()
     expect(settingsMap['ai.provider']).toBe('cloud')
     expect(pushConfigToBackend).toHaveBeenCalled()
+    expect(getOnboardingState().currentStep).toBe(3)
+    expect(getOnboardingState().footerNote).toBeNull()
+  })
+
+  it('the warning clears on the next thing the user does, so the gate asks again', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
+    await waitForAsync()
+    getOnboardingState().footerOverride?.[0].onclick()
+    await waitForAsync()
+    expect(getOnboardingState().footerNote).not.toBeNull()
+
+    // Anything outside the wizard footer counts as the user moving on.
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await waitForAsync()
+    expect(getOnboardingState().footerNote).toBeNull()
+
+    getOnboardingState().footerOverride?.[0].onclick()
+    await waitForAsync()
+    expect(getOnboardingState().footerNote).not.toBeNull()
+    expect(getOnboardingState().currentStep).toBe(2)
+  })
+
+  it('no gate when the picked provider needs no key, or when AI is off', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    radioByValue(mounted.target, 'off')?.dispatchEvent(new Event('change', { bubbles: true }))
+    await waitForAsync()
+    getOnboardingState().footerOverride?.[0].onclick()
+    await waitForAsync()
+    expect(getOnboardingState().footerNote).toBeNull()
+    expect(getOnboardingState().currentStep).toBe(3)
   })
 })

@@ -125,6 +125,13 @@ interface OnboardingStateData {
    */
   footerOverride: WizardFooterButton[] | null
   /**
+   * A warning the wizard renders to the LEFT of the footer buttons, or `null` for none.
+   * It belongs to the footer rather than the step body because it answers a press on a
+   * footer button ("you enabled AI but entered no API key"), and an answer that appears
+   * a screenful away from the button reads as nothing happening at all.
+   */
+  footerNote: string | null
+  /**
    * Monotonic tick. A step bumps this via `requestWizardComplete()` to ask the wizard
    * shell to fire `onComplete` and close the wizard. The wizard's `$effect` watches
    * this value (not a boolean, so repeated requests within the same session still
@@ -143,6 +150,7 @@ const state = $state<OnboardingStateData>({
   step1Granted: false,
   stepTwoBanner: 'stuck',
   footerOverride: null,
+  footerNote: null,
   finishRequestTick: 0,
 })
 
@@ -220,6 +228,7 @@ export function stepTwoBannerFor(ctx: ResumeContext): StepTwoFdaBanner {
 export function openWizard(source: OnboardingSource, ctx: ResumeContext | null = null): void {
   state.source = source
   state.footerOverride = null
+  state.footerNote = null
   // Reset the finish-request counter. The wizard's `$effect` watching this counter has
   // its own local "last seen" cursor that resets on remount; without resetting the
   // module-level counter here, a re-entry after a previous Start/Finish would fire
@@ -262,6 +271,7 @@ export function closeWizard(): void {
   state.step1Granted = false
   state.stepTwoBanner = 'stuck'
   state.footerOverride = null
+  state.footerNote = null
   state.finishRequestTick = 0
 }
 
@@ -276,6 +286,7 @@ export function nextStep(): void {
     state.currentStep = (state.currentStep + 1) as OnboardingStep
     // Clear any prior step's footer override; the new step opts in fresh if it wants.
     state.footerOverride = null
+    state.footerNote = null
   }
 }
 
@@ -296,6 +307,7 @@ export function previousStep(): void {
     state.step1FooterMode = 'decide'
     state.step1Granted = false
     state.footerOverride = null
+    state.footerNote = null
   }
 }
 
@@ -355,6 +367,15 @@ export function setFooterOverride(buttons: WizardFooterButton[] | null): void {
 }
 
 /**
+ * Step-controlled warning beside the footer buttons; `null` clears it. The AI step uses
+ * it to say "you picked cloud AI but stored no API key" the moment the user presses
+ * Next, and clears it again on the user's next interaction.
+ */
+export function setFooterNote(note: string | null): void {
+  state.footerNote = note
+}
+
+/**
  * Ask the wizard to fire its `onComplete` callback (close + persist `isOnboarded`).
  * The final Optional step's "Start using Cmdr" button calls this. The wizard observes
  * `finishRequestTick` and calls `onComplete()` once per increment.
@@ -372,5 +393,6 @@ export function resetForTesting(): void {
   state.step1Granted = false
   state.stepTwoBanner = 'stuck'
   state.footerOverride = null
+  state.footerNote = null
   state.finishRequestTick = 0
 }

@@ -271,6 +271,14 @@
                 {/if}
             </div>
             <div class="primary-slot">
+                {#if onboardingState.footerNote}
+                    <!-- `role="alert"` so a screen reader hears the reason the press didn't
+                         move, the same moment a sighted user reads it next to the button. -->
+                    <p class="footer-note" role="alert">
+                        <span class="footer-note-icon"><Icon name="triangle-alert" size={16} /></span>
+                        <span>{onboardingState.footerNote}</span>
+                    </p>
+                {/if}
                 {#each footerButtons as button, i (`${String(i)}-${button.label}`)}
                     <!-- A blocked button keeps its click and its place in the tab order on
                          purpose: pressing it is how the user finds out what's missing. -->
@@ -407,6 +415,28 @@
 
     .primary-slot {
         gap: var(--spacing-md);
+    }
+
+    /* The note sits left of the buttons and wraps rather than pushing them off the
+       panel. `align-items: center` twice over is what keeps the layout calm at either
+       height: the note's own box centres on the button row, and the icon centres on
+       the text block, so a one-liner and a two-liner both read as one line of thought
+       next to the button label. */
+    .footer-note {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        max-width: 30rem;
+        margin: 0;
+        font-size: var(--font-size-sm);
+        line-height: var(--font-line-height-normal);
+        color: var(--color-warning-text);
+    }
+
+    .footer-note-icon {
+        display: inline-flex;
+        flex: none;
+        color: var(--color-warning);
     }
 
     .back-button {

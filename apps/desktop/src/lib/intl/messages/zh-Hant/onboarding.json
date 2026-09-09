@@ -420,7 +420,7 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "如果你關掉這一項，資料夾大小就只會顯示 <code>&lt;DIR&gt;</code>。代價是幾百萬個檔案大約要在你的磁碟機上放 1 GB 的索引，但除了第一次開 App、或很久沒開再開的頭 2&ndash;3 分鐘之外，不會多吃 CPU 或記憶體。以它帶來的好處來看，這個代價很划算。",
+  "onboarding.stepOptional.indexing.descCost": "如果你關掉這一項，資料夾大小就只會顯示 <code>{dirPlaceholder}</code>。代價是幾百萬個檔案大約要在你的磁碟機上放 1 GB 的索引，但除了第一次開 App、或很久沒開再開的頭 2–3 分鐘之外，不會多吃 CPU 或記憶體。以它帶來的好處來看，這個代價很划算。",
   "@onboarding.stepOptional.indexing.descCost": {
     "sourceHash": "739f4f8"
   },

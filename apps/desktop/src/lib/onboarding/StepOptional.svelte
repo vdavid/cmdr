@@ -10,6 +10,12 @@
     /**
      * Step 3: Optional setup.
      *
+     * Each card leads with a half-line summary and parks the full explanation behind the
+     * info glyph beside its title (`OnboardingToggleCard`'s `details` snippet). Four cards
+     * of full prose turned the last step of onboarding into a wall of text, which is the
+     * worst possible place for one: the user is trying to get INTO the app. The summary
+     * carries the trade-off, and the tooltip is there for whoever wants the why.
+     *
      * Four toggles, each bound to an existing registry setting via `<SettingSwitch>`.
      * The switch component reads + writes the setting directly, so the toggles
      * live-apply the moment the user flips them: `network.enabled` /
@@ -63,8 +69,14 @@
         title={tString('onboarding.stepOptional.networking.title')}
         settingId="network.enabled"
         caption={tString('onboarding.stepOptional.recommendedOn')}
+        detailsLabel={tString('onboarding.stepOptional.moreAbout', {
+            topic: tString('onboarding.stepOptional.networking.title'),
+        })}
     >
-        <p class="toggle-desc"><Trans key="onboarding.stepOptional.networking.desc" snippets={{ em }} /></p>
+        <p class="toggle-desc">{tString('onboarding.stepOptional.networking.summary')}</p>
+        {#snippet details()}
+            <p class="toggle-desc"><Trans key="onboarding.stepOptional.networking.desc" snippets={{ em }} /></p>
+        {/snippet}
     </OnboardingToggleCard>
 
     <OnboardingToggleCard
@@ -72,13 +84,27 @@
         title={tString('onboarding.stepOptional.indexing.title')}
         settingId="indexing.enabled"
         caption={tString('onboarding.stepOptional.recommendedOn')}
+        detailsLabel={tString('onboarding.stepOptional.moreAbout', {
+            topic: tString('onboarding.stepOptional.indexing.title'),
+        })}
     >
-        <p class="toggle-desc">{tString('onboarding.stepOptional.indexing.descIntro')}</p>
-        <ol class="toggle-list">
-            <li>{tString('onboarding.stepOptional.indexing.benefit1')}</li>
-            <li>{tString('onboarding.stepOptional.indexing.benefit2')}</li>
-        </ol>
-        <p class="toggle-desc"><Trans key="onboarding.stepOptional.indexing.descCost" snippets={{ code }} /></p>
+        <p class="toggle-desc">{tString('onboarding.stepOptional.indexing.summary')}</p>
+        {#snippet details()}
+            <p class="toggle-desc">{tString('onboarding.stepOptional.indexing.descIntro')}</p>
+            <ol class="toggle-list">
+                <li>{tString('onboarding.stepOptional.indexing.benefit1')}</li>
+                <li>{tString('onboarding.stepOptional.indexing.benefit2')}</li>
+            </ol>
+            <!-- The folder-size placeholder comes from the file list's own catalog entry, so
+                 this sentence can never name a placeholder the Size column doesn't show. -->
+            <p class="toggle-desc">
+                <Trans
+                    key="onboarding.stepOptional.indexing.descCost"
+                    snippets={{ code }}
+                    params={{ dirPlaceholder: tString('fileExplorer.dirSize.dirPlaceholder') }}
+                />
+            </p>
+        {/snippet}
     </OnboardingToggleCard>
 
     <OnboardingToggleCard
@@ -86,8 +112,14 @@
         title={tString('onboarding.stepOptional.updates.title')}
         settingId="updates.autoCheck"
         caption={tString('onboarding.stepOptional.recommendedOn')}
+        detailsLabel={tString('onboarding.stepOptional.moreAbout', {
+            topic: tString('onboarding.stepOptional.updates.title'),
+        })}
     >
-        <p class="toggle-desc">{tString('onboarding.stepOptional.updates.desc')}</p>
+        <p class="toggle-desc">{tString('onboarding.stepOptional.updates.summary')}</p>
+        {#snippet details()}
+            <p class="toggle-desc">{tString('onboarding.stepOptional.updates.desc')}</p>
+        {/snippet}
     </OnboardingToggleCard>
 
     <OnboardingToggleCard
@@ -95,8 +127,14 @@
         title={tString('onboarding.stepOptional.mtp.title')}
         settingId="fileOperations.mtpEnabled"
         caption={tString('onboarding.stepOptional.recommendedOn')}
+        detailsLabel={tString('onboarding.stepOptional.moreAbout', {
+            topic: tString('onboarding.stepOptional.mtp.title'),
+        })}
     >
-        <p class="toggle-desc"><Trans key="onboarding.stepOptional.mtp.desc" snippets={{ strong, em }} /></p>
+        <p class="toggle-desc">{tString('onboarding.stepOptional.mtp.summary')}</p>
+        {#snippet details()}
+            <p class="toggle-desc"><Trans key="onboarding.stepOptional.mtp.desc" snippets={{ strong, em }} /></p>
+        {/snippet}
     </OnboardingToggleCard>
 </OnboardingStepShell>
 
@@ -116,24 +154,35 @@
         color: var(--color-text-primary);
     }
 
-    /* Inside `OnboardingToggleCard`'s description slot, so these stay parent-scoped. */
+    /* Inside `OnboardingToggleCard`'s description and details slots, so these stay
+       parent-scoped. The list sits in the same vertical rhythm as the paragraphs around
+       it: one paragraph gap above and below, never a bigger one on one side. */
     .toggle-list {
-        margin: 0 0 var(--spacing-sm);
-        padding-left: var(--spacing-lg);
+        margin: 0 0 var(--spacing-md);
+        padding-left: 0;
+        list-style-position: inside;
         font-size: var(--font-size-sm);
         line-height: var(--font-line-height-prose);
         color: var(--color-text-secondary);
     }
 
+    /* Numbers line up with the paragraph text above rather than sitting in an indent of
+       their own; the hanging indent keeps a wrapped line under the words, not the number. */
     .toggle-list li {
         margin: 0 0 var(--spacing-xxs);
+        padding-left: 1.6em;
+        text-indent: -1.6em;
     }
 
     .toggle-desc {
-        margin: 0;
+        margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-sm);
         line-height: var(--font-line-height-prose);
         color: var(--color-text-secondary);
+    }
+
+    .toggle-desc:last-child {
+        margin-bottom: 0;
     }
 
     .toggle-desc code {

@@ -121,7 +121,14 @@
         block.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' })
         // Focus the control itself, not just the region: a scroll alone leaves a keyboard
         // user's caret back on the footer with nothing to act on.
-        block.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus()
+        //
+        // ❌ `preventScroll` is load-bearing. Ark's hidden 1x1 input is off screen when we
+        // get here, so a plain `focus()` runs its own scroll-into-view, which cancels the
+        // smooth scroll above and leaves the step where it started. The press then does
+        // nothing visible and focus sits on a control the user can't see, which reads as a
+        // dead button and an unclickable checkbox (measured in the app: 4 runs out of 4,
+        // and only when the input wasn't already focused, which is why it looked flaky).
+        block.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus({ preventScroll: true })
     }
 
     // Guards a double-trigger while the step tears down. Both handlers are synchronous, so
@@ -327,15 +334,20 @@
         margin-bottom: var(--spacing-lg);
     }
 
+    /* The list belongs to the paragraphs around it, so its numbers start on the same
+       left edge they do; only a wrapped line hangs in under the words. */
     .feedback-list {
         margin: 0 0 var(--spacing-lg);
-        padding-left: var(--spacing-lg);
+        padding-left: 0;
+        list-style-position: inside;
         line-height: var(--font-line-height-prose);
         color: var(--color-text-primary);
     }
 
     .feedback-list li {
         margin-bottom: var(--spacing-xs);
+        padding-left: 1.6em;
+        text-indent: -1.6em;
     }
 
     .feedback-list li:last-child {

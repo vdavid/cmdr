@@ -1204,6 +1204,33 @@ When to add a wrapper (like `SettingToggleGroup`) versus using `ToggleGroup` dir
 single source of truth that the consumer already owns (the settings registry, a config object). Otherwise, use the
 primitive directly.
 
+## Checkbox
+
+A presentational wrapper over Ark's `Checkbox`. Props: `checked` (bindable), `disabled`, `indeterminate`, `id`,
+`ariaLabel`, `required` (`aria-required` on the control; a visible asterisk elsewhere is decoration only),
+`onCheckedChange`, `children` (an inline label right of the box). Ark's root is a `<label>`, so the label text toggles
+the box for free.
+
+**The indicator's size is fixed and its glyphs are toggled with `visibility`, never `display`.** The root is
+`inline-flex`, so the line it sits on takes its baseline from the first flex item's first child, the indicator. An empty
+indicator has no baseline to give, the browser synthesizes one from the border box instead, and the two differ: the
+whole control and the prose around it hopped ~6 px every time the box was ticked (measured in the onboarding terms
+block). A 12 px indicator with both glyphs absolutely centred inside gives checked, unchecked, and indeterminate one
+identical layout.
+
+**A LABELED checkbox grows its hit area; a bare one must not.** `:has(.checkbox-label)` adds `--spacing-xs` of padding
+cancelled by an equal negative margin, so the clickable band grows and nothing moves. A bare box (dense list rows, grids
+that own their label) keeps its exact footprint on purpose: an overhang there reaches into the neighbouring row and
+steals its clicks.
+
+**Ark's hidden input is a real 1×1 element parked inside the root, and `.focus()` on it scrolls.** Anything that reveals
+a checkbox by scrolling and then focusing it MUST pass `focus({ preventScroll: true })`, or the focus scroll cancels the
+deliberate one and the reveal silently does nothing. The onboarding terms checkbox hit exactly that; see
+`lib/onboarding/DETAILS.md` § "Terms acceptance".
+
+`aria-label` goes on the INPUT for the same reason it does on `Switch` (a dangling `aria-labelledby` when there are no
+`children` would leave the control unnamed).
+
 ## Switch
 
 The track-and-thumb on/off control, a presentational wrapper over Ark's `Switch`, and the ONLY switch in the app: every

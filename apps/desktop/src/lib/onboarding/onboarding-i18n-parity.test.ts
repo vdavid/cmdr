@@ -321,6 +321,21 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
     )
   })
 
+  it('resolves the four summaries and the info-glyph label', () => {
+    // Each card leads with one of these and parks its `desc` behind the info glyph.
+    expect(tString('onboarding.stepOptional.moreAbout', { topic: 'Drive indexing' })).toBe('More about Drive indexing')
+    expect(tString('onboarding.stepOptional.networking.summary')).toBe('Needs accepting "Local network access" once')
+    expect(tString('onboarding.stepOptional.indexing.summary')).toBe(
+      'Takes 1 GB space, speeds up searches, shows folder sizes',
+    )
+    expect(tString('onboarding.stepOptional.updates.summary')).toBe(
+      'One tiny check at app start and once a day, so you stay on the latest version',
+    )
+    expect(tString('onboarding.stepOptional.mtp.summary')).toBe(
+      'Lets you connect Android phones and the such, suppresses macOS native handler',
+    )
+  })
+
   it('resolves the four toggle blocks', () => {
     expect(tString('onboarding.stepOptional.networking.title')).toBe('Networking')
     expect(renderRich('onboarding.stepOptional.networking.desc', ['em'])).toBe(
@@ -336,16 +351,21 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
     expect(tString('onboarding.stepOptional.indexing.benefit2')).toBe(
       'Real-time folder sizes for your whole drive. You always know how much stuff you have in each folder.',
     )
-    expect(renderRich('onboarding.stepOptional.indexing.descCost', ['code'])).toBe(
-      "If you turn this off, you only get <code>&lt;DIR&gt;</code> for the sizes. The cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2&ndash;3 minutes of you first starting the app, or starting it after a long time. It's a cheap feature considering the benefits.",
+    // The folder-size placeholder is passed in from the file list's own catalog entry, so
+    // this sentence can't drift from what the Size column actually shows. The `<` reaches
+    // the reader as a `<`, never as `&lt;`: `<Trans>` renders text, not HTML.
+    expect(renderRich('onboarding.stepOptional.indexing.descCost', ['code'], { dirPlaceholder: '<dir>' })).toBe(
+      "If you turn this off, you only get <code><dir></code> for the sizes. The cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2–3 minutes of you first starting the app, or starting it after a long time. It's a cheap feature considering the benefits.",
     )
     expect(tString('onboarding.stepOptional.updates.title')).toBe('Automatic updates')
     expect(tString('onboarding.stepOptional.updates.desc')).toBe(
       "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates. If disabled, you'll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).",
     )
     expect(tString('onboarding.stepOptional.mtp.title')).toBe('MTP (Android phones, Kindles, cameras)')
+    // The trailing "But it's a bit of a cost, so:" is gone: it used to lead into the
+    // recommendation caption beside the toggle, and this sentence now ends a tooltip.
     expect(renderRich('onboarding.stepOptional.mtp.desc', ['strong', 'em'])).toBe(
-      "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP. The cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can't just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it's running. When you quit Cmdr, this is politely restored. But it's a bit of a cost, so:",
+      "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP. The cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can't just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it's running. When you quit Cmdr, this is politely restored.",
     )
   })
 })

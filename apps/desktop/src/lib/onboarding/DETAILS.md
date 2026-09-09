@@ -18,7 +18,9 @@ finishes onboarding.
   to a step).
 - **`OnboardingStepShell.svelte`**: Per-step inner frame (padding, scroll container). Steps render their body inside.
 - **`OnboardingLanguagePicker.svelte`**: The language escape hatch in the wizard header's right cell (a globe glyph plus
-  `SettingSelect` on `appearance.language`). See "The language escape hatch" below.
+  `SettingSelect` on `appearance.language`). See "The language escape hatch" below. It overrides `SettingSelect`'s
+  `min-width` to hug its trigger: that trigger is a borderless macOS pop-up button sized to its own text, so a fixed
+  wrapper width would park the visible control short of the panel's right padding edge with dead space after it.
 - **`StepFda.svelte`**: Step 1 (macOS only): Full Disk Access. Three variants: first-ask, revoked, already-granted.
 - **`StepAi.svelte`**: Step 2: AI provider picker. FDA-outcome banner (or none), comparison table (Without AI / With
   AI), three radio choices, single "Next" forward button.
@@ -36,7 +38,8 @@ finishes onboarding.
   settings.
 - **`OnboardingToggleCard.svelte`**: the bordered card of one registry-backed `<SettingSwitch>` (title, description
   snippet, switch, caption) that `StepBeta`'s analytics opt-out and `StepOptional`'s four toggles render, so the two
-  steps stay pixel-identical. The description snippet is styled by the parent's own `.toggle-desc` / `.toggle-list`.
+  steps stay pixel-identical. The description snippet is styled by the parent's own `.toggle-desc` / `.toggle-list`. An
+  optional `details` snippet + `detailsLabel` adds the info glyph beside the title (see § "The info glyph").
 - **`onboarding-state.svelte.ts`**: Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner
   mode, `openWizard()` / `resumeStepFor()` etc.
 
@@ -189,10 +192,15 @@ Three pieces stacked top to bottom:
    - `denied` ("You chose not to enable full disk access.")
    - `stuck` ("Cmdr doesn't seem to have full disk access yet"; surfaces a deep link to System Settings) Linux
      short-circuits with `linux` (no banner; the step opens with the Welcome line instead).
-2. **Comparison table**: "without AI vs with AI" for Search, Mass-rename, Select. The "With AI" column is the rightmost
-   and carries the accent flair (tint + sparkle) to draw the eye.
-3. **Three radio choices**: cloud / local / no AI. Pre-selected from the persisted `ai.provider` so a crash-then-resume
-   user lands on their previous pick. Picking cloud reveals `CloudProviderPicker.svelte` (left) and
+2. **Comparison table**: "without AI vs with AI" for Search, Mass-rename, Select. Each row label carries its own glyph
+   (`search` / `pencil` / `list-checks`), `aria-hidden` because the label beside it already names the row. The "With AI"
+   column is the rightmost and carries the accent flair (tint + sparkle) to draw the eye. The feature column's header is
+   `sr-only`: the row labels say what each row is, so a visible "Feature" over them was noise, but the header still has
+   to EXIST or a screen reader hears a blank with every cell in that column.
+3. **Three radio choices, in the order no AI → local → cloud.** Cheapest commitment first, so all three cards fit above
+   the fold and only the last one opens a provider panel underneath it; before, cloud sat first and its panel pushed the
+   other two options off screen. The pre-selection comes from the persisted `ai.provider` (default `off`), so a
+   crash-then-resume user lands on their previous pick. Picking cloud reveals `CloudProviderPicker.svelte` (left) and
    `CloudProviderSetup.svelte` (right). Picking local kicks off `startAiDownload()` in the background; switching away
    cancels (HTTP-Range resume picks up on switch-back). Intel Macs see the local radio disabled with a tooltip ("Local
    LLM requires Apple Silicon. Cloud works on Intel.") driven by `getAiRuntimeStatus().localAiSupported`.
@@ -241,6 +249,21 @@ two absent `meta` rows), and both it and the surrounding persist are wrapped: a 
 module's `getAppLogger` and the rest of the persist still runs, and any other persist failure is logged and still
 advances. The footer's `advanceBusy` guard always clears in a `finally`. Same reasoning as the no-key-blocks-advance
 rule above: the wizard never traps someone on a step.
+### The missing-API-key gate (confirm once, never block)
+
+Cloud picked, the provider's `requiresApiKey` set, and `getAiApiKeyStatus(providerId).isSet === false`: the first Next
+doesn't advance. It sets `footerNote` in `onboarding-state`, and the wizard renders it as a warning glyph plus one
+sentence to the LEFT of the footer buttons, vertically centred on the button label at one line or two. The second Next
+persists and advances. So the no-key-blocks-advance rule still holds (nothing is ever hard-blocked), and nobody sails
+past a half-configured AI setup without hearing about it.
+
+The state (`keyWarningShown`) clears on the next thing the user does, document-level and capture-phase so a control that
+stops propagation still counts. **Events inside `.wizard-footer` are exempt, and that exemption is what makes the gate
+work at all**: the second press has to reach `handleGoToBeta` with the flag still set. It can't be "ignore the click
+that raised the warning" either, because Enter on the focused button fires `keydown` BEFORE the click, so a blanket
+clear would disarm the gate one beat before the press it belongs to.
+
+A failed keychain read logs and returns `false`: a wizard the user can't leave is worse than a warning they don't get.
 
 ### Connection-check pipeline
 
@@ -322,6 +345,14 @@ itself. A truly `disabled` button fires no click and takes no focus, so a user w
 keyboard user couldn't even reach it to find out why the wizard won't move. Focusing the control, not just scrolling to
 it, is what makes the keyboard path equal to the pointer one.
 
+**That focus MUST pass `preventScroll: true`.** Ark's hidden checkbox input is a real 1×1 element, off screen when the
+press happens, so a plain `focus()` runs its own scroll-into-view, and in WKWebView that cancels the smooth
+`scrollIntoView` above and wins with a near-no-op. The press then does nothing visible while focus sits on a control the
+user can't see, which reads exactly like a dead button and an unclickable checkbox; the fix is a step back and forward,
+which remounts the step. Measured in the running app before the fix: 4 runs out of 4 ended ~350 px short of the terms
+block, and only when the input wasn't already focused, which is what made it look intermittent. With `preventScroll`, 3
+runs out of 3 landed correctly.
+
 **Marking it required.** The red asterisk after the block heading is `aria-hidden` decoration; `<Checkbox required>`
 puts `aria-required` on the control, which is what a screen reader announces. Neither alone is enough (see
 `docs/design-system.md` § "Checkbox and radio group").
@@ -330,6 +361,28 @@ puts `aria-required` on the control, which is what a screen reader announces. Ne
 
 Four toggle blocks, each bound to an existing registry setting via `<SettingSwitch>`. Defaults stay ON; the step is
 about letting the user turn things OFF with full context, not about asking for opt-in.
+
+### The info glyph
+
+Each card shows a half-line `*.summary` and parks its full `*.desc` in a tooltip behind an info glyph beside the title.
+Four paragraphs of prose made the LAST step of onboarding a wall of text, which is the worst place for one: the user is
+trying to get into the app. The summary carries the trade-off in a line; the tooltip is there for whoever wants the why.
+
+The glyph is a `<button>`, not a decorated span, so the tooltip opens on Tab as well as hover (the action fires on
+`focus`, which is also why a native `title` is banned app-wide). Its content goes through the tooltip action's
+`contentEl`, so it can carry real `<p>` and `<ol>` elements rather than one run-on line; `OnboardingToggleCard` renders
+it into a `<div hidden>` host and hands over the INNER element, since an adopted element keeps its own `hidden`.
+
+That host sits outside `.toggle-text` on purpose: a hidden sibling in there would still count for `:last-child`, and the
+summary above it would keep a paragraph gap under it with nothing to separate.
+
+Lists on this step and step 3 sit flush with the paragraphs around them (`list-style-position: inside` plus a `1.6em`
+hanging indent), so a marker starts on the same left edge as the prose and only a wrapped line hangs in under the words.
+
+Copy that reaches a tooltip goes through `<Trans>`, which renders TEXT, never HTML, so an HTML entity in the catalog
+shows up literally: `&lt;DIR&gt;` used to render as `&lt;DIR&gt;` on screen, and `2&ndash;3` as `2&ndash;3`. The en dash
+is now the literal character, and the folder-size placeholder is passed in as `{dirPlaceholder}` from
+`fileExplorer.dirSize.dirPlaceholder`, so the sentence can't name a placeholder the Size column doesn't actually show.
 
 | Toggle            | Setting ID                  | Live-apply wiring                                                             |
 | ----------------- | --------------------------- | ----------------------------------------------------------------------------- |
