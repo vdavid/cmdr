@@ -49,16 +49,17 @@ below is met.
 
 ## In progress
 
-- [ ] 2026-09-09 `dock-integration.md` - **Cmdr has no presence in the Dock beyond its running tile.** A read-only
-      implementation map (no code yet) for four pieces: a `usage.json` launch-day ledger, a one-time "add Cmdr to your
-      Dock" nudge that writes `com.apple.dock`'s `persistent-apps` through CFPreferences, a Dock-tile context menu built
-      on demand, and three PostHog events. Every seam is named with a path and a symbol: tao's `TaoAppDelegateParent`
-      never implements `applicationDockMenu:` so the selector can simply be added, `objc2-core-foundation` already
-      carries CFPreferences behind one unused feature flag, and favorites plus recents are both readable from Rust
-      synchronously. Two findings change the plan: `CommandScope::FileScoped` silently drops a Dock click because the
-      main window isn't focused, and Tauri exposes no `NSMenu*` from a `Submenu`, so the menu has to be hand-built with
-      objc2. Four open questions for David (what "New window" means with one window, what "Recent locations" draws from,
-      the `_schemaVersion` naming, and whether `~/Applications` counts).
+- [ ] 2026-09-09 `dock-integration.md` - **Cmdr has no presence in the Dock beyond its running tile.** An implementation
+      map for four pieces, three of which have now landed on `worktree-dock-integration`: the `usage.json` launch-day
+      ledger, the one-time "add Cmdr to your Dock" nudge that writes `com.apple.dock`'s `persistent-apps` through
+      CFPreferences, and its three PostHog events. Only the Dock-tile context menu is left, and §§ A and B are still its
+      map: tao's `TaoAppDelegateParent` never implements `applicationDockMenu:` so the selector can simply be added, but
+      `CommandScope::FileScoped` silently drops a Dock click because the main window isn't focused, and Tauri exposes no
+      `NSMenu*` from a `Submenu`, so the menu has to be hand-built with objc2. Two open questions for David remain, both
+      about that menu: what "New window" means when there is only one window, and what "Recent locations" draws from.
+      The file now leads with the corrections the build turned up (the toast raise/answer import cycle, the `onDismiss`
+      seam that tells a dismissal from a refusal, `i18n-coverage` as the real cost of new copy, and the per-file
+      coverage floor on new IPC wrappers); where it and a colocated `CLAUDE.md` disagree, the colocated doc wins.
 - [ ] 2026-09-07 `servers-hub-review-follow-ups.md` - **What the servers branch's pre-merge review left open once its
       fixes landed.** Twenty-four entries in problem / impact / solution / size form, verified against the code as it
       stands. Four are decisions rather than fixes and wait for David: the SMB sheet seeding "Remember in Keychain" ON

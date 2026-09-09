@@ -1,19 +1,44 @@
 # macOS Dock integration: implementation map
 
-Read-only survey of the seams a macOS Dock integration needs. **Nothing here is implemented.** This is the map so a
-later agent can write the code without re-deriving where things live. Every path is repo-relative; every claim below was
-read out of the tree at the commit this file landed on.
+Survey of the seams a macOS Dock integration needs, so an agent can write the code without re-deriving where things
+live. Every path is repo-relative.
 
-What is being built (four pieces, for context):
+What is being built (four pieces):
 
-1. A launch-day ledger: `usage.json` in the app data dir, `{ "schemaVersion": 1, "launchDays": ["2026-09-08", …] }`,
-   local calendar days, appended once per launch by Rust at startup.
-2. A one-time "add Cmdr to your Dock" nudge: a persistent INFO toast when (a) `launchDays.length >= 3`, (b) Cmdr is not
-   already in the Dock, (c) Cmdr runs from `/Applications`, (d) a `behavior.*Seen` setting is unset. Accepting writes
-   Cmdr into `com.apple.dock`'s `persistent-apps` as the FIRST entry, then restarts the Dock.
-3. A Dock tile context menu, live only while the app runs (no `NSDockTilePlugIn`).
-4. Three PostHog events: `dock_pin_offered`, `dock_pin_answered` (`answer`: yes|no|dismissed), `dock_pin_failed` (typed
-   reason).
+1. ✅ **Landed.** A launch-day ledger: `usage.json` in the app data dir, local calendar days, appended once per launch
+   by Rust at startup. Now documented at `apps/desktop/src-tauri/src/usage/CLAUDE.md`, which is the authority; the
+   envelope key is `_schemaVersion`, per the house convention rather than this file's original `schemaVersion`.
+2. ✅ **Landed.** A one-time "add Cmdr to your Dock" nudge. Authority: `apps/desktop/src-tauri/src/dock/CLAUDE.md` (the
+   machine-facing half) and `apps/desktop/src/lib/dock/CLAUDE.md` (the decision, the toast, the events). Conditions (b)
+   and (c) below turned out to be one answer, `DockPinState`, not two; both Applications folders count, not just
+   `/Applications`.
+3. ⏳ **Not started.** A Dock tile context menu, live only while the app runs (no `NSDockTilePlugIn`). §§ A and B are
+   still the map for it, and are the reason this file is still here.
+4. ✅ **Landed** with piece 2. Three PostHog events: `dock_pin_offered`, `dock_pin_answered` (`answer`:
+   yes|no|dismissed), `dock_pin_failed` (typed reason).
+
+**Where a landed piece and this file disagree, the colocated `CLAUDE.md` / `DETAILS.md` wins.** The corrections below
+are the ones that cost real time to rediscover; everything else in §§ C–G is now background.
+
+## Corrections from building pieces 1, 2, and 4
+
+- **§ D's suggested single `$lib/dock/` module is an import cycle.** One module can't both raise the toast (importing
+  the `*ToastContent.svelte`) and hold the answer handlers (which the component imports). `import-cycles` fails it. The
+  shipped split is `dock-nudge.ts` (raise) + `dock-pin-answer.ts` (answers), which is also what `open-terminal/` already
+  does. § E's "frontend, same file" for all three events is wrong for the same reason.
+- **§ D's toast API summary omits `onDismiss`**, which is the seam that makes a frame-× dismissal distinguishable from
+  an active "No". It's in `toast-store.svelte.ts`, and it fires ONLY on the × — never on a timeout, never on a
+  programmatic `dismissToast` — so a component's own buttons can't contaminate it. Without it you'd be reduced to
+  inferring a dismissal from unmount, which also fires on quit.
+- **§ G's lane list is missing `i18n-coverage`, the biggest hidden cost of any new user-facing string.** It's
+  ERROR-level and fails until every full-translation locale carries the new key, so adding English copy pulls in the
+  whole translator process (`docs/guides/i18n-translation.md` § "New feature → add strings and translate to ALL
+  languages"): `sync-locale-keys.ts`, then one translator agent per language mining the reference pile. Budget for it
+  when a milestone adds copy. `en-GB` / `en-AU` are overlays and correctly stay empty unless the wording forks
+  regionally.
+- **A new `$lib/tauri-commands/*.ts` wrapper needs its own test.** `svelte-tests` enforces a 70% per-file coverage
+  floor, so the wrapper fails the lane until a `*.test.ts` sits beside it. This is what caught `usage.ts` from piece 1
+  at 0%.
 
 ---
 
@@ -331,11 +356,17 @@ worth copying so the nudge is not simply lost when the user finishes onboarding 
 ```ts
 addToast(content: ToastContent, options?: ToastOptions): string
 // ToastLevel = 'default' | 'info' | 'success' | 'warn' | 'error'
-// ToastOptions = { level?, dismissal?: 'transient' | 'persistent', id?, timeoutMs?, toastGroup?, maxInGroup?, props? }
+// ToastOptions = { level?, dismissal?: 'transient' | 'persistent', id?, timeoutMs?, toastGroup?, maxInGroup?, props?,
+//                  onDismiss?, closeTooltip?, widthPx?, originPane?, suppressErrorReportAction? }
 ```
 
 `dismissal: 'persistent'` forces `timeoutMs: 0`. `props` is forwarded into the component, with the toast's own id
 appended under the `toastId` key so the component can call `dismissToast(toastId)`.
+
+❗ **`onDismiss` fires only when the user closes the toast with the frame's ×** — never on a timeout, never on a
+programmatic `dismissToast`. That makes it the one honest way to tell "swept it away" from an active refusal by a
+button, and the pin nudge's `dismissed` answer rides it. Inferring a dismissal from unmount instead would also count a
+quit with the toast still up.
 
 ### The house pattern David wants copied
 
@@ -356,8 +387,10 @@ decide → set the seen flag → `addToast(Component, { level: 'info', dismissal
 Note the flag is set **when the toast is raised**, not when it is dismissed — matching `maybeFireUpgradeNudge`. Keep
 that; the rationale is spelled out in `maybeShowOldMacosNotice`'s doc comment.
 
-Suggested home for the new code: `apps/desktop/src/lib/dock/` with `should-show-dock-nudge.ts`, its `.test.ts`,
-`DockNudgeToastContent.svelte`, its `.a11y.test.ts`, and a `CLAUDE.md` + `DETAILS.md` pair.
+Home for this code (as shipped): `apps/desktop/src/lib/dock/`, holding `should-show-dock-nudge.ts`, `dock-nudge.ts` (the
+raise), `dock-pin-answer.ts` (the answers), `DockPinNudgeToastContent.svelte`, their tests, and a `CLAUDE.md` +
+`DETAILS.md` pair. ❗ The raise and the answers are two modules on purpose: the raise imports the toast component and
+the component imports the answers, so one module holding both is a cycle `import-cycles` fails.
 
 ### Adding a setting — full procedure
 
@@ -479,10 +512,12 @@ Event names must be `[a-z0-9_]+` **literals at the call site**. An event smuggle
 bullets under that heading; a bullet opens with one or more backticked names joined by `/`:
 
 ```
-- `dock_pin_offered` (frontend, `$lib/dock/…`): no props.
-- `dock_pin_answered` (frontend, same file): `answer` (`yes` / `no` / `dismissed`).
-- `dock_pin_failed` (frontend, same file): `reason`, the typed refusal from Rust.
+- `dock_pin_offered` (frontend, `$lib/dock/dock-nudge.ts` `offerDockPin`): no props.
+- `dock_pin_answered` (frontend, `$lib/dock/dock-pin-answer.ts`): `answer` (`yes` / `no` / `dismissed`).
+- `dock_pin_failed` (frontend, same file as `dock_pin_answered`): `reason`, the typed refusal from Rust.
 ```
+
+(The three don't share one file: see the import-cycle correction at the top.)
 
 **The check is an ERROR, not a warning, and it fails in both directions**: an emitted-but-undocumented event fails, and
 a documented-but-unemitted one fails too. So do not add the catalog bullets before the emitters exist (or land both in
@@ -620,9 +655,16 @@ Rust:
 
 Frontend:
 
-- `pnpm check svelte` (the tech group), or individually `eslint`, `svelte-check`, `stylelint`, `css-unused`,
-  `a11y-contrast`, `a11y-coverage`, `ui-primitive-coverage`, `bare-poll`, `knip`.
-- `pnpm check desktop-tests` (Vitest) — the `should-show-*` unit tests and the `.a11y.test.ts`.
+- `pnpm check svelte` (the tech group), or individually `desktop-svelte-eslint`, `eslint-typecheck-ts`,
+  `eslint-typecheck-svelte`, `svelte-check`, `stylelint`, `css-unused`, `a11y-contrast`, `a11y-coverage`,
+  `ui-primitive-coverage`, `import-cycles`, `bare-poll`, `knip`. (There is no bare `eslint` or `desktop-tests` lane;
+  `pnpm check --help` lists the real names.)
+- `pnpm check svelte-tests` (Vitest) — the `should-show-*` unit tests and the `.a11y.test.ts`. ❗ It also enforces a
+  **70% per-file coverage floor**, so a new `$lib/tauri-commands/*.ts` wrapper fails the lane until it has its own
+  `*.test.ts`.
+- ❗ `pnpm check i18n-coverage` — ERROR-level, and it fails on every new English key until all ten full-translation
+  locales carry it. See the correction at the top: adding user-facing copy pulls in the whole translator process, and
+  that's a milestone-sized cost, not a lane you fix in a minute.
 
 Generated-artifact freshness (each has a matching `pnpm` script; the checks regenerate in place outside `--ci`, so
 **commit the rewrite**):
@@ -654,20 +696,22 @@ and commit `apps/desktop/src/lib/ipc/bindings.ts` (`bindings-fresh` guards it). 
 
 ## Open questions for David
 
+Both remaining ones belong to piece 3, the Dock tile menu.
+
 1. **"New window"** has no meaning today: closing the main window quits the app, and there is only ever one `"main"`
    window. Should the item bring the existing window forward (and be renamed), or is a real second-window feature in
    scope?
 2. **"Recent locations"** would come from the Go-to-path dialog's history (`go_to_path/history.rs`, cap 10), which
    records only explicit dialog jumps — not ordinary pane navigation. Accept that, or add a new list?
-3. **`schemaVersion` vs `_schemaVersion`** in `usage.json`: the brief says the former, the house convention
-   (`favorites.json`, every recents file) is the latter.
-4. **`~/Applications/Cmdr.app`**: does condition (c) mean strictly `/Applications`, or any Applications folder?
 
-## What this survey could not determine
+Two more are settled, and the answers live in the code: `usage.json` uses `_schemaVersion` (the house convention), and
+both `/Applications` and `~/Applications` count as an Applications folder (`dock/location.rs`).
+
+## Still unverified
 
 - Whether a muda-built menu returned from `applicationDockMenu:` actually posts its `MenuEvent` (the global handler is
-  installed process-wide, so it should, but AppKit tracks a Dock menu in its own context and this was not tested).
-- The exact `persistent-apps` dictionary shape modern macOS writes. The shape above is from general knowledge, not from
-  reading a live `com.apple.dock`. Dump the real plist before writing one.
-- Whether a notarized, non-sandboxed Cmdr can write `com.apple.dock` without a TCC prompt on macOS 26. Test on a real
-  build before committing to the nudge's copy.
+  installed process-wide, so it should, but AppKit tracks a Dock menu in its own context and this was not tested). The
+  one open item for piece 3.
+
+The other two are answered: the real `persistent-apps` entry shape and the TCC findings for writing `com.apple.dock`
+from a signed build are recorded, with their evidence, in `apps/desktop/src-tauri/src/dock/DETAILS.md`.
