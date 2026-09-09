@@ -2929,18 +2929,18 @@ Familia ICU normal: apóstrofos dobles, aunque al final ningún valor español l
   `Lista de comprobación de la introducción` se va a 62 caracteres en un título. `onboarding` sigue siendo
   `introducción`, como en `onboarding.wizard.title` · `high`.
 - **`Save` (el botón junto al campo de correo) → `Guardar`** · macOS AppKit (`Save` = `Guardar` en el menú Archivo), MS
-  terminology, y el propio catálogo (`servers.sheet.save`) · `high`. Las dos frases que lo nombran
-  (`signup.rejected`, `signup.unreachable`) lo escriben igual y sin comillas, como el inglés.
+  terminology, y el propio catálogo (`servers.sheet.save`) · `high`. Las dos frases que lo nombran (`signup.rejected`,
+  `signup.unreachable`) lo escriben igual y sin comillas, como el inglés.
 - **`mailing list` → `lista de correo`** · MS terminology publica `lista de distribución de correo`, que es la forma
   larga de Exchange y pesa demasiado para una línea bajo un campo. `lista de correo` es la forma corta habitual del
   mismo concepto y comparte raíz con la fuente (gotcha 4 de la guía: una raíz compartida ya es evidencia) · `high`.
 - **`typo` → `errata`** · ninguna de las fuentes del pile la nombra (ni macOS, ni MS, ni los gestores de archivos).
   `errata` es la palabra española para el fallo material al escribir y esquiva el veto de Cmdr sobre `error` en los
   mensajes · `tentative`.
-- **`sign up` (la lista de correo) → `dar de alta`; `signup server` → `servidor de altas`** · MS da
-  `sign up` → `registrarse` / `suscribirse`, pero el catálogo ya eligió `darte de alta`
-  (`onboarding.stepBeta.signup.failure`) y las dos frases nuevas se leen debajo del mismo campo, así que manda la
-  coherencia interna · `high` para el verbo, `tentative` para el nombre compuesto, que nadie publica.
+- **`sign up` (la lista de correo) → `dar de alta`; `signup server` → `servidor de altas`** · MS da `sign up` →
+  `registrarse` / `suscribirse`, pero el catálogo ya eligió `darte de alta` (`onboarding.stepBeta.signup.failure`) y las
+  dos frases nuevas se leen debajo del mismo campo, así que manda la coherencia interna · `high` para el verbo,
+  `tentative` para el nombre compuesto, que nadie publica.
 - **`More about {topic}` → `Más información sobre {topic}`** · macOS Finder escribe exactamente
   `Más información sobre iCloud`; es un nombre accesible, así que la longitud no molesta · `high`.
 - **`handler` (el proceso nativo de macOS que MTP desplaza) → `proceso`** · MS da `handler` → `controlador`, pero la

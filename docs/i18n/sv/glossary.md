@@ -2726,49 +2726,48 @@ långa förklaringar och enradssammanfattningarna bredvid strömbrytarna i valfr
 
 - **checklist · `checklista`** · Microsoft sv terminology (`checklist` → `checklista`, term-id 30962 → 1113079, plus två
   `Checklist` → `Checklista`-poster). `high`. Rubriken heter `Checklista för att komma igång`, eftersom katalogen redan
-  ramar in guiden som `komma igång` (`onboarding.wizard.title` = ”Kom igång med Cmdr”,
-  `onboarding.wizard.progressLabel` = ”Förlopp för att komma igång”), inte som `introduktion`.
+  ramar in guiden som `komma igång` (`onboarding.wizard.title` = ”Kom igång med Cmdr”, `onboarding.wizard.progressLabel`
+  = ”Förlopp för att komma igång”), inte som `introduktion`.
 - **`each takes 30 seconds` behöver ett huvudord: `varje punkt tar 30 sekunder`** · engelskans nakna `each` dinglar på
   svenska på samma sätt som ett räknat `*Text`-tal utan substantiv gör (`style.md` § Plurals). Punkten i en checklista
   är `punkt`. `high`.
 - **`star` (GitHub-verbet) · `stjärnmärk`** · GitHubs eget gränssnitt ger INGEN svensk form att kopiera: GitHub
   lokaliserade sitt UI till bland annat svenska 2010–2016 men lade ner det 2016-11-18, och gränssnittet är sedan dess
   enbart engelskt (`Preferred spoken language` styr bara enstaka kommunikationsytor). Så valet faller på katalogens egen
-  precedens, `onboarding.stepBeta.star` (”stjärnmärk repot <github>här på GitHub</github>”), med Microsoft sv
-  (`star` → `stjärna`, fem poster) som stöd för substantivet `stjärnor`. `high`.
+  precedens, `onboarding.stepBeta.star` (”stjärnmärk repot <github>här på GitHub</github>”), med Microsoft sv (`star` →
+  `stjärna`, fem poster) som stöd för substantivet `stjärnor`. `high`.
 - **`repo` · `repot`** · katalogens egen form i `onboarding.stepBeta.star`. Låneordet böjs som ett neutrumord
-  (`ett repo`, `repot`, `repon`). Skiljt från `git-repository` i `settings.json`, som är den tekniska helformen.
-  `high`.
+  (`ett repo`, `repot`, `repon`). Skiljt från `git-repository` i `settings.json`, som är den tekniska helformen. `high`.
 - **`Like` (AlternativeTos knapp) · `Gilla`** · AlternativeTo har inget svenskt gränssnitt (sajten är helt engelsk och
-  knappen räknar `likes`, kontrollerat 2026-09-09), så verbet översätts: Microsoft sv terminology ger `Like` → `Gilla`
-  i sex poster. `high`. `AlternativeTo` står kvar ordagrant som sajtnamn.
+  knappen räknar `likes`, kontrollerat 2026-09-09), så verbet översätts: Microsoft sv terminology ger `Like` → `Gilla` i
+  sex poster. `high`. `AlternativeTo` står kvar ordagrant som sajtnamn.
 - **`title` på en webbsida · `rubriken`** · `Cmdr`-rubriken högst upp på AlternativeTo-sidan är en sidrubrik, inte en
   fönstertitel. Svenska citattecken runt namnet (`rubriken ”Cmdr”`) per `style.md`. `high`.
-- **`notice` (om folk och sökmotorer) · `upptäcka`** · naturlig svenska för att få syn på något nytt; `lägga märke
-  till` är längre utan att bli tydligare. `tentative` (sammansatt av vardagsspråket, ingen direkt källa).
+- **`notice` (om folk och sökmotorer) · `upptäcka`** · naturlig svenska för att få syn på något nytt; `lägga märke till`
+  är längre utan att bli tydligare. `tentative` (sammansatt av vardagsspråket, ingen direkt källa).
 - **`Save` (knappen bredvid e-postfältet) · `Spara`** · macOS AppKit `SavePanel.json` (`Save` → `Spara`),
-  `Document.json` (samma). `high`. Samma ord citeras i `signup.rejected` och `signup.unreachable`, som pekar på just
-  den knappen.
+  `Document.json` (samma). `high`. Samma ord citeras i `signup.rejected` och `signup.unreachable`, som pekar på just den
+  knappen.
 - **`Email address saved` (kryssmarkeringens skärmläsarnamn) · `E-postadressen sparad`** · `email address` →
   `e-postadress` från Microsoft sv terminology; `e-postadress` är en-genus, så participet blir `sparad`, aldrig
   `sparat`. Bestämd form eftersom raden pekar på just den adress användaren skrev in. `high`.
 - **`<field></field>` mitt i meningen** · taggen är tom och renderar in-/utmatningsrutan plus Spara-knappen inne i
   satsen, så den måste stå där svenskan vill ha objektet: `Ange din e-postadress <field></field>, så hör jag av mig …`.
-  Kommat före konsekutivt `så` står kvar (`style.md`). Första person, som resten av beta-steget, och samma
-  ”hör jag av mig”-formel som `onboarding.stepBeta.emailNote` redan använder. `high`.
+  Kommat före konsekutivt `så` står kvar (`style.md`). Första person, som resten av beta-steget, och samma ”hör jag av
+  mig”-formel som `onboarding.stepBeta.emailNote` redan använder. `high`.
 
 ### Registreringen till e-postlistan
 
 - **`mailing list` · `e-postlistan`** · Microsofts `distributionslista` är Exchanges distributionslista (en adressgrupp
   i en organisation), inte en prenumerationslista, alltså fel betydelse på samma sätt som `aktie` för `share` och
   `redigera` för `redact`. `sändlista` finns inte i referenssamlingen alls. `e-postlista` är den genomskinliga
-  vardagssvenskan och håller ihop med `.unreachable`s ”du står inte på listan än”. `tentative` (MS-betydelsen
-  förkastad, ingen förstahandskälla).
+  vardagssvenskan och håller ihop med `.unreachable`s ”du står inte på listan än”. `tentative` (MS-betydelsen förkastad,
+  ingen förstahandskälla).
 - **`typo` · `stavfel`** · macOS AppKit `Accessibility.json` (`Misspelled` → `Felstavat`) ger roten; `stavfel` är
   standardformen av substantivet. `high`. ❌ Total Commanders `Skrivfel!` (`WCMD.LNG` 625/1245/1907) är en FALSK VÄN:
   den sitter bland filoperationsfelen och är `Write error`, inte `typo`. Använd den inte som belägg.
-- **`sign up` · `registrera`; `signup server` · `registreringsservern`** · Microsoft sv terminology
-  (`sign up` → `registrera` / `registrera sig`), och katalogen säger redan ”vi kunde inte registrera dig just nu”
+- **`sign up` · `registrera`; `signup server` · `registreringsservern`** · Microsoft sv terminology (`sign up` →
+  `registrera` / `registrera sig`), och katalogen säger redan ”vi kunde inte registrera dig just nu”
   (`onboarding.stepBeta.signup.failure`). `high`.
 - **Sökvägen i `signup.unreachable` skrivs `Inställningar › Uppdateringar och integritet`** · båda halvorna tas från
   katalogen själv, inte från en nyöversättning: `settings.section.updatesAndPrivacy` = ”Uppdateringar och integritet”
@@ -2794,8 +2793,8 @@ långa förklaringar och enradssammanfattningarna bredvid strömbrytarna i valfr
   ikonräknaren på en appsymbol och fel sak här). `<alpha></alpha>-märken` sätter taggen först och hänger på
   sammansättningsledet med bindestreck. `high`.
 - **`work-in-progress areas` · `de områden som är mest under arbete`** · `under arbete` är den etablerade svenskan för
-  work in progress; `pågående` ensamt säger bara att något rör sig, inte att det är ofärdigt. `tentative` (ingen
-  direkt UI-källa).
+  work in progress; `pågående` ensamt säger bara att något rör sig, inte att det är ofärdigt. `tentative` (ingen direkt
+  UI-källa).
 - **`helps me fix bugs` · `hjälper mig att fixa buggar`** · håll isär från syskonnyckeln
   `onboarding.stepBeta.feedbackIntro`, där engelskan säger `spot bugs` och svenskan därför säger `hitta buggar`. Två
   olika verb i engelskan, två olika verb i svenskan. `high`.
@@ -2817,8 +2816,8 @@ terminologin från syskonnyckelns `…desc`.
 - **`check` (uppdateringskontrollen) · `kontroll`** · syskonnyckeln `onboarding.stepOptional.updates.desc` säger redan
   `licenskontroller` för samma sorts anrop. `high`.
 - **`native handler` · `macOS inbyggda hanterare`** · `inbyggd` är dokumentets settlade ord för Apples egna ytor
-  (`style.md` § ”Inbyggda menyer följer Finders ordval”), och `macOS` slutar på s-ljud och tar därför varken
-  genitiv-`s` eller apostrof (`macOS inbyggda hanterare`, precis som `macOS inbyggda SMB-anslutning`). `high`.
+  (`style.md` § ”Inbyggda menyer följer Finders ordval”), och `macOS` slutar på s-ljud och tar därför varken genitiv-`s`
+  eller apostrof (`macOS inbyggda hanterare`, precis som `macOS inbyggda SMB-anslutning`). `high`.
 - **`suppresses` · `håller tillbaka`** · syskonnyckeln `onboarding.stepOptional.mtp.desc` säger redan ”måste hålla
   tillbaka den macOS-processen”. `high`. Skilt från `style.md`s regel att `Suppress` i visa/göm-betydelsen blir `Dölj`:
   här handlar det om att stoppa en process, inte om att gömma något.

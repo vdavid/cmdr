@@ -433,11 +433,12 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `幾個好決定的選項`, and `onboarding.stepFda.ifAllow` renders "Three easy steps:" as `三個步驟就好：`. Keep dodging;
   don't "restore" `簡單`.
 
-- **A tag that renders an inline CONTROL takes a space before it and a comma after.** `onboarding.stepBeta.checklist.email`
-  wraps a text field plus its Save button in an empty `<field></field>` sitting mid-sentence
-  (`留下你的電子郵件地址 <field></field>，就能很偶爾收到一些近況和問題`). The control is a Latin-shaped run, so § Spacing
-  applies to it like any other; putting the tag where Chinese wants the object and continuing with `，` is what keeps
-  the row reading as one line with a box in the middle. ❗ Don't wrap it in `「」`: it's a widget, not a quoted name.
+- **A tag that renders an inline CONTROL takes a space before it and a comma after.**
+  `onboarding.stepBeta.checklist.email` wraps a text field plus its Save button in an empty `<field></field>` sitting
+  mid-sentence (`留下你的電子郵件地址 <field></field>，就能很偶爾收到一些近況和問題`). The control is a Latin-shaped
+  run, so § Spacing applies to it like any other; putting the tag where Chinese wants the object and continuing with
+  `，` is what keeps the row reading as one line with a box in the middle. ❗ Don't wrap it in `「」`: it's a widget,
+  not a quoted name.
 
 ### `*Aria` containment pairs that are load-bearing
 

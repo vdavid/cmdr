@@ -3141,9 +3141,9 @@ opdrachten, dus de macOS-terminologie wint (style.md § systeemoppervlakken).
 ## De onboarding-herschrijving: de checklist, de stapteller en de vier verdictregels (2026-09-09)
 
 23 sleutels uit `onboarding.json`: stap 1 en het wizardframe, de AI-stap, de checklist van stap 3, de vier
-samenvattingen van stap 4, plus vier sleutels waarvan het Engels herschreven werd. Gemijnd in
-`_ignored/i18n/nl/` (macOS, Microsoft-terminologie, de vijf bestandsbeheerders) en, waar de stapel zwijgt, in de live
-macOS-bundels (macOS 26.6.2, build 25G83, gelezen 2026-09-09).
+samenvattingen van stap 4, plus vier sleutels waarvan het Engels herschreven werd. Gemijnd in `_ignored/i18n/nl/`
+(macOS, Microsoft-terminologie, de vijf bestandsbeheerders) en, waar de stapel zwijgt, in de live macOS-bundels (macOS
+26.6.2, build 25G83, gelezen 2026-09-09).
 
 ### GitHub en AlternativeTo: `star` en `like` blijven Engels, maar krijgen een Nederlands werkwoord
 
@@ -3151,9 +3151,9 @@ macOS-bundels (macOS 26.6.2, build 25G83, gelezen 2026-09-09).
   Microsoft-terminologie `DUTCH.tbx`, precies deze betekenis ("A bookmark or display of appreciation for a repository.
   Stars are a manual way to rank the popularity of projects."), NLD + BEL, Nederlandse term = `star` (onvertaald) ·
   `high`. GitHub zelf levert geen Nederlands: de meertalige interface is op 2016-11-18 stopgezet, dus een Nederlandse
-  gebruiker ziet letterlijk de knop `Star`. Daarom blijft het woord staan en draagt het Nederlands alleen het
-  werkwoord. ❌ Niet `ster` (dat is in `DUTCH.tbx` de beoordelings-ster) en niet `favoriet` (dat is de
-  browser-bladwijzer). Meervoud `stars`, zoals in `checklist.starNote`.
+  gebruiker ziet letterlijk de knop `Star`. Daarom blijft het woord staan en draagt het Nederlands alleen het werkwoord.
+  ❌ Niet `ster` (dat is in `DUTCH.tbx` de beoordelings-ster) en niet `favoriet` (dat is de browser-bladwijzer).
+  Meervoud `stars`, zoals in `checklist.starNote`.
 - **like (een upvote op AlternativeTo) → `like` (zelfstandig naamwoord), knoptekst `Geef Cmdr een like`** ·
   AlternativeTo is een Engelstalige site, dus de knop die de gebruiker aanklikt heet `Like`; het Nederlandse
   `een like geven` is standaardtaal. Microsoft geeft voor de sociale betekenis `vind ik leuk` / `leuk vinden`
@@ -3175,8 +3175,8 @@ macOS-bundels (macOS 26.6.2, build 25G83, gelezen 2026-09-09).
   knopregel in `style.md` · `high`. De twee foutregels eronder noemen de knop met de enkele krulaanhalingstekens
   (`op ‘Bewaar’`), zodat de gebruiker het label letterlijk terugvindt.
 - **Email address saved (de toegankelijke naam van het vinkje) → `E-mailadres bewaard`** · `e-mailadres` uit macOS
-  (`Email Address` → `E-mailadres`) en Microsoft (`DUTCH.tbx`); een kort deelwoordelijk naamwoordgroepje, want de rij
-  is een voortgangsmarkering, geen bedienbare knop · `high`
+  (`Email Address` → `E-mailadres`) en Microsoft (`DUTCH.tbx`); een kort deelwoordelijk naamwoordgroepje, want de rij is
+  een voortgangsmarkering, geen bedienbare knop · `high`
 - **`<field></field>` staat achter het scheidbare partikel**: `Vul je e-mailadres in <field></field> om …`. Het vakje
   komt zo op dezelfde plek als in het Engels en de zin loopt door over het invoerveld heen. ❌ Zet het niet vóór `in`:
   dan valt het partikel van zijn werkwoord los.
@@ -3202,18 +3202,18 @@ macOS-bundels (macOS 26.6.2, build 25G83, gelezen 2026-09-09).
 Elke regel staat naast een schakelaar en mag niet omlopen, dus ze blijven kort en volgen de terminologie van hun lange
 `…desc`-tegenhanger.
 
-- **"Local network access" → `‘Lokale netwerktoegang’`** · byte-identiek aan wat `stepOptional.networking.desc` al
-  zegt · `high`. Apples eigen paneelrij heet `Lokaal netwerk` (live `Security.prefPane`
-  `Localizable.loctable`, `LOCAL_NETWORK`, gelezen 2026-09-09), maar het Engels citeert de toestemmingsvraag, niet de
-  paneelnaam, en de tooltip ernaast draagt de langere vorm al. Grens: wie ooit naar de **paneelrij** in
-  Systeeminstellingen verwijst, schrijft `Lokaal netwerk`.
+- **"Local network access" → `‘Lokale netwerktoegang’`** · byte-identiek aan wat `stepOptional.networking.desc` al zegt
+  · `high`. Apples eigen paneelrij heet `Lokaal netwerk` (live `Security.prefPane` `Localizable.loctable`,
+  `LOCAL_NETWORK`, gelezen 2026-09-09), maar het Engels citeert de toestemmingsvraag, niet de paneelnaam, en de tooltip
+  ernaast draagt de langere vorm al. Grens: wie ooit naar de **paneelrij** in Systeeminstellingen verwijst, schrijft
+  `Lokaal netwerk`.
 - **folder sizes → `mapgroottes`** · al overal in de catalogus (`settings.indexing.enabled.description`,
   `indexing.step.findFilesChangeCheck`, `settings.section.fileAndFolderSizes`) · `high`
 - **native handler (het macOS-proces dat MTP-apparaten inpikt) → `de macOS-afhandeling`** · `stepOptional.mtp.desc`
   noemt het `dat macOS-proces`; `afhandeling` vangt `handler` in één woord en houdt de regel even lang als het Engels ·
   `tentative`
-- **one tiny check → `één piepkleine controle`** · `piepklein` staat al in `stepOptional.updates.desc`
-  ("piepklein netwerkverzoek") · `high`
+- **one tiny check → `één piepkleine controle`** · `piepklein` staat al in `stepOptional.updates.desc` ("piepklein
+  netwerkverzoek") · `high`
 
 ### De vier herschreven sleutels
 
@@ -3239,14 +3239,14 @@ Elke regel staat naast een schakelaar en mag niet omlopen, dus ze blijven kort e
 - **`Stap {step} van {mandatory}+1`** · `onboarding.wizard.stepProgress` schrijft `Stap {step} van {total}` al zo, dus
   de tooltip erft die vorm; de literale `+1` blijft staan, want dat is de hele pointe van de formulering · `high`
 - **optional → `optioneel` / `optionele`** · dezelfde sleutel `stepProgress` heeft `(optioneel)` al · `high`
-- De `select`-takken zijn hele bijzinnen (`, er is nog één optionele stap` / `, dit is de laatste, optionele stap`),
-  dus de komma van het Engels blijft binnen de tak staan.
+- De `select`-takken zijn hele bijzinnen (`, er is nog één optionele stap` / `, dit is de laatste, optionele stap`), dus
+  de komma van het Engels blijft binnen de tak staan.
 
 ### REVIEW FLAGS (onboarding-herschrijving)
 
 - **`Onboardingchecklist`** is orthografisch correct maar 19 letters lang. Bevestig dat het leesbaar genoeg is naast het
   streepjesalternatief `Onboarding-checklist`.
 - **`de inschrijfserver`** is gemunt; niets in de stapel benoemt de server achter een mailinglijst-inschrijving.
-- **`de macOS-afhandeling`** voor `native handler`: gemunt, gekozen op lengte. Alternatief was
-  `het eigen macOS-proces`, dat langer is en waarvan `eigen` dubbelzinnig leest.
+- **`de macOS-afhandeling`** voor `native handler`: gemunt, gekozen op lengte. Alternatief was `het eigen macOS-proces`,
+  dat langer is en waarvan `eigen` dubbelzinnig leest.
 - **`mailinglijst`** wijkt af van Microsofts `adressenlijst`, met opzet (ander begrip). Bevestig de term.

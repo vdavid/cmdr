@@ -2814,8 +2814,8 @@ dùng từ của macOS thắng (style.md § bề mặt hệ thống).
 
 Bề mặt: bốn bước của trình thiết lập ban đầu. Mới hoàn toàn là chú giải hàng chấm tiến độ, nhãn trợ năng của biểu tượng
 chữ i, chú giải mô hình cục bộ, cảnh báo thiếu khóa API, cả bảng kiểm bốn dòng ở bước 3 (sao GitHub, Like trên
-AlternativeTo, ô email), hai câu hỏng của việc đăng ký, và bốn dòng tóm tắt một dòng ở bước 4. Viết lại: `stepFda.ifAllow`,
-`stepAi.cloud.help`, `stepAi.local.label`, `stepBeta.openBeta`.
+AlternativeTo, ô email), hai câu hỏng của việc đăng ký, và bốn dòng tóm tắt một dòng ở bước 4. Viết lại:
+`stepFda.ifAllow`, `stepAi.cloud.help`, `stepAi.local.label`, `stepBeta.openBeta`.
 
 Nguồn: kho tham chiếu `_ignored/i18n/vi/` (macOS Finder/AppKit/SystemSettings, MS terminology `VIETNAMESE.tbx`, GNOME
 Nautilus, Xfce Thunar, KDE Dolphin, Total Commander) cộng bằng chứng Tier 1 đọc thẳng từ macOS 26.6.2 (build 25G83) đang
@@ -2881,8 +2881,8 @@ cài, quét toàn bộ `*.loctable` theo công thức trong `docs/i18n/reference
   (`style.md` § "Reach" có hai lối), và "at any time" là `bất cứ lúc nào`. Đường dẫn cài đặt lấy nguyên chữ của
   `settings.section.updatesAndPrivacy`: `Cài đặt › Cập nhật & quyền riêng tư`, giữ ký tự `›`.
 - **Bốn dòng tóm tắt ở bước 4 phải NGẮN và không được xuống dòng**, đồng thời dùng lại thuật ngữ của khóa `…desc` anh
-  em: `kích cỡ thư mục`, `khởi động ứng dụng`, `Truy cập mạng cục bộ`, `điện thoại Android`. Nhớ luật
-  **show → `hiển thị`, không phải `hiện`** ở `indexing.summary`.
+  em: `kích cỡ thư mục`, `khởi động ứng dụng`, `Truy cập mạng cục bộ`, `điện thoại Android`. Nhớ luật **show →
+  `hiển thị`, không phải `hiện`** ở `indexing.summary`.
 - **`stepFda.ifAllow` đổi hẳn nghĩa**: tiếng Anh từ "If you decide to allow:" thành "Three easy steps:", nên bản cũ
   `Nếu bạn quyết định cho phép:` sai hẳn. Nay là `Ba bước đơn giản:`, đứng ngay trên ba khóa `stepFda.step1..3`.
 - **`stepBeta.openBeta` và `stepBeta.feedbackIntro` cố ý khác một động từ.** Tiếng Anh: "helps me fix bugs" so với

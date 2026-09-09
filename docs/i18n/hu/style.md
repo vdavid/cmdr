@@ -242,8 +242,8 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   whole row set is informal imperative (`Csillagozd meg a repót a GitHubon`), not nominal. A mixed form is visible
   inside one list; a difference between two lists never is.
 - **Neither GitHub nor AlternativeTo ships a Hungarian UI**, so "use the site's own verb" has no Tier-1 answer for
-  `star` or `like` — a Hungarian user sees the English buttons. Microsoft terminology decides both
-  (`csillagoz`, `kedvel`); evidence in `glossary.md` § A bevezető átírt lépései.
+  `star` or `like` — a Hungarian user sees the English buttons. Microsoft terminology decides both (`csillagoz`,
+  `kedvel`); evidence in `glossary.md` § A bevezető átírt lépései.
 - **Quotation marks: `„…”`** (low opening, high closing) is the standard Hungarian form. macOS Finder uses it too (e.g.
   „^0”). Avoid English `"…"`.
 - **`{duration}` is NOT locale-formatted**, unlike numbers, sizes, and dates: `formatDuration()` in

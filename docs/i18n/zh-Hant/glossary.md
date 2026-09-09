@@ -1615,35 +1615,35 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 第三步新增的檢查清單、第四步四條開關摘要，以及精靈框架幾個新鍵。用詞先 grep 目錄自己已經出貨的同義句，再回頭找來源。
 
 - **star（GitHub 上按的那個星）** · 保留原文 `star`，數量講 `顆星` · Microsoft zh-Hant 術語庫 id 3097426 → id
-  3109098，定義寫的正是 GitHub 的那個意思（`A bookmark or display of appreciation for a repository. Stars are a manual way to rank the popularity of projects.`），繁中側就是原文 `star`，標 `HKG, TWN`；目錄自己的
-  `onboarding.stepBeta.star` 也早就寫 `幫儲存庫按個 star`、`225 顆星` · `high`。❗ 術語庫裡另外四條 `star`
-  全是別的意思，別拿錯：`星號`（清單裡的優先標記，id 2329252）、`加上星號`（把東西加星號這個動作，id
-  2643747）、`星星`（emoji）、`主角`（Photos 影片的主角）。⚠️ **GitHub 自己的繁中介面沒能直接查證**（要登入切語言才看得到），
-  所以這條靠的是微軟這條 GitHub 專用詞條加上目錄內部一致性；哪天有人能看到 GitHub 的繁中 UI，值得回頭核一次。
+  3109098，定義寫的正是 GitHub 的那個意思（`A bookmark or display of appreciation for a repository. Stars are a manual way to rank the popularity of projects.`），繁中側就是原文
+  `star`，標 `HKG, TWN`；目錄自己的 `onboarding.stepBeta.star` 也早就寫 `幫儲存庫按個 star`、`225 顆星` ·
+  `high`。❗ 術語庫裡另外四條 `star` 全是別的意思，別拿錯：`星號`（清單裡的優先標記，id
+  2329252）、`加上星號`（把東西加星號這個動作，id 2643747）、`星星`（emoji）、`主角`（Photos 影片的主角）。⚠️
+  **GitHub 自己的繁中介面沒能直接查證**（要登入切語言才看得到），所以這條靠的是微軟這條 GitHub 專用詞條加上目錄內部一致性；哪天有人能看到 GitHub 的繁中 UI，值得回頭核一次。
 - **repository（GitHub 上的那個 repo）** · `儲存庫` · 沿用上面 § AI, chat, and the agent 已定的那條 · `tentative`
 - **Like（AlternativeTo 那顆按鈕）** · `按讚`（動詞）／`讚`（名詞）· Microsoft zh-Hant 術語庫 id 2349285 `Like` → id
   2352483 `讚`，標 `HKG, TWN` · `high`。AlternativeTo 站上沒有繁中介面，按鈕本身寫的是英文 `Like`，所以
   `alternativeToNote` 那條要把位置講清楚（`就在頁面最上方，「Cmdr」標題旁邊`），使用者才找得到。
 - **checklist** · `檢查清單` · Microsoft zh-Hant 術語庫 id 30962 → id 30977，標 `HKG, TWN` · `high`
-- **mailing list** · `郵寄清單` · Microsoft zh-Hant 術語庫兩條都一樣（id 2791 → id 2806、id 210512 → id
-  2773512），標 `HKG, TWN` · `high`。❗ 不是 `電子報`（那是 newsletter，id 295551 → `電子報`），英文刻意說這不是 newsletter。
-- **sign up（加入名單）／signup server** · `註冊`／`註冊伺服器` · Microsoft zh-Hant 術語庫 id 112681 → id
-  2510936，定義 `To enroll in a service`，標 `HKG, TWN` · `high`
+- **mailing list** · `郵寄清單` · Microsoft zh-Hant 術語庫兩條都一樣（id 2791 → id 2806、id 210512 → id 2773512），標
+  `HKG, TWN` · `high`。❗ 不是 `電子報`（那是 newsletter，id 295551 → `電子報`），英文刻意說這不是 newsletter。
+- **sign up（加入名單）／signup server** · `註冊`／`註冊伺服器` · Microsoft zh-Hant 術語庫 id 112681 → id 2510936，定義
+  `To enroll in a service`，標 `HKG, TWN` · `high`
 - **typo** · `打錯字` · 五份語料都沒有，就是日常國語的講法 · `tentative`
 - **bug（要修的那種缺陷）** · `問題` · 目錄自己的 `onboarding.stepBeta.feedbackIntro` 已經把 `spot bugs` 寫成
-  `幫我找出問題`，同一段話的第二句（`openBeta` 的 `fix bugs`）就跟著寫 `修正問題` · `high`。❗ 不取術語庫的
-  `錯誤`（id 24563）：`錯誤` 在本目錄留給 `錯誤報告` 那種終局狀態名詞，`style.md` § Voice and tone
-  禁的是拿它當句子的動詞。
+  `幫我找出問題`，同一段話的第二句（`openBeta` 的 `fix bugs`）就跟著寫 `修正問題` · `high`。❗ 不取術語庫的 `錯誤`（id
+  24563）：`錯誤` 在本目錄留給 `錯誤報告` 那種終局狀態名詞，`style.md` § Voice and tone禁的是拿它當句子的動詞。
 - **More about X（資訊圖示的無障礙名稱）** · `進一步了解「{topic}」` · Apple zh-HK Finder
-  `ICloudNoDocumentsView`（`進一步了解iCloud`）、`ICloudUpgradeView`（`進一步了解⋯`）、`LocalizableMerged` NE115
-  （`進一步了解`）· `high`。**角括號是刻意的**：`{topic}` 塞進來的是開關自己的標題，有的是漢字（`磁碟機索引`）、有的以拉丁文開頭
-  （`MTP（Android 手機、Kindle、相機）`），角括號同時解決了「這是個 UI 名稱」和 § Spacing 的拉丁／漢字空格兩件事。
+  `ICloudNoDocumentsView`（`進一步了解iCloud`）、`ICloudUpgradeView`（`進一步了解⋯`）、`LocalizableMerged`
+  NE115（`進一步了解`）· `high`。**角括號是刻意的**：`{topic}`
+  塞進來的是開關自己的標題，有的是漢字（`磁碟機索引`）、有的以拉丁文開頭（`MTP（Android 手機、Kindle、相機）`），角括號同時解決了「這是個 UI 名稱」和 §
+  Spacing 的拉丁／漢字空格兩件事。
 - **badge（`<alpha></alpha>` 那個狀態標記）** · 動詞化寫成 `標記`，不寫 `徽章` · 目錄自己出貨的
   `onboarding.stepBeta.openBeta`（`看到 <alpha></alpha> 標記的地方`）· `high`。術語庫的 `徽章`（id 1354385、id
   1606726）指的是成就徽章和鎖定畫面的計數徽章，不是這種狀態標籤；而 `標籤` 在本目錄專屬於 tag（§ UI chrome）。
 - **`Settings › X` 這種路徑** · `「設定 › 更新與隱私」`，`›` 原樣保留 · 形狀抄目錄自己的
-  `settings.askCmdr.provider.off`（`在「設定 › AI」中…`）；`更新與隱私` 逐字取自
-  `settings.section.updatesAndPrivacy` · `high`
+  `settings.askCmdr.provider.off`（`在「設定 › AI」中…`）；`更新與隱私` 逐字取自 `settings.section.updatesAndPrivacy` ·
+  `high`
 - **"Local network access"（macOS 的那個權限）** · `「區域網路」取用` · 逐字沿用同一步的長版說明
   `onboarding.stepOptional.networking.desc`（`請你允許「區域網路」取用`），詞本身在上面 § macOS surfaces named in
   onboarding 已定為 `區域網路` · `high`

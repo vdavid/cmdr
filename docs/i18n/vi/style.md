@@ -172,10 +172,10 @@ Settled terms (sources agree):
   ships the root at `fileExplorer.doubleClickHint.iLikeIt` (`Tôi thích`). `high`.
 - **checklist: `danh sách kiểm tra`** · Microsoft terminology (two entries agree). `high`.
 - **mailing list: `danh sách gửi thư`** · Microsoft terminology. `high`.
-- **Local Network (the macOS permission's name): `Mạng cục bộ`** · three macOS bundles agree (`AppSystemSettingsUI`
-  and two more, key `Local Network` / `LOCAL_NETWORK`), plus `TCC.framework` for the prose form
-  (`mạng cục bộ`), macOS 26.6.2 build 25G83, verified 2026-09-09. The catalog's phrase for the permission itself is
-  `Truy cập mạng cục bộ`. `high`.
+- **Local Network (the macOS permission's name): `Mạng cục bộ`** · three macOS bundles agree (`AppSystemSettingsUI` and
+  two more, key `Local Network` / `LOCAL_NETWORK`), plus `TCC.framework` for the prose form (`mạng cục bộ`), macOS
+  26.6.2 build 25G83, verified 2026-09-09. The catalog's phrase for the permission itself is `Truy cập mạng cục bộ`.
+  `high`.
 - **native (belonging to the OS): `gốc`** · matches the settled `menu gốc`; used in
   `onboarding.stepOptional.mtp.summary` as `trình xử lý gốc của macOS`. `high`.
 - **warning: `cảnh báo`** · Xfce Thunar and KDE Dolphin agree. `high`.
@@ -391,9 +391,9 @@ Vietnamese has no grammatical number, so one form covers all counts.
   (`Cài đặt › Cập nhật & quyền riêng tư`). Keep the `›` character; don't swap it for `>` or `/`.
 - **The pile has no "Why", "More info", or permission-prompt names; sweep the installed OS instead.** Several Tier 1
   answers this catalog needs live only in `.loctable` files, not in the extracted pile. The whole-system sweep in
-  `docs/i18n/reference-pile/how-to-mine.md` (walk `/System/**`, `plutil -convert json` each `.loctable`, filter the
-  `en` side, read the `vi` side by the same key) takes ~2 minutes and is what sourced `Tại sao?` and `Mạng cục bộ`.
-  Reach for it before recording a term as `tentative`.
+  `docs/i18n/reference-pile/how-to-mine.md` (walk `/System/**`, `plutil -convert json` each `.loctable`, filter the `en`
+  side, read the `vi` side by the same key) takes ~2 minutes and is what sourced `Tại sao?` and `Mạng cục bộ`. Reach for
+  it before recording a term as `tentative`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

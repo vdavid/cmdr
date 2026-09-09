@@ -359,8 +359,8 @@ Dateien".
   `desc` ohnehin trägt, und im Zweifel die kurze Wortform nehmen (`Platz` statt `Speicherplatz`). Deutsch läuft hier
   sonst 20–30 % über die englische Zeile.
 - **Ein leeres Tag mitten im Satz (`<field></field>`) ist ein Bedienelement, kein Text.** Der Satz braucht eine Stelle,
-  an der ein Kasten natürlich sitzt; ein trennbares Verb liefert sie („Gib deine E-Mail-Adresse <field></field> ein,
-  um …“). Nicht das Tag ans Satzende schieben: das Englische setzt es bewusst in die Mitte.
+  an der ein Kasten natürlich sitzt; ein trennbares Verb liefert sie („Gib deine E-Mail-Adresse <field></field> ein, um
+  …“). Nicht das Tag ans Satzende schieben: das Englische setzt es bewusst in die Mitte.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

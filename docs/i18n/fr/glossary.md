@@ -3175,16 +3175,16 @@ Termes établis pendant cette passe :
   (`3Lg-B5-cFZ.title` → « En savoir plus… »), relevés dans le tas de références 2026-09-09 · high. `{topic}` porte un
   libellé déjà traduit et de genre inconnu : la tournure « sur {topic} » ne demande ni article ni accord, c'est
   exactement la restructuration que la règle des insertions non contrôlées attend.
-- checklist → **liste de contrôle** · MS terminology FRA (`FRENCH.tbx`, entrée 30962 → 30965), relevé 2026-09-09 ·
-  high. Le titre complet devient « Liste de contrôle de la prise en main » : `onboarding` reste `prise en main` partout
-  (entrée déjà au glossaire), et le compte « each takes 30 seconds » se rend par « 30 secondes par point », parce que
-  « chacune » n'aurait pas d'antécédent féminin en français.
+- checklist → **liste de contrôle** · MS terminology FRA (`FRENCH.tbx`, entrée 30962 → 30965), relevé 2026-09-09 · high.
+  Le titre complet devient « Liste de contrôle de la prise en main » : `onboarding` reste `prise en main` partout
+  (entrée déjà au glossaire), et le compte « each takes 30 seconds » se rend par « 30 secondes par point », parce que «
+  chacune » n'aurait pas d'antécédent féminin en français.
 - Save (le bouton à côté du champ e-mail) → **Enregistrer** · macOS AppKit, pervasif (`SavePanel.json`,
   `NSLocalSavePanel.json`, `NSRemoteSavePanel.json`, `Document.json`, `Printing.json`, `Preferences.json` → «
   Enregistrer »), relevé 2026-09-09 · high. Les deux messages d'échec du champ (`signup.rejected`, `.unreachable`)
   citent ce mot tel quel : les trois clés forment une unité, ne renommez le bouton que dans les trois à la fois.
-- star (le verbe de GitHub) → **ajouter une étoile** · GitHub localise son interface en français et son bouton dit
-  « Ajouter une étoile » (état marqué : « Marqué d'une étoile »), d'après la doc GitHub française
+- star (le verbe de GitHub) → **ajouter une étoile** · GitHub localise son interface en français et son bouton dit «
+  Ajouter une étoile » (état marqué : « Marqué d'une étoile »), d'après la doc GitHub française
   `docs.github.com/fr/get-started/exploring-projects-on-github/saving-repositories-with-stars`, relevée 2026-09-09 ·
   high. Le catalogue le disait déjà en clair à `onboarding.stepBeta.star` (« ajoutez une étoile au dépôt ») : les deux
   clés parlent du même geste et disent maintenant le même mot. `dépôt` pour `repo` était déjà en place.
@@ -3205,14 +3205,14 @@ Décisions de formulation :
   sens réel de `suppress` ici (macOS le retrouve à la fermeture de Cmdr). ❌ `supprimer` seul, sans le contexte de la
   description, se lirait « effacer ».
 - **Le nom d'une autorisation macOS cité dans un résumé garde les guillemets de la source**, sans imbrication puisque la
-  valeur elle-même n'est pas entre guillemets : `stepOptional.networking.summary` = « Demande d'accepter une fois
-  l'« accès au réseau local » », la formulation exacte déjà livrée par `.desc`.
+  valeur elle-même n'est pas entre guillemets : `stepOptional.networking.summary` = « Demande d'accepter une fois l'«
+  accès au réseau local » », la formulation exacte déjà livrée par `.desc`.
 - **`<field></field>` se place après l'objet, pas en fin de phrase.** La balise est un champ de saisie rendu au milieu
   de la phrase : « Saisissez votre adresse e-mail <field></field> pour recevoir… ». Le verbe reste `saisir` (Finder),
   jamais `taper`.
-- **Un renvoi à une section des Réglages recopie mot pour mot le titre livré**, ici
-  `settings.section.updatesAndPrivacy` = « Mises à jour et confidentialité », et garde le chevron `›` de la source :
-  « Réglages › Mises à jour et confidentialité » (`stepBeta.signup.unreachable`).
+- **Un renvoi à une section des Réglages recopie mot pour mot le titre livré**, ici `settings.section.updatesAndPrivacy`
+  = « Mises à jour et confidentialité », et garde le chevron `›` de la source : « Réglages › Mises à jour et
+  confidentialité » (`stepBeta.signup.unreachable`).
 - **« Couldn't reach X » reste sur le verbe `joindre`**, comme `onboarding.cloudSetup.status.connectionError` («
   Impossible de joindre le service pour le moment ») : ni « erreur », ni « échec », le constat puis la sortie.
 - **`dumber` se traduit franchement.** `stepAi.local.tooltip` dit « nettement plus bête que les modèles cloud » : la

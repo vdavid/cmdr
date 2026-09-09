@@ -320,9 +320,9 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   ”Appar”, och dra-meningen skrivs `dra … från mappen Appar`. Belägg: `glossary.md` § Dock-erbjudandet.
 - **En tom tagg som renderar en kontroll mitt i meningen sätts där svenskan vill ha objektet.**
   `onboarding.stepBeta.checklist.email` har `<field></field>`, som är textfältet plus dess Spara-knapp inuti satsen.
-  Meningen måste läsas som EN rad med en ruta i mitten, alltså placeras taggen efter objektet
-  (”Ange din e-postadress <field></field>, så …”), inte i engelskans position. Samma reflex gäller `<alpha></alpha>`
-  och `<chip></chip>`. Belägg: `glossary.md` § Introduktionsguidens omskrivning.
+  Meningen måste läsas som EN rad med en ruta i mitten, alltså placeras taggen efter objektet (”Ange din e-postadress
+  <field></field>, så …”), inte i engelskans position. Samma reflex gäller `<alpha></alpha>` och `<chip></chip>`.
+  Belägg: `glossary.md` § Introduktionsguidens omskrivning.
 - **När en sträng CITERAR en annan nyckels etikett är de två en enhet, precis som ett `*Aria`-par.**
   `onboarding.stepAi.local.tooltip` säger `<strong>Ja, jag vill ha AI</strong>` och pekar därmed på
   `onboarding.stepAi.cloud.label`, som måste stå ordagrant likadant; `signup.rejected`/`.unreachable` citerar
@@ -333,12 +333,12 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   `fullständig åtkomst till skivan` var. Belägg och den live lästa bunten: `glossary.md` § Introduktionsguidens
   omskrivning.
 - **Referenssamlingen bär falska vänner; kolla vad strängen sitter bland innan du lånar den.** Total Commanders
-  `Skrivfel!` ser ut som `typo` men är `Write error` (den ligger bland filoperationsfelen). En träff på rätt svenskt
-  ord är inte belägg förrän källans egen betydelse stämmer.
-- **GitHub och AlternativeTo har inget svenskt gränssnitt att kopiera.** GitHub lade ner sin UI-lokalisering
-  2016-11-18 (svenska fanns 2010–2016), och AlternativeTo är helt engelskt. Deras verb översätts alltså som vanliga
-  termer, inte som citerade knappetiketter: `star` → `stjärnmärk` (katalogens egen precedens), `Like` → `Gilla`
-  (Microsoft sv). Belägg: `glossary.md` § Introduktionsguidens omskrivning.
+  `Skrivfel!` ser ut som `typo` men är `Write error` (den ligger bland filoperationsfelen). En träff på rätt svenskt ord
+  är inte belägg förrän källans egen betydelse stämmer.
+- **GitHub och AlternativeTo har inget svenskt gränssnitt att kopiera.** GitHub lade ner sin UI-lokalisering 2016-11-18
+  (svenska fanns 2010–2016), och AlternativeTo är helt engelskt. Deras verb översätts alltså som vanliga termer, inte
+  som citerade knappetiketter: `star` → `stjärnmärk` (katalogens egen precedens), `Like` → `Gilla` (Microsoft sv).
+  Belägg: `glossary.md` § Introduktionsguidens omskrivning.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

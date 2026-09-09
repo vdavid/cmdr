@@ -2689,29 +2689,30 @@ terminologia da Apple vence (style.md § superfícies do sistema).
 - star (o BOTÃO do GitHub) · **Adicionar aos favoritos** · o próprio GitHub em português chama assim
   (`docs.github.com/pt/…/saving-repositories-with-stars`: "clicar em **Adicionar aos favoritos**", e "Adicionado aos
   favoritos" quando já está), e a Microsoft terminology pt-BR fecha o mesmo verbo (`star`, verbo, "To mark an entity
-  with a star" → `adicionar aos favoritos`, BRA, id 2644689; lido em 2026-09-09) · confirmed. Daí
-  `checklist.star` = `Adicionar o repo aos favoritos no GitHub`. `repo` fica curto porque é rótulo de link, e o
-  parágrafo `stepBeta.star` já publicava `repo`.
+  with a star" → `adicionar aos favoritos`, BRA, id 2644689; lido em 2026-09-09) · confirmed. Daí `checklist.star` =
+  `Adicionar o repo aos favoritos no GitHub`. `repo` fica curto porque é rótulo de link, e o parágrafo `stepBeta.star`
+  já publicava `repo`.
 - stars (o CONTADOR do GitHub) · **estrelas** · o mesmo GitHub em português usa `Estrelas` para a contagem, e o
   `stepBeta.star` já publica "225 estrelas" · confirmed. ⚠️ **O botão e o contador usam palavras DIFERENTES de
   propósito**, e isso não é deriva: é exatamente o que a pessoa vê na página do GitHub, então a linha do link nomeia o
-  botão que ela vai procurar e a nota logo abaixo nomeia o número que ela vai ver. (A Microsoft chega a manter `star`
-  em inglês para o sentido de repositório, id 3107904 BRA; ninguém em pt-BR lê "star" como substantivo, então fica
-  fora.) `checklist.starNote`.
+  botão que ela vai procurar e a nota logo abaixo nomeia o número que ela vai ver. (A Microsoft chega a manter `star` em
+  inglês para o sentido de repositório, id 3107904 BRA; ninguém em pt-BR lê "star" como substantivo, então fica fora.)
+  `checklist.starNote`.
 - Like (o botão do AlternativeTo) · **Curtir** · MS terminology pt-BR, três entradas convergentes (`like` → `curtir`,
   "To express approval for a certain item"; `Like` → `Curtir`; `like` → `curtida` para o substantivo) · confirmed. O
   AlternativeTo não tem interface em português (só lista os idiomas do app), então não há rótulo do próprio site para
   copiar e `curtir` é o verbo de aprovação social do pt-BR. `checklist.alternativeTo`.
 - checklist · **lista de verificação** · MS terminology pt-BR, duas entradas (`checklist` e `check list` →
-  `lista de verificação`) · confirmed. `checklist.title` = `Lista de verificação da introdução, cada item leva 30
-  segundos:`, mantendo a promessa dos 30 segundos, que é o ponto da linha.
+  `lista de verificação`) · confirmed. `checklist.title` =
+  `Lista de verificação da introdução, cada item leva 30 segundos:`, mantendo a promessa dos 30 segundos, que é o ponto
+  da linha.
 - Save (o botão ao lado do campo de e-mail) · **Salvar** · macOS Finder pt-BR (`LocalizableMerged` `AL2` e `BN38`,
   `Save` → `Salvar`) · confirmed. ⚠️ **As duas linhas de status NOMEIAM esse botão** (`signup.rejected`,
   `signup.unreachable` dizem "clicar em Salvar"), então elas copiam o rótulo palavra por palavra; trocar um sem o outro
   manda a pessoa procurar um botão que não existe.
-- typo · **erro de digitação** · o catálogo já publica a mesma frase em `licensing.error.badSignatureHint`
-  ("Please double-check for typos" → "Confira se não há erros de digitação") · confirmed. O "erro" aqui é da digitação
-  da pessoa, não do app, então não colide com a regra de nunca dizer `erro`/`falha` sobre o que o Cmdr fez.
+- typo · **erro de digitação** · o catálogo já publica a mesma frase em `licensing.error.badSignatureHint` ("Please
+  double-check for typos" → "Confira se não há erros de digitação") · confirmed. O "erro" aqui é da digitação da pessoa,
+  não do app, então não colide com a regra de nunca dizer `erro`/`falha` sobre o que o Cmdr fez.
 - mailing list · **lista de e-mails** · sem fonte direta: a MS terminology só tem `lista de distribuição` e
   `lista de endereçamento`, os dois do grupo de distribuição do Exchange, que é outro conceito, não uma lista opt-in
   (gotcha 2 do § Researching terms) · tentative
@@ -2722,8 +2723,8 @@ terminologia da Apple vence (style.md § superfícies do sistema).
   `stepOptional.networking.desc` já publica exatamente essa forma, e o macOS pt-BR sustenta: o painel se chama
   `Rede Local` e o resumo dele fala em "permissão para buscar e se comunicar com dispositivos na sua rede local"
   (`SecurityPrivacyExtension.appex/Contents/Resources/Localizable.loctable`, chaves `LOCAL_NETWORK` e
-  `LOCAL_NETWORK_SUMMARY`, macOS 26.6.2 build 25G83, lido em 2026-09-09) · confirmed. O resumo de meia linha e a
-  legenda longa atrás do glifo de informação ficam a dois cliques um do outro, então têm de dizer a mesma coisa.
+  `LOCAL_NETWORK_SUMMARY`, macOS 26.6.2 build 25G83, lido em 2026-09-09) · confirmed. O resumo de meia linha e a legenda
+  longa atrás do glifo de informação ficam a dois cliques um do outro, então têm de dizer a mesma coisa.
 - step (uma etapa numerada de instrução) · **etapa** · o catálogo já usa `etapa` para as etapas do assistente
   (`wizard.stepProgress`, `wizard.backAria`, `stepBeta.footer.continue`) e nunca `passo`; a pilha não decide (o macOS
   pt-BR não tem a palavra em contexto de instrução) · high. Daí `stepFda.ifAllow` = `Três etapas fáceis:`: a introdução
@@ -2734,12 +2735,12 @@ terminologia da Apple vence (style.md § superfícies do sistema).
   contribution levels, achievements") · confirmed. Já era a palavra do `stepBeta.openBeta`.
 - latest version · **última versão** · MS terminology pt-BR (`latest version` → `última versão`) · high.
   `stepOptional.updates.summary`.
-- dumb (o modelo local) · **burro** · o inglês escolhe "dumber" de propósito (a `@key` diz isso), e `bem mais burro do
-  que` é o comparativo franco e natural em pt-BR · high. `stepAi.local.tooltip`.
-- native handler (o processo do macOS que o MTP suprime) · **processo nativo do macOS** · o
-  `stepOptional.mtp.desc` já chama de "esse processo do macOS", e a MS terminology dá `suppress` → `suprimir` ·
-  high. ❌ Não `manipulador` (a tradução literal de `handler` na MS terminology): a legenda longa desta mesma tela já
-  disse `processo`, e um resumo não troca a palavra da legenda que está logo atrás dele.
+- dumb (o modelo local) · **burro** · o inglês escolhe "dumber" de propósito (a `@key` diz isso), e
+  `bem mais burro do que` é o comparativo franco e natural em pt-BR · high. `stepAi.local.tooltip`.
+- native handler (o processo do macOS que o MTP suprime) · **processo nativo do macOS** · o `stepOptional.mtp.desc` já
+  chama de "esse processo do macOS", e a MS terminology dá `suppress` → `suprimir` · high. ❌ Não `manipulador` (a
+  tradução literal de `handler` na MS terminology): a legenda longa desta mesma tela já disse `processo`, e um resumo
+  não troca a palavra da legenda que está logo atrás dele.
 
 ⚠️ **A tooltip do modelo local CITA o rótulo da opção de nuvem.** `stepAi.local.tooltip` fecha com
 `<strong>Sim, eu quero IA</strong>`, que é o valor de `stepAi.cloud.label` byte a byte. As duas chaves são uma unidade:

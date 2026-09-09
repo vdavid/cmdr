@@ -328,8 +328,8 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
 - **`Onboardingchecklist` aaneen** (`onboarding.stepBeta.checklist.title`): orthografisch correct en in lijn met
   `onboardingopties`, maar 19 letters. Bevestig tegenover `Onboarding-checklist`.
 - **`de inschrijfserver` en `mailinglijst`** (`onboarding.stepBeta.signup.unreachable` / `.rejected`): de eerste is
-  gemunt, de tweede wijkt bewust af van Microsofts `adressenlijst` (dat een ander begrip benoemt). Bewijs:
-  `glossary.md` § De onboarding-herschrijving.
+  gemunt, de tweede wijkt bewust af van Microsofts `adressenlijst` (dat een ander begrip benoemt). Bewijs: `glossary.md`
+  § De onboarding-herschrijving.
 - **`de macOS-afhandeling` voor `native handler`** (`onboarding.stepOptional.mtp.summary`): gemunt en gekozen op lengte,
   want de regel mag niet omlopen. Alternatief `het eigen macOS-proces` is langer en `eigen` leest dubbelzinnig.
 - **"Ask Cmdr model" → "Ask Cmdr-model"**: hyphenating after a two-word English brand name is a judgment call (no exact

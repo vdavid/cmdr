@@ -327,9 +327,8 @@ strings are counted, so no plural branches are needed there.
   AlternativeTo, el nombre `"Acceso a la red local"` de un diálogo de macOS) conserva las rectas del inglés.
 - **Un resumen de una línea junto a un interruptor no puede envolver, así que se recorta antes que alargarse.** Las
   cuatro claves `onboarding.stepOptional.*.summary` son telegráficas en inglés y lo siguen siendo en español: verbo en
-  tercera persona, lista con comas, sin subordinadas («Ocupa 1 GB, acelera las búsquedas y muestra tamaños de
-  carpeta»). Toman la terminología de su clave hermana `…desc`, que es la versión larga que el usuario abre justo al
-  lado.
+  tercera persona, lista con comas, sin subordinadas («Ocupa 1 GB, acelera las búsquedas y muestra tamaños de carpeta»).
+  Toman la terminología de su clave hermana `…desc`, que es la versión larga que el usuario abre justo al lado.
 - **`type` es `escribir`; `introducir` se reserva para las credenciales.** "nothing to type" →
   `no hay nada que escribir`, pero "type your username and password" sigue siendo `introduce tu usuario y contraseña`
   (`fileExplorer.network.*`). macOS hace el mismo reparto: `escribir` para el acto de teclear, `introducir` cuando el
@@ -360,10 +359,10 @@ strings are counted, so no plural branches are needed there.
   `settings.fileOperations.adbBinaryPath.description`; both would change together if you prefer the full Google wording.
 - **"your computer/machine" → "tu equipo", y dos claves de `settings.json` dicen otra cosa** (tentative): macOS `es`
   escribe `ordenador` (43 apariciones frente a 1 de `equipo` en Finder + AppKit + SystemSettings, 2026-09-09), pero es
-  vocabulario solo de España y esta base es panregional, así que `onboarding.stepAi.local.tooltip` dice `tu equipo`
-  (la palabra de Microsoft, ya presente en `errors.json`). `settings.mediaIndex.privacyNote` y
-  `settings.ai.tooltipLocal` siguen diciendo `sale(n) de tu ordenador`. Es una sola palabra en tres sitios: decide cuál
-  gana y se unifican en una pasada.
+  vocabulario solo de España y esta base es panregional, así que `onboarding.stepAi.local.tooltip` dice `tu equipo` (la
+  palabra de Microsoft, ya presente en `errors.json`). `settings.mediaIndex.privacyNote` y `settings.ai.tooltipLocal`
+  siguen diciendo `sale(n) de tu ordenador`. Es una sola palabra en tres sitios: decide cuál gana y se unifican en una
+  pasada.
 - **crash report → "informe de fallos"** (tentative): no single canonical source. "fallos" is the gentlest, most natural
   fit for Cmdr's non-alarmist voice; the more technical alternatives are "informe de bloqueos" (matches MS/macOS
   "bloqueo" for crash) or keeping it generic as "informe del problema". Confirm which reads best.

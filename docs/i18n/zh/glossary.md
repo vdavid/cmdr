@@ -1482,8 +1482,8 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
   `忽略所有权`）（macOS 26.6.2 语料，2026-08-30 核对） · `confirmed`。目录里原有 5 个键写成 `忽略`，其中
   `errorReporter.sentToast.dismiss`
   是**报告发送成功**后的提示，按钮却写着「忽略」，等于让用户「无视」自己刚做成的事。九个 Dismiss 全部统一为 `关闭`。
-    - 连带：`queue.row.dismissAria` 原为 `忽略这项操作`，改为 `关闭这项操作的记录`。**不要写成 `关闭这项操作`**：中文的
-      `关闭+操作` 会被读成「终止这项操作」，而这个按钮只是让那一行不再显示，什么都不撤销、不重试、不删除。
+  - 连带：`queue.row.dismissAria` 原为 `忽略这项操作`，改为 `关闭这项操作的记录`。**不要写成 `关闭这项操作`**：中文的
+    `关闭+操作` 会被读成「终止这项操作」，而这个按钮只是让那一行不再显示，什么都不撤销、不重试、不删除。
 - **Example:（占位符示例）** · `示例：` · 完整词 Example 用 `示例`（GNOME Nautilus `Examples:` →
   `示例:`），缩写 e.g. 才用 `例如`（KDE Dolphin `(e.g. smb://…)` → `(例如： smb://…)`） ·
   `high`。`onboarding.cloudSetup.*` 的 4 个键原写 `例如：`，与 `ai.cloud.*` 的 `示例：` 打架；英文两处都是完整词

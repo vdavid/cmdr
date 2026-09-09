@@ -2678,15 +2678,15 @@ und `stepFda.why`. Onboarding ist die eine Fläche, auf der Cmdr in der Ich-Form
   konnte nicht gesichert werden.“, „Die letzten Änderungen werden im Versionsverlauf gesichert.“) · high. Abgrenzung:
   der Katalog sagt `gespeichert`, wo es ums bloße ABLEGEN von Daten geht („Anmeldedaten gespeichert“, „Notiz über dich
   gespeichert“). Hier hängt das Partizip aber direkt an der Taste `Sichern`, also gewinnt die Wortfamilie der Taste
-  (`style.md` § „Eine Wortfamilie pro Dialog durchhalten“): `E-Mail-Adresse gesichert`, `Deine Adresse ist auf diesem
-  Mac gesichert`.
-- **`star` (GitHubs eigenes Verb) → `Stern`, als Handlung `einen Stern vergeben`** · GitHub lokalisiert seine
-  Oberfläche NICHT ins Deutsche (die Einstellung „Preferred spoken language“ betrifft nur Kommunikationsfunktionen), es
-  gibt also keinen deutschen Button-Text. Die deutsche GitHub-Doku nennt die Taste `Stern` und die Handlung „mit einem
-  Stern versehen“ / „mit einem Stern markieren“ (GitHub-Doku `de`, „Repositorien markiert mit Sternen sichern“:
-  „Klicke in der oberen rechten Ecke der Seite auf **Stern**.“, abgerufen 2026-09-09) · high. Der Katalog hatte
-  `Vergib dem Repo … einen Stern` schon in `onboarding.stepBeta.star`; die Checklistenzeile übernimmt es
-  zeichengleich. `Repo` bleibt die Kurzform, wie im Englischen.
+  (`style.md` § „Eine Wortfamilie pro Dialog durchhalten“): `E-Mail-Adresse gesichert`,
+  `Deine Adresse ist auf diesem Mac gesichert`.
+- **`star` (GitHubs eigenes Verb) → `Stern`, als Handlung `einen Stern vergeben`** · GitHub lokalisiert seine Oberfläche
+  NICHT ins Deutsche (die Einstellung „Preferred spoken language“ betrifft nur Kommunikationsfunktionen), es gibt also
+  keinen deutschen Button-Text. Die deutsche GitHub-Doku nennt die Taste `Stern` und die Handlung „mit einem Stern
+  versehen“ / „mit einem Stern markieren“ (GitHub-Doku `de`, „Repositorien markiert mit Sternen sichern“: „Klicke in der
+  oberen rechten Ecke der Seite auf **Stern**.“, abgerufen 2026-09-09) · high. Der Katalog hatte
+  `Vergib dem Repo … einen Stern` schon in `onboarding.stepBeta.star`; die Checklistenzeile übernimmt es zeichengleich.
+  `Repo` bleibt die Kurzform, wie im Englischen.
 - **`Like` (AlternativeTos eigenes Verb) → `ein Like geben`** · AlternativeTo ist einsprachig englisch, der Nutzer sieht
   dort also eine Taste `Like`; Microsofts Terminologie führt `like` (Verb, Beitrag) als `gefällt mir`, was aus Facebook/
   Dynamics stammt und als Linktext zu lang ist · tentative. `das Like` / `liken` stehen im Duden. Die Form
@@ -2700,8 +2700,8 @@ und `stepFda.why`. Onboarding ist die eine Fläche, auf der Cmdr in der Ich-Form
   Verteilerliste im Firmenadressbuch), nicht die Opt-in-Liste, um die es hier geht · tentative. `Mailingliste` ist das
   übliche deutsche Wort dafür und hält die Liste als handelndes Subjekt („Die Mailingliste hat diese Adresse nicht
   angenommen.“), was wichtig ist: nicht Cmdr weist die Adresse ab.
-- **`typo` → `Tippfehler`** · der Katalog selbst (`licensing.error.badSignatureHint` „Prüfe ihn bitte auf Tippfehler
-  …“) · high.
+- **`typo` → `Tippfehler`** · der Katalog selbst (`licensing.error.badSignatureHint` „Prüfe ihn bitte auf Tippfehler …“)
+  · high.
 - **`signup` → `Anmeldung`, `signup server` → `Anmeldeserver`** · der Katalog (`onboarding.stepBeta.signup.failure` „die
   Anmeldung hat gerade nicht geklappt“) · high.
 - **Die macOS-Berechtigung `Local Network` → `Lokales Netzwerk`** · `SecurityPrivacyExtension.appex`
@@ -2712,22 +2712,22 @@ und `stepFda.why`. Onboarding ist die eine Fläche, auf der Cmdr in der Ich-Form
   Systemeinstellungen steht.
 - **`space` (Plattenplatz in einer Zeile, die nicht umbrechen darf) → `Platz`** · Finder `de` („Kein Platz mehr“, „Das
   Objekt „^0“ kann nicht kopiert werden, da nicht genügend freier Platz zur Verfügung steht.“) · high. `Speicherplatz`
-  bleibt die Langform für Fließtext (macOS nutzt beide); in `stepOptional.indexing.summary` und
-  `stepAi.local.tooltip` kostet die Langform zu viel Breite.
+  bleibt die Langform für Fließtext (macOS nutzt beide); in `stepOptional.indexing.summary` und `stepAi.local.tooltip`
+  kostet die Langform zu viel Breite.
 - **`More about X` (der Info-Punkt neben einem Label) → `Mehr über {topic}`** · macOS `de` nutzt die knappe
   `Mehr …`-Form („Mehr Infos …“ = Learn More…, „Mehr anzeigen“) · high. Ohne Artikel, weil `{topic}` ein schon
   übersetztes Label trägt, dessen Genus der Katalog nicht kennt; `über` regiert den Akkusativ, der im Singular
   unmarkiert ist, also bleibt jeder Einschub grammatisch.
 - **Der Einstellungspfad → `Einstellungen › Updates & Datenschutz`** · die beiden Hälften kommen aus
-  `settings.section.updatesAndPrivacy`; das `›` bleibt wie im Englischen und wie in
-  `askCmdr.error.notConfigured` („Einstellungen › KI“) · high.
+  `settings.section.updatesAndPrivacy`; das `›` bleibt wie im Englischen und wie in `askCmdr.error.notConfigured`
+  („Einstellungen › KI“) · high.
 
 Formulierungsentscheidungen in diesem Set:
 
 - **Die vier Kurzfazits bleiben untereinander parallel und verbinitial**: `Braucht einmal die Berechtigung …`,
-  `Braucht 1 GB Platz, …`, `Eine winzige Anfrage …`, `Verbindet Android-Handys …`. Sie stehen als eine Zeile neben
-  einem Schalter und dürfen nicht umbrechen, also fällt jedes Füllwort weg, das die lange Fassung im Geschwister-`desc`
-  schon trägt.
+  `Braucht 1 GB Platz, …`, `Eine winzige Anfrage …`, `Verbindet Android-Handys …`. Sie stehen als eine Zeile neben einem
+  Schalter und dürfen nicht umbrechen, also fällt jedes Füllwort weg, das die lange Fassung im Geschwister-`desc` schon
+  trägt.
 - **Jedes Kurzfazit erbt die Wörter seines `…desc`.** `Vorgang`/`Prozess` für den macOS-MTP-Dienst, `und Ähnliches` für
   „and the such“ (der `desc` sagt „und Ähnlichem“, hier steht der Akkusativ), `winzige Anfrage` für „tiny check“,
   `Ordnergrößen` wie `settings.section.fileAndFolderSizes`.
@@ -2736,9 +2736,9 @@ Formulierungsentscheidungen in diesem Set:
   Ein trennbares Verb liefert die Stelle gratis; ein Satz mit dem Verb am Anfang würde den Kasten ans Ende drängen.
   `eingeben` ist Apples Wort für Tastatureingabe (`style.md`), nicht `tippen`.
 - **`stepTooltip` behält das wörtliche `+1`**, weil genau das die Aussage ist („drei Pflichtschritte und ein
-  optionaler“). Die `select`-Zweige sind Satzanhängsel und beginnen deshalb mit Komma: `, es folgt noch ein optionaler
-  Schritt` / `, das ist der letzte, optionale Schritt`. Der Rahmen kommt aus dem Geschwister `wizard.stepProgress`
-  („Schritt {step} von {total}“).
+  optionaler“). Die `select`-Zweige sind Satzanhängsel und beginnen deshalb mit Komma:
+  `, es folgt noch ein optionaler Schritt` / `, das ist der letzte, optionale Schritt`. Der Rahmen kommt aus dem
+  Geschwister `wizard.stepProgress` („Schritt {step} von {total}“).
 - **`dumber` bleibt `dümmer`.** Das Englische wählt das grobe Wort bewusst; eine Abmilderung („weniger leistungsfähig“)
   wäre eine andere Aussage als die, die David trifft.
 - **Der `<strong>`-Block in `stepAi.local.tooltip` muss `stepAi.cloud.label` zeichengleich zitieren**
