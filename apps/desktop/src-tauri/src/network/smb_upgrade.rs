@@ -115,6 +115,41 @@ enum DirectConnectOutcome {
     SurfacedToCaller,
 }
 
+/// Who the attempt signed in as, which is what an auth rejection MEANS.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AttemptedAs {
+    /// Credentials we held for this share.
+    SavedCredentials,
+    /// Nothing was saved, so the attempt went out as a guest, which is what
+    /// `SmbConnectionParams::new` does with no username.
+    Guest,
+}
+
+impl AttemptedAs {
+    /// Mirrors `SmbConnectionParams::new`: no username means the connection goes
+    /// out as `Guest`, so that is what a rejection is about.
+    fn from_username(username: Option<&str>) -> Self {
+        match username {
+            Some(_) => Self::SavedCredentials,
+            None => Self::Guest,
+        }
+    }
+
+    /// What a rejection of THIS identity means, and what would fix it.
+    ///
+    /// A rejected guest attempt is not a wrong password: there was no password.
+    /// The server has guest access turned off, which is an admin's setting, and
+    /// the way out is to sign in rather than to correct something saved. Telling
+    /// someone to fix a password they never saved sends them looking in Keychain
+    /// for an entry that isn't there (ERR-48RZX).
+    fn rejection_advice(self) -> &'static str {
+        match self {
+            Self::SavedCredentials => "The saved password for this share isn't being accepted; correcting it restores the direct connection.",
+            Self::Guest => "Nothing is saved for this share, so the attempt went out as a guest and the server has guest access turned off. Signing in gets the direct connection.",
+        }
+    }
+}
+
 /// Writes down why a direct smb2 connection didn't happen, naming the auth case.
 ///
 /// **Why it's a function and not two `warn!`s.** Both upgrade paths end here, so
@@ -125,12 +160,22 @@ enum DirectConnectOutcome {
 /// for a `STATUS_LOGON_FAILURE`, and the manual path printed nothing at all.
 /// A stale Keychain password therefore looked exactly like a flaky server, and
 /// the share sat silently on the kernel mount at a fraction of the speed.
-fn log_direct_connect_failure(server: &str, share: &str, err: &smb2::Error, outcome: DirectConnectOutcome) {
+///
+/// `attempted_as` separates the two auth cases, which need different advice:
+/// see [`AttemptedAs::rejection_advice`].
+fn log_direct_connect_failure(
+    server: &str,
+    share: &str,
+    err: &smb2::Error,
+    outcome: DirectConnectOutcome,
+    attempted_as: AttemptedAs,
+) {
     let auth = cmdr_smb::is_auth_error(err);
     match (outcome, auth) {
         (DirectConnectOutcome::StaysOnKernelMount, true) => log::warn!(
             target: "smb_fallback",
-            "{server}/{share} rejected our credentials ({err}), so it stays on the macOS kernel mount: slower, and Cmdr can't manage the connection. Fix the saved password for this share to get the direct connection back."
+            "{server}/{share} turned our sign-in down ({err}), so it stays on the macOS kernel mount: slower, and Cmdr can't manage the connection. {}",
+            attempted_as.rejection_advice()
         ),
         (DirectConnectOutcome::StaysOnKernelMount, false) => log::warn!(
             target: "smb_fallback",
@@ -139,7 +184,8 @@ fn log_direct_connect_failure(server: &str, share: &str, err: &smb2::Error, outc
         ),
         (DirectConnectOutcome::SurfacedToCaller, true) => log::info!(
             target: "smb_fallback",
-            "{server}/{share} rejected our credentials ({err}); asking for new ones."
+            "{server}/{share} turned our sign-in down ({err}); asking for credentials. {}",
+            attempted_as.rejection_advice()
         ),
         (DirectConnectOutcome::SurfacedToCaller, false) => log::warn!(
             target: "smb_fallback",
@@ -411,8 +457,14 @@ pub(crate) async fn register_smb_volume(
     use cmdr_smb::volume::connect_smb_volume;
     use std::sync::Arc;
 
-    // Resolve mDNS service names (like "Naspolya._smb._tcp.local") to an IP
-    let resolved_server = resolve_server_address(server);
+    // Resolve mDNS service names (like "Naspolya._smb._tcp.local") to an IP.
+    // Nothing to dial means nothing to do THIS pass: dialing the service name
+    // anyway can only burn the resolver timeout and report a failure that isn't
+    // one. The pass that runs once discovery goes active resolves it and connects.
+    let ServerAddress::Connectable(resolved_server) = resolve_server_address(server) else {
+        log::debug!("Leaving {mount_path} on the kernel mount for now: {server} isn't discovered yet");
+        return;
+    };
 
     // Derive the volume ID before connect so SmbVolume's internal ID, the
     // ID we pass to `connect_smb_volume`, and the ID the OS-event watcher
@@ -475,7 +527,13 @@ pub(crate) async fn register_smb_volume(
         Err(e) => {
             // The raw error belongs in the log, where it's the diagnostic. The volume
             // stays on the OS mount, which still works, at a fraction of the speed.
-            log_direct_connect_failure(server, share, &e, DirectConnectOutcome::StaysOnKernelMount);
+            log_direct_connect_failure(
+                server,
+                share,
+                &e,
+                DirectConnectOutcome::StaysOnKernelMount,
+                AttemptedAs::from_username(username),
+            );
             // And tell the person, once per server: this is the only path that leaves
             // someone on the slow connection with nothing but a small yellow dot to
             // notice it by. The frontend's notice carries a retry button.
@@ -526,8 +584,21 @@ pub(crate) async fn try_smb_upgrade(
     use std::sync::Arc;
 
     // Resolve mDNS service names to connectable addresses
-    let resolved_server = resolve_server_address(server);
     let display = friendly_server_name(server);
+    // The user asked for this one, so answer rather than go quiet — but answer
+    // now. Dialing an undiscovered service name spends the resolver's timeout to
+    // reach the same place, and `Unreachable` is what it means: we can't find
+    // this server on the network right now.
+    let ServerAddress::Connectable(resolved_server) = resolve_server_address(server) else {
+        log::info!(
+            target: "smb_fallback",
+            "{server}/{share} can't be dialed: mDNS hasn't discovered it, so there's no address for it yet."
+        );
+        return Err(UpgradeError::Network {
+            reason: UpgradeFailure::Unreachable,
+            display_name: display,
+        });
+    };
 
     // Same lock and re-check as the auto path: the 1.5 s mDNS wait upstream is
     // enough time for another path to have upgraded this volume already, and if one
@@ -566,7 +637,13 @@ pub(crate) async fn try_smb_upgrade(
         Err(e) => {
             // The raw error stays in the log where it's useful; the caller gets the
             // typed reason and the frontend writes the sentence.
-            log_direct_connect_failure(&resolved_server, share, &e, DirectConnectOutcome::SurfacedToCaller);
+            log_direct_connect_failure(
+                &resolved_server,
+                share,
+                &e,
+                DirectConnectOutcome::SurfacedToCaller,
+                AttemptedAs::from_username(username),
+            );
             if is_auth_error(&e) {
                 Err(UpgradeError::Auth)
             } else {
@@ -652,7 +729,24 @@ pub(crate) async fn resolve_ip_to_hostname_with_wait(ip: &str, timeout: std::tim
     None
 }
 
-/// Resolves a server address from `statfs` to a connectable address.
+/// A server string from `statfs`, once we know whether anything can dial it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum ServerAddress {
+    /// Ready to dial: an IP, a DNS hostname, or an mDNS service name discovery
+    /// has already resolved.
+    Connectable(String),
+    /// An mDNS SERVICE instance name (`Naspolya._smb._tcp.local.`) that discovery
+    /// hasn't seen yet.
+    ///
+    /// Not a hostname, so `getaddrinfo` can never resolve it: dialing it spends
+    /// the resolver's timeout and fails every single time. Measured at 8.2 s on
+    /// one report, which also cost the user a "this share is stuck on the kernel
+    /// mount" warning for a share that connected fine 30 s later, once discovery
+    /// went active (ERR-48RZX).
+    UndiscoveredService,
+}
+
+/// Resolves a server address from `statfs` to something dialable.
 ///
 /// `statfs` can return different formats depending on how the mount was created:
 /// - An IP address like `192.168.1.111`: usable as-is
@@ -660,11 +754,13 @@ pub(crate) async fn resolve_ip_to_hostname_with_wait(ip: &str, timeout: std::tim
 /// - An mDNS service name like `Naspolya._smb._tcp.local`: NOT resolvable by DNS, must be resolved
 ///   to an IP via the mDNS discovery state
 ///
-/// Returns the resolved IP if possible, otherwise the original string.
-pub(crate) fn resolve_server_address(server: &str) -> String {
+/// The last kind is the only one that can come back
+/// [`UndiscoveredService`](ServerAddress::UndiscoveredService), and only until
+/// discovery finds it.
+pub(crate) fn resolve_server_address(server: &str) -> ServerAddress {
     // Detect mDNS service names (contain "._tcp" or "._udp")
     if !server.contains("._tcp") && !server.contains("._udp") {
-        return server.to_string();
+        return ServerAddress::Connectable(server.to_string());
     }
 
     // Extract the service/display name (everything before the first "._")
@@ -676,21 +772,25 @@ pub(crate) fn resolve_server_address(server: &str) -> String {
         if host.name.eq_ignore_ascii_case(service_name) {
             if let Some(ref ip) = host.ip_address {
                 log::debug!("Resolved mDNS service name {} to IP {}", server, ip);
-                return ip.clone();
+                return ServerAddress::Connectable(ip.clone());
             }
             // Host found but no IP yet; try the hostname
             if let Some(ref hostname) = host.hostname {
                 log::debug!("Resolved mDNS service name {} to hostname {}", server, hostname);
-                return hostname.clone();
+                return ServerAddress::Connectable(hostname.clone());
             }
         }
     }
 
-    log::warn!(
-        "Could not resolve mDNS service name {} (no matching discovered host)",
+    // DEBUG rather than WARN: an upgrade pass that runs before discovery settles
+    // hits this routinely, and the pass that runs after it resolves the name and
+    // connects. Handing the unresolved name to the dialer instead is what turned
+    // this into a visible failure.
+    log::debug!(
+        "mDNS service name {} isn't discovered yet, so there's nothing to dial for it",
         server
     );
-    server.to_string()
+    ServerAddress::UndiscoveredService
 }
 
 /// Extracts the friendly display name from a server address.

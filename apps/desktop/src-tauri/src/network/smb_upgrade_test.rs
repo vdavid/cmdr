@@ -707,3 +707,53 @@ async fn different_volumes_upgrade_concurrently() {
     assert!(second.is_ok(), "an unrelated volume's upgrade was blocked");
     drop(first);
 }
+
+// ── What a server string can be dialed as ─────────────────────────────────────
+
+/// An IP or a DNS hostname is dialable as it stands; nothing about it needs mDNS.
+#[test]
+fn a_plain_address_is_connectable_as_it_stands() {
+    assert_eq!(
+        resolve_server_address("192.168.1.111"),
+        ServerAddress::Connectable("192.168.1.111".to_string())
+    );
+    assert_eq!(
+        resolve_server_address("fileserver.corp.example.com"),
+        ServerAddress::Connectable("fileserver.corp.example.com".to_string())
+    );
+}
+
+/// An mDNS SERVICE instance name that discovery hasn't seen has no address at
+/// all, and saying so is the whole point.
+///
+/// `getaddrinfo` can't resolve one (it names a service, not a host), so handing
+/// it to the dialer spends the resolver's timeout (8.2 s on the report that
+/// prompted this) and then reports a connection failure for a share that
+/// connects fine on the next pass, once discovery goes active. Reported as
+/// ERR-48RZX.
+#[test]
+fn an_undiscovered_mdns_service_name_has_nothing_to_dial() {
+    assert_eq!(
+        resolve_server_address("DS220j._smb._tcp.local."),
+        ServerAddress::UndiscoveredService
+    );
+}
+
+/// A rejected GUEST attempt is not a wrong password: there was no password. The
+/// advice has to point at signing in, or the reader goes looking in Keychain for
+/// an entry that was never written. Reported as ERR-48RZX.
+#[test]
+fn a_rejected_guest_attempt_is_not_reported_as_a_bad_saved_password() {
+    let guest = AttemptedAs::from_username(None).rejection_advice();
+    let saved = AttemptedAs::from_username(Some("andrew")).rejection_advice();
+
+    assert!(guest.contains("guest"), "the guest case has to name it: {guest}");
+    assert!(
+        !guest.contains("saved password"),
+        "nothing was saved, so there is no saved password to correct: {guest}"
+    );
+    assert!(
+        saved.contains("saved password"),
+        "and the credentialed case still points at the thing to fix: {saved}"
+    );
+}
