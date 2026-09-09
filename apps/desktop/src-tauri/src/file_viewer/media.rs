@@ -73,7 +73,9 @@ fn hex_encode(bytes: &[u8]) -> String {
 }
 
 /// Reads an image's pixel dimensions from its header only (no full decode), best-effort.
-/// Returns `None` for formats the `image` crate can't parse (HEIC, SVG) or on any error.
+/// Returns `None` for formats the `image` crate can't parse (HEIC, AVIF, SVG) or on any
+/// error. AVIF is in that list because we build `image` without its AVIF decoder; see the
+/// `image` dependency comment in `Cargo.toml`.
 /// Must stay header-only so it can't extend the viewer open past a quick metadata read.
 /// The format is sniffed from the bytes, never the extension, so a PNG named `.txt`
 /// still answers (the classifier that got us here decided by magic too).

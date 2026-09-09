@@ -125,7 +125,31 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 notify = "8"
 dirs = "6"
-image = "0.25.10"
+# Raster decode for icon extraction, `open_with` menu bitmaps, share-sheet images, and
+# header-only dimension reads. The feature list is `default-formats` MINUS `avif`, which is
+# an ENCODER (`ravif` on top of `rav1e`); the AVIF *decoder* is the separate `avif-native`
+# feature and we've never enabled it. Nothing here encodes AVIF, so those 1.4 MB of codec
+# were dead weight, and dropping the feature takes 30 crates out of the graph (the whole
+# `wasm-bindgen` chain among them). AVIF still displays: the viewer renders through WebKit's
+# `<img>`, and thumbnails go through the native ImageIO/Vision backend in `cmdr-index`.
+# ❌ Don't restore `default-features`; re-add formats explicitly instead.
+image = { version = "0.25.10", default-features = false, features = [
+  "rayon",
+  "bmp",
+  "dds",
+  "exr",
+  "ff",
+  "gif",
+  "hdr",
+  "ico",
+  "jpeg",
+  "png",
+  "pnm",
+  "qoi",
+  "tga",
+  "tiff",
+  "webp",
+] }
 # EXIF for `inspect_file`'s image rows (date taken, camera, lens, exposure, GPS): a
 # pure-Rust reader over the JPEG / TIFF / HEIF / PNG / WebP containers, one dependency
 # of its own, BSD-2-Clause. Declared under its lib name `exif` (the package is
