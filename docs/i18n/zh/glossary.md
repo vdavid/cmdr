@@ -861,7 +861,7 @@ term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card title
 - **"the check running right now"** · `正在进行的这次检查` · reuses `检查` as this catalog's settled word for a full
   check (`tooltipCoalesced`: `下一次完整检查`) and that string's closing `恢复准确` · `high`.
 
-## 传输停滞提示 / stalled-transfer notice (`fileOperations.transferProgress.stall*`, `close`, `queue.row.stalled`, 2026-07-31)
+## 传输停滞提示 / stalled-transfer notice (`fileOperations.transferProgress.stall*`, `close`, 2026-07-31)
 
 The copy/move progress dialog and the queue row when a transfer has stopped moving (a parked network share or phone),
 replacing the countdown we no longer believe. macOS zh-CN Tier 1, Total Commander zh-CN for the
@@ -904,7 +904,7 @@ wait-on-a-remote-endpoint phrasing (the exact same surface), Microsoft zh-Hans T
 - **Pre-formatted Latin tokens inside Chinese prose.** `{duration}` arrives already formatted and unlocalized (`45s`,
   `2m 30s`, `1h 5m` from `units/duration.ts`), so it lands as Latin text in a Chinese sentence: keep a space on BOTH
   sides (`已有 {duration} 没有进度`), the same way `剩余约 {duration}` already does · `high`
-- No `sameAsSourceJustification` needed: all eight values differ from English.
+- No `sameAsSourceJustification` needed: all seven values differ from English.
 
 ## 已拷贝路径：剪贴板确认提示 (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
 
@@ -1261,8 +1261,8 @@ Cmdr 没能建立自己的直接连接，共享改走 macOS 提供的连接时�
   已写作 `没能跟上文件系统的改动`（`fileExplorer.navigation.driveIndex.tooltipCoalesced`），同一个 `跟` 词根；`跟丢`
   是口语里现成的说法，比 `句柄失效` 这类术语更贴 style.md 的声音。后半句 "Open it again" 指重新进入这个文件夹，写
   `请再次进入这个文件夹`，沿用 `errors.listing.*` 的 `再次进入这里` · `high`
-- **"didn''t work"（密码被拒）→ `不起作用`** · 目录里 `fileExplorer.smbReauth.savedPasswordFailed` 就是
-  `保存的密码不起作用了。`；`fileOperations.archivePassword.retryMessage` 的 `这个密码没能解锁…`
+- **"didn''t work"（密码被拒）→ `不起作用`** · 目录里 `errors.volume.passwordRejected` 就是
+  `这个密码不起作用。`；`fileOperations.archivePassword.retryMessage` 的 `这个密码没能解锁…`
   是同一件事的长版本。❌ 不写 `密码错误` · `confirmed`
 - **"couldn''t tell what"（说不出具体原因的兜底）→ `也说不清是什么`** · `出了点问题`
   是目录里已定的兜底说法（5 处，`ai.cloud.genericError`、`updates.checkToast.errorPrefix` 等），`说不清`
@@ -2056,8 +2056,10 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **hostname → `主机名`** · Automator `Variables.loctable`、Security `OID.loctable`、Terminal `ServiceBrowser`
   （`host name` → `主机名`），目录里 `fileExplorer.network.browser.tooltip.resolving` 已经是它 · `confirmed`。
 - **Username → `用户名`；Password → `密码`；Name → `名称`；Address → `地址`；Advanced → `高级`；Cancel → `取消`**
-  ·与目录里同英文的键一字不差（`fileExplorer.network.login.username`/`.password`、`fileExplorer.columns.name`、
-  `servers.hub.colAddress`、`settings.section.advanced`）· `confirmed`。`i18n-terms` 会比这几组。
+  ·除 `用户名` 外，都与目录里同英文的键一字不差（`fileOperations.archivePassword.placeholder`、
+  `fileExplorer.columns.name`、`servers.hub.colAddress`、`settings.section.advanced`、`fileOperations.button.cancel`）；
+  `Username` 在目录里只此一处，取 NetAuthAgent `GENERIC_MSG_NONAME`（`Enter your user name and password.` →
+  `输入你的用户名和密码。`）· `confirmed`。`i18n-terms` 会比这几组。
 - **passphrase → `密码短语`，所以 Key passphrase → `密钥密码短语`** ·
   Apple 全系统统一（DiskManagement、DiskImages2、Security `SecErrorMessages` 与 `OID`、Certificate Assistant
   `Enter Passphrase:` → `输入密码短语：`）· `confirmed`。写全是有原因的：这一栏解锁的是密钥文件，不是账户密码，`密码`
@@ -2066,14 +2068,14 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   `密钥文件` 更直白 · `high`。
 - **Browse…（按钮）→ `浏览…`** · AppleAccountUI `PROFILE_BROWSE_PHOTO`（`Browse...` → `浏览…`）·
   `confirmed`。省略号是 U+2026。
-- **Remember in Keychain → `记住到钥匙串`（沿用目录既有值）** · 与 `fileExplorer.network.login.rememberInKeychain`
-  一字不差，`i18n-terms` 会比 · `confirmed`。Apple 自己的说法是 `在我的钥匙串中记住此密码` （NetAuthAgent
-  `AuthDialog.loctable`），词根 `钥匙串` 一致。`servers.sheet.needsStoredSecret` 正文里引用这个复选框时用
-  `“记住到钥匙串”`，必须与复选框同字。
-- **Connect as guest → `以来宾身份连接`（沿用目录既有值）** · 与 `fileExplorer.network.login.connectAsGuest` 一字不差 ·
-  `high`。⚠️ 分歧待复审：macOS `zh_CN` 里 Guest 一律是 `客人`（NetAuthAgent `GUEST`、LoginUIKit
-  `GUEST_ACCOUNT_RECORD_NAME`、AppKit `NSUserGuest`），微软才用
-  `来宾`。真要按「macOS 优先」改，得两个键一起改，属于单独一趟收敛，别只改一边（`i18n-terms` 会立刻报新分歧）。
+- **Remember in Keychain → `记住到钥匙串`** · Apple 自己的说法是 `在我的钥匙串中记住此密码` （NetAuthAgent
+  `AuthDialog.loctable`），词根 `钥匙串` 一致 · `confirmed`。`servers.sheet.needsStoredSecret` 正文里引用这个复选框时用
+  `“记住到钥匙串”`，必须与复选框同字，`i18n-terms` 会比。
+- **Connect as guest → `以来宾身份连接`** · 词根 `来宾` 与目录里的 `fileExplorer.network.browser.status.guest`
+  （`Guest` → `来宾`）一致 · `high`。⚠️ 分歧待复审：macOS `zh_CN` 里 Guest 一律是 `客人`（NetAuthAgent `GUEST`、
+  LoginUIKit `GUEST_ACCOUNT_RECORD_NAME`、AppKit `NSUserGuest`），微软才用 `来宾`。真要按「macOS 优先」改，得
+  `servers.sheet.connectAsGuest` 和 `fileExplorer.network.browser.status.guest`
+  两个键一起改，属于单独一趟收敛，别只改一边（`i18n-terms` 会立刻报新分歧）。
 - **Sign in with a username and password → `用用户名和密码登录`** · NetAuthAgent `GENERIC_MSG_NONAME`
   （`Enter your user name and password.` → `输入你的用户名和密码。`）· `high`。它是 `以来宾身份连接`
   的对照项，Apple对应的单选是 `注册用户`，但我们的英文是动词短语，所以照动词写。
