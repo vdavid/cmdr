@@ -32,7 +32,7 @@
   "@updates.toast.restart": {
     "sourceHash": "09af100"
   },
-  "updates.moveToApplicationsDialog.title": "Helyezd át a Cmdr appot a Programok mappádba",
+  "updates.moveToApplicationsDialog.title": "Helyezd át a Cmdr appot az Alkalmazások mappádba",
   "@updates.moveToApplicationsDialog.title": {
     "sourceHash": "97f87a0"
   },
@@ -44,7 +44,7 @@
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
     "sourceHash": "94edc89"
   },
-  "updates.moveToApplicationsDialog.howTo": "Lépj ki a Cmdr appból, húzd át a Programok mappádba, és onnan indítsd el. Utána már minden frissítés magától megérkezik.",
+  "updates.moveToApplicationsDialog.howTo": "Lépj ki a Cmdr appból, húzd át az Alkalmazások mappádba, és onnan indítsd el. Utána már minden frissítés magától megérkezik.",
   "@updates.moveToApplicationsDialog.howTo": {
     "sourceHash": "76a136d"
   },

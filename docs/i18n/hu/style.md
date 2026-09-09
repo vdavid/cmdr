@@ -326,9 +326,8 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   `a Finderben`, `a Finder mellé`. Mindkettő végi betű a kiejtett hangot írja, tehát az AkH kötőjelszabálya nem lép be.
   Összetételben viszont kötőjel jár (`Finder-ablak`, `Dock-ajánlat`). Az `Applications` mappa magyar neve `Alkalmazások`
   (az Apple lefordítja). Bizonyítékok: `glossary.md` § A Dockba kerülés egyszeri ajánlata.
-- **⚠️ A `Programok mappa` a katalógus régi elsodródása**, nem a mai macOS neve; három szállított kulcs viszi még
-  (`updates.moveToApplicationsDialog.title`/`.howTo`, `onboarding.stepFda.step2.tip`). Új szövegbe `Alkalmazások` megy;
-  a hármat egy külön menetnek kell átsöpörnie.
+- **⚠️ ❌ A `Programok mappa` soha nem jön vissza**: az a régi Mac OS X-es név, nem a mai macOS-é. Semmilyen ellenőrzés
+  nem fogja el a visszaesést, mert az érintett kulcsok angolja nem betű szerint azonos.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

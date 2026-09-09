@@ -111,7 +111,7 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Tipp: Nincs a listában a Cmdr? Kattints alul a „+” gombra, és válaszd ki a <strong>Cmdr</strong> appot a <strong>Programok</strong> mappádból.",
+  "onboarding.stepFda.step2.tip": "Tipp: Nincs a listában a Cmdr? Kattints alul a „+” gombra, és válaszd ki a <strong>Cmdr</strong> appot az <strong>Alkalmazások</strong> mappádból.",
   "@onboarding.stepFda.step2.tip": {
     "sourceHash": "1bdc656"
   },

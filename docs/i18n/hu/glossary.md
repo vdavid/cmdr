@@ -175,8 +175,9 @@ Settled while translating `onboarding.json` + `fileOperations.json` (2026-06-21)
 - Close (button) → `Bezárás` · mac (FR26) · high. Done = `Kész` (PW23). Dismiss = `Elvetés` · descriptive · tentative.
 - Technical details → `Technikai részletek` · descriptive · high.
 - macOS folder names (already localized by OS): Downloads = `Letöltések`, Documents = `Dokumentumok`, Desktop =
-  `Asztal`, Applications = `Programok` · mac · high. macOS button "Quit & Reopen" = `Kilépés és újranyitás`, "Open
-  System Settings" rendered as `{systemSettings} megnyitása`.
+  `Asztal`, Applications = `Alkalmazások` · mac · high (a teljes bizonyítás és a `Programok` elvetése: § „Applications
+  (a mappa)”). macOS button "Quit & Reopen" = `Kilépés és újranyitás`, "Open System Settings" rendered as
+  `{systemSettings} megnyitása`.
 - agent (AI assistant) → `ágens` · descriptive · high. provider (cloud AI) → `szolgáltató`; API key → `API-kulcs`;
   endpoint → `végpont` · ms · high.
 - "onboarding" surfaced as a noun ("Onboarding progress", screen-reader title) → `bevezető` (consistent with the prior
@@ -2969,12 +2970,10 @@ Commander, Double Commander).
   `GROUP_APPLICATIONS`, `TL_HELP_APPS` = „Ugrás az Alkalmazások mappába”; AppKit: „Try dragging „%@” from the Trash to
   your Applications folder.” = „Próbálja a(z) „%@” alkalmazást a kukából az **Alkalmazások mappába** húzni.”) · `high`.
   A kupacban NULLA `Programok` találat van.
-  - ⚠️ **A szállított katalógus itt elsodródott**: három kulcs `Programok mappa` alakot visz
-    (`updates.moveToApplicationsDialog.title`, `.howTo`, `onboarding.stepFda.step2.tip`). Az a régi Mac OS X-es magyar
-    név; a mai macOS `Alkalmazások`. Az 1. szintű, betű szerinti Apple-találat veri a katalógus családi mintáját (§ „A
-    szerverközpont táblázata” precedense), ezért a `notAdded` `az Alkalmazások mappádból` alakot visz. A három régi
-    kulcsot egy külön menetnek kell átsöpörnie: a `desktop-i18n-term-consistency` nem fogja el, mert az angoljuk nem
-    betű szerint azonos.
+  - ⚠️ **A `Programok` a régi Mac OS X-es név, ❌ ne kerüljön vissza.** Az 1. szintű, betű szerinti Apple-találat veri a
+    katalógus családi mintáját (§ „A szerverközpont táblázata” precedense). A `desktop-i18n-term-consistency` nem fogja
+    el a visszaesést, mert az érintett kulcsok angolja nem betű szerint azonos, tehát ez a bejegyzés az egyetlen
+    védelem.
 
 ### A többi eldöntött szó
 
