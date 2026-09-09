@@ -326,6 +326,13 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   `a Finderben`, `a Finder mellé`. Mindkettő végi betű a kiejtett hangot írja, tehát az AkH kötőjelszabálya nem lép be.
   Összetételben viszont kötőjel jár (`Finder-ablak`, `Dock-ajánlat`). Az `Applications` mappa magyar neve `Alkalmazások`
   (az Apple lefordítja). Bizonyítékok: `glossary.md` § A Dockba kerülés egyszeri ajánlata.
+- **A Dock helyi menüjének szövegeit magából a `Dock.app`-ból mérd, ne a kupacból.** A referenciakupac `hu/macOS/`
+  mappája csak a Findert, az AppKitet és a System Settingset tartalmazza; a Dock saját menüje a
+  `/System/Library/CoreServices/Dock.app/Contents/Resources/hu.lproj/DockMenus.strings` fájlban él
+  (`plutil -convert json`), és pontosan az a felület, amelybe a `menu.dock.*` elemek kerülnek. Onnan jön az appnevek
+  mintája: **puszta név + névszói cselekvés, névelő nélkül** (`%@ elrejtése`, `Cmdr megnyitása`); az
+  `A(z) „%@” megnyitása` hedge csak FÁJLNÉVRE való, ahol a kezdőhang ismeretlen. Bizonyítékok: `glossary.md` § A Dock
+  helyi menüje.
 - **⚠️ ❌ A `Programok mappa` soha nem jön vissza**: az a régi Mac OS X-es név, nem a mai macOS-é. Semmilyen ellenőrzés
   nem fogja el a visszaesést, mert az érintett kulcsok angolja nem betű szerint azonos.
 - Record case-by-case rulings here so they aren't relitigated.

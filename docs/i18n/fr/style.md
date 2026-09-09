@@ -269,7 +269,10 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
 
 - **Les menus natifs suivent la formulation du Finder, pas celle du catalogue.** Là où macOS a un équivalent, il
   l'emporte (`Présentation`, `Départ`, `Réduire/agrandir`, `Coup d'œil`), parce que l'utilisateur voit la barre de menus
-  de Cmdr à côté de celle du Finder. Preuves et exceptions : `glossary.md` § Menus natifs.
+  de Cmdr à côté de celle du Finder. Preuves et exceptions : `glossary.md` § Menus natifs. Le menu du Dock suit la même
+  règle : « Aller au dossier… » et « Se connecter au serveur… » sont copiés du menu Aller du Finder, et « Connexion au
+  serveur » (le titre de la fenêtre chez Apple) n'est jamais un libellé de commande. Preuves : `glossary.md` § Le menu
+  du Dock.
 - **Accents on capitals are mandatory.** "État", "Éjecter", "À propos", "Écraser", never strip the accent on a capital
   (see Decision points → Capitalization). macOS French keeps them.
 - **Punctuation spacing**: French typography puts a thin space before `: ; ! ? %`. The standard permits a real narrow
@@ -280,14 +283,17 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   Use a regular space here; do NOT reintroduce U+202F (it would re-split the catalog).
 - **Quotation marks**: use French guillemets « … » with inner spacing when quoting, not English "…". macOS follows this
   ("Nom du nouveau dossier à l'intérieur de « ^0 » :").
-- **Apostrophes**: in ICU strings (everything outside `errors.*`), double every apostrophe (`d''incident`). In
-  `errors.*` keys, use normal apostrophes. The crash-reporter strings are ICU, so they double. French elision makes
-  apostrophes frequent ("d'incident", "l'élément", "n'a pas"): this trap bites more often in French than in most
-  languages, so check every value. **Always the ASCII apostrophe (U+0027), never the curly U+2019**, even when the
-  English source string uses the curly one: the whole `fr` catalog is ASCII, and a curly apostrophe is not an ICU escape
-  character, so it slips past every check as a silent consistency break.
-- **Ellipsis**: keep the source's literal three dots ("Envoi...") rather than swapping to a single … character, to match
-  the English catalog value.
+- **Apostrophes**: in ICU strings, double every apostrophe (`d''incident`). In the RAW families, use normal apostrophes:
+  `errors.*` plus the NATIVE ones Rust draws (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`), which never
+  meet ICU, so a doubled `''` would show as two apostrophes on a real menu (`i18n-icu` fails the build over it). The
+  crash-reporter strings are ICU, so they double. French elision makes apostrophes frequent ("d'incident", "l'élément",
+  "n'a pas"): this trap bites more often in French than in most languages, so check every value. **Always the ASCII
+  apostrophe (U+0027), never the curly U+2019**, even when the English source string uses the curly one: the whole `fr`
+  catalog is ASCII, and a curly apostrophe is not an ICU escape character, so it slips past every check as a silent
+  consistency break.
+- **Ellipsis**: follow the English catalog value character for character, key by key. Where it writes three dots
+  ("Envoi..."), keep three dots; where it writes U+2026 ("Aller au dossier…"), keep U+2026. Never convert either way;
+  see the fuller note below.
 - **Length**: French runs roughly 15–20% longer than English. Overflow-check the layout against the pseudolocale
   (`en-XA`); look for clipped buttons, labels, and toasts.
 - **Numbers and dates come from the formatter layer** (French uses a comma decimal and a narrow space for thousands).

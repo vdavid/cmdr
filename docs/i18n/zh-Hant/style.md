@@ -390,6 +390,13 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
 - **`context` is `上下文`** (`上下文視窗` for the window, `上下文大小` for the size). Three renderings had drifted into
   the catalog; the ruling and why it's still `tentative` are in `glossary.md` § "狀態角落的兩條 AI 提示、`同意`
   的統一，與 `上下文` 定案（2026-09-09）".
+- **A menu item that names the app is `動詞 + 空格 + Cmdr`, unquoted.** `隱藏 Cmdr`, `結束 Cmdr`, `關於 Cmdr`,
+  `開啟 Cmdr`. Apple's Dock quotes the name (`隱藏「%@」`) only because that `%@` is an arbitrary app name filled in at
+  runtime; ours is the literal brand, and corner brackets would make the Dock menu disagree with the app menu right next
+  to it. The Dock's own menu is a Tier-1 source for these labels and is NOT in the reference pile: read
+  `/System/Library/CoreServices/Dock.app/Contents/Resources/zh_{TW,HK}.lproj/DockMenus.strings`. ❗ Its zh-TW `OPEN` is
+  `打開`, which is the § Apple-zh-TW outlier rule again, so take zh-HK's `開啟`. Per-key evidence: `glossary.md` §
+  "右鍵按 Dock 圖像跳出來的那張選單（`menu.dock.*`，2026-09-09）".
 - **Keep the trailing `…` wherever the English has one** (a menu item or button that opens a further dialog), and keep
   the `*Aria` containment rule in mind: an aria value must contain its visible label verbatim and in order. Chinese
   doesn't inflect, so this is easy here: just don't paraphrase the label inside the aria sentence.

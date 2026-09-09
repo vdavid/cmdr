@@ -589,5 +589,27 @@
   "menu.viewer.wordWrap": "Tekstterugloop",
   "@menu.viewer.wordWrap": {
     "sourceHash": "9e210f3"
+  },
+  "menu.dock.openCmdr": "Open Cmdr",
+  "@menu.dock.openCmdr": {
+    "sourceHash": "f898c5b",
+    "sameAsSourceJustification": "The Dutch bare-stem imperative of \"openen\" is \"Open\", spelt like English; the Dutch Dock's own menu uses it for this very item (Dock.app nl.lproj/DockMenus.strings, OPEN = \"Open\", OPEN_FILENAME = \"Open '%@'\"). \"Cmdr\" is a brand kept verbatim, so the whole label coincides. Same word as menu.file.open and menu.network.open."
+  },
+  "menu.dock.searchFiles": "Zoek bestanden…",
+  "@menu.dock.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.dock.goToFolder": "Ga naar map…",
+  "@menu.dock.goToFolder": {
+    "sourceHash": "33de610"
+  },
+  "menu.dock.connectToServer": "Verbind met server…",
+  "@menu.dock.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.dock.locationInParent": "{name} ({parent})",
+  "@menu.dock.locationInParent": {
+    "sourceHash": "0bf83e2",
+    "sameAsSourceJustification": "Two folder names and a parenthesis, no translatable word. Dutch puts the qualifier after the head in exactly this shape, and Apple's own Dutch keeps the pattern byte-for-byte (Finder LocalizableMerged SB_iCloudDetail = \"^0 (^1)\", AppKit Common/InfoPanel \"%@ (%@)\" = \"%1$@ (%2$@)\"), matching this catalog's own parenthetical labels (menu.volume.eject, menu.context.openWithDefault)."
   }
 }

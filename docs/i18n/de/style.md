@@ -345,6 +345,10 @@ Dateien".
   übernimmt `Im Dock behalten`, `Aus dem Dock entfernen` und `Zum Dock hinzufügen` zeichengleich aus dem Dock-Menü, das
   der Nutzer beim Rechtsklick auf dasselbe Symbol sieht. Dieselbe Logik wie bei den nativen Menüs oben, nur eine Ebene
   weiter: die Fläche muss nicht Cmdrs eigene sein.
+- **Das Dock-Menü zählt zu den nativen Menüs und nimmt Apples Wortlaut, auch gegen Cmdrs eigene Menüleiste.** Beim
+  Rechtsklick auf Cmdrs Dock-Symbol steht der Eintrag neben Apples Dock-Menü und Finders `Gehe zu`, also gewinnt deren
+  Formulierung: `Go to folder…` → `Gehe zu Ordner…` (Finder), obwohl Cmdrs Menüleiste denselben Dialog `Zu Pfad gehen…`
+  nennt. Das Englische unterscheidet die beiden Flächen genauso. Belege: `glossary.md` § Das Dock-Menü von Cmdr.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

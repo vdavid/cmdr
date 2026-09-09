@@ -3097,3 +3097,29 @@ Toonkeuzes in deze negen strings:
   `whoever` wordt een vrije relatieve bijzin, geen `hij/zij`.
 - **`erin slepen`** (`notAdded`) vermijdt dat `het Dock` twee keer in twee zinnen staat; het voornaamwoordelijk bijwoord
   werkt hier omdat het Dock in de vorige zin genoemd is.
+
+## Het Dock-menu van Cmdr zelf (`menu.dock.*`)
+
+De vijf items die verschijnen als je met rechts op Cmdrs symbool in het Dock klikt. RAW-familie (`menu.*`), dus enkele
+apostroffen en letterlijke `{name}` / `{parent}`. Twee items hebben een exacte Finder-tegenhanger, en die wint: de
+gebruiker ziet Cmdrs Dock-menu naast dat van Finder. Gemijnd in `_ignored/i18n/nl/macOS/Finder/MenuBar.json` en, voor
+het Dock zelf, in de live bundels (macOS 26.6.2, build 25G83, gelezen 2026-09-09).
+
+- Open Cmdr → `Open Cmdr` (bewust gelijk aan het Engels) · `Dock.app` `nl.lproj/DockMenus.strings`: `OPEN` = `Open`,
+  `OPEN_FILENAME` = `Open '%@'`. Precies dit item, in precies dit menu, heet in het Nederlandse Dock `Open`; de
+  stam-imperatief van `openen` valt samen met het Engelse woord, en `Cmdr` blijft onvertaald · `high`
+- Go to Folder… → `Ga naar map…` · macOS Finder `MenuBar` `261.title`, woordelijk (`en_GB` = `Go to Folder…`) · `high`.
+  Onderscheiden van de bestaande `menu.go.goToPath` = `Ga naar pad…`: die vraagt om een pad, dit item is Finders eigen
+  label
+- Connect to Server… → `Verbind met server…` · macOS Finder `MenuBar` `266.title`, woordelijk (`en_GB` =
+  `Connect to Server…`), en al zo in de catalogus (`commands.serversConnect.label`,
+  `settings.network.permissionIntroConnectLink`) · `high`
+- Search files… → `Zoek bestanden…` · byte-identiek aan `menu.edit.searchFiles`, dezelfde opdracht in de menubalk
+  (dezelfde `sourceHash`), dus dezelfde waarde · `high`
+- `{name} ({parent})` → `{name} ({parent})` (bewust gelijk aan het Engels) · twee mapnamen en een haakje, geen te
+  vertalen woord. Het Nederlands zet de verduidelijking net zo achter de kern, en Apple houdt het patroon zelf
+  ongewijzigd (Finder `LocalizableMerged` `SB_iCloudDetail` = `^0 (^1)`, AppKit `Common`/`InfoPanel` `%@ (%@)` =
+  `%1$@ (%2$@)`), net als de catalogus in `menu.volume.eject` en `menu.context.openWithDefault` · `high`
+
+Merk op dat Apples Dock-menu voor `eject` `Verwijder` zegt (`DockMenus.strings` `EJECT`); dat bevestigt de al
+vastgelegde uitzondering in § Native menu's, waar Cmdr `Werp uit` gebruikt om de botsing met _delete_ te vermijden.

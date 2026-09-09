@@ -2754,3 +2754,43 @@ chứng Tier 1 lấy thẳng từ `Dock.app` đang cài (`vi.lproj/DockMenus.str
   `Dòng gợi ý một lần … đã bị bỏ qua hay chưa.`), để hai cờ đọc như một họ.
 - **Không giá trị nào có dấu nháy đơn**, nên phần nhân đôi `''` của ICU không đụng tới đợt này. Không có placeholder,
   không có `<tag>`, không có plural/select.
+
+## Menu chuột phải trên biểu tượng Dock (`menu.dock.*` 5 khóa, 2026-09-09)
+
+Bề mặt: menu bật ra khi bấm chuột phải vào biểu tượng Cmdr trong Dock macOS. Đây là menu gốc do Rust vẽ, thuộc họ RAW
+(`menu.*`), nên dấu nháy đơn giữ nguyên MỘT dấu và `{name}` / `{parent}` là đích thay thế theo nghĩa đen, không phải
+tham số ICU.
+
+Nguồn Tier 1, đọc thẳng từ macOS 26.6.2 đang cài, ngày 2026-09-09:
+
+- `Dock.app/Contents/Resources/vi.lproj/DockMenus.strings` (qua `plutil -convert json -o -`) — chính là menu này. macOS
+  CÓ ship `vi.lproj` cho `Dock.app`.
+- `Finder.app/Contents/Resources/{en_GB,vi}.lproj/LocalizableMerged.strings` — hai mục Go của Finder.
+- `_ignored/i18n/vi/macOS/AppKit/{Common,InfoPanel}.json` — khuôn ngoặc đơn phân biệt.
+
+### Thuật ngữ chốt trong đợt này
+
+- **Mở + tên ỨNG DỤNG → `Mở <Tên>`, không ngoặc kép** · `DockMenus.strings` tách rõ hai dạng: tên ứng dụng đi trần
+  (`HIDE_NAME` = `Ẩn %@`, `SHOW_NAME` = `Hiển thị %@`), còn tên TỆP mới được đóng ngoặc kép (`OPEN_FILENAME` =
+  `Mở “%@”`). Động từ trần là `OPEN` = `Mở`. Catalog cũng đã ship đúng khuôn này (`menu.app.hide` = `Ẩn Cmdr`,
+  `menu.app.quit` = `Thoát Cmdr`) · `high`. ❌ Đừng viết `Mở “Cmdr”`: đó là dạng dành cho tên tệp.
+- **Go to Folder… → `Đi tới thư mục…`** · Finder `LocalizableMerged` khóa `N83` (`Go to Folder…`), khóa `GT8` cho dạng
+  không có dấu ba chấm · `high`. Khác `menu.go.goToPath` (`Đi tới đường dẫn…`), vì bản tiếng Anh ở đó nói "path", không
+  phải "folder"; hai khóa cố ý khác chữ.
+- **Connect to Server… → `Kết nối với máy chủ…`** · Finder `LocalizableMerged` khóa `N84`, và catalog đã ship y hệt ở
+  `commands.serversConnect.label` cùng `settings.network.permissionIntroConnectLink` · `high`. Giới từ là `với`, ❌
+  không phải `tới` (câu văn xuôi trong `errors.*` dùng `kết nối tới`, nhưng NHÃN lấy đúng chữ của Finder).
+- **Khuôn ngoặc đơn phân biệt hai hàng trùng tên → giữ nguyên `{name} ({parent})`** · AppKit vi dịch `"%@ (%@)"` thành
+  `"%1$@ (%2$@)"` trong cả `Common.json` lẫn `InfoPanel.json`: cùng thứ tự, cùng dấu ngoặc, cùng khoảng trắng. Tiếng
+  Việt đặt phần bổ nghĩa SAU danh từ chính y như tiếng Anh, và không nguồn nào trong kho thêm giới từ vào trong ngoặc ·
+  `high`. Khóa mang `sameAsSourceJustification`; ❌ đừng "dịch" thành `{name} (trong {parent})`.
+
+### Ghi chú theo chuỗi
+
+- **`menu.dock.searchFiles` phải khớp TỪNG CHỮ với `menu.edit.searchFiles`** (`Tìm kiếm tệp…`). Cùng một lệnh ở hai
+  menu; lệch một chữ là người dùng đọc thành hai chức năng khác nhau. `commands.searchOpen.label` là bản không dấu ba
+  chấm của cùng lệnh đó.
+- **Dấu ba chấm là một ký tự `…` (U+2026)**, giữ nguyên ở ba khóa có nó; ❌ không viết ba dấu chấm rời.
+- **Không viết dấu gạch dưới `_` hay `&` làm phím tắt.** Trên Linux, gạch chân được cấp phát từ nhãn ĐÃ DỊCH theo từng
+  menu con.
+- **Không có `bạn` trong bất kỳ nhãn nào**: nhãn hành động là động từ trần, đúng luật trong `style.md` § Formality.

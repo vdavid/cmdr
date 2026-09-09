@@ -583,5 +583,25 @@
   "menu.viewer.wordWrap": "自動換行",
   "@menu.viewer.wordWrap": {
     "sourceHash": "9e210f3"
+  },
+  "menu.dock.openCmdr": "開啟 Cmdr",
+  "@menu.dock.openCmdr": {
+    "sourceHash": "f898c5b"
+  },
+  "menu.dock.searchFiles": "搜尋檔案…",
+  "@menu.dock.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.dock.goToFolder": "前往資料夾…",
+  "@menu.dock.goToFolder": {
+    "sourceHash": "33de610"
+  },
+  "menu.dock.connectToServer": "連接伺服器…",
+  "@menu.dock.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.dock.locationInParent": "{name}（{parent}）",
+  "@menu.dock.locationInParent": {
+    "sourceHash": "0bf83e2"
   }
 }

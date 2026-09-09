@@ -2617,3 +2617,33 @@ Formulierungsentscheidungen in diesem Set:
   beide den vertagten Fall, nicht diesen.
 - **Die zwei `settings.behavior.dockPinNudgeSeen.*`-Werte sind intern** und folgen dem Nachbarpaar
   `settings.behavior.adbHintDismissed.*` in der Form (Partizip-Label, `Ob das einmalige …`-Beschreibung).
+
+## Das Dock-Menü von Cmdr (`menu.dock.*`, 2026-09-09)
+
+Fünf Einträge im Menü, das beim Rechtsklick auf Cmdrs Dock-Symbol aufgeht. Das ist eine native Fläche, also gibt es kein
+Bildschirmfoto; die Belege kommen aus genau der Fläche, die der Nutzer daneben sieht: Apples eigenes Dock-Menü
+(`/System/Library/CoreServices/Dock.app/Contents/Resources/{en,de}.lproj/DockMenus.strings`, `plutil -convert json`,
+live macOS 26.6.2, Build 25G83, 2026-09-09) und Finders Menüleiste (`de/macOS/Finder/MenuBar.json` gegen
+`en-GB/macOS/Finder/MenuBar.json` in der Referenzsammlung). Rohfamilie `menu.*`: **einfache Apostrophe**, `{name}` und
+`{parent}` sind wörtliche Einschübe, keine ICU-Argumente.
+
+- **`Open Cmdr` → `Cmdr öffnen`** · `DockMenus` `OPEN` → „Öffnen“ und `OPEN_FILENAME` („Open “%@”“ → „„%@“ öffnen“) ·
+  high. Apples Muster in genau diesem Menü stellt den Namen voran und hängt das Verb hinten an, wie auch `HIDE_NAME`
+  („%@ ausblenden“) und `SHOW_NAME` („%@ einblenden“). Anführungszeichen bekommt der Name hier nicht: die stehen bei
+  Apple um einen beliebigen Dateinamen, ein Produktname steht blank (AppKit „Force Quit %@“ → „%@ sofort beenden“).
+- **`Search files…` → `Dateien suchen…`** · zeichengleich zu `menu.edit.searchFiles`, wie der englische `@key` verlangt
+  (derselbe Befehl in der Menüleiste) · high.
+- **`Go to folder…` → `Gehe zu Ordner…`** · Finder `de` `MenuBar` `261.title` („Go to Folder…“ → „Gehe zu Ordner …“) ·
+  high. Der Dock-Eintrag nimmt Finders Wortlaut, obwohl Cmdrs eigene Menüleiste denselben Dialog `Zu Pfad gehen…` nennt
+  (`menu.go.goToPath`, englisch „Go to path…“): das Englische unterscheidet die beiden Flächen genauso, und der Nutzer
+  vergleicht das Dock-Menü mit Finders `Gehe zu`-Menü, nicht mit Cmdrs Menüleiste.
+- **`Connect to server…` → `Mit Server verbinden…`** · Finder `de` `MenuBar` `266.title` („Connect to Server…“ → „Mit
+  Server verbinden …“), NetAuthAgent `CONNECT_TO_SERVER`, und zeichengleich zum schon ausgelieferten
+  Befehlspaletten-Eintrag (§ Das Verbindungsblatt) · high.
+- **Auslassungspunkte ohne Leerzeichen**, obwohl Apple in beiden Finder-Einträgen ein (geschütztes) Leerzeichen davor
+  setzt („Gehe zu Ordner …“, „Dock-Einstellungen …“). Der Katalog hat die dialogöffnende Form ohne Leerzeichen gesetzt
+  (`style.md` § Ellipsis, `Zu Pfad gehen…`, `Dateien suchen…`, `Server hinzufügen…`), und Einheitlichkeit innerhalb
+  Cmdrs Menüs wiegt hier schwerer als das eine Zeichen bei Apple.
+- **`{name} ({parent})` bleibt zeichengleich** und trägt deshalb eine `sameAsSourceJustification` · Finder
+  `LocalizableMerged` `IN_G6_V1` („^2 (^3)“), AppKit `Menus` („Location (%@)“ → „Umgebung (%@)“) · high. Deutsch
+  qualifiziert einen Namen mit demselben Klammerzusatz in derselben Reihenfolge; es gibt nichts umzustellen.

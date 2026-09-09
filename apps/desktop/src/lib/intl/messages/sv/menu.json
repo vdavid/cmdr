@@ -581,5 +581,26 @@
   "menu.viewer.wordWrap": "Automatiskt radbyte",
   "@menu.viewer.wordWrap": {
     "sourceHash": "9e210f3"
+  },
+  "menu.dock.openCmdr": "Öppna Cmdr",
+  "@menu.dock.openCmdr": {
+    "sourceHash": "f898c5b"
+  },
+  "menu.dock.searchFiles": "Sök filer…",
+  "@menu.dock.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.dock.goToFolder": "Gå till mapp…",
+  "@menu.dock.goToFolder": {
+    "sourceHash": "33de610"
+  },
+  "menu.dock.connectToServer": "Anslut till server…",
+  "@menu.dock.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.dock.locationInParent": "{name} ({parent})",
+  "@menu.dock.locationInParent": {
+    "sourceHash": "0bf83e2",
+    "sameAsSourceJustification": "Pure punctuation around two literal folder names. Swedish appends a disambiguating qualifier in parentheses exactly as English does, in the same order: Finder sv 'SB_iCloudDetail' is the bare '^0 (^1)' (pile macOS/Finder/LocalizableMerged.json), and the sv catalog already uses the same trailing parenthetical for qualifiers ('Mata ut ({name}) (upptagen)'). Deliberately identical."
   }
 }

@@ -312,6 +312,10 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 - **`Dock` är Apples yta, så `fäst`/`lossa` gäller inte där.** Katalogens pin/unpin-par hör till Cmdrs egna ytor
   (flikar, servrar); i Dock skriver macOS `Behåll i Dock` / `Ta bort från Dock`, och `Dock` står oböjt utan artikel och
   utan possessiv (`i Dock`, inte `i Docken` eller `i din Dock`). Belägg: `glossary.md` § Dock-erbjudandet.
+- **Dockmenyns egna ord slås upp i Dock, inte i Finder.** Referenssamlingen bär inte Dock, så
+  `Dock.app/Contents/Resources/sv.lproj/DockMenus.strings` är Tier 1 för högerklicksmenyn på appsymbolen. Den skiljer på
+  APPNAMNSformen (`Göm %@`, `Visa %@`, naket namn) och FILNAMNSformen (`Öppna ”%@”`, svenska citattecken), så
+  `Open Cmdr` blir `Öppna Cmdr` utan citattecken. Belägg: `glossary.md` § Dockmenyn.
 - **Mappen `Applications` heter `Appar` sedan macOS 26, inte `Program`.** Finder, AppKit och Go-menyn säger alla
   ”Appar”, och dra-meningen skrivs `dra … från mappen Appar`. Belägg: `glossary.md` § Dock-erbjudandet.
 - Record any case-by-case rulings here so they aren't relitigated.

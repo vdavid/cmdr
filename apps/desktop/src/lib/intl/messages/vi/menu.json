@@ -584,5 +584,26 @@
   "menu.viewer.wordWrap": "Tự ngắt dòng",
   "@menu.viewer.wordWrap": {
     "sourceHash": "9e210f3"
+  },
+  "menu.dock.openCmdr": "Mở Cmdr",
+  "@menu.dock.openCmdr": {
+    "sourceHash": "f898c5b"
+  },
+  "menu.dock.searchFiles": "Tìm kiếm tệp…",
+  "@menu.dock.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.dock.goToFolder": "Đi tới thư mục…",
+  "@menu.dock.goToFolder": {
+    "sourceHash": "33de610"
+  },
+  "menu.dock.connectToServer": "Kết nối với máy chủ…",
+  "@menu.dock.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.dock.locationInParent": "{name} ({parent})",
+  "@menu.dock.locationInParent": {
+    "sourceHash": "0bf83e2",
+    "sameAsSourceJustification": "Apple ships this exact disambiguation frame unchanged in Vietnamese: AppKit vi renders the \"%@ (%@)\" pattern as \"%1$@ (%2$@)\" (Common.json, InfoPanel.json), same order, same parentheses, same spacing. Vietnamese is head-initial, so the qualifier follows the name just as in English, and no vi source in the pile adds a preposition inside the parentheses. Only the two folder names, taken from disk, ever differ."
   }
 }

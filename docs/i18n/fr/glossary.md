@@ -3113,3 +3113,37 @@ Décisions de formulation :
 - La pile de référence était bien lisible sur cette machine
   (`/Users/veszelovszki/projects-git/vdavid/cmdr/_ignored/i18n/fr/`), complétée par les paquets système pour `Dock.app`
   et `LoginItems.appex`, que la pile ne contient pas.
+
+## Le menu du Dock : les cinq clés `menu.dock.*` (2026-09-09)
+
+Famille RAW (`menu.*`, tirée par Rust, jamais par ICU) : apostrophes simples, `{name}` et `{parent}` sont des cibles de
+remplacement littérales. Aucune capture ne peut photographier un menu natif, donc tout vient de la pile
+(`/Users/veszelovszki/projects-git/vdavid/cmdr/_ignored/i18n/fr/`) et du paquet `Dock.app` du système.
+
+- Open <App> (l'élément qui ramène la fenêtre au premier plan depuis le menu du Dock) → **Ouvrir <App>** · `Dock.app`
+  `fr.lproj/DockMenus.strings` : `OPEN` → « Ouvrir », et le moule à nom d'app y est nu, sans guillemets (`SHOW_NAME` → «
+  Afficher %@ », `HIDE_NAME` → « Masquer %@ ») ; les guillemets sont réservés aux noms de fichiers (`OPEN_FILENAME` → «
+  Ouvrir « %@ » »). Donc « Ouvrir Cmdr », pas « Ouvrir « Cmdr » ». Lu sur macOS 26.6.2 build 25G83, 2026-09-09 · high
+- Go to Folder… → **Aller au dossier…** · Finder `MenuBar.json` `261.title` (élément Aller > Aller au dossier…),
+  confirmé par `LocalizableMerged` `N83` et `GotoWindow.json` `1.title` (« Aller au dossier ») · high. Le catalogue a
+  déjà « Aller au chemin… » à `menu.go.goToPath` : c'est une AUTRE commande (un chemin qu'on saisit), et les deux
+  libellés doivent rester distincts.
+- Connect to Server… → **Se connecter au serveur…** · Finder `MenuBar.json` `266.title` (élément Aller > Se connecter au
+  serveur…) et `LocalizableMerged` `N84` · high. ❌ Pas « Connexion au serveur », qui est chez Apple le TITRE de la
+  fenêtre qui s'ouvre (`ConnectToWindow.json` `1.title`, `LocalizableMerged` `PW28` / `FR15`), pas la commande. Le
+  libellé de commande prend le verbe pronominal, cohérent avec `disconnect → se déconnecter` déjà au glossaire.
+- Search files… → **Rechercher des fichiers…** · repris mot pour mot de `menu.edit.searchFiles`, déjà livré : c'est la
+  même commande, atteinte depuis la barre de menus au lieu du Dock, et la description anglaise demande explicitement la
+  même formulation · high
+
+Décisions de formulation :
+
+- **`{name} ({parent})` reste identique à l'anglais**, avec `sameAsSourceJustification` sur la clé. Le français garde
+  l'ordre nom-puis-qualifiant et la même parenthèse : Apple écrit sa propre ligne de désambiguïsation `^0 (^1)` (Finder
+  `LocalizableMerged` `SB_iCloudDetail`), et le catalogue livre déjà ce moule à
+  `fileExplorer.functionKeyBar.actionWithShortcut`. Pas d'espace avant la parenthèse ouvrante au-delà de l'espace normal
+  : la parenthèse n'est pas une ponctuation double.
+- **Les points de suspension restent U+2026**, comme la source anglaise, conformément à la règle « caractère pour
+  caractère » de `style.md`, et comme le Finder français qui écrit lui aussi U+2026 dans ces deux éléments.
+- **Aucune apostrophe dans les cinq valeurs**, donc le piège du doublage ICU ne se pose pas ici ; il se poserait si un
+  jour un libellé du menu du Dock prenait une élision, et la réponse serait alors l'apostrophe SIMPLE (famille RAW).

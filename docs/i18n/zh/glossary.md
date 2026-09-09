@@ -2415,3 +2415,35 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   （`是否已显示过关于取消固定服务器的一次性提示。`）· `tentative`。
 - **「a few days」不许变成数字 → `好几天`** · 阈值会改，写成「三天」对一半人就是假话；`好几天`
   是中文里正好的模糊小量词 · `high`。
+
+## 程序坞图标右键菜单（`menu.dock.*`，2026-09-09）
+
+右键点按程序坞里的 Cmdr 图标弹出的那个原生菜单：置前主窗口、三条常用命令，外加几行最近去过的文件夹。原生菜单没有截图，
+`@key` 说明就是全部依据。
+
+一级来源是 Dock 自己的菜单串，参考堆里没有，直接从系统包取：`plutil -convert json -o -` 读
+`/System/Library/CoreServices/Dock.app/Contents/Resources/zh_CN.lproj/DockMenus.strings`；Finder 的菜单栏用
+`Finder.app/Contents/Resources/{en_GB,zh_CN}.lproj/MenuBar.strings`（按 nib 对象 id 对照）。均验证于 macOS 26.6.2 /
+25G83，2026-09-09。
+
+- **Open Cmdr → `打开 Cmdr`** · `打开` 是 Dock `OPEN` 的原词，也是本文件已定的 open 动词；`动词 + 应用名`
+  不加引号，跟目录里
+  `menu.app.hide`（`隐藏 Cmdr`）、`menu.app.quit`（`退出 Cmdr`）、`menu.app.about`（`关于 Cmdr`）读成一套 · `high`。
+- ⚠️ **别给应用名加引号。** Dock 的 `HIDE_NAME` / `SHOW_NAME` / `OPEN_FILENAME` 确实写成
+  `隐藏“%@”`、`打开“%@”`，但那对引号是给运行时替换进来的任意名字用的（跟本目录 `menu.context.copyNamed` 的
+  `拷贝“{name}”` 同一个理由）。名字在写串的时候就定死时，Apple 自己不加引号：Finder 应用菜单是
+  `隐藏访达`、`退出访达`，Safari 是 `隐藏Safari浏览器`、`关于Safari浏览器`。Cmdr 这条属于后者。
+- **Search files… → `搜索文件…`** · 与菜单栏里同一条命令 `menu.edit.searchFiles` 逐字一致（`@key` 明确要求同措辞）·
+  `confirmed`。
+- **Go to folder… → `前往文件夹…`** · Finder `MenuBar` `261.title`（`Go to Folder…`）逐字照搬 · `confirmed`。⚠️ 不要跟
+  `menu.go.goToPath` 的 `前往路径…` 混：那条英文是 `Go to path…`，是另一条命令，两个值本来就该不一样。
+- **Connect to server… → `连接服务器…`** · Finder `MenuBar`
+  `266.title`（`Connect to Server…`）逐字照搬，和本文件已定的connect to server（`连接服务器`）、`menu.network.*` 的
+  `服务器` 对齐 · `confirmed`。
+- **`{name} ({parent})` → `{name}（{parent}）`**
+  · 同名两行时用上层文件夹区分。语序不动（中文限定语放在括号里跟在名字后面最自然），只把半角括号换成全角、去掉前面的空格：目录里
+  `fileExplorer.functionKeyBar.actionWithShortcut`
+  （`{action}（{shortcut}）`）就是这个形状，`menu.volume.eject`（`推出（{name}）`）、
+  `menu.context.openWithDefault`（`{app}（默认）`）同样 · `high`。
+- **省略号照旧是单个全角 `…`（U+2026）**，见本文件 § Ellipsis normalization。`menu.*`
+  是 RAW 家族，不过 Chinese 这五条里没有撇号，ICU 转义无关。

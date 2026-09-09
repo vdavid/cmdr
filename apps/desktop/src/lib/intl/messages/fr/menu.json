@@ -583,5 +583,26 @@
   "menu.viewer.wordWrap": "Retour à la ligne automatique",
   "@menu.viewer.wordWrap": {
     "sourceHash": "9e210f3"
+  },
+  "menu.dock.openCmdr": "Ouvrir Cmdr",
+  "@menu.dock.openCmdr": {
+    "sourceHash": "f898c5b"
+  },
+  "menu.dock.searchFiles": "Rechercher des fichiers…",
+  "@menu.dock.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.dock.goToFolder": "Aller au dossier…",
+  "@menu.dock.goToFolder": {
+    "sourceHash": "33de610"
+  },
+  "menu.dock.connectToServer": "Se connecter au serveur…",
+  "@menu.dock.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.dock.locationInParent": "{name} ({parent})",
+  "@menu.dock.locationInParent": {
+    "sourceHash": "0bf83e2",
+    "sameAsSourceJustification": "Placeholder-only layout string ('{name} ({parent})'); both tokens are folder names from the user's disk and there is no literal text to translate. French keeps the same order and punctuation for a name-plus-qualifier row: macOS Finder's own disambiguating detail line is 'SB_iCloudDetail' = '^0 (^1)' (reference pile, fr/macOS/Finder/LocalizableMerged.json), and the catalog already ships the same shape at 'fileExplorer.functionKeyBar.actionWithShortcut'."
   }
 }

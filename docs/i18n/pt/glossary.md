@@ -2616,3 +2616,55 @@ pt-BR; `está a usar` seria marcador pt-PT (§ style.md).
 
 - `Não precisa` para `No, thanks`: neutro e natural, mas é a escolha menos literal das onze. Se David preferir o
   literal, a alternativa é `Não, obrigado`, com o custo de gênero descrito acima.
+
+## O menu do ícone do Cmdr no Dock (`menu.dock.*`, 2026-09-09)
+
+Cinco itens do menu que aparece ao clicar com o botão direito no ícone do Cmdr no Dock. Família RAW (`menu.*`):
+apóstrofo SIMPLES, `{name}` e `{parent}` são alvos literais de substituição, nunca argumentos ICU. Nenhum valor leva
+apóstrofo, então não há `''` no lote. Superfície nativa: nenhuma captura de tela pode fotografá-la.
+
+### A fonte Tier 1 deste menu não está na pilha
+
+O próprio Dock publica esse menu em
+`/System/Library/CoreServices/Dock.app/Contents/Resources/pt_BR.lproj/DockMenus.strings` (lido com
+`plutil -convert json -o -`, macOS 26.6.2 build 25G83, 2026-09-09). A pilha de referência traz Finder, AppKit e Ajustes
+do Sistema, mas **não** o Dock, então esse arquivo é a fonte que decide a forma "verbo + nome do app". Repare na pasta:
+`pt_BR.lproj` é o brasileiro e `pt_PT.lproj` o europeu (aqui a Apple não usa o `pt` nu que o AppKit usa).
+
+- **`Open <app>` → `Abrir Cmdr`, sem artigo e sem aspas** · o Dock pt-BR usa o nome do app cru nesse molde: `HIDE_NAME`
+  → `Ocultar %@`, `SHOW_NAME` → `Mostrar %@`, e `OPEN` sozinho → `Abrir`. A forma com aspas (`OPEN_FILENAME` →
+  `Abrir “%@”`) é a de ARQUIVO e não vale aqui · confirmed. Bate com o que o catálogo já publica em `menu.app.hide`
+  (`Ocultar Cmdr`) e `menu.app.quit` (`Encerrar Cmdr`); o artigo só entra em `Sobre o Cmdr`, seguindo o `Sobre o Finder`
+  da Apple.
+
+### Os três itens que também existem no Finder ou na barra de menus
+
+- **`Go to folder…` → `Ir para pasta…`** · macOS Finder pt-BR, `macOS/Finder/MenuBar.json` `261.title`
+  (`Ir para Pasta…`; o inglês `Go to Folder…` está na mesma chave de `en-GB/macOS/Finder/MenuBar.json`) · confirmed. Só
+  o TERMO vem do Finder, não a capitalização (§ Menus nativos), daí a caixa de frase. Distinto de `menu.go.goToPath`
+  (`Ir para o caminho…`), que é outro comando e outro inglês.
+- **`Connect to server…` → `Conectar ao servidor…`** · macOS Finder pt-BR, `MenuBar.json` `266.title`
+  (`Conectar ao Servidor…`), mais o título da janela em `ConnectToWindow.json` `1.title` · confirmed. É a linha
+  `Connect to server` que este glossário já trava.
+- **`Search files…` → `Buscar arquivos…`, byte a byte igual a `menu.edit.searchFiles`** · o inglês das duas chaves é o
+  mesmo (`sourceHash` `149a9d1`), o `desktop-i18n-term-consistency` compara pelo inglês, e os dois itens disparam o
+  MESMO comando: qualquer diferença de palavra leria como dois comandos · confirmed.
+
+### `{name} ({parent})` fica idêntico ao inglês
+
+`menu.dock.locationInParent` desambigua duas linhas de pasta que sairiam com o mesmo nome. O valor não muda em pt-BR, e
+isso é sourced, não preguiça: o compositor `%@ (%@)` do AppKit sai como `%1$@ (%2$@)` no `pt` da Apple
+(`AppKit.framework/Resources/Common.loctable`, macOS 26.6.2 build 25G83, 2026-09-09), enquanto a MESMA chave é de fato
+adaptada em outros idiomas (`ja` com parênteses de largura plena, `zh_CN` sem espaço, `ar`/`he` com isoladores
+bidirecionais) · confirmed. Ou seja, a Apple olhou para essa chave idioma a idioma, e o português brasileiro manteve
+parênteses ASCII com um espaço antes, na ordem núcleo → qualificador.
+
+Nada pode concordar com `{name}` nem com `{parent}`: são nomes de pasta vindos do disco, então a linha não leva artigo,
+particípio nem adjetivo (a mesma regra do § "Nada concorda com um `{name}`" do `style.md`). Registrado com
+`sameAsSourceJustification` na própria chave.
+
+### Varredura pt-PT deste lote
+
+`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`, `alterar o nome`, `você`
+omitido: zero ocorrências. `Ir para pasta…` e `Conectar ao servidor…` vêm do `pt_BR.lproj` e do `pt-BR/` da pilha, nunca
+do europeu.

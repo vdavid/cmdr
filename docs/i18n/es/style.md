@@ -219,6 +219,15 @@ strings are counted, so no plural branches are needed there.
 - **Los menús nativos siguen el texto del Finder, no el del catálogo.** Donde macOS tiene un equivalente, gana
   (`Visualización`, `Ocultar otras apps`, `Carpeta contenedora`, `Por omisión`), porque el usuario ve la barra de menús
   de Cmdr junto a la del Finder. Evidencia y excepciones: `glossary.md` § Menús nativos.
+- **El menú del Dock tiene su propia fuente Tier 1, y no es el Finder.** Los ítems que salen al hacer clic derecho sobre
+  el icono de una app los escribe el Dock, así que la referencia es
+  `/System/Library/CoreServices/Dock.app/Contents/Resources/es.lproj/DockMenus.strings` (verificado en macOS 26.6.2,
+  2026-09-09). De ahí sale el patrón «verbo + nombre de la app» sin preposición ni artículo (`Mostrar %@`,
+  `Ocultar %@`), que es el que sigue `menu.dock.openCmdr` = `Abrir Cmdr`. Evidencia: `glossary.md` § El menú del icono
+  en el Dock.
+- **`folder` es `carpeta` y `path` es `ruta`, aunque los dos comandos lleven al mismo diálogo.** `menu.dock.goToFolder`
+  dice `Ir a la carpeta…` (lo que dice el Finder) y `goToPath.dialog.title` dice `Ir a la ruta` (lo que dice su inglés).
+  Frontera deliberada: cada clave sigue a su propia fuente, no se unifican.
 - **Un ítem de menú desactivado por estar en uso lleva ` (ocupado)` al final, y nada más.** La forma `…Busy` de un ítem
   repite palabra por palabra el texto del ítem base y le añade solo ese marcador: `Desconectar (ocupado)`,
   `Olvidar el servidor (ocupado)`, `Olvidar la contraseña guardada (ocupado)`, siguiendo a `menu.volume.ejectBusy`

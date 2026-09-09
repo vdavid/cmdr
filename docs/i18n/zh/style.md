@@ -257,6 +257,12 @@ inflection.
   `没有要发送的内容。`, `There is nothing to print.` → `没有要打印的内容。` (AppIntents and Printing `.loctable`, macOS
   26.6.2 / 25G83, 2026-09-07). Reach for it whenever a string says there is nothing for the user to supply, rather than
   inventing a chattier `没什么可…的`.
+- **A menu item naming an app writes the name bare: `打开 Cmdr`, never `打开“Cmdr”`.** Apple quotes a name in a menu
+  item only when it substitutes an arbitrary one at runtime (Dock's `隐藏“%@”`, the catalog's own
+  `menu.context.copyNamed` = `拷贝“{name}”`). When the name is fixed in the string, Apple writes it unquoted: `隐藏访达`
+  / `退出访达` (Finder `MenuBar`), `隐藏Safari浏览器` / `关于Safari浏览器` (Safari `MainMenu`) (verified on macOS
+  26.6.2, 25G83, 2026-09-09). Cmdr's whole `menu.app.*` and `menu.dock.*` block follows that: `关于 Cmdr`, `隐藏 Cmdr`,
+  `退出 Cmdr`, `打开 Cmdr`, with a space before the Latin brand.
 - **A progress heading is `正在…`, and the reconnect one is `正在重新连接到 {name}…`.** It shares the sentence shape of
   `正在连接到 {name}…`, so first connect and auto-reconnect read as two states of one thing. Evidence in `glossary.md`
   § 自动重连的面板标题.

@@ -2675,3 +2675,27 @@ Nycklarna `onboarding.cloudSetup.*`, granskade mot referenssamlingen (`sv/micros
   `Slutpunkts-URL` (`onboarding.cloudSetup.step.endpoint`) · `high`
 - `Ollama`, `LM Studio`, `Azure OpenAI`, `Azure`, `api-version` och kommandot `ollama pull llama3.2` står kvar
   ordagrant.
+
+## Dockmenyn: de fem `menu.dock.*` (2026-09-09)
+
+Menyn som dyker upp när man högerklickar på Cmdrs symbol i Dock. Belagd i macOS egen dockmeny och i Finders menyrad,
+inte i referenssamlingen: `_ignored/i18n/sv/` bär Finder, AppKit och Systeminställningar, men INTE Dock. Källan är
+`/System/Library/CoreServices/Dock.app/Contents/Resources/sv.lproj/DockMenus.strings`, läst med
+`plutil -convert json -o -` (macOS 26.6.2, build 25G83, läst 2026-09-09).
+
+- **`Open <app>` i Dock · `Öppna <app>`, utan citattecken** · Dock sv `OPEN` = `Öppna`, och namnformerna `HIDE_NAME` =
+  `Göm %@` / `SHOW_NAME` = `Visa %@` sätter appnamnet naket. FILNAMNSformen är en annan sträng, `OPEN_FILENAME` =
+  `Öppna ”%@”`, som lägger svenska citattecken runt namnet. Cmdr är ett appnamn, alltså `Öppna Cmdr`. ❌ Skriv inte
+  `Öppna ”Cmdr”`: det är filnamnsformen och läses som att man öppnar en fil som heter Cmdr. `high`.
+- **`Go to Folder…` · `Gå till mapp…`** · Finder sv `MenuBar.json` (Gå-menyn) och fönstertiteln i `GotoWindow.json`
+  (`Gå till mapp`). Obestämd form utan artikel, versal bara på första ordet. `high`.
+- **`Connect to Server…` · `Anslut till server…`** · Finder sv `MenuBar.json` (Gå-menyn) och `ConnectToWindow.json`
+  (`Anslut till server`). Stämmer med `style.md`s settlade server-post. `high`.
+- **`Search files…` · `Sök filer…`** · samma kommando som `menu.edit.searchFiles` i menyraden, som redan säger
+  `Sök filer…`; `@key` säger uttryckligen att de två ska formuleras lika. `high`.
+- **`{name} ({parent})` står oförändrad** · rent skiljetecken runt två filnamn. Svenskan hänger på ett förtydligande
+  inom parentes i samma ordning som engelskan: Finder sv `SB_iCloudDetail` är den nakna `^0 (^1)`
+  (`macOS/Finder/LocalizableMerged.json`), och katalogen gör redan likadant (`Mata ut ({name}) (upptagen)`). Nyckeln bär
+  en `sameAsSourceJustification`. `high`.
+
+`Dock` böjs inte och tar ingen artikel (`i Dock`), enligt § Dock-erbjudandet ovan.

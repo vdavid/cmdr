@@ -265,6 +265,15 @@ Two mechanics that bite in Portuguese specifically:
   isso que o termo pareceu intocável por um tempo. O rótulo também é uma string traduzível: `endpoint` virou
   `ponto de extremidade` no rótulo E na legenda de uma vez só. Evidência e a confiança (`high`): `glossary.md` § Os
   passos de configuração de provedor de IA.
+- **O menu do ícone no Dock tem uma fonte Tier 1 que a pilha NÃO carrega**:
+  `Dock.app/Contents/Resources/pt_BR.lproj/DockMenus.strings` (leia com `plutil -convert json -o -`). Ele decide a forma
+  "verbo + nome do app" (`Abrir Cmdr`, sem artigo e sem aspas, seguindo `Ocultar %@` / `Mostrar %@`) e separa essa forma
+  da de ARQUIVO, que a Apple põe entre aspas (`Abrir “%@”`). Atenção à pasta: `pt_BR.lproj` é o brasileiro. Evidência:
+  `glossary.md` § O menu do ícone do Cmdr no Dock.
+- **Um compositor `{a} ({b})` fica idêntico ao inglês em pt-BR, e há fonte para isso.** O `%@ (%@)` do AppKit sai
+  inalterado no `pt` da Apple, embora a mesma chave seja adaptada em `ja`, `zh_CN`, `ar` e `he`: parênteses ASCII, um
+  espaço antes, ordem núcleo → qualificador. Quando a chave só junta dois nomes vindos do disco, não invente `em` nem
+  inverta a ordem; registre o `sameAsSourceJustification`. Evidência: `glossary.md` § O menu do ícone do Cmdr no Dock.
 
 ## Decisions to confirm with David
 

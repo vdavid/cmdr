@@ -348,6 +348,16 @@ Vietnamese has no grammatical number, so one form covers all counts.
   `Applications` luôn là `thư mục Ứng dụng`. Bằng chứng: `glossary.md` § Lời mời ghim Cmdr vào Dock.
 - **"at any time" → `bất cứ lúc nào`, kể cả khi macOS viết `bất kỳ lúc nào`.** Cả hai đều đúng tiếng Việt, nhưng catalog
   đã ship `bất cứ lúc nào` ở chín chỗ; một chuỗi mới đi lệch sẽ làm hai câu chị em đọc như hai giọng khác nhau.
+- **Menu chuột phải trên biểu tượng Dock có nguồn Tier 1 riêng, và kho tham chiếu KHÔNG chứa nó.**
+  `/System/Library/CoreServices/Dock.app/Contents/Resources/vi.lproj/DockMenus.strings` (đọc bằng
+  `plutil -convert json -o -`) chính là menu mà `menu.dock.*` rơi vào; macOS có ship `vi.lproj` cho bundle này. Nó chốt
+  luật **tên ỨNG DỤNG đi trần, tên TỆP mới đóng ngoặc kép** (`Ẩn %@` / `Hiển thị %@` so với `Mở “%@”`), nên
+  `menu.dock.openCmdr` là `Mở Cmdr`. Chi tiết: `glossary.md` § Menu chuột phải trên biểu tượng Dock.
+- **Khuôn `{a} ({b})` để phân biệt hai hàng trùng tên giữ nguyên như tiếng Anh.** AppKit vi dịch `"%@ (%@)"` thành
+  `"%1$@ (%2$@)"`: tiếng Việt đặt phần bổ nghĩa sau danh từ chính, nên không đảo thứ tự và không thêm giới từ vào trong
+  ngoặc (`menu.dock.locationInParent`).
+- **Một lệnh xuất hiện ở hai menu thì hai nhãn phải khớp từng chữ.** `menu.dock.searchFiles` và `menu.edit.searchFiles`
+  đều là `Tìm kiếm tệp…`; một biến thể "hay hơn" ở một chỗ sẽ đọc thành hai chức năng khác nhau.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

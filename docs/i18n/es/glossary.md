@@ -2859,3 +2859,31 @@ Las dos líneas bajo los campos atenuados `Dirección` y `Nombre de usuario` al 
   (junto a `Si ya se mostró el aviso único sobre desfijar servidores.`) · `high`.
 - Ninguno de los once valores lleva apóstrofo, así que no hay nada que doblar para ICU, y ninguno coincide con el
   inglés, así que no hace falta `sameAsSourceJustification`.
+
+## El menú del icono en el Dock (`menu.dock.*`, 2026-09-09)
+
+Cinco ítems del menú que sale al hacer clic derecho sobre el icono de Cmdr en el Dock. Familia RAW (`menu.*`, la dibuja
+Rust): **apóstrofos simples**, `{name}` y `{parent}` son marcadores literales, no argumentos ICU. Fuente Tier 1 de este
+grupo: el propio **Dock** (`/System/Library/CoreServices/Dock.app/Contents/Resources/es.lproj/DockMenus.strings`, macOS
+26.6.2, 2026-09-09) y el Finder `es` (`MenuBar.strings`), porque el usuario ve estos ítems al lado de los del sistema.
+
+- **`Open Cmdr` → `Abrir Cmdr`** · `DockMenus.strings` es exactamente donde vive este patrón: `OPEN` = `Abrir`,
+  `SHOW_NAME` = `Mostrar %@`, `HIDE_NAME` = `Ocultar %@`. O sea, el propio Dock forma «verbo + nombre de la app» sin
+  preposición ni artículo, así que `Abrir Cmdr` es literalmente la forma que el menú de al lado usa. La marca queda
+  verbatim (el español no la flexiona) · `high`.
+- **`Search files…` → `Buscar archivos…`** · el mismo comando ya existe en la barra de menús (`menu.edit.searchFiles` =
+  `Buscar archivos…`) y el brief pide que coincidan palabra por palabra · `high`.
+- **`Go to folder…` → `Ir a la carpeta…`** · Finder `es`, `MenuBar.strings` `261.title` (Ir > Ir a la carpeta…), y
+  `Localizable.strings` lo confirma dos veces (`Go To Folder` = `Ir a la carpeta`; «Muestra la opción “Ir a la carpeta…”
+  del Finder.»). Nota: el diálogo propio de Cmdr se llama `Ir a la ruta` (`goToPath.dialog.title`, porque su inglés dice
+  «path»); el ítem del Dock dice «folder», así que sigue al Finder. No unificar · `high`.
+- **`Connect to server…` → `Conectarse a un servidor…`** · Finder `es`, `MenuBar.strings` `266.title`, más
+  `ConnectToWindow` y `LocalizableMerged` (`N84`, `FR15`, `TL_HELP_CNCT`); coincide ya con
+  `commands.serversConnect.label` del catálogo. El reflexivo `conectarse` y el artículo indefinido `un` son de Apple, no
+  una elección nuestra · `high`.
+- **`{name} ({parent})` → idéntico, con `sameAsSourceJustification`** · el valor es solo puntuación alrededor de dos
+  nombres de carpeta que salen del disco. El español califica con el mismo paréntesis final y el mismo orden, y macOS
+  publica el patrón sin tocarlo (AppKit `Common` e `InfoPanel`: `%@ (%@)` → `%1$@ (%2$@)`). Además, aquí no puede
+  agregarse nada que concuerde: `{name}` puede ser archivo o carpeta (regla «Nothing may agree with a `{name}`» del
+  `style.md`), así que una variante tipo `{name} (en {parent})` tampoco aportaría nada y alargaría un ítem de menú ·
+  `high`.

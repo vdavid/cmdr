@@ -585,5 +585,26 @@
   "menu.viewer.wordWrap": "Ajuste de línea",
   "@menu.viewer.wordWrap": {
     "sourceHash": "9e210f3"
+  },
+  "menu.dock.openCmdr": "Abrir Cmdr",
+  "@menu.dock.openCmdr": {
+    "sourceHash": "f898c5b"
+  },
+  "menu.dock.searchFiles": "Buscar archivos…",
+  "@menu.dock.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.dock.goToFolder": "Ir a la carpeta…",
+  "@menu.dock.goToFolder": {
+    "sourceHash": "33de610"
+  },
+  "menu.dock.connectToServer": "Conectarse a un servidor…",
+  "@menu.dock.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.dock.locationInParent": "{name} ({parent})",
+  "@menu.dock.locationInParent": {
+    "sourceHash": "0bf83e2",
+    "sameAsSourceJustification": "Pure punctuation around two literal folder names: Spanish qualifies with the same trailing parenthesis and the same order, and macOS Spanish ships the pattern unchanged (AppKit Common/InfoPanel translate \"%@ (%@)\" as \"%1$@ (%2$@)\"). Nothing here is a word, so there is nothing to translate."
   }
 }

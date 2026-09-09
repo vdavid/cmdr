@@ -287,6 +287,10 @@ second half is now a normal plural with a real verb
   (`Voeg toe aan Dock`, `Verwijder uit Dock`), maar zet het er in een zin wél bij (`Toon/verberg het Dock automatisch`,
   Systeeminstellingen). Kies op de vorm: label zonder, zin met. De bezittelijke vorm `je Dock` mag waar het Engels
   `your Dock` zegt. Bewijs: `glossary.md` § Het Dock-aanbod.
+- **Voor een item in Cmdrs Dock-menu is `Dock.app` `nl.lproj/DockMenus.strings` de Tier-1-bron**, naast Finders
+  `MenuBar.strings`. Het bestand draagt het hele Nederlandse Dock-menu op leesbare sleutels (`OPEN`, `HIDE`, `QUIT`,
+  `SHOW_ALL_WINDOWS`, `KEEP_IN_DOCK`), dus een label dat het Dock zelf al kent, schrijf je niet zelf. Bewijs:
+  `glossary.md` § Het Dock-menu van Cmdr zelf.
 - **De map Applications heet in het Nederlandse macOS `Apps`, niet `Programma's`.** Finder gebruikt `Apps` in de
   navigatiekolom, het Ga-menu en de knopbaltip `Ga naar de map ‘Apps’`; `Programma's` leeft alleen nog in
   `Hulpprogramma's`. Schrijf `de map ‘Apps’`, met de enkele krulaanhalingstekens die deze gids voorschrijft.

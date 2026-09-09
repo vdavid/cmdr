@@ -3022,3 +3022,36 @@ Commander, Double Commander).
   köznév összetétele (`Finder-címke`, `USB-kábel` mintája). Sosem látszik a felületen, de a lefedettség kéri.
 - Aposztróf egyik magyar értékben sincs, tehát ICU-kettőzés sem kellett. Helyőrző, `<tag>`, plural és select egyikben
   sincs, ahogy az angolban sem. Egyik érték sem azonos az angollal, tehát `sameAsSourceJustification` sem kellett.
+
+## A Dock helyi menüje (`menu.dock.*`, 2026-09-09)
+
+Öt natív menüpont arra a menüre, amit a Cmdr Dock-ikonjára jobb gombbal kattintva kapunk. RAW család (`menu.*`), tehát
+**egyszeres aposztróf** és literál `{name}` / `{parent}` helyőrző; a záró `…` U+2026 marad.
+
+**Új, elsőrangú forrás ehhez a felülethez: maga a macOS Dock.** A `Dock.app` a `hu.lproj/DockMenus.strings` fájlban
+szállítja a saját helyi menüje szövegeit, vagyis pontosan azt a menüt, amelybe a Cmdr elemei kerülnek. Kiolvasása:
+`plutil -convert json -o - /System/Library/CoreServices/Dock.app/Contents/Resources/hu.lproj/DockMenus.strings` (a
+kulcsok beszédesek: `OPEN`, `HIDE_NAME`, `SHOW_NAME`, `QUIT`, `KEEP_IN_DOCK`, `REMOVE_FROM_DOCK`). A referenciakupac
+`hu/macOS/` mappája csak a Finder, az AppKit és a System Settings dumpját tartalmazza, a Dockét nem, ezért ezt élőben
+kell kiolvasni. (macOS 26.6.2, build 25G83, `plutil` + `jq`, 2026-09-09.)
+
+- **`Open Cmdr` → `Cmdr megnyitása`** · mac Dock (`DockMenus.strings` `HIDE_NAME` = „%@ elrejtése”, `SHOW_NAME` = „%@
+  elem megjelenítése”, `OPEN` = „Megnyitás”), plusz a szállított `menu.app.hide` = „Cmdr elrejtése” · `high`. A Dock
+  saját mintája appnév esetén **puszta név + névszói cselekvés, névelő nélkül**; a `A(z) „%@” megnyitása` alak
+  (`OPEN_FILENAME`) FÁJLNÉVRE való, ahol a kezdőhang ismeretlen. Egy appnévnél nincs mit hedgelni, tehát nem kell az
+  `a(z)`. Ugyanez a Finderé a menüsorban: „Finder elrejtése” (`MenuBar` `300728.title`), névelő nélkül.
+- **`Search files…` → `Fájlok keresése…`** · a szállított `menu.edit.searchFiles` · `high`. Betű szerint azonos angol
+  (`sourceHash` `149a9d1`), tehát a `desktop-i18n-term-consistency` amúgy is egy alakot kér; ugyanaz a parancs a
+  menüsorban és a Dockban.
+- **`Go to folder…` → `Ugrás mappához…`** · mac Finder `hu` (`MenuBar` `261.title` = „Ugrás mappához…”, és a hozzá
+  tartozó ablakcím `GotoWindow` `1.title` = „Ugrás mappához”) · `high`. Betű szerinti Tier-1 találat, pontosan arra a
+  menüpontra, amit az angol leírás megnevez (Finder > Ugrás > Ugrás mappához…). ❌ NEM `Ugrás útvonalra…`: az a
+  szállított `menu.go.goToPath`, más angolra (`Go to path…`), és a két kulcs szándékosan más szót visz.
+- **`Connect to server…` → `Kapcsolódás szerverre…`** · mac Finder `hu` (`MenuBar` `266.title`, ablakcím
+  `ConnectToWindow` `1.title` = „Kapcsolódás szerverre”), plusz a szállított `commands.serversConnect.label` és
+  `settings.network.permissionIntroConnectLink`, amelyek angolja betű szerint ugyanez · `high`. A `szerver` (nem
+  `kiszolgáló`) a szótár szállított döntése (`style.md` § server → `szerver`).
+- **`{name} ({parent})` → változatlan, `sameAsSourceJustification`-nel** · mac Finder `hu` (`LocalizableMerged`
+  `SB_iCloudDetail` = „^0 (^1)”, `IN_G6_V1` = „^2 (^3)”) · `high`. A magyar ugyanabban a sorrendben és ugyanazzal a
+  zárójelezéssel írja a név + minősítő párost, mint az angol, tehát nincs mit átrendezni. Toldalék egyik helyőrzőre sem
+  kerülhet (mindkettő ismeretlen végű mappanév, `style.md` § Agglutination), így valóban nem marad változtatnivaló.

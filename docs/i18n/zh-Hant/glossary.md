@@ -1566,3 +1566,32 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 `下面的 Dock 上`（Dock 預設就在螢幕底部，中文講得出來，所以留著）。`Yes, add it to my Dock` →
 `好，加入 Dock`：中文自己的東西通常不帶所有格， `我的` 加上去反而不自然；動詞取 Apple 的
 `加入`（`加入Dock中`），按鈕上省掉 `中` 比較好唸 · `high`。
+
+## 右鍵按 Dock 圖像跳出來的那張選單（`menu.dock.*`，2026-09-09）
+
+五個 `menu.dock.*` 都是 Rust 直接畫的原生選單項目（RAW family：撇號不加倍，`{token}` 是字面替換），所以撇號維持單個、
+`…` 一律 U+2026。**每一個都對得上目錄裡已經有的鍵，沒有新造詞**，這是刻意的：這個 locale 有跨批次用詞漂移的前科（選單寫
+`命令選擇區…`、它打開的面板卻叫 `指令面板`），所以先 grep 目錄再定案。
+
+- **`openCmdr` = `開啟 Cmdr`** · 動詞取 § The Apple-zh-TW outlier rule 的 `開啟`（Dock.app 自己的 `DockMenus.strings`
+  `OPEN` 在 zh-HK 正是 `開啟`，zh-TW 才寫 `打開`，又一次落在那條 outlier 上）；`動詞 + 空格 + Cmdr`
+  的形狀直接抄目錄已經在出貨的
+  `menu.app.hide`（`隱藏 Cmdr`）、`menu.app.quit`（`結束 Cmdr`）、`menu.app.about`（`關於 Cmdr`）· `high`。❗ **不要加上
+  `「」`**：Dock.app 的 `HIDE_NAME` / `SHOW_NAME` 寫成 `隱藏「%@」` 是因為那個 `%@`
+  是執行期塞進去的任意 App 名稱，需要框起來；我們這裡的 `Cmdr` 是寫死在字串裡的品牌詞，跟 `menu.app.*`
+  三個同款，加了角括號反而跟隔壁選單不一致。
+- **`searchFiles` = `搜尋檔案…`** · 逐字複製目錄裡的 `menu.edit.searchFiles`（選單列上的同一個命令）·
+  `confirmed`。brief 就是這樣要求的，而且兩個項目同時看得到。
+- **`goToFolder` = `前往資料夾…`** · Finder `Go` 選單的同一項：`MenuBar.strings` `261.title` 在 zh-HK 是
+  `前往資料夾⋯`、zh-TW 是 `前往檔案夾⋯`（`GotoWindow.strings` `1.title` 與 `Localizable.strings` `Go To Folder`
+  兩處都同樣分裂）。folder = `資料夾` 的 outlier 裁決照套，取 HK/共識形 · `high`。❗ **這一項跟 `menu.go.goToPath`
+  （`前往路徑…`）是兩個不同的鍵**，英文那邊也刻意分成 `Go to folder…` 和
+  `Go to path…`：Dock 選單抄 Finder 的說法，選單列那一項用 Cmdr 自己的 `路徑`。不要把兩邊統一掉。
+- **`connectToServer` = `連接伺服器…`** · 目錄裡已經出貨兩次（`commands.serversConnect.label`、
+  `settings.network.permissionIntroConnectLink`），而且跟 Finder 完全一致：`MenuBar.strings` `266.title` 在 **zh-TW =
+  zh-HK 都是 `連接伺服器⋯`** · `confirmed`。
+- **`locationInParent` = `{name}（{parent}）`** · 照 `style.md` §
+  Punctuation, 全形括號、括號跟裡面的字不空格；形狀抄目錄自己的同款消歧義列
+  `fileExplorer.renameConflict.yours`（`{name}（你的）`）、
+  `menu.context.openWithDefault`（`{app}（預設）`）、`menu.volume.eject`（`退出（{name}）`）·
+  `high`。兩個 token 的順序跟英文一樣，名字在前、所在位置在後：中文這個位置本來就是後置限定，不需要倒過來，也不用補介詞（補了會變成一句話，而這是一列選單項目）。

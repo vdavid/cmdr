@@ -583,5 +583,26 @@
   "menu.viewer.wordWrap": "Zeilenumbruch",
   "@menu.viewer.wordWrap": {
     "sourceHash": "9e210f3"
+  },
+  "menu.dock.openCmdr": "Cmdr öffnen",
+  "@menu.dock.openCmdr": {
+    "sourceHash": "f898c5b"
+  },
+  "menu.dock.searchFiles": "Dateien suchen…",
+  "@menu.dock.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.dock.goToFolder": "Gehe zu Ordner…",
+  "@menu.dock.goToFolder": {
+    "sourceHash": "33de610"
+  },
+  "menu.dock.connectToServer": "Mit Server verbinden…",
+  "@menu.dock.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.dock.locationInParent": "{name} ({parent})",
+  "@menu.dock.locationInParent": {
+    "sourceHash": "0bf83e2",
+    "sameAsSourceJustification": "Pure placeholder-and-punctuation label, and German disambiguates a name with the same parenthetical frame: macOS de renders \"^2 (^3)\" (Finder LocalizableMerged IN_G6_V1) and \"Location (%@)\" → \"Umgebung (%@)\" (AppKit Menus), so the qualifier stays second in parentheses with a space before the opening paren."
   }
 }
