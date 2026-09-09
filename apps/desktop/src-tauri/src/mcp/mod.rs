@@ -39,6 +39,12 @@ pub(crate) use executor::{ToolError, ToolResult, fit_to_result_budget, is_virtua
 // `mcp-move-cursor` + `mcp-select-names`), but it isn't only an agent's move: an OS
 // reveal (`crate::reveal`) makes exactly the same one. Exported as a named seam rather
 // than by opening `executor` up, so the rest of the crate reaches this and nothing else.
+//
+// Gated because `crate::reveal` is the seam's only user and is itself macOS-only: the
+// in-module caller (`executor::downloads`) reaches `nav` directly, so off macOS this
+// re-export has nobody, and `-D unused` is an error. CI lints on Linux and we lint on
+// macOS, so a missing gate here compiles clean locally and breaks the whole build there.
+#[cfg(target_os = "macos")]
 pub(crate) use executor::nav::go_to_in_focused_pane;
 pub use server::{
     McpServerOutcome, get_mcp_actual_port, is_mcp_running, rebind_interactive, start_mcp_server_background,
