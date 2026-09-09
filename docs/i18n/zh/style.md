@@ -266,6 +266,19 @@ inflection.
 - **A progress heading is `正在…`, and the reconnect one is `正在重新连接到 {name}…`.** It shares the sentence shape of
   `正在连接到 {name}…`, so first connect and auto-reconnect read as two states of one thing. Evidence in `glossary.md`
   § 自动重连的面板标题.
+- **An inline `<field></field>` is a text box sitting mid-sentence, so put it where Chinese wants the object and keep
+  the sentence reading as one line.** `onboarding.stepBeta.checklist.email` renders an input plus its Save button inside
+  the sentence, so the words before and after it have to hold together around a box:
+  `留下你的邮箱 <field></field> 就能偶尔收到一点更新和提问`. Spaces on both sides of the tag, as with any inline widget.
+- **Space an inline tag by what it WRAPS, not by the tag name.** A `<strong>` or `<code>` block quoting a UI element or
+  a command gets a space on both sides, even between Han characters: `点按下方的 <strong>打开{systemSettings}</strong>`,
+  `在列表中找到 <strong>Cmdr</strong> 并把它打开`, `启用 <code>brew install cmdr</code>`. That space is what keeps a
+  bolded option name from fusing with the noun after it (`… AI</strong> 选项`). An `<em>` emphasizing a word INSIDE a
+  clause takes none, because the sentence would read wrong broken apart: `如果<em>不是</em>有意的`,
+  `既想要隐私<em>又</em>想要一个像样的模型`. Never space against CJK punctuation (`，。：（`) either way.
+- **A `…summary` key beside a switch is a HALF-LINE and must not wrap; the long version lives in the sibling `…desc`.**
+  Match the desc's terminology exactly, then cut: `占用 1 GB 空间，加快搜索，显示文件夹大小`. Chinese runs short here,
+  so the room is real, but a summary that grows past ~24 Han characters starts wrapping in the real layout.
 
 ### ICU mechanics (catalog-level, easy to miss)
 

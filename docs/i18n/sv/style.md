@@ -318,6 +318,27 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   `Open Cmdr` blir `Öppna Cmdr` utan citattecken. Belägg: `glossary.md` § Dockmenyn.
 - **Mappen `Applications` heter `Appar` sedan macOS 26, inte `Program`.** Finder, AppKit och Go-menyn säger alla
   ”Appar”, och dra-meningen skrivs `dra … från mappen Appar`. Belägg: `glossary.md` § Dock-erbjudandet.
+- **En tom tagg som renderar en kontroll mitt i meningen sätts där svenskan vill ha objektet.**
+  `onboarding.stepBeta.checklist.email` har `<field></field>`, som är textfältet plus dess Spara-knapp inuti satsen.
+  Meningen måste läsas som EN rad med en ruta i mitten, alltså placeras taggen efter objektet
+  (”Ange din e-postadress <field></field>, så …”), inte i engelskans position. Samma reflex gäller `<alpha></alpha>`
+  och `<chip></chip>`. Belägg: `glossary.md` § Introduktionsguidens omskrivning.
+- **När en sträng CITERAR en annan nyckels etikett är de två en enhet, precis som ett `*Aria`-par.**
+  `onboarding.stepAi.local.tooltip` säger `<strong>Ja, jag vill ha AI</strong>` och pekar därmed på
+  `onboarding.stepAi.cloud.label`, som måste stå ordagrant likadant; `signup.rejected`/`.unreachable` citerar
+  `checklist.emailSave` (`Spara`) på samma sätt. Skriv om båda samtidigt eller ingen.
+- **En systembehörighets namn hämtas från Apple även när syskonnyckeln parafraserar det.** Sammanfattningen bredvid
+  nätverksströmbrytaren säger `Lokalt nätverk` (Apples egen etikett), inte den beskrivande `Lokal nätverksåtkomst` som
+  `…networking.desc` fortfarande bär. Ett namn användaren inte hittar i Systeminställningar är samma feltyp som
+  `fullständig åtkomst till skivan` var. Belägg och den live lästa bunten: `glossary.md` § Introduktionsguidens
+  omskrivning.
+- **Referenssamlingen bär falska vänner; kolla vad strängen sitter bland innan du lånar den.** Total Commanders
+  `Skrivfel!` ser ut som `typo` men är `Write error` (den ligger bland filoperationsfelen). En träff på rätt svenskt
+  ord är inte belägg förrän källans egen betydelse stämmer.
+- **GitHub och AlternativeTo har inget svenskt gränssnitt att kopiera.** GitHub lade ner sin UI-lokalisering
+  2016-11-18 (svenska fanns 2010–2016), och AlternativeTo är helt engelskt. Deras verb översätts alltså som vanliga
+  termer, inte som citerade knappetiketter: `star` → `stjärnmärk` (katalogens egen precedens), `Like` → `Gilla`
+  (Microsoft sv). Belägg: `glossary.md` § Introduktionsguidens omskrivning.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

@@ -380,6 +380,14 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   access. » se termine par « Cliquez pour configurer l'accès complet au disque. », où « configurer l'accès complet au
   disque » est exactement `search.coverage.setUpFullDiskAccess` : les deux surfaces mènent au même panneau des Réglages
   Système et doivent le nommer pareil.
+- **Un `{placeholder}` qui porte un libellé déjà traduit se met dans un créneau sans article ni accord.** Son genre est
+  inconnu à l'écriture : « En savoir plus sur {topic} » marche pour « Réseau » comme pour « Indexation du disque », là
+  où « Plus d'infos sur le {topic} » casserait un mot sur deux. Même discipline que la règle de genre : nommez l'action
+  ou l'objet, ne pariez jamais sur la forme de l'insertion.
+- **Le verbe d'un bouton tiers vient de l'interface française de cet éditeur, quand elle existe.** GitHub localise la
+  sienne et dit « Ajouter une étoile » ; on la reprend. Quand l'éditeur ne localise pas du tout (AlternativeTo, dont le
+  bouton dit « Like » à tout le monde), il n'y a pas de terme à citer : on prend le verbe français standard de ce geste
+  et on marque le choix `tentative`. Preuves : `glossary.md` § La réécriture de la prise en main.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

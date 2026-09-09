@@ -624,7 +624,9 @@ one-time consent screen, the per-chat cost footer, and the settings section + LL
 - **usage / spending (AI cost tracking): `användning` / `utgifter`** · MS terminology (`usage` → `användning`,
   `spending` → `utgift`, pluralized for the settings section heading). `high`.
 - **estimate, adverbial ("about {amount}"): `cirka`** · matches the existing sv catalog's own "cirka"/"ungefär" usage
-  for approximate values (`indexing.scan.etaRough`, `onboarding.stepAi.local.help`). `high`.
+  for approximate values (`indexing.scan.etaRough` = "ungefär {eta}"). `high`. The onboarding rewrite folded the second
+  witness for this into `onboarding.stepAi.local.tooltip`, which renders "about 2 GB" as "runt 2 GB": a third variant,
+  fine in that casual register, but don't read it as a reason to change this entry.
 - **free (no cost): `gratis`** · matches the shipped `licensing.section.typePersonal` "Personal (free)" → "Personlig
   (gratis)". `askCmdr.cost.free` "free, on-device" → "gratis, på enheten" (on-device processing framed as "på enheten",
   built on the settled `enhet` = device/drive root; no direct pile hit for the Apple-Intelligence-style "on-device"
@@ -2715,3 +2717,111 @@ vinner enligt style.md § ”Copy som pekar på en systemyta stavas som macOS st
   `main.dockPinNudge.body` (”i några dagar nu”) · `high`.
 - **Aviseringen vid första träffen är ❌ ingen ursäkt** · Den säger vad som just hände, varför, och var reglaget finns.
   Därav `Cmdr är inställd på att fånga upp dem`, ❌ aldrig ”tyvärr” · `high`.
+## Introduktionsguidens omskrivning: checklistan, AI-steget och sammanfattningarna (2026-09-09)
+
+De 23 nyckarna i `onboarding.json` som steg 1–4 fick när guiden skrevs om: kryssrutelistan i beta-steget, AI-stegets
+långa förklaringar och enradssammanfattningarna bredvid strömbrytarna i valfria steget.
+
+### Kryssrutelistan i beta-steget
+
+- **checklist · `checklista`** · Microsoft sv terminology (`checklist` → `checklista`, term-id 30962 → 1113079, plus två
+  `Checklist` → `Checklista`-poster). `high`. Rubriken heter `Checklista för att komma igång`, eftersom katalogen redan
+  ramar in guiden som `komma igång` (`onboarding.wizard.title` = ”Kom igång med Cmdr”,
+  `onboarding.wizard.progressLabel` = ”Förlopp för att komma igång”), inte som `introduktion`.
+- **`each takes 30 seconds` behöver ett huvudord: `varje punkt tar 30 sekunder`** · engelskans nakna `each` dinglar på
+  svenska på samma sätt som ett räknat `*Text`-tal utan substantiv gör (`style.md` § Plurals). Punkten i en checklista
+  är `punkt`. `high`.
+- **`star` (GitHub-verbet) · `stjärnmärk`** · GitHubs eget gränssnitt ger INGEN svensk form att kopiera: GitHub
+  lokaliserade sitt UI till bland annat svenska 2010–2016 men lade ner det 2016-11-18, och gränssnittet är sedan dess
+  enbart engelskt (`Preferred spoken language` styr bara enstaka kommunikationsytor). Så valet faller på katalogens egen
+  precedens, `onboarding.stepBeta.star` (”stjärnmärk repot <github>här på GitHub</github>”), med Microsoft sv
+  (`star` → `stjärna`, fem poster) som stöd för substantivet `stjärnor`. `high`.
+- **`repo` · `repot`** · katalogens egen form i `onboarding.stepBeta.star`. Låneordet böjs som ett neutrumord
+  (`ett repo`, `repot`, `repon`). Skiljt från `git-repository` i `settings.json`, som är den tekniska helformen.
+  `high`.
+- **`Like` (AlternativeTos knapp) · `Gilla`** · AlternativeTo har inget svenskt gränssnitt (sajten är helt engelsk och
+  knappen räknar `likes`, kontrollerat 2026-09-09), så verbet översätts: Microsoft sv terminology ger `Like` → `Gilla`
+  i sex poster. `high`. `AlternativeTo` står kvar ordagrant som sajtnamn.
+- **`title` på en webbsida · `rubriken`** · `Cmdr`-rubriken högst upp på AlternativeTo-sidan är en sidrubrik, inte en
+  fönstertitel. Svenska citattecken runt namnet (`rubriken ”Cmdr”`) per `style.md`. `high`.
+- **`notice` (om folk och sökmotorer) · `upptäcka`** · naturlig svenska för att få syn på något nytt; `lägga märke
+  till` är längre utan att bli tydligare. `tentative` (sammansatt av vardagsspråket, ingen direkt källa).
+- **`Save` (knappen bredvid e-postfältet) · `Spara`** · macOS AppKit `SavePanel.json` (`Save` → `Spara`),
+  `Document.json` (samma). `high`. Samma ord citeras i `signup.rejected` och `signup.unreachable`, som pekar på just
+  den knappen.
+- **`Email address saved` (kryssmarkeringens skärmläsarnamn) · `E-postadressen sparad`** · `email address` →
+  `e-postadress` från Microsoft sv terminology; `e-postadress` är en-genus, så participet blir `sparad`, aldrig
+  `sparat`. Bestämd form eftersom raden pekar på just den adress användaren skrev in. `high`.
+- **`<field></field>` mitt i meningen** · taggen är tom och renderar in-/utmatningsrutan plus Spara-knappen inne i
+  satsen, så den måste stå där svenskan vill ha objektet: `Ange din e-postadress <field></field>, så hör jag av mig …`.
+  Kommat före konsekutivt `så` står kvar (`style.md`). Första person, som resten av beta-steget, och samma
+  ”hör jag av mig”-formel som `onboarding.stepBeta.emailNote` redan använder. `high`.
+
+### Registreringen till e-postlistan
+
+- **`mailing list` · `e-postlistan`** · Microsofts `distributionslista` är Exchanges distributionslista (en adressgrupp
+  i en organisation), inte en prenumerationslista, alltså fel betydelse på samma sätt som `aktie` för `share` och
+  `redigera` för `redact`. `sändlista` finns inte i referenssamlingen alls. `e-postlista` är den genomskinliga
+  vardagssvenskan och håller ihop med `.unreachable`s ”du står inte på listan än”. `tentative` (MS-betydelsen
+  förkastad, ingen förstahandskälla).
+- **`typo` · `stavfel`** · macOS AppKit `Accessibility.json` (`Misspelled` → `Felstavat`) ger roten; `stavfel` är
+  standardformen av substantivet. `high`. ❌ Total Commanders `Skrivfel!` (`WCMD.LNG` 625/1245/1907) är en FALSK VÄN:
+  den sitter bland filoperationsfelen och är `Write error`, inte `typo`. Använd den inte som belägg.
+- **`sign up` · `registrera`; `signup server` · `registreringsservern`** · Microsoft sv terminology
+  (`sign up` → `registrera` / `registrera sig`), och katalogen säger redan ”vi kunde inte registrera dig just nu”
+  (`onboarding.stepBeta.signup.failure`). `high`.
+- **Sökvägen i `signup.unreachable` skrivs `Inställningar › Uppdateringar och integritet`** · båda halvorna tas från
+  katalogen själv, inte från en nyöversättning: `settings.section.updatesAndPrivacy` = ”Uppdateringar och integritet”
+  och `settings` = `Inställningar` (`style.md`). Tecknet `›` står kvar ordagrant. `high`.
+
+### AI-steget
+
+- **`dumber` · `dummare`** · engelskan är avsiktligt rättfram enligt `@key`, och svenskan har samma raka ord. Ingen
+  mildring till ”mindre kapabel”. `high`.
+- **`custom` (egen LLM) · `anpassad`** · katalogens settlade form i nio `settings.*`-nycklar (`Custom…` → `Anpassat…`,
+  `Custom timeout` → `Anpassad tidsgräns`). `LLM` är en-genus (`en modell`), alltså `din egen anpassade LLM`. `high`.
+- **`Configure it below` · `Konfigurera det nedan`** · `konfigurera` per § arkivpassets `Konfigurera…`. `high`.
+- **`<strong>`-blocket i `stepAi.local.tooltip` MÅSTE vara ordagrant `onboarding.stepAi.cloud.label`** · texten pekar
+  användaren på alternativknappen längre ner, så de två är en enhet på samma sätt som ett `*Aria`-par: båda säger
+  `Ja, jag vill ha AI`. Skrivs den ena om måste den andra skrivas om samtidigt.
+- **`<em>och</em>` bär betoningen ensam** · engelskan betonar `and` just för att markera att det INTE brukar gå att få
+  båda. Lägg därför inte till `både` framför: `både … <em>och</em> …` gör betoningen överflödig och tar udden av
+  meningen. `high`.
+- **`ignore this and go on` · `strunta i det här och gå vidare`** · `strunta i` matchar appens informella röst;
+  `bortse från` är byråkratiskt. Etiketten i `{nextLabel}` ramas in av svenska citattecken (`”{nextLabel}”`), inte
+  engelska. `high`.
+- **`badge` · `märke`** · Microsoft sv terminology (`badge` → `märke`; den andra posten, `aktivitetsikon`, är
+  ikonräknaren på en appsymbol och fel sak här). `<alpha></alpha>-märken` sätter taggen först och hänger på
+  sammansättningsledet med bindestreck. `high`.
+- **`work-in-progress areas` · `de områden som är mest under arbete`** · `under arbete` är den etablerade svenskan för
+  work in progress; `pågående` ensamt säger bara att något rör sig, inte att det är ofärdigt. `tentative` (ingen
+  direkt UI-källa).
+- **`helps me fix bugs` · `hjälper mig att fixa buggar`** · håll isär från syskonnyckeln
+  `onboarding.stepBeta.feedbackIntro`, där engelskan säger `spot bugs` och svenskan därför säger `hitta buggar`. Två
+  olika verb i engelskan, två olika verb i svenskan. `high`.
+
+### Enradssammanfattningarna i valfria steget
+
+Alla fyra sitter bredvid en strömbrytare och får inte radbrytas, så de hålls på ungefär engelskans längd och lånar
+terminologin från syskonnyckelns `…desc`.
+
+- **`Local network access` · `Lokalt nätverk`** · Apples egen etikett för behörigheten, läst live i
+  `/System/Library/ExtensionKit/Extensions/SecurityPrivacyExtension.appex/…/Localizable.loctable` (`LOCAL_NETWORK` =
+  `Lokalt nätverk`, `LOCAL_NETWORK_SUMMARY` = ”Tillåt att apparna nedan får hitta och kommunicera med enheter i det
+  lokala nätverket.”, macOS 26.6.2 build 25G83, läst 2026-09-09); referenssamlingens `macOS/`-bunt bär den inte, så
+  detta är den dokumenterade live-fallbacken. `high`. ❌ Inte den beskrivande `Lokal nätverksåtkomst`: det är samma
+  feltyp som `fullständig åtkomst till skivan` mot Apples `Full skivtillgång`, alltså ett namn användaren inte hittar i
+  Integritet och säkerhet. Se rapportanteckningen om att `onboarding.stepOptional.networking.desc` fortfarande säger
+  `Lokal nätverksåtkomst` och behöver samma rättelse.
+- **`speeds up searches` · `snabbar upp sökningar`** · `sökning` per `style.md`s search-post. `high`.
+- **`check` (uppdateringskontrollen) · `kontroll`** · syskonnyckeln `onboarding.stepOptional.updates.desc` säger redan
+  `licenskontroller` för samma sorts anrop. `high`.
+- **`native handler` · `macOS inbyggda hanterare`** · `inbyggd` är dokumentets settlade ord för Apples egna ytor
+  (`style.md` § ”Inbyggda menyer följer Finders ordval”), och `macOS` slutar på s-ljud och tar därför varken
+  genitiv-`s` eller apostrof (`macOS inbyggda hanterare`, precis som `macOS inbyggda SMB-anslutning`). `high`.
+- **`suppresses` · `håller tillbaka`** · syskonnyckeln `onboarding.stepOptional.mtp.desc` säger redan ”måste hålla
+  tillbaka den macOS-processen”. `high`. Skilt från `style.md`s regel att `Suppress` i visa/göm-betydelsen blir `Dölj`:
+  här handlar det om att stoppa en process, inte om att gömma något.
+- **`and the such` · `och liknande`** · engelskans avsiktligt slarviga vändning; `och liknande` är den vardagliga
+  svenska motsvarigheten och används redan i `onboarding.stepOptional.networking.desc` (”en NAS hemma och liknande”).
+  `high`.

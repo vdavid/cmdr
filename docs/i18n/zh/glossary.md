@@ -1482,8 +1482,8 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
   `忽略所有权`）（macOS 26.6.2 语料，2026-08-30 核对） · `confirmed`。目录里原有 5 个键写成 `忽略`，其中
   `errorReporter.sentToast.dismiss`
   是**报告发送成功**后的提示，按钮却写着「忽略」，等于让用户「无视」自己刚做成的事。九个 Dismiss 全部统一为 `关闭`。
-  - 连带：`queue.row.dismissAria` 原为 `忽略这项操作`，改为 `关闭这项操作的记录`。**不要写成 `关闭这项操作`**：中文的
-    `关闭+操作` 会被读成「终止这项操作」，而这个按钮只是让那一行不再显示，什么都不撤销、不重试、不删除。
+    - 连带：`queue.row.dismissAria` 原为 `忽略这项操作`，改为 `关闭这项操作的记录`。**不要写成 `关闭这项操作`**：中文的
+      `关闭+操作` 会被读成「终止这项操作」，而这个按钮只是让那一行不再显示，什么都不撤销、不重试、不删除。
 - **Example:（占位符示例）** · `示例：` · 完整词 Example 用 `示例`（GNOME Nautilus `Examples:` →
   `示例:`），缩写 e.g. 才用 `例如`（KDE Dolphin `(e.g. smb://…)` → `(例如： smb://…)`） ·
   `high`。`onboarding.cloudSetup.*` 的 4 个键原写 `例如：`，与 `ai.cloud.*` 的 `示例：` 打架；英文两处都是完整词
@@ -2461,3 +2461,50 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   `main.dockPinNudge.body`（“好几天了”）同一条规则 · `high`。
 - **首次接手提示 ❌ 不是道歉** · 它说明刚才发生了什么、为什么，以及开关在哪里。所以写
   `Cmdr 设置成了接手这类请求`，❌ 不写“抱歉”· `high`。
+### 入门引导改版：清单、步骤提示、可选项摘要（2026-09-09）
+
+覆盖 `onboarding.moreAbout`、`onboarding.wizard.stepTooltip`、`onboarding.stepFda.*`、`onboarding.stepAi.*`、
+`onboarding.stepBeta.checklist.*`、`onboarding.stepBeta.signup.*`、`onboarding.stepOptional.*.summary` 这一批。macOS
+zh-CN 为 Tier 1，GitHub 自家中文文档用于 GitHub 专有动词，Microsoft zh-Hans TBX 交叉校验。
+
+- **Save（邮箱字段旁的按钮）** · `保存` · macOS zh-CN：AppKit `Document`/`Preferences`/`Printing`/`SavePanel` 的 `Save`
+  键、Finder `LocalizableMerged` 的 `AL2`/`BN38`，四处一致都是 `保存`（reference pile，2026-09-09）。⚠️ 不是
+  `存储`：Apple 现在的简体中文用 `保存`。`onboarding.stepBeta.signup.rejected` / `.unreachable` 在句中引用这个按钮时写
+  `“保存”`（全角引号），与按钮标签逐字一致 · `high`
+- **star（GitHub 的动词）/ stars（数量）** · `加星标` / `星标` · GitHub 自家简体中文文档（`docs.github.com/zh`
+  §「保存带星标的仓库」：`单击“星标”`、`已加星标`、`星标数`，2026-09-09）。GitHub的网页界面本身不出简体中文版，所以它的中文文档就是能拿到的最权威来源。⚠️
+  `onboarding.stepBeta.star` 用的是口语借词 `点 star` / `个 star`；那段被 `StepBeta.svelte` 的
+  `SHOW_FEEDBACK_CHANNELS = false` 挡着，眼下不会和清单同屏，但开关一旦打回 `true`
+  就会两种说法并排出现，届时把它一起改成 `加星标` / `星标`。仓库仍是 `仓库`（目录里 18 处，与 `errors.git.*`
+  一致），不是 Microsoft TBX 的 `存储库` · `high`
+- **like（AlternativeTo 的点赞动词）** · `点赞` ·
+  AlternativeTo 只有英文站，没有中文界面，因此没有「站点自家的中文动词」可抄（2026-09-09 核实过该站无语言切换器）。改用中文网站通用的
+  `点赞` · `high`
+- **checklist** · `清单` · Microsoft zh-Hans TBX（`checklist` → `清单`，CHN/SGP）。标题写 `入门引导清单`，复用已定的
+  `入门引导` · `high`
+- **mailing list** · `邮件列表` · ⚠️ Microsoft TBX 第一个命中是
+  `邮寄列表`，那是「寄实物」的义项（how-to-mine.md 的 source-quality trap 4）。电子邮件订阅列表在中文里一律是 `邮件列表`
+  · `high`
+- **sign up / signup server** · `注册` / `注册服务器` · Microsoft zh-Hans TBX（`sign up` → `注册`）· `high`
+- **typo（提示用户检查拼写）** · `看看是不是打错了` · 按 style.md 的口语register改写成动作，不落 `错误` 这个词 · `high`
+- **Local Network（macOS 隐私面板里的项目）** · `本地网络` · 实机
+  `SecurityPrivacyExtension.appex/.../Localizable.loctable` 的 `LOCAL_NETWORK` 键（macOS
+  26.6.2，`plutil`，2026-09-09）；同一文件里 `ALL_FILES` = `完全磁盘访问权限`，与本文件已定的说法对上。⚠️
+  `onboarding.stepOptional.networking.summary` 仍写 `“本地网络访问”`，因为兄弟键
+  `onboarding.stepOptional.networking.desc`
+  已经这么写，一行摘要必须跟长说明同词；macOS的权限弹窗本身没有这个名词短语（弹窗是整句「想要查找并连接到本地网络上的设备」）。哪天统一时两条一起改成
+  `本地网络` · `tentative`
+- **Settings › Updates & privacy（句中引用应用自己的设置路径）** · `“设置 › 更新与隐私”` ·
+  `settings.section.updatesAndPrivacy` = `更新与隐私`；整条路径加全角引号、分隔符照抄英文原文（英文写 `›` 就写 `›`，写
+  `>` 就写 `>`），与 `whatsNew.optOutToast`（`“设置 > 更新与隐私”`）、
+  `settings.askCmdr.provider.shared`（`“设置 › AI”`）同形 · `high`
+- **Learn more / More about X（信息图标的无障碍名称）** · `进一步了解“{topic}”` · macOS Finder `LocalizableMerged`
+  `NE115`（`Learn More` → `进一步了解`）。`{topic}` 是运行时替换进来的任意标签（可能是中文，也可能以 Latin 开头，比如
+  `MTP（…）`），所以照 Apple「运行时替换的名字才加引号」的规矩包一对全角引号，顺带解决中英夹排的空格问题 · `high`
+- **Step {step} of {mandatory}+1（步骤圆点的 tooltip）** · `第 {step} 步，共 {mandatory}+1 步` ·沿用兄弟键
+  `onboarding.wizard.stepProgress` 已定的 `第 {step} 步，共 {total} 步` 句形；字面量 `+1`
+  原样保留（英文特意不写成 4，是要点明最后一步可选）· `high`
+- **native handler（被 Cmdr 临时抑制的 macOS 进程）** · `原生处理程序` · 与 `onboarding.stepOptional.mtp.desc` 里的
+  `抑制 macOS 的那个进程` 同指，摘要一行取更短的名词说法 · `high`
+- **dumber（本地模型比云端模型弱）** · `笨不少` · 英文特意用口语的 "dumber"，中文保留同样直白的口语调子，不改写成
+  `能力较弱` 这类中性说法（style.md：保留刻意的随意语气）· `high`

@@ -2664,3 +2664,84 @@ also gewinnt die macOS-Wortwahl (style.md § Systemoberflächen).
   einsetzen. Gleiche Regel wie `main.dockPinNudge.body` („ein paar Tage“) · `high`.
 - **Der Ersttreffer-Hinweis ist ❌ keine Entschuldigung** · Er sagt, was passiert ist und warum, und wo der Schalter
   sitzt. Deshalb `Cmdr ist so eingestellt, dass es das übernimmt.`, ❌ nicht „Entschuldigung“ oder „Leider“ · `high`.
+## Die Einführungs-Checkliste, der Schritt-Tooltip und die vier Kurzfazits (`onboarding.*`, 2026-09-09)
+
+Der umgeschriebene Einführungsassistent: die vier Zeilen der Mitmach-Checkliste in Schritt 3, die beiden Meldungen unter
+dem E-Mail-Feld, die vier einzeiligen Fazits neben den Schaltern in Schritt 4 sowie `moreAbout`, `wizard.stepTooltip`
+und `stepFda.why`. Onboarding ist die eine Fläche, auf der Cmdr in der Ich-Form als David spricht; das `du` bleibt.
+
+- **`Save` (die Taste neben dem E-Mail-Feld) → `Sichern`** · macOS ist das Save-Wort durchweg `Sichern`, und der Katalog
+  hat es mit `servers.sheet.save` bereits gesetzt · high. Die beiden Schlüssel tragen **denselben englischen Wert und
+  denselben `sourceHash`** (`1509f56`), also erzwingt `desktop-i18n-term-consistency` ohnehin ein Wort für beide. Nicht
+  Microsofts `Speichern` (Windows-Konvention).
+- **`saved` (im Umfeld dieser Taste) → `gesichert`** · AppKit `de` („%@ (Automatisch gesichert)“, „Das Dokument „%1$@“
+  konnte nicht gesichert werden.“, „Die letzten Änderungen werden im Versionsverlauf gesichert.“) · high. Abgrenzung:
+  der Katalog sagt `gespeichert`, wo es ums bloße ABLEGEN von Daten geht („Anmeldedaten gespeichert“, „Notiz über dich
+  gespeichert“). Hier hängt das Partizip aber direkt an der Taste `Sichern`, also gewinnt die Wortfamilie der Taste
+  (`style.md` § „Eine Wortfamilie pro Dialog durchhalten“): `E-Mail-Adresse gesichert`, `Deine Adresse ist auf diesem
+  Mac gesichert`.
+- **`star` (GitHubs eigenes Verb) → `Stern`, als Handlung `einen Stern vergeben`** · GitHub lokalisiert seine
+  Oberfläche NICHT ins Deutsche (die Einstellung „Preferred spoken language“ betrifft nur Kommunikationsfunktionen), es
+  gibt also keinen deutschen Button-Text. Die deutsche GitHub-Doku nennt die Taste `Stern` und die Handlung „mit einem
+  Stern versehen“ / „mit einem Stern markieren“ (GitHub-Doku `de`, „Repositorien markiert mit Sternen sichern“:
+  „Klicke in der oberen rechten Ecke der Seite auf **Stern**.“, abgerufen 2026-09-09) · high. Der Katalog hatte
+  `Vergib dem Repo … einen Stern` schon in `onboarding.stepBeta.star`; die Checklistenzeile übernimmt es
+  zeichengleich. `Repo` bleibt die Kurzform, wie im Englischen.
+- **`Like` (AlternativeTos eigenes Verb) → `ein Like geben`** · AlternativeTo ist einsprachig englisch, der Nutzer sieht
+  dort also eine Taste `Like`; Microsofts Terminologie führt `like` (Verb, Beitrag) als `gefällt mir`, was aus Facebook/
+  Dynamics stammt und als Linktext zu lang ist · tentative. `das Like` / `liken` stehen im Duden. Die Form
+  `Gib Cmdr auf AlternativeTo ein Like` hält außerdem den Parallelbau zur Zeile darüber
+  (`Vergib dem Repo auf GitHub einen Stern`).
+- **`checklist` → `Checkliste`** · Microsoft-Terminologie führt beides: `Prüfliste` für die generische Definition (eine
+  QA-Liste möglicher Fehler) und `Checkliste` für die Planner-Funktion · high. `Prüfliste` klingt behördlich; Cmdrs
+  Tonfall nimmt das Alltagswort. `onboarding` selbst heißt im Katalog `Einführung` (`menu.app.onboarding`,
+  `commands.cmdrOpenOnboarding.label`), daher `Checkliste zur Einführung`.
+- **`mailing list` → `Mailingliste`** · Microsofts `Verteiler` / `Adressenliste` sind der Exchange-Sinn (eine
+  Verteilerliste im Firmenadressbuch), nicht die Opt-in-Liste, um die es hier geht · tentative. `Mailingliste` ist das
+  übliche deutsche Wort dafür und hält die Liste als handelndes Subjekt („Die Mailingliste hat diese Adresse nicht
+  angenommen.“), was wichtig ist: nicht Cmdr weist die Adresse ab.
+- **`typo` → `Tippfehler`** · der Katalog selbst (`licensing.error.badSignatureHint` „Prüfe ihn bitte auf Tippfehler
+  …“) · high.
+- **`signup` → `Anmeldung`, `signup server` → `Anmeldeserver`** · der Katalog (`onboarding.stepBeta.signup.failure` „die
+  Anmeldung hat gerade nicht geklappt“) · high.
+- **Die macOS-Berechtigung `Local Network` → `Lokales Netzwerk`** · `SecurityPrivacyExtension.appex`
+  `Localizable.loctable`, Schlüssel `LOCAL_NETWORK`, und `AppSystemSettingsUI.framework` `Local Network`
+  (`plutil -convert json`, live macOS 26.6.2, Build 25G83, 2026-09-09) · high. Abgrenzung: die Nachbarzeile
+  `stepOptional.networking.desc` beschreibt den DIALOG („bittet dich um Erlaubnis für „Zugriff auf das lokale
+  Netzwerk““) und darf das ruhig ausformulieren; das Kurzfazit nennt die Berechtigung so, wie sie in den
+  Systemeinstellungen steht.
+- **`space` (Plattenplatz in einer Zeile, die nicht umbrechen darf) → `Platz`** · Finder `de` („Kein Platz mehr“, „Das
+  Objekt „^0“ kann nicht kopiert werden, da nicht genügend freier Platz zur Verfügung steht.“) · high. `Speicherplatz`
+  bleibt die Langform für Fließtext (macOS nutzt beide); in `stepOptional.indexing.summary` und
+  `stepAi.local.tooltip` kostet die Langform zu viel Breite.
+- **`More about X` (der Info-Punkt neben einem Label) → `Mehr über {topic}`** · macOS `de` nutzt die knappe
+  `Mehr …`-Form („Mehr Infos …“ = Learn More…, „Mehr anzeigen“) · high. Ohne Artikel, weil `{topic}` ein schon
+  übersetztes Label trägt, dessen Genus der Katalog nicht kennt; `über` regiert den Akkusativ, der im Singular
+  unmarkiert ist, also bleibt jeder Einschub grammatisch.
+- **Der Einstellungspfad → `Einstellungen › Updates & Datenschutz`** · die beiden Hälften kommen aus
+  `settings.section.updatesAndPrivacy`; das `›` bleibt wie im Englischen und wie in
+  `askCmdr.error.notConfigured` („Einstellungen › KI“) · high.
+
+Formulierungsentscheidungen in diesem Set:
+
+- **Die vier Kurzfazits bleiben untereinander parallel und verbinitial**: `Braucht einmal die Berechtigung …`,
+  `Braucht 1 GB Platz, …`, `Eine winzige Anfrage …`, `Verbindet Android-Handys …`. Sie stehen als eine Zeile neben
+  einem Schalter und dürfen nicht umbrechen, also fällt jedes Füllwort weg, das die lange Fassung im Geschwister-`desc`
+  schon trägt.
+- **Jedes Kurzfazit erbt die Wörter seines `…desc`.** `Vorgang`/`Prozess` für den macOS-MTP-Dienst, `und Ähnliches` für
+  „and the such“ (der `desc` sagt „und Ähnlichem“, hier steht der Akkusativ), `winzige Anfrage` für „tiny check“,
+  `Ordnergrößen` wie `settings.section.fileAndFolderSizes`.
+- **`<field></field>` steht zwischen Objekt und Verbzusatz.** Das leere Tag ist ein Eingabefeld mitten im Satz, also
+  braucht der Satz eine Stelle, an der ein Kasten natürlich sitzt: `Gib deine E-Mail-Adresse <field></field> ein, um …`.
+  Ein trennbares Verb liefert die Stelle gratis; ein Satz mit dem Verb am Anfang würde den Kasten ans Ende drängen.
+  `eingeben` ist Apples Wort für Tastatureingabe (`style.md`), nicht `tippen`.
+- **`stepTooltip` behält das wörtliche `+1`**, weil genau das die Aussage ist („drei Pflichtschritte und ein
+  optionaler“). Die `select`-Zweige sind Satzanhängsel und beginnen deshalb mit Komma: `, es folgt noch ein optionaler
+  Schritt` / `, das ist der letzte, optionale Schritt`. Der Rahmen kommt aus dem Geschwister `wizard.stepProgress`
+  („Schritt {step} von {total}“).
+- **`dumber` bleibt `dümmer`.** Das Englische wählt das grobe Wort bewusst; eine Abmilderung („weniger leistungsfähig“)
+  wäre eine andere Aussage als die, die David trifft.
+- **Der `<strong>`-Block in `stepAi.local.tooltip` muss `stepAi.cloud.label` zeichengleich zitieren**
+  (`Ja, ich will KI`). Wird das Label umformuliert, muss der Tooltip mit.
+- **`{nextLabel}` steht in deutschen Anführungszeichen** („{nextLabel}“), wie jeder andere zitierte Tastentext im
+  Katalog (`onboarding.stepFda.step2.tip` „die Taste „+““).

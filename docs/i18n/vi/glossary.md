@@ -2810,3 +2810,86 @@ dùng từ của macOS thắng (style.md § bề mặt hệ thống).
   tắc với `main.dockPinNudge.body` (“được vài ngày rồi”) · `high`.
 - **Thông báo lần đầu ❌ không phải lời xin lỗi** · Nó nói vừa xảy ra chuyện gì, vì sao, và công tắc nằm ở đâu. Vì thế
   `Cmdr được đặt để nhận những lệnh này`, ❌ không dùng “xin lỗi” · `high`.
+## Viết lại phần thiết lập ban đầu: bảng kiểm, chú giải bước, tóm tắt tùy chọn (23 khóa `onboarding.*`, 2026-09-09)
+
+Bề mặt: bốn bước của trình thiết lập ban đầu. Mới hoàn toàn là chú giải hàng chấm tiến độ, nhãn trợ năng của biểu tượng
+chữ i, chú giải mô hình cục bộ, cảnh báo thiếu khóa API, cả bảng kiểm bốn dòng ở bước 3 (sao GitHub, Like trên
+AlternativeTo, ô email), hai câu hỏng của việc đăng ký, và bốn dòng tóm tắt một dòng ở bước 4. Viết lại: `stepFda.ifAllow`,
+`stepAi.cloud.help`, `stepAi.local.label`, `stepBeta.openBeta`.
+
+Nguồn: kho tham chiếu `_ignored/i18n/vi/` (macOS Finder/AppKit/SystemSettings, MS terminology `VIETNAMESE.tbx`, GNOME
+Nautilus, Xfce Thunar, KDE Dolphin, Total Commander) cộng bằng chứng Tier 1 đọc thẳng từ macOS 26.6.2 (build 25G83) đang
+cài, quét toàn bộ `*.loctable` theo công thức trong `docs/i18n/reference-pile/how-to-mine.md`, ngày 2026-09-09.
+
+### Thuật ngữ chốt trong đợt này
+
+- **Why? → `Tại sao?`** · Tier 1, `PhotosUICore.framework/Resources/*.loctable`, khóa tiếng Anh `Why?` → `Tại sao?`,
+  macOS 26.6.2 build 25G83, quét live-bundle 2026-09-09 · `high`. Kho tham chiếu không có chuỗi nào; chỉ bản quét trực
+  tiếp mới tìm ra.
+- **Learn more / More about → `Tìm hiểu thêm`** · Finder `LocalizableMerged` khóa `NE115` (`Learn More`) và ba
+  `.loctable` khác của hệ thống đều nhất trí · `high`. `onboarding.moreAbout` viết `Tìm hiểu thêm về {topic}`; `{topic}`
+  là một nhãn ĐÃ DỊCH, và tiếng Việt không biến hình nên nhãn giữ nguyên từng chữ sau `về` (đúng luật WCAG 2.5.3 dù khóa
+  này không thuộc cặp `*Aria`). ❌ Không lấy `Thông tin khác` (macOS dùng cho "More Info", một nút mở panel chi tiết).
+- **Save (nút) → `Lưu`** · macOS AppKit + `ActionKit.framework` + `PhotosUICore` (`SAVE` → `LƯU`), và Total Commander vi
+  cũng `Lưu` · `high`. Ba khóa phải khớp: nút `checklist.emailSave` và hai câu `signup.rejected` / `signup.unreachable`
+  nhắc lại tên nút đó.
+- **Email address → `địa chỉ email`** · Tier 1, `AddressBookCore.framework` (`Email address` → `Địa chỉ email`) và
+  AppKit `TextFinder` (`Email Address` → `Địa chỉ Email`) · `high`. Cmdr viết thường theo luật sentence case; catalog đã
+  dùng `email` làm từ mượn ở `settings.updates.attachEmailToReports.*` và `onboarding.stepBeta.emailNote`.
+- **star (động từ, của GitHub) → `gắn sao`; a star (danh từ) → `sao`** · GitHub KHÔNG có giao diện tiếng Việt (danh sách
+  ngôn ngữ của GitHub chỉ có en, zh-CN, zh-TW, fr, de, ja, ko, pt-BR, ru, es), nên không có "chữ của chính GitHub" để
+  lấy. Chốt theo hai đường: (1) catalog đã ship `onboarding.stepBeta.star` = `gắn sao cho repo … Ngay khi đạt 225 sao`;
+  (2) GNOME Nautilus vi dịch chính khái niệm này là `Sao` / `đánh sao` (`Star` → `Sao`, `starred` → `đã đánh sao`), tức
+  cùng một gốc từ `sao` · `high` (thống nhất catalog + gốc từ chung). Ghi lại biến thể `đánh sao` của Nautilus; ❌ đừng
+  đổi sang nó, hai khóa mới phải đọc y như câu đã ship.
+- **repo → `repo`, giữ nguyên** · catalog đã giữ từ mượn ở khắp `errors.git.*` (`Không có git repo ở đây`,
+  `Repo này trông như đã hỏng`) và ở `onboarding.stepBeta.star` · `high`. MS terminology dịch `repository` là
+  `kho lưu trữ`, nhưng tiếng Anh của Cmdr viết tắt "repo" và người dùng Việt trong giới lập trình cũng nói "repo"; chỉ
+  dùng `kho` khi tiếng Anh viết đủ chữ "repository" (`settings.fileExplorer.git.showRepoChip.*` = `Huy hiệu kho`).
+- **Like (nút của một trang web) → `Thích`** · không nguồn Tier 1 nào có nhãn này (AlternativeTo cũng chỉ có tiếng Anh),
+  nhưng catalog đã ship gốc từ ở `fileExplorer.doubleClickHint.iLikeIt` (`Tôi thích`) và
+  `fileExplorer.doubleClickHint.dontLikeIt` (`Không thích à?`), và `Thích` là chữ mọi mạng xã hội tiếng Việt dùng cho
+  nút này · `high`.
+- **checklist → `danh sách kiểm tra`** · MS terminology, hai mục Office/Kaizala đều `Danh sách kiểm tra` · `high`. Bản
+  quét macOS live có một bundle để nguyên `Checklist`, nhưng đó là tên mẫu trong Reminders, không phải thuật ngữ chung.
+- **mailing list → `danh sách gửi thư`** · MS terminology (`mailing list` → `danh sách gửi thư`, định nghĩa "A list of
+  names and email addresses…") · `high`.
+- **Local Network (tên quyền của macOS) → `Mạng cục bộ`; câu văn xuôi → `Truy cập mạng cục bộ`** · Tier 1, ba bundle
+  nhất trí (`AppSystemSettingsUI.framework` và hai `.loctable` khác, khóa `Local Network` / `LOCAL_NETWORK`), cùng
+  `TCC.framework` (`…devices on your local network` → `…thiết bị trên mạng cục bộ của bạn`), macOS 26.6.2 build 25G83,
+  2026-09-09 · `high`. `networking.summary` dùng lại y nguyên chữ của khóa anh em `networking.desc`.
+- **native (của hệ điều hành) → `gốc`** · `style.md` § Notes đã chốt `menu gốc` cho native menu; `mtp.summary` viết
+  `trình xử lý gốc của macOS` · `high`.
+- **warning → `cảnh báo`** · Xfce Thunar và KDE Dolphin đều `Cảnh báo` · `high`.
+
+### Ghi chú theo chuỗi
+
+- **Chú giải hàng chấm lấy đúng khuôn của `wizard.stepProgress`.** `Bước {step} trên {mandatory}+1`; `+1` là chữ đen
+  đúng nghĩa, ❌ đừng gộp thành `4`. Ba nhánh `select` giữ nguyên tên nhánh (`remaining` / `last` / `other`), nhánh
+  `other` để rỗng. `vi` chỉ có phạm trù số `other`, nhưng đây là `select`, không phải `plural`, nên tên nhánh không đổi.
+- **`stepAi.local.tooltip` phải nhắc lại nhãn của lựa chọn đám mây từng chữ.** `<strong>Có, tôi muốn AI</strong>` chính
+  là `stepAi.cloud.label`; sửa một cái là phải sửa cái kia. Ba dòng `\n` là ba câu, giữ đúng một câu một dòng.
+- **"dumber" dịch nhẹ đi một nấc: `kém thông minh hơn hẳn`.** Tiếng Anh cố ý nói thẳng ("dumber"); `dốt hơn` trong tiếng
+  Việt là chữ dành cho NGƯỜI và đọc như xúc phạm, nên chọn cụm mô tả năng lực. Giọng thành thật vẫn còn, chỉ bớt phần
+  thô.
+- **`<field></field>` là một cái ô nằm GIỮA câu.** Tiếng Việt đặt tân ngữ sau động từ y như tiếng Anh, nên ô ở đúng chỗ
+  cũ: `Nhập địa chỉ email của bạn <field></field> để nhận…`. Lời hứa "rất hiếm khi" dời ra cuối câu
+  (`, rất thi thoảng thôi`) cho tự nhiên; `thi thoảng` là chữ khóa anh em `stepBeta.emailNote` đã dùng.
+- **`checklist.emailMark` là tên trợ năng của một dấu tích trạng thái, nên viết ở dạng `Đã + động từ`**:
+  `Đã lưu địa chỉ email`, cùng khuôn với `errorReporter.autoSentToast.title` (`Đã gửi báo cáo trục trặc`).
+- **Hai câu hỏng của việc đăng ký theo đúng hai luật đã có.** "Reach" một MÁY CHỦ là `không kết nối được tới`
+  (`style.md` § "Reach" có hai lối), và "at any time" là `bất cứ lúc nào`. Đường dẫn cài đặt lấy nguyên chữ của
+  `settings.section.updatesAndPrivacy`: `Cài đặt › Cập nhật & quyền riêng tư`, giữ ký tự `›`.
+- **Bốn dòng tóm tắt ở bước 4 phải NGẮN và không được xuống dòng**, đồng thời dùng lại thuật ngữ của khóa `…desc` anh
+  em: `kích cỡ thư mục`, `khởi động ứng dụng`, `Truy cập mạng cục bộ`, `điện thoại Android`. Nhớ luật
+  **show → `hiển thị`, không phải `hiện`** ở `indexing.summary`.
+- **`stepFda.ifAllow` đổi hẳn nghĩa**: tiếng Anh từ "If you decide to allow:" thành "Three easy steps:", nên bản cũ
+  `Nếu bạn quyết định cho phép:` sai hẳn. Nay là `Ba bước đơn giản:`, đứng ngay trên ba khóa `stepFda.step1..3`.
+- **`stepBeta.openBeta` và `stepBeta.feedbackIntro` cố ý khác một động từ.** Tiếng Anh: "helps me fix bugs" so với
+  "helps me spot bugs". Tiếng Việt giữ đúng khoảng cách đó: `giúp mình sửa lỗi` so với `giúp mình phát hiện lỗi`. ❌
+  Đừng gộp hai câu làm một.
+- **Giọng ngôi thứ nhất của David là `mình`** ở cả bước 3 (`stepBeta.greeting`, `.feedback.call`, `.star`), nên câu mới
+  trong `openBeta` cũng viết `mình`, không phải `tôi`. `tôi` chỉ dùng khi NGƯỜI DÙNG là người nói (`stepAi.*.label`).
+- **Dấu nháy kép: theo khóa anh em trong cùng tệp, tức nháy thẳng `"`.** `style.md` khuyên nháy cong `“…”` cho văn xuôi
+  nói chung, nhưng cả `onboarding.json` (`stepFda.step2.tip`, `networking.desc`, `stepAi.table.*`) đã dùng nháy thẳng
+  theo đúng bản tiếng Anh; hai khóa mới (`alternativeToNote`, `networking.summary`) theo tệp, không theo luật chung.

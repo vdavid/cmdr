@@ -294,6 +294,18 @@ second half is now a normal plural with a real verb
 - **De map Applications heet in het Nederlandse macOS `Apps`, niet `Programma's`.** Finder gebruikt `Apps` in de
   navigatiekolom, het Ga-menu en de knopbaltip `Ga naar de map ‘Apps’`; `Programma's` leeft alleen nog in
   `Hulpprogramma's`. Schrijf `de map ‘Apps’`, met de enkele krulaanhalingstekens die deze gids voorschrijft.
+- **Een Engelstalig platform levert geen Nederlands, dus het werkwoord wordt Nederlands en het woord blijft Engels.**
+  GitHub stopte zijn meertalige interface op 2016-11-18 en AlternativeTo is alleen Engels, dus de knoppen die de
+  gebruiker daar aanklikt heten `Star` en `Like`. Cmdr schrijft `Geef de repo een star op GitHub` en
+  `Geef Cmdr een like op AlternativeTo`: het leenwoord blijft, het Nederlands draagt alleen het werkwoord. Zoek dus
+  eerst uit óf het platform je taal spreekt, voordat je "gebruik de term van het platform" toepast. Bewijs:
+  `glossary.md` § De onboarding-herschrijving.
+- **Een `…summary`-regel naast een schakelaar mag niet omlopen**, dus die erft de terminologie van zijn lange
+  `…desc`-buur maar niet diens zinsbouw: benoem in telegramstijl de kosten en de baten, en houd de regel rond de lengte
+  van het Engels. Wordt het langer, snoei dan een bijwoord of een lidwoord weg, nooit een van de feiten.
+- **Een leeg inline-vakje (`<field></field>`) hoort achter het scheidbare partikel**, niet ertussenin:
+  `Vul je e-mailadres in <field></field> om …`. Het partikel hoort bij zijn werkwoord; het vakje komt daarna, op
+  dezelfde plek als in het Engels.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -313,6 +325,13 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   FLAGS). Confirm the tone lands, and that seven distinct verbs read as a coherent family rather than ad hoc.
 - **unarchive → "Uit archief halen"**: no single natural Dutch imperative verb for "unarchive" the way "Archiveer" works
   for "archive". Confirm this multi-word button reads fine next to its short siblings.
+- **`Onboardingchecklist` aaneen** (`onboarding.stepBeta.checklist.title`): orthografisch correct en in lijn met
+  `onboardingopties`, maar 19 letters. Bevestig tegenover `Onboarding-checklist`.
+- **`de inschrijfserver` en `mailinglijst`** (`onboarding.stepBeta.signup.unreachable` / `.rejected`): de eerste is
+  gemunt, de tweede wijkt bewust af van Microsofts `adressenlijst` (dat een ander begrip benoemt). Bewijs:
+  `glossary.md` § De onboarding-herschrijving.
+- **`de macOS-afhandeling` voor `native handler`** (`onboarding.stepOptional.mtp.summary`): gemunt en gekozen op lengte,
+  want de regel mag niet omlopen. Alternatief `het eigen macOS-proces` is langer en `eigen` leest dubbelzinnig.
 - **"Ask Cmdr model" → "Ask Cmdr-model"**: hyphenating after a two-word English brand name is a judgment call (no exact
   pile precedent for a multi-word brand + suffix). Confirm it doesn't read as awkward.
 - **rename as a NOUN → "naamwijziging"** (with the compound "naamwijzigingsplan"), sourced from Microsoft's

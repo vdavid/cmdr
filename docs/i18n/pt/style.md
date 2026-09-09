@@ -275,6 +275,24 @@ Two mechanics that bite in Portuguese specifically:
   espaço antes, ordem núcleo → qualificador. Quando a chave só junta dois nomes vindos do disco, não invente `em` nem
   inverta a ordem; registre o `sameAsSourceJustification`. Evidência: `glossary.md` § O menu do ícone do Cmdr no Dock.
 
+- **O botão e o contador de "star" do GitHub NÃO usam a mesma palavra em pt-BR, e está certo assim.** O botão é
+  `Adicionar aos favoritos` (é como o próprio GitHub em português chama) e a contagem é `estrelas`. Uma linha de link
+  nomeia o botão que a pessoa vai procurar; a nota abaixo nomeia o número que ela vai ver. Evidência e as duas fontes:
+  `glossary.md` § Termos da reescrita da introdução.
+- **`step` é `etapa` na introdução inteira**, tanto a etapa do assistente quanto a etapa numerada de instrução. Nunca
+  `passo`: o catálogo já fechou `etapa` e uma tela que alterna as duas palavras lê como dois conceitos.
+- **Um resumo de meia linha ao lado de um interruptor tem o INTERRUPTOR como sujeito, e não pode quebrar linha.** Os
+  quatro `onboarding.stepOptional.*.summary` são orações sem sujeito na mesma forma (`Precisa aceitar…`, `Ocupa 1 GB…`,
+  `Permite conectar…`), o que dispensa o `você` que a § Variant cobra em frases de RESULTADO e também evita qualquer
+  concordância de gênero com a pessoa. Como o espaço é de uma linha, cada valor ficou igual ou mais curto que o inglês:
+  vale deixar implícito o que a legenda longa atrás do glifo já diz. Evidência: `glossary.md` § Termos da reescrita da
+  introdução.
+- **Um resumo curto não troca a palavra da legenda longa que está atrás do glifo de informação.** É a mesma regra da
+  legenda de configuração acima, um nível abaixo: `native handler` saiu como `processo nativo do macOS` porque o
+  `stepOptional.mtp.desc` já dizia `esse processo do macOS`, e não como o `manipulador` da Microsoft.
+- **`Por quê?` isolado leva circunflexo**; o `Por que` átono do meio da frase (`Por que este nome`) não. As duas formas
+  convivem no catálogo e são as duas corretas.
+
 ## Decisions to confirm with David
 
 - **`uma chave` sem `SSH`** em `servers.paneState.signedOutNothingToAsk`: no mesmo painel, `chave` já é a chave DO HOST

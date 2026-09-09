@@ -361,8 +361,7 @@ REVIEW FLAGS (onboarding/fileOperations pass):
 - "Quit & Reopen" (`onboarding.stepFda.step3`): macOS shows this exact button when relaunching for FDA. Not in the mined
   pile (no `<tag>/macOS` string captured); rendered as "Stop en open opnieuw", the standard macOS-NL FDA button label.
   Confirm against a live Dutch macOS.
-- "super private" (`onboarding.stepAi.local.label`): rendered "supergeprivacyd" reads playful/informal to match the
-  casual EN ("super private"); a more neutral alternative is "extra privacy wil". Flagged as a tone/subjective call.
+- "super private" (`onboarding.stepAi.local.label`): opgelost naar `superprivé`, zie § De onboarding-herschrijving.
 - "Pro/Con" (`onboarding.stepFda.pro/con`): rendered "Voordeel/Nadeel" (full words) rather than loan "Pro/Con", which
   reads cleaner in Dutch.
 
@@ -3139,3 +3138,115 @@ opdrachten, dus de macOS-terminologie wint (style.md § systeemoppervlakken).
   regel als `main.dockPinNudge.body` (‘een paar dagen’) · `high`.
 - **De melding bij de eerste keer is ❌ geen excuus** · Ze zegt wat er net gebeurde, waarom, en waar de schakelaar
   staat. Vandaar `Cmdr staat ingesteld om deze op te vangen`, ❌ nooit ‘sorry’ · `high`.
+## De onboarding-herschrijving: de checklist, de stapteller en de vier verdictregels (2026-09-09)
+
+23 sleutels uit `onboarding.json`: stap 1 en het wizardframe, de AI-stap, de checklist van stap 3, de vier
+samenvattingen van stap 4, plus vier sleutels waarvan het Engels herschreven werd. Gemijnd in
+`_ignored/i18n/nl/` (macOS, Microsoft-terminologie, de vijf bestandsbeheerders) en, waar de stapel zwijgt, in de live
+macOS-bundels (macOS 26.6.2, build 25G83, gelezen 2026-09-09).
+
+### GitHub en AlternativeTo: `star` en `like` blijven Engels, maar krijgen een Nederlands werkwoord
+
+- **star (een repository markeren op GitHub) → `star` (zelfstandig naamwoord), knoptekst `Geef de repo een star`** ·
+  Microsoft-terminologie `DUTCH.tbx`, precies deze betekenis ("A bookmark or display of appreciation for a repository.
+  Stars are a manual way to rank the popularity of projects."), NLD + BEL, Nederlandse term = `star` (onvertaald) ·
+  `high`. GitHub zelf levert geen Nederlands: de meertalige interface is op 2016-11-18 stopgezet, dus een Nederlandse
+  gebruiker ziet letterlijk de knop `Star`. Daarom blijft het woord staan en draagt het Nederlands alleen het
+  werkwoord. ❌ Niet `ster` (dat is in `DUTCH.tbx` de beoordelings-ster) en niet `favoriet` (dat is de
+  browser-bladwijzer). Meervoud `stars`, zoals in `checklist.starNote`.
+- **like (een upvote op AlternativeTo) → `like` (zelfstandig naamwoord), knoptekst `Geef Cmdr een like`** ·
+  AlternativeTo is een Engelstalige site, dus de knop die de gebruiker aanklikt heet `Like`; het Nederlandse
+  `een like geven` is standaardtaal. Microsoft geeft voor de sociale betekenis `vind ik leuk` / `leuk vinden`
+  (`DUTCH.tbx`), maar dat is Facebooks Nederlandse knop en die staat hier niet op het scherm · `high`
+- **De twee rijen delen bewust één vorm**, `Geef <object> een <leenwoord> op <site>`. Wie er één herschrijft,
+  herschrijft ze allebei: naast elkaar in dezelfde checklist leest een afwijkende tweede rij als een andere handeling.
+
+### De checklist zelf
+
+- **checklist → `checklist`** · Van Dale-leenwoord, ingeburgerd in Nederlandse interfaces. Microsoft zegt
+  `controlelijst` (`DUTCH.tbx`), maar dat is de Planner/Kaizala-functie en klinkt naar inspectie, niet naar de vier
+  kleine gunsten die deze lijst vraagt · `high`
+- **`Onboardingchecklist`, aaneen** · `onboarding` blijft een leenwoord (zie boven) en de catalogus schrijft zulke
+  samenstellingen al aaneen (`onboardingopties`). Lang woord, maar het is de correcte spelling; een streepje zou van de
+  `onboardingopties`-lijn afwijken.
+- **each takes 30 seconds → `elk punt kost 30 seconden`** · het Engelse `each` heeft geen antecedent dat het Nederlands
+  kan overnemen, dus `punt` benoemt waar het over gaat · `high`
+- **Save (de knop naast het e-mailveld) → `Bewaar`** · macOS AppKit (`Save` → `Bewaar`), stam-imperatief per de
+  knopregel in `style.md` · `high`. De twee foutregels eronder noemen de knop met de enkele krulaanhalingstekens
+  (`op ‘Bewaar’`), zodat de gebruiker het label letterlijk terugvindt.
+- **Email address saved (de toegankelijke naam van het vinkje) → `E-mailadres bewaard`** · `e-mailadres` uit macOS
+  (`Email Address` → `E-mailadres`) en Microsoft (`DUTCH.tbx`); een kort deelwoordelijk naamwoordgroepje, want de rij
+  is een voortgangsmarkering, geen bedienbare knop · `high`
+- **`<field></field>` staat achter het scheidbare partikel**: `Vul je e-mailadres in <field></field> om …`. Het vakje
+  komt zo op dezelfde plek als in het Engels en de zin loopt door over het invoerveld heen. ❌ Zet het niet vóór `in`:
+  dan valt het partikel van zijn werkwoord los.
+
+### De twee inschrijfmeldingen
+
+- **mailing list → `mailinglijst`** · standaardtaal (Van Dale) en de gangbare term voor een lijst waar je je zelf voor
+  inschrijft. Microsofts `adressenlijst` (`DUTCH.tbx`) benoemt een ánder begrip, een distributielijst die een beheerder
+  samenstelt, dus die term is hier niet van toepassing (mijngotcha 2) · `tentative`
+- **signup server → `de inschrijfserver`** · gemunte samenstelling op het werkwoord dat de broer of zus
+  `onboarding.stepBeta.signup.failure` al gebruikt (`Sorry, het inschrijven lukte nu niet`); `inschrijf-` is een normale
+  Nederlandse samenstellingsstam (vgl. `inschrijfformulier`). Microsoft geeft `registreren` voor `sign up` en
+  `aanmelden` voor `subscribe`, maar de catalogus heeft zijn eigen woord al gekozen en consistentie binnen het paneel
+  weegt zwaarder · `tentative`
+- **typo → `typefout`** · al in de catalogus (`licensing.error.badSignatureHint` "Controleer op typefouten") · `high`.
+  De regel "geen `fout` als kaal label" gaat over foutmeldingen; `typefout` is de gewone naam van het ding.
+- **Settings › Updates & privacy → `Instellingen › Updates en privacy`** · beide helften uit de catalogus zelf
+  (`settings.section.updatesAndPrivacy` = `Updates en privacy`), en `›` blijft staan zoals in
+  `settings.askCmdr.provider.shared` · `high`
+
+### De vier verdictregels van stap 4
+
+Elke regel staat naast een schakelaar en mag niet omlopen, dus ze blijven kort en volgen de terminologie van hun lange
+`…desc`-tegenhanger.
+
+- **"Local network access" → `‘Lokale netwerktoegang’`** · byte-identiek aan wat `stepOptional.networking.desc` al
+  zegt · `high`. Apples eigen paneelrij heet `Lokaal netwerk` (live `Security.prefPane`
+  `Localizable.loctable`, `LOCAL_NETWORK`, gelezen 2026-09-09), maar het Engels citeert de toestemmingsvraag, niet de
+  paneelnaam, en de tooltip ernaast draagt de langere vorm al. Grens: wie ooit naar de **paneelrij** in
+  Systeeminstellingen verwijst, schrijft `Lokaal netwerk`.
+- **folder sizes → `mapgroottes`** · al overal in de catalogus (`settings.indexing.enabled.description`,
+  `indexing.step.findFilesChangeCheck`, `settings.section.fileAndFolderSizes`) · `high`
+- **native handler (het macOS-proces dat MTP-apparaten inpikt) → `de macOS-afhandeling`** · `stepOptional.mtp.desc`
+  noemt het `dat macOS-proces`; `afhandeling` vangt `handler` in één woord en houdt de regel even lang als het Engels ·
+  `tentative`
+- **one tiny check → `één piepkleine controle`** · `piepklein` staat al in `stepOptional.updates.desc`
+  ("piepklein netwerkverzoek") · `high`
+
+### De vier herschreven sleutels
+
+- **`stepFda.ifAllow`**: "Three easy steps:" → `Drie eenvoudige stappen:`. Het Engels trivialiseert hier ("easy"), wat
+  tegen `docs/style-guide.md` in gaat; de vertaling volgt de bron en de opmerking gaat naar boven, niet in de string.
+- **`stepAi.cloud.help`**: `aangepast` voor `custom` komt uit macOS (`Custom` → `Aangepast`, glossarium hierboven);
+  `ollama` en `LLM` blijven staan; `Configure it below` → `Stel het hieronder in`, met het partikel achteraan.
+- **`stepAi.local.label`**: "super private" → **`superprivé`**, ter vervanging van het eerder geplaatste
+  `supergeprivacyd`. `privé` is het gewone Nederlandse woord en `super-` is een normaal versterkend voorvoegsel dat
+  aaneen geschreven wordt (`supersnel`); het gemunte `supergeprivacyd` stond als REVIEW FLAG in de
+  onboarding/fileOperations-ronde en is hiermee opgelost · `high`. `simple local model` → `een eenvoudig lokaal model`:
+  `eenvoudig` beschrijft hier het model, niet hoe makkelijk de gebruiker het heeft, dus de "geen simpel/makkelijk"-regel
+  geldt niet.
+- **`stepBeta.openBeta`**: de nieuwe slotzin herhaalt bijna letterlijk de broer of zus
+  `onboarding.stepBeta.feedbackIntro` ("spot bugs" tegenover "fix bugs"), dus de vertaling spiegelt die zin exact en
+  wisselt alleen het werkwoord: `Jouw feedback helpt me bugs op te lossen en functies te prioriteren.` Wie er één
+  herschrijft, moet de andere meenemen. `<alpha></alpha>-badges` houdt het streepje uit de al verzonden waarde, en
+  `de meest in-ontwikkeling-zijnde gebieden` is vervangen door `de delen die het meest in ontwikkeling zijn`, dat het
+  woord `delen` uit de eerste zin hergebruikt.
+
+### De stapteller met de `+1`
+
+- **`Stap {step} van {mandatory}+1`** · `onboarding.wizard.stepProgress` schrijft `Stap {step} van {total}` al zo, dus
+  de tooltip erft die vorm; de literale `+1` blijft staan, want dat is de hele pointe van de formulering · `high`
+- **optional → `optioneel` / `optionele`** · dezelfde sleutel `stepProgress` heeft `(optioneel)` al · `high`
+- De `select`-takken zijn hele bijzinnen (`, er is nog één optionele stap` / `, dit is de laatste, optionele stap`),
+  dus de komma van het Engels blijft binnen de tak staan.
+
+### REVIEW FLAGS (onboarding-herschrijving)
+
+- **`Onboardingchecklist`** is orthografisch correct maar 19 letters lang. Bevestig dat het leesbaar genoeg is naast het
+  streepjesalternatief `Onboarding-checklist`.
+- **`de inschrijfserver`** is gemunt; niets in de stapel benoemt de server achter een mailinglijst-inschrijving.
+- **`de macOS-afhandeling`** voor `native handler`: gemunt, gekozen op lengte. Alternatief was
+  `het eigen macOS-proces`, dat langer is en waarvan `eigen` dubbelzinnig leest.
+- **`mailinglijst`** wijkt af van Microsofts `adressenlijst`, met opzet (ander begrip). Bevestig de term.

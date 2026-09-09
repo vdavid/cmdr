@@ -317,6 +317,19 @@ strings are counted, so no plural branches are needed there.
   fija Finder (`MN1`) y lo mantiene el par `servers.paneState.connecting` / `.reconnecting`, que el usuario ve en el
   mismo panel. macOS reparte el prefijo `re-` entre `Conectando de nuevo…` y `Reconectando…`, así que la elección entre
   ellos la decide el paralelismo interno, no la fuente. Evidence: `glossary.md` § Las dos líneas nuevas del panel.
+- **Pulsar un botón es `hacer clic en`, no `pulsar`.** macOS `es` escribe `haz clic` 44 veces frente a 2 de `pulsa`
+  (grep sobre Finder + AppKit + SystemSettings, 2026-09-09), y el catálogo ya lo sigue
+  (`fileExplorer.breadcrumb.navigateTooltip`). Un inglés coloquial tipo «hit Save again» se traduce igual:
+  `vuelve a hacer clic en Guardar` (`onboarding.stepBeta.signup.rejected`).
+- **Un nombre de botón que llega por marcador (`{nextLabel}`) va entre comillas curvas.** Es una etiqueta que Cmdr pinta
+  en pantalla, así que cae del lado curvo de la frontera de comillas de más arriba, aunque el inglés use las rectas.
+  Worked example: `onboarding.stepAi.missingKeyWarning`. Un literal ajeno (el título `"Cmdr"` de una página de
+  AlternativeTo, el nombre `"Acceso a la red local"` de un diálogo de macOS) conserva las rectas del inglés.
+- **Un resumen de una línea junto a un interruptor no puede envolver, así que se recorta antes que alargarse.** Las
+  cuatro claves `onboarding.stepOptional.*.summary` son telegráficas en inglés y lo siguen siendo en español: verbo en
+  tercera persona, lista con comas, sin subordinadas («Ocupa 1 GB, acelera las búsquedas y muestra tamaños de
+  carpeta»). Toman la terminología de su clave hermana `…desc`, que es la versión larga que el usuario abre justo al
+  lado.
 - **`type` es `escribir`; `introducir` se reserva para las credenciales.** "nothing to type" →
   `no hay nada que escribir`, pero "type your username and password" sigue siendo `introduce tu usuario y contraseña`
   (`fileExplorer.network.*`). macOS hace el mismo reparto: `escribir` para el acto de teclear, `introducir` cuando el
@@ -345,6 +358,12 @@ strings are counted, so no plural branches are needed there.
   this Android SDK component, and Google's own Spanish string is "Herramientas de la plataforma del SDK de Android",
   which is too long for a settings row. The short form is in `settings.fileOperations.adbEnabled.description` and
   `settings.fileOperations.adbBinaryPath.description`; both would change together if you prefer the full Google wording.
+- **"your computer/machine" → "tu equipo", y dos claves de `settings.json` dicen otra cosa** (tentative): macOS `es`
+  escribe `ordenador` (43 apariciones frente a 1 de `equipo` en Finder + AppKit + SystemSettings, 2026-09-09), pero es
+  vocabulario solo de España y esta base es panregional, así que `onboarding.stepAi.local.tooltip` dice `tu equipo`
+  (la palabra de Microsoft, ya presente en `errors.json`). `settings.mediaIndex.privacyNote` y
+  `settings.ai.tooltipLocal` siguen diciendo `sale(n) de tu ordenador`. Es una sola palabra en tres sitios: decide cuál
+  gana y se unifican en una pasada.
 - **crash report → "informe de fallos"** (tentative): no single canonical source. "fallos" is the gentlest, most natural
   fit for Cmdr's non-alarmist voice; the more technical alternatives are "informe de bloqueos" (matches MS/macOS
   "bloqueo" for crash) or keeping it generic as "informe del problema". Confirm which reads best.

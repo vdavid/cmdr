@@ -11,11 +11,11 @@
   "@onboarding.wizard.stepProgress": {
     "sourceHash": "41705d0"
   },
-  "onboarding.moreAbout": "More about {topic}",
+  "onboarding.moreAbout": "En savoir plus sur {topic}",
   "@onboarding.moreAbout": {
     "sourceHash": "b4d183a"
   },
-  "onboarding.wizard.stepTooltip": "Step {step} of {mandatory}+1{note, select, remaining {, one optional step remains} last {, this is the last, optional step} other {}}",
+  "onboarding.wizard.stepTooltip": "Étape {step} sur {mandatory}+1{note, select, remaining {, il reste une étape facultative} last {, c''est la dernière étape, facultative} other {}}",
   "@onboarding.wizard.stepTooltip": {
     "sourceHash": "53f848a"
   },
@@ -91,7 +91,7 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.why": "Why?",
+  "onboarding.stepFda.why": "Pourquoi ?",
   "@onboarding.stepFda.why": {
     "sourceHash": "5d8a995"
   },
@@ -111,9 +111,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "Si vous décidez d''autoriser :",
+  "onboarding.stepFda.ifAllow": "Trois étapes faciles :",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "09c5053"
+    "sourceHash": "32358ef"
   },
   "onboarding.stepFda.openSettings": "Ouvrir {systemSettings}",
   "@onboarding.stepFda.openSettings": {
@@ -263,19 +263,19 @@
   "@onboarding.stepAi.cloud.recommended": {
     "sourceHash": "d70604e"
   },
-  "onboarding.stepAi.cloud.help": "Utilisez n''importe quel fournisseur cloud avec votre propre clé API. Des modèles rapides et de grande qualité. Choisissez un fournisseur ci-dessous.",
+  "onboarding.stepAi.cloud.help": "Utilisez n''importe quel fournisseur cloud avec votre propre clé d''API, ou votre propre ollama/LLM personnalisé. Configurez cela ci-dessous.",
   "@onboarding.stepAi.cloud.help": {
-    "sourceHash": "96f3940"
+    "sourceHash": "0841a0d"
   },
   "onboarding.stepAi.cloud.pickerTitle": "Sélectionner un fournisseur",
   "@onboarding.stepAi.cloud.pickerTitle": {
     "sourceHash": "71e2ca7"
   },
-  "onboarding.stepAi.local.label": "Oui, je veux l''IA, mais je tiens à une confidentialité maximale",
+  "onboarding.stepAi.local.label": "Oui, je veux l''IA, mais je la veux ultra confidentielle, avec un simple modèle local.",
   "@onboarding.stepAi.local.label": {
-    "sourceHash": "f371401"
+    "sourceHash": "2ee5605"
   },
-  "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that''s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
+  "onboarding.stepAi.local.tooltip": "Le modèle local est nettement plus bête que les modèles cloud, et il occupe environ 2 Go d''espace, plus un peu de RAM et de CPU à chaque utilisation.\nEn échange, aucune donnée ne quitte votre machine.\nCmdr s''efforce de livrer des mises à jour pour que vous puissiez utiliser le meilleur petit modèle disponible. Mais si vous voulez à la fois la confidentialité <em>et</em> un modèle correct, le mieux est de faire tourner votre propre serveur ollama et de le configurer avec l''option <strong>Oui, je veux l''IA</strong> ci-dessous.",
   "@onboarding.stepAi.local.tooltip": {
     "sourceHash": "c3fa36a"
   },
@@ -287,7 +287,7 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "dc194e8"
   },
-  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Please fix this above.\n\n<strong>Click \"{nextLabel}\" again to ignore this and go on.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "Vous avez activé l''IA mais vous n''avez pas saisi de clé d''API. L''IA ne fonctionnera pas et vous verrez un avertissement. Corrigez cela ci-dessus.\n\n<strong>Cliquez à nouveau sur « {nextLabel} » pour ignorer ceci et continuer.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
     "sourceHash": "3d66d11"
   },
@@ -315,39 +315,39 @@
   "@onboarding.stepBeta.greeting": {
     "sourceHash": "f7ade14"
   },
-  "onboarding.stepBeta.openBeta": "Cmdr est en bêta ouverte, ce qui signifie qu''il est globalement solide et utilisable, mais que certaines parties sont encore brutes. Repérez les badges <alpha></alpha> qui marquent les zones les plus en cours de développement.",
+  "onboarding.stepBeta.openBeta": "Cmdr est en bêta ouverte : il est globalement solide et utilisable, mais certaines parties sont encore brutes. Les badges <alpha></alpha> marquent les zones les plus en cours de développement. Vos retours m''aident à corriger les bugs et à prioriser les fonctionnalités.",
   "@onboarding.stepBeta.openBeta": {
-    "sourceHash": "5b0a107"
+    "sourceHash": "0dba196"
   },
-  "onboarding.stepBeta.checklist.title": "Onboarding checklist, each takes 30 seconds:",
+  "onboarding.stepBeta.checklist.title": "Liste de contrôle de la prise en main, 30 secondes par point :",
   "@onboarding.stepBeta.checklist.title": {
     "sourceHash": "6c0fc62"
   },
-  "onboarding.stepBeta.checklist.star": "Star the repo on GitHub",
+  "onboarding.stepBeta.checklist.star": "Ajouter une étoile au dépôt sur GitHub",
   "@onboarding.stepBeta.checklist.star": {
     "sourceHash": "c271317"
   },
-  "onboarding.stepBeta.checklist.starNote": "Homebrew needs Cmdr to have 225 stars to enable <code>brew install cmdr</code>",
+  "onboarding.stepBeta.checklist.starNote": "Homebrew exige que Cmdr ait 225 étoiles pour activer <code>brew install cmdr</code>",
   "@onboarding.stepBeta.checklist.starNote": {
     "sourceHash": "6553ce2"
   },
-  "onboarding.stepBeta.checklist.alternativeTo": "Like Cmdr on AlternativeTo",
+  "onboarding.stepBeta.checklist.alternativeTo": "Aimer Cmdr sur AlternativeTo",
   "@onboarding.stepBeta.checklist.alternativeTo": {
     "sourceHash": "c9b1e1e"
   },
-  "onboarding.stepBeta.checklist.alternativeToNote": "At the very top of the page, next to the \"Cmdr\" title. This helps people and Google notice Cmdr!",
+  "onboarding.stepBeta.checklist.alternativeToNote": "Tout en haut de la page, à côté du titre « Cmdr ». Ça aide les gens et Google à remarquer Cmdr !",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
     "sourceHash": "ea4903a"
   },
-  "onboarding.stepBeta.checklist.email": "Enter your email address <field></field> to get very occasional updates and questions",
+  "onboarding.stepBeta.checklist.email": "Saisissez votre adresse e-mail <field></field> pour recevoir, très occasionnellement, des nouvelles et des questions",
   "@onboarding.stepBeta.checklist.email": {
     "sourceHash": "e53bd44"
   },
-  "onboarding.stepBeta.checklist.emailSave": "Save",
+  "onboarding.stepBeta.checklist.emailSave": "Enregistrer",
   "@onboarding.stepBeta.checklist.emailSave": {
     "sourceHash": "1509f56"
   },
-  "onboarding.stepBeta.checklist.emailMark": "Email address saved",
+  "onboarding.stepBeta.checklist.emailMark": "Adresse e-mail enregistrée",
   "@onboarding.stepBeta.checklist.emailMark": {
     "sourceHash": "1bf8647"
   },
@@ -411,11 +411,11 @@
   "@onboarding.stepBeta.signup.failure": {
     "sourceHash": "0aac3a9"
   },
-  "onboarding.stepBeta.signup.rejected": "The mailing list didn''t accept that address. Worth a look for a typo, then hit Save again.",
+  "onboarding.stepBeta.signup.rejected": "La liste de diffusion n''a pas accepté cette adresse. Vérifiez qu''il n''y a pas de faute de frappe, puis cliquez à nouveau sur Enregistrer.",
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "05ccee5"
   },
-  "onboarding.stepBeta.signup.unreachable": "Couldn''t reach the signup server just now, so you''re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+  "onboarding.stepBeta.signup.unreachable": "Impossible de joindre le serveur d''inscription pour l''instant, vous n''êtes donc pas encore sur la liste. Votre adresse est enregistrée sur ce Mac : cliquez à nouveau sur Enregistrer dans une minute, ou à tout moment depuis Réglages › Mises à jour et confidentialité.",
   "@onboarding.stepBeta.signup.unreachable": {
     "sourceHash": "8036aad"
   },
@@ -463,7 +463,7 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Needs accepting \"Local network access\" once",
+  "onboarding.stepOptional.networking.summary": "Demande d''accepter une fois l''« accès au réseau local »",
   "@onboarding.stepOptional.networking.summary": {
     "sourceHash": "84f3716"
   },
@@ -475,7 +475,7 @@
   "@onboarding.stepOptional.indexing.title": {
     "sourceHash": "38d916b"
   },
-  "onboarding.stepOptional.indexing.summary": "Takes 1 GB space, speeds up searches, shows folder sizes",
+  "onboarding.stepOptional.indexing.summary": "Prend 1 Go, accélère les recherches, affiche les tailles de dossiers",
   "@onboarding.stepOptional.indexing.summary": {
     "sourceHash": "6413c6f"
   },
@@ -499,7 +499,7 @@
   "@onboarding.stepOptional.updates.title": {
     "sourceHash": "147b1b6"
   },
-  "onboarding.stepOptional.updates.summary": "One tiny check at app start and once a day, so you stay on the latest version",
+  "onboarding.stepOptional.updates.summary": "Une toute petite vérification au démarrage et une fois par jour, pour rester à jour",
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
@@ -511,11 +511,11 @@
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "Lets you connect Android phones and the such, suppresses macOS native handler",
+  "onboarding.stepOptional.mtp.summary": "Permet de connecter des téléphones Android et autres, suspend le processus macOS natif",
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "Si vous activez ceci, Cmdr peut <strong>se connecter aux téléphones Android, Kindles, appareils photo</strong>, à certains lecteurs de musique, et à tout autre appareil prenant en charge les protocoles appelés MTP ou PTP.\nLe coût, c''est que macOS veut <em>lui aussi</em> se connecter à ces appareils (et il échoue généralement, c''est pourquoi vous ne pouvez pas simplement utiliser Finder pour copier des photos depuis des téléphones Android), donc Cmdr doit supprimer ce processus macOS pendant son exécution.\nQuand vous quittez Cmdr, ce processus est poliment restauré.",
+  "onboarding.stepOptional.mtp.desc": "Si vous activez ceci, Cmdr peut <strong>se connecter aux téléphones Android, Kindles, appareils photo</strong>, à certains lecteurs de musique, et à tout autre appareil prenant en charge les protocoles appelés MTP ou PTP.\nLe coût, c''est que macOS veut <em>lui aussi</em> se connecter à ces appareils (et il échoue généralement, c''est pourquoi vous ne pouvez pas simplement utiliser Finder pour copier des photos depuis des téléphones Android), donc Cmdr doit suspendre ce processus macOS pendant son exécution.\nQuand vous quittez Cmdr, ce processus est poliment restauré.",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "9563b7b"
   },

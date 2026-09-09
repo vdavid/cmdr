@@ -3073,3 +3073,95 @@ parancsára mutat, tehát a macOS szóhasználata nyer (style.md § rendszerfel�
   style.md § márkanevek · `high`.
 - **Az első találat értesítése ❌ nem bocsánatkérés** · Azt mondja el, mi történt, miért, és hol a kapcsoló. Innen az
   `A Cmdr úgy van beállítva, hogy elkapja ezeket`, ❌ nem „sajnáljuk” · `high`.
+## A bevezető átírt lépései: ellenőrzőlista, lépésbuborék, összefoglalók (`onboarding.*`, 2026-09-09)
+
+Huszonhárom kulcs a bevezető varázsló négy lépéséről: a lépésjelző buboréka, az FDA-lépés `Miért?` linkje, az AI-lépés
+két hosszú magyarázata, a 3. lépés új ellenőrzőlistája (csillagozás, AlternativeTo, e-mail-mező), és a 4. lépés négy
+egysoros összefoglalója. ICU család (nem RAW), tehát kettőzött aposztróf járna, de egyetlen magyar érték sem tartalmaz
+aposztrófot. Négy kulcs angolja átíródott, ezért a tárolt hash `sync-locale-keys.ts hu --restamp` alakkal frissült.
+
+### Az eldöntött szavak
+
+- **star (ige, „megjelöl valamit csillaggal”) → `csillagoz`** · ms (`HUNGARIAN.tbx`, `star` Verb, definíció: „To mark an
+  entity with a star.” → `csillagoz`, HUN), plusz a szállított `onboarding.stepBeta.star` („csillagozd meg a repót”) ·
+  `high`. ❗ A **GitHub nem szállít magyar felületet** (a támogatott nyelvei közt nincs magyar), tehát a „használd, amit
+  a GitHub mond a te nyelveden” utasításra itt nincs Tier-1 válasz: a magyar felhasználó angol `Star` gombot lát. A
+  Microsoft-terminológia viszont pontosan erre a jelentésre ad alakot, és egyezik a szállított katalógussal, ami
+  eldönti.
+- **repo → `repó`** · a szállított `onboarding.stepBeta.star` · `high`. ❌ NEM `adattár` (az a Microsoft `repository`
+  alakja, és általános adattárolót nevez meg, nem Git-repót) és nem `tároló` (az a `container` felé csúszik). Az angol
+  is a köznyelvi rövidítést használja („repo”), tehát a regiszter is egyezik.
+- **like (ige, „tetszést fejez ki egy elemre”) → `kedvel`** · ms (`HUNGARIAN.tbx`, `like` Verb, definíció: „To express
+  approval for a certain item.” → `kedvel`, HUN) · `high`. Az AlternativeTo Like gombja pontosan ez a jelentés (egy
+  elem, nem egy közösségi poszt), ezért nem a másik MS-alak (`tetszik`, definíció: „Action taken by a user on a post”)
+  jön. Az AlternativeTo sem szállít magyar felületet, tehát itt sincs Tier-1 forrás. ❌ NEM `lájkol`: a Microsoft csak
+  FŐNÉVKÉNT ismeri el a `lájk`-ot (a `kedvelés` mellett), igei alakra nem ad forrást, és a katalógus máshol sem használ
+  szleng igét.
+- **checklist → `ellenőrzőlista`** · ms (`HUNGARIAN.tbx`, `checklist` → `ellenőrzőlista`, HUN) · `high`.
+- **mailing list → `levelezőlista`** · ms (`HUNGARIAN.tbx`, két külön szócikk, mindkettő `levelezőlista`, HUN) · `high`.
+- **badge → `jelvény`** · ms (`HUNGARIAN.tbx`, két szócikk, mindkettő `jelvény`, HUN), plusz a szállított
+  `onboarding.stepBeta.openBeta` · `high`.
+- **Save (az e-mail-mező melletti gomb) → `Mentés`** · mac (a `hu/macOS/` kupacban kilenc puszta „Mentés” előfordulás,
+  plusz „Mentés…”, „Mentés mint:”, „Mentés mindenképp”) · `high`. Prózában a gombra a `Mentés gombot` alakkal
+  hivatkozunk (`signup.rejected`, `signup.unreachable`), ahogy a katalógus a többi gombra is
+  (`Kattints … a <strong>Kilépés és újranyitás</strong> gombra`).
+- **More about {topic} → `Bővebben: {topic}`** · mac („Bővebben az iCloudról”, „Bővebben”, „Bővebben:”, „Bővebben…”) ·
+  `high`. Az Apple ragozott alakja (`az iCloudról`) itt nem másolható: a `{topic}` egy futásidőben behelyettesített,
+  ismeretlen végű címke, amire nem tehető rag (`style.md` § Agglutination). A kettőspontos alakot maga a macOS is
+  szállítja, tehát nem kitalált kerülőút.
+- **typo → az `elgépel` ige** · nincs forrás a kupacban (sem a macOS, sem a Microsoft-terminológia, sem a
+  stílusútmutató-PDF nem ismeri) · `tentative`. A `signup.rejected` ezért nem főnevet használ, hanem átfogalmaz:
+  `Érdemes megnézni, nem gépelted-e el`. Ha egy későbbi passz talál rá forrást, ez a mondat az első hely, ahol
+  érdemes felülvizsgálni.
+
+### Mondatszintű döntések
+
+- **Az ellenőrzőlista sorai FELSZÓLÍTÓK, nem névszóiak.** A `style.md` § Formality a névszói alakot a gombokra,
+  menükre és fejlécekre írja elő; ezek linkszövegek egy teendőlistában, és a testvérsoruk (`checklist.email`) mindenképp
+  mondat kell legyen (a `<field></field>` mezőt egy mondat közepén kell körbefognia). Egy listán belül a vegyes alak
+  látszik, a listák közötti eltérés nem, ezért az egész sor tegező felszólítás:
+  `Csillagozd meg a repót a GitHubon`, `Kedveld a Cmdrt az AlternativeTo oldalán`, `Add meg az e-mail-címedet …`.
+- **`AlternativeTo` nem kap ragot, hanem alaptagot: `az AlternativeTo oldalán`.** Ugyanaz a minta, mint az
+  `Android platform tools csomag`-nál (`style.md`): a név végi `o` az angol kiejtésben nem magyar `o`, tehát sem a
+  kötőjeles (`AlternativeTo-n`), sem a kötőjel nélküli (`AlternativeTón`) rag nem védhető. Az `oldalán` alaptag
+  ragozatlanul hagyja a nevet, és a mondat így is rövid marad. A névelő `az`, mert a kiejtés magánhangzóval kezdődik.
+- **`Cmdrtől`, `Cmdrre`: a márka toldaléka ELÖL HANGRENDŰ.** A `style.md` „hátsó hangrendű toldalék” megfogalmazása
+  félrevezető; a felsorolt példái (`Cmdrben`, `Cmdrrel`, `Cmdrnek`) és a szállított katalógus is végig elöl hangrendű
+  (24× `Cmdrnek`, 9× `Cmdrben`, 4× `Cmdrből`, 3× `Cmdrhez`, 2× `Cmdrre`). A kiejtett „commander” utolsó magánhangzója
+  `e`, és a magyar hangrend a szó UTOLSÓ magánhangzójához igazodik, tehát `-től`, `-re`, `-nek`, `-ben`.
+- **A `<code>` parancs elé VALÓDI névelő kerül, nem `a(z)` hedge.** A `checklist.starNote` tartalma mindig ugyanaz a
+  literál (`brew install cmdr`, `b`-vel kezdődik), tehát a `style.md` szabálya („egyetlen lehetséges értékű helyőrző a
+  valódi névelőt kapja”) érvényes: `a <code>brew install cmdr</code> parancsot`. ❗ A szállított
+  `onboarding.stepBeta.star` ugyanerre a parancsra `a(z)`-t ír; az a hedge ott felesleges, de más kulcs, ezt a passz nem
+  söpörte át.
+- **A `{nextLabel}` szintén valódi névelőt kap: `a „{nextLabel}” gombra`.** Az értéke a magyarban vagy `Tovább`, vagy
+  `Befejezés` (`onboarding.wizard.next` / `.finish`), mindkettő mássalhangzóval kezdődik, tehát `a`. Az idézőjel a
+  házi `„…”` alak, ahogy a katalógus minden felületi címkét idéz (`a „+” gombra`, `a „Zárolt” pipát`).
+- **`{mandatory}+1-ből`: a toldalék az `1`-hez igazodik, nem a helyőrzőhöz.** A `wizard.stepTooltip` „+1” része literál,
+  tehát a rag mindig az `egy` kiejtéséhez harmonizál (`-ből`), a helyőrző ismeretlen értéke nem befolyásolja. A keret a
+  testvér `wizard.stepProgress` idiómája (`{step}. lépés a(z) {total}-ból`), az `a(z)` hedge pedig ott is, itt is a
+  szám kiejtésének ismeretlensége miatt kell (`style.md`: `a három`, de `az öt`).
+- **`Settings › Updates & privacy` → `Beállítások › Frissítések és adatvédelem`.** A két fél a szállított
+  `settings.section.updatesAndPrivacy` (`Frissítések és adatvédelem`) és a katalógus `Beállítások ›` mintája
+  (`settings.askCmdr.provider.shared`/`.off`). Az útvonal nem kap ragot: a mondat `itt:` kettősponttal vezeti fel
+  (`vagy bármikor később itt: Beállítások › Frissítések és adatvédelem`), ugyanaz a kerülőút, mint az `itt: {path}`-nál.
+- **`Local network access` → `Helyi hálózat elérése`, a testvér `desc`-ből.** A kupac `hu/macOS/SystemSettings/` dumpja
+  csak a Rendszerbeállítások keretszövegeit tartalmazza, az Adatvédelem panel engedélyneveit nem, tehát erre nincs
+  Tier-1 találat. A szállított `onboarding.stepOptional.networking.desc` viszont már idézi a promptot
+  („a »Helyi hálózat elérése« engedélyezését kéri”), és a `summary` pont annak a hosszú változatnak a rövid verdiktje,
+  tehát kötelező egyezniük.
+- **A négy `stepOptional.*.summary` a testvér `desc` szavait viszi, és nem érhet túl az angol hosszán.** Egy sorba kell
+  férniük a kapcsoló mellett: `1 GB helyet foglal…` (a `descCost` „nagyjából 1 GB index” szava), `…elnyomja a macOS
+  kezelőjét` (a `mtp.desc` „el kell nyomnia azt a macOS folyamatot” igéje). Az `mtp.summary`-ból a hely kedvéért kimarad
+  a `saját` jelző (angolul „native”); a teljes állítás a `desc`-ben van.
+- **`openBeta` záró mondata és a `feedbackIntro` szándékosan más igét visz.** Az angol az egyiken `fix bugs`
+  (`kijavítsam a hibákat`), a másikon `spot bugs` (`észrevegyem a hibákat`); a keret (`A visszajelzésed segít, hogy …
+  és rangsoroljam a funkciókat`) viszont szó szerint azonos, hogy a két mondat egymás mellett ne olvasódjon két külön
+  ígéretnek.
+- **A `local.tooltip` harmadik sora a `stepAi.cloud.label`-t IDÉZI**, tehát a `<strong>` tartalma betű szerint
+  `Igen, szeretnék AI-t` kell legyen. Ha az a címke valaha változik, ez a sor is vele megy; a két kulcs egy egység.
+- **`dumber` → `butább`, tudatosan.** Az angol `@key.description` külön kiemeli, hogy a nyers szó szándékos; a magyar
+  sem szépíti (`nem gyengébb`, `nem korlátozottabb`), mert a mondat egész értelme az őszinte figyelmeztetés.
+- **Betűszó + rag kötőjellel: `RAM-ot`, `CPU-t`, `LLM-edet`, `AI-t`, `API-kulcsot`.** A katalógus `USB-` családjának
+  mintája (`style.md`). A `CPU` kiejtése `cé-pé-ú`, tehát a tárgyrag `-t`; az `LLM` kiejtése `el-el-em`, tehát elöl
+  hangrendű (`-edet`).

@@ -226,10 +226,24 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
     `glossary.md` § `askCmdr.renameUndo.undoJob`.
 - **Sentence case is native** (Hungarian doesn't capitalize common nouns, days, or months), so the app's sentence-case
   rule applies cleanly. Don't capitalize the word after a colon unless it's a proper noun.
-- **Suffix the brand WITHOUT a hyphen: `Cmdrt`, `Cmdrben`, `Cmdrrel`, `Cmdrnek`.** `Cmdr` is pronounced "commander", so
-  its final written `r` does spell its final pronounced sound, and AkH's hyphen rule (silent final letter or an unusual
-  letter cluster spelling the last sound) doesn't apply. Vowel harmony keys off the spoken form, so the back-vowel
-  suffixes are the right ones. Same for the multiword product name: `Ask Cmdrt`.
+- **Suffix the brand WITHOUT a hyphen: `Cmdrt`, `Cmdrben`, `Cmdrrel`, `Cmdrnek`, `Cmdrtől`, `Cmdrre`.** `Cmdr` is
+  pronounced "commander", so its final written `r` does spell its final pronounced sound, and AkH's hyphen rule (silent
+  final letter or an unusual letter cluster spelling the last sound) doesn't apply. Vowel harmony keys off the spoken
+  form and follows the word's LAST vowel, which in "commander" is `e`, so the FRONT-vowel suffixes are the right ones
+  (`-ben`, `-nek`, `-től`, `-re`, `-hez`, `-ből`), never `-ban`/`-nak`/`-tól`. The shipped catalog is unanimous on this
+  (24× `Cmdrnek`, 9× `Cmdrben`, 4× `Cmdrből`, 3× `Cmdrhez`, 2× `Cmdrre`). Same for the multiword product name:
+  `Ask Cmdrt`.
+- **A foreign name whose final letter doesn't spell a Hungarian sound gets a BASE WORD, not a suffix.** `AlternativeTo`
+  is `az AlternativeTo oldalán`, because the English `o` is neither a hyphen case (`AlternativeTo-n`) nor a lengthening
+  case (`AlternativeTón`) you could defend. Same move as `az Android platform tools csomag` above: the base word leaves
+  the name uninflected and the sentence stays short.
+- **The nominal-label rule stops at a checklist of things to DO.** `onboarding.stepBeta.checklist.*` rows are link texts
+  in a to-do list, and one of them (`…checklist.email`) has to be a sentence wrapped around an inline input, so the
+  whole row set is informal imperative (`Csillagozd meg a repót a GitHubon`), not nominal. A mixed form is visible
+  inside one list; a difference between two lists never is.
+- **Neither GitHub nor AlternativeTo ships a Hungarian UI**, so "use the site's own verb" has no Tier-1 answer for
+  `star` or `like` — a Hungarian user sees the English buttons. Microsoft terminology decides both
+  (`csillagoz`, `kedvel`); evidence in `glossary.md` § A bevezető átírt lépései.
 - **Quotation marks: `„…”`** (low opening, high closing) is the standard Hungarian form. macOS Finder uses it too (e.g.
   „^0”). Avoid English `"…"`.
 - **`{duration}` is NOT locale-formatted**, unlike numbers, sizes, and dates: `formatDuration()` in

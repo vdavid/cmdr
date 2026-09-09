@@ -349,6 +349,18 @@ Dateien".
   Rechtsklick auf Cmdrs Dock-Symbol steht der Eintrag neben Apples Dock-Menü und Finders `Gehe zu`, also gewinnt deren
   Formulierung: `Go to folder…` → `Gehe zu Ordner…` (Finder), obwohl Cmdrs Menüleiste denselben Dialog `Zu Pfad gehen…`
   nennt. Das Englische unterscheidet die beiden Flächen genauso. Belege: `glossary.md` § Das Dock-Menü von Cmdr.
+- **Zwei Schlüssel mit demselben englischen Wert bekommen EIN deutsches Wort.** `desktop-i18n-term-consistency` meldet
+  jede Stelle, an der derselbe englische String zweimal verschieden übersetzt ist, und identische Werte tragen denselben
+  `sourceHash`, sodass man es beim Übersetzen sofort sieht. Deshalb vor jedem Ein-Wort-Label kurz im `en`-Katalog nach
+  demselben Wert greppen: `Save` steht in `onboarding.stepBeta.checklist.emailSave` UND `servers.sheet.save`, also
+  heißen beide `Sichern`. Belege und die Abgrenzung `sichern`/`speichern`: `glossary.md` § Die Einführungs-Checkliste.
+- **Ein einzeiliges Fazit neben einem Schalter darf nicht umbrechen.** Die `…summary`-Schlüssel stehen direkt unter dem
+  Titel ihres Schalters, die Langfassung im Geschwister `…desc`. Also verbinitial bauen, jedes Wort weglassen, das der
+  `desc` ohnehin trägt, und im Zweifel die kurze Wortform nehmen (`Platz` statt `Speicherplatz`). Deutsch läuft hier
+  sonst 20–30 % über die englische Zeile.
+- **Ein leeres Tag mitten im Satz (`<field></field>`) ist ein Bedienelement, kein Text.** Der Satz braucht eine Stelle,
+  an der ein Kasten natürlich sitzt; ein trennbares Verb liefert sie („Gib deine E-Mail-Adresse <field></field> ein,
+  um …“). Nicht das Tag ans Satzende schieben: das Englische setzt es bewusst in die Mitte.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -373,6 +385,11 @@ The formality and move calls are now settled from the sources (see above); the o
   one up“ verweist mit `one` auf den Anbieter aus dem ersten Satz, und das Deutsche gibt das mit dem bloßen Pronomen
   `einen` wieder. Grammatisch einwandfrei, aber am Satzende etwas kahl; die Alternative wiederholt schlicht
   `einen Anbieter`. Bestätige, welche in einem Tooltip besser liest.
+- **`Gib Cmdr auf AlternativeTo ein Like`** (`onboarding.stepBeta.checklist.alternativeTo`, tentative): AlternativeTo
+  ist einsprachig englisch, es gibt also keinen lokalisierten Button-Text, an dem man sich festhalten könnte, und
+  Microsofts `gefällt mir` ist als Linktext zu lang. `ein Like geben` steht im Duden und hält den Parallelbau zur Zeile
+  darüber (`Vergib dem Repo auf GitHub einen Stern`), liest sich aber jugendlich. Bestätige, oder wähle die längere
+  Form. Belege: `glossary.md` § Die Einführungs-Checkliste.
 - **`Systemintegritätsschutz` vs Apple's on-screen `System-Integrationsschutz`** (product-voice call, currently shipping
   the first). `errors.mutation.sipProtected` uses Apple's German DOCUMENTATION name for System Integrity Protection.
   Apple's German Finder shows a different word in exactly one string, and it's a visible mistranslation (Integration

@@ -158,6 +158,27 @@ Settled terms (sources agree):
 - **Terminal (the command-line app): `Terminal`, capitalized, kept verbatim** · macOS vi Finder (`Mở trong Terminal`),
   verified 2026-09-09. `high`. ❌ Not KDE Dolphin's `dòng lệnh`: that names the command line, and macOS is Tier 1 for an
   app the user actually opens. `lệnh` still stays the word for one command, per the entry above.
+- **why: `Tại sao?`** · macOS `PhotosUICore.framework` `.loctable`, English key `Why?` → `Tại sao?` (macOS 26.6.2 build
+  25G83, live-bundle sweep, 2026-09-09). The reference pile has no "why" string at all; only the live sweep finds it.
+  `high`.
+- **learn more / more about: `Tìm hiểu thêm`** · macOS Finder `LocalizableMerged` `NE115` plus three system
+  `.loctable`s, verified 2026-09-09. ❌ Not `Thông tin khác`, which macOS uses for "More Info" (a details panel).
+  `high`.
+- **star (GitHub's verb): `gắn sao`; a star: `sao`; repo: `repo`, kept verbatim** · GitHub ships no Vietnamese UI, so
+  there is no vendor wording to copy. The catalog settled it (`onboarding.stepBeta.star`), and GNOME Nautilus vi renders
+  the same concept on the same root (`Star` → `Sao`, "starred" → `đã đánh sao`). `high`. Write `kho` only where the
+  English spells out "repository" (`settings.fileExplorer.git.showRepoChip.label` = `Huy hiệu kho`).
+- **like (a site's upvote button): `Thích`** · no Tier 1 source (AlternativeTo is English-only); the catalog already
+  ships the root at `fileExplorer.doubleClickHint.iLikeIt` (`Tôi thích`). `high`.
+- **checklist: `danh sách kiểm tra`** · Microsoft terminology (two entries agree). `high`.
+- **mailing list: `danh sách gửi thư`** · Microsoft terminology. `high`.
+- **Local Network (the macOS permission's name): `Mạng cục bộ`** · three macOS bundles agree (`AppSystemSettingsUI`
+  and two more, key `Local Network` / `LOCAL_NETWORK`), plus `TCC.framework` for the prose form
+  (`mạng cục bộ`), macOS 26.6.2 build 25G83, verified 2026-09-09. The catalog's phrase for the permission itself is
+  `Truy cập mạng cục bộ`. `high`.
+- **native (belonging to the OS): `gốc`** · matches the settled `menu gốc`; used in
+  `onboarding.stepOptional.mtp.summary` as `trình xử lý gốc của macOS`. `high`.
+- **warning: `cảnh báo`** · Xfce Thunar and KDE Dolphin agree. `high`.
 
 Tentative / needs a native check:
 
@@ -358,6 +379,21 @@ Vietnamese has no grammatical number, so one form covers all counts.
   ngoặc (`menu.dock.locationInParent`).
 - **Một lệnh xuất hiện ở hai menu thì hai nhãn phải khớp từng chữ.** `menu.dock.searchFiles` và `menu.edit.searchFiles`
   đều là `Tìm kiếm tệp…`; một biến thể "hay hơn" ở một chỗ sẽ đọc thành hai chức năng khác nhau.
+- **Quotation marks: the catalog uses STRAIGHT `"`, not the curly `“…”` this guide recommends.** Every quoted phrase
+  shipped in `onboarding.json` (`onboarding.stepFda.step2.tip`, `onboarding.stepOptional.networking.desc`,
+  `onboarding.stepAi.table.searchWithout`) mirrors the English's straight quotes, and there are only 12 curly quotes in
+  the whole `vi/` catalog against 136 straight ones. Follow the file you're in: a new key beside straight-quoted
+  siblings uses straight quotes. The curly preference stands for prose that has no quoting neighbours.
+- **Two first persons, and they're not interchangeable.** David speaking is `mình` (`onboarding.stepBeta.greeting`,
+  `.feedback.call`, `.star`, `.openBeta`); the USER speaking, as on a radio option, is `tôi`
+  (`onboarding.stepAi.cloud.label` = `Có, tôi muốn AI`). Picking the wrong one flips who is talking.
+- **A Settings path is `Cài đặt › <tên mục>`**, with the section name taken verbatim from `settings.section.*`
+  (`Cài đặt › Cập nhật & quyền riêng tư`). Keep the `›` character; don't swap it for `>` or `/`.
+- **The pile has no "Why", "More info", or permission-prompt names; sweep the installed OS instead.** Several Tier 1
+  answers this catalog needs live only in `.loctable` files, not in the extracted pile. The whole-system sweep in
+  `docs/i18n/reference-pile/how-to-mine.md` (walk `/System/**`, `plutil -convert json` each `.loctable`, filter the
+  `en` side, read the `vi` side by the same key) takes ~2 minutes and is what sourced `Tại sao?` and `Mạng cục bộ`.
+  Reach for it before recording a term as `tentative`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

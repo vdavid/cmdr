@@ -11,11 +11,11 @@
   "@onboarding.wizard.stepProgress": {
     "sourceHash": "41705d0"
   },
-  "onboarding.moreAbout": "More about {topic}",
+  "onboarding.moreAbout": "進一步了解「{topic}」",
   "@onboarding.moreAbout": {
     "sourceHash": "b4d183a"
   },
-  "onboarding.wizard.stepTooltip": "Step {step} of {mandatory}+1{note, select, remaining {, one optional step remains} last {, this is the last, optional step} other {}}",
+  "onboarding.wizard.stepTooltip": "第 {step} 步，共 {mandatory}+1 步{note, select, remaining {，還有一個可選步驟} last {，這是最後一個，可選的步驟} other {}}",
   "@onboarding.wizard.stepTooltip": {
     "sourceHash": "53f848a"
   },
@@ -91,7 +91,7 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.why": "Why?",
+  "onboarding.stepFda.why": "為什麼？",
   "@onboarding.stepFda.why": {
     "sourceHash": "5d8a995"
   },
@@ -111,9 +111,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "如果你決定允許：",
+  "onboarding.stepFda.ifAllow": "三個步驟就好：",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "09c5053"
+    "sourceHash": "32358ef"
   },
   "onboarding.stepFda.openSettings": "開啟 {systemSettings}",
   "@onboarding.stepFda.openSettings": {
@@ -263,19 +263,19 @@
   "@onboarding.stepAi.cloud.recommended": {
     "sourceHash": "d70604e"
   },
-  "onboarding.stepAi.cloud.help": "用你自己的 API 金鑰連任何一家雲端提供者。模型又快又好。在下面挑一家吧。",
+  "onboarding.stepAi.cloud.help": "用你自己的 API 金鑰連任何一家雲端提供者，或是你自己的 ollama/自訂 LLM。在下面設定就行。",
   "@onboarding.stepAi.cloud.help": {
-    "sourceHash": "96f3940"
+    "sourceHash": "0841a0d"
   },
   "onboarding.stepAi.cloud.pickerTitle": "選一家提供者",
   "@onboarding.stepAi.cloud.pickerTitle": {
     "sourceHash": "71e2ca7"
   },
-  "onboarding.stepAi.local.label": "要，我想用 AI，但我想要超級注重隱私",
+  "onboarding.stepAi.local.label": "要，我想用 AI，但我想要超級注重隱私，用一個簡單的本機模型。",
   "@onboarding.stepAi.local.label": {
-    "sourceHash": "f371401"
+    "sourceHash": "2ee5605"
   },
-  "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that''s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
+  "onboarding.stepAi.local.tooltip": "本機模型比雲端模型笨很多，而且會佔掉大約 2 GB 空間，每次用還會吃掉一些 RAM 和 CPU。\n換來的是：沒有任何資料離開你的電腦。\nCmdr 會盡量透過更新，讓你用到當下最好的小模型。但如果你既想要隱私、<em>又</em>想要一個像樣的模型，那自己跑一台 ollama 伺服器，再用下面的 <strong>要，我想用 AI</strong> 選項把它設定好，會是最好的選擇。",
   "@onboarding.stepAi.local.tooltip": {
     "sourceHash": "c3fa36a"
   },
@@ -287,7 +287,7 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "dc194e8"
   },
-  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Please fix this above.\n\n<strong>Click \"{nextLabel}\" again to ignore this and go on.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "你開啟了 AI，但還沒填 API 金鑰。AI 不會運作，而且你會看到一則警告。請在上面補上。\n\n<strong>再按一下「{nextLabel}」，就會忽略這件事繼續往下走。</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
     "sourceHash": "3d66d11"
   },
@@ -315,39 +315,39 @@
   "@onboarding.stepBeta.greeting": {
     "sourceHash": "f7ade14"
   },
-  "onboarding.stepBeta.openBeta": "Cmdr 正在公開測試階段，也就是說整體上夠穩、能用，但有些地方還很粗糙。看到 <alpha></alpha> 標記的地方，就是最還在開發中的區域。",
+  "onboarding.stepBeta.openBeta": "Cmdr 正在公開測試階段：整體上夠穩、能用，但有些地方還很粗糙。看到 <alpha></alpha> 標記的地方，就是最還在開發中的區域。你的意見反應能幫我修正問題、決定功能的先後順序。",
   "@onboarding.stepBeta.openBeta": {
-    "sourceHash": "5b0a107"
+    "sourceHash": "0dba196"
   },
-  "onboarding.stepBeta.checklist.title": "Onboarding checklist, each takes 30 seconds:",
+  "onboarding.stepBeta.checklist.title": "入門引導檢查清單，每一項只要 30 秒：",
   "@onboarding.stepBeta.checklist.title": {
     "sourceHash": "6c0fc62"
   },
-  "onboarding.stepBeta.checklist.star": "Star the repo on GitHub",
+  "onboarding.stepBeta.checklist.star": "在 GitHub 上幫儲存庫按個 star",
   "@onboarding.stepBeta.checklist.star": {
     "sourceHash": "c271317"
   },
-  "onboarding.stepBeta.checklist.starNote": "Homebrew needs Cmdr to have 225 stars to enable <code>brew install cmdr</code>",
+  "onboarding.stepBeta.checklist.starNote": "Cmdr 要有 225 顆星，Homebrew 才會開放 <code>brew install cmdr</code>",
   "@onboarding.stepBeta.checklist.starNote": {
     "sourceHash": "6553ce2"
   },
-  "onboarding.stepBeta.checklist.alternativeTo": "Like Cmdr on AlternativeTo",
+  "onboarding.stepBeta.checklist.alternativeTo": "在 AlternativeTo 上幫 Cmdr 按個讚",
   "@onboarding.stepBeta.checklist.alternativeTo": {
     "sourceHash": "c9b1e1e"
   },
-  "onboarding.stepBeta.checklist.alternativeToNote": "At the very top of the page, next to the \"Cmdr\" title. This helps people and Google notice Cmdr!",
+  "onboarding.stepBeta.checklist.alternativeToNote": "就在頁面最上方，「Cmdr」標題旁邊。這能讓大家和 Google 注意到 Cmdr！",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
     "sourceHash": "ea4903a"
   },
-  "onboarding.stepBeta.checklist.email": "Enter your email address <field></field> to get very occasional updates and questions",
+  "onboarding.stepBeta.checklist.email": "留下你的電子郵件地址 <field></field>，就能很偶爾收到一些近況和問題",
   "@onboarding.stepBeta.checklist.email": {
     "sourceHash": "e53bd44"
   },
-  "onboarding.stepBeta.checklist.emailSave": "Save",
+  "onboarding.stepBeta.checklist.emailSave": "儲存",
   "@onboarding.stepBeta.checklist.emailSave": {
     "sourceHash": "1509f56"
   },
-  "onboarding.stepBeta.checklist.emailMark": "Email address saved",
+  "onboarding.stepBeta.checklist.emailMark": "電子郵件地址已儲存",
   "@onboarding.stepBeta.checklist.emailMark": {
     "sourceHash": "1bf8647"
   },
@@ -412,11 +412,11 @@
   "@onboarding.stepBeta.signup.failure": {
     "sourceHash": "0aac3a9"
   },
-  "onboarding.stepBeta.signup.rejected": "The mailing list didn''t accept that address. Worth a look for a typo, then hit Save again.",
+  "onboarding.stepBeta.signup.rejected": "郵寄清單沒有收下這個地址。看看是不是有打錯字，然後再按一次「儲存」。",
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "05ccee5"
   },
-  "onboarding.stepBeta.signup.unreachable": "Couldn''t reach the signup server just now, so you''re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+  "onboarding.stepBeta.signup.unreachable": "剛剛無法連上註冊伺服器，所以你還沒加到清單裡。你的地址已經存在這部 Mac 上了：過一分鐘再按一次「儲存」，或是隨時在「設定 › 更新與隱私」裡按。",
   "@onboarding.stepBeta.signup.unreachable": {
     "sourceHash": "8036aad"
   },
@@ -464,7 +464,7 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Needs accepting \"Local network access\" once",
+  "onboarding.stepOptional.networking.summary": "需要允許一次「區域網路」取用",
   "@onboarding.stepOptional.networking.summary": {
     "sourceHash": "84f3716"
   },
@@ -476,7 +476,7 @@
   "@onboarding.stepOptional.indexing.title": {
     "sourceHash": "38d916b"
   },
-  "onboarding.stepOptional.indexing.summary": "Takes 1 GB space, speeds up searches, shows folder sizes",
+  "onboarding.stepOptional.indexing.summary": "佔 1 GB 空間，搜尋更快，看得到資料夾大小",
   "@onboarding.stepOptional.indexing.summary": {
     "sourceHash": "6413c6f"
   },
@@ -500,7 +500,7 @@
   "@onboarding.stepOptional.updates.title": {
     "sourceHash": "147b1b6"
   },
-  "onboarding.stepOptional.updates.summary": "One tiny check at app start and once a day, so you stay on the latest version",
+  "onboarding.stepOptional.updates.summary": "App 啟動時和每天各查一次，讓你保持在最新版本",
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
@@ -512,7 +512,7 @@
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "Lets you connect Android phones and the such, suppresses macOS native handler",
+  "onboarding.stepOptional.mtp.summary": "能連 Android 手機之類的裝置，會壓下 macOS 原生的處理程序",
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },

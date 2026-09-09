@@ -2903,3 +2903,65 @@ así que gana la terminología de macOS (style.md § superficies del sistema).
   Misma regla que `main.dockPinNudge.body` («unos días») · `high`.
 - **El aviso de la primera vez ❌ no es una disculpa** · Dice qué pasó, por qué, y dónde está el interruptor. De ahí
   `Cmdr está configurado para recogerlos`, ❌ nunca «lo sentimos» · `high`.
+## Las 23 claves del rediseño de la introducción (`onboarding.*`, 2026-09-09)
+
+Los 19 textos nuevos y los 4 reescritos del asistente de bienvenida: la ayuda emergente de los pasos, la lista de tareas
+del paso 3 (estrella en GitHub, me gusta en AlternativeTo, correo) y los cuatro resúmenes de una línea del paso 4.
+Familia ICU normal: apóstrofos dobles, aunque al final ningún valor español lleva ninguno.
+
+- **`star` (el verbo de GitHub) → `dar una estrella`; el botón se llama `Estrella`** · GitHub publica su propia UI y sus
+  docs en español: el botón de la esquina superior derecha es `Estrella` y el texto instructivo dice
+  `marcar con una estrella` (`docs.github.com/es/…/saving-repositories-with-stars`, consultado 2026-09-09). La
+  terminología de Microsoft coincide con la forma verbal: `star` (v., «To mark an entity with a star») =
+  `marcar con una estrella`. Para una fila de una lista de tareas, `marca el repo con una estrella` queda largo y
+  burocrático, así que va la forma coloquial `Dale una estrella al repo en GitHub`, que además **ya es la del catálogo**
+  (`onboarding.stepBeta.star` dice `dale una estrella al repo`) · `high`. ❌ No `Destacar`: es lo que dice la gente, no
+  lo que dice GitHub.
+- **`repo` → `repo`** · el catálogo ya lo usa (`onboarding.stepBeta.star`) y la propia terminología de Microsoft publica
+  `repo` como término español para `repository` junto a `repositorio`. El inglés aquí es deliberadamente coloquial ·
+  `high`.
+- **`like` (el botón de AlternativeTo) → `dar un me gusta`** · AlternativeTo solo existe en inglés, así que no hay UI
+  localizada que copiar y decide Tier 2: MS terminology da `like` → `me gusta` en las seis entradas de redes sociales
+  (aprobar una publicación, el icono del corazón, el pulgar arriba). `Dale un me gusta a Cmdr en AlternativeTo` es la
+  forma natural; sin comillas, porque el inglés tampoco las pone · `high`.
+- **`checklist` → `lista de tareas`** · MS terminology publica las dos: `Lista de comprobación` (Planner, Kaizala) y
+  `Lista de tareas` (Kaizala). Aquí gana la segunda: son cuatro cosas que se hacen y se tachan, no una verificación, y
+  `Lista de comprobación de la introducción` se va a 62 caracteres en un título. `onboarding` sigue siendo
+  `introducción`, como en `onboarding.wizard.title` · `high`.
+- **`Save` (el botón junto al campo de correo) → `Guardar`** · macOS AppKit (`Save` = `Guardar` en el menú Archivo), MS
+  terminology, y el propio catálogo (`servers.sheet.save`) · `high`. Las dos frases que lo nombran
+  (`signup.rejected`, `signup.unreachable`) lo escriben igual y sin comillas, como el inglés.
+- **`mailing list` → `lista de correo`** · MS terminology publica `lista de distribución de correo`, que es la forma
+  larga de Exchange y pesa demasiado para una línea bajo un campo. `lista de correo` es la forma corta habitual del
+  mismo concepto y comparte raíz con la fuente (gotcha 4 de la guía: una raíz compartida ya es evidencia) · `high`.
+- **`typo` → `errata`** · ninguna de las fuentes del pile la nombra (ni macOS, ni MS, ni los gestores de archivos).
+  `errata` es la palabra española para el fallo material al escribir y esquiva el veto de Cmdr sobre `error` en los
+  mensajes · `tentative`.
+- **`sign up` (la lista de correo) → `dar de alta`; `signup server` → `servidor de altas`** · MS da
+  `sign up` → `registrarse` / `suscribirse`, pero el catálogo ya eligió `darte de alta`
+  (`onboarding.stepBeta.signup.failure`) y las dos frases nuevas se leen debajo del mismo campo, así que manda la
+  coherencia interna · `high` para el verbo, `tentative` para el nombre compuesto, que nadie publica.
+- **`More about {topic}` → `Más información sobre {topic}`** · macOS Finder escribe exactamente
+  `Más información sobre iCloud`; es un nombre accesible, así que la longitud no molesta · `high`.
+- **`handler` (el proceso nativo de macOS que MTP desplaza) → `proceso`** · MS da `handler` → `controlador`, pero la
+  clave hermana `onboarding.stepOptional.mtp.desc` ya lo llama `ese proceso de macOS` y el usuario lee el resumen y la
+  ayuda emergente uno detrás de otro. Frontera: `controlador` queda libre para un driver de verdad · `high`.
+- **`badge` → `insignia`** · MS terminology (`badge` = `distintivo` / `insignia`) y el propio catálogo, que ya decía
+  `las insignias <alpha></alpha>` · `high`.
+- **`machine` («no data leaves your machine») → `tu equipo`** · el inglés dice `machine`, no `Mac`, así que hace falta
+  un nombre genérico. macOS `es` escribe `ordenador` (43 apariciones frente a 1 de `equipo`), pero es vocabulario solo
+  de España y el `style.md` pide una base panregional; `equipo` es la palabra de MS y ya está en el catálogo
+  (`errors.json`) · `high`. Ojo: `settings.json` tiene dos claves con `salen de tu ordenador` que contradicen esto; ver
+  el informe de esta pasada.
+- **`{nextLabel}` va entre comillas curvas `“…”`** · es una etiqueta que Cmdr pinta en pantalla (sale de
+  `onboarding.wizard.next`), y esa es justo la frontera del `style.md`: curvas para lo que Cmdr muestra, rectas para un
+  literal que el inglés ya entrecomilla. Por eso `checklist.alternativeToNote` conserva las rectas alrededor de `"Cmdr"`
+  (es el título de una página ajena) y `networking.summary` las conserva alrededor de `"Acceso a la red local"` (es el
+  nombre del diálogo de macOS, ya fijado por `networking.desc`) · `high`.
+- **`superprivate` → `superprivada`, concordando con `la IA`** · la reescritura del inglés
+  (`onboarding.stepAi.local.label`) permitió por fin quitar el `superprivado` que generaba a quien lee. El adjetivo
+  concuerda ahora con `IA`, no con la persona: misma jugada que la regla de género del `style.md`, pero aplicada a un
+  adjetivo emocional en vez de a un nombre de rol · `high`.
+- **`dumber` → `más torpe`** · el inglés es deliberadamente franco («dumber» está elegido a propósito). `torpe` dice lo
+  mismo sin insultar al modelo ni sonar técnico, y evita `tonto`, que en una ayuda emergente de producto suena a broma ·
+  `tentative`.

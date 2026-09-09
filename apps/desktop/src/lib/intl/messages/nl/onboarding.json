@@ -12,11 +12,11 @@
   "@onboarding.wizard.stepProgress": {
     "sourceHash": "41705d0"
   },
-  "onboarding.moreAbout": "More about {topic}",
+  "onboarding.moreAbout": "Meer over {topic}",
   "@onboarding.moreAbout": {
     "sourceHash": "b4d183a"
   },
-  "onboarding.wizard.stepTooltip": "Step {step} of {mandatory}+1{note, select, remaining {, one optional step remains} last {, this is the last, optional step} other {}}",
+  "onboarding.wizard.stepTooltip": "Stap {step} van {mandatory}+1{note, select, remaining {, er is nog één optionele stap} last {, dit is de laatste, optionele stap} other {}}",
   "@onboarding.wizard.stepTooltip": {
     "sourceHash": "53f848a"
   },
@@ -92,7 +92,7 @@
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.why": "Why?",
+  "onboarding.stepFda.why": "Waarom?",
   "@onboarding.stepFda.why": {
     "sourceHash": "5d8a995"
   },
@@ -112,9 +112,9 @@
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "Als je besluit toe te staan:",
+  "onboarding.stepFda.ifAllow": "Drie eenvoudige stappen:",
   "@onboarding.stepFda.ifAllow": {
-    "sourceHash": "09c5053"
+    "sourceHash": "32358ef"
   },
   "onboarding.stepFda.openSettings": "Open {systemSettings}",
   "@onboarding.stepFda.openSettings": {
@@ -265,19 +265,19 @@
   "@onboarding.stepAi.cloud.recommended": {
     "sourceHash": "d70604e"
   },
-  "onboarding.stepAi.cloud.help": "Gebruik elke cloudaanbieder met je eigen API-sleutel. Snelle modellen van hoge kwaliteit. Kies hieronder een aanbieder.",
+  "onboarding.stepAi.cloud.help": "Gebruik elke cloudaanbieder met je eigen API-sleutel, of je eigen ollama/aangepaste LLM. Stel het hieronder in.",
   "@onboarding.stepAi.cloud.help": {
-    "sourceHash": "96f3940"
+    "sourceHash": "0841a0d"
   },
   "onboarding.stepAi.cloud.pickerTitle": "Kies een aanbieder",
   "@onboarding.stepAi.cloud.pickerTitle": {
     "sourceHash": "71e2ca7"
   },
-  "onboarding.stepAi.local.label": "Ja, ik wil AI, maar ik wil supergeprivacyd zijn",
+  "onboarding.stepAi.local.label": "Ja, ik wil AI, maar dan superprivé met een eenvoudig lokaal model.",
   "@onboarding.stepAi.local.label": {
-    "sourceHash": "f371401"
+    "sourceHash": "2ee5605"
   },
-  "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that''s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
+  "onboarding.stepAi.local.tooltip": "Het lokale model is een stuk dommer dan cloudmodellen, en het neemt ongeveer 2 GB ruimte in beslag plus wat RAM en CPU bij elk gebruik.\nDaar staat tegenover dat er geen gegevens je computer verlaten.\nCmdr probeert updates uit te brengen zodat je steeds het beste kleine model kunt gebruiken dat er is. Maar wil je privacy <em>én</em> een fatsoenlijk model, dan kun je het beste je eigen ollama-server draaien en die hieronder instellen met de optie <strong>Ja, ik wil AI</strong>.",
   "@onboarding.stepAi.local.tooltip": {
     "sourceHash": "c3fa36a"
   },
@@ -289,7 +289,7 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "dc194e8"
   },
-  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Please fix this above.\n\n<strong>Click \"{nextLabel}\" again to ignore this and go on.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "Je hebt AI ingeschakeld, maar geen API-sleutel ingevuld. AI werkt dan niet en je krijgt een waarschuwing te zien. Los dit hierboven op.\n\n<strong>Klik nogmaals op ‘{nextLabel}’ om dit te negeren en verder te gaan.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
     "sourceHash": "3d66d11"
   },
@@ -317,39 +317,39 @@
   "@onboarding.stepBeta.greeting": {
     "sourceHash": "f7ade14"
   },
-  "onboarding.stepBeta.openBeta": "Cmdr is in open bèta, wat betekent dat het over het algemeen solide en bruikbaar is, maar sommige delen zijn nog ruw. Let op de <alpha></alpha>-badges die de meest in-ontwikkeling-zijnde gebieden markeren.",
+  "onboarding.stepBeta.openBeta": "Cmdr is in open bèta: over het algemeen solide en bruikbaar, maar sommige delen zijn nog ruw. <alpha></alpha>-badges markeren de delen die het meest in ontwikkeling zijn. Jouw feedback helpt me bugs op te lossen en functies te prioriteren.",
   "@onboarding.stepBeta.openBeta": {
-    "sourceHash": "5b0a107"
+    "sourceHash": "0dba196"
   },
-  "onboarding.stepBeta.checklist.title": "Onboarding checklist, each takes 30 seconds:",
+  "onboarding.stepBeta.checklist.title": "Onboardingchecklist, elk punt kost 30 seconden:",
   "@onboarding.stepBeta.checklist.title": {
     "sourceHash": "6c0fc62"
   },
-  "onboarding.stepBeta.checklist.star": "Star the repo on GitHub",
+  "onboarding.stepBeta.checklist.star": "Geef de repo een star op GitHub",
   "@onboarding.stepBeta.checklist.star": {
     "sourceHash": "c271317"
   },
-  "onboarding.stepBeta.checklist.starNote": "Homebrew needs Cmdr to have 225 stars to enable <code>brew install cmdr</code>",
+  "onboarding.stepBeta.checklist.starNote": "Homebrew heeft 225 stars voor Cmdr nodig om <code>brew install cmdr</code> mogelijk te maken",
   "@onboarding.stepBeta.checklist.starNote": {
     "sourceHash": "6553ce2"
   },
-  "onboarding.stepBeta.checklist.alternativeTo": "Like Cmdr on AlternativeTo",
+  "onboarding.stepBeta.checklist.alternativeTo": "Geef Cmdr een like op AlternativeTo",
   "@onboarding.stepBeta.checklist.alternativeTo": {
     "sourceHash": "c9b1e1e"
   },
-  "onboarding.stepBeta.checklist.alternativeToNote": "At the very top of the page, next to the \"Cmdr\" title. This helps people and Google notice Cmdr!",
+  "onboarding.stepBeta.checklist.alternativeToNote": "Helemaal boven aan de pagina, naast de titel ‘Cmdr’. Zo valt Cmdr op bij mensen en bij Google!",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
     "sourceHash": "ea4903a"
   },
-  "onboarding.stepBeta.checklist.email": "Enter your email address <field></field> to get very occasional updates and questions",
+  "onboarding.stepBeta.checklist.email": "Vul je e-mailadres in <field></field> om heel af en toe updates en vragen te krijgen",
   "@onboarding.stepBeta.checklist.email": {
     "sourceHash": "e53bd44"
   },
-  "onboarding.stepBeta.checklist.emailSave": "Save",
+  "onboarding.stepBeta.checklist.emailSave": "Bewaar",
   "@onboarding.stepBeta.checklist.emailSave": {
     "sourceHash": "1509f56"
   },
-  "onboarding.stepBeta.checklist.emailMark": "Email address saved",
+  "onboarding.stepBeta.checklist.emailMark": "E-mailadres bewaard",
   "@onboarding.stepBeta.checklist.emailMark": {
     "sourceHash": "1bf8647"
   },
@@ -413,11 +413,11 @@
   "@onboarding.stepBeta.signup.failure": {
     "sourceHash": "0aac3a9"
   },
-  "onboarding.stepBeta.signup.rejected": "The mailing list didn''t accept that address. Worth a look for a typo, then hit Save again.",
+  "onboarding.stepBeta.signup.rejected": "De mailinglijst accepteerde dat adres niet. Kijk even of er een typefout in zit en klik daarna opnieuw op ‘Bewaar’.",
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "05ccee5"
   },
-  "onboarding.stepBeta.signup.unreachable": "Couldn''t reach the signup server just now, so you''re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+  "onboarding.stepBeta.signup.unreachable": "De inschrijfserver was net niet bereikbaar, dus je staat nog niet op de lijst. Je adres is op deze Mac bewaard: klik over een minuutje opnieuw op ‘Bewaar’, of wanneer je maar wilt via Instellingen › Updates en privacy.",
   "@onboarding.stepBeta.signup.unreachable": {
     "sourceHash": "8036aad"
   },
@@ -465,7 +465,7 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Needs accepting \"Local network access\" once",
+  "onboarding.stepOptional.networking.summary": "Eén keer ‘Lokale netwerktoegang’ toestaan",
   "@onboarding.stepOptional.networking.summary": {
     "sourceHash": "84f3716"
   },
@@ -477,7 +477,7 @@
   "@onboarding.stepOptional.indexing.title": {
     "sourceHash": "38d916b"
   },
-  "onboarding.stepOptional.indexing.summary": "Takes 1 GB space, speeds up searches, shows folder sizes",
+  "onboarding.stepOptional.indexing.summary": "Kost 1 GB schijfruimte, versnelt zoeken, toont mapgroottes",
   "@onboarding.stepOptional.indexing.summary": {
     "sourceHash": "6413c6f"
   },
@@ -501,7 +501,7 @@
   "@onboarding.stepOptional.updates.title": {
     "sourceHash": "147b1b6"
   },
-  "onboarding.stepOptional.updates.summary": "One tiny check at app start and once a day, so you stay on the latest version",
+  "onboarding.stepOptional.updates.summary": "Eén piepkleine controle bij het starten en één per dag, voor de nieuwste versie",
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
@@ -513,7 +513,7 @@
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "Lets you connect Android phones and the such, suppresses macOS native handler",
+  "onboarding.stepOptional.mtp.summary": "Verbindt met Android-telefoons en dergelijke, onderdrukt de macOS-afhandeling",
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
