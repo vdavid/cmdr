@@ -36,10 +36,14 @@ finishes onboarding.
   email/`betaSignup` wiring.
 - **`StepOptional.svelte`**: Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry
   settings.
-- **`OnboardingToggleCard.svelte`**: the bordered card of one registry-backed `<SettingSwitch>` (title, description
-  snippet, switch, caption) that `StepBeta`'s analytics opt-out and `StepOptional`'s four toggles render, so the two
-  steps stay pixel-identical. The description snippet is styled by the parent's own `.toggle-desc` / `.toggle-list`. An
-  optional `details` snippet + `detailsLabel` adds the info glyph beside the title (see § "The info glyph").
+- **`OnboardingToggleCard.svelte`**: one registry-backed `<SettingSwitch>` with its title, description snippet, and
+  caption, rendered by both `StepBeta`'s analytics opt-out and `StepOptional`'s four toggles so the two steps agree on
+  layout. `appearance` picks the chrome: `'card'` (default) draws the bordered, filled block that sets ONE toggle apart
+  from the prose around it; `'plain'` keeps the layout and rhythm but drops the frame, which is what a RUN of toggles
+  needs — four filled blocks stack into a wall, and a frame stops separating anything once every row has one. Plain also
+  drops the horizontal inset, so a title lines up with the step's own heading. `captionPlacement` puts the caption under
+  the switch or on its left, and an optional `details` snippet + `detailsLabel` adds the info glyph beside the title
+  (see § "The info glyph"). The description snippet is styled by the parent's own `.toggle-desc` / `.toggle-list`.
 - **`onboarding-state.svelte.ts`**: Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner
   mode, `openWizard()` / `resumeStepFor()` etc.
 

@@ -261,9 +261,13 @@
         display: contents;
     }
 
+    /* The gap is not decoration: the option's focus ring is drawn OUTSIDE its box
+       (`outline-offset`), so a footer sitting flush under the row gets the ring painted
+       across it. `--spacing-sm` clears the ring's full reach with room to spare. */
     .radio-cell.has-footer {
         display: flex;
         flex-direction: column;
+        gap: var(--spacing-sm);
         min-width: 0;
     }
 

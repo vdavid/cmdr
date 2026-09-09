@@ -70,6 +70,7 @@
         settingId="network.enabled"
         caption={tString('onboarding.stepOptional.recommendedOn')}
         captionPlacement="inline"
+        appearance="plain"
         detailsLabel={tString('onboarding.moreAbout', {
             topic: tString('onboarding.stepOptional.networking.title'),
         })}
@@ -87,6 +88,7 @@
         settingId="indexing.enabled"
         caption={tString('onboarding.stepOptional.recommendedOn')}
         captionPlacement="inline"
+        appearance="plain"
         detailsLabel={tString('onboarding.moreAbout', {
             topic: tString('onboarding.stepOptional.indexing.title'),
         })}
@@ -117,6 +119,7 @@
         settingId="updates.autoCheck"
         caption={tString('onboarding.stepOptional.recommendedOn')}
         captionPlacement="inline"
+        appearance="plain"
         detailsLabel={tString('onboarding.moreAbout', {
             topic: tString('onboarding.stepOptional.updates.title'),
         })}
@@ -134,6 +137,7 @@
         settingId="fileOperations.mtpEnabled"
         caption={tString('onboarding.stepOptional.recommendedOn')}
         captionPlacement="inline"
+        appearance="plain"
         detailsLabel={tString('onboarding.moreAbout', {
             topic: tString('onboarding.stepOptional.mtp.title'),
         })}

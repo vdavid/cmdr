@@ -28,6 +28,13 @@
          * for a short verdict like "Recommended: on" that reads as part of the control.
          */
         captionPlacement?: 'below' | 'inline'
+        /**
+         * `'card'` (default) draws the bordered, filled block, which is what sets ONE
+         * toggle apart from the prose around it. `'plain'` keeps the layout and the
+         * spacing but drops the frame, for a RUN of toggles: four filled blocks stack
+         * into a wall, and the frames stop separating anything once every row has one.
+         */
+        appearance?: 'card' | 'plain'
         /** The description under the title. */
         children: Snippet
         /**
@@ -47,6 +54,7 @@
         settingId,
         caption,
         captionPlacement = 'below',
+        appearance = 'card',
         children,
         details,
         detailsLabel,
@@ -60,7 +68,7 @@
     let detailsEl = $state<HTMLDivElement>()
 </script>
 
-<section class="toggle-block" aria-labelledby={titleId}>
+<section class="toggle-block" class:plain={appearance === 'plain'} aria-labelledby={titleId}>
     <header class="toggle-header">
         <div class="toggle-text">
             <h3 id={titleId} class="toggle-title">
@@ -107,6 +115,17 @@
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         background: var(--color-bg-primary);
+    }
+
+    /* Frame off, rhythm kept: the rows still breathe the way the cards did, they just stop
+       shouting. The horizontal inset goes with the frame, so a title lines up with the
+       step's own heading and lede instead of sitting in an indent of its own. */
+    .toggle-block.plain {
+        margin-bottom: var(--spacing-xl);
+        padding: 0;
+        border: none;
+        border-radius: 0;
+        background: none;
     }
 
     .toggle-block:last-child {

@@ -847,8 +847,11 @@
         overflow-y: auto;
     }
 
+    /* ❌ No negative top margin. It used to cancel the radio group's own row gap so the
+       note tucked under the option; as an `itemFooter` the note is inside that option's
+       cell, where the same nudge pulled it up under the focus ring instead. */
     .local-note {
-        margin: calc(-1 * var(--spacing-xs)) 0 0;
+        margin: 0;
         padding: var(--spacing-sm) var(--spacing-md);
         border-radius: var(--radius-sm);
         background: var(--color-bg-tertiary);
