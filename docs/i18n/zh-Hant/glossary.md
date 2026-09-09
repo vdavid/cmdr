@@ -1528,7 +1528,7 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 ### ❗ Dock 上的 pin / unpin 不用 `釘選`／`取消釘選`
 
 目錄裡的 `釘選`／`取消釘選` 是
-**Cmdr 自己介面**的詞（分頁、側邊欄的伺服器：`commands.tabPin.label`、`settings.behavior.serversPinHintSeen.description`）。
+**Cmdr 自己介面**的詞（分頁、側邊欄的伺服器：`commands.tabTogglePin.label`、`settings.behavior.serversPinHintSeen.description`）。
 **Dock 是 macOS 的介面，所以用 Apple 自己在 Dock 選單裡的那兩個詞**：
 
 - pin（把圖像留在 Dock 上）→ **`保留在 Dock 上`**（Dock.app `DockMenus`，`Keep in Dock`，zh-TW = zh-HK）
