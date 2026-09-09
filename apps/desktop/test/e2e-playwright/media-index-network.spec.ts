@@ -28,22 +28,53 @@ const OPT_IN_SETTING = 'mediaIndex.networkVolumes'
 const MASTER_SETTING = 'mediaIndex.enabled'
 const STUB_VOLUME_ID = 'e2e-smb-vol'
 
+/**
+ * Runs every step even when an earlier one throws, then reports all the failures
+ * together. Teardown here writes SHARED app state, so a step skipped because the
+ * step before it timed out leaves that state dirty: the app is one process for the
+ * whole run, so the retry re-enters with `mediaIndex.enabled` still on and fails on
+ * a precondition instead of the thing under test, and so does every later spec.
+ * Nothing is swallowed — a failing step still fails the test.
+ */
+async function runAllSteps(steps: { what: string; run: () => Promise<unknown> }[]): Promise<void> {
+  const failures: string[] = []
+  for (const step of steps) {
+    try {
+      await step.run()
+    } catch (error) {
+      failures.push(`${step.what}: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+  if (failures.length > 0) throw new Error(`Teardown did not fully restore state.\n  ${failures.join('\n  ')}`)
+}
+
 test.describe('Media index — network volume opt-in', () => {
   test.beforeEach(async ({ tauriPage }) => {
     await initMcpClient(tauriPage)
+    // Establish the preconditions rather than inheriting them. Both tests assume
+    // these defaults, and the app is shared across the whole run, so a spec that
+    // died mid-teardown (here or anywhere earlier) must not decide what this one sees.
+    await mcpCall('set_setting', { id: MASTER_SETTING, value: false })
+    await mcpCall('set_setting', { id: OPT_IN_SETTING, value: [] })
   })
 
   test.afterEach(async ({ tauriPage }) => {
     // Restore defaults so the next spec starts clean (sparse store persists these).
-    await mcpCall('set_setting', { id: OPT_IN_SETTING, value: [] })
-    await mcpCall('set_setting', { id: MASTER_SETTING, value: false })
-    await tauriPage.evaluate(`(async function() {
-      try {
-        var mod = await import('@tauri-apps/api/webviewWindow');
-        var win = await mod.WebviewWindow.getByLabel('settings');
-        if (win) await win.close();
-      } catch (e) { /* ignore */ }
-    })()`)
+    await runAllSteps([
+      { what: `resetting ${OPT_IN_SETTING}`, run: () => mcpCall('set_setting', { id: OPT_IN_SETTING, value: [] }) },
+      { what: `resetting ${MASTER_SETTING}`, run: () => mcpCall('set_setting', { id: MASTER_SETTING, value: false }) },
+      {
+        what: 'closing the settings window',
+        run: () =>
+          tauriPage.evaluate(`(async function() {
+            try {
+              var mod = await import('@tauri-apps/api/webviewWindow');
+              var win = await mod.WebviewWindow.getByLabel('settings');
+              if (win) await win.close();
+            } catch (e) { /* ignore */ }
+          })()`),
+      },
+    ])
   })
 
   test('the per-volume SMB opt-in persists in the settings store', async () => {
