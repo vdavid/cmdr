@@ -329,7 +329,8 @@ macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms (`索
 - **process** · `进程` · standard · `confirmed`
 - **exclusive access** · `独占访问权限` · standard · `high`
 - **suggestions (combobox)** · `建议` · standard · `high`
-- **dismiss (a toast/notification)** · `忽略` · macOS-style (dismiss a notification) · `high`
+- **dismiss (a toast/notification)** · `关闭` · macOS `zh-CN` (`Dismiss Popover` → `关闭弹出窗口`; the same corpus keeps
+  `忽略` for genuine ignore senses) · `confirmed`
 - **finalize / preparing view (loading)** · `准备视图` / `正在准备` · descriptive · `high`
 
 ### macOS system-feature names (shortcut-conflict warnings; reuse the localized macOS name)
@@ -921,17 +922,14 @@ Nine keys for two new surfaces: the main window's ~80 px corner progress chip (a
 the never-auto-dismissing failure notice plus its failed queue row. Head noun `操作`, window name `操作队列`, and the
 classifier `项` all come from the operation-queue section above; this section only records what that one doesn't.
 
-- **dismiss (button that removes a failed row / a notice, undoing and retrying nothing)** · `忽略` · the zh catalog had
-  already settled the English "Dismiss" BUTTON as `忽略` in four places (`downloads.empty.dismiss`,
-  `downloads.fda.dismiss`, `errorReporter.sentToast.dismiss`, `errorReporter.bundleSavedToast.dismiss`) plus
-  `ui.toast.dismissAria` = `忽略通知`, and the catalog outranks the pile for a concept the app already ships. The pile
-  offers no competing first-party term: macOS has only `Dismiss Popover` → `关闭弹出窗口` (a popover, not a list row),
-  Microsoft TBX gives `消除`/`关闭` (both defined as "turn off a system notification"), and none of the five file
-  managers has "dismiss" at all. `清除` (macOS `Clear Menu` → `清除菜单`) and `移除` (macOS `Remove` → `移除`) were
-  rejected: both read as deleting something, and the row deletes nothing. `queue.row.dismissAria` = `忽略这项操作`,
-  matching the sibling arias `暂停/继续/取消/选择这项操作` verbatim · `high`
-- **dismiss all (toolbar)** · `全部忽略` · the `全部 + 动词` family shape this window already uses (`全部暂停`,
-  `全部继续`) and the rename-review pass's `全部允许`/`全部拒绝` · `high`
+- **dismiss (button that removes a failed row / a notice, undoing and retrying nothing)** · `关闭` · all nine Dismiss
+  keys carry it; the macOS evidence is in the Dismiss entry of the 2026-08-30 convergence block below. Beyond that, the
+  pile offers no competing first-party term: Microsoft TBX gives `消除`/`关闭` (both defined as "turn off a system
+  notification"), and none of the five file managers has "dismiss" at all. `清除` (macOS `Clear Menu` → `清除菜单`) and
+  `移除` (macOS `Remove` → `移除`) were rejected: both read as deleting something, and the row deletes nothing.
+  `queue.row.dismissAria` = `关闭这项操作的记录`; the block below says why it can't be shortened · `confirmed`
+- **dismiss all (toolbar)** · `全部关闭` · the `全部 + 动词` family shape this window already uses (`全部暂停`,
+  `全部继续`) and the rename-review pass's `全部允许`/`全部拒绝` · `confirmed`
 - **"Couldn''t finish <action>" (the failure notice's nine `select` arms)** · `无法完成…操作` · built on the settled
   `queue.row.status` failed arm `无法完成` so the toast and the row say the same thing, and closed with the head noun
   `操作` so every arm is grammatical: 完成 wants a nominal object, and a bare `无法完成移到废纸篓` (a full verb phrase)
@@ -1460,8 +1458,8 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
   提到动词前面。 `焦点窗格`
   是目录里已经定下的说法（`commands.navGoToPath.description`、`commands.favoritesAdd.description`）。
 - **"Press Enter to filter"** · `按 Enter 键筛选` · 沿用本文件「pressing Enter / the Enter key」条目定下的
-  `按 Enter 键`（目录里另有 9 处这么写）加上 `筛选`（`queryUi.recent.filterPlaceholder` `筛选最近的搜索`） · `high`。❗
-  **有意不跟 `search.runHint` 的 `按回车键搜索`**：那一条本文件早就记成唯一的历史遗留写法，该被收敛，不该被复制。
+  `按 Enter 键`（目录里另有 9 处这么写）加上 `筛选`（`queryUi.recent.filterPlaceholder` `筛选最近的搜索`） ·
+  `high`。孪生键 `search.runHint` 与 `queryUi.bar.runHint` 同样是 `按 Enter 键搜索`，整份目录里 `回车键` 一次都不出现。
 - **"recent selections"（最近用过的查询弹窗）** · `最近的选择` · 上面的动词当名词用，与 `queryUi.recent.*` 的孪生键
   `最近的搜索` 完全对仗 · `high`。五个弹窗键逐字照搬孪生键，只把 `搜索` 换成 `选择`。
 - **"Matching what is shown in the list (the full path)."** · `匹配的是列表中显示的内容（完整路径）。` · `匹配`
