@@ -34,7 +34,10 @@ here:
   `startWindowServices(ctx)` runs AFTER the document-level key handlers, because its first `listen` rejects outside
   Tauri (the Playwright smoke tests) and the handlers have to survive that. `stopWindowServices()` drains both plus the
   module-owned `unlistenFns` array. Same context discipline as `listener-setup.ts`: getters in, callbacks out, no
-  captured `$state`.
+  captured `$state`. Phase 2 ends with `drainPendingReveals()`, which tells the backend this window can now be handed
+  an OS reveal that landed before it existed. ❌ It can't move to phase 1: the reveal is delivered over
+  `mcp-nav-to-path`, so it has to sit after `setupMcpListeners`. See
+  `apps/desktop/src-tauri/src/reveal/CLAUDE.md`.
 - **The window hands out TWO dispatchers, and which one a caller gets is a correctness question.** `dispatchFromUi`
   absorbs the rejection: a few handlers reject on purpose, a user gesture has nobody to hand that to, and the handler
   has already said its piece in a toast, so the alternative is an unhandled rejection. `handleCommandExecute` propagates

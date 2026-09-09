@@ -267,8 +267,11 @@ All under `apps/desktop/src-tauri/src/`.
   deadline. See `apps/desktop/src-tauri/src/quit/CLAUDE.md`, the frontend `apps/desktop/src/lib/quit/CLAUDE.md`, and the
   agent-facing surface in `apps/desktop/src-tauri/src/mcp/executor/quit.rs`
 - `app_lifecycle.rs`: The two Tauri builder handlers `lib.rs` names: `on_window_event` (main-window focus, close, and
-  destroy; viewer-window teardown) and `on_run_event` (ready, exit requested, exit), plus the shared
-  stop-background-services path all three shutdown routes take
+  destroy; viewer-window teardown) and `on_run_event` (ready, an OS reveal arriving, exit requested, exit), plus the
+  shared stop-background-services path all three shutdown routes take
+- `reveal/`: macOS-only. "Reveal in Cmdr": another app's "Show in Finder" lands in a pane instead, via the undocumented
+  `NSFileViewer` global default. Owns the registration state machine, the arriving-reveal dispatch, and the cold-start
+  buffer. See `apps/desktop/src-tauri/src/reveal/CLAUDE.md`
 - `stubs/`: Linux compilation stubs for macOS-only modules (Docker E2E pipeline)
 - `menu/`: Native menu bar: construction, dispatch mapping, accelerator sync, context-aware enable/disable. The Help
   menu carries the "What's new" item (above "Send feedback…")

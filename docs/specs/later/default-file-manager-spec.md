@@ -1,9 +1,14 @@
 # Reveal in Cmdr + default folder handler
 
-Status: deferred, and **nothing here is built** (re-derived from the tree 2026-08-27: `NSFileViewer` appears nowhere in
-the repo, `on_run_event` handles only `Ready` / `ExitRequested` / `Exit`, and `apps/desktop/src-tauri/Info.plist`
-carries no `CFBundleDocumentTypes`). The research below is from 2026-07-14 (web sources plus codebase recon) and was
-never spike-verified on a real machine. Run the spike before building.
+Status: **mechanism A is built** (`apps/desktop/src-tauri/src/reveal/`, 2026-09-09), with one measured limitation: a
+reveal only reaches Cmdr when Cmdr is already running. Mechanism B, onboarding, the first-activation moment, and the
+Settings UI are still deferred. The spike ran on 2026-09-09 (macOS 26.6 / Darwin 25.6, probe app plus a bundled Cmdr
+debug build driven by `open -R`); its answers are folded into the sections below and supersede the 2026-07-14 web
+research.
+
+What exists now: the `NSFileViewer` registration state machine plus its three IPC commands, the `RunEvent::Opened` arm,
+the cold-start buffer and its drain, and the shared navigate-then-cursor pane primitive. Depth and decisions live in
+`apps/desktop/src-tauri/src/reveal/DETAILS.md`; ❌ don't restate them here.
 
 ## Goal
 
@@ -25,9 +30,9 @@ They're independent OS toggles with different blast radius and different fragili
 
 - **A. `NSFileViewer` global default** (`defaults write -g NSFileViewer -string <bundle-id>`): an UNOFFICIAL,
   undocumented AppKit key consulted when apps call the reveal APIs. Per-user, plain user default (write via
-  `CFPreferences` on the global domain, not by shelling out). No sanctioned API, could break in any macOS release;
-  evidence: ForkLift/Path Finder document it, and community recipes confirm it works through recent macOS (researched
-  2026-07, community sources: ForkLift docs, MPU forum, yazi/fman GitHub threads).
+  `CFPreferences` on the global domain, not by shelling out). No sanctioned API, could break in any macOS release.
+  **Built.** Verified working on macOS 26.6 for `open -R` and the two `NSWorkspace` reveal calls; AppleScript's
+  `tell Finder to reveal` does not redirect, by design (verified 2026-09-09).
 - **B. `public.folder` default handler**: the sanctioned LaunchServices route. Set via
   `NSWorkspace.setDefaultApplication(at:toOpenContentType:completionHandler:)` (macOS 12+, above the 10.15
   `minimumSystemVersion` floor in `tauri.conf.json`, so it needs a `macos_at_least(12, 0)` gate plus the
@@ -35,49 +40,42 @@ They're independent OS toggles with different blast radius and different fragili
   surfaces errors. Never poke `com.apple.launchservices.secure` with `defaults write` (the recipe most blogs show): it's
   fragile and LS db rebuilds can drop it.
 
-Prerequisite for B (and possibly for A; spike item 1): Cmdr must declare itself a folder viewer via
-`CFBundleDocumentTypes` with `LSItemContentTypes = [public.folder]`, `CFBundleTypeRole = Viewer`,
-`LSHandlerRank = Alternate` (Alternate so we never auto-become default; the toggle is the only path). Tauri's
-`bundle.fileAssociations` is extension-based and can't express a UTI-only type, so this goes directly into
-`apps/desktop/src-tauri/Info.plist`, which already exists and which Tauri merges. Side effect worth knowing: Cmdr will
-appear in Finder's "Open With" menu for folders even with both toggles off. That's arguably a free feature, not a bug.
+**Not a prerequisite for A** (spike item 1, answered 2026-09-09): a probe app declaring no `CFBundleDocumentTypes` and
+claiming no UTI still received the reveal, so `NSFileViewer` alone is sufficient and Cmdr ships no document-type claim.
+Prerequisite for B only: Cmdr must declare itself a folder viewer via `CFBundleDocumentTypes` with
+`LSItemContentTypes = [public.folder]`, `CFBundleTypeRole = Viewer`, `LSHandlerRank = Alternate` (Alternate so we never
+auto-become default; the toggle is the only path). Tauri's `bundle.fileAssociations` is extension-based and can't
+express a UTI-only type, so this goes directly into `apps/desktop/src-tauri/Info.plist`, which already exists and which
+Tauri merges. Side effect worth knowing: Cmdr will appear in Finder's "Open With" menu for folders even with both
+toggles off. That's arguably a free feature, not a bug.
 
 ## Event delivery and app plumbing
 
-- macOS delivers the open/reveal as an Apple Event (`odoc`) → AppKit `application:openURLs:` → Tauri
-  `RunEvent::Opened { urls }` (macOS/iOS). No argv involved, ever: cold launch and already-running both arrive as this
-  event. macOS single-instances GUI apps through LaunchServices, so no second process and no need for a single-instance
-  plugin on macOS.
-- **Dispatch rule**: URL is a file → reveal (navigate focused pane to parent, cursor on the file). URL is a folder →
-  open it. Known ambiguity: a _reveal_ of a folder becomes an _open_ of it; acceptable, Finder-parity is not required.
-- **Where the arm goes**: `app_lifecycle.rs::on_run_event` is the single `RunEvent` match, and today it carries only
-  `Ready`, `ExitRequested`, and `Exit`. `Opened` is a new arm there, not a new plumbing layer.
-- **Cold-start race**: `RunEvent::Opened` can fire before the webview/frontend is mounted; a naive forward drops the
-  event and the launch silently lands on the default dirs. Buffer URLs in Rust and replay once the frontend is up. ❗
-  **There is no frontend-ready handshake to reuse** (verified 2026-08-27: no `frontend_ready` / `app_ready` signal
-  exists, and the MCP path has none either), so the replay trigger is part of this work. The cheapest honest shape is a
-  first-invoke from the frontend that drains the buffer.
-- **Window state**: on delivery, show + unminimize + focus the main window.
-- **The reveal primitive already exists**: `mcp/executor/downloads.rs`'s `go_to_latest_download` navigates the focused
-  pane to the parent directory then moves the cursor via `mcp-move-cursor`, with the disappeared-file race handled (72
-  lines, verified 2026-08-27). Reuse that internal path; ❌ don't build a second one.
-- Multi-URL events (user opened several folders at once): iterate; see open question 3.
-- Revealed paths may hit TCC prompts like any navigation; existing flows handle it, nothing new needed.
+**Built**, in `apps/desktop/src-tauri/src/reveal/` plus the `RunEvent::Opened` arm in `app_lifecycle.rs`: the dispatch
+rule (file → parent + cursor; folder → open it), the window raise, the cold-start buffer and its frontend drain, and
+multi-URL accumulation. It reuses `go_to_latest_download`'s pane primitive, now shared as `mcp::go_to_in_focused_pane`.
+Mechanics and rationale: `apps/desktop/src-tauri/src/reveal/DETAILS.md`.
 
-## Registration module (Rust, objc2 — `objc2-app-kit` 0.3 is already a dependency, verified 2026-08-27)
+❗ **The one open problem: a cold-launch reveal is lost** (spike item 2, answered 2026-09-09 and worse than the research
+assumed). An already-running Cmdr receives the reveal as `RunEvent::Opened` and shows the file. A reveal that
+LaunchServices has to launch Cmdr for delivers nothing at all — not `RunEvent::Opened`, and not `application:openURLs:`
+at the app delegate either. Declaring `CFBundleDocumentTypes` didn't change it. So the feature as shipped is "reveals
+land in Cmdr while Cmdr is open"; from cold, the window opens on its remembered location. The evidence, the two
+ruled-out causes, and what's left to try are in that `DETAILS.md` § "The cold-launch gap"; ❌ don't re-derive them.
 
-- **Read current state**: `NSWorkspace.urlForApplication(toOpen:)` for `public.folder`, and read the `NSFileViewer`
-  default. The Settings toggles MUST mirror actual OS state on every Settings open, not a stored flag: the user can
-  change handlers externally, and another file manager can take the handler at any time.
-- **Set B**: `setDefaultApplication(at: <our bundle URL>, toOpenContentType: UTType("public.folder"))`.
-- **Set A**: write `NSFileViewer` = our bundle id to the global preferences domain.
-- **Revert**: B → Finder's app URL (`/System/Library/CoreServices/Finder.app`); A → delete the key (not "set to Finder";
-  absence is the true default state).
-- **Courtesy to existing handlers**: if the current `public.folder` handler is neither Finder nor Cmdr (ForkLift, Path
-  Finder), the toggle copy names it ("Currently: ForkLift") and turning us on is still one click, but never clobber
-  silently from onboarding bulk-apply.
-- Dev/E2E builds: only offer registration in production bundles (a debug bundle id grabbing the user's handler is a
-  footgun).
+That gap has to be closed, or honestly worded, before this reaches onboarding: "reveals land in Cmdr" promises more than
+it currently does.
+
+## Registration module
+
+**Built for A** (`reveal/registration.rs`): read-through state, enable, disable, the production-bundle-only gate, and
+the "clear only if it's ours" rule, each covered by a test against an in-memory fake. Decisions and their reasons:
+`apps/desktop/src-tauri/src/reveal/DETAILS.md` § Registration.
+
+Still to build, for B: `NSWorkspace.urlForApplication(toOpen:)` for `public.folder`,
+`setDefaultApplication(at:toOpenContentType:)` to set it, and Finder's app URL to revert. The Settings toggle for B must
+mirror actual OS state on every open, same as A's does, and must name a third-party incumbent rather than clobbering it
+silently.
 
 ## UX
 
@@ -95,6 +93,10 @@ Decided (conversation, 2026-06/07):
   off" a neutral secondary. On turn-off, swap the same surface's content to a short friendly confirmation; no second
   notification, no groveling.
 - All copy through i18n; style guide applies (no "error"/"failed", active voice, sentence case).
+- **A's row is not a stored setting**: no `settings.json` key and no registry entry. `getRevealHandlerState` reads
+  through to the OS every time, and `setRevealHandlerEnabled` returns the state the OS was left in, which is what the
+  row must render. The typed state carries `registered` / `notRegistered` / `heldByOtherApp { bundleId, displayName }` /
+  `unavailable`; `unavailable` means this build may never write the key, so the row hides rather than disabling.
 
 Open questions:
 
@@ -107,30 +109,30 @@ Open questions:
 4. Onboarding copy and Settings copy (write with the style guide; pitch honestly: "folder opens and reveals land in
    Cmdr", not "Cmdr becomes your default file manager").
 
-## Spike checklist (~1 day, do first; each result gets an evidence anchor)
+## Spike checklist
 
-1. Does `NSFileViewer` alone redirect `activateFileViewerSelectingURLs`, or must the app also be the (or a declared)
-   `public.folder` handler? Community recipes always set both; test the combos.
-2. What exactly arrives in `RunEvent::Opened` for (a) reveal-of-file, (b) open-of-folder, (c) cold launch vs already
-   running; and the cold-launch timing vs webview-ready (verify the buffering is needed and sufficient).
-3. Coverage matrix for A: Chrome/Safari download "show in Finder", VS Code "Reveal in Finder", Slack, `open -R`,
-   AppleScript `tell Finder to reveal`. Expect partial coverage (apps that script Finder directly won't redirect);
-   record which, for honest toggle copy.
-4. Actual surface of B: `open .`, Spotlight folder hit, Dock folder click, "open containing folder" from a few apps, and
-   confirm within-Finder navigation is untouched.
-5. Deleting Cmdr.app while registered: confirm LS falls back to Finder for B and AppKit falls back for A (uninstall runs
-   no code, so graceful degradation is the only cleanup we get).
-6. Confirm no OS consent dialog interferes (macOS 15+ added consent UI for default _browser_ changes; folders are
-   believed prompt-free). Verify on the current macOS (26.x, what the team measures on) and, if a machine is available,
-   on the 10.15 `minimumSystemVersion` floor.
-7. Confirm the `Info.plist` declaration alone (toggles off) has no surprising side effects beyond the "Open With" menu
-   entry.
+Ran 2026-09-09 on macOS 26.6 (Darwin 25.6). Numbers below are the original item numbers. Answered:
 
-## Rough cost (after the spike)
+1. **`NSFileViewer` alone is enough.** No `public.folder` claim, no `CFBundleDocumentTypes`, no UTI needed (probe app
+   with none of them still received the reveal).
+2. **`RunEvent::Opened` carries the revealed items themselves**, as `file://` URLs; a reveal of a folder arrives as that
+   folder's URL. It fires for an already-running app and NOT for a cold launch. Buffering is in place and is necessary,
+   but it is not what's missing from the cold-launch case: see § "Event delivery".
+3. Coverage for A: `open -R` verified end to end. `activateFileViewerSelectingURLs:` and
+   `selectFile:inFileViewerRootedAtPath:` (what Chromium and Electron call) redirect; AppleScript
+   `tell Finder to reveal` does not, by design. A per-app matrix (Chrome, Safari, VS Code, Slack) is still worth running
+   for honest toggle copy.
+4. **No OS consent dialog, no TCC prompt, no entitlement** for A on macOS 26.6.
 
-Event plumbing + buffering + reveal wiring ~1 day; registration module ~1 day; Settings + onboarding step 4 +
-first-activation surface + copy + i18n ~1 day. E2E: cold-launch reveal is hard to E2E; cover the dispatch rule and
-buffering with Rust unit tests, the toggles with Playwright.
+Still open, all for mechanism B: item 4 (B's actual surface), item 5 (deleting Cmdr.app while registered), and item 7
+(side effects of the `Info.plist` declaration).
+
+## Rough cost
+
+Spent on A: event plumbing, buffering, registration module, and the shared pane primitive, with unit tests. Remaining:
+closing or wording the cold-launch gap (unknown, needs the investigation above); mechanism B ~1 day; Settings rows +
+onboarding step 4 + first-activation surface + copy + i18n ~1 day. Cold-launch reveal is hard to E2E; the dispatch rule
+and the buffering are covered by Rust unit tests, and the toggles get Playwright coverage when they exist.
 
 ## Sources
 

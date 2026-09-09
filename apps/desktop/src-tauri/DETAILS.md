@@ -24,6 +24,7 @@ Two kinds of block move out. First, anything with a real owner elsewhere:
 - `menu::install::at_startup(app, &settings)`: pin the UI language, build the bar, run the macOS AppKit passes, place `MenuState`.
 - `app_lifecycle::{on_window_event, on_run_event}`: the two builder handlers, plus the shared `stop_background_services`
   all three shutdown routes take (main window closed, main window destroyed, process exiting; none implies the others).
+  `on_run_event`'s `Opened` arm is where an OS reveal arrives (macOS only); it hands straight off to `reveal/`.
 
 Second, a whole PHASE whose steps are independent of each other, so lifting it hides no sequence:
 
