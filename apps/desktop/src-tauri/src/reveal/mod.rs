@@ -1,7 +1,7 @@
 //! "Reveal in Cmdr": another app's "Show in Finder" lands in our pane instead.
 //!
-//! Two halves. [`registration`] owns the one OS switch that makes it happen (the
-//! `NSFileViewer` global default); [`delivery`] owns what arrives once it's on — macOS
+//! Two halves. `registration` owns the one OS switch that makes it happen (the
+//! `NSFileViewer` global default); `delivery` owns what arrives once it's on — macOS
 //! delivers the reveal as an open-documents Apple Event, which Tauri surfaces as
 //! `RunEvent::Opened`, handled in `app_lifecycle.rs`.
 //!
