@@ -1331,6 +1331,27 @@ open in the default app, or ask. The decision is a pure function; the UI is a sm
   Installs from before the split are carried over by settings migration 5 (`settings/settings-store.ts`), which unpacks
   the old `behavior.archiveEnterBehavior` JSON blob into the three keys and deletes it.
 
+## The context menu's header line
+
+The native file context menu opens with a line naming what it will act on (`photo.jpg · 2.1 MB`, or `3 items · 3.2 MB`
+when the right-click landed inside the selection). Rust picks which of those shapes to draw, from the target count it
+derives itself (`src-tauri/src/menu/DETAILS.md` § "The context menu's header line"); the frontend supplies every word
+and digit inside, because only it can honour `appearance.fileSizeFormat`, `listing.sizeUnit`, a locale's grouping
+separator, and a plural form. The rules and helpers live in `../selection/context-menu-target.ts`; what each caller here
+can answer:
+
+- `pane-pointer.ts::handleContextMenu`: the right-clicked row's own size when the click landed OUTSIDE the selection,
+  and the pane's selection total when it landed inside — through the `getSelectedFilesTotalSize` dep, which `FilePane`
+  fills from the same `ListingStats` the status bar reads. A pane can't hand its rows over (the listing lives outside
+  reactivity by design), so the backend's totals stand in. `countText` comes off `paths.length`, the same array the
+  backend re-counts.
+- `SearchResultsView.svelte`: its snapshot holds its own rows, so `snapshotContextMenuRows` answers both cases. ❗ That
+  function and `snapshotContextMenuPaths` are one rule in two shapes on purpose — a second walk could aim the header at
+  a different set than the actions.
+
+❌ No stand-in number when there's no honest size (a folder, a row with no size yet, a selection holding a folder): the
+header shows the name or the count alone.
+
 ## Sharing a row
 
 The native context menu's `Share` (macOS) is a submenu listing what macOS can send the right-clicked selection to. The

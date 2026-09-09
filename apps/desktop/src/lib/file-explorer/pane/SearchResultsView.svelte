@@ -33,7 +33,8 @@
     import { capabilitiesForKind } from './volume-capabilities'
     import { showFileContextMenu } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
-    import { snapshotBasename, snapshotContextMenuPaths } from './snapshot-context-menu'
+    import { snapshotBasename, snapshotContextMenuPaths, snapshotContextMenuRows } from './snapshot-context-menu'
+    import { contextMenuCountText, contextMenuSizeBytes, contextMenuSizeText } from '../selection/context-menu-target'
     import type { SearchResultEntry } from '$lib/ipc/bindings'
     import type { ListViewAPI } from './types'
 
@@ -250,10 +251,22 @@
             // basename) copies the same string.
             // `canOpenTerminalHere` stays off: a snapshot pane is a result set, not
             // a folder, so there's nothing for "here" to mean.
+            // The header line at the top of the menu names what the menu acts on, and its
+            // size when there is an honest one. The snapshot holds its rows itself, so the
+            // same walk answers both halves.
+            const targets = snapshotContextMenuRows(entry.path, entries, selectedIndices)
             const paths = snapshotContextMenuPaths(entry.path, entries, selectedIndices)
-            void showFileContextMenu(entry.path, snapshotBasename(entry.path), entry.isDirectory, paths, {
-                restrictDestinationActions: !caps.canWrite,
-            })
+            void showFileContextMenu(
+                entry.path,
+                snapshotBasename(entry.path),
+                entry.isDirectory,
+                paths,
+                { restrictDestinationActions: !caps.canWrite },
+                {
+                    countText: contextMenuCountText(paths.length),
+                    sizeText: contextMenuSizeText(contextMenuSizeBytes(targets)),
+                },
+            )
         }}
     />
 {:else}

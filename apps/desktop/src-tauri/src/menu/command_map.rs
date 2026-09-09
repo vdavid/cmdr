@@ -85,6 +85,13 @@ pub const SELECT_FILES_ID: &str = "select_files";
 pub const DESELECT_FILES_ID: &str = "deselect_files";
 pub const TOGGLE_SELECTION_ID: &str = "toggle_selection";
 
+/// The header at the top of the file context menu, naming what the menu will act on
+/// (`menu/context_menu_header.rs`). Deliberately absent from `menu_id_to_command`: the
+/// item is DISABLED, so it isn't clickable, and no command belongs behind a label.
+/// It carries an ID so `menu.get()` can find it for the macOS styling pass, the same
+/// reason `SERVICES_CONTEXT_ID` has one.
+pub const CONTEXT_MENU_TARGET_ID: &str = "context_menu_target";
+
 /// Menu item IDs for cloud actions (macOS File Provider).
 pub const CLOUD_MAKE_OFFLINE_ID: &str = "cloud_make_offline";
 pub const CLOUD_REMOVE_DOWNLOAD_ID: &str = "cloud_remove_download";

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, it, expect } from 'vitest'
 import {
   formatSizeTriads,
   formatSizeForDisplay,
+  formatSizeText,
   tierClassForUnit,
   formatDate,
   buildDateTooltip,
@@ -454,6 +455,42 @@ describe('formatSizeForDisplay', () => {
       const result = formatSizeForDisplay(1024 ** 5, { unit: 'kB', format: 'binary' })
       expect(result[0].tierClass).toBe('size-tb')
     })
+  })
+})
+
+describe('formatSizeText', () => {
+  // Same locale pin as `formatSizeForDisplay` above, for the same reason: the raw-bytes
+  // path's group separator follows the locale.
+  beforeEach(() => {
+    _setLocaleForTests('en-US')
+  })
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
+  it('is what formatSizeForDisplay renders, joined into one string', () => {
+    // The whole point: the native context menu's header can't carry the tier spans, and
+    // it must still read exactly like the pane's size column beside it.
+    for (const unit of ['bytes', 'dynamic', 'kB', 'MB', 'GB'] as const) {
+      const opts = { unit, format: 'binary' as const }
+      expect(formatSizeText(1_073_208, opts)).toBe(
+        formatSizeForDisplay(1_073_208, opts)
+          .map((span) => span.value)
+          .join(''),
+      )
+    }
+  })
+
+  it('renders a friendly unit in dynamic mode', () => {
+    expect(formatSizeText(1_073_208, { unit: 'dynamic', format: 'binary' })).toBe('1.02 MB')
+  })
+
+  it('renders grouped digits and no unit word in bytes mode, like the column', () => {
+    expect(formatSizeText(1_073_208, { unit: 'bytes', format: 'binary' })).toBe('1,073,208')
+  })
+
+  it('follows the SI setting', () => {
+    expect(formatSizeText(1_073_208, { unit: 'dynamic', format: 'si' })).toBe('1.07 MB')
   })
 })
 

@@ -79,6 +79,33 @@ export interface PaneContextMenuFacts {
 }
 
 /**
+ * The TEXT the header line at the top of the menu shows about the right-clicked ROW(S),
+ * as opposed to what the pane they sit in contributes ({@link PaneContextMenuFacts}).
+ *
+ * Every field is rendered on this side because every one of them needs locale-aware
+ * number formatting, which `crate::intl` deliberately doesn't have. Build them with
+ * `$lib/file-explorer/selection/context-menu-target`, never by hand.
+ */
+export interface ContextMenuTarget {
+  /**
+   * How many rows the menu acts on, worded for the active language (`3 items`).
+   *
+   * The backend re-derives the NUMBER from `paths` and uses that to pick the header's
+   * shape; this is only the wording for the several-rows shape, which needs the locale's
+   * grouping separator and plural form. Omit it below two rows.
+   */
+  countText?: string
+  /**
+   * The size the header shows, formatted HERE and passed as text.
+   *
+   * Omit it when there's no honest size: a folder, a row whose size isn't known yet, a
+   * selection with a folder in it (its recursive size may not be settled). ❌ Never a
+   * fabricated zero.
+   */
+  sizeText?: string
+}
+
+/**
  * Shows a native context menu for a file.
  * @param path - Absolute path to the right-clicked file (the "primary" file).
  * @param filename - Name of the right-clicked file.
@@ -87,6 +114,7 @@ export interface PaneContextMenuFacts {
  *                file, pass `[path]`. For a right-click on a file that's part of a multi-selection,
  *                pass the full selection so "Open with" launches all files at once.
  * @param pane - What the surface the click landed in contributes. See {@link PaneContextMenuFacts}.
+ * @param target - What the right-clicked rows contribute. See {@link ContextMenuTarget}.
  */
 export async function showFileContextMenu(
   path: string,
@@ -94,6 +122,7 @@ export async function showFileContextMenu(
   isDirectory: boolean,
   paths: string[],
   pane: PaneContextMenuFacts = {},
+  target: ContextMenuTarget = {},
 ): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see the `ipc.rs` manifest)
   await invoke('show_file_context_menu', {
@@ -106,6 +135,10 @@ export async function showFileContextMenu(
       listingId: pane.listingId ?? '',
       canOpenTerminalHere: pane.canOpenTerminalHere ?? false,
       canShare: pane.canShare ?? false,
+    },
+    target: {
+      countText: target.countText ?? null,
+      sizeText: target.sizeText ?? null,
     },
   })
 }

@@ -1098,6 +1098,7 @@ export type MessageKey =
   | 'fileExplorer.columns.name'
   | 'fileExplorer.columns.size'
   | 'fileExplorer.columns.sortByRelevance'
+  | 'fileExplorer.contextMenu.itemCount'
   | 'fileExplorer.dateTooltip.created'
   | 'fileExplorer.dateTooltip.lastModified'
   | 'fileExplorer.dateTooltip.lastMoved'

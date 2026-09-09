@@ -97,6 +97,26 @@ export function formatSizeForDisplay(
 }
 
 /**
+ * The same size {@link formatSizeForDisplay} renders, as one plain string — for a
+ * surface that can't carry the tier-colored spans.
+ *
+ * The native context menu's header line is the case it exists for: a menu label is
+ * text, and the size in it has to be the size the pane's own column shows right
+ * beside it, under both `listing.sizeUnit` and `appearance.fileSizeFormat`. Going
+ * through the same function is what keeps the two from disagreeing on screen (and is
+ * why the backend never formats a size of its own — see
+ * `src-tauri/src/commands/menu.rs`'s `ContextMenuTarget`).
+ *
+ * In raw-bytes mode this is the grouped digit string with no unit word, exactly as
+ * the size column reads it.
+ */
+export function formatSizeText(bytes: number, opts: { unit: FileSizeUnit; format: FileSizeFormat }): string {
+  return formatSizeForDisplay(bytes, opts)
+    .map((span) => span.value)
+    .join('')
+}
+
+/**
  * Wraps an already-formatted size string (e.g. `"1.02 MB"`, `"512 bytes"`) in a colored span
  * based on its unit suffix. Use when the value comes from `$lib/units`
  * (`formatByteSize` / `formatByteRate`) and you just need tier coloring on top, without re-formatting.

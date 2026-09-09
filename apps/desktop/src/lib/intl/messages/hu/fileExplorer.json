@@ -1056,6 +1056,10 @@
   "@fileExplorer.summary.selectedSuffix": {
     "sourceHash": "d7cbbb6"
   },
+  "fileExplorer.contextMenu.itemCount": "{countText} {count, plural, one {elem} other {elem}}",
+  "@fileExplorer.contextMenu.itemCount": {
+    "sourceHash": "66337df"
+  },
   "fileExplorer.renameConflict.title": "Már létezik ilyen nevű fájl",
   "@fileExplorer.renameConflict.title": {
     "sourceHash": "92ae292"

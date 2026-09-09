@@ -24,9 +24,12 @@
 //! - `open_with.rs` (macOS): "Open with" submenu builder.
 //! - `context_menu_icons.rs` (macOS): SF Symbols on right-click items, which needs the tracking
 //!   notification because Tauri exposes no `NSMenu` for a context menu.
+//! - `context_menu_header.rs`: the right-click menu's first line, naming what it will act on, plus
+//!   the macOS pass that makes it read as a header rather than a greyed-out command.
 
 mod accelerators;
 mod command_map;
+mod context_menu_header;
 #[cfg(target_os = "macos")]
 mod context_menu_icons;
 pub mod install;
@@ -69,6 +72,9 @@ use tauri::{
 // `command_map`; the glob keeps every existing `crate::menu::…` / `super::…` import path valid.
 pub use accelerators::{frontend_shortcut_to_accelerator, update_menu_item_accelerator};
 pub use command_map::*;
+#[cfg(target_os = "macos")]
+pub use context_menu_header::lend_context_menu_header;
+pub use context_menu_header::{ContextMenuTarget, ContextMenuTargetFacts};
 #[cfg(target_os = "macos")]
 pub use context_menu_icons::lend_context_menu_icons;
 pub use media_index_items::{ImageIndexMenuState, image_index_menu_items};

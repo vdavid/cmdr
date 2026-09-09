@@ -88,6 +88,7 @@
     import { createPaneKeyRouter } from './pane-key-router'
     import { createEntryActivation } from './entry-activation'
     import { createPanePointer } from './pane-pointer'
+    import { contextMenuSelectionSizeBytes } from '../selection/context-menu-target'
     import { breadcrumbDisplayPath, createBreadcrumbHandlers } from './breadcrumb-bar'
     import { createDeletedDirPoll } from './deleted-dir-poll'
     import { fetchEntriesSnapshot, fetchSelectedNames } from './entries-snapshot'
@@ -1282,6 +1283,7 @@
         getIncludeHidden: () => includeHidden,
         getVolumeId: () => volumeId,
         getSelectedIndices: () => Array.from(selection.selectedIndices),
+        getSelectedFilesTotalSize: () => contextMenuSelectionSizeBytes(selectionInfo.stats),
         onRequestFocus: () => onRequestFocus?.(),
         fetchCursorEntry: () => void selectionInfo.fetchEntry(),
         extendSelectionFromMouse: ({ index, cursorIndex: cursor, hasParent: parent }) =>

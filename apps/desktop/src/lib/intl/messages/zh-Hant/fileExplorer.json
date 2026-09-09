@@ -1053,6 +1053,10 @@
   "@fileExplorer.summary.selectedSuffix": {
     "sourceHash": "d7cbbb6"
   },
+  "fileExplorer.contextMenu.itemCount": "{countText} 個{count, plural, other {項目}}",
+  "@fileExplorer.contextMenu.itemCount": {
+    "sourceHash": "66337df"
+  },
   "fileExplorer.renameConflict.title": "已經有同名的檔案了",
   "@fileExplorer.renameConflict.title": {
     "sourceHash": "92ae292"

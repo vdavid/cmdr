@@ -11,6 +11,7 @@
  */
 
 import { getPathsAtIndices, showFileContextMenu, showParentRowContextMenu } from '$lib/tauri-commands'
+import { contextMenuCountText, contextMenuSizeBytes, contextMenuSizeText } from '../selection/context-menu-target'
 import type { FileEntry, SelectPayload } from '../types'
 import { getSetting, setSetting } from '$lib/settings'
 import { addToast } from '$lib/ui/toast'
@@ -36,6 +37,13 @@ export interface PanePointerDeps {
   getVolumeId: () => string
   /** The pane's selected indices, for the "right-clicked inside the selection" test. */
   getSelectedIndices: () => number[]
+  /**
+   * The selection's total size for the context menu's header line, or `null` when
+   * there isn't an honest one (no listing stats yet, or a folder in the selection —
+   * see `selection/context-menu-target.ts` for why a folder disqualifies it).
+   * Only read when the right-click landed inside the selection.
+   */
+  getSelectedFilesTotalSize: () => number | null
   onRequestFocus: () => void
   fetchCursorEntry: () => void
   /** Shift+click: extend the range from the cursor to the clicked row. */
@@ -102,16 +110,27 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
       }
     }
     const volumeId = deps.getVolumeId()
-    await showFileContextMenu(entry.path, entry.name, entry.isDirectory, paths, {
-      listingId,
-      // The terminal item acts on the PANE's folder, so it asks the pane's volume,
-      // not the right-clicked row.
-      canOpenTerminalHere: canOpenTerminalIn(capabilitiesFor(volumeId).kind),
-      // "Share…" acts on the ROWS, so it asks about the row: a snapshot pane has no
-      // folder to `cd` into but lists real files, and an archive's insides are the
-      // other way round.
-      canShare: rowIsOsVisible(volumeId, entry.path),
-    })
+    // The header at the top of the menu says what the menu will act on, so its size has
+    // to be the size of THAT: the whole selection when the click landed inside it (the
+    // pane already totals it for the status bar), this one row otherwise.
+    const sizeBytes = paths.length > 1 ? deps.getSelectedFilesTotalSize() : contextMenuSizeBytes([entry])
+    await showFileContextMenu(
+      entry.path,
+      entry.name,
+      entry.isDirectory,
+      paths,
+      {
+        listingId,
+        // The terminal item acts on the PANE's folder, so it asks the pane's volume,
+        // not the right-clicked row.
+        canOpenTerminalHere: canOpenTerminalIn(capabilitiesFor(volumeId).kind),
+        // "Share…" acts on the ROWS, so it asks about the row: a snapshot pane has no
+        // folder to `cd` into but lists real files, and an archive's insides are the
+        // other way round.
+        canShare: rowIsOsVisible(volumeId, entry.path),
+      },
+      { countText: contextMenuCountText(paths.length), sizeText: contextMenuSizeText(sizeBytes) },
+    )
   }
 
   function handlePaneClick(event: MouseEvent): void {

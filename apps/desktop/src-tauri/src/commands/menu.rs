@@ -60,6 +60,7 @@ pub fn show_file_context_menu<R: Runtime>(
     is_directory: bool,
     paths: Vec<String>,
     pane: PaneContextMenuFacts,
+    target: crate::menu::ContextMenuTarget,
 ) -> Result<(), String> {
     let app = window.app_handle();
 
@@ -68,6 +69,8 @@ pub fn show_file_context_menu<R: Runtime>(
     // should apply to: it equals `[path]` when the right-clicked file isn't part of a
     // multi-selection, or the entire selection otherwise.
     let context_paths = if paths.is_empty() { vec![path.clone()] } else { paths };
+    // How many rows the header names, taken before `context_paths` moves into `MenuState`.
+    let target_count = context_paths.len();
 
     // Compute per-file context (sync status, FP-domain membership, candidate "Open with"
     // apps). The LaunchServices query for candidates can take 50-200 ms on a cold cache,
@@ -136,6 +139,11 @@ pub fn show_file_context_menu<R: Runtime>(
             can_share: pane.can_share,
         },
         image_index,
+        crate::menu::ContextMenuTargetFacts {
+            count: target_count,
+            count_text: target.count_text.as_deref(),
+            size_text: target.size_text.as_deref(),
+        },
     )
     .map_err(|e| e.to_string())?;
 
@@ -161,6 +169,12 @@ pub fn show_file_context_menu<R: Runtime>(
     // starts tracking, which happens inside `popup()`. ❌ Never `let _ =`.
     #[cfg(target_os = "macos")]
     let _icon_loan = crate::menu::lend_context_menu_icons(&result.menu);
+
+    // The header line, restyled from "greyed-out command" to "header" at the same
+    // moment and for the same reason as the icons above. ❌ Never `let _ =`; if this
+    // never lands, the plain disabled item it replaces is still correct.
+    #[cfg(target_os = "macos")]
+    let _header_loan = crate::menu::lend_context_menu_header(&result.menu);
 
     result.menu.popup(window).map_err(|e| e.to_string())?;
 

@@ -26,11 +26,35 @@ export function snapshotContextMenuPaths(
   rows: readonly SnapshotRow[],
   selectedIndices: ReadonlySet<number>,
 ): string[] {
-  const selectedPaths: string[] = []
+  const targets = snapshotContextMenuRows(clickedPath, rows, selectedIndices)
+  // A clicked path that isn't in `rows` at all still gets a menu aimed at itself: the
+  // path is what the actions need, and it's real whether or not this array holds it.
+  return targets.length > 0 ? targets.map((row) => row.path) : [clickedPath]
+}
+
+/**
+ * The same answer as {@link snapshotContextMenuPaths}, as whole ROWS.
+ *
+ * The menu's header line needs more off each target than its path (its size, and
+ * whether it's a folder), and there must be exactly one rule deciding which rows the
+ * menu is about — a second walk could disagree with the paths the actions get.
+ *
+ * EMPTY when `clickedPath` isn't among `rows`, which is the honest answer for a row
+ * this array doesn't describe: the header then shows no size.
+ */
+export function snapshotContextMenuRows<Row extends SnapshotRow>(
+  clickedPath: string,
+  rows: readonly Row[],
+  selectedIndices: ReadonlySet<number>,
+): Row[] {
+  const selected: Row[] = []
+  let clickedRow: Row | undefined
   for (let i = 0; i < rows.length; i++) {
-    if (selectedIndices.has(i)) selectedPaths.push(rows[i].path)
+    if (selectedIndices.has(i)) selected.push(rows[i])
+    if (rows[i].path === clickedPath) clickedRow = rows[i]
   }
-  return selectedPaths.includes(clickedPath) ? selectedPaths : [clickedPath]
+  if (selected.some((row) => row.path === clickedPath)) return selected
+  return clickedRow ? [clickedRow] : []
 }
 
 /**

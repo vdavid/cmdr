@@ -26,6 +26,8 @@ use crate::file_system::sync_status::SyncStatus;
 
 use crate::intl::{menu_t, menu_t_with};
 
+use super::context_menu_header::{ContextMenuTargetFacts, append_context_menu_header};
+
 #[cfg(target_os = "macos")]
 use super::OPEN_TERMINAL_HERE_ID;
 #[cfg(target_os = "macos")]
@@ -159,6 +161,9 @@ pub fn build_context_menu<R: Runtime>(
     // turns them into the folder-only chosen/exclusion items (empty when the master toggle
     // is off).
     image_index: ImageIndexMenuState,
+    // What the right-clicked ROW(S) are, for the header line at the very top; see
+    // `ContextMenuTargetFacts`.
+    target: ContextMenuTargetFacts<'_>,
 ) -> tauri::Result<ContextMenuResult<R>> {
     let ContextMenuPaneFacts {
         restrict_destination_actions,
@@ -169,6 +174,11 @@ pub fn build_context_menu<R: Runtime>(
     #[cfg(not(target_os = "macos"))]
     let _ = (can_open_terminal_here, can_share);
     let menu = Menu::new(app)?;
+
+    // What this menu will act on, first line, above everything. Cmdr acts on the whole
+    // selection or on the one right-clicked row depending on whether the click landed
+    // inside the selection, and this is the only place that says which.
+    append_context_menu_header(app, &menu, filename, target)?;
 
     // Open / View / Edit group (files only)
     #[cfg(target_os = "macos")]

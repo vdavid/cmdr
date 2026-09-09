@@ -1549,6 +1549,14 @@
   "@fileExplorer.summary.selectedSuffix": {
     "description": "Word appended in the dirs-only status-bar summary when no size is shown, e.g. \"2 of 5 dirs selected.\" Only used in that no-size branch."
   },
+  "fileExplorer.contextMenu.itemCount": "{countText} {count, plural, one {item} other {items}}",
+  "@fileExplorer.contextMenu.itemCount": {
+    "description": "NOUN phrase, no verb. The first line of a file's right-click menu, above a separator: it names what the menu is about to act on, because Cmdr acts on the whole selection when the right-clicked row is part of it and on that one row when it isn't. When several rows are involved this count replaces the filename, and a total size may follow it after a \" · \" that Cmdr adds (\"3 items · 3.2 MB\"). In practice only the two-or-more forms are ever seen (one row shows its filename instead), but fill in every plural category your language has anyway. Use the noun your macOS Finder uses when it counts a mixed pile of files and folders.",
+    "placeholders": {
+      "countText": "how many rows the menu will act on, already formatted for display (e.g. 3, or 12,345)",
+      "count": "the same number (drives the singular/plural form of the noun, and any agreement your language needs)"
+    }
+  },
   "fileExplorer.renameConflict.title": "A file with this name already exists",
   "@fileExplorer.renameConflict.title": {
     "description": "Title of the dialog shown when renaming a file to a name that already exists in the folder.",

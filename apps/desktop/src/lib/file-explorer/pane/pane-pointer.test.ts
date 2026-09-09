@@ -61,7 +61,14 @@ function entryOf(over: Partial<FileEntry> = {}): FileEntry {
 describe('createPanePointer', () => {
   let deps: PanePointerDeps
   let calls: Record<string, Mock>
-  let state: { cursorIndex: number; hasParent: boolean; listingId: string; volumeId: string; selected: number[] }
+  let state: {
+    cursorIndex: number
+    hasParent: boolean
+    listingId: string
+    volumeId: string
+    selected: number[]
+    selectedFilesTotalSize: number | null
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -70,7 +77,14 @@ describe('createPanePointer', () => {
     ipc.getPathsAtIndices.mockResolvedValue([])
     background.isFileListBackgroundClick.mockReturnValue(true)
     settings.getSetting.mockReturnValue(true)
-    state = { cursorIndex: 2, hasParent: true, listingId: 'listing-1', volumeId: 'root', selected: [] }
+    state = {
+      cursorIndex: 2,
+      hasParent: true,
+      listingId: 'listing-1',
+      volumeId: 'root',
+      selected: [],
+      selectedFilesTotalSize: null,
+    }
     calls = {
       setCursorIndex: vi.fn((i: number) => {
         state.cursorIndex = i
@@ -91,6 +105,7 @@ describe('createPanePointer', () => {
       getIncludeHidden: () => true,
       getVolumeId: () => state.volumeId,
       getSelectedIndices: () => state.selected,
+      getSelectedFilesTotalSize: () => state.selectedFilesTotalSize,
       onRequestFocus: calls.onRequestFocus,
       fetchCursorEntry: calls.fetchCursorEntry,
       extendSelectionFromMouse: calls.extendSelectionFromMouse,
@@ -139,44 +154,72 @@ describe('createPanePointer', () => {
       state.selected = [1, 2]
       ipc.getPathsAtIndices.mockResolvedValue(['/dir/a.txt', '/dir/b.txt'])
       await createPanePointer(deps).handleContextMenu(entryOf())
-      expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt', '/dir/b.txt'], {
-        listingId: 'listing-1',
-        canOpenTerminalHere: true,
-        canShare: true,
-      })
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
+        '/dir/a.txt',
+        'a.txt',
+        false,
+        ['/dir/a.txt', '/dir/b.txt'],
+        {
+          listingId: 'listing-1',
+          canOpenTerminalHere: true,
+          canShare: true,
+        },
+        { countText: '2 items', sizeText: undefined },
+      )
     })
 
     it('acts on the one entry when the right-clicked row is outside the selection', async () => {
       state.selected = [7]
       ipc.getPathsAtIndices.mockResolvedValue(['/dir/other.txt'])
       await createPanePointer(deps).handleContextMenu(entryOf())
-      expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt'], {
-        listingId: 'listing-1',
-        canOpenTerminalHere: true,
-        canShare: true,
-      })
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
+        '/dir/a.txt',
+        'a.txt',
+        false,
+        ['/dir/a.txt'],
+        {
+          listingId: 'listing-1',
+          canOpenTerminalHere: true,
+          canShare: true,
+        },
+        { countText: undefined, sizeText: undefined },
+      )
     })
 
     it('falls back to the single entry when the selection lookup throws', async () => {
       state.selected = [1]
       ipc.getPathsAtIndices.mockRejectedValue(new Error('gone'))
       await createPanePointer(deps).handleContextMenu(entryOf())
-      expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt'], {
-        listingId: 'listing-1',
-        canOpenTerminalHere: true,
-        canShare: true,
-      })
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
+        '/dir/a.txt',
+        'a.txt',
+        false,
+        ['/dir/a.txt'],
+        {
+          listingId: 'listing-1',
+          canOpenTerminalHere: true,
+          canShare: true,
+        },
+        { countText: undefined, sizeText: undefined },
+      )
     })
 
     it('greys out "Open terminal here" on a pane whose volume has no OS-visible paths', async () => {
       // The item acts on the pane's folder, so a phone offers nothing to open.
       state.volumeId = 'mtp-1'
       await createPanePointer(deps).handleContextMenu(entryOf())
-      expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt'], {
-        listingId: 'listing-1',
-        canOpenTerminalHere: false,
-        canShare: false,
-      })
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
+        '/dir/a.txt',
+        'a.txt',
+        false,
+        ['/dir/a.txt'],
+        {
+          listingId: 'listing-1',
+          canOpenTerminalHere: false,
+          canShare: false,
+        },
+        { countText: undefined, sizeText: undefined },
+      )
     })
 
     it('offers "Share…" on the snapshot pane, where the terminal item has nothing to open', async () => {
@@ -184,11 +227,18 @@ describe('createPanePointer', () => {
       // search-results pane has no folder of its own, but every row is a real file.
       state.volumeId = 'search-results'
       await createPanePointer(deps).handleContextMenu(entryOf())
-      expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt'], {
-        listingId: 'listing-1',
-        canOpenTerminalHere: false,
-        canShare: true,
-      })
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
+        '/dir/a.txt',
+        'a.txt',
+        false,
+        ['/dir/a.txt'],
+        {
+          listingId: 'listing-1',
+          canOpenTerminalHere: false,
+          canShare: true,
+        },
+        { countText: undefined, sizeText: undefined },
+      )
     })
 
     it('leaves "Share…" out for a row inside an archive, though the pane sits on a local drive', async () => {
@@ -201,6 +251,7 @@ describe('createPanePointer', () => {
         false,
         ['/dir/trip.zip/IMG_0001.jpg'],
         { listingId: 'listing-1', canOpenTerminalHere: true, canShare: false },
+        { countText: undefined, sizeText: undefined },
       )
     })
 
@@ -219,6 +270,41 @@ describe('createPanePointer', () => {
     it('cancels an in-flight type-to-jump', async () => {
       await createPanePointer(deps).handleContextMenu(entryOf())
       expect(calls.clearJump).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("the header's size", () => {
+    /** The `target` argument, whatever else the call carried. */
+    function targetArg(): { countText?: string; sizeText?: string } {
+      return ipc.showFileContextMenu.mock.calls[0][5] as { countText?: string; sizeText?: string }
+    }
+
+    it("sends the one row's own size when the click landed outside the selection", async () => {
+      await createPanePointer(deps).handleContextMenu(entryOf({ size: 2_100_000 }))
+      expect(targetArg()).toEqual({ countText: undefined, sizeText: '2.00 MB' })
+    })
+
+    it('sends the selection total when the click landed inside the selection', async () => {
+      state.selected = [1, 2]
+      state.selectedFilesTotalSize = 3_355_443
+      ipc.getPathsAtIndices.mockResolvedValue(['/dir/a.txt', '/dir/b.txt'])
+      await createPanePointer(deps).handleContextMenu(entryOf({ size: 2_100_000 }))
+      // The total, never the clicked row's own size: the menu acts on all of them.
+      expect(targetArg()).toEqual({ countText: '2 items', sizeText: '3.20 MB' })
+    })
+
+    it('sends no size for a folder, whose size is its subtree and may still be settling', async () => {
+      await createPanePointer(deps).handleContextMenu(entryOf({ isDirectory: true, size: 4096 }))
+      expect(targetArg()).toEqual({ countText: undefined, sizeText: undefined })
+    })
+
+    it("sends no size when the pane can't total the selection honestly", async () => {
+      state.selected = [1, 2]
+      state.selectedFilesTotalSize = null
+      ipc.getPathsAtIndices.mockResolvedValue(['/dir/a.txt', '/dir/b.txt'])
+      await createPanePointer(deps).handleContextMenu(entryOf({ size: 2_100_000 }))
+      // ❌ Never the clicked row's size as a stand-in: it would read as the total.
+      expect(targetArg()).toEqual({ countText: '2 items', sizeText: undefined })
     })
   })
 

@@ -23,6 +23,7 @@
     import { onMount, onDestroy } from 'svelte'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import { showFileContextMenu, type HistoryEntry, type SearchResultEntry } from '$lib/tauri-commands'
+    import { contextMenuSizeBytes, contextMenuSizeText } from '$lib/file-explorer/selection/context-menu-target'
     import { resolveDefaultScope, defaultScopeLabel } from './searchable-folder'
     import type { ScopePresets } from '$lib/query-ui/query-dialog-config'
     import { tString } from '$lib/intl/messages.svelte'
@@ -207,11 +208,18 @@
      * `showFileContextMenu` IPC the file panes use.
      */
     function openRowMenu(entry: SearchResultEntry): void {
-        void showFileContextMenu(entry.path, entry.name, entry.isDirectory, [entry.path]).catch(
-            () => {
-                // Silent: a missing menu is preferable to a stuck dialog.
-            },
-        )
+        // Always one target here: the dialog's menu acts on the row it was opened on, never
+        // on a selection, so the header names that row and its size.
+        void showFileContextMenu(
+            entry.path,
+            entry.name,
+            entry.isDirectory,
+            [entry.path],
+            {},
+            { sizeText: contextMenuSizeText(contextMenuSizeBytes([entry])) },
+        ).catch(() => {
+            // Silent: a missing menu is preferable to a stuck dialog.
+        })
     }
 
     /**

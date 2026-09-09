@@ -53,6 +53,12 @@ window focus context.
 - `context_menu_icons.rs` (macOS): `lend_context_menu_icons` and the `FILE_CONTEXT_ICONS` table, the SF Symbols the
   file context menu carries. See "SF Symbols on a CONTEXT menu" for why the images land on the tracking notification
   rather than through `IconMenuItem`.
+- `context_menu_header.rs`: the file context menu's first line, naming what the menu will act on.
+  `append_context_menu_header` (the disabled item plus its separator, both platforms), the `ContextMenuTargetFacts` the
+  builder takes, the `ContextMenuTarget` the IPC command deserializes (the field's rationale is this feature's, so it
+  lives with the feature rather than beside `PaneContextMenuFacts`), and — macOS only, in a nested `macos` module —
+  `lend_context_menu_header`, which restyles it as a header on the tracking notification. See "The context menu's header
+  line".
 - `media_index_items.rs`: `image_index_menu_items`, which decides the image-search group's labels and which of them are
   clickable.
 - `linux.rs`: `build_menu_linux` (full Linux/GTK menu bar with mnemonics, no F-key accelerators).
@@ -452,6 +458,63 @@ both spell AI with, shared with `Ask Cmdr` in the menu bar. All verified present
 there: app-bundle icons in "Open with" (via `file_system::open_with::load_app_icon`), each
 `NSSharingService`'s own icon in `Share`, and the tag colour circles.
 
+### The context menu's header line
+
+`context_menu_header.rs`. The file context menu's first item, above a separator, naming what the menu is about to act
+on: `photo.jpg · 2.1 MB` for one row, `3 items · 3.2 MB` for several, dropping the size half when there isn't one
+(`photo folder`, `3 items`). The separator between the parts is U+00B7 between spaces, which reads the same in every
+language we ship and so needs no catalog entry.
+
+**Why it exists at all**: Cmdr follows Finder — a right-click INSIDE the current selection acts on the whole selection,
+a right-click outside it acts on that one row — and nothing on screen used to say which. Select `a.jpg`, `b.jpg`,
+`c.jpg`, right-click `e.jpg`, and every item below applied to `e.jpg` alone with no way to tell. This is not
+decoration.
+
+**Portable half**: a DISABLED `MenuItem`, which is what makes it read as a label rather than a command, then a
+`PredefinedMenuItem::separator`. No AppKit, so Linux gets it too. Its `CONTEXT_MENU_TARGET_ID` maps to nothing in
+`menu_id_to_command`, so even a click that somehow arrived is a no-op (`the_header_maps_to_no_command`).
+
+**macOS half**: an attributed title (the small menu font, `secondaryLabelColor`) so it also LOOKS like a header rather
+than a greyed-out command. It rides the same `NSMenuDidBeginTrackingNotification` as the SF Symbols above, for the same
+reason — Tauri hands out no `NSMenu` for a context menu — with the same `HeaderLoan` discipline: ❗ hold it until
+`popup()` returns, ❌ never `let _ =`. It cannot panic and has no `.unwrap()`: if the attributed pass doesn't happen,
+the plain disabled item is already correct.
+
+❌ **Not `+[NSMenuItem sectionHeaderWithTitle:]`.** It's macOS 14 (the bundle floor is 10.15) and it CREATES an item, so
+it can't restyle the one muda already made; swapping items inside a menu muda owns would desync muda's own child
+bookkeeping. The attributed title gets the look without touching menu structure.
+
+**Decision**: every number in the header crosses IPC ALREADY RENDERED by the frontend — `ContextMenuTarget::count_text`
+as well as `size_text`. This module composes the label's SHAPE and formats nothing.
+**Why**: all three things a reader would notice are locale-dependent and none of them is expressible here. A size needs
+`appearance.fileSizeFormat` (binary vs SI) and `listing.sizeUnit` (dynamic or fixed), which only
+`src/lib/units/byte-size.ts` honours. A count needs the active locale's grouping separator (`12,345` against `12.345`)
+and its plural category, and `menu_t` deliberately has neither — it is a table lookup with no ICU and no number
+formatting, and "a label that seems to need a plural is a label to reshape" (see "Labels come from the message
+catalog"). Composing either half here would be a second, worse implementation drifting from the pane's own status bar
+and size column, with both on screen at once; and the plural gap is not hypothetical, since "two or more needs no
+distinct form" happens to hold for the 11 locales shipping today and breaks the moment a Slavic one lands (Polish and
+Russian both need a separate paucal form for 2–4). The frontend already computes this summary for the status bar, so it
+reuses that path: `apps/desktop/src/lib/file-explorer/selection/context-menu-target.ts`, which also holds the "no honest
+size, no size" rule.
+
+❗ What stays HERE is the COUNT ITSELF, `context_paths.len()`. The number of targets decides filename-vs-count and it
+has to be the number the menu's actions will use, so `count_text` is the wording for that branch and never the reason to
+take it (`one_row_shows_its_name_even_when_a_count_text_arrives`). With no wording for a multi-row menu the label falls
+back to the bare number (`3 · 3.2 MB`): a defensive branch, judged on "never wrong" rather than "pretty", keeping the
+one fact the line exists for. ❌ Not the primary filename, which would restate the ambiguity the header removes; ❌ not
+the size alone, which would drop the count silently.
+
+**Decision**: the header carries no file KIND ("PNG image", which Finder shows).
+**Why**: `UTType` is the API for it, and `Cargo.toml` deliberately keeps `UniformTypeIdentifiers.framework` out of the
+binary to hold the app's 10.15 floor (see the `objc2-quick-look-ui` comment there; `desktop-macos-framework-floor` fails
+the build if it comes back). The alternative, an `NSURL` resource read, means disk I/O on every single right-click and
+can hang on a dead mount, which "immediate feedback" forbids. Name and size answer the question the header exists for.
+
+**i18n**: no `menu.*` key at all. The one string the header needs beyond a filename is
+`fileExplorer.contextMenu.itemCount`, an ICU plural in the FRONTEND catalog, resolved there and sent as text — which is
+what keeps the native catalog free of the count-plus-noun shape `menu_t` can't render properly.
+
 ## Platform differences
 
 | Aspect | macOS | Linux |
@@ -467,6 +530,9 @@ there: app-bundle icons in "Open with" (via `file_system::open_with::load_app_ic
 ## Menu structure
 
 Both platforms share: File, Edit, Select, View (with Sort by and Zoom submenus), Go, Tab, Help.
+
+The **file context menu opens with the target header** (`append_context_menu_header`, above everything else), then a
+separator, then the Open / View / Edit group. See "The context menu's header line".
 
 The **File** submenu's transfer group runs `Copy…` (F5), `Move…` (F6), `Duplicate` (⌘D), `Compress…` (⌥F5). `Duplicate`
 carries no ellipsis because it picks nothing: it copies the selection into the folder it already sits in, and the
@@ -612,8 +678,14 @@ distinction is the load-bearing reason.
 **Decision**: `Edit extensions` (the `Share` submenu's last item) carries NO ellipsis, and is NOT a second exception alongside `Check for updates…`.
 **Why**: It opens System Settings, which changes nothing about what any Cmdr command acts on, so the rule above answers it plainly. There IS a parity argument the other way, and it's worth stating so this doesn't get re-litigated from scratch: macOS marks its own settings-opening menu items with an ellipsis, including the ones nearest to ours (AppKit's Services menu ends with `Services Settings…`, and ShareKit's own share menu ends with `More…`; both open a System Settings pane, verified on macOS 26.6.2, 2026-09-09 by reading `AppKit.framework/…/Services.loctable` and `ShareKit.framework/…/ShareKit.loctable`). The near-universality test that earned `Check for updates…` its exception is therefore arguably met here too. It's kept bare anyway because the exception list is what makes the mark informative, and one label's OS parity is a weaker reason than the updater case, where the *exact* string is the convention. Note that Finder has no `Edit Extensions…` item to match on current macOS: that string appears in no `.loctable`, `.strings`, or `.nib` under `/System/Library` or `/System/Applications` (same verification), so the `@key.description` sends translators to the `Login Items & Extensions` settings page for the noun instead of to a Finder label that isn't there.
 
-**Decision**: SF Symbol icons only on the menu bar, not on context menus.
-**Why**: Tauri doesn't support SF Symbols natively. For the menu bar, we walk `NSApplication.mainMenu()` post-construction via objc2 FFI and set SF Symbols directly on `NSMenuItem` objects, producing true template images that auto-tint correctly. Context menus don't get icons because Tauri doesn't expose the raw `NSMenu` pointer, and the alternative (rasterized bitmaps via `IconMenuItem`) produces visually poor results (no template tinting, wrong size/weight).
+**Decision**: SF Symbols go on real `NSMenuItem`s through objc2, ❌ never as `IconMenuItem` bitmaps.
+**Why**: Tauri exposes no SF Symbol API, and muda's `IconMenuItem` rasterizes what it's given without calling
+`setTemplate:`, so a monochrome glyph draws as literal pixels: it disappears in the appearance it wasn't baked for and
+stays dark on a highlighted row. `NSMenuItem.setImage:` with a real symbol image gets AppKit's tinting for light, dark,
+and highlight. The menu BAR is reached by walking `NSApplication.mainMenu()` post-construction (`set_macos_menu_icons`);
+a CONTEXT menu has no `NSMenu` to walk, so it goes through `NSMenuDidBeginTrackingNotification` instead — see "SF
+Symbols on a CONTEXT menu", and "The context menu's header line", which crosses the same boundary for its attributed
+title. `IconMenuItem` stays right for images that ARE pixels (app icons, share-service icons, tag circles).
 
 ## Gotchas
 

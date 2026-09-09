@@ -372,6 +372,11 @@ objc2-app-kit = { version = "0.3", features = [
     # services pasteboard is written as. `NSPasteboard` (above) carries the type
     # constants and `registerServicesMenuSendTypes:returnTypes:`.
     "NSPasteboardItem",
+    # The context menu's header line (`menu/context_menu_header.rs`): an attributed
+    # title in the small menu font and `secondaryLabelColor`, so the first line reads
+    # as a header instead of a greyed-out command. Both are AppKit-only additions to
+    # frameworks already linked; nothing here raises the 10.15 floor.
+    "NSAttributedString", "NSFont",
 ] }
 # Native macOS Quick Look panel (QLPreviewPanel + protocols). Published 2025-10-04, well
 # outside the 14-day cool-off; tracks the same objc2 0.6 family as the other bindings above.

@@ -32,8 +32,60 @@ Depth for the status-bar / header components. `CLAUDE.md` holds the must-knows.
 - `formatNumber`, `calculatePercentage`: selection summary helpers. `formatNumber` delegates to `formatInteger`
   (`$lib/intl`), so counts group per the active locale. Count + noun formatting goes through
   [`$lib/utils/pluralize`](../../utils/pluralize.ts).
+- `formatSizeText(bytes, { unit, format })`: the same answer as `formatSizeForDisplay`, joined into one plain string,
+  for a surface that can't carry the tier spans. Only consumer today is the native context menu's header line (below).
 - `sizeTierClasses`: `['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']`. CSS rules for these live in the
   consuming view, not here.
+
+## Context-menu header (`context-menu-target.ts`)
+
+The file context menu's first line names what the menu is about to act on (`photo.jpg · 2.1 MB`, or `3 items · 3.2 MB`
+when the right-click landed inside the selection). Rust decides WHICH of those two shapes to draw, from the one fact it
+owns — how many paths the menu will act on — and this module supplies every word and digit that goes in. Backend side:
+`apps/desktop/src-tauri/src/menu/context_menu_header.rs`, which also carries the IPC struct `ContextMenuTarget` this
+fills.
+
+- `contextMenuSizeBytes(rows)`: the byte total for rows the caller HAS. `null` for no rows, for any folder among them,
+  or for any row whose size hasn't arrived — see the decision below.
+- `contextMenuSelectionSizeBytes(stats)`: the same answer for a right-click inside a normal pane's selection, off the
+  `ListingStats` the status bar already reads. A pane can't hand over its rows (a 500k-row listing lives outside
+  reactivity by design), so the backend's totals stand in, under the same folder rule. Honours
+  `listing.sizeDisplayMode`, so the header agrees with the selection summary.
+- `contextMenuSizeText(bytes)`: `formatSizeText` plus the two live settings, or `undefined` for "show no size" — which
+  is what `showFileContextMenu`'s `target.sizeText` means when omitted.
+- `contextMenuCountText(count)`: the count worded for the active language, from `fileExplorer.contextMenu.itemCount` (an
+  ICU plural) with `formatInteger` supplying the grouped digits. `undefined` below two, mirroring Rust's own rule that
+  one row shows its filename instead.
+
+Callers, and what each can answer: `pane/pane-pointer.ts` (this row's size, or the pane's selection total through the
+`getSelectedFilesTotalSize` dep), `pane/SearchResultsView.svelte` (its snapshot holds its own rows, so
+`snapshotContextMenuRows` feeds `contextMenuSizeBytes` for both the one-row and the multi-row case), and
+`search/SearchDialog.svelte` (always one row, so it sends no count text).
+
+**Decision**: every number in the header crosses IPC ALREADY RENDERED — the count as well as the size — and Rust formats
+neither. **Why**: all three things a reader would notice are locale-dependent and all three live on this side. A size
+needs `appearance.fileSizeFormat` (binary vs SI) and `listing.sizeUnit` (dynamic or fixed), which only
+`$lib/units/byte-size.ts` honours. A count needs the active locale's grouping separator (`12,345` against `12.345`) and
+its plural category, which `$lib/intl` has and `crate::intl`'s `menu_t` deliberately does not: it is a table lookup with
+no ICU and no number formatting, and a native label that seems to need a plural is a label to reshape. Composing either
+half in Rust would be a second, worse implementation drifting from the pane's own status bar and size column with both
+on screen at once — and the plural gap is not hypothetical: "two or more needs no distinct form" happens to hold for the
+11 locales shipping today and breaks the moment a Slavic one lands, since Polish and Russian both need a separate paucal
+form for 2–4. What stays in Rust is the COUNT ITSELF, `context_paths.len()`, because the number of targets is what
+decides filename-vs-count and it has to be the number the menu's actions will use. A `countText` is the wording for that
+branch, never the reason to take it.
+
+**Decision**: when no wording arrives for a multi-row menu, the header falls back to the bare number (`3 · 3.2 MB`).
+**Why**: it is a defensive branch no caller should reach, so the bar is "never wrong" rather than "always pretty". The
+bare number keeps the one fact the line exists for — that the menu acts on more than the row under the pointer — and
+can't be mistaken for a filename. ❌ Not the primary filename, which would restate the exact ambiguity the header
+removes; ❌ not the size alone, which would drop the count silently.
+
+**Decision**: no size at all rather than a stand-in, whenever the answer wouldn't be honest. **Why**: a folder's size is
+its subtree's, which the index may still be walking — the pane deliberately shows `<dir>` rather than a number for
+exactly that reason, and a header that guessed would contradict it on screen. Same for a row whose size hasn't arrived,
+and for a selection holding a folder: a partial sum understates the pile silently, and `0` reads as "empty". The header
+then shows the name or the count alone, which says less but nothing false.
 
 ## `TagDots.svelte` + `tag-dots-utils.ts`
 

@@ -5,7 +5,7 @@
  * (a real `contextmenu` event on a rendered row).
  */
 import { describe, it, expect } from 'vitest'
-import { snapshotBasename, snapshotContextMenuPaths } from './snapshot-context-menu'
+import { snapshotBasename, snapshotContextMenuPaths, snapshotContextMenuRows } from './snapshot-context-menu'
 
 const ROWS = [{ path: '/Users/test/a.txt' }, { path: '/Users/test/b.txt' }, { path: '/Users/test/c.txt' }]
 
@@ -34,6 +34,24 @@ describe('snapshotContextMenuPaths', () => {
 
   it('drops a selected index the rows no longer have', () => {
     expect(snapshotContextMenuPaths('/Users/test/a.txt', ROWS, new Set([0, 42]))).toEqual(['/Users/test/a.txt'])
+  })
+
+  it('still aims at a clicked path the rows array does not describe', () => {
+    // The path is real whether or not this array holds it, and the actions need it.
+    expect(snapshotContextMenuPaths('/Users/test/gone.txt', ROWS, new Set([0]))).toEqual(['/Users/test/gone.txt'])
+  })
+})
+
+describe('snapshotContextMenuRows', () => {
+  it('picks the same targets as the paths rule, as whole rows', () => {
+    // One rule, two shapes: the header's size and the actions' paths can't disagree.
+    expect(snapshotContextMenuRows('/Users/test/a.txt', ROWS, new Set([0, 2]))).toEqual([ROWS[0], ROWS[2]])
+    expect(snapshotContextMenuRows('/Users/test/b.txt', ROWS, new Set([0, 2]))).toEqual([ROWS[1]])
+  })
+
+  it('has no rows for a clicked path the array does not describe', () => {
+    // The header then shows no size, which is the honest answer.
+    expect(snapshotContextMenuRows('/Users/test/gone.txt', ROWS, new Set([0]))).toEqual([])
   })
 })
 

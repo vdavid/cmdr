@@ -1056,6 +1056,10 @@
   "@fileExplorer.summary.selectedSuffix": {
     "sourceHash": "d7cbbb6"
   },
+  "fileExplorer.contextMenu.itemCount": "{countText} {count, plural, one {Objekt} other {Objekte}}",
+  "@fileExplorer.contextMenu.itemCount": {
+    "sourceHash": "66337df"
+  },
   "fileExplorer.renameConflict.title": "Eine Datei mit diesem Namen existiert bereits",
   "@fileExplorer.renameConflict.title": {
     "sourceHash": "92ae292"
