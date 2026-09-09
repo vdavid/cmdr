@@ -146,7 +146,7 @@ describe('AskCmdrSessions interactions', () => {
     expect(marks).toHaveLength(1)
     const marked = target.querySelectorAll('.conversation')[1]
     expect(marked.querySelector('.started-by-agent')).not.toBeNull()
-    expect(marked.querySelector('[aria-label="Ask Cmdr started this chat"]')).not.toBeNull()
+    expect(marked.querySelector('[aria-label="Cmdr started this chat"]')).not.toBeNull()
   })
 
   /** The same mark in search results. A hit that lost it would read as a thread the user

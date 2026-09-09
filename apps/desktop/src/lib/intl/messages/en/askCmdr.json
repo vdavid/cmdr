@@ -215,7 +215,7 @@
   "@askCmdr.error.noKey": {
     "description": "Shown when the chosen AI provider has no API key. Friendly and actionable; avoids the words error and failed."
   },
-  "askCmdr.error.notConfigured": "Turn on an AI provider in settings to use Ask Cmdr.",
+  "askCmdr.error.notConfigured": "Chatting needs an AI provider. Turn one on in settings.",
   "@askCmdr.error.notConfigured": {
     "description": "Shown when no AI provider is set up. Friendly and actionable; avoids the words error and failed."
   },
@@ -223,7 +223,7 @@
   "@askCmdr.error.noConsent": {
     "description": "Shown when the user hasn't opted into Ask Cmdr yet (or the consent copy changed and needs re-accepting), so the backend refused to send. Friendly and actionable; avoids the words error and failed; points the user at the opt-in screen."
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr needs a bigger context window than your local model has. Pick 32,768 tokens or more in settings, under AI.",
+  "askCmdr.error.localWindowTooSmall": "Cmdr needs a bigger context window than your local model has. Pick 32,768 tokens or more in settings, under AI.",
   "@askCmdr.error.localWindowTooSmall": {
     "description": "Shown in the Ask Cmdr chat when the local AI server is running with a context window too small to hold one message, so Cmdr refused to send rather than have the model reject it. Names the number to pick and where. Friendly and actionable; avoids the words error and failed. Group the number the way the language does. Sentence case."
   },
@@ -379,7 +379,7 @@
     "description": "Heading of the one-time opt-in screen shown before the first Ask Cmdr chat. Warm and inviting. Sentence case.",
     "screenshot": "ask-cmdr-consent.png"
   },
-  "askCmdr.consent.intro": "Ask Cmdr sends your questions to the AI provider you choose, using your own API key. Here’s exactly what leaves your Mac when you chat:",
+  "askCmdr.consent.intro": "Cmdr sends your questions to the AI provider you choose, using your own API key. Here’s exactly what leaves your Mac when you chat:",
   "@askCmdr.consent.intro": {
     "description": "Opening paragraph of the Ask Cmdr consent screen, before the list of what gets sent. Ends with a colon introducing the list. The apostrophe is U+2019.",
     "screenshot": "ask-cmdr-consent.png"
@@ -414,22 +414,22 @@
     "description": "Consent list item: files or folders the user attaches to a question are sent by reference (name and path), never their contents. Sentence case, no period.",
     "screenshot": "ask-cmdr-consent.png"
   },
-  "askCmdr.consent.item.memory": "The notes Ask Cmdr keeps about you, sent again with every message",
+  "askCmdr.consent.item.memory": "The notes Cmdr keeps about you, sent again with every message",
   "@askCmdr.consent.item.memory": {
-    "description": "Sixth item in the Ask Cmdr consent list of what leaves the Mac: the assistant's own memory notes about the user, which are re-sent with every single message. Sentence case, no period.",
+    "description": "Sixth item in the Ask Cmdr consent list of what leaves the Mac: the assistant's own memory notes about the user, which are re-sent with every single message. \"Cmdr\" here is the assistant doing the remembering, matching the other items in the list. Sentence case, no period.",
     "screenshot": "ask-cmdr-consent.png"
   },
-  "askCmdr.consent.contentsRule": "Cmdr never sends whole files, photos, or thumbnails. When you ask about a file, it can read a limited part of it: some lines of text, a few pages of a PDF along with its title and author, the list of files inside an archive, or a photo’s camera details, including where it was taken. Photo search works the same way: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them. Ask Cmdr can suggest renames, moves, and cleanups, and nothing happens to a file until you approve it.",
+  "askCmdr.consent.contentsRule": "Cmdr never sends whole files, photos, or thumbnails. When you ask about a file, it can read a limited part of it: some lines of text, a few pages of a PDF along with its title and author, the list of files inside an archive, or a photo’s camera details, including where it was taken. Photo search works the same way: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them. Cmdr can suggest renames, moves, and cleanups, and nothing happens to a file until you approve it.",
   "@askCmdr.consent.contentsRule": {
     "description": "Reassurance paragraph on the Ask Cmdr consent screen, and in the same disclosure in Settings > Ask Cmdr. Four facts to keep: whole files, photos, and thumbnails are never sent; when the user asks about a file, the assistant reads a limited part of it (some lines of text, a few PDF pages plus the PDF's title and author, the names of the files inside an archive, a photo's camera details including where it was taken); photo search sends the text recognized inside the matching photos and their tags; and the assistant proposes file changes but never carries one out without the user approving it. Must NOT promise that no file contents are sent, and must NOT promise that the assistant changes nothing (it writes its own notes and proposes renames and moves). The apostrophes are U+2019.",
     "screenshot": "ask-cmdr-consent.png"
   },
-  "askCmdr.consent.memory": "Ask Cmdr writes itself notes about you: how you like things organized, what you’ve turned down before, anything you ask it to remember. Those notes ride along with every message you send, for as long as they exist, and they can include text Cmdr recognized inside your photos. You can read them, or wipe them, any time in the Ask Cmdr settings.",
+  "askCmdr.consent.memory": "Cmdr writes itself notes about you: how you like things organized, what you’ve turned down before, anything you ask it to remember. Those notes ride along with every message you send, for as long as they exist, and they can include text Cmdr recognized inside your photos. You can read them, or wipe them, any time in the Ask Cmdr settings.",
   "@askCmdr.consent.memory": {
     "description": "Paragraph on the Ask Cmdr consent screen, and in the same disclosure in Settings > Ask Cmdr, about the assistant's memory: it writes notes about the user, those notes go to the provider with every message for as long as they exist, they can contain text recognized inside the user's photos, and the user can read or delete them in settings. This is the disclosure the whole re-prompt exists for, so keep all four facts. The apostrophe is U+2019.",
     "screenshot": "ask-cmdr-consent.png"
   },
-  "askCmdr.consent.proactive": "Ask Cmdr also watches the folders you use and starts a conversation when it has something to suggest, so messages can reach your provider without you asking first. You can turn that off in the Ask Cmdr settings, under “On its own”.",
+  "askCmdr.consent.proactive": "Cmdr also watches the folders you use and starts a conversation when it has something to suggest, so messages can reach your provider without you asking first. You can turn that off in the Ask Cmdr settings, under “On its own”.",
   "@askCmdr.consent.proactive": {
     "description": "Paragraph on the Ask Cmdr consent screen, and in the same disclosure in Settings > Ask Cmdr: the assistant can start conversations by itself, so messages reach the provider without the user typing anything, and the user can switch that off. The quoted phrase is the heading of that settings group (settings.askCmdr.proactive.title), so translate it exactly the same way in both places. The quotes are U+201C and U+201D.",
     "screenshot": "ask-cmdr-consent.png"
@@ -459,16 +459,16 @@
     "description": "Heading above the Ask Cmdr consent screen, shown ONLY to someone who already accepted an older version of this copy, so they can see why they are being asked again. Sentence case. The apostrophe is U+2019.",
     "screenshot": "ask-cmdr-consent.png"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr can now look inside a file you ask about: some of its text, a few pages of a PDF, the list of files inside an archive, or a photo’s camera details and location. That’s a bigger promise than the one you agreed to, so here it all is again.",
+  "askCmdr.consent.whatsNew.body": "Cmdr can now look inside a file you ask about: some of its text, a few pages of a PDF, the list of files inside an archive, or a photo’s camera details and location. That’s a bigger promise than the one you agreed to, so here it all is again.",
   "@askCmdr.consent.whatsNew.body": {
     "description": "Paragraph under askCmdr.consent.whatsNew.title, shown only to someone being asked again after the consent copy changed. Names the new thing (on request, the assistant reads parts of a file: some text, a few PDF pages, the names of the files inside an archive, or a photo's camera details and location) and says why the whole screen is being shown again. The apostrophes are U+2019.",
     "screenshot": "ask-cmdr-consent.png"
   },
-  "askCmdr.forget.title": "Forget everything Ask Cmdr remembers?",
+  "askCmdr.forget.title": "Forget everything Cmdr remembers about you?",
   "@askCmdr.forget.title": {
     "description": "Title of the confirmation dialog opened by the \"Forget everything\" button in Settings > Ask Cmdr. A question, sentence case."
   },
-  "askCmdr.forget.message": "Ask Cmdr throws away its notes about you and starts from a blank page. Your chats and your files stay exactly as they are.",
+  "askCmdr.forget.message": "Cmdr throws away its notes about you and starts from a blank page. Your chats and your files stay exactly as they are.",
   "@askCmdr.forget.message": {
     "description": "Body of the \"Forget everything\" confirmation dialog: the assistant's memory notes are deleted, and neither the chat history nor any of the user's files are touched."
   },
@@ -726,7 +726,7 @@
   },
   "askCmdr.renameReview.expired": "This review expired. Ask Cmdr to prepare it again.",
   "@askCmdr.renameReview.expired": {
-    "description": "Message when the server-side rename proposal is no longer reviewable, because it was already applied, turned down, or replaced.",
+    "description": "Message when the server-side rename proposal is no longer reviewable, because it was already applied, turned down, or replaced. ❗ \"Ask Cmdr to prepare it again\" is an instruction to the reader, with \"ask\" as the verb and \"Cmdr\" as the thing being asked. It is NOT the \"Ask Cmdr\" panel name, so translate \"ask\" normally.",
     "screenshot": "bulk-rename-review-expired.png"
   },
   "askCmdr.renameReview.status": "{allowed, plural, one {# rename allowed} other {# renames allowed}}; {blocked, plural, one {# blocked} other {# blocked}}",
@@ -968,11 +968,11 @@
     "description": "Tooltip on the context-usage gauge. usedText and budgetText are preformatted numbers (with thousands separators). Both are chars/4 estimates, never a tokenizer's count, so the copy says so.",
     "screenshot": "ask-cmdr-chat.png"
   },
-  "askCmdr.wake.thinking": "Ask Cmdr is having a look at what changed. Open the chat.",
+  "askCmdr.wake.thinking": "Cmdr is having a look at what changed. Open the chat.",
   "@askCmdr.wake.thinking": {
     "description": "Tooltip and spoken label on the status-corner indicator shown while Ask Cmdr is running a conversation it started on its own. Pressing it opens that chat in the rail, which is what the second sentence promises. Sentence case; two short sentences, because the label has to say both what is happening and what pressing it does."
   },
-  "askCmdr.wake.stop": "Stop what Ask Cmdr is doing",
+  "askCmdr.wake.stop": "Stop what Cmdr is doing",
   "@askCmdr.wake.stop": {
     "description": "Spoken label and tooltip on the small stop button beside that indicator, which ends the conversation Ask Cmdr started on its own. Longer than the rail's bare \"Stop\" on purpose: this button carries no visible text and sits in the window corner, so the label is the only thing naming what it stops. Sentence case, no full stop."
   },
@@ -1052,13 +1052,13 @@
       "changes": { "content": "The same change count as a raw integer, used only to pick the singular or plural word." }
     }
   },
-  "askCmdr.sessions.wakeThread": "Ask Cmdr started this chat",
+  "askCmdr.sessions.wakeThread": "Cmdr started this chat",
   "@askCmdr.sessions.wakeThread": {
-    "description": "Tooltip and spoken label on the small robot glyph beside a chat title in the chat list and in chat search results. It marks the chats nobody typed the first message in: Ask Cmdr noticed something and opened one by itself. The whole job of the label is telling those apart from chats the user started and forgot, so keep the emphasis on WHO started it. \"Ask Cmdr\" is the feature name and stays untranslated. Sentence case, no full stop."
+    "description": "Tooltip and spoken label on the small robot glyph beside a chat title in the chat list and in chat search results. It marks the chats nobody typed the first message in: the app noticed something and opened one by itself. The whole job of the label is telling those apart from chats the user started and forgot, so keep the emphasis on WHO started it. \"Cmdr\" is the product name and stays verbatim with its capital C. Sentence case, no full stop."
   },
-  "askCmdr.wakeToast.title": "Ask Cmdr has {countText} {count, plural, one {suggestion} other {suggestions}} for you",
+  "askCmdr.wakeToast.title": "Cmdr has {countText} {count, plural, one {suggestion} other {suggestions}} for you",
   "@askCmdr.wakeToast.title": {
-    "description": "Headline of the pop-up notice that appears when Ask Cmdr noticed something on its own and staged changes for the user to look at. Nobody asked for these, so the sentence names the agent as the one making the offer rather than telling the user to do anything. \"Ask Cmdr\" is the feature name and stays untranslated. Sentence case, no full stop.",
+    "description": "Headline of the pop-up notice that appears when the app noticed something on its own and staged changes for the user to look at. Nobody asked for these, so the sentence names the app as the one making the offer rather than telling the user to do anything. \"Cmdr\" is the product name and stays verbatim with its capital C. Sentence case, no full stop.",
     "placeholders": {
       "countText": {
         "content": "How many suggestions are waiting, already formatted with thousands separators, like 1,234. Always at least one."

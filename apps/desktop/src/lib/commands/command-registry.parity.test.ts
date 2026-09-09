@@ -175,7 +175,7 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
   'help.whatsNew': 'See what changed in the latest releases of Cmdr',
   'feedback.send': 'Tell the maker of Cmdr what you think: ideas, wishes, anything',
   'log.operationLog': 'See a history of your file operations, and roll them back',
-  'suggestedOps.show': 'Review the file operations Ask Cmdr suggested, and decide what runs',
+  'suggestedOps.show': 'Review the file operations the AI suggested, and decide what runs',
   'askCmdr.toggle': 'Chat with an AI about your files, drives, and history',
   'file.openTerminalHere': "Open your terminal app in the folder you're looking at",
   'nav.goToPath': 'Jump the focused pane to a typed, pasted, or recent path.',

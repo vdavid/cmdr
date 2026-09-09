@@ -212,7 +212,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloud.askCmdrOverrideHint": "Ask Cmdr uses its own model ({model}) instead of this one. Change it in the Ask Cmdr section.",
+  "ai.cloud.askCmdrOverrideHint": "The chat uses its own model ({model}) instead of this one. Change it in the Ask Cmdr section.",
   "@ai.cloud.askCmdrOverrideHint": {
     "description": "Hint under the cloud AI model picker, shown only while the Ask Cmdr chat has its own model override set — without it, users change this model and wonder why the chat still uses the old one. {model} is the override's technical name, for example openai/gpt-oss-120b.",
     "screenshot": "settings-ai-ask-cmdr.png",

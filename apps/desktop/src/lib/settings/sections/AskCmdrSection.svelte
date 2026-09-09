@@ -1,5 +1,5 @@
 <!--
-  The Ask Cmdr settings section: the enable/consent toggle, the "what Ask Cmdr sends"
+  The Ask Cmdr settings section: the enable/consent toggle, the "what Cmdr sends"
   disclosure (the same human-reviewed copy as the opt-in screen), the provider/model
   (interactive slot), and the spend rollup. The enable state is consent, stored
   in `main.db` (not a preference), so it's driven by the consent commands, not the registry.
@@ -238,7 +238,7 @@
         </div>
     {/if}
 
-    <!-- What Ask Cmdr sends (the same copy as the opt-in screen). Open by default for
+    <!-- What Cmdr sends (the same copy as the opt-in screen). Open by default for
          somebody being asked again: the button above says "read what's new below". -->
     <details class="disclosure" open={needsReconsent}>
         <summary>{tString('settings.askCmdr.disclosure.title')}</summary>
@@ -343,7 +343,7 @@
         </SettingRow>
     {/if}
 
-    <!-- What Ask Cmdr remembers: the notes are about the user, so they get to read them and
+    <!-- What Cmdr remembers: the notes are about the user, so they get to read them and
          to throw them away. Neither button is a setting; both are searchable rows
          (`AskCmdrSection.rows.ts`), and the heading follows whichever one a search kept. -->
     {#if anyVisible(shouldShow, 'row:askCmdr.openMemoryFolder', 'row:askCmdr.forgetMemory')}

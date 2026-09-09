@@ -156,7 +156,7 @@ describe('accessibility', () => {
  *
  * The disclosure is a JUXTAPOSITION: the agent's claim on one side, facts Cmdr holds by itself
  * on the other, so the user can check one against the other. Drop either label and it inverts.
- * Without "Ask Cmdr's reason", a rationale reads as something Cmdr verified. Without "What Cmdr
+ * Without "The AI's reason", a rationale reads as something Cmdr verified. Without "What Cmdr
  * knows", a column of sizes and dates reads as MORE of the agent's claims rather than as the
  * independent check on them, which is worse than showing no facts at all: it lends the agent
  * Cmdr's credibility.
@@ -170,7 +170,7 @@ describe('disclosure', () => {
     const host = mountDialog()
 
     expect(host.textContent).toContain('They all look like invoices to me.')
-    expect(host.textContent).toContain("Ask Cmdr's reason")
+    expect(host.textContent).toContain("The AI’s reason")
   })
 
   it("labels Cmdr's own facts as Cmdr's, so the two sit side by side", () => {
@@ -226,7 +226,7 @@ describe('honest absence', () => {
     store.state.changedUnderReview = true
     const host = mountDialog()
 
-    expect(host.textContent).toContain('Ask Cmdr changed this suggestion while you were reading it.')
+    expect(host.textContent).toContain('The AI changed this suggestion while you were reading it.')
     expect(host.textContent).toContain('/Users/someone/Downloads/invoice-jan.pdf')
   })
 

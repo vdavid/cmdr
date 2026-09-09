@@ -49,12 +49,12 @@ beforeEach(() => {
 describe('WakeStagedToastContent', () => {
   it('names the agent as the one making the offer, and counts what is waiting', () => {
     render(3)
-    expect(target.querySelector('.title')?.textContent.trim()).toBe('Ask Cmdr has 3 suggestions for you')
+    expect(target.querySelector('.title')?.textContent.trim()).toBe('Cmdr has 3 suggestions for you')
   })
 
   it('speaks of one suggestion in the singular', () => {
     render(1)
-    expect(target.querySelector('.title')?.textContent.trim()).toBe('Ask Cmdr has 1 suggestion for you')
+    expect(target.querySelector('.title')?.textContent.trim()).toBe('Cmdr has 1 suggestion for you')
   })
 
   it('Review opens the suggestions and gets out of the way', () => {

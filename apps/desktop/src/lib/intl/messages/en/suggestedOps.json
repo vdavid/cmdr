@@ -3,7 +3,7 @@
   "@suggestedOps.title": {
     "description": "Title of the dialog listing the file operations Ask Cmdr has suggested, and the matching View-menu item."
   },
-  "suggestedOps.description": "Ask Cmdr suggested these. Nothing runs until you approve it.",
+  "suggestedOps.description": "The AI suggested these. Nothing runs until you approve it.",
   "@suggestedOps.description": {
     "description": "Line under the dialog title. Makes clear that opening the dialog changes nothing by itself."
   },
@@ -15,9 +15,9 @@
   "@suggestedOps.loadFailed": {
     "description": "Shown when reading the suggestion list threw. Distinct from the empty state, which would read as the agent having suggested nothing."
   },
-  "suggestedOps.agentReason": "Ask Cmdr's reason",
+  "suggestedOps.agentReason": "The AI’s reason",
   "@suggestedOps.agentReason": {
-    "description": "Label above the agent own words for a group. Load-bearing: it marks the text as the agent claim rather than as something Cmdr verified."
+    "description": "Label above the agent own words for a group. Load-bearing: it marks the text as the agent claim rather than as something Cmdr verified, so it must stay clearly distinct from its neighbour suggestedOps.cmdrFacts (\"What Cmdr knows\"). Keep the two subjects different: the AI says this, Cmdr checked that. The apostrophe is U+2019."
   },
   "suggestedOps.cmdrFacts": "What Cmdr knows",
   "@suggestedOps.cmdrFacts": {
@@ -75,7 +75,7 @@
   "@suggestedOps.fromPattern": {
     "description": "Marker on a group a selector produced, so the user knows the list was matched rather than named one by one."
   },
-  "suggestedOps.changedUnderReview": "Ask Cmdr changed this suggestion while you were reading it.",
+  "suggestedOps.changedUnderReview": "The AI changed this suggestion while you were reading it.",
   "@suggestedOps.changedUnderReview": {
     "description": "Notice shown when the agent amended the open group. The rows on screen stay put until the user asks for the new version."
   },
@@ -111,7 +111,7 @@
   "@suggestedOps.loadingFiles": {
     "description": "Placeholder while a window of the file list is being read."
   },
-  "suggestedOps.indicatorTooltip": "Ask Cmdr has suggestions waiting. Click to review them.",
+  "suggestedOps.indicatorTooltip": "AI suggestions are waiting. Click to review them.",
   "@suggestedOps.indicatorTooltip": {
     "description": "Tooltip and accessible name for the status-corner indicator that opens the Suggested ops dialog. The number itself is in the badge beside it, so the sentence doesn't repeat it."
   }

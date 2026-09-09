@@ -1,7 +1,7 @@
 /**
  * Tier 3 a11y tests for `AskCmdrSection.svelte`.
  *
- * The section: the enable/consent toggle, the "what Ask Cmdr sends" disclosure, the
+ * The section: the enable/consent toggle, the "what Cmdr sends" disclosure, the
  * provider hint, the interactive-model and chat-memory-size rows (including the over-window
  * warning), and the spend rollup. The settings store and
  * the consent + cost commands are mocked so it mounts without a backend; the consent state

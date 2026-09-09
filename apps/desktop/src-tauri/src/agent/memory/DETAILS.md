@@ -119,7 +119,7 @@ also what makes 1–3 necessary rather than theoretical.
 
 ## The two controls the user gets
 
-Both live in Settings › Ask Cmdr, under "What Ask Cmdr remembers", and both exist for the same reason: the folder is
+Both live in Settings › Ask Cmdr, under "What Cmdr remembers", and both exist for the same reason: the folder is
 the agent's, the notes in it are about the user.
 
 - **Open memory folder.** `ask_cmdr_memory_folder` (`../../commands/agent/memory.rs`) resolves the root, creating it so

@@ -1939,7 +1939,7 @@
     "description": "Top-level Settings section title: Ask Cmdr (the read-only chat rail). This is the product name; keep it as-is.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.askCmdr.intro": "Chat with an AI about your files, drives, and history. Ask Cmdr reads names, paths, and sizes to answer, looks inside a file only when you ask about it, and never changes a file without your approval.",
+  "settings.askCmdr.intro": "Chat with an AI about your files, drives, and history. Cmdr reads names, paths, and sizes to answer, looks inside a file only when you ask about it, and never changes a file without your approval.",
   "@settings.askCmdr.intro": {
     "description": "Intro paragraph at the top of the Ask Cmdr settings section. Three facts: it reads names, paths, and sizes; it looks inside a file only when the user asks about that file; it never changes a file without the user's approval (it proposes renames and moves and writes its own notes, so do not say it changes nothing or is read-only).",
     "screenshot": "settings-ai-ask-cmdr.png"
@@ -1989,7 +1989,7 @@
     "description": "Button that turns Ask Cmdr off from settings (chats are kept). Starts with a verb. Sentence case.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
-  "settings.askCmdr.disclosure.title": "What Ask Cmdr sends",
+  "settings.askCmdr.disclosure.title": "What Cmdr sends",
   "@settings.askCmdr.disclosure.title": {
     "description": "Heading of the collapsible block in Ask Cmdr settings that shows exactly what leaves the Mac (the same copy as the opt-in screen). Sentence case.",
     "screenshot": "settings-ai-ask-cmdr.png"
@@ -1999,16 +1999,16 @@
     "description": "Heading of the provider/model group in Ask Cmdr settings. Sentence case.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
-  "settings.askCmdr.provider.shared": "Ask Cmdr uses the AI provider and key you set up in Settings › AI ({provider}).",
+  "settings.askCmdr.provider.shared": "Cmdr uses the AI provider and key you set up in Settings › AI ({provider}).",
   "@settings.askCmdr.provider.shared": {
-    "description": "Line telling the user Ask Cmdr shares the provider configured in the AI settings section. provider is the current provider's name (Off, Cloud AI, or Local LLM). The › is a right-pointing angle separating the settings path.",
+    "description": "Line telling the user this section shares the provider configured in the AI settings section. provider is the current provider's name (Off, Cloud AI, or Local LLM). The › is a right-pointing angle separating the settings path.",
     "placeholders": {
       "provider": {
         "content": "The current AI provider label: Off, Cloud AI, or Local LLM."
       }
     }
   },
-  "settings.askCmdr.provider.off": "Turn on an AI provider in Settings › AI to use Ask Cmdr.",
+  "settings.askCmdr.provider.off": "Turn on an AI provider in Settings › AI to start chatting.",
   "@settings.askCmdr.provider.off": {
     "description": "Hint shown in Ask Cmdr settings when no AI provider is enabled, pointing the user to the AI settings section. The › is a right-pointing angle separating the settings path.",
     "screenshot": "settings-ai-ask-cmdr.png"
@@ -2018,7 +2018,7 @@
     "description": "Label for the text field where the user picks a dedicated model for Ask Cmdr. Sentence case.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
-  "settings.askCmdr.interactiveModel.description": "The model Ask Cmdr chats with. Leave blank to use the same model as Cmdr’s other AI features. Example: claude-sonnet-4-5",
+  "settings.askCmdr.interactiveModel.description": "The model the chat uses. Leave blank to use the same model as Cmdr’s other AI features. Example: claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
     "description": "Help text under the Ask Cmdr model field. Explains that blank falls back to the shared AI model, and gives an example model id. The example id and the apostrophe (U+2019) stay as written; do not translate the example id.",
     "screenshot": "settings-ai-ask-cmdr.png"
@@ -2052,22 +2052,22 @@
     "description": "Heading of the group in Ask Cmdr settings that controls whether Ask Cmdr may notice changes and open a chat by itself, without being asked. Sentence case, no period.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
-  "settings.askCmdr.proactive.label": "Let Ask Cmdr start conversations",
+  "settings.askCmdr.proactive.label": "Let Cmdr start conversations",
   "@settings.askCmdr.proactive.label": {
-    "description": "Label for the switch that lets Ask Cmdr open a chat on its own when it notices something worth suggesting. Starts with a verb. \"Ask Cmdr\" is the product name; keep it as-is. Sentence case.",
+    "description": "Label for the switch that lets the assistant open a chat on its own when it notices something worth suggesting. Starts with a verb. \"Cmdr\" is the product name and stays verbatim with its capital C. Sentence case.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
-  "settings.askCmdr.proactive.description": "Ask Cmdr watches the folders you work in and starts a chat when it has something to suggest. Nothing runs until you approve it.",
+  "settings.askCmdr.proactive.description": "Cmdr watches the folders you work in and starts a chat when it has something to suggest. Nothing runs until you approve it.",
   "@settings.askCmdr.proactive.description": {
     "description": "Help text under the switch that lets Ask Cmdr start conversations. Says what it watches and reassures the reader that a suggestion is only ever a proposal. The second sentence matches the Suggested ops dialog's wording, so keep the two consistent.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
-  "settings.askCmdr.wakeDelay.label": "How soon Ask Cmdr looks",
+  "settings.askCmdr.wakeDelay.label": "How soon Cmdr looks",
   "@settings.askCmdr.wakeDelay.label": {
-    "description": "Label for the slider that sets how long Ask Cmdr waits after a folder changes before it looks at it. \"Ask Cmdr\" is the product name; keep it as-is. Sentence case.",
+    "description": "Label for the slider that sets how long the assistant waits after a folder changes before it looks at it. \"Cmdr\" is the product name and stays verbatim with its capital C. Sentence case.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
-  "settings.askCmdr.wakeDelay.description": "How soon Ask Cmdr looks at a folder that just changed. Longer means a calmer assistant.",
+  "settings.askCmdr.wakeDelay.description": "How soon Cmdr looks at a folder that just changed. Longer means a calmer assistant.",
   "@settings.askCmdr.wakeDelay.description": {
     "description": "Help text for the cadence slider, used by settings search and wherever the live readout is unavailable. The rendered row shows settings.askCmdr.wakeDelay.summary instead, which names the two actual waits.",
     "screenshot": "settings-ai-ask-cmdr.png"
@@ -2090,19 +2090,19 @@
     "description": "Label for the switch that controls whether a small corner message appears when Ask Cmdr has staged a suggestion. Starts with a verb. Sentence case.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
-  "settings.askCmdr.wakeToast.description": "A small message in the corner when Ask Cmdr stages something for you to review.",
+  "settings.askCmdr.wakeToast.description": "A small message in the corner when Cmdr stages something for you to review.",
   "@settings.askCmdr.wakeToast.description": {
     "description": "Help text under the suggestion-notice switch, describing the corner message (a toast).",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
-  "settings.askCmdr.memory.title": "What Ask Cmdr remembers",
+  "settings.askCmdr.memory.title": "What Cmdr remembers",
   "@settings.askCmdr.memory.title": {
     "description": "Heading of the memory group in Ask Cmdr settings, over the two controls that open the notes folder and delete everything in it. Sentence case.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
-  "settings.askCmdr.memory.description": "Ask Cmdr keeps a small folder of notes about you, and sends it with every message. Have a look, or start it over.",
+  "settings.askCmdr.memory.description": "Cmdr keeps a small folder of notes about you, and sends it with every message. Have a look, or start it over.",
   "@settings.askCmdr.memory.description": {
-    "description": "Paragraph under the \"What Ask Cmdr remembers\" heading in Ask Cmdr settings, introducing the two buttons below it.",
+    "description": "Paragraph under the \"What Cmdr remembers\" heading in Ask Cmdr settings, introducing the two buttons below it.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.memory.open": "Open memory folder",
@@ -2110,7 +2110,7 @@
     "description": "Button in Ask Cmdr settings that shows the assistant's notes folder in Cmdr's own file pane. Starts with a verb. Sentence case.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
-  "settings.askCmdr.memory.forgotten": "Ask Cmdr’s notes are gone. It starts over from here.",
+  "settings.askCmdr.memory.forgotten": "Cmdr’s notes are gone. It starts over from here.",
   "@settings.askCmdr.memory.forgotten": {
     "description": "Confirmation line shown in Ask Cmdr settings right after the user confirms \"Forget everything\". The apostrophe is U+2019.",
     "screenshot": "settings-ai-ask-cmdr.png"

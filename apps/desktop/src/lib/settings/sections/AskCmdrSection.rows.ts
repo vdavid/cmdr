@@ -26,7 +26,7 @@ export const askCmdrRows: SearchableRow[] = [
     keywords: ['memory', 'folder', 'notes', 'remember', 'open'],
   },
   {
-    // "Forget everything", under the "What Ask Cmdr remembers" heading.
+    // "Forget everything", under the "What Cmdr remembers" heading.
     id: 'row:askCmdr.forgetMemory',
     section: ['AI', 'Ask Cmdr'],
     labelKey: 'askCmdr.forget.confirm',

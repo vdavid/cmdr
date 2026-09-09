@@ -1,6 +1,6 @@
 <script lang="ts">
     /**
-     * "Forget everything Ask Cmdr remembers?" confirmation, opened from
+     * "Forget everything Cmdr remembers about you?" confirmation, opened from
      * `AskCmdrSection`.
      *
      * Deleting is quick enough that there is no in-flight state to model, but both

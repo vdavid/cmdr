@@ -24,7 +24,7 @@ vi.mock('$lib/settings', () => ({
     setSetting(...args)
   },
   getSettingDefinition: vi.fn(() => ({
-    label: 'How soon Ask Cmdr looks',
+    label: 'How soon Cmdr looks',
     description: '',
     constraints: { min: 5, max: 7200, step: 1, sliderStops: STOPS, stopsAreDiscrete: true },
   })),

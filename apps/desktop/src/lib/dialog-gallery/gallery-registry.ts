@@ -380,7 +380,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     label: 'Forget Ask Cmdr memory',
     hostWindow: 'settings',
     status: 'ready',
-    note: 'Forgetting nothing: the delete lives in the onConfirm prop, which the gallery leaves empty. In the app this sits in the Settings window over AI › Ask Cmdr, under "What Ask Cmdr remembers".',
+    note: 'Forgetting nothing: the delete lives in the onConfirm prop, which the gallery leaves empty. In the app this sits in the Settings window over AI › Ask Cmdr, under "What Cmdr remembers".',
     states: [
       { id: 'idle', label: 'Confirm' },
       { id: 'forgetting', label: 'Delete in flight', note: 'Both buttons go dead, and Enter with them.' },

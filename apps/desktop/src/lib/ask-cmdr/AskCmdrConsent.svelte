@@ -3,7 +3,7 @@
   consent copy (spec §2.1 privacy line; plan §12). Nothing is sent to a provider until the
   user turns Ask Cmdr on here. "Not now" closes the rail. The exact copy is human-reviewed
   (principle 6); it lives in the catalog (`askCmdr.consent.*`), shared with the settings
-  section's "what Ask Cmdr sends" disclosure.
+  section's "what Cmdr sends" disclosure.
 -->
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'

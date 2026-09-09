@@ -600,7 +600,7 @@ registry entries all live at `section: ['AI', 'Ask Cmdr']`. Its parts:
   by the consent commands via `lib/ask-cmdr/ask-cmdr-consent.svelte.ts` (`acceptConsent` / `revokeConsent`), not a
   settings boolean. Deliberately so: the rail gates on the same consent record, and a separate `askCmdr.enabled` flag
   would drift from it. The toggle is a `Button`, not a registry `SettingSwitch`.
-- **The "what Ask Cmdr sends" disclosure** reuses the `askCmdr.consent.*` catalog copy verbatim (the same human-reviewed
+- **The "what Cmdr sends" disclosure** reuses the `askCmdr.consent.*` catalog copy verbatim (the same human-reviewed
   strings as the rail's opt-in gate), so the two surfaces never diverge.
 - **The interactive slot is a MODEL-only setting.** `askCmdr.interactiveModel` (a hand-rolled text row — the registry
   has no generic text-input primitive) overrides the model; the provider, keys, and base URL come from the shared `ai/`
