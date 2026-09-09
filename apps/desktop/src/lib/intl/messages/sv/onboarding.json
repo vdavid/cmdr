@@ -351,34 +351,6 @@
   "@onboarding.stepBeta.checklist.emailMark": {
     "sourceHash": "1bf8647"
   },
-  "onboarding.stepBeta.feedbackIntro": "Din återkoppling hjälper mig att hitta buggar och prioritera funktioner. Så här kan du engagera dig:",
-  "@onboarding.stepBeta.feedbackIntro": {
-    "sourceHash": "4e238dd"
-  },
-  "onboarding.stepBeta.feedback.inAppBound": "<strong>I appen:</strong> Se <strong>Hjälp > Skicka återkoppling…</strong> i menyn, eller hitta det i kommandopaletten med <chip></chip>.",
-  "@onboarding.stepBeta.feedback.inAppBound": {
-    "sourceHash": "8fabdee"
-  },
-  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>I appen:</strong> Se <strong>Hjälp > Skicka återkoppling…</strong> i menyn, eller hitta det i kommandopaletten.",
-  "@onboarding.stepBeta.feedback.inAppUnbound": {
-    "sourceHash": "26447c9"
-  },
-  "onboarding.stepBeta.feedback.github": "<github>GitHub</github>: Lägg till ärenden, rösta på ärenden.",
-  "@onboarding.stepBeta.feedback.github": {
-    "sourceHash": "f4fb26a"
-  },
-  "onboarding.stepBeta.feedback.discord": "<discord>Discord</discord>: Klicka på länken, hoppa in på servern, träffa mig och andra.",
-  "@onboarding.stepBeta.feedback.discord": {
-    "sourceHash": "c899232"
-  },
-  "onboarding.stepBeta.feedback.call": "<call>Boka ett samtal med mig</call>: Jag kommer inte att göra det här särskilt länge, men medan Cmdr är i öppen beta vill jag jättegärna prata med dig om dina filer!",
-  "@onboarding.stepBeta.feedback.call": {
-    "sourceHash": "5e198ee"
-  },
-  "onboarding.stepBeta.star": "Och ytterligare ett mycket viktigt sätt att hjälpa till på en minut: stjärnmärk repot <github>här på GitHub</github>. Så fort det når 225 stjärnor låter Homebrew mig aktivera <code>brew install cmdr</code>.",
-  "@onboarding.stepBeta.star": {
-    "sourceHash": "30c25f2"
-  },
   "onboarding.stepBeta.analyticsLede": "För att lära mig vad som fungerar och inte skickar Cmdr användningsstatistik under den öppna betan: vilka funktioner som används och hur ofta, aldrig något från dina filer.\nStatistiken är kopplad till ett slumpmässigt id, inte till ditt namn eller din e-post.\nDet är på nu och du kan stänga av det när som helst.",
   "@onboarding.stepBeta.analyticsLede": {
     "sourceHash": "edd95b4"

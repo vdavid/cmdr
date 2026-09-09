@@ -351,34 +351,6 @@
   "@onboarding.stepBeta.checklist.emailMark": {
     "sourceHash": "1bf8647"
   },
-  "onboarding.stepBeta.feedbackIntro": "Seu feedback me ajuda a encontrar bugs e priorizar recursos. Veja como você pode participar:",
-  "@onboarding.stepBeta.feedbackIntro": {
-    "sourceHash": "4e238dd"
-  },
-  "onboarding.stepBeta.feedback.inAppBound": "<strong>No app:</strong> Veja <strong>Ajuda > Enviar feedback…</strong> no menu, ou encontre na paleta de comandos com <chip></chip>.",
-  "@onboarding.stepBeta.feedback.inAppBound": {
-    "sourceHash": "8fabdee"
-  },
-  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>No app:</strong> Veja <strong>Ajuda > Enviar feedback…</strong> no menu, ou encontre na paleta de comandos.",
-  "@onboarding.stepBeta.feedback.inAppUnbound": {
-    "sourceHash": "26447c9"
-  },
-  "onboarding.stepBeta.feedback.github": "<github>GitHub</github>: Crie issues, vote em issues.",
-  "@onboarding.stepBeta.feedback.github": {
-    "sourceHash": "f4fb26a"
-  },
-  "onboarding.stepBeta.feedback.discord": "<discord>Discord</discord>: Clique no link, entre no servidor, conheça a mim e a outras pessoas.",
-  "@onboarding.stepBeta.feedback.discord": {
-    "sourceHash": "c899232"
-  },
-  "onboarding.stepBeta.feedback.call": "<call>Agende uma conversa comigo</call>: Não vou fazer isso por muito tempo, mas enquanto o Cmdr está em beta aberto, eu adoraria conversar com você sobre seus arquivos!",
-  "@onboarding.stepBeta.feedback.call": {
-    "sourceHash": "5e198ee"
-  },
-  "onboarding.stepBeta.star": "E mais uma forma muito importante de ajudar em um minuto: dê uma estrela ao repo <github>aqui no GitHub</github>. Assim que chegar a 225 estrelas, o Homebrew me deixa liberar o <code>brew install cmdr</code>.",
-  "@onboarding.stepBeta.star": {
-    "sourceHash": "30c25f2"
-  },
   "onboarding.stepBeta.analyticsLede": "Para saber o que está funcionando e o que não está, durante o beta aberto o Cmdr envia estatísticas de uso: quais recursos são usados e com que frequência, nunca nada dos seus arquivos.\nElas são ligadas a um identificador aleatório, não ao seu nome nem ao seu e-mail.\nEstá ativo agora, e você pode desativar quando quiser.",
   "@onboarding.stepBeta.analyticsLede": {
     "sourceHash": "edd95b4"

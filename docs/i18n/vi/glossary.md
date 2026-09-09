@@ -2839,12 +2839,12 @@ cài, quét toàn bộ `*.loctable` theo công thức trong `docs/i18n/reference
   dùng `email` làm từ mượn ở `settings.updates.attachEmailToReports.*` và `onboarding.stepBeta.emailNote`.
 - **star (động từ, của GitHub) → `gắn sao`; a star (danh từ) → `sao`** · GitHub KHÔNG có giao diện tiếng Việt (danh sách
   ngôn ngữ của GitHub chỉ có en, zh-CN, zh-TW, fr, de, ja, ko, pt-BR, ru, es), nên không có "chữ của chính GitHub" để
-  lấy. Chốt theo hai đường: (1) catalog đã ship `onboarding.stepBeta.star` = `gắn sao cho repo … Ngay khi đạt 225 sao`;
+  lấy. Chốt theo hai đường: (1) catalog đã ship `onboarding.stepBeta.checklist.star` = `Gắn sao cho repo trên GitHub`;
   (2) GNOME Nautilus vi dịch chính khái niệm này là `Sao` / `đánh sao` (`Star` → `Sao`, `starred` → `đã đánh sao`), tức
   cùng một gốc từ `sao` · `high` (thống nhất catalog + gốc từ chung). Ghi lại biến thể `đánh sao` của Nautilus; ❌ đừng
   đổi sang nó, hai khóa mới phải đọc y như câu đã ship.
 - **repo → `repo`, giữ nguyên** · catalog đã giữ từ mượn ở khắp `errors.git.*` (`Không có git repo ở đây`,
-  `Repo này trông như đã hỏng`) và ở `onboarding.stepBeta.star` · `high`. MS terminology dịch `repository` là
+  `Repo này trông như đã hỏng`) và ở `onboarding.stepBeta.checklist.star` · `high`. MS terminology dịch `repository` là
   `kho lưu trữ`, nhưng tiếng Anh của Cmdr viết tắt "repo" và người dùng Việt trong giới lập trình cũng nói "repo"; chỉ
   dùng `kho` khi tiếng Anh viết đủ chữ "repository" (`settings.fileExplorer.git.showRepoChip.*` = `Huy hiệu kho`).
 - **Like (nút của một trang web) → `Thích`** · không nguồn Tier 1 nào có nhãn này (AlternativeTo cũng chỉ có tiếng Anh),

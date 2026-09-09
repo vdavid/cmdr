@@ -3084,14 +3084,14 @@ aposztrófot. Négy kulcs angolja átíródott, ezért a tárolt hash `sync-loca
 ### Az eldöntött szavak
 
 - **star (ige, „megjelöl valamit csillaggal”) → `csillagoz`** · ms (`HUNGARIAN.tbx`, `star` Verb, definíció: „To mark an
-  entity with a star.” → `csillagoz`, HUN), plusz a szállított `onboarding.stepBeta.star` („csillagozd meg a repót”) ·
-  `high`. ❗ A **GitHub nem szállít magyar felületet** (a támogatott nyelvei közt nincs magyar), tehát a „használd, amit
-  a GitHub mond a te nyelveden” utasításra itt nincs Tier-1 válasz: a magyar felhasználó angol `Star` gombot lát. A
-  Microsoft-terminológia viszont pontosan erre a jelentésre ad alakot, és egyezik a szállított katalógussal, ami
-  eldönti.
-- **repo → `repó`** · a szállított `onboarding.stepBeta.star` · `high`. ❌ NEM `adattár` (az a Microsoft `repository`
-  alakja, és általános adattárolót nevez meg, nem Git-repót) és nem `tároló` (az a `container` felé csúszik). Az angol
-  is a köznyelvi rövidítést használja („repo”), tehát a regiszter is egyezik.
+  entity with a star.” → `csillagoz`, HUN), plusz a szállított `onboarding.stepBeta.checklist.star` („Csillagozd meg a
+  repót a GitHubon”) · `high`. ❗ A **GitHub nem szállít magyar felületet** (a támogatott nyelvei közt nincs magyar),
+  tehát a „használd, amit a GitHub mond a te nyelveden” utasításra itt nincs Tier-1 válasz: a magyar felhasználó angol
+  `Star` gombot lát. A Microsoft-terminológia viszont pontosan erre a jelentésre ad alakot, és egyezik a szállított
+  katalógussal, ami eldönti.
+- **repo → `repó`** · a szállított `onboarding.stepBeta.checklist.star` · `high`. ❌ NEM `adattár` (az a Microsoft
+  `repository` alakja, és általános adattárolót nevez meg, nem Git-repót) és nem `tároló` (az a `container` felé
+  csúszik). Az angol is a köznyelvi rövidítést használja („repo”), tehát a regiszter is egyezik.
 - **like (ige, „tetszést fejez ki egy elemre”) → `kedvel`** · ms (`HUNGARIAN.tbx`, `like` Verb, definíció: „To express
   approval for a certain item.” → `kedvel`, HUN) · `high`. Az AlternativeTo Like gombja pontosan ez a jelentés (egy
   elem, nem egy közösségi poszt), ezért nem a másik MS-alak (`tetszik`, definíció: „Action taken by a user on a post”)
@@ -3132,9 +3132,9 @@ aposztrófot. Négy kulcs angolja átíródott, ezért a tárolt hash `sync-loca
   `e`, és a magyar hangrend a szó UTOLSÓ magánhangzójához igazodik, tehát `-től`, `-re`, `-nek`, `-ben`.
 - **A `<code>` parancs elé VALÓDI névelő kerül, nem `a(z)` hedge.** A `checklist.starNote` tartalma mindig ugyanaz a
   literál (`brew install cmdr`, `b`-vel kezdődik), tehát a `style.md` szabálya („egyetlen lehetséges értékű helyőrző a
-  valódi névelőt kapja”) érvényes: `a <code>brew install cmdr</code> parancsot`. ❗ A szállított
-  `onboarding.stepBeta.star` ugyanerre a parancsra `a(z)`-t ír; az a hedge ott felesleges, de más kulcs, ezt a passz nem
-  söpörte át.
+  valódi névelőt kapja”) érvényes: `a <code>brew install cmdr</code> parancsot`. A testvér
+  `onboarding.stepBeta.checklist.starNote` ugyanezt a szabályt követi: `a <code>brew install cmdr</code> parancsot`,
+  valódi névelővel.
 - **A `{nextLabel}` szintén valódi névelőt kap: `a „{nextLabel}” gombra`.** Az értéke a magyarban vagy `Tovább`, vagy
   `Befejezés` (`onboarding.wizard.next` / `.finish`), mindkettő mássalhangzóval kezdődik, tehát `a`. Az idézőjel a házi
   `„…”` alak, ahogy a katalógus minden felületi címkét idéz (`a „+” gombra`, `a „Zárolt” pipát`).

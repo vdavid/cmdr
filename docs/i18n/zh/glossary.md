@@ -2474,10 +2474,8 @@ zh-CN 为 Tier 1，GitHub 自家中文文档用于 GitHub 专有动词，Microso
   `存储`：Apple 现在的简体中文用 `保存`。`onboarding.stepBeta.signup.rejected` / `.unreachable` 在句中引用这个按钮时写
   `“保存”`（全角引号），与按钮标签逐字一致 · `high`
 - **star（GitHub 的动词）/ stars（数量）** · `加星标` / `星标` · GitHub 自家简体中文文档（`docs.github.com/zh`
-  §「保存带星标的仓库」：`单击“星标”`、`已加星标`、`星标数`，2026-09-09）。GitHub的网页界面本身不出简体中文版，所以它的中文文档就是能拿到的最权威来源。⚠️
-  `onboarding.stepBeta.star` 用的是口语借词 `点 star` / `个 star`；那段被 `StepBeta.svelte` 的
-  `SHOW_FEEDBACK_CHANNELS = false` 挡着，眼下不会和清单同屏，但开关一旦打回 `true`
-  就会两种说法并排出现，届时把它一起改成 `加星标` / `星标`。仓库仍是 `仓库`（目录里 18 处，与 `errors.git.*`
+  §「保存带星标的仓库」：`单击“星标”`、`已加星标`、`星标数`，2026-09-09）。GitHub的网页界面本身不出简体中文版，所以它的中文文档就是能拿到的最权威来源。这条现在是全目录唯一的说法：另一处用口语借词
+  `点 star` / `个 star` 的旧反馈段落已随第 3 步改版一并删除。仓库仍是 `仓库`（目录里 18 处，与 `errors.git.*`
   一致），不是 Microsoft TBX 的 `存储库` · `high`
 - **like（AlternativeTo 的点赞动词）** · `点赞` ·
   AlternativeTo 只有英文站，没有中文界面，因此没有「站点自家的中文动词」可抄（2026-09-09 核实过该站无语言切换器）。改用中文网站通用的

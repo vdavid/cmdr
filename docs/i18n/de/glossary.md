@@ -2685,9 +2685,9 @@ und `stepFda.why`. Onboarding ist die eine Fläche, auf der Cmdr in der Ich-Form
   NICHT ins Deutsche (die Einstellung „Preferred spoken language“ betrifft nur Kommunikationsfunktionen), es gibt also
   keinen deutschen Button-Text. Die deutsche GitHub-Doku nennt die Taste `Stern` und die Handlung „mit einem Stern
   versehen“ / „mit einem Stern markieren“ (GitHub-Doku `de`, „Repositorien markiert mit Sternen sichern“: „Klicke in der
-  oberen rechten Ecke der Seite auf **Stern**.“, abgerufen 2026-09-09) · high. Der Katalog hatte
-  `Vergib dem Repo … einen Stern` schon in `onboarding.stepBeta.star`; die Checklistenzeile übernimmt es zeichengleich.
-  `Repo` bleibt die Kurzform, wie im Englischen.
+  oberen rechten Ecke der Seite auf **Stern**.“, abgerufen 2026-09-09) · high. Die Checklistenzeile
+  `onboarding.stepBeta.checklist.star` sagt es ausgeschrieben: `Vergib dem Repo auf GitHub einen Stern`. `Repo` bleibt
+  die Kurzform, wie im Englischen.
 - **`Like` (AlternativeTos eigenes Verb) → `ein Like geben`** · AlternativeTo ist einsprachig englisch, der Nutzer sieht
   dort also eine Taste `Like`; Microsofts Terminologie führt `like` (Verb, Beitrag) als `gefällt mir`, was aus Facebook/
   Dynamics stammt und als Linktext zu lang ist · tentative. `das Like` / `liken` stehen im Duden. Die Form

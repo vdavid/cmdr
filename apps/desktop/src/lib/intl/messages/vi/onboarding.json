@@ -351,34 +351,6 @@
   "@onboarding.stepBeta.checklist.emailMark": {
     "sourceHash": "1bf8647"
   },
-  "onboarding.stepBeta.feedbackIntro": "Phản hồi của bạn giúp mình phát hiện lỗi và ưu tiên tính năng. Đây là cách bạn có thể tham gia:",
-  "@onboarding.stepBeta.feedbackIntro": {
-    "sourceHash": "4e238dd"
-  },
-  "onboarding.stepBeta.feedback.inAppBound": "<strong>Trong ứng dụng:</strong> Xem <strong>Trợ giúp > Gửi phản hồi…</strong> trong trình đơn, hoặc tìm nó trong bảng lệnh bằng <chip></chip>.",
-  "@onboarding.stepBeta.feedback.inAppBound": {
-    "sourceHash": "8fabdee"
-  },
-  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>Trong ứng dụng:</strong> Xem <strong>Trợ giúp > Gửi phản hồi…</strong> trong trình đơn, hoặc tìm nó trong bảng lệnh.",
-  "@onboarding.stepBeta.feedback.inAppUnbound": {
-    "sourceHash": "26447c9"
-  },
-  "onboarding.stepBeta.feedback.github": "<github>GitHub</github>: Thêm vấn đề, bình chọn cho vấn đề.",
-  "@onboarding.stepBeta.feedback.github": {
-    "sourceHash": "f4fb26a"
-  },
-  "onboarding.stepBeta.feedback.discord": "<discord>Discord</discord>: Nhấn vào liên kết, vào máy chủ, gặp mình và những người khác.",
-  "@onboarding.stepBeta.feedback.discord": {
-    "sourceHash": "c899232"
-  },
-  "onboarding.stepBeta.feedback.call": "<call>Đặt lịch gọi với mình</call>: Mình sẽ không làm việc này lâu đâu, nhưng trong lúc Cmdr còn là open beta, mình rất muốn trò chuyện với bạn về các tệp của bạn!",
-  "@onboarding.stepBeta.feedback.call": {
-    "sourceHash": "5e198ee"
-  },
-  "onboarding.stepBeta.star": "Và một cách rất quan trọng nữa mà bạn có thể giúp trong một phút: gắn sao cho repo <github>tại đây trên GitHub</github>. Ngay khi đạt 225 sao, Homebrew sẽ cho mình bật <code>brew install cmdr</code>.",
-  "@onboarding.stepBeta.star": {
-    "sourceHash": "30c25f2"
-  },
   "onboarding.stepBeta.analyticsLede": "Để biết điều gì hiệu quả và điều gì không, trong giai đoạn open beta Cmdr gửi thống kê sử dụng: tính năng nào được dùng và dùng bao nhiêu lần, không bao giờ gửi bất cứ thứ gì từ các tệp của bạn.\nThống kê gắn với một mã định danh ngẫu nhiên, không gắn với tên hay email của bạn.\nNó đang bật, và bạn có thể tắt bất cứ lúc nào.",
   "@onboarding.stepBeta.analyticsLede": {
     "sourceHash": "edd95b4"

@@ -2916,11 +2916,11 @@ Familia ICU normal: apóstrofos dobles, aunque al final ningún valor español l
   terminología de Microsoft coincide con la forma verbal: `star` (v., «To mark an entity with a star») =
   `marcar con una estrella`. Para una fila de una lista de tareas, `marca el repo con una estrella` queda largo y
   burocrático, así que va la forma coloquial `Dale una estrella al repo en GitHub`, que además **ya es la del catálogo**
-  (`onboarding.stepBeta.star` dice `dale una estrella al repo`) · `high`. ❌ No `Destacar`: es lo que dice la gente, no
-  lo que dice GitHub.
-- **`repo` → `repo`** · el catálogo ya lo usa (`onboarding.stepBeta.star`) y la propia terminología de Microsoft publica
-  `repo` como término español para `repository` junto a `repositorio`. El inglés aquí es deliberadamente coloquial ·
-  `high`.
+  (`onboarding.stepBeta.checklist.star` dice `Dale una estrella al repo en GitHub`) · `high`. ❌ No `Destacar`: es lo
+  que dice la gente, no lo que dice GitHub.
+- **`repo` → `repo`** · el catálogo ya lo usa (`onboarding.stepBeta.checklist.star`) y la propia terminología de
+  Microsoft publica `repo` como término español para `repository` junto a `repositorio`. El inglés aquí es
+  deliberadamente coloquial · `high`.
 - **`like` (el botón de AlternativeTo) → `dar un me gusta`** · AlternativeTo solo existe en inglés, así que no hay UI
   localizada que copiar y decide Tier 2: MS terminology da `like` → `me gusta` en las seis entradas de redes sociales
   (aprobar una publicación, el icono del corazón, el pulgar arriba). `Dale un me gusta a Cmdr en AlternativeTo` es la

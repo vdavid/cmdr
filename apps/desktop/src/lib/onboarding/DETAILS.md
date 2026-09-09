@@ -403,12 +403,6 @@ empty optional field is an answer rather than a mistake.
 A setback says which one it was: the list rejected the address (look for a typo, Save again) or we never reached the
 list (nothing lost, the address is on this Mac, retry here or in Settings). One "try again?" for both was a dead end.
 
-### Parked, not deleted
-
-Two blocks sit behind `const SHOW_… = false` flags with their copy still in the catalog: the feedback-channel list
-(in-app, GitHub issues, Discord, book-a-call), whose introducing paragraph went in the rewrite, and the "Stay in touch"
-card the checklist's email row replaced. Flip a flag to bring one back.
-
 The footer has two buttons: a secondary **Start using Cmdr!** that finishes onboarding right here (skipping the optional
 step, via `requestWizardComplete()`) and a primary **One more optional setup step** that `nextStep()`s to the Optional
 step. There is no skip-to-finish that bypasses this page: every first-launch user sees the analytics disclosure once,
@@ -713,6 +707,7 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 - `$lib/shortcuts/key-capture`: `isMacOS`
 - `$lib/system-strings.svelte`: localized system pane names
 - `$lib/ui`: `Button`, `LinkButton`
-- `$lib/beta-links`: `GITHUB_REPO_URL`, `GITHUB_ISSUES_URL`, `BOOK_A_CALL_URL`, `ABOUT_DAVID_URL` (Step 3's feedback +
-  star-CTA links; shared with `AboutWindow.svelte`)
+- `$lib/beta-links`: `GITHUB_REPO_URL`, `ALTERNATIVE_TO_URL`, `ABOUT_DAVID_URL` (Step 3's two checklist links and
+  David's own page). `GITHUB_ISSUES_URL` and `BOOK_A_CALL_URL` live in the same module but belong to
+  `FeedbackDialog.svelte` and `AboutWindow.svelte` now, ❌ not here.
 - `@tauri-apps/plugin-process`: `relaunch` (Allow-path footer button)

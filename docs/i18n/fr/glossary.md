@@ -1481,10 +1481,9 @@ Le toast grandissant qui compte les renommages non appliqués. Il prolonge la ph
 
 - **"and so did N other files" → `ainsi que {n} autres fichiers`** · macOS Finder Tier 1 pour la forme « X et N autres
   éléments » (`LocalizableMerged.json` : « Envoi de « ^1 » et de ^0 autres éléments. », « … en gardant les éléments les
-  plus récents tels que « ^1 » et ^0 autres éléments. ») ; `ainsi que` déjà employé dans le catalogue
-  (`onboarding.stepBeta.feedback.discord`) et attesté dans KDE Dolphin `fr` · high. Le « so did » anglais n'a pas
-  d'équivalent direct : `ainsi que` porte le parallélisme sans allonger la phrase (le catalogue `fr` dérive déjà long).
-  `fichier` et non `élément` parce que l'anglais dit explicitement « file ».
+  plus récents tels que « ^1 » et ^0 autres éléments. ») ; `ainsi que` attesté dans KDE Dolphin `fr` · high. Le « so did
+  » anglais n'a pas d'équivalent direct : `ainsi que` porte le parallélisme sans allonger la phrase (le catalogue `fr`
+  dérive déjà long). `fichier` et non `élément` parce que l'anglais dit explicitement « file ».
 - **`ainsi que` passe DANS les branches du pluriel, pas devant.** L'élision l'impose : la branche `one` doit lire
   `ainsi qu''un autre fichier`, les autres `ainsi que {othersText} autres fichiers`. Même discipline que la règle
   style.md § Plurals sur les clauses qui doivent s'accorder ; le contrôle de parité ne compare que l'ENSEMBLE des
@@ -3187,8 +3186,8 @@ Termes établis pendant cette passe :
 - star (le verbe de GitHub) → **ajouter une étoile** · GitHub localise son interface en français et son bouton dit «
   Ajouter une étoile » (état marqué : « Marqué d'une étoile »), d'après la doc GitHub française
   `docs.github.com/fr/get-started/exploring-projects-on-github/saving-repositories-with-stars`, relevée 2026-09-09 ·
-  high. Le catalogue le disait déjà en clair à `onboarding.stepBeta.star` (« ajoutez une étoile au dépôt ») : les deux
-  clés parlent du même geste et disent maintenant le même mot. `dépôt` pour `repo` était déjà en place.
+  high. La ligne de la liste, `onboarding.stepBeta.checklist.star`, la reprend telle quelle : « Ajouter une étoile au
+  dépôt sur GitHub ». `dépôt` pour `repo` était déjà en place.
 - Like (le bouton d'AlternativeTo) → **Aimer** · AlternativeTo n'a PAS d'interface française (le bouton dit « Like » en
   anglais quel que soit le visiteur, vérifié sur `alternativeto.net` 2026-09-09), donc aucun terme éditeur à reprendre.
   On prend le verbe français standard du bouton social (Facebook FR « J'aime »), à l'infinitif comme tout libellé

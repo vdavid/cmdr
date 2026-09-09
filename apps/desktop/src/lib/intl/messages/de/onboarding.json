@@ -351,34 +351,6 @@
   "@onboarding.stepBeta.checklist.emailMark": {
     "sourceHash": "1bf8647"
   },
-  "onboarding.stepBeta.feedbackIntro": "Dein Feedback hilft mir, Fehler zu finden und Funktionen zu priorisieren. So kannst du dich einbringen:",
-  "@onboarding.stepBeta.feedbackIntro": {
-    "sourceHash": "4e238dd"
-  },
-  "onboarding.stepBeta.feedback.inAppBound": "<strong>In der App:</strong> Schau im Menü unter <strong>Hilfe > Feedback senden …</strong>, oder finde es mit <chip></chip> in der Befehlspalette.",
-  "@onboarding.stepBeta.feedback.inAppBound": {
-    "sourceHash": "8fabdee"
-  },
-  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>In der App:</strong> Schau im Menü unter <strong>Hilfe > Feedback senden …</strong>, oder finde es in der Befehlspalette.",
-  "@onboarding.stepBeta.feedback.inAppUnbound": {
-    "sourceHash": "26447c9"
-  },
-  "onboarding.stepBeta.feedback.github": "<github>GitHub</github>: Issues anlegen, über Issues abstimmen.",
-  "@onboarding.stepBeta.feedback.github": {
-    "sourceHash": "f4fb26a"
-  },
-  "onboarding.stepBeta.feedback.discord": "<discord>Discord</discord>: Klicke auf den Link, komm auf den Server, lerne mich und andere kennen.",
-  "@onboarding.stepBeta.feedback.discord": {
-    "sourceHash": "c899232"
-  },
-  "onboarding.stepBeta.feedback.call": "<call>Vereinbare einen Anruf mit mir</call>: Ich mache das nicht mehr lange, aber solange Cmdr in der offenen Beta ist, würde ich mich gerne mit dir über deine Dateien unterhalten!",
-  "@onboarding.stepBeta.feedback.call": {
-    "sourceHash": "5e198ee"
-  },
-  "onboarding.stepBeta.star": "Und noch eine sehr wichtige Sache, mit der du in einer Minute helfen kannst: Vergib dem Repo <github>hier auf GitHub</github> einen Stern. Sobald es 225 Sterne erreicht, lässt Homebrew mich <code>brew install cmdr</code> freischalten.",
-  "@onboarding.stepBeta.star": {
-    "sourceHash": "30c25f2"
-  },
   "onboarding.stepBeta.analyticsLede": "Um zu erfahren, was funktioniert und was nicht, sendet Cmdr während der offenen Beta Nutzungsstatistiken: welche Funktionen wie oft genutzt werden, nie etwas aus deinen Dateien.\nSie sind mit einer zufälligen ID verknüpft, nicht mit deinem Namen oder deiner E-Mail-Adresse.\nEs ist jetzt aktiv, und du kannst es jederzeit ausschalten.",
   "@onboarding.stepBeta.analyticsLede": {
     "sourceHash": "edd95b4"

@@ -165,9 +165,9 @@ Settled terms (sources agree):
   `.loctable`s, verified 2026-09-09. ❌ Not `Thông tin khác`, which macOS uses for "More Info" (a details panel).
   `high`.
 - **star (GitHub's verb): `gắn sao`; a star: `sao`; repo: `repo`, kept verbatim** · GitHub ships no Vietnamese UI, so
-  there is no vendor wording to copy. The catalog settled it (`onboarding.stepBeta.star`), and GNOME Nautilus vi renders
-  the same concept on the same root (`Star` → `Sao`, "starred" → `đã đánh sao`). `high`. Write `kho` only where the
-  English spells out "repository" (`settings.fileExplorer.git.showRepoChip.label` = `Huy hiệu kho`).
+  there is no vendor wording to copy. The catalog settled it (`onboarding.stepBeta.checklist.star`), and GNOME Nautilus
+  vi renders the same concept on the same root (`Star` → `Sao`, "starred" → `đã đánh sao`). `high`. Write `kho` only
+  where the English spells out "repository" (`settings.fileExplorer.git.showRepoChip.label` = `Huy hiệu kho`).
 - **like (a site's upvote button): `Thích`** · no Tier 1 source (AlternativeTo is English-only); the catalog already
   ships the root at `fileExplorer.doubleClickHint.iLikeIt` (`Tôi thích`). `high`.
 - **checklist: `danh sách kiểm tra`** · Microsoft terminology (two entries agree). `high`.

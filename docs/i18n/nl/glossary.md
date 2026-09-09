@@ -3227,12 +3227,11 @@ Elke regel staat naast een schakelaar en mag niet omlopen, dus ze blijven kort e
   onboarding/fileOperations-ronde en is hiermee opgelost · `high`. `simple local model` → `een eenvoudig lokaal model`:
   `eenvoudig` beschrijft hier het model, niet hoe makkelijk de gebruiker het heeft, dus de "geen simpel/makkelijk"-regel
   geldt niet.
-- **`stepBeta.openBeta`**: de nieuwe slotzin herhaalt bijna letterlijk de broer of zus
-  `onboarding.stepBeta.feedbackIntro` ("spot bugs" tegenover "fix bugs"), dus de vertaling spiegelt die zin exact en
-  wisselt alleen het werkwoord: `Jouw feedback helpt me bugs op te lossen en functies te prioriteren.` Wie er één
-  herschrijft, moet de andere meenemen. `<alpha></alpha>-badges` houdt het streepje uit de al verzonden waarde, en
-  `de meest in-ontwikkeling-zijnde gebieden` is vervangen door `de delen die het meest in ontwikkeling zijn`, dat het
-  woord `delen` uit de eerste zin hergebruikt.
+- **`stepBeta.openBeta`**: de slotzin luidt `Jouw feedback helpt me bugs op te lossen en functies te prioriteren.` Er
+  stond ooit een bijna identieke zin een paar regels lager, in de intro van de feedbackkanalenlijst; die lijst is met de
+  herschrijving van stap 3 verdwenen, dus dit is nu de enige plek waar Cmdr dit zegt. `<alpha></alpha>-badges` houdt het
+  streepje uit de al verzonden waarde, en `de meest in-ontwikkeling-zijnde gebieden` is vervangen door
+  `de delen die het meest in ontwikkeling zijn`, dat het woord `delen` uit de eerste zin hergebruikt.
 
 ### De stapteller met de `+1`
 

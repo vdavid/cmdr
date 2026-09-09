@@ -3,10 +3,6 @@
   "@onboarding.stepAi.bannerBody.stuck": {
     "sourceHash": "79d5765"
   },
-  "onboarding.stepBeta.feedbackIntro": "Your feedback helps me spot bugs and prioritise features. Here is how you can engage:",
-  "@onboarding.stepBeta.feedbackIntro": {
-    "sourceHash": "4e238dd"
-  },
   "onboarding.stepBeta.openBeta": "Cmdr is in open beta: it''s overall solid and usable, but some parts are rough. <alpha></alpha> badges mark the most work-in-progress areas. Your feedback helps me fix bugs and prioritise features.",
   "@onboarding.stepBeta.openBeta": {
     "sourceHash": "0dba196"

@@ -270,29 +270,6 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
     expect(renderRich('onboarding.stepBeta.openBeta', ['alpha'])).toBe(
       "Cmdr is in open beta: it's overall solid and usable, but some parts are rough. <alpha></alpha> badges mark the most work-in-progress areas. Your feedback helps me fix bugs and prioritize features.",
     )
-    // The feedback-channel copy is parked behind `SHOW_FEEDBACK_CHANNELS`, not deleted, so
-    // it still has to resolve: bringing the list back shouldn't turn up a broken sentence.
-    expect(tString('onboarding.stepBeta.feedbackIntro')).toBe(
-      'Your feedback helps me spot bugs and prioritize features. Here is how you can engage:',
-    )
-    expect(renderRich('onboarding.stepBeta.feedback.inAppBound', ['strong', 'chip'])).toBe(
-      '<strong>In-app:</strong> See <strong>Help > Send feedback…</strong> in the menu, or find it in the command palette with <chip></chip>.',
-    )
-    expect(renderRich('onboarding.stepBeta.feedback.inAppUnbound', ['strong'])).toBe(
-      '<strong>In-app:</strong> See <strong>Help > Send feedback…</strong> in the menu, or find it in the command palette.',
-    )
-    expect(renderRich('onboarding.stepBeta.feedback.github', ['github'])).toBe(
-      '<github>GitHub</github>: Add issues, vote on issues.',
-    )
-    expect(renderRich('onboarding.stepBeta.feedback.discord', ['discord'])).toBe(
-      '<discord>Discord</discord>: Click the link, hop on to the server, meet me and others.',
-    )
-    expect(renderRich('onboarding.stepBeta.feedback.call', ['call'])).toBe(
-      "<call>Schedule a call with me</call>: I won't be doing this for very long, but while Cmdr is an open beta, I'd love to talk to you about your files!",
-    )
-    expect(renderRich('onboarding.stepBeta.star', ['github', 'code'])).toBe(
-      'And one more very important way you can help in one minute: star the repo <github>here on GitHub</github>. Once it hits 225 stars, Homebrew lets me enable <code>brew install cmdr</code>.',
-    )
   })
 
   it('resolves the checklist rows', () => {

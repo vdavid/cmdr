@@ -2735,9 +2735,9 @@ långa förklaringar och enradssammanfattningarna bredvid strömbrytarna i valfr
 - **`star` (GitHub-verbet) · `stjärnmärk`** · GitHubs eget gränssnitt ger INGEN svensk form att kopiera: GitHub
   lokaliserade sitt UI till bland annat svenska 2010–2016 men lade ner det 2016-11-18, och gränssnittet är sedan dess
   enbart engelskt (`Preferred spoken language` styr bara enstaka kommunikationsytor). Så valet faller på katalogens egen
-  precedens, `onboarding.stepBeta.star` (”stjärnmärk repot <github>här på GitHub</github>”), med Microsoft sv (`star` →
-  `stjärna`, fem poster) som stöd för substantivet `stjärnor`. `high`.
-- **`repo` · `repot`** · katalogens egen form i `onboarding.stepBeta.star`. Låneordet böjs som ett neutrumord
+  precedens, `onboarding.stepBeta.checklist.star` (”Stjärnmärk repot på GitHub”), med Microsoft sv (`star` → `stjärna`,
+  fem poster) som stöd för substantivet `stjärnor`. `high`.
+- **`repo` · `repot`** · katalogens egen form i `onboarding.stepBeta.checklist.star`. Låneordet böjs som ett neutrumord
   (`ett repo`, `repot`, `repon`). Skiljt från `git-repository` i `settings.json`, som är den tekniska helformen. `high`.
 - **`Like` (AlternativeTos knapp) · `Gilla`** · AlternativeTo har inget svenskt gränssnitt (sajten är helt engelsk och
   knappen räknar `likes`, kontrollerat 2026-09-09), så verbet översätts: Microsoft sv terminology ger `Like` → `Gilla` i
@@ -2796,9 +2796,9 @@ långa förklaringar och enradssammanfattningarna bredvid strömbrytarna i valfr
 - **`work-in-progress areas` · `de områden som är mest under arbete`** · `under arbete` är den etablerade svenskan för
   work in progress; `pågående` ensamt säger bara att något rör sig, inte att det är ofärdigt. `tentative` (ingen direkt
   UI-källa).
-- **`helps me fix bugs` · `hjälper mig att fixa buggar`** · håll isär från syskonnyckeln
-  `onboarding.stepBeta.feedbackIntro`, där engelskan säger `spot bugs` och svenskan därför säger `hitta buggar`. Två
-  olika verb i engelskan, två olika verb i svenskan. `high`.
+- **`helps me fix bugs` · `hjälper mig att fixa buggar`** · `fixa` för `fix`, matchar katalogens ledigare register i
+  `onboarding.stepBeta.openBeta`. Den nästan likalydande syskonmeningen med `spot bugs` (`hitta buggar`) satt i
+  feedbackkanalslistans intro och försvann med omskrivningen av steg 3. `high`.
 
 ### Enradssammanfattningarna i valfria steget
 

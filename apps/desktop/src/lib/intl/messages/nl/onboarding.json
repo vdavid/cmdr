@@ -353,34 +353,6 @@
   "@onboarding.stepBeta.checklist.emailMark": {
     "sourceHash": "1bf8647"
   },
-  "onboarding.stepBeta.feedbackIntro": "Jouw feedback helpt me bugs te vinden en functies te prioriteren. Zo kun je meedoen:",
-  "@onboarding.stepBeta.feedbackIntro": {
-    "sourceHash": "4e238dd"
-  },
-  "onboarding.stepBeta.feedback.inAppBound": "<strong>In de app:</strong> Zie <strong>Help > Stuur feedback…</strong> in het menu, of vind het in het opdrachtenpalet met <chip></chip>.",
-  "@onboarding.stepBeta.feedback.inAppBound": {
-    "sourceHash": "8fabdee"
-  },
-  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>In de app:</strong> Zie <strong>Help > Stuur feedback…</strong> in het menu, of vind het in het opdrachtenpalet.",
-  "@onboarding.stepBeta.feedback.inAppUnbound": {
-    "sourceHash": "26447c9"
-  },
-  "onboarding.stepBeta.feedback.github": "<github>GitHub</github>: Voeg issues toe, stem op issues.",
-  "@onboarding.stepBeta.feedback.github": {
-    "sourceHash": "f4fb26a"
-  },
-  "onboarding.stepBeta.feedback.discord": "<discord>Discord</discord>: Klik op de link, kom op de server, ontmoet mij en anderen.",
-  "@onboarding.stepBeta.feedback.discord": {
-    "sourceHash": "c899232"
-  },
-  "onboarding.stepBeta.feedback.call": "<call>Plan een gesprek met mij</call>: Ik doe dit niet heel lang meer, maar zolang Cmdr in open bèta is, praat ik graag met je over je bestanden!",
-  "@onboarding.stepBeta.feedback.call": {
-    "sourceHash": "5e198ee"
-  },
-  "onboarding.stepBeta.star": "En nog een heel belangrijke manier om in één minuut te helpen: geef de repo <github>hier op GitHub</github> een ster. Zodra het 225 sterren haalt, laat Homebrew me <code>brew install cmdr</code> inschakelen.",
-  "@onboarding.stepBeta.star": {
-    "sourceHash": "30c25f2"
-  },
   "onboarding.stepBeta.analyticsLede": "Om te leren wat wel en niet werkt, stuurt Cmdr tijdens de open bèta gebruiksstatistieken: welke functies worden gebruikt en hoe vaak, nooit iets uit je bestanden.\nZe zijn gekoppeld aan een willekeurige id, niet aan je naam of e-mailadres.\nHet staat nu aan en je kunt het op elk moment uitzetten.",
   "@onboarding.stepBeta.analyticsLede": {
     "sourceHash": "edd95b4"

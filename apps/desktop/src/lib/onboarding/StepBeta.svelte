@@ -9,7 +9,6 @@
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
-    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import {
         setFooterOverride,
         nextStep,
@@ -22,16 +21,8 @@
     import { useBooleanSetting } from '$lib/settings/components/boolean-setting.svelte'
     import { createBetaEmailSignup } from '$lib/settings/sections/beta-email-signup.svelte'
     import { openExternalUrl } from '$lib/tauri-commands'
-    import {
-        GITHUB_REPO_URL,
-        GITHUB_ISSUES_URL,
-        BOOK_A_CALL_URL,
-        ABOUT_DAVID_URL,
-        DISCORD_INVITE_URL,
-        ALTERNATIVE_TO_URL,
-    } from '$lib/beta-links'
+    import { GITHUB_REPO_URL, ABOUT_DAVID_URL, ALTERNATIVE_TO_URL } from '$lib/beta-links'
     import { TERMS_URL, TERMS_VERSION } from '$lib/legal/terms'
-    import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
@@ -73,19 +64,6 @@
      */
 
     /**
-     * The feedback-channel list (in-app, GitHub issues, Discord, book-a-call). Parked rather
-     * than deleted: the checklist took the middle of the page and the paragraph that used to
-     * introduce this list ("here is how you can engage:") went with the rewrite, so the list
-     * has nothing to hang off. Flip to `true` to bring it back.
-     */
-    const SHOW_FEEDBACK_CHANNELS = false
-    /**
-     * The "Stay in touch (optional)" card. Parked, not deleted: the checklist's inline email
-     * field replaced it. Flip to `true` to bring it back.
-     */
-    const SHOW_STAY_IN_TOUCH_CARD = false
-
-    /**
      * How long after following a checklist link before its row ticks itself. The app can't
      * see what happened in the browser, so this is a "you've had time to do it" delay, not a
      * confirmation: long enough that the tick doesn't land while the page is still opening,
@@ -108,10 +86,6 @@
     function moreAbout(topic: string): string {
         return tString('onboarding.moreAbout', { topic })
     }
-
-    // Drives the command-palette mention: when `app.commandPalette` is unbound the chip
-    // renders nothing, so we drop the "with <chip>" tail rather than leave a gap.
-    const commandPaletteShortcut = $derived(getFirstShortcutReactive('app.commandPalette'))
 
     /** Click handler factory for the feedback links: intercepts the decorative href and routes
      * through `openExternalUrl` (Tauri blocks raw `<a>` navigation), logging on failure. */
@@ -288,38 +262,12 @@
         onclick={openLink(ABOUT_DAVID_URL)}>{@render children()}</LinkButton
     >{/snippet}
 {#snippet alpha(children: Snippet)}<StatusBadge status="alpha" />{@render children()}{/snippet}
-{#snippet chip(children: Snippet)}<ShortcutChip commandId="app.commandPalette" clickable={false} />{@render children()}{/snippet}
-{#snippet strong(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
 {#snippet code(children: Snippet)}<code>{@render children()}</code>{/snippet}
-{#snippet github(children: Snippet)}<LinkButton
-        href={GITHUB_ISSUES_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        onclick={openLink(GITHUB_ISSUES_URL)}>{@render children()}</LinkButton
-    >{/snippet}
-{#snippet discord(children: Snippet)}<LinkButton
-        href={DISCORD_INVITE_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        onclick={openLink(DISCORD_INVITE_URL)}>{@render children()}</LinkButton
-    >{/snippet}
-{#snippet call(children: Snippet)}<LinkButton
-        href={BOOK_A_CALL_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        onclick={openLink(BOOK_A_CALL_URL)}>{@render children()}</LinkButton
-    >{/snippet}
 {#snippet terms(children: Snippet)}<LinkButton
         href={TERMS_URL}
         target="_blank"
         rel="noopener noreferrer"
         onclick={openLink(TERMS_URL)}>{@render children()}</LinkButton
-    >{/snippet}
-{#snippet repoLink(children: Snippet)}<LinkButton
-        href={GITHUB_REPO_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        onclick={openLink(GITHUB_REPO_URL)}>{@render children()}</LinkButton
     >{/snippet}
 
 <!-- The field and its Save button ride INSIDE the sentence, so the row reads as one line
@@ -351,39 +299,6 @@
     <h2 class="step-title">{tString('onboarding.stepBeta.title')}</h2>
     <p class="lede"><Trans key="onboarding.stepBeta.greeting" snippets={{ david }} /></p>
     <p class="lede"><Trans key="onboarding.stepBeta.openBeta" snippets={{ alpha }} /></p>
-
-    {#if SHOW_FEEDBACK_CHANNELS}
-        <p class="lede">{tString('onboarding.stepBeta.feedbackIntro')}</p>
-        <!-- Each row's sentence lives in ONE span. The `<li>` is a flex row (marker + text),
-             and flex makes every ELEMENT child its own item: without the span, the leading
-             `<LinkButton>` would be separated from the ": …" after it by the row's own gap,
-             and the list read "GitHub : Add issues". -->
-        <ol class="feedback-list">
-            <li>
-                <span class="feedback-text">
-                    {#if commandPaletteShortcut}
-                        <Trans key="onboarding.stepBeta.feedback.inAppBound" snippets={{ strong, chip }} />
-                    {:else}
-                        <Trans key="onboarding.stepBeta.feedback.inAppUnbound" snippets={{ strong }} />
-                    {/if}
-                </span>
-            </li>
-            <li>
-                <span class="feedback-text"
-                    ><Trans key="onboarding.stepBeta.feedback.github" snippets={{ github }} /></span
-                >
-            </li>
-            <li>
-                <span class="feedback-text"
-                    ><Trans key="onboarding.stepBeta.feedback.discord" snippets={{ discord }} /></span
-                >
-            </li>
-            <li>
-                <span class="feedback-text"><Trans key="onboarding.stepBeta.feedback.call" snippets={{ call }} /></span>
-            </li>
-        </ol>
-        <p class="lede"><Trans key="onboarding.stepBeta.star" snippets={{ github: repoLink, code }} /></p>
-    {/if}
 
     <p class="lede checklist-title">{tString('onboarding.stepBeta.checklist.title')}</p>
     <!-- One grid, three columns (tick, glyph, text), with each row `display: contents` so
@@ -481,22 +396,6 @@
             </span>
         </li>
     </ul>
-
-    {#if SHOW_STAY_IN_TOUCH_CARD}
-        <SectionCard label={tString('onboarding.stepBeta.emailTitle')}>
-            <TextInput
-                type="email"
-                placeholder={tString('onboarding.stepBeta.emailPlaceholder')}
-                value={emailSignup.email}
-                oninput={emailSignup.handleInput}
-                onblur={emailSignup.handleCommit}
-                onkeydown={emailSignup.handleKeydown}
-                disabled={emailSignup.signupInFlight}
-                ariaLabel={tString('onboarding.stepBeta.emailTitle')}
-            />
-            <p class="card-note">{tString('onboarding.stepBeta.emailNote')}</p>
-        </SectionCard>
-    {/if}
 
     <!-- The card carries the id a blocked footer press scrolls back to; that's what
          `SectionCard`'s `id` is for. -->
@@ -629,51 +528,7 @@
         margin-bottom: 0;
     }
 
-    /* The list belongs to the paragraphs around it, so its numbers start on the same
-       left edge they do; only a wrapped line hangs in under the words.
-       ❌ Not `text-indent`, which is INHERITED: it reaches into every inline-flex
-       descendant's anonymous item and yanked the `ShortcutChip` keys out of their pill.
-       A counter plus a flex row keeps the effect inside the row that asked for it. */
-    .feedback-list {
-        margin: 0 0 var(--spacing-lg);
-        padding-left: 0;
-        list-style: none;
-        counter-reset: feedback-item;
-        line-height: var(--font-line-height-prose);
-        color: var(--color-text-primary);
-    }
-
-    .feedback-list li {
-        display: flex;
-        gap: var(--spacing-xs);
-        margin-bottom: var(--spacing-xs);
-        counter-increment: feedback-item;
-    }
-
-    .feedback-list li::before {
-        content: counter(feedback-item) '.';
-        flex: none;
-    }
-
-    .feedback-text {
-        min-width: 0;
-    }
-
-    .feedback-list li:last-child {
-        margin-bottom: 0;
-    }
-
-    .lede code {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        background: var(--color-bg-tertiary);
-        padding: var(--spacing-xxs) var(--spacing-xs);
-        border-radius: var(--radius-sm);
-        color: var(--color-text-primary);
-    }
-
-    /* A quieter line inside a card: the note under the analytics switch, the email
-       small print, the terms lede. */
+    /* A quieter line inside a card: the terms lede. */
     .card-note {
         margin: 0;
         font-size: var(--font-size-sm);
@@ -709,10 +564,5 @@
 
     .signup-feedback.failure {
         color: var(--color-text-primary);
-    }
-
-    /* The parked "Stay in touch" card stacks its field over its small print. */
-    :global(.text-field) + .card-note {
-        margin-top: var(--spacing-sm);
     }
 </style>
