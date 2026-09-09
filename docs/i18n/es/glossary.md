@@ -1533,7 +1533,8 @@ papelera"), y el mismo comando está en la paleta de comandos.
   entre devolver un SITIO y restaurar un NOMBRE.
 - **`This drive doesn't keep a trash.` → `Esta unidad no tiene papelera.`** · dato sobre la unidad, sin veredicto, en la
   línea de `fileOperations.delete.noTrashWarningStrong` ("Este volumen no admite la papelera."). El inglés dice
-  `drive`, y `unidad` es lo que el catálogo usa para eso (`askCmdr.renameUndo.unavailable`, "su unidad no esté conectada") · high
+  `drive`, y `unidad` es lo que el catálogo usa para eso (`askCmdr.renameUndo.unavailable`, "su unidad no esté
+  conectada") · high
 - **`Nothing to put back.` → `No hay nada que devolver.`** · el giro `no hay nada que + infinitivo` ya está asentado
   (`askCmdr.renameUndo.unavailable`, "No hay nada que restaurar.") · high
 - **La segunda mitad trae su propio parámetro de cantidad (`{skipped}`)**, así que conjuga con normalidad: "… a su
