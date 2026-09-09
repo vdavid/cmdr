@@ -208,17 +208,17 @@
   "@askCmdr.error.noKey": {
     "sourceHash": "0a78f37"
   },
-  "askCmdr.error.notConfigured": "在设置中开启一个 AI 提供方，即可使用 Ask Cmdr。",
+  "askCmdr.error.notConfigured": "聊天需要一个 AI 提供方。请在设置中开启一个。",
   "@askCmdr.error.notConfigured": {
-    "sourceHash": "b84c5f4"
+    "sourceHash": "2d55d2c"
   },
   "askCmdr.error.noConsent": "开启 Ask Cmdr 即可开始聊天。你先选择它能看到哪些内容。",
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr 需要比你本地模型更大的上下文窗口。请在设置的 AI 部分选择 32,768 个 token 或更多。",
+  "askCmdr.error.localWindowTooSmall": "Cmdr 需要比你本地模型更大的上下文窗口。请在设置的 AI 部分选择 32,768 个 token 或更多。",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "6c2334b"
+    "sourceHash": "8ac7452"
   },
   "askCmdr.error.unavailable": "无法连接到 AI 提供方，请检查网络连接后重试。",
   "@askCmdr.error.unavailable": {
@@ -356,9 +356,9 @@
   "@askCmdr.consent.title": {
     "sourceHash": "59b4ca9"
   },
-  "askCmdr.consent.intro": "Ask Cmdr 会把你的问题发送给你选择的 AI 提供方，使用你自己的 API 密钥。以下是你聊天时，会离开你 Mac 的全部内容：",
+  "askCmdr.consent.intro": "Cmdr 会把你的问题发送给你选择的 AI 提供方，使用你自己的 API 密钥。以下是你聊天时，会离开你 Mac 的全部内容：",
   "@askCmdr.consent.intro": {
-    "sourceHash": "4366272"
+    "sourceHash": "3b5eac1"
   },
   "askCmdr.consent.item.messages": "你的消息",
   "@askCmdr.consent.item.messages": {
@@ -384,21 +384,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.item.memory": "Ask Cmdr 记下的关于你的笔记，每条消息都会再发一次",
+  "askCmdr.consent.item.memory": "Cmdr 记下的关于你的笔记，每条消息都会再发一次",
   "@askCmdr.consent.item.memory": {
-    "sourceHash": "54bee04"
+    "sourceHash": "7779513"
   },
-  "askCmdr.consent.contentsRule": "Cmdr 从不发送整个文件、照片或缩略图。当你问到某个文件时，它可以读取其中有限的一部分：几行文本、PDF 的几页及其标题和作者、压缩文件里的文件列表，或者照片的相机信息，包括拍摄地点。照片搜索也是同样的方式：Cmdr 在匹配照片中识别出的文字及其标签会发送给你的提供方，以便它找到这些照片。Ask Cmdr 可以建议重命名、移动和整理，在你批准之前，任何文件都不会有变化。",
+  "askCmdr.consent.contentsRule": "Cmdr 从不发送整个文件、照片或缩略图。当你问到某个文件时，它可以读取其中有限的一部分：几行文本、PDF 的几页及其标题和作者、压缩文件里的文件列表，或者照片的相机信息，包括拍摄地点。照片搜索也是同样的方式：Cmdr 在匹配照片中识别出的文字及其标签会发送给你的提供方，以便它找到这些照片。Cmdr 可以建议重命名、移动和整理，在你批准之前，任何文件都不会有变化。",
   "@askCmdr.consent.contentsRule": {
-    "sourceHash": "11b2e0a"
+    "sourceHash": "5a378c1"
   },
-  "askCmdr.consent.memory": "Ask Cmdr 会给自己记下关于你的笔记：你喜欢怎样整理东西、你以前拒绝过什么，以及任何你让它记住的事。只要这些笔记还在，它们就会随你发出的每条消息一起发送，其中可能包含 Cmdr 在你照片里识别出的文字。你随时可以在 Ask Cmdr 设置中查看或清空它们。",
+  "askCmdr.consent.memory": "Cmdr 会给自己记下关于你的笔记：你喜欢怎样整理东西、你以前拒绝过什么，以及任何你让它记住的事。只要这些笔记还在，它们就会随你发出的每条消息一起发送，其中可能包含 Cmdr 在你照片里识别出的文字。你随时可以在 Ask Cmdr 设置中查看或清空它们。",
   "@askCmdr.consent.memory": {
-    "sourceHash": "80facfd"
+    "sourceHash": "496c78d"
   },
-  "askCmdr.consent.proactive": "Ask Cmdr 还会关注你正在使用的文件夹，有建议时主动开启对话，因此消息可能在你没有提问的情况下发送给你的提供方。你可以在 Ask Cmdr 设置的“主动提醒”一节中关闭它。",
+  "askCmdr.consent.proactive": "Cmdr 还会关注你正在使用的文件夹，有建议时主动开启对话，因此消息可能在你没有提问的情况下发送给你的提供方。你可以在 Ask Cmdr 设置的“主动提醒”一节中关闭它。",
   "@askCmdr.consent.proactive": {
-    "sourceHash": "1d0b671"
+    "sourceHash": "abfa80b"
   },
   "askCmdr.consent.local": "你的聊天记录留在你的 Mac 上，保存在一个你可以打开查看的本地数据库里。提供方和模型由你选择，你也能看到每次聊天的花费。",
   "@askCmdr.consent.local": {
@@ -420,17 +420,17 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr 现在可以查看你问到的文件里的内容：其中的一些文本、PDF 的几页、压缩文件里的文件列表，或者照片的相机信息和拍摄地点。这比你当初同意的范围更大，所以这里再完整说明一次。",
+  "askCmdr.consent.whatsNew.body": "Cmdr 现在可以查看你问到的文件里的内容：其中的一些文本、PDF 的几页、压缩文件里的文件列表，或者照片的相机信息和拍摄地点。这比你当初同意的范围更大，所以这里再完整说明一次。",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "fd59b19"
+    "sourceHash": "1af51d8"
   },
-  "askCmdr.forget.title": "忘掉 Ask Cmdr 记住的所有内容？",
+  "askCmdr.forget.title": "忘掉 Cmdr 记住的关于你的一切？",
   "@askCmdr.forget.title": {
-    "sourceHash": "95f576a"
+    "sourceHash": "e83c997"
   },
-  "askCmdr.forget.message": "Ask Cmdr 会丢弃关于你的笔记，从一张白纸重新开始。你的聊天记录和文件保持原样。",
+  "askCmdr.forget.message": "Cmdr 会丢弃关于你的笔记，从一张白纸重新开始。你的聊天记录和文件保持原样。",
   "@askCmdr.forget.message": {
-    "sourceHash": "5687160"
+    "sourceHash": "5a390a8"
   },
   "askCmdr.forget.confirm": "忘掉全部",
   "@askCmdr.forget.confirm": {
@@ -708,21 +708,21 @@
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
   },
-  "askCmdr.wake.thinking": "Ask Cmdr 正在看看有哪些变化。打开聊天。",
+  "askCmdr.wake.thinking": "Cmdr 正在看看有哪些变化。打开聊天。",
   "@askCmdr.wake.thinking": {
-    "sourceHash": "c4367ad"
+    "sourceHash": "772ca6e"
   },
-  "askCmdr.wake.stop": "停止 Ask Cmdr 正在做的事",
+  "askCmdr.wake.stop": "停止 Cmdr 正在做的事",
   "@askCmdr.wake.stop": {
-    "sourceHash": "6559df8"
+    "sourceHash": "1eae5cb"
   },
-  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr 只能观察它能看到的文件夹。设置完全磁盘访问权限。",
+  "askCmdr.wake.needsFullDiskAccess": "AI 功能还看不到你的文件夹。点按即可设置完全磁盘访问权限。",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "fd24fd2"
+    "sourceHash": "0c301b5"
   },
-  "askCmdr.wake.needsApiKey": "Ask Cmdr 正在观察，但需要 API 密钥才能思考。打开设置。",
+  "askCmdr.wake.needsApiKey": "AI 功能已开启，但还需要一个提供方才能工作。点按即可在设置中选一个。",
   "@askCmdr.wake.needsApiKey": {
-    "sourceHash": "e9b96e6"
+    "sourceHash": "0f71f75"
   },
   "askCmdr.wakeDigest.summary": "{foldersText} {folders, plural, other {个文件夹}}中的变化",
   "@askCmdr.wakeDigest.summary": {
@@ -752,13 +752,13 @@
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
   },
-  "askCmdr.sessions.wakeThread": "这个对话是 Ask Cmdr 发起的",
+  "askCmdr.sessions.wakeThread": "这个对话是 Cmdr 发起的",
   "@askCmdr.sessions.wakeThread": {
-    "sourceHash": "ba3d8fa"
+    "sourceHash": "5a27703"
   },
-  "askCmdr.wakeToast.title": "Ask Cmdr 有 {countText} {count, plural, other {条建议}}给你",
+  "askCmdr.wakeToast.title": "Cmdr 有 {countText} {count, plural, other {条建议}}给你",
   "@askCmdr.wakeToast.title": {
-    "sourceHash": "08b3d32"
+    "sourceHash": "881baf8"
   },
   "askCmdr.wakeToast.action": "查看",
   "@askCmdr.wakeToast.action": {

@@ -135,9 +135,9 @@
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "sourceHash": "5a4d18d"
   },
-  "ai.cloud.askCmdrOverrideHint": "Ask Cmdr 用的是它自己的模型（{model}），不是這一個。可以在「Ask Cmdr」區段裡更改。",
+  "ai.cloud.askCmdrOverrideHint": "對話用的是它自己的模型（{model}），不是這一個。可以在「Ask Cmdr」區段裡更改。",
   "@ai.cloud.askCmdrOverrideHint": {
-    "sourceHash": "0d278f6"
+    "sourceHash": "5a5539a"
   },
   "ai.cloud.modelPlaceholderExample": "例如：{model}",
   "@ai.cloud.modelPlaceholderExample": {

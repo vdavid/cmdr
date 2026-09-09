@@ -208,17 +208,17 @@
   "@askCmdr.error.noKey": {
     "sourceHash": "0a78f37"
   },
-  "askCmdr.error.notConfigured": "在設定裡開啟一個 AI 提供者，就能使用 Ask Cmdr。",
+  "askCmdr.error.notConfigured": "聊天需要一個 AI 提供者。請在設定裡開啟一個。",
   "@askCmdr.error.notConfigured": {
-    "sourceHash": "b84c5f4"
+    "sourceHash": "2d55d2c"
   },
   "askCmdr.error.noConsent": "開啟 Ask Cmdr 就能開始聊。你先決定它能看到哪些東西。",
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr 需要的上下文視窗比你的本機模型大。請到設定的「AI」裡選 32,768 個 token 以上。",
+  "askCmdr.error.localWindowTooSmall": "Cmdr 需要的上下文視窗比你的本機模型大。請到設定的「AI」裡選 32,768 個 token 以上。",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "6c2334b"
+    "sourceHash": "8ac7452"
   },
   "askCmdr.error.unavailable": "連不上這個 AI 提供者。檢查一下你的連線再試一次。",
   "@askCmdr.error.unavailable": {
@@ -356,9 +356,9 @@
   "@askCmdr.consent.title": {
     "sourceHash": "59b4ca9"
   },
-  "askCmdr.consent.intro": "Ask Cmdr 會用你自己的 API 金鑰，把你的問題傳給你選的 AI 提供者。你聊天時離開你 Mac 的，就是這些：",
+  "askCmdr.consent.intro": "Cmdr 會用你自己的 API 金鑰，把你的問題傳給你選的 AI 提供者。你聊天時離開你 Mac 的，就是這些：",
   "@askCmdr.consent.intro": {
-    "sourceHash": "4366272"
+    "sourceHash": "3b5eac1"
   },
   "askCmdr.consent.item.messages": "你的訊息",
   "@askCmdr.consent.item.messages": {
@@ -384,21 +384,21 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.item.memory": "Ask Cmdr 記下的關於你的筆記，每一則訊息都會再送一次",
+  "askCmdr.consent.item.memory": "Cmdr 記下的關於你的筆記，每一則訊息都會再送一次",
   "@askCmdr.consent.item.memory": {
-    "sourceHash": "54bee04"
+    "sourceHash": "7779513"
   },
-  "askCmdr.consent.contentsRule": "Cmdr 絕不會送出整個檔案、照片或縮圖。當你問到某個檔案時，它可以讀取其中有限的一部分：幾行文字、PDF 的幾頁連同它的標題和作者、封存檔裡的檔案列表，或是照片的相機資訊，包括拍攝地點。照片搜尋也是同樣的做法：Cmdr 在符合的照片裡辨識出的文字和標籤會送給你的提供者，好讓它找得到。Ask Cmdr 可以建議重新命名、移動和整理，但在你同意之前，任何檔案都不會有變化。",
+  "askCmdr.consent.contentsRule": "Cmdr 絕不會送出整個檔案、照片或縮圖。當你問到某個檔案時，它可以讀取其中有限的一部分：幾行文字、PDF 的幾頁連同它的標題和作者、封存檔裡的檔案列表，或是照片的相機資訊，包括拍攝地點。照片搜尋也是同樣的做法：Cmdr 在符合的照片裡辨識出的文字和標籤會送給你的提供者，好讓它找得到。Cmdr 可以建議重新命名、移動和整理，但在你同意之前，任何檔案都不會有變化。",
   "@askCmdr.consent.contentsRule": {
-    "sourceHash": "11b2e0a"
+    "sourceHash": "5a378c1"
   },
-  "askCmdr.consent.memory": "Ask Cmdr 會給自己記下關於你的筆記：你喜歡怎麼整理東西、你以前拒絕過什麼，還有任何你要它記住的事。只要這些筆記還在，你送出的每一則訊息都會帶著它們一起走，其中也可能包含 Cmdr 在你照片裡辨識出的文字。你隨時可以在 Ask Cmdr 的設定裡讀它們，或是全部清掉。",
+  "askCmdr.consent.memory": "Cmdr 會給自己記下關於你的筆記：你喜歡怎麼整理東西、你以前拒絕過什麼，還有任何你要它記住的事。只要這些筆記還在，你送出的每一則訊息都會帶著它們一起走，其中也可能包含 Cmdr 在你照片裡辨識出的文字。你隨時可以在 Ask Cmdr 的設定裡讀它們，或是全部清掉。",
   "@askCmdr.consent.memory": {
-    "sourceHash": "80facfd"
+    "sourceHash": "496c78d"
   },
-  "askCmdr.consent.proactive": "Ask Cmdr 還會留意你正在使用的資料夾，有東西可以建議時就主動開啟對話，所以訊息可能在你沒開口的情況下就送到提供者那裡。你可以在 Ask Cmdr 設定的「主動提醒」裡把它關掉。",
+  "askCmdr.consent.proactive": "Cmdr 還會留意你正在使用的資料夾，有東西可以建議時就主動開啟對話，所以訊息可能在你沒開口的情況下就送到提供者那裡。你可以在 Ask Cmdr 設定的「主動提醒」裡把它關掉。",
   "@askCmdr.consent.proactive": {
-    "sourceHash": "1d0b671"
+    "sourceHash": "abfa80b"
   },
   "askCmdr.consent.local": "你的對話留在你的 Mac 上，存在一個你打得開、讀得到的本機資料庫裡。提供者和模型由你選，每次對話花了多少錢你也看得到。",
   "@askCmdr.consent.local": {
@@ -420,17 +420,17 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr 現在可以查看你問到的檔案裡的內容：它的一些文字、PDF 的幾頁、封存檔裡的檔案列表，或是照片的相機資訊和拍攝地點。這比你當初同意的範圍更大，所以整份說明再給你看一次。",
+  "askCmdr.consent.whatsNew.body": "Cmdr 現在可以查看你問到的檔案裡的內容：它的一些文字、PDF 的幾頁、封存檔裡的檔案列表，或是照片的相機資訊和拍攝地點。這比你當初同意的範圍更大，所以整份說明再給你看一次。",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "fd59b19"
+    "sourceHash": "1af51d8"
   },
-  "askCmdr.forget.title": "要忘記 Ask Cmdr 記住的所有東西嗎？",
+  "askCmdr.forget.title": "要忘記 Cmdr 記住的關於你的一切嗎？",
   "@askCmdr.forget.title": {
-    "sourceHash": "95f576a"
+    "sourceHash": "e83c997"
   },
-  "askCmdr.forget.message": "Ask Cmdr 會丟掉關於你的筆記，從一張白紙重新開始。你的對話和你的檔案都維持原樣。",
+  "askCmdr.forget.message": "Cmdr 會丟掉關於你的筆記，從一張白紙重新開始。你的對話和你的檔案都維持原樣。",
   "@askCmdr.forget.message": {
-    "sourceHash": "5687160"
+    "sourceHash": "5a390a8"
   },
   "askCmdr.forget.confirm": "忘記全部",
   "@askCmdr.forget.confirm": {
@@ -708,21 +708,21 @@
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
   },
-  "askCmdr.wake.thinking": "Ask Cmdr 正在看看有什麼變化。開啟對話。",
+  "askCmdr.wake.thinking": "Cmdr 正在看看有什麼變化。開啟對話。",
   "@askCmdr.wake.thinking": {
-    "sourceHash": "c4367ad"
+    "sourceHash": "772ca6e"
   },
-  "askCmdr.wake.stop": "停止 Ask Cmdr 正在做的事",
+  "askCmdr.wake.stop": "停止 Cmdr 正在做的事",
   "@askCmdr.wake.stop": {
-    "sourceHash": "6559df8"
+    "sourceHash": "1eae5cb"
   },
-  "askCmdr.wake.needsFullDiskAccess": "Ask Cmdr 只看得到它看得見的資料夾。設定「完全取用磁碟」。",
+  "askCmdr.wake.needsFullDiskAccess": "AI 功能還看不到你的資料夾。按一下就能設定「完全取用磁碟」。",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "fd24fd2"
+    "sourceHash": "0c301b5"
   },
-  "askCmdr.wake.needsApiKey": "Ask Cmdr 正在留意，但它需要 API 金鑰才能思考。開啟設定。",
+  "askCmdr.wake.needsApiKey": "AI 功能已開啟，但還需要一個提供者才能運作。按一下就能到設定裡選一個。",
   "@askCmdr.wake.needsApiKey": {
-    "sourceHash": "e9b96e6"
+    "sourceHash": "0f71f75"
   },
   "askCmdr.wakeDigest.summary": "{foldersText} 個{folders, plural, other {資料夾}}裡有什麼變化",
   "@askCmdr.wakeDigest.summary": {
@@ -752,13 +752,13 @@
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
   },
-  "askCmdr.sessions.wakeThread": "這段對話是 Ask Cmdr 開的",
+  "askCmdr.sessions.wakeThread": "這段對話是 Cmdr 開的",
   "@askCmdr.sessions.wakeThread": {
-    "sourceHash": "ba3d8fa"
+    "sourceHash": "5a27703"
   },
-  "askCmdr.wakeToast.title": "Ask Cmdr 有 {countText} {count, plural, other {項建議}}要給你",
+  "askCmdr.wakeToast.title": "Cmdr 有 {countText} {count, plural, other {項建議}}要給你",
   "@askCmdr.wakeToast.title": {
-    "sourceHash": "08b3d32"
+    "sourceHash": "881baf8"
   },
   "askCmdr.wakeToast.action": "檢視",
   "@askCmdr.wakeToast.action": {

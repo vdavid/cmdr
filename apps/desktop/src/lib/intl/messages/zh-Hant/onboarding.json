@@ -462,7 +462,7 @@
     "sourceHash": "cd0221c"
   },
 
-  "onboarding.cloudSetup.step.ollamaModel": "在終端機用 ollama pull llama3.2 拉一個模型，或是<libraryLink>瀏覽模型庫</libraryLink>",
+  "onboarding.cloudSetup.step.ollamaModel": "在終端機裡用 ollama pull llama3.2 提取一個模型，或是<libraryLink>瀏覽模型庫</libraryLink>",
   "@onboarding.cloudSetup.step.ollamaModel": {
     "sourceHash": "5999d6a"
   },

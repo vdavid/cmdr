@@ -2329,3 +2329,45 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - function key
   bar（窗口底部的功能键命令按钮行）→ 功能键栏 · 已在目录中确定（`settings.appearance.showFunctionKeyBar.label`）；用于右键菜单项及其提示 ·
   high
+
+## AI 文案改写：主语从 “Ask Cmdr” 换成 `Cmdr` / `AI`（2026-09-09）
+
+英文做了一次扫尾：`Ask Cmdr` 现在只在**指代聊天面板本身**时出现（面板标题、`menu.view.askCmdr`、
+`commands.askCmdrToggle.label`、`settings.section.askCmdr`、开关它的那几条 `settings.askCmdr.status.*` /
+`turnOn` / `turnOff`）；凡是**描述 AI 在做什么**的句子，主语都改成了 `Cmdr`，少数几条改成 `the AI`。中文照搬这条分工。
+
+- **句子主语 `Cmdr` → 直接写 `Cmdr`**，不要补成 `Ask Cmdr` · 目录里本来就这么写（`suggestedOps.cmdrFacts` =
+  `Cmdr 掌握的信息`、`askCmdr.consent.contentsRule` 开头的 `Cmdr 从不发送整个文件`）· `high`
+- **句子主语 `the AI` → 写 `AI`**（`suggestedOps.*` 那一组）· 这四条是故意跟 `Cmdr` 分开的：`suggestedOps.agentReason`
+  （`AI 给出的理由`）就挨着 `suggestedOps.cmdrFacts`（`Cmdr 掌握的信息`），对话框存在的意义就是把「模型说的」和
+  「Cmdr 核实过的」分开。❗ 别把 `AI 给出的理由` 统一成 `Cmdr …`，那正好把这个区分抹掉 · `high`
+- **指向设置里那一节时仍写 `Ask Cmdr`**（`Ask Cmdr 设置`、`Ask Cmdr 部分`）· 英文保留了 “the Ask Cmdr settings /
+  section”，因为那一节的名字没变 · `high`
+- **“Chatting” / “to start chatting”（去掉主语的两条）→ `聊天` / `开始聊天`** ·
+  `askCmdr.error.notConfigured` = `聊天需要一个 AI 提供方。请在设置中开启一个。`、`settings.askCmdr.provider.off` =
+  `在“设置 › AI”中开启一个 AI 提供方，即可开始聊天。` · `high`
+- **“What Cmdr sends” / “What Cmdr remembers” 是一对**，中文也要读成一对：`Cmdr 发送的内容` /
+  `Cmdr 记住的内容` · `high`
+
+## 状态角落的两条 AI 提示与“复查”这个动词（2026-09-09）
+
+- **“AI features” → `AI 功能`** · 沿用 `settings.ai.tooltipOff`（`AI 功能已关闭`）· `high`
+- **`askCmdr.wake.needsFullDiskAccess` 的第二句必须一字不差包含
+  `search.coverage.setUpFullDiskAccess`**（`设置完全磁盘访问权限`）· `@key` 说明点名要求两处措辞一致，写成
+  `点按即可设置完全磁盘访问权限。` · `high`。改写其中任何一条都要回头看另一条。
+- **“Click to …” → `点按即可…`** · `点按` 是 macOS zh-CN 唯一的写法（`点击` 0 次），style.md 已定 · `high`
+- **review（复查建议的操作）→ `复查`** · 沿用 `suggestedOps.review`（`复查这些文件`）与
+  `commands.suggestedOpsShow.description` · `high`。❗ 边界：`复查` 只用在「再看一遍待批准的建议」这一个动作上；
+  读报告、看文件内容仍是 `查看`（style.md 的 `查看` / `显示` 之分不受影响）。
+
+## AI 提供方设置向导的用词（`onboarding.cloudSetup.*`，2026-09-09 复核）
+
+上一轮是绕过流程翻的，这轮按流程逐条核过证据，结论是**五条都保留原样**。
+
+- **placeholder → `占位符`** · Microsoft zh-Hans 术语库（`placeholder` id 92735 → `占位符` id 92751）· `high`
+- **deployment（Azure 上给模型起的部署名）→ `部署`** · Microsoft zh-Hans 术语库（多条 `deployment` → `部署`）· `high`
+- **endpoint → `端点`** · Microsoft zh-Hans 术语库 id 51076；Windows 专有条目里的 `终结点` 不适用于 API 端点 · `high`
+- **address（那个 endpoint URL 字段）→ `地址`** · 目录里 `地址` 14 次对 `网址` 1 次，macOS zh-CN 也是 7:1 · `high`
+- **terminal → `终端`**（App 时写 `终端 App`）· 沿用 `commands.fileOpenTerminalHere.*` · `high`
+- **pull（`ollama pull`）→ `拉取`** · Microsoft zh-Hans 术语库的现代条目（id 2306935 / 2309495 → `拉取`）；早期的
+  `请求` 是 pull request 的一半，不适用 · `high`

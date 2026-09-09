@@ -927,7 +927,7 @@
   "@settings.ai.cloudProviderConfigs.description": {
     "sourceHash": "21132a2"
   },
-  "settings.ai.localContextSize.label": "脈絡視窗",
+  "settings.ai.localContextSize.label": "上下文視窗",
   "@settings.ai.localContextSize.label": {
     "sourceHash": "7696d08"
   },
@@ -1581,9 +1581,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product feature name, kept verbatim across the whole catalogue per the @key description (“keep it as-is”)."
   },
-  "settings.askCmdr.intro": "和 AI 聊聊你的檔案、磁碟機和歷史記錄。Ask Cmdr 會讀取名稱、路徑和大小來回答問題，只有在你問到某個檔案時才會查看它裡面的內容，而且沒有你的同意，絕不會更動任何檔案。",
+  "settings.askCmdr.intro": "和 AI 聊聊你的檔案、磁碟機和歷史記錄。Cmdr 會讀取名稱、路徑和大小來回答問題，只有在你問到某個檔案時才會查看它裡面的內容，而且沒有你的同意，絕不會更動任何檔案。",
   "@settings.askCmdr.intro": {
-    "sourceHash": "5a81d7a"
+    "sourceHash": "3b16f89"
   },
   "settings.askCmdr.status.on": "Ask Cmdr 已開啟",
   "@settings.askCmdr.status.on": {
@@ -1617,29 +1617,29 @@
   "@settings.askCmdr.turnOff": {
     "sourceHash": "eb03374"
   },
-  "settings.askCmdr.disclosure.title": "Ask Cmdr 會傳送的內容",
+  "settings.askCmdr.disclosure.title": "Cmdr 會傳送的內容",
   "@settings.askCmdr.disclosure.title": {
-    "sourceHash": "8ccd3b9"
+    "sourceHash": "6907e64"
   },
   "settings.askCmdr.provider.title": "提供者和模型",
   "@settings.askCmdr.provider.title": {
     "sourceHash": "b9fdc88"
   },
-  "settings.askCmdr.provider.shared": "Ask Cmdr 使用你在「設定 › AI」中設定好的 AI 提供者和金鑰（{provider}）。",
+  "settings.askCmdr.provider.shared": "Cmdr 使用你在「設定 › AI」中設定好的 AI 提供者和金鑰（{provider}）。",
   "@settings.askCmdr.provider.shared": {
-    "sourceHash": "c84fd32"
+    "sourceHash": "9442b09"
   },
-  "settings.askCmdr.provider.off": "在「設定 › AI」中開啟一個 AI 提供者，就能使用 Ask Cmdr。",
+  "settings.askCmdr.provider.off": "在「設定 › AI」中開啟一個 AI 提供者，就能開始聊天。",
   "@settings.askCmdr.provider.off": {
-    "sourceHash": "8b378ae"
+    "sourceHash": "5cc1481"
   },
   "settings.askCmdr.interactiveModel.label": "Ask Cmdr 模型",
   "@settings.askCmdr.interactiveModel.label": {
     "sourceHash": "194255a"
   },
-  "settings.askCmdr.interactiveModel.description": "Ask Cmdr 聊天時使用的模型。留空則使用和 Cmdr 其他 AI 功能相同的模型。例如：claude-sonnet-4-5",
+  "settings.askCmdr.interactiveModel.description": "對話使用的模型。留空則使用和 Cmdr 其他 AI 功能相同的模型。例如：claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
-    "sourceHash": "e3f64a5"
+    "sourceHash": "881f8a4"
   },
   "settings.askCmdr.interactiveModel.placeholder": "和 Cmdr 的 AI 相同",
   "@settings.askCmdr.interactiveModel.placeholder": {
@@ -1665,21 +1665,21 @@
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
   },
-  "settings.askCmdr.proactive.label": "讓 Ask Cmdr 主動發起對話",
+  "settings.askCmdr.proactive.label": "讓 Cmdr 主動發起對話",
   "@settings.askCmdr.proactive.label": {
-    "sourceHash": "1db4497"
+    "sourceHash": "a85ef48"
   },
-  "settings.askCmdr.proactive.description": "Ask Cmdr 會留意你正在使用的資料夾，有東西可以建議時就主動開啟對話。在你批准之前，什麼都不會執行。",
+  "settings.askCmdr.proactive.description": "Cmdr 會留意你正在使用的資料夾，有東西可以建議時就主動開啟對話。在你同意之前，什麼都不會執行。",
   "@settings.askCmdr.proactive.description": {
-    "sourceHash": "9bf4e15"
+    "sourceHash": "556f155"
   },
-  "settings.askCmdr.wakeDelay.label": "Ask Cmdr 多快去查看",
+  "settings.askCmdr.wakeDelay.label": "Cmdr 多快去查看",
   "@settings.askCmdr.wakeDelay.label": {
-    "sourceHash": "f80bb5a"
+    "sourceHash": "a7368d0"
   },
-  "settings.askCmdr.wakeDelay.description": "Ask Cmdr 多快去查看剛剛發生變化的資料夾。時間越長，助理越安靜。",
+  "settings.askCmdr.wakeDelay.description": "Cmdr 多快去查看剛剛發生變化的資料夾。時間越長，助理越安靜。",
   "@settings.askCmdr.wakeDelay.description": {
-    "sourceHash": "b53dd9b"
+    "sourceHash": "08790da"
   },
   "settings.askCmdr.wakeDelay.summary": "忙碌的資料夾會在 {hot} 內查看，安靜的則在 {warm} 內查看。",
   "@settings.askCmdr.wakeDelay.summary": {
@@ -1689,25 +1689,25 @@
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
   },
-  "settings.askCmdr.wakeToast.description": "當 Ask Cmdr 準備好待你查看的內容時，在角落顯示一則小訊息。",
+  "settings.askCmdr.wakeToast.description": "當 Cmdr 準備好待你查看的內容時，在角落顯示一則小訊息。",
   "@settings.askCmdr.wakeToast.description": {
-    "sourceHash": "f07a46e"
+    "sourceHash": "dd04b0a"
   },
-  "settings.askCmdr.memory.title": "Ask Cmdr 記住的內容",
+  "settings.askCmdr.memory.title": "Cmdr 記住的內容",
   "@settings.askCmdr.memory.title": {
-    "sourceHash": "4b102db"
+    "sourceHash": "be6fce6"
   },
-  "settings.askCmdr.memory.description": "Ask Cmdr 會保留一個關於你的小筆記資料夾，並隨每則訊息一起傳送。可以看看，也可以清空重來。",
+  "settings.askCmdr.memory.description": "Cmdr 會保留一個關於你的小筆記資料夾，並隨每則訊息一起傳送。可以看看，也可以清空重來。",
   "@settings.askCmdr.memory.description": {
-    "sourceHash": "bcd73ea"
+    "sourceHash": "0948ddb"
   },
   "settings.askCmdr.memory.open": "開啟筆記資料夾",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.memory.forgotten": "Ask Cmdr 的筆記已經清空，它從這裡重新開始。",
+  "settings.askCmdr.memory.forgotten": "Cmdr 的筆記已經清空，它從這裡重新開始。",
   "@settings.askCmdr.memory.forgotten": {
-    "sourceHash": "a50ed99"
+    "sourceHash": "f3d9022"
   },
   "settings.askCmdr.spend.title": "花費",
   "@settings.askCmdr.spend.title": {
@@ -2045,7 +2045,7 @@
   "@settings.ai.tooltipCloud": {
     "sourceHash": "1f63e66"
   },
-  "settings.ai.tooltipLocal": "在你的裝置上完整執行一個小型語言模型。隱私最大化：沒有任何內容離開你的電腦。可以離線運作。佔用約 2 GB 磁碟空間和約 400 MB 記憶體（隨脈絡大小而變）。需要 Apple 晶片（M1 以上）。",
+  "settings.ai.tooltipLocal": "在你的裝置上完整執行一個小型語言模型。隱私最大化：沒有任何內容離開你的電腦。可以離線運作。佔用約 2 GB 磁碟空間和約 400 MB 記憶體（隨上下文大小而變）。需要 Apple 晶片（M1 以上）。",
   "@settings.ai.tooltipLocal": {
     "sourceHash": "bf83043"
   },

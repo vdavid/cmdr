@@ -1581,9 +1581,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name, kept verbatim across the whole zh catalog per the @key description (\"keep it as-is\")."
   },
-  "settings.askCmdr.intro": "和 AI 聊聊你的文件、驱动器和历史记录。Ask Cmdr 通过读取名称、路径和大小来回答问题，只有在你问到某个文件时才会查看它的内容，而且未经你批准，绝不会更改任何文件。",
+  "settings.askCmdr.intro": "和 AI 聊聊你的文件、驱动器和历史记录。Cmdr 通过读取名称、路径和大小来回答问题，只有在你问到某个文件时才会查看它的内容，而且未经你批准，绝不会更改任何文件。",
   "@settings.askCmdr.intro": {
-    "sourceHash": "5a81d7a"
+    "sourceHash": "3b16f89"
   },
   "settings.askCmdr.status.on": "Ask Cmdr 已开启",
   "@settings.askCmdr.status.on": {
@@ -1617,29 +1617,29 @@
   "@settings.askCmdr.turnOff": {
     "sourceHash": "eb03374"
   },
-  "settings.askCmdr.disclosure.title": "Ask Cmdr 发送的内容",
+  "settings.askCmdr.disclosure.title": "Cmdr 发送的内容",
   "@settings.askCmdr.disclosure.title": {
-    "sourceHash": "8ccd3b9"
+    "sourceHash": "6907e64"
   },
   "settings.askCmdr.provider.title": "提供方和模型",
   "@settings.askCmdr.provider.title": {
     "sourceHash": "b9fdc88"
   },
-  "settings.askCmdr.provider.shared": "Ask Cmdr 使用你在“设置 › AI”中设置好的 AI 提供方和密钥（{provider}）。",
+  "settings.askCmdr.provider.shared": "Cmdr 使用你在“设置 › AI”中设置好的 AI 提供方和密钥（{provider}）。",
   "@settings.askCmdr.provider.shared": {
-    "sourceHash": "c84fd32"
+    "sourceHash": "9442b09"
   },
-  "settings.askCmdr.provider.off": "在“设置 › AI”中开启一个 AI 提供方，即可使用 Ask Cmdr。",
+  "settings.askCmdr.provider.off": "在“设置 › AI”中开启一个 AI 提供方，即可开始聊天。",
   "@settings.askCmdr.provider.off": {
-    "sourceHash": "8b378ae"
+    "sourceHash": "5cc1481"
   },
   "settings.askCmdr.interactiveModel.label": "Ask Cmdr 模型",
   "@settings.askCmdr.interactiveModel.label": {
     "sourceHash": "194255a"
   },
-  "settings.askCmdr.interactiveModel.description": "Ask Cmdr 聊天时使用的模型。留空则使用与 Cmdr 其他 AI 功能相同的模型。例如：claude-sonnet-4-5",
+  "settings.askCmdr.interactiveModel.description": "聊天使用的模型。留空则使用与 Cmdr 其他 AI 功能相同的模型。例如：claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
-    "sourceHash": "e3f64a5"
+    "sourceHash": "881f8a4"
   },
   "settings.askCmdr.interactiveModel.placeholder": "与 Cmdr 的 AI 相同",
   "@settings.askCmdr.interactiveModel.placeholder": {
@@ -1665,21 +1665,21 @@
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
   },
-  "settings.askCmdr.proactive.label": "允许 Ask Cmdr 主动发起对话",
+  "settings.askCmdr.proactive.label": "允许 Cmdr 主动发起对话",
   "@settings.askCmdr.proactive.label": {
-    "sourceHash": "1db4497"
+    "sourceHash": "a85ef48"
   },
-  "settings.askCmdr.proactive.description": "Ask Cmdr 会关注你正在使用的文件夹，有建议时主动开启对话。在你批准之前，什么都不会执行。",
+  "settings.askCmdr.proactive.description": "Cmdr 会关注你正在使用的文件夹，有建议时主动开启对话。在你批准之前，什么都不会执行。",
   "@settings.askCmdr.proactive.description": {
-    "sourceHash": "9bf4e15"
+    "sourceHash": "556f155"
   },
-  "settings.askCmdr.wakeDelay.label": "Ask Cmdr 多快去查看",
+  "settings.askCmdr.wakeDelay.label": "Cmdr 多快去查看",
   "@settings.askCmdr.wakeDelay.label": {
-    "sourceHash": "f80bb5a"
+    "sourceHash": "a7368d0"
   },
-  "settings.askCmdr.wakeDelay.description": "Ask Cmdr 多快去查看刚刚发生变化的文件夹。时间越长，助手越安静。",
+  "settings.askCmdr.wakeDelay.description": "Cmdr 多快去查看刚刚发生变化的文件夹。时间越长，助手越安静。",
   "@settings.askCmdr.wakeDelay.description": {
-    "sourceHash": "b53dd9b"
+    "sourceHash": "08790da"
   },
   "settings.askCmdr.wakeDelay.summary": "活跃的文件夹会在 {hot} 内查看，安静的文件夹在 {warm} 内查看。",
   "@settings.askCmdr.wakeDelay.summary": {
@@ -1689,25 +1689,25 @@
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
   },
-  "settings.askCmdr.wakeToast.description": "当 Ask Cmdr 准备好待你查看的内容时，在角落显示一条小提示。",
+  "settings.askCmdr.wakeToast.description": "当 Cmdr 准备好待你查看的内容时，在角落显示一条小提示。",
   "@settings.askCmdr.wakeToast.description": {
-    "sourceHash": "f07a46e"
+    "sourceHash": "dd04b0a"
   },
-  "settings.askCmdr.memory.title": "Ask Cmdr 记住的内容",
+  "settings.askCmdr.memory.title": "Cmdr 记住的内容",
   "@settings.askCmdr.memory.title": {
-    "sourceHash": "4b102db"
+    "sourceHash": "be6fce6"
   },
-  "settings.askCmdr.memory.description": "Ask Cmdr 保存着一个关于你的小笔记文件夹，并随每条消息一起发送。可以看看，也可以清空重来。",
+  "settings.askCmdr.memory.description": "Cmdr 保存着一个关于你的小笔记文件夹，并随每条消息一起发送。可以看看，也可以清空重来。",
   "@settings.askCmdr.memory.description": {
-    "sourceHash": "bcd73ea"
+    "sourceHash": "0948ddb"
   },
   "settings.askCmdr.memory.open": "打开笔记文件夹",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.memory.forgotten": "Ask Cmdr 的笔记已清空，它从这里重新开始。",
+  "settings.askCmdr.memory.forgotten": "Cmdr 的笔记已清空，它从这里重新开始。",
   "@settings.askCmdr.memory.forgotten": {
-    "sourceHash": "a50ed99"
+    "sourceHash": "f3d9022"
   },
   "settings.askCmdr.spend.title": "花费",
   "@settings.askCmdr.spend.title": {

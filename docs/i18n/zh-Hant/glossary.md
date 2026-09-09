@@ -1450,3 +1450,58 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 - function key
   bar（視窗底部的功能鍵命令按鈕列）→ 功能鍵列 · 已在目錄中確定（`settings.appearance.showFunctionKeyBar.label`）；用於右鍵選單項目及其提示 ·
   high
+
+## AI 文案改寫：主詞從「Ask Cmdr」換成 `Cmdr` / `AI`（2026-09-09）
+
+英文做了一次收尾：`Ask Cmdr` 現在只在**指聊天面板本身**時出現（面板標題、`menu.view.askCmdr`、
+`commands.askCmdrToggle.label`、`settings.section.askCmdr`，以及開關它的那幾條 `settings.askCmdr.status.*` /
+`turnOn` / `turnOff`）；凡是**描述 AI 在做什麼**的句子，主詞都換成 `Cmdr`，少數幾條換成 `the AI`。中文照搬這條分工。
+
+- **句子主詞 `Cmdr` → 直接寫 `Cmdr`**，不要補成 `Ask Cmdr` · 目錄本來就這麼寫（`suggestedOps.cmdrFacts` =
+  `Cmdr 知道的事實`、`askCmdr.consent.contentsRule` 開頭的 `Cmdr 絕不會送出整個檔案`）· `high`
+- **句子主詞 `the AI` → 寫 `AI`**（`suggestedOps.*` 那一組）· 這四條是刻意跟 `Cmdr` 分開的：`suggestedOps.agentReason`
+  （`AI 的理由`）就緊鄰 `suggestedOps.cmdrFacts`（`Cmdr 知道的事實`），對話框存在的意義就是把「模型說的」和
+  「Cmdr 查證過的」分開。❗ 別把 `AI 的理由` 統一成 `Cmdr …`，那剛好把這個區分抹掉 · `high`
+- **指向設定裡那一段時仍寫 `Ask Cmdr`**（`Ask Cmdr 設定`、`「Ask Cmdr」區段`）· 英文保留了 “the Ask Cmdr settings /
+  section”，因為那一段的名字沒變 · `high`
+- **“Chatting” / “to start chatting”（拿掉主詞的兩條）→ `聊天` / `開始聊天`** ·
+  `askCmdr.error.notConfigured` = `聊天需要一個 AI 提供者。請在設定裡開啟一個。`、`settings.askCmdr.provider.off` =
+  `在「設定 › AI」中開啟一個 AI 提供者，就能開始聊天。` · `high`。❗ 這裡用動詞的 `聊天`，不是名詞的 `對話`；
+  詞彙表上面 § AI, chat, and the agent 已經把兩者分開了。
+- **“The chat”（當主詞，指那個面板裡的對話）→ `對話`** · `ai.cloud.askCmdrOverrideHint`（`對話用的是它自己的模型…`）、
+  `settings.askCmdr.interactiveModel.description`（`對話使用的模型。`）· `high`
+- **“What Cmdr sends” / “What Cmdr remembers” 是一對**，中文也要讀成一對：`Cmdr 會傳送的內容` /
+  `Cmdr 記住的內容` · `high`
+
+## 狀態角落的兩條 AI 提示、`同意` 的統一，與 `上下文` 定案（2026-09-09）
+
+- **“AI features” → `AI 功能`** · 沿用 `settings.ai.tooltipOff`（`AI 功能已關閉`）· `high`
+- **`askCmdr.wake.needsFullDiskAccess` 的第二句必須一字不差包含
+  `search.coverage.setUpFullDiskAccess`**（`設定「完全取用磁碟」`）· `@key` 說明點名要求兩處措辭一致，寫成
+  `按一下就能設定「完全取用磁碟」。` · `high`。日後改寫任何一條都要回頭看另一條。
+- **“Click to …” → `按一下就能…`** · Apple zh-TW macOS 語料 `按一下` 50 次對 `點一下` 4 次（2026-09-09 量測）·
+  `high`。❗ 不是 macOS zh-CN 的 `點按`，那是簡體那邊的詞。
+- **approve → `同意`，整本目錄一致** · 詞彙表上面已定 `approve` → `同意`；`settings.askCmdr.proactive.description`
+  原本寫 `批准`，這輪跟 `suggestedOps.description` 對齊成 `在你同意之前，什麼都不會執行。` · `high`
+- **context → `上下文`；context window → `上下文視窗`；context size → `上下文大小`** · 目錄原本三種寫法並存
+  （`settings.ai.localContextSize.label` = `脈絡視窗`、`settings.ai.tooltipLocal` = `脈絡大小`、
+  `askCmdr.error.localWindowTooSmall` = `上下文視窗`，而詞彙表寫的是第四種 `上下文長度`）。Apple 的兩套繁中語料
+  完全沒有這個 LLM 概念（zh-TW 與 zh-HK 的 `脈絡` 都是 0 次、`上下文` 都是 0 次，2026-09-09 量測），所以只剩
+  MS zh-Hant TBX：五條 `context` 詞條裡四條是同形異義的 `內容` / `執行內容`，只有 id 38882 → `上下文` 是我們要的
+  那個意思。取這一條，再加上目錄裡本來就有的 `askCmdr.event.contextTrimmed`（`模型的上下文`），三個鍵一起改齊 ·
+  `tentative`（一級來源整個缺席）。❗ 這條取代詞彙表 § AI and chat, second pass 裡的 `上下文長度`
+  （那個形式沒有任何鍵在用）。
+
+## AI 提供者設定精靈的用詞（`onboarding.cloudSetup.*`，2026-09-09 複核）
+
+上一輪是繞過流程翻的，這輪照流程逐條查了證據：四條保留，一條改字。
+
+- **placeholder → `預留位置`** · Microsoft zh-Hant 術語庫（`placeholder` id 92735 → `預留位置` id 92752）· `high`
+- **deployment（Azure 上給模型取的部署名）→ `部署`** · Microsoft zh-Hant 術語庫（多條 `deployment` → `部署`）· `high`
+- **endpoint → `端點`** · Microsoft zh-Hant 術語庫（四條 `endpoint` 全是 `端點`）· `high`
+- **address（那個 endpoint URL 欄位）→ `網址`** · 與同組的 `onboarding.cloudSetup.step.endpoint`
+  （`端點網址`）對齊；`位址` 在本目錄留給 IP／網路位址 · `high`
+- **terminal → `終端機`** · 沿用 `commands.fileOpenTerminalHere.*` · `high`
+- **pull（`ollama pull`）→ `提取`**（原本寫的是沒來源的 `拉`）· Microsoft zh-Hant 術語庫四條 `pull` 有三條是
+  `提取`（id 95960 / 151531 / 2309059；剩下那條 `扣動` 是扣扳機的意思）· `high`。整句同時補上 `裡`：
+  `在終端機裡用 ollama pull llama3.2 提取一個模型…`

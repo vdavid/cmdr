@@ -828,8 +828,8 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "4f24ca6"
   },
-  "commands.suggestedOpsShow.description": "复查 Ask Cmdr 建议的文件操作，并决定执行哪些",
+  "commands.suggestedOpsShow.description": "复查 AI 建议的文件操作，并决定执行哪些",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "cf24a4f"
+    "sourceHash": "7efe8c9"
   }
 }

@@ -217,6 +217,13 @@ inflection.
   undo down). Some of these keys carry byte-identical English across families, so `desktop-i18n-term-consistency`
   requires identical values; per-key evidence and the pairs that are locked together: `glossary.md`
   § 回滚结束后的提示条.
+- **`Ask Cmdr` names the chat PANEL; everywhere else the subject is `Cmdr`, and in the Suggested ops dialog it's `AI`.**
+  Follow the English exactly: keep `Ask Cmdr` where it's the panel's own name (its title, the View-menu item, the
+  palette command, the settings section, the on/off copy) and where a sentence points at that settings section
+  (`Ask Cmdr 设置`, `Ask Cmdr 部分`); write bare `Cmdr` when the sentence describes what the AI does; write `AI` in the
+  four `suggestedOps.*` strings, which have to stay distinguishable from the neighbouring `Cmdr 掌握的信息`. ❗ Don't
+  "restore" `Ask Cmdr` as a sentence subject: that's the exact regression the 2026-09-09 copy sweep undid. Per-key
+  evidence: `glossary.md` § AI 文案改写.
 - **Quotation marks:** this catalog quotes filenames with `“…”`, following macOS zh-CN. Traditional uses corner brackets
   instead, which is one more reason a converted catalog reads wrong; its rule is in `../zh-Hant/style.md`.
 - **Ask Cmdr tool-line labels are a `正在…` / `已…` pair, with `查看` for reading contents.** Every

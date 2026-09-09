@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "4f24ca6"
   },
-  "suggestedOps.description": "Ask Cmdr 建议了这些操作。在你批准之前，什么都不会执行。",
+  "suggestedOps.description": "这些是 AI 建议的操作。在你批准之前，什么都不会执行。",
   "@suggestedOps.description": {
-    "sourceHash": "d70e5f0"
+    "sourceHash": "73255a0"
   },
   "suggestedOps.empty": "目前没有什么在等你处理。",
   "@suggestedOps.empty": {
@@ -15,9 +15,9 @@
   "@suggestedOps.loadFailed": {
     "sourceHash": "3d3af5a"
   },
-  "suggestedOps.agentReason": "Ask Cmdr 给出的理由",
+  "suggestedOps.agentReason": "AI 给出的理由",
   "@suggestedOps.agentReason": {
-    "sourceHash": "0768c36"
+    "sourceHash": "e3acab8"
   },
   "suggestedOps.cmdrFacts": "Cmdr 掌握的信息",
   "@suggestedOps.cmdrFacts": {
@@ -75,9 +75,9 @@
   "@suggestedOps.fromPattern": {
     "sourceHash": "20e88a9"
   },
-  "suggestedOps.changedUnderReview": "Ask Cmdr 在你查看期间更改了这条建议。",
+  "suggestedOps.changedUnderReview": "AI 在你查看期间更改了这条建议。",
   "@suggestedOps.changedUnderReview": {
-    "sourceHash": "fd6b2ac"
+    "sourceHash": "5d07c7c"
   },
   "suggestedOps.showNewVersion": "显示新版本",
   "@suggestedOps.showNewVersion": {
@@ -111,8 +111,8 @@
   "@suggestedOps.loadingFiles": {
     "sourceHash": "83257e6"
   },
-  "suggestedOps.indicatorTooltip": "Ask Cmdr 有建议在等你。点按即可查看。",
+  "suggestedOps.indicatorTooltip": "有 AI 建议在等你。点按即可复查。",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "dc423e6"
+    "sourceHash": "4508b0b"
   }
 }

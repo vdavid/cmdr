@@ -378,6 +378,17 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `已搜尋你的照片`), so a new tool label copies the sibling shape rather than restating the object two ways. "Look
   inside" a file is `查看…裡的內容`; a photo's place is `拍攝地點`, a path's is `位置` (`glossary.md` § Ask Cmdr looks
   inside files).
+- **`Ask Cmdr` names the chat PANEL; everywhere else the subject is `Cmdr`, and in the Suggested ops dialog it's `AI`.**
+  Follow the English exactly: keep `Ask Cmdr` where it's the panel's own name (its title, the View-menu item, the
+  palette command, the settings section, the on/off copy) and where a sentence points at that settings section
+  (`Ask Cmdr 設定`, `「Ask Cmdr」區段`); write bare `Cmdr` when the sentence describes what the AI does; write `AI` in
+  the four `suggestedOps.*` strings, which have to stay distinguishable from the neighbouring `Cmdr 知道的事實`. ❗
+  Don't "restore" `Ask Cmdr` as a sentence subject: that's the exact regression the 2026-09-09 copy sweep undid.
+  Per-key evidence: `glossary.md` § AI 文案改寫.
+- **Click is `按一下`, not macOS zh-CN's `點按`.** Apple zh-TW writes `按一下` 50 times against 4 `點一下` and zero
+  `點按` (measured 2026-09-09). A "Click to …" instruction becomes `按一下就能…`.
+- **`context` is `上下文`** (`上下文視窗` for the window, `上下文大小` for the size). Three renderings had drifted into
+  the catalog; the ruling and why it's still `tentative` are in `glossary.md` § 上下文 定案.
 - **Keep the trailing `…` wherever the English has one** (a menu item or button that opens a further dialog), and keep
   the `*Aria` containment rule in mind: an aria value must contain its visible label verbatim and in order. Chinese
   doesn't inflect, so this is easy here: just don't paraphrase the label inside the aria sentence.
