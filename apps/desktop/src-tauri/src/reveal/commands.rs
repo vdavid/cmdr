@@ -6,10 +6,10 @@
 //! from outside Cmdr, and a stored flag would show the user a switch that disagrees with
 //! their Mac. `DETAILS.md` § "Not a stored setting".
 
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 use super::registration::{GlobalDomain, RevealHandlerState, RevealRegistration, own_bundle_id};
-use super::{PendingReveals, spawn_delivery};
+use super::{PENDING, spawn_delivery};
 
 /// Build the registration state machine over the real global domain.
 fn registration() -> RevealRegistration<GlobalDomain> {
@@ -44,10 +44,7 @@ pub async fn set_reveal_handler_enabled(enabled: bool) -> RevealHandlerState {
 #[tauri::command]
 #[specta::specta]
 pub async fn drain_pending_reveals(app: AppHandle) {
-    let Some(pending) = app.try_state::<PendingReveals>() else {
-        return;
-    };
-    let paths = pending.drain();
+    let paths = PENDING.drain();
     if paths.is_empty() {
         return;
     }

@@ -1,10 +1,9 @@
 # Reveal in Cmdr + default folder handler
 
-Status: **mechanism A is built** (`apps/desktop/src-tauri/src/reveal/`, 2026-09-09), with one measured limitation: a
-reveal only reaches Cmdr when Cmdr is already running. Mechanism B, onboarding, the first-activation moment, and the
-Settings UI are still deferred. The spike ran on 2026-09-09 (macOS 26.6 / Darwin 25.6, probe app plus a bundled Cmdr
-debug build driven by `open -R`); its answers are folded into the sections below and supersede the 2026-07-14 web
-research.
+Status: **mechanism A is built and works end to end** (`apps/desktop/src-tauri/src/reveal/`, 2026-09-09), cold launch
+included. Mechanism B, onboarding, the first-activation moment, and the Settings UI are still deferred. The spike ran on
+2026-09-09 (macOS 26.6 / Darwin 25.6, probe app plus a bundled Cmdr debug build driven by `open -R`); its answers are
+folded into the sections below and supersede the 2026-07-14 web research.
 
 What exists now: the `NSFileViewer` registration state machine plus its three IPC commands, the `RunEvent::Opened` arm,
 the cold-start buffer and its drain, and the shared navigate-then-cursor pane primitive. Depth and decisions live in
@@ -56,15 +55,14 @@ rule (file → parent + cursor; folder → open it), the window raise, the cold-
 multi-URL accumulation. It reuses `go_to_latest_download`'s pane primitive, now shared as `mcp::go_to_in_focused_pane`.
 Mechanics and rationale: `apps/desktop/src-tauri/src/reveal/DETAILS.md`.
 
-❗ **The one open problem: a cold-launch reveal is lost** (spike item 2, answered 2026-09-09 and worse than the research
-assumed). An already-running Cmdr receives the reveal as `RunEvent::Opened` and shows the file. A reveal that
-LaunchServices has to launch Cmdr for delivers nothing at all — not `RunEvent::Opened`, and not `application:openURLs:`
-at the app delegate either. Declaring `CFBundleDocumentTypes` didn't change it. So the feature as shipped is "reveals
-land in Cmdr while Cmdr is open"; from cold, the window opens on its remembered location. The evidence, the two
-ruled-out causes, and what's left to try are in that `DETAILS.md` § "The cold-launch gap"; ❌ don't re-derive them.
+Verified end to end (macOS 26.6, `open -R`, 2026-09-09): cold launch with a file, already running with a file in another
+directory, already running with a folder, and two siblings at once.
 
-That gap has to be closed, or honestly worded, before this reaches onboarding: "reveals land in Cmdr" promises more than
-it currently does.
+❗ **The trap this cost a day to find**: on a cold launch the event fires ~500 ms BEFORE Tauri's `setup` closure, so at
+that moment there is no `app.manage`d state, no logger, and no main window. Buffering is not a nicety here, it is the
+delivery mechanism, and it has to be process-global. A log line added to that path never appears, which is what made the
+event look like it was never sent at all. `DETAILS.md` § "How a cold-launch reveal arrives" also records the two fixes
+built and reverted before the timing was measured, so nobody spends that day again.
 
 ## Registration module
 
@@ -116,8 +114,8 @@ Ran 2026-09-09 on macOS 26.6 (Darwin 25.6). Numbers below are the original item 
 1. **`NSFileViewer` alone is enough.** No `public.folder` claim, no `CFBundleDocumentTypes`, no UTI needed (probe app
    with none of them still received the reveal).
 2. **`RunEvent::Opened` carries the revealed items themselves**, as `file://` URLs; a reveal of a folder arrives as that
-   folder's URL. It fires for an already-running app and NOT for a cold launch. Buffering is in place and is necessary,
-   but it is not what's missing from the cold-launch case: see § "Event delivery".
+   folder's URL. It fires for both a cold launch and an already-running app — but on a cold launch it lands before
+   `setup`, which is what makes the buffering load-bearing. See § "Event delivery".
 3. Coverage for A: `open -R` verified end to end. `activateFileViewerSelectingURLs:` and
    `selectFile:inFileViewerRootedAtPath:` (what Chromium and Electron call) redirect; AppleScript
    `tell Finder to reveal` does not, by design. A per-app matrix (Chrome, Safari, VS Code, Slack) is still worth running
@@ -130,9 +128,9 @@ Still open, all for mechanism B: item 4 (B's actual surface), item 5 (deleting C
 ## Rough cost
 
 Spent on A: event plumbing, buffering, registration module, and the shared pane primitive, with unit tests. Remaining:
-closing or wording the cold-launch gap (unknown, needs the investigation above); mechanism B ~1 day; Settings rows +
-onboarding step 4 + first-activation surface + copy + i18n ~1 day. Cold-launch reveal is hard to E2E; the dispatch rule
-and the buffering are covered by Rust unit tests, and the toggles get Playwright coverage when they exist.
+mechanism B ~1 day; Settings rows + onboarding step 4 + first-activation surface + copy + i18n ~1 day. Cold-launch
+reveal is hard to E2E; the dispatch rule and the buffering are covered by Rust unit tests, and the toggles get
+Playwright coverage when they exist.
 
 ## Sources
 

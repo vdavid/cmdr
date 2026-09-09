@@ -26,32 +26,44 @@ Measured on macOS 26.6 (Darwin 25.6) with a throwaway probe app and a bundled Cm
 and nothing else. It can stop working in any macOS release, and nothing will tell us but a user report. That's a known,
 accepted cost, not something to design around.
 
-## The cold-launch gap
+## How a cold-launch reveal arrives
 
-**A reveal that has to launch Cmdr is lost.** LaunchServices cold-launches the app, and then nothing is delivered:
-neither `RunEvent::Opened` nor `application:openURLs:` on the app delegate ever fires. The window opens on its
-remembered location, as if the app had been launched from the Dock. A reveal to an ALREADY-RUNNING Cmdr works, every
-time.
+**A reveal reaches Cmdr whether or not it is already running**, both times as
+`RunEvent::Opened`. The two cases differ only in timing, and that timing is the whole
+trap:
 
-Measured 2026-09-09 on macOS 26.6 with a Developer ID-signed bundled debug build
-(`CMDR_INSTANCE_ID=dev-reveal-probe`), driven by `open -R`, read back from the log. Two candidate causes were tested
-and **ruled out**:
+- **Already running**: the event arrives mid-session. Everything exists, and the pane moves
+  immediately.
+- **Cold launch**: LaunchServices starts Cmdr and the event arrives **before Tauri's `setup`
+  closure runs** — measured at 513 ms before it, on macOS 26.6, from a breadcrumb trail in a
+  bundled debug build driven by `open -R`, 2026-09-09.
 
-- *Tauri or tao dropping the event before its callback exists.* A swizzle of `application:openURLs:` on the live app
-  delegate class, installed during `setup` (before the event loop starts), fired for the already-running case and never
-  for the cold-launch case. So the event isn't reaching AppKit's delegate at all. The swizzle was removed again: it
-  bought nothing that `RunEvent::Opened` doesn't already do.
-- *The missing document-type declaration.* Adding `CFBundleDocumentTypes` with `LSItemContentTypes = [public.item]`,
-  `Viewer` / `Alternate`, to the built bundle and re-registering with `lsregister` changed nothing.
+Two things are therefore not yet true when `on_urls_opened` runs on a cold launch, and both
+used to swallow the reveal without a trace:
 
-What's left to try, for whoever picks this up: register an `NSAppleEventManager` handler for `kAEOpenDocuments`
-directly and see whether the event is queued but unhandled, or genuinely never sent; and compare against the throwaway
-probe app that DID get a cold-launch reveal, since the difference between it and Cmdr is the lead. Cmdr's startup is
-seconds long and pumps nested run loops (`instance_lock`'s `CFUserNotification`) before Tauri builds its event loop,
-which is the most likely place a queued Apple Event goes missing.
+- **`app.manage`d state does not exist.** `setup` is where it is registered, so a
+  `try_state` lookup comes back empty. That is why [`PENDING`] is a process-global
+  `LazyLock` and ❌ never Tauri-managed state.
+- **The logger is not initialised.** `logging::startup::init()` also runs in `setup`, so
+  every `log::` call from this path goes nowhere. ❌ Don't debug this path by adding log
+  lines — they will not appear, and their absence is not evidence the code didn't run. The
+  first honest line is the drain's "Frontend is up; delivering N parked path(s)".
 
-The buffering below stays regardless: it's what a fix would deliver into, and it already covers the smaller race of a
-reveal landing while an already-running app's window is still booting.
+The main window also doesn't exist yet, so `raise_main_window` is a no-op there. Nothing
+needs to special-case the cold path: the buffer holds the paths and the frontend's drain
+delivers them once its listeners are up.
+
+**Ruled out, so nobody re-tries them.** Before the timing was measured, this looked like
+"the event never arrives", and two fixes were built and reverted:
+
+- An `NSAppleEventManager` / `AEInstallEventHandler` handler for `kAEOpenDocuments`,
+  installed as the first statement in `run()`. It never fired once: AppKit claims the
+  `odoc` handler while the app is being built and gets there first.
+- A swizzle of `application:openURLs:` on the live app delegate. It fired for the
+  already-running case and never for the cold one — installed in `setup`, it was already on
+  the wrong side of the line.
+
+Neither is needed. `RunEvent::Opened` is the whole delivery mechanism.
 
 ## Delivery
 
@@ -59,9 +71,15 @@ reveal landing while an already-running app's window is still booting.
 
 1. Keep the `file://` URLs, drop everything else.
 2. Raise the main window (`unminimize` → `show` → `set_focus`), the same three calls the go-to-latest-download hotkey
-   makes. The reveal was fired from another app, so without the raise the result stays hidden behind it.
+   makes. The reveal was fired from another app, so without the raise the result stays hidden behind it. On a cold
+   launch there is no window yet and this does nothing, which is correct: the window is on its way up anyway.
 3. Park the paths in `PendingReveals`, and deliver them right away if the frontend has drained at least once.
 4. `plan_reveal` decides the pane move, then `crate::mcp::go_to_in_focused_pane` makes it.
+
+Verified end to end on macOS 26.6 (bundled debug build, `open -R`, 2026-09-09): cold launch with a file, already
+running with a file in another directory, already running with a folder, and two siblings at once. `open -R` with
+several paths sends one event per path, so the multi-URL branch below is exercised by its unit tests rather than by
+that command.
 
 ### The dispatch rule
 
@@ -81,6 +99,10 @@ where `is_dir` blocks for minutes, and a reveal that quietly does nothing beats 
 `PendingReveals` is a `Vec` plus a `frontend_ready` flag, not an `Option`: two reveals can land back to back and the
 second must not erase the first. Nothing is delivered until the frontend calls `drain_pending_reveals`, because the
 delivery rides `mcp-nav-to-path` and an emit into a window with no listener is simply lost.
+
+This is what carries a cold-launch reveal across the ~1 s between the event arriving and the frontend being able to act
+on it, so it is load-bearing for the feature's main selling point, not a safety net. § "How a cold-launch reveal
+arrives".
 
 **Decision: the drain fires from phase 2 of `window-services.ts`, not phase 1.** Phase 1 runs at the top of `onMount`,
 before `setupMcpListeners`, so a drain there would race the very listener it depends on. Phase 2 runs after every `mcp-*`
@@ -144,5 +166,5 @@ that isn't installed reports `None` and the UI falls back to the raw bundle id.
 
 ## What's not built
 
-Mechanism B (the `public.folder` LaunchServices handler), the onboarding step, the first-activation notice, and the
+The Settings UI. Mechanism B (the `public.folder` LaunchServices handler), the onboarding step, the first-activation notice, and the
 Settings UI itself. See the spec.

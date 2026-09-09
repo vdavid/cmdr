@@ -10,16 +10,24 @@
 //! lives there.
 
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{LazyLock, Mutex};
 use std::time::Duration;
 
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Manager, Runtime, Wry};
 
 use crate::ignore_poison::IgnorePoison;
 
 pub mod commands;
 pub mod registration;
+
+/// The one buffer, and process-global on purpose.
+///
+/// ❗ A cold-launch reveal reaches `on_urls_opened` BEFORE Tauri's `setup` runs, so
+/// `app.manage`d state doesn't exist yet and `try_state` would come back empty — which is
+/// exactly how the reveal used to get dropped. `DETAILS.md` § "How a cold-launch reveal
+/// arrives".
+static PENDING: LazyLock<PendingReveals> = LazyLock::new(PendingReveals::default);
 
 /// How long the "is this a folder?" probe may take. A revealed path can sit on a dead
 /// network mount, where `is_dir` blocks for minutes; past this we give up on the whole
@@ -51,10 +59,6 @@ pub struct PendingReveals {
 }
 
 impl PendingReveals {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Park `paths` and report whether they can be delivered right now.
     fn accept(&self, paths: Vec<PathBuf>) -> Vec<PathBuf> {
         let mut queue = self.queue.lock_ignore_poison();
@@ -102,32 +106,29 @@ pub(crate) fn plan_reveal(paths: &[PathBuf], is_dir: &dyn Fn(&Path) -> bool) -> 
     Some(RevealPlan { dir, entries })
 }
 
-/// Handle a `RunEvent::Opened`: raise the window and show what the OS handed us.
+/// Handle a `RunEvent::Opened`: the one door every arriving reveal comes through.
 ///
-/// ⚠️ Reaches us only when Cmdr is ALREADY RUNNING. A reveal that cold-launches Cmdr never
-/// arrives at all — `DETAILS.md` § "The cold-launch gap" has the measurement and what was
-/// already ruled out.
+/// ⚠️ On a cold launch this runs before `setup`, before the main window exists, and before
+/// the logger is initialised, so anything it says there goes nowhere and the delivery has
+/// to wait for the frontend's drain. Both calls below tolerate that: `raise_main_window`
+/// returns when there is no window, and the buffer holds the paths. `DETAILS.md` § "How a
+/// cold-launch reveal arrives".
 ///
-/// Called on the main thread's run-event handler, so it must not block: the classify probe
-/// and the pane round-trip both happen on the async runtime.
-pub fn on_urls_opened(app: &AppHandle<tauri::Wry>, urls: Vec<tauri::Url>) {
+/// Called on the main thread, so it must not block: the classify probe and the pane
+/// round-trip both happen on the async runtime.
+pub fn on_urls_opened(app: &AppHandle<Wry>, urls: Vec<tauri::Url>) {
     let paths: Vec<PathBuf> = urls
         .iter()
         .filter(|url| url.scheme() == "file")
         .filter_map(|url| url.to_file_path().ok())
         .collect();
     if paths.is_empty() {
-        log::debug!(target: "reveal", "Opened event carried no file URLs; ignoring");
+        log::debug!(target: "reveal", "A reveal carried no file paths; ignoring");
         return;
     }
-    log::info!(target: "reveal", "Opened event: {} path(s) to show", paths.len());
+    log::info!(target: "reveal", "Reveal: {} path(s) to show", paths.len());
     raise_main_window(app);
-
-    let Some(pending) = app.try_state::<PendingReveals>() else {
-        log::warn!(target: "reveal", "No pending-reveal store; dropping {} path(s)", paths.len());
-        return;
-    };
-    let ready = pending.accept(paths);
+    let ready = PENDING.accept(paths);
     if !ready.is_empty() {
         spawn_delivery(app, ready);
     }
@@ -242,7 +243,7 @@ mod tests {
 
     #[test]
     fn a_cold_launch_parks_paths_until_the_frontend_drains_them() {
-        let pending = PendingReveals::new();
+        let pending = PendingReveals::default();
         assert!(
             pending.accept(vec![p("/tmp/one.txt")]).is_empty(),
             "nothing may be delivered before the frontend is listening"
@@ -253,7 +254,7 @@ mod tests {
 
     #[test]
     fn a_second_reveal_never_erases_the_first() {
-        let pending = PendingReveals::new();
+        let pending = PendingReveals::default();
         pending.accept(vec![p("/tmp/one.txt")]);
         pending.accept(vec![p("/tmp/two.txt")]);
         assert_eq!(pending.drain().len(), 2);
@@ -261,7 +262,7 @@ mod tests {
 
     #[test]
     fn once_drained_a_reveal_is_delivered_straight_away() {
-        let pending = PendingReveals::new();
+        let pending = PendingReveals::default();
         pending.drain();
         assert_eq!(pending.accept(vec![p("/tmp/one.txt")]), vec![p("/tmp/one.txt")]);
         assert!(pending.drain().is_empty(), "an accepted path must not be queued twice");

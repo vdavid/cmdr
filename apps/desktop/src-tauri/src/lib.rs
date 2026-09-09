@@ -648,12 +648,6 @@ pub fn run() {
             // can name the archive and `unlock_archive` can answer it.
             app.manage(mcp::ArchivePasswordPromptStore::new());
 
-            // Reveals ("Show in Cmdr" from another app) that land before the webview
-            // exists. A cold launch delivers the event first and mounts the frontend
-            // after, so they wait here until it drains them. See `reveal/CLAUDE.md`.
-            #[cfg(target_os = "macos")]
-            app.manage(reveal::PendingReveals::new());
-
             // Start MCP server for AI agent integration
             // Use settings from user preferences, with env vars as override for dev
             let mcp_config = mcp::McpConfig::from_settings_and_env(

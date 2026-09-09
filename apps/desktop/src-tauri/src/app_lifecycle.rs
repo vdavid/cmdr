@@ -104,8 +104,9 @@ pub fn on_run_event(app: &AppHandle<Wry>, event: tauri::RunEvent) {
         // (`NSFileViewer`, see `reveal/`). It arrives as an open-documents
         // Apple Event, which AppKit hands to `application:openURLs:` and
         // Tauri surfaces here — cold launch and already-running alike, so
-        // there is no argv path to cover. macOS and iOS only: no other
-        // platform emits this variant.
+        // there is no argv path to cover. ⚠️ On a cold launch this fires
+        // BEFORE `setup`, so the arm must not reach for managed state or the
+        // logger. macOS only: no other platform emits this variant.
         #[cfg(target_os = "macos")]
         tauri::RunEvent::Opened { urls } => {
             reveal::on_urls_opened(app, urls);

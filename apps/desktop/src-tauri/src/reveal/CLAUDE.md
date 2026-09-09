@@ -7,16 +7,17 @@ Another app's "Show in Finder" lands in a Cmdr pane instead. One OS switch turns
 
 - **`registration.rs`**: the `NSFileViewer` state machine (`RevealHandlerState`, `RevealRegistration`), the
   `ViewerPreference` seam over CFPreferences, and `own_bundle_id`, which decides whether this build may write at all.
-- **`mod.rs`**: what arrives once it's on. `plan_reveal` turns the delivered paths into one pane move; `PendingReveals`
-  parks anything the frontend isn't up for yet; `deliver` drives the pane.
+- **`mod.rs`**: what arrives once it's on. `on_urls_opened` is the one door; `plan_reveal` turns the delivered paths
+  into one pane move; `PendingReveals` parks anything the frontend isn't up for yet; `deliver` drives the pane.
 - **`commands.rs`**: three IPC commands (read state, set state, drain the parked reveals).
 
 ## Must-knows
 
-- **Cold launch does not work, and that isn't a bug in this code.** A reveal to an already-running Cmdr arrives as
-  `RunEvent::Opened`; one that cold-launches Cmdr never arrives at all (measured on macOS 26.6, 2026-09-09). Declaring
-  document types and catching `application:openURLs:` at the delegate were both tried and neither helped. ❌ Don't
-  re-derive it: `DETAILS.md` § "The cold-launch gap" has the evidence and what's left to try.
+- **A cold-launch reveal arrives ~500 ms BEFORE Tauri's `setup` runs**, as the same `RunEvent::Opened` (measured on
+  macOS 26.6, 2026-09-09). So at that moment there is no `app.manage`d state, no logger, and no main window. That's why
+  `PENDING` is a process-global `LazyLock` and ❌ never Tauri-managed state, and why a log line added to this path won't
+  appear. `DETAILS.md` § "How a cold-launch reveal arrives" also lists the two fixes already tried and reverted (an
+  early `AEInstallEventHandler`, and an `application:openURLs:` swizzle) — ❌ don't re-derive them.
 - **Turning off clears the key only when it still names us.** Another app can take it between the Settings row being
   drawn and the click; clearing then would unregister somebody else's file manager. And clearing means REMOVING the
   key, ❌ never writing `com.apple.finder`: absence is the true default.
