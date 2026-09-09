@@ -316,9 +316,8 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
     expect(tString('onboarding.stepOptional.lede')).toBe(
       "You chose to walk through a detailed setup, so here are a few easy choices. If you don't care too much, just click the button below. These are all options, and the defaults are picked for your benefit.",
     )
-    expect(tString('onboarding.stepOptional.recommendedOn')).toBe(
-      'Recommended: on. You can change this any time in Settings.',
-    )
+    expect(tString('onboarding.stepOptional.recommendedOn')).toBe('Recommended: on')
+    expect(tString('onboarding.stepOptional.changeAnytime')).toBe('You can change this any time in Settings.')
   })
 
   it('resolves the four summaries and the info-glyph label', () => {
@@ -339,7 +338,7 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
   it('resolves the four toggle blocks', () => {
     expect(tString('onboarding.stepOptional.networking.title')).toBe('Networking')
     expect(renderRich('onboarding.stepOptional.networking.desc', ['em'])).toBe(
-      'Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like. The only cost is a macOS permission dialog that pops up and asks you to allow "Local network access", and one for "Accepting incoming connections". Both dialogs are harmless, but if you don\'t know what these are, they might be scary or annoying.',
+      'Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow "Local network access", and one for "Accepting incoming connections".\nBoth dialogs are harmless, but if you don\'t know what these are, they might be scary or annoying.',
     )
     expect(tString('onboarding.stepOptional.indexing.title')).toBe('Drive indexing')
     expect(tString('onboarding.stepOptional.indexing.descIntro')).toBe(
@@ -355,17 +354,17 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
     // this sentence can't drift from what the Size column actually shows. The `<` reaches
     // the reader as a `<`, never as `&lt;`: `<Trans>` renders text, not HTML.
     expect(renderRich('onboarding.stepOptional.indexing.descCost', ['code'], { dirPlaceholder: '<dir>' })).toBe(
-      "If you turn this off, you only get <code><dir></code> for the sizes. The cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2–3 minutes of you first starting the app, or starting it after a long time. It's a cheap feature considering the benefits.",
+      "If you turn this off, you only get <code><dir></code> for the sizes.\nThe cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2–3 minutes of you first starting the app, or starting it after a long time.\nIt's a cheap feature considering the benefits.",
     )
     expect(tString('onboarding.stepOptional.updates.title')).toBe('Automatic updates')
     expect(tString('onboarding.stepOptional.updates.desc')).toBe(
-      "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates. If disabled, you'll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).",
+      "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf disabled, you'll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).",
     )
     expect(tString('onboarding.stepOptional.mtp.title')).toBe('MTP (Android phones, Kindles, cameras)')
     // The trailing "But it's a bit of a cost, so:" is gone: it used to lead into the
     // recommendation caption beside the toggle, and this sentence now ends a tooltip.
     expect(renderRich('onboarding.stepOptional.mtp.desc', ['strong', 'em'])).toBe(
-      "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP. The cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can't just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it's running. When you quit Cmdr, this is politely restored.",
+      "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nThe cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can't just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it's running.\nWhen you quit Cmdr, this is politely restored.",
     )
   })
 })

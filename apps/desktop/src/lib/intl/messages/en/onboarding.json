@@ -614,9 +614,15 @@
     "screenshot": "onboarding-optional.png"
   },
 
-  "onboarding.stepOptional.recommendedOn": "Recommended: on. You can change this any time in Settings.",
+  "onboarding.stepOptional.recommendedOn": "Recommended: on",
   "@onboarding.stepOptional.recommendedOn": {
-    "description": "Caption repeated beside each optional toggle, noting the recommended setting is on and it's changeable later. \"on\" refers to the toggle being enabled; \"Settings\" is the app's settings screen.",
+    "description": "Short verdict sitting immediately left of each optional toggle's switch, so it reads as the switch's own label. \"on\" refers to the toggle being enabled. Keep it to two or three words: it shares one line with the switch and doesn't wrap.",
+    "screenshot": "onboarding-optional.png"
+  },
+
+  "onboarding.stepOptional.changeAnytime": "You can change this any time in Settings.",
+  "@onboarding.stepOptional.changeAnytime": {
+    "description": "Closing line of each optional toggle's info tooltip, reassuring the user the choice isn't final. \"Settings\" is the app's settings screen.",
     "screenshot": "onboarding-optional.png"
   },
 
@@ -641,9 +647,9 @@
     "screenshot": "onboarding-optional.png"
   },
 
-  "onboarding.stepOptional.networking.desc": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like. The only cost is a macOS permission dialog that pops up and asks you to allow \"Local network access\", and one for \"Accepting incoming connections\". Both dialogs are harmless, but if you don''t know what these are, they might be scary or annoying.",
+  "onboarding.stepOptional.networking.desc": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow \"Local network access\", and one for \"Accepting incoming connections\".\nBoth dialogs are harmless, but if you don''t know what these are, they might be scary or annoying.",
   "@onboarding.stepOptional.networking.desc": {
-    "description": "Long explanation of the networking toggle, shown in the tooltip behind its info glyph: enables SMB shares at the cost of two macOS permission prompts. <em> emphasizes \"on\". \"SMB\" is the file-sharing protocol; \"NAS\" is a network storage device; \"macOS\" is the operating system; all stay untranslated. \"Local network access\" and \"Accepting incoming connections\" are the exact macOS permission-prompt names (use macOS's wording in your locale).",
+    "description": "Long explanation of the networking toggle, shown in the tooltip behind its info glyph: enables SMB shares at the cost of two macOS permission prompts. <em> emphasizes \"on\". \"SMB\" is the file-sharing protocol; \"NAS\" is a network storage device; \"macOS\" is the operating system; all stay untranslated. \"Local network access\" and \"Accepting incoming connections\" are the exact macOS permission-prompt names (use macOS's wording in your locale). Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"
   },
 
@@ -677,9 +683,9 @@
     "screenshot": "onboarding-optional.png"
   },
 
-  "onboarding.stepOptional.indexing.descCost": "If you turn this off, you only get <code>{dirPlaceholder}</code> for the sizes. The cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2–3 minutes of you first starting the app, or starting it after a long time. It''s a cheap feature considering the benefits.",
+  "onboarding.stepOptional.indexing.descCost": "If you turn this off, you only get <code>{dirPlaceholder}</code> for the sizes.\nThe cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2–3 minutes of you first starting the app, or starting it after a long time.\nIt''s a cheap feature considering the benefits.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "description": "Explains the trade-off of disabling indexing (folders show a placeholder instead of a size) and its cost (disk space, brief startup work). <code> wraps the placeholder the Size column shows for an unmeasured folder, supplied as {dirPlaceholder}. \"1 GB\" is the index size and it scales with how many files the user has, not with the size of the drive; \"CPU\" is the processor; both stay as-is.",
+    "description": "Explains the trade-off of disabling indexing (folders show a placeholder instead of a size) and its cost (disk space, brief startup work). <code> wraps the placeholder the Size column shows for an unmeasured folder, supplied as {dirPlaceholder}. \"1 GB\" is the index size and it scales with how many files the user has, not with the size of the drive; \"CPU\" is the processor; both stay as-is. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "placeholders": {
       "dirPlaceholder": "the literal text the Size column shows for a folder whose size isn't computed yet, taken from fileExplorer.dirSize.dirPlaceholder (for example \"<dir>\")"
     },
@@ -698,9 +704,9 @@
     "screenshot": "onboarding-optional.png"
   },
 
-  "onboarding.stepOptional.updates.desc": "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates. If disabled, you''ll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).",
+  "onboarding.stepOptional.updates.desc": "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf disabled, you''ll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).",
   "@onboarding.stepOptional.updates.desc": {
-    "description": "The long automatic-updates explanation, shown in the tooltip behind the info glyph: the network requests it makes and the trade-off of disabling it. \"Cmdr\" is the product name. \"24 hours\" and \"commercial license\" are factual details.",
+    "description": "The long automatic-updates explanation, shown in the tooltip behind the info glyph: the network requests it makes and the trade-off of disabling it. \"Cmdr\" is the product name. \"24 hours\" and \"commercial license\" are factual details. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"
   },
 
@@ -716,9 +722,9 @@
     "screenshot": "onboarding-optional.png"
   },
 
-  "onboarding.stepOptional.mtp.desc": "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP. The cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can''t just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it''s running. When you quit Cmdr, this is politely restored.",
+  "onboarding.stepOptional.mtp.desc": "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nThe cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can''t just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it''s running.\nWhen you quit Cmdr, this is politely restored.",
   "@onboarding.stepOptional.mtp.desc": {
-    "description": "The long MTP explanation, shown in the tooltip behind the info glyph: it lets the app talk to phones, e-readers, and cameras, at the cost of temporarily suppressing a conflicting macOS process, which is put back on quit. <strong> bolds the device list; <em> emphasizes \"also\". \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Finder\" is the macOS file manager; \"Android\", \"Kindles\", \"MTP\", and \"PTP\" are device/protocol names; all stay untranslated.",
+    "description": "The long MTP explanation, shown in the tooltip behind the info glyph: it lets the app talk to phones, e-readers, and cameras, at the cost of temporarily suppressing a conflicting macOS process, which is put back on quit. <strong> bolds the device list; <em> emphasizes \"also\". \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Finder\" is the macOS file manager; \"Android\", \"Kindles\", \"MTP\", and \"PTP\" are device/protocol names; all stay untranslated. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"
   },
 

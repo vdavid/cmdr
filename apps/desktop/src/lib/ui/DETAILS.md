@@ -1032,6 +1032,12 @@ look — different context). The clickable variant adds an accent border + `--co
 `0 var(--spacing-xs)` and the corner radius to `--radius-xs` for dense rows where several chips sit side by side — the
 command palette (up to three chips per row) is the first consumer.
 
+**The pill defends itself against inherited text layout: keep both `white-space: nowrap` and `text-indent: 0`.** A chip
+is `inline-flex`, so its bare key string becomes an ANONYMOUS block flex item, and `text-indent` inherits straight into
+it. A hanging-indent list up the tree (`text-indent: -1.6em`) therefore dragged `⌘⇧P` out of its pill and across the
+sentence beside it, leaving an empty box behind — seen on the onboarding beta step. Chips render inside arbitrary prose
+written by other people, so the reset belongs here rather than in every caller.
+
 The `shortcut-<commandId>` anchor-id convention (shared with the Settings section the deep link targets) lives as the
 exported `shortcutAnchorId(commandId)` in `lib/settings/settings-window.ts` so it can't drift.
 

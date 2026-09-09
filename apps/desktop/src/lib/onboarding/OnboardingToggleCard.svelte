@@ -20,8 +20,14 @@
         title: string
         /** The setting the switch reads and writes. */
         settingId: SettingId
-        /** The small note under the switch. */
+        /** The small note beside the switch. */
         caption: string
+        /**
+         * Where that note sits. `'below'` (default) stacks it under the switch, for a
+         * caption long enough to need the width. `'inline'` puts it on the switch's left,
+         * for a short verdict like "Recommended: on" that reads as part of the control.
+         */
+        captionPlacement?: 'below' | 'inline'
         /** The description under the title. */
         children: Snippet
         /**
@@ -35,7 +41,16 @@
         detailsLabel?: string
     }
 
-    const { titleId, title, settingId, caption, children, details, detailsLabel }: Props = $props()
+    const {
+        titleId,
+        title,
+        settingId,
+        caption,
+        captionPlacement = 'below',
+        children,
+        details,
+        detailsLabel,
+    }: Props = $props()
 
     /**
      * The tooltip adopts THIS element, never the `hidden` wrapper around it: an adopted
@@ -65,9 +80,14 @@
             </h3>
             {@render children()}
         </div>
-        <div class="toggle-control">
-            <SettingSwitch id={settingId} />
-            <p class="toggle-caption">{caption}</p>
+        <div class="toggle-control" class:inline-caption={captionPlacement === 'inline'}>
+            {#if captionPlacement === 'inline'}
+                <p class="toggle-caption">{caption}</p>
+                <SettingSwitch id={settingId} />
+            {:else}
+                <SettingSwitch id={settingId} />
+                <p class="toggle-caption">{caption}</p>
+            {/if}
         </div>
     </header>
     {#if details}
@@ -113,12 +133,26 @@
         padding-top: var(--spacing-xxs);
     }
 
+    /* One row instead of a stack, so a short verdict reads as the switch's own label
+       rather than a footnote under it. */
+    .toggle-control.inline-caption {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding-top: 0;
+    }
+
     .toggle-caption {
         margin: 0;
         max-width: 14rem;
         text-align: right;
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
+    }
+
+    .toggle-control.inline-caption .toggle-caption {
+        max-width: none;
+        white-space: nowrap;
     }
 
     .toggle-title {

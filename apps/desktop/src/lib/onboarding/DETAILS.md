@@ -376,8 +376,20 @@ it into a `<div hidden>` host and hands over the INNER element, since an adopted
 That host sits outside `.toggle-text` on purpose: a hidden sibling in there would still count for `:last-child`, and the
 summary above it would keep a paragraph gap under it with nothing to separate.
 
-Lists on this step and step 3 sit flush with the paragraphs around them (`list-style-position: inside` plus a `1.6em`
-hanging indent), so a marker starts on the same left edge as the prose and only a wrapped line hangs in under the words.
+The card's `captionPlacement="inline"` moves "Recommended: on" onto the switch's left, so the verdict reads as the
+switch's own label instead of a footnote under it. The rest of that caption ("You can change this any time in Settings")
+closes each tooltip as its own paragraph, where there's room for it.
+
+Each sentence of the tooltip copy sits on its own line: the catalog values carry real `\n`s and `.toggle-desc` is
+`white-space: pre-line`. Six sentences in one block is the wall of text the info glyph existed to avoid, and CSS can't
+break at sentence boundaries. A translation without the newlines still renders, as one paragraph.
+
+**Lists here and on step 3 are a flex row: a `counter()` in `::before` plus the sentence in one span.** They sit flush
+with the paragraphs around them, and only a wrapped line hangs in under the words. ❌ Not `text-indent`, the obvious way
+to write that: it INHERITS, reaches the anonymous flex item inside any `inline-flex` descendant, and pulled the keys out
+of a `ShortcutChip` and across the sentence beside it. And the sentence needs its span because flex makes every element
+child its own item, so a leading `<LinkButton>` would be cut off from the ": …" after it by the row's own gap
+("GitHub : Add issues").
 
 Copy that reaches a tooltip goes through `<Trans>`, which renders TEXT, never HTML, so an HTML entity in the catalog
 shows up literally: `&lt;DIR&gt;` used to render as `&lt;DIR&gt;` on screen, and `2&ndash;3` as `2&ndash;3`. The en dash

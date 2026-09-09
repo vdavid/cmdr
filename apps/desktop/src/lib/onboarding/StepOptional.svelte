@@ -69,6 +69,7 @@
         title={tString('onboarding.stepOptional.networking.title')}
         settingId="network.enabled"
         caption={tString('onboarding.stepOptional.recommendedOn')}
+        captionPlacement="inline"
         detailsLabel={tString('onboarding.stepOptional.moreAbout', {
             topic: tString('onboarding.stepOptional.networking.title'),
         })}
@@ -76,6 +77,7 @@
         <p class="toggle-desc">{tString('onboarding.stepOptional.networking.summary')}</p>
         {#snippet details()}
             <p class="toggle-desc"><Trans key="onboarding.stepOptional.networking.desc" snippets={{ em }} /></p>
+            <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
         {/snippet}
     </OnboardingToggleCard>
 
@@ -84,6 +86,7 @@
         title={tString('onboarding.stepOptional.indexing.title')}
         settingId="indexing.enabled"
         caption={tString('onboarding.stepOptional.recommendedOn')}
+        captionPlacement="inline"
         detailsLabel={tString('onboarding.stepOptional.moreAbout', {
             topic: tString('onboarding.stepOptional.indexing.title'),
         })}
@@ -104,6 +107,7 @@
                     params={{ dirPlaceholder: tString('fileExplorer.dirSize.dirPlaceholder') }}
                 />
             </p>
+            <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
         {/snippet}
     </OnboardingToggleCard>
 
@@ -112,6 +116,7 @@
         title={tString('onboarding.stepOptional.updates.title')}
         settingId="updates.autoCheck"
         caption={tString('onboarding.stepOptional.recommendedOn')}
+        captionPlacement="inline"
         detailsLabel={tString('onboarding.stepOptional.moreAbout', {
             topic: tString('onboarding.stepOptional.updates.title'),
         })}
@@ -119,6 +124,7 @@
         <p class="toggle-desc">{tString('onboarding.stepOptional.updates.summary')}</p>
         {#snippet details()}
             <p class="toggle-desc">{tString('onboarding.stepOptional.updates.desc')}</p>
+            <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
         {/snippet}
     </OnboardingToggleCard>
 
@@ -127,6 +133,7 @@
         title={tString('onboarding.stepOptional.mtp.title')}
         settingId="fileOperations.mtpEnabled"
         caption={tString('onboarding.stepOptional.recommendedOn')}
+        captionPlacement="inline"
         detailsLabel={tString('onboarding.stepOptional.moreAbout', {
             topic: tString('onboarding.stepOptional.mtp.title'),
         })}
@@ -134,6 +141,7 @@
         <p class="toggle-desc">{tString('onboarding.stepOptional.mtp.summary')}</p>
         {#snippet details()}
             <p class="toggle-desc"><Trans key="onboarding.stepOptional.mtp.desc" snippets={{ strong, em }} /></p>
+            <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
         {/snippet}
     </OnboardingToggleCard>
 </OnboardingStepShell>
@@ -160,25 +168,39 @@
     .toggle-list {
         margin: 0 0 var(--spacing-md);
         padding-left: 0;
-        list-style-position: inside;
+        list-style: none;
+        counter-reset: toggle-benefit;
         font-size: var(--font-size-sm);
         line-height: var(--font-line-height-prose);
         color: var(--color-text-secondary);
     }
 
     /* Numbers line up with the paragraph text above rather than sitting in an indent of
-       their own; the hanging indent keeps a wrapped line under the words, not the number. */
+       their own; the hanging indent keeps a wrapped line under the words, not the number.
+       ❌ Not `text-indent`, which inherits into inline-flex descendants and displaces
+       their content (it broke `ShortcutChip` on step 3). See `StepBeta`'s feedback list. */
     .toggle-list li {
+        display: flex;
+        gap: var(--spacing-xs);
         margin: 0 0 var(--spacing-xxs);
-        padding-left: 1.6em;
-        text-indent: -1.6em;
+        counter-increment: toggle-benefit;
     }
 
+    .toggle-list li::before {
+        content: counter(toggle-benefit) '.';
+        flex: none;
+    }
+
+    /* `pre-line` is what turns the sentence-per-line newlines in the catalog into actual
+       line breaks: a tooltip has the vertical room, and one unbroken block of six
+       sentences is the wall of text the info glyph existed to avoid. Harmless on the
+       card summaries, which carry no newlines. */
     .toggle-desc {
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-sm);
         line-height: var(--font-line-height-prose);
         color: var(--color-text-secondary);
+        white-space: pre-line;
     }
 
     .toggle-desc:last-child {

@@ -2169,6 +2169,7 @@ export type MessageKey =
   | 'onboarding.stepFda.step2.ventura'
   | 'onboarding.stepFda.step3'
   | 'onboarding.stepFda.welcome.title'
+  | 'onboarding.stepOptional.changeAnytime'
   | 'onboarding.stepOptional.footer.start'
   | 'onboarding.stepOptional.indexing.benefit1'
   | 'onboarding.stepOptional.indexing.benefit2'

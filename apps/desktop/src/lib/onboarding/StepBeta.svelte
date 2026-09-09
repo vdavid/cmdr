@@ -239,17 +239,29 @@
     <p class="lede"><Trans key="onboarding.stepBeta.greeting" snippets={{ david }} /></p>
     <p class="lede"><Trans key="onboarding.stepBeta.openBeta" snippets={{ alpha }} /></p>
     <p class="lede">{tString('onboarding.stepBeta.feedbackIntro')}</p>
+    <!-- Each row's sentence lives in ONE span. The `<li>` is a flex row (marker + text),
+         and flex makes every ELEMENT child its own item: without the span, the leading
+         `<LinkButton>` would be separated from the ": …" after it by the row's own gap,
+         and the list read "GitHub : Add issues". -->
     <ol class="feedback-list">
         <li>
-            {#if commandPaletteShortcut}
-                <Trans key="onboarding.stepBeta.feedback.inAppBound" snippets={{ strong, chip }} />
-            {:else}
-                <Trans key="onboarding.stepBeta.feedback.inAppUnbound" snippets={{ strong }} />
-            {/if}
+            <span class="feedback-text">
+                {#if commandPaletteShortcut}
+                    <Trans key="onboarding.stepBeta.feedback.inAppBound" snippets={{ strong, chip }} />
+                {:else}
+                    <Trans key="onboarding.stepBeta.feedback.inAppUnbound" snippets={{ strong }} />
+                {/if}
+            </span>
         </li>
-        <li><Trans key="onboarding.stepBeta.feedback.github" snippets={{ github }} /></li>
-        <li><Trans key="onboarding.stepBeta.feedback.discord" snippets={{ discord }} /></li>
-        <li><Trans key="onboarding.stepBeta.feedback.call" snippets={{ call }} /></li>
+        <li>
+            <span class="feedback-text"><Trans key="onboarding.stepBeta.feedback.github" snippets={{ github }} /></span>
+        </li>
+        <li>
+            <span class="feedback-text"><Trans key="onboarding.stepBeta.feedback.discord" snippets={{ discord }} /></span>
+        </li>
+        <li>
+            <span class="feedback-text"><Trans key="onboarding.stepBeta.feedback.call" snippets={{ call }} /></span>
+        </li>
     </ol>
     <p class="lede"><Trans key="onboarding.stepBeta.star" snippets={{ github: repoLink, code }} /></p>
 
@@ -335,19 +347,33 @@
     }
 
     /* The list belongs to the paragraphs around it, so its numbers start on the same
-       left edge they do; only a wrapped line hangs in under the words. */
+       left edge they do; only a wrapped line hangs in under the words.
+       ❌ Not `text-indent`, which is INHERITED: it reaches into every inline-flex
+       descendant's anonymous item and yanked the `ShortcutChip` keys out of their pill.
+       A counter plus a flex row keeps the effect inside the row that asked for it. */
     .feedback-list {
         margin: 0 0 var(--spacing-lg);
         padding-left: 0;
-        list-style-position: inside;
+        list-style: none;
+        counter-reset: feedback-item;
         line-height: var(--font-line-height-prose);
         color: var(--color-text-primary);
     }
 
     .feedback-list li {
+        display: flex;
+        gap: var(--spacing-xs);
         margin-bottom: var(--spacing-xs);
-        padding-left: 1.6em;
-        text-indent: -1.6em;
+        counter-increment: feedback-item;
+    }
+
+    .feedback-list li::before {
+        content: counter(feedback-item) '.';
+        flex: none;
+    }
+
+    .feedback-text {
+        min-width: 0;
     }
 
     .feedback-list li:last-child {

@@ -106,6 +106,13 @@
         font-size: var(--font-size-xs);
         color: var(--color-text-primary);
         white-space: nowrap;
+        /* ❌ Don't drop this. A chip is `inline-flex`, so its bare key text becomes an
+           ANONYMOUS block flex item, and `text-indent` is inherited: a hanging-indent
+           list anywhere up the tree (`text-indent: -1.6em`) drags the keys clean out of
+           the pill and over the sentence beside it, leaving an empty box behind. The
+           chip renders inside arbitrary prose, so it defends itself rather than trusting
+           every caller. Same reasoning as `white-space` above. */
+        text-indent: 0;
     }
 
     /* Dense variant: tighter padding + corner radius so several chips fit a row
