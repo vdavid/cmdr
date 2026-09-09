@@ -365,7 +365,7 @@ describe('StepBeta a11y', () => {
     track(target, mount(StepBeta, { target, props: {} }))
     await settle(10)
 
-    const checkbox = target.querySelector<HTMLInputElement>('.terms-block input[type="checkbox"]')
+    const checkbox = target.querySelector<HTMLInputElement>('#onboarding-terms-block input[type="checkbox"]')
     expect(checkbox?.getAttribute('aria-required')).toBe('true')
     // Named by the inline consent label, so a screen reader reads the sentence being agreed to.
     expect(checkbox?.getAttribute('aria-labelledby')).toBeTruthy()

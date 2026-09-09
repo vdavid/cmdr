@@ -53,6 +53,7 @@ vi.mock('$lib/ipc/bindings', () => ({
 import Chip from './Chip.svelte'
 import DateLabel from './DateLabel.svelte'
 import Icon from './Icon.svelte'
+import InfoTip from './InfoTip.svelte'
 import LoadingIcon from './LoadingIcon.svelte'
 import ProgressBar from './ProgressBar.svelte'
 import SectionCard from './SectionCard.svelte'
@@ -194,6 +195,32 @@ describe('Icon a11y', () => {
       const target = await renderIcon({ name, size: 16, 'aria-hidden': 'true' })
       await expectNoA11yViolations(target)
     }
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `InfoTip.svelte`.
+ *
+ * The glyph has no visible text, so its `aria-label` is the whole accessible name; axe
+ * catches a button that lost one. Both bodies are covered: the plain-text form, and the
+ * snippet form, whose markup lives in a `hidden` host until the tooltip adopts it.
+ */
+describe('InfoTip a11y', () => {
+  it('with a plain-text body has no a11y violations', async () => {
+    const target = container()
+    mount(InfoTip, { target, props: { label: 'More about drive indexing', text: 'Takes about 1 GB.' } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('with a snippet body has no a11y violations', async () => {
+    const target = container()
+    const children = createRawSnippet(() => ({
+      render: () => '<p>Takes about 1 GB.</p><p>You can change this any time in Settings.</p>',
+    }))
+    mount(InfoTip, { target, props: { label: 'More about drive indexing', children } })
+    await tick()
+    await expectNoA11yViolations(target)
   })
 })
 

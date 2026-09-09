@@ -805,6 +805,18 @@ every other. `useShortenMiddle` routes through this action for the same reason.
 **Accessibility:** Shows on focus (keyboard navigation), hides on blur/Escape. Trigger element gets `aria-describedby`
 pointing to the tooltip's unique `id`. Tooltip has `role="tooltip"`.
 
+### Info glyph (app)
+
+`InfoTip.svelte` is the house "the long version lives behind this ⓘ" control: a 14px `info` glyph in a bare `<button>`,
+tertiary text color, primary on hover, accent focus ring. Reach for it when a label needs a sentence or three of context
+that would bloat the surface inline; a run of toggles that each lead with a half-line and park the rest here is the
+pattern it exists for (onboarding's optional-setup step).
+
+Two bodies. `text` for a plain string; a `children` snippet for real paragraphs and lists, which renders into a `hidden`
+host and reaches the tooltip as a live `contentEl`, so the markup and its rhythm stay the caller's. `label` is required:
+the glyph has no visible text, so that `aria-label` is its whole accessible name. It's a `<button>` on purpose, so the
+body is one Tab away as well as one hover, which a native `title` never manages.
+
 ### Keyboard shortcut hints (app)
 
 Shortcut hints appear in custom tooltips (via `use:tooltip={{ text: "Label", shortcut: "⌘K" }}`) and in the command

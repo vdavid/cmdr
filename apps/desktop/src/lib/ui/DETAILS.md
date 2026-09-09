@@ -31,6 +31,7 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`AlertDialog.svelte`**: Single-action confirmation dialog built on `ModalDialog`
 - **`ProgressBar.svelte`**: Reusable progress bar (just the bar, no labels or layout)
 - **`Size.svelte`**: Canonical inline byte-count renderer: human-friendly + rainbow tier color
+- **`InfoTip.svelte`**: info glyph parking a long explanation in a tooltip; plain `text` or a rich `children` snippet
 - **`SectionCard.svelte`**: macOS-style grouped card with optional label above; used for Debug/Settings groupings
 - **`ToggleGroup.svelte`**: Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape
 - **`Switch.svelte`**: Presentational Ark `Switch`: the track-and-thumb on/off control; `SettingSwitch` wraps it
@@ -435,6 +436,16 @@ corner. Two guards prevent this and must both stay: (1) the action's `destroy()`
 zero-rect heuristic — happy-dom reports zero rects for every connected element, so it false-positives the whole test
 suite. Covered by `tooltip.test.ts`.
 
+### InfoTip
+
+`InfoTip.svelte` packages the commonest `contentEl` shape: an info glyph whose whole job is to hold the long version of
+a nearby label. `text` gives it a plain string, a `children` snippet gives it real paragraphs and lists (rendered into
+the hidden host described above, so the caller keeps owning the markup and its rhythm). `label` is required, since the
+glyph carries no visible text.
+
+Reach for it wherever a surface would otherwise lead with a paragraph nobody asked for: onboarding's step 4 puts one on
+each of its four `SettingRow`s (through `labelTrailing`) and leads with a half-line instead.
+
 ### Dismiss on keypress
 
 Any non-modifier keydown hides the tooltip app-wide, the way OS-native tooltips behave: a tooltip parked over the file
@@ -780,6 +791,10 @@ link-styled button or anchor with raw CSS; the cursor opt-in stays in one place 
 
 Hover keeps the resting accent-text color (the lighter `--color-accent-hover` doesn't meet 4.5:1 contrast on white). The
 underline is enough affordance.
+
+For a link that unfolds a disclosure below it, pass `aria-expanded` and `aria-controls` (button mode only): the pair is
+what tells a screen reader the link opens something and whether it's open right now. Onboarding's step 1 "Why?" is the
+example.
 
 The `href` mode includes a per-line eslint disable for `svelte/no-navigation-without-resolve`. That rule wants
 SvelteKit's `resolve()`, which is for internal routes; we route external URLs through `openExternalUrl()` after

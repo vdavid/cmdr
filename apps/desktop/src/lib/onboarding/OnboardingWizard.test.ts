@@ -118,7 +118,7 @@ function backButton(target: HTMLElement): HTMLButtonElement | null {
  * like a user does.
  */
 function acceptTerms(target: HTMLElement): void {
-  const checkbox = target.querySelector<HTMLInputElement>('.terms-block input[type="checkbox"]')
+  const checkbox = target.querySelector<HTMLInputElement>('#onboarding-terms-block input[type="checkbox"]')
   if (!checkbox) throw new Error('terms checkbox not found on the Beta step')
   checkbox.click()
   flushSync()

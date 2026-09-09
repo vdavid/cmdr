@@ -1,7 +1,9 @@
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte'
     import OnboardingStepShell from './OnboardingStepShell.svelte'
-    import OnboardingToggleCard from './OnboardingToggleCard.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
+    import SettingRow from '$lib/settings/components/SettingRow.svelte'
+    import SettingSwitch from '$lib/settings/components/SettingSwitch.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
@@ -78,8 +80,8 @@
     // `$lib/legal/terms`), so a later terms change can ask again instead of coasting on a
     // consent that was given to a different document.
     let termsAccepted = $state(false)
-    /** The terms `<section>`, so a blocked click can bring it back on screen. */
-    let termsBlockEl: HTMLElement | undefined = $state()
+    /** The terms card's anchor, so a blocked click can bring it back on screen. */
+    const TERMS_BLOCK_ID = 'onboarding-terms-block'
     /** Guards the mount-time read from overwriting a tick the user got in first. */
     let termsTouched = false
 
@@ -112,7 +114,7 @@
      * checkbox, and a press that neither advances nor explains reads as a broken app.
      */
     function revealTermsCheckbox(): void {
-        const block = termsBlockEl
+        const block = document.getElementById(TERMS_BLOCK_ID)
         if (!block) return
         const reduceMotion =
             typeof window !== 'undefined' &&
@@ -267,25 +269,25 @@
 
     <p class="lede analytics-lede">{tString('onboarding.stepBeta.analyticsLede')}</p>
 
-    <OnboardingToggleCard
-        titleId="toggle-analytics-title"
-        title={tString('onboarding.stepBeta.analyticsTitle')}
-        settingId="analytics.enabled"
-        caption={tString('onboarding.stepBeta.analyticsCaption')}
-    >
-        <p class="toggle-desc">{analyticsDef.description}</p>
-    </OnboardingToggleCard>
+    <SectionCard>
+        <SettingRow
+            id="analytics.enabled"
+            label={tString('onboarding.stepBeta.analyticsTitle')}
+            description={analyticsDef.description}
+        >
+            <SettingSwitch id="analytics.enabled" />
+        </SettingRow>
+        <p class="card-note">{tString('onboarding.stepBeta.analyticsCaption')}</p>
+    </SectionCard>
 
     <!-- Crash reports default on too, and a default that sends something has to be disclosed
          where the analytics one is, not only in Settings. No toggle: the switch lives in
          Settings > Updates & privacy, and this step already asks enough of a first launch. -->
     <p class="lede crash-reports-note">{tString('onboarding.stepBeta.crashReportsNote')}</p>
 
-    <section class="email-block" aria-labelledby="beta-email-title">
-        <h3 id="beta-email-title" class="toggle-title">{tString('onboarding.stepBeta.emailTitle')}</h3>
+    <SectionCard label={tString('onboarding.stepBeta.emailTitle')}>
         <TextInput
             type="email"
-            containerStyle="margin-top: var(--spacing-sm)"
             placeholder={tString('onboarding.stepBeta.emailPlaceholder')}
             value={emailSignup.email}
             oninput={emailSignup.handleInput}
@@ -299,21 +301,23 @@
         {:else if emailSignup.signupFeedback?.kind === 'failure'}
             <p class="signup-feedback failure" role="status">{tString('onboarding.stepBeta.signup.failure')}</p>
         {/if}
-        <p class="email-note">{tString('onboarding.stepBeta.emailNote')}</p>
-    </section>
+        <p class="card-note">{tString('onboarding.stepBeta.emailNote')}</p>
+    </SectionCard>
 
-    <section class="terms-block" bind:this={termsBlockEl} aria-labelledby="beta-terms-title">
-        <h3 id="beta-terms-title" class="toggle-title">
-            {tString('onboarding.stepBeta.terms.title')}<span class="required-mark" aria-hidden="true">*</span>
-        </h3>
-        <p class="toggle-desc">{tString('onboarding.stepBeta.terms.lede')}</p>
+    <!-- The card carries the id a blocked footer press scrolls back to; that's what
+         `SectionCard`'s `id` is for. -->
+    <SectionCard id={TERMS_BLOCK_ID} label={tString('onboarding.stepBeta.terms.title')}>
+        {#snippet badge()}
+            <!-- Decoration; `required` on the checkbox is what a screen reader hears. -->
+            <span class="required-mark" aria-hidden="true">*</span>
+        {/snippet}
+        <p class="card-note">{tString('onboarding.stepBeta.terms.lede')}</p>
         <div class="terms-consent">
-            <!-- The asterisk above is decoration; `required` is what a screen reader hears. -->
             <Checkbox checked={termsAccepted} required onCheckedChange={handleTermsChange}>
                 <Trans key="onboarding.stepBeta.terms.consent" snippets={{ terms }} />
             </Checkbox>
         </div>
-    </section>
+    </SectionCard>
 </OnboardingStepShell>
 
 <style>
@@ -389,35 +393,18 @@
         color: var(--color-text-primary);
     }
 
-    /* `.toggle-title` / `.toggle-desc` match `OnboardingToggleCard`'s, so the email and terms
-       blocks below read as siblings of the analytics card. */
-    .toggle-title {
-        margin: 0 0 var(--spacing-xs);
-        font-size: var(--font-size-md);
-        font-weight: 600;
-        color: var(--color-text-primary);
-    }
-
-    .toggle-desc {
+    /* A quieter line inside a card: the note under the analytics switch, the email
+       small print, the terms lede. */
+    .card-note {
         margin: 0;
         font-size: var(--font-size-sm);
         line-height: var(--font-line-height-prose);
         color: var(--color-text-secondary);
     }
 
-    .email-block {
-        padding: var(--spacing-lg);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        background: var(--color-bg-primary);
-    }
-
-    .terms-block {
-        margin-top: var(--spacing-lg);
-        padding: var(--spacing-lg);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        background: var(--color-bg-primary);
+    /* The row above already ends on its own divider, so the note only needs air. */
+    :global(.setting-row) + .card-note {
+        margin-top: var(--spacing-sm);
     }
 
     .terms-consent {
@@ -425,11 +412,13 @@
         line-height: var(--font-line-height-prose);
     }
 
-    /* The required marker. Red and set slightly apart from the heading, matching how forms
-       everywhere mark a required field; `aria-hidden` keeps it out of the a11y tree, where
-       the control's own `aria-required` carries the same fact. */
+    /* The required marker, sitting on the card's label. Red and set slightly apart from it,
+       matching how forms everywhere mark a required field; `aria-hidden` keeps it out of the
+       a11y tree, where the control's own `aria-required` carries the same fact. The negative
+       margin cancels the header's own gap, which is sized for a real badge, not a glyph that
+       belongs to the last letter of the label. */
     .required-mark {
-        margin-left: var(--spacing-xxs);
+        margin-left: calc(var(--spacing-xxs) - var(--spacing-sm));
         color: var(--color-error-text);
     }
 
@@ -446,10 +435,9 @@
         color: var(--color-text-primary);
     }
 
-    .email-note {
-        margin: var(--spacing-sm) 0 0;
-        font-size: var(--font-size-xs);
-        line-height: var(--font-line-height-prose);
-        color: var(--color-text-secondary);
+    /* The email field and its inline verdict both sit above the small print. */
+    :global(.text-field) + .card-note,
+    .signup-feedback + .card-note {
+        margin-top: var(--spacing-sm);
     }
 </style>

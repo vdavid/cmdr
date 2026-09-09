@@ -63,8 +63,12 @@ vi.mock('$lib/settings', async (importOriginal) => {
   }
 })
 
+// The barrel re-exports these three, and `SettingRow` reads all of them: a store mock that
+// only answers `onSpecificSettingChange` leaves the other two `undefined` on the barrel.
 vi.mock('$lib/settings/settings-store', () => ({
   onSpecificSettingChange: () => () => {},
+  isModified: () => false,
+  resetSetting: () => {},
 }))
 
 import StepBeta from './StepBeta.svelte'
@@ -93,7 +97,7 @@ function getEmailInput(target: HTMLElement): HTMLInputElement {
 }
 
 function getTermsCheckbox(target: HTMLElement): HTMLInputElement {
-  const input = target.querySelector<HTMLInputElement>('.terms-block input[type="checkbox"]')
+  const input = target.querySelector<HTMLInputElement>('#onboarding-terms-block input[type="checkbox"]')
   if (!input) throw new Error('Terms checkbox missing')
   return input
 }
@@ -229,14 +233,14 @@ describe('StepBeta', () => {
     const checkbox = getTermsCheckbox(mounted.target)
     expect(checkbox.getAttribute('aria-required')).toBe('true')
     // The red asterisk is decoration on top of `aria-required`, so it stays out of the a11y tree.
-    const mark = mounted.target.querySelector('.terms-block .required-mark')
+    const mark = mounted.target.querySelector('#onboarding-terms-block .required-mark')
     expect(mark?.getAttribute('aria-hidden')).toBe('true')
   })
 
   it('links the public terms page and opens it externally rather than navigating in-app', async () => {
     mounted = mountStep()
     await waitForAsync()
-    const link = mounted.target.querySelector<HTMLAnchorElement>(`.terms-block a[href="${TERMS_URL}"]`)
+    const link = mounted.target.querySelector<HTMLAnchorElement>(`#onboarding-terms-block a[href="${TERMS_URL}"]`)
     expect(link).not.toBeNull()
     expect(link?.textContent).toContain('terms and conditions')
   })

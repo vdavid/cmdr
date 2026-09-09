@@ -1,5 +1,6 @@
 <script lang="ts">
     import SectionCard from '$lib/ui/SectionCard.svelte'
+    import InfoTip from '$lib/ui/InfoTip.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
 
     const longPath = '/Users/david/Library/CloudStorage/Dropbox/obsidian/40-49 things/veszelovszki.com and other domains.md'
@@ -31,6 +32,25 @@
             <p class="caption">Overflow only</p>
             <span class="anchor truncated" use:tooltip={{ text: longPath, overflowOnly: true }}>{longPath}</span>
         </div>
+
+        <div class="cell">
+            <p class="caption">InfoTip, plain text</p>
+            <span class="anchor">
+                Drive indexing
+                <InfoTip label="More about drive indexing" text="Takes about 1 GB and speeds up every search." />
+            </span>
+        </div>
+
+        <div class="cell">
+            <p class="caption">InfoTip, rich body</p>
+            <span class="anchor">
+                Networking
+                <InfoTip label="More about networking">
+                    <p class="tip-line">Needs accepting "Local network access" once.</p>
+                    <p class="tip-line">You can change this any time in Settings.</p>
+                </InfoTip>
+            </span>
+        </div>
     </div>
 </SectionCard>
 
@@ -55,6 +75,14 @@
         border-radius: var(--radius-sm);
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
+    }
+
+    .tip-line {
+        margin: 0 0 var(--spacing-sm);
+    }
+
+    .tip-line:last-child {
+        margin-bottom: 0;
     }
 
     .truncated {

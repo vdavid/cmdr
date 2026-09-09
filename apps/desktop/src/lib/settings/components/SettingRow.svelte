@@ -20,6 +20,12 @@
         searchQuery?: string
         children: Snippet
         descriptionContent?: Snippet
+        /**
+         * Rendered right after the label, inside the label wrapper, ahead of the reset pip
+         * and the badges. For a small adornment that belongs to the label rather than the
+         * control: an `<InfoTip>` carrying the long version of the description, say.
+         */
+        labelTrailing?: Snippet
     }
 
     const {
@@ -33,6 +39,7 @@
         searchQuery = '',
         children,
         descriptionContent,
+        labelTrailing,
     }: Props = $props()
 
     // Get highlighted label segments based on search query
@@ -70,6 +77,7 @@
                             >{segment.text}</mark
                         >{:else}{segment.text}{/if}{/each}</label
             >
+            {#if labelTrailing}{@render labelTrailing()}{/if}
             {#if modified}
                 <button
                     class="reset-button"

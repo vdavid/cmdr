@@ -1,7 +1,10 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
     import OnboardingStepShell from './OnboardingStepShell.svelte'
-    import OnboardingToggleCard from './OnboardingToggleCard.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
+    import InfoTip from '$lib/ui/InfoTip.svelte'
+    import SettingRow from '$lib/settings/components/SettingRow.svelte'
+    import SettingSwitch from '$lib/settings/components/SettingSwitch.svelte'
     import { setFooterOverride, requestWizardComplete } from './onboarding-state.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
@@ -10,18 +13,22 @@
     /**
      * Step 3: Optional setup.
      *
-     * Each card leads with a half-line summary and parks the full explanation behind the
-     * info glyph beside its title (`OnboardingToggleCard`'s `details` snippet). Four cards
-     * of full prose turned the last step of onboarding into a wall of text, which is the
-     * worst possible place for one: the user is trying to get INTO the app. The summary
-     * carries the trade-off, and the tooltip is there for whoever wants the why.
+     * Four toggles in one `<SectionCard>` of `<SettingRow>`s, exactly the grouping Settings
+     * uses: a card frames a RUN of rows, and the rows divide themselves. Onboarding passes
+     * its own friendlier `label` / `description` rather than the registry's, which is the
+     * one place it diverges from a Settings page.
      *
-     * Four toggles, each bound to an existing registry setting via `<SettingSwitch>`.
-     * The switch component reads + writes the setting directly, so the toggles
-     * live-apply the moment the user flips them: `network.enabled` /
-     * `indexing.enabled` / `updates.autoCheck` / `fileOperations.mtpEnabled` all
-     * have entries in `settings-applier.ts`'s `passthroughBackendHandlers` table that
-     * fire the matching Rust-side helper.
+     * Each row leads with a half-line summary and parks the full explanation behind an
+     * `<InfoTip>` beside its title. Four rows of full prose turned the last step of
+     * onboarding into a wall of text, which is the worst possible place for one: the user
+     * is trying to get INTO the app. The summary carries the trade-off, and the tip is
+     * there for whoever wants the why.
+     *
+     * The switch component reads + writes the setting directly, so the toggles live-apply
+     * the moment the user flips them: `network.enabled` / `indexing.enabled` /
+     * `updates.autoCheck` / `fileOperations.mtpEnabled` all have entries in
+     * `settings-applier.ts`'s `passthroughBackendHandlers` table that fire the matching
+     * Rust-side helper.
      *
      * Defaults stay ON. Step 3's purpose is to let the user turn things OFF with full
      * context, not to ask for opt-in. See `lib/onboarding/CLAUDE.md` § "Step 3 (optional setup)".
@@ -54,100 +61,109 @@
         // leak stale closures.
         setFooterOverride(null)
     })
+
+    const recommendedOn = $derived(tString('onboarding.stepOptional.recommendedOn'))
+
+    /** Accessible name for a row's info glyph, which has no visible text of its own. */
+    function moreAbout(topic: string): string {
+        return tString('onboarding.moreAbout', { topic })
+    }
 </script>
 
 {#snippet em(children: Snippet)}<em>{@render children()}</em>{/snippet}
 {#snippet strong(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
 {#snippet code(children: Snippet)}<code>{@render children()}</code>{/snippet}
 
+<!-- The verdict reads as the switch's own label rather than a footnote under it, so it
+     rides in the control slot beside it. -->
+{#snippet recommendation()}<span class="row-caption">{recommendedOn}</span>{/snippet}
+
 <OnboardingStepShell>
     <h2 class="step-title">{tString('onboarding.stepOptional.title')}</h2>
     <p class="lede">{tString('onboarding.stepOptional.lede')}</p>
 
-    <OnboardingToggleCard
-        titleId="toggle-networking-title"
-        title={tString('onboarding.stepOptional.networking.title')}
-        settingId="network.enabled"
-        caption={tString('onboarding.stepOptional.recommendedOn')}
-        captionPlacement="inline"
-        appearance="plain"
-        detailsLabel={tString('onboarding.moreAbout', {
-            topic: tString('onboarding.stepOptional.networking.title'),
-        })}
-    >
-        <p class="toggle-desc">{tString('onboarding.stepOptional.networking.summary')}</p>
-        {#snippet details()}
-            <p class="toggle-desc"><Trans key="onboarding.stepOptional.networking.desc" snippets={{ em }} /></p>
-            <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
-        {/snippet}
-    </OnboardingToggleCard>
+    <SectionCard>
+        <SettingRow
+            id="network.enabled"
+            label={tString('onboarding.stepOptional.networking.title')}
+            description={tString('onboarding.stepOptional.networking.summary')}
+        >
+            {#snippet labelTrailing()}
+                <InfoTip label={moreAbout(tString('onboarding.stepOptional.networking.title'))}>
+                    <p class="toggle-desc"><Trans key="onboarding.stepOptional.networking.desc" snippets={{ em }} /></p>
+                    <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
+                </InfoTip>
+            {/snippet}
+            <div class="row-control">
+                {@render recommendation()}
+                <SettingSwitch id="network.enabled" />
+            </div>
+        </SettingRow>
 
-    <OnboardingToggleCard
-        titleId="toggle-indexing-title"
-        title={tString('onboarding.stepOptional.indexing.title')}
-        settingId="indexing.enabled"
-        caption={tString('onboarding.stepOptional.recommendedOn')}
-        captionPlacement="inline"
-        appearance="plain"
-        detailsLabel={tString('onboarding.moreAbout', {
-            topic: tString('onboarding.stepOptional.indexing.title'),
-        })}
-    >
-        <p class="toggle-desc">{tString('onboarding.stepOptional.indexing.summary')}</p>
-        {#snippet details()}
-            <p class="toggle-desc">{tString('onboarding.stepOptional.indexing.descIntro')}</p>
-            <ol class="toggle-list">
-                <li>{tString('onboarding.stepOptional.indexing.benefit1')}</li>
-                <li>{tString('onboarding.stepOptional.indexing.benefit2')}</li>
-            </ol>
-            <!-- The folder-size placeholder comes from the file list's own catalog entry, so
-                 this sentence can never name a placeholder the Size column doesn't show. -->
-            <p class="toggle-desc">
-                <Trans
-                    key="onboarding.stepOptional.indexing.descCost"
-                    snippets={{ code }}
-                    params={{ dirPlaceholder: tString('fileExplorer.dirSize.dirPlaceholder') }}
-                />
-            </p>
-            <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
-        {/snippet}
-    </OnboardingToggleCard>
+        <SettingRow
+            id="indexing.enabled"
+            label={tString('onboarding.stepOptional.indexing.title')}
+            description={tString('onboarding.stepOptional.indexing.summary')}
+        >
+            {#snippet labelTrailing()}
+                <InfoTip label={moreAbout(tString('onboarding.stepOptional.indexing.title'))}>
+                    <p class="toggle-desc">{tString('onboarding.stepOptional.indexing.descIntro')}</p>
+                    <ol class="toggle-list">
+                        <li>{tString('onboarding.stepOptional.indexing.benefit1')}</li>
+                        <li>{tString('onboarding.stepOptional.indexing.benefit2')}</li>
+                    </ol>
+                    <!-- The folder-size placeholder comes from the file list's own catalog entry, so
+                         this sentence can never name a placeholder the Size column doesn't show. -->
+                    <p class="toggle-desc">
+                        <Trans
+                            key="onboarding.stepOptional.indexing.descCost"
+                            snippets={{ code }}
+                            params={{ dirPlaceholder: tString('fileExplorer.dirSize.dirPlaceholder') }}
+                        />
+                    </p>
+                    <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
+                </InfoTip>
+            {/snippet}
+            <div class="row-control">
+                {@render recommendation()}
+                <SettingSwitch id="indexing.enabled" />
+            </div>
+        </SettingRow>
 
-    <OnboardingToggleCard
-        titleId="toggle-updates-title"
-        title={tString('onboarding.stepOptional.updates.title')}
-        settingId="updates.autoCheck"
-        caption={tString('onboarding.stepOptional.recommendedOn')}
-        captionPlacement="inline"
-        appearance="plain"
-        detailsLabel={tString('onboarding.moreAbout', {
-            topic: tString('onboarding.stepOptional.updates.title'),
-        })}
-    >
-        <p class="toggle-desc">{tString('onboarding.stepOptional.updates.summary')}</p>
-        {#snippet details()}
-            <p class="toggle-desc">{tString('onboarding.stepOptional.updates.desc')}</p>
-            <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
-        {/snippet}
-    </OnboardingToggleCard>
+        <SettingRow
+            id="updates.autoCheck"
+            label={tString('onboarding.stepOptional.updates.title')}
+            description={tString('onboarding.stepOptional.updates.summary')}
+        >
+            {#snippet labelTrailing()}
+                <InfoTip label={moreAbout(tString('onboarding.stepOptional.updates.title'))}>
+                    <p class="toggle-desc">{tString('onboarding.stepOptional.updates.desc')}</p>
+                    <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
+                </InfoTip>
+            {/snippet}
+            <div class="row-control">
+                {@render recommendation()}
+                <SettingSwitch id="updates.autoCheck" />
+            </div>
+        </SettingRow>
 
-    <OnboardingToggleCard
-        titleId="toggle-mtp-title"
-        title={tString('onboarding.stepOptional.mtp.title')}
-        settingId="fileOperations.mtpEnabled"
-        caption={tString('onboarding.stepOptional.recommendedOn')}
-        captionPlacement="inline"
-        appearance="plain"
-        detailsLabel={tString('onboarding.moreAbout', {
-            topic: tString('onboarding.stepOptional.mtp.title'),
-        })}
-    >
-        <p class="toggle-desc">{tString('onboarding.stepOptional.mtp.summary')}</p>
-        {#snippet details()}
-            <p class="toggle-desc"><Trans key="onboarding.stepOptional.mtp.desc" snippets={{ strong, em }} /></p>
-            <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
-        {/snippet}
-    </OnboardingToggleCard>
+        <SettingRow
+            id="fileOperations.mtpEnabled"
+            label={tString('onboarding.stepOptional.mtp.title')}
+            description={tString('onboarding.stepOptional.mtp.summary')}
+        >
+            {#snippet labelTrailing()}
+                <InfoTip label={moreAbout(tString('onboarding.stepOptional.mtp.title'))}>
+                    <p class="toggle-desc"><Trans key="onboarding.stepOptional.mtp.desc" snippets={{ strong, em }} /></p>
+                    <p class="toggle-desc">{tString('onboarding.stepOptional.changeAnytime')}</p>
+                </InfoTip>
+            {/snippet}
+            <div class="row-control">
+                {@render recommendation()}
+                <SettingSwitch id="fileOperations.mtpEnabled" />
+            </div>
+        </SettingRow>
+    </SectionCard>
 </OnboardingStepShell>
 
 <style>
@@ -166,9 +182,21 @@
         color: var(--color-text-primary);
     }
 
-    /* Inside `OnboardingToggleCard`'s description and details slots, so these stay
-       parent-scoped. The list sits in the same vertical rhythm as the paragraphs around
-       it: one paragraph gap above and below, never a bigger one on one side. */
+    .row-control {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .row-caption {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        white-space: nowrap;
+    }
+
+    /* Inside the rows' info tips, so these stay parent-scoped. The list sits in the same
+       vertical rhythm as the paragraphs around it: one paragraph gap above and below,
+       never a bigger one on one side. */
     .toggle-list {
         margin: 0 0 var(--spacing-md);
         padding-left: 0;
@@ -197,8 +225,7 @@
 
     /* `pre-line` is what turns the sentence-per-line newlines in the catalog into actual
        line breaks: a tooltip has the vertical room, and one unbroken block of six
-       sentences is the wall of text the info glyph existed to avoid. Harmless on the
-       card summaries, which carry no newlines. */
+       sentences is the wall of text the info glyph existed to avoid. */
     .toggle-desc {
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-sm);
