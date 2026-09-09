@@ -90,17 +90,24 @@ describe('the committed masters', () => {
     })
   })
 
-  it.skipIf(!hasMagick)('measure exactly the focused margins the pipeline gates on', () => {
-    const bytes = masterAsPng()
-    const decoded = decodePng(bytes)
+  // 8 s, not the 5 s default: this is the only test here that shells out to ImageMagick and
+  // then walks 3.6M pixels in JS. It takes ~0.6 s alone, but a full `pnpm check` run has every
+  // core busy and it has measured 6.4 s there, which failed on the default budget.
+  it.skipIf(!hasMagick)(
+    'measure exactly the focused margins the pipeline gates on',
+    () => {
+      const bytes = masterAsPng()
+      const decoded = decodePng(bytes)
 
-    const rect = opaqueBoundingBox(bytes)
+      const rect = opaqueBoundingBox(bytes)
 
-    expect(rect).toEqual({ x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, ...MASTER_WINDOW })
-    expect(decoded.width).toBe(MASTER_WINDOW.width + FOCUSED_CANVAS_GROWTH)
-    expect(decoded.height).toBe(MASTER_WINDOW.height + FOCUSED_CANVAS_GROWTH)
-    expect(verifyShadowFrame(bytes, MASTER_WINDOW)).toEqual({ ok: true, rect })
-  })
+      expect(rect).toEqual({ x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, ...MASTER_WINDOW })
+      expect(decoded.width).toBe(MASTER_WINDOW.width + FOCUSED_CANVAS_GROWTH)
+      expect(decoded.height).toBe(MASTER_WINDOW.height + FOCUSED_CANVAS_GROWTH)
+      expect(verifyShadowFrame(bytes, MASTER_WINDOW)).toEqual({ ok: true, rect })
+    },
+    8_000,
+  )
 
   it('grow by the same amount on both axes, which is what one constant assumes', () => {
     expect(FOCUSED_SHADOW_X * 2).toBe(FOCUSED_SHADOW_TOP + FOCUSED_SHADOW_BOTTOM)
