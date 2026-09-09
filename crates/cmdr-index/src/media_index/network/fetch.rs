@@ -421,25 +421,31 @@ mod tests {
         let made = unsafe { libc::mkfifo(c_path.as_ptr(), 0o600) };
         assert_eq!(made, 0, "mkfifo failed: {}", std::io::Error::last_os_error());
 
+        let budget = Duration::from_millis(50);
         let started = std::time::Instant::now();
         let err = FsByteFetcher
-            .fetch(&fifo.to_string_lossy(), None, Duration::from_millis(50))
+            .fetch(&fifo.to_string_lossy(), None, budget)
             .expect_err("a read that never returns must not yield bytes");
 
-        // The variant is what the pass branches on, and the message proves it came from
-        // the TIMEOUT arm rather than an errno the open happened to return instead.
-        match &err {
-            FetchError::Disconnected(msg) => {
-                assert!(msg.contains("timed out"), "expected the timeout arm, got {msg:?}")
-            }
-            other => panic!("a hung read must classify as Disconnected, got {other:?}"),
-        }
+        // The variant is what the pass branches on.
+        assert!(
+            matches!(err, FetchError::Disconnected(_)),
+            "a hung read must classify as Disconnected, got {err:?}"
+        );
+        // The CLOCK is what proves the TIMEOUT arm rather than an errno the open
+        // happened to return instead: `recv_timeout` reaches that arm only once its
+        // deadline has passed, so an elapsed at least as long as the budget can't have
+        // come from an errno or a dropped sender, both of which return at once.
+        let elapsed = started.elapsed();
+        assert!(
+            elapsed >= budget,
+            "returning inside the {budget:?} budget means an errno arm, not the timeout: took {elapsed:?}"
+        );
         // And it gave up on the budget instead of blocking. Generous upper bound: this
         // asserts "bounded", not a scheduling deadline.
         assert!(
-            started.elapsed() < Duration::from_secs(5),
-            "the fetch should return on its 50ms budget, took {:?}",
-            started.elapsed()
+            elapsed < Duration::from_secs(5),
+            "the fetch should return on its {budget:?} budget, took {elapsed:?}"
         );
     }
 
