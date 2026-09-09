@@ -24,9 +24,23 @@
         children?: Snippet
         /** Glyph size in px. Match the text it sits beside. */
         size?: number
+        /**
+         * Where the glyph sits relative to what it explains.
+         *
+         * - `inline` (the default): it follows inline text, and a length `vertical-align`
+         *   drops it onto that text's optical middle.
+         * - `radio-row`: it's a `RadioGroup`'s `itemTrailing` slot, whose row is a flex
+         *   container as tall as a label plus its description. Centring against the whole
+         *   row leaves the glyph hanging below the words it belongs to, so this variant
+         *   gives it `RadioGroup`'s own label line box and item padding and top-aligns it,
+         *   putting it on the LABEL's line. ❌ Don't reach for it in a row whose first line
+         *   isn't `--font-size-sm` text with `--spacing-xs` above it; the numbers are
+         *   `RadioGroup`'s.
+         */
+        align?: 'inline' | 'radio-row'
     }
 
-    const { label, text, children, size = 14 }: Props = $props()
+    const { label, text, children, size = 14, align = 'inline' }: Props = $props()
 
     /**
      * The tooltip adopts THIS element, never the `hidden` wrapper around it: an adopted
@@ -38,7 +52,13 @@
     const param = $derived<TooltipParam>(children ? { contentEl } : (text ?? ''))
 </script>
 
-<button type="button" class="info-tip" aria-label={label} use:tooltip={param}>
+<button
+    type="button"
+    class="info-tip"
+    class:radio-row={align === 'radio-row'}
+    aria-label={label}
+    use:tooltip={param}
+>
     <Icon name="info" {size} aria-hidden="true" />
 </button>
 {#if children}
@@ -68,6 +88,21 @@
         background: transparent;
         color: var(--color-text-tertiary);
         transition: color var(--transition-base);
+    }
+
+    /* A `RadioGroup` row is a flex container, so `vertical-align` above is already inert
+       here and the container's alignment is in charge. Top-aligning alone would still miss:
+       the row is as tall as a label plus its description, so the glyph needs the label's own
+       line box (`RadioGroup`'s `--font-size-sm`) and the item's own vertical padding to land
+       on the words rather than a couple of pixels under them. `content-box` keeps that
+       padding outside the line box instead of eating it. */
+    .info-tip.radio-row {
+        align-self: flex-start;
+        flex: none;
+        margin-left: 0;
+        height: calc(var(--font-size-sm) * var(--font-line-height-prose));
+        padding: var(--spacing-xs) 0;
+        box-sizing: content-box;
     }
 
     .info-tip:hover {

@@ -444,7 +444,23 @@ the hidden host described above, so the caller keeps owning the markup and its r
 glyph carries no visible text.
 
 Reach for it wherever a surface would otherwise lead with a paragraph nobody asked for: onboarding's step 4 puts one on
-each of its four `SettingRow`s (through `labelTrailing`) and leads with a half-line instead.
+each of its four `SettingRow`s (through `labelTrailing`) and leads with a half-line instead. `cmdr/prefer-ui-primitive`
+enforces it: a `<button>` whose only meaningful child is `<Icon name="info">` is this component, whatever the class says.
+
+`align` picks between two geometries, and the default is right unless the tip is a flex item in a row taller than one
+line:
+
+- `inline`, the default: a length `vertical-align` drops the glyph onto the optical middle of the text it follows. ❌
+  Padding can't do this; the reasoning is in the component's own comment.
+- `radio-row`: for a `RadioGroup`'s `itemTrailing` slot. `.radio-row` is a flex container as tall as a label plus its
+  description, so `align-items: center` hangs the glyph a couple of pixels below the words it belongs to. The variant
+  top-aligns it and gives it `RadioGroup`'s label line box (`--font-size-sm`) plus the item's own `--spacing-xs`
+  vertical padding, landing it on the LABEL's line. `content-box` keeps that padding outside the line box. `StepAi`'s
+  local-model option is the caller. ❌ Don't reach for it in a row whose first line isn't `--font-size-sm` text with
+  `--spacing-xs` above it: the numbers are `RadioGroup`'s, and nothing checks the match.
+
+Not every info glyph is an `InfoTip`. A non-interactive one marking a row's state is `StatusMarker`; a purely decorative
+one leading a banner or dialog header is a bare `<Icon>` in a `<span>` (`AdbHint`, `TransferErrorDialog`).
 
 Adopted content also widens the tooltip: `setTooltipContent` stamps `cmdr-tooltip-rich` whenever it takes a `contentEl`,
 and that class raises the box from the 320px label measure to 460px. Several paragraphs at label width wrap into a

@@ -23,7 +23,7 @@
     import { getCloudProvider, getSetting, setSetting, type AiProvider } from '$lib/settings'
     import { pushConfigToBackend } from '$lib/settings/ai-config'
     import { revokeConsent } from '$lib/ask-cmdr/ask-cmdr-consent.svelte'
-    import { tooltip } from '$lib/tooltip/tooltip'
+    import InfoTip from '$lib/ui/InfoTip.svelte'
     import RadioGroup from '$lib/ui/RadioGroup.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
@@ -343,9 +343,6 @@
         { value: 'cloud', label: tString('onboarding.stepAi.cloud.label') },
     ])
 
-    /** The local option's long explanation, adopted by the tooltip (never the hidden host). */
-    let localDetailsEl = $state<HTMLDivElement>()
-
     /** The forward button's own label, so the warning can name the button by its real name. */
     const nextLabel = $derived(tString('onboarding.wizard.next'))
 </script>
@@ -510,16 +507,14 @@
 
         {#snippet itemTrailing(value: string)}
             {#if value === 'local'}
-                <button
-                    type="button"
-                    class="choice-info"
-                    aria-label={tString('onboarding.moreAbout', {
+                <InfoTip
+                    align="radio-row"
+                    label={tString('onboarding.moreAbout', {
                         topic: tString('onboarding.stepAi.local.label'),
                     })}
-                    use:tooltip={{ contentEl: localDetailsEl }}
                 >
-                    <Icon name="info" size={14} aria-hidden="true" />
-                </button>
+                    <p class="choice-details"><Trans key="onboarding.stepAi.local.tooltip" snippets={{ strong, em }} /></p>
+                </InfoTip>
             {/if}
         {/snippet}
 
@@ -554,9 +549,6 @@
 
     <!-- The tooltip adopts the INNER element; a hidden host handed over would render empty. -->
     <div hidden>
-        <div bind:this={localDetailsEl} class="choice-details">
-            <p><Trans key="onboarding.stepAi.local.tooltip" snippets={{ strong, em }} /></p>
-        </div>
         <!-- The missing-key warning, rendered here so the step that owns the copy owns its
              markup too, and handed to the wizard through `setFooterNote`. -->
         <div bind:this={keyWarningEl} class="key-warning">
@@ -756,38 +748,9 @@
         color: var(--color-cmdr-gold);
     }
 
-    /* The glyph sits on the LABEL's line, not the row's middle. `.radio-item` carries its
-       own vertical padding, so centring the button against the whole row left the glyph
-       hanging a couple of pixels below the words it belongs to. Matching the row's own
-       padding and giving the button the text's line box lines the two up. */
-    .choice-info {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        align-self: flex-start;
-        flex: none;
-        height: calc(var(--font-size-sm) * var(--font-line-height-prose));
-        padding: var(--spacing-xs) 0;
-        box-sizing: content-box;
-        border: none;
-        background: transparent;
-        color: var(--color-text-tertiary);
-        transition: color var(--transition-base);
-    }
-
-    .choice-info:hover {
-        color: var(--color-text-primary);
-    }
-
-    .choice-info:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 2px;
-        border-radius: var(--radius-xs);
-    }
-
     /* The local option's long explanation, adopted into the tooltip. One sentence per
        line, same as step 4's info tooltips. */
-    .choice-details p {
+    .choice-details {
         margin: 0;
         white-space: pre-line;
     }

@@ -35,8 +35,8 @@ analytics disclosure and the terms (3) → Optional settings (4). Linux starts a
 - **Long copy hides behind an `<InfoTip>` or a fold, ❌ never in the body**: step 4's rows, step 2's local option, step
   1's "Why?".
 - **Step 2's options are plain `RadioGroup` rows, and each snippet is an a11y call**: helper text and the Recommended
-  badge go in `itemInline` (a click on either picks the option), the info `<button>` in `itemTrailing`, ❌ never inside
-  the `role="radio"`.
+  badge go in `itemInline` (a click on either picks the option), the `<InfoTip align="radio-row">` in `itemTrailing`, ❌
+  never inside the `role="radio"`.
 - **Allow (FDA) requires a restart before advancing past step 1**: `fda_gate::FDA_PENDING` is set once at boot, and
   clearing it at runtime races the TCC popups it suppresses (5-10 stacked, once). Deny advances normally.
 - **Step 1's live-grant poller calls `checkFullDiskAccessQuiet`, ❌ never `checkFullDiskAccess`**, which fires a TCC

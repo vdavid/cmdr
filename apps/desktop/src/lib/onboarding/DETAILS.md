@@ -261,8 +261,9 @@ Three pieces stacked top to bottom:
    **Which snippet each piece uses is an accessibility decision, not a layout one.** The helper text and the
    recommendation badge go in `itemInline`, INSIDE the label, so clicking either picks the option and both join the
    radio's accessible name — they read as part of the choice, and a user who aims at the sentence rather than the dot
-   gets what they expected. ❌ The info glyph can't go there: it's a `<button>`, and a focusable control nested in a
-   `role="radio"` element trips axe's nested-interactive rule, so it sits in `itemTrailing` beside the option. The
+   gets what they expected. ❌ The info glyph can't go there: `InfoTip` is a `<button>`, and a focusable control nested
+   in a `role="radio"` element trips axe's nested-interactive rule, so it sits in `itemTrailing` beside the option,
+   as `<InfoTip align="radio-row">` (that variant exists for this slot; `lib/ui/DETAILS.md` § InfoTip). The
    download note uses `itemFooter` rather than the group `footer`, or it would hang under the CLOUD option (the last
    one) while describing the local one.
 
