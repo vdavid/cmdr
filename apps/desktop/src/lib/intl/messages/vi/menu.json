@@ -449,6 +449,10 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
+  "menu.context.editExtensions": "Sửa phần mở rộng",
+  "@menu.context.editExtensions": {
+    "sourceHash": "e996d1a"
+  },
   "menu.context.openWith": "Mở bằng",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"

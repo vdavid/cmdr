@@ -450,6 +450,10 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
+  "menu.context.editExtensions": "Editar extensões",
+  "@menu.context.editExtensions": {
+    "sourceHash": "e996d1a"
+  },
   "menu.context.openWith": "Abrir com",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"

@@ -480,6 +480,22 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
+    // === Share → Edit extensions: System Settings' Extensions pane ===
+    // Handled here rather than through `menu_id_to_command` because it isn't a file
+    // command: there's nothing to bind a shortcut to and nothing for the palette to
+    // offer, and the whole `Share` submenu is built and routed in the backend anyway.
+    // `open_system_settings_url` is the house helper for these deep links (the Tauri
+    // opener plugin's allowlist drops the `x-apple.systempreferences:` scheme silently).
+    #[cfg(target_os = "macos")]
+    if id == super::share_submenu::SHARE_EDIT_EXTENSIONS_ID {
+        if let Err(e) =
+            crate::permissions::open_system_settings_url(super::share_submenu::EXTENSIONS_SETTINGS_URL.to_string())
+        {
+            log::warn!(target: "menu", "Share: couldn't open the Extensions settings pane: {e}");
+        }
+        return;
+    }
+
     // === Tag color items: prefix-routed straight to the tag write (like open-with) ===
     // `tag-color:<index>` toggles that system color on the RIGHT-CLICKED selection
     // (`MenuState.context.paths`), then refreshes the stashed listing's cache. It acts on

@@ -447,6 +447,10 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
+  "menu.context.editExtensions": "Modifier les extensions",
+  "@menu.context.editExtensions": {
+    "sourceHash": "e996d1a"
+  },
   "menu.context.openWith": "Ouvrir avec",
   "@menu.context.openWith": {
     "sourceHash": "fe94d58"

@@ -1901,6 +1901,7 @@ export type MessageKey =
   | 'menu.context.copyGoogleDriveLink'
   | 'menu.context.copyNamed'
   | 'menu.context.edit'
+  | 'menu.context.editExtensions'
   | 'menu.context.hideFunctionKeyBar'
   | 'menu.context.makeAvailableOffline'
   | 'menu.context.openInGoogleDrive'

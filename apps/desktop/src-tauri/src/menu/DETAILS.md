@@ -487,6 +487,19 @@ they read as one row of choices. `Share` is macOS-only and carries no ellipsis, 
 greyed on two counts: `can_share` is false (a greyed item would have to explain "this row isn't a file yet", which no
 label does better than its absence), or macOS offers no service for the selection at all.
 
+The submenu closes with a separator and `Edit extensions`, which opens System Settings' Extensions pane
+(`x-apple.systempreferences:com.apple.ExtensionsPreferences`, the page macOS titles `Login Items & Extensions`). It earns
+its place from the absence rule above: the list holds only what macOS currently offers, and the whole submenu vanishes
+when that's nothing, so without this item there is no route from Cmdr to the place a missing service is switched back
+on. Its click is handled in `menu_handlers.rs` beside the `share-service:` routing rather than through
+`menu_id_to_command`, because it isn't a file command: nothing to bind a shortcut to, nothing for the palette to offer,
+and the submenu is backend-owned end to end anyway. It reuses `permissions::open_system_settings_url`, the house helper
+for these deep links (the Tauri opener plugin's default allowlist drops the `x-apple.systempreferences:` scheme
+silently, so a hand-rolled `NSWorkspace` call or a plugin call would both be wrong). Its ID, `share-edit-extensions`,
+deliberately sits OUTSIDE the `share-service:` family, since `handle_menu_event` walks that flat ID space by prefix and a
+near-miss would hand `perform_offered` an index the offer doesn't have
+(`edit_extensions_sits_outside_the_share_service_id_space`).
+
 The file context menu's **cloud group** (macOS) is provider-aware: a concatenation of what each provider can actually
 do, rather than one iCloud-shaped block.
 
@@ -595,6 +608,9 @@ distinction is the load-bearing reason.
 
 **Decision**: A menu label ends with `…` when the dialog it opens can change WHAT the command acts on, not merely whether it runs.
 **Why**: Apple's own phrasing ("requires further input") doesn't decide Cmdr's cases, because both of our big confirmations arrive pre-filled and are usually dismissed with Return. The copy/move dialog takes a destination that is genuinely steerable (it's the focused control, and confirm is blocked while the path is invalid), so the destination pane is a suggestion, not the command. The delete dialog can't retarget anything: the file set is fixed, and its trash-vs-permanent switch only picks between two commands that already exist as two menu items (`Delete` / `Delete permanently`), so flipping it is switching command, not steering this one. Hence `Copy…` / `Move…` / `Compress…` / `New folder…` / `New file…` / `Search files…` / `Go to path…` / `Select files…`, and bare `Share` (a submenu opens no dialog and changes nothing about what the command acts on), `Delete`, `Rename` (inline edit, no dialog), `Add to favorites`, `Operation log`, `What's new`, `Acknowledgements`, `Get info`. The looser reading ("a dialog appears") was rejected: nearly every destructive command in Cmdr shows something, so under it the mark lands on almost everything in the File menu and stops carrying information. `Check for updates…` is the one deliberate exception to the rule, kept because Sparkle-style updaters have made that exact label near-universal on macOS and dropping the ellipsis reads as a typo.
+
+**Decision**: `Edit extensions` (the `Share` submenu's last item) carries NO ellipsis, and is NOT a second exception alongside `Check for updates…`.
+**Why**: It opens System Settings, which changes nothing about what any Cmdr command acts on, so the rule above answers it plainly. There IS a parity argument the other way, and it's worth stating so this doesn't get re-litigated from scratch: macOS marks its own settings-opening menu items with an ellipsis, including the ones nearest to ours (AppKit's Services menu ends with `Services Settings…`, and ShareKit's own share menu ends with `More…`; both open a System Settings pane, verified on macOS 26.6.2, 2026-09-09 by reading `AppKit.framework/…/Services.loctable` and `ShareKit.framework/…/ShareKit.loctable`). The near-universality test that earned `Check for updates…` its exception is therefore arguably met here too. It's kept bare anyway because the exception list is what makes the mark informative, and one label's OS parity is a weaker reason than the updater case, where the *exact* string is the convention. Note that Finder has no `Edit Extensions…` item to match on current macOS: that string appears in no `.loctable`, `.strings`, or `.nib` under `/System/Library` or `/System/Applications` (same verification), so the `@key.description` sends translators to the `Login Items & Extensions` settings page for the noun instead of to a Finder label that isn't there.
 
 **Decision**: SF Symbol icons only on the menu bar, not on context menus.
 **Why**: Tauri doesn't support SF Symbols natively. For the menu bar, we walk `NSApplication.mainMenu()` post-construction via objc2 FFI and set SF Symbols directly on `NSMenuItem` objects, producing true template images that auto-tint correctly. Context menus don't get icons because Tauri doesn't expose the raw `NSMenu` pointer, and the alternative (rasterized bitmaps via `IconMenuItem`) produces visually poor results (no template tinting, wrong size/weight).

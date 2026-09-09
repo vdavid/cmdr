@@ -15,8 +15,8 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
   before display; `cleanup_macos_menus` only strips what AppKit injects *after* it.
 - **The three macOS right-click extras, all `DETAILS.md`, and ❗ every loan must outlive `popup()` — ❌ never
   `let _ =`.** `Services`: AppKit owns ONE such menu and the app menu already has it, so `ServicesLoan` borrows it,
-  aimed at the RIGHT-CLICKED rows. `Share`: ours, item by item from `file_system/share.rs`'s enumeration, ids
-  `share-service:<index>`, ❌ never empty (no service offered, no item). SF Symbols: set on
+  aimed at the RIGHT-CLICKED rows. `Share`: ours, built from `file_system/share.rs`'s enumeration, ids
+  `share-service:<index>`, closing with `Edit extensions`, ❌ never empty (no service, no item). SF Symbols: set on
   `NSMenuDidBeginTrackingNotification`, ❌ never through `IconMenuItem` — Tauri exposes no `NSMenu` here and muda's
   bitmaps can't be TEMPLATE images, so a glyph would vanish in one appearance and go dark when highlighted.
   `IconMenuItem` stays right for real pixels (app, share, tag icons).
