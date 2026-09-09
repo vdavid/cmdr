@@ -49,7 +49,12 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
    (see Researching terms below). This isn't only for terms: whenever you hit a convention, gotcha, decision point, or
    rule that wasn't already written where you looked for it, write it down so the next translator inherits it instead of
    rediscovering it. Per-language findings go in the style guide; a missing cross-language rule (like an ICU mechanic)
-   goes in this guide or the template.
+   goes in this guide or the template. **Every message key you cite in a guide is verified**:
+   `pnpm check i18n-citations` (`desktop-i18n-doc-citations`) requires each backticked dotted token whose first segment
+   is a real catalog namespace to name a real English key, and it fails the build when one doesn't. So a rename that
+   orphans your evidence surfaces at once instead of talking the next translator out of a correct fix. Naming a key
+   that's genuinely gone (recording where a carried-over translation came from) needs a reasoned entry in
+   `scripts/check/checks/desktop-i18n-doc-citations-allowlist.json`.
 3. **One ICU instruction**: given once in the agent system prompt, not per string (see the block below).
 
 ## Term-choice principles
