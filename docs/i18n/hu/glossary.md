@@ -363,15 +363,12 @@ Settled while translating `queue.json` + the new pause/queue/background keys in 
   parallel to Cmdr's queue window. "Pause all" = `Mindet szünetelteti` (DC `&Pause all` = `Mindet &szünetelteti`).
 - resume (a paused transfer) → `Folytatás` · double-commander (`&Resume` = `Folytatás`), ms (`resume` = `folytatás`) ·
   high. "Resume all" = `Mindet folytatja`.
-- queue (the transfer queue) → `sor` (`átviteli sor` = transfer queue) · double-commander (operations viewer `Queue` =
-  `Sor`, `New queue` = `Új sor`), ms (`várólista`/`várakozási sor`) · high. DC's file-manager-native `Sor` beats MS's
-  generic `várólista`. **SUPERSEDED for the window's NAME as of 2026-08-08** (English renamed it "Operation queue"; it
-  is now `Műveleti sor` — see the dated block at the end of this file). The head `queue → sor` below still stands; only
-  the `átviteli` modifier is retired. Window title `queue.windowTitle` = `Átviteli sor`; the command
-  `commands.queueShow.label` = `Átviteli sor megjelenítése`; empty state "Nothing in the queue" = `A sor üres`. The
-  progress-dialog "Queue" button (sends the transfer to the background and opens the queue window) = `Sorba` (short
-  label, "into the queue"; mirrors DC `A&dd To Queue` = `Várakozási &sorba helyez`); its aria "Send to the transfer
-  queue" = `Áthelyezés az átviteli sorba`.
+- queue (the waiting line) → `sor` · double-commander (operations viewer `Queue` = `Sor`, `New queue` = `Új sor`), ms
+  (`várólista`/`várakozási sor`) · high. DC's file-manager-native `Sor` beats MS's generic `várólista`. The window, its
+  View-menu item, and its command carry the widened name `Műveleti sor`, argued in the operation-queue block below;
+  `átviteli` is not the modifier for them. Empty state "Nothing in the queue" = `A sor üres`. The progress-dialog
+  "Queue" button (sends the transfer to the background and opens the queue window) = `Sorba` (short label, "into the
+  queue"; mirrors DC `A&dd To Queue` = `Várakozási &sorba helyez`).
 - background / send to background → `háttér` (`a háttérben` = in the background) · double-commander ("Work in
   background" = `Háttérben futtatás`, "When application is in the background" = `Ha az alkalmazás a háttérben fut`), ms
   (`background` = `háttér`) · high. "Keep this running in the background" = `Hagyd futni a háttérben`; "Still running in
@@ -1045,7 +1042,7 @@ Settled while translating the stalled-transfer notice (7 `fileOperations.transfe
   high. Kept OUTSIDE the plural braces, as in English.
 - **"The log has the details." → `A részleteket megtalálod a naplóban.`** · reuses settled `log → napló` (`naplófájl`,
   `Naplózás`; TC `5390="Napló fájl"`, DC `Naplófájl megtekintése`) and the catalog's own "you'll find it there" shape
-  (`backgroundedToast` = `Megtalálod az átviteli sorban.`), which reads warmer than the literal
+  (`backgroundedToast` = `Megtalálod a műveleti sorban.`), which reads warmer than the literal
   `A napló tartalmazza a részleteket.` · high.
 - **`transferProgress.close` (dismiss the dialog while the transfer finishes) → `Bezárás`** · the catalog-wide,
   macOS-sourced Close (`ui.modalDialog.close`, `fileOperations.errorDialog.close`, and 8 more) · high. It sits next to
@@ -1070,14 +1067,12 @@ trashes, renames, folder/file creations, and archive edits too, and "transfer" a
 (the transfer dialog, the transfer driver). So the Hungarian head noun had to widen the same way, not just get
 restamped:
 
-- **operation queue (the window, the View-menu item, the command) → `Műveleti sor`** · SUPERSEDES the June
-  `transfer queue → átviteli sor` entry (see the 2026-06-21 transfer-queue block above), which stays on record because
-  `transfer → átvitel` itself is unchanged and still correct for the copy/move dialog · high. Built from two settled
-  parts: the head noun `művelet` (below) and the catalog's settled `queue → sor` (Double Commander `New queue` =
-  `Új sor`, `Put first in queue` = `Első helyre tétele a sorban`). The `<activity>-i sor` shape is Tier-2 attested
-  (Microsoft `print queue` = `nyomtatási sor`) and is the exact shape the outgoing `Átviteli sor` used, so only the
-  modifier changes; the adjectival `műveleti` + head-noun formation is Double-Commander-attested (`operations panel` =
-  `műveleti panel`).
+- **operation queue (the window, the View-menu item, the command) → `Műveleti sor`** · the widened name covers the
+  whole window; `transfer → átvitel` is untouched by it and stays correct for the copy/move dialog · high. Built from
+  two settled parts: the head noun `művelet` (below) and the catalog's settled `queue → sor` (Double Commander
+  `New queue` = `Új sor`, `Put first in queue` = `Első helyre tétele a sorban`). The `<activity>-i sor` shape is Tier-2
+  attested (Microsoft `print queue` = `nyomtatási sor`), and the adjectival `műveleti` + head-noun formation is
+  Double-Commander-attested (`operations panel` = `műveleti panel`).
   - **NOT the solid compound `Műveletsor`**, even though it would look more parallel to `Műveletnapló`: Microsoft
     terminology already assigns `műveletsor` to `task flow` (id 2335491) and `visszaállítási műveletsor` to
     `restore sequence` (id 2225865) — that is, a SEQUENCE of steps, not a waiting line. The compound would name the
@@ -1085,9 +1080,8 @@ restamped:
   - NOT Microsoft's generic `queue` = `várakozási sor` either: the catalog settled the file-manager-native `sor` in June
     and `várakozási sor` is long for a window title.
   - Inflects regularly (back-vowel `sor`): illative `a műveleti sorba` (`transferProgress.queueAria`), inessive
-    `a műveleti sorban` (`queueTooltip`, `queuedToast`, `backgroundedToast`). **Watch the article**: `Átviteli` starts
-    with a vowel and took `az`, `műveleti` starts with a consonant and takes `a` — every one of those sites moved from
-    `az átviteli sorba/-ban` to `a műveleti sorba/-ban`.
+    `a műveleti sorban` (`queueTooltip`, `queuedToast`, `backgroundedToast`). **Watch the article**: `műveleti` starts
+    with a consonant, so every one of those sites takes `a`, never `az`.
 - **operation (the category word: a copy, move, delete, trash, rename, folder/file creation, or archive edit) →
   `művelet`** · macOS Tier 1 throughout (`Művelet` as a bare label; "A művelet nem hajtható végre.", "Ez a művelet nem
   vonható vissza.", `Gyorsműveletek`), Microsoft terminology (`operation` = `művelet`, two entries), Double Commander
@@ -2106,7 +2100,7 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
   - **A `drift` sor látszólagos ellentmondása (`változatlan maradt: módosult…`) örökölt, és feloldható**: a
     `változatlan` a VISSZAGÖRGETÉSRE vonatkozik (a Cmdr nem nyúlt hozzá), a `módosult` pedig arra, ami korábban történt
     vele. Pontosan így él a szállított `askCmdr.renameUndo.skipReason.drift.named` is
-    (`A {name} változatlan maradt: az átnevezés után módosult.`), tehát a keret ezt az olvasatot már elbírja.
+    (`A(z) „{name}” változatlan maradt: az átnevezés után módosult.`), tehát a keret ezt az olvasatot már elbírja.
   - ❌ NEM `békén hagyja` / `érintetlenül hagyja`: mindkettő értelmes magyar, de a `hu` pile egyikre sem ad egyetlen
     találatot sem.
 - **A visszatétel igéje az EREDMÉNY-sorokban `visszahelyez`, a FOLYAMAT-sorokban marad `visszavitel`** · macOS Finder
