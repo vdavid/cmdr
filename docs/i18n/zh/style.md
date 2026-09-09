@@ -223,7 +223,7 @@ inflection.
   (`Ask Cmdr 设置`, `Ask Cmdr 部分`); write bare `Cmdr` when the sentence describes what the AI does; write `AI` in the
   four `suggestedOps.*` strings, which have to stay distinguishable from the neighbouring `Cmdr 掌握的信息`. ❗ Don't
   "restore" `Ask Cmdr` as a sentence subject: that's the exact regression the 2026-09-09 copy sweep undid. Per-key
-  evidence: `glossary.md` § AI 文案改写.
+  evidence: `glossary.md` § "AI 文案改写：主语从 “Ask Cmdr” 换成 `Cmdr` / `AI`（2026-09-09）".
 - **Quotation marks:** this catalog quotes filenames with `“…”`, following macOS zh-CN. Traditional uses corner brackets
   instead, which is one more reason a converted catalog reads wrong; its rule is in `../zh-Hant/style.md`.
 - **Ask Cmdr tool-line labels are a `正在…` / `已…` pair, with `查看` for reading contents.** Every
