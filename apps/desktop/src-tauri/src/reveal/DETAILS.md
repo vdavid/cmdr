@@ -67,6 +67,9 @@ Neither is needed. `RunEvent::Opened` is the whole delivery mechanism.
 
 ## Delivery
 
+All of this is `delivery.rs`, which is macOS-only like the rest of the mechanism; `mod.rs` carries only
+`RevealDelivered`, which `ipc.rs`'s `collect_events!` needs to resolve on every platform.
+
 `app_lifecycle.rs`'s `RunEvent::Opened` arm hands the URLs to `on_urls_opened`. From there:
 
 1. Keep the `file://` URLs, drop everything else.
@@ -119,7 +122,9 @@ not await the move: the frontend that has to answer `mcp-nav-to-path` is the sam
 ## Where the pane primitive lives
 
 `go_to_in_focused_pane` sits in `mcp/executor/nav.rs` and is re-exported from `mcp` as a named seam. Two callers: the
-`go_to_latest_download` MCP tool and this module.
+`go_to_latest_download` MCP tool, which reaches `executor::nav` directly from inside the module, and this one, which is
+the seam's only user. That's why the re-export itself carries a `#[cfg(target_os = "macos")]`: without it the export is
+dead on Linux and `-D unused` fails the build.
 
 **Decision: it lives with the MCP executor rather than here or in a neutral module.** "Take the focused pane there and
 point at that" is spoken entirely in the `mcp-*` frontend protocol (`mcp-nav-to-path`, `mcp-move-cursor`,

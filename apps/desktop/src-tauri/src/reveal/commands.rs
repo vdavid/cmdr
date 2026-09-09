@@ -8,8 +8,8 @@
 
 use tauri::AppHandle;
 
+use super::delivery::{PENDING, spawn_delivery};
 use super::registration::{GlobalDomain, RevealHandlerState, RevealRegistration, own_bundle_id};
-use super::{PENDING, spawn_delivery};
 
 /// Build the registration state machine over the real global domain.
 fn registration() -> RevealRegistration<GlobalDomain> {

@@ -110,9 +110,9 @@ mod redact;
 #[cfg(target_os = "macos")]
 mod reduce_transparency;
 mod restricted_paths;
-// Not `#[cfg(target_os = "macos")]`, though the mechanism is: `RevealDelivered` has to
-// resolve on every platform for `ipc.rs`'s `collect_events!`, which can't cfg-gate inline.
-// The two macOS-only halves are gated inside (`reveal/mod.rs`).
+// Not `#[cfg(target_os = "macos")]`, though every part of the mechanism is: `RevealDelivered`
+// has to resolve on every platform for `ipc.rs`'s `collect_events!`, which can't cfg-gate
+// inline. The three macOS-only submodules are gated inside (`reveal/mod.rs`).
 mod reveal;
 pub mod search;
 mod secrets;

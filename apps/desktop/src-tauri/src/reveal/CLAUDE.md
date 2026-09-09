@@ -7,17 +7,18 @@ Another app's "Show in Finder" lands in a Cmdr pane instead. One OS switch turns
 
 - **`registration.rs`**: the `NSFileViewer` state machine (`RevealHandlerState`, `RevealRegistration`), the
   `ViewerPreference` seam over CFPreferences, and `own_bundle_id`, which decides whether this build may write at all.
-- **`mod.rs`**: what arrives once it's on. `on_urls_opened` is the one door; `plan_reveal` turns the delivered paths
-  into one pane move; `PendingReveals` parks anything the frontend isn't up for yet; `deliver` drives the pane and then
-  announces `RevealDelivered`.
+- **`delivery.rs`**: what arrives once it's on. `on_urls_opened` is the one door; `plan_reveal` turns the delivered
+  paths into one pane move; `PendingReveals` parks anything the frontend isn't up for yet; `deliver` drives the pane
+  and then announces `RevealDelivered`.
+- **`mod.rs`**: the `RevealDelivered` event type and nothing else.
 - **`commands.rs`**: three IPC commands (read state, set state, drain the parked reveals).
 
 ## Must-knows
 
-- **This module is NOT `#[cfg(target_os = "macos")]`; its two macOS halves are.** `RevealDelivered` has to resolve on
+- **`mod.rs` is NOT `#[cfg(target_os = "macos")]`; all three submodules are.** `RevealDelivered` has to resolve on
   every platform for `ipc.rs`'s `collect_events!`, which can't cfg-gate inline (same reason `SmbFellBackToOsMount` sits
-  in `network/mod.rs`). So `commands` and `registration` carry the gate, and the planning tests run on the Linux lane
-  for free.
+  in `network/mod.rs`). ❌ Don't move anything else up into `mod.rs`: on Linux it would have no callers, and `-D unused`
+  turns that into a broken build rather than a warning.
 - **`RevealDelivered` is emitted only after the pane actually moved**, so it means "the feature just did its thing".
   The frontend turns the FIRST one into a once-ever notice (`apps/desktop/src/lib/reveal/CLAUDE.md`), so announcing a
   reveal that went nowhere would spend it.
