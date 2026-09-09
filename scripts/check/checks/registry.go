@@ -518,6 +518,25 @@ var AllChecks = []CheckDefinition{
 		Run:       RunDesktopI18nTermConsistency,
 	},
 	{
+		ID:          "desktop-i18n-doc-citations",
+		Nickname:    "i18n-citations",
+		DisplayName: "i18n-citations",
+		App:         AppDesktop,
+		Tech:        "\U0001F3A8 Svelte",
+		// ERROR class: a translator guide citing a key that doesn't exist asserts
+		// something false about the shipped app, and the next translator acts on it
+		// (reverting a correct fix, or copying a value that never shipped). Its CI
+		// step runs in the `hygiene` job rather than `desktop-svelte`, since the
+		// guides live under `docs/i18n/` and the `svelte` filter can't see them.
+		DependsOn: nil,
+		IsFast:    true,
+		Inputs: inputs(
+			[]string{"docs/i18n/**", "apps/desktop/src/lib/intl/messages/en/*.json"},
+			runnerDataInputs("desktop-i18n-doc-citations-allowlist.json"),
+		),
+		Run: RunDesktopI18nDocCitations,
+	},
+	{
 		ID:          "desktop-i18n-icu",
 		Nickname:    "i18n-icu",
 		DisplayName: "i18n-icu",

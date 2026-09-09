@@ -17,10 +17,10 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
 - **An allowlist is a sibling JSON named `<check>-allowlist.json`**, and it's NEVER hand-edited: the owning check
   shrink-wraps it on local runs, so you run the check and commit its rewrite (`.claude/rules/file-length-allowlist.md`).
   The shared staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist
-  shrink-wrap". Ten exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the two
-  with no § of their own (both are exempt-with-reason lists whose checks FAIL on a dead or redundant entry rather than
-  auto-removing it). `macos-availability-selectors.json` is a sibling JSON that isn't an allowlist: it's the SDK's own
-  answer, cached so the Linux CI lanes can enforce it (§ "macOS availability").
+  shrink-wrap". Eleven exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the
+  two with no § of their own (both are exempt-with-reason lists whose checks FAIL on a dead or redundant entry rather
+  than auto-removing it). `macos-availability-selectors.json` is a sibling JSON that isn't an allowlist: it's the SDK's
+  own answer, cached so the Linux CI lanes can enforce it (§ "macOS availability").
 - **Not every file here is a registry check.** `e2e-durations.go` is embedded in the two E2E checks (§ "E2E test
   duration flagger" has the why), `docs_graph.go` is a shared library behind both `docs-reachable` and the
   `--docs-graph` renderer in `../docs_graph_render.go`, and three files carve the Playwright lane into stages so
@@ -578,6 +578,44 @@ HEAD**, not merely present in the object DB: an abbreviated SHA of a rebased-awa
 reflog, but CI's clean clone has no reflog and would fail there instead. Findings cite the line the hash actually sits
 on, which for a wrapped group is a continuation line, not the entry's first.
 
+## The doc-citation check
+
+`desktop-i18n-doc-citations` (nickname `i18n-citations`, `desktop-i18n-doc-citations.go`) reads every `.md` under
+`docs/i18n/` and requires each message key those guides cite to exist in the English catalogs. The guides settle a term
+by pointing at shipped copy ("the sheet copies `servers.sheet.remember`"), so a citation is load-bearing evidence: an
+orphaned one either invents authority for a value that never shipped, or talks a translator out of a correct fix. ERROR
+class on David's call, since it's a doc asserting something false about the app rather than a maintenance signal.
+
+**The namespace gate is the design.** A token is a candidate only when it's backtick-delimited, splits into two or more
+identifier segments, isn't a catalog FILENAME (`errors.json`), and its FIRST segment opens a real catalog namespace.
+Without that last clause the check fires 1,924 times to find 10 real problems, because the guides are built from mined
+evidence and are full of foreign string ids (`MR10.1`, `PHL-pS-ELV.title`), date patterns (`dd.MM.yyyy`), hostnames, and
+reference-pile filenames. With it, 4,288 candidates yield the ~90 findings that are actually about our catalog. A
+denylist of foreign id shapes would need feeding every time a translator mines a new bundle; the allowlist of our own
+namespaces does not. Namespaces come from the KEYS (every key's first segment), not the catalog filenames, so there's
+one source of truth if a catalog file is ever split.
+
+**Matching is segment-aligned.** The index stores every contiguous segment run of every key, so exact, prefix, suffix,
+and infix citations are one map lookup, and `ai.endpoint` can never be satisfied by `settings.aiendpoint.label`. Suffix
+matching is what lets the guides elide a namespace; combined with the gate it means a fully namespace-less shorthand
+(`network.tryAgain`) is never considered at all. That's deliberate: those are unverifiable either way, and mislead
+nobody about which key shipped.
+
+**Findings carry a suggestion.** `nearestKeys` ranks real keys at 0.85 leaf similarity plus 0.15 parent-path overlap.
+Leaf-heavy on purpose: a rename moves a message to a new parent and keeps its last segment, so a higher path weight
+buries the answer under siblings of the path that died. Leaf similarity takes the better of edit distance and a
+containment reading (the whole shorter leaf opens the longer one, at least four runes and at least 40% of its length),
+which is what puts `servers.sheet.remember` above `fileExplorer.network.browser.refreshHint` for
+`fileExplorer.network.login.rememberInKeychain` without letting `menu.tag.red` in on three shared runes.
+
+**Two allowlist sections** in `desktop-i18n-doc-citations-allowlist.json`, both mapping a doc to the dead keys it may
+cite, valued in the reason; a blank reason silences nothing. `retired` is permanent, for a guide that names a gone key
+BECAUSE it's gone (eight paragraphs record that their translation was carried over verbatim from the retired
+`askCmdr.consent.noContents`, so no live key can stand in). `pending` is a burn-down list of the 83 citations orphaned
+when the sign-in sheet moved to `servers.sheet.*` and the image-index keys moved under `.file.*`; each entry names the
+live key to repoint at. Local runs drop an entry the moment its doc stops citing the key, so `pending` drains itself and
+can't quietly become a second permanent section.
+
 ## CLAUDE.md / DETAILS.md sibling
 
 `claude-md-details-sibling` (`IsFast`, an **error** like `docs-reachable`: the C/D pair is structural) enforces that
@@ -728,8 +766,10 @@ or read stale artifacts.
 Policy by staleness class:
 
 - **Dead entries** (file gone, or E2E test gone from the run): auto-removed locally, report-only in CI (same dual-mode
-  convention as the formatters). Done by `file-length`, `svelte-tests`, and the E2E duration flagger; `a11y-coverage`
-  and `log-error-macro` fail instead (their lists are small/hardcoded).
+  convention as the formatters). Done by `file-length`, `svelte-tests`, the E2E duration flagger, and
+  `desktop-i18n-doc-citations` (an entry goes as soon as its doc stops citing the dead key, which is what keeps its
+  `pending` section a burn-down list); `a11y-coverage` and `log-error-macro` fail instead (their lists are
+  small/hardcoded).
 - **Satisfied entries with a reason** (coverage now ≥ threshold+5% margin; exempt component that has a valid a11y test;
   allowlisted E2E test now under 1.5 s): reported for an agent to judge — the reason may say "tested elsewhere", and the
   margin band stays silently allowlisted to avoid removal/re-add churn.
@@ -1473,16 +1513,20 @@ doubles as production code.
   classifying needs CLDR script data (`zh-Hant` is NOT an overlay of Simplified `zh`) that Node's `Intl` has and Go
   doesn't, and an approximate second copy would drift exactly where it matters. i18n-terms goes one step further and
   echoes the script's own last line as its success message, so the untriaged-divergence total is stated once, by the
-  layer that computed it. Then bundle-size (warn-only; builds a production-shaped frontend into a private dir and
-  compares its total against a committed baseline, since the app embeds this output so every byte ships in each silent
-  update and is parsed before first paint), vite-build-target (ERROR; `apps/desktop/vite.config.js` must pin
-  `build.target` to a `safari<major>`, because Vite's default is a MOVING "widely available" baseline: leave it unset
-  and a routine Vite major bump raises the browser floor above the `minimumSystemVersion` the bundle claims, silently,
-  with a green build. It parses the config structurally (comments blanked, string literals masked, then brace-matched)
-  so the comment explaining the pin can neither fake one nor hide one, and so a `target` under `server` or
-  `optimizeDeps` doesn't answer for `build`. It deliberately enforces no UPPER bound against the plist: mapping a macOS
-  version to "the WebKit we must assume" is a product call, not a fact), knip, type-drift, tests, e2e-linux-typecheck,
-  e2e-linux (slow), e2e-playwright (slow)
+  layer that computed it. Then i18n-citations (ERROR, desktop-i18n-doc-citations; the only check pointed at the
+  translator GUIDES rather than the catalogs: `docs/i18n/<locale>/glossary.md` and `style.md` justify a term by citing a
+  message key as evidence, and a citation orphaned by a rename hands the next translator false authority, so every
+  backticked dotted token whose first segment is a real catalog namespace must name part of a real English key. § "The
+  doc-citation check" for the namespace gate, the matcher, and the two allowlist sections), bundle-size (warn-only;
+  builds a production-shaped frontend into a private dir and compares its total against a committed baseline, since the
+  app embeds this output so every byte ships in each silent update and is parsed before first paint), vite-build-target
+  (ERROR; `apps/desktop/vite.config.js` must pin `build.target` to a `safari<major>`, because Vite's default is a MOVING
+  "widely available" baseline: leave it unset and a routine Vite major bump raises the browser floor above the
+  `minimumSystemVersion` the bundle claims, silently, with a green build. It parses the config structurally (comments
+  blanked, string literals masked, then brace-matched) so the comment explaining the pin can neither fake one nor hide
+  one, and so a `target` under `server` or `optimizeDeps` doesn't answer for `build`. It deliberately enforces no UPPER
+  bound against the plist: mapping a macOS version to "the WebKit we must assume" is a product call, not a fact), knip,
+  type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
   `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the runner's input
