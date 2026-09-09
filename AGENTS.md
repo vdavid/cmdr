@@ -51,16 +51,16 @@ Two colocated tiers per code area, enforced by checks:
   gotchas, guardrails, a 2–3 line module map, and pointer to `DETAILS.md`. **Aim for 300–400 words.** `claude-md-length`
   warns past 600, but that's the alarm, not the target.
 - **`D.md`** the rest. Read on demand. Architecture, data flows, decision rationale, edge-case catalogs. No length
-  limit, but try to be concise to make it token-efficient. When writing, default to `D.md`; promote to `C.md`.
+  limit, but stay concise to stay token-efficient. When writing, default to `D.md`; promote to `C.md`.
 - `claude-md-details-sibling` enforces all `C.md` and `D.md` to exist in pairs. Never `@`-import `D.md` from a `C.md`!
 - Cut `C.md` radically: make each part sound like a tweet, move depth to `D.md`, and split the module if it can't reach
   300–400 words that way.
-- `docs-reachable` enforces the doc graph to be linked: (every doc reachable from this file by link-walking),
-  `docs-dead-links` and `docs-link-text` (no broken or path-shaped reference), and `resident-doc-budget` (the
-  always-resident bundle, this file plus its `@`-imports plus `.claude/rules/`, can't silently regrow). Keep this
-  section crisp: it's the contract every agent replicates.
+- `docs-reachable` keeps the doc graph linked (every doc reachable from this file by link-walking), `docs-dead-links`
+  and `docs-link-text` catch broken or path-shaped references, and `resident-doc-budget` stops the always-resident
+  bundle (this file, its `@`-imports, `.claude/rules/`) silently regrowing. Keep this section crisp: it's the contract
+  every agent replicates.
 
-Rules for writing them:
+Writing them:
 
 - **Keep in sync.** Touch code in a `C+D.md` dir → update them. `Gotcha/Why` when a wrong assumption bit you;
   `Decision/Why` in `D.md`, plus a one-line `C.md` guardrail only if ignoring it can silently break something. Rich
@@ -77,7 +77,7 @@ Rules for writing them:
 - **Reference a doc by a bare backticked path**, never a link repeating its own target; link only for descriptive text
   or an `#anchor`.
 - **A rule is a cost.** Every `❌` line is an invariant nothing enforces, paid in tokens every session. Prefer making it
-  unrepresentable in a type; `invariant-density` tracks the count per subsystem, and it only goes down.
+  unrepresentable in a type.
 - How the doc system works and how to slim it (playbook, principles, why): `docs/doc-system.md`. Read it before any
   sweeping `C+D.md` slimming or restructuring pass.
 
@@ -86,16 +86,18 @@ Rules for writing them:
 - **Editing code**: for "where does symbol X live", use `codegraph_search` (enabled and up to date). The harness
   autoloads `C.md`s when you touch a dir. Read a subsystem's `C.md` proactively when running its tooling/tests without
   touching it (like `test/e2e-playwright/CLAUDE.md` before the E2E suite).
-- **Before planning**, read `docs/architecture.md`: the subsystem map (what + where + a pointer to each area's docs).
+- **Before planning**, read `docs/architecture.md`: the subsystem map (what + where + a pointer per area).
 - **A procedure** (release, screenshots, deps, adding a window): `docs/guides/` and the skills. Building a dialog,
-  settings screen, window, or form control: `docs/guides/building-ui.md` (house primitives and where each deeper doc
-  lives). Two different "icon" docs: a UI glyph is `docs/guides/icons.md`; the app icon and every logo raster come from
+  settings screen, window, or form control: `docs/guides/building-ui.md` (house primitives, and where each deeper doc
+  lives). Two "icon" docs: a UI glyph is `docs/guides/icons.md`; the app icon and every logo raster come from
   `brand/logos/cmdr.svg` via `docs/guides/updating-icon.md`.
-- **Debugging a running app / reading logs**: [This](docs/tooling/logging.md) is the first stop, not `Console.app` or
-  grepping code. All (FE & BE) log paths, format, and `RUST_LOG` recipes. RAM per line: `CMDR_LOG_RAM_USE=1`.
+- **Debugging a running app / reading logs**: [This](docs/tooling/logging.md) is the first stop, before `Console.app`
+  or grepping code. All (FE & BE) log paths, format, and `RUST_LOG` recipes. RAM per line: `CMDR_LOG_RAM_USE=1`.
 - **A report from a USER** (`ERR-XXXXX`, a crash, in-app feedback): `docs/tooling/feedback-and-error-digest.md`. The
-  logging doc above is the LOCAL app and won't find one.
+  logging doc above covers the LOCAL app and won't find one.
 - **Branding / marketing**: `brand/CLAUDE.md`, `apps/website/`, and `README.md`. You don't need app internals.
+- **Pricing, licensing, anything commercial**: `docs/business/README.md`, and `product-facts.md` beside it FIRST (code
+  facts that change business answers). Private strategy is in David's vault, linked from there.
 - **Writing, code, or UI-copy style**: `docs/style-guide.md` (read before writing user-facing strings or non-trivial
   code). Product and UX values: `docs/design-principles.md`.
 - **Translating the app / adding a language**: `docs/guides/i18n-translation.md` (the translator process, per-language
@@ -104,16 +106,16 @@ Rules for writing them:
 ## File structure
 
 - `apps/desktop/`: `src/` (Svelte frontend), `src-tauri/` (Rust backend), `test/` (Vitest, Playwright, Linux Docker E2E,
-  SMB fixtures), `scripts/`. The other three apps are listed above.
+  SMB fixtures), `scripts/`. The other three apps are above.
 - `crates/`: `cmdr-fs` (filesystem vocabulary + host primitives), `cmdr-index` (file, media, and folder-importance
   indexes), `cmdr-archive` (zip/tar/7z, and the model a new backend crate copies), `cmdr-smb` (SMB and its protocol
   layer), `cmdr-adb` (Android over ADB), `cmdr-mtp` (USB phones), `cmdr-git` (repos and the `.git` portal) carry no
   `tauri`, enforced by `index-crate-isolation`; plus two dev CLIs and a vendored `fsevent-stream` fork. Map:
   `docs/architecture.md`.
-- `brand/`: tracked brand and press-kit assets.
+- `brand/`: brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
-  `docs/specs/index.md` (per-development plans, periodically wiped), `docs/notes/README.md` (benchmarks and analysis),
-  `style-guide.md`, `design-principles.md`, `security.md`, `maintenance.md`.
+  `docs/business/README.md` (pricing, licensing, product facts), `docs/specs/index.md` (plans, periodically wiped),
+  `docs/notes/README.md`, `style-guide.md`, `design-principles.md`, `security.md`, `maintenance.md`.
 - `tools/`: dev tooling outside every workspace and check: `tools/intellij-plugin/`, `tools/privatesize-poc/README.md`.
 - `scripts/check/`: the Go check runner. `.github/workflows/`: CI.
 
