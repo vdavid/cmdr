@@ -1494,6 +1494,22 @@
     "sourceHash": "e0926fd",
     "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Ouvrir dans Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
   },
+  "settings.navigationAndFileOps.card.showInFinder": "Afficher dans le Finder",
+  "@settings.navigationAndFileOps.card.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "settings.revealHandler.label": "Laisser les autres apps afficher des fichiers dans Cmdr",
+  "@settings.revealHandler.label": {
+    "sourceHash": "8c39a2f"
+  },
+  "settings.revealHandler.description": "Quand une autre app lance « Afficher dans le Finder », Cmdr ouvre ce dossier avec le fichier sous le curseur. Pour tout le reste, le Finder reste votre gestionnaire de fichiers par défaut.",
+  "@settings.revealHandler.description": {
+    "sourceHash": "ebb79ff"
+  },
+  "settings.revealHandler.heldByOtherApp": "Actuellement : {app}. Si vous activez cette option, Cmdr récupère « Afficher dans le Finder ».",
+  "@settings.revealHandler.heldByOtherApp": {
+    "sourceHash": "d0aa283"
+  },
   "settings.behavior.openTerminalHereApp.label": "« Ouvrir un terminal ici » utilise",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

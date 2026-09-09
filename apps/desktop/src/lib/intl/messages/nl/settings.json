@@ -1490,6 +1490,22 @@
     "sourceHash": "e0926fd",
     "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Open in Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
   },
+  "settings.navigationAndFileOps.card.showInFinder": "Toon in Finder",
+  "@settings.navigationAndFileOps.card.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "settings.revealHandler.label": "Laat andere apps bestanden in Cmdr tonen",
+  "@settings.revealHandler.label": {
+    "sourceHash": "8c39a2f"
+  },
+  "settings.revealHandler.description": "Wanneer een andere app ‘Toon in Finder’ uitvoert, opent Cmdr die map met het bestand onder de cursor. Voor al het andere blijft Finder je standaard bestandsbeheer.",
+  "@settings.revealHandler.description": {
+    "sourceHash": "ebb79ff"
+  },
+  "settings.revealHandler.heldByOtherApp": "Op dit moment: {app}. Als je dit inschakelt, neemt Cmdr ‘Toon in Finder’ over.",
+  "@settings.revealHandler.heldByOtherApp": {
+    "sourceHash": "d0aa283"
+  },
   "settings.behavior.openTerminalHereApp.label": "‘Terminal hier openen’ gebruikt",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

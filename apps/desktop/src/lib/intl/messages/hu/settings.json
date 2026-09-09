@@ -1484,6 +1484,22 @@
   "@settings.navigationAndFileOps.card.terminal": {
     "sourceHash": "e0926fd"
   },
+  "settings.navigationAndFileOps.card.showInFinder": "Megjelenítés a Finderben",
+  "@settings.navigationAndFileOps.card.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "settings.revealHandler.label": "Más appok a Cmdrben jelenítsék meg a fájlokat",
+  "@settings.revealHandler.label": {
+    "sourceHash": "8c39a2f"
+  },
+  "settings.revealHandler.description": "Ha egy másik app a „Megjelenítés a Finderben” parancsot futtatja, a Cmdr megnyitja azt a mappát, és a kurzort a fájlra teszi. Minden másban a Finder marad az alapértelmezett fájlkezelőd.",
+  "@settings.revealHandler.description": {
+    "sourceHash": "ebb79ff"
+  },
+  "settings.revealHandler.heldByOtherApp": "Jelenleg: {app}. Ha bekapcsolod, a „Megjelenítés a Finderben” a Cmdrhez kerül.",
+  "@settings.revealHandler.heldByOtherApp": {
+    "sourceHash": "d0aa283"
+  },
   "settings.behavior.openTerminalHereApp.label": "A „Terminál megnyitása itt” appja",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

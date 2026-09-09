@@ -1482,6 +1482,22 @@
     "sourceHash": "e0926fd",
     "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Mở trong Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
   },
+  "settings.navigationAndFileOps.card.showInFinder": "Hiển thị trong Finder",
+  "@settings.navigationAndFileOps.card.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "settings.revealHandler.label": "Cho phép ứng dụng khác hiển thị tệp trong Cmdr",
+  "@settings.revealHandler.label": {
+    "sourceHash": "8c39a2f"
+  },
+  "settings.revealHandler.description": "Khi một ứng dụng khác chạy “Hiển thị trong Finder”, Cmdr sẽ mở thư mục đó với con trỏ ở ngay tệp. Ngoài ra, Finder vẫn là trình quản lý tệp mặc định của bạn.",
+  "@settings.revealHandler.description": {
+    "sourceHash": "ebb79ff"
+  },
+  "settings.revealHandler.heldByOtherApp": "Hiện tại: {app}. Bật mục này sẽ chuyển “Hiển thị trong Finder” sang Cmdr.",
+  "@settings.revealHandler.heldByOtherApp": {
+    "sourceHash": "d0aa283"
+  },
   "settings.behavior.openTerminalHereApp.label": "“Mở terminal tại đây” dùng",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

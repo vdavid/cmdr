@@ -1483,6 +1483,22 @@
   "@settings.navigationAndFileOps.card.terminal": {
     "sourceHash": "e0926fd"
   },
+  "settings.navigationAndFileOps.card.showInFinder": "在 Finder 中顯示",
+  "@settings.navigationAndFileOps.card.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "settings.revealHandler.label": "讓其他 App 在 Cmdr 中顯示檔案",
+  "@settings.revealHandler.label": {
+    "sourceHash": "8c39a2f"
+  },
+  "settings.revealHandler.description": "當其他 App 執行「在 Finder 中顯示」時，Cmdr 會開啟該資料夾，並把游標停在該檔案上。其餘情況下，Finder 仍是你的預設檔案管理程式。",
+  "@settings.revealHandler.description": {
+    "sourceHash": "ebb79ff"
+  },
+  "settings.revealHandler.heldByOtherApp": "目前：{app}。開啟後，「在 Finder 中顯示」會交給 Cmdr。",
+  "@settings.revealHandler.heldByOtherApp": {
+    "sourceHash": "d0aa283"
+  },
   "settings.behavior.openTerminalHereApp.label": "「在此開啟終端機」使用",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

@@ -13,6 +13,10 @@
      *      `TerminalAppSelect`, not `SettingSelect`.
      *   4. **Operation log** — the retention limits (`operationLog.maxAge` /
      *      `operationLog.maxSize`) for the file-operation history and undo log.
+     *   5. **Show in Finder** — `RevealHandlerCard`, whose switch is backed by a
+     *      macOS preference rather than the registry, so it owns its own card,
+     *      hides itself on every build that can't write the key, and never appears
+     *      in settings search. Its own doc comment says why.
      *
      * Card visibility is section-owned: each `SectionCard` frame is wrapped in
      * `{#if anyVisible(shouldShow, ...ids)}` over the SAME `shouldShow` predicate
@@ -26,6 +30,7 @@
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingSelect from '../components/SettingSelect.svelte'
     import TerminalAppSelect from './TerminalAppSelect.svelte'
+    import RevealHandlerCard from './RevealHandlerCard.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
@@ -103,6 +108,10 @@
             {/if}
         </SectionCard>
     {/if}
+
+    <!-- Owns its own card frame: its state comes from macOS, not the registry, so
+         only it can tell whether there's anything to render. -->
+    <RevealHandlerCard {searchQuery} />
 
     {#if anyVisible(shouldShow, 'operationLog.maxAge', 'operationLog.maxSize')}
         <SectionCard label={tString('settings.navigationAndFileOps.card.operationLog')}>

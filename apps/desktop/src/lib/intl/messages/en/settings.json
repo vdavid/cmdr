@@ -1828,6 +1828,27 @@
     "description": "Heading of the Terminal card in Settings > Behavior > Navigation & file ops. It holds the setting for which terminal app the \"Open terminal here\" action launches. Generic here: a terminal (command-line) app in general, NOT Apple's app called Terminal.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.navigationAndFileOps.card.showInFinder": "Show in Finder",
+  "@settings.navigationAndFileOps.card.showInFinder": {
+    "description": "Heading of the card in Settings > Behavior > Navigation & file ops that holds one switch: whether another app's \"Show in Finder\" command lands in a Cmdr pane. \"Show in Finder\" is the macOS command name that apps like Chrome and Slack put on their downloads; use the wording your locale's macOS and its apps use for it. macOS only, so the card is absent on other platforms."
+  },
+  "settings.revealHandler.label": "Let other apps show files in Cmdr",
+  "@settings.revealHandler.label": {
+    "description": "Label of the switch that hands the macOS \"Show in Finder\" command to Cmdr, in Settings > Behavior > Navigation & file ops. \"Cmdr\" is the product name; keep it. Addressed to the user, describing what turning the switch on allows."
+  },
+  "settings.revealHandler.description": "When another app runs \"Show in Finder\", Cmdr opens that folder with the file under the cursor. Finder stays your default file manager everywhere else.",
+  "@settings.revealHandler.description": {
+    "description": "Help text under the \"Let other apps show files in Cmdr\" switch in Settings > Behavior > Navigation & file ops. Two sentences: what the switch does, then the honest limit (this does NOT make Cmdr replace Finder; double-clicking a folder still opens Finder). \"Show in Finder\" is the macOS command name and \"Finder\" the macOS file manager; use your locale's macOS wording for both. \"Cmdr\" is the product name; keep it. \"cursor\" = the highlighted row in a Cmdr file pane."
+  },
+  "settings.revealHandler.heldByOtherApp": "Currently: {app}. Turning this on hands \"Show in Finder\" to Cmdr.",
+  "@settings.revealHandler.heldByOtherApp": {
+    "description": "Status line under the \"Let other apps show files in Cmdr\" switch, shown when a third app (Path Finder, ForkLift, and the like) currently receives the macOS \"Show in Finder\" command. Says who has it and that turning the switch on takes it over. \"Show in Finder\" is the macOS command name; use your locale's macOS wording. \"Cmdr\" is the product name; keep it.",
+    "placeholders": {
+      "app": {
+        "description": "Name of the app that currently receives \"Show in Finder\", for example \"Path Finder\". Falls back to that app's raw bundle identifier (like com.cocoatech.PathFinder) when the app isn't installed any more. Never translated."
+      }
+    }
+  },
   "settings.behavior.openTerminalHereApp.label": "Open terminal here uses",
   "@settings.behavior.openTerminalHereApp.label": {
     "description": "Label of the dropdown that picks which terminal app the \"Open terminal here\" action launches, in Settings > Behavior > Navigation & file ops. \"Open terminal here\" is Cmdr's own command name (it opens a terminal at the folder you're looking at), so translate it the same way as the command of that name. The sentence continues in the dropdown beside it, which names an app: \"Open terminal here uses [Ghostty]\".",

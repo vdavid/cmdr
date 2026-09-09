@@ -2,11 +2,9 @@
 //
 // macOS only, mechanism and all (`src-tauri/src/reveal/`), so each wrapper swallows the
 // missing-command rejection other platforms give and does nothing there.
-//
-// The Settings row's `getRevealHandlerState` / `setRevealHandlerEnabled` wrappers belong
-// in this file too when that row gets built.
 
 import { commands } from '$lib/ipc/bindings'
+import type { RevealHandlerState } from '$lib/ipc/bindings'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('reveal')
@@ -24,5 +22,39 @@ export async function drainPendingReveals(): Promise<void> {
     await commands.drainPendingReveals()
   } catch (error) {
     log.debug('Skipping pending-reveal drain: {error}', { error })
+  }
+}
+
+/**
+ * Who currently owns the `NSFileViewer` key: us, nobody, or another app.
+ *
+ * Reads through to the OS on every call. ❌ Never cache it in a setting: the key is
+ * machine state anyone can change from outside Cmdr, so a stored flag would show a
+ * switch that disagrees with the Mac it sits on.
+ *
+ * `unavailable` covers every build that must not write the key (a debug, worktree, or
+ * E2E instance) as well as every non-macOS platform, where the command doesn't exist.
+ */
+export async function getRevealHandlerState(): Promise<RevealHandlerState> {
+  try {
+    return await commands.getRevealHandlerState()
+  } catch (error) {
+    log.debug('Reveal handler state is unavailable: {error}', { error })
+    return { kind: 'unavailable' }
+  }
+}
+
+/**
+ * Take the `NSFileViewer` key, or give it up.
+ *
+ * Returns the state the OS was left in, not the state that was asked for: another app
+ * can hold the key by the time the click lands, and the row has to render the truth.
+ */
+export async function setRevealHandlerEnabled(enabled: boolean): Promise<RevealHandlerState> {
+  try {
+    return await commands.setRevealHandlerEnabled(enabled)
+  } catch (error) {
+    log.debug('Could not set the reveal handler: {error}', { error })
+    return { kind: 'unavailable' }
   }
 }

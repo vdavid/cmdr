@@ -1491,6 +1491,22 @@
     "sourceHash": "e0926fd",
     "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Öppna i Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
   },
+  "settings.navigationAndFileOps.card.showInFinder": "Visa i Finder",
+  "@settings.navigationAndFileOps.card.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "settings.revealHandler.label": "Låt andra appar visa filer i Cmdr",
+  "@settings.revealHandler.label": {
+    "sourceHash": "8c39a2f"
+  },
+  "settings.revealHandler.description": "När en annan app kör ”Visa i Finder” öppnar Cmdr den mappen med filen under markören. I övrigt är Finder fortfarande din förvalda filhanterare.",
+  "@settings.revealHandler.description": {
+    "sourceHash": "ebb79ff"
+  },
+  "settings.revealHandler.heldByOtherApp": "Just nu: {app}. Slår du på det här tar Cmdr över ”Visa i Finder”.",
+  "@settings.revealHandler.heldByOtherApp": {
+    "sourceHash": "d0aa283"
+  },
   "settings.behavior.openTerminalHereApp.label": "”Öppna terminal här” använder",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"
