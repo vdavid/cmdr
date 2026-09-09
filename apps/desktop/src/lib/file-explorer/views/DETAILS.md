@@ -141,11 +141,11 @@ in one tested function (`full-list-utils.test.ts`) rather than two copies that c
   share one quiet-text token rather than each getting their own: in dark mode there's no room for two dim levels above
   the enforced APCA Lc-45 floor (the floor bites around `#9e9e9e`), so italic is the sole differentiator between the two
   row kinds.
-- `--color-text-quiet` (light `#4d4d4d`, dark `#aaaaaa`) is its own token, not `--color-text-secondary`: that pair
-  steps 34 L* down from `--color-text-primary` in light but only 13 L* in dark, so reusing it would dim hard in light
-  and barely at all in dark. Both values here step ~22 L* down instead, so the cue reads the same weight in both modes.
-  Dark is the tight side against the enforced APCA Lc-45 floor (about 5 Lc of slack); see the token's comment in
-  `app.css` for the measured numbers.
+- `--color-text-quiet` (light `#4d4d4d`, dark `#aaaaaa`) is its own token, not `--color-text-secondary`: that pair steps
+  34 L* down from `--color-text-primary` in light but only 13 L* in dark, so reusing it would dim hard in light and
+  barely at all in dark. Both values here step ~22 L* down instead, so the cue reads the same weight in both modes. Dark
+  is the tight side against the enforced APCA Lc-45 floor (about 5 Lc of slack); see the token's comment in `app.css`
+  for the measured numbers.
 - Scope is the name text only (`.col-name-text` / `.col-ext` in Full, `.name` in Brief) for the hidden-dim, and the
   name/size/date cells for the restricted treatment (its existing, wider scope); neither ever reaches the row's other
   cells or the file icon: icon dimming is a deliberate follow-up, judged separately once the text-only dim has been seen
@@ -160,9 +160,9 @@ in one tested function (`full-list-utils.test.ts`) rather than two copies that c
   matrix's unselected-role sweep found `--color-text-quiet` composited against the accent-tinted cursor-active overlay
   drops below both WCAG AA and the Lc-45 floor for several tint combinations under the Apple Yellow system accent.
   `rowUnselectedVariants` in `row_state_matrix.go` excludes "cursor-active" from the sweep to match: extend both the CSS
-  exclusion and that variant list together if a future unselected-row role needs to render there. Cursor-INACTIVE
-  (pane unfocused) isn't affected — its bg is dark enough that the quiet token clears both bars — so only that one
-  variant is excluded.
+  exclusion and that variant list together if a future unselected-row role needs to render there. Cursor-INACTIVE (pane
+  unfocused) isn't affected — its bg is dark enough that the quiet token clears both bars — so only that one variant is
+  excluded.
 
 ### Data flow
 

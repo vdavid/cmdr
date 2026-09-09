@@ -78,9 +78,9 @@ on different selectors — cases the walker can't pair on its own:
 
 The rule walker pairs a `color` and a `background` declared on the SAME selector; it has no notion of CSS `opacity` at
 all, so a rule like `.foo { color: var(--color-text-primary); opacity: 0.6; }` composites a translucent glyph against
-whatever is behind it at runtime, and the walker never evaluates the result. This is a real hole, not a theoretical
-one: a hidden/restricted file-list row composited to about Lc 44 in dark mode (under the enforced APCA floor) via
-exactly this pattern, and nothing caught it for as long as it shipped (fixed in `4cdc00c0a`, converted to the
+whatever is behind it at runtime, and the walker never evaluates the result. This is a real hole, not a theoretical one:
+a hidden/restricted file-list row composited to about Lc 44 in dark mode (under the enforced APCA floor) via exactly
+this pattern, and nothing caught it for as long as it shipped (fixed in `4cdc00c0a`, converted to the
 `--color-text-quiet` token).
 
 Rather than resolve the CSS cascade to compute what an `opacity` rule actually composites against (which needs a
@@ -100,19 +100,19 @@ rule with a static `opacity: N < 1` UNLESS it's one of:
   idiom for "hidden until `:hover`/`:focus`/a state class reveals it," not a dimmed-but-readable case). The revealed
   state is a separate rule, evaluated on its own merits.
 
-A reported finding isn't a computed WCAG/APCA verdict like `Finding` (there's no FG/BG/ratio to show): it's a
-structural "the walker can't see this" flag. The fix is one of the two the message states: express the dimming as a
-color token (so the walker's normal color/background pairing sees it) or hand-model the composited pair in a
-synthesizer. Converting a survivor to a color token is what promotes it into the set the WCAG/APCA gate actually
-verifies — it doesn't just quiet this check, it makes the pair provably fine (or catches it if it isn't).
+A reported finding isn't a computed WCAG/APCA verdict like `Finding` (there's no FG/BG/ratio to show): it's a structural
+"the walker can't see this" flag. The fix is one of the two the message states: express the dimming as a color token (so
+the walker's normal color/background pairing sees it) or hand-model the composited pair in a synthesizer. Converting a
+survivor to a color token is what promotes it into the set the WCAG/APCA gate actually verifies — it doesn't just quiet
+this check, it makes the pair provably fine (or catches it if it isn't).
 
 **Advisory, not a hard gate** — unlike the WCAG violations and the APCA Lc-45 floor, which stay hard failures.
-`AnalyzeOpacity` reports what the walker *can't verify*, not a computed failure: a reported rule might be a real
-contrast bug (the file-list row above genuinely was) or might be perfectly fine once you look at what's actually
-behind it — the tool has no way to tell the two apart without a browser. Blocking every build on that would be
-indistinguishable from blocking on noise, so opacity findings never fail the exit code (for a direct `go run` or
-through the check runner). They're always printed, though — every run, in full, with no allowlist or baseline that
-can quiet an entry — so they stay visible until someone looks and either converts the rule or hand-models it. See
+`AnalyzeOpacity` reports what the walker _can't verify_, not a computed failure: a reported rule might be a real
+contrast bug (the file-list row above genuinely was) or might be perfectly fine once you look at what's actually behind
+it — the tool has no way to tell the two apart without a browser. Blocking every build on that would be
+indistinguishable from blocking on noise, so opacity findings never fail the exit code (for a direct `go run` or through
+the check runner). They're always printed, though — every run, in full, with no allowlist or baseline that can quiet an
+entry — so they stay visible until someone looks and either converts the rule or hand-models it. See
 `scripts/check/checks/desktop-svelte-a11y-contrast.go` for how the check runner surfaces this as a `warn` (yellow, not
 red; doesn't fail `pnpm check`) via a `CMDR_A11Y_OPACITY_STATUS_FILE` side channel — `go run` collapses any non-zero
 exit to 1, so the exit code alone can't tell "clean" apart from "clean of hard failures, but opacity findings remain."
@@ -122,9 +122,8 @@ non-literal values are left unparsed rather than guessed (none exist in the code
 
 **File coverage**: this pass also walks every `.css` file under `apps/desktop/src` (not just `.svelte` components and
 `app.css`), since a global stylesheet like `app-field.css`, `app-file-list.css`, or a component-local
-`filter-popover.css` is imported directly by `+layout.svelte` rather than scoped to a component and the WCAG rule
-walker below doesn't reach it. The WCAG/APCA gate's own file scope is unchanged; only the opacity check sees these
-extra files.
+`filter-popover.css` is imported directly by `+layout.svelte` rather than scoped to a component and the WCAG rule walker
+below doesn't reach it. The WCAG/APCA gate's own file scope is unchanged; only the opacity check sees these extra files.
 
 The parser also normalizes `app.css` before extracting vars: every `@supports not (color: color-mix(...))` block is
 stripped (those carry old-WebKit hex fallbacks that would otherwise overwrite the modern `color-mix` formulas), and
@@ -230,8 +229,8 @@ Tests:
 - `apca_test.go`: APCA reference values (black-on-white ≈ Lc 106, white-on-black ≈ −108), polarity asymmetry, target
   ladder.
 - `opacity_check_test.go`: disabled/inactive exemption, decorative allowlist exemption, `opacity: 0` and `opacity: 1`
-  are non-findings, a plain-text opacity dim is reported, a re-declared selector (for example a
-  `prefers-reduced-motion` override) dedupes to one finding, and `parseOpacity`'s literal-only contract.
+  are non-findings, a plain-text opacity dim is reported, a re-declared selector (for example a `prefers-reduced-motion`
+  override) dedupes to one finding, and `parseOpacity`'s literal-only contract.
 
 Diagnostic helpers (skipped by default; gated on env vars):
 
@@ -283,9 +282,9 @@ If the scenario depends on the active accent, you don't need to do anything spec
 `AccentVariants` automatically.
 
 If the pair composites through an `opacity: N` on the fg or bg side (rather than only `color-mix(...)`), mirror it in
-the scenario's `FgExpr` / `BgExpr` with a `color-mix(in srgb, var(--token), transparent (1-N)%)` term, then add the
-same `(file-suffix, selector)` pair to `opacityModeledElsewhere` in `opacity_check.go` so the opacity check doesn't
-also report what the synthesizer now verifies.
+the scenario's `FgExpr` / `BgExpr` with a `color-mix(in srgb, var(--token), transparent (1-N)%)` term, then add the same
+`(file-suffix, selector)` pair to `opacityModeledElsewhere` in `opacity_check.go` so the opacity check doesn't also
+report what the synthesizer now verifies.
 
 ### Add a new opacity exemption
 
@@ -295,9 +294,9 @@ When `AnalyzeOpacity` (`opacity_check.go`) reports a rule that's genuinely out o
   `aria-disabled` / `data-gated` / `.disabled` / `.is-disabled*` / `*-disabled`): extend `opacityInactiveSelector`'s
   pattern list. This is a general rule, not a per-component allowlist — prefer widening the pattern over adding a
   one-off entry.
-- **Non-text/decorative element**: add an entry to `opacityDecorativeAllowlist`, but only after reading the
-  component's markup (never infer from the selector or class name alone). The bar is: does this selector's element
-  render an `<Icon>`, an empty CSS-shape indicator with no child content, or an aria-hidden punctuation divider with no
+- **Non-text/decorative element**: add an entry to `opacityDecorativeAllowlist`, but only after reading the component's
+  markup (never infer from the selector or class name alone). The bar is: does this selector's element render an
+  `<Icon>`, an empty CSS-shape indicator with no child content, or an aria-hidden punctuation divider with no
   informational content? If you can't tell, don't add it — leave the rule reported instead; a false exemption hides a
   real contrast bug the way `opacity` itself did before this check existed.
 - **Already hand-modeled**: see the synthesizer note just above.
