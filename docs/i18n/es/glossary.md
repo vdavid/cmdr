@@ -152,10 +152,12 @@ AppKit + SystemSettings, 2026-06-21).
 - download / downloading → descargar / Descargando... · macOS ("descargar", "Descargas", "Descargando" AXBADGE8) · high
 - model (AI) → modelo · Double Commander es ("Modelo de la cámara"); standard · high
 - server → servidor · macOS · high (already in settings pass)
-- endpoint (API) → extremo · MS terminology (TBX entries 51058/257427 "endpoint" → 51059/342292 "extremo", incl. the
-  service-endpoint sense "An endpoint where an application or system uses a service"). Label "Endpoint" → "Extremo";
-  "Endpoint URL" → "URL del extremo". Reconciled across `ai.json` + `onboarding.json` so the AI-settings field and the
-  cloud-setup field match · high
+- endpoint (API) → punto de conexión · MS terminology, TBX id 535789 → 2328145, the URL-form sense that is ours ("The
+  logical representation of a location, typically expressed in URL form"), tagged for all 21 Spanish regions · high. ❌
+  NOT `extremo` (TBX 51058/257427), which names the geometry handle and the B2B trading-partner senses, not this one;
+  full sense breakdown and the mining trap behind it: `style.md` § Terminology and glossary. "Endpoint URL" → "URL del
+  punto de conexión", on `onboarding.cloudSetup.step.endpoint`; the caption below it
+  (`onboarding.cloudSetup.hint.azureEndpoint`) uses the same words, and the two must always move together
 - API key → clave de API · "clave" + "API" kept · high
 - encoding (character) → Codificación · MS terminology ("character encoding"→"codificación de caracteres") · high
 - Western (encoding group) → Occidental · macOS character-encoding submenu name (not in this pile snapshot; established
@@ -203,8 +205,7 @@ AppKit + SystemSettings, 2026-06-21).
 - star/watch/fork (GitHub) → dar una estrella / seguir / hacer un fork · composed; "fork" kept (GitHub term), "seguir"
   for watch, "estrella" for star · tentative
 - API key → clave de API · MS terminology ("clave de API") · high
-- endpoint URL → URL del extremo · see the `endpoint (API) → extremo` entry above (reconciled with `ai.json`); "URL"
-  kept · high
+- endpoint URL → URL del punto de conexión · see the `endpoint (API) → punto de conexión` entry above; "URL" kept · high
 - pros and cons → pros y contras; Pro:/Con: bullet labels → "A favor:" / "En contra:" · composed · tentative
 - toast (corner status) → aviso · composed; transient corner message (no macOS "tostada") · tentative
 - source-available → código abierto · composed; renders the public-source sense plainly · tentative

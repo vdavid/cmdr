@@ -480,7 +480,7 @@
   "@onboarding.cloudSetup.hint.azureModel": {
     "sourceHash": "e856224"
   },
-  "onboarding.cloudSetup.step.endpoint": "URL del extremo",
+  "onboarding.cloudSetup.step.endpoint": "URL del punto de conexión",
   "@onboarding.cloudSetup.step.endpoint": {
     "sourceHash": "2578179"
   },

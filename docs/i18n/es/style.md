@@ -164,8 +164,16 @@ GNOME/Xfce (Tier 3). Confidence: `confirmed` (human signed off), `high` (authori
   ir a {path}", `fileExplorer.navigation.spaceStillUnavailable` "Haz clic para reintentar") · high
 - endpoint (an API address) → punto de conexión · MS terminology, entry "The logical representation of a location,
   typically expressed in URL form" (id 535789 → "punto de conexión", tagged for ESP, MEX, ARG, 419 and every other
-  Spanish region, so it is pan-regional; mined from the reference pile 2026-09-09) · high. **NOT "extremo"**, which the
-  catalog briefly carried: it is a literal rendering with no source behind it.
+  Spanish region, so it is pan-regional; mined from the reference pile 2026-09-09) · high. Label phrasing follows
+  `endpoint address` → `dirección de punto de conexión` and `API Endpoint` → `punto de conexión de API`, so
+  `Endpoint URL` is `URL del punto de conexión` (`onboarding.cloudSetup.step.endpoint`, the only key in any locale that
+  carries the label). Apple is silent: `es/macOS/` publishes none of the three candidate words, so Tier 2 decides alone.
+  **NOT "extremo"**, which the catalog carried for a while. `extremo` IS in the TBX, which is exactly why it's a trap:
+  it renders the two senses that aren't ours (id 51058, the handle at the end of a line or arc; id 257427, a company in
+  a B2B data exchange), and it is the FIRST bare `endpoint` hit in the file by id order. Five of the seven senses, ours
+  included, read `punto de conexión`. This is `../reference-pile/how-to-mine.md` trap 4 (the first hit is often the
+  wrong sense) caught in the act; disambiguate by reading the `<descrip type="definition">`, never by taking the top
+  match.
 - placeholder (the pre-filled example you replace in a field) → marcador de posición · MS terminology (ids 146442 and
   92736, mined 2026-09-09) · high
 - deployment (Azure: the name you give a deployed model) → implementación · MS terminology (ids 44583, 542746, 1579560,
