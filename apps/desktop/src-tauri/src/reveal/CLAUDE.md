@@ -5,8 +5,9 @@ Another app's "Show in Finder" lands in a Cmdr pane instead. One OS switch turns
 
 ## Module map
 
-- **`registration.rs`**: the `NSFileViewer` state machine (`RevealHandlerState`, `RevealRegistration`), the
-  `ViewerPreference` seam over CFPreferences, and `own_bundle_id`, which decides whether this build may write at all.
+- **`registration.rs`**: the `NSFileViewer` state machine (`RevealHandlerState`, `RevealHandlerStatus`,
+  `RevealRegistration`), the `ViewerPreference` seam over CFPreferences, and `own_bundle_id`, which decides whether this
+  build may write at all.
 - **`delivery.rs`**: what arrives once it's on. `on_urls_opened` is the one door; `plan_reveal` turns the delivered
   paths into one pane move; `PendingReveals` parks anything the frontend isn't up for yet; `deliver` drives the pane
   and then announces `RevealDelivered`.
@@ -30,10 +31,12 @@ Another app's "Show in Finder" lands in a Cmdr pane instead. One OS switch turns
 - **Turning off clears the key only when it still names us.** Another app can take it between the Settings row being
   drawn and the click; clearing then would unregister somebody else's file manager. And clearing means REMOVING the
   key, ❌ never writing `com.apple.finder`: absence is the true default.
-- **A non-production build may never write the key** (`own_bundle_id` returns `None` → state `Unavailable`). A dev build
-  that grabs it and is then deleted leaves a dangling `NSFileViewer` that breaks reveal machine-wide, and the E2E suite
-  must be structurally incapable of rewiring the user's Mac. Three independent gates: debug build, any
-  `prod_instance` harness env, and a bundle id that isn't the production one.
+- **A dangling key breaks reveal machine-wide**: macOS does NOT fall back to Finder when `NSFileViewer` names an app
+  that's gone (macOS 26.6, 2026-09-09), and nothing of ours runs at uninstall. So a non-production build may never write
+  it at all (`own_bundle_id` → `None` → `Unavailable`, on any of: debug build, a `prod_instance` harness env, a
+  non-production bundle id), `set_enabled(true)` refuses from a copy outside an Applications folder
+  (`crate::install_location`), and the cask clears it on uninstall. ❗ The gate blocks TAKING the key, ❌ never giving it
+  up, or a copy that registered and then moved is stranded holding it. `DETAILS.md` § "The uninstall problem".
 - **This is not a stored setting.** No `settings.json` key, no registry entry: the state reads through to the OS every
   time, because the user can change the handler outside Cmdr and a cached flag would lie.
 - **The pane move is `crate::mcp::go_to_in_focused_pane`**, shared with `go_to_latest_download`. ❌ Don't grow a second

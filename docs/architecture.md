@@ -291,6 +291,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `dock/menu/`: macOS-only. The Dock tile's right-click menu (four commands, then the bookmarks and open tabs), built as
   a raw `NSMenu` from an `applicationDockMenu:` we add to tao's app delegate. Runs inside an AppKit callback, so it may
   neither panic nor block. See `apps/desktop/src-tauri/src/dock/menu/CLAUDE.md`
+- `install_location.rs`: macOS-only. Whether the running copy of Cmdr sits in an Applications folder, the one question
+  the Dock pin and the reveal handler must not answer differently. Distinct from
+  `updater/bundle_location.rs` (can an update be written into the bundle)
 - `quick_look/`: macOS-only `QLPreviewPanel` integration (Shift+Space)
 - `drag_image_detection.rs`: macOS method swizzle for drag image size detection
 - `drag_image_swap.rs`: Rich/transparent drag image swap for self-drags

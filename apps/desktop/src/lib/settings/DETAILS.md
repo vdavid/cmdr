@@ -581,6 +581,17 @@ comes back on the same `false` the row started from, so a `$derived(state.kind =
 down and the switch would sit reading "on" while the key belongs to someone else. `RevealHandlerCard` binds `checked` to
 a `$state` and re-reads it from an `$effect` on every answer, including one that lands on the value it started from.
 
+**An OS-backed row's answer carries the gate, not just the value.** `get_reveal_handler_state` returns a
+`RevealHandlerStatus`: the state plus `blockedBy`, a typed reason the switch may not be operated. The rule that produces
+it lives in Rust (the same call refuses the write), so the row, the once-ever offer, and the backend can't drift into
+three different answers, and the UI needs no second round trip to ask "may I". A second OS-backed row should copy that
+shape rather than deriving a gate frontend-side.
+
+The reason is worded from the typed variant through a `Record<Blocker, MessageKey>`, ❌ never from a message the backend
+sent (`cmdr/no-error-string-match`), and it renders twice on purpose: as a tooltip on the whole row (a disabled control
+takes no pointer events, so a tooltip ON the switch would never show) and as `sr-only` text in the row, because a
+hover-only explanation reaches no screen reader and a dead switch with no stated reason is worse than no switch.
+
 ## Key decisions
 
 ### Why hybrid declarative registry with custom UI?

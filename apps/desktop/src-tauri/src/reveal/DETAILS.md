@@ -165,6 +165,32 @@ bundle id is read from `NSBundle` at runtime, never hardcoded, because telling t
 Why it matters: an uninstalled build that still holds the key leaves a dangling `NSFileViewer`, and reveal silently
 stops working system-wide with nothing pointing at the cause.
 
+### The uninstall problem, and the two guardrails around it
+
+**A dangling key doesn't fall back to Finder.** When `NSFileViewer` names an app that isn't installed, macOS does not
+quietly go back to Finder: "Show in Finder" silently does nothing, in every app, machine-wide, until somebody clears
+the key by hand (measured on macOS 26.6, 2026-09-09). So a person who switches this on and later deletes Cmdr breaks
+their Mac with nothing pointing at the cause. Nothing of ours runs at uninstall, so everything here narrows that window
+rather than closing it.
+
+- **The gate.** `set_enabled(true)` refuses from a copy that isn't in an Applications folder (`crate::install_location`,
+  shared with the Dock pin, which asks the same question for the same reason). `~/Downloads`, a mounted disk image, and
+  Gatekeeper's translocated shadow are where a copy gets moved or thrown away. `status()` reports the refusal as a typed
+  `RevealHandlerBlocker`, so the Settings switch is disabled with the reason and the once-ever offer stays silent
+  instead of promising a click that's refused.
+  **❗ Decision: the gate blocks taking the key and NEVER giving it up.** `blocked_by` is `None` whenever the state is
+  `Registered`, so a copy that registered and then moved out of Applications can still hand the key back. A switch dead
+  in both directions would strand somebody registered from a copy they're about to delete, which is precisely the
+  dangling key the gate exists to prevent.
+- **The warning.** The Settings row says "Before you uninstall Cmdr, switch this off" while, and only while, the switch
+  is on. Before that it's friction on a decision nobody has made.
+- **The Homebrew cask** removes the key on uninstall: `apps/desktop/packaging/homebrew/cmdr.rb`, and
+  `docs/guides/homebrew-cask.md` § "Why the cask looks the way it does" for what it can and can't cover.
+
+**Decision: no self-heal for a key that's already dangling.** Considered and declined: a Cmdr that notices the key names
+a missing app and clears it would be reaching into machine-wide state on behalf of an app it isn't, for a user who never
+asked.
+
 **Decision: no stored setting.** The Settings row reads through to the OS on every open, and the write returns the
 state the OS was left in rather than the state that was asked for. A `settings.json` mirror would disagree with the
 machine the first time the user changed the handler elsewhere, and there is no event to keep it in sync.
@@ -178,10 +204,11 @@ that isn't installed reports `None` and the UI falls back to the raw bundle id.
 `Settings > Behavior > Navigation & file ops > Show in Finder`, built as
 `apps/desktop/src/lib/settings/sections/RevealHandlerCard.svelte`. It's the settings system's only OS-BACKED row (no
 registry entry, no `settings.json` key), so what that pattern is and when to reach for it lives over there:
-`apps/desktop/src/lib/settings/DETAILS.md` § OS-backed rows. Two things worth knowing from this side: the row renders
-nothing on an `Unavailable` answer, so it never appears in a dev, worktree, or E2E build, and it renders the state
+`apps/desktop/src/lib/settings/DETAILS.md` § OS-backed rows. Three things worth knowing from this side: the row renders
+nothing on an `Unavailable` answer, so it never appears in a dev, worktree, or E2E build; it renders the state
 `set_reveal_handler_enabled` RETURNS rather than the one the click asked for, which is what makes the
-"another app took the key first" case honest.
+"another app took the key first" case honest; and both commands answer a `RevealHandlerStatus` (state plus
+`blocked_by`), so the row disables its own switch from the same answer that refuses the write.
 
 ## How the feature is offered
 

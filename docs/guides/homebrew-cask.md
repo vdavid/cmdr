@@ -51,6 +51,20 @@ This shape also satisfies a future `Homebrew/homebrew-cask` resubmission, so kee
   `minimumSystemVersion` in `tauri.conf.json`. Everything from Catalina up to Monterey is best-effort, and the app
   itself says so at launch when the WebKit under it is too old. Floor rationale:
   `../notes/system-requirements-and-es2025.md`.
+- **`uninstall script:` hands "Show in Finder" back.** If the user switched on the reveal handler, Cmdr's bundle id sits
+  in the machine-wide `NSFileViewer` preference, and macOS does NOT fall back to Finder when that id names an app that's
+  gone: the command silently does nothing everywhere (`apps/desktop/src-tauri/src/reveal/DETAILS.md` § "The uninstall
+  problem"). The one-liner clears the key, and ONLY when it still holds a Cmdr bundle id: Path Finder and ForkLift write
+  the same key, so a blind `defaults delete` would unregister theirs. It never touches
+  `.GlobalPreferences.plist` itself.
+  - **In `uninstall`, ❌ never only in `zap`.** `zap` runs on `brew uninstall --zap` alone, so a plain
+    `brew uninstall cmdr` would leave the key dangling, and that's the case that breaks somebody's Mac.
+  - **Known cost: it also runs on `brew reinstall` and on a `--greedy` upgrade.** Homebrew passes `upgrade:` and
+    `successor:` to uninstall directives, but only `login_item:` and `signal:` act on them; `script:` cannot tell an
+    upgrade from a real uninstall (read in `Cask::Artifact::AbstractUninstall`, Homebrew 6.0.22, 2026-09-09). Those
+    cases leave the switch off, which the user can turn back on in Settings. A dangling key can't be turned back on by
+    anyone, so this is the right way round. `auto_updates true` keeps plain `brew upgrade` out of it entirely.
+  - **`must_succeed: false`** so a `defaults` that fails can't abort somebody's uninstall.
 - **`zap` paths** were verified on a prod machine. `~/Library/HTTPStorages/` is deliberately absent (Cmdr doesn't create
   it).
 

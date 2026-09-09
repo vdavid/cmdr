@@ -12,7 +12,8 @@ platforms use the Tauri updater plugin and the frontend calls the plugin API dir
 - `manifest.rs`: parses `latest.json`, compares versions, resolves the platform key.
 - `signature.rs`: minisign signature verification (base64-wrapped, matching Tauri's format).
 - `installer.rs`: tarball extraction, sync into the running bundle, privilege escalation. Its
-  `running_bundle()` is crate-visible: `dock/` asks the same "where is this copy installed" question.
+  `running_bundle()` is crate-visible: `crate::install_location` asks the same "where is this copy installed" question
+  on behalf of the Dock pin and the reveal handler.
 
 ## Must-knows
 

@@ -10,11 +10,12 @@ frontend; every decision that has to look at the machine is here.
   `DockPinBlocker`, `DockPinFailure`) behind `../commands/dock.rs`.
 - **`entries.rs`**: `persistent-apps` as pure `plist::Value` data — build a tile, decide whether an
   app is in the array, put a tile first.
-- **`location.rs`**: is this copy of Cmdr somewhere a tile may point at?
 - **`prefs.rs`**: the CFPreferences boundary. **`restart.rs`**: asking the Dock to reload.
 - **`menu/`**: the tile's context menu, with its own `CLAUDE.md`. Separate concern,
   separate rules — it runs inside an AppKit callback where a panic is undefined
   behavior and a blocking read beachballs the Dock.
+- "Is this copy somewhere a pointer may survive?" is `crate::install_location`, shared with the reveal handler, which
+  refuses to write a machine-wide key from a copy that's about to move.
 
 ## Must-knows
 
@@ -30,8 +31,8 @@ frontend; every decision that has to look at the machine is here.
   false no puts a second Cmdr tile in someone's Dock.
 - **Both `/Applications` and `~/Applications` count; nothing else does.** A tile pointing into
   `~/Downloads`, a mounted disk image, or a translocated copy dies as soon as that copy moves.
-  `bundle_location::classify` answers a different question (can the updater write here) — don't
-  reuse it.
+  The rule is `crate::install_location`, ❌ not `bundle_location::classify`, which answers a
+  different question (can the updater write here).
 - **A dev build switches the whole feature off for free**: it runs out of `target/` with no `.app`
   ancestor, so `running_bundle()` fails and the state is `NotABundle`.
 - **The write is only half of it.** The Dock holds `persistent-apps` in memory and re-reads it at
