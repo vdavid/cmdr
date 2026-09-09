@@ -543,6 +543,10 @@ func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, p
 			printFailure(failedChecks)
 		}
 		printAutoFixNotice(dirtyBefore, gitDirtyFiles(ctx.RootDir))
+		// After the auto-fix notice, so it's the very last thing read: when it
+		// fires, every failure above it is noise from a stale build cache and the
+		// reader should stop reading them.
+		printTornTargetNotice(runner.RunStates(), ctx.RootDir)
 		os.Exit(1)
 	}
 	printSuccess(quiet, runner, totalDuration)

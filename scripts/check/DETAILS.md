@@ -173,6 +173,8 @@ pnpm check [flags]
   which implementation files each check's `Run` reaches (§ "The runner's own source")
 - **`autofix_notice.go`**: Brackets the run with a `git status` snapshot and names, last, every committed file an
   auto-fixer rewrote (§ "The auto-fix notice")
+- **`torn_target_notice.go`**: Scans failed lanes for an inconsistent `target/` and, when it finds one, says so last so
+  the reader doesn't revert a good change (§ "The inconsistent-`target/` notice")
 - **`colors.go`**: ANSI color constants
 - **`utils.go`**: `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)
 - **`stack_orchestrator.go`**: Runner-level Docker fixture lifecycle: acquires a machine-wide lease per stack (via
@@ -648,6 +650,33 @@ LAST line of the run, on both the green and the red path: "This run rewrote N co
 dirty and always will be, so listing every modification would be noise a reader learns to skip. The set difference is
 exactly "an auto-fixer touched something that was committed", which is exactly the state that fails CI. Skipped under
 `--ci`, where nothing auto-fixes, and silent outside a git work tree.
+
+### The inconsistent-`target/` notice
+
+`target/` can hold fingerprints from one moment and `.rlib`s from another. Cargo trusts the fingerprint, rustc gets an
+artefact that disagrees with it, and the run dies on crates nobody touched: `error[E0463]` (can't find the crate) and
+`error[E0460]` (found one that disagrees with what a dependent was built against), pointing into
+`~/.cargo/registry/src/`.
+
+The usual cause is a fresh worktree. `cp -Rc` walks `target/` for ~80 s, so anything compiling in the main clone during
+that walk lands in the copy twice, at two versions. An interrupted build, a killed `cargo-sweep`, or a disk-full write
+give the same shape. The commit-staleness guard in `new-worktree.sh` doesn't catch it: the commits agree, and the clone
+goes ahead.
+
+`printTornTargetNotice` scans every failed lane's output and prints last, after the auto-fix notice, naming the
+implicated registry packages and the recovery: `cargo clean --profile dev`. It cost a session ~15 minutes of diagnosis
+on 2026-09-09 and nearly cost a correct dependency change, which is the harm it exists to prevent: the wall of compiler
+output arrives right after whatever the author last edited, so reverting a good change is the obvious next move.
+
+**Decision**: fires only when BOTH an `E0460`/`E0463` code and a registry path are present. **Why**: the code alone
+fires on an author's own missing crate, which must stay reported as their mistake; a registry path alone shows up in
+ordinary output constantly (a deprecation inside a dependency, a backtrace frame). Together they mean the unreconcilable
+crate was built from source the author never edited, so their change can't be the cause. Matched on the error CODE, a
+stable identifier, never on the sentence around it (same reasoning as `.claude/rules`' string-matching ban).
+
+**Decision**: names the problem, never auto-recovers. **Why**: lanes run concurrently, so a mid-run `cargo clean` pulls
+`target/` out from under lanes still building, and a post-run one silently spends a cold rebuild (12 minutes, measured
+2026-09-09) on a run the reader thinks is finishing.
 
 ## Troubleshooting
 

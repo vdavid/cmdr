@@ -10,7 +10,7 @@ Authoring a check: `checks/CLAUDE.md`.
 - `plan.go` + `cache.go` + `runner-sources.go` + `checks/fingerprint.go` (the input-fingerprint cache),
   `checks/inputs.go` (shared `Inputs` blocks), `checks/cargo-workspace.go` (the geometry Rust checks scope from).
 - `stack_orchestrator.go` + `stacklease/` (Docker fixture stacks), `graph.go` / `docs_graph_render.go` (renderers),
-  `stats.go` + `unknown_selector_log.go` (the CSV logs), `autofix_notice.go`.
+  `stats.go` + `unknown_selector_log.go` (the CSV logs), `autofix_notice.go`, `torn_target_notice.go`.
 
 ## Must-knows
 
