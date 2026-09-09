@@ -378,6 +378,11 @@ on the same edges however far any of them wraps.
   `onboarding-state`'s `betaChecklist`, ❌ not in the step, or a Back into step 2 would forget them.
 - **Email address** — an inline field plus a Save button.
 
+Each `<li>` carries `data-checklist-item="analytics" | "star" | "alternativeTo" | "email"`, the way
+`CloudProviderPicker` rows carry `data-provider-id`. That's what the E2E a11y walk matches on: every other handle on a
+row is translated copy, so a copy edit would silently stop finding it. Same reason the terms card's `id`
+(`onboarding-terms-block`) is the handle for its checkbox, not a class.
+
 ❌ **The analytics disclosure must keep saying all four things**, wherever it lives. `updates.crashReports` defaults ON
 too, and this step is the only place a first launch hears about that default at all (an existing install gets the
 CHANGELOG instead, and there's no in-app notice). It carries no toggle deliberately: that switch lives in Settings >

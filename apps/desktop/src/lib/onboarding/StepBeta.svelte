@@ -304,7 +304,9 @@
     <!-- One grid, three columns (tick, glyph, text), with each row `display: contents` so
          all four line up on the same three edges however far the text wraps. -->
     <ul class="checklist">
-        <li class="checklist-row">
+        <!-- Each row names itself, the way `data-provider-id` names an AI preset. The row
+             text is translated copy that gets edited, so it can't be what identifies a row. -->
+        <li class="checklist-row" data-checklist-item="analytics">
             <Checkbox
                 checked={analytics.checked}
                 ariaLabel={statsLabel}
@@ -325,7 +327,7 @@
             </span>
         </li>
 
-        <li class="checklist-row">
+        <li class="checklist-row" data-checklist-item="star">
             <Checkbox
                 checked={onboardingState.betaChecklist.star}
                 ariaLabel={starLabel}
@@ -343,7 +345,7 @@
             </span>
         </li>
 
-        <li class="checklist-row">
+        <li class="checklist-row" data-checklist-item="alternativeTo">
             <Checkbox
                 checked={onboardingState.betaChecklist.alternativeTo}
                 ariaLabel={alternativeToLabel}
@@ -361,7 +363,7 @@
             </span>
         </li>
 
-        <li class="checklist-row">
+        <li class="checklist-row" data-checklist-item="email">
             <!-- A progress mark, not a control: the field beside it is what ticks it, so it
                  takes no clicks. `disabled` is how that's said to a screen reader; the local
                  style below keeps it from also looking switched off. -->
