@@ -822,9 +822,8 @@ the process; this pass re-derived every term from the pile:
   consistency: the already-shipped `settings.mediaIndex.excludedFolders.label` = `Kizárt mappák` and its description
   ("…amelyeket a felhasználó **kizárt** a képindexelésből") name the SAME feature, and `queryUi.scope.hint` uses
   `kizáráshoz` · high. `kihagy`/`kihagyva` is already taken by the transfer `skipped` outcome (macOS
-  `Kihagyás`/`Kihagyva`), so reusing it here blurred the deliberate-exclusion vs not-picked distinction the status-bar
-  labels exist to make. Fixed `fileExplorer.imageIndex.excluded` → `Képek kizárva` and `.excludedTooltip` →
-  `Kizártad ezt a mappát…`.
+  `Kihagyás`/`Kihagyva`), so reusing it here blurs the deliberate-exclusion vs not-picked distinction the badge and
+  settings labels exist to make.
 - blocked (a rename row preflight won't let through) → `blokkolva` · tentative. macOS attests `letiltva`, but that
   renders the policy/permission "disabled by Screen Time" sense, not "prevented from proceeding"; `blokkolva` is the
   common HU software word for the latter and is not an error word (the no-`hiba`/`sikertelen` voice rule holds). Used in
@@ -879,8 +878,8 @@ Settled while translating the image-index indicator badges (`fileExplorer.imageI
 - **`file.excluded` "Not included in image search" → `Nem szerepel a képkeresésben`, NOT `kizárva`** · the EN word is
   the neutral "not included" (the `@key` lists several non-user reasons: out of scope, unsupported, too big), so the
   deliberate-user-exclusion term `kizár`/`kizárva` (settled for `settings.mediaIndex.excludedFolders` = `Kizárt mappák`)
-  would over-claim. `szerepel` = to appear/be included; `képkeresés` inessive `-ben` (front) · high. Distinct on purpose
-  from the folder-level `imageIndex.excluded` (deliberate exclusion) which stays `kizárva`.
+  would over-claim. `szerepel` = to appear/be included; `képkeresés` inessive `-ben` (front) · high. The
+  deliberate-exclusion sense keeps `kizárva`, and it lives in Settings, not on this badge.
 - **image search (feature) → `Képkeresés`** · the catalog's one term wherever the feature is named
   (`fileExplorer.imageIndex.drive.off` = `A képkeresés ki van kapcsolva ehhez a meghajtóhoz.`) · high. Don''t fork it.
 - **drive image-search dot aria (`drive.ariaLabel`) → `Meghajtó képkeresési állapota`** · parallels the sibling
@@ -996,8 +995,8 @@ Settled in the REVIEW pass over the five drive-indexing-override keys
   for a full check (`tooltipCoalesced`: "a Cmdr következő teljes átvizsgálása") and that string's closing
   `ezt rendbe hozza` · high.
 
-Settled while translating the stalled-transfer notice (7 `fileOperations.transferProgress.stall*`/`close` keys +
-`queue.row.stalled`, 2026-07-31):
+Settled while translating the stalled-transfer notice (7 `fileOperations.transferProgress.stall*`/`close` keys,
+2026-07-31):
 
 - **"No progress for {duration}" → `{duration} óta nincs előrehaladás`** · `előrehaladás` is the pile's progress noun
   (macOS Finder `1.title` = `Előrehaladás paraméterei`, Xfce Thunar "File operation progress" =
@@ -1009,7 +1008,8 @@ Settled while translating the stalled-transfer notice (7 `fileOperations.transfe
   line it replaces (`etaRemaining` = `~{duration} van hátra`). Residual `tentative` point: `óta` most often takes a
   point in time; with a measured span it's idiomatic in the plural (`hetek óta`) and reads fine with an abbreviated
   value, but a native reviewer may prefer `{duration} alatt nem történt előrehaladás` (unambiguously a span, longer, and
-  slightly past-tense). Both keys use the identical sentence, only the dialog one takes the period, as in English.
+  slightly past-tense). One key carries the sentence, with no final period, and it renders on both the progress dialog
+  and the narrow queue-row cell, so the Hungarian has to fit the narrow one.
 - **"Waiting for X to respond" → `Várakozás a X válaszára`** (destination = `Várakozás a cél válaszára.`, source =
   `Várakozás a forrás válaszára.`) · Total Commander `1384="Adatküldés, várakozás a válaszra..."` is the exact
   waiting-for-a-response phrase, and the `Várakozás a …-ra/-re` frame is macOS Tier 1 (AppKit "Waiting for disc drive…"
@@ -1067,11 +1067,11 @@ trashes, renames, folder/file creations, and archive edits too, and "transfer" a
 (the transfer dialog, the transfer driver). So the Hungarian head noun had to widen the same way, not just get
 restamped:
 
-- **operation queue (the window, the View-menu item, the command) → `Műveleti sor`** · the widened name covers the
-  whole window; `transfer → átvitel` is untouched by it and stays correct for the copy/move dialog · high. Built from
-  two settled parts: the head noun `művelet` (below) and the catalog's settled `queue → sor` (Double Commander
-  `New queue` = `Új sor`, `Put first in queue` = `Első helyre tétele a sorban`). The `<activity>-i sor` shape is Tier-2
-  attested (Microsoft `print queue` = `nyomtatási sor`), and the adjectival `műveleti` + head-noun formation is
+- **operation queue (the window, the View-menu item, the command) → `Műveleti sor`** · the widened name covers the whole
+  window; `transfer → átvitel` is untouched by it and stays correct for the copy/move dialog · high. Built from two
+  settled parts: the head noun `művelet` (below) and the catalog's settled `queue → sor` (Double Commander `New queue` =
+  `Új sor`, `Put first in queue` = `Első helyre tétele a sorban`). The `<activity>-i sor` shape is Tier-2 attested
+  (Microsoft `print queue` = `nyomtatási sor`), and the adjectival `műveleti` + head-noun formation is
   Double-Commander-attested (`operations panel` = `műveleti panel`).
   - **NOT the solid compound `Műveletsor`**, even though it would look more parallel to `Műveletnapló`: Microsoft
     terminology already assigns `műveletsor` to `task flow` (id 2335491) and `visszaállítási műveletsor` to
@@ -2393,7 +2393,7 @@ kötetváltó szerversorainak buboréksúgói és a két „elfelejtés” meger
 - **Connecting to {name}… → `Kapcsolódás ide: {name}…`** · mac (Finder `LocalizableMerged` `MN1` = „Kapcsolódás ide:
   ^0…”, macOS 26.6.2) · `high`. Betű szerinti Apple-megfelelő ugyanerre az angol mondatra, és a kettőspontos alak
   megoldja a ragozási csapdát is (a `{name}` semmilyen toldalékot nem kap). Idézőjel nincs benne: a katalógus akkor
-  idéz, ha az ANGOL is idéz (`fileExplorer.network.login.title`), itt pedig nem.
+  idéz, ha az ANGOL is idéz (`servers.pinHint.body`: `"{command}"` → „{command}”), itt pedig nem.
 - **Disconnect → `Leválasztás`; Cancel → `Mégsem`; Try again → `Próbáld újra`** · a szállított alakok nyernek
   (`fileExplorer.unreachable.disconnect`, `servers.paneState.disconnect`, `menu.network.disconnect`; 15+ `Mégsem`; 5
   `Próbáld újra`), és mind macOS-megerősített (Finder `MR10.1`/`N200` = „Leválasztás”, NetAuthAgent `CANCEL` = „Mégsem”
@@ -2423,8 +2423,8 @@ kötetváltó szerversorainak buboréksúgói és a két „elfelejtés” meger
   hozzáférése). Ne relitigáld a terminust, csak igazítsd hozzá a régi kulcsot.
 - **Signed out (állapot) → `Kijelentkezve`; Saved (állapot) → `Mentve`** · a semleges, tárgyhoz igazodó állapotalak (nem
   „Ki vagy jelentkezve”), ahogy a nemsemlegességi szabály kéri · `high`.
-- **Open X to Y → nem „hogy Y”, hanem célhatározós `-hoz/-hez/-höz`** · a szállított
-  `fileExplorer.smbReauth.savedPasswordFailed` mintája („Jelentkezz be az újracsatlakozáshoz”) · `high`. Innen a három
+- **Open X to Y → nem „hogy Y”, hanem célhatározós `-hoz/-hez/-höz`** · a szállított `askCmdr.renameReview.coverageThin`
+  mintája (`Open the file to check the name.` = „Nyisd meg a fájlt a név ellenőrzéséhez.”) · `high`. Innen a három
   buboréksúgó egységes záró tagmondata: `az újbóli bejelentkezéshez`, `a kulcs megtekintéséhez`, `a kapcsolódáshoz`.
 - **A „busy” súgó a testvére szerkezetét másolja.** `disconnectBusyTooltip` =
   `Nem választható le, amíg ezen a szerveren műveletek vannak folyamatban`, pontosan a szállított `ejectBusyTooltip`
@@ -2568,8 +2568,8 @@ szentesített élő-macOS ága szerint közvetlenül a rendszer `.lproj` / `.loc
   (`desktop-i18n-term-consistency`), és ugyanaz a gomb írja át magát `Connecting…`-ra. Ha itt `Kapcsolódás…` állna, a
   felhasználó a saját szeme előtt látná a gombot tövet váltani. A lap többi kapcsolódás-szava ezért végig `csatlakoz-`:
   `Első csatlakozás ide: {host}`, `Csatlakozás vendégként`, `Beállítás megbízhatóként és csatlakozás`,
-  `Automatikus újracsatlakozás` (ez utóbbi a szállított `fileExplorer.smbReconnect.title` =
-  `Újracsatlakozás a szerverhez…` tövével is egyezik).
+  `Automatikus újracsatlakozás` (ez utóbbi a szállított `servers.paneState.reconnecting` =
+  `Újracsatlakozás ide: {name}…` tövével is egyezik).
 - **Reconnect automatically → `Automatikus újracsatlakozás`** · mac (`DisplaysSettingsIntentsExtension`: „Az
   »Automatikus újracsatlakozás bármely közeli Machez vagy iPadhez« beállítás…”) · `high`. Betű szerinti Apple-alak
   ugyanerre a beállításnévre.
@@ -2591,11 +2591,13 @@ szentesített élő-macOS ága szerint közvetlenül a rendszer `.lproj` / `.loc
   (`NetAuthAgent` `GUEST` — épp a szerverre kapcsolódás lapja) · `high`.
 - **Kényszerítve, mert az angol betű szerint azonos egy szállított kulcséval** (`desktop-i18n-term-consistency`):
   `Connect` → `Csatlakozás` (`fileExplorer.network.connect`), `Sign in` → `Bejelentkezés`
-  (`fileExplorer.network.signIn`), `Username` → `Felhasználónév` (`fileExplorer.network.login.username`), `Password` →
-  `Jelszó` (`fileExplorer.network.login.password`), `Name` → `Név` (`fileExplorer.columns.name`), `Address` → `Cím`
-  (`servers.hub.colAddress`), `Cancel` → `Mégsem` (20 kulcs), `Advanced` → `Speciális` (`settings.section.advanced`),
-  `Connect to server…` → `Kapcsolódás szerverre…` (`settings.network.permissionIntroConnectLink`, egyben a Finder saját
-  menüparancsa). Mind egybevág a Tier-1 forrásokkal is.
+  (`fileExplorer.network.signIn`), `Password` → `Jelszó` (`fileOperations.archivePassword.placeholder`), `Name` → `Név`
+  (`fileExplorer.columns.name`), `Address` → `Cím` (`servers.hub.colAddress`), `Cancel` → `Mégsem` (20 kulcs),
+  `Advanced` → `Speciális` (`settings.section.advanced`), `Connect to server…` → `Kapcsolódás szerverre…`
+  (`settings.network.permissionIntroConnectLink`, egyben a Finder saját menüparancsa). Mind egybevág a Tier-1
+  forrásokkal is. A `Username` → `Felhasználónév` a lap egyetlen mezőcímkéje, amelynek nincs testvére máshol a
+  katalógusban, tehát nem kényszerített; a mac forrás viszont ugyanide mutat (`Security.framework` `SecErrorMessages`
+  -25293 „user name or passphrase” = „felhasználónév vagy jelmondat”).
 - **A helyőrző sehol nem kap toldalékot.** `Bejelentkezés ide: {name}` (mac `iCloud.app/CloudKit` `Sign In to %1$@` =
   „Bejelentkezés: %1$@”, plusz a szállított `ide:` idióma), `Első csatlakozás ide: {host}`,
   `Kijelentkezve innen: {name}`, `A Cmdr leállította a kapcsolódást ide: {name}`, `Megnyitja ezt: {name}`. A két kivétel
@@ -2755,11 +2757,11 @@ alól). Minden sor mellett a bundle és a kulcs neve.
   méretű. A `settings.adb.install.intro` betű szerint idézi a gombcímkét: `majd nyomd meg az Újraellenőrzés gombot:` (a
   `nyomd meg a … gombot` keret a szállított `downloads.toast.inAppHint` és `mtp.ptpcameradDialog.helpText` alakja).
 - **watch (Cmdr figyeli a csatlakozó eszközöket) → `figyel`** · a katalógus szállított töve
-  (`settings.section.fileSystemWatching` = `Fájlrendszer figyelése`, `settings.advanced.card.fileWatching` =
-  `Fájlfigyelés`, `askCmdr.wake.needsApiKey` = `Az Ask Cmdr figyel, de …`) · `high`. Innen
-  `A Cmdr figyeli a csatlakozó telefonokat.` és `A Cmdr most nem figyeli a csatlakozó telefonokat.` A két sor
-  szándékosan egy mondatpár: az angol is csak a tagadásban és a `right now`-ban tér el. Az ADB-szerver, az előfizetés és
-  a socket egyikben sem jelenik meg, ahogy az `@key` kéri.
+  (`settings.advanced.card.fileWatching` = `Fájlfigyelés`, `settings.askCmdr.proactive.description`:
+  `Cmdr watches the folders you work in` = `A Cmdr figyeli azokat a mappákat, amikben dolgozol`, `downloads.fda.message`
+  = `… a Letöltések mappa figyeléséhez.`) · `high`. Innen `A Cmdr figyeli a csatlakozó telefonokat.` és
+  `A Cmdr most nem figyeli a csatlakozó telefonokat.` A két sor szándékosan egy mondatpár: az angol is csak a tagadásban
+  és a `right now`-ban tér el. Az ADB-szerver, az előfizetés és a socket egyikben sem jelenik meg, ahogy az `@key` kéri.
 - **A `Cmdr` alanyt kitesszük mindkét figyelő sorban**, mert az angol alanytalan mondata („Watching for phones.”)
   magyarul gazdátlan harmadik személy lenne egy olyan sorban, amely fölött csak az `Állapot` címke áll · `high`.
 - **Az adb-sorok a szállított `settings.fileOperations.adb*` kulcsok szóhasználatát viszik tovább**:
