@@ -288,8 +288,8 @@ doubled below to match this doc's convention:
   "rapport d''incident", non-alarmist) · high
 - error report (the report-sending flow) → rapport d''incident · same flow as crash reports; kept consistent · high
 - "Error:" prefix (non-alarmist toast) → "Problème :" · style guide steers away from "erreur"; matches the `errors` pass
-  "problème" calm fallback. Applied to user-facing toasts (`updates.checkToast.errorPrefix`, `ai.cloud.unknownError`,
-  etc.). EXCEPTION: `settings.updates.errorPrefix` stays "Erreur :" — its `@key` description explicitly marks it a
+  "problème" calm fallback. Applied to user-facing toasts such as `updates.checkToast.errorPrefix` ("Problème :
+  {message}"). EXCEPTION: `settings.updates.errorPrefix` stays "Erreur :" — its `@key` description explicitly marks it a
   developer/diagnostic label where "Error" is acceptable. · high
 - running low on space → l''espace libre devient faible / espace disque faible · descriptive FR, calm; pairs with
   "disque de démarrage" · high
@@ -735,8 +735,8 @@ every apostrophe is doubled in the catalog:
   (reuses the settled `logging → journalisation` term).
 - drop to attach (a drag-and-drop hint on the composer) → `Déposer pour joindre` · `déposer` from macOS''s "Boîte de
   dépôt" (Drop box, the only pile hit for "drop"); `joindre` from the catalog''s existing attach-an-email-address
-  precedent (`crashReporter.dialog.attachEmail` → "Joindre mon adresse e-mail…") · tentative (composed from two
-  separately-sourced roots, no single pile phrase for the whole hint).
+  precedent (`common.attachEmailPrompt` → "Joindre mon adresse e-mail pour que vous puissiez me répondre") ·
+  tentative (composed from two separately-sourced roots, no single pile phrase for the whole hint).
 - attachment (a file/folder staged onto a chat message) → `pièce jointe` (noun); remove attachment →
   `Retirer la pièce jointe` · MS terminology FRA (`attachment` → "pièce jointe", fem.); `retirer` matches macOS''s
   sidebar-removal register · high.
@@ -832,7 +832,7 @@ Phrasing notes for this pass:
   the brand whole would read as "demandez à Ask". The brand still appears (`Cmdr`), so the don't-translate check holds.
 - `errors.listing.deviceReconnecting.suggestion` was the catalog's only `tu` address ("Patiente… réessaie…") and is now
   `vous` ("Patientez quelques secondes, puis réessayez."), per the settled formality.
-- ASCII space before `%` in `fileExplorer.imageIndex.indexingTooltip` ("{percent} % du travail est fait") and before `;`
+- ASCII space before `%` in `fileExplorer.summary.percentSelectedIn` ("({percent} %) sélectionnés dans") and before `;`
   in the `renameReview.status` screen-reader summary, per the catalog-wide settled spacing rule.
 - The two `driveIndex.tooltipCoalesced*` tooltips were confirmed unchanged: FR CLDR `one`/`many`/`other` on all three
   counts, no "erreur"/"échec" wording, and the calm close ("remettra tout d'aplomb" / "rien de grave donc") matches the
@@ -991,10 +991,10 @@ Phrasing notes for this pass:
   check (`tooltipCoalesced`: "la prochaine analyse complète de Cmdr") and that string's closing
   `remettre tout d''aplomb` · high.
 
-## Transferts à l'arrêt : les 8 clés du bandeau de blocage (2026-07-31)
+## Transferts à l'arrêt : les 7 clés du bandeau de blocage (2026-07-31)
 
-Settled during the stalled-transfer pass (`fileOperations.transferProgress.stall*` + `close`, `queue.row.stalled`). ICU
-values, so single apostrophes doubled below to match this doc's convention:
+Settled during the stalled-transfer pass (`fileOperations.transferProgress.stall*` + `close`). ICU values, so single
+apostrophes doubled below to match this doc's convention:
 
 - close (button that closes the progress dialog while the transfer keeps running) → **Fermer** · macOS AppKit
   (`Document.json`, `WindowTabs.json`: "Close" → "Fermer"), MS terminology FRA ("Close" → "Fermer") · high — distinct
@@ -2079,10 +2079,6 @@ vérificateur) et sont décrites plus bas pour que la prochaine passe ne les « 
 
 ### Frontières volontaires (ne pas uniformiser)
 
-- **`Connect to server` : `Connexion au serveur` titre le dialogue, `Se connecter au serveur` est la commande** · macOS
-  `fr` ship les DEUX, exactement ainsi (le point du menu Aller est `Se connecter au serveur…`, le titre de la fenêtre
-  est `Connexion au serveur`). `fileExplorer.network.browser.connectToServerRow` est une ligne qui déclenche l'action,
-  donc verbe ; `connectDialog.title` est le titre, donc nom · `high`.
 - **`Back` : `Précédent` dans le menu Aller, `Retour` sur les boutons de l'app** · `@menu.go.back` demande le mot exact
   du Finder, et macOS `fr` n'utilise que `Précédent` (6 occurrences dans `fr/macOS/`, aucun `Retour` isolé). Les boutons
   réseau et l'assistant sont des surfaces Cmdr et gardent `Retour` · `high`.
@@ -2091,9 +2087,10 @@ vérificateur) et sont décrites plus bas pour que la prochaine passe ne les « 
 - **`Edit` : `Édition` est le MENU, `Modifier` est le verbe** · même raison, `@menu.bar.edit` · `high`.
 - **`Zoom` : `Zoom` est la taille du texte, `Réduire/agrandir` est la fenêtre** · macOS `fr` nomme l'action de la
   pastille verte `Réduire/agrandir`, et le `@key` dit d'employer le mot de macOS ICI même s'il diffère · `high`.
-- **`(unknown)` s'accorde avec ce qu'il remplace** · `fileExplorer.network.browser.unknown` = `(inconnu)` (le nombre de
-  partages, masculin) ; `fileOperations.transferProgress.sizeUnknown` = `(inconnue)` (la taille, féminin). Les deux sont
-  justes et aucune ne va à la place de l'autre · `high`.
+- **`Unknown` employé seul s'accorde avec ce qu'il remplace** · `ai.local.modelUnknown` = `Inconnu` (le modèle,
+  masculin) ; `fileOperations.transferProgress.sizeUnknown` = `(inconnue)` (la taille, féminin). Les deux sont justes
+  et aucune ne va à la place de l'autre · `high`. Seule la seconde porte les parenthèses de la source ; ne les ajoutez
+  ni ne les retirez, l'accord et la ponctuation sont deux décisions séparées.
 - **`App` : `App` est la couleur de l'app, `Application` est la portée** · les options de couleurs désignent l'app comme
   SOURCE d'une teinte (étiquette de bouton très courte) ; `shortcuts.scope.app` désigne les raccourcis valables dans
   toute l'application · `high`.
@@ -2501,7 +2498,7 @@ de cette machine ; les termes ci-dessous viennent donc des paquets macOS install
 - **Keychain Access (le nom de l'app) → `Trousseaux d''accès`** · `CFBundleDisplayName` de
   `/System/Library/CoreServices/Applications/Keychain Access.app/Contents/Resources/InfoPlist.loctable`, entrée `fr`
   (macOS 26.6.2 build 25G83, 2026-09-06) · `high`. Le pluriel est celui d'Apple, gardez-le. À distinguer du `trousseau`
-  au singulier, qui nomme le MAGASIN et que le catalogue emploie déjà (`fileExplorer.network.login.rememberInKeychain`,
+  au singulier, qui nomme le MAGASIN et que le catalogue emploie déjà (`servers.sheet.remember`,
   `ai.secretError.keychainTitle`).
 - **to trust / not trusted (un certificat) → `approuver` / `n''approuve pas`** · Security.framework,
   `authorization.prompts.loctable` (`is trying to trust a certificate` → `tente d''approuver un certificat`) et
@@ -2664,6 +2661,11 @@ macOS 26.6.2 build 25G83, 2026-09-07) et du catalogue `fr` déjà livré.
   `Localizable.loctable`, ScreenSharing, WorkflowKit) et `ordinateur distant` (AppleScript, Sharing.appex) · `high`.
   `Remote folder` → `Dossier distant`. Pas `À distance`, que System Profiler et FinderKit réservent au `Remote` employé
   seul comme valeur de colonne.
+- **Connect to server… → `Se connecter au serveur…`, au verbe, sur toutes les surfaces** · c'est le point du menu Aller
+  de macOS `fr`, mot pour mot ; les deux clés qui portent la phrase (`commands.serversConnect.label`,
+  `settings.network.permissionIntroConnectLink`) sont des actions, donc l'infinitif · `high`. Le nom
+  `Connexion au serveur` que Finder donne à SA fenêtre ne s'emploie pas ici : nos titres de feuille nomment ce qu'on
+  fait (`Ajouter un serveur`, `S''identifier sur {name}`).
 - **Browse… (le bouton qui ouvre le sélecteur de fichiers système) → `Parcourir…`** · Finder
   `fr.lproj/ConnectToWindow.strings`, clé `48.title` : `Browse` → `Parcourir`, dans la fenêtre « Connexion au serveur »
   elle-même (macOS 26.6.2 build 25G83, 2026-09-07) · `high`. Même mot que `settings.archives.opt.browse`, déjà livré.
@@ -2677,17 +2679,19 @@ Notes de formulation :
 
 - **Les titres de la feuille sont des infinitifs**, comme tous les libellés d'action du set `fr` (style guide §
   Formality) : `Ajouter un serveur`, `Modifier {name}`, `S''identifier sur {name}`. Le verbe `s''identifier` vient du
-  glossaire (§ Terms) et des clés livrées `fileExplorer.network.signIn` et `fileExplorer.smbReauth.savedPasswordFailed`
-  ; `se connecter` reste réservé à l'action réseau (`fileExplorer.network.connect` → `Se connecter`).
-- **Cinq libellés reprennent MOT POUR MOT une clé déjà livrée**, sinon `desktop-i18n-term-consistency` compte une
+  glossaire (§ Terms) et de la clé livrée `fileExplorer.network.signIn` (`S''identifier`) ; `se connecter` reste
+  réservé à l'action réseau (`fileExplorer.network.connect` → `Se connecter`).
+- **Trois libellés reprennent MOT POUR MOT une clé livrée AILLEURS**, sinon `desktop-i18n-term-consistency` compte une
   divergence : `Se connecter` (`fileExplorer.network.connect`), `S''identifier` (`fileExplorer.network.signIn`),
-  `Se connecter en tant qu''invité` (`fileExplorer.network.login.connectAsGuest`), `Mémoriser dans le trousseau`
-  (`fileExplorer.network.login.rememberInKeychain`), `Avancé` (`settings.section.advanced`).
-- **`Sign in with a username and password` s'écrit en toutes lettres**, contrairement au voisin
-  `fileExplorer.network.login.signInWithCredentials` (`S''identifier avec des identifiants`) : la source anglaise a
-  changé de formulation, donc le français aussi (`S''identifier avec un nom d''utilisateur et un mot de passe`).
-- **`How to connect` n'est pas `Mode de connexion`.** Le voisin `fileExplorer.network.login.connectionModeLegend` porte
-  ce dernier ; la nouvelle étiquette d'accessibilité pose une question et se rend par `Comment se connecter`.
+  `Avancé` (`settings.section.advanced`). Deux autres n'existent que sur la feuille et fixent donc leur formulation
+  ici : `Mémoriser dans le trousseau` (`servers.sheet.remember`) et `Se connecter en tant qu''invité`
+  (`servers.sheet.connectAsGuest`).
+- **`Sign in with a username and password` s'écrit en toutes lettres** : `servers.sheet.signInWithCredentials` →
+  `S''identifier avec un nom d''utilisateur et un mot de passe`. Pas d'abrégé en `identifiants`, qui en français
+  désigne aussi bien le seul nom d'utilisateur que le couple entier ; la source nomme les deux champs, le français
+  les nomme aussi (`servers.sheet.username` → `Nom d''utilisateur`, `servers.sheet.password` → `Mot de passe`).
+- **`How to connect` pose une question, ce n'est pas un nom de champ** : `servers.sheet.connectionModeLegend` →
+  `Comment se connecter`. Pas `Mode de connexion`, qui nommerait un réglage alors que la légende demande de choisir.
 - **La citation d'un libellé de case à cocher garde les guillemets français** avec espace intérieure :
   `Activez « Mémoriser dans le trousseau » et identifiez-vous une fois.` (style guide § Notes).
 - **`Signed out of {name}` nomme la session, pas la personne** : `Session fermée sur {name}`, sur le moule de
