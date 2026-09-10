@@ -12,13 +12,11 @@ use std::sync::{Arc, Mutex};
 
 use cmdr_adb::{AdbConnectError, AdbConnectionParams, AdbEndpoint, AdbVolume, DeviceTracker};
 use cmdr_fs::ignore_poison::IgnorePoison;
-use cmdr_fs::volume::Volume;
 use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 
-use super::device_provider::{self, AdbDeviceProvider};
+use super::device_provider::{self, AdbDeviceProvider, Installed};
 use crate::device_volumes::{notify_devices_changed, register_device_provider};
-use crate::file_system::volume::manager::get_volume_manager;
 use crate::network::connect_wiring::AttemptTable;
 
 /// The `host:track-devices` subscription. Replaceable, not a `OnceLock`: the
@@ -344,7 +342,7 @@ async fn run_dial(
         let outcome = match dialed {
             // Every claim was withdrawn while the last round-trip answered.
             Ok(_) if wire.is_cancelled() => Err(AdbConnectError::Cancelled),
-            Ok(volume) => Ok(install_volume(&serial, volume)),
+            Ok(volume) => install_volume(&serial, volume),
             Err(error) => Err(error),
         };
         if dials.get(&serial).is_some_and(|d| d.generation == generation) {
@@ -362,21 +360,25 @@ async fn run_dial(
 /// Registers a freshly dialed volume and remembers the SAME `Arc` by serial, so
 /// eject, `note_device_gone`, and `space_for_path` reach the volume panes list.
 ///
-/// `register_if_absent`, never `register`: an ADB device has no OS mount, so
-/// nothing else can pre-register its id, and a connect must not retire a volume
-/// a pane is using.
-fn install_volume(serial: &str, volume: AdbVolume) -> String {
+/// ❗ Only while the phone is still listed: a phone unplugged mid-dial answers
+/// `DeviceGone` and leaves nothing behind. The look and the install are one step
+/// against `apply_device_list` (`device_provider::install_if_listed`).
+fn install_volume(serial: &str, volume: AdbVolume) -> Result<String, AdbConnectError> {
     let volume_id = volume.volume_id().to_string();
-    let volume = Arc::new(volume);
-    if get_volume_manager().register_if_absent(&volume_id, Arc::clone(&volume) as Arc<dyn Volume>) {
-        device_provider::remember_volume(serial, volume);
-        log::info!(target: "volume", "registered ADB volume {volume_id}");
-    } else {
-        // ❗ Not remembered: the provider only ever names the volume the
-        // registry holds, and the registry kept its incumbent.
-        log::warn!(target: "volume", "ADB volume {volume_id} was already registered; keeping that one");
+    match device_provider::install_if_listed(serial, Arc::new(volume)) {
+        Installed::Registered => {
+            log::info!(target: "volume", "registered ADB volume {volume_id}");
+            Ok(volume_id)
+        }
+        Installed::KeptIncumbent => {
+            log::warn!(target: "volume", "ADB volume {volume_id} was already registered; keeping that one");
+            Ok(volume_id)
+        }
+        Installed::DeviceGone => {
+            log::info!(target: "volume", "adb device {serial} left while it was being dialed; not registering its volume");
+            Err(AdbConnectError::DeviceGone(serial.to_string()))
+        }
     }
-    volume_id
 }
 
 /// How many attempts are waiting on the dial for `serial`, for cells that have

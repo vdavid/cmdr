@@ -76,7 +76,11 @@ that finds a dial running JOINS it and gets its answer; otherwise it starts one,
 (never `register`: no OS mount can pre-register the id, and a connect must not retire a volume a pane is using), the
 SAME `Arc` is remembered by serial, and `notify_devices_changed("adb")` lets `volume_listing::complete` enrich the entry
 with its capabilities. One lock covers joining, withdrawing, and the dial's register-and-publish, so a caller that looks
-again under it finds a volume that just landed rather than dialing a second time. Errors cross IPC as
+again under it finds a volume that just landed rather than dialing a second time. ❗ The install happens only while the
+cached list still carries the phone, and the look, the registration, and the remembering run under the state lock
+`apply_device_list` stores a push under (`device_provider::install_if_listed`): a phone unplugged mid-dial answers
+`DeviceGone` with nothing registered or remembered, never a dead volume the next plug-in is handed without a dial.
+Errors cross IPC as
 `AdbConnectOutcomeError`, a
 typed mirror of `AdbConnectError` (`AdbNotInstalled`, `ServerUnreachable`, `DeviceGone`, `Unauthorized`,
 `DeviceTooOld`, `TimedOut`, `Cancelled`, `Transport`); the frontend words each one in `adb-connect-errors.ts`.
@@ -100,7 +104,8 @@ stays `NotFound`, as an unmount race is.
 
 **Eject**: `eject.rs` asks `provider_for_volume_id`, gets this provider, and answers
 `EjectAction::DeviceDisconnect { provider: "adb", volume_id }`. `AdbDeviceProvider::eject` forgets the volume and
-unregisters it; nothing is sent to the phone (`adb` has no per-client detach). The device stays in the cached list, so
+unregisters whatever the registry holds under the id, remembered or not; nothing is sent to the phone (`adb` has no
+per-client detach). The device stays in the cached list, so
 it is listed again on the next `volumes-changed`, now without `capabilities` (enrichment fills them only for a
 registered volume), and a pane standing on it holds its listing and dials again (`src/lib/file-explorer/pane/DETAILS.md`
 § "A pane on a phone"). A device the user wants gone for good is unplugged, or revoked on the phone.
@@ -148,12 +153,14 @@ registered volume), and a pane standing on it holds its listing and dials again 
 Suites here drive `cmdr_adb::testing::FakeAdbServer` (the crate's `testing` feature is on for the app's dev targets).
 `volume_wiring_test.rs` holds calling a dial off, one dial per phone (three concurrent callers, a joined attempt
 cancelled while the other waits, every joined attempt cancelled; each holds the fake's answers so every caller is
-provably in line first), the settings' live apply, the binary-path fallback, a pane listing a dialed phone through
+provably in line first), a dial whose phone left the cached list while it was held (answers `DeviceGone`, leaves
+nothing), the settings' live apply, the binary-path fallback, a pane listing a dialed phone through
 `read_directory_with_progress` on an `adb://<serial>/sdcard` path (the cell that holds the prefixed spelling end to
 end), and a listing and a `path_exists` on a listed, undialed phone (never `NotFound`); `device_provider.rs` holds the
-provider's row answers and `serial_of_path`; `commands/volumes.rs` holds resolving an `adb://` path without dialing
+provider's row answers, `serial_of_path`, and an eject of a volume the registry holds but the provider never
+remembered; `commands/volumes.rs` holds resolving an `adb://` path without dialing
 (the cell points `ANDROID_ADB_SERVER_PORT` at the fake, so a dial would be seen). Not covered here yet: the tracker's
-diff and inline retirement, eject itself, and the transfer engine through the registry. A cell asserting on the protocol belongs in the crate: `crates/cmdr-adb/DETAILS.md` §
+diff and inline retirement, eject's round trip through `eject.rs`, and the transfer engine through the registry. A cell asserting on the protocol belongs in the crate: `crates/cmdr-adb/DETAILS.md` §
 "Which side a test lives on".
 
 ## Deliberate non-goals

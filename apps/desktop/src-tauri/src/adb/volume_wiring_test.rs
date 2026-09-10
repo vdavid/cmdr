@@ -1,5 +1,6 @@
-//! Calling an ADB connect off, applying the settings live, and a pane listing a
-//! dialed phone through the real listing pipeline.
+//! Calling an ADB connect off, one dial per phone and what it installs, applying
+//! the settings live, and a pane listing a dialed phone through the real listing
+//! pipeline.
 //!
 //! The cancel cell dials a listener that accepts and never answers, so the
 //! attempt is provably still in flight when the cancel lands: a fake that
@@ -18,6 +19,7 @@ use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOr
 use crate::file_system::listing::streaming::{
     CollectorListingEventSink, ListingEventSink, StreamingListingState, read_directory_with_progress,
 };
+use crate::file_system::volume::manager::get_volume_manager;
 
 /// An endpoint whose server accepts connections and never says anything, so a
 /// dial against it hangs until something calls it off. `at_without_adb` because
@@ -74,11 +76,20 @@ async fn cancelling_an_id_nobody_is_dialing_under_is_a_plain_no() {
 async fn a_fake_phone(serial: &str) -> cmdr_adb::testing::FakeAdbServer {
     let mut tree = cmdr_adb::testing::FakeTree::new();
     tree.add_dir("/sdcard");
+    a_listed_phone(serial, tree).await
+}
+
+/// A fake server holding `tree` for one ready phone under `serial`, and the
+/// app's cached list carrying that phone too, which is where a pane finds the
+/// row it dials: a dial installs only for a phone that list still holds.
+async fn a_listed_phone(serial: &str, tree: cmdr_adb::testing::FakeTree) -> cmdr_adb::testing::FakeAdbServer {
     let fake = cmdr_adb::testing::FakeAdbServer::start(tree).await;
-    fake.push_devices(vec![cmdr_adb::AdbDevice {
+    let phone = cmdr_adb::AdbDevice {
         serial: serial.to_string(),
         ..cmdr_adb::testing::fake_device()
-    }]);
+    };
+    fake.push_devices(vec![phone.clone()]);
+    device_provider::apply_device_list(vec![phone]);
     fake
 }
 
@@ -248,6 +259,44 @@ async fn a_dial_every_joined_attempt_called_off_leaves_nothing_behind() {
     );
 }
 
+/// ❗ A phone unplugged while its dial is still on the wire must not come back as
+/// a volume. The tracker's retirement can't see a dial that hasn't installed
+/// yet, so an install that doesn't look again registers a volume for a phone
+/// that's gone, and the next plug-in is handed that dead volume without a dial.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_dial_whose_phone_left_before_it_installed_answers_gone_and_leaves_nothing_behind() {
+    const SERIAL: &str = "R58M-Left-Mid-Dial";
+    let fake = a_fake_phone(SERIAL).await;
+    // Held, so the phone provably leaves while the dial is still on the wire.
+    fake.hold_answers();
+    let dial = tokio::spawn(connect_device_at(
+        AdbConnectionParams::at(SERIAL, fake.endpoint()),
+        "adb-left-mid-dial",
+    ));
+    wait_until_joined("adb-left-mid-dial", SERIAL, 1).await;
+
+    // The tracker's next push no longer carries the phone. The fake server still
+    // does, so the dial itself succeeds on the wire: only the install can refuse.
+    device_provider::apply_device_list(Vec::new());
+    fake.release_answers();
+
+    let outcome = dial.await.expect("the dial task ran");
+    assert!(
+        matches!(outcome, Err(AdbConnectError::DeviceGone(_))),
+        "a dial for a phone that left says so; got {outcome:?}"
+    );
+    assert!(
+        device_provider::connected_volume(SERIAL).is_none(),
+        "nothing remembered"
+    );
+    assert!(
+        get_volume_manager()
+            .get(&cmdr_fs::volume::adb_volume_id(SERIAL))
+            .is_none(),
+        "nothing registered"
+    );
+}
+
 /// ❗ Turning ADB off has to take the ROWS away too, not only the subscription:
 /// a stopped tracker on its own leaves the last device list frozen on screen and
 /// its volumes registered, so the phone looks browsable and answers nothing.
@@ -289,11 +338,7 @@ async fn a_pane_on_an_adb_path_lists_the_phone_through_the_listing_pipeline() {
     const SERIAL: &str = "R58M-Listing-Cell";
     let mut tree = cmdr_adb::testing::FakeTree::new();
     tree.add_file("/sdcard/photo.jpg", b"jpeg").add_dir("/sdcard/DCIM");
-    let fake = cmdr_adb::testing::FakeAdbServer::start(tree).await;
-    fake.push_devices(vec![cmdr_adb::AdbDevice {
-        serial: SERIAL.to_string(),
-        ..cmdr_adb::testing::fake_device()
-    }]);
+    let fake = a_listed_phone(SERIAL, tree).await;
     let volume_id = connect_device_at(AdbConnectionParams::at(SERIAL, fake.endpoint()), "adb-listing-cell")
         .await
         .expect("the fake phone dials");

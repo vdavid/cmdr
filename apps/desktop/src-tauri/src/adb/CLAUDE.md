@@ -29,7 +29,8 @@ puts a device in the switcher, the dial a pane asks for, the two settings, eject
   tell", ❌ never `NotFound` (the frontend reads that as "deleted" and walks off the phone).
 - **❗ At most one wire dial per serial; later callers JOIN it.** A cancel answers its own attempt at once; the wire
   dial goes only when no joined attempt still wants it. ❌ Never register or remember a volume outside that one dial,
-  or the registry and the provider hold different volumes.
+  or the registry and the provider hold different volumes. It installs only while the phone is still listed, in one
+  step with `apply_device_list` (`install_if_listed`).
 - **❗ The tracker callback (`apply_device_list`) is synchronous and unregisters inline.** ❌ Never spawn from it, or a
   pane keeps a dead volume until the task gets scheduled.
 - **❗ Turning `fileOperations.adbEnabled` off empties the cached list, not only the tracker**, or the last list stays

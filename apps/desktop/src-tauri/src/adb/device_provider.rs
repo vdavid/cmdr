@@ -32,9 +32,45 @@ pub(crate) fn connected_volume(serial: &str) -> Option<Arc<AdbVolume>> {
     STATE.read_ignore_poison().volumes.get(serial).cloned()
 }
 
-/// Files a freshly dialed volume under its serial.
-pub(crate) fn remember_volume(serial: &str, volume: Arc<AdbVolume>) {
-    STATE.write_ignore_poison().volumes.insert(serial.to_string(), volume);
+/// What installing a freshly dialed volume came to.
+pub(crate) enum Installed {
+    /// Registered, and remembered under its serial.
+    Registered,
+    /// The registry already held a volume under this id and kept it, so nothing
+    /// was remembered: the provider only ever names the volume the registry holds.
+    KeptIncumbent,
+    /// The phone left the cached list while it was being dialed: nothing
+    /// registered, nothing remembered.
+    DeviceGone,
+}
+
+/// Registers a freshly dialed `volume` and remembers the SAME `Arc` under
+/// `serial`, but only while the cached list still carries the phone.
+///
+/// ❗ One write lock covers the look, the registration, and the remembering, and
+/// it's the lock [`apply_device_list`] stores a push under. So a push that drops
+/// the phone lands either first (this registers nothing) or after (it finds the
+/// volume and retires it). ❌ Never look outside the lock: a push in the gap finds
+/// nothing to retire, the dial registers a volume for a phone that's gone, and
+/// the next plug-in is handed that dead volume without a dial.
+///
+/// Holding it across `register_if_absent` can't deadlock: the registry takes only
+/// its own lock, and an arrival listener must return immediately
+/// (`VolumeManager::on_volume_arrival`), so nothing on that path reads this state.
+/// `register_if_absent`, never `register`: an ADB device has no OS mount, so
+/// nothing else can pre-register its id, and a connect must not retire a volume a
+/// pane is using.
+pub(crate) fn install_if_listed(serial: &str, volume: Arc<AdbVolume>) -> Installed {
+    let mut state = STATE.write_ignore_poison();
+    if !state.devices.iter().any(|d| d.serial == serial) {
+        return Installed::DeviceGone;
+    }
+    let volume_id = volume.volume_id().to_string();
+    if !get_volume_manager().register_if_absent(&volume_id, Arc::clone(&volume) as Arc<dyn Volume>) {
+        return Installed::KeptIncumbent;
+    }
+    state.volumes.insert(serial.to_string(), volume);
+    Installed::Registered
 }
 
 /// Forgets the volume for `serial`, handing it back so the caller can retire it.
@@ -179,9 +215,11 @@ impl DeviceVolumeProvider for AdbDeviceProvider {
                 .find(|d| cmdr_fs::volume::adb_volume_id(&d.serial) == volume_id)
                 .map(|d| d.serial)
                 .ok_or_else(|| format!("no adb device owns volume {volume_id}"))?;
-            if forget_volume(&serial).is_some() {
-                get_volume_manager().unregister(volume_id);
-            }
+            forget_volume(&serial);
+            // ❗ Whether or not the provider remembered one: a volume the registry
+            // holds that nothing unregisters keeps answering for a phone the user
+            // let go of.
+            get_volume_manager().unregister(volume_id);
             notify_devices_changed("adb");
             Ok(())
         })
@@ -259,6 +297,30 @@ mod tests {
                 "{state:?} has no filesystem to offer, so it must not become a row"
             );
         }
+    }
+
+    /// ❗ Eject retires whatever the registry holds under the phone's id, even a
+    /// volume the provider never remembered: a registered volume nothing can
+    /// unregister keeps answering for a phone the user let go of.
+    #[tokio::test]
+    async fn eject_unregisters_a_registered_volume_the_provider_does_not_remember() {
+        const SERIAL: &str = "R58M-Unremembered-Eject";
+        let id = cmdr_fs::volume::adb_volume_id(SERIAL);
+        apply_device_list(vec![device(SERIAL, AdbDeviceState::Ready)]);
+        let phone: Arc<dyn Volume> = Arc::new(cmdr_fs::volume::InMemoryVolume::new("Phone"));
+        assert!(
+            get_volume_manager().register_if_absent(&id, phone),
+            "precondition: registered"
+        );
+        assert!(connected_volume(SERIAL).is_none(), "precondition: not remembered");
+
+        AdbDeviceProvider.eject(&id).await.expect("the listed phone ejects");
+
+        assert!(
+            get_volume_manager().get(&id).is_none(),
+            "the registry no longer holds a volume for the ejected phone"
+        );
+        apply_device_list(Vec::new());
     }
 
     #[test]
