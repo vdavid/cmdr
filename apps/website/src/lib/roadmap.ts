@@ -582,7 +582,6 @@ export const roadmapSections: RoadmapSection[] = [
             date: '(Sep 2)',
             title: 'Agent can read files',
             description: 'Text, PDFs, photo EXIF, and archive contents.',
-            icon: 'sparkles',
             done: true,
           },
           {
@@ -597,6 +596,32 @@ export const roadmapSections: RoadmapSection[] = [
             description: 'Enter opens a .docx, .xlsx, or .pptx like a folder (read-only).',
             done: true,
           },
+          {
+            date: '(Sep 7)',
+            title: 'SFTP',
+            description: 'Mounts an SSH server like a local volume. Supports host-key checks and key files.',
+            icon: 'server',
+            done: true,
+          },
+          {
+            date: '(Sep 8)',
+            title: 'WebDAV',
+            description: 'Opens Nextcloud, ownCloud, Synology, Fastmail, etc., like a local volume.',
+            done: true,
+          },
+          {
+            date: '(Sep 9)',
+            title: 'Share and Services',
+            description: 'AirDrop, Mail, and every macOS Service, one right-click away.',
+            done: true,
+          },
+          {
+            date: '(Sep 10)',
+            title: 'Onboarding revamp',
+            description: 'Much nicer! And "Show in Finder" in Chrome finally takes you to Cmdr.',
+            icon: 'sparkles',
+            done: true,
+          },
         ],
       },
     ],
@@ -608,15 +633,15 @@ export const roadmapSections: RoadmapSection[] = [
       {
         milestones: [
           {
-            date: '(summer?)',
-            title: 'Support more file systems',
-            description: 'S3 buckets, SFTP, SCP, WebDAV, NFS, etc.',
+            date: '(this fall?)',
+            title: 'AI-powered "Tell me about this"',
+            description: 'Right-click any file for a quick AI explanation.',
             done: false,
           },
           {
-            date: '(summer?)',
-            title: 'AI-powered "Tell me about this"',
-            description: 'Right-click any file for a quick AI explanation.',
+            date: '(this fall?)',
+            title: 'Support more file systems',
+            description: 'S3 buckets, SCP, NFS, Google Drive, Dropbox, and OneDrive',
             done: false,
           },
         ],
@@ -630,21 +655,32 @@ export const roadmapSections: RoadmapSection[] = [
       {
         milestones: [
           {
-            date: '(fall?)',
+            date: '(this fall?)',
+            title: 'Folder sync',
+            description: 'Compare/sync two folders.',
+            done: false,
+          },
+          {
+            date: '(this fall?)',
+            title: 'Bulk rename tool',
+            description: 'To bulk-rename files without using AI.',
+            done: false,
+          },
+          {
+            date: '(winter?)',
             title: 'Add plugins',
             description: 'Let you extend Cmdr with your scripts and tools.',
             done: false,
           },
-          { date: '(fall?)', title: 'Folder sync', description: 'Compare/sync two folders.', done: false },
           {
-            date: '(fall?)',
+            date: '(winter?)',
             title: 'Add disk space visualizer',
             description:
               '<a href="https://grandperspectiv.sourceforge.net/HelpDocumentation/QuickStart.html" target="_blank">GrandPerspective</a>-style treemap built-in',
             done: false,
           },
           {
-            date: '(winter?)',
+            date: '(next year)',
             title: 'Add Windows and true Linux support',
             description: 'Bring Cmdr to more platforms.',
             done: false,

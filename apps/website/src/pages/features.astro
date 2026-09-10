@@ -11,14 +11,14 @@ import type { IconName } from '../components/icons/icon-map'
 import { features, type Feature } from '../lib/feature-status'
 
 /**
- * Presentation map over the repo-root `feature-status.json`: three tiers (Core, Indexing,
- * AI), each a bento grid. Each card carries a cyan status pill, plus a yellow sub-category
+ * Presentation map over the repo-root `feature-status.json`: four tiers (Core, Connect,
+ * Indexing, AI), each a bento grid. Each card carries a cyan status pill, plus a yellow sub-category
  * chip when it says something the tier heading doesn't; flagship cards span two columns
  * with a trimmed blurb, the rest render the JSON's honest one-line note. The completeness
  * check below fails the build when the JSON and this map drift, so a new feature can't
  * silently miss the page.
  */
-const tierOrder = ['Core', 'Indexing', 'AI'] as const
+const tierOrder = ['Core', 'Connect', 'Indexing', 'AI'] as const
 type Tier = (typeof tierOrder)[number]
 
 const tierMeta: Record<Tier, { id: string; title: string; description: string }> = {
@@ -26,6 +26,11 @@ const tierMeta: Record<Tier, { id: string; title: string; description: string }>
         id: 'core',
         title: 'Core',
         description: 'The file manager itself: two panes, safe file operations, and everything you reach for daily.',
+    },
+    Connect: {
+        id: 'connect',
+        title: 'Connect',
+        description: 'Network shares, servers, and phones open like any local folder, with the same fast file operations.',
     },
     Indexing: {
         id: 'indexing',
@@ -53,7 +58,7 @@ interface CardSpec {
 }
 
 const cards: CardSpec[] = [
-    // Core: the flagship up top, then files, navigation, keyboard, connectivity, extras.
+    // Core: the flagship up top, then files, navigation, keyboard, extras.
     {
         id: 'file-explorer',
         tier: 'Core',
@@ -73,13 +78,17 @@ const cards: CardSpec[] = [
     { id: 'go-to-path', tier: 'Core', category: 'Core', icon: 'navigation' },
     { id: 'keyboard-shortcuts', tier: 'Core', category: 'Keyboard', icon: 'keyboard' },
     { id: 'command-palette', tier: 'Core', category: 'Keyboard', icon: 'square-chevron-right' },
-    { id: 'network-drives', tier: 'Core', category: 'Connect', icon: 'server' },
-    { id: 'android-devices', tier: 'Core', category: 'Connect', icon: 'smartphone' },
-    { id: 'more-file-systems', tier: 'Core', category: 'Connect', icon: 'cloud' },
-    { id: 'windows-linux', tier: 'Core', category: 'Connect', icon: 'monitor' },
     { id: 'git-browser', tier: 'Core', category: 'Extras', icon: 'git-branch' },
     { id: 'download-notifications', tier: 'Core', category: 'Extras', icon: 'bell' },
     { id: 'plugins', tier: 'Core', category: 'Extras', icon: 'puzzle' },
+    { id: 'windows-linux', tier: 'Core', category: 'Extras', icon: 'monitor' },
+    // Connect: network shares, then servers, then phones, then what's planned.
+    { id: 'network-drives', tier: 'Connect', category: 'Connect', icon: 'server' },
+    { id: 'sftp', tier: 'Connect', category: 'Connect', icon: 'square-terminal' },
+    { id: 'webdav', tier: 'Connect', category: 'Connect', icon: 'globe' },
+    { id: 'android-devices', tier: 'Connect', category: 'Connect', icon: 'smartphone' },
+    { id: 'android-adb', tier: 'Connect', category: 'Connect', icon: 'usb' },
+    { id: 'more-file-systems', tier: 'Connect', category: 'Connect', icon: 'cloud' },
     // Indexing: two flagships, each paired with a small card that fills the third column.
     {
         id: 'full-disk-index',
@@ -160,7 +169,7 @@ const tiers = tierOrder.map((tier) => ({
             >.
         </p>
 
-        <!-- Three tiers, one bento each: every feature, one card -->
+        <!-- Four tiers, one bento each: every feature, one card -->
         {
             tiers.map((tier) => (
                 <section id={tier.id} class="mb-14 scroll-mt-24 last:mb-0">

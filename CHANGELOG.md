@@ -5,6 +5,100 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Thanks again for all the feedback! This release is full of stuff delivered based on real human requests! Keep them
+coming!
+
+Some highlights:
+
+1. SFTP and WebDAV support! You can now mount an SSH server or your Nextcloud/ownCloud/Synology as a volume. Try `⌘K`!
+2. "Show in Finder" support for your downloads in Google Chrome. Look for
+   `Settings > Navigation & file ops > Show in Finder`.
+3. Context menu updates:
+   - On files: "Share" and "Services" menus added. "Copy path" was _sometimes_ broken, now fixed.
+   - Google Drive: You now have "Open in Google Drive", "Copy Google Drive link", and "Ask Gemini", like in Finder!
+     (Btw, no other third-party file manager seems to have this; I've checked the 10 most popular ones!)
+   - On Cmdr in your macOS Dock: Right-click to see your tabs and bookmarks, and to open folders and servers!
+
+### Added
+
+- Connect to SFTP and WebDAV servers (alpha): a Servers list, saved servers in the volume switcher, one sign-in sheet
+  with SSH host-key checks, ⌘K to add a server, and server addresses in ⌘G (4bd5769cd, cb23070e3, 116633dd8, d76c28aab,
+  42d7b6fff, 59c204ae7, e7f391a0c, 8fbfa65c0, 4d2892967, 0a7308b5a, f52e62b39, cc4155228, 65d7f9c3c, 9c49cd283,
+  891239110, 0c22aff63, ddab97974, d546df1bc, 1cbf731a8, 979b07ac8, 181ebf6ee, 3ec450e83, b0381ae6d, 6e150d019,
+  0ecc815cc, 3fd8ad4dc, 98682b45d, 4d2cf2e67, c11408ea0, 9d89c43e2, e9ac0d601, 4a7753494, 357f5371a, 8ab154201)
+- Browse an Android phone's whole filesystem over ADB (alpha), with a pane that waits for your Allow tap and a Settings
+  page for `adb` (5ee5ea452, e9bd05fbe, d52186d9a, 53ca26515, 4a2efc50f, 61fa41f02, 74770f238, a9fef5541, a9a790a9d,
+  28964c941, 1701ad579, f0d1da5fc)
+- Share files from the right-click menu to AirDrop, Mail, Messages, and your other share extensions (b49af2d49,
+  1dcec600c, 017fc3c61, ed3b9e3cf, 2bf6909e0)
+- Use every macOS Service Finder lists, from `Cmdr > Services` and the right-click menu (39befc24e, c6c9835e7)
+- Right-click a Google Drive file to open it on the web, copy its link, or ask Gemini about it (68eb3a2f9, bb182363b,
+  6de78ee23, 98672145f, e60aa02aa, a4abe9475, 65568f608)
+- Let "Show in Finder" in other apps open a Cmdr pane with the file under the cursor, from Settings or a one-time offer
+  (94faf0dd5, bb3a3ad69, ac0f31ea6, c8003533b, c95ea3c52, e911a430a, 536f16d15, 1656b287f)
+- Right-click Cmdr's Dock icon to search, go to a folder, connect to a server, or jump to a favorite or open tab
+  (3469eb1c4, 05a537349)
+- Offer once, a few days in, to pin Cmdr to the Dock next to Finder (6138e29e9, 6376f84c4, e8ca0bc63, 6c49f312a,
+  1822d7c84)
+- Start every file right-click menu with what it acts on, like `photo.jpg · 2.1 MB` or `3 items · 3.2 MB` (28f4a43a3)
+- Add "New file…" to the File menu and the right-click menu (e401e3946)
+- Right-click the function key bar to hide it (85254509c)
+- Walk through AI provider setup in Settings the way onboarding does, with steps that fit each provider (6a2ed70df)
+
+### Changed
+
+- Rework onboarding into shorter steps: a quick checklist, one-line summaries with details behind info tips, and the
+  app's own dialog look (3bf238b6e, b0b5a6f5e, 72d82cdf5, fbe86c8c4, 77da94242, ed04861c7, 4b15a5203, cfe9d7ccf,
+  c12656f38, 861a11cd2, 2d372a46d, 59ae9a03a)
+- Hide what Finder hides (like ~/Library and /usr), and dim hidden items when you show them (4f502c2ac, c1aedbd78,
+  da4239995)
+- Sort file names the way people read them, with accents beside their base letter and your language's order, twice as
+  fast (4c2bf067f)
+- SMB shares sign in on the new sign-in sheet, and the switcher's Network row is now called Servers (c33a47512,
+  5015246c1, e74b3a420, 2a7d24a68, 39b5ce2ec)
+- Tooltips get out of the way the moment you press a key (44038a0a3)
+- Refresh the app icon, and show it in the About window instead of a ⌘ placeholder (c16ed9869, b26646a5e, 8c87e3f8f)
+- Say "Cmdr" or "the AI" in sentences that used to call every AI feature "Ask Cmdr" (356ff46a3, d7e29dbc8, d1f316184,
+  c0faed042, 20d2cb84d, 7205922cc)
+- The app is 1.4 MB smaller, having dropped an image encoder it never used (8c18c0b37)
+
+### Fixed
+
+- Fix Tab, Space, and other single keys reaching the panes behind onboarding and most other dialogs (65fb4f4ec,
+  8db8de7af)
+- Fix right-click menu items doing nothing while Settings or the viewer had focus (ae222ae2d)
+- Fix the New folder and New file dialogs opening without the cursor in the name box (1d40218b1)
+- Fix the function key bar printing F2 twice while Shift is held (2f5db8abf)
+- Fix a folder whose size is still updating showing a `≥422 GB` floor while it shrinks to 56 KB (ca0619f0c, d87f4d4c1)
+- Fix a DFS domain share falling back to the slow macOS mount, and an 8-second stall on a NAS Bonjour hasn't found yet
+  (4b68dd979, 524500cf9, 1891d18a2, e0df67bfb, b907ce55c)
+- Fix New Zealand, Irish, Indian, and other regional English Macs getting US English instead of British (fd32191ea)
+- Fix choosing no AI in onboarding leaving Ask Cmdr on, with a corner badge nagging for a provider (7b2bb151c,
+  bc731c1cc, 5a4324c42)
+- Fix pressing "Start using Cmdr!" with the terms unticked sometimes leaving their checkbox out of reach (cbf755cd3)
+- Fix Qwen's setup showing no sign-up or API key links, and LM Studio's guide link going nowhere (057e0c42e)
+- Fix screen readers skipping the restricted-folder marker, and restricted rows dropping below readable contrast in dark
+  mode (80a93d8b0, 83a6e7a3f, d2f9cc23c)
+- Fix `brew install cmdr` failing on current Homebrew (a8f229b0f)
+- Fix translations naming macOS labels that aren't on screen: "Local Network" in every language, and Hungarian's old
+  Applications folder name (db1dc0858, d9c91ffa1, eb165cbba)
+
+### Non-app
+
+- Fail the build when a translator guide cites a message key that doesn't exist, after repointing all 91 dead citations
+  (07be26551, aeda68739, 26b279d4d)
+- Make the contrast checker report text dimmed with CSS opacity, which it couldn't see before (71cb254d7, e00f2133f)
+- Log a failed file operation's real OS reason, and fail lint on a log field that never reaches the log (ee26f5b2c,
+  8e24eb2a6)
+- Verify the website's visual baselines inside the container that shot them (c1bb61a46, 2e26326f5, 58c6f9fbc, 8e2ddf6bd,
+  eca41ccae)
+- Fix every browser login to the analytics dashboard being refused (d4411cc4e)
+- Split the oversized transfer, scan, and startup modules along their real seams (307a73a9f, 0260a19e3, e6b0b0600,
+  5bc04657e, 56fcbd365, ec1ad44c5)
+- Give agents a business docs home with the product facts that change commercial answers (a4606db51, 3831e2c55)
+
 ## [0.43.0] - 2026-09-07
 
 Thanks for all the bug reports, folks! ❤️ And keep them coming!

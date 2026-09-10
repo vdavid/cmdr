@@ -19,6 +19,7 @@ import FileArchive from '~icons/lucide/file-archive'
 import FileText from '~icons/lucide/file-text'
 import Folder from '~icons/lucide/folder'
 import GitBranch from '~icons/lucide/git-branch'
+import Globe from '~icons/lucide/globe'
 import History from '~icons/lucide/history'
 import Keyboard from '~icons/lucide/keyboard'
 import ListChecks from '~icons/lucide/list-checks'
@@ -37,6 +38,8 @@ import Ship from '~icons/lucide/ship'
 import Smartphone from '~icons/lucide/smartphone'
 import Sparkles from '~icons/lucide/sparkles'
 import SquareChevronRight from '~icons/lucide/square-chevron-right'
+import SquareTerminal from '~icons/lucide/square-terminal'
+import Usb from '~icons/lucide/usb'
 import Zap from '~icons/lucide/zap'
 
 export const ICONS = {
@@ -52,6 +55,7 @@ export const ICONS = {
   'file-text': FileText,
   folder: Folder,
   'git-branch': GitBranch,
+  globe: Globe,
   history: History,
   keyboard: Keyboard,
   'list-checks': ListChecks,
@@ -70,6 +74,8 @@ export const ICONS = {
   smartphone: Smartphone,
   sparkles: Sparkles,
   'square-chevron-right': SquareChevronRight,
+  'square-terminal': SquareTerminal,
+  usb: Usb,
   zap: Zap,
 } as const
 

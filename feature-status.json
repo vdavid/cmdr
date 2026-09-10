@@ -56,6 +56,24 @@
       "note": "Fast transfers on most devices, but macOS sometimes claims the device first and some phones need a reconnect."
     },
     {
+      "id": "android-adb",
+      "name": "Android devices (ADB)",
+      "status": "alpha",
+      "note": "Browse a phone's whole filesystem over USB debugging, with the phone's Allow prompt handled right in the pane. Needs Android's platform tools installed."
+    },
+    {
+      "id": "sftp",
+      "name": "SFTP servers",
+      "status": "alpha",
+      "note": "Save an SFTP server once and open it from the volume switcher, with SSH host-key checks, key files, and passwords in your Keychain. Not yet tested against many real-world servers."
+    },
+    {
+      "id": "webdav",
+      "name": "WebDAV servers",
+      "status": "alpha",
+      "note": "Open Nextcloud, ownCloud, Synology, and other WebDAV servers like folders, with passwords in your Keychain. Not yet tested against many real-world servers."
+    },
+    {
       "id": "git-browser",
       "name": "Git browser",
       "status": "beta",
@@ -143,7 +161,7 @@
       "id": "more-file-systems",
       "name": "More file systems",
       "status": "planned",
-      "note": "S3 buckets, SFTP, WebDAV, NFS, and more."
+      "note": "S3 buckets, NFS, and more."
     },
     {
       "id": "ai-tell-me",
