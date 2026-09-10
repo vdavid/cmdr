@@ -637,6 +637,22 @@ subsystem can tell its own fixtures apart from the real thing — it also covers
 an `CMDR_E2E_MODE` check would miss. **Known remaining instance:** that same enumeration still auto-connects a real USB
 device it finds alongside the virtual one.
 
+### ❌ Remove-then-recreate to get "a different file"
+
+**The rule:** when a test needs a path to become a DIFFERENT file (a new inode), write the replacement beside it and
+`fs::rename` over it. ❌ Never `remove_file` then `write`. And assert the inode actually changed, so the premise is
+checked rather than assumed.
+
+**Why:** inode reuse is a filesystem policy, not a guarantee. APFS never recycles a number, so remove-then-recreate
+always yields a new inode on a Mac; ext4 hands the just-freed inode straight back, so the same code yields the SAME
+inode on CI and the test quietly asserts nothing. `google_drive::mirror_db`'s inode-proof test shipped that way and
+passed locally for a day while failing every Linux run. Renaming allocates the replacement while the original still
+holds its inode, which makes "a different file" true on every filesystem.
+
+**How to spot the next one:** a test that manufactures a fact about a file (inode, device, birth time, link count,
+case-sensitivity, mtime resolution) by asking the filesystem to do something, rather than by checking that it happened.
+Anything in that list differs across APFS, ext4, overlayfs, and tmpfs, and the E2E Docker stack runs on the last two.
+
 ## Sanctioned slow-test exceptions
 
 Most "raise the timeout" instincts are wrong (see the `retries: 1` and `sleep(N)` anti-patterns above): a flaky timeout

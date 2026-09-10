@@ -230,10 +230,22 @@ fn a_row_whose_inode_isnt_the_files_yields_nothing() {
     let mut fixture = Fixture::new("acct");
     let root = fixture.root("My Drive", "ROOT");
     let pdf = fixture.file(root, "My Drive/report.pdf", 300, "STALE", PDF);
+    let recorded_inode = fs::metadata(&pdf).expect("stat the mirrored file").ino();
 
-    // Replace the file: same path, new inode.
-    fs::remove_file(&pdf).expect("remove");
-    fs::write(&pdf, b"different bytes entirely").expect("rewrite");
+    // Replace the file the way an editor does: write the replacement BESIDE it, then rename
+    // over it. ❌ Never remove-then-recreate: the replacement is allocated after the original
+    // is gone, so a filesystem that recycles a just-freed inode (ext4 does, routinely) hands
+    // back the same number and the row still matches. APFS never recycles, so that shape
+    // passes on macOS and fails only on CI. Renaming allocates while the original still holds
+    // its inode, which makes "a different file" true everywhere.
+    let replacement = pdf.with_extension("pdf.new");
+    fs::write(&replacement, b"different bytes entirely").expect("write the replacement");
+    fs::rename(&replacement, &pdf).expect("rename over the original");
+
+    // The premise, checked rather than assumed: without a different inode this test would
+    // still pass while proving nothing.
+    let new_inode = fs::metadata(&pdf).expect("stat the replacement").ino();
+    assert_ne!(new_inode, recorded_inode, "the replacement must be a different file");
 
     assert_eq!(fixture.resolve(&pdf), None);
 }
