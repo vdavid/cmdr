@@ -280,7 +280,8 @@ impl DialClaim {
 
 impl Drop for DialClaim {
     fn drop(&mut self) {
-        // allowed-discarded-outcome: an attempt that already has its answer, or whose future was dropped, has nobody to hand the dial's answer to.
+        // An attempt that already has its answer, or whose future was dropped, has
+        // nobody to hand the dial's answer to.
         let _ = self.withdraw();
     }
 }
