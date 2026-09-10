@@ -407,9 +407,9 @@ async fn a_phone_walk_indexes_its_storage_once_and_never_its_system_trees() {
 }
 
 /// A change Cmdr reports under a tree the phone's walk keeps out never lands, so a
-/// live patch can't put back rows no walk produces. A change under the phone's
-/// storage does land, which is also what proves the writer had the other in hand
-/// before the assertion reads.
+/// live patch can't put back rows no walk produces. The phone's total is what
+/// shows it: an upsert under `/data` would add its byte there even though `/data`
+/// lists nothing, while the change under storage, sent second, does land.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[allow(
     clippy::await_holding_lock,
@@ -447,10 +447,13 @@ async fn a_change_under_a_tree_the_walk_keeps_out_never_lands() {
         names_under(&index, &download).contains(&"copied.txt".to_string())
     })
     .await;
-    assert!(
-        names_under(&index, &data_dir).is_empty(),
-        "/data keeps its row and takes no child from a patch"
-    );
+    // The writer applies changes in order, so the `/data` one is settled by now.
+    wait_until_async(
+        PATCH_BUDGET,
+        "the phone's total to hold the note and the copied byte, and nothing pushed under /data",
+        || size_under(&index, &root) == Some(5 + 1),
+    )
+    .await;
 
     let _ = index.forget_volume(&volume_id);
     crate::adb::test_support::retire_phone(serial);
