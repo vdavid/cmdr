@@ -32,7 +32,7 @@
   "@updates.toast.restart": {
     "sourceHash": "09af100"
   },
-  "updates.moveToApplicationsDialog.title": "Flytta Cmdr till din mapp Program",
+  "updates.moveToApplicationsDialog.title": "Flytta Cmdr till mappen Appar",
   "@updates.moveToApplicationsDialog.title": {
     "sourceHash": "97f87a0"
   },
@@ -44,7 +44,7 @@
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
     "sourceHash": "94edc89"
   },
-  "updates.moveToApplicationsDialog.howTo": "Avsluta Cmdr, dra appen till din mapp Program och öppna den därifrån. Varje uppdatering efter det kommer av sig själv.",
+  "updates.moveToApplicationsDialog.howTo": "Avsluta Cmdr, dra appen till mappen Appar och öppna den därifrån. Varje uppdatering efter det kommer av sig själv.",
   "@updates.moveToApplicationsDialog.howTo": {
     "sourceHash": "76a136d"
   },

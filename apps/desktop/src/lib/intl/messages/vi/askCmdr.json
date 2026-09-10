@@ -737,7 +737,7 @@
   "@askCmdr.wakeDigest.modified": {
     "sourceHash": "6aa21c5"
   },
-  "askCmdr.wakeDigest.removed": "{countText} {count, plural, other {mục đã xoá}}",
+  "askCmdr.wakeDigest.removed": "{countText} {count, plural, other {mục đã xóa}}",
   "@askCmdr.wakeDigest.removed": {
     "sourceHash": "9711102"
   },

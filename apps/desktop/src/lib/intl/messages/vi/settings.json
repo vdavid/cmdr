@@ -1502,7 +1502,7 @@
   "@settings.revealHandler.uninstallWarning": {
     "sourceHash": "3c10fd3"
   },
-  "settings.revealHandler.notInApplications": "Chuyển Cmdr vào thư mục Ứng dụng để bật được mục này. Từ nơi nó đang chạy hiện tại, việc chuyển hoặc xoá Cmdr sẽ khiến mọi lần bấm “Hiển thị trong Finder” trỏ vào chỗ trống.",
+  "settings.revealHandler.notInApplications": "Chuyển Cmdr vào thư mục Ứng dụng để bật được mục này. Từ nơi nó đang chạy hiện tại, việc chuyển hoặc xóa Cmdr sẽ khiến mọi lần bấm “Hiển thị trong Finder” trỏ vào chỗ trống.",
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "dc15ebf"
   },

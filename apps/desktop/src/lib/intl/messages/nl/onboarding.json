@@ -133,7 +133,7 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Staat Cmdr niet in de lijst? Klik op de knop ‘+’ onderaan en kies <strong>Cmdr</strong> uit je map <strong>Programma''s</strong>.",
+  "onboarding.stepFda.step2.tip": "Staat Cmdr niet in de lijst? Klik op de knop ‘+’ onderaan en kies <strong>Cmdr</strong> uit de map <strong>Apps</strong>.",
   "@onboarding.stepFda.step2.tip": {
     "sourceHash": "30d0299"
   },

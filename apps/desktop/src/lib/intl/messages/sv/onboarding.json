@@ -131,7 +131,7 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Finns inte Cmdr i listan? Klicka på ”+”-knappen längst ner och välj <strong>Cmdr</strong> från din mapp <strong>Program</strong>.",
+  "onboarding.stepFda.step2.tip": "Finns inte Cmdr i listan? Klicka på ”+”-knappen längst ner och välj <strong>Cmdr</strong> från mappen <strong>Appar</strong>.",
   "@onboarding.stepFda.step2.tip": {
     "sourceHash": "30d0299"
   },
