@@ -912,6 +912,10 @@
   "@fileExplorer.clipboard.useF6FromMtp": {
     "description": "Info toast shown when the user tries to clipboard-cut from a phone/camera. It points them at the F6 move flow instead. \"F6\" is a key name and \"MTP\" the phone/camera protocol; keep both."
   },
+  "fileExplorer.edit.notOnThisMac": "Cmdr can''t open this file in an editor yet, because it isn''t a regular file on your Mac. Press F3 to view it.",
+  "@fileExplorer.edit.notOnThisMac": {
+    "description": "Info toast shown when the user presses F4 (edit) on a file with no regular file behind it on the Mac: a file on a phone or camera, on a server reached over SFTP or WebDAV, inside an archive, or in the virtual .git folders. A text editor can't open it yet, so the toast says so and points at F3, which opens Cmdr's own viewer and can show the file. \"Cmdr\" is the product name and \"F3\" a key name; keep both. Never use the words 'error' or 'failed'."
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Use F5 to copy files to MTP devices",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "description": "Info toast shown when the user tries to paste onto a phone/camera. It points them at the F5 copy flow instead. \"F5\" is a key name and \"MTP\" the phone/camera protocol; keep both."

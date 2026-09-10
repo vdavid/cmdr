@@ -8,15 +8,19 @@
  */
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
-const { computeSpy, openFileViewerSpy, openInEditorSpy } = vi.hoisted(() => ({
+const { computeSpy, openFileViewerSpy, openInEditorSpy, addToastSpy } = vi.hoisted(() => ({
   computeSpy: vi.fn(),
   openFileViewerSpy: vi.fn(),
   openInEditorSpy: vi.fn(),
+  addToastSpy: vi.fn(),
 }))
 
 vi.mock('./search-results-keys', () => ({ computeSearchPaneKeyAction: computeSpy }))
 vi.mock('$lib/file-viewer/open-viewer', () => ({ openFileViewer: openFileViewerSpy }))
 vi.mock('$lib/tauri-commands', () => ({ openInEditor: openInEditorSpy }))
+vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
+// An empty volume list: the edit gate classifies the ids below off their shape alone.
+vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
 
 import { createSearchPaneKeys, type SearchPaneKeysDeps } from './search-pane-keys'
 
@@ -95,11 +99,21 @@ describe('createSearchPaneKeys', () => {
     expect(openFileViewerSpy).not.toHaveBeenCalled()
   })
 
-  it('edit-file opens the editor for a file', () => {
+  it('edit-file opens the editor for a file on the Mac', () => {
     computeSpy.mockReturnValue({ kind: 'edit-file' })
-    const { keys } = setup()
+    const { keys } = setup({ getSnapshotVolumeId: () => 'root' })
     keys.handleSearchResultsKeyDown(fakeEvent().e)
     expect(openInEditorSpy).toHaveBeenCalledWith('/f.txt')
+  })
+
+  it('edit-file refuses a phone’s file with a toast instead of handing the editor a path it can’t open', () => {
+    computeSpy.mockReturnValue({ kind: 'edit-file' })
+    const { keys } = setup({
+      getSnapshotEntryAt: () => ({ path: 'adb://R58M/sdcard/notes.txt', isDirectory: false }),
+    })
+    keys.handleSearchResultsKeyDown(fakeEvent().e)
+    expect(openInEditorSpy).not.toHaveBeenCalled()
+    expect(addToastSpy).toHaveBeenCalledTimes(1)
   })
 
   it('toggle-selection-at-cursor toggles when there are rows, no-ops when empty', () => {

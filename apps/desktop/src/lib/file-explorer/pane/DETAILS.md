@@ -299,6 +299,11 @@ volume-id string. The record has two halves, and which half answers is the whole
 - **`rowIsOsVisible(volumeId, rowPath)`** answers ONE row's "is there a real file behind this", the gate behind the
   context menu's `Share` (see § "Sharing a row" below). ❌ It is NOT `capabilitiesForPane`: that one uses the WIDE
   archive check, so it would call a `.zip` FILE unshareable, and sharing a freshly-made archive is the point.
+- **F4 (edit) goes through `editor-open.ts`**: `openInEditorOrExplain(volumeId, rowPath)` hands a file to `open -t` only
+  when its path is a plain filesystem path AND `rowIsOsVisible` holds, and otherwise shows
+  `fileExplorer.edit.notOnThisMac` (a phone, a server, an archive's insides, the `.git` portal), pointing at F3. The
+  pane's `file.edit`, the search-results F4 (against the snapshot's `volumeId`), and the new-file auto-open all call it.
+  ❌ Never call `openInEditor` on a row directly: `open -t` on a scheme path does nothing and says nothing.
 - **❗ Nothing switches exhaustively over `VolumeKind`.** Every consumer is a positive-list comparison, so a new member
   compiles clean everywhere and silently falls out of each list. The five to walk when you add one:
   `pane/clipboard-operations.ts` (the system-clipboard refusal — a missed kind puts an unusable scheme path on the OS

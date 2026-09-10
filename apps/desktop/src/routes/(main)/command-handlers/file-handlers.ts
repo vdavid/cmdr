@@ -13,7 +13,6 @@ import {
   quickLookOpen,
   quickLookClose,
   getInfo,
-  openInEditor,
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
   googleDriveLinks,
@@ -28,6 +27,7 @@ import { addToast } from '$lib/ui/toast'
 import CopiedPathToastContent from '$lib/file-explorer/CopiedPathToastContent.svelte'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
 import { capabilitiesFor, pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
+import { openInEditorOrExplain } from '$lib/file-explorer/pane/editor-open'
 import { resolveTerminalFolder } from '$lib/open-terminal/terminal-target'
 import { openTerminalHereForFolder } from '$lib/open-terminal/open-terminal-here'
 import { tString } from '$lib/intl/messages.svelte'
@@ -97,13 +97,14 @@ export const fileHandlers = {
   },
 
   'file.edit': (hctx) =>
-    withEntryUnderCursor(hctx, (entry) => {
-      // F4 hands the file to the OS's text editor (`open -t`), so there's nothing
-      // downstream of this to count it. No props: the only honest thing this
-      // knows is that somebody pressed it, and the file's name and extension are
-      // exactly what must never cross.
-      void trackEvent('editor_opened', {})
-      return openInEditor(entry.path)
+    withEntryUnderCursor(hctx, async (entry) => {
+      // F4 hands the file to the OS's text editor (`open -t`), or refuses a row with
+      // no real file behind it, with a toast (`pane/editor-open.ts`). Nothing
+      // downstream of the editor can count an open, so it's counted here, only when
+      // an editor was asked. No props: the file's name and extension are exactly
+      // what must never cross.
+      const outcome = await openInEditorOrExplain(getFocusedPaneVolumeId(), entry.path)
+      if (outcome === 'opened') void trackEvent('editor_opened', {})
     }),
 
   'file.copy': ({ explorerRef, dispatchArgs }) => {

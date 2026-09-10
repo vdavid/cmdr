@@ -304,6 +304,24 @@ describe('characterization — entry-under-cursor arms', () => {
     expect(openInEditor).toHaveBeenCalledExactlyOnceWith(ENTRY.path)
   })
 
+  it('file.edit → refuses a file that isn’t on the Mac with a toast, and never opens an editor', async () => {
+    // `open -t` on a phone's `adb://` path does nothing at all, so F4 there has to
+    // say why instead of silently failing.
+    const explorer = makeExplorerSpy()
+    explorer.getFileAndPathUnderCursor.mockReturnValue({
+      path: 'adb://R58M/sdcard/notes.txt',
+      filename: 'notes.txt',
+    })
+    getVolumeId.mockReturnValue('adb-r58m')
+    try {
+      await handleCommandExecute('file.edit', makeCtx(explorer))
+    } finally {
+      getVolumeId.mockReturnValue('local')
+    }
+    expect(openInEditor).not.toHaveBeenCalled()
+    expect(addToast).toHaveBeenCalledTimes(1)
+  })
+
   it('file.edit → no-op when nothing is under the cursor', async () => {
     const explorer = makeExplorerSpy()
     explorer.getFileAndPathUnderCursor.mockReturnValue(undefined)

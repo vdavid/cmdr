@@ -11,7 +11,7 @@
  */
 
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
-import { openInEditor } from '$lib/tauri-commands'
+import { openInEditorOrExplain } from './editor-open'
 import { computeSearchPaneKeyAction } from './search-results-keys'
 
 /** Toggle-and-fill keyboard selection args, snapshot-pane semantics (no `hasParent`: no `..` row). */
@@ -51,15 +51,19 @@ export interface SearchPaneKeys {
 }
 
 export function createSearchPaneKeys(deps: SearchPaneKeysDeps): SearchPaneKeys {
-  /** Hand the cursor's file to the in-app viewer (F3) or default editor (F4). Directories are no-ops. */
+  /**
+   * Hand the cursor's file to the in-app viewer (F3) or default editor (F4), both
+   * against the volume the search covered. F4 refuses a file that isn't on the Mac,
+   * with a toast (`editor-open.ts`). Directories are no-ops.
+   */
   function openSnapshotFileWith(kind: 'viewer' | 'editor'): void {
     const entry = deps.getSnapshotEntryAt(deps.getCursorIndex())
-    if (!entry || entry.isDirectory) return
+    const volumeId = deps.getSnapshotVolumeId()
+    if (!entry || entry.isDirectory || volumeId === undefined) return
     if (kind === 'viewer') {
-      const volumeId = deps.getSnapshotVolumeId()
-      if (volumeId !== undefined) void openFileViewer(entry.path, volumeId)
+      void openFileViewer(entry.path, volumeId)
     } else {
-      void openInEditor(entry.path)
+      void openInEditorOrExplain(volumeId, entry.path)
     }
   }
 

@@ -1122,6 +1122,7 @@ export type MessageKey =
   | 'fileExplorer.doubleClickHint.iLikeIt'
   | 'fileExplorer.doubleClickHint.neverAgain'
   | 'fileExplorer.doubleClickHint.title'
+  | 'fileExplorer.edit.notOnThisMac'
   | 'fileExplorer.entry.brokenSymlink'
   | 'fileExplorer.errorPane.aMomentAgo'
   | 'fileExplorer.errorPane.goBack'

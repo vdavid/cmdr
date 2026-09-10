@@ -13,7 +13,7 @@
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
-    import { openInEditor } from '$lib/tauri-commands'
+    import { openInEditorOrExplain } from './editor-open'
     import { pluralize } from '$lib/utils/pluralize'
     import { type ViewMode } from '$lib/app-status-store'
     import type { CommandId, McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
@@ -209,7 +209,7 @@
         // own exports, so there's nothing to plumb from the route.
         getExplorer: () => ({ getFocusedPane, setFocusedPane, getPaneLocation, navigate, moveCursor }),
         onRefocus: () => containerElement?.focus(),
-        onOpenInEditor: (path: string) => void openInEditor(path),
+        onOpenInEditor: (path: string) => void openInEditorOrExplain(getPaneVolumeId(focusedPane), path),
     })
 
     // --- Pane accessor helpers ---
