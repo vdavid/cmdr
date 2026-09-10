@@ -58,7 +58,7 @@ describe('FirstConnectIndexToastContent a11y', () => {
 
   it('the rendered toast has no violations', async () => {
     const target = mountToast()
-    expect(target.querySelector('.first-connect-toast')).not.toBeNull()
+    expect(target.querySelector('.title')).not.toBeNull()
     await expectNoA11yViolations(target)
   })
 })
