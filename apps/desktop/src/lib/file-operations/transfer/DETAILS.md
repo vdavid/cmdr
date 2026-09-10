@@ -555,7 +555,8 @@ reaches for a fixed `sleep`. `waitForConflictCheck` in `conflict-helpers.ts` pol
 The destination box (`editedPath`) accepts the home shortcut as well as absolute paths: `validateDirectoryPath` passes a
 leading `/`, a bare `~`, or `~/…`. `~` is the app's internal stand-in for the home dir; the backend expands it on
 execution (the local `copy_files`/`move_files` commands always did, and `copy_between_volumes`/`move_between_volumes`
-now expand a leading `~` for a LOCAL destination via `expand_local_dest`).
+expand a leading `~` for a destination volume with a local path via `write_operations/routing.rs::resolve_dest_path`,
+which the write-access probe below anchors through too).
 
 Two niceties on top:
 
@@ -569,6 +570,15 @@ Two niceties on top:
   line (`.path-warning`, keys `targetWillBeCreated{Copy,Move}`). The red error always wins — the two never show at once.
   A timeout is inconclusive (hung mount), so it stays quiet rather than over-promising. A monotonic `existsCheckSeq`
   drops a stale probe that lands after a newer keystroke.
+- **Red "nothing can go here" notice.** The same debounced probe also asks `destinationWriteAccess` (the
+  `destination_write_access` command: `Volume::write_access_at` on the resolved folder, 2 s, `unknown` for an
+  unregistered volume). A definite `unwritable` shows a red line under the box (`#transfer-path-refusal`, keys
+  `destinationReadOnly` / `destinationNoPermission` / `destinationNotWritable`, one per reason the backend could tell
+  apart) and suppresses the yellow "will be created" warning, which would be a promise the transfer can't keep. The
+  structural red error still wins. ❗ `unknown` shows nothing, and confirm stays enabled: the transfer asks again before
+  it writes and refuses with the typed `destination_not_writable` error, which is also what an MCP auto-confirm meets
+  (a disabled confirm would leave its round trip waiting). The phone case this exists for: copying onto a Pixel's `/`
+  surfaced only after confirm, as "Not enough space".
 
 Backend counterpart: every transfer path creates a missing destination (and ancestors) before transferring — the local
 copy/move paths via `ensure_destination_dir` (`write_operations/validation.rs`), and the cross-volume +

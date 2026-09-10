@@ -56,6 +56,16 @@ const pathExistsCheckedMock = vi.fn<
   (payload: { path: string; volumeId?: string }) => Promise<{ data: boolean; timedOut: boolean }>
 >(() => Promise.resolve({ data: true, timedOut: false }))
 
+// Whether the destination folder takes writes, behind the red "nothing can go
+// here" notice. Defaults to "can't tell" so most tests see no notice.
+type WriteAccessAnswer =
+  | { kind: 'writable' }
+  | { kind: 'unwritable'; reason: 'readOnlyFilesystem' | 'noPermission' | 'unexplained' }
+  | { kind: 'unknown' }
+const destinationWriteAccessMock = vi.fn<(payload: { volumeId: string; path: string }) => Promise<WriteAccessAnswer>>(
+  () => Promise.resolve({ kind: 'unknown' }),
+)
+
 // Home dir resolution for the long-form display of a bare `~` destination.
 vi.mock('@tauri-apps/api/path', () => ({
   homeDir: () => Promise.resolve('/Users/test'),
@@ -90,6 +100,7 @@ vi.mock('$lib/tauri-commands', () => ({
     sourcePaths?: string[],
   ) => scanVolumeForConflictsMock({ volumeId, sourceItems, destPath, sourceVolumeId, sourcePaths }),
   pathExistsChecked: (path: string, volumeId?: string) => pathExistsCheckedMock({ path, volumeId }),
+  destinationWriteAccess: (volumeId: string, path: string) => destinationWriteAccessMock({ volumeId, path }),
   DEFAULT_VOLUME_ID: 'root',
 }))
 
@@ -210,6 +221,8 @@ beforeEach(() => {
   scanVolumeForConflictsMock.mockResolvedValue([])
   pathExistsCheckedMock.mockReset()
   pathExistsCheckedMock.mockResolvedValue({ data: true, timedOut: false })
+  destinationWriteAccessMock.mockReset()
+  destinationWriteAccessMock.mockResolvedValue({ kind: 'unknown' })
   startScanPreviewMock.mockClear()
   startScanPreviewMock.mockResolvedValue({ previewId: 'preview-1' })
   cancelScanPreviewMock.mockClear()
@@ -783,6 +796,41 @@ describe('TransferDialog destination path', () => {
     // Structurally invalid → red error shows, yellow warning suppressed.
     expect(target.querySelector('.path-error')).not.toBeNull()
     expect(target.querySelector('.path-warning')).toBeNull()
+  })
+
+  it('says plainly when the destination folder takes no writes, instead of promising to create it', async () => {
+    // ❗ The Pixel case: copying onto a phone's `/` only surfaced after confirm, as
+    // "Not enough space". The folder doesn't exist yet AND takes no writes, so
+    // "Cmdr will create it" would be a promise the copy can't keep.
+    pathExistsCheckedMock.mockResolvedValue({ data: false, timedOut: false })
+    destinationWriteAccessMock.mockResolvedValue({ kind: 'unwritable', reason: 'unexplained' })
+    const target = mountDialog({ operationType: 'copy', destinationPath: '/system/New', currentVolumeId: 'root' })
+    await settleExistsCheck()
+
+    expect(destinationWriteAccessMock).toHaveBeenCalledWith({ volumeId: 'root', path: '/system/New' })
+    expect(target.querySelector('.path-error')?.textContent).toContain("doesn't accept new files")
+    expect(target.querySelector('.path-warning')).toBeNull()
+  })
+
+  it('names the reason when the backend can tell read-only from a missing permission', async () => {
+    destinationWriteAccessMock.mockResolvedValue({ kind: 'unwritable', reason: 'readOnlyFilesystem' })
+    const readOnly = mountDialog({ destinationPath: '/Volumes/Installer' })
+    await settleExistsCheck()
+    expect(readOnly.querySelector('.path-error')?.textContent).toContain('read-only')
+
+    document.body.innerHTML = ''
+    destinationWriteAccessMock.mockResolvedValue({ kind: 'unwritable', reason: 'noPermission' })
+    const locked = mountDialog({ destinationPath: '/Users/other/private' })
+    await settleExistsCheck()
+    expect(locked.querySelector('.path-error')?.textContent).toContain('permission')
+  })
+
+  it("stays quiet when the backend can't tell whether the folder takes writes", async () => {
+    destinationWriteAccessMock.mockResolvedValue({ kind: 'unknown' })
+    const target = mountDialog({ destinationPath: '/Volumes/naspi/share' })
+    await settleExistsCheck()
+
+    expect(target.querySelector('.path-error')).toBeNull()
   })
 })
 

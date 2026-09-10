@@ -239,6 +239,18 @@
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
   },
+  "fileOperations.transferDialog.destinationReadOnly": "這個資料夾是唯讀的，無法放入任何東西。",
+  "@fileOperations.transferDialog.destinationReadOnly": {
+    "sourceHash": "f30522f"
+  },
+  "fileOperations.transferDialog.destinationNoPermission": "你沒有將檔案加入這個資料夾的權限。",
+  "@fileOperations.transferDialog.destinationNoPermission": {
+    "sourceHash": "728b1ed"
+  },
+  "fileOperations.transferDialog.destinationNotWritable": "這個資料夾不接受新檔案。",
+  "@fileOperations.transferDialog.destinationNotWritable": {
+    "sourceHash": "d7cd278"
+  },
   "fileOperations.transferDialog.targetWillBeOverwritten": "這裡已經有同名的檔案了。Cmdr 會取代它。",
   "@fileOperations.transferDialog.targetWillBeOverwritten": {
     "sourceHash": "32c9a21"

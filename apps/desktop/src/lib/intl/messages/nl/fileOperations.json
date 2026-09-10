@@ -241,6 +241,18 @@
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
   },
+  "fileOperations.transferDialog.destinationReadOnly": "Deze map is alleen-lezen, dus hier kan niets heen.",
+  "@fileOperations.transferDialog.destinationReadOnly": {
+    "sourceHash": "f30522f"
+  },
+  "fileOperations.transferDialog.destinationNoPermission": "Je hebt geen toestemming om bestanden aan deze map toe te voegen.",
+  "@fileOperations.transferDialog.destinationNoPermission": {
+    "sourceHash": "728b1ed"
+  },
+  "fileOperations.transferDialog.destinationNotWritable": "Deze map accepteert geen nieuwe bestanden.",
+  "@fileOperations.transferDialog.destinationNotWritable": {
+    "sourceHash": "d7cd278"
+  },
   "fileOperations.transferDialog.targetWillBeOverwritten": "Er staat hier al een bestand met deze naam. Cmdr vervangt het.",
   "@fileOperations.transferDialog.targetWillBeOverwritten": {
     "sourceHash": "32c9a21"

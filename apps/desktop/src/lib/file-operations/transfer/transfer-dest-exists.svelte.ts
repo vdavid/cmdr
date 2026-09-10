@@ -1,13 +1,19 @@
 /**
- * Reactive "does the destination folder exist yet?" check for `TransferDialog`.
+ * Reactive "does the destination folder exist yet, and does it take writes?" check
+ * for `TransferDialog`.
  *
- * Drives the yellow "this folder will be created" warning. Structural validation
- * (empty, absolute, length) stays pure-frontend and per-keystroke; THIS check is
- * the one async piece, so it's debounced and decoupled: an `$effect` re-runs it
- * whenever the destination path or volume changes, but only after the user pauses
- * typing. A monotonic sequence drops a slow probe that lands after a newer
- * keystroke, and a timeout (hung mount) is treated as inconclusive — we stay quiet
- * rather than promise a create we can't confirm.
+ * Drives the yellow "this folder will be created" warning and the red "nothing can
+ * go here" notice. Structural validation (empty, absolute, length) stays
+ * pure-frontend and per-keystroke; THIS check is the one async piece, so it's
+ * debounced and decoupled: an `$effect` re-runs it whenever the destination path or
+ * volume changes, but only after the user pauses typing. A monotonic sequence drops
+ * a slow probe that lands after a newer keystroke, and a timeout (hung mount) is
+ * treated as inconclusive — we stay quiet rather than promise a create we can't
+ * confirm.
+ *
+ * The write-access answer shows only when the backend can say a folder takes no
+ * writes (`destinationWriteAccess`): "can't tell" shows nothing, and the transfer
+ * asks again before it writes, which is the answer that refuses.
  *
  * Mirrors the factory pattern of `transfer-conflict-check.svelte.ts`: reactive
  * inputs arrive via getter callbacks, state is read through a getter, and the
@@ -15,7 +21,8 @@
  * creates this synchronously at component init.
  */
 
-import { pathExistsChecked } from '$lib/tauri-commands'
+import { destinationWriteAccess, pathExistsChecked } from '$lib/tauri-commands'
+import type { UnwritableReason } from '$lib/file-explorer/types'
 import { validateDirectoryPath } from '$lib/utils/filename-validation'
 import { createDebounce } from '$lib/utils/timing'
 import type { Logger } from '$lib/logging/logger'
@@ -43,7 +50,11 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
   // created". A timeout leaves both flags false (inconclusive).
   let targetExists = $state(false)
 
-  // Monotonic guard: only the newest probe may write `targetMissing`.
+  // Why the destination folder takes no writes, or `null` when it takes them or
+  // the backend can't tell. ❗ Only a definite "no" sets it.
+  let refusal = $state<UnwritableReason | null>(null)
+
+  // Monotonic guard: only the newest probe may write the state above.
   let checkSeq = 0
 
   async function run(): Promise<void> {
@@ -54,20 +65,31 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
     if (validateDirectoryPath(path).severity === 'error') {
       targetMissing = false
       targetExists = false
+      refusal = null
       return
     }
     try {
-      const result = await pathExistsChecked(path, volumeId)
+      // Both at once. A failed write-access probe says nothing (`null`), ❌ never
+      // takes the existence answer down with it.
+      const [result, access] = await Promise.all([
+        pathExistsChecked(path, volumeId),
+        destinationWriteAccess(volumeId, path).catch((err: unknown) => {
+          deps.log.debug('Destination write-access check failed: {error}', { error: err })
+          return null
+        }),
+      ])
       // Drop a stale result (a newer keystroke superseded this probe) or one that
       // landed after the dialog closed.
       if (seq !== checkSeq || deps.getDestroyed()) return
       // Warn only on a definitive answer. A timeout is inconclusive (both false).
       targetMissing = !result.timedOut && !result.data
       targetExists = !result.timedOut && result.data
+      refusal = access?.kind === 'unwritable' ? access.reason : null
     } catch (err) {
       if (seq !== checkSeq) return
       targetMissing = false
       targetExists = false
+      refusal = null
       deps.log.debug('Destination existence check failed: {error}', { error: err })
     }
   }
@@ -87,6 +109,10 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
     },
     get targetExists() {
       return targetExists
+    },
+    /** Why the destination folder takes no writes, or `null` (takes them, or can't tell). */
+    get refusal() {
+      return refusal
     },
     /**
      * One-shot, non-debounced existence probe for the compress auto-confirm gate:

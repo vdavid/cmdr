@@ -241,6 +241,18 @@
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
   },
+  "fileOperations.transferDialog.destinationReadOnly": "Ez a mappa írásvédett, ide semmit nem lehet tenni.",
+  "@fileOperations.transferDialog.destinationReadOnly": {
+    "sourceHash": "f30522f"
+  },
+  "fileOperations.transferDialog.destinationNoPermission": "Nincs engedélyed fájlokat hozzáadni ehhez a mappához.",
+  "@fileOperations.transferDialog.destinationNoPermission": {
+    "sourceHash": "728b1ed"
+  },
+  "fileOperations.transferDialog.destinationNotWritable": "Ez a mappa nem fogad új fájlokat.",
+  "@fileOperations.transferDialog.destinationNotWritable": {
+    "sourceHash": "d7cd278"
+  },
   "fileOperations.transferDialog.targetWillBeOverwritten": "Már van itt egy ilyen nevű fájl. A Cmdr lecseréli.",
   "@fileOperations.transferDialog.targetWillBeOverwritten": {
     "sourceHash": "32c9a21"

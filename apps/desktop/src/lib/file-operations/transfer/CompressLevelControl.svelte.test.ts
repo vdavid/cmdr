@@ -57,6 +57,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onScanPreviewCancelled: vi.fn(() => Promise.resolve(() => {})),
   scanVolumeForConflicts: vi.fn(() => Promise.resolve([])),
   pathExistsChecked: vi.fn(() => Promise.resolve({ data: true, timedOut: false })),
+  destinationWriteAccess: vi.fn(() => Promise.resolve({ kind: 'unknown' })),
   DEFAULT_VOLUME_ID: 'root',
 }))
 

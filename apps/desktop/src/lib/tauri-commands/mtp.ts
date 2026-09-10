@@ -543,6 +543,16 @@ export async function scanVolumeForCopy(
 }
 
 /**
+ * Whether the destination folder takes writes, for the transfer dialog's notice
+ * under its path box. `unknown` when the volume can't tell, isn't connected, or
+ * didn't answer in time, which shows nothing: the transfer asks again before it
+ * writes, and that answer is the one that refuses.
+ */
+export async function destinationWriteAccess(destVolumeId: string, destPath: string): Promise<WriteAccess> {
+  return commands.destinationWriteAccess(destVolumeId, destPath)
+}
+
+/**
  * Scans destination volume for conflicts with source items.
  * Checks if any of the source item names already exist at the destination path.
  *

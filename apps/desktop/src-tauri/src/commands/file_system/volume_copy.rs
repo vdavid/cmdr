@@ -155,6 +155,36 @@ pub async fn scan_volume_for_copy(
     .await
 }
 
+/// Whether the transfer dialog's destination folder takes writes, for the notice
+/// under its path box. Resolved and anchored the way the copy op does it
+/// (`resolve_dest_path` expands a local `~`), and bounded: a volume that isn't
+/// registered (a phone nobody dialed) or doesn't answer in 2 s is `Unknown`, which
+/// shows nothing. ❌ Never a refusal of its own: the transfer asks again before it
+/// writes, and that answer is the one that refuses.
+#[tauri::command]
+#[specta::specta]
+pub async fn destination_write_access(dest_volume_id: String, dest_path: String) -> cmdr_fs::volume::WriteAccess {
+    use cmdr_fs::volume::WriteAccess;
+
+    let Some(dest_volume) = get_volume_manager()
+        .resolve(&dest_volume_id, Path::new(&dest_path))
+        .await
+        .volume
+    else {
+        return WriteAccess::Unknown;
+    };
+    let dest_path = resolve_dest_path(&dest_volume, dest_path);
+    // Detached, like the scan: dropping a probe mid-round-trip wedges an MTP phone.
+    timeout_detached_typed(
+        Duration::from_secs(2),
+        || WriteAccess::Unknown,
+        |_| WriteAccess::Unknown,
+        async move { Ok::<_, WriteAccess>(dest_volume.write_access_at(&dest_path).await) },
+    )
+    .await
+    .unwrap_or_else(|unknown| unknown)
+}
+
 /// Why a pre-flight scan or a conflict check couldn't answer.
 ///
 /// ❌ Not prose: the transfer dialog shows its own "couldn't check" state and

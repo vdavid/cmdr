@@ -186,6 +186,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::file_system::compress_files,
                     crate::commands::file_system::scan_volume_for_copy,
                     crate::commands::file_system::scan_volume_for_conflicts,
+                    crate::commands::file_system::destination_write_access,
                     crate::commands::file_system::get_listing_stats,
                     crate::commands::file_system::refresh_listing_index_sizes,
                     crate::commands::file_system::start_selection_drag,

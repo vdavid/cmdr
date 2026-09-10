@@ -583,6 +583,7 @@ export {
   compressFiles,
   scanVolumeForCopy,
   scanVolumeForConflicts,
+  destinationWriteAccess,
 } from './mtp'
 // Android devices over ADB (device list, connect, cancel, settings)
 export {

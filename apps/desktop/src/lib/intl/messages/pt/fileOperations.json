@@ -241,6 +241,18 @@
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
   },
+  "fileOperations.transferDialog.destinationReadOnly": "Esta pasta é somente leitura, então nada pode ser colocado aqui.",
+  "@fileOperations.transferDialog.destinationReadOnly": {
+    "sourceHash": "f30522f"
+  },
+  "fileOperations.transferDialog.destinationNoPermission": "Você não tem permissão para adicionar arquivos a esta pasta.",
+  "@fileOperations.transferDialog.destinationNoPermission": {
+    "sourceHash": "728b1ed"
+  },
+  "fileOperations.transferDialog.destinationNotWritable": "Esta pasta não aceita arquivos novos.",
+  "@fileOperations.transferDialog.destinationNotWritable": {
+    "sourceHash": "d7cd278"
+  },
   "fileOperations.transferDialog.targetWillBeOverwritten": "Já existe um arquivo com este nome aqui. O Cmdr vai substituí-lo.",
   "@fileOperations.transferDialog.targetWillBeOverwritten": {
     "sourceHash": "32c9a21"

@@ -311,11 +311,24 @@
         log,
     })
 
+    // The destination folder takes no writes, said before confirm (red, beneath the
+    // path box, after a structural error). Confirm stays enabled: the transfer asks
+    // again before it writes and refuses with its own typed error, which is also
+    // what an MCP auto-confirm meets.
+    const REFUSAL_KEY = {
+        readOnlyFilesystem: 'fileOperations.transferDialog.destinationReadOnly',
+        noPermission: 'fileOperations.transferDialog.destinationNoPermission',
+        unexplained: 'fileOperations.transferDialog.destinationNotWritable',
+    } as const
+    const targetRefusal = $derived(pathError || !destExists.refusal ? null : tString(REFUSAL_KEY[destExists.refusal]))
+
     // Inline path warning beneath the box (red path error always wins). Copy/move:
-    // "folder will be created" (backend auto-creates via `create_directory_all`).
-    // Compress targets a new zip FILE, so the inverse — replacing an existing file.
+    // "folder will be created" (backend auto-creates via `create_directory_all`),
+    // unless the folder takes no writes, where that would be a promise the transfer
+    // can't keep. Compress targets a new zip FILE, so the inverse — replacing an
+    // existing file.
     const targetWarning = $derived.by<string | null>(() => {
-        if (pathError) return null
+        if (pathError || targetRefusal) return null
         if (activeOperationType === 'compress')
             return destExists.targetExists ? tString('fileOperations.transferDialog.targetWillBeOverwritten') : null
         if (!destExists.targetMissing) return null
@@ -602,20 +615,24 @@
                     <TextInput
                         bind:inputElement={pathInputRef}
                         bind:value={editedPath}
-                        invalid={!!pathError}
+                        invalid={!!pathError || !!targetRefusal}
                         warning={!!targetWarning}
                         ariaLabel={tString('fileOperations.transferDialog.destPathAria')}
                         aria-describedby={pathError
                             ? 'transfer-path-error'
-                            : targetWarning
-                              ? 'transfer-path-warning'
-                              : undefined}
+                            : targetRefusal
+                              ? 'transfer-path-refusal'
+                              : targetWarning
+                                ? 'transfer-path-warning'
+                                : undefined}
                         spellcheck={false}
                         autocomplete="off"
                         onkeydown={handleInputKeydown}
                     />
                     {#if pathError}
                         <p id="transfer-path-error" class="path-error" role="alert">{pathError}</p>
+                    {:else if targetRefusal}
+                        <p id="transfer-path-refusal" class="path-error" role="alert">{targetRefusal}</p>
                     {:else if targetWarning}
                         <p id="transfer-path-warning" class="path-warning">{targetWarning}</p>
                     {/if}

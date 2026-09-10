@@ -240,6 +240,18 @@
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
   },
+  "fileOperations.transferDialog.destinationReadOnly": "Esta carpeta es de solo lectura, así que aquí no se puede poner nada.",
+  "@fileOperations.transferDialog.destinationReadOnly": {
+    "sourceHash": "f30522f"
+  },
+  "fileOperations.transferDialog.destinationNoPermission": "No tienes permiso para añadir archivos a esta carpeta.",
+  "@fileOperations.transferDialog.destinationNoPermission": {
+    "sourceHash": "728b1ed"
+  },
+  "fileOperations.transferDialog.destinationNotWritable": "Esta carpeta no acepta archivos nuevos.",
+  "@fileOperations.transferDialog.destinationNotWritable": {
+    "sourceHash": "d7cd278"
+  },
   "fileOperations.transferDialog.targetWillBeOverwritten": "Ya hay un archivo con este nombre aquí. Cmdr lo reemplazará.",
   "@fileOperations.transferDialog.targetWillBeOverwritten": {
     "sourceHash": "32c9a21"

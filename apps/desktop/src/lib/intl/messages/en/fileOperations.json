@@ -410,6 +410,21 @@
     "description": "Yellow inline warning beneath the destination path box in the Copy/Move dialog, shown when the typed destination folder doesn''t exist yet and the Move action is selected. Reassures the user the folder will be made automatically. Active voice, friendly. Keep the product name 'Cmdr' as-is. There''s a separate '...Copy' variant for the Copy action."
   },
 
+  "fileOperations.transferDialog.destinationReadOnly": "This folder is read-only, so nothing can go here.",
+  "@fileOperations.transferDialog.destinationReadOnly": {
+    "description": "Red inline notice beneath the destination path box in the Copy/Move/Compress dialog, shown before confirming when the destination folder is on storage mounted read-only (a disk image, a write-protected card). Plain and factual, about the folder rather than the whole device."
+  },
+
+  "fileOperations.transferDialog.destinationNoPermission": "You don''t have permission to add files to this folder.",
+  "@fileOperations.transferDialog.destinationNoPermission": {
+    "description": "Red inline notice beneath the destination path box in the Copy/Move/Compress dialog, shown before confirming when the user''s account isn''t allowed to add files to the destination folder. Plain and factual."
+  },
+
+  "fileOperations.transferDialog.destinationNotWritable": "This folder doesn''t accept new files.",
+  "@fileOperations.transferDialog.destinationNotWritable": {
+    "description": "Red inline notice beneath the destination path box in the Copy/Move/Compress dialog, shown before confirming when the destination folder refuses new files and Cmdr can''t tell whether it''s read-only or a permission problem (for example the top-level folder of a phone connected over ADB). Keep it neutral: don''t claim read-only or a permission."
+  },
+
   "fileOperations.transferDialog.targetWillBeOverwritten": "A file with this name is already here. Cmdr will replace it.",
   "@fileOperations.transferDialog.targetWillBeOverwritten": {
     "description": "Yellow inline warning beneath the destination path box in the Compress dialog, shown when a file with the typed archive name already exists at the destination. Confirming replaces it with the new zip. Active voice, friendly. Keep the product name 'Cmdr' as-is."
