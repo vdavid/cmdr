@@ -296,10 +296,10 @@ fn full_refresh_produces_no_targeted_write() {
 }
 
 #[test]
-fn renamed_upserts_the_new_entry() {
+fn renamed_from_a_never_indexed_name_upserts_the_new_entry() {
     let (conn, _dir) = seed_index();
     let change = DirectoryChange::Renamed {
-        old_name: "top.txt".into(),
+        old_name: "ghost.txt".into(),
         new_entry: file_entry("renamed.txt", "/Volumes/share/renamed.txt", 5),
     };
     match resolve_change(&conn, "/", &change).expect("a write") {
@@ -307,8 +307,72 @@ fn renamed_upserts_the_new_entry() {
             assert_eq!(name, "renamed.txt");
             assert_eq!(parent_id, 1);
         }
-        _ => panic!("Renamed must upsert the new entry"),
+        _ => panic!("a rename with no old row to move must upsert the new entry"),
     }
+}
+
+/// Applies one change to the seeded index through the real writer and waits for
+/// it to commit, so a cell reads back what the index holds rather than what the
+/// translator meant to send.
+fn apply_to_seeded(conn: &rusqlite::Connection, dir: &tempfile::TempDir, change: &DirectoryChange) {
+    let writer = IndexWriter::spawn(&dir.path().join("smb-watch-test.db"), crate::NoopEventSink::shared())
+        .expect("spawn writer");
+    assert!(
+        resolve_and_send_for_test(conn, &writer, "/Volumes/share", "/Volumes/share", change),
+        "the change must translate to a write"
+    );
+    writer.flush_blocking().expect("flush");
+    writer.shutdown();
+}
+
+/// A rename MOVES the old row to its new name. Upserting the new name alone left
+/// the old row behind for good: every rename double-counted the file in its
+/// folder's size, and a copy onto a phone left its staging name as a row (the
+/// engine streams to `<name>.cmdr-tmp-…` and renames it into place). A phone has no
+/// verifier pass to heal that, so the translation has to be right.
+#[test]
+fn renamed_moves_the_old_row_rather_than_leaving_it_behind() {
+    let (conn, dir) = seed_index();
+    apply_to_seeded(
+        &conn,
+        &dir,
+        &DirectoryChange::Renamed {
+            old_name: "top.txt".into(),
+            new_entry: file_entry("renamed.txt", "/Volumes/share/renamed.txt", 5),
+        },
+    );
+
+    assert_eq!(
+        store::resolve_path(&conn, "/top.txt").expect("readable"),
+        None,
+        "the old name's row must not survive the rename"
+    );
+    assert_eq!(
+        store::resolve_path(&conn, "/renamed.txt").expect("readable"),
+        Some(4),
+        "the row keeps its id: it moved rather than being copied"
+    );
+}
+
+/// A renamed folder keeps its subtree: its children answer under the new name.
+#[test]
+fn a_renamed_folder_keeps_its_children() {
+    let (conn, dir) = seed_index();
+    apply_to_seeded(
+        &conn,
+        &dir,
+        &DirectoryChange::Renamed {
+            old_name: "sub".into(),
+            new_entry: FileEntry::new("folder".into(), "/Volumes/share/folder".into(), true, false),
+        },
+    );
+
+    assert_eq!(store::resolve_path(&conn, "/sub").expect("readable"), None);
+    assert_eq!(
+        store::resolve_path(&conn, "/folder/leaf.txt").expect("readable"),
+        Some(3),
+        "the child moved with its folder"
+    );
 }
 
 #[test]

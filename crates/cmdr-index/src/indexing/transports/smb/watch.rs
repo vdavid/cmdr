@@ -142,6 +142,15 @@ enum ResolvedWrite {
     DeleteFile(i64),
     /// Delete a directory subtree by id (stat-verified gone).
     DeleteSubtree(i64),
+    /// Rename the indexed row `entry_id` in place to the refreshed entry's name
+    /// under its parent, then write the refreshed metadata onto it. A move, so a
+    /// folder keeps its subtree and totals; the writer replaces a row already
+    /// holding the new name.
+    Rename {
+        entry_id: i64,
+        /// Always an [`Upsert`](ResolvedWrite::Upsert), carrying the new name.
+        refreshed: Box<ResolvedWrite>,
+    },
 }
 
 impl ResolvedWrite {
@@ -169,6 +178,24 @@ impl ResolvedWrite {
     /// entries carry no stable inode, so hardlink dedup doesn't apply.
     fn send(self, writer: &IndexWriter) {
         let msg = match self {
+            ResolvedWrite::Rename { entry_id, refreshed } => {
+                // The move first, so the refresh lands on the moved row (an upsert
+                // is keyed by parent and name) rather than beside it.
+                if let ResolvedWrite::Upsert {
+                    parent_id, ref name, ..
+                } = *refreshed
+                    && let Err(e) = writer.send(WriteMessage::MoveEntryV2 {
+                        entry_id,
+                        new_parent_id: parent_id,
+                        new_name: name.clone(),
+                    })
+                {
+                    log::debug!(target: "indexing::transports::smb::watch", "writer send failed (writer gone): {e}");
+                    return;
+                }
+                refreshed.send(writer);
+                return;
+            }
             ResolvedWrite::Upsert {
                 parent_id,
                 name,
@@ -397,13 +424,24 @@ fn resolve_change(conn: &rusqlite::Connection, parent_rel: &str, change: &Direct
         DirectoryChange::Added(entry) | DirectoryChange::Modified(entry) => {
             Some(ResolvedWrite::upsert_from_entry(parent_id, entry))
         }
-        DirectoryChange::Renamed { new_entry, .. } => {
-            // The watcher already resolved the rename to a removed old name + a
-            // freshly-stat'd new entry within the same directory. Upsert the new
-            // entry; the stale old-name row is cleared by the verifier / a later
-            // FullRefresh. (A same-dir rename keeps ancestor totals, so leaving the
-            // old row briefly only over-counts within this dir until reconciled.)
-            Some(ResolvedWrite::upsert_from_entry(parent_id, new_entry))
+        DirectoryChange::Renamed { old_name, new_entry } => {
+            // A same-directory rename with the new entry freshly stat'd. When the
+            // index holds the old name, MOVE that row (a folder keeps its subtree)
+            // and refresh it; upserting the new name alone left the old row behind
+            // for good, double-counting the folder's size, and nothing heals it on
+            // a volume the verifier can't read (a phone). An old name the index
+            // never had is just a new entry.
+            let refreshed = ResolvedWrite::upsert_from_entry(parent_id, new_entry);
+            match store::resolve_path(conn, &join_rel(parent_rel, old_name))
+                .ok()
+                .flatten()
+            {
+                Some(entry_id) => Some(ResolvedWrite::Rename {
+                    entry_id,
+                    refreshed: Box::new(refreshed),
+                }),
+                None => Some(refreshed),
+            }
         }
         DirectoryChange::Removed(name) => {
             // Resolve the delete against the INDEX, not a live stat. SMB coalescing
