@@ -1417,6 +1417,42 @@
   "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.title": "唯讀資料夾",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
+    "sourceHash": "24c9063"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "這個資料夾是唯讀的，無法把任何東西複製或搬移到這裡。",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.message": {
+    "sourceHash": "0c50a60"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": "請選擇另一個目標資料夾。",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": {
+    "sourceHash": "a41f65a"
+  },
+  "errors.write.destinationNotWritable.noPermission.title": "沒有在這裡加入檔案的權限",
+  "@errors.write.destinationNotWritable.noPermission.title": {
+    "sourceHash": "19f57db"
+  },
+  "errors.write.destinationNotWritable.noPermission.message": "你沒有將檔案加入這個資料夾的權限。",
+  "@errors.write.destinationNotWritable.noPermission.message": {
+    "sourceHash": "15abe78"
+  },
+  "errors.write.destinationNotWritable.noPermission.suggestion": "請選擇另一個目標資料夾，或是更改這個資料夾的權限後再試一次。",
+  "@errors.write.destinationNotWritable.noPermission.suggestion": {
+    "sourceHash": "fceb936"
+  },
+  "errors.write.destinationNotWritable.unexplained.title": "這個資料夾不接受檔案",
+  "@errors.write.destinationNotWritable.unexplained.title": {
+    "sourceHash": "628c3aa"
+  },
+  "errors.write.destinationNotWritable.unexplained.message": "這個資料夾不接受新檔案，無法把任何東西複製或搬移到這裡。",
+  "@errors.write.destinationNotWritable.unexplained.message": {
+    "sourceHash": "22ce481"
+  },
+  "errors.write.destinationNotWritable.unexplained.suggestion": "請選擇另一個目標資料夾。",
+  "@errors.write.destinationNotWritable.unexplained.suggestion": {
+    "sourceHash": "a41f65a"
+  },
   "errors.write.readOnlyDevice.destination.fallbackName": "目標裝置",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
     "sourceHash": "ef2429e"

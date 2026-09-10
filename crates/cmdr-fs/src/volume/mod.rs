@@ -1054,6 +1054,20 @@ pub trait Volume: Send + Sync {
         self.get_space_info()
     }
 
+    /// Whether a write into `path` would be taken right now, and if not, why, as
+    /// far as this backend can tell WITHOUT writing anything.
+    ///
+    /// `path` is a destination folder that may not exist yet (a copy creates it),
+    /// so a backend answers for the nearest existing folder at or above it.
+    /// Default [`WriteAccess::Unknown`]: a backend with no way to ask says so, and
+    /// ❌ never answers a guess. The transfer pre-flight asks this BEFORE it
+    /// measures space, so a folder nothing can be written to never reads as a full
+    /// one.
+    fn write_access_at<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = WriteAccess> + Send + 'a>> {
+        let _ = path;
+        Box::pin(async { WriteAccess::Unknown })
+    }
+
     /// Recommended poll interval for live disk-space monitoring.
     ///
     /// Local volumes use a short interval (2 s) because `statvfs`/NSURL is

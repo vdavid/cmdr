@@ -1417,6 +1417,42 @@
   "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.title": "Alleen-lezen map",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
+    "sourceHash": "24c9063"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "Deze map is alleen-lezen, dus er kan niets naartoe gekopieerd of verplaatst worden.",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.message": {
+    "sourceHash": "0c50a60"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": "Kies een andere doelmap.",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": {
+    "sourceHash": "a41f65a"
+  },
+  "errors.write.destinationNotWritable.noPermission.title": "Geen toestemming om hier bestanden toe te voegen",
+  "@errors.write.destinationNotWritable.noPermission.title": {
+    "sourceHash": "19f57db"
+  },
+  "errors.write.destinationNotWritable.noPermission.message": "Je hebt geen toestemming om bestanden aan deze map toe te voegen.",
+  "@errors.write.destinationNotWritable.noPermission.message": {
+    "sourceHash": "15abe78"
+  },
+  "errors.write.destinationNotWritable.noPermission.suggestion": "Kies een andere doelmap, of wijzig de rechten van deze map en probeer het opnieuw.",
+  "@errors.write.destinationNotWritable.noPermission.suggestion": {
+    "sourceHash": "fceb936"
+  },
+  "errors.write.destinationNotWritable.unexplained.title": "Deze map accepteert geen bestanden",
+  "@errors.write.destinationNotWritable.unexplained.title": {
+    "sourceHash": "628c3aa"
+  },
+  "errors.write.destinationNotWritable.unexplained.message": "Deze map accepteert geen nieuwe bestanden, dus er kan niets naartoe gekopieerd of verplaatst worden.",
+  "@errors.write.destinationNotWritable.unexplained.message": {
+    "sourceHash": "22ce481"
+  },
+  "errors.write.destinationNotWritable.unexplained.suggestion": "Kies een andere doelmap.",
+  "@errors.write.destinationNotWritable.unexplained.suggestion": {
+    "sourceHash": "a41f65a"
+  },
   "errors.write.readOnlyDevice.destination.fallbackName": "Het doelapparaat",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
     "sourceHash": "ef2429e"

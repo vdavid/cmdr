@@ -523,6 +523,64 @@ impl Volume for LocalPosixVolume {
                 .expect("spawn_blocking get_space_info closure doesn't panic and the task is uncancelable")
         })
     }
+
+    /// `statvfs` and `access(W_OK)` on the nearest folder at or above `path` that
+    /// exists, off the async runtime (`write_access_for_path`).
+    fn write_access_at<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = crate::file_system::volume::WriteAccess> + Send + 'a>> {
+        let target = self.resolve(path);
+        Box::pin(async move {
+            spawn_blocking(move || write_access_for_path(&target))
+                .await
+                .expect("spawn_blocking write_access closure doesn't panic and the task is uncancelable")
+        })
+    }
+}
+
+/// Whether a write into `path` would be taken, answered for the nearest folder at
+/// or above it that exists (a copy creates the rest).
+///
+/// A read-only filesystem is the `statvfs` `ST_RDONLY` flag, or `access(W_OK)`
+/// refused with `EROFS`; a missing permission is `access` refused with `EACCES` or
+/// `EPERM`. Anything the two calls can't answer is `Unknown`, ❌ never a guess.
+pub(crate) fn write_access_for_path(path: &Path) -> crate::file_system::volume::WriteAccess {
+    use crate::file_system::volume::{UnwritableReason, WriteAccess};
+    use std::ffi::CString;
+    use std::os::unix::ffi::OsStrExt;
+
+    let Some(folder) = path.ancestors().find(|ancestor| ancestor.is_dir()) else {
+        return WriteAccess::Unknown;
+    };
+    let Ok(c_path) = CString::new(folder.as_os_str().as_bytes()) else {
+        return WriteAccess::Unknown;
+    };
+    let read_only = WriteAccess::Unwritable {
+        reason: UnwritableReason::ReadOnlyFilesystem,
+    };
+
+    // SAFETY: `c_path` is a valid NUL-terminated C string; `stat` is a zeroed,
+    // correctly-typed `libc::statvfs` out-buffer, and its flags are read only on the
+    // `== 0` branch, where the kernel filled them.
+    let mount_is_read_only = unsafe {
+        let mut stat: libc::statvfs = std::mem::zeroed();
+        libc::statvfs(c_path.as_ptr(), &mut stat) == 0 && (stat.f_flag & libc::ST_RDONLY) != 0
+    };
+    if mount_is_read_only {
+        return read_only;
+    }
+    // SAFETY: `c_path` is a valid NUL-terminated C string, and `access` only reads it.
+    if unsafe { libc::access(c_path.as_ptr(), libc::W_OK) } == 0 {
+        return WriteAccess::Writable;
+    }
+    match io::Error::last_os_error().raw_os_error() {
+        Some(libc::EROFS) => read_only,
+        Some(libc::EACCES | libc::EPERM) => WriteAccess::Unwritable {
+            reason: UnwritableReason::NoPermission,
+        },
+        _ => WriteAccess::Unknown,
+    }
 }
 
 /// Gets space information for a path.

@@ -1417,6 +1417,42 @@
   "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.title": "Carpeta de solo lectura",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
+    "sourceHash": "24c9063"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "Esta carpeta es de solo lectura, así que no se puede copiar ni mover nada a ella.",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.message": {
+    "sourceHash": "0c50a60"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": "Elige otra carpeta de destino.",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": {
+    "sourceHash": "a41f65a"
+  },
+  "errors.write.destinationNotWritable.noPermission.title": "Sin permiso para añadir archivos aquí",
+  "@errors.write.destinationNotWritable.noPermission.title": {
+    "sourceHash": "19f57db"
+  },
+  "errors.write.destinationNotWritable.noPermission.message": "No tienes permiso para añadir archivos a esta carpeta.",
+  "@errors.write.destinationNotWritable.noPermission.message": {
+    "sourceHash": "15abe78"
+  },
+  "errors.write.destinationNotWritable.noPermission.suggestion": "Elige otra carpeta de destino, o cambia los permisos de esta carpeta y vuelve a intentarlo.",
+  "@errors.write.destinationNotWritable.noPermission.suggestion": {
+    "sourceHash": "fceb936"
+  },
+  "errors.write.destinationNotWritable.unexplained.title": "Esta carpeta no acepta archivos",
+  "@errors.write.destinationNotWritable.unexplained.title": {
+    "sourceHash": "628c3aa"
+  },
+  "errors.write.destinationNotWritable.unexplained.message": "Esta carpeta no acepta archivos nuevos, así que no se puede copiar ni mover nada a ella.",
+  "@errors.write.destinationNotWritable.unexplained.message": {
+    "sourceHash": "22ce481"
+  },
+  "errors.write.destinationNotWritable.unexplained.suggestion": "Elige otra carpeta de destino.",
+  "@errors.write.destinationNotWritable.unexplained.suggestion": {
+    "sourceHash": "a41f65a"
+  },
   "errors.write.readOnlyDevice.destination.fallbackName": "El dispositivo de destino",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
     "sourceHash": "ef2429e"

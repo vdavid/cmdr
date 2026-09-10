@@ -408,6 +408,28 @@ fn room_to_check(dest_space: Option<SpaceInfo>) -> Option<u64> {
     dest_space.and_then(|space| space.available_bytes())
 }
 
+/// The refusal for a destination folder that takes no writes, or `None` when it
+/// takes them or its backend can't tell.
+///
+/// Asked BEFORE anything is created or measured, by the copy and both moves, so a
+/// folder nothing can land in never reads as a full one: a phone's `/` is a
+/// read-only system image reporting 0 free, and the space check alone told the
+/// user it was out of room. `Unknown` goes ahead, ❌ never a refusal, the same
+/// tolerance the space pre-flight gives `NotSupported`. The answer can go stale
+/// before the first write, the one window this guard accepts: a write refused
+/// later is still refused, with the backend's own error.
+pub(super) async fn destination_refusal(dest_volume: &dyn Volume, dest_path: &Path) -> Option<WriteOperationError> {
+    match dest_volume.write_access_at(dest_path).await {
+        crate::file_system::volume::WriteAccess::Unwritable { reason } => {
+            Some(WriteOperationError::DestinationNotWritable {
+                path: dest_path.display().to_string(),
+                reason,
+            })
+        }
+        _ => None,
+    }
+}
+
 /// Performs a pre-flight scan for volume copy without executing.
 ///
 /// This scans the source files and checks destination for conflicts and space.
@@ -454,13 +476,29 @@ pub async fn scan_for_volume_copy(
         }
     }
 
+    // Whether the destination takes writes at all, asked BEFORE its space: an
+    // unwritable folder is reported as such, ❌ never as a space shortfall (a
+    // phone's `/` reports 0 free and takes nothing at any size).
+    let dest_write_access = dest_volume.write_access_at(dest_path).await;
+    let dest_takes_writes = !matches!(
+        dest_write_access,
+        crate::file_system::volume::WriteAccess::Unwritable { .. }
+    );
+
     // What the destination has room for, or `None` when it genuinely can't tell.
-    let dest_space = dest_space_if_known(dest_volume, dest_path).await?;
+    // A folder that takes no writes has nothing to measure for, so its space
+    // failing to answer doesn't refuse the preview either.
+    let dest_space = match dest_space_if_known(dest_volume, dest_path).await {
+        Ok(space) => space,
+        Err(_) if !dest_takes_writes => None,
+        Err(e) => return Err(e),
+    };
 
     // ❗ Only a volume that answered with a CEILING gets checked. See
     // `room_to_check`: a silent backend and a bottomless one both mean "don't
     // compare", and a preview the user can't even open is the wrong way to say so.
-    if let Some(available) = room_to_check(dest_space)
+    if dest_takes_writes
+        && let Some(available) = room_to_check(dest_space)
         && available < total_bytes
     {
         return Err(VolumeError::IoError {
@@ -487,6 +525,7 @@ pub async fn scan_for_volume_copy(
         dir_count: total_dirs,
         total_bytes,
         dest_space,
+        dest_write_access,
         conflicts,
     })
 }
@@ -623,6 +662,13 @@ pub(crate) async fn copy_volumes_with_progress(
                 }));
             }
         }
+    }
+
+    // Phase 0.4: a destination folder that takes no writes is refused here,
+    // before Phase 0.5 creates anything in it and before Phase 2 measures its
+    // space (`destination_refusal`).
+    if let Some(refusal) = destination_refusal(&*dest_volume, dest_path).await {
+        return Err(WriteFailure::synthetic(refusal));
     }
 
     // Phase 0.5: Ensure the destination directory exists, creating it and any

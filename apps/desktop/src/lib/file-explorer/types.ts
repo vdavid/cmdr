@@ -626,6 +626,14 @@ export interface RecoveredOriginal {
  */
 export type ReadOnlySide = 'source' | 'destination'
 
+/**
+ * Why a destination folder takes no writes, for `destination_not_writable`. Only
+ * what the backend can tell apart: a backend that can't tell read-only from a
+ * missing permission (a phone over ADB) says `unexplained`, and the frontend ❌
+ * never guesses one.
+ */
+export type UnwritableReason = 'readOnlyFilesystem' | 'noPermission' | 'unexplained'
+
 /** Error types for write operations (discriminated union). */
 export type WriteOperationError =
   | { type: 'source_not_found'; path: string }
@@ -639,6 +647,7 @@ export type WriteOperationError =
   | { type: 'cancelled'; message: string }
   | { type: 'device_disconnected'; path: string }
   | { type: 'read_only_device'; path: string; deviceName: string | null; side: ReadOnlySide }
+  | { type: 'destination_not_writable'; path: string; reason: UnwritableReason }
   | { type: 'file_locked'; path: string }
   | { type: 'trash_not_supported'; path: string }
   | { type: 'connection_interrupted'; path: string }

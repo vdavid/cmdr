@@ -17,12 +17,18 @@
 //! `copy_volumes_with_progress` ask independently and a fix to one leaves the
 //! other wrong.
 //!
+//! One question comes before space: whether the destination folder takes writes
+//! at all (`Volume::write_access_at`). A folder that takes none is refused as
+//! such, before anything is created or measured, and ❌ never reads as a full
+//! one. A phone's `/` is the live case: a read-only system image reporting 0 free,
+//! beside shared storage that takes the same copy.
+//!
 //! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests/`
 //! (`super::tests`) so they aren't duplicated.
 
 use super::tests::make_state;
 use super::*;
-use crate::file_system::volume::InMemoryVolume;
+use crate::file_system::volume::{InMemoryVolume, UnwritableReason, WriteAccess};
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 
 // ========================================
@@ -319,4 +325,129 @@ async fn a_preview_of_a_destination_with_no_ceiling_carries_what_it_holds() {
     .expect("a destination with no ceiling is still previewable");
 
     assert_eq!(result.dest_space, Some(SpaceInfo::Unbounded { used_bytes: 67_108_864 }));
+}
+
+// ========================================
+// The destination folder takes no writes
+// ========================================
+
+/// A phone-shaped destination: a read-only system image at `/` reporting 0 free,
+/// beside shared storage under `/sdcard` that takes writes and has room.
+async fn phone_with_a_read_only_root() -> Arc<dyn Volume> {
+    let dest = InMemoryVolume::new("Phone")
+        .with_space_info(1_000, 0)
+        .with_space_info_under("/sdcard", 10_000_000, 9_000_000)
+        .with_write_access_under(
+            "/",
+            WriteAccess::Unwritable {
+                reason: UnwritableReason::ReadOnlyFilesystem,
+            },
+        )
+        .with_write_access_under("/sdcard", WriteAccess::Writable);
+    dest.create_directory(Path::new("/sdcard")).await.unwrap();
+    Arc::new(dest)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_into_a_folder_that_takes_no_writes_is_refused_as_such_before_anything_is_created_or_measured() {
+    // ❗ The live case: a copy onto a Pixel's `/` said "Not enough space: the
+    // destination needs X but only has 0 bytes available". `df` was right about
+    // the 0 and wrong as the reason, since nothing lands there at any size. The
+    // write-access answer comes before Phase 0.5 creates the folder and before
+    // the space check.
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source
+        .create_file(Path::new("/photo.jpg"), b"a photo's worth of bytes")
+        .await
+        .unwrap();
+    let dest = phone_with_a_read_only_root().await;
+
+    let failure = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "test-op-unwritable-dest",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/photo.jpg")],
+        Arc::clone(&dest),
+        Path::new("/system/New"),
+        &VolumeCopyConfig::default(),
+    )
+    .await
+    .expect_err("nothing can land in a read-only folder");
+
+    assert!(
+        matches!(
+            &failure.error,
+            WriteOperationError::DestinationNotWritable {
+                path,
+                reason: UnwritableReason::ReadOnlyFilesystem,
+            } if path == "/system/New"
+        ),
+        "a read-only destination must never read as a full one, got {:?}",
+        failure.error,
+    );
+    assert!(
+        !dest.exists(Path::new("/system/New")).await,
+        "the refusal comes before Phase 0.5 creates the destination folder"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_preview_of_a_folder_that_takes_no_writes_says_so_instead_of_refusing_for_space() {
+    // The dialog's half: the preview describes the destination (it takes no
+    // writes) rather than failing with a space shortfall that isn't the reason.
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(1_000_000, 900_000));
+    source
+        .create_file(Path::new("/photo.jpg"), b"a photo's worth of bytes")
+        .await
+        .unwrap();
+    let dest = phone_with_a_read_only_root().await;
+
+    let preview = scan_for_volume_copy(
+        source.as_ref(),
+        &[PathBuf::from("/photo.jpg")],
+        dest.as_ref(),
+        Path::new("/"),
+        10,
+    )
+    .await
+    .expect("the preview describes an unwritable destination rather than refusing for space");
+
+    assert_eq!(
+        preview.dest_write_access,
+        WriteAccess::Unwritable {
+            reason: UnwritableReason::ReadOnlyFilesystem,
+        },
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_folder_that_takes_writes_beside_a_read_only_root_still_copies() {
+    // The other half, and the one an over-eager fix breaks: the answer is about
+    // the FOLDER. The shared storage beside the read-only root takes the copy.
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source
+        .create_file(Path::new("/photo.jpg"), b"a photo's worth of bytes")
+        .await
+        .unwrap();
+    let dest = phone_with_a_read_only_root().await;
+
+    let result = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "test-op-writable-beside-read-only",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/photo.jpg")],
+        Arc::clone(&dest),
+        Path::new("/sdcard/New"),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+
+    assert!(
+        result.is_ok(),
+        "the shared storage takes writes, got {:?}",
+        result.err().map(|f| format!("{:?}", f.error)),
+    );
+    assert!(dest.exists(Path::new("/sdcard/New/photo.jpg")).await);
 }

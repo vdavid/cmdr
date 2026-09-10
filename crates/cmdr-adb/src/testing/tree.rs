@@ -1,8 +1,9 @@
 //! The in-memory filesystem the fake ADB server serves: what a device would
 //! have on disk, with no device involved.
 //!
-//! [`FakeTree::read_only`] is the one fault switch here; every write then
-//! answers `EROFS`.
+//! [`FakeTree::read_only`] refuses every write with `EROFS`, and a
+//! [`FakeMount::read_only`] mount refuses the writes under it, the way a phone's
+//! system image at `/` does (`FakeTree::new` mounts it so).
 
 use std::collections::BTreeMap;
 
@@ -109,6 +110,10 @@ pub struct FakeMount {
     /// The `Mounted on` column, which needn't be `path`: the fake's `/sdcard`
     /// is a plain folder, where a phone links it into `/storage/emulated`.
     pub mounted_on: String,
+    /// Mounted read-only, as a phone's system image at `/` is: a write under it
+    /// answers `EROFS`, and `test -w` exits 1. A mount flag `df -k` doesn't print,
+    /// so it changes none of the columns above.
+    pub read_only: bool,
 }
 
 impl FakeMount {
@@ -135,6 +140,7 @@ impl FakeMount {
             used_kib: kib(used),
             available_kib: kib(available),
             mounted_on: mounted_on.join(" "),
+            read_only: false,
         }
     }
 
@@ -148,7 +154,14 @@ impl FakeMount {
             available_kib,
             mounted_on: path.clone(),
             path,
+            read_only: false,
         }
+    }
+
+    /// This mount, mounted read-only. Chainable.
+    pub fn mounted_read_only(mut self) -> Self {
+        self.read_only = true;
+        self
     }
 
     /// The `Use%` column as toybox computes it: used over used plus
@@ -164,8 +177,8 @@ impl FakeMount {
 impl FakeTree {
     /// A tree holding `/` and `/sdcard`, mounted as the Pixel in
     /// [`pixel_captures`](super::pixel_captures) mounts them: its read-only
-    /// system image at `/` (0 available), and its shared storage holding
-    /// `/sdcard`, reported on `/storage/emulated`.
+    /// system image at `/` (0 available, and a write under it refused), and its
+    /// shared storage holding `/sdcard`, reported on `/storage/emulated`.
     pub fn new() -> Self {
         let mut tree = Self {
             nodes: BTreeMap::new(),
@@ -174,7 +187,7 @@ impl FakeTree {
         };
         tree.add_dir("/");
         tree.add_dir("/sdcard");
-        tree.mount(FakeMount::with_row("/", data_row(DF_K_ROOT, 0)))
+        tree.mount(FakeMount::with_row("/", data_row(DF_K_ROOT, 0)).mounted_read_only())
             .mount(FakeMount::with_row("/sdcard", data_row(DF_K_SHARED_STORAGE, 0)));
         tree
     }
@@ -349,9 +362,24 @@ impl FakeTree {
         Err(ENOENT)
     }
 
+    /// Whether a write at `path` is refused: the whole-tree
+    /// [`read_only`](Self::read_only) switch, or the deepest mount holding `path`
+    /// being read-only. Matched by prefix, without following links, since a write
+    /// names the folder it lands in.
+    pub fn writes_refused_at(&self, path: &str) -> bool {
+        let path = Self::normalize(path);
+        self.read_only
+            || self
+                .mounts
+                .iter()
+                .filter(|m| m.path == "/" || path == m.path || path.starts_with(&format!("{}/", m.path)))
+                .max_by_key(|m| m.path.len())
+                .is_some_and(|m| m.read_only)
+    }
+
     /// Creates `path` and every missing ancestor (`mkdir -p`).
     pub fn mkdir_p(&mut self, path: &str) -> Result<(), i32> {
-        if self.read_only {
+        if self.writes_refused_at(path) {
             return Err(EROFS);
         }
         let path = Self::normalize(path);
@@ -367,7 +395,7 @@ impl FakeTree {
 
     /// Writes a file (`SEND`). The parent must exist and be a directory.
     pub fn write_file(&mut self, path: &str, data: Vec<u8>, mode: u32, mtime: i64) -> Result<(), i32> {
-        if self.read_only {
+        if self.writes_refused_at(path) {
             return Err(EROFS);
         }
         let path = Self::normalize(path);
@@ -386,7 +414,7 @@ impl FakeTree {
     /// Removes `path` and everything under it (`rm -rf`). `Err(ENOENT)` when
     /// nothing was there.
     pub fn remove_tree(&mut self, path: &str) -> Result<(), i32> {
-        if self.read_only {
+        if self.writes_refused_at(path) {
             return Err(EROFS);
         }
         let path = Self::normalize(path);
@@ -400,7 +428,7 @@ impl FakeTree {
 
     /// Removes one node, refusing a directory that still holds something.
     pub fn remove_one(&mut self, path: &str) -> Result<(), i32> {
-        if self.read_only {
+        if self.writes_refused_at(path) {
             return Err(EROFS);
         }
         let path = Self::normalize(path);
@@ -417,7 +445,7 @@ impl FakeTree {
     /// Renames `from` to `to` (`mv`), overwriting a file at `to`. Moves a
     /// whole subtree.
     pub fn rename(&mut self, from: &str, to: &str) -> Result<(), i32> {
-        if self.read_only {
+        if self.writes_refused_at(from) || self.writes_refused_at(to) {
             return Err(EROFS);
         }
         let from = Self::normalize(from);

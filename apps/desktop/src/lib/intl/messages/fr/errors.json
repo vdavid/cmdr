@@ -1417,6 +1417,42 @@
   "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.title": "Dossier en lecture seule",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
+    "sourceHash": "24c9063"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "Ce dossier est en lecture seule : rien ne peut y être copié ni déplacé.",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.message": {
+    "sourceHash": "0c50a60"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": "Choisissez un autre dossier de destination.",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": {
+    "sourceHash": "a41f65a"
+  },
+  "errors.write.destinationNotWritable.noPermission.title": "Pas l'autorisation d'ajouter des fichiers ici",
+  "@errors.write.destinationNotWritable.noPermission.title": {
+    "sourceHash": "19f57db"
+  },
+  "errors.write.destinationNotWritable.noPermission.message": "Vous n'avez pas l'autorisation d'ajouter des fichiers à ce dossier.",
+  "@errors.write.destinationNotWritable.noPermission.message": {
+    "sourceHash": "15abe78"
+  },
+  "errors.write.destinationNotWritable.noPermission.suggestion": "Choisissez un autre dossier de destination, ou modifiez les autorisations de ce dossier et réessayez.",
+  "@errors.write.destinationNotWritable.noPermission.suggestion": {
+    "sourceHash": "fceb936"
+  },
+  "errors.write.destinationNotWritable.unexplained.title": "Ce dossier n'accepte pas de fichiers",
+  "@errors.write.destinationNotWritable.unexplained.title": {
+    "sourceHash": "628c3aa"
+  },
+  "errors.write.destinationNotWritable.unexplained.message": "Ce dossier n'accepte pas de nouveaux fichiers : rien ne peut y être copié ni déplacé.",
+  "@errors.write.destinationNotWritable.unexplained.message": {
+    "sourceHash": "22ce481"
+  },
+  "errors.write.destinationNotWritable.unexplained.suggestion": "Choisissez un autre dossier de destination.",
+  "@errors.write.destinationNotWritable.unexplained.suggestion": {
+    "sourceHash": "a41f65a"
+  },
   "errors.write.readOnlyDevice.destination.fallbackName": "L'appareil cible",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
     "sourceHash": "ef2429e"

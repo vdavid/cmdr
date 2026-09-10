@@ -16,9 +16,9 @@
 use super::super::move_same::move_within_same_volume_with_progress;
 use super::test_support::{make_state, make_state_with_interval_ms};
 use super::*;
-use crate::file_system::volume::InMemoryVolume;
+use crate::file_system::volume::{InMemoryVolume, UnwritableReason, WriteAccess};
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
-use crate::file_system::write_operations::types::ConflictResolution;
+use crate::file_system::write_operations::types::{ConflictResolution, WriteOperationError};
 
 /// Happy-path same-volume rename: files end up at their new paths via `Volume::rename`.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -240,4 +240,50 @@ async fn same_volume_move_creates_missing_nested_dest() {
     assert!(!volume.exists(Path::new("/a.txt")).await, "source renamed away");
     let mut a = volume.open_read_stream(Path::new("/archive/2026/a.txt")).await.unwrap();
     assert_eq!(a.next_chunk().await.unwrap().unwrap(), b"alpha");
+}
+
+/// ❗ A same-volume move into a folder that takes no writes is refused before the
+/// rename runs, with the reason the backend gave, rather than as whatever the
+/// first rename happens to fail with.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_same_volume_move_into_a_folder_that_takes_no_writes_is_refused_before_anything_moves() {
+    let volume: Arc<dyn Volume> = Arc::new(
+        InMemoryVolume::new("V")
+            .with_space_info(10_000_000, 10_000_000)
+            .with_write_access_under(
+                "/system",
+                WriteAccess::Unwritable {
+                    reason: UnwritableReason::ReadOnlyFilesystem,
+                },
+            ),
+    );
+    volume.create_file(Path::new("/a.txt"), b"alpha").await.unwrap();
+
+    let refusal = move_within_same_volume_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "op-same-move-unwritable",
+        &make_state(),
+        Arc::clone(&volume),
+        &[PathBuf::from("/a.txt")],
+        Path::new("/system/New"),
+        &VolumeCopyConfig::default(),
+    )
+    .await
+    .expect_err("nothing can move into a read-only folder");
+
+    assert!(
+        matches!(
+            refusal,
+            WriteOperationError::DestinationNotWritable {
+                reason: UnwritableReason::ReadOnlyFilesystem,
+                ..
+            }
+        ),
+        "got {refusal:?}"
+    );
+    assert!(volume.exists(Path::new("/a.txt")).await, "the file stays where it was");
+    assert!(
+        !volume.exists(Path::new("/system/New")).await,
+        "no destination folder was created"
+    );
 }

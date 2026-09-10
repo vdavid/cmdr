@@ -229,6 +229,31 @@ describe('getUserFriendlyMessage', () => {
       expect(result.message).toContain('read-only')
     })
 
+    // A folder that takes no writes is refused before anything is created or its
+    // space measured, and the sentence is about the FOLDER: a phone's `/` refuses
+    // writes while its shared storage takes them, so "the phone is read-only" would
+    // be a lie. One sentence per reason the backend can tell apart.
+    it('handles destination_not_writable with one sentence per reason', () => {
+      const cases = [
+        { reason: 'readOnlyFilesystem', title: 'Read-only folder', message: 'read-only' },
+        { reason: 'noPermission', title: 'No permission to add files here', message: 'permission' },
+        { reason: 'unexplained', title: "This folder doesn't accept files", message: "doesn't accept" },
+      ] as const
+      for (const { reason, title, message } of cases) {
+        const result = getUserFriendlyMessage({ type: 'destination_not_writable', path: 'adb://R58M', reason })
+        expect(result.title, reason).toBe(title)
+        expect(result.message, reason).toContain(message)
+        expect(result.suggestion, reason).toContain('different destination folder')
+      }
+    })
+
+    it('offers no Retry for destination_not_writable, since the same folder refuses again', () => {
+      expect(getErrorDisplayMeta({ type: 'destination_not_writable', path: '/p', reason: 'unexplained' })).toEqual({
+        category: 'needs_action',
+        retryHint: false,
+      })
+    })
+
     // The two sides are different sentences, not two wordings of one. A move OFF
     // a read-only source (a repo's `.git` history, a tar) is refused because the
     // source can never delete the original, so pointing that user at the

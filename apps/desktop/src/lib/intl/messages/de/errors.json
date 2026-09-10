@@ -1417,6 +1417,42 @@
   "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.title": "Schreibgeschützter Ordner",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
+    "sourceHash": "24c9063"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "Dieser Ordner ist schreibgeschützt, daher kann nichts hinein kopiert oder verschoben werden.",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.message": {
+    "sourceHash": "0c50a60"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": "Wähle einen anderen Zielordner.",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": {
+    "sourceHash": "a41f65a"
+  },
+  "errors.write.destinationNotWritable.noPermission.title": "Keine Berechtigung, hier Dateien hinzuzufügen",
+  "@errors.write.destinationNotWritable.noPermission.title": {
+    "sourceHash": "19f57db"
+  },
+  "errors.write.destinationNotWritable.noPermission.message": "Du hast keine Berechtigung, diesem Ordner Dateien hinzuzufügen.",
+  "@errors.write.destinationNotWritable.noPermission.message": {
+    "sourceHash": "15abe78"
+  },
+  "errors.write.destinationNotWritable.noPermission.suggestion": "Wähle einen anderen Zielordner oder ändere die Berechtigungen dieses Ordners und versuche es erneut.",
+  "@errors.write.destinationNotWritable.noPermission.suggestion": {
+    "sourceHash": "fceb936"
+  },
+  "errors.write.destinationNotWritable.unexplained.title": "Dieser Ordner nimmt keine Dateien an",
+  "@errors.write.destinationNotWritable.unexplained.title": {
+    "sourceHash": "628c3aa"
+  },
+  "errors.write.destinationNotWritable.unexplained.message": "Dieser Ordner nimmt keine neuen Dateien an, daher kann nichts hinein kopiert oder verschoben werden.",
+  "@errors.write.destinationNotWritable.unexplained.message": {
+    "sourceHash": "22ce481"
+  },
+  "errors.write.destinationNotWritable.unexplained.suggestion": "Wähle einen anderen Zielordner.",
+  "@errors.write.destinationNotWritable.unexplained.suggestion": {
+    "sourceHash": "a41f65a"
+  },
   "errors.write.readOnlyDevice.destination.fallbackName": "Das Zielgerät",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
     "sourceHash": "ef2429e"

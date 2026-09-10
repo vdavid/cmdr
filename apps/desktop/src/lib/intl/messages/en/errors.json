@@ -2045,6 +2045,42 @@
     "description": "Recovery suggestion when the destination device is read-only. Plain text.",
     "screenshot": "transfer-error-read_only_device.png"
   },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.title": "Read-only folder",
+  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "This folder is read-only, so nothing can be copied or moved into it.",
+  "errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": "Choose a different destination folder.",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
+    "description": "Title of the copy/move error dialog when the destination FOLDER sits on storage mounted read-only (a disk image, a write-protected card, a phone's system area). Cmdr found this out before copying anything. Plain text."
+  },
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.message": {
+    "description": "Body of the copy/move error dialog when the destination folder is on read-only storage. About the folder, not the whole device. Plain text."
+  },
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": {
+    "description": "Recovery suggestion when the destination folder is on read-only storage. Plain text."
+  },
+  "errors.write.destinationNotWritable.noPermission.title": "No permission to add files here",
+  "errors.write.destinationNotWritable.noPermission.message": "You don't have permission to add files to this folder.",
+  "errors.write.destinationNotWritable.noPermission.suggestion": "Choose a different destination folder, or change this folder's permissions and try again.",
+  "@errors.write.destinationNotWritable.noPermission.title": {
+    "description": "Title of the copy/move error dialog when the user's account isn't allowed to create files in the destination folder, found out before copying anything. Plain text."
+  },
+  "@errors.write.destinationNotWritable.noPermission.message": {
+    "description": "Body of the copy/move error dialog when the user's account may not create files in the destination folder. Plain text."
+  },
+  "@errors.write.destinationNotWritable.noPermission.suggestion": {
+    "description": "Recovery suggestion when the user's account may not create files in the destination folder. Plain text."
+  },
+  "errors.write.destinationNotWritable.unexplained.title": "This folder doesn't accept files",
+  "errors.write.destinationNotWritable.unexplained.message": "This folder doesn't accept new files, so nothing can be copied or moved into it.",
+  "errors.write.destinationNotWritable.unexplained.suggestion": "Choose a different destination folder.",
+  "@errors.write.destinationNotWritable.unexplained.title": {
+    "description": "Title of the copy/move error dialog when the destination folder refuses new files and Cmdr can't tell whether it's read-only or a permission problem (for example the top-level folder of a phone connected over ADB). Keep it neutral: don't claim read-only or a permission. Plain text."
+  },
+  "@errors.write.destinationNotWritable.unexplained.message": {
+    "description": "Body of the copy/move error dialog when the destination folder refuses new files for a reason Cmdr can't tell. Keep it neutral. Plain text."
+  },
+  "@errors.write.destinationNotWritable.unexplained.suggestion": {
+    "description": "Recovery suggestion when the destination folder refuses new files for a reason Cmdr can't tell. Plain text."
+  },
   "errors.write.readOnlyDevice.destination.fallbackName": "The target device",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
     "description": "Fallback for the device name in the read-only-device message when the actual name is unknown. Plain text, used as the subject of \"is read-only\".",

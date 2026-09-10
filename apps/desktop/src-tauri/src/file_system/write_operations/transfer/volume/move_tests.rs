@@ -17,10 +17,10 @@
 use super::super::super::conflict_responder_test_support::await_prompted_clash;
 use super::test_support::{self, make_state, make_state_with_interval_ms, make_volumes};
 use super::*;
-use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume};
+use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, UnwritableReason, WriteAccess};
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::state::ConflictResolutionResponse;
-use crate::file_system::write_operations::types::ConflictResolution;
+use crate::file_system::write_operations::types::{ConflictResolution, WriteOperationError};
 use crate::test_support::TestDir;
 
 /// Happy path: every source lands at dest and is gone from source. Completion
@@ -641,5 +641,57 @@ async fn a_move_into_a_directory_reaps_the_stale_temps_a_crash_left_there() {
     assert!(
         dest_vol.exists(Path::new("/inbox/notes.txt")).await,
         "the move still lands"
+    );
+}
+
+/// ❗ A move into a folder that takes no writes is refused before anything moves:
+/// the destination's answer comes before its folder is created, so the source
+/// stays whole and nothing half-lands.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_cross_volume_move_into_a_folder_that_takes_no_writes_is_refused_before_anything_moves() {
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source.create_file(Path::new("/a.txt"), b"alpha").await.unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(
+        InMemoryVolume::new("Dest")
+            .with_space_info(10_000_000, 10_000_000)
+            .with_write_access_under(
+                "/locked",
+                WriteAccess::Unwritable {
+                    reason: UnwritableReason::NoPermission,
+                },
+            ),
+    );
+
+    let failure = move_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "op-move-unwritable",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/a.txt")],
+        Arc::clone(&dest),
+        Path::new("/locked/inbox"),
+        &VolumeCopyConfig::default(),
+    )
+    .await
+    .expect_err("nothing can land in a folder this user can't write into");
+
+    assert!(
+        matches!(
+            &failure.error,
+            WriteOperationError::DestinationNotWritable {
+                reason: UnwritableReason::NoPermission,
+                ..
+            }
+        ),
+        "got {:?}",
+        failure.error
+    );
+    assert!(
+        source.exists(Path::new("/a.txt")).await,
+        "the source stays where it was"
+    );
+    assert!(
+        !dest.exists(Path::new("/locked/inbox")).await,
+        "no destination folder was created"
     );
 }

@@ -42,6 +42,10 @@ pub struct InMemoryVolume {
     /// that spans several filesystems. The deepest matching prefix answers;
     /// a path under none of them falls back to `space_info`.
     space_info_under: Vec<(PathBuf, SpaceInfo)>,
+    /// Per-subtree answers for [`Volume::write_access_at`], set by
+    /// [`with_write_access_under`](Self::with_write_access_under). The deepest
+    /// matching prefix answers; a path under none of them is `Unknown`.
+    write_access_under: Vec<(PathBuf, super::WriteAccess)>,
     /// Lane key the operation manager uses to (de)serialize this volume against
     /// others. `None` ⇒ fall back to the root lane (the trait default), so the
     /// ~169 existing `new(...)` sites are untouched. Manager tests set it via
@@ -135,6 +139,7 @@ impl InMemoryVolume {
             entries: RwLock::new(HashMap::new()),
             space_info: None,
             space_info_under: Vec::new(),
+            write_access_under: Vec::new(),
             lane_key: None,
             local_fs_access: false,
             routes_over_a_parent: false,
@@ -369,6 +374,15 @@ impl InMemoryVolume {
     pub fn with_space_info_under(mut self, under: impl Into<PathBuf>, total_bytes: u64, available_bytes: u64) -> Self {
         self.space_info_under
             .push((under.into(), SpaceInfo::bounded(total_bytes, available_bytes)));
+        self
+    }
+
+    /// Makes [`Volume::write_access_at`] answer `access` for `under` and everything
+    /// below it, modeling a read-only system image or a folder this user can't
+    /// write into. Every other path answers `Unknown`, as a backend with no way to
+    /// ask does.
+    pub fn with_write_access_under(mut self, under: impl Into<PathBuf>, access: super::WriteAccess) -> Self {
+        self.write_access_under.push((under.into(), access));
         self
     }
 
@@ -1030,6 +1044,19 @@ impl Volume for InMemoryVolume {
                 .map(|(_, space)| *space)
                 .or(self.space_info)
                 .ok_or(VolumeError::NotSupported)
+        })
+    }
+
+    /// The deepest [`with_write_access_under`](Self::with_write_access_under)
+    /// subtree holding `path`, else `Unknown`.
+    fn write_access_at<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = super::WriteAccess> + Send + 'a>> {
+        Box::pin(async move {
+            let normalized = self.normalize(path);
+            self.write_access_under
+                .iter()
+                .filter(|(under, _)| normalized.starts_with(self.normalize(under)))
+                .max_by_key(|(under, _)| under.components().count())
+                .map_or(super::WriteAccess::Unknown, |(_, access)| *access)
         })
     }
 

@@ -107,6 +107,10 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       side: 'destination',
     },
   },
+  destination_not_writable: {
+    operationType: 'copy',
+    error: { type: 'destination_not_writable', path: 'adb://46061FDAS000A4', reason: 'unexplained' },
+  },
   file_locked: {
     operationType: 'delete',
     error: { type: 'file_locked', path: '/Users/david/Documents/Rymdskottkärra/bokföring-2025.numbers' },

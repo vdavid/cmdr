@@ -11,6 +11,7 @@ import {
   type MtpPermissionError,
   type MtpStorageInfo as MtpStorageInfoBinding,
   type SpaceInfo,
+  type WriteAccess,
 } from '$lib/ipc/bindings'
 import type { ConflictResolution, FileEntry, WriteOperationStartResult } from '../file-explorer/types'
 import { throwIpcError } from './ipc-types'
@@ -377,6 +378,10 @@ export interface VolumeCopyScanResult {
    *  means "can't tell", never "no room"; nor does an `unbounded` reading, which
    *  is storage with no ceiling. */
   destSpace: SpaceInfo | null
+  /** Whether the destination folder takes writes, asked before its space. An
+   *  `unwritable` answer is why nothing can land there, whatever `destSpace` says;
+   *  `unknown` means "can't tell", never "no". */
+  destWriteAccess: WriteAccess
   conflicts: VolumeConflictInfo[]
 }
 

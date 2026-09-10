@@ -192,6 +192,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'cancelled', label: 'Cancelled' },
       { id: 'device_disconnected', label: 'Device disconnected' },
       { id: 'read_only_device', label: 'Read-only device' },
+      { id: 'destination_not_writable', label: 'Destination folder takes no writes' },
       { id: 'file_locked', label: 'File locked' },
       { id: 'trash_not_supported', label: 'Trash not supported' },
       { id: 'connection_interrupted', label: 'Connection interrupted' },

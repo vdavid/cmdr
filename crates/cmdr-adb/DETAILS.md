@@ -161,7 +161,8 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   isn't there (`ENOENT`, or a mode of 0 on the v1 verbs) answers for the nearest folder above it that is, because the
   copy pre-flight asks about a destination folder the copy will create, and anything but `NotSupported` fails the
   dialog's preview (`copy.rs::dest_space_if_known`). ❗ That stays a plain space answer, even when the climb lands on
-  `/` and its 0 free: telling a copy the place is read-only is the transfer layer's job, ❌ not a special case here.
+  `/` and its 0 free: whether a folder takes writes is `write_access_at`'s answer (below), which the transfer pre-flight
+  asks first, ❌ not a special case here.
   Anything else is `NotSupported` ("can't tell"), ❌ never a guessed number: a `df` failing on a path that exists, or a
   path under a file, where stat answers `ENOTDIR` and nothing could land (verified on Pixel 9 Pro XL, Android 17,
   `adb shell stat /sdcard/x.png/New`, 2026-09-10; the fake's `FakeTree::stat` answers the same). What `df -k` prints on
@@ -172,6 +173,16 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   stdout, puts its reason on stderr, and exits 1, so the exit code decides and stderr is never read.
   `testing::pixel_captures` holds those captures verbatim, `FakeTree::new` mounts the Pixel's own rows, and
   `shell_test.rs` holds the fake's `df` to them byte for byte.
+- **Write access**: `write_access_at(path)` runs `test -w` on the nearest folder at or above `path` that the sync service
+  finds, the same climb the space answer makes. Exit 0 is `Writable`. Exit 1 is `Unwritable { reason: Unexplained }`,
+  ❌ never `ReadOnlyFilesystem` or `NoPermission`: the exit code can't tell them apart (a phone's `/` is both a
+  read-only image and root's), and telling them apart would need the mount flags in `/proc/mounts`, which no capture
+  here holds yet. A transport failure or any other exit is `Unknown`. The transfer pre-flight asks this before it
+  measures space, so a copy onto `/` is refused as not writable rather than as out of room
+  (`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "A destination folder that
+  takes no writes"). `FakeTree::new` mounts its `/` read-only (`FakeMount::read_only`), so a write under it answers
+  `EROFS` and `test -w` exits 1 there, as the kernel does under a read-only mount. `test -w /` exiting 1 on a real phone
+  is not yet verified on a device (the Pixel was unplugged); `classify_failed_verb` already relies on the same verb.
 
 ## The error policy
 

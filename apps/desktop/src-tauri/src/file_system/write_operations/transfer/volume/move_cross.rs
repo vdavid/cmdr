@@ -74,6 +74,12 @@ pub(crate) async fn move_volumes_with_progress(
     // destination name index and has no use for the `DirectoryCreation` answer
     // that gates one (see `volume/copy.rs`, Phase 0.5). Its subtree walk still
     // fans out; that width is the `FileWindow`'s, further down.
+    // A destination folder that takes no writes is refused first, before its
+    // folder is created and before any source is touched
+    // (`copy.rs::destination_refusal`).
+    if let Some(refusal) = super::copy::destination_refusal(&*dest_volume, dest_path).await {
+        return Err(WriteFailure::synthetic(refusal));
+    }
     dest_volume
         .create_directory_all(dest_path)
         .await

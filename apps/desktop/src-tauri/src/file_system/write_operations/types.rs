@@ -385,6 +385,17 @@ pub enum WriteOperationError {
         device_name: Option<String>,
         side: ReadOnlySide,
     },
+    /// The destination folder takes no writes, found out BEFORE anything was
+    /// created or measured (`Volume::write_access_at`).
+    ///
+    /// ❗ About the FOLDER, never the device: a phone's `/` refuses writes while
+    /// its shared storage takes them, so "the phone is read-only" would be a lie.
+    /// `reason` carries only what the backend can tell apart; a backend that
+    /// can't tell read-only from no permission says `Unexplained`.
+    DestinationNotWritable {
+        path: String,
+        reason: crate::file_system::volume::UnwritableReason,
+    },
     /// File is locked (macOS immutable flag, "Operation not permitted" on delete).
     FileLocked {
         path: String,
@@ -694,5 +705,9 @@ pub struct VolumeCopyScanResult {
     /// genuinely can't answer (SFTP: `statvfs@openssh.com` is out of reach). ❗
     /// `None` is "can't tell", ❌ never "no room" — a preview must still open.
     pub dest_space: Option<SpaceInfo>,
+    /// Whether the destination folder takes writes, asked BEFORE its space. An
+    /// unwritable one is reported here rather than as a space shortfall, so a
+    /// read-only place never reads as a full one.
+    pub dest_write_access: crate::file_system::volume::WriteAccess,
     pub conflicts: Vec<ScanConflict>,
 }

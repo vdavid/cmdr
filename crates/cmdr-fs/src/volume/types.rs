@@ -325,6 +325,44 @@ pub struct ScanConflict {
     pub dest_is_directory: bool,
 }
 
+/// Whether a write into a folder would be taken, as far as the backend can tell
+/// without writing anything ([`Volume::write_access_at`](super::Volume::write_access_at)).
+///
+/// Three answers, because "can't tell" is its own truth: a backend with no way to
+/// ask answers [`Unknown`](Self::Unknown), ❌ never a guess in either direction.
+/// The transfer pre-flight asks this BEFORE it measures space, so a folder nothing
+/// can be written to never reads as a full one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum WriteAccess {
+    /// This user can write here.
+    Writable,
+    /// Nothing this user sends can land here.
+    Unwritable {
+        /// Why, as far as the backend can tell.
+        reason: UnwritableReason,
+    },
+    /// The backend has no way to tell without writing.
+    Unknown,
+}
+
+/// Why a folder takes no writes ([`WriteAccess::Unwritable`]).
+///
+/// Read-only and no-permission are different truths with different fixes, so a
+/// backend that can tell them apart says which. ❌ Never pick one when the backend
+/// can't tell: that's [`Unexplained`](Self::Unexplained).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum UnwritableReason {
+    /// The filesystem holding the folder is mounted read-only, so nobody can write there.
+    ReadOnlyFilesystem,
+    /// The filesystem takes writes, but this user may not write into the folder.
+    NoPermission,
+    /// This user can't write here, and the backend can't tell whether the
+    /// filesystem or a permission is the reason.
+    Unexplained,
+}
+
 /// What a volume can say about its room.
 ///
 /// Two shapes, because two situations are genuinely different. A disk, a share,

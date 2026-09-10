@@ -1,7 +1,7 @@
 //! Tests for LocalPosixVolume.
 
 use super::*;
-use crate::file_system::volume::ListingProgress;
+use crate::file_system::volume::{ListingProgress, UnwritableReason, WriteAccess};
 use crate::ignore_poison::IgnorePoison;
 use crate::test_support::TestDir;
 use std::path::Path;
@@ -760,5 +760,60 @@ async fn listing_a_local_directory_reports_progress_while_it_reads() {
         ticks.windows(2).all(|w| w[0].entries() <= w[1].entries()),
         "counts must climb, never go backwards: {:?}",
         ticks.iter().map(ListingProgress::entries).collect::<Vec<_>>()
+    );
+}
+
+/// A folder this user can write into is writable, and a folder a copy would
+/// create answers for the nearest one that exists.
+#[tokio::test]
+async fn write_access_of_a_writable_folder_and_of_one_a_copy_would_create() {
+    let dir = TestDir::new("local_posix_write_access");
+    let volume = LocalPosixVolume::new("Test", &*dir);
+    assert_eq!(volume.write_access_at(Path::new("/")).await, WriteAccess::Writable);
+    assert_eq!(
+        volume.write_access_at(Path::new("/new/deeper")).await,
+        WriteAccess::Writable
+    );
+}
+
+/// A folder whose mode takes write permission away answers `NoPermission`, which
+/// `access(W_OK)`'s errno tells apart from a read-only filesystem.
+#[tokio::test]
+async fn write_access_of_a_folder_without_write_permission_is_no_permission() {
+    use std::os::unix::fs::PermissionsExt;
+
+    // SAFETY: `geteuid` has no preconditions; it only reads this process's credentials.
+    if unsafe { libc::geteuid() } == 0 {
+        // Root writes past a folder's mode, so there's nothing to assert.
+        return;
+    }
+    let dir = TestDir::new("local_posix_write_access_locked");
+    let locked = dir.join("locked");
+    std::fs::create_dir(&locked).expect("making the folder");
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o555)).expect("taking write away");
+    let volume = LocalPosixVolume::new("Test", &*dir);
+
+    let access = volume.write_access_at(Path::new("/locked")).await;
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).expect("giving write back for cleanup");
+
+    assert_eq!(
+        access,
+        WriteAccess::Unwritable {
+            reason: UnwritableReason::NoPermission
+        }
+    );
+}
+
+/// ❗ macOS mounts its sealed system volume read-only (macOS 11 and later), the
+/// one read-only filesystem every Mac has to test against.
+#[cfg(target_os = "macos")]
+#[tokio::test]
+async fn write_access_on_the_sealed_system_volume_is_read_only() {
+    let volume = LocalPosixVolume::new("Macintosh HD", "/");
+    assert_eq!(
+        volume.write_access_at(Path::new("/System/Library")).await,
+        WriteAccess::Unwritable {
+            reason: UnwritableReason::ReadOnlyFilesystem
+        }
     );
 }

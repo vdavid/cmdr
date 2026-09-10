@@ -198,6 +198,8 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   // picking one of the two, or transferring them one at a time.
   duplicate_source_names: { category: 'needs_action', retryHint: false },
   read_only_device: { category: 'needs_action', retryHint: false },
+  // No Retry: the same folder refuses again. The way out is another destination.
+  destination_not_writable: { category: 'needs_action', retryHint: false },
   file_locked: { category: 'needs_action', retryHint: false },
   trash_not_supported: { category: 'needs_action', retryHint: false },
   name_too_long: { category: 'needs_action', retryHint: false },
@@ -278,6 +280,23 @@ function readOnlyMessage(error: Extract<WriteOperationError, { type: 'read_only_
 }
 
 /**
+ * The refusal for a destination folder that takes no writes, found out before
+ * anything was created or its space measured. One sentence per reason the backend
+ * could tell apart. ❗ Every sentence is about the FOLDER, never the device (a
+ * phone's `/` refuses writes while its shared storage takes them), and
+ * `unexplained` stays neutral rather than claiming read-only or a permission.
+ */
+function destinationNotWritableMessage(
+  error: Extract<WriteOperationError, { type: 'destination_not_writable' }>,
+): FriendlyErrorMessage {
+  return {
+    title: w(`destinationNotWritable.${error.reason}.title`),
+    message: w(`destinationNotWritable.${error.reason}.message`),
+    suggestion: w(`destinationNotWritable.${error.reason}.suggestion`),
+  }
+}
+
+/**
  * Builds the message for a copy that stopped with one of the user's files
  * renamed out of a folder's way.
  *
@@ -329,6 +348,8 @@ export function getUserFriendlyMessage(
       }
     case 'read_only_device':
       return readOnlyMessage(error)
+    case 'destination_not_writable':
+      return destinationNotWritableMessage(error)
     case 'duplicate_source_names':
       // Two selected items carry one name, so they'd both want
       // `<destination>/<name>`. Refused before anything is written, and the
@@ -392,6 +413,7 @@ const pathOnlyTypes = new Set<WriteOperationError['type']>([
   'connection_interrupted',
   'name_too_long',
   'delete_pending',
+  'destination_not_writable',
 ])
 
 /** Error types where technical details include path + error message. */

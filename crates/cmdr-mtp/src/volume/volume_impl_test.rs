@@ -76,6 +76,34 @@ async fn watch_coverage_flips_with_the_connection() {
     );
 }
 
+/// A storage the device reports read-only answers `ReadOnlyFilesystem`, so a copy
+/// onto it is refused as such before anything is sent. The writable storage
+/// answers `Unknown`, ❌ never `Writable`: a writable storage still refuses some
+/// folders, and only the write itself can say which.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn write_access_is_what_the_device_reports_for_the_storage() {
+    use cmdr_fs::volume::{UnwritableReason, WriteAccess};
+
+    let _guard = device_lock().await;
+    let device = connect_virtual_device(test_connection_manager()).await;
+    let internal = volume_for(test_connection_manager(), &device, None).await;
+    let card_id = *device
+        .storage_ids
+        .get(1)
+        .expect("the virtual device reports a second, read-only storage");
+    let card = MtpVolume::new(Arc::clone(test_connection_manager()), &device.id, card_id, "SD Card");
+
+    assert_eq!(internal.write_access_at(Path::new("/DCIM")).await, WriteAccess::Unknown);
+    assert_eq!(
+        card.write_access_at(Path::new("/")).await,
+        WriteAccess::Unwritable {
+            reason: UnwritableReason::ReadOnlyFilesystem,
+        }
+    );
+
+    device.teardown(test_connection_manager()).await;
+}
+
 /// An index walk descends every folder an MTP phone lists. PTP has no links, so no
 /// entry is one, and the volume keeps the trait's `index_walk`, which turns away
 /// only a link: the walk's link rule leaves an MTP walk exactly as it was.

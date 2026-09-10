@@ -19,7 +19,7 @@ use cmdr_adb::AdbDeviceState;
 use cmdr_adb::testing::{FakeAdbServer, FakeNode, FakeTree, split_argv};
 use cmdr_fs::staging::STAGING_TEMP_MARKER;
 use cmdr_fs::volume::host::listings::RecordingListings;
-use cmdr_fs::volume::{DirectoryChange, Volume};
+use cmdr_fs::volume::{DirectoryChange, UnwritableReason, Volume};
 
 use super::event_sinks::{CollectorEventSink, OperationEventSink};
 use super::network_transfer_test_support::{
@@ -29,7 +29,7 @@ use super::network_transfer_test_support::{
     read_all, self_describing_bytes, sha256, start_copy_by_id,
 };
 use super::state::WriteOperationState;
-use super::types::{VolumeCopyConfig, WriteOperationConfig};
+use super::types::{VolumeCopyConfig, WriteOperationConfig, WriteOperationError};
 use crate::adb::device_provider::apply_device_list;
 use crate::adb::test_support::{a_listed_phone, dial, phone, retire_phone};
 use crate::file_system::volume::LocalPosixVolume;
@@ -377,6 +377,52 @@ async fn a_preview_into_a_phone_folder_the_copy_will_create_checks_the_room_on_i
         preview.dest_space.and_then(|space| space.available_bytes()),
         Some(26_956_476 * 1024),
         "the preview judges the copy against the shared storage it lands on"
+    );
+}
+
+/// ❗ The bug a real Pixel showed: a copy onto the phone's `/` said "Not enough
+/// space: the destination needs X but only has 0 bytes available". `df` is right
+/// that the system image has 0 free, and wrong as the reason: nothing lands there
+/// at any size. `test -w` answers first, and its exit code can't tell read-only
+/// from no permission, so the refusal says `Unexplained`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_copy_onto_a_phones_root_is_refused_as_not_writable_rather_than_as_out_of_space() {
+    const SERIAL: &str = "R58M-Copy-Root";
+    let phone = dialed_phone(SERIAL, "copy-root").await;
+    let local = registered_local("adb_copy_onto_phone_root");
+    std::fs::write(local.dir.join("photo.jpg"), b"a photo's worth of bytes").expect("seeding the local file");
+
+    let running = start_copy_by_id(
+        "copy-onto-phone-root",
+        local.volume_id.clone(),
+        vec![PathBuf::from("photo.jpg")],
+        phone.volume_id.clone(),
+        cmdr_fs::volume::adb_app_root(SERIAL),
+        VolumeCopyConfig::default(),
+    )
+    .await;
+    running.settle().await;
+
+    let errors: Vec<WriteOperationError> = running
+        .events
+        .errors
+        .lock_ignore_poison()
+        .iter()
+        .map(|e| e.error.clone())
+        .collect();
+    assert!(
+        matches!(
+            errors.as_slice(),
+            [WriteOperationError::DestinationNotWritable {
+                reason: UnwritableReason::Unexplained,
+                ..
+            }]
+        ),
+        "the phone's root takes no writes, which is not a space shortfall; got {errors:?}"
+    );
+    assert!(
+        phone.fake.tree().lock_ignore_poison().get("/photo.jpg").is_none(),
+        "nothing landed on the phone"
     );
 }
 

@@ -211,7 +211,7 @@ pub fn run_fake_shell(tree: &Mutex<FakeTree>, argv: &[String]) -> (u8, String, S
                 "-e" => node.is_some(),
                 "-d" => matches!(node, Some(FakeNode::Dir { .. })),
                 "-f" => matches!(node, Some(FakeNode::File { .. })),
-                "-w" => node.is_some() && !tree.read_only,
+                "-w" => node.is_some() && args.first().is_some_and(|p| !tree.writes_refused_at(p)),
                 _ => false,
             };
             (u8::from(!ok), String::new(), String::new())

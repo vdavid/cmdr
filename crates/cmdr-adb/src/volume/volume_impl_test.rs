@@ -417,6 +417,57 @@ async fn a_folder_under_a_file_is_cant_tell_where_the_climb_stops() {
     );
 }
 
+/// ❗ Whether a folder takes writes is `test -w` on the nearest folder at or above
+/// it. A phone's `/` is a read-only system image, and the exit code can't tell
+/// that from a missing permission, so it answers `Unexplained`, ❌ never a guess
+/// either way. A folder a copy will create answers for the storage it lands on.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn write_access_is_what_test_w_says_about_the_nearest_folder() {
+    use cmdr_fs::volume::{UnwritableReason, WriteAccess};
+
+    let mut tree = FakeTree::new();
+    tree.add_dir("/sdcard/Download");
+    let server = FakeAdbServer::start(tree).await;
+    let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
+
+    let unexplained = WriteAccess::Unwritable {
+        reason: UnwritableReason::Unexplained,
+    };
+    assert_eq!(
+        volume.write_access_at(&fixture_path("")).await,
+        unexplained,
+        "the root is the read-only system image"
+    );
+    assert_eq!(
+        volume.write_access_at(&fixture_path("/system/New")).await,
+        unexplained,
+        "a folder a copy would create under the root answers for the root"
+    );
+    assert_eq!(
+        volume.write_access_at(&fixture_path("/sdcard/Download")).await,
+        WriteAccess::Writable
+    );
+    assert_eq!(
+        volume.write_access_at(&fixture_path("/sdcard/New album/Deeper")).await,
+        WriteAccess::Writable,
+        "a folder a copy will create answers for the shared storage"
+    );
+}
+
+/// A phone that stopped answering can't say either way, so it answers `Unknown`
+/// and leaves the refusal to the operation that meets the silence.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn write_access_of_a_phone_that_stopped_answering_is_unknown() {
+    let server = FakeAdbServer::start(FakeTree::new()).await;
+    let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
+    server.stop();
+
+    assert_eq!(
+        volume.write_access_at(&fixture_path("/sdcard")).await,
+        cmdr_fs::volume::WriteAccess::Unknown
+    );
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_df_that_fails_anywhere_else_is_cant_tell_never_a_zero() {
     let mut tree = FakeTree::new();

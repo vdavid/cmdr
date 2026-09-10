@@ -296,6 +296,12 @@ pub(crate) async fn move_within_same_volume_with_progress(
     // same-volume move into a brand-new folder just work, matching copy and the
     // local-FS path. A merge into an existing dest is a no-op create, so the
     // server-side-rename fast path is untouched when the dest already exists.
+    // A destination folder that takes no writes is refused first, with the reason
+    // its backend gave, before the folder is created or anything renamed
+    // (`copy.rs::destination_refusal`).
+    if let Some(refusal) = super::copy::destination_refusal(&*volume, dest_path).await {
+        return Err(refusal);
+    }
     volume
         .create_directory_all(dest_path)
         .await

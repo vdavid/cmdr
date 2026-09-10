@@ -400,6 +400,34 @@ impl Volume for AdbVolume {
         }))
     }
 
+    /// `test -w` on the nearest folder at or above `path` that exists: exit 0 is
+    /// writable, exit 1 is unwritable. ❗ The exit code can't tell a read-only
+    /// filesystem from a missing permission (a phone's `/` is both a read-only
+    /// image and root's), so it says `Unexplained`, ❌ never a guess. Anything else,
+    /// a device that stopped answering included, is `Unknown`: the operation that
+    /// meets the silence is what reports it.
+    fn write_access_at<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = cmdr_fs::volume::WriteAccess> + Send + 'a>> {
+        use cmdr_fs::volume::{UnwritableReason, WriteAccess};
+        Box::pin(async move {
+            let Ok(device) = self.to_device_path(path) else {
+                return WriteAccess::Unknown;
+            };
+            let Ok(Some(folder)) = self.nearest_existing(&device).await else {
+                return WriteAccess::Unknown;
+            };
+            match shell::run(&self.inner.endpoint, &self.inner.serial, &["test", "-w", &folder]).await {
+                Ok(outcome) if outcome.succeeded() => WriteAccess::Writable,
+                Ok(outcome) if outcome.exit_code == 1 => WriteAccess::Unwritable {
+                    reason: UnwritableReason::Unexplained,
+                },
+                _ => WriteAccess::Unknown,
+            }
+        })
+    }
+
     /// A shell round trip per poll, so well above the local 2 s.
     fn space_poll_interval(&self) -> Option<Duration> {
         Some(Duration::from_secs(30))

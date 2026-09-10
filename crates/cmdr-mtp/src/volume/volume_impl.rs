@@ -531,6 +531,29 @@ impl Volume for MtpVolume {
         })
     }
 
+    /// A storage the device reports read-only is a read-only filesystem. Anything
+    /// else is `Unknown`, ❌ never `Writable`: a writable storage still refuses some
+    /// folders (Android blocks creating at a storage's root), and only the write
+    /// itself can say which.
+    fn write_access_at<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = cmdr_fs::volume::WriteAccess> + Send + 'a>> {
+        use cmdr_fs::volume::{UnwritableReason, WriteAccess};
+        let _ = path;
+        Box::pin(async move {
+            let Some(info) = self.manager.get_device_info(&self.device_id).await else {
+                return WriteAccess::Unknown;
+            };
+            match info.storages.iter().find(|storage| storage.id == self.storage_id) {
+                Some(storage) if storage.is_read_only => WriteAccess::Unwritable {
+                    reason: UnwritableReason::ReadOnlyFilesystem,
+                },
+                _ => WriteAccess::Unknown,
+            }
+        })
+    }
+
     fn supports_streaming(&self) -> bool {
         true
     }
