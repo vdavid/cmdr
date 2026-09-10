@@ -352,6 +352,13 @@ Two writers, and they agree by construction: `lib.rs` seeds it from `settings.js
 built), and the frontend pushes the same value through `set_ui_language` once it loads and on every change. The push is
 idempotent, since a rebuild only happens when the resolved answer moves.
 
+**In the crate's unit-test build, `'system'` is English and the OS is never asked** (`native_strings::system_locale`).
+The host's language isn't a fixture, so a name sort or a native string in a test answers the same on every machine, and
+the first `NSUserDefaults` read in a bare test binary is expensive enough to fail a timed test under load
+(`docs/testing.md` § "The host machine is not a fixture"). A test that needs another language pins it with
+`set_language_preference` while holding `lock_active_locale_for_tests`. Integration tests under `src-tauri/tests/`
+compile the library without `cfg(test)`, so they still follow the OS.
+
 The `en-XA` pseudolocale is absent from the table on purpose. It's gitignored and regenerated, so including it would
 make the generated file differ between a fresh clone and a machine that ran `pnpm i18n:pseudo` — permanent phantom
 drift for the freshness check. A developer running in `en-XA` therefore sees an English menu bar over an accented app,

@@ -637,6 +637,16 @@ subsystem can tell its own fixtures apart from the real thing — it also covers
 an `CMDR_E2E_MODE` check would miss. **Known remaining instance:** that same enumeration still auto-connects a real USB
 device it finds alongside the virtual one.
 
+**The unit-test variant: a bare test binary asking macOS about its own bundle.** A test executable has no `.app` around
+it, so CoreFoundation resolves its main bundle by listing the directory it sits in, which is `target/debug/deps`
+(117,078 entries). An `NSUserDefaults` read (the `'system'` language, reached by every name sort) and `trashItemAtURL`
+(DesktopServices asks whether it's running in Finder) both trigger that listing, once per test process. Under a full
+`rust-tests` run it alone outlasted a 2 s and a 5 s in-test wait: `refresh_listing_test` failed in about a third of the
+lane's runs and the scan-bridge trash cell in about one in ten (verified on macOS 26, `sample` of the stalled test
+processes, 2026-09-10). The shipped app never pays it. Keep the test off the host service instead: a unit-test build's `'system'` language is English without asking
+(`apps/desktop/src-tauri/src/intl/DETAILS.md` § "Which locale, and who decides"), and a test whose subject isn't the
+Trash trashes a path that doesn't exist.
+
 ### ❌ Remove-then-recreate to get "a different file"
 
 **The rule:** when a test needs a path to become a DIFFERENT file (a new inode), write the replacement beside it and

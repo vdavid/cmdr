@@ -164,7 +164,25 @@ fn resolve_active_locale() -> String {
     let preference = LANGUAGE_PREFERENCE.read_ignore_poison().clone();
     match preference {
         Some(tag) => shipped_tag(&tag).unwrap_or(BASE_LOCALE).to_string(),
-        None => super::os_ui_locale(),
+        None => system_locale(),
+    }
+}
+
+/// What `'system'` resolves to: the OS's answer, except in this crate's unit-test
+/// build, which answers English without asking.
+///
+/// The host's language isn't a fixture, so a test that sorts names or reads a
+/// native string gets the same answer on every machine. It also keeps the OS read
+/// off the clock: the first `NSUserDefaults` lookup in a bare test binary makes
+/// CoreFoundation list the executable's own directory, `target/debug/deps`, and
+/// under a full `rust-tests` run that alone outlasted `refresh_listing`'s 2 s wait
+/// (`docs/testing.md` § "The host machine is not a fixture"). A test that needs a
+/// language pins one with [`set_language_preference`].
+fn system_locale() -> String {
+    if cfg!(test) {
+        BASE_LOCALE.to_string()
+    } else {
+        super::os_ui_locale()
     }
 }
 
