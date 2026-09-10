@@ -14,7 +14,9 @@ use tokio_util::sync::CancellationToken;
 use cmdr_adb::AdbEndpoint;
 
 use super::*;
-use crate::adb::test_support::{a_fake_phone, a_listed_phone, dials_seen, registry_and_provider_agree, retire_phone};
+use crate::adb::test_support::{
+    a_fake_phone, a_listed_phone, dial, dials_seen, phone, registry_and_provider_agree, retire_phone,
+};
 use crate::file_system::listing::caching_test_support::{TestListingGuard, unique_test_id};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::listing::streaming::{
@@ -258,30 +260,48 @@ async fn a_dial_whose_phone_left_before_it_installed_answers_gone_and_leaves_not
 /// ❗ Turning ADB off has to take the ROWS away too, not only the subscription:
 /// a stopped tracker on its own leaves the last device list frozen on screen and
 /// its volumes registered, so the phone looks browsable and answers nothing.
+/// Back on, the subscription lists the phone again without a restart, and
+/// nobody dials it: the pane standing on it is the only dialer.
 #[tokio::test(flavor = "multi_thread")]
-async fn turning_adb_off_stops_the_tracker_and_empties_the_device_list() {
+async fn turning_adb_off_retires_a_dialed_phone_and_turning_it_on_lists_it_again() {
+    const SERIAL: &str = "R58M-Settings-Toggle";
     let fake = cmdr_adb::testing::FakeAdbServer::start(cmdr_adb::testing::FakeTree::new()).await;
+    // The fake lists the phone and the app's list doesn't, so only the tracker
+    // can put it there.
+    fake.push_devices(vec![phone(SERIAL, cmdr_adb::AdbDeviceState::Ready)]);
+    let listed = || device_provider::cached_devices().iter().any(|d| d.serial == SERIAL);
 
     apply_settings_at(fake.endpoint(), true, None).await;
     crate::test_support::wait_until_async(
         std::time::Duration::from_secs(5),
         "the tracker to deliver the fake server's device list",
-        || !device_provider::cached_devices().is_empty(),
+        listed,
     )
     .await;
     assert!(adb_install_status().tracking, "an enabled ADB follows the server");
+    let (volume_id, _) = dial(&fake, SERIAL, "adb-settings-toggle").await;
 
     apply_settings_at(fake.endpoint(), false, None).await;
     assert!(!adb_install_status().tracking, "a disabled ADB follows nothing");
+    assert!(
+        get_volume_manager().get(&volume_id).is_none() && device_provider::connected_volume(SERIAL).is_none(),
+        "the dialed phone's volume is retired, never left registered behind a row that's gone"
+    );
     assert!(device_provider::cached_devices().is_empty(), "and the rows go with it");
 
     // Back on: the subscription comes back without a restart, which is the whole
     // point of a live-applied setting.
     apply_settings_at(fake.endpoint(), true, None).await;
-    crate::test_support::wait_until_async(std::time::Duration::from_secs(5), "the tracker to come back", || {
-        !device_provider::cached_devices().is_empty()
-    })
+    crate::test_support::wait_until_async(
+        std::time::Duration::from_secs(5),
+        "the tracker to list the phone again",
+        listed,
+    )
     .await;
+    assert!(
+        get_volume_manager().get(&volume_id).is_none(),
+        "listed again and dialed by nobody: the setting never opens a phone"
+    );
 
     apply_settings_at(fake.endpoint(), false, None).await;
 }
