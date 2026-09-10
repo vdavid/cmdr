@@ -13,8 +13,9 @@ left stays schedulable.
 
 ❌ Nothing here restates a mechanism. Every item points at the doc that owns it.
 
-Two things that look like gaps and are not. **Indexing an ADB volume is a settled non-goal**, and so is wireless pairing
-(§ 3); both are written down with their reasons in `apps/desktop/src-tauri/src/adb/DETAILS.md` § "Deliberate non-goals".
+One thing looks like a gap and is not: **wireless pairing** (§ 3), written down with its reasons in
+`apps/desktop/src-tauri/src/adb/DETAILS.md` § "Deliberate non-goals". A phone's drive index is described beside it, §
+"Indexing a phone".
 **The wire-level gaps** (no ranged `RECV`, so a resumed read re-reads from zero) live in `crates/cmdr-adb/DETAILS.md` §
 "Known gaps and follow-ups", and the smaller app-side ones in `adb/DETAILS.md` § "Not wired yet". The last piece of
 frontend work, one switcher row per phone rather than one per protocol, is `adb-merged-phone-row.md`.
@@ -22,8 +23,10 @@ frontend work, one switcher row per phone rather than one per protocol, is `adb-
 ## 1. No real phone has ever run this
 
 - **Problem**: every test is against the in-repo fake ADB server. Nothing has been observed on hardware: the authorize
-  prompt, an `unauthorized` → `device` transition mid-session, a 2 GB `RECV` and `SEND`, or a `/data` listing on a
-  non-rooted phone (which should answer `PermissionDenied` carrying the path).
+  prompt, an `unauthorized` → `device` transition mid-session, a 2 GB `RECV` and `SEND`, a `/data` listing on a
+  non-rooted phone (which should answer `PermissionDenied` carrying the path), or a drive-index walk of a real
+  `/sdcard` (how long it takes, whether browsing the phone stays responsive under its four-listing ceiling, and an
+  unplug mid-walk).
 - **Impact**: this gates everything else, the shipped UI included. A fake server agrees with whatever the crate believes
   about framing and state transitions, so the first real device is where a wrong belief surfaces. Until it runs, the
   honest status is "works against our own mock".

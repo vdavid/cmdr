@@ -174,6 +174,21 @@ Pinned by `browsing_the_share_throttles_the_scan_to_one_listing_in_flight`,
 `pace_tests.rs` (including `the_budget_is_never_zero_for_any_input`). The transfer side of the same problem lives in
 `crates/cmdr-smb/src/volume/foreground_yield.rs`.
 
+### A backend's own ceiling (`Volume::max_concurrent_scan_listings`)
+
+On top of the pace decision, a volume may cap how many listings a walk keeps in flight on it. `ScanPacer::for_volume`
+takes the volume itself and applies `min(pace budget, ceiling)`, never below one, so neither the background scan nor the
+cover walk can be built without asking. The default is no ceiling (`usize::MAX`), which leaves SMB and MTP paced exactly
+as above.
+
+**Decision/Why a phone over ADB answers 4** (reasoned, not measured, 2026-09-10): every ADB listing is a fresh sync
+socket through the adb server and a thread of `adbd` statting the phone's flash. Overlapping listings buys back the
+per-socket handshake latency, and a few capture most of it; the full 64 would pile that many sockets and flash-stat
+threads onto one device the user may be holding. Revisit it when a real phone is benchmarked. The yield still applies
+on top: browsing the phone or a transfer on it drops the walk to one. Pinned by
+`pace_tests::a_volume_ceiling_caps_the_scan_below_the_full_budget` and
+`scan_pace::tests::a_backend_ceiling_caps_the_budget_but_never_below_one`.
+
 ## NAS snapshot/system dirs aren't recursed (`system_dirs.rs`)
 
 The BFS does NOT descend into NAS snapshot/system pseudo-directories (`@eaDir`, `@Recently-Snapshot`, `@Recycle`,

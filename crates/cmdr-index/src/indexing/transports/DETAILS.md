@@ -78,7 +78,8 @@ lifetime, not just while a pane shows the share, so the index must update even w
   `index_relative_path` is defined here and reused by the read side (`paths::index_read_path`) and by
   `IndexPathSpace::resolve_abs` — the single mount-strip, never a second copy.
 - **Translation (`resolve_change`, pure over DB state, unit-tested).** `Added`/`Modified` → `UpsertEntryV2` under the
-  resolved `parent_id`; `Renamed` → upsert the new entry (same-dir, so ancestor totals hold); `Removed` → resolve the
+  resolved `parent_id`; `Renamed` → move the old name's row to the new name (`MoveEntryV2`, so a folder keeps its
+  subtree) and upsert the fresh stat onto it, or just upsert when the index never had the old name; `Removed` → resolve the
   child id and `DeleteEntryById` (file) / `DeleteSubtreeById` (dir); `FullRefresh` and `Replaced` → no targeted write
   (overflow is handled by the freshness path; `Replaced` carries a whole re-read directory, and folding it in would be a
   write per entry on a path that fires per device event, which the reporting backend's own transport does more cheaply
@@ -187,6 +188,42 @@ by the stored handle. PTP events are device-wide but storages are separate names
 **Needs real-device QA** (no live MTP hardware in CI; the pure pieces are unit-tested): connect → scan → green badge;
 add/delete a file on the phone → index reflects it while connected; unplug → yellow; rescan → green; a same-port vs.
 different-port replug (serial id re-matches, location id rescans); a device that reports no serial (location fallback).
+
+## ADB (`adb.rs`)
+
+A phone over ADB indexes like an MTP storage (its own DB, the `Volume`-trait walk, the shared read path) and differs in
+three places.
+
+### Enable
+
+`start_indexing_for_adb` needs only the phone dialed (the volume registered): no connection gate, FDA-independent.
+`Index::start_volume` routes to it by the registered volume's `BackendKind::Adb`, a typed fact, rather than by the id's
+shape, and the cover walk's bootstrap classifies the same way. An unplugged phone's id isn't registered, so a start for
+it falls through to the SMB gate and is refused as `NotRegistered`.
+
+### No live watch, so a finished walk reads Stale
+
+ADB reports nothing when a file changes on the phone, so there is no `watch.rs` here and
+`IndexVolumeKind::has_live_watch` is false. A clean walk fires `ScanCompletedUnwatched` ⇒ **Stale** (with
+`scan_completed_at` written) where SMB and MTP land Fresh.
+
+**Decision/Why Stale, and no new state:** Fresh means "watched since the scan", and `Index::is_fresh` is what the
+operation log trusts an index on, so a phone must never answer it yes. Stale already says "browsable, may have drifted,
+rescan offered", which is exactly true of a phone the user can change from its own screen at any moment. A disconnect
+mid-walk takes the shared terminal-disconnect path (honest partial, Stale, no completion claimed), and an unplug of an
+idle phone changes nothing, since it already reads Stale.
+
+### Cmdr's own writes patch the index
+
+Every ADB mutation reports its listing patch (`crates/cmdr-adb/CLAUDE.md`), and the app's listing host forwards it to
+`Index::apply_directory_change`: the same translation an SMB `CHANGE_NOTIFY` takes (`smb/watch.rs`), resolving against
+the phone's root `adb://<serial>`, with a write that lands mid-walk buffered in the same place and replayed after it. A
+change made on the phone itself surfaces at the next rescan. The per-navigation verifier doesn't cover the gap: it reads
+the directory with a local `read_dir`, which fails on an `adb://` path and makes no correction.
+
+A walk keeps at most four listings in flight on the phone (`../network_scanner/DETAILS.md` § "A backend's own
+ceiling"). The whole story is proven against the fake ADB server by
+`apps/desktop/src-tauri/src/file_system/write_operations/adb_index_test.rs`.
 
 ## Local external drives (`local_external/`)
 

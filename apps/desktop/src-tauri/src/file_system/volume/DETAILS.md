@@ -90,7 +90,7 @@ the app maps. SMB's retrofit is the worked example; the cost model and the two t
 
 **Drive indexing does NOT go through `Volume`.** The local scanner and the FSEvents watcher are called directly by the
 indexing lifecycle (`indexing::scanner::{scan_volume, scan_subtree}`, `DriveWatcher::start`), dispatched on
-`VolumeKind::uses_local_scanner()`; SMB and MTP index through `network_scanner::scan_volume_via_trait`, a BFS over
+`VolumeKind::uses_local_scanner()`; SMB, MTP, and ADB index through `network_scanner::scan_volume_via_trait`, a BFS over
 `Volume::list_directory`. So `list_directory` is the only volume abstraction the indexer uses, and a new backend gets
 indexed by implementing it, not by implementing an indexing hook.
 

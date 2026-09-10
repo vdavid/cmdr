@@ -388,7 +388,8 @@ on. The two dev CLIs and the vendored fork are ordinary members.
     (`crates/cmdr-index/src/indexing/lifecycle/phases/CLAUDE.md`); a completed one replays or rescans as before.
     Per-volume registry (one index DB per drive, not just local) with a per-volume freshness model (Fresh/Stale/gray);
     SMB and MTP drives index too and stay live via smb2 `CHANGE_NOTIFY` / PTP events, with an "admittedly stale" model
-    on launch and disconnect. See `crates/cmdr-index/src/indexing/CLAUDE.md`
+    on launch and disconnect; a phone over ADB indexes with no live watch, so it reads Stale between rescans. See
+    `crates/cmdr-index/src/indexing/CLAUDE.md`
   - `importance/`: Deterministic folder-importance scoring (pure `scorer/`: values-in/score-out `Weights` + explain
     breakdown) that expensive features (agent, media-ML enrichment) consume. A read-consumer of `indexing/`, sibling to
     `search/`, with its own per-volume `importance.db` store, a multi-volume kind-aware scheduler (Local + SMB scored,

@@ -26,9 +26,9 @@ the per-volume paced listing budget, `system_dirs.rs` the non-recursed NAS dirs 
   fails dirs one at a time through the same arm, and marking there would condemn thousands for a disconnect that heals
   on wake. ❌ Never mark at the point of failure, ❌ never branch on how the walk ended: `finish` stamps the proven set
   on every exit and drops the rest. `DETAILS.md` § "A failed listing is held until the share answers again".
-- **The listing budget is PACED per volume, not constant** (`scan_pace.rs`, all three walks): browsing the share or a
-  transfer on it drops it 64 → 1, so higher-priority work isn't queued behind the walk. ❌ Never let it reach 0 —
-  one-at-a-time is what makes forward progress structural. Signals arrive once per top-up, ❌ never per entry.
+- **The listing budget is PACED per volume** (`scan_pace.rs`, all three walks): browsing the share or a transfer on it
+  drops it 64 → 1, and a backend may cap it (`max_concurrent_scan_listings`, 4 on a phone). ❌ Never let it reach 0:
+  one-at-a-time makes progress structural. Signals arrive once per top-up, ❌ never per entry.
 - **NAS system/snapshot dirs aren't recursed** (`system_dirs.rs`, all three walks): the dir's own row IS indexed, its
   subtree never walked. ❌ Don't remove it to "fill in" sizes — it re-triggers the stall. The cover walk stamps them
   `unreadable_cause = Declined`, ❌ never `Denied`, or the frontier hands that tree to every search.

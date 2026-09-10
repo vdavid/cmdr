@@ -593,7 +593,10 @@ Load-bearing rules:
   loads `None` (gray → fresh scan). Seeded at reservation from the volume `kind`. This is correct and honest, not a bug:
   we weren't watching while off.
 - **Scan transitions.** `ScanStarted` ⇒ Scanning; a CLEAN `ScanCompleted` ⇒ Fresh (only the `Ok` arm reaches it); a
-  FAILED LOCAL scan/reconcile ⇒ `ScanFailed` ⇒ Stale.
+  FAILED LOCAL scan/reconcile ⇒ `ScanFailed` ⇒ Stale. A clean trait scan on a volume NOTHING watches
+  (`IndexVolumeKind::has_live_watch`, false only for ADB) fires `ScanCompletedUnwatched` ⇒ Stale instead, with
+  `scan_completed_at` written: the walk is whole, but no event will say when the phone changes, and `Index::is_fresh`
+  (what the operation log trusts) must not answer yes. The lifecycle bus publishes a completion for either event.
 - **Failed LOCAL scan ⇒ Stale, never a stuck spinner** (`scan_completion.rs`). `start_scan`'s completion handler fires
   `ScanFailed` (through the cloned freshness handle, no registry re-lock) from `report_unfinished_scan`, on both failure
   arms: `Ok(Err(_))` (a typed `ScanError` like `EmptyRoot`, or a `catch_unwind`-converted `Panicked`) and `Err(_)`

@@ -170,7 +170,7 @@ decorative `aria-hidden`); the active step's bar takes the step label as its `ar
 a fixed list. The run kind picks the ordered list:
 
 - **local** (the `root` volume): Find files → Save the file list → Compute folder sizes → Catch up on recent changes.
-- **network** (SMB/MTP): Find files → Compute folder sizes. The Save and Catch-up steps don't appear: a network scan
+- **network** (SMB/MTP/ADB): Find files → Compute folder sizes. The Save and Catch-up steps don't appear: a network scan
   inserts entries inline during the walk (no `saving_entries` sub-phase) and emits no top-level Aggregating/Reconciling
   phase (Scanning → Live directly), so those steps never run. Compute is driven off the aggregation SUB-phase events,
   which DO fire for network.

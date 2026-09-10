@@ -1,8 +1,8 @@
 # Indexing transports
 
-Per-transport enable + live-watch wiring. Each transport builds on the shared machinery (the `network_scanner` trait BFS
-for SMB/MTP, the local `scanner` + `watch` pipeline for local-external) and differs only in HOW a volume is enabled and
-HOW live changes arrive.
+Per-transport enable + live-watch wiring over shared machinery (the `network_scanner` trait BFS for SMB/MTP/ADB, the
+local `scanner` + `watch` pipeline for local-external). Transports differ only in HOW a volume is enabled and HOW live
+changes arrive.
 
 ## Must-knows
 
@@ -36,11 +36,12 @@ HOW live changes arrive.
 
 ## Module map
 
-Sub-subdirs do NOT get their own docs; they're covered here.
+Sub-subdirs have no docs.
 
 - `smb/` — `index.rs` (the direct-smb2 gate + auto-resume), `watch.rs` (`CHANGE_NOTIFY` → index via `apply_smb_change`,
   and `index_relative_path`, the shared mount-strip), `integration_test.rs`.
 - `mtp/` — `index.rs` (enable, no gate), `watch.rs` (PTP-event live watch, gate-before-resolve, handle→removal).
+- `adb.rs` — enable only (no gate, no watch).
 - `local_external/` — `index.rs` (enable + `classify`; the LOCAL scanner drives a mount-rooted drive).
 
 Owned elsewhere: the `Volume`-trait BFS scanner, scan pacing, NAS system-dir skips, and no-completion-on-empty-root live

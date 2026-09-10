@@ -110,6 +110,9 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   table has an `"adb"` row answering the constant 1. ❗ A namespace with no row silently gets a cautious 2, which is why
   the row exists even though it is not a user-facing knob. `adbd` serializes I/O per device, so a second concurrent
   transfer only adds contention.
+- **`max_concurrent_scan_listings` → 4.** A drive-index walk keeps at most that many `LIST`s in flight on the phone,
+  under whatever the walk's own pacing allows. Why four, and how the walk applies it:
+  `crates/cmdr-index/src/indexing/network_scanner/DETAILS.md` § "A backend's own ceiling".
 - **`supports_export` → true, `is_writable` → true, `supports_streaming` → true.** Every read and write path is
   implemented; the conformance assertions hold each declaration to what the device accepts. The conflict scan is
   `scan_walk::scan_conflicts`, which lists the destination through this backend's own `scan_list` and matches with
@@ -117,8 +120,8 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   answers an empty list rather than `NotFound`, per `Volume::scan_for_conflicts`. A read-only mount answers `ReadOnly`
   per path when the shell's `EROFS` says so, not volume-wide.
 - **`can_watch_listings` → false, `listing_watch_coverage` → `None`.** There is no watcher, so ❌ nothing here may claim
-  an authoritative listing; the pane stays honest through `notify_mutation`, called once per changed directory by every
-  mutation, `write_from_stream` included. The patch itself is `cmdr_fs::volume::patching`: this backend implements
+  an authoritative listing; the pane, and the phone's drive index behind the app's listing host, stay honest through
+  `notify_mutation`, called once per changed directory by every mutation, `write_from_stream` included. The patch itself is `cmdr_fs::volume::patching`: this backend implements
   `PatchSource` (`volume/mutation.rs`) and owes nothing else.
 - **The tree walk is `cmdr_fs::volume::scan_walk`**, reached by implementing `ScanSource` (`volume/scan.rs`): one `STAT`
   for a stat, one `LIST` for a listing, and the walk's arithmetic, batch loop, and conflict matcher come with it. ❗ It

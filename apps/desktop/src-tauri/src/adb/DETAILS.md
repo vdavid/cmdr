@@ -182,18 +182,31 @@ that the registry and the provider hold the same volume. A cell asserting on the
   the engine's own staging temp; and a mkdir, a move, and a delete each report the pane patch they owe. The patch cells
   connect through `cmdr_adb::volume::testing::connect_fake`, whose `RecordingListings` is what they read: the app's
   listing-cache patch needs a running app (`caching::notify_directory_changed` returns early without an `AppHandle`).
+- `file_system/write_operations/adb_index_test.rs`: the phone's drive index end to end, over a phone dialed the way a
+  pane dials it, because only the app's listing host forwards a patch to the index. The walk indexes the fake tree
+  (rows, folder sizes, routing); a copy onto the phone and a delete on it patch the index, leaving no staging-name row;
+  an unplug mid-walk leaves the index Stale with no completion claimed; and a change under another phone's path (a
+  serial that merely extends this one's included) never lands.
+
+## Indexing a phone
+
+A phone over ADB gets a drive index the way an MTP phone does: the switcher offers the badge and the first-connect
+prompt (`BackendKind::can_be_indexed`, with the frontend's per-kind default answering before the phone is dialed), and
+`Index::start_volume` walks it through the `Volume` trait. What differs is owned elsewhere:
+
+- Nothing watches a phone, so a finished walk reads Stale, and Cmdr's own writes are what keep the index current:
+  `crates/cmdr-index/src/indexing/transports/DETAILS.md` § "ADB".
+- A walk keeps at most four listings in flight on the phone: `crates/cmdr-index/src/indexing/network_scanner/DETAILS.md`
+  § "A backend's own ceiling".
+- An unplug (`apply_device_list` retiring the volume) cuts a walk short with an honest partial, and the index stays
+  registered, Stale, across the replug, as an MTP phone's does. Nothing re-walks it on replug: that's the user's rescan
+  (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "What a launch deliberately does NOT start").
 
 ## Deliberate non-goals
 
-Two things read like gaps and are not. They live here because the spec that decided them is wiped, and because both are
-the kind of "oversight" someone will otherwise fix.
+One thing reads like a gap and is not. It lives here because the spec that decided it is wiped, and because it's the
+kind of "oversight" someone will otherwise fix.
 
-- **An ADB volume is never indexed.** `BackendKind::Adb` answers `can_be_indexed: false`, so the switcher offers a
-  phone no index badge and no first-connect prompt (the frontend's per-kind default answers before it's dialed), and
-  `Index::start_volume` refuses one. That is the intended end state. A phone
-  is transient, its filesystem is large, and walking it over USB to fill an index would thrash the device and the cable
-  for data that is stale the moment it is unplugged. Search inside an ADB pane is live filename search over the current
-  listing.
 - **Wireless pairing stays the `adb` server's job.** `adb pair` and its six-digit code have no surface in Cmdr and
   won't get one: pairing is a one-time terminal step with its own flow, and a device paired there arrives through
   `track-devices` exactly like a cabled one, so this module already serves it.

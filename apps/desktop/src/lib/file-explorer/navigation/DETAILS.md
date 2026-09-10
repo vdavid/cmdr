@@ -417,8 +417,8 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
 
 - **Eligibility is `isDriveRow(volume)`** (in `drive-index-manager.svelte.ts`): every entry except favorites, mounted
   disk images (`isDiskImage`), and any volume whose `canBeIndexed` capability says no (`pane/volume-capabilities.ts`):
-  the synthetic `network` / `search-results` rows, SFTP and WebDAV servers, and a phone over ADB. SMB shares, MTP
-  phones, and the local disk DO get a badge. Disk images are a product choice (transient install-style mounts we
+  the synthetic `network` / `search-results` rows, and SFTP and WebDAV servers. SMB shares, phones over MTP or ADB, and
+  the local disk DO get a badge. Disk images are a product choice (transient install-style mounts we
   deliberately never index); the rest is the backend's answer (`BackendKind::can_be_indexed`), with the per-kind default
   standing in until a volume registers, which is exactly when an undialed phone's row gets clicked. Since this predicate
   also gates the first-connect prompt and the status fetch, one exclusion covers all three. The badge is gray for any
