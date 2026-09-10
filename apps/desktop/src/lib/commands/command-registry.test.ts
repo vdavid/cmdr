@@ -247,6 +247,7 @@ describe('whileDialogOpen', () => {
   it('gives every opt-out a reason', () => {
     for (const cmd of commands) {
       const rule = cmd.whileDialogOpen as { runs?: string; reason?: string } | undefined
+      // allowed-pluralize-noun: "needs" is the verb of an assertion message, not a counted noun
       if (rule?.runs === 'always') expect(rule.reason?.trim(), `${cmd.id} needs a reason`).toBeTruthy()
     }
   })
