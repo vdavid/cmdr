@@ -19,7 +19,7 @@
     "apps/desktop/src-tauri/src/file_viewer/line_index.rs": 19,
     "apps/desktop/src-tauri/src/logging/dispatch.rs": 18,
     "apps/desktop/src-tauri/src/menu/linux.rs ↔ apps/desktop/src-tauri/src/menu/macos.rs": {
-      "lines": 50,
+      "lines": 54,
       "reason": "the two platforms' `register_item` blocks are near-identical by design: `register_item_positions_match_submenu_order` parses BOTH files and checks each id's index against its own platform's submenu order, so extracting them into one shared list would remove the very thing the test compares (`apps/desktop/src-tauri/src/menu/DETAILS.md`). Every File-menu item added lands one line in each"
     },
     "apps/desktop/src-tauri/src/native_drag/fulfillment.rs": 36,

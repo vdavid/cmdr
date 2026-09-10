@@ -46,6 +46,7 @@ Some highlights:
 - Add "New file…" to the File menu and the right-click menu (e401e3946)
 - Right-click the function key bar to hide it (85254509c)
 - Walk through AI provider setup in Settings the way onboarding does, with steps that fit each provider (6a2ed70df)
+- Connect to a server or open your servers list from the new Servers menu in the menu bar (97d626707)
 
 ### Changed
 
