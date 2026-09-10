@@ -85,7 +85,37 @@ async fn turning_indexing_on_records_the_choice_before_any_scan_finishes() {
     reason = "the fixture holds the process-wide seams for the whole test; holding it across the await IS the point"
 )]
 async fn turning_indexing_on_for_a_volume_no_index_can_serve_refuses_and_records_nothing() {
-    let phone = ColdDrive::with_volume("cover-enable-unindexable-test", |volume| {
+    let server = ColdDrive::with_volume("cover-enable-unindexable-test", |volume| {
+        volume.with_backend_kind(cmdr_fs::volume::BackendKind::Sftp)
+    });
+
+    let outcome = server
+        .index
+        .start_volume(server.volume_id)
+        .await
+        .expect("the enable itself is not an error");
+
+    assert_eq!(
+        outcome,
+        crate::indexing::handle::StartOutcome::Refused(crate::SmbIndexGateReason::NotAnSmbVolume),
+        "an SFTP server has no index transport",
+    );
+    assert!(
+        !IndexStore::user_enabled(&server.db_path()),
+        "and nothing records it as a drive the user turned on",
+    );
+}
+
+/// Turning indexing on for a phone over ADB starts it and records the choice,
+/// through the same door an MTP phone takes: no connection gate, just a
+/// registered volume the `Volume`-trait walk can list.
+#[tokio::test(flavor = "multi_thread")]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the fixture holds the process-wide seams for the whole test; holding it across the await IS the point"
+)]
+async fn turning_indexing_on_for_a_phone_over_adb_starts_it_and_records_the_choice() {
+    let phone = ColdDrive::with_volume("cover-enable-adb-phone-test", |volume| {
         volume.with_backend_kind(cmdr_fs::volume::BackendKind::Adb)
     });
 
@@ -97,12 +127,12 @@ async fn turning_indexing_on_for_a_volume_no_index_can_serve_refuses_and_records
 
     assert_eq!(
         outcome,
-        crate::indexing::handle::StartOutcome::Refused(crate::SmbIndexGateReason::NotAnSmbVolume),
-        "a phone over ADB has no index transport",
+        crate::indexing::handle::StartOutcome::Started,
+        "a phone over ADB walks through the `Volume` trait, like an MTP phone",
     );
     assert!(
-        !IndexStore::user_enabled(&phone.db_path()),
-        "and nothing records it as a drive the user turned on",
+        IndexStore::user_enabled(&phone.db_path()),
+        "and the choice is on the phone's own database",
     );
 }
 

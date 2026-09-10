@@ -273,6 +273,10 @@ impl Index {
                 crate::indexing::transports::mtp::index::start_indexing_for_mtp(volume_id.to_string())?;
                 return Ok(StartOutcome::Started);
             }
+            if crate::indexing::transports::adb::is_registered_adb_volume(volume_id) {
+                crate::indexing::transports::adb::start_indexing_for_adb(volume_id)?;
+                return Ok(StartOutcome::Started);
+            }
             match start_indexing_for_local_external(volume_id.to_string()).await? {
                 LocalExternalEnable::Started => return Ok(StartOutcome::Started),
                 LocalExternalEnable::NotLocalExternal => {}

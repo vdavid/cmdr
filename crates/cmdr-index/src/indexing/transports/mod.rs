@@ -5,9 +5,12 @@
 //!
 //! - [`smb`]: SMB shares (direct-smb2 gate + `CHANGE_NOTIFY` live watch).
 //! - [`mtp`]: MTP storages (USB/PTP; no gate, PTP-event live watch).
+//! - [`adb`]: Android phones over ADB (no gate, no live watch).
 //! - [`local_external`]: plain local external drives (mount-rooted, but scanned
 //!   and watched by the LOCAL pipeline).
 
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) mod adb;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) mod local_external;
 #[cfg(any(target_os = "macos", target_os = "linux"))]

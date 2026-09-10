@@ -571,6 +571,24 @@ pub(crate) fn start_indexing_for_mtp_inner(volume_id: &str, volume_root: PathBuf
     )
 }
 
+/// Internal ADB-start entry point, called by `transports::adb::start_indexing_for_adb`
+/// once the phone is confirmed registered. Funnels into the shared
+/// `start_indexing_for` with the `Adb` kind so the lock-first reservation,
+/// load-as-Stale freshness seeding, and `Volume`-trait scan path all apply.
+/// `volume_root` is the phone's `adb://<serial>` root.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) fn start_indexing_for_adb_inner(volume_id: &str, volume_root: PathBuf) -> Result<(), String> {
+    // A trait-scanned volume never runs the local inode-keyed rename pre-pass, so
+    // its inode identity counts as trustworthy, as SMB's and MTP's do.
+    start_indexing_for(
+        volume_id,
+        volume_root,
+        IndexVolumeKind::Adb,
+        true,
+        Activation::IndexTheVolume,
+    )
+}
+
 /// Internal local-external-start entry point, called by
 /// `local_external_index::start_indexing_for_local_external` after the volume is
 /// classified as a plain local external drive. Funnels into the shared

@@ -82,7 +82,8 @@ pub(in crate::indexing::lifecycle) use startup::start_indexing_for;
 pub(crate) use startup::{Activation, StartRequest};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use startup::{
-    start_indexing_for_local_external_inner, start_indexing_for_mtp_inner, start_indexing_for_smb_inner,
+    start_indexing_for_adb_inner, start_indexing_for_local_external_inner, start_indexing_for_mtp_inner,
+    start_indexing_for_smb_inner,
 };
 #[cfg(test)]
 pub(crate) use supervisor::fail_index_for_test;

@@ -150,8 +150,8 @@ impl ScoringPolicy {
                     last_used_available: false,
                 },
             },
-            // MTP: on-demand only, never background-scored.
-            IndexVolumeKind::Mtp => ScoringPolicy::Excluded,
+            // A phone (MTP or ADB): on-demand only, never background-scored.
+            IndexVolumeKind::Mtp | IndexVolumeKind::Adb => ScoringPolicy::Excluded,
         }
     }
 }

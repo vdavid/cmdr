@@ -218,10 +218,9 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
-    // ...but it is never indexed, by design (`src-tauri/src/adb/DETAILS.md` §
-    // Deliberate non-goals). This row is what answers for a phone's row BEFORE
-    // it's dialed, which is when the first-connect prompt would fire.
-    canBeIndexed: false,
+    // Indexed like an MTP phone. This row is what answers for a phone's row
+    // BEFORE it's dialed, which is when the first-connect prompt fires.
+    canBeIndexed: true,
   }),
   network: Object.freeze({
     kind: 'network',

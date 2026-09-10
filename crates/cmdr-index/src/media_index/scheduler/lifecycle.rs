@@ -174,8 +174,9 @@ pub(super) fn kick_ready_passes_from(scheduler: &Arc<MediaScheduler>, ready: Vec
         let pass_kind = match kind {
             IndexVolumeKind::Local => PassKind::Local,
             IndexVolumeKind::Smb => PassKind::Network,
-            // MTP is never background-swept (on-demand only); nothing to kick.
-            IndexVolumeKind::Mtp => continue,
+            // A phone (MTP or ADB) is never background-swept (on-demand only);
+            // nothing to kick.
+            IndexVolumeKind::Mtp | IndexVolumeKind::Adb => continue,
             // A LocalExternal (USB/SD) drive's index paths are MOUNT-RELATIVE, so the
             // local pass (which treats stored paths as OS paths) would hand Vision
             // relative paths — the phantom-path bug class. Skip it until mount-root
@@ -286,17 +287,17 @@ enum PassKind {
 ///   per-volume opt-in is checked INSIDE the pass, so flipping the opt-in on takes
 ///   effect on the next scan completion (and the opt-in command kicks an immediate
 ///   pass — see [`kick_network_pass`]).
-/// - **MTP**: NEVER background-swept: a phone/camera on MTP is transient
+/// - **MTP and ADB**: NEVER background-swept: a phone/camera is transient
 ///   and slow, so enrichment is on-demand-per-visit, not a background sweep. The
 ///   on-demand trigger is a later slice; this gate is real now.
 pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVolumeKind) {
     let pass_kind = match kind {
         IndexVolumeKind::Local => PassKind::Local,
         IndexVolumeKind::Smb => PassKind::Network,
-        IndexVolumeKind::Mtp => {
+        IndexVolumeKind::Mtp | IndexVolumeKind::Adb => {
             log::debug!(
                 target: "media_index",
-                "media enrichment skips MTP '{volume_id}': never background-swept (on-demand-per-visit only)"
+                "media enrichment skips phone '{volume_id}': never background-swept (on-demand-per-visit only)"
             );
             return;
         }

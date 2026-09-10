@@ -35,13 +35,12 @@ import { capabilitiesForInfo } from '../pane/volume-capabilities'
  * - **A mounted disk image** could be indexed, and we deliberately don't: a
  *   `.dmg` mount is transient.
  * - **No drive index can serve it** (`canBeIndexed`, a typed capability): the
- *   synthetic `network` / `search-results` rows, an SFTP or WebDAV server (whose
- *   `sftp://…` root no local walker can read, so an enable would leave a
- *   fresh-looking empty index), and a phone over ADB (never indexed, by design).
- *   The backend's answer wins once a volume is registered; before that (a phone
- *   nobody has dialed, the moment its row is clicked) the per-kind default
- *   answers. A mounted SMB share and an MTP phone stay in: the index really does
- *   walk both.
+ *   synthetic `network` / `search-results` rows, and an SFTP or WebDAV server
+ *   (whose `sftp://…` root no local walker can read, so an enable would leave a
+ *   fresh-looking empty index). The backend's answer wins once a volume is
+ *   registered; before that (a phone nobody has dialed, the moment its row is
+ *   clicked) the per-kind default answers. A mounted SMB share and a phone over
+ *   MTP or ADB stay in: the index really does walk all three.
  */
 export function isDriveRow(volume: VolumeInfo): boolean {
   if (volume.category === 'favorite') return false

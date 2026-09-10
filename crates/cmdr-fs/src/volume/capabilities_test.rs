@@ -143,9 +143,9 @@ fn the_in_memory_double_publishes_the_read_write_surface_a_test_expects() {
     );
 }
 
-/// A server, a phone over ADB, and a view inside a drive are never offered a
-/// drive index; a disk, a share, and an MTP phone are. The published answer
-/// follows the backend kind, so it can't disagree with the index's own routing.
+/// A server and a view inside a drive are never offered a drive index; a disk, a
+/// share, and a phone (over MTP or ADB) are. The published answer follows the
+/// backend kind, so it can't disagree with the index's own routing.
 #[test]
 fn indexability_follows_the_backend_kind() {
     use super::BackendKind;
@@ -153,9 +153,9 @@ fn indexability_follows_the_backend_kind() {
         (BackendKind::Local, true),
         (BackendKind::Smb, true),
         (BackendKind::Mtp, true),
+        (BackendKind::Adb, true),
         (BackendKind::Sftp, false),
         (BackendKind::Webdav, false),
-        (BackendKind::Adb, false),
         (BackendKind::Archive, false),
         (BackendKind::GitPortal, false),
     ] {

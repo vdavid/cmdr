@@ -20,12 +20,12 @@ pub const ROOT_VOLUME_ID: &str = "root";
 /// explicit, orthogonal method rather than a single conflated predicate:
 ///
 /// - [`uses_local_scanner`](Self::uses_local_scanner): the guarded walker + FSEvents pipeline
-///   (`Local`, `LocalExternal`) vs the `Volume` trait scanner (`Smb`, `Mtp`).
+///   (`Local`, `LocalExternal`) vs the `Volume` trait scanner (`Smb`, `Mtp`, `Adb`).
 ///   Its exact complement is [`is_trait_scanned`](Self::is_trait_scanned).
 /// - [`has_event_journal`](Self::has_event_journal): self-heals watch continuity
 ///   by replaying an FSEvents journal on launch. Only the boot disk (`Local`).
 /// - [`mount_rooted`](Self::mount_rooted): the index `ROOT_ID` is the mount
-///   (`/Volumes/X`), not `/`. True for `LocalExternal`, `Smb`, `Mtp`.
+///   (`/Volumes/X`), not `/`. True for `LocalExternal`, `Smb`, `Mtp`, `Adb`.
 /// - [`feeds_search`](Self::feeds_search): the single volume whose writes back
 ///   the in-memory search index. Only the boot disk (`Local`).
 ///
@@ -52,6 +52,11 @@ pub const ROOT_VOLUME_ID: &str = "root";
 ///   event loop keeps it Fresh while the device is connected (D4). A distinct
 ///   variant only so the scan path and any future MTP-specific tuning have a
 ///   name to branch on.
+/// - [`Adb`](IndexVolumeKind::Adb): an Android phone over ADB, scanned over the
+///   same `Volume` trait and rooted at the device's `/` under `adb://<serial>`.
+///   Non-journaled and mount-rooted like `Mtp`, and a distinct variant for the
+///   same reason, plus one of its own: ADB reports no device-side changes, so
+///   nothing keeps its index live between scans.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IndexVolumeKind {
     /// The boot disk.
@@ -63,6 +68,8 @@ pub enum IndexVolumeKind {
     Smb,
     /// An MTP device (a phone), scanned through the `Volume` trait.
     Mtp,
+    /// An Android phone over ADB, scanned through the `Volume` trait.
+    Adb,
 }
 
 impl IndexVolumeKind {
@@ -75,24 +82,24 @@ impl IndexVolumeKind {
     }
 
     /// Whether this volume scans over the `Volume` trait (network/USB) rather
-    /// than the local guarded walker. SMB and MTP both do. Exact complement of
+    /// than the local guarded walker. SMB, MTP, and ADB do. Exact complement of
     /// [`uses_local_scanner`](Self::uses_local_scanner).
     pub fn is_trait_scanned(self) -> bool {
-        matches!(self, IndexVolumeKind::Smb | IndexVolumeKind::Mtp)
+        matches!(self, IndexVolumeKind::Smb | IndexVolumeKind::Mtp | IndexVolumeKind::Adb)
     }
 
     /// Whether this volume self-heals watch continuity from an event journal on
     /// launch. Only the local boot disk does (FSEvents replay). Feeds
     /// `freshness::initial_freshness_on_launch`. Local external drives carry no
-    /// `.fseventsd`, and SMB and MTP have no journal.
+    /// `.fseventsd`, and SMB, MTP, and ADB have no journal.
     pub fn has_event_journal(self) -> bool {
         matches!(self, IndexVolumeKind::Local)
     }
 
     /// Whether the index's `ROOT_ID` is the volume's mount point (`/Volumes/X`)
     /// rather than `/`. True for every volume except the boot disk: local
-    /// external drives, SMB shares, and MTP devices all index relative to their
-    /// mount.
+    /// external drives, SMB shares, and MTP and ADB phones all index relative to
+    /// their root.
     ///
     /// Consumed by [`IndexPathSpace`](crate::indexing::IndexPathSpace) to decide
     /// whether the local scan/reconcile/live pipeline strips a mount root before
@@ -100,7 +107,7 @@ impl IndexVolumeKind {
     pub fn mount_rooted(self) -> bool {
         matches!(
             self,
-            IndexVolumeKind::LocalExternal | IndexVolumeKind::Smb | IndexVolumeKind::Mtp
+            IndexVolumeKind::LocalExternal | IndexVolumeKind::Smb | IndexVolumeKind::Mtp | IndexVolumeKind::Adb
         )
     }
 
@@ -118,11 +125,12 @@ mod tests {
 
     /// Every `IndexVolumeKind`, so a new variant can't be added without deciding
     /// its capabilities here.
-    const ALL_KINDS: [IndexVolumeKind; 4] = [
+    const ALL_KINDS: [IndexVolumeKind; 5] = [
         IndexVolumeKind::Local,
         IndexVolumeKind::LocalExternal,
         IndexVolumeKind::Smb,
         IndexVolumeKind::Mtp,
+        IndexVolumeKind::Adb,
     ];
 
     /// The five capability axes must match the plan's table exactly. Each tuple is
@@ -148,6 +156,7 @@ mod tests {
         );
         assert_eq!(expected(IndexVolumeKind::Smb), (false, true, false, true, false));
         assert_eq!(expected(IndexVolumeKind::Mtp), (false, true, false, true, false));
+        assert_eq!(expected(IndexVolumeKind::Adb), (false, true, false, true, false));
     }
 
     /// `uses_local_scanner` and `is_trait_scanned` are exact complements: every

@@ -171,10 +171,13 @@ fn resolve_enabled_volumes(volume_ids: &[String]) -> (Vec<(String, String)>, boo
                 Some(mount) => enabled.push((vid.clone(), mount.clone())),
                 None => pending = true,
             },
-            // Not opted-in SMB / MTP / LocalExternal: never reclaimed here (nothing was
+            // Not opted-in SMB / a phone / LocalExternal: never reclaimed here (nothing was
             // enriched — LocalExternal is skipped by the passes since its index paths are
             // mount-relative, so it has no stored rows to reclaim).
-            Some(IndexVolumeKind::Smb) | Some(IndexVolumeKind::Mtp) | Some(IndexVolumeKind::LocalExternal) => {}
+            Some(IndexVolumeKind::Smb)
+            | Some(IndexVolumeKind::Mtp)
+            | Some(IndexVolumeKind::Adb)
+            | Some(IndexVolumeKind::LocalExternal) => {}
             // Requested but offline / not scanned: the user expects it, so it's pending.
             None => pending = true,
         }

@@ -416,6 +416,7 @@ fn kind_token(kind: cmdr_index::IndexVolumeKind) -> &'static str {
         IndexVolumeKind::LocalExternal => "external",
         IndexVolumeKind::Smb => "smb",
         IndexVolumeKind::Mtp => "mtp",
+        IndexVolumeKind::Adb => "adb",
     }
 }
 

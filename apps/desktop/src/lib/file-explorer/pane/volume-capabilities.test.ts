@@ -117,8 +117,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeSource: true,
       hasParentRow: true,
       syncsToMcp: true,
-      // Never indexed, by design: this default answers for a phone nobody has dialed.
-      canBeIndexed: false,
+      // Indexable like an MTP phone: this default answers for a phone nobody has dialed.
+      canBeIndexed: true,
     },
     network: {
       kind: 'network',

@@ -160,6 +160,11 @@ fn classify_external(volume_id: &str) -> Result<WalkableVolume, NoCoverContext> 
     if cmdr_fs::volume::mtp_ids::is_mtp_volume_id(volume_id) {
         return Ok(via_trait(IndexVolumeKind::Mtp));
     }
+    // A phone over ADB, by the backend the host registered: its files exist only
+    // through the adb server, so there's no mount to probe either.
+    if volume.backend_kind() == cmdr_fs::volume::BackendKind::Adb {
+        return Ok(via_trait(IndexVolumeKind::Adb));
+    }
     // Anything else with no local filesystem behind it is reachable only through
     // its `Volume`, which is exactly what the trait walk needs. A probe would have
     // nothing to probe.

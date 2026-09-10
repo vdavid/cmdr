@@ -171,16 +171,16 @@ describe('isDriveRow — index-affordance eligibility', () => {
   })
 
   /**
-   * ❗ A phone over ADB is never indexed by design, and its row is clicked
-   * BEFORE it's dialed, when no backend has published anything yet. The
-   * first-connect prompt fires on that click, so the per-kind default has to
-   * say no on its own.
+   * ❗ A phone over ADB's row is clicked BEFORE it's dialed, when no backend has
+   * published anything yet, and the first-connect prompt fires on that click. So
+   * the per-kind default has to offer indexing on its own, the same answer the
+   * dialed volume publishes.
    */
-  it('excludes a phone over ADB, before and after it is dialed', () => {
+  it('keeps the badge on a phone over ADB, before and after it is dialed', () => {
     const phone = { id: 'adb-r58m-0a1b2c', category: 'mobile_device', fsType: 'adb' } as const
-    expect(isDriveRow(vol(phone))).toBe(false)
-    const dialed = { backendCanWrite: true, canExport: true, canBeIndexed: false }
-    expect(isDriveRow(vol({ ...phone, capabilities: dialed }))).toBe(false)
+    expect(isDriveRow(vol(phone))).toBe(true)
+    const dialed = { backendCanWrite: true, canExport: true, canBeIndexed: true }
+    expect(isDriveRow(vol({ ...phone, capabilities: dialed }))).toBe(true)
   })
 
   it('keeps the badge on an MTP phone, which the index scans over its own session', () => {

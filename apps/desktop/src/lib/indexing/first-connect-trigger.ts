@@ -10,8 +10,8 @@
 //
 // Whether the volume can be indexed AT ALL is the caller's gate, not this
 // module's: `VolumeBreadcrumb` asks only for a row `isDriveRow` passes, which
-// drops every volume no drive index can serve (a phone over ADB, a server) on
-// the typed `canBeIndexed` capability.
+// drops every volume no drive index can serve (a server, a view inside a drive)
+// on the typed `canBeIndexed` capability.
 
 import { addToast } from '$lib/ui/toast'
 import { getVolumeIndexStatusById } from '$lib/tauri-commands'

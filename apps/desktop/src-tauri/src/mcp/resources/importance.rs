@@ -95,6 +95,7 @@ fn kind_token(volume_id: &str) -> Option<&'static str> {
         IndexVolumeKind::LocalExternal => "external",
         IndexVolumeKind::Smb => "smb",
         IndexVolumeKind::Mtp => "mtp",
+        IndexVolumeKind::Adb => "adb",
     })
 }
 
