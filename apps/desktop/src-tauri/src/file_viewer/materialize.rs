@@ -26,12 +26,12 @@
 //!
 //! Discipline this module owns:
 //!
-//! - **One temp per open.** Re-opening the same file re-materializes — simple
-//!   beats a dedup cache. The temp is deleted when the viewer session closes (both
-//!   close paths funnel through [`super::session::close_session`]). The second
+//! - **One temp per window's file.** A fresh open pulls; a view switch in the same
+//!   window shares the copy its session already holds ([`PreviewTemp`], behind an
+//!   `Arc`), and the temp goes when the last session holding it closes. The second
 //!   caller, the agent's `inspect_file` (`agent/tools/read/inspect/`), owns its
 //!   temp for one read and removes it in a `Drop` guard; the contract is the same:
-//!   whoever receives an [`MaterializedFile`] removes `cleanup_dir`.
+//!   whoever receives a [`MaterializedFile`] removes `cleanup_dir`.
 //! - **Bounded, refuse-before-extract.** The volume reports the file's size UP
 //!   FRONT (an archive from its central directory, the portal from the blob header,
 //!   a phone or server from its stat), so an oversize file is refused with a typed
@@ -77,15 +77,59 @@ const DEFAULT_EXTRACT_DIRNAME: &str = "cmdr-viewer-extract";
 /// The per-instance extract dir, stashed at startup by [`init_materialize_dir`].
 static MATERIALIZE_DIR: LazyLock<RwLock<Option<PathBuf>>> = LazyLock::new(|| RwLock::new(None));
 
-/// A successful extraction: the temp file to open, and the subdir to remove on close.
+/// A successful extraction: the temp file to open, and the subdir to remove when done.
 #[derive(Debug)]
 pub(crate) struct MaterializedFile {
     /// The extracted file on local disk, named with the source's basename so the
     /// viewer shows the right title and classifies media by the right extension.
     pub(crate) temp_file: PathBuf,
-    /// The `.cmdr-viewer-<uuid>/` subdir wrapping `temp_file`, removed wholesale on
-    /// session close (stored on the `ViewerSession`).
+    /// The `.cmdr-viewer-<uuid>/` subdir wrapping `temp_file`. Whoever receives this
+    /// removes it: the viewer by wrapping it in a [`PreviewTemp`], the agent's
+    /// `inspect_file` in its own `Drop` guard.
     pub(crate) cleanup_dir: PathBuf,
+}
+
+/// A viewer's temp copy of one file, shared by every session that previews it.
+///
+/// A view switch ("View as text", or back to the image) opens a second session for the
+/// same window before the first one closes, so both hold this through an `Arc`, and the
+/// subdir goes when the LAST of them drops it. It remembers which file it copies, so a
+/// switch reuses it only for the same path on the same volume.
+#[derive(Debug)]
+pub(crate) struct PreviewTemp {
+    pub(crate) temp_file: PathBuf,
+    cleanup_dir: PathBuf,
+    source_path: PathBuf,
+    volume_id: String,
+}
+
+impl PreviewTemp {
+    /// Takes ownership of `materialized`, the copy of `source_path` on `volume_id`.
+    pub(crate) fn new(materialized: MaterializedFile, source_path: PathBuf, volume_id: &str) -> Self {
+        Self {
+            temp_file: materialized.temp_file,
+            cleanup_dir: materialized.cleanup_dir,
+            source_path,
+            volume_id: volume_id.to_string(),
+        }
+    }
+
+    /// Whether this is a copy of `source_path` on `volume_id`, still on disk.
+    pub(crate) fn is_copy_of(&self, source_path: &Path, volume_id: &str) -> bool {
+        self.source_path == source_path && self.volume_id == volume_id && self.temp_file.exists()
+    }
+}
+
+impl Drop for PreviewTemp {
+    fn drop(&mut self) {
+        if let Err(e) = std::fs::remove_dir_all(&self.cleanup_dir) {
+            log::debug!(
+                target: "cmdr_lib::file_viewer",
+                "preview temp cleanup failed for {}: {e}",
+                self.cleanup_dir.display()
+            );
+        }
+    }
 }
 
 /// Records the per-instance extract dir and reaps any orphans left in it by a crash.

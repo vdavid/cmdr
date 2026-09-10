@@ -22,6 +22,7 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::content_kind::{CLASSIFY_HEAD_LEN, ViewerContentKind, classify_viewer_content, media_mime};
 use super::encoding::FileEncoding;
+use super::materialize::PreviewTemp;
 use super::media::{self, MediaEntry};
 use super::media_backend::MediaBackend;
 use super::session::{BackendType, SESSIONS, ViewerOpenResult, ViewerSession, ViewerSessionInit, generate_session_id};
@@ -41,14 +42,14 @@ pub struct MediaDimensions {
 pub(super) fn try_open_media(
     file_path: &Path,
     file_size: u64,
-    temp_cleanup: Option<std::path::PathBuf>,
+    temp: Option<Arc<PreviewTemp>>,
 ) -> Option<Result<ViewerOpenResult, ViewerError>> {
     let head = read_head(file_path, CLASSIFY_HEAD_LEN);
     let ext = file_path.extension().and_then(|e| e.to_str());
     let is_local = is_local_posix_path(file_path);
     let kind = classify_viewer_content(&head, ext, is_local);
     if matches!(kind, ViewerContentKind::Image | ViewerContentKind::Pdf) {
-        Some(open_media_session(file_path, file_size, &head, kind, temp_cleanup))
+        Some(open_media_session(file_path, file_size, &head, kind, temp))
     } else {
         None
     }
@@ -62,7 +63,7 @@ fn open_media_session(
     file_size: u64,
     head: &[u8],
     kind: ViewerContentKind,
-    temp_cleanup: Option<std::path::PathBuf>,
+    temp: Option<Arc<PreviewTemp>>,
 ) -> Result<ViewerOpenResult, ViewerError> {
     let file_name = file_path
         .file_name()
@@ -105,7 +106,7 @@ fn open_media_session(
         watcher_stop: Arc::new(AtomicBool::new(false)),
         path: file_path.to_path_buf(),
         media_token: Some(media_token.clone()),
-        temp_cleanup,
+        temp,
     });
 
     // No watcher and no LineIndex upgrade for media: there's no text viewport to

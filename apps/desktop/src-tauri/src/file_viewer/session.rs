@@ -12,6 +12,7 @@ use std::time::Duration;
 
 use arc_swap::ArcSwap;
 
+use super::materialize::PreviewTemp;
 use super::pending_open::PendingOpen;
 use crate::commands::file_system::expand_tilde;
 use crate::ignore_poison::IgnorePoison;
@@ -234,12 +235,11 @@ pub(super) struct ViewerSession {
     /// to the single close choke point keeps the token's lifetime exactly the
     /// session's, so a closed-window viewer can't leave a live token mapping a path.
     media_token: Option<String>,
-    /// For a session over a ROUTED file (inside a zip, or inside a repo's virtual
-    /// `.git` trees), the `.cmdr-viewer-<uuid>/` temp subdir the entry was streamed
-    /// into. Removed wholesale at `close_session` (both close paths funnel through
-    /// it), so the temp's lifetime is exactly the session's. `None` for a normal
-    /// on-disk open. See `file_viewer::materialize`.
-    temp_cleanup: Option<PathBuf>,
+    /// For a session over a file the OS can't open (inside a zip, in a repo's virtual
+    /// `.git` trees, on a phone or server), the temp copy it reads. Shared with a view
+    /// switch's session for the same window, and removed when the last session holding
+    /// it closes. `None` for a normal on-disk open. See `file_viewer::materialize`.
+    temp: Option<Arc<PreviewTemp>>,
 }
 
 /// The fields that vary between a text open and a media open. Everything else on a
@@ -254,7 +254,7 @@ pub(super) struct ViewerSessionInit {
     pub(super) watcher_stop: Arc<AtomicBool>,
     pub(super) path: PathBuf,
     pub(super) media_token: Option<String>,
-    pub(super) temp_cleanup: Option<PathBuf>,
+    pub(super) temp: Option<Arc<PreviewTemp>>,
 }
 
 impl ViewerSession {
@@ -274,7 +274,7 @@ impl ViewerSession {
             active_reads: Mutex::new(HashMap::new()),
             path: init.path,
             media_token: init.media_token,
-            temp_cleanup: init.temp_cleanup,
+            temp: init.temp,
         }
     }
 
@@ -347,14 +347,14 @@ pub(super) fn generate_session_id() -> String {
 /// - Under 1 MB: FullLoad (instant, full random access)
 /// - Over 1 MB: ByteSeek first (instant open), then upgrades to LineIndex in background
 pub fn open_session(path: &str, volume_id: &str) -> Result<ViewerOpenResult, ViewerError> {
-    open_session_inner(path, volume_id, /*force_text=*/ false, &PendingOpen::new())
+    open_session_inner(path, volume_id, /*force_text=*/ false, &PendingOpen::new(), None)
 }
 
 /// Opens a fresh, full text session regardless of content kind. Backs the "View as
 /// text" override: a media session isn't upgraded in place; the FE swaps to the
 /// session this returns. Reuses the text path verbatim.
 pub fn open_session_as_text(path: &str, volume_id: &str) -> Result<ViewerOpenResult, ViewerError> {
-    open_session_inner(path, volume_id, /*force_text=*/ true, &PendingOpen::new())
+    open_session_inner(path, volume_id, /*force_text=*/ true, &PendingOpen::new(), None)
 }
 
 /// Opens a session for the viewer window `window_label`, watched by `open`, and
@@ -365,6 +365,10 @@ pub fn open_session_as_text(path: &str, volume_id: &str) -> Result<ViewerOpenRes
 /// abandoned (the window closed, or it stopped responding). An open abandoned after
 /// its session was built closes that session and answers the abandon's error, so a
 /// closed window never leaves a session behind. See `file_viewer::pending_open`.
+///
+/// A view switch reopens the same file for the same window, so when the window's
+/// current session already holds a temp copy of it, the new session shares that copy
+/// and pulls nothing. See `reusable_temp`.
 pub fn open_for_window(
     path: &str,
     volume_id: &str,
@@ -372,7 +376,8 @@ pub fn open_for_window(
     force_text: bool,
     open: &PendingOpen,
 ) -> Result<ViewerOpenResult, ViewerError> {
-    let result = open_session_inner(path, volume_id, force_text, open)?;
+    let reuse = reusable_temp(window_label, path, volume_id);
+    let result = open_session_inner(path, volume_id, force_text, open, reuse)?;
     match open.deliver(|| register_window_session(window_label, &result.session_id)) {
         Ok(()) => Ok(result),
         Err(abandoned) => {
@@ -382,11 +387,30 @@ pub fn open_for_window(
     }
 }
 
+/// The temp copy of `path` on `volume_id` that `window_label`'s current session holds,
+/// if it holds one. Scoped to the window on purpose: another window on the same file
+/// pulls its own copy, and a fresh open re-pulls, so only a view switch skips the pull.
+fn reusable_temp(window_label: &str, path: &str, volume_id: &str) -> Option<Arc<PreviewTemp>> {
+    if window_label.is_empty() {
+        return None;
+    }
+    let session_id = WINDOW_TO_SESSION.lock_ignore_poison().get(window_label).cloned()?;
+    let requested = PathBuf::from(expand_tilde(path));
+    SESSIONS
+        .lock_ignore_poison()
+        .get(&session_id)?
+        .temp
+        .as_ref()
+        .filter(|temp| temp.is_copy_of(&requested, volume_id))
+        .cloned()
+}
+
 fn open_session_inner(
     path: &str,
     volume_id: &str,
     force_text: bool,
     open: &PendingOpen,
+    reuse: Option<Arc<PreviewTemp>>,
 ) -> Result<ViewerOpenResult, ViewerError> {
     // Wrapped rather than emitted inline: the body has a media early return and a
     // dozen `?`s, so an in-body emit would count a biased subset of opens. The
@@ -397,7 +421,7 @@ fn open_session_inner(
     // previewing inside a zip, and a portal open is honestly `false` for it.
     let from_archive = cmdr_archive::archive_boundary_candidate(Path::new(&expand_tilde(path)))
         .is_some_and(|(_, inner)| !inner.as_os_str().is_empty());
-    let result = open_session_core(path, volume_id, force_text, open);
+    let result = open_session_core(path, volume_id, force_text, open, reuse);
     super::analytics::emit_viewer_opened(&result, from_archive, force_text);
     result
 }
@@ -407,6 +431,7 @@ fn open_session_core(
     volume_id: &str,
     force_text: bool,
     open: &PendingOpen,
+    reuse: Option<Arc<PreviewTemp>>,
 ) -> Result<ViewerOpenResult, ViewerError> {
     let expanded = expand_tilde(path);
     let requested = PathBuf::from(&expanded);
@@ -416,14 +441,18 @@ fn open_session_core(
     // `std::fs` file, so the viewer can't touch it directly. Stream the file out to a
     // bounded temp and open THAT; any other path returns `None` and flows through
     // unchanged. Both are pulled through `volume_id`'s volume, not a hardcoded
-    // `"root"`. On close, `close_session` removes the temp subdir. See
-    // `materialize`.
-    let extracted = super::materialize::materialize_for_viewer(&requested, volume_id, open)?;
-    let (file_path, temp_cleanup) = match extracted {
-        Some(e) => (e.temp_file, Some(e.cleanup_dir)),
-        None => (requested, None),
+    // `"root"`. A view switch hands in the copy its window already holds (`reuse`), so
+    // it pulls nothing. The temp goes when the last session holding it closes, or right
+    // here if this open fails. See `materialize`.
+    let temp = match reuse {
+        Some(temp) => Some(temp),
+        None => super::materialize::materialize_for_viewer(&requested, volume_id, open)?
+            .map(|file| Arc::new(PreviewTemp::new(file, requested.clone(), volume_id))),
     };
-    let is_extracted = temp_cleanup.is_some();
+    let file_path = temp
+        .as_ref()
+        .map_or_else(|| requested.clone(), |temp| temp.temp_file.clone());
+    let is_extracted = temp.is_some();
 
     if !file_path.exists() {
         return Err(ViewerError::NotFound { path: path.to_string() });
@@ -439,9 +468,9 @@ fn open_session_core(
     // A media kind (Image/Pdf on a local volume) opens a no-op session that serves bytes
     // via `cmdr-media://`; the whole media-open path lives in `media_session.rs`.
     // An extracted image/PDF renders inline too: the media session serves the temp via
-    // `cmdr-media://` and inherits the same `temp_cleanup`, so closing it deletes the
-    // temp. `try_open_media` returns `None` (falls through to text) for non-media kinds.
-    if !force_text && let Some(result) = media_session::try_open_media(&file_path, file_size, temp_cleanup.clone()) {
+    // `cmdr-media://` and holds the same shared `temp`, so its temp lives as long as the
+    // session. `try_open_media` returns `None` (falls through to text) for non-media kinds.
+    if !force_text && let Some(result) = media_session::try_open_media(&file_path, file_size, temp.clone()) {
         return result;
     }
 
@@ -482,7 +511,7 @@ fn open_session_core(
         watcher_stop,
         path: file_path.clone(),
         media_token: None,
-        temp_cleanup,
+        temp,
     });
 
     // Calculate estimated total lines from the initial sample
@@ -1196,16 +1225,9 @@ pub fn close_session(session_id: &str) -> Result<(), ViewerError> {
         if let Some(token) = &session.media_token {
             media::drop_token(token);
         }
-        // Delete the preview-in-zip temp (if any). This is the single choke point both
-        // teardown paths funnel through, so the temp's lifetime is exactly the session's.
-        if let Some(dir) = &session.temp_cleanup
-            && let Err(e) = std::fs::remove_dir_all(dir)
-        {
-            debug!(
-                "close_session: viewer extract cleanup failed for {}: {e}",
-                dir.display()
-            );
-        }
+        // `session` drops at the end of this block, and with it its share of the
+        // preview temp (if any): `PreviewTemp`'s `Drop` removes the subdir once the
+        // last session sharing it (a view switch's twin) has closed.
     }
     Ok(())
 }

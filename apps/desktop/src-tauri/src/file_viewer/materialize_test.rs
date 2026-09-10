@@ -558,6 +558,112 @@ fn a_pull_reports_its_progress_against_the_declared_size() {
 
 const EXTRACT_CAP_FOR_TESTS: u64 = PREVIEW_CAP_BYTES;
 
+/// The temp subdirs left in `dir`.
+fn temps_in(dir: &Path) -> Vec<std::fs::DirEntry> {
+    std::fs::read_dir(dir).expect("read extract dir").flatten().collect()
+}
+
+/// Switching an open file's view ("View as text", or back to the image) reopens it
+/// for the same window. When that window's session already holds a temp copy of the
+/// file, the new session shares it: the switch reads nothing from the phone, and the
+/// temp lives until the last session using it closes. Pre-fix every switch pulled the
+/// whole file again.
+#[test]
+fn switching_the_view_mode_reuses_the_windows_temp_and_reads_nothing_from_the_phone() {
+    use std::sync::atomic::Ordering;
+
+    let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let extract = crate::test_support::TestDir::new("viewer_mode_switch");
+    init_materialize_dir(extract.to_path_buf());
+    let (path, chunks_served, _) = a_slow_phone("viewer-mode-switch-cell");
+    let window = "viewer-mode-switch";
+
+    let first = session::open_for_window(
+        &path,
+        "viewer-mode-switch-cell",
+        window,
+        false,
+        &super::PendingOpen::new(),
+    )
+    .expect("the first open");
+    let after_first = chunks_served.load(Ordering::SeqCst);
+    assert_eq!(
+        after_first,
+        PHONE_FILE_LEN / PHONE_CHUNK,
+        "the first open pulls the whole file"
+    );
+
+    let second = session::open_for_window(
+        &path,
+        "viewer-mode-switch-cell",
+        window,
+        true,
+        &super::PendingOpen::new(),
+    )
+    .expect("the view-as-text open");
+    assert_eq!(
+        chunks_served.load(Ordering::SeqCst),
+        after_first,
+        "the mode switch reads zero bytes from the phone"
+    );
+
+    // The frontend closes the old session once it has swapped to the new one.
+    session::close_session(&first.session_id).expect("close the first session");
+    let lines = session::get_lines(&second.session_id, super::SeekTarget::Line(0), 1)
+        .expect("the new session still reads its file");
+    assert!(lines.lines[0].starts_with('x'));
+    let temps = temps_in(&extract);
+    assert_eq!(temps.len(), 1, "one temp, shared rather than copied, found {temps:?}");
+
+    session::close_session(&second.session_id).expect("close the second session");
+    let left = temps_in(&extract);
+    assert!(
+        left.is_empty(),
+        "the temp goes with the last session using it, found {left:?}"
+    );
+}
+
+/// Reuse is per window: a second viewer window on the same file pulls its own copy,
+/// so closing one window never takes the file out from under the other.
+#[test]
+fn another_window_on_the_same_file_pulls_its_own_copy() {
+    use std::sync::atomic::Ordering;
+
+    let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let extract = crate::test_support::TestDir::new("viewer_two_windows");
+    init_materialize_dir(extract.to_path_buf());
+    let (path, chunks_served, _) = a_slow_phone("viewer-two-windows-cell");
+
+    let first = session::open_for_window(
+        &path,
+        "viewer-two-windows-cell",
+        "viewer-window-one",
+        false,
+        &super::PendingOpen::new(),
+    )
+    .expect("the first window's open");
+    let after_first = chunks_served.load(Ordering::SeqCst);
+    let second = session::open_for_window(
+        &path,
+        "viewer-two-windows-cell",
+        "viewer-window-two",
+        false,
+        &super::PendingOpen::new(),
+    )
+    .expect("the second window's open");
+    assert_eq!(
+        chunks_served.load(Ordering::SeqCst),
+        after_first * 2,
+        "a second window pulls its own copy"
+    );
+
+    session::close_session(&first.session_id).expect("close the first window's session");
+    session::get_lines(&second.session_id, super::SeekTarget::Line(0), 1).expect("the second window still reads");
+    session::close_session(&second.session_id).expect("close the second window's session");
+    let left = temps_in(&extract);
+    assert!(left.is_empty(), "both temps go, found {left:?}");
+}
+
 /// The cap fires for a `.zip` entry AND for a blob in a repo's virtual `.git`
 /// snapshot, so its log line names no namespace. Pinned because "from the archive"
 /// read as a plain lie once the git portal started routing through here.

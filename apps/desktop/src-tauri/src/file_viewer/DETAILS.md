@@ -71,8 +71,8 @@ The viewer renders images and PDFs inline instead of showing the binary warning.
   `try_open_media(file_path, file_size, temp_cleanup)` reads the head, classifies (`is_local_posix_path` decides
   locality), and for a media kind calls `open_media_session`; otherwise returns `None` so `open_session` falls through to
   text. `open_media_session` mints the token, reads dimensions best-effort, installs a `MediaBackend`, and builds the
-  `ViewerSession` via `session::ViewerSession::new`, passing `temp_cleanup` through so an image/PDF previewed from
-  over a routed file deletes its temp on close (see § "Preview of a routed file"). Owns the `MediaDimensions` type. Covered by `media_session_test.rs`
+  `ViewerSession` via `session::ViewerSession::new`, passing the shared `temp` through so an image/PDF previewed from
+  over a routed file keeps its temp exactly as long as a text session would (see § "Preview of a routed file"). Owns the `MediaDimensions` type. Covered by `media_session_test.rs`
   (image / PDF / text-fallthrough / open-as-text through the public `open_session`).
 
 Open flow: `open_session` calls `media_session::try_open_media` before building a text backend; a media kind opens
@@ -146,13 +146,20 @@ Flow (in `open_session_inner`, before the media/text split):
 3. Otherwise it streams `open_read_stream` into `<extract_dir>/.cmdr-viewer-<uuid>/<entry-basename>`, enforcing the cap
    again on bytes written (a central directory that understates the real size can't sneak past). The basename is the
    entry's, so the viewer window shows the right title and media classification sees the right extension.
-4. `open_session` then runs its normal media/text classification on the temp. The `ViewerSession` stores the temp's
-   subdir in `temp_cleanup`; a media open threads the same value through `try_open_media`. Extracted sessions spawn
-   NO watcher (the temp is immutable for the session's life).
+4. `open_session` then runs its normal media/text classification on the temp. The `ViewerSession` holds it as an
+   `Arc<PreviewTemp>`; a media open threads the same value through `try_open_media`. Extracted sessions spawn NO
+   watcher (the temp is immutable for the session's life).
 
-**Temp lifetime == session lifetime.** `close_session` (the single choke point both teardown paths funnel through)
-`remove_dir_all`s `temp_cleanup`. One temp per open — re-opening the same entry re-extracts (simple beats a dedup
-cache).
+**A temp lives as long as the last session holding it.** `PreviewTemp`'s `Drop` removes the subdir, and a session
+drops its share in `close_session` (the single choke point both teardown paths funnel through). An open that fails
+after its pull drops the temp on the spot. **A view switch shares, a fresh open re-pulls.** "View as text" (or back to
+the image) reopens the file for the same window before the frontend closes the old session; `open_for_window` asks
+`reusable_temp` for the window's current session's copy, and when `PreviewTemp::is_copy_of` matches the path and
+volume, the new session shares it and reads nothing from the source. The reuse is scoped to one window: a second window
+on the same file pulls its own copy, and closing and reopening a viewer re-pulls, which is how a user gets a newer copy.
+Pinned by `materialize_test::switching_the_view_mode_reuses_the_windows_temp_and_reads_nothing_from_the_phone` (a
+counting slow volume: zero chunks on the switch, one shared temp, gone after the last close) and
+`another_window_on_the_same_file_pulls_its_own_copy`.
 
 **The second caller: the agent's `inspect_file`** (`agent/tools/read/inspect/`). It calls the same
 `extract_if_routed(path, volume_id)` — from `archive.rs` for a FILE inside an archive, where it has richer rows to give,
