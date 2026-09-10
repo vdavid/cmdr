@@ -21,7 +21,11 @@ The test for the second one is a single question: **can the protocol and its own
 Here, because the answer is yes:
 
 - `build_smb_addr` — an `smb2` address string. Strips a `.local` suffix, because `smb2` puts the addr's host component
-  into UNC paths (`\\server\IPC$`) and some servers reject `.local` there.
+  into UNC paths (`\\server\IPC$`) and some servers reject `.local` there. An IPv6 literal goes in bare (`fe80::1:445`)
+  and still dials: an address that doesn't parse as a socket address reaches the resolver split on its LAST colon. Bare,
+  bracketed, and expanded spellings all opened a share (verified on smb2 0.21.0 / tokio 1.53.1, `try_open_share` against
+  the `guest` fixture through a `[::1]` forwarder, 2026-09-10), so brackets would change nothing. In every spelling smb2
+  takes the UNC server name as what comes before the FIRST colon, and Samba ignores it.
 - `is_auth_error` / `classify_error` / `classify_authenticated_error` — reading an `smb2::Error`. Every retry, fallback,
   and sign-in path branches on the first one, and it's the reason the `UpgradeFailure` log can name a rejected password
   even though its own enum has no auth variant.
