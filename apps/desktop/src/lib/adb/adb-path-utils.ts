@@ -10,7 +10,7 @@
  * Volume id format: `adb-{slug}-{digest}`. No colon, so `isMtpVolumeId` stays
  * false for it and the two families never shadow each other.
  *
- * Contract: `docs/specs/android-adb-backend.md` § "Volume contract".
+ * Contract: `crates/cmdr-adb/DETAILS.md` § "The `Volume` answers, and why".
  */
 
 import { getMtpDisplayPath, isMtpVolumeId } from '$lib/mtp/mtp-path-utils'

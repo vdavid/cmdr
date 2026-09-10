@@ -397,6 +397,14 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
           }),
           onListingError((payload) => {
             if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
+              // One line per failed listing, with the typed reason, so a log says why.
+              const reason = payload.error?.reason
+              log.debug('Listing {listingId} on {volumeId} ended in error: {reason}', {
+                listingId: payload.listingId,
+                volumeId,
+                reason: reason?.reason ?? 'untyped',
+              })
+
               // For MTP volumes, trigger fallback on error (device likely disconnected)
               if (deps.getIsMtpView()) {
                 resetLoadingState(payload.message)
@@ -431,7 +439,6 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
               // archive before anyone could be asked for the password. The typed
               // reason is definitive; ❌ don't make it wait on a probe that
               // cannot answer.
-              const reason = payload.error?.reason
               if (reason?.reason === 'archiveNeedsPassword') {
                 showListingError()
                 deps.onArchiveNeedsPassword?.({
