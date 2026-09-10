@@ -8,7 +8,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use cmdr_fs::volume::{Volume, WatchCoverage};
+use cmdr_fs::volume::{IndexWalk, Volume, WatchCoverage};
 
 use crate::testing::{connect_virtual_device, device_lock, test_connection_manager, volume_for};
 use crate::volume::MtpVolume;
@@ -74,4 +74,32 @@ async fn watch_coverage_flips_with_the_connection() {
         WatchCoverage::None,
         "and the coverage goes with the session"
     );
+}
+
+/// An index walk descends every folder an MTP phone lists. PTP has no links, so no
+/// entry is one, and the volume keeps the trait's `index_walk`, which turns away
+/// only a link: the walk's link rule leaves an MTP walk exactly as it was.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_index_walk_descends_every_folder_an_mtp_phone_lists() {
+    let _guard = device_lock().await;
+    let device = connect_virtual_device(test_connection_manager()).await;
+    let volume = volume_for(test_connection_manager(), &device, None).await;
+
+    let entries = volume
+        .list_directory_for_scan(Path::new("/"), None)
+        .await
+        .expect("the virtual phone lists its root");
+    let folders: Vec<_> = entries.iter().filter(|entry| entry.is_directory).collect();
+    assert!(!folders.is_empty(), "the virtual phone has folders to walk");
+    for folder in folders {
+        assert!(!folder.is_symlink, "{} is not a link", folder.path);
+        assert_eq!(
+            volume.index_walk(Path::new(&folder.path), folder.is_symlink),
+            IndexWalk::Descend,
+            "{} is walked",
+            folder.path
+        );
+    }
+
+    device.teardown(test_connection_manager()).await;
 }

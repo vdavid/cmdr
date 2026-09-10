@@ -242,7 +242,10 @@ async fn list_one_directory(
 ) -> Result<Vec<cmdr_fs::entry::FileEntry>, VolumeScanError> {
     let listing_path = dir_path.clone();
     let listing = tokio::spawn(async move {
-        let result = volume.list_directory_for_scan(&listing_path, Some(&cancel)).await;
+        let result = volume
+            .list_directory_for_scan(&listing_path, Some(&cancel))
+            .await
+            .map(|entries| walked_links_as_directories(volume.as_ref(), entries));
         // Drain the autoreleased ObjC objects this listing created before the
         // future resolves. Cheap no-op on non-macOS.
         drain_autorelease_pool();
@@ -275,7 +278,10 @@ async fn list_one_directory(
 pub(crate) async fn stat_one_directory(volume: Arc<dyn Volume>, path: PathBuf) -> Option<cmdr_fs::entry::FileEntry> {
     let stat_path = path.clone();
     let stat = tokio::spawn(async move {
-        let result = volume.get_metadata(&stat_path).await;
+        let result = volume
+            .get_metadata(&stat_path)
+            .await
+            .map(|entry| walked_links_as_directories(volume.as_ref(), vec![entry]).remove(0));
         drain_autorelease_pool();
         result
     });
@@ -305,6 +311,37 @@ pub(crate) async fn stat_one_directory(volume: Arc<dyn Volume>, path: PathBuf) -
 fn drain_autorelease_pool() {
     #[cfg(target_os = "macos")]
     objc2::rc::autoreleasepool(|_| {});
+}
+
+/// Hands a listing back with every link the volume walks turned into the plain
+/// directory the walk treats it as.
+///
+/// ❗ The ONE place a walked link changes shape, and all three walks list through
+/// it, so the fresh walk, the reconcile diff, and the cover walk agree: a phone's
+/// `/sdcard` is indexed as a folder (its sizes roll up, and a rescan diffs it as
+/// one), while every other link stays the one row it is.
+fn walked_links_as_directories(
+    volume: &dyn Volume,
+    mut entries: Vec<cmdr_fs::entry::FileEntry>,
+) -> Vec<cmdr_fs::entry::FileEntry> {
+    for entry in &mut entries {
+        if entry.is_directory
+            && entry.is_symlink
+            && volume.index_walk(Path::new(&entry.path), true) == cmdr_fs::volume::IndexWalk::Descend
+        {
+            entry.is_symlink = false;
+        }
+    }
+    entries
+}
+
+/// Whether a walk descends into the directory at `dir`: never a NAS system dir
+/// (`system_dirs.rs`), and otherwise wherever the volume's `index_walk` says, which
+/// by default is every real directory and never a link.
+///
+/// All three walks ask this; the cover walk marks a "no" as ground it won't read.
+pub(crate) fn walk_descends(volume: &dyn Volume, dir: &Path, name: &str, is_symlink: bool) -> bool {
+    !is_recursion_excluded_dir(name) && volume.index_walk(dir, is_symlink) == cmdr_fs::volume::IndexWalk::Descend
 }
 
 /// Whether a `VolumeError` means the whole volume went away mid-walk (terminal

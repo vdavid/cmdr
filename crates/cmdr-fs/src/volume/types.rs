@@ -11,6 +11,33 @@ use std::path::PathBuf;
 
 use crate::entry::FileEntry;
 
+/// Whether a background index walk descends into one directory it met in a
+/// listing ([`Volume::index_walk`](super::Volume::index_walk)).
+///
+/// A walk keeps the directory's own row either way; this decides only whether it
+/// lists what's inside. The answer is the backend's, because only the backend
+/// knows which of its trees hold files and which are views onto the kernel, or a
+/// second path onto files the walk already covers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IndexWalk {
+    /// Walk the directory's contents. A link answered this way is walked, and
+    /// indexed, as the folder it points at.
+    Descend,
+    /// Keep the directory's row and leave its contents unwalked, so its size reads
+    /// as unknown rather than as zero.
+    RowOnly,
+}
+
+impl IndexWalk {
+    /// The rule a walk follows where nothing else decides: a real directory is
+    /// walked, and a link is the one row it is. Walking a link would count its
+    /// target's files a second time, and a link loop would keep the walk going for
+    /// as long as its paths grew.
+    pub fn unless_link(is_symlink: bool) -> Self {
+        if is_symlink { Self::RowOnly } else { Self::Descend }
+    }
+}
+
 /// Whether [`Volume::create_directory_all`](super::Volume::create_directory_all)
 /// had to create the directory it was asked for, or found one already there.
 ///

@@ -184,10 +184,39 @@ as above.
 **Decision/Why a phone over ADB answers 4** (reasoned, not measured, 2026-09-10): every ADB listing is a fresh sync
 socket through the adb server and a thread of `adbd` statting the phone's flash. Overlapping listings buys back the
 per-socket handshake latency, and a few capture most of it; the full 64 would pile that many sockets and flash-stat
-threads onto one device the user may be holding. Revisit it when a real phone is benchmarked. The yield still applies
-on top: browsing the phone or a transfer on it drops the walk to one. Pinned by
+threads onto one device the user may be holding. Revisit it when a real phone is benchmarked. The yield still applies on
+top: browsing the phone or a transfer on it drops the walk to one. Pinned by
 `pace_tests::a_volume_ceiling_caps_the_scan_below_the_full_budget` and
 `scan_pace::tests::a_backend_ceiling_caps_the_budget_but_never_below_one`.
+
+## Where a walk descends (`Volume::index_walk`)
+
+All three walks ask `walk_descends` (`mod.rs`) before queueing a child directory: never a NAS system dir (below), and
+otherwise wherever the volume's `index_walk(dir, is_symlink)` answers `Descend`. A `RowOnly` directory keeps its row and
+is never listed, so its size reads as unknown; the cover walk stamps it `Declined`, as it does a NAS system dir.
+
+- **Default: descend a real directory, never a link** (`IndexWalk::unless_link`). A link is the one row it is, as in the
+  local walker and the reconcile diff: walking one counts its target once per alias (a phone's `/sdcard`,
+  `/storage/self/primary`, and `/storage/emulated/0` are one storage), and a link loop (a phone's `/sys` holds them)
+  keeps a walk going as long as its paths grow. ❌ Never decide descent on `is_directory` alone: ADB sets it on a link.
+- **The link rule changes nothing for SMB and MTP**, so their existing indexes need no rebuild. Neither reports a link
+  (smb2's `DirectoryEntry` has no link concept, PTP has none, and both map `is_symlink = false`), and neither overrides
+  the hook, so every folder they list answers `Descend`. Pinned by
+  `mapping_test::directory_entry_to_file_entry_directory` (`cmdr-smb`) and
+  `volume_impl_test::an_index_walk_descends_every_folder_an_mtp_phone_lists` (`cmdr-mtp`).
+- **A backend scopes its walks by overriding the hook.** ADB descends only on the way to storage:
+  `crates/cmdr-adb/src/volume/index_scope.rs`.
+- **A link the volume walks is indexed as a plain folder.** `list_one_directory` and `stat_one_directory` clear
+  `is_symlink` on a directory link the volume answers `Descend` for (`walked_links_as_directories`), the ONE place a
+  listing changes shape. All three walks list through it, so they agree: the folder's size rolls up, and a rescan in
+  place diffs it as a folder. ❌ Don't normalize inside one walk only: the reconcile diff leaves links out, so a rescan
+  would disagree with what the fresh walk wrote.
+- **The live patch honors the same answer**: `apply_one_change` (`../transports/smb/watch.rs`, the path a phone's
+  own-write patches take too) drops a change whose parent the volume answers `RowOnly` for, or a write there would put
+  back rows no walk produces.
+- Pinned by `fresh_scan::a_fresh_walk_never_descends_a_symlinked_directory`,
+  `nas_system_dirs::a_walk_descends_where_the_volume_says_and_nowhere_else` (a fresh walk and a rescan in place), and
+  the two matching `lifecycle/cover/network_tests` cells.
 
 ## NAS snapshot/system dirs aren't recursed (`system_dirs.rs`)
 
@@ -309,15 +338,16 @@ places below, all of them consequences of a person having asked:
   directory in its own right, have its children written under that id, and then lose the row the id belonged to —
   orphaning everything below it. The name check makes it "keep the first, log the rest". Pinned by
   `cover::network_tests::a_same_name_sibling_keeps_the_first_row_rather_than_orphaning_a_subtree`.
-- **NAS system directories are stamped `unreadable_cause = Declined`, not left unlisted.** Both whole-volume walks index
-  such a directory's own row and refuse its subtree, which leaves it at `listed_epoch = 0` — and that is precisely what
-  the descent rule calls FRONTIER, so a search over a NAS would be handed the hardlinked per-snapshot tree this area
-  exists to keep the walk out of. Marking it says "nothing is coming for this subtree", which is what the column means
-  and what a user is owed; the descent rule needs no new case and no per-kind branch. The mark survives because nothing
-  ever lists the directory (`mark_dirs_listed` is what clears it), and a change to the name list re-arms the whole index
-  anyway. A frontier rooted AT one is marked and refused without a single round trip, which is what heals an index built
-  before this rule. ❌ The cause is `Declined`, never `Denied`: nobody refused us here, and a user offered Full Disk
-  Access over a snapshot tree would be sent to fix something that isn't broken.
+- **NAS system directories, and any directory its volume keeps `RowOnly`, are stamped `unreadable_cause = Declined`, not
+  left unlisted.** Both whole-volume walks index such a directory's own row and refuse its subtree, which leaves it at
+  `listed_epoch = 0` — and that is precisely what the descent rule calls FRONTIER, so a search over a NAS would be
+  handed the hardlinked per-snapshot tree this area exists to keep the walk out of. Marking it says "nothing is coming
+  for this subtree", which is what the column means and what a user is owed; the descent rule needs no new case and no
+  per-kind branch. The mark survives because nothing ever lists the directory (`mark_dirs_listed` is what clears it),
+  and a change to the name list re-arms the whole index anyway. A frontier rooted AT one is marked and refused without a
+  single round trip, which is what heals an index built before this rule. ❌ The cause is `Declined`, never `Denied`:
+  nobody refused us here, and a user offered Full Disk Access over a snapshot tree would be sent to fix something that
+  isn't broken.
 - **No empty-root refusal.** `VolumeScanError::EmptyRoot` exists because a share that lists empty is a glitch, and a
   false "complete" strands the whole index. An empty FOLDER is an ordinary thing to search, and refusing to mark it
   would hand it back to every later search forever, so the cover walk marks it listed and moves on.

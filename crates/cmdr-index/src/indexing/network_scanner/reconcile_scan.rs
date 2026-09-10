@@ -20,7 +20,7 @@ use futures_util::stream::FuturesUnordered;
 use cmdr_fs::volume::Volume;
 
 use super::scan_pace::ScanPacer;
-use super::system_dirs::is_recursion_excluded_dir;
+use super::walk_descends;
 use super::{
     CONSECUTIVE_FAILURE_ABORT, VolumeScanError, is_typed_disconnect, list_one_directory, log_scan_progress, summary,
 };
@@ -291,21 +291,25 @@ pub(crate) async fn reconcile_volume_via_trait(
         // Same NAS snapshot/system-dir exclusion as the fresh scan: keep the row
         // (it's diffed in like any child) but don't recurse into its subtree. Logged
         // (like the fresh-scan branch) so an error report visibly confirms the skip.
+        // The diff already leaves links out of both sets, so what's left is a real
+        // directory, or a link the listing turned into one because the volume walks it.
         for (child_id, child_name) in diff.matched_child_dirs {
-            if is_recursion_excluded_dir(&child_name) {
+            let child_path = dir_path.join(&child_name);
+            if !walk_descends(volume.as_ref(), &child_path, &child_name, false) {
                 log::debug!(
-                    "network_scanner: not descending into NAS system dir {}",
-                    dir_path.join(&child_name).display()
+                    "network_scanner: not descending into {} (a NAS system dir or a tree the volume keeps out of its walks)",
+                    child_path.display()
                 );
                 continue;
             }
-            queue.push_back((dir_path.join(child_name), child_id));
+            queue.push_back((child_path, child_id));
         }
         for child_name in diff.new_child_dir_names {
-            if is_recursion_excluded_dir(&child_name) {
+            let child_path = dir_path.join(&child_name);
+            if !walk_descends(volume.as_ref(), &child_path, &child_name, false) {
                 log::debug!(
-                    "network_scanner: not descending into NAS system dir {}",
-                    dir_path.join(&child_name).display()
+                    "network_scanner: not descending into {} (a NAS system dir or a tree the volume keeps out of its walks)",
+                    child_path.display()
                 );
                 continue;
             }

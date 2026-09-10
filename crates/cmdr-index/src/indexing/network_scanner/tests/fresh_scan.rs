@@ -3,6 +3,63 @@
 
 use super::*;
 
+/// A symlinked directory is indexed as the one row it is and never walked, the
+/// rule the local walker and the reconcile walk already keep. Following links let
+/// a phone's walk count its storage once per alias (`/sdcard`,
+/// `/storage/self/primary`, `/storage/emulated/0`) and chase a `/sys` symlink loop
+/// for as long as the paths kept growing.
+#[tokio::test]
+async fn a_fresh_walk_never_descends_a_symlinked_directory() {
+    use crate::indexing::writer::IndexWriter;
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = dir.path().join("vol-scan-symlink.db");
+    let _store = IndexStore::open(&db_path).expect("open store");
+    let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).expect("spawn writer");
+
+    // /real/b.jpg is the file; /alias is a link to /real whose listing would
+    // hand the same file back under a second path.
+    let alias = FileEntry::new("alias".into(), "/alias".into(), true, true);
+    let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries(
+        "Test",
+        vec![
+            entry("real", "/real", true, None),
+            entry("b.jpg", "/real/b.jpg", false, Some(7)),
+            alias,
+            entry("b.jpg", "/alias/b.jpg", false, Some(7)),
+        ],
+    ));
+
+    let summary = scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        CancellationToken::new(),
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("scan should complete");
+    writer.flush().await.expect("flush");
+    writer.shutdown();
+
+    let store = IndexStore::open(&db_path).expect("reopen");
+    let root_children = store.list_children(ROOT_ID).expect("list root");
+    let alias_row = root_children
+        .iter()
+        .find(|e| e.name == "alias")
+        .expect("the link keeps its own row");
+    assert!(alias_row.is_symlink);
+    assert!(
+        store.list_children(alias_row.id).expect("list alias").is_empty(),
+        "nothing is indexed through the link"
+    );
+    assert_eq!(
+        summary.total_entries, 3,
+        "real/, real/b.jpg, and the link: the file counted once"
+    );
+}
+
 /// Walk a small in-memory tree over the `Volume` trait and assert the index
 /// reflects its contents: the writer/aggregator reuse is exercised end to
 /// end (entries land under ROOT_ID, sizes flow into dir_stats). This is the

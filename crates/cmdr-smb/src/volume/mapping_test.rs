@@ -54,6 +54,9 @@ fn directory_entry_to_file_entry_directory() {
     assert_eq!(fe.name, "Photos");
     assert_eq!(fe.path, "/Volumes/Share/Photos");
     assert!(fe.is_directory);
+    // smb2 reports no links, so a share's folder is never one, and the index walk's
+    // "never descend a link" rule (`Volume::index_walk`) never skips a share's folder.
+    assert!(!fe.is_symlink);
     assert_eq!(fe.size, None);
     assert_eq!(fe.modified_at, None);
     assert_eq!(fe.icon_id, "dir");

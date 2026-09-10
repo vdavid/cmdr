@@ -335,10 +335,16 @@ fn apply_one_change(volume_id: &str, writer: &IndexWriter, parent_path: &Path, c
         None => return,
     };
 
-    let mount_root = match crate::indexing::host::volumes::current().get(volume_id) {
-        Some(v) => v.root().to_string_lossy().into_owned(),
-        None => return, // share unmounted; the freshness layer will flip it Stale
+    let Some(volume) = crate::indexing::host::volumes::current().get(volume_id) else {
+        return; // share unmounted; the freshness layer will flip it Stale
     };
+    // A tree the volume keeps out of its index walks (a phone's `/data`) takes no
+    // live patch either, or a write there would put back rows no walk produces:
+    // the same rule the NAS system-dir gate in `resolve_change` keeps.
+    if volume.index_walk(parent_path, false) == cmdr_fs::volume::IndexWalk::RowOnly {
+        return;
+    }
+    let mount_root = volume.root().to_string_lossy().into_owned();
     let parent_abs = parent_path.to_string_lossy();
     let parent_rel = match index_relative_path(&mount_root, &parent_abs) {
         Some(p) => p,

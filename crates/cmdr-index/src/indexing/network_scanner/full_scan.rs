@@ -21,7 +21,7 @@ use futures_util::stream::FuturesUnordered;
 use cmdr_fs::volume::Volume;
 
 use super::scan_pace::ScanPacer;
-use super::system_dirs::is_recursion_excluded_dir;
+use super::walk_descends;
 use super::{
     BATCH_SIZE, CONSECUTIVE_FAILURE_ABORT, SCAN_COMMIT_INTERVAL, VolumeScanError, begin_scan_tx, commit_scan_tx,
     flush_batch, is_typed_disconnect, list_one_directory, log_scan_progress, summary,
@@ -291,9 +291,9 @@ pub async fn scan_volume_via_trait(
                 // stalled a real first-scan. The row is still indexed (visible,
                 // navigable); we just don't walk its subtree, so its size stays
                 // honestly unknown rather than a misleading roll-up. See `system_dirs`.
-                if is_recursion_excluded_dir(&entry.name) {
+                if !walk_descends(volume.as_ref(), &child_path, &entry.name, is_symlink) {
                     log::debug!(
-                        "network_scanner: not descending into NAS system dir {}",
+                        "network_scanner: not descending into {} (a NAS system dir, a link, or a tree the volume keeps out of its walks)",
                         child_path.display()
                     );
                 } else {

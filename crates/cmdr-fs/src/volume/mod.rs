@@ -271,6 +271,17 @@ pub trait Volume: Send + Sync {
         usize::MAX
     }
 
+    /// How a background index walk treats `dir`, a directory it met in a listing,
+    /// with `is_symlink` set when the entry is a link to one.
+    ///
+    /// Default: [`IndexWalk::unless_link`], so a real directory is walked and a link
+    /// never is. A backend overrides this to keep trees out of its walks (a phone's
+    /// `/proc`), or to name the link that IS its storage (a phone's `/sdcard`).
+    fn index_walk(&self, dir: &Path, is_symlink: bool) -> IndexWalk {
+        let _ = dir;
+        IndexWalk::unless_link(is_symlink)
+    }
+
     /// Called by the index-scan lifecycle right before a background scan/reconcile
     /// walk starts. Lets a backend spin up scan-scoped resources that only make
     /// sense for the duration of a walk. SMB opens a small pool of extra TCP

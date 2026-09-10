@@ -81,6 +81,86 @@ fn a_walk_over_a_share_covers_the_folder_it_was_pointed_at() {
     );
 }
 
+/// A walk over a share never descends a symlinked directory: the link is the one
+/// row it is. Following one handed a phone's walk its storage once per alias and a
+/// `/sys` symlink loop to chase.
+#[test]
+fn a_walk_over_a_share_never_descends_a_symlinked_directory() {
+    let share = Share::new("cover-share-symlink-test", |t| {
+        vec![
+            t.dir("scope"),
+            t.dir("scope/real"),
+            t.file("scope/real/b.jpg", 7),
+            cmdr_fs::entry::FileEntry {
+                is_symlink: true,
+                ..t.dir("scope/alias")
+            },
+            t.file("scope/alias/b.jpg", 7),
+        ]
+    });
+    let scope = share.path("scope");
+    let alias = PathBuf::from(share.path("scope/alias"));
+
+    let (entries, outcome) = share.cover(&scope);
+
+    assert!(!outcome.cancelled, "the walk ran to the end");
+    assert!(
+        entries.iter().all(|e| e.path == alias || !e.path.starts_with(&alias)),
+        "nothing reached the consumer through the link: {:?}",
+        entries.iter().map(|e| e.path.clone()).collect::<Vec<_>>()
+    );
+    assert!(
+        share.child_ids(&share.path("scope/alias")).is_empty(),
+        "and nothing is indexed through it"
+    );
+}
+
+/// A walk over a share descends where the volume says: a tree the volume keeps
+/// out keeps its row and nothing beneath it, and a link the volume names is walked
+/// as the folder it points at.
+#[test]
+fn a_walk_over_a_share_descends_where_the_volume_says() {
+    use cmdr_fs::volume::IndexWalk;
+
+    let share = Share::with_volume("cover-share-scope-test", |root| {
+        let t = Tree(root.to_string());
+        Arc::new(
+            InMemoryVolume::with_entries(
+                "Share",
+                vec![
+                    t.dir("scope"),
+                    t.dir("scope/kernel"),
+                    t.file("scope/kernel/state", 99),
+                    cmdr_fs::entry::FileEntry {
+                        is_symlink: true,
+                        ..t.dir("scope/storage")
+                    },
+                    t.file("scope/storage/a.jpg", 7),
+                ],
+            )
+            .with_root(root)
+            .with_index_walk(t.path("scope/kernel"), IndexWalk::RowOnly)
+            .with_index_walk(t.path("scope/storage"), IndexWalk::Descend),
+        )
+    });
+    let scope = share.path("scope");
+
+    let (entries, outcome) = share.cover(&scope);
+
+    assert!(!outcome.cancelled, "the walk ran to the end");
+    let emitted: Vec<PathBuf> = entries.iter().map(|e| e.path.clone()).collect();
+    assert!(
+        emitted.contains(&PathBuf::from(share.path("scope/storage/a.jpg"))),
+        "the named link is walked: {emitted:?}"
+    );
+    assert!(
+        !emitted.contains(&PathBuf::from(share.path("scope/kernel/state"))),
+        "the kept-out tree is not: {emitted:?}"
+    );
+    assert!(share.child_ids(&share.path("scope/kernel")).is_empty());
+    assert_eq!(share.child_ids(&share.path("scope/storage")).len(), 1);
+}
+
 // ── Cancellation ─────────────────────────────────────────────────────
 
 /// A walk over a share stopped partway KEEPS every directory it read.

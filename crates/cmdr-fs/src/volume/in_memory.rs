@@ -5,7 +5,7 @@
 //! without touching the real file system.
 
 use super::{
-    BackendKind, ConnectionState, CopyScanResult, LaneKey, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
+    BackendKind, ConnectionState, CopyScanResult, IndexWalk, LaneKey, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
     VolumeError, VolumeReadStream,
 };
 use crate::entry::FileEntry;
@@ -117,6 +117,10 @@ pub struct InMemoryVolume {
     /// so a double only names a transport when the code under test asks about
     /// one.
     backend_kind: BackendKind,
+    /// [`Volume::index_walk`] answers set by
+    /// [`with_index_walk`](Self::with_index_walk), by directory path. Any other
+    /// directory keeps the trait's default.
+    index_walk_overrides: Vec<(PathBuf, IndexWalk)>,
     /// Raw errno to inject on the next `list_directory` call. Cleared after use.
     #[cfg(feature = "playwright-e2e")]
     injected_error: std::sync::Mutex<Option<i32>>,
@@ -145,6 +149,7 @@ impl InMemoryVolume {
             stat_failing: RwLock::new(HashSet::new()),
             connection_state: None,
             backend_kind: BackendKind::Local,
+            index_walk_overrides: Vec::new(),
             #[cfg(feature = "playwright-e2e")]
             injected_error: std::sync::Mutex::new(None),
         }
@@ -162,6 +167,15 @@ impl InMemoryVolume {
     /// a share, a server, or a phone at a gate that dispatches on the transport.
     pub fn with_backend_kind(mut self, kind: BackendKind) -> Self {
         self.backend_kind = kind;
+        self
+    }
+
+    /// Makes [`Volume::index_walk`] answer `walk` for the directory at `dir`,
+    /// so this volume stands in for a backend that keeps a tree out of its index
+    /// walks (a phone's `/proc`) or names the link that is its storage (a phone's
+    /// `/sdcard`). Every other directory keeps the trait's default answer.
+    pub fn with_index_walk(mut self, dir: impl Into<PathBuf>, walk: IndexWalk) -> Self {
+        self.index_walk_overrides.push((dir.into(), walk));
         self
     }
 
@@ -510,6 +524,13 @@ impl Volume for InMemoryVolume {
 
     fn backend_kind(&self) -> BackendKind {
         self.backend_kind
+    }
+
+    fn index_walk(&self, dir: &Path, is_symlink: bool) -> IndexWalk {
+        if let Some((_, walk)) = self.index_walk_overrides.iter().find(|(path, _)| path == dir) {
+            return *walk;
+        }
+        IndexWalk::unless_link(is_symlink)
     }
 
     fn root(&self) -> &Path {

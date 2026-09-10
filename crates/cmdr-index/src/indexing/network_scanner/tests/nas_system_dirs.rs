@@ -287,3 +287,87 @@ async fn reconcile_keeps_walking_lookalike_user_folders() {
 
     writer.shutdown();
 }
+
+// ── The volume's own answer about where to descend ───────────────
+
+/// A volume decides which of its directories a walk descends. A tree it keeps out
+/// keeps its row and nothing beneath it, and a link it names is walked as the
+/// folder it points at: indexed as a plain directory, so its size rolls up, and so
+/// a rescan in place diffs it as one rather than dropping what it holds.
+#[tokio::test]
+async fn a_walk_descends_where_the_volume_says_and_nowhere_else() {
+    use cmdr_fs::volume::IndexWalk;
+
+    let tree = vec![
+        entry("kernel", "/kernel", true, None),
+        entry("state", "/kernel/state", false, Some(99)),
+        FileEntry::new("storage".into(), "/storage".into(), true, true),
+        entry("a.jpg", "/storage/a.jpg", false, Some(7)),
+        entry("real", "/real", true, None),
+        entry("b.jpg", "/real/b.jpg", false, Some(5)),
+    ];
+    let vol: Arc<dyn Volume> = Arc::new(
+        InMemoryVolume::with_entries("Test", tree)
+            .with_index_walk("/kernel", IndexWalk::RowOnly)
+            .with_index_walk("/storage", IndexWalk::Descend),
+    );
+
+    let (writer, db_path, _dir) = fresh_scan(Arc::clone(&vol)).await;
+    writer.flush().await.expect("flush");
+    assert_walk_scope(&db_path, "after the fresh walk");
+
+    // A continuity break bumps the epoch before a rescan; mirror the manager.
+    {
+        let wconn = IndexStore::open_write_connection(&db_path).expect("write conn");
+        IndexStore::bump_current_epoch(&wconn).expect("bump epoch");
+    }
+    reconcile_volume_via_trait(
+        Arc::clone(&vol),
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        CancellationToken::new(),
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("reconcile");
+    writer.flush().await.expect("flush");
+    assert_walk_scope(&db_path, "after a rescan in place");
+
+    writer.shutdown();
+}
+
+/// What `a_walk_descends_where_the_volume_says_and_nowhere_else` expects of the
+/// index, after either walk.
+fn assert_walk_scope(db_path: &Path, when: &str) {
+    let conn = IndexStore::open_read_connection(db_path).expect("read conn");
+    assert!(
+        resolve_path(&conn, "/kernel").expect("resolve").is_some(),
+        "{when}: the kept-out tree keeps its row"
+    );
+    assert_eq!(
+        resolve_path(&conn, "/kernel/state").expect("resolve"),
+        None,
+        "{when}: and nothing beneath it is indexed"
+    );
+    let storage = resolve_path(&conn, "/storage")
+        .expect("resolve")
+        .unwrap_or_else(|| panic!("{when}: the named link has a row"));
+    let storage_row = IndexStore::get_entry_by_id(&conn, storage)
+        .expect("entry")
+        .unwrap_or_else(|| panic!("{when}: the named link's row reads back"));
+    assert!(
+        storage_row.is_directory && !storage_row.is_symlink,
+        "{when}: the walked link is indexed as a plain directory"
+    );
+    assert!(
+        resolve_path(&conn, "/storage/a.jpg").expect("resolve").is_some(),
+        "{when}: what the link holds is indexed"
+    );
+    assert_eq!(dir_size(&conn, "/storage"), 7, "{when}: and its size rolls up");
+    assert_eq!(
+        dir_size(&conn, "/"),
+        12,
+        "{when}: the root counts each file once and nothing from the kept-out tree"
+    );
+}

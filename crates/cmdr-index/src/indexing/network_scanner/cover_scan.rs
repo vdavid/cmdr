@@ -35,7 +35,7 @@ use tokio_util::sync::CancellationToken;
 use cmdr_fs::volume::Volume;
 
 use super::scan_pace::ScanPacer;
-use super::system_dirs::is_recursion_excluded_dir;
+use super::walk_descends;
 use super::{
     BATCH_SIZE, CONSECUTIVE_FAILURE_ABORT, SCAN_COMMIT_INTERVAL, VolumeScanError, begin_scan_tx, commit_scan_tx,
     flush_batch, is_typed_disconnect, list_one_directory, log_scan_progress, summary,
@@ -92,10 +92,10 @@ pub(crate) async fn cover_volume_subtree(
     // 10 TB volume), so the walk says "won't read" instead of "haven't read".
     if root
         .file_name()
-        .is_some_and(|name| is_recursion_excluded_dir(&name.to_string_lossy()))
+        .is_some_and(|name| !walk_descends(volume.as_ref(), &root, &name.to_string_lossy(), false))
     {
         log::debug!(
-            "network_scanner: not covering NAS system dir {}; marking it as ground we won't read",
+            "network_scanner: not covering {} (a NAS system dir or a tree the volume keeps out of its walks); marking it as ground we won't read",
             root.display()
         );
         writes.mark_unreadable(root_id);
@@ -262,10 +262,11 @@ pub(crate) async fn cover_volume_subtree(
                 // too; nothing is rewritten either way.
                 Some(Slot::InTheIndex(child)) => {
                     if let Some(child_id) = child {
-                        if is_recursion_excluded_dir(&entry.name) {
-                            writes.mark_unreadable(child_id);
+                        let child_path = PathBuf::from(&entry.path);
+                        if walk_descends(volume.as_ref(), &child_path, &entry.name, entry.is_symlink) {
+                            queue.push_back((child_path, child_id));
                         } else {
-                            queue.push_back((PathBuf::from(&entry.path), child_id));
+                            writes.mark_unreadable(child_id);
                         }
                     }
                     taken.insert(folded, Slot::TakenHere);
@@ -297,9 +298,9 @@ pub(crate) async fn cover_volume_subtree(
                 // system dir doesn't get walked (`system_dirs.rs`). Marked as ground
                 // we won't read, so the frontier stops offering it — see the root
                 // case above for why that matters more here than on a full scan.
-                if is_recursion_excluded_dir(&entry.name) {
+                if !walk_descends(volume.as_ref(), &child_path, &entry.name, is_symlink) {
                     log::debug!(
-                        "network_scanner: not descending into NAS system dir {}",
+                        "network_scanner: not descending into {} (a NAS system dir, a link, or a tree the volume keeps out of its walks)",
                         child_path.display()
                     );
                     writes.mark_unreadable(id);
