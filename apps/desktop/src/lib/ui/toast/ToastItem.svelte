@@ -157,9 +157,18 @@
 >
     <ToastLevelIcon {level} />
     <div class="toast-main">
-        <div class="toast-line">
-            <div class="toast-content">
-                {#if typeof content === 'string'}
+        <div class="toast-content">
+            <!-- The corner, floated so the body's first line wraps around the age label and the
+                 close button pinned over it, while everything below runs to the right edge. -->
+            <span class="toast-corner">
+                {#if ageLabel !== null}
+                    <!-- `aria-hidden`: the toast is a live region, so a label that changes every
+                         minute would have a screen reader announce the whole toast again. -->
+                    <span class="toast-age" aria-hidden="true">{ageLabel}</span>
+                {/if}
+            </span>
+            {#if typeof content === 'string'}
+                <div>
                     <span class="toast-message">{content}</span>
                     {#if showSendErrorReport}
                         <div class="toast-actions">
@@ -168,23 +177,18 @@
                             </Button>
                         </div>
                     {/if}
+                </div>
+            {:else}
+                {@const ContentComponent = content}
+                {#if contentProps}
+                    <!-- Component toasts that opt into the prop-forwarding shape get
+                         the toast id appended for self-dismiss. Existing toasts that
+                         don't pass `props` to `addToast` keep their zero-prop shape so
+                         they don't see Svelte's unknown-prop warning. -->
+                    <ContentComponent {...contentProps} toastId={id} />
                 {:else}
-                    {@const ContentComponent = content}
-                    {#if contentProps}
-                        <!-- Component toasts that opt into the prop-forwarding shape get
-                             the toast id appended for self-dismiss. Existing toasts that
-                             don't pass `props` to `addToast` keep their zero-prop shape so
-                             they don't see Svelte's unknown-prop warning. -->
-                        <ContentComponent {...contentProps} toastId={id} />
-                    {:else}
-                        <ContentComponent />
-                    {/if}
+                    <ContentComponent />
                 {/if}
-            </div>
-            {#if ageLabel !== null}
-                <!-- `aria-hidden`: the toast is a live region, so a label that changes every
-                     minute would have a screen reader announce the whole toast again. -->
-                <span class="toast-age" aria-hidden="true">{ageLabel}</span>
             {/if}
         </div>
     </div>
@@ -208,8 +212,7 @@
         align-items: flex-start;
         gap: var(--spacing-md);
         max-width: 360px;
-        /* The right inset also clears the pinned close button. */
-        padding: var(--spacing-toast) calc(var(--spacing-toast) + 30px) var(--spacing-toast) var(--spacing-toast);
+        padding: var(--spacing-toast);
         background: var(--color-toast-default-bg);
         border: 1px solid var(--color-toast-default-border);
         border-radius: var(--radius-toast);
@@ -248,16 +251,37 @@
         justify-content: center;
     }
 
-    /* The age label sits on the content's first line, whatever that content is. */
-    .toast-line {
-        display: flex;
-        align-items: baseline;
-        gap: var(--spacing-sm);
+    /* The close button is pinned over the content box's top-right corner, reaching 19px into it
+       both down and in. The float claims that corner (plus a gap, plus the age label when there is
+       one), so text flows around it instead of under it. */
+    .toast-corner {
+        float: right;
+        height: 19px;
+        min-height: 1lh;
+        margin-left: var(--spacing-md);
+        padding-right: calc(19px + var(--spacing-sm));
     }
 
-    .toast-content {
-        flex: 1;
-        min-width: 0;
+    .toast-age {
+        color: var(--color-text-tertiary);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    /* The toast body contract (`ui/DETAILS.md` § Toast system): a body renders ONE root, in block
+       flow. A flex or grid root would be its own formatting context, which the corner float can't
+       reach into, so its lines couldn't wrap around the corner. The frame stacks the root's rows
+       instead, every row a block `--spacing-xs` below the last. Zero specificity (`:where`), so a
+       row's own `display` or `margin-top` still wins; a row that sets `margin-top` sets its whole
+       distance from the row above. Unlayered, so it also beats the `typography` layer's margins
+       on a `<p>` row. `toast-body-layout.test.ts` holds bodies to the one-root, no-flex-root half. */
+    :where(.toast-content) > :global(*) > :global(*) {
+        display: block;
+        margin-block: 0;
+    }
+
+    :where(.toast-content) > :global(*) > :global(* + *) {
+        margin-block-start: var(--spacing-xs);
     }
 
     .toast-message {
@@ -269,13 +293,6 @@
         justify-content: flex-end;
         gap: var(--spacing-sm);
         margin-top: var(--spacing-md);
-    }
-
-    .toast-age {
-        flex-shrink: 0;
-        color: var(--color-text-tertiary);
-        font-variant-numeric: tabular-nums;
-        white-space: nowrap;
     }
 
     /* Pinned the same distance from the top and right edges, centered on the first text line. */

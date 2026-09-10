@@ -283,9 +283,6 @@
 
 <style>
     .toast-body {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
         font-size: var(--font-size-sm);
     }
 
@@ -318,7 +315,7 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-sm);
-        margin-top: var(--spacing-xs);
+        margin-top: var(--spacing-sm);
     }
 
     .learn-intro {
@@ -330,7 +327,7 @@
     .hint {
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
-        display: inline-flex;
+        display: flex;
         align-items: center;
         gap: var(--spacing-xxs);
     }
@@ -344,7 +341,7 @@
        chevron tucked at the end of the same flow. */
     .hint.summary {
         flex-wrap: wrap;
-        margin-top: var(--spacing-xxs);
+        margin-top: calc(var(--spacing-xs) + var(--spacing-xxs));
     }
 
     /* The collapse/expand chevron: subtle, tertiary, icon-only. Reset the button
@@ -387,6 +384,6 @@
         display: flex;
         justify-content: flex-end;
         gap: var(--spacing-sm);
-        margin-top: var(--spacing-md);
+        margin-top: var(--spacing-lg);
     }
 </style>

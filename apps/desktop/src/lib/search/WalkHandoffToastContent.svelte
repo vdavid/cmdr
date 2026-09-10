@@ -53,17 +53,16 @@
 
 <style>
     .content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
         font-size: var(--font-size-sm);
     }
 
+    /* Plain text with the spinner inline, so a long label wraps around the toast's corner. */
     .headline {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--spacing-xs);
         color: var(--color-text-primary);
+    }
+
+    .headline :global(.spinner) {
+        vertical-align: middle;
     }
 
     .counts {

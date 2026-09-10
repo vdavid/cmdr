@@ -71,21 +71,9 @@
 </div>
 
 <style>
-    .toast-body {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-    }
-
-    .title {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-    }
-
     .glyph {
-        display: flex;
-        flex: none;
+        display: inline-flex;
+        vertical-align: text-bottom;
         color: var(--color-text-secondary);
     }
 

@@ -3,7 +3,7 @@
      * Module-state bridge for the persistent reload toast. The toast system
      * mounts components without props, so the viewer page calls
      * `setReloadToastContext({ sessionId, kind, toastId })` immediately
-     * before `addToast(ViewerReloadToast, ...)` and the toast renders
+     * before `addToast(ViewerReloadToastContent, ...)` and the toast renders
      * against this state. There's at most one reload toast per session per
      * kind active at a time; rapid changes coalesce by toast id, so the
      * "last write wins" semantic is fine.
@@ -51,28 +51,26 @@
     }
 </script>
 
-<div class="viewer-reload-toast">
-    <span class="viewer-reload-message">{message}</span>
-    <button
-        type="button"
-        class="viewer-reload-button"
-        onclick={() => {
-            void reload()
-        }}
-    >
-        {tString('viewer.reloadToast.reload')}
-    </button>
+<div>
+    <span>{message}</span>
+    <div class="viewer-reload-actions">
+        <button
+            type="button"
+            class="viewer-reload-button"
+            onclick={() => {
+                void reload()
+            }}
+        >
+            {tString('viewer.reloadToast.reload')}
+        </button>
+    </div>
 </div>
 
 <style>
-    .viewer-reload-toast {
+    .viewer-reload-actions {
         display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-    }
-
-    .viewer-reload-message {
-        flex: 1;
+        justify-content: flex-end;
+        margin-top: var(--spacing-md);
     }
 
     .viewer-reload-button {

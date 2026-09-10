@@ -46,7 +46,6 @@
       leaves out) is one button-press away.
     */
     .reason {
-        margin: 0;
         color: var(--color-text-secondary);
         overflow-wrap: anywhere;
         display: -webkit-box;

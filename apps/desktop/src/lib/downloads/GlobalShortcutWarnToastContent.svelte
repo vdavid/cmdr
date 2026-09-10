@@ -63,9 +63,6 @@
 
 <style>
     .content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
         font-size: var(--font-size-sm);
     }
 
@@ -77,6 +74,6 @@
         display: flex;
         justify-content: flex-end;
         gap: var(--spacing-sm);
-        margin-top: var(--spacing-md);
+        margin-top: var(--spacing-lg);
     }
 </style>

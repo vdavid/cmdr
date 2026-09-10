@@ -26,7 +26,7 @@
     }
 </script>
 
-<div class="mtp-toast">
+<div>
     <p class="title">{tString('mtp.connectedToast.title', { deviceName: getLastConnectedDeviceName() })}</p>
     <p class="body">
         {#if isMacOS()}
@@ -45,27 +45,19 @@
 </div>
 
 <style>
-    .mtp-toast {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-    }
-
     .title {
-        margin: 0;
         font-weight: 600;
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
     }
 
     .body {
-        margin: 0;
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
     }
 
     .dont-show-again {
-        margin-top: var(--spacing-xs);
+        margin-top: var(--spacing-sm);
     }
 
     /* Keep the toast's compact scale: the house checkbox label defaults to md. */
@@ -78,6 +70,6 @@
         display: flex;
         justify-content: flex-end;
         gap: var(--spacing-sm);
-        margin-top: var(--spacing-md);
+        margin-top: var(--spacing-lg);
     }
 </style>

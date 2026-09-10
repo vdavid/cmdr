@@ -16,9 +16,6 @@
 
 <style>
     .content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
         font-size: var(--font-size-sm);
     }
 

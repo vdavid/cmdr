@@ -76,9 +76,6 @@
 
 <style>
     .toast-body {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
         font-size: var(--font-size-sm);
     }
 
@@ -92,6 +89,6 @@
         display: flex;
         justify-content: flex-end;
         gap: var(--spacing-xs);
-        margin-top: var(--spacing-xs);
+        margin-top: var(--spacing-sm);
     }
 </style>

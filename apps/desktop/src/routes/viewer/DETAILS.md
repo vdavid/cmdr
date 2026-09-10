@@ -38,7 +38,7 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
   triggers), **`MediaImageView` / `MediaPdfView`** (inline `<img>` / `<embed>`).
 - Presentational: **`ViewerContextMenu`**, **`ViewerToolbar`** (title-bar overlay, owns `data-tauri-drag-region`,
   disabled-not-hidden in media), **`ViewerStatusBar`** (keeps `user-select: text`), **`ViewerCopyDialogs`**,
-  **`EncodingPicker`**, **`ViewModePicker`** (two-way media↔text switch), **`ViewerReloadToast`** (session id via
+  **`EncodingPicker`**, **`ViewModePicker`** (two-way media↔text switch), **`ViewerReloadToastContent`** (session id via
   `setReloadToastContext()`).
 
 ## Architecture

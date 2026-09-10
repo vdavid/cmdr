@@ -919,6 +919,21 @@ scheme. The content column is at least as tall as the icon with its text centere
 sits level with its icon while a longer one starts at the icon's top. Contrast of the frame's text on every level's
 surface: `scripts/check-a11y-contrast/toast_states.go`.
 
+The corner and the body contract. `ToastItem` floats a `.toast-corner` at the top right of the content box, holding the
+age label when there is one plus room for the close button pinned over it. The body's first line wraps around it, and
+everything below, buttons included, runs to the right inset. Text only wraps around a float in plain block flow, so
+every toast body keeps this contract:
+
+- **One root element, in block flow.** A flex or grid root is its own formatting context, which a float can't reach
+  into, so the whole body would sit narrowed beside the corner. `toast-body-layout.test.ts` enforces it for every
+  `*ToastContent.svelte` / `*ToastBody.svelte`, which is why a component passed to `addToast` keeps that suffix.
+- **The frame stacks the root's rows.** Each row is a block `--spacing-xs` below the previous one (zero-specificity rules
+  in `ToastItem`). A row that sets its own `margin-top` sets its whole distance from the row above, so the usual buttons
+  row says `--spacing-lg`. Rows below the first can be flex (a buttons row, the downloads lesson); keep the first row
+  plain text with any glyph inline, so its lines wrap around the corner.
+- **Decision: CSS floats do the wrapping.** `@chenglou/pretext` lays out plain text lines in JS, and a toast body is rich
+  markup (chips, links, `<Trans>` sentences, buttons) that it can't lay out, while a float costs no JS at all.
+
 Age label: once a toast has been up a minute, "2m ago" / "1h ago" sits on the content's first line. Decisions:
 
 - **Nothing under a minute.** A seconds count ticks on a surface the eye keeps catching, and a transient toast is gone in
@@ -963,7 +978,7 @@ don't pick `warn` when an op actually failed (that's `error`); don't pick `error
 reached" (that's `warn`).
 
 Toast action buttons use `Button` mini primitives in a right-aligned `.actions` row (`justify-content: flex-end`,
-`gap: var(--spacing-sm)`, `margin-top: var(--spacing-md)`), with the default action at the far right (macOS
+`gap: var(--spacing-sm)`, `margin-top: var(--spacing-lg)`), with the default action at the far right (macOS
 default-button-bottom-right convention) and the alternative to its left. Don't hand-roll bespoke `<button>`s in toast
 content components. `DownloadToastContent` is the reference.
 

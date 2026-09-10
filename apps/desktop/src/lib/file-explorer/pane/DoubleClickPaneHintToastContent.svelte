@@ -46,9 +46,6 @@
 
 <style>
     .content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
         font-size: var(--font-size-sm);
     }
 
@@ -66,7 +63,7 @@
         align-items: center;
         justify-content: flex-end;
         gap: var(--spacing-sm);
-        margin-top: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 
     .prompt {

@@ -41,7 +41,7 @@
     }
 </script>
 
-<div class="first-connect-toast">
+<div>
     <span class="title">{tString('indexing.firstConnect.title', { name: volumeName })}</span>
     <p class="body">{tString('indexing.firstConnect.body')}</p>
     <div class="actions">
@@ -58,19 +58,12 @@
 </div>
 
 <style>
-    .first-connect-toast {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-    }
-
     .title {
         font-weight: 600;
         color: var(--color-text-primary);
     }
 
     .body {
-        margin: 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
     }
@@ -79,6 +72,6 @@
         display: flex;
         flex-wrap: wrap;
         gap: var(--spacing-xs);
-        margin-top: var(--spacing-xxs);
+        margin-top: calc(var(--spacing-xs) + var(--spacing-xxs));
     }
 </style>

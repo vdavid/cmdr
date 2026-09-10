@@ -78,9 +78,6 @@
 
 <style>
     .content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
         /* Toasts default to a narrow column; give this one a bit more room so
@@ -88,18 +85,14 @@
         max-width: 28rem;
     }
 
-    p {
-        margin: 0;
-    }
-
     .settings-line {
-        margin-top: var(--spacing-xs);
+        margin-top: var(--spacing-sm);
     }
 
     .actions {
         display: flex;
         justify-content: flex-end;
         gap: var(--spacing-sm);
-        margin-top: var(--spacing-md);
+        margin-top: var(--spacing-lg);
     }
 </style>

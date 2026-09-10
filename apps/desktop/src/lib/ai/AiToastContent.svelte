@@ -6,8 +6,10 @@
     const aiState = getAiState()
 </script>
 
-{#if aiState.notificationState === 'downloading'}
-    <div class="ai-content">
+<!-- One root around every state: the toast frame lays a body's rows out in block flow, spaced
+     for it (`ui/DETAILS.md` § Toast system). -->
+<div>
+    {#if aiState.notificationState === 'downloading'}
         <span class="ai-title">{tString('ai.toast.downloadingTitle')}</span>
         {#if aiState.downloadProgress && aiState.downloadProgress.totalBytes > 0}
             <div class="progress-bar-container">
@@ -25,43 +27,31 @@
         {:else}
             <span class="ai-progress-text">{tString('ai.toast.startingDownload')}</span>
         {/if}
-    </div>
-    <div class="ai-actions">
-        <Button variant="secondary" size="mini" onclick={() => void handleCancel()}>{tString('ai.toast.cancel')}</Button>
-    </div>
-{:else if aiState.notificationState === 'installing'}
-    <div class="ai-content">
+        <div class="ai-actions">
+            <Button variant="secondary" size="mini" onclick={() => void handleCancel()}>{tString('ai.toast.cancel')}</Button>
+        </div>
+    {:else if aiState.notificationState === 'installing'}
         <span class="ai-title">{tString('ai.toast.installingTitle')}</span>
         <span class="ai-description">{tString('ai.toast.installingDescription')}</span>
-    </div>
-{:else if aiState.notificationState === 'ready'}
-    <div class="ai-content">
+    {:else if aiState.notificationState === 'ready'}
         <span class="ai-title">{tString('ai.toast.readyTitle')}</span>
         <span class="ai-description">{tString('ai.toast.readyDescription')}</span>
-    </div>
-    <div class="ai-actions">
-        <Button
-            variant="primary"
-            size="mini"
-            onclick={() => {
-                handleGotIt()
-            }}>{tString('ai.toast.gotIt')}</Button
-        >
-    </div>
-{:else if aiState.notificationState === 'starting'}
-    <div class="ai-content">
+        <div class="ai-actions">
+            <Button
+                variant="primary"
+                size="mini"
+                onclick={() => {
+                    handleGotIt()
+                }}>{tString('ai.toast.gotIt')}</Button
+            >
+        </div>
+    {:else if aiState.notificationState === 'starting'}
         <span class="ai-title">{tString('ai.toast.startingTitle')}</span>
         <span class="ai-description">{tString('ai.toast.startingDescription')}</span>
-    </div>
-{/if}
+    {/if}
+</div>
 
 <style>
-    .ai-content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-    }
-
     .ai-title {
         font-size: var(--font-size-sm);
         font-weight: 600;
@@ -85,7 +75,7 @@
         background: var(--color-bg-tertiary);
         border-radius: var(--radius-xs);
         overflow: hidden;
-        margin-top: var(--spacing-xs);
+        margin-top: var(--spacing-sm);
     }
 
     .progress-bar-fill {

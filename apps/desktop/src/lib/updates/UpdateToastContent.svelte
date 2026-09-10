@@ -26,7 +26,7 @@
     }
 </script>
 
-<div class="update-body">
+<div>
     <span class="update-headline">{tString('updates.toast.ready')}</span>
     <span class="update-detail">{tString('updates.toast.readyDetail')}</span>
     {#if versions !== null}
@@ -36,19 +36,13 @@
             {tString('updates.toast.versionChange', versions)}
         </span>
     {/if}
-</div>
-<div class="update-actions">
-    <Button variant="secondary" size="mini" onclick={handleDismiss}>{tString('updates.toast.later')}</Button>
-    <Button variant="primary" size="mini" onclick={handleRestart}>{tString('updates.toast.restart')}</Button>
+    <div class="update-actions">
+        <Button variant="secondary" size="mini" onclick={handleDismiss}>{tString('updates.toast.later')}</Button>
+        <Button variant="primary" size="mini" onclick={handleRestart}>{tString('updates.toast.restart')}</Button>
+    </div>
 </div>
 
 <style>
-    .update-body {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-    }
-
     .update-headline {
         font-size: var(--font-size-sm);
         font-weight: 600;

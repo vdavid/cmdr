@@ -39,9 +39,6 @@
 
 <style>
     .toast-body {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
         font-size: var(--font-size-sm);
     }
 
@@ -53,6 +50,6 @@
     .actions {
         display: flex;
         justify-content: flex-end;
-        margin-top: var(--spacing-xs);
+        margin-top: var(--spacing-sm);
     }
 </style>
