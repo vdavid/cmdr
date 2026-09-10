@@ -375,7 +375,7 @@ async fn a_phone_walk_indexes_its_storage_once_and_never_its_system_trees() {
     for kept_out in ["/proc", "/sys", "/mnt", "/data", "/storage/emulated", "/storage/self"] {
         assert!(
             names_under(&index, &at(kept_out)).is_empty(),
-            "{kept_out} keeps its row and nothing beneath it"
+            "{kept_out} keeps its row and nothing beneath it" // allowed-pluralize-noun: `kept_out` is a device path, not a count
         );
     }
     for listed in ["proc", "sys", "mnt", "data", "sdcard", "storage"] {
