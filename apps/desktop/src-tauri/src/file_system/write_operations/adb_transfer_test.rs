@@ -341,6 +341,38 @@ async fn settle(events: &CollectorEventSink, what: &str) {
     assert!(errors.is_empty(), "{what}: the operation reported {errors:?}");
 }
 
+/// ❗ The copy dialog previews a destination folder before the copy makes it
+/// (`copy_volumes_with_progress` creates a missing destination). A phone answers
+/// for the storage that folder will land on, so the preview still checks for
+/// room, and it opens: `dest_space_if_known` tolerates only `NotSupported`, so a
+/// `NotFound` about the missing folder would refuse the preview outright.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_preview_into_a_phone_folder_the_copy_will_create_checks_the_room_on_its_shared_storage() {
+    let phone = recorded_phone("PREVIEWNEWDIR01", FakeTree::new()).await;
+    let source = crate::file_system::volume::InMemoryVolume::new("Source");
+    source
+        .create_file(Path::new("/photo.jpg"), b"a photo's worth of bytes")
+        .await
+        .expect("the source file");
+    let destination = phone.sdcard.join("New album").join("Deeper");
+
+    let preview = crate::file_system::scan_for_volume_copy(
+        &source,
+        &[PathBuf::from("/photo.jpg")],
+        phone.volume.as_ref(),
+        &destination,
+        10,
+    )
+    .await
+    .expect("a preview into a folder the copy will create opens");
+    // The Pixel's own `df -k /sdcard` figure (`cmdr_adb::testing::pixel_captures`).
+    assert_eq!(
+        preview.dest_space.and_then(|space| space.available_bytes()),
+        Some(26_956_476 * 1024),
+        "the preview judges the copy against the shared storage it lands on"
+    );
+}
+
 /// mkdir on a phone makes the folder and tells the pane showing its parent.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn mkdir_on_a_phone_makes_the_folder_and_patches_the_pane_showing_its_parent() {
