@@ -164,6 +164,101 @@ async fn a_destination_that_does_report_free_space_still_refuses_what_it_cant_ho
 }
 
 // ========================================
+// The destination spans several filesystems
+// ========================================
+
+/// A phone-shaped destination: the volume's own figure is a full system image,
+/// and `/sdcard` is a second filesystem with room.
+async fn phone_with_room_under_sdcard() -> Arc<dyn Volume> {
+    let dest = InMemoryVolume::new("Phone")
+        .with_space_info(1_000, 0)
+        .with_space_info_under("/sdcard", 10_000_000, 9_000_000);
+    dest.create_directory(Path::new("/sdcard")).await.unwrap();
+    dest.create_directory(Path::new("/sdcard/Download")).await.unwrap();
+    Arc::new(dest)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_is_judged_by_the_filesystem_its_destination_folder_is_on() {
+    // ❗ A phone over ADB is the live case: its `/` is a read-only system image
+    // reporting 0 free, and asking the VOLUME refused a 920 KB copy into a Pixel's
+    // shared storage with "only has 0 bytes available". Both pre-flights ask
+    // about the destination folder.
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source
+        .create_file(Path::new("/photo.jpg"), b"a photo's worth of bytes")
+        .await
+        .unwrap();
+    let dest = phone_with_room_under_sdcard().await;
+
+    let preview = scan_for_volume_copy(
+        source.as_ref(),
+        &[PathBuf::from("/photo.jpg")],
+        dest.as_ref(),
+        Path::new("/sdcard/Download"),
+        10,
+    )
+    .await
+    .expect("the shared storage has room, so the preview opens");
+    assert_eq!(preview.dest_space.and_then(|s| s.available_bytes()), Some(9_000_000));
+
+    let result = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "test-op-space-per-folder",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/photo.jpg")],
+        Arc::clone(&dest),
+        Path::new("/sdcard/Download"),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+    assert!(
+        result.is_ok(),
+        "the destination folder's filesystem has room, got {:?}",
+        result.err().map(|f| format!("{:?}", f.error)),
+    );
+    assert!(dest.exists(Path::new("/sdcard/Download/photo.jpg")).await);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_full_destination_folder_refuses_even_when_the_volume_has_room() {
+    // The other half: the folder's filesystem is what decides, in both directions.
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source
+        .create_file(Path::new("/big.bin"), b"more than four bytes")
+        .await
+        .unwrap();
+    let dest = InMemoryVolume::new("Phone")
+        .with_space_info(10_000_000, 9_000_000)
+        .with_space_info_under("/storage/card", 1_000, 4);
+    dest.create_directory(Path::new("/storage")).await.unwrap();
+    dest.create_directory(Path::new("/storage/card")).await.unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(dest);
+
+    let failure = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "test-op-space-full-folder",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/big.bin")],
+        Arc::clone(&dest),
+        Path::new("/storage/card"),
+        &VolumeCopyConfig::default(),
+    )
+    .await
+    .expect_err("a folder whose filesystem has 4 bytes free must refuse 20 bytes");
+    assert!(
+        matches!(
+            &failure.error,
+            WriteOperationError::InsufficientSpace { available: 4, .. }
+        ),
+        "got {:?}",
+        failure.error,
+    );
+}
+
+// ========================================
 // The destination measures but has no ceiling
 // ========================================
 

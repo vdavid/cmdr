@@ -38,6 +38,10 @@ pub struct InMemoryVolume {
     entries: RwLock<HashMap<PathBuf, InMemoryEntry>>,
     /// Configurable space info for testing. None means get_space_info returns NotSupported.
     space_info: Option<SpaceInfo>,
+    /// Per-subtree space for [`Volume::get_space_info_at`], modeling a volume
+    /// that spans several filesystems. The deepest matching prefix answers;
+    /// a path under none of them falls back to `space_info`.
+    space_info_under: Vec<(PathBuf, SpaceInfo)>,
     /// Lane key the operation manager uses to (de)serialize this volume against
     /// others. `None` ⇒ fall back to the root lane (the trait default), so the
     /// ~169 existing `new(...)` sites are untouched. Manager tests set it via
@@ -126,6 +130,7 @@ impl InMemoryVolume {
             root: PathBuf::from("/"),
             entries: RwLock::new(HashMap::new()),
             space_info: None,
+            space_info_under: Vec::new(),
             lane_key: None,
             local_fs_access: false,
             routes_over_a_parent: false,
@@ -340,6 +345,16 @@ impl InMemoryVolume {
     /// nonetheless answers.
     pub fn with_unbounded_space_info(mut self, used_bytes: u64) -> Self {
         self.space_info = Some(SpaceInfo::Unbounded { used_bytes });
+        self
+    }
+
+    /// Makes [`Volume::get_space_info_at`] answer a BOUNDED figure for `under`
+    /// and everything below it, modeling a second filesystem mounted there (a
+    /// phone's shared storage beside its read-only system image). The volume's
+    /// own figure stays whatever [`with_space_info`](Self::with_space_info) set.
+    pub fn with_space_info_under(mut self, under: impl Into<PathBuf>, total_bytes: u64, available_bytes: u64) -> Self {
+        self.space_info_under
+            .push((under.into(), SpaceInfo::bounded(total_bytes, available_bytes)));
         self
     }
 
@@ -977,6 +992,24 @@ impl Volume for InMemoryVolume {
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
         Box::pin(async move { self.space_info.ok_or(VolumeError::NotSupported) })
+    }
+
+    /// The deepest [`with_space_info_under`](Self::with_space_info_under) subtree
+    /// holding `path`, else the volume's own figure.
+    fn get_space_info_at<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let normalized = self.normalize(path);
+            self.space_info_under
+                .iter()
+                .filter(|(under, _)| normalized.starts_with(self.normalize(under)))
+                .max_by_key(|(under, _)| under.components().count())
+                .map(|(_, space)| *space)
+                .or(self.space_info)
+                .ok_or(VolumeError::NotSupported)
+        })
     }
 
     fn routes_over_a_parent(&self) -> bool {

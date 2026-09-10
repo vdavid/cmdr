@@ -16,7 +16,7 @@
 //! - `sync:` with `STAT`/`STA2`/`LIST`/`LIS2`/`RECV`/`RCV2`/`SEND`/`SND2`/`QUIT`
 //!   over the [`FakeTree`].
 //! - `shell,v2,raw:<cmd>` with `mkdir [-p]`, `rmdir`, `rm [-rf]`, `mv`,
-//!   `cp [-f]`, `df -k`, `readlink -f`, `test -e|-d|-f|-w` (`-w` follows
+//!   `cp [-f]`, `df -k [path]` (per [`FakeTree::mount_for`]), `readlink -f`, `test -e|-d|-f|-w` (`-w` follows
 //!   [`FakeTree::read_only`]), and `stat -c '%f %s %Y'`; anything else exits
 //!   127.
 //!
@@ -38,7 +38,7 @@ mod tree;
 
 pub use server::FakeAdbServer;
 pub use shell::{run_fake_shell, split_argv};
-pub use tree::{DEFAULT_MTIME, FakeNode, FakeTree};
+pub use tree::{DEFAULT_MTIME, DF_K_HEADER, FakeMount, FakeNode, FakeTree};
 
 use crate::devices::{AdbDevice, AdbDeviceState};
 

@@ -11,7 +11,7 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 
 use crate::errors::{EEXIST, EISDIR, ENOENT, ENOTDIR, ENOTEMPTY_DEVICE, EROFS};
 
-use super::tree::{FakeNode, FakeTree};
+use super::tree::{DF_K_HEADER, FakeNode, FakeTree};
 
 /// Splits a POSIX command line into words: single quotes literal, double quotes
 /// and backslashes handled minimally.
@@ -144,12 +144,23 @@ pub fn run_fake_shell(tree: &Mutex<FakeTree>, argv: &[String]) -> (u8, String, S
             }
         }
         "df" => {
-            let used = tree.total_kib.saturating_sub(tree.available_kib);
-            let pct = (used * 100).checked_div(tree.total_kib).unwrap_or(0);
-            let out = format!(
-                "Filesystem      1K-blocks     Used Available Use% Mounted on\n/dev/fuse       {} {} {} {}% /storage/emulated\n",
-                tree.total_kib, used, tree.available_kib, pct
-            );
+            let mut out = format!("{DF_K_HEADER}\n");
+            if args.is_empty() {
+                for mount in tree.mounts() {
+                    out.push_str(&mount.df_row);
+                    out.push('\n');
+                }
+                return (0, out, String::new());
+            }
+            for p in &args {
+                match tree.mount_for(p) {
+                    Ok(mount) => {
+                        out.push_str(&mount.df_row);
+                        out.push('\n');
+                    }
+                    Err(e) => return (1, String::new(), format!("df: {p}: {}\n", errno_text(e))),
+                }
+            }
             (0, out, String::new())
         }
         "readlink" => {

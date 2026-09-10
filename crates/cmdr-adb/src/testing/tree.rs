@@ -67,10 +67,8 @@ impl FakeNode {
 #[derive(Debug, Clone)]
 pub struct FakeTree {
     nodes: BTreeMap<String, FakeNode>,
-    /// What `df -k` reports as the total, in KiB.
-    pub total_kib: u64,
-    /// What `df -k` reports as available, in KiB.
-    pub available_kib: u64,
+    /// The filesystems `df -k` reports on, see [`FakeTree::mount_for`].
+    mounts: Vec<FakeMount>,
     /// When set, every write answers `EROFS`.
     pub read_only: bool,
 }
@@ -84,17 +82,50 @@ impl Default for FakeTree {
 /// The mtime every node gets unless a test sets one: 2026-01-01T00:00:00Z.
 pub const DEFAULT_MTIME: i64 = 1_767_225_600;
 
+/// The header toybox's `df -k` prints above its rows.
+pub const DF_K_HEADER: &str = "Filesystem      1K-blocks     Used Available Use% Mounted on";
+
+/// One filesystem mounted in the fake device, as `df -k` reports it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FakeMount {
+    /// Where it's mounted.
+    pub path: String,
+    /// The row `df -k` prints for it, below [`DF_K_HEADER`].
+    pub df_row: String,
+}
+
+impl FakeMount {
+    /// A mount whose `df -k` row is `row` verbatim, for a real device's output.
+    pub fn with_row(path: &str, row: &str) -> Self {
+        Self {
+            path: FakeTree::normalize(path),
+            df_row: row.to_string(),
+        }
+    }
+
+    /// A mount of `total_kib` with `available_kib` free, in toybox's layout.
+    pub fn sized(path: &str, device: &str, total_kib: u64, available_kib: u64) -> Self {
+        let path = FakeTree::normalize(path);
+        let used = total_kib.saturating_sub(available_kib);
+        let pct = (used * 100).checked_div(total_kib).unwrap_or(0);
+        let df_row = format!("{device:<15} {total_kib:>9} {used:>8} {available_kib:>9} {pct:>3}% {path}");
+        Self { path, df_row }
+    }
+}
+
 impl FakeTree {
-    /// A tree holding `/` and `/sdcard`.
+    /// A tree holding `/` and `/sdcard`, mounted the way a phone mounts them: a
+    /// full read-only system image at `/`, and the shared storage at `/sdcard`.
     pub fn new() -> Self {
         let mut tree = Self {
             nodes: BTreeMap::new(),
-            total_kib: 118_120_468,
-            available_kib: 96_764_008,
+            mounts: Vec::new(),
             read_only: false,
         };
         tree.add_dir("/");
         tree.add_dir("/sdcard");
+        tree.mount(FakeMount::sized("/", "/dev/block/dm-7", 1_046_868, 0))
+            .mount(FakeMount::sized("/sdcard", "/dev/fuse", 118_120_468, 96_764_008));
         tree
     }
 
@@ -166,6 +197,29 @@ impl FakeTree {
             },
         );
         self
+    }
+
+    /// Mounts a filesystem, replacing one already at the same path. Chainable.
+    pub fn mount(&mut self, mount: FakeMount) -> &mut Self {
+        self.mounts.retain(|m| m.path != mount.path);
+        self.mounts.push(mount);
+        self
+    }
+
+    /// Every mounted filesystem, in mount order.
+    pub fn mounts(&self) -> &[FakeMount] {
+        &self.mounts
+    }
+
+    /// The filesystem `df -k <path>` reports on: the deepest mount holding
+    /// `path` after following a link at it. `Err(ENOENT)` when nothing is there.
+    pub fn mount_for(&self, path: &str) -> Result<&FakeMount, i32> {
+        let resolved = self.resolve(path)?;
+        self.mounts
+            .iter()
+            .filter(|m| m.path == "/" || resolved == m.path || resolved.starts_with(&format!("{}/", m.path)))
+            .max_by_key(|m| m.path.len())
+            .ok_or(ENOENT)
     }
 
     /// The node at `path`, if any.

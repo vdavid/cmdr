@@ -143,7 +143,13 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
 - **Liveness**: operations are the detector (there is no keepalive), so every wire-touching delegator classifies a
   `DeviceGone` into `VolumeError::DeviceDisconnected` and emits the transition once (`state.rs`). `track-devices`
   additionally retires the volume when its serial leaves the list, which is the push channel MTP never had.
-- **Space**: `df -k` on the volume root, polled at `space_poll_interval` = 30 s. A `df` that fails is `NotSupported`
+- **Space**: two answers, both `df -k`. `get_space_info` is the phone's figure, asked of the shared storage
+  (`/sdcard`), and is what the pane's indicator and the poller show, polled at `space_poll_interval` = 30 s.
+  `get_space_info_at(path)` asks about `path` itself, so an SD card answers for what's on it; the transfer pre-flight
+  asks this of the destination folder. ❌ Never ask about the device root: `/` is a read-only system image reporting 0
+  free, which put "0 bytes" in the pane and refused every copy onto a phone (observed on a Pixel 9 Pro XL, the dev
+  log's `volume-space-changed: adb-… (0 avail)` and `InsufficientSpace { available: 0 }`, 2026-09-10). The fake
+  models that layout (`FakeTree::mount_for`). A `df` that fails is `NotSupported`
   ("can't tell"), ❌ never a guessed number.
 
 ## The error policy

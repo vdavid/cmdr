@@ -1013,6 +1013,22 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
+    /// Space for the filesystem that holds `path`. Defaults to
+    /// [`get_space_info`](Self::get_space_info), the volume's one figure.
+    ///
+    /// A volume spanning several filesystems answers per path: a phone over ADB
+    /// mounts a read-only system image at `/` (no room ever) beside its shared
+    /// storage and any SD card. The transfer pre-flight asks this about the
+    /// destination folder, so a copy is judged against the filesystem it lands
+    /// on. The pane's indicator and the space poller keep the volume's figure.
+    fn get_space_info_at<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        let _ = path;
+        self.get_space_info()
+    }
+
     /// Recommended poll interval for live disk-space monitoring.
     ///
     /// Local volumes use a short interval (2 s) because `statvfs`/NSURL is

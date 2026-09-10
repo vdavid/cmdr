@@ -236,7 +236,10 @@ async fn a_listing_of_a_missing_directory_carries_the_path() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn space_comes_from_df() {
+async fn the_phones_space_is_its_shared_storage_not_the_system_image_at_the_root() {
+    // ❗ A phone's `/` is a read-only system image that reports 0 free. Asking
+    // `df` about the volume root put "0 bytes free" in the pane and refused every
+    // copy onto a real Pixel.
     let server = FakeAdbServer::start(FakeTree::new()).await;
     let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
     let space = volume.get_space_info().await.expect("df -k");
@@ -247,6 +250,46 @@ async fn space_comes_from_df() {
             available_bytes: 96_764_008 * 1024,
             used_bytes: (118_120_468 - 96_764_008) * 1024,
         }
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn space_at_a_path_is_the_filesystem_holding_it() {
+    let mut tree = FakeTree::new();
+    tree.add_dir("/sdcard/Download")
+        .add_dir("/storage/1A2B-3C4D/Music")
+        .mount(crate::testing::FakeMount::sized(
+            "/storage/1A2B-3C4D",
+            "/dev/fuse",
+            60_000_000,
+            59_000_000,
+        ));
+    let server = FakeAdbServer::start(tree).await;
+    let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
+
+    let card = volume
+        .get_space_info_at(&fixture_path("/storage/1A2B-3C4D/Music"))
+        .await
+        .expect("df -k on the SD card");
+    assert_eq!(card.available_bytes(), Some(59_000_000 * 1024));
+    let shared = volume
+        .get_space_info_at(&fixture_path("/sdcard/Download"))
+        .await
+        .expect("df -k on the shared storage");
+    assert_eq!(shared.available_bytes(), Some(96_764_008 * 1024));
+    // The root really is the full system image; only the volume's own figure
+    // stands for the phone.
+    let root = volume
+        .get_space_info_at(&fixture_path(""))
+        .await
+        .expect("df -k on the root");
+    assert_eq!(root.available_bytes(), Some(0));
+
+    // A `df` that can't answer is "can't tell", never a zero.
+    let missing = volume.get_space_info_at(&fixture_path("/nowhere")).await;
+    assert!(
+        matches!(missing, Err(cmdr_fs::volume::VolumeError::NotSupported)),
+        "{missing:?}"
     );
 }
 

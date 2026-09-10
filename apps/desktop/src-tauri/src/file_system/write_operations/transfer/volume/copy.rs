@@ -359,8 +359,14 @@ pub async fn copy_between_volumes(
     })
 }
 
-/// How much room the destination reports, or `None` when the backend genuinely
-/// cannot answer.
+/// How much room the destination folder's filesystem reports, or `None` when the
+/// backend genuinely cannot answer.
+///
+/// ❗ **Asked about `dest_path`, ❌ never the volume as a whole**
+/// (`Volume::get_space_info_at`). A phone over ADB mounts a read-only system
+/// image at `/` that reports 0 free, and a volume-wide answer refused every copy
+/// into its shared storage. Pinned by
+/// `copy_space_tests.rs::a_copy_is_judged_by_the_filesystem_its_destination_folder_is_on`.
 ///
 /// ❗ **`NotSupported` means "can't tell", ❌ never "no room".** `get_space_info`
 /// is explicitly allowed to refuse: SFTP is the live case, because
@@ -377,8 +383,8 @@ pub async fn copy_between_volumes(
 /// dialog's preview and the transfer that follows it.
 /// `a_destination_that_cant_report_free_space_is_still_copyable_into` and its
 /// sibling in `copy_space_tests.rs` hold both sides.
-async fn dest_space_if_known(dest_volume: &dyn Volume) -> Result<Option<SpaceInfo>, VolumeError> {
-    match dest_volume.get_space_info().await {
+async fn dest_space_if_known(dest_volume: &dyn Volume, dest_path: &Path) -> Result<Option<SpaceInfo>, VolumeError> {
+    match dest_volume.get_space_info_at(dest_path).await {
         Ok(info) => Ok(Some(info)),
         Err(VolumeError::NotSupported) => Ok(None),
         Err(other) => Err(other),
@@ -449,7 +455,7 @@ pub async fn scan_for_volume_copy(
     }
 
     // What the destination has room for, or `None` when it genuinely can't tell.
-    let dest_space = dest_space_if_known(dest_volume).await?;
+    let dest_space = dest_space_if_known(dest_volume, dest_path).await?;
 
     // ❗ Only a volume that answered with a CEILING gets checked. See
     // `room_to_check`: a silent backend and a bottomless one both mean "don't
@@ -696,7 +702,7 @@ pub(crate) async fn copy_volumes_with_progress(
     let mut source_hints = preflight.source_hints;
 
     // Phase 2: Check destination space, where the destination can report it.
-    let dest_space = dest_space_if_known(&*dest_volume)
+    let dest_space = dest_space_if_known(&*dest_volume, dest_path)
         .await
         .map_err(|e| WriteFailure::from_volume(dest_path, PathRole::Destination, e))?;
     if let Some(available) = room_to_check(dest_space)

@@ -196,7 +196,10 @@ impl DeviceVolumeProvider for AdbDeviceProvider {
         })
     }
 
-    /// Live space from the connected volume; `None` until it's dialed.
+    /// The connected phone's figure (its shared storage, like MTP's per-storage
+    /// figure) for any path on it; `None` until it's dialed. The pane's
+    /// indicator and the poller read this, so ❌ don't make it per path: two
+    /// panes on one phone would flip the shared, volume-keyed readout.
     fn space_for_path<'a>(&'a self, path: &'a str) -> ProviderFuture<'a, Option<(u64, u64)>> {
         Box::pin(async move {
             let volume = connected_volume(serial_of_path(path)?)?;

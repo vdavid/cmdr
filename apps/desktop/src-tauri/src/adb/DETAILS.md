@@ -133,7 +133,10 @@ registered volume), and a pane standing on it holds its listing and dials again 
   it holds its listing, renders the waiting state, and dials only once a broadcast says the row turned ready
   (`apps/desktop/src/lib/adb/DETAILS.md`, `src/lib/file-explorer/pane/DETAILS.md` § "A pane on a phone").
 - `owns_volume_id`: any cached serial's id matches.
-- `space_for_path`: the connected volume's `get_space_info` (`df -k` on the device), `None` until it is dialed.
+- `space_for_path`: the connected volume's `get_space_info` (the phone's shared storage, whatever path on it is
+  asked), `None` until it is dialed. It feeds the pane's indicator, which the poller keys by volume, so it stays one
+  figure per phone; the copy pre-flight asks the volume per folder instead. Crate `DETAILS.md` § "The `Volume`
+  answers, and why" has the `df` side.
 - `eject`: above.
 
 ## IPC and frontend
