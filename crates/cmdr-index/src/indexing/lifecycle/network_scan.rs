@@ -521,15 +521,18 @@ impl IndexManager {
                     let stayed_fresh = replay_buffered_changes_for_kind(kind, &volume_id);
 
                     if stayed_fresh {
-                        // Freshness ⇒ Fresh (green). The volume is now authoritative
-                        // until the live watcher observes a continuity break. Fire
-                        // through the cloned `Arc` (no registry re-lock).
-                        super::state::apply_freshness_event_on(
-                            &freshness,
-                            events.as_ref(),
-                            &volume_id,
-                            super::freshness::FreshnessEvent::ScanCompleted,
-                        );
+                        // Freshness ⇒ Fresh (green) for a watched volume, which is
+                        // now authoritative until its live watcher observes a
+                        // continuity break. A volume nothing watches (a phone over
+                        // ADB) lands Stale instead: the walk is complete, but no
+                        // event will say when the device changes. Fire through the
+                        // cloned `Arc` (no registry re-lock).
+                        let completed = if kind.has_live_watch() {
+                            super::freshness::FreshnessEvent::ScanCompleted
+                        } else {
+                            super::freshness::FreshnessEvent::ScanCompletedUnwatched
+                        };
+                        super::state::apply_freshness_event_on(&freshness, events.as_ref(), &volume_id, completed);
                     }
                     set_phase_for(
                         events.as_ref(),

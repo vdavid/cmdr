@@ -65,6 +65,82 @@ fn in_memory_share(root: &str) -> Arc<dyn Volume> {
     )
 }
 
+/// A phone over ADB, rooted where the app roots one (`adb://<serial>`), holding a
+/// folder and two files.
+fn in_memory_phone(root: &str) -> Arc<dyn Volume> {
+    let entries = vec![
+        FileEntry::new("sdcard".into(), format!("{root}/sdcard"), true, false),
+        FileEntry {
+            size: Some(11),
+            ..FileEntry::new("a.jpg".into(), format!("{root}/sdcard/a.jpg"), false, false)
+        },
+        FileEntry {
+            size: Some(22),
+            ..FileEntry::new("b.jpg".into(), format!("{root}/sdcard/b.jpg"), false, false)
+        },
+    ];
+    Arc::new(
+        InMemoryVolume::with_entries("Phone", entries)
+            .with_root(root)
+            .with_backend_kind(cmdr_fs::volume::BackendKind::Adb),
+    )
+}
+
+/// A phone's finished scan is honest about what it can't see: ADB reports no
+/// change made on the phone itself, so the index lands Stale with its completion
+/// recorded, never Fresh. `is_fresh` is what the operation log trusts an index on,
+/// so a Fresh here would be a claim nothing backs.
+#[tokio::test(flavor = "multi_thread")]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the lock serializes the process-wide seams for the whole scan; holding it across the awaits IS the point"
+)]
+async fn a_phone_over_adb_finishes_its_scan_stale_because_nothing_watches_it() {
+    use crate::indexing::lifecycle::freshness::Freshness;
+
+    let _serialized = crate::indexing::handle::test_lock();
+    let data = tempfile::tempdir().expect("index data dir");
+    let serial = "ACCEPTANCE1";
+    let root = cmdr_fs::volume::adb_app_root(serial);
+    let volume_id = cmdr_fs::volume::adb_volume_id(serial);
+
+    let volumes = FakeVolumeProvider::shared();
+    volumes.register(&volume_id, in_memory_phone(&root));
+
+    let events = Arc::new(RecordingSink::new());
+    let (index, _installed) = Index::builder()
+        .data_dir(data.path())
+        .volumes(Arc::clone(&volumes) as Arc<_>)
+        .events(Arc::clone(&events) as Arc<dyn EventSink>)
+        .install_for_test();
+
+    assert_eq!(
+        index.start_volume(&volume_id).await.expect("the phone starts indexing"),
+        StartOutcome::Started
+    );
+    wait_until_async(Duration::from_secs(20), "the phone's scan to settle", || {
+        matches!(
+            index.volume_status(&volume_id).freshness,
+            Some(Freshness::Fresh | Freshness::Stale)
+        )
+    })
+    .await;
+
+    let status = index.volume_status(&volume_id);
+    assert_eq!(
+        status.freshness,
+        Some(Freshness::Stale),
+        "nothing watches a phone over ADB"
+    );
+    assert!(status.scan_completed_at.is_some(), "and yet its scan did finish");
+    assert!(!index.is_fresh(&volume_id), "so nothing may trust it as current");
+    let children = index
+        .list_children(&format!("{root}/sdcard"))
+        .expect("the scanned folder is readable")
+        .expect("the scanned folder is in the index");
+    assert_eq!(children.len(), 2, "the walk read both files: {children:?}");
+}
+
 /// The acceptance test for the whole extraction: a full scan, start to finish,
 /// driven through the public handle over an `InMemoryVolume`, reporting into a
 /// `RecordingSink`. Nothing app-side is in the room — no `AppHandle`, no

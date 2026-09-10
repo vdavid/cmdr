@@ -30,8 +30,9 @@
 //! ## The transition table (this module is the single source of truth)
 //!
 //! [`Freshness::on`] is a pure function from `(current, event)` to the next
-//! state. Some transitions are scan-driven (`ScanStarted`, `ScanCompleted`, and
-//! `ScanFailed` — fired by the scan completion handlers); the watcher-driven
+//! state. Some transitions are scan-driven (`ScanStarted`, `ScanCompleted`,
+//! `ScanCompletedUnwatched` for a volume nothing watches, and `ScanFailed` —
+//! fired by the scan completion handlers); the watcher-driven
 //! ones (`WatcherDied`, `OverflowUnrecoverable`) are fired from the
 //! watcher-lifetime layer (`transports/smb/index` / `transports/mtp/index`), which just calls
 //! `on(WatcherDied)` — the call sites live there, never in this state machine.
@@ -75,11 +76,12 @@ pub enum Freshness {
 
 /// Inputs that drive a volume's freshness transitions.
 ///
-/// The first three are scan-driven and need no live watcher. The last two are
-/// fired from the watcher-lifetime layer: `WatcherDied` when the SMB session
-/// drops / the watcher task returns, `OverflowUnrecoverable` when a
-/// `CHANGE_NOTIFY` overflow can't be repaired by a targeted subtree rescan. All
-/// the call sites live there, never as new state-machine arms.
+/// The scan-driven events (`ScanStarted`, `ScanCompleted`,
+/// `ScanCompletedUnwatched`, `ScanFailed`) need no live watcher. Two are fired
+/// from the watcher-lifetime layer: `WatcherDied` when the SMB session drops /
+/// the watcher task returns, `OverflowUnrecoverable` when a `CHANGE_NOTIFY`
+/// overflow can't be repaired by a targeted subtree rescan. All the call sites
+/// live there, never as new state-machine arms.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FreshnessEvent {
     /// A full scan started (initial or rescan). ⇒ `Scanning`.
@@ -90,6 +92,14 @@ pub enum FreshnessEvent {
     /// mid-scan discards the partial and the volume goes gray (no instance), so
     /// it never reaches this event (D-interrupted, handled in `lifecycle/state.rs`).
     ScanCompleted,
+    /// A full scan completed without cancellation on a volume NOTHING watches
+    /// (`IndexVolumeKind::has_live_watch` is false: a phone over ADB). ⇒ `Stale`.
+    ///
+    /// The rows are exactly what the walk read, but no event will ever say the
+    /// device changed them, so they can't be authoritative the moment the walk
+    /// ends. Cmdr's own writes still land in the index; a change made on the
+    /// device itself surfaces only at the next rescan, which is what Stale offers.
+    ScanCompletedUnwatched,
     /// The live watcher for this volume reported the watched session is gone
     /// (disconnect, SMB session drop, MTP device unplug). ⇒ `Stale`.
     ///
@@ -144,8 +154,11 @@ impl Freshness {
             // scan, or the recovery rescan of a Failed volume. While scanning we are
             // neither Fresh nor Stale.
             FreshnessEvent::ScanStarted => Freshness::Scanning,
-            // A clean scan completion is the only path to Fresh.
+            // A clean scan completion on a watched volume is the only path to Fresh.
             FreshnessEvent::ScanCompleted => Freshness::Fresh,
+            // The same completion on a volume nothing watches: whole, but never
+            // authoritative, so it lands where a rescan is offered.
+            FreshnessEvent::ScanCompletedUnwatched => Freshness::Stale,
             // Continuity broke, or a scan/reconcile failed. From Scanning a
             // watcher death is unusual (the scan path handles mid-scan disconnect
             // by discarding to gray), but a `ScanFailed` from Scanning is the
@@ -279,6 +292,20 @@ mod tests {
     }
 
     #[test]
+    fn an_unwatched_scan_completion_lands_stale_from_any_live_state() {
+        // A phone over ADB: the walk finished, but nothing will report a change on
+        // the device, so it must never read as authoritative. From Scanning is the
+        // normal case; from Fresh or Stale it's a rescan that finished.
+        for from in [Freshness::Scanning, Freshness::Fresh, Freshness::Stale] {
+            assert_eq!(
+                from.on(FreshnessEvent::ScanCompletedUnwatched),
+                Freshness::Stale,
+                "an unwatched completion from {from:?} must land Stale"
+            );
+        }
+    }
+
+    #[test]
     fn failed_is_terminal_except_an_explicit_rescan() {
         // The core stickiness guarantee: once the storage is dead, a concurrent
         // scan-completion handler firing ScanFailed/ScanCompleted (or another
@@ -286,6 +313,7 @@ mod tests {
         // explicit rebuild (ScanStarted) leaves it.
         for event in [
             FreshnessEvent::ScanCompleted,
+            FreshnessEvent::ScanCompletedUnwatched,
             FreshnessEvent::WatcherDied,
             FreshnessEvent::OverflowUnrecoverable,
             FreshnessEvent::ScanFailed,

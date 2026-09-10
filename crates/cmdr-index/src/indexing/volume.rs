@@ -117,6 +117,17 @@ impl IndexVolumeKind {
     pub fn feeds_search(self) -> bool {
         matches!(self, IndexVolumeKind::Local)
     }
+
+    /// Whether a live watch reports this volume's changes to the index while it's
+    /// connected: FSEvents for a local disk, `CHANGE_NOTIFY` for SMB, PTP events
+    /// for MTP. False only for ADB, which reports nothing.
+    ///
+    /// Decides where a finished trait scan lands (`lifecycle/network_scan.rs`):
+    /// a watched volume is Fresh until its watch breaks, an unwatched one is Stale
+    /// from the moment the walk ends, because nothing will say when it drifts.
+    pub fn has_live_watch(self) -> bool {
+        !matches!(self, IndexVolumeKind::Adb)
+    }
 }
 
 #[cfg(test)]
@@ -133,30 +144,31 @@ mod tests {
         IndexVolumeKind::Adb,
     ];
 
-    /// The five capability axes must match the plan's table exactly. Each tuple is
+    /// The six capability axes must match the plan's table exactly. Each tuple is
     /// `(uses_local_scanner, is_trait_scanned, has_event_journal, mount_rooted,
-    /// feeds_search)`.
+    /// feeds_search, has_live_watch)`.
     #[test]
     fn capability_axes_match_the_table() {
-        let expected = |kind: IndexVolumeKind| -> (bool, bool, bool, bool, bool) {
+        let expected = |kind: IndexVolumeKind| -> (bool, bool, bool, bool, bool, bool) {
             (
                 kind.uses_local_scanner(),
                 kind.is_trait_scanned(),
                 kind.has_event_journal(),
                 kind.mount_rooted(),
                 kind.feeds_search(),
+                kind.has_live_watch(),
             )
         };
 
-        // (local_scanner, trait_scanned, event_journal, mount_rooted, feeds_search)
-        assert_eq!(expected(IndexVolumeKind::Local), (true, false, true, false, true));
+        // (local_scanner, trait_scanned, event_journal, mount_rooted, feeds_search, live_watch)
+        assert_eq!(expected(IndexVolumeKind::Local), (true, false, true, false, true, true));
         assert_eq!(
             expected(IndexVolumeKind::LocalExternal),
-            (true, false, false, true, false)
+            (true, false, false, true, false, true)
         );
-        assert_eq!(expected(IndexVolumeKind::Smb), (false, true, false, true, false));
-        assert_eq!(expected(IndexVolumeKind::Mtp), (false, true, false, true, false));
-        assert_eq!(expected(IndexVolumeKind::Adb), (false, true, false, true, false));
+        assert_eq!(expected(IndexVolumeKind::Smb), (false, true, false, true, false, true));
+        assert_eq!(expected(IndexVolumeKind::Mtp), (false, true, false, true, false, true));
+        assert_eq!(expected(IndexVolumeKind::Adb), (false, true, false, true, false, false));
     }
 
     /// `uses_local_scanner` and `is_trait_scanned` are exact complements: every

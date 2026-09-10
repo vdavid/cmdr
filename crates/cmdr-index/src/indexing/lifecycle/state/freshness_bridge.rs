@@ -94,7 +94,12 @@ pub(crate) fn apply_freshness_event_on(
     // it (plan Decision 4). We fire on the EVENT, not on a freshness change: a
     // Fresh→Fresh rescan completion still means new data to rescore, and it must
     // notify the bus even though the badge didn't move.
-    if event == FreshnessEvent::ScanCompleted {
+    // An unwatched volume's completion is new data just the same, however its
+    // badge reads.
+    if matches!(
+        event,
+        FreshnessEvent::ScanCompleted | FreshnessEvent::ScanCompletedUnwatched
+    ) {
         lifecycle_bus::publish_scan_completed(volume_id);
     }
 }
