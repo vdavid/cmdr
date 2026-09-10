@@ -134,6 +134,7 @@ describe('CoverageNote a11y', () => {
         driveName: 'Naspolya',
         isNetwork: true,
         isIndexing: false,
+        canBeIndexed: true,
         onIndexDrive,
         onSilenceDrive: () => {},
       },

@@ -24,6 +24,7 @@
  */
 
 import { checkFullDiskAccessQuiet } from '$lib/tauri-commands'
+import { capabilitiesFor } from '$lib/file-explorer/pane/volume-capabilities'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 import { getVolumes } from '$lib/stores/volume-store.svelte'
 import { isDriveSilenced, silenceDrive as silenceDrivePref } from '$lib/indexing/drive-index-prefs'
@@ -52,6 +53,12 @@ export interface CoverageCtaView {
   readonly isNetwork: boolean
   /** Whether that drive's first index is running right now, which the note speaks to. */
   readonly isIndexing: boolean
+  /**
+   * Whether a drive index can serve that drive at all. A server's can't (SFTP, WebDAV),
+   * so the note says search isn't available there and nothing is offered: there's no
+   * index to turn on, and Enter doesn't reach it either.
+   */
+  readonly canBeIndexed: boolean
   /** Turns indexing on for the uncovered drive, or `null` when nothing may be offered. */
   readonly indexDrive: (() => void) | null
   /** "Don't ask again" for this drive: the same persisted silence the first-connect prompt honors. */
@@ -76,8 +83,21 @@ export function createCoverageCta(deps: CoverageCtaDeps): CoverageCtaView {
    */
   const isIndexing = $derived(note !== null && note.volumeId !== '' && isVolumeCoveredInPhases(note.volumeId))
 
+  /**
+   * Off the volume's capability record (the backend's published answer, per-kind table
+   * beneath it), the one the switcher's index badge reads, so the two can't disagree
+   * about whether a drive can be indexed. Withholding the offer needs a positive "no":
+   * a gap with no volume to look up keeps today's behavior.
+   */
+  const canBeIndexed = $derived(note === null || note.volumeId === '' || capabilitiesFor(note.volumeId).canBeIndexed)
+
   const ctaVolumeId = $derived(
-    note && note.uncoveredScopes.length > 0 && note.volumeId !== '' && !isDriveSilenced(note.volumeId) && !isIndexing
+    note &&
+      note.uncoveredScopes.length > 0 &&
+      note.volumeId !== '' &&
+      canBeIndexed &&
+      !isDriveSilenced(note.volumeId) &&
+      !isIndexing
       ? note.volumeId
       : null,
   )
@@ -150,6 +170,9 @@ export function createCoverageCta(deps: CoverageCtaDeps): CoverageCtaView {
     },
     get isIndexing() {
       return isIndexing
+    },
+    get canBeIndexed() {
+      return canBeIndexed
     },
     get indexDrive() {
       return indexDrive

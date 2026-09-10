@@ -37,6 +37,13 @@
          */
         isIndexing: boolean
         /**
+         * Whether a drive index can serve the drive the gap belongs to. `false` for a
+         * server over SFTP or WebDAV: an uncovered gap there reads as "search isn't
+         * available here yet", and the "press Enter" line goes, since Enter doesn't
+         * reach it either. `coverage-cta.svelte.ts` withholds the offer alongside.
+         */
+        canBeIndexed: boolean
+        /**
          * Offers indexing for that drive. `null` hides the actions entirely: the user
          * silenced this drive, or there's no drive to act on (an unresolved path on a
          * drive that IS indexed).
@@ -59,6 +66,7 @@
         driveName,
         isNetwork,
         isIndexing,
+        canBeIndexed,
         onIndexDrive,
         onSilenceDrive,
         onGrantFullDiskAccess = null,
@@ -68,6 +76,9 @@
     const drive = $derived(driveName || tString('search.coverage.unnamedDrive'))
 
     const uncoveredMessage = $derived.by(() => {
+        // First: a server is a network drive too, and the network voice ("unless you
+        // ask") would promise an index nobody can ask for.
+        if (!canBeIndexed) return tString('search.coverage.uncovered.unavailable', { drive })
         if (isNetwork) return tString('search.coverage.uncovered.network', { drive })
         if (isIndexing) return tString('search.coverage.uncovered.indexing', { drive })
         return tString('search.coverage.uncovered.local', { drive })
@@ -178,9 +189,10 @@
                 {/each}
             </ul>
         {/if}
-        {#if !note.live}
+        {#if !note.live && canBeIndexed}
             <!-- An index-only answer: this run was the DEBOUNCE's, which never walks
-                 (Decision 7). So the gap it reports has a way out that costs one key. -->
+                 (Decision 7). So the gap it reports has a way out that costs one key,
+                 except on a drive no index can serve, which Enter doesn't walk either. -->
             <p class="message secondary">{tString('search.coverage.pressEnter')}</p>
         {/if}
         {#if onIndexDrive}

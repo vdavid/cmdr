@@ -379,6 +379,7 @@
         driveName={coverage.driveName}
         isNetwork={coverage.isNetwork}
         isIndexing={coverage.isIndexing}
+        canBeIndexed={coverage.canBeIndexed}
         onIndexDrive={coverage.indexDrive}
         onSilenceDrive={coverage.silenceDrive}
         onGrantFullDiskAccess={coverage.grantFullDiskAccess}

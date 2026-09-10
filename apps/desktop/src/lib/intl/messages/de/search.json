@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.unavailable": "Cmdr kann {drive} noch nicht durchsuchen, deshalb hat diese Suche Folgendes übersprungen:",
+  "@search.coverage.uncovered.unavailable": {
+    "sourceHash": "0a3f94b"
+  },
   "search.coverage.uncovered.indexing": "Cmdr indiziert {drive} noch und hat diese Ordner bisher nicht erreicht, deshalb hat die Suche sie übersprungen:",
   "@search.coverage.uncovered.indexing": {
     "sourceHash": "f5995ea"

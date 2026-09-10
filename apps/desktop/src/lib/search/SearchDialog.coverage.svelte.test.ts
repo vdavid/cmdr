@@ -262,6 +262,7 @@ function installLiveBackend(): void {
       listener({
         runId,
         phase: 'readingIndex',
+        targetVolumeId: answer.targetVolumeId ?? 'root',
         entries: answer.entries,
         matchCount: answer.totalCount,
         dirsFound: 0,
@@ -280,6 +281,9 @@ function installLiveBackend(): void {
           declined: [],
           stillCovering: [],
           unresolvedScopes: answer.unresolvedScopes ?? [],
+          // A live run reports this only for a volume no index can serve, so the fake
+          // mirrors whatever the answer says it couldn't cover.
+          uncoveredScopes: answer.uncoveredScopes ?? [],
           capped: false,
           targetVolumeId: answer.targetVolumeId ?? '',
         },
@@ -477,6 +481,49 @@ describe('the per-drive indexing offer', () => {
     await runAutoApplied(overlay, '*.pdf')
 
     expect(offerButton(target)).toBeNull()
+  })
+})
+
+describe('a server search can’t cover', () => {
+  // A server Cmdr reaches over SFTP or WebDAV has no drive index, and Cmdr can't build
+  // one for it, so the note says search isn't available there. It must not offer an
+  // index that can't exist, and must not promise that Enter reaches the folders.
+  const SERVER = {
+    id: 'sftp-nas-local-22-ada',
+    name: 'nas.local',
+    path: 'sftp://ada@nas.local:22/srv/data',
+    category: 'network',
+    fsType: 'sftp',
+    capabilities: { backendCanWrite: true, canExport: true, canBeIndexed: false },
+  }
+  const SCOPE = 'sftp://ada@nas.local:22/srv/data'
+
+  it('says plainly that search isn’t available there, and offers nothing', async () => {
+    volumesMock.mockReturnValue([SERVER])
+    searchFilesMock.mockResolvedValueOnce(result({ uncoveredScopes: [SCOPE], targetVolumeId: SERVER.id }))
+    const { overlay, target } = await mountDialog({ autoApply: true })
+
+    await runAutoApplied(overlay, '*.pdf')
+
+    const note = noteText(target)
+    expect(note).toContain(tString('search.coverage.uncovered.unavailable', { drive: 'nas.local' }))
+    expect(note).toContain(SCOPE)
+    expect(note).not.toContain(tString('search.coverage.pressEnter'))
+    expect(target.querySelectorAll('.coverage-note button')).toHaveLength(0)
+  })
+
+  it('says the same after Enter, whose live run doesn’t walk a server either', async () => {
+    volumesMock.mockReturnValue([SERVER])
+    searchFilesMock.mockResolvedValue(result({ uncoveredScopes: [SCOPE], targetVolumeId: SERVER.id }))
+    const { overlay, target } = await mountDialog()
+
+    setQuery('*.pdf')
+    await runSearch(overlay)
+
+    const note = noteText(target)
+    expect(note).toContain(tString('search.coverage.uncovered.unavailable', { drive: 'nas.local' }))
+    expect(note).toContain(SCOPE)
+    expect(target.querySelectorAll('.coverage-note button')).toHaveLength(0)
   })
 })
 

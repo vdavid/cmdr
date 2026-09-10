@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.unavailable": "Cmdr chưa thể tìm kiếm trên {drive}, nên lần tìm kiếm này đã bỏ qua:",
+  "@search.coverage.uncovered.unavailable": {
+    "sourceHash": "0a3f94b"
+  },
   "search.coverage.uncovered.indexing": "Cmdr vẫn đang lập chỉ mục {drive} và chưa tới các thư mục này, nên lượt tìm kiếm này đã bỏ qua chúng:",
   "@search.coverage.uncovered.indexing": {
     "sourceHash": "f5995ea"

@@ -2487,6 +2487,7 @@ export type MessageKey =
   | 'search.coverage.uncovered.indexing'
   | 'search.coverage.uncovered.local'
   | 'search.coverage.uncovered.network'
+  | 'search.coverage.uncovered.unavailable'
   | 'search.coverage.unnamedDrive'
   | 'search.coverage.unresolved'
   | 'search.coverage.walk.abandoned'

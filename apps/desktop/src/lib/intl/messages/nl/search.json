@@ -136,6 +136,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.unavailable": "Cmdr kan {drive} nog niet doorzoeken, dus deze zoekopdracht sloeg dit over:",
+  "@search.coverage.uncovered.unavailable": {
+    "sourceHash": "0a3f94b"
+  },
   "search.coverage.uncovered.indexing": "Cmdr is {drive} nog aan het indexeren en heeft deze mappen nog niet bereikt, dus deze zoekopdracht sloeg ze over:",
   "@search.coverage.uncovered.indexing": {
     "sourceHash": "f5995ea"

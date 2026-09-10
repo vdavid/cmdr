@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.unavailable": "Cmdr kan inte söka i {drive} än, så den här sökningen hoppade över:",
+  "@search.coverage.uncovered.unavailable": {
+    "sourceHash": "0a3f94b"
+  },
   "search.coverage.uncovered.indexing": "Cmdr indexerar fortfarande {drive} och har inte nått de här mapparna än, så den här sökningen hoppade över dem:",
   "@search.coverage.uncovered.indexing": {
     "sourceHash": "f5995ea"

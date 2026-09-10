@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.unavailable": "Cmdr 暂时还不能搜索 {drive}，因此本次搜索跳过了：",
+  "@search.coverage.uncovered.unavailable": {
+    "sourceHash": "0a3f94b"
+  },
   "search.coverage.uncovered.indexing": "Cmdr 还在为 {drive} 建立索引，还没走到这些文件夹，所以这次搜索跳过了它们：",
   "@search.coverage.uncovered.indexing": {
     "sourceHash": "f5995ea"

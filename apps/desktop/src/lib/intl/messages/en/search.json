@@ -238,6 +238,15 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
+  "search.coverage.uncovered.unavailable": "Cmdr can''t search {drive} yet, so this search skipped:",
+  "@search.coverage.uncovered.unavailable": {
+    "description": "The server version of search.coverage.uncovered.local, shown when the search was started from a server Cmdr reaches over SFTP or WebDAV. Search works by reading a drive index, and Cmdr can't build one for a server yet, so unlike the other variants there's nothing to turn on and pressing Enter won't help: no offer appears with it. It says plainly that search isn't available there, not that anything went wrong. A list of the skipped folder paths follows the colon, which is why the sentence ends open. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "drive": "the server's display name (e.g. nas.local), or the generic phrase from search.coverage.unnamedDrive when it isn't in the volume list"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
   "search.coverage.uncovered.indexing": "Cmdr is still indexing {drive} and hasn''t reached these folders yet, so this search skipped:",
   "@search.coverage.uncovered.indexing": {
     "description": "The still-being-indexed version of search.coverage.uncovered.local, shown when the drive's very first index is running right now and hasn't got to the folder searched in. It replaces the ''this drive isn''t indexed'' wording, which would read as nothing happening while indexing is under way, and no ''Index this drive'' offer appears with it. A list of the skipped folder paths follows the colon, which is why the sentence ends open. Conversational; avoid the words 'error' and 'failed'.",

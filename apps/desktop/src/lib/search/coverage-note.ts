@@ -102,23 +102,26 @@ export function coverageNoteFrom(result: SearchResult): CoverageNote | null {
  * The coverage note for a finished LIVE run, or `null` when it covered everything it
  * was asked to and finished doing so.
  *
- * There's no `uncoveredScopes` half here on purpose: a volume with no index used to be
- * the biggest gap a search could report, and a live run walks it instead. What's left
- * is what a walk genuinely can't answer for.
+ * A volume with no index is walked rather than reported, so a live run's
+ * `uncoveredScopes` is narrower than the one-shot answer's: only a volume NO index can
+ * serve (a server), which nothing walks either. What's left besides is what a walk
+ * genuinely can't answer for.
  */
 export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote | null {
   const short = coverage.walk === 'interrupted' || coverage.walk === 'cancelled' || coverage.abandonedGround
+  const uncoveredScopes = coverage.uncoveredScopes ?? []
   if (
     !short &&
     coverage.permissionDenied.length === 0 &&
     coverage.declined.length === 0 &&
     coverage.stillCovering.length === 0 &&
-    coverage.unresolvedScopes.length === 0
+    coverage.unresolvedScopes.length === 0 &&
+    uncoveredScopes.length === 0
   ) {
     return null
   }
   return {
-    uncoveredScopes: [],
+    uncoveredScopes,
     unresolvedScopes: coverage.unresolvedScopes,
     volumeId: coverage.targetVolumeId,
     live: {

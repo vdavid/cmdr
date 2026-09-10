@@ -135,6 +135,10 @@
   "@search.coverage.uncovered.network": {
     "sourceHash": "5a2794a"
   },
+  "search.coverage.uncovered.unavailable": "Cmdr ne peut pas encore rechercher dans {drive}, cette recherche a donc ignoré :",
+  "@search.coverage.uncovered.unavailable": {
+    "sourceHash": "0a3f94b"
+  },
   "search.coverage.uncovered.indexing": "Cmdr indexe encore {drive} et n''a pas encore atteint ces dossiers, donc cette recherche les a ignorés :",
   "@search.coverage.uncovered.indexing": {
     "sourceHash": "f5995ea"

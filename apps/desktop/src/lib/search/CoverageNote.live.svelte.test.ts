@@ -43,6 +43,7 @@ function noteText(note: Note | null, onGrantFullDiskAccess: (() => void) | null 
       driveName: 'Backups',
       isNetwork: false,
       isIndexing,
+      canBeIndexed: true,
       onIndexDrive: null,
       onSilenceDrive: () => {},
       onGrantFullDiskAccess,
