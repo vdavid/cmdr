@@ -11,8 +11,8 @@ covers local models, and image search runs an on-device CLIP model with no provi
 **We pay nothing for inference; the user brings and funds their own key.** Consequences:
 
 - A perpetual license with unlimited AI carries no growing cost liability for us. Bundled inference would.
-- Equally, "AI has to be paid to keep this sustainable" is a weaker story than it would be with inference on us. A
-  paid AI tier sells the integration, not the tokens.
+- Equally, "AI has to be paid to keep this sustainable" is a weaker story than it would be with inference on us. A paid
+  AI tier sells the integration, not the tokens.
 - AI adoption sits around 12% of installs. That is partly setup friction (sign up with a provider, create a key, paste
   it), so read it as a friction number as much as a value verdict.
 
@@ -20,12 +20,12 @@ covers local models, and image search runs an on-device CLIP model with no provi
 
 Cmdr is free for personal use and requires a license for commercial use. That is not a pure honour system:
 
-- **"Personal use only" is always in the main window title.** Awkward to screen-share in a work meeting, and visible
-  to an IT department.
+- **"Personal use only" is always in the main window title.** Awkward to screen-share in a work meeting, and visible to
+  an IT department.
 - **A monthly reminder shows for all unlicensed users.**
-- The app indexes the user's files, so it can escalate the reminder when it recognises likely work-use patterns.
-  **Not implemented yet**, and it is the largest remaining lever on compliance. Agentic feature usage would make that
-  signal stronger still.
+- The app indexes the user's files, so it can escalate the reminder when it recognises likely work-use patterns. **Not
+  implemented yet**, and it is the largest remaining lever on compliance. Agentic feature usage would make that signal
+  stronger still.
 
 Model compliance meaningfully above the rate an unenforced honour system would get.
 
@@ -41,8 +41,8 @@ rather than a heavy undercount, which is unusual and makes the funnel trustworth
 
 ## Distribution and payments
 
-- macOS only today. Signed and notarized, distributed as a direct DMG download plus Homebrew, with a self-hosted
-  updater that preserves Full Disk Access across updates.
+- macOS only today. Signed and notarized, distributed as a direct DMG download plus Homebrew, with a self-hosted updater
+  that preserves Full Disk Access across updates.
 - Paddle is the merchant of record, so it handles VAT and sales tax. EU business buyers with a VAT number are
   reverse-charged; individuals buying personally pay VAT-inclusive.
 - Source-available under BSL 1.1, converting to AGPL-3.0 after three years. See `licensing.md`.

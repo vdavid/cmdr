@@ -91,8 +91,8 @@ Writing them:
   settings screen, window, or form control: `docs/guides/building-ui.md` (house primitives, and where each deeper doc
   lives). Two "icon" docs: a UI glyph is `docs/guides/icons.md`; the app icon and every logo raster come from
   `brand/logos/cmdr.svg` via `docs/guides/updating-icon.md`.
-- **Debugging a running app / reading logs**: [This](docs/tooling/logging.md) is the first stop, before `Console.app`
-  or grepping code. All (FE & BE) log paths, format, and `RUST_LOG` recipes. RAM per line: `CMDR_LOG_RAM_USE=1`.
+- **Debugging a running app / reading logs**: [This](docs/tooling/logging.md) is the first stop, before `Console.app` or
+  grepping code. All (FE & BE) log paths, format, and `RUST_LOG` recipes. RAM per line: `CMDR_LOG_RAM_USE=1`.
 - **A report from a USER** (`ERR-XXXXX`, a crash, in-app feedback): `docs/tooling/feedback-and-error-digest.md`. The
   logging doc above covers the LOCAL app and won't find one.
 - **Branding / marketing**: `brand/CLAUDE.md`, `apps/website/`, and `README.md`. You don't need app internals.
