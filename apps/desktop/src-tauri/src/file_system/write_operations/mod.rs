@@ -746,6 +746,10 @@ mod network_transfer_test_support;
 // No Docker, so these run in the unit lane.
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod adb_transfer_test;
+// A phone's drive index end to end: the scan over the fake server, a Cmdr copy
+// and delete patching it, an unplug mid-scan, and another phone's path kept out.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod adb_index_test;
 #[cfg(test)]
 mod scan_bridge_tests;
 #[cfg(test)]

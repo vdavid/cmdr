@@ -29,11 +29,12 @@ use crate::file_system::index_provider::AppVolumeProvider;
 use crate::test_support::wait_until_async;
 
 /// A backstop for a whole walk of the fake phone, far above the fraction of a
-/// second it takes on loopback.
-const WALK_BUDGET: Duration = Duration::from_secs(20);
+/// second it takes on loopback, and under nextest's slow-test cutoff so a stuck
+/// wait fails with its own message rather than a bare timeout.
+const WALK_BUDGET: Duration = Duration::from_secs(6);
 
 /// A backstop for one patch to reach the index's writer and commit.
-const PATCH_BUDGET: Duration = Duration::from_secs(10);
+const PATCH_BUDGET: Duration = Duration::from_secs(5);
 
 // ── Fixtures ─────────────────────────────────────────────────────────
 
@@ -87,9 +88,11 @@ fn size_under(index: &Index, dir: &str) -> Option<u64> {
     index.dir_stats(dir).ok().flatten().map(|stats| stats.recursive_size)
 }
 
-/// How many sync sessions the phone has been asked to open so far.
-fn sync_sessions(fake: &FakeAdbServer) -> usize {
-    fake.requests().iter().filter(|request| *request == "sync:").count()
+/// How many requests the fake server has received so far. ❗ Every request, not
+/// only `sync:`: with answers held, a new socket parks on its first request
+/// (`host:transport:<serial>`) and never gets to ask for the sync service.
+fn requests_seen(fake: &FakeAdbServer) -> usize {
+    fake.requests().len()
 }
 
 /// A file entry for a change a listing host would report.
@@ -175,8 +178,8 @@ async fn a_cmdr_copy_onto_a_phone_and_a_delete_on_it_patch_its_index() {
     running.settle().await;
     running.assert_no_errors();
 
-    wait_until_async(PATCH_BUDGET, "the copy's patch to reach the phone's index", || {
-        size_under(&index, &scratch) == Some(4096)
+    wait_until_async(PATCH_BUDGET, "the copied file's row to reach the phone's index", || {
+        names_under(&index, &scratch).contains(&"uploaded.bin".to_string())
     })
     .await;
     assert_eq!(
@@ -184,6 +187,10 @@ async fn a_cmdr_copy_onto_a_phone_and_a_delete_on_it_patch_its_index() {
         vec!["uploaded.bin"],
         "the copy is one row under its own name, and no staging name it passed through is left as a row"
     );
+    wait_until_async(PATCH_BUDGET, "the copied bytes to reach the folder's size", || {
+        size_under(&index, &scratch) == Some(4096)
+    })
+    .await;
 
     let events = CollectorEventSink::new();
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
@@ -203,7 +210,7 @@ async fn a_cmdr_copy_onto_a_phone_and_a_delete_on_it_patch_its_index() {
         names_under(&index, &scratch).is_empty()
     })
     .await;
-    wait_until_async(PATCH_BUDGET, "the delete's bytes to leave the folder's size", || {
+    wait_until_async(PATCH_BUDGET, "the deleted bytes to leave the folder's size", || {
         size_under(&index, &scratch) == Some(0)
     })
     .await;
@@ -234,7 +241,7 @@ async fn a_phone_unplugged_mid_walk_stops_the_walk_and_reads_stale() {
     // Park every answer, so the walk is provably waiting on the phone when the
     // cable comes out. Nothing before the walk talks to the phone: the scan's
     // disk-usage probe asks the Mac about an `adb://` path and gets nothing.
-    let sessions_before = sync_sessions(&phone.fake);
+    let requests_before = requests_seen(&phone.fake);
     phone.fake.hold_answers();
     assert_eq!(
         index
@@ -244,7 +251,7 @@ async fn a_phone_unplugged_mid_walk_stops_the_walk_and_reads_stale() {
         StartOutcome::Started
     );
     wait_until_async(WALK_BUDGET, "the walk to ask the phone for a listing", || {
-        sync_sessions(&phone.fake) > sessions_before
+        requests_seen(&phone.fake) > requests_before
     })
     .await;
 

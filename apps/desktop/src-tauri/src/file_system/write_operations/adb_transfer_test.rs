@@ -49,14 +49,15 @@ const SETTLE_BUDGET: Duration = Duration::from_secs(6);
 // ── Fixtures ─────────────────────────────────────────────────────────
 
 /// A phone the app has dialed the way a pane does, and a scratch folder of its
-/// own on the shared storage. Retires the phone on drop.
-struct DialedPhone {
-    fake: FakeAdbServer,
+/// own on the shared storage. Retires the phone on drop. Shared with
+/// `adb_index_test.rs`, whose cells need the app's own listing host behind it.
+pub(super) struct DialedPhone {
+    pub(super) fake: FakeAdbServer,
     serial: &'static str,
-    volume_id: String,
-    volume: Arc<dyn Volume>,
+    pub(super) volume_id: String,
+    pub(super) volume: Arc<dyn Volume>,
     /// `adb://<serial>/sdcard/<what>`, the spelling a pane holds.
-    dir: PathBuf,
+    pub(super) dir: PathBuf,
     /// The same folder as the device names it.
     device_dir: String,
 }
@@ -69,7 +70,12 @@ impl Drop for DialedPhone {
 }
 
 async fn dialed_phone(serial: &'static str, what: &str) -> DialedPhone {
-    let fake = a_listed_phone(serial, FakeTree::new()).await;
+    dialed_phone_with(serial, what, FakeTree::new()).await
+}
+
+/// [`dialed_phone`] over a tree of the cell's own.
+pub(super) async fn dialed_phone_with(serial: &'static str, what: &str, tree: FakeTree) -> DialedPhone {
+    let fake = a_listed_phone(serial, tree).await;
     let (volume_id, volume) = dial(&fake, serial, &format!("adb-transfer-{what}")).await;
     let device_dir = format!("/sdcard/{what}");
     let dir = PathBuf::from(format!("{}{device_dir}", cmdr_fs::volume::adb_app_root(serial)));
@@ -88,10 +94,11 @@ async fn dialed_phone(serial: &'static str, what: &str) -> DialedPhone {
 }
 
 /// A local folder registered under an id of its own, so a copy starts from two
-/// ids the way the transfer dialog's does. Unregisters on drop.
-struct RegisteredLocal {
-    dir: TestDir,
-    volume_id: String,
+/// ids the way the transfer dialog's does. Unregisters on drop. Shared with
+/// `adb_index_test.rs`.
+pub(super) struct RegisteredLocal {
+    pub(super) dir: TestDir,
+    pub(super) volume_id: String,
 }
 
 impl Drop for RegisteredLocal {
@@ -100,7 +107,7 @@ impl Drop for RegisteredLocal {
     }
 }
 
-fn registered_local(what: &str) -> RegisteredLocal {
+pub(super) fn registered_local(what: &str) -> RegisteredLocal {
     let dir = TestDir::new(what);
     let volume_id = format!("adb-transfer-local-{}", uuid::Uuid::new_v4());
     get_volume_manager().register(&volume_id, Arc::new(LocalPosixVolume::new("Local", &*dir)));
