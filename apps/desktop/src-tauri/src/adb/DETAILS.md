@@ -63,19 +63,30 @@ caught up. That backoff is for a server that exists and went away; a MISSING `ad
 
 **Connect**: `connect_adb_device(serial, attempt_id)` answers an already-dialed volume's id without a second dial;
 otherwise it files `attempt_id` in this module's own `AttemptTable` (`network/connect_wiring.rs`, ADB's table is its
-own so a stray cancel from another backend's sign-in can't reach in) and
-`cmdr_adb::connect_adb_volume(params, host, cancel)` runs the crate's four phases, the volume goes in through
-`VolumeManager::register_if_absent` (never `register`: no OS mount can pre-register the id, and a repeated connect
-must not retire a volume a pane is using), is remembered by serial, and `notify_devices_changed("adb")` lets
-`volume_listing::complete` enrich the entry with its capabilities. Errors cross IPC as `AdbConnectOutcomeError`, a
+own so a stray cancel from another backend's sign-in can't reach in) and gets in line for the serial's dial.
+
+❗ **At most one wire dial per serial** (`volume_wiring.rs`'s `IN_FLIGHT`). The Allow tap is exactly when several
+callers reach for one phone at once (a second pane, a retry), and dialing each on its own would register the FIRST
+volume but remember the LAST, so eject and `note_device_gone` would reach a volume no pane uses. A caller
+that finds a dial running JOINS it and gets its answer; otherwise it starts one, a spawned task running
+`cmdr_adb::connect_adb_volume(params, host, wire)`. The volume goes in through `VolumeManager::register_if_absent`
+(never `register`: no OS mount can pre-register the id, and a connect must not retire a volume a pane is using), the
+SAME `Arc` is remembered by serial, and `notify_devices_changed("adb")` lets `volume_listing::complete` enrich the entry
+with its capabilities. One lock covers joining, withdrawing, and the dial's register-and-publish, so a caller that looks
+again under it finds a volume that just landed rather than dialing a second time. Errors cross IPC as
+`AdbConnectOutcomeError`, a
 typed mirror of `AdbConnectError` (`AdbNotInstalled`, `ServerUnreachable`, `DeviceGone`, `Unauthorized`,
 `DeviceTooOld`, `TimedOut`, `Cancelled`, `Transport`); the frontend words each one in `adb-connect-errors.ts`.
 
 **Cancel**: the id is the CALLER's, minted before the call, because a phone can sit on its "Allow USB debugging?"
 prompt for as long as nobody picks it up and the pane has to arm its cancel button while that is happening.
 `cancel_adb_connect(attempt_id)` answers whether a dial was running; a `false` is ordinary (a cancel racing a dial
-that just finished finds nothing filed). A called-off dial leaves nothing behind: no volume registered, nothing
-remembered, no `volumes-changed`. The one dial nobody mints an id for is a pane walking onto an `adb://` path, which
+that just finished finds nothing filed). ❗ A cancel is per ATTEMPT, never per dial: the called-off attempt answers
+`Cancelled` at once, and the wire dial is called off only when its last joined attempt is gone (two panes on one phone
+is the realistic case). A claim is withdrawn however its attempt ends, a dropped future included, so the last one
+leaving always calls the dial off. A called-off dial leaves nothing behind: no volume registered, nothing remembered,
+no `volumes-changed`. An attempt cancelled in the same instant its dial published keeps the dial's real answer,
+because the volume is really there. The one dial nobody mints an id for is a pane walking onto an `adb://` path, which
 files under `adb-navigation:<serial>` so a repeat navigation replaces only its own entry.
 
 **Eject**: `eject.rs` asks `provider_for_volume_id`, gets this provider, and answers
@@ -125,7 +136,9 @@ for good is unplugged, or revoked on the phone.
 ## Testing
 
 Suites here drive `cmdr_adb::testing::FakeAdbServer` (the crate's `testing` feature is on for the app's dev targets).
-`volume_wiring_test.rs` holds calling a dial off, the settings' live apply, the binary-path fallback, and a pane
+`volume_wiring_test.rs` holds calling a dial off, one dial per phone (three concurrent callers, a joined attempt
+cancelled while the other waits, every joined attempt cancelled; each holds the fake's answers so every caller is
+provably in line first), the settings' live apply, the binary-path fallback, and a pane
 listing a dialed phone through `read_directory_with_progress` on an `adb://<serial>/sdcard` path (the cell that holds
 the prefixed spelling end to end); `device_provider.rs` holds the provider's row answers and `serial_of_path`. Not
 covered here yet: the tracker's diff and inline retirement, eject, `resolve_path_to_volume` dialing, and the transfer

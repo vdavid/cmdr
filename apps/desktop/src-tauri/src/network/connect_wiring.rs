@@ -100,6 +100,14 @@ impl AttemptTable {
         log::info!(target: "volume", "{} connect was called off", self.backend);
         true
     }
+
+    /// Whether an attempt is filed under `attempt_id`, without touching it: how a
+    /// cell waits for a spawned connect to be cancelable when calling it off
+    /// would change what it is testing.
+    #[cfg(test)]
+    pub fn is_filed(&self, attempt_id: &str) -> bool {
+        self.entries.lock_ignore_poison().contains_key(attempt_id)
+    }
 }
 
 /// Takes one attempt's entry out of the table when its connect ends, however it

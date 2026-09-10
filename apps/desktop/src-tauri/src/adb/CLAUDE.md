@@ -25,6 +25,9 @@ commands. The wire and the `Volume` are `crates/cmdr-adb/`. As in `mtp/volume_wi
   debugging?" tap has no session, and the reconnect backoff would dial nothing forever.
 - **❗ A dial is cancelable and the attempt id is the CALLER's**, filed before the wire is touched so a pane can arm
   its cancel button first. A navigation's own dial files under `adb-navigation:<serial>`.
+- **❗ At most one wire dial per serial; later callers JOIN it.** A cancel answers its own attempt at once; the wire
+  dial goes only when no joined attempt still wants it. ❌ Never register or remember a volume outside that one dial,
+  or the registry and the provider hold different volumes.
 - **❗ The tracker callback (`apply_device_list`) is synchronous and unregisters inline.** ❌ Never spawn from it, or a
   pane keeps a dead volume until the task gets scheduled.
 - **❗ Turning `fileOperations.adbEnabled` off empties the cached list, not only the tracker**, or the last list stays

@@ -25,6 +25,9 @@
 //! [`FakeAdbServer::drop_connections`] kills every open socket (a tracker sees
 //! its stream end and reconnects); [`FakeAdbServer::stop`] closes the listener
 //! too. [`FakeTree::read_only`] makes every write answer `EROFS`.
+//! [`FakeAdbServer::hold_answers`] parks every request until
+//! [`FakeAdbServer::release_answers`], and [`FakeAdbServer::requests`] records
+//! what arrived, so a cell can count dials or prove nothing dialed.
 
 //! Module map: `tree` (the filesystem model), `server` (the listener and the
 //! wire), `shell` (the device-shell verbs).

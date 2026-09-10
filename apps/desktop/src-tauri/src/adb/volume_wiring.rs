@@ -5,11 +5,16 @@
 //! and the volume registry, and neither of those knows this module: the same
 //! shape `mtp::volume_wiring` and `network::sftp_volume_wiring` take.
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
-use cmdr_adb::{AdbConnectError, AdbConnectionParams, AdbEndpoint, DeviceTracker};
+use cmdr_adb::{AdbConnectError, AdbConnectionParams, AdbEndpoint, AdbVolume, DeviceTracker};
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::volume::Volume;
+use tokio::sync::watch;
+use tokio_util::sync::CancellationToken;
 
 use super::device_provider::{self, AdbDeviceProvider};
 use crate::device_volumes::{notify_devices_changed, register_device_provider};
@@ -170,10 +175,12 @@ pub async fn connect_adb_device(serial: &str, attempt_id: &str) -> Result<String
 
 /// The dial itself, against whichever server `params` names.
 ///
-/// `register_if_absent`, never `register`: an ADB device has no OS mount, so
-/// nothing else can pre-register its id, and a repeated connect must not retire
-/// a volume the pane is using. ❗ A called-off dial leaves nothing behind: no
-/// volume registered, nothing remembered, no `volumes-changed`.
+/// ❗ **At most one wire dial per serial.** A caller arriving while one runs
+/// JOINS it and gets its answer; the Allow tap is exactly when several callers
+/// reach for one phone at once. The cancel stays per-attempt: a called-off
+/// attempt answers `Cancelled` at once, and the wire dial is called off only
+/// when no joined attempt still wants it. A called-off dial leaves nothing
+/// behind: no volume registered, nothing remembered, no `volumes-changed`.
 pub(crate) async fn connect_device_at(
     params: AdbConnectionParams,
     attempt_id: &str,
@@ -181,16 +188,221 @@ pub(crate) async fn connect_device_at(
     if let Some(volume) = device_provider::connected_volume(&params.serial) {
         return Ok(volume.volume_id().to_string());
     }
-    let serial = params.serial.clone();
     let (cancel, _attempt) = ATTEMPTS.register(attempt_id);
-    let volume = cmdr_adb::connect_adb_volume(params, crate::volume_host::host(), cancel).await?;
+    let mut claim = match join_dial(params) {
+        Joined::AlreadyOpen(volume_id) => return Ok(volume_id),
+        Joined::Waiting(claim) => claim,
+    };
+    tokio::select! {
+        biased;
+        outcome = claim.outcome() => return outcome,
+        () = cancel.cancelled() => {}
+    }
+    // Called off. A dial that answered in the same instant keeps its real
+    // answer, because its volume is really there.
+    claim.withdraw().unwrap_or(Err(AdbConnectError::Cancelled))
+}
+
+// ============================================================================
+// One wire dial per phone
+// ============================================================================
+
+/// What a finished wire dial answers every attempt that joined it; `None` while
+/// it runs.
+type DialOutcome = Option<Result<String, AdbConnectError>>;
+
+/// The wire dial running for one serial, and how many attempts still want it.
+struct InFlightDial {
+    /// Tells this dial apart from a later one for the same serial, so a dial
+    /// winding down after being called off only ever removes its OWN entry.
+    generation: u64,
+    /// Calls the wire dial off. ❗ Fired only when the last claim is withdrawn,
+    /// ❌ never by one attempt's cancel.
+    wire: CancellationToken,
+    wanted_by: usize,
+    outcome: watch::Receiver<DialOutcome>,
+}
+
+/// The dials running now, by serial.
+///
+/// ❗ One lock covers joining, withdrawing, and a dial's registering and
+/// publishing, so a withdrawal either lands while the dial still runs (and a
+/// dial nobody wants then registers nothing) or finds its answer published.
+static IN_FLIGHT: Mutex<BTreeMap<String, InFlightDial>> = Mutex::new(BTreeMap::new());
+
+static NEXT_DIAL_GENERATION: AtomicU64 = AtomicU64::new(0);
+
+/// What getting in line for a phone's dial handed back.
+enum Joined {
+    /// A dial finished while the caller was getting in line.
+    AlreadyOpen(String),
+    /// Waiting on the dial running for this serial.
+    Waiting(DialClaim),
+}
+
+/// One attempt's claim on a phone's dial.
+///
+/// ❗ Withdrawn however the attempt ends (answered, cancelled, or its future
+/// dropped), so the last attempt to stop wanting a dial always calls it off.
+struct DialClaim {
+    serial: String,
+    generation: u64,
+    outcome: watch::Receiver<DialOutcome>,
+    withdrawn: bool,
+}
+
+impl DialClaim {
+    /// The dial's answer, once it has one.
+    async fn outcome(&mut self) -> Result<String, AdbConnectError> {
+        let published = self
+            .outcome
+            .wait_for(Option::is_some)
+            .await
+            .map(|outcome| (*outcome).clone());
+        match published {
+            Ok(Some(result)) => result,
+            // The sender went away unanswered: the dial task itself is gone.
+            Ok(None) | Err(_) => Err(AdbConnectError::Transport(
+                "the dial ended without answering".to_string(),
+            )),
+        }
+    }
+
+    /// Stops wanting the dial, calling it off if nobody else does. Answers the
+    /// dial's own outcome when it had already published one.
+    fn withdraw(&mut self) -> Option<Result<String, AdbConnectError>> {
+        if std::mem::replace(&mut self.withdrawn, true) {
+            return None;
+        }
+        let mut dials = IN_FLIGHT.lock_ignore_poison();
+        match dials.get_mut(&self.serial).filter(|d| d.generation == self.generation) {
+            Some(dial) => {
+                dial.wanted_by = dial.wanted_by.saturating_sub(1);
+                if dial.wanted_by == 0 {
+                    dial.wire.cancel();
+                }
+                None
+            }
+            // The dial left the table, and it publishes before letting go of
+            // the lock, so its answer is already there.
+            None => self.outcome.borrow().clone(),
+        }
+    }
+}
+
+impl Drop for DialClaim {
+    fn drop(&mut self) {
+        // allowed-discarded-outcome: an attempt that already has its answer, or whose future was dropped, has nobody to hand the dial's answer to.
+        let _ = self.withdraw();
+    }
+}
+
+/// Joins the dial running for `params.serial`, or starts one.
+fn join_dial(params: AdbConnectionParams) -> Joined {
+    let mut dials = IN_FLIGHT.lock_ignore_poison();
+    // ❗ Asked again under the lock: a dial registers and leaves the table under
+    // it, so a volume that landed since the caller's first look is found here
+    // rather than dialed a second time.
+    if let Some(volume) = device_provider::connected_volume(&params.serial) {
+        return Joined::AlreadyOpen(volume.volume_id().to_string());
+    }
+    // A dial everyone already walked away from is winding down; the new caller
+    // gets a fresh one rather than an answer of `Cancelled` it never asked for.
+    if let Some(dial) = dials.get_mut(&params.serial).filter(|d| !d.wire.is_cancelled()) {
+        dial.wanted_by += 1;
+        return Joined::Waiting(DialClaim {
+            serial: params.serial.clone(),
+            generation: dial.generation,
+            outcome: dial.outcome.clone(),
+            withdrawn: false,
+        });
+    }
+    let generation = NEXT_DIAL_GENERATION.fetch_add(1, Ordering::Relaxed);
+    let wire = CancellationToken::new();
+    let (answer, outcome) = watch::channel(None);
+    let serial = params.serial.clone();
+    dials.insert(
+        serial.clone(),
+        InFlightDial {
+            generation,
+            wire: wire.clone(),
+            wanted_by: 1,
+            outcome: outcome.clone(),
+        },
+    );
+    tokio::spawn(run_dial(params, generation, wire, answer));
+    Joined::Waiting(DialClaim {
+        serial,
+        generation,
+        outcome,
+        withdrawn: false,
+    })
+}
+
+/// The one wire dial for a serial: connects, registers, and answers everyone
+/// who joined.
+async fn run_dial(
+    params: AdbConnectionParams,
+    generation: u64,
+    wire: CancellationToken,
+    answer: watch::Sender<DialOutcome>,
+) {
+    let serial = params.serial.clone();
+    let dialed = cmdr_adb::connect_adb_volume(params, crate::volume_host::host(), wire.clone()).await;
+    let opened = {
+        let mut dials = IN_FLIGHT.lock_ignore_poison();
+        let outcome = match dialed {
+            // Every claim was withdrawn while the last round-trip answered.
+            Ok(_) if wire.is_cancelled() => Err(AdbConnectError::Cancelled),
+            Ok(volume) => Ok(install_volume(&serial, volume)),
+            Err(error) => Err(error),
+        };
+        if dials.get(&serial).is_some_and(|d| d.generation == generation) {
+            dials.remove(&serial);
+        }
+        let opened = outcome.is_ok();
+        answer.send_replace(Some(outcome));
+        opened
+    };
+    if opened {
+        notify_devices_changed("adb");
+    }
+}
+
+/// Registers a freshly dialed volume and remembers the SAME `Arc` by serial, so
+/// eject, `note_device_gone`, and `space_for_path` reach the volume panes list.
+///
+/// `register_if_absent`, never `register`: an ADB device has no OS mount, so
+/// nothing else can pre-register its id, and a connect must not retire a volume
+/// a pane is using.
+fn install_volume(serial: &str, volume: AdbVolume) -> String {
     let volume_id = volume.volume_id().to_string();
     let volume = Arc::new(volume);
-    get_volume_manager().register_if_absent(&volume_id, Arc::clone(&volume) as Arc<dyn cmdr_fs::volume::Volume>);
-    device_provider::remember_volume(&serial, volume);
-    log::info!(target: "volume", "registered ADB volume {volume_id}");
-    notify_devices_changed("adb");
-    Ok(volume_id)
+    if get_volume_manager().register_if_absent(&volume_id, Arc::clone(&volume) as Arc<dyn Volume>) {
+        device_provider::remember_volume(serial, volume);
+        log::info!(target: "volume", "registered ADB volume {volume_id}");
+    } else {
+        // ❗ Not remembered: the provider only ever names the volume the
+        // registry holds, and the registry kept its incumbent.
+        log::warn!(target: "volume", "ADB volume {volume_id} was already registered; keeping that one");
+    }
+    volume_id
+}
+
+/// How many attempts are waiting on the dial for `serial`, for cells that have
+/// to know every caller joined before the dial may answer.
+#[cfg(test)]
+fn attempts_waiting_on(serial: &str) -> usize {
+    IN_FLIGHT
+        .lock_ignore_poison()
+        .get(serial)
+        .map_or(0, |dial| dial.wanted_by)
+}
+
+/// Whether a wire dial for `serial` is still running.
+#[cfg(test)]
+fn dial_in_flight(serial: &str) -> bool {
+    IN_FLIGHT.lock_ignore_poison().contains_key(serial)
 }
 
 /// The volume id for an `adb://<serial>[/…]` path, dialing the device on first

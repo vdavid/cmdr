@@ -70,6 +70,184 @@ async fn cancelling_an_id_nobody_is_dialing_under_is_a_plain_no() {
     assert!(!cancel_connect("adb-nothing-is-filed-under-this"));
 }
 
+/// A fake server listing one ready phone under `serial`.
+async fn a_fake_phone(serial: &str) -> cmdr_adb::testing::FakeAdbServer {
+    let mut tree = cmdr_adb::testing::FakeTree::new();
+    tree.add_dir("/sdcard");
+    let fake = cmdr_adb::testing::FakeAdbServer::start(tree).await;
+    fake.push_devices(vec![cmdr_adb::AdbDevice {
+        serial: serial.to_string(),
+        ..cmdr_adb::testing::fake_device()
+    }]);
+    fake
+}
+
+/// How many dials reached `fake`: a connect opens with exactly one
+/// `host:devices-l`, and nothing else these cells run asks for it.
+fn dials_seen(fake: &cmdr_adb::testing::FakeAdbServer) -> usize {
+    fake.requests().iter().filter(|r| *r == "host:devices-l").count()
+}
+
+/// Waits until `attempt_id` is filed AND `waiting` attempts are in line for the
+/// dial on `serial`, without calling anything off. Filing and joining happen in
+/// one poll, but a probe from another thread can still land between the two.
+async fn wait_until_joined(attempt_id: &str, serial: &str, waiting: usize) {
+    crate::test_support::wait_until_async(
+        std::time::Duration::from_secs(5),
+        "the adb connect attempt to be filed and in line for the dial",
+        || ATTEMPTS.is_filed(attempt_id) && attempts_waiting_on(serial) == waiting,
+    )
+    .await;
+}
+
+/// Whether the registry and the provider hold the very same volume for
+/// `serial`: the one panes list through, and the one eject, `note_device_gone`,
+/// and `space_for_path` reach.
+fn registry_and_provider_agree(serial: &str) -> bool {
+    let id = cmdr_fs::volume::adb_volume_id(serial);
+    match (get_volume_manager().get(&id), device_provider::connected_volume(serial)) {
+        (Some(registered), Some(remembered)) => std::ptr::addr_eq(Arc::as_ptr(&registered), Arc::as_ptr(&remembered)),
+        _ => false,
+    }
+}
+
+fn retire_phone(serial: &str) {
+    get_volume_manager().unregister(&cmdr_fs::volume::adb_volume_id(serial));
+    device_provider::forget_volume(serial);
+}
+
+/// ❗ The moment a user taps Allow, several callers reach for the same phone at
+/// once. Dialing each on its own registers the FIRST volume and remembers the
+/// LAST, so eject and `note_device_gone` reach a volume no pane is using.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn concurrent_connects_to_one_phone_share_one_dial_and_one_volume() {
+    const SERIAL: &str = "R58M-Single-Flight";
+    let fake = a_fake_phone(SERIAL).await;
+    // Held, so every caller is provably in before the dial can answer.
+    fake.hold_answers();
+    let attempts = ["adb-single-flight-1", "adb-single-flight-2", "adb-single-flight-3"];
+    let dials: Vec<_> = attempts
+        .iter()
+        .map(|id| tokio::spawn(connect_device_at(AdbConnectionParams::at(SERIAL, fake.endpoint()), id)))
+        .collect();
+    for id in attempts {
+        wait_until_joined(id, SERIAL, 3).await;
+    }
+    fake.release_answers();
+
+    for dial in dials {
+        let volume_id = dial.await.expect("the dial task ran").expect("the fake phone dials");
+        assert_eq!(volume_id, cmdr_fs::volume::adb_volume_id(SERIAL));
+    }
+    assert_eq!(
+        dials_seen(&fake),
+        1,
+        "three callers share one dial on the wire; requests: {:?}",
+        fake.requests()
+    );
+    assert!(
+        registry_and_provider_agree(SERIAL),
+        "the provider remembers exactly the volume the registry holds"
+    );
+    retire_phone(SERIAL);
+}
+
+/// ❗ Two panes on one phone join one dial, and a cancel is the CALLER's: the
+/// pane that called its attempt off hears `Cancelled` straight away, while the
+/// dial the other pane still wants runs on and opens the phone for it.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn cancelling_one_joined_attempt_leaves_the_dial_to_the_one_still_waiting() {
+    const SERIAL: &str = "R58M-Joined-Cancel";
+    let fake = a_fake_phone(SERIAL).await;
+    fake.hold_answers();
+    let staying = tokio::spawn(connect_device_at(
+        AdbConnectionParams::at(SERIAL, fake.endpoint()),
+        "adb-joined-staying",
+    ));
+    wait_until_joined("adb-joined-staying", SERIAL, 1).await;
+    let leaving = tokio::spawn(connect_device_at(
+        AdbConnectionParams::at(SERIAL, fake.endpoint()),
+        "adb-joined-leaving",
+    ));
+    wait_until_joined("adb-joined-leaving", SERIAL, 2).await;
+
+    assert!(cancel_connect("adb-joined-leaving"));
+    // Answered while the server is still holding: nothing waits on the wire.
+    let left = leaving.await.expect("the leaving dial task ran");
+    assert!(
+        matches!(left, Err(AdbConnectError::Cancelled)),
+        "the attempt called off says so at once; got {left:?}"
+    );
+
+    fake.release_answers();
+    let volume_id = staying
+        .await
+        .expect("the staying dial task ran")
+        .expect("the attempt nobody called off still opens the phone");
+    assert_eq!(volume_id, cmdr_fs::volume::adb_volume_id(SERIAL));
+    assert_eq!(
+        dials_seen(&fake),
+        1,
+        "the second pane joined the first one's dial; requests: {:?}",
+        fake.requests()
+    );
+    assert!(registry_and_provider_agree(SERIAL));
+    retire_phone(SERIAL);
+}
+
+/// ❗ Once the LAST joined attempt is called off, the wire dial goes too, and
+/// it leaves nothing behind: no volume registered, nothing remembered.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_dial_every_joined_attempt_called_off_leaves_nothing_behind() {
+    const SERIAL: &str = "R58M-All-Called-Off";
+    let fake = a_fake_phone(SERIAL).await;
+    fake.hold_answers();
+    let first = tokio::spawn(connect_device_at(
+        AdbConnectionParams::at(SERIAL, fake.endpoint()),
+        "adb-called-off-first",
+    ));
+    wait_until_joined("adb-called-off-first", SERIAL, 1).await;
+    let second = tokio::spawn(connect_device_at(
+        AdbConnectionParams::at(SERIAL, fake.endpoint()),
+        "adb-called-off-second",
+    ));
+    wait_until_joined("adb-called-off-second", SERIAL, 2).await;
+
+    assert!(cancel_connect("adb-called-off-first"));
+    assert!(cancel_connect("adb-called-off-second"));
+    for dial in [first, second] {
+        let outcome = dial.await.expect("the dial task ran");
+        assert!(matches!(outcome, Err(AdbConnectError::Cancelled)), "got {outcome:?}");
+    }
+
+    // Answers flow again, so a dial that was NOT called off would now finish
+    // and register. Waiting for the dial to leave the table is what makes the
+    // absence below a real observation.
+    fake.release_answers();
+    crate::test_support::wait_until_async(
+        std::time::Duration::from_secs(5),
+        "the called-off dial to wind down",
+        || !dial_in_flight(SERIAL),
+    )
+    .await;
+    assert!(
+        device_provider::connected_volume(SERIAL).is_none(),
+        "nothing remembered"
+    );
+    assert!(
+        get_volume_manager()
+            .get(&cmdr_fs::volume::adb_volume_id(SERIAL))
+            .is_none(),
+        "nothing registered"
+    );
+    assert_eq!(
+        dials_seen(&fake),
+        1,
+        "one dial, called off; requests: {:?}",
+        fake.requests()
+    );
+}
+
 /// ❗ Turning ADB off has to take the ROWS away too, not only the subscription:
 /// a stopped tracker on its own leaves the last device list frozen on screen and
 /// its volumes registered, so the phone looks browsable and answers nothing.

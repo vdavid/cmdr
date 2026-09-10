@@ -68,8 +68,9 @@ impl From<std::io::Error> for AdbError {
 ///
 /// A typed value rather than a message, because the app branches on it: an
 /// absent binary, an unauthorized phone, and a device too old for `shell_v2`
-/// each put a different thing in front of the user.
-#[derive(Debug)]
+/// each put a different thing in front of the user. `Clone` because one dial
+/// answers every caller that joined it.
+#[derive(Debug, Clone)]
 pub enum AdbConnectError {
     /// No `adb` binary anywhere [`crate::server::locate_adb_binary`] looks, so
     /// an absent server can't be started.

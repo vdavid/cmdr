@@ -185,7 +185,9 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
   server** in `crates/cmdr-adb/src/testing/` (`FakeAdbServer` in `server.rs`, the filesystem model in `tree.rs`, the
   shell verbs in `shell.rs`): a loopback `TcpListener` speaking the host framing, `host:transport`,
   `host-serial:<serial>:features`, `sync:` (both v1 and v2 verbs), and `shell,v2,raw:` over an in-memory `FakeTree`,
-  plus `host:track-devices` with `push_devices` for scripted hotplug and `drop_connections` / `stop` for faults.
+  plus `host:track-devices` with `push_devices` for scripted hotplug, `drop_connections` / `stop` for faults,
+  `hold_answers` / `release_answers` to hold a dial provably in flight, and `requests` (every service request, in
+  order) for counting dials or proving none happened.
   `volume/testing.rs` holds the volume-level fixtures on top of it. No `adb` binary, no device, no Docker: every cell
   runs in the unit lane.
 - **App-side** (`apps/desktop/src-tauri/src/adb/`): anything driving `write_operations`, the volume registry,

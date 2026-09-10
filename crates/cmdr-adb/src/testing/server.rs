@@ -2,7 +2,9 @@
 //! protocol, the `sync:` service, and `shell,v2,raw` over the [`FakeTree`].
 //!
 //! Faults live here too: [`FakeAdbServer::drop_connections`] kills every open
-//! socket, [`FakeAdbServer::stop`] closes the listener.
+//! socket, [`FakeAdbServer::stop`] closes the listener, and
+//! [`FakeAdbServer::hold_answers`] parks every request until
+//! [`FakeAdbServer::release_answers`], so a dial can be held provably in flight.
 
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
@@ -29,6 +31,8 @@ pub struct FakeAdbServer {
     tree: Arc<Mutex<FakeTree>>,
     devices: watch::Sender<Vec<AdbDevice>>,
     features: Arc<Mutex<String>>,
+    requests: Arc<Mutex<Vec<String>>>,
+    answering: watch::Sender<bool>,
     accept: JoinHandle<()>,
     connections: Arc<Mutex<Vec<JoinHandle<()>>>>,
 }
@@ -47,6 +51,8 @@ struct Shared {
     tree: Arc<Mutex<FakeTree>>,
     devices: watch::Sender<Vec<AdbDevice>>,
     features: Arc<Mutex<String>>,
+    requests: Arc<Mutex<Vec<String>>>,
+    answering: watch::Sender<bool>,
 }
 
 impl FakeAdbServer {
@@ -59,6 +65,8 @@ impl FakeAdbServer {
             tree: Arc::new(Mutex::new(tree)),
             devices: watch::Sender::new(vec![fake_device()]),
             features: Arc::new(Mutex::new(FAKE_FEATURES.to_string())),
+            requests: Arc::new(Mutex::new(Vec::new())),
+            answering: watch::Sender::new(true),
         };
         let connections: Arc<Mutex<Vec<JoinHandle<()>>>> = Arc::new(Mutex::new(Vec::new()));
         let accept = {
@@ -82,6 +90,8 @@ impl FakeAdbServer {
             tree: shared.tree,
             devices: shared.devices,
             features: shared.features,
+            requests: shared.requests,
+            answering: shared.answering,
             accept,
             connections,
         }
@@ -116,6 +126,24 @@ impl FakeAdbServer {
     /// Changes what `host-serial:<serial>:features` answers.
     pub fn set_features(&self, list: &str) {
         *self.features.lock_ignore_poison() = list.to_string();
+    }
+
+    /// Every service request the fake has received, in arrival order
+    /// (`host:devices-l`, `host-serial:<serial>:features`, `sync:`, …). What a
+    /// cell counts to say how many times something dialed, or that nothing did.
+    pub fn requests(&self) -> Vec<String> {
+        self.requests.lock_ignore_poison().clone()
+    }
+
+    /// Parks every request (after recording it) until [`Self::release_answers`],
+    /// so a dial can be held in flight for as long as a cell needs.
+    pub fn hold_answers(&self) {
+        self.answering.send_replace(false);
+    }
+
+    /// Answers every parked request, and every later one straight away.
+    pub fn release_answers(&self) {
+        self.answering.send_replace(true);
     }
 
     /// Kills every open socket. The listener stays up, so clients reconnect.
@@ -186,6 +214,13 @@ fn long_list(devices: &[AdbDevice]) -> String {
 async fn serve_connection(mut stream: TcpStream, shared: Shared) -> std::io::Result<()> {
     loop {
         let request = read_request(&mut stream).await?;
+        shared.requests.lock_ignore_poison().push(request.clone());
+        // A closed gate parks the answer, never the recording: a cell holding
+        // answers still sees what arrived.
+        let mut answering = shared.answering.subscribe();
+        if answering.wait_for(|open| *open).await.is_err() {
+            return Ok(());
+        }
         if let Some(serial) = request.strip_prefix("host:transport:") {
             let state = shared
                 .devices
