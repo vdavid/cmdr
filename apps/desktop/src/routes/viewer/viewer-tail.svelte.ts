@@ -15,7 +15,9 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 
 import { addToast, dismissToast } from '$lib/ui/toast/toast-store.svelte'
 import { tString } from '$lib/intl/messages.svelte'
-import ViewerReloadToastContent, { setReloadToastContext as setReloadToastContextRaw } from './ViewerReloadToastContent.svelte'
+import ViewerReloadToastContent, {
+  setReloadToastContext as setReloadToastContextRaw,
+} from './ViewerReloadToastContent.svelte'
 
 // `setReloadToastContext` is exported from a `.svelte` module block; the
 // ESLint+TS pipeline can't always resolve the type across that boundary, so

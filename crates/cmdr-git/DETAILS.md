@@ -307,8 +307,9 @@ the same `virtual_listing` / `log` / `tree` code `GitPortal::category_rows` call
   `supports_streaming` true, with `open_read_stream` handing back a `GitBlobReadStream`; `can_watch_listings` false and
   `listing_watch_coverage` `None`, because the paths aren't on disk; `supports_local_fs_access` false and `local_path`
   `None` for the same reason; `routes_over_a_parent` TRUE, which is what keeps the host from mistaking `<worktree>/.git`
-  for a mount and stealing every path under it; `lane_key`, `get_space_info`, and `get_space_info_at` delegate to the PARENT volume, since the
-  objects live on its disk (the last is asked at `<worktree>/.git`, so a repo on a phone's SD card answers for the card). `scan_for_copy` and the batch scan come from `cmdr_fs::volume::scan_walk` through a
+  for a mount and stealing every path under it; `lane_key`, `get_space_info`, and `get_space_info_at` delegate to the
+  PARENT volume, since the objects live on its disk (the last is asked at `<worktree>/.git`, so a repo on a phone's SD
+  card answers for the card). `scan_for_copy` and the batch scan come from `cmdr_fs::volume::scan_walk` through a
   two-method `ScanSource`, which is what lets a whole branch tree be copied out to another volume.
 - **The host reads a snapshot through the trait and nothing else.** A copy out of `.git/branches/<name>/` walks with
   `scan_for_copy` and streams with `open_read_stream`; the viewer and the agent's `inspect_file` stream one blob to a

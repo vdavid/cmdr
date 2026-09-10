@@ -98,9 +98,10 @@ describe('toast body layout contract', () => {
     const source = readFileSync(file, 'utf8')
     const ast = parse(source, { modern: true })
     for (const set of rootSets(ast.fragment.nodes)) {
-      expect(set.length, `${file}: renders ${String(set.length)} root elements in one state, not one`).toBeLessThanOrEqual(
-        1,
-      )
+      expect(
+        set.length,
+        `${file}: renders ${String(set.length)} root elements in one state, not one`,
+      ).toBeLessThanOrEqual(1)
       const root = set.at(0)
       if (root === undefined || root.type !== 'RegularElement') continue
       for (const className of staticClasses(root)) {
