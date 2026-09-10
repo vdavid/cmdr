@@ -2608,6 +2608,7 @@ export type MessageKey =
   | 'servers.pinHint.favorites'
   | 'servers.pinHint.gotIt'
   | 'servers.pinHint.title'
+  | 'servers.refusal.accountNotPermitted'
   | 'servers.refusal.authMethodUnsupported'
   | 'servers.refusal.authenticationRejected'
   | 'servers.refusal.certificateUntrusted'

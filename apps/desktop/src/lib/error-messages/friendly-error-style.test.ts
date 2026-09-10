@@ -208,6 +208,7 @@ const REFUSAL_KINDS: ConnectRefusalKind[] = [
   'root_not_found',
   'start_folder_not_found',
   'save_unconfirmed',
+  'account_not_permitted',
 ]
 
 /**

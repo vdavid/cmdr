@@ -168,17 +168,33 @@ export function refusalForShareError(error: ShareListError): ConnectRefusalKind 
 /**
  * A share MOUNT that stopped, in the same vocabulary.
  *
- * ❗ `auth_required` is ❌ NOT `auth_failed`: telling someone who has never
- * entered a password that theirs is wrong is what collapsing the two does.
- * `auth_required` covers the NetAuth -6600 code the backend maps.
+ * ❗ Three answers, ❌ never collapsed. `auth_required` is NOT `auth_failed`:
+ * telling someone who has never entered a password that theirs is wrong is what
+ * collapsing the two does. And `permission_denied` is neither: the account signed
+ * in and the SHARE turned it away, so blaming the password misdirects the fix.
+ * The backend reads both of the first and third off the server's own TreeConnect
+ * answer when NetFS only said "not found" (`src-tauri/src/network/DETAILS.md`
+ * § "A share that says not found").
  */
 export function refusalForMountError(error: MountError): ConnectRefusalKind {
-  return error.type === 'auth_required' ? 'needs_credentials' : 'authentication_rejected'
+  switch (error.type) {
+    case 'auth_required':
+      return 'needs_credentials'
+    case 'permission_denied':
+      return 'account_not_permitted'
+    default:
+      return 'authentication_rejected'
+  }
 }
 
-/** Whether a mount failure is a credential question, so the sheet is what answers it. */
-export function isMountAuthError(error: MountError): boolean {
-  return error.type === 'auth_failed' || error.type === 'auth_required'
+/**
+ * Whether the sign-in sheet is what answers a mount failure.
+ *
+ * ❗ `permission_denied` counts: another account is the fix, and the sheet is
+ * where one is typed.
+ */
+export function isMountSignInQuestion(error: MountError): boolean {
+  return error.type === 'auth_failed' || error.type === 'auth_required' || error.type === 'permission_denied'
 }
 
 /**

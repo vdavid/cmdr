@@ -245,6 +245,10 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
 
 - `authentication_rejected`: the credential was offered and refused. Names the account.
 - `needs_credentials`: nothing was ever offered. ❌ Not a rejection.
+- `account_not_permitted`: the account signed in, and the PLACE turned it away (an SMB share whose TreeConnect answers
+  access denied). Names the account and asks for a different one. ❗ Goes under `form`, ❌ never `secret`: the password
+  worked, and the `secret` slot marks its field invalid. SMB's mount is the producer today, and the direct-connect path
+  is meant to reuse it.
 - `auth_method_unsupported`: the server challenged with a scheme Cmdr doesn't speak, so the secret never left. ❌ Never
   name the scheme; "Digest" means nothing to the reader.
 - `certificate_untrusted`: macOS doesn't trust the certificate, and the fix is Keychain Access. Trust-on-first-use is

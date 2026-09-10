@@ -17,7 +17,7 @@
     import ServersHub from '../network/ServersHub.svelte'
     import type { HubRow } from '../network/servers-hub-rows'
     import PlacesBrowser from '../network/PlacesBrowser.svelte'
-    import { isMountAuthError, openSmbSignInSheet, refusalForMountError } from '../network/smb-sign-in'
+    import { isMountSignInQuestion, openSmbSignInSheet, refusalForMountError } from '../network/smb-sign-in'
     import type { SignInAttemptOutcome } from '$lib/servers/sign-in-contract'
     import Button from '$lib/ui/Button.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
@@ -93,10 +93,11 @@
      */
     let signingIn = $state(false)
 
-    // ❗ Auth-class mount failures ASK (the one sign-in sheet) instead of
+    // ❗ Credential-class mount failures ASK (the one sign-in sheet) instead of
     // dead-ending in the error pane: "Try again" there replayed the identical
-    // credentials, which is the "Naspolya dead end". `isMountAuthError` and the
-    // refusal vocabulary live in `../network/smb-sign-in`.
+    // credentials, which is the "Naspolya dead end". That covers a signed-in
+    // account the share turned away too, since another account is the fix.
+    // `isMountSignInQuestion` and the refusal vocabulary live in `../network/smb-sign-in`.
 
     // Component refs for keyboard navigation
     let serversHubRef: ServersHubAPI | undefined = $state()
@@ -296,7 +297,7 @@
     /** Mounts a share the user picked, and asks for a credential if that is what's missing. */
     async function handleShareSelect(share: ShareInfo, credentials: { username: string; password: string } | null) {
         const error = await mountShare(share, credentials)
-        if (error && isMountAuthError(error)) await askForMountCredentials(share, error)
+        if (error && isMountSignInQuestion(error)) await askForMountCredentials(share, error)
     }
 
     /**
@@ -352,9 +353,10 @@
             }
             return { kind: 'handed_off' }
         }
-        // ❗ Only a credential refusal keeps the sheet open. Anything else is about
-        // the SHARE, and the pane's error state is what has the words and the retry.
-        if (!isMountAuthError(error)) return { kind: 'handed_off' }
+        // ❗ Only a refusal another credential can answer keeps the sheet open.
+        // Anything else is about the SHARE or the server, and the pane's error
+        // state is what has the words and the retry.
+        if (!isMountSignInQuestion(error)) return { kind: 'handed_off' }
         return { kind: 'refused', refusal: refusalForMountError(error) }
     }
 

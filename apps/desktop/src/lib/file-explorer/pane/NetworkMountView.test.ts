@@ -223,6 +223,61 @@ describe('NetworkMountView mount-failure auth loop', () => {
     await unmount(component)
   })
 
+  it('asks for a sign-in when the share refuses guests, saying a password is needed', async () => {
+    // ERR-SHUSC: a share guests can SEE but can't OPEN. The backend clarifies the
+    // mount's "not found" into `auth_required`, and that has to open the sheet
+    // rather than the dead-end error pane.
+    h.mountNetworkShare.mockRejectedValue({ type: 'auth_required', message: 'Sign in to open "naspi"' })
+    const { component } = await mountViewAndActivateShare()
+
+    await vi.waitFor(() => {
+      expect(h.openSignInSheet).toHaveBeenCalled()
+    })
+    // ❗ Nothing was offered, so it isn't a rejected password.
+    expect(sheetRequest().refusal).toBe('needs_credentials')
+
+    await unmount(component)
+  })
+
+  it('asks for a different account when the share refuses the one that signed in', async () => {
+    // The account got past sign-in; the SHARE doesn't let it in. The fix is another
+    // account, which the sheet takes, so this is its question and not the pane's.
+    h.mountNetworkShare.mockRejectedValue({ type: 'permission_denied', message: '"david" can\'t open "naspi"' })
+    const { target, component } = await mountViewAndActivateShare()
+
+    await vi.waitFor(() => {
+      expect(h.openSignInSheet).toHaveBeenCalled()
+    })
+    expect(sheetRequest().refusal).toBe('account_not_permitted')
+    expect(target.querySelector('.mount-error-state'), 'no dead-end pane in front of the sheet').toBeNull()
+
+    await unmount(component)
+  })
+
+  it('keeps the sheet open when the share refuses the account the user just signed in with', async () => {
+    h.mountNetworkShare
+      .mockRejectedValueOnce({ type: 'auth_required', message: 'Sign in to open "naspi"' })
+      .mockRejectedValueOnce({ type: 'permission_denied', message: '"david" can\'t open "naspi"' })
+    const { component } = await mountViewAndActivateShare()
+
+    await vi.waitFor(() => {
+      expect(h.openSignInSheet).toHaveBeenCalled()
+    })
+
+    const outcome = await sheetRequest().attempt({
+      mode: 'sign-in',
+      secret: { secret: 'hunter2', remember: true },
+      username: 'david',
+    })
+
+    // ❗ Not `authentication_rejected`: the password worked, so "that password didn't
+    // work" would send the user to fix the one thing that isn't wrong.
+    expect(outcome).toEqual({ kind: 'refused', refusal: 'account_not_permitted' })
+    expect(h.saveSmbCredentials, 'nothing is remembered for a mount that did not go through').not.toHaveBeenCalled()
+
+    await unmount(component)
+  })
+
   it('hands a refusal about the SHARE back to the pane, which has the words for it', async () => {
     // The sheet's vocabulary is about credentials. A share that went missing
     // between the listing and the mount is the pane's error state to render, with

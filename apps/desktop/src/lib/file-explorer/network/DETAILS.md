@@ -193,7 +193,8 @@ so a separate flag could only disagree with it.
   says one is allowed; the mount and the upgrade both pass `false`.
 - **`refusalForShareError` / `refusalForMountError`** put every SMB failure in `../../servers/connect-refusals.ts`'s
   vocabulary, and ❗ `auth_required` stays distinct from `auth_failed`: telling someone who has never entered a password
-  that theirs is wrong is what collapsing the two does.
+  that theirs is wrong is what collapsing the two does. A mount's `permission_denied` is a third answer,
+  `account_not_permitted`: the account signed in and the share turned it away, so the password isn't what to fix.
 
 ## Data flow
 
@@ -282,9 +283,15 @@ one share is noise). A press while an attempt is in flight is ignored.
 ## Mount-phase auth failures
 
 `NetworkMountView.svelte` (in `../pane/`) opens the sign-in sheet instead of dead-ending in its error pane whenever
-`mountNetworkShare` rejects with an auth-class error (`auth_failed` / `auth_required`, including the NetAuth -6600 code
-the backend maps). The sheet opens carrying that refusal, pre-filled with the username the failed attempt tried; what
-its `attempt` then runs is `../../servers/DETAILS.md` § "The sheet contract".
+`mountNetworkShare` rejects with a failure another credential can answer (`smb-sign-in.ts::isMountSignInQuestion`):
+`auth_failed` (including the NetAuth -6600 code the backend maps), `auth_required`, and `permission_denied`. The sheet
+opens carrying that refusal, pre-filled with the username the failed attempt tried; what its `attempt` then runs is
+`../../servers/DETAILS.md` § "The sheet contract".
+
+A share guests can list but not open reaches here as `auth_required`, not as the "not found" NetFS reports: the backend
+asks the server itself which it was (`src-tauri/src/network/DETAILS.md` § "A share that says not found"). That is what
+turned ERR-SHUSC's dead-end pane into a sign-in. A signed-in account the share refuses comes back `permission_denied`
+and keeps the sheet open on `account_not_permitted`, so the user can try another account.
 
 Two properties are load-bearing:
 

@@ -22,6 +22,9 @@ import type { MessageKey } from '$lib/intl/keys.gen'
  * saw the secret, so "check your password" is the wrong fix), and
  * `needs_credentials` is not one either (telling someone who has never entered a
  * password that theirs is wrong is what collapsing the two does).
+ * `account_not_permitted` is a third one: the account SIGNED IN, and the place
+ * (an SMB share, and whatever a later protocol's equivalent is) turned it away,
+ * so the password is the one thing known to be right.
  *
  * It lives beside its sentences so a new kind and its words land together, and
  * so the pane and the sign-in sheet can't drift into two vocabularies.
@@ -29,6 +32,7 @@ import type { MessageKey } from '$lib/intl/keys.gen'
 export type ConnectRefusalKind =
   | 'authentication_rejected'
   | 'needs_credentials'
+  | 'account_not_permitted'
   | 'auth_method_unsupported'
   | 'certificate_untrusted'
   | 'not_a_webdav_server'
@@ -52,6 +56,7 @@ export type ConnectRefusalKind =
 const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   authentication_rejected: 'servers.refusal.authenticationRejected',
   needs_credentials: 'servers.refusal.needsCredentials',
+  account_not_permitted: 'servers.refusal.accountNotPermitted',
   auth_method_unsupported: 'servers.refusal.authMethodUnsupported',
   certificate_untrusted: 'servers.refusal.certificateUntrusted',
   not_a_webdav_server: 'servers.refusal.notAWebdavServer',
@@ -102,6 +107,9 @@ export type RefusalField =
 const REFUSAL_FIELDS: Record<ConnectRefusalKind, RefusalField> = {
   authentication_rejected: 'secret',
   needs_credentials: 'secret',
+  // ❗ The password WORKED, so marking its field invalid would point at the one
+  // thing that isn't wrong. The fix is another account.
+  account_not_permitted: 'form',
   // ❗ The secret was never sent, so the field is not where the fix is.
   auth_method_unsupported: 'form',
   certificate_untrusted: 'form',

@@ -125,6 +125,13 @@
   "@servers.refusal.needsCredentials": {
     "description": "Shown in the pane when the server wants a credential and Cmdr has none stored. ❗ NOT a rejection: nothing was ever offered, so don''t word it as a wrong password."
   },
+  "servers.refusal.accountNotPermitted": "{username} doesn''t have access here. Try a different account.",
+  "@servers.refusal.accountNotPermitted": {
+    "description": "Shown in the sign-in sheet when the server accepted the account, but the place being opened (for example a network share) doesn''t let that account in. ❗ NOT a wrong password: the sign-in worked, so don''t word it as a rejected credential. \"Here\" is the place named in the sheet''s header.",
+    "placeholders": {
+      "username": "the account name on the server, like \"ada\""
+    }
+  },
   "servers.refusal.authMethodUnsupported": "This server uses a sign-in method Cmdr doesn''t support yet.",
   "@servers.refusal.authMethodUnsupported": {
     "description": "Shown in the pane when the server challenged with an authentication scheme Cmdr doesn''t speak. The secret was never sent, so nothing about it is known to be wrong. ❌ Don''t name the scheme: it means nothing to the reader."

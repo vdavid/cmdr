@@ -28,6 +28,7 @@ const KINDS: ConnectRefusalKind[] = [
   'root_not_found',
   'start_folder_not_found',
   'save_unconfirmed',
+  'account_not_permitted',
 ]
 
 const subject = { host: 'nas.local', username: 'ada' }
@@ -83,6 +84,16 @@ describe('wordConnectRefusal', () => {
     expect(wordConnectRefusal('root_not_found', subject)).toContain('nas.local')
     expect(wordConnectRefusal('start_folder_not_found', subject)).toContain('nas.local')
     expect(wordConnectRefusal('save_unconfirmed', subject)).toContain('nas.local')
+  })
+
+  it('❌ never blames the password when the account signed in and the place turned it away', () => {
+    // The password worked. Pointing at it sends the user to fix the one thing that
+    // isn't wrong, and the sentence belongs above the buttons rather than marking
+    // the password field invalid.
+    const sentence = wordConnectRefusal('account_not_permitted', subject)
+    expect(sentence).toContain('ada')
+    expect(sentence.toLowerCase()).not.toContain('password')
+    expect(refusalField('account_not_permitted')).toBe('form')
   })
 })
 
