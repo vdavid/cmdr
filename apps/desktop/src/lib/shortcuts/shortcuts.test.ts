@@ -288,6 +288,13 @@ describe('menuCommands', () => {
     expect(menuCommands).toContain('downloads.goToLatest')
   })
 
+  it('includes both Servers-menu commands so accelerator sync covers them', () => {
+    // The Servers menu contains "Connect to server…" (⌘K) and "Show servers"; both are
+    // native menu items, so a custom shortcut must reach their accelerators.
+    expect(menuCommands).toContain('servers.connect')
+    expect(menuCommands).toContain('servers.show')
+  })
+
   it('has no duplicate command IDs', () => {
     const unique = new Set(menuCommands)
     expect(unique.size).toBe(menuCommands.length)

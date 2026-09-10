@@ -20,7 +20,8 @@ use super::{
     GO_TO_PATH_ID, HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID,
     INVERT_SELECTION_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID,
     QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID,
-    SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, ViewMode,
+    SERVERS_CONNECT_ID, SERVERS_SHOW_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID,
+    SWAP_PANES_ID, SWITCH_PANE_ID, ViewMode,
 };
 
 /// Linux menu: builds all menus from scratch, matching the macOS menu structure.
@@ -538,6 +539,32 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     )?;
     menu.append(&go_menu)?;
 
+    // --- Servers menu ---
+    let mut servers = Mnemonics::new();
+    let servers_connect_item = MenuItem::with_id(
+        app,
+        SERVERS_CONNECT_ID,
+        servers.assign(&menu_t("menu.servers.connectToServer")),
+        true,
+        Some("Cmd+K"),
+    )?;
+    // No default accelerator: `servers.show` ships without a default shortcut.
+    let servers_show_item = MenuItem::with_id(
+        app,
+        SERVERS_SHOW_ID,
+        servers.assign(&menu_t("menu.servers.showServers")),
+        true,
+        None::<&str>,
+    )?;
+
+    let servers_menu = Submenu::with_items(
+        app,
+        bar.assign(&menu_t("menu.bar.servers")),
+        true,
+        &[&servers_connect_item, &servers_show_item],
+    )?;
+    menu.append(&servers_menu)?;
+
     // --- Tab menu ---
     let mut tab = Mnemonics::new();
     let new_tab_item = MenuItem::with_id(
@@ -752,6 +779,10 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     register_item(&mut items, GO_TO_PATH_ID, &go_to_path_item, &go_menu, 6);
     register_item(&mut items, GO_LATEST_DOWNLOAD_ID, &go_latest_download_item, &go_menu, 7);
     register_item(&mut items, FAVORITES_ADD_ID, &favorites_add_item, &go_menu, 9);
+
+    // Servers menu positions: connect(0), show(1)
+    register_item(&mut items, SERVERS_CONNECT_ID, &servers_connect_item, &servers_menu, 0);
+    register_item(&mut items, SERVERS_SHOW_ID, &servers_show_item, &servers_menu, 1);
 
     // Tab menu positions: new(0), close(1), reopen(2), sep(3), next(4), prev(5), sep(6), pin(7),
     // close_others(8)

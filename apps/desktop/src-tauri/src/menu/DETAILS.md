@@ -535,7 +535,7 @@ what keeps the native catalog free of the count-plus-noun shape `menu_t` can't r
 
 ## Menu structure
 
-Both platforms share: File, Edit, Select, View (with Sort by and Zoom submenus), Go, Tab, Help.
+Both platforms share: File, Edit, Select, View (with Sort by and Zoom submenus), Go, Servers, Tab, Help.
 
 The **file context menu opens with the target header** (`append_context_menu_header`, above everything else), then a
 separator, then the Open / View / Edit group. See "The context menu's header line".
@@ -611,6 +611,12 @@ grey out in the viewer/settings windows. `Go to path…` carries the macOS ellip
 AND the JS keydown dispatch on macOS (see `shortcuts/DETAILS.md` § "Modifier-key accelerators may fire twice"). This is
 safe here without any suppression hack: ⌘G's dialog-open is idempotency-guarded in `+page.svelte`, and ⌘J's re-reveal is
 naturally idempotent. Expect two `FE:user-action downloads.goToLatest` log lines on one ⌘J press — harmless.
+
+The **Servers** submenu (between Go and Tab) holds `Connect to server…` (⌘K, `SERVERS_CONNECT_ID` →
+`servers.connect`) and `Show servers` (no default shortcut, `SERVERS_SHOW_ID` → `servers.show`). Both are menu faces
+of existing palette commands, `FileScoped` because each acts in the main window: the first opens the add-server sheet,
+the second takes the focused pane to the servers hub. macOS SF Symbols are `network` and `server.rack`. What the
+commands do: `apps/desktop/src/routes/(main)/command-handlers/servers-handlers.ts`.
 
 The **Help** submenu holds, in order: `Keyboard shortcuts`, separator, `What's new`, `Send feedback…`,
 `Send error report…` (Linux prepends `About cmdr` + a separator, since it has no app menu). `What's new`

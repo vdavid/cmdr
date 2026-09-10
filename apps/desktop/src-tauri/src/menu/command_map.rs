@@ -29,6 +29,8 @@ pub const SORT_BY_MENU_ID: &str = "menu_sort_by";
 #[cfg(target_os = "macos")]
 pub const GO_MENU_ID: &str = "menu_go";
 #[cfg(target_os = "macos")]
+pub const SERVERS_MENU_ID: &str = "menu_servers";
+#[cfg(target_os = "macos")]
 pub const TAB_MENU_ID: &str = "menu_tab";
 #[cfg(target_os = "macos")]
 pub const WINDOW_MENU_ID: &str = "menu_window";
@@ -163,6 +165,12 @@ pub const GO_LATEST_DOWNLOAD_ID: &str = "go_latest_download";
 /// "Home" (⇧⌘H): opens the home folder in the focused pane. ⌘H alone belongs to AppKit
 /// ("Hide Cmdr"), so the shifted combo is the one Cmdr can own.
 pub const GO_HOME_ID: &str = "go_home";
+
+/// Menu item IDs for the Servers menu.
+/// "Connect to server…" (⌘K): opens the add-server sheet, the same `servers.connect` the palette runs.
+pub const SERVERS_CONNECT_ID: &str = "servers_connect";
+/// "Show servers": takes the focused pane to the servers hub (`servers.show`). No default shortcut.
+pub const SERVERS_SHOW_ID: &str = "servers_show";
 
 /// "Add to favorites", menu bar + palette: maps to the `favorites.add` command, which favorites the
 /// focused pane's current folder. Ships with NO default shortcut (adding a favorite is infrequent);
@@ -324,6 +332,10 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         GO_HOME_ID => Some(("nav.goHome", CommandScope::FileScoped)),
         FAVORITES_ADD_ID => Some(("favorites.add", CommandScope::FileScoped)),
 
+        // Servers commands (file-scoped: both act in the main window's focused pane)
+        SERVERS_CONNECT_ID => Some(("servers.connect", CommandScope::FileScoped)),
+        SERVERS_SHOW_ID => Some(("servers.show", CommandScope::FileScoped)),
+
         // Tab commands (file-scoped)
         NEW_TAB_ID => Some(("tab.new", CommandScope::FileScoped)),
         CLOSE_TAB_ID => Some(("tab.close", CommandScope::FileScoped)),
@@ -432,6 +444,8 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "downloads.goToLatest" => Some(GO_LATEST_DOWNLOAD_ID),
         "nav.goHome" => Some(GO_HOME_ID),
         "favorites.add" => Some(FAVORITES_ADD_ID),
+        "servers.connect" => Some(SERVERS_CONNECT_ID),
+        "servers.show" => Some(SERVERS_SHOW_ID),
         "tab.new" => Some(NEW_TAB_ID),
         "tab.close" => Some(CLOSE_TAB_ID),
         "tab.reopen" => Some(REOPEN_CLOSED_TAB_ID),
@@ -536,6 +550,14 @@ mod tests {
             Some(("downloads.goToLatest", CommandScope::FileScoped))
         );
         assert_eq!(
+            menu_id_to_command(SERVERS_CONNECT_ID),
+            Some(("servers.connect", CommandScope::FileScoped))
+        );
+        assert_eq!(
+            menu_id_to_command(SERVERS_SHOW_ID),
+            Some(("servers.show", CommandScope::FileScoped))
+        );
+        assert_eq!(
             menu_id_to_command(NEW_TAB_ID),
             Some(("tab.new", CommandScope::FileScoped))
         );
@@ -617,6 +639,8 @@ mod tests {
             "tab.prev",
             "tab.togglePin",
             "tab.closeOthers",
+            "servers.connect",
+            "servers.show",
             "search.open",
             "file.rename",
             "file.edit",

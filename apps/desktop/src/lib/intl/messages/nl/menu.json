@@ -19,6 +19,11 @@
   "@menu.bar.go": {
     "sourceHash": "6cc8519"
   },
+  "menu.bar.servers": "Servers",
+  "@menu.bar.servers": {
+    "sourceHash": "68d7beb",
+    "sameAsSourceJustification": "Dutch uses the English loanword: macOS nl says \"Servers\" (AppKit Menus.loctable, Finder ConnectToWindow.strings \"Favoriete servers:\"), and the nl catalog already ships fileExplorer.navigation.networkVolume as \"Servers\"."
+  },
   "menu.bar.tab": "Tabblad",
   "@menu.bar.tab": {
     "sourceHash": "90ddf19"
@@ -352,6 +357,14 @@
   "menu.go.addToFavorites": "Voeg aan favorieten toe",
   "@menu.go.addToFavorites": {
     "sourceHash": "7f3c078"
+  },
+  "menu.servers.connectToServer": "Verbind met server…",
+  "@menu.servers.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.servers.showServers": "Toon servers",
+  "@menu.servers.showServers": {
+    "sourceHash": "092283a"
   },
   "menu.tab.newTab": "Nieuw tabblad",
   "@menu.tab.newTab": {

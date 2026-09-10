@@ -24,6 +24,11 @@
     "description": "VERB (imperative), title of the menu-bar menu holding the navigation commands (Back, Forward, Parent folder, Home, Go to path…). Use the exact word Finder uses for its own \"Go\" menu in this language. One short word; a menu-bar title has almost no room."
   },
 
+  "menu.bar.servers": "Servers",
+  "@menu.bar.servers": {
+    "description": "NOUN, plural. Title of the menu-bar menu holding the server commands (Connect to server…, Show servers). A server here is a network file server (SMB, SFTP, or WebDAV) the user browses like a folder. Finder has no counterpart menu, so use the same word Cmdr uses for the \"Servers\" group in its volume selector. One short word; a menu-bar title has almost no room."
+  },
+
   "menu.bar.tab": "Tab",
   "@menu.bar.tab": {
     "description": "NOUN, title of the menu-bar menu holding the tab commands (New tab, Close tab, Next tab). A tab here is a browser-style tab inside a file pane, each showing one folder. Use the word your language's browsers use for a browser tab. One short word; a menu-bar title has almost no room."
@@ -426,6 +431,16 @@
   "menu.go.addToFavorites": "Add to favorites",
   "@menu.go.addToFavorites": {
     "description": "VERB phrase (imperative). Pins the current folder to Cmdr's own favorites list in the volume dropdown, for one-click return later. \"favorites\" is Cmdr's list, not macOS's sidebar Favorites, but using the same word your macOS Finder uses keeps it recognizable. No ellipsis: nothing is asked."
+  },
+
+  "menu.servers.connectToServer": "Connect to server…",
+  "@menu.servers.connectToServer": {
+    "description": "VERB phrase (imperative). Item in the menu-bar Servers menu (⌘K): opens a form where the user types a network file server's address (SMB, SFTP, or WebDAV) and signs in. The trailing … is U+2026 and must stay: the form decides which server it connects to. Use the wording macOS Finder uses for its own Go > \"Connect to Server…\" item in this language."
+  },
+
+  "menu.servers.showServers": "Show servers",
+  "@menu.servers.showServers": {
+    "description": "VERB phrase (imperative). Item in the menu-bar Servers menu: takes the active file pane to Cmdr's servers list, which shows every saved and nearby network file server. No ellipsis: nothing is asked."
   },
 
   "menu.tab.newTab": "New tab",

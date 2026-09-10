@@ -19,6 +19,10 @@
   "@menu.bar.go": {
     "sourceHash": "6cc8519"
   },
+  "menu.bar.servers": "伺服器",
+  "@menu.bar.servers": {
+    "sourceHash": "68d7beb"
+  },
   "menu.bar.tab": "分頁",
   "@menu.bar.tab": {
     "sourceHash": "90ddf19"
@@ -347,6 +351,14 @@
   "menu.go.addToFavorites": "加入喜好項目",
   "@menu.go.addToFavorites": {
     "sourceHash": "7f3c078"
+  },
+  "menu.servers.connectToServer": "連接伺服器…",
+  "@menu.servers.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.servers.showServers": "顯示伺服器",
+  "@menu.servers.showServers": {
+    "sourceHash": "092283a"
   },
   "menu.tab.newTab": "新增分頁",
   "@menu.tab.newTab": {

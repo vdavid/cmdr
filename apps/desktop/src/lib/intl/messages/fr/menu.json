@@ -19,6 +19,10 @@
   "@menu.bar.go": {
     "sourceHash": "6cc8519"
   },
+  "menu.bar.servers": "Serveurs",
+  "@menu.bar.servers": {
+    "sourceHash": "68d7beb"
+  },
   "menu.bar.tab": "Onglet",
   "@menu.bar.tab": {
     "sourceHash": "90ddf19"
@@ -346,6 +350,14 @@
   "menu.go.addToFavorites": "Ajouter aux favoris",
   "@menu.go.addToFavorites": {
     "sourceHash": "7f3c078"
+  },
+  "menu.servers.connectToServer": "Se connecter au serveur…",
+  "@menu.servers.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.servers.showServers": "Afficher les serveurs",
+  "@menu.servers.showServers": {
+    "sourceHash": "092283a"
   },
   "menu.tab.newTab": "Nouvel onglet",
   "@menu.tab.newTab": {
