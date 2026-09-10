@@ -14,26 +14,26 @@ use tauri::menu::MenuItemKind;
 
 const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// Open budget for a preview of a ROUTED file (inside a `.zip`, or inside a repo's
-/// virtual `.git` trees): the whole entry is streamed out to a bounded temp first, so
-/// it needs the recursive-scan tier, not the 2 s read tier. The extraction cap keeps
-/// the worst case bounded. An ordinary on-disk open keeps the strict 2 s.
-const VIEWER_ROUTED_TIMEOUT: Duration = Duration::from_secs(30);
+/// Open budget for a file the viewer pulls into a bounded temp before opening it
+/// (inside a `.zip`, inside a repo's virtual `.git` trees, or on a volume whose paths
+/// the OS can't open, like a phone): the whole file is streamed out first, so it needs
+/// the recursive-scan tier, not the 2 s read tier. The extraction cap keeps the worst
+/// case bounded. An ordinary on-disk open keeps the strict 2 s.
+const VIEWER_MATERIALIZE_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Picks the open timeout for `path`: the generous routed budget when a route serves
-/// the path (a temp materialization, which is slow — more so pulling a `.zip` from a
-/// remote parent, or a blob out of a big pack), else the strict 2 s. Viewing the
-/// `.zip` file itself is a normal read, so it keeps the strict budget.
+/// Picks the open timeout for `path`: the generous budget when the open may pull the
+/// file into a temp first (slow, more so pulling a `.zip` from a remote parent, a blob
+/// out of a big pack, or a file off a phone), else the strict 2 s. Viewing the `.zip`
+/// file itself is a normal read, so it keeps the strict budget.
 ///
-/// `path_routes_over_its_parent` is a pure string check plus one atomic read, no I/O
-/// and no confirm: the budget is a heuristic, not a correctness gate, so it needs no
-/// `volume_id` and never touches the disk or network. Over-granting the generous
-/// budget to a mislabeled `.zip` or a `.git` that isn't a repository is harmless (the
-/// open fails fast on its own).
-fn open_timeout_for(path: &str) -> Duration {
+/// `open_may_materialize` is a string check plus a registry lookup, no I/O and no
+/// confirm: the budget is a heuristic, not a correctness gate, so over-granting it to
+/// a mislabeled `.zip` or a `.git` that isn't a repository is harmless (the open fails
+/// fast on its own).
+fn open_timeout_for(path: &str, volume_id: &str) -> Duration {
     let expanded = crate::commands::file_system::expand_tilde(path);
-    if crate::file_system::volume::manager::path_routes_over_its_parent(std::path::Path::new(&expanded)) {
-        VIEWER_ROUTED_TIMEOUT
+    if file_viewer::routed_extract::open_may_materialize(std::path::Path::new(&expanded), volume_id) {
+        VIEWER_MATERIALIZE_TIMEOUT
     } else {
         VIEWER_TIMEOUT
     }
@@ -59,27 +59,24 @@ pub async fn viewer_open(
     volume_id: String,
     window_label: String,
 ) -> Result<ViewerOpenResult, ViewerError> {
-    let timeout = open_timeout_for(&path);
+    let timeout = open_timeout_for(&path, &volume_id);
     // Typed `ViewerError` (never a stringified message) so the FE can render friendly
-    // copy for the routed family — `ExtractTooLarge` (the preview cap, which a `.zip`
-    // entry and a `.git` snapshot blob both reach), `Archive` (encrypted / corrupt /
-    // unsupported codec) — matching `viewer_read_range`.
-    match tokio::time::timeout(
+    // copy for the materializing family — `ExtractTooLarge` (the preview cap, which a
+    // `.zip` entry, a `.git` snapshot blob, and a phone's file all reach), `Archive`
+    // (encrypted / corrupt / unsupported codec) — matching `viewer_read_range`. On
+    // expiry the open keeps running detached, so a pull off a phone is never dropped
+    // mid-transaction.
+    blocking_typed_result_with_timeout(
         timeout,
-        tokio::task::spawn_blocking(move || {
+        || ViewerError::TimedOut,
+        |message| ViewerError::Io { message },
+        move || {
             let result = file_viewer::open_session(&path, &volume_id)?;
             file_viewer::register_window_session(&window_label, &result.session_id);
             Ok(result)
-        }),
+        },
     )
     .await
-    {
-        Ok(Ok(result)) => result,
-        Ok(Err(join_err)) => Err(ViewerError::Io {
-            message: join_err.to_string(),
-        }),
-        Err(_) => Err(ViewerError::TimedOut),
-    }
 }
 
 /// Opens a fresh, full **text** session for `path`, ignoring media classification.
@@ -95,23 +92,18 @@ pub async fn viewer_open_as_text(
     volume_id: String,
     window_label: String,
 ) -> Result<ViewerOpenResult, ViewerError> {
-    let timeout = open_timeout_for(&path);
-    match tokio::time::timeout(
+    let timeout = open_timeout_for(&path, &volume_id);
+    blocking_typed_result_with_timeout(
         timeout,
-        tokio::task::spawn_blocking(move || {
+        || ViewerError::TimedOut,
+        |message| ViewerError::Io { message },
+        move || {
             let result = file_viewer::open_session_as_text(&path, &volume_id)?;
             file_viewer::register_window_session(&window_label, &result.session_id);
             Ok(result)
-        }),
+        },
     )
     .await
-    {
-        Ok(Ok(result)) => result,
-        Ok(Err(join_err)) => Err(ViewerError::Io {
-            message: join_err.to_string(),
-        }),
-        Err(_) => Err(ViewerError::TimedOut),
-    }
 }
 
 /// Fetches a range of lines from a viewer session.
@@ -429,6 +421,25 @@ mod tests {
             .expect("start");
         writer.write_all(b"hello").expect("write");
         writer.finish().expect("finish");
+    }
+
+    /// A file on a volume whose paths the OS can't open is pulled into a temp before
+    /// it opens, so it gets the materialization budget; the 2 s read tier would time
+    /// out a phone's larger files. A plain local file keeps the strict tier.
+    #[test]
+    fn an_open_that_pulls_through_a_volume_gets_the_materialization_budget() {
+        use crate::file_system::volume::InMemoryVolume;
+        use crate::file_system::volume::manager::get_volume_manager;
+
+        get_volume_manager().register(
+            "viewer-budget-cell",
+            std::sync::Arc::new(InMemoryVolume::new("Phone").with_root("mtp://viewer-budget-cell/1")),
+        );
+        assert_eq!(
+            open_timeout_for("mtp://viewer-budget-cell/1/notes.txt", "viewer-budget-cell"),
+            VIEWER_MATERIALIZE_TIMEOUT
+        );
+        assert_eq!(open_timeout_for("/tmp/notes.txt", "root"), VIEWER_TIMEOUT);
     }
 
     #[tokio::test]

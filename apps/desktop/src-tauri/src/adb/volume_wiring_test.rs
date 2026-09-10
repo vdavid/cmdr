@@ -1,6 +1,6 @@
 //! Calling an ADB connect off, one dial per phone and what it installs, applying
-//! the settings live, and a pane listing a dialed phone through the real listing
-//! pipeline.
+//! the settings live, a pane listing a dialed phone through the real listing
+//! pipeline, and the viewer opening a file on one.
 //!
 //! The cancel cell dials a listener that accepts and never answers, so the
 //! attempt is provably still in flight when the cancel lands: a fake that
@@ -374,6 +374,39 @@ async fn a_pane_on_an_adb_path_lists_the_phone_through_the_listing_pipeline() {
     );
 
     drop(listing);
+    get_volume_manager().unregister(&volume_id);
+    device_provider::forget_volume(SERIAL);
+}
+
+/// F3 on a phone's file. The viewer can't `std::fs::open` `adb://<serial>/…`, so it
+/// pulls the file through the dialed volume into a bounded temp and reads that.
+/// Pre-fix the open answered `NotFound` on a real phone, while copying the same file
+/// off it worked.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn the_viewer_opens_a_text_file_on_a_dialed_phone() {
+    const SERIAL: &str = "R58M-Viewer-Cell";
+    let mut tree = cmdr_adb::testing::FakeTree::new();
+    tree.add_file("/sdcard/notes.txt", b"first line\nsecond line\n");
+    let fake = a_listed_phone(SERIAL, tree).await;
+    let volume_id = connect_device_at(AdbConnectionParams::at(SERIAL, fake.endpoint()), "adb-viewer-cell")
+        .await
+        .expect("the fake phone dials");
+
+    let path = format!("{}/sdcard/notes.txt", cmdr_fs::volume::adb_app_root(SERIAL));
+    // The open blocks on the volume's async reads, so it runs where the viewer
+    // command runs it: on a blocking thread.
+    let opened = tokio::task::spawn_blocking({
+        let volume_id = volume_id.clone();
+        move || crate::file_viewer::open_session(&path, &volume_id)
+    })
+    .await
+    .expect("the open ran")
+    .expect("the phone's file opens");
+    assert_eq!(opened.file_name, "notes.txt");
+    assert_eq!(opened.initial_lines.lines[0], "first line");
+    assert_eq!(opened.initial_lines.lines[1], "second line");
+
+    crate::file_viewer::close_session(&opened.session_id).expect("close");
     get_volume_manager().unregister(&volume_id);
     device_provider::forget_volume(SERIAL);
 }

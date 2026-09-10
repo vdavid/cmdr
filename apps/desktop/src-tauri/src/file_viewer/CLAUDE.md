@@ -14,8 +14,8 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 - Backend selection: `< 1MB` → `FullLoad`; else `ByteSeek` (instant open) + a background `LineIndex` upgrade.
 - Media (Image/PDF): `content_kind.rs`, `media.rs` (`cmdr-media://` token map), `media_protocol.rs` (scheme handler),
   `media_backend.rs`, `media_session.rs`. See `DETAILS.md` § "Media rendering".
-- `routed_extract.rs`: preview of a ROUTED file (an archive entry or a `.git` snapshot blob → a bounded temp); the
-  agent's `inspect_file` is its second caller. `DETAILS.md` § "Preview of a routed file".
+- `routed_extract.rs`: preview of a file the OS can't open (routed, or on a phone → a bounded temp); the agent's
+  `inspect_file` calls its routes-only half. `DETAILS.md` § "Preview of a routed file".
 - `headless.rs`: `open_text_backend` (the backend pick with no session around it) and `open_scan_backend` (no index,
   for a `search`); the agent's `inspect_file` reads through both. `content_kind::looks_binary`, the byte-level
   text-vs-binary call. `DETAILS.md` § "Headless reads".
@@ -49,11 +49,10 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   arithmetic depends on this; stripping `\r` later needs the same change there.
 - **Cancellation is per-read / per-search, never session-wide**: `read_range` and `search` check the cancel flag inside
   the per-line loop (not just between chunks), so concurrent reads don't race a shared flag.
-- **Never open a ROUTED path via `std::fs` here** (`/…/foo.zip/inner`, `/…/.git/branches/main/lib.rs`): neither has an
-  inode. `open_session` sends one through `routed_extract` instead (bounded temp, dropped on close via
-  `ViewerSession.extract_cleanup`; the cap refuses BEFORE materializing). Ask
-  `volume::manager::path_routes_over_its_parent`, ❌ never an archive-only check. `DETAILS.md` § "Preview of a routed
-  file".
+- **Never `std::fs`-open a path the OS can't open**: a ROUTED one (`/…/foo.zip/inner`) or one whose volume's
+  `paths_are_os_visible()` is false (`adb://…`). `open_session` sends both through `materialize_for_viewer` (bounded
+  temp, dropped on close; the cap refuses BEFORE materializing). ❌ Never an archive-only check, nor
+  `supports_local_fs_access` (direct SMB says `false` yet opens fine). `DETAILS.md` § "Preview of a routed file".
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

@@ -135,8 +135,8 @@ registered volume), and a pane standing on it holds its listing and dials again 
 - `owns_volume_id`: any cached serial's id matches.
 - `space_for_path`: the connected volume's `get_space_info` (the phone's shared storage, whatever path on it is
   asked), `None` until it is dialed. It feeds the pane's indicator, which the poller keys by volume, so it stays one
-  figure per phone; the copy pre-flight asks the volume per folder instead. Crate `DETAILS.md` § "The `Volume`
-  answers, and why" has the `df` side.
+  figure per phone; the copy pre-flight asks the volume per folder instead. `crates/cmdr-adb/DETAILS.md` § "The
+  `Volume` answers, and why" has the `df` side.
 - `eject`: above.
 
 ## IPC and frontend
@@ -159,7 +159,8 @@ cancelled while the other waits, every joined attempt cancelled; each holds the 
 provably in line first), a dial whose phone left the cached list while it was held (answers `DeviceGone`, leaves
 nothing), the settings' live apply, the binary-path fallback, a pane listing a dialed phone through
 `read_directory_with_progress` on an `adb://<serial>/sdcard` path (the cell that holds the prefixed spelling end to
-end), and a listing and a `path_exists` on a listed, undialed phone (never `NotFound`); `device_provider.rs` holds the
+end), the viewer opening a text file under `adb://<serial>/sdcard` (pulled into a temp through the dialed volume), and
+a listing and a `path_exists` on a listed, undialed phone (never `NotFound`); `device_provider.rs` holds the
 provider's row answers, `serial_of_path`, and an eject of a volume the registry holds but the provider never
 remembered; `commands/volumes.rs` holds resolving an `adb://` path without dialing
 (the cell points `ANDROID_ADB_SERVER_PORT` at the fake, so a dial would be seen). Not covered here yet: the tracker's

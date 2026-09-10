@@ -373,13 +373,13 @@ fn open_session_core(path: &str, volume_id: &str, force_text: bool) -> Result<Vi
     let requested = PathBuf::from(&expanded);
 
     // A path a ROUTE serves (`/…/foo.zip/inner`, `/…/.git/branches/main/src/lib.rs`)
-    // has no `std::fs` file to open, so the viewer can't touch it directly. Stream
-    // the entry out to a bounded temp and open THAT; an unrouted path returns `None`
-    // and flows through unchanged. The `.zip` can live on a remote parent (direct
-    // SMB / MTP), so the entry is pulled through `volume_id`'s volume, not hardcoded
+    // or a path on a volume the OS can't open (`adb://<serial>/sdcard/…`) has no
+    // `std::fs` file, so the viewer can't touch it directly. Stream the file out to a
+    // bounded temp and open THAT; any other path returns `None` and flows through
+    // unchanged. Both are pulled through `volume_id`'s volume, not a hardcoded
     // `"root"`. On close, `close_session` removes the temp subdir. See
     // `routed_extract`.
-    let extracted = super::routed_extract::extract_if_routed(&requested, volume_id)?;
+    let extracted = super::routed_extract::materialize_for_viewer(&requested, volume_id)?;
     let (file_path, extract_cleanup) = match extracted {
         Some(e) => (e.temp_file, Some(e.cleanup_dir)),
         None => (requested, None),
@@ -488,8 +488,8 @@ fn open_session_core(path: &str, volume_id: &str, force_text: bool) -> Result<Vi
     // the open→subscribe window for any append that landed before the watcher
     // went live. See `spawn_watcher_manager`.
     //
-    // Tests can opt out via `CMDR_VIEWER_DISABLE_WATCHER=1`. An extracted archive temp
-    // is immutable for the session's life, so it gets no watcher (nothing to tail).
+    // Tests can opt out via `CMDR_VIEWER_DISABLE_WATCHER=1`. A materialized temp is a
+    // snapshot of a file the OS can't watch, so it gets no watcher (nothing to tail).
     if !is_extracted && std::env::var("CMDR_VIEWER_DISABLE_WATCHER").is_err() {
         spawn_watcher_manager(session_id.clone(), session_path, watcher_stop_for_thread);
     }

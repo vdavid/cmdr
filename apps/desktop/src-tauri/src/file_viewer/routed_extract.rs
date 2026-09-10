@@ -1,35 +1,45 @@
-//! Previewing a file that lives inside a ROUTE: bounded temp-materialization of
-//! one entry from a read-only routed volume (an archive, or a repo's virtual
-//! `.git` trees).
+//! Previewing a file the OS can't open: bounded temp-materialization of one file
+//! the viewer can only reach through a `Volume`.
+//!
+//! Two kinds of path have no `std::fs` file behind them:
+//!
+//! - a path a ROUTE serves: an archive entry or a blob in a repo's virtual `.git`
+//!   trees (`/…/foo.zip/inner.txt`, `/…/.git/branches/main/src/lib.rs`);
+//! - a path on a volume whose paths aren't OS-visible
+//!   (`Volume::paths_are_os_visible`): a phone over ADB or MTP, an SFTP or WebDAV
+//!   server, a direct SMB share whose mount went away (`adb://R58M1/sdcard/a.txt`).
 //!
 //! The viewer core is 100% `std::fs::File`-based (byte-seek, line-index, encoding,
-//! media protocol) with no `Volume` seam, so a path with no inode of its own —
-//! `/…/foo.zip/inner.txt`, `/…/.git/branches/main/src/lib.rs` — can't be opened
-//! directly. Instead the entry is streamed out to a bounded temp file and the
-//! viewer opens THAT. Threading a `Volume` byte-source through the whole viewer is
-//! a later refactor; this is the deliberately simple bridge (see
-//! `docs/specs/archive-browsing-m1b-derivation.md` lead decision 5).
+//! media protocol) with no `Volume` seam, so neither can be opened directly. Instead
+//! the file is streamed out to a bounded temp and the viewer opens THAT. Threading a
+//! `Volume` byte-source through the whole viewer is a later refactor; this is the
+//! deliberately simple bridge.
 //!
-//! The two routes go through one code path on purpose: both mint a read-only
-//! volume, both answer `open_read_stream`, and a second copy of the temp
-//! lifecycle would drift. The only thing that reads the kind is the error
-//! mapping, where the archive family has its own frontend copy and a portal
-//! failure does not.
+//! Both kinds go through one code path on purpose: every volume answers
+//! `get_metadata` and `open_read_stream`, and a second copy of the temp lifecycle
+//! would drift. The only thing that reads the kind is the error mapping, where the
+//! archive family has its own frontend copy and nothing else does.
+//!
+//! [`materialize_for_viewer`] is the viewer's entry and covers both kinds;
+//! [`extract_if_routed`] covers routes only, for the agent's `inspect_file`, which
+//! refuses a volume the OS can't open before it gets here.
 //!
 //! Discipline this module owns:
 //!
-//! - **One temp per open.** Re-opening the same entry re-materializes — simple
+//! - **One temp per open.** Re-opening the same file re-materializes — simple
 //!   beats a dedup cache. The temp is deleted when the viewer session closes (both
 //!   close paths funnel through [`super::session::close_session`]). The second
 //!   caller, the agent's `inspect_file` (`agent/tools/read/inspect/`), owns its
 //!   temp for one read and removes it in a `Drop` guard; the contract is the same:
-//!   whoever calls [`extract_if_routed`] removes `cleanup_dir`.
-//! - **Bounded, refuse-before-extract.** The routed volume reports the entry's
-//!   size UP FRONT (an archive from its central directory, the portal from the
-//!   blob header), so an oversize entry is refused with a typed
+//!   whoever receives an [`ExtractedEntry`] removes `cleanup_dir`.
+//! - **Bounded, refuse-before-extract.** The volume reports the file's size UP
+//!   FRONT (an archive from its central directory, the portal from the blob header,
+//!   a phone or server from its stat), so an oversize file is refused with a typed
 //!   [`ViewerError::ExtractTooLarge`] before a single byte is written. That's also
 //!   the zip-bomb guard for preview: a streaming byte-cap is the belt-and-suspenders
-//!   backstop against a central directory that understates the real size.
+//!   backstop against a reported size that understates the real one.
+//! - **A snapshot, not a live view.** The temp is the file as it was at open. No
+//!   watcher follows it, so tail mode and reload re-read the temp, never the source.
 //! - **Reaper-friendly, per-instance temps.** Each extraction lives in its own
 //!   `.cmdr-viewer-<uuid>/` subdir of a per-instance extract dir (under the app data
 //!   dir, so side-by-side dev/prod/worktree instances never reap each other's live
@@ -42,7 +52,7 @@ use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::RwLockIgnorePoison;
 
 use super::ViewerError;
-use crate::file_system::volume::manager::{RoutedKind, path_routes_over_its_parent};
+use crate::file_system::volume::manager::{RoutedKind, get_volume_manager, path_routes_over_its_parent};
 
 /// Max bytes to materialize for a single preview. Above this the open is refused
 /// (typed) before any extraction, which doubles as the zip-bomb guard.
@@ -69,7 +79,7 @@ static EXTRACT_DIR: LazyLock<RwLock<Option<PathBuf>>> = LazyLock::new(|| RwLock:
 /// A successful extraction: the temp file to open, and the subdir to remove on close.
 #[derive(Debug)]
 pub(crate) struct ExtractedEntry {
-    /// The extracted entry on local disk, named with the entry's basename so the
+    /// The extracted file on local disk, named with the source's basename so the
     /// viewer shows the right title and classifies media by the right extension.
     pub(crate) temp_file: PathBuf,
     /// The `.cmdr-viewer-<uuid>/` subdir wrapping `temp_file`, removed wholesale on
@@ -118,6 +128,52 @@ pub(super) fn is_orphan_extract_name(name: &str) -> bool {
     name.starts_with(EXTRACT_SUBDIR_PREFIX)
 }
 
+/// What the viewer opens for `requested`: a bounded temp copy when the OS can't open
+/// the path (a route serves it, or its volume's paths aren't OS-visible), else
+/// `Ok(None)` and the caller opens `requested` directly.
+///
+/// Blocking: run it inside `spawn_blocking`, not on the IPC thread.
+pub(crate) fn materialize_for_viewer(requested: &Path, volume_id: &str) -> Result<Option<ExtractedEntry>, ViewerError> {
+    materialize_for_viewer_with(requested, volume_id, &extract_dir(), EXTRACT_CAP_BYTES)
+}
+
+/// Whether opening `requested` may pull it into a temp first, so `viewer_open` can
+/// grant the materialization budget. No I/O and no route confirm: it's a heuristic,
+/// so over-granting to a mislabeled `.zip` is harmless.
+///
+/// Reads the registry with `get`, not `resolve`: a path that doesn't route is served
+/// by `volume_id`'s own volume, and `resolve` may confirm a route with I/O.
+pub(crate) fn open_may_materialize(requested: &Path, volume_id: &str) -> bool {
+    path_routes_over_its_parent(requested)
+        || get_volume_manager()
+            .get(volume_id)
+            .is_some_and(|volume| !volume.paths_are_os_visible())
+}
+
+/// [`materialize_for_viewer`] with an explicit dir + cap, for tests.
+pub(crate) fn materialize_for_viewer_with(
+    requested: &Path,
+    volume_id: &str,
+    dir: &Path,
+    cap: u64,
+) -> Result<Option<ExtractedEntry>, ViewerError> {
+    if let Some(entry) = extract_if_routed_with(requested, volume_id, dir, cap)? {
+        return Ok(Some(entry));
+    }
+    // Locality is `paths_are_os_visible`, ❌ never `supports_local_fs_access`: a
+    // direct SMB share answers `false` there, yet its mounted path opens with
+    // `std::fs` and keeps tail mode, so it stays a direct open until its mount goes.
+    let resolved = tauri::async_runtime::block_on(get_volume_manager().resolve(volume_id, requested));
+    let Some(volume) = resolved.volume else {
+        // Unregistered (an eject or unmount race): the caller's existence check answers.
+        return Ok(None);
+    };
+    if resolved.routed.is_some() || volume.paths_are_os_visible() {
+        return Ok(None);
+    }
+    tauri::async_runtime::block_on(extract_entry(volume, resolved.path, dir, cap, None)).map(Some)
+}
+
 /// If a ROUTE serves `requested`, stream the addressed entry to a bounded temp and
 /// return it; otherwise `Ok(None)` (the caller opens `requested` directly).
 ///
@@ -146,9 +202,7 @@ pub(crate) fn extract_if_routed_with(
     if !path_routes_over_its_parent(requested) {
         return Ok(None);
     }
-    let resolved = tauri::async_runtime::block_on(
-        crate::file_system::volume::manager::get_volume_manager().resolve(volume_id, requested),
-    );
+    let resolved = tauri::async_runtime::block_on(get_volume_manager().resolve(volume_id, requested));
     let Some(routed) = resolved.routed else {
         return Ok(None);
     };
@@ -158,21 +212,22 @@ pub(crate) fn extract_if_routed_with(
         return Ok(None);
     };
     let entry_path = resolved.path;
-    tauri::async_runtime::block_on(extract_entry(volume, entry_path, dir, cap, routed)).map(Some)
+    tauri::async_runtime::block_on(extract_entry(volume, entry_path, dir, cap, Some(routed))).map(Some)
 }
 
-/// Streams one routed entry to a fresh temp subdir under `dir`, refusing an oversize
-/// entry before writing anything.
+/// Streams one file to a fresh temp subdir under `dir`, refusing an oversize file
+/// before writing anything. `routed` is the route that minted `volume`, or `None`
+/// for a volume the OS can't open.
 async fn extract_entry(
     volume: std::sync::Arc<dyn Volume>,
     entry_path: PathBuf,
     dir: &Path,
     cap: u64,
-    routed: RoutedKind,
+    routed: Option<RoutedKind>,
 ) -> Result<ExtractedEntry, ViewerError> {
-    // Size + kind come from the volume's index (an archive's central directory, the
-    // portal's tree entry), never a decompression or a blob read, so the refusal
-    // lands BEFORE we create a temp or stream a byte.
+    // Size + kind come from the volume's metadata (an archive's central directory,
+    // the portal's tree entry, a phone's or server's stat), never a decompression or
+    // a content read, so the refusal lands BEFORE we create a temp or stream a byte.
     let meta = volume
         .get_metadata(&entry_path)
         .await
@@ -199,14 +254,14 @@ async fn extract_entry(
     }
 }
 
-/// Streams the entry into `temp_file`, enforcing the byte-cap as a backstop against a
-/// central directory that understates the real uncompressed size.
+/// Streams the file into `temp_file`, enforcing the byte-cap as a backstop against a
+/// reported size that understates the real one.
 async fn stream_to_file(
     volume: &dyn Volume,
     entry_path: &Path,
     temp_file: &Path,
     cap: u64,
-    routed: RoutedKind,
+    routed: Option<RoutedKind>,
 ) -> Result<(), ViewerError> {
     use std::io::Write as _;
 
@@ -228,7 +283,7 @@ async fn stream_to_file(
     Ok(())
 }
 
-/// A safe single-component filename for the temp, derived from the entry's basename.
+/// A safe single-component filename for the temp, derived from the source's basename.
 /// Empty or separator-bearing names fall back to a fixed name (the subdir already
 /// guarantees uniqueness; this only affects the viewer's displayed title + extension).
 fn temp_basename(entry_name: &str) -> String {
@@ -240,22 +295,23 @@ fn temp_basename(entry_name: &str) -> String {
     }
 }
 
-/// Maps a `VolumeError` from a routed read into a typed `ViewerError`. Path-shaped
-/// errors keep their twins whichever route they came from; the rest depend on it.
+/// Maps a `VolumeError` from a materializing read into a typed `ViewerError`.
+/// Path-shaped errors keep their twins whatever the source; the rest depend on it.
 ///
 /// The archive family (encrypted, corrupt, unsupported codec) has its own frontend
 /// copy under `ViewerError::Archive`, which the FE renders without inspecting the
-/// message string. A portal read has no such family — a repository that can't be
-/// opened is a fault, not a kind of file — so it stays a plain `Io`.
-fn map_volume_error(err: VolumeError, routed: RoutedKind) -> ViewerError {
+/// message string. A portal read and a plain pull have no such family — a repository
+/// that can't be opened or a phone that dropped mid-read is a fault, not a kind of
+/// file — so they stay a plain `Io`.
+fn map_volume_error(err: VolumeError, routed: Option<RoutedKind>) -> ViewerError {
     match err {
         VolumeError::NotFound(path) => ViewerError::NotFound { path },
         VolumeError::IsADirectory(_) => ViewerError::IsDirectory,
         other => match routed {
-            RoutedKind::Archive => ViewerError::Archive {
+            Some(RoutedKind::Archive) => ViewerError::Archive {
                 message: other.to_string(),
             },
-            RoutedKind::GitPortal => ViewerError::Io {
+            Some(RoutedKind::GitPortal) | None => ViewerError::Io {
                 message: other.to_string(),
             },
         },

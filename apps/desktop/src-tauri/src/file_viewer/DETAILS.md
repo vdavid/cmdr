@@ -45,7 +45,8 @@ The viewer renders images and PDFs inline instead of showing the binary warning.
 - `content_kind.rs`: pure `classify_viewer_content(head, ext, is_local) -> ViewerContentKind { Text, Image, Pdf }`.
   Magic bytes decide (JPEG/PNG/GIF/WebP/BMP/TIFF/HEIC/PDF); the extension is a tiebreaker only, and only for SVG (an
   `.svg` ext AND an `<svg` root after BOM/prolog/comments/DOCTYPE). Non-local files always classify `Text` (v1 scopes
-  media to local POSIX volumes; MTP has no POSIX path, SMB can block). `media_mime(head, kind)` re-sniffs the magic to
+  media to local POSIX volumes; SMB can block). A file on a volume the OS can't open (MTP, ADB, SFTP, WebDAV) reaches
+  classification as a local temp, so it renders like any local image or PDF (§ "Preview of a routed file"). `media_mime(head, kind)` re-sniffs the magic to
   pick the served `Content-Type`. `looks_binary(head, encoding)` is the byte-level answer the classifier doesn't give
   (it calls every non-media file `Text` and leaves the binary warning to the FE's extension list): UTF-16 is text (its
   NULs are code-unit halves); otherwise a NUL, or C0 controls other than `\t` `\n` `\r` form feed and ESC above 5% of
@@ -117,11 +118,12 @@ the scheme + range support regardless, so one path (the token scheme for everyth
 
 ## Preview of a routed file
 
-`routed_extract.rs` lets the viewer preview a file that only a ROUTE can serve: an archive-inner path
-(`/…/foo.zip/inner.txt`) or a path in a repo's virtual `.git` trees (`/…/.git/branches/main/src/lib.rs`). The viewer
-core is 100% `std::fs::File`-based (byte-seek, line-index, encoding, and the `cmdr-media://` handler all `File::open` a
-real path), so there's no `Volume` byte-source seam to thread through. Instead of that larger refactor, `open_session`
-streams the addressed entry to a bounded temp and opens THAT — the deliberately simple bridge.
+`routed_extract.rs` lets the viewer preview a file the OS can't open: one only a ROUTE can serve, an archive-inner
+path (`/…/foo.zip/inner.txt`) or a path in a repo's virtual `.git` trees (`/…/.git/branches/main/src/lib.rs`), and a
+file on a volume whose paths aren't OS-visible (§ "A file on a volume the OS can't open" below). The viewer core is
+100% `std::fs::File`-based (byte-seek, line-index, encoding, and the `cmdr-media://` handler all `File::open` a real
+path), so there's no `Volume` byte-source seam to thread through. Instead of that larger refactor, `open_session`
+streams the file to a bounded temp and opens THAT — the deliberately simple bridge.
 
 **One code path for both routes.** Both mint a read-only volume, both answer `open_read_stream`, and a second copy of
 the temp lifecycle would drift. The only thing that reads the `RoutedKind` is the error mapping: the archive family
@@ -165,15 +167,41 @@ removing its `cleanup_dir` (the reaper only covers a crash). `extract_if_routed_
 **The cap is 256 MiB** (`EXTRACT_CAP_BYTES`), chosen to comfortably cover real preview content (documents, images, PDFs,
 most media) while bounding the temp write, extraction time, and decompression amplification. It's independent of the FE
 copy-selection ceiling (`COPY_REFUSE_BYTES`, 100 MiB): that caps a *selection*, this caps a whole-entry materialization.
-Because a large entry can take longer than the 2 s read tier to materialize, `viewer_open` / `viewer_open_as_text` use
-a 30 s budget (`VIEWER_ROUTED_TIMEOUT`, the recursive-scan tier) when a route serves the path, and the strict 2 s
-otherwise. The pick is `path_routes_over_its_parent`, pure string work with no I/O: the budget is a heuristic, not a
-correctness gate, so over-granting it to a mislabeled `.zip` is harmless.
+Because a large file can take longer than the 2 s read tier to materialize, `viewer_open` / `viewer_open_as_text` use
+a 30 s budget (`VIEWER_MATERIALIZE_TIMEOUT`, the recursive-scan tier) when the open may materialize, and the strict 2 s
+otherwise. The pick is `routed_extract::open_may_materialize`: `path_routes_over_its_parent` plus a registry `get` for
+the volume's `paths_are_os_visible()`, no I/O. The budget is a heuristic, not a correctness gate, so over-granting it to
+a mislabeled `.zip` is harmless. Both commands time out through `util.rs`'s `blocking_typed_result_with_timeout`, which
+detaches the open on expiry rather than dropping it, so a pull off an MTP phone never abandons a PTP transaction.
 
 `ViewerError::ExtractTooLarge` names no namespace, in the Rust `Display` string and in the frontend copy it maps to
-(`viewer.error.tooLargeToPreview`, "too big to preview from here"): a `.zip` entry and a >256 MiB blob in a `.git`
-snapshot both reach this cap, so naming one of them would be a plain lie in the other case. Pinned on both sides
-(`routed_extract_test.rs`, `viewer-i18n-parity.test.ts`).
+(`viewer.error.tooLargeToPreview`, "too big to preview from here"): a `.zip` entry, a >256 MiB blob in a `.git`
+snapshot, and a large file on a phone all reach this cap, so naming one of them would be a plain lie in the others.
+Pinned on both sides (`routed_extract_test.rs`, `viewer-i18n-parity.test.ts`).
+
+### A file on a volume the OS can't open
+
+A phone over ADB or MTP, an SFTP or WebDAV server, and a direct SMB share whose mount went away hand out paths no
+`std::fs` call can open (`adb://R58M1/sdcard/notes.txt`, `mtp://…`, `sftp://…`). `materialize_for_viewer` is the
+viewer's entry: it tries the route first (so a `.zip` ON a phone still routes), then `resolve`s the path and, when the
+volume's `paths_are_os_visible()` is false, pulls the file through that volume with the same `extract_entry` a routed
+entry uses. Same cap, refused from the volume's stat before a temp exists; same `.cmdr-viewer-<uuid>/` subdir; same
+`extract_cleanup` on close; same media path, since the temp is a local file an image or PDF renders from. Errors map
+like a portal read's: `NotFound` and `IsDirectory` keep their twins, and anything else (a phone dropping mid-read) is a
+plain `ViewerError::Io`.
+
+**Decision**: locality is `Volume::paths_are_os_visible()`, not `supports_local_fs_access()`. **Why**: the viewer core
+opens paths with `std::fs`, which is the question `paths_are_os_visible` answers. A direct SMB volume answers `false` to
+`supports_local_fs_access` (its own I/O rides smb2) but `true` here while its share is mounted, and a direct open keeps
+the watcher, tail mode, and no size cap. Once the registry latches the mount gone, the same share pulls through smb2.
+
+Which volumes this covers (verified in code, 2026-09-10): ADB, MTP, SFTP, and WebDAV answer `false`, so their files
+materialize; before, each answered `notFound`. Direct SMB answers `true` while mounted and opens directly, as it always
+did. A local disk and an OS-mounted share are unchanged.
+
+**The temp is a snapshot, like a routed temp.** No watcher is spawned for it, so tail mode never extends it and
+`viewer_reload` re-reads the temp, not the phone. The toolbar's tail toggle stays available and does nothing visible,
+exactly as for a file inside a `.zip`. To see a newer copy, close and reopen the viewer.
 
 **Per-instance extract dir + startup reaper.** The dir is `<app_data_dir>/viewer-extract` (set by
 `init_routed_extract_dir` from `lib.rs`), so side-by-side dev/prod/worktree instances never reap each other's live

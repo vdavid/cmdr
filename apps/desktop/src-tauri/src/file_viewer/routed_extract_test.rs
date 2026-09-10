@@ -6,7 +6,8 @@ use std::sync::{Arc, Mutex};
 
 use super::ViewerError;
 use super::routed_extract::{
-    EXTRACT_CAP_BYTES, extract_if_routed_with, init_routed_extract_dir, is_orphan_extract_name, reap_orphan_extracts,
+    EXTRACT_CAP_BYTES, extract_if_routed_with, init_routed_extract_dir, is_orphan_extract_name,
+    materialize_for_viewer_with, reap_orphan_extracts,
 };
 use super::session;
 
@@ -232,6 +233,78 @@ fn image_in_zip_opens_as_media_and_temp_is_deleted_on_close() {
         after.is_empty(),
         "media temp must be deleted on session close, found {after:?}"
     );
+}
+
+/// Registers a volume whose paths the OS can't open (standing in for a phone over
+/// ADB or MTP, or an SFTP / WebDAV server) under `id`, holding one `notes.txt`, and
+/// returns that file's app path. `InMemoryVolume` answers `paths_are_os_visible()`
+/// `false` by default; the assert keeps the fixture honest about it.
+fn a_volume_the_os_cant_open(id: &str, content: &[u8]) -> String {
+    use crate::file_system::volume::manager::get_volume_manager;
+    use crate::file_system::volume::{InMemoryVolume, Volume as _};
+
+    let root = format!("mtp://{id}/1");
+    let volume = InMemoryVolume::new("Phone").with_root(&root);
+    let path = format!("{root}/notes.txt");
+    tauri::async_runtime::block_on(volume.create_file(Path::new(&path), content)).expect("seed the file");
+    assert!(
+        !volume.paths_are_os_visible(),
+        "the fixture must model a volume the OS can't open"
+    );
+    get_volume_manager().register(id, Arc::new(volume));
+    path
+}
+
+/// A file on a volume whose paths the OS can't open is pulled through the volume
+/// into the same bounded temp a routed entry uses, read from there, and the temp goes
+/// on close. Pre-fix the open went straight to `std::fs`, found nothing at `mtp://…`,
+/// and answered `NotFound` (F3 on a real phone over ADB did exactly that).
+#[test]
+fn a_file_on_a_volume_the_os_cant_open_is_pulled_into_a_temp_and_its_lines_read() {
+    let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let extract = crate::test_support::TestDir::new("viewer_pull");
+    init_routed_extract_dir(extract.to_path_buf());
+    let path = a_volume_the_os_cant_open("viewer-pull-cell", b"first line\nsecond line\n");
+
+    let opened = session::open_session(&path, "viewer-pull-cell").expect("the file opens");
+    assert_eq!(opened.file_name, "notes.txt");
+    assert_eq!(opened.initial_lines.lines[0], "first line");
+    assert_eq!(opened.initial_lines.lines[1], "second line");
+    let subdirs: Vec<_> = std::fs::read_dir(&extract)
+        .expect("read extract dir")
+        .flatten()
+        .collect();
+    assert_eq!(subdirs.len(), 1, "one temp subdir expected, found {subdirs:?}");
+
+    session::close_session(&opened.session_id).expect("close");
+    let after: Vec<_> = std::fs::read_dir(&extract)
+        .expect("read extract dir")
+        .flatten()
+        .collect();
+    assert!(after.is_empty(), "the temp goes on close, found {after:?}");
+}
+
+/// A file past the cap on such a volume answers the typed `ExtractTooLarge` the
+/// frontend words ("too big to preview from here"), from the size the volume reports,
+/// before a temp exists. 100 KiB is past one 64 KiB in-memory chunk, so the reported
+/// `size` pins the refusal to the up-front guard rather than the streaming backstop.
+/// Pre-fix nothing was pulled, so there was no refusal to give.
+#[test]
+fn a_file_past_the_cap_on_a_volume_the_os_cant_open_is_refused_before_a_temp_exists() {
+    let extract = crate::test_support::TestDir::new("viewer_pull_cap");
+    let entry_len = 100 * 1024;
+    let path = a_volume_the_os_cant_open("viewer-pull-cap-cell", &vec![b'x'; entry_len]);
+
+    let outcome = materialize_for_viewer_with(Path::new(&path), "viewer-pull-cap-cell", &extract, 10);
+    assert!(
+        matches!(outcome, Err(ViewerError::ExtractTooLarge { size, cap: 10 }) if size == entry_len as u64),
+        "expected ExtractTooLarge with the declared size, got {outcome:?}"
+    );
+    let created: Vec<_> = std::fs::read_dir(&extract)
+        .expect("read extract dir")
+        .flatten()
+        .collect();
+    assert!(created.is_empty(), "no temp after a cap refusal, found {created:?}");
 }
 
 /// The cap fires for a `.zip` entry AND for a blob in a repo's virtual `.git`
