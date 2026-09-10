@@ -120,6 +120,26 @@ fn a_sibling_root_is_not_this_servers_path() {
     );
 }
 
+/// ❗ Asking whether a path exists on a SAVED server nobody connected answers
+/// "couldn't tell", ❌ never a confident `false`: nothing has looked, and every
+/// caller reads `false` as "deleted" and walks the pane off the server.
+#[tokio::test]
+async fn path_exists_on_a_saved_server_nobody_connected_answers_that_it_couldnt_tell() {
+    let host = "198.51.100.48";
+    sftp_known_servers::remember(saved_sftp(host, true));
+
+    let answer = crate::commands::file_system::path_exists(
+        Some(cmdr_fs::volume::sftp_volume_id(host, 2222, "ada")),
+        format!("sftp://ada@{host}:2222/srv/data/photos"),
+    )
+    .await;
+
+    assert!(
+        answer.timed_out && !answer.data,
+        "a server that isn't connected can't say either way; got {answer:?}"
+    );
+}
+
 // ── The rows the switcher gets ───────────────────────────────────────
 
 /// ❗ **Every saved server gets a row, and the row carries its own pin.** The

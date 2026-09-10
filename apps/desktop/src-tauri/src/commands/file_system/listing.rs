@@ -155,10 +155,12 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bo
     } else if crate::device_volumes::provider_for_volume_id(&volume_id)
         .await
         .is_some()
+        || crate::server_volumes::place_root(&volume_id).is_some()
     {
         // A device its provider lists but nobody has dialed (an ADB phone before its
-        // pane's connect lands, or after an eject). Nothing has looked, so the honest
-        // answer is "couldn't tell", ❌ never a `false` that every caller reads as "gone".
+        // pane's connect lands, or after an eject), or a saved SFTP / WebDAV server
+        // nobody has connected. Nothing has looked, so the honest answer is "couldn't
+        // tell", ❌ never a `false` that every caller reads as "gone".
         TimedOut {
             data: false,
             timed_out: true,

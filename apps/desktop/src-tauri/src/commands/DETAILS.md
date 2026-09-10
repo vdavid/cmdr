@@ -44,7 +44,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `clipboard.rs::read_clipboard_files`. `drag.rs`: native drag, self-drag overlay (see "Drag session locality" below).
   `e2e_support.rs`: feature-gated E2E/debug commands. `listing.rs::path_exists` is session-aware: a remote volume whose session
   drops returns an immediate `false`, so it re-checks `connection_state()` and reports `timedOut: true` unless the
-  session is still live, and a transient blip can't evict the user from a network folder. `TimedOut<T>`'s TS twin lives in
+  session is still live, and a transient blip can't evict the user from a network folder. An id nothing registered but
+  something still names answers `timedOut: true` too, never a confident `false`: a phone its device provider lists but
+  nobody dialed, or a saved SFTP / WebDAV server nobody connected (`server_volumes::place_root`). `TimedOut<T>`'s TS twin lives in
   `$lib/tauri-commands/ipc-types.ts`; every typed error enum's twin is generated into `$lib/ipc/bindings.ts`.
 - **`volumes.rs`** (macOS): `list_volumes`, `get_default_volume_id`, `get_volume_space`, `resolve_path_volume`
   (statfs-based, no volume enumeration), `resolve_location`. The latter two share one `resolve_path_to_volume` body
