@@ -562,15 +562,19 @@ async fn a_pause_during_a_scan_wait_still_holds_when_the_scan_ends() {
 /// Leaving the preview alone isn't an option either, because the dialog
 /// deliberately skips its own cleanup after a confirm (on the DELETE path the
 /// operation does consume it), so an ownerless walk would run for nobody.
+///
+/// The source doesn't exist, so the operation runs its whole shape and settles
+/// on its per-item verdict without handing anything to the real Trash. What's
+/// under test is the preview, and a real `trashItemAtURL` in a bare test binary
+/// has DesktopServices list `target/debug/deps` to find the main bundle, which
+/// alone outlasted the settle wait under a full `rust-tests` run
+/// (`docs/testing.md` § "The host machine is not a fixture").
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_trash_frees_its_preview_instead_of_waiting_on_it() {
     use super::trash_files_start;
 
     let dir = TestDir::new("scanwait-trash");
-    let src = dir.join("src");
-    std::fs::create_dir_all(&src).expect("create src");
-    let file = src.join("a.bin");
-    std::fs::write(&file, b"a").expect("write a");
+    let never_created = dir.join("never-created.bin");
 
     let preview_id = unique("preview");
     register_in_flight(&preview_id);
@@ -578,7 +582,7 @@ async fn a_trash_frees_its_preview_instead_of_waiting_on_it() {
     let events = Arc::new(CollectorEventSink::new());
     let start = trash_files_start(
         Arc::clone(&events) as Arc<dyn OperationEventSink>,
-        vec![file.clone()],
+        vec![never_created],
         None,
         WriteOperationConfig {
             preview_id: Some(preview_id.clone()),
