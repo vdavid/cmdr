@@ -237,8 +237,8 @@ pub(super) struct ViewerSession {
     /// `.git` trees), the `.cmdr-viewer-<uuid>/` temp subdir the entry was streamed
     /// into. Removed wholesale at `close_session` (both close paths funnel through
     /// it), so the temp's lifetime is exactly the session's. `None` for a normal
-    /// on-disk open. See `file_viewer::routed_extract`.
-    extract_cleanup: Option<PathBuf>,
+    /// on-disk open. See `file_viewer::materialize`.
+    temp_cleanup: Option<PathBuf>,
 }
 
 /// The fields that vary between a text open and a media open. Everything else on a
@@ -253,7 +253,7 @@ pub(super) struct ViewerSessionInit {
     pub(super) watcher_stop: Arc<AtomicBool>,
     pub(super) path: PathBuf,
     pub(super) media_token: Option<String>,
-    pub(super) extract_cleanup: Option<PathBuf>,
+    pub(super) temp_cleanup: Option<PathBuf>,
 }
 
 impl ViewerSession {
@@ -273,7 +273,7 @@ impl ViewerSession {
             active_reads: Mutex::new(HashMap::new()),
             path: init.path,
             media_token: init.media_token,
-            extract_cleanup: init.extract_cleanup,
+            temp_cleanup: init.temp_cleanup,
         }
     }
 
@@ -378,13 +378,13 @@ fn open_session_core(path: &str, volume_id: &str, force_text: bool) -> Result<Vi
     // bounded temp and open THAT; any other path returns `None` and flows through
     // unchanged. Both are pulled through `volume_id`'s volume, not a hardcoded
     // `"root"`. On close, `close_session` removes the temp subdir. See
-    // `routed_extract`.
-    let extracted = super::routed_extract::materialize_for_viewer(&requested, volume_id)?;
-    let (file_path, extract_cleanup) = match extracted {
+    // `materialize`.
+    let extracted = super::materialize::materialize_for_viewer(&requested, volume_id)?;
+    let (file_path, temp_cleanup) = match extracted {
         Some(e) => (e.temp_file, Some(e.cleanup_dir)),
         None => (requested, None),
     };
-    let is_extracted = extract_cleanup.is_some();
+    let is_extracted = temp_cleanup.is_some();
 
     if !file_path.exists() {
         return Err(ViewerError::NotFound { path: path.to_string() });
@@ -400,9 +400,9 @@ fn open_session_core(path: &str, volume_id: &str, force_text: bool) -> Result<Vi
     // A media kind (Image/Pdf on a local volume) opens a no-op session that serves bytes
     // via `cmdr-media://`; the whole media-open path lives in `media_session.rs`.
     // An extracted image/PDF renders inline too: the media session serves the temp via
-    // `cmdr-media://` and inherits the same `extract_cleanup`, so closing it deletes the
+    // `cmdr-media://` and inherits the same `temp_cleanup`, so closing it deletes the
     // temp. `try_open_media` returns `None` (falls through to text) for non-media kinds.
-    if !force_text && let Some(result) = media_session::try_open_media(&file_path, file_size, extract_cleanup.clone()) {
+    if !force_text && let Some(result) = media_session::try_open_media(&file_path, file_size, temp_cleanup.clone()) {
         return result;
     }
 
@@ -443,7 +443,7 @@ fn open_session_core(path: &str, volume_id: &str, force_text: bool) -> Result<Vi
         watcher_stop,
         path: file_path.clone(),
         media_token: None,
-        extract_cleanup,
+        temp_cleanup,
     });
 
     // Calculate estimated total lines from the initial sample
@@ -1159,7 +1159,7 @@ pub fn close_session(session_id: &str) -> Result<(), ViewerError> {
         }
         // Delete the preview-in-zip temp (if any). This is the single choke point both
         // teardown paths funnel through, so the temp's lifetime is exactly the session's.
-        if let Some(dir) = &session.extract_cleanup
+        if let Some(dir) = &session.temp_cleanup
             && let Err(e) = std::fs::remove_dir_all(dir)
         {
             debug!(

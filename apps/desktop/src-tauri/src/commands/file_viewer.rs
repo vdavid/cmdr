@@ -32,7 +32,7 @@ const VIEWER_MATERIALIZE_TIMEOUT: Duration = Duration::from_secs(30);
 /// fast on its own).
 fn open_timeout_for(path: &str, volume_id: &str) -> Duration {
     let expanded = crate::commands::file_system::expand_tilde(path);
-    if file_viewer::routed_extract::open_may_materialize(std::path::Path::new(&expanded), volume_id) {
+    if file_viewer::materialize::open_may_materialize(std::path::Path::new(&expanded), volume_id) {
         VIEWER_MATERIALIZE_TIMEOUT
     } else {
         VIEWER_TIMEOUT
@@ -61,7 +61,7 @@ pub async fn viewer_open(
 ) -> Result<ViewerOpenResult, ViewerError> {
     let timeout = open_timeout_for(&path, &volume_id);
     // Typed `ViewerError` (never a stringified message) so the FE can render friendly
-    // copy for the materializing family — `ExtractTooLarge` (the preview cap, which a
+    // copy for the materializing family — `TooLargeToPreview` (the preview cap, which a
     // `.zip` entry, a `.git` snapshot blob, and a phone's file all reach), `Archive`
     // (encrypted / corrupt / unsupported codec) — matching `viewer_read_range`. On
     // expiry the open keeps running detached, so a pull off a phone is never dropped

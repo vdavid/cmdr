@@ -128,7 +128,7 @@ export async function viewerOpen(path: string, volumeId = 'root', windowLabel = 
 /**
  * Throws a viewer failure carrying the typed `ViewerError` on a `viewerError`
  * property, so the caller can branch on the VARIANT (the archive family:
- * `extractTooLarge`, `archive`; the deadline: `timedOut`) and render friendly
+ * `tooLargeToPreview`, `archive`; the deadline: `timedOut`) and render friendly
  * per-variant copy. The `Error.message` is a best-effort diagnostic for logs and
  * generic consumers; ❌ nothing a user reads comes from it.
  */

@@ -68,10 +68,10 @@ The viewer renders images and PDFs inline instead of showing the binary warning.
 - `media_backend.rs`: `MediaBackend`, a no-op `FileViewerBackend` so a media session can fill the non-optional
   `backend` field without a text backend. Every text-shaped call returns empty/zero.
 - `media_session.rs`: the media-open path, kept out of `session.rs` so that file stays text-backend orchestration.
-  `try_open_media(file_path, file_size, extract_cleanup)` reads the head, classifies (`is_local_posix_path` decides
+  `try_open_media(file_path, file_size, temp_cleanup)` reads the head, classifies (`is_local_posix_path` decides
   locality), and for a media kind calls `open_media_session`; otherwise returns `None` so `open_session` falls through to
   text. `open_media_session` mints the token, reads dimensions best-effort, installs a `MediaBackend`, and builds the
-  `ViewerSession` via `session::ViewerSession::new`, passing `extract_cleanup` through so an image/PDF previewed from
+  `ViewerSession` via `session::ViewerSession::new`, passing `temp_cleanup` through so an image/PDF previewed from
   over a routed file deletes its temp on close (see § "Preview of a routed file"). Owns the `MediaDimensions` type. Covered by `media_session_test.rs`
   (image / PDF / text-fallthrough / open-as-text through the public `open_session`).
 
@@ -118,7 +118,7 @@ the scheme + range support regardless, so one path (the token scheme for everyth
 
 ## Preview of a routed file
 
-`routed_extract.rs` lets the viewer preview a file the OS can't open: one only a ROUTE can serve, an archive-inner
+`materialize.rs` lets the viewer preview a file the OS can't open: one only a ROUTE can serve, an archive-inner
 path (`/…/foo.zip/inner.txt`) or a path in a repo's virtual `.git` trees (`/…/.git/branches/main/src/lib.rs`), and a
 file on a volume whose paths aren't OS-visible (§ "A file on a volume the OS can't open" below). The viewer core is
 100% `std::fs::File`-based (byte-seek, line-index, encoding, and the `cmdr-media://` handler all `File::open` a real
@@ -141,17 +141,17 @@ Flow (in `open_session_inner`, before the media/text split):
    confirm inside `resolve` handles a mislabeled or remote-only archive and a `.git` that isn't a repository.
 2. For a routed path it reads the entry's `get_metadata` (from the archive's central directory or the portal's tree
    entry, never a decompression or a blob read). A directory entry → `ViewerError::IsDirectory`. A size over the cap →
-   `ViewerError::ExtractTooLarge`, refused BEFORE any temp is created — this up-front refusal is the zip-bomb guard for
+   `ViewerError::TooLargeToPreview`, refused BEFORE any temp is created — this up-front refusal is the zip-bomb guard for
    preview.
 3. Otherwise it streams `open_read_stream` into `<extract_dir>/.cmdr-viewer-<uuid>/<entry-basename>`, enforcing the cap
    again on bytes written (a central directory that understates the real size can't sneak past). The basename is the
    entry's, so the viewer window shows the right title and media classification sees the right extension.
 4. `open_session` then runs its normal media/text classification on the temp. The `ViewerSession` stores the temp's
-   subdir in `extract_cleanup`; a media open threads the same value through `try_open_media`. Extracted sessions spawn
+   subdir in `temp_cleanup`; a media open threads the same value through `try_open_media`. Extracted sessions spawn
    NO watcher (the temp is immutable for the session's life).
 
 **Temp lifetime == session lifetime.** `close_session` (the single choke point both teardown paths funnel through)
-`remove_dir_all`s `extract_cleanup`. One temp per open — re-opening the same entry re-extracts (simple beats a dedup
+`remove_dir_all`s `temp_cleanup`. One temp per open — re-opening the same entry re-extracts (simple beats a dedup
 cache).
 
 **The second caller: the agent's `inspect_file`** (`agent/tools/read/inspect/`). It calls the same
@@ -160,33 +160,33 @@ and from `inspect_routed_path` in `mod.rs` for every other route — runs its pe
 removes `cleanup_dir` in a `Drop` guard, so its temp lives for one read rather than a session. A routed row reports no
 `modified`: the temp was written a moment ago, and quoting its mtime would date a years-old commit as today. The
 contract both callers share, and any third one inherits: the 256 MiB cap and the refuse-before-extract guard are inside
-the function and stay there; a caller never materializes around them; and whoever receives an `ExtractedEntry` owns
+the function and stay there; a caller never materializes around them; and whoever receives an `MaterializedFile` owns
 removing its `cleanup_dir` (the reaper only covers a crash). `extract_if_routed_with` (explicit dir + cap) is
 `pub(crate)` for both callers' tests.
 
-**The cap is 256 MiB** (`EXTRACT_CAP_BYTES`), chosen to comfortably cover real preview content (documents, images, PDFs,
+**The cap is 256 MiB** (`PREVIEW_CAP_BYTES`), chosen to comfortably cover real preview content (documents, images, PDFs,
 most media) while bounding the temp write, extraction time, and decompression amplification. It's independent of the FE
 copy-selection ceiling (`COPY_REFUSE_BYTES`, 100 MiB): that caps a *selection*, this caps a whole-entry materialization.
 Because a large file can take longer than the 2 s read tier to materialize, `viewer_open` / `viewer_open_as_text` use
 a 30 s budget (`VIEWER_MATERIALIZE_TIMEOUT`, the recursive-scan tier) when the open may materialize, and the strict 2 s
-otherwise. The pick is `routed_extract::open_may_materialize`: `path_routes_over_its_parent` plus a registry `get` for
+otherwise. The pick is `materialize::open_may_materialize`: `path_routes_over_its_parent` plus a registry `get` for
 the volume's `paths_are_os_visible()`, no I/O. The budget is a heuristic, not a correctness gate, so over-granting it to
 a mislabeled `.zip` is harmless. Both commands time out through `util.rs`'s `blocking_typed_result_with_timeout`, which
 detaches the open on expiry rather than dropping it, so a pull off an MTP phone never abandons a PTP transaction.
 
-`ViewerError::ExtractTooLarge` names no namespace, in the Rust `Display` string and in the frontend copy it maps to
+`ViewerError::TooLargeToPreview` names no namespace, in the Rust `Display` string and in the frontend copy it maps to
 (`viewer.error.tooLargeToPreview`, "too big to preview from here"): a `.zip` entry, a >256 MiB blob in a `.git`
 snapshot, and a large file on a phone all reach this cap, so naming one of them would be a plain lie in the others.
-Pinned on both sides (`routed_extract_test.rs`, `viewer-i18n-parity.test.ts`).
+Pinned on both sides (`materialize_test.rs`, `viewer-i18n-parity.test.ts`).
 
 ### A file on a volume the OS can't open
 
 A phone over ADB or MTP, an SFTP or WebDAV server, and a direct SMB share whose mount went away hand out paths no
 `std::fs` call can open (`adb://R58M1/sdcard/notes.txt`, `mtp://…`, `sftp://…`). `materialize_for_viewer` is the
 viewer's entry: it tries the route first (so a `.zip` ON a phone still routes), then `resolve`s the path and, when the
-volume's `paths_are_os_visible()` is false, pulls the file through that volume with the same `extract_entry` a routed
+volume's `paths_are_os_visible()` is false, pulls the file through that volume with the same `pull_to_temp` a routed
 entry uses. Same cap, refused from the volume's stat before a temp exists; same `.cmdr-viewer-<uuid>/` subdir; same
-`extract_cleanup` on close; same media path, since the temp is a local file an image or PDF renders from. Errors map
+`temp_cleanup` on close; same media path, since the temp is a local file an image or PDF renders from. Errors map
 like a portal read's: `NotFound` and `IsDirectory` keep their twins, and anything else (a phone dropping mid-read) is a
 plain `ViewerError::Io`.
 
@@ -204,7 +204,7 @@ did. A local disk and an OS-mounted share are unchanged.
 exactly as for a file inside a `.zip`. To see a newer copy, close and reopen the viewer.
 
 **Per-instance extract dir + startup reaper.** The dir is `<app_data_dir>/viewer-extract` (set by
-`init_routed_extract_dir` from `lib.rs`), so side-by-side dev/prod/worktree instances never reap each other's live
+`init_materialize_dir` from `lib.rs`), so side-by-side dev/prod/worktree instances never reap each other's live
 temps. At startup the reaper removes any `.cmdr-viewer-*` subdir a crash left behind; the prefix guard means it can only
 touch our own extraction subdirs. When uninitialized (unit tests), it falls back to an OS-temp subdir.
 
@@ -212,7 +212,7 @@ touch our own extraction subdirs. When uninitialized (unit tests), it falls back
 the open session and writes with `std::fs`, so it just works off the temp. The DESTINATION, though, must not be
 archive-inner (archives are read-only this phase): the command rejects it with `ViewerError::DestinationInsideArchive`,
 matching the write-path guards. Covered by `commands/file_viewer.rs` tests; the extraction, cap, cleanup, and media
-paths by `routed_extract_test.rs`, and the git half by
+paths by `materialize_test.rs`, and the git half by
 `file_viewer::session_test::opens_a_file_out_of_a_git_snapshot_and_reads_its_lines` plus
 `agent::tools::read::inspect::git_snapshot_tests`.
 

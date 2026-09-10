@@ -1,18 +1,18 @@
-//! Tests for preview-in-zip temp-extraction (`routed_extract`).
+//! Tests for preview-in-zip temp-extraction (`materialize`).
 
 use std::io::Write as _;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use super::ViewerError;
-use super::routed_extract::{
-    EXTRACT_CAP_BYTES, extract_if_routed_with, init_routed_extract_dir, is_orphan_extract_name,
-    materialize_for_viewer_with, reap_orphan_extracts,
+use super::materialize::{
+    PREVIEW_CAP_BYTES, extract_if_routed_with, init_materialize_dir, is_orphan_temp_name, materialize_for_viewer_with,
+    reap_orphan_temps,
 };
 use super::session;
 
 /// Serializes the tests that drive `open_session` (they share the process-wide extract
-/// dir set by `init_routed_extract_dir`).
+/// dir set by `init_materialize_dir`).
 static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Registers a real local-FS "root" volume so `resolve("root", …)` finds a parent for
@@ -42,11 +42,11 @@ fn build_zip(path: &Path, entries: &[(&str, &[u8])]) {
 
 #[test]
 fn orphan_predicate_matches_only_our_subdirs() {
-    assert!(is_orphan_extract_name(".cmdr-viewer-abc123"));
+    assert!(is_orphan_temp_name(".cmdr-viewer-abc123"));
     // A sibling name, a plain file, and the write-ops temp family must NOT match.
-    assert!(!is_orphan_extract_name("notes.txt"));
-    assert!(!is_orphan_extract_name(".cmdr-tmp-abc"));
-    assert!(!is_orphan_extract_name("cmdr-viewer-no-dot"));
+    assert!(!is_orphan_temp_name("notes.txt"));
+    assert!(!is_orphan_temp_name(".cmdr-tmp-abc"));
+    assert!(!is_orphan_temp_name("cmdr-viewer-no-dot"));
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn reaper_removes_only_matching_subdirs() {
     let theirs = dir.path().join("keepme");
     std::fs::create_dir_all(&theirs).expect("mk theirs");
 
-    reap_orphan_extracts(dir.path());
+    reap_orphan_temps(dir.path());
 
     assert!(!ours.exists(), "orphan .cmdr-viewer-* subdir should be reaped");
     assert!(theirs.exists(), "unrelated dir must be left alone");
@@ -72,7 +72,7 @@ fn non_archive_path_returns_none() {
     std::fs::write(&plain, b"hi").expect("seed");
     let extract = tempfile::tempdir().expect("extract dir");
 
-    let got = extract_if_routed_with(&plain, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve");
+    let got = extract_if_routed_with(&plain, "root", extract.path(), PREVIEW_CAP_BYTES).expect("resolve");
     assert!(got.is_none(), "a non-archive path must not extract");
 }
 
@@ -87,13 +87,13 @@ fn the_zip_file_itself_returns_none_so_it_views_as_raw_bytes() {
     // The `.zip` FILE itself is NOT temp-extracted — it views as raw bytes like any
     // binary file. (Extracting inner "" would address the archive ROOT, a directory,
     // and error — so pre-fix this would panic here.)
-    let got = extract_if_routed_with(&zip, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve the .zip file");
+    let got = extract_if_routed_with(&zip, "root", extract.path(), PREVIEW_CAP_BYTES).expect("resolve the .zip file");
     assert!(got.is_none(), "the .zip file itself must not extract (raw-bytes view)");
 
     // A path INSIDE the archive DOES extract to a temp.
     let inner = zip.join("inner.txt");
     let extracted =
-        extract_if_routed_with(&inner, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve inner entry");
+        extract_if_routed_with(&inner, "root", extract.path(), PREVIEW_CAP_BYTES).expect("resolve inner entry");
     assert!(extracted.is_some(), "an inner path extracts to a temp");
 }
 
@@ -114,8 +114,8 @@ fn refuses_oversize_entry_before_extracting() {
     let inner = zip.join("data.bin");
     let err = extract_if_routed_with(&inner, "root", extract.path(), 10).expect_err("oversize must be refused");
     assert!(
-        matches!(err, ViewerError::ExtractTooLarge { size, cap: 10 } if size == entry_len as u64),
-        "expected ExtractTooLarge with the full declared size (refused before extraction), got {err:?}"
+        matches!(err, ViewerError::TooLargeToPreview { size, cap: 10 } if size == entry_len as u64),
+        "expected TooLargeToPreview with the full declared size (refused before extraction), got {err:?}"
     );
 
     // Refused from the index's declared size, BEFORE any temp subdir was created.
@@ -138,7 +138,7 @@ fn directory_entry_in_zip_is_rejected() {
     build_zip(&zip, &[("sub/", b""), ("sub/f.txt", b"x")]);
 
     let inner = zip.join("sub");
-    let err = extract_if_routed_with(&inner, "root", extract.path(), EXTRACT_CAP_BYTES)
+    let err = extract_if_routed_with(&inner, "root", extract.path(), PREVIEW_CAP_BYTES)
         .expect_err("a directory entry can't be previewed");
     assert!(
         matches!(err, ViewerError::IsDirectory),
@@ -151,7 +151,7 @@ fn text_file_in_zip_round_trips_and_temp_is_deleted_on_close() {
     let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     ensure_root_volume();
     let extract = tempfile::tempdir().expect("extract dir");
-    init_routed_extract_dir(extract.path().to_path_buf());
+    init_materialize_dir(extract.path().to_path_buf());
 
     let src = tempfile::tempdir().expect("src dir");
     let zip = src.path().join("bundle.zip");
@@ -173,7 +173,7 @@ fn text_file_in_zip_round_trips_and_temp_is_deleted_on_close() {
     assert_eq!(subdirs.len(), 1, "one temp subdir expected, found {subdirs:?}");
     let subdir_name = subdirs[0].file_name();
     assert!(
-        is_orphan_extract_name(&subdir_name.to_string_lossy()),
+        is_orphan_temp_name(&subdir_name.to_string_lossy()),
         "temp subdir must match the reaper glob: {subdir_name:?}"
     );
     let temp_file = subdirs[0].path().join("notes.txt");
@@ -200,7 +200,7 @@ fn image_in_zip_opens_as_media_and_temp_is_deleted_on_close() {
     let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     ensure_root_volume();
     let extract = tempfile::tempdir().expect("extract dir");
-    init_routed_extract_dir(extract.path().to_path_buf());
+    init_materialize_dir(extract.path().to_path_buf());
 
     let src = tempfile::tempdir().expect("src dir");
     let zip = src.path().join("pics.zip");
@@ -263,7 +263,7 @@ fn a_volume_the_os_cant_open(id: &str, content: &[u8]) -> String {
 fn a_file_on_a_volume_the_os_cant_open_is_pulled_into_a_temp_and_its_lines_read() {
     let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let extract = crate::test_support::TestDir::new("viewer_pull");
-    init_routed_extract_dir(extract.to_path_buf());
+    init_materialize_dir(extract.to_path_buf());
     let path = a_volume_the_os_cant_open("viewer-pull-cell", b"first line\nsecond line\n");
 
     let opened = session::open_session(&path, "viewer-pull-cell").expect("the file opens");
@@ -284,7 +284,7 @@ fn a_file_on_a_volume_the_os_cant_open_is_pulled_into_a_temp_and_its_lines_read(
     assert!(after.is_empty(), "the temp goes on close, found {after:?}");
 }
 
-/// A file past the cap on such a volume answers the typed `ExtractTooLarge` the
+/// A file past the cap on such a volume answers the typed `TooLargeToPreview` the
 /// frontend words ("too big to preview from here"), from the size the volume reports,
 /// before a temp exists. 100 KiB is past one 64 KiB in-memory chunk, so the reported
 /// `size` pins the refusal to the up-front guard rather than the streaming backstop.
@@ -297,8 +297,8 @@ fn a_file_past_the_cap_on_a_volume_the_os_cant_open_is_refused_before_a_temp_exi
 
     let outcome = materialize_for_viewer_with(Path::new(&path), "viewer-pull-cap-cell", &extract, 10);
     assert!(
-        matches!(outcome, Err(ViewerError::ExtractTooLarge { size, cap: 10 }) if size == entry_len as u64),
-        "expected ExtractTooLarge with the declared size, got {outcome:?}"
+        matches!(outcome, Err(ViewerError::TooLargeToPreview { size, cap: 10 }) if size == entry_len as u64),
+        "expected TooLargeToPreview with the declared size, got {outcome:?}"
     );
     let created: Vec<_> = std::fs::read_dir(&extract)
         .expect("read extract dir")
@@ -312,7 +312,7 @@ fn a_file_past_the_cap_on_a_volume_the_os_cant_open_is_refused_before_a_temp_exi
 /// read as a plain lie once the git portal started routing through here.
 #[test]
 fn the_too_large_display_string_names_no_particular_routed_source() {
-    let rendered = ViewerError::ExtractTooLarge { size: 9, cap: 2 }.to_string();
+    let rendered = ViewerError::TooLargeToPreview { size: 9, cap: 2 }.to_string();
     assert_eq!(
         rendered,
         "This item is too large to preview from here (size 9, limit 2)"

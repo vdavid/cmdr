@@ -17,7 +17,7 @@ mod media_backend;
 pub mod media_protocol;
 mod media_session;
 pub(crate) mod range_read;
-pub(crate) mod routed_extract;
+pub(crate) mod materialize;
 mod search_matcher;
 pub mod session;
 pub mod watcher;
@@ -41,7 +41,7 @@ mod media_protocol_test;
 #[cfg(test)]
 mod media_session_test;
 #[cfg(test)]
-mod routed_extract_test;
+mod materialize_test;
 #[cfg(test)]
 mod search_cancel_test_support;
 #[cfg(test)]
@@ -55,7 +55,7 @@ pub use content_kind::{ViewerContentKind, classify_viewer_content};
 pub use encoding::FileEncoding;
 pub use media_session::MediaDimensions;
 pub use range_read::RangeEnd;
-pub use routed_extract::init_routed_extract_dir;
+pub use materialize::init_materialize_dir;
 pub use search_matcher::{Matcher, SearchMode};
 pub use session::{
     EncodingOptions, SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session,
@@ -175,8 +175,8 @@ pub enum ViewerError {
     /// a file in a repo's `.git` snapshot, a file on a phone or server) would
     /// materialize more than the preview cap. Refused before any extraction (the
     /// zip-bomb guard for preview); `size` is the file's reported size, `cap` the
-    /// limit. See `file_viewer::routed_extract`.
-    ExtractTooLarge {
+    /// limit. See `file_viewer::materialize`.
+    TooLargeToPreview {
         size: u64,
         cap: u64,
     },
@@ -202,7 +202,7 @@ impl std::fmt::Display for ViewerError {
             Self::Cancelled => write!(f, "Read cancelled"),
             Self::OutOfRange => write!(f, "Selection is past the end of the file"),
             Self::TimedOut => write!(f, "Read timed out"),
-            Self::ExtractTooLarge { size, cap } => {
+            Self::TooLargeToPreview { size, cap } => {
                 // Display/log string only — the user sees the FE's friendly copy
                 // (`viewer.error.tooLargeToPreview`). Phrased to avoid a `1 bytes`
                 // singular. Names no namespace: a `.zip` entry and a `.git` snapshot

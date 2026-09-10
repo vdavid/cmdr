@@ -631,7 +631,7 @@ resolve `None` to `"root"`, so the volume has to be registered under exactly tha
 
 Under plain `cargo test` a crate's tests share one process, so those tests are all writing to one `"root"` slot:
 - Installing an **equivalent** volume idempotently is safe. `ensure_root_volume()` (duplicated in `create/tests.rs`,
-  `write_operations/paste_clipboard_tests.rs`, `file_viewer/routed_extract_test.rs`, and `commands/rename.rs`)
+  `write_operations/paste_clipboard_tests.rs`, `file_viewer/materialize_test.rs`, and `commands/rename.rs`)
   `register_if_absent`s a local-FS `"root"`, so whoever runs first wins and the value is the same either way.
 - Installing a **different** volume needs `manager::test_support::TestVolumeRegistration`, which restores the previous
   registration from `Drop` (unwind included). Without it, `commands/file_system/write_ops.rs`'s `InMemoryVolume` `"root"`

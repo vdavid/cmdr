@@ -31,11 +31,11 @@
 //!   close paths funnel through [`super::session::close_session`]). The second
 //!   caller, the agent's `inspect_file` (`agent/tools/read/inspect/`), owns its
 //!   temp for one read and removes it in a `Drop` guard; the contract is the same:
-//!   whoever receives an [`ExtractedEntry`] removes `cleanup_dir`.
+//!   whoever receives an [`MaterializedFile`] removes `cleanup_dir`.
 //! - **Bounded, refuse-before-extract.** The volume reports the file's size UP
 //!   FRONT (an archive from its central directory, the portal from the blob header,
 //!   a phone or server from its stat), so an oversize file is refused with a typed
-//!   [`ViewerError::ExtractTooLarge`] before a single byte is written. That's also
+//!   [`ViewerError::TooLargeToPreview`] before a single byte is written. That's also
 //!   the zip-bomb guard for preview: a streaming byte-cap is the belt-and-suspenders
 //!   backstop against a reported size that understates the real one.
 //! - **A snapshot, not a live view.** The temp is the file as it was at open. No
@@ -62,23 +62,23 @@ use crate::file_system::volume::manager::{RoutedKind, get_volume_manager, path_r
 /// amplification. Chosen independently of the FE copy-selection ceiling
 /// (`COPY_REFUSE_BYTES`, 100 MiB) — that caps a *selection*, this caps a whole-entry
 /// materialization.
-pub(crate) const EXTRACT_CAP_BYTES: u64 = 256 * 1024 * 1024;
+pub(crate) const PREVIEW_CAP_BYTES: u64 = 256 * 1024 * 1024;
 
 /// Prefix on each extraction's subdir. The startup reaper matches on it, and it's the
 /// `.cmdr-` family the project uses for recoverable temps.
-const EXTRACT_SUBDIR_PREFIX: &str = ".cmdr-viewer-";
+const TEMP_SUBDIR_PREFIX: &str = ".cmdr-viewer-";
 
-/// Fallback extract-dir name under the OS temp dir when [`init_routed_extract_dir`]
+/// Fallback extract-dir name under the OS temp dir when [`init_materialize_dir`]
 /// hasn't run (unit tests, a not-yet-initialized process). Prod always initializes a
 /// per-instance dir under the app data dir.
 const DEFAULT_EXTRACT_DIRNAME: &str = "cmdr-viewer-extract";
 
-/// The per-instance extract dir, stashed at startup by [`init_routed_extract_dir`].
-static EXTRACT_DIR: LazyLock<RwLock<Option<PathBuf>>> = LazyLock::new(|| RwLock::new(None));
+/// The per-instance extract dir, stashed at startup by [`init_materialize_dir`].
+static MATERIALIZE_DIR: LazyLock<RwLock<Option<PathBuf>>> = LazyLock::new(|| RwLock::new(None));
 
 /// A successful extraction: the temp file to open, and the subdir to remove on close.
 #[derive(Debug)]
-pub(crate) struct ExtractedEntry {
+pub(crate) struct MaterializedFile {
     /// The extracted file on local disk, named with the source's basename so the
     /// viewer shows the right title and classifies media by the right extension.
     pub(crate) temp_file: PathBuf,
@@ -89,14 +89,14 @@ pub(crate) struct ExtractedEntry {
 
 /// Records the per-instance extract dir and reaps any orphans left in it by a crash.
 /// Called once at startup from `lib.rs` with `<app_data_dir>/viewer-extract`.
-pub fn init_routed_extract_dir(dir: PathBuf) {
-    reap_orphan_extracts(&dir);
-    *EXTRACT_DIR.write_ignore_poison() = Some(dir);
+pub fn init_materialize_dir(dir: PathBuf) {
+    reap_orphan_temps(&dir);
+    *MATERIALIZE_DIR.write_ignore_poison() = Some(dir);
 }
 
 /// The extract dir: the initialized per-instance dir, or an OS-temp fallback.
-fn extract_dir() -> PathBuf {
-    EXTRACT_DIR
+fn materialize_dir() -> PathBuf {
+    MATERIALIZE_DIR
         .read_ignore_poison()
         .clone()
         .unwrap_or_else(|| std::env::temp_dir().join(DEFAULT_EXTRACT_DIRNAME))
@@ -105,18 +105,18 @@ fn extract_dir() -> PathBuf {
 /// Removes every `.cmdr-viewer-*` subdir in `dir` (orphaned extractions from a crash).
 /// Best-effort: an unreadable dir or a failed remove is logged-then-ignored, never
 /// fatal. The prefix guard means it can only ever touch our own extraction subdirs.
-pub(super) fn reap_orphan_extracts(dir: &Path) {
+pub(super) fn reap_orphan_temps(dir: &Path) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return; // dir doesn't exist yet (first run) — nothing to reap.
     };
     for entry in entries.flatten() {
         let name = entry.file_name();
-        if is_orphan_extract_name(&name.to_string_lossy())
+        if is_orphan_temp_name(&name.to_string_lossy())
             && let Err(e) = std::fs::remove_dir_all(entry.path())
         {
             log::debug!(
                 target: "cmdr_lib::file_viewer",
-                "reap_orphan_extracts: could not remove {}: {e}",
+                "reap_orphan_temps: could not remove {}: {e}",
                 entry.path().display()
             );
         }
@@ -124,8 +124,8 @@ pub(super) fn reap_orphan_extracts(dir: &Path) {
 }
 
 /// Whether `name` is one of our extraction subdirs (the reaper's match predicate).
-pub(super) fn is_orphan_extract_name(name: &str) -> bool {
-    name.starts_with(EXTRACT_SUBDIR_PREFIX)
+pub(super) fn is_orphan_temp_name(name: &str) -> bool {
+    name.starts_with(TEMP_SUBDIR_PREFIX)
 }
 
 /// What the viewer opens for `requested`: a bounded temp copy when the OS can't open
@@ -133,8 +133,11 @@ pub(super) fn is_orphan_extract_name(name: &str) -> bool {
 /// `Ok(None)` and the caller opens `requested` directly.
 ///
 /// Blocking: run it inside `spawn_blocking`, not on the IPC thread.
-pub(crate) fn materialize_for_viewer(requested: &Path, volume_id: &str) -> Result<Option<ExtractedEntry>, ViewerError> {
-    materialize_for_viewer_with(requested, volume_id, &extract_dir(), EXTRACT_CAP_BYTES)
+pub(crate) fn materialize_for_viewer(
+    requested: &Path,
+    volume_id: &str,
+) -> Result<Option<MaterializedFile>, ViewerError> {
+    materialize_for_viewer_with(requested, volume_id, &materialize_dir(), PREVIEW_CAP_BYTES)
 }
 
 /// Whether opening `requested` may pull it into a temp first, so `viewer_open` can
@@ -156,7 +159,7 @@ pub(crate) fn materialize_for_viewer_with(
     volume_id: &str,
     dir: &Path,
     cap: u64,
-) -> Result<Option<ExtractedEntry>, ViewerError> {
+) -> Result<Option<MaterializedFile>, ViewerError> {
     if let Some(entry) = extract_if_routed_with(requested, volume_id, dir, cap)? {
         return Ok(Some(entry));
     }
@@ -171,7 +174,7 @@ pub(crate) fn materialize_for_viewer_with(
     if resolved.routed.is_some() || volume.paths_are_os_visible() {
         return Ok(None);
     }
-    tauri::async_runtime::block_on(extract_entry(volume, resolved.path, dir, cap, None)).map(Some)
+    tauri::async_runtime::block_on(pull_to_temp(volume, resolved.path, dir, cap, None)).map(Some)
 }
 
 /// If a ROUTE serves `requested`, stream the addressed entry to a bounded temp and
@@ -182,8 +185,8 @@ pub(crate) fn materialize_for_viewer_with(
 /// single-sourced with the listing/copy paths — and a `.zip` on a REMOTE parent
 /// (direct SMB / MTP) is pulled through that parent, not a hardcoded `"root"`.
 /// Blocking: run it inside `spawn_blocking`, not on the IPC thread.
-pub(crate) fn extract_if_routed(requested: &Path, volume_id: &str) -> Result<Option<ExtractedEntry>, ViewerError> {
-    extract_if_routed_with(requested, volume_id, &extract_dir(), EXTRACT_CAP_BYTES)
+pub(crate) fn extract_if_routed(requested: &Path, volume_id: &str) -> Result<Option<MaterializedFile>, ViewerError> {
+    extract_if_routed_with(requested, volume_id, &materialize_dir(), PREVIEW_CAP_BYTES)
 }
 
 /// [`extract_if_routed`] with an explicit dir + cap, for tests.
@@ -192,7 +195,7 @@ pub(crate) fn extract_if_routed_with(
     volume_id: &str,
     dir: &Path,
     cap: u64,
-) -> Result<Option<ExtractedEntry>, ViewerError> {
+) -> Result<Option<MaterializedFile>, ViewerError> {
     // Only a path with no file of its own is materialized. The `.zip` file ITSELF
     // is a regular file: viewing it shows its raw bytes like any binary file
     // (extracting inner "" would address the archive ROOT — a directory — and
@@ -212,19 +215,19 @@ pub(crate) fn extract_if_routed_with(
         return Ok(None);
     };
     let entry_path = resolved.path;
-    tauri::async_runtime::block_on(extract_entry(volume, entry_path, dir, cap, Some(routed))).map(Some)
+    tauri::async_runtime::block_on(pull_to_temp(volume, entry_path, dir, cap, Some(routed))).map(Some)
 }
 
 /// Streams one file to a fresh temp subdir under `dir`, refusing an oversize file
 /// before writing anything. `routed` is the route that minted `volume`, or `None`
 /// for a volume the OS can't open.
-async fn extract_entry(
+async fn pull_to_temp(
     volume: std::sync::Arc<dyn Volume>,
     entry_path: PathBuf,
     dir: &Path,
     cap: u64,
     routed: Option<RoutedKind>,
-) -> Result<ExtractedEntry, ViewerError> {
+) -> Result<MaterializedFile, ViewerError> {
     // Size + kind come from the volume's metadata (an archive's central directory,
     // the portal's tree entry, a phone's or server's stat), never a decompression or
     // a content read, so the refusal lands BEFORE we create a temp or stream a byte.
@@ -237,16 +240,16 @@ async fn extract_entry(
     }
     let declared = meta.size.unwrap_or(0);
     if declared > cap {
-        return Err(ViewerError::ExtractTooLarge { size: declared, cap });
+        return Err(ViewerError::TooLargeToPreview { size: declared, cap });
     }
 
-    let cleanup_dir = dir.join(format!("{EXTRACT_SUBDIR_PREFIX}{}", uuid::Uuid::new_v4()));
+    let cleanup_dir = dir.join(format!("{TEMP_SUBDIR_PREFIX}{}", uuid::Uuid::new_v4()));
     std::fs::create_dir_all(&cleanup_dir)?;
     let temp_file = cleanup_dir.join(temp_basename(&meta.name));
 
     // Any failure past this point must not leave the subdir behind.
     match stream_to_file(volume.as_ref(), &entry_path, &temp_file, cap, routed).await {
-        Ok(()) => Ok(ExtractedEntry { temp_file, cleanup_dir }),
+        Ok(()) => Ok(MaterializedFile { temp_file, cleanup_dir }),
         Err(e) => {
             let _ = std::fs::remove_dir_all(&cleanup_dir);
             Err(e)
@@ -275,7 +278,7 @@ async fn stream_to_file(
         let chunk = chunk.map_err(|e| map_volume_error(e, routed))?;
         written = written.saturating_add(chunk.len() as u64);
         if written > cap {
-            return Err(ViewerError::ExtractTooLarge { size: written, cap });
+            return Err(ViewerError::TooLargeToPreview { size: written, cap });
         }
         file.write_all(&chunk)?;
     }

@@ -14,7 +14,7 @@ use super::*;
 use crate::file_system::git;
 use crate::file_system::volume::LocalPosixVolume;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_viewer::routed_extract::{EXTRACT_CAP_BYTES, extract_if_routed_with};
+use crate::file_viewer::materialize::{PREVIEW_CAP_BYTES, extract_if_routed_with};
 use crate::test_support::TestDir;
 use cmdr_git::test_fixtures::{Fixture, cleanup, temp_dir};
 
@@ -33,7 +33,7 @@ fn repo_registered_as_the_local_drive(name: &str) -> std::path::PathBuf {
 /// whether the temp was cleaned up.
 fn inspect_extracting_to(path: &Path, extract_dir: &Path) -> FileRow {
     let extract = |requested: &Path, volume_id: &str| {
-        extract_if_routed_with(requested, volume_id, extract_dir, EXTRACT_CAP_BYTES)
+        extract_if_routed_with(requested, volume_id, extract_dir, PREVIEW_CAP_BYTES)
     };
     inspect_path_with(
         path.to_str().unwrap(),

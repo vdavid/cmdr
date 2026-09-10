@@ -47,7 +47,7 @@ fn failure_tokens_carry_no_payload() {
             },
             "io",
         ),
-        (ViewerError::ExtractTooLarge { size: 9, cap: 2 }, "extract_too_large"),
+        (ViewerError::TooLargeToPreview { size: 9, cap: 2 }, "extract_too_large"),
         (
             ViewerError::Archive {
                 message: "unsupported codec".to_string(),

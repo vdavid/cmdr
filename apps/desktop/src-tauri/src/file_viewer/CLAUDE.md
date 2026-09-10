@@ -14,7 +14,7 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 - Backend selection: `< 1MB` → `FullLoad`; else `ByteSeek` (instant open) + a background `LineIndex` upgrade.
 - Media (Image/PDF): `content_kind.rs`, `media.rs` (`cmdr-media://` token map), `media_protocol.rs` (scheme handler),
   `media_backend.rs`, `media_session.rs`. See `DETAILS.md` § "Media rendering".
-- `routed_extract.rs`: preview of a file the OS can't open (routed, or on a phone → a bounded temp); the agent's
+- `materialize.rs`: preview of a file the OS can't open (routed, or on a phone → a bounded temp); the agent's
   `inspect_file` calls its routes-only half. `DETAILS.md` § "Preview of a routed file".
 - `headless.rs`: `open_text_backend` (the backend pick with no session around it) and `open_scan_backend` (no index,
   for a `search`); the agent's `inspect_file` reads through both. `content_kind::looks_binary`, the byte-level

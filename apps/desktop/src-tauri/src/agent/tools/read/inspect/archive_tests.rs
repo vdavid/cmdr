@@ -13,14 +13,14 @@ use super::tests::assert_text_only;
 use super::*;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, VolumeError};
-use crate::file_viewer::routed_extract::{EXTRACT_CAP_BYTES, extract_if_routed_with};
+use crate::file_viewer::materialize::{PREVIEW_CAP_BYTES, extract_if_routed_with};
 use crate::test_support::TestDir;
 use cmdr_archive::test_fixtures::{
     build_encrypted_7z, build_zip, build_zipcrypto_zip, dir as zip_dir, encrypted_entry, plain_entry, stored,
 };
 
 /// Registers a real local-FS "root" volume so `resolve("root", …)` finds a parent for the
-/// on-demand `ArchiveVolume`. Idempotent; the shape `routed_extract_test.rs` uses.
+/// on-demand `ArchiveVolume`. Idempotent; the shape `materialize_test.rs` uses.
 fn ensure_root_volume() {
     get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
 }
@@ -193,7 +193,7 @@ fn an_inner_text_file_reads_through_a_temp_that_is_gone_afterwards() {
     let zip = write_bundle(&dir);
     let extract_dir = TestDir::new("inspect_zip_extract");
 
-    let row = inspect_extracting_to(&zip.join("docs/notes.txt"), &extract_dir, EXTRACT_CAP_BYTES);
+    let row = inspect_extracting_to(&zip.join("docs/notes.txt"), &extract_dir, PREVIEW_CAP_BYTES);
     let file = file_of(&row);
     assert_eq!(file.name, "notes.txt");
     assert_eq!(file.extension.as_deref(), Some("txt"));
@@ -258,7 +258,7 @@ fn a_zip_inside_a_zip_reads_as_binary_not_as_a_second_archive() {
     let outer = write_bytes(&dir, "outer.zip", &build_zip(&[stored("inner.zip", inner_zip)]));
     let extract_dir = TestDir::new("inspect_zip_nested_extract");
 
-    let row = inspect_extracting_to(&outer.join("inner.zip"), &extract_dir, EXTRACT_CAP_BYTES);
+    let row = inspect_extracting_to(&outer.join("inner.zip"), &extract_dir, PREVIEW_CAP_BYTES);
     // Nested archives aren't browsable in the pane either (the boundary is the leftmost
     // archive component); the honest kind for the extracted bytes is `binary`.
     assert!(matches!(file_of(&row).content, Content::Binary {}), "got {row:?}");
@@ -301,7 +301,7 @@ fn an_encrypted_entry_is_flagged_in_the_listing_and_refused_before_extraction() 
     assert!(!by_name("open.txt").encrypted);
 
     // The tool has no password path, so the entry is refused typed, with no temp written.
-    let row = inspect_extracting_to(&zip.join("secret.txt"), &extract_dir, EXTRACT_CAP_BYTES);
+    let row = inspect_extracting_to(&zip.join("secret.txt"), &extract_dir, PREVIEW_CAP_BYTES);
     assert!(
         matches!(
             &row,
@@ -315,7 +315,7 @@ fn an_encrypted_entry_is_flagged_in_the_listing_and_refused_before_extraction() 
     assert!(entries_in(&extract_dir).is_empty());
 
     // The plain sibling still reads.
-    let row = inspect_extracting_to(&zip.join("open.txt"), &extract_dir, EXTRACT_CAP_BYTES);
+    let row = inspect_extracting_to(&zip.join("open.txt"), &extract_dir, PREVIEW_CAP_BYTES);
     assert!(matches!(file_of(&row).content, Content::Text(_)), "got {row:?}");
 }
 

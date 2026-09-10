@@ -272,7 +272,7 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   archive. If an Office reader ever lands, revisit this branch first.
 - **Archives** (`archive.rs`): the pane's own routing, before any `std::fs`. A path with an archive-named component
   (`cmdr_archive::archive_boundary_candidate`, a pure string check) goes through `VolumeManager::resolve(volume_id,
-  path)` (`block_on` from the blocking thread, as `routed_extract` does): the shared boundary detector confirms the
+  path)` (`block_on` from the blocking thread, as `materialize` does): the shared boundary detector confirms the
   format by name and magic bytes and hands back the on-demand `ArchiveVolume`, or a passthrough for a mislabeled
   `.zip`, which then reads as text or binary. The row is then built from the archive's cached index
   (`ArchiveVolume::index()`, the seam the volume opened for this: `FileEntry` has no `encrypted` field, and
@@ -282,14 +282,14 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   format from `ArchiveFormat::label()`; the archive root's row metadata is the `.zip` file's own `std::fs` stat, an
   inner directory's `sizeBytes` is absent (never a zero). A file node → refused `unreadable { encrypted }` from the
   node's flag BEFORE extraction (the tool has no password path), else
-  `routed_extract::extract_if_routed(path, volume_id)` streams it to the viewer's bounded temp (the same
-  256 MiB refuse-before-extract cap; `ExtractTooLarge` → `tooLargeToExtract`, `ViewerError::Archive` → `corrupt`),
+  `materialize::extract_if_routed(path, volume_id)` streams it to the viewer's bounded temp (the same
+  256 MiB refuse-before-extract cap; `TooLargeToPreview` → `tooLargeToExtract`, `ViewerError::Archive` → `corrupt`),
   `read_content` runs the normal per-kind pipeline on `temp_file` (so `find` and the window work inside a zip), and
   `TempCleanup` removes `cleanup_dir` in `Drop`, so an early return or a panic can't leak it. A zip inside a zip is
   `binary`: the boundary is the leftmost archive component, as in the pane. The parse errors map typed:
   `NeedsPassword` (a header-encrypted 7z) → `encrypted`, `IoError` (a damaged structure) → `corrupt`, `NotSupported`
   (the archive layer's unsupported-codec / non-archive / over-cap collapse) → `unsupported`: an unsupported codec is
-  not a damaged file. (An unsupported codec met at EXTRACT time still reads `corrupt`: `routed_extract` folds it into
+  not a damaged file. (An unsupported codec met at EXTRACT time still reads `corrupt`: `materialize` folds it into
   `ViewerError::Archive { message }`, which carries no kind.) The extract step is injected (`ExtractFn`) so the tests
   shrink the cap and watch the temp dir.
 - **Every other route** (`inspect_routed_path` in `mod.rs`): a file in a repo's virtual `.git` trees has no inode to

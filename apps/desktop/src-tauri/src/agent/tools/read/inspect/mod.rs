@@ -77,7 +77,7 @@ use crate::file_viewer::content_kind::{
 };
 use crate::file_viewer::encoding::detect_from_head;
 use crate::file_viewer::media::read_image_dimensions;
-use crate::file_viewer::routed_extract::extract_if_routed;
+use crate::file_viewer::materialize::extract_if_routed;
 use crate::file_viewer::{Matcher, SearchMode, ViewerError};
 use crate::mcp::{ToolError, ToolResult, fit_to_result_budget, is_virtual_path};
 use crate::search::{format_size, format_timestamp};
@@ -144,7 +144,7 @@ pub enum UnreadableReason {
     /// `NotSupported`). Not a damaged file, so never reported as one.
     Unsupported,
     /// A file inside an archive over the viewer's 256 MiB extraction cap
-    /// (`routed_extract::EXTRACT_CAP_BYTES`), refused before any byte was extracted.
+    /// (`materialize::PREVIEW_CAP_BYTES`), refused before any byte was extracted.
     TooLargeToExtract,
 }
 
@@ -622,7 +622,7 @@ fn status_for(path: String, failure: ReadFailure) -> FileRow {
         },
         ReadFailure::Viewer(ViewerError::NotFound { .. }) => FileRow::Missing { path },
         ReadFailure::Viewer(ViewerError::IsDirectory) => FileRow::Folder { path },
-        ReadFailure::Viewer(ViewerError::ExtractTooLarge { .. }) => FileRow::Unreadable {
+        ReadFailure::Viewer(ViewerError::TooLargeToPreview { .. }) => FileRow::Unreadable {
             path,
             reason: UnreadableReason::TooLargeToExtract,
         },

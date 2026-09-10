@@ -549,11 +549,11 @@ glyphs (the a11y labels and tooltips carry the real copy). The runtime works in 
 `viewerGetLines` throws the backend's typed `ViewerError` with its fields copied onto the `Error`, so the deadline is a
 VARIANT (`kind: 'timedOut'`) rather than a flag beside a sentence. Both surfaces read it the same way, through
 `asViewerError(e)?.kind`: `viewer-scroll.svelte.ts` routes `timedOut` to `deps.onTimeoutError()` and logs everything
-else by kind, and `+page.svelte`'s `openFailureCopy` maps `timedOut` / `extractTooLarge` / `archive` to their own
+else by kind, and `+page.svelte`'s `openFailureCopy` maps `timedOut` / `tooLargeToPreview` / `archive` to their own
 catalog keys and falls back to `viewer.error.readFailed` for anything that never reached the typed path. Nothing renders
 the backend's own words. The wider split: `docs/guides/error-handling.md`.
 
-`extractTooLarge`'s key is `viewer.error.tooLargeToPreview`, deliberately not named after archives: the preview cap is
+`tooLargeToPreview`'s key is `viewer.error.tooLargeToPreview`, deliberately not named after archives: the preview cap is
 reached by a `.zip` entry AND by a blob in a repository's virtual `.git` snapshot, so the copy says "from here" and
 names neither. `archive` next to it IS archive-only (an encrypted, corrupt, or unsupported-codec archive entry), so
 `viewer.error.archiveUnreadable` keeps its name.
