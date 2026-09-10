@@ -62,6 +62,7 @@ import { volumeKindFor } from './volume-tint.svelte'
 import { getVolumes } from '$lib/stores/volume-store.svelte'
 import { isVirtualGitPath } from '../git/path-detection'
 import { getShowVirtualGitPortal } from '$lib/settings/reactive-settings.svelte'
+import { isPlainFilesystemPath } from '$lib/path/canonical'
 
 /**
  * The closed set of volume kinds. The discriminant — every capability lookup
@@ -144,6 +145,14 @@ export interface VolumeCapabilities {
    * before a backend registers, like a phone's row clicked before it's dialed.
    */
   canBeIndexed: boolean
+  /**
+   * FilePane polls whether this pane's folder still exists (`deleted-dir-poll.ts`),
+   * covering FSEvents' blind spot: macOS doesn't report a watched folder's own
+   * deletion. So it's true only where the folder lives on a filesystem the Mac
+   * itself mounts and watches (`local`, `smb`, and an `archive` sitting on one).
+   * Read it through `paneFolderIsPolledForDeletion`, which adds the path half.
+   */
+  pollsForDeletedFolder: boolean
 }
 
 /**
@@ -163,6 +172,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     hasParentRow: true,
     syncsToMcp: true,
     canBeIndexed: true,
+    pollsForDeletedFolder: true,
   }),
   smb: Object.freeze({
     kind: 'smb',
@@ -173,6 +183,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     syncsToMcp: true,
     // Both an smb2 session and an OS-mounted share: the index walks either.
     canBeIndexed: true,
+    // The share stays OS-mounted at `/Volumes/…`, so the Mac's own stat answers.
+    pollsForDeletedFolder: true,
   }),
   sftp: Object.freeze({
     // A server: a real backend listing over a session Cmdr owns, with `..` and a
@@ -188,6 +200,9 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     syncsToMcp: true,
     // No drive index: its `sftp://` root is nothing the index's walkers can read.
     canBeIndexed: false,
+    // No OS mount, so no FSEvents blind spot to cover. Whether a server pane should
+    // notice its folder deleted on the server is a separate question nobody polls for.
+    pollsForDeletedFolder: false,
   }),
   webdav: Object.freeze({
     // The `sftp` row, for the same reasons: a session-backed listing with no OS
@@ -199,6 +214,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     hasParentRow: true,
     syncsToMcp: true,
     canBeIndexed: false,
+    pollsForDeletedFolder: false,
   }),
   mtp: Object.freeze({
     kind: 'mtp',
@@ -208,6 +224,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     hasParentRow: true,
     syncsToMcp: true,
     canBeIndexed: true,
+    // A device path the Mac can't stat. An unplugged phone is `mtp-disconnect-watch`'s.
+    pollsForDeletedFolder: false,
   }),
   adb: Object.freeze({
     // Same shape as `mtp`: a device-anchored real listing. The transport differs
@@ -221,6 +239,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     // Indexed like an MTP phone. This row is what answers for a phone's row
     // BEFORE it's dialed, which is when the first-connect prompt fires.
     canBeIndexed: true,
+    pollsForDeletedFolder: false,
   }),
   network: Object.freeze({
     kind: 'network',
@@ -234,6 +253,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     hasParentRow: false,
     syncsToMcp: false,
     canBeIndexed: false,
+    pollsForDeletedFolder: false,
   }),
   'search-results': Object.freeze({
     kind: 'search-results',
@@ -248,6 +268,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     // store describing the directory it came from.
     syncsToMcp: true,
     canBeIndexed: false,
+    // No folder behind the namespace, so nothing to poll.
+    pollsForDeletedFolder: false,
   }),
   archive: Object.freeze({
     kind: 'archive',
@@ -263,12 +285,16 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     // `syncsToMcp: true` — the listing is real; MCP reports the parent drive id
     // plus the full `…/foo.zip/inner` path, so agents navigate by path.
     // `canBeIndexed: false` — a view inside a drive, which is indexed as itself.
+    // `pollsForDeletedFolder: true` — deleting the `.zip` is the case to notice,
+    // and the path half of `paneFolderIsPolledForDeletion` keeps a zip on a phone
+    // or a server out.
     hasBackendListing: true,
     canWrite: true,
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
     canBeIndexed: false,
+    pollsForDeletedFolder: true,
   }),
   'git-portal': Object.freeze({
     kind: 'git-portal',
@@ -282,12 +308,16 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     // every mutation method on the volume keeps the trait's `NotSupported`.
     // `syncsToMcp: true` — the listing is real; MCP reports the parent drive id
     // plus the full `…/.git/branches/main/…` path, so agents navigate by path.
+    // `pollsForDeletedFolder: false` — a snapshot folder never exists on disk, so
+    // the Mac's stat would call it gone and evict the user back to `.git/`. The git
+    // watcher keeps these listings fresh instead.
     hasBackendListing: true,
     canWrite: false,
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
     canBeIndexed: false,
+    pollsForDeletedFolder: false,
   }),
 })
 
@@ -414,6 +444,24 @@ export function rowIsOsVisible(volumeId: string, rowPath: string): boolean {
   if (!paneRowsAreOsVisible(capabilitiesFor(volumeId).kind)) return false
   if (pathInsideArchive(rowPath)) return false
   return !(getShowVirtualGitPortal() && isVirtualGitPath(rowPath))
+}
+
+/**
+ * Whether the pane's folder is polled for being deleted behind its back, the gate
+ * `deleted-dir-poll.ts` runs on.
+ *
+ * Two halves, and neither covers the other:
+ *
+ * 1. The pane's KIND (`pollsForDeletedFolder`, through `capabilitiesForPane`, so
+ *    the `.git` portal's snapshot folders are out).
+ * 2. The PATH is one the Mac can stat at all. This is what holds once the pane's
+ *    row is gone: an unplugged phone's pane keeps its `adb://` path, and a removed
+ *    server's stale id classifies as `local`, so without it the boot disk answers
+ *    "gone" for a path it can't see and the walk-up re-lists a vanished place.
+ *    Same reasoning as the snapshot clipboard's scheme gate.
+ */
+export function paneFolderIsPolledForDeletion(volumeId: string, path: string): boolean {
+  return isPlainFilesystemPath(path) && capabilitiesForPane(volumeId, path).pollsForDeletedFolder
 }
 
 /**

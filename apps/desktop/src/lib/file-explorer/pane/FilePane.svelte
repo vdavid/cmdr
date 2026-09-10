@@ -74,7 +74,7 @@
     import { createSearchPaneKeys } from './search-pane-keys'
     import { computeHasParent } from './has-parent'
     import { firstSelectedIndex } from './first-selected-index'
-    import { capabilitiesForPane, paneRowsAreOsVisible } from './volume-capabilities'
+    import { capabilitiesForPane, paneFolderIsPolledForDeletion, paneRowsAreOsVisible } from './volume-capabilities'
     import { createEnterMenu } from './enter-menu.svelte'
     import Menu from '$lib/ui/Menu.svelte'
     import { homeDir } from '@tauri-apps/api/path'
@@ -451,12 +451,11 @@
     })
 
     // The deleted-directory fallback poll: two confirmed misses before walking up,
-    // with the SMB/timeout and virtual-git-path skips (`deleted-dir-poll.ts`).
+    // only on a folder the Mac mounts (`deleted-dir-poll.ts`).
     const deletedDirPoll = createDeletedDirPoll({
         getListingId: () => listingId,
         getLoading: () => loading,
-        getHasBackendListing: () => caps.hasBackendListing,
-        getIsMtpView: () => isMtpView,
+        getFolderIsPolled: () => paneFolderIsPolledForDeletion(volumeId, currentPath),
         getCurrentPath: () => currentPath,
         getVolumePath: () => volumePath,
         navigateToFallback: loader.navigateToFallback,

@@ -287,6 +287,15 @@ volume-id string. The record has two halves, and which half answers is the whole
   the path first (archive by suffix, git portal by `isVirtualGitPath` gated on the live `showVirtualGitPortal` toggle),
   and otherwise defers to `capabilitiesFor`. ❌ Neither routed branch folds in the parent drive's published
   capabilities: those answer for the drive, and the pane is inside something ON it.
+- **`paneFolderIsPolledForDeletion(volumeId, path)`** gates `deleted-dir-poll.ts`, which exists only for FSEvents' blind
+  spot (macOS doesn't report a watched folder's own deletion). Two halves: the kind's `pollsForDeletedFolder` (true for
+  `local`, `smb`, and `archive`; false for the `.git` portal, whose snapshot folders never exist on disk, and for every
+  kind with no OS mount), AND `isPlainFilesystemPath(path)`. ❗ The path half is what holds once a pane's row is gone:
+  an unplugged phone keeps its `adb://` path, and a removed server's stale id classifies as `local`. Before this gate a
+  phone or server pane polled the boot disk with its scheme path (`root_anchored` makes it `/adb:/…`, which never
+  exists), so it escaped a walk-up only because the volume root "missed" too, and once the row left the list the
+  `volumePath` fell back to `/` and the poll re-listed the gone place every few seconds. Whether a phone or server pane
+  should notice its folder being deleted on the device is an open product question, not something this gate answers.
 - **`rowIsOsVisible(volumeId, rowPath)`** answers ONE row's "is there a real file behind this", the gate behind the
   context menu's `Share` (see § "Sharing a row" below). ❌ It is NOT `capabilitiesForPane`: that one uses the WIDE
   archive check, so it would call a `.zip` FILE unshareable, and sharing a freshly-made archive is the point.
@@ -375,11 +384,11 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   MtpConnectionView) and the SelectionInfo footer (`paneViewKind === 'normal'`). The RUNTIME-state branches
   (`unreachable`, the SAVED-place dial, the reconnect cycle's `RemoteConnectState`, the gave-up banner, `loading` /
   `friendlyError` / `error`) stay per-feature and gate IN FRONT of the descriptor, byte-identical precedence. This is a
-  derived discriminant, NOT a new component. The per-feature gates (git lookup, type-to-jump keystroke, dir-exists poll)
-  read `!caps.hasBackendListing` for the "is there a real directory" half; the MTP-path-specific checks
-  (`isMtpVolumeId(volumeId)` for git-skip, `isMtpView` for the dir-poll, `isMtpDeviceOnly` for the jump) STAY — MTP has
-  a backend listing but git can't run on it, there's no on-disk path to `pathExists`-poll, and the not-yet-connected
-  sub-state isn't a kind capability. `caps` is derived once per pane
+  derived discriminant, NOT a new component. The git lookup and the type-to-jump keystroke read
+  `!caps.hasBackendListing` for the "is there a real directory" half; their MTP-path-specific checks
+  (`isMtpVolumeId(volumeId)` for git-skip, `isMtpDeviceOnly` for the jump) STAY — MTP has a backend listing but git
+  can't run on it, and the not-yet-connected sub-state isn't a kind capability. The dir-exists poll reads its own
+  capability instead, `paneFolderIsPolledForDeletion` (§ "Volume capabilities"). `caps` is derived once per pane
   (`caps = $derived(capabilitiesForPane(volumeId, currentPath))`); the named `isNetworkView` / `isSearchResultsView`
   deriveds re-source off `caps.kind`.
 

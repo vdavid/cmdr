@@ -112,9 +112,9 @@ the same way. The rest pass none on purpose:
 - `smb-view-state.svelte.ts`'s cancel, disconnect, and place-disconnect handlers walk to LEAVE a volume that stopped
   answering; a server's walk then lands on its scheme root, a `saved` row that dials afresh.
 - `deleted-dir-poll.ts` and `listing-diff-sync.svelte.ts` ask about OS paths: the poll covers FSEvents' blind spot, and
-  `directory-deleted` comes only from the local notify watcher. On a phone or server pane the poll's volume-root probe
-  answers "gone" from the boot disk too, so it never walks there. Giving it the id would turn a 2 s local stat into a
-  network round trip on backends that poll their space every 30–60 s or never.
+  `directory-deleted` comes only from the local notify watcher. The poll only runs on a folder the Mac mounts
+  (`pane/volume-capabilities.ts::paneFolderIsPolledForDeletion`), so a phone or server pane never reaches it. Giving it
+  the id would turn a 2 s local stat into an smb2 round trip for a share the OS mount already answers for.
 
 **A probe that couldn't tell is skipped, never landed on.** The walk's answer is where a caller navigates, so only a
 "yes" ends it; a parent that didn't answer would re-fail its listing. The gate for "couldn't tell" sits BEFORE the walk:

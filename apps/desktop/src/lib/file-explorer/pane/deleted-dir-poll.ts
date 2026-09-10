@@ -8,10 +8,13 @@
  * can be a rename-in-flight or a hiccup), and an "I don't know" answer (syscall
  * timeout, or an SMB volume in `Disconnected`) resets the counter rather than
  * counting against the directory.
+ *
+ * Which panes poll is a capability answer (`paneFolderIsPolledForDeletion`): only a
+ * folder the Mac itself mounts has the blind spot. A phone or server pane never
+ * polls, and neither does a `.git` portal snapshot, which never exists on disk.
  */
 
 import { pathExistsChecked } from '$lib/tauri-commands'
-import { isVirtualGitPath } from '../git/path-detection'
 import { resolveValidPath } from '../navigation/path-resolution'
 import { getAppLogger } from '$lib/logging/logger'
 
@@ -25,9 +28,8 @@ const MISSES_BEFORE_FALLBACK = 2
 export interface DeletedDirPollDeps {
   getListingId: () => string
   getLoading: () => boolean
-  /** Whether the pane's volume kind has a real backend listing (off `caps`). */
-  getHasBackendListing: () => boolean
-  getIsMtpView: () => boolean
+  /** Whether this pane's folder is polled at all (`paneFolderIsPolledForDeletion`), read live on every tick. */
+  getFolderIsPolled: () => boolean
   getCurrentPath: () => string
   /** The pane volume's mount point, or `/` for the root volume. */
   getVolumePath: () => string
@@ -53,20 +55,11 @@ export function createDeletedDirPoll(deps: DeletedDirPollDeps): DeletedDirPoll {
   }
 
   function poll(): void {
-    // Network / search-results panes have no real `currentPath` on disk
-    // to poll — that folds into `!hasBackendListing`. The MTP skip STAYS:
-    // MTP has a backend listing (`hasBackendListing: true`) but no real
-    // on-disk path for `pathExists` to stat, so it's an MTP-path-specific
-    // skip, not a capability question.
-    if (!deps.getListingId() || deps.getLoading() || !deps.getHasBackendListing() || deps.getIsMtpView()) return
+    if (!deps.getListingId() || deps.getLoading() || !deps.getFolderIsPolled()) return
     const currentPath = deps.getCurrentPath()
-    // Virtual `.git/<category>/...` paths don't exist on disk, so
-    // `pathExists` always returns false and the poll would evict
-    // the user back to `.git/`. The git watcher keeps these
-    // listings fresh via `git-state-changed` and the
-    // `directory-diff` events from `invalidate_virtual_listings`.
-    if (isVirtualGitPath(currentPath)) return
 
+    // No volume id on purpose: the gate above only admits a path the Mac can
+    // stat, so the boot disk's own answer is the right and cheapest one.
     void pathExistsChecked(currentPath).then(({ data: exists, timedOut }) => {
       // `timedOut` covers both a 2s syscall timeout and an SMB volume in
       // `Disconnected` state: in both cases we don't know whether the path

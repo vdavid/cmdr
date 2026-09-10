@@ -47,6 +47,7 @@ import {
   pathCrossesArchiveBoundary,
   pathInsideArchive,
   archiveNameFromPath,
+  paneFolderIsPolledForDeletion,
   paneRowsAreOsVisible,
   rowIsOsVisible,
   SUPPORTED_ARCHIVE_SUFFIXES,
@@ -73,6 +74,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasParentRow: true,
       syncsToMcp: true,
       canBeIndexed: true,
+      pollsForDeletedFolder: true,
     },
     smb: {
       kind: 'smb',
@@ -82,6 +84,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasParentRow: true,
       syncsToMcp: true,
       canBeIndexed: true,
+      pollsForDeletedFolder: true,
     },
     sftp: {
       kind: 'sftp',
@@ -91,6 +94,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasParentRow: true,
       syncsToMcp: true,
       canBeIndexed: false,
+      // No OS mount: the Mac can't see the folder, so nothing it watches goes blind.
+      pollsForDeletedFolder: false,
     },
     webdav: {
       kind: 'webdav',
@@ -100,6 +105,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasParentRow: true,
       syncsToMcp: true,
       canBeIndexed: false,
+      pollsForDeletedFolder: false,
     },
     mtp: {
       kind: 'mtp',
@@ -109,6 +115,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasParentRow: true,
       syncsToMcp: true,
       canBeIndexed: true,
+      pollsForDeletedFolder: false,
     },
     adb: {
       kind: 'adb',
@@ -119,6 +126,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       syncsToMcp: true,
       // Indexable like an MTP phone: this default answers for a phone nobody has dialed.
       canBeIndexed: true,
+      pollsForDeletedFolder: false,
     },
     network: {
       kind: 'network',
@@ -130,6 +138,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       // nothing for a sort to order.
       syncsToMcp: false,
       canBeIndexed: false,
+      pollsForDeletedFolder: false,
     },
     'search-results': {
       kind: 'search-results',
@@ -143,6 +152,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       // the copy/move/delete gate reads this pane's state.
       syncsToMcp: true,
       canBeIndexed: false,
+      pollsForDeletedFolder: false,
     },
     archive: {
       kind: 'archive',
@@ -153,6 +163,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasParentRow: true,
       syncsToMcp: true,
       canBeIndexed: false,
+      // The archive file itself sits in a folder; the DRIVE it's on still decides.
+      pollsForDeletedFolder: true,
     },
     'git-portal': {
       kind: 'git-portal',
@@ -165,6 +177,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasParentRow: true,
       syncsToMcp: true,
       canBeIndexed: false,
+      // Snapshot folders never exist on disk, so a poll would evict the user.
+      pollsForDeletedFolder: false,
     },
   }
 
@@ -286,6 +300,97 @@ describe('capabilitiesFor — the store-reading convenience', () => {
     for (const id of ['network', 'search-results', 'root', 'mtp-1:1', 'nope']) {
       expect(capabilitiesFor(id)).toBeDefined()
     }
+  })
+})
+
+describe('paneFolderIsPolledForDeletion — which panes cover the FSEvents blind spot', () => {
+  // The poll exists because macOS doesn't report a watched folder's own deletion.
+  // That blind spot only concerns folders the Mac can see, so every pane on a
+  // scheme path answers false, and so does a snapshot that never exists on disk.
+  const cases: Array<{ name: string; volume: VolumeInfo; path: string; polled: boolean }> = [
+    { name: 'local', volume: vol({ id: 'root', fsType: 'apfs' }), path: '/Users/me/Documents', polled: true },
+    {
+      name: 'smb',
+      volume: vol({ id: 'volumesnaspi', fsType: 'smbfs', category: 'network' }),
+      path: '/Volumes/naspi/photos',
+      polled: true,
+    },
+    {
+      name: 'sftp',
+      volume: vol({ id: 'sftp-nas-22-ada', fsType: 'sftp', category: 'network' }),
+      path: 'sftp://nas/home/ada',
+      polled: false,
+    },
+    {
+      name: 'webdav',
+      volume: vol({ id: 'webdav-cloud-443-ada', fsType: 'webdav', category: 'network' }),
+      path: 'webdav://cloud/files',
+      polled: false,
+    },
+    {
+      name: 'mtp',
+      volume: vol({ id: 'mtp-336592896:65537', category: 'mobile_device' }),
+      path: 'mtp://mtp-336592896/65537/DCIM',
+      polled: false,
+    },
+    {
+      name: 'adb',
+      volume: vol({ id: 'adb-pixel-7-a1b2c3d', fsType: 'adb', category: 'mobile_device' }),
+      path: 'adb://R58M1/sdcard/DCIM',
+      polled: false,
+    },
+    { name: 'network', volume: vol({ id: 'network', category: 'network' }), path: 'smb://', polled: false },
+    {
+      name: 'search-results',
+      volume: vol({ id: 'search-results' }),
+      path: 'search-results://latest',
+      polled: false,
+    },
+    {
+      name: 'a zip on the boot disk',
+      volume: vol({ id: 'root', fsType: 'apfs' }),
+      path: '/Users/me/photos.zip/2024',
+      polled: true,
+    },
+    {
+      name: 'a zip on a phone',
+      volume: vol({ id: 'adb-pixel-7-a1b2c3d', fsType: 'adb', category: 'mobile_device' }),
+      path: 'adb://R58M1/sdcard/photos.zip/2024',
+      polled: false,
+    },
+    {
+      name: 'the virtual `.git` portal',
+      volume: vol({ id: 'root', fsType: 'apfs' }),
+      path: '/Users/me/repo/.git/branches/main',
+      polled: false,
+    },
+  ]
+
+  for (const { name, volume, path, polled } of cases) {
+    it(`${polled ? 'polls' : "doesn't poll"} ${name}`, () => {
+      volumes.list = [volume]
+      expect(paneFolderIsPolledForDeletion(volume.id, path)).toBe(polled)
+    })
+  }
+
+  it('polls a real `.git/branches` folder once the portal is switched off', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs' })]
+    gitPortal.on = false
+    try {
+      expect(paneFolderIsPolledForDeletion('root', '/Users/me/repo/.git/branches/main')).toBe(true)
+    } finally {
+      gitPortal.on = true
+    }
+  })
+
+  it("doesn't poll a phone or a server whose row has left the volume list", () => {
+    // ❗ The case the path half exists for. A pane keeps its `adb://` or `sftp://`
+    // path after its row goes (an unplugged phone, a removed server), and a stale
+    // server id classifies as `local`, so the kind alone would say "poll" and the
+    // boot disk would answer "gone" for a path it can't see.
+    volumes.list = []
+    expect(paneFolderIsPolledForDeletion('adb-pixel-7-a1b2c3d', 'adb://R58M1/sdcard/DCIM')).toBe(false)
+    expect(paneFolderIsPolledForDeletion('sftp-nas-22-ada', 'sftp://nas/home/ada')).toBe(false)
   })
 })
 
