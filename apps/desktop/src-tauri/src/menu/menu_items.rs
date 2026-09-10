@@ -642,10 +642,10 @@ mod tests {
             );
 
             let mut checked = 0;
+            let mut unreadable = Vec::new();
             for (id, item, submenu, position) in &registrations {
-                // Submenus assembled by a helper (`build_zoom_submenu`, `build_sort_submenu`) have
-                // no literal item array in this file, so their order isn't checkable from here.
                 let Some(entries) = layouts.get(submenu.as_str()) else {
+                    unreadable.push(format!("`{id}` in `{submenu}`"));
                     continue;
                 };
                 let actual = entries.get(*position).map(String::as_str);
@@ -658,6 +658,11 @@ mod tests {
                 checked += 1;
             }
             assert!(
+                unreadable.is_empty(),
+                "{name}: the parser found no item array for {unreadable:?}, so those positions go unchecked. \
+                 Teach `parse_submenu_layouts` the layout it missed."
+            );
+            assert!(
                 checked > 20,
                 "{name}: the verifiable-registration count fell to {checked}; the parser stopped matching the source"
             );
@@ -667,7 +672,15 @@ mod tests {
     /// Maps each `let <name> = Submenu::with_items(…, &[…])` to its ordered item expressions.
     /// `Submenu::with_id_and_items` counts the same: the ID goes before the label, and neither
     /// shifts the item array this reads.
+    ///
+    /// rustfmt keeps a long array one entry per line but collapses a short one onto a single
+    /// `&[&a, &b],` line, so both shapes count: a two-item menu is as easy to misnumber as a long one.
     fn parse_submenu_layouts(source: &str) -> HashMap<String, Vec<String>> {
+        enum ItemArray {
+            OnePerLine,
+            OneLine(Vec<String>),
+        }
+
         let mut layouts = HashMap::new();
         let mut lines = source.lines();
         while let Some(line) = lines.next() {
@@ -681,31 +694,39 @@ mod tests {
                 continue;
             };
             // Walk to the item array, giving up if this call doesn't spell one out.
-            let mut found_array = false;
+            let mut array = None;
             for inner in lines.by_ref() {
-                match inner.trim() {
-                    "&[" => {
-                        found_array = true;
-                        break;
-                    }
-                    ")?;" => break,
-                    _ => {}
-                }
-            }
-            if !found_array {
-                continue;
-            }
-            let mut entries = Vec::new();
-            for inner in lines.by_ref() {
-                let entry = inner.trim();
-                if entry == "]," {
+                let trimmed = inner.trim();
+                if trimmed == "&[" {
+                    array = Some(ItemArray::OnePerLine);
                     break;
                 }
-                if entry.starts_with("//") {
-                    continue;
+                if let Some(items) = trimmed.strip_prefix("&[").and_then(|rest| rest.strip_suffix("],")) {
+                    array = Some(ItemArray::OneLine(split_top_level(items)));
+                    break;
                 }
-                entries.push(entry.trim_end_matches(',').to_string());
+                if trimmed == ")?;" {
+                    break;
+                }
             }
+            let entries = match array {
+                None => continue,
+                Some(ItemArray::OneLine(entries)) => entries,
+                Some(ItemArray::OnePerLine) => {
+                    let mut entries = Vec::new();
+                    for inner in lines.by_ref() {
+                        let entry = inner.trim();
+                        if entry == "]," {
+                            break;
+                        }
+                        if entry.starts_with("//") {
+                            continue;
+                        }
+                        entries.push(entry.trim_end_matches(',').to_string());
+                    }
+                    entries
+                }
+            };
             layouts.insert(submenu_name.to_string(), entries);
         }
         layouts

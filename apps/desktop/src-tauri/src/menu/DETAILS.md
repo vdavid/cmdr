@@ -242,9 +242,11 @@ shortcut: a DIFFERENT item gets removed and reinserted. `register_item_positions
 in `menu_items.rs` guards it by reading `macos.rs` / `linux.rs` with `include_str!` and checking each
 registered index against the item's real slot in that submenu's `Submenu::with_items` /
 `Submenu::with_id_and_items` array. Source
-parsing is the only option available: building a real menu needs AppKit on the main thread. Submenus
-assembled by a helper (`build_zoom_submenu`, `build_sort_submenu`) have no literal array in those
-files, so their registrations are skipped. That is why the Sort by registrations live in
+parsing is the only option available: building a real menu needs AppKit on the main thread. It reads
+both array shapes rustfmt produces (one entry per line, and a short array collapsed onto one line), and
+it FAILS when a registration's submenu has no array it can read, so a new menu can't slip past
+unchecked. Submenus assembled by a helper (`build_zoom_submenu`, `build_sort_submenu`) have no literal
+array in those files, which is why the Sort by registrations live in
 `menu_items::register_sort_items`, beside the builder that fixes their order: nothing over in the
 platform files could have checked them anyway.
 
