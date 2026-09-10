@@ -42,8 +42,8 @@ impl AdbVolume {
 }
 
 /// How many listings a background index walk may keep in flight on one phone.
-/// Why a few and not the walk's wide budget: `max_concurrent_scan_listings` below.
-const MAX_CONCURRENT_SCAN_LISTINGS: usize = 4;
+/// Why eight and not the walk's wide budget: `max_concurrent_scan_listings` below.
+const MAX_CONCURRENT_SCAN_LISTINGS: usize = 8;
 
 impl Volume for AdbVolume {
     fn name(&self) -> &str {
@@ -70,12 +70,11 @@ impl Volume for AdbVolume {
         self.inner.host.settings().max_concurrent_operations(BACKEND)
     }
 
-    /// A few, never the index walk's wide budget. Each listing is a fresh sync
-    /// socket through the adb server and a thread of `adbd` statting the
-    /// phone's flash, so the win from overlapping them is the per-socket
-    /// handshake latency, and four captures most of it without piling work
-    /// onto one device. The walk still drops to one while the pane browses the
-    /// phone or a transfer runs on it.
+    /// Eight, never the index walk's wide budget: the knee a real phone
+    /// measured, where a walk stops getting faster and the pane's own listings
+    /// start slowing down (`network_scanner/DETAILS.md` § "A backend's own
+    /// ceiling"). The walk still drops to one while the pane browses the phone
+    /// or a transfer runs on it.
     fn max_concurrent_scan_listings(&self) -> usize {
         MAX_CONCURRENT_SCAN_LISTINGS
     }

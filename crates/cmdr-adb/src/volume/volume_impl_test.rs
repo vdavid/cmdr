@@ -17,13 +17,12 @@ use crate::errors::AdbConnectError;
 use crate::params::AdbConnectionParams;
 use crate::testing::{FakeAdbServer, FakeTree, fake_device};
 
-/// A background index walk keeps only a few listings in flight on a phone. Each
-/// listing is its own sync socket through the adb server and a thread of `adbd`
-/// statting the phone's flash, so the wide budget a quiet NAS gets would pile
-/// dozens of those onto one device.
+/// A background index walk keeps eight listings in flight on a phone: the knee a
+/// real phone measured, past which a walk gains nothing and the pane's own
+/// listings slow down (`network_scanner/DETAILS.md` § "A backend's own ceiling").
 #[test]
-fn an_index_walk_keeps_few_listings_in_flight_on_a_phone() {
-    assert_eq!(detached_volume().max_concurrent_scan_listings(), 4);
+fn an_index_walk_keeps_eight_listings_in_flight_on_a_phone() {
+    assert_eq!(detached_volume().max_concurrent_scan_listings(), 8);
 }
 
 /// An index walk of a phone descends only where a person keeps files: the shared

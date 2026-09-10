@@ -181,12 +181,18 @@ takes the volume itself and applies `min(pace budget, ceiling)`, never below one
 cover walk can be built without asking. The default is no ceiling (`usize::MAX`), which leaves SMB and MTP paced exactly
 as above.
 
-**Decision/Why a phone over ADB answers 4** (reasoned, not measured, 2026-09-10): every ADB listing is a fresh sync
-socket through the adb server and a thread of `adbd` statting the phone's flash. Overlapping listings buys back the
-per-socket handshake latency, and a few capture most of it; the full 64 would pile that many sockets and flash-stat
-threads onto one device the user may be holding. Revisit it when a real phone is benchmarked. The yield still applies on
-top: browsing the phone or a transfer on it drops the walk to one. Pinned by
-`pace_tests::a_volume_ceiling_caps_the_scan_below_the_full_budget` and
+**Decision/Why a phone over ADB answers 8**: every ADB listing is a fresh sync socket through the adb server and a
+thread of `adbd` statting the phone's flash, so overlapping listings buys back per-socket latency until the phone
+saturates. A walk of a whole shared storage (2,288 folders, 22,263 entries), with the pane listing `DCIM` every 200 ms
+alongside, measured (verified on Pixel 9 Pro XL, Android 17, a read-only `LIST` walk through `AdbVolume`, warm cache,
+2026-09-11):
+
+- 1 listing: 22.6 s, pane listing p50 12 ms. 2: 12.2 s, p50 13 ms. 4: 6.2–6.6 s, p50 13–15 ms, p90 22–25 ms.
+- 8: 3.6–4.0 s, p50 13–16 ms, p90 21–30 ms. 16: 3.3–3.65 s, p50 22–31 ms, p90 38–45 ms. Idle baseline p50 8–9 ms.
+
+Eight is the knee: each doubling halves the walk up to it while the pane's listings stay flat. ❌ Not 16: no further
+gain, and the pane's p50 doubles. The yield still applies on top: browsing the phone or a transfer on it drops the walk
+to one. Pinned by `pace_tests::a_volume_ceiling_caps_the_scan_below_the_full_budget` and
 `scan_pace::tests::a_backend_ceiling_caps_the_budget_but_never_below_one`.
 
 ## Where a walk descends (`Volume::index_walk`)

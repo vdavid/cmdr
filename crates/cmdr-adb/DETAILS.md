@@ -110,8 +110,8 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   table has an `"adb"` row answering the constant 1. ❗ A namespace with no row silently gets a cautious 2, which is why
   the row exists even though it is not a user-facing knob. `adbd` serializes I/O per device, so a second concurrent
   transfer only adds contention.
-- **`max_concurrent_scan_listings` → 4.** A drive-index walk keeps at most that many `LIST`s in flight on the phone,
-  under whatever the walk's own pacing allows. Why four, and how the walk applies it:
+- **`max_concurrent_scan_listings` → 8.** A drive-index walk keeps at most that many `LIST`s in flight on the phone,
+  under whatever the walk's own pacing allows. Why eight (measured on a real phone), and how the walk applies it:
   `crates/cmdr-index/src/indexing/network_scanner/DETAILS.md` § "A backend's own ceiling".
 - **`index_walk` → the phone's storage, once** (`src/volume/index_scope.rs`, whose module doc is the canonical why). A
   drive-index walk descends `/`, the `/sdcard` link (walked as the folder it points at), `/storage`, and every SD card:

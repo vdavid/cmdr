@@ -27,7 +27,7 @@ the per-volume paced listing budget, `system_dirs.rs` the non-recursed NAS dirs 
   on wake. ❌ Never mark at the point of failure, ❌ never branch on how the walk ended: `finish` stamps the proven set
   on every exit and drops the rest.
 - **The listing budget is PACED per volume** (`scan_pace.rs`, all three walks): browsing the share or a transfer on it
-  drops it 64 → 1, and a backend may cap it (`max_concurrent_scan_listings`, 4 on a phone). ❌ Never let it reach 0:
+  drops it 64 → 1, and a backend may cap it (`max_concurrent_scan_listings`, 8 on a phone). ❌ Never let it reach 0:
   one-at-a-time makes progress structural. Signals arrive once per top-up, ❌ never per entry.
 - **NAS system/snapshot dirs aren't recursed** (`system_dirs.rs`, all three walks): the dir's own row IS indexed, its
   subtree never walked. ❌ Don't remove it to "fill in" sizes — it re-triggers the stall. The cover walk stamps them

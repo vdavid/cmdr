@@ -199,7 +199,7 @@ prompt (`BackendKind::can_be_indexed`, with the frontend's per-kind default answ
 
 - Nothing watches a phone, so a finished walk reads Stale, and Cmdr's own writes are what keep the index current:
   `crates/cmdr-index/src/indexing/transports/DETAILS.md` § "ADB".
-- A walk keeps at most four listings in flight on the phone: `crates/cmdr-index/src/indexing/network_scanner/DETAILS.md`
+- A walk keeps at most eight listings in flight on the phone: `crates/cmdr-index/src/indexing/network_scanner/DETAILS.md`
   § "A backend's own ceiling".
 - A walk covers the phone's storage and nothing else, once, under `/sdcard/…` and each SD card, so a pane browsing
   `/storage/emulated/0/…` shows no folder sizes and search results name the `/sdcard` spelling:
