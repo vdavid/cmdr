@@ -153,19 +153,35 @@ registered volume), and a pane standing on it holds its listing and dials again 
 
 ## Testing
 
-Suites here drive `cmdr_adb::testing::FakeAdbServer` (the crate's `testing` feature is on for the app's dev targets).
-`volume_wiring_test.rs` holds calling a dial off, one dial per phone (three concurrent callers, a joined attempt
-cancelled while the other waits, every joined attempt cancelled; each holds the fake's answers so every caller is
-provably in line first), a dial whose phone left the cached list while it was held (answers `DeviceGone`, leaves
-nothing), the settings' live apply, the binary-path fallback, a pane listing a dialed phone through
-`read_directory_with_progress` on an `adb://<serial>/sdcard` path (the cell that holds the prefixed spelling end to
-end), the viewer opening a text file under `adb://<serial>/sdcard` (pulled into a temp through the dialed volume), and
-a listing and a `path_exists` on a listed, undialed phone (never `NotFound`); `device_provider.rs` holds the
-provider's row answers, `serial_of_path`, and an eject of a volume the registry holds but the provider never
-remembered; `commands/volumes.rs` holds resolving an `adb://` path without dialing
-(the cell points `ANDROID_ADB_SERVER_PORT` at the fake, so a dial would be seen). Not covered here yet: the tracker's
-diff and inline retirement, eject's round trip through `eject.rs`, and the transfer engine through the registry. A cell asserting on the protocol belongs in the crate: `crates/cmdr-adb/DETAILS.md` §
-"Which side a test lives on".
+Suites here drive `cmdr_adb::testing::FakeAdbServer` (the crate's `testing` feature is on for the app's dev targets),
+through the fixtures in `test_support.rs`: a phone the cached list carries, a dial the way a pane dials, and the check
+that the registry and the provider hold the same volume. A cell asserting on the protocol belongs in the crate:
+`crates/cmdr-adb/DETAILS.md` § "Which side a test lives on".
+
+- `tracker_test.rs`: a real `host:track-devices` subscription against `push_devices`. A push that drops a dialed phone
+  retires its volume (`note_device_gone`, unregister, forget, a `volumes-changed` request); a push from `unauthorized`
+  to `device` turns the row ready; `offline` and `no permissions` rows arrive carrying their reasons.
+- `volume_wiring_test.rs`: calling a dial off; one dial per phone (three concurrent callers, a joined attempt cancelled
+  while the other waits, every joined attempt cancelled, each holding the fake's answers so every caller is provably in
+  line first); a dial whose phone left the cached list while it was held (answers `DeviceGone`, leaves nothing); the
+  settings' live apply (off retires a dialed phone's volume and empties the rows, on lists the phone again, undialed);
+  the binary-path fallback; a pane listing a dialed phone through `read_directory_with_progress` on an
+  `adb://<serial>/sdcard` path (the cell that holds the prefixed spelling end to end); the viewer opening a text file
+  under `adb://<serial>/sdcard`; and a listing and a `path_exists` on a listed, undialed phone (never `NotFound`).
+- `eject_test.rs`: `eject.rs` routes a phone's id to this provider (`DeviceDisconnect { provider: "adb" }`), the volume
+  is unregistered and forgotten, the row stays listed without `capabilities`, and the next dial goes over the wire and
+  registers a new volume.
+- `device_provider.rs`: the provider's row answers, `serial_of_path`, and an eject of a volume the registry holds but
+  the provider never remembered.
+- `commands/volumes.rs`: resolving an `adb://` path without dialing (the cell points `ANDROID_ADB_SERVER_PORT` at the
+  fake, so a dial would be seen).
+- `file_system/write_operations/adb_transfer_test.rs`, beside the SFTP suite: the transfer engine through the registry,
+  local to phone and back. A file each way, a tree each way, a cancel mid-upload, an Overwrite answer, a folder already
+  on the phone that still asks about each clashing name, and awkward names (the shared `network_transfer_test_support.rs`
+  scenarios); a copy onto the phone lands through the writer's own `<name>.cmdr-tmp-<pid>-<n>` and one `mv`, on top of
+  the engine's own staging temp; and a mkdir, a move, and a delete each report the pane patch they owe. The patch cells
+  connect through `cmdr_adb::volume::testing::connect_fake`, whose `RecordingListings` is what they read: the app's
+  listing-cache patch needs a running app (`caching::notify_directory_changed` returns early without an `AppHandle`).
 
 ## Deliberate non-goals
 

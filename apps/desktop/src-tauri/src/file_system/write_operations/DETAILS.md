@@ -1014,6 +1014,13 @@ predicate the crate never states, and a free-space pre-flight reading `NotSuppor
 - **The scenarios are backend-blind and live in `network_transfer_test_support.rs`.** Everything they touch is
   `dyn Volume`, so a claim proved against WebDAV is proved in the same words against SFTP and the two suites can't
   drift. Each backend file connects its own fixture, mints a scratch dir, and delegates.
+- **`adb_transfer_test.rs` runs the same scenarios against a phone on `cmdr-adb`'s in-process fake server**, so it
+  needs no Docker, runs in the unit lane, and has no name prefix to keep. Its own cells start a copy from two registered
+  ids (`start_copy_by_id`, through `start_volume_copy`), check that a copy onto the phone lands through the writer's own
+  staging `mv`, and read the pane patch a mkdir, a move, and a delete each owe from a `RecordingListings` host.
+  ❗ A transfer onto a phone runs at width 1 (the `"adb"` row in `MAX_CONCURRENT_OPERATIONS_SOURCES`), so the serial
+  driver runs it: the pre-existing-folder scenario there holds the per-name probe (`conflict::size_of_whatever_is_at`),
+  never the concurrent driver's skip on a `Created` answer.
 - **❗ The cells themselves must stay in the two backend files, on the `webdav_integration_` / `sftp_integration_` name
   prefix.** The integration lane selects the app crate's Docker cells by NAME (`scripts/check/checks/fixture-lane-coverage.go`,
   enforced by `desktop-fixture-lane-coverage`), so a scenario promoted to a `#[tokio::test]` in the shared file would

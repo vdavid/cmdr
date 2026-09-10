@@ -211,11 +211,11 @@ pub(crate) fn place_root(volume_id: &str) -> Option<String> {
 /// The server volume an `sftp://` or `webdav://` path belongs to, registered or
 /// merely saved.
 ///
-/// ❗ **This never dials.** The neighbouring `adb://` arm in
-/// `commands/volumes.rs` connects the device as a side effect of resolving, and
-/// copying that shape would make every restored server tab dial at launch, which
-/// is exactly what a saved row exists to avoid. Resolving says WHERE a path
-/// lives; activating the row is what brings it to life.
+/// ❗ **This never dials.** Resolving says WHERE a path lives; activating the
+/// row is what brings it to life. A dial here would make every restored server
+/// tab connect at launch, which is exactly what a saved row exists to avoid. The
+/// neighbouring `adb://` arm in `commands/volumes.rs` answers from the cached
+/// device row the same way.
 pub(crate) fn server_volume_for_path(path: &str) -> Option<LocationInfo> {
     server_places()
         .into_iter()

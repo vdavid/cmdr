@@ -190,13 +190,17 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
   off, the state transitions, and the shared `cmdr_fs::volume::conformance` assertions. They run against the **fake ADB
   server** in `crates/cmdr-adb/src/testing/` (`FakeAdbServer` in `server.rs`, the filesystem model in `tree.rs`, the
   shell verbs in `shell.rs`): a loopback `TcpListener` speaking the host framing, `host:transport`,
-  `host-serial:<serial>:features`, `sync:` (both v1 and v2 verbs), and `shell,v2,raw:` over an in-memory `FakeTree`,
+  `host-serial:<serial>:features`, `sync:` (both v1 and v2 verbs; `SEND` creates its file at open, as a device's does,
+  so an upload that stops short leaves a torn file for the writer's cleanup to remove, and a cell can watch that
+  cleanup fail), and `shell,v2,raw:` over an in-memory `FakeTree`,
   plus `host:track-devices` with `push_devices` for scripted hotplug, `drop_connections` / `stop` for faults,
   `hold_answers` / `release_answers` to hold a dial provably in flight, and `requests` (every service request, in order)
   for counting dials or proving none happened. `volume/testing.rs` holds the volume-level fixtures on top of it. No
   `adb` binary, no device, no Docker: every cell runs in the unit lane.
 - **App-side** (`apps/desktop/src-tauri/src/adb/`): anything driving `write_operations`, the volume registry,
-  `volume_listing::complete`, or the listing cache. ❌ Don't widen this crate's public surface to keep a test on that
+  `volume_listing::complete`, or the listing cache. The transfer engine's cells sit beside the SFTP suite, in
+  `apps/desktop/src-tauri/src/file_system/write_operations/adb_transfer_test.rs`; the list of what exists is
+  `apps/desktop/src-tauri/src/adb/DETAILS.md` § "Testing". ❌ Don't widen this crate's public surface to keep a test on that
   side; move the test instead. ❗ A green suite here is not evidence that a copy works: `supports_export` and the
   free-space pre-flight are read by the engine, so the cells that would catch them live with the engine.
 - **`#[cfg(any(test, feature = "testing"))]`** widens `testing` and `volume::testing` to `pub` for the app's suites; the
