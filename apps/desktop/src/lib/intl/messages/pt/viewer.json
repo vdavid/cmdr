@@ -379,7 +379,7 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
-  "viewer.saveAs.destinationReadOnly": "Essa localização é só de leitura. Escolhes outra pasta para guardar?",
+  "viewer.saveAs.destinationReadOnly": "Esta localização é somente leitura. Escolher outra pasta para salvar?",
   "@viewer.saveAs.destinationReadOnly": {
     "sourceHash": "8d627aa"
   },

@@ -65,6 +65,9 @@ variant trap. Mine `_ignored/i18n/pt-BR/`.
   (`para prepará-la`).
 - `Rever` → **Revisar**. `alterar o nome` → **renomear**.
 - A dropped `você` where the verb form alone is ambiguous (`Excluiu esta pasta…` → `Você excluiu esta pasta…`).
+- A `tu` verb form (`Escolhes…?`, `Podes…`), `guardar`, or `só de leitura` → pt-BR **salvar** and **somente leitura**
+  (glossary-locked), and for a question toast the catalog's infinitive (`Escolher outra pasta para salvar?`, like
+  `Tentar de novo?`), which needs no pronoun at all.
 
 ### Spelling reform compliance
 
