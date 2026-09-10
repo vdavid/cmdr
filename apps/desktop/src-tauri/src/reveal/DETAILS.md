@@ -155,12 +155,19 @@ touches nothing.
 **Decision: clear means remove.** Absence is the OS default, and writing `com.apple.finder` instead would pin a choice
 the user never made and would survive their later preference for something else.
 
-**Decision: production bundles only.** `own_bundle_id` returns `None` — and every operation then reports `Unavailable`
-and writes nothing — unless all three hold: not a debug build, no `prod_instance` harness env var set, and
-`NSBundle.mainBundle().bundleIdentifier()` equal to the production id. Three gates because each catches a case the
-others miss: `pnpm dev` off the plain config still carries the production identifier; a release-mode E2E lane is caught
-by its env; and every `--worktree` / E2E instance carries a suffixed id (`apps/desktop/scripts/instance-id.ts`). The
-bundle id is read from `NSBundle` at runtime, never hardcoded, because telling those builds apart is the whole job.
+**Decision: production bundles only.** `own_bundle_id` returns `None` — and every operation then answers
+`blocked_by: NotProductionBuild` and writes nothing, in either direction — unless all three hold: not a debug build, no
+`prod_instance` harness env var set, and `NSBundle.mainBundle().bundleIdentifier()` equal to the production id. Three
+gates because each catches a case the others miss: `pnpm dev` off the plain config still carries the production
+identifier; a release-mode E2E lane is caught by its env; and every `--worktree` / E2E instance carries a suffixed id
+(`apps/desktop/scripts/instance-id.ts`). The bundle id is read from `NSBundle` at runtime, never hardcoded, because
+telling those builds apart is the whole job.
+
+Such a build still READS the key, so its Settings row shows the real state, disabled, on the builds we develop with.
+`NotProductionBuild` outranks `NotInApplications` (a dev build runs from `target/`, so both hold, and only one is the
+real reason). The never-block-off rule below doesn't need to bend for it: `state` needs our own id to read `Registered`,
+so the key never names such a build and there's nothing to hand back. A `pnpm dev` build carrying the production id
+reads a key naming that id as `HeldByOtherApp`, because it belongs to the installed copy.
 
 Why it matters: an uninstalled build that still holds the key leaves a dangling `NSFileViewer`, and reveal silently
 stops working system-wide with nothing pointing at the cause.
@@ -204,8 +211,9 @@ that isn't installed reports `None` and the UI falls back to the raw bundle id.
 `Settings > Behavior > Navigation & file ops > Show in Finder`, built as
 `apps/desktop/src/lib/settings/sections/RevealHandlerCard.svelte`. It's the settings system's only OS-BACKED row (no
 registry entry, no `settings.json` key), so what that pattern is and when to reach for it lives over there:
-`apps/desktop/src/lib/settings/DETAILS.md` § OS-backed rows. Three things worth knowing from this side: the row renders
-nothing on an `Unavailable` answer, so it never appears in a dev, worktree, or E2E build; it renders the state
+`apps/desktop/src/lib/settings/DETAILS.md` § OS-backed rows. Three things worth knowing from this side: on a dev,
+worktree, or E2E build the row renders disabled with the `NotProductionBuild` reason (it hides only off macOS, where the
+commands don't exist); it renders the state
 `set_reveal_handler_enabled` RETURNS rather than the one the click asked for, which is what makes the
 "another app took the key first" case honest; and both commands answer a `RevealHandlerStatus` (state plus
 `blocked_by`), so the row disables its own switch from the same answer that refuses the write.

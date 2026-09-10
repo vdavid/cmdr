@@ -1857,6 +1857,10 @@
   "@settings.revealHandler.notInApplications": {
     "description": "Tooltip on the \"Let other apps show files in Cmdr\" row in Settings > Behavior > Navigation & file ops, shown while the switch is disabled because this copy of Cmdr is running from somewhere other than an Applications folder (the Downloads folder, a mounted disk image, or the read-only copy macOS makes for a freshly downloaded app). Says what to do first, then why. \"Applications folder\" is the macOS folder of that name; use your locale's macOS name for it. \"Show in Finder\" is the macOS command name and \"Cmdr\" the product name; keep both."
   },
+  "settings.revealHandler.notProductionBuild": "Only a released copy of Cmdr can switch this on. Dev and test builds come and go, and deleting one would leave every \"Show in Finder\" click pointing at nothing.",
+  "@settings.revealHandler.notProductionBuild": {
+    "description": "Tooltip on the \"Let other apps show files in Cmdr\" row in Settings > Behavior > Navigation & file ops, shown while the switch is disabled because this is a development or automated-test build of Cmdr rather than a released one. Mostly seen by people who build Cmdr themselves. Says who can switch it on, then why. \"Dev and test builds\" means builds made while developing and testing Cmdr. \"Show in Finder\" is the macOS command name and \"Cmdr\" the product name; keep both."
+  },
   "settings.behavior.openTerminalHereApp.label": "Open terminal here uses",
   "@settings.behavior.openTerminalHereApp.label": {
     "description": "Label of the dropdown that picks which terminal app the \"Open terminal here\" action launches, in Settings > Behavior > Navigation & file ops. \"Open terminal here\" is Cmdr's own command name (it opens a terminal at the folder you're looking at), so translate it the same way as the command of that name. The sentence continues in the dropdown beside it, which names an app: \"Open terminal here uses [Ghostty]\".",

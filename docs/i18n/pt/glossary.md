@@ -2757,3 +2757,11 @@ que o inglês (a de indexação diz `Ocupa 1 GB` e deixa `de espaço` implícito
 Varredura pt-PT deste lote: `ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
 `alterar o nome`, `você` omitido em frase de resultado: zero ocorrências. `configurá-lo` é ênclise no infinitivo, a
 forma brasileira.
+
+- released copy / Dev and test builds · **versão lançada** / **builds de desenvolvimento e de teste**
+  (`settings.revealHandler.notProductionBuild`) · Microsoft terminology (`PORTUGUESE (BRAZIL).tbx`: `build` → `build` /
+  `compilação`, `release` → `versão`), e o catálogo já escreve `pastas … de build` em `search.systemDirExclude.default`.
+  `build` é masculino (`apagar um deles`). `versão` e não `cópia`: a frase fala de uma versão publicada, como
+  `commands.appCheckForUpdates.description`, não de um segundo processo como `main.instanceLock.alertBody`. A segunda
+  frase copia o molde de `settings.revealHandler.notInApplications`
+  (`deixaria cada clique em “Mostrar no Finder” apontando para o nada`) · high

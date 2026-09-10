@@ -79,14 +79,20 @@ describe('shouldShowRevealNudge', () => {
   })
 
   /**
-   * `unavailable` is a build that must never write the key (debug, worktree,
-   * E2E) as well as every non-macOS platform. Offering there would promise
-   * something the click cannot deliver.
+   * No answer is a platform with no mechanism, or a backend that didn't reply.
+   * Offering there would promise something the click cannot deliver.
    */
-  it('says nothing where the key cannot be written at all', () => {
-    expect(
-      shouldShowRevealNudge({ ...ready, handlerStatus: { state: { kind: 'unavailable' }, blockedBy: null } }),
-    ).toBe(false)
+  it('says nothing where there is no handler state to read', () => {
+    expect(shouldShowRevealNudge({ ...ready, handlerStatus: null })).toBe(false)
+  })
+
+  /**
+   * A dev, worktree, or E2E build reads the key like any copy, but it must never
+   * write it: a deleted build left holding the key breaks reveal machine-wide.
+   */
+  it('says nothing from a build that is not a released one', () => {
+    const handlerStatus: RevealHandlerStatus = { state: { kind: 'notRegistered' }, blockedBy: 'notProductionBuild' }
+    expect(shouldShowRevealNudge({ ...ready, handlerStatus })).toBe(false)
   })
 
   /**

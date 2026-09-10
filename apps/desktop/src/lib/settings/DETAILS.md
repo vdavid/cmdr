@@ -542,7 +542,8 @@ element and widen that signature — deliberately not done for an unused capabil
 - **A card that renders a row lists its id in the card's `anyVisible(...)` guard**, or a hit filters every card away.
 - **Only register a row that's there whenever its page is.** Rows gated on runtime state (the image-index reclaim offer,
   the CLIP model's download/delete, everything behind the image-index master toggle) stay unregistered: a hit that
-  scrolls to a row that isn't rendered is worse than no hit.
+  scrolls to a row that isn't rendered is worse than no hit. A row that renders on one platform only is fine:
+  `macOSOnly: true` keeps it out of the index everywhere else (`searchable-rows.ts`, pinned by its test).
 
 ## OS-backed rows (a control whose value lives outside Cmdr)
 
@@ -568,13 +569,14 @@ Three consequences fall out of that shape, all accepted deliberately:
 - **It carries its own DOM anchor.** With no `SettingId`, `settingAnchorId` has nothing to derive one from, so the card
   takes an `id` that lives beside its only deep-linker: `$lib/reveal/reveal-settings-link.ts`. Same shape as the
   sub-group anchors (`settings-downloads-notifications`).
-- **It isn't searchable.** Registering a `SearchableRow` would put a hit in the index for a row this machine may not
-  render (see below), which the searchable-row guardrails already forbid. So it hides under any non-empty query, which
-  falls out for free: `shouldShow` answers `false` for an id the index has never seen. Honest state beat searchability.
-- **It hides itself rather than explaining itself.** The reveal row renders nothing when the backend answers
-  `unavailable` (a debug, worktree, or E2E build that must never write the key) or when this isn't a Mac. A disabled row
-  with an explanation would be copy shipped only to us, and it can't appear in a dev build at all, so verify its states
-  from the component tests rather than by driving the app.
+- **It's a `SearchableRow` like any other** (`sections/RevealHandlerCard.rows.ts`, `macOSOnly`), gated on `shouldShow`
+  inside the card, since the card owns its frame. Its keywords carry how people look for it ("Finder", "Find in Finder",
+  "Chrome", "Google"), not only its label. That's honest because the row renders on every Mac (next bullet).
+- **It explains itself rather than hiding.** Where this copy may not operate the switch (a debug, worktree, or E2E
+  build, or a copy outside an Applications folder), the backend still reads the real state and says why through
+  `blockedBy`, so the row renders disabled with the reason as a tooltip. It renders nothing only where there's no
+  mechanism at all: off macOS, or when the command doesn't answer (the wrapper's `null`). A row hidden on dev builds is
+  a row nobody working on Cmdr ever sees, and a search hit that lands on nothing.
 
 **Guardrail: the switch is bound, not derived.** Ark's `Switch` flips itself locally on click, and a refused take-over
 comes back on the same `false` the row started from, so a `$derived(state.kind === 'registered')` would never flow back

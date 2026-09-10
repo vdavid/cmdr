@@ -3167,3 +3167,10 @@ aposztrófot. Négy kulcs angolja átíródott, ezért a tárolt hash `sync-loca
 - **Betűszó + rag kötőjellel: `RAM-ot`, `CPU-t`, `LLM-edet`, `AI-t`, `API-kulcsot`.** A katalógus `USB-` családjának
   mintája (`style.md`). A `CPU` kiejtése `cé-pé-ú`, tehát a tárgyrag `-t`; az `LLM` kiejtése `el-el-em`, tehát elöl
   hangrendű (`-edet`).
+- **released copy / Dev and test builds → `kiadott verzió` / `fejlesztői és tesztbuildek`**
+  (`settings.revealHandler.notProductionBuild`) · ms (`HUNGARIAN.tbx`: `build` → `build`, `release` → `kiadás`,
+  `production build` → `élő build`), katalógus (`build mappákat` a `search.systemDirExclude.default`-ban, `Cmdr-verzió`
+  a `commands.appCheckForUpdates.description`-ben) · high. `verzió`, nem `példány`: a mondat kiadásról szól, nem egy
+  második futó példányról (`main.instanceLock.alertBody`). A második mondat a `settings.revealHandler.notInApplications`
+  mintáját követi (`… törlése után minden „Megjelenítés a Finderben” kattintás a semmibe mutatna`), hogy a két tooltip
+  testvérként olvasódjon.

@@ -17,20 +17,24 @@ The feature is one OS switch, but a person meets it twice and the two moments ha
 `shouldShowRevealNudge` adds two conditions to the shared `nudgeCouldFire`: at least `REVEAL_NUDGE_AFTER_DAYS` (2)
 distinct launch days, and a handler state of `notRegistered`.
 
-**Decision: only `notRegistered` speaks.** The other three states are each a deliberate silence.
+**Decision: only `notRegistered` speaks.** The other two states are each a deliberate silence, and so are two answers
+that come before the state.
 
 - `registered`: reveals already land here.
 - `heldByOtherApp`: Path Finder and ForkLift ship exactly this key and nothing else, so a person holding one chose it.
   An unprompted offer to take it over is the difference between a helpful app and a pushy one. The Settings row does
   offer the take-over, because there the person went looking for it.
-- `unavailable`: a debug, worktree, or E2E build (which must never write the key) or a platform with no mechanism. The
-  click could not deliver anything.
+- No answer (`null` from the wrapper): a platform with no mechanism, or a backend that didn't reply. The click could not
+  deliver anything.
+- A `blockedBy` answer: a debug, worktree, or E2E build (which must never write the key), or a copy outside an
+  Applications folder. The click would be refused.
 
 **Decision: accepting reports the state the OS was LEFT in.** `setRevealHandlerEnabled` answers with what it found, not
 what it was asked for, and `acceptRevealNudge` words that answer. The race is real — the key is a shared global that any
 app can take at any moment — and it's the same reason `RevealHandlerCard` re-derives its switch from the returned state.
-`heldByOtherApp` earns its own line because it names who won; `notRegistered` and `unavailable` collapse into one "not
-this time" plus the switch's address, because they look identical from here and lead to the same next step.
+`heldByOtherApp` earns its own line because it names who won; `notRegistered` and no answer at all (reported as
+`unavailable`) collapse into one "not this time" plus the switch's address, because they look identical from here and
+lead to the same next step.
 
 The answer records the PRESS, ❌ never the outcome: what's being measured is whether people want this.
 `reveal_handler_not_taken` carries the rest, keyed by the typed variant so a new one reaches the dashboard under its own

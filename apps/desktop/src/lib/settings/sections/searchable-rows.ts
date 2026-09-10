@@ -13,6 +13,7 @@
  */
 
 import { tString } from '$lib/intl/messages.svelte'
+import { isMacOS } from '$lib/shortcuts/key-capture'
 import type { SearchableEntry, SearchableRow } from '../types'
 import { adbRows } from './AdbSection.rows'
 import { advancedRows } from './AdvancedSection.rows'
@@ -20,11 +21,13 @@ import { askCmdrRows } from './AskCmdrSection.rows'
 import { driveIndexingRows } from './DriveIndexingSection.rows'
 import { keyboardShortcutsRows } from './KeyboardShortcutsSection.rows'
 import { licenseRows } from './LicenseSection.rows'
+import { revealHandlerRows } from './RevealHandlerCard.rows'
 import { serversRows } from './ServersSection.rows'
 import { updatesRows } from './UpdatesSection.rows'
 
 /** Every declared row, in section order (search doesn't rank by it; readers do). */
 export const searchableRows: SearchableRow[] = [
+  ...revealHandlerRows,
   ...driveIndexingRows,
   ...askCmdrRows,
   ...serversRows,
@@ -57,5 +60,13 @@ function resolveRow(row: SearchableRow): SearchableEntry {
   return entry
 }
 
-/** The rows as search-index entries, merged with the registry by `buildSearchIndex`. */
-export const searchableRowEntries: SearchableEntry[] = searchableRows.map(resolveRow)
+/**
+ * The rows as search-index entries, merged with the registry by `buildSearchIndex`.
+ *
+ * Read when the index builds rather than at import, so a `macOSOnly` row drops out
+ * off macOS (where its markup never renders) and a test can flip the platform.
+ */
+export function searchableRowEntries(): SearchableEntry[] {
+  const onMacOS = isMacOS()
+  return searchableRows.filter((row) => onMacOS || row.macOSOnly !== true).map(resolveRow)
+}

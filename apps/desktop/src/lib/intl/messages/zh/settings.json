@@ -1507,6 +1507,10 @@
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "dc15ebf"
   },
+  "settings.revealHandler.notProductionBuild": "只有正式发布的 Cmdr 版本才能开启这一项。开发版和测试版来来去去，一旦删掉其中一个，每一次“在 Finder 中显示”的点击就都会指向空处。",
+  "@settings.revealHandler.notProductionBuild": {
+    "sourceHash": "20648ba"
+  },
   "settings.behavior.openTerminalHereApp.label": "“在此处打开终端”使用",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

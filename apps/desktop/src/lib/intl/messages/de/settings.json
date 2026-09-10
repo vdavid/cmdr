@@ -1516,6 +1516,10 @@
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "dc15ebf"
   },
+  "settings.revealHandler.notProductionBuild": "Einschalten lässt sich das nur in einer veröffentlichten Version von Cmdr. Dev- und Test-Builds kommen und gehen, und das Löschen eines solchen Builds würde jeden Klick auf „Im Finder anzeigen“ ins Leere laufen lassen.",
+  "@settings.revealHandler.notProductionBuild": {
+    "sourceHash": "20648ba"
+  },
   "settings.behavior.openTerminalHereApp.label": "„Terminal hier öffnen“ verwendet",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

@@ -1652,3 +1652,9 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   `Local Network`，理由相同：使用者要在系統設定裡找得到這個名字 · `high`
 - **`{mandatory}+1` 的 `+1` 是字面的** · `第 {step} 步，共 {mandatory}+1 步` · 英文刻意寫 `3+1` 而不是
   `4`（最後一步是可選的），中文照搬；量詞用 `步`，形狀抄隔壁的 `onboarding.wizard.stepProgress` · `high`
+- **released copy / Dev and test builds（`settings.revealHandler.notProductionBuild`）** · `正式發行的 Cmdr 版本` /
+  `開發版和測試版` · MS（`CHINESE (TRADITIONAL).tbx`：`release` → `發行版本`，`production build` →
+  `正式版本`）；這裡講的是給人用的版本，所以不用 `建置`（那是 `search.systemDirExclude.default`
+  裡資料夾的說法），也不用 MS 的 `組建`。第二句沿用 `settings.revealHandler.notInApplications` 的
+  `每一次「在 Finder 中顯示」的點擊都指向空的地方`，讓兩條提示讀起來是一對 · `high`（術語）；"come and go" 譯作
+  `來來去去` 是意譯判斷，`tentative`

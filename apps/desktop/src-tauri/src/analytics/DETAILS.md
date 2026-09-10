@@ -309,7 +309,7 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `reveal_handler_answered` (frontend, `$lib/reveal/reveal-nudge-answer.ts`): `answer` (`yes` / `no` / `dismissed`).
   Same three-way split, and for the same reason, as `dock_pin_answered`; `yes` records the press, ❌ never the outcome.
 - `reveal_handler_not_taken` (frontend, same file): `reason`, the `RevealHandlerState` variant the OS was LEFT in
-  (`notRegistered` / `heldByOtherApp` / `unavailable`) after an accepted offer. ❌ Never a message string. Read it
+  (`notRegistered` / `heldByOtherApp`) after an accepted offer, or `unavailable` when the command gave no answer at all. ❌ Never a message string. Read it
   against `reveal_handler_answered{answer: yes}`: `heldByOtherApp` here is another file manager winning the race
   between the toast being drawn and the button being pressed, which is the one number that would justify re-reading the
   state at click time.

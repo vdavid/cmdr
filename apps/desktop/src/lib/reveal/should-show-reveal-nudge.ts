@@ -28,31 +28,31 @@ export interface RevealNudgeInputs extends NudgeContext {
   launchDayCount: number
   /**
    * `get_reveal_handler_state()`: who holds the `NSFileViewer` key right now, and
-   * whether this copy of Cmdr may take it.
+   * whether this copy of Cmdr may take it. `null` where there's no mechanism to ask.
    */
-  handlerStatus: RevealHandlerStatus
+  handlerStatus: RevealHandlerStatus | null
 }
 
 /**
  * Whether to raise the "open Show in Finder in Cmdr?" offer.
  *
- * `notRegistered` is the ONLY state that speaks up, and each of the other three
- * is a deliberate silence:
+ * `notRegistered` is the ONLY state that speaks up, and each of the other two is
+ * a deliberate silence:
  *
  * - `registered`: reveals already land here, so there's nothing to offer.
  * - `heldByOtherApp`: someone chose Path Finder or ForkLift on purpose.
  *   Offering to take a working setup over out of nowhere would be rude; a
  *   take-over belongs in the Settings row, where the person asked for it.
- * - `unavailable`: a build that must never write the key (debug, worktree, E2E)
- *   or a platform with no mechanism, so the click couldn't deliver anything.
  *
- * A `blockedBy` answer is a fifth silence: the backend refuses to register a copy
- * that isn't in an Applications folder, so offering would be offering a click that
- * gets refused.
+ * Two more silences sit above the state. No answer at all (`null`) is a platform
+ * with no mechanism, so the click couldn't deliver anything. And a `blockedBy`
+ * answer is a click the backend would refuse: a dev, worktree, or E2E build that
+ * must never write the key, or a copy that isn't in an Applications folder.
  */
 export function shouldShowRevealNudge(inputs: RevealNudgeInputs): boolean {
   if (!nudgeCouldFire(inputs, 'reveal')) return false
   if (inputs.launchDayCount < REVEAL_NUDGE_AFTER_DAYS) return false
+  if (inputs.handlerStatus === null) return false
   if (inputs.handlerStatus.blockedBy !== null) return false
   return inputs.handlerStatus.state.kind === 'notRegistered'
 }

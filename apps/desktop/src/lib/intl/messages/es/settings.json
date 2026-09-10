@@ -1510,6 +1510,10 @@
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "dc15ebf"
   },
+  "settings.revealHandler.notProductionBuild": "Esto solo se puede activar en una versión publicada de Cmdr. Las compilaciones de desarrollo y de prueba van y vienen, y borrar una dejaría cada clic en “Mostrar en el Finder” apuntando a la nada.",
+  "@settings.revealHandler.notProductionBuild": {
+    "sourceHash": "20648ba"
+  },
   "settings.behavior.openTerminalHereApp.label": "“Abrir terminal aquí” usa",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

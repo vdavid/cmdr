@@ -17,9 +17,9 @@ first time a reveal actually lands. Everything that touches the `NSFileViewer` k
 
 - **The offer fires ONLY on `notRegistered`, and only with `blockedBy === null`.** ❌ Never on `heldByOtherApp`: someone
   chose Path Finder or ForkLift on purpose, and offering to take a working setup over unprompted is rude. A take-over
-  belongs in the Settings row, where the person asked for it. `registered` has nothing to offer, `unavailable` couldn't
-  deliver, and a `blockedBy` copy (Cmdr running outside an Applications folder) would have its click refused by the
-  backend.
+  belongs in the Settings row, where the person asked for it. `registered` has nothing to offer, no answer (`null`, off
+  macOS) couldn't deliver, and a `blockedBy` answer (a dev or test build, or Cmdr outside an Applications folder) would
+  have its click refused by the backend.
 - **Accepting renders what the OS was LEFT holding, ❌ never what the click asked for.** Another app can take the key
   between the toast being drawn and the button being pressed. Same rule the Settings card follows.
 - **The activation notice is ❌ NOT a nudge**: it explains something the person set up themselves, so it takes no part

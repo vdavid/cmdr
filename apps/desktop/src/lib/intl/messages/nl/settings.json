@@ -1514,6 +1514,10 @@
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "dc15ebf"
   },
+  "settings.revealHandler.notProductionBuild": "Je kunt dit alleen aanzetten in een uitgebrachte versie van Cmdr. Dev- en testbuilds komen en gaan, en het verwijderen van zo''n build zou elke klik op ‘Toon in Finder’ naar niets laten wijzen.",
+  "@settings.revealHandler.notProductionBuild": {
+    "sourceHash": "20648ba"
+  },
   "settings.behavior.openTerminalHereApp.label": "‘Terminal hier openen’ gebruikt",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

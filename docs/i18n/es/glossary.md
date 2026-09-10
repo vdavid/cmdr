@@ -2969,3 +2969,10 @@ Familia ICU normal: apóstrofos dobles, aunque al final ningún valor español l
 - **`dumber` → `más torpe`** · el inglés es deliberadamente franco («dumber» está elegido a propósito). `torpe` dice lo
   mismo sin insultar al modelo ni sonar técnico, y evita `tonto`, que en una ayuda emergente de producto suena a broma ·
   `tentative`.
+- **released copy / Dev and test builds → `versión publicada` / `compilaciones de desarrollo y de prueba`**
+  (`settings.revealHandler.notProductionBuild`) · MS terminology (`SPANISH.tbx`: `build` → `compilación`,
+  `production build` → `versión de producción`), y el catálogo ya dice `carpetas … de compilación` en
+  `search.systemDirExclude.default`. `versión` y no `copia`: la frase habla de una versión publicada, como
+  `commands.appCheckForUpdates.description`, no de un segundo proceso como `main.instanceLock.alertBody`. La segunda
+  frase copia el molde de `settings.revealHandler.notInApplications`
+  (`dejaría cada clic en “Mostrar en el Finder” apuntando a la nada`) · `high`.

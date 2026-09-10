@@ -3221,3 +3221,9 @@ Décisions de formulation :
 - **`<strong>Oui, je veux l'IA</strong>` dans l'info-bulle du modèle local recopie `stepAi.cloud.label`**, caractère
   pour caractère : l'info-bulle envoie l'utilisateur vers cette option-là, les deux doivent se reconnaître.
 - **`2 GB` → `2 Go`**, comme `stepOptional.indexing.descCost` écrit déjà « 1 Go ».
+- **released copy / Dev and test builds → `version publiée` / `versions de développement et de test`**
+  (`settings.revealHandler.notProductionBuild`) · MS terminology FRA (`FRENCH.tbx` : `release` → `version`,
+  `production build` → `version de production`). « version » plutôt que « build » ou « compilation » : l'info-bulle
+  oppose deux sortes de versions de l'app, pas des dossiers (`search.systemDirExclude.default` garde « compilation »
+  pour les dossiers). La seconde phrase reprend le moule de `settings.revealHandler.notInApplications`
+  (`laisserait chaque clic sur « Afficher dans le Finder » sans destination`) · `high`.

@@ -1506,6 +1506,10 @@
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "dc15ebf"
   },
+  "settings.revealHandler.notProductionBuild": "Chỉ bản phát hành chính thức của Cmdr mới bật được mục này. Các bản dựng để phát triển và thử nghiệm chỉ tồn tại tạm thời, và việc xóa một bản như vậy sẽ khiến mọi lần bấm “Hiển thị trong Finder” trỏ vào chỗ trống.",
+  "@settings.revealHandler.notProductionBuild": {
+    "sourceHash": "20648ba"
+  },
   "settings.behavior.openTerminalHereApp.label": "“Mở terminal tại đây” dùng",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

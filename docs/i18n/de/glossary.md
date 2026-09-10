@@ -2745,3 +2745,10 @@ Formulierungsentscheidungen in diesem Set:
   (`Ja, ich will KI`). Wird das Label umformuliert, muss der Tooltip mit.
 - **`{nextLabel}` steht in deutschen Anführungszeichen** („{nextLabel}“), wie jeder andere zitierte Tastentext im
   Katalog (`onboarding.stepFda.step2.tip` „die Taste „+““).
+- **released copy / Dev and test builds → `veröffentlichte Version` / `Dev- und Test-Builds`**
+  (`settings.revealHandler.notProductionBuild`) · Microsoft terminology (`GERMAN.tbx`: `build` → `Build`,
+  `production build` → `Produktions-Build`) für das Lehnwort, das Leser dieses Tooltips (Leute, die Cmdr selbst bauen)
+  ohnehin benutzen. `Version` statt `Kopie`: der Satz meint eine Veröffentlichung wie in
+  `commands.appCheckForUpdates.description` („neuere Version von Cmdr“), keinen zweiten laufenden Prozess wie
+  `main.instanceLock.alertBody`. Der zweite Satz spiegelt `settings.revealHandler.notInApplications` („… jeden Klick auf
+  „Im Finder anzeigen“ ins Leere laufen lassen“), damit beide Tooltips als Geschwister lesen · `high`

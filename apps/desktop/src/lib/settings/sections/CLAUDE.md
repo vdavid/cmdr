@@ -18,8 +18,9 @@ decide where and how it renders. Parents: `../CLAUDE.md` (registry, store, appli
   `section: ['Advanced']` setting on a feature page (`../CLAUDE.md`: a setting's `section` is its ONE home). Checklist:
   `docs/guides/adding-a-new-setting.md`.
 - **A control whose value lives in the OS owns its own `SectionCard` and no registry entry** (`RevealHandlerCard`, the
-  only one). It reads through on mount, renders whatever the write returns, and hides where the state can't exist, so it
-  never appears in a dev build. Before adding a second one, read `../DETAILS.md` § OS-backed rows.
+  only one). It reads through on mount, renders whatever the write returns, and shows disabled with the backend's reason
+  where this build may not write, so dev builds show it too. Before adding a second one, read `../DETAILS.md` §
+  OS-backed rows.
 - **A row that isn't a setting declares a `SearchableRow` in the sibling `<Component>.rows.ts`.** Gate it on
   `shouldShow('row:…')` AND list it in its card's `anyVisible(...)`, or a hit filters every card away. It's search
   metadata; ❌ it never decides what renders. A page with NO control (`ServersSection`) reaches the sidebar via a row's

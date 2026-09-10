@@ -14,7 +14,7 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { tString } from '$lib/intl/messages.svelte'
 import { buildSectionTree, settingsRegistry, type SettingsSection } from '../settings-registry'
 import {
@@ -25,6 +25,14 @@ import {
 } from '../settings-search'
 import type { SearchableRow, SearchableRowId, SettingId } from '../types'
 import { searchableRows } from './searchable-rows'
+
+/** On a Mac by default, so every row, `macOSOnly` ones too, is in the index under test. */
+const isMacOS = vi.hoisted(() => vi.fn(() => true))
+
+vi.mock('$lib/shortcuts/key-capture', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/shortcuts/key-capture')>()),
+  isMacOS: () => isMacOS(),
+}))
 
 /**
  * The compile-time half of the collision guard: `never` the moment a
@@ -159,6 +167,32 @@ describe('a row that anchors its section', () => {
       }
       const names = siblings.map((section) => section.name)
       expect(names.indexOf(row.section[row.section.length - 1])).toBe(names.indexOf(anchor.after) + 1)
+    }
+  })
+})
+
+/**
+ * Off macOS a `macOSOnly` row's markup never renders, so a hit would land on a
+ * page with nothing to show for it. The row stays declared; only the index drops it.
+ */
+describe('a macOS-only row', () => {
+  it('stays out of the search index off macOS, while the other rows stay in', () => {
+    const macOnly = searchableRows.filter((row) => row.macOSOnly === true)
+    const everywhere = searchableRows.filter((row) => row.macOSOnly !== true)
+    expect(macOnly.length).toBeGreaterThan(0)
+
+    isMacOS.mockReturnValue(false)
+    clearSearchIndex()
+    try {
+      for (const row of macOnly) {
+        expect([...getMatchingSettingIdsInSection(tString(row.labelKey), row.section)]).not.toContain(row.id)
+      }
+      for (const row of everywhere) {
+        expect([...getMatchingSettingIdsInSection(tString(row.labelKey), row.section)]).toContain(row.id)
+      }
+    } finally {
+      isMacOS.mockReturnValue(true)
+      clearSearchIndex()
     }
   })
 })

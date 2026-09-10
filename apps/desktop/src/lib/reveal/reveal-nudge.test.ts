@@ -117,14 +117,15 @@ describe('acceptRevealNudge', () => {
   /**
    * Typed on purpose: renaming a `RevealHandlerState` variant has to break this
    * table rather than quietly leave the funnel reporting a name nothing sends.
+   * `null` is the wrapper's "no answer at all", reported as `unavailable`.
    */
-  const refusals: [state: RevealHandlerState, reason: string, messageKey: string][] = [
-    [{ kind: 'notRegistered' }, 'notRegistered', 'main.revealNudge.notTurnedOn'],
-    [{ kind: 'unavailable' }, 'unavailable', 'main.revealNudge.notTurnedOn'],
+  const refusals: [status: RevealHandlerStatus | null, reason: string, messageKey: string][] = [
+    [unblocked({ kind: 'notRegistered' }), 'notRegistered', 'main.revealNudge.notTurnedOn'],
+    [null, 'unavailable', 'main.revealNudge.notTurnedOn'],
   ]
 
-  it.each(refusals)('reports %o as a typed reason and words it for the user', async (state, reason, key) => {
-    mocks.setRevealHandlerEnabled.mockResolvedValue(unblocked(state))
+  it.each(refusals)('reports %o as a typed reason and words it for the user', async (status, reason, key) => {
+    mocks.setRevealHandlerEnabled.mockResolvedValue(status)
 
     await acceptRevealNudge(REVEAL_NUDGE_TOAST_ID)
 

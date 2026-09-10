@@ -1515,6 +1515,10 @@
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "dc15ebf"
   },
+  "settings.revealHandler.notProductionBuild": "Det här går bara att slå på i en släppt version av Cmdr. Utvecklings- och testversioner kommer och går, och raderar du en av dem skulle varje klick på ”Visa i Finder” peka på ingenting.",
+  "@settings.revealHandler.notProductionBuild": {
+    "sourceHash": "20648ba"
+  },
   "settings.behavior.openTerminalHereApp.label": "”Öppna terminal här” använder",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

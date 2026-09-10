@@ -26,9 +26,6 @@ export async function drainPendingReveals(): Promise<void> {
   }
 }
 
-/** What every wrapper here answers when the backend can't be reached at all. */
-const UNAVAILABLE: RevealHandlerStatus = { state: { kind: 'unavailable' }, blockedBy: null }
-
 /**
  * Who currently owns the `NSFileViewer` key — us, nobody, or another app — and whether
  * this copy of Cmdr may take it.
@@ -37,15 +34,16 @@ const UNAVAILABLE: RevealHandlerStatus = { state: { kind: 'unavailable' }, block
  * machine state anyone can change from outside Cmdr, so a stored flag would show a
  * switch that disagrees with the Mac it sits on.
  *
- * `unavailable` covers every build that must not write the key (a debug, worktree, or
- * E2E instance) as well as every non-macOS platform, where the command doesn't exist.
+ * `null` where there's nothing to ask: every non-macOS platform, where the command
+ * doesn't exist, and a backend that didn't answer. A debug, worktree, or E2E build DOES
+ * answer, with the real state and `blockedBy: 'notProductionBuild'`.
  */
-export async function getRevealHandlerState(): Promise<RevealHandlerStatus> {
+export async function getRevealHandlerState(): Promise<RevealHandlerStatus | null> {
   try {
     return await commands.getRevealHandlerState()
   } catch (error) {
     log.debug('Reveal handler state is unavailable: {error}', { error })
-    return UNAVAILABLE
+    return null
   }
 }
 
@@ -54,14 +52,15 @@ export async function getRevealHandlerState(): Promise<RevealHandlerStatus> {
  *
  * Returns the state the OS was left in, not the state that was asked for: another app
  * can hold the key by the time the click lands, and the row has to render the truth.
- * A `blockedBy` answer means the backend refused and touched nothing.
+ * A `blockedBy` answer means the backend refused and touched nothing; `null` means it
+ * couldn't be reached, as for `getRevealHandlerState`.
  */
-export async function setRevealHandlerEnabled(enabled: boolean): Promise<RevealHandlerStatus> {
+export async function setRevealHandlerEnabled(enabled: boolean): Promise<RevealHandlerStatus | null> {
   try {
     return await commands.setRevealHandlerEnabled(enabled)
   } catch (error) {
     log.debug('Could not set the reveal handler: {error}', { error })
-    return UNAVAILABLE
+    return null
   }
 }
 

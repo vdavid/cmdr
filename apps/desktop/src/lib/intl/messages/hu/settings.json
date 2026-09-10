@@ -1508,6 +1508,10 @@
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "dc15ebf"
   },
+  "settings.revealHandler.notProductionBuild": "Csak a Cmdr kiadott verziójában kapcsolhatod be. A fejlesztői és a tesztbuildek jönnek-mennek, és egy ilyen build törlése után minden „Megjelenítés a Finderben” kattintás a semmibe mutatna.",
+  "@settings.revealHandler.notProductionBuild": {
+    "sourceHash": "20648ba"
+  },
   "settings.behavior.openTerminalHereApp.label": "A „Terminál megnyitása itt” appja",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

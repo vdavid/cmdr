@@ -2825,3 +2825,9 @@ terminologin från syskonnyckelns `…desc`.
 - **`and the such` · `och liknande`** · engelskans avsiktligt slarviga vändning; `och liknande` är den vardagliga
   svenska motsvarigheten och används redan i `onboarding.stepOptional.networking.desc` (”en NAS hemma och liknande”).
   `high`.
+- **released copy / Dev and test builds · `släppt version` / `utvecklings- och testversioner`**
+  (`settings.revealHandler.notProductionBuild`) · Microsoft terminology (`SWEDISH.tbx`: `build` → `version`, `release` →
+  `släppa` / `version`, `production build` → `produktionsversion`). `version` och inte `kopia`: meningen handlar om en
+  utgåva, som `commands.appCheckForUpdates.description`, inte om en andra körande process som
+  `main.instanceLock.alertBody`. Andra meningen följer `settings.revealHandler.notInApplications`
+  (`varje klick på ”Visa i Finder” pekar på ingenting`). `high`.

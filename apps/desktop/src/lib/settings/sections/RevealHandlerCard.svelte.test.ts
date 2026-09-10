@@ -11,9 +11,9 @@
  * swallow-and-report-`unavailable` fallback is half of why a non-macOS build
  * renders nothing, and mocking above them would skip it.
  *
- * ❗ What this file CANNOT cover: the row hides itself on every non-production
- * build, and the E2E suite only ever runs those, so there is no end-to-end test
- * of it. `settings.spec.ts` would find an empty section and pass.
+ * ❗ The E2E suite only ever runs non-production builds, where the switch is
+ * disabled, so no end-to-end test ever flips it. Every state it can reach is
+ * pinned here instead.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -22,7 +22,9 @@ import type { RevealHandlerState, RevealHandlerStatus } from '$lib/ipc/bindings'
 
 const getRevealHandlerState = vi.fn<() => Promise<RevealHandlerStatus>>()
 const setRevealHandlerEnabled = vi.fn<(enabled: boolean) => Promise<RevealHandlerStatus>>()
-const isMacOS = vi.fn<() => boolean>()
+// Hoisted: the card imports settings search, whose import graph calls `isMacOS()`
+// while modules load, before a plain `const` here would exist.
+const isMacOS = vi.hoisted(() => vi.fn<() => boolean>(() => true))
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
@@ -116,16 +118,8 @@ describe('what the card shows for each handler state', () => {
 })
 
 describe('when the card renders nothing at all', () => {
-  it('stays away on a build that must never write the key', async () => {
-    getRevealHandlerState.mockResolvedValue(unblocked({ kind: 'unavailable' }))
-
-    const target = await mountCard()
-
-    expect(card(target)).toBeNull()
-  })
-
   it('stays away when the IPC command is missing, as it is off macOS', async () => {
-    // The wrapper turns the rejection into `unavailable`; nothing reaches the user.
+    // The wrapper turns the rejection into `null`; nothing reaches the user.
     getRevealHandlerState.mockRejectedValue(new Error('command not found'))
 
     const target = await mountCard()
@@ -142,13 +136,29 @@ describe('when the card renders nothing at all', () => {
     expect(getRevealHandlerState).not.toHaveBeenCalled()
   })
 
-  it('hides under any search query, because the row is not in the search index', async () => {
+  it('hides under a search query that does not find it', async () => {
     getRevealHandlerState.mockResolvedValue(unblocked({ kind: 'registered' }))
 
-    const target = await mountCard('finder')
+    const target = await mountCard('terminal')
 
     expect(card(target)).toBeNull()
   })
+})
+
+/**
+ * The card is a searchable row (`RevealHandlerCard.rows.ts`). People look for it
+ * by the command's name, or by the apps whose downloads list runs that command,
+ * far more often than by the switch's own label.
+ */
+describe('finding the card from settings search', () => {
+  it.each(['finder', 'Show in Finder', 'Find in Finder', 'Google', 'Chrome', 'other apps'])(
+    'shows under "%s"',
+    async (query) => {
+      const target = await mountCard(query)
+
+      expect(card(target)).not.toBeNull()
+    },
+  )
 })
 
 describe('turning the handler on and off', () => {
@@ -298,5 +308,34 @@ describe('a copy of Cmdr outside an Applications folder', () => {
 
     expect(toggle(target)?.disabled).toBe(false)
     expect(blockedReason(target)).toBeNull()
+  })
+})
+
+/**
+ * A dev, worktree, or E2E build. It may never take the key, and the card says so
+ * instead of hiding, so anyone working on Cmdr sees the row that ships.
+ */
+describe('a build of Cmdr that is not a released one', () => {
+  function notProduction(state: RevealHandlerState): RevealHandlerStatus {
+    return { state, blockedBy: 'notProductionBuild' }
+  }
+
+  it('shows the card with the switch disabled, and says why', async () => {
+    getRevealHandlerState.mockResolvedValue(notProduction({ kind: 'notRegistered' }))
+
+    const target = await mountCard()
+
+    expect(card(target)).not.toBeNull()
+    expect(toggle(target)?.disabled).toBe(true)
+    expect(target.querySelector('[data-test="reveal-handler-blocked"]')?.textContent).toContain('released copy')
+  })
+
+  it('still names whoever holds the key', async () => {
+    getRevealHandlerState.mockResolvedValue(notProduction(HELD_BY_PATH_FINDER))
+
+    const target = await mountCard()
+
+    expect(toggle(target)?.disabled).toBe(true)
+    expect(target.querySelector('.reveal-holder')?.textContent).toContain('Path Finder')
   })
 })

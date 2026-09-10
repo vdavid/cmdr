@@ -45,14 +45,16 @@ export async function acceptRevealNudge(toastId: string): Promise<void> {
   dismissToast(toastId)
   recordRevealNudgeAnswer('yes')
 
-  const { state } = await setRevealHandlerEnabled(true)
-  if (state.kind === 'registered') {
+  const state = (await setRevealHandlerEnabled(true))?.state ?? null
+  if (state?.kind === 'registered') {
     addToast(tString('main.revealNudge.turnedOn'), { level: 'success' })
     return
   }
 
-  log.warn('Cmdr did not get the reveal handler: {kind}', { kind: state.kind })
-  void trackEvent('reveal_handler_not_taken', { reason: state.kind })
+  // `unavailable` is no answer at all: the command didn't exist or didn't reply.
+  const reason = state?.kind ?? 'unavailable'
+  log.warn('Cmdr did not get the reveal handler: {kind}', { kind: reason })
+  void trackEvent('reveal_handler_not_taken', { reason })
   addToast(refusalMessage(state), { level: 'warn' })
 }
 
@@ -62,11 +64,11 @@ export async function acceptRevealNudge(toastId: string): Promise<void> {
  * `heldByOtherApp` earns its own line because it names who won the race and is
  * the one case where nothing is broken. The other two collapse into one honest
  * "not this time" plus the place to try again: `notRegistered` (the write went
- * nowhere) and `unavailable` (a build that may not write the key at all) look
- * identical from here and lead to the same next step.
+ * nowhere) and no answer at all (`null`) look identical from here and lead to the
+ * same next step.
  */
-function refusalMessage(state: RevealHandlerState): string {
-  if (state.kind === 'heldByOtherApp') {
+function refusalMessage(state: RevealHandlerState | null): string {
+  if (state?.kind === 'heldByOtherApp') {
     return tString('main.revealNudge.heldByOtherApp', { app: state.displayName ?? state.bundleId })
   }
   return tString('main.revealNudge.notTurnedOn')

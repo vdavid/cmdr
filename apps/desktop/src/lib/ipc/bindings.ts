@@ -10969,10 +10969,17 @@ export type RevealDelivered = Record<string, never>
 // Why Cmdr won't take the `NSFileViewer` key right now.
 export type RevealHandlerBlocker =
   /**
+   *  A debug build, a dev / worktree / E2E instance: see [`own_bundle_id`]. These builds
+   *  come and go, and one that took the key and then got deleted would leave a dangling
+   *  `NSFileViewer` that breaks reveal machine-wide. Outranks every other blocker, and
+   *  unlike them it holds in both directions: the key can never name such a build.
+   */
+  | 'notProductionBuild'
+  /**
    *  This copy of Cmdr isn't in `/Applications` or `~/Applications`, so it's one of the
    *  copies that gets moved or deleted. Registering it would leave a dangling key.
    */
-  'notInApplications'
+  | 'notInApplications'
 
 /**
  *  What the Settings row shows, read through to the OS every time it asks.
@@ -10998,12 +11005,6 @@ export type RevealHandlerState =
        */
       displayName: string | null
     }
-  /**
-   *  This build must never write the key: a debug build, a dev / E2E instance, or a
-   *  platform without the mechanism. A dev build that grabbed the key and then got
-   *  deleted would leave a dangling `NSFileViewer` that breaks reveal machine-wide.
-   */
-  | { kind: 'unavailable' }
 
 /**
  *  Everything the Settings row needs: where the key stands, and whether this copy of Cmdr

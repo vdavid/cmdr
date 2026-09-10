@@ -3249,3 +3249,10 @@ Elke regel staat naast een schakelaar en mag niet omlopen, dus ze blijven kort e
 - **`de macOS-afhandeling`** voor `native handler`: gemunt, gekozen op lengte. Alternatief was `het eigen macOS-proces`,
   dat langer is en waarvan `eigen` dubbelzinnig leest.
 - **`mailinglijst`** wijkt af van Microsofts `adressenlijst`, met opzet (ander begrip). Bevestig de term.
+- **released copy / Dev and test builds → `uitgebrachte versie` / `dev- en testbuilds`**
+  (`settings.revealHandler.notProductionBuild`) · Microsoft terminology (`DUTCH.tbx`: `build` → `build`,
+  `production build` → `productiebuild`, `uitbrengen` voor een product op de markt brengen), plus de catalogus
+  (`buildmappen` in `search.systemDirExclude.default`, aaneengeschreven). `versie` en niet `kopie`: de zin gaat over een
+  uitgave, zoals `commands.appCheckForUpdates.description`, niet over een tweede draaiend proces zoals
+  `main.instanceLock.alertBody`. De tweede zin volgt `settings.revealHandler.notInApplications`
+  (`… elke klik op ‘Toon in Finder’ naar niets laten wijzen`) · `high`.

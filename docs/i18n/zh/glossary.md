@@ -2508,3 +2508,9 @@ zh-CN 为 Tier 1，GitHub 自家中文文档用于 GitHub 专有动词，Microso
   `抑制 macOS 的那个进程` 同指，摘要一行取更短的名词说法 · `high`
 - **dumber（本地模型比云端模型弱）** · `笨不少` · 英文特意用口语的 "dumber"，中文保留同样直白的口语调子，不改写成
   `能力较弱` 这类中性说法（style.md：保留刻意的随意语气）· `high`
+- **released copy / Dev and test builds（`settings.revealHandler.notProductionBuild`）** · `正式发布的 Cmdr 版本` /
+  `开发版和测试版` · Microsoft 术语（`CHINESE (SIMPLIFIED).tbx`：`release` → `发布` / `版本`，`production build` →
+  `生产版本`）；这里说的是给人用的版本，所以不用 `构建`（那是 `search.systemDirExclude.default`
+  里文件夹的说法）。第二句沿用 `settings.revealHandler.notInApplications` 的
+  `每一次“在 Finder 中显示”的点击都指向空处`，让两条提示读起来是一对 · `high`（术语）；"come and go" 译作 `来来去去`
+  是意译判断，`tentative`

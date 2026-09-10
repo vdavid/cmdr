@@ -42,10 +42,6 @@ pub enum RevealHandlerState {
         /// can fall back to the raw id.
         display_name: Option<String>,
     },
-    /// This build must never write the key: a debug build, a dev / E2E instance, or a
-    /// platform without the mechanism. A dev build that grabbed the key and then got
-    /// deleted would leave a dangling `NSFileViewer` that breaks reveal machine-wide.
-    Unavailable,
 }
 
 /// Everything the Settings row needs: where the key stands, and whether this copy of Cmdr
@@ -62,6 +58,11 @@ pub struct RevealHandlerStatus {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum RevealHandlerBlocker {
+    /// A debug build, a dev / worktree / E2E instance: see [`own_bundle_id`]. These builds
+    /// come and go, and one that took the key and then got deleted would leave a dangling
+    /// `NSFileViewer` that breaks reveal machine-wide. Outranks every other blocker, and
+    /// unlike them it holds in both directions: the key can never name such a build.
+    NotProductionBuild,
     /// This copy of Cmdr isn't in `/Applications` or `~/Applications`, so it's one of the
     /// copies that gets moved or deleted. Registering it would leave a dangling key.
     NotInApplications,
@@ -115,25 +116,30 @@ impl<P: ViewerPreference> RevealRegistration<P> {
 
     /// Why the switch won't take a yes, or `None` when it will.
     ///
-    /// ❗ Holding the key beats every blocker: handing it back has to stay possible from
-    /// wherever this copy has ended up. Someone who switched this on and then moved Cmdr
-    /// out of `/Applications` would otherwise be stranded registered, which is the exact
-    /// dangling key the blocker exists to prevent.
+    /// ❗ Holding the key beats the install blocker: handing it back has to stay possible
+    /// from wherever this copy has ended up. Someone who switched this on and then moved
+    /// Cmdr out of `/Applications` would otherwise be stranded registered, which is the
+    /// exact dangling key the blocker exists to prevent.
+    ///
+    /// A non-production build is blocked unconditionally, and that strands nobody: the key
+    /// never reads as ITS OWN (`state` needs an id to compare), so there's nothing for it to
+    /// hand back.
     fn blocked_by(&self, state: &RevealHandlerState) -> Option<RevealHandlerBlocker> {
+        if self.own_bundle_id.is_none() {
+            return Some(RevealHandlerBlocker::NotProductionBuild);
+        }
         if matches!(state, RevealHandlerState::Registered) {
             return None;
         }
         self.install_blocker
     }
 
-    /// Read through to the OS and word what it says.
+    /// Read through to the OS and word what it says. A non-production build reads the key
+    /// like any copy, so its Settings row can still show who holds it.
     fn state(&self) -> RevealHandlerState {
-        let Some(own) = self.own_bundle_id.as_deref() else {
-            return RevealHandlerState::Unavailable;
-        };
         match self.prefs.read() {
             None => RevealHandlerState::NotRegistered,
-            Some(current) if current == own => RevealHandlerState::Registered,
+            Some(current) if self.own_bundle_id.as_deref() == Some(current.as_str()) => RevealHandlerState::Registered,
             Some(current) => {
                 let display_name = self.prefs.display_name(&current);
                 RevealHandlerState::HeldByOtherApp {
@@ -150,13 +156,11 @@ impl<P: ViewerPreference> RevealRegistration<P> {
     /// taken it since the row was drawn, and clearing then would silently unregister
     /// somebody else's file manager.
     ///
-    /// A build that isn't allowed to write returns `Unavailable` and touches nothing.
+    /// A build that isn't allowed to write touches nothing in either direction, and answers
+    /// with its blocked status.
     pub fn set_enabled(&self, enabled: bool) -> RevealHandlerStatus {
         let Some(own) = self.own_bundle_id.as_deref() else {
-            return RevealHandlerStatus {
-                state: RevealHandlerState::Unavailable,
-                blocked_by: None,
-            };
+            return self.status();
         };
         if enabled {
             let status = self.status();
@@ -454,23 +458,76 @@ mod tests {
         assert_eq!(prefs.clears(), 0);
     }
 
+    /// A debug build, or a dev, worktree, or E2E instance: [`own_bundle_id`] said `None`.
+    fn not_production(prefs: &FakePreference) -> RevealRegistration<&FakePreference> {
+        RevealRegistration::new(prefs, None, None)
+    }
+
+    /// The status every operation on a non-production build answers.
+    fn not_production_status(state: RevealHandlerState) -> RevealHandlerStatus {
+        RevealHandlerStatus {
+            state,
+            blocked_by: Some(RevealHandlerBlocker::NotProductionBuild),
+        }
+    }
+
     #[test]
-    fn a_build_that_may_not_write_reports_unavailable_and_touches_nothing() {
+    fn a_build_that_may_not_write_reads_the_key_but_refuses_to_move_it() {
         // A dev or E2E build. It must be structurally incapable of rewiring the user's
         // Mac: a dangling `NSFileViewer` left by a deleted build breaks reveal everywhere.
-        let prefs = FakePreference::default();
-        let registration = RevealRegistration::new(&prefs, None, None);
-        assert_eq!(registration.status(), unblocked(RevealHandlerState::Unavailable));
-        assert_eq!(
-            registration.set_enabled(true),
-            unblocked(RevealHandlerState::Unavailable)
-        );
-        assert_eq!(
-            registration.set_enabled(false),
-            unblocked(RevealHandlerState::Unavailable)
-        );
+        // It still reads the key, so its Settings row shows where things stand.
+        let prefs = FakePreference::holding(THEIRS);
+        let registration = not_production(&prefs);
+        let expected = not_production_status(held_by_path_finder());
+
+        assert_eq!(registration.status(), expected);
+        assert_eq!(registration.set_enabled(true), expected);
+        assert_eq!(registration.set_enabled(false), expected);
         assert!(prefs.writes().is_empty());
         assert_eq!(prefs.clears(), 0);
+    }
+
+    #[test]
+    fn a_build_that_may_not_write_reads_an_absent_key_as_not_registered() {
+        let prefs = FakePreference::default();
+        let registration = not_production(&prefs);
+
+        assert_eq!(
+            registration.set_enabled(true),
+            not_production_status(RevealHandlerState::NotRegistered)
+        );
+        assert!(prefs.writes().is_empty());
+    }
+
+    #[test]
+    fn a_build_that_may_not_write_leaves_the_installed_copys_key_alone() {
+        // `pnpm dev` off the plain config carries the production bundle id, so the key can
+        // name that id while this build runs. It belongs to the installed copy: reading it
+        // as `Registered` would lift the block, and switching off would clear the key out
+        // from under the real Cmdr.
+        let prefs = FakePreference::holding(OURS);
+        let registration = not_production(&prefs);
+        let expected = not_production_status(RevealHandlerState::HeldByOtherApp {
+            bundle_id: OURS.to_string(),
+            display_name: None,
+        });
+
+        assert_eq!(registration.status(), expected);
+        assert_eq!(registration.set_enabled(false), expected);
+        assert_eq!(prefs.clears(), 0);
+    }
+
+    #[test]
+    fn not_being_a_production_build_outranks_the_applications_folder() {
+        // A dev build runs from `target/`, so both reasons hold. The row names the one no
+        // move would fix.
+        let prefs = FakePreference::default();
+        let registration = RevealRegistration::new(&prefs, None, Some(RevealHandlerBlocker::NotInApplications));
+
+        assert_eq!(
+            registration.status(),
+            not_production_status(RevealHandlerState::NotRegistered)
+        );
     }
 
     #[test]

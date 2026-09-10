@@ -2895,3 +2895,9 @@ cài, quét toàn bộ `*.loctable` theo công thức trong `docs/i18n/reference
 - **Dấu nháy kép: theo khóa anh em trong cùng tệp, tức nháy thẳng `"`.** `style.md` khuyên nháy cong `“…”` cho văn xuôi
   nói chung, nhưng cả `onboarding.json` (`stepFda.step2.tip`, `networking.desc`, `stepAi.table.*`) đã dùng nháy thẳng
   theo đúng bản tiếng Anh; hai khóa mới (`alternativeToNote`, `networking.summary`) theo tệp, không theo luật chung.
+- **released copy / Dev and test builds: `bản phát hành chính thức` / `các bản dựng để phát triển và thử nghiệm`**
+  (`settings.revealHandler.notProductionBuild`) · Microsoft terminology (`VIETNAMESE.tbx`: `release` → `bản phát hành`,
+  `build` → `bản dựng`). "come and go" viết thành `chỉ tồn tại tạm thời`, vì `đến rồi đi` đọc như dịch từng chữ. Câu thứ
+  hai theo khuôn `settings.revealHandler.notInApplications` (`… mọi lần bấm “Hiển thị trong Finder” trỏ vào chỗ trống`),
+  nhưng viết `xóa` theo `style.md` thay vì `xoá` của khóa anh em · `high` (thuật ngữ), `tentative`
+  (`chỉ tồn tại tạm thời`).

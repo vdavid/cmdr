@@ -15,26 +15,26 @@
      * - **It can't use `SettingRow`**, whose `id` is a `SettingId` and whose reset
      *   pip, modified dot, and change subscription are all registry reads. The row
      *   below is the same shape, hand-built.
-     * - **It isn't in the settings search index**, so any search query hides it
-     *   (`shouldShow` answers `false` for an id it's never seen, which is exactly
-     *   the behavior wanted). A hit that scrolled to a row this machine doesn't
-     *   render would be worse than no hit.
-     * - **It renders nothing on `unavailable`**, which means a debug, worktree, or
-     *   E2E build that must never write the key, plus every non-macOS platform.
-     *   Real users on macOS never see that state, so a disabled row explaining it
-     *   would be copy shipped only to us.
+     * - **It gates itself on search**, as the `SearchableRow` in
+     *   `RevealHandlerCard.rows.ts`: it owns its card frame, so no section-level
+     *   `anyVisible(...)` can do that for it. The row joins the index on macOS
+     *   only, matching where the card renders.
+     * - **It renders nothing only where there's no mechanism**: off macOS, or when
+     *   the command doesn't answer (the wrapper's `null`). A build that may not
+     *   write the key still shows the card, disabled, with the backend's reason.
      *
      * When another app holds the key, the switch reads off and a line names the
      * holder ("Currently: Path Finder", falling back to the raw bundle id when
      * that app isn't installed any more). Switching on takes the key over: one
      * explicit click, never silently.
      *
-     * ❗ **The switch is disabled when `blockedBy` is set**, which the backend
-     * reports for a copy of Cmdr outside an Applications folder. It never blocks
-     * switching OFF: `blockedBy` comes back `null` while Cmdr holds the key, so a
-     * copy that was registered and then moved can always hand it back. A fully
-     * dead switch there would strand someone registered, which is the dangling
-     * key the block exists to prevent.
+     * ❗ **The switch is disabled when `blockedBy` is set**: on a debug, worktree,
+     * or E2E build, and for a copy of Cmdr outside an Applications folder. The
+     * Applications gate never blocks switching OFF: `blockedBy` comes back `null`
+     * while Cmdr holds the key, so a copy that was registered and then moved can
+     * always hand it back. A fully dead switch there would strand someone
+     * registered, which is the dangling key the block exists to prevent. (A
+     * non-production build never holds the key, so it has nothing to hand back.)
      */
     import { onMount, type Snippet } from 'svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
@@ -45,6 +45,7 @@
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import { getRevealHandlerState, setRevealHandlerEnabled } from '$lib/tauri-commands'
     import { REVEAL_HANDLER_ANCHOR_ID } from '$lib/reveal/reveal-settings-link'
+    import { createShouldShow } from '$lib/settings/settings-search'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import type { RevealHandlerBlocker, RevealHandlerStatus } from '$lib/ipc/bindings'
 
@@ -57,14 +58,17 @@
     /** The switch's own element id, so the visible label points at the control. */
     const SWITCH_ID = 'reveal-handler-switch'
 
-    /** `null` until the OS has answered, so no switch flashes the wrong way first. */
+    /**
+     * `null` until the OS has answered, so no switch flashes the wrong way first,
+     * and for good where there's nothing to ask (off macOS).
+     */
     let handlerStatus = $state<RevealHandlerStatus | null>(null)
     /** True while a take-over or hand-back is in flight; the switch stays put meanwhile. */
     let applying = $state(false)
 
     onMount(() => {
         // Non-macOS has no mechanism at all, so skip the round-trip: the wrapper
-        // would answer `unavailable` and the card would hide either way.
+        // would answer `null` and the card would hide either way.
         if (!isMacOS()) return
         void (async () => {
             handlerStatus = await getRevealHandlerState()
@@ -86,9 +90,8 @@
         if (state?.kind !== 'heldByOtherApp') return null
         return state.displayName ?? state.bundleId
     })
-    const visible = $derived(
-        !searchQuery.trim() && handlerStatus !== null && handlerStatus.state.kind !== 'unavailable',
-    )
+    const shouldShow = $derived(createShouldShow(searchQuery))
+    const visible = $derived(handlerStatus !== null && shouldShow('row:behavior.revealHandler'))
 
     /** Why the switch won't take a yes, or `null` while it will. */
     const blockedBy = $derived(handlerStatus?.blockedBy ?? null)
@@ -103,6 +106,7 @@
      * is a compile error here rather than a silently unexplained disabled switch.
      */
     const BLOCKER_MESSAGES: Record<RevealHandlerBlocker, MessageKey> = {
+        notProductionBuild: 'settings.revealHandler.notProductionBuild',
         notInApplications: 'settings.revealHandler.notInApplications',
     }
 

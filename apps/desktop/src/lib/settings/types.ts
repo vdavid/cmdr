@@ -104,6 +104,11 @@ export interface SearchableRow {
   /** Extra English search terms, like a setting's `keywords`. */
   keywords?: string[]
   /**
+   * The row renders only on macOS, so it joins the search index only there. Off
+   * macOS a hit would land on a page with nothing to show for it.
+   */
+  macOSOnly?: true
+  /**
    * This row is what puts its PAGE in the sidebar, right after the named sibling.
    *
    * Rows add no nav entry by default: they sit on pages some setting already

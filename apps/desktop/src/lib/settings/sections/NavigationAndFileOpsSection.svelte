@@ -14,9 +14,9 @@
      *   4. **Operation log** — the retention limits (`operationLog.maxAge` /
      *      `operationLog.maxSize`) for the file-operation history and undo log.
      *   5. **Show in Finder** — `RevealHandlerCard`, whose switch is backed by a
-     *      macOS preference rather than the registry, so it owns its own card,
-     *      hides itself on every build that can't write the key, and never appears
-     *      in settings search. Its own doc comment says why.
+     *      macOS preference rather than the registry, so it owns its own card
+     *      and gates it on search itself (`RevealHandlerCard.rows.ts`). Its own
+     *      doc comment says why.
      *
      * Card visibility is section-owned: each `SectionCard` frame is wrapped in
      * `{#if anyVisible(shouldShow, ...ids)}` over the SAME `shouldShow` predicate

@@ -34,8 +34,9 @@ sections compose).
 - **`RevealHandlerCard.svelte`**: the fifth card on that page, "Show in Finder": one switch deciding whether another
   app's reveal lands in a Cmdr pane. It's the only OS-BACKED row in Settings, so it owns its card frame rather than
   taking one from the section (only it can tell whether there's anything to render), carries no registry entry, and
-  hides itself on every build that must never write the `NSFileViewer` key as well as on every non-Mac. When to reach
-  for that pattern, and the bound-not-derived switch guardrail: `../DETAILS.md` § OS-backed rows. Mechanism:
+  renders disabled with a reason on a build that may not write the `NSFileViewer` key (it hides only off macOS). Its
+  search metadata is `RevealHandlerCard.rows.ts`, which the card gates itself on. When to reach for that pattern, and
+  the bound-not-derived switch guardrail: `../DETAILS.md` § OS-backed rows. Mechanism:
   `src-tauri/src/reveal/DETAILS.md`.
 - **`ArchivesSection.svelte`**: `Behavior > Archives`: what pressing Enter does per format (Browse | Open | Ask). Fully
   registry-driven — one setting per format (`behavior.archiveEnter.zip` / `.ooxml` / `.bundle`), each a `SettingRow` +

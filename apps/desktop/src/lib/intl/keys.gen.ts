@@ -3131,6 +3131,7 @@ export type MessageKey =
   | 'settings.revealHandler.heldByOtherApp'
   | 'settings.revealHandler.label'
   | 'settings.revealHandler.notInApplications'
+  | 'settings.revealHandler.notProductionBuild'
   | 'settings.revealHandler.uninstallWarning'
   | 'settings.search.autoApply.description'
   | 'settings.search.autoApply.label'

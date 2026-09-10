@@ -48,7 +48,7 @@ function buildSearchIndex(): SearchIndexEntry[] {
   // Searchable rows (the hand-rendered non-settings: "Clear index", "Get a
   // license") join here as equal entries. They carry no `SettingsValues` key and
   // add no nav entry — `buildSectionTree` reads the registry alone.
-  searchIndex = [...settingsRegistry, ...searchableRowEntries].map((entry) => ({
+  searchIndex = [...settingsRegistry, ...searchableRowEntries()].map((entry) => ({
     entry,
     searchableText: buildSearchableText(entry),
   }))
