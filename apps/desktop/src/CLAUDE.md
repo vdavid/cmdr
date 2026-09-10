@@ -41,9 +41,9 @@ code.
   the house wrapper, never `@ark-ui/svelte` (`cmdr/no-raw-ark-import`, allowlisted to `lib/ui/` alone).
 - ❌ Before hand-rolling a control or dialog/window chrome, reach for the `lib/ui` primitive (`ModalDialog`, `Checkbox`,
   `RadioGroup`, `ToggleGroup`, `Select`, `Combobox`, `Chip`, …) and check Debug > Components. Never a raw
-  `<input type=checkbox|radio>` / `<select>`, nor a `<button>` / `<div>` wearing `role=switch|checkbox|radio`
-  (`cmdr/prefer-ui-primitive`; opt out per element with a reason when a control is genuinely bespoke). Record and
-  document a new primitive: `docs/guides/building-ui.md`.
+  `<input type=checkbox|radio>` / `<select>`, a `<button>` / `<div>` wearing `role=switch|checkbox|radio`, nor a
+  `<button>` around a lone `<Icon name="info">` (`InfoTip`, or `StatusGlyph` if unfocusable).
+  `cmdr/prefer-ui-primitive`; opt out per element, with reason. New primitive: `docs/guides/building-ui.md`.
 - Adding code that loads remote content (`fetch`, `iframe`)? Ask whether to disable it in dev, where
   `withGlobalTauri: true` makes remote content a security risk.
 - **`app.html`'s boot guard is ES5 on purpose**: one ES6 token kills it silently on old Safari, and `pnpm dev` won't

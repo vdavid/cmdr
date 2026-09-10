@@ -44,8 +44,8 @@ Seven sheets, all global (no Svelte scoping). Who owns what:
   `.spinner*`).
 - `app-tooltip.css`: `.cmdr-tooltip`, the singleton element the tooltip action creates.
 - `app-file-list.css`: the `.file-entry` row chrome that `FullList.svelte` and `BriefList.svelte` share (stripe,
-  selection fill, selected-row hairline, cursor fill and outline, the `.restricted-indicator` icon). Only rules that
-  were identical in both views live here; see `lib/file-explorer/views/DETAILS.md` for what stayed per-view and why.
+  selection fill, selected-row hairline, cursor fill and outline). Only rules that were identical in both views live
+  here; see `lib/file-explorer/views/DETAILS.md` for what stayed per-view and why.
 
 ### Cascade order is load order, and it's manual
 

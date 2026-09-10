@@ -55,6 +55,19 @@ instead:
 - `Combobox`: a text field with suggestions (free text plus a filtered list), not a value-bound select.
 - `Chip`: a small pill button (filter trigger or recent-query pill).
 
+## Info glyphs
+
+Two primitives, and the same rule rejects hand-rolling either: a `<button>` whose only meaningful child is
+`<Icon name="info">` is flagged.
+
+- `InfoTip`: a `<button>` parking a long explanation behind a ⓘ, reachable on Tab as well as hover. Its body is a plain
+  `text` string or a `children` snippet, and `align="radio-row"` fits it into a `RadioGroup`'s trailing slot.
+- `StatusGlyph`: a `<span>` marking a condition on the thing beside it (a restricted folder, a symlinked subtree). Never
+  focusable, because these live in virtual-scroll rows where a tab stop per row wrecks the keyboard model.
+
+A glyph that means nothing on its own (a banner's or a dialog header's leading mark) is neither: it's a bare `<Icon>` in
+a `<span>`. Picking between them and the geometry each assumes: `apps/desktop/src/lib/ui/DETAILS.md`.
+
 ## Building a settings screen
 
 Compose from the settings components in `apps/desktop/src/lib/settings/components`:

@@ -1,5 +1,6 @@
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'
+    import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
     import { dependOn } from '$lib/utils/reactivity'
     import type { FileEntry, SelectPayload, SortColumn, SortOrder, SyncStatus, VisibleRangePayload } from '../types'
     import type { FileIndexState, FolderCoverage } from '$lib/tauri-commands'
@@ -754,11 +755,10 @@
                                         startRatio: 0.7,
                                         tooltipWhenTruncated: true,
                                     }}
-                                ></span>{#if fileIsRestricted}<span
-                                    class="restricted-indicator"
-                                    aria-hidden="true"
-                                    use:tooltip={RESTRICTED_FOLDER_TOOLTIP}
-                                ><Icon name="info" size={12} /></span>{/if}{#if showTags}<TagDots tags={file.tags} />{/if}</span>
+                                ></span>{#if fileIsRestricted}<StatusGlyph
+                                    name="info"
+                                    label={RESTRICTED_FOLDER_TOOLTIP}
+                                />{/if}{#if showTags}<TagDots tags={file.tags} />{/if}</span>
                             {#if gitColumnVisible}
                                 {@const status = gitColumn.statusFor(file)}
                                 <span
@@ -990,9 +990,9 @@
         color: var(--color-text-primary);
     }
 
-    /* `.restricted-indicator`'s own chrome, the stripe / selection / cursor
-       fills, and the selected-row hairline are identical in `BriefList`, so
-       they live in `src/app-file-list.css`. */
+    /* The stripe / selection / cursor fills and the selected-row hairline are
+       identical in `BriefList`, so they live in `src/app-file-list.css`. The
+       restricted marker's own chrome is `$lib/ui/StatusGlyph.svelte`'s. */
 
     /* Hidden-entry name dim: the same quiet text token as restricted rows
        above, for dotfiles / `UF_HIDDEN` / root-`/.hidden` entries once "show

@@ -7,29 +7,30 @@ Reusable components; only silent-breakage rules live here. Ark UI backs the comp
 - Dialogs: `ModalDialog.svelte` (overlay + drag + Escape + focus + MCP tracking), `focus-trap.ts` (`use:trapFocus`),
   `dialog-registry.ts` (`SOFT_DIALOG_REGISTRY`), `AlertDialog.svelte`.
 - The primitives (`Icon`, `Spinner`, `Button`, form controls, `Select`, `Combobox`, text fields, `ShortcutChip`,
-  `toast/`) are catalogued in DETAILS § Key files. `ToggleGroup` is segmented, ≠ `RadioGroup`; Tooltip is the sibling
-  `../tooltip/tooltip.ts`.
+  `InfoTip` (a `<button>`), `StatusGlyph` (❌ never focusable: a tab stop per virtual row wrecks keyboard navigation),
+  `toast/`) are catalogued in DETAILS § Key files. `ToggleGroup` is segmented, ≠ `RadioGroup`; Tooltip is the
+  sibling `../tooltip/tooltip.ts`.
 
 ## Must-knows
 
 - **A missing primitive is the cue to add a wrapper here** (`@ark-ui/svelte` and lucide imports are allowlisted here;
   rules in `src/CLAUDE.md`). A new one owes a tier-3 a11y test, a Debug > Components row, and a `design-system.md`
-  entry, all check-enforced. Router: `docs/guides/building-ui.md`.
+  entry, all check-enforced. `docs/guides/building-ui.md`.
 - **Every `role="dialog"` / `role="alertdialog"` element MUST carry `use:trapFocus` on the SAME element**
   (`cmdr/dialog-needs-focus-trap`), else Tab leaks into the shortcut-suppressed background: a keyboard lockout.
   `ModalDialog` owns the directive, so `role`-prop callers don't repeat it.
 - **Adding a dialog** (soft sheets too): register its id in `SOFT_DIALOG_REGISTRY`, pass it as `ModalDialog`'s
-  `dialogId`, and add a gallery row (type error + `dialog-gallery-coverage`). Its `whileOpen` verdict is REQUIRED (won't
-  compile until answered): it decides whether a file operation may start behind your dialog. Scope:
+  `dialogId`, add a gallery row (type error + `dialog-gallery-coverage`). Its `whileOpen` verdict is REQUIRED and won't
+  compile until answered: it decides whether a file operation may start behind your dialog.
   `$lib/file-explorer/pane/DETAILS.md` § "The operation-start gate".
 - **`ModalDialog` registers what it renders in `open-dialogs.svelte.ts`**, keeping that set exhaustive;
-  `OnboardingWizard` is the only hand-registrar. ❌ An unpaired close blocks file operations until restart.
+  `OnboardingWizard` alone hand-registers. ❌ An unpaired close blocks file operations until restart.
 - **`ModalDialog`'s overlay starts at `inset: var(--titlebar-height) 0 0 0`**, keeping the macOS window-drag region
-  live; any full-window backdrop must too. ❌ Keep the drag offset and dragged size OFF the `style` attribute
-  (`containerStyle` owns it), ❌ never restore `overflow: hidden` on `.modal-dialog` (resize bands hang over its edge),
-  and ❌ never drop `.modal-overlay:focus { outline: none }` (the scrim holds focus, so a UA ring paints a full-width
-  line under the title bar in the SYSTEM accent). ❌ Keep the MCP close registration in its `$effect`, or a
-  mount/destroy pair leaves a stale entry that makes `dialog close` lie. DETAILS § ModalDialog.
+  live; any full-window backdrop must too. ❌ Drag offset and dragged size stay OFF the `style` attribute
+  (`containerStyle` owns them), ❌ never restore `overflow: hidden` on `.modal-dialog` (resize bands overhang), ❌ never
+  drop `.modal-overlay:focus { outline: none }` (the scrim holds focus, so a UA ring lines the title bar in the SYSTEM
+  accent), ❌ keep the MCP close registration in its `$effect` or a mount/destroy pair makes `dialog close` lie. DETAILS
+  § ModalDialog.
 - **Don't restyle `.btn-*` colors from a scoped feature component** (`scripts/check-btn-restyle`; one-offs need
   `/* allowed-btn-restyle: <reason> */`). `LinkButton` is the ONLY `cursor: pointer` opt-in.
 - **Per-component traps.** Each has its own section in `DETAILS.md`:

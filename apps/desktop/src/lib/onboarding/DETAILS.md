@@ -262,10 +262,10 @@ Three pieces stacked top to bottom:
    recommendation badge go in `itemInline`, INSIDE the label, so clicking either picks the option and both join the
    radio's accessible name — they read as part of the choice, and a user who aims at the sentence rather than the dot
    gets what they expected. ❌ The info glyph can't go there: `InfoTip` is a `<button>`, and a focusable control nested
-   in a `role="radio"` element trips axe's nested-interactive rule, so it sits in `itemTrailing` beside the option,
-   as `<InfoTip align="radio-row">` (that variant exists for this slot; `lib/ui/DETAILS.md` § InfoTip). The
-   download note uses `itemFooter` rather than the group `footer`, or it would hang under the CLOUD option (the last
-   one) while describing the local one.
+   in a `role="radio"` element trips axe's nested-interactive rule, so it sits in `itemTrailing` beside the option, as
+   `<InfoTip align="radio-row">` (that variant exists for this slot; `lib/ui/DETAILS.md` § InfoTip). The download note
+   uses `itemFooter` rather than the group `footer`, or it would hang under the CLOUD option (the last one) while
+   describing the local one.
 
    The recommendation is a gold badge (a sparkle plus one word) rather than a parenthetical, because it's the one steer
    the step gives and it should be findable without reading. Brand `--color-cmdr-gold` at 18% for the fill with the

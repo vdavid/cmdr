@@ -32,6 +32,8 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`ProgressBar.svelte`**: Reusable progress bar (just the bar, no labels or layout)
 - **`Size.svelte`**: Canonical inline byte-count renderer: human-friendly + rainbow tier color
 - **`InfoTip.svelte`**: info glyph parking a long explanation in a tooltip; plain `text` or a rich `children` snippet
+- **`StatusGlyph.svelte`**: `InfoTip`'s non-interactive twin: a 12px glyph marking a condition on the thing beside it,
+  its one sentence serving as both accessible name and tooltip
 - **`SectionCard.svelte`**: macOS-style grouped card with optional label above; used for Debug/Settings groupings
 - **`ToggleGroup.svelte`**: Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape
 - **`Switch.svelte`**: Presentational Ark `Switch`: the track-and-thumb on/off control; `SettingSwitch` wraps it
@@ -445,7 +447,8 @@ glyph carries no visible text.
 
 Reach for it wherever a surface would otherwise lead with a paragraph nobody asked for: onboarding's step 4 puts one on
 each of its four `SettingRow`s (through `labelTrailing`) and leads with a half-line instead. `cmdr/prefer-ui-primitive`
-enforces it: a `<button>` whose only meaningful child is `<Icon name="info">` is this component, whatever the class says.
+enforces it: a `<button>` whose only meaningful child is `<Icon name="info">` is this component, whatever the class
+says.
 
 `align` picks between two geometries, and the default is right unless the tip is a flex item in a row taller than one
 line:
@@ -467,6 +470,38 @@ and that class raises the box from the 320px label measure to 460px. Several par
 column of stubs; 460px at 12px is about 75 characters, the top of a comfortable reading measure. The class is the
 action's to set, ❌ never a caller's, and it's in `check-css-unused`'s allowlist with the tooltip's other runtime
 classes.
+
+### StatusGlyph
+
+`StatusGlyph.svelte` marks a condition on the thing beside it: a TCC-restricted folder in a `FullList` / `BriefList`
+row and in `VolumeBreadcrumb`'s volume rows, a symlinked subtree in `SelectionInfo`'s status bar. Those four are its
+callers. One `label` serves as both the accessible name and the tooltip, because a marker's meaning and its explanation
+are the same sentence; the restricted one comes from `restrictedFolderTooltip()` in `$lib/system-strings.svelte`, which
+stays the single definition of that string.
+
+**It is a `<span>`, never a `<button>`, and that's why it's a separate component from `InfoTip`.** These sit in recycled
+virtual-scroll rows, where one tab stop per row would wreck the keyboard model of a 10,000-entry list. Pick by whether
+the glyph is an affordance: openable on Tab as well as hover means `InfoTip`; readable-only means this; meaningless on
+its own (a banner's or a dialog header's leading mark, as in `AdbHint` and `TransferErrorDialog`) means a bare `<Icon>`.
+
+Decisions, and what each settled:
+
+- **Exposed to AT (`role="img"` + `aria-label`), ❌ not `aria-hidden`.** Three of the four markers were `aria-hidden`,
+  which threw the information away twice over: the glyph vanished, and so did the tooltip, since `use:tooltip` wires
+  `aria-describedby` and an `aria-hidden` element carries none. "This folder is restricted" is real information.
+  Gotcha: the label is currently the whole tooltip sentence, so a restricted row's accessible name grows by an
+  instruction paragraph. A short `fileExplorer.restrictedFolder.label` would fix that, and needs David to write it.
+- **Size is fixed at 12px, ❌ not a prop.** All four sites are the app's small-text surfaces. Making it settable is how
+  the eight info glyphs in the tree reached four different sizes.
+- **It inherits the row's color at `opacity: 0.7`**, replacing 0.7 / 0.6 / an explicit `--color-text-tertiary` across
+  the four. Inheriting is what makes it brighten along with a selected or cursor row instead of sitting as a fixed gray
+  on a highlight. Gotcha: `pnpm check a11y-contrast` can't fold `opacity` into a computed color, so it reads the glyph
+  at full strength and would not warn if the dimming ever took it under the non-text floor.
+- **`showTooltip={false}` for the breadcrumb alone.** Its whole volume row already carries the same string, and the row
+  is the honest target there: the italic dimmed label needs the explanation as much as the glyph does. The accessible
+  name stays either way, so that site is no longer the odd one out.
+
+The tooltip's detached-trigger guards are what make this safe in a virtual list at all; see the Tooltip section above.
 
 ### Dismiss on keypress
 

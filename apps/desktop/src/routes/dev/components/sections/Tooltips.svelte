@@ -1,6 +1,7 @@
 <script lang="ts">
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import InfoTip from '$lib/ui/InfoTip.svelte'
+    import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
 
     const longPath = '/Users/david/Library/CloudStorage/Dropbox/obsidian/40-49 things/veszelovszki.com and other domains.md'
@@ -49,6 +50,22 @@
                     <p class="tip-line">Needs accepting "Local Network" once.</p>
                     <p class="tip-line">You can change this any time in Settings.</p>
                 </InfoTip>
+            </span>
+        </div>
+
+        <div class="cell">
+            <p class="caption">StatusGlyph</p>
+            <span class="anchor">
+                Restricted folder
+                <StatusGlyph name="info" label="Access to this folder is limited." />
+            </span>
+        </div>
+
+        <div class="cell">
+            <p class="caption">StatusGlyph, no tooltip</p>
+            <span class="anchor" use:tooltip={'Access to this folder is limited.'}>
+                Whole row explains it
+                <StatusGlyph name="info" label="Access to this folder is limited." showTooltip={false} />
             </span>
         </div>
     </div>

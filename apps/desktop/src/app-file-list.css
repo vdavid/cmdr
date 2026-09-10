@@ -19,18 +19,6 @@
  * Loaded from `routes/+layout.svelte`; see `src/DETAILS.md` § Global stylesheets.
  */
 
-/* The (i) icon next to a TCC-restricted row's name; it carries the tooltip
-   pointing at System Settings. The italic + dimmed treatment of the row's own
-   cells stays per-view, since the cell class names differ. */
-.file-entry .restricted-indicator {
-  display: inline-flex;
-  align-items: center;
-  margin-left: var(--spacing-xxs);
-  opacity: 0.7;
-  font-size: var(--font-size-sm);
-  vertical-align: text-bottom;
-}
-
 .full-list-container .file-entry.is-striped,
 .brief-list-container .file-entry.is-striped {
   background-color: var(--color-bg-stripe);

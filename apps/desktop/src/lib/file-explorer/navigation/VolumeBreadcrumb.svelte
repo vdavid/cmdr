@@ -26,6 +26,7 @@
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import Icon from '$lib/ui/Icon.svelte'
+    import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { describeUsbSpeed, type VolumeInfo } from '../types'
     import type { VolumeChangePayload } from '../pane/types'
@@ -926,9 +927,10 @@
                             <span class="volume-fs">{fsLabel}</span>
                         {/if}
                         {#if isRestricted(volume.path)}
-                            <span class="restricted-indicator" aria-hidden="true">
-                                <Icon name="info" size={12} />
-                            </span>
+                            <!-- No tooltip of its own: the whole row already carries this
+                                 same string, and the row is the honest target (the italic
+                                 dimmed label needs the explanation as much as the glyph). -->
+                            <StatusGlyph name="info" label={RESTRICTED_FOLDER_TOOLTIP} showTooltip={false} />
                         {/if}
                         {#if volume.mountIsReadOnly}
                             <span class="read-only-indicator" use:tooltip={tString('fileExplorer.navigation.readOnlyTooltip')}><Icon name="lock" size={14} aria-hidden="true" /></span>
@@ -1361,14 +1363,6 @@
     .volume-item.is-restricted .volume-label {
         font-style: italic;
         opacity: 0.6;
-    }
-
-    .restricted-indicator {
-        display: inline-flex;
-        align-items: center;
-        opacity: 0.6;
-        font-size: var(--font-size-sm);
-        flex-shrink: 0;
     }
 
     .checkmark {

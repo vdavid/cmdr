@@ -102,8 +102,9 @@ refs, and the row template). Four siblings hold the rest, each with its own suit
 
 The row chrome that is IDENTICAL in both views lives in `src/app-file-list.css`: the `.is-striped` fill, the
 `.is-selected` fill, the `--color-selection-fg` swap for a cursor-on-selected row, the hairline between consecutive
-selected rows, the `.is-under-cursor` fill + outline + radius, and the `.restricted-indicator` icon's own chrome. One
-copy, so the two views can't drift apart on how a selected or cursor row looks.
+selected rows, and the `.is-under-cursor` fill + outline + radius. One copy, so the two views can't drift apart on how a
+selected or cursor row looks. The restricted marker beside a row's name is `$lib/ui/StatusGlyph.svelte`, which carries
+its own chrome and inherits the row's color, so it brightens along with a selected or cursor row.
 
 Every selector there is prefixed with `.full-list-container` / `.brief-list-container`. That's mandatory, not stylistic:
 a lifted rule loses the class of specificity Svelte's scoping gave it, and a bare `.file-entry.is-selected` would tie

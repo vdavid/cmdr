@@ -15,7 +15,7 @@
  * `overlays.a11y.test.ts`.
  */
 
-import { describe, it, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, tick, createRawSnippet, type ComponentProps } from 'svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
@@ -61,6 +61,7 @@ import ShortcutChip from './ShortcutChip.svelte'
 import Size from './Size.svelte'
 import Spinner from './Spinner.svelte'
 import StatusBadge from './StatusBadge.svelte'
+import StatusGlyph from './StatusGlyph.svelte'
 import { ICON_COMPONENTS, type IconName } from './icons/icon-map'
 
 /** A fresh container, appended to the document and ready to mount into. */
@@ -220,6 +221,33 @@ describe('InfoTip a11y', () => {
     }))
     mount(InfoTip, { target, props: { label: 'More about drive indexing', children } })
     await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `StatusGlyph.svelte`.
+ *
+ * It's a `role="img"` span with no visible text, so `aria-label` is its whole accessible
+ * name and axe catches a labelless one. Both wirings are covered, since the tooltip-less
+ * form is the one that could quietly lose its name if the label ever followed the tooltip.
+ */
+describe('StatusGlyph a11y', () => {
+  it('with a tooltip has no a11y violations', async () => {
+    const target = container()
+    mount(StatusGlyph, { target, props: { name: 'info', label: 'Access to this folder is limited.' } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('without a tooltip keeps its accessible name', async () => {
+    const target = container()
+    mount(StatusGlyph, {
+      target,
+      props: { name: 'info', label: 'Access to this folder is limited.', showTooltip: false },
+    })
+    await tick()
+    expect(target.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('Access to this folder is limited.')
     await expectNoA11yViolations(target)
   })
 })

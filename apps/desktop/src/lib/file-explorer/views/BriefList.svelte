@@ -56,7 +56,7 @@
     import { noteRenderedFolderSizes } from '$lib/indexing/first-size-timing'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
-    import Icon from '$lib/ui/Icon.svelte'
+    import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
 
     const RESTRICTED_FOLDER_TOOLTIP = $derived(restrictedFolderTooltip())
     import { iconCacheCleared } from '$lib/icon-cache'
@@ -959,11 +959,10 @@
                                         class="name"
                                         class:is-hidden={rowIsHiddenDimmed}
                                         use:tooltip={buildNameTooltip(file)}
-                                        >{file.name}{#if fileIsRestricted}<span
-                                                class="restricted-indicator"
-                                                aria-hidden="true"
-                                                use:tooltip={RESTRICTED_FOLDER_TOOLTIP}
-                                            ><Icon name="info" size={12} /></span>{/if}</span>
+                                        >{file.name}{#if fileIsRestricted}<StatusGlyph
+                                                name="info"
+                                                label={RESTRICTED_FOLDER_TOOLTIP}
+                                            />{/if}</span>
                                     {#if showTags}<TagDots tags={file.tags} />{/if}
                                 {/if}
                             </div>
@@ -1099,9 +1098,9 @@
         color: var(--color-text-primary);
     }
 
-    /* `.restricted-indicator`'s own chrome, the stripe / selection / cursor
-       fills, and the selected-row hairline are identical in `FullList`, so
-       they live in `src/app-file-list.css`. */
+    /* The stripe / selection / cursor fills and the selected-row hairline are
+       identical in `FullList`, so they live in `src/app-file-list.css`. The
+       restricted marker's own chrome is `$lib/ui/StatusGlyph.svelte`'s. */
 
     /* Hidden-entry name dim: see `FullList.svelte`'s twin rule for the full
        rationale (the same quiet token restricted rows use above; color only,

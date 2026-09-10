@@ -817,6 +817,28 @@ host and reaches the tooltip as a live `contentEl`, so the markup and its rhythm
 the glyph has no visible text, so that `aria-label` is its whole accessible name. It's a `<button>` on purpose, so the
 body is one Tab away as well as one hover, which a native `title` never manages.
 
+`align` picks the geometry: `inline` (the default) drops the glyph onto the optical middle of the text it follows;
+`radio-row` is for a `RadioGroup`'s `itemTrailing` slot, where the row is taller than one line and the glyph belongs on
+the label's line. Details and the geometry it assumes: `apps/desktop/src/lib/ui/DETAILS.md` § InfoTip.
+
+`cmdr/prefer-ui-primitive` enforces this: a `<button>` whose only meaningful child is `<Icon name="info">` is an
+`InfoTip`, whatever class it wears.
+
+### Status glyph (app)
+
+`StatusGlyph.svelte` is the non-interactive twin: a 12px glyph in a `<span>` that marks a condition on the thing beside
+it, carrying that condition's sentence as both its accessible name and its tooltip. The restricted-folder ⓘ in a file
+row, in the volume breadcrumb, and the symlink ⓘ in the status bar are the four callers.
+
+It inherits the row's color at 70% opacity, so it brightens along with a selected or cursor row instead of sitting as a
+fixed gray on a highlight. Size is fixed, ❌ not a prop: these are the app's small-text surfaces, and four sites
+drifting to four sizes is what the component exists to stop.
+
+**Pick between the two by whether it's an affordance, ❌ not by how it looks.** `StatusGlyph` is a `<span>` and never
+takes focus, because these sit in recycled virtual-scroll rows where a tab stop per row would wreck the keyboard model
+of a 10,000-entry list. If the glyph should open something on Tab as well as hover, it's an `InfoTip`. A glyph that
+means nothing on its own (a banner's or a dialog header's leading mark) is neither: it's a bare `<Icon>` in a `<span>`.
+
 ### Keyboard shortcut hints (app)
 
 Shortcut hints appear in custom tooltips (via `use:tooltip={{ text: "Label", shortcut: "⌘K" }}`) and in the command

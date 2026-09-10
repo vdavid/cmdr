@@ -63,6 +63,15 @@ function makeDir(overrides: Partial<Record<string, unknown>> = {}) {
   }
 }
 
+/**
+ * The hint is a `StatusGlyph`, so it has no class of its own. Match it the way a screen
+ * reader finds it: the one status glyph in the status bar whose accessible name is about
+ * symlinks (the size column can carry an hourglass glyph at the same time).
+ */
+function symlinkHint(target: HTMLElement): Element | null {
+  return target.querySelector('.status-glyph[aria-label*="symlink"]')
+}
+
 describe('SelectionInfo symlink hint', () => {
   it('renders the (i) icon when the directory has recursiveHasSymlinks=true', async () => {
     const target = document.createElement('div')
@@ -87,7 +96,7 @@ describe('SelectionInfo symlink hint', () => {
       },
     })
     await tick()
-    const hint = target.querySelector('.symlink-hint')
+    const hint = symlinkHint(target)
     expect(hint).not.toBeNull()
     expect(hint?.getAttribute('aria-label')).toMatch(/symlinks/i)
   })
@@ -115,7 +124,7 @@ describe('SelectionInfo symlink hint', () => {
       },
     })
     await tick()
-    expect(target.querySelector('.symlink-hint')).toBeNull()
+    expect(symlinkHint(target)).toBeNull()
   })
 
   it('does not render the (i) icon for plain files with the flag', async () => {
@@ -142,6 +151,6 @@ describe('SelectionInfo symlink hint', () => {
       },
     })
     await tick()
-    expect(target.querySelector('.symlink-hint')).toBeNull()
+    expect(symlinkHint(target)).toBeNull()
   })
 })

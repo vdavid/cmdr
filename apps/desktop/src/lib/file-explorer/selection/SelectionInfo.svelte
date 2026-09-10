@@ -1,5 +1,6 @@
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'
+    import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
     import type { FileEntry, ListingStats } from '../types'
     import {
         buildDateTooltip,
@@ -297,14 +298,7 @@
                 {/if}
             {/if}
             {#if showSymlinkHint}
-                <span
-                    class="symlink-hint symlink-hint-icon"
-                    role="img"
-                    aria-label={symlinkHintTooltip}
-                    use:tooltip={symlinkHintTooltip}
-                >
-                    <Icon name="info" size={12} />
-                </span>
+                <StatusGlyph name="info" label={symlinkHintTooltip} />
             {/if}
         </span>
         <span class="date" style="width: {dateColumnWidth}px;" use:tooltip={dateTooltip}>
@@ -433,17 +427,5 @@
     .stale-icon {
         /* stylelint-disable-next-line declaration-property-value-disallowed-list -- small icon indicator, not body text */
         color: var(--color-accent);
-    }
-
-    .symlink-hint {
-        display: inline-flex;
-        align-items: center;
-        vertical-align: middle;
-        margin-left: var(--spacing-xs);
-        cursor: help;
-    }
-
-    .symlink-hint-icon {
-        color: var(--color-text-tertiary);
     }
 </style>
