@@ -14,7 +14,9 @@ only what a visitor could learn anyway, because the repo is source-available and
 
 Strategy, revenue goals, unit economics, competitor research, and named customers live in David's Obsidian vault, at
 `~/Library/CloudStorage/Dropbox/obsidian/projects/Cmdr/business/`. Start with `Cmdr business strategy.md`, then
-`Cmdr pricing.md` and `Cmdr customers and prospects.md`.
+`Cmdr pricing.md` and `Cmdr customers and prospects.md`. For anything about selling to a company rather than a person
+(MDM deployment, volume licensing, security questionnaires, invoicing, volume discounts),
+`Cmdr enterprise readiness.md`.
 
 That split is deliberate: **this repo is public, so nothing about revenue, strategy, or real people goes here.** The
 repo holds what must stay in sync with the code; the vault holds the money, the plan, and the humans. Each side links to
