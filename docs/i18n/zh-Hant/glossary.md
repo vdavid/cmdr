@@ -1665,7 +1665,7 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   （`正在將「^0」下載至「^1」`）加角括號。
 - **"x of y"（位元組進度行，兩個值都帶單位）** · `{doneText} / {totalText}` · AP-TW `PW8` `已拷貝：^0/^1`、AP-HK
   `已複製：^0/^1`，進度行一律用斜線；斜線兩旁留空格沿用 `errorReporter.dialog.counter`（`{currentText} / {maxText}`），因為單位裡本身有空格 ·
-  `high`。❗ 和 `style.md` § Spacing 那句 `64.0 MB/1.33 GB` 不衝突：那裡講的是別讓人往一段 Latin 裡面加空格，這裡是兩個占位符之間的分隔。
+  `high`。❗ 和 `style.md` § "Spacing: put a space between Chinese and Latin" 裡那句 `64.0 MB/1.33 GB` 不衝突：那裡講的是別讓人往一段 Latin 裡面加空格，這裡是兩個占位符之間的分隔。
 - **"so far"（總大小未知時已到的量）** · `目前已取得 {doneText}` · `目前…` 沿用
   `queryUi.results.live.matchesSoFar`（`目前找到`）、`fileOperations.transferProgress.rollbackTooltip`（`目前為止寫入`）；動詞與標題的
   `取得` 同字 · `high`
