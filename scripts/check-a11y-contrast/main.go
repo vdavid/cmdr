@@ -112,6 +112,10 @@ func main() {
 	// cursor bg. See `query_dialog_states.go`.
 	allFindings = append(allFindings, analyzer.AnalyzeQueryDialogStates()...)
 
+	// Toast frame text (message, age label) on each level's tinted surface,
+	// set on different selectors. See `toast_states.go`.
+	allFindings = append(allFindings, analyzer.AnalyzeToastStates()...)
+
 	violations := FilterViolations(allFindings)
 	warnings := append([]string{}, analyzer.Warnings...)
 	for _, f := range allFindings {

@@ -82,39 +82,10 @@ var queryDialogScenarios = []ancestorBgScenario{
 
 // AnalyzeQueryDialogStates evaluates each query-dialog scenario against the
 // accent matrix + both modes, returning the worst-case finding per
-// (selector, mode). Reuses `evalDropdownSample` (the dropdown synthesizer is
-// generic over `ancestorBgScenario`).
+// (selector, mode). Shares the sweep in `dropdown_states.go`
+// (`analyzeAncestorBgScenarios`).
 func (a *Analyzer) AnalyzeQueryDialogStates() []Finding {
-	type key struct {
-		selector string
-		mode     Mode
-	}
-	worst := make(map[key]Finding)
-	evaluated := 0
-
-	for _, sc := range queryDialogScenarios {
-		for _, mode := range []Mode{ModeLight, ModeDark} {
-			for _, accent := range AccentVariants {
-				f, ok := evalDropdownSample(a.Vars, mode, accent, sc)
-				if !ok {
-					continue
-				}
-				f.File = syntheticQueryDialogPath()
-				k := key{selector: sc.Selector, mode: mode}
-				if cur, exists := worst[k]; !exists || f.Ratio < cur.Ratio {
-					worst[k] = f
-				}
-				evaluated++
-			}
-		}
-	}
-
-	a.RulesEvaluated += evaluated
-	out := make([]Finding, 0, len(worst))
-	for _, f := range worst {
-		out = append(out, f)
-	}
-	return out
+	return a.analyzeAncestorBgScenarios(queryDialogScenarios, syntheticQueryDialogPath())
 }
 
 func syntheticQueryDialogPath() string {

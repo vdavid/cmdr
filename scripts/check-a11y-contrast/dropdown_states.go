@@ -63,6 +63,14 @@ var dropdownScenarios = []ancestorBgScenario{
 // matrix + both modes. Returns one Finding per (scenario, mode) keyed on the
 // worst-case accent variant.
 func (a *Analyzer) AnalyzeDropdownStates() []Finding {
+	return a.analyzeAncestorBgScenarios(dropdownScenarios, syntheticDropdownPath())
+}
+
+// analyzeAncestorBgScenarios is the sweep every `ancestorBgScenario` list shares
+// (dropdowns, query dialogs, toasts): each scenario × both modes × every accent
+// variant, reported once per (selector, mode) at its worst case, attributed to
+// `file`.
+func (a *Analyzer) analyzeAncestorBgScenarios(scenarios []ancestorBgScenario, file string) []Finding {
 	type key struct {
 		selector string
 		mode     Mode
@@ -70,13 +78,14 @@ func (a *Analyzer) AnalyzeDropdownStates() []Finding {
 	worst := make(map[key]Finding)
 	evaluated := 0
 
-	for _, sc := range dropdownScenarios {
+	for _, sc := range scenarios {
 		for _, mode := range []Mode{ModeLight, ModeDark} {
 			for _, accent := range AccentVariants {
 				f, ok := evalDropdownSample(a.Vars, mode, accent, sc)
 				if !ok {
 					continue
 				}
+				f.File = file
 				k := key{selector: sc.Selector, mode: mode}
 				if cur, exists := worst[k]; !exists || f.Ratio < cur.Ratio {
 					worst[k] = f

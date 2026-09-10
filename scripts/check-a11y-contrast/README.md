@@ -53,7 +53,7 @@ The rule walker pairs `color` and `background`, full stop: it has no notion of C
 color composited via `opacity` is invisible to steps 1-6 above. A separate pass, `AnalyzeOpacity`, flags any such rule
 it can't otherwise account for — see "Opacity (detect, don't compute)" below.
 
-In addition to the rule walker, three scenario synthesizers cover cases where the text color and the background are set
+In addition to the rule walker, four scenario synthesizers cover cases where the text color and the background are set
 on different selectors — cases the walker can't pair on its own:
 
 - **Row state matrix** (`row_state_matrix.go`): the file-list's selected-row text colors (`--color-selection-fg` and the
@@ -73,6 +73,9 @@ on different selectors — cases the walker can't pair on its own:
   fold through `opacity` and the rule walker can't see: the `ToggleGroup` "AI" badge + shortcut hint, the under-cursor
   result row's muted columns on the accent-tinted cursor bg, and the footer shortcut hints (on the dialog surface and on
   the primary button). Reuses the `dropdown_states.go` scenario type and accent-matrix sweep.
+- **Toast states** (`toast_states.go`): the toast frame's text roles (the message on `--color-text-primary`, the age
+  label on `--color-text-tertiary`) on each level's tinted surface, which `ToastItem.svelte` sets on `.toast.<level>`
+  while the text colors live on their own selectors. Same scenario type and sweep.
 
 ## Opacity (detect, don't compute)
 
@@ -211,6 +214,8 @@ dropdown_states.go   Hand-listed (descendant-text-var, ancestor-bg-var) tuples
 query_dialog_states.go  Search / Select dialog pairs the walker can't pair:
                      ToggleGroup badge + hint, under-cursor result row, footer
                      shortcut hints. Reuses the dropdown_states scenario type.
+toast_states.go      Toast frame text (message, age label) on every
+                     level-tinted toast surface. Same scenario type.
 opacity_check.go     Detects (doesn't compute) a static `opacity: N < 1` the
                      rule walker can't fold into its color/background
                      pairing. Exempts disabled/inactive components, a
