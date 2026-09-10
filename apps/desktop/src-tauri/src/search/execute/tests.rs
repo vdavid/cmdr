@@ -14,8 +14,10 @@ use crate::search::ranking::ImportanceWeights;
 use crate::search::types::{PatternType, SearchResultEntry};
 use cmdr_index::ROOT_VOLUME_ID;
 
+mod adb_phone;
 mod live_drive;
 mod live_e2e;
+mod server_scope;
 mod stalled_walk;
 
 // ── Synthetic index builder ──────────────────────────────────────────

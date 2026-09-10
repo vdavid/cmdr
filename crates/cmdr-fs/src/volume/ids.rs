@@ -254,7 +254,7 @@ pub fn webdav_volume_id(host: &str, port: u16, username: &str) -> String {
 /// The host is lowercased and the username is not, exactly as in
 /// [`sftp_volume_id`], so a path and the id it resolves to agree on identity.
 pub fn sftp_app_root(host: &str, port: u16, username: &str) -> String {
-    remote_app_root("sftp", host, port, username)
+    remote_app_root(SFTP_SCHEME, host, port, username)
 }
 
 /// The `webdav://<user>@<host>:<port>` prefix every app path on a WebDAV volume
@@ -264,14 +264,67 @@ pub fn sftp_app_root(host: &str, port: u16, username: &str) -> String {
 /// port are the same server (the port tells the two default listeners apart),
 /// which is the same call [`webdav_volume_id`] makes, so the two can't disagree.
 pub fn webdav_app_root(host: &str, port: u16, username: &str) -> String {
-    remote_app_root("webdav", host, port, username)
+    remote_app_root(WEBDAV_SCHEME, host, port, username)
 }
+
+/// The scheme [`sftp_app_root`] mints and [`server_of_path`] reads back.
+const SFTP_SCHEME: &str = "sftp";
+
+/// The scheme [`webdav_app_root`] mints and [`server_of_path`] reads back.
+const WEBDAV_SCHEME: &str = "webdav";
 
 /// `{scheme}://{username}@{host}:{port}`, with the host folded the way the volume
 /// id folds it.
 fn remote_app_root(scheme: &str, host: &str, port: u16, username: &str) -> String {
     let host = host.to_lowercase();
     format!("{scheme}://{username}@{host}:{port}")
+}
+
+/// The server account an app path names, as [`server_of_path`] reads it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ServerPath {
+    /// The backend its scheme names: [`BackendKind::Sftp`](super::BackendKind::Sftp)
+    /// or [`BackendKind::Webdav`](super::BackendKind::Webdav).
+    pub kind: super::BackendKind,
+    /// The id that account mints ([`sftp_volume_id`] or [`webdav_volume_id`]).
+    pub volume_id: String,
+}
+
+/// The server account an `sftp://` or `webdav://<user>@<host>:<port>[/…]` app
+/// path names, or `None` for any other path, and for one missing its user, host,
+/// or port.
+///
+/// The one split of what [`remote_app_root`] joins, kept beside it so the two
+/// can't drift. Pure for the reason [`adb_serial_of_path`] is: the path IS the
+/// identity its id is minted from, so a saved server nobody has connected answers
+/// the same as a live one, and the kind rides along so a caller can ask
+/// [`BackendKind::can_be_indexed`](super::BackendKind::can_be_indexed) without a
+/// registry.
+///
+/// The user is everything before the authority's LAST `@` and the port everything
+/// after its last `:`, which is how an IPv6 host (`sftp://ada@::1:22`) still
+/// splits.
+pub fn server_of_path(path: &str) -> Option<ServerPath> {
+    type Mint = fn(&str, u16, &str) -> String;
+    let servers: [(&str, super::BackendKind, Mint); 2] = [
+        (SFTP_SCHEME, super::BackendKind::Sftp, sftp_volume_id),
+        (WEBDAV_SCHEME, super::BackendKind::Webdav, webdav_volume_id),
+    ];
+    let (rest, kind, mint) = servers.into_iter().find_map(|(scheme, kind, mint)| {
+        let rest = path.strip_prefix(scheme)?.strip_prefix("://")?;
+        Some((rest, kind, mint))
+    })?;
+    let authority = rest.split('/').next()?;
+    let (username, host_port) = authority.rsplit_once('@')?;
+    let (host, port) = host_port.rsplit_once(':')?;
+    let port: u16 = port.parse().ok()?;
+    if username.is_empty() || host.is_empty() {
+        return None;
+    }
+    Some(ServerPath {
+        kind,
+        volume_id: mint(host, port, username),
+    })
 }
 
 /// Build the ID for an MTP device from its (opaque, verbatim) serial.

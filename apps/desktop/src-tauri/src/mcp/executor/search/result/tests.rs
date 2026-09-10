@@ -13,6 +13,7 @@ fn covered(volume: &str) -> SearchRunCoverage {
         declined: Vec::new(),
         still_covering: Vec::new(),
         unresolved_scopes: Vec::new(),
+        uncovered_scopes: Vec::new(),
         abandoned_ground: false,
         abandoned_locations: 0,
         capped: false,
@@ -219,6 +220,13 @@ fn coverage_complete_is_false_when_any_gap_is_set() {
                 abandoned_ground: true,
                 abandoned_locations: 1,
                 ..covered("root")
+            },
+        ),
+        (
+            "a server search can't cover",
+            SearchRunCoverage {
+                uncovered_scopes: vec!["sftp://ada@nas.local:22/srv/data".to_string()],
+                ..covered("sftp-nas-local-22-ada")
             },
         ),
     ];

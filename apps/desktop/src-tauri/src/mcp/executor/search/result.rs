@@ -92,6 +92,9 @@ pub(crate) struct SearchCoverage {
     /// Scope paths Cmdr can't speak for. ❌ Never "that folder doesn't exist" —
     /// it can't tell a typo from a folder nothing has walked.
     pub unresolved_scopes: Vec<String>,
+    /// Scope paths on a server (SFTP or WebDAV), which search can't cover at all:
+    /// no index serves one, and nothing walks one. Not a gap a retry closes.
+    pub uncovered_scopes: Vec<String>,
     /// The walk gave up on ground that stopped responding. True makes the list a
     /// lower bound even when the walk otherwise completed.
     pub abandoned_ground: bool,
@@ -204,6 +207,7 @@ fn shape_coverage(answer: &LiveAnswer) -> SearchCoverage {
     let declined = settled.map(|c| c.declined.clone()).unwrap_or_default();
     let still_covering = settled.map(|c| c.still_covering.clone()).unwrap_or_default();
     let unresolved_scopes = settled.map(|c| c.unresolved_scopes.clone()).unwrap_or_default();
+    let uncovered_scopes = settled.map(|c| c.uncovered_scopes.clone()).unwrap_or_default();
     let abandoned_ground = settled.is_some_and(|c| c.abandoned_ground);
     SearchCoverage {
         complete: walk_finished
@@ -211,6 +215,7 @@ fn shape_coverage(answer: &LiveAnswer) -> SearchCoverage {
             && declined.is_empty()
             && still_covering.is_empty()
             && unresolved_scopes.is_empty()
+            && uncovered_scopes.is_empty()
             && !abandoned_ground,
         still_walking: matches!(answer.ending, AnswerEnding::StillWalking),
         folders_found: answer.dirs_found,
@@ -220,6 +225,7 @@ fn shape_coverage(answer: &LiveAnswer) -> SearchCoverage {
         declined,
         still_covering,
         unresolved_scopes,
+        uncovered_scopes,
         abandoned_ground,
         abandoned_locations: settled.map_or(0, |c| c.abandoned_locations),
     }
@@ -234,6 +240,14 @@ fn coverage_notes(answer: &LiveAnswer, system_dirs_excluded: bool) -> Vec<String
     let mut notes = Vec::new();
 
     if let AnswerEnding::Settled(coverage) = &answer.ending {
+        if !coverage.uncovered_scopes.is_empty() {
+            // Said plainly and with the way out: an empty list here is NOT "no
+            // matches", and searching again changes nothing.
+            notes.push(format!(
+                "Note: Cmdr can't search {} yet: search reads a drive index, and nothing indexes or walks a server over SFTP or WebDAV. Browse it with list_dir instead.",
+                coverage.uncovered_scopes.join(", ")
+            ));
+        }
         if !coverage.unresolved_scopes.is_empty() {
             notes.push(format!(
                 "Note: Cmdr couldn't resolve {}: a typo, or a folder nothing has walked yet.",

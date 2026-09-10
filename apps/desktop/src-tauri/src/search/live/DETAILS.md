@@ -81,6 +81,9 @@ and the note has words for it. Why it stays a count rather than a fourth list of
 
 ## What a live result carries, and what it can't
 
+- **The volume every row lives on**, on each `search-progress` batch (`target_volume_id`). Rows and their volume travel
+  together, so the frontend never waits on the start reply or the terminal event to act on a row, and never re-derives
+  a volume from a path: a promoted snapshot takes it from the batch (`src/lib/search/DETAILS.md` § Snapshot store).
 - **No `entry_id`** (`0`): a walked entry has no arena id.
 - **No directory size**: `dir_stats` doesn't exist for ground walked a moment ago (Accepted difference 5), and a file's
   size is its own, pre-hardlink-dedup, which is what a listing shows.

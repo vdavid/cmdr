@@ -110,6 +110,13 @@ pub struct SearchRunCoverage {
     /// couldn't be walked either. The typed "Cmdr can't speak for this folder"
     /// signal; ❌ never worded as "that folder doesn't exist".
     pub unresolved_scopes: Vec<String>,
+    /// Scope paths on a volume no drive index can serve (an SFTP or WebDAV
+    /// server), so this run neither read an index for them nor walked them. The
+    /// live twin of `SearchResult::uncovered_scopes`, and the only thing on the
+    /// wire that says why a server pane's search came back empty. ❌ Never
+    /// "fixed" by walking: a walk stands an index up for the volume it walks.
+    #[serde(default)]
+    pub uncovered_scopes: Vec<String>,
     /// Whether ground was given up on: a directory that stopped responding, one
     /// that failed with an errno the walk can't act on, or a subtree pruned by the
     /// walker's consecutive-failure budget. Covers both what THIS run's walk gave
@@ -164,6 +171,11 @@ pub struct SearchProgressEvent {
     /// superseded.
     pub run_id: String,
     pub phase: SearchPhase,
+    /// The ONE volume every row here lives on, as routing resolved it. Carried
+    /// WITH the rows so a caller acting on one (F3, a copy, a drag) never has to
+    /// wait for the start reply or the terminal event to know where it is, and
+    /// never re-derives it from a path.
+    pub target_volume_id: String,
     /// Rows found since the last event, in arrival order. Empty on a
     /// progress-only event (a walk grinding through folders that match nothing,
     /// or a count-only search).

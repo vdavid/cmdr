@@ -23,7 +23,7 @@ use super::coverage::{
 use super::{CoveredHalf, Target, resolve_target, search_covered_half};
 use crate::search::excludes::ExcludeRules;
 use crate::search::live::{
-    self, CollectingSink, LiveAnswer, LiveRun, ResultStream, RunOrigin, SearchEventSink, SearchPhase,
+    self, CollectingSink, CoverageKind, LiveAnswer, LiveRun, ResultStream, RunOrigin, SearchEventSink, SearchPhase,
     SearchRunCoverage, SearchRunError, WalkEnding, WalkJudge,
 };
 use crate::search::matcher::{CompiledQuery, Evaluator};
@@ -126,6 +126,28 @@ pub(crate) fn run_live_collected(query: SearchQuery, budget: std::time::Duration
 pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &dyn SearchEventSink) {
     let mut stream = ResultStream::new(run, sink, &query);
     stream.announce(SearchPhase::ResolvingCoverage);
+
+    // A volume no drive index can serve (a server) is neither read nor walked: a
+    // walk stands an index up for the volume it walks, which would be indexing
+    // the server by the back door. The scope comes back as not covered, the same
+    // gap the index-only answer reports for it.
+    if !target.can_be_indexed {
+        stream.finish(SearchRunCoverage {
+            walk: WalkEnding::NothingToWalk,
+            kind: CoverageKind::Live,
+            permission_denied: Vec::new(),
+            declined: Vec::new(),
+            still_covering: Vec::new(),
+            unresolved_scopes: Vec::new(),
+            uncovered_scopes: target.include_paths.clone(),
+            abandoned_ground: false,
+            abandoned_locations: 0,
+            capped: false,
+            target_volume_id: target.volume_id.clone(),
+            hidden_by_excludes: 0,
+        });
+        return;
+    }
 
     // 1-3. What the index can't answer for, what it CAN, and where the volume
     //      lives — the whole of what a run works out before it emits anything, so
@@ -257,6 +279,9 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
                 .collect(),
             _ => unresolved_scopes.clone(),
         },
+        // Only a volume no index can serve leaves a scope uncovered, and that run
+        // answered before reaching here.
+        uncovered_scopes: Vec::new(),
         walk,
         kind,
         permission_denied: unreadable.permission_denied,

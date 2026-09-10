@@ -3,11 +3,12 @@
 //! This module owns two related questions:
 //!
 //! - **Which volume does a path belong to?** `volume_id_for_local_path` maps a
-//!   filesystem (or `mtp://` / `adb://`) path to the index volume id that owns it:
-//!   an SMB mount to its `smb_volume_id`, an `mtp://` path to its
+//!   filesystem (or `mtp://` / `adb://` / server) path to the volume id that owns
+//!   it: an SMB mount to its `smb_volume_id`, an `mtp://` path to its
 //!   `{device}:{storage}` id, an `adb://<serial>` path to that phone's
-//!   `adb_volume_id`, a registered local external mount (`/Volumes/X`) to its own
-//!   id, and the boot disk (plus cloud-drive folders `root`'s index owns) to `root`.
+//!   `adb_volume_id`, an `sftp://` / `webdav://` path to that server account's id,
+//!   a registered local external mount (`/Volumes/X`) to its own id, and the boot
+//!   disk (plus cloud-drive folders `root`'s index owns) to `root`.
 //! - **How does a read path map into that volume's index path space?**
 //!   `index_read_path` (and the pure `index_read_path_pure` it wraps) translate a
 //!   mount-absolute listing / dir-stats path into the mount-relative path the
@@ -34,7 +35,7 @@ use cmdr_fs::firmlinks;
 
 /// Resolve a filesystem path to its index volume id.
 ///
-/// Five routing tiers, tried in order; each maps to the SAME id its volume and
+/// Six routing tiers, tried in order; each maps to the SAME id its volume and
 /// index register under, so a read routes to the owning index (or skips cleanly
 /// when that volume has no registered index — `get_read_pool_for` → `None` — so an
 /// unindexed volume costs zero DB work):
@@ -43,6 +44,9 @@ use cmdr_fs::firmlinks;
 ///   `smb_volume_id(server, port, share)`.
 /// - **MTP** (`mtp://{device_id}/{storage_id}[/inner…]`) → `{device_id}:{storage_id}`.
 /// - **ADB** (`adb://<serial>[/device path…]`) → `adb_volume_id(serial)`.
+/// - **Server** (`sftp://` / `webdav://<user>@<host>:<port>[/…]`) → that account's
+///   `sftp_volume_id` / `webdav_volume_id`. No drive index serves a server, so the
+///   id owns none; routing it anyway is what keeps a server's path off `root`.
 /// - **Local external mount** (a registered `/Volumes/X` drive on macOS,
 ///   `/mnt`/`/media` on Linux) → the mount's registered id, so an external drive's
 ///   dir-stats and `cmdr://state` status come from ITS OWN index, not `root`'s. See
@@ -58,6 +62,12 @@ pub(crate) fn volume_id_for_local_path(path: &str) -> VolumeId {
     }
     if let Some(adb_id) = adb_volume_id_for_path(path) {
         return adb_id;
+    }
+    // Pure, like the two device tiers: the account a server path names IS the
+    // identity its id is minted from, so a saved server nobody has connected
+    // routes the same as a live one.
+    if let Some(server) = cmdr_fs::volume::server_of_path(path) {
+        return server.volume_id;
     }
     if let Some(mount_id) = external_mount_volume_id_for_path(path) {
         return mount_id;
@@ -574,6 +584,55 @@ mod tests {
             ROOT_VOLUME_ID,
             "a path naming no phone is nobody's"
         );
+    }
+
+    /// `volume_id_for_local_path`'s server tier: an `sftp://` or `webdav://` path
+    /// belongs to that server account's own id, registered or not. Nothing indexes
+    /// a server, so the id owns no index and a read skips cleanly; what matters is
+    /// that the path never falls through to `root`, where a search from a server
+    /// pane silently searched the Mac's boot disk.
+    #[test]
+    fn volume_id_for_local_path_routes_a_server_path_to_its_own_id() {
+        use cmdr_fs::volume::{sftp_app_root, sftp_volume_id, webdav_app_root, webdav_volume_id};
+
+        let _serialized = crate::indexing::handle::test_lock();
+        let sftp = sftp_volume_id("nas.local", 22, "ada");
+        assert_eq!(volume_id_for_local_path(&sftp_app_root("nas.local", 22, "ada")), sftp);
+        assert_eq!(
+            volume_id_for_local_path(&format!("{}/srv/data/photos", sftp_app_root("nas.local", 22, "ada"))),
+            sftp
+        );
+        assert_eq!(
+            volume_id_for_local_path(&format!("{}/srv", sftp_app_root("NAS.local", 22, "ada"))),
+            sftp,
+            "the host folds the way the id folds it"
+        );
+        assert_ne!(
+            volume_id_for_local_path(&format!("{}/srv", sftp_app_root("nas.local", 22, "Ada"))),
+            sftp,
+            "the account is case-sensitive, so another user is another volume"
+        );
+        assert_ne!(
+            volume_id_for_local_path(&format!("{}/srv", sftp_app_root("nas.local", 2222, "ada"))),
+            sftp,
+            "another port is another server"
+        );
+        assert_eq!(
+            volume_id_for_local_path(&format!("{}/dav/x", webdav_app_root("cloud.example", 443, "ada"))),
+            webdav_volume_id("cloud.example", 443, "ada"),
+        );
+        for nobodys in [
+            "sftp://",
+            "sftp://nas.local:22/srv",
+            "sftp://ada@nas.local/srv",
+            "webdav://ada@:443",
+        ] {
+            assert_eq!(
+                volume_id_for_local_path(nobodys),
+                ROOT_VOLUME_ID,
+                "a malformed server path ({nobodys}) names no account"
+            );
+        }
     }
 
     /// The `IndexPathSpace` seam: `root` is a pass-through (absolute == index-relative

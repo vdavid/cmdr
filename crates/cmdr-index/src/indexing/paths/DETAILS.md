@@ -98,7 +98,7 @@ into index-relative space before the partial-aggregate send, so the same transfo
 
 ## Path → volume routing (`routing.rs`)
 
-`volume_id_for_local_path(path)` resolves which index volume owns a path, five tiers in order, each mapping to the SAME
+`volume_id_for_local_path(path)` resolves which index volume owns a path, six tiers in order, each mapping to the SAME
 id its volume and index register under:
 
 1. **SMB** — `transports::smb::index::smb_volume_id_for_path` (probes the mount, keys by `(server, port, share)`).
@@ -107,14 +107,19 @@ id its volume and index register under:
    yield `{device}:{storage}`.
 3. **ADB** — `adb_volume_id_for_path`, pure the same way: the serial `adb_serial_of_path` reads mints the id
    (`adb_volume_id`). A path naming no serial (`adb://`) falls through.
-4. **Local external mount** — `external_mount_volume_id_for_path`: fast-reject with
+4. **Server** — `cmdr_fs::volume::server_of_path`, pure too: the `sftp://` / `webdav://<user>@<host>:<port>` account
+   mints `sftp_volume_id` / `webdav_volume_id`, so a saved server nobody connected routes like a live one. No drive
+   index serves a server, so the id owns none and a read skips; the tier exists to keep a server's path off `root`,
+   where a search from a server pane used to answer with the Mac's boot disk. A path missing its user, host, or port
+   falls through.
+5. **Local external mount** — `external_mount_volume_id_for_path`: fast-reject with
    `scanner::is_on_mounted_external_volume` (a pure prefix check, no registry lock) so ONLY a path under an excluded
    mount prefix (`/Volumes`, `/mnt`, `/media`) can leave `root`, then route by the host's volume registry
    (`mount_id_for_path`, the longest non-root ancestor mount). The fast-reject is the load-bearing trap-guard: a
    registered cloud-drive folder in the home dir (`~/Library/CloudStorage/…`) is a non-root registered volume too, but
    `root`'s index owns it — a naive "any registered non-root volume" prefix match would divert it to an index-less id
    and drop its sizes.
-5. **Everything else** → `root` (the boot disk, plus cloud-drive folders root's index owns).
+6. **Everything else** → `root` (the boot disk, plus cloud-drive folders root's index owns).
 
 `exclusion_scope_for_volume(volume_id)` derives the read-side scope (root ⇒ boot disk; every other registered volume ⇒
 mount-rooted at its registered root). An UNREGISTERED non-root id yields an empty mount root — still mount-rooted, but

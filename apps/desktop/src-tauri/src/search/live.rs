@@ -389,6 +389,7 @@ impl<'a> ResultStream<'a> {
         self.sink.emit_progress(SearchProgressEvent {
             run_id: self.run.run_id.clone(),
             phase,
+            target_volume_id: self.run.volume_id.clone(),
             entries,
             match_count: self.match_count,
             dirs_found: self.dirs_found,

@@ -56,6 +56,10 @@ struct Target {
     volume_id: String,
     include_paths: Vec<String>,
     from_scope: bool,
+    /// Whether any drive index can serve this volume (`BackendKind::can_be_indexed`).
+    /// A server's can't, so a live run answers "not covered" without walking it: a
+    /// walk stands an index up for the volume it walks.
+    can_be_indexed: bool,
 }
 
 /// Why a query's scope can't be reduced to the one volume a search may cover. Typed
@@ -94,6 +98,7 @@ fn resolve_target(query: &SearchQuery) -> Result<Target, ScopeError> {
             volume_id: ROOT_VOLUME_ID.to_string(),
             include_paths: Vec::new(),
             from_scope: false,
+            can_be_indexed: true,
         });
     };
 
@@ -107,11 +112,27 @@ fn resolve_target(query: &SearchQuery) -> Result<Target, ScopeError> {
     if volume_ids.len() > 1 {
         return Err(ScopeError::SpansMultipleVolumes { volume_ids });
     }
+    let volume_id = volume_ids.remove(0);
     Ok(Target {
-        volume_id: volume_ids.remove(0),
+        can_be_indexed: volume_can_be_indexed(&volume_id, &paths[0]),
+        volume_id,
         include_paths: paths.clone(),
         from_scope: true,
     })
+}
+
+/// Whether a drive index can serve the volume a scope routed to.
+///
+/// A registered volume answers for itself (`Volume::capabilities`, the answer the
+/// switcher's index badge and `Index::start_volume` read too). A saved server
+/// nobody has connected isn't registered, but its path still names its kind, so
+/// that answers instead. Any other unregistered volume (an unplugged phone, an
+/// ejected drive) may well have an index on disk, so it gets its chance.
+fn volume_can_be_indexed(volume_id: &str, scope_path: &str) -> bool {
+    match crate::file_system::volume::manager::get_volume_manager().get(volume_id) {
+        Some(volume) => volume.capabilities().can_be_indexed,
+        None => cmdr_fs::volume::server_of_path(scope_path).is_none_or(|server| server.kind.can_be_indexed()),
+    }
 }
 
 /// Run a search over its one target volume. Synchronous (opens a DB, reads an arena,

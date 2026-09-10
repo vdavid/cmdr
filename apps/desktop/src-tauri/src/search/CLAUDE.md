@@ -30,7 +30,8 @@ to the volume that owns it; unscoped means the boot volume.
   the `volume_path` meta OR the live registry, ❌ never assume the meta is set; routing picks the live id when one NAS
   has two DBs.
 - **Honesty is TYPED, ❌ never a string match**: `uncovered_scopes`, `unresolved_scopes` (❌ never "doesn't exist" — it
-  can't tell a typo from a not-yet-walked folder), and `SearchRunCoverage`, where `walk: Completed` ≠ exhaustive.
+  can't tell a typo from a not-yet-walked folder), and `SearchRunCoverage`, where `walk: Completed` ≠ exhaustive. A
+  server's scope answers `uncovered`, ❌ never walked (a walk stands an index up).
 - **`prepare_search_index`'s `loading` says whether an event is COMING**; `loading: false, ready: false` is the terminal
   "no index here", or a machine that declined indexing waits forever.
 - **A directory's size filter applies BEFORE ranking** (`dir_sizes_for`), ❌ never after, and ❌ never fall back to "no

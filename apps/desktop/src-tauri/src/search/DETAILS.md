@@ -99,7 +99,8 @@ pure.
 
 - **Scoped** (`include_paths` non-empty): each path routes to its owning volume via
   [`volume_id_for_local_path`](crates/cmdr-index/src/indexing/paths/routing.rs) (SMB mount → `smb_volume_id`, `mtp://` →
-  `{device}:{storage}`, registered external mount → its id, everything else → `root`). Every path must agree on the
+  `{device}:{storage}`, `adb://<serial>` → that phone's id, `sftp://` / `webdav://` → that server account's id,
+  registered external mount → its id, everything else → `root`). Every path must agree on the
   volume; two or more yields `ScopeError::SpansMultipleVolumes`, which `run_blocking` turns into the message the dialog
   toasts and MCP returns. The target is `from_scope`.
 - **Unscoped**: the boot volume, whole-volume, not `from_scope`. It's the MCP default (the dialog always sends a scope);
@@ -224,6 +225,13 @@ field:
 - **`uncovered_scopes`** — a `from_scope` target whose volume has no persisted index (`VolumeLoad::NotIndexed`). An
   unscoped search never fills this: nobody named the boot volume, so there's no user intent to report against. The
   dialog also offers to index that drive, which is why the result names the volume it routed to.
+
+  A LIVE run fills its twin (`SearchRunCoverage::uncovered_scopes`) for one case only: a volume no drive index can serve
+  (`BackendKind::can_be_indexed`, today an SFTP or WebDAV server). `resolve_target` stamps that on the `Target` (a
+  registered volume's own capability, else the server path's kind, so a saved server nobody connected answers too), and
+  `run_live_blocking` answers before reading or walking anything. ❌ Never let such a run reach `Index::cover`: a walk
+  stands an index up for the volume it walks, which is server indexing by the back door. The dialog says search isn't
+  available there and offers nothing; MCP says so in `coverage.uncoveredScopes` and a note.
 - **`unresolved_scopes`** — the volume IS indexed but the specific path isn't in it. **The two causes are
   indistinguishable here**: a typo or deleted folder, and a real folder the user is standing in on a partially indexed
   volume, both land in this bucket. So the copy says what the index knows ("Cmdr's index doesn't cover this folder
