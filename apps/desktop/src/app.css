@@ -192,14 +192,38 @@
   --color-disk-danger: var(--color-error);
   --color-disk-track: var(--color-border);
 
-  /* === Toast tints (tuned per scheme so info reads blue, warn reads amber, error reads red) === */
-  --color-toast-info-stripe: #2563eb;
-  --color-toast-info-bg: #eff6ff;
-  --color-toast-warn-stripe: #d4a006;
-  --color-toast-warn-bg: #fef9ee;
-  --color-toast-error-bg: #fef2f2;
+  /* === Toasts (`ui/toast/`) ===
+     Each level gives its surface a faint tint of its icon's hue and a slightly deeper hairline,
+     so the level reads at a glance while the icon carries the full color. Hand-picked hex per
+     scheme rather than `color-mix()`: dark mode's tints are deeper and warmer than any mix of
+     the light ones would give. The glyph on every icon is white except on amber, where white
+     doesn't read. */
+  --color-toast-default-bg: #f9f9fa;
+  --color-toast-default-border: #e4e5e8;
+  --color-toast-default-icon: #8a919e;
+  --color-toast-info-bg: #f4f7fd;
+  --color-toast-info-border: #dfe6f3;
+  --color-toast-info-icon: #3d77e4;
+  --color-toast-success-bg: #f3f9f1;
+  --color-toast-success-border: #dcead8;
+  --color-toast-success-icon: #61b854;
+  --color-toast-warn-bg: #fcf5e4;
+  --color-toast-warn-border: #eee3c6;
+  --color-toast-warn-icon: #dcac3e;
+  --color-toast-error-bg: #fcf1ef;
+  --color-toast-error-border: #f0dcd8;
+  --color-toast-error-icon: #cf533e;
+  --color-toast-icon-glyph: #ffffff;
+  --color-toast-warn-icon-glyph: #2b2412;
+  /* Toast chrome. The corner sits closer to a macOS notification banner than the 6px of a
+     control; the inset is both the padding and the close button's distance from the corner,
+     which is what keeps the X equidistant from the top and right edges. */
+  --radius-toast: 12px;
+  --spacing-toast: 14px;
+  /* A step above `--shadow-md`: a toast floats over busy file lists, not a calm canvas. */
+  --shadow-toast: 0 12px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  /* The "done" green the license, updates, and onboarding screens use for success text. */
   --color-toast-success-stripe: #16a34a;
-  --color-toast-success-bg: #f0fdf4;
 
   /* === Striped rows (zebra striping for file lists) ===
      A faint black overlay (~4% alpha) that composites over whatever
@@ -781,14 +805,26 @@
     --color-disk-danger: var(--color-error);
     --color-disk-track: var(--color-border);
 
-    /* === Toast tints === */
-    --color-toast-info-stripe: #60a5fa;
-    --color-toast-info-bg: color-mix(in srgb, #60a5fa 8%, var(--color-bg-secondary));
-    --color-toast-warn-stripe: var(--color-warning);
-    --color-toast-warn-bg: color-mix(in srgb, var(--color-warning) 8%, var(--color-bg-secondary));
-    --color-toast-error-bg: color-mix(in srgb, var(--color-error) 8%, var(--color-bg-secondary));
+    /* === Toasts (dark) ===
+       See the light-mode block for the why. Deeper, warmer tints than the light ones, and a
+       much heavier shadow: at light-mode strength it vanishes into a dark canvas. */
+    --color-toast-default-bg: #26292f;
+    --color-toast-default-border: #363a41;
+    --color-toast-default-icon: #737c8d;
+    --color-toast-info-bg: #232933;
+    --color-toast-info-border: #303848;
+    --color-toast-info-icon: #5782f0;
+    --color-toast-success-bg: #232e26;
+    --color-toast-success-border: #323f35;
+    --color-toast-success-icon: #61a656;
+    --color-toast-warn-bg: #322c1e;
+    --color-toast-warn-border: #463f2f;
+    --color-toast-warn-icon: #e8b84a;
+    --color-toast-error-bg: #312423;
+    --color-toast-error-border: #45302f;
+    --color-toast-error-icon: #cd574e;
+    --shadow-toast: 0 12px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.35);
     --color-toast-success-stripe: #22c55e;
-    --color-toast-success-bg: color-mix(in srgb, #22c55e 8%, var(--color-bg-secondary));
 
     /* === Overlays === */
     --color-overlay: color-mix(in srgb, black, transparent 50%);
@@ -892,10 +928,6 @@
       --color-warning-bg-solid: #483d29;
       --color-disk-ok: #588b5b;
       --color-disk-warning: #bf892d;
-      --color-toast-info-bg: #1f2937;
-      --color-toast-warn-bg: #3a3429;
-      --color-toast-error-bg: #3a2c2b;
-      --color-toast-success-bg: #29362e;
       --color-overlay: rgba(0, 0, 0, 0.5);
       --color-overlay-light: rgba(0, 0, 0, 0.4);
       --color-overlay-heavy: rgba(0, 0, 0, 0.6);
@@ -921,10 +953,6 @@
     --color-warning-bg-solid: #483d29;
     --color-disk-ok: #588b5b;
     --color-disk-warning: #bf892d;
-    --color-toast-info-bg: #1f2937;
-    --color-toast-warn-bg: #3a3429;
-    --color-toast-error-bg: #3a2c2b;
-    --color-toast-success-bg: #29362e;
     --color-overlay: rgba(0, 0, 0, 0.5);
     --color-overlay-light: rgba(0, 0, 0, 0.4);
     --color-overlay-heavy: rgba(0, 0, 0, 0.6);

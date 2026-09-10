@@ -229,8 +229,8 @@ describe('OperationFailedToastContent a11y', () => {
 /**
  * Tier 3 a11y tests for `OperationFailureToastBody.svelte`, the body both failure
  * notices render. Two states: the title alone (what the summary passes) and the
- * title with a reason under it (what one failure passes). The glyph is decorative,
- * so the title's words have to carry the severity on their own.
+ * title with a reason under it (what one failure passes). The toast frame's level
+ * icon is decorative, so the title's words have to carry the severity on their own.
  */
 describe('OperationFailureToastBody a11y', () => {
   function mountBody(children?: ReturnType<typeof createRawSnippet>): HTMLElement {
@@ -246,7 +246,6 @@ describe('OperationFailureToastBody a11y', () => {
   it('title only has no a11y violations', async () => {
     const target = mountBody()
     await tick()
-    expect(target.querySelector('.glyph')?.getAttribute('aria-hidden')).toBe('true')
     await expectNoA11yViolations(target)
   })
 

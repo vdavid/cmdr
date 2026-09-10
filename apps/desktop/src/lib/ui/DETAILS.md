@@ -906,13 +906,32 @@ bars for size + file count), `$lib/status-corner/OperationChip` (size `sm`, `ani
 Centralized toast notifications with stacking, levels, and two dismissal modes.
 
 - **Store** (`toast-store.svelte.ts`): Module-level `$state` array. `addToast(content, options?)` accepts a `Snippet` or
-  plain `string`. Optional `id` for dedup (replace in place). Max 5 visible.
+  plain `string`. Optional `id` for dedup (replace in place, which also re-stamps `postedAt`). Max 5 visible.
 - **Container** (`ToastContainer.svelte`): Mounted once in `(main)/+layout.svelte`. Fixed top-right, stacks vertically.
-- **Item** (`ToastItem.svelte`): Frame, close button, auto-dismiss timer for transient toasts.
+- **Item** (`ToastItem.svelte`): Frame, level icon, age label, close button, auto-dismiss timer for transient toasts.
+- **Level icon** (`ToastLevelIcon.svelte`): the 28px flat SVG badge per level. **Age** (`toast-age.ts`): the age label's
+  wording and wake-up schedule.
+
+The frame: the level icon at the leading edge, the content beside it, and the close button pinned to the top-right corner
+the same distance from both edges. Surface, hairline, and icon colors, corner, inset, and shadow are the
+`--color-toast-*`, `--radius-toast`, `--spacing-toast`, and `--shadow-toast` tokens in `app.css`, hand-picked hex per
+scheme. The content column is at least as tall as the icon with its text centered in that height, so a one-line toast
+sits level with its icon while a longer one starts at the icon's top. Contrast of the frame's text on every level's
+surface: `scripts/check-a11y-contrast/toast_states.go`.
+
+Age label: once a toast has been up a minute, "2m ago" / "1h ago" sits on the content's first line. Decisions:
+
+- **Nothing under a minute.** A seconds count ticks on a surface the eye keeps catching, and a transient toast is gone in
+  four seconds anyway. It counts whole minutes, then whole hours, rounded down.
+- **`aria-hidden`.** Each toast is a live region (`status` / `alert`), so a label changing every minute would have a
+  screen reader announce the whole toast again.
+- **No polling.** One timer per toast, armed for the next whole minute (or hour) and re-armed when it fires.
+- **It counts from `postedAt`, which a same-id re-add re-stamps.** Replaced content is fresh news; "5m ago" on it would
+  be wrong.
 
 Five levels. Pick by what kind of feedback the toast carries, not by how the message reads:
 
-- **`default`** (no color, the fallback): factual neutral status with no action needed and no value judgement.
+- **`default`** (gray, the fallback): factual neutral status with no action needed and no value judgement.
   In-progress indicators that get replaced on completion (`Connecting directly…`), "nothing happened" reports
   (`No mounted shares from ${host}` after a disconnect that had nothing to disconnect). Rare in practice — most toasts
   carry some signal.

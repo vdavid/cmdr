@@ -60,6 +60,10 @@
   "@ui.toast.dismissAria": {
     "sourceHash": "b7bb3f3"
   },
+  "ui.toast.age": "{durationText} ezelőtt",
+  "@ui.toast.age": {
+    "sourceHash": "6dcfed0"
+  },
   "ui.loadingIcon.finalizing": "Mind a(z) {countText} {count, plural, one {fájl} other {fájl}} betöltve. Rendezés, nézet előkészítése…",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "2aac2cb"

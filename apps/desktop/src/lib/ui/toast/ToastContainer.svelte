@@ -20,6 +20,7 @@
                 level={toast.level}
                 dismissal={toast.dismissal}
                 timeoutMs={toast.timeoutMs}
+                postedAt={toast.postedAt}
                 closeTooltip={toast.closeTooltip}
                 contentProps={toast.props}
                 widthPx={toast.widthPx}
@@ -44,7 +45,8 @@
            gives the widest opt-in toast room; each ToastItem still caps itself at 360
            by default. */
         align-items: flex-end;
-        gap: var(--spacing-sm);
+        /* Room for each toast's shadow to fall before the next one starts. */
+        gap: var(--spacing-md);
         max-width: 440px;
         pointer-events: none;
     }

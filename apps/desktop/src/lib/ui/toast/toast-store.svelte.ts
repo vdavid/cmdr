@@ -105,7 +105,8 @@ export interface Toast {
   level: ToastLevel
   dismissal: ToastDismissal
   timeoutMs: number
-  createdAt: number
+  /** When the toast's current content was posted. A same-id re-add re-stamps it, so the age label counts from the latest news. */
+  postedAt: number
   closeTooltip?: string
   onDismiss?: () => void
   toastGroup?: string
@@ -146,6 +147,7 @@ function replaceExisting(index: number, content: ToastContent, level: ToastLevel
   toasts[index].level = level
   toasts[index].closeTooltip = options?.closeTooltip
   toasts[index].onDismiss = options?.onDismiss
+  toasts[index].postedAt = Date.now()
 }
 
 /**
@@ -226,7 +228,7 @@ export function addToast(content: ToastContent, options?: ToastOptions): string 
     level,
     dismissal,
     timeoutMs,
-    createdAt: Date.now(),
+    postedAt: Date.now(),
     closeTooltip: options?.closeTooltip,
     onDismiss: options?.onDismiss,
     toastGroup,

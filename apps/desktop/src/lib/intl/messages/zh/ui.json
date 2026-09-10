@@ -59,6 +59,10 @@
   "@ui.toast.dismissAria": {
     "sourceHash": "b7bb3f3"
   },
+  "ui.toast.age": "{durationText}前",
+  "@ui.toast.age": {
+    "sourceHash": "6dcfed0"
+  },
   "ui.loadingIcon.finalizing": "已加载全部 {countText} 个{count, plural, other {文件}}。正在排序你的文件并准备视图…",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "2aac2cb"

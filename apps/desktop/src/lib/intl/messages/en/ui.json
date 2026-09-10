@@ -77,6 +77,13 @@
     "description": "aria-label for the × button that closes (dismisses) a toast notification.",
     "screenshot": "toast-favorite.png"
   },
+  "ui.toast.age": "{durationText} ago",
+  "@ui.toast.age": {
+    "description": "Small gray label at the top right of a notification toast, beside its close button, saying how long ago the notification appeared. Only shown once the toast is at least a minute old, and it counts up as time passes. Keep it very short: it shares a line with the toast's first line of text.",
+    "placeholders": {
+      "durationText": "how long ago, already formatted as a number plus a one-letter unit, for example 2m (minutes) or 1h (hours)"
+    }
+  },
 
   "ui.loadingIcon.finalizing": "All {countText} {count, plural, one {file} other {files}} loaded. Sorting your files, preparing view...",
   "@ui.loadingIcon.finalizing": {

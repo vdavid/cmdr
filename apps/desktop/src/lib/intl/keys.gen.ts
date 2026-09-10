@@ -3362,6 +3362,7 @@ export type MessageKey =
   | 'ui.select.placeholder'
   | 'ui.shortcutChip.customizeAria'
   | 'ui.shortcutChip.customizeTooltip'
+  | 'ui.toast.age'
   | 'ui.toast.dismissAria'
   | 'ui.toast.sendErrorReport'
   | 'updates.checkToast.errorPrefix'

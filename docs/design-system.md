@@ -913,8 +913,10 @@ displays so digits don't shift as values update.
 
 ### Notifications/toasts (app)
 
-Slide in from top-right. Background: `--color-bg-secondary`. Border: `1px solid --color-border`. Shadow: `--shadow-md`.
-Auto-dismiss after 4 seconds. Close button on hover.
+Slide in from top-right. A flat 28px level icon leads, the close button is pinned to the top-right corner, and an age
+label ("2m ago") appears once a toast is a minute old. Surface and hairline: the per-level `--color-toast-<level>-bg` /
+`-border` tokens. Corner: `--radius-toast` (12px). Inset: `--spacing-toast` (14px). Shadow: `--shadow-toast`.
+Auto-dismiss after 4 seconds. Mechanics and decisions: `apps/desktop/src/lib/ui/DETAILS.md` § Toast system.
 
 ## Applying the system
 

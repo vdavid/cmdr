@@ -60,6 +60,10 @@
   "@ui.toast.dismissAria": {
     "sourceHash": "b7bb3f3"
   },
+  "ui.toast.age": "há {durationText}",
+  "@ui.toast.age": {
+    "sourceHash": "6dcfed0"
+  },
   "ui.loadingIcon.finalizing": "Todos os {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}} carregados. Ordenando seus arquivos, preparando a visualização...",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "2aac2cb"

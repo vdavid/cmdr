@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { ToastContent } from './toast-store.svelte'
 import {
   addToast,
@@ -45,6 +45,19 @@ describe('addToast', () => {
     expect(toasts).toHaveLength(1)
     expect(toasts[0].content).toBe(content2)
     expect(toasts[0].level).toBe('error')
+  })
+
+  it('re-stamps postedAt when a same-id add replaces the toast, so its age label restarts', () => {
+    vi.useFakeTimers()
+    try {
+      addToast('Indexing…', { id: 'dup' })
+      const firstPostedAt = getToasts()[0].postedAt
+      vi.advanceTimersByTime(90_000)
+      addToast('Indexing completed', { id: 'dup' })
+      expect(getToasts()[0].postedAt).toBe(firstPostedAt + 90_000)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('accepts a string as content', () => {

@@ -22,6 +22,7 @@ function mountItem(props: Record<string, unknown>): HTMLElement {
       level: 'info',
       dismissal: 'persistent',
       timeoutMs: 0,
+      postedAt: Date.now(),
       onTimeout: vi.fn(),
       onUserDismiss: vi.fn(),
       ...props,
@@ -194,5 +195,55 @@ describe('ToastItem auto-dismiss rule', () => {
     vi.advanceTimersByTime(100000)
 
     expect(onTimeout).not.toHaveBeenCalled()
+  })
+})
+
+describe('ToastItem age label', () => {
+  const MINUTE = 60_000
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('shows no age while the toast is under a minute old', async () => {
+    const target = mountItem({ postedAt: Date.now() })
+    await tick()
+
+    vi.advanceTimersByTime(MINUTE - 1000)
+    await tick()
+
+    expect(target.querySelector('.toast-age')).toBeNull()
+  })
+
+  it('starts at one minute, then moves on at each whole minute', async () => {
+    const target = mountItem({ postedAt: Date.now() })
+    await tick()
+
+    vi.advanceTimersByTime(MINUTE)
+    await tick()
+    expect(target.querySelector('.toast-age')?.textContent).toBe('1m ago')
+
+    vi.advanceTimersByTime(MINUTE)
+    await tick()
+    expect(target.querySelector('.toast-age')?.textContent).toBe('2m ago')
+  })
+
+  it('counts from when the toast was posted, not from when it mounted', async () => {
+    const target = mountItem({ postedAt: Date.now() - 5 * MINUTE })
+    await tick()
+
+    expect(target.querySelector('.toast-age')?.textContent).toBe('5m ago')
+  })
+
+  it('keeps the ticking label out of the live region, so a screen reader never re-reads the toast each minute', async () => {
+    const target = mountItem({ postedAt: Date.now() - 2 * MINUTE })
+    await tick()
+
+    expect(target.querySelector('.toast-age')?.getAttribute('aria-hidden')).toBe('true')
   })
 })

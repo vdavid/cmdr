@@ -60,6 +60,10 @@
   "@ui.toast.dismissAria": {
     "sourceHash": "b7bb3f3"
   },
+  "ui.toast.age": "för {durationText} sedan",
+  "@ui.toast.age": {
+    "sourceHash": "6dcfed0"
+  },
   "ui.loadingIcon.finalizing": "Alla {countText} {count, plural, one {filen} other {filerna}} har lästs in. Sorterar dina filer, förbereder vyn...",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "2aac2cb"

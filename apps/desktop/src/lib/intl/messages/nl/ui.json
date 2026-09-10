@@ -60,6 +60,10 @@
   "@ui.toast.dismissAria": {
     "sourceHash": "b7bb3f3"
   },
+  "ui.toast.age": "{durationText} geleden",
+  "@ui.toast.age": {
+    "sourceHash": "6dcfed0"
+  },
   "ui.loadingIcon.finalizing": "Alle {countText} {count, plural, one {bestand} other {bestanden}} geladen. Je bestanden sorteren, weergave voorbereiden...",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "2aac2cb"

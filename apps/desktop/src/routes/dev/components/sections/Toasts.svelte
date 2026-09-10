@@ -3,20 +3,36 @@
     import Button from '$lib/ui/Button.svelte'
     import { addToast } from '$lib/ui/toast'
     import type { ToastLevel } from '$lib/ui/toast'
+    import ToastItem from '$lib/ui/toast/ToastItem.svelte'
 
     interface Preview {
         level: ToastLevel
         label: string
         message: string
+        /** How long ago the preview pretends it was posted, so some of them show the age label. */
+        ageMs: number
     }
 
+    const MINUTE_MS = 60_000
+
     const previews: Preview[] = [
-        { level: 'default', label: 'default', message: 'Connecting directly...' },
-        { level: 'info', label: 'info', message: 'Copied 12 items.' },
-        { level: 'success', label: 'success', message: 'Share disconnected.' },
-        { level: 'warn', label: 'warn', message: 'Tab limit reached.' },
-        { level: 'error', label: 'error', message: "Couldn't remove host." },
+        { level: 'default', label: 'default', message: 'Connecting directly...', ageMs: 0 },
+        { level: 'info', label: 'info', message: 'Copied 12 items.', ageMs: 0 },
+        { level: 'success', label: 'success', message: 'Share disconnected.', ageMs: 5 * MINUTE_MS },
+        {
+            level: 'warn',
+            label: 'warn',
+            message: 'Tab limit reached. Close a tab in this pane to open a new one.',
+            ageMs: 2 * MINUTE_MS,
+        },
+        { level: 'error', label: 'error', message: "Couldn't remove host.", ageMs: 65 * MINUTE_MS },
     ]
+
+    const renderedAt = Date.now()
+
+    function ignore(): void {
+        // The previews are static: nothing times out, and dismissing one does nothing.
+    }
 
     function triggerToast(level: ToastLevel) {
         const preview = previews.find((p) => p.level === level)
@@ -41,7 +57,7 @@
     }
 
     function triggerHoverDemo() {
-        addToast('Hover me to pause; leaving past expiry gives a 2-second grace.', {
+        addToast('Keep hovering past six seconds, then move away: I hide a second later.', {
             level: 'info',
             timeoutMs: 6000,
         })
@@ -49,19 +65,22 @@
 </script>
 
 <SectionCard id="components-toasts" label="Toasts">
-    <p class="caption">Static previews of each level (left to right: default, info, success, warn, error).</p>
-    <div class="preview-row">
+    <p class="caption">
+        The real toast frame at each level (default, info, success, warn, error), backdated so the older ones show
+        their age label.
+    </p>
+    <div class="preview-stack">
         {#each previews as p (p.level)}
-            <div
-                class="toast-preview"
-                class:info={p.level === 'info'}
-                class:success={p.level === 'success'}
-                class:warn={p.level === 'warn'}
-                class:error={p.level === 'error'}
-            >
-                <span class="toast-message">{p.message}</span>
-                <span class="toast-close" aria-hidden="true">×</span>
-            </div>
+            <ToastItem
+                id={`preview-${p.level}`}
+                content={p.message}
+                level={p.level}
+                dismissal="persistent"
+                timeoutMs={0}
+                postedAt={renderedAt - p.ageMs}
+                onTimeout={ignore}
+                onUserDismiss={ignore}
+            />
         {/each}
     </div>
 
@@ -88,12 +107,12 @@
     </div>
 
     <p class="caption">
-        Hover behavior: the timer pauses while the pointer is over a transient toast. Past natural expiry, leaving
-        starts a 2-second grace timer.
+        Hover behavior: hovering never pauses a transient toast's clock, but a toast never hides under the pointer.
+        Past its natural deadline, it hides one second after the pointer leaves.
     </p>
     <div class="trigger-row">
-        <Button size="mini" onclick={triggerHoverDemo}>Show a hover-pause toast</Button>
-        <span class="hint">Hover the toast top-right; move away to see the resume or grace behavior.</span>
+        <Button size="mini" onclick={triggerHoverDemo}>Show a 6-second toast</Button>
+        <span class="hint">Hover the toast top-right; move away to see it keep or lose its remaining time.</span>
     </div>
 </SectionCard>
 
@@ -110,10 +129,11 @@
         align-self: center;
     }
 
-    .preview-row {
+    .preview-stack {
         display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-sm);
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
         margin-bottom: var(--spacing-lg);
     }
 
@@ -122,52 +142,5 @@
         flex-wrap: wrap;
         gap: var(--spacing-sm);
         margin-bottom: var(--spacing-md);
-    }
-
-    /* Mirror ToastItem.svelte chrome for static previews. */
-    .toast-preview {
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-subtle);
-        border-left: 3px solid var(--color-text-tertiary);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-md);
-        padding: var(--spacing-md) var(--spacing-lg);
-        font-size: var(--font-size-sm);
-        max-width: 240px;
-        display: flex;
-        align-items: start;
-        gap: var(--spacing-sm);
-    }
-
-    .toast-preview.info {
-        border-left-color: var(--color-toast-info-stripe);
-        background: var(--color-toast-info-bg);
-    }
-
-    .toast-preview.success {
-        border-left-color: var(--color-toast-success-stripe);
-        background: var(--color-toast-success-bg);
-    }
-
-    .toast-preview.warn {
-        border-left-color: var(--color-toast-warn-stripe);
-        background: var(--color-toast-warn-bg);
-    }
-
-    .toast-preview.error {
-        border-left-color: var(--color-error);
-        background: var(--color-toast-error-bg);
-    }
-
-    .toast-message {
-        flex: 1;
-        color: var(--color-text-primary);
-    }
-
-    .toast-close {
-        flex-shrink: 0;
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-        line-height: var(--font-line-height-flat);
     }
 </style>

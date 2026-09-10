@@ -2,6 +2,8 @@
     import { onMount, onDestroy } from 'svelte'
     import type { ToastContent, ToastLevel, ToastDismissal } from './toast-store.svelte'
     import { HOVER_LEAVE_GRACE_MS } from './toast-store.svelte'
+    import { formatToastAge, msUntilToastAgeChanges } from './toast-age'
+    import ToastLevelIcon from './ToastLevelIcon.svelte'
     import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import Button from '$lib/ui/Button.svelte'
@@ -14,6 +16,8 @@
         level: ToastLevel
         dismissal: ToastDismissal
         timeoutMs: number
+        /** When the toast's current content was posted (`Toast.postedAt`); the age label counts from it. */
+        postedAt: number
         closeTooltip?: string
         /**
          * Props forwarded to a component-shaped `content`. Merged with the
@@ -42,6 +46,7 @@
         level,
         dismissal,
         timeoutMs,
+        postedAt,
         closeTooltip,
         contentProps,
         widthPx,
@@ -65,6 +70,26 @@
     // Persistent toasts never get a timer; the hover handlers no-op for them.
     let timer: ReturnType<typeof setTimeout> | undefined
     let naturalDeadline = 0
+
+    // Age label ("2m ago"). `now` moves only when the label would change: one timer, armed for
+    // the next whole minute (or hour) and re-armed each time it fires, so an idle toast costs one
+    // wake-up a minute at most. `now` last moved at the previous tick, so a same-id re-add can
+    // re-stamp `postedAt` past it; that counts as age zero, and the next tick lands a minute
+    // after the new post.
+    let now = $state(Date.now())
+    const ageLabel = $derived(formatToastAge(now - postedAt))
+
+    $effect(() => {
+        const ageTimer = setTimeout(
+            () => {
+                now = Date.now()
+            },
+            msUntilToastAgeChanges(Math.max(now, postedAt) - postedAt),
+        )
+        return () => {
+            clearTimeout(ageTimer)
+        }
+    })
 
     // Error-level toasts that carry a plain-text message get an inline "Send error
     // report…" action. Component-content toasts manage their own actions, so we don't
@@ -130,28 +155,38 @@
     onpointerenter={handlePointerEnter}
     onpointerleave={handlePointerLeave}
 >
-    <div class="toast-content">
-        {#if typeof content === 'string'}
-            <span class="toast-message">{content}</span>
-            {#if showSendErrorReport}
-                <div class="toast-actions">
-                    <Button size="mini" variant="secondary" onclick={handleSendErrorReport}>
-                        {tString('ui.toast.sendErrorReport')}
-                    </Button>
-                </div>
+    <ToastLevelIcon {level} />
+    <div class="toast-main">
+        <div class="toast-line">
+            <div class="toast-content">
+                {#if typeof content === 'string'}
+                    <span class="toast-message">{content}</span>
+                    {#if showSendErrorReport}
+                        <div class="toast-actions">
+                            <Button size="mini" variant="secondary" onclick={handleSendErrorReport}>
+                                {tString('ui.toast.sendErrorReport')}
+                            </Button>
+                        </div>
+                    {/if}
+                {:else}
+                    {@const ContentComponent = content}
+                    {#if contentProps}
+                        <!-- Component toasts that opt into the prop-forwarding shape get
+                             the toast id appended for self-dismiss. Existing toasts that
+                             don't pass `props` to `addToast` keep their zero-prop shape so
+                             they don't see Svelte's unknown-prop warning. -->
+                        <ContentComponent {...contentProps} toastId={id} />
+                    {:else}
+                        <ContentComponent />
+                    {/if}
+                {/if}
+            </div>
+            {#if ageLabel !== null}
+                <!-- `aria-hidden`: the toast is a live region, so a label that changes every
+                     minute would have a screen reader announce the whole toast again. -->
+                <span class="toast-age" aria-hidden="true">{ageLabel}</span>
             {/if}
-        {:else}
-            {@const ContentComponent = content}
-            {#if contentProps}
-                <!-- Component toasts that opt into the prop-forwarding shape get
-                     the toast id appended for self-dismiss. Existing toasts that
-                     don't pass `props` to `addToast` keep their zero-prop shape so
-                     they don't see Svelte's unknown-prop warning. -->
-                <ContentComponent {...contentProps} toastId={id} />
-            {:else}
-                <ContentComponent />
-            {/if}
-        {/if}
+        </div>
     </div>
     <button
         class="toast-close"
@@ -167,37 +202,62 @@
 
 <style>
     .toast {
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-subtle);
-        border-left: 3px solid var(--color-text-tertiary);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-md);
-        padding: var(--spacing-md) var(--spacing-lg);
-        font-size: var(--font-size-sm);
-        max-width: 360px;
+        /* The containing block for the close button pinned to the corner. */
+        position: relative;
         display: flex;
-        align-items: start;
-        gap: var(--spacing-sm);
+        align-items: flex-start;
+        gap: var(--spacing-md);
+        max-width: 360px;
+        /* The right inset also clears the pinned close button. */
+        padding: var(--spacing-toast) calc(var(--spacing-toast) + 30px) var(--spacing-toast) var(--spacing-toast);
+        background: var(--color-toast-default-bg);
+        border: 1px solid var(--color-toast-default-border);
+        border-radius: var(--radius-toast);
+        box-shadow: var(--shadow-toast);
+        font-size: var(--font-size-sm);
     }
 
     .toast.info {
-        border-left-color: var(--color-toast-info-stripe);
         background: var(--color-toast-info-bg);
+        border-color: var(--color-toast-info-border);
     }
 
     .toast.success {
-        border-left-color: var(--color-toast-success-stripe);
         background: var(--color-toast-success-bg);
+        border-color: var(--color-toast-success-border);
     }
 
     .toast.warn {
-        border-left-color: var(--color-toast-warn-stripe);
         background: var(--color-toast-warn-bg);
+        border-color: var(--color-toast-warn-border);
     }
 
     .toast.error {
-        border-left-color: var(--color-error);
         background: var(--color-toast-error-bg);
+        border-color: var(--color-toast-error-border);
+    }
+
+    /* At least as tall as the level icon, with the text centered in that height, so a one-line
+       toast sits level with its icon while a longer one starts at the icon's top. */
+    .toast-main {
+        flex: 1;
+        min-width: 0;
+        min-height: 28px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* The age label sits on the content's first line, whatever that content is. */
+    .toast-line {
+        display: flex;
+        align-items: baseline;
+        gap: var(--spacing-sm);
+    }
+
+    .toast-content {
+        flex: 1;
+        min-width: 0;
     }
 
     .toast-message {
@@ -211,13 +271,18 @@
         margin-top: var(--spacing-md);
     }
 
-    .toast-content {
-        flex: 1;
-        min-width: 0;
+    .toast-age {
+        flex-shrink: 0;
+        color: var(--color-text-tertiary);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
     }
 
+    /* Pinned the same distance from the top and right edges, centered on the first text line. */
     .toast-close {
-        flex-shrink: 0;
+        position: absolute;
+        top: calc(var(--spacing-toast) - 3px);
+        right: calc(var(--spacing-toast) - 3px);
         background: none;
         border: none;
         color: var(--color-text-tertiary);
@@ -227,7 +292,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: var(--radius-sm);
+        border-radius: var(--radius-full);
         line-height: var(--font-line-height-flat);
         transition:
             background var(--transition-fast),
@@ -235,7 +300,7 @@
     }
 
     .toast-close:hover {
-        background: var(--color-bg-tertiary);
+        background: var(--color-tint-hover);
         color: var(--color-text-primary);
     }
 

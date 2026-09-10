@@ -61,6 +61,10 @@
   "@ui.toast.dismissAria": {
     "sourceHash": "b7bb3f3"
   },
+  "ui.toast.age": "il y a {durationText}",
+  "@ui.toast.age": {
+    "sourceHash": "6dcfed0"
+  },
   "ui.loadingIcon.finalizing": "Les {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}} sont chargés. Tri de vos fichiers, préparation de l''affichage...",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "2aac2cb"
