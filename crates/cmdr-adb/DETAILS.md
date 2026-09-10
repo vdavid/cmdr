@@ -180,8 +180,10 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   here holds yet. A transport failure or any other exit is `Unknown`. The transfer pre-flight asks this before it
   measures space, so a copy onto `/` is refused as not writable rather than as out of room
   (`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "A destination folder that
-  takes no writes"). `FakeTree::new` mounts its `/` read-only (`FakeMount::read_only`), so a write under it answers
-  `EROFS` and `test -w` exits 1 there, as the kernel does under a read-only mount. `test -w /` exiting 1 on a real phone
+  takes no writes"). `FakeTree::new` and `FakeTree::android_layout` mount `/` read-only (`FakeMount::read_only`), so a
+  write under it answers `EROFS` and `test -w` exits 1 there, as the kernel does under a read-only mount. The mount is
+  matched after following links (`FakeTree::writes_refused_at`), so a write through the layout's `/sdcard` link lands on
+  shared storage rather than under `/`. `test -w /` exiting 1 on a real phone
   is not yet verified on a device (the Pixel was unplugged); `classify_failed_verb` already relies on the same verb.
 
 ## The error policy

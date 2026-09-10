@@ -324,7 +324,7 @@ impl FakeTree {
         tree.add_dir("/storage/emulated/0");
         tree.add_symlink("/storage/self/primary", "/storage/emulated/0");
         tree.add_symlink("/sdcard", "/storage/self/primary");
-        tree.mount(FakeMount::with_row("/", data_row(DF_K_ROOT, 0)))
+        tree.mount(FakeMount::with_row("/", data_row(DF_K_ROOT, 0)).mounted_read_only())
             .mount(FakeMount::with_row(
                 "/storage/emulated",
                 data_row(DF_K_SHARED_STORAGE, 0),
@@ -364,10 +364,12 @@ impl FakeTree {
 
     /// Whether a write at `path` is refused: the whole-tree
     /// [`read_only`](Self::read_only) switch, or the deepest mount holding `path`
-    /// being read-only. Matched by prefix, without following links, since a write
-    /// names the folder it lands in.
+    /// being read-only. ❗ Matched after following the links along `path`, as the
+    /// kernel resolves a write: on a phone `/sdcard` is a link into
+    /// `/storage/emulated`, and a literal match would put a write through it under
+    /// the read-only `/`.
     pub fn writes_refused_at(&self, path: &str) -> bool {
-        let path = Self::normalize(path);
+        let path = self.canonical(path).unwrap_or_else(|_| Self::normalize(path));
         self.read_only
             || self
                 .mounts

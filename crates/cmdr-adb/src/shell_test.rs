@@ -281,3 +281,21 @@ async fn rmdir_cp_and_test_flags() {
             .succeeded()
     );
 }
+
+/// ❗ On a real phone `/sdcard` is a link into `/storage/emulated`, and the kernel
+/// resolves a write through it onto the shared storage mount. So the Android layout's
+/// read-only `/` refuses a write under `/system` and ❌ never one through `/sdcard`,
+/// which a match on the literal path would put under `/`.
+#[test]
+fn a_read_only_root_refuses_writes_under_it_but_not_through_a_link_into_storage() {
+    let tree = FakeTree::android_layout();
+    assert!(
+        tree.writes_refused_at("/system/New"),
+        "the system image at `/` takes no writes"
+    );
+    assert!(
+        !tree.writes_refused_at("/sdcard/Download"),
+        "a write through `/sdcard` lands on the shared storage"
+    );
+    assert!(!tree.writes_refused_at("/storage/emulated/0/DCIM"));
+}
