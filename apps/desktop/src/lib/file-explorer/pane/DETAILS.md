@@ -249,11 +249,11 @@ location) and `onVolumeChange` (deliberate volume-(re)select) are the two distin
 volume-id string. The record has two halves, and which half answers is the whole design:
 
 - **Rust answers "what can it do."** `Volume::capabilities()` publishes `backendCanWrite`, `canExport`, and
-  `canBeIndexed` per volume; they ride on `VolumeInfo.capabilities` and land on the record as `canWrite` /
-  `canBeSource` / `canBeIndexed` via `withBackendCapabilities`. `canBeIndexed` gates the switcher's index affordances
+  `canBeIndexed` per volume; they ride on `VolumeInfo.capabilities` and land on the record as `canWrite` / `canBeSource`
+  / `canBeIndexed` via `withBackendCapabilities`. `canBeIndexed` gates the switcher's index affordances
   (`navigation/drive-index-manager.svelte.ts::isDriveRow`), and its per-kind default carries real weight for a phone,
-  whose row is clicked before it's dialed and so before any backend has published.
-  Canonical: `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Trait capability model".
+  whose row is clicked before it's dialed and so before any backend has published. Canonical:
+  `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Trait capability model".
 - **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `sftp` /
   `webdav` / `mtp` / `adb` / `network` / `search-results`), which keys a frozen, by-reference table of per-kind defaults
   carrying the per-namespace UI structure Rust has nothing to say about (`hasBackendListing`, `hasParentRow`,
@@ -415,10 +415,10 @@ questions").
 - **The effect keys on `<volume>:<readiness>`**, so one landing is one dial AND a readiness change (the Allow tap) is a
   fresh decision. A plain volume-id guard would strand the pane in the waiting state forever.
 - **❗ It is the ONE dialer, and it HOLDS the pane's listing** (`holdsListing`). Path resolution never dials, and a
-  phone nobody has dialed has no registered volume, so a listing there can only come back refused
-  (`DeviceDisconnected`, never `NotFound`: `src-tauri/src/adb/DETAILS.md`) and would put an error over the connecting
-  state. The reload on connect is what lists the phone. The hold is threaded through `path-sync.ts`'s
-  `deviceIsConnecting` input (a `sync-path` arm, like device-only MTP's) and the mount-time load's own branch.
+  phone nobody has dialed has no registered volume, so a listing there can only come back refused (`DeviceDisconnected`,
+  never `NotFound`: `src-tauri/src/adb/DETAILS.md`) and would put an error over the connecting state. The reload on
+  connect is what lists the phone. The hold is threaded through `path-sync.ts`'s `deviceIsConnecting` input (a
+  `sync-path` arm, like device-only MTP's) and the mount-time load's own branch.
 - **❗ While the hold is on, a `null` state renders NOTHING**, so every way a dial can end has to leave a non-`null`
   one: a `refused` with the reason and, where a second try could work, a Try again. That covers both cancels (the button
   on `connecting` and the one on `waiting_for_device`), the backend's own `cancelled` answer, a failure with no typed

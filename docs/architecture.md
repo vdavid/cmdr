@@ -185,8 +185,7 @@ All under `apps/desktop/src-tauri/src/`.
   workaround, and where the app parks the one connection manager it built. See `mtp/CLAUDE.md`
 - `adb/`: the app-side half of the Android-over-ADB backend (`crates/cmdr-adb/`): the `host:track-devices` task, the
   `AdbDeviceProvider`, the one dial per phone a pane asks for, eject (forget the device client-side), and the IPC
-  commands.
-  See `adb/CLAUDE.md`
+  commands. See `adb/CLAUDE.md`
 - `device_volumes.rs`: the device-provider seam. A `DeviceVolumeProvider` per device backend (`MtpDeviceProvider`,
   `AdbDeviceProvider`), a registry `volume_listing::complete` folds over, and `notify_devices_changed`, the one hotplug
   push channel (it emits `volumes-changed`). Contract in the module doc; the checklist step in
