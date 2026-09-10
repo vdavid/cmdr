@@ -13409,10 +13409,11 @@ export type ViewerError =
    */
   | { kind: 'timedOut' }
   /**
-   *  Previewing a file that lives inside a route (an archive entry, a file in a
-   *  repo's `.git` snapshot) would materialize more than the preview cap. Refused
-   *  before any extraction (the zip-bomb guard for preview); `size` is the entry's
-   *  declared size, `cap` the limit. See `file_viewer::routed_extract`.
+   *  Previewing a file the viewer has to pull into a temp first (an archive entry,
+   *  a file in a repo's `.git` snapshot, a file on a phone or server) would
+   *  materialize more than the preview cap. Refused before any extraction (the
+   *  zip-bomb guard for preview); `size` is the file's reported size, `cap` the
+   *  limit. See `file_viewer::routed_extract`.
    */
   | { kind: 'extractTooLarge'; size: number; cap: number }
   /**
