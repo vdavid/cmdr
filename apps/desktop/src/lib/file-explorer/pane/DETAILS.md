@@ -933,6 +933,15 @@ so the target's owner decides where we land, via `resolvePathVolume(target)`; a 
 resolve (they're the chain's last-resort rungs, and `~` is expanded backend-side so it isn't resolvable as written); an
 unresolvable owner (dead mount, statfs timeout) lands in place, since the pane's own volume is then the honest guess.
 
+**The `onListingError` branch asks about the load's OWN volume, and never walks onto the path that just failed.** Its
+`pathExistsChecked(loadPath, volumeId)` passes the id captured when the load started: without one, `path_exists`
+defaults to `root` and asks the boot disk about an `adb://` or `sftp://` path, which always says "gone". And when
+`resolveValidPath` comes back with the failed path itself (a volume root, or a scheme path's floor) or with `null`, the
+branch shows the error pane rather than calling `navigateToFallback`, which would re-list the same failure. ❌ Don't
+drop that guard: a phone's pane once re-listed `adb://<serial>` about 15 times a second through exactly that loop. An
+unregistered SFTP id still answers "gone" from the boot disk (no volume to ask), so the walk-up reaches the scheme floor
+once and then the guard shows the error.
+
 _Decision / why:_ assuming the pane's volume still owns the fallback target strands the pane. An SMB share unmounts, its
 volume id is unregistered, the walk-up climbs from `/Volumes/<share>/sub` out to `/Volumes` (owned by the ROOT volume),
 and the listing goes out under the share's dead id → `Path not found: Volume not found`. It's PERMANENT, not transient:

@@ -445,16 +445,24 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
                 return
               }
 
-              // For local volumes, check if the path was deleted.
-              // Use the checked variant so a connection-blip "false" doesn't get treated as
-              // "deleted": show the error pane in that case instead of walking up.
-              void pathExistsChecked(loadPath).then(({ data: exists, timedOut }) => {
+              // Check whether the path was deleted, asking the volume THIS load listed
+              // (`volumeId`, captured at the start), ❌ never a live read here: without
+              // an id the backend asks the boot disk, which says "gone" for every
+              // `adb://` or `sftp://` path. The checked variant keeps a connection
+              // blip's "false" from reading as "deleted".
+              void pathExistsChecked(loadPath, volumeId).then(({ data: exists, timedOut }) => {
                 if (!exists && !timedOut) {
-                  // Path is gone: auto-navigate to nearest valid parent
-                  log.info('Listing error for deleted path, navigating to valid parent: {path}', {
-                    path: loadPath,
-                  })
                   void resolveValidPath(loadPath, { volumeRoot: deps.getVolumePath() }).then((validPath) => {
+                    // ❗ A walk-up that lands back on the path that just failed (a
+                    // volume's own root) or nowhere at all has nothing better to
+                    // offer: navigating would re-list the same failure, forever.
+                    if (validPath === null || validPath === loadPath) {
+                      showListingError()
+                      return
+                    }
+                    log.info('Listing error for deleted path, navigating to valid parent: {path}', {
+                      path: loadPath,
+                    })
                     navigateToFallback(validPath)
                   })
                 } else {

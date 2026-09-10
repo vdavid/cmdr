@@ -464,6 +464,55 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
     })
   })
 
+  it('asks whether the path exists on the volume the load was started on', async () => {
+    // Pre-fix the check went out with no volume id, so the backend asked the
+    // Mac's boot disk about `adb://…`, which always says "gone".
+    const { loader, state } = makeHarness({ volumeId: 'adb-phone', volumePath: 'adb://R58M' })
+    await loader.loadDirectory({ path: 'adb://R58M/sdcard' })
+    // The pane's live id moves on before the error lands; the load's own id wins.
+    state.volumeId = 'root'
+    h.listeners.error[0]({ listingId: state.listingId, message: 'not connected' })
+    await vi.waitFor(() => {
+      expect(h.pathExistsChecked).toHaveBeenCalled()
+    })
+    expect(h.pathExistsChecked).toHaveBeenCalledWith('adb://R58M/sdcard', 'adb-phone')
+  })
+
+  it('shows the error, and lists nothing again, when the walk-up lands on the path that just failed', async () => {
+    // Pre-fix a failing volume ROOT walked up to itself and re-listed it, which
+    // failed again: a phone's pane re-listed `adb://<serial>` ~15 times a second.
+    const { loader, state, spies } = makeHarness({ volumeId: 'adb-phone', volumePath: 'adb://R58M' })
+    h.pathExistsChecked.mockResolvedValue({ data: false, timedOut: false })
+    h.resolveValidPath.mockResolvedValue('adb://R58M')
+    h.resolvePathVolume.mockResolvedValue({ volume: { id: 'adb-phone', path: 'adb://R58M' }, timedOut: false })
+    await loader.loadDirectory({ path: 'adb://R58M' })
+    h.listeners.error[0]({ listingId: state.listingId, message: 'not connected' })
+    await vi.waitFor(() => {
+      expect(h.resolveValidPath).toHaveBeenCalled()
+    })
+    await vi.waitFor(() => {
+      expect(state.error).toBe('not connected')
+    })
+
+    expect(h.listDirectoryStart).toHaveBeenCalledTimes(1)
+    expect(spies.onVolumeChange).not.toHaveBeenCalled()
+    expect(spies.onPathChange).toHaveBeenCalledWith('adb://R58M')
+  })
+
+  it('shows the error rather than leaving the volume when the walk-up finds nowhere to land', async () => {
+    const { loader, state, spies } = makeHarness({ volumeId: 'smb-host', volumePath: '/Volumes/x' })
+    h.pathExistsChecked.mockResolvedValue({ data: false, timedOut: false })
+    h.resolveValidPath.mockResolvedValue(null)
+    await loader.loadDirectory({ path: '/Volumes/x/gone' })
+    h.listeners.error[0]({ listingId: state.listingId, message: 'no such dir' })
+    await vi.waitFor(() => {
+      expect(state.error).toBe('no such dir')
+    })
+
+    expect(h.listDirectoryStart).toHaveBeenCalledTimes(1)
+    expect(spies.onVolumeChange).not.toHaveBeenCalled()
+  })
+
   it('shows the friendly error (and pushes history) when the path still exists', async () => {
     const { loader, state, spies } = makeHarness()
     await loader.loadDirectory({ path: '/a' })
