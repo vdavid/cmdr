@@ -156,6 +156,13 @@ export const setCoverageNote = (v: CoverageNote | null): void => {
   extras.setCoverageNote(v)
 }
 
+// The volume the results on screen live on (extras): what a promoted snapshot's rows
+// dispatch against. Cleared wherever the results are.
+export const getResultsVolumeId = (): string | null => extras.getResultsVolumeId()
+export const setResultsVolumeId = (v: string | null): void => {
+  extras.setResultsVolumeId(v)
+}
+
 // Scope + system-dirs (extras)
 export const getScope = (): string => extras.getScope()
 export const setScope = (v: string): void => {
@@ -223,6 +230,7 @@ export function applyHistoryEntry(entry: HistoryEntry): void {
   core.setLastAiCaveat(null)
   extras.recordAiPatternAndLabel({ pattern: null, kind: null, label: null })
   core.setResults([])
+  extras.setResultsVolumeId(null)
   core.setTotalCount(0)
   core.setCursorIndex(0)
 }
@@ -278,6 +286,7 @@ export function applySearchPrefill(prefill: SearchPrefill): void {
   }
 
   core.setResults([])
+  extras.setResultsVolumeId(null)
   core.setTotalCount(0)
   core.setCursorIndex(0)
   // A prefill REPLACES the session, so there is no previous run left to restore:

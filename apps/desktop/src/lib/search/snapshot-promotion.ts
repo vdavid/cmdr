@@ -20,6 +20,7 @@ import {
   getMode,
   getQuery,
   getResults,
+  getResultsVolumeId,
   getScope,
   getTotalCount,
 } from './search-state.svelte'
@@ -75,8 +76,8 @@ export function persistRecentSearch(): void {
   })
 }
 
-/** Builds the stored record from live dialog state. */
-function buildSnapshot(id: string, label: string): SearchSnapshot {
+/** Builds the stored record from live dialog state, over the volume its rows live on. */
+function buildSnapshot(id: string, label: string, volumeId: string): SearchSnapshot {
   // `HistoryFilters` (IPC type) uses `number | null` for absent fields; the
   // snapshot store uses `number | undefined`. Coerce so `null` doesn't sneak
   // into the snapshot's runtime shape.
@@ -94,6 +95,7 @@ function buildSnapshot(id: string, label: string): SearchSnapshot {
     mode: getMode(),
     filters: snapshotFilters,
     scope: getScope(),
+    volumeId,
     caseSensitive: getCaseSensitive(),
     excludeSystemDirs: getExcludeSystemDirs(),
     entries: getResults(),
@@ -117,7 +119,11 @@ function buildSnapshot(id: string, label: string): SearchSnapshot {
  * belongs to `walk-handoff.svelte.ts`.
  */
 export function promoteResultsToPane(liveRun: { runId: string; view: LiveRunView } | null): PanePromotion | null {
-  if (getResults().length === 0) return null
+  const volumeId = getResultsVolumeId()
+  // Rows and the volume they live on arrive in the same answer (the one-shot result, or
+  // a live batch), so rows with no volume shouldn't exist. If they ever do, refusing
+  // beats guessing `root` and pointing every action on them at the wrong drive.
+  if (getResults().length === 0 || volumeId === null) return null
   const id = nextSnapshotId()
   const label = buildSnapshotLabel({
     mode: getMode(),
@@ -125,7 +131,7 @@ export function promoteResultsToPane(liveRun: { runId: string; view: LiveRunView
     aiPrompt: getLastAiPrompt(),
     aiLabel: getLastAiLabel(),
   })
-  createSnapshot(id, buildSnapshot(id, label))
+  createSnapshot(id, buildSnapshot(id, label, volumeId))
   setLastAttemptId(id)
 
   const handedOffRunId = liveRun

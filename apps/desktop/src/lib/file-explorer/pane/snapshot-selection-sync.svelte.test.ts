@@ -43,6 +43,7 @@ function makeSnapshot(id: string, names: string[]): SearchSnapshot {
     mode: 'filename',
     filters: {},
     scope: '',
+    volumeId: 'root',
     caseSensitive: false,
     excludeSystemDirs: true,
     entries: names.map(makeEntry),

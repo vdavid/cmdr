@@ -8,7 +8,7 @@ import {
   resolvePathVolume,
 } from '$lib/tauri-commands'
 import { addToast, addToastForPane } from '$lib/ui/toast'
-import { resolveSnapshotPaths, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
+import { getSnapshot, resolveSnapshotPaths, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { isPlainFilesystemPath } from '$lib/path/canonical'
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
@@ -17,7 +17,6 @@ import type { MessageKey } from '$lib/intl/keys.gen'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
 import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
-import { resolveSnapshotSourceVolume } from './snapshot-source-volume'
 import { operationStartIsBlocked } from './operation-start-gate'
 import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
 import { pasteClipboardContentAsFile } from './paste-clipboard-as-file'
@@ -174,11 +173,10 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
    * which reads an unknown scheme as a RELATIVE path and returns a file URL under
    * the process working directory. It holds when the volume gate can't: unplug a
    * phone under an open snapshot pane and the device drops off the volume list,
-   * so `resolveSnapshotSourceVolume` falls back to `root` — a kind that copies —
-   * while the rows still read `mtp://…`.
+   * so nothing can classify its volume, while the rows still read `mtp://…`.
    *
-   * The volume gate then covers the live device, where the kind has to come from
-   * where the rows really LIVE, because the pane's own volume id is the virtual
+   * The volume gate then asks about the volume the snapshot's search covered
+   * (`SearchSnapshot.volumeId`), because the pane's own volume id is the virtual
    * `search-results`: a search covers any volume with a persisted index, MTP
    * storages and ADB devices included.
    *
@@ -186,9 +184,12 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
    * the clipboard under a toast that says the copy happened, which is worse than
    * refusing.
    */
-  function snapshotClipboardIsRefused(paths: string[]): boolean {
+  function snapshotClipboardIsRefused({ paths, snapshotId }: { paths: string[]; snapshotId: string }): boolean {
     if (paths.some((path) => !isPlainFilesystemPath(path))) return true
-    return isMtpClipboardRefusal(resolveSnapshotSourceVolume(paths, access.getVolumes()).volumeId)
+    const volumeId = getSnapshot(snapshotId)?.volumeId
+    // The rows came out of this snapshot a moment ago, so it's there. If it somehow
+    // isn't, refusing beats guessing which volume they're on.
+    return volumeId === undefined || isMtpClipboardRefusal(volumeId)
   }
 
   /** Copies selected files (or cursor file) to the system clipboard. */
@@ -197,7 +198,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     // regular listing-id path can't apply because there's no backend listing.
     const snapshotClip = getSnapshotClipboardPaths()
     if (snapshotClip) {
-      if (snapshotClipboardIsRefused(snapshotClip.paths)) {
+      if (snapshotClipboardIsRefused(snapshotClip)) {
         addToast(tString('fileExplorer.clipboard.useF5FromMtp'), { level: 'info' })
         return
       }
@@ -242,7 +243,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
   async function cutToClipboard() {
     const snapshotClip = getSnapshotClipboardPaths()
     if (snapshotClip) {
-      if (snapshotClipboardIsRefused(snapshotClip.paths)) {
+      if (snapshotClipboardIsRefused(snapshotClip)) {
         addToast(tString('fileExplorer.clipboard.useF6FromMtp'), { level: 'info' })
         return
       }

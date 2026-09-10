@@ -621,6 +621,7 @@ describe('tab-state-manager', () => {
         mode: 'filename',
         filters: {},
         scope: '',
+        volumeId: 'root',
         caseSensitive: false,
         excludeSystemDirs: true,
         entries: [],

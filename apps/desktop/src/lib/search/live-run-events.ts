@@ -39,6 +39,8 @@ export function liveViewOf(event: LiveRunProgress): LiveRunView {
 /** One batch of a live run, before any of it is translated into shared vocabulary. */
 export interface LiveRunProgress {
   phase: QueryStreamPhase
+  /** The one volume every row in `entries` lives on, as the backend routed the run. */
+  targetVolumeId: string
   entries: SearchResultEntry[]
   matchCount: number
   dirsFound: number
@@ -77,6 +79,7 @@ export async function observeSearchRun(runId: string, handlers: LiveRunHandlers)
         if (!mine(event.runId)) return
         handlers.onProgress({
           phase: event.phase,
+          targetVolumeId: event.targetVolumeId,
           entries: event.entries,
           matchCount: event.matchCount,
           dirsFound: event.dirsFound,

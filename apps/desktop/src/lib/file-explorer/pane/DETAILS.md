@@ -332,14 +332,13 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
 
   **The snapshot-clip branch gates TWICE, in this order** (`snapshotClipboardIsRefused`). First the PATH SCHEME:
   `$lib/path/canonical.ts::isPlainFilesystemPath` refuses any row that isn't a plain absolute filesystem path, from the
-  path alone. Then the resolved row VOLUME (`snapshot-source-volume.ts::resolveSnapshotSourceVolume` →
-  `isMtpClipboardRefusal`), because the pane's own volume id is the virtual `search-results` and a search covers any
-  volume with a persisted index, MTP storages included. Either gate refuses the WHOLE set if any row offends; a partial
+  path alone. Then the VOLUME the snapshot's search covered (`SearchSnapshot.volumeId` → `isMtpClipboardRefusal`),
+  because the pane's own volume id is the virtual `search-results` and a search covers any volume with a persisted
+  index, MTP storages and ADB phones included. Either gate refuses the WHOLE set if any row offends; a partial
   copy under a toast claiming success is worse than a refusal.
 
-  **Why the scheme gate leads:** the volume gate is only as good as the resolution, and a device unplugged while its
-  snapshot pane stays open drops off the volume list, so `resolveSnapshotSourceVolume` answers the `root` fallback — a
-  kind that copies — while the rows still read `mtp://…`. Such a path reaches `NSURL::fileURLWithPath`
+  **Why the scheme gate leads:** the volume gate reads a volume's kind through the live volume list, and a device
+  unplugged while its snapshot pane stays open has left that list, while the rows still read `mtp://…`. Such a path reaches `NSURL::fileURLWithPath`
   (`clipboard/pasteboard.rs`), which reads an unknown scheme as a RELATIVE path and hands back a file URL under the
   process working directory. The scheme gate holds with no volume registered at all, which is the case it exists for.
 

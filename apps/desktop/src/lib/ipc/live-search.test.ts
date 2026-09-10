@@ -107,6 +107,7 @@ describe('the live-search event family', () => {
     const progress: SearchProgressEvent = {
       runId: 'run-1',
       phase: 'walking',
+      targetVolumeId: 'root',
       entries: [],
       matchCount: 7,
       dirsFound: 42,

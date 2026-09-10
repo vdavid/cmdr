@@ -297,10 +297,11 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    *
    * `canBeSource: true` per the `search-results` capability row: source-side
    * operations always run against the real underlying files. The volume they run
-   * against comes from `resolveSnapshotSourceVolume`, which places the rows
-   * against the live volume list rather than assuming the boot drive. After a
-   * move completes, `dialog-state::handleTransferComplete` already purges moved
-   * paths from every snapshot via `removeEntryFromAllSnapshots`.
+   * against is the one the search covered, which the snapshot carries
+   * (`SearchSnapshot.volumeId`), so a phone unplugged under the pane still names
+   * the phone rather than falling back to the boot drive. After a move completes,
+   * `dialog-state::handleTransferComplete` already purges moved paths from every
+   * snapshot via `removeEntryFromAllSnapshots`.
    */
   function buildSnapshotTransferProps(
     operationType: TransferOperationType,
@@ -314,6 +315,8 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
     const entries = resolveSnapshotEntries(snapshotId, selectedIndices, cursorIndex)
     if (entries.length === 0) return null
+    const snapshot = getSnapshot(snapshotId)
+    if (!snapshot) return null
 
     const sourcePaths = entries.map((entry) => entry.path)
     const isDirectoryFlags = entries.map((entry) => entry.isDirectory)
@@ -329,7 +332,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       access.getPaneVolumeId(other),
       sortBy,
       sortOrder,
-      resolveSnapshotSourceVolume(sourcePaths, access.getVolumes()).volumeId,
+      snapshot.volumeId,
     )
   }
 
@@ -471,10 +474,10 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    *
    * `sourceFolderPath` is the common parent of the resolved paths: a result set
    * is gathered from anywhere, and the dialog's "from" line plus the trash
-   * toast's volume lookup both need a real directory. The volume id and the trash
-   * affordance come from `resolveSnapshotSourceVolume`, which places the rows
-   * against the live volume list: a search covers one volume and it need not be
-   * the boot drive, so neither can be assumed.
+   * toast's volume lookup both need a real directory. The volume id is the one the
+   * search covered (`SearchSnapshot.volumeId`), and `resolveSnapshotSourceVolume`
+   * reads its trash affordance off the live volume list: a search covers one volume
+   * and it need not be the boot drive, so neither can be assumed.
    */
   function openDeleteFromSearchResults({ permanent, autoConfirm, mcpRequestId, initiator }: OpenDeleteDialogArgs) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
@@ -515,7 +518,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const sourcePaths = entries.map((entry) => entry.path)
 
     const { sortBy, sortOrder } = access.getPaneSort(access.getFocusedPane())
-    const sourceVolume = resolveSnapshotSourceVolume(sourcePaths, access.getVolumes())
+    const sourceVolume = resolveSnapshotSourceVolume(snapshot.volumeId, access.getVolumes())
 
     dialogs.showDeleteConfirmation({
       sourceItems,

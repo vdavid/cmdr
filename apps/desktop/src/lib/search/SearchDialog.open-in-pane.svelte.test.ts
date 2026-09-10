@@ -122,7 +122,9 @@ describe('SearchDialog "Open in pane"', () => {
     })
     setQuery('foo')
     setMode('filename')
-    await seedResults()
+    // Rows from a phone's search: every action on the pane's rows dispatches against
+    // the volume the snapshot carries, so it has to be the one the rows came from.
+    await seedResults('adb-r58m')
     await tick()
 
     const btn = document.body.querySelector('button[aria-label="Show all in main window"]') as HTMLButtonElement
@@ -137,6 +139,7 @@ describe('SearchDialog "Open in pane"', () => {
     expect(snap).toBeDefined()
     expect(snap?.mode).toBe('filename')
     expect(snap?.entries.length).toBe(1)
+    expect(snap?.volumeId).toBe('adb-r58m')
     // The "last attempt" slot is pinned to the new id (refcount-wise).
     expect(getLastAttemptId()).toBe(openedId as unknown as string)
 

@@ -48,6 +48,7 @@ function makeSnapshot(id: string, entries: SearchResultEntry[]): SearchSnapshot 
     mode: 'filename',
     filters: {},
     scope: '',
+    volumeId: 'root',
     caseSensitive: false,
     excludeSystemDirs: true,
     entries,

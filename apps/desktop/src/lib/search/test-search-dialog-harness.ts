@@ -350,9 +350,14 @@ export async function mountDialog(opts: MountDialogOptions = {}): Promise<{ over
   }
 }
 
-/** One stand-in result row in Search state, for the paths that act on a result. */
-export async function seedResults(): Promise<void> {
-  const { setResults, setTotalCount } = await import('./search-state.svelte')
+/**
+ * One stand-in result row in Search state, for the paths that act on a result, living
+ * on `volumeId`. A real run records the volume with the rows (`search-runners.ts`), and
+ * promotion refuses rows without one, so the stand-in records it too.
+ */
+export async function seedResults(volumeId = 'root'): Promise<void> {
+  const { setResults, setResultsVolumeId, setTotalCount } = await import('./search-state.svelte')
+  setResultsVolumeId(volumeId)
   setResults([
     {
       name: 'doc.pdf',

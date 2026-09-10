@@ -141,7 +141,7 @@ describe('openTransferDialog on a search-results pane', () => {
     // on a non-boot volume have to name it, or a move off an SMB share or an MTP
     // storage takes the local-filesystem fast path.
     getSnapshotSpy.mockReturnValue(
-      snapshot([snapshotEntry({ path: '/Volumes/Stick/a.txt', parentPath: '/Volumes/Stick' })]),
+      snapshot([snapshotEntry({ path: '/Volumes/Stick/a.txt', parentPath: '/Volumes/Stick' })], 'vol-stick'),
     )
     const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0] })
     const access = buildAccess({
@@ -155,6 +155,30 @@ describe('openTransferDialog on a search-results pane', () => {
     await create(access, dialogs).openTransferDialog('move')
 
     expect(dialogs.showTransfer.mock.calls[0][0]).toMatchObject({ sourceVolumeId: 'vol-stick' })
+  })
+
+  it('copies from the phone the search covered even once the phone is off the volume list', async () => {
+    // The snapshot names its volume. A prefix match against the list would answer
+    // `root` for `adb://` rows the moment the phone is unplugged, sending the copy
+    // down the local-filesystem path; this way the backend answers for the phone.
+    getSnapshotSpy.mockReturnValue(
+      snapshot(
+        [snapshotEntry({ name: 'a.jpg', path: 'adb://R58M/sdcard/a.jpg', parentPath: 'adb://R58M/sdcard' })],
+        'adb-r58m',
+      ),
+    )
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0] })
+    const access = buildAccess({
+      focusedPane: 'left',
+      paneRefs: { left: paneRef },
+      volumeIds: { left: 'search-results', right: 'root' },
+      volumes: [volume({ id: 'root', path: '/' })],
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openTransferDialog('copy')
+
+    expect(dialogs.showTransfer.mock.calls[0][0]).toMatchObject({ sourceVolumeId: 'adb-r58m' })
   })
 
   it('does not open a snapshot transfer when the snapshot index is stale (out of range)', async () => {
@@ -211,10 +235,13 @@ describe('openDeleteDialog on a search-results pane', () => {
     // A permanent delete routes on `sourceVolumeId`, so reporting `root` for rows
     // on another volume sends the operation down the local-filesystem path.
     getSnapshotSpy.mockReturnValue(
-      snapshot([
-        snapshotEntry({ name: 'a.txt', path: '/Volumes/Stick/a.txt', parentPath: '/Volumes/Stick' }),
-        snapshotEntry({ name: 'b.txt', path: '/Volumes/Stick/b.txt', parentPath: '/Volumes/Stick' }),
-      ]),
+      snapshot(
+        [
+          snapshotEntry({ name: 'a.txt', path: '/Volumes/Stick/a.txt', parentPath: '/Volumes/Stick' }),
+          snapshotEntry({ name: 'b.txt', path: '/Volumes/Stick/b.txt', parentPath: '/Volumes/Stick' }),
+        ],
+        'vol-stick',
+      ),
     )
     const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0, 1] })
     const access = buildAccess({
@@ -237,7 +264,10 @@ describe('openDeleteDialog on a search-results pane', () => {
     // (`volumes/fs_type.rs`). Offering "Move to trash" there gives the user a
     // button whose operation the backend can only fail.
     getSnapshotSpy.mockReturnValue(
-      snapshot([snapshotEntry({ name: 'a.txt', path: '/Volumes/Stick/a.txt', parentPath: '/Volumes/Stick' })]),
+      snapshot(
+        [snapshotEntry({ name: 'a.txt', path: '/Volumes/Stick/a.txt', parentPath: '/Volumes/Stick' })],
+        'vol-stick',
+      ),
     )
     const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0] })
     const access = buildAccess({
@@ -278,26 +308,30 @@ describe('openDeleteDialog on a search-results pane', () => {
     })
   })
 
-  it('falls back to root when no registered volume claims the rows', async () => {
-    // The honest unknown, the same answer `transfer-entry::resolveSourceVolumeId`
-    // gives a drag it cannot place. Optimistic on trash, so an unplaceable row
-    // keeps the trash option and lets the backend answer for it, rather than
-    // being forced into a permanent delete by a resolution miss.
+  it('names the phone the search covered even once it is off the volume list, and keeps the trash offer', async () => {
+    // A phone unplugged under an open results pane drops off the list, and a prefix
+    // match would answer `root` for its `adb://` rows: a delete sent down the local
+    // path. The snapshot names its volume, so the dispatch stays pointed at the phone
+    // and the backend answers for it. Optimistic on trash, so a volume nothing can
+    // look up isn't forced into a permanent delete.
     getSnapshotSpy.mockReturnValue(
-      snapshot([snapshotEntry({ name: 'a.txt', path: '/nowhere/a.txt', parentPath: '/nowhere' })]),
+      snapshot(
+        [snapshotEntry({ name: 'a.jpg', path: 'adb://R58M/sdcard/a.jpg', parentPath: 'adb://R58M/sdcard' })],
+        'adb-r58m',
+      ),
     )
     const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0] })
     const access = buildAccess({
       paneRefs: { left: paneRef },
       volumeIds: { left: 'search-results' },
-      volumes: [volume({ id: 'vol-stick', name: 'Stick', path: '/Volumes/Stick', supportsTrash: false })],
+      volumes: [volume({ id: 'root', path: '/' })],
     })
     const dialogs = buildDialogs()
 
     await create(access, dialogs).openDeleteDialog({ permanent: false })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
-      sourceVolumeId: 'root',
+      sourceVolumeId: 'adb-r58m',
       supportsTrash: true,
     })
   })

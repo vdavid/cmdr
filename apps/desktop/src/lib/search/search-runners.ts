@@ -27,6 +27,7 @@ import {
   getQuery,
   getScope,
   setCoverageNote,
+  setResultsVolumeId,
 } from './search-state.svelte'
 
 /**
@@ -89,6 +90,8 @@ export function createSearchRunners(deps: SearchRunnersDeps): SearchRunners {
     setCoverageNote(null)
     const query = await buildRunQuery(deps.getDefaultScopePath())
     const result = await searchFiles(query)
+    // Ahead of the rows reaching the dialog: anything that acts on one needs its volume.
+    setResultsVolumeId(result.targetVolumeId ?? null)
     // Coverage honesty: an empty answer with a structural reason says so, instead of
     // reading as "nothing matched" (`search/DETAILS.md` § Honesty).
     setCoverageNote(coverageNoteFrom(result))
@@ -99,6 +102,7 @@ export function createSearchRunners(deps: SearchRunnersDeps): SearchRunners {
   const streamingSource = createLiveSearchSource({
     buildQuery: () => buildRunQuery(deps.getDefaultScopePath()),
     onRunState: deps.onRunState,
+    onRowsVolume: setResultsVolumeId,
     onCoverage: (coverage) => {
       setCoverageNote(coverage === null ? null : coverageNoteFromRun(coverage))
       // `null` is a run STARTING, and it's the run's clock edge as well as the note's:

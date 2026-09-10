@@ -49,6 +49,12 @@ export interface LiveSearchSourceDeps {
   /** The order a finished walk's rows are left in. */
   rank: (entries: SearchResultEntry[]) => SearchResultEntry[]
   /**
+   * The volume a batch's rows live on, told whenever rows arrive. The two travel in one
+   * event, so whatever acts on a row later (a promoted snapshot) never waits on the
+   * start reply and never re-derives it from a path.
+   */
+  onRowsVolume: (volumeId: string) => void
+  /**
    * The run in flight and where it has got to, or `null` once it has ended.
    *
    * The runner owns the run for the DIALOG's purposes and keeps its id private; this
@@ -107,6 +113,7 @@ export function createLiveSearchSource(deps: LiveSearchSourceDeps): QueryStreamS
       })
       const stop = await observeSearchRun(runId, {
         onProgress: (event) => {
+          if (event.entries.length > 0) deps.onRowsVolume(event.targetVolumeId)
           deps.onRunState?.({ runId, view: liveViewOf(event) })
           callbacks.onProgress(event)
         },

@@ -201,6 +201,12 @@ again" writes it here). The note itself always renders: silencing the offer does
 on `SearchResult.targetVolumeId` — the volume the BACKEND routed to — because a typed scope can point at a drive the
 pane isn't on, and offering to index the wrong one would be worse than saying nothing.
 
+**A volume no index can serve** (a server over SFTP or WebDAV) gets neither the offer nor the "press Enter" line. Its
+gap reads `search.coverage.uncovered.unavailable`, because there's nothing to turn on and the live run doesn't walk it
+either: it answers with the same `uncoveredScopes` (`src-tauri/src/search/DETAILS.md` § Honesty). The gate is the
+volume's `canBeIndexed` capability through `capabilitiesFor`, the answer the switcher's index badge reads, ❌ never its
+kind or id.
+
 `indexUncoveredDrive` branches on the TYPED `EnableIndexingOutcome`, and two arms are easy to get backwards. Both are
 promises, and falling through to the "Cmdr can't index this right now" answer would be the opposite of true (model:
 `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The one walk a volume remembers):
@@ -576,7 +582,7 @@ first 30" is a product call for David, so ❌ don't pick one on your own.
 
 ## Snapshot store
 
-`snapshot-store.svelte.ts` holds `SearchSnapshot` records (query, mode, filters, scope, capped 10,000 entries,
+`snapshot-store.svelte.ts` holds `SearchSnapshot` records (query, mode, filters, scope, the volume its rows live on, capped 10,000 entries,
 totalCount, createdAt, friendly label, row order) under monotonic `sr-N` ids, plus a per-record refcount. Each record
 keeps TWO arrays: the `entries` the pane renders and the `rankedEntries` the engine produced, which are the same array
 until a sort splits them (§ "The snapshot pane's row order"). The store has no hard cap on its own — **refcount is the
@@ -590,6 +596,12 @@ only authority**. Refs come from two sources:
 - **The "last dialog attempt" slot** (`setLastAttemptId`) holds +1 for the most-recent dialog search regardless of
   whether any pane references it. Swaps decrement the old id and increment the new one atomically. The dialog calls this
   on each new search.
+
+**Where a snapshot's `volumeId` comes from.** Rows and the volume they live on arrive in ONE answer: the one-shot
+`SearchResult.targetVolumeId`, and on a live run each `search-progress` batch's own `targetVolumeId`.
+`search-runners.ts` records it as the rows land (`setResultsVolumeId`, cleared wherever the results are), and
+`promoteResultsToPane` stamps it on the snapshot. Rows with no known volume don't promote at all: guessing `root` would
+point every action on them at the wrong drive.
 
 ### Closed-tab lifecycle and refs
 
@@ -696,7 +708,7 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
   IPCs of the listing-id-keyed `copy_files_to_clipboard` family). The Rust commands reuse
   `clipboard::write_file_urls_to_clipboard` and `set_cut_state` / `clear_cut_state`, so the system clipboard contract
   (file URLs + newline-separated text) is identical. Both first run the same MTP refusal a live MTP pane gets, against
-  the RESOLVED row volume rather than the pane's virtual id: an `mtp://…` path can't go on the OS clipboard, and
+  the volume the snapshot's search covered rather than the pane's virtual id: an `mtp://…` path can't go on the OS clipboard, and
   `NSURL::fileURLWithPath` would take it for a relative path. `file-explorer/pane/DETAILS.md` § "Volume capabilities"
   carries the mechanism.
 - **F5 / F6** route through `openUnifiedTransferDialog`, which routes off the kind's `hasBackendListing` capability and
@@ -708,16 +720,15 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
   on the cursor fallback (it picks the dialog's title), and `sourceFolderPath` is the COMMON PARENT of the resolved
   paths: a result set is gathered from anywhere, and both the dialog's "from" line and the trash toast's volume lookup
   (`go-to-trash::goToTrashedItems`) need a real directory.
-- **Which volume the op runs against** comes from `file-explorer/pane/snapshot-source-volume.ts`, shared by the delete
-  and transfer openers. ❌ Never assume `root`: a search covers exactly one volume and any volume with a persisted
-  `index-{volume_id}.db` is searchable, including an SMB share and an MTP storage (`src-tauri/src/search/volumes.rs`).
-  `sourceVolumeId` picks the delete and copy/move dispatch paths (`file-operations/transfer/transfer-dispatch.ts`), and
-  `supportsTrash` decides whether the dialog offers the trash at all, so both are read off the resolved volume the way a
-  normal pane reads them off its own. Resolution is the frontend half of `transfer-entry::resolveSourceVolumeId`
-  (longest-prefix per path, favorites excluded, unanimity required, else `root`); it stays synchronous because these
-  paths came out of one volume's index, so the volume list settles it without a backend round-trip. `supportsTrash` is
-  optimistic on a miss, since a `false` would force the dialog into a PERMANENT delete and a resolution miss must never
-  do that.
+- **Which volume the op runs against** is the one the search covered, carried on the snapshot
+  (`SearchSnapshot.volumeId`); `file-explorer/pane/snapshot-source-volume.ts` reads that volume's trash affordance for
+  the delete opener. ❌ Never assume `root`, and ❌ never re-derive it from the rows' paths: a search covers exactly one
+  volume, and any volume with a persisted `index-{volume_id}.db` is searchable, an SMB share, an MTP storage, and a phone
+  over ADB included (`src-tauri/src/search/volumes.rs`), while a prefix match against the volume list answers `root` the
+  moment a phone is unplugged under the pane. `sourceVolumeId` picks the delete and copy/move dispatch paths
+  (`file-operations/transfer/transfer-dispatch.ts`), and `supportsTrash` decides whether the dialog offers the trash at
+  all. `supportsTrash` is optimistic when the volume isn't in the list, since a `false` would force the dialog into a
+  PERMANENT delete.
 - **No operation snapshot is taken**, because `entries-snapshot::fetchSelectedNames` returns early on a pane with no
   listing id. The name snapshot exists to feed listing-diff-driven selection adjustment, which doesn't run here; the
   path-based remap below does that job instead. Without the guard, `getFileAt('')` rejects with "Listing not found"
@@ -725,7 +736,9 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
   promise rejection.
 - **Drag-out** uses the `'paths'` drag context in `lib/file-explorer/drag/drag-drop.ts`: when `FullList` is rendered
   with `staticEntries` and the user drags a selection, the FE builds a paths array from `getEntryAt(idx)` and routes
-  through `start_drag_paths`.
+  through `start_drag_paths`. `SearchResultsView` hands `FullList` the snapshot's `volumeId`, so the drag records the
+  rows' real volume as its source: a phone's rows leave as a file promise rather than `file://` URLs nothing can open,
+  and an in-app drop trusts the recorded identity while that volume is registered.
 - **Post-move snapshot cleanup**: covered by the cross-snapshot purge above. After F6 or F8 from the snapshot pane, the
   rows the operation actually took disappear from every snapshot that referenced them; a skipped one stays.
 

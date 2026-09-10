@@ -38,6 +38,7 @@ function makeSnapshot(id: string, overrides: Partial<SearchSnapshot> = {}): Sear
     mode: 'filename',
     filters: {},
     scope: '',
+    volumeId: 'root',
     caseSensitive: false,
     excludeSystemDirs: true,
     entries: [makeEntry('a.txt'), makeEntry('b.txt')],

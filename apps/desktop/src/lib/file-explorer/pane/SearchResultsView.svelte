@@ -210,11 +210,14 @@
          `snapshot.entries` in the store, so every consumer that resolves the index the
          user sees against `snapshot.entries[i]` (F5/F6/F8, the clipboard, the context
          menu, the MCP mirror, the selection remap) follows without knowing a sort
-         happened. See `search/DETAILS.md` § "The snapshot pane's row order". -->
+         happened. See `search/DETAILS.md` § "The snapshot pane's row order".
+         `volumeId` is the volume the ROWS live on, never the pane's virtual one: a drag
+         records it as its source, so a phone's rows leave as a file promise rather than
+         `file://` URLs no app can open. -->
     <FullList
         bind:this={fullListRef}
         listingId=""
-        volumeId="search-results"
+        volumeId={snapshot.volumeId}
         totalCount={entries.length}
         includeHidden={true}
         {cursorIndex}

@@ -149,8 +149,9 @@ export function snapshotEntry(
   }
 }
 
-export function snapshot(entries: SearchSnapshot['entries']): SearchSnapshot {
-  return { entries } as unknown as SearchSnapshot
+/** A snapshot of `entries`, found by a search that covered `volumeId`. */
+export function snapshot(entries: SearchSnapshot['entries'], volumeId = 'root'): SearchSnapshot {
+  return { entries, volumeId } as unknown as SearchSnapshot
 }
 
 export function fileEntry(overrides: Partial<FileEntry> = {}): FileEntry {

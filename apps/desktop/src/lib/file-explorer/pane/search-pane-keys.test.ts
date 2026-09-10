@@ -20,6 +20,9 @@ vi.mock('$lib/tauri-commands', () => ({ openInEditor: openInEditorSpy }))
 
 import { createSearchPaneKeys, type SearchPaneKeysDeps } from './search-pane-keys'
 
+/** The volume the snapshot's search covered: a phone, so `root` would be the wrong answer. */
+const PHONE_VOLUME_ID = 'adb-r58m-1a2b3c'
+
 function setup(over: Partial<SearchPaneKeysDeps> = {}) {
   const spies = {
     setCursorIndex: vi.fn(),
@@ -33,6 +36,7 @@ function setup(over: Partial<SearchPaneKeysDeps> = {}) {
     getSearchResultsCount: () => 10,
     getVisibleItemsCount: () => 20,
     getSnapshotEntryAt: spies.getSnapshotEntryAt,
+    getSnapshotVolumeId: () => PHONE_VOLUME_ID,
     setCursorIndex: spies.setCursorIndex,
     extendSelection: spies.extendSelection,
     toggleSelectionAt: spies.toggleSelectionAt,
@@ -76,11 +80,14 @@ describe('createSearchPaneKeys', () => {
     expect(spies.openCursorItem).toHaveBeenCalled()
   })
 
-  it('view-file opens the viewer for a file, skips a directory', () => {
+  it('view-file opens the viewer for a file on the volume the search covered, skips a directory', () => {
     computeSpy.mockReturnValue({ kind: 'view-file' })
     const { keys } = setup()
     keys.handleSearchResultsKeyDown(fakeEvent().e)
-    expect(openFileViewerSpy).toHaveBeenCalledWith('/f.txt')
+    // The snapshot pane's own volume is the virtual `search-results`, and `root` is
+    // only right for a boot-disk search: a phone's file opened against `root`
+    // answers "not found".
+    expect(openFileViewerSpy).toHaveBeenCalledWith('/f.txt', PHONE_VOLUME_ID)
 
     openFileViewerSpy.mockClear()
     const { keys: keys2 } = setup({ getSnapshotEntryAt: () => ({ path: '/dir', isDirectory: true }) })

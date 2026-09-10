@@ -72,6 +72,14 @@ export interface SearchSnapshot {
   filters: SearchSnapshotFilters
   /** Scope expression (comma-separated paths with `!` for exclusions). */
   scope: string
+  /**
+   * The ONE volume the search covered, as the backend routed it (`SearchResult.targetVolumeId`,
+   * or the live run's rows). Every row lives on it, so every action on a row dispatches
+   * against it: F3, F5/F6, F8, the clipboard gate, and a drag. ❌ Never re-derive it from a
+   * row's path: the pane's own volume is the virtual `search-results`, and a prefix match
+   * against the volume list falls back to `root` the moment a phone is unplugged.
+   */
+  volumeId: string
   caseSensitive: boolean
   excludeSystemDirs: boolean
   /** The result entries, capped at SNAPSHOT_ENTRIES_CAP. */

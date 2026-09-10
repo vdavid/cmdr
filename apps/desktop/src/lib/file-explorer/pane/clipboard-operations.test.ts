@@ -15,6 +15,7 @@ const {
   resolvePathVolumeSpy,
   addToastSpy,
   resolveSnapshotPathsSpy,
+  getSnapshotSpy,
   getCommonParentPathSpy,
   pasteClipboardContentAsFileSpy,
   logErrorSpy,
@@ -28,6 +29,7 @@ const {
   resolvePathVolumeSpy: vi.fn<(path: string) => Promise<{ volume: { id: string } | null }>>(),
   addToastSpy: vi.fn<(content: ToastContent, options?: ToastOptions) => string>(),
   resolveSnapshotPathsSpy: vi.fn<() => string[]>(),
+  getSnapshotSpy: vi.fn<(id: string) => { volumeId: string } | undefined>(),
   getCommonParentPathSpy: vi.fn<() => string>(),
   pasteClipboardContentAsFileSpy: vi.fn<(deps: { onNothingCreated: () => void }) => Promise<void>>(),
   logErrorSpy: vi.fn(),
@@ -57,6 +59,8 @@ vi.mock('./paste-clipboard-as-file', () => ({ pasteClipboardContentAsFile: paste
 
 vi.mock('$lib/search/snapshot-store.svelte', () => ({
   resolveSnapshotPaths: resolveSnapshotPathsSpy,
+  // The volume the snapshot's search covered, which the clipboard gate classifies.
+  getSnapshot: getSnapshotSpy,
   // Pure namespace arithmetic with no store state behind it, so the mock keeps
   // the real shape rather than a spy.
   snapshotIdFromPanePath: (path: string) =>
@@ -159,6 +163,8 @@ beforeEach(() => {
   // volume" (`tauri-commands/storage.ts`), so an unplaceable path is the default
   // here too: the paste resolves to `root`, the honest unknown.
   resolvePathVolumeSpy.mockResolvedValue({ volume: null })
+  // A snapshot of a boot-disk search unless a test says otherwise.
+  getSnapshotSpy.mockReturnValue({ volumeId: 'root' })
 })
 
 describe('copyToClipboard', () => {
@@ -190,8 +196,9 @@ describe('copyToClipboard', () => {
     // A search covers any volume with a persisted index, MTP storages included,
     // so an `mtp://…` row path can reach `NSURL::fileURLWithPath` and come back
     // mangled. The snapshot pane's own id is virtual, so the kind has to come
-    // from where the rows really live.
+    // from the volume the snapshot's search covered.
     resolveSnapshotPathsSpy.mockReturnValue(['mtp://0-5/65537/DCIM/a.jpg'])
+    getSnapshotSpy.mockReturnValue({ volumeId: 'mtp-0-5:65537' })
     const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
     const access = buildAccess({
       paneRef,
@@ -208,6 +215,7 @@ describe('copyToClipboard', () => {
 
   it('copies a snapshot whose rows sit on an ordinary volume, so the refusal stays narrow', async () => {
     resolveSnapshotPathsSpy.mockReturnValue(['/Volumes/Stick/a.txt'])
+    getSnapshotSpy.mockReturnValue({ volumeId: 'stick' })
     copyPathsToClipboardSpy.mockResolvedValue(1)
     const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
     const access = buildAccess({
@@ -223,10 +231,9 @@ describe('copyToClipboard', () => {
 
   it('refuses a snapshot copy of a device row after the device is unplugged, when no volume can place it', async () => {
     // The device went away under an open snapshot pane, so the volume list no
-    // longer holds it and `resolveSnapshotSourceVolume` answers the `root`
-    // fallback — a kind that copies. The row path is still `mtp://…`, which
-    // `NSURL::fileURLWithPath` reads as RELATIVE, so the scheme itself has to
-    // refuse, ahead of any volume lookup.
+    // longer holds it and nothing can classify its volume. The row path is still
+    // `mtp://…`, which `NSURL::fileURLWithPath` reads as RELATIVE, so the scheme
+    // itself has to refuse, ahead of any volume lookup.
     resolveSnapshotPathsSpy.mockReturnValue(['mtp://0-5/65537/DCIM/a.jpg'])
     const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
     const access = buildAccess({ paneRef, volumeId: 'search-results', volumes: [] })

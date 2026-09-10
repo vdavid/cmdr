@@ -43,6 +43,15 @@ export interface SearchExtrasState {
   getCoverageNote(): CoverageNote | null
   setCoverageNote(value: CoverageNote | null): void
 
+  /**
+   * The volume the results on screen live on, as the backend routed the run that
+   * produced them: `SearchResult.targetVolumeId` for the index-only answer, the batch's
+   * own `targetVolumeId` for a live run. `null` until a run has answered with rows. A
+   * promoted snapshot takes it, so every action on a row dispatches against it.
+   */
+  getResultsVolumeId(): string | null
+  setResultsVolumeId(value: string | null): void
+
   getLastAiLabel(): string | null
   getLastAiPattern(): string | null
   getLastAiPatternKind(): 'glob' | 'regex' | null
@@ -82,6 +91,7 @@ export function createSearchExtrasState(): SearchExtrasState {
   let pendingVolumeId = $state<string | null>(null)
   let isIndexAvailable = $state(true)
   let coverageNote = $state<CoverageNote | null>(null)
+  let resultsVolumeId = $state<string | null>(null)
   let lastAiLabel = $state<string | null>(null)
   let lastAiPattern = $state<string | null>(null)
   let lastAiPatternKind = $state<'glob' | 'regex' | null>(null)
@@ -119,6 +129,11 @@ export function createSearchExtrasState(): SearchExtrasState {
       coverageNote = v
     },
 
+    getResultsVolumeId: () => resultsVolumeId,
+    setResultsVolumeId: (v) => {
+      resultsVolumeId = v
+    },
+
     getLastAiLabel: () => lastAiLabel,
     getLastAiPattern: () => lastAiPattern,
     getLastAiPatternKind: () => lastAiPatternKind,
@@ -139,6 +154,8 @@ export function createSearchExtrasState(): SearchExtrasState {
       excludeSystemDirs = true
       countOnly = false
       coverageNote = null
+      // The results go with ⌘N (`clearCore`), so the volume they lived on goes too.
+      resultsVolumeId = null
       lastAiLabel = null
       lastAiPattern = null
       lastAiPatternKind = null

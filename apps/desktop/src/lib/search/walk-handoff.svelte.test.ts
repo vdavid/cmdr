@@ -93,6 +93,7 @@ function openSnapshot(id = 'sr-1'): void {
     mode: 'filename',
     filters: {},
     scope: '',
+    volumeId: 'root',
     caseSensitive: false,
     excludeSystemDirs: true,
     entries: [entry('first.pdf')],
@@ -143,6 +144,7 @@ describe('the running state', () => {
     await handOff()
     observed?.handlers.onProgress({
       phase: 'walking',
+      targetVolumeId: 'root',
       entries: [entry('second.pdf'), entry('third.pdf')],
       matchCount: 9,
       dirsFound: 40,
@@ -203,6 +205,7 @@ describe('the way it ends', () => {
     resetSnapshots()
     observed?.handlers.onProgress({
       phase: 'walking',
+      targetVolumeId: 'root',
       entries: [entry('orphan.pdf')],
       matchCount: 5,
       dirsFound: 20,
@@ -225,6 +228,7 @@ describe('handing the run back to a reopened dialog', () => {
     await handOff()
     observed?.handlers.onProgress({
       phase: 'walking',
+      targetVolumeId: 'root',
       entries: [entry('while-away.pdf')],
       matchCount: 9,
       dirsFound: 40,
@@ -249,6 +253,7 @@ describe('handing the run back to a reopened dialog', () => {
 
     observed?.handlers.onProgress({
       phase: 'walking',
+      targetVolumeId: 'root',
       entries: [entry('live.pdf')],
       matchCount: 4,
       dirsFound: 21,
@@ -264,6 +269,7 @@ describe('handing the run back to a reopened dialog', () => {
 
     observed?.handlers.onProgress({
       phase: 'walking',
+      targetVolumeId: 'root',
       entries: [entry('after.pdf')],
       matchCount: 5,
       dirsFound: 22,

@@ -1406,6 +1406,7 @@
         getSearchResultsCount: () => searchResultsCount,
         getVisibleItemsCount: () => fullListRef?.getVisibleItemsCount?.() ?? 20,
         getSnapshotEntryAt: (index: number) => searchSnapshot?.entries[index],
+        getSnapshotVolumeId: () => searchSnapshot?.volumeId,
         extendSelection: ({ fromIndex, toIndex, overflow }) =>
             { selection.handleShiftKeyboardNavigation(fromIndex, toIndex, overflow, false); },
         toggleSelectionAt: (index: number) => selection.toggleAt(index, false),

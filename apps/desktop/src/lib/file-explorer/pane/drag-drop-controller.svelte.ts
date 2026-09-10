@@ -538,9 +538,11 @@ export function createDragDropController(deps: DragDropControllerDeps) {
    * The recorded self-drag identity to consume, or undefined when there's none
    * to trust. We trust it only when its `sourceVolumeId` is a REGISTERED
    * backend-real volume: that's what makes the MTP self-drag correct (a real
-   * volume + volume-relative paths) while letting a search-results self-drag
-   * (virtual `'search-results'` id, real absolute paths spanning volumes) fall
-   * through to the resolver. A registry-membership check, not a string compare.
+   * volume + volume-relative paths). A search-results pane records the volume its
+   * rows live on (`SearchSnapshot.volumeId`), so its drag is trusted the same way
+   * while that volume is registered, and falls through to the resolver once it
+   * isn't (a phone unplugged under an open results pane). A registry-membership
+   * check, not a string compare.
    */
   function consumableSelfDragIdentity(): SelfDragIdentity | undefined {
     const identity = getSelfDragIdentity()

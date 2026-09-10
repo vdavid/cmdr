@@ -31,6 +31,12 @@ export interface SearchPaneKeysDeps {
   getVisibleItemsCount: () => number
   /** The snapshot entry at an index (for F3/F4 open), or undefined when out of range. */
   getSnapshotEntryAt: (index: number) => { path: string; isDirectory: boolean } | undefined
+  /**
+   * The volume the snapshot's search covered (`SearchSnapshot.volumeId`). F3 opens
+   * against it: the pane's own volume is the virtual `search-results`, and a phone's
+   * or share's file opened against `root` answers "not found".
+   */
+  getSnapshotVolumeId: () => string | undefined
   /** Extend selection across a keyboard jump (toggle-and-fill), snapshot-pane semantics. */
   extendSelection: (args: SearchPaneExtendSelectionArgs) => void
   /** Toggle selection at an index, snapshot-pane semantics. */
@@ -50,7 +56,8 @@ export function createSearchPaneKeys(deps: SearchPaneKeysDeps): SearchPaneKeys {
     const entry = deps.getSnapshotEntryAt(deps.getCursorIndex())
     if (!entry || entry.isDirectory) return
     if (kind === 'viewer') {
-      void openFileViewer(entry.path)
+      const volumeId = deps.getSnapshotVolumeId()
+      if (volumeId !== undefined) void openFileViewer(entry.path, volumeId)
     } else {
       void openInEditor(entry.path)
     }
