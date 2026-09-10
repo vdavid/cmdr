@@ -1,14 +1,23 @@
-//! Calling an ADB connect off.
+//! Calling an ADB connect off, applying the settings live, and a pane listing a
+//! dialed phone through the real listing pipeline.
 //!
-//! The dial runs against a listener that accepts and never answers, so the
+//! The cancel cell dials a listener that accepts and never answers, so the
 //! attempt is provably still in flight when the cancel lands: a fake that
 //! answers would race the cancel and the cell would pass for the wrong reason.
 
+use std::path::Path;
+
 use tokio::net::TcpListener;
+use tokio_util::sync::CancellationToken;
 
 use cmdr_adb::AdbEndpoint;
 
 use super::*;
+use crate::file_system::listing::caching_test_support::{TestListingGuard, unique_test_id};
+use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+use crate::file_system::listing::streaming::{
+    CollectorListingEventSink, ListingEventSink, StreamingListingState, read_directory_with_progress,
+};
 
 /// An endpoint whose server accepts connections and never says anything, so a
 /// dial against it hangs until something calls it off. `at_without_adb` because
@@ -90,6 +99,60 @@ async fn turning_adb_off_stops_the_tracker_and_empties_the_device_list() {
     .await;
 
     apply_settings_at(fake.endpoint(), false, None).await;
+}
+
+/// ❗ A pane holds a phone as `adb://<serial>/sdcard`, and
+/// `read_directory_with_progress` hands that path to the volume untouched. So
+/// the volume has to read its own prefix, and hand entries back in the same
+/// spelling, or opening a subfolder sends a bare `/sdcard/x` to path resolution,
+/// which lands on the Mac's boot disk.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_pane_on_an_adb_path_lists_the_phone_through_the_listing_pipeline() {
+    const SERIAL: &str = "R58M-Listing-Cell";
+    let mut tree = cmdr_adb::testing::FakeTree::new();
+    tree.add_file("/sdcard/photo.jpg", b"jpeg").add_dir("/sdcard/DCIM");
+    let fake = cmdr_adb::testing::FakeAdbServer::start(tree).await;
+    fake.push_devices(vec![cmdr_adb::AdbDevice {
+        serial: SERIAL.to_string(),
+        ..cmdr_adb::testing::fake_device()
+    }]);
+    let volume_id = connect_device_at(AdbConnectionParams::at(SERIAL, fake.endpoint()), "adb-listing-cell")
+        .await
+        .expect("the fake phone dials");
+
+    let listing = TestListingGuard::adopt(unique_test_id("adb-pane-listing"));
+    let sink = Arc::new(CollectorListingEventSink::new());
+    let events: Arc<dyn ListingEventSink> = Arc::clone(&sink) as Arc<dyn ListingEventSink>;
+    let state = Arc::new(StreamingListingState {
+        cancel: CancellationToken::new(),
+    });
+    let pane_path = format!("adb://{SERIAL}/sdcard");
+    let outcome = read_directory_with_progress(
+        &events,
+        listing.id(),
+        &state,
+        &volume_id,
+        Path::new(&pane_path),
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
+    assert!(outcome.is_ok(), "the listing pipeline reads the phone; got {outcome:?}");
+    assert!(sink.errors.lock().unwrap().is_empty(), "no listing error was emitted");
+
+    let mut paths: Vec<String> = listing.entries().into_iter().map(|e| e.path).collect();
+    paths.sort_unstable();
+    assert_eq!(
+        paths,
+        vec![format!("{pane_path}/DCIM"), format!("{pane_path}/photo.jpg")],
+        "entries carry the pane's own spelling, so opening one stays on the phone"
+    );
+
+    drop(listing);
+    get_volume_manager().unregister(&volume_id);
+    device_provider::forget_volume(SERIAL);
 }
 
 #[test]

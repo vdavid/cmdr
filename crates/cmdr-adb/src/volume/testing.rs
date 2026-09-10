@@ -9,10 +9,10 @@ use std::sync::atomic::{AtomicBool, AtomicU8};
 
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::listings::RecordingListings;
-use cmdr_fs::volume::{Retirement, adb_volume_id};
+use cmdr_fs::volume::{Retirement, adb_app_root, adb_volume_id};
 use tokio_util::sync::CancellationToken;
 
-use super::{AdbVolume, AdbVolumeInner, ConnectionState, connect_adb_volume};
+use super::{AdbVolume, AdbVolumeInner, ConnectionState, app_root_for, connect_adb_volume};
 use crate::features::DeviceFeatures;
 use crate::params::AdbConnectionParams;
 use crate::server::AdbEndpoint;
@@ -21,12 +21,21 @@ use crate::testing::FakeAdbServer;
 /// The serial every fixture device answers to: the fake server's own.
 pub const FIXTURE_SERIAL: &str = crate::testing::FAKE_SERIAL;
 
+/// The app path a pane holds for `device` on the fixture phone:
+/// `adb://<FIXTURE_SERIAL><device>`. Suites spell paths through this so they
+/// address the volume the way a pane does.
+pub fn fixture_path(device: &str) -> PathBuf {
+    PathBuf::from(format!("{}{device}", adb_app_root(FIXTURE_SERIAL)))
+}
+
 /// A volume with no server behind it, for the pure paths (path translation,
 /// capability answers). Every wire-touching call on it fails.
 pub fn detached_volume() -> AdbVolume {
+    let (root, paths) = app_root_for(FIXTURE_SERIAL);
     AdbVolume {
         name: "Fixture phone".to_string(),
-        root: PathBuf::from("/"),
+        root,
+        paths,
         inner: Arc::new(AdbVolumeInner {
             volume_id: adb_volume_id(FIXTURE_SERIAL),
             serial: FIXTURE_SERIAL.to_string(),

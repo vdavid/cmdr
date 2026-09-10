@@ -89,8 +89,8 @@ for good is unplugged, or revoked on the phone.
 `AdbDeviceProvider` answers from the cache, never the wire:
 
 - `id`: `"adb"`.
-- `entries()`: one entry per device that has a filesystem to offer, dialed or not: id `adb:<serial>`, path
-  `adb://<serial>`, `fs_type: "adb"`, name = `AdbDevice::display_name()` (the model, falling back to the serial),
+- `entries()`: one entry per device that has a filesystem to offer, dialed or not: id `adb_volume_id(serial)`, path
+  `adb_app_root(serial)` (`adb://<serial>`, the dialed volume's `root()`), `fs_type: "adb"`, name = `AdbDevice::display_name()` (the model, falling back to the serial),
   `mount_is_read_only: false`, `usb_speed: None`, and a `device_readiness` from `readiness_of`:
   - `device` → `ready`.
   - `unauthorized`, `authorizing`, `connecting` → `waiting_for_authorization`. All three end at the same place the
@@ -124,10 +124,13 @@ for good is unplugged, or revoked on the phone.
 
 ## Testing
 
-Suites here drive `cmdr_adb::testing::FakeAdbServer` (the crate's `testing` feature is on for the app's dev targets):
-the tracker's diff and inline retirement, the provider's listing answers, eject, `resolve_path_to_volume` on an
-`adb://` path, and the transfer engine through the registry. A cell asserting on the protocol belongs in the crate:
-`crates/cmdr-adb/DETAILS.md` § "Which side a test lives on".
+Suites here drive `cmdr_adb::testing::FakeAdbServer` (the crate's `testing` feature is on for the app's dev targets).
+`volume_wiring_test.rs` holds calling a dial off, the settings' live apply, the binary-path fallback, and a pane
+listing a dialed phone through `read_directory_with_progress` on an `adb://<serial>/sdcard` path (the cell that holds
+the prefixed spelling end to end); `device_provider.rs` holds the provider's row answers and `serial_of_path`. Not
+covered here yet: the tracker's diff and inline retirement, eject, `resolve_path_to_volume` dialing, and the transfer
+engine through the registry. A cell asserting on the protocol belongs in the crate: `crates/cmdr-adb/DETAILS.md` §
+"Which side a test lives on".
 
 ## Deliberate non-goals
 

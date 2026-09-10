@@ -15,8 +15,9 @@ commands. The wire and the `Volume` are `crates/cmdr-adb/`. As in `mtp/volume_wi
 
 ## Must-knows
 
-- **❗ Path scheme is `adb://<serial>[/device path]`; volume id `adb:<serial>`** (`cmdr_fs::volume::adb_volume_id`).
-  ❌ Never build or split either by hand: `device_path` / `serial_of_path` here, `adb-path-utils.ts` on the frontend.
+- **❗ Path scheme is `adb://<serial>[/device path]`, minted by `cmdr_fs::volume::adb_app_root` (the volume's `root()`
+  too); the id is `adb_volume_id`.** ❌ Never build or split either by hand: `device_path` / `serial_of_path` here,
+  `adb-path-utils.ts` on the frontend.
 - **❗ A device is listed before it's connected, and before it's authorized**, carrying a `device_readiness`; only
   `recovery` / `bootloader` / `sideload` / an unreadable state word are left out. ❌ Never dial from `entries()`: the
   listing runs on every `volumes-changed`.

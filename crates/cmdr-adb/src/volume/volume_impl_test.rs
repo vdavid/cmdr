@@ -10,7 +10,7 @@ use cmdr_fs::volume::host::events::{RecordingVolumeEvents, VolumeConnection};
 use cmdr_fs::volume::{LaneKey, SignInShape, Volume, WatchCoverage, adb_volume_id};
 use tokio_util::sync::CancellationToken;
 
-use super::testing::{FIXTURE_SERIAL, connect_fake, detached_volume};
+use super::testing::{FIXTURE_SERIAL, connect_fake, detached_volume, fixture_path};
 use super::{ConnectionState, connect_adb_volume};
 use crate::devices::{AdbDevice, AdbDeviceState};
 use crate::errors::AdbConnectError;
@@ -20,7 +20,11 @@ use crate::testing::{FakeAdbServer, FakeTree, fake_device};
 #[test]
 fn the_device_anchored_answers() {
     let volume = detached_volume();
-    assert_eq!(volume.root(), Path::new("/"));
+    assert_eq!(
+        volume.root(),
+        fixture_path(""),
+        "rooted at the device's app prefix, no trailing slash"
+    );
     assert_eq!(volume.volume_id(), adb_volume_id(FIXTURE_SERIAL));
     assert_eq!(volume.lane_key(), LaneKey::new(format!("adb:{FIXTURE_SERIAL}")));
     assert!(volume.rerooted(Path::new("/other")).is_none());
@@ -28,7 +32,10 @@ fn the_device_anchored_answers() {
     assert!(volume.is_writable());
     assert!(volume.supports_streaming());
     assert!(!volume.can_watch_listings());
-    assert_eq!(volume.listing_watch_coverage(Path::new("/sdcard")), WatchCoverage::None);
+    assert_eq!(
+        volume.listing_watch_coverage(&fixture_path("/sdcard")),
+        WatchCoverage::None
+    );
     assert!(!volume.supports_local_fs_access());
     assert!(!volume.paths_are_os_visible());
     assert!(!volume.operations_are_local());
@@ -138,7 +145,7 @@ async fn a_listing_maps_kinds_sizes_and_symlinked_folders() {
 
     let progress = std::sync::Mutex::new(Vec::new());
     let entries = volume
-        .list_directory(Path::new("/sdcard"), Some(&|p| progress.lock().unwrap().push(p)))
+        .list_directory(&fixture_path("/sdcard"), Some(&|p| progress.lock().unwrap().push(p)))
         .await
         .expect("list");
     let by_name = |name: &str| {
@@ -148,7 +155,11 @@ async fn a_listing_maps_kinds_sizes_and_symlinked_folders() {
             .unwrap_or_else(|| panic!("{name}"))
     };
     assert_eq!(by_name("a.txt").size, Some(5));
-    assert_eq!(by_name("a.txt").path, "/sdcard/a.txt");
+    assert_eq!(
+        Path::new(&by_name("a.txt").path),
+        fixture_path("/sdcard/a.txt"),
+        "an entry carries the pane's spelling"
+    );
     assert!(by_name("DCIM").is_directory);
     assert!(by_name("shortcut").is_symlink, "a link stays a link");
     assert!(
@@ -165,11 +176,59 @@ async fn a_listing_maps_kinds_sizes_and_symlinked_folders() {
     );
 }
 
+/// ❗ **The pane addresses a phone as `adb://<serial>[/device path]`**, and a
+/// listing has to hand back entries in that same spelling: a pane opens a
+/// subfolder by passing its entry's path straight back, and a bare `/sdcard/x`
+/// resolves to the Mac's boot disk. The serial keeps its exact case (only the
+/// volume id's slug is folded).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_listing_through_the_app_prefix_reaches_the_device_and_hands_back_prefixed_paths() {
+    const SERIAL: &str = "46061FDAS000A4";
+    let mut tree = FakeTree::new();
+    tree.add_file("/sdcard/a.txt", b"hello").add_dir("/sdcard/DCIM");
+    let server = FakeAdbServer::start(tree).await;
+    server.push_devices(vec![AdbDevice {
+        serial: SERIAL.to_string(),
+        ..fake_device()
+    }]);
+    let (volume, _) = connect_fake(&server, SERIAL).await;
+    let prefix = format!("adb://{SERIAL}");
+
+    let root = volume
+        .list_directory(Path::new(&prefix), None)
+        .await
+        .expect("the device root lists through its app prefix");
+    let sdcard = root
+        .iter()
+        .find(|e| e.name == "sdcard")
+        .expect("/sdcard is on the device");
+    assert_eq!(sdcard.path, format!("{prefix}/sdcard"));
+
+    let entries = volume
+        .list_directory(Path::new(&sdcard.path), None)
+        .await
+        .expect("a folder lists through the path its entry carried");
+    let mut paths: Vec<&str> = entries.iter().map(|e| e.path.as_str()).collect();
+    paths.sort_unstable();
+    assert_eq!(
+        paths,
+        vec![format!("{prefix}/sdcard/DCIM"), format!("{prefix}/sdcard/a.txt")]
+    );
+
+    let file = volume
+        .get_metadata(Path::new(&format!("{prefix}/sdcard/a.txt")))
+        .await
+        .expect("a prefixed file stats");
+    assert_eq!(file.path, format!("{prefix}/sdcard/a.txt"));
+    assert_eq!(file.size, Some(5));
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_listing_of_a_missing_directory_carries_the_path() {
     let server = FakeAdbServer::start(FakeTree::new()).await;
     let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
-    let outcome = volume.list_directory(Path::new("/nowhere"), None).await;
+    // Prefixed, so the refusal is the device's `ENOENT` and not the translation's.
+    let outcome = volume.list_directory(&fixture_path("/nowhere"), None).await;
     assert!(
         matches!(outcome, Err(cmdr_fs::volume::VolumeError::NotFound(ref p)) if p == "/nowhere"),
         "{outcome:?}"
@@ -229,20 +288,23 @@ async fn every_write_patches_the_pane_once() {
     let (volume, listings) = connect_fake(&server, FIXTURE_SERIAL).await;
 
     volume
-        .create_file(Path::new("/sdcard/a.txt"), b"abc")
+        .create_file(&fixture_path("/sdcard/a.txt"), b"abc")
         .await
         .expect("create");
     assert_eq!(listings.change_count(), 1);
-    volume.create_directory(Path::new("/sdcard/dir")).await.expect("mkdir");
+    volume
+        .create_directory(&fixture_path("/sdcard/dir"))
+        .await
+        .expect("mkdir");
     assert_eq!(listings.change_count(), 2);
     volume
-        .rename(Path::new("/sdcard/a.txt"), Path::new("/sdcard/b.txt"), false)
+        .rename(&fixture_path("/sdcard/a.txt"), &fixture_path("/sdcard/b.txt"), false)
         .await
         .expect("rename");
     assert_eq!(listings.change_count(), 3);
-    volume.delete(Path::new("/sdcard/b.txt")).await.expect("delete");
+    volume.delete(&fixture_path("/sdcard/b.txt")).await.expect("delete");
     assert_eq!(listings.change_count(), 4);
     // A scan is a read and reports nothing.
-    volume.scan_for_copy(Path::new("/sdcard")).await.expect("scan");
+    volume.scan_for_copy(&fixture_path("/sdcard")).await.expect("scan");
     assert_eq!(listings.change_count(), 4);
 }

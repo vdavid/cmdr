@@ -1,8 +1,8 @@
 # `cmdr-adb`
 
-Everything Cmdr says to an Android device over ADB: one `Volume` per attached device, rooted at the device's real `/`,
-spoken to the ADB **server** on loopback (never USB itself). The device-side twin of `cmdr-sftp`. No `tauri`, no
-user-facing words.
+Everything Cmdr says to an Android device over ADB: one `Volume` per attached device, rooted at `adb://<serial>`, spoken
+to the ADB **server** on loopback (never USB itself). The device-side twin of `cmdr-sftp`. No `tauri`, no user-facing
+words.
 
 ## Module map
 
@@ -26,8 +26,8 @@ user-facing words.
   says "no"; the sync service says why. `DETAILS.md` § "The error policy".
 - **❗ `NotFound` / `PermissionDenied` carry the PATH**, ❌ never the device's wording: the frontend renders it as the
   missing file's name. `errors::volume_error_from_errno` takes the path for that reason.
-- **❌ Never anchor an out-of-root path; refuse it.** `root_anchored` is idempotent; a pane's `adb://<serial>/sdcard`
-  and a dest box's `/sdcard` are the same file.
+- **❗ Paths are `adb://<serial>/…` both ways; `volume/paths.rs` is the ONLY translation.** ❌ A bare `/sdcard` or a
+  `..` above `/` is refused, never anchored.
 - **❌ Never collect a file into a `Vec<u8>`.** `RECV` and `SEND` are one socket per file, chunk by chunk.
 - **❗ Every write lands under a staging name (`<name>.cmdr-tmp-<pid>-<n>`) and is `mv -f`ed into place.** `SEND`
   truncates on open, so a direct write is a torn file the moment the cable pulls.

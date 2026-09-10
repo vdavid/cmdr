@@ -298,6 +298,22 @@ pub fn adb_volume_id(serial: &str) -> String {
     derived_id("adb", serial, &[serial])
 }
 
+/// The `adb://<serial>` prefix every app path on an ADB volume carries, and the
+/// volume's root.
+///
+/// Minted here, beside [`adb_volume_id`], for the reason [`sftp_app_root`] is:
+/// the crate, the device provider's row, and a restored tab all spell it from
+/// one function. The device's own tree hangs under it
+/// (`adb://R58M1/sdcard/DCIM`), and `cmdr_fs::volume::remote_paths` is the
+/// translation.
+///
+/// ❗ The serial goes in VERBATIM, case and all. The id's slug is folded for
+/// readability, but the id's digest and the ADB server both key on the exact
+/// serial, so a folded prefix would name a device the server doesn't list.
+pub fn adb_app_root(serial: &str) -> String {
+    format!("adb://{serial}")
+}
+
 /// Whether `id` names an Android device reached over ADB.
 ///
 /// The Rust twin of `isAdbVolumeId` in `adb-path-utils.ts`, and the same test:
@@ -633,6 +649,15 @@ mod id_tests {
         assert!(!is_adb_volume_id(&mtp_device_id("39041FDJH00A0K")));
         assert!(!is_adb_volume_id(&path_volume_id("/Volumes/Backup")));
         assert!(!is_adb_volume_id(DEFAULT_VOLUME_ID));
+    }
+
+    #[test]
+    fn an_adb_prefix_keeps_the_serial_exactly_as_the_server_names_it() {
+        // The ADB server keys on the exact serial, so a folded prefix would dial a
+        // device nobody listed. The id folds its slug; the prefix never does.
+        assert_eq!(adb_app_root("46061FDAS000A4"), "adb://46061FDAS000A4");
+        assert_eq!(adb_app_root("192.168.1.5:5555"), "adb://192.168.1.5:5555");
+        assert_ne!(adb_app_root("R58M1"), adb_app_root("r58m1"));
     }
 
     #[test]

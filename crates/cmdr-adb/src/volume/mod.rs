@@ -3,9 +3,9 @@
 //!
 //! There is no OS mount under this and never will be: every listing, read, and
 //! write rides a socket to the ADB server, which relays it to the device's
-//! `adbd`. The volume is rooted at the device's own `/`, so the paths it hands
-//! out ARE device paths and nothing has to be translated between two spellings
-//! of the same tree.
+//! `adbd`. The volume is rooted at `adb://<serial>`, with the device's whole
+//! tree under it, and `paths.rs` is the one translation between that spelling
+//! and the device's own.
 //!
 //! Nothing here names the application. What the backend needs from it arrives
 //! through the [`VolumeHost`] seams handed to [`connect_adb_volume`].
@@ -32,7 +32,8 @@ use std::time::Duration;
 
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::settings::BackendName;
-use cmdr_fs::volume::{Retirement, VolumeError, adb_volume_id};
+use cmdr_fs::volume::remote_paths::RemoteRoot;
+use cmdr_fs::volume::{Retirement, VolumeError, adb_app_root, adb_volume_id};
 use tokio_util::sync::CancellationToken;
 
 use crate::devices::{AdbDeviceState, list_devices};
@@ -71,9 +72,23 @@ const CONNECT_BUDGET: Duration = Duration::from_secs(10);
 pub struct AdbVolume {
     /// Display name: the device's model as `list_devices` reported it.
     name: String,
-    /// Always the device's `/`. A plain field so `root()` stays a borrow.
+    /// `adb://<serial>`, from `adb_app_root`: what the app addresses the device's
+    /// `/` by. A plain field so `root()` stays a borrow, and spelled without a
+    /// trailing slash, the way the device provider's row spells it.
     root: PathBuf,
+    /// The translation between app paths and device paths (`paths.rs`).
+    paths: RemoteRoot,
     inner: Arc<AdbVolumeInner>,
+}
+
+/// The root and the translation for the device named `serial`, both from its
+/// one minted prefix, so they can't disagree.
+fn app_root_for(serial: &str) -> (PathBuf, RemoteRoot) {
+    let prefix = adb_app_root(serial);
+    (
+        PathBuf::from(&prefix),
+        RemoteRoot::new(prefix, std::path::Path::new("/")),
+    )
 }
 
 /// The device-scoped half: what every operation on this volume shares.
@@ -244,9 +259,11 @@ pub async fn connect_adb_volume(
 
     // PII-free: an ADB volume came up. ❌ No serial, model, or path crosses.
     inner.host.analytics().record("adb_connected", &[]);
+    let (root, paths) = app_root_for(&params.serial);
     Ok(AdbVolume {
         name,
-        root: PathBuf::from("/"),
+        root,
+        paths,
         inner,
     })
 }

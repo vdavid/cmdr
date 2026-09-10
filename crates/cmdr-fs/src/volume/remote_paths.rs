@@ -13,7 +13,7 @@
 //!
 //! So a remote volume is rooted at `<prefix><remote root>`, where the prefix is
 //! minted beside the volume id in [`super::ids`] (`sftp_app_root`,
-//! `webdav_app_root`) and the tree under it is the server's own. [`RemoteRoot`]
+//! `webdav_app_root`, `adb_app_root`) and the tree under it is the server's own. [`RemoteRoot`]
 //! holds both and is the ONLY translation: `to_remote_path` going down,
 //! `to_app_path` coming back.
 //!
@@ -35,7 +35,7 @@ use std::path::{Component, Path, PathBuf};
 /// per call beyond the answer itself.
 pub struct RemoteRoot {
     /// `sftp://<user>@<host>:<port>`: what every app path on this volume starts
-    /// with. From [`super::ids::sftp_app_root`] or its WebDAV twin, ❌ never
+    /// with. From [`super::ids::sftp_app_root`] or one of its twins, ❌ never
     /// hand-built, so a path and the id it resolves to can't disagree.
     prefix: String,
     /// The same, as a `Path`, so the match is by whole COMPONENTS. A string

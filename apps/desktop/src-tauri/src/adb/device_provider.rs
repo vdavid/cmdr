@@ -71,9 +71,10 @@ pub(crate) fn apply_device_list(devices: Vec<AdbDevice>) {
     notify_devices_changed("adb");
 }
 
-/// The `adb://<serial>` root a pane navigates to.
+/// The `adb://<serial>` root a pane navigates to: the dialed volume's own
+/// `root()`, minted in one place so the row and the volume can't disagree.
 pub(crate) fn device_path(serial: &str) -> String {
-    format!("adb://{serial}")
+    cmdr_fs::volume::adb_app_root(serial)
 }
 
 /// The serial an `adb://<serial>[/…]` path names.

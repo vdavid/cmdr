@@ -57,7 +57,9 @@ impl AdbVolume {
         }
 
         let mut entries: Vec<FileEntry> = Vec::new();
-        let mut symlinks: Vec<usize> = Vec::new();
+        // Each link's index and DEVICE path: an entry carries the app path, and
+        // `follow` asks the device, which only knows its own spelling.
+        let mut symlinks: Vec<(usize, String)> = Vec::new();
         let mut tally = ListingProgress::default();
         let mut cancelled = false;
         let outcome = session
@@ -67,9 +69,9 @@ impl AdbVolume {
                     return;
                 }
                 let child = join_device_path(&device, &entry.name);
-                let built = stat_to_file_entry(&entry.name, &child, &entry.stat);
+                let built = stat_to_file_entry(&entry.name, &self.to_app_path(&child).to_string_lossy(), &entry.stat);
                 if built.is_symlink {
-                    symlinks.push(entries.len());
+                    symlinks.push((entries.len(), child));
                 }
                 if built.is_directory {
                     tally.dirs += 1;
@@ -96,8 +98,8 @@ impl AdbVolume {
 
         // A link to a folder must navigate like one. One `stat` per symlink,
         // on the same socket, ❗ never per entry: a listing is mostly files.
-        for index in symlinks {
-            if let Some(target) = self.follow(&mut session, &entries[index].path.clone()).await {
+        for (index, child) in symlinks {
+            if let Some(target) = self.follow(&mut session, &child).await {
                 let entry = std::mem::replace(
                     &mut entries[index],
                     FileEntry::new(String::new(), String::new(), false, false),
@@ -134,7 +136,7 @@ impl AdbVolume {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| self.name.clone());
-        let mut entry = stat_to_file_entry(&name, &device, &stat);
+        let mut entry = stat_to_file_entry(&name, &self.to_app_path(&device).to_string_lossy(), &stat);
         if entry.is_symlink
             && let Some(target) = self.follow(&mut session, &device).await
         {
@@ -157,7 +159,7 @@ impl AdbVolume {
     /// shell (`readlink -f`, in every Android `toybox`) and then stat'ed on the
     /// same sync socket. A `Symlink` answer again means `readlink` couldn't
     /// resolve a chain, which is left as a plain link rather than walked.
-    async fn follow(&self, session: &mut SyncSession, device: &str) -> Option<SyncStat> {
+    pub(super) async fn follow(&self, session: &mut SyncSession, device: &str) -> Option<SyncStat> {
         let outcome = crate::shell::run(&self.inner.endpoint, &self.inner.serial, &["readlink", "-f", device])
             .await
             .ok()?;

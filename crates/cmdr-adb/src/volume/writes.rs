@@ -202,22 +202,26 @@ impl AdbVolume {
 
     /// What the sync service says is at `device`. A link is followed, so a
     /// link to a folder reads as a folder.
+    ///
+    /// ❗ Takes and follows the DEVICE path on its own socket, ❌ never through
+    /// `get_metadata_impl`: that one takes an app path, and a bare device path
+    /// is refused there, so a link to a folder would read as a file.
     pub(super) async fn probe(&self, device: &str) -> WhatIsThere {
         let Ok(mut session) = self.open_sync(device).await else {
             return WhatIsThere::Nothing;
         };
-        let stat = session.stat(device).await;
-        session.quit().await;
-        match stat {
+        let what = match session.stat(device).await {
             Ok(stat) if stat.exists() => match stat.kind() {
                 SyncEntryKind::Directory => WhatIsThere::Directory,
-                SyncEntryKind::Symlink => match self.get_metadata_impl(Path::new(device)).await {
-                    Ok(entry) if entry.is_directory => WhatIsThere::Directory,
+                SyncEntryKind::Symlink => match self.follow(&mut session, device).await {
+                    Some(target) if target.kind() == SyncEntryKind::Directory => WhatIsThere::Directory,
                     _ => WhatIsThere::NotADirectory,
                 },
                 _ => WhatIsThere::NotADirectory,
             },
             _ => WhatIsThere::Nothing,
-        }
+        };
+        session.quit().await;
+        what
     }
 }

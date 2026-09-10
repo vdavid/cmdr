@@ -87,10 +87,22 @@ for anything else (strictly one node, so `delete` never recurses), `mv -f`, `cp 
 
 The volume is device-anchored, the same shape MTP has, and every answer below follows from that.
 
-- **Identity**: `volume_id` = `cmdr_fs::volume::adb_volume_id(serial)` (`adb:<serial>`); the root is the device's `/`.
-  Paths relative to the root ARE device paths, so nothing translates between two spellings of one tree. `root_anchored`
-  is idempotent: a pane's `adb://<serial>/sdcard/DCIM` and a dest box's `/sdcard/DCIM` land on the same file. ❌ Never
-  anchor an out-of-root path; refuse it.
+- **Identity**: `volume_id` = `cmdr_fs::volume::adb_volume_id(serial)` (`adb-<slug>-<digest>`). The root is
+  `adb_app_root(serial)`, `adb://<serial>` with the serial verbatim (the server keys on its exact case, while the id's
+  slug is folded), spelled without a trailing slash because the device provider's row and the frontend's
+  `constructAdbPath` spell it that way. The device's whole `/` hangs under it: `adb://R58M1/sdcard/DCIM` is
+  `/sdcard/DCIM`.
+- **Paths**: `volume/paths.rs` is the one translation, through `cmdr_fs::volume::remote_paths::RemoteRoot` (shared with
+  SFTP and WebDAV): `to_device_path` going down, `to_app_path` coming back. Every `FileEntry.path` a listing or stat
+  hands out, and every listing-cache patch path, carries the prefix, because a pane passes an entry's path straight back
+  and a scheme-free `/sdcard/x` resolves to the Mac's boot disk. For the same reason a bare device-absolute path is
+  refused rather than anchored: the app sites that take a volume-relative path (a transfer dialog's `/sdcard`) run it
+  through `root_anchored` against `Volume::root` first, which lands it on `adb://<serial>/sdcard`, idempotently for a
+  pane's already-prefixed path. ❌ Never anchor an out-of-root path; refuse it. `RemoteRoot` absorbs a `..` at `/`,
+  which is right for a server rooted deeper but silent on a volume whose root IS `/`, so `paths.rs` counts the climb
+  first and refuses `adb://<serial>/sdcard/../../etc`. Internally the device path is what the wire, the shell, and an
+  error from the device carry; ❗ `probe` and `follow` take it directly, since handing one back through
+  `get_metadata_impl` would be a bare path that the translation refuses.
 - **`rerooted` → `None`.** One volume per device; the pane's path is inside it. A device has no second root to offer.
 - **`lane_key` → the serial.** Two panes on one phone contend on one `adbd`, so they share a lane and the operation
   manager serializes their writes.

@@ -3,7 +3,6 @@
 //!
 //! No `#[ignore]`: the fake is in-process, so these run in every lane.
 
-use std::path::Path;
 use std::sync::Arc;
 
 use cmdr_fs::staging::is_staging_temp_name;
@@ -11,7 +10,7 @@ use cmdr_fs::volume::conformance;
 use cmdr_fs::volume::{DirectoryCreation, Volume, VolumeError};
 
 use super::AdbVolume;
-use super::testing::{FIXTURE_SERIAL, connect_fake};
+use super::testing::{FIXTURE_SERIAL, connect_fake, fixture_path};
 use crate::testing::{FakeAdbServer, FakeTree};
 
 /// A phone with the usual `/sdcard` and a handful of files in it.
@@ -40,8 +39,8 @@ async fn a_forceless_rename_refuses_an_existing_destination() {
     let (_server, volume) = seeded().await;
     conformance::assert_rename_refuses_an_existing_destination(
         volume.as_ref(),
-        Path::new("/sdcard/source.txt"),
-        Path::new("/sdcard/target.txt"),
+        &fixture_path("/sdcard/source.txt"),
+        &fixture_path("/sdcard/target.txt"),
     )
     .await;
 }
@@ -51,7 +50,8 @@ async fn create_file_refuses_to_clobber() {
     // `SEND` truncates unconditionally, so the refusal is the pre-flight
     // stat's here too.
     let (_server, volume) = seeded().await;
-    conformance::assert_create_file_refuses_to_clobber(volume.as_ref(), Path::new("/sdcard/notes.txt"), b"new").await;
+    conformance::assert_create_file_refuses_to_clobber(volume.as_ref(), &fixture_path("/sdcard/notes.txt"), b"new")
+        .await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -61,7 +61,7 @@ async fn create_directory_all_reports_an_existing_directory_honestly() {
     let (_server, volume) = seeded().await;
     conformance::assert_create_directory_all_reports_an_existing_dir_honestly(
         volume.as_ref(),
-        Path::new("/sdcard/album"),
+        &fixture_path("/sdcard/album"),
     )
     .await;
 }
@@ -69,14 +69,19 @@ async fn create_directory_all_reports_an_existing_directory_honestly() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_leaves_a_non_empty_directory_intact() {
     let (_server, volume) = seeded().await;
-    conformance::assert_delete_leaves_a_non_empty_dir_intact(volume.as_ref(), Path::new("/sdcard/album"), "keep.txt")
-        .await;
+    conformance::assert_delete_leaves_a_non_empty_dir_intact(
+        volume.as_ref(),
+        &fixture_path("/sdcard/album"),
+        "keep.txt",
+    )
+    .await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn writability_matches_the_mutations_offered() {
     let (_server, volume) = seeded().await;
-    conformance::assert_writability_matches_the_mutations_offered(volume.as_ref(), Path::new("/sdcard/scratch")).await;
+    conformance::assert_writability_matches_the_mutations_offered(volume.as_ref(), &fixture_path("/sdcard/scratch"))
+        .await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -84,7 +89,7 @@ async fn export_matches_the_bytes_offered() {
     let (_server, volume) = seeded().await;
     conformance::assert_export_matches_the_bytes_offered(
         volume.as_ref(),
-        Path::new("/sdcard/exported.txt"),
+        &fixture_path("/sdcard/exported.txt"),
         b"the bytes a copy would move",
     )
     .await;
@@ -93,7 +98,7 @@ async fn export_matches_the_bytes_offered() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn not_found_carries_the_path() {
     let (_server, volume) = seeded().await;
-    conformance::assert_not_found_carries_the_path(volume.as_ref(), Path::new("/sdcard/no-such-file.txt")).await;
+    conformance::assert_not_found_carries_the_path(volume.as_ref(), &fixture_path("/sdcard/no-such-file.txt")).await;
 }
 
 // ── This backend's own cells ─────────────────────────────────────────
@@ -101,7 +106,7 @@ async fn not_found_carries_the_path() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_path_escaping_the_root_is_refused_before_any_io() {
     let (server, volume) = seeded().await;
-    let outcome = volume.get_metadata(Path::new("/sdcard/../../etc/passwd")).await;
+    let outcome = volume.get_metadata(&fixture_path("/sdcard/../../etc/passwd")).await;
     assert!(matches!(outcome, Err(VolumeError::NotFound(_))), "{outcome:?}");
     // And nothing was created or asked for under a wrong name.
     assert!(server.tree().lock().unwrap().get("/etc/passwd").is_none());
@@ -115,7 +120,7 @@ async fn a_write_lands_through_a_staging_sibling_and_leaves_no_partial() {
     let seen = std::sync::Mutex::new(Vec::new());
     let written = volume
         .write_from_stream(
-            Path::new("/sdcard/big.bin"),
+            &fixture_path("/sdcard/big.bin"),
             payload.len() as u64,
             source,
             &|done, total| {
@@ -150,9 +155,12 @@ async fn a_cancelled_write_removes_its_partial() {
     let payload = vec![7u8; 100_000];
     let source = Box::new(super::streams::BytesReadStream::new(payload.clone()));
     let outcome = volume
-        .write_from_stream(Path::new("/sdcard/never.bin"), payload.len() as u64, source, &|_, _| {
-            std::ops::ControlFlow::Break(())
-        })
+        .write_from_stream(
+            &fixture_path("/sdcard/never.bin"),
+            payload.len() as u64,
+            source,
+            &|_, _| std::ops::ControlFlow::Break(()),
+        )
         .await;
     assert!(matches!(outcome, Err(VolumeError::Cancelled(_))), "{outcome:?}");
     let tree = server.tree();
@@ -172,16 +180,16 @@ async fn a_cancelled_write_removes_its_partial() {
 async fn mkdir_on_an_existing_directory_succeeds() {
     let (_server, volume) = seeded().await;
     volume
-        .create_directory(Path::new("/sdcard/album"))
+        .create_directory(&fixture_path("/sdcard/album"))
         .await
         .expect("mkdir -p over an existing directory is a success");
     assert!(!volume.create_directory_errors_on_existing_dir());
     let deep = volume
-        .create_directory_all(Path::new("/sdcard/a/b/c"))
+        .create_directory_all(&fixture_path("/sdcard/a/b/c"))
         .await
         .expect("a deep create must work");
     assert_eq!(deep, DirectoryCreation::Created);
-    assert!(volume.is_directory(Path::new("/sdcard/a/b/c")).await.unwrap());
+    assert!(volume.is_directory(&fixture_path("/sdcard/a/b/c")).await.unwrap());
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -195,7 +203,7 @@ async fn cancelling_a_read_mid_file_releases_the_socket_and_the_volume_keeps_wor
     let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
 
     let mut stream = volume
-        .open_read_stream(Path::new("/sdcard/big.bin"))
+        .open_read_stream(&fixture_path("/sdcard/big.bin"))
         .await
         .expect("open");
     assert_eq!(stream.total_size(), big.len() as u64);
@@ -206,12 +214,12 @@ async fn cancelling_a_read_mid_file_releases_the_socket_and_the_volume_keeps_wor
 
     // The volume is still perfectly usable afterwards.
     let entries = volume
-        .list_directory(Path::new("/sdcard"), None)
+        .list_directory(&fixture_path("/sdcard"), None)
         .await
         .expect("list after cancel");
     assert!(entries.iter().any(|e| e.name == "big.bin"));
     let mut resumed = volume
-        .open_read_stream_at_offset(Path::new("/sdcard/big.bin"), 100_000)
+        .open_read_stream_at_offset(&fixture_path("/sdcard/big.bin"), 100_000)
         .await
         .expect("open at offset");
     let mut tail = Vec::new();
@@ -230,7 +238,7 @@ async fn conflict_scan_reads_a_missing_destination_as_empty() {
     let (_server, volume) = seeded().await;
     conformance::assert_conflict_scan_reads_a_missing_destination_as_empty(
         volume.as_ref(),
-        Path::new("/sdcard/not-created-yet"),
+        &fixture_path("/sdcard/not-created-yet"),
     )
     .await;
 }
@@ -241,7 +249,7 @@ async fn a_batch_scan_stops_when_it_is_told_to() {
     // milliseconds each; a `/sdcard/DCIM` with thousands of photos is where
     // somebody presses Cancel.
     let (_server, volume) = seeded().await;
-    conformance::assert_batch_scan_stops_when_told(volume.as_ref(), Path::new("/sdcard")).await;
+    conformance::assert_batch_scan_stops_when_told(volume.as_ref(), &fixture_path("/sdcard")).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -249,5 +257,5 @@ async fn a_batch_scan_asks_its_boundary_inside_the_walk() {
     // This backend's scan is `scan_walk`'s, so the boundary is per entry. The
     // fixture holds four files, a subdirectory, and that subdirectory's child.
     let (_server, volume) = seeded().await;
-    conformance::assert_batch_scan_asks_inside_the_walk(volume.as_ref(), Path::new("/sdcard"), 6).await;
+    conformance::assert_batch_scan_asks_inside_the_walk(volume.as_ref(), &fixture_path("/sdcard"), 6).await;
 }
