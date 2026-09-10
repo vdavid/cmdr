@@ -62,6 +62,10 @@ pub(crate) use item_identity::is_the_same_item;
 pub(in crate::file_system::write_operations) use move_file::move_file_across_volumes;
 /// Pull a remote path down to a local scratch copy (remote zip edits).
 pub(in crate::file_system::write_operations) use strategy::pull_path_to_local;
+/// The refusal for a volume id the registry had nothing for, shared by the
+/// transfer routing and the volume delete so both name an unconnected phone or
+/// server the same way.
+pub(in crate::file_system::write_operations) use transfer_error::unregistered_volume_error;
 /// The one place a `VolumeError` becomes a typed `WriteOperationError`; the
 /// delete walker maps its own volume failures through it too.
 pub(in crate::file_system::write_operations) use transfer_error::{PathRole, map_volume_error};

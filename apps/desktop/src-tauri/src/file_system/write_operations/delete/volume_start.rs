@@ -15,6 +15,7 @@ use super::super::event_sinks::OperationEventSink;
 use super::super::manager::{self, OperationDescriptor};
 use super::super::source_binding::{ExpectedSources, retain_bound_sources_on};
 use super::super::state::{WriteOperationState, WriteSettledGuard};
+use super::super::transfer::volume::{PathRole, unregistered_volume_error};
 use super::super::types::{
     WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationStartResult, WriteOperationType,
 };
@@ -176,13 +177,13 @@ async fn run_volume_delete(
     expected_sources: Option<&ExpectedSources>,
 ) -> ExecutionStatus {
     let Some(volume) = get_volume_manager().get(volume_id) else {
+        let first_source = sources
+            .first()
+            .map_or_else(|| volume_id.to_string(), |p| p.display().to_string());
         events.emit_error(WriteErrorEvent::new(
             op_id.to_string(),
             WriteOperationType::Delete,
-            WriteOperationError::IoError {
-                path: volume_id.to_string(),
-                message: format!("Volume '{}' not found", volume_id),
-            },
+            unregistered_volume_error(volume_id, &first_source, PathRole::Source).await,
         ));
         return ExecutionStatus::Failed;
     };

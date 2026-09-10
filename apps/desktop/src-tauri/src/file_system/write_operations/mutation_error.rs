@@ -136,3 +136,19 @@ impl From<VolumeError> for MutationError {
         Self::Volume { error }
     }
 }
+
+/// The refusal for an instant mutation whose volume isn't registered. A listed
+/// phone or a saved server nothing has connected answers the volume's own
+/// `NotConnected`, which the frontend's volume factory already words; any other
+/// id is `VolumeGone` (an unmount race). `path` is what the mutation targeted.
+/// The classification: `crate::unregistered_volumes`.
+pub(crate) async fn unregistered_volume_refusal(volume_id: String, path: &std::path::Path) -> MutationError {
+    use crate::unregistered_volumes::{Unregistered, why_unregistered};
+
+    match why_unregistered(&volume_id).await {
+        Unregistered::NotConnected => MutationError::Volume {
+            error: VolumeError::NotConnected(path.display().to_string()),
+        },
+        Unregistered::Gone => MutationError::VolumeGone { volume_id },
+    }
+}

@@ -1101,6 +1101,22 @@
   "@errors.write.destinationNotFound.suggestion": {
     "sourceHash": "2e99059"
   },
+  "errors.write.notConnected.title": "Noch nicht verbunden",
+  "@errors.write.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.write.notConnected.message.source": "Cmdr hat sich noch nicht mit dem Telefon oder Server verbunden, auf dem diese Dateien liegen, daher hat sich nichts geändert.",
+  "@errors.write.notConnected.message.source": {
+    "sourceHash": "e6690da"
+  },
+  "errors.write.notConnected.message.destination": "Cmdr hat sich noch nicht mit dem Telefon oder Server am Ziel verbunden, daher hat sich nichts geändert. Deine Dateien sind unberührt.",
+  "@errors.write.notConnected.message.destination": {
+    "sourceHash": "5bbc6b9"
+  },
+  "errors.write.notConnected.suggestion": "Öffne es über die Volume-Auswahl, um die Verbindung herzustellen, und versuche es dann erneut. Entsperre ein Telefon und bestätige jede Abfrage, die es anzeigt.",
+  "@errors.write.notConnected.suggestion": {
+    "sourceHash": "222ba64"
+  },
   "errors.write.destinationExists.title": "Datei existiert bereits",
   "@errors.write.destinationExists.title": {
     "sourceHash": "ae71a9a"

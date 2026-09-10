@@ -1101,6 +1101,22 @@
   "@errors.write.destinationNotFound.suggestion": {
     "sourceHash": "2e99059"
   },
+  "errors.write.notConnected.title": "Chưa kết nối",
+  "@errors.write.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.write.notConnected.message.source": "Cmdr chưa kết nối với điện thoại hoặc máy chủ chứa các tệp này, nên chưa có gì thay đổi.",
+  "@errors.write.notConnected.message.source": {
+    "sourceHash": "e6690da"
+  },
+  "errors.write.notConnected.message.destination": "Cmdr chưa kết nối với điện thoại hoặc máy chủ đích, nên chưa có gì thay đổi. Các tệp của bạn vẫn nguyên vẹn.",
+  "@errors.write.notConnected.message.destination": {
+    "sourceHash": "5bbc6b9"
+  },
+  "errors.write.notConnected.suggestion": "Mở nó từ bộ chọn ổ đĩa để kết nối, rồi thử lại. Nếu là điện thoại, hãy mở khóa và chấp nhận mọi lời nhắc hiện ra.",
+  "@errors.write.notConnected.suggestion": {
+    "sourceHash": "222ba64"
+  },
   "errors.write.destinationExists.title": "Tệp đã tồn tại",
   "@errors.write.destinationExists.title": {
     "sourceHash": "ae71a9a"

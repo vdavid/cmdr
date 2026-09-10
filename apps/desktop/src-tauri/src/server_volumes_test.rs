@@ -179,6 +179,44 @@ async fn listing_a_saved_server_nobody_connected_says_it_is_not_connected() {
     );
 }
 
+/// ❗ A copy onto a SAVED server nobody connected is refused as not connected yet,
+/// ❌ never the untyped "Destination volume not found": a transfer doesn't dial,
+/// and the way through is opening the server, which that wording hides.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_onto_a_saved_server_nobody_connected_is_refused_as_not_connected() {
+    use crate::file_system::volume::LocalPosixVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
+    use crate::file_system::write_operations::CollectorEventSink;
+    use crate::file_system::{VolumeCopyConfig, WriteOperationError, start_volume_copy};
+    use crate::operation_log::types::Initiator;
+
+    let host = "198.51.100.50";
+    sftp_known_servers::remember(saved_sftp(host, true));
+    let dir = crate::test_support::TestDir::new("copy_onto_saved_server");
+    std::fs::write(dir.join("notes.txt"), b"notes").expect("seeding the local file");
+    let source_id = format!("saved-server-copy-source-{}", uuid::Uuid::new_v4());
+    get_volume_manager().register(&source_id, std::sync::Arc::new(LocalPosixVolume::new("Local", &*dir)));
+
+    let refused = start_volume_copy(
+        std::sync::Arc::new(CollectorEventSink::new()),
+        source_id.clone(),
+        vec![std::path::PathBuf::from("notes.txt")],
+        cmdr_fs::volume::sftp_volume_id(host, 2222, "ada"),
+        format!("sftp://ada@{host}:2222/srv/data/photos"),
+        VolumeCopyConfig::default(),
+        Initiator::User,
+        None,
+    )
+    .await
+    .expect_err("a copy onto a saved server nobody connected is refused");
+    get_volume_manager().unregister(&source_id);
+
+    assert!(
+        matches!(refused, WriteOperationError::DestinationNotConnected { .. }),
+        "the saved server isn't connected yet; got {refused:?}"
+    );
+}
+
 // ── The rows the switcher gets ───────────────────────────────────────
 
 /// ❗ **Every saved server gets a row, and the row carries its own pin.** The

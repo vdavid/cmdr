@@ -20,6 +20,7 @@ use tokio::time::Duration;
 use crate::commands::util::{Deadline, timeout_detached_typed, timeout_detached_within};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
+use crate::unregistered_volumes::{Unregistered, why_unregistered};
 
 /// Unified copy across volume types (local, MTP, extract out of a `.zip`).
 /// Same events as `copy_files`.
@@ -120,19 +121,13 @@ pub async fn scan_volume_for_copy(
 
     // Resolve both so an archive-inner source scans through its ArchiveVolume
     // (sizing an extract-out) and the dest routes consistently with the copy op.
-    let (source_volume, _) = resolve_source_volume(&source_volume_id, source_paths.first())
-        .await
-        .ok_or(VolumeScanError::SourceVolumeNotFound {
-            volume_id: source_volume_id,
-        })?;
+    let Some((source_volume, _)) = resolve_source_volume(&source_volume_id, source_paths.first()).await else {
+        return Err(VolumeScanError::source_missing(source_volume_id).await);
+    };
 
-    let dest_volume = get_volume_manager()
-        .resolve(&dest_volume_id, &dest_path)
-        .await
-        .volume
-        .ok_or(VolumeScanError::DestinationVolumeNotFound {
-            volume_id: dest_volume_id,
-        })?;
+    let Some(dest_volume) = get_volume_manager().resolve(&dest_volume_id, &dest_path).await.volume else {
+        return Err(VolumeScanError::destination_missing(dest_volume_id).await);
+    };
 
     let max_conflicts = max_conflicts.unwrap_or(100);
     // Same anchoring the copy op applies, so the scan sizes and counts conflicts
@@ -203,6 +198,18 @@ pub enum VolumeScanError {
         /// The id that no longer resolves.
         volume_id: String,
     },
+    /// The source is a listed phone or a saved server that nothing has
+    /// connected yet (`crate::unregistered_volumes`).
+    SourceVolumeNotConnected {
+        /// The id nothing has connected.
+        volume_id: String,
+    },
+    /// The destination is a listed phone or a saved server that nothing has
+    /// connected yet.
+    DestinationVolumeNotConnected {
+        /// The id nothing has connected.
+        volume_id: String,
+    },
     /// The volume refused, and said why in its own vocabulary.
     Volume {
         /// The backend's typed answer.
@@ -218,6 +225,25 @@ pub enum VolumeScanError {
     },
 }
 
+impl VolumeScanError {
+    /// The refusal for a source id the registry had nothing for: not connected
+    /// yet, or gone (`crate::unregistered_volumes`).
+    async fn source_missing(volume_id: String) -> Self {
+        match why_unregistered(&volume_id).await {
+            Unregistered::NotConnected => Self::SourceVolumeNotConnected { volume_id },
+            Unregistered::Gone => Self::SourceVolumeNotFound { volume_id },
+        }
+    }
+
+    /// The same, for the destination.
+    async fn destination_missing(volume_id: String) -> Self {
+        match why_unregistered(&volume_id).await {
+            Unregistered::NotConnected => Self::DestinationVolumeNotConnected { volume_id },
+            Unregistered::Gone => Self::DestinationVolumeNotFound { volume_id },
+        }
+    }
+}
+
 impl std::fmt::Display for VolumeScanError {
     /// ❗ For logs and debugging only.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -225,6 +251,10 @@ impl std::fmt::Display for VolumeScanError {
             Self::SourceVolumeNotFound { volume_id } => write!(f, "source volume not found: {volume_id}"),
             Self::DestinationVolumeNotFound { volume_id } => {
                 write!(f, "destination volume not found: {volume_id}")
+            }
+            Self::SourceVolumeNotConnected { volume_id } => write!(f, "source volume not connected yet: {volume_id}"),
+            Self::DestinationVolumeNotConnected { volume_id } => {
+                write!(f, "destination volume not connected yet: {volume_id}")
             }
             Self::Volume { error } => write!(f, "volume: {error}"),
             Self::TimedOut => f.write_str("timed out"),
@@ -303,8 +333,10 @@ pub(crate) async fn scan_volume_for_conflicts_within(
         async move { Ok::<_, VolumeScanError>(get_volume_manager().resolve(&resolve_id, &resolve_path).await.volume) },
     )
     .await
-    .inspect_err(|e| log_conflict_outcome(&deadline, "couldn't reach the destination volume", e))?
-    .ok_or(VolumeScanError::DestinationVolumeNotFound { volume_id })?;
+    .inspect_err(|e| log_conflict_outcome(&deadline, "couldn't reach the destination volume", e))?;
+    let Some(volume) = volume else {
+        return Err(VolumeScanError::destination_missing(volume_id).await);
+    };
 
     // Same anchoring the copy op applies: the dialog's box is volume-relative,
     // so without it the scan asks a share for a path outside its mount and

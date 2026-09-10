@@ -358,12 +358,12 @@ pub(crate) async fn create_directory_core(
     }
 
     // "root" and every mounted volume is always registered in `VolumeManager`,
-    // so reaching here means the volume was unregistered out from under us (e.g.
-    // an unmount race). Error out instead of falling back to an untimed
-    // synchronous `std::fs::create_dir` on the async executor, which would
-    // violate this module's "every FS-touching command is timed" contract on a
-    // hung mount.
-    Err(MutationError::VolumeGone { volume_id })
+    // so reaching here means a phone or saved server nobody connected yet, or a
+    // volume unregistered out from under us (an unmount race). Error out instead
+    // of falling back to an untimed synchronous `std::fs::create_dir` on the async
+    // executor, which would violate this module's "every FS-touching command is
+    // timed" contract on a hung mount.
+    Err(super::mutation_error::unregistered_volume_refusal(volume_id, Path::new(parent_path)).await)
 }
 
 /// Reports a taken name by the NAME the user typed, and everything else by the
@@ -421,9 +421,10 @@ pub(crate) async fn create_file_core(
         return Ok((new_path, expanded_path));
     }
 
-    // See `create_directory_core`: an unregistered volume means an unmount race;
-    // error out instead of an untimed `std::fs::File::create_new` fallback.
-    Err(MutationError::VolumeGone { volume_id })
+    // See `create_directory_core`: an unregistered volume is one nobody connected
+    // or an unmount race; error out instead of an untimed
+    // `std::fs::File::create_new` fallback.
+    Err(super::mutation_error::unregistered_volume_refusal(volume_id, Path::new(parent_path)).await)
 }
 
 /// Returns true if a synthetic entry diff should be emitted for this volume.

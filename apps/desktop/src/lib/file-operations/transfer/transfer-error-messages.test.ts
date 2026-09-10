@@ -254,6 +254,27 @@ describe('getUserFriendlyMessage', () => {
       })
     })
 
+    // A phone or saved server nobody has connected yet is refused before anything
+    // is read or written. Nothing dropped, so it's ❌ never the "device
+    // disconnected" sentence, and each side names the half that isn't connected.
+    it('handles source_not_connected and destination_not_connected, naming the side', () => {
+      const destination = getUserFriendlyMessage({ type: 'destination_not_connected', path: 'adb://R58M/sdcard' })
+      expect(destination.title).toBe('Not connected yet')
+      expect(destination.message).toContain('destination phone or server')
+      expect(destination.suggestion).toContain('volume switcher')
+
+      const source = getUserFriendlyMessage({ type: 'source_not_connected', path: 'sftp://ada@nas/photos' }, 'delete')
+      expect(source.title).toBe('Not connected yet')
+      expect(source.message).toContain('holding these files')
+      expect(source.suggestion).toContain('volume switcher')
+    })
+
+    it('offers no Retry for a place nobody connected, since the same request refuses again until it is opened', () => {
+      for (const type of ['source_not_connected', 'destination_not_connected'] as const) {
+        expect(getErrorDisplayMeta({ type, path: '/p' }), type).toEqual({ category: 'needs_action', retryHint: false })
+      }
+    })
+
     // The two sides are different sentences, not two wordings of one. A move OFF
     // a read-only source (a repo's `.git` history, a tar) is refused because the
     // source can never delete the original, so pointing that user at the

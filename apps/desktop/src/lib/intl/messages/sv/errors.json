@@ -1101,6 +1101,22 @@
   "@errors.write.destinationNotFound.suggestion": {
     "sourceHash": "2e99059"
   },
+  "errors.write.notConnected.title": "Inte ansluten än",
+  "@errors.write.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.write.notConnected.message.source": "Cmdr har inte anslutit till telefonen eller servern som innehåller de här filerna än, så inget har ändrats.",
+  "@errors.write.notConnected.message.source": {
+    "sourceHash": "e6690da"
+  },
+  "errors.write.notConnected.message.destination": "Cmdr har inte anslutit till telefonen eller servern som är målet än, så inget har ändrats. Dina filer är orörda.",
+  "@errors.write.notConnected.message.destination": {
+    "sourceHash": "5bbc6b9"
+  },
+  "errors.write.notConnected.suggestion": "Öppna den från volymväljaren för att ansluta till den och försök sedan igen. Om det är en telefon, lås upp den och godkänn eventuella frågor som den visar.",
+  "@errors.write.notConnected.suggestion": {
+    "sourceHash": "222ba64"
+  },
   "errors.write.destinationExists.title": "Filen finns redan",
   "@errors.write.destinationExists.title": {
     "sourceHash": "ae71a9a"

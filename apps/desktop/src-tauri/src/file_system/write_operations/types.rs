@@ -335,6 +335,24 @@ pub enum WriteOperationError {
     DestinationNotFound {
         path: String,
     },
+    /// The volume holding the sources is a phone its provider lists, or a saved
+    /// server, that nothing has connected yet, so no volume answers for it.
+    /// Refused before anything is read. `path` is the first source as the
+    /// caller sent it.
+    ///
+    /// ❌ Never `DeviceDisconnected`, which tells the user a session dropped
+    /// mid-operation, and ❌ never a "volume not found", which reads as a place
+    /// that's gone. Opening it in a pane is what connects it.
+    SourceNotConnected {
+        path: String,
+    },
+    /// The destination is a phone its provider lists, or a saved server, that
+    /// nothing has connected yet. Refused before anything is written. Same
+    /// wording rules as `SourceNotConnected`; the two stay separate for the same
+    /// reason `SourceNotFound` and `DestinationNotFound` do.
+    DestinationNotConnected {
+        path: String,
+    },
     /// Overwrite not enabled.
     DestinationExists {
         path: String,

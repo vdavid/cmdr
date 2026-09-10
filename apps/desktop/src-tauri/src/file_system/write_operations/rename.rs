@@ -150,11 +150,9 @@ async fn rename_managed_inner(
                 // Volume-aware rename (MTP, SMB, and other non-local volumes).
                 // The volume's `rename` calls `notify_mutation` internally, so
                 // the listing cache updates automatically.
-                let volume = crate::file_system::volume::manager::get_volume_manager()
-                    .get(&volume_id)
-                    .ok_or(MutationError::VolumeGone {
-                        volume_id: volume_id.clone(),
-                    })?;
+                let Some(volume) = crate::file_system::volume::manager::get_volume_manager().get(&volume_id) else {
+                    return Err(super::mutation_error::unregistered_volume_refusal(volume_id.clone(), &from).await);
+                };
                 // A taken name is reported by the NAME, matching the local branch and
                 // the live validation the user just saw; everything else rides as the
                 // volume's own typed answer.

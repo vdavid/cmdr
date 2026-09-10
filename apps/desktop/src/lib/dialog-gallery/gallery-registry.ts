@@ -183,6 +183,8 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     states: [
       { id: 'source_not_found', label: 'Source not found' },
       { id: 'destination_not_found', label: 'Destination not found' },
+      { id: 'source_not_connected', label: 'Source not connected yet' },
+      { id: 'destination_not_connected', label: 'Destination not connected yet' },
       { id: 'destination_exists', label: 'Destination exists' },
       { id: 'permission_denied', label: 'Permission denied' },
       { id: 'insufficient_space', label: 'Not enough space' },

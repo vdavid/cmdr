@@ -1101,6 +1101,22 @@
   "@errors.write.destinationNotFound.suggestion": {
     "sourceHash": "2e99059"
   },
+  "errors.write.notConnected.title": "Ainda não conectado",
+  "@errors.write.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.write.notConnected.message.source": "O Cmdr ainda não se conectou ao celular ou servidor que guarda estes arquivos, então nada mudou.",
+  "@errors.write.notConnected.message.source": {
+    "sourceHash": "e6690da"
+  },
+  "errors.write.notConnected.message.destination": "O Cmdr ainda não se conectou ao celular ou servidor de destino, então nada mudou. Seus arquivos estão intactos.",
+  "@errors.write.notConnected.message.destination": {
+    "sourceHash": "5bbc6b9"
+  },
+  "errors.write.notConnected.suggestion": "Abra-o pelo seletor de volume para se conectar a ele e tente de novo. Se for um celular, desbloqueie-o e aceite qualquer aviso que aparecer.",
+  "@errors.write.notConnected.suggestion": {
+    "sourceHash": "222ba64"
+  },
   "errors.write.destinationExists.title": "O arquivo já existe",
   "@errors.write.destinationExists.title": {
     "sourceHash": "ae71a9a"

@@ -397,21 +397,17 @@ pub async fn list_directory_start_streaming(
     })
 }
 
-/// Why a listing found no volume registered under `volume_id`.
-///
-/// ❗ A device its provider lists but nobody has dialed (an ADB phone before its
-/// pane's connect lands, or after an eject), or a saved server nobody has
-/// connected, is `NotConnected`: ❌ never `DeviceDisconnected`, which says a
-/// session dropped that never existed, and ❌ never `NotFound`, which the frontend
-/// reads as "this folder was deleted" and walks the pane up and off the device.
-/// Any other unknown id is `NotFound`, as an unmount race is.
+/// Why a listing found no volume registered under `volume_id`, in the listing's
+/// vocabulary: a listed phone or saved server nobody connected is `NotConnected`,
+/// any other id `NotFound`, as an unmount race is. The why of both answers:
+/// `crate::unregistered_volumes`.
 async fn missing_volume_error(volume_id: &str, path: &Path) -> VolumeError {
-    let listed_but_not_connected = crate::device_volumes::provider_for_volume_id(volume_id).await.is_some()
-        || crate::server_volumes::place_root(volume_id).is_some();
-    if listed_but_not_connected {
-        return VolumeError::NotConnected(path.display().to_string());
+    use crate::unregistered_volumes::{Unregistered, why_unregistered};
+
+    match why_unregistered(volume_id).await {
+        Unregistered::NotConnected => VolumeError::NotConnected(path.display().to_string()),
+        Unregistered::Gone => VolumeError::NotFound(format!("Volume not found: {}", volume_id)),
     }
-    VolumeError::NotFound(format!("Volume not found: {}", volume_id))
 }
 
 /// Reads a directory with progress reporting.

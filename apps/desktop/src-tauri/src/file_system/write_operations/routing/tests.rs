@@ -126,3 +126,61 @@ async fn resolve_source_routes_a_snapshot_path_to_the_git_portal() {
 
     cleanup(&dir);
 }
+
+/// A `NotConnected` a backend answers mid-transfer names the half that asked, the
+/// same way an unregistered volume does before the transfer starts. ❌ Never
+/// `DeviceDisconnected`: nothing dropped.
+#[test]
+fn a_volume_that_isnt_connected_yet_maps_to_the_side_that_asked() {
+    use crate::file_system::write_operations::WriteOperationError;
+    use crate::file_system::write_operations::transfer::volume::{PathRole, map_volume_error};
+    use cmdr_fs::volume::VolumeError;
+
+    let not_connected = || VolumeError::NotConnected("adb://R58M/sdcard".to_string());
+    assert!(matches!(
+        map_volume_error("adb://R58M/sdcard", PathRole::Destination, not_connected()),
+        WriteOperationError::DestinationNotConnected { .. }
+    ));
+    assert!(matches!(
+        map_volume_error("adb://R58M/sdcard", PathRole::Source, not_connected()),
+        WriteOperationError::SourceNotConnected { .. }
+    ));
+}
+
+/// An id no provider lists and no saved server names keeps reading as a volume
+/// that's gone (an unmount race), ❌ never "not connected yet": there's nothing to
+/// open, so that advice would send the user looking for a row that isn't there.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_onto_an_id_nothing_knows_still_reads_as_a_missing_volume() {
+    use crate::file_system::volume::manager::get_volume_manager;
+    use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+    use crate::file_system::write_operations::{VolumeCopyConfig, WriteOperationError, start_volume_copy};
+    use crate::operation_log::types::Initiator;
+
+    let source_id = format!("routing-source-{}", uuid::Uuid::new_v4());
+    let source = InMemoryVolume::new("Source");
+    source
+        .create_file(Path::new("/a.txt"), b"a")
+        .await
+        .expect("the source file");
+    get_volume_manager().register(&source_id, Arc::new(source));
+
+    let refused = start_volume_copy(
+        Arc::new(CollectorEventSink::new()),
+        source_id.clone(),
+        vec![Path::new("/a.txt").to_path_buf()],
+        "no-provider-or-saved-server-knows-this".to_string(),
+        "/photos".to_string(),
+        VolumeCopyConfig::default(),
+        Initiator::User,
+        None,
+    )
+    .await
+    .expect_err("a copy onto an unknown volume is refused");
+    get_volume_manager().unregister(&source_id);
+
+    assert!(
+        matches!(refused, WriteOperationError::IoError { .. }),
+        "an unknown id is a missing volume; got {refused:?}"
+    );
+}

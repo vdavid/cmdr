@@ -19,8 +19,9 @@ use cmdr_adb::AdbDeviceState;
 use cmdr_adb::testing::{FakeAdbServer, FakeNode, FakeTree, split_argv};
 use cmdr_fs::staging::STAGING_TEMP_MARKER;
 use cmdr_fs::volume::host::listings::RecordingListings;
-use cmdr_fs::volume::{DirectoryChange, UnwritableReason, Volume};
+use cmdr_fs::volume::{DirectoryChange, UnwritableReason, Volume, VolumeError};
 
+use super::MutationError;
 use super::event_sinks::{CollectorEventSink, OperationEventSink};
 use super::network_transfer_test_support::{
     a_cancelled_upload_leaves_nothing_behind, a_directory_tree_lands_intact_off_the_server,
@@ -31,7 +32,8 @@ use super::network_transfer_test_support::{
 use super::state::WriteOperationState;
 use super::types::{VolumeCopyConfig, WriteOperationConfig, WriteOperationError};
 use crate::adb::device_provider::apply_device_list;
-use crate::adb::test_support::{a_listed_phone, dial, phone, retire_phone};
+use crate::adb::test_support::{a_listed_phone, dial, dials_seen, phone, retire_phone};
+use crate::commands::file_system::{VolumeScanError, scan_volume_for_copy};
 use crate::file_system::volume::LocalPosixVolume;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::ignore_poison::IgnorePoison;
@@ -533,5 +535,196 @@ async fn a_delete_on_a_phone_removes_the_file_and_patches_its_pane() {
         ),
         "the pane on /sdcard hears the file is gone; changes: {:?}",
         phone.changes_seen()
+    );
+}
+
+// ── A phone the switcher lists but nobody dialed ─────────────────────
+
+/// A phone the app's cached list carries, and the fake serves, that nothing has
+/// dialed: where a pane is before its connect lands, or after an eject. Empties
+/// the list on drop.
+struct UndialedPhone {
+    fake: FakeAdbServer,
+    volume_id: String,
+    /// `adb://<serial>/sdcard`, the spelling a pane holds.
+    sdcard: PathBuf,
+}
+
+impl Drop for UndialedPhone {
+    fn drop(&mut self) {
+        apply_device_list(Vec::new());
+    }
+}
+
+async fn undialed_phone(serial: &str, tree: FakeTree) -> UndialedPhone {
+    crate::adb::volume_wiring::install_device_provider();
+    let fake = a_listed_phone(serial, tree).await;
+    let volume_id = cmdr_fs::volume::adb_volume_id(serial);
+    assert!(
+        get_volume_manager().get(&volume_id).is_none(),
+        "precondition: nothing dialed {serial}"
+    );
+    let sdcard = PathBuf::from(format!("{}/sdcard", cmdr_fs::volume::adb_app_root(serial)));
+    UndialedPhone {
+        fake,
+        volume_id,
+        sdcard,
+    }
+}
+
+impl UndialedPhone {
+    fn holds(&self, device_path: &str) -> bool {
+        self.fake.tree().lock_ignore_poison().get(device_path).is_some()
+    }
+
+    /// Whether anything dialed the phone. ❗ A refusal must not: only opening
+    /// the phone in a pane connects it.
+    fn was_dialed(&self) -> bool {
+        dials_seen(&self.fake) > 0
+    }
+}
+
+/// ❗ A copy onto a phone nobody dialed says the phone isn't connected yet, ❌
+/// never the untyped "Destination volume not found": the user reads that as a
+/// place that's gone, when opening the phone is all it takes.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_onto_a_phone_nobody_dialed_is_refused_as_not_connected() {
+    let phone = undialed_phone("R58M-Undialed-Copy", FakeTree::new()).await;
+    let local = registered_local("adb_copy_onto_undialed_phone");
+    std::fs::write(local.dir.join("photo.jpg"), b"a photo's worth of bytes").expect("seeding the local file");
+
+    let refused = super::start_volume_copy(
+        Arc::new(CollectorEventSink::new()),
+        local.volume_id.clone(),
+        vec![PathBuf::from("photo.jpg")],
+        phone.volume_id.clone(),
+        phone.sdcard.to_string_lossy().into_owned(),
+        VolumeCopyConfig::default(),
+        Initiator::User,
+        None,
+    )
+    .await
+    .expect_err("a copy onto a phone nobody dialed is refused");
+
+    assert!(
+        matches!(refused, WriteOperationError::DestinationNotConnected { .. }),
+        "the destination isn't connected yet; got {refused:?}"
+    );
+    assert!(!phone.holds("/sdcard/photo.jpg"), "nothing landed on the phone");
+    assert!(!phone.was_dialed(), "a refused copy doesn't dial the phone");
+}
+
+/// A move OFF a phone nobody dialed names the SOURCE as the half that isn't
+/// connected, and leaves the file where it is.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_move_off_a_phone_nobody_dialed_is_refused_as_not_connected() {
+    let mut tree = FakeTree::new();
+    tree.add_file("/sdcard/a.txt", b"staying put");
+    let phone = undialed_phone("R58M-Undialed-Move", tree).await;
+    let local = registered_local("adb_move_off_undialed_phone");
+
+    let refused = super::start_volume_move(
+        Arc::new(CollectorEventSink::new()),
+        phone.volume_id.clone(),
+        vec![phone.sdcard.join("a.txt")],
+        local.volume_id.clone(),
+        local.dir.to_string_lossy().into_owned(),
+        VolumeCopyConfig::default(),
+        Initiator::User,
+        None,
+    )
+    .await
+    .expect_err("a move off a phone nobody dialed is refused");
+
+    assert!(
+        matches!(refused, WriteOperationError::SourceNotConnected { .. }),
+        "the source isn't connected yet; got {refused:?}"
+    );
+    assert!(phone.holds("/sdcard/a.txt"), "the file stays on the phone");
+    assert!(!local.dir.join("a.txt").exists(), "nothing landed locally");
+}
+
+/// A delete on a phone nobody dialed settles with the typed refusal and removes
+/// nothing.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_delete_on_a_phone_nobody_dialed_is_refused_as_not_connected() {
+    let mut tree = FakeTree::new();
+    tree.add_file("/sdcard/old.txt", b"keeping");
+    let phone = undialed_phone("R58M-Undialed-Delete", tree).await;
+
+    let events = Arc::new(CollectorEventSink::new());
+    super::delete_files_start(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        vec![phone.sdcard.join("old.txt")],
+        WriteOperationConfig::default(),
+        Some(phone.volume_id.clone()),
+        Initiator::User,
+        None,
+    )
+    .await
+    .expect("the delete is admitted; its body is what finds the phone unconnected");
+    crate::test_support::wait_until_async(SETTLE_BUDGET, "the refused delete to settle", || {
+        !events.settled.lock_ignore_poison().is_empty()
+    })
+    .await;
+
+    let errors: Vec<WriteOperationError> = events
+        .errors
+        .lock_ignore_poison()
+        .iter()
+        .map(|e| e.error.clone())
+        .collect();
+    assert!(
+        matches!(errors.as_slice(), [WriteOperationError::SourceNotConnected { .. }]),
+        "the phone holding the file isn't connected yet; got {errors:?}"
+    );
+    assert!(phone.holds("/sdcard/old.txt"), "the file is still on the phone");
+}
+
+/// New folder on a phone nobody dialed answers the volume's `NotConnected`,
+/// which the rename / new folder / new file line already words, ❌ never
+/// `VolumeGone`, which says a volume vanished mid-write.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn mkdir_on_a_phone_nobody_dialed_is_refused_as_not_connected() {
+    let phone = undialed_phone("R58M-Undialed-Mkdir", FakeTree::new()).await;
+
+    let refused =
+        super::create::create_directory_core(Some(phone.volume_id.clone()), &phone.sdcard.to_string_lossy(), "album")
+            .await
+            .expect_err("mkdir on a phone nobody dialed is refused");
+
+    assert!(
+        matches!(
+            refused,
+            MutationError::Volume {
+                error: VolumeError::NotConnected(_)
+            }
+        ),
+        "the phone isn't connected yet; got {refused:?}"
+    );
+    assert!(!phone.holds("/sdcard/album"), "no folder appeared on the phone");
+}
+
+/// The copy preview scan names the unconnected destination the same way the copy
+/// does, so the two can't disagree about why nothing can land.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_preview_onto_a_phone_nobody_dialed_says_it_is_not_connected() {
+    let phone = undialed_phone("R58M-Undialed-Scan", FakeTree::new()).await;
+    let local = registered_local("adb_scan_onto_undialed_phone");
+    std::fs::write(local.dir.join("photo.jpg"), b"a photo's worth of bytes").expect("seeding the local file");
+
+    let refused = scan_volume_for_copy(
+        local.volume_id.clone(),
+        vec!["photo.jpg".to_string()],
+        phone.volume_id.clone(),
+        phone.sdcard.to_string_lossy().into_owned(),
+        None,
+    )
+    .await
+    .err();
+
+    assert!(
+        matches!(refused, Some(VolumeScanError::DestinationVolumeNotConnected { .. })),
+        "the destination isn't connected yet; got {refused:?}"
     );
 }

@@ -1101,6 +1101,22 @@
   "@errors.write.destinationNotFound.suggestion": {
     "sourceHash": "2e99059"
   },
+  "errors.write.notConnected.title": "Még nincs csatlakoztatva",
+  "@errors.write.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.write.notConnected.message.source": "A Cmdr még nem csatlakozott ahhoz a telefonhoz vagy szerverhez, amelyen ezek a fájlok vannak, ezért semmi sem változott.",
+  "@errors.write.notConnected.message.source": {
+    "sourceHash": "e6690da"
+  },
+  "errors.write.notConnected.message.destination": "A Cmdr még nem csatlakozott ahhoz a telefonhoz vagy szerverhez, ahová a fájlok kerülnének, ezért semmi sem változott. A fájljaid érintetlenek.",
+  "@errors.write.notConnected.message.destination": {
+    "sourceHash": "5bbc6b9"
+  },
+  "errors.write.notConnected.suggestion": "Nyisd meg a kötetválasztóban, hogy csatlakozz hozzá, majd próbáld újra. Ha telefon, oldd fel a zárolását, és fogadd el a megjelenő kéréseket.",
+  "@errors.write.notConnected.suggestion": {
+    "sourceHash": "222ba64"
+  },
   "errors.write.destinationExists.title": "A fájl már létezik",
   "@errors.write.destinationExists.title": {
     "sourceHash": "ae71a9a"

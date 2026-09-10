@@ -46,6 +46,16 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     // is on a NAS that stopped being able to address the folder mid-transfer.
     error: { type: 'destination_not_found', path: '/Volumes/Naspolya/media/photos/2026' },
   },
+  source_not_connected: {
+    operationType: 'delete',
+    // A phone the switcher lists that nobody has opened in a pane yet.
+    error: { type: 'source_not_connected', path: 'adb://46061FDAS000A4/sdcard/DCIM/Camera/PXL_20260714_052311.jpg' },
+  },
+  destination_not_connected: {
+    operationType: 'copy',
+    // A saved server nobody has connected this session.
+    error: { type: 'destination_not_connected', path: 'sftp://david@naspolya.local:22/share/photos/2026' },
+  },
   destination_exists: {
     operationType: 'move',
     error: { type: 'destination_exists', path: '/Users/david/Documents/invoices/2026-Q2-summary.numbers' },

@@ -44,11 +44,9 @@ pub(crate) async fn write_payload_to_dir(
     };
 
     let volume_id_str = volume_id.clone().unwrap_or_else(|| "root".to_string());
-    let volume = get_volume_manager()
-        .get(&volume_id_str)
-        .ok_or_else(|| MutationError::VolumeGone {
-            volume_id: volume_id_str.clone(),
-        })?;
+    let Some(volume) = get_volume_manager().get(&volume_id_str) else {
+        return Err(super::mutation_error::unregistered_volume_refusal(volume_id_str, dir).await);
+    };
 
     // Route through the managed `CreateFile` instant op (David-approved bypass routing): the
     // write is a real mutation, so it registers a brief `Running` record, marks

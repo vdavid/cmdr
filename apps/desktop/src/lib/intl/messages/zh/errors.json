@@ -1101,6 +1101,22 @@
   "@errors.write.destinationNotFound.suggestion": {
     "sourceHash": "2e99059"
   },
+  "errors.write.notConnected.title": "尚未连接",
+  "@errors.write.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.write.notConnected.message.source": "Cmdr 还没有连接到存放这些文件的手机或服务器，所以什么都没有改变。",
+  "@errors.write.notConnected.message.source": {
+    "sourceHash": "e6690da"
+  },
+  "errors.write.notConnected.message.destination": "Cmdr 还没有连接到目标手机或服务器，所以什么都没有改变。你的文件没有被动过。",
+  "@errors.write.notConnected.message.destination": {
+    "sourceHash": "5bbc6b9"
+  },
+  "errors.write.notConnected.suggestion": "从宗卷选择器中打开它来连接，然后再试一次。如果是手机，解锁它并接受它弹出的任何提示。",
+  "@errors.write.notConnected.suggestion": {
+    "sourceHash": "222ba64"
+  },
   "errors.write.destinationExists.title": "文件已存在",
   "@errors.write.destinationExists.title": {
     "sourceHash": "ae71a9a"

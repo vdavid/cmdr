@@ -25,7 +25,7 @@ use std::sync::Arc;
 use super::archive_edit::{compress_start, route_archive_copy_into};
 use super::event_sinks::OperationEventSink;
 use super::source_binding::ExpectedSources;
-use super::transfer::volume::{copy_between_volumes, move_between_volumes};
+use super::transfer::volume::{PathRole, copy_between_volumes, move_between_volumes, unregistered_volume_error};
 use super::types::{ReadOnlySide, VolumeCopyConfig, WriteOperationError, WriteOperationStartResult};
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::manager::{RoutedKind, get_volume_manager, path_routes_over_its_parent};
@@ -176,18 +176,19 @@ fn route_cannot_hold_a_binding(route: &str) -> WriteOperationError {
     }
 }
 
-fn source_volume_missing(volume_id: &str) -> WriteOperationError {
-    WriteOperationError::IoError {
-        path: volume_id.to_string(),
-        message: format!("Source volume '{}' not found", volume_id),
-    }
+/// The refusal for a batch whose source volume isn't registered, named by its
+/// first source (`unregistered_volume_error`).
+async fn source_volume_missing(volume_id: &str, source_paths: &[PathBuf]) -> WriteOperationError {
+    let path = source_paths
+        .first()
+        .map_or_else(|| volume_id.to_string(), |p| p.display().to_string());
+    unregistered_volume_error(volume_id, &path, PathRole::Source).await
 }
 
-fn dest_volume_missing(volume_id: &str) -> WriteOperationError {
-    WriteOperationError::IoError {
-        path: volume_id.to_string(),
-        message: format!("Destination volume '{}' not found", volume_id),
-    }
+/// The refusal for a destination volume that isn't registered, named by the
+/// destination the caller sent.
+async fn dest_volume_missing(volume_id: &str, dest_path: &str) -> WriteOperationError {
+    unregistered_volume_error(volume_id, dest_path, PathRole::Destination).await
 }
 
 /// Starts a copy across volume types, resolving both ends first.
@@ -215,18 +216,19 @@ pub(crate) async fn start_volume_copy(
     // batch to its `ArchiveVolume` (extract-out), a snapshot path to the repo's
     // `GitPortalVolume` (copy out of `.git/branches/<name>/…`). Both then read
     // through the cross-volume engine.
-    let (source_volume, _source_route) = resolve_source_volume(&source_volume_id, source_paths.first())
-        .await
-        .ok_or_else(|| source_volume_missing(&source_volume_id))?;
+    let Some((source_volume, _source_route)) = resolve_source_volume(&source_volume_id, source_paths.first()).await
+    else {
+        return Err(source_volume_missing(&source_volume_id, &source_paths).await);
+    };
 
     // Resolve the destination. A `.zip`-crossing dest routes the whole copy to
     // the managed archive-edit driver (one `{ add }` changeset).
     let dest_resolved = get_volume_manager()
         .resolve(&dest_volume_id, Path::new(&dest_path))
         .await;
-    let dest_volume = dest_resolved
-        .volume
-        .ok_or_else(|| dest_volume_missing(&dest_volume_id))?;
+    let Some(dest_volume) = dest_resolved.volume else {
+        return Err(dest_volume_missing(&dest_volume_id, &dest_path).await);
+    };
 
     if dest_resolved.routed == Some(RoutedKind::GitPortal) {
         return Err(destination_takes_no_writes(&dest_volume));
@@ -288,9 +290,10 @@ pub(crate) async fn start_volume_move(
     // engine, then a batch `{ delete }` archive rewrite once the extract lands).
     // A git-portal source has no delete to pair with the copy, so it's refused
     // below rather than routed anywhere.
-    let (source_volume, source_route) = resolve_source_volume(&source_volume_id, source_paths.first())
-        .await
-        .ok_or_else(|| source_volume_missing(&source_volume_id))?;
+    let Some((source_volume, source_route)) = resolve_source_volume(&source_volume_id, source_paths.first()).await
+    else {
+        return Err(source_volume_missing(&source_volume_id, &source_paths).await);
+    };
 
     // A snapshot can be copied out of, never moved out of: `.git/branches/…` has
     // no file to remove once the copy lands. Refused before the destination is
@@ -302,9 +305,9 @@ pub(crate) async fn start_volume_move(
     let dest_resolved = get_volume_manager()
         .resolve(&dest_volume_id, Path::new(&dest_path))
         .await;
-    let dest_volume = dest_resolved
-        .volume
-        .ok_or_else(|| dest_volume_missing(&dest_volume_id))?;
+    let Some(dest_volume) = dest_resolved.volume else {
+        return Err(dest_volume_missing(&dest_volume_id, &dest_path).await);
+    };
 
     if dest_resolved.routed == Some(RoutedKind::GitPortal) {
         return Err(destination_takes_no_writes(&dest_volume));
@@ -389,17 +392,20 @@ pub(crate) async fn start_volume_compress(
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Route a routed source batch to its read-only volume, so compressing reads
     // through it: from inside a `.zip`, or from a repo's snapshots.
-    let (source_volume, _source_route) = resolve_source_volume(&source_volume_id, source_paths.first())
-        .await
-        .ok_or_else(|| source_volume_missing(&source_volume_id))?;
+    let Some((source_volume, _source_route)) = resolve_source_volume(&source_volume_id, source_paths.first()).await
+    else {
+        return Err(source_volume_missing(&source_volume_id, &source_paths).await);
+    };
 
     // The new `.zip` doesn't exist yet, so `resolve` returns the PARENT drive volume
     // (nothing routes for a non-existent path) — the drive the seed is written to. `compress_start` bypasses the archive-boundary resolve on its own.
-    let dest_volume = get_volume_manager()
+    let Some(dest_volume) = get_volume_manager()
         .resolve(&dest_volume_id, Path::new(&dest_zip_path))
         .await
         .volume
-        .ok_or_else(|| dest_volume_missing(&dest_volume_id))?;
+    else {
+        return Err(dest_volume_missing(&dest_volume_id, &dest_zip_path).await);
+    };
 
     let dest_zip_path = resolve_dest_path(&dest_volume, dest_zip_path);
 

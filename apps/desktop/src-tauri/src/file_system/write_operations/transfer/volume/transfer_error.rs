@@ -202,6 +202,47 @@ pub(super) fn write_error_event_from(
     WriteErrorEvent::new(operation_id, operation_type, failure.error)
 }
 
+/// The refusal for an operation whose volume isn't registered, asked before
+/// anything is read or written. `path` is what the caller sent for that side: the
+/// destination folder, or the first source.
+///
+/// A listed phone or a saved server nothing has connected is
+/// `SourceNotConnected` / `DestinationNotConnected`, so the user hears that opening
+/// it is the way through. Any other id is a volume that left the registry (an
+/// unmount race), an `IoError` naming the id. The classification itself:
+/// `crate::unregistered_volumes`.
+pub(in crate::file_system::write_operations) async fn unregistered_volume_error(
+    volume_id: &str,
+    path: &str,
+    role: PathRole,
+) -> WriteOperationError {
+    use crate::unregistered_volumes::{Unregistered, why_unregistered};
+
+    match why_unregistered(volume_id).await {
+        Unregistered::NotConnected => not_connected(path, role),
+        // (Log and technical-details text, not rendered prose.)
+        Unregistered::Gone => WriteOperationError::IoError {
+            path: volume_id.to_string(),
+            message: format!(
+                "{} volume '{}' not found",
+                match role {
+                    PathRole::Source => "Source",
+                    PathRole::Destination => "Destination",
+                },
+                volume_id
+            ),
+        },
+    }
+}
+
+fn not_connected(path: &str, role: PathRole) -> WriteOperationError {
+    let path = path.to_string();
+    match role {
+        PathRole::Source => WriteOperationError::SourceNotConnected { path },
+        PathRole::Destination => WriteOperationError::DestinationNotConnected { path },
+    }
+}
+
 /// Maps VolumeError to WriteOperationError, attaching path context where the original error lacks
 /// one.
 ///
@@ -244,20 +285,11 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
         VolumeError::DeviceDisconnected(_) => WriteOperationError::DeviceDisconnected {
             path: context_path.to_string(),
         },
-        // Only a listing produces this today: a transfer resolves its volumes
-        // before it starts, so an unconnected one never reaches a write. ❌ Never
+        // Names the half that asked, the same way an unregistered volume does
+        // before a transfer starts (`unregistered_volume_error`). ❌ Never
         // `DeviceDisconnected`, which would tell the user a session dropped
-        // mid-copy. (Log and technical-details text, not rendered prose.)
-        VolumeError::NotConnected(_) => WriteOperationError::IoError {
-            path: context_path.to_string(),
-            message: format!(
-                "The {} volume isn't connected yet",
-                match role {
-                    PathRole::Source => "source",
-                    PathRole::Destination => "destination",
-                }
-            ),
-        },
+        // mid-copy.
+        VolumeError::NotConnected(_) => not_connected(context_path, role),
         // The backend refused a WRITE, so it is the destination that is read-only.
         VolumeError::ReadOnly(_) => WriteOperationError::ReadOnlyDevice {
             path: context_path.to_string(),

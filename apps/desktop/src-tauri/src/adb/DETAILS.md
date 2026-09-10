@@ -96,13 +96,15 @@ no `volumes-changed`. An attempt cancelled in the same instant its dial publishe
 because the volume is really there.
 
 **A phone nobody has dialed** (listed, no registered volume: before the pane's connect lands, or after an eject)
-answers every read without dialing. `read_directory_with_progress` refuses with `VolumeError::NotConnected`
-(`streaming.rs::missing_volume_error`), and `path_exists` answers "couldn't tell" (`timed_out: true`). ❌ Never
-`NotFound`: the frontend reads it as "this folder was deleted" and walks the pane up and off the phone. ❌ Never
-`DeviceDisconnected` either: that one says a session dropped mid-operation, and there never was one. Both ask
-`device_volumes::provider_for_volume_id` (and `server_volumes::place_root`, so a saved server nobody connected answers
-the same way); an id nobody owns stays `NotFound`, as an unmount race is. The frontend shows the `notConnected` reason
-without probing whether the path exists (`listing-loader.ts`).
+answers every read and write without dialing. A listing refuses with `VolumeError::NotConnected`; a copy, move,
+compress, delete, or copy preview with the typed `SourceNotConnected` / `DestinationNotConnected` (the preview's
+`*VolumeNotConnected`); a new folder, new file, rename, or paste with `MutationError::Volume { NotConnected }`; and
+`path_exists` answers "couldn't tell" (`timed_out: true`). ❌ Never `NotFound`: the frontend reads it as "this folder was
+deleted" and walks the pane up and off the phone. ❌ Never `DeviceDisconnected` either: that one says a session dropped
+mid-operation, and there never was one. Every one of those sites asks `crate::unregistered_volumes::why_unregistered`,
+which answers the same way for a saved server nobody connected; an id nobody lists or saves stays a missing volume, as an
+unmount race is. The frontend shows the `notConnected` reason without probing whether the path exists
+(`listing-loader.ts`).
 
 **Eject**: `eject.rs` asks `provider_for_volume_id`, gets this provider, and answers
 `EjectAction::DeviceDisconnect { provider: "adb", volume_id }`. `AdbDeviceProvider::eject` forgets the volume and

@@ -73,6 +73,21 @@ const simpleMessageFactories: Partial<
     message: w(`destinationNotFound.message.${op}`),
     suggestion: w('destinationNotFound.suggestion'),
   }),
+  // A phone or saved server nobody has connected yet, refused before anything
+  // was read or written. ❌ Never worded as a disconnect: nothing dropped. The
+  // sentence names the half that isn't connected, and holds for every operation
+  // that reaches it (a source for copy, move, and delete; a destination for copy,
+  // move, and compress), so it doesn't vary by `op`.
+  source_not_connected: () => ({
+    title: w('notConnected.title'),
+    message: w('notConnected.message.source'),
+    suggestion: w('notConnected.suggestion'),
+  }),
+  destination_not_connected: () => ({
+    title: w('notConnected.title'),
+    message: w('notConnected.message.destination'),
+    suggestion: w('notConnected.suggestion'),
+  }),
   // destinationInsideSource can only happen on copy/move (delete/trash have no
   // destination), so `${op}` only ever resolves to `.copy` or `.move` here.
   destination_inside_source: (op) => ({
@@ -190,6 +205,10 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   // No Retry: the folder is missing, so the identical request can only fail
   // again. The way out is picking another destination or restoring the folder.
   destination_not_found: { category: 'needs_action', retryHint: false },
+  // No Retry: the same request refuses again until the phone or server is
+  // opened in a pane, which is what the suggestion asks for.
+  source_not_connected: { category: 'needs_action', retryHint: false },
+  destination_not_connected: { category: 'needs_action', retryHint: false },
   destination_exists: { category: 'needs_action', retryHint: false },
   permission_denied: { category: 'needs_action', retryHint: false },
   insufficient_space: { category: 'needs_action', retryHint: false },
@@ -405,6 +424,8 @@ export function getUserFriendlyMessage(
 const pathOnlyTypes = new Set<WriteOperationError['type']>([
   'source_not_found',
   'destination_not_found',
+  'source_not_connected',
+  'destination_not_connected',
   'destination_exists',
   'symlink_loop',
   'device_disconnected',
