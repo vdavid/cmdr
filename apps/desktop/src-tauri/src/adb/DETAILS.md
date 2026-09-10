@@ -186,7 +186,8 @@ that the registry and the provider hold the same volume. A cell asserting on the
   listing-cache patch needs a running app (`caching::notify_directory_changed` returns early without an `AppHandle`).
 - `file_system/write_operations/adb_index_test.rs`: the phone's drive index end to end, over a phone dialed the way a
   pane dials it, because only the app's listing host forwards a patch to the index. The walk indexes the fake tree
-  (rows, folder sizes, routing); a copy onto the phone and a delete on it patch the index, leaving no staging-name row;
+  (rows, folder sizes, routing); a walk over an Android-shaped tree indexes storage once and never descends `/proc`, a
+  `/sys` link loop, or a second path onto storage; a copy onto the phone and a delete on it patch the index, leaving no staging-name row;
   an unplug mid-walk leaves the index Stale with no completion claimed; and a change under another phone's path (a
   serial that merely extends this one's included) never lands.
 
@@ -200,6 +201,9 @@ prompt (`BackendKind::can_be_indexed`, with the frontend's per-kind default answ
   `crates/cmdr-index/src/indexing/transports/DETAILS.md` § "ADB".
 - A walk keeps at most four listings in flight on the phone: `crates/cmdr-index/src/indexing/network_scanner/DETAILS.md`
   § "A backend's own ceiling".
+- A walk covers the phone's storage and nothing else, once, under `/sdcard/…` and each SD card, so a pane browsing
+  `/storage/emulated/0/…` shows no folder sizes and search results name the `/sdcard` spelling:
+  `crates/cmdr-adb/src/volume/index_scope.rs`.
 - An unplug (`apply_device_list` retiring the volume) cuts a walk short with an honest partial, and the index stays
   registered, Stale, across the replug, as an MTP phone's does. Nothing re-walks it on replug: that's the user's rescan
   (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "What a launch deliberately does NOT start").

@@ -79,15 +79,16 @@ lifetime, not just while a pane shows the share, so the index must update even w
   `IndexPathSpace::resolve_abs` — the single mount-strip, never a second copy.
 - **Translation (`resolve_change`, pure over DB state, unit-tested).** `Added`/`Modified` → `UpsertEntryV2` under the
   resolved `parent_id`; `Renamed` → move the old name's row to the new name (`MoveEntryV2`, so a folder keeps its
-  subtree) and upsert the fresh stat onto it, or just upsert when the index never had the old name; `Removed` → resolve the
-  child id and `DeleteEntryById` (file) / `DeleteSubtreeById` (dir); `FullRefresh` and `Replaced` → no targeted write
-  (overflow is handled by the freshness path; `Replaced` carries a whole re-read directory, and folding it in would be a
-  write per entry on a path that fires per device event, which the reporting backend's own transport does more cheaply
-  by object handle). A `Removed` for a name the index never had is a no-op — **resolve-deletes-against-the- index**, NOT
-  a live stat: SMB does not stat the volume per delete, so a false removal (atomic-rename old name, coalesced
-  delete-then-recreate) with no matching index row enqueues nothing, and a recreate heals via the separate `Added`. SMB
-  entries carry no stable inode, so `inode`/`nlink` are `None` (no hardlink dedup). The writer auto-propagates the
-  size/count delta on upsert AND delete, so the translator never sends a separate `PropagateDeltaById`.
+  subtree) and upsert the fresh stat onto it, or just upsert when the index never had the old name; `Removed` → resolve
+  the child id and `DeleteEntryById` (file) / `DeleteSubtreeById` (dir); `FullRefresh` and `Replaced` → no targeted
+  write (overflow is handled by the freshness path; `Replaced` carries a whole re-read directory, and folding it in
+  would be a write per entry on a path that fires per device event, which the reporting backend's own transport does
+  more cheaply by object handle). A `Removed` for a name the index never had is a no-op — **resolve-deletes-against-the-
+  index**, NOT a live stat: SMB does not stat the volume per delete, so a false removal (atomic-rename old name,
+  coalesced delete-then-recreate) with no matching index row enqueues nothing, and a recreate heals via the separate
+  `Added`. SMB entries carry no stable inode, so `inode`/`nlink` are `None` (no hardlink dedup). The writer
+  auto-propagates the size/count delta on upsert AND delete, so the translator never sends a separate
+  `PropagateDeltaById`.
 - **The recursion exclusion applies live, not only to the walk.** `resolve_change` returns `None` for any change whose
   index-relative PARENT path has a component matching `network_scanner::is_recursion_excluded_dir` (checked before the
   `resolve_path`, so it costs nothing on the hot path). **Decision/Why:** the excluded dir keeps its own row, so its
@@ -221,9 +222,10 @@ the phone's root `adb://<serial>`, with a write that lands mid-walk buffered in 
 change made on the phone itself surfaces at the next rescan. The per-navigation verifier doesn't cover the gap: it reads
 the directory with a local `read_dir`, which fails on an `adb://` path and makes no correction.
 
-A walk keeps at most four listings in flight on the phone (`../network_scanner/DETAILS.md` § "A backend's own
-ceiling"). The whole story is proven against the fake ADB server by
-`apps/desktop/src-tauri/src/file_system/write_operations/adb_index_test.rs`.
+A walk keeps at most four listings in flight on the phone (`../network_scanner/DETAILS.md` § "A backend's own ceiling"),
+and descends only the phone's storage, indexed under `/sdcard/…` and each SD card, so a patch under any other tree is
+dropped the same way (`crates/cmdr-adb/src/volume/index_scope.rs`). The whole story is proven against the fake ADB
+server by `apps/desktop/src-tauri/src/file_system/write_operations/adb_index_test.rs`.
 
 ## Local external drives (`local_external/`)
 

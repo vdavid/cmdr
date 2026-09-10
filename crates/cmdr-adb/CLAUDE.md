@@ -12,7 +12,8 @@ words.
   `testing/` (the fake ADB server: `tree` the filesystem model, `server` the listener and wire, `shell` the device-shell
   verbs).
 - `volume/`: the `Volume` impl by job: `paths`, `query`, `streams`, `writes`, `mapping`, `state`, `volume_impl`,
-  `testing`, plus `scan` and `mutation`, which are just this backend's `ScanSource` / `PatchSource` impls.
+  `testing`, `index_scope` (which directories a drive-index walk descends), plus `scan` and `mutation`, which are just
+  this backend's `ScanSource` / `PatchSource` impls.
 
 ## Must-knows
 

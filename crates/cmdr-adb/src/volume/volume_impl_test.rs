@@ -26,6 +26,59 @@ fn an_index_walk_keeps_few_listings_in_flight_on_a_phone() {
     assert_eq!(detached_volume().max_concurrent_scan_listings(), 4);
 }
 
+/// An index walk of a phone descends only where a person keeps files: the shared
+/// storage the pane reaches through the `/sdcard` link, and each SD card under
+/// `/storage`. Every other tree keeps its row and isn't walked: the kernel's views
+/// (`/proc`, `/sys`, `/dev`), the system image, private data, and the second paths
+/// Android mounts onto the same storage (`/storage/emulated`, `/storage/self`,
+/// `/mnt`), which would count every file again.
+#[test]
+fn an_index_walk_of_a_phone_descends_only_its_storage() {
+    use cmdr_fs::volume::IndexWalk::{Descend, RowOnly};
+
+    let volume = detached_volume();
+    let walk = |device: &str, is_symlink: bool| volume.index_walk(&fixture_path(device), is_symlink);
+
+    assert_eq!(walk("/", false), Descend, "the root, on the way to storage");
+    assert_eq!(walk("/sdcard", true), Descend, "the link IS the phone's storage");
+    assert_eq!(
+        walk("/sdcard", false),
+        Descend,
+        "as is a plain /sdcard on an older phone"
+    );
+    assert_eq!(walk("/sdcard/DCIM", false), Descend);
+    assert_eq!(
+        walk("/sdcard/DCIM/elsewhere", true),
+        RowOnly,
+        "a link inside storage is one row"
+    );
+    assert_eq!(walk("/storage", false), Descend, "on the way to SD cards");
+    assert_eq!(walk("/storage/1234-5678", false), Descend, "an SD card");
+    assert_eq!(walk("/storage/1234-5678/Music", false), Descend);
+    for alias in ["/storage/emulated", "/storage/self"] {
+        assert_eq!(walk(alias, false), RowOnly, "{alias} is a second path onto /sdcard");
+    }
+    for tree in [
+        "/proc",
+        "/sys",
+        "/dev",
+        "/data",
+        "/data/local/tmp",
+        "/mnt",
+        "/system",
+        "/apex",
+        "/vendor",
+        "/acct",
+    ] {
+        assert_eq!(walk(tree, false), RowOnly, "{tree} is not where a person keeps files");
+    }
+    assert_eq!(
+        volume.index_walk(Path::new("adb://ANOTHER-PHONE/sdcard"), true),
+        RowOnly,
+        "a path on another phone is nothing to walk here"
+    );
+}
+
 #[test]
 fn the_device_anchored_answers() {
     let volume = detached_volume();

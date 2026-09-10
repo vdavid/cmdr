@@ -113,6 +113,11 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
 - **`max_concurrent_scan_listings` → 4.** A drive-index walk keeps at most that many `LIST`s in flight on the phone,
   under whatever the walk's own pacing allows. Why four, and how the walk applies it:
   `crates/cmdr-index/src/indexing/network_scanner/DETAILS.md` § "A backend's own ceiling".
+- **`index_walk` → the phone's storage, once** (`src/volume/index_scope.rs`, whose module doc is the canonical why). A
+  drive-index walk descends `/`, the `/sdcard` link (walked as the folder it points at), `/storage`, and every SD card:
+  whatever `/storage` lists besides `emulated` and `self`, ❌ never a hardcoded card name. Every other directory keeps
+  its row unwalked, `/proc`, `/sys`, `/data`, and the two second paths onto primary storage included. ❗ Primary storage
+  is indexed under `/sdcard/…` only, so a pane on `/storage/emulated/0/…` shows no folder sizes.
 - **`supports_export` → true, `is_writable` → true, `supports_streaming` → true.** Every read and write path is
   implemented; the conformance assertions hold each declaration to what the device accepts. The conflict scan is
   `scan_walk::scan_conflicts`, which lists the destination through this backend's own `scan_list` and matches with
@@ -121,8 +126,8 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   per path when the shell's `EROFS` says so, not volume-wide.
 - **`can_watch_listings` → false, `listing_watch_coverage` → `None`.** There is no watcher, so ❌ nothing here may claim
   an authoritative listing; the pane, and the phone's drive index behind the app's listing host, stay honest through
-  `notify_mutation`, called once per changed directory by every mutation, `write_from_stream` included. The patch itself is `cmdr_fs::volume::patching`: this backend implements
-  `PatchSource` (`volume/mutation.rs`) and owes nothing else.
+  `notify_mutation`, called once per changed directory by every mutation, `write_from_stream` included. The patch itself
+  is `cmdr_fs::volume::patching`: this backend implements `PatchSource` (`volume/mutation.rs`) and owes nothing else.
 - **The tree walk is `cmdr_fs::volume::scan_walk`**, reached by implementing `ScanSource` (`volume/scan.rs`): one `STAT`
   for a stat, one `LIST` for a listing, and the walk's arithmetic, batch loop, and conflict matcher come with it. ❗ It
   counts a symlinked directory as the one entry it is rather than walking it, which matters more here than on any other
@@ -146,27 +151,27 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
 - **Liveness**: operations are the detector (there is no keepalive), so every wire-touching delegator classifies a
   `DeviceGone` into `VolumeError::DeviceDisconnected` and emits the transition once (`state.rs`). `track-devices`
   additionally retires the volume when its serial leaves the list, which is the push channel MTP never had.
-- **Space**: two answers, both `df -k`. `get_space_info` is the phone's figure, asked of the shared storage
-  (`/sdcard`), and is what the pane's indicator and the poller show, polled at `space_poll_interval` = 30 s.
+- **Space**: two answers, both `df -k`. `get_space_info` is the phone's figure, asked of the shared storage (`/sdcard`),
+  and is what the pane's indicator and the poller show, polled at `space_poll_interval` = 30 s.
   `get_space_info_at(path)` asks about `path` itself, so an SD card answers for what's on it; the transfer pre-flight
   asks this of the destination folder. ❌ Never ask about the device root: `/` is a read-only system image reporting 0
-  free, which put "0 bytes" in the pane and refused every copy onto a phone (observed on a Pixel 9 Pro XL, the dev
-  log's `volume-space-changed: adb-… (0 avail)` and `InsufficientSpace { available: 0 }`, 2026-09-10). A `df` without
-  figures reads like any failed verb, through a follow-up stat and ❌ never its stderr (`AdbVolume::df_space`): a path
-  that isn't there (`ENOENT`, or a mode of 0 on the v1 verbs) answers for the nearest folder above it that is, because
-  the copy pre-flight asks about a destination folder the copy will create, and anything but `NotSupported` fails the
+  free, which put "0 bytes" in the pane and refused every copy onto a phone (observed on a Pixel 9 Pro XL, the dev log's
+  `volume-space-changed: adb-… (0 avail)` and `InsufficientSpace { available: 0 }`, 2026-09-10). A `df` without figures
+  reads like any failed verb, through a follow-up stat and ❌ never its stderr (`AdbVolume::df_space`): a path that
+  isn't there (`ENOENT`, or a mode of 0 on the v1 verbs) answers for the nearest folder above it that is, because the
+  copy pre-flight asks about a destination folder the copy will create, and anything but `NotSupported` fails the
   dialog's preview (`copy.rs::dest_space_if_known`). ❗ That stays a plain space answer, even when the climb lands on
   `/` and its 0 free: telling a copy the place is read-only is the transfer layer's job, ❌ not a special case here.
   Anything else is `NotSupported` ("can't tell"), ❌ never a guessed number: a `df` failing on a path that exists, or a
   path under a file, where stat answers `ENOTDIR` and nothing could land (verified on Pixel 9 Pro XL, Android 17,
-  `adb shell stat /sdcard/x.png/New`, 2026-09-10; the fake's `FakeTree::stat` answers the same). What `df -k` prints on a phone (verified on Pixel 9
-  Pro XL, Android 17, toybox 0.8.13, `adb shell df -k`, 2026-09-10): the last column is the MOUNT POINT, so `/sdcard`,
-  `/storage/emulated/0`, and every folder under them report `/storage/emulated` (and `/data` its bind mount
-  `/data/user/0`); toybox sizes the columns per invocation, so `shell::parse_df_k` reads the first three numbers after
-  the header and ignores spacing; `/` reports `Available 0`; a missing path still prints the header on stdout, puts its
-  reason on stderr, and exits 1, so the exit code decides and stderr is never read. `testing::pixel_captures` holds
-  those captures verbatim, `FakeTree::new` mounts the Pixel's own rows, and `shell_test.rs` holds the fake's `df` to
-  them byte for byte.
+  `adb shell stat /sdcard/x.png/New`, 2026-09-10; the fake's `FakeTree::stat` answers the same). What `df -k` prints on
+  a phone (verified on Pixel 9 Pro XL, Android 17, toybox 0.8.13, `adb shell df -k`, 2026-09-10): the last column is the
+  MOUNT POINT, so `/sdcard`, `/storage/emulated/0`, and every folder under them report `/storage/emulated` (and `/data`
+  its bind mount `/data/user/0`); toybox sizes the columns per invocation, so `shell::parse_df_k` reads the first three
+  numbers after the header and ignores spacing; `/` reports `Available 0`; a missing path still prints the header on
+  stdout, puts its reason on stderr, and exits 1, so the exit code decides and stderr is never read.
+  `testing::pixel_captures` holds those captures verbatim, `FakeTree::new` mounts the Pixel's own rows, and
+  `shell_test.rs` holds the fake's `df` to them byte for byte.
 
 ## The error policy
 
@@ -205,19 +210,22 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
 - **Here**: the framing, the sync and shell codecs, the errno table, path anchoring, the connect phases and calling one
   off, the state transitions, and the shared `cmdr_fs::volume::conformance` assertions. They run against the **fake ADB
   server** in `crates/cmdr-adb/src/testing/` (`FakeAdbServer` in `server.rs`, the filesystem model in `tree.rs`, the
-  shell verbs in `shell.rs`, a real phone's `df -k` output in `pixel_captures.rs`): a loopback `TcpListener` speaking the host framing, `host:transport`,
-  `host-serial:<serial>:features`, `sync:` (both v1 and v2 verbs; `SEND` creates its file at open, as a device's does,
-  so an upload that stops short leaves a torn file for the writer's cleanup to remove, and a cell can watch that
-  cleanup fail), and `shell,v2,raw:` over an in-memory `FakeTree`,
-  plus `host:track-devices` with `push_devices` for scripted hotplug, `drop_connections` / `stop` for faults,
-  `hold_answers` / `release_answers` to hold a dial provably in flight, and `requests` (every service request, in order)
-  for counting dials or proving none happened. `volume/testing.rs` holds the volume-level fixtures on top of it. No
-  `adb` binary, no device, no Docker: every cell runs in the unit lane.
+  shell verbs in `shell.rs`, a real phone's `df -k` output in `pixel_captures.rs`): a loopback `TcpListener` speaking
+  the host framing, `host:transport`, `host-serial:<serial>:features`, `sync:` (both v1 and v2 verbs; `SEND` creates its
+  file at open, as a device's does, so an upload that stops short leaves a torn file for the writer's cleanup to remove,
+  and a cell can watch that cleanup fail), and `shell,v2,raw:` over an in-memory `FakeTree`. The tree resolves links as
+  the kernel does: a read follows every link along the path (`canonical`, up to `MAX_LINK_HOPS`, then `ELOOP`), `STAT`
+  leaves the last one unfollowed, `LIST` of a link lists its target, and a write stays literal;
+  `FakeTree::android_layout` builds the `/sdcard` → `/storage/self/primary` → `/storage/emulated/0` chain the index
+  cells walk, plus `host:track-devices` with `push_devices` for scripted hotplug, `drop_connections` / `stop` for
+  faults, `hold_answers` / `release_answers` to hold a dial provably in flight, and `requests` (every service request,
+  in order) for counting dials or proving none happened. `volume/testing.rs` holds the volume-level fixtures on top of
+  it. No `adb` binary, no device, no Docker: every cell runs in the unit lane.
 - **App-side** (`apps/desktop/src-tauri/src/adb/`): anything driving `write_operations`, the volume registry,
   `volume_listing::complete`, or the listing cache. The transfer engine's cells sit beside the SFTP suite, in
   `apps/desktop/src-tauri/src/file_system/write_operations/adb_transfer_test.rs`; the list of what exists is
-  `apps/desktop/src-tauri/src/adb/DETAILS.md` § "Testing". ❌ Don't widen this crate's public surface to keep a test on that
-  side; move the test instead. ❗ A green suite here is not evidence that a copy works: `supports_export` and the
+  `apps/desktop/src-tauri/src/adb/DETAILS.md` § "Testing". ❌ Don't widen this crate's public surface to keep a test on
+  that side; move the test instead. ❗ A green suite here is not evidence that a copy works: `supports_export` and the
   free-space pre-flight are read by the engine, so the cells that would catch them live with the engine.
 - **`#[cfg(any(test, feature = "testing"))]`** widens `testing` and `volume::testing` to `pub` for the app's suites; the
   crate's own `dev-dependencies` self-entry turns the feature on for every dev target and leaves it off for the lib, so
@@ -235,7 +243,8 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
 - **Wireless debugging** (`adb pair`) is out of scope: the server owns pairing, and a paired device appears in
   `track-devices` like any other.
 - **Real-device pass pending**: the authorize prompt, an `unauthorized` → `device` transition mid-session, a 2 GB `RECV`
-  / `SEND`, and a `/data` listing on a non-rooted phone (expect `PermissionDenied` carrying the path).
+  / `SEND`, and a `/data` listing on a non-rooted phone (expect `PermissionDenied` carrying the path). The `/sdcard`
+  link chain `android_layout` models, and a timed walk to confirm the four-listing ceiling, wait for the same pass.
 
 ## The public surface
 

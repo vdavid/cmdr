@@ -83,6 +83,13 @@ impl Default for FakeTree {
 /// The mtime every node gets unless a test sets one: 2026-01-01T00:00:00Z.
 pub const DEFAULT_MTIME: i64 = 1_767_225_600;
 
+/// How many links one path resolution follows before refusing, as Linux's
+/// `MAXSYMLINKS` caps it.
+pub const MAX_LINK_HOPS: usize = 40;
+
+/// Linux `ELOOP`: too many links along a path, a loop among them.
+const ELOOP: i32 = 40;
+
 /// One filesystem mounted in the fake device, as `df -k` reports it. The shell
 /// lays its row out per invocation, as toybox does.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -271,9 +278,10 @@ impl FakeTree {
             .ok_or(ENOENT)
     }
 
-    /// The node at `path`, if any.
+    /// The node at `path`, if any, looked up as an `lstat` does: links along the
+    /// parent are followed, and a link at the end is answered as the link it is.
     pub fn get(&self, path: &str) -> Option<&FakeNode> {
-        self.nodes.get(&Self::normalize(path))
+        self.nodes.get(&self.through_links(path))
     }
 
     /// A file's bytes, if `path` is a file.
@@ -289,9 +297,32 @@ impl FakeTree {
         self.nodes.keys().cloned().collect()
     }
 
-    /// The direct children of `dir`: `(name, node)`.
+    /// A tree laid out as a real phone's storage is: primary storage at
+    /// `/storage/emulated/0`, reached through the `/storage/self/primary` link and
+    /// the `/sdcard` link a person browses, with the mounts [`new`](Self::new) has.
+    /// A suite that cares which spelling a file lands under builds on this.
+    pub fn android_layout() -> Self {
+        let mut tree = Self {
+            nodes: BTreeMap::new(),
+            mounts: Vec::new(),
+            read_only: false,
+        };
+        tree.add_dir("/");
+        tree.add_dir("/storage/emulated/0");
+        tree.add_symlink("/storage/self/primary", "/storage/emulated/0");
+        tree.add_symlink("/sdcard", "/storage/self/primary");
+        tree.mount(FakeMount::with_row("/", data_row(DF_K_ROOT, 0)))
+            .mount(FakeMount::with_row(
+                "/storage/emulated",
+                data_row(DF_K_SHARED_STORAGE, 0),
+            ));
+        tree
+    }
+
+    /// The direct children of `dir`: `(name, node)`. Links along `dir` are
+    /// followed, the last one included, as `opendir` follows them.
     pub fn children(&self, dir: &str) -> Vec<(String, FakeNode)> {
-        let dir = Self::normalize(dir);
+        let dir = self.canonical(dir).unwrap_or_else(|_| Self::normalize(dir));
         let prefix = if dir == "/" { "/".to_string() } else { format!("{dir}/") };
         self.nodes
             .iter()
@@ -418,21 +449,70 @@ impl FakeTree {
         Ok(())
     }
 
-    /// `readlink -f`: follows a symlink at `path` (one level; relative targets
-    /// resolve against its directory). A non-link answers itself.
+    /// `readlink -f`: `path` with every link along it followed, the last one
+    /// included, as a phone prints it (`/sdcard` → `/storage/emulated/0`).
+    /// `Err(ENOENT)` when nothing is there, `Err(ELOOP)` for a link loop.
     pub fn resolve(&self, path: &str) -> Result<String, i32> {
-        let path = Self::normalize(path);
-        match self.nodes.get(&path) {
-            None => Err(ENOENT),
-            Some(FakeNode::Symlink { target, .. }) => {
-                if target.starts_with('/') {
-                    Ok(Self::normalize(target))
-                } else {
-                    let parent = Self::parent_of(&path).unwrap_or_else(|| "/".to_string());
-                    Ok(Self::normalize(&format!("{parent}/{target}")))
-                }
+        let canonical = self.canonical(path)?;
+        if self.nodes.contains_key(&canonical) {
+            Ok(canonical)
+        } else {
+            Err(ENOENT)
+        }
+    }
+
+    /// `path` as the kernel resolves it: every link along it followed (relative
+    /// targets against their own directory), the last one included. A component
+    /// that doesn't exist ends the following; the rest is joined on as written.
+    /// `Err(ELOOP)` past [`MAX_LINK_HOPS`], as a phone refuses a link loop.
+    pub fn canonical(&self, path: &str) -> Result<String, i32> {
+        let mut pending: Vec<String> = Self::normalize(path)
+            .split('/')
+            .filter(|part| !part.is_empty())
+            .rev()
+            .map(str::to_string)
+            .collect();
+        let mut resolved = String::from("/");
+        let mut hops = 0;
+        while let Some(part) = pending.pop() {
+            if part == ".." {
+                resolved = Self::parent_of(&resolved).unwrap_or_else(|| "/".to_string());
+                continue;
             }
-            Some(_) => Ok(path),
+            let candidate = if resolved == "/" {
+                format!("/{part}")
+            } else {
+                format!("{resolved}/{part}")
+            };
+            match self.nodes.get(&candidate) {
+                Some(FakeNode::Symlink { target, .. }) => {
+                    hops += 1;
+                    if hops > MAX_LINK_HOPS {
+                        return Err(ELOOP);
+                    }
+                    if target.starts_with('/') {
+                        resolved = "/".to_string();
+                    }
+                    pending.extend(target.split('/').filter(|t| !t.is_empty()).rev().map(str::to_string));
+                }
+                _ => resolved = candidate,
+            }
+        }
+        Ok(resolved)
+    }
+
+    /// `path` with the links along its PARENT followed and its last component
+    /// left as written: the path an `lstat` looks at, so a link at the end is
+    /// answered as the link it is.
+    fn through_links(&self, path: &str) -> String {
+        let path = Self::normalize(path);
+        let (Some(parent), Some(name)) = (Self::parent_of(&path), path.rsplit('/').next()) else {
+            return path;
+        };
+        match self.canonical(&parent) {
+            Ok(parent) if parent == "/" => format!("/{name}"),
+            Ok(parent) => format!("{parent}/{name}"),
+            Err(_) => path,
         }
     }
 }

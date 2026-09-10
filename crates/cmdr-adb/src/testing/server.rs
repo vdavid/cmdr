@@ -356,12 +356,15 @@ async fn serve_sync(stream: &mut TcpStream, shared: &Shared) -> std::io::Result<
                 let mut out = Vec::new();
                 {
                     let tree = shared.tree.lock_ignore_poison();
-                    if let Some(FakeNode::Dir { .. }) = tree.get(&path) {
+                    // `opendir` follows every link along the path, the last one
+                    // included, so a listing of `/sdcard` lists the storage it points at.
+                    let listed = tree.canonical(&path).unwrap_or_else(|_| path.clone());
+                    if let Some(FakeNode::Dir { .. }) = tree.get(&listed) {
                         let mut entries = vec![
-                            (".".to_string(), tree.stat(&path)),
-                            ("..".to_string(), tree.stat(&path)),
+                            (".".to_string(), tree.stat(&listed)),
+                            ("..".to_string(), tree.stat(&listed)),
                         ];
-                        entries.extend(tree.children(&path).into_iter().map(|(n, node)| (n, Ok(node))));
+                        entries.extend(tree.children(&listed).into_iter().map(|(n, node)| (n, Ok(node))));
                         for (name, node) in entries {
                             if v2 {
                                 out.extend_from_slice(b"DNT2");

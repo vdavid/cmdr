@@ -334,3 +334,125 @@ async fn a_change_under_another_phones_path_never_lands_in_this_phones_index() {
 
     let _ = index.forget_volume(&phone.volume_id);
 }
+
+// ── What a phone's walk covers ───────────────────────────────────────
+
+/// A phone's walk indexes its storage once, under the `/sdcard` spelling the pane
+/// browses, plus its SD cards, and never descends the rest of the device. The
+/// kernel's views, a `/sys` symlink loop, private data, and the second paths
+/// Android mounts onto the same storage each keep a row with nothing under it, and a
+/// link inside storage stays the one row it is.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the lock serializes the index's process-wide seams for the whole cell; holding it across the awaits IS the point"
+)]
+async fn a_phone_walk_indexes_its_storage_once_and_never_its_system_trees() {
+    let _serialized = test_lock();
+    let data = tempfile::tempdir().expect("index data dir");
+    let (index, _installed) = install_index(data.path());
+    let serial = "R58M-Index-Layout";
+    let mut tree = FakeTree::android_layout();
+    tree.add_file("/storage/emulated/0/DCIM/Camera/IMG_0001.jpg", &[7; 11])
+        .add_symlink("/storage/emulated/0/DCIM/again", "/sdcard/DCIM")
+        .add_file("/storage/emulated/0/Download/notes.txt", b"hello")
+        .add_file("/storage/1234-5678/Music/song.mp3", &[3; 7])
+        .add_file("/proc/1/status", b"Name: init")
+        .add_symlink("/proc/self", "/proc/1")
+        .add_file("/sys/devices/soc/uevent", b"DRIVER=soc")
+        .add_symlink("/sys/devices/soc/subsystem", "/sys/class/soc")
+        .add_symlink("/sys/class/soc", "/sys/devices/soc")
+        .add_file("/mnt/user/0/emulated/0/DCIM/Camera/IMG_0001.jpg", &[7; 11])
+        .add_file("/data/local/tmp/scratch.bin", &[1; 64]);
+    let fake = crate::adb::test_support::a_listed_phone(serial, tree).await;
+    let (volume_id, _volume) = crate::adb::test_support::dial(&fake, serial, "adb-index-layout").await;
+
+    index_it(&index, &volume_id).await;
+
+    let root = adb_app_root(serial);
+    let at = |device: &str| format!("{root}{device}");
+    let at_root = names_under(&index, &root);
+    for kept_out in ["/proc", "/sys", "/mnt", "/data", "/storage/emulated", "/storage/self"] {
+        assert!(
+            names_under(&index, &at(kept_out)).is_empty(),
+            "{kept_out} keeps its row and nothing beneath it"
+        );
+    }
+    for listed in ["proc", "sys", "mnt", "data", "sdcard", "storage"] {
+        assert!(
+            at_root.contains(&listed.to_string()),
+            "{listed} still lists at the root: {at_root:?}"
+        );
+    }
+    assert_eq!(names_under(&index, &at("/sdcard/DCIM/Camera")), vec!["IMG_0001.jpg"]);
+    assert!(
+        names_under(&index, &at("/sdcard/DCIM/again")).is_empty(),
+        "a link inside storage is the one row it is"
+    );
+    assert_eq!(names_under(&index, &at("/storage/1234-5678/Music")), vec!["song.mp3"]);
+    wait_until_async(PATCH_BUDGET, "the folder sizes the pane shows to roll up", || {
+        size_under(&index, &at("/sdcard/DCIM")) == Some(11)
+    })
+    .await;
+    wait_until_async(
+        PATCH_BUDGET,
+        "the phone's total to count each file once: the photo, the note, and the song",
+        || size_under(&index, &root) == Some(11 + 5 + 7),
+    )
+    .await;
+
+    let _ = index.forget_volume(&volume_id);
+    crate::adb::test_support::retire_phone(serial);
+    apply_device_list(Vec::new());
+}
+
+/// A change Cmdr reports under a tree the phone's walk keeps out never lands, so a
+/// live patch can't put back rows no walk produces. A change under the phone's
+/// storage does land, which is also what proves the writer had the other in hand
+/// before the assertion reads.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the lock serializes the index's process-wide seams for the whole cell; holding it across the awaits IS the point"
+)]
+async fn a_change_under_a_tree_the_walk_keeps_out_never_lands() {
+    let _serialized = test_lock();
+    let data = tempfile::tempdir().expect("index data dir");
+    let (index, _installed) = install_index(data.path());
+    let serial = "R58M-Index-Kept-Out";
+    let mut tree = FakeTree::android_layout();
+    tree.add_file("/storage/emulated/0/Download/notes.txt", b"hello")
+        .add_file("/data/local/tmp/scratch.bin", &[1; 64]);
+    let fake = crate::adb::test_support::a_listed_phone(serial, tree).await;
+    let (volume_id, _volume) = crate::adb::test_support::dial(&fake, serial, "adb-index-kept-out").await;
+    index_it(&index, &volume_id).await;
+
+    let root = adb_app_root(serial);
+    let data_dir = format!("{root}/data");
+    let download = format!("{root}/sdcard/Download");
+    // The hop a listing host takes, with the volume id a phone's patch carries.
+    let index_host = crate::index_host::index();
+    index_host.apply_directory_change(
+        &volume_id,
+        Path::new(&data_dir),
+        &DirectoryChange::Added(a_file(&data_dir, "pushed.bin")),
+    );
+    index_host.apply_directory_change(
+        &volume_id,
+        Path::new(&download),
+        &DirectoryChange::Added(a_file(&download, "copied.txt")),
+    );
+
+    wait_until_async(PATCH_BUDGET, "the change under storage to land", || {
+        names_under(&index, &download).contains(&"copied.txt".to_string())
+    })
+    .await;
+    assert!(
+        names_under(&index, &data_dir).is_empty(),
+        "/data keeps its row and takes no child from a patch"
+    );
+
+    let _ = index.forget_volume(&volume_id);
+    crate::adb::test_support::retire_phone(serial);
+    apply_device_list(Vec::new());
+}

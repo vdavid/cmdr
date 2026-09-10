@@ -43,6 +43,7 @@ use crate::params::AdbConnectionParams;
 use crate::server::AdbEndpoint;
 use crate::sync::SyncSession;
 
+mod index_scope;
 mod mapping;
 mod mutation;
 mod paths;

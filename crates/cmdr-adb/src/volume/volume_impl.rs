@@ -80,6 +80,11 @@ impl Volume for AdbVolume {
         MAX_CONCURRENT_SCAN_LISTINGS
     }
 
+    /// The phone's storage and nothing else: `volume/index_scope.rs`.
+    fn index_walk(&self, dir: &Path, is_symlink: bool) -> cmdr_fs::volume::IndexWalk {
+        self.index_walk_impl(dir, is_symlink)
+    }
+
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
