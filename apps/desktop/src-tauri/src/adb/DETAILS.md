@@ -161,7 +161,9 @@ diff and inline retirement, eject itself, and the transfer engine through the re
 Two things read like gaps and are not. They live here because the spec that decided them is wiped, and because both are
 the kind of "oversight" someone will otherwise fix.
 
-- **An ADB volume is never indexed.** `cmdr-index` does not route `adb://`, and that is the intended end state. A phone
+- **An ADB volume is never indexed.** `BackendKind::Adb` answers `can_be_indexed: false`, so the switcher offers a
+  phone no index badge and no first-connect prompt (the frontend's per-kind default answers before it's dialed), and
+  `Index::start_volume` refuses one. That is the intended end state. A phone
   is transient, its filesystem is large, and walking it over USB to fill an index would thrash the device and the cable
   for data that is stale the moment it is unplugged. Search inside an ADB pane is live filename search over the current
   listing.

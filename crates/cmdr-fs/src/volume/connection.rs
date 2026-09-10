@@ -138,6 +138,29 @@ pub enum BackendKind {
     GitPortal,
 }
 
+impl BackendKind {
+    /// Whether a drive index can be turned on for a volume this backend serves:
+    /// the index has a transport that walks and watches it (the local walker for
+    /// a real filesystem, an OS-mounted share included, and the `Volume`-trait
+    /// scanner for an smb2 session and an MTP phone).
+    ///
+    /// ❗ The one answer both sides read: `Volume::capabilities` publishes it for
+    /// the volume switcher's index affordances, and the index's `start_volume`
+    /// refuses a registered volume this says no for. A server's scheme root is
+    /// nothing the local walker can read, a phone over ADB is never indexed by
+    /// design (a transient device, walked over USB), and an archive or a `.git`
+    /// portal is a view inside a drive that is indexed as itself.
+    ///
+    /// Exhaustive on purpose: a new backend doesn't compile until it answers.
+    #[must_use]
+    pub fn can_be_indexed(self) -> bool {
+        match self {
+            Self::Local | Self::Smb | Self::Mtp => true,
+            Self::Sftp | Self::Webdav | Self::Adb | Self::Archive | Self::GitPortal => false,
+        }
+    }
+}
+
 /// What a "Sign in" affordance on a volume asks a person for: the FORM the sheet
 /// renders, decided by the backend rather than by the sheet's mode or the
 /// protocol's name.

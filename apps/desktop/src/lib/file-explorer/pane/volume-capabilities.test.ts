@@ -72,6 +72,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeSource: true,
       hasParentRow: true,
       syncsToMcp: true,
+      canBeIndexed: true,
     },
     smb: {
       kind: 'smb',
@@ -80,6 +81,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeSource: true,
       hasParentRow: true,
       syncsToMcp: true,
+      canBeIndexed: true,
     },
     sftp: {
       kind: 'sftp',
@@ -88,6 +90,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeSource: true,
       hasParentRow: true,
       syncsToMcp: true,
+      canBeIndexed: false,
     },
     webdav: {
       kind: 'webdav',
@@ -96,6 +99,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeSource: true,
       hasParentRow: true,
       syncsToMcp: true,
+      canBeIndexed: false,
     },
     mtp: {
       kind: 'mtp',
@@ -104,6 +108,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeSource: true,
       hasParentRow: true,
       syncsToMcp: true,
+      canBeIndexed: true,
     },
     adb: {
       kind: 'adb',
@@ -112,6 +117,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeSource: true,
       hasParentRow: true,
       syncsToMcp: true,
+      // Never indexed, by design: this default answers for a phone nobody has dialed.
+      canBeIndexed: false,
     },
     network: {
       kind: 'network',
@@ -122,6 +129,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       // No file list at all (NetworkMountView renders instead), so there is
       // nothing for a sort to order.
       syncsToMcp: false,
+      canBeIndexed: false,
     },
     'search-results': {
       kind: 'search-results',
@@ -134,6 +142,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       // Mirrors to MCP off the frontend snapshot: no backend listing needed, and
       // the copy/move/delete gate reads this pane's state.
       syncsToMcp: true,
+      canBeIndexed: false,
     },
     archive: {
       kind: 'archive',
@@ -143,6 +152,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeSource: true,
       hasParentRow: true,
       syncsToMcp: true,
+      canBeIndexed: false,
     },
     'git-portal': {
       kind: 'git-portal',
@@ -154,6 +164,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeSource: true,
       hasParentRow: true,
       syncsToMcp: true,
+      canBeIndexed: false,
     },
   }
 
@@ -287,12 +298,12 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
 
   it('returns the SAME frozen row (no allocation) when the two already agree', () => {
     const row = capabilitiesForKind('local')
-    expect(withBackendCapabilities(row, { backendCanWrite: true, canExport: true })).toBe(row)
+    expect(withBackendCapabilities(row, { backendCanWrite: true, canExport: true, canBeIndexed: true })).toBe(row)
   })
 
   it("takes the backend's answer when it differs, leaving the structural fields alone", () => {
     const row = capabilitiesForKind('local')
-    const folded = withBackendCapabilities(row, { backendCanWrite: false, canExport: false })
+    const folded = withBackendCapabilities(row, { backendCanWrite: false, canExport: false, canBeIndexed: true })
     expect(folded.canWrite).toBe(false)
     expect(folded.canBeSource).toBe(false)
     // Kind and the per-namespace UI structure are not the backend's to answer.
@@ -303,13 +314,21 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
     expect(Object.isFrozen(folded)).toBe(true)
   })
 
+  it("folds the backend's indexability too: a registered volume no index can serve says so", () => {
+    const row = capabilitiesForKind('local')
+    const folded = withBackendCapabilities(row, { backendCanWrite: true, canExport: true, canBeIndexed: false })
+    expect(folded.canBeIndexed).toBe(false)
+    expect(folded.canWrite).toBe(true)
+    expect(folded.canBeSource).toBe(true)
+  })
+
   it('reaches capabilitiesFor: a backend that declines writes disables them on the pane', () => {
     volumes.list = [
       vol({
         id: 'weird-vol',
         fsType: 'apfs',
         category: 'attached_volume',
-        capabilities: { backendCanWrite: false, canExport: true },
+        capabilities: { backendCanWrite: false, canExport: true, canBeIndexed: true },
       }),
     ]
     const caps = capabilitiesFor('weird-vol')
@@ -326,7 +345,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
         id: 'volumesnaspi',
         fsType: 'smbfs',
         category: 'network',
-        capabilities: { backendCanWrite: true, canExport: true },
+        capabilities: { backendCanWrite: true, canExport: true, canBeIndexed: true },
       }),
     ]
     expect(capabilitiesFor('volumesnaspi').kind).toBe('smb')
@@ -468,7 +487,7 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
         id: 'root',
         fsType: 'apfs',
         category: 'main_volume',
-        capabilities: { backendCanWrite: true, canExport: true },
+        capabilities: { backendCanWrite: true, canExport: true, canBeIndexed: true },
       }),
     ]
     expect(capabilitiesForPane('root', '/Users/me/foo.tar/inner').canWrite).toBe(false)
@@ -513,7 +532,7 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
         id: 'root',
         fsType: 'apfs',
         category: 'main_volume',
-        capabilities: { backendCanWrite: true, canExport: true },
+        capabilities: { backendCanWrite: true, canExport: true, canBeIndexed: true },
       }),
     ]
     for (const path of [
@@ -543,7 +562,7 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
         id: 'root',
         fsType: 'apfs',
         category: 'main_volume',
-        capabilities: { backendCanWrite: true, canExport: true },
+        capabilities: { backendCanWrite: true, canExport: true, canBeIndexed: true },
       }),
     ]
     // The volumeId is the writable parent drive; the path crosses `.git/branches/`,

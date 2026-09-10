@@ -252,7 +252,7 @@ describe('createDeviceConnect', () => {
     })
     // The `volumes-changed` after the dial: enrichment fills `capabilities` only
     // for a volume the registry holds, so this is what "dialed" looks like.
-    const registered: VolumeBackendCapabilities = { backendCanWrite: true, canExport: true }
+    const registered: VolumeBackendCapabilities = { backendCanWrite: true, canExport: true, canBeIndexed: false }
     setInfo({ ...phone({ kind: 'ready' }), capabilities: registered })
     expect(sub.holdsListing).toBe(false)
 

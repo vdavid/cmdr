@@ -562,14 +562,16 @@ pub trait Volume: Send + Sync {
     /// Which backend serves this volume.
     ///
     /// For the few app decisions that are genuinely about the transport (which
-    /// indexer transport may walk it, whether the file viewer treats its paths as
-    /// local, whether an SMB upgrade has anything to do).
+    /// indexer transport may walk it, and whether any may at all; whether the file
+    /// viewer treats its paths as local; whether an SMB upgrade has anything to do).
     ///
     /// The default is [`BackendKind::Local`], so a test double compiles without
     /// naming one and an unclassified backend gets no remote treatment.
-    /// ❌ Never published to the frontend: `volume-capabilities.ts` classifies a
-    /// pane off `fsType` and category, and an un-upgraded SMB share served by
-    /// `LocalPosixVolume` would answer `Local` here.
+    /// ❌ The kind itself is never published to the frontend: `volume-capabilities.ts`
+    /// classifies a pane off `fsType` and category, and an un-upgraded SMB share
+    /// served by `LocalPosixVolume` would answer `Local` here. A capability derived
+    /// from it (`can_be_indexed`) is published, because that's a question about the
+    /// backend.
     fn backend_kind(&self) -> BackendKind {
         BackendKind::Local
     }
@@ -806,6 +808,7 @@ pub trait Volume: Send + Sync {
         VolumeCapabilities {
             backend_can_write: self.is_writable(),
             can_export: self.supports_export(),
+            can_be_indexed: self.backend_kind().can_be_indexed(),
         }
     }
 

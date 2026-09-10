@@ -244,6 +244,8 @@ export interface VolumeBackendCapabilities {
   backendCanWrite: boolean
   /** Files can be read out of here, so this volume can be the SOURCE of a copy or a move. */
   canExport: boolean
+  /** A drive index can be turned on for this volume: the index has a way to walk and watch this backend. */
+  canBeIndexed: boolean
 }
 
 /**

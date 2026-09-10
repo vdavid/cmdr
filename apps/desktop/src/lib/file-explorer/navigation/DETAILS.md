@@ -396,12 +396,14 @@ the dropdown trigger (reflecting the ACTIVE drive), and per-row inside the dropd
 `scanning`, green = `fresh`, yellow = `stale`. The mapping, the menu items per state, and the "N min, S s" duration
 formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated behind `prefers-reduced-motion`).
 
-- **Eligibility is `isDriveRow(volume)`** (in `drive-index-manager.svelte.ts`): every entry except favorites, the
-  synthetic `network` / `search-results` ids, and mounted disk images (`isDiskImage`). SMB shares
-  (`category: 'network'`, real id) and the local disk (`root`) DO get a badge; the synthetic "Network" group entry and
-  `.dmg` mounts do not. Disk images are excluded here because they're transient install-style mounts we deliberately
-  never index — and since this predicate also gates the first-connect prompt and the status fetch, one exclusion covers
-  all three. The badge is gray for any drive without a registered index, so it's safe to query for every eligible row.
+- **Eligibility is `isDriveRow(volume)`** (in `drive-index-manager.svelte.ts`): every entry except favorites, mounted
+  disk images (`isDiskImage`), and any volume whose `canBeIndexed` capability says no (`pane/volume-capabilities.ts`):
+  the synthetic `network` / `search-results` rows, SFTP and WebDAV servers, and a phone over ADB. SMB shares, MTP
+  phones, and the local disk DO get a badge. Disk images are a product choice (transient install-style mounts we
+  deliberately never index); the rest is the backend's answer (`BackendKind::can_be_indexed`), with the per-kind
+  default standing in until a volume registers, which is exactly when an undialed phone's row gets clicked. Since this
+  predicate also gates the first-connect prompt and the status fetch, one exclusion covers all three. The badge is gray
+  for any drive without a registered index, so it's safe to query for every eligible row.
 - **Status stays live by SUBSCRIPTION, not polling** (`drive-index-manager.svelte.ts`): it listens to
   `index-freshness-changed`, `index-scan-started`, and `index-scan-complete`, refetching the named volume's status on
   each (the events alone don't carry the last-scan facts). The active-drive badge also refetches when the active drive

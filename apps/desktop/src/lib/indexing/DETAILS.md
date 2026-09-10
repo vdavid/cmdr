@@ -357,7 +357,8 @@ ms→seconds) covers the gap before the window has samples. Tier 2's ETA is pref
 ## The prompts this area owns
 
 Three FE-owned surfaces ask the user something about drive indexing, and all three keep their state on this side:
-`first-connect-trigger.ts` + `FirstConnectIndexToastContent` (offer to index a drive the moment it connects),
+`first-connect-trigger.ts` + `FirstConnectIndexToastContent` (offer to index a drive the moment it connects; the caller
+asks only for a row `isDriveRow` passes, so a volume no drive index can serve, like a phone over ADB, is never offered),
 `StaleDriveDialog.svelte` (below), and `drive-index-prefs.ts` (the persisted one-shots both read).
 
 ## The one-time stale dialog

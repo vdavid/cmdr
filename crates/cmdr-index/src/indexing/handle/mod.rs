@@ -203,6 +203,22 @@ impl Index {
     /// user asked for this drive" and nothing else. `state::record_drive_index_enabled`
     /// says why it's written before the start rather than after it.
     pub async fn start_volume(&self, volume_id: &str) -> Result<StartOutcome, IndexError> {
+        // ❗ A registered volume no drive index can serve is refused FIRST: before
+        // the enable is recorded (the marker would name a drive nobody could have
+        // asked for) and before a search walk's writer-only instance on it is
+        // promoted to a full scan. `can_be_indexed` is the answer the volume
+        // switcher offers indexing on, so this door refuses exactly where it says
+        // no. An unregistered id (an offline share) can't be asked, and keeps its
+        // recorded intent below.
+        if crate::indexing::host::volumes::current()
+            .get(volume_id)
+            .is_some_and(|volume| !volume.capabilities().can_be_indexed)
+        {
+            log::info!(target: "indexing", "start_volume: refusing '{volume_id}', no drive index can serve its backend");
+            return Ok(StartOutcome::Refused(
+                crate::indexing::transports::smb::index::SmbIndexGateReason::NotAnSmbVolume,
+            ));
+        }
         // ❌ Not `is_active`: a volume with a teardown claimed on it reads active
         // right up to the moment it stops, and short-circuiting there answers
         // "already indexing" to the very request that has to bring it back.

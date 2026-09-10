@@ -72,6 +72,40 @@ async fn turning_indexing_on_records_the_choice_before_any_scan_finishes() {
     );
 }
 
+/// Turning indexing on for a volume no drive index can serve refuses, and records
+/// nothing.
+///
+/// The published `can_be_indexed` capability and this routing are one decision:
+/// the switcher offers indexing only where it says yes, so this door must refuse
+/// exactly where it says no. A marker left behind would name a drive the user
+/// could never have asked for, and resume nothing.
+#[tokio::test(flavor = "multi_thread")]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the fixture holds the process-wide seams for the whole test; holding it across the await IS the point"
+)]
+async fn turning_indexing_on_for_a_volume_no_index_can_serve_refuses_and_records_nothing() {
+    let phone = ColdDrive::with_volume("cover-enable-unindexable-test", |volume| {
+        volume.with_backend_kind(cmdr_fs::volume::BackendKind::Adb)
+    });
+
+    let outcome = phone
+        .index
+        .start_volume(phone.volume_id)
+        .await
+        .expect("the enable itself is not an error");
+
+    assert_eq!(
+        outcome,
+        crate::indexing::handle::StartOutcome::Refused(crate::SmbIndexGateReason::NotAnSmbVolume),
+        "a phone over ADB has no index transport",
+    );
+    assert!(
+        !IndexStore::user_enabled(&phone.db_path()),
+        "and nothing records it as a drive the user turned on",
+    );
+}
+
 /// Turning indexing on for a share that ISN'T reachable still records the choice,
 /// so the share indexes itself when it comes back.
 ///

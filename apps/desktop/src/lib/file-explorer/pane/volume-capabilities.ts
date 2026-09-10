@@ -101,11 +101,11 @@ export type VolumeKind =
  * What a pane on a given volume can do. A real typed interface (NOT a
  * `Record<string, boolean>` bag): the `kind` field is the discriminant.
  *
- * `canWrite` and `canBeSource` are the FOLDED answers — the backend's published
- * `backendCanWrite` / `canExport` laid over the per-kind row whenever the pane
- * sits on a registered volume; the per-kind row
- * is the default for everything Rust has no volume for. The remaining three are
- * per-namespace UI structure Rust has nothing to say about.
+ * `canWrite`, `canBeSource`, and `canBeIndexed` are the FOLDED answers — the
+ * backend's published `backendCanWrite` / `canExport` / `canBeIndexed` laid over
+ * the per-kind row whenever the pane sits on a registered volume; the per-kind
+ * row is the default for everything Rust has no volume for. The remaining three
+ * are per-namespace UI structure Rust has nothing to say about.
  */
 export interface VolumeCapabilities {
   kind: VolumeKind
@@ -137,6 +137,13 @@ export interface VolumeCapabilities {
    * a pane that pushes nothing leaves the store describing wherever it came from.
    */
   syncsToMcp: boolean
+  /**
+   * A drive index can be turned on here, so the switcher offers its index
+   * affordances (`navigation/drive-index-manager.svelte.ts::isDriveRow`). Rust's
+   * `BackendKind::can_be_indexed` is the one decider; this row only answers
+   * before a backend registers, like a phone's row clicked before it's dialed.
+   */
+  canBeIndexed: boolean
 }
 
 /**
@@ -155,6 +162,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
+    canBeIndexed: true,
   }),
   smb: Object.freeze({
     kind: 'smb',
@@ -163,6 +171,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
+    // Both an smb2 session and an OS-mounted share: the index walks either.
+    canBeIndexed: true,
   }),
   sftp: Object.freeze({
     // A server: a real backend listing over a session Cmdr owns, with `..` and a
@@ -176,6 +186,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
+    // No drive index: its `sftp://` root is nothing the index's walkers can read.
+    canBeIndexed: false,
   }),
   webdav: Object.freeze({
     // The `sftp` row, for the same reasons: a session-backed listing with no OS
@@ -186,6 +198,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
+    canBeIndexed: false,
   }),
   mtp: Object.freeze({
     kind: 'mtp',
@@ -194,6 +207,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
+    canBeIndexed: true,
   }),
   adb: Object.freeze({
     // Same shape as `mtp`: a device-anchored real listing. The transport differs
@@ -204,6 +218,10 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
+    // ...but it is never indexed, by design (`src-tauri/src/adb/DETAILS.md` §
+    // Deliberate non-goals). This row is what answers for a phone's row BEFORE
+    // it's dialed, which is when the first-connect prompt would fire.
+    canBeIndexed: false,
   }),
   network: Object.freeze({
     kind: 'network',
@@ -216,6 +234,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeSource: false,
     hasParentRow: false,
     syncsToMcp: false,
+    canBeIndexed: false,
   }),
   'search-results': Object.freeze({
     kind: 'search-results',
@@ -229,6 +248,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     // gate reasons on this pane's state, so a pane that pushed nothing left the
     // store describing the directory it came from.
     syncsToMcp: true,
+    canBeIndexed: false,
   }),
   archive: Object.freeze({
     kind: 'archive',
@@ -243,11 +263,13 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     // `canBeSource: true` — copying files OUT stays a headline feature.
     // `syncsToMcp: true` — the listing is real; MCP reports the parent drive id
     // plus the full `…/foo.zip/inner` path, so agents navigate by path.
+    // `canBeIndexed: false` — a view inside a drive, which is indexed as itself.
     hasBackendListing: true,
     canWrite: true,
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
+    canBeIndexed: false,
   }),
   'git-portal': Object.freeze({
     kind: 'git-portal',
@@ -266,6 +288,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
+    canBeIndexed: false,
   }),
 })
 
@@ -336,8 +359,19 @@ export function withBackendCapabilities(
   published: VolumeBackendCapabilities | null | undefined,
 ): VolumeCapabilities {
   if (!published) return row
-  if (published.backendCanWrite === row.canWrite && published.canExport === row.canBeSource) return row
-  return Object.freeze({ ...row, canWrite: published.backendCanWrite, canBeSource: published.canExport })
+  if (
+    published.backendCanWrite === row.canWrite &&
+    published.canExport === row.canBeSource &&
+    published.canBeIndexed === row.canBeIndexed
+  ) {
+    return row
+  }
+  return Object.freeze({
+    ...row,
+    canWrite: published.backendCanWrite,
+    canBeSource: published.canExport,
+    canBeIndexed: published.canBeIndexed,
+  })
 }
 
 /**
@@ -350,8 +384,17 @@ export function withBackendCapabilities(
  */
 export function capabilitiesFor(volumeId: string): VolumeCapabilities {
   const info: VolumeInfo | undefined = getVolumes().find((v) => v.id === volumeId)
-  const row = capabilitiesForKind(volumeKindOf(volumeId, info?.fsType, info?.category))
-  return withBackendCapabilities(row, info?.capabilities)
+  return info ? capabilitiesForInfo(info) : capabilitiesForKind(volumeKindOf(volumeId, undefined, undefined))
+}
+
+/**
+ * The same answer as `capabilitiesFor`, for a caller already holding the volume
+ * row: a site walking the volume list (the switcher's index affordances) has the
+ * row in hand, and a lookup by id would be a second pass over the same list.
+ */
+export function capabilitiesForInfo(info: VolumeInfo): VolumeCapabilities {
+  const row = capabilitiesForKind(volumeKindOf(info.id, info.fsType, info.category))
+  return withBackendCapabilities(row, info.capabilities)
 }
 
 /**

@@ -248,8 +248,11 @@ location) and `onVolumeChange` (deliberate volume-(re)select) are the two distin
 **Volume capabilities (`volume-capabilities.ts`).** Guard logic branches on a `VolumeCapabilities` record, ❌ never on a
 volume-id string. The record has two halves, and which half answers is the whole design:
 
-- **Rust answers "what can it do."** `Volume::capabilities()` publishes `backendCanWrite` + `canExport` per volume; they
-  ride on `VolumeInfo.capabilities` and land on the record as `canWrite` / `canBeSource` via `withBackendCapabilities`.
+- **Rust answers "what can it do."** `Volume::capabilities()` publishes `backendCanWrite`, `canExport`, and
+  `canBeIndexed` per volume; they ride on `VolumeInfo.capabilities` and land on the record as `canWrite` /
+  `canBeSource` / `canBeIndexed` via `withBackendCapabilities`. `canBeIndexed` gates the switcher's index affordances
+  (`navigation/drive-index-manager.svelte.ts::isDriveRow`), and its per-kind default carries real weight for a phone,
+  whose row is clicked before it's dialed and so before any backend has published.
   Canonical: `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Trait capability model".
 - **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `sftp` /
   `webdav` / `mtp` / `adb` / `network` / `search-results`), which keys a frozen, by-reference table of per-kind defaults
@@ -295,7 +298,8 @@ volume-id string. The record has two halves, and which half answers is the whole
   `rowIsOsVisible` (a missed kind offers `Share` on a row with no file behind it).
 - **To add virtual volume #3:** add a `VolumeKind` member, a table row, and a `volumeKindOf` branch, then walk those
   five.
-- **To add a real backend:** override `is_writable` in Rust and there's nothing to do on this side.
+- **To add a real backend:** override `is_writable` and answer `BackendKind::can_be_indexed` in Rust, then give its
+  `VolumeKind` row the same `canBeIndexed` for the window before it registers.
 
 Consumers read the record directly: `SearchResultsView.svelte` reads `capabilitiesForKind('search-results')` (it always
 renders a search-results pane), and every capability-GUARD consumer reads it for a PANE via `capabilitiesForPane`.

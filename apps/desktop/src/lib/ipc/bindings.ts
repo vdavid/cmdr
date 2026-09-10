@@ -496,7 +496,8 @@ export const commands = {
     __TAURI_INVOKE<TimedOut<null>>('toggle_tags', { listingId, paths, color }),
   /**
    *  Returns `TimedOut<bool>` so the frontend can distinguish a real "doesn't exist"
-   *  from "we couldn't tell" (timeout, or SMB volume in `Disconnected` state). Without this
+   *  from "we couldn't tell" (timeout, an SMB volume in `Disconnected` state, or a
+   *  listed device nobody has dialed, like an ADB phone before its pane connects). Without this
    *  distinction, the directory-eviction poll in `FilePane.svelte` evicts users from a
    *  network folder on any transient connection blip.
    */
@@ -13507,6 +13508,12 @@ export type VolumeCapabilities = {
    *  or a move.
    */
   canExport: boolean
+  /**
+   *  A drive index can be turned on for this volume, because the index has a
+   *  transport that walks and watches this backend. `BackendKind::can_be_indexed`
+   *  is the one decider.
+   */
+  canBeIndexed: boolean
 }
 
 /**

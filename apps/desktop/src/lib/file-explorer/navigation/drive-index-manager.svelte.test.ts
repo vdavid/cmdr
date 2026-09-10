@@ -169,4 +169,26 @@ describe('isDriveRow — index-affordance eligibility', () => {
   it('keeps the badge on a mounted SMB share, which the SMB gate really does index', () => {
     expect(isDriveRow(vol({ id: 'smb-share', category: 'network', fsType: 'smbfs' }))).toBe(true)
   })
+
+  /**
+   * ❗ A phone over ADB is never indexed by design, and its row is clicked
+   * BEFORE it's dialed, when no backend has published anything yet. The
+   * first-connect prompt fires on that click, so the per-kind default has to
+   * say no on its own.
+   */
+  it('excludes a phone over ADB, before and after it is dialed', () => {
+    const phone = { id: 'adb-r58m-0a1b2c', category: 'mobile_device', fsType: 'adb' } as const
+    expect(isDriveRow(vol(phone))).toBe(false)
+    const dialed = { backendCanWrite: true, canExport: true, canBeIndexed: false }
+    expect(isDriveRow(vol({ ...phone, capabilities: dialed }))).toBe(false)
+  })
+
+  it('keeps the badge on an MTP phone, which the index scans over its own session', () => {
+    expect(isDriveRow(vol({ id: 'mtp-1:65537', category: 'mobile_device', fsType: undefined }))).toBe(true)
+  })
+
+  it("follows a registered backend's own answer over the per-kind default", () => {
+    const declines = { backendCanWrite: true, canExport: true, canBeIndexed: false }
+    expect(isDriveRow(vol({ category: 'attached_volume', capabilities: declines }))).toBe(false)
+  })
 })

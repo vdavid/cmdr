@@ -20,33 +20,33 @@ import {
   onIndexScanComplete,
 } from '$lib/tauri-commands/indexing'
 import type { VolumeInfo } from '../types'
+import { capabilitiesForInfo } from '../pane/volume-capabilities'
 
 /**
  * Whether a switcher entry is a real DRIVE row that can carry an index badge.
- * Excludes favorites and the synthetic `network` / `search-results` entries
- * (the plan: badges only on real drives, not Favorites/groups), plus mounted
- * disk images (transient `.dmg` mounts we deliberately never index). Every
- * remaining category is a real volume the backend can report on (gray if not
- * indexed).
  *
- * This predicate is the single chokepoint for index affordances: dropping a
- * disk image here suppresses the index badge (both the active-volume spot and
- * each dropdown row), the first-connect "index this drive?" prompt, and the
- * per-volume index-status fetch, all at once.
+ * This predicate is the single chokepoint for index affordances: a row it drops
+ * gets no index badge (neither the active-volume spot nor its dropdown row), no
+ * first-connect "index this drive?" prompt, and no per-volume index-status fetch.
  *
- * ❗ An SFTP or WebDAV server is dropped for a different reason than a disk
- * image: an enable there SUCCEEDS and is wrong. The volume's root is a
- * `sftp://…` path, so the local walker reads nothing, covers zero entries, and
- * leaves an index that reports itself fresh and complete while folder sizes and
- * search answer "nothing here". A mounted SMB share keeps its badge: the SMB
- * gate really does index one over its own session.
+ * Three reasons to drop a row, each a different kind of answer:
+ *
+ * - **A favorite** is a shortcut into a drive, not a drive.
+ * - **A mounted disk image** could be indexed, and we deliberately don't: a
+ *   `.dmg` mount is transient.
+ * - **No drive index can serve it** (`canBeIndexed`, a typed capability): the
+ *   synthetic `network` / `search-results` rows, an SFTP or WebDAV server (whose
+ *   `sftp://…` root no local walker can read, so an enable would leave a
+ *   fresh-looking empty index), and a phone over ADB (never indexed, by design).
+ *   The backend's answer wins once a volume is registered; before that (a phone
+ *   nobody has dialed, the moment its row is clicked) the per-kind default
+ *   answers. A mounted SMB share and an MTP phone stay in: the index really does
+ *   walk both.
  */
 export function isDriveRow(volume: VolumeInfo): boolean {
   if (volume.category === 'favorite') return false
-  if (volume.id === 'network' || volume.id === 'search-results') return false
   if (volume.isDiskImage) return false
-  if (volume.fsType === 'sftp' || volume.fsType === 'webdav') return false
-  return true
+  return capabilitiesForInfo(volume).canBeIndexed
 }
 
 export interface DriveIndexManager {

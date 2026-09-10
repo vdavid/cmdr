@@ -189,7 +189,10 @@ parent). A grant of "one item" for such a type is `RootPromises` moving by one a
   network layer. ⚠️ `start_volume`'s "already indexing" short-circuit asks `is_active_and_staying`, ❌ never
   `is_active`: a volume with a teardown claimed on it reads active right up to the moment it stops, so the plain
   question answers "already indexing" to the very request that has to bring it back (`../lifecycle/DETAILS.md` § The
-  shutting-down window).
+  shutting-down window). ❗ Ahead of all of it, a REGISTERED volume whose `capabilities().can_be_indexed` is false
+  answers `Refused(NotAnSmbVolume)`: before the enable marker is written, and before a search walk's writer-only
+  instance on it could be promoted to a scan. The volume switcher offers indexing on that same capability, so the two
+  can't disagree.
 
 - **`is_active` + `force_scan` ⇒ `Index::rescan_volume`.** "Rescan now" on a drive that isn't indexing yet means "start
   it", and the caller shouldn't have to know that.

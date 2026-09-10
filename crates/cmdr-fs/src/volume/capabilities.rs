@@ -43,4 +43,8 @@ pub struct VolumeCapabilities {
     /// Files can be read out of here, so this volume can be the SOURCE of a copy
     /// or a move.
     pub can_export: bool,
+    /// A drive index can be turned on for this volume, because the index has a
+    /// transport that walks and watches this backend. `BackendKind::can_be_indexed`
+    /// is the one decider.
+    pub can_be_indexed: bool,
 }

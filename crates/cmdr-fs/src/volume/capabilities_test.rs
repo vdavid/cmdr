@@ -112,6 +112,8 @@ fn an_undeclared_backend_gets_the_conservative_answer_to_everything() {
         VolumeCapabilities {
             backend_can_write: false,
             can_export: false,
+            // Follows `backend_kind`, whose default is `Local`.
+            can_be_indexed: true,
         }
     );
 }
@@ -123,6 +125,7 @@ fn declaring_a_predicate_moves_the_published_surface() {
         VolumeCapabilities {
             backend_can_write: true,
             can_export: true,
+            can_be_indexed: true,
         }
     );
 }
@@ -135,8 +138,30 @@ fn the_in_memory_double_publishes_the_read_write_surface_a_test_expects() {
         VolumeCapabilities {
             backend_can_write: true,
             can_export: true,
+            can_be_indexed: true,
         }
     );
+}
+
+/// A server, a phone over ADB, and a view inside a drive are never offered a
+/// drive index; a disk, a share, and an MTP phone are. The published answer
+/// follows the backend kind, so it can't disagree with the index's own routing.
+#[test]
+fn indexability_follows_the_backend_kind() {
+    use super::BackendKind;
+    for (kind, indexable) in [
+        (BackendKind::Local, true),
+        (BackendKind::Smb, true),
+        (BackendKind::Mtp, true),
+        (BackendKind::Sftp, false),
+        (BackendKind::Webdav, false),
+        (BackendKind::Adb, false),
+        (BackendKind::Archive, false),
+        (BackendKind::GitPortal, false),
+    ] {
+        let volume = InMemoryVolume::new("Test").with_backend_kind(kind);
+        assert_eq!(volume.capabilities().can_be_indexed, indexable, "{kind:?}");
+    }
 }
 
 #[tokio::test]
