@@ -1,5 +1,7 @@
-//! Reaching an SMB server: the address string, and the two share-listing calls.
+//! Reaching an SMB server: the address string, the two share-listing calls, and
+//! asking whether an identity may open one share.
 
+use crate::volume::SmbConnectionParams;
 use log::debug;
 use smb2::{ClientConfig, SmbClient};
 use std::time::Duration;
@@ -77,6 +79,48 @@ pub async fn try_list_shares_authenticated(
     let mut client = SmbClient::connect(config).await?;
     client.list_shares().await
 }
+
+/// Asks the server whether `params`' identity may open its share: session setup,
+/// one TreeConnect, and a tree disconnect, with nothing kept.
+///
+/// For a caller holding a vaguer answer from somewhere else, like a kernel mount
+/// that could only say "not found", that needs the server's own. The error comes
+/// back untouched, because WHICH status arrived at WHICH command is the answer:
+/// `STATUS_ACCESS_DENIED` at TreeConnect is a share turning this identity away,
+/// `STATUS_BAD_NETWORK_NAME` there is a share that doesn't exist, and a refusal at
+/// SessionSetup never got as far as the share.
+///
+/// `timeout` bounds each protocol step, not the whole exchange; a caller with a
+/// hard budget bounds the future too.
+pub async fn try_open_share(params: &SmbConnectionParams, timeout: Duration) -> Result<(), smb2::Error> {
+    let config = ClientConfig {
+        addr: build_smb_addr(&params.server, params.port),
+        timeout,
+        username: params.username.clone(),
+        password: params.password.clone(),
+        domain: String::new(),
+        auto_reconnect: false,
+        compression: false,
+        dfs_enabled: false,
+        dfs_target_overrides: Default::default(),
+    };
+
+    let mut client = SmbClient::connect(config).await?;
+    let tree = client.connect_share(&params.share_name).await?;
+    // Courtesy only: the answer is already in, and the socket closing on drop ends
+    // the tree anyway.
+    if let Err(e) = client.disconnect_share(&tree).await {
+        debug!(
+            "try_open_share: tree disconnect from {} didn't go through: {}",
+            params.share_name, e
+        );
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+#[path = "connection_integration_test.rs"]
+mod integration_test;
 
 #[cfg(test)]
 mod tests {

@@ -75,17 +75,17 @@ Whichever crate's test target enables the feature, the one `smb2` gets it.
 
 ## The public surface is capped
 
-`index-crate-isolation` holds this crate to 15 root promises, 4 public modules, and 21 public items inside them. The
-first two were set on 2026-08-22 to exactly what the crate exposed the day the extraction finished, with no headroom, so
-an addition has to be argued for.
+`index-crate-isolation` holds this crate to 16 root promises, 4 public modules, and 22 public items inside them. The
+numbers were set to exactly what the crate exposed the day the extraction finished, with no headroom, so an addition has
+to be argued for, and each raise since carries its argument below.
 
 **A backend's API is the `Volume` trait it implements**, which is `cmdr-fs`'s promise rather than this crate's, so none
 of its methods are counted here. Everything that IS counted exists because something outside has to build a share or ask
 after one, and a new item should name which of three audiences it serves:
 
-- **The protocol layer**, for `network/`'s discovery and share-listing passes: `build_smb_addr`, the two
-  `try_list_shares_*` calls, the three `classify_*` / `is_auth_error` readers, `convert_shares`, and the four vocabulary
-  types that cross IPC.
+- **The protocol layer**, for `network/`'s discovery, share-listing, and mount passes: `build_smb_addr`, the two
+  `try_list_shares_*` calls, `try_open_share`, the three `classify_*` / `is_auth_error` readers, `convert_shares`, and
+  the four vocabulary types that cross IPC.
 - **Constructing and asking after a share**, for `network/smb_upgrade.rs` and the debug window's diagnostics dashboard:
   `connect_smb_volume`, `SmbVolume` with `volume_id` / `session_state` / `diagnostics`, `SmbConnectionParams` with its
   five fields, and `ConnectionState`. `SmbVolume::new` is `pub(crate)`: outside, a share is dialed, which is the only
@@ -101,6 +101,14 @@ that unrepresentable, so it earns its place at the boundary the app crosses rath
 constructors come with it: `at_share_root` names the ordinary mount, which is nearly every call site, and `new` folds
 the anchor to NFC, which no caller may skip. `exchange_mount_roots_with` replaced three narrower methods, so the
 bookkeeping the registry needs crosses the boundary once.
+
+**`try_open_share` is one root promise and one item past the extraction's numbers**, for the protocol-layer audience.
+When a kernel mount can only say "not found", the app needs the server's own answer to "may this identity open this
+share" (`apps/desktop/src-tauri/src/network/DETAILS.md` § "A share that says not found", ERR-SHUSC). The four
+dispositions each lose: a facade would be the app building an `smb2::SmbClient` itself, which no app code does and which
+is what this crate exists to stop; folding it into a listing call would TreeConnect `IPC$` rather than the share; gating
+is no answer for production code; and the probe is the fix, so it can't be deleted. It takes `SmbConnectionParams`, so
+the NFC fold and the `Guest` default come with it rather than being rebuilt by the caller.
 
 Four public modules is the whole tree a host can name a path into: `connection`, `errors`, `types`, `volume`. Everything
 under `volume` except the four items above is private, `SmbVolumeInner` included. `volume::testing` and
@@ -781,6 +789,9 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   deleting inside its own directory rather than at the top of the share.
 - `session_integration_test.rs` — what the SESSION does: the connection gate the fresh-listing oracle reads, the
   reconnect cycle, the refcounted scan pool, and what a supersede leaves alone.
+- `src/connection_integration_test.rs` — the three answers `try_open_share` hears from the `both` fixture: a guest
+  refused at TreeConnect, the allowed account let in, and a missing share's bad network name. What the app makes of them
+  is `apps/desktop/src-tauri/src/network/share_access_test.rs`.
 - **The byte path is three files split by contract**, all declared from `volume/mod.rs`. A new byte-path cell adds
   itself to the matching contract rather than growing one file; a cell that straddles goes where its ASSERTION lives,
   not where its setup does.

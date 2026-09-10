@@ -168,11 +168,13 @@ var surfaceGuardedCrates = []struct {
 		// this wrong (ERR-48RZX), so the type that forces the mount path and the
 		// anchor to travel together belongs at the boundary the app crosses. The
 		// argument item by item: the crate DETAILS section above.
+		// Root 15 -> 16 and items 21 -> 22 for `try_open_share` (ERR-SHUSC): why, in
+		// that same DETAILS section.
 		Name: "cmdr-smb",
 		Ceilings: surfaceCeilings{
-			RootPromises:   15,
+			RootPromises:   16,
 			PublicModules:  4,
-			SubsystemItems: 21,
+			SubsystemItems: 22,
 		},
 	},
 	{

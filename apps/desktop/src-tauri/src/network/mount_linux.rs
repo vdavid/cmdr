@@ -107,7 +107,11 @@ fn derive_gvfs_path(server: &str, share: &str) -> String {
 }
 
 /// Mount an SMB share synchronously using `gio mount`.
-fn mount_share_sync(
+///
+/// `crate::network::mount_share` is the async entry point, shared with macOS. Its
+/// second opinion on a "not found" applies here too: `gio mount`'s "No such file or
+/// directory" is no more specific than NetFS's `ENOENT`.
+pub(crate) fn mount_share_sync(
     server: &str,
     share: &str,
     username: Option<&str>,
@@ -284,24 +288,6 @@ fn classify_mount_error(stderr: &str, server: &str, share: &str) -> MountError {
             message: format!("Mount failed: {}", stderr.trim()),
         }
     }
-}
-
-/// Async wrapper for `mount_share_sync` that runs in a blocking task with timeout.
-/// The timeout and its typed failures live in `crate::network::mount_within`, shared
-/// with the macOS backend.
-pub async fn mount_share(
-    server: String,
-    share: String,
-    username: Option<String>,
-    password: Option<String>,
-    port: u16,
-    timeout_ms: Option<u64>,
-) -> Result<MountResult, MountError> {
-    let server_clone = server.clone();
-    crate::network::mount_within(server_clone, timeout_ms, move || {
-        mount_share_sync(&server, &share, username.as_deref(), password.as_deref(), port)
-    })
-    .await
 }
 
 /// Unmounts all SMB shares from a given host.

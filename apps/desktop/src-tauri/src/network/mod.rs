@@ -58,6 +58,9 @@ pub mod mount;
 // (mount dedup, `smb_upgrade`, keychain keying). Only `same_server_live` is macOS-only,
 // gated at its definition, so no module-wide dead-code allowance is needed.
 pub mod server_identity;
+// Asks the server itself why a mount found no share. Both platforms' mounts reach
+// it through `mount_share` below.
+pub(crate) mod share_access;
 pub mod smb_client;
 
 // SMB submodules - these are implementation details of smb_client
@@ -126,25 +129,31 @@ pub fn ensure_mdns_started(app_handle: AppHandle) {
 /// patience on macOS and on Linux.
 pub(crate) const DEFAULT_MOUNT_TIMEOUT_MS: u64 = 20_000;
 
-/// Runs a platform backend's blocking `mount_share_sync` on the blocking pool under
-/// the mount timeout, mapping a panicked task and an expired budget onto the typed
-/// `MountError` the caller renders.
+/// Mounts an SMB share through the platform backend's blocking
+/// `mount::mount_share_sync`, on the blocking pool under the mount timeout.
 ///
-/// Both `mount::mount_share` wrappers are this function plus their own sync body —
-/// the timeout, the join-failure wording, and the timeout wording are one
-/// implementation so the two platforms can't drift apart.
-pub(crate) async fn mount_within<F>(
+/// A panicked task and an expired budget come back as the typed `MountError` the
+/// caller renders, and a mount that could only say "not found" spends what's left
+/// of the budget asking the server which it was
+/// (`share_access::clarify_share_not_found`). One function for both platforms, so
+/// the timeout, its wording, and the not-found clarification can't drift apart
+/// between macOS and Linux.
+pub async fn mount_share(
     server: String,
+    share: String,
+    username: Option<String>,
+    password: Option<String>,
+    port: u16,
     timeout_ms: Option<u64>,
-    mount_sync: F,
-) -> Result<mount::MountResult, mount::MountError>
-where
-    F: FnOnce() -> Result<mount::MountResult, mount::MountError> + Send + 'static,
-{
+) -> Result<mount::MountResult, mount::MountError> {
+    let attempt = share_access::ShareAttempt::new(&server, &share, port, username.as_deref(), password.as_deref());
+    let started = std::time::Instant::now();
     let timeout_duration = std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_MOUNT_TIMEOUT_MS));
-    let mount_future = tokio::task::spawn_blocking(mount_sync);
+    let mount_future = tokio::task::spawn_blocking(move || {
+        mount::mount_share_sync(&server, &share, username.as_deref(), password.as_deref(), port)
+    });
 
-    match tokio::time::timeout(timeout_duration, mount_future).await {
+    let result = match tokio::time::timeout(timeout_duration, mount_future).await {
         Ok(Ok(result)) => result,
         Ok(Err(join_error)) => Err(mount::MountError::ProtocolError {
             message: format!("Mount task failed: {}", join_error),
@@ -152,10 +161,18 @@ where
         Err(_timeout) => Err(mount::MountError::Timeout {
             message: format!(
                 "Connection to \"{}\" timed out after {} seconds",
-                server,
+                attempt.server(),
                 timeout_duration.as_secs()
             ),
         }),
+    };
+
+    match result {
+        Err(not_found @ mount::MountError::ShareNotFound { .. }) => {
+            let budget_left = timeout_duration.saturating_sub(started.elapsed());
+            Err(share_access::clarify_share_not_found(not_found, &attempt, budget_left).await)
+        }
+        other => other,
     }
 }
 

@@ -31,8 +31,9 @@
 //!   serde and `specta::Type`.
 //! - [`errors`] — turning an [`smb2::Error`] into a [`ShareListError`], and the
 //!   `is this an auth problem?` predicate every retry path asks.
-//! - [`connection`] — the smb2 address string, and the two guest / authenticated
-//!   share-listing calls.
+//! - [`connection`] — the smb2 address string, the two guest / authenticated
+//!   share-listing calls, and [`try_open_share`], which asks the server whether an
+//!   identity may open one share.
 //!
 //! See `CLAUDE.md` for the must-knows and `DETAILS.md` for the boundary's
 //! rationale.
@@ -49,6 +50,6 @@ pub mod errors;
 pub mod types;
 pub mod volume;
 
-pub use connection::{build_smb_addr, try_list_shares_as_guest, try_list_shares_authenticated};
+pub use connection::{build_smb_addr, try_list_shares_as_guest, try_list_shares_authenticated, try_open_share};
 pub use errors::{classify_authenticated_error, classify_error, is_auth_error};
 pub use types::{AuthMode, ShareInfo, ShareListError, ShareListResult, convert_shares};

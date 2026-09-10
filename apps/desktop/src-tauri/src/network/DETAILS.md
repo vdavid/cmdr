@@ -30,6 +30,8 @@ of the app build.
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
   - `mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts; also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
   - `mount_linux.rs`: Linux `gio mount` for GVFS-based user-space mounts
+  - `share_access.rs`: both platforms' second opinion on a mount's "not found", asked of the server itself through
+    `mod.rs::mount_share`, the one async mount entry point both platforms share (§ "A share that says not found")
 - **Server identity**: `server_identity.rs`: `same_server` / `same_server_live` equivalence over the names a server goes by (mDNS service name, `.local` hostname, IP), enriched from the discovery state. Used by the mount-path disambiguation and the already-mounted short-circuit so string-shape differences can't split one server into two.
 - **Auth** (platform-agnostic):
   - `keychain.rs`: SMB credential management. Delegates storage to `crate::secrets::store()` (see `secrets/CLAUDE.md` for backend details)
@@ -328,6 +330,47 @@ setting belongs to the server's admin. `smb_upgrade::AttemptedAs` carries which 
 `rejection_advice` says the matching thing, because the log line is what the next reader of an error report acts on.
 Telling someone to fix a saved password they never saved sends them into Keychain looking for an entry that isn't there
 (ERR-48RZX again).
+
+## A share that says not found
+
+The kernel mount can't tell a missing share from a refused one. A guest mount of a share guests can list but not open
+and a mount of a share that doesn't exist both return `ENOENT`, which `mount.rs::error_from_code` maps to
+`ShareNotFound`. A wrong password is not one of them: it comes back as an auth code (`AuthFailed`). (verified on macOS
+26.6.2 / 25G83, `mount_share` against the `both` fixture's `private` share as guest, as `testuser` with a wrong and then
+the right password, and against a share that doesn't exist, 2026-09-10.) The server itself answers precisely: guest
+TreeConnect on `private` is `STATUS_ACCESS_DENIED`, a missing share is `STATUS_BAD_NETWORK_NAME` (same fixture, smb2
+0.21.0, 2026-09-10). ERR-SHUSC is where it bit: a Samba server's guest-listable `data` share said "not found" five
+times, with no way to sign in.
+
+So `mod.rs::mount_share`, the async entry point both platforms' blocking `mount_share_sync` run under, answers a
+`ShareNotFound` by asking.
+`share_access::clarify_share_not_found` dials `cmdr_smb::try_open_share` with the mount's own identity (`ShareAttempt`,
+built through `SmbConnectionParams::new`, so the share is NFC-folded and a missing username goes out as `Guest`), makes
+one TreeConnect, and reads the answer by type:
+
+- **A guest refused at TreeConnect, or at sign-in** → `AuthRequired`, so the sign-in sheet opens asking for a password.
+- **An account refused at TreeConnect** → `PermissionDenied`, so the sheet stays open saying that account can't open
+  it. This is the only producer of `PermissionDenied` on macOS.
+- **An account refused at sign-in** → the mount's own answer. NetFS answers a wrong password with an auth code, so a
+  refusal only the probe saw says more about how the probe spelled the account (a domain, say) than about the share.
+- **A bad network name, the probe getting in, or no answer** → the mount's own answer.
+
+**Within the mount's budget, never after it.** The probe gets what's left of the mount timeout, capped at
+`PROBE_LIMIT` (5 s), and a spent budget skips the dial. Bounding it with `tokio::time::timeout` is safe because the
+future is async and owns its socket, unlike the `spawn_blocking` case § "Every SMB subprocess runs under a deadline"
+warns about.
+
+**Linux takes the same path**, since `gio mount`'s "No such file or directory" is no more specific than `ENOENT` and
+the server's answer doesn't depend on which client asked.
+
+**The dial goes through `cmdr-smb`**, ❌ never an `smb2::SmbClient` built here. Why that took a surface raise:
+`crates/cmdr-smb/DETAILS.md` § "The public surface is capped".
+
+Pinned by `share_access_test.rs` (every identity against every verdict, every answer read by status and command), the
+fixture cells `mount_test.rs::smb_integration_mount_guest_refused_share_asks_for_credentials` and
+`smb_integration_mount_missing_share_stays_not_found`, and `crates/cmdr-smb/src/connection_integration_test.rs` for the
+three raw answers. No fixture has a second account (each container has one, and the compose files are vendored), so
+the account-refused rows are unit-tested only.
 
 ## Server-keyed answers are lookups, never maps
 

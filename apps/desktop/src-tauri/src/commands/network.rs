@@ -327,7 +327,7 @@ pub async fn mount_network_share(
     timeout_ms: Option<u64>,
 ) -> Result<MountResult, MountError> {
     let actual_port = port.unwrap_or(445);
-    let result = mount::mount_share(
+    let result = crate::network::mount_share(
         server.clone(),
         share.clone(),
         username.clone(),

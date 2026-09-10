@@ -155,6 +155,9 @@ fn error_from_code(code: i32, share_name: &str, server_name: &str) -> MountError
         USER_CANCELLED_ERR => MountError::Cancelled {
             message: "Mount operation was cancelled".to_string(),
         },
+        // ❗ Ambiguous: NetFS answers ENOENT for a share this identity may not open as
+        // well as for one that doesn't exist. `network::mount_share` asks the server
+        // which (`network/DETAILS.md` § "A share that says not found").
         ENOENT => MountError::ShareNotFound {
             message: format!("Share \"{}\" not found on \"{}\"", share_name, server_name),
         },
@@ -283,7 +286,8 @@ fn encode_url_host(server: &str) -> String {
 
 /// Mount an SMB share to the local filesystem.
 ///
-/// This is a synchronous function that should be called from a spawn_blocking context.
+/// This is a synchronous function that should be called from a spawn_blocking context;
+/// `crate::network::mount_share` is the async entry point that does, shared with Linux.
 /// It uses NetFSMountURLSync which handles the mount operation synchronously.
 /// NetFS automatically detects if the share is already mounted and returns the existing path.
 ///
@@ -448,24 +452,6 @@ pub fn mount_share_sync(
         mount_path,
         already_mounted,
     })
-}
-
-/// Async wrapper for `mount_share_sync` that runs in a blocking task with timeout.
-/// The timeout and its typed failures live in `crate::network::mount_within`, shared
-/// with the Linux backend.
-pub async fn mount_share(
-    server: String,
-    share: String,
-    username: Option<String>,
-    password: Option<String>,
-    port: u16,
-    timeout_ms: Option<u64>,
-) -> Result<MountResult, MountError> {
-    let server_clone = server.clone();
-    crate::network::mount_within(server_clone, timeout_ms, move || {
-        mount_share_sync(&server, &share, username.as_deref(), password.as_deref(), port)
-    })
-    .await
 }
 
 /// Extracts the mount path from a `NetFSMountURLSync` mountpoints CFArray.

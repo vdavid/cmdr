@@ -5,6 +5,7 @@
 //! those through a real macOS kernel mount).
 
 use super::*;
+use crate::network::mount_share;
 
 /// `CFURLCreateWithString` parses, it does not escape: it returns NULL for any
 /// string that isn't already a valid RFC 3986 URL, so a share whose name carries
@@ -341,6 +342,64 @@ async fn smb_integration_mount_non_ascii_share() {
         crate::file_system::volume::smb_volume_id(&host, port, share),
         "expected the id keyed on (server, port, share) for {share:?}, got {}",
         volume.id
+    );
+}
+
+/// A share guests can SEE but can't OPEN must ask for a sign-in, not claim it's missing.
+///
+/// NetFS answers a guest mount of such a share with `ENOENT`, which alone reads as
+/// "no share by that name", so the frontend rendered a dead-end "not found" pane
+/// and the user could never sign in (ERR-SHUSC, a Samba server with a guest-listable
+/// `data` share). The server's own answer is `STATUS_ACCESS_DENIED` at TreeConnect,
+/// and a guest refused there is a credential question. The `both` fixture reproduces
+/// it exactly: `map to guest = Bad User`, and a browseable `private` share with
+/// `valid users = testuser`.
+///
+/// The mount is refused, so there's no kernel mount to clean up and no slow-test
+/// budget to spend.
+#[cfg(target_os = "macos")]
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_mount_guest_refused_share_asks_for_credentials() {
+    let port: u16 = std::env::var("SMB_CONSUMER_BOTH_PORT")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(10482);
+    let host = "localhost".to_string();
+
+    let result = mount_share(host.clone(), "private".to_string(), None, None, port, Some(8_000)).await;
+
+    assert!(
+        matches!(result, Err(MountError::AuthRequired { .. })),
+        "a guest mount of a share that refuses guests must ask for credentials, got {result:?}"
+    );
+}
+
+/// The other half of the same `ENOENT`: a share that really doesn't exist must
+/// still say so, rather than sending the user to a sign-in no password can answer.
+/// The server's `STATUS_BAD_NETWORK_NAME` at TreeConnect is what tells the two apart.
+#[cfg(target_os = "macos")]
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_mount_missing_share_stays_not_found() {
+    let port: u16 = std::env::var("SMB_CONSUMER_BOTH_PORT")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(10482);
+
+    let result = mount_share(
+        "localhost".to_string(),
+        "no-such-share".to_string(),
+        None,
+        None,
+        port,
+        Some(8_000),
+    )
+    .await;
+
+    assert!(
+        matches!(result, Err(MountError::ShareNotFound { .. })),
+        "a share the server doesn't have must stay not-found, got {result:?}"
     );
 }
 
