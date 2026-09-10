@@ -49,7 +49,7 @@ import { adoptedOperationFor } from '$lib/file-operations/foreground-request'
 import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { seedSettingForE2E, setSetting } from '$lib/settings'
-import { openFileViewer } from '$lib/file-viewer/open-viewer'
+import { openFileViewerForPath } from '$lib/file-viewer/open-viewer-for-path'
 import { navigateToDirInBestPane, resolveLocationOrToast } from '$lib/file-explorer/navigation/navigate-and-select'
 import { closeDialogById } from '$lib/ui/dialog-close-registry'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
@@ -417,8 +417,8 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
   await pushTauri(unlistenFns, () =>
     onOpenFileViewer((payload) => {
       if (payload.path) {
-        // Open viewer for specific path
-        void openFileViewer(payload.path)
+        // Open viewer for specific path, on the volume that holds it
+        void openFileViewerForPath(payload.path)
       } else {
         // Open viewer for cursor file
         void getExplorer()?.openViewerForCursor()

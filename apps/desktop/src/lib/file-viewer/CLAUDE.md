@@ -8,7 +8,7 @@ lifecycle, and background search. The viewer route shell: `apps/desktop/src/rout
 
 ## Key files
 
-- `open-viewer.ts`: `openFileViewer(filePath)` creates a new `WebviewWindow` with a unique label.
+- `open-viewer.ts`: one `WebviewWindow` per viewer; `open-viewer-for-path.ts` resolves a bare path's volume first (MCP).
 - `binary-warning.ts`: pure `categorizeForViewerWarning(fileName)` classifies a file into a `category` (`image` /
   `document` / `binary`, or `null` = "don't warn" for text/source/unknown) plus an uppercased `ext` for the `binary`
   case. The displayed word is NOT in that result: `viewerWarningLabel(warning)` resolves it (translatable
