@@ -263,6 +263,16 @@ impl Volume for GitPortalVolume {
         Box::pin(async move { self.parent.get_space_info().await })
     }
 
+    /// The parent's answer for the filesystem holding the repo, whatever `path` is
+    /// asked about: a repo on a phone's SD card sits on the card, which the
+    /// parent's volume-wide figure doesn't describe.
+    fn get_space_info_at<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        Box::pin(async move { self.parent.get_space_info_at(&self.dot_git).await })
+    }
+
     /// `false`, and `listing_watch_coverage` stays at the trait's `None`: these
     /// paths don't exist on disk, so `notify` has nothing to arm on (it answers "No
     /// path was found" and spams the warn log). Invalidation arrives from the

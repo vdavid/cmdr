@@ -633,6 +633,17 @@ impl Volume for ArchiveVolume {
         Box::pin(async move { self.parent.get_space_info().await })
     }
 
+    /// The parent's answer for the filesystem holding the `.zip`, whatever `path`
+    /// inside it is asked about: an edit lands beside the `.zip` (temp+rename), so
+    /// that's the filesystem a copy into the archive fills, and on a phone it can
+    /// be an SD card the parent's volume-wide figure doesn't describe.
+    fn get_space_info_at<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        Box::pin(async move { self.parent.get_space_info_at(&self.archive_path).await })
+    }
+
     /// Covered only while the content watch is genuinely live (established by
     /// [`start_content_watch`](Self::start_content_watch) and not yet dropped by
     /// LRU eviction). If the watch failed to establish, this stays

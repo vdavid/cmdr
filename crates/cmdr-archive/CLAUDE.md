@@ -43,8 +43,9 @@ browses, extracts, and **writes**; tar (every codec), 7z, and OOXML are **read-o
 - **Read-only at this layer: every mutation method returns `NotSupported`**, `create_directory_all` included — it's
   overridden because the trait default falsely answers `Ok` for a dir that already exists. Edits route path-based to the
   mutator, never through these methods.
-- **`lane_key()` and `get_space_info()` delegate to the PARENT volume, never the archive** — the parent owns the
-  serialization lane and the real disk cost, and this dodges a false `available = 0` disk-full block.
+- **`lane_key()`, `get_space_info()`, and `get_space_info_at()` delegate to the PARENT volume, never the archive** — the
+  parent owns the serialization lane and the real disk cost (asked at the `.zip`'s own path, so an SD card answers for
+  itself), and this dodges a false `available = 0` disk-full block.
 - **Local vs remote byte source is picked by `parent.supports_local_fs_access()`, NOT by whether the path opens
   locally** — a direct-SMB parent must read through the parent, never its possibly-hung OS mount.
 

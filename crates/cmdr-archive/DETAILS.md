@@ -63,7 +63,8 @@ the display name, and an `Arc<ArchiveIndexCache>`.
 - `lane_key()` returns `parent.lane_key()` — archive work must share the physical device's serialization lane (a zip on
   an SMB share shares that share's lane), never key on the archive path. Consequence: two zips on the same mount
   serialize; only zips on different mounts parallelize (the existing per-device write-serialization).
-- `get_space_info()` delegates to the parent (see the decision below).
+- `get_space_info()` delegates to the parent, and `get_space_info_at()` asks the parent about the `.zip`'s own path (see
+  the decision below).
 
 `ArchiveVolume` serves BOTH a local parent (`LocalFileSource` + `index_for_local`'s local stat+parse) and a remote one
 (`VolumeByteSource` + `index_for_source`, freshness from the parent's metadata). It picks by
@@ -118,7 +119,10 @@ plain `.tar` and zip are random-access and keep the per-entry path unchanged.
 `dest.available_bytes < total_bytes`, so reporting zeros (or `available = 0`) would read as "disk full" and block a
 paste with a spurious message instead of the correct read-only / `NotSupported` outcome. Any archive edit (temp+rename)
 is built on the parent drive, so the parent's free space is the honest constraint AND a non-blocking answer. Delegating
-is one line and stays correct when mutation turns on. Pinned by `get_space_info_delegates_to_the_parent`.
+is one line and stays correct when mutation turns on. `get_space_info_at(path)` forwards to the parent with the `.zip`'s
+own path, whatever inner path is asked: a parent can span several filesystems (a phone's shared storage beside its SD
+card), and the transfer pre-flight asks about the destination folder, so a copy into an archive on the card is judged
+against the card. Both are pinned by `get_space_info_delegates_to_the_parent`.
 
 ### Decision: `max_concurrent_ops = 1` for the read-only phase
 

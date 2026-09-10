@@ -13,7 +13,7 @@ use crate::portal::GitPortal;
 use crate::test_fixtures::{EntryKind, Fixture, cleanup, git_cli_capture, temp_dir};
 use crate::volume::GitPortalVolume;
 use cmdr_fs::volume::host::VolumeHost;
-use cmdr_fs::volume::{DirectoryCreation, InMemoryVolume, Volume, VolumeError};
+use cmdr_fs::volume::{DirectoryCreation, InMemoryVolume, SpaceInfo, Volume, VolumeError};
 
 /// A repo with one commit on `main` (a plain file and an executable one), a
 /// second branch, and a tag, plus the portal volume serving it.
@@ -43,6 +43,25 @@ fn portal_over_a_repo(name: &str) -> (PathBuf, GitPortalVolume) {
 /// takes (the resolve hands the input path through verbatim).
 fn virtual_path(repo: &Path, rest: &str) -> PathBuf {
     repo.join(".git").join(rest)
+}
+
+/// ❗ Space at a path is the parent's answer for the filesystem holding the repo,
+/// ❌ never the parent's volume-wide figure: a repo on a phone's SD card sits on
+/// the card, not on the shared storage the phone's one figure describes.
+#[tokio::test]
+async fn space_at_a_path_is_the_parents_answer_for_the_repos_filesystem() {
+    let repo = PathBuf::from("/sdcard-ext/code/app");
+    let parent = InMemoryVolume::new("Parent")
+        .with_space_info(1_000, 400)
+        .with_space_info_under("/sdcard-ext", 500, 100);
+    let portal = Arc::new(GitPortal::new(
+        VolumeHost::detached(),
+        crate::state_sink::no_git_state_sink(),
+    ));
+    let volume = GitPortalVolume::new(portal, repo.clone(), Arc::new(parent));
+
+    let space = volume.get_space_info_at(&virtual_path(&repo, "branches/main")).await;
+    assert_eq!(space.unwrap(), SpaceInfo::bounded(500, 100));
 }
 
 // ── The shared conformance assertions, from the read-only side ─────────────

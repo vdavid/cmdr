@@ -594,23 +594,24 @@ async fn lane_key_is_the_parents_lane_key() {
     assert_ne!(volume.lane_key().as_str(), archive.path.to_string_lossy().as_ref());
 }
 
+/// The parent's numbers verbatim, and crucially a BOUNDED reading with available >
+/// 0, so the pre-copy space check never reads the archive as "disk full". Asked
+/// about a path inside, it's the parent's answer for the filesystem holding the
+/// `.zip` (a phone's SD card), ❌ never the parent's volume-wide figure.
 #[tokio::test]
 async fn get_space_info_delegates_to_the_parent() {
     let archive = TestArchive::from_entries(&[stored("a.txt", "x")]);
-    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("drive").with_space_info(1_000, 400));
-    let volume = archive.volume_with_parent(parent);
+    let card = archive.path.parent().expect("the fixture archive sits in a folder");
+    let parent = InMemoryVolume::new("drive")
+        .with_space_info(1_000, 400)
+        .with_space_info_under(card, 500, 100);
+    let volume = archive.volume_with_parent(Arc::new(parent));
 
-    let space = volume.get_space_info().await.unwrap();
-    // The parent's numbers verbatim, and crucially a BOUNDED reading with
-    // available > 0, so the pre-copy space check never reads the archive as
-    // "disk full".
+    assert_eq!(volume.get_space_info().await.unwrap(), SpaceInfo::bounded(1_000, 400));
+    let inside = archive.path.join("a.txt");
     assert_eq!(
-        space,
-        SpaceInfo::Bounded {
-            total_bytes: 1_000,
-            available_bytes: 400,
-            used_bytes: 600,
-        }
+        volume.get_space_info_at(&inside).await.unwrap(),
+        SpaceInfo::bounded(500, 100)
     );
 }
 
