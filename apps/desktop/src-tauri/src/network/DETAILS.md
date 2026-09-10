@@ -28,11 +28,11 @@ of the app build.
   - The protocol layer under all of them is the `cmdr-smb` crate: the addr builder, the guest / authenticated `smb2::SmbClient` listing calls, the `classify_*` / `is_auth_error` classification, and the `ShareInfo` / `AuthMode` / `ShareListResult` / `ShareListError` vocabulary. `crates/cmdr-smb/DETAILS.md` says what belongs there and what stays here
   - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by three upgrade paths (startup, mount-time watcher, manual "Connect directly"). Contains `register_smb_volume`, `resolve_and_register_smb_volume` (the shared resolve+creds+register used by both fire-and-forget auto-upgrade paths), `try_smb_upgrade`, `UpgradeResult`/`UpgradeError` types, address resolution (`resolve_server_address`, `resolve_ip_to_hostname`, `friendly_server_name`), and `get_keychain_password`.
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
-  - `mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts; also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
-  - `mount_linux.rs`: Linux `gio mount` for GVFS-based user-space mounts
+  - `mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts, each success confirmed against `statfs` (§ "A reported mount counts once it's there"); also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
+  - `mount_linux.rs`: Linux `gio mount` for GVFS-based user-space mounts, confirmed the same way
   - `share_access.rs`: both platforms' second opinion on a mount's "not found", asked of the server itself through
     `mod.rs::mount_share`, the one async mount entry point both platforms share (§ "A share that says not found")
-- **Server identity**: `server_identity.rs`: `same_server` / `same_server_live` equivalence over the names a server goes by (mDNS service name, `.local` hostname, IP), enriched from the discovery state. Used by the mount-path disambiguation and the already-mounted short-circuit so string-shape differences can't split one server into two.
+- **Server identity**: `server_identity.rs`: `same_server` equivalence over the names a server goes by (mDNS service name, `.local` hostname, IP), enriched from the discovery state. Used by the mount-path disambiguation and the already-mounted short-circuit so string-shape differences can't split one server into two.
 - **Auth** (platform-agnostic):
   - `keychain.rs`: SMB credential management. Delegates storage to `crate::secrets::store()` (see `secrets/CLAUDE.md` for backend details)
 - **State**: `known_shares.rs`: Connection history in `known-shares.json` (usernames, last auth mode, timestamps).
@@ -223,11 +223,41 @@ already taken by a different server (via `statfs`), and if so picks `/Volumes/{s
 convention) and passes it as an explicit mount point to `NetFSMountURLSync`. The volume switcher shows
 `{share} on {server}` for SMB mounts so the user knows which server each volume belongs to.
 
-"Different server" is an identity comparison (`server_identity::same_server_live`), never a string compare: `statfs`
+"Different server" is an identity comparison (`server_identity::same_server`), never a string compare: `statfs`
 may report the existing mount as `Naspolya._smb._tcp.local` while we mount by `192.168.1.111`, and a string mismatch
 would treat one NAS as two, force a second mount with `ForceNewSession`, and break session reuse. For the same reason,
 `mount_share_sync` returns early with `already_mounted: true` when `find_mount_path_for_share` finds the same
 server+share+port already mounted, skipping NetFS entirely.
+
+## A reported mount counts once it's there
+
+NetFS has answered `0` for a share that never got mounted. In ERR-SHUSC, `observermch/data` came back OK, yet no FSEvents
+mount followed, `/Volumes` held only `Macintosh HD`, and the returned path listed as "Path not found". Why NetFS said so
+isn't known, so the code defends instead of explaining. `mount.rs::settle_netfs_answer` is the one place a NetFS code
+becomes a `MountResult`, and a success (`0` or `EEXIST`) lands on the first sighting where `statfs` finds the mount:
+
+- **Where it looks, in order**: NetFS's own `mountpoints` answer, the disambiguation guess (`public-1`, which NetFS
+  isn't told about and may not have used), then every `/Volumes` entry named like the share.
+- **What counts**: an SMB mount of the share on the port, the share compared folded (NFC, case-insensitive, like
+  `smb_volume_id`). A path worked out here also needs the server by identity (`same_server`), since it could hold
+  another server's same-named share. NetFS's own path doesn't: NetFS resolved our URL to it, and demanding identity
+  there would fail a working mount whenever discovery hasn't yet paired an IP with an mDNS name.
+- **Nothing found is `MountMissing`**, ❌ never a path made up from the share name. The made-up `/Volumes/{share}` is
+  what bounced the pane to `/Volumes` and sent `register_smb_volume` to dial a mount nobody made, announcing a
+  kernel-mount fallback whose retry could never work. The frontend shows it as the pane's error with "Try again", since
+  no credential answers it.
+
+Linux has the same shape: a zero exit from `gio mount` counts only for a mount `gio mount -l` lists, or a derived GVFS
+path that exists (`mount_linux.rs::present_gvfs_path`).
+
+**No second guard in `register_smb_volume`.** Every caller hands it a live mount: the mount command only after the
+check above, and the watcher and the startup pass take the path from a `statfs` read that just succeeded. Refusing to
+dial when `identity_from_statfs` answers `None` would also strand Linux, where a GVFS mount is never a `cifs` row in
+`/proc/mounts`, so that answer is `None` for every mount the app makes there.
+
+Pinned by `mount_test.rs` (`a_netfs_success_with_no_mount_of_the_share_is_not_a_mount` and its siblings, over fabricated
+`statfs` rows, since NetFS can't be made to lie on demand), `mount_linux.rs::a_gio_success_counts_only_where_a_mount_is`,
+and `NetworkMountView.test.ts` for the pane.
 
 ## The mount URL is built, escaped, and NFC-normalized
 
@@ -701,7 +731,7 @@ cycles"; re-measure there before trusting any number.
 
 - **Don't hold mutex during DNS resolution**: `get_host_for_resolution` / `update_host_resolution` extract host info and release the mutex before blocking DNS, then re-acquire to update. Holding the mutex across network calls risks deadlock.
 - **Auth mode is a guess**: `GuestAllowed` means "guest worked, creds might also work." `CredsRequired` means "guest failed, must have creds." Can't detect guest-only vs guest-or-creds without trying both.
-- **NetFS error 17 (EEXIST) is success** (macOS): Share already mounted. Return existing mount path, set `already_mounted: true`. Not an error.
+- **NetFS error 17 (EEXIST) is success** (macOS): the share is already mounted, so `already_mounted: true`, once `statfs` finds that mount (§ "A reported mount counts once it's there").
 - **mDNS service type must include `.local.`**: `mdns-sd` requires full form `"_smb._tcp.local."` (trailing dot). Without it, browse() fails silently.
 - **Account name is keyed by server identity, not the raw string**: `make_account_name` runs the server through `server_identity::credential_key` (lowercase + strip the mDNS service suffix / `.local` down to the bare instance name), so `Naspolya`, `naspolya.local`, and `Naspolya._smb._tcp.local` all key the same entry. Without this the frontend saved under the mDNS instance name while the OS-mount upgrade path looked up by the `statfs` service name, so a just-saved password was never found on the next connect (the picker kept showing the `os_mount` dot and re-prompted). IP literals have no bare form and pass through unchanged.
 - **Linux `gio mount` requires GVFS**: The `gvfs-smb` package must be installed. Standard on Ubuntu/Fedora GNOME desktops. KDE desktops may need it explicitly.

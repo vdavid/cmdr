@@ -9269,6 +9269,8 @@ export type MountError =
   | { type: 'protocol_error'; message: string }
   // Path already exists but isn't a mountpoint.
   | { type: 'mount_path_conflict'; message: string }
+  // The system reported the share connected, and no mount of it is there.
+  | { type: 'mount_missing'; message: string }
 
 // Why a pane is showing a mount failure rather than a directory.
 export type MountErrorInfo = {

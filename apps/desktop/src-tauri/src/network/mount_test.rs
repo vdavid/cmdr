@@ -317,7 +317,15 @@ async fn smb_integration_mount_non_ascii_share() {
         mount.mount_path
     );
     assert_eq!(
-        find_mount_path_for_share(&host, share, port).as_deref(),
+        find_mount_path_for_share(
+            MountTarget {
+                server: &host,
+                share,
+                port
+            },
+            &crate::network::get_discovered_hosts()
+        )
+        .as_deref(),
         Some(mount.mount_path.as_str()),
         "the live mount for {share:?} must be findable under the name the server advertises"
     );
@@ -400,6 +408,209 @@ async fn smb_integration_mount_missing_share_stays_not_found() {
     assert!(
         matches!(result, Err(MountError::ShareNotFound { .. })),
         "a share the server doesn't have must stay not-found, got {result:?}"
+    );
+}
+
+// ── What a NetFS success counts as ─────────────────────────────────
+
+fn smb_mount(server: &str, share: &str, port: u16) -> Option<SmbMountInfo> {
+    Some(SmbMountInfo {
+        server: server.to_string(),
+        share: share.to_string(),
+        subpath: None,
+        username: None,
+        port,
+    })
+}
+
+fn sighting(path: &str, mount: Option<SmbMountInfo>, reported_by_netfs: bool) -> MountSighting {
+    MountSighting {
+        path: path.to_string(),
+        mount,
+        reported_by_netfs,
+    }
+}
+
+fn naspolya() -> NetworkHost {
+    NetworkHost {
+        id: "naspolya-smb-tcp-local".to_string(),
+        name: "Naspolya".to_string(),
+        hostname: Some("Naspolya.local".to_string()),
+        ip_address: Some("192.168.1.111".to_string()),
+        port: 445,
+        source: crate::network::HostSource::Discovered,
+    }
+}
+
+const DATA: MountTarget<'static> = MountTarget {
+    server: "observermch",
+    share: "data",
+    port: 445,
+};
+
+/// ERR-SHUSC: NetFS answered OK for `observermch/data` while nothing got mounted.
+/// The pane went to a path that didn't exist and bounced to `/Volumes`, and the
+/// direct-connect upgrade then announced a kernel-mount fallback for a share that
+/// wasn't on the kernel mount at all. A success counts only once a mount of the
+/// share is actually there.
+#[test]
+fn a_netfs_success_with_no_mount_of_the_share_is_not_a_mount() {
+    for code in [0, EEXIST] {
+        let result = settle_netfs_answer(code, DATA, [], &[]);
+        assert!(
+            matches!(result, Err(MountError::MountMissing { .. })),
+            "code {code} with nowhere to look must not invent a path, got {result:?}"
+        );
+
+        let result = settle_netfs_answer(code, DATA, [sighting("/Volumes/data", None, true)], &[]);
+        assert!(
+            matches!(result, Err(MountError::MountMissing { .. })),
+            "code {code} naming a path with nothing mounted there, got {result:?}"
+        );
+    }
+}
+
+#[test]
+fn a_netfs_success_lands_where_the_share_is_mounted() {
+    let mounted = settle_netfs_answer(
+        0,
+        DATA,
+        [
+            sighting("/Volumes/data-1", None, false),
+            sighting("/Volumes/data-2", smb_mount("observermch", "data", 445), false),
+        ],
+        &[],
+    )
+    .expect("the scan found the mount");
+    assert_eq!(mounted.mount_path, "/Volumes/data-2");
+    assert!(!mounted.already_mounted);
+
+    let existing = settle_netfs_answer(
+        EEXIST,
+        DATA,
+        [sighting("/Volumes/data", smb_mount("observermch", "data", 445), true)],
+        &[],
+    )
+    .expect("NetFS's own path holds the mount");
+    assert_eq!(existing.mount_path, "/Volumes/data");
+    assert!(existing.already_mounted);
+}
+
+/// A path worked out HERE (the disambiguation guess, a `/Volumes` scan) could be
+/// anyone's mount of a same-named share, so it counts only for this server, by
+/// identity, on this port.
+#[test]
+fn an_inferred_path_counts_only_for_the_same_server_and_port() {
+    let public = MountTarget {
+        server: "192.168.1.111",
+        share: "public",
+        port: 445,
+    };
+    let result = settle_netfs_answer(
+        0,
+        public,
+        [
+            sighting("/Volumes/public", smb_mount("raspberrypi.local", "public", 445), false),
+            sighting("/Volumes/public-1", smb_mount("192.168.1.111", "public", 10480), false),
+            sighting(
+                "/Volumes/public-2",
+                smb_mount("Naspolya._smb._tcp.local", "public", 445),
+                false,
+            ),
+        ],
+        &[naspolya()],
+    );
+    assert_eq!(result.expect("mounted").mount_path, "/Volumes/public-2");
+
+    let result = settle_netfs_answer(
+        0,
+        public,
+        [sighting(
+            "/Volumes/public",
+            smb_mount("raspberrypi.local", "public", 445),
+            false,
+        )],
+        &[naspolya()],
+    );
+    assert!(
+        matches!(result, Err(MountError::MountMissing { .. })),
+        "another server's `public` is not our mount, got {result:?}"
+    );
+}
+
+/// NetFS resolved our URL to the path it reports, so that path answers WHICH
+/// server even when discovery can't pair the names yet (an IP against an mDNS
+/// service name, before discovery warms). Whether a mount of the share is there
+/// is still `statfs`'s to say.
+#[test]
+fn the_path_netfs_reports_speaks_for_the_server_but_not_for_the_share() {
+    let public = MountTarget {
+        server: "192.168.1.111",
+        share: "public",
+        port: 445,
+    };
+    let result = settle_netfs_answer(
+        EEXIST,
+        public,
+        [sighting(
+            "/Volumes/public",
+            smb_mount("Naspolya._smb._tcp.local", "public", 445),
+            true,
+        )],
+        &[],
+    );
+    assert_eq!(result.expect("mounted").mount_path, "/Volumes/public");
+
+    let result = settle_netfs_answer(
+        0,
+        public,
+        [sighting(
+            "/Volumes/public",
+            smb_mount("192.168.1.111", "private", 445),
+            true,
+        )],
+        &[],
+    );
+    assert!(
+        matches!(result, Err(MountError::MountMissing { .. })),
+        "a mount of another share is not this one, got {result:?}"
+    );
+}
+
+/// SMB share names are case-insensitive, and `statfs` spells an accented name
+/// decomposed. A mount of `Café` recorded as `cafe\u{301}` is the same share, and
+/// missing it would turn a working mount into a failure.
+#[test]
+fn a_mounted_share_matches_across_normalization_and_case() {
+    let cafe = MountTarget {
+        server: "localhost",
+        share: "Café",
+        port: 11484,
+    };
+    let result = settle_netfs_answer(
+        0,
+        cafe,
+        [sighting(
+            "/Volumes/cafe\u{301}",
+            smb_mount("localhost", "cafe\u{301}", 11484),
+            false,
+        )],
+        &[],
+    );
+    assert_eq!(result.expect("mounted").mount_path, "/Volumes/cafe\u{301}");
+}
+
+#[test]
+fn a_netfs_failure_code_keeps_its_own_answer() {
+    let result = settle_netfs_answer(
+        ENOENT,
+        DATA,
+        [sighting("/Volumes/data", smb_mount("observermch", "data", 445), true)],
+        &[],
+    );
+    assert!(
+        matches!(result, Err(MountError::ShareNotFound { .. })),
+        "got {result:?}"
     );
 }
 

@@ -297,10 +297,11 @@ Two properties are load-bearing:
 
 - **`mountError` is set for an auth failure too**, so the pane behind the sheet holds the failure and the MCP mirror
   reports it. The error pane is what cancelling lands back on, cleared by `handleMountErrorBack`.
-- **Only a credential refusal keeps the sheet open.** A retry that comes back `share_not_found` or `host_unreachable`
-  answers `handed_off`, closing the sheet onto the pane's error state with its own "Try again" / "Back": the sheet has
-  no words for a share that went missing. Non-auth failures never open it in the first place. Pinned by
-  `../pane/NetworkMountView.test.ts`.
+- **Only a credential refusal keeps the sheet open.** A retry that comes back `share_not_found`, `host_unreachable`, or
+  `mount_missing` (the system reported the share connected and no mount of it is there:
+  `src-tauri/src/network/DETAILS.md` § "A reported mount counts once it's there") answers `handed_off`, closing the
+  sheet onto the pane's error state with its own "Try again" / "Back": the sheet has no words for a share that went
+  missing. Non-auth failures never open it in the first place. Pinned by `../pane/NetworkMountView.test.ts`.
 
 ## SMB live-reconnect flow (cross-component)
 

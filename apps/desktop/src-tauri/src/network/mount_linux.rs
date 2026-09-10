@@ -21,15 +21,37 @@ pub struct MountResult {
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum MountError {
-    HostUnreachable { message: String },
-    ShareNotFound { message: String },
-    AuthRequired { message: String },
-    AuthFailed { message: String },
-    PermissionDenied { message: String },
-    Timeout { message: String },
-    Cancelled { message: String },
-    ProtocolError { message: String },
-    MountPathConflict { message: String },
+    HostUnreachable {
+        message: String,
+    },
+    ShareNotFound {
+        message: String,
+    },
+    AuthRequired {
+        message: String,
+    },
+    AuthFailed {
+        message: String,
+    },
+    PermissionDenied {
+        message: String,
+    },
+    Timeout {
+        message: String,
+    },
+    Cancelled {
+        message: String,
+    },
+    ProtocolError {
+        message: String,
+    },
+    MountPathConflict {
+        message: String,
+    },
+    /// The system reported the share connected, and no mount of it is there.
+    MountMissing {
+        message: String,
+    },
 }
 
 /// Checks if `gio` is available on the system.
@@ -154,13 +176,33 @@ pub(crate) fn mount_share_sync(
         return Err(classify_mount_error(&stderr, server, share));
     }
 
-    // After successful mount, find the mount path
-    let mount_path = find_existing_mount(server, share).unwrap_or_else(|| derive_gvfs_path(server, share));
+    // ❗ A zero exit is a claim, not a mount, same as NetFS's OK on macOS
+    // (`mount.rs::settle_netfs_answer`, ERR-SHUSC).
+    let Some(mount_path) = present_gvfs_path(
+        find_existing_mount(server, share),
+        derive_gvfs_path(server, share),
+        |path| std::path::Path::new(path).is_dir(),
+    ) else {
+        log::warn!("gio mount answered success for {smb_url}, but no mount of \"{share}\" on {server} is there");
+        return Err(MountError::MountMissing {
+            message: format!(
+                "GVFS reported \"{share}\" on \"{server}\" as connected, but it never showed up. Try again."
+            ),
+        });
+    };
 
     Ok(MountResult {
         mount_path,
         already_mounted: false,
     })
+}
+
+/// Where a mount `gio mount` just reported sits: the one `gio mount -l` lists, else the
+/// path GVFS names such a mount, ❗ only when something is there. ❌ Never the derived
+/// path on its own say-so: a pane sent to a folder that doesn't exist bounces, and the
+/// direct-connect upgrade that follows speaks about a mount nobody made.
+fn present_gvfs_path(listed: Option<String>, derived: String, is_present: impl FnOnce(&str) -> bool) -> Option<String> {
+    listed.or_else(|| is_present(&derived).then_some(derived))
 }
 
 /// Runs `gio mount <url>`, feeding the password (when present) through the child's
@@ -307,6 +349,18 @@ mod tests {
         let path = derive_gvfs_path("MyNAS", "Documents");
         assert!(path.contains("smb-share:server=mynas,share=documents"));
         assert!(path.starts_with("/run/user/"));
+    }
+
+    /// `gio mount` exiting 0 counts only where a mount is: the listed one, or the
+    /// derived GVFS path when it exists. The macOS twin is
+    /// `mount_test.rs::a_netfs_success_with_no_mount_of_the_share_is_not_a_mount`.
+    #[test]
+    fn a_gio_success_counts_only_where_a_mount_is() {
+        let listed = present_gvfs_path(Some("/run/listed".into()), "/run/derived".into(), |_| false);
+        assert_eq!(listed.as_deref(), Some("/run/listed"));
+        let derived = present_gvfs_path(None, "/run/derived".into(), |_| true);
+        assert_eq!(derived.as_deref(), Some("/run/derived"));
+        assert_eq!(present_gvfs_path(None, "/run/derived".into(), |_| false), None);
     }
 
     #[test]

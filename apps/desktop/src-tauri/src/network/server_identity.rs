@@ -17,19 +17,9 @@ use super::NetworkHost;
 use std::collections::HashSet;
 use std::net::IpAddr;
 
-/// Returns true when `a` and `b` refer to the same server, consulting the live mDNS
-/// discovery state for name ↔ IP equivalence.
-///
-/// macOS-only: the NetFS mount-dedup path (`mount.rs`) has no host list at hand, so it
-/// needs this self-fetching wrapper. The Linux `gio mount` path and `smb_upgrade` already
-/// hold a `NetworkHost` slice and call [`same_server`] directly.
-#[cfg(target_os = "macos")]
-pub fn same_server_live(a: &str, b: &str) -> bool {
-    same_server(a, b, &super::get_discovered_hosts())
-}
-
-/// Pure core of `same_server_live` (macOS-only, so not an intra-doc link here): equivalence
-/// against an explicit host list.
+/// Returns true when `a` and `b` refer to the same server, with `hosts` (the discovery
+/// state, `super::get_discovered_hosts()`, for a live caller) supplying name ↔ IP
+/// equivalence.
 pub fn same_server(a: &str, b: &str, hosts: &[NetworkHost]) -> bool {
     !identifiers(a, hosts).is_disjoint(&identifiers(b, hosts))
 }

@@ -55,8 +55,7 @@ pub mod mount;
 pub mod mount;
 
 // Cross-platform: `same_server` and `credential_key` are used on both macOS and Linux
-// (mount dedup, `smb_upgrade`, keychain keying). Only `same_server_live` is macOS-only,
-// gated at its definition, so no module-wide dead-code allowance is needed.
+// (mount dedup, `smb_upgrade`, keychain keying).
 pub mod server_identity;
 // Asks the server itself why a mount found no share. Both platforms' mounts reach
 // it through `mount_share` below.

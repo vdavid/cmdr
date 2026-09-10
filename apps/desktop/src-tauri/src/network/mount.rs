@@ -30,6 +30,9 @@
 //! With `NoUI`, failures come back immediately as typed error codes and Cmdr renders
 //! its own login flow. See `open_option_entries`.
 
+use crate::network::NetworkHost;
+use crate::network::server_identity::same_server;
+use crate::volumes::SmbMountInfo;
 use core_foundation::base::TCFType;
 use core_foundation::string::CFString;
 use core_foundation::url::CFURL;
@@ -76,6 +79,10 @@ pub enum MountError {
     },
     /// Path already exists but isn't a mountpoint.
     MountPathConflict {
+        message: String,
+    },
+    /// The system reported the share connected, and no mount of it is there.
+    MountMissing {
         message: String,
     },
 }
@@ -149,7 +156,7 @@ fn open_option_entries(want_guest: bool, want_force_new_session: bool) -> Vec<(&
 }
 
 /// Map NetFS/POSIX error codes to user-friendly MountError.
-/// Note: EEXIST (17) is handled specially in mount_share_sync, not here.
+/// Note: EEXIST (17) is a success, so `settle_netfs_answer` handles it, not this.
 fn error_from_code(code: i32, share_name: &str, server_name: &str) -> MountError {
     match code {
         USER_CANCELLED_ERR => MountError::Cancelled {
@@ -194,6 +201,83 @@ fn error_from_code(code: i32, share_name: &str, server_name: &str) -> MountError
     }
 }
 
+/// The share a mount was asked for.
+#[derive(Debug, Clone, Copy)]
+struct MountTarget<'a> {
+    server: &'a str,
+    share: &'a str,
+    port: u16,
+}
+
+/// A path a mount of the share might sit at, and what `statfs` says is there.
+struct MountSighting {
+    path: String,
+    /// `get_smb_mount_info` at `path`: `None` when no SMB mount is there at all.
+    mount: Option<SmbMountInfo>,
+    /// NetFS's own `mountpoints` answer, rather than a path worked out here.
+    reported_by_netfs: bool,
+}
+
+impl MountTarget<'_> {
+    /// Whether `info` is a mount of this share on this port, whichever server it names.
+    fn same_share_and_port(&self, info: &SmbMountInfo) -> bool {
+        same_share_name(&info.share, self.share) && info.port == self.port
+    }
+
+    /// Whether `info` is THIS mount: the share and port, plus the server by identity,
+    /// since `statfs` may name it `Naspolya._smb._tcp.local` where we mount
+    /// `192.168.1.111`.
+    fn is_mounted_as(&self, info: &SmbMountInfo, hosts: &[NetworkHost]) -> bool {
+        self.same_share_and_port(info) && same_server(&info.server, self.server, hosts)
+    }
+}
+
+/// What NetFS's answer means, ❗ counting a success only once a mount of the share is
+/// actually there.
+///
+/// NetFS has answered 0 for a share that never got mounted (ERR-SHUSC). Why isn't
+/// known, so this doesn't try to explain it: a success lands on the first sighting
+/// where `statfs` finds the mount, and with none it's `MountMissing`, ❌ never a path
+/// made up from the share name. A made-up path sent the pane to a folder that didn't
+/// exist, and the direct-connect upgrade to announce a kernel-mount fallback for a
+/// share nothing had mounted.
+///
+/// The path NetFS reports is trusted for WHICH server, because NetFS resolved our URL
+/// to it, so it needs only the share and port. That keeps an IP and an mDNS name that
+/// discovery hasn't paired yet from failing a working mount. A path worked out here
+/// could hold anyone's same-named share, so it needs the server too.
+fn settle_netfs_answer(
+    code: i32,
+    target: MountTarget<'_>,
+    sightings: impl IntoIterator<Item = MountSighting>,
+    hosts: &[NetworkHost],
+) -> Result<MountResult, MountError> {
+    if code != 0 && code != EEXIST {
+        return Err(error_from_code(code, target.share, target.server));
+    }
+    let found = sightings.into_iter().find(|sighting| {
+        sighting.mount.as_ref().is_some_and(|info| {
+            if sighting.reported_by_netfs {
+                target.same_share_and_port(info)
+            } else {
+                target.is_mounted_as(info, hosts)
+            }
+        })
+    });
+    match found {
+        Some(sighting) => Ok(MountResult {
+            mount_path: sighting.path,
+            already_mounted: code == EEXIST,
+        }),
+        None => Err(MountError::MountMissing {
+            message: format!(
+                "macOS reported \"{}\" on \"{}\" as connected, but it never showed up. Try again.",
+                target.share, target.server
+            ),
+        }),
+    }
+}
+
 /// Builds the `smb://` URL string `CFURLCreateWithString` accepts for a mount.
 ///
 /// `CFURLCreateWithString` PARSES, it never escapes: hand it a string that isn't
@@ -234,15 +318,16 @@ fn build_smb_mount_url(server: &str, share: &str, port: u16) -> String {
 
 /// Whether two spellings name the same share.
 ///
-/// Compared on NFC, because the two sides reach us through different pipes and can
-/// disagree on normalization for the same visible name: one comes from the server's
-/// share list, the other from `statfs` or a `/Volumes` entry, and macOS APIs hand out
-/// decomposed strings wherever the composed one wasn't what got written. A byte
-/// compare splits the two spellings of `café` and reports a mounted share as
-/// unmounted.
+/// Compared [`folded`]. NFC because the two sides reach us through different pipes
+/// and can disagree on normalization for the same visible name: one comes from the
+/// server's share list, the other from `statfs` or a `/Volumes` entry, and macOS APIs
+/// hand out decomposed strings wherever the composed one wasn't what got written. A
+/// byte compare splits the two spellings of `café` and reports a mounted share as
+/// unmounted. Case-insensitive because SMB share names are (and `smb_volume_id` folds
+/// case too): a mount of `Data` is the `data` the user picked, and missing that turns
+/// a working mount into `MountMissing`.
 fn same_share_name(a: &str, b: &str) -> bool {
-    use unicode_normalization::UnicodeNormalization;
-    a.nfc().eq(b.nfc())
+    folded(a) == folded(b)
 }
 
 /// Whether two spellings name the same server.
@@ -252,10 +337,7 @@ fn same_share_name(a: &str, b: &str) -> bool {
 /// typed), the other comes back from `statfs`, and macOS spells an accented name
 /// decomposed there. A byte compare walks past that server's mounts.
 fn same_server_name(a: &str, b: &str) -> bool {
-    use unicode_normalization::UnicodeNormalization;
-    a.nfc()
-        .flat_map(char::to_lowercase)
-        .eq(b.nfc().flat_map(char::to_lowercase))
+    folded(a) == folded(b)
 }
 
 /// Renders `server` as a URL authority host: an IPv6 literal in brackets, anything
@@ -312,7 +394,9 @@ pub fn mount_share_sync(
     // mount may be keyed by a different name for the same server (mDNS service name vs
     // IP), in which case a second NetFS call would "disambiguate" into mounting a
     // doomed second copy with a fresh session instead of reusing this one.
-    if let Some(existing) = find_mount_path_for_share(server, share, port) {
+    let target = MountTarget { server, share, port };
+    let hosts = crate::network::get_discovered_hosts();
+    if let Some(existing) = find_mount_path_for_share(target, &hosts) {
         return Ok(MountResult {
             mount_path: existing,
             already_mounted: true,
@@ -345,7 +429,7 @@ pub fn mount_share_sync(
 
     // Check if the default mount path is already taken by a different server.
     // If so, pick a disambiguated path (public-1, public-2, ...) like Finder does.
-    let explicit_mount_path = disambiguated_mount_path(server, share, port);
+    let explicit_mount_path = disambiguated_mount_path(target, &hosts);
 
     // Build openOptions. `open_option_entries` decides the content:
     //   - `UIOption = NoUI`, always: Cmdr owns all auth UI; NetAuthAgent must never pop
@@ -430,28 +514,65 @@ pub fn mount_share_sync(
         unsafe { core_foundation::base::CFRelease(open_options) };
     }
 
-    // Check result
-    if result != 0 && result != EEXIST {
-        return Err(error_from_code(result, share, server));
+    // Taken whatever the code says, so a +1 CFArray NetFS wrote is always released.
+    let reported_path = extract_mount_path(mountpoints);
+
+    // ❗ NetFS's OK is a claim, not a mount: it has answered 0 with nothing mounted
+    // (ERR-SHUSC). Look everywhere the mount could be, NetFS's own answer first
+    // (it may have disambiguated to `public-1` itself), and let `statfs` say
+    // whether it's there.
+    let sightings = reported_path
+        .clone()
+        .map(|path| sight(path, true))
+        .into_iter()
+        .chain(explicit_mount_path.map(|path| sight(path, false)))
+        .chain(
+            std::iter::once_with(|| volumes_named_like(share))
+                .flatten()
+                .map(|path| sight(path, false)),
+        );
+    let settled = settle_netfs_answer(result, target, sightings, &hosts);
+    if matches!(settled, Err(MountError::MountMissing { .. })) {
+        log::warn!(
+            "NetFS answered {result} for {url_string} and named {reported_path:?} as the mount point, but no mount of \"{share}\" on {server} is there"
+        );
     }
+    settled
+}
 
-    let already_mounted = result == EEXIST;
+/// Reads what's mounted at `path`, for [`settle_netfs_answer`].
+fn sight(path: String, reported_by_netfs: bool) -> MountSighting {
+    let mount = crate::volumes::get_smb_mount_info(&path);
+    MountSighting {
+        path,
+        mount,
+        reported_by_netfs,
+    }
+}
 
-    // Extract mount path from the mountpoints array. On both success (0) and
-    // EEXIST (17), macOS may return the actual path (which can be disambiguated,
-    // for example `/Volumes/public-1` when `/Volumes/public` is already taken by
-    // a different server). Fall back to scanning /Volumes/ for the mount.
-    // Prefer: explicit path we chose → NetFS output → /Volumes/ scan → hardcoded fallback.
-    // The explicit path is most reliable because we already validated it.
-    let mount_path = explicit_mount_path
-        .or_else(|| extract_mount_path(mountpoints))
-        .or_else(|| find_mount_path_for_share(server, share, port))
-        .unwrap_or_else(|| format!("/Volumes/{}", share));
+/// The `/Volumes` entries a mount of `share` could sit at: the share's own name and
+/// Finder's `-1`, `-2`… disambiguations.
+///
+/// Matched folded (NFC, case-insensitive): `readdir` reports whatever the volume
+/// stored while `share` arrives from the server's own share list, so a raw
+/// `starts_with` between the two spellings of `café` never matches and leaves a
+/// mounted share looking unmounted.
+fn volumes_named_like(share: &str) -> Vec<String> {
+    let Ok(entries) = std::fs::read_dir("/Volumes") else {
+        return Vec::new();
+    };
+    let prefix = folded(share);
+    entries
+        .flatten()
+        .filter(|entry| folded(&entry.file_name().to_string_lossy()).starts_with(&prefix))
+        .map(|entry| entry.path().to_string_lossy().into_owned())
+        .collect()
+}
 
-    Ok(MountResult {
-        mount_path,
-        already_mounted,
-    })
+/// NFC, then lowercase: the one spelling SMB names compare in here.
+fn folded(name: &str) -> String {
+    use unicode_normalization::UnicodeNormalization;
+    name.nfc().flat_map(char::to_lowercase).collect()
 }
 
 /// Extracts the mount path from a `NetFSMountURLSync` mountpoints CFArray.
@@ -486,9 +607,10 @@ fn extract_mount_path(mountpoints: *const c_void) -> Option<String> {
 /// belongs to this server (EEXIST case).
 ///
 /// Follows Finder's convention: `public-1`, `public-2`, etc.
-fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<String> {
+fn disambiguated_mount_path(target: MountTarget<'_>, hosts: &[NetworkHost]) -> Option<String> {
     use crate::volumes::get_smb_mount_info;
 
+    let share = target.share;
     let default_path = format!("/Volumes/{}", share);
     if !std::path::Path::new(&default_path).exists() {
         return None; // Default path is free
@@ -497,11 +619,7 @@ fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<Stri
     // Check if the existing mount is from the same server+port. Identity-aware: the
     // mount source may name the server differently than we do (mDNS service name vs
     // IP), and a string mismatch here would force a second mount of the same share.
-    if let Some(info) = get_smb_mount_info(&default_path)
-        && crate::network::server_identity::same_server_live(&info.server, server)
-        && same_share_name(&info.share, share)
-        && info.port == port
-    {
+    if get_smb_mount_info(&default_path).is_some_and(|info| target.is_mounted_as(&info, hosts)) {
         return None; // Same server: let NetFS handle EEXIST
     }
 
@@ -517,11 +635,7 @@ fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<Stri
             return Some(candidate);
         }
         // If this suffixed path exists and belongs to this server, reuse it
-        if let Some(info) = get_smb_mount_info(&candidate)
-            && crate::network::server_identity::same_server_live(&info.server, server)
-            && same_share_name(&info.share, share)
-            && info.port == port
-        {
+        if get_smb_mount_info(&candidate).is_some_and(|info| target.is_mounted_as(&info, hosts)) {
             return Some(candidate); // Already mounted here
         }
     }
@@ -536,34 +650,10 @@ fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<Stri
 /// This function finds the right one by checking each mount's source via `statfs`,
 /// comparing servers by identity (mDNS name ↔ IP), not by string. The port check keeps
 /// same-named shares on different ports apart (Docker test containers on `localhost`).
-fn find_mount_path_for_share(server: &str, share: &str, port: u16) -> Option<String> {
-    use crate::volumes::get_smb_mount_info;
-    use unicode_normalization::UnicodeNormalization;
-
-    let entries = std::fs::read_dir("/Volumes").ok()?;
-    // The prefix check runs on NFC for the same reason the mount URL does: `readdir`
-    // reports whatever the volume stored, while `share` arrives from the server's own
-    // share list, and the two can spell one visible name differently. A raw
-    // `starts_with` between the two spellings of `café` never matches, which would
-    // leave a non-ASCII share looking unmounted.
-    let share_nfc: String = share.nfc().collect();
-
-    for entry in entries.flatten() {
-        let path = entry.path().to_string_lossy().to_string();
-        // Check paths that start with the share name (for example, "public", "public-1")
-        let file_name: String = entry.file_name().to_string_lossy().nfc().collect();
-        if !file_name.starts_with(&share_nfc) {
-            continue;
-        }
-        if let Some(info) = get_smb_mount_info(&path)
-            && crate::network::server_identity::same_server_live(&info.server, server)
-            && same_share_name(&info.share, share)
-            && info.port == port
-        {
-            return Some(path);
-        }
-    }
-    None
+fn find_mount_path_for_share(target: MountTarget<'_>, hosts: &[NetworkHost]) -> Option<String> {
+    volumes_named_like(target.share)
+        .into_iter()
+        .find(|path| crate::volumes::get_smb_mount_info(path).is_some_and(|info| target.is_mounted_as(&info, hosts)))
 }
 
 /// Unmounts all SMB shares mounted from a given server.

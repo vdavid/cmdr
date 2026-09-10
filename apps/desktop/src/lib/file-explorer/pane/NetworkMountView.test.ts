@@ -305,6 +305,30 @@ describe('NetworkMountView mount-failure auth loop', () => {
     await unmount(component)
   })
 
+  it('shows a mount the system reported but never made as the pane error, and Try again mounts again', async () => {
+    // ERR-SHUSC: macOS said the share connected and nothing got mounted. No
+    // credential answers that, so the sheet stays out of it, and the pane's
+    // Try again is a real second attempt rather than a dead end.
+    h.mountNetworkShare
+      .mockRejectedValueOnce({ type: 'mount_missing', message: 'macOS reported "naspi" as connected' })
+      .mockResolvedValueOnce({ mountPath: '/Volumes/naspi', alreadyMounted: false })
+    const { target, component } = await mountViewAndActivateShare()
+
+    const errorPane = await vi.waitFor(() => must(target.querySelector('.mount-error-state'), 'the error pane'))
+    expect(h.openSignInSheet).not.toHaveBeenCalled()
+
+    must(errorPane.querySelector<HTMLButtonElement>('.error-actions button'), 'Try again').click()
+
+    await vi.waitFor(() => {
+      expect(h.mountNetworkShare).toHaveBeenCalledTimes(2)
+    })
+    await vi.waitFor(() => {
+      expect(target.querySelector('.mount-error-state'), 'the retry went through').toBeNull()
+    })
+
+    await unmount(component)
+  })
+
   it('goes back to the share list when the sign-in is cancelled', async () => {
     h.mountNetworkShare.mockRejectedValue({ type: 'auth_failed', message: 'Invalid username or password' })
     const { target, component } = await mountViewAndActivateShare()

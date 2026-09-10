@@ -539,6 +539,8 @@ export type MountError =
   | { type: 'cancelled'; message: string }
   | { type: 'protocol_error'; message: string }
   | { type: 'mount_path_conflict'; message: string }
+  /** The system reported the share connected, and no mount of it is there. */
+  | { type: 'mount_missing'; message: string }
 
 // ============================================================================
 // Write operation types
