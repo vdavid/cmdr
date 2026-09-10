@@ -57,6 +57,7 @@ pub(super) fn failure_token(error: &ViewerError) -> &'static str {
         ViewerError::Cancelled => "cancelled",
         ViewerError::OutOfRange => "out_of_range",
         ViewerError::TimedOut => "timed_out",
+        ViewerError::StoppedResponding => "stopped_responding",
         ViewerError::TooLargeToPreview { .. } => "extract_too_large",
         // A save-path refusal, so the OPEN emitter above never produces it; the
         // arm is here for exhaustiveness and no shipped series carries the token.

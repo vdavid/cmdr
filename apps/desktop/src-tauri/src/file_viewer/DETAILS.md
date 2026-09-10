@@ -167,12 +167,7 @@ removing its `cleanup_dir` (the reaper only covers a crash). `extract_if_routed_
 **The cap is 256 MiB** (`PREVIEW_CAP_BYTES`), chosen to comfortably cover real preview content (documents, images, PDFs,
 most media) while bounding the temp write, extraction time, and decompression amplification. It's independent of the FE
 copy-selection ceiling (`COPY_REFUSE_BYTES`, 100 MiB): that caps a *selection*, this caps a whole-entry materialization.
-Because a large file can take longer than the 2 s read tier to materialize, `viewer_open` / `viewer_open_as_text` use
-a 30 s budget (`VIEWER_MATERIALIZE_TIMEOUT`, the recursive-scan tier) when the open may materialize, and the strict 2 s
-otherwise. The pick is `materialize::open_may_materialize`: `path_routes_over_its_parent` plus a registry `get` for
-the volume's `paths_are_os_visible()`, no I/O. The budget is a heuristic, not a correctness gate, so over-granting it to
-a mislabeled `.zip` is harmless. Both commands time out through `util.rs`'s `blocking_typed_result_with_timeout`, which
-detaches the open on expiry rather than dropping it, so a pull off an MTP phone never abandons a PTP transaction.
+A pull has no time budget, only a stall rule, and its window shows its progress: § "Watching a pull" below.
 
 `ViewerError::TooLargeToPreview` names no namespace, in the Rust `Display` string and in the frontend copy it maps to
 (`viewer.error.tooLargeToPreview`, "too big to preview from here"): a `.zip` entry, a >256 MiB blob in a `.git`
@@ -202,6 +197,42 @@ did. A local disk and an OS-mounted share are unchanged.
 **The temp is a snapshot, like a routed temp.** No watcher is spawned for it, so tail mode never extends it and
 `viewer_reload` re-reads the temp, not the phone. The toolbar's tail toggle stays available and does nothing visible,
 exactly as for a file inside a `.zip`. To see a newer copy, close and reopen the viewer.
+
+### Watching a pull
+
+The viewer window exists before `viewer_open` runs (the FE opens the window, and its page opens the session), so a
+pull can report progress to that window and stop when it closes. `pending_open.rs` holds one open's shared state;
+`commands/file_viewer.rs::open_viewer` wires it.
+
+- **Every open is a pending open.** `begin_pending_open(window_label)` registers it for the whole command, pulling or
+  not, and `end_pending_open` removes it. `close_session_for_window` (the `WindowEvent::Destroyed` net) abandons the
+  window's pending open BEFORE it reads the window → session link. A plain open that times out at 2 s is abandoned
+  too, so the session it builds late is closed.
+- **Abandon and deliver share one lock.** `open_for_window` records the window → session link inside
+  `PendingOpen::deliver`. An abandon that lands first makes the open close the session it just built and answer the
+  abandon's error; an open that delivers first has recorded the link, so the ordinary close frees it. No interleaving
+  strands a session.
+- **The pull stops between chunks.** `stream_to_file` records bytes after each chunk (`record_pull`) and returns the
+  abandon's error at the next boundary. Returning drops the stream, which stops a network producer
+  (`ChannelReadStream`), and `pull_to_temp` removes the temp subdir. ❌ Never race `next_chunk` against a cancel:
+  dropping an in-flight MTP window read wedges the phone. A close costs at most the chunk already on the wire: 64 KiB
+  on ADB, 255 KiB on SFTP, 8 MiB on MTP. Pinned by
+  `materialize_test::closing_the_window_mid_pull_stops_reading_and_leaves_no_temp`, whose counting slow volume proves
+  the reads stop and the stream drops, not just that the temp goes.
+- **No total deadline, a stall rule instead.** An open that may pull (`materialize::open_may_materialize`: a path
+  that routes, or a volume whose `paths_are_os_visible()` is false; no I/O) waits through `util.rs`'s
+  `blocking_typed_result_until_stalled`. Every 200 ms, `PullWatch` emits `ViewerPullProgress` when the byte count
+  changed; once `idle_for()` reaches `PULL_STALL_LIMIT` it abandons the open as `StoppedResponding` and answers that.
+  Giving up detaches the task like the deadline helpers do, and the pull still reaches its chunk boundary and cleanup.
+  `idle_for` counts from the open's start, so a stat that hangs trips it too. Every other open keeps the strict 2 s.
+- **Why 45 s.** Above each backend's own read timeout, so a backend that notices a dead connection answers first with
+  its own error: MTP gives one USB transfer 30 s, WebDAV allows 10 s between body chunks. ADB's sync stream and SFTP's
+  read window carry no read timeout (verified in code, 2026-09-10), so for them this rule is the only guard.
+- **Progress is a window-targeted event** (`viewer-pull-progress`, `emit_to(label)`). The FE listens on its own
+  `Window`, since a global listener would hear every viewer's pull. Pinned by `commands::file_viewer::tests` (a quiet
+  pull answers `StoppedResponding` and removes its temp; progress reports only news, against the declared size) and
+  `commands::util::stall_tests` (given-up work runs to its end; work that delivered answers its result).
+- **Analytics** see a stalled pull as `failure = stopped_responding` and a closed one as `cancelled`.
 
 **Per-instance extract dir + startup reaper.** The dir is `<app_data_dir>/viewer-extract` (set by
 `init_materialize_dir` from `lib.rs`), so side-by-side dev/prod/worktree instances never reap each other's live

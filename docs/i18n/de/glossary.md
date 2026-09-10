@@ -2752,3 +2752,21 @@ Formulierungsentscheidungen in diesem Set:
   `commands.appCheckForUpdates.description` („neuere Version von Cmdr“), keinen zweiten laufenden Prozess wie
   `main.instanceLock.alertBody`. Der zweite Satz spiegelt `settings.revealHandler.notInApplications` („… jeden Klick auf
   „Im Finder anzeigen“ ins Leere laufen lassen“), damit beide Tooltips als Geschwister lesen · `high`
+
+## Die Vorschau holt eine Datei erst herüber (`viewer.pull.*`, `viewer.error.stoppedResponding`)
+
+- **fetch (eine Datei vom Telefon, Server oder Archiv in eine temporäre Kopie holen) → `laden`
+  (`{fileName} wird für die Vorschau geladen`)** · macOS Finder `IN_MD1` („Fetching…“ → „Laden …“), System Settings
+  `Fetching Menu Item` („Fetching…“ → „Laden …“); der Katalog (`viewer.loading` „Wird geladen …“,
+  `downloads.notification.title` „{fileName} geladen“). ❌ Nicht Microsofts `abrufen` (`GERMAN.tbx`): Apple rendert
+  dasselbe Englisch als `laden` · `high`. `{fileName}` steht als Subjekt im Nominativ und ohne Anführungszeichen, wie in
+  `downloads.notification.title`.
+- **„{doneText} of {totalText}“ → `{doneText} von {totalText}`** · Finder `PW8` („^0 von ^1 kopiert“), Nautilus („%s
+  von %s“), der Katalog (`fileExplorer.diskSpace.free`) · `high`
+- **„so far“ (Datenmenge ohne bekannte Gesamtgröße) → `{doneText} bisher geladen`** · `bisher` aus
+  `queryUi.results.live.matchesSoFar` und der Zeile „written so far → bisher geschrieben“; `geladen` hält die Wortfamilie
+  des Titels · `high`
+- **„stopped arriving“ (seit etwa 45 Sekunden keine Daten) → `Von dieser Datei kommen keine Daten mehr an.`** · keine
+  Quelle formuliert das; bewusst nicht die Stall-Formel „Die Übertragung kommt nicht mehr voran.“, weil die Vorschau
+  keinen Vorgang zeigt · `tentative`. Der Folgesatz ist belegt: `errors.listing.couldntReadUnknown.suggestion` („Prüfe,
+  ob … noch verbunden ist“), Finder `N178` („Versuche es dann erneut.“) · `high`

@@ -52,6 +52,7 @@ use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::RwLockIgnorePoison;
 
 use super::ViewerError;
+use super::pending_open::PendingOpen;
 use crate::file_system::volume::manager::{RoutedKind, get_volume_manager, path_routes_over_its_parent};
 
 /// Max bytes to materialize for a single preview. Above this the open is refused
@@ -132,12 +133,14 @@ pub(super) fn is_orphan_temp_name(name: &str) -> bool {
 /// the path (a route serves it, or its volume's paths aren't OS-visible), else
 /// `Ok(None)` and the caller opens `requested` directly.
 ///
-/// Blocking: run it inside `spawn_blocking`, not on the IPC thread.
+/// `open` watches the pull: it records progress there and stops once `open` is
+/// abandoned. Blocking: run it inside `spawn_blocking`, not on the IPC thread.
 pub(crate) fn materialize_for_viewer(
     requested: &Path,
     volume_id: &str,
+    open: &PendingOpen,
 ) -> Result<Option<MaterializedFile>, ViewerError> {
-    materialize_for_viewer_with(requested, volume_id, &materialize_dir(), PREVIEW_CAP_BYTES)
+    materialize_for_viewer_with(requested, volume_id, &materialize_dir(), PREVIEW_CAP_BYTES, open)
 }
 
 /// Whether opening `requested` may pull it into a temp first, so `viewer_open` can
@@ -159,8 +162,9 @@ pub(crate) fn materialize_for_viewer_with(
     volume_id: &str,
     dir: &Path,
     cap: u64,
+    open: &PendingOpen,
 ) -> Result<Option<MaterializedFile>, ViewerError> {
-    if let Some(entry) = extract_if_routed_with(requested, volume_id, dir, cap)? {
+    if let Some(entry) = extract_routed(requested, volume_id, dir, cap, open)? {
         return Ok(Some(entry));
     }
     // Locality is `paths_are_os_visible`, ❌ never `supports_local_fs_access`: a
@@ -174,7 +178,7 @@ pub(crate) fn materialize_for_viewer_with(
     if resolved.routed.is_some() || volume.paths_are_os_visible() {
         return Ok(None);
     }
-    tauri::async_runtime::block_on(pull_to_temp(volume, resolved.path, dir, cap, None)).map(Some)
+    tauri::async_runtime::block_on(pull_to_temp(volume, resolved.path, dir, cap, None, open)).map(Some)
 }
 
 /// If a ROUTE serves `requested`, stream the addressed entry to a bounded temp and
@@ -196,6 +200,17 @@ pub(crate) fn extract_if_routed_with(
     dir: &Path,
     cap: u64,
 ) -> Result<Option<MaterializedFile>, ViewerError> {
+    extract_routed(requested, volume_id, dir, cap, &PendingOpen::new())
+}
+
+/// The route half of [`materialize_for_viewer_with`], watched by `open`.
+fn extract_routed(
+    requested: &Path,
+    volume_id: &str,
+    dir: &Path,
+    cap: u64,
+    open: &PendingOpen,
+) -> Result<Option<MaterializedFile>, ViewerError> {
     // Only a path with no file of its own is materialized. The `.zip` file ITSELF
     // is a regular file: viewing it shows its raw bytes like any binary file
     // (extracting inner "" would address the archive ROOT — a directory — and
@@ -215,7 +230,7 @@ pub(crate) fn extract_if_routed_with(
         return Ok(None);
     };
     let entry_path = resolved.path;
-    tauri::async_runtime::block_on(pull_to_temp(volume, entry_path, dir, cap, Some(routed))).map(Some)
+    tauri::async_runtime::block_on(pull_to_temp(volume, entry_path, dir, cap, Some(routed), open)).map(Some)
 }
 
 /// Streams one file to a fresh temp subdir under `dir`, refusing an oversize file
@@ -227,7 +242,11 @@ async fn pull_to_temp(
     dir: &Path,
     cap: u64,
     routed: Option<RoutedKind>,
+    open: &PendingOpen,
 ) -> Result<MaterializedFile, ViewerError> {
+    if let Some(abandoned) = open.abandoned_error() {
+        return Err(abandoned);
+    }
     // Size + kind come from the volume's metadata (an archive's central directory,
     // the portal's tree entry, a phone's or server's stat), never a decompression or
     // a content read, so the refusal lands BEFORE we create a temp or stream a byte.
@@ -248,7 +267,7 @@ async fn pull_to_temp(
     let temp_file = cleanup_dir.join(temp_basename(&meta.name));
 
     // Any failure past this point must not leave the subdir behind.
-    match stream_to_file(volume.as_ref(), &entry_path, &temp_file, cap, routed).await {
+    match stream_to_file(volume.as_ref(), &entry_path, &temp_file, cap, meta.size, routed, open).await {
         Ok(()) => Ok(MaterializedFile { temp_file, cleanup_dir }),
         Err(e) => {
             let _ = std::fs::remove_dir_all(&cleanup_dir);
@@ -258,16 +277,30 @@ async fn pull_to_temp(
 }
 
 /// Streams the file into `temp_file`, enforcing the byte-cap as a backstop against a
-/// reported size that understates the real one.
+/// reported size that understates the real one. Records progress on `open` against
+/// `declared_size` after every chunk, and stops once `open` is abandoned.
+///
+/// The abandon check sits BETWEEN chunks, ❌ never as a race that drops an in-flight
+/// `next_chunk`: an MTP window read is a USB transaction, and dropping it mid-flight
+/// is what wedges a phone. Returning drops the stream, which is the backend's cancel
+/// (a network producer stops on it; see `ChannelReadStream`), so a close costs at most
+/// the one chunk already on the wire: 64 KiB on ADB, 8 MiB on MTP.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one pull's inputs; a struct would exist only to pass them here"
+)]
 async fn stream_to_file(
     volume: &dyn Volume,
     entry_path: &Path,
     temp_file: &Path,
     cap: u64,
+    declared_size: Option<u64>,
     routed: Option<RoutedKind>,
+    open: &PendingOpen,
 ) -> Result<(), ViewerError> {
     use std::io::Write as _;
 
+    open.record_pull(0, declared_size);
     let mut stream = volume
         .open_read_stream(entry_path)
         .await
@@ -281,6 +314,10 @@ async fn stream_to_file(
             return Err(ViewerError::TooLargeToPreview { size: written, cap });
         }
         file.write_all(&chunk)?;
+        open.record_pull(written, declared_size);
+        if let Some(abandoned) = open.abandoned_error() {
+            return Err(abandoned);
+        }
     }
     file.flush()?;
     Ok(())

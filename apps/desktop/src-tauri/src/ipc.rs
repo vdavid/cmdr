@@ -67,6 +67,7 @@ use crate::file_system::write_operations::{
     WriteConflictResolvedEvent, WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::write_operations::{OperationsChanged, VolumesBusyChanged};
+use crate::file_viewer::ViewerPullProgress;
 use crate::mtp::{
     MtpDeviceConnected, MtpDeviceDisconnected, MtpExclusiveAccessError, MtpPermissionError, MtpPtpcameradRestored,
     MtpPtpcameradSuppressed, MtpStorageRemoved,
@@ -1121,6 +1122,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             CloseConfirmation,
             McpSettingsClose,
             ViewerWordWrapToggled,
+            // emit_to(viewer label): how far a viewer's pull into its preview temp got.
+            ViewerPullProgress,
             TabContextAction,
             FunctionKeyBarHideRequested,
             MouseNav,

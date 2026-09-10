@@ -72,8 +72,10 @@ export {
   viewerSetTailMode,
   viewerReload,
   viewerGetEncodingOptions,
+  onViewerPullProgress,
 } from './file-viewer'
 export type {
+  ViewerPullProgress,
   LineChunk,
   BackendCapabilities,
   ViewerOpenResult,

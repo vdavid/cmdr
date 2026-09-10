@@ -1658,3 +1658,18 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   裡資料夾的說法），也不用 MS 的 `組建`。第二句沿用 `settings.revealHandler.notInApplications` 的
   `每一次「在 Finder 中顯示」的點擊都指向空的地方`，讓兩條提示讀起來是一對 · `high`（術語）；"come and go" 譯作
   `來來去去` 是意譯判斷，`tentative`
+- **fetch（檢視器先把手機、伺服器或封存檔裡的檔案取到暫存檔再顯示）** · `取得`，標題寫
+  `正在取得「{fileName}」以便預覽` · AP-HK `Fetching Menu Item` = `正在取得⋯`（AP-TW 是 `擷取中⋯`，本目錄的 `擷取`
+  只用在 `預先擷取`）；目錄裡 key 名就叫 fetch 的 `fileExplorer.navigation.spaceFetchFailed` = `無法取得磁碟空間` ·
+  `high`。❌ 不寫 Finder 的 `下載`（`PE126` `正在下載^0`）：USB 手機和封存檔都不是下載。檔名照 Apple `FT1`
+  （`正在將「^0」下載至「^1」`）加角括號。
+- **"x of y"（位元組進度行，兩個值都帶單位）** · `{doneText} / {totalText}` · AP-TW `PW8` `已拷貝：^0/^1`、AP-HK
+  `已複製：^0/^1`，進度行一律用斜線；斜線兩旁留空格沿用 `errorReporter.dialog.counter`（`{currentText} / {maxText}`），因為單位裡本身有空格 ·
+  `high`。❗ 和 `style.md` § Spacing 那句 `64.0 MB/1.33 GB` 不衝突：那裡講的是別讓人往一段 Latin 裡面加空格，這裡是兩個占位符之間的分隔。
+- **"so far"（總大小未知時已到的量）** · `目前已取得 {doneText}` · `目前…` 沿用
+  `queryUi.results.live.matchesSoFar`（`目前找到`）、`fileOperations.transferProgress.rollbackTooltip`（`目前為止寫入`）；動詞與標題的
+  `取得` 同字 · `high`
+- **"stopped arriving"（45 秒沒有資料進來）** · `這個檔案的傳輸停住不動了` · 複用目錄已出貨的
+  `fileOperations.transferProgress.stallUnknown`（`這項傳輸停住不動了`），刻意不寫 `已暫停` 或 `沒有回應`；後半句逐字沿用
+  `errors.listing.*.suggestion` 的 `確認磁碟或裝置仍然連接著` 與 Apple 的 `然後再試一次` · `tentative`（`停住不動了`
+  是既有目錄用字，五份語料都沒有來源）

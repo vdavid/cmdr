@@ -13,9 +13,12 @@
         viewerSetupMenu,
         viewerSetWordWrap,
         asViewerError,
+        onViewerPullProgress,
         onViewerWordWrapToggled,
         activateWindowMenu,
     } from '$lib/tauri-commands'
+    import { createViewerPull } from './viewer-pull.svelte'
+    import PullProgressPanel from './PullProgressPanel.svelte'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import { getSetting, setSetting } from '$lib/settings'
@@ -71,7 +74,7 @@
     let estimatedLines = $state(1) // Backend's estimate based on initial sample
     let totalBytes = $state(0)
     let error = $state('')
-    let errorIsTimeout = $state(false)
+    let errorCanRetry = $state(false)
     let filePath = $state('')
     // The volume the file lives on (`'root'` for the local drive), from the `volume`
     // URL param. Threaded to `viewerOpen` so a file inside a `.zip` on a remote
@@ -166,14 +169,21 @@
     }
 
     let unsubscribeLanguage: (() => void) | undefined
+    // The "fetching this file" bar for an open that pulls first (phone, server, zip).
+    const pull = createViewerPull()
+    let unlistenPull: UnlistenFn | undefined
 
     // `.scroll-spacer`, the box the text cursor is positioned against. Not on the scroll
     // composable: nothing else needs it, and the cursor is the only thing measured
     // against the spacer rather than the scroll container.
     let spacerRef = $state<HTMLDivElement>()
 
-    // Window lifecycle state: prevents closing before WebKit is fully initialized
+    // Window lifecycle state. `canClose` prevents closing before WebKit has settled the
+    // mount; it flips right after mount, NOT when the open resolves, because a pull off
+    // a phone can run for minutes and Escape / Cancel must end it. `windowReady` marks
+    // the open resolved (the E2E readiness attribute).
     let windowReady = $state(false)
+    let canClose = false
     let closeRequested = $state(false)
     let closing = false
 
@@ -254,7 +264,7 @@
         getBackendType: () => backendType,
         onTimeoutError: () => {
             error = tString('viewer.error.timeout')
-            errorIsTimeout = true
+            errorCanRetry = true
         },
         getAllLines: () => {
             if (backendType !== 'fullLoad') return null
@@ -434,7 +444,7 @@
 
     function closeWindow() {
         if (closing) return
-        if (!windowReady) {
+        if (!canClose) {
             log.debug('closeWindow: window not ready, queueing close')
             closeRequested = true
             return
@@ -579,14 +589,17 @@
      * `ViewerError`; anything that never reached the typed path at all reads as the
      * generic copy rather than as the backend's own English.
      */
-    function openFailureCopy(e: unknown): { message: string; isTimeout: boolean } {
+    function openFailureCopy(e: unknown): { message: string; canRetry: boolean } {
         const ve = asViewerError(e)
         if (ve) {
-            if (ve.kind === 'timedOut') return { message: tString('viewer.error.timeout'), isTimeout: true }
-            if (ve.kind === 'tooLargeToPreview') return { message: tString('viewer.error.tooLargeToPreview'), isTimeout: false }
-            if (ve.kind === 'archive') return { message: tString('viewer.error.archiveUnreadable'), isTimeout: false }
+            if (ve.kind === 'timedOut') return { message: tString('viewer.error.timeout'), canRetry: true }
+            if (ve.kind === 'stoppedResponding') {
+                return { message: tString('viewer.error.stoppedResponding'), canRetry: true }
+            }
+            if (ve.kind === 'tooLargeToPreview') return { message: tString('viewer.error.tooLargeToPreview'), canRetry: false }
+            if (ve.kind === 'archive') return { message: tString('viewer.error.archiveUnreadable'), canRetry: false }
         }
-        return { message: tString('viewer.error.readFailed'), isTimeout: false }
+        return { message: tString('viewer.error.readFailed'), canRetry: false }
     }
 
     /**
@@ -599,7 +612,13 @@
         // Pass the window label so the backend can free this session when the
         // window is closed via the titlebar X (which never fires `viewerClose`).
         const open = asText ? viewerOpenAsText : viewerOpen
-        const result = await open(path, volumeId, getCurrentWindow().label)
+        pull.start()
+        let result: Awaited<ReturnType<typeof open>>
+        try {
+            result = await open(path, volumeId, getCurrentWindow().label)
+        } finally {
+            pull.finish()
+        }
         log.debug('viewer_open IPC took {ms}ms', { ms: Math.round(performance.now() - t0) })
 
         sessionId = result.sessionId
@@ -725,20 +744,20 @@
         })
 
         error = ''
-        errorIsTimeout = false
+        errorCanRetry = false
     }
 
     async function retryOpen() {
         if (!filePath) return
         loading = true
         error = ''
-        errorIsTimeout = false
+        errorCanRetry = false
         try {
             await openViewerSession(filePath)
         } catch (e) {
             const copy = openFailureCopy(e)
             error = copy.message
-            errorIsTimeout = copy.isTimeout
+            errorCanRetry = copy.canRetry
             log.error('Retry failed: {error}', { error: String(e) })
         } finally {
             loading = false
@@ -772,7 +791,7 @@
         const oldSessionId = sessionId
         loading = true
         error = ''
-        errorIsTimeout = false
+        errorCanRetry = false
         cleanupListeners()
         viewerTail.destroy()
         indexingPoll.stop()
@@ -784,7 +803,7 @@
         } catch (e) {
             const copy = openFailureCopy(e)
             error = copy.message
-            errorIsTimeout = copy.isTimeout
+            errorCanRetry = copy.canRetry
             log.error('{label} failed: {error}', { label: logLabel, error: String(e) })
         } finally {
             loading = false
@@ -808,6 +827,11 @@
         if (loadingScreen) {
             loadingScreen.style.display = 'none'
         }
+        // `setTimeout(0)`, never rAF (see the readiness note below).
+        setTimeout(() => {
+            canClose = true
+            if (closeRequested) closeWindow()
+        }, 0)
 
         await initAccentColor()
 
@@ -835,7 +859,7 @@
 
         if (!pathParam) {
             error = tString('viewer.error.noPath')
-            errorIsTimeout = false
+            errorCanRetry = false
             loading = false
             return
         }
@@ -843,13 +867,16 @@
         filePath = pathParam
         // Missing / empty `volume` param means the local drive (older links, MCP).
         volumeId = params.get('volume') || 'root'
+        unlistenPull = await onViewerPullProgress(getCurrentWindow(), (progress) => {
+            pull.report(progress)
+        })
 
         try {
             await openViewerSession(pathParam)
         } catch (e) {
             const copy = openFailureCopy(e)
             error = copy.message
-            errorIsTimeout = copy.isTimeout
+            errorCanRetry = copy.canRetry
             log.error('Failed to open file: {error}', { error: String(e) })
         } finally {
             loading = false
@@ -866,10 +893,7 @@
             // see docs/testing.md § "rAF in unfocused windows".
             setTimeout(() => {
                 windowReady = true
-                log.debug('Window ready, closeRequested={closeRequested}', { closeRequested })
-                if (closeRequested) {
-                    closeWindow()
-                }
+                log.debug('Window ready')
             }, 0)
         }
     })
@@ -884,6 +908,8 @@
         scroll.destroy()
         indexingPoll.stop()
         viewerTail.destroy()
+        unlistenPull?.()
+        pull.destroy()
     })
 </script>
 
@@ -1081,9 +1107,18 @@
         </div>
     {/if}
 
-    {#if loading}
+    {#if loading && pull.visible}
+        <PullProgressPanel
+            fileName={filePath.split('/').pop() ?? filePath}
+            bytesDone={pull.bytesDone}
+            bytesTotal={pull.bytesTotal}
+            fraction={pull.fraction}
+            stalled={pull.stalled}
+            onCancel={closeWindow}
+        />
+    {:else if loading}
         <div class="status-message">{tString('viewer.loading')}</div>
-    {:else if error && errorIsTimeout}
+    {:else if error && errorCanRetry}
         <div class="status-message timeout-error" role="alert">
             <p class="timeout-error-message">{error}</p>
             <div class="timeout-error-actions">

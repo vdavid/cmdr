@@ -76,8 +76,8 @@ use crate::file_viewer::content_kind::{
     CLASSIFY_HEAD_LEN, ViewerContentKind, classify_viewer_content, looks_binary, media_mime,
 };
 use crate::file_viewer::encoding::detect_from_head;
-use crate::file_viewer::media::read_image_dimensions;
 use crate::file_viewer::materialize::extract_if_routed;
+use crate::file_viewer::media::read_image_dimensions;
 use crate::file_viewer::{Matcher, SearchMode, ViewerError};
 use crate::mcp::{ToolError, ToolResult, fit_to_result_budget, is_virtual_path};
 use crate::search::{format_size, format_timestamp};

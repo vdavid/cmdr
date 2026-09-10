@@ -295,7 +295,13 @@ fn a_file_past_the_cap_on_a_volume_the_os_cant_open_is_refused_before_a_temp_exi
     let entry_len = 100 * 1024;
     let path = a_volume_the_os_cant_open("viewer-pull-cap-cell", &vec![b'x'; entry_len]);
 
-    let outcome = materialize_for_viewer_with(Path::new(&path), "viewer-pull-cap-cell", &extract, 10);
+    let outcome = materialize_for_viewer_with(
+        Path::new(&path),
+        "viewer-pull-cap-cell",
+        &extract,
+        10,
+        &super::PendingOpen::new(),
+    );
     assert!(
         matches!(outcome, Err(ViewerError::TooLargeToPreview { size, cap: 10 }) if size == entry_len as u64),
         "expected TooLargeToPreview with the declared size, got {outcome:?}"
@@ -306,6 +312,251 @@ fn a_file_past_the_cap_on_a_volume_the_os_cant_open_is_refused_before_a_temp_exi
         .collect();
     assert!(created.is_empty(), "no temp after a cap refusal, found {created:?}");
 }
+
+/// A phone that sends a file slowly: chunks arrive `CHUNK_DELAY` apart, and the
+/// volume counts what a pull asked of it, so a test can tell "the pull stopped
+/// reading" from "the pull read everything and threw it away".
+struct SlowPhone {
+    inner: crate::file_system::volume::InMemoryVolume,
+    chunks_served: Arc<std::sync::atomic::AtomicUsize>,
+    stream_dropped: Arc<std::sync::atomic::AtomicBool>,
+}
+
+/// 64 KiB, `InMemoryVolume`'s chunk size.
+const PHONE_CHUNK: usize = 64 * 1024;
+/// Sixteen chunks at 25 ms each: long enough to close the window mid-pull.
+const PHONE_FILE_LEN: usize = 16 * PHONE_CHUNK;
+const CHUNK_DELAY: std::time::Duration = std::time::Duration::from_millis(25);
+
+struct CountingStream {
+    inner: Box<dyn crate::file_system::volume::VolumeReadStream>,
+    chunks_served: Arc<std::sync::atomic::AtomicUsize>,
+    stream_dropped: Arc<std::sync::atomic::AtomicBool>,
+}
+
+impl Drop for CountingStream {
+    fn drop(&mut self) {
+        self.stream_dropped.store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
+impl crate::file_system::volume::VolumeReadStream for CountingStream {
+    fn next_chunk(
+        &mut self,
+    ) -> std::pin::Pin<
+        Box<dyn Future<Output = Option<Result<Vec<u8>, crate::file_system::volume::VolumeError>>> + Send + '_>,
+    > {
+        Box::pin(async move {
+            let chunk = self.inner.next_chunk().await;
+            if matches!(chunk, Some(Ok(_))) {
+                self.chunks_served.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            }
+            chunk
+        })
+    }
+
+    fn total_size(&self) -> u64 {
+        self.inner.total_size()
+    }
+
+    fn bytes_read(&self) -> u64 {
+        self.inner.bytes_read()
+    }
+}
+
+impl crate::file_system::volume::Volume for SlowPhone {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+    ) -> std::pin::Pin<
+        Box<
+            dyn Future<Output = Result<Vec<crate::file_system::FileEntry>, crate::file_system::volume::VolumeError>>
+                + Send
+                + 'a,
+        >,
+    > {
+        self.inner.list_directory(path, on_progress)
+    }
+
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> std::pin::Pin<
+        Box<
+            dyn Future<Output = Result<crate::file_system::FileEntry, crate::file_system::volume::VolumeError>>
+                + Send
+                + 'a,
+        >,
+    > {
+        self.inner.get_metadata(path)
+    }
+
+    fn paths_are_os_visible(&self) -> bool {
+        false
+    }
+
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> std::pin::Pin<
+        Box<
+            dyn Future<
+                    Output = Result<
+                        Box<dyn crate::file_system::volume::VolumeReadStream>,
+                        crate::file_system::volume::VolumeError,
+                    >,
+                > + Send
+                + 'a,
+        >,
+    > {
+        Box::pin(async move {
+            let inner = self.inner.open_read_stream(path).await?;
+            Ok(Box::new(CountingStream {
+                inner,
+                chunks_served: Arc::clone(&self.chunks_served),
+                stream_dropped: Arc::clone(&self.stream_dropped),
+            }) as Box<dyn crate::file_system::volume::VolumeReadStream>)
+        })
+    }
+}
+
+/// Registers a [`SlowPhone`] under `id` holding one `PHONE_FILE_LEN`-byte `big.log`,
+/// and returns that file's path with the phone's two counters.
+fn a_slow_phone(
+    id: &str,
+) -> (
+    String,
+    Arc<std::sync::atomic::AtomicUsize>,
+    Arc<std::sync::atomic::AtomicBool>,
+) {
+    use crate::file_system::volume::manager::get_volume_manager;
+    use crate::file_system::volume::{InMemoryVolume, Volume as _};
+
+    let root = format!("mtp://{id}/1");
+    let inner = InMemoryVolume::new("Phone")
+        .with_root(&root)
+        .with_read_chunk_delay(CHUNK_DELAY);
+    let path = format!("{root}/big.log");
+    tauri::async_runtime::block_on(inner.create_file(Path::new(&path), &vec![b'x'; PHONE_FILE_LEN]))
+        .expect("seed the file");
+    let chunks_served = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let stream_dropped = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    get_volume_manager().register(
+        id,
+        Arc::new(SlowPhone {
+            inner,
+            chunks_served: Arc::clone(&chunks_served),
+            stream_dropped: Arc::clone(&stream_dropped),
+        }),
+    );
+    (path, chunks_served, stream_dropped)
+}
+
+/// Closing the viewer window mid-pull stops the pull at the source: it reads no
+/// further chunks, drops the stream (which cancels a network backend's producer),
+/// deletes the partial temp, and the open answers `Cancelled`. Pre-fix the pull ran
+/// to the end of the file, and its temp lived until the session closed or the app quit.
+#[test]
+fn closing_the_window_mid_pull_stops_reading_and_leaves_no_temp() {
+    let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let extract = crate::test_support::TestDir::new("viewer_pull_close");
+    init_materialize_dir(extract.to_path_buf());
+    let (path, chunks_served, stream_dropped) = a_slow_phone("viewer-close-mid-pull-cell");
+    let window = "viewer-close-mid-pull";
+
+    let open = super::begin_pending_open(window);
+    let opener = {
+        let open = Arc::clone(&open);
+        std::thread::spawn(move || session::open_for_window(&path, "viewer-close-mid-pull-cell", window, false, &open))
+    };
+    crate::test_support::wait_until(
+        std::time::Duration::from_secs(5),
+        "the pull to read its first chunks",
+        || chunks_served.load(std::sync::atomic::Ordering::SeqCst) >= 2,
+    );
+
+    session::close_session_for_window(window);
+    let outcome = opener.join().expect("the opener thread");
+    super::end_pending_open(window, &open);
+
+    assert!(
+        matches!(outcome, Err(ViewerError::Cancelled)),
+        "a closed window's open answers Cancelled, got {outcome:?}"
+    );
+    let served = chunks_served.load(std::sync::atomic::Ordering::SeqCst);
+    assert!(
+        served < PHONE_FILE_LEN / PHONE_CHUNK,
+        "the pull must stop reading when the window closes; it read {served} of 16 chunks"
+    );
+    assert!(
+        stream_dropped.load(std::sync::atomic::Ordering::SeqCst),
+        "the stream is dropped, so no further chunk can be read"
+    );
+    let left: Vec<_> = std::fs::read_dir(&extract)
+        .expect("read extract dir")
+        .flatten()
+        .collect();
+    assert!(left.is_empty(), "the partial temp goes with the pull, found {left:?}");
+}
+
+/// While it pulls, an open reports bytes against the size the source declared, and
+/// ends with all of them. That's what the viewer's progress bar draws from.
+#[test]
+fn a_pull_reports_its_progress_against_the_declared_size() {
+    let extract = crate::test_support::TestDir::new("viewer_pull_progress");
+    let (path, _, _) = a_slow_phone("viewer-pull-progress-cell");
+    let open = Arc::new(super::PendingOpen::new());
+
+    let puller = {
+        let open = Arc::clone(&open);
+        let dir = extract.to_path_buf();
+        std::thread::spawn(move || {
+            materialize_for_viewer_with(
+                Path::new(&path),
+                "viewer-pull-progress-cell",
+                &dir,
+                EXTRACT_CAP_FOR_TESTS,
+                &open,
+            )
+        })
+    };
+    crate::test_support::wait_until(
+        std::time::Duration::from_secs(5),
+        "the pull to report a first chunk",
+        || open.pull_progress().is_some_and(|p| p.bytes_done > 0),
+    );
+    let midway = open.pull_progress().expect("progress mid-pull");
+    assert_eq!(midway.bytes_total, Some(PHONE_FILE_LEN as u64));
+    assert!(midway.bytes_done <= PHONE_FILE_LEN as u64);
+
+    puller
+        .join()
+        .expect("the puller thread")
+        .expect("the pull finishes")
+        .expect("a temp");
+    assert_eq!(
+        open.pull_progress(),
+        Some(super::ViewerPullProgress {
+            bytes_done: PHONE_FILE_LEN as u64,
+            bytes_total: Some(PHONE_FILE_LEN as u64),
+        })
+    );
+}
+
+const EXTRACT_CAP_FOR_TESTS: u64 = PREVIEW_CAP_BYTES;
 
 /// The cap fires for a `.zip` entry AND for a blob in a repo's virtual `.git`
 /// snapshot, so its log line names no namespace. Pinned because "from the archive"

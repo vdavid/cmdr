@@ -43,6 +43,22 @@
   "@viewer.error.cancel": {
     "sourceHash": "19766ed"
   },
+  "viewer.error.stoppedResponding": "A fájl betöltése megállt. Ellenőrizd, hogy a telefon vagy a szerver még csatlakozik, aztán próbáld újra.",
+  "@viewer.error.stoppedResponding": {
+    "sourceHash": "f88b690"
+  },
+  "viewer.pull.title": "Betöltés a megjelenítéshez: {fileName}",
+  "@viewer.pull.title": {
+    "sourceHash": "3a02768"
+  },
+  "viewer.pull.progress": "{doneText} / {totalText}",
+  "@viewer.pull.progress": {
+    "sourceHash": "edce3be"
+  },
+  "viewer.pull.progressUnknownTotal": "Eddig {doneText}",
+  "@viewer.pull.progressUnknownTotal": {
+    "sourceHash": "548095e"
+  },
   "viewer.content.ariaLabel": "Fájltartalom: {fileName}",
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"

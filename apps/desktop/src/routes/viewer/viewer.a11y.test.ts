@@ -23,6 +23,7 @@ import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
 import ViewerStatusBar from './ViewerStatusBar.svelte'
 import ViewerToolbar from './ViewerToolbar.svelte'
 import ViewerTextCursor from './ViewerTextCursor.svelte'
+import PullProgressPanel from './PullProgressPanel.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import type { EncodingChoice } from '$lib/ipc/bindings'
 import type { TextCursorBox } from './viewer-text-cursor.svelte'
@@ -452,6 +453,46 @@ describe('viewer search-bar a11y', () => {
     expect(alert).not.toBeNull()
     expect(alert?.textContent.trim()).toBe('Bad regex')
     target.remove()
+  })
+})
+
+/**
+ * The mid-screen "fetching this file" state. The bar needs an accessible name (a
+ * `progressbar` without one is announced as a bare percentage), and the unknown-size
+ * variant swaps the bar for a decorative spinner beside visible text.
+ */
+describe('PullProgressPanel a11y', () => {
+  function mountPanel(props: { bytesTotal: number | null; fraction: number | null; stalled?: boolean }) {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(PullProgressPanel, {
+      target,
+      props: {
+        fileName: 'holiday.mp4',
+        bytesDone: 48_000_000,
+        bytesTotal: props.bytesTotal,
+        fraction: props.fraction,
+        stalled: props.stalled ?? false,
+        onCancel: () => {},
+      },
+    })
+    return target
+  }
+
+  it('known size: a named progress bar, no a11y violations', async () => {
+    const target = mountPanel({ bytesTotal: 256_000_000, fraction: 0.1875 })
+    await tick()
+    const bar = target.querySelector('[role="progressbar"]')
+    expect(bar?.getAttribute('aria-label')).toBe('Fetching holiday.mp4 to preview it')
+    expect(bar?.getAttribute('aria-valuenow')).toBe('19')
+    await expectNoA11yViolations(target)
+  })
+
+  it('unknown size: no bar, no a11y violations', async () => {
+    const target = mountPanel({ bytesTotal: null, fraction: null, stalled: true })
+    await tick()
+    expect(target.querySelector('[role="progressbar"]')).toBeNull()
+    await expectNoA11yViolations(target)
   })
 })
 

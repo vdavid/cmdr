@@ -6,9 +6,8 @@ The file viewer opens files in their own Tauri window, with virtual scrolling an
 
 ## Module map
 
-`+page.svelte` (lifecycle, window, UI) wires the `createViewer*` composables, the selection / caret / granularity /
-motion helpers, and the `createViewerKeyboard` keydown router. Toolbar, status bar, context menu, pickers, and dialogs
-are presentational siblings. Inventory: `DETAILS.md` § "Module map".
+`+page.svelte` (lifecycle, window, UI) wires the `createViewer*` composables, the selection and caret helpers, and the
+`createViewerKeyboard` router; the components beside it are presentational. Inventory: `DETAILS.md` § "Module map".
 
 ## Must-knows
 
@@ -37,7 +36,8 @@ Each is a break-if-ignored invariant; the named `DETAILS.md` section has the why
 - **"Caret" is a text POSITION, "text cursor" the optional rendered bar** — `caretRectFor` stays caret vocabulary though
   it measures that bar. Mount the cursor in `.scroll-spacer`, ❌ never in `.lines-container`, whose child count derives
   the wrapped-line height. (§ "Text cursor")
-- **`closeWindow()` defers via `deferWindowClose()` (100 ms, NOT 0), `windowReady` via `setTimeout(0)`; never rAF.**
+- **`closeWindow()` defers via `deferWindowClose()` (100 ms, NOT 0); `canClose` (at mount) and `windowReady` flip via
+  `setTimeout(0)`; never rAF.**
   Each dodges a different failure: stalled IPC in other webviews, a macOS WebKit segfault mid-teardown, starved rAF in
   unfocused E2E windows. (§ Gotchas; `$lib/window-close-defer`)
 - **Escape: the page's window keydown runs BEFORE `ViewerContextMenu`'s**, so it gates on `contextMenuPos !== null`

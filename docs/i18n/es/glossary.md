@@ -2976,3 +2976,23 @@ Familia ICU normal: apóstrofos dobles, aunque al final ningún valor español l
   `commands.appCheckForUpdates.description`, no de un segundo proceso como `main.instanceLock.alertBody`. La segunda
   frase copia el molde de `settings.revealHandler.notInApplications`
   (`dejaría cada clic en “Mostrar en el Finder” apuntando a la nada`) · `high`.
+
+## El panel del visor mientras llega el archivo (`viewer.pull.*`, `viewer.error.stoppedResponding`, 2026-09-10)
+
+Cuatro claves: el panel en mitad del visor mientras Cmdr copia un archivo de un teléfono, de un servidor o de dentro de
+un archivo comprimido a un archivo temporal, y el mensaje de cuando dejan de llegar datos durante unos 45 segundos.
+
+- **Fetching → `Obteniendo`** · macOS Finder `IN_MD1` (`Fetching…` → `Obteniendo…`) y AppKit `Revisions`
+  (`Retrieving versions` → `Obteniendo versiones`) · `high`. La terminología de Microsoft solo trae `Fetch` /
+  `FetchXML`, nombre propio de Dynamics CRM (otro sentido). ❌ No `Descargando` (Finder `PE126`): un archivo comprimido
+  local no se descarga de ningún sitio.
+- **to preview it → `para previsualizarlo`, con el sustantivo delante: `Obteniendo el archivo {fileName} para
+  previsualizarlo`** · `previsualizar` es el verbo del visor (`viewer.error.tooLargeToPreview`). El clítico `lo`
+  concuerda con `el archivo`, nunca con `{fileName}` (§ «Nothing may agree with a `{name}`» de `style.md`) · `high`.
+- **`{doneText} of {totalText}` → `{doneText} de {totalText}`** · Finder `PW3` / `PW8` (`^0 de ^1`) y
+  `askCmdr.context.tooltip` · `high`.
+- **so far → `hasta ahora`, sin participio** · `search.imageResults.paused`; un `recibidos` concordaría en número con la
+  unidad que ya llega formateada (`1 byte`) · `high`.
+- **stopped arriving → `Dejaron de llegar los datos de este archivo`** · pretérito, según `style.md`; `Este archivo dejó
+  de llegar` es un calco. La segunda frase copia `errors.listing.couldntReadUnknown.suggestion`
+  (`Comprueba que … sigan conectados`) y `ai.translateError.unavailable.body` (`y vuelve a intentarlo`) · `high`.

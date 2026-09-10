@@ -12,12 +12,13 @@ pub mod encoding;
 mod full_load;
 pub(crate) mod headless;
 mod line_index;
+pub(crate) mod materialize;
 pub mod media;
 mod media_backend;
 pub mod media_protocol;
 mod media_session;
+pub mod pending_open;
 pub(crate) mod range_read;
-pub(crate) mod materialize;
 mod search_matcher;
 pub mod session;
 pub mod watcher;
@@ -37,11 +38,11 @@ mod headless_test;
 #[cfg(test)]
 mod line_index_test;
 #[cfg(test)]
+mod materialize_test;
+#[cfg(test)]
 mod media_protocol_test;
 #[cfg(test)]
 mod media_session_test;
-#[cfg(test)]
-mod materialize_test;
 #[cfg(test)]
 mod search_cancel_test_support;
 #[cfg(test)]
@@ -53,15 +54,16 @@ mod watcher_test;
 
 pub use content_kind::{ViewerContentKind, classify_viewer_content};
 pub use encoding::FileEncoding;
-pub use media_session::MediaDimensions;
-pub use range_read::RangeEnd;
 pub use materialize::init_materialize_dir;
+pub use media_session::MediaDimensions;
+pub use pending_open::{AbandonReason, PendingOpen, ViewerPullProgress, begin_pending_open, end_pending_open};
+pub use range_read::RangeEnd;
 pub use search_matcher::{Matcher, SearchMode};
 pub use session::{
     EncodingOptions, SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session,
-    close_session_for_window, get_encoding_options, get_lines, get_session_status, init_app_handle, open_session,
-    open_session_as_text, read_range, register_window_session, reload, search_cancel, search_poll, search_start,
-    set_encoding, set_tail_mode, write_range_to_file,
+    close_session_for_window, get_encoding_options, get_lines, get_session_status, init_app_handle, open_for_window,
+    open_session, open_session_as_text, read_range, register_window_session, reload, search_cancel, search_poll,
+    search_start, set_encoding, set_tail_mode, write_range_to_file,
 };
 
 use serde::{Deserialize, Serialize};
@@ -171,6 +173,10 @@ pub enum ViewerError {
     /// The read exceeded the IPC timeout. The frontend can offer Retry; the underlying
     /// backend read continues until it sees the per-read cancel flag or completes.
     TimedOut,
+    /// A pull into the preview temp got no bytes for the stall limit: the phone or
+    /// server went quiet. The frontend offers Retry; the pull stops at its next chunk
+    /// boundary and removes its temp. See `file_viewer::pending_open`.
+    StoppedResponding,
     /// Previewing a file the viewer has to pull into a temp first (an archive entry,
     /// a file in a repo's `.git` snapshot, a file on a phone or server) would
     /// materialize more than the preview cap. Refused before any extraction (the
@@ -202,6 +208,7 @@ impl std::fmt::Display for ViewerError {
             Self::Cancelled => write!(f, "Read cancelled"),
             Self::OutOfRange => write!(f, "Selection is past the end of the file"),
             Self::TimedOut => write!(f, "Read timed out"),
+            Self::StoppedResponding => write!(f, "The source stopped sending the file"),
             Self::TooLargeToPreview { size, cap } => {
                 // Display/log string only — the user sees the FE's friendly copy
                 // (`viewer.error.tooLargeToPreview`). Phrased to avoid a `1 bytes`

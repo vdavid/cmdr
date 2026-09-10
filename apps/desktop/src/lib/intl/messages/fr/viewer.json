@@ -43,6 +43,22 @@
   "@viewer.error.cancel": {
     "sourceHash": "19766ed"
   },
+  "viewer.error.stoppedResponding": "La récupération de ce fichier n''avance plus. Vérifiez que le téléphone ou le serveur est toujours connecté, puis réessayez.",
+  "@viewer.error.stoppedResponding": {
+    "sourceHash": "f88b690"
+  },
+  "viewer.pull.title": "Récupération de « {fileName} » pour l''aperçu",
+  "@viewer.pull.title": {
+    "sourceHash": "3a02768"
+  },
+  "viewer.pull.progress": "{doneText} sur {totalText}",
+  "@viewer.pull.progress": {
+    "sourceHash": "edce3be"
+  },
+  "viewer.pull.progressUnknownTotal": "{doneText} pour l''instant",
+  "@viewer.pull.progressUnknownTotal": {
+    "sourceHash": "548095e"
+  },
   "viewer.content.ariaLabel": "Contenu du fichier : {fileName}",
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"

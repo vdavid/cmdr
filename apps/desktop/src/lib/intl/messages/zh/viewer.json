@@ -43,6 +43,22 @@
   "@viewer.error.cancel": {
     "sourceHash": "19766ed"
   },
+  "viewer.error.stoppedResponding": "这个文件的传输停住不动了。请确认手机或服务器仍连接着，然后重试。",
+  "@viewer.error.stoppedResponding": {
+    "sourceHash": "f88b690"
+  },
+  "viewer.pull.title": "正在获取“{fileName}”以便预览",
+  "@viewer.pull.title": {
+    "sourceHash": "3a02768"
+  },
+  "viewer.pull.progress": "{doneText} / {totalText}",
+  "@viewer.pull.progress": {
+    "sourceHash": "edce3be"
+  },
+  "viewer.pull.progressUnknownTotal": "目前已获取 {doneText}",
+  "@viewer.pull.progressUnknownTotal": {
+    "sourceHash": "548095e"
+  },
   "viewer.content.ariaLabel": "文件内容：{fileName}",
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"

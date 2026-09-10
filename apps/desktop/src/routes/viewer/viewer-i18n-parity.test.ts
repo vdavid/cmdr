@@ -37,13 +37,22 @@ describe('viewer error + load states (en)', () => {
     expect(tString('viewer.loading')).toBe('Loading...')
   })
 
-  it('words the preview size cap for ANY routed source, not just archives', () => {
-    // The cap fires for a `.zip` entry AND for a blob in a repo's virtual `.git`
-    // snapshot, so the copy names no namespace. Pinned because "from the archive"
-    // read as a plain lie on a git snapshot.
+  it('words the preview size cap for ANY source it pulls from, not just archives', () => {
+    // The cap fires for a `.zip` entry, a blob in a repo's virtual `.git` snapshot,
+    // and a file on a phone or server, so the copy names none of them. Pinned
+    // because "from the archive" read as a plain lie on a git snapshot.
     expect(tString('viewer.error.tooLargeToPreview')).toBe(
       'This file is too big to preview from here. Copy it out first, then open it.',
     )
+  })
+
+  it('words a pull that went quiet, and the panel that shows a pull running', () => {
+    expect(tString('viewer.error.stoppedResponding')).toBe(
+      'This file stopped arriving. Check that the phone or server is still connected, then try again.',
+    )
+    expect(tString('viewer.pull.title', { fileName: 'holiday.mp4' })).toBe('Fetching holiday.mp4 to preview it')
+    expect(tString('viewer.pull.progress', { doneText: '12 MB', totalText: '250 MB' })).toBe('12 MB of 250 MB')
+    expect(tString('viewer.pull.progressUnknownTotal', { doneText: '12 MB' })).toBe('12 MB so far')
   })
 
   it('builds the window title with the file name', () => {

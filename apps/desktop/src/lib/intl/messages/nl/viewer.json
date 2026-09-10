@@ -43,6 +43,22 @@
   "@viewer.error.cancel": {
     "sourceHash": "19766ed"
   },
+  "viewer.error.stoppedResponding": "Er komen geen gegevens van dit bestand meer binnen. Controleer of de telefoon of server nog verbonden is en probeer het dan opnieuw.",
+  "@viewer.error.stoppedResponding": {
+    "sourceHash": "f88b690"
+  },
+  "viewer.pull.title": "{fileName} ophalen om te bekijken",
+  "@viewer.pull.title": {
+    "sourceHash": "3a02768"
+  },
+  "viewer.pull.progress": "{doneText} van {totalText}",
+  "@viewer.pull.progress": {
+    "sourceHash": "edce3be"
+  },
+  "viewer.pull.progressUnknownTotal": "{doneText} tot nu toe",
+  "@viewer.pull.progressUnknownTotal": {
+    "sourceHash": "548095e"
+  },
   "viewer.content.ariaLabel": "Bestandsinhoud: {fileName}",
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"

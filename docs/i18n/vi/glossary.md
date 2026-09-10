@@ -2901,3 +2901,26 @@ cài, quét toàn bộ `*.loctable` theo công thức trong `docs/i18n/reference
   hai theo khuôn `settings.revealHandler.notInApplications` (`… mọi lần bấm “Hiển thị trong Finder” trỏ vào chỗ trống`),
   nhưng viết `xóa` theo `style.md` thay vì `xoá` của khóa anh em · `high` (thuật ngữ), `tentative`
   (`chỉ tồn tại tạm thời`).
+
+## Trình xem tải tệp từ điện thoại, máy chủ hoặc tệp nén (`viewer.pull.*`, `viewer.error.stoppedResponding`, 2026-09-10)
+
+Bề mặt: khung giữa cửa sổ trình xem khi Cmdr chép một tệp ở xa vào tệp tạm trước khi hiển thị (tiêu đề, thanh tiến
+trình, dòng "x trên y", nút Hủy), và thông báo khi không có dữ liệu nào tới trong khoảng 45 giây. Bằng chứng Tier 1 đọc
+thẳng từ macOS 26.6.2 (build 25G83), 2026-09-10.
+
+- **"Fetching" (chép tệp về để xem trước) → `Đang tải`** · chính động từ của trình xem (`viewer.loading` = `Đang tải...`)
+  · `high`. ❌ Không lấy `Đang tìm nạp…` của Finder (`IN_MD1`): đó là nghĩa lấy siêu dữ liệu trong cửa sổ Lấy thông tin,
+  đọc rất kỹ thuật. ❌ Không lấy `Đang tải về` (Foundation `Progress.loctable` "Downloading"): tệp trong một tệp nén thì
+  không "tải về" từ đâu cả. `{fileName}` đi trần giữa câu như `downloads.notification.title` (`Đã tải về {fileName}`) và
+  Quick Look (`Preview of %@` → `Bản xem trước của %@`).
+- **"{done} of {total}" (dòng dung lượng dưới thanh tiến trình) → `{doneText} trên {totalText}`** · Foundation
+  `Progress.loctable`, khóa `%@ of %@` → `%1$@ trên %2$@`, đúng dòng "12,4 MB of 250 MB" của `NSProgress` · `high`. Khớp
+  `settings.mediaIndex.progress.ofTotal` và `onboarding.wizard.stepProgress`. Finder (`PW3` `^0 / ^1 – ^2`) và
+  `ai.toast.progress` dùng `/`, nhưng đó là những dòng dày đặc có thêm tốc độ/thời gian; dòng này đứng riêng.
+- **"{done} so far" (dung lượng khi chưa biết tổng) → `Đến giờ đã tải {doneText}`** · `so far` → `đến giờ` đã chốt, và
+  khuôn đặt `Đến giờ` lên đầu là của bộ đếm trực tiếp `queryUi.results.live.matchesSoFar` (`Đến giờ có {countText} kết quả`)
+  · `high`. Cần thêm động từ `đã tải` (như `có` ở câu anh em), vì `12,4 MB đến giờ` trơ trọi không thành câu.
+- **"stopped arriving" → `đã ngừng tải`** · cùng gốc `tải` với tiêu đề; `ngừng` là chữ catalog dùng cho một thứ tự dừng
+  ngoài ý muốn (`search.coverage.walk.abandoned` = `Vài thư mục ngừng phản hồi`) · `high`. Vế sau lấy nguyên khuôn
+  `errors.listing.couldntReadUnknown.suggestion` (`Kiểm tra xem … có còn kết nối không`) và `rồi` của
+  `viewer.error.tooLargeToPreview`.

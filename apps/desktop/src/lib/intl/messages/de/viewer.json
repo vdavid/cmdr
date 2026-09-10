@@ -43,6 +43,22 @@
   "@viewer.error.cancel": {
     "sourceHash": "19766ed"
   },
+  "viewer.error.stoppedResponding": "Von dieser Datei kommen keine Daten mehr an. Prüfe, ob das Telefon oder der Server noch verbunden ist, und versuche es dann erneut.",
+  "@viewer.error.stoppedResponding": {
+    "sourceHash": "f88b690"
+  },
+  "viewer.pull.title": "{fileName} wird für die Vorschau geladen",
+  "@viewer.pull.title": {
+    "sourceHash": "3a02768"
+  },
+  "viewer.pull.progress": "{doneText} von {totalText}",
+  "@viewer.pull.progress": {
+    "sourceHash": "edce3be"
+  },
+  "viewer.pull.progressUnknownTotal": "{doneText} bisher geladen",
+  "@viewer.pull.progressUnknownTotal": {
+    "sourceHash": "548095e"
+  },
   "viewer.content.ariaLabel": "Dateiinhalt: {fileName}",
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"

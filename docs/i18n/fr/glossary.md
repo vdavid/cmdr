@@ -3227,3 +3227,33 @@ Décisions de formulation :
   oppose deux sortes de versions de l'app, pas des dossiers (`search.systemDirExclude.default` garde « compilation »
   pour les dossiers). La seconde phrase reprend le moule de `settings.revealHandler.notInApplications`
   (`laisserait chaque clic sur « Afficher dans le Finder » sans destination`) · `high`.
+
+## La visionneuse récupère d'abord le fichier (`viewer.pull.*`, `viewer.error.stoppedResponding`, 2026-09-10)
+
+Famille ICU : apostrophes doublées. Le panneau s'affiche au milieu de la visionneuse quand la copie d'un fichier distant
+(téléphone, serveur, archive) vers un fichier temporaire dure plus d'une seconde.
+
+Termes :
+
+- fetch (copier un fichier distant sur le Mac avant de l'afficher) → **récupération** (nom d'état) / **récupérer** ·
+  macOS Réglages Système, `fr/macOS/SystemSettings/Localizable.json`, clé `Fetching Menu Item` (`Fetching…` →
+  `Récupération…`), relevé dans le tas de références 2026-09-10 · high. Le titre suit le moule nominal des fenêtres de
+  progression du Finder (`LocalizableMerged.strings` `PW5_V1` = `Préparation de la copie de « ^1 »`, `PW45.2` =
+  `Préparation du partage de « ^0 »`, macOS 26.6.2 build 25G83, lu le 2026-09-10). Les guillemets autour de
+  `{fileName}` règlent aussi l'élision : `de « image.png »` ne demande jamais `d'`. `téléchargement` reste réservé à
+  Internet (`settings.mediaIndex.clip.failed`).
+- x of y (quantité reçue sur la taille totale) → **{doneText} sur {totalText}** · Finder `PW3` (`^0 of ^1 – ^2` →
+  `^0 sur ^1 – ^2`, la ligne de taille de la fenêtre de copie) et `PW8` (`^0 sur ^1 copiés`), macOS 26.6.2 build 25G83,
+  2026-09-10 ; le catalogue écrit déjà `fileExplorer.imageIndex.folder.someIndexed` « {doneText} sur {totalText} » ·
+  high. Thunar dit `%s de %s` : Tier 3, le Finder l'emporte.
+- so far (après une taille) → **pour l'instant** · moule du catalogue (`queryUi.results.live.matchesSoFar`,
+  `search.walkHandoff.counts`) · high. ❌ Pas `{doneText} reçus` : le participe devrait s'accorder avec une unité
+  inconnue (`1 octet reçu` / `12 Mo reçus`).
+
+Décision de formulation :
+
+- **« This file stopped arriving » → « La récupération de ce fichier n'avance plus. »** Le constat reprend le moule du
+  transfert bloqué (style guide § Voix : « Le transfert n'avance plus ») et le nom du titre, donc le panneau et le
+  message se lisent comme la même opération. La suite recopie `errors.listing.couldntReadUnknown.suggestion` («
+  Vérifiez que le disque ou l'appareil est toujours connecté ») et finit sur `puis réessayez`. `connecté` s'accorde avec
+  `le téléphone ou le serveur`, deux masculins fixés par la phrase, jamais avec la personne · `high`.

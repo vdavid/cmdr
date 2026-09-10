@@ -1,7 +1,11 @@
 // File viewer session commands (open, seek, search, close)
 
+import type { UnlistenFn } from '@tauri-apps/api/event'
+import type { Window } from '@tauri-apps/api/window'
+
 import {
   commands,
+  events,
   type FileEncoding,
   type MediaDimensions,
   type RangeEnd,
@@ -10,6 +14,7 @@ import {
   type SeekTargetKind,
   type ViewerContentKind,
   type ViewerError,
+  type ViewerPullProgress,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
@@ -19,8 +24,24 @@ export type {
   RangeEnd,
   ViewerContentKind,
   ViewerError,
+  ViewerPullProgress,
   ViewerSearchMode,
   ViewerSearchStatus,
+}
+
+/**
+ * Listens for `viewer-pull-progress` on ONE viewer window: how far that window's open
+ * has pulled its file into a preview temp (a file on a phone or server, a zip entry).
+ * Scoped to `window` because the backend emits to the window's label; a global
+ * listener would hear every viewer's pull.
+ */
+export function onViewerPullProgress(
+  window: Window,
+  handler: (progress: ViewerPullProgress) => void,
+): Promise<UnlistenFn> {
+  return events.viewerPullProgress(window).listen((event) => {
+    handler(event.payload)
+  })
 }
 
 /** A chunk of lines returned by the viewer backend. */

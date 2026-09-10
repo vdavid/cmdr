@@ -43,6 +43,22 @@
   "@viewer.error.cancel": {
     "sourceHash": "19766ed"
   },
+  "viewer.error.stoppedResponding": "Dejaron de llegar los datos de este archivo. Comprueba que el teléfono o el servidor sigan conectados y vuelve a intentarlo.",
+  "@viewer.error.stoppedResponding": {
+    "sourceHash": "f88b690"
+  },
+  "viewer.pull.title": "Obteniendo el archivo {fileName} para previsualizarlo",
+  "@viewer.pull.title": {
+    "sourceHash": "3a02768"
+  },
+  "viewer.pull.progress": "{doneText} de {totalText}",
+  "@viewer.pull.progress": {
+    "sourceHash": "edce3be"
+  },
+  "viewer.pull.progressUnknownTotal": "{doneText} hasta ahora",
+  "@viewer.pull.progressUnknownTotal": {
+    "sourceHash": "548095e"
+  },
   "viewer.content.ariaLabel": "Contenido del archivo: {fileName}",
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"

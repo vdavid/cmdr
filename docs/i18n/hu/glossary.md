@@ -3174,3 +3174,26 @@ aposztrófot. Négy kulcs angolja átíródott, ezért a tárolt hash `sync-loca
   második futó példányról (`main.instanceLock.alertBody`). A második mondat a `settings.revealHandler.notInApplications`
   mintáját követi (`… törlése után minden „Megjelenítés a Finderben” kattintás a semmibe mutatna`), hogy a két tooltip
   testvérként olvasódjon.
+
+## A megjelenítő betölti a telefonon, szerveren vagy archívumban lévő fájlt (`viewer.pull.*`, `viewer.error.stoppedResponding`, 2026-09-10)
+
+A megjelenítőablak középső panelje, amíg a Cmdr egy távoli fájlt ideiglenes fájlba másol (cím, folyamatjelző, „x / y”
+sor, Mégsem gomb), és az üzenet, ha kb. 45 másodpercig nem érkezik adat. Tier-1 bizonyíték a telepített macOS 26.6.2-ből
+(build 25G83), 2026-09-10.
+
+- **„Fetching” (a fájl áthozása megjelenítés előtt) → `Betöltés`** · a megjelenítő saját igéje (`viewer.loading` =
+  `Betöltés…`, `viewer.error.timeout` = `Nem sikerült betölteni a fájlt.`), a „to preview” pedig ugyanennek a fájlnak a
+  `megjelenít` töve (`viewer.error.tooLargeToPreview`) · `high`. ❌ NEM a Finder `Begyűjtés…` alakja (`IN_MD1`): az az
+  Infó-ablak metaadat-gyűjtése, más jelentés. ❌ NEM `Letöltés` (Foundation `Progress.loctable` „Downloading”): egy
+  archívumban lévő fájlt senki nem tölt le. A cím kettőspontos keretet kap, mint a szomszédos
+  `viewer.content.ariaLabel` (`Fájltartalom: {fileName}`), így a `{fileName}` elé nem kell `a(z)`, és rag sem kerül rá.
+- **„{done} of {total}” (a folyamatjelző alatti méretsor) → `{doneText} / {totalText}`** · Foundation
+  `Progress.loctable`, `%@ of %@` kulcs → `%1$@ / %2$@`, pontosan az `NSProgress` „12,4 MB of 250 MB” sora; a Finder
+  másolási sora (`PW3` `^0 / ^1 – ^2`) és a szállított `ai.toast.progress` (`{downloaded} / {total}`) ugyanez · `high`.
+- **„{done} so far” (ismeretlen teljes méret) → `Eddig {doneText}`** · a „so far” mindenütt `eddig`, és az elöl álló,
+  ige nélküli alak az élő találatszámlálóé (`queryUi.results.live.matchesSoFar` = `Eddig {countText} találat`) · `high`.
+- **„stopped arriving” → `A fájl betöltése megállt.`** · a `megáll` az elakadt, de élő átvitel szava
+  (`Az átvitel megállt`, lásd fent), a `betöltés` a cím töve, így az ablak egy igét használ · `high` a tőre; a `megáll`
+  örökli a fenti bejegyzés `tentative` jelölését. A második mondat a szállított
+  `errors.listing.couldntReadUnknown.suggestion` (`Ellenőrizd, hogy … még csatlakozik`) és a
+  `viewer.error.tooLargeToPreview` `aztán` kötőszava.

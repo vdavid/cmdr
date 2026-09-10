@@ -549,14 +549,33 @@ glyphs (the a11y labels and tooltips carry the real copy). The runtime works in 
 `viewerGetLines` throws the backend's typed `ViewerError` with its fields copied onto the `Error`, so the deadline is a
 VARIANT (`kind: 'timedOut'`) rather than a flag beside a sentence. Both surfaces read it the same way, through
 `asViewerError(e)?.kind`: `viewer-scroll.svelte.ts` routes `timedOut` to `deps.onTimeoutError()` and logs everything
-else by kind, and `+page.svelte`'s `openFailureCopy` maps `timedOut` / `tooLargeToPreview` / `archive` to their own
-catalog keys and falls back to `viewer.error.readFailed` for anything that never reached the typed path. Nothing renders
-the backend's own words. The wider split: `docs/guides/error-handling.md`.
+else by kind, and `+page.svelte`'s `openFailureCopy` maps `timedOut` / `stoppedResponding` / `tooLargeToPreview` /
+`archive` to their own catalog keys and falls back to `viewer.error.readFailed` for anything that never reached the
+typed path. `timedOut` and `stoppedResponding` also set `canRetry`, which puts Retry and Cancel under the message.
+Nothing renders the backend's own words. The wider split: `docs/guides/error-handling.md`.
 
 `tooLargeToPreview`'s key is `viewer.error.tooLargeToPreview`, deliberately not named after archives: the preview cap is
-reached by a `.zip` entry AND by a blob in a repository's virtual `.git` snapshot, so the copy says "from here" and
-names neither. `archive` next to it IS archive-only (an encrypted, corrupt, or unsupported-codec archive entry), so
-`viewer.error.archiveUnreadable` keeps its name.
+reached by a `.zip` entry, a blob in a repository's virtual `.git` snapshot, and a file on a phone or server, so the copy
+says "from here" and names none of them. `archive` next to it IS archive-only (an encrypted, corrupt, or
+unsupported-codec archive entry), so `viewer.error.archiveUnreadable` keeps its name.
+
+## Fetching a file first (pull progress)
+
+An open that pulls its file into a preview temp first (a file on a phone or server, a `.zip` entry) can run for
+minutes, so the page shows how far it got. Backend half: `apps/desktop/src-tauri/src/file_viewer/DETAILS.md` §
+"Watching a pull".
+
+- `onMount` subscribes `onViewerPullProgress(getCurrentWindow(), …)` BEFORE the first open. It listens on this window
+  only: the backend emits to the window's label, and a global listener would hear every viewer's pull.
+- `openViewerSession` wraps each open in `pull.start()` / `pull.finish()` (`viewer-pull.svelte.ts`), so a retry or a
+  view-as-text reopen starts clean, and a report that lands after the open resolved is ignored.
+- `PullProgressPanel.svelte` replaces the "Loading..." line only while `pull.visible`: the open has run for a second
+  AND a pull has reported progress. A plain slow open keeps the line, since it has no honest progress to show. A known
+  size draws a `ProgressBar` named by the title plus "x of y"; an unknown size draws a decorative `Spinner` plus "x so
+  far". Three seconds without new bytes sets `stalled`, which stops the bar's shimmer; giving up is the backend's call
+  (`stoppedResponding`, after 45 s), and it lands as a retryable error.
+- Cancel and Escape call `closeWindow()`, which works mid-pull because `canClose` flips right after mount. The window's
+  destruction abandons the backend's pending open, which stops the pull and removes its temp.
 
 ## Gotchas
 
@@ -639,7 +658,8 @@ names neither. `archive` next to it IS archive-only (an encrypted, corrupt, or u
   `$lib/window-close-defer` constant. The settings page (`routes/settings/+page.svelte`'s Escape handler) mirrors this
   exact pattern; see `lib/settings/DETAILS.md`, `docs/notes/child-window-close-webkit-crash.md`, and commit `46481b29`
   for the original post-mortem. `setTimeout` also avoids the rAF throttling that WKWebView applies to unfocused windows.
-  **The same trap applies to `windowReady`** (the `data-window-ready` attribute every viewer E2E spec waits on): it's
-  set via `setTimeout(0)` after session open, NOT rAF — an rAF there starved in unfocused E2E windows and timed out the
+  **The same trap applies to `windowReady`** (the `data-window-ready` attribute every viewer E2E spec waits on) and to
+  `canClose`: `windowReady` is set via `setTimeout(0)` after session open, `canClose` via `setTimeout(0)` right after
+  mount, NOT rAF — an rAF there starved in unfocused E2E windows and timed out the
   whole viewer suite whenever a human was using the machine. Canonical rule + recurrence history: `docs/testing.md` §
   "`requestAnimationFrame` in unfocused windows".

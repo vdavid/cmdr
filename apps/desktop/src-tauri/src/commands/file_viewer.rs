@@ -1,11 +1,14 @@
 //! Tauri commands for the file viewer.
 
+use std::sync::Arc;
+
+use tauri_specta::Event as _;
 use tokio::time::Duration;
 
-use super::util::blocking_typed_result_with_timeout;
+use super::util::{StallWatch, blocking_typed_result_until_stalled, blocking_typed_result_with_timeout};
 use crate::file_viewer::{
-    self, EncodingOptions, FileEncoding, LineChunk, RangeEnd, SearchMode, SearchPollResult, SeekTarget, SeekTargetKind,
-    ViewerError, ViewerOpenResult, ViewerSessionStatus,
+    self, AbandonReason, EncodingOptions, FileEncoding, LineChunk, PendingOpen, RangeEnd, SearchMode, SearchPollResult,
+    SeekTarget, SeekTargetKind, ViewerError, ViewerOpenResult, ViewerPullProgress, ViewerSessionStatus,
 };
 use log::debug;
 use tauri::Manager;
@@ -14,30 +17,18 @@ use tauri::menu::MenuItemKind;
 
 const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// Open budget for a file the viewer pulls into a bounded temp before opening it
-/// (inside a `.zip`, inside a repo's virtual `.git` trees, or on a volume whose paths
-/// the OS can't open, like a phone): the whole file is streamed out first, so it needs
-/// the recursive-scan tier, not the 2 s read tier. The extraction cap keeps the worst
-/// case bounded. An ordinary on-disk open keeps the strict 2 s.
-const VIEWER_MATERIALIZE_TIMEOUT: Duration = Duration::from_secs(30);
-
-/// Picks the open timeout for `path`: the generous budget when the open may pull the
-/// file into a temp first (slow, more so pulling a `.zip` from a remote parent, a blob
-/// out of a big pack, or a file off a phone), else the strict 2 s. Viewing the `.zip`
-/// file itself is a normal read, so it keeps the strict budget.
+/// How long a pull into the preview temp may go without a byte before the open answers
+/// `StoppedResponding`. A pull has no total limit: the viewer window shows its progress,
+/// and closing the window stops it.
 ///
-/// `open_may_materialize` is a string check plus a registry lookup, no I/O and no
-/// confirm: the budget is a heuristic, not a correctness gate, so over-granting it to
-/// a mislabeled `.zip` or a `.git` that isn't a repository is harmless (the open fails
-/// fast on its own).
-fn open_timeout_for(path: &str, volume_id: &str) -> Duration {
-    let expanded = crate::commands::file_system::expand_tilde(path);
-    if file_viewer::materialize::open_may_materialize(std::path::Path::new(&expanded), volume_id) {
-        VIEWER_MATERIALIZE_TIMEOUT
-    } else {
-        VIEWER_TIMEOUT
-    }
-}
+/// Above every backend's own read timeout, so a backend that notices a dead connection
+/// answers first with its own error: MTP gives one USB transfer 30 s
+/// (`USB_TRANSFER_TIMEOUT_SECS`), WebDAV allows 10 s between body chunks
+/// (`REQUEST_BUDGET`). ADB's sync stream and SFTP's read window carry no read timeout of
+/// their own (verified in code, 2026-09-10), so for them this is the only guard. The
+/// 15 s over MTP's limit leaves room for a phone that answers a window slowly but does
+/// answer.
+const PULL_STALL_LIMIT: Duration = Duration::from_secs(45);
 
 /// Maximum read timeout for `viewer_read_range`. The 100 MiB hard ceiling (enforced
 /// at the FE) means even on a slow disk we shouldn't blow this. The backend's per-read
@@ -52,31 +43,128 @@ const READ_RANGE_TIMEOUT: Duration = Duration::from_secs(60);
 /// free the session when the user closes the window via the titlebar X (a path
 /// that never fires the FE `viewer_close` IPC). Pass an empty string when there's
 /// no owning window (no mapping is recorded).
+///
+/// An open that pulls the file into a temp first (a `.zip` entry, a `.git` blob, a
+/// file on a phone or server) reports `viewer-pull-progress` to that window and has no
+/// total deadline, only the stall rule (`PULL_STALL_LIMIT`). Any other open keeps the
+/// strict 2 s read tier. Errors stay the typed `ViewerError`, so the FE words each
+/// variant (`TooLargeToPreview`, `Archive`, `StoppedResponding`, `TimedOut`).
 #[tauri::command]
 #[specta::specta]
 pub async fn viewer_open(
+    app_handle: tauri::AppHandle,
     path: String,
     volume_id: String,
     window_label: String,
 ) -> Result<ViewerOpenResult, ViewerError> {
-    let timeout = open_timeout_for(&path, &volume_id);
-    // Typed `ViewerError` (never a stringified message) so the FE can render friendly
-    // copy for the materializing family — `TooLargeToPreview` (the preview cap, which a
-    // `.zip` entry, a `.git` snapshot blob, and a phone's file all reach), `Archive`
-    // (encrypted / corrupt / unsupported codec) — matching `viewer_read_range`. On
-    // expiry the open keeps running detached, so a pull off a phone is never dropped
-    // mid-transaction.
-    blocking_typed_result_with_timeout(
-        timeout,
-        || ViewerError::TimedOut,
+    open_viewer(app_handle, path, volume_id, window_label, /*force_text=*/ false).await
+}
+
+/// The shared body of `viewer_open` and `viewer_open_as_text`.
+///
+/// Every open, pulling or not, is registered as the window's pending open for its
+/// whole run: the window can close before the open resolves, and the session it may
+/// still build must then be closed rather than leaked.
+///
+/// `open_may_materialize` is a string check plus a registry lookup, no I/O: over-
+/// granting the pull path to a mislabeled `.zip` is harmless, since the stall rule
+/// only ever gives up on an open that went quiet.
+async fn open_viewer(
+    app_handle: tauri::AppHandle,
+    path: String,
+    volume_id: String,
+    window_label: String,
+    force_text: bool,
+) -> Result<ViewerOpenResult, ViewerError> {
+    let open = file_viewer::begin_pending_open(&window_label);
+    let expanded = crate::commands::file_system::expand_tilde(&path);
+    let result = if file_viewer::materialize::open_may_materialize(std::path::Path::new(&expanded), &volume_id) {
+        let target = window_label.clone();
+        let emit = move |progress: ViewerPullProgress| {
+            if !target.is_empty() {
+                // Best-effort: a window that closed mid-pull has no one left to tell.
+                let _ = progress.emit_to(&app_handle, target.as_str());
+            }
+        };
+        let label = window_label.clone();
+        open_pulling(&open, path, volume_id, label, force_text, PULL_STALL_LIMIT, emit).await
+    } else {
+        let work_open = Arc::clone(&open);
+        let work_label = window_label.clone();
+        let result = blocking_typed_result_with_timeout(
+            VIEWER_TIMEOUT,
+            || ViewerError::TimedOut,
+            |message| ViewerError::Io { message },
+            move || file_viewer::open_for_window(&path, &volume_id, &work_label, force_text, &work_open),
+        )
+        .await;
+        if matches!(result, Err(ViewerError::TimedOut)) {
+            // The window offers Retry, which starts a fresh open; a session this one
+            // builds late would have no one to show it to.
+            open.abandon(AbandonReason::Cancelled);
+        }
+        result
+    };
+    file_viewer::end_pending_open(&window_label, &open);
+    result
+}
+
+/// Runs `open`, which may pull its file, watched for stalls, handing each change in
+/// progress to `emit`. No `AppHandle`, so tests drive it directly.
+async fn open_pulling(
+    open: &Arc<PendingOpen>,
+    path: String,
+    volume_id: String,
+    window_label: String,
+    force_text: bool,
+    stall_limit: Duration,
+    emit: impl FnMut(ViewerPullProgress) + Send,
+) -> Result<ViewerOpenResult, ViewerError> {
+    let mut watch = PullWatch {
+        open: Arc::clone(open),
+        emit,
+        last_emitted: None,
+    };
+    let work_open = Arc::clone(open);
+    blocking_typed_result_until_stalled(
+        stall_limit,
+        &mut watch,
         |message| ViewerError::Io { message },
-        move || {
-            let result = file_viewer::open_session(&path, &volume_id)?;
-            file_viewer::register_window_session(&window_label, &result.session_id);
-            Ok(result)
-        },
+        move || file_viewer::open_for_window(&path, &volume_id, &window_label, force_text, &work_open),
     )
     .await
+}
+
+/// Watches one pulling open for [`blocking_typed_result_until_stalled`].
+struct PullWatch<F> {
+    open: Arc<PendingOpen>,
+    emit: F,
+    /// What the window last heard, so a poll with no new bytes sends nothing.
+    last_emitted: Option<ViewerPullProgress>,
+}
+
+impl<F: FnMut(ViewerPullProgress)> StallWatch<ViewerError> for PullWatch<F> {
+    fn idle_for(&self) -> Duration {
+        self.open.idle_for()
+    }
+
+    fn on_poll(&mut self) {
+        if let Some(progress) = self.open.pull_progress()
+            && self.last_emitted != Some(progress)
+        {
+            (self.emit)(progress);
+            self.last_emitted = Some(progress);
+        }
+    }
+
+    fn give_up(&mut self) -> Option<ViewerError> {
+        // An open already abandoned (its window closed) keeps that first reason.
+        if self.open.abandon(AbandonReason::StoppedResponding) {
+            self.open.abandoned_error()
+        } else {
+            None
+        }
+    }
 }
 
 /// Opens a fresh, full **text** session for `path`, ignoring media classification.
@@ -88,22 +176,12 @@ pub async fn viewer_open(
 #[tauri::command]
 #[specta::specta]
 pub async fn viewer_open_as_text(
+    app_handle: tauri::AppHandle,
     path: String,
     volume_id: String,
     window_label: String,
 ) -> Result<ViewerOpenResult, ViewerError> {
-    let timeout = open_timeout_for(&path, &volume_id);
-    blocking_typed_result_with_timeout(
-        timeout,
-        || ViewerError::TimedOut,
-        |message| ViewerError::Io { message },
-        move || {
-            let result = file_viewer::open_session_as_text(&path, &volume_id)?;
-            file_viewer::register_window_session(&window_label, &result.session_id);
-            Ok(result)
-        },
-    )
-    .await
+    open_viewer(app_handle, path, volume_id, window_label, /*force_text=*/ true).await
 }
 
 /// Fetches a range of lines from a viewer session.
@@ -423,23 +501,96 @@ mod tests {
         writer.finish().expect("finish");
     }
 
-    /// A file on a volume whose paths the OS can't open is pulled into a temp before
-    /// it opens, so it gets the materialization budget; the 2 s read tier would time
-    /// out a phone's larger files. A plain local file keeps the strict tier.
-    #[test]
-    fn an_open_that_pulls_through_a_volume_gets_the_materialization_budget() {
-        use crate::file_system::volume::InMemoryVolume;
+    /// Registers an in-memory phone under `id` whose 64 KiB chunks arrive `delay`
+    /// apart, holding `len` bytes at `big.log`, and returns that file's path.
+    async fn a_phone_sending_slowly(id: &str, len: usize, delay: Duration) -> String {
         use crate::file_system::volume::manager::get_volume_manager;
+        use crate::file_system::volume::{InMemoryVolume, Volume as _};
 
-        get_volume_manager().register(
-            "viewer-budget-cell",
-            std::sync::Arc::new(InMemoryVolume::new("Phone").with_root("mtp://viewer-budget-cell/1")),
+        let root = format!("mtp://{id}/1");
+        let volume = InMemoryVolume::new("Phone")
+            .with_root(&root)
+            .with_read_chunk_delay(delay);
+        let path = format!("{root}/big.log");
+        volume
+            .create_file(std::path::Path::new(&path), &vec![b'x'; len])
+            .await
+            .expect("seed the file");
+        get_volume_manager().register(id, Arc::new(volume));
+        path
+    }
+
+    /// A pull that gets no bytes for the stall limit answers the typed
+    /// `StoppedResponding` without waiting for the source, and the pull, detached
+    /// rather than dropped, still stops at its chunk boundary and removes its temp.
+    /// Pre-fix a pull had a flat 30 s budget and no stall rule at all.
+    #[tokio::test]
+    async fn a_pull_that_goes_quiet_answers_stopped_responding_and_leaves_no_temp() {
+        let extract = crate::test_support::TestDir::new("viewer_pull_stall");
+        file_viewer::init_materialize_dir(extract.to_path_buf());
+        let path = a_phone_sending_slowly("viewer-stall-cell", 3 * 64 * 1024, Duration::from_millis(900)).await;
+
+        let outcome = open_pulling(
+            &Arc::new(PendingOpen::new()),
+            path,
+            "viewer-stall-cell".to_string(),
+            String::new(),
+            false,
+            Duration::from_millis(250),
+            |_| {},
+        )
+        .await;
+
+        assert!(
+            matches!(outcome, Err(ViewerError::StoppedResponding)),
+            "a quiet pull answers StoppedResponding, got {outcome:?}"
         );
-        assert_eq!(
-            open_timeout_for("mtp://viewer-budget-cell/1/notes.txt", "viewer-budget-cell"),
-            VIEWER_MATERIALIZE_TIMEOUT
+        crate::test_support::wait_until_async(Duration::from_secs(5), "the quiet pull to remove its temp", || {
+            std::fs::read_dir(&extract).is_ok_and(|entries| entries.count() == 0)
+        })
+        .await;
+    }
+
+    /// While a pull runs, its window hears how far it got, against the size the source
+    /// declared, and only when there's news. That's what the viewer's bar draws.
+    #[tokio::test]
+    async fn a_pull_reports_its_progress_to_the_window_as_bytes_arrive() {
+        use crate::ignore_poison::IgnorePoison;
+
+        let extract = crate::test_support::TestDir::new("viewer_pull_emit");
+        file_viewer::init_materialize_dir(extract.to_path_buf());
+        let len = 6 * 64 * 1024;
+        let path = a_phone_sending_slowly("viewer-emit-cell", len, Duration::from_millis(100)).await;
+        let heard = Arc::new(std::sync::Mutex::new(Vec::<ViewerPullProgress>::new()));
+
+        let outcome = {
+            let heard = Arc::clone(&heard);
+            open_pulling(
+                &Arc::new(PendingOpen::new()),
+                path,
+                "viewer-emit-cell".to_string(),
+                String::new(),
+                false,
+                Duration::from_secs(5),
+                move |progress| heard.lock_ignore_poison().push(progress),
+            )
+            .await
+        };
+        let opened = outcome.expect("the file opens");
+        file_viewer::close_session(&opened.session_id).expect("close");
+
+        let heard = heard.lock_ignore_poison();
+        assert!(!heard.is_empty(), "the window hears at least one progress report");
+        assert!(
+            heard
+                .iter()
+                .all(|p| p.bytes_total == Some(len as u64) && p.bytes_done <= len as u64),
+            "every report counts against the declared size, got {heard:?}"
         );
-        assert_eq!(open_timeout_for("/tmp/notes.txt", "root"), VIEWER_TIMEOUT);
+        assert!(
+            heard.windows(2).all(|pair| pair[0].bytes_done < pair[1].bytes_done),
+            "every report is news, got {heard:?}"
+        );
     }
 
     #[tokio::test]

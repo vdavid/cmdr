@@ -2514,3 +2514,17 @@ zh-CN 为 Tier 1，GitHub 自家中文文档用于 GitHub 专有动词，Microso
   里文件夹的说法）。第二句沿用 `settings.revealHandler.notInApplications` 的
   `每一次“在 Finder 中显示”的点击都指向空处`，让两条提示读起来是一对 · `high`（术语）；"come and go" 译作 `来来去去`
   是意译判断，`tentative`
+- **fetch（查看器先把手机、服务器或压缩文件里的文件取到临时文件再显示）** · `获取`，标题写
+  `正在获取“{fileName}”以便预览` · 目录里 key 名就叫 fetch 的 `fileExplorer.navigation.spaceFetchFailed` =
+  `无法获取磁盘空间`（目录共 8 处 `获取`，0 处 `抓取`）；macOS zh-CN `Fetching Menu Item` 是 `正在抓取…`，但 `抓取`
+  读起来像爬网页，不取。❌ 不写 Finder 的 `下载`（`PE126` `正在下载^0`）：USB 手机和压缩文件都不是下载。文件名照 Apple
+  `FT1`（`正在将“^0”下载到“^1”`）加全角引号、不留空格 · `high`
+- **"x of y"（字节进度行，两个值都带单位）** · `{doneText} / {totalText}` · macOS Finder `PW8` `已拷贝：^0/^1`、`PW3`
+  `^0/^1 - ^2`，进度行一律用斜线；带空格的 `/` 是目录留给数值分数的写法（`errorReporter.dialog.counter`），而且单位里本身有空格，
+  不留空格会读成 `MB/250` · `high`
+- **"so far"（总大小未知时已到的量）** · `目前已获取 {doneText}` · `目前已…` 沿用
+  `fileOperations.transferProgress.rollbackTooltip`（`目前已写入`）、`queryUi.results.live.matchesSoFar`（`目前找到`）；动词与标题的
+  `获取` 同字 · `high`
+- **"stopped arriving"（45 秒没有数据到达）** · `这个文件的传输停住不动了` · 复用停滞传输那一批的 `停住不动了`（本身
+  `tentative`），刻意不写 `已暂停` 或 `没有响应`，让它读成「停住了」而不是用户暂停或设备报错；后半句逐字沿用
+  `errors.listing.*.suggestion` 的 `确认磁盘或设备仍连接着` 与 `然后重试` · `tentative`（随 `停住不动了`）

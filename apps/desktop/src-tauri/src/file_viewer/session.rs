@@ -12,6 +12,7 @@ use std::time::Duration;
 
 use arc_swap::ArcSwap;
 
+use super::pending_open::PendingOpen;
 use crate::commands::file_system::expand_tilde;
 use crate::ignore_poison::IgnorePoison;
 use log::debug;
@@ -313,6 +314,9 @@ pub fn register_window_session(window_label: &str, session_id: &str) {
 /// `Destroyed`/`CloseRequested` handler for `viewer-*` windows. Idempotent: a
 /// window with no recorded session (or an already-closed session) is a no-op.
 pub fn close_session_for_window(window_label: &str) {
+    // A window closed mid-pull has no session yet: stop the pull instead. Abandon
+    // BEFORE reading the link, so an open that delivers in between has recorded it.
+    super::pending_open::abandon_pending_open_for_window(window_label);
     let session_id = WINDOW_TO_SESSION.lock_ignore_poison().remove(window_label);
     if let Some(session_id) = session_id {
         // Reuse the normal teardown; ignore SessionNotFound (the FE may have
@@ -343,17 +347,47 @@ pub(super) fn generate_session_id() -> String {
 /// - Under 1 MB: FullLoad (instant, full random access)
 /// - Over 1 MB: ByteSeek first (instant open), then upgrades to LineIndex in background
 pub fn open_session(path: &str, volume_id: &str) -> Result<ViewerOpenResult, ViewerError> {
-    open_session_inner(path, volume_id, /*force_text=*/ false)
+    open_session_inner(path, volume_id, /*force_text=*/ false, &PendingOpen::new())
 }
 
 /// Opens a fresh, full text session regardless of content kind. Backs the "View as
 /// text" override: a media session isn't upgraded in place; the FE swaps to the
 /// session this returns. Reuses the text path verbatim.
 pub fn open_session_as_text(path: &str, volume_id: &str) -> Result<ViewerOpenResult, ViewerError> {
-    open_session_inner(path, volume_id, /*force_text=*/ true)
+    open_session_inner(path, volume_id, /*force_text=*/ true, &PendingOpen::new())
 }
 
-fn open_session_inner(path: &str, volume_id: &str, force_text: bool) -> Result<ViewerOpenResult, ViewerError> {
+/// Opens a session for the viewer window `window_label`, watched by `open`, and
+/// links the window to it (so the window-destroyed handler frees it). `force_text`
+/// is the "View as text" override.
+///
+/// A pull the open needs records its progress on `open` and stops once `open` is
+/// abandoned (the window closed, or it stopped responding). An open abandoned after
+/// its session was built closes that session and answers the abandon's error, so a
+/// closed window never leaves a session behind. See `file_viewer::pending_open`.
+pub fn open_for_window(
+    path: &str,
+    volume_id: &str,
+    window_label: &str,
+    force_text: bool,
+    open: &PendingOpen,
+) -> Result<ViewerOpenResult, ViewerError> {
+    let result = open_session_inner(path, volume_id, force_text, open)?;
+    match open.deliver(|| register_window_session(window_label, &result.session_id)) {
+        Ok(()) => Ok(result),
+        Err(abandoned) => {
+            let _ = close_session(&result.session_id);
+            Err(abandoned)
+        }
+    }
+}
+
+fn open_session_inner(
+    path: &str,
+    volume_id: &str,
+    force_text: bool,
+    open: &PendingOpen,
+) -> Result<ViewerOpenResult, ViewerError> {
     // Wrapped rather than emitted inline: the body has a media early return and a
     // dozen `?`s, so an in-body emit would count a biased subset of opens. The
     // archive question is answered here from the pure path split (the same one
@@ -363,12 +397,17 @@ fn open_session_inner(path: &str, volume_id: &str, force_text: bool) -> Result<V
     // previewing inside a zip, and a portal open is honestly `false` for it.
     let from_archive = cmdr_archive::archive_boundary_candidate(Path::new(&expand_tilde(path)))
         .is_some_and(|(_, inner)| !inner.as_os_str().is_empty());
-    let result = open_session_core(path, volume_id, force_text);
+    let result = open_session_core(path, volume_id, force_text, open);
     super::analytics::emit_viewer_opened(&result, from_archive, force_text);
     result
 }
 
-fn open_session_core(path: &str, volume_id: &str, force_text: bool) -> Result<ViewerOpenResult, ViewerError> {
+fn open_session_core(
+    path: &str,
+    volume_id: &str,
+    force_text: bool,
+    open: &PendingOpen,
+) -> Result<ViewerOpenResult, ViewerError> {
     let expanded = expand_tilde(path);
     let requested = PathBuf::from(&expanded);
 
@@ -379,7 +418,7 @@ fn open_session_core(path: &str, volume_id: &str, force_text: bool) -> Result<Vi
     // unchanged. Both are pulled through `volume_id`'s volume, not a hardcoded
     // `"root"`. On close, `close_session` removes the temp subdir. See
     // `materialize`.
-    let extracted = super::materialize::materialize_for_viewer(&requested, volume_id)?;
+    let extracted = super::materialize::materialize_for_viewer(&requested, volume_id, open)?;
     let (file_path, temp_cleanup) = match extracted {
         Some(e) => (e.temp_file, Some(e.cleanup_dir)),
         None => (requested, None),

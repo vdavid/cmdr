@@ -14,45 +14,43 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 - Backend selection: `< 1MB` → `FullLoad`; else `ByteSeek` (instant open) + a background `LineIndex` upgrade.
 - Media (Image/PDF): `content_kind.rs`, `media.rs` (`cmdr-media://` token map), `media_protocol.rs` (scheme handler),
   `media_backend.rs`, `media_session.rs`. See `DETAILS.md` § "Media rendering".
-- `materialize.rs`: preview of a file the OS can't open (routed, or on a phone → a bounded temp); the agent's
-  `inspect_file` calls its routes-only half. `DETAILS.md` § "Preview of a routed file".
-- `headless.rs`: `open_text_backend` (the backend pick with no session around it) and `open_scan_backend` (no index,
-  for a `search`); the agent's `inspect_file` reads through both. `content_kind::looks_binary`, the byte-level
-  text-vs-binary call. `DETAILS.md` § "Headless reads".
+- `materialize.rs`: pulls a file the OS can't open (routed, or on a phone) into a bounded temp; the agent's
+  `inspect_file` calls its routes-only half. `pending_open.rs`: an open's pull progress, cancel, and session handoff.
+  `DETAILS.md` § "Preview of a routed file" and § "Watching a pull".
+- `headless.rs`: `open_text_backend` and `open_scan_backend`, the backend picks with no session around them, for the
+  agent's `inspect_file`; `content_kind::looks_binary` is its text-vs-binary call. `DETAILS.md` § "Headless reads".
 - `analytics.rs`: `viewer_opened`; ❌ never a file name or extension.
 
 ## Must-knows
 
 - **`viewer_set_encoding`, `viewer_set_tail_mode`, and `viewer_reload` are `async` + `spawn_blocking` + 2 s timeout**
-  (`blocking_viewer_op`): a sync call would freeze the viewer window's IPC thread behind concurrent scroll/search. ❌
-  Don't revert to plain `fn`. The watcher manager thread is already off the IPC thread, so its own calls stay sync.
-- **The FSEvents subscribe runs on the manager thread, NOT inline in `open_session`.** It's blocking and
-  `fseventsd`-bound (seconds under load), so inlining risks the 2 s `viewer_open` timeout;
-  `catch_up_after_subscribe` closes the append window. A test injecting synthetic watcher events calls
+  (`blocking_viewer_op`): a sync call freezes the viewer window's IPC thread behind scroll and search. ❌ Don't revert
+  to plain `fn`.
+- **The FSEvents subscribe runs on the manager thread, NOT inline in `open_session`**: it's `fseventsd`-bound (seconds
+  under load). `catch_up_after_subscribe` closes the append window; a test injecting watcher events calls
   `wait_for_watcher_subscribed()` first. `DETAILS.md` § "Gotchas (tail mode)".
-- **Drain-and-swap-under-lock protocol** for the ByteSeek→LineIndex upgrade and the encoding rebuild: a `Grew` event
-  arriving mid-rebuild would be dropped, so it queues into `session.pending_grew` under one lock the watcher writers
-  also hold. The tail-extend race re-checks the backend `Arc` with `Arc::ptr_eq`, discarding a stale one.
-- **`ViewerSession.backend` is `Arc<ArcSwap<Box<dyn FileViewerBackend>>>`** (not `Arc<dyn>` or `RwLock`): background
-  rebuilds replace the backend without blocking the `get_lines` read path. Each backend is immutable.
-- **`SESSIONS` is freed on BOTH close paths.** The titlebar-X never fires `viewer_close`; a `WindowEvent::Destroyed`
-  branch in `app_lifecycle::on_window_event` covers `viewer-*` labels, else those viewers leak sessions. The
-  `cmdr-media://` token drops at that same choke point (`media::drop_token`), ❌ nowhere else, or a closed viewer leaves
-  a live token mapping a path. `DETAILS.md` § "Media rendering".
-- **`search_cancel` must not null `session.search`**: the cancel flag is where the search thread writes `Cancelled`;
-  nulling first lands the write in a dropped state and `search_poll` returns `Idle`.
-- **`SearchMatch.column` / `.length` are UTF-16 code units** (match JS `String.substring()`), avoiding highlight
-  off-by-ones. **Reject cross-line regex** (`(?s)`, literal `\n`, `\n` escape) at build time; `(?m)` is fine.
-- **ISO-8859-1 uses a manual 1:1 byte→codepoint table, NOT `encoding_rs::WINDOWS_1252`** (they disagree on `0x80-0x9F`).
-  UTF-16 detection runs the parity heuristic BEFORE the UTF-8 fast path (ASCII-as-UTF-16 is valid UTF-8).
-- **CRLF: line readers keep `\r` in the line string** (all three backends split only on `\n`). `range_read`'s byte
-  arithmetic depends on this; stripping `\r` later needs the same change there.
-- **Cancellation is per-read / per-search, never session-wide**: `read_range` and `search` check the cancel flag inside
-  the per-line loop (not just between chunks), so concurrent reads don't race a shared flag.
+- **Drain-and-swap-under-lock** for the ByteSeek→LineIndex upgrade and the encoding rebuild: a mid-rebuild `Grew` queues
+  into `session.pending_grew` under the lock the watcher writers hold. The tail extend re-checks the backend with
+  `Arc::ptr_eq`, discarding a stale one.
+- **`ViewerSession.backend` is `Arc<ArcSwap<Box<dyn FileViewerBackend>>>`**: rebuilds swap it without blocking
+  `get_lines`. Each backend is immutable.
+- **`SESSIONS` is freed on BOTH close paths.** The titlebar X never fires `viewer_close`; the `WindowEvent::Destroyed`
+  branch in `app_lifecycle::on_window_event` covers `viewer-*` labels. The `cmdr-media://` token drops at that same
+  choke point (`media::drop_token`), ❌ nowhere else.
+- **`search_cancel` must not null `session.search`**: the search thread writes `Cancelled` there, and nulling it first
+  makes `search_poll` return `Idle`.
+- **`SearchMatch.column` / `.length` are UTF-16 code units** (JS `String.substring()`). **Reject cross-line regex**
+  (`(?s)`, literal `\n`, `\n` escape) at build time; `(?m)` is fine.
+- **ISO-8859-1 uses a manual 1:1 table, NOT `encoding_rs::WINDOWS_1252`** (they disagree on `0x80-0x9F`). UTF-16
+  detection runs its parity heuristic BEFORE the UTF-8 fast path (ASCII-as-UTF-16 is valid UTF-8).
+- **CRLF: line readers keep `\r` in the line string**; `range_read`'s byte arithmetic depends on it.
+- **Cancellation is per-read / per-search, never session-wide**, and checked inside the per-line loop.
 - **Never `std::fs`-open a path the OS can't open**: a ROUTED one (`/…/foo.zip/inner`) or one whose volume's
-  `paths_are_os_visible()` is false (`adb://…`). `open_session` sends both through `materialize_for_viewer` (bounded
-  temp, dropped on close; the cap refuses BEFORE materializing). ❌ Never an archive-only check, nor
-  `supports_local_fs_access` (direct SMB says `false` yet opens fine). `DETAILS.md` § "Preview of a routed file".
+  `paths_are_os_visible()` is false (`adb://…`). `open_session` sends both through `materialize_for_viewer`. ❌ Never an
+  archive-only check, nor `supports_local_fs_access` (direct SMB says `false` yet opens fine).
+- **A pull stops between chunks, ❌ never by dropping an in-flight `next_chunk`** (that wedges an MTP phone). Abandon and
+  deliver share one lock, so a window closed mid-open never strands a session. No total deadline, only a 45 s stall
+  rule. `DETAILS.md` § "Watching a pull".
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

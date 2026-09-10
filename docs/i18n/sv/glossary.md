@@ -2831,3 +2831,25 @@ terminologin från syskonnyckelns `…desc`.
   utgåva, som `commands.appCheckForUpdates.description`, inte om en andra körande process som
   `main.instanceLock.alertBody`. Andra meningen följer `settings.revealHandler.notInApplications`
   (`varje klick på ”Visa i Finder” pekar på ingenting`). `high`.
+
+## Förhandsvisningen hämtar filen först (`viewer.pull.*`, `viewer.error.stoppedResponding`, 2026-09-10)
+
+ICU-värden. Panelen syns mitt i förhandsvisningen när Cmdr kopierar en fil från en telefon, en server eller ett arkiv
+till en temporär fil och det tar mer än en sekund.
+
+- **fetch (kopiera en fil hit innan den visas): `hämta` / `hämtning`** · macOS Systeminställningar i
+  referenssamlingen, `sv/macOS/SystemSettings/Localizable.json` nyckeln `Fetching Menu Item` (`Fetching…` = `Hämtar…`),
+  läst 2026-09-10; samma ord som glossarets `download`-post. `high`. Rubriken följer Finders förloppsfönster
+  (`LocalizableMerged.strings` `PW5_V1` = `Förbereder kopiering av ”^1”`, `PW45.2` = `Förbereder delning av ”^0”`,
+  macOS 26.6.2 build 25G83, läst 2026-09-10): verb i presens och filnamnet inom `”…”`, som katalogens övriga meningar
+  med ett filnamn (`menu.context.copyNamed`). `för förhandsvisning` är ett substantiv utan pronomen, så inget `den`/`det`
+  behöver stämma med filnamnet.
+- **x of y (mängd av hela storleken): `{doneText} av {totalText}`** · Finder `PW3` (`^0 of ^1 – ^2` = `^0 av ^1 – ^2`,
+  kopieringsfönstrets storleksrad) och `PW8` (`Kopierat: ^0 av ^1`), macOS 26.6.2 build 25G83; Thunar `%s av %s`;
+  katalogens `fileExplorer.imageIndex.folder.someIndexed`. `high`.
+- **so far (efter en storlek): `hittills`** · glossarets `so far`-post och `queryUi.results.live.matchesSoFar`. `high`.
+- **”This file stopped arriving” · `Hämtningen av den här filen står stilla.`** · `står stilla` är katalogens satta ord
+  för en överföring som inte rör sig (§ Stalled-transfer notice, valt framför `har stannat`), och `Hämtningen` knyter an
+  till rubrikens `Hämtar`. Andra meningen följer `settings.mediaIndex.clip.failed` (`Kontrollera din anslutning och
+  försök igen.`) och `errors.listing.couldntReadUnknown.suggestion` (`fortfarande är ansluten`), utan komma före `och`
+  mellan två korta satser (`style.md`). `ansluten` stämmer med `telefonen` och `servern`, båda en-genus. `high`.

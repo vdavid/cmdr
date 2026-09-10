@@ -3256,3 +3256,21 @@ Elke regel staat naast een schakelaar en mag niet omlopen, dus ze blijven kort e
   uitgave, zoals `commands.appCheckForUpdates.description`, niet over een tweede draaiend proces zoals
   `main.instanceLock.alertBody`. De tweede zin volgt `settings.revealHandler.notInApplications`
   (`… elke klik op ‘Toon in Finder’ naar niets laten wijzen`) · `high`.
+
+## Het weergavevenster haalt een bestand eerst op (`viewer.pull.*`, `viewer.error.stoppedResponding`)
+
+- **fetch (een bestand van een telefoon, server of archief naar een tijdelijke kopie halen) → `ophalen`
+  (`{fileName} ophalen om te bekijken`)** · macOS Finder `IN_MD1` (`Fetching…` → `Ophalen…`), Systeeminstellingen
+  `Fetching Menu Item` (`Ophalen…`), Microsoft terminology (`DUTCH.tbx`, fetch → `ophalen`, NLD/BEL) · `high`. Een
+  voortgangskop, dus infinitief met het object vooraan, zoals Apples `'%@' laden…`. `bekijken` volgt
+  `viewer.error.tooLargeToPreview`; geen voornaamwoord naar `{fileName}`, en geen aanhalingstekens, zoals
+  `downloads.notification.title` (`{fileName} gedownload`).
+- **"{doneText} of {totalText}" → `{doneText} van {totalText}`** · Finder `PW8` (`^0 van ^1 gekopieerd`), Nautilus
+  (`%s van %s`), de catalogus (`fileExplorer.diskSpace.free`) · `high`
+- **"so far" (hoeveelheid zonder bekende totale grootte) → `{doneText} tot nu toe`** · de catalogus
+  (`queryUi.results.live.matchesSoFar`, `search.imageResults.paused`) · `high`
+- **"stopped arriving" (zo'n 45 seconden geen gegevens) → `Er komen geen gegevens van dit bestand meer binnen.`** · geen
+  bron formuleert dit; bewust niet de stall-formule `komt niet meer vooruit`, want het weergavevenster toont geen
+  overdracht · `tentative`. De tweede zin is wel belegd: `errors.provider.macDroid.transient` (`Controleer of je telefoon
+  verbonden is`), `errors.listing.networkConnectionDropped.suggestion` (`nog verbonden is`), glossary connected →
+  `verbonden`, Finder `N178` (`Probeer het vervolgens opnieuw.`) · `high`

@@ -2,6 +2,8 @@
 
 #[cfg(test)]
 mod budget_tests;
+#[cfg(test)]
+mod stall_tests;
 
 use serde::{Deserialize, Serialize};
 use std::future::Future;
@@ -104,6 +106,68 @@ where
         Ok(Ok(result)) => result,
         Ok(Err(join_err)) => Err(on_join_failure(join_err.to_string())),
         Err(_) => Err(on_timeout()),
+    }
+}
+
+/// How often [`blocking_typed_result_until_stalled`] checks its work, and so how often
+/// a caller's watch gets to report progress.
+pub const STALL_POLL_INTERVAL: Duration = Duration::from_millis(200);
+
+/// How [`blocking_typed_result_until_stalled`] watches the work it waits on.
+pub trait StallWatch<E> {
+    /// How long since the work last showed progress.
+    fn idle_for(&self) -> Duration;
+
+    /// Runs on every poll while the work runs: the place to report progress.
+    fn on_poll(&mut self);
+
+    /// The work went idle for the stall limit. Returns the error to answer with, or
+    /// `None` when the work already delivered its result, which the waiter then takes.
+    fn give_up(&mut self) -> Option<E>;
+}
+
+/// Runs a blocking closure that can refuse, with NO total deadline: it waits for as
+/// long as the work keeps moving, and gives up once `watch` reports it idle for
+/// `stall_limit`.
+///
+/// For work whose honest duration has no ceiling but whose silence does, like pulling
+/// a large file off a phone while a progress bar shows how far it got. Giving up
+/// detaches the work, exactly like the deadline helpers above: the blocking task runs
+/// on to its own end (a chunk boundary, then its cleanup), so a device mid-transaction
+/// is never abandoned. The watch's `give_up` is where the caller tells that work to stop.
+pub async fn blocking_typed_result_until_stalled<T, E>(
+    stall_limit: Duration,
+    watch: &mut impl StallWatch<E>,
+    on_join_failure: impl FnOnce(String) -> E,
+    f: impl FnOnce() -> Result<T, E> + Send + 'static,
+) -> Result<T, E>
+where
+    T: Send + 'static,
+    E: Send + 'static,
+{
+    let mut handle = tokio::task::spawn_blocking(f);
+    let mut poll = tokio::time::interval(STALL_POLL_INTERVAL);
+    poll.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    // The select borrows the handle rather than owning it, so returning early drops
+    // only the borrow: the blocking task stays detached and runs to its own end.
+    let joined = loop {
+        tokio::select! {
+            joined = &mut handle => break joined,
+            _ = poll.tick() => {
+                watch.on_poll();
+                if watch.idle_for() >= stall_limit {
+                    match watch.give_up() {
+                        Some(error) => return Err(error),
+                        // Delivered a moment ago: its result is about to land.
+                        None => break (&mut handle).await,
+                    }
+                }
+            }
+        }
+    };
+    match joined {
+        Ok(result) => result,
+        Err(join_err) => Err(on_join_failure(join_err.to_string())),
     }
 }
 

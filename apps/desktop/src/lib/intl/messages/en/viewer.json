@@ -45,7 +45,7 @@
   },
   "viewer.error.tooLargeToPreview": "This file is too big to preview from here. Copy it out first, then open it.",
   "@viewer.error.tooLargeToPreview": {
-    "description": "Shown when previewing a file that Cmdr has to materialize first would need more than the preview size cap. That happens for a file inside an archive (a zip Cmdr browses like a folder) and for a file in a repository''s virtual `.git` snapshot, so the wording deliberately names neither: \"from here\" means the place the user is currently browsing. Suggests copying the file out to a normal folder and opening it from there.",
+    "description": "Shown in the viewer window when a file is too big to preview where it is. Cmdr can only preview some files by first copying them into a temporary file on this Mac, and that copy has a size cap. It happens for a file inside an archive (a zip Cmdr browses like a folder), for a file in a repository's virtual `.git` snapshot, and for a file on a phone connected over USB or on a server Cmdr connects to itself (SFTP, WebDAV). The wording deliberately names none of these: \"from here\" means the place the user is currently browsing, whichever it is. Suggests copying the file to a normal folder on this Mac and opening it from there.",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
@@ -63,9 +63,35 @@
   },
   "viewer.error.cancel": "Cancel",
   "@viewer.error.cancel": {
-    "description": "Button next to Retry that closes the viewer window instead of retrying after a load timeout. Keep it short (a button).",
+    "description": "Button that closes the viewer window. It sits next to Retry after a load timeout, and under the progress bar while Cmdr fetches a file from a phone, a server, or an archive, where closing also stops the fetch. Keep it short (a button).",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
+  "viewer.error.stoppedResponding": "This file stopped arriving. Check that the phone or server is still connected, then try again.",
+  "@viewer.error.stoppedResponding": {
+    "description": "Shown in the viewer window, in place of content, when Cmdr was copying a file from a phone (connected over USB) or a server into a temporary file to preview it, and no data arrived for about 45 seconds. A Retry button sits below it. Conversational; suggests checking the connection. Do not use the words \"error\" or \"failed\"."
+  },
+  "viewer.pull.title": "Fetching {fileName} to preview it",
+  "@viewer.pull.title": {
+    "description": "Shown in the middle of the viewer window, above a progress bar, while Cmdr copies a file from a phone, a server, or an archive into a temporary file before it can show it. Appears only when that takes more than a second. Also read out by screen readers as the progress bar's name.",
+    "placeholders": {
+      "fileName": "name of the file being fetched (for example, holiday.mp4)"
+    }
+  },
+  "viewer.pull.progress": "{doneText} of {totalText}",
+  "@viewer.pull.progress": {
+    "description": "Line under the progress bar while the viewer fetches a file: how much has arrived out of the whole file. Both values arrive already formatted with their units.",
+    "placeholders": {
+      "doneText": "how much of the file has arrived so far, with its unit (for example, 12.4 MB)",
+      "totalText": "the whole file's size, with its unit (for example, 250 MB)"
+    }
+  },
+  "viewer.pull.progressUnknownTotal": "{doneText} so far",
+  "@viewer.pull.progressUnknownTotal": {
+    "description": "Line under a loading spinner while the viewer fetches a file whose total size the phone or server didn't report: how much has arrived so far. The value arrives already formatted with its unit.",
+    "placeholders": {
+      "doneText": "how much of the file has arrived so far, with its unit (for example, 12.4 MB)"
+    }
   },
   "viewer.content.ariaLabel": "File content: {fileName}",
   "@viewer.content.ariaLabel": {

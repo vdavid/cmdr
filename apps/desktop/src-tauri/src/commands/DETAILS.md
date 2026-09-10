@@ -10,7 +10,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   command module".
 - **`util.rs`**: `TimedOut<T>`, `DeadlineError`, `blocking_with_timeout`, `blocking_with_timeout_flag`,
   `blocking_typed_result_with_timeout`, `timeout_detached_typed`, `Deadline` (`elapsed` / `remaining` / `total` /
-  `fraction`) + `timeout_detached_within`, and `BlockingBudget`.
+  `fraction`) + `timeout_detached_within`, and `BlockingBudget`. Plus `blocking_typed_result_until_stalled` with its
+  `StallWatch`: no total deadline, it gives up once the watch reports the work idle for the stall limit, and detaches
+  rather than drops like the deadline helpers. Its one caller is the viewer's pulling open
+  (`file_viewer/DETAILS.md` § "Watching a pull").
 - **`file_system/`**: directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, tests.
   `listing.rs`: streaming + virtual-scroll listing, path queries, `find_first_fuzzy_match` (type-to-jump),
   benchmarking, `get_brief_column_text_widths` (per-column widest-filename text widths for Brief mode). `refresh_listing`
