@@ -2010,6 +2010,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "description": "Hover tooltip on the yellow drive-index dot, shown when the drive''s index may be out of date because the drive was disconnected. Active voice; never use the words ''error'' or ''failed''."
   },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr keeps this index current with the changes it makes. Changes made on the phone itself show up after a rescan.",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "description": "Hover tooltip on the yellow drive-index dot for an Android phone connected over USB debugging (ADB). The phone never reports its own file changes, so its index reads as possibly out of date even while it's plugged in: Cmdr updates the index for copies, moves, and deletes it does itself, and anything changed on the phone (new photos, another app) appears after the user rescans. The phone version of tooltipStale; it must not mention disconnecting. Never use the words 'error' or 'failed'."
+  },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Indexing stopped because of a problem saving this drive''s index. Rescan to rebuild it.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "description": "Hover tooltip on the RED drive-index dot, shown when the drive''s index database hit a fatal storage problem (a disk I/O failure, a full or read-only disk, corruption) and indexing stopped for this drive. The index is a rebuildable cache, so the fix is to rescan. Keep it calm and actionable; active voice; never use the words ''error'' or ''failed''."

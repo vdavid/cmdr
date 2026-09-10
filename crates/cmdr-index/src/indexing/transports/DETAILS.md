@@ -206,7 +206,10 @@ it falls through to the SMB gate and is refused as `NotRegistered`.
 
 ADB reports nothing when a file changes on the phone, so there is no `watch.rs` here and
 `IndexVolumeKind::has_live_watch` is false. A clean walk fires `ScanCompletedUnwatched` ⇒ **Stale** (with
-`scan_completed_at` written) where SMB and MTP land Fresh.
+`scan_completed_at` written) where SMB and MTP land Fresh. `VolumeIndexStatus::live_watch` carries the same answer to
+the frontend, so the badge tooltip and the one-time stale dialog say changes made on the phone show up after a rescan,
+rather than blaming a disconnect on a phone that's still plugged in (`apps/desktop/src/lib/indexing/DETAILS.md` § "The
+one-time stale dialog").
 
 **Decision/Why Stale, and no new state:** Fresh means "watched since the scan", and `Index::is_fresh` is what the
 operation log trusts an index on, so a phone must never answer it yes. Stale already says "browsable, may have drifted,
