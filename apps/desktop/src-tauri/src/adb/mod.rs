@@ -23,3 +23,6 @@ pub(crate) mod test_support;
 // A real tracker's pushes through the provider: retirement and row readiness.
 #[cfg(test)]
 mod tracker_test;
+// Eject's round trip: `eject.rs` to the provider, the row left behind, a fresh dial.
+#[cfg(test)]
+mod eject_test;
