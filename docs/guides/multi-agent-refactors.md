@@ -31,8 +31,10 @@ per language). Hard-won rules:
 - **Cap concurrency at ~3 subagents.** The Anthropic API rate-limits aggressively; a 14-agent burst gets throttled and
   agents silently finish partial. Keep ~3 in flight; queue the rest. Batch size per agent (3 vs 10 items) is separate
   and can stay large once concurrency is capped.
-- **Give ABSOLUTE write paths.** Subagents inherit the orchestrator's cwd (the main clone, not a worktree), so a
-  relative write path scatters into the wrong tree. Pass the full worktree path.
+- **Enter the worktree before spawning, and give ABSOLUTE write paths.** Subagents inherit the orchestrator's worktree
+  pin and cwd, so an orchestrator that called `EnterWorktree` puts every agent on the worktree with no `EnterWorktree`
+  of their own. One still on the main clone leaves them there, where a relative write path scatters into the wrong
+  tree.
 - **Terse returns, artifacts to files.** Tell agents to write their output to files and reply with one line per item
   (plus flags), not a full report. Verbose returns blow the orchestrator's context over many waves. Persist a
   progress/plan file so the loop survives a context compaction.
