@@ -35,7 +35,8 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   ❗ its NAME is spelled in four places (`../network/DETAILS.md` § Gotchas).
 - **ONE typed state renders every remote wait** (`remote-connect-state.ts` + `RemoteConnectView`): `place-connect` gates
   on CONNECTION STATE, `device-connect` on `deviceReadiness`, both in FRONT of the kind chain. ❌ No second renderer, no
-  inert affordance. ❗ A phone's dial HOLDS the listing (`holdsListing`), or the backend dials again and Cancel misses.
+  inert affordance. ❗ `device-connect` is a phone's ONE dialer and HOLDS the listing (`holdsListing`): an undialed
+  phone's listing can only refuse. An eject (row loses `capabilities`) re-dials.
 - **`DualPaneExplorer.svelte` / `FilePane.svelte` are at their size cap**: cross-cutting state → a `*.svelte.ts`
   factory, pure logic → a `*.ts` helper, ❌ never a child component.
 

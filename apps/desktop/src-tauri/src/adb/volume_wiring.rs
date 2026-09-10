@@ -152,16 +152,6 @@ pub fn cancel_connect(attempt_id: &str) -> bool {
     ATTEMPTS.cancel(attempt_id)
 }
 
-/// The id a navigation's own dial is filed under.
-///
-/// A pane that walks onto `adb://<serial>` dials without anyone having minted an
-/// attempt id, and per-serial keeps a second navigation onto the same device
-/// from cancelling the first: [`AttemptTable`]'s serial makes the repeat replace
-/// only its own entry.
-fn navigation_attempt_id(serial: &str) -> String {
-    format!("adb-navigation:{serial}")
-}
-
 /// Dials the device with `serial`, registers its volume, and answers the volume
 /// id. Already connected is answered without a second dial.
 ///
@@ -403,13 +393,6 @@ fn attempts_waiting_on(serial: &str) -> usize {
 #[cfg(test)]
 fn dial_in_flight(serial: &str) -> bool {
     IN_FLIGHT.lock_ignore_poison().contains_key(serial)
-}
-
-/// The volume id for an `adb://<serial>[/…]` path, dialing the device on first
-/// use. `None` for a path that isn't `adb://` at all.
-pub async fn volume_id_for_path(path: &str) -> Option<Result<String, AdbConnectError>> {
-    let serial = device_provider::serial_of_path(path)?;
-    Some(connect_adb_device(serial, &navigation_attempt_id(serial)).await)
 }
 
 #[cfg(test)]

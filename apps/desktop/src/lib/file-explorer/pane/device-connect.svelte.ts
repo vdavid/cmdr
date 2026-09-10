@@ -7,11 +7,14 @@
  * a phone waiting for its "Allow USB debugging?" tap has no session to be in any
  * state about (`$lib/adb/device-readiness.ts` carries that split).
  *
- * ❗ **This factory holds the pane's listing while it works** (`holdsListing`).
- * Without that, `list_directory` reaches `resolve_path_to_volume`, which dials
- * the same phone AGAIN under the backend's own `adb-navigation:<serial>` attempt
- * id — and Cancel, which aims at the id minted here, would then call off the one
- * dial nobody was watching while the other quietly registered the volume.
+ * ❗ **This factory is the ONE dialer, and it holds the pane's listing while it
+ * works** (`holdsListing`). Path resolution never dials, and a phone nobody has
+ * dialed has no registered volume, so a listing there can only come back refused
+ * (`DeviceDisconnected`). The reload on connect is what lists the phone.
+ *
+ * ❗ **"Open" is re-checked against the row.** Enrichment fills `capabilities`
+ * only for a registered volume, so a phone that stays listed after an eject
+ * comes back without them, and the factory holds the listing and dials again.
  *
  * ❗ **The auto-proceed is a READ, not a listener.** `getCurrentVolumeInfo()` is
  * the pane's own lookup into the volume store, and the store is what subscribes
@@ -24,6 +27,7 @@
  * `MtpConnectionView.svelte`.
  */
 
+import { untrack } from 'svelte'
 import { asAdbConnectError, cancelAdbConnect, connectAdbDevice, newAdbAttemptId } from '$lib/tauri-commands'
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { isAdbVolumeId, parseAdbPath } from '$lib/adb/adb-path-utils'
@@ -67,6 +71,13 @@ export function createDeviceConnect(deps: DeviceConnectDeps): DeviceConnect {
   let state = $state<RemoteConnectState | null>(null)
   /** The volume this factory has seen all the way open. */
   let opened = $state<string | null>(null)
+  /**
+   * Whether a row has shown `opened` REGISTERED (carrying `capabilities`) since
+   * the dial. Plain, not `$state`: only the effect reads it. ❗ A fresh dial's
+   * broadcast can land after the dial answers, so a row without `capabilities`
+   * counts as an eject only once one with them was seen.
+   */
+  let seenRegistered = false
   /** The attempt a Cancel aims at. Plain, not `$state`: nothing renders it. */
   let attemptId: string | null = null
   /**
@@ -89,7 +100,19 @@ export function createDeviceConnect(deps: DeviceConnectDeps): DeviceConnect {
       attemptId = null
       handled = null
       opened = null
+      seenRegistered = false
       return
+    }
+    if (untrack(() => opened) === volumeId) {
+      if (info.capabilities != null) {
+        seenRegistered = true
+      } else if (seenRegistered) {
+        // Retired while still listed (an eject). A listing could only come back
+        // refused now, so hold it again and let the decision below dial.
+        opened = null
+        seenRegistered = false
+        handled = null
+      }
     }
     const key = `${volumeId}:${readinessKey(info)}`
     if (handled === key) return
@@ -134,10 +157,9 @@ export function createDeviceConnect(deps: DeviceConnectDeps): DeviceConnect {
    * volumes. "A cancel says nothing" is about not scolding the user for what
    * they just did, ❌ not about leaving them in an empty pane.
    *
-   * ❗ ❌ And never a release of the hold either: `list_directory` on an
-   * `adb://` path dials the phone again through the backend's own
-   * `adb-navigation:<serial>` id, so letting the listing run would re-dial the
-   * very thing the user called off.
+   * ❗ ❌ And never a release of the hold either: nothing re-runs the listing on
+   * that path, and one that ran could only come back refused, because the
+   * phone the user just called off has no volume.
    */
   function stopped(volumeId: string, info: VolumeInfo): RemoteConnectState {
     return {
@@ -174,6 +196,9 @@ export function createDeviceConnect(deps: DeviceConnectDeps): DeviceConnect {
       await connectAdbDevice(parsed.serial, id)
       attemptId = null
       opened = volumeId
+      // A phone another pane already opened may never broadcast again, so what
+      // its row says now is the baseline an eject is measured against.
+      seenRegistered = deps.getCurrentVolumeInfo()?.capabilities != null
       state = null
       deps.onConnected(volumeId)
     } catch (e) {

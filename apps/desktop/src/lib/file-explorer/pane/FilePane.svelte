@@ -587,10 +587,9 @@
 
     // A pane standing on a PHONE dials it the same way, gated on the device's
     // readiness rather than a connection state: a phone waiting for its "Allow USB
-    // debugging?" tap has no session to be in any state about. ❗ It also HOLDS the
-    // listing while it works (`holdsListing`), or `list_directory` dials the same
-    // phone a second time through the backend's own navigation path and Cancel
-    // aims at the wrong one.
+    // debugging?" tap has no session to be in any state about. ❗ It is the one dialer
+    // and HOLDS the listing while it works (`holdsListing`): an undialed phone has
+    // no volume, so a listing there could only come back refused.
     const deviceConnect = createDeviceConnect({
         getVolumeId: () => volumeId,
         getCurrentVolumeInfo: () => currentVolumeInfo,

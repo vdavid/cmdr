@@ -390,6 +390,20 @@ pub async fn list_directory_start_streaming(
     })
 }
 
+/// Why a listing found no volume registered under `volume_id`.
+///
+/// ❗ A device its provider lists but nobody has dialed (an ADB phone before its
+/// pane's connect lands, or after an eject) is NOT CONNECTED, ❌ never
+/// `NotFound`: the frontend reads `NotFound` as "this folder was deleted" and
+/// walks the pane up and off the device. Any other unknown id is `NotFound`, as
+/// an unmount race is.
+async fn missing_volume_error(volume_id: &str, path: &Path) -> VolumeError {
+    if crate::device_volumes::provider_for_volume_id(volume_id).await.is_some() {
+        return VolumeError::DeviceDisconnected(path.display().to_string());
+    }
+    VolumeError::NotFound(format!("Volume not found: {}", volume_id))
+}
+
 /// Reads a directory with progress reporting.
 ///
 /// Async implementation that spawns the Volume I/O in a background task
@@ -448,9 +462,10 @@ pub(crate) async fn read_directory_with_progress(
         .resolve(volume_id, path)
         .await;
     let is_routed = resolved.is_routed();
-    let volume = resolved
-        .volume
-        .ok_or_else(|| VolumeError::NotFound(format!("Volume not found: {}", volume_id)))?;
+    let volume = match resolved.volume {
+        Some(volume) => volume,
+        None => return Err(missing_volume_error(volume_id, path).await),
+    };
     // The listing task consumes its own handle; keep `volume` for the watcher
     // check and `volume_root` below (an archive's `root()` is the `.zip` path).
     let volume_for_task = Arc::clone(&volume);

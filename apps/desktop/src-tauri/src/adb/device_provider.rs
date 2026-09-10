@@ -143,8 +143,9 @@ impl DeviceVolumeProvider for AdbDeviceProvider {
 
     /// One entry per device with a filesystem to offer, dialed or not and
     /// whatever it is waiting for: a device with no volume yet is listed so the
-    /// user can click it, and the first `adb://` navigation connects it
-    /// (`commands/volumes.rs`). [`readiness_of`] says which states are listed.
+    /// user can click it, and the pane that opens it dials it
+    /// (`src/lib/file-explorer/pane/device-connect.svelte.ts`). [`readiness_of`]
+    /// says which states are listed.
     ///
     /// Follow-up: an " (ADB)" suffix when an MTP entry shares the name.
     fn entries(&self) -> ProviderFuture<'_, Vec<DeviceVolumeEntry>> {

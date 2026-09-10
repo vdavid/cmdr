@@ -16,8 +16,11 @@ whose module doc is canonical for the trait.
   over), `provider_for_volume_id` (what `eject.rs` asks before answering `EjectAction::DeviceDisconnect`),
   `device_volume_for_path` (what path resolution asks), and `notify_devices_changed`, the one push channel (it emits
   `volumes-changed`).
-- **`commands/volumes.rs::resolve_path_to_volume`** is where an `adb://` path turns into a dial: it calls
-  `volume_wiring::volume_id_for_path` before the generic device-provider lookup.
+- **`commands/volumes.rs::resolve_path_to_volume`** answers an `adb://` path with the cached row
+  (`device_volume_for_path`) and ❗ never dials: resolution runs for a restored tab, Go to path, a drag, and every lap
+  of a frontend retry, so a dial there turns a loop on a failing listing into hundreds of failed dials a second. The
+  one dialer is the pane standing on the phone (`src/lib/file-explorer/pane/device-connect.svelte.ts` →
+  `connect_adb_device`).
 
 ## Flows
 
@@ -86,14 +89,21 @@ that just finished finds nothing filed). ❗ A cancel is per ATTEMPT, never per 
 is the realistic case). A claim is withdrawn however its attempt ends, a dropped future included, so the last one
 leaving always calls the dial off. A called-off dial leaves nothing behind: no volume registered, nothing remembered,
 no `volumes-changed`. An attempt cancelled in the same instant its dial published keeps the dial's real answer,
-because the volume is really there. The one dial nobody mints an id for is a pane walking onto an `adb://` path, which
-files under `adb-navigation:<serial>` so a repeat navigation replaces only its own entry.
+because the volume is really there.
+
+**A phone nobody has dialed** (listed, no registered volume: before the pane's connect lands, or after an eject)
+answers every read without dialing. `read_directory_with_progress` refuses with `VolumeError::DeviceDisconnected`
+(`streaming.rs::missing_volume_error`), and `path_exists` answers "couldn't tell" (`timed_out: true`). ❌ Never
+`NotFound`: the frontend reads it as "this folder was deleted" and walks the pane up and off the phone. Both ask
+`device_volumes::provider_for_volume_id`, so any device id a provider lists answers the same way; an id nobody owns
+stays `NotFound`, as an unmount race is.
 
 **Eject**: `eject.rs` asks `provider_for_volume_id`, gets this provider, and answers
 `EjectAction::DeviceDisconnect { provider: "adb", volume_id }`. `AdbDeviceProvider::eject` forgets the volume and
 unregisters it; nothing is sent to the phone (`adb` has no per-client detach). The device stays in the cached list, so
-it is listed again on the next `volumes-changed` and re-dialed on the next navigation. A device the user wants gone
-for good is unplugged, or revoked on the phone.
+it is listed again on the next `volumes-changed`, now without `capabilities` (enrichment fills them only for a
+registered volume), and a pane standing on it holds its listing and dials again (`src/lib/file-explorer/pane/DETAILS.md`
+§ "A pane on a phone"). A device the user wants gone for good is unplugged, or revoked on the phone.
 
 ## The provider's answers
 
@@ -114,9 +124,8 @@ for good is unplugged, or revoked on the phone.
 
   ❗ `device_readiness` is PRESENCE, never session health: `connection_state` stays `None` on a device row, so nothing
   enrolls a phone waiting for its Allow tap in the reconnect backoff (`cmdr_fs::volume::connection` carries the split).
-  ❗ A `waiting_for_authorization` row resolving through `commands/volumes.rs::resolve_path_to_volume` still dials, and
-  the dial answers `Unauthorized`. The frontend avoids that round-trip: it holds the pane's listing and renders the
-  waiting state without dialing, and dials only once a broadcast says the row turned ready
+  ❗ A dial against a `waiting_for_authorization` row would answer `Unauthorized`, so the pane skips that round-trip:
+  it holds its listing, renders the waiting state, and dials only once a broadcast says the row turned ready
   (`apps/desktop/src/lib/adb/DETAILS.md`, `src/lib/file-explorer/pane/DETAILS.md` § "A pane on a phone").
 - `owns_volume_id`: any cached serial's id matches.
 - `space_for_path`: the connected volume's `get_space_info` (`df -k` on the device), `None` until it is dialed.
@@ -131,18 +140,20 @@ for good is unplugged, or revoked on the phone.
 - Frontend: `src/lib/adb/` (`adb-path-utils.ts` for the `adb://` scheme beside `mtp://`, plus `adb-volume-label.ts`,
   `adb-connect-errors.ts`, `device-readiness.ts`, `adb-settings.ts`, and the `AdbHint` pair) and
   `tauri-commands/adb.ts`. The frontend is a passive consumer of `volumes-changed`, the posture `src/lib/mtp/CLAUDE.md`
-  describes for MTP; its one active step is the connect a navigation triggers.
+  describes for MTP; its one active step is the dial a pane standing on a phone makes
+  (`src/lib/file-explorer/pane/device-connect.svelte.ts`).
 
 ## Testing
 
 Suites here drive `cmdr_adb::testing::FakeAdbServer` (the crate's `testing` feature is on for the app's dev targets).
 `volume_wiring_test.rs` holds calling a dial off, one dial per phone (three concurrent callers, a joined attempt
 cancelled while the other waits, every joined attempt cancelled; each holds the fake's answers so every caller is
-provably in line first), the settings' live apply, the binary-path fallback, and a pane
-listing a dialed phone through `read_directory_with_progress` on an `adb://<serial>/sdcard` path (the cell that holds
-the prefixed spelling end to end); `device_provider.rs` holds the provider's row answers and `serial_of_path`. Not
-covered here yet: the tracker's diff and inline retirement, eject, `resolve_path_to_volume` dialing, and the transfer
-engine through the registry. A cell asserting on the protocol belongs in the crate: `crates/cmdr-adb/DETAILS.md` §
+provably in line first), the settings' live apply, the binary-path fallback, a pane listing a dialed phone through
+`read_directory_with_progress` on an `adb://<serial>/sdcard` path (the cell that holds the prefixed spelling end to
+end), and a listing and a `path_exists` on a listed, undialed phone (never `NotFound`); `device_provider.rs` holds the
+provider's row answers and `serial_of_path`; `commands/volumes.rs` holds resolving an `adb://` path without dialing
+(the cell points `ANDROID_ADB_SERVER_PORT` at the fake, so a dial would be seen). Not covered here yet: the tracker's
+diff and inline retirement, eject itself, and the transfer engine through the registry. A cell asserting on the protocol belongs in the crate: `crates/cmdr-adb/DETAILS.md` §
 "Which side a test lives on".
 
 ## Deliberate non-goals

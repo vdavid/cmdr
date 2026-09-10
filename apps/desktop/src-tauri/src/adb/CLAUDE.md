@@ -1,16 +1,15 @@
 # ADB (app side)
 
 The app half of the Android-over-ADB backend: the cached `host:track-devices` list, the `DeviceVolumeProvider` that
-puts a device in the switcher, lazy connect on the first `adb://` navigation, the two settings, eject, and the IPC
-commands. The wire and the `Volume` are `crates/cmdr-adb/`. As in `mtp/volume_wiring.rs` and
+puts a device in the switcher, the dial a pane asks for, the two settings, eject, and the IPC commands. The wire and the `Volume` are `crates/cmdr-adb/`. As in `mtp/volume_wiring.rs` and
 `network/sftp_volume_wiring.rs`, the wiring knows the backend and the registry; neither knows the wiring.
 
 ## Module map
 
 - `device_provider.rs`: the cached state (`AdbDevices`: the tracker's last list plus connected volumes by serial, one
   process-wide `RwLock`), `readiness_of` (which states become a row), and `AdbDeviceProvider`.
-- `volume_wiring.rs`: tracker lifecycle, settings, `connect_adb_device` / `cancel_connect`, and `volume_id_for_path`
-  (what `commands/volumes.rs::resolve_path_to_volume` calls).
+- `volume_wiring.rs`: tracker lifecycle, settings, and `connect_adb_device` / `cancel_connect` (one wire dial per
+  serial).
 - `commands.rs`: the IPC pass-throughs, plus `AdbConnectOutcomeError`, the typed mirror of `AdbConnectError`.
 
 ## Must-knows
@@ -24,7 +23,10 @@ commands. The wire and the `Volume` are `crates/cmdr-adb/`. As in `mtp/volume_wi
 - **❗ Readiness is PRESENCE; `connection_state` stays `None` on a device row.** A phone waiting for its "Allow USB
   debugging?" tap has no session, and the reconnect backoff would dial nothing forever.
 - **❗ A dial is cancelable and the attempt id is the CALLER's**, filed before the wire is touched so a pane can arm
-  its cancel button first. A navigation's own dial files under `adb-navigation:<serial>`.
+  its cancel button first.
+- **❗ Only the pane dials** (`device-connect.svelte.ts` → `connect_adb_device`). ❌ Path resolution, a listing, and
+  `path_exists` never do; on a listed, undialed phone they answer the cached row, `DeviceDisconnected`, and "couldn't
+  tell", ❌ never `NotFound` (the frontend reads that as "deleted" and walks off the phone).
 - **❗ At most one wire dial per serial; later callers JOIN it.** A cancel answers its own attempt at once; the wire
   dial goes only when no joined attempt still wants it. ❌ Never register or remember a volume outside that one dial,
   or the registry and the provider hold different volumes.

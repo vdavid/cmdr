@@ -410,21 +410,27 @@ questions").
   store, and the store is what subscribes to `volumes-changed`. One subscription for the whole app, ❌ not one per pane.
 - **The effect keys on `<volume>:<readiness>`**, so one landing is one dial AND a readiness change (the Allow tap) is a
   fresh decision. A plain volume-id guard would strand the pane in the waiting state forever.
-- **❗ It HOLDS the pane's listing** (`holdsListing`). Without that, `list_directory` reaches
-  `commands/volumes.rs::resolve_path_to_volume`, which dials the same phone AGAIN under the backend's own
-  `adb-navigation:<serial>` attempt id — and Cancel, which aims at the id minted here, would call off the dial nobody
-  was watching while the other quietly registered the volume. The hold is threaded through `path-sync.ts`'s
+- **❗ It is the ONE dialer, and it HOLDS the pane's listing** (`holdsListing`). Path resolution never dials, and a
+  phone nobody has dialed has no registered volume, so a listing there can only come back refused
+  (`DeviceDisconnected`, never `NotFound`: `src-tauri/src/adb/DETAILS.md`) and would put an error over the connecting
+  state. The reload on connect is what lists the phone. The hold is threaded through `path-sync.ts`'s
   `deviceIsConnecting` input (a `sync-path` arm, like device-only MTP's) and the mount-time load's own branch.
 - **❗ While the hold is on, a `null` state renders NOTHING**, so every way a dial can end has to leave a non-`null`
   one: a `refused` with the reason and, where a second try could work, a Try again. That covers both cancels (the button
   on `connecting` and the one on `waiting_for_device`), the backend's own `cancelled` answer, a failure with no typed
   reason (which shows `adb.connect.transport`, because its own text is untranslated diagnostics that belong in the log),
   and a device row whose path names no serial. ❌ Releasing the hold instead is NOT the escape hatch: nothing re-runs
-  the listing on that path, and if it did, `list_directory` would re-dial the very phone the user just called off. "A
-  cancel says nothing" means not scolding someone for what they did, ❌ not leaving them in an empty pane.
+  the listing on that path, and one that ran could only come back refused, because the phone has no volume until this
+  factory dials. "A cancel says nothing" means not scolding someone for what they did, ❌ not leaving them in an empty
+  pane.
 - **`holdsListing` is a `$derived` off the volume id and the factory's own record, ❌ never off `state`.** The
   mount-time load runs before this factory's `$effect` has said anything, so a gate read from the view state would
   depend on `$effect` ordering — correct today, silently wrong after any reordering.
+- **❗ "Open" is re-checked against the row, so an eject re-dials.** `volume_listing::complete` fills `capabilities`
+  only for a registered volume, and an eject unregisters the volume while `adb` keeps the phone listed (same id, same
+  readiness). A row SEEN with `capabilities` since the dial that comes back without them resets the factory's record,
+  which re-holds the listing and dials again. ❌ A missing `capabilities` right after a dial is NOT an eject: the dial's
+  own broadcast can land after `connectAdbDevice` answers, so the baseline is what the row says when the dial lands.
 - **MTP is deliberately NOT folded in.** Its volume id CHANGES on connect (device-only → storage), which is a different
   pane transition with its own `path-sync.ts` arm, and it keeps `MtpConnectionView.svelte`.
 

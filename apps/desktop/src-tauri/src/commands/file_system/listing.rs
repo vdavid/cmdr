@@ -102,7 +102,8 @@ pub fn get_path_limits() -> PathLimits {
 }
 
 /// Returns `TimedOut<bool>` so the frontend can distinguish a real "doesn't exist"
-/// from "we couldn't tell" (timeout, or SMB volume in `Disconnected` state). Without this
+/// from "we couldn't tell" (timeout, an SMB volume in `Disconnected` state, or a
+/// listed device nobody has dialed, like an ADB phone before its pane connects). Without this
 /// distinction, the directory-eviction poll in `FilePane.svelte` evicts users from a
 /// network folder on any transient connection blip.
 #[tauri::command]
@@ -150,6 +151,17 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bo
                 data: false,
                 timed_out: true,
             },
+        }
+    } else if crate::device_volumes::provider_for_volume_id(&volume_id)
+        .await
+        .is_some()
+    {
+        // A device its provider lists but nobody has dialed (an ADB phone before its
+        // pane's connect lands, or after an eject). Nothing has looked, so the honest
+        // answer is "couldn't tell", ❌ never a `false` that every caller reads as "gone".
+        TimedOut {
+            data: false,
+            timed_out: true,
         }
     } else {
         // Fallback for unknown volumes (shouldn't happen in practice)

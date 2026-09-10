@@ -12,7 +12,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushSync } from 'svelte'
 import type { DeviceReadiness } from '$lib/ipc/bindings'
-import type { VolumeInfo } from '../types'
+import type { VolumeBackendCapabilities, VolumeInfo } from '../types'
 
 const { ipc } = vi.hoisted(() => ({
   ipc: {
@@ -109,9 +109,8 @@ describe('createDeviceConnect', () => {
     const { sub } = create()
     expect(ipc.connectAdbDevice).toHaveBeenCalledWith(SERIAL, 'adb-attempt-1')
     expect(sub.state?.kind).toBe('connecting')
-    // ❗ The listing is held: a `list_directory` here would dial a SECOND time
-    // through the backend's own navigation path, and Cancel would then call off
-    // the wrong one.
+    // ❗ The listing is held: the phone has no volume until this dial lands, so a
+    // `list_directory` here could only come back refused.
     expect(sub.holdsListing).toBe(true)
   })
 
@@ -244,6 +243,30 @@ describe('createDeviceConnect', () => {
     if (state?.kind !== 'refused') return
     expect(state.retry).toBeUndefined()
     expect(state.openSettings).toBeUndefined()
+  })
+
+  it('holds the listing and dials again when the phone stays listed but its volume was ejected', async () => {
+    const { sub, setInfo, onConnected } = create()
+    await vi.waitFor(() => {
+      expect(onConnected).toHaveBeenCalledTimes(1)
+    })
+    // The `volumes-changed` after the dial: enrichment fills `capabilities` only
+    // for a volume the registry holds, so this is what "dialed" looks like.
+    const registered: VolumeBackendCapabilities = { backendCanWrite: true, canExport: true }
+    setInfo({ ...phone({ kind: 'ready' }), capabilities: registered })
+    expect(sub.holdsListing).toBe(false)
+
+    // Eject unregisters the volume, but `adb` has no per-client detach, so the
+    // phone stays listed: same id, same readiness, no capabilities.
+    setInfo(phone({ kind: 'ready' }))
+
+    // ❗ A listing now could only come back refused, so the pane is held and the
+    // phone is dialed again.
+    expect(sub.holdsListing).toBe(true)
+    expect(ipc.connectAdbDevice).toHaveBeenCalledTimes(2)
+    await vi.waitFor(() => {
+      expect(onConnected).toHaveBeenCalledTimes(2)
+    })
   })
 
   it('lets go of everything when the pane leaves the phone', () => {

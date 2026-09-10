@@ -120,28 +120,19 @@ async fn resolve_location_inner(path: String, fs_timeout: Duration) -> ResolveLo
 /// timed out.
 async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<VolumeInfo>, bool) {
     // Device protocol dispatch (`mtp://`, `adb://`): whichever provider's
-    // storage the path falls under. An ADB device is listed before it's
-    // dialed, so the first navigation onto it is what connects it.
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
-    {
-        if path.starts_with("adb://") {
-            match crate::adb::volume_wiring::volume_id_for_path(&path).await {
-                Some(Ok(_)) => {}
-                Some(Err(error)) => {
-                    log::info!(target: "volume", "adb device for {path} didn't connect: {error}");
-                    return (None, false);
-                }
-                None => return (None, false),
-            }
-        }
-    }
+    // storage the path falls under, from its CACHED list. ❗ This NEVER dials:
+    // resolution runs for a restored tab, Go to path, a drag, and every lap of a
+    // frontend retry, so a dial here turns a loop on a failing listing into
+    // hundreds of failed dials a second. An ADB phone is listed before it's
+    // dialed, and the pane standing on it is the one dialer
+    // (`src/lib/file-explorer/pane/device-connect.svelte.ts`).
     if path.starts_with("mtp://") || path.starts_with("adb://") {
         return (crate::device_volumes::device_volume_for_path(&path).await, false);
     }
 
     // SFTP and WebDAV paths → the registered volume, or the saved server whose
-    // prefix they carry. ❗ This arm NEVER dials, unlike the `adb://` one above:
-    // a restored tab resolves at launch, and four servers connecting there is
+    // prefix they carry. ❗ This arm NEVER dials either: a restored tab resolves
+    // at launch, and four servers connecting there is
     // four Keychain reads and four network waits nobody asked for. Activating
     // the row is what brings it to life.
     #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -330,5 +321,45 @@ mod tests {
 
         assert!(!result.timed_out);
         assert!(result.location.is_none());
+    }
+
+    /// ❗ An `adb://` path resolves to the LISTED phone, ❌ never by dialing it.
+    ///
+    /// Resolution runs for a restored tab, Go to path, a drag, and every lap of a
+    /// frontend loop on a failing listing, so a resolver that dials turns such a
+    /// loop into hundreds of failed dials a second against the ADB server. The
+    /// pane is the one dialer (`device-connect.svelte.ts`).
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    #[tokio::test]
+    async fn resolve_location_adb_path_returns_the_listed_phone_without_dialing() {
+        const SERIAL: &str = "R58M-Resolve-Cell";
+        let fake = cmdr_adb::testing::FakeAdbServer::start(cmdr_adb::testing::FakeTree::new()).await;
+        let phone = cmdr_adb::AdbDevice {
+            serial: SERIAL.to_string(),
+            ..cmdr_adb::testing::fake_device()
+        };
+        fake.push_devices(vec![phone.clone()]);
+        // Aimed at the fake, so a resolver that dials is SEEN dialing rather than
+        // reaching whatever `adb` this machine runs.
+        // SAFETY: `std::env::set_var` is unsound only under concurrent env access. Each nextest test
+        // runs in its own process, and this current-thread test sets the var before anything in it
+        // reads the variable, so no other thread can be touching the environment here.
+        unsafe {
+            std::env::set_var("ANDROID_ADB_SERVER_PORT", fake.addr().port().to_string());
+        }
+        crate::adb::volume_wiring::install_device_provider();
+        crate::adb::device_provider::apply_device_list(vec![phone]);
+
+        let result = resolve_location_inner(format!("adb://{SERIAL}/sdcard"), TEST_FS_TIMEOUT).await;
+
+        assert!(!result.timed_out);
+        let location = result.location.expect("a listed phone's path resolves to its row");
+        assert_eq!(location.volume_id, cmdr_fs::volume::adb_volume_id(SERIAL));
+        assert!(
+            fake.requests().is_empty(),
+            "❌ resolution never dials; the server saw {:?}",
+            fake.requests()
+        );
+        crate::adb::device_provider::apply_device_list(Vec::new());
     }
 }

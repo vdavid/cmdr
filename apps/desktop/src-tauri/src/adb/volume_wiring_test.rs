@@ -333,6 +333,71 @@ async fn a_pane_on_an_adb_path_lists_the_phone_through_the_listing_pipeline() {
     device_provider::forget_volume(SERIAL);
 }
 
+/// Lists a phone the way the tracker does, without anyone dialing it: a row, no
+/// volume.
+fn list_undialed_phone(serial: &str) {
+    install_device_provider();
+    device_provider::apply_device_list(vec![cmdr_adb::AdbDevice {
+        serial: serial.to_string(),
+        ..cmdr_adb::testing::fake_device()
+    }]);
+}
+
+/// ❗ Listing a phone that is listed but not dialed answers that the device isn't
+/// connected, ❌ never `NotFound`: the frontend reads `NotFound` as "this folder
+/// was deleted" and walks the pane up and off the phone.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn listing_a_listed_phone_nobody_dialed_says_it_is_not_connected() {
+    const SERIAL: &str = "R58M-Undialed-Listing";
+    list_undialed_phone(SERIAL);
+
+    let listing = TestListingGuard::adopt(unique_test_id("adb-undialed-listing"));
+    let events: Arc<dyn ListingEventSink> = Arc::new(CollectorListingEventSink::new());
+    let state = Arc::new(StreamingListingState {
+        cancel: CancellationToken::new(),
+    });
+    let pane_path = format!("adb://{SERIAL}/sdcard");
+    let outcome = read_directory_with_progress(
+        &events,
+        listing.id(),
+        &state,
+        &cmdr_fs::volume::adb_volume_id(SERIAL),
+        Path::new(&pane_path),
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
+
+    assert!(
+        matches!(outcome, Err(cmdr_fs::volume::VolumeError::DeviceDisconnected(_))),
+        "an undialed phone isn't connected, and nothing was deleted; got {outcome:?}"
+    );
+    device_provider::apply_device_list(Vec::new());
+}
+
+/// ❗ Asking whether a path exists on a listed-but-undialed phone answers
+/// "couldn't tell", ❌ never a confident `false`: nothing has looked, and a
+/// `false` reads as "gone" to every caller that evicts a pane on it.
+#[tokio::test]
+async fn path_exists_on_a_listed_phone_nobody_dialed_answers_that_it_couldnt_tell() {
+    const SERIAL: &str = "R58M-Undialed-Exists";
+    list_undialed_phone(SERIAL);
+
+    let answer = crate::commands::file_system::path_exists(
+        Some(cmdr_fs::volume::adb_volume_id(SERIAL)),
+        format!("adb://{SERIAL}/sdcard"),
+    )
+    .await;
+
+    assert!(
+        answer.timed_out && !answer.data,
+        "an undialed phone can't say either way; got {answer:?}"
+    );
+    device_provider::apply_device_list(Vec::new());
+}
+
 #[test]
 fn an_empty_binary_path_hands_the_search_back_to_the_platform() {
     set_adb_binary_path(Some("   ".to_string()));
