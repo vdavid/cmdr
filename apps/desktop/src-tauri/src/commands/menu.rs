@@ -8,12 +8,13 @@ use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
     CLOSE_TAB_ID, CommandScope, ContextMenuPaneFacts, DetachWord, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
     FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FileContextInfo,
-    MenuState, OPEN_TERMINAL_HERE_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, ServerRowMenu, SettingsChanged, ViewMode,
-    build_breadcrumb_context_menu, build_context_menu, build_function_key_bar_context_menu,
-    build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu,
-    build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items,
-    sync_view_mode_check_states,
+    MenuState, OPEN_TERMINAL_HERE_ID, PIN_TAB_MENU_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, ServerRowMenu, SettingsChanged,
+    VIEW_SET_MODE_COMMAND_ID, VIEW_SHOW_HIDDEN_COMMAND_ID, ViewMode, build_breadcrumb_context_menu, build_context_menu,
+    build_function_key_bar_context_menu, build_network_host_context_menu, build_parent_row_context_menu,
+    build_tab_context_menu, build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command,
+    rebuild_view_mode_items, sync_view_mode_check_states,
 };
+use std::collections::HashSet;
 use std::sync::atomic::Ordering;
 use tauri::menu::ContextMenu;
 use tauri::{AppHandle, Manager, Runtime, Window};
@@ -605,17 +606,14 @@ pub fn set_ui_language<R: Runtime>(app: AppHandle<R>, language: Option<String>) 
 }
 
 /// Enables or disables the Tab menu "Reopen closed tab" item based on whether the
-/// focused pane's closed-tab stack has entries. Mirrors the dynamic-label pattern
-/// used by `update_pin_tab_menu`.
+/// focused pane's closed-tab stack has entries.
 #[tauri::command]
 #[specta::specta]
 pub fn set_reopen_closed_tab_enabled<R: Runtime>(app: AppHandle<R>, enabled: bool) -> Result<(), String> {
     let menu_state = app.state::<MenuState<R>>();
-    let guard = menu_state.reopen_closed_tab.lock_ignore_poison();
-    let Some(item) = guard.as_ref() else {
-        return Err("Menu not initialized".to_string());
-    };
-    item.set_enabled(enabled).map_err(|e| e.to_string())
+    menu_state.reopen_closed_tab_enabled.store(enabled, Ordering::Relaxed);
+    apply_menu_item_states(&menu_state);
+    Ok(())
 }
 
 /// Activates the right app menu for the window that just gained focus.
@@ -718,92 +716,114 @@ fn swap_to_viewer_menu<R: Runtime>(app: &AppHandle<R>) {
     crate::menu::cleanup_macos_menus_from_command(app);
 }
 
-/// Enables or disables explorer-scoped menu items based on the current context.
-/// - `"explorer"`: all menu items enabled (main file explorer has focus)
-/// - `"other"`: all non-App items disabled except Close tab (⌘W), which doubles as "close the
-///   focused window" (standard macOS behavior)
+/// Records which window's menu the explorer items answer to, and recomputes every item from it.
+/// - `"explorer"`: the main file explorer has focus
+/// - `"other"`: Settings or Debug has focus, so every non-App item greys out except Close tab (⌘W),
+///   which doubles as "close the focused window" (standard macOS behavior)
 ///
 /// Private helper behind `activate_window_menu`: the focus-gain command owns the menu swap (macOS)
-/// and then calls this to set the per-item enabled state.
+/// and then calls this to set the per-item enabled state. A rebuilt menu bar comes up with fresh,
+/// enabled items, and the frontend re-runs `activate_window_menu` after one, so this is also what
+/// restores every stored verdict after a language change.
 fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<(), String> {
-    let enabled = context == "explorer";
     let menu_state = app.state::<MenuState<R>>();
-    menu_state.explorer_menu_active.store(enabled, Ordering::Relaxed);
-
-    for (id, entry) in menu_state.items.lock_ignore_poison().iter() {
-        // Close tab stays enabled: on_menu_event has special logic to close the focused
-        // non-main window when main isn't focused (standard ⌘W behavior on macOS).
-        if id == CLOSE_TAB_ID {
-            continue;
-        }
-        // Reopen closed tab is managed exclusively by `set_reopen_closed_tab_enabled`:
-        // skip it here so an "explorer" context switch doesn't enable it while the
-        // focused pane's closed-tab stack is empty.
-        if id == REOPEN_CLOSED_TAB_ID {
-            continue;
-        }
-        // Same reason, different question: "Open terminal here" follows the FOCUSED
-        // PANE's volume, which this loop knows nothing about. `apply_open_terminal_here_state`
-        // below re-applies the stored verdict once the loop is done.
-        if id == OPEN_TERMINAL_HERE_ID {
-            continue;
-        }
-        let is_app = matches!(menu_id_to_command(id), Some((_, CommandScope::App)));
-        if !is_app {
-            let _ = entry.item.set_enabled(enabled);
-        }
-    }
-
-    // Items stored in separate MenuState fields (not in the HashMap)
-    if let Some(ref item) = *menu_state.pin_tab.lock_ignore_poison() {
-        let _ = item.set_enabled(enabled);
-    }
-    if let Some(ref item) = *menu_state.show_hidden_files.lock_ignore_poison() {
-        let _ = item.set_enabled(enabled);
-    }
-    if let Some(ref item) = *menu_state.view_mode_full_left.lock_ignore_poison() {
-        let _ = item.set_enabled(enabled);
-    }
-    if let Some(ref item) = *menu_state.view_mode_brief_left.lock_ignore_poison() {
-        let _ = item.set_enabled(enabled);
-    }
-    if let Some(ref item) = *menu_state.view_mode_full_right.lock_ignore_poison() {
-        let _ = item.set_enabled(enabled);
-    }
-    if let Some(ref item) = *menu_state.view_mode_brief_right.lock_ignore_poison() {
-        let _ = item.set_enabled(enabled);
-    }
-    // Disable the parent "Left pane" / "Right pane" submenus too, so they appear
-    // greyed out instead of opening to reveal disabled items.
-    if let Some(ref submenu) = *menu_state.view_left_pane_submenu.lock_ignore_poison() {
-        let _ = submenu.set_enabled(enabled);
-    }
-    if let Some(ref submenu) = *menu_state.view_right_pane_submenu.lock_ignore_poison() {
-        let _ = submenu.set_enabled(enabled);
-    }
-    if let Some(ref submenu) = *menu_state.sort_submenu.lock_ignore_poison() {
-        let _ = submenu.set_enabled(enabled);
-    }
-
-    // ⚠️ Last, and never skipped: the loop above enables EVERY explorer item, so
-    // without this a trip through Settings and back would offer Copy again while a
-    // dialog is still up.
-    apply_operation_item_state(&menu_state);
-    // Same shape, and the reason the item is skipped above: a rebuilt menu bar comes
-    // up with a fresh, enabled item, and the frontend re-runs `activate_window_menu`
-    // after one, so this is also what restores the verdict after a language change.
-    apply_open_terminal_here_state(&menu_state);
-
+    menu_state
+        .explorer_menu_active
+        .store(context == "explorer", Ordering::Relaxed);
+    apply_menu_item_states(&menu_state);
     Ok(())
 }
 
-/// Sets "Open terminal here" from BOTH inputs: the explorer has to own the menu,
-/// and the focused pane has to sit somewhere a shell can `cd` into.
-fn apply_open_terminal_here_state<R: Runtime>(menu_state: &MenuState<R>) {
-    let enabled = menu_state.explorer_menu_active.load(Ordering::Relaxed)
-        && menu_state.open_terminal_here_enabled.load(Ordering::Relaxed);
-    if let Some(entry) = menu_state.items.lock_ignore_poison().get(OPEN_TERMINAL_HERE_ID) {
-        let _ = entry.item.set_enabled(enabled);
+/// Everything a main-menu item's enabled state is derived from.
+struct MenuItemInputs<'a> {
+    /// The main file explorer owns the menu (`activate_window_menu("main")`).
+    explorer_menu_active: bool,
+    /// The main window can't start a file operation right now (`set_file_operations_blocked`).
+    file_operations_blocked: bool,
+    /// The focused pane sits somewhere a shell can `cd` into (`set_open_terminal_here_enabled`).
+    open_terminal_here_enabled: bool,
+    /// The focused pane's closed-tab stack has entries (`set_reopen_closed_tab_enabled`).
+    reopen_closed_tab_enabled: bool,
+    /// The commands the main window's dialog gate refuses right now (`set_commands_refused_over_dialog`).
+    refused: &'a HashSet<String>,
+}
+
+/// Whether the main-menu item `id` is enabled. The ONE place that's decided, from every input at
+/// once, so no writer can undo another's verdict by running later.
+fn menu_item_enabled(id: &str, inputs: &MenuItemInputs) -> bool {
+    let command = menu_id_to_command(id);
+    let refused = command.is_some_and(|(command_id, _)| inputs.refused.contains(command_id));
+    // Close tab doubles as "close the focused window" (`handle_menu_event`), so it only greys out
+    // while the main window is the one in front and can't close a tab.
+    if id == CLOSE_TAB_ID {
+        return !(inputs.explorer_menu_active && refused);
+    }
+    let in_scope = matches!(command, Some((_, CommandScope::App))) || inputs.explorer_menu_active;
+    let own_verdict = match id {
+        REOPEN_CLOSED_TAB_ID => inputs.reopen_closed_tab_enabled,
+        OPEN_TERMINAL_HERE_ID => inputs.open_terminal_here_enabled,
+        _ if OPERATION_START_ITEM_IDS.contains(&id) => !inputs.file_operations_blocked,
+        _ => true,
+    };
+    in_scope && own_verdict && !refused
+}
+
+/// Recomputes every main-menu item's enabled state from the stored inputs.
+///
+/// Every writer of an input stores it and calls this, ❌ never `set_enabled` on an item directly:
+/// an item with two writers keeps whichever ran last, which is how a focus round-trip through
+/// Settings once offered Copy again with a dialog still up.
+fn apply_menu_item_states<R: Runtime>(menu_state: &MenuState<R>) {
+    // A copy, so the lock isn't held across the item locks below: `handle_menu_event` takes a check
+    // item's lock first and this one second.
+    let refused = menu_state.commands_refused_over_dialog.lock_ignore_poison().clone();
+    let inputs = MenuItemInputs {
+        explorer_menu_active: menu_state.explorer_menu_active.load(Ordering::Relaxed),
+        file_operations_blocked: menu_state.file_operations_blocked.load(Ordering::Relaxed),
+        open_terminal_here_enabled: menu_state.open_terminal_here_enabled.load(Ordering::Relaxed),
+        reopen_closed_tab_enabled: menu_state.reopen_closed_tab_enabled.load(Ordering::Relaxed),
+        refused: &refused,
+    };
+
+    for (id, entry) in menu_state.items.lock_ignore_poison().iter() {
+        let _ = entry.item.set_enabled(menu_item_enabled(id, &inputs));
+    }
+
+    // The items held in their own `MenuState` fields, outside `items`. All of them are explorer
+    // items with no verdict of their own. The check items name their command by const, since they
+    // emit their own events instead of `execute-command`.
+    let explorer_item = |command_id: &str| inputs.explorer_menu_active && !refused.contains(command_id);
+    let pin_tab_command = menu_id_to_command(PIN_TAB_MENU_ID).map_or("", |(command_id, _)| command_id);
+    let pin_tab_enabled = explorer_item(pin_tab_command);
+    let show_hidden_enabled = explorer_item(VIEW_SHOW_HIDDEN_COMMAND_ID);
+    let view_mode_enabled = explorer_item(VIEW_SET_MODE_COMMAND_ID);
+
+    if let Some(ref item) = *menu_state.pin_tab.lock_ignore_poison() {
+        let _ = item.set_enabled(pin_tab_enabled);
+    }
+    if let Some(ref item) = *menu_state.show_hidden_files.lock_ignore_poison() {
+        let _ = item.set_enabled(show_hidden_enabled);
+    }
+    for view_mode_item in [
+        &menu_state.view_mode_full_left,
+        &menu_state.view_mode_brief_left,
+        &menu_state.view_mode_full_right,
+        &menu_state.view_mode_brief_right,
+    ] {
+        if let Some(ref item) = *view_mode_item.lock_ignore_poison() {
+            let _ = item.set_enabled(view_mode_enabled);
+        }
+    }
+    // The parent "Left pane" / "Right pane" submenus too, so they appear greyed out instead of
+    // opening to reveal disabled items.
+    for pane_submenu in [&menu_state.view_left_pane_submenu, &menu_state.view_right_pane_submenu] {
+        if let Some(ref submenu) = *pane_submenu.lock_ignore_poison() {
+            let _ = submenu.set_enabled(view_mode_enabled);
+        }
+    }
+    // The sort items themselves are in `items`, each greyed by its own command.
+    if let Some(ref submenu) = *menu_state.sort_submenu.lock_ignore_poison() {
+        let _ = submenu.set_enabled(inputs.explorer_menu_active);
     }
 }
 
@@ -819,7 +839,7 @@ fn apply_open_terminal_here_state<R: Runtime>(menu_state: &MenuState<R>) {
 pub fn set_open_terminal_here_enabled<R: Runtime>(app: AppHandle<R>, enabled: bool) -> Result<(), String> {
     let menu_state = app.state::<MenuState<R>>();
     menu_state.open_terminal_here_enabled.store(enabled, Ordering::Relaxed);
-    apply_open_terminal_here_state(&menu_state);
+    apply_menu_item_states(&menu_state);
     Ok(())
 }
 
@@ -832,8 +852,7 @@ pub fn set_open_terminal_here_enabled<R: Runtime>(app: AppHandle<R>, enabled: bo
 /// ⚠️ Every id here must be `FileScoped`. `Edit > Paste` is deliberately absent
 /// even though pasting files DOES start a copy: it's `App`-scoped because in
 /// Settings and the viewer it forwards the native `paste:` selector, so greying it
-/// for a main-window dialog would kill ⌘V in those windows' text fields (and
-/// `set_menu_context` skips `App` items, so nothing would put it back). Pasting
+/// for a main-window dialog would kill ⌘V in those windows' text fields. Pasting
 /// files is still refused honestly by `pane/operation-start-gate.ts`; only the
 /// chrome differs. `every_gated_item_is_a_real_file_scoped_menu_item` pins this.
 const OPERATION_START_ITEM_IDS: &[&str] = &[
@@ -848,19 +867,6 @@ const OPERATION_START_ITEM_IDS: &[&str] = &[
     EDIT_PASTE_MOVE_ID,
 ];
 
-/// Recomputes the operation items' enabled state from BOTH inputs: the explorer has
-/// to own the menu, and the main window has to be able to take an operation.
-fn apply_operation_item_state<R: Runtime>(menu_state: &MenuState<R>) {
-    let enabled = menu_state.explorer_menu_active.load(Ordering::Relaxed)
-        && !menu_state.file_operations_blocked.load(Ordering::Relaxed);
-    let items = menu_state.items.lock_ignore_poison();
-    for id in OPERATION_START_ITEM_IDS {
-        if let Some(entry) = items.get(*id) {
-            let _ = entry.item.set_enabled(enabled);
-        }
-    }
-}
-
 /// Greys out (or restores) the menu items that would start a file operation.
 ///
 /// Called by the main window whenever a dialog opens or closes, or the Ask Cmdr
@@ -872,7 +878,24 @@ fn apply_operation_item_state<R: Runtime>(menu_state: &MenuState<R>) {
 pub fn set_file_operations_blocked<R: Runtime>(app: AppHandle<R>, blocked: bool) -> Result<(), String> {
     let menu_state = app.state::<MenuState<R>>();
     menu_state.file_operations_blocked.store(blocked, Ordering::Relaxed);
-    apply_operation_item_state(&menu_state);
+    apply_menu_item_states(&menu_state);
+    Ok(())
+}
+
+/// Greys out the main-menu items whose commands the main window's dialog gate refuses right now:
+/// every `BLOCKED_BY_DIALOGS` command while a dialog, an explorer overlay, or the command palette is
+/// up, and none once it's gone. The only writer is `routes/(main)/menu-dialog-gate.svelte.ts`.
+///
+/// ⚠️ CHROME for the regular items: a disabled item's accelerator still fires, and the dispatch core
+/// refuses those commands itself. The two check items are the exception, because they toggle
+/// themselves before the frontend hears of the click: `handle_menu_event` reverts a refused one
+/// from this same set.
+#[tauri::command]
+#[specta::specta]
+pub fn set_commands_refused_over_dialog<R: Runtime>(app: AppHandle<R>, command_ids: Vec<String>) -> Result<(), String> {
+    let menu_state = app.state::<MenuState<R>>();
+    *menu_state.commands_refused_over_dialog.lock_ignore_poison() = command_ids.into_iter().collect();
+    apply_menu_item_states(&menu_state);
     Ok(())
 }
 
@@ -883,8 +906,8 @@ mod tests {
 
     #[test]
     fn every_gated_item_is_a_real_file_scoped_menu_item() {
-        // A typo, or an id that stopped being registered, would make the loop in
-        // `apply_operation_item_state` skip that item SILENTLY: the menu would keep
+        // A typo, or an id that stopped being registered, would make
+        // `menu_item_enabled` skip that item's verdict SILENTLY: the menu would keep
         // offering Copy while a dialog is up, and nothing would say why. Every id
         // here has to resolve to a file-scoped command, which is what `register_item`
         // registers and what `set_menu_context` manages.
@@ -896,6 +919,84 @@ mod tests {
                 "{id} must be file-scoped, else `set_menu_context` doesn't manage it either"
             );
         }
+    }
+
+    fn refusing(command_ids: &[&str]) -> HashSet<String> {
+        command_ids.iter().map(|id| (*id).to_string()).collect()
+    }
+
+    /// The main window owns the menu, every item's own verdict says yes, and nothing is refused
+    /// unless `refused` says so.
+    fn inputs(refused: &HashSet<String>) -> MenuItemInputs<'_> {
+        MenuItemInputs {
+            explorer_menu_active: true,
+            file_operations_blocked: false,
+            open_terminal_here_enabled: true,
+            reopen_closed_tab_enabled: true,
+            refused,
+        }
+    }
+
+    #[test]
+    fn an_item_greys_out_while_the_dialog_gate_refuses_its_command() {
+        use crate::menu::{ABOUT_ID, SERVERS_CONNECT_ID};
+        let nothing = refusing(&[]);
+        assert!(menu_item_enabled(SERVERS_CONNECT_ID, &inputs(&nothing)));
+        assert!(!menu_item_enabled(
+            SERVERS_CONNECT_ID,
+            &inputs(&refusing(&["servers.connect"]))
+        ));
+        // An app-wide item too: About opens a dialog in the main window, which the gate refuses
+        // behind another one whichever window the menu click came from.
+        assert!(!menu_item_enabled(ABOUT_ID, &inputs(&refusing(&["app.about"]))));
+    }
+
+    #[test]
+    fn an_app_item_stays_enabled_outside_the_explorer_and_a_file_item_does_not() {
+        use crate::menu::{SERVERS_CONNECT_ID, SETTINGS_ID};
+        let nothing = refusing(&[]);
+        let settings_in_front = MenuItemInputs {
+            explorer_menu_active: false,
+            ..inputs(&nothing)
+        };
+        assert!(menu_item_enabled(SETTINGS_ID, &settings_in_front));
+        assert!(!menu_item_enabled(SERVERS_CONNECT_ID, &settings_in_front));
+    }
+
+    #[test]
+    fn close_tab_still_closes_another_window_while_the_main_one_has_a_dialog_up() {
+        let tab_close = refusing(&["tab.close"]);
+        assert!(!menu_item_enabled(CLOSE_TAB_ID, &inputs(&tab_close)));
+        let settings_in_front = MenuItemInputs {
+            explorer_menu_active: false,
+            ..inputs(&tab_close)
+        };
+        assert!(menu_item_enabled(CLOSE_TAB_ID, &settings_in_front));
+    }
+
+    #[test]
+    fn an_item_with_its_own_verdict_needs_that_verdict_and_the_gate() {
+        let nothing = refusing(&[]);
+        let blocked = MenuItemInputs {
+            file_operations_blocked: true,
+            ..inputs(&nothing)
+        };
+        assert!(!menu_item_enabled(FILE_COPY_ID, &blocked));
+        let no_shell_here = MenuItemInputs {
+            open_terminal_here_enabled: false,
+            ..inputs(&nothing)
+        };
+        assert!(!menu_item_enabled(OPEN_TERMINAL_HERE_ID, &no_shell_here));
+        let no_closed_tabs = MenuItemInputs {
+            reopen_closed_tab_enabled: false,
+            ..inputs(&nothing)
+        };
+        assert!(!menu_item_enabled(REOPEN_CLOSED_TAB_ID, &no_closed_tabs));
+        assert!(menu_item_enabled(REOPEN_CLOSED_TAB_ID, &inputs(&nothing)));
+        assert!(!menu_item_enabled(
+            REOPEN_CLOSED_TAB_ID,
+            &inputs(&refusing(&["tab.reopen"]))
+        ));
     }
 
     #[test]

@@ -295,9 +295,33 @@ menu is swapped wholesale via `app.set_menu()`:
 On Linux `activate_window_menu` skips the swap (viewer windows carry their own per-window menu set by
 `viewer_setup_menu` / `window.set_menu()`) and only does the enable/disable step.
 
-The enable/disable step is the private `set_menu_context("explorer" | "other")` helper: it iterates
-the `items` HashMap and sets `enabled` on each file-scoped item (`"main"` → explorer/enabled,
-`"other"` → disabled). This is a visual hint reinforcing the focus guard in `on_menu_event`.
+The enable/disable step is the private `set_menu_context("explorer" | "other")` helper: it stores whether the explorer
+owns the menu and recomputes every item (`"main"` → file-scoped items enabled, `"other"` → greyed). This is a visual
+hint reinforcing the focus guard in `on_menu_event`.
+
+## Dialog refusals, and the one writer of an item's enabled state
+
+Every main-menu item's enabled state comes from `apply_menu_item_states` in `commands/menu.rs`, which derives it from
+stored inputs through the pure `menu_item_enabled`: whether the explorer owns the menu, `file_operations_blocked`, the
+"Open terminal here" and "Reopen closed tab" verdicts, and `commands_refused_over_dialog`. Each input's writer stores it
+and calls the recompute. **Decision/Why:** when each input wrote its items directly, the last writer won, so a focus
+round-trip through Settings once re-offered Copy with a dialog still up, and every later input had to be "re-applied
+LAST". One derivation makes the order irrelevant.
+
+`commands_refused_over_dialog` is the frontend dialog gate's answer (`routes/(main)/DETAILS.md` § The dialog gate): every
+`BLOCKED_BY_DIALOGS` command while a dialog, an explorer overlay, or the command palette is up in the main window, pushed
+by `menu-dialog-gate.svelte.ts` through `set_commands_refused_over_dialog`. It greys an item out whichever window is in
+front, since a click from Settings still lands in the main window's refusing dispatch core. Close tab is the one
+exception: it greys out only while the main window is in front, because anywhere else ⌘W closes the focused window.
+
+- **Regular items: chrome.** A disabled item's accelerator still fires, and the dispatch core refuses the command itself.
+- **The two check items: the refusal itself.** Show hidden files and the per-pane view modes toggle themselves before
+  `handle_menu_event` runs, and they emit their own events (`settings-changed`, `view-mode-changed`), so the frontend
+  can't untoggle them and show hidden never passes the dispatch core. `handle_menu_event` checks
+  `MenuState::refuses_over_dialog` and puts the check back. Their commands are named by the `*_COMMAND_ID` consts in
+  `command_map.rs`, pinned by `rust-command-id-drift.test.ts`.
+- **Lock order:** the recompute copies the refused set before taking any item lock, because `handle_menu_event` holds a
+  check item's lock while it reads the set.
 
 **Gotcha: `onFocusChanged` doesn't fire for a window's initial focus.** A window opens already
 focused, so its frontend focus listener (registered in `onMount`) misses the first focus and only
@@ -731,19 +755,17 @@ title. `IconMenuItem` stays right for images that ARE pixels (app icons, share-s
 - **Pin tab label**: `pin_tab` in MenuState is updated dynamically by the frontend to show
   "Pin tab" or "Unpin tab" based on the active tab's state.
 - **Reopen closed tab item**: The Tab submenu includes "Reopen closed tab" (⌘⇧T on macOS) between
-  Close tab and the Next/Previous tab pair. The item is created **disabled** and toggled live via
-  `set_reopen_closed_tab_enabled(enabled: bool)`, using the same dynamic-state pattern as `pin_tab`'s label.
-  `MenuState.reopen_closed_tab` holds the `MenuItem` reference. The frontend pushes enable state
-  after every close, reopen, and focus change so the menu always reflects the focused pane's
-  closed-tab stack.
+  Close tab and the Next/Previous tab pair. The item is created **disabled**. The frontend pushes the verdict through
+  `set_reopen_closed_tab_enabled(enabled: bool)` after every close, reopen, and focus change, which stores it in
+  `MenuState.reopen_closed_tab_enabled` and recomputes the items (§ Dialog refusals), so the menu always reflects the
+  focused pane's closed-tab stack.
 - **Open terminal here item** (`OPEN_TERMINAL_HERE_ID` → `file.openTerminalHere`, macOS only): sits in the File menu
   right after Show in Finder (⌥⌘T), and in the file context menu next to it. It's the one item whose enabled state
   follows the FOCUSED PANE rather than the window: a pane on MTP or ADB has no path a shell can `cd` into. The verdict
   arrives through `set_open_terminal_here_enabled` and is STORED in `MenuState.open_terminal_here_enabled`, not just
-  applied: `set_menu_context` enables every explorer item, so the id is skipped in that loop (like
-  `REOPEN_CLOSED_TAB_ID`) and `apply_open_terminal_here_state` re-applies the stored verdict LAST, next to
-  `apply_operation_item_state`. That is also what restores it after a menu-bar rebuild, since the frontend's
-  `menu-bar-rebuilt` handler calls `activate_window_menu('main')`. The context-menu copy needs no channel: it's built
+  applied, because every recompute derives the item from all its inputs at once (§ Dialog refusals). That is also what
+  restores it after a menu-bar rebuild, since the frontend's `menu-bar-rebuilt` handler calls
+  `activate_window_menu('main')`. The context-menu copy needs no channel: it's built
   per right-click, so `show_file_context_menu` carries the answer in `PaneContextMenuFacts.can_open_terminal_here`.
   ⚠️ Greying is CHROME: a disabled item's accelerator still fires, and the palette has no disabled state at all, so
   the real refusal is the frontend handler (`apps/desktop/src/lib/open-terminal/CLAUDE.md`).

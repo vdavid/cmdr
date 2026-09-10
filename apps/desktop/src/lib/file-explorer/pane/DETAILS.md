@@ -1128,10 +1128,11 @@ the same-tick guard between `show* = true` and the mount that registers it, ❌ 
 (`explorerState.getRailFocused()`), ❌ never while it's merely visible: the rail is docked next to the panes most of the
 time, and blocking on visibility would take Copy away from anyone who leaves it open.
 
-**Two Rust-side traps worth keeping.** `set_menu_context` re-applies the blocked state LAST, because its own loop
-enables every explorer item — without that, a focus round-trip through Settings re-offers Copy while the dialog is still
-up. And `register_known_dialogs` clears the backend's open list, since a reloaded webview never fires the close half of
-its pairs and one orphaned entry would refuse every MCP file operation until restart.
+**Two Rust-side traps worth keeping.** The blocked state is STORED and every item is recomputed from all its inputs at
+once (`src-tauri/src/menu/DETAILS.md` § Dialog refusals), because a writer that set the items directly lost to whichever
+ran after it: a focus round-trip through Settings re-offered Copy while the dialog was still up. And
+`register_known_dialogs` clears the backend's open list, since a reloaded webview never fires the close half of its
+pairs and one orphaned entry would refuse every MCP file operation until restart.
 
 **A menu-bar rebuild resets the chrome layer too.** Changing the UI language throws every menu item away and builds new
 ones (`src-tauri/src/menu/rebuild.rs`), which come up enabled. `DualPaneExplorer`'s `menu-bar-rebuilt` listener

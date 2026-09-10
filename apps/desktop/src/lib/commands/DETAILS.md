@@ -161,8 +161,8 @@ sidebar highlight in settings-search) must cover the same set. The command palet
 
 ## Unified dispatch
 
-Native menu clicks, keyboard shortcuts, palette rows, the explorer's own controls, the mouse's side buttons, and MCP
-all route through `handleCommandExecute(commandId, ctx)` in `routes/(main)/command-dispatch.ts`, each down its own road
+Native menu clicks, keyboard shortcuts, palette rows, the explorer's own controls, the mouse's side buttons, and MCP all
+route through `handleCommandExecute(commandId, ctx)` in `routes/(main)/command-dispatch.ts`, each down its own road
 (`ctx.source`), and all pass the same dialog gate (`routes/(main)/DETAILS.md` § The dialog gate). The Rust
 `on_menu_event` handler maps menu item ids to command registry ids and emits a single `"execute-command"` Tauri event;
 the frontend listens and dispatches it down the menu's road.

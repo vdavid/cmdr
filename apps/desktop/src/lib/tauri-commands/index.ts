@@ -143,6 +143,7 @@ export {
   notifyDialogClosed,
   registerKnownDialogs,
   setFileOperationsBlocked,
+  setCommandsRefusedOverDialog,
   updateMenuContext,
   updateServicesSelection,
   activateWindowMenu,

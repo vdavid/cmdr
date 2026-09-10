@@ -72,6 +72,17 @@ export async function setFileOperationsBlocked(blocked: boolean): Promise<void> 
   await invoke('set_file_operations_blocked', { blocked })
 }
 
+/**
+ * Tells the native menu which commands the main window's dialog gate refuses right now, so it greys
+ * those items out and reverts a refused click on its two check items. An empty list restores them.
+ *
+ * Driven by `routes/(main)/menu-dialog-gate.svelte.ts`; the refusals themselves live in the dispatch core.
+ */
+export async function setCommandsRefusedOverDialog(commandIds: string[]): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic over Runtime; not in typed bindings
+  await invoke('set_commands_refused_over_dialog', { commandIds })
+}
+
 /** Enables or disables the Tab menu "Reopen closed tab" item based on whether the focused pane's closed-tab stack has entries. */
 export async function setReopenClosedTabEnabled(enabled: boolean): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic over Runtime; not in typed bindings

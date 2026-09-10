@@ -58,7 +58,7 @@ pub mod share_submenu;
 mod tag_icons;
 mod view_mode_items;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::ignore_poison::IgnorePoison as _;
 #[cfg(target_os = "macos")]
@@ -308,8 +308,17 @@ pub struct MenuState<R: Runtime> {
     pub view_mode_brief_accel: Mutex<Option<String>>,
     /// Pin/unpin tab menu item (label toggles based on active tab state)
     pub pin_tab: Mutex<Option<MenuItem<R>>>,
-    /// Reopen closed tab menu item (enabled when the focused pane's closed-tab stack is non-empty)
-    pub reopen_closed_tab: Mutex<Option<MenuItem<R>>>,
+    /// Whether the focused pane's closed-tab stack has entries, deciding "Reopen closed tab". Pushed by
+    /// `set_reopen_closed_tab_enabled`, and stored for the same reason as `open_terminal_here_enabled`: every
+    /// item's enabled state is recomputed from all its inputs at once. Starts `false`, matching the item as
+    /// it's built.
+    pub reopen_closed_tab_enabled: AtomicBool,
+    /// The frontend commands the main window's dialog gate refuses right now: every `BLOCKED_BY_DIALOGS`
+    /// command while a dialog, an explorer overlay, or the command palette is up, and nothing once it's gone.
+    /// Pushed by `set_commands_refused_over_dialog`, whose only writer is
+    /// `routes/(main)/menu-dialog-gate.svelte.ts`. Greys those items out, and reverts a refused click on
+    /// the two check items (`refuses_over_dialog`).
+    pub commands_refused_over_dialog: Mutex<HashSet<String>>,
     /// Generic menu items keyed by menu item ID, for accelerator and enable/disable updates.
     pub items: Mutex<HashMap<String, MenuItemEntry<R>>>,
     /// Sort by submenu (disabled when not in explorer context)
@@ -361,7 +370,8 @@ impl<R: Runtime> Default for MenuState<R> {
             view_mode_full_accel: Mutex::new(Some("Cmd+1".to_string())),
             view_mode_brief_accel: Mutex::new(Some("Cmd+2".to_string())),
             pin_tab: Mutex::new(None),
-            reopen_closed_tab: Mutex::new(None),
+            reopen_closed_tab_enabled: AtomicBool::new(false),
+            commands_refused_over_dialog: Mutex::new(HashSet::new()),
             items: Mutex::new(HashMap::new()),
             sort_submenu: Mutex::new(None),
             network_host_context: Mutex::new(NetworkHostMenuContext::default()),
@@ -379,6 +389,13 @@ impl<R: Runtime> Default for MenuState<R> {
 }
 
 impl<R: Runtime> MenuState<R> {
+    /// Whether the main window's dialog gate refuses `command_id` right now (`commands_refused_over_dialog`).
+    pub fn refuses_over_dialog(&self, command_id: &str) -> bool {
+        self.commands_refused_over_dialog
+            .lock_ignore_poison()
+            .contains(command_id)
+    }
+
     /// Store every item reference a freshly built bar hands back, and return the bar itself.
     ///
     /// Both paths that build a bar end in the same assignments: the startup build
@@ -394,7 +411,6 @@ impl<R: Runtime> MenuState<R> {
         *self.view_left_pane_submenu.lock_ignore_poison() = Some(items.view_left_pane_submenu);
         *self.view_right_pane_submenu.lock_ignore_poison() = Some(items.view_right_pane_submenu);
         *self.pin_tab.lock_ignore_poison() = Some(items.pin_tab);
-        *self.reopen_closed_tab.lock_ignore_poison() = Some(items.reopen_closed_tab);
         *self.items.lock_ignore_poison() = items.items;
         *self.sort_submenu.lock_ignore_poison() = Some(items.sort_submenu);
         items.menu
@@ -419,8 +435,6 @@ pub struct MenuItems<R: Runtime> {
     pub view_right_pane_submenu: Submenu<R>,
     /// Pin/unpin tab menu item (label updated dynamically by frontend)
     pub pin_tab: MenuItem<R>,
-    /// Reopen closed tab menu item (enable state synced from frontend)
-    pub reopen_closed_tab: MenuItem<R>,
     /// Generic menu items for accelerator updates, keyed by menu item ID.
     pub items: HashMap<String, MenuItemEntry<R>>,
     /// Sort by submenu (disabled when not in explorer context)

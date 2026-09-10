@@ -31,9 +31,9 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
   "Open with" have own paths.
 - **File-scoped commands are dual-guarded**: `activate_window_menu("other")` greys them (visual only); the real guard is
   `main_window.is_focused()` in `on_menu_event` — accelerators fire even when items look off.
-- **`OPERATION_START_ITEM_IDS` greys out while a dialog is up or Ask Cmdr has focus**, and `set_menu_context`
-  re-applies it LAST, or a focus round-trip re-offers Copy. ❌ Every gated id must be `FileScoped`: greying `App`-scoped
-  `Edit > Paste` kills ⌘V elsewhere. `src/lib/file-explorer/pane/DETAILS.md`.
+- **Enabled state has ONE writer, `apply_menu_item_states`**: store a new input and add it to `menu_item_enabled`, ❌
+  never a direct `set_enabled`. Check items revert a click the dialog gate refuses. ❌ `OPERATION_START_ITEM_IDS` stay
+  `FileScoped`. DETAILS § Dialog refusals.
 - **macOS swaps the app menu bar on focus-gain (`activate_window_menu`); Linux uses per-window menus.** One app-level
   bar, so each window's focus handler `app.set_menu()`s between main and viewer. Re-run `cleanup_macos_menus` after
   every swap, and `set_macos_menu_icons` on the way back (SF Symbols don't survive it). `window.set_menu()` is a macOS

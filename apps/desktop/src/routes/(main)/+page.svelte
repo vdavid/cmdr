@@ -636,6 +636,7 @@
         getExplorer: () => explorerRef,
         // One dispatcher per road; MCP's is the one that propagates a rejection (why: the interface).
         dispatchers,
+        getDialogsOnScreen: dialogsOnScreen,
         dialogs: {
             setAboutWindow: (show: boolean) => {
                 showAboutWindow = show

@@ -42,11 +42,10 @@ frontend what the focused pane is sitting on. `menu-gate.svelte.ts` runs an `$ef
 `routes/(main)/menu-operation-gate.svelte.ts`. It dedupes on the last value sent, so switching tabs inside one volume
 costs nothing.
 
-Rust stores the verdict in `MenuState.open_terminal_here_enabled` rather than only applying it, because
-`set_menu_context` enables every explorer item on a focus round-trip. The id is skipped in that loop (like
-`REOPEN_CLOSED_TAB_ID`) and `apply_open_terminal_here_state` re-applies the stored verdict last. That is also what
-restores it after a menu-bar rebuild: a language change throws every item away, and the frontend's `menu-bar-rebuilt`
-handler calls `activate_window_menu('main')`, which runs `set_menu_context`.
+Rust stores the verdict in `MenuState.open_terminal_here_enabled` rather than only applying it, because every menu
+recompute derives each item from all its stored inputs at once (`src-tauri/src/menu/DETAILS.md` § Dialog refusals). That
+is also what restores it after a menu-bar rebuild: a language change throws every item away, and the frontend's
+`menu-bar-rebuilt` handler calls `activate_window_menu('main')`, which recomputes them.
 
 The pane context menu needs no channel: it's built per right-click, so `show_file_context_menu` carries the answer in
 `PaneContextMenuFacts.canOpenTerminalHere`. The search-results snapshot pane and the Search dialog pass `false`, a

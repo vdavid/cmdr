@@ -89,7 +89,33 @@ function crossWindowEmittedCommandIds(): string[] {
   return [...ids]
 }
 
+/**
+ * Command ids named by a `pub const …_COMMAND_ID` in `command_map.rs`: the check items' commands, which
+ * `handle_menu_event` reads to revert a click the dialog gate refuses. A typo there would silently let that
+ * click through behind a dialog.
+ */
+function checkItemCommandIds(): string[] {
+  const source = readFileSync(path.join(desktopRoot, 'src-tauri/src/menu/command_map.rs'), 'utf8')
+  const ids: string[] = []
+  const re = /pub const [A-Z_]+_COMMAND_ID: &str = "([^"]+)";/g
+  let match: RegExpExecArray | null
+  while ((match = re.exec(source)) !== null) {
+    ids.push(match[1])
+  }
+  return ids
+}
+
 describe('Rust↔FE command-id drift', () => {
+  it("every check item's command id is a registry CommandId", () => {
+    const ids = checkItemCommandIds()
+    // The two check items, show hidden files and the per-pane view modes. A regex that
+    // silently stopped matching would pass vacuously.
+    expect(ids.sort()).toEqual(['view.setMode', 'view.showHidden'])
+
+    const unknown = ids.filter((id) => !isCommandId(id))
+    expect(unknown, 'check-item command ids not present in COMMAND_IDS').toEqual([])
+  })
+
   it('every menu-emitted command id is a registry CommandId', () => {
     const menuIds = menuEmittedCommandIds()
     // Guard against the regex silently matching nothing (which would make the

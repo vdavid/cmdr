@@ -40,9 +40,9 @@ here:
   to be subscribed BEFORE the drain, or a cold-launch reveal announces itself with nobody listening. See
   `apps/desktop/src-tauri/src/reveal/CLAUDE.md` and `apps/desktop/src/lib/reveal/CLAUDE.md`.
 - **The window hands out one dispatcher per road (`dispatchers`), and which one a caller gets is a correctness
-  question.** The road is the dispatch's source, which the dialog gate and the cross-source dedup both read (§ The dialog
-  gate). The five user roads absorb a rejection: a few handlers reject on purpose, a user gesture has nobody to hand
-  that to, and the handler has already said its piece in a toast, so the alternative is an unhandled rejection. The
+  question.** The road is the dispatch's source, which the dialog gate and the cross-source dedup both read (§ The
+  dialog gate). The five user roads absorb a rejection: a few handlers reject on purpose, a user gesture has nobody to
+  hand that to, and the handler has already said its piece in a toast, so the alternative is an unhandled rejection. The
   `mcp` one propagates it, and the MCP adapter is the one caller that needs it — several tools refuse BY rejecting
   (`select` naming a file that isn't in the listing, `pane.refresh` when a re-read outlives its wait), and the adapter
   turns that throw into the `mcp-response` error an agent reads. ❌ Hand the adapter a gesture dispatcher and every such
@@ -156,21 +156,25 @@ runs anyway with a stated reason. `dialog-command-gate.ts` applies the rule, and
 the answer is the same whichever road a command came in by.
 
 - **Each road has its own dispatcher**, bound once in `+page.svelte` (`dispatchers`, typed
-  `Record<DispatchSource, CommandDispatcher>`, so a new road doesn't compile until it's wired). That's how the core knows
-  the source, which both the gate and the cross-source dedup read. The menu road also carries the Dock menu, other
+  `Record<DispatchSource, CommandDispatcher>`, so a new road doesn't compile until it's wired). That's how the core
+  knows the source, which both the gate and the cross-source dedup read. The menu road also carries the Dock menu, other
   windows' `execute-command` emits, `view-mode-changed`, and `menu-sort`.
 - **MCP is exempt.** Its file-operation tools refuse with a typed `blockedBy` while a blocking dialog is up, and
   `dialog.confirm` acts on the open dialog itself. A refusal from the gate would be silent, and the agent would read it
   as success.
 - **The palette never blocks its own rows** (it closes on the way to the handler); every other road counts it as in the
   way.
-- **The keydown resolver asks the gate too**, before claiming a key. A key the core would refuse stays unclaimed, so
-  Tab still moves focus inside a dialog instead of being `preventDefault`ed on its way to `pane.switch`.
+- **The keydown resolver asks the gate too**, before claiming a key. A key the core would refuse stays unclaimed, so Tab
+  still moves focus inside a dialog instead of being `preventDefault`ed on its way to `pane.switch`.
 - **Why it lives in the core.** When only the keyboard resolver knew about dialogs, a native-menu accelerator (⌘W, ⌘T,
   ⌘K) reached its handler behind an open dialog: the `execute-command` listener had no gate. Refusing that listener
   wholesale isn't the fix either (§ Native-menu and input-focus interactions); the per-command rule is.
-- **What runs over a dialog** is pinned in `$lib/commands/command-registry.test.ts`: the windows of their own
-  (Settings, keyboard shortcuts help, the queue), zoom, the four macOS-native commands, and MCP's `dialog.confirm`.
+- **What runs over a dialog** is pinned in `$lib/commands/command-registry.test.ts`: the windows of their own (Settings,
+  keyboard shortcuts help, the queue), zoom, the four macOS-native commands, and MCP's `dialog.confirm`.
+- **The native menu shows the same answer.** `menu-dialog-gate.svelte.ts` pushes every `BLOCKED_BY_DIALOGS` command to
+  Rust while something is open, which greys those items out, and makes the two check items (show hidden files, the view
+  modes) revert a refused click: they toggle themselves before the frontend hears of it, and show hidden never passes
+  the core. `src-tauri/src/menu/DETAILS.md` § Dialog refusals.
 
 Per-command logging: each successful dispatch emits one `log.info(commandId)` (LogTape, fern, error-report bundles) and
 one `record_breadcrumb` invoke (rolling manifest buffer). Both are best-effort; a failing breadcrumb must not break the
@@ -308,8 +312,8 @@ the middle button included, is handed straight back.
 **Linux: from the DOM.** `+page.svelte` registers two document listeners that both consult `navCommandForMouseButton`
 (mapping `button === 3 → nav.back`, `4 → nav.forward`):
 
-- **`mouseup`** dispatches the command down the mouse's road: the dialog gate keeps the buttons inert while a dialog
-  or overlay is up, and the cross-source dedup leaves them alone, since a mouse button has no native-menu twin to
+- **`mouseup`** dispatches the command down the mouse's road: the dialog gate keeps the buttons inert while a dialog or
+  overlay is up, and the cross-source dedup leaves them alone, since a mouse button has no native-menu twin to
   double-fire.
 - **`mousedown`** only `preventDefault`s the side buttons (no dispatch). This is what cancels the webview's built-in
   page back / forward, which would otherwise pop the SvelteKit SPA history (e.g. unwinding a `/settings` visit)

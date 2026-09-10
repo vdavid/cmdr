@@ -37,6 +37,14 @@ pub const WINDOW_MENU_ID: &str = "menu_window";
 #[cfg(target_os = "macos")]
 pub const HELP_MENU_ID: &str = "menu_help";
 
+/// The frontend command behind the "Show hidden files" check item. The item emits `settings-changed` instead of
+/// `execute-command`, so `menu_id_to_command` doesn't carry it; `handle_menu_event` needs the id to revert a click
+/// the dialog gate refuses. `rust-command-id-drift.test.ts` checks every `*_COMMAND_ID` here is a real command.
+pub const VIEW_SHOW_HIDDEN_COMMAND_ID: &str = "view.showHidden";
+/// The frontend command behind the per-pane view-mode check items (they emit `view-mode-changed`). Same reason as
+/// `VIEW_SHOW_HIDDEN_COMMAND_ID`.
+pub const VIEW_SET_MODE_COMMAND_ID: &str = "view.setMode";
+
 /// Menu item IDs for file actions.
 pub const SHOW_HIDDEN_FILES_ID: &str = "show_hidden_files";
 /// View mode CheckMenuItems, one pair per pane, nested under per-pane submenus

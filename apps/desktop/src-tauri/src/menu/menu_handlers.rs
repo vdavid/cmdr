@@ -25,8 +25,8 @@ use super::{
     SERVER_FORGET_SECRET_ID, SERVER_OPEN_ID, SERVER_PIN_ID, SERVER_UNPIN_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID,
     SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
     SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID,
-    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode,
-    ViewModeChanged, menu_id_to_command,
+    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEW_SET_MODE_COMMAND_ID,
+    VIEW_SHOW_HIDDEN_COMMAND_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged, menu_id_to_command,
 };
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
@@ -127,11 +127,21 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
 
     // === CheckMenuItem exceptions: sync checked state and emit directly ===
     // These must NOT go through "execute-command", as that would double-toggle.
+    //
+    // ❗ They're also the one place the main window's dialog gate is applied in Rust. The item has
+    // already toggled itself by the time we hear of the click, and the frontend can't untoggle it:
+    // show hidden never reaches the dispatch core at all, and a refused `view.setMode` would leave
+    // the check on a mode the pane isn't in. So a refused click puts the check back and stops here.
+    // A disabled item's accelerator still fires, so the greying alone doesn't cover it.
     if id == SHOW_HIDDEN_FILES_ID {
         let menu_state = app.state::<MenuState<tauri::Wry>>();
         let guard = menu_state.show_hidden_files.lock_ignore_poison();
         if let Some(check_item) = guard.as_ref() {
             let new_state = check_item.is_checked().unwrap_or(true);
+            if menu_state.refuses_over_dialog(VIEW_SHOW_HIDDEN_COMMAND_ID) {
+                let _ = check_item.set_checked(!new_state);
+                return;
+            }
             use tauri_specta::Event as _;
             let _ = SettingsChanged {
                 show_hidden_files: new_state,
@@ -157,6 +167,11 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             _ => unreachable!(),
         };
         let menu_state = app.state::<MenuState<tauri::Wry>>();
+        if menu_state.refuses_over_dialog(VIEW_SET_MODE_COMMAND_ID) {
+            // Re-sync every check from the stored modes, which undoes muda's toggle.
+            let _ = super::view_mode_items::sync_view_mode_check_states(&menu_state);
+            return;
+        }
         let new_mode = if mode_str == "full" {
             ViewMode::Full
         } else {

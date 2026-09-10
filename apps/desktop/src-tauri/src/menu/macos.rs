@@ -724,7 +724,6 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         view_left_pane_submenu,
         view_right_pane_submenu,
         pin_tab: pin_tab_item,
-        reopen_closed_tab: reopen_closed_tab_item,
         items,
         sort_submenu,
     })

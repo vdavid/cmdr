@@ -214,8 +214,8 @@ customize shortcuts on the fly.
 Builds a reverse lookup `Map<shortcutString, commandId>` for Tier 1 commands (those with `showInPalette: true` plus
 `app.commandPalette`). On every keypress, `handleGlobalKeyDown()` in `+page.svelte` asks `resolveGlobalKeyAction`
 (`routes/(main)/global-keydown.ts`), which finds the command through `formatKeyCombo(e)` and `lookupCommand()` and
-claims the key only when the dispatch core's dialog gate would run it. The claimed command goes down the keyboard's
-road into `handleCommandExecute()`, the same core the palette, the native menu, and MCP events reach
+claims the key only when the dispatch core's dialog gate would run it. The claimed command goes down the keyboard's road
+into `handleCommandExecute()`, the same core the palette, the native menu, and MCP events reach
 (`routes/(main)/DETAILS.md` § The dialog gate). Rebuilds automatically when custom shortcuts change via
 `onShortcutChange`.
 
@@ -423,9 +423,8 @@ the Quick Look feature.
 The dispatch core swallows this class centrally: every dispatch carries its road (`ctx.source`, bound per road in
 `+page.svelte`), and `routes/(main)/dispatch-dedup.ts` drops the same command arriving from the OTHER of the keyboard
 and menu roads within 300ms. Both halves also pass the same dialog gate, so neither can run behind a dialog. Keying on
-the
-source pair (instead of a bare time window) means real rapid input — double-presses, key auto-repeat — is same-source
-and always passes. New toggle commands need NO per-command guard. Quick Look's older local guard
+the source pair (instead of a bare time window) means real rapid input — double-presses, key auto-repeat — is
+same-source and always passes. New toggle commands need NO per-command guard. Quick Look's older local guard
 (`quickLookDispatchGuardJustFired` in `file-explorer/quick-look/quick-look-state.svelte.ts`) predates the central one
 and remains as a harmless second line of defense.
 

@@ -53,7 +53,7 @@ import {
   stopOperationFailureWatch,
 } from '$lib/status-corner/operation-failure-watch.svelte'
 import { startSuggestedOpsBadge, stopSuggestedOpsBadge } from '$lib/suggested-ops/suggested-ops-badge.svelte'
-import type { CommandDispatchers } from './command-dispatch-context'
+import type { CommandDispatchers, DialogsOnScreen } from './command-dispatch-context'
 import type { ExplorerAPI } from './explorer-api'
 import {
   type ListenerSetupContext,
@@ -64,6 +64,7 @@ import {
   setupWindowFocusListener,
 } from './listener-setup'
 import { startMenuOperationGate } from './menu-operation-gate.svelte'
+import { startMenuDialogGate } from './menu-dialog-gate.svelte'
 import { setupMcpListeners } from './mcp-listeners'
 
 /**
@@ -89,6 +90,8 @@ export interface WindowServicesContext {
   }
   /** Re-runs the "What's new" startup trigger; component-owned because it reads startup-modal `$state`. */
   maybeRunWhatsNew: (force: boolean) => Promise<void>
+  /** Live read of what's on screen, so the native menu greys out what the dialog gate refuses. */
+  getDialogsOnScreen: () => DialogsOnScreen
 }
 
 /**
@@ -103,6 +106,9 @@ let stopMenuGate: (() => void) | null = null
 
 /** Tears down the "Open terminal here" menu-item sync (HMR safety). */
 let stopTerminalMenuGate: (() => void) | null = null
+
+/** Tears down the sync of the menu items a dialog greys out (HMR safety). */
+let stopMenuDialogGate: (() => void) | null = null
 
 /**
  * Phase 1: the subscriptions that want to be up before anything awaits. All fire-and-forget —
@@ -147,6 +153,9 @@ export async function startWindowServices(ctx: WindowServicesContext): Promise<v
     dialogs: ctx.dialogs,
     maybeRunWhatsNew: ctx.maybeRunWhatsNew,
   }
+  // Grey out every menu item the dialog gate refuses while something is open in front of the panes.
+  // Chrome for the regular items; the dispatch core refuses the commands itself.
+  stopMenuDialogGate = startMenuDialogGate(ctx.getDialogsOnScreen)
   await setupMenuListeners(listenerCtx)
   await setupDialogListeners(listenerCtx)
   // macOS: the mouse's back / forward side buttons, which only AppKit sees.
@@ -240,6 +249,8 @@ export function stopWindowServices(): void {
   stopMenuGate = null
   stopTerminalMenuGate?.()
   stopTerminalMenuGate = null
+  stopMenuDialogGate?.()
+  stopMenuDialogGate = null
   // Clean up every menu / MCP / dialog / window-focus listener (prevents duplicate listeners
   // after HMR). All of them register into this one array.
   for (const unlisten of unlistenFns) {
