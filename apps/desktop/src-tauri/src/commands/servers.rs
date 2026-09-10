@@ -23,6 +23,7 @@ use serde::{Deserialize, Serialize};
 
 use super::sftp::SftpHostKeyIdentity;
 use crate::network::one_shot_credentials::SecretOffer;
+use crate::network::saved_server_fields::{self, SavedServerOutcome};
 use crate::network::sftp_volume_wiring::{self, SftpConnection};
 use crate::network::webdav_volume_wiring::{self, WebdavConnection};
 use crate::network::{known_shares, manual_servers, sftp_known_servers, webdav_known_servers};
@@ -152,8 +153,11 @@ pub enum ServerTarget {
         port: u16,
         /// The account to sign in as. ❗ Part of the identity.
         username: String,
-        /// The remote directory to open at. Absolute, server-side.
+        /// The remote directory the place is rooted at. Absolute, server-side.
         remote_root: String,
+        /// Where a pane lands when the place itself is opened: an absolute
+        /// server-side path at or under `remote_root`. `None` is the root.
+        start_folder: Option<String>,
         /// A private key file to offer. ❗ A path, ❌ never a secret.
         key_file: Option<String>,
         /// Whether the running ssh-agent may be asked.
@@ -169,8 +173,11 @@ pub enum ServerTarget {
         url: String,
         /// The account to sign in as. ❗ Part of the identity.
         username: String,
-        /// The collection to open at, under the base URL.
+        /// The collection the place is rooted at, under the base URL.
         remote_root: String,
+        /// Where a pane lands when the place itself is opened: a path at or
+        /// under `remote_root`, in the same space. `None` is the root.
+        start_folder: Option<String>,
         /// Whether Cmdr may re-probe unattended when a request finds it gone.
         auto_reconnect: bool,
     },
@@ -216,6 +223,9 @@ pub enum ServerConnectOutcome {
     NotAWebdavServer,
     /// WebDAV only: the address the user typed isn't a `http`/`https` URL.
     InvalidUrl,
+    /// The start folder isn't the root or under it. ❗ Refused before dialing,
+    /// so nothing was registered or saved.
+    StartFolderOutsideRoot,
     /// The handshake didn't finish inside the connect budget.
     TimedOut,
     /// No route, refused, DNS, or a transport-level breakdown.
@@ -425,7 +435,14 @@ pub async fn connect_saved_place(
             params.use_agent = entry.use_agent;
             params.auto_reconnect = entry.auto_reconnect;
             outcome_from_sftp(
-                sftp_volume_wiring::connect_and_register(&entry.display_name, params, &attempt_id, secret).await,
+                sftp_volume_wiring::connect_and_register(
+                    &entry.display_name,
+                    entry.start_folder,
+                    params,
+                    &attempt_id,
+                    secret,
+                )
+                .await,
             )
         }
         SavedEntry::Webdav(entry) => {
@@ -434,7 +451,14 @@ pub async fn connect_saved_place(
             };
             params.auto_reconnect = entry.auto_reconnect;
             outcome_from_webdav(
-                webdav_volume_wiring::connect_and_register(&entry.display_name, params, &attempt_id, secret).await,
+                webdav_volume_wiring::connect_and_register(
+                    &entry.display_name,
+                    entry.start_folder,
+                    params,
+                    &attempt_id,
+                    secret,
+                )
+                .await,
             )
         }
     })
@@ -458,16 +482,23 @@ pub async fn connect_server(
             port,
             username,
             remote_root,
+            start_folder,
             key_file,
             use_agent,
             auto_reconnect,
         } => {
+            // ❗ Before the dial, so a refusal registers nothing and saves nothing.
+            let Ok(start_folder) = saved_server_fields::start_folder_under_root(&remote_root, start_folder.as_deref())
+            else {
+                return ServerConnectOutcome::StartFolderOutsideRoot;
+            };
             let mut params = SftpConnectionParams::new(&host, port, &username, remote_root);
             params.key_file = key_file.map(std::path::PathBuf::from);
             params.use_agent = use_agent;
             params.auto_reconnect = auto_reconnect;
             outcome_from_sftp(
-                sftp_volume_wiring::connect_and_register(&display_name, params, &attempt_id, secret).await,
+                sftp_volume_wiring::connect_and_register(&display_name, start_folder, params, &attempt_id, secret)
+                    .await,
             )
         }
         ServerTarget::Webdav {
@@ -475,14 +506,20 @@ pub async fn connect_server(
             url,
             username,
             remote_root,
+            start_folder,
             auto_reconnect,
         } => {
             let Some(mut params) = webdav_params(&url, &username, &remote_root) else {
                 return ServerConnectOutcome::InvalidUrl;
             };
+            let Ok(start_folder) = saved_server_fields::start_folder_under_root(&remote_root, start_folder.as_deref())
+            else {
+                return ServerConnectOutcome::StartFolderOutsideRoot;
+            };
             params.auto_reconnect = auto_reconnect;
             outcome_from_webdav(
-                webdav_volume_wiring::connect_and_register(&display_name, params, &attempt_id, secret).await,
+                webdav_volume_wiring::connect_and_register(&display_name, start_folder, params, &attempt_id, secret)
+                    .await,
             )
         }
     }
@@ -646,9 +683,12 @@ pub async fn forget_server_secret(id: String) -> bool {
 /// edit and an add differ only in whether the fields arrived prefilled. A saved
 /// server's PIN is not in it: `remember` preserves the stored pin on a replace,
 /// and [`set_place_pinned`] is the one writer that moves one.
+///
+/// ❗ Answers a typed [`SavedServerOutcome`], and a refusal (a start folder
+/// outside the root) writes nothing at all.
 #[tauri::command]
 #[specta::specta]
-pub fn update_saved_server(server: ServerTarget) {
+pub fn update_saved_server(server: ServerTarget) -> SavedServerOutcome {
     match server {
         ServerTarget::Sftp {
             display_name,
@@ -656,6 +696,7 @@ pub fn update_saved_server(server: ServerTarget) {
             port,
             username,
             remote_root,
+            start_folder,
             key_file,
             use_agent,
             auto_reconnect,
@@ -665,6 +706,7 @@ pub fn update_saved_server(server: ServerTarget) {
             username,
             display_name,
             remote_root,
+            start_folder,
             key_file,
             use_agent,
             auto_reconnect,
@@ -674,8 +716,16 @@ pub fn update_saved_server(server: ServerTarget) {
             url,
             username,
             remote_root,
+            start_folder,
             auto_reconnect,
-        } => super::webdav::update_known_webdav_server(url, username, display_name, remote_root, auto_reconnect),
+        } => super::webdav::update_known_webdav_server(
+            url,
+            username,
+            display_name,
+            remote_root,
+            start_folder,
+            auto_reconnect,
+        ),
     }
 }
 

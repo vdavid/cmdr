@@ -54,7 +54,7 @@ impl RemoteRoot {
     /// `remote_root` is normalized and made absolute, so a backend handed a
     /// relative or `..`-carrying root still ends up with one spelling of it.
     pub fn new(prefix: String, remote_root: &Path) -> Self {
-        let remote = normalize(&Path::new("/").join(remote_root));
+        let remote = normalize_remote_path(remote_root);
         let app = PathBuf::from(format!("{prefix}{}", remote.to_string_lossy()));
         Self {
             prefix_path: PathBuf::from(&prefix),
@@ -118,6 +118,16 @@ impl RemoteRoot {
     pub fn to_app_path(&self, remote: &str) -> PathBuf {
         PathBuf::from(format!("{}{remote}", self.prefix))
     }
+}
+
+/// A server-side directory, normalized and made absolute: `.` and `..` resolved
+/// lexically, and a relative path read from `/`.
+///
+/// ❗ The one spelling [`RemoteRoot::new`] gives its root, so anything compared
+/// against a root (a start folder, say) has to come through here too: two
+/// normalizations would let one directory compare unequal to itself.
+pub fn normalize_remote_path(path: &Path) -> PathBuf {
+    normalize(&Path::new("/").join(path))
 }
 
 /// Whether `path` opens with a `<scheme>://` that isn't this volume's.

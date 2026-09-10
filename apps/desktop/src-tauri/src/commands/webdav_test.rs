@@ -114,13 +114,15 @@ async fn the_credential_trio_agrees_on_where_a_secret_lives() {
 #[tokio::test]
 async fn the_known_servers_trio_round_trips() {
     let url = "https://known-servers-trio.webdav.test/dav";
-    update_known_webdav_server(
+    let saved = update_known_webdav_server(
         url.to_string(),
         "ada".to_string(),
         "Trio".to_string(),
         "/".to_string(),
+        None,
         false,
     );
+    assert_eq!(saved, SavedServerOutcome::Saved);
 
     let mine: Vec<_> = get_known_webdav_servers()
         .into_iter()

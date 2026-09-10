@@ -9,6 +9,21 @@ fn rooted_at(remote_root: &str) -> RemoteRoot {
     RemoteRoot::new(PREFIX.to_string(), Path::new(remote_root))
 }
 
+/// ❗ One spelling of a server-side directory, shared with `RemoteRoot::new`, so
+/// a path compared against a root is normalized the way the root itself was.
+#[test]
+fn a_remote_path_normalizes_to_one_absolute_spelling() {
+    assert_eq!(normalize_remote_path(Path::new("/srv/data/")), Path::new("/srv/data"));
+    assert_eq!(normalize_remote_path(Path::new("srv/data")), Path::new("/srv/data"));
+    assert_eq!(
+        normalize_remote_path(Path::new("/srv/./data/x/..")),
+        Path::new("/srv/data")
+    );
+    assert_eq!(normalize_remote_path(Path::new("")), Path::new("/"));
+    assert_eq!(normalize_remote_path(Path::new(".")), Path::new("/"));
+    assert_eq!(normalize_remote_path(Path::new("/..")), Path::new("/"));
+}
+
 #[test]
 fn the_app_root_is_the_prefix_plus_the_remote_root() {
     let root = rooted_at("/srv/data");

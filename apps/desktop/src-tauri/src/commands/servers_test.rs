@@ -25,6 +25,7 @@ fn sftp_entry(host: &str, pinned: bool) -> KnownSftpServer {
         username: "ada".to_string(),
         display_name: format!("{host} over ssh"),
         remote_root: "/srv/data".to_string(),
+        start_folder: None,
         key_file: None,
         use_agent: false,
         auto_reconnect: true,
@@ -39,6 +40,7 @@ fn webdav_entry(host: &str, pinned: bool) -> KnownWebdavServer {
         username: "ada".to_string(),
         display_name: format!("{host} over dav"),
         remote_root: "/Photos".to_string(),
+        start_folder: None,
         auto_reconnect: true,
         pinned,
         last_connected_at: "2026-09-02T00:00:00Z".to_string(),
@@ -403,6 +405,126 @@ async fn disconnecting_a_place_that_has_no_session_announces_nothing() {
         before,
         "and nothing was announced, so no pane goes home for nothing"
     );
+}
+
+// ── Saving without dialing, and the start folder ─────────────────────
+
+fn sftp_target(host: &str, port: u16, username: &str, start_folder: Option<&str>) -> ServerTarget {
+    ServerTarget::Sftp {
+        display_name: "Edited".to_string(),
+        host: host.to_string(),
+        port,
+        username: username.to_string(),
+        remote_root: "/srv/data".to_string(),
+        start_folder: start_folder.map(str::to_string),
+        key_file: None,
+        use_agent: false,
+        auto_reconnect: true,
+    }
+}
+
+fn webdav_target(url: &str, username: &str, start_folder: Option<&str>) -> ServerTarget {
+    ServerTarget::Webdav {
+        display_name: "Edited".to_string(),
+        url: url.to_string(),
+        username: username.to_string(),
+        remote_root: "/Photos".to_string(),
+        start_folder: start_folder.map(str::to_string),
+        auto_reconnect: true,
+    }
+}
+
+/// ❗ **A start folder outside the root is refused, and NOTHING is written**:
+/// the stored entry keeps every field it had, the name included.
+#[test]
+fn saving_a_start_folder_outside_the_root_is_refused_and_writes_nothing() {
+    let host = "192.0.2.61";
+    sftp_known_servers::remember(sftp_entry(host, true));
+
+    let outcome = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data-1")));
+
+    assert_eq!(outcome, SavedServerOutcome::StartFolderOutsideRoot);
+    let stored = sftp_known_servers::find(host, 2222, "ada").expect("the entry stays saved");
+    assert_eq!(
+        stored.display_name,
+        format!("{host} over ssh"),
+        "not even the name moved"
+    );
+    assert_eq!(stored.start_folder, None);
+}
+
+/// The start folder is stored normalized, and the root itself stores as none,
+/// so one landing has one spelling.
+#[test]
+fn saving_a_start_folder_under_the_root_stores_it_normalized() {
+    let host = "192.0.2.62";
+    sftp_known_servers::remember(sftp_entry(host, true));
+    let stored = || sftp_known_servers::find(host, 2222, "ada").expect("the entry stays saved");
+
+    let deeper = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data/photos/")));
+    assert_eq!(deeper, SavedServerOutcome::Saved);
+    assert_eq!(stored().start_folder.as_deref(), Some("/srv/data/photos"));
+    assert_eq!(stored().display_name, "Edited");
+
+    let at_root = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data")));
+    assert_eq!(at_root, SavedServerOutcome::Saved);
+    assert_eq!(stored().start_folder, None);
+}
+
+/// WebDAV takes the same rule through the same family, so the frontend branches
+/// on protocol nowhere new.
+#[test]
+fn saving_a_webdav_start_folder_outside_the_root_is_refused_and_writes_nothing() {
+    let host = "192.0.2.63";
+    webdav_known_servers::remember(webdav_entry(host, true));
+    let url = format!("http://{host}:8080/dav/");
+
+    let outcome = update_saved_server(webdav_target(&url, "ada", Some("/Documents")));
+
+    assert_eq!(outcome, SavedServerOutcome::StartFolderOutsideRoot);
+    let stored = webdav_known_servers::find(&url, "ada").expect("the entry stays saved");
+    assert_eq!(
+        stored.display_name,
+        format!("{host} over dav"),
+        "not even the name moved"
+    );
+}
+
+/// ❗ **An add with a start folder outside the root is refused BEFORE dialing**,
+/// so nothing is registered and nothing is saved. Port 1 on loopback refuses
+/// connections, so a dial that slipped through would answer `Unreachable`.
+#[tokio::test]
+async fn connecting_with_a_start_folder_outside_the_root_is_refused_before_dialing() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let username = "start-folder-refusal";
+
+    let sftp = connect_server(
+        sftp_target("127.0.0.1", 1, username, Some("/srv")),
+        "start-folder-refusal-sftp".to_string(),
+        None,
+    )
+    .await;
+    assert!(
+        matches!(sftp, ServerConnectOutcome::StartFolderOutsideRoot),
+        "got {sftp:?}"
+    );
+    assert!(
+        sftp_known_servers::find("127.0.0.1", 1, username).is_none(),
+        "nothing was saved"
+    );
+
+    let url = "http://127.0.0.1:1/dav/";
+    let webdav = connect_server(
+        webdav_target(url, username, Some("/Documents")),
+        "start-folder-refusal-webdav".to_string(),
+        None,
+    )
+    .await;
+    assert!(
+        matches!(webdav, ServerConnectOutcome::StartFolderOutsideRoot),
+        "got {webdav:?}"
+    );
+    assert!(webdav_known_servers::find(url, username).is_none(), "nothing was saved");
 }
 
 /// An id nothing saved has no secret to forget, so the menu item stays off

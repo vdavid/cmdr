@@ -22,6 +22,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::network::keychain::{self, KeychainError};
+use crate::network::saved_server_fields::SavedServerOutcome;
 use crate::network::sftp_host_keys::{self, TrustedHostKey};
 use crate::network::sftp_known_servers::{self, KnownSftpServer};
 use crate::network::sftp_volume_wiring::{self, SftpConnection};
@@ -224,12 +225,15 @@ pub async fn connect_sftp_volume(
     auto_reconnect: bool,
     attempt_id: String,
 ) -> SftpConnectResult {
+    // ❗ No start-folder field here, so the SAVED one carries across: `None` would wipe what an edit stored. The
+    // wiring drops it if the root this dials no longer holds it.
+    let start_folder = sftp_known_servers::find(&host, port, &username).and_then(|saved| saved.start_folder);
     let mut params = SftpConnectionParams::new(&host, port, &username, remote_root);
     params.key_file = key_file.map(std::path::PathBuf::from);
     params.use_agent = use_agent;
     params.auto_reconnect = auto_reconnect;
 
-    match sftp_volume_wiring::connect_and_register(&display_name, params, &attempt_id, None).await {
+    match sftp_volume_wiring::connect_and_register(&display_name, start_folder, params, &attempt_id, None).await {
         SftpConnection::Connected { volume_id, rung } => SftpConnectResult::Connected(ConnectedSftpVolume {
             volume_id,
             rung: SftpAuthRung::from(rung),
@@ -430,12 +434,13 @@ pub fn get_known_sftp_servers() -> Vec<KnownSftpServer> {
 /// Adds a server, or replaces the entry for the same `(host, port, username)`.
 ///
 /// `connect_sftp_volume` already does this on every successful connection; this
-/// is for editing one without connecting (renaming it, changing its root or its
-/// key file).
+/// is for editing one without connecting (renaming it, or changing its root, its
+/// start folder, or its key file). ❗ A start folder outside the root is refused
+/// and nothing is written. The flow is `sftp_volume_wiring::save_without_connecting`.
 #[tauri::command]
 #[specta::specta]
-// Seven flat parameters rather than a struct, so the generated TS call site names
-// each one; the shape mirrors `connect_sftp_volume`.
+// Flat parameters rather than a struct, so the generated TS call site names each
+// one; the shape mirrors `connect_sftp_volume`.
 #[allow(
     clippy::too_many_arguments,
     reason = "one argument per saved-server field, mirroring the connect command"
@@ -446,24 +451,18 @@ pub fn update_known_sftp_server(
     username: String,
     display_name: String,
     remote_root: String,
+    start_folder: Option<String>,
     key_file: Option<String>,
     use_agent: bool,
     auto_reconnect: bool,
-) {
-    // ❗ The live volume too, when there is one: the saved entry is the durable
-    // copy, and a switch that only took effect on the next connect would read as
-    // ignored.
-    let volume_id = cmdr_fs::volume::sftp_volume_id(&host, port, &username);
-    // It answers whether that volume happened to be MOUNTED, and editing a saved server while it isn't is ordinary;
-    // the durable entry written below is what the caller asked for either way.
-    // allowed-discarded-outcome: "no such mounted volume" is the common case here, not a failure to report.
-    sftp_volume_wiring::apply_auto_reconnect(&volume_id, auto_reconnect);
-    sftp_known_servers::remember(KnownSftpServer {
+) -> SavedServerOutcome {
+    sftp_volume_wiring::save_without_connecting(KnownSftpServer {
         host,
         port,
         username,
         display_name,
         remote_root,
+        start_folder,
         key_file,
         use_agent,
         auto_reconnect,
@@ -472,7 +471,7 @@ pub fn update_known_sftp_server(
         // being saved for the first time here.
         pinned: true,
         last_connected_at: chrono::Utc::now().to_rfc3339(),
-    });
+    })
 }
 
 /// Whether an SFTP volume can actually come back on its own as it stands.

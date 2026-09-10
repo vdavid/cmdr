@@ -4,7 +4,12 @@
 // `crates/cmdr-webdav/DETAILS.md`.
 
 import { commands } from '$lib/ipc/bindings'
-import type { KnownWebdavServer, WebdavConnectResult, WebdavUnattendedReconnect } from '$lib/ipc/bindings'
+import type {
+  KnownWebdavServer,
+  SavedServerOutcome,
+  WebdavConnectResult,
+  WebdavUnattendedReconnect,
+} from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 export type { KnownWebdavServer, WebdavConnectResult, WebdavUnattendedReconnect }
@@ -18,8 +23,10 @@ export interface WebdavTarget {
   url: string
   /** The account to sign in as. Part of the volume's identity. */
   username: string
-  /** The remote directory to open at, relative to the base URL's path. */
+  /** The remote directory the place is rooted at, relative to the base URL's path. */
   remoteRoot: string
+  /** Where the place lands when opened, at or under `remoteRoot`. Absent is the root. */
+  startFolder?: string | null
   /**
    * Whether Cmdr may redial this server unattended when the session drops.
    *
@@ -142,14 +149,16 @@ export async function getKnownWebdavServers(): Promise<SavedWebdavServer[]> {
  * Adds a saved server, or replaces the entry for the same URL and account.
  *
  * `connectWebdavVolume` already does this on every successful connection; this is
- * for editing one without connecting.
+ * for editing one without connecting. A start folder outside the root answers
+ * `start_folder_outside_root`, and nothing is written.
  */
-export async function updateKnownWebdavServer(target: WebdavTarget): Promise<void> {
-  await commands.updateKnownWebdavServer(
+export async function updateKnownWebdavServer(target: WebdavTarget): Promise<SavedServerOutcome> {
+  return await commands.updateKnownWebdavServer(
     target.url,
     target.username,
     target.displayName,
     target.remoteRoot,
+    target.startFolder ?? null,
     target.autoReconnect,
   )
 }

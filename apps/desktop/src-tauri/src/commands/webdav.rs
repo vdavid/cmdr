@@ -14,6 +14,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::network::keychain::{self, KeychainError};
+use crate::network::saved_server_fields::SavedServerOutcome;
 use crate::network::webdav_known_servers::{self, KnownWebdavServer};
 use crate::network::webdav_volume_wiring::{self, WebdavConnection};
 use cmdr_webdav::{UnattendedReconnect, WebdavConnectionParams};
@@ -146,10 +147,13 @@ pub async fn connect_webdav_volume(
     let Some(base_url) = parse_base_url(&url) else {
         return WebdavConnectResult::InvalidUrl;
     };
+    // ❗ No start-folder field here, so the SAVED one carries across: `None` would wipe what an edit stored. The
+    // wiring drops it if the root this dials no longer holds it.
+    let start_folder = webdav_known_servers::find(&url, &username).and_then(|saved| saved.start_folder);
     let mut params = WebdavConnectionParams::new(base_url, &username, remote_root);
     params.auto_reconnect = auto_reconnect;
 
-    match webdav_volume_wiring::connect_and_register(&display_name, params, &attempt_id, None).await {
+    match webdav_volume_wiring::connect_and_register(&display_name, start_folder, params, &attempt_id, None).await {
         WebdavConnection::Connected { volume_id } => {
             WebdavConnectResult::Connected(ConnectedWebdavVolume { volume_id })
         }
@@ -299,7 +303,9 @@ pub fn get_known_webdav_servers() -> Vec<KnownWebdavServer> {
 /// Adds a server, or replaces the entry for the same `(url, username)`.
 ///
 /// `connect_webdav_volume` already does this on every successful connection;
-/// this is for editing one without connecting (renaming it, changing its root).
+/// this is for editing one without connecting (renaming it, or changing its root
+/// or its start folder). ❗ A start folder outside the root is refused and
+/// nothing is written. The flow is `webdav_volume_wiring::save_without_connecting`.
 #[tauri::command]
 #[specta::specta]
 // Flat parameters rather than a struct, so the generated TS call site names each
@@ -309,31 +315,22 @@ pub fn update_known_webdav_server(
     username: String,
     display_name: String,
     remote_root: String,
+    start_folder: Option<String>,
     auto_reconnect: bool,
-) {
-    // ❗ The live volume too, when there is one: the saved entry is the durable
-    // copy, and a switch that only took effect on the next connect would read as
-    // ignored.
-    if let Some(base_url) = parse_base_url(&url) {
-        let params = WebdavConnectionParams::new(base_url, &username, "/");
-        let volume_id = cmdr_fs::volume::webdav_volume_id(params.host(), params.port(), &params.username);
-        // It answers whether that volume happened to be MOUNTED, and editing a saved server while it isn't is
-        // ordinary; the durable entry written below is what the caller asked for either way.
-        // allowed-discarded-outcome: "no such mounted volume" is the common case here, not a failure to report.
-        webdav_volume_wiring::apply_auto_reconnect(&volume_id, auto_reconnect);
-    }
-    webdav_known_servers::remember(KnownWebdavServer {
+) -> SavedServerOutcome {
+    webdav_volume_wiring::save_without_connecting(KnownWebdavServer {
         url,
         username,
         display_name,
         remote_root,
+        start_folder,
         auto_reconnect,
         // Only reachable for a NEW entry: editing a saved server leaves its pin
         // alone, which is `remember`'s rule, and a server nobody saved yet is
         // being saved for the first time here.
         pinned: true,
         last_connected_at: chrono::Utc::now().to_rfc3339(),
-    });
+    })
 }
 
 /// Whether a WebDAV volume can actually come back on its own as it stands.

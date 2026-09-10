@@ -7,6 +7,7 @@ import { commands } from '$lib/ipc/bindings'
 import type {
   HostKeyPrompt,
   KnownSftpServer,
+  SavedServerOutcome,
   SftpConnectResult,
   SftpHostKeyApprovalResult,
   SftpUnattendedReconnect,
@@ -27,8 +28,10 @@ export interface SftpTarget {
   port: number
   /** The account to sign in as. Part of the volume's identity. */
   username: string
-  /** The remote directory to open at. Absolute, server-side. */
+  /** The remote directory the place is rooted at. Absolute, server-side. */
   remoteRoot: string
+  /** Where the place lands when opened, at or under `remoteRoot`. Absent is the root. */
+  startFolder?: string | null
   /** A private key file to offer. A path, not a secret. */
   keyFile?: string | null
   /** Whether the running ssh-agent may be asked. */
@@ -197,15 +200,17 @@ export async function getKnownSftpServers(): Promise<SavedSftpServer[]> {
  * Adds a saved server, or replaces the entry for the same host, port, and account.
  *
  * `connectSftpVolume` already does this on every successful connection; this is
- * for editing one without connecting.
+ * for editing one without connecting. A start folder outside the root answers
+ * `start_folder_outside_root`, and nothing is written.
  */
-export async function updateKnownSftpServer(target: SftpTarget): Promise<void> {
-  await commands.updateKnownSftpServer(
+export async function updateKnownSftpServer(target: SftpTarget): Promise<SavedServerOutcome> {
+  return await commands.updateKnownSftpServer(
     target.host,
     target.port,
     target.username,
     target.displayName,
     target.remoteRoot,
+    target.startFolder ?? null,
     target.keyFile ?? null,
     target.useAgent,
     target.autoReconnect,

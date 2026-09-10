@@ -219,14 +219,15 @@ describe('the saved-server list', () => {
   it('update reorders the target into the argument order the command takes', async () => {
     // ❗ Not the same order as `connectSftpVolume`: the identity triple comes
     // first here, and getting it wrong would silently write a different server.
-    vi.mocked(commands.updateKnownSftpServer).mockResolvedValueOnce(undefined)
-    await updateKnownSftpServer(target)
+    vi.mocked(commands.updateKnownSftpServer).mockResolvedValueOnce({ outcome: 'saved' })
+    expect(await updateKnownSftpServer(target)).toEqual({ outcome: 'saved' })
     expect(commands.updateKnownSftpServer).toHaveBeenCalledWith(
       'naspolya.local',
       2222,
       'ada',
       'Naspolya',
       '/srv/data',
+      null,
       '/Users/ada/.ssh/id_ed25519',
       true,
       true,

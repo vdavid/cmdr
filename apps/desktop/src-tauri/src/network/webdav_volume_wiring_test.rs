@@ -87,7 +87,7 @@ async fn a_connect_that_ends_takes_its_attempt_entry_with_it_and_registers_nothi
 
     let outcome = tokio::time::timeout(
         Duration::from_secs(15),
-        webdav_volume_wiring::connect_and_register("Nowhere", params.clone(), ATTEMPT, None),
+        webdav_volume_wiring::connect_and_register("Nowhere", None, params.clone(), ATTEMPT, None),
     )
     .await
     .expect("a dial with nothing in the store answers without touching the network");
@@ -151,7 +151,7 @@ async fn webdav_integration_reconnecting_leaves_an_unpinned_server_unpinned() {
     };
 
     let first =
-        webdav_volume_wiring::connect_and_register("Fixture server", params.clone(), "webdav-pin-1", None).await;
+        webdav_volume_wiring::connect_and_register("Fixture server", None, params.clone(), "webdav-pin-1", None).await;
     let WebdavConnection::Connected { volume_id } = first else {
         panic!("a fixture with its password stored must connect");
     };
@@ -165,7 +165,7 @@ async fn webdav_integration_reconnecting_leaves_an_unpinned_server_unpinned() {
     webdav_volume_wiring::disconnect(&volume_id).await;
 
     let again =
-        webdav_volume_wiring::connect_and_register("Fixture server", params.clone(), "webdav-pin-2", None).await;
+        webdav_volume_wiring::connect_and_register("Fixture server", None, params.clone(), "webdav-pin-2", None).await;
     let WebdavConnection::Connected { volume_id } = again else {
         panic!("the same fixture connects again");
     };
@@ -193,6 +193,7 @@ async fn webdav_integration_a_one_shot_secret_connects_and_leaves_the_store_empt
 
     let outcome = webdav_volume_wiring::connect_and_register(
         "Fixture server",
+        None,
         params.clone(),
         "webdav-one-shot",
         Some(SecretOffer {
@@ -224,6 +225,7 @@ async fn webdav_integration_a_remembered_secret_is_in_the_store_after_the_dial()
 
     let outcome = webdav_volume_wiring::connect_and_register(
         "Fixture server",
+        None,
         params.clone(),
         "webdav-remembered",
         Some(SecretOffer {

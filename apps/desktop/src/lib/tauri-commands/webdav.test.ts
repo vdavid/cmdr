@@ -154,9 +154,9 @@ describe('the saved-server list', () => {
   it('update reorders the target into the argument order the command takes', async () => {
     // ❗ Not the same order as `connectWebdavVolume`: the identity pair comes
     // first here, and getting it wrong would silently write a different server.
-    vi.mocked(commands.updateKnownWebdavServer).mockResolvedValueOnce(undefined)
-    await updateKnownWebdavServer(target)
-    expect(commands.updateKnownWebdavServer).toHaveBeenCalledWith(URL, 'ada', 'Example', '/Photos', true)
+    vi.mocked(commands.updateKnownWebdavServer).mockResolvedValueOnce({ outcome: 'saved' })
+    expect(await updateKnownWebdavServer(target)).toEqual({ outcome: 'saved' })
+    expect(commands.updateKnownWebdavServer).toHaveBeenCalledWith(URL, 'ada', 'Example', '/Photos', null, true)
   })
 
   it('forget is keyed by the same pair the store is', async () => {

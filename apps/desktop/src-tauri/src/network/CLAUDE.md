@@ -8,7 +8,7 @@ and `apps/desktop/src/lib/file-explorer/network/CLAUDE.md`.
 
 Three families: SMB (discovery, share listing with CLI fallbacks, mounting, OS-mount → direct upgrade), SFTP and
 WebDAV (host keys, a saved-server store each, a `*_volume_wiring.rs` that dials and registers), and their shared seams
-(`connect_wiring.rs`, `server_list_file.rs`, `one_shot_credentials.rs`, `credential_store.rs`).
+(`connect_wiring.rs`, `server_list_file.rs`, `saved_server_fields.rs`, `one_shot_credentials.rs`, `credential_store.rs`).
 
 ## Must-knows
 

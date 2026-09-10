@@ -294,6 +294,7 @@ mod tests {
             username: "ada".to_string(),
             display_name: "Nowhere".to_string(),
             remote_root: "/srv/data".to_string(),
+            start_folder: None,
             key_file: None,
             use_agent: false,
             auto_reconnect: true,

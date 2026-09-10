@@ -14,6 +14,7 @@ import { commands } from '$lib/ipc/bindings'
 import type {
   SavedPlace,
   SavedServer,
+  SavedServerOutcome,
   SecretOffer,
   ServerConnectOutcome,
   ServerProtocol,
@@ -21,7 +22,15 @@ import type {
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { SavedPlace, SavedServer, SecretOffer, ServerConnectOutcome, ServerProtocol, ServerTarget }
+export type {
+  SavedPlace,
+  SavedServer,
+  SavedServerOutcome,
+  SecretOffer,
+  ServerConnectOutcome,
+  ServerProtocol,
+  ServerTarget,
+}
 
 /**
  * Every server the user has saved, across all three stores.
@@ -133,8 +142,9 @@ export async function forgetServerSecret(id: string): Promise<boolean> {
  * Saves an edited server, or adds one without connecting.
  *
  * A saved server's PIN isn't in the patch: `setPlacePinned` is the one writer
- * that moves one.
+ * that moves one. A start folder outside the root answers
+ * `start_folder_outside_root`, and nothing is written.
  */
-export async function updateSavedServer(server: ServerTarget): Promise<void> {
-  await commands.updateSavedServer(server)
+export async function updateSavedServer(server: ServerTarget): Promise<SavedServerOutcome> {
+  return await commands.updateSavedServer(server)
 }

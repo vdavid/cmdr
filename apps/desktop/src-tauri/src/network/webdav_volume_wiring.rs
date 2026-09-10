@@ -16,6 +16,7 @@ use cmdr_webdav::{UnattendedReconnect, WebdavConnectError, WebdavConnectionParam
 
 use super::connect_wiring::{self, AttemptTable};
 use super::one_shot_credentials::{self, SecretOffer};
+use super::saved_server_fields::{self, SavedServerOutcome};
 use super::webdav_known_servers::{self, KnownWebdavServer};
 
 /// What a connect attempt produced, in the terms a sign-in UI branches on.
@@ -89,13 +90,21 @@ pub fn cancel_connect(attempt_id: &str) -> bool {
 /// the probe (one `PROPFIND Depth: 0` on the root) and the credential lookup
 /// live. Calling one OFF goes through the token, which is what makes it answer
 /// `Cancelled`.
+///
+/// `display_name` and `start_folder` aren't connection params: they travel
+/// beside `params` into the saved entry, which a connect rebuilds whole. ❗ So a
+/// caller that doesn't set them passes the SAVED values, or a connect would wipe
+/// what an edit stored. A start folder the root no longer holds is dropped here
+/// rather than saved.
 pub async fn connect_and_register(
     display_name: &str,
+    start_folder: Option<String>,
     params: WebdavConnectionParams,
     attempt_id: &str,
     secret: Option<SecretOffer>,
 ) -> WebdavConnection {
     let volume_id = cmdr_fs::volume::webdav_volume_id(params.host(), params.port(), &params.username);
+    let start_folder = saved_server_fields::start_folder_for_root(&params.remote_root.to_string_lossy(), start_folder);
     let (host, _offer) =
         one_shot_credentials::host_for_dial(&params.credential_service(), &params.username, secret).await;
     let (cancel, _attempt) = ATTEMPTS.register(attempt_id);
@@ -112,6 +121,7 @@ pub async fn connect_and_register(
         username: params.username.clone(),
         display_name: display_name.to_string(),
         remote_root: params.remote_root.to_string_lossy().to_string(),
+        start_folder,
         auto_reconnect: params.auto_reconnect,
         // A first connect pins the new place; `remember` carries the stored value
         // across for a server that is already saved, so a reconnect can't re-pin
@@ -160,6 +170,44 @@ pub fn apply_auto_reconnect(volume_id: &str, on: bool) -> bool {
     };
     webdav.set_auto_reconnect(on);
     true
+}
+
+/// Saves a server without dialing it: an edit, or an add that doesn't connect.
+///
+/// ❗ The saved entry is the durable copy and a mounted volume holds a live
+/// "reconnect automatically" switch, so both move. A refusal moves neither.
+pub fn save_without_connecting(server: KnownWebdavServer) -> SavedServerOutcome {
+    let Ok(start_folder) =
+        saved_server_fields::start_folder_under_root(&server.remote_root, server.start_folder.as_deref())
+    else {
+        return SavedServerOutcome::StartFolderOutsideRoot;
+    };
+    let server = KnownWebdavServer { start_folder, ..server };
+    if let Some(volume_id) = saved_volume_id(&server.url, &server.username) {
+        // It answers whether that volume happened to be MOUNTED, and editing a saved server while it isn't is
+        // ordinary; the durable entry written below is what the caller asked for either way.
+        apply_auto_reconnect(&volume_id, server.auto_reconnect);
+    }
+    webdav_known_servers::remember(server);
+    SavedServerOutcome::Saved
+}
+
+/// The id a saved entry's volume is filed under, or `None` when its URL isn't an
+/// `http`/`https` one (nothing can be mounted under an address nobody can dial).
+///
+/// ❗ Through the crate's own params, so the host and port are the pair the dial
+/// derives the id from.
+fn saved_volume_id(url: &str, username: &str) -> Option<String> {
+    let parsed = url::Url::parse(url.trim()).ok()?;
+    if !matches!(parsed.scheme(), "http" | "https") {
+        return None;
+    }
+    let params = WebdavConnectionParams::new(parsed, username, "/");
+    Some(cmdr_fs::volume::webdav_volume_id(
+        params.host(),
+        params.port(),
+        &params.username,
+    ))
 }
 
 /// Whether an unattended reconnect can actually happen for a mounted volume.

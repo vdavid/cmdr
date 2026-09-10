@@ -38,8 +38,19 @@ pub struct KnownSftpServer {
     /// What to call it in the UI. The user's own label, falling back to the host
     /// when they never gave one.
     pub display_name: String,
-    /// The remote directory to open at. Absolute, server-side.
+    /// The remote directory this place is rooted at. Absolute, server-side, and a
+    /// CEILING: nothing on this place navigates above it.
     pub remote_root: String,
+    /// Where a pane lands when the place itself is opened: an absolute,
+    /// normalized server-side path at or under `remote_root`. `None` is the root.
+    ///
+    /// ❗ Every writer runs it through
+    /// `saved_server_fields::start_folder_under_root` first, so a stored value
+    /// never sits outside the root it belongs to, and the root itself stores as
+    /// `None`. `serde(default)` lets a server saved before the field existed land
+    /// at its root, the way it always has.
+    #[serde(default)]
+    pub start_folder: Option<String>,
     /// A private key file to offer. ❗ A path, not a secret: its passphrase (if
     /// it has one) lives in the secret store and dies with the session it
     /// unlocked.
@@ -148,6 +159,17 @@ fn save() {
 /// Every server the user has connected to.
 pub fn all() -> Vec<KnownSftpServer> {
     known().lock_ignore_poison().known_sftp_servers.clone()
+}
+
+/// The entry for `(host, port, username)`, by the identity [`remember`] files
+/// under.
+pub fn find(host: &str, port: u16, username: &str) -> Option<KnownSftpServer> {
+    known()
+        .lock_ignore_poison()
+        .known_sftp_servers
+        .iter()
+        .find(|entry| same_server(entry, host, port, username))
+        .cloned()
 }
 
 /// Adds `server`, or replaces the entry for the same `(host, port, username)`.

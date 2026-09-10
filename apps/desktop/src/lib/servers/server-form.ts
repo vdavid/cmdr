@@ -21,6 +21,8 @@ export interface ServerForm {
   remember: boolean
   displayName: string
   remoteRoot: string
+  /** Where the place lands when opened, at or under `remoteRoot`. Empty is the root. */
+  startFolder: string
   keyFile: string
   useAgent: boolean
   autoReconnect: boolean
@@ -41,6 +43,7 @@ export function emptyServerForm(): ServerForm {
     remember: true,
     displayName: '',
     remoteRoot: '',
+    startFolder: '',
     keyFile: '',
     useAgent: true,
     autoReconnect: true,
@@ -92,6 +95,7 @@ export function serverTargetFrom(form: ServerForm): ServerTarget | null {
       port: parsed.protocol === 'sftp' ? parsed.port : 22,
       username,
       remoteRoot: normalizeRoot(form.remoteRoot),
+      startFolder: startFolderOf(form),
       keyFile: form.keyFile.trim() === '' ? null : form.keyFile.trim(),
       useAgent: form.useAgent,
       autoReconnect: form.autoReconnect,
@@ -105,6 +109,7 @@ export function serverTargetFrom(form: ServerForm): ServerTarget | null {
       url: webdavBaseUrl(parsed),
       username,
       remoteRoot: normalizeRoot(form.remoteRoot),
+      startFolder: startFolderOf(form),
       autoReconnect: form.autoReconnect,
     }
   }
@@ -123,6 +128,7 @@ export function formFromSftpServer(server: SavedSftpServer): ServerForm {
     username: server.username,
     displayName: server.displayName,
     remoteRoot: server.remoteRoot,
+    startFolder: server.startFolder ?? '',
     keyFile: server.keyFile ?? '',
     useAgent: server.useAgent,
     autoReconnect: server.autoReconnect,
@@ -141,6 +147,7 @@ export function formFromWebdavServer(server: SavedWebdavServer): ServerForm {
     username: server.username,
     displayName: server.displayName,
     remoteRoot: server.remoteRoot,
+    startFolder: server.startFolder ?? '',
     autoReconnect: server.autoReconnect,
     remember: false,
   }
@@ -173,6 +180,15 @@ function webdavBaseUrl(parsed: Extract<ParsedAddress, { kind: 'parsed' }>): stri
   const isDefaultPort = (scheme === 'https' && parsed.port === 443) || (scheme === 'http' && parsed.port === 80)
   const authority = isDefaultPort ? parsed.host : `${parsed.host}:${String(parsed.port)}`
   return `${scheme}://${authority}${parsed.path ?? ''}`
+}
+
+/**
+ * The start folder a target carries: `null` for the root. The backend refuses one
+ * outside the root and stores it normalized, so this only trims.
+ */
+function startFolderOf(form: ServerForm): string | null {
+  const trimmed = form.startFolder.trim()
+  return trimmed === '' ? null : trimmed
 }
 
 /** The three root spellings (`''`, `'.'`, `'/'`) all mean the volume root. */

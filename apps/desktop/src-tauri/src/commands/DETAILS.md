@@ -110,7 +110,14 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
     the consumer has nothing to race. ❌ And no new "you disconnected" pane state: a `saved` row dials on activation.
   - `update_saved_server` takes a `ServerTarget`, the same shape the add sheet collects, because an edit and an add
     differ only in whether the fields arrived prefilled. It carries no PIN: `set_place_pinned` is the one writer that
-    moves one, because the stores' `remember` deliberately preserves a stored pin on every replace.
+    moves one, because the stores' `remember` deliberately preserves a stored pin on every replace. It answers a typed
+    `SavedServerOutcome` (`network/saved_server_fields.rs`), the same one the per-protocol `update_known_*_server`
+    commands answer, and a refusal writes nothing.
+  - ❗ **A start folder outside the remote root is a typed refusal on both writers a person types into.**
+    `update_saved_server` answers `start_folder_outside_root`, and `connect_server` answers
+    `ServerConnectOutcome::StartFolderOutsideRoot` BEFORE dialing, so nothing is registered or saved. Landing the pane
+    somewhere else instead would hide the typo. The rule itself: `network/DETAILS.md` § "The start folder, and what a
+    connect carries beside its params".
   - **This family is where a NEW backend plugs in**, and that is why it exists as a facade over correct, tested
     per-protocol enums rather than as a rewrite of them: one more `ServerTarget` arm, one more saved-server store, and
     whatever outcomes the protocol adds to the superset. The frontend then branches once, in a `switch` it already has.

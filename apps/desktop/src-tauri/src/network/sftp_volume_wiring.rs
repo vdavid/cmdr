@@ -18,6 +18,7 @@ use cmdr_sftp::{SftpConnectError, SftpConnectOutcome, SftpConnectionParams, Sftp
 
 use super::connect_wiring::{self, AttemptTable};
 use super::one_shot_credentials::{self, SecretOffer};
+use super::saved_server_fields::{self, SavedServerOutcome};
 use super::sftp_known_servers::{self, KnownSftpServer};
 
 /// What a connect attempt produced, in the terms a sign-in UI branches on.
@@ -96,13 +97,21 @@ pub fn cancel_connect(attempt_id: &str) -> bool {
 /// goes through the token instead, which stops the dial where it stands in every
 /// phase and is what makes it answer `Cancelled`.
 /// `crates/cmdr-sftp/DETAILS.md` § "2. An abandoned `Sftp::new`" has the terms.
+///
+/// `display_name` and `start_folder` aren't connection params: they travel
+/// beside `params` into the saved entry, which a connect rebuilds whole. ❗ So a
+/// caller that doesn't set them passes the SAVED values, or a connect would wipe
+/// what an edit stored. A start folder the root no longer holds is dropped here
+/// rather than saved.
 pub async fn connect_and_register(
     display_name: &str,
+    start_folder: Option<String>,
     params: SftpConnectionParams,
     attempt_id: &str,
     secret: Option<SecretOffer>,
 ) -> SftpConnection {
     let volume_id = cmdr_fs::volume::sftp_volume_id(&params.host, params.port, &params.username);
+    let start_folder = saved_server_fields::start_folder_for_root(&params.remote_root.to_string_lossy(), start_folder);
     let (host, _offer) =
         one_shot_credentials::host_for_dial(&params.credential_service(), &params.username, secret).await;
     let (cancel, _attempt) = ATTEMPTS.register(attempt_id);
@@ -122,6 +131,7 @@ pub async fn connect_and_register(
         username: params.username.clone(),
         display_name: display_name.to_string(),
         remote_root: params.remote_root.to_string_lossy().to_string(),
+        start_folder,
         key_file: params.key_file.as_ref().map(|p| p.to_string_lossy().to_string()),
         use_agent: params.use_agent,
         auto_reconnect: params.auto_reconnect,
@@ -172,6 +182,25 @@ pub fn apply_auto_reconnect(volume_id: &str, on: bool) -> bool {
     };
     sftp.set_auto_reconnect(on);
     true
+}
+
+/// Saves a server without dialing it: an edit, or an add that doesn't connect.
+///
+/// ❗ The saved entry is the durable copy and a mounted volume holds a live
+/// "reconnect automatically" switch, so both move. A refusal moves neither.
+pub fn save_without_connecting(server: KnownSftpServer) -> SavedServerOutcome {
+    let Ok(start_folder) =
+        saved_server_fields::start_folder_under_root(&server.remote_root, server.start_folder.as_deref())
+    else {
+        return SavedServerOutcome::StartFolderOutsideRoot;
+    };
+    let server = KnownSftpServer { start_folder, ..server };
+    let volume_id = cmdr_fs::volume::sftp_volume_id(&server.host, server.port, &server.username);
+    // It answers whether that volume happened to be MOUNTED, and editing a saved server while it isn't is ordinary;
+    // the durable entry written below is what the caller asked for either way.
+    apply_auto_reconnect(&volume_id, server.auto_reconnect);
+    sftp_known_servers::remember(server);
+    SavedServerOutcome::Saved
 }
 
 /// Whether an unattended reconnect can actually happen for a mounted volume.

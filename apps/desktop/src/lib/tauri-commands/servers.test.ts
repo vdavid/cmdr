@@ -46,6 +46,7 @@ const target: ServerTarget = {
   port: 22,
   username: 'ada',
   remoteRoot: '/srv/data',
+  startFolder: null,
   keyFile: null,
   useAgent: true,
   autoReconnect: true,
@@ -128,8 +129,8 @@ describe('the saved list', () => {
   })
 
   it('edits a server through the same shape the add sheet collects', async () => {
-    vi.mocked(commands.updateSavedServer).mockResolvedValueOnce(undefined)
-    await updateSavedServer(target)
+    vi.mocked(commands.updateSavedServer).mockResolvedValueOnce({ outcome: 'start_folder_outside_root' })
+    expect(await updateSavedServer(target)).toEqual({ outcome: 'start_folder_outside_root' })
     expect(commands.updateSavedServer).toHaveBeenCalledWith(target)
   })
 })

@@ -40,8 +40,19 @@ pub struct KnownWebdavServer {
     /// What to call it in the UI. The user's own label, falling back to the host
     /// when they never gave one.
     pub display_name: String,
-    /// The remote directory to open at, relative to the base URL's path.
+    /// The remote directory this place is rooted at, under the base URL's path.
+    /// A CEILING: nothing on this place navigates above it.
     pub remote_root: String,
+    /// Where a pane lands when the place itself is opened: a normalized path in
+    /// the same space as `remote_root`, at or under it. `None` is the root.
+    ///
+    /// ❗ Every writer runs it through
+    /// `saved_server_fields::start_folder_under_root` first, so a stored value
+    /// never sits outside the root it belongs to, and the root itself stores as
+    /// `None`. `serde(default)` lets a server saved before the field existed land
+    /// at its root, the way it always has.
+    #[serde(default)]
+    pub start_folder: Option<String>,
     /// Whether Cmdr may redial this server unattended when its session drops.
     ///
     /// ❗ **Independent of whether a secret is remembered**, which is the OTHER
@@ -168,6 +179,16 @@ fn save() {
 /// Every server the user has connected to.
 pub fn all() -> Vec<KnownWebdavServer> {
     known().lock_ignore_poison().known_webdav_servers.clone()
+}
+
+/// The entry for `(url, username)`, by the identity [`remember`] files under.
+pub fn find(url: &str, username: &str) -> Option<KnownWebdavServer> {
+    known()
+        .lock_ignore_poison()
+        .known_webdav_servers
+        .iter()
+        .find(|entry| same_server(entry, url, username))
+        .cloned()
 }
 
 /// Adds `server`, or replaces the entry for the same `(url, username)`.

@@ -3869,8 +3869,9 @@ export const commands = {
    *  Adds a server, or replaces the entry for the same `(host, port, username)`.
    *
    *  `connect_sftp_volume` already does this on every successful connection; this
-   *  is for editing one without connecting (renaming it, changing its root or its
-   *  key file).
+   *  is for editing one without connecting (renaming it, or changing its root, its
+   *  start folder, or its key file). ❗ A start folder outside the root is refused
+   *  and nothing is written. The flow is `sftp_volume_wiring::save_without_connecting`.
    */
   updateKnownSftpServer: (
     host: string,
@@ -3878,16 +3879,18 @@ export const commands = {
     username: string,
     displayName: string,
     remoteRoot: string,
+    startFolder: string | null,
     keyFile: string | null,
     useAgent: boolean,
     autoReconnect: boolean,
   ) =>
-    __TAURI_INVOKE<void>('update_known_sftp_server', {
+    __TAURI_INVOKE<SavedServerOutcome>('update_known_sftp_server', {
       host,
       port,
       username,
       displayName,
       remoteRoot,
+      startFolder,
       keyFile,
       useAgent,
       autoReconnect,
@@ -4047,15 +4050,26 @@ export const commands = {
    *  Adds a server, or replaces the entry for the same `(url, username)`.
    *
    *  `connect_webdav_volume` already does this on every successful connection;
-   *  this is for editing one without connecting (renaming it, changing its root).
+   *  this is for editing one without connecting (renaming it, or changing its root
+   *  or its start folder). ❗ A start folder outside the root is refused and
+   *  nothing is written. The flow is `webdav_volume_wiring::save_without_connecting`.
    */
   updateKnownWebdavServer: (
     url: string,
     username: string,
     displayName: string,
     remoteRoot: string,
+    startFolder: string | null,
     autoReconnect: boolean,
-  ) => __TAURI_INVOKE<void>('update_known_webdav_server', { url, username, displayName, remoteRoot, autoReconnect }),
+  ) =>
+    __TAURI_INVOKE<SavedServerOutcome>('update_known_webdav_server', {
+      url,
+      username,
+      displayName,
+      remoteRoot,
+      startFolder,
+      autoReconnect,
+    }),
   /**
    *  Drops a server from the list, answering whether one was there.
    *
@@ -4238,8 +4252,11 @@ export const commands = {
    *  edit and an add differ only in whether the fields arrived prefilled. A saved
    *  server's PIN is not in it: `remember` preserves the stored pin on a replace,
    *  and [`set_place_pinned`] is the one writer that moves one.
+   *
+   *  ❗ Answers a typed [`SavedServerOutcome`], and a refusal (a start folder
+   *  outside the root) writes nothing at all.
    */
-  updateSavedServer: (server: ServerTarget) => __TAURI_INVOKE<void>('update_saved_server', { server }),
+  updateSavedServer: (server: ServerTarget) => __TAURI_INVOKE<SavedServerOutcome>('update_saved_server', { server }),
   /**
    *  Tauri command: returns the current macOS accent color as a hex string.
    *
@@ -7931,8 +7948,22 @@ export type KnownSftpServer = {
    *  when they never gave one.
    */
   displayName: string
-  // The remote directory to open at. Absolute, server-side.
+  /**
+   *  The remote directory this place is rooted at. Absolute, server-side, and a
+   *  CEILING: nothing on this place navigates above it.
+   */
   remoteRoot: string
+  /**
+   *  Where a pane lands when the place itself is opened: an absolute,
+   *  normalized server-side path at or under `remote_root`. `None` is the root.
+   *
+   *  ❗ Every writer runs it through
+   *  `saved_server_fields::start_folder_under_root` first, so a stored value
+   *  never sits outside the root it belongs to, and the root itself stores as
+   *  `None`. `serde(default)` lets a server saved before the field existed land
+   *  at its root, the way it always has.
+   */
+  startFolder?: string | null
   /**
    *  A private key file to offer. ❗ A path, not a secret: its passphrase (if
    *  it has one) lives in the secret store and dies with the session it
@@ -8003,8 +8034,22 @@ export type KnownWebdavServer = {
    *  when they never gave one.
    */
   displayName: string
-  // The remote directory to open at, relative to the base URL's path.
+  /**
+   *  The remote directory this place is rooted at, under the base URL's path.
+   *  A CEILING: nothing on this place navigates above it.
+   */
   remoteRoot: string
+  /**
+   *  Where a pane lands when the place itself is opened: a normalized path in
+   *  the same space as `remote_root`, at or under it. `None` is the root.
+   *
+   *  ❗ Every writer runs it through
+   *  `saved_server_fields::start_folder_under_root` first, so a stored value
+   *  never sits outside the root it belongs to, and the root itself stores as
+   *  `None`. `serde(default)` lets a server saved before the field existed land
+   *  at its root, the way it always has.
+   */
+  startFolder?: string | null
   /**
    *  Whether Cmdr may redial this server unattended when its session drops.
    *
@@ -11235,6 +11280,18 @@ export type SavedServer = {
 }
 
 /**
+ *  What saving a server's fields without dialing produced.
+ *
+ *  ❗ A refusal writes NOTHING: a half-saved edit is a server that dials one way
+ *  and lists another.
+ */
+export type SavedServerOutcome =
+  // The store holds the edit.
+  | { outcome: 'saved' }
+  // The start folder isn't the root or under it.
+  | { outcome: 'start_folder_outside_root' }
+
+/**
  *  A conflict detected during pre-copy scanning: a source item that already exists at the
  *  destination.
  */
@@ -12057,6 +12114,11 @@ export type ServerConnectOutcome =
   | { outcome: 'not_a_webdav_server' }
   // WebDAV only: the address the user typed isn't a `http`/`https` URL.
   | { outcome: 'invalid_url' }
+  /**
+   *  The start folder isn't the root or under it. ❗ Refused before dialing,
+   *  so nothing was registered or saved.
+   */
+  | { outcome: 'start_folder_outside_root' }
   // The handshake didn't finish inside the connect budget.
   | { outcome: 'timed_out' }
   // No route, refused, DNS, or a transport-level breakdown.
@@ -12118,8 +12180,13 @@ export type ServerTarget =
       port: number
       // The account to sign in as. ❗ Part of the identity.
       username: string
-      // The remote directory to open at. Absolute, server-side.
+      // The remote directory the place is rooted at. Absolute, server-side.
       remoteRoot: string
+      /**
+       *  Where a pane lands when the place itself is opened: an absolute
+       *  server-side path at or under `remote_root`. `None` is the root.
+       */
+      startFolder: string | null
       // A private key file to offer. ❗ A path, ❌ never a secret.
       keyFile: string | null
       // Whether the running ssh-agent may be asked.
@@ -12136,8 +12203,13 @@ export type ServerTarget =
       url: string
       // The account to sign in as. ❗ Part of the identity.
       username: string
-      // The collection to open at, under the base URL.
+      // The collection the place is rooted at, under the base URL.
       remoteRoot: string
+      /**
+       *  Where a pane lands when the place itself is opened: a path at or
+       *  under `remote_root`, in the same space. `None` is the root.
+       */
+      startFolder: string | null
       // Whether Cmdr may re-probe unattended when a request finds it gone.
       autoReconnect: boolean
     }

@@ -45,7 +45,8 @@ async fn signed_in_already(params: &SftpConnectionParams) {
     .expect("the test secret store always accepts");
 
     // First contact, then the approval, which is exactly what the frontend does.
-    let first = sftp_volume_wiring::connect_and_register("fixture", params.clone(), "fixture-attempt", None).await;
+    let first =
+        sftp_volume_wiring::connect_and_register("fixture", None, params.clone(), "fixture-attempt", None).await;
     let SftpConnection::NeedsHostKeyApproval(prompt) = first else {
         // Another cell in this binary may have approved the same fixture already;
         // that is a connected volume, not a failure.
@@ -66,7 +67,7 @@ async fn sftp_integration_connecting_registers_the_volume_and_remembers_the_serv
     signed_in_already(&params).await;
 
     let outcome =
-        sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt", None).await;
+        sftp_volume_wiring::connect_and_register("Fixture server", None, params.clone(), "fixture-attempt", None).await;
     let SftpConnection::Connected { volume_id, rung } = outcome else {
         panic!("a fixture with its key approved and its password stored must connect");
     };
@@ -105,7 +106,7 @@ async fn sftp_integration_reconnecting_leaves_an_unpinned_server_unpinned() {
     signed_in_already(&params).await;
 
     let first =
-        sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt", None).await;
+        sftp_volume_wiring::connect_and_register("Fixture server", None, params.clone(), "fixture-attempt", None).await;
     let SftpConnection::Connected { volume_id, .. } = first else {
         panic!("a fixture with its key approved and its password stored must connect");
     };
@@ -125,7 +126,8 @@ async fn sftp_integration_reconnecting_leaves_an_unpinned_server_unpinned() {
     sftp_volume_wiring::disconnect(&volume_id).await;
 
     let again =
-        sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt-2", None).await;
+        sftp_volume_wiring::connect_and_register("Fixture server", None, params.clone(), "fixture-attempt-2", None)
+            .await;
     let SftpConnection::Connected { volume_id, .. } = again else {
         panic!("the same fixture connects again");
     };
@@ -146,7 +148,7 @@ async fn sftp_integration_disconnecting_drops_the_session_and_unregisters_the_vo
     let params = stock_params();
     signed_in_already(&params).await;
     let SftpConnection::Connected { volume_id, .. } =
-        sftp_volume_wiring::connect_and_register("fixture", params, "fixture-attempt", None).await
+        sftp_volume_wiring::connect_and_register("fixture", None, params, "fixture-attempt", None).await
     else {
         panic!("a fixture with its key approved and its password stored must connect");
     };
@@ -199,7 +201,8 @@ async fn sftp_integration_an_unapproved_server_asks_before_it_connects() {
         sftp_host_keys::forget_trusted_host_key(&params.host, params.port, &algorithm);
     }
 
-    let outcome = sftp_volume_wiring::connect_and_register("fixture", params.clone(), "fixture-attempt", None).await;
+    let outcome =
+        sftp_volume_wiring::connect_and_register("fixture", None, params.clone(), "fixture-attempt", None).await;
     let SftpConnection::NeedsHostKeyApproval(prompt) = outcome else {
         panic!("a server with no approved key must ask about it before anything else");
     };
@@ -244,7 +247,9 @@ async fn cancelling_a_hanging_connect_ends_it_and_registers_nothing() {
 
     let dialing = params.clone();
     let connecting =
-        tokio::spawn(async move { sftp_volume_wiring::connect_and_register("Nowhere", dialing, ATTEMPT, None).await });
+        tokio::spawn(
+            async move { sftp_volume_wiring::connect_and_register("Nowhere", None, dialing, ATTEMPT, None).await },
+        );
 
     // The attempt is cancelable from the moment the dial is in the air, which is
     // the whole reason the id is the caller's.
@@ -288,7 +293,8 @@ async fn cancelling_a_hanging_connect_ends_it_and_registers_nothing() {
 /// Approves the fixture's host key without leaving a secret behind, so a cell
 /// about where the secret came from starts with an empty store.
 async fn host_key_approved(params: &SftpConnectionParams) {
-    let first = sftp_volume_wiring::connect_and_register("fixture", params.clone(), "fixture-approve", None).await;
+    let first =
+        sftp_volume_wiring::connect_and_register("fixture", None, params.clone(), "fixture-approve", None).await;
     let SftpConnection::NeedsHostKeyApproval(prompt) = first else {
         // Another cell in this binary may have approved the same fixture already.
         return;
@@ -317,6 +323,7 @@ async fn sftp_integration_a_one_shot_secret_connects_and_leaves_the_store_empty(
 
     let outcome = sftp_volume_wiring::connect_and_register(
         "Fixture server",
+        None,
         params.clone(),
         "sftp-one-shot",
         Some(SecretOffer {
@@ -349,6 +356,7 @@ async fn sftp_integration_a_remembered_secret_is_in_the_store_after_the_dial() {
 
     let outcome = sftp_volume_wiring::connect_and_register(
         "Fixture server",
+        None,
         params.clone(),
         "sftp-remembered",
         Some(SecretOffer {
@@ -380,7 +388,7 @@ async fn sftp_integration_forgetting_a_server_drops_its_session_and_unregisters_
     let params = stock_params();
     signed_in_already(&params).await;
     let SftpConnection::Connected { volume_id, .. } =
-        sftp_volume_wiring::connect_and_register("fixture", params, "fixture-forget-attempt", None).await
+        sftp_volume_wiring::connect_and_register("fixture", None, params, "fixture-forget-attempt", None).await
     else {
         panic!("a fixture with its key approved and its password stored must connect");
     };

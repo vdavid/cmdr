@@ -20,6 +20,7 @@ fn server(host: &str, username: &str) -> KnownSftpServer {
         username: username.to_string(),
         display_name: host.to_string(),
         remote_root: "/srv/data".to_string(),
+        start_folder: None,
         key_file: None,
         use_agent: true,
         auto_reconnect: true,
@@ -151,6 +152,59 @@ fn a_server_saved_before_the_setting_existed_still_reconnects_automatically() {
         store.known_sftp_servers[0].auto_reconnect,
         "the field wasn't in the file, and the default has to be the behavior that was already shipping"
     );
+}
+
+/// A server saved before start folders existed lands at its root, the way it
+/// always did.
+#[test]
+fn a_server_saved_before_start_folders_existed_lands_at_its_root() {
+    let stored = r#"{
+      "knownSftpServers": [
+        {
+          "host": "naspolya",
+          "port": 22,
+          "username": "ada",
+          "displayName": "Naspolya",
+          "remoteRoot": "/srv/data",
+          "keyFile": null,
+          "useAgent": true,
+          "lastConnectedAt": "2026-08-22T10:00:00Z"
+        }
+      ]
+    }"#;
+
+    let store: KnownSftpServersStore = serde_json::from_str(stored).expect("an older file still parses");
+
+    assert_eq!(store.known_sftp_servers[0].start_folder, None);
+}
+
+#[test]
+fn the_start_folder_round_trips_through_the_stored_file() {
+    let mut deeper = server("start-folder-round-trip.sftp-servers.test", "ada");
+    deeper.start_folder = Some("/srv/data/photos".to_string());
+    let store = KnownSftpServersStore {
+        known_sftp_servers: vec![deeper],
+    };
+
+    let written = serde_json::to_string(&store).expect("serializable");
+    let read: KnownSftpServersStore = serde_json::from_str(&written).expect("parseable");
+
+    assert_eq!(
+        read.known_sftp_servers[0].start_folder.as_deref(),
+        Some("/srv/data/photos")
+    );
+}
+
+/// `find` answers by the identity `remember` files under, so a lookup can't
+/// miss an entry a connect just wrote.
+#[test]
+fn finding_a_server_uses_the_same_identity_as_remembering_one() {
+    let host = host_for("find");
+    remember(server(&host, "ada"));
+
+    assert!(find(&host.to_uppercase(), 22, "ada").is_some(), "the host folds case");
+    assert!(find(&host, 22, "Ada").is_none(), "the account doesn't");
+    assert!(find(&host, 2222, "ada").is_none(), "the port is part of the identity");
 }
 
 /// The switch survives a round trip through the file, both ways.

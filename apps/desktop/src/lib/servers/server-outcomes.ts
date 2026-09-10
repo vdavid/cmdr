@@ -39,6 +39,10 @@ export function readConnectOutcome(outcome: ServerConnectOutcome): ServerDialOut
       return { kind: 'refused', refusal: 'not_a_webdav_server' }
     case 'invalid_url':
       return { kind: 'refused', refusal: 'invalid_url' }
+    case 'start_folder_outside_root':
+      // ❗ A stand-in: the add form has no start-folder field yet, so a dial never carries one the backend could
+      // refuse. It borrows the address refusal until the field lands with a sentence of its own.
+      return { kind: 'refused', refusal: 'invalid_url' }
     case 'timed_out':
       return { kind: 'refused', refusal: 'timed_out' }
     case 'unreachable':

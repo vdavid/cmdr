@@ -105,16 +105,18 @@ async fn the_credential_trio_agrees_on_where_a_secret_lives() {
 #[tokio::test]
 async fn the_known_servers_trio_round_trips() {
     let host = "known-servers-trio.sftp.test";
-    update_known_sftp_server(
+    let saved = update_known_sftp_server(
         host.to_string(),
         22,
         "ada".to_string(),
         "Trio".to_string(),
         "/srv/data".to_string(),
         None,
+        None,
         true,
         false,
     );
+    assert_eq!(saved, SavedServerOutcome::Saved);
 
     let mine: Vec<_> = get_known_sftp_servers()
         .into_iter()

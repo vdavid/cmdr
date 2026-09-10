@@ -19,6 +19,7 @@ fn server(url: &str, username: &str) -> KnownWebdavServer {
         username: username.to_string(),
         display_name: url.to_string(),
         remote_root: "/".to_string(),
+        start_folder: None,
         auto_reconnect: true,
         pinned: false,
         last_connected_at: "2026-09-01T10:00:00Z".to_string(),
@@ -39,6 +40,41 @@ fn a_remembered_server_comes_back() {
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].username, "ada");
     assert_eq!(found[0].remote_root, "/");
+}
+
+/// A server saved before start folders existed lands at its root, the way it
+/// always did.
+#[test]
+fn a_server_saved_before_start_folders_existed_lands_at_its_root() {
+    let stored = r#"{
+      "knownWebdavServers": [
+        {
+          "url": "https://dav.example.test/dav/",
+          "username": "ada",
+          "displayName": "Docs",
+          "remoteRoot": "/",
+          "lastConnectedAt": "2026-09-01T10:00:00Z"
+        }
+      ]
+    }"#;
+
+    let store: KnownWebdavServersStore = serde_json::from_str(stored).expect("an older file still parses");
+
+    assert_eq!(store.known_webdav_servers[0].start_folder, None);
+}
+
+/// `find` answers by the identity `remember` files under, so a lookup can't
+/// miss an entry a connect just wrote.
+#[test]
+fn finding_a_server_uses_the_same_identity_as_remembering_one() {
+    let url = url_for("find");
+    remember(server(&url, "ada"));
+
+    assert!(
+        find(&url.trim_end_matches('/').to_uppercase().replace("/DAV", "/dav"), "ada").is_some(),
+        "the scheme and host fold case, and the trailing slash is optional"
+    );
+    assert!(find(&url, "Ada").is_none(), "the account doesn't fold");
 }
 
 #[test]

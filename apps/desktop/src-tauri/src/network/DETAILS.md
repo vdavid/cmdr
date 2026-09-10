@@ -454,10 +454,10 @@ rather than a fact about a secret, so the saved-server list is its home. ❗ It 
 doesn't name it: SFTP has always come back on its own, and a missing field must not switch that off under servers saved
 before the setting existed.
 
-`update_known_sftp_server` moves both copies: the saved entry, and (through `sftp_volume_wiring::apply_auto_reconnect`)
-a volume that happens to be mounted, so the switch takes effect now rather than on the next connect. What the two mean
-together, what the backend answers when one is on and can't work, and what a UI shows:
-`crates/cmdr-sftp/DETAILS.md` § "The two switches".
+`sftp_volume_wiring::save_without_connecting` (behind `update_known_sftp_server` and `update_saved_server`) moves both
+copies: the saved entry, and (through `apply_auto_reconnect`) a volume that happens to be mounted, so the switch takes
+effect now rather than on the next connect. What the two mean together, what the backend answers when one is on and
+can't work, and what a UI shows: `crates/cmdr-sftp/DETAILS.md` § "The two switches".
 
 `sftp_volume_wiring.rs` is the only path a volume gets registered on, and it does three things in one order: dial
 through `cmdr_sftp::connect_sftp_volume` (an ABANDONED connect leaves the server nothing, because the SFTP hello's
@@ -508,6 +508,28 @@ undoes itself. That makes `remember` the one function that cannot change a pin, 
 drops whatever another thread appended between the read and the write. `commands/servers.rs::set_place_pinned` is its
 only caller, and it emits `volumes-changed` afterwards, because the switcher's Network group is exactly the pinned and
 the connected places and an unpin the list never hears about leaves a row nothing will remove.
+
+### The start folder, and what a connect carries beside its params
+
+A saved SFTP or WebDAV place has a remote root, which is a CEILING (`RemoteRoot::to_remote_path` refuses anything above
+it), and an optional start folder: where a pane lands when the place itself is opened. `saved_server_fields.rs` holds the
+rule both stores share:
+
+- **At or under the root, by whole path components.** Both sides go through
+  `cmdr_fs::volume::remote_paths::normalize_remote_path`, the spelling `RemoteRoot` gives a root, so `/srv/data-1` and
+  `/srv/data/../etc` are both outside `/srv/data`. A relative start folder is read from `/`, the way a relative root is.
+- **One landing, one spelling.** An empty start folder and the root itself both store as `None`; a deeper one stores
+  normalized.
+- **Where a person typed it, a refusal; where a connect carries it, a drop.** `start_folder_under_root` answers a typed
+  `StartFolderOutsideRoot` for `save_without_connecting` and `connect_server`, and nothing is written.
+  `start_folder_for_root` is the connect path's rule: a SAVED start folder carried across a root that changed under it
+  lands the place at its root, because nobody is there to read a refusal.
+
+❗ **A connect rebuilds the saved entry whole**, from `params` plus the `display_name` and `start_folder` passed beside
+them (neither is a connection param). So a caller with no field of its own passes the SAVED values:
+`connect_saved_place` reads them off the entry, and the per-protocol `connect_sftp_volume` / `connect_webdav_volume`
+look the start folder up with the store's `find`. Passing `None` would wipe what an edit stored, the same trap
+`remember`'s pin rule closes for `pinned`.
 
 ### A secret used for one dial and never stored
 
