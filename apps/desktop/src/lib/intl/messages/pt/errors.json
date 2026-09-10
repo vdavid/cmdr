@@ -1721,15 +1721,15 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.write.readOnlyDevice.source.title": "Origem só de leitura",
+  "errors.write.readOnlyDevice.source.title": "Origem somente leitura",
   "@errors.write.readOnlyDevice.source.title": {
     "sourceHash": "5d77aa4"
   },
-  "errors.write.readOnlyDevice.source.message": "{deviceName} é só de leitura. Podes copiar ficheiros de lá, mas não movê-los para fora.",
+  "errors.write.readOnlyDevice.source.message": "{deviceName} é somente leitura. Você pode copiar arquivos de lá, mas não movê-los para fora.",
   "@errors.write.readOnlyDevice.source.message": {
     "sourceHash": "ec7d263"
   },
-  "errors.write.readOnlyDevice.source.suggestion": "Copia-os em vez disso. Os originais ficam onde estão.",
+  "errors.write.readOnlyDevice.source.suggestion": "Copie os arquivos em vez disso. Os originais ficam onde estão.",
   "@errors.write.readOnlyDevice.source.suggestion": {
     "sourceHash": "f6a307b"
   },
