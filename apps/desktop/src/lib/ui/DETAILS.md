@@ -473,8 +473,8 @@ classes.
 
 ### StatusGlyph
 
-`StatusGlyph.svelte` marks a condition on the thing beside it: a TCC-restricted folder in a `FullList` / `BriefList`
-row and in `VolumeBreadcrumb`'s volume rows, a symlinked subtree in `SelectionInfo`'s status bar. Those four are its
+`StatusGlyph.svelte` marks a condition on the thing beside it: a TCC-restricted folder in a `FullList` / `BriefList` row
+and in `VolumeBreadcrumb`'s volume rows, a symlinked subtree in `SelectionInfo`'s status bar. Those four are its
 callers. One `label` serves as both the accessible name and the tooltip, because a marker's meaning and its explanation
 are the same sentence; the restricted one comes from `restrictedFolderTooltip()` in `$lib/system-strings.svelte`, which
 stays the single definition of that string.
@@ -488,9 +488,9 @@ Decisions, and what each settled:
 
 - **Exposed to AT (`role="img"` + `aria-label`), ❌ not `aria-hidden`.** Three of the four markers were `aria-hidden`,
   which threw the information away twice over: the glyph vanished, and so did the tooltip, since `use:tooltip` wires
-  `aria-describedby` and an `aria-hidden` element carries none. "This folder is restricted" is real information.
-  Gotcha: the label is currently the whole tooltip sentence, so a restricted row's accessible name grows by an
-  instruction paragraph. A short `fileExplorer.restrictedFolder.label` would fix that, and needs David to write it.
+  `aria-describedby` and an `aria-hidden` element carries none. "This folder is restricted" is real information. Gotcha:
+  the label is currently the whole tooltip sentence, so a restricted row's accessible name grows by an instruction
+  paragraph. A short `fileExplorer.restrictedFolder.label` would fix that, and needs David to write it.
 - **Size is fixed at 12px, ❌ not a prop.** All four sites are the app's small-text surfaces. Making it settable is how
   the eight info glyphs in the tree reached four different sizes.
 - **It inherits the row's color at `opacity: 0.7`**, replacing 0.7 / 0.6 / an explicit `--color-text-tertiary` across

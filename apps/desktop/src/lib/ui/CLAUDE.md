@@ -8,8 +8,8 @@ Reusable components; only silent-breakage rules live here. Ark UI backs the comp
   `dialog-registry.ts` (`SOFT_DIALOG_REGISTRY`), `AlertDialog.svelte`.
 - The primitives (`Icon`, `Spinner`, `Button`, form controls, `Select`, `Combobox`, text fields, `ShortcutChip`,
   `InfoTip` (a `<button>`), `StatusGlyph` (❌ never focusable: a tab stop per virtual row wrecks keyboard navigation),
-  `toast/`) are catalogued in DETAILS § Key files. `ToggleGroup` is segmented, ≠ `RadioGroup`; Tooltip is the
-  sibling `../tooltip/tooltip.ts`.
+  `toast/`) are catalogued in DETAILS § Key files. `ToggleGroup` is segmented, ≠ `RadioGroup`; Tooltip is the sibling
+  `../tooltip/tooltip.ts`.
 
 ## Must-knows
 
