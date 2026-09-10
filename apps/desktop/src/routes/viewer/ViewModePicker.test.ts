@@ -20,16 +20,27 @@ function mountPicker(props: {
   return { target, instance }
 }
 
-function itemValues(target: HTMLElement): (string | null)[] {
-  return Array.from(target.querySelectorAll('[data-part="item"]')).map((o) => o.getAttribute('data-value'))
+/** Ark's `Portal` mounts the menu on the tick after its own effect runs, so wait out both. */
+async function settle(): Promise<void> {
+  await tick()
+  await tick()
+}
+
+/** The menu's rows. It portals to `document.body`, so they're never under the mount target. */
+function items(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>('[data-part="item"]'))
+}
+
+function itemValues(): (string | null)[] {
+  return items().map((o) => o.getAttribute('data-value'))
 }
 
 describe('ViewModePicker', () => {
   it('renders a single, disabled "Text" option for a genuine text file', async () => {
     const { target, instance } = mountPicker({ kind: 'text', lastMediaKind: null })
-    await tick()
+    await settle()
 
-    const options = target.querySelectorAll('[data-part="item"]')
+    const options = items()
     expect(options).toHaveLength(1)
     expect(options[0].getAttribute('data-value')).toBe('text')
     expect(options[0].textContent).toContain('Text')
@@ -49,40 +60,36 @@ describe('ViewModePicker', () => {
 
   it('offers "View as text" for a media file and is enabled', async () => {
     const { target, instance } = mountPicker({ kind: 'pdf' })
-    await tick()
+    await settle()
 
     const trigger = target.querySelector<HTMLButtonElement>('.select-trigger')
     expect(trigger?.hasAttribute('data-disabled')).toBe(false)
     expect(trigger?.textContent).toContain('PDF')
-    expect(itemValues(target)).toEqual(['pdf', 'viewAsText'])
+    expect(itemValues()).toEqual(['pdf', 'viewAsText'])
 
     void unmount(instance)
   })
 
   it('offers the reverse "View as image" while reading a media file as text', async () => {
     const { target, instance } = mountPicker({ kind: 'text', lastMediaKind: 'image' })
-    await tick()
+    await settle()
 
     const trigger = target.querySelector<HTMLButtonElement>('.select-trigger')
     // Not disabled: there's a real switch-back available.
     expect(trigger?.hasAttribute('data-disabled')).toBe(false)
     expect(trigger?.textContent).toContain('Text')
-    expect(itemValues(target)).toEqual(['text', 'viewAsMedia'])
-    const reverse = Array.from(target.querySelectorAll<HTMLElement>('[data-part="item"]')).find(
-      (o) => o.getAttribute('data-value') === 'viewAsMedia',
-    )
+    expect(itemValues()).toEqual(['text', 'viewAsMedia'])
+    const reverse = items().find((o) => o.getAttribute('data-value') === 'viewAsMedia')
     expect(reverse?.textContent).toContain('View as image')
 
     void unmount(instance)
   })
 
   it('offers the reverse "View as PDF" while reading a PDF as text (PDF stays uppercase)', async () => {
-    const { target, instance } = mountPicker({ kind: 'text', lastMediaKind: 'pdf' })
-    await tick()
+    const { instance } = mountPicker({ kind: 'text', lastMediaKind: 'pdf' })
+    await settle()
 
-    const reverse = Array.from(target.querySelectorAll<HTMLElement>('[data-part="item"]')).find(
-      (o) => o.getAttribute('data-value') === 'viewAsMedia',
-    )
+    const reverse = items().find((o) => o.getAttribute('data-value') === 'viewAsMedia')
     expect(reverse?.textContent).toContain('View as PDF')
 
     void unmount(instance)
@@ -91,13 +98,11 @@ describe('ViewModePicker', () => {
   it('calls onViewAsText when "View as text" is picked', async () => {
     const onViewAsText = vi.fn()
     const { target, instance } = mountPicker({ kind: 'image', onViewAsText })
-    await tick()
+    await settle()
 
     target.querySelector<HTMLButtonElement>('.select-trigger')?.click()
     await tick()
-    const item = Array.from(target.querySelectorAll<HTMLElement>('[data-part="item"]')).find(
-      (o) => o.getAttribute('data-value') === 'viewAsText',
-    )
+    const item = items().find((o) => o.getAttribute('data-value') === 'viewAsText')
     item?.click()
     await tick()
 
@@ -109,13 +114,11 @@ describe('ViewModePicker', () => {
   it('calls onViewAsMedia when "View as image" is picked from the text view', async () => {
     const onViewAsMedia = vi.fn()
     const { target, instance } = mountPicker({ kind: 'text', lastMediaKind: 'image', onViewAsMedia })
-    await tick()
+    await settle()
 
     target.querySelector<HTMLButtonElement>('.select-trigger')?.click()
     await tick()
-    const item = Array.from(target.querySelectorAll<HTMLElement>('[data-part="item"]')).find(
-      (o) => o.getAttribute('data-value') === 'viewAsMedia',
-    )
+    const item = items().find((o) => o.getAttribute('data-value') === 'viewAsMedia')
     item?.click()
     await tick()
 

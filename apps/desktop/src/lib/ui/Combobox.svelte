@@ -30,10 +30,13 @@
      * it, the chevron `Trigger` toggles it, typing opens it (`openOnChange`). Don't reintroduce a
      * controlled `open` driven from the input's focus: the `Trigger` focuses the input on click, so a
      * focus-open handler races the trigger's own toggle and flashes the popup shut. `loading` is OUR
-     * in-field spinner overlay (Ark has no loading prop). No `Portal` (keeps the viewer's restricted
-     * capability set unaffected). No entrance animation by default.
+     * in-field spinner overlay (Ark has no loading prop). The open popup portals out of the field's
+     * subtree (`portal-target.ts`), so no ancestor clip or stacking context can bury it. No entrance
+     * animation by default.
      */
     import { Combobox, createListCollection } from '@ark-ui/svelte/combobox'
+    import { Portal } from '@ark-ui/svelte/portal'
+    import { usePortalTarget } from '$lib/ui/portal-target'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -64,6 +67,8 @@
     }: Props = $props()
 
     const resolvedEmptyText = $derived(emptyText ?? tString('ui.combobox.emptyText'))
+
+    const portalTarget = usePortalTarget()
 
     const collection = $derived(
         createListCollection({
@@ -110,31 +115,33 @@
                 <span class="combobox-indicator"><Icon name="chevron-down" size={16} /></span>
             </Combobox.Trigger>
         </Combobox.Control>
-        <Combobox.Positioner class="combobox-positioner">
-            <Combobox.Content
-                class="combobox-content"
-                onkeydown={(e: KeyboardEvent) => {
-                    // Keep Escape scoped to the popup so a host dialog's capture-phase Escape doesn't
-                    // also close the whole dialog.
-                    if (e.key === 'Escape') e.stopPropagation()
-                }}
-            >
-                {#each items as item (item.value)}
-                    <Combobox.Item {item} class="combobox-item">
-                        <Combobox.ItemText>{item.label}</Combobox.ItemText>
-                        <Combobox.ItemIndicator class="combobox-item-indicator"><Icon name="check" size={14} aria-hidden="true" /></Combobox.ItemIndicator>
-                    </Combobox.Item>
-                {/each}
-                {#if items.length === 0}
-                    <!-- A non-actionable `option` so the `role="listbox"` content satisfies axe's
-                         `aria-required-children` on a cold-start / no-match empty list, instead of an
-                         empty listbox (axe flags that even when hidden). Reads as a "no matches" row. -->
-                    <div class="combobox-empty" role="option" aria-disabled="true" aria-selected="false">
-                        {resolvedEmptyText}
-                    </div>
-                {/if}
-            </Combobox.Content>
-        </Combobox.Positioner>
+        <Portal container={portalTarget()}>
+            <Combobox.Positioner>
+                <Combobox.Content
+                    class="combobox-content"
+                    onkeydown={(e: KeyboardEvent) => {
+                        // Keep Escape scoped to the popup so a host dialog's capture-phase Escape doesn't
+                        // also close the whole dialog.
+                        if (e.key === 'Escape') e.stopPropagation()
+                    }}
+                >
+                    {#each items as item (item.value)}
+                        <Combobox.Item {item} class="combobox-item">
+                            <Combobox.ItemText>{item.label}</Combobox.ItemText>
+                            <Combobox.ItemIndicator class="combobox-item-indicator"><Icon name="check" size={14} aria-hidden="true" /></Combobox.ItemIndicator>
+                        </Combobox.Item>
+                    {/each}
+                    {#if items.length === 0}
+                        <!-- A non-actionable `option` so the `role="listbox"` content satisfies axe's
+                             `aria-required-children` on a cold-start / no-match empty list, instead of an
+                             empty listbox (axe flags that even when hidden). Reads as a "no matches" row. -->
+                        <div class="combobox-empty" role="option" aria-disabled="true" aria-selected="false">
+                            {resolvedEmptyText}
+                        </div>
+                    {/if}
+                </Combobox.Content>
+            </Combobox.Positioner>
+        </Portal>
     </Combobox.Root>
 </div>
 
@@ -214,13 +221,10 @@
         color: var(--color-text-tertiary);
     }
 
-    /* The dropdown rung goes on the positioner, through zag's `--z-index` hook — same reasoning
-       (and same trap) as `Select.svelte`'s `.select-positioner`; that comment is the long version. */
-    :global(.combobox-positioner) {
-        --z-index: var(--z-dropdown);
-    }
-
     :global(.combobox-content) {
+        /* The dropdown rung sits on the CONTENT on purpose: zag lifts it onto the positioner.
+           `Select.svelte`'s `.select-content` comment is the long version. */
+        z-index: var(--z-dropdown);
         background: var(--color-bg-primary);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);

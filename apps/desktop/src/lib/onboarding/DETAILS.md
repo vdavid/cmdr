@@ -660,8 +660,9 @@ to).
 **The menu portals into the wizard OVERLAY, not into `document.body`.** Body would put it under the scrim
 (`--z-dropdown` < `--z-modal`) and outside `use:trapFocus`, whose leak guard would yank focus back out of the menu the
 moment zag focuses its content. The overlay is inside the trap and above the panel, and still escapes the panel's
-`overflow: hidden`, which would otherwise clip a menu whose selected row sits near the bottom of the list.
-`ui/DETAILS.md` § Select covers the `portalContainer` prop.
+`overflow: hidden`, which would otherwise clip a menu whose selected row sits near the bottom of the list. The wizard
+provides the overlay through `providePortalTarget`, so every menu inside it (this picker, and the AI step's model field)
+lands there with nothing to pass; `ui/DETAILS.md` § Select covers the mechanism.
 
 **A pick here reports itself.** The picker passes `SettingSelect`'s `onPicked` to
 `trackLanguageChanged('onboarding', …)`, which is half the population of the `language_changed` event (the Settings

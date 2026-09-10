@@ -127,9 +127,7 @@ describe('OnboardingLanguagePicker a11y', () => {
   function mountPicker(): HTMLElement {
     const target = document.createElement('div')
     document.body.appendChild(target)
-    // Portal the menu into `target` so axe sees the whole control in one tree, the way
-    // the wizard portals it into its own overlay.
-    mounted = { target, instance: mount(OnboardingLanguagePicker, { target, props: { portalContainer: target } }) }
+    mounted = { target, instance: mount(OnboardingLanguagePicker, { target }) }
     return target
   }
 
@@ -144,17 +142,19 @@ describe('OnboardingLanguagePicker a11y', () => {
     _setSystemLocalesForTests({ ui: null, format: null })
   })
 
+  // The menu portals to `document.body`, so each audit covers the whole body: the trigger
+  // and its menu in one tree.
   it('closed, on the System default, has no a11y violations', async () => {
-    const target = mountPicker()
+    mountPicker()
     await settle(10)
-    await expectNoA11yViolations(target)
+    await expectNoA11yViolations(document.body)
   })
 
   it('closed, on an explicit pick, has no a11y violations', async () => {
     stubs.settingsMap['appearance.language'] = 'hu'
-    const target = mountPicker()
+    mountPicker()
     await settle(10)
-    await expectNoA11yViolations(target)
+    await expectNoA11yViolations(document.body)
   })
 
   it('open, with the language menu rendered, has no a11y violations', async () => {
@@ -162,7 +162,7 @@ describe('OnboardingLanguagePicker a11y', () => {
     await settle(10)
     target.querySelector<HTMLButtonElement>('.select-trigger')?.click()
     await settle(10)
-    await expectNoA11yViolations(target)
+    await expectNoA11yViolations(document.body)
   })
 })
 

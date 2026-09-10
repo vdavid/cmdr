@@ -26,23 +26,12 @@
      * the language, and the wizard re-renders in place with no restart. ❌ Don't fork
      * that into a bespoke handler.
      */
-    interface Props {
-        /**
-         * The wizard's overlay element, so the open menu escapes the panel's
-         * `overflow: hidden` while staying inside the focus trap. See
-         * `ui/Select.svelte`'s `portalContainer`.
-         */
-        portalContainer?: HTMLElement
-    }
-
-    const { portalContainer }: Props = $props()
 </script>
 
 <div class="language-picker">
     <span class="globe"><Icon name="globe" size={16} aria-hidden="true" /></span>
     <SettingSelect
         id="appearance.language"
-        {portalContainer}
         onPicked={(value: string) => { trackLanguageChanged('onboarding', value); }}
     />
 </div>

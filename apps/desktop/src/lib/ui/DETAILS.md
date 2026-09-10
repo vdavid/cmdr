@@ -20,6 +20,8 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
   § "Text fields", shared prop types in `text-field-types.ts`
 - **`Combobox.svelte`**: Presentational Ark `Combobox`: text-field-with-suggestions, async list, free text (model
   picker)
+- **`portal-target.ts`**: Where `Select` / `Combobox` menus portal: `document.body`, or the overlay a modal layer
+  provides (`providePortalTarget`, called by `ModalDialog` and `OnboardingWizard`). See § Select
 - **`Popover.svelte`**: Generic positioned floater: frosted glass, auto-flip, focus trap, Esc-scoped close
 - **`FilterPopover.svelte`**: `Popover` + a labelled section header; the query dialogs' Size / Modified / Search-in
   surface
@@ -122,10 +124,10 @@ makes the panel the containing block for fixed-position DESCENDANTS, which re-ba
 the dialog from the viewport onto the panel's border box: it lands down-right by exactly the panel's top-left offset.
 `transform: translate(0px, 0px)` counts, so an undragged dialog breaks them just as thoroughly as a dragged one.
 `Popover` is what's exposed (it positions `fixed` from `getBoundingClientRect()` and deliberately doesn't portal, so a
-host dialog's Escape handler can find it in its own subtree); `Menu` and `Select` portal to `document.body` and are
-immune. `will-change: transform` is the tempting "smooth out the drag" change that reintroduces it. jsdom has no layout,
-so no unit test can catch this — a Playwright assertion comparing the popover's rect to its anchor is the only real
-guard.
+host dialog's Escape handler can find it in its own subtree); `Menu` portals to `document.body`, and `Select` /
+`Combobox` portal into the overlay, outside the panel, so all three are immune. `will-change: transform` is the tempting
+"smooth out the drag" change that reintroduces it. jsdom has no layout, so no unit test can catch this — a Playwright
+assertion comparing the popover's rect to its anchor is the only real guard.
 
 The same trap sits one level up: `blur` puts `backdrop-filter` on the OVERLAY, which is also an ancestor. No blurred
 dialog hosts a `Popover` today (the query dialogs, the only `Popover` consumers, don't set `blur`), and unlike the panel
@@ -596,8 +598,6 @@ Props:
 - `disabled?`, `placeholder?` (default `Select...`), `ariaLabel` (lands on the trigger).
 - `contentClass?: string` — extra class on the `.select-content` element (`SettingSelect` sets `custom-highlighted` to
   suppress the checked state on other items while its "Custom…" row is highlighted).
-- `portal?: boolean` (default `false`) — teleport the open menu to `document.body`. See "Portal" below.
-- `portalContainer?: HTMLElement` — portal somewhere other than `document.body` (implies `portal`). See "Portal" below.
 
 **macOS pop-up-button look.** The trigger is borderless and hugs its content: value text + a rounded chevron square
 (`chevrons-up-down`), not a full-width bezel. The menu is a frosted-glass surface (shared `--color-bg-glass` /
@@ -620,34 +620,45 @@ wiring left the menu stuck at `opacity: 0`. The effect retries the measurement a
 never stay invisible if rAF is throttled (unfocused window) or the rows aren't found. The measurement is self-correcting
 (it folds the residual gap into the already-applied shift). Content is `opacity: 0` until the first measurement lands,
 so it never flashes at the default below-trigger spot. The measurement reads the trigger value via
-`rootEl.querySelector` (always in the subtree) and the content via its own `bind:ref` (`contentEl`), so it works whether
-or not the menu is portaled.
+`rootEl.querySelector` (always in the subtree) and the content via its own `bind:ref` (`contentEl`), so it works
+wherever the menu portals.
 
-**Portal (`portal` prop).** Because the menu opens _over_ the trigger, a bottom-of-list selection pushes the top rows
-well above the trigger — into whatever chrome sits there. When the menu isn't portaled it's a descendant of its scroll
-container, so an ancestor `overflow` clips it and, worse, an ancestor `mask-image` fades its top rows regardless of
-z-index (no z-index escapes an ancestor mask). The settings page's `.settings-content-wrapper` has both, which left the
-top rows shaded and un-clickable. `portal` teleports the `Positioner` (via Ark's `Portal`) to `document.body` so the
-menu floats above all of it, macOS-style; zag still anchors to the trigger, and the design tokens live on `:root` so
-body-level content keeps full theming. `SettingSelect` sets `portal`. **Every `Select` rendered into a settings section
-must set it**, `SettingSelect` or not: `AiCloudSection`'s cloud-provider row is the one hand-rolled `Select` there, and
-it's the one that hit this trap. **Leave it `false` in the viewer window**, whose restricted capability set assumes no
-portal-to-body (`ViewModePicker` / `EncodingPicker`); `Combobox` is non-portaled for the same reason.
+**The menu always portals, and the caller never chooses where (`portal-target.ts`).** Because the menu opens _over_ the
+trigger, a bottom-of-list selection pushes the top rows well above the trigger, into whatever chrome sits there.
+Rendered inline, the menu would be a descendant of its scroll container: an ancestor `overflow` clips it, and an
+ancestor `mask-image` fades its top rows regardless of z-index (no z-index escapes an ancestor mask). The settings
+page's `.settings-content-wrapper` has both. When each caller had to opt in, the one hand-rolled settings `Select` (the
+AI provider row) forgot, and its top rows went unclickable. So Ark's `Portal` always moves the `Positioner` out, to one
+of two places:
 
-**Inside a modal, portal to the modal's overlay (`portalContainer`), not to body.** Body is wrong twice over there:
-`--z-dropdown` (100) sits under `--z-modal` (300), so the menu paints behind the scrim, and `use:trapFocus`'s leak guard
-yanks focus straight back out of the open menu, because zag focuses the content element on open. Passing the overlay
-element fixes both while still escaping the panel's `overflow: hidden`. `OnboardingLanguagePicker` is the live example.
+- `document.body` by default. Zag still anchors to the trigger, and the design tokens live on `:root`, so body-level
+  content keeps full theming.
+- The overlay of the nearest modal layer that calls `providePortalTarget` (`ModalDialog`, `OnboardingWizard`). Body is
+  wrong twice over inside a modal: `--z-dropdown` (100) sits under `--z-modal` (300), so the menu would paint behind the
+  scrim, and `use:trapFocus`'s leak guard would yank focus straight back out of the open menu, because zag focuses the
+  content element on open. The overlay carries both the rung and the trap, and still escapes the panel's
+  `overflow: hidden`. A new modal layer with its own trap owes the same one-line call.
 
-**The `--z-dropdown` rung belongs on the positioner (`.select-positioner`).** Zag styles the positioner
-`position: absolute` + `isolation: isolate` and leaves the content a static child inside that stacking context, so a
-`z-index` on `.select-content` only orders the menu's own rows — it can lift the menu over nothing outside the
-positioner, no matter how high it goes. That's the trap: a menu painted under some other chrome looks exactly like a
-z-index problem, and the obvious fix (raise `.select-content`) is a no-op. Zag also writes `z-index: var(--z-index)` to
-the positioner's INLINE style, which no class rule outranks, so the rung goes in by defining that variable rather than
-declaring `z-index`. `Combobox` carries the same pair. The case that exposed both halves was the settings window's
-invisible drag strip painting over the AI provider menu's top rows; the other half of that fix is `../../DETAILS.md` §
+The target is a getter that Ark's `Portal` reads once, when it mounts (a tick after its own effect), by which point the
+provider's `bind:this` has landed; `Portal` never re-reads it. Nothing about the viewer window stands against portaling:
+capabilities gate IPC, and a portal is plain DOM. `Combobox` portals the same way. Tests find a portaled menu through
+its trigger's `aria-controls`, never by nesting under the mount target.
+
+**The `--z-dropdown` rung goes on `.select-content`, and zag lifts it onto the positioner.** Zag styles the positioner
+`position: absolute` + `isolation: isolate` with an INLINE `z-index: var(--z-index)`, so the positioner is the box that
+stacks and the content is a static child inside its context. When zag places the menu, it reads the content's computed
+`z-index` and writes it inline on the positioner as `--z-index` (`@zag-js/popper` `get-placement.mjs`). ❌ Never define
+the rung in a positioner class rule: zag's inline `--z-index` outranks it, the positioner lands on `z-index: auto`, and
+anything on a real rung paints over the menu (a window's drag strip; the viewer's image stage when the menu renders
+inline). The trap hides from E2E: WKWebView starves `requestAnimationFrame` in the unfocused windows E2E opens, and zag
+places the menu from a rAF, so there the write never happens and a class rule reads correct (verified in the macOS E2E
+app by reading the positioner's inline style before and after running frames on timers, 2026-09-10). `Combobox` follows
+the same rule on `.combobox-content`. The settings bug's other half was the drag strip's own rung: `../../DETAILS.md` §
 "Window drag strips".
+
+A real hit test guards it: `viewer-media.spec.ts` runs frames on timers (`runAnimationFramesOnTimers`), puts a
+full-window sentinel on `--z-sticky`, opens the view-mode menu across the image, and checks every row with
+`elementFromPoint` (`selectRowHits`).
 
 **Stable class contract (load-bearing, don't rename):** `.select-trigger`, `.select-item`, `.select-content`,
 `.option-description`. `SettingSelect`'s `handleCustomSubmit` focuses `.select-trigger` via `querySelector`, and the
@@ -912,8 +923,8 @@ Centralized toast notifications with stacking, levels, and two dismissal modes.
 - **Level icon** (`ToastLevelIcon.svelte`): the 28px flat SVG badge per level. **Age** (`toast-age.ts`): the age label's
   wording and wake-up schedule.
 
-The frame: the level icon at the leading edge, the content beside it, and the close button pinned to the top-right corner
-the same distance from both edges. Surface, hairline, and icon colors, corner, inset, and shadow are the
+The frame: the level icon at the leading edge, the content beside it, and the close button pinned to the top-right
+corner the same distance from both edges. Surface, hairline, and icon colors, corner, inset, and shadow are the
 `--color-toast-*`, `--radius-toast`, `--spacing-toast`, and `--shadow-toast` tokens in `app.css`, hand-picked hex per
 scheme. The content column is at least as tall as the icon with its text centered in that height, so a one-line toast
 sits level with its icon while a longer one starts at the icon's top. Contrast of the frame's text on every level's
@@ -927,17 +938,17 @@ every toast body keeps this contract:
 - **One root element, in block flow.** A flex or grid root is its own formatting context, which a float can't reach
   into, so the whole body would sit narrowed beside the corner. `toast-body-layout.test.ts` enforces it for every
   `*ToastContent.svelte` / `*ToastBody.svelte`, which is why a component passed to `addToast` keeps that suffix.
-- **The frame stacks the root's rows.** Each row is a block `--spacing-xs` below the previous one (zero-specificity rules
-  in `ToastItem`). A row that sets its own `margin-top` sets its whole distance from the row above, so the usual buttons
-  row says `--spacing-lg`. Rows below the first can be flex (a buttons row, the downloads lesson); keep the first row
-  plain text with any glyph inline, so its lines wrap around the corner.
-- **Decision: CSS floats do the wrapping.** `@chenglou/pretext` lays out plain text lines in JS, and a toast body is rich
-  markup (chips, links, `<Trans>` sentences, buttons) that it can't lay out, while a float costs no JS at all.
+- **The frame stacks the root's rows.** Each row is a block `--spacing-xs` below the previous one (zero-specificity
+  rules in `ToastItem`). A row that sets its own `margin-top` sets its whole distance from the row above, so the usual
+  buttons row says `--spacing-lg`. Rows below the first can be flex (a buttons row, the downloads lesson); keep the
+  first row plain text with any glyph inline, so its lines wrap around the corner.
+- **Decision: CSS floats do the wrapping.** `@chenglou/pretext` lays out plain text lines in JS, and a toast body is
+  rich markup (chips, links, `<Trans>` sentences, buttons) that it can't lay out, while a float costs no JS at all.
 
 Age label: once a toast has been up a minute, "2m ago" / "1h ago" sits on the content's first line. Decisions:
 
-- **Nothing under a minute.** A seconds count ticks on a surface the eye keeps catching, and a transient toast is gone in
-  four seconds anyway. It counts whole minutes, then whole hours, rounded down.
+- **Nothing under a minute.** A seconds count ticks on a surface the eye keeps catching, and a transient toast is gone
+  in four seconds anyway. It counts whole minutes, then whole hours, rounded down.
 - **`aria-hidden`.** Each toast is a live region (`status` / `alert`), so a label changing every minute would have a
   screen reader announce the whole toast again.
 - **No polling.** One timer per toast, armed for the next whole minute (or hour) and re-armed when it fires.
@@ -946,8 +957,8 @@ Age label: once a toast has been up a minute, "2m ago" / "1h ago" sits on the co
 
 Five levels. Pick by what kind of feedback the toast carries, not by how the message reads:
 
-- **`default`** (gray, the fallback): factual neutral status with no action needed and no value judgement.
-  In-progress indicators that get replaced on completion (`Connecting directly…`), "nothing happened" reports
+- **`default`** (gray, the fallback): factual neutral status with no action needed and no value judgement. In-progress
+  indicators that get replaced on completion (`Connecting directly…`), "nothing happened" reports
   (`No mounted shares from ${host}` after a disconnect that had nothing to disconnect). Rare in practice — most toasts
   carry some signal.
 - **`info`** (blue): notices the user should attend to, including action confirmations. Restart hints

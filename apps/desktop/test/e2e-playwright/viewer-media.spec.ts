@@ -17,7 +17,14 @@
 
 import path from 'path'
 import { test, expect } from './fixtures.js'
-import { closeScopedWindow, openViewerWindow } from './helpers.js'
+import {
+  closeScopedWindow,
+  openViewerWindow,
+  pointerClick,
+  runAnimationFramesOnTimers,
+  selectContentExpr,
+  selectRowHits,
+} from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 const fixtureRoot = (() => {
@@ -95,6 +102,66 @@ test.describe('File viewer media rendering', () => {
 
       // No CSP violation fired (the wrong-token failure mode).
       expect(await mediaCspViolations(viewer)).toEqual([])
+    } finally {
+      await closeScopedWindow(main, viewer, label)
+    }
+  })
+
+  // The view-mode menu opens OVER its trigger and hangs down across the image. A menu
+  // that lost its `--z-dropdown` rung sits at `z-index: auto`, under anything on a real
+  // rung: the menu looks open, but its rows are hidden and a click lands elsewhere.
+  //
+  // Two things keep this test honest. Frames run on timers, because zag's placement
+  // (which writes the positioner's inline stacking styles) happens in a rAF that an
+  // unfocused E2E window never fires. And a full-window sentinel sits at `--z-sticky`,
+  // standing in for chrome on a lower rung (a window's drag strip): the menu portals to
+  // the end of `<body>`, so DOM order alone would lift even an unstacked menu over the
+  // unstacked image stage.
+  test('the view-mode menu opens above the image, and every row takes a click', async ({ tauriPage }) => {
+    const main = tauriPage as TauriPage
+    const viewer = await openMediaViewer(main, pngPath)
+    const label = viewer.targetWindow
+    if (!label) throw new Error('Scoped viewer page has no targetWindow label')
+
+    try {
+      await viewer.waitForSelector('.media-image-stage', 5000)
+      await runAnimationFramesOnTimers(viewer)
+      await viewer.evaluate(`(function () {
+        var sentinel = document.createElement('div');
+        sentinel.id = 'lower-rung-sentinel';
+        sentinel.style.setProperty('position', 'fixed');
+        sentinel.style.setProperty('inset', '0');
+        sentinel.style.setProperty('z-index', 'var(--z-sticky)');
+        document.body.appendChild(sentinel);
+      })()`)
+      // The sentinel really answers clicks over the image, or an empty `covered` below proves nothing.
+      expect(
+        await viewer.evaluate<string | null>(`(function () {
+          var r = document.querySelector('.media-image-stage').getBoundingClientRect();
+          var hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return hit ? hit.id : null;
+        })()`),
+      ).toBe('lower-rung-sentinel')
+
+      const trigger = `document.querySelector('.viewer-toolbar-pickers .select-trigger')`
+      expect(await pointerClick(viewer, trigger)).toBe('clicked')
+      // Wait for zag's placement to land (it writes the positioner's inline `--x`), since that
+      // same write is what sets the positioner's rung. Probing before it tests a menu no user sees.
+      await expect
+        .poll(
+          async () =>
+            viewer.evaluate<string>(`${selectContentExpr(trigger)}.parentElement.style.getPropertyValue('--x')`),
+          {
+            timeout: 5000,
+          },
+        )
+        .not.toBe('')
+
+      // Poll the hit test itself: the menu settles its overlap shift a few frames after
+      // opening, and the user only ever clicks the settled menu.
+      await expect
+        .poll(async () => selectRowHits(viewer, trigger, '.media-image-stage'), { timeout: 5000 })
+        .toEqual({ covered: [], over: ['viewAsText'] })
     } finally {
       await closeScopedWindow(main, viewer, label)
     }

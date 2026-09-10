@@ -19,12 +19,6 @@
         id: SettingId
         disabled?: boolean
         /**
-         * Where the open menu lands, when `document.body` is the wrong place: pass a
-         * focus-trapped modal's overlay element to render this row inside one. See
-         * `ui/Select.svelte`'s `portalContainer`.
-         */
-        portalContainer?: HTMLElement
-        /**
          * Runs when the user COMMITS a pick (clicks a row, or presses Enter on one),
          * with the value they landed on. ❌ Not called for the keyboard/hover preview
          * that `handleHighlightChange` applies as they move through the list, so a
@@ -33,7 +27,7 @@
         onPicked?: (value: string) => void
     }
 
-    const { id, disabled = false, portalContainer, onPicked }: Props = $props()
+    const { id, disabled = false, onPicked }: Props = $props()
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
@@ -192,8 +186,6 @@
             onHighlightChange={handleHighlightChange}
             contentClass={customHighlighted ? 'custom-highlighted' : ''}
             ariaLabel={label}
-            portal
-            {portalContainer}
             {disabled}
         />
     {/if}

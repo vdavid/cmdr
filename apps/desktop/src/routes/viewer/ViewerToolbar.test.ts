@@ -23,11 +23,20 @@ function triggerByLabel(target: HTMLElement, label: string): HTMLButtonElement |
   )
 }
 
-/** The Ark `Select` for `label` renders every option in the DOM even closed. */
+/**
+ * The Ark `Select` for `label` renders every option in the DOM even closed. Its menu portals to
+ * `document.body`, so it's found through the trigger's `aria-controls`, never under the trigger.
+ */
 function optionByValue(target: HTMLElement, label: string, value: string): HTMLElement | undefined {
-  const trigger = triggerByLabel(target, label)
-  const root = trigger?.closest('[data-part="root"]')
-  return Array.from(root?.querySelectorAll<HTMLElement>(`[data-part="item"][data-value="${value}"]`) ?? [])[0]
+  const contentId = triggerByLabel(target, label)?.getAttribute('aria-controls')
+  const content = contentId ? document.getElementById(contentId) : null
+  return content?.querySelector<HTMLElement>(`[data-part="item"][data-value="${value}"]`) ?? undefined
+}
+
+/** Ark's `Portal` mounts the menu on the tick after its own effect runs, so wait out both. */
+async function settle(): Promise<void> {
+  await tick()
+  await tick()
 }
 
 interface MountOpts {
@@ -123,7 +132,7 @@ describe('ViewerToolbar', () => {
   it('calls onEncodingChange when the user picks a different encoding', async () => {
     const onEncodingChange = vi.fn()
     const { target, instance } = mountToolbar({ onEncodingChange })
-    await tick()
+    await settle()
 
     // Open the encoding listbox, then pick UTF-16 LE (Ark routes selection only
     // while the content is open).
@@ -167,7 +176,7 @@ describe('ViewerToolbar', () => {
   it('calls onViewAsText when the user picks "View as text" on a media file', async () => {
     const onViewAsText = vi.fn()
     const { target, instance } = mountToolbar({ kind: 'pdf', onViewAsText })
-    await tick()
+    await settle()
 
     triggerByLabel(target, 'View mode')?.click()
     await tick()
@@ -182,7 +191,7 @@ describe('ViewerToolbar', () => {
   it('calls onViewAsMedia when the user picks "View as image" while reading a media file as text', async () => {
     const onViewAsMedia = vi.fn()
     const { target, instance } = mountToolbar({ kind: 'text', lastMediaKind: 'image', onViewAsMedia })
-    await tick()
+    await settle()
 
     triggerByLabel(target, 'View mode')?.click()
     await tick()

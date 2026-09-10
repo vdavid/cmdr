@@ -26,8 +26,8 @@ already paints over the in-flow layout — a rung is only needed to beat other P
 high as it should ever go. All four sat at `--z-dropdown` once, which put an invisible strip on the same rung as the
 app's menus and let it swallow clicks on their top rows: the AI provider pop-up in settings opens over its trigger, so
 its first two options landed under the strip and couldn't be picked. Anything a menu can open into belongs BELOW
-`--z-dropdown`. (The other half of that bug was the rung sitting on the wrong element inside `Select`;
-`lib/ui/DETAILS.md` § Select has it.)
+`--z-dropdown`. (A menu clears the strip only if its own rung really applies, which depends on the element carrying it:
+`lib/ui/DETAILS.md` § Select.)
 
 ## Global stylesheets
 

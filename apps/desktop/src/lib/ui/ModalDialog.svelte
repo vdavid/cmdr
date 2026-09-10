@@ -8,6 +8,7 @@
     import { markDialogOpen, markDialogClosed } from './open-dialogs.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { dependOn } from '$lib/utils/reactivity'
+    import { providePortalTarget } from './portal-target'
 
     interface Props {
         titleId: string
@@ -130,6 +131,9 @@
     }: Props = $props()
 
     let overlayElement: HTMLDivElement | undefined = $state()
+    // Menus in the body (`Select`, `Combobox`) portal into the overlay: it carries the modal
+    // rung and the focus trap, and it doesn't clip the way the panel does.
+    providePortalTarget(() => overlayElement)
     let dialogElement: HTMLDivElement | undefined = $state()
     let dialogPosition = $state({ x: 0, y: 0 })
     let isDragging = $state(false)
@@ -173,7 +177,8 @@
      *
      * `Popover` is the exposed one (it positions `fixed` from `getBoundingClientRect()` and
      * deliberately does NOT portal, so the host dialog's Escape handler can find it in its own
-     * subtree). `Menu` and `Select` portal to `document.body` and are immune.
+     * subtree). `Menu` portals to `document.body`, and `Select` / `Combobox` portal into the
+     * overlay, outside the panel, so all three are immune.
      *
      * `left` / `top` shift the panel visually without reflowing siblings (same as the
      * transform did) and establish no containing block. `will-change: transform` is the

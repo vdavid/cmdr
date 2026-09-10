@@ -93,11 +93,13 @@ describe('EncodingPicker accessibility', () => {
     // full keyboard support (Tab focus, arrow-key option change, Enter commit).
     // Pin that the picker renders the accessible widget, not a bare button.
     const { target, instance } = mountPicker()
+    // Ark's `Portal` mounts the listbox on the tick after its own effect, into `document.body`.
+    await tick()
     await tick()
 
     expect(target.querySelector('[role="combobox"]')).not.toBeNull()
-    expect(target.querySelector('[role="listbox"]')).not.toBeNull()
-    expect(target.querySelectorAll('[data-part="item-group-label"]').length).toBeGreaterThan(0)
+    expect(document.querySelector('[role="listbox"]')).not.toBeNull()
+    expect(document.querySelectorAll('[data-part="item-group-label"]').length).toBeGreaterThan(0)
 
     void unmount(instance)
   })
@@ -157,11 +159,13 @@ describe('ViewModePicker accessibility', () => {
     // popover with full keyboard support out of the box. Pin that the picker
     // stays on the accessible widget rather than a bare button.
     const { target, instance } = mountPicker()
+    // Ark's `Portal` mounts the listbox on the tick after its own effect, into `document.body`.
+    await tick()
     await tick()
 
     expect(target.querySelector('[role="combobox"]')).not.toBeNull()
-    expect(target.querySelector('[role="listbox"]')).not.toBeNull()
-    const option = target.querySelector('[data-part="item"][data-value="text"]')
+    expect(document.querySelector('[role="listbox"]')).not.toBeNull()
+    const option = document.querySelector('[data-part="item"][data-value="text"]')
     expect(option?.textContent).toContain('Text')
 
     void unmount(instance)

@@ -104,16 +104,11 @@
             split
             {searchQuery}
         >
-            <!-- `portal` is not optional here: the menu opens OVER the trigger, so picking a
-                 provider low in the list lifts the top rows above it, and this row sits near the
-                 top of the section. Un-portaled they'd be trapped in `.settings-content-wrapper`'s
-                 mask + `overflow`. See `lib/ui/DETAILS.md` § Select → Portal. -->
             <Select
                 items={providerSelectItems}
                 value={cloudProviderId}
                 onChange={(newProviderId: string) => { setSetting('ai.cloudProvider', newProviderId); }}
                 ariaLabel={tString('ai.cloud.serviceAria')}
-                portal
             />
         </SettingRow>
         {#if controller.preset?.description}

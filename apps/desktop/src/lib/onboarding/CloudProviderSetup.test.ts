@@ -351,9 +351,10 @@ describe('CloudProviderSetup', () => {
     keyInput.dispatchEvent(new Event('input', { bubbles: true }))
     await advanceTimers(1500)
     // The shared `ui/Combobox` renders the model items; we assert the data flows through, not the
-    // popup open/close mechanics (that's Ark's job, covered by the primitive's own tests).
-    expect(mounted.target.textContent).toContain('gpt-4.1-mini')
-    expect(mounted.target.textContent).toContain('gpt-4o-mini')
+    // popup open/close mechanics (that's Ark's job, covered by the primitive's own tests). The popup
+    // portals to `document.body`, so its rows are there, not under the mount target.
+    expect(document.body.textContent).toContain('gpt-4.1-mini')
+    expect(document.body.textContent).toContain('gpt-4o-mini')
   })
 
   it('a secret store read failure surfaces an inline error', async () => {

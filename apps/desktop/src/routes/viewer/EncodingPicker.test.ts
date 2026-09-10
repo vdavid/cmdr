@@ -40,17 +40,26 @@ function mountPicker(opts: {
   return { target, instance }
 }
 
-/** The Ark `Select` renders every option in the DOM even while closed. */
-function optionEls(target: HTMLElement): HTMLElement[] {
-  return Array.from(target.querySelectorAll<HTMLElement>('[data-part="item"]'))
+/** Ark's `Portal` mounts the menu on the tick after its own effect runs, so wait out both. */
+async function settle(): Promise<void> {
+  await tick()
+  await tick()
 }
 
-function optionByValue(target: HTMLElement, value: string): HTMLElement | undefined {
-  return optionEls(target).find((el) => el.getAttribute('data-value') === value)
+/**
+ * The Ark `Select` renders every option in the DOM even while closed. The menu portals to
+ * `document.body`, so its parts are found there, never under the mount target.
+ */
+function optionEls(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>('[data-part="item"]'))
 }
 
-function groupLabels(target: HTMLElement): string[] {
-  return Array.from(target.querySelectorAll<HTMLElement>('[data-part="item-group-label"]')).map((el) =>
+function optionByValue(value: string): HTMLElement | undefined {
+  return optionEls().find((el) => el.getAttribute('data-value') === value)
+}
+
+function groupLabels(): string[] {
+  return Array.from(document.querySelectorAll<HTMLElement>('[data-part="item-group-label"]')).map((el) =>
     el.textContent.trim(),
   )
 }
@@ -58,22 +67,22 @@ function groupLabels(target: HTMLElement): string[] {
 describe('EncodingPicker', () => {
   it('renders every choice grouped by Unicode and Western', async () => {
     const { target, instance } = mountPicker({ value: 'utf8', detected: 'utf8' })
-    await tick()
+    await settle()
 
     expect(target.querySelector('.select-trigger')).not.toBeNull()
-    expect(groupLabels(target)).toContain('Unicode')
-    expect(groupLabels(target)).toContain('Western')
-    expect(optionEls(target)).toHaveLength(allChoices.length)
+    expect(groupLabels()).toContain('Unicode')
+    expect(groupLabels()).toContain('Western')
+    expect(optionEls()).toHaveLength(allChoices.length)
 
     void unmount(instance)
   })
 
   it('marks the detected encoding with "(Detected)"', async () => {
-    const { target, instance } = mountPicker({ value: 'windows1252', detected: 'windows1252' })
-    await tick()
+    const { instance } = mountPicker({ value: 'windows1252', detected: 'windows1252' })
+    await settle()
 
-    expect(optionByValue(target, 'windows1252')?.textContent).toContain('(Detected)')
-    expect(optionByValue(target, 'utf8')?.textContent).not.toContain('(Detected)')
+    expect(optionByValue('windows1252')?.textContent).toContain('(Detected)')
+    expect(optionByValue('utf8')?.textContent).not.toContain('(Detected)')
 
     void unmount(instance)
   })
@@ -81,13 +90,13 @@ describe('EncodingPicker', () => {
   it('calls onChange with the picked encoding', async () => {
     const onChange = vi.fn()
     const { target, instance } = mountPicker({ value: 'utf8', detected: 'utf8', onChange })
-    await tick()
+    await settle()
 
     // Open the listbox before picking: Ark only routes selection through the
     // interaction machinery while the content is open (closed content is hidden).
     target.querySelector<HTMLButtonElement>('.select-trigger')?.click()
     await tick()
-    optionByValue(target, 'utf16Le')?.click()
+    optionByValue('utf16Le')?.click()
     await tick()
 
     expect(onChange).toHaveBeenCalledTimes(1)
@@ -108,10 +117,10 @@ describe('EncodingPicker', () => {
   })
 
   it('preserves the backend-supplied order within each group', async () => {
-    const { target, instance } = mountPicker({ value: 'utf8', detected: 'utf8' })
-    await tick()
+    const { instance } = mountPicker({ value: 'utf8', detected: 'utf8' })
+    await settle()
 
-    const unicodeGroup = Array.from(target.querySelectorAll<HTMLElement>('[data-part="item-group"]')).find(
+    const unicodeGroup = Array.from(document.querySelectorAll<HTMLElement>('[data-part="item-group"]')).find(
       (g) => (g.querySelector('[data-part="item-group-label"]')?.textContent ?? '').trim() === 'Unicode',
     )
     const unicodeValues = Array.from(unicodeGroup?.querySelectorAll<HTMLElement>('[data-part="item"]') ?? []).map(

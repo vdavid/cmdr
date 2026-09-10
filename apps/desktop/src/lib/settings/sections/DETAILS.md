@@ -102,10 +102,8 @@ sections compose).
   `SectionCard` (no `anyVisible` gate: the section mounts only when `provider === 'cloud'`). Endpoint, key, and model
   are controls inside those steps now, not three `SettingRow`s; they were all one setting (`ai.cloudProviderConfigs`)
   before, so the block's single `shouldShow('ai.cloudProviderConfigs')` gate is the same search visibility the rows had.
-  See § "The setup steps are shared with onboarding". It holds the only hand-rolled `Select` in settings (the provider
-  row; every other dropdown here goes through `SettingSelect`), so it carries the `portal` prop itself — without it the
-  menu is trapped in `.settings-content-wrapper`'s mask and `overflow`, which is exactly how the provider pop-up's top
-  rows became unclickable. `../../ui/DETAILS.md` § Select → Portal.
+  See § "The setup steps are shared with onboarding". The provider row is the one hand-rolled `Select` in settings;
+  every other dropdown here goes through `SettingSelect`.
 - **`AiLocalSection.svelte`**: Local llama-server lifecycle, model install with multi-step tracking, context window
   "Apply" (server restart), RAM gauge, delete confirmation. Only the context-window registry-row cluster (`SettingRow`
   - the RAM gauge) is wrapped in an unlabeled `SectionCard`, and that wrapper sits INSIDE the

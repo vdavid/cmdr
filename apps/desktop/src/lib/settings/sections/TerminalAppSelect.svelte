@@ -100,5 +100,4 @@
     placeholder={tString('settings.behavior.openTerminalHereApp.checking')}
     disabled={!ready}
     {ariaLabel}
-    portal
 />

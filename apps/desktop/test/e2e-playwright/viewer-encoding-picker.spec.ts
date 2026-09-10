@@ -13,7 +13,7 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import { test, expect } from './fixtures.js'
-import { closeScopedWindow, openViewerWindow, pointerClick } from './helpers.js'
+import { closeScopedWindow, openViewerWindow, pointerClick, selectContentExpr } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 const ENC_FIXTURE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'cmdr-viewer-enc-'))
@@ -76,18 +76,24 @@ test.describe('File viewer encoding picker', () => {
     // its `data-value` is the encoding id.
     await viewer.waitForSelector('.viewer-toolbar-pickers .select-trigger', 8000)
 
-    // Scope every item lookup to the encoding picker's own listbox. The toolbar holds
-    // two `ui/Select` pickers: the disabled view-mode picker (a single "text" item)
-    // first, the encoding picker second. On webkit2gtk the disabled picker's item is
-    // mounted AND carries `aria-selected="true"`, so an unscoped
-    // `.viewer-toolbar-pickers [data-part="item"]` query matches it first and reads
-    // "text" instead of the detected encoding (passes on macOS, where that item isn't
-    // matched). The encoding picker is the last `.select-content` (mirrors the
-    // last-trigger click below).
+    // The toolbar holds two `ui/Select` pickers: the disabled view-mode picker (a single
+    // "text" item) first, the encoding picker last. Every item lookup goes through the
+    // encoding trigger's OWN menu (`selectContentExpr` follows its `aria-controls`): the
+    // menus portal to `document.body`, so nothing nests under the toolbar, and an unscoped
+    // `[data-part="item"]` query would match the view-mode picker's item first. On
+    // webkit2gtk that item also carries `aria-selected="true"`, so it would read "text"
+    // instead of the detected encoding.
+    const encodingTriggerExpr = `
+      (function () {
+        const triggers = document.querySelectorAll('.viewer-toolbar-pickers .select-trigger')
+        return triggers[triggers.length - 1]
+      })()
+    `
+    const encodingContentExpr = selectContentExpr(encodingTriggerExpr)
+
     const inEncodingPicker = (innerSelector: string): string => `
       (function () {
-        const contents = document.querySelectorAll('.viewer-toolbar-pickers .select-content')
-        const enc = contents[contents.length - 1]
+        const enc = ${encodingContentExpr}
         return enc ? enc.querySelector('${innerSelector}') : null
       })()
     `
@@ -113,20 +119,12 @@ test.describe('File viewer encoding picker', () => {
     // Switch to UTF-8: triggers a non-instant rebuild (UTF-16 -> UTF-8 changes
     // byte layout). Open the listbox, then click the UTF-8 option. The picker
     // reflects the new selection immediately; the rebuild runs in the
-    // background. The encoding picker is the second trigger in the toolbar (the
-    // first is the view-mode picker, which is disabled).
+    // background.
     // A bare `.click()` doesn't drive an Ark/zag `Select` on webkit2gtk: the trigger
     // toggles on `pointerdown` and items select on `pointerup`, neither of which a
     // synthetic click fires (it works on macOS WebKit by luck). `pointerClick` drives
     // the realistic pointer+mouse sequence, and reports a missing or disabled target
     // instead of no-opping into a later timeout.
-
-    const encodingTriggerExpr = `
-      (function () {
-        const triggers = document.querySelectorAll('.viewer-toolbar-pickers .select-trigger')
-        return triggers[triggers.length - 1]
-      })()
-    `
 
     // The encoding picker is `disabled={isIndexing}`. On a slow host the initial
     // LineIndex build of the 6 MB file can still be running here, and a disabled
@@ -136,8 +134,7 @@ test.describe('File viewer encoding picker', () => {
         async () =>
           viewer.evaluate<boolean>(`
             (function () {
-              const triggers = document.querySelectorAll('.viewer-toolbar-pickers .select-trigger')
-              const trig = triggers[triggers.length - 1]
+              const trig = ${encodingTriggerExpr}
               return !!trig && !trig.disabled && trig.getAttribute('data-disabled') === null
             })()
           `),
@@ -156,8 +153,7 @@ test.describe('File viewer encoding picker', () => {
         async () =>
           viewer.evaluate<string | null>(`
             (function () {
-              const contents = document.querySelectorAll('.viewer-toolbar-pickers .select-content')
-              const enc = contents[contents.length - 1]
+              const enc = ${encodingContentExpr}
               return enc ? enc.getAttribute('data-state') : null
             })()
           `),

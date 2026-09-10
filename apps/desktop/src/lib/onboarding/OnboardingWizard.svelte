@@ -6,6 +6,7 @@
     import { markDialogOpen, markDialogClosed } from '$lib/ui/open-dialogs.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
+    import { providePortalTarget } from '$lib/ui/portal-target'
     import { tooltip, showTooltipNow, hideTooltipFor } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
     import { tString } from '$lib/intl/messages.svelte'
@@ -42,11 +43,13 @@
      */
     let panelEl: HTMLDivElement | undefined = $state()
     /**
-     * The overlay, handed to the header's language picker as its portal target: the
-     * open menu has to escape `.wizard-panel`'s `overflow: hidden` without leaving the
-     * focus trap (which lives on this element) or the modal stacking context.
+     * The overlay, where every menu in the wizard portals (the footer's language picker,
+     * the AI step's model field): an open menu has to escape `.wizard-panel`'s
+     * `overflow: hidden` without leaving the focus trap (which lives on this element) or
+     * the modal stacking context.
      */
     let overlayEl: HTMLDivElement | undefined = $state()
+    providePortalTarget(() => overlayEl)
     /**
      * Element that had focus when the wizard opened. Restored on destroy so
      * keyboard input flows back to wherever it came from after close.
@@ -283,13 +286,8 @@
                         <Icon name="arrow-left" size={16} />
                     </button>
                 {/if}
-                <!-- Rendered only once the overlay ref is bound, so the portal target is stable
-                     from the picker's first render. Without the guard the menu mounts into
-                     `document.body` for one pass and Ark's Portal then re-mounts it. See
-                     `OnboardingLanguagePicker.svelte` for why it isn't a step. -->
-                {#if overlayEl}
-                    <OnboardingLanguagePicker portalContainer={overlayEl} />
-                {/if}
+                <!-- See `OnboardingLanguagePicker.svelte` for why it isn't a step. -->
+                <OnboardingLanguagePicker />
             </div>
             <ol
                 class="step-dots"

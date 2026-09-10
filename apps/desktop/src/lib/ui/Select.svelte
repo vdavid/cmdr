@@ -39,12 +39,14 @@
      * `handleCustomSubmit` focuses `.select-trigger` via `querySelector`. The `ariaLabel` lands on
      * the trigger.
      *
-     * The open menu can teleport to `document.body` via the `portal` prop (escapes ancestor
-     * `overflow`/`mask`); the overlap measurement finds the content through its `bind:ref`, so it
-     * works portaled or not. See `lib/ui/DETAILS.md` § Select.
+     * The open menu always portals out of the trigger's subtree (`portal-target.ts` picks where:
+     * `document.body`, or the hosting dialog's overlay), so no ancestor clip, mask, or stacking
+     * context can bury it. The overlap measurement finds the content through its `bind:ref`. See
+     * `lib/ui/DETAILS.md` § Select.
      */
     import { Select, createListCollection, type SelectValueChangeDetails } from '@ark-ui/svelte/select'
     import { Portal } from '@ark-ui/svelte/portal'
+    import { usePortalTarget } from '$lib/ui/portal-target'
     import Icon from '$lib/ui/Icon.svelte'
     import { computeOverlapShift } from '$lib/ui/select-positioning'
     import { tString } from '$lib/intl/messages.svelte'
@@ -61,21 +63,6 @@
         ariaLabel: string
         /** Extra class on the `.select-content` element (for example `custom-highlighted`). */
         contentClass?: string
-        /**
-         * Teleport the open menu to `document.body` so it escapes any ancestor `overflow`/`mask`/
-         * stacking context (for example the settings page's masked, scrolling content wrapper). Leave
-         * `false` in the viewer window, whose restricted capability set assumes no portal-to-body.
-         */
-        portal?: boolean
-        /**
-         * Where the portaled menu lands, when `document.body` is the wrong place. Inside a modal
-         * that's `use:trapFocus`'d, body is: the trap's leak guard would yank focus straight back
-         * out of the open menu (zag focuses the content element on open), and `--z-dropdown` sits
-         * under `--z-modal` so the menu would paint behind the scrim. Pass the modal's own overlay
-         * element and both problems go away, while still escaping the panel's `overflow: hidden`.
-         * Implies `portal`.
-         */
-        portalContainer?: HTMLElement
     }
 
     const {
@@ -87,11 +74,11 @@
         placeholder,
         ariaLabel,
         contentClass = '',
-        portal = false,
-        portalContainer,
     }: Props = $props()
 
     const resolvedPlaceholder = $derived(placeholder ?? tString('ui.select.placeholder'))
+
+    const portalTarget = usePortalTarget()
 
     const collection = $derived(
         createListCollection({
@@ -248,12 +235,10 @@
                 <span class="select-indicator"><Icon name="chevrons-up-down" size={14} aria-hidden="true" /></span>
             </Select.Trigger>
         </Select.Control>
-        <!-- Always wrap the menu in `Portal`, disabled (rendered inline) unless `portal` (or a
-             `portalContainer`) is set; when enabled it teleports to `portalContainer ?? body` so the
-             open menu escapes ancestor `overflow`/`mask`. Ark's Portal forwards the Select context,
-             and the content's `bind:ref` works either way. -->
-        <Portal disabled={!portal && portalContainer === undefined} container={portalContainer}>
-            <Select.Positioner class="select-positioner">
+        <!-- Ark's Portal forwards the Select context, and reads `container` only when it mounts, by
+             which point a hosting dialog's overlay is bound. -->
+        <Portal container={portalTarget()}>
+            <Select.Positioner>
                 <Select.Content
                     bind:ref={contentEl}
                     class={`select-content${contentClass ? ` ${contentClass}` : ''}`}
@@ -389,22 +374,18 @@
         color: var(--color-text-primary);
     }
 
-    /* The dropdown rung lives on the POSITIONER, not on the content. Zag styles the positioner
-       `position: absolute` + `isolation: isolate`, so the content is a static child inside the
-       positioner's own stacking context: a `z-index` there orders the menu's rows against each
-       other and nothing else, which is why raising it never lifted the menu over a window's drag
-       strip. The positioner is the positioned box — but zag already writes `z-index: var(--z-index)`
-       to its INLINE style, which no class rule can outrank, so the rung goes in through that
-       variable (zag's own hook) rather than a `z-index` declaration that would silently lose the
-       cascade. Portaled, this lands at body level; inside a modal (`portalContainer`) it's relative
-       to the overlay, one rung under `--z-modal`. */
-    :global(.select-positioner) {
-        --z-index: var(--z-dropdown);
-    }
-
     /* Frosted-glass menu. Shared tokens with tooltips / filter-chip popovers so every glass surface
        reads as one material; the blur is dropped under reduced transparency (token flips opaque). */
     :global(.select-content) {
+        /* The dropdown rung goes on the CONTENT, and zag lifts it onto the positioner, the box that
+           actually stacks. When zag places the menu it reads the content's computed `z-index` and
+           writes it inline on the positioner as `--z-index`, which the positioner's inline
+           `z-index: var(--z-index)` picks up. ❌ Never put the rung in a positioner class rule
+           instead: zag's inline write outranks it, so in every window where the placement runs
+           (every focused one) the positioner lands on `z-index: auto` and anything on a real rung
+           paints over the menu. It stacks relative to wherever the menu portals
+           (`portal-target.ts`): body level, or a hosting dialog's overlay, under `--z-modal`. */
+        z-index: var(--z-dropdown);
         background: var(--color-bg-glass);
         -webkit-backdrop-filter: saturate(180%) blur(20px);
         backdrop-filter: saturate(180%) blur(20px);

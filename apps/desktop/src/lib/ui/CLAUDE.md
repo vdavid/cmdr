@@ -41,8 +41,8 @@ Reusable components; only silent-breakage rules live here. Ark UI backs the comp
   - `ShortcutChip`: import `openShortcutCustomization` dynamically in the click handler: a static import drags
     `@tauri-apps/api/webviewWindow` onto a module-eval surface the capability-restricted viewer can't have. Set exactly
     one of `commandId` / `key`.
-  - `Select`: `.select-*` classes are a contract (`SettingSelect`'s `querySelector`, `dropdown_states.go`); don't rename
-    or recolor off the accent tokens. `--z-dropdown` belongs on `.select-positioner`, inert on `.select-content`.
+  - `Select`: `.select-*` classes are a contract; don't rename or recolor off the accent tokens. `--z-dropdown` on
+    `.select-content`, ❌ never the positioner. Trapping modals call `providePortalTarget`.
   - `Combobox` is a text-field-with-suggestions: drive its text off `inputValue`, never `value` / `items`, which blanks
     the field on an empty list or custom name.
   - Text fields: chrome lives in `app.css` § "Text fields", so ONE edit restyles all five (keep `Combobox` /

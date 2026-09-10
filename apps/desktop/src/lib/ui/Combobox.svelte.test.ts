@@ -80,7 +80,11 @@ describe('Combobox value model', () => {
     // Open the popup (Ark only acts on a selection while open), then click a suggestion.
     getInput(target).click()
     await tick()
-    const option = [...target.querySelectorAll<HTMLElement>('.combobox-item')].find((el) =>
+    // The popup portals to `document.body`, so its rows are found through the input's
+    // `aria-controls`, never under `target`: earlier tests leave their own popups in the body.
+    const contentId = getInput(target).getAttribute('aria-controls')
+    const content = contentId ? document.getElementById(contentId) : null
+    const option = [...(content?.querySelectorAll<HTMLElement>('.combobox-item') ?? [])].find((el) =>
       el.textContent.includes('gpt-4o-mini'),
     )
     if (!option) throw new Error('combobox item not found')

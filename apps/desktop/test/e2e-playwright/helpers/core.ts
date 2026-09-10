@@ -326,6 +326,88 @@ export async function pointerClick(page: PageLike, elementExpr: string): Promise
 }
 
 /**
+ * A JS expression for the menu of the `ui/Select` whose trigger `triggerExpr`
+ * resolves to, or null.
+ *
+ * Found through the trigger's `aria-controls`, ❌ never by nesting under the
+ * trigger's container: the menu portals out of that subtree (into the nearest
+ * dialog overlay, or `document.body`).
+ */
+export function selectContentExpr(triggerExpr: string): string {
+  return `(function () {
+        var t = ${triggerExpr};
+        var id = t ? t.getAttribute('aria-controls') : null;
+        return id ? document.getElementById(id) : null;
+    })()`
+}
+
+/**
+ * Makes `requestAnimationFrame` run its callbacks on timers in `page`'s window.
+ *
+ * E2E opens windows unfocused, and WKWebView starves rAF there (`docs/testing.md`
+ * § "rAF in unfocused windows"). Code that only does its real work in a frame then
+ * never does it under test: zag places a `ui/Select` menu (and writes its inline
+ * stacking styles) from a rAF, so an unfocused E2E window shows a menu no user
+ * ever gets. Call this BEFORE the gesture whose frames matter.
+ */
+export async function runAnimationFramesOnTimers(page: PageLike): Promise<void> {
+  await page.evaluate(`(function () {
+        window.requestAnimationFrame = function (cb) {
+            return setTimeout(function () { cb(performance.now()); }, 16);
+        };
+        window.cancelAnimationFrame = function (id) { clearTimeout(id); };
+    })()`)
+}
+
+/** Where each row of an open `ui/Select` menu stands for a real click. */
+export interface SelectRowHits {
+  /** `data-value`s of the rows whose centre a click would NOT land on. */
+  covered: string[]
+  /** `data-value`s of the rows whose centre sits over `overSelector`'s box. */
+  over: string[]
+}
+
+/**
+ * Probes the centre of every row in an OPEN `ui/Select` menu with
+ * `elementFromPoint`, which is what a real click hits. A row counts as covered
+ * when anything else answers there: a sibling stacked above the menu, a window's
+ * invisible drag strip, an ancestor's clip. A computed `z-index` can't stand in
+ * for this: a menu can hold its rung and still sit under something stacked in a
+ * higher context, or clipped by an ancestor. In an unfocused E2E window, call
+ * `runAnimationFramesOnTimers` first, or zag never places the menu at all.
+ *
+ * `over` lists the rows lying over `overSelector`, so a caller can prove the menu
+ * really opened across the thing it's meant to beat (an empty `covered` proves
+ * nothing if the rows never overlapped it). Returns null when the menu isn't
+ * mounted.
+ */
+export async function selectRowHits(
+  page: PageLike,
+  triggerExpr: string,
+  overSelector: string,
+): Promise<SelectRowHits | null> {
+  return page.evaluate<SelectRowHits | null>(`(function () {
+        var content = ${selectContentExpr(triggerExpr)};
+        if (!content) return null;
+        var target = document.querySelector(${JSON.stringify(overSelector)});
+        var box = target ? target.getBoundingClientRect() : null;
+        var covered = [];
+        var over = [];
+        var rows = content.querySelectorAll('.select-item');
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i].getBoundingClientRect();
+            var x = r.left + r.width / 2;
+            var y = r.top + r.height / 2;
+            var value = rows[i].getAttribute('data-value');
+            var hit = document.elementFromPoint(x, y);
+            if (!hit || !rows[i].contains(hit)) covered.push(value);
+            if (box && x >= box.left && x <= box.right && y >= box.top && y <= box.bottom) over.push(value);
+        }
+        return { covered: covered, over: over };
+    })()`)
+}
+
+/**
  * Finds the index of a file by name in the focused pane's entry list.
  * Returns the target index and total entry count, or an error object.
  */
