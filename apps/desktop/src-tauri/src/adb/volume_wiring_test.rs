@@ -399,9 +399,10 @@ fn list_undialed_phone(serial: &str) {
     }]);
 }
 
-/// ❗ Listing a phone that is listed but not dialed answers that the device isn't
-/// connected, ❌ never `NotFound`: the frontend reads `NotFound` as "this folder
-/// was deleted" and walks the pane up and off the phone.
+/// ❗ Listing a phone that is listed but not dialed answers `NotConnected`: ❌ never
+/// `DeviceDisconnected`, which tells the user a session dropped that never
+/// existed, and ❌ never `NotFound`, which the frontend reads as "this folder was
+/// deleted" and walks the pane up and off the phone.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn listing_a_listed_phone_nobody_dialed_says_it_is_not_connected() {
     const SERIAL: &str = "R58M-Undialed-Listing";
@@ -427,8 +428,8 @@ async fn listing_a_listed_phone_nobody_dialed_says_it_is_not_connected() {
     .await;
 
     assert!(
-        matches!(outcome, Err(cmdr_fs::volume::VolumeError::DeviceDisconnected(_))),
-        "an undialed phone isn't connected, and nothing was deleted; got {outcome:?}"
+        matches!(outcome, Err(cmdr_fs::volume::VolumeError::NotConnected(_))),
+        "an undialed phone isn't connected yet: nothing dropped, and nothing was deleted; got {outcome:?}"
     );
     device_provider::apply_device_list(Vec::new());
 }

@@ -101,6 +101,7 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
         VolumeError::AlreadyExists(_) => kinds::already_exists(&path_display, raw),
         VolumeError::NotSupported => kinds::not_supported(raw),
         VolumeError::DeviceDisconnected(_) => kinds::device_disconnected(&path_display, raw),
+        VolumeError::NotConnected(_) => kinds::not_connected(&path_display, raw),
         VolumeError::DeviceSessionReset(_) => kinds::device_reconnecting(&path_display, raw),
         VolumeError::ReadOnly(_) => kinds::read_only(raw),
         VolumeError::StorageFull { .. } => kinds::storage_full(raw),

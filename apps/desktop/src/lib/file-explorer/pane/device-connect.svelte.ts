@@ -10,7 +10,7 @@
  * ❗ **This factory is the ONE dialer, and it holds the pane's listing while it
  * works** (`holdsListing`). Path resolution never dials, and a phone nobody has
  * dialed has no registered volume, so a listing there can only come back refused
- * (`DeviceDisconnected`). The reload on connect is what lists the phone.
+ * (`NotConnected`). The reload on connect is what lists the phone.
  *
  * ❗ **"Open" is re-checked against the row.** Enrichment fills `capabilities`
  * only for a registered volume, so a phone that stays listed after an eject

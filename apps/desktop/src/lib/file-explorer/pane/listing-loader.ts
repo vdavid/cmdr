@@ -452,6 +452,15 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
                 return
               }
 
+              // A phone or server nobody has connected yet: nothing was deleted, and the
+              // existence probe below can only answer "couldn't tell" there, so it would
+              // cost a round trip and end in this same refusal. Definitive, like the
+              // password case above.
+              if (reason?.reason === 'notConnected') {
+                showListingError()
+                return
+              }
+
               // Check whether the path was deleted, and walk up, asking the volume THIS
               // load listed (`volumeId`, captured at the start), ❌ never a live read
               // here: without an id the backend asks the boot disk, which says "gone"

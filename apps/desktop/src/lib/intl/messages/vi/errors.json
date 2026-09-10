@@ -539,6 +539,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.notConnected.title": "Chưa kết nối",
+  "@errors.listing.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.listing.notConnected.explanation": "Cmdr chưa kết nối với điện thoại hoặc máy chủ chứa `{path}`, nên chưa có gì để hiển thị ở đây. Không có gì bị ngắt kết nối và không có gì bị xóa.",
+  "@errors.listing.notConnected.explanation": {
+    "sourceHash": "4c508d7"
+  },
+  "errors.listing.notConnected.suggestion": "Đây là những cách để thử:\n- Mở điện thoại hoặc máy chủ từ bộ chọn ổ đĩa để kết nối\n- Nếu là điện thoại, hãy mở khóa và chấp nhận mọi lời nhắc hiện ra\n- Mở lại nơi này khi đã kết nối",
+  "@errors.listing.notConnected.suggestion": {
+    "sourceHash": "3c48bcd"
+  },
   "errors.listing.deviceReconnecting.title": "Đang kết nối lại với thiết bị",
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
@@ -1580,6 +1592,10 @@
   "errors.volume.deviceDisconnected": "Thiết bị đã ngắt kết nối trước khi thay đổi được thực hiện.",
   "@errors.volume.deviceDisconnected": {
     "sourceHash": "50b46bf"
+  },
+  "errors.volume.notConnected": "Cmdr chưa kết nối với điện thoại hoặc máy chủ này, hãy mở nó trước.",
+  "@errors.volume.notConnected": {
+    "sourceHash": "094dc49"
   },
   "errors.volume.deviceSessionReset": "Thiết bị đã khởi động lại kết nối. Hãy đợi vài giây rồi thử lại.",
   "@errors.volume.deviceSessionReset": {

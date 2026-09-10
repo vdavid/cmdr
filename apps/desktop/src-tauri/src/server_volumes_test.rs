@@ -140,6 +140,45 @@ async fn path_exists_on_a_saved_server_nobody_connected_answers_that_it_couldnt_
     );
 }
 
+/// ❗ Listing a SAVED server nobody connected answers `NotConnected`, ❌ never the
+/// `NotFound` an unknown id gets: the user would read "Path not found" for a folder
+/// that's fine, and the frontend reads `NotFound` as "this folder was deleted".
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn listing_a_saved_server_nobody_connected_says_it_is_not_connected() {
+    use crate::file_system::listing::caching_test_support::{TestListingGuard, unique_test_id};
+    use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+    use crate::file_system::listing::streaming::{
+        CollectorListingEventSink, ListingEventSink, StreamingListingState, read_directory_with_progress,
+    };
+
+    let host = "198.51.100.49";
+    sftp_known_servers::remember(saved_sftp(host, true));
+
+    let listing = TestListingGuard::adopt(unique_test_id("saved-server-listing"));
+    let events: std::sync::Arc<dyn ListingEventSink> = std::sync::Arc::new(CollectorListingEventSink::new());
+    let state = std::sync::Arc::new(StreamingListingState {
+        cancel: tokio_util::sync::CancellationToken::new(),
+    });
+    let pane_path = format!("sftp://ada@{host}:2222/srv/data/photos");
+    let outcome = read_directory_with_progress(
+        &events,
+        listing.id(),
+        &state,
+        &cmdr_fs::volume::sftp_volume_id(host, 2222, "ada"),
+        std::path::Path::new(&pane_path),
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
+
+    assert!(
+        matches!(outcome, Err(cmdr_fs::volume::VolumeError::NotConnected(_))),
+        "a saved server nobody connected isn't connected yet, and nothing was deleted; got {outcome:?}"
+    );
+}
+
 // ── The rows the switcher gets ───────────────────────────────────────
 
 /// ❗ **Every saved server gets a row, and the row carries its own pin.** The

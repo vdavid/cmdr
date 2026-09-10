@@ -539,6 +539,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.notConnected.title": "Ainda não conectado",
+  "@errors.listing.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.listing.notConnected.explanation": "O Cmdr ainda não se conectou ao celular ou servidor que guarda `{path}`, então não há nada para mostrar aqui. Nada foi desconectado e nada foi apagado.",
+  "@errors.listing.notConnected.explanation": {
+    "sourceHash": "4c508d7"
+  },
+  "errors.listing.notConnected.suggestion": "Veja o que tentar:\n- Abra o celular ou o servidor pelo seletor de volume para se conectar a ele\n- Se for um celular, desbloqueie-o e aceite qualquer aviso que aparecer\n- Navegue até aqui de novo assim que estiver conectado",
+  "@errors.listing.notConnected.suggestion": {
+    "sourceHash": "3c48bcd"
+  },
   "errors.listing.deviceReconnecting.title": "Reconectando ao dispositivo",
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
@@ -1580,6 +1592,10 @@
   "errors.volume.deviceDisconnected": "O dispositivo foi desconectado antes de a alteração ser concluída.",
   "@errors.volume.deviceDisconnected": {
     "sourceHash": "50b46bf"
+  },
+  "errors.volume.notConnected": "O Cmdr ainda não está conectado a este celular ou servidor, então abra-o primeiro.",
+  "@errors.volume.notConnected": {
+    "sourceHash": "094dc49"
   },
   "errors.volume.deviceSessionReset": "O dispositivo reiniciou a conexão. Espere alguns segundos e tente de novo.",
   "@errors.volume.deviceSessionReset": {

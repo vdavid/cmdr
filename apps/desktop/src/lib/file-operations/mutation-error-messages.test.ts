@@ -26,6 +26,7 @@ const VOLUME_CASES: VolumeError[] = [
   { type: 'alreadyExists', data: '/Volumes/share/notes.txt' },
   { type: 'notSupported' },
   { type: 'deviceDisconnected', data: 'the phone went away' },
+  { type: 'notConnected', data: 'adb://R58M/sdcard' },
   { type: 'deviceSessionReset', data: 'PTP DeviceReset' },
   { type: 'readOnly', data: 'mounted read-only' },
   { type: 'storageFull', data: { message: 'STATUS_DISK_FULL' } },

@@ -449,6 +449,27 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
     expect(spies.onPathChange).toHaveBeenCalledWith('/a/locked.7z')
   })
 
+  it('shows a not-connected refusal without asking whether the path exists', async () => {
+    // A phone or server nobody has connected yet can't answer the existence probe
+    // either (it says "couldn't tell"), so asking costs a round trip and ends in the
+    // same refusal. The typed reason is definitive, and nothing was deleted.
+    const { loader, state, spies } = makeHarness({ volumeId: 'adb-phone' })
+    h.pathExistsChecked.mockResolvedValue({ data: false, timedOut: true })
+    await loader.loadDirectory({ path: 'adb://R58M/sdcard' })
+    h.listeners.error[0]({
+      listingId: state.listingId,
+      message: 'not connected yet',
+      error: { reason: { reason: 'notConnected', path: 'adb://R58M/sdcard' } },
+    })
+    await vi.waitFor(() => {
+      expect(state.error).toBe('not connected yet')
+    })
+
+    expect(h.pathExistsChecked).not.toHaveBeenCalled()
+    expect(h.resolveValidPath).not.toHaveBeenCalled()
+    expect(spies.onPathChange).toHaveBeenCalledWith('adb://R58M/sdcard')
+  })
+
   it('walks up to the nearest valid parent when the listing path was deleted', async () => {
     const { loader, state } = makeHarness()
     h.pathExistsChecked.mockResolvedValueOnce({ data: false, timedOut: false })

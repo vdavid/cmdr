@@ -99,6 +99,7 @@ pub fn preview_friendly_error(
             "AlreadyExists" => VolumeError::AlreadyExists(path_str.clone()),
             "NotSupported" => VolumeError::NotSupported,
             "DeviceDisconnected" => VolumeError::DeviceDisconnected("device went away".into()),
+            "NotConnected" => VolumeError::NotConnected(path_str.clone()),
             "ReadOnly" => VolumeError::ReadOnly(path_str.clone()),
             "StorageFull" => VolumeError::StorageFull {
                 message: "not enough space".into(),

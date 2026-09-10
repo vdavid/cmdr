@@ -227,6 +227,14 @@ fn volume_error_variants_map_correctly() {
             |r| matches!(r, ListingErrorReason::DeviceDisconnected { .. }),
         ),
         (
+            // ❌ Deliberately NOT `DeviceDisconnected`: nothing dropped. The phone or
+            // server is listed, and opening it is what connects it.
+            VolumeError::NotConnected("x".into()),
+            ErrorCategory::NeedsAction,
+            false,
+            |r| matches!(r, ListingErrorReason::NotConnected { .. }),
+        ),
+        (
             // ❌ Deliberately NOT the `DeviceDisconnected` classification: the
             // device is still attached and a reopen is already running, so the
             // user needs to wait and retry, not go re-plug anything.

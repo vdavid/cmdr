@@ -539,6 +539,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.notConnected.title": "尚未连接",
+  "@errors.listing.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.listing.notConnected.explanation": "Cmdr 还没有连接到存放 `{path}` 的手机或服务器，所以这里暂时没有内容可显示。没有任何东西断开，也没有任何东西被删除。",
+  "@errors.listing.notConnected.explanation": {
+    "sourceHash": "4c508d7"
+  },
+  "errors.listing.notConnected.suggestion": "可以这样试试：\n- 从宗卷选择器中打开这台手机或服务器来连接它\n- 如果是手机，解锁它并接受它弹出的任何提示\n- 连接好后，再次进入这里",
+  "@errors.listing.notConnected.suggestion": {
+    "sourceHash": "3c48bcd"
+  },
   "errors.listing.deviceReconnecting.title": "正在重新连接设备",
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
@@ -1580,6 +1592,10 @@
   "errors.volume.deviceDisconnected": "改动还没完成，设备就断开了。",
   "@errors.volume.deviceDisconnected": {
     "sourceHash": "50b46bf"
+  },
+  "errors.volume.notConnected": "Cmdr 还没有连接到这台手机或服务器，请先打开它。",
+  "@errors.volume.notConnected": {
+    "sourceHash": "094dc49"
   },
   "errors.volume.deviceSessionReset": "设备的连接已重启。请等待几秒钟，然后重试。",
   "@errors.volume.deviceSessionReset": {

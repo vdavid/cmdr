@@ -539,6 +539,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.notConnected.title": "尚未連線",
+  "@errors.listing.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.listing.notConnected.explanation": "Cmdr 還沒有連線到存放 `{path}` 的手機或伺服器，所以這裡暫時沒有內容可顯示。沒有任何東西斷線，也沒有任何東西被刪除。",
+  "@errors.listing.notConnected.explanation": {
+    "sourceHash": "4c508d7"
+  },
+  "errors.listing.notConnected.suggestion": "可以這樣試試：\n- 從卷宗切換器開啟這台手機或伺服器來連線\n- 如果是手機，把它解鎖並接受它跳出的任何提示\n- 連線好之後，再次進入這裡",
+  "@errors.listing.notConnected.suggestion": {
+    "sourceHash": "3c48bcd"
+  },
   "errors.listing.deviceReconnecting.title": "正在重新連線到裝置",
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
@@ -1580,6 +1592,10 @@
   "errors.volume.deviceDisconnected": "更動還沒完成，裝置就斷線了。",
   "@errors.volume.deviceDisconnected": {
     "sourceHash": "50b46bf"
+  },
+  "errors.volume.notConnected": "Cmdr 還沒有連線到這台手機或伺服器，請先開啟它。",
+  "@errors.volume.notConnected": {
+    "sourceHash": "094dc49"
   },
   "errors.volume.deviceSessionReset": "裝置重新建立了連線。等個幾秒再試一次。",
   "@errors.volume.deviceSessionReset": {

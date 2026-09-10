@@ -539,6 +539,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.notConnected.title": "Noch nicht verbunden",
+  "@errors.listing.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.listing.notConnected.explanation": "Cmdr hat sich noch nicht mit dem Telefon oder Server verbunden, auf dem `{path}` liegt, daher gibt es hier nichts anzuzeigen. Es wurde nichts getrennt und nichts gelöscht.",
+  "@errors.listing.notConnected.explanation": {
+    "sourceHash": "4c508d7"
+  },
+  "errors.listing.notConnected.suggestion": "Das kannst du versuchen:\n- Öffne das Telefon oder den Server über die Volume-Auswahl, um die Verbindung herzustellen\n- Entsperre ein Telefon und bestätige jede Abfrage, die es anzeigt\n- Navigiere erneut hierher, sobald die Verbindung steht",
+  "@errors.listing.notConnected.suggestion": {
+    "sourceHash": "3c48bcd"
+  },
   "errors.listing.deviceReconnecting.title": "Verbindung zum Gerät wird wiederhergestellt",
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
@@ -1580,6 +1592,10 @@
   "errors.volume.deviceDisconnected": "Das Gerät wurde getrennt, bevor die Änderung abgeschlossen war.",
   "@errors.volume.deviceDisconnected": {
     "sourceHash": "50b46bf"
+  },
+  "errors.volume.notConnected": "Cmdr ist noch nicht mit diesem Telefon oder Server verbunden, öffne es also zuerst.",
+  "@errors.volume.notConnected": {
+    "sourceHash": "094dc49"
   },
   "errors.volume.deviceSessionReset": "Das Gerät hat seine Verbindung neu gestartet. Warte ein paar Sekunden und versuche es dann erneut.",
   "@errors.volume.deviceSessionReset": {

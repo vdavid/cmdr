@@ -25,8 +25,8 @@ puts a device in the switcher, the dial a pane asks for, the two settings, eject
 - **❗ A dial is cancelable and the attempt id is the CALLER's**, filed before the wire is touched so a pane can arm
   its cancel button first.
 - **❗ Only the pane dials** (`device-connect.svelte.ts` → `connect_adb_device`). ❌ Path resolution, a listing, and
-  `path_exists` never do; on a listed, undialed phone they answer the cached row, `DeviceDisconnected`, and "couldn't
-  tell", ❌ never `NotFound` (the frontend reads that as "deleted" and walks off the phone).
+  `path_exists` never do; on a listed, undialed phone they answer the cached row, `NotConnected`, and "couldn't tell",
+  ❌ never `NotFound` (the frontend reads that as "deleted" and walks off the phone).
 - **❗ At most one wire dial per serial; later callers JOIN it.** A cancel answers its own attempt at once; the wire
   dial goes only when no joined attempt still wants it. ❌ Never register or remember a volume outside that one dial,
   or the registry and the provider hold different volumes. It installs only while the phone is still listed, in one

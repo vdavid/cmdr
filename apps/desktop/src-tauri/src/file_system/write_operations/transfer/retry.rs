@@ -98,6 +98,7 @@ pub(super) fn is_retryable(err: &VolumeError) -> bool {
         | VolumeError::PermissionDenied(_)
         | VolumeError::AlreadyExists(_)
         | VolumeError::NotSupported
+        | VolumeError::NotConnected(_) // nothing is dialing it; only opening it connects
         | VolumeError::ReadOnly(_)
         | VolumeError::StorageFull { .. }
         | VolumeError::IsADirectory(_)

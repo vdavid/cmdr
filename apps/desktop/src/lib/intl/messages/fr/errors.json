@@ -539,6 +539,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.notConnected.title": "Pas encore connecté",
+  "@errors.listing.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.listing.notConnected.explanation": "Cmdr ne s'est pas encore connecté au téléphone ou au serveur qui contient `{path}`, il n'y a donc rien à afficher ici. Rien n'a été déconnecté et rien n'a été supprimé.",
+  "@errors.listing.notConnected.explanation": {
+    "sourceHash": "4c508d7"
+  },
+  "errors.listing.notConnected.suggestion": "Voici ce que vous pouvez essayer :\n- Ouvrez le téléphone ou le serveur depuis le sélecteur de volume pour vous y connecter\n- Si c'est un téléphone, déverrouillez-le et acceptez toute demande qu'il affiche\n- Revenez ici une fois la connexion établie",
+  "@errors.listing.notConnected.suggestion": {
+    "sourceHash": "3c48bcd"
+  },
   "errors.listing.deviceReconnecting.title": "Reconnexion à l'appareil",
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
@@ -1580,6 +1592,10 @@
   "errors.volume.deviceDisconnected": "L'appareil s'est déconnecté avant que la modification n'aboutisse.",
   "@errors.volume.deviceDisconnected": {
     "sourceHash": "50b46bf"
+  },
+  "errors.volume.notConnected": "Cmdr n'est pas encore connecté à ce téléphone ou à ce serveur, ouvrez-le d'abord.",
+  "@errors.volume.notConnected": {
+    "sourceHash": "094dc49"
   },
   "errors.volume.deviceSessionReset": "L'appareil a redémarré sa connexion. Patientez quelques secondes, puis réessayez.",
   "@errors.volume.deviceSessionReset": {

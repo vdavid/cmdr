@@ -440,6 +440,14 @@ pub enum VolumeError {
     NotSupported,
     /// Device went away mid-operation.
     DeviceDisconnected(String),
+    /// The device or server is listed, but nothing has connected to it yet, so
+    /// no volume answers for it. Carries the path.
+    ///
+    /// ❌ Never `DeviceDisconnected`, which tells the user a session dropped
+    /// mid-operation, and ❌ never `NotFound`, which the frontend reads as "this
+    /// folder was deleted" and walks the pane off the device. Opening it in a
+    /// pane is what connects it.
+    NotConnected(String),
     /// The device's session died mid-operation but the device itself is still
     /// attached, and a reopen is already running in the background (MTP: a PTP
     /// `DeviceReset`, typically after a cancelled or timed-out transfer). The
@@ -531,6 +539,7 @@ impl std::fmt::Display for VolumeError {
             Self::AlreadyExists(path) => write!(f, "Already exists: {}", path),
             Self::NotSupported => write!(f, "Operation not supported"),
             Self::DeviceDisconnected(msg) => write!(f, "Device disconnected: {}", msg),
+            Self::NotConnected(path) => write!(f, "Not connected yet: {}", path),
             Self::DeviceSessionReset(msg) => write!(f, "Device session restarted: {}", msg),
             Self::ReadOnly(msg) => write!(f, "Read-only: {}", msg),
             Self::StorageFull { message } => write!(f, "Storage full: {}", message),

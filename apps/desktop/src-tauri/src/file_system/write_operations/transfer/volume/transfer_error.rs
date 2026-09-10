@@ -244,6 +244,20 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
         VolumeError::DeviceDisconnected(_) => WriteOperationError::DeviceDisconnected {
             path: context_path.to_string(),
         },
+        // Only a listing produces this today: a transfer resolves its volumes
+        // before it starts, so an unconnected one never reaches a write. ❌ Never
+        // `DeviceDisconnected`, which would tell the user a session dropped
+        // mid-copy. (Log and technical-details text, not rendered prose.)
+        VolumeError::NotConnected(_) => WriteOperationError::IoError {
+            path: context_path.to_string(),
+            message: format!(
+                "The {} volume isn't connected yet",
+                match role {
+                    PathRole::Source => "source",
+                    PathRole::Destination => "destination",
+                }
+            ),
+        },
         // The backend refused a WRITE, so it is the destination that is read-only.
         VolumeError::ReadOnly(_) => WriteOperationError::ReadOnlyDevice {
             path: context_path.to_string(),

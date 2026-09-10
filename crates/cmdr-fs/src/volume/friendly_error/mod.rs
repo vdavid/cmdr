@@ -264,6 +264,11 @@ pub enum ListingErrorReason {
         /// The path the failure was about.
         path: String,
     },
+    /// `VolumeError::NotConnected`: the device or server is listed, but nothing has connected to it yet.
+    NotConnected {
+        /// The path the failure was about.
+        path: String,
+    },
     /// The volume or device is read-only.
     ReadOnly,
     /// The device is out of storage.

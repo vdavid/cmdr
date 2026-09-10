@@ -539,6 +539,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.notConnected.title": "Még nincs csatlakoztatva",
+  "@errors.listing.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.listing.notConnected.explanation": "A Cmdr még nem csatlakozott ahhoz a telefonhoz vagy szerverhez, amelyen ez a mappa van: `{path}`. Ezért itt még nincs mit megjeleníteni. Semmi nem vált le, és semmi sem törlődött.",
+  "@errors.listing.notConnected.explanation": {
+    "sourceHash": "4c508d7"
+  },
+  "errors.listing.notConnected.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a telefont vagy a szervert a kötetválasztóban, hogy csatlakozz hozzá\n- Ha telefon, oldd fel a zárolását, és fogadd el a megjelenő kéréseket\n- Lépj ide újra, amint létrejött a kapcsolat",
+  "@errors.listing.notConnected.suggestion": {
+    "sourceHash": "3c48bcd"
+  },
   "errors.listing.deviceReconnecting.title": "Újracsatlakozás az eszközhöz",
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
@@ -1580,6 +1592,10 @@
   "errors.volume.deviceDisconnected": "Megszakadt a kapcsolat az eszközzel, mielőtt a módosítás végbement volna.",
   "@errors.volume.deviceDisconnected": {
     "sourceHash": "50b46bf"
+  },
+  "errors.volume.notConnected": "A Cmdr még nem csatlakozott ehhez a telefonhoz vagy szerverhez, ezért előbb nyisd meg.",
+  "@errors.volume.notConnected": {
+    "sourceHash": "094dc49"
   },
   "errors.volume.deviceSessionReset": "Az eszköz újraindította a kapcsolatot. Várj néhány másodpercet, majd próbáld újra.",
   "@errors.volume.deviceSessionReset": {

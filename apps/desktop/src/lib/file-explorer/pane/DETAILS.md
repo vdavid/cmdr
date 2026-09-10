@@ -424,7 +424,7 @@ questions").
 - **The effect keys on `<volume>:<readiness>`**, so one landing is one dial AND a readiness change (the Allow tap) is a
   fresh decision. A plain volume-id guard would strand the pane in the waiting state forever.
 - **❗ It is the ONE dialer, and it HOLDS the pane's listing** (`holdsListing`). Path resolution never dials, and a
-  phone nobody has dialed has no registered volume, so a listing there can only come back refused (`DeviceDisconnected`,
+  phone nobody has dialed has no registered volume, so a listing there can only come back refused (`NotConnected`,
   never `NotFound`: `src-tauri/src/adb/DETAILS.md`) and would put an error over the connecting state. The reload on
   connect is what lists the phone. The hold is threaded through `path-sync.ts`'s `deviceIsConnecting` input (a
   `sync-path` arm, like device-only MTP's) and the mount-time load's own branch.

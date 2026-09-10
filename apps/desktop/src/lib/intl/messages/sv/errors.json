@@ -539,6 +539,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.notConnected.title": "Inte ansluten än",
+  "@errors.listing.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.listing.notConnected.explanation": "Cmdr har inte anslutit till telefonen eller servern som innehåller `{path}` än, så det finns inget att visa här. Inget har kopplats från och inget har raderats.",
+  "@errors.listing.notConnected.explanation": {
+    "sourceHash": "4c508d7"
+  },
+  "errors.listing.notConnected.suggestion": "Så här kan du prova:\n- Öppna telefonen eller servern från volymväljaren för att ansluta till den\n- Om det är en telefon, lås upp den och godkänn eventuella frågor som den visar\n- Gå hit igen när den är ansluten",
+  "@errors.listing.notConnected.suggestion": {
+    "sourceHash": "3c48bcd"
+  },
   "errors.listing.deviceReconnecting.title": "Återansluter till enheten",
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
@@ -1580,6 +1592,10 @@
   "errors.volume.deviceDisconnected": "Enheten kopplades från innan ändringen gick igenom.",
   "@errors.volume.deviceDisconnected": {
     "sourceHash": "50b46bf"
+  },
+  "errors.volume.notConnected": "Cmdr har inte anslutit till den här telefonen eller servern än, så öppna den först.",
+  "@errors.volume.notConnected": {
+    "sourceHash": "094dc49"
   },
   "errors.volume.deviceSessionReset": "Enheten startade om sin anslutning. Vänta några sekunder och försök igen.",
   "@errors.volume.deviceSessionReset": {

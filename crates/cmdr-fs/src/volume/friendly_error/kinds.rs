@@ -116,6 +116,22 @@ pub(super) fn device_disconnected(path_display: &str, raw_detail: String) -> Lis
     }
 }
 
+/// The device or server is listed, but nothing has connected to it yet. Nothing
+/// dropped and nothing was deleted: opening it is what connects it, so a retry
+/// of the same listing would only refuse again.
+pub(super) fn not_connected(path_display: &str, raw_detail: String) -> ListingError {
+    ListingError {
+        category: ErrorCategory::NeedsAction,
+        reason: ListingErrorReason::NotConnected {
+            path: path_display.to_string(),
+        },
+        provider: None,
+        action_kind: None,
+        retry_hint: false,
+        raw_detail,
+    }
+}
+
 /// The device's session died but the device is still attached and a reopen is
 /// already running. `Transient` with a retry hint, deliberately unlike
 /// [`device_disconnected`]: the user has nothing to plug in or unlock, they just

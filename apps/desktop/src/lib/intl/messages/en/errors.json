@@ -811,6 +811,18 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.listing.notConnected.title": "Not connected yet",
+  "errors.listing.notConnected.explanation": "Cmdr hasn't connected to the phone or server holding `{path}` yet, so there's nothing to show here. Nothing was disconnected, and nothing was deleted.",
+  "errors.listing.notConnected.suggestion": "Here's what to try:\n- Open the phone or server from the volume switcher to connect to it\n- If it's a phone, unlock it and accept any prompt it shows\n- Navigate here again once it's connected",
+  "@errors.listing.notConnected.title": {
+    "description": "Title of the listing error panel when a phone or server shows in Cmdr's volume list but Cmdr hasn't connected to it yet, so there's nothing to list. Deliberately distinct from \"Device disconnected\": nothing dropped. Plain text."
+  },
+  "@errors.listing.notConnected.explanation": {
+    "description": "Body of the listing error panel for a phone or server Cmdr hasn't connected to yet. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the folder's path, which Cmdr doesn't control: any length, and it can start with a scheme such as adb:// or sftp://. The last sentence reassures that nothing broke."
+  },
+  "@errors.listing.notConnected.suggestion": {
+    "description": "Recovery suggestion for a phone or server Cmdr hasn't connected to yet. Markdown bullet list. \"Volume switcher\" is the dropdown at the top of each pane where a person picks a drive, phone, or server; use the same term as the commands.paneLeftVolumeChooser.label key. Choosing the phone or server there is what connects it."
+  },
   "errors.listing.deviceReconnecting.title": "Reconnecting to the device",
   "errors.listing.deviceReconnecting.explanation": "The connection to the device holding `{path}` restarted, so this action didn't go through. The device is still plugged in, and Cmdr is reopening it right now. This usually follows a canceled or interrupted transfer.",
   "errors.listing.deviceReconnecting.suggestion": "Give it a few seconds, then try again. There's nothing to unplug.",
@@ -2327,6 +2339,10 @@
     "description": "Shown when a USB drive, phone, or network share dropped mid-operation. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
+  },
+  "errors.volume.notConnected": "Cmdr isn't connected to this phone or server yet, so open it first.",
+  "@errors.volume.notConnected": {
+    "description": "Shown when a rename, new folder, or new file targets a phone or server that shows in Cmdr's volume list but isn't connected yet. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. \"Open it\" means opening the phone or server in a pane, which connects it. Cmdr never uses the words \"error\" or \"failed\" in messages people read."
   },
   "errors.volume.deviceSessionReset": "The device restarted its connection. Give it a few seconds and try again.",
   "@errors.volume.deviceSessionReset": {
