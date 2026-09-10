@@ -2853,3 +2853,26 @@ till en temporär fil och det tar mer än en sekund.
   till rubrikens `Hämtar`. Andra meningen följer `settings.mediaIndex.clip.failed` (`Kontrollera din anslutning och
   försök igen.`) och `errors.listing.couldntReadUnknown.suggestion` (`fortfarande är ansluten`), utan komma före `och`
   mellan två korta satser (`style.md`). `ansluten` stämmer med `telefonen` och `servern`, båda en-genus. `high`.
+
+## Inaktuellt index på en telefon över ADB (2026-09-11; `fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`.bodyPhone`)
+
+Telefonversionerna av den gula statusens tre texter. En Android-telefon över ADB säger aldrig till när filer ändras, så
+indexet kan vara inaktuellt fast telefonen sitter i. ❗ Inget om frånkoppling, precis som engelskan. Syskonen
+(`tooltipStale`, `staleDialog.title`/`.body`) ger ramen: rubriken är ordagrant systerns med `telefonens` i stället för
+`enhetens`, och `filer på den`, `Den gula statusen bredvid …`, `mappstorlekar och sökresultat` och `en ny genomsökning`
+är systerdialogens egna ord.
+
+- **phone (en Android-telefon som volym): `telefon`** · Microsoft-terminologin i referenssamlingen (`phone` →
+  `telefon`, läst 2026-09-11) och katalogens satta ord i hela `adb.*` (`Din telefon är inte ansluten längre.`). En-genus:
+  `telefonens index`, `filer på den`. Glossarets MTP-post `enhet` gäller den generiska enheten; när engelskan säger
+  `phone` står `telefon`. `high`.
+- **keep (an index) current: `hålla … uppdaterat`** · katalogens `tooltipFresh` = `Indexerad och uppdaterad`, så
+  färsk och inaktuell status delar ord; neutrum efter `indexet`. `high`.
+- **changes Cmdr makes / changes made on the phone: `sina egna ändringar` / `de ändringar Cmdr själv gör` / `ändringar
+  som görs på (själva) telefonen`** · passivt `görs` med flit: ändringen kan komma från användaren eller från en annan
+  app, så inget subjekt passar. `high`.
+- **reminder: `påminnelse`** · Microsoft-terminologin (`reminder` → `påminnelse`, läst 2026-09-11). `stays as a
+  reminder` → `finns kvar som en påminnelse`. `high`.
+
+Inga `sameAsSourceJustification`; `{name}` står oförändrad, och ingen apostrof i värdena, så ICU-dubbleringen `''` blir
+aldrig aktuell.

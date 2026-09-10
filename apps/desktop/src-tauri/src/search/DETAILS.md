@@ -229,9 +229,11 @@ field:
   A LIVE run fills its twin (`SearchRunCoverage::uncovered_scopes`) for one case only: a volume no drive index can serve
   (`BackendKind::can_be_indexed`, today an SFTP or WebDAV server). `resolve_target` stamps that on the `Target` (a
   registered volume's own capability, else the server path's kind, so a saved server nobody connected answers too), and
-  `run_live_blocking` answers before reading or walking anything. ❌ Never let such a run reach `Index::cover`: a walk
-  stands an index up for the volume it walks, which is server indexing by the back door. The dialog says search isn't
-  available there and offers nothing; MCP says so in `coverage.uncoveredScopes` and a note.
+  `run_live_blocking` answers before reading or walking anything. `Index::cover` refuses such a volume on its own too
+  (`IndexError::NotIndexable`), because a walk stands an index up for whatever it walks, so no caller can build a
+  server an index. The search-side gate stays anyway: it answers with the scope as uncovered, where a refused walk would
+  read as an interrupted one. The dialog says search isn't available there and offers nothing; MCP says so in
+  `coverage.uncoveredScopes` and a note.
 - **`unresolved_scopes`** — the volume IS indexed but the specific path isn't in it. **The two causes are
   indistinguishable here**: a typo or deleted folder, and a real folder the user is standing in on a partially indexed
   volume, both land in this bucket. So the copy says what the index knows ("Cmdr's index doesn't cover this folder

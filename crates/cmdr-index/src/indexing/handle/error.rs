@@ -27,6 +27,14 @@ pub enum IndexError {
         /// The volume that has nowhere to run.
         volume_id: String,
     },
+    /// No drive index can serve this volume's backend at all (a server over SFTP
+    /// or WebDAV), so nothing is built for it and no walk runs. The same refusal
+    /// `start_volume` gives such a volume, so no caller can stand an index up for
+    /// one by any door.
+    NotIndexable {
+        /// The volume no drive index can serve.
+        volume_id: String,
+    },
     /// Something below the API failed. Log-only detail; classify by the variants
     /// above, never by this text.
     Internal(Diagnostic),
@@ -41,6 +49,9 @@ impl std::fmt::Display for IndexError {
             Self::NotConfigured => f.write_str("the index has no data directory configured"),
             Self::UnsupportedVolume { volume_id } => {
                 write!(f, "volume '{volume_id}' has no indexing transport on this platform")
+            }
+            Self::NotIndexable { volume_id } => {
+                write!(f, "volume '{volume_id}' has a backend no drive index can serve")
             }
             Self::Internal(diagnostic) => f.write_str(diagnostic.as_str()),
         }

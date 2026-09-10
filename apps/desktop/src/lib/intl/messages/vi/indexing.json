@@ -214,6 +214,14 @@
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
+  "indexing.staleDialog.titlePhone": "Chỉ mục của điện thoại này có thể đã lỗi thời",
+  "@indexing.staleDialog.titlePhone": {
+    "sourceHash": "6086bac"
+  },
+  "indexing.staleDialog.bodyPhone": "{name} không báo cho Cmdr biết khi các tệp trên đó thay đổi, nên Cmdr luôn cập nhật chỉ mục của điện thoại theo những thay đổi do chính Cmdr thực hiện. Những thay đổi thực hiện trên điện thoại, như ảnh mới, sẽ xuất hiện trong kích cỡ thư mục và kết quả tìm kiếm sau một lần quét lại. Trạng thái màu vàng bên cạnh điện thoại vẫn hiện ra để nhắc bạn điều này.",
+  "@indexing.staleDialog.bodyPhone": {
+    "sourceHash": "4ba8463"
+  },
   "indexing.staleDialog.neverShowAgain": "Không bao giờ hiển thị lại",
   "@indexing.staleDialog.neverShowAgain": {
     "sourceHash": "f2d1044"

@@ -370,6 +370,14 @@ disk is journaled and never goes stale), the `indexing.staleNotify` setting is o
 the explainer appears once per machine; the yellow badge keeps showing regardless. The body names the volume through the
 volume store and falls back to the raw id for a volume that isn't in it.
 
+It picks its copy from the volume's status (`getVolumeIndexStatusById`, read after the stamp so a second edge can't open
+it twice): a volume with `liveWatch: false` (a phone over ADB, the only kind nothing watches) gets the phone title and
+body, which say Cmdr keeps the index current with its own changes and that changes made on the phone show up after a
+rescan. Everything else keeps the disconnect copy, and so does a failed status read. **Decision/Why a status read
+rather than a field on the event:** the freshness event is emitted by `apply_freshness_event_on`, which must never lock
+the registry the volume kind lives in, and whose callers can hold it. The badge's stale tooltip branches on the same
+`liveWatch` (`fileExplorer.navigation.driveIndex.tooltipStalePhone`).
+
 The app never clears the one-shot. `resetFirstStaleDialogShown` exists for the dev-only dialog gallery, whose
 `drive-index-stale` row arranges all three gates and emits the real event so the row repeats (see the gallery's
 `../dialog-gallery/DETAILS.md`).

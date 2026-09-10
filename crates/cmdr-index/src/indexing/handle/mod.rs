@@ -66,6 +66,8 @@ use crate::{IndexDebugStatusResponse, IndexStatusResponse, VolumeIndexStatus};
 pub use builder::TestInstallGuard;
 
 #[cfg(test)]
+mod cover_refusal_tests;
+#[cfg(test)]
 mod tests;
 
 /// What starting a volume's index did.
@@ -573,10 +575,13 @@ impl Index {
     ///
     /// A volume with no index gets one, built for exactly this and nothing more:
     /// no full scan of the drive, no watcher, just somewhere for the walk to
-    /// write. Every kind is walkable — a local disk through the guarded walker, a
-    /// share or a phone (or whatever backend comes next) through its `Volume` —
-    /// so [`NotIndexed`](IndexError::NotIndexed) means only that nothing is
-    /// mounted under that id to build one for.
+    /// write. Every kind a drive index can serve is walkable — a local disk
+    /// through the guarded walker, a share or a phone (or whatever backend comes
+    /// next) through its `Volume`. A registered volume no index can serve (a
+    /// server over SFTP or WebDAV) is refused with
+    /// [`NotIndexable`](IndexError::NotIndexable) before anything is built, and
+    /// [`NotIndexed`](IndexError::NotIndexed) means only that nothing is mounted
+    /// under that id to build one for.
     pub fn cover(
         &self,
         volume_id: &str,
@@ -584,6 +589,18 @@ impl Index {
         dimension: CoverageDimension,
         cancel: CancellationToken,
     ) -> Result<CoverWalk, IndexError> {
+        // ❗ Refused FIRST, before a writer-only instance is stood up: a walk builds
+        // an index for whatever it walks, so this is the one door that could hand a
+        // server the index `start_volume` refuses it. Same test, same answer.
+        if crate::indexing::host::volumes::current()
+            .get(volume_id)
+            .is_some_and(|volume| !volume.capabilities().can_be_indexed)
+        {
+            log::info!(target: "indexing", "cover: refusing '{volume_id}', no drive index can serve its backend");
+            return Err(IndexError::NotIndexable {
+                volume_id: volume_id.to_string(),
+            });
+        }
         let context = cover::context_for_walk(volume_id).map_err(|e| match e {
             // Nothing to walk into and nothing built: from out here that reads
             // exactly like a drive that was never indexed, which is what it is.

@@ -605,6 +605,10 @@
   "@fileExplorer.clipboard.useF6FromMtp": {
     "sourceHash": "cd6f83f"
   },
+  "fileExplorer.edit.notOnThisMac": "Cmdr chưa thể sửa tệp này trong trình soạn thảo, vì đây không phải là tệp thông thường trên máy Mac của bạn. Nhấn F3 để xem tệp.",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "99b6f61"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Dùng F5 để sao chép tệp vào thiết bị MTP",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"
@@ -1395,6 +1399,10 @@
   "fileExplorer.navigation.driveIndex.tooltipStale": "Ổ đĩa này có thể đã thay đổi khi nó bị ngắt kết nối. Kích cỡ và tìm kiếm có thể hơi lệch. Hãy quét lại để làm mới.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr luôn cập nhật chỉ mục này theo những thay đổi do Cmdr thực hiện. Những thay đổi thực hiện ngay trên điện thoại sẽ xuất hiện sau một lần quét lại.",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Đã dừng lập chỉ mục do gặp sự cố khi lưu chỉ mục của ổ đĩa này. Quét lại để tạo lại chỉ mục.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {

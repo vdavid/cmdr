@@ -603,6 +603,10 @@
   "@fileExplorer.clipboard.useF6FromMtp": {
     "sourceHash": "cd6f83f"
   },
+  "fileExplorer.edit.notOnThisMac": "Cmdr 還不能用編輯器編輯這個檔案，因為它不是你 Mac 上的一般檔案。請按 F3 檢視。",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "99b6f61"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "請用 F5 把檔案複製到 MTP 裝置",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"
@@ -1392,6 +1396,10 @@
   "fileExplorer.navigation.driveIndex.tooltipStale": "這個磁碟機在中斷連線期間可能有變動。大小和搜尋結果也許會有點出入。重新掃描就能更新。",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr 會讓這個索引跟上自己做的變動。直接在手機上做的變動，重新掃描後就會出現。",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "儲存這個磁碟機的索引時出了狀況，所以索引已經停下來。請重新掃描以重建索引。",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {

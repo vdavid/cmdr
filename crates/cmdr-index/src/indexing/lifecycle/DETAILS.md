@@ -886,7 +886,7 @@ SMB/MTP/ local-external routing lives in `../transports/CLAUDE.md`. `enable`/`re
 (`{ status: "started" }` or, for SMB, `{ status: "refused", reason: SmbIndexGateReason }`). The per-volume status IPC
 (`get_volume_index_status(path)` for the active-drive badge, `get_volume_index_status_by_id` for the dropdown rows)
 builds
-`VolumeIndexStatus { volume_id, enabled, freshness, scan_completed_at, scan_duration_ms, coalesced_signals_since_sweep, next_sweep_due_at }`:
+`VolumeIndexStatus { volume_id, enabled, freshness, scan_completed_at, scan_duration_ms, coalesced_signals_since_sweep, next_sweep_due_at, live_watch }`:
 freshness from the registry, the scan facts from the persisted `meta`. `enabled: false` + `freshness: None` is gray. The
 path→volume resolution feeding these lives in `../paths/CLAUDE.md`.
 

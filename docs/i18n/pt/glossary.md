@@ -2786,3 +2786,27 @@ segundos.
   `transferProgress.stallUnknown`; `Este arquivo parou de chegar` é decalque. `Verifique se … ainda está conectado` copia
   `errors.listing.couldntReadUnknown.suggestion`, e `tente novamente` ecoa o botão `Tentar novamente`
   (`viewer.error.retry`) logo abaixo · high
+
+## O índice do celular que fica amarelo com o cabo ligado (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`bodyPhone`, 2026-09-11)
+
+As versões de celular (ADB) das três strings de disco desatualizado. O celular nunca avisa quando os arquivos mudam,
+então o índice fica amarelo mesmo conectado; nenhuma das três pode falar em desconectar.
+
+- **`keeps this index current` → `mantém este índice atualizado`** · `atualizado` / `desatualizado` é o par da família
+  do ponto do índice (`tooltipFresh` = `Indexado e atualizado`, `staleDialog.title` = `pode estar desatualizado`) e do
+  Finder pt-BR (`LocalizableMerged.json` `NE103`/`NE105`: `Os itens podem estar desatualizados.`) · high. ❌ Não
+  `em dia`: aparece só no sentido de pôr em dia (`indexing.step.catchUp`), e quebraria o par com o título.
+- **`rescan` → `nova varredura`** · o molde de `tooltipStale` (`Faça uma nova varredura`) e o substantivo travado acima
+  (§ drive scan, § full check) · confirmed. ⚠️ A irmã `indexing.staleDialog.body` ainda diz `examinar o disco de novo` e
+  `uma nova análise`; `análise` é o termo reservado da pré-contagem de transferência, então o corpo de disco é que está
+  fora do molde. Ficou intocado nesta rodada (fora do escopo).
+- **`{name} doesn''t tell Cmdr when its files change` → `{name} não avisa o Cmdr quando os arquivos do celular mudam`** ·
+  `its files` viraria `dele` ou `nele`, que concordam com `{name}`; a frase escreve o substantivo, como manda o § «Nada
+  concorda com um `{name}`» do `style.md` · high
+- **`the changes Cmdr makes itself` → `as mudanças feitas pelo próprio Cmdr`** · o `feitas pelo próprio Cmdr` espelha o
+  `feitas no celular` da frase seguinte, e evita um `ele mesmo` que poderia apontar para o celular · high
+- **`stays as a reminder` → `fica como lembrete`** · sem fonte na pilha; forma corriqueira pt-BR · tentative
+- `phone` → `celular` (§ O painel do celular Android) e `yellow status` → `status amarelo` (`staleDialog.body`,
+  `settings.indexing.staleNotify.description`) reutilizados sem mudança.
+
+Nenhum valor leva apóstrofo. Varredura pt-PT: zero `ficheiro`, `telemóvel`, `estar a` + infinitivo, próclise.

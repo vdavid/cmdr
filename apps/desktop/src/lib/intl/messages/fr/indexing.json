@@ -213,6 +213,14 @@
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
+  "indexing.staleDialog.titlePhone": "L''index de ce téléphone est peut-être obsolète",
+  "@indexing.staleDialog.titlePhone": {
+    "sourceHash": "6086bac"
+  },
+  "indexing.staleDialog.bodyPhone": "{name} ne prévient pas Cmdr quand ses fichiers changent, donc Cmdr met l''index à jour avec les changements qu''il effectue lui-même. Les changements faits sur le téléphone, comme de nouvelles photos, sont pris en compte dans la taille des dossiers et la recherche après une nouvelle analyse. Le statut jaune à côté du téléphone reste affiché pour vous le rappeler.",
+  "@indexing.staleDialog.bodyPhone": {
+    "sourceHash": "4ba8463"
+  },
   "indexing.staleDialog.neverShowAgain": "Ne plus jamais afficher",
   "@indexing.staleDialog.neverShowAgain": {
     "sourceHash": "f2d1044"

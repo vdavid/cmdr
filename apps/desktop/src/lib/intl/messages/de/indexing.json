@@ -213,6 +213,14 @@
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
+  "indexing.staleDialog.titlePhone": "Der Index dieses Telefons ist womöglich nicht mehr aktuell",
+  "@indexing.staleDialog.titlePhone": {
+    "sourceHash": "6086bac"
+  },
+  "indexing.staleDialog.bodyPhone": "{name} teilt Cmdr nicht mit, wenn sich Dateien darauf ändern, daher hält Cmdr den Index mit den eigenen Änderungen aktuell. Änderungen auf dem Telefon, etwa neue Fotos, sind nach einem erneuten Durchlauf in Ordnergrößen und Suchergebnissen sichtbar. Der gelbe Status neben dem Telefon bleibt zur Erinnerung stehen.",
+  "@indexing.staleDialog.bodyPhone": {
+    "sourceHash": "4ba8463"
+  },
   "indexing.staleDialog.neverShowAgain": "Nie mehr anzeigen",
   "@indexing.staleDialog.neverShowAgain": {
     "sourceHash": "f2d1044"

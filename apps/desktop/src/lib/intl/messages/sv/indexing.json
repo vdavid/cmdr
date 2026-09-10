@@ -214,6 +214,14 @@
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
+  "indexing.staleDialog.titlePhone": "Den här telefonens index kan vara inaktuellt",
+  "@indexing.staleDialog.titlePhone": {
+    "sourceHash": "6086bac"
+  },
+  "indexing.staleDialog.bodyPhone": "{name} talar inte om för Cmdr när filer på den ändras, så Cmdr håller indexet uppdaterat med de ändringar Cmdr själv gör. Ändringar som görs på telefonen, till exempel nya bilder, syns i mappstorlekar och sökresultat efter en ny genomsökning. Den gula statusen bredvid telefonen finns kvar som en påminnelse.",
+  "@indexing.staleDialog.bodyPhone": {
+    "sourceHash": "4ba8463"
+  },
   "indexing.staleDialog.neverShowAgain": "Visa aldrig igen",
   "@indexing.staleDialog.neverShowAgain": {
     "sourceHash": "f2d1044"

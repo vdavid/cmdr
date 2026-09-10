@@ -3274,3 +3274,34 @@ Elke regel staat naast een schakelaar en mag niet omlopen, dus ze blijven kort e
   overdracht · `tentative`. De tweede zin is wel belegd: `errors.provider.macDroid.transient` (`Controleer of je telefoon
   verbonden is`), `errors.listing.networkConnectionDropped.suggestion` (`nog verbonden is`), glossary connected →
   `verbonden`, Finder `N178` (`Probeer het vervolgens opnieuw.`) · `high`
+
+## De verouderde index van een telefoon via ADB (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`.bodyPhone`)
+
+De telefoonversies van de drie zinnen over een verouderde schijfindex. Ze erven de termen van hun schijfzusjes, zodat de
+twee families als één lezen, en zeggen nergens `losgekoppeld`: de telefoon zit nog aan de kabel.
+
+- **phone → `telefoon`** · de hele `adb.*`-familie (`Je telefoon is niet meer aangesloten.`), plus
+  `errors.listing.notConnected.*` en `errors.provider.macDroid.*` · `high`. Hier `deze telefoon` / `de telefoon`, want
+  het Engels zegt `this phone` / `the phone`, niet `your phone`.
+- **out of date (index) → `mogelijk verouderd`** · byte-parallel aan `indexing.staleDialog.title`
+  (`De index van deze schijf is mogelijk verouderd`) · `high`
+- **keeps the index current → `werkt de index bij`** · `bijwerken` is het gevestigde werkwoord voor de index
+  (`fileExplorer.dirSize.updatingIndexTooltip` `Index wordt bijgewerkt`, `indexing.rescan.watcherStartFailed`
+  `om de index bij te werken`) · `high`. ❌ Niet `houdt … bij`, dat in deze catalogus _registreren_ betekent
+  (`settings.operationLog.intro` `Cmdr houdt je bestandsbewerkingen bij`).
+- **the changes Cmdr makes itself → `zijn eigen wijzigingen` (zweeftip) / `de wijzigingen die Cmdr zelf aanbrengt`
+  (dialoog)** · `zijn eigen` voor Cmdr staat al in `askCmdr.tool.memoryEdit.doing` (`Werkt zijn eigen notities bij`);
+  `wijzigingen aanbrengen` in `errors.listing.readOnly.explanation` · `high`. In de dialoog staat `{name}` vóór Cmdr in
+  de zin, dus `zijn` zou naar de telefoon kunnen wijzen en precies het omgekeerde zeggen; daar herhaalt de zin `Cmdr`,
+  net als het Engels.
+- **rescan → `opnieuw scannen` (zweeftip) / `opnieuw doorzoeken` (dialoog)** · Microsoft terminology (`DUTCH.tbx`,
+  rescan → `opnieuw scannen`, NLD/BEL) plus `driveIndex.tooltipStale` (`Scan opnieuw`); de dialoog volgt
+  `indexing.staleDialog.body` (`totdat je opnieuw doorzoekt`) · `high`. Elke zin houdt het werkwoord van zijn eigen
+  zusje, dus `nadat je opnieuw scant` en `nadat je opnieuw doorzoekt`.
+- **show up (in folder sizes and search) → `verschijnen in mapgroottes en zoekresultaten`** · `mapgroottes` en
+  `zoekresultaten` uit `indexing.staleDialog.body` · `high` op de termen. `zoekresultaten` en niet het kale `zoeken`:
+  `verschijnen in zoeken` is geen Nederlands.
+- **its files → `de bestanden erop`** · `{name}` krijgt geen voornaamwoord (style.md), en `erop` staat al zo in
+  `indexing.staleDialog.body` · `high`
+- **stays as a reminder → `blijft zichtbaar als herinnering`** · geen bron in de stapel; gekozen boven
+  `blijft als geheugensteuntje staan`, dat warmer maar langer is · `tentative`

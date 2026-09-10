@@ -241,6 +241,12 @@ pub struct VolumeIndexStatus {
     /// hours" without duplicating the policy constant in the frontend. `None` until
     /// a first sweep has been recorded.
     pub next_sweep_due_at: Option<u64>,
+    /// Whether a live watch reports this volume's changes to the index while it's
+    /// connected (`IndexVolumeKind::has_live_watch`). `false` only for a phone over
+    /// ADB, whose index is Stale from the moment a walk ends even while it's
+    /// plugged in, so the stale copy there can't blame a disconnect. `true` for a
+    /// volume with no registered index, where "stale" means what it always has.
+    pub live_watch: bool,
 }
 
 /// Extended debug status for the debug window. Includes live DB counts

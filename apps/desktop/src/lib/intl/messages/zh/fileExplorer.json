@@ -603,6 +603,10 @@
   "@fileExplorer.clipboard.useF6FromMtp": {
     "sourceHash": "cd6f83f"
   },
+  "fileExplorer.edit.notOnThisMac": "Cmdr 暂时还不能用编辑器编辑这个文件，因为它不是你 Mac 上的普通文件。请按 F3 查看。",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "99b6f61"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "请用 F5 将文件拷贝到 MTP 设备",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"
@@ -1392,6 +1396,10 @@
   "fileExplorer.navigation.driveIndex.tooltipStale": "此驱动器在断开期间可能发生了变动。大小和搜索结果也许会有些偏差。重新扫描即可刷新。",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr 自己做的更改会及时更新到这个索引里。直接在手机上做的更改，要重新扫描后才会显示。",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "由于保存此驱动器的索引时出现问题，索引已停止。请重新扫描以重建索引。",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {

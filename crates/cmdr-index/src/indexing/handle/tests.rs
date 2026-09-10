@@ -134,6 +134,10 @@ async fn a_phone_over_adb_finishes_its_scan_stale_because_nothing_watches_it() {
     );
     assert!(status.scan_completed_at.is_some(), "and yet its scan did finish");
     assert!(!index.is_fresh(&volume_id), "so nothing may trust it as current");
+    assert!(
+        !status.live_watch,
+        "and its status says nothing watches it, so the stale copy doesn't blame a disconnect"
+    );
     let children = index
         .list_children(&format!("{root}/sdcard"))
         .expect("the scanned folder is readable")

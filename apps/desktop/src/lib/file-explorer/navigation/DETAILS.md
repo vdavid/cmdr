@@ -413,7 +413,9 @@ the dropdown trigger (reflecting the ACTIVE drive), and per-row inside the dropd
 `use:tooltip` shape as the SMB light and USB-speed ring. The four states map from the backend `VolumeIndexStatus`
 (`commands.getVolumeIndexStatusById`): gray = `disabled` (no live index, `enabled: false` or `freshness: null`), blue =
 `scanning`, green = `fresh`, yellow = `stale`. The mapping, the menu items per state, and the "N min, S s" duration
-formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated behind `prefers-reduced-motion`).
+formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated behind `prefers-reduced-motion`). The
+yellow tooltip branches on `liveWatch`: a phone over ADB, which nothing watches, is stale while plugged in, so it gets
+`tooltipStalePhone` instead of the disconnect sentence (`$lib/indexing` DETAILS § "The one-time stale dialog").
 
 - **Eligibility is `isDriveRow(volume)`** (in `drive-index-manager.svelte.ts`): every entry except favorites, mounted
   disk images (`isDiskImage`), and any volume whose `canBeIndexed` capability says no (`pane/volume-capabilities.ts`):

@@ -1673,3 +1673,15 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   `fileOperations.transferProgress.stallUnknown`（`這項傳輸停住不動了`），刻意不寫 `已暫停` 或 `沒有回應`；後半句逐字沿用
   `errors.listing.*.suggestion` 的 `確認磁碟或裝置仍然連接著` 與 Apple 的 `然後再試一次` · `tentative`（`停住不動了`
   是既有目錄用字，五份語料都沒有來源）
+
+## 手機版的過時索引提示（`fileExplorer.navigation.driveIndex.tooltipStalePhone`、`indexing.staleDialog.titlePhone`、`.bodyPhone`，2026-09-11）
+
+這三條是磁碟機版本（`tooltipStale`、`staleDialog.title`、`staleDialog.body`）的手機版：透過 ADB 接著的手機從不回報自己的檔案變動，所以索引在手機還插著的時候就顯示過時。用字照抄磁碟機那一家，只把原因從「中斷連線期間」換成「手機不會告訴 Cmdr」，❗ 不能提到中斷連線。參考素材裡沒有 `keep … up to date` 這種句型可抄（macOS 語料與 MS 術語庫都查過），以下以目錄既有用字為準。
+
+- **phone（標題）** · `這支手機的索引可能過時了` · 形狀逐字抄 `indexing.staleDialog.title`（`這個磁碟機的索引可能過時了`），量詞照 § Android 手機的連線窗格 的 `這支手機` · `high`
+- **keep the index current with the changes Cmdr makes** · `Cmdr 會讓索引跟上自己做的變動` · **自行組出來的**：`跟上` 取自 `indexing.rescan.watcherStartFailed`（`讓索引跟上`）與 `indexing.rescan.staleIndex`（`來跟上`），`變動` 取自兩條磁碟機版本（`可能有變動`）；`自己` 回指主詞 Cmdr，省掉英文重複的第二個 `Cmdr` · `tentative`。❗ 不加 `即時`：英文沒有這個承諾。
+- **doesn't tell Cmdr** · `不會…告訴 Cmdr` · 刻意不寫 `通知`：目錄裡 `通知` 是 macOS 通知那個字，這裡講的是手機不回報變動 · `high`
+- **show up after a rescan** · `重新掃描後就會出現` · `重新掃描` 是目錄既有動詞（`fileExplorer.navigation.driveIndex.menuRescan`），`就會…` 沿用 `tooltipStale` 的 `重新掃描就能更新` · `high`
+- **folder sizes and search** · `資料夾大小和搜尋結果` · 逐字沿用 `indexing.staleDialog.body` · `high`
+- **like new photos** · `（例如新照片）` · 全形括號加 `例如`，形狀抄 `errors.listing.notSupported.explanation`（`（例如手機儲存空間或某些網路磁碟機）`）· `high`
+- **stays as a reminder（黃色狀態）** · `手機旁邊的黃色狀態會一直留著，提醒你這件事` · `黃色狀態` 與 `X 旁邊` 逐字沿用 `indexing.staleDialog.body`；`提醒` 是目錄既有用字（`settings.fileExplorer.suppressQuickLookHint.description`）· `high`

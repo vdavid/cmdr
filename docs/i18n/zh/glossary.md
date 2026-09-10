@@ -2528,3 +2528,22 @@ zh-CN 为 Tier 1，GitHub 自家中文文档用于 GitHub 专有动词，Microso
 - **"stopped arriving"（45 秒没有数据到达）** · `这个文件的传输停住不动了` · 复用停滞传输那一批的 `停住不动了`（本身
   `tentative`），刻意不写 `已暂停` 或 `没有响应`，让它读成「停住了」而不是用户暂停或设备报错；后半句逐字沿用
   `errors.listing.*.suggestion` 的 `确认磁盘或设备仍连接着` 与 `然后重试` · `tentative`（随 `停住不动了`）
+
+## ADB 手机的索引“可能已过期”（`fileExplorer.navigation.driveIndex.tooltipStalePhone`、`indexing.staleDialog.titlePhone` / `.bodyPhone`）
+
+驱动器那三条（`tooltipStale`、`staleDialog.title`、`staleDialog.body`）的手机版。手机一直插着，只是从不报告自己的文件改动，所以 ❌
+不能提断开连接。
+
+- **phone → `手机`，量词 `部`** · 复用本文件 § Android（ADB）手机 已定的说法（AOSP zh-CN `这部手机`）· `confirmed`。标题因此是
+  `这部手机的索引可能已过期`，与 `这个驱动器的索引可能已过期` 只差主语。
+- **rescan → `重新扫描`** · 目录已定；参考堆里 Microsoft TBX（`重新扫描`）、Total Commander（`F2 重新扫描`）、KDE
+  一致 · `confirmed`。
+- **"keeps this index current with the changes it makes" → `Cmdr 自己做的更改会及时更新到这个索引里`** · 刻意 ❌ 不写
+  `让索引保持最新`：这个圆点正是在说索引「可能不是最新」，`保持最新` 会读成打包票。`自己做的` 把范围限定在 Cmdr 的拷贝、移动、删除上 ·
+  `high`。
+- **"show up after a rescan" → `要重新扫描后才会显示`** · `才` 承担英文里「在那之前看不到」的意思；弹窗正文补上
+  `在目录大小和搜索结果里`，这几个字逐字取自 `staleDialog.body`，所以两版读起来是一家 · `high`。
+- **yellow status → `黄色状态`**，句形沿用 `staleDialog.body` 的 `驱动器旁边始终会显示黄色状态`，改成
+  `手机旁边会一直显示黄色状态，提醒你这一点` · `high`。
+- **new photos → `新照片`** · `照片` 是目录已定的说法（`已索引 {countText} 张照片`）；Photos.app 语境 · `high`。
+- `{name}` 是手机的显示名（常见如 `Pixel 9 Pro XL`），放在句首，后面留半角空格；三个值都没有撇号，也不含 `错误` / `失败`。

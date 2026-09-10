@@ -143,7 +143,11 @@
             case 'scanning':
                 return tString('indexing.scan.label')
             case 'stale':
-                return tString('fileExplorer.navigation.driveIndex.tooltipStale')
+                // Nothing watches a phone over ADB, so its index is stale while it's
+                // plugged in, and a disconnect is the wrong thing to blame.
+                return status.liveWatch
+                    ? tString('fileExplorer.navigation.driveIndex.tooltipStale')
+                    : tString('fileExplorer.navigation.driveIndex.tooltipStalePhone')
             case 'fresh':
                 return hasLastScanFacts(status)
                     ? tString('fileExplorer.navigation.driveIndex.tooltipFresh', {

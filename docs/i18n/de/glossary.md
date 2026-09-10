@@ -2485,6 +2485,29 @@ Wortlaut-Entscheidungen:
   substantivierte Infinitiv `das Öffnen` trägt das englische Gerundium, `öffnen` ist das gesetzte Verb fürs Aufmachen
   eines Telefons (`adb.connect.waitingHint`), und der Genitiv `deines Telefons` bleibt beim Katalogwort `Telefon`.
 
+## Der veraltete Index eines Telefons (`driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone` / `.bodyPhone`)
+
+Die Telefon-Fassungen der drei Laufwerks-Geschwister. Ein Telefon über ADB meldet keine Änderungen, also liest sich sein
+Index als veraltet, obwohl es angeschlossen ist; die Texte dürfen deshalb kein `getrennt` enthalten.
+
+- **Titel: wortgleich mit `indexing.staleDialog.title`, nur `Laufwerks` → `Telefons`** („Der Index dieses Telefons ist
+  womöglich nicht mehr aktuell“), damit beide als ein Paar lesbar bleiben · `high`. `phone → Telefon` wie in § Das
+  Telefon über ADB öffnen.
+- **`keeps this index current with the changes it makes` → `hält diesen Index mit den eigenen Änderungen aktuell`** ·
+  Wortfamilie `aktuell` aus den Geschwistern (`title` „nicht mehr aktuell“, `driveIndex.tooltipFresh` „Indiziert und
+  aktuell“); „etwas mit X aktuell halten“ ist die normale deutsche Fügung, `eigenen` bezieht sich aufs Subjekt `Cmdr` und
+  spart die dritte Nennung. Der Stapel hat die Fügung nicht (macOS `de` führt `aktuell` nur als Adjektiv) · `high`.
+- **`{name} doesn''t tell Cmdr when its files change` → `{name} teilt Cmdr nicht mit, wenn sich Dateien darauf ändern`**
+  · ❌ Nicht `meldet Cmdr nicht`: das liest sich zuerst als Akkusativ („meldet Cmdr [irgendwo]“), `mitteilen` regiert
+  eindeutig den Dativ. `Dateien darauf` statt `seine Dateien` (kein Possessiv auf `{name}`, `style.md` § Notes),
+  wortgleich mit `indexing.staleDialog.body` · `high`.
+- **`show up (in folder sizes and search) after a rescan` → `sind nach einem erneuten Durchlauf (in Ordnergrößen und
+  Suchergebnissen) sichtbar`** · `erneuter Durchlauf` aus der Zeile `scan`, `Ordnergrößen und Suchergebnisse` wortgleich
+  aus `body`; `sichtbar` in Tooltip und Dialog gleich · `high`.
+- **`stays as a reminder` → `bleibt zur Erinnerung stehen`** · `tentative`: kein Beleg im Stapel. KDE Dolphin nennt einen
+  „Reminder“ `Hinweis`, aber `Hinweis` ist im Katalog der Toast (Zeile `toast`); `zur Erinnerung` ist die feste
+  Wendung.
+
 ## Die gesperrte Server-Identität (`servers.sheet.identityLocked`)
 
 Die zwei Zeilen unter den ausgegrauten Feldern `Adresse` und `Benutzername`, wenn ein gespeicherter Server bearbeitet

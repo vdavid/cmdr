@@ -605,6 +605,10 @@
   "@fileExplorer.clipboard.useF6FromMtp": {
     "sourceHash": "cd6f83f"
   },
+  "fileExplorer.edit.notOnThisMac": "Cmdr kann diese Datei noch nicht im Editor bearbeiten, weil sie keine normale Datei auf deinem Mac ist. Drücke F3, um sie anzusehen.",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "99b6f61"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Nutze F5, um Dateien auf MTP-Geräte zu kopieren",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"
@@ -1399,6 +1403,10 @@
   "fileExplorer.navigation.driveIndex.tooltipStale": "Dieses Laufwerk hat sich vielleicht geändert, während es getrennt war. Größen und Suche sind möglicherweise etwas ungenau. Erneut scannen, um zu aktualisieren.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr hält diesen Index mit den eigenen Änderungen aktuell. Änderungen auf dem Telefon selbst sind nach einem erneuten Durchlauf sichtbar.",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Die Indizierung wurde gestoppt, weil der Index dieses Laufwerks nicht gespeichert werden konnte. Scanne erneut, um ihn neu aufzubauen.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {

@@ -605,6 +605,10 @@
   "@fileExplorer.clipboard.useF6FromMtp": {
     "sourceHash": "cd6f83f"
   },
+  "fileExplorer.edit.notOnThisMac": "O Cmdr ainda não consegue editar este arquivo no editor, porque ele não é um arquivo comum do seu Mac. Pressione F3 para visualizá-lo.",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "99b6f61"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Use F5 para copiar arquivos para dispositivos MTP",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"
@@ -1401,6 +1405,10 @@
   "fileExplorer.navigation.driveIndex.tooltipStale": "Este disco pode ter mudado enquanto estava desconectado. Os tamanhos e a busca podem estar um pouco desatualizados. Faça uma nova varredura para atualizar.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "O Cmdr mantém este índice atualizado com as mudanças que faz. As mudanças feitas no próprio celular aparecem depois de uma nova varredura.",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "A indexação parou por causa de um problema ao salvar o índice deste disco. Refaça a varredura para reconstruí-lo.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {

@@ -605,6 +605,10 @@
   "@fileExplorer.clipboard.useF6FromMtp": {
     "sourceHash": "cd6f83f"
   },
+  "fileExplorer.edit.notOnThisMac": "A Cmdr ezt a fájlt még nem tudja megnyitni szerkesztésre, mert nem szokásos fájl a Macen. Az F3 billentyűvel megtekintheted.",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "99b6f61"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Az F5 billentyűvel másolhatsz fájlokat MTP-eszközökre",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"
@@ -1395,6 +1399,10 @@
   "fileExplorer.navigation.driveIndex.tooltipStale": "Ez a meghajtó megváltozhatott, amíg le volt választva. A méretek és a keresés kissé pontatlan lehet. Vizsgáld át újra a frissítéshez.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "A Cmdr a saját változtatásaival tartja naprakészen ezt az indexet. A közvetlenül a telefonon végzett változtatások egy újbóli átvizsgálás után jelennek meg.",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Az indexelés leállt, mert nem sikerült elmenteni a meghajtó indexét. Indíts újbóli átvizsgálást az újraépítéshez.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {

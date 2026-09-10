@@ -606,6 +606,10 @@
   "@fileExplorer.clipboard.useF6FromMtp": {
     "sourceHash": "cd6f83f"
   },
+  "fileExplorer.edit.notOnThisMac": "Cmdr kan dit bestand nog niet in een editor bewerken, omdat het geen gewoon bestand op je Mac is. Druk op F3 om het te tonen.",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "99b6f61"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Gebruik F5 om bestanden naar MTP-apparaten te kopiëren",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"
@@ -1405,6 +1409,10 @@
   "fileExplorer.navigation.driveIndex.tooltipStale": "Deze schijf is misschien veranderd terwijl hij losgekoppeld was. Groottes en zoeken kunnen wat afwijken. Scan opnieuw om te verversen.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr werkt deze index bij met zijn eigen wijzigingen. Wijzigingen op de telefoon zelf verschijnen nadat je opnieuw scant.",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Het indexeren is gestopt door een probleem bij het opslaan van de index van deze schijf. Scan opnieuw om de index opnieuw op te bouwen.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {

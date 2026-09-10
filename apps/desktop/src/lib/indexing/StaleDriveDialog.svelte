@@ -6,12 +6,16 @@
      * Stale — gated on the `indexing.staleNotify` setting and a persisted
      * one-shot flag — shows this explainer so the user learns the concept. The
      * yellow badge keeps showing regardless of this dialog.
+     *
+     * A volume nothing watches (a phone over ADB, per its status's `liveWatch`)
+     * is stale while it's still plugged in, so it gets the phone copy, which
+     * doesn't blame a disconnect.
      */
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { onDestroy, onMount } from 'svelte'
     import type { UnlistenFn } from '@tauri-apps/api/event'
-    import { onIndexFreshnessChanged } from '$lib/tauri-commands/indexing'
+    import { getVolumeIndexStatusById, onIndexFreshnessChanged } from '$lib/tauri-commands/indexing'
     import { getSetting, setSetting } from '$lib/settings'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { t, tString } from '$lib/intl/messages.svelte'
@@ -19,12 +23,29 @@
 
     let open = $state(false)
     let staleVolumeName = $state('')
+    let unwatched = $state(false)
     let unlisten: UnlistenFn | undefined
 
     function volumeName(volumeId: string): string {
         // `root` is the local disk, which is journaled and never goes stale — but
         // fall back to the id for any volume not currently in the store.
         return getVolumes().find((v) => v.id === volumeId)?.name ?? volumeId
+    }
+
+    /** Whether nothing watches the volume. A failed read keeps the drive copy. */
+    async function isUnwatched(volumeId: string): Promise<boolean> {
+        try {
+            const res = await getVolumeIndexStatusById(volumeId)
+            return res.status === 'ok' && !res.data.liveWatch
+        } catch {
+            return false
+        }
+    }
+
+    async function show(volumeId: string) {
+        staleVolumeName = volumeName(volumeId)
+        unwatched = await isUnwatched(volumeId)
+        open = true
     }
 
     onMount(() => {
@@ -36,9 +57,10 @@
             if (!getSetting('indexing.staleNotify')) return
             if (hasShownFirstStaleDialog()) return
 
+            // Stamped before the status read, so a second edge landing meanwhile
+            // can't open the dialog twice.
             markFirstStaleDialogShown()
-            staleVolumeName = volumeName(payload.volumeId)
-            open = true
+            void show(payload.volumeId)
         }).then((u) => {
             unlisten = u
         })
@@ -67,10 +89,14 @@
         ariaDescribedby="drive-index-stale-body"
         containerStyle="width: 440px"
     >
-        {#snippet title()}{tString('indexing.staleDialog.title')}{/snippet}
+        {#snippet title()}{unwatched
+                ? tString('indexing.staleDialog.titlePhone')
+                : tString('indexing.staleDialog.title')}{/snippet}
 
         <p id="drive-index-stale-body" class="description">
-            {t('indexing.staleDialog.body', { name: staleVolumeName })}
+            {unwatched
+                ? t('indexing.staleDialog.bodyPhone', { name: staleVolumeName })
+                : t('indexing.staleDialog.body', { name: staleVolumeName })}
         </p>
 
         {#snippet footer()}

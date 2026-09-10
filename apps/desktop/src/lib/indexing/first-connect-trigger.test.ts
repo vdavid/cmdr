@@ -42,6 +42,7 @@ vi.mock('$lib/ipc/bindings', () => ({
           unreadableLocations: 0,
           unreadableRetried: false,
           nextSweepDueAt: null,
+          liveWatch: true,
         },
       }),
   },
@@ -100,6 +101,7 @@ describe('maybePromptFirstConnect gating', () => {
       unreadableLocations: 0,
       unreadableRetried: false,
       nextSweepDueAt: null,
+      liveWatch: true,
     }
     await maybePromptFirstConnect('smb-e', 'Share E', actions)
     expect(addToast).not.toHaveBeenCalled()
@@ -121,6 +123,7 @@ describe('maybePromptFirstConnect gating', () => {
       unreadableLocations: 0,
       unreadableRetried: false,
       nextSweepDueAt: null,
+      liveWatch: true,
     }
     await maybePromptFirstConnect('smb-walked', 'Walked share', actions)
     expect(addToast).toHaveBeenCalledTimes(1)

@@ -3257,3 +3257,32 @@ Décision de formulation :
   message se lisent comme la même opération. La suite recopie `errors.listing.couldntReadUnknown.suggestion` («
   Vérifiez que le disque ou l'appareil est toujours connecté ») et finit sur `puis réessayez`. `connecté` s'accorde avec
   `le téléphone ou le serveur`, deux masculins fixés par la phrase, jamais avec la personne · `high`.
+
+## L'index d'un téléphone ADB paraît obsolète (`driveIndex.tooltipStalePhone`, `staleDialog.titlePhone` / `bodyPhone`, 2026-09-11)
+
+Famille ICU : apostrophes doublées. Versions « téléphone » des trois clés de l'index obsolète : un téléphone Android en
+débogage USB ne signale jamais ses changements, donc son index reste jaune alors qu'il est toujours branché. ❌ Aucune
+des trois ne parle de déconnexion.
+
+Termes :
+
+- phone → **téléphone** · repris du catalogue (`adb.connect.*`, `settings.adb.status.*`, § Le téléphone Android) · high.
+  `appareil` reste le mot MTP générique (Kindle, appareil photo) ; ici la source dit `phone`.
+- keep the index current with the changes Cmdr makes → **mettre l'index à jour avec les changements qu'il effectue** ·
+  `à jour` et `Mettre à jour l'index` viennent de `indexing.step.updateIndex` et `driveIndex.tooltipFresh` («
+  Indexé et à jour ») ; `changements` suit la famille `driveIndex.*` / `indexing.run.changeCheck` (« Recherche des
+  changements ») · high.
+- show up (in folder sizes and search) after a rescan → **sont pris en compte (dans la taille des dossiers et la
+  recherche) après une nouvelle analyse** · `nouvelle analyse`, `la taille des dossiers` et `recherche` recopient les
+  sœurs `staleDialog.body` et `tooltipStale`. `apparaître dans la taille` se lirait mal : ce sont des changements, pas
+  des éléments · tentative (paraphrase, aucune source ne l'a mot pour mot).
+- stays as a reminder (le statut jaune) → **reste affiché pour vous le rappeler** · `affiché` s'accorde avec `le
+  statut`, jamais avec la personne ; `le` reprend la situation, comme le « le signale toujours » de `staleDialog.body` ·
+  tentative.
+
+Décisions de formulation :
+
+- **`{name}` sujet d'un verbe sans accord** : `{name} ne prévient pas Cmdr quand ses fichiers changent`. Le nom du
+  téléphone vient de l'appareil (« Pixel 9 Pro XL ») ; aucun participe ni adjectif ne s'accorde avec lui.
+- **`on the phone itself` → `directement sur le téléphone`** dans l'info-bulle, plus naturel que `lui-même` ; le corps
+  garde `sur le téléphone`, comme l'anglais.

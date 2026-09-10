@@ -15,6 +15,9 @@ vi.mock('$lib/tauri-commands/indexing', () => ({
     freshnessCb = cb
     return Promise.resolve(() => {})
   },
+  // Only the phone has no live watch: the one fact the dialog reads from a status.
+  getVolumeIndexStatusById: (volumeId: string) =>
+    Promise.resolve({ status: 'ok', data: { volumeId, liveWatch: volumeId !== 'adb-pixel' } }),
 }))
 
 const settings: Record<string, unknown> = {}
@@ -40,7 +43,10 @@ vi.mock('./drive-index-prefs', () => ({
 }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({
-  getVolumes: () => [{ id: 'smb-backups', name: 'Backups', path: 'smb://x', category: 'network', isEjectable: false }],
+  getVolumes: () => [
+    { id: 'smb-backups', name: 'Backups', path: 'smb://x', category: 'network', isEjectable: false },
+    { id: 'adb-pixel', name: 'Pixel', path: 'adb://pixel', category: 'mobile_device', isEjectable: true },
+  ],
 }))
 
 // ModalDialog notifies the backend on open/close; stub those IPC calls.
@@ -53,6 +59,8 @@ import StaleDriveDialog from './StaleDriveDialog.svelte'
 
 async function fire(event: IndexFreshnessChangedEvent) {
   freshnessCb?.(event)
+  // The dialog reads the volume's status before it opens: let that settle.
+  await new Promise((resolve) => setTimeout(resolve, 0))
   await tick()
   flushSync()
 }
@@ -79,6 +87,18 @@ describe('StaleDriveDialog', () => {
     await fire({ volumeId: 'smb-backups', freshness: 'stale' })
     expect(target.querySelector('[role="dialog"]')).not.toBeNull()
     expect(target.textContent).toContain('Backups')
+    expect(target.textContent).toContain('was disconnected')
+    expect(markFirstStaleDialogShown).toHaveBeenCalledTimes(1)
+  })
+
+  it("opens once for a phone, telling its owner that the phone's own changes show up after a rescan", async () => {
+    const target = mountDialog()
+    await fire({ volumeId: 'adb-pixel', freshness: 'stale' })
+    expect(target.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(target.textContent).toContain("This phone's index may be out of date")
+    expect(target.textContent).toContain('Pixel')
+    expect(target.textContent).toContain('show up in folder sizes and search after a rescan')
+    expect(target.textContent).not.toContain('disconnected')
     expect(markFirstStaleDialogShown).toHaveBeenCalledTimes(1)
   })
 

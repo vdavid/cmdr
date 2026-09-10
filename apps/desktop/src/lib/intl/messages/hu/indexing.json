@@ -214,6 +214,14 @@
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
+  "indexing.staleDialog.titlePhone": "Ennek a telefonnak az indexe elavulhatott",
+  "@indexing.staleDialog.titlePhone": {
+    "sourceHash": "6086bac"
+  },
+  "indexing.staleDialog.bodyPhone": "A(z) {name} nem szól a Cmdrnek, amikor megváltoznak rajta a fájlok, ezért az indexét a Cmdr a saját változtatásaival tartja naprakészen. A telefonon végzett változtatások, például az új fotók, egy újbóli átvizsgálás után jelennek meg a mappaméretekben és a keresésben. A telefon melletti sárga állapot emlékeztetőül ott marad.",
+  "@indexing.staleDialog.bodyPhone": {
+    "sourceHash": "4ba8463"
+  },
   "indexing.staleDialog.neverShowAgain": "Soha ne jelenjen meg újra",
   "@indexing.staleDialog.neverShowAgain": {
     "sourceHash": "f2d1044"

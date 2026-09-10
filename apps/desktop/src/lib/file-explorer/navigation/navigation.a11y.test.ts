@@ -135,6 +135,7 @@ describe('DriveIndexBadge a11y', () => {
       unreadableLocations: 0,
       unreadableRetried: false,
       nextSweepDueAt: null,
+      liveWatch: true,
     }
   }
 

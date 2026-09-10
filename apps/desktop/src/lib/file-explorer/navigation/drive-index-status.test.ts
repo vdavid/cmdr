@@ -25,6 +25,7 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
     unreadableLocations: 0,
     unreadableRetried: false,
     nextSweepDueAt: null,
+    liveWatch: true,
     ...overrides,
   }
 }

@@ -82,6 +82,7 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
     unreadableLocations: 0,
     unreadableRetried: false,
     nextSweepDueAt: null,
+    liveWatch: true,
     ...overrides,
   }
 }
@@ -305,6 +306,19 @@ describe('DriveIndexBadge coalesced-signal note', () => {
     // running scan cleared the marker the "in the last N hours" window reads.
     expect(label).not.toContain('next full check')
     expect(label).not.toContain('in the last')
+  })
+})
+
+describe('DriveIndexBadge stale tooltip', () => {
+  it('says a drive may have changed while it was disconnected', () => {
+    const label = ariaLabel(render(makeStatus({ freshness: 'stale' })).target)
+    expect(label).toContain('may have changed while it was disconnected')
+  })
+
+  it("says a phone's own changes show up after a rescan, since nothing watches it", () => {
+    const label = ariaLabel(render(makeStatus({ freshness: 'stale', liveWatch: false })).target)
+    expect(label).toContain('Changes made on the phone itself show up after a rescan')
+    expect(label).not.toContain('disconnected')
   })
 })
 

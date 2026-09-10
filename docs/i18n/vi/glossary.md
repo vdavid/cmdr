@@ -2924,3 +2924,27 @@ thẳng từ macOS 26.6.2 (build 25G83), 2026-09-10.
   ngoài ý muốn (`search.coverage.walk.abandoned` = `Vài thư mục ngừng phản hồi`) · `high`. Vế sau lấy nguyên khuôn
   `errors.listing.couldntReadUnknown.suggestion` (`Kiểm tra xem … có còn kết nối không`) và `rồi` của
   `viewer.error.tooLargeToPreview`.
+
+## Chỉ mục lỗi thời của điện thoại qua ADB (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`, `.bodyPhone`, 2026-09-11)
+
+Bề mặt: chú giải khi rê chuột lên chấm vàng của chỉ mục và hộp thoại giải thích một lần, cho điện thoại Android qua gỡ
+lỗi qua USB. Điện thoại vẫn đang cắm; chỉ mục đọc là lỗi thời vì điện thoại không bao giờ báo thay đổi của nó. Đây là
+bản "điện thoại" của ba khóa chị em `tooltipStale` / `staleDialog.title` / `staleDialog.body`, nên ❌ không được nhắc
+tới `ngắt kết nối`.
+
+- **phone: `điện thoại`** · catalog đã ship ở mọi khóa ADB (`adb.connect.*`, `adb.readiness.*`, `settings.adb.status.*`)
+  và `errors.listing.notConnected.*` · `high`. "the yellow status next to the phone" đổi đúng một danh từ so với chị em:
+  `Trạng thái màu vàng bên cạnh điện thoại`.
+- **keep the index current (with the changes Cmdr makes): `luôn cập nhật chỉ mục … theo những thay đổi do Cmdr thực
+  hiện`** · `cập nhật chỉ mục` là của macOS Finder (`LocalizableMerged` `PW39` = `Đang cập nhật chỉ mục thẻ.`) và catalog
+  (`fileExplorer.dirSize.updatingIndexTooltip`); `thay đổi … được thực hiện` đã ship ở `errors.json` và
+  `operationLog.json` (`những thay đổi thực hiện bên trong một tệp nén`) · `high`. Trong thân hộp thoại viết
+  `chỉ mục của điện thoại`, ❌ không phải `chỉ mục của nó`: câu có hai chủ ngữ ({name} và Cmdr), nên `nó` đọc mơ hồ.
+- **show up (after a rescan): `xuất hiện`** · khuôn gần nhất trong catalog là `whatsNew.dialog.empty`
+  (`Các thay đổi mới sẽ xuất hiện ở đây sau một bản cập nhật.`) · `high`. "after a rescan" → `sau một lần quét lại`,
+  cùng cụm `một lần quét lại` của `indexing.staleDialog.body`; dùng giống nhau ở cả chú giải lẫn hộp thoại.
+- **"stays as a reminder" → `vẫn hiện ra để nhắc bạn điều này`** · `hiện ra` lấy từ câu chị em
+  (`… luôn hiện ra khi điều này xảy ra`), `vẫn` giữ nghĩa "stays" · `tentative` (không nguồn nào có câu này; lựa chọn theo
+  chị em).
+- Tên điện thoại `{name}` đứng đầu câu (`{name} không báo cho Cmdr biết…`): tiếng Việt không biến hình nên tên nào cũng
+  vừa, kể cả `Pixel 9 Pro XL`. Không giá trị nào chứa dấu nháy đơn.

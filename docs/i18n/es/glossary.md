@@ -2996,3 +2996,25 @@ un archivo comprimido a un archivo temporal, y el mensaje de cuando dejan de lle
 - **stopped arriving → `Dejaron de llegar los datos de este archivo`** · pretérito, según `style.md`; `Este archivo dejó
   de llegar` es un calco. La segunda frase copia `errors.listing.couldntReadUnknown.suggestion`
   (`Comprueba que … sigan conectados`) y `ai.translateError.unavailable.body` (`y vuelve a intentarlo`) · `high`.
+
+## El índice desactualizado de un teléfono por ADB (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.{titlePhone,bodyPhone}`, 2026-09-11)
+
+Tres claves: las versiones para teléfono de `tooltipStale`, `staleDialog.title` y `staleDialog.body`. El teléfono sigue
+enchufado, así que ninguna menciona la desconexión.
+
+- **keep (the index) current → `mantener … al día`** · el catálogo ya dice `al día` para un índice fresco
+  (`tooltipFresh` «Indexada y al día», `tooltipCoalesced` «lo dejará al día», `indexing.rescan.staleIndex` «ponerlo al
+  día»). macOS `es` no publica ninguna frase de «mantener actualizado»; lo más cercano es Finder «Puede que los ítems no
+  estén actualizados», que respalda `desactualizado` en el título · `high`.
+- **phone → `teléfono`** · ya asentado (§ El teléfono Android por ADB); `El índice de este teléfono` calca
+  `El índice de esta unidad` · `high`.
+- **after a rescan → `tras un nuevo análisis`** · `un nuevo análisis` es el sustantivo del hermano `staleDialog.body`; el
+  sustantivo evita un clítico que tendría que concordar · `high`.
+- **`{name} doesn't tell Cmdr` → `{name} no avisa a Cmdr`** · `{name}` va de sujeto con un verbo sin género (§ «Nothing
+  may agree with a `{name}`» de `style.md`) · `high`.
+- **the changes Cmdr makes itself → `los cambios que hace el propio Cmdr`** · `el propio` deja la marca como sujeto,
+  igual que el inglés, sin un `él mismo`. ❌ No `mantiene su índice`: `su` leería como el índice de Cmdr o el del
+  teléfono · `high`.
+- **stays as a reminder → `sigue ahí para recordártelo`** · `tú`, y el `lo` neutro recoge la situación entera sin
+  concordar con nada. `se queda como recordatorio` también vale, pero suena más rígido · `tentative` (elección de
+  registro, sin fuente).

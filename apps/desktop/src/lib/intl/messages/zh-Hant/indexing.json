@@ -213,6 +213,14 @@
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
+  "indexing.staleDialog.titlePhone": "這支手機的索引可能過時了",
+  "@indexing.staleDialog.titlePhone": {
+    "sourceHash": "6086bac"
+  },
+  "indexing.staleDialog.bodyPhone": "{name} 不會在檔案有變動時告訴 Cmdr，所以 Cmdr 會讓索引跟上自己做的變動。在手機上做的變動（例如新照片），重新掃描後就會出現在資料夾大小和搜尋結果裡。手機旁邊的黃色狀態會一直留著，提醒你這件事。",
+  "@indexing.staleDialog.bodyPhone": {
+    "sourceHash": "4ba8463"
+  },
   "indexing.staleDialog.neverShowAgain": "不要再顯示",
   "@indexing.staleDialog.neverShowAgain": {
     "sourceHash": "f2d1044"

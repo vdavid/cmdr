@@ -605,6 +605,10 @@
   "@fileExplorer.clipboard.useF6FromMtp": {
     "sourceHash": "cd6f83f"
   },
+  "fileExplorer.edit.notOnThisMac": "Cmdr kan inte öppna den här filen i redigeraren än, eftersom den inte är en vanlig fil på din Mac. Tryck på F3 för att visa den.",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "99b6f61"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Använd F5 för att kopiera filer till MTP-enheter",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"
@@ -1395,6 +1399,10 @@
   "fileExplorer.navigation.driveIndex.tooltipStale": "Den här enheten kan ha ändrats medan den var frånkopplad. Storlekar och sökning kan vara lite fel. Sök igenom på nytt för att uppdatera.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr håller det här indexet uppdaterat med sina egna ändringar. Ändringar som görs på själva telefonen syns efter en ny genomsökning.",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Indexeringen stoppades på grund av ett problem med att spara den här enhetens index. Sök igenom på nytt för att bygga om det.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {

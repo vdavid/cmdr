@@ -333,6 +333,17 @@
     },
     "screenshot": "drive-index-stale-default.png"
   },
+  "indexing.staleDialog.titlePhone": "This phone''s index may be out of date",
+  "@indexing.staleDialog.titlePhone": {
+    "description": "Title of the one-time stale-index dialog when the first index to go stale belongs to an Android phone connected over USB debugging (ADB), which never reports its own file changes. The phone version of indexing.staleDialog.title. Never use the words ''error'' or ''failed''."
+  },
+  "indexing.staleDialog.bodyPhone": "{name} doesn''t tell Cmdr when its files change, so Cmdr keeps its index current with the changes Cmdr makes itself. Changes made on the phone, like new photos, show up in folder sizes and search after a rescan. The yellow status next to the phone stays as a reminder.",
+  "@indexing.staleDialog.bodyPhone": {
+    "description": "Body of the one-time stale-index dialog for an Android phone connected over USB debugging (ADB). The phone is still plugged in: its index reads as possibly out of date because the phone never reports changes made on it. Cmdr keeps the index current for the copies, moves, and deletes Cmdr does itself; anything changed on the phone appears after a rescan. The yellow dot beside the phone stays on for this reason. The phone version of indexing.staleDialog.body; it must not mention disconnecting. Calm and reassuring.",
+    "placeholders": {
+      "name": "the phone''s display name (e.g. Pixel 9 Pro XL)"
+    }
+  },
   "indexing.staleDialog.neverShowAgain": "Never show again",
   "@indexing.staleDialog.neverShowAgain": {
     "description": "Button in the one-time stale-drive dialog that turns off this notification for good (the yellow status still shows). Sentence case.",

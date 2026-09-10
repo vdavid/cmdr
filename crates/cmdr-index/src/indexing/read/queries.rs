@@ -89,6 +89,7 @@ pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
         next_sweep_due_at,
         unreadable_locations: unreadable.locations,
         unreadable_retried: unreadable.retried,
+        live_watch: volume_kind(volume_id).is_none_or(IndexVolumeKind::has_live_watch),
     }
 }
 

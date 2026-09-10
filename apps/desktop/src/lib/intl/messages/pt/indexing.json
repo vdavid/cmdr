@@ -214,6 +214,14 @@
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
+  "indexing.staleDialog.titlePhone": "O índice deste celular pode estar desatualizado",
+  "@indexing.staleDialog.titlePhone": {
+    "sourceHash": "6086bac"
+  },
+  "indexing.staleDialog.bodyPhone": "{name} não avisa o Cmdr quando os arquivos do celular mudam, então o Cmdr mantém o índice atualizado com as mudanças feitas pelo próprio Cmdr. As mudanças feitas no celular, como fotos novas, aparecem nos tamanhos das pastas e na busca depois de uma nova varredura. O status amarelo ao lado do celular fica como lembrete.",
+  "@indexing.staleDialog.bodyPhone": {
+    "sourceHash": "4ba8463"
+  },
   "indexing.staleDialog.neverShowAgain": "Nunca mais mostrar",
   "@indexing.staleDialog.neverShowAgain": {
     "sourceHash": "f2d1044"

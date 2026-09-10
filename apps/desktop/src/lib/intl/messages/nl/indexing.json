@@ -214,6 +214,14 @@
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
+  "indexing.staleDialog.titlePhone": "De index van deze telefoon is mogelijk verouderd",
+  "@indexing.staleDialog.titlePhone": {
+    "sourceHash": "6086bac"
+  },
+  "indexing.staleDialog.bodyPhone": "{name} laat Cmdr niet weten wanneer de bestanden erop veranderen, dus Cmdr werkt de index bij met de wijzigingen die Cmdr zelf aanbrengt. Wijzigingen op de telefoon, zoals nieuwe foto''s, verschijnen in mapgroottes en zoekresultaten nadat je opnieuw doorzoekt. De gele status naast de telefoon blijft zichtbaar als herinnering.",
+  "@indexing.staleDialog.bodyPhone": {
+    "sourceHash": "4ba8463"
+  },
   "indexing.staleDialog.neverShowAgain": "Nooit meer tonen",
   "@indexing.staleDialog.neverShowAgain": {
     "sourceHash": "f2d1044"

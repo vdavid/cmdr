@@ -605,6 +605,10 @@
   "@fileExplorer.clipboard.useF6FromMtp": {
     "sourceHash": "cd6f83f"
   },
+  "fileExplorer.edit.notOnThisMac": "Cmdr aún no puede editar este archivo en el editor, porque no es un archivo normal de tu Mac. Pulsa F3 para verlo.",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "99b6f61"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Usa F5 para copiar archivos a dispositivos MTP",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"
@@ -1397,6 +1401,10 @@
   "fileExplorer.navigation.driveIndex.tooltipStale": "Puede que esta unidad haya cambiado mientras estaba desconectada. Los tamaños y la búsqueda podrían estar algo desactualizados. Vuelve a analizarla para actualizar.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr mantiene este índice al día con los cambios que hace. Los cambios hechos en el propio teléfono aparecen tras un nuevo análisis.",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Se detuvo la indexación por un problema al guardar el índice de esta unidad. Vuelve a analizar para reconstruirlo.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {

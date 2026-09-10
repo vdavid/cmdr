@@ -605,6 +605,10 @@
   "@fileExplorer.clipboard.useF6FromMtp": {
     "sourceHash": "cd6f83f"
   },
+  "fileExplorer.edit.notOnThisMac": "Cmdr ne peut pas encore modifier ce fichier dans l''éditeur, car ce n''est pas un fichier ordinaire de votre Mac. Appuyez sur F3 pour le visualiser.",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "99b6f61"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Utilisez F5 pour copier des fichiers vers les appareils MTP",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"
@@ -1401,6 +1405,10 @@
   "fileExplorer.navigation.driveIndex.tooltipStale": "Ce disque a peut-être changé pendant qu''il était déconnecté. Les tailles et la recherche peuvent être un peu inexactes. Relancez l''analyse pour actualiser.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr met cet index à jour avec les changements qu''il effectue. Les changements faits directement sur le téléphone sont pris en compte après une nouvelle analyse.",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "L''indexation s''est arrêtée à cause d''un problème d''enregistrement de l''index de ce disque. Relancez l''analyse pour le reconstruire.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {

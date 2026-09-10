@@ -3197,3 +3197,28 @@ sor, Mégsem gomb), és az üzenet, ha kb. 45 másodpercig nem érkezik adat. Ti
   örökli a fenti bejegyzés `tentative` jelölését. A második mondat a szállított
   `errors.listing.couldntReadUnknown.suggestion` (`Ellenőrizd, hogy … még csatlakozik`) és a
   `viewer.error.tooLargeToPreview` `aztán` kötőszava.
+
+## A telefon elavult indexe (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`.bodyPhone`, 2026-09-11)
+
+A meghajtós elavult-index család telefonos változata: az ADB-n csatlakozó Android-telefon nem jelzi a saját
+fájlváltozásait, ezért az indexe csatlakoztatva is sárga. A szöveg nem említheti a leválasztást.
+
+- **phone: `telefon`** · ms (`HUNGARIAN.tbx`, `phone` → `telefon`, HUN; ugyanott `okostelefon` a másodlagos alak),
+  katalógus (`adb.connect.*`, `adb.readiness.*`, `settings.adb.status.*`, `errors.listing.notConnected.*`,
+  `fileExplorer.navigation.spaceMtpHint`) · high. ❌ NEM `okostelefon` (hosszabb, és a katalógus sehol nem használja) és
+  nem `eszköz`: az a `device` szava (`style.md`), amely a kamerát és a Kindle-t is lefedi.
+- **A család szavai a testvérkulcsokéi** · high: `index … elavulhatott` (`staleDialog.title`), `újbóli átvizsgálás`
+  (`staleDialog.body`, `driveIndex.menuRescan`), `mappaméretek és … keresés`, `A meghajtó melletti sárga állapot` →
+  `A telefon melletti sárga állapot`. A „current” szava `naprakész`, a `driveIndex.tooltipFresh`
+  (`Indexelve és naprakész.`) alakja.
+- **„the changes Cmdr makes” → `a saját változtatásaival`, „changes made on the phone” → `a telefonon végzett
+  változtatások`** · leíró · tentative. Ugyanaz a főnév áll mindkét helyen, ahogy az angol is kétszer mondja a
+  `changes`-t. A `a saját változtatásaival tartja naprakészen` szórendben a fókusz (ige előtti hely) hordozza a „csak a
+  sajátjaival” jelentést, amit az angol a mondatpárral mond, ezért nem kell külön `csak`.
+- **`{name}` a mondat elején: `A(z) {name} nem szól a Cmdrnek`** · a `style.md` `a(z)` szabálya és a szállított
+  `driveIndex.refusedDisconnected` (`A(z) {name} le van választva.`) · high. Idézőjel nincs, mert a testvér
+  `staleDialog.body` (`Amíg a(z) {name} le volt választva`) sem tesz, és a telefon neve jellemzően a gyártóé.
+- **„stays as a reminder” → `emlékeztetőül ott marad`** · leíró, a katalógus `emlékeztető` szava
+  (`settings.json`, a Space-emlékeztető leírása) · tentative. A pile-ban nincs `emlékeztetőül` / `emlékeztetőként`
+  találat.
+- Aposztróf egyik magyar értékben sincs; a `{name}` halmaza egyezik az angoléval.

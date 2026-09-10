@@ -298,7 +298,7 @@ number look worse than it is.
 
 **2. `IndexError::Internal(Diagnostic)`.** The internals below the facade still report a formatted diagnostic for causes
 no caller acts on (a poisoned registry lock, a database open failure). Every cause a caller CAN act on has its own
-variant — `NotIndexed`, `NotConfigured`, `UnsupportedVolume` — and nothing matches on the text. Converting the residue
+variant — `NotIndexed`, `NotConfigured`, `UnsupportedVolume`, `NotIndexable` — and nothing matches on the text. Converting the residue
 means typing the failures inside `lifecycle/state.rs` and `read/queries.rs`, which is a separate change with its own
 risk; this is the honest interim, not the end state.
 

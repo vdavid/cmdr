@@ -214,6 +214,14 @@
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
+  "indexing.staleDialog.titlePhone": "El índice de este teléfono puede estar desactualizado",
+  "@indexing.staleDialog.titlePhone": {
+    "sourceHash": "6086bac"
+  },
+  "indexing.staleDialog.bodyPhone": "{name} no avisa a Cmdr cuando cambian sus archivos, así que Cmdr mantiene el índice al día con los cambios que hace el propio Cmdr. Los cambios hechos en el teléfono, como fotos nuevas, aparecen en los tamaños de carpetas y en la búsqueda tras un nuevo análisis. El estado amarillo junto al teléfono sigue ahí para recordártelo.",
+  "@indexing.staleDialog.bodyPhone": {
+    "sourceHash": "4ba8463"
+  },
   "indexing.staleDialog.neverShowAgain": "No volver a mostrar",
   "@indexing.staleDialog.neverShowAgain": {
     "sourceHash": "f2d1044"
