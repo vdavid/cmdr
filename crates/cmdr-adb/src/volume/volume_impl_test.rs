@@ -17,6 +17,15 @@ use crate::errors::AdbConnectError;
 use crate::params::AdbConnectionParams;
 use crate::testing::{FakeAdbServer, FakeTree, fake_device};
 
+/// A background index walk keeps only a few listings in flight on a phone. Each
+/// listing is its own sync socket through the adb server and a thread of `adbd`
+/// statting the phone's flash, so the wide budget a quiet NAS gets would pile
+/// dozens of those onto one device.
+#[test]
+fn an_index_walk_keeps_few_listings_in_flight_on_a_phone() {
+    assert_eq!(detached_volume().max_concurrent_scan_listings(), 4);
+}
+
 #[test]
 fn the_device_anchored_answers() {
     let volume = detached_volume();

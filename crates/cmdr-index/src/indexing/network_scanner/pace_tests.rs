@@ -47,6 +47,49 @@ fn tracking_wide_tree(n_subdirs: usize, max_in_flight: &Arc<AtomicU64>) -> Arc<d
     })
 }
 
+/// A tracking tree that declares a listing ceiling of its own, the way a phone
+/// over ADB does.
+struct CeilingVolume {
+    inner: ConcurrencyTrackingVolume,
+    ceiling: usize,
+}
+
+type Fut<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+
+impl Volume for CeilingVolume {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &std::path::Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a std::path::Path,
+        on_progress: Option<&'a (dyn Fn(cmdr_fs::volume::ListingProgress) + Sync)>,
+    ) -> Fut<'a, Result<Vec<cmdr_fs::entry::FileEntry>, cmdr_fs::volume::VolumeError>> {
+        self.inner.list_directory(path, on_progress)
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a std::path::Path,
+    ) -> Fut<'a, Result<cmdr_fs::entry::FileEntry, cmdr_fs::volume::VolumeError>> {
+        self.inner.get_metadata(path)
+    }
+    fn exists<'a>(&'a self, path: &'a std::path::Path) -> Fut<'a, bool> {
+        self.inner.exists(path)
+    }
+    fn is_directory<'a>(&'a self, path: &'a std::path::Path) -> Fut<'a, Result<bool, cmdr_fs::volume::VolumeError>> {
+        self.inner.is_directory(path)
+    }
+    fn max_concurrent_scan_listings(&self) -> usize {
+        self.ceiling
+    }
+}
+
 /// Run a full trait scan of `vol` under `pacer`, flushing the writer.
 async fn scan(vol: Arc<dyn Volume>, writer: &IndexWriter, pacer: ScanPacer) -> ScanSummary {
     let cancelled = CancellationToken::new();
@@ -55,6 +98,35 @@ async fn scan(vol: Arc<dyn Volume>, writer: &IndexWriter, pacer: ScanPacer) -> S
         .expect("scan completes");
     writer.flush().await.expect("flush");
     summary
+}
+
+/// A volume's own listing ceiling holds even with nothing competing: the walk
+/// still overlaps its listings, but never past what the backend says it can take.
+/// A phone over ADB answers a handful, where a quiet NAS gets the full budget.
+#[tokio::test]
+async fn a_volume_ceiling_caps_the_scan_below_the_full_budget() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let writer = writer_in(dir.path(), "vol-scan-ceiling.db");
+    let max_in_flight = Arc::new(AtomicU64::new(0));
+    let vol = CeilingVolume {
+        inner: ConcurrencyTrackingVolume {
+            inner: wide_tree(FULL_LISTING_BUDGET * 2),
+            in_flight: Arc::new(AtomicU64::new(0)),
+            max_in_flight: Arc::clone(&max_in_flight),
+        },
+        ceiling: 3,
+    };
+    let pacer = ScanPacer::with_policy("test://network_scanner/ceiling", LONG_WINDOW, FakeHostPolicy::shared())
+        .capped_at(vol.max_concurrent_scan_listings());
+
+    scan(Arc::new(vol), &writer, pacer).await;
+    writer.shutdown();
+
+    let max = max_in_flight.load(Ordering::SeqCst);
+    assert!(
+        max > 1 && max <= 3,
+        "the walk overlaps listings up to the volume's ceiling and no further (max in flight = {max})"
+    );
 }
 
 /// THE navigation-responsiveness guard. While the user is browsing the share, the

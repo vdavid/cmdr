@@ -96,13 +96,36 @@ pub struct ScanPacer {
     /// The budget we last logged, so a walk logs one line per transition rather
     /// than one per top-up (thousands per second).
     last_logged: AtomicUsize,
+    /// The volume's own ceiling on listings in flight
+    /// (`Volume::max_concurrent_scan_listings`), laid over the pace decision.
+    /// `usize::MAX` when the backend sets none; never below one.
+    ceiling: usize,
 }
 
 impl ScanPacer {
     /// Pace this walk against foreground activity on `volume_id`, asking whichever
-    /// host the app installed (production).
-    pub(crate) fn for_volume(volume_id: impl Into<String>) -> Self {
+    /// host the app installed (production), and never past the ceiling `volume`
+    /// declares for itself.
+    ///
+    /// Takes the volume rather than the number, so no walk can be built without
+    /// asking it.
+    pub(crate) fn for_volume(volume_id: impl Into<String>, volume: &dyn cmdr_fs::volume::Volume) -> Self {
         Self::with_policy(volume_id, SCAN_FOREGROUND_IDLE_THRESHOLD, host_policy::current())
+            .capped_at(volume.max_concurrent_scan_listings())
+    }
+
+    /// Cap the budget at `ceiling` listings in flight, a backend's own limit. A
+    /// ceiling of 0 still means one: the walk slows, it never stops.
+    pub(crate) fn capped_at(mut self, ceiling: usize) -> Self {
+        self.ceiling = ceiling.max(1);
+        self.last_logged = AtomicUsize::new(self.quiet_budget());
+        self
+    }
+
+    /// What this walk gets with nothing competing: the full budget, or the
+    /// volume's own ceiling when that's lower.
+    fn quiet_budget(&self) -> usize {
+        FULL_LISTING_BUDGET.min(self.ceiling)
     }
 
     /// Pace against `volume_id` with an explicit idle threshold and an explicit host.
@@ -119,6 +142,7 @@ impl ScanPacer {
             idle_threshold,
             policy,
             last_logged: AtomicUsize::new(FULL_LISTING_BUDGET),
+            ceiling: usize::MAX,
         }
     }
 
@@ -131,6 +155,7 @@ impl ScanPacer {
             idle_threshold: SCAN_FOREGROUND_IDLE_THRESHOLD,
             policy: Arc::new(host_policy::AlwaysClear),
             last_logged: AtomicUsize::new(FULL_LISTING_BUDGET),
+            ceiling: usize::MAX,
         }
     }
 
@@ -141,9 +166,11 @@ impl ScanPacer {
     /// per dispatched listing, which is what keeps the seam off the hot path.
     pub(crate) fn listing_budget(&self) -> usize {
         let Some(volume_id) = self.volume_id.as_deref() else {
-            return FULL_LISTING_BUDGET;
+            return self.quiet_budget();
         };
-        let budget = listing_budget(self.policy.clearance(volume_id, self.idle_threshold));
+        // The ceiling is at least one and so is the yielding budget, so the walk
+        // still never stops.
+        let budget = listing_budget(self.policy.clearance(volume_id, self.idle_threshold)).min(self.ceiling);
         self.log_transition(volume_id, budget);
         budget
     }
@@ -155,7 +182,7 @@ impl ScanPacer {
             return;
         }
         let in_flight = cmdr_fs::pluralize::pluralize(budget as u64, "listing");
-        if budget == FULL_LISTING_BUDGET {
+        if budget == self.quiet_budget() {
             log::debug!("scan_pace: '{volume_id}' is quiet again, scan back to {in_flight} in flight");
         } else {
             log::debug!(
@@ -254,6 +281,31 @@ mod tests {
             FakeHostPolicy::shared(),
         );
         assert_eq!(pacer.listing_budget(), FULL_LISTING_BUDGET);
+    }
+
+    /// A backend's own ceiling caps the quiet budget, leaves the yield alone, and
+    /// never stops the walk: a ceiling of 0 still makes progress one at a time.
+    #[test]
+    fn a_backend_ceiling_caps_the_budget_but_never_below_one() {
+        let host = FakeHostPolicy::shared();
+        let pacer =
+            ScanPacer::with_policy("test://scan_pace/capped", Duration::from_secs(30), host.clone()).capped_at(4);
+        assert_eq!(pacer.listing_budget(), 4, "a quiet volume runs at its own ceiling");
+
+        host.note_foreground_activity();
+        assert_eq!(
+            pacer.listing_budget(),
+            YIELDING_LISTING_BUDGET,
+            "browsing still yields to one"
+        );
+
+        let zero = ScanPacer::with_policy(
+            "test://scan_pace/capped-at-zero",
+            Duration::from_secs(30),
+            FakeHostPolicy::shared(),
+        )
+        .capped_at(0);
+        assert_eq!(zero.listing_budget(), 1, "a ceiling of 0 still means one in flight");
     }
 
     /// An unpaced walk ignores the host entirely, so tests and callers with no volume

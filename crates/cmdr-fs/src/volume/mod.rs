@@ -257,6 +257,20 @@ pub trait Volume: Send + Sync {
         self.list_directory_with_cancel(path, None, cancel)
     }
 
+    /// The most directory listings a background index walk may keep in flight on
+    /// this volume at once, whatever budget the walk itself would allow.
+    ///
+    /// The walk paces itself (a quiet volume gets a wide budget, one the user is
+    /// browsing or copying to gets one listing at a time), and this is the
+    /// backend's own ceiling on top: a volume whose every listing costs something
+    /// scarce on the far end says how many it can take. Read once per walk.
+    ///
+    /// Default: no ceiling of the backend's own (`usize::MAX`). A walk never keeps
+    /// fewer than one in flight, so an answer of 0 still means one.
+    fn max_concurrent_scan_listings(&self) -> usize {
+        usize::MAX
+    }
+
     /// Called by the index-scan lifecycle right before a background scan/reconcile
     /// walk starts. Lets a backend spin up scan-scoped resources that only make
     /// sense for the duration of a walk. SMB opens a small pool of extra TCP

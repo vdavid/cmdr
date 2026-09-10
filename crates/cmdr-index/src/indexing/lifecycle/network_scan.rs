@@ -404,7 +404,8 @@ impl IndexManager {
         // Pace the walk against foreground activity on THIS volume: while the user
         // browses the share, the walk drops to one listing in flight so a navigation
         // isn't queued behind the scan's backlog. See `indexing/network_scanner/scan_pace.rs`.
-        let pacer = crate::indexing::network_scanner::scan_pace::ScanPacer::for_volume(self.volume_id.clone());
+        let pacer =
+            crate::indexing::network_scanner::scan_pace::ScanPacer::for_volume(self.volume_id.clone(), volume.as_ref());
         // Kept alive across the walk to open/close the backend's scan-scoped
         // resources (SMB spreads the walk across a small pool of extra
         // connections; see `file_system/.../smb/scan_pool.rs`). Invisible to the

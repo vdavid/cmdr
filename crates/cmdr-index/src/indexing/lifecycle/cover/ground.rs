@@ -67,10 +67,8 @@ impl Ground {
             return Some(Ground::Local);
         }
         let volume = crate::indexing::host::volumes::current().get(&context.volume_id)?;
-        Some(Ground::ViaTrait {
-            volume,
-            pacer: ScanPacer::for_volume(context.volume_id.clone()),
-        })
+        let pacer = ScanPacer::for_volume(context.volume_id.clone(), volume.as_ref());
+        Some(Ground::ViaTrait { volume, pacer })
     }
 
     /// Let the backend open whatever a walk's worth of listings needs (SMB spins up
