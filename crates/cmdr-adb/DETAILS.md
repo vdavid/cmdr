@@ -148,8 +148,14 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   `get_space_info_at(path)` asks about `path` itself, so an SD card answers for what's on it; the transfer pre-flight
   asks this of the destination folder. ❌ Never ask about the device root: `/` is a read-only system image reporting 0
   free, which put "0 bytes" in the pane and refused every copy onto a phone (observed on a Pixel 9 Pro XL, the dev
-  log's `volume-space-changed: adb-… (0 avail)` and `InsufficientSpace { available: 0 }`, 2026-09-10). A `df` that
-  fails is `NotSupported` ("can't tell"), ❌ never a guessed number. What `df -k` prints on a phone (verified on Pixel 9
+  log's `volume-space-changed: adb-… (0 avail)` and `InsufficientSpace { available: 0 }`, 2026-09-10). A `df` without
+  figures reads like any failed verb, through a follow-up stat and ❌ never its stderr (`AdbVolume::df_space`): a path
+  that isn't there (`ENOENT`, or a mode of 0 on the v1 verbs) answers for the nearest folder above it that is, because
+  the copy pre-flight asks about a destination folder the copy will create, and anything but `NotSupported` fails the
+  dialog's preview (`copy.rs::dest_space_if_known`). ❗ That stays a plain space answer, even when the climb lands on
+  `/` and its 0 free: telling a copy the place is read-only is the transfer layer's job, ❌ not a special case here.
+  Anything else, a `df` failing on a path that exists included, is `NotSupported` ("can't tell"), ❌ never a guessed
+  number. What `df -k` prints on a phone (verified on Pixel 9
   Pro XL, Android 17, toybox 0.8.13, `adb shell df -k`, 2026-09-10): the last column is the MOUNT POINT, so `/sdcard`,
   `/storage/emulated/0`, and every folder under them report `/storage/emulated` (and `/data` its bind mount
   `/data/user/0`); toybox sizes the columns per invocation, so `shell::parse_df_k` reads the first three numbers after

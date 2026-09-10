@@ -21,7 +21,9 @@ use cmdr_fs::volume::{patching, scan_walk};
 use tokio_util::sync::CancellationToken;
 
 use super::{AdbVolume, BACKEND};
+use crate::errors::{AdbError, ENOENT};
 use crate::shell;
+use crate::sync::SyncSession;
 
 impl AdbVolume {
     /// Runs `work`, noticing on the way out if the answer says the device is
@@ -391,16 +393,67 @@ impl Volume for AdbVolume {
 const SHARED_STORAGE: &str = "/sdcard";
 
 impl AdbVolume {
-    /// `df -k <device>`, parsed by the shell module. A `df` that fails or prints
-    /// no figures is `NotSupported` ("can't tell"), ❌ never a guessed number.
+    /// `df -k <device>`, parsed by the shell module.
+    ///
+    /// A `df` without figures is read like any failed verb, through a
+    /// follow-up stat and ❌ never its stderr: a path that isn't there answers
+    /// for the nearest folder above it that is, so the pre-flight judges a copy
+    /// into a folder it will create against the filesystem it lands on. That
+    /// stays a plain space answer, even at `/`. Anything else is
+    /// `NotSupported` ("can't tell"), ❌ never a guessed number.
     async fn df_space(&self, device: &str) -> Result<SpaceInfo, VolumeError> {
+        if let Some(space) = self.df_k(device).await? {
+            return Ok(space);
+        }
+        match self.nearest_existing(device).await? {
+            Some(ancestor) if ancestor != device => self.df_k(&ancestor).await?.ok_or(VolumeError::NotSupported),
+            _ => Err(VolumeError::NotSupported),
+        }
+    }
+
+    /// One `df -k`: its figures, or `None` when it exited non-zero or printed
+    /// none.
+    async fn df_k(&self, device: &str) -> Result<Option<SpaceInfo>, VolumeError> {
         let outcome = shell::run(&self.inner.endpoint, &self.inner.serial, &["df", "-k", device])
             .await
             .map_err(|e| self.inner.map_adb_error(e, device))?;
         if !outcome.succeeded() {
-            return Err(VolumeError::NotSupported);
+            return Ok(None);
         }
-        let parts = shell::parse_df_k(&String::from_utf8_lossy(&outcome.stdout)).ok_or(VolumeError::NotSupported)?;
-        Ok(SpaceInfo::bounded(parts.total_bytes, parts.available_bytes))
+        Ok(shell::parse_df_k(&String::from_utf8_lossy(&outcome.stdout))
+            .map(|parts| SpaceInfo::bounded(parts.total_bytes, parts.available_bytes)))
+    }
+
+    /// `device` when the sync service finds it, else its nearest ancestor that
+    /// it finds, on one sync socket.
+    async fn nearest_existing(&self, device: &str) -> Result<Option<String>, VolumeError> {
+        let mut session = self.open_sync(device).await?;
+        let found = climb_to_existing(&mut session, device).await;
+        session.quit().await;
+        found.map_err(|e| self.inner.map_adb_error(e, device))
+    }
+}
+
+/// Stats `device`, then each ancestor in turn, and returns the first that
+/// exists. It climbs only past a path that isn't there (`ENOENT`, or a mode of
+/// 0 on the v1 verbs, which carry no errno); any other errno, or a missing
+/// `/`, is `None`.
+async fn climb_to_existing(session: &mut SyncSession, device: &str) -> Result<Option<String>, AdbError> {
+    let mut at = device.to_string();
+    loop {
+        let stat = session.stat(&at).await?;
+        if stat.exists() {
+            return Ok(Some(at));
+        }
+        let missing = stat.errno.is_none_or(|errno| errno == ENOENT);
+        let parent = match at.rfind('/') {
+            Some(0) if at != "/" => "/".to_string(),
+            Some(slash) if slash > 0 => at[..slash].to_string(),
+            _ => return Ok(None),
+        };
+        if !missing {
+            return Ok(None);
+        }
+        at = parent;
     }
 }

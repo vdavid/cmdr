@@ -298,13 +298,57 @@ async fn space_at_a_path_is_the_filesystem_holding_it() {
             used_bytes: 904_496 * 1024,
         }
     );
+}
 
-    // A `df` that can't answer is "can't tell", never a zero.
-    let missing = volume.get_space_info_at(&fixture_path("/nowhere")).await;
-    assert!(
-        matches!(missing, Err(cmdr_fs::volume::VolumeError::NotSupported)),
-        "{missing:?}"
-    );
+/// ❗ A copy may target a folder it will create, and the pre-flight asks about
+/// that folder before it exists: a missing path answers for the nearest folder
+/// above it that does, found by stat, ❌ never by reading `df`'s stderr.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn space_at_a_folder_that_does_not_exist_yet_is_the_filesystem_it_would_land_on() {
+    let mut tree = FakeTree::new();
+    tree.add_dir("/storage/1A2B-3C4D")
+        .mount(crate::testing::FakeMount::sized(
+            "/storage/1A2B-3C4D",
+            "/dev/fuse",
+            60_000_000,
+            59_000_000,
+        ));
+    let server = FakeAdbServer::start(tree).await;
+    let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
+
+    let deeper = volume
+        .get_space_info_at(&fixture_path("/sdcard/New album/Deeper"))
+        .await
+        .expect("the shared storage answers for a folder two levels short");
+    assert_eq!(deeper, PIXEL_SHARED_STORAGE);
+    let card = volume
+        .get_space_info_at(&fixture_path("/storage/1A2B-3C4D/New"))
+        .await
+        .expect("the SD card answers for a folder on it");
+    assert_eq!(card.available_bytes(), Some(59_000_000 * 1024));
+    // A plain space answer even where nothing could be created: `/` is the
+    // read-only system image, and saying so is the copy's job, not this one's.
+    let top = volume
+        .get_space_info_at(&fixture_path("/nowhere"))
+        .await
+        .expect("the root answers for a folder at the top");
+    assert_eq!(top.available_bytes(), Some(0));
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_df_that_fails_anywhere_else_is_cant_tell_never_a_zero() {
+    let mut tree = FakeTree::new();
+    // No mounts, so `df` fails on every path, the ones that exist included.
+    tree.add_dir("/sdcard/Download").unmount_all();
+    let server = FakeAdbServer::start(tree).await;
+    let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
+    for path in ["/sdcard/Download", "/sdcard/Missing"] {
+        let outcome = volume.get_space_info_at(&fixture_path(path)).await;
+        assert!(
+            matches!(outcome, Err(cmdr_fs::volume::VolumeError::NotSupported)),
+            "{path}: {outcome:?}"
+        );
+    }
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
