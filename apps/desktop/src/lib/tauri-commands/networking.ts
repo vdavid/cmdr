@@ -382,9 +382,7 @@ export async function systemHasSavedSmbPassword(volumeId: string): Promise<boole
  * `credentialsNeeded` so the caller falls back to the login form.
  */
 export async function upgradeToSmbVolumeUsingSavedPassword(volumeId: string): Promise<UpgradeResult> {
-  const res = await commands.upgradeToSmbVolumeUsingSavedPassword(volumeId)
-  if (res.status === 'error') throwIpcError(res.error)
-  return res.data
+  return commands.upgradeToSmbVolumeUsingSavedPassword(volumeId)
 }
 
 /**
@@ -396,9 +394,7 @@ export async function upgradeToSmbVolumeWithCredentials(
   password: string | null,
   rememberInKeychain: boolean,
 ): Promise<UpgradeResult> {
-  const res = await commands.upgradeToSmbVolumeWithCredentials(volumeId, username, password, rememberInKeychain)
-  if (res.status === 'error') throwIpcError(res.error)
-  return res.data
+  return commands.upgradeToSmbVolumeWithCredentials(volumeId, username, password, rememberInKeychain)
 }
 
 /**
