@@ -2986,15 +2986,16 @@ un archivo comprimido a un archivo temporal, y el mensaje de cuando dejan de lle
   (`Retrieving versions` → `Obteniendo versiones`) · `high`. La terminología de Microsoft solo trae `Fetch` /
   `FetchXML`, nombre propio de Dynamics CRM (otro sentido). ❌ No `Descargando` (Finder `PE126`): un archivo comprimido
   local no se descarga de ningún sitio.
-- **to preview it → `para previsualizarlo`, con el sustantivo delante: `Obteniendo el archivo {fileName} para
-  previsualizarlo`** · `previsualizar` es el verbo del visor (`viewer.error.tooLargeToPreview`). El clítico `lo`
-  concuerda con `el archivo`, nunca con `{fileName}` (§ «Nothing may agree with a `{name}`» de `style.md`) · `high`.
+- **to preview it → `para previsualizarlo`, con el sustantivo delante:
+  `Obteniendo el archivo {fileName} para previsualizarlo`** · `previsualizar` es el verbo del visor
+  (`viewer.error.tooLargeToPreview`). El clítico `lo` concuerda con `el archivo`, nunca con `{fileName}` (§ «Nothing may
+  agree with a `{name}`» de `style.md`) · `high`.
 - **`{doneText} of {totalText}` → `{doneText} de {totalText}`** · Finder `PW3` / `PW8` (`^0 de ^1`) y
   `askCmdr.context.tooltip` · `high`.
 - **so far → `hasta ahora`, sin participio** · `search.imageResults.paused`; un `recibidos` concordaría en número con la
   unidad que ya llega formateada (`1 byte`) · `high`.
-- **stopped arriving → `Dejaron de llegar los datos de este archivo`** · pretérito, según `style.md`; `Este archivo dejó
-  de llegar` es un calco. La segunda frase copia `errors.listing.couldntReadUnknown.suggestion`
+- **stopped arriving → `Dejaron de llegar los datos de este archivo`** · pretérito, según `style.md`;
+  `Este archivo dejó de llegar` es un calco. La segunda frase copia `errors.listing.couldntReadUnknown.suggestion`
   (`Comprueba que … sigan conectados`) y `ai.translateError.unavailable.body` (`y vuelve a intentarlo`) · `high`.
 
 ## El índice desactualizado de un teléfono por ADB (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.{titlePhone,bodyPhone}`, 2026-09-11)
@@ -3008,8 +3009,8 @@ enchufado, así que ninguna menciona la desconexión.
   estén actualizados», que respalda `desactualizado` en el título · `high`.
 - **phone → `teléfono`** · ya asentado (§ El teléfono Android por ADB); `El índice de este teléfono` calca
   `El índice de esta unidad` · `high`.
-- **after a rescan → `tras un nuevo análisis`** · `un nuevo análisis` es el sustantivo del hermano `staleDialog.body`; el
-  sustantivo evita un clítico que tendría que concordar · `high`.
+- **after a rescan → `tras un nuevo análisis`** · `un nuevo análisis` es el sustantivo del hermano `staleDialog.body`;
+  el sustantivo evita un clítico que tendría que concordar · `high`.
 - **`{name} doesn't tell Cmdr` → `{name} no avisa a Cmdr`** · `{name}` va de sujeto con un verbo sin género (§ «Nothing
   may agree with a `{name}`» de `style.md`) · `high`.
 - **the changes Cmdr makes itself → `los cambios que hace el propio Cmdr`** · `el propio` deja la marca como sujeto,

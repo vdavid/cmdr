@@ -87,10 +87,10 @@ pure, unit-tested decision it wraps:
   `None` for a path not under the mount root, or a volume with no registered mount root (drop rather than mis-root).
 
 **Decision/Why MTP and ADB route purely rather than through the registry's `root()` prefix:** a device's index outlives
-its volume. Unplugging a phone unregisters the volume and keeps the index (registered, Stale), so a registry match
-would answer `root` for that phone's paths from the moment the cable came out. Both schemes carry their identity in
-the path, so no lookup is needed. A path-shaped registry match would also be the one generic tier that could serve
-SFTP/WebDAV, which have no index to route to.
+its volume. Unplugging a phone unregisters the volume and keeps the index (registered, Stale), so a registry match would
+answer `root` for that phone's paths from the moment the cable came out. Both schemes carry their identity in the path,
+so no lookup is needed. A path-shaped registry match would also be the one generic tier that could serve SFTP/WebDAV,
+which have no index to route to.
 
 Firmlink normalization stays local-only — it must NOT touch virtual SMB/MTP/ADB paths. `index_read_path` is called by
 `read/enrichment.rs`, `read/queries.rs`, and `lifecycle/progress_reporter.rs` (which maps firmlink-normalized hot paths

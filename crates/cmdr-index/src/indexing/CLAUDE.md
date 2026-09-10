@@ -1,8 +1,8 @@
 # Drive indexing subsystem
 
-Background-indexes each volume (local disk, local external, SMB, MTP, ADB) into its own SQLite DB with recursive
-size aggregates. The headline UX win: showing directory sizes in listings. The crate root re-exports what a host may
-rely on (`crates/cmdr-index/CLAUDE.md`); `mod.rs` here just declares the areas below, where the real code is.
+Background-indexes each volume (local disk, local external, SMB, MTP, ADB) into its own SQLite DB with recursive size
+aggregates. The headline UX win: showing directory sizes in listings. The crate root re-exports what a host may rely on
+(`crates/cmdr-index/CLAUDE.md`); `mod.rs` here just declares the areas below, where the real code is.
 
 ## The one cross-area invariant
 

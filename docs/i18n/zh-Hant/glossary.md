@@ -1658,30 +1658,43 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   裡資料夾的說法），也不用 MS 的 `組建`。第二句沿用 `settings.revealHandler.notInApplications` 的
   `每一次「在 Finder 中顯示」的點擊都指向空的地方`，讓兩條提示讀起來是一對 · `high`（術語）；"come and go" 譯作
   `來來去去` 是意譯判斷，`tentative`
-- **fetch（檢視器先把手機、伺服器或封存檔裡的檔案取到暫存檔再顯示）** · `取得`，標題寫
-  `正在取得「{fileName}」以便預覽` · AP-HK `Fetching Menu Item` = `正在取得⋯`（AP-TW 是 `擷取中⋯`，本目錄的 `擷取`
-  只用在 `預先擷取`）；目錄裡 key 名就叫 fetch 的 `fileExplorer.navigation.spaceFetchFailed` = `無法取得磁碟空間` ·
+- **fetch（檢視器先把手機、伺服器或封存檔裡的檔案取到暫存檔再顯示）** · `取得`，標題寫 `正在取得「{fileName}」以便預覽`
+  · AP-HK `Fetching Menu Item` = `正在取得⋯`（AP-TW 是 `擷取中⋯`，本目錄的 `擷取` 只用在
+  `預先擷取`）；目錄裡 key 名就叫 fetch 的 `fileExplorer.navigation.spaceFetchFailed` = `無法取得磁碟空間` ·
   `high`。❌ 不寫 Finder 的 `下載`（`PE126` `正在下載^0`）：USB 手機和封存檔都不是下載。檔名照 Apple `FT1`
   （`正在將「^0」下載至「^1」`）加角括號。
 - **"x of y"（位元組進度行，兩個值都帶單位）** · `{doneText} / {totalText}` · AP-TW `PW8` `已拷貝：^0/^1`、AP-HK
-  `已複製：^0/^1`，進度行一律用斜線；斜線兩旁留空格沿用 `errorReporter.dialog.counter`（`{currentText} / {maxText}`），因為單位裡本身有空格 ·
-  `high`。❗ 和 `style.md` § "Spacing: put a space between Chinese and Latin" 裡那句 `64.0 MB/1.33 GB` 不衝突：那裡講的是別讓人往一段 Latin 裡面加空格，這裡是兩個占位符之間的分隔。
+  `已複製：^0/^1`，進度行一律用斜線；斜線兩旁留空格沿用
+  `errorReporter.dialog.counter`（`{currentText} / {maxText}`），因為單位裡本身有空格 · `high`。❗ 和 `style.md` §
+  "Spacing: put a space between Chinese and Latin" 裡那句 `64.0 MB/1.33 GB`
+  不衝突：那裡講的是別讓人往一段 Latin 裡面加空格，這裡是兩個占位符之間的分隔。
 - **"so far"（總大小未知時已到的量）** · `目前已取得 {doneText}` · `目前…` 沿用
   `queryUi.results.live.matchesSoFar`（`目前找到`）、`fileOperations.transferProgress.rollbackTooltip`（`目前為止寫入`）；動詞與標題的
   `取得` 同字 · `high`
 - **"stopped arriving"（45 秒沒有資料進來）** · `這個檔案的傳輸停住不動了` · 複用目錄已出貨的
-  `fileOperations.transferProgress.stallUnknown`（`這項傳輸停住不動了`），刻意不寫 `已暫停` 或 `沒有回應`；後半句逐字沿用
-  `errors.listing.*.suggestion` 的 `確認磁碟或裝置仍然連接著` 與 Apple 的 `然後再試一次` · `tentative`（`停住不動了`
-  是既有目錄用字，五份語料都沒有來源）
+  `fileOperations.transferProgress.stallUnknown`（`這項傳輸停住不動了`），刻意不寫 `已暫停` 或
+  `沒有回應`；後半句逐字沿用 `errors.listing.*.suggestion` 的 `確認磁碟或裝置仍然連接著` 與 Apple 的 `然後再試一次` ·
+  `tentative`（`停住不動了` 是既有目錄用字，五份語料都沒有來源）
 
 ## 手機版的過時索引提示（`fileExplorer.navigation.driveIndex.tooltipStalePhone`、`indexing.staleDialog.titlePhone`、`.bodyPhone`，2026-09-11）
 
-這三條是磁碟機版本（`tooltipStale`、`staleDialog.title`、`staleDialog.body`）的手機版：透過 ADB 接著的手機從不回報自己的檔案變動，所以索引在手機還插著的時候就顯示過時。用字照抄磁碟機那一家，只把原因從「中斷連線期間」換成「手機不會告訴 Cmdr」，❗ 不能提到中斷連線。參考素材裡沒有 `keep … up to date` 這種句型可抄（macOS 語料與 MS 術語庫都查過），以下以目錄既有用字為準。
+這三條是磁碟機版本（`tooltipStale`、`staleDialog.title`、`staleDialog.body`）的手機版：透過 ADB 接著的手機從不回報自己的檔案變動，所以索引在手機還插著的時候就顯示過時。用字照抄磁碟機那一家，只把原因從「中斷連線期間」換成「手機不會告訴 Cmdr」，❗ 不能提到中斷連線。參考素材裡沒有
+`keep … up to date` 這種句型可抄（macOS 語料與 MS 術語庫都查過），以下以目錄既有用字為準。
 
-- **phone（標題）** · `這支手機的索引可能過時了` · 形狀逐字抄 `indexing.staleDialog.title`（`這個磁碟機的索引可能過時了`），量詞照 § Android 手機的連線窗格 的 `這支手機` · `high`
-- **keep the index current with the changes Cmdr makes** · `Cmdr 會讓索引跟上自己做的變動` · **自行組出來的**：`跟上` 取自 `indexing.rescan.watcherStartFailed`（`讓索引跟上`）與 `indexing.rescan.staleIndex`（`來跟上`），`變動` 取自兩條磁碟機版本（`可能有變動`）；`自己` 回指主詞 Cmdr，省掉英文重複的第二個 `Cmdr` · `tentative`。❗ 不加 `即時`：英文沒有這個承諾。
-- **doesn't tell Cmdr** · `不會…告訴 Cmdr` · 刻意不寫 `通知`：目錄裡 `通知` 是 macOS 通知那個字，這裡講的是手機不回報變動 · `high`
-- **show up after a rescan** · `重新掃描後就會出現` · `重新掃描` 是目錄既有動詞（`fileExplorer.navigation.driveIndex.menuRescan`），`就會…` 沿用 `tooltipStale` 的 `重新掃描就能更新` · `high`
+- **phone（標題）** · `這支手機的索引可能過時了` · 形狀逐字抄
+  `indexing.staleDialog.title`（`這個磁碟機的索引可能過時了`），量詞照 § Android 手機的連線窗格 的 `這支手機` · `high`
+- **keep the index current with the changes Cmdr makes** · `Cmdr 會讓索引跟上自己做的變動` · **自行組出來的**：`跟上`
+  取自 `indexing.rescan.watcherStartFailed`（`讓索引跟上`）與 `indexing.rescan.staleIndex`（`來跟上`），`變動`
+  取自兩條磁碟機版本（`可能有變動`）；`自己` 回指主詞 Cmdr，省掉英文重複的第二個 `Cmdr` · `tentative`。❗ 不加
+  `即時`：英文沒有這個承諾。
+- **doesn't tell Cmdr** · `不會…告訴 Cmdr` · 刻意不寫 `通知`：目錄裡 `通知`
+  是 macOS 通知那個字，這裡講的是手機不回報變動 · `high`
+- **show up after a rescan** · `重新掃描後就會出現` · `重新掃描`
+  是目錄既有動詞（`fileExplorer.navigation.driveIndex.menuRescan`），`就會…` 沿用 `tooltipStale` 的 `重新掃描就能更新` ·
+  `high`
 - **folder sizes and search** · `資料夾大小和搜尋結果` · 逐字沿用 `indexing.staleDialog.body` · `high`
-- **like new photos** · `（例如新照片）` · 全形括號加 `例如`，形狀抄 `errors.listing.notSupported.explanation`（`（例如手機儲存空間或某些網路磁碟機）`）· `high`
-- **stays as a reminder（黃色狀態）** · `手機旁邊的黃色狀態會一直留著，提醒你這件事` · `黃色狀態` 與 `X 旁邊` 逐字沿用 `indexing.staleDialog.body`；`提醒` 是目錄既有用字（`settings.fileExplorer.suppressQuickLookHint.description`）· `high`
+- **like new photos** · `（例如新照片）` · 全形括號加 `例如`，形狀抄
+  `errors.listing.notSupported.explanation`（`（例如手機儲存空間或某些網路磁碟機）`）· `high`
+- **stays as a reminder（黃色狀態）** · `手機旁邊的黃色狀態會一直留著，提醒你這件事` · `黃色狀態` 與 `X 旁邊` 逐字沿用
+  `indexing.staleDialog.body`；`提醒` 是目錄既有用字（`settings.fileExplorer.suppressQuickLookHint.description`）·
+  `high`

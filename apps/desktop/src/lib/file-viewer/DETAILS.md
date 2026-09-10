@@ -52,10 +52,10 @@ Depth and rationale for the frontend file viewer. `CLAUDE.md` holds the must-kno
   speed; JS `String.substring()` uses UTF-16 code units. The backend does the conversion so the frontend can highlight
   matches correctly in JavaScript strings.
 - **The `canClose` flag gates `closeWindow()`.** If Escape is pressed before the mount settles, close is queued: WebKit
-  crashes if you close a window before its content process has finished initializing. The flag flips via
-  `setTimeout(0)` right after mount (never rAF, which starves in unfocused windows), and deliberately NOT when the open
-  resolves: an open that pulls a file off a phone can run for minutes, and closing the window is how the user stops it.
-  `windowReady` still marks the open resolved, for the `data-window-ready` attribute E2E specs wait on.
+  crashes if you close a window before its content process has finished initializing. The flag flips via `setTimeout(0)`
+  right after mount (never rAF, which starves in unfocused windows), and deliberately NOT when the open resolves: an
+  open that pulls a file off a phone can run for minutes, and closing the window is how the user stops it. `windowReady`
+  still marks the open resolved, for the `data-window-ready` attribute E2E specs wait on.
 - **Menu integration requires two-way sync for word-wrap state.** Both "W" and the menu CheckMenuItem toggle word wrap.
   "W" calls `viewerSetWordWrap` to update the menu's checked state; the menu item emits `viewer-word-wrap-toggled` back
   to the frontend. The `fromMenu` parameter prevents an infinite toggle loop.

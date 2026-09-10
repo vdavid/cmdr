@@ -2837,22 +2837,23 @@ terminologin från syskonnyckelns `…desc`.
 ICU-värden. Panelen syns mitt i förhandsvisningen när Cmdr kopierar en fil från en telefon, en server eller ett arkiv
 till en temporär fil och det tar mer än en sekund.
 
-- **fetch (kopiera en fil hit innan den visas): `hämta` / `hämtning`** · macOS Systeminställningar i
-  referenssamlingen, `sv/macOS/SystemSettings/Localizable.json` nyckeln `Fetching Menu Item` (`Fetching…` = `Hämtar…`),
-  läst 2026-09-10; samma ord som glossarets `download`-post. `high`. Rubriken följer Finders förloppsfönster
-  (`LocalizableMerged.strings` `PW5_V1` = `Förbereder kopiering av ”^1”`, `PW45.2` = `Förbereder delning av ”^0”`,
-  macOS 26.6.2 build 25G83, läst 2026-09-10): verb i presens och filnamnet inom `”…”`, som katalogens övriga meningar
-  med ett filnamn (`menu.context.copyNamed`). `för förhandsvisning` är ett substantiv utan pronomen, så inget `den`/`det`
-  behöver stämma med filnamnet.
+- **fetch (kopiera en fil hit innan den visas): `hämta` / `hämtning`** · macOS Systeminställningar i referenssamlingen,
+  `sv/macOS/SystemSettings/Localizable.json` nyckeln `Fetching Menu Item` (`Fetching…` = `Hämtar…`), läst 2026-09-10;
+  samma ord som glossarets `download`-post. `high`. Rubriken följer Finders förloppsfönster (`LocalizableMerged.strings`
+  `PW5_V1` = `Förbereder kopiering av ”^1”`, `PW45.2` = `Förbereder delning av ”^0”`, macOS 26.6.2 build 25G83, läst
+  2026-09-10): verb i presens och filnamnet inom `”…”`, som katalogens övriga meningar med ett filnamn
+  (`menu.context.copyNamed`). `för förhandsvisning` är ett substantiv utan pronomen, så inget `den`/`det` behöver stämma
+  med filnamnet.
 - **x of y (mängd av hela storleken): `{doneText} av {totalText}`** · Finder `PW3` (`^0 of ^1 – ^2` = `^0 av ^1 – ^2`,
   kopieringsfönstrets storleksrad) och `PW8` (`Kopierat: ^0 av ^1`), macOS 26.6.2 build 25G83; Thunar `%s av %s`;
   katalogens `fileExplorer.imageIndex.folder.someIndexed`. `high`.
 - **so far (efter en storlek): `hittills`** · glossarets `so far`-post och `queryUi.results.live.matchesSoFar`. `high`.
 - **”This file stopped arriving” · `Hämtningen av den här filen står stilla.`** · `står stilla` är katalogens satta ord
   för en överföring som inte rör sig (§ Stalled-transfer notice, valt framför `har stannat`), och `Hämtningen` knyter an
-  till rubrikens `Hämtar`. Andra meningen följer `settings.mediaIndex.clip.failed` (`Kontrollera din anslutning och
-  försök igen.`) och `errors.listing.couldntReadUnknown.suggestion` (`fortfarande är ansluten`), utan komma före `och`
-  mellan två korta satser (`style.md`). `ansluten` stämmer med `telefonen` och `servern`, båda en-genus. `high`.
+  till rubrikens `Hämtar`. Andra meningen följer `settings.mediaIndex.clip.failed`
+  (`Kontrollera din anslutning och försök igen.`) och `errors.listing.couldntReadUnknown.suggestion`
+  (`fortfarande är ansluten`), utan komma före `och` mellan två korta satser (`style.md`). `ansluten` stämmer med
+  `telefonen` och `servern`, båda en-genus. `high`.
 
 ## Inaktuellt index på en telefon över ADB (2026-09-11; `fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`.bodyPhone`)
 
@@ -2862,17 +2863,17 @@ indexet kan vara inaktuellt fast telefonen sitter i. ❗ Inget om frånkoppling,
 `enhetens`, och `filer på den`, `Den gula statusen bredvid …`, `mappstorlekar och sökresultat` och `en ny genomsökning`
 är systerdialogens egna ord.
 
-- **phone (en Android-telefon som volym): `telefon`** · Microsoft-terminologin i referenssamlingen (`phone` →
-  `telefon`, läst 2026-09-11) och katalogens satta ord i hela `adb.*` (`Din telefon är inte ansluten längre.`). En-genus:
+- **phone (en Android-telefon som volym): `telefon`** · Microsoft-terminologin i referenssamlingen (`phone` → `telefon`,
+  läst 2026-09-11) och katalogens satta ord i hela `adb.*` (`Din telefon är inte ansluten längre.`). En-genus:
   `telefonens index`, `filer på den`. Glossarets MTP-post `enhet` gäller den generiska enheten; när engelskan säger
   `phone` står `telefon`. `high`.
-- **keep (an index) current: `hålla … uppdaterat`** · katalogens `tooltipFresh` = `Indexerad och uppdaterad`, så
-  färsk och inaktuell status delar ord; neutrum efter `indexet`. `high`.
-- **changes Cmdr makes / changes made on the phone: `sina egna ändringar` / `de ändringar Cmdr själv gör` / `ändringar
-  som görs på (själva) telefonen`** · passivt `görs` med flit: ändringen kan komma från användaren eller från en annan
-  app, så inget subjekt passar. `high`.
-- **reminder: `påminnelse`** · Microsoft-terminologin (`reminder` → `påminnelse`, läst 2026-09-11). `stays as a
-  reminder` → `finns kvar som en påminnelse`. `high`.
+- **keep (an index) current: `hålla … uppdaterat`** · katalogens `tooltipFresh` = `Indexerad och uppdaterad`, så färsk
+  och inaktuell status delar ord; neutrum efter `indexet`. `high`.
+- **changes Cmdr makes / changes made on the phone: `sina egna ändringar` / `de ändringar Cmdr själv gör` /
+  `ändringar som görs på (själva) telefonen`** · passivt `görs` med flit: ändringen kan komma från användaren eller från
+  en annan app, så inget subjekt passar. `high`.
+- **reminder: `påminnelse`** · Microsoft-terminologin (`reminder` → `påminnelse`, läst 2026-09-11).
+  `stays as a reminder` → `finns kvar som en påminnelse`. `high`.
 
 Inga `sameAsSourceJustification`; `{name}` står oförändrad, och ingen apostrof i värdena, så ICU-dubbleringen `''` blir
 aldrig aktuell.

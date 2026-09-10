@@ -3271,9 +3271,9 @@ Elke regel staat naast een schakelaar en mag niet omlopen, dus ze blijven kort e
   (`queryUi.results.live.matchesSoFar`, `search.imageResults.paused`) · `high`
 - **"stopped arriving" (zo'n 45 seconden geen gegevens) → `Er komen geen gegevens van dit bestand meer binnen.`** · geen
   bron formuleert dit; bewust niet de stall-formule `komt niet meer vooruit`, want het weergavevenster toont geen
-  overdracht · `tentative`. De tweede zin is wel belegd: `errors.provider.macDroid.transient` (`Controleer of je telefoon
-  verbonden is`), `errors.listing.networkConnectionDropped.suggestion` (`nog verbonden is`), glossary connected →
-  `verbonden`, Finder `N178` (`Probeer het vervolgens opnieuw.`) · `high`
+  overdracht · `tentative`. De tweede zin is wel belegd: `errors.provider.macDroid.transient`
+  (`Controleer of je telefoon verbonden is`), `errors.listing.networkConnectionDropped.suggestion` (`nog verbonden is`),
+  glossary connected → `verbonden`, Finder `N178` (`Probeer het vervolgens opnieuw.`) · `high`
 
 ## De verouderde index van een telefoon via ADB (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`.bodyPhone`)
 

@@ -18,8 +18,8 @@ is the canonical owner of `IndexPathSpace` and the read-side path transforms.
 - **`absolute(raw)` firmlink-normalizes for the boot disk, is identity for a mount-rooted drive.** Firmlink semantics
   are boot-disk-only; they must NOT touch virtual SMB/MTP paths.
 - **`index_read_path` is the read-side mirror**: pass-through for `root`, mount-relative strip for SMB, `mtp://` scheme
-  strip for MTP, `adb://<serial>` strip for ADB. `None` ⇒ the path isn't in this volume's index ⇒ the caller skips
-  (like an unindexed volume), never mis-roots it at `ROOT_ID`. MTP, ADB, and servers route PURELY (an unplugged phone keeps
+  strip for MTP, `adb://<serial>` strip for ADB. `None` ⇒ the path isn't in this volume's index ⇒ the caller skips (like
+  an unindexed volume), never mis-roots it at `ROOT_ID`. MTP, ADB, and servers route PURELY (an unplugged phone keeps
   its index); ❌ never split an `adb://` or server path by hand: `adb_serial_of_path` and `server_of_path`
   (`cmdr_fs::volume`) are the one splits.
 - **`trust_inode` nulls the inode on a FAT/exFAT drive** (`inodes_trustworthy == false`): a derived, unstable inode must

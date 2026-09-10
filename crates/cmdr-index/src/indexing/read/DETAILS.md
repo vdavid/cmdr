@@ -112,11 +112,11 @@ mutate registry state.
 - `get_volume_index_status(path)` / `get_volume_index_status_by_id(volume_id)` — build the per-drive badge shape
   (`VolumeIndexStatus { volume_id, enabled, freshness, scan_completed_at, scan_duration_ms, coalesced_signals_since_sweep, next_sweep_due_at, live_watch }`).
   `live_watch` is the registered kind's `has_live_watch` (`true` with no index registered), so the badge and the
-  one-time stale dialog word a phone's always-stale index without blaming a disconnect.
-  The path form resolves the volume from a listing path (the always-visible active-drive badge); the id form is keyed by
-  `volume.id` (the per-drive dropdown rows). Both return the same shape. `next_sweep_due_at` is computed here so the
-  sweep-window length stays in the policy module (owned by `../reconcile/DETAILS.md`), not duplicated in the frontend.
-  It also carries `unreadable_locations` + `unreadable_retried`, so a finished index can admit it has holes (below).
+  one-time stale dialog word a phone's always-stale index without blaming a disconnect. The path form resolves the
+  volume from a listing path (the always-visible active-drive badge); the id form is keyed by `volume.id` (the per-drive
+  dropdown rows). Both return the same shape. `next_sweep_due_at` is computed here so the sweep-window length stays in
+  the policy module (owned by `../reconcile/DETAILS.md`), not duplicated in the frontend. It also carries
+  `unreadable_locations` + `unreadable_retried`, so a finished index can admit it has holes (below).
 
 **What a COMPLETED index couldn't read** (`unreadable_ground`). A finished walk can hold no rows for directories it was
 refused (`Denied`), ones Cmdr declines to read at all (`Declined`), and ones that stopped answering (`Abandoned`), so

@@ -654,9 +654,9 @@ Two traps specific to `Select`, both of which cost a silent 5 s each in the i18n
   probe does not.
 
 **Proving an open menu is really on top.** Every `Select` and `Combobox` menu portals out of its trigger's subtree, so
-find it through `selectContentExpr` (the trigger's `aria-controls`), never a selector nested under the toolbar or dialog.
-`selectRowHits` hit-tests the centre of every row with `elementFromPoint`, which is what a real click lands on. Call
-`runAnimationFramesOnTimers` BEFORE opening the menu: zag places it, and writes its stacking styles, from a
+find it through `selectContentExpr` (the trigger's `aria-controls`), never a selector nested under the toolbar or
+dialog. `selectRowHits` hit-tests the centre of every row with `elementFromPoint`, which is what a real click lands on.
+Call `runAnimationFramesOnTimers` BEFORE opening the menu: zag places it, and writes its stacking styles, from a
 `requestAnimationFrame` that an unfocused E2E window never fires, so without it the test inspects a menu no user ever
 gets (`docs/testing.md` § "`requestAnimationFrame` in unfocused windows"). Then wait for the positioner's inline `--x`
 before probing. `viewer-media.spec.ts` is the worked example, including the full-window sentinel on a lower rung that

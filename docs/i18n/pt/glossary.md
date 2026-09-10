@@ -2772,19 +2772,19 @@ Quatro chaves: o painel no meio do visualizador enquanto o Cmdr copia um arquivo
 dentro de um arquivo compactado para um arquivo temporário, e a mensagem de quando os dados param de chegar por uns 45
 segundos.
 
-- Fetching (trazer um arquivo antes de mostrá-lo) · **Obtendo** · macOS Finder pt-BR `IN_MD1` (`Fetching…` →
-  `Obtendo…`) · high. A MS terminology só tem `Fetch` / `FetchXML`, nome próprio do Dynamics CRM (outro sentido). ❌ Não
-  `Baixando` (Finder `PE126`): um arquivo compactado local não é baixado de lugar nenhum. ❌ Não `Buscando`: é o
-  `Searching` do próprio visualizador (`viewer.search.searching`).
-- to preview it · **para pré-visualizar**, sem pronome · copia `viewer.error.tooLargeToPreview` (`muito grande para
-  pré-visualizar daqui`); sem o `-lo`, nada concorda com `{fileName}` · high
+- Fetching (trazer um arquivo antes de mostrá-lo) · **Obtendo** · macOS Finder pt-BR `IN_MD1` (`Fetching…` → `Obtendo…`)
+  · high. A MS terminology só tem `Fetch` / `FetchXML`, nome próprio do Dynamics CRM (outro sentido). ❌ Não `Baixando`
+  (Finder `PE126`): um arquivo compactado local não é baixado de lugar nenhum. ❌ Não `Buscando`: é o `Searching` do
+  próprio visualizador (`viewer.search.searching`).
+- to preview it · **para pré-visualizar**, sem pronome · copia `viewer.error.tooLargeToPreview`
+  (`muito grande para pré-visualizar daqui`); sem o `-lo`, nada concorda com `{fileName}` · high
 - `{doneText} of {totalText}` · **`{doneText} de {totalText}`** · Finder pt-BR `PW3` / `PW8` (`^0 de ^1`) e
   `askCmdr.context.tooltip` · high
-- so far · **até agora**, sem particípio · a forma fixa de `search.imageResults.paused`; um `recebidos` concordaria com a
-  unidade que já chega formatada (`1 byte`) · high
+- so far · **até agora**, sem particípio · a forma fixa de `search.imageResults.paused`; um `recebidos` concordaria com
+  a unidade que já chega formatada (`1 byte`) · high
 - stopped arriving · **`Os dados deste arquivo pararam de chegar`** · o `parou de avançar` de
-  `transferProgress.stallUnknown`; `Este arquivo parou de chegar` é decalque. `Verifique se … ainda está conectado` copia
-  `errors.listing.couldntReadUnknown.suggestion`, e `tente novamente` ecoa o botão `Tentar novamente`
+  `transferProgress.stallUnknown`; `Este arquivo parou de chegar` é decalque. `Verifique se … ainda está conectado`
+  copia `errors.listing.couldntReadUnknown.suggestion`, e `tente novamente` ecoa o botão `Tentar novamente`
   (`viewer.error.retry`) logo abaixo · high
 
 ## O índice do celular que fica amarelo com o cabo ligado (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`bodyPhone`, 2026-09-11)
@@ -2800,9 +2800,9 @@ então o índice fica amarelo mesmo conectado; nenhuma das três pode falar em d
   (§ drive scan, § full check) · confirmed. ⚠️ A irmã `indexing.staleDialog.body` ainda diz `examinar o disco de novo` e
   `uma nova análise`; `análise` é o termo reservado da pré-contagem de transferência, então o corpo de disco é que está
   fora do molde. Ficou intocado nesta rodada (fora do escopo).
-- **`{name} doesn''t tell Cmdr when its files change` → `{name} não avisa o Cmdr quando os arquivos do celular mudam`** ·
-  `its files` viraria `dele` ou `nele`, que concordam com `{name}`; a frase escreve o substantivo, como manda o § «Nada
-  concorda com um `{name}`» do `style.md` · high
+- **`{name} doesn''t tell Cmdr when its files change` → `{name} não avisa o Cmdr quando os arquivos do celular mudam`**
+  · `its files` viraria `dele` ou `nele`, que concordam com `{name}`; a frase escreve o substantivo, como manda o §
+  «Nada concorda com um `{name}`» do `style.md` · high
 - **`the changes Cmdr makes itself` → `as mudanças feitas pelo próprio Cmdr`** · o `feitas pelo próprio Cmdr` espelha o
   `feitas no celular` da frase seguinte, e evita um `ele mesmo` que poderia apontar para o celular · high
 - **`stays as a reminder` → `fica como lembrete`** · sem fonte na pilha; forma corriqueira pt-BR · tentative

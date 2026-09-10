@@ -3185,8 +3185,8 @@ sor, Mégsem gomb), és az üzenet, ha kb. 45 másodpercig nem érkezik adat. Ti
   `Betöltés…`, `viewer.error.timeout` = `Nem sikerült betölteni a fájlt.`), a „to preview” pedig ugyanennek a fájlnak a
   `megjelenít` töve (`viewer.error.tooLargeToPreview`) · `high`. ❌ NEM a Finder `Begyűjtés…` alakja (`IN_MD1`): az az
   Infó-ablak metaadat-gyűjtése, más jelentés. ❌ NEM `Letöltés` (Foundation `Progress.loctable` „Downloading”): egy
-  archívumban lévő fájlt senki nem tölt le. A cím kettőspontos keretet kap, mint a szomszédos
-  `viewer.content.ariaLabel` (`Fájltartalom: {fileName}`), így a `{fileName}` elé nem kell `a(z)`, és rag sem kerül rá.
+  archívumban lévő fájlt senki nem tölt le. A cím kettőspontos keretet kap, mint a szomszédos `viewer.content.ariaLabel`
+  (`Fájltartalom: {fileName}`), így a `{fileName}` elé nem kell `a(z)`, és rag sem kerül rá.
 - **„{done} of {total}” (a folyamatjelző alatti méretsor) → `{doneText} / {totalText}`** · Foundation
   `Progress.loctable`, `%@ of %@` kulcs → `%1$@ / %2$@`, pontosan az `NSProgress` „12,4 MB of 250 MB” sora; a Finder
   másolási sora (`PW3` `^0 / ^1 – ^2`) és a szállított `ai.toast.progress` (`{downloaded} / {total}`) ugyanez · `high`.
@@ -3211,14 +3211,13 @@ fájlváltozásait, ezért az indexe csatlakoztatva is sárga. A szöveg nem eml
   (`staleDialog.body`, `driveIndex.menuRescan`), `mappaméretek és … keresés`, `A meghajtó melletti sárga állapot` →
   `A telefon melletti sárga állapot`. A „current” szava `naprakész`, a `driveIndex.tooltipFresh`
   (`Indexelve és naprakész.`) alakja.
-- **„the changes Cmdr makes” → `a saját változtatásaival`, „changes made on the phone” → `a telefonon végzett
-  változtatások`** · leíró · tentative. Ugyanaz a főnév áll mindkét helyen, ahogy az angol is kétszer mondja a
-  `changes`-t. A `a saját változtatásaival tartja naprakészen` szórendben a fókusz (ige előtti hely) hordozza a „csak a
-  sajátjaival” jelentést, amit az angol a mondatpárral mond, ezért nem kell külön `csak`.
+- **„the changes Cmdr makes” → `a saját változtatásaival`, „changes made on the phone” →
+  `a telefonon végzett változtatások`** · leíró · tentative. Ugyanaz a főnév áll mindkét helyen, ahogy az angol is
+  kétszer mondja a `changes`-t. A `a saját változtatásaival tartja naprakészen` szórendben a fókusz (ige előtti hely)
+  hordozza a „csak a sajátjaival” jelentést, amit az angol a mondatpárral mond, ezért nem kell külön `csak`.
 - **`{name}` a mondat elején: `A(z) {name} nem szól a Cmdrnek`** · a `style.md` `a(z)` szabálya és a szállított
   `driveIndex.refusedDisconnected` (`A(z) {name} le van választva.`) · high. Idézőjel nincs, mert a testvér
   `staleDialog.body` (`Amíg a(z) {name} le volt választva`) sem tesz, és a telefon neve jellemzően a gyártóé.
-- **„stays as a reminder” → `emlékeztetőül ott marad`** · leíró, a katalógus `emlékeztető` szava
-  (`settings.json`, a Space-emlékeztető leírása) · tentative. A pile-ban nincs `emlékeztetőül` / `emlékeztetőként`
-  találat.
+- **„stays as a reminder” → `emlékeztetőül ott marad`** · leíró, a katalógus `emlékeztető` szava (`settings.json`, a
+  Space-emlékeztető leírása) · tentative. A pile-ban nincs `emlékeztetőül` / `emlékeztetőként` találat.
 - Aposztróf egyik magyar értékben sincs; a `{name}` halmaza egyezik az angoléval.

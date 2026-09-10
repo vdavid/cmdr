@@ -37,9 +37,8 @@ Each is a break-if-ignored invariant; the named `DETAILS.md` section has the why
   it measures that bar. Mount the cursor in `.scroll-spacer`, ❌ never in `.lines-container`, whose child count derives
   the wrapped-line height. (§ "Text cursor")
 - **`closeWindow()` defers via `deferWindowClose()` (100 ms, NOT 0); `canClose` (at mount) and `windowReady` flip via
-  `setTimeout(0)`; never rAF.**
-  Each dodges a different failure: stalled IPC in other webviews, a macOS WebKit segfault mid-teardown, starved rAF in
-  unfocused E2E windows. (§ Gotchas; `$lib/window-close-defer`)
+  `setTimeout(0)`; never rAF.** Each dodges a different failure: stalled IPC in other webviews, a macOS WebKit segfault
+  mid-teardown, starved rAF in unfocused E2E windows. (§ Gotchas; `$lib/window-close-defer`)
 - **Escape: the page's window keydown runs BEFORE `ViewerContextMenu`'s**, so it gates on `contextMenuPos !== null`
   first, else an open menu's Escape shuts the window. (§ Gotchas)
 - **The height map's wrap width comes from row geometry, never a `.line-text` span** (it shrink-wraps; measuring it

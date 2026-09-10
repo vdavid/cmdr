@@ -582,11 +582,11 @@ first 30" is a product call for David, so ❌ don't pick one on your own.
 
 ## Snapshot store
 
-`snapshot-store.svelte.ts` holds `SearchSnapshot` records (query, mode, filters, scope, the volume its rows live on, capped 10,000 entries,
-totalCount, createdAt, friendly label, row order) under monotonic `sr-N` ids, plus a per-record refcount. Each record
-keeps TWO arrays: the `entries` the pane renders and the `rankedEntries` the engine produced, which are the same array
-until a sort splits them (§ "The snapshot pane's row order"). The store has no hard cap on its own — **refcount is the
-only authority**. Refs come from two sources:
+`snapshot-store.svelte.ts` holds `SearchSnapshot` records (query, mode, filters, scope, the volume its rows live on,
+capped 10,000 entries, totalCount, createdAt, friendly label, row order) under monotonic `sr-N` ids, plus a per-record
+refcount. Each record keeps TWO arrays: the `entries` the pane renders and the `rankedEntries` the engine produced,
+which are the same array until a sort splits them (§ "The snapshot pane's row order"). The store has no hard cap on its
+own — **refcount is the only authority**. Refs come from two sources:
 
 - **Pane history entries** whose `path` starts with `search-results://<id>` hold +1 per occurrence. The tab-state
   manager (`pushHistoryEntry` and the closed-tab lifecycle) drives inc/dec — `navigation-history.ts` itself stays pure
@@ -708,9 +708,9 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
   IPCs of the listing-id-keyed `copy_files_to_clipboard` family). The Rust commands reuse
   `clipboard::write_file_urls_to_clipboard` and `set_cut_state` / `clear_cut_state`, so the system clipboard contract
   (file URLs + newline-separated text) is identical. Both first run the same MTP refusal a live MTP pane gets, against
-  the volume the snapshot's search covered rather than the pane's virtual id: an `mtp://…` path can't go on the OS clipboard, and
-  `NSURL::fileURLWithPath` would take it for a relative path. `file-explorer/pane/DETAILS.md` § "Volume capabilities"
-  carries the mechanism.
+  the volume the snapshot's search covered rather than the pane's virtual id: an `mtp://…` path can't go on the OS
+  clipboard, and `NSURL::fileURLWithPath` would take it for a relative path. `file-explorer/pane/DETAILS.md` § "Volume
+  capabilities" carries the mechanism.
 - **F5 / F6** route through `openUnifiedTransferDialog`, which routes off the kind's `hasBackendListing` capability and
   calls `transfer-operations::buildTransferPropsFromSnapshot` instead of the listing-id-driven builders. The resolved
   entries feed the same `TransferDialogPropsData` shape every transfer uses, and the existing `copy_files` /
@@ -723,9 +723,9 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
 - **Which volume the op runs against** is the one the search covered, carried on the snapshot
   (`SearchSnapshot.volumeId`); `file-explorer/pane/snapshot-source-volume.ts` reads that volume's trash affordance for
   the delete opener. ❌ Never assume `root`, and ❌ never re-derive it from the rows' paths: a search covers exactly one
-  volume, and any volume with a persisted `index-{volume_id}.db` is searchable, an SMB share, an MTP storage, and a phone
-  over ADB included (`src-tauri/src/search/volumes.rs`), while a prefix match against the volume list answers `root` the
-  moment a phone is unplugged under the pane. `sourceVolumeId` picks the delete and copy/move dispatch paths
+  volume, and any volume with a persisted `index-{volume_id}.db` is searchable, an SMB share, an MTP storage, and a
+  phone over ADB included (`src-tauri/src/search/volumes.rs`), while a prefix match against the volume list answers
+  `root` the moment a phone is unplugged under the pane. `sourceVolumeId` picks the delete and copy/move dispatch paths
   (`file-operations/transfer/transfer-dispatch.ts`), and `supportsTrash` decides whether the dialog offers the trash at
   all. `supportsTrash` is optimistic when the volume isn't in the list, since a `false` would force the dialog into a
   PERMANENT delete.

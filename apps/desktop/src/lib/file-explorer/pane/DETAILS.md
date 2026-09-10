@@ -339,13 +339,14 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   `$lib/path/canonical.ts::isPlainFilesystemPath` refuses any row that isn't a plain absolute filesystem path, from the
   path alone. Then the VOLUME the snapshot's search covered (`SearchSnapshot.volumeId` → `isMtpClipboardRefusal`),
   because the pane's own volume id is the virtual `search-results` and a search covers any volume with a persisted
-  index, MTP storages and ADB phones included. Either gate refuses the WHOLE set if any row offends; a partial
-  copy under a toast claiming success is worse than a refusal.
+  index, MTP storages and ADB phones included. Either gate refuses the WHOLE set if any row offends; a partial copy
+  under a toast claiming success is worse than a refusal.
 
   **Why the scheme gate leads:** the volume gate reads a volume's kind through the live volume list, and a device
-  unplugged while its snapshot pane stays open has left that list, while the rows still read `mtp://…`. Such a path reaches `NSURL::fileURLWithPath`
-  (`clipboard/pasteboard.rs`), which reads an unknown scheme as a RELATIVE path and hands back a file URL under the
-  process working directory. The scheme gate holds with no volume registered at all, which is the case it exists for.
+  unplugged while its snapshot pane stays open has left that list, while the rows still read `mtp://…`. Such a path
+  reaches `NSURL::fileURLWithPath` (`clipboard/pasteboard.rs`), which reads an unknown scheme as a RELATIVE path and
+  hands back a file URL under the process working directory. The scheme gate holds with no volume registered at all,
+  which is the case it exists for.
 
 - **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`.
   `readOnlyRefusal` turns rename / mkdir / mkfile / delete away up front on a read-only routed pane, worded per kind
@@ -428,10 +429,10 @@ questions").
 - **The effect keys on `<volume>:<readiness>`**, so one landing is one dial AND a readiness change (the Allow tap) is a
   fresh decision. A plain volume-id guard would strand the pane in the waiting state forever.
 - **❗ It is the ONE dialer, and it HOLDS the pane's listing** (`holdsListing`). Path resolution never dials, and a
-  phone nobody has dialed has no registered volume, so a listing there can only come back refused (`NotConnected`,
-  never `NotFound`: `src-tauri/src/adb/DETAILS.md`) and would put an error over the connecting state. The reload on
-  connect is what lists the phone. The hold is threaded through `path-sync.ts`'s `deviceIsConnecting` input (a
-  `sync-path` arm, like device-only MTP's) and the mount-time load's own branch.
+  phone nobody has dialed has no registered volume, so a listing there can only come back refused (`NotConnected`, never
+  `NotFound`: `src-tauri/src/adb/DETAILS.md`) and would put an error over the connecting state. The reload on connect is
+  what lists the phone. The hold is threaded through `path-sync.ts`'s `deviceIsConnecting` input (a `sync-path` arm,
+  like device-only MTP's) and the mount-time load's own branch.
 - **❗ While the hold is on, a `null` state renders NOTHING**, so every way a dial can end has to leave a non-`null`
   one: a `refused` with the reason and, where a second try could work, a Try again. That covers both cancels (the button
   on `connecting` and the one on `waiting_for_device`), the backend's own `cancelled` answer, a failure with no typed

@@ -576,8 +576,8 @@ Two niceties on top:
   `destinationReadOnly` / `destinationNoPermission` / `destinationNotWritable`, one per reason the backend could tell
   apart) and suppresses the yellow "will be created" warning, which would be a promise the transfer can't keep. The
   structural red error still wins. ❗ `unknown` shows nothing, and confirm stays enabled: the transfer asks again before
-  it writes and refuses with the typed `destination_not_writable` error, which is also what an MCP auto-confirm meets
-  (a disabled confirm would leave its round trip waiting). The phone case this exists for: copying onto a Pixel's `/`
+  it writes and refuses with the typed `destination_not_writable` error, which is also what an MCP auto-confirm meets (a
+  disabled confirm would leave its round trip waiting). The phone case this exists for: copying onto a Pixel's `/`
   surfaced only after confirm, as "Not enough space".
 
 Backend counterpart: every transfer path creates a missing destination (and ancestors) before transferring — the local

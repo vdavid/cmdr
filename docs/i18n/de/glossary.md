@@ -2495,17 +2495,18 @@ Index als veraltet, obwohl es angeschlossen ist; die Texte dürfen deshalb kein 
   Telefon über ADB öffnen.
 - **`keeps this index current with the changes it makes` → `hält diesen Index mit den eigenen Änderungen aktuell`** ·
   Wortfamilie `aktuell` aus den Geschwistern (`title` „nicht mehr aktuell“, `driveIndex.tooltipFresh` „Indiziert und
-  aktuell“); „etwas mit X aktuell halten“ ist die normale deutsche Fügung, `eigenen` bezieht sich aufs Subjekt `Cmdr` und
-  spart die dritte Nennung. Der Stapel hat die Fügung nicht (macOS `de` führt `aktuell` nur als Adjektiv) · `high`.
+  aktuell“); „etwas mit X aktuell halten“ ist die normale deutsche Fügung, `eigenen` bezieht sich aufs Subjekt `Cmdr`
+  und spart die dritte Nennung. Der Stapel hat die Fügung nicht (macOS `de` führt `aktuell` nur als Adjektiv) · `high`.
 - **`{name} doesn''t tell Cmdr when its files change` → `{name} teilt Cmdr nicht mit, wenn sich Dateien darauf ändern`**
   · ❌ Nicht `meldet Cmdr nicht`: das liest sich zuerst als Akkusativ („meldet Cmdr [irgendwo]“), `mitteilen` regiert
   eindeutig den Dativ. `Dateien darauf` statt `seine Dateien` (kein Possessiv auf `{name}`, `style.md` § Notes),
   wortgleich mit `indexing.staleDialog.body` · `high`.
-- **`show up (in folder sizes and search) after a rescan` → `sind nach einem erneuten Durchlauf (in Ordnergrößen und
-  Suchergebnissen) sichtbar`** · `erneuter Durchlauf` aus der Zeile `scan`, `Ordnergrößen und Suchergebnisse` wortgleich
-  aus `body`; `sichtbar` in Tooltip und Dialog gleich · `high`.
-- **`stays as a reminder` → `bleibt zur Erinnerung stehen`** · `tentative`: kein Beleg im Stapel. KDE Dolphin nennt einen
-  „Reminder“ `Hinweis`, aber `Hinweis` ist im Katalog der Toast (Zeile `toast`); `zur Erinnerung` ist die feste
+- **`show up (in folder sizes and search) after a rescan` →
+  `sind nach einem erneuten Durchlauf (in Ordnergrößen und Suchergebnissen) sichtbar`** · `erneuter Durchlauf` aus der
+  Zeile `scan`, `Ordnergrößen und Suchergebnisse` wortgleich aus `body`; `sichtbar` in Tooltip und Dialog gleich ·
+  `high`.
+- **`stays as a reminder` → `bleibt zur Erinnerung stehen`** · `tentative`: kein Beleg im Stapel. KDE Dolphin nennt
+  einen „Reminder“ `Hinweis`, aber `Hinweis` ist im Katalog der Toast (Zeile `toast`); `zur Erinnerung` ist die feste
   Wendung.
 
 ## Die gesperrte Server-Identität (`servers.sheet.identityLocked`)
@@ -2784,11 +2785,11 @@ Formulierungsentscheidungen in diesem Set:
   `downloads.notification.title` „{fileName} geladen“). ❌ Nicht Microsofts `abrufen` (`GERMAN.tbx`): Apple rendert
   dasselbe Englisch als `laden` · `high`. `{fileName}` steht als Subjekt im Nominativ und ohne Anführungszeichen, wie in
   `downloads.notification.title`.
-- **„{doneText} of {totalText}“ → `{doneText} von {totalText}`** · Finder `PW8` („^0 von ^1 kopiert“), Nautilus („%s
-  von %s“), der Katalog (`fileExplorer.diskSpace.free`) · `high`
+- **„{doneText} of {totalText}“ → `{doneText} von {totalText}`** · Finder `PW8` („^0 von ^1 kopiert“), Nautilus („%s von
+  %s“), der Katalog (`fileExplorer.diskSpace.free`) · `high`
 - **„so far“ (Datenmenge ohne bekannte Gesamtgröße) → `{doneText} bisher geladen`** · `bisher` aus
-  `queryUi.results.live.matchesSoFar` und der Zeile „written so far → bisher geschrieben“; `geladen` hält die Wortfamilie
-  des Titels · `high`
+  `queryUi.results.live.matchesSoFar` und der Zeile „written so far → bisher geschrieben“; `geladen` hält die
+  Wortfamilie des Titels · `high`
 - **„stopped arriving“ (seit etwa 45 Sekunden keine Daten) → `Von dieser Datei kommen keine Daten mehr an.`** · keine
   Quelle formuliert das; bewusst nicht die Stall-Formel „Die Übertragung kommt nicht mehr voran.“, weil die Vorschau
   keinen Vorgang zeigt · `tentative`. Der Folgesatz ist belegt: `errors.listing.couldntReadUnknown.suggestion` („Prüfe,

@@ -3239,9 +3239,9 @@ Termes :
   macOS Réglages Système, `fr/macOS/SystemSettings/Localizable.json`, clé `Fetching Menu Item` (`Fetching…` →
   `Récupération…`), relevé dans le tas de références 2026-09-10 · high. Le titre suit le moule nominal des fenêtres de
   progression du Finder (`LocalizableMerged.strings` `PW5_V1` = `Préparation de la copie de « ^1 »`, `PW45.2` =
-  `Préparation du partage de « ^0 »`, macOS 26.6.2 build 25G83, lu le 2026-09-10). Les guillemets autour de
-  `{fileName}` règlent aussi l'élision : `de « image.png »` ne demande jamais `d'`. `téléchargement` reste réservé à
-  Internet (`settings.mediaIndex.clip.failed`).
+  `Préparation du partage de « ^0 »`, macOS 26.6.2 build 25G83, lu le 2026-09-10). Les guillemets autour de `{fileName}`
+  règlent aussi l'élision : `de « image.png »` ne demande jamais `d'`. `téléchargement` reste réservé à Internet
+  (`settings.mediaIndex.clip.failed`).
 - x of y (quantité reçue sur la taille totale) → **{doneText} sur {totalText}** · Finder `PW3` (`^0 of ^1 – ^2` →
   `^0 sur ^1 – ^2`, la ligne de taille de la fenêtre de copie) et `PW8` (`^0 sur ^1 copiés`), macOS 26.6.2 build 25G83,
   2026-09-10 ; le catalogue écrit déjà `fileExplorer.imageIndex.folder.someIndexed` « {doneText} sur {totalText} » ·
@@ -3254,8 +3254,8 @@ Décision de formulation :
 
 - **« This file stopped arriving » → « La récupération de ce fichier n'avance plus. »** Le constat reprend le moule du
   transfert bloqué (style guide § Voix : « Le transfert n'avance plus ») et le nom du titre, donc le panneau et le
-  message se lisent comme la même opération. La suite recopie `errors.listing.couldntReadUnknown.suggestion` («
-  Vérifiez que le disque ou l'appareil est toujours connecté ») et finit sur `puis réessayez`. `connecté` s'accorde avec
+  message se lisent comme la même opération. La suite recopie `errors.listing.couldntReadUnknown.suggestion` (« Vérifiez
+  que le disque ou l'appareil est toujours connecté ») et finit sur `puis réessayez`. `connecté` s'accorde avec
   `le téléphone ou le serveur`, deux masculins fixés par la phrase, jamais avec la personne · `high`.
 
 ## L'index d'un téléphone ADB paraît obsolète (`driveIndex.tooltipStalePhone`, `staleDialog.titlePhone` / `bodyPhone`, 2026-09-11)
@@ -3269,16 +3269,16 @@ Termes :
 - phone → **téléphone** · repris du catalogue (`adb.connect.*`, `settings.adb.status.*`, § Le téléphone Android) · high.
   `appareil` reste le mot MTP générique (Kindle, appareil photo) ; ici la source dit `phone`.
 - keep the index current with the changes Cmdr makes → **mettre l'index à jour avec les changements qu'il effectue** ·
-  `à jour` et `Mettre à jour l'index` viennent de `indexing.step.updateIndex` et `driveIndex.tooltipFresh` («
-  Indexé et à jour ») ; `changements` suit la famille `driveIndex.*` / `indexing.run.changeCheck` (« Recherche des
-  changements ») · high.
+  `à jour` et `Mettre à jour l'index` viennent de `indexing.step.updateIndex` et `driveIndex.tooltipFresh` (« Indexé et
+  à jour ») ; `changements` suit la famille `driveIndex.*` / `indexing.run.changeCheck` (« Recherche des changements »)
+  · high.
 - show up (in folder sizes and search) after a rescan → **sont pris en compte (dans la taille des dossiers et la
   recherche) après une nouvelle analyse** · `nouvelle analyse`, `la taille des dossiers` et `recherche` recopient les
   sœurs `staleDialog.body` et `tooltipStale`. `apparaître dans la taille` se lirait mal : ce sont des changements, pas
   des éléments · tentative (paraphrase, aucune source ne l'a mot pour mot).
-- stays as a reminder (le statut jaune) → **reste affiché pour vous le rappeler** · `affiché` s'accorde avec `le
-  statut`, jamais avec la personne ; `le` reprend la situation, comme le « le signale toujours » de `staleDialog.body` ·
-  tentative.
+- stays as a reminder (le statut jaune) → **reste affiché pour vous le rappeler** · `affiché` s'accorde avec
+  `le statut`, jamais avec la personne ; `le` reprend la situation, comme le « le signale toujours » de
+  `staleDialog.body` · tentative.
 
 Décisions de formulation :
 

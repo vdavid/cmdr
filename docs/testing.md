@@ -643,9 +643,9 @@ it, so CoreFoundation resolves its main bundle by listing the directory it sits 
 (DesktopServices asks whether it's running in Finder) both trigger that listing, once per test process. Under a full
 `rust-tests` run it alone outlasted a 2 s and a 5 s in-test wait: `refresh_listing_test` failed in about a third of the
 lane's runs and the scan-bridge trash cell in about one in ten (verified on macOS 26, `sample` of the stalled test
-processes, 2026-09-10). The shipped app never pays it. Keep the test off the host service instead: a unit-test build's `'system'` language is English without asking
-(`apps/desktop/src-tauri/src/intl/DETAILS.md` § "Which locale, and who decides"), and a test whose subject isn't the
-Trash trashes a path that doesn't exist.
+processes, 2026-09-10). The shipped app never pays it. Keep the test off the host service instead: a unit-test build's
+`'system'` language is English without asking (`apps/desktop/src-tauri/src/intl/DETAILS.md` § "Which locale, and who
+decides"), and a test whose subject isn't the Trash trashes a path that doesn't exist.
 
 ### ❌ Remove-then-recreate to get "a different file"
 

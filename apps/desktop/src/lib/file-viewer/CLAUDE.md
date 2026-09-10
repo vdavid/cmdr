@@ -12,9 +12,8 @@ lifecycle, and background search. The viewer route shell: `apps/desktop/src/rout
 - `binary-warning.ts`: pure `categorizeForViewerWarning(fileName)` classifies a file into a `category` (`image` /
   `document` / `binary`, or `null` = "don't warn" for text/source/unknown) plus an uppercased `ext` for the `binary`
   case. The displayed word comes from `viewerWarningLabel(warning)`, keeping the classifier locale-free. The viewer
-  route renders a red banner whenever `shouldWarn`. Suppressible per-instance (banner
-  **Close**) or forever (**Never show this warning again**, flips `fileViewer.suppressBinaryWarning` in Settings >
-  Advanced).
+  route renders a red banner whenever `shouldWarn`. Suppressible per-instance (banner **Close**) or forever (**Never
+  show this warning again**, flips `fileViewer.suppressBinaryWarning` in Settings > Advanced).
 - Route: `src/routes/viewer/+page.svelte`: viewer UI with virtual scrolling, search bar, status bar.
 
 **Don't trim the image set in `binary-warning.ts` to suppress rendered formats.** Rendered media is suppressed by the
@@ -51,8 +50,8 @@ These guard against macOS WebKit crashes and toggle loops. Keep them; the why is
   while it recalculates content insets; one rAF isn't enough (the current frame must complete AND the next start). Also
   do NOT call `setFocus()` on another window before closing: that can trigger the dying window to recalculate.
 - **The `canClose` flag gates `closeWindow()`**, queuing an Escape pressed before the mount settles (WebKit crashes
-  closing a half-initialized window). It flips right after mount, ❌ not when the open resolves: a phone pull can run for
-  minutes.
+  closing a half-initialized window). It flips right after mount, ❌ not when the open resolves: a phone pull can run
+  for minutes.
 - **Word-wrap menu sync is two-way; keep the `fromMenu` guard.** "W" calls `viewerSetWordWrap` to update the menu's
   checked state; the menu item emits `viewer-word-wrap-toggled` back. The `fromMenu` parameter prevents an infinite
   toggle loop.

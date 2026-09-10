@@ -2908,18 +2908,19 @@ Bề mặt: khung giữa cửa sổ trình xem khi Cmdr chép một tệp ở xa
 trình, dòng "x trên y", nút Hủy), và thông báo khi không có dữ liệu nào tới trong khoảng 45 giây. Bằng chứng Tier 1 đọc
 thẳng từ macOS 26.6.2 (build 25G83), 2026-09-10.
 
-- **"Fetching" (chép tệp về để xem trước) → `Đang tải`** · chính động từ của trình xem (`viewer.loading` = `Đang tải...`)
-  · `high`. ❌ Không lấy `Đang tìm nạp…` của Finder (`IN_MD1`): đó là nghĩa lấy siêu dữ liệu trong cửa sổ Lấy thông tin,
-  đọc rất kỹ thuật. ❌ Không lấy `Đang tải về` (Foundation `Progress.loctable` "Downloading"): tệp trong một tệp nén thì
-  không "tải về" từ đâu cả. `{fileName}` đi trần giữa câu như `downloads.notification.title` (`Đã tải về {fileName}`) và
-  Quick Look (`Preview of %@` → `Bản xem trước của %@`).
+- **"Fetching" (chép tệp về để xem trước) → `Đang tải`** · chính động từ của trình xem (`viewer.loading` =
+  `Đang tải...`) · `high`. ❌ Không lấy `Đang tìm nạp…` của Finder (`IN_MD1`): đó là nghĩa lấy siêu dữ liệu trong cửa sổ
+  Lấy thông tin, đọc rất kỹ thuật. ❌ Không lấy `Đang tải về` (Foundation `Progress.loctable` "Downloading"): tệp trong
+  một tệp nén thì không "tải về" từ đâu cả. `{fileName}` đi trần giữa câu như `downloads.notification.title`
+  (`Đã tải về {fileName}`) và Quick Look (`Preview of %@` → `Bản xem trước của %@`).
 - **"{done} of {total}" (dòng dung lượng dưới thanh tiến trình) → `{doneText} trên {totalText}`** · Foundation
   `Progress.loctable`, khóa `%@ of %@` → `%1$@ trên %2$@`, đúng dòng "12,4 MB of 250 MB" của `NSProgress` · `high`. Khớp
   `settings.mediaIndex.progress.ofTotal` và `onboarding.wizard.stepProgress`. Finder (`PW3` `^0 / ^1 – ^2`) và
   `ai.toast.progress` dùng `/`, nhưng đó là những dòng dày đặc có thêm tốc độ/thời gian; dòng này đứng riêng.
 - **"{done} so far" (dung lượng khi chưa biết tổng) → `Đến giờ đã tải {doneText}`** · `so far` → `đến giờ` đã chốt, và
-  khuôn đặt `Đến giờ` lên đầu là của bộ đếm trực tiếp `queryUi.results.live.matchesSoFar` (`Đến giờ có {countText} kết quả`)
-  · `high`. Cần thêm động từ `đã tải` (như `có` ở câu anh em), vì `12,4 MB đến giờ` trơ trọi không thành câu.
+  khuôn đặt `Đến giờ` lên đầu là của bộ đếm trực tiếp `queryUi.results.live.matchesSoFar`
+  (`Đến giờ có {countText} kết quả`) · `high`. Cần thêm động từ `đã tải` (như `có` ở câu anh em), vì `12,4 MB đến giờ`
+  trơ trọi không thành câu.
 - **"stopped arriving" → `đã ngừng tải`** · cùng gốc `tải` với tiêu đề; `ngừng` là chữ catalog dùng cho một thứ tự dừng
   ngoài ý muốn (`search.coverage.walk.abandoned` = `Vài thư mục ngừng phản hồi`) · `high`. Vế sau lấy nguyên khuôn
   `errors.listing.couldntReadUnknown.suggestion` (`Kiểm tra xem … có còn kết nối không`) và `rồi` của
@@ -2935,16 +2936,17 @@ tới `ngắt kết nối`.
 - **phone: `điện thoại`** · catalog đã ship ở mọi khóa ADB (`adb.connect.*`, `adb.readiness.*`, `settings.adb.status.*`)
   và `errors.listing.notConnected.*` · `high`. "the yellow status next to the phone" đổi đúng một danh từ so với chị em:
   `Trạng thái màu vàng bên cạnh điện thoại`.
-- **keep the index current (with the changes Cmdr makes): `luôn cập nhật chỉ mục … theo những thay đổi do Cmdr thực
-  hiện`** · `cập nhật chỉ mục` là của macOS Finder (`LocalizableMerged` `PW39` = `Đang cập nhật chỉ mục thẻ.`) và catalog
-  (`fileExplorer.dirSize.updatingIndexTooltip`); `thay đổi … được thực hiện` đã ship ở `errors.json` và
-  `operationLog.json` (`những thay đổi thực hiện bên trong một tệp nén`) · `high`. Trong thân hộp thoại viết
-  `chỉ mục của điện thoại`, ❌ không phải `chỉ mục của nó`: câu có hai chủ ngữ ({name} và Cmdr), nên `nó` đọc mơ hồ.
+- **keep the index current (with the changes Cmdr makes):
+  `luôn cập nhật chỉ mục … theo những thay đổi do Cmdr thực hiện`** · `cập nhật chỉ mục` là của macOS Finder
+  (`LocalizableMerged` `PW39` = `Đang cập nhật chỉ mục thẻ.`) và catalog (`fileExplorer.dirSize.updatingIndexTooltip`);
+  `thay đổi … được thực hiện` đã ship ở `errors.json` và `operationLog.json`
+  (`những thay đổi thực hiện bên trong một tệp nén`) · `high`. Trong thân hộp thoại viết `chỉ mục của điện thoại`, ❌
+  không phải `chỉ mục của nó`: câu có hai chủ ngữ ({name} và Cmdr), nên `nó` đọc mơ hồ.
 - **show up (after a rescan): `xuất hiện`** · khuôn gần nhất trong catalog là `whatsNew.dialog.empty`
   (`Các thay đổi mới sẽ xuất hiện ở đây sau một bản cập nhật.`) · `high`. "after a rescan" → `sau một lần quét lại`,
   cùng cụm `một lần quét lại` của `indexing.staleDialog.body`; dùng giống nhau ở cả chú giải lẫn hộp thoại.
 - **"stays as a reminder" → `vẫn hiện ra để nhắc bạn điều này`** · `hiện ra` lấy từ câu chị em
-  (`… luôn hiện ra khi điều này xảy ra`), `vẫn` giữ nghĩa "stays" · `tentative` (không nguồn nào có câu này; lựa chọn theo
-  chị em).
+  (`… luôn hiện ra khi điều này xảy ra`), `vẫn` giữ nghĩa "stays" · `tentative` (không nguồn nào có câu này; lựa chọn
+  theo chị em).
 - Tên điện thoại `{name}` đứng đầu câu (`{name} không báo cho Cmdr biết…`): tiếng Việt không biến hình nên tên nào cũng
   vừa, kể cả `Pixel 9 Pro XL`. Không giá trị nào chứa dấu nháy đơn.
