@@ -1400,7 +1400,7 @@
   "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
     "sourceHash": "fedc5ae"
   },
-  "fileExplorer.navigation.driveIndex.tooltipStale": "Dieses Laufwerk hat sich vielleicht geändert, während es getrennt war. Größen und Suche sind möglicherweise etwas ungenau. Erneut scannen, um zu aktualisieren.",
+  "fileExplorer.navigation.driveIndex.tooltipStale": "Dieses Laufwerk hat sich vielleicht geändert, während es getrennt war. Größen und Suche sind möglicherweise etwas ungenau. Ein erneuter Durchlauf bringt alles auf den neuesten Stand.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
   },

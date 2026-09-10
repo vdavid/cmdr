@@ -210,7 +210,7 @@
   "@indexing.staleDialog.title": {
     "sourceHash": "21a78ee"
   },
-  "indexing.staleDialog.body": "Enquanto {name} esteve desconectado, arquivos nele podem ter mudado. Os tamanhos das pastas e os resultados da busca podem ficar um pouco imprecisos até você examinar o disco de novo. O status amarelo ao lado do disco sempre mostra quando isso acontece, e uma nova análise o atualiza.",
+  "indexing.staleDialog.body": "Enquanto {name} esteve desconectado, arquivos nele podem ter mudado. Os tamanhos das pastas e os resultados da busca podem ficar um pouco imprecisos até você fazer uma nova varredura. O status amarelo ao lado do disco sempre mostra quando isso acontece, e uma nova varredura o atualiza.",
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
