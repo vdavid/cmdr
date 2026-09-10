@@ -3,16 +3,17 @@
 //! This module owns two related questions:
 //!
 //! - **Which volume does a path belong to?** `volume_id_for_local_path` maps a
-//!   filesystem (or `mtp://`) path to the index volume id that owns it — an SMB
-//!   mount to its `smb_volume_id`, an `mtp://` path to its `{device}:{storage}`
-//!   id, a registered local external mount (`/Volumes/X`) to its own id, and the
-//!   boot disk (plus cloud-drive folders `root`'s index owns) to `root`.
+//!   filesystem (or `mtp://` / `adb://`) path to the index volume id that owns it:
+//!   an SMB mount to its `smb_volume_id`, an `mtp://` path to its
+//!   `{device}:{storage}` id, an `adb://<serial>` path to that phone's
+//!   `adb_volume_id`, a registered local external mount (`/Volumes/X`) to its own
+//!   id, and the boot disk (plus cloud-drive folders `root`'s index owns) to `root`.
 //! - **How does a read path map into that volume's index path space?**
 //!   `index_read_path` (and the pure `index_read_path_pure` it wraps) translate a
 //!   mount-absolute listing / dir-stats path into the mount-relative path the
 //!   volume's index stores it under, so `store::resolve_path` (which walks from
 //!   `ROOT_ID`) hits. Pass-through for `root`, mount-relative strip for SMB,
-//!   scheme/storage strip for MTP.
+//!   scheme/storage strip for MTP, scheme/serial strip for ADB.
 //!
 //! These are the read-side mirror of the write-side mount-relative transforms in
 //! `transports/smb/watch` / `transports/mtp/watch`. They're kept here, separate from the lifecycle /
@@ -33,7 +34,7 @@ use cmdr_fs::firmlinks;
 
 /// Resolve a filesystem path to its index volume id.
 ///
-/// Four routing tiers, tried in order; each maps to the SAME id its volume and
+/// Five routing tiers, tried in order; each maps to the SAME id its volume and
 /// index register under, so a read routes to the owning index (or skips cleanly
 /// when that volume has no registered index — `get_read_pool_for` → `None` — so an
 /// unindexed volume costs zero DB work):
@@ -41,6 +42,7 @@ use cmdr_fs::firmlinks;
 /// - **SMB** (`/Volumes/<share>/…` on macOS, an `smbfs`/`cifs` mount on Linux) →
 ///   `smb_volume_id(server, port, share)`.
 /// - **MTP** (`mtp://{device_id}/{storage_id}[/inner…]`) → `{device_id}:{storage_id}`.
+/// - **ADB** (`adb://<serial>[/device path…]`) → `adb_volume_id(serial)`.
 /// - **Local external mount** (a registered `/Volumes/X` drive on macOS,
 ///   `/mnt`/`/media` on Linux) → the mount's registered id, so an external drive's
 ///   dir-stats and `cmdr://state` status come from ITS OWN index, not `root`'s. See
@@ -53,6 +55,9 @@ pub(crate) fn volume_id_for_local_path(path: &str) -> VolumeId {
     }
     if let Some(mtp_id) = mtp_volume_id_for_path(path) {
         return mtp_id;
+    }
+    if let Some(adb_id) = adb_volume_id_for_path(path) {
+        return adb_id;
     }
     if let Some(mount_id) = external_mount_volume_id_for_path(path) {
         return mount_id;
@@ -93,6 +98,34 @@ fn mtp_volume_id_for_path(path: &str) -> Option<VolumeId> {
     let device_id = parts.next().filter(|s| !s.is_empty())?;
     let storage = parts.next().filter(|s| s.parse::<u32>().is_ok())?;
     Some(format!("{device_id}:{storage}"))
+}
+
+/// Map an `adb://<serial>[/…]` path to that phone's volume id, or `None` for any
+/// other path.
+///
+/// Pure, like the MTP tier and for the same reason: the serial the path names IS
+/// the identity the id is minted from, so no registry lookup is needed, and none
+/// is wanted. A phone's index outlives its volume (unplugging unregisters the
+/// volume and keeps the index), and a registry match would send its paths to
+/// `root` the moment the cable came out.
+fn adb_volume_id_for_path(path: &str) -> Option<VolumeId> {
+    cmdr_fs::volume::adb_serial_of_path(path).map(cmdr_fs::volume::adb_volume_id)
+}
+
+/// Strip an `adb://<serial>[/…]` path to the device path the phone's index stores
+/// it under (`/` for the device root, `/sdcard/DCIM` below it), but only when the
+/// serial mints `volume_id`.
+///
+/// `None` for another phone's path and for a bare `/sdcard/…`: in the app's
+/// vocabulary a scheme-free path is the Mac's boot disk, never a phone (unlike
+/// MTP, no self-mutation notify hands this index a bare path). The strip itself is
+/// the shared mount-root one, against the root `adb_app_root` mints.
+fn adb_index_relative_path(volume_id: &str, abs_path: &str) -> Option<String> {
+    let serial = cmdr_fs::volume::adb_serial_of_path(abs_path)?;
+    if cmdr_fs::volume::adb_volume_id(serial) != volume_id {
+        return None;
+    }
+    crate::indexing::transports::smb::watch::index_relative_path(&cmdr_fs::volume::adb_app_root(serial), abs_path)
 }
 
 /// The exclusion scope for a volume id on the READ side, where only the id is at
@@ -146,6 +179,11 @@ fn index_read_path_pure(volume_id: &str, normalized_abs: &str, mount_root: Optio
     // MTP volume yields `None` (drop rather than mis-root), exactly like SMB.
     if cmdr_fs::volume::mtp_ids::is_mtp_volume_id(volume_id) {
         return mtp_index_relative_path(volume_id, normalized_abs);
+    }
+    // ADB: the index `ROOT_ID` is the device's `/`, under `adb://<serial>`. Pure
+    // over the path, so an unplugged phone's index still answers for its paths.
+    if cmdr_fs::volume::is_adb_volume_id(volume_id) {
+        return adb_index_relative_path(volume_id, normalized_abs);
     }
     let mount_root = mount_root?;
     crate::indexing::transports::smb::watch::index_relative_path(mount_root, normalized_abs)
@@ -475,6 +513,66 @@ mod tests {
             index_read_path_pure(colon_vid, "mtp://mtp-AA:BB/65537/Music", None),
             Some("/Music".to_string()),
             "a serial device id containing a colon maps correctly",
+        );
+    }
+
+    /// The ADB read-side transform: an `adb://<serial>/…` path maps to the device
+    /// path the phone's index stores (its `ROOT_ID` is the device's `/`), but only
+    /// when the serial mints THIS volume id. Pure, so it holds with no volume
+    /// registered: an unplugged phone keeps its index.
+    #[test]
+    fn index_read_path_routes_adb() {
+        use cmdr_fs::volume::{adb_app_root, adb_volume_id};
+
+        let vid = adb_volume_id("R58M1");
+        assert_eq!(
+            index_read_path_pure(&vid, &adb_app_root("R58M1"), None),
+            Some("/".to_string()),
+            "the phone's root maps to the index ROOT_ID path",
+        );
+        assert_eq!(
+            index_read_path_pure(&vid, "adb://R58M1/sdcard/DCIM", None),
+            Some("/sdcard/DCIM".to_string()),
+            "a nested phone path maps to its device path",
+        );
+        assert_eq!(
+            index_read_path_pure(&vid, "adb://OTHER/sdcard/DCIM", None),
+            None,
+            "another phone's path must not resolve onto this index",
+        );
+        assert_eq!(
+            index_read_path_pure(&vid, "adb://R58M10/sdcard", Some("adb://R58M1")),
+            None,
+            "a serial that merely starts with this one is another phone",
+        );
+        assert_eq!(
+            index_read_path_pure(&vid, "/sdcard/DCIM", None),
+            None,
+            "a bare device path is the Mac's boot disk in app vocabulary, never this phone",
+        );
+    }
+
+    /// `volume_id_for_local_path`'s ADB tier: an `adb://<serial>` path belongs to
+    /// that phone's index, whether or not the phone is plugged in right now. Before
+    /// this tier every phone path fell through to `root`, the Mac's boot disk.
+    #[test]
+    fn volume_id_for_local_path_routes_a_phone_path_to_its_own_index() {
+        use cmdr_fs::volume::{adb_app_root, adb_volume_id};
+
+        let _serialized = crate::indexing::handle::test_lock();
+        let phone = adb_volume_id("R58M1");
+        assert_eq!(volume_id_for_local_path(&adb_app_root("R58M1")), phone);
+        assert_eq!(volume_id_for_local_path("adb://R58M1/sdcard/DCIM"), phone);
+        assert_eq!(
+            volume_id_for_local_path("adb://192.168.1.5:5555/sdcard"),
+            adb_volume_id("192.168.1.5:5555"),
+            "a wireless phone's serial carries its port",
+        );
+        assert_ne!(volume_id_for_local_path("adb://OTHER/sdcard"), phone);
+        assert_eq!(
+            volume_id_for_local_path("adb://"),
+            ROOT_VOLUME_ID,
+            "a path naming no phone is nobody's"
         );
     }
 

@@ -311,7 +311,23 @@ pub fn adb_volume_id(serial: &str) -> String {
 /// readability, but the id's digest and the ADB server both key on the exact
 /// serial, so a folded prefix would name a device the server doesn't list.
 pub fn adb_app_root(serial: &str) -> String {
-    format!("adb://{serial}")
+    format!("{ADB_PATH_SCHEME}{serial}")
+}
+
+/// The scheme every [`adb_app_root`] starts with.
+const ADB_PATH_SCHEME: &str = "adb://";
+
+/// The serial an `adb://<serial>[/…]` app path names, verbatim, or `None` for
+/// any other path.
+///
+/// The one split of what [`adb_app_root`] joins, kept beside it so the two can't
+/// drift: the device provider asks it which phone a path is on, and the index
+/// asks it which phone's index a path belongs to. It reads the serial only; the
+/// device path under it is the volume's own translation (`remote_paths`).
+pub fn adb_serial_of_path(path: &str) -> Option<&str> {
+    let rest = path.strip_prefix(ADB_PATH_SCHEME)?;
+    let serial = rest.split('/').next()?;
+    (!serial.is_empty()).then_some(serial)
 }
 
 /// Whether `id` names an Android device reached over ADB.
@@ -658,6 +674,23 @@ mod id_tests {
         assert_eq!(adb_app_root("46061FDAS000A4"), "adb://46061FDAS000A4");
         assert_eq!(adb_app_root("192.168.1.5:5555"), "adb://192.168.1.5:5555");
         assert_ne!(adb_app_root("R58M1"), adb_app_root("r58m1"));
+    }
+
+    #[test]
+    fn a_phone_path_names_its_serial_exactly_as_the_prefix_spelled_it() {
+        // The index routes a pane's `adb://…` path to its phone by this serial, so
+        // it must read back exactly what `adb_app_root` wrote, port and case included.
+        assert_eq!(adb_serial_of_path(&adb_app_root("ZY22ABC")), Some("ZY22ABC"));
+        assert_eq!(adb_serial_of_path("adb://ZY22ABC/sdcard/DCIM"), Some("ZY22ABC"));
+        assert_eq!(
+            adb_serial_of_path("adb://192.168.1.5:5555/sdcard"),
+            Some("192.168.1.5:5555")
+        );
+        assert_eq!(adb_serial_of_path("adb://"), None);
+        assert_eq!(adb_serial_of_path("adb:///sdcard"), None);
+        assert_eq!(adb_serial_of_path("mtp://dev/1"), None);
+        // A bare device path is the Mac's boot disk in the app's vocabulary.
+        assert_eq!(adb_serial_of_path("/sdcard/DCIM"), None);
     }
 
     #[test]

@@ -115,9 +115,7 @@ pub(crate) fn device_path(serial: &str) -> String {
 
 /// The serial an `adb://<serial>[/…]` path names.
 pub(crate) fn serial_of_path(path: &str) -> Option<&str> {
-    let rest = path.strip_prefix("adb://")?;
-    let serial = rest.split('/').next()?;
-    (!serial.is_empty()).then_some(serial)
+    cmdr_fs::volume::adb_serial_of_path(path)
 }
 
 /// How ready a device in `state` is, or `None` for one that has no filesystem

@@ -79,30 +79,42 @@ pure, unit-tested decision it wraps:
   `mtp://{device}/{storage}` scheme + segments to the inner `/path` the index stores under. The path's device+storage
   must match the volume id (a `:`-in-serial device id round-trips verbatim); a plain `/inner` path already
   storage-relative is accepted as-is; anything else ⇒ `None`.
+- **ADB** (id recognized by `cmdr_fs::volume::is_adb_volume_id`) — `adb_index_relative_path` reads the serial off the
+  path (`cmdr_fs::volume::adb_serial_of_path`), requires `adb_volume_id(serial)` to equal the volume id, then strips
+  `adb_app_root(serial)` with the shared `index_relative_path`, leaving the device path (`/sdcard/DCIM`). A bare
+  `/sdcard/…` is `None`: scheme-free is the Mac's boot disk in app vocabulary, and nothing hands this index one.
 - **SMB (non-root with a known mount root)** — strip the mount root via `transports::smb::watch::index_relative_path`.
   `None` for a path not under the mount root, or a volume with no registered mount root (drop rather than mis-root).
 
-Firmlink normalization stays local-only — it must NOT touch virtual SMB/MTP paths. `index_read_path` is called by
+**Decision/Why MTP and ADB route purely rather than through the registry's `root()` prefix:** a device's index outlives
+its volume. Unplugging a phone unregisters the volume and keeps the index (registered, Stale), so a registry match
+would answer `root` for that phone's paths from the moment the cable came out. Both schemes carry their identity in
+the path, so no lookup is needed. A path-shaped registry match would also be the one generic tier that could serve
+SFTP/WebDAV, which have no index to route to.
+
+Firmlink normalization stays local-only — it must NOT touch virtual SMB/MTP/ADB paths. `index_read_path` is called by
 `read/enrichment.rs`, `read/queries.rs`, and `lifecycle/progress_reporter.rs` (which maps firmlink-normalized hot paths
 into index-relative space before the partial-aggregate send, so the same transform is single-sourced).
 
 ## Path → volume routing (`routing.rs`)
 
-`volume_id_for_local_path(path)` resolves which index volume owns a path, four tiers in order, each mapping to the SAME
+`volume_id_for_local_path(path)` resolves which index volume owns a path, five tiers in order, each mapping to the SAME
 id its volume and index register under:
 
 1. **SMB** — `transports::smb::index::smb_volume_id_for_path` (probes the mount, keys by `(server, port, share)`).
 2. **MTP** — `mtp_volume_id_for_path`, the pure `mtp://` half: strip the scheme, take the first two `/`-segments,
    require the storage segment to parse as a `u32` (so a malformed `mtp://` path doesn't resolve to a bogus volume),
    yield `{device}:{storage}`.
-3. **Local external mount** — `external_mount_volume_id_for_path`: fast-reject with
+3. **ADB** — `adb_volume_id_for_path`, pure the same way: the serial `adb_serial_of_path` reads mints the id
+   (`adb_volume_id`). A path naming no serial (`adb://`) falls through.
+4. **Local external mount** — `external_mount_volume_id_for_path`: fast-reject with
    `scanner::is_on_mounted_external_volume` (a pure prefix check, no registry lock) so ONLY a path under an excluded
    mount prefix (`/Volumes`, `/mnt`, `/media`) can leave `root`, then route by the host's volume registry
    (`mount_id_for_path`, the longest non-root ancestor mount). The fast-reject is the load-bearing trap-guard: a
    registered cloud-drive folder in the home dir (`~/Library/CloudStorage/…`) is a non-root registered volume too, but
    `root`'s index owns it — a naive "any registered non-root volume" prefix match would divert it to an index-less id
    and drop its sizes.
-4. **Everything else** → `root` (the boot disk, plus cloud-drive folders root's index owns).
+5. **Everything else** → `root` (the boot disk, plus cloud-drive folders root's index owns).
 
 `exclusion_scope_for_volume(volume_id)` derives the read-side scope (root ⇒ boot disk; every other registered volume ⇒
 mount-rooted at its registered root). An UNREGISTERED non-root id yields an empty mount root — still mount-rooted, but
