@@ -5,7 +5,7 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.44.0] - 2026-09-10
 
 Thanks again for all the feedback! This release is full of stuff delivered based on real human requests! Keep them
 coming!
