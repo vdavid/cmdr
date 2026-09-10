@@ -44,6 +44,7 @@
     "apps/desktop/src/lib/file-explorer/pane/FilePane.svelte": 1971,
     "apps/desktop/src/lib/file-explorer/pane/dialog-state.svelte.ts": 800,
     "apps/desktop/src/lib/file-explorer/pane/drag-drop-controller.svelte.test.ts": 957,
+    "apps/desktop/src/lib/file-explorer/pane/listing-loader.test.ts": 844,
     "apps/desktop/src/lib/file-explorer/pane/navigate.test.ts": 802,
     "apps/desktop/src/lib/file-explorer/pane/navigate.ts": 825,
     "apps/desktop/src/lib/file-explorer/pane/volume-breadcrumb.test.ts": 802,
