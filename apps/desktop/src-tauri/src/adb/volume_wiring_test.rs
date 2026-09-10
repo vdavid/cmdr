@@ -14,6 +14,7 @@ use tokio_util::sync::CancellationToken;
 use cmdr_adb::AdbEndpoint;
 
 use super::*;
+use crate::adb::test_support::{a_fake_phone, a_listed_phone, dials_seen, registry_and_provider_agree, retire_phone};
 use crate::file_system::listing::caching_test_support::{TestListingGuard, unique_test_id};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::listing::streaming::{
@@ -72,33 +73,6 @@ async fn cancelling_an_id_nobody_is_dialing_under_is_a_plain_no() {
     assert!(!cancel_connect("adb-nothing-is-filed-under-this"));
 }
 
-/// A fake server listing one ready phone under `serial`.
-async fn a_fake_phone(serial: &str) -> cmdr_adb::testing::FakeAdbServer {
-    let mut tree = cmdr_adb::testing::FakeTree::new();
-    tree.add_dir("/sdcard");
-    a_listed_phone(serial, tree).await
-}
-
-/// A fake server holding `tree` for one ready phone under `serial`, and the
-/// app's cached list carrying that phone too, which is where a pane finds the
-/// row it dials: a dial installs only for a phone that list still holds.
-async fn a_listed_phone(serial: &str, tree: cmdr_adb::testing::FakeTree) -> cmdr_adb::testing::FakeAdbServer {
-    let fake = cmdr_adb::testing::FakeAdbServer::start(tree).await;
-    let phone = cmdr_adb::AdbDevice {
-        serial: serial.to_string(),
-        ..cmdr_adb::testing::fake_device()
-    };
-    fake.push_devices(vec![phone.clone()]);
-    device_provider::apply_device_list(vec![phone]);
-    fake
-}
-
-/// How many dials reached `fake`: a connect opens with exactly one
-/// `host:devices-l`, and nothing else these cells run asks for it.
-fn dials_seen(fake: &cmdr_adb::testing::FakeAdbServer) -> usize {
-    fake.requests().iter().filter(|r| *r == "host:devices-l").count()
-}
-
 /// Waits until `attempt_id` is filed AND `waiting` attempts are in line for the
 /// dial on `serial`, without calling anything off. Filing and joining happen in
 /// one poll, but a probe from another thread can still land between the two.
@@ -109,22 +83,6 @@ async fn wait_until_joined(attempt_id: &str, serial: &str, waiting: usize) {
         || ATTEMPTS.is_filed(attempt_id) && attempts_waiting_on(serial) == waiting,
     )
     .await;
-}
-
-/// Whether the registry and the provider hold the very same volume for
-/// `serial`: the one panes list through, and the one eject, `note_device_gone`,
-/// and `space_for_path` reach.
-fn registry_and_provider_agree(serial: &str) -> bool {
-    let id = cmdr_fs::volume::adb_volume_id(serial);
-    match (get_volume_manager().get(&id), device_provider::connected_volume(serial)) {
-        (Some(registered), Some(remembered)) => std::ptr::addr_eq(Arc::as_ptr(&registered), Arc::as_ptr(&remembered)),
-        _ => false,
-    }
-}
-
-fn retire_phone(serial: &str) {
-    get_volume_manager().unregister(&cmdr_fs::volume::adb_volume_id(serial));
-    device_provider::forget_volume(serial);
 }
 
 /// ❗ The moment a user taps Allow, several callers reach for the same phone at

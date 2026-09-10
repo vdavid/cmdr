@@ -15,3 +15,11 @@ pub mod device_provider;
 pub mod volume_wiring;
 
 pub use volume_wiring::{set_adb_binary_path, start_adb_tracker};
+
+// The fixtures the app-side ADB suites share, the transfer suite in
+// `write_operations` included.
+#[cfg(test)]
+pub(crate) mod test_support;
+// A real tracker's pushes through the provider: retirement and row readiness.
+#[cfg(test)]
+mod tracker_test;
