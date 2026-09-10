@@ -1,5 +1,8 @@
 use super::*;
-use crate::testing::{FAKE_SERIAL, FakeAdbServer, FakeTree, split_argv};
+use crate::testing::pixel_captures::{
+    DF_K_ALL, DF_K_FOUND_AND_MISSING, DF_K_MISSING, DF_K_ROOT, DF_K_SHARED_STORAGE, DF_K_THREE_PATHS, data_row,
+};
+use crate::testing::{FAKE_SERIAL, FakeAdbServer, FakeMount, FakeTree, split_argv};
 
 #[test]
 fn quoting_is_posix_single_quotes() {
@@ -23,15 +26,35 @@ fn the_fake_shell_unquotes_what_command_line_quotes() {
 }
 
 #[test]
-fn parse_df_k_reads_toybox_and_busybox() {
-    let toybox = "Filesystem      1K-blocks     Used Available Use% Mounted on\n/dev/fuse       118120468 21356460  96764008  19% /storage/emulated\n";
+fn parse_df_k_reads_a_pixels_real_output() {
     assert_eq!(
-        parse_df_k(toybox),
+        parse_df_k(DF_K_SHARED_STORAGE),
         Some(SpaceParts {
-            total_bytes: 118_120_468 * 1024,
-            available_bytes: 96_764_008 * 1024,
+            total_bytes: 114_786_388 * 1024,
+            available_bytes: 26_956_476 * 1024,
         })
     );
+    // The read-only system image really does report nothing free, which is
+    // why the volume never asks about `/` for the phone's figure.
+    assert_eq!(
+        parse_df_k(DF_K_ROOT),
+        Some(SpaceParts {
+            total_bytes: 904_496 * 1024,
+            available_bytes: 0,
+        })
+    );
+    // A missing path still prints the header: no figures, never a zero.
+    assert_eq!(parse_df_k(DF_K_MISSING), None);
+    // Beside a missing path the found row still parses; only the exit code
+    // says something failed.
+    assert_eq!(
+        parse_df_k(DF_K_FOUND_AND_MISSING).map(|p| p.available_bytes),
+        Some(26_951_288 * 1024)
+    );
+}
+
+#[test]
+fn parse_df_k_reads_busybox_layouts() {
     let busybox = "Filesystem           1K-blocks      Used Available Use% Mounted on\n/dev/block/dm-0      118120468  21356460  96764008  18% /data\n";
     assert_eq!(parse_df_k(busybox).unwrap().total_bytes, 118_120_468 * 1024);
     let wrapped = "Filesystem           1K-blocks      Used Available Use% Mounted on\n/dev/block/platform/soc/1d84000.ufshc/by-name/userdata\n                     118120468  21356460  96764008  18% /data\n";
@@ -85,7 +108,81 @@ async fn runs_mutations_against_the_fake_tree() {
     let out = run(&ep, FAKE_SERIAL, &["df", "-k", "/sdcard"]).await.unwrap();
     assert!(out.succeeded());
     let space = parse_df_k(&out.stdout_text()).unwrap();
-    assert_eq!(space.total_bytes, 118_120_468 * 1024);
+    assert_eq!(space.total_bytes, 114_786_388 * 1024);
+}
+
+/// ❗ The fake's `df` answers byte for byte what a Pixel printed
+/// (`testing::pixel_captures`): the mount point in the last column, toybox's
+/// per-invocation column widths, and the read-only system image at `/`.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_fakes_df_prints_what_a_pixel_prints() {
+    let mut tree = FakeTree::new();
+    tree.add_dir("/sdcard/Download").add_dir("/sdcard/DCIM/Camera");
+    let server = FakeAdbServer::start(tree).await;
+    let ep = server.endpoint();
+    for path in ["/sdcard", "/sdcard/", "/sdcard/Download", "/sdcard/DCIM/Camera"] {
+        let out = run(&ep, FAKE_SERIAL, &["df", "-k", path]).await.unwrap();
+        assert_eq!(out.stdout_text(), DF_K_SHARED_STORAGE, "df -k {path}");
+        assert!(out.succeeded(), "df -k {path}: {out:?}");
+    }
+    let out = run(&ep, FAKE_SERIAL, &["df", "-k", "/"]).await.unwrap();
+    assert_eq!(out.stdout_text(), DF_K_ROOT);
+    assert!(out.succeeded(), "{out:?}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_fakes_df_on_a_missing_path_prints_the_header_and_exits_1() {
+    let mut tree = FakeTree::new();
+    tree.mount(FakeMount::with_row("/sdcard", data_row(DF_K_FOUND_AND_MISSING, 0)));
+    let server = FakeAdbServer::start(tree).await;
+    let ep = server.endpoint();
+
+    let out = run(&ep, FAKE_SERIAL, &["df", "-k", "/nonexistent/path"]).await.unwrap();
+    assert_eq!(out.stdout_text(), DF_K_MISSING);
+    assert_eq!(out.exit_code, 1);
+    assert!(!out.stderr.is_empty(), "the reason goes to stderr, for people");
+
+    let out = run(&ep, FAKE_SERIAL, &["df", "-k", "/sdcard", "/nonexistent/path"])
+        .await
+        .unwrap();
+    assert_eq!(out.stdout_text(), DF_K_FOUND_AND_MISSING);
+    assert_eq!(out.exit_code, 1);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_fakes_df_sizes_one_table_over_every_path_asked() {
+    let mut tree = FakeTree::new();
+    tree.add_dir("/storage/emulated/0")
+        .add_symlink("/storage/self/primary", "/storage/emulated/0")
+        .add_dir("/data/local/tmp")
+        .mount(FakeMount::with_row("/storage/emulated", data_row(DF_K_THREE_PATHS, 0)))
+        // A bind mount: `/data` reports `/data/user/0` as its mount point.
+        .mount(FakeMount::with_row("/data", data_row(DF_K_THREE_PATHS, 2)));
+    let server = FakeAdbServer::start(tree).await;
+    let ep = server.endpoint();
+    let argv = [
+        "df",
+        "-k",
+        "/storage/emulated",
+        "/storage/self/primary",
+        "/data/local/tmp",
+    ];
+    let out = run(&ep, FAKE_SERIAL, &argv).await.unwrap();
+    assert_eq!(out.stdout_text(), DF_K_THREE_PATHS);
+    assert!(out.succeeded(), "{out:?}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_fakes_bare_df_lays_out_every_mount_as_toybox_does() {
+    let mut tree = FakeTree::new();
+    tree.unmount_all();
+    for row in DF_K_ALL.lines().skip(1) {
+        let mount_point = row.split_whitespace().last().expect("a row ends in its mount point");
+        tree.mount(FakeMount::with_row(mount_point, row));
+    }
+    let server = FakeAdbServer::start(tree).await;
+    let out = run(&server.endpoint(), FAKE_SERIAL, &["df", "-k"]).await.unwrap();
+    assert_eq!(out.stdout_text(), DF_K_ALL);
 }
 
 #[tokio::test(flavor = "multi_thread")]

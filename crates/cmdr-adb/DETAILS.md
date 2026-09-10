@@ -143,13 +143,20 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
 - **Liveness**: operations are the detector (there is no keepalive), so every wire-touching delegator classifies a
   `DeviceGone` into `VolumeError::DeviceDisconnected` and emits the transition once (`state.rs`). `track-devices`
   additionally retires the volume when its serial leaves the list, which is the push channel MTP never had.
-- **Space**: two answers, both `df -k`. `get_space_info` is the phone's figure, asked of the shared storage (`/sdcard`),
-  and is what the pane's indicator and the poller show, polled at `space_poll_interval` = 30 s.
+- **Space**: two answers, both `df -k`. `get_space_info` is the phone's figure, asked of the shared storage
+  (`/sdcard`), and is what the pane's indicator and the poller show, polled at `space_poll_interval` = 30 s.
   `get_space_info_at(path)` asks about `path` itself, so an SD card answers for what's on it; the transfer pre-flight
   asks this of the destination folder. ❌ Never ask about the device root: `/` is a read-only system image reporting 0
-  free, which put "0 bytes" in the pane and refused every copy onto a phone (observed on a Pixel 9 Pro XL, the dev log's
-  `volume-space-changed: adb-… (0 avail)` and `InsufficientSpace { available: 0 }`, 2026-09-10). The fake models that
-  layout (`FakeTree::mount_for`). A `df` that fails is `NotSupported` ("can't tell"), ❌ never a guessed number.
+  free, which put "0 bytes" in the pane and refused every copy onto a phone (observed on a Pixel 9 Pro XL, the dev
+  log's `volume-space-changed: adb-… (0 avail)` and `InsufficientSpace { available: 0 }`, 2026-09-10). A `df` that
+  fails is `NotSupported` ("can't tell"), ❌ never a guessed number. What `df -k` prints on a phone (verified on Pixel 9
+  Pro XL, Android 17, toybox 0.8.13, `adb shell df -k`, 2026-09-10): the last column is the MOUNT POINT, so `/sdcard`,
+  `/storage/emulated/0`, and every folder under them report `/storage/emulated` (and `/data` its bind mount
+  `/data/user/0`); toybox sizes the columns per invocation, so `shell::parse_df_k` reads the first three numbers after
+  the header and ignores spacing; `/` reports `Available 0`; a missing path still prints the header on stdout, puts its
+  reason on stderr, and exits 1, so the exit code decides and stderr is never read. `testing::pixel_captures` holds
+  those captures verbatim, `FakeTree::new` mounts the Pixel's own rows, and `shell_test.rs` holds the fake's `df` to
+  them byte for byte.
 
 ## The error policy
 
@@ -188,18 +195,19 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
 - **Here**: the framing, the sync and shell codecs, the errno table, path anchoring, the connect phases and calling one
   off, the state transitions, and the shared `cmdr_fs::volume::conformance` assertions. They run against the **fake ADB
   server** in `crates/cmdr-adb/src/testing/` (`FakeAdbServer` in `server.rs`, the filesystem model in `tree.rs`, the
-  shell verbs in `shell.rs`): a loopback `TcpListener` speaking the host framing, `host:transport`,
+  shell verbs in `shell.rs`, a real phone's `df -k` output in `pixel_captures.rs`): a loopback `TcpListener` speaking the host framing, `host:transport`,
   `host-serial:<serial>:features`, `sync:` (both v1 and v2 verbs; `SEND` creates its file at open, as a device's does,
-  so an upload that stops short leaves a torn file for the writer's cleanup to remove, and a cell can watch that cleanup
-  fail), and `shell,v2,raw:` over an in-memory `FakeTree`, plus `host:track-devices` with `push_devices` for scripted
-  hotplug, `drop_connections` / `stop` for faults, `hold_answers` / `release_answers` to hold a dial provably in flight,
-  and `requests` (every service request, in order) for counting dials or proving none happened. `volume/testing.rs`
-  holds the volume-level fixtures on top of it. No `adb` binary, no device, no Docker: every cell runs in the unit lane.
+  so an upload that stops short leaves a torn file for the writer's cleanup to remove, and a cell can watch that
+  cleanup fail), and `shell,v2,raw:` over an in-memory `FakeTree`,
+  plus `host:track-devices` with `push_devices` for scripted hotplug, `drop_connections` / `stop` for faults,
+  `hold_answers` / `release_answers` to hold a dial provably in flight, and `requests` (every service request, in order)
+  for counting dials or proving none happened. `volume/testing.rs` holds the volume-level fixtures on top of it. No
+  `adb` binary, no device, no Docker: every cell runs in the unit lane.
 - **App-side** (`apps/desktop/src-tauri/src/adb/`): anything driving `write_operations`, the volume registry,
   `volume_listing::complete`, or the listing cache. The transfer engine's cells sit beside the SFTP suite, in
   `apps/desktop/src-tauri/src/file_system/write_operations/adb_transfer_test.rs`; the list of what exists is
-  `apps/desktop/src-tauri/src/adb/DETAILS.md` § "Testing". ❌ Don't widen this crate's public surface to keep a test on
-  that side; move the test instead. ❗ A green suite here is not evidence that a copy works: `supports_export` and the
+  `apps/desktop/src-tauri/src/adb/DETAILS.md` § "Testing". ❌ Don't widen this crate's public surface to keep a test on that
+  side; move the test instead. ❗ A green suite here is not evidence that a copy works: `supports_export` and the
   free-space pre-flight are read by the engine, so the cells that would catch them live with the engine.
 - **`#[cfg(any(test, feature = "testing"))]`** widens `testing` and `volume::testing` to `pub` for the app's suites; the
   crate's own `dev-dependencies` self-entry turns the feature on for every dev target and leaves it off for the lib, so

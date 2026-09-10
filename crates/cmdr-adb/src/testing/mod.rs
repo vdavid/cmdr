@@ -17,7 +17,8 @@
 //!   over the [`FakeTree`]. `SEND` creates its file at open, as a device's
 //!   does, so an upload that never reaches `DONE` leaves a torn file behind.
 //! - `shell,v2,raw:<cmd>` with `mkdir [-p]`, `rmdir`, `rm [-rf]`, `mv`,
-//!   `cp [-f]`, `df -k [path]` (per [`FakeTree::mount_for`]), `readlink -f`, `test -e|-d|-f|-w` (`-w` follows
+//!   `cp [-f]`, `df -k [path...]` (per [`FakeTree::mount_for`], in toybox's
+//!   layout: a missing path prints the bare header and exits 1), `readlink -f`, `test -e|-d|-f|-w` (`-w` follows
 //!   [`FakeTree::read_only`]), and `stat -c '%f %s %Y'`; anything else exits
 //!   127.
 //!
@@ -31,15 +32,17 @@
 //! what arrived, so a cell can count dials or prove nothing dialed.
 
 //! Module map: `tree` (the filesystem model), `server` (the listener and the
-//! wire), `shell` (the device-shell verbs).
+//! wire), `shell` (the device-shell verbs), `pixel_captures` (a real phone's
+//! `df -k` output, which the fake's `df` must match byte for byte).
 
+pub mod pixel_captures;
 mod server;
 mod shell;
 mod tree;
 
 pub use server::FakeAdbServer;
 pub use shell::{run_fake_shell, split_argv};
-pub use tree::{DEFAULT_MTIME, DF_K_HEADER, FakeMount, FakeNode, FakeTree};
+pub use tree::{DEFAULT_MTIME, FakeMount, FakeNode, FakeTree};
 
 use crate::devices::{AdbDevice, AdbDeviceState};
 

@@ -11,7 +11,7 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 
 use crate::errors::{EEXIST, EISDIR, ENOENT, ENOTDIR, ENOTEMPTY_DEVICE, EROFS};
 
-use super::tree::{DF_K_HEADER, FakeNode, FakeTree};
+use super::tree::{FakeMount, FakeNode, FakeTree};
 
 /// Splits a POSIX command line into words: single quotes literal, double quotes
 /// and backslashes handled minimally.
@@ -81,6 +81,42 @@ fn errno_text(errno: i32) -> &'static str {
     }
 }
 
+/// `df -k`'s table as toybox lays it out: every column as wide as its widest
+/// cell, header included, and the `Filesystem` column at least 14 wide. The
+/// header prints even with no rows. Held byte for byte against a real phone by
+/// `shell_test.rs` and [`pixel_captures`](super::pixel_captures).
+fn df_k_table(mounts: &[&FakeMount]) -> String {
+    let header = ["Filesystem", "1K-blocks", "Used", "Available", "Use%", "Mounted on"].map(String::from);
+    let rows: Vec<[String; 6]> = mounts
+        .iter()
+        .map(|m| {
+            [
+                m.device.clone(),
+                m.total_kib.to_string(),
+                m.used_kib.to_string(),
+                m.available_kib.to_string(),
+                format!("{}%", m.use_percent()),
+                m.mounted_on.clone(),
+            ]
+        })
+        .collect();
+    let mut widths = [14, 0, 0, 0, 0, 0];
+    for row in std::iter::once(&header).chain(&rows) {
+        for (width, cell) in widths.iter_mut().zip(row) {
+            *width = (*width).max(cell.len());
+        }
+    }
+    let [w_device, w_total, w_used, w_available, w_percent, _] = widths;
+    std::iter::once(&header)
+        .chain(&rows)
+        .map(|[device, total, used, available, percent, mounted_on]| {
+            format!(
+                "{device:<w_device$} {total:>w_total$} {used:>w_used$} {available:>w_available$} {percent:>w_percent$} {mounted_on}\n"
+            )
+        })
+        .collect()
+}
+
 /// Runs one fake shell command over the tree: `(exit_code, stdout, stderr)`.
 pub fn run_fake_shell(tree: &Mutex<FakeTree>, argv: &[String]) -> (u8, String, String) {
     let Some(cmd) = argv.first() else {
@@ -144,24 +180,21 @@ pub fn run_fake_shell(tree: &Mutex<FakeTree>, argv: &[String]) -> (u8, String, S
             }
         }
         "df" => {
-            let mut out = format!("{DF_K_HEADER}\n");
             if args.is_empty() {
-                for mount in tree.mounts() {
-                    out.push_str(&mount.df_row);
-                    out.push('\n');
-                }
-                return (0, out, String::new());
+                let every: Vec<&FakeMount> = tree.mounts().iter().collect();
+                return (0, df_k_table(&every), String::new());
             }
+            // Like toybox: a missing path's reason goes to stderr and makes the
+            // exit 1, while the paths that were found keep their rows.
+            let mut found = Vec::new();
+            let mut reasons = Vec::new();
             for p in &args {
                 match tree.mount_for(p) {
-                    Ok(mount) => {
-                        out.push_str(&mount.df_row);
-                        out.push('\n');
-                    }
-                    Err(e) => return (1, String::new(), format!("df: {p}: {}\n", errno_text(e))),
+                    Ok(mount) => found.push(mount),
+                    Err(e) => reasons.push(format!("df: '{p}': {}\n", errno_text(e))),
                 }
             }
-            (0, out, String::new())
+            (u8::from(!reasons.is_empty()), df_k_table(&found), reasons.concat())
         }
         "readlink" => {
             let Some(p) = args.first() else {

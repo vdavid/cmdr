@@ -239,24 +239,26 @@ async fn a_listing_of_a_missing_directory_carries_the_path() {
 async fn the_phones_space_is_its_shared_storage_not_the_system_image_at_the_root() {
     // ❗ A phone's `/` is a read-only system image that reports 0 free. Asking
     // `df` about the volume root put "0 bytes free" in the pane and refused every
-    // copy onto a real Pixel.
+    // copy onto a real Pixel. The fake's `/sdcard` answers with that Pixel's
+    // own `df -k /sdcard` line, which names the `/storage/emulated` mount.
     let server = FakeAdbServer::start(FakeTree::new()).await;
     let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
     let space = volume.get_space_info().await.expect("df -k");
-    assert_eq!(
-        space,
-        SpaceInfo::Bounded {
-            total_bytes: 118_120_468 * 1024,
-            available_bytes: 96_764_008 * 1024,
-            used_bytes: (118_120_468 - 96_764_008) * 1024,
-        }
-    );
+    assert_eq!(space, PIXEL_SHARED_STORAGE);
 }
+
+/// What the Pixel's `df -k /sdcard` comes to (`testing::pixel_captures`).
+const PIXEL_SHARED_STORAGE: SpaceInfo = SpaceInfo::Bounded {
+    total_bytes: 114_786_388 * 1024,
+    available_bytes: 26_956_476 * 1024,
+    used_bytes: (114_786_388 - 26_956_476) * 1024,
+};
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn space_at_a_path_is_the_filesystem_holding_it() {
     let mut tree = FakeTree::new();
     tree.add_dir("/sdcard/Download")
+        .add_dir("/sdcard/DCIM/Camera")
         .add_dir("/storage/1A2B-3C4D/Music")
         .mount(crate::testing::FakeMount::sized(
             "/storage/1A2B-3C4D",
@@ -276,14 +278,26 @@ async fn space_at_a_path_is_the_filesystem_holding_it() {
         .get_space_info_at(&fixture_path("/sdcard/Download"))
         .await
         .expect("df -k on the shared storage");
-    assert_eq!(shared.available_bytes(), Some(96_764_008 * 1024));
+    assert_eq!(shared, PIXEL_SHARED_STORAGE);
+    let nested = volume
+        .get_space_info_at(&fixture_path("/sdcard/DCIM/Camera"))
+        .await
+        .expect("df -k on a folder deep in the shared storage");
+    assert_eq!(nested, PIXEL_SHARED_STORAGE);
     // The root really is the full system image; only the volume's own figure
     // stands for the phone.
     let root = volume
         .get_space_info_at(&fixture_path(""))
         .await
         .expect("df -k on the root");
-    assert_eq!(root.available_bytes(), Some(0));
+    assert_eq!(
+        root,
+        SpaceInfo::Bounded {
+            total_bytes: 904_496 * 1024,
+            available_bytes: 0,
+            used_bytes: 904_496 * 1024,
+        }
+    );
 
     // A `df` that can't answer is "can't tell", never a zero.
     let missing = volume.get_space_info_at(&fixture_path("/nowhere")).await;

@@ -6,6 +6,7 @@
 
 use std::collections::BTreeMap;
 
+use super::pixel_captures::{DF_K_ROOT, DF_K_SHARED_STORAGE, data_row};
 use crate::errors::{EEXIST, EISDIR, ENOENT, ENOTEMPTY_DEVICE, EROFS};
 
 /// One node of the in-memory device filesystem.
@@ -82,40 +83,82 @@ impl Default for FakeTree {
 /// The mtime every node gets unless a test sets one: 2026-01-01T00:00:00Z.
 pub const DEFAULT_MTIME: i64 = 1_767_225_600;
 
-/// The header toybox's `df -k` prints above its rows.
-pub const DF_K_HEADER: &str = "Filesystem      1K-blocks     Used Available Use% Mounted on";
-
-/// One filesystem mounted in the fake device, as `df -k` reports it.
+/// One filesystem mounted in the fake device, as `df -k` reports it. The shell
+/// lays its row out per invocation, as toybox does.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FakeMount {
-    /// Where it's mounted.
+    /// The fake tree's path it holds: `df -k` on it, or on anything under it,
+    /// reports this mount.
     pub path: String,
-    /// The row `df -k` prints for it, below [`DF_K_HEADER`].
-    pub df_row: String,
+    /// The `Filesystem` column.
+    pub device: String,
+    /// Size, in 1 KiB blocks.
+    pub total_kib: u64,
+    /// Used, in 1 KiB blocks. On a real filesystem used and available don't
+    /// add up to the size: reserved blocks are neither.
+    pub used_kib: u64,
+    /// Available to the caller, in 1 KiB blocks.
+    pub available_kib: u64,
+    /// The `Mounted on` column, which needn't be `path`: the fake's `/sdcard`
+    /// is a plain folder, where a phone links it into `/storage/emulated`.
+    pub mounted_on: String,
 }
 
 impl FakeMount {
-    /// A mount whose `df -k` row is `row` verbatim, for a real device's output.
+    /// A mount holding `path` with the columns of a real `df -k` row, such as
+    /// one from [`pixel_captures`](super::pixel_captures). The row's own
+    /// spacing isn't kept; the shell lays each table out afresh.
     pub fn with_row(path: &str, row: &str) -> Self {
+        let cells: Vec<&str> = row.split_whitespace().collect();
+        let [device, total, used, available, _use_percent, mounted_on @ ..] = &cells[..] else {
+            panic!("a df -k row has six columns, got {row:?}");
+        };
+        assert!(
+            !mounted_on.is_empty(),
+            "a df -k row ends in its mount point, got {row:?}"
+        );
+        let kib = |cell: &str| {
+            cell.parse::<u64>()
+                .unwrap_or_else(|_| panic!("{cell:?} in {row:?} is not a block count"))
+        };
         Self {
             path: FakeTree::normalize(path),
-            df_row: row.to_string(),
+            device: (*device).to_string(),
+            total_kib: kib(total),
+            used_kib: kib(used),
+            available_kib: kib(available),
+            mounted_on: mounted_on.join(" "),
         }
     }
 
-    /// A mount of `total_kib` with `available_kib` free, in toybox's layout.
+    /// A mount of `total_kib` with `available_kib` free, mounted on `path`.
     pub fn sized(path: &str, device: &str, total_kib: u64, available_kib: u64) -> Self {
         let path = FakeTree::normalize(path);
-        let used = total_kib.saturating_sub(available_kib);
-        let pct = (used * 100).checked_div(total_kib).unwrap_or(0);
-        let df_row = format!("{device:<15} {total_kib:>9} {used:>8} {available_kib:>9} {pct:>3}% {path}");
-        Self { path, df_row }
+        Self {
+            device: device.to_string(),
+            total_kib,
+            used_kib: total_kib.saturating_sub(available_kib),
+            available_kib,
+            mounted_on: path.clone(),
+            path,
+        }
+    }
+
+    /// The `Use%` column as toybox computes it: used over used plus
+    /// available, rounded up.
+    pub(super) fn use_percent(&self) -> u64 {
+        match self.used_kib.saturating_add(self.available_kib) {
+            0 => 0,
+            denominator => self.used_kib.saturating_mul(100).div_ceil(denominator),
+        }
     }
 }
 
 impl FakeTree {
-    /// A tree holding `/` and `/sdcard`, mounted the way a phone mounts them: a
-    /// full read-only system image at `/`, and the shared storage at `/sdcard`.
+    /// A tree holding `/` and `/sdcard`, mounted as the Pixel in
+    /// [`pixel_captures`](super::pixel_captures) mounts them: its read-only
+    /// system image at `/` (0 available), and its shared storage holding
+    /// `/sdcard`, reported on `/storage/emulated`.
     pub fn new() -> Self {
         let mut tree = Self {
             nodes: BTreeMap::new(),
@@ -124,8 +167,8 @@ impl FakeTree {
         };
         tree.add_dir("/");
         tree.add_dir("/sdcard");
-        tree.mount(FakeMount::sized("/", "/dev/block/dm-7", 1_046_868, 0))
-            .mount(FakeMount::sized("/sdcard", "/dev/fuse", 118_120_468, 96_764_008));
+        tree.mount(FakeMount::with_row("/", data_row(DF_K_ROOT, 0)))
+            .mount(FakeMount::with_row("/sdcard", data_row(DF_K_SHARED_STORAGE, 0)));
         tree
     }
 
@@ -203,6 +246,12 @@ impl FakeTree {
     pub fn mount(&mut self, mount: FakeMount) -> &mut Self {
         self.mounts.retain(|m| m.path != mount.path);
         self.mounts.push(mount);
+        self
+    }
+
+    /// Unmounts everything, for a cell that declares its own mounts. Chainable.
+    pub fn unmount_all(&mut self) -> &mut Self {
+        self.mounts.clear();
         self
     }
 
