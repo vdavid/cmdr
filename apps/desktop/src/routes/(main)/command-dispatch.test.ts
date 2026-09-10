@@ -35,11 +35,26 @@ vi.mock('$lib/ui/toast', () => ({
   },
 }))
 
+const openSettingsWindow = vi.fn()
+vi.mock('$lib/settings/settings-window', () => ({
+  openSettingsWindow: (...args: unknown[]) => {
+    openSettingsWindow(...args)
+    return Promise.resolve()
+  },
+}))
+
 import { handleCommandExecute, type CommandDispatchContext } from './command-dispatch'
+import type { DialogsOnScreen, DispatchSource } from './command-dispatch-context'
 import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
 import type { ExplorerAPI } from './explorer-api'
 
-function makeCtx(explorer: Partial<ExplorerAPI>): CommandDispatchContext {
+const NOTHING_OPEN: DialogsOnScreen = { dialogOpen: false, paletteOpen: false }
+const DIALOG_OPEN: DialogsOnScreen = { dialogOpen: true, paletteOpen: false }
+
+function makeCtx(
+  explorer: Partial<ExplorerAPI>,
+  { source = 'palette', onScreen = NOTHING_OPEN }: { source?: DispatchSource; onScreen?: DialogsOnScreen } = {},
+): CommandDispatchContext {
   return {
     getExplorer: () => explorer as ExplorerAPI,
     dialogs: {
@@ -51,8 +66,51 @@ function makeCtx(explorer: Partial<ExplorerAPI>): CommandDispatchContext {
       showSelectionDialog: vi.fn(),
       openOnboarding: vi.fn(),
     },
+    source,
+    getDialogsOnScreen: () => onScreen,
   }
 }
+
+/**
+ * The dialog gate in the core. Before it, only the keyboard road knew about dialogs, so a
+ * native-menu accelerator (⌘T, ⌘W, ⌘K) reached its handler behind an open one.
+ */
+describe('handleCommandExecute — the dialog gate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getVolumeId.mockReturnValue('local')
+  })
+
+  it('refuses a pane command from the native menu while a dialog is up', async () => {
+    const newTab = vi.fn(() => true)
+    await handleCommandExecute('tab.new', makeCtx({ newTab }, { source: 'menu', onScreen: DIALOG_OPEN }))
+    expect(newTab).not.toHaveBeenCalled()
+  })
+
+  it('runs the same command from the native menu with nothing open', async () => {
+    const newTab = vi.fn(() => true)
+    await handleCommandExecute('tab.new', makeCtx({ newTab }, { source: 'menu', onScreen: NOTHING_OPEN }))
+    expect(newTab).toHaveBeenCalledOnce()
+  })
+
+  it('runs Settings over a dialog, since it opens its own window', async () => {
+    await handleCommandExecute('app.settings', makeCtx({}, { source: 'menu', onScreen: DIALOG_OPEN }))
+    expect(openSettingsWindow).toHaveBeenCalledOnce()
+  })
+
+  it('lets MCP through, since its tools answer for themselves', async () => {
+    const newTab = vi.fn(() => true)
+    await handleCommandExecute('tab.new', makeCtx({ newTab }, { source: 'mcp', onScreen: DIALOG_OPEN }))
+    expect(newTab).toHaveBeenCalledOnce()
+  })
+
+  it("doesn't count the palette against its own row", async () => {
+    const newTab = vi.fn(() => true)
+    const onScreen: DialogsOnScreen = { dialogOpen: false, paletteOpen: true }
+    await handleCommandExecute('tab.new', makeCtx({ newTab }, { source: 'palette', onScreen }))
+    expect(newTab).toHaveBeenCalledOnce()
+  })
+})
 
 describe('handleCommandExecute — view.setMode (arg-carrying dispatch)', () => {
   beforeEach(() => {

@@ -2,8 +2,9 @@
  * Command dispatch: maps command IDs from the command palette, keyboard shortcuts,
  * and menu actions to concrete app actions.
  *
- * This is the dispatch CORE: it runs the preamble (text-region intercept →
- * `log.info` → breadcrumb → close palette → capability guard) in order, builds the
+ * This is the dispatch CORE: it runs the preamble (cross-source dedup → text-region
+ * intercept → dialog gate → `log.info` → breadcrumb → close palette → capability
+ * guard) in order, builds the
  * per-dispatch context once, then looks up the id in the flat
  * `commandHandlers` record and awaits the handler. The handlers themselves live
  * in `command-handlers/`, grouped by family. Ids with no handler are the
@@ -23,6 +24,7 @@ import { commandHandlers } from './command-handlers'
 import type { CommandHandler } from './command-handlers'
 import type { CommandDispatchContext } from './command-dispatch-context'
 import { shouldDropCrossSourceDuplicate } from './dispatch-dedup'
+import { isRefusedOverDialog } from './dialog-command-gate'
 
 // Re-exported so existing importers (`+page.svelte`, the dispatch tests) keep
 // resolving these from `./command-dispatch` after the move to the context leaf.
@@ -155,7 +157,7 @@ export async function handleCommandExecute<K extends CommandId>(
   // before anything else runs (no double log, no double breadcrumb, no toggle
   // flip-back). Same-source repeats and untagged dispatches always pass; see
   // dispatch-dedup.ts for the source-pair rationale.
-  if (shouldDropCrossSourceDuplicate(id)) {
+  if (shouldDropCrossSourceDuplicate(id, ctx.source)) {
     log.debug('Dropped cross-source duplicate dispatch of {id}', { id })
     return
   }
@@ -165,8 +167,21 @@ export async function handleCommandExecute<K extends CommandId>(
   // Bail before logging if the user's intent is text manipulation in a selectable
   // region. Native menu accelerators (⌘C, ⌘A) flow through here even when focus is
   // outside the file pane, so without this guard every text copy would log
-  // `edit.copy` / `selection.selectAll` and trigger file-scope behavior.
+  // `edit.copy` / `selection.selectAll` and trigger file-scope behavior. Ahead of the
+  // dialog gate: copying the text of an error shown inside a dialog touches no pane.
   if (handleTextRegionShortcut(id)) return
+
+  // Refuse a command that can't run behind what's on screen (a dialog, an explorer
+  // overlay, the palette), whichever road it came in by. The rule is the command's own
+  // (`whileDialogOpen`), and `dialog-command-gate.ts` applies it. Before the log, so the
+  // log and the breadcrumbs only show what ran.
+  const textInputFocused = isTextInputFocused()
+  if (
+    isRefusedOverDialog({ commandId: id, source: ctx.source, onScreen: ctx.getDialogsOnScreen(), textInputFocused })
+  ) {
+    log.debug('Refused {id} from the {source}: a dialog or overlay is in front of it', { id, source: ctx.source })
+    return
+  }
 
   // Every keyboard / palette / menu command flows through here. Two channels:
   // - Info-level structured log → LogTape → Rust bridge → fern file chain, so the

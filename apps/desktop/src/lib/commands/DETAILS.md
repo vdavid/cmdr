@@ -116,7 +116,9 @@ Two special cases:
 2. Add a `CommandSource` entry to the matching `sources/*.ts` scope file (with a `nameKey`, and a `descriptionKey` if it
    needs help text), and add the matching `commands.<idish>.label` / `.description` to `messages/en/commands.json` with
    a `@key` description, then run `pnpm intl:keys`. Skipping the entry fails the set-equality test in
-   `command-registry.test.ts`; a `nameKey` with no catalog entry fails the key-gen build.
+   `command-registry.test.ts`; a `nameKey` with no catalog entry fails the key-gen build. The entry's `whileDialogOpen`
+   is required: `BLOCKED_BY_DIALOGS` unless the command leaves the panes and the main window's UI alone. An opt-out
+   (`runsOverDialogs(reason)`, or `IN_TEXT_INPUTS_ONLY`) also goes into the pinned lists in `command-registry.test.ts`.
 3. If the command carries a REQUIRED dispatch payload, declare its shape in `CommandArgsOverrides` in `types.ts`; if the
    payload is OPTIONAL (dispatched both arg-less and with a payload, like the MCP `file.copy`/`move`/`delete` tools),
    use `CommandArgsOptionalOverrides` so `CommandDispatchArgs` resolves to `[args?]`. Arg-less commands skip both. The
@@ -159,9 +161,11 @@ sidebar highlight in settings-search) must cover the same set. The command palet
 
 ## Unified dispatch
 
-Native menu clicks and keyboard shortcuts both route through `handleCommandExecute(commandId)` in
-`routes/(main)/command-dispatch.ts`. The Rust `on_menu_event` handler maps menu item ids to command registry ids and
-emits a single `"execute-command"` Tauri event; the frontend listens and calls `handleCommandExecute`.
+Native menu clicks, keyboard shortcuts, palette rows, the explorer's own controls, the mouse's side buttons, and MCP
+all route through `handleCommandExecute(commandId, ctx)` in `routes/(main)/command-dispatch.ts`, each down its own road
+(`ctx.source`), and all pass the same dialog gate (`routes/(main)/DETAILS.md` § The dialog gate). The Rust
+`on_menu_event` handler maps menu item ids to command registry ids and emits a single `"execute-command"` Tauri event;
+the frontend listens and dispatches it down the menu's road.
 
 Exception: `CheckMenuItem`s (show hidden files, view modes) keep separate handling to avoid double-toggle. Close tab
 (⌘W) has special logic to close focused non-main windows.

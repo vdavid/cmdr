@@ -19,11 +19,11 @@ here:
   precisely because they read and write `$state` directly. On the dispatch side the mirror rule is that only
   `handleTextRegionShortcut` and `blockedByCapabilities` belong in the core; everything else is a handler.
 - **`global-keydown.ts` owns the keydown DECISION, `+page.svelte` owns the side effects.**
-  `resolveGlobalKeyAction(event, isModalOpen)` is pure (`dispatch` / `openDebugWindow` / `suppress` / `ignore`), so
-  every branch is unit-testable without mounting the shell; the component supplies `isModalDialogOpen()` (the only
-  reactive input, § What `isModalDialogOpen()` is made of) and then runs `preventDefault`,
-  `markDispatchSource('keyboard')`, and the dispatch. Keeping the decision out of the component is also what stops the
-  `file-length`-flagged `+page.svelte` from growing per keyboard rule.
+  `resolveGlobalKeyAction(event, onScreen)` is pure (`dispatch` / `openDebugWindow` / `suppress` / `ignore`), so every
+  branch is unit-testable without mounting the shell; the component supplies `dialogsOnScreen()` (the only reactive
+  input, § What `dialogsOnScreen()` is made of) and then runs `preventDefault` and `dispatchers.keyboard`. Keeping the
+  decision out of the component is also what stops the `file-length`-flagged `+page.svelte` from growing per keyboard
+  rule.
 - **`global-contextmenu.ts` is the same split for the right-click**: `resolveGlobalContextMenuAction(event)` is pure
   (`native-text-menu` / `suppress`), `+page.svelte` runs `stopPropagation` or `preventDefault`. § Right-click ownership.
 - **`startup-gates.ts` owns what a launch SHOWS.** § Startup gates.
@@ -39,21 +39,23 @@ here:
   reveal is delivered over `mcp-nav-to-path`, so the drain has to sit after `setupMcpListeners`. ❌ And the notice has
   to be subscribed BEFORE the drain, or a cold-launch reveal announces itself with nobody listening. See
   `apps/desktop/src-tauri/src/reveal/CLAUDE.md` and `apps/desktop/src/lib/reveal/CLAUDE.md`.
-- **The window hands out TWO dispatchers, and which one a caller gets is a correctness question.** `dispatchFromUi`
-  absorbs the rejection: a few handlers reject on purpose, a user gesture has nobody to hand that to, and the handler
-  has already said its piece in a toast, so the alternative is an unhandled rejection. `handleCommandExecute` propagates
-  it, and the MCP adapter is the one caller that needs it — several tools refuse BY rejecting (`select` naming a file
-  that isn't in the listing, `pane.refresh` when a re-read outlives its wait), and the adapter turns that throw into the
-  `mcp-response` error an agent reads. ❌ Hand the adapter the absorbing one and every such refusal reports `ok: true`
-  instead, silently. `WindowServicesContext` carries both (`dispatch`, `dispatchForMcp`); `mcp-agent-tools.spec.ts` §
-  "honest errors" is what catches the mix-up.
+- **The window hands out one dispatcher per road (`dispatchers`), and which one a caller gets is a correctness
+  question.** The road is the dispatch's source, which the dialog gate and the cross-source dedup both read (§ The dialog
+  gate). The five user roads absorb a rejection: a few handlers reject on purpose, a user gesture has nobody to hand
+  that to, and the handler has already said its piece in a toast, so the alternative is an unhandled rejection. The
+  `mcp` one propagates it, and the MCP adapter is the one caller that needs it — several tools refuse BY rejecting
+  (`select` naming a file that isn't in the listing, `pane.refresh` when a re-read outlives its wait), and the adapter
+  turns that throw into the `mcp-response` error an agent reads. ❌ Hand the adapter a gesture dispatcher and every such
+  refusal reports `ok: true` instead, silently. `WindowServicesContext` carries the whole set (`dispatchers`);
+  `mcp-agent-tools.spec.ts` § "honest errors" is what catches the mix-up.
 - **`command-dispatch-context.ts` is deliberately a LEAF**, importing nothing from the core or the handlers, so handler
   modules and `command-dispatch.ts` can both import the context types without a cycle. It's re-exported from
   `command-dispatch.ts` for callers.
-- **`dispatch-dedup.ts` guards a CROSS-source double fire only.** `markDispatchSource('keyboard' | 'menu')` tags a
-  dispatch and the core drops the same command arriving from the OTHER source within 300 ms, which is the macOS
-  menu-accelerator + webview-keydown double fire. Same-source repeats (a user pressing a key twice) and untagged
-  dispatches (palette, MCP, mouse) always pass. Unit-tested with injectable time.
+- **`dispatch-dedup.ts` guards a CROSS-source double fire only.** The core drops a command arriving from the keyboard
+  within 300 ms of the same command from the menu, or the other way round, which is the macOS menu-accelerator +
+  webview-keydown double fire. The source is the dispatch's own road (`ctx.source`). Same-source repeats (a user
+  pressing a key twice) and the other roads (palette, MCP, mouse, explorer) always pass. Unit-tested with injectable
+  time.
 - **`+page.svelte` mounts Ask Cmdr's bulk-rename review beside the rail, but doesn't own it**: the rail owns its user
   decisions and the proposal's lifetime.
 
@@ -141,9 +143,34 @@ two drift and leak an update toast over the wizard.
 
 ## Dispatch core
 
-`handleCommandExecute<K extends CommandId>(commandId, ctx, ...args)` runs the preamble (text-region intercept, then
-`log.info`, then `record_breadcrumb`, then close palette, then capability guard), then looks the id up in the flat
-`commandHandlers` record and awaits the handler. Arg-carrying ids take a typed payload.
+`handleCommandExecute<K extends CommandId>(commandId, ctx, ...args)` runs the preamble (cross-source dedup, then
+text-region intercept, then the dialog gate, then `log.info`, then `record_breadcrumb`, then close palette, then
+capability guard), then looks the id up in the flat `commandHandlers` record and awaits the handler. Arg-carrying ids
+take a typed payload.
+
+## The dialog gate
+
+Every command declares what it does while a dialog, an explorer overlay, or the palette is up: `whileDialogOpen` in
+`$lib/commands/while-dialog-open.ts`, required on every registry entry. It's refused, runs from a text input only, or
+runs anyway with a stated reason. `dialog-command-gate.ts` applies the rule, and the core asks it on EVERY dispatch, so
+the answer is the same whichever road a command came in by.
+
+- **Each road has its own dispatcher**, bound once in `+page.svelte` (`dispatchers`, typed
+  `Record<DispatchSource, CommandDispatcher>`, so a new road doesn't compile until it's wired). That's how the core knows
+  the source, which both the gate and the cross-source dedup read. The menu road also carries the Dock menu, other
+  windows' `execute-command` emits, `view-mode-changed`, and `menu-sort`.
+- **MCP is exempt.** Its file-operation tools refuse with a typed `blockedBy` while a blocking dialog is up, and
+  `dialog.confirm` acts on the open dialog itself. A refusal from the gate would be silent, and the agent would read it
+  as success.
+- **The palette never blocks its own rows** (it closes on the way to the handler); every other road counts it as in the
+  way.
+- **The keydown resolver asks the gate too**, before claiming a key. A key the core would refuse stays unclaimed, so
+  Tab still moves focus inside a dialog instead of being `preventDefault`ed on its way to `pane.switch`.
+- **Why it lives in the core.** When only the keyboard resolver knew about dialogs, a native-menu accelerator (⌘W, ⌘T,
+  ⌘K) reached its handler behind an open dialog: the `execute-command` listener had no gate. Refusing that listener
+  wholesale isn't the fix either (§ Native-menu and input-focus interactions); the per-command rule is.
+- **What runs over a dialog** is pinned in `$lib/commands/command-registry.test.ts`: the windows of their own
+  (Settings, keyboard shortcuts help, the queue), zoom, the four macOS-native commands, and MCP's `dialog.confirm`.
 
 Per-command logging: each successful dispatch emits one `log.info(commandId)` (LogTape, fern, error-report bundles) and
 one `record_breadcrumb` invoke (rolling manifest buffer). Both are best-effort; a failing breadcrumb must not break the
@@ -261,7 +288,7 @@ platform, both mapped in `mouse-nav.ts`.
 
 **macOS: from AppKit** (`navCommandForDirection`). `mouse_nav.rs` (in `src-tauri/src/`) installs a local `NSEvent`
 monitor and emits the typed `mouse-nav` event to the main window; `setupMouseNavListener` (`listener-setup.ts`) turns
-the direction into the dispatch, behind the same `isModalDialogOpen()` guard as everything else.
+the direction into the dispatch down the mouse's road, where the dialog gate keeps it inert behind a dialog.
 
 That monitor watches TWO kinds of event, because on macOS the mouse's driver decides which one the user's press becomes.
 It reads `buttonNumber` off `otherMouseUp` for a raw five-button mouse, and `deltaX` off `NSEventType::Swipe` for a Logi
@@ -281,9 +308,9 @@ the middle button included, is handed straight back.
 **Linux: from the DOM.** `+page.svelte` registers two document listeners that both consult `navCommandForMouseButton`
 (mapping `button === 3 → nav.back`, `4 → nav.forward`):
 
-- **`mouseup`** dispatches the command (gated by the same `isModalDialogOpen()` guard as the keyboard path, so the
-  buttons stay inert while a dialog or overlay is up). The dispatch is left untagged for the cross-source dedup: a mouse
-  button has no native-menu twin to double-fire, so it should always pass.
+- **`mouseup`** dispatches the command down the mouse's road: the dialog gate keeps the buttons inert while a dialog
+  or overlay is up, and the cross-source dedup leaves them alone, since a mouse button has no native-menu twin to
+  double-fire.
 - **`mousedown`** only `preventDefault`s the side buttons (no dispatch). This is what cancels the webview's built-in
   page back / forward, which would otherwise pop the SvelteKit SPA history (e.g. unwinding a `/settings` visit)
   underneath us. The suppression can't move to `mouseup` — the webview commits its default nav on the press — so the two
@@ -291,13 +318,13 @@ the middle button included, is handed straight back.
   navigating itself); only the dispatch is gated. On macOS the AppKit monitor above swallows the events first, so these
   two listeners are the Linux path's alone.
 
-## What `isModalDialogOpen()` is made of
+## What `dialogsOnScreen()` is made of
 
-The one reactive input `resolveGlobalKeyAction` takes, and the same guard the two mouse-nav roads consult. Three arms,
-and the shape of the list is the point:
+What the dialog gate reads, through `resolveGlobalKeyAction` and the core's `ctx.getDialogsOnScreen()`. Three arms,
+reported as two flags (the palette apart, because it never blocks its own rows), and the shape of the list is the point:
 
 ```ts
-showCommandPalette || isAnySoftDialogOpen() || isExplorerOverlayOpen()
+{ dialogOpen: isAnySoftDialogOpen() || isExplorerOverlayOpen(), paletteOpen: showCommandPalette }
 ```
 
 **`isAnySoftDialogOpen()` (`$lib/ui/open-dialogs.svelte`) covers every registered soft dialog**, roughly 35 of them in
@@ -317,9 +344,9 @@ chooser, a confirmation). `$lib/dialog-gallery/gallery-registry.ts`'s `UNREGISTE
 list of modal-looking things outside the registry, and it holds exactly those two.
 
 **No same-tick guard is needed**, unlike `anyDialogOpen()` in `$lib/file-explorer/pane/dialog-state.svelte.ts`, which
-keeps local flags for the window between `show* = true` and the mount that registers it. Every caller here is an event
-handler (document `keydown`, document `mouseup`, the Tauri `mouse-nav` event), so any flip that opened a dialog happened
-in an earlier turn and has long since mounted.
+keeps local flags for the window between `show* = true` and the mount that registers it. Every dispatch starts in an
+event handler (a keydown, a menu event, a click), so any flip that opened a dialog happened in an earlier turn and has
+long since mounted.
 
 ## Right-click ownership
 
@@ -357,22 +384,21 @@ dispatch path can't rely on the keydown bail.
 - **⌘A (`selection.selectAll`).** Intercepted as a menu accelerator before the webview. The handler routes to
   `active.select()` when a `<input>` / `<textarea>` is focused, otherwise delegates to
   `explorerRef.handleSelectionAction({ action: 'selectAll' })`. The keydown bail doesn't help; the menu fires first.
-- **The text-editing family while a modal is open.** `resolveGlobalKeyAction` (`global-keydown.ts`) normally resolves
-  nothing when `isModalDialogOpen()`, so pane-scoped commands stay inert behind a dialog. `edit.cut` / `edit.copy` /
-  `edit.paste` / `selection.selectAll` are the exception: with focus in a text input they still resolve, matched through
-  the registry (`comboMatchesCommand`, so a rebind follows) rather than as literal combos.
+- **The text-editing family while a dialog is open.** `edit.cut` / `edit.copy` / `edit.paste` / `selection.selectAll`
+  declare `IN_TEXT_INPUTS_ONLY`, so the dialog gate (§ The dialog gate) lets them through with focus in a text input,
+  from every road, and refuses them otherwise. Their handlers branch on `isTextInputFocused()` and edit the text.
 
   Two actors would otherwise insert on ⌘V: WebKit's native paste (the key event's default action on an editable element)
   and the Edit > Paste accelerator, which reaches the `edit.paste` handler through the `execute-command` menu listener.
-  Outside a modal only one lands, because the resolver's dispatch means `+page.svelte` calls `preventDefault()` (killing
-  the native one) and the menu twin is swallowed by the cross-source dedup. With a modal open there was no
-  `preventDefault()`, so both ran and the clipboard text landed TWICE, in every dialog with a text field. The dedup
-  can't catch it: only one command dispatch happens, and the other insertion is a browser default action it never sees.
+  Only one lands because the resolver CLAIMS ⌘V, inside a dialog too: `+page.svelte` calls `preventDefault()` (killing
+  the native one) and the menu twin is swallowed by the cross-source dedup. When a dialog made the resolver leave ⌘V
+  unclaimed, both ran and the clipboard text landed TWICE, in every dialog with a text field. The dedup can't catch
+  that: only one command dispatch happens, and the other insertion is a browser default action it never sees.
 
   Two shapes that look like fixes and aren't: adding ⌘V to the suppress list makes paste depend on a native menu
-  existing (it breaks in the dev browser, and on any platform whose menu lacks the item), and gating the
-  `execute-command` listener on modal state breaks paste wherever AppKit consumes the key outright and the menu is the
-  only path.
+  existing (it breaks in the dev browser, and on any platform whose menu lacks the item), and refusing everything the
+  `execute-command` listener carries while a dialog is up breaks paste wherever AppKit consumes the key outright and the
+  menu is the only path. The per-command rule is what lets both hold.
 
 - **`edit.paste` into a text input.** Reads via the `readClipboardText` Rust IPC, then writes with
   `document.execCommand('insertText')`. `navigator.clipboard.readText()` would surface a WebKit "Paste" confirmation the

@@ -390,7 +390,7 @@ describe('characterization — view.showHidden', () => {
 
   it('works with no explorer mounted: the setting is the source of truth, not pane state', async () => {
     getSetting.mockReturnValue(true)
-    const ctx: CommandDispatchContext = { getExplorer: () => undefined, dialogs: makeCtx({}).dialogs }
+    const ctx: CommandDispatchContext = { ...makeCtx({}), getExplorer: () => undefined }
     await handleCommandExecute('view.showHidden', ctx)
     expect(setSetting).toHaveBeenCalledExactlyOnceWith('listing.showHiddenFiles', false)
     // The menu push is the applier's job now, never the handler's (one owner, so

@@ -38,12 +38,12 @@ import {
   onMouseNav,
 } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
-import { markDispatchSource } from './dispatch-dedup'
+import type { CommandDispatchers } from './command-dispatch-context'
 import { navCommandForDirection } from './mouse-nav'
 import { setFolderExcluded } from '$lib/media-index/excluded-folders'
 import { setFolderChosen } from '$lib/media-index/always-index-folders'
 import { handleFunctionKeyBarHideRequested } from '$lib/file-explorer/pane/function-key-bar-hide'
-import { isCommandId, type CommandId, type CommandDispatchArgs } from '$lib/commands'
+import { isCommandId, type CommandId } from '$lib/commands'
 import type { ViewMode } from '$lib/app-status-store'
 import { adoptedOperationFor } from '$lib/file-operations/foreground-request'
 import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
@@ -72,8 +72,12 @@ const log = getAppLogger('mainListeners')
 export interface ListenerSetupContext {
   /** Live read of the explorer handle (`undefined` until `DualPaneExplorer` mounts; HMR can swap it). */
   getExplorer: () => ExplorerAPI | undefined
-  /** Dispatch through the same typed command bus the keyboard / palette / MCP paths use. */
-  dispatch: <K extends CommandId>(commandId: K, ...args: CommandDispatchArgs<K>) => Promise<void>
+  /**
+   * The dispatchers for the two roads these listeners carry: the native menu's events and the
+   * mouse's side buttons. Each is bound to its road in `+page.svelte`, so the dispatch core
+   * knows where a command came from.
+   */
+  dispatchers: Pick<CommandDispatchers, 'menu' | 'mouse'>
   /** Component-owned cleanup array; every registered unlisten is pushed here. */
   unlistenFns: UnlistenFn[]
   /** Write-only dialog setters (the component owns the `$state`). */
@@ -85,11 +89,6 @@ export interface ListenerSetupContext {
    * reads reactive startup-modal `$state`; the E2E rerun listener calls it.
    */
   maybeRunWhatsNew: (force: boolean) => Promise<void>
-  /**
-   * Whether a modal dialog or overlay is up, so a listener can stay inert while
-   * the user is answering something. Reads the component's dialog `$state`.
-   */
-  isModalDialogOpen: () => boolean
 }
 
 /** Safe wrapper for Tauri event listeners - handles non-Tauri environment. */
@@ -269,9 +268,10 @@ function menuSortToCommand(action: unknown, value: unknown): CommandId | undefin
 
 /** Set up menu-related event listeners. */
 export async function setupMenuListeners(ctx: ListenerSetupContext): Promise<void> {
-  const { dispatch, getExplorer, unlistenFns } = ctx
+  const { dispatchers, getExplorer, unlistenFns } = ctx
 
-  // Single unified listener for all menu commands routed through "execute-command"
+  // Single unified listener for all menu commands routed through "execute-command": the
+  // native menu bar, the Dock menu, and other windows' emits all take the menu's road.
   try {
     unlistenFns.push(
       await onExecuteCommand((payload) => {
@@ -281,10 +281,7 @@ export async function setupMenuListeners(ctx: ListenerSetupContext): Promise<voi
         // at the edge so a stale Rust id is dropped here rather than no-oping in the switch
         // `default`. The Rust↔registry drift test pins the two id sets together.
         if (isCommandId(commandId)) {
-          // Tag the source so the dispatch core can swallow the spurious
-          // second half of a macOS keyboard+menu double-fire (dispatch-dedup.ts).
-          markDispatchSource('menu')
-          void dispatch(commandId)
+          void dispatchers.menu(commandId)
         }
       }),
     )
@@ -308,7 +305,7 @@ export async function setupMenuListeners(ctx: ListenerSetupContext): Promise<voi
       // registry rename breaks compilation and `cmdr/no-raw-command-dispatch`
       // stays satisfied (A3). `fromMenu: true` → the handler skips
       // `pushViewMenuState` (the menu already toggled its CheckMenuItem).
-      void dispatch(viewSetModeCommand, { pane, mode, fromMenu: true })
+      void dispatchers.menu(viewSetModeCommand, { pane, mode, fromMenu: true })
     }),
   )
 
@@ -330,7 +327,7 @@ export async function setupMenuListeners(ctx: ListenerSetupContext): Promise<voi
   unlistenFns.push(
     await onMenuSort((payload) => {
       const command = menuSortToCommand(payload.action, payload.value)
-      if (command) void dispatch(command)
+      if (command) void dispatchers.menu(command)
     }),
   )
 
@@ -517,9 +514,10 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
       void (async () => {
         // `onboarding` has no store and nothing the harness can render (its open
         // flag is a local `$state` in `+page.svelte`), so its preview dispatches
-        // the app's own re-entry command instead. See `dialog-gallery/onboarding-preview.ts`.
+        // the app's own re-entry command instead, down the menu's road like every other
+        // window's request. See `dialog-gallery/onboarding-preview.ts`.
         if (dialogId === 'onboarding') {
-          await openOnboardingPreview(stateId, ctx.dispatch)
+          await openOnboardingPreview(stateId, ctx.dispatchers.menu)
           await focusMainWindow()
           return
         }
@@ -600,15 +598,14 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
  * direction into the same `nav.back` / `nav.forward` dispatch the `⌘[` / `⌘]`
  * shortcuts and the Linux DOM path make.
  *
- * Gated by the same modal guard as the keyboard path, so the buttons stay inert
- * while a dialog is up. Left untagged for the cross-source dedup: a mouse button
- * has no native-menu twin to double-fire.
+ * Down the mouse's own road: the dispatch core's dialog gate keeps the buttons
+ * inert while a dialog is up, and the cross-source dedup leaves them alone, since a
+ * mouse button has no native-menu twin to double-fire.
  */
 export async function setupMouseNavListener(ctx: ListenerSetupContext): Promise<void> {
   await pushTauri(ctx.unlistenFns, () =>
     onMouseNav((direction) => {
-      if (ctx.isModalDialogOpen()) return
-      void ctx.dispatch(navCommandForDirection(direction))
+      void ctx.dispatchers.mouse(navCommandForDirection(direction))
     }),
   )
 }

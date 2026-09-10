@@ -194,9 +194,9 @@ export interface ExplorerAPI {
   isRenaming: () => boolean
   /**
    * Whether the volume switcher dropdown is open on either pane. The dropdown
-   * hosts the inline favorite-rename input, so `isModalDialogOpen()` reads this
-   * to suppress pane/global shortcuts while it's open (so text-editing keys
-   * reach the textbox instead of the panes).
+   * hosts the inline favorite-rename input, so `dialogsOnScreen()` reads this
+   * and the dialog gate suppresses pane/global shortcuts while it's open (so
+   * text-editing keys reach the textbox instead of the panes).
    */
   isVolumeChooserOpen: () => boolean
   openViewerForCursor: () => Promise<void>

@@ -153,7 +153,7 @@ function mountBehindBothHandlers(): MountedHub {
     api.handleKeyDown(e)
   }
   const documentDispatcher = (e: KeyboardEvent) => {
-    const action = resolveGlobalKeyAction(e, false)
+    const action = resolveGlobalKeyAction(e, { dialogOpen: false, paletteOpen: false })
     if (action.kind === 'dispatch' && action.commandId === 'pane.refresh') api.refresh()
   }
   target.addEventListener('keydown', paneHandler)

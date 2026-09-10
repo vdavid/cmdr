@@ -14,11 +14,16 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { resolveGlobalKeyAction } from './global-keydown'
+import type { DialogsOnScreen } from './command-dispatch-context'
 import { initShortcutDispatch, destroyShortcutDispatch } from '$lib/shortcuts/shortcut-dispatch'
 
 // The resolver speaks the macOS combo vocabulary (⌘V, not Ctrl+V), and this is a
 // macOS-only bug; `isMacOS()` reads the user agent.
 vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' })
+
+const NOTHING_OPEN: DialogsOnScreen = { dialogOpen: false, paletteOpen: false }
+const DIALOG_OPEN: DialogsOnScreen = { dialogOpen: true, paletteOpen: false }
+const PALETTE_OPEN: DialogsOnScreen = { dialogOpen: false, paletteOpen: true }
 
 /** A ⌘-modified keydown for `key`, with no other modifier held. */
 function cmd(key: string): KeyboardEvent {
@@ -55,41 +60,48 @@ describe('resolveGlobalKeyAction', () => {
 
   describe('with nothing open', () => {
     it('dispatches the command bound to the combo', () => {
-      expect(resolveGlobalKeyAction(cmd('v'), false)).toEqual({ kind: 'dispatch', commandId: 'edit.paste' })
+      expect(resolveGlobalKeyAction(cmd('v'), NOTHING_OPEN)).toEqual({ kind: 'dispatch', commandId: 'edit.paste' })
     })
 
     it('dispatches the pane refresh on ⌘R, so a manual re-read has a key at all', () => {
       // The one refresh key: it re-reads the focused pane's directory, and in the
       // network browser it re-scans hosts (`pane-commands.ts` routes on the view).
-      expect(resolveGlobalKeyAction(cmd('r'), false)).toEqual({ kind: 'dispatch', commandId: 'pane.refresh' })
+      expect(resolveGlobalKeyAction(cmd('r'), NOTHING_OPEN)).toEqual({ kind: 'dispatch', commandId: 'pane.refresh' })
     })
 
     it('hands ⌘← / ⌘→ to a focused text input instead of dispatching', () => {
       cleanupFocus = focus('input')
-      expect(resolveGlobalKeyAction(cmd('ArrowLeft'), false)).toEqual({ kind: 'ignore' })
-      expect(resolveGlobalKeyAction(cmd('ArrowRight'), false)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(cmd('ArrowLeft'), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(cmd('ArrowRight'), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
     })
 
     it('hands a bare typing key to a focused text input instead of dispatching', () => {
       cleanupFocus = focus('input')
-      expect(resolveGlobalKeyAction(new KeyboardEvent('keydown', { key: 'Tab' }), false)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(new KeyboardEvent('keydown', { key: 'Tab' }), NOTHING_OPEN)).toEqual({
+        kind: 'ignore',
+      })
     })
 
     it('dispatches the bare-key pane commands', () => {
-      expect(resolveGlobalKeyAction(bare('Tab'), false)).toEqual({ kind: 'dispatch', commandId: 'pane.switch' })
-      expect(resolveGlobalKeyAction(bare(' '), false)).toEqual({ kind: 'dispatch', commandId: 'selection.toggle' })
+      expect(resolveGlobalKeyAction(bare('Tab'), NOTHING_OPEN)).toEqual({ kind: 'dispatch', commandId: 'pane.switch' })
+      expect(resolveGlobalKeyAction(bare(' '), NOTHING_OPEN)).toEqual({
+        kind: 'dispatch',
+        commandId: 'selection.toggle',
+      })
     })
 
     it('ignores a combo no command claims', () => {
-      expect(resolveGlobalKeyAction(new KeyboardEvent('keydown', { key: 'q' }), false)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(new KeyboardEvent('keydown', { key: 'q' }), NOTHING_OPEN)).toEqual({
+        kind: 'ignore',
+      })
     })
   })
 
   describe('with a modal open', () => {
     it('blocks pane-scoped commands', () => {
       // ⌘T (new tab) fires with nothing open, and must not fire behind a dialog.
-      expect(resolveGlobalKeyAction(cmd('t'), false)).toEqual({ kind: 'dispatch', commandId: 'tab.new' })
-      expect(resolveGlobalKeyAction(cmd('t'), true)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(cmd('t'), NOTHING_OPEN)).toEqual({ kind: 'dispatch', commandId: 'tab.new' })
+      expect(resolveGlobalKeyAction(cmd('t'), DIALOG_OPEN)).toEqual({ kind: 'ignore' })
     })
 
     it('blocks the BARE-key pane commands, so Tab moves focus inside the dialog', () => {
@@ -97,40 +109,58 @@ describe('resolveGlobalKeyAction', () => {
       // nothing, so it resolves to `ignore` and the browser moves focus, while Tab reaches
       // `pane.switch`, gets `preventDefault`ed, and focus never moves at all. Space is the
       // same shape (`selection.toggle`), and so are F5 / F6 / F7 / Insert.
-      expect(resolveGlobalKeyAction(bare('Tab'), true)).toEqual({ kind: 'ignore' })
-      expect(resolveGlobalKeyAction(bare(' '), true)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(bare('Tab'), DIALOG_OPEN)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(bare(' '), DIALOG_OPEN)).toEqual({ kind: 'ignore' })
     })
 
     it('dispatches edit.paste when focus is in a text input, so WebKit does not ALSO paste', () => {
       cleanupFocus = focus('input')
-      expect(resolveGlobalKeyAction(cmd('v'), true)).toEqual({ kind: 'dispatch', commandId: 'edit.paste' })
+      expect(resolveGlobalKeyAction(cmd('v'), DIALOG_OPEN)).toEqual({ kind: 'dispatch', commandId: 'edit.paste' })
     })
 
     it('dispatches the rest of the text-editing family from a focused text input', () => {
       cleanupFocus = focus('textarea')
-      expect(resolveGlobalKeyAction(cmd('c'), true)).toEqual({ kind: 'dispatch', commandId: 'edit.copy' })
-      expect(resolveGlobalKeyAction(cmd('x'), true)).toEqual({ kind: 'dispatch', commandId: 'edit.cut' })
-      expect(resolveGlobalKeyAction(cmd('a'), true)).toEqual({ kind: 'dispatch', commandId: 'selection.selectAll' })
+      expect(resolveGlobalKeyAction(cmd('c'), DIALOG_OPEN)).toEqual({ kind: 'dispatch', commandId: 'edit.copy' })
+      expect(resolveGlobalKeyAction(cmd('x'), DIALOG_OPEN)).toEqual({ kind: 'dispatch', commandId: 'edit.cut' })
+      expect(resolveGlobalKeyAction(cmd('a'), DIALOG_OPEN)).toEqual({
+        kind: 'dispatch',
+        commandId: 'selection.selectAll',
+      })
     })
 
     it('leaves the text-editing family alone when focus is NOT in a text input', () => {
       cleanupFocus = focus('button')
       // ⌘A still gets suppressed so the browser doesn't select the whole page.
-      expect(resolveGlobalKeyAction(cmd('a'), true)).toEqual({ kind: 'suppress' })
-      expect(resolveGlobalKeyAction(cmd('v'), true)).toEqual({ kind: 'ignore' })
-      expect(resolveGlobalKeyAction(cmd('c'), true)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(cmd('a'), DIALOG_OPEN)).toEqual({ kind: 'suppress' })
+      expect(resolveGlobalKeyAction(cmd('v'), DIALOG_OPEN)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(cmd('c'), DIALOG_OPEN)).toEqual({ kind: 'ignore' })
     })
 
     it('does not widen to a pane-scoped command that happens to be typed in an input', () => {
       cleanupFocus = focus('input')
-      expect(resolveGlobalKeyAction(cmd('t'), true)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(cmd('t'), DIALOG_OPEN)).toEqual({ kind: 'ignore' })
     })
 
     it('does not match a modifier superset of a text-editing combo', () => {
       cleanupFocus = focus('input')
       // ⌥⌘V is "Paste as move" (a pane op), not ⌘V.
       const optionCmdV = new KeyboardEvent('keydown', { key: 'v', metaKey: true, altKey: true })
-      expect(resolveGlobalKeyAction(optionCmdV, true)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(optionCmdV, DIALOG_OPEN)).toEqual({ kind: 'ignore' })
+    })
+
+    it('still dispatches a command that runs over dialogs, like Settings on ⌘,', () => {
+      expect(resolveGlobalKeyAction(cmd(','), DIALOG_OPEN)).toEqual({ kind: 'dispatch', commandId: 'app.settings' })
+    })
+  })
+
+  describe('with the command palette open', () => {
+    it('blocks pane-scoped commands behind it', () => {
+      expect(resolveGlobalKeyAction(cmd('t'), PALETTE_OPEN)).toEqual({ kind: 'ignore' })
+    })
+
+    it("dispatches paste into the palette's search field", () => {
+      cleanupFocus = focus('input')
+      expect(resolveGlobalKeyAction(cmd('v'), PALETTE_OPEN)).toEqual({ kind: 'dispatch', commandId: 'edit.paste' })
     })
   })
 })

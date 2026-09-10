@@ -212,9 +212,12 @@ customize shortcuts on the fly.
 ### Centralized dispatch (`shortcut-dispatch.ts`)
 
 Builds a reverse lookup `Map<shortcutString, commandId>` for Tier 1 commands (those with `showInPalette: true` plus
-`app.commandPalette`). On every keypress, `handleGlobalKeyDown()` in `+page.svelte` calls `formatKeyCombo(e)` and
-`lookupCommand()` to find a matching command, then routes through `handleCommandExecute()` -- the same path used by the
-command palette and MCP events. Rebuilds automatically when custom shortcuts change via `onShortcutChange`.
+`app.commandPalette`). On every keypress, `handleGlobalKeyDown()` in `+page.svelte` asks `resolveGlobalKeyAction`
+(`routes/(main)/global-keydown.ts`), which finds the command through `formatKeyCombo(e)` and `lookupCommand()` and
+claims the key only when the dispatch core's dialog gate would run it. The claimed command goes down the keyboard's
+road into `handleCommandExecute()`, the same core the palette, the native menu, and MCP events reach
+(`routes/(main)/DETAILS.md` § The dialog gate). Rebuilds automatically when custom shortcuts change via
+`onShortcutChange`.
 
 Tier 2 commands (arrows, Space, Enter, Backspace, etc.) are not in the dispatch map. Unmatched keypresses propagate
 normally to component-level handlers in DualPaneExplorer and FilePane.
@@ -417,9 +420,10 @@ sees the keydown and calls `handleCommandExecute('file.quickLook')`. **Both path
 The race is not theoretical — observed empirically as `FE:user-action file.quickLook (×2, deduplicated)` log lines in
 the Quick Look feature.
 
-The dispatch core now swallows this class centrally: both double-fire callers tag their dispatches
-(`markDispatchSource('keyboard')` in the centralized keydown path, `'menu'` in the `execute-command` listener), and
-`routes/(main)/dispatch-dedup.ts` drops the same command arriving from the OTHER source within 300ms. Keying on the
+The dispatch core swallows this class centrally: every dispatch carries its road (`ctx.source`, bound per road in
+`+page.svelte`), and `routes/(main)/dispatch-dedup.ts` drops the same command arriving from the OTHER of the keyboard
+and menu roads within 300ms. Both halves also pass the same dialog gate, so neither can run behind a dialog. Keying on
+the
 source pair (instead of a bare time window) means real rapid input — double-presses, key auto-repeat — is same-source
 and always passes. New toggle commands need NO per-command guard. Quick Look's older local guard
 (`quickLookDispatchGuardJustFired` in `file-explorer/quick-look/quick-look-state.svelte.ts`) predates the central one

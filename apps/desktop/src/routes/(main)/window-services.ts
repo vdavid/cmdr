@@ -53,7 +53,7 @@ import {
   stopOperationFailureWatch,
 } from '$lib/status-corner/operation-failure-watch.svelte'
 import { startSuggestedOpsBadge, stopSuggestedOpsBadge } from '$lib/suggested-ops/suggested-ops-badge.svelte'
-import type { CommandDispatchArgs, CommandId } from '$lib/commands'
+import type { CommandDispatchers } from './command-dispatch-context'
 import type { ExplorerAPI } from './explorer-api'
 import {
   type ListenerSetupContext,
@@ -74,25 +74,21 @@ export interface WindowServicesContext {
   /** Live read of the explorer handle (`undefined` until `DualPaneExplorer` mounts; HMR can swap it). */
   getExplorer: () => ExplorerAPI | undefined
   /**
-   * Dispatch a command from a USER GESTURE (menu item, dialog action). Absorbs the rejection: a
-   * handler that rejects has already said its piece in a toast, and there is nobody to hand it to.
+   * One dispatcher per road (`command-dispatch-context.ts`). The menu and mouse listeners take
+   * theirs, which absorb a rejection: a handler that rejects on a user gesture has already said
+   * its piece in a toast. ⚠️ The MCP adapter takes `mcp`, the one that PROPAGATES it. A few
+   * handlers reject on purpose so the adapter can report the real outcome back to the agent
+   * (`select` names a file that isn't in the listing; `pane.refresh` when a re-read outlives its
+   * wait). ❌ Never hand it a gesture dispatcher: an absorbed rejection turns every one of those
+   * refusals into `ok: true`.
    */
-  dispatch: <K extends CommandId>(commandId: K, ...args: CommandDispatchArgs<K>) => Promise<void>
-  /**
-   * ⚠️ Dispatch for the MCP adapter, which PROPAGATES the rejection. A few handlers reject on
-   * purpose so the adapter can report the real outcome back to the agent (`select` names a file
-   * that isn't in the listing; `pane.refresh` when a re-read outlives its wait). ❌ Never hand
-   * `dispatch` here: an absorbed rejection turns every one of those refusals into `ok: true`.
-   */
-  dispatchForMcp: <K extends CommandId>(commandId: K, ...args: CommandDispatchArgs<K>) => Promise<void>
+  dispatchers: CommandDispatchers
   /** Write-only dialog setters (the component owns the `$state`). */
   dialogs: {
     setAboutWindow: (show: boolean) => void
   }
   /** Re-runs the "What's new" startup trigger; component-owned because it reads startup-modal `$state`. */
   maybeRunWhatsNew: (force: boolean) => Promise<void>
-  /** Whether a modal dialog or overlay is up; the mouse side buttons stay inert while one is. */
-  isModalDialogOpen: () => boolean
 }
 
 /**
@@ -146,11 +142,10 @@ export function startEarlyWindowServices(): void {
 export async function startWindowServices(ctx: WindowServicesContext): Promise<void> {
   const listenerCtx: ListenerSetupContext = {
     getExplorer: ctx.getExplorer,
-    dispatch: ctx.dispatch,
+    dispatchers: ctx.dispatchers,
     unlistenFns,
     dialogs: ctx.dialogs,
     maybeRunWhatsNew: ctx.maybeRunWhatsNew,
-    isModalDialogOpen: ctx.isModalDialogOpen,
   }
   await setupMenuListeners(listenerCtx)
   await setupDialogListeners(listenerCtx)
@@ -161,7 +156,7 @@ export async function startWindowServices(ctx: WindowServicesContext): Promise<v
     // The MCP adapter dispatches through the same typed command bus as the keyboard / palette /
     // menu paths, so MCP events get the uniform preamble (log + breadcrumb + search-results guard)
     // — but through the strict dispatcher, so a refusal reaches the agent as one.
-    dispatch: ctx.dispatchForMcp,
+    dispatch: ctx.dispatchers.mcp,
     listenTauri: makeListenTauri(unlistenFns),
     isAiEnabled: () => getSetting('ai.provider') !== 'off',
   })

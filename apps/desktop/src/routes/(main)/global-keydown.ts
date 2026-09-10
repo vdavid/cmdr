@@ -1,44 +1,32 @@
 /**
  * What the document-level keydown handler should DO with a keypress. The whole
  * decision lives here as a pure function so it's unit-testable; `+page.svelte`
- * only performs the side effects (`preventDefault`, the tagged dispatch, opening
- * the debug window).
+ * only performs the side effects (`preventDefault`, the dispatch, opening the
+ * debug window).
  *
- * The caller passes whether a modal is open, because that flips the regime:
+ * Two questions, in order:
  *
- * - **Nothing open**: the full Tier 1 reverse lookup runs, minus the bails that
- *   hand a combo back to the browser (native text copy, ⌘← / ⌘→ inside an input,
- *   typing keys inside an input).
- * - **A modal or explorer overlay is open**: pane-scoped commands must stay
- *   inert, so only the text-editing family resolves, and only while focus is in
- *   a text input.
+ * - **Which command does the combo mean?** The Tier 1 reverse lookup, minus the
+ *   bails that hand a combo back to the browser (native text copy, ⌘← / ⌘→ inside
+ *   an input, typing keys inside an input).
+ * - **Would the dispatch core run it right now?** The dialog gate
+ *   (`dialog-command-gate.ts`) answers from the command's own `whileDialogOpen`
+ *   rule. A key the core would refuse stays unclaimed, so nothing
+ *   `preventDefault`s the browser's own action: Tab still moves focus inside a
+ *   dialog instead of reaching `pane.switch` behind it.
  */
 import { formatKeyCombo, isTypingKeyCombo } from '$lib/shortcuts/key-capture'
-import { comboMatchesCommand, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
+import { lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
 import { isTextInputFocused } from '$lib/utils/text-input-focus'
 import type { CommandId } from '$lib/commands'
-
-/**
- * The commands whose handlers act on the FOCUSED TEXT INPUT rather than the file
- * pane: `clipboard-handlers.ts` and the `selection.selectAll` arm each branch on
- * `document.activeElement` before touching the explorer. Only these may fire
- * while a modal is open, and only from a text input.
- *
- * Read through the registry (`comboMatchesCommand`), never as literal combos:
- * all four are user-rebindable.
- */
-const TEXT_EDITING_COMMAND_IDS = [
-  'edit.cut',
-  'edit.copy',
-  'edit.paste',
-  'selection.selectAll',
-] as const satisfies readonly CommandId[]
+import type { DialogsOnScreen } from './command-dispatch-context'
+import { isRefusedOverDialog } from './dialog-command-gate'
 
 /** What `+page.svelte` should do with the keypress. */
 export type GlobalKeyAction =
   /** Leave the event alone: the browser's default action is what the user wants. */
   | { kind: 'ignore' }
-  /** `preventDefault` + `stopPropagation`, then dispatch this command tagged `'keyboard'`. */
+  /** `preventDefault` + `stopPropagation`, then dispatch this command down the keyboard road. */
   | { kind: 'dispatch'; commandId: CommandId }
   /** `preventDefault`, then open the debug window (dev only). */
   | { kind: 'openDebugWindow' }
@@ -90,32 +78,23 @@ function commandForCombo(combo: string): CommandId | undefined {
 }
 
 /**
- * The text-editing command this combo means, while a modal has the keyboard and
- * focus is in a text input.
+ * Decides what the keypress means, given what's on screen (`+page.svelte`'s
+ * `dialogsOnScreen()`).
  *
- * Without this, ⌘V pastes TWICE in every dialog with a text field: nothing calls
- * `preventDefault`, so WebKit runs its native paste AND the macOS Edit > Paste
- * accelerator reaches `edit.paste` through the menu listener (which can't be
- * gated on modal state — when AppKit swallows the key outright, it's the only
- * path). Dispatching from here is the same shape that already makes ⌘V behave
- * outside a modal: the native action dies, and the menu twin is swallowed by the
- * cross-source dedup.
+ * Claiming a key matters inside a dialog too. With focus in a text input, the gate
+ * lets the text-editing family through, and dispatching ⌘V from here is what stops
+ * WebKit's native paste from ALSO inserting, while the menu's twin dispatch is
+ * swallowed by the cross-source dedup. Left unclaimed, the text would land twice.
  */
-function textEditingCommandForCombo(combo: string): CommandId | undefined {
-  if (!isTextInputFocused()) return undefined
-  return TEXT_EDITING_COMMAND_IDS.find((id) => comboMatchesCommand(combo, id))
-}
-
-/**
- * Decides what the keypress means. `isModalOpen` is the caller's
- * `isModalDialogOpen()` (soft dialogs plus the explorer-owned overlays).
- */
-export function resolveGlobalKeyAction(event: KeyboardEvent, isModalOpen: boolean): GlobalKeyAction {
+export function resolveGlobalKeyAction(event: KeyboardEvent, onScreen: DialogsOnScreen): GlobalKeyAction {
   const combo = formatKeyCombo(event)
-  // A modal narrows the keyboard to text editing: everything else is pane-scoped
-  // and must stay inert behind the dialog.
-  const commandId = isModalOpen ? textEditingCommandForCombo(combo) : commandForCombo(combo)
-  if (commandId) return { kind: 'dispatch', commandId }
+  const commandId = commandForCombo(combo)
+  if (
+    commandId &&
+    !isRefusedOverDialog({ commandId, source: 'keyboard', onScreen, textInputFocused: isTextInputFocused() })
+  ) {
+    return { kind: 'dispatch', commandId }
+  }
 
   // Special cases not handled by centralized dispatch:
   // - Debug window: dev-only, not worth registering as a command

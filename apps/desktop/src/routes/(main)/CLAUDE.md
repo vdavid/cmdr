@@ -11,7 +11,7 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
   holds the menu / MCP-dialog / window-focus listeners; `window-services.ts` starts and stops every subscription the
   window holds for its lifetime.
 - Supporting pure modules: `startup-gates.ts`, `mcp-listeners.ts`, `mcp-nav-landing.ts`, `explorer-api.ts`,
-  `dispatch-dedup.ts`, `global-keydown.ts`, `global-contextmenu.ts`.
+  `dispatch-dedup.ts`, `dialog-command-gate.ts`, `global-keydown.ts`, `global-contextmenu.ts`.
 
 ## Must-knows
 
@@ -27,9 +27,12 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
   `startup-gates.ts`. ❌ Never capture a `$state` value; `isOnboardingVisible()` reads live.
 - **The old-macOS notice is `topmost` AND rendered after `<OnboardingWizard>`**: that order is the only reason it clears
   the wizard's overlay. ❌ Don't move it or drop the prop. DETAILS § Startup gates.
-- **`isModalDialogOpen()` reads the `open-dialogs` INVENTORY, ❌ never a list of `show*` booleans**: a hand list misses
+- **The dispatch core refuses a command behind a dialog on EVERY road** (keyboard, menu, mouse, palette, explorer),
+  from the command's own `whileDialogOpen`; MCP is exempt. Each road gets its own dispatcher from `+page.svelte`'s
+  `dispatchers`, ❌ never a shared one, or the gate and the dedup lose the source. DETAILS § The dialog gate.
+- **`dialogsOnScreen()` reads the `open-dialogs` INVENTORY, ❌ never a list of `show*` booleans**: a hand list misses
   dialogs, and each miss lets a bare key (Tab, Space, F5) fire behind one. Its other arms, the palette and the explorer
-  overlays, register nowhere. DETAILS § What `isModalDialogOpen()` is made of.
+  overlays, register nowhere. DETAILS § What `dialogsOnScreen()` is made of.
 - **Text-region intercept (⌘C / ⌘A)**: `handleTextRegionShortcut` short-circuits `edit.copy` / `selection.selectAll`
   inside `.error-pane` or `[data-text-region]`, so copying error text doesn't copy files.
 - **Gate on capabilities, ❌ never a `volumeId` compare**: `blockedByCapabilities` bails pre-dispatch for
@@ -49,8 +52,9 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
 - **Don't remove the `{#if settingsReady}` wrapper** in `+layout.svelte`, and don't read settings ahead of the flag: a
   pre-init `getSetting()` returns registry defaults that can get hot-applied to the backend as if chosen.
 - **Native-menu accelerators fire before the webview keydown**, so a focused text input owns `edit.cut` / `edit.copy` /
-  `edit.paste` / `selection.selectAll`. ❌ Don't widen that set, gate `execute-command` on modal state, or hardcode ⌘V.
-  Read DETAILS § Native-menu and input-focus interactions first.
+  `edit.paste` / `selection.selectAll` (`IN_TEXT_INPUTS_ONLY`). ❌ Don't refuse `execute-command` wholesale behind a
+  dialog, or hardcode ⌘V: where AppKit eats the key, the menu is paste's only path. Read DETAILS § Native-menu and
+  input-focus interactions first.
 - **Right-click is Cmdr's except in text fields**, and the predicate is the event TARGET, ❌ never focus. DETAILS §
   Right-click ownership.
 

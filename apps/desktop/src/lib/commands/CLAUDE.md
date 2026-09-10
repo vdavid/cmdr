@@ -34,6 +34,10 @@ Centralized command registry and fuzzy search engine for the command palette.
   `routes/(main)/command-dispatch.ts`). It looks the id up in the flat `commandHandlers` record (in
   `routes/(main)/command-handlers/`), keyed by `Exclude<CommandId, DispatchExemptId>` so every dispatchable id has a
   handler at compile time; handlerless ids go in `DISPATCH_EXEMPT_IDS` and silently no-op.
+- **Every command declares `whileDialogOpen`** (`while-dialog-open.ts`; required, so a new one won't compile without
+  it): `BLOCKED_BY_DIALOGS` if it touches a pane or opens main-window UI, `IN_TEXT_INPUTS_ONLY` for cut / copy / paste /
+  select all, `runsOverDialogs(reason)` otherwise. The dispatch core enforces it on every road but MCP
+  (`routes/(main)/DETAILS.md` § The dialog gate); `command-registry.test.ts` pins the opt-outs.
 - **Native macOS commands (quit, hide, hide others, show all) carry `nativeShortcut: true` and `showInPalette: false`.**
   AppKit owns both the behavior and the accelerator via `PredefinedMenuItems`; including them in JS shortcut dispatch
   would double-execute. `nativeShortcut: true` (set on exactly `NATIVE_SHORTCUT_COMMAND_IDS`) is the single source of

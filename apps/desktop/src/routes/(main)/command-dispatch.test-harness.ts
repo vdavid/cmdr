@@ -54,7 +54,11 @@ export const EXEMPT_SET: ReadonlySet<string> = new Set(EXEMPT_IDS)
 export const DISPATCHABLE_IDS = COMMAND_IDS.filter((id) => !EXEMPT_SET.has(id))
 
 // --- Shared harness --------------------------------------------------------
-/** A ctx whose dialogs callbacks are all spies. */
+/**
+ * A ctx whose dialogs callbacks are all spies. It dispatches as a palette row with nothing on
+ * screen: the palette never takes part in the cross-source dedup, and nothing is in the dialog
+ * gate's way, so every arm runs exactly as its characterization expects.
+ */
 export function makeCtx(explorer: Partial<ExplorerAPI>): CommandDispatchContext {
   return {
     getExplorer: () => explorer as ExplorerAPI,
@@ -67,6 +71,8 @@ export function makeCtx(explorer: Partial<ExplorerAPI>): CommandDispatchContext 
       showSelectionDialog: vi.fn(),
       openOnboarding: vi.fn(),
     },
+    source: 'palette',
+    getDialogsOnScreen: () => ({ dialogOpen: false, paletteOpen: false }),
   }
 }
 

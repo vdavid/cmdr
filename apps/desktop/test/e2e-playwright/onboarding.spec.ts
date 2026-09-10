@@ -102,7 +102,7 @@ test.describe('Onboarding wizard re-entry', () => {
   })
 
   // Regression anchor for the Tab lockout, and the only test that runs the real chain: the
-  // document keydown handler, `isModalDialogOpen()`, and the wizard's registration in the
+  // document keydown handler, `dialogsOnScreen()`, and the wizard's registration in the
   // frontend dialog inventory. Unregistered, Tab resolved to the Tier 1 `pane.switch`
   // binding, so the handler killed the browser's focus move, the command focused a pane
   // behind the overlay, and `focus-trap.ts`'s leak guard pulled focus back where it

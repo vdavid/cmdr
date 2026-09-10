@@ -39,7 +39,12 @@
     import { initPathLimits } from '$lib/utils/filename-validation'
     import { initShortcutDispatch, destroyShortcutDispatch } from '$lib/shortcuts/shortcut-dispatch'
     import { registerKnownDialogs } from '$lib/tauri-commands'
-    import { markDispatchSource } from './dispatch-dedup'
+    import type {
+        CommandDispatcher,
+        CommandDispatchers,
+        DialogsOnScreen,
+        DispatchSource,
+    } from './command-dispatch-context'
     import { navCommandForMouseButton } from './mouse-nav'
     import { resolveGlobalKeyAction } from './global-keydown'
     import { resolveGlobalContextMenuAction } from './global-contextmenu'
@@ -71,7 +76,6 @@
         type CommandDispatchContext,
     } from './command-dispatch'
     import { getAppLogger } from '$lib/logging/logger'
-    import { type CommandId, type CommandDispatchArgs } from '$lib/commands'
     import { initAppMode, getAppMode, decorateMainWindowTitle, type AppMode } from '$lib/app-mode'
     import {
         getCachedStatus,
@@ -164,8 +168,10 @@
     }
 
     /**
-     * Whether something on screen should suppress centralized dispatch, so a bare-key
-     * Tier 1 binding (Tab, Space, F5, Insert) stays inert behind it.
+     * What's on screen that a command could land behind, read by the dispatch core's dialog
+     * gate (`dialog-command-gate.ts`) and the keydown resolver, so a bare-key Tier 1 binding
+     * (Tab, Space, F5, Insert) and a native-menu accelerator (⌘W, ⌘K) both stay inert
+     * behind a dialog.
      *
      * The INVENTORY is `$lib/ui/open-dialogs.svelte`, exhaustive by construction because
      * every soft dialog registers from its own mount/destroy pair. ❌ Never go back to
@@ -173,18 +179,19 @@
      * dialogs the main window renders, and each miss let Tab reach `pane.switch` behind
      * the dialog, whose `preventDefault` then froze focus where it stood.
      *
-     * The two arms beside it are the things that are NOT soft dialogs and so register
-     * nowhere: the explorer's own overlays (inline rename, the volume chooser, a
-     * confirmation), and the command palette, which is its own overlay rather than a
-     * `ModalDialog` (`$lib/dialog-gallery/gallery-registry.ts` § `UNREGISTERED_OVERLAY_ENTRIES`
-     * is the standing list of those two).
+     * The other arms are the things that are NOT soft dialogs and so register nowhere: the
+     * explorer's own overlays (inline rename, the volume chooser, a confirmation), and the
+     * command palette, which is its own overlay rather than a `ModalDialog`
+     * (`$lib/dialog-gallery/gallery-registry.ts` § `UNREGISTERED_OVERLAY_ENTRIES` is the
+     * standing list of those two). The palette is reported apart because it never stands in
+     * the way of its own rows.
      *
      * No same-tick guard is needed here, unlike `$lib/file-explorer/pane/dialog-state.svelte.ts`:
-     * every caller is an event handler (keydown, mouseup, the Tauri mouse-nav event), so a
+     * every dispatch starts in an event handler (keydown, a menu event, a click), so a
      * `show* = true` set in an earlier turn has long since mounted and registered.
      */
-    function isModalDialogOpen(): boolean {
-        return showCommandPalette || isAnySoftDialogOpen() || isExplorerOverlayOpen()
+    function dialogsOnScreen(): DialogsOnScreen {
+        return { dialogOpen: isAnySoftDialogOpen() || isExplorerOverlayOpen(), paletteOpen: showCommandPalette }
     }
 
     /**
@@ -192,15 +199,12 @@
      * `global-keydown.ts`'s (pure, unit-tested); this only runs the side effects.
      */
     function handleGlobalKeyDown(e: KeyboardEvent): void {
-        const action = resolveGlobalKeyAction(e, isModalDialogOpen())
+        const action = resolveGlobalKeyAction(e, dialogsOnScreen())
         switch (action.kind) {
             case 'dispatch':
                 e.preventDefault()
                 e.stopPropagation()
-                // Tag the source so the dispatch core can swallow the spurious
-                // second half of a macOS keyboard+menu double-fire (dispatch-dedup.ts).
-                markDispatchSource('keyboard')
-                void dispatchFromUi(action.commandId)
+                void dispatchers.keyboard(action.commandId)
                 break
             case 'openDebugWindow':
                 e.preventDefault()
@@ -244,17 +248,16 @@
     /**
      * Global handler for a mouse's dedicated back / forward side buttons (issue #31):
      * dispatch `nav.back` / `nav.forward` through the same command bus as the `⌘[` /
-     * `⌘]` shortcuts. Left untagged for the cross-source dedup (a mouse button has no
-     * native-menu twin to double-fire), and gated by the same modal-open guard as the
-     * keyboard path so the buttons stay inert while a dialog or overlay is up.
+     * `⌘]` shortcuts, down the mouse's own road: the cross-source dedup leaves it alone (a
+     * mouse button has no native-menu twin to double-fire), and the dispatch core's dialog
+     * gate keeps the buttons inert while a dialog or overlay is up.
      */
     function handleGlobalMouseUp(e: MouseEvent): void {
-        if (isModalDialogOpen()) return
         const commandId = navCommandForMouseButton(e.button)
         if (!commandId) return
         e.preventDefault()
         e.stopPropagation()
-        void dispatchFromUi(commandId)
+        void dispatchers.mouse(commandId)
     }
 
     /**
@@ -542,9 +545,13 @@
         })
     }
 
-    /** Command dispatch context: wires reactive state to the extracted dispatch function */
-    const commandDispatchCtx: CommandDispatchContext = {
+    /**
+     * Command dispatch context: wires reactive state to the extracted dispatch function. Every
+     * field but `source`, which each road's dispatcher adds (`dispatchers` below).
+     */
+    const commandDispatchCtx: Omit<CommandDispatchContext, 'source'> = {
         getExplorer: () => explorerRef,
+        getDialogsOnScreen: dialogsOnScreen,
         dialogs: {
             showCommandPalette: (show: boolean) => {
                 showCommandPalette = show
@@ -575,30 +582,49 @@
 
     const dispatchLog = getAppLogger('user-action')
 
-    async function handleCommandExecute<K extends CommandId>(
-        commandId: K,
-        ...args: CommandDispatchArgs<K>
-    ): Promise<void> {
-        await dispatchCommand(commandId, commandDispatchCtx, ...args)
+    /**
+     * The strict dispatcher for one road: a handler's rejection reaches the caller. Only the
+     * MCP adapter keeps it. A few handlers reject on purpose so the adapter can report the
+     * real outcome (`pane.refresh` does when a re-read outlives its wait).
+     */
+    function strictDispatcherFor(source: DispatchSource): CommandDispatcher {
+        return async (commandId, ...args) => {
+            await dispatchCommand(commandId, { ...commandDispatchCtx, source }, ...args)
+        }
     }
 
     /**
-     * Fire a command from a user gesture (key, palette row, F-key, menu item) and
-     * absorb the rejection. A few handlers reject on purpose so the MCP adapter can
-     * report the real outcome — `pane.refresh` does when a re-read outlives its wait
-     * — and the MCP path keeps `handleCommandExecute` for exactly that. On a user
-     * gesture there's nobody to hand the rejection to: the handler has already said
-     * its piece in a toast, so the alternative is an unhandled rejection.
+     * A user gesture's dispatcher (key, palette row, F-key, menu item), which absorbs the
+     * rejection. On a user gesture there's nobody to hand it to: the handler has already
+     * said its piece in a toast, so the alternative is an unhandled rejection.
      */
-    async function dispatchFromUi<K extends CommandId>(commandId: K, ...args: CommandDispatchArgs<K>): Promise<void> {
-        try {
-            await handleCommandExecute(commandId, ...args)
-        } catch (e) {
-            dispatchLog.debug('Command {commandId} rejected on a user gesture: {reason}', {
-                commandId,
-                reason: e instanceof Error ? e.message : String(e),
-            })
+    function gestureDispatcherFor(source: DispatchSource): CommandDispatcher {
+        const dispatch = strictDispatcherFor(source)
+        return async (commandId, ...args) => {
+            try {
+                await dispatch(commandId, ...args)
+            } catch (e) {
+                dispatchLog.debug('Command {commandId} rejected on a user gesture: {reason}', {
+                    commandId,
+                    reason: e instanceof Error ? e.message : String(e),
+                })
+            }
         }
+    }
+
+    /**
+     * One dispatcher per road a command comes in by, and each caller gets only its own, so
+     * the dispatch core always knows where a command came from: the cross-source dedup and
+     * the dialog gate both read it. The `Record` type makes a new road a compile error
+     * until it's wired here.
+     */
+    const dispatchers: CommandDispatchers = {
+        keyboard: gestureDispatcherFor('keyboard'),
+        menu: gestureDispatcherFor('menu'),
+        mouse: gestureDispatcherFor('mouse'),
+        palette: gestureDispatcherFor('palette'),
+        explorer: gestureDispatcherFor('explorer'),
+        mcp: strictDispatcherFor('mcp'),
     }
 
     /**
@@ -608,16 +634,14 @@
      */
     const windowServicesCtx: WindowServicesContext = {
         getExplorer: () => explorerRef,
-        // A user gesture absorbs a rejection; the MCP adapter is the one caller that needs it (why: the interface).
-        dispatch: dispatchFromUi,
-        dispatchForMcp: handleCommandExecute,
+        // One dispatcher per road; MCP's is the one that propagates a rejection (why: the interface).
+        dispatchers,
         dialogs: {
             setAboutWindow: (show: boolean) => {
                 showAboutWindow = show
             },
         },
         maybeRunWhatsNew: (force: boolean) => maybeRunWhatsNew(startupGatesCtx, force),
-        isModalDialogOpen,
     }
 </script>
 
@@ -654,7 +678,7 @@
         {/if}
 
         {#if showCommandPalette}
-            <CommandPalette onExecute={dispatchFromUi} onClose={handleCommandPaletteClose} />
+            <CommandPalette onExecute={dispatchers.palette} onClose={handleCommandPaletteClose} />
         {/if}
 
         {#if showSearchDialog}
@@ -737,7 +761,7 @@
 
         {#if showApp}
             <div class="explorer-rail-row">
-                <DualPaneExplorer bind:this={explorerRef} onCommand={dispatchFromUi} />
+                <DualPaneExplorer bind:this={explorerRef} onCommand={dispatchers.explorer} />
                 {#if askCmdrState.open}
                     <AskCmdrRail />
                 {/if}
@@ -751,7 +775,7 @@
         {/if}
 
         {#if showApp}
-            <FunctionKeyBar visible={showFunctionKeyBar} onCommand={dispatchFromUi} />
+            <FunctionKeyBar visible={showFunctionKeyBar} onCommand={dispatchers.explorer} />
         {/if}
     </main>
 </div>

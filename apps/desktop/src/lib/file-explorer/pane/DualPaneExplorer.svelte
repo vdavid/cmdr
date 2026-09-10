@@ -823,8 +823,8 @@
      * dropdown hosts the inline favorite-rename `<input>` plus a focusable list,
      * so while it's open the app must stop firing pane/global shortcuts (⌘A,
      * ⌥←/→, ⌘[/], Backspace, etc.) that would otherwise steal keystrokes from
-     * the textbox. `+page.svelte`'s `isModalDialogOpen()` reads this through the
-     * ExplorerAPI so suppression rides the existing scope-suppression seam.
+     * the textbox. `+page.svelte`'s `dialogsOnScreen()` reads this through the
+     * ExplorerAPI, and the dispatch core's dialog gate does the suppressing.
      */
     export function isVolumeChooserOpen(): boolean {
         return (paneRefs.left?.isVolumeChooserOpen() ?? false) || (paneRefs.right?.isVolumeChooserOpen() ?? false)
