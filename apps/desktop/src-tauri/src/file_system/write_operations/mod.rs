@@ -737,10 +737,15 @@ mod journal_capture_volume_tests;
 // The source the cancel scenario holds still at a chunk boundary.
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod network_gated_source_test_support;
-// The transfer scenarios the WebDAV and SFTP suites below share, written once
-// and driven against both live servers.
+// The transfer scenarios the WebDAV, SFTP, and ADB suites below share, written
+// once and driven against every one of those backends.
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod network_transfer_test_support;
+// Real copies, a move, a delete, and a mkdir between local disk and a phone over
+// ADB, against the crate's fake server, through the app's own write operations.
+// No Docker, so these run in the unit lane.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod adb_transfer_test;
 #[cfg(test)]
 mod scan_bridge_tests;
 #[cfg(test)]

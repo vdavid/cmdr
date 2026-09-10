@@ -14,7 +14,8 @@
 //! - `host-serial:<serial>:features`: the string set by
 //!   [`FakeAdbServer::set_features`] (all four this crate reads, by default).
 //! - `sync:` with `STAT`/`STA2`/`LIST`/`LIS2`/`RECV`/`RCV2`/`SEND`/`SND2`/`QUIT`
-//!   over the [`FakeTree`].
+//!   over the [`FakeTree`]. `SEND` creates its file at open, as a device's
+//!   does, so an upload that never reaches `DONE` leaves a torn file behind.
 //! - `shell,v2,raw:<cmd>` with `mkdir [-p]`, `rmdir`, `rm [-rf]`, `mv`,
 //!   `cp [-f]`, `df -k [path]` (per [`FakeTree::mount_for`]), `readlink -f`, `test -e|-d|-f|-w` (`-w` follows
 //!   [`FakeTree::read_only`]), and `stat -c '%f %s %Y'`; anything else exits

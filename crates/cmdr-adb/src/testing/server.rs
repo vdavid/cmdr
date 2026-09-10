@@ -22,7 +22,7 @@ use crate::sync::MAX_DATA_CHUNK;
 use crate::transport::hex_message;
 
 use super::shell::{run_fake_shell, split_argv};
-use super::tree::{FakeNode, FakeTree};
+use super::tree::{DEFAULT_MTIME, FakeNode, FakeTree};
 use super::{FAKE_FEATURES, fake_device};
 
 /// The running fake. Stops on drop.
@@ -418,6 +418,15 @@ async fn serve_sync(stream: &mut TcpStream, shared: &Shared) -> std::io::Result<
                     let (p, m) = spec.rsplit_once(',').unwrap_or((&spec, "33188"));
                     (p.to_string(), m.parse().unwrap_or(0o100644))
                 };
+                // A device creates the file the moment `SEND` opens it, truncating
+                // whatever was there, so an upload that never reaches `DONE` leaves
+                // a torn file behind. Modeled, so a writer's cleanup of that file is
+                // something a cell can watch fail. An open that fails answers at
+                // `DONE`, as before.
+                let _ = shared
+                    .tree
+                    .lock_ignore_poison()
+                    .write_file(&path, Vec::new(), mode, DEFAULT_MTIME);
                 let mut data = Vec::new();
                 loop {
                     let mut id = [0u8; 4];

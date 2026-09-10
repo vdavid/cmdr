@@ -1,15 +1,16 @@
 //! The transfer scenarios both network backends owe, written once.
 //!
-//! `webdav_transfer_integration_test.rs` and `sftp_transfer_integration_test.rs`
-//! connect their own fixture and hand the live volume to a function here. The
-//! scenarios themselves are backend-blind: everything they touch is
-//! `dyn Volume`, so a claim proved against one server is proved in the same
-//! words against the other, and neither copy can drift.
+//! `webdav_transfer_integration_test.rs`, `sftp_transfer_integration_test.rs`,
+//! and `adb_transfer_test.rs` connect their own fixture and hand the live volume
+//! to a function here. The scenarios themselves are backend-blind: everything
+//! they touch is `dyn Volume`, so a claim proved against one backend is proved
+//! in the same words against the others, and no copy can drift.
 //!
-//! ❗ **The cells stay in the two backend files.** The integration lane selects
-//! the app crate's Docker cells by the `webdav_integration_` /
-//! `sftp_integration_` name prefix (`scripts/check/checks/fixture-lane-coverage.go`),
-//! so a scenario promoted into a `#[tokio::test]` here would never run.
+//! ❗ **The cells stay in the backend files.** The integration lane selects the
+//! app crate's Docker cells by the `webdav_integration_` / `sftp_integration_`
+//! name prefix (`scripts/check/checks/fixture-lane-coverage.go`), so a scenario
+//! promoted into a `#[tokio::test]` here would never run. The ADB cells need no
+//! Docker (the crate's fake server is in-process) and run in the unit lane.
 //!
 //! Every scenario checksums BOTH ends. A copy that lands a file of the right
 //! length full of the wrong bytes is a data-loss bug that an `exists()`
@@ -262,6 +263,40 @@ pub(super) async fn start_copy(
         source_paths,
         format!("{label}-dest"),
         dest,
+        dest_path,
+        config,
+        Initiator::User,
+        None,
+    )
+    .await
+    .unwrap_or_else(|e| panic!("{label}: the copy must START; it was refused with {e:?}"));
+
+    RunningCopy {
+        events: collector,
+        operation_id: started.operation_id,
+        label: label.to_string(),
+    }
+}
+
+/// Starts one copy from two registered volume ids through `start_volume_copy`:
+/// the registry resolves both ends and anchors `dest_path`, the way the
+/// transfer dialog's copy starts.
+pub(super) async fn start_copy_by_id(
+    label: &str,
+    source_volume_id: String,
+    source_paths: Vec<PathBuf>,
+    dest_volume_id: String,
+    dest_path: String,
+    config: VolumeCopyConfig,
+) -> RunningCopy {
+    let collector = Arc::new(CollectorEventSink::new());
+    let events: Arc<dyn OperationEventSink> = collector.clone();
+
+    let started = super::start_volume_copy(
+        events,
+        source_volume_id,
+        source_paths,
+        dest_volume_id,
         dest_path,
         config,
         Initiator::User,
