@@ -1025,6 +1025,16 @@ export const commands = {
     typedError<ScanConflict[], VolumeScanError>(
       __TAURI_INVOKE('scan_volume_for_conflicts', { volumeId, sourceItems, destPath, sourceVolumeId, sourcePaths }),
     ),
+  /**
+   *  Whether the transfer dialog's destination folder takes writes, for the notice
+   *  under its path box. Resolved and anchored the way the copy op does it
+   *  (`resolve_dest_path` expands a local `~`), and bounded: a volume that isn't
+   *  registered (a phone nobody dialed) or doesn't answer in 2 s is `Unknown`, which
+   *  shows nothing. ❌ Never a refusal of its own: the transfer asks again before it
+   *  writes, and that answer is the one that refuses.
+   */
+  destinationWriteAccess: (destVolumeId: string, destPath: string) =>
+    __TAURI_INVOKE<WriteAccess>('destination_write_access', { destVolumeId, destPath }),
   // Returns total file/dir counts and sizes, plus selection stats if `selected_indices` is given.
   getListingStats: (listingId: string, includeHidden: boolean, selectedIndices: number[] | null) =>
     typedError<ListingStats, string>(
@@ -1183,6 +1193,12 @@ export const commands = {
    *  free the session when the user closes the window via the titlebar X (a path
    *  that never fires the FE `viewer_close` IPC). Pass an empty string when there's
    *  no owning window (no mapping is recorded).
+   *
+   *  An open that pulls the file into a temp first (a `.zip` entry, a `.git` blob, a
+   *  file on a phone or server) reports `viewer-pull-progress` to that window and has no
+   *  total deadline, only the stall rule (`PULL_STALL_LIMIT`). Any other open keeps the
+   *  strict 2 s read tier. Errors stay the typed `ViewerError`, so the FE words each
+   *  variant (`TooLargeToPreview`, `Archive`, `StoppedResponding`, `TimedOut`).
    */
   viewerOpen: (path: string, volumeId: string, windowLabel: string) =>
     typedError<ViewerOpenResult, ViewerError>(__TAURI_INVOKE('viewer_open', { path, volumeId, windowLabel })),
@@ -4599,6 +4615,7 @@ export const events = {
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
   tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
   viewModeChanged: makeEvent<ViewModeChanged>('view-mode-changed'),
+  viewerPullProgress: makeEvent<ViewerPullProgress>('viewer-pull-progress'),
   viewerWordWrapToggled: makeEvent<ViewerWordWrapToggled>('viewer-word-wrap-toggled'),
   volumeConnectionChanged: makeEvent<VolumeConnectionChanged>('volume-connection-changed'),
   volumeContextAction: makeEvent<VolumeContextAction>('volume-context-action'),
@@ -8359,6 +8376,12 @@ export type ListingErrorReason =
       // The path the failure was about.
       path: string
     }
+  // `VolumeError::NotConnected`: the device or server is listed, but nothing has connected to it yet.
+  | {
+      reason: 'notConnected'
+      // The path the failure was about.
+      path: string
+    }
   // The volume or device is read-only.
   | { reason: 'readOnly' }
   // The device is out of storage.
@@ -11530,6 +11553,13 @@ export type SearchProgressEvent = {
   runId: string
   phase: SearchPhase
   /**
+   *  The ONE volume every row here lives on, as routing resolved it. Carried
+   *  WITH the rows so a caller acting on one (F3, a copy, a drag) never has to
+   *  wait for the start reply or the terminal event to know where it is, and
+   *  never re-derives it from a path.
+   */
+  targetVolumeId: string
+  /**
    *  Rows found since the last event, in arrival order. Empty on a
    *  progress-only event (a walk grinding through folders that match nothing,
    *  or a count-only search).
@@ -11696,6 +11726,14 @@ export type SearchRunCoverage = {
    *  signal; ❌ never worded as "that folder doesn't exist".
    */
   unresolvedScopes: string[]
+  /**
+   *  Scope paths on a volume no drive index can serve (an SFTP or WebDAV
+   *  server), so this run neither read an index for them nor walked them. The
+   *  live twin of `SearchResult::uncovered_scopes`, and the only thing on the
+   *  wire that says why a server pane's search came back empty. ❌ Never
+   *  "fixed" by walking: a walk stands an index up for the volume it walks.
+   */
+  uncoveredScopes?: string[]
   /**
    *  Whether ground was given up on: a directory that stopped responding, one
    *  that failed with an errno the walk can't act on, or a subtree pruned by the
@@ -13273,6 +13311,24 @@ export type UndoReport = {
   skipped: number
 }
 
+/**
+ *  Why a folder takes no writes ([`WriteAccess::Unwritable`]).
+ *
+ *  Read-only and no-permission are different truths with different fixes, so a
+ *  backend that can tell them apart says which. ❌ Never pick one when the backend
+ *  can't tell: that's [`Unexplained`](Self::Unexplained).
+ */
+export type UnwritableReason =
+  // The filesystem holding the folder is mounted read-only, so nobody can write there.
+  | 'readOnlyFilesystem'
+  // The filesystem takes writes, but this user may not write into the folder.
+  | 'noPermission'
+  /**
+   *  This user can't write here, and the backend can't tell whether the
+   *  filesystem or a permission is the reason.
+   */
+  | 'unexplained'
+
 // Update metadata returned to the frontend when a newer version is available.
 export type UpdateInfo = {
   version: string
@@ -13409,13 +13465,19 @@ export type ViewerError =
    */
   | { kind: 'timedOut' }
   /**
+   *  A pull into the preview temp got no bytes for the stall limit: the phone or
+   *  server went quiet. The frontend offers Retry; the pull stops at its next chunk
+   *  boundary and removes its temp. See `file_viewer::pending_open`.
+   */
+  | { kind: 'stoppedResponding' }
+  /**
    *  Previewing a file the viewer has to pull into a temp first (an archive entry,
    *  a file in a repo's `.git` snapshot, a file on a phone or server) would
    *  materialize more than the preview cap. Refused before any extraction (the
    *  zip-bomb guard for preview); `size` is the file's reported size, `cap` the
-   *  limit. See `file_viewer::routed_extract`.
+   *  limit. See `file_viewer::materialize`.
    */
-  | { kind: 'extractTooLarge'; size: number; cap: number }
+  | { kind: 'tooLargeToPreview'; size: number; cap: number }
   /**
    *  Saving a selection to a destination a ROUTE serves isn't supported: inside a
    *  `.zip`, or inside a repo's virtual `.git` trees. Neither has a directory on
@@ -13461,6 +13523,16 @@ export type ViewerOpenResult = {
    *  SVG, PDFs, text, or on any read error).
    */
   mediaDimensions: MediaDimensions | null
+}
+
+/**
+ *  `viewer-pull-progress`: how much of the file a viewer has pulled so far. Emitted to
+ *  the viewer window that asked for the file, while its open pulls.
+ */
+export type ViewerPullProgress = {
+  bytesDone: number
+  // `None` when the source didn't say how big the file is.
+  bytesTotal: number | null
 }
 
 // Current status of a viewer session.
@@ -13655,6 +13727,12 @@ export type VolumeCopyScanResult = {
    *  `None` is "can't tell", ❌ never "no room" — a preview must still open.
    */
   destSpace: SpaceInfo | null
+  /**
+   *  Whether the destination folder takes writes, asked BEFORE its space. An
+   *  unwritable one is reported here rather than as a space shortfall, so a
+   *  read-only place never reads as a full one.
+   */
+  destWriteAccess: WriteAccess
   conflicts: ScanConflict[]
 }
 
@@ -13686,6 +13764,16 @@ export type VolumeError =
   | { type: 'notSupported' }
   // Device went away mid-operation.
   | { type: 'deviceDisconnected'; data: string }
+  /**
+   *  The device or server is listed, but nothing has connected to it yet, so
+   *  no volume answers for it. Carries the path.
+   *
+   *  ❌ Never `DeviceDisconnected`, which tells the user a session dropped
+   *  mid-operation, and ❌ never `NotFound`, which the frontend reads as "this
+   *  folder was deleted" and walks the pane off the device. Opening it in a
+   *  pane is what connects it.
+   */
+  | { type: 'notConnected'; data: string }
   /**
    *  The device's session died mid-operation but the device itself is still
    *  attached, and a reopen is already running in the background (MTP: a PTP
@@ -13876,6 +13964,14 @@ export type VolumeIndexStatus = {
    *  a first sweep has been recorded.
    */
   nextSweepDueAt: number | null
+  /**
+   *  Whether a live watch reports this volume's changes to the index while it's
+   *  connected (`IndexVolumeKind::has_live_watch`). `false` only for a phone over
+   *  ADB, whose index is Stale from the moment a walk ends even while it's
+   *  plugged in, so the stale copy there can't blame a disconnect. `true` for a
+   *  volume with no registered index, where "stale" means what it always has.
+   */
+  liveWatch: boolean
 }
 
 /**
@@ -13906,6 +14002,24 @@ export type VolumeScanError =
   | {
       type: 'destinationVolumeNotFound'
       // The id that no longer resolves.
+      volumeId: string
+    }
+  /**
+   *  The source is a listed phone or a saved server that nothing has
+   *  connected yet (`crate::unregistered_volumes`).
+   */
+  | {
+      type: 'sourceVolumeNotConnected'
+      // The id nothing has connected.
+      volumeId: string
+    }
+  /**
+   *  The destination is a listed phone or a saved server that nothing has
+   *  connected yet.
+   */
+  | {
+      type: 'destinationVolumeNotConnected'
+      // The id nothing has connected.
       volumeId: string
     }
   // The volume refused, and said why in its own vocabulary.
@@ -14157,6 +14271,27 @@ export type WhatsNewSection = {
   entries: string[]
 }
 
+/**
+ *  Whether a write into a folder would be taken, as far as the backend can tell
+ *  without writing anything ([`Volume::write_access_at`](super::Volume::write_access_at)).
+ *
+ *  Three answers, because "can't tell" is its own truth: a backend with no way to
+ *  ask answers [`Unknown`](Self::Unknown), ❌ never a guess in either direction.
+ *  The transfer pre-flight asks this BEFORE it measures space, so a folder nothing
+ *  can be written to never reads as a full one.
+ */
+export type WriteAccess =
+  // This user can write here.
+  | { kind: 'writable' }
+  // Nothing this user sends can land here.
+  | {
+      kind: 'unwritable'
+      // Why, as far as the backend can tell.
+      reason: UnwritableReason
+    }
+  // The backend has no way to tell without writing.
+  | { kind: 'unknown' }
+
 // Cancelled event payload.
 export type WriteCancelledEvent = {
   operationId: string
@@ -14326,6 +14461,24 @@ export type WriteOperationError =
    *  passes to `map_volume_error`, never guessed from the path.
    */
   | { type: 'destination_not_found'; path: string }
+  /**
+   *  The volume holding the sources is a phone its provider lists, or a saved
+   *  server, that nothing has connected yet, so no volume answers for it.
+   *  Refused before anything is read. `path` is the first source as the
+   *  caller sent it.
+   *
+   *  ❌ Never `DeviceDisconnected`, which tells the user a session dropped
+   *  mid-operation, and ❌ never a "volume not found", which reads as a place
+   *  that's gone. Opening it in a pane is what connects it.
+   */
+  | { type: 'source_not_connected'; path: string }
+  /**
+   *  The destination is a phone its provider lists, or a saved server, that
+   *  nothing has connected yet. Refused before anything is written. Same
+   *  wording rules as `SourceNotConnected`; the two stay separate for the same
+   *  reason `SourceNotFound` and `DestinationNotFound` do.
+   */
+  | { type: 'destination_not_connected'; path: string }
   // Overwrite not enabled.
   | { type: 'destination_exists'; path: string }
   | { type: 'permission_denied'; path: string; message: string }
@@ -14354,6 +14507,16 @@ export type WriteOperationError =
    *  them to fix the half that was fine.
    */
   | { type: 'read_only_device'; path: string; deviceName: string | null; side: ReadOnlySide }
+  /**
+   *  The destination folder takes no writes, found out BEFORE anything was
+   *  created or measured (`Volume::write_access_at`).
+   *
+   *  ❗ About the FOLDER, never the device: a phone's `/` refuses writes while
+   *  its shared storage takes them, so "the phone is read-only" would be a lie.
+   *  `reason` carries only what the backend can tell apart; a backend that
+   *  can't tell read-only from no permission says `Unexplained`.
+   */
+  | { type: 'destination_not_writable'; path: string; reason: UnwritableReason }
   // File is locked (macOS immutable flag, "Operation not permitted" on delete).
   | { type: 'file_locked'; path: string }
   // Volume doesn't support trash (network mounts, FAT, etc.).
