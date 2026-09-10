@@ -60,8 +60,7 @@ func TestAnalyzeOpacity_PlainTextReported(t *testing.T) {
 // checker's text-contrast scope doesn't apply to them.
 func TestAnalyzeOpacity_DecorativeExempt(t *testing.T) {
 	cases := []Rule{
-		{File: "apps/desktop/src/app-file-list.css", Line: 29, Selector: ".file-entry .restricted-indicator", Classes: []string{"restricted-indicator"}, Opacity: 0.7, HasOpacity: true},
-		{File: "apps/desktop/src/lib/file-explorer/navigation/VolumeBreadcrumb.svelte", Line: 1369, Selector: ".restricted-indicator", Classes: []string{"restricted-indicator"}, Opacity: 0.6, HasOpacity: true},
+		{File: "apps/desktop/src/lib/ui/StatusGlyph.svelte", Line: 45, Selector: ".status-glyph", Classes: []string{"status-glyph"}, Opacity: 0.7, HasOpacity: true},
 		{File: "apps/desktop/src/lib/ask-cmdr/AskCmdrCostFooter.svelte", Line: 100, Selector: ".dot", Classes: []string{"dot"}, Opacity: 0.6, HasOpacity: true},
 		// The hidden-entry icon dim: a raster OS icon plus badge glyphs, with the
 		// row's own name carrying the meaning. It is the one allowlisted entry

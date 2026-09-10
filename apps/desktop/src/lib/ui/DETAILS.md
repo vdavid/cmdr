@@ -488,18 +488,23 @@ Decisions, and what each settled:
 
 - **Exposed to AT (`role="img"` + `aria-label`), ❌ not `aria-hidden`.** Three of the four markers were `aria-hidden`,
   which threw the information away twice over: the glyph vanished, and so did the tooltip, since `use:tooltip` wires
-  `aria-describedby` and an `aria-hidden` element carries none. "This folder is restricted" is real information. Gotcha:
-  the label is currently the whole tooltip sentence, so a restricted row's accessible name grows by an instruction
-  paragraph. A short `fileExplorer.restrictedFolder.label` would fix that, and needs David to write it.
+  `aria-describedby` and an `aria-hidden` element carries none. "This folder is restricted" is real information.
 - **Size is fixed at 12px, ❌ not a prop.** All four sites are the app's small-text surfaces. Making it settable is how
   the eight info glyphs in the tree reached four different sizes.
 - **It inherits the row's color at `opacity: 0.7`**, replacing 0.7 / 0.6 / an explicit `--color-text-tertiary` across
   the four. Inheriting is what makes it brighten along with a selected or cursor row instead of sitting as a fixed gray
   on a highlight. Gotcha: `pnpm check a11y-contrast` can't fold `opacity` into a computed color, so it reads the glyph
   at full strength and would not warn if the dimming ever took it under the non-text floor.
-- **`showTooltip={false}` for the breadcrumb alone.** Its whole volume row already carries the same string, and the row
-  is the honest target there: the italic dimmed label needs the explanation as much as the glyph does. The accessible
-  name stays either way, so that site is no longer the odd one out.
+- **`label` names the condition, `tooltip` explains it**, and `tooltip` defaults to `label` for the markers where those
+  are the same short sentence. The split exists because the name is read out on EVERY row carrying the marker: the
+  restricted glyph names `fileExplorer.restrictedFolder.label` ("Restricted folder") and parks the
+  grant-Full-Disk-Access instruction in the tooltip, because a file list whose every restricted row read out that
+  paragraph was miserable to arrow through. The status bar's symlink hint is the opposite case and keeps its whole
+  sentence as the name: it appears once, and a screen-reader user never hovers, so a tooltip alone would never reach
+  them.
+- **`tooltip={null}` for the breadcrumb alone.** Its whole volume row already carries the same string, and the row is
+  the honest target there: the italic dimmed label needs the explanation as much as the glyph does. The accessible name
+  stays either way, so that site is no longer the odd one out.
 
 The tooltip's detached-trigger guards are what make this safe in a virtual list at all; see the Tooltip section above.
 

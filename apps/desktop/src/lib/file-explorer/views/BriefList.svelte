@@ -59,6 +59,9 @@
     import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
 
     const RESTRICTED_FOLDER_TOOLTIP = $derived(restrictedFolderTooltip())
+    /* Short, because a screen reader reads it on every restricted row; the instruction above
+       is the hover tooltip on the same glyph. */
+    const RESTRICTED_FOLDER_LABEL = $derived(tString('fileExplorer.restrictedFolder.label'))
     import { iconCacheCleared } from '$lib/icon-cache'
     import { escapeHtml, tooltip } from '$lib/tooltip/tooltip'
     import type { RenameState, RenameSessionId } from '../rename/rename-state.svelte'
@@ -961,7 +964,8 @@
                                         use:tooltip={buildNameTooltip(file)}
                                         >{file.name}{#if fileIsRestricted}<StatusGlyph
                                                 name="info"
-                                                label={RESTRICTED_FOLDER_TOOLTIP}
+                                                label={RESTRICTED_FOLDER_LABEL}
+                                                tooltip={RESTRICTED_FOLDER_TOOLTIP}
                                             />{/if}</span>
                                     {#if showTags}<TagDots tags={file.tags} />{/if}
                                 {/if}

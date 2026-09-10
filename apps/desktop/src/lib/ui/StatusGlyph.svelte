@@ -9,9 +9,16 @@
      * row would wreck the keyboard model of a file list with 10,000 entries. If the glyph
      * should be reachable and openable, you want `InfoTip`.
      *
-     * `label` is what it means. It becomes the accessible name (the glyph carries no text)
-     * and, unless `showTooltip` is off, the hover explanation too: a marker's meaning and
-     * its explanation are the same sentence.
+     * `label` is what the marker MEANS, in a couple of words, and becomes its accessible
+     * name. `tooltip` is the longer explanation on hover, and defaults to `label` for the
+     * markers whose meaning and explanation are the same short sentence.
+     *
+     * ❌ Where the marker REPEATS (a file row, a breadcrumb entry), keep `label` to a couple
+     * of words and park the detail in `tooltip`: the name is read out on every row carrying
+     * it, and the full "grant Full Disk Access in System Settings → …" instruction made a
+     * file list miserable to arrow through with VoiceOver. A one-off marker (the status
+     * bar's symlink hint) is the opposite case and keeps its whole sentence as the name: a
+     * screen-reader user never hovers, so `tooltip` alone would never reach them.
      */
     import Icon from './Icon.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -20,24 +27,28 @@
     interface Props {
         /** Which glyph. Registered in `icons/icon-map.ts`, like every other glyph. */
         name: IconName
-        /** What the condition is, in one sentence. Required: the glyph carries no text. */
+        /** What the condition is, in a couple of words. Required: the glyph carries no text. */
         label: string
         /**
-         * Off when something around the marker ALREADY carries the same tooltip, so the two
-         * don't stack. The breadcrumb's whole volume row does, and the row is the honest
-         * target there: the italic dimmed label needs the explanation as much as the glyph.
-         * The accessible name stays either way.
+         * The hover explanation, when it's longer than the name. Defaults to `label`.
+         *
+         * `null` turns the tooltip off, for a marker whose surroundings ALREADY carry the
+         * same one, so the two don't stack. The breadcrumb's whole volume row does, and the
+         * row is the honest target there: the italic dimmed label needs the explanation as
+         * much as the glyph. The accessible name stays either way.
          */
-        showTooltip?: boolean
+        tooltip?: string | null
     }
 
-    const { name, label, showTooltip = true }: Props = $props()
+    const { name, label, tooltip: tooltipText }: Props = $props()
+
+    const hoverText = $derived(tooltipText === undefined ? label : (tooltipText ?? ''))
 </script>
 
 <!-- Size is fixed, ❌ not a prop: these markers sit in the app's small-text surfaces (file
      rows, the status bar, the breadcrumb), and four sites drifting to four sizes is what the
      component exists to stop. A surface that needs another size changes it here, on purpose. -->
-<span class="status-glyph" role="img" aria-label={label} use:tooltip={showTooltip ? label : ''}>
+<span class="status-glyph" role="img" aria-label={label} use:tooltip={hoverText}>
     <Icon {name} size={12} />
 </span>
 

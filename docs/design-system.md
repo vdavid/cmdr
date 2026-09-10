@@ -827,8 +827,13 @@ the label's line. Details and the geometry it assumes: `apps/desktop/src/lib/ui/
 ### Status glyph (app)
 
 `StatusGlyph.svelte` is the non-interactive twin: a 12px glyph in a `<span>` that marks a condition on the thing beside
-it, carrying that condition's sentence as both its accessible name and its tooltip. The restricted-folder ⓘ in a file
-row, in the volume breadcrumb, and the symlink ⓘ in the status bar are the four callers.
+it. `label` names that condition and becomes the accessible name, `tooltip` explains it on hover and defaults to
+`label`. The restricted-folder ⓘ in a file row, in the volume breadcrumb, and the symlink ⓘ in the status bar are the
+four callers.
+
+Where the marker repeats, keep `label` to a couple of words: a screen reader reads it on every row that carries one, so
+the restricted glyph is named "Restricted folder" and the grant-Full-Disk-Access instruction stays in the tooltip. A
+one-off marker keeps its whole sentence as the name instead, since nobody hovers with a screen reader.
 
 It inherits the row's color at 70% opacity, so it brightens along with a selected or cursor row instead of sitting as a
 fixed gray on a highlight. Size is fixed, ❌ not a prop: these are the app's small-text surfaces, and four sites

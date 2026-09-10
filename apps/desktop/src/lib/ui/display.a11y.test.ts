@@ -235,19 +235,29 @@ describe('InfoTip a11y', () => {
 describe('StatusGlyph a11y', () => {
   it('with a tooltip has no a11y violations', async () => {
     const target = container()
-    mount(StatusGlyph, { target, props: { name: 'info', label: 'Access to this folder is limited.' } })
+    mount(StatusGlyph, { target, props: { name: 'info', label: 'Restricted folder' } })
     await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('keeps the SHORT label as its accessible name when the tooltip is a paragraph', async () => {
+    // The name is read out on every row carrying the marker, so it must not grow into the
+    // instruction the tooltip holds.
+    const target = container()
+    mount(StatusGlyph, {
+      target,
+      props: { name: 'info', label: 'Restricted folder', tooltip: 'Access to this folder is limited. Grant Cmdr…' },
+    })
+    await tick()
+    expect(target.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('Restricted folder')
     await expectNoA11yViolations(target)
   })
 
   it('without a tooltip keeps its accessible name', async () => {
     const target = container()
-    mount(StatusGlyph, {
-      target,
-      props: { name: 'info', label: 'Access to this folder is limited.', showTooltip: false },
-    })
+    mount(StatusGlyph, { target, props: { name: 'info', label: 'Restricted folder', tooltip: null } })
     await tick()
-    expect(target.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('Access to this folder is limited.')
+    expect(target.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('Restricted folder')
     await expectNoA11yViolations(target)
   })
 })

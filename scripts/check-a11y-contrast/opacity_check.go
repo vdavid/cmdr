@@ -71,8 +71,7 @@ type opacityDecorativeEntry struct {
 }
 
 var opacityDecorativeAllowlist = []opacityDecorativeEntry{
-	{"app-file-list.css", ".file-entry .restricted-indicator", "wraps an <Icon>, aria-hidden"},
-	{"VolumeBreadcrumb.svelte", ".restricted-indicator", "wraps an <Icon>, aria-hidden"},
+	{"StatusGlyph.svelte", ".status-glyph", "wraps an <Icon>, renders no text glyph"},
 	{"VolumeBreadcrumb.svelte", ".read-only-indicator", `wraps <Icon name="lock">`},
 	{"VolumeBreadcrumb.svelte", ".smb-indicator", "empty span, pure CSS-colored status dot"},
 	{"VolumeBreadcrumb.svelte", ".smb-indicator-saved", "empty span, pure CSS-colored dot outline"},

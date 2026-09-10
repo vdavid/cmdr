@@ -49,6 +49,9 @@
 
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
     const RESTRICTED_FOLDER_TOOLTIP = $derived(restrictedFolderTooltip())
+    /* Short, because a screen reader reads it on every restricted volume; the instruction
+       above is the tooltip the whole volume row carries. */
+    const RESTRICTED_FOLDER_LABEL = $derived(tString('fileExplorer.restrictedFolder.label'))
     import {
         getVolumes,
         getVolumesTimedOut,
@@ -930,7 +933,7 @@
                             <!-- No tooltip of its own: the whole row already carries this
                                  same string, and the row is the honest target (the italic
                                  dimmed label needs the explanation as much as the glyph). -->
-                            <StatusGlyph name="info" label={RESTRICTED_FOLDER_TOOLTIP} showTooltip={false} />
+                            <StatusGlyph name="info" label={RESTRICTED_FOLDER_LABEL} tooltip={null} />
                         {/if}
                         {#if volume.mountIsReadOnly}
                             <span class="read-only-indicator" use:tooltip={tString('fileExplorer.navigation.readOnlyTooltip')}><Icon name="lock" size={14} aria-hidden="true" /></span>

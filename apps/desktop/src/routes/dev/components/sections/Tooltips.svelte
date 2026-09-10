@@ -57,7 +57,7 @@
             <p class="caption">StatusGlyph</p>
             <span class="anchor">
                 Restricted folder
-                <StatusGlyph name="info" label="Access to this folder is limited." />
+                <StatusGlyph name="info" label="Restricted folder" tooltip="Access to this folder is limited." />
             </span>
         </div>
 
@@ -65,7 +65,7 @@
             <p class="caption">StatusGlyph, no tooltip</p>
             <span class="anchor" use:tooltip={'Access to this folder is limited.'}>
                 Whole row explains it
-                <StatusGlyph name="info" label="Access to this folder is limited." showTooltip={false} />
+                <StatusGlyph name="info" label="Restricted folder" tooltip={null} />
             </span>
         </div>
     </div>

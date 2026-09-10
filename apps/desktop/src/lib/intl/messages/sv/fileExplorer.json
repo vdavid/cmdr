@@ -51,6 +51,10 @@
   "@fileExplorer.restrictedFolder.tooltip": {
     "sourceHash": "27b86a9"
   },
+  "fileExplorer.restrictedFolder.label": "Begränsad mapp",
+  "@fileExplorer.restrictedFolder.label": {
+    "sourceHash": "bbcf72f"
+  },
   "fileExplorer.diskSpace.free": "{freeText} ledigt av {totalText} ({percentText} %)",
   "@fileExplorer.diskSpace.free": {
     "sourceHash": "97781f4"

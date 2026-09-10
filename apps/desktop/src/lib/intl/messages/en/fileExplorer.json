@@ -66,6 +66,10 @@
       "filesAndFolders": "the localized OS name of the Files & Folders permission (comes from the OS; do not translate)"
     }
   },
+  "fileExplorer.restrictedFolder.label": "Restricted folder",
+  "@fileExplorer.restrictedFolder.label": {
+    "description": "Accessible name for the small info glyph marking a folder macOS won't let Cmdr read fully (a TCC-protected one like Desktop or Documents). A screen reader reads it on every restricted row in the file list and on the breadcrumb, so keep it to a couple of words; the full instruction is the separate tooltip on the same glyph. Reads as a noun phrase naming the condition, not a sentence."
+  },
   "fileExplorer.diskSpace.free": "{freeText} of {totalText} free ({percentText}%)",
   "@fileExplorer.diskSpace.free": {
     "description": "How much room is left on the drive the pane is showing. Appears in the status bar under a pane and as the first line of the disk-usage bar's hover tooltip. Reads as a statement of fact, not an instruction: of a 926 GB drive, 91 GB are still free, which is 10% of it. Both sizes arrive already formatted with the user's unit choice (GB/GiB) and the OS's decimal separator, so don't add units. The percent sign is separate from {percentText}: put a space before it, drop it, or move it in front of the number as your language writes percentages.",

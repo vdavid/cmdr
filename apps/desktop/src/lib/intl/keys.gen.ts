@@ -1395,6 +1395,7 @@ export type MessageKey =
   | 'fileExplorer.renameConflict.size'
   | 'fileExplorer.renameConflict.title'
   | 'fileExplorer.renameConflict.yours'
+  | 'fileExplorer.restrictedFolder.label'
   | 'fileExplorer.restrictedFolder.tooltip'
   | 'fileExplorer.searchResults.unavailableBody'
   | 'fileExplorer.searchResults.unavailableTitle'

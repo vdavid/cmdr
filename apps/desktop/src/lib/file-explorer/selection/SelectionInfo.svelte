@@ -330,6 +330,8 @@
                 {#if showSelectionStale}
                     <span
                         class="stale-indicator stale-icon"
+                        role="img"
+                        aria-label={tString('fileExplorer.selectionInfo.sizeUpdatingAriaLabel')}
                         use:tooltip={tString('fileExplorer.selectionInfo.indexUpdatingTooltip')}
                         ><Icon name="hourglass" size={12} /></span
                     >
@@ -348,6 +350,8 @@
                 {#if showSelectionStale}
                     <span
                         class="stale-indicator stale-icon"
+                        role="img"
+                        aria-label={tString('fileExplorer.selectionInfo.sizeUpdatingAriaLabel')}
                         use:tooltip={tString('fileExplorer.selectionInfo.indexUpdatingTooltip')}
                         ><Icon name="hourglass" size={12} /></span
                     >

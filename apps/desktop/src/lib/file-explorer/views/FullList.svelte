@@ -28,6 +28,9 @@
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
     const RESTRICTED_FOLDER_TOOLTIP = $derived(restrictedFolderTooltip())
+    /* Short, because a screen reader reads it on every restricted row; the instruction above
+       is the hover tooltip on the same glyph. */
+    const RESTRICTED_FOLDER_LABEL = $derived(tString('fileExplorer.restrictedFolder.label'))
     import {
         getVisibleItemsCount as getVisibleItemsCountUtil,
         getVirtualizationBufferRows,
@@ -757,7 +760,8 @@
                                     }}
                                 ></span>{#if fileIsRestricted}<StatusGlyph
                                     name="info"
-                                    label={RESTRICTED_FOLDER_TOOLTIP}
+                                    label={RESTRICTED_FOLDER_LABEL}
+                                    tooltip={RESTRICTED_FOLDER_TOOLTIP}
                                 />{/if}{#if showTags}<TagDots tags={file.tags} />{/if}</span>
                             {#if gitColumnVisible}
                                 {@const status = gitColumn.statusFor(file)}
