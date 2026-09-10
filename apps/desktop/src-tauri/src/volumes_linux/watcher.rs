@@ -345,6 +345,9 @@ fn unregister_volume_from_manager(volume_path: &str) {
     match manager.remove_root(Path::new(volume_path)) {
         RootRemoval::Unregistered { id, volume } => {
             volume.on_unmount();
+            // The frontend retires a slow-connection notice about this share now, so
+            // its server's next genuine fallback has to be news again.
+            crate::network::os_mount_notice::forget_unmounted_volume(&id);
             debug!("Unregistered volume: {} ({})", id, volume_path);
         }
         RootRemoval::Promoted { id, new_root } => {

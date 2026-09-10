@@ -50,6 +50,15 @@ fn emit_fell_back_to_os_mount(volume_id: &str, share: &str) {
     }
 }
 
+/// A server the user was told is on the slow path, and the share the notice named.
+struct Told {
+    server: String,
+    /// The volume id of the share the notice named. The frontend retires that
+    /// notice once this volume leaves the list, and that's when the server stops
+    /// counting as told.
+    volume_id: String,
+}
+
 /// The servers the user has already been told are on the slow path this run.
 ///
 /// A `Vec` rather than a `HashSet` because membership is an identity question,
@@ -59,23 +68,32 @@ fn emit_fell_back_to_os_mount(volume_id: &str, share: &str) {
 /// server that ever fell back in a session, so the scan is over a handful.
 #[derive(Default)]
 struct OsMountNotices {
-    told: Vec<String>,
+    told: Vec<Told>,
 }
 
 impl OsMountNotices {
-    /// Records `server` as told, returning `true` only the first time. The caller
-    /// speaks on `true` and stays quiet on `false`.
-    fn claim(&mut self, server: &str, hosts: &[NetworkHost]) -> bool {
-        if self.told.iter().any(|told| same_server(told, server, hosts)) {
+    /// Records `server` as told by a notice naming `volume_id`, returning `true`
+    /// only the first time. The caller speaks on `true` and stays quiet on `false`.
+    fn claim(&mut self, server: &str, volume_id: &str, hosts: &[NetworkHost]) -> bool {
+        if self.told.iter().any(|told| same_server(&told.server, server, hosts)) {
             return false;
         }
-        self.told.push(server.to_string());
+        self.told.push(Told {
+            server: server.to_string(),
+            volume_id: volume_id.to_string(),
+        });
         true
     }
 
     /// Forgets `server`, so a later fallback on it earns a fresh notice.
     fn forget(&mut self, server: &str, hosts: &[NetworkHost]) {
-        self.told.retain(|told| !same_server(told, server, hosts));
+        self.told.retain(|told| !same_server(&told.server, server, hosts));
+    }
+
+    /// Forgets the server whose notice named `volume_id`. Another of that server's
+    /// shares going away changes nothing: the notice on screen is about this one.
+    fn forget_volume(&mut self, volume_id: &str) {
+        self.told.retain(|told| told.volume_id != volume_id);
     }
 }
 
@@ -89,7 +107,7 @@ static OS_MOUNT_NOTICES: LazyLock<Mutex<OsMountNotices>> = LazyLock::new(Mutex::
 /// say the same thing twice.
 pub(crate) fn announce_os_mount_fallback(server: &str, volume_id: &str, share: &str) {
     let hosts = crate::network::get_discovered_hosts();
-    if !OS_MOUNT_NOTICES.lock_ignore_poison().claim(server, &hosts) {
+    if !OS_MOUNT_NOTICES.lock_ignore_poison().claim(server, volume_id, &hosts) {
         return;
     }
     log::debug!("Telling the frontend about the kernel-mount fallback on {server}/{share}");
@@ -103,6 +121,16 @@ pub(crate) fn announce_os_mount_fallback(server: &str, volume_id: &str, share: &
 pub(crate) fn clear_os_mount_notice(server: &str) {
     let hosts = crate::network::get_discovered_hosts();
     OS_MOUNT_NOTICES.lock_ignore_poison().forget(server, &hosts);
+}
+
+/// Forgets the server whose notice named `volume_id`, once that volume's last
+/// mount is gone.
+///
+/// The frontend retires a notice once its share leaves the volume list. A server
+/// still counted as told would then stay silent through a genuine fallback after
+/// a remount, for the rest of the run, with no notice on screen to account for it.
+pub(crate) fn forget_unmounted_volume(volume_id: &str) {
+    OS_MOUNT_NOTICES.lock_ignore_poison().forget_volume(volume_id);
 }
 
 #[cfg(test)]

@@ -503,6 +503,12 @@ manual install paths). A notice describes a situation, not an event: once the se
 genuine regression is worth saying out loud again. Without the clear, one bad startup would mute the notice for the
 rest of the run.
 
+**So does the unmount of the share the notice named** (`forget_unmounted_volume`, called from both mount watchers when
+a volume's last root goes). The frontend retires a notice once its share leaves the volume list, so a server still
+counted as told would stay silent through a genuine fallback after a remount, with no notice on screen to account for
+the silence. The ledger remembers which volume each server's notice named, and only that volume's departure counts:
+another of the server's shares unmounting leaves the notice up, so the server stays told.
+
 ## Connect directly answers a gone volume
 
 `smb_connect_directly.rs` is the upgrade someone ASKED for: the three `upgrade_to_smb_volume*` commands (which kick

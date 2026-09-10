@@ -194,6 +194,9 @@ pub(crate) fn handle_volume_unmounted(volume_path: &str) {
             // SMB/MTP tear their indexes down through their own paths, so this acts
             // only for a `LocalExternal`.
             stop_local_external_index_off_main(id.clone());
+            // The frontend retires a slow-connection notice about this share now, so
+            // its server's next genuine fallback has to be news again.
+            crate::network::os_mount_notice::forget_unmounted_volume(&id);
             debug!("Unregistered volume: {} ({})", id, volume_path);
         }
         RootRemoval::Promoted { id, new_root } => {
