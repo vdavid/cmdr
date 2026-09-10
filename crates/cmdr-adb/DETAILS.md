@@ -131,8 +131,8 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
 - **The tree walk is `cmdr_fs::volume::scan_walk`**, reached by implementing `ScanSource` (`volume/scan.rs`): one `STAT`
   for a stat, one `LIST` for a listing, and the walk's arithmetic, batch loop, and conflict matcher come with it. ❗ It
   counts a symlinked directory as the one entry it is rather than walking it, which matters more here than on any other
-  backend: `/sdcard` is a symlink to `/storage/emulated/0` on every modern Android, so following links would count the
-  same bytes twice and a link aimed at an ancestor would never terminate.
+  backend: `/sdcard` links to `/storage/self/primary`, which links to `/storage/emulated/0`, so following links would
+  count the same bytes three times and a link aimed at an ancestor would never terminate.
 - **❌ `MakesDirectories` is deliberately NOT implemented**, though the other stat-and-listing backends use it. That
   walk exists for protocols whose create-directory verb makes exactly one level (WebDAV's `MKCOL`), so it spends one
   request per missing ancestor. The device shell has native `mkdir -p`: `create_directory_all` is one probe plus one
@@ -217,7 +217,8 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
   the kernel does: a read follows every link along the path (`canonical`, up to `MAX_LINK_HOPS`, then `ELOOP`), `STAT`
   leaves the last one unfollowed, `LIST` of a link lists its target, and a write stays literal;
   `FakeTree::android_layout` builds the `/sdcard` → `/storage/self/primary` → `/storage/emulated/0` chain the index
-  cells walk, plus `host:track-devices` with `push_devices` for scripted hotplug, `drop_connections` / `stop` for
+  cells walk (a phone's own, verified on Pixel 9 Pro XL, Android 17, `adb shell readlink /sdcard /storage/self/primary`,
+  2026-09-11), plus `host:track-devices` with `push_devices` for scripted hotplug, `drop_connections` / `stop` for
   faults, `hold_answers` / `release_answers` to hold a dial provably in flight, and `requests` (every service request,
   in order) for counting dials or proving none happened. `volume/testing.rs` holds the volume-level fixtures on top of
   it. No `adb` binary, no device, no Docker: every cell runs in the unit lane.
@@ -243,8 +244,7 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
 - **Wireless debugging** (`adb pair`) is out of scope: the server owns pairing, and a paired device appears in
   `track-devices` like any other.
 - **Real-device pass pending**: the authorize prompt, an `unauthorized` → `device` transition mid-session, a 2 GB `RECV`
-  / `SEND`, and a `/data` listing on a non-rooted phone (expect `PermissionDenied` carrying the path). The `/sdcard`
-  link chain `android_layout` models, and a timed walk to confirm the four-listing ceiling, wait for the same pass.
+  / `SEND`, and a `/data` listing on a non-rooted phone (expect `PermissionDenied` carrying the path).
 
 ## The public surface
 
