@@ -9,7 +9,13 @@
  * it into `~` on the ROOT volume, so `null` is the same failure spelled
  * differently. The guard below is what keeps a restored server tab on its server.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const { pathExists } = vi.hoisted(() => ({
+  pathExists: vi.fn((_path: string, _volumeId?: string): Promise<boolean> => Promise.resolve(false)),
+}))
+vi.mock('$lib/tauri-commands', () => ({ pathExists }))
+
 import { resolveValidPath } from './path-resolution'
 
 /** A probe that says no to everything, the way a remote path always answers. */
@@ -91,5 +97,43 @@ describe('resolveValidPath with a volume root on the same scheme', () => {
       volumeRoot: 'mtp://device-1/65537',
     })
     expect(resolved).toBe('mtp://device-1/65537')
+  })
+})
+
+describe('resolveValidPath on the volume it was given', () => {
+  beforeEach(() => {
+    pathExists.mockReset()
+  })
+
+  /**
+   * Pre-fix every probe went out with no volume id, so the backend asked the
+   * Mac's boot disk about `sftp://…`, heard "gone" at every level, and the pane
+   * landed on the server root instead of the parent that was still there.
+   */
+  it('lands on the nearest parent that exists there, asking that volume every time', async () => {
+    pathExists.mockImplementation((path, volumeId) =>
+      Promise.resolve(volumeId === 'sftp-nas' && path === 'sftp://ada@nas.local:22/a'),
+    )
+    const resolved = await resolveValidPath('sftp://ada@nas.local:22/a/b/c', {
+      volumeId: 'sftp-nas',
+      volumeRoot: 'sftp://ada@nas.local:22',
+      timeoutMs: 0,
+    })
+    expect(resolved).toBe('sftp://ada@nas.local:22/a')
+    expect(pathExists.mock.calls).toEqual([
+      ['sftp://ada@nas.local:22/a/b/c', 'sftp-nas'],
+      ['sftp://ada@nas.local:22/a/b', 'sftp-nas'],
+      ['sftp://ada@nas.local:22/a', 'sftp-nas'],
+    ])
+  })
+
+  it('asks the boot disk about `~`, never the volume the walk ran on', async () => {
+    pathExists.mockImplementation((path, volumeId) => Promise.resolve(path === '~' && volumeId === undefined))
+    const resolved = await resolveValidPath('/Volumes/naspi/gone', {
+      volumeId: 'smb-naspi',
+      volumeRoot: '/Volumes/naspi',
+      timeoutMs: 0,
+    })
+    expect(resolved).toBe('~')
   })
 })

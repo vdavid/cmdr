@@ -98,9 +98,28 @@ own 2s timeout, no frontend wrapper needed).
 ## `path-resolution.ts`
 
 `resolveValidPath(targetPath, options?)`: walks parent tree until an existing directory is found. Accepts optional
-`{ pathExistsFn, timeoutMs }`: defaults to Tauri `pathExists` with 1s timeout per step. Used both at runtime (with
-timeouts) and at startup via `app-status-store.ts`'s `resolvePersistedPath` wrapper (no timeout, injected
-`pathExistsFn`). Fallback chain: parent dirs → `~` → `/` → `null` (volume unmounted).
+`{ pathExistsFn, timeoutMs, volumeRoot, volumeId }`: defaults to Tauri `pathExists` with 1s timeout per step. Used both
+at runtime (with timeouts) and at startup via `app-status-store.ts`'s `resolvePersistedPath` wrapper (no timeout,
+injected `pathExistsFn`). Fallback chain: parent dirs → `~` → `/` → `null` (volume unmounted).
+
+**Which volume the walk asks.** Every parent probe goes to `volumeId`; `~` and `/` always go to the boot disk. Without
+an id the backend asks `root`, which says "gone" for every path on a phone or server, and the walk lands on the server
+root instead of the nearest parent still there. Callers that want to STAY on the pane's volume pass it:
+`listing-loader.ts`'s error branch (the id captured when the load started) and `edge-flow-handlers.ts`'s cancel walk-up.
+`path-navigation.ts::determineNavigationPath` asks the target volume about the other pane's path and the last-used path
+the same way. The rest pass none on purpose:
+
+- `smb-view-state.svelte.ts`'s cancel, disconnect, and place-disconnect handlers walk to LEAVE a volume that stopped
+  answering; a server's walk then lands on its scheme root, a `saved` row that dials afresh.
+- `deleted-dir-poll.ts` and `listing-diff-sync.svelte.ts` ask about OS paths: the poll covers FSEvents' blind spot, and
+  `directory-deleted` comes only from the local notify watcher. On a phone or server pane the poll's volume-root probe
+  answers "gone" from the boot disk too, so it never walks there. Giving it the id would turn a 2 s local stat into a
+  network round trip on backends that poll their space every 30–60 s or never.
+
+**A probe that couldn't tell is skipped, never landed on.** The walk's answer is where a caller navigates, so only a
+"yes" ends it; a parent that didn't answer would re-fail its listing. The gate for "couldn't tell" sits BEFORE the walk:
+the listing error branch and the poll start one only after a confirmed miss, and the leave-the-volume handlers above
+walk precisely because their volume stopped answering.
 
 Lives in its own module so `app-status-store.ts` can import it without forming a cycle; `path-navigation.ts` itself
 imports `getLastUsedPathForVolume` from `app-status-store.ts`.

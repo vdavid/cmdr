@@ -452,14 +452,14 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
                 return
               }
 
-              // Check whether the path was deleted, asking the volume THIS load listed
-              // (`volumeId`, captured at the start), ❌ never a live read here: without
-              // an id the backend asks the boot disk, which says "gone" for every
-              // `adb://` or `sftp://` path. The checked variant keeps a connection
-              // blip's "false" from reading as "deleted".
+              // Check whether the path was deleted, and walk up, asking the volume THIS
+              // load listed (`volumeId`, captured at the start), ❌ never a live read
+              // here: without an id the backend asks the boot disk, which says "gone"
+              // for every `adb://` or `sftp://` path. The checked variant keeps a
+              // connection blip's "false" from reading as "deleted".
               void pathExistsChecked(loadPath, volumeId).then(({ data: exists, timedOut }) => {
                 if (!exists && !timedOut) {
-                  void resolveValidPath(loadPath, { volumeRoot: deps.getVolumePath() }).then((validPath) => {
+                  void resolveValidPath(loadPath, { volumeRoot: deps.getVolumePath(), volumeId }).then((validPath) => {
                     // ❗ A walk-up that lands back on the path that just failed (a
                     // volume's own root) or nowhere at all has nothing better to
                     // offer: navigating would re-list the same failure, forever.

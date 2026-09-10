@@ -938,8 +938,9 @@ resolve (they're the chain's last-resort rungs, and `~` is expanded backend-side
 unresolvable owner (dead mount, statfs timeout) lands in place, since the pane's own volume is then the honest guess.
 
 **The `onListingError` branch asks about the load's OWN volume, and never walks onto the path that just failed.** Its
-`pathExistsChecked(loadPath, volumeId)` passes the id captured when the load started: without one, `path_exists`
-defaults to `root` and asks the boot disk about an `adb://` or `sftp://` path, which always says "gone". And when
+`pathExistsChecked(loadPath, volumeId)` and the walk-up's `resolveValidPath(…, { volumeId })` pass the id captured when
+the load started: without one, `path_exists` defaults to `root` and asks the boot disk about an `adb://` or `sftp://`
+path, which always says "gone", and the walk lands on the server root instead of the nearest parent. And when
 `resolveValidPath` comes back with the failed path itself (a volume root, or a scheme path's floor) or with `null`, the
 branch shows the error pane rather than calling `navigateToFallback`, which would re-list the same failure. ❌ Don't
 drop that guard: a phone's pane once re-listed `adb://<serial>` about 15 times a second through exactly that loop. An

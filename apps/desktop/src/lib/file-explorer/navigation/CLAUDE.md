@@ -14,9 +14,12 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 - **History pushes on listing success AND failure.** Drop the `listing-error` branch and a TCC-restricted folder stays
   out of history, so `Cmd+[` jumps back two steps.
 - **Callers holding per-entry resources need `push()`**: only it returns `droppedEntries` to release dropped refs.
-- **`resolveValidPath` stops at a scheme path's floor and RETURNS it**, never `~`, `/`, or `null`: a remote path answers
-  no probe, so a plain walk lands the pane on the boot disk. It stays in `path-resolution.ts`, a module that only exists
-  to break a cycle.
+- **`resolveValidPath` stops at a scheme path's floor and RETURNS it**, never `~`, `/`, or `null`: a remote path can
+  answer no probe, so a plain walk lands the pane on the boot disk. It stays in `path-resolution.ts`, a module that only
+  exists to break a cycle.
+- **❗ Pass `volumeId` wherever the walk should stay on the pane's volume**: without it every probe asks the boot disk,
+  which says "gone" for a phone's or server's folders. Who passes it and who doesn't: `DETAILS.md` §
+  `path-resolution.ts`.
 - **ONE global `correctionGen` gates stale volume-switch corrections**, ❌ not one per pane: a change on either pane
   drops a superseded one.
 - **`containingVolumeId` comes from `resolvePathVolume(currentPath)`, ❌ not the `volumeId` prop** (a favorite's is

@@ -57,14 +57,16 @@ export async function determineNavigationPath(args: DetermineNavigationPathArgs)
     return targetPath
   }
 
-  // Run both checks in parallel with timeouts
+  // Run both checks in parallel with timeouts, asking the volume being switched to:
+  // without its id the backend asks the boot disk, which says "gone" for every path
+  // on a phone or server.
   const [otherPaneValid, lastUsedResult] = await Promise.all([
     otherPane.otherPaneVolumeId === volumeId
-      ? withTimeout(pathExists(otherPane.otherPanePath), pathExistsTimeoutMs, false)
+      ? withTimeout(pathExists(otherPane.otherPanePath, volumeId), pathExistsTimeoutMs, false)
       : Promise.resolve(false),
     getLastUsedPathForVolume(volumeId).then((p) =>
       p && isPathOnVolume(p, volumePath)
-        ? withTimeout(pathExists(p), pathExistsTimeoutMs, false).then((ok) => (ok ? p : null))
+        ? withTimeout(pathExists(p, volumeId), pathExistsTimeoutMs, false).then((ok) => (ok ? p : null))
         : null,
     ),
   ])

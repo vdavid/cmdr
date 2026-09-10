@@ -84,8 +84,9 @@ export function createEdgeFlowHandlers(deps: EdgeFlowHandlersDeps): EdgeFlowHand
 
       // Edge case: tab opened directly at this path, no history. Walk up to nearest valid parent.
       const parentPath = entry.path.substring(0, Math.max(1, entry.path.lastIndexOf('/')))
-      const volumeRoot = deps.getVolumes().find((v) => v.id === entry.volumeId)?.path
-      void resolveValidPath(parentPath, { volumeRoot }).then((validPath) => {
+      // Asking the tab's own volume: the boot disk says "gone" for a phone's or server's folders.
+      const volume = deps.getVolumes().find((v) => v.id === entry.volumeId)
+      void resolveValidPath(parentPath, { volumeRoot: volume?.path, volumeId: volume?.id }).then((validPath) => {
         const target = validPath ?? '~'
         const isOutsideVolume = entry.volumeId !== 'root' && (target === '~' || target === '/')
         // Volume root unreachable ⇒ switch to root volume; otherwise stay on

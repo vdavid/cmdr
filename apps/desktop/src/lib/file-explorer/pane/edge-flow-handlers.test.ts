@@ -136,6 +136,29 @@ describe('createEdgeFlowHandlers', () => {
       })
     })
 
+    it('walks up on the volume the tab was on, asking that volume', async () => {
+      // Pre-fix the walk asked the boot disk about a phone's folders, heard "gone"
+      // at every level, and landed the pane on the phone's root.
+      getCurrentEntrySpy.mockReturnValue({ volumeId: 'adb-phone', path: 'adb://R58M/sdcard/a' })
+      canGoBackSpy.mockReturnValue(false)
+      resolveValidPathSpy.mockResolvedValue('adb://R58M/sdcard')
+      const { handlers, navigate } = setup({
+        paneRef: makePaneRef(),
+        volumes: [{ id: 'adb-phone', path: 'adb://R58M' } as VolumeInfo],
+        volumeIdByPane: { left: 'adb-phone', right: 'root' },
+      })
+
+      handlers.handleCancelLoading('left', { cancelledPath: 'adb://R58M/sdcard/a' })
+      await vi.waitFor(() => {
+        expect(navigate).toHaveBeenCalled()
+      })
+
+      expect(resolveValidPathSpy).toHaveBeenCalledWith('adb://R58M/sdcard', {
+        volumeRoot: 'adb://R58M',
+        volumeId: 'adb-phone',
+      })
+    })
+
     it('when the listing did not complete, navigates the pane straight to the previous folder', () => {
       getCurrentEntrySpy.mockReturnValue({ volumeId: 'root', path: '/prev' })
       const paneRef = makePaneRef()

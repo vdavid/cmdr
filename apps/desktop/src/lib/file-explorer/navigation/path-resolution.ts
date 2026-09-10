@@ -11,7 +11,10 @@ import { pathExists } from '$lib/tauri-commands'
 import { withTimeout } from '$lib/utils/timing'
 
 export interface ResolveValidPathOptions {
-  /** Custom path-existence checker. Defaults to the Tauri `pathExists` command. */
+  /**
+   * Custom path-existence checker, asked about every rung (the volume's and `~` / `/`).
+   * Defaults to the Tauri `pathExists` command.
+   */
   pathExistsFn?: (path: string) => Promise<boolean>
   /** Timeout per step in ms. Set to 0 to skip timeout wrapping. Defaults to 1000. */
   timeoutMs?: number
@@ -21,6 +24,13 @@ export interface ResolveValidPathOptions {
    * which would fail for non-local volumes like SmbVolume).
    */
   volumeRoot?: string
+  /**
+   * The volume the walk asks about its own rungs. ❗ Without it the backend asks
+   * `root`, the boot disk, which says "gone" for every path on a phone or server,
+   * so the walk lands on the scheme floor instead of the nearest parent that's
+   * still there. `~` and `/` always go to the boot disk: they're its rungs.
+   */
+  volumeId?: string
 }
 
 /**
@@ -28,11 +38,12 @@ export interface ResolveValidPathOptions {
  * (`sftp://ada@nas:22/srv` → `sftp://ada@nas:22`), or `null` for a plain path.
  *
  * ❗ This is where the walk-up STOPS on such a path, and what it answers there.
- * Every `pathExists` probe on a remote path is false, so the plain walk chops the
- * scheme itself (`sftp:/`, then `sftp:`), falls through to `~`, and lands the
- * pane on the boot disk. `null` is the same failure spelled differently: four of
- * this module's callers hand it to `navigateToFallback`, which turns it into `~`
- * on the root volume. A restored server tab has to come back on its server.
+ * A remote path's probes can all say no (asked of the boot disk, or of a server
+ * that isn't connected), and then the plain walk chops the scheme itself
+ * (`sftp:/`, then `sftp:`), falls through to `~`, and lands the pane on the boot
+ * disk. `null` is the same failure spelled differently: four of this module's
+ * callers hand it to `navigateToFallback`, which turns it into `~` on the root
+ * volume. A restored server tab has to come back on its server.
  */
 function schemeRootOf(path: string): string | null {
   const match = SCHEME_ROOT_RE.exec(path)
@@ -68,8 +79,9 @@ function schemeFloorFor(targetPath: string, volumeRoot: string | undefined): str
 }
 
 /**
- * Resolves a path to a valid existing path by walking up the parent tree.
- * Each step has a timeout to prevent hanging on dead mounts (default 1s).
+ * Resolves a path to a valid existing path by walking up the parent tree, asking
+ * `volumeId` about each parent. Each step has a timeout to prevent hanging on dead
+ * mounts (default 1s).
  * Fallback chain: parent tree (up to volumeRoot) → user home (~) → filesystem root (/).
  * Returns null if even the root doesn't exist (volume unmounted).
  *
@@ -77,25 +89,27 @@ function schemeFloorFor(targetPath: string, volumeRoot: string | undefined): str
  * never `~`, `/`, or `null` (`schemeRootOf`).
  */
 export async function resolveValidPath(targetPath: string, options?: ResolveValidPathOptions): Promise<string | null> {
-  const checkFn = options?.pathExistsFn ?? pathExists
   const timeoutMs = options?.timeoutMs ?? 1000
   const volumeRoot = options?.volumeRoot
+  const volumeId = options?.volumeId
+  const onVolume = options?.pathExistsFn ?? ((p: string) => pathExists(p, volumeId))
+  const onBootDisk = options?.pathExistsFn ?? ((p: string) => pathExists(p))
 
-  const check = (p: string): Promise<boolean> =>
-    timeoutMs > 0 ? withTimeout(checkFn(p), timeoutMs, false) : checkFn(p)
+  const bounded = (probe: Promise<boolean>): Promise<boolean> =>
+    timeoutMs > 0 ? withTimeout(probe, timeoutMs, false) : probe
 
   const schemeFloor = schemeFloorFor(targetPath, volumeRoot)
 
-  const walked = await walkUp(targetPath, check, { volumeRoot, schemeFloor })
+  const walked = await walkUp(targetPath, (p) => bounded(onVolume(p)), { volumeRoot, schemeFloor })
   if (walked !== null) return walked
   // A scheme path stops here: `~` is on another volume entirely.
   if (schemeFloor) return schemeFloor
   // Try user home before falling back to root (~ is expanded by the backend)
-  if (await check('~')) {
+  if (await bounded(onBootDisk('~'))) {
     return '~'
   }
   // Check root
-  if (await check('/')) {
+  if (await bounded(onBootDisk('/'))) {
     return '/'
   }
   return null
@@ -109,6 +123,15 @@ export async function resolveValidPath(targetPath: string, options?: ResolveVali
  * a server's root is the right answer for a place that has to be dialed before
  * anything under it can answer, while a local volume root that doesn't exist
  * means the volume is gone and the caller's `~` fallback is right.
+ *
+ * ❗ A probe that couldn't tell (the backend's `timedOut`, which `pathExists`
+ * folds to `false`, or the step timeout) is SKIPPED, ❌ never landed on: the
+ * answer is where a caller navigates, so only a "yes" may end the walk, and
+ * standing on a place that didn't answer re-fails its listing further from where
+ * the user was than any parent that did answer. The gate for "couldn't tell" sits
+ * BEFORE the walk instead: `listing-loader.ts` and `deleted-dir-poll.ts` start one
+ * only after a confirmed miss, and the SMB cancel and disconnect handlers walk to
+ * LEAVE a volume that stopped answering, which stopping on it would defeat.
  */
 async function walkUp(
   targetPath: string,

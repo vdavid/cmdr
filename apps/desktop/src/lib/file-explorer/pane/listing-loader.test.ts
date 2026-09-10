@@ -488,7 +488,7 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
     await loader.loadDirectory({ path: 'adb://R58M' })
     h.listeners.error[0]({ listingId: state.listingId, message: 'not connected' })
     await vi.waitFor(() => {
-      expect(h.resolveValidPath).toHaveBeenCalled()
+      expect(h.resolveValidPath).toHaveBeenCalledWith('adb://R58M', { volumeRoot: 'adb://R58M', volumeId: 'adb-phone' })
     })
     await vi.waitFor(() => {
       expect(state.error).toBe('not connected')

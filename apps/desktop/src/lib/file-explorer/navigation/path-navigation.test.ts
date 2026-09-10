@@ -131,6 +131,25 @@ describe('determineNavigationPath', () => {
     expect(result).toBe('/Users/test/last-used')
   })
 
+  it('asks the volume being switched to whether its remembered places still exist', async () => {
+    // Pre-fix both checks went out with no volume id, so the boot disk said "gone"
+    // for every path on a phone or server, and the pane never came back where it was.
+    mockGetLastUsedPath.mockResolvedValue('adb://R58M/sdcard/DCIM')
+    mockPathExists.mockImplementation((_path: string, volumeId?: string) => Promise.resolve(volumeId === 'adb-phone'))
+
+    const resultPromise = determineNavigationPath({
+      volumeId: 'adb-phone',
+      volumePath: 'adb://R58M',
+      targetPath: 'adb://R58M',
+      otherPane: { otherPaneVolumeId: 'adb-phone', otherPanePath: 'adb://R58M/sdcard/Music' },
+    })
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(await resultPromise).toBe('adb://R58M/sdcard/Music')
+    expect(mockPathExists).toHaveBeenCalledWith('adb://R58M/sdcard/Music', 'adb-phone')
+    expect(mockPathExists).toHaveBeenCalledWith('adb://R58M/sdcard/DCIM', 'adb-phone')
+  })
+
   it('ignores last used path that is foreign to the target volume', async () => {
     // Reproduces the SMB-share-shows-local-path bug: a previously corrupted
     // `lastUsedPathForVolume('smb-…-naspi') = '/Users/…/vdavid'` must not be
@@ -319,7 +338,8 @@ describe('resolveValidPath', () => {
     const result = await resultPromise
 
     expect(result).toBe('/Users/test/documents')
-    expect(mockPathExists).toHaveBeenCalledWith('/Users/test/documents')
+    // No `volumeId` given, so the probe leaves the volume slot empty and the backend asks `root`.
+    expect(mockPathExists).toHaveBeenCalledWith('/Users/test/documents', undefined)
   })
 
   it('walks up parent tree to find existing directory', async () => {
@@ -332,9 +352,9 @@ describe('resolveValidPath', () => {
     const result = await resultPromise
 
     expect(result).toBe('/Users/test')
-    expect(mockPathExists).toHaveBeenCalledWith('/Users/test/documents/subfolder')
-    expect(mockPathExists).toHaveBeenCalledWith('/Users/test/documents')
-    expect(mockPathExists).toHaveBeenCalledWith('/Users/test')
+    expect(mockPathExists).toHaveBeenCalledWith('/Users/test/documents/subfolder', undefined)
+    expect(mockPathExists).toHaveBeenCalledWith('/Users/test/documents', undefined)
+    expect(mockPathExists).toHaveBeenCalledWith('/Users/test', undefined)
   })
 
   it('falls back to ~ if no parent exists', async () => {
