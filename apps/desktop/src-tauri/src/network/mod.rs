@@ -70,6 +70,9 @@ mod smb_cache;
 mod smb_smbclient;
 mod smb_smbutil;
 pub(crate) mod smb_upgrade;
+// "Connect directly": the upgrade someone asked for, answered with where it left
+// the volume. The auto-upgrade paths stay in `smb_upgrade`.
+pub(crate) mod smb_connect_directly;
 
 // The "we're stuck on the kernel mount" notice's once-per-server ledger. Lives
 // beside `smb_upgrade` (its only caller) rather than inside it, so the ledger is

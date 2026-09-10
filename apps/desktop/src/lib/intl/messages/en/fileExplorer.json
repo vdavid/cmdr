@@ -166,6 +166,20 @@
   "@fileExplorer.pane.directConnectionUnavailableToast": {
     "description": "Toast shown when the direct-connection attempt itself broke down before the app learned why, so no server name is available."
   },
+  "fileExplorer.pane.directConnectionShareGoneToast": "{share} isn''t connected anymore, so there''s no connection to speed up.",
+  "@fileExplorer.pane.directConnectionShareGoneToast": {
+    "description": "Toast shown when someone asks for a faster direct connection to a network share, but the share was disconnected (unmounted, ejected, or dropped off the network) before the request arrived. {share} is the share's name. Explains why nothing happened; nothing broke.",
+    "placeholders": {
+      "share": "the name of the network share, for example archive or Photos"
+    }
+  },
+  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} isn''t a network share, so there''s no connection to speed up.",
+  "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
+    "description": "Toast shown when someone asks for a faster direct connection on a drive that isn't a network share at all, so there's nothing to connect. {volume} is the drive's name. Explains why nothing happened; nothing broke.",
+    "placeholders": {
+      "volume": "the name of the drive, for example Backup or Macintosh HD"
+    }
+  },
   "fileExplorer.pane.trashUnconfirmedToast": "Couldn''t confirm the file was moved to Trash. The volume may be slow, but the file may still have been moved. Please check your Trash to be sure.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "description": "Persistent warning toast shown when moving a file to the Trash (as part of a rename-overwrite) timed out, so Cmdr can''t confirm it landed. Reassures the user it may have worked and asks them to check. \"Trash\" is the macOS Trash; keep the name."

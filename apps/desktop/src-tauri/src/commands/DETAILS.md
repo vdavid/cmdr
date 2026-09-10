@@ -148,7 +148,11 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   copies the password into Cmdr's own store so future reconnects are silent → `CredentialsNeeded` fallback if
   absent/denied). User-initiated only. Lazy-startup hooks: `ensure_network_discovery_started` (idempotent: kicks off
   mDNS + manual-server load + smb-mount upgrade on first user network action) and `set_network_enabled` (live-applies
-  the `network.enabled` toggle). Upgrade business logic lives in `network::smb_upgrade`; commands here are thin wrappers.
+  the `network.enabled` toggle). The "Connect directly" upgrade lives in `network::smb_connect_directly` and the
+  auto-upgrade in `network::smb_upgrade`; the three `upgrade_to_smb_volume*` commands only kick mDNS and delegate. They
+  answer a bare `UpgradeResult`, with no `Err` channel: a volume that's gone or isn't an SMB mount is a variant
+  (`VolumeGone` / `NotSmbMount`) the frontend words, and elsewhere than macOS the saved-password one answers
+  `CredentialsNeeded`.
   `list_shares_with_credentials` carries `#[allow(clippy::too_many_arguments)]`: Tauri params must be top-level args.
 - **`smb_diagnostics.rs`** (debug window only): `list_smb_volumes` (the dashboard's volume picker) and
   `get_smb_diagnostics(volume_id)` (a snapshot of one volume's `smb2::SmbClient`). The snapshot DTOs mirror

@@ -8,7 +8,7 @@ import { mount, flushSync } from 'svelte'
 import type { DirectConnectOutcome } from './direct-connect'
 
 const { connectDirectly } = vi.hoisted(() => ({
-  connectDirectly: vi.fn<(volumeId: string) => Promise<DirectConnectOutcome>>(),
+  connectDirectly: vi.fn<(target: { volumeId: string; shareName: string }) => Promise<DirectConnectOutcome>>(),
 }))
 vi.mock('./direct-connect', () => ({ connectDirectly }))
 
@@ -49,12 +49,12 @@ describe('SmbOsMountFallbackToastContent', () => {
     expect(target.querySelector('strong')?.textContent).toBe('archive')
   })
 
-  it('reuses the shared upgrade flow rather than a second way to connect', async () => {
+  it('reuses the shared upgrade flow rather than a second way to connect, naming the share for its answer', async () => {
     const { button } = render()
 
     button.click()
     await vi.waitFor(() => {
-      expect(connectDirectly).toHaveBeenCalledWith('smb-archive')
+      expect(connectDirectly).toHaveBeenCalledWith({ volumeId: 'smb-archive', shareName: 'archive' })
     })
   })
 
@@ -69,6 +69,16 @@ describe('SmbOsMountFallbackToastContent', () => {
 
   it('retires the notice when the credential form takes over, so it does not shadow the form', async () => {
     connectDirectly.mockResolvedValue('askingForCredentials')
+    const { button } = render()
+
+    button.click()
+    await vi.waitFor(() => {
+      expect(dismissToast).toHaveBeenCalledWith('smb-os-mount:smb-archive')
+    })
+  })
+
+  it('retires the notice when the share is gone, because no retry can bring it back', async () => {
+    connectDirectly.mockResolvedValue('gone')
     const { button } = render()
 
     button.click()

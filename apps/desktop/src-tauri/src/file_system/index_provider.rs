@@ -93,16 +93,21 @@ impl VolumeProvider for AppVolumeProvider {
 
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     fn ensure_direct_smb(&self, volume_id: &str) -> EnsureDirectSmbFut<'_> {
-        use crate::network::smb_upgrade::UpgradeResult;
+        use crate::network::smb_connect_directly::{UpgradeResult, connect_directly};
         let volume_id = volume_id.to_string();
         Box::pin(async move {
-            match crate::commands::network::upgrade_to_smb_volume_inner(volume_id).await {
-                Ok(UpgradeResult::Success) => Ok(()),
-                Ok(UpgradeResult::CredentialsNeeded { .. }) => Err(SmbUpgradeRefusal::CredentialsNeeded),
-                Ok(UpgradeResult::NetworkError { reason, display_name }) => Err(SmbUpgradeRefusal::Failed(
+            match connect_directly(&volume_id).await {
+                UpgradeResult::Success => Ok(()),
+                UpgradeResult::CredentialsNeeded { .. } => Err(SmbUpgradeRefusal::CredentialsNeeded),
+                UpgradeResult::NetworkError { reason, display_name } => Err(SmbUpgradeRefusal::Failed(
                     format!("couldn't reach {display_name} ({reason:?})").into(),
                 )),
-                Err(e) => Err(SmbUpgradeRefusal::Failed(e.to_string().into())),
+                UpgradeResult::VolumeGone => Err(SmbUpgradeRefusal::Failed(
+                    "the volume isn't mounted anymore".to_string().into(),
+                )),
+                UpgradeResult::NotSmbMount => Err(SmbUpgradeRefusal::Failed(
+                    "the volume isn't an SMB mount".to_string().into(),
+                )),
             }
         })
     }

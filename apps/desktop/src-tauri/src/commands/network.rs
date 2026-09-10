@@ -7,10 +7,8 @@ use crate::network::{
     update_host_resolution,
 };
 
-use crate::network::smb_upgrade::{
-    UpgradeError, UpgradeResult, friendly_server_name, get_keychain_password, register_smb_volume,
-    resolve_ip_to_hostname_with_wait, try_smb_upgrade,
-};
+use crate::network::smb_connect_directly::{self, UpgradeResult};
+use crate::network::smb_upgrade::register_smb_volume;
 // Only the macOS-gated commands below read the system keychain aliases; an unconditional
 // import fails the Linux build via `#![deny(unused)]`.
 #[cfg(target_os = "macos")]
@@ -353,27 +351,21 @@ pub async fn mount_network_share(
     Ok(result)
 }
 
-/// Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection.
+/// Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection, with
+/// the credentials Cmdr stored for its share.
 ///
-/// Extracts server/share/username from `statfs`, tries stored credentials,
-/// and either upgrades to `SmbVolume` or returns `CredentialsNeeded` so
-/// the frontend can show a login form.
-///
-/// Called from the "Connect directly for faster access" UI action.
+/// Called from the "Connect directly for faster access" UI action. Every answer,
+/// a volume that's gone or isn't an SMB mount included:
+/// `network::smb_connect_directly::UpgradeResult`.
 #[tauri::command]
 #[specta::specta]
-pub async fn upgrade_to_smb_volume(volume_id: String, app_handle: tauri::AppHandle) -> Result<UpgradeResult, String> {
-    // Kick mDNS off so IP → hostname resolution has a shot before we hit the
-    // Keychain. Idempotent; no-op if already running or `network.enabled` is off.
-    // Kept here (and not in `upgrade_to_smb_volume_inner`) because
-    // `ensure_mdns_started` requires a concrete `AppHandle`, while the inner
-    // function needs to stay AppHandle-free so the MCP executor (generic over
-    // `Runtime`) can call it. MCP relies on mDNS having been started elsewhere
-    // (initial launch with `firstTriggerDone == true`, or any prior network
-    // action); the MCP tool's description tells agents to take a network
-    // action first if their target volume needs hostname-keyed creds.
+pub async fn upgrade_to_smb_volume(volume_id: String, app_handle: tauri::AppHandle) -> UpgradeResult {
+    // Kick mDNS off so IP → hostname resolution has a shot before the Keychain
+    // lookup. Idempotent; a no-op if it's already running or `network.enabled` is
+    // off. Here rather than in the upgrade itself, which stays `AppHandle`-free so
+    // the MCP executor (generic over `Runtime`) can call it.
     crate::network::ensure_mdns_started(app_handle);
-    upgrade_to_smb_volume_inner(volume_id).await
+    smb_connect_directly::connect_directly(&volume_id).await
 }
 
 // Per-drive indexing enable/disable/rescan lives in `commands/indexing.rs` as a
@@ -382,103 +374,10 @@ pub async fn upgrade_to_smb_volume(volume_id: String, app_handle: tauri::AppHand
 // through one set of commands. The SMB-specific gate + typed `SmbIndexGateReason`
 // it surfaces still live in `indexing::start_indexing_for_smb`.
 
-/// Body of `upgrade_to_smb_volume` minus the mDNS kick (which needs concrete
-/// `AppHandle`). Used by the Tauri command above and by the MCP
-/// `upgrade_smb_to_direct` executor — both routes share the same Keychain
-/// lookup, mDNS-cached hostname resolution, and `try_smb_upgrade` body.
-pub async fn upgrade_to_smb_volume_inner(volume_id: String) -> Result<UpgradeResult, String> {
-    use crate::file_system::volume::manager::get_volume_manager;
-    #[cfg(target_os = "macos")]
-    use crate::volumes::get_smb_mount_info;
-    #[cfg(target_os = "linux")]
-    use crate::volumes_linux::get_smb_mount_info;
-
-    let manager = get_volume_manager();
-
-    // Get the current volume's root path
-    let volume = manager.get(&volume_id).ok_or("Volume not found")?;
-    let mount_path = volume.root().to_string_lossy().to_string();
-
-    // Check if already an SmbVolume
-    if volume.backend_kind() == cmdr_fs::volume::BackendKind::Smb {
-        return Ok(UpgradeResult::Success);
-    }
-
-    // Extract SMB connection info from statfs
-    let info = get_smb_mount_info(&mount_path).ok_or_else(|| {
-        format!(
-            "Can't determine SMB server info for {}. Is this an SMB mount?",
-            mount_path
-        )
-    })?;
-
-    log::info!(
-        "Upgrading volume {} to SmbVolume: server={}, share={}, user={:?}",
-        volume_id,
-        info.server,
-        info.share,
-        info.username
-    );
-
-    // Try to get credentials from Keychain. The mount source has the IP, but Cmdr
-    // stores Keychain credentials keyed by hostname (from mDNS). Try both. Briefly
-    // wait for mDNS to warm up so we don't prompt for creds the user already saved.
-    let hostname = resolve_ip_to_hostname_with_wait(&info.server, std::time::Duration::from_millis(1500)).await;
-    let display_name = friendly_server_name(&info.server);
-    let creds = get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
-
-    match &creds {
-        Some((u, _)) => log::info!("Found Keychain credentials for user={}", u),
-        None => {
-            log::info!("No stored credentials found, requesting credentials from user");
-            return Ok(UpgradeResult::CredentialsNeeded {
-                server: info.server,
-                share: info.share,
-                port: info.port,
-                display_name,
-                username_hint: info.username,
-                message: None,
-            });
-        }
-    }
-
-    let (username, password) = match &creds {
-        Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
-        None => unreachable!(),
-    };
-
-    // Try connecting with stored credentials
-    let result = try_smb_upgrade(
-        &info.server,
-        &info.share,
-        &mount_path,
-        username,
-        password,
-        info.port,
-        &volume_id,
-    )
-    .await;
-
-    match result {
-        Ok(()) => Ok(UpgradeResult::Success),
-        Err(UpgradeError::Auth) => {
-            log::info!("Stored credentials didn't work, requesting new credentials");
-            Ok(UpgradeResult::CredentialsNeeded {
-                server: info.server,
-                share: info.share,
-                port: info.port,
-                display_name,
-                username_hint: username.map(|s| s.to_string()),
-                message: Some("Stored credentials didn't work".to_string()),
-            })
-        }
-        Err(UpgradeError::Network { reason, display_name }) => Ok(UpgradeResult::NetworkError { reason, display_name }),
-    }
-}
-
 /// Upgrades an existing OS-mounted SMB volume using explicit credentials.
 ///
-/// Called after the user fills in the login form shown by `upgrade_to_smb_volume`.
+/// Called with what the user typed into the sign-in sheet `upgrade_to_smb_volume`
+/// led to.
 #[tauri::command]
 #[specta::specta]
 pub async fn upgrade_to_smb_volume_with_credentials(
@@ -487,68 +386,10 @@ pub async fn upgrade_to_smb_volume_with_credentials(
     password: Option<String>,
     remember_in_keychain: bool,
     app_handle: tauri::AppHandle,
-) -> Result<UpgradeResult, String> {
-    use crate::file_system::volume::manager::get_volume_manager;
-    #[cfg(target_os = "macos")]
-    use crate::volumes::get_smb_mount_info;
-    #[cfg(target_os = "linux")]
-    use crate::volumes_linux::get_smb_mount_info;
-
-    let manager = get_volume_manager();
-
-    let volume = manager.get(&volume_id).ok_or("Volume not found")?;
-    let mount_path = volume.root().to_string_lossy().to_string();
-
-    if volume.backend_kind() == cmdr_fs::volume::BackendKind::Smb {
-        return Ok(UpgradeResult::Success);
-    }
-
-    let info = get_smb_mount_info(&mount_path).ok_or_else(|| {
-        format!(
-            "Can't determine SMB server info for {}. Is this an SMB mount?",
-            mount_path
-        )
-    })?;
-
-    // Kick mDNS off so we can save credentials keyed by hostname (not raw IP)
-    // when the user picks "remember".
+) -> UpgradeResult {
+    // Kick mDNS off so a remembered password is saved under the hostname, not the raw IP.
     crate::network::ensure_mdns_started(app_handle);
-
-    let hostname = resolve_ip_to_hostname_with_wait(&info.server, std::time::Duration::from_millis(1500)).await;
-    let display_name = friendly_server_name(&info.server);
-
-    let result = try_smb_upgrade(
-        &info.server,
-        &info.share,
-        &mount_path,
-        username.as_deref(),
-        password.as_deref(),
-        info.port,
-        &volume_id,
-    )
-    .await;
-
-    match result {
-        Ok(()) => {
-            // Save credentials on success if requested
-            if remember_in_keychain && let (Some(u), Some(p)) = (&username, &password) {
-                let server_key = hostname.as_deref().unwrap_or(&info.server);
-                if let Err(e) = keychain::save_credentials(server_key, Some(&info.share), u, p) {
-                    log::warn!("Couldn't save credentials to Keychain: {}", e);
-                }
-            }
-            Ok(UpgradeResult::Success)
-        }
-        Err(UpgradeError::Auth) => Ok(UpgradeResult::CredentialsNeeded {
-            server: info.server,
-            share: info.share,
-            port: info.port,
-            display_name,
-            username_hint: username,
-            message: Some("Invalid username or password".to_string()),
-        }),
-        Err(UpgradeError::Network { reason, display_name }) => Ok(UpgradeResult::NetworkError { reason, display_name }),
-    }
+    smb_connect_directly::connect_directly_with_credentials(&volume_id, username, password, remember_in_keychain).await
 }
 
 /// Does the system (login) keychain hold an SMB password another app (Finder) saved for
@@ -591,108 +432,19 @@ pub async fn system_has_saved_smb_password(_volume_id: String) -> Result<bool, S
     Ok(false)
 }
 
-/// Upgrades an OS-mounted SMB volume to a direct smb2 connection using the password that
-/// another app (Finder/macOS) already saved in the login keychain — so the user doesn't
-/// retype it. Reading the password triggers the macOS consent dialog (the frontend primes
-/// the user first; we can't customize the system dialog's text). On success, the password
-/// is also copied into Cmdr's own store so future reconnects are silent. If nothing is
-/// saved or the user denies access, returns `CredentialsNeeded` so the frontend falls back
-/// to its login form. **User-initiated only** — never call this at startup.
-#[cfg(target_os = "macos")]
+/// Upgrades an OS-mounted SMB volume to a direct smb2 connection using the password
+/// another app (Finder) already saved in the login keychain, so the user doesn't retype
+/// it. Reading it raises the macOS consent dialog, so this is **user-initiated only**:
+/// never call it at startup. Where there's no system keychain, it asks for the password.
 #[tauri::command]
 #[specta::specta]
 pub async fn upgrade_to_smb_volume_using_saved_password(
     volume_id: String,
     app_handle: tauri::AppHandle,
-) -> Result<UpgradeResult, String> {
-    use crate::file_system::volume::manager::get_volume_manager;
-    use crate::secrets::system_keychain_smb;
-    use crate::volumes::get_smb_mount_info;
-
-    let manager = get_volume_manager();
-    let volume = manager.get(&volume_id).ok_or("Volume not found")?;
-    let mount_path = volume.root().to_string_lossy().to_string();
-
-    if volume.backend_kind() == cmdr_fs::volume::BackendKind::Smb {
-        return Ok(UpgradeResult::Success);
-    }
-
-    let info = get_smb_mount_info(&mount_path).ok_or_else(|| {
-        format!(
-            "Can't determine SMB server info for {}. Is this an SMB mount?",
-            mount_path
-        )
-    })?;
-
+) -> UpgradeResult {
     // Warm mDNS so the alias set (Finder keys by the mDNS service name) is populated.
     crate::network::ensure_mdns_started(app_handle);
-    let hostname = resolve_ip_to_hostname_with_wait(&info.server, std::time::Duration::from_millis(1500)).await;
-    let display_name = friendly_server_name(&info.server);
-
-    let aliases = system_keychain_aliases(&info.server);
-    let candidates = system_keychain_smb::server_query_candidates(&info.server, hostname.as_deref(), &aliases);
-
-    // The data read triggers the consent dialog and blocks on the user — keep it off the
-    // async worker pool.
-    let creds = tokio::task::spawn_blocking(move || system_keychain_smb::read_password(&candidates))
-        .await
-        .ok()
-        .flatten();
-
-    let Some(creds) = creds else {
-        // Nothing readable, or the user denied access → fall back to the login form.
-        return Ok(UpgradeResult::CredentialsNeeded {
-            server: info.server,
-            share: info.share,
-            port: info.port,
-            display_name,
-            username_hint: info.username,
-            message: None,
-        });
-    };
-
-    let result = try_smb_upgrade(
-        &info.server,
-        &info.share,
-        &mount_path,
-        Some(&creds.username),
-        Some(&creds.password),
-        info.port,
-        &volume_id,
-    )
-    .await;
-
-    match result {
-        Ok(()) => {
-            // Copy the borrowed password into Cmdr's own store so the next reconnect is
-            // silent (no consent dialog). Keyed by hostname when known, else the server.
-            let server_key = hostname.as_deref().unwrap_or(&info.server);
-            if let Err(e) = keychain::save_credentials(server_key, Some(&info.share), &creds.username, &creds.password)
-            {
-                log::warn!("Couldn't copy borrowed credentials into Cmdr's store: {}", e);
-            }
-            Ok(UpgradeResult::Success)
-        }
-        Err(UpgradeError::Auth) => Ok(UpgradeResult::CredentialsNeeded {
-            server: info.server,
-            share: info.share,
-            port: info.port,
-            display_name,
-            username_hint: Some(creds.username),
-            message: Some("The saved password didn't work".to_string()),
-        }),
-        Err(UpgradeError::Network { reason, display_name }) => Ok(UpgradeResult::NetworkError { reason, display_name }),
-    }
-}
-
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub async fn upgrade_to_smb_volume_using_saved_password(
-    _volume_id: String,
-    _app_handle: tauri::AppHandle,
-) -> Result<UpgradeResult, String> {
-    Err("Reading saved SMB passwords is only supported on macOS".to_string())
+    smb_connect_directly::connect_directly_with_system_saved_password(&volume_id).await
 }
 
 // --- Disconnect Command ---

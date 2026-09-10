@@ -366,7 +366,8 @@ mcp_tools! {
     },
     "upgrade_smb_to_direct" => {
         desc: "Upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O. Uses \
-               Keychain creds. Returns OK, NeedsCredentials, or NetworkError. See \
+               Keychain creds. Returns OK or NeedsCredentials; a server it can't reach, a \
+               volume that's gone, or one that isn't an SMB mount comes back as an error. See \
                cmdr://state volumes for each SMB share's connectionState.",
         schema: schemas::upgrade_smb_to_direct_schema(),
         gate: TokenGate::Open,

@@ -26,7 +26,8 @@ of the app build.
   - `smb_smbclient.rs`: `smbclient -L` fallback for Linux (requires `samba-client` package)
   - `linux_distro.rs`: Thin wrapper calling `crate::linux_distro::LinuxDistro` for smbclient install hints; `cfg(target_os = "linux")` gated
   - The protocol layer under all of them is the `cmdr-smb` crate: the addr builder, the guest / authenticated `smb2::SmbClient` listing calls, the `classify_*` / `is_auth_error` classification, and the `ShareInfo` / `AuthMode` / `ShareListResult` / `ShareListError` vocabulary. `crates/cmdr-smb/DETAILS.md` says what belongs there and what stays here
-  - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by three upgrade paths (startup, mount-time watcher, manual "Connect directly"). Contains `register_smb_volume`, `resolve_and_register_smb_volume` (the shared resolve+creds+register used by both fire-and-forget auto-upgrade paths), `try_smb_upgrade`, `UpgradeResult`/`UpgradeError` types, address resolution (`resolve_server_address`, `resolve_ip_to_hostname`, `friendly_server_name`), and `get_keychain_password`.
+  - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by three upgrade paths (startup, mount-time watcher, manual "Connect directly"). Contains `register_smb_volume`, `resolve_and_register_smb_volume` (the shared resolve+creds+register used by both fire-and-forget auto-upgrade paths), `try_smb_upgrade`, `UpgradeError`/`UpgradeFailure` types, address resolution (`resolve_server_address`, `resolve_ip_to_hostname`, `friendly_server_name`), and `get_keychain_password`.
+  - `smb_connect_directly.rs`: the manual "Connect directly" upgrade, with Cmdr's stored credentials, the sign-in sheet's, or Finder's saved password. Behind the three `upgrade_to_smb_volume*` commands, the MCP `upgrade_smb_to_direct` tool, and the indexer's `ensure_direct_smb`. Owns `UpgradeResult` (§ "Connect directly answers a gone volume").
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
   - `mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts, each success confirmed against `statfs` (§ "A reported mount counts once it's there"); also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
   - `mount_linux.rs`: Linux `gio mount` for GVFS-based user-space mounts, confirmed the same way
@@ -502,6 +503,24 @@ manual install paths). A notice describes a situation, not an event: once the se
 genuine regression is worth saying out loud again. Without the clear, one bad startup would mute the notice for the
 rest of the run.
 
+## Connect directly answers a gone volume
+
+`smb_connect_directly.rs` is the upgrade someone ASKED for: the three `upgrade_to_smb_volume*` commands (which kick
+mDNS and delegate), the MCP `upgrade_smb_to_direct` tool, and the indexer's `ensure_direct_smb`. Nothing in it takes an
+`AppHandle`, which is what lets the generic MCP executor call it.
+
+**Every answer is an `UpgradeResult` variant, ❌ never an `Err`.** `find_mounted_share` runs first on all three doors:
+no volume under the id, or nothing at its root, is `VolumeGone`; something mounted there that isn't SMB is
+`NotSmbMount`; an already-`Smb` backend is `Success`. A share vanishing between the offer and the press (an unmount, an
+eject, a network drop) is an ordinary outcome the frontend words and retires the notice on. As a string `Err`, it
+reached the frontend as a breakdown with no reason, and the OS-mount notice kept offering a retry on a volume that
+didn't exist (ERR-SHUSC). The saved-password door looks before its Keychain read, so a gone share never costs a consent
+dialog.
+
+**Gone versus not-SMB is `Path::exists` on the root**, asked only after `get_smb_mount_info` found no SMB mount: macOS
+removes a `/Volumes` mount point along with its mount. A mount point left behind as a plain directory reads as
+`NotSmbMount`, which the frontend answers the same way.
+
 ## The two SFTP stores, and why neither is a widened SMB one
 
 `sftp_host_keys.rs` holds what this machine TRUSTS (`known-sftp-hosts.json`), `sftp_known_servers.rs` holds what the
@@ -751,7 +770,7 @@ cycles"; re-measure there before trusting any number.
   through the shared `smb_upgrade::resolve_and_register_smb_volume`, so the resolver choice can't drift between them
   again (the startup copy previously used the one-shot `resolve_ip_to_hostname`, looked creds up by LAN IP, missed
   hostname-keyed creds, and fell back to guest → `STATUS_LOGON_FAILURE`). The manual "Connect directly" path
-  (`commands::network::upgrade_to_smb_volume`) stays separate because it surfaces `CredentialsNeeded` to prompt the
+  (`smb_connect_directly`) stays separate because it surfaces `CredentialsNeeded` to prompt the
   user, but uses the same `resolve_ip_to_hostname_with_wait` + `get_keychain_password` pair.
 - **A wedged `NetAuthSysAgent` hangs every NetFS mount, and only restarting the daemon clears it**: `mount_share_sync`
   sits in `NetFSMountURLSync` → `NAAA_MountURL`, blocked on the MIG reply, while the daemon itself sits in `smb_mount` →

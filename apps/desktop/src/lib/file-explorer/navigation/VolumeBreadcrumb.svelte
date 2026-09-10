@@ -575,8 +575,11 @@
 
         // The flow itself lives in `../network/direct-connect`, shared with the retry
         // button on the OS-mount fallback notice. It raises the one sign-in sheet
-        // itself when a credential is what's missing.
-        await connectDirectly(vid)
+        // itself when a credential is what's missing. The name is read NOW, while the
+        // row is still listed: it's what words the answer if the share goes away
+        // before the backend gets there.
+        const shareName = allVolumes.find((volume) => volume.id === vid)?.name ?? vid
+        await connectDirectly({ volumeId: vid, shareName })
     }
 
     // Per-row right-click context menu. Favorites get Rename / Remove; ejectable

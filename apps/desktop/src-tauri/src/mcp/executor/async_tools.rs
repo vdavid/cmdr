@@ -417,17 +417,15 @@ pub fn execute_remove_manual_server<R: Runtime>(app: &AppHandle<R>, params: &Val
 }
 
 /// Execute `upgrade_smb_to_direct`: upgrade an OS-mounted SMB volume to a direct
-/// smb2 session. Thin wrapper around the existing `upgrade_to_smb_volume` Tauri
-/// command (same code path that powers the "Connect directly" UI button) so
-/// agents get the same behaviour as users: tries stored Keychain credentials,
-/// returns a typed result mirroring `UpgradeResult` (Success / CredentialsNeeded
-/// / NetworkError). On `CredentialsNeeded`, agents are out of luck for now —
-/// credential prompts are interactive; a future tool could accept credentials
-/// inline and call `upgrade_to_smb_volume_with_credentials`.
+/// smb2 session through `network::smb_connect_directly::connect_directly`, the same
+/// code the "Connect directly" button runs, so agents get what users get: stored
+/// Keychain credentials, and the same typed answer. On `CredentialsNeeded`, agents
+/// are out of luck for now: credential prompts are interactive, and a future tool
+/// could take credentials inline through `connect_directly_with_credentials`. A
+/// volume that's gone or isn't an SMB mount means the `volumeId` is wrong, so both
+/// come back as invalid params.
 ///
-/// Only meaningful on macOS / Linux (the underlying command is platform-gated).
-/// On other platforms the Tauri stub returns an error; we surface it as an
-/// MCP internal error.
+/// Only meaningful on macOS / Linux, where the network module exists.
 pub async fn execute_upgrade_smb_to_direct<R: Runtime>(_app: &AppHandle<R>, params: &Value) -> ToolResult {
     let volume_id = params
         .get("volumeId")
@@ -436,21 +434,19 @@ pub async fn execute_upgrade_smb_to_direct<R: Runtime>(_app: &AppHandle<R>, para
 
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
-        use crate::network::smb_upgrade::UpgradeResult;
-        // Calls the inner helper rather than the Tauri command itself because
-        // the Tauri command takes concrete `tauri::AppHandle` (= `AppHandle<Wry>`)
-        // while the MCP executor's `app` is generic over `Runtime`. The inner
-        // function carries all the upgrade logic minus the mDNS kick (which
-        // needs a concrete handle). Agents wanting hostname-keyed Keychain
-        // creds need mDNS already running — see the tool description.
-        match crate::commands::network::upgrade_to_smb_volume_inner(volume_id.to_string()).await {
-            Ok(UpgradeResult::Success) => Ok(json!(format!("OK: Upgraded {} to direct smb2", volume_id))),
-            Ok(UpgradeResult::CredentialsNeeded {
+        use crate::network::smb_connect_directly::{UpgradeResult, connect_directly};
+        // The upgrade takes no `AppHandle`, which is what lets this generic executor
+        // call it. What it can't do is kick mDNS (that needs a concrete handle), so
+        // hostname-keyed Keychain creds need mDNS already running; the
+        // `CredentialsNeeded` answer below says so.
+        match connect_directly(volume_id).await {
+            UpgradeResult::Success => Ok(json!(format!("OK: Upgraded {} to direct smb2", volume_id))),
+            UpgradeResult::CredentialsNeeded {
                 server,
                 share,
                 display_name,
                 ..
-            }) => {
+            } => {
                 let server_label = if display_name.is_empty() { server } else { display_name };
                 Ok(json!(format!(
                     "Needs credentials: share={} on {}. Cmdr's Keychain didn't have a working password for this share. \
@@ -459,13 +455,17 @@ pub async fn execute_upgrade_smb_to_direct<R: Runtime>(_app: &AppHandle<R>, para
                     share, server_label
                 )))
             }
-            Ok(UpgradeResult::NetworkError { reason, display_name }) => Err(ToolError::internal(format!(
+            UpgradeResult::NetworkError { reason, display_name } => Err(ToolError::internal(format!(
                 "Couldn't reach {} while upgrading {} ({:?}). The share is still usable over its OS mount.",
                 display_name, volume_id, reason
             ))),
-            Err(e) => Err(ToolError::internal(format!(
-                "upgrade_to_smb_volume_inner({}) failed: {}",
-                volume_id, e
+            UpgradeResult::VolumeGone => Err(ToolError::invalid_params(format!(
+                "Volume {volume_id} isn't mounted anymore (unmounted or ejected), so there's nothing to upgrade. \
+                 See cmdr://state volumes for the current ids."
+            ))),
+            UpgradeResult::NotSmbMount => Err(ToolError::invalid_params(format!(
+                "Volume {volume_id} isn't an SMB mount, so there's nothing to upgrade. Pick a volume whose kind is \
+                 smb and connectionState is os_mount in cmdr://state volumes."
             ))),
         }
     }

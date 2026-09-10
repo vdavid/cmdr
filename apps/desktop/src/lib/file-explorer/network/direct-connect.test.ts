@@ -51,6 +51,9 @@ vi.mock('./lazy-trigger', () => ({ triggerNetworkDiscovery: vi.fn() }))
 
 import { connectDirectly } from './direct-connect'
 
+/** The share every test presses the button on. */
+const archive = { volumeId: 'smb-archive', shareName: 'archive' }
+
 const credentialsNeeded: UpgradeResult = {
   status: 'credentialsNeeded',
   server: 'naspolya',
@@ -64,6 +67,11 @@ const credentialsNeeded: UpgradeResult = {
 /** Toasts the user would actually read as bad news. */
 function errorToasts(): unknown[] {
   return addToast.mock.calls.filter((call) => call[1]?.level === 'error').map((call) => call[0])
+}
+
+/** The text of every toast raised at `level`. */
+function toastsAt(level: string): string[] {
+  return addToast.mock.calls.filter((call) => call[1]?.level === level).map((call) => String(call[0]))
 }
 
 /** The sheet request under test, as much of it as these assert. */
@@ -98,15 +106,34 @@ describe('connectDirectly', () => {
   it('confirms a direct connection and refreshes the volume list', async () => {
     upgradeToSmbVolume.mockResolvedValue({ status: 'success' })
 
-    await expect(connectDirectly('smb-archive')).resolves.toBe('connected')
+    await expect(connectDirectly(archive)).resolves.toBe('connected')
     expect(requestVolumeRefresh).toHaveBeenCalled()
   })
 
   it('names the reason a reachable-but-uncooperative server stayed on the OS mount', async () => {
     upgradeToSmbVolume.mockResolvedValue({ status: 'networkError', reason: 'unreachable', displayName: 'Naspolya' })
 
-    await expect(connectDirectly('smb-archive')).resolves.toBe('stillOnOsMount')
+    await expect(connectDirectly(archive)).resolves.toBe('stillOnOsMount')
     expect(errorToasts()).toHaveLength(1)
+  })
+
+  it('says the share is gone, and reports it so the notice retires, when it vanished before the press', async () => {
+    // An unmount, an eject, or a network drop between the offer and the click.
+    // Retrying can't bring a share back, so this is no breakdown and no retry.
+    upgradeToSmbVolume.mockResolvedValue({ status: 'volumeGone' })
+
+    await expect(connectDirectly(archive)).resolves.toBe('gone')
+    expect(errorToasts()).toHaveLength(0)
+    expect(toastsAt('warn')).toHaveLength(1)
+    expect(toastsAt('warn')[0]).toContain('archive')
+  })
+
+  it('says a volume that is no network share is exactly that, rather than blaming the connection', async () => {
+    upgradeToSmbVolume.mockResolvedValue({ status: 'notSmbMount' })
+
+    await expect(connectDirectly({ volumeId: 'local-backup', shareName: 'Backup' })).resolves.toBe('gone')
+    expect(errorToasts()).toHaveLength(0)
+    expect(toastsAt('warn')[0]).toContain('Backup')
   })
 
   it('still asks when the remembered-username lookup breaks down', async () => {
@@ -117,7 +144,7 @@ describe('connectDirectly', () => {
     vi.mocked(getUsernameHint).mockRejectedValueOnce(new Error('ipc down'))
     upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
 
-    await expect(connectDirectly('smb-archive')).resolves.toBe('askingForCredentials')
+    await expect(connectDirectly(archive)).resolves.toBe('askingForCredentials')
 
     const request = await sheetRequest()
     expect(request.endpoint.username).toBeUndefined()
@@ -126,7 +153,7 @@ describe('connectDirectly', () => {
   it('asks for a password on the one sign-in sheet, naming the share', async () => {
     upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
 
-    await expect(connectDirectly('smb-archive')).resolves.toBe('askingForCredentials')
+    await expect(connectDirectly(archive)).resolves.toBe('askingForCredentials')
 
     const request = await sheetRequest()
     expect(request.mode).toBe('sign-in')
@@ -142,7 +169,7 @@ describe('connectDirectly', () => {
     upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
     upgradeToSmbVolumeWithCredentials.mockResolvedValue({ status: 'success' })
 
-    await connectDirectly('smb-archive')
+    await connectDirectly(archive)
     const request = await sheetRequest()
     const outcome = await request.attempt({
       mode: 'sign-in',
@@ -159,7 +186,7 @@ describe('connectDirectly', () => {
     upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
     upgradeToSmbVolumeWithCredentials.mockResolvedValue(credentialsNeeded)
 
-    await connectDirectly('smb-archive')
+    await connectDirectly(archive)
     const request = await sheetRequest()
 
     await expect(
@@ -178,7 +205,7 @@ describe('connectDirectly', () => {
       displayName: 'Naspolya',
     })
 
-    await connectDirectly('smb-archive')
+    await connectDirectly(archive)
     const request = await sheetRequest()
 
     await expect(
@@ -187,17 +214,31 @@ describe('connectDirectly', () => {
     expect(errorToasts()).toHaveLength(1)
   })
 
+  it('closes the sheet and says the share is gone when it vanished while the user typed', async () => {
+    upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
+    upgradeToSmbVolumeWithCredentials.mockResolvedValue({ status: 'volumeGone' })
+
+    await connectDirectly(archive)
+    const request = await sheetRequest()
+
+    await expect(
+      request.attempt({ mode: 'sign-in', secret: { secret: 'hunter2', remember: false }, username: 'david' }),
+    ).resolves.toEqual({ kind: 'handed_off' })
+    expect(errorToasts()).toHaveLength(0)
+    expect(toastsAt('warn')[0]).toContain('archive')
+  })
+
   it('says so out loud when the attempt itself breaks down', async () => {
     upgradeToSmbVolume.mockRejectedValue(new Error('boom'))
 
-    await expect(connectDirectly('smb-archive')).resolves.toBe('stillOnOsMount')
+    await expect(connectDirectly(archive)).resolves.toBe('stillOnOsMount')
     expect(errorToasts()).toHaveLength(1)
   })
 
   it('dismisses its progress toast on every path, so no spinner outlives the attempt', async () => {
     upgradeToSmbVolume.mockRejectedValue(new Error('boom'))
 
-    await connectDirectly('smb-archive')
+    await connectDirectly(archive)
 
     expect(dismissToast).toHaveBeenCalledWith('toast-id')
   })
@@ -207,8 +248,19 @@ describe('connectDirectly', () => {
     systemHasSavedSmbPassword.mockResolvedValue(true)
     ask.mockResolvedValue(true)
     upgradeToSmbVolumeUsingSavedPassword.mockResolvedValue({ status: 'success' })
-    await expect(connectDirectly('smb-archive')).resolves.toBe('connected')
+    await expect(connectDirectly(archive)).resolves.toBe('connected')
     expect(openSignInSheet).not.toHaveBeenCalled()
+  })
+
+  it('says the share is gone when it vanished behind the saved-password prompt', async () => {
+    upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
+    systemHasSavedSmbPassword.mockResolvedValue(true)
+    ask.mockResolvedValue(true)
+    upgradeToSmbVolumeUsingSavedPassword.mockResolvedValue({ status: 'volumeGone' })
+
+    await expect(connectDirectly(archive)).resolves.toBe('gone')
+    expect(openSignInSheet).not.toHaveBeenCalled()
+    expect(toastsAt('warn')[0]).toContain('archive')
   })
 
   it('falls to the login form when the saved password no longer works', async () => {
@@ -216,7 +268,7 @@ describe('connectDirectly', () => {
     systemHasSavedSmbPassword.mockResolvedValue(true)
     ask.mockResolvedValue(true)
     upgradeToSmbVolumeUsingSavedPassword.mockResolvedValue(credentialsNeeded)
-    await expect(connectDirectly('smb-archive')).resolves.toBe('askingForCredentials')
+    await expect(connectDirectly(archive)).resolves.toBe('askingForCredentials')
     expect(openSignInSheet).toHaveBeenCalled()
   })
 
@@ -224,7 +276,7 @@ describe('connectDirectly', () => {
     upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
     systemHasSavedSmbPassword.mockResolvedValue(true)
     ask.mockResolvedValue(false)
-    await expect(connectDirectly('smb-archive')).resolves.toBe('askingForCredentials')
+    await expect(connectDirectly(archive)).resolves.toBe('askingForCredentials')
     expect(upgradeToSmbVolumeUsingSavedPassword).not.toHaveBeenCalled()
   })
 })

@@ -343,23 +343,23 @@ pub async fn mount_network_share(
     })
 }
 
-/// Result of an SMB volume upgrade attempt (stub version mirrors real type).
+/// Result of an SMB volume upgrade attempt (stub: the one real variant this
+/// platform can honestly give, in the real type's JSON shape).
 #[derive(serde::Serialize, specta::Type)]
 #[serde(tag = "status", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum UpgradeResult {
-    NetworkError { message: String },
+    /// Nothing on this platform is an SMB mount, so there's nothing to upgrade.
+    NotSmbMount,
 }
 
-/// Upgrades an SMB volume to use direct smb2 (stub: returns error).
+/// Upgrades an SMB volume to use direct smb2 (stub: nothing here is an SMB mount).
 #[tauri::command]
 #[specta::specta]
-pub async fn upgrade_to_smb_volume(_volume_id: String, _app_handle: tauri::AppHandle) -> Result<UpgradeResult, String> {
-    Ok(UpgradeResult::NetworkError {
-        message: "Direct SMB connection not supported on this platform".to_string(),
-    })
+pub async fn upgrade_to_smb_volume(_volume_id: String, _app_handle: tauri::AppHandle) -> UpgradeResult {
+    UpgradeResult::NotSmbMount
 }
 
-/// Upgrades an SMB volume with explicit credentials (stub: returns error).
+/// Upgrades an SMB volume with explicit credentials (stub: nothing here is an SMB mount).
 #[tauri::command]
 #[specta::specta]
 pub async fn upgrade_to_smb_volume_with_credentials(
@@ -368,10 +368,8 @@ pub async fn upgrade_to_smb_volume_with_credentials(
     _password: Option<String>,
     _remember_in_keychain: bool,
     _app_handle: tauri::AppHandle,
-) -> Result<UpgradeResult, String> {
-    Ok(UpgradeResult::NetworkError {
-        message: "Direct SMB connection not supported on this platform".to_string(),
-    })
+) -> UpgradeResult {
+    UpgradeResult::NotSmbMount
 }
 
 /// Reconnects an SMB volume (stub: returns error).
@@ -409,16 +407,14 @@ pub async fn system_has_saved_smb_password(_volume_id: String) -> Result<bool, S
     Ok(false)
 }
 
-/// Upgrades an SMB volume using a saved system password (stub: returns error).
+/// Upgrades an SMB volume using a saved system password (stub: nothing here is an SMB mount).
 #[tauri::command]
 #[specta::specta]
 pub async fn upgrade_to_smb_volume_using_saved_password(
     _volume_id: String,
     _app_handle: tauri::AppHandle,
-) -> Result<UpgradeResult, String> {
-    Ok(UpgradeResult::NetworkError {
-        message: "Reading saved SMB passwords is only supported on macOS".to_string(),
-    })
+) -> UpgradeResult {
+    UpgradeResult::NotSmbMount
 }
 
 /// Disconnects an SMB volume (stub: returns error).

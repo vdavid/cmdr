@@ -18,7 +18,8 @@ An `os_mount` share is registered as a `LocalPosixVolume` on an `smbfs` mount (i
 direct one is an `SmbVolume` returning `Some(Direct)`. `ensure_direct_smb` therefore refuses any other `backend_kind()`
 outright (❗ SFTP, WebDAV, and a dialed phone report a healthy `connection_state()` too, and walking an `sftp://` root
 over smb2 is what the kind check prevents), then: `Direct` → index now; anything else on an `SmbVolume` → refuse
-(reconnect first); a `Local` volume on an `smbfs` mount → trigger/await `upgrade_to_smb_volume_inner`, then re-check.
+(reconnect first); a `Local` volume on an `smbfs` mount → trigger/await the host's `ensure_direct_smb` (the app's
+"Connect directly" upgrade), then re-check.
 
 Every refusal is a TYPED `SmbIndexGateReason` (`NotRegistered` / `NotAnSmbVolume` / `UpgradeFailed` /
 `CredentialsNeeded` / `Disconnected`) that crosses IPC as a snake_case tag, never a message substring. FDA-independent:

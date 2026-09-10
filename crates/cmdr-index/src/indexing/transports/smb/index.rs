@@ -6,7 +6,7 @@
 //! round-trips through the kernel mount. So `start_indexing_for_smb` gates on
 //! the volume being a live `SmbVolume` in `Direct` state; an `os_mount` share
 //! (registered as a `LocalPosixVolume` on an `smbfs` mount, no smb2 session) is
-//! upgraded first via the existing `upgrade_to_smb_volume` path, and if that
+//! upgraded first through the host's "Connect directly" upgrade, and if that
 //! upgrade can't complete, indexing stays disabled with a TYPED reason (no
 //! string-matching).
 //!
@@ -79,7 +79,7 @@ fn is_direct_smb(volume_id: &str) -> bool {
 /// typed gate reason.
 ///
 /// Mirrors the FE "Turn on indexing" intent: an `os_mount` share triggers/awaits
-/// `upgrade_to_smb_volume_inner`; a failed/credential-needing upgrade keeps
+/// the host's `ensure_direct_smb`; a failed/credential-needing upgrade keeps
 /// indexing disabled with a typed reason.
 async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReason> {
     let volumes = crate::indexing::host::volumes::current();

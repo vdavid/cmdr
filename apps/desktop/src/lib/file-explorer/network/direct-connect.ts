@@ -11,9 +11,10 @@
  *
  * The credential ask is the ONE sign-in sheet (`servers/DETAILS.md` § "The sheet
  * contract"), which is app-global, so this flow raises it itself and every caller
- * is a bare `connectDirectly(volumeId)`. ❗ It returns as soon as the sheet is up,
- * ❌ not when the user is done with it: the OS-mount notice retires on
- * `askingForCredentials`, and waiting out a sheet would leave it stacked under one.
+ * is a bare `connectDirectly({ volumeId, shareName })`. ❗ It returns as soon as
+ * the sheet is up, ❌ not when the user is done with it: the OS-mount notice
+ * retires on `askingForCredentials`, and waiting out a sheet would leave it
+ * stacked under one.
  */
 
 import {
@@ -31,12 +32,26 @@ import { tString } from '$lib/intl/messages.svelte'
 import { triggerNetworkDiscovery } from './lazy-trigger'
 import { openSmbSignInSheet, type SmbCredentialAnswer } from './smb-sign-in'
 import type { SignInAttemptOutcome } from '$lib/servers/sign-in-contract'
-import { directConnectionUnavailableMessage } from './upgrade-messages'
+import { directConnectionUnavailableMessage, nothingToUpgradeMessage } from './upgrade-messages'
 
 const log = getAppLogger('fileExplorer')
 
 /** The `credentialsNeeded` arm of an upgrade result, which is all the form needs. */
 export type CredentialsNeeded = UpgradeResult & { status: 'credentialsNeeded' }
+
+/** The answers that leave no direct session and no credential worth asking for. */
+type NoUpgrade = Exclude<UpgradeResult, { status: 'success' | 'credentialsNeeded' }>
+
+/** The volume a "Connect directly" press is about. */
+export interface DirectConnectTarget {
+  volumeId: string
+  /**
+   * The name the pressed control showed: the share on the OS-mount notice, the
+   * volume in the breadcrumb. It words the "that share is gone" answer, which the
+   * backend can't name.
+   */
+  shareName: string
+}
 
 /** Where the flow left the volume once it ran its course. */
 export type DirectConnectOutcome =
@@ -46,11 +61,17 @@ export type DirectConnectOutcome =
   | 'askingForCredentials'
   /** No direct session, and the user has been told why. The share still works. */
   | 'stillOnOsMount'
+  /**
+   * There's no OS-mounted share left to upgrade: it was unmounted, ejected, or
+   * dropped off the network before the press, or the volume was never a network
+   * share. The user has been told, and no retry can change it.
+   */
+  | 'gone'
 
 /**
- * Upgrades `volumeId` to a direct smb2 connection, owning every toast along the
- * way (a persistent "Connecting directly…" while it runs, then success or the
- * typed reason it didn't happen).
+ * Upgrades the target volume to a direct smb2 connection, owning every toast
+ * along the way (a persistent "Connecting directly…" while it runs, then success
+ * or the typed reason it didn't happen).
  *
  * Stored credentials are tried first; if they're missing or stale, the saved
  * macOS/Finder password gets a prompt-free probe before anyone is asked to type
@@ -59,7 +80,7 @@ export type DirectConnectOutcome =
  * Never resolves without having said something to the user, so a caller can wire
  * a button straight to it.
  */
-export async function connectDirectly(volumeId: string): Promise<DirectConnectOutcome> {
+export async function connectDirectly(target: DirectConnectTarget): Promise<DirectConnectOutcome> {
   // Opening a TCP socket to a private IP triggers macOS's Local Network prompt on
   // its own, so this is the right moment to also start mDNS for the rest of the
   // network UI.
@@ -70,18 +91,17 @@ export async function connectDirectly(volumeId: string): Promise<DirectConnectOu
   })
 
   try {
-    const result = await upgradeToSmbVolume(volumeId)
+    const result = await upgradeToSmbVolume(target.volumeId)
     dismissToast(connectingToastId)
 
     if (result.status === 'success') return announceSuccess()
     if (result.status === 'credentialsNeeded') {
       // Before asking anyone to type a password, see whether macOS/Finder already
       // saved one for this share (a prompt-free probe).
-      const saved = await tryUseSavedPassword(volumeId, result.displayName)
-      return saved ?? askForCredentials(result, volumeId)
+      const saved = await tryUseSavedPassword(target, result.displayName)
+      return saved ?? askForCredentials(result, target)
     }
-    addToast(directConnectionUnavailableMessage(result.reason, result.displayName), { level: 'error' })
-    return 'stillOnOsMount'
+    return announceNoUpgrade(result, target.shareName)
   } catch (e) {
     dismissToast(connectingToastId)
     return announceBreakdown(e)
@@ -98,8 +118,11 @@ export async function connectDirectly(volumeId: string): Promise<DirectConnectOu
  * when there's nothing saved or the user chose to type it instead, in which case
  * the caller raises the login form.
  */
-async function tryUseSavedPassword(volumeId: string, displayName: string): Promise<DirectConnectOutcome | null> {
-  if (!(await systemHasSavedSmbPassword(volumeId))) return null
+async function tryUseSavedPassword(
+  target: DirectConnectTarget,
+  displayName: string,
+): Promise<DirectConnectOutcome | null> {
+  if (!(await systemHasSavedSmbPassword(target.volumeId))) return null
 
   const useSaved = await ask(tString('fileExplorer.navigation.useSavedPasswordMessage', { displayName }), {
     title: tString('fileExplorer.navigation.useSavedPasswordTitle'),
@@ -113,15 +136,14 @@ async function tryUseSavedPassword(volumeId: string, displayName: string): Promi
     dismissal: 'persistent',
   })
   try {
-    const result = await upgradeToSmbVolumeUsingSavedPassword(volumeId)
+    const result = await upgradeToSmbVolumeUsingSavedPassword(target.volumeId)
     dismissToast(savedToastId)
     if (result.status === 'success') return announceSuccess()
     if (result.status === 'credentialsNeeded') {
       // The saved password was absent, denied, or wrong: fall to the sheet.
-      return askForCredentials(result, volumeId)
+      return askForCredentials(result, target)
     }
-    addToast(directConnectionUnavailableMessage(result.reason, result.displayName), { level: 'error' })
-    return 'stillOnOsMount'
+    return announceNoUpgrade(result, target.shareName)
   } catch (e) {
     dismissToast(savedToastId)
     return announceBreakdown(e)
@@ -142,7 +164,7 @@ function announceSuccess(): DirectConnectOutcome {
  * ask is on screen (two prompts for one share is noise). The sheet is app-global,
  * so there is no longer a case where nothing can render it.
  */
-function askForCredentials(info: CredentialsNeeded, volumeId: string): DirectConnectOutcome {
+function askForCredentials(info: CredentialsNeeded, target: DirectConnectTarget): DirectConnectOutcome {
   void openSmbSignInSheet({
     host: { name: info.displayName },
     shareName: info.share,
@@ -150,7 +172,7 @@ function askForCredentials(info: CredentialsNeeded, volumeId: string): DirectCon
     // `upgradeToSmbVolume` just tried, so offering it again would be inert.
     guestAllowed: false,
     refusal: 'needs_credentials',
-    attempt: (answer) => upgradeWithCredentials(volumeId, answer),
+    attempt: (answer) => upgradeWithCredentials(target, answer),
   })
   return 'askingForCredentials'
 }
@@ -159,18 +181,27 @@ function askForCredentials(info: CredentialsNeeded, volumeId: string): DirectCon
  * One upgrade round-trip with what the user offered.
  *
  * ❗ Only a refused CREDENTIAL keeps the sheet open. A server that stopped
- * answering has nothing a password can fix, so the sheet closes and the typed
- * sentence goes to a toast — the same words the flow's own failure path uses.
+ * answering, or a share that went away while the user typed, has nothing a
+ * password can fix, so the sheet closes and the typed sentence goes to a toast:
+ * the same words the flow's own paths use.
  */
-async function upgradeWithCredentials(volumeId: string, answer: SmbCredentialAnswer): Promise<SignInAttemptOutcome> {
+async function upgradeWithCredentials(
+  target: DirectConnectTarget,
+  answer: SmbCredentialAnswer,
+): Promise<SignInAttemptOutcome> {
   try {
-    const result = await upgradeToSmbVolumeWithCredentials(volumeId, answer.username, answer.password, answer.remember)
+    const result = await upgradeToSmbVolumeWithCredentials(
+      target.volumeId,
+      answer.username,
+      answer.password,
+      answer.remember,
+    )
     if (result.status === 'success') {
       announceSuccess()
       return { kind: 'handed_off' }
     }
     if (result.status === 'credentialsNeeded') return { kind: 'refused', refusal: 'authentication_rejected' }
-    addToast(directConnectionUnavailableMessage(result.reason, result.displayName), { level: 'error' })
+    announceNoUpgrade(result, target.shareName)
     return { kind: 'handed_off' }
   } catch (e) {
     announceBreakdown(e)
@@ -178,6 +209,24 @@ async function upgradeWithCredentials(volumeId: string, answer: SmbCredentialAns
   }
 }
 
+/**
+ * Says why no direct session came of it, and where that leaves the volume.
+ *
+ * A server that didn't cooperate is worth another press once it wakes, so that's
+ * an `error` and the volume is `stillOnOsMount`. A share that's gone, or a volume
+ * that was never one, isn't worth any press: nothing broke, there was just nothing
+ * left to connect, so that's a `warn` and the volume is `gone`.
+ */
+function announceNoUpgrade(result: NoUpgrade, shareName: string): DirectConnectOutcome {
+  if (result.status === 'networkError') {
+    addToast(directConnectionUnavailableMessage(result.reason, result.displayName), { level: 'error' })
+    return 'stillOnOsMount'
+  }
+  addToast(nothingToUpgradeMessage(result.status, shareName), { level: 'warn' })
+  return 'gone'
+}
+
+/** The attempt threw before the backend could answer: the one case with no typed reason to word. */
 function announceBreakdown(e: unknown): DirectConnectOutcome {
   log.error('Direct SMB connection attempt broke down: {error}', { error: String(e) })
   addToast(tString('fileExplorer.pane.directConnectionUnavailableToast'), { level: 'error' })

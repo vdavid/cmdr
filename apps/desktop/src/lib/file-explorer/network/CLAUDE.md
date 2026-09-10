@@ -24,8 +24,8 @@ Signing in is `$lib/servers`' one sheet; this module only says what to ask and w
   refusal ask. A pre-prompt there was a real bug; `PlacesBrowser.test.ts` pins it.
 - **`direct-connect.ts::connectDirectly` is the ONE upgrade flow**: the yellow dot, the breadcrumb submenu, and the
   fallback notice all press it, so route a new entry point through it rather than re-inlining the saved-password probe
-  and the toast lifecycle. Its failures are typed `UpgradeFailure`s worded by `upgrade-messages.ts`; ❌ never toast
-  `String(e)`.
+  and the toast lifecycle. Every answer is a typed `UpgradeResult` status worded by `upgrade-messages.ts` (a share gone
+  before the press is `volumeGone`, not a throw); ❌ never toast `String(e)`.
 - **A credential is asked for on the sheet and ❌ never in the pane**, through `smb-sign-in.ts`. The three sites, what
   each `attempt` runs, and where cancelling lands: `../../servers/DETAILS.md`.
 - **`NetworkMountView` must propagate its local `currentNetworkHost` via `onNetworkHostChange`**, mirrored in the parent

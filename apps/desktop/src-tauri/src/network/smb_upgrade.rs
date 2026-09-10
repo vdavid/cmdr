@@ -3,7 +3,7 @@
 //! Shared across three upgrade paths:
 //! 1. **Startup** (`file_system::upgrade_existing_smb_mounts`): scans existing mounts
 //! 2. **Mount-time** (`volumes::watcher::try_upgrade_smb_mount`): FSEvents detects new mount
-//! 3. **Manual** (`commands::network::upgrade_to_smb_volume`): user clicks "Connect directly"
+//! 3. **Manual** (`smb_connect_directly`): user clicks "Connect directly"
 
 use crate::ignore_poison::IgnorePoison;
 use crate::network::get_discovered_hosts;
@@ -197,32 +197,6 @@ fn log_direct_connect_failure(
             UpgradeFailure::from_smb_error(err)
         ),
     }
-}
-
-/// Result of an SMB volume upgrade attempt.
-#[derive(serde::Serialize, specta::Type)]
-#[serde(tag = "status", rename_all = "camelCase", rename_all_fields = "camelCase")]
-pub enum UpgradeResult {
-    /// Upgrade succeeded: volume now uses direct smb2.
-    Success,
-    /// Credentials needed: frontend should show login form.
-    CredentialsNeeded {
-        server: String,
-        share: String,
-        port: u16,
-        /// Friendly display name for the server (mDNS hostname or IP).
-        display_name: String,
-        /// Username hint from stored credentials or the OS mount.
-        username_hint: Option<String>,
-        /// Optional message explaining why credentials are needed.
-        message: Option<String>,
-    },
-    /// Couldn't reach the server (DNS, network, unreachable, too slow).
-    NetworkError {
-        reason: UpgradeFailure,
-        /// Friendly server name for the frontend to name in its copy.
-        display_name: String,
-    },
 }
 
 /// Internal error type for upgrade attempts, distinguishing auth from network failures.

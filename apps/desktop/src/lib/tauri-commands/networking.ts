@@ -348,19 +348,18 @@ export async function mountNetworkShare(
   return res.data
 }
 
-/** Result of an SMB volume upgrade attempt. */
+/** Where a "Connect directly" left the volume. Every outcome is an answer, never a throw. */
 export type { UpgradeResult }
 
 /**
  * Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection.
  *
- * Tries stored credentials first. Returns `credentialsNeeded` if the frontend
- * should show a login form, or `networkError` for non-auth failures.
+ * Tries stored credentials first. Answers `credentialsNeeded` when the frontend
+ * should ask for a password, `networkError` for a server that didn't cooperate,
+ * and `volumeGone` / `notSmbMount` when there's no OS-mounted share to upgrade.
  */
 export async function upgradeToSmbVolume(volumeId: string): Promise<UpgradeResult> {
-  const res = await commands.upgradeToSmbVolume(volumeId)
-  if (res.status === 'error') throwIpcError(res.error)
-  return res.data
+  return commands.upgradeToSmbVolume(volumeId)
 }
 
 /**

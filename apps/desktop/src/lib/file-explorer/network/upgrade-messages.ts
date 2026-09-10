@@ -31,3 +31,21 @@ export function directConnectionUnavailableMessage(reason: UpgradeFailure, serve
       return tString('fileExplorer.pane.directConnectionUnexpectedToast', { server })
   }
 }
+
+/**
+ * The toast text for a volume with no OS-mounted share left to upgrade: the
+ * share went away before the press (`volumeGone`), or the volume was never a
+ * network share (`notSmbMount`).
+ *
+ * `name` is what the pressed control showed: the share's name on the OS-mount
+ * notice, the volume's name in the breadcrumb. The backend can't supply it, since
+ * a volume that's gone has no name left to look up.
+ */
+export function nothingToUpgradeMessage(status: 'volumeGone' | 'notSmbMount', name: string): string {
+  switch (status) {
+    case 'volumeGone':
+      return tString('fileExplorer.pane.directConnectionShareGoneToast', { share: name })
+    case 'notSmbMount':
+      return tString('fileExplorer.pane.directConnectionNotNetworkShareToast', { volume: name })
+  }
+}

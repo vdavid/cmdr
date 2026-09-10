@@ -3600,20 +3600,19 @@ export const commands = {
       __TAURI_INVOKE('mount_network_share', { server, share, username, password, port, timeoutMs }),
     ),
   /**
-   *  Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection.
+   *  Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection, with
+   *  the credentials Cmdr stored for its share.
    *
-   *  Extracts server/share/username from `statfs`, tries stored credentials,
-   *  and either upgrades to `SmbVolume` or returns `CredentialsNeeded` so
-   *  the frontend can show a login form.
-   *
-   *  Called from the "Connect directly for faster access" UI action.
+   *  Called from the "Connect directly for faster access" UI action. Every answer,
+   *  a volume that's gone or isn't an SMB mount included:
+   *  `network::smb_connect_directly::UpgradeResult`.
    */
-  upgradeToSmbVolume: (volumeId: string) =>
-    typedError<UpgradeResult, string>(__TAURI_INVOKE('upgrade_to_smb_volume', { volumeId })),
+  upgradeToSmbVolume: (volumeId: string) => __TAURI_INVOKE<UpgradeResult>('upgrade_to_smb_volume', { volumeId }),
   /**
    *  Upgrades an existing OS-mounted SMB volume using explicit credentials.
    *
-   *  Called after the user fills in the login form shown by `upgrade_to_smb_volume`.
+   *  Called with what the user typed into the sign-in sheet `upgrade_to_smb_volume`
+   *  led to.
    */
   upgradeToSmbVolumeWithCredentials: (
     volumeId: string,
@@ -3621,9 +3620,12 @@ export const commands = {
     password: string | null,
     rememberInKeychain: boolean,
   ) =>
-    typedError<UpgradeResult, string>(
-      __TAURI_INVOKE('upgrade_to_smb_volume_with_credentials', { volumeId, username, password, rememberInKeychain }),
-    ),
+    __TAURI_INVOKE<UpgradeResult>('upgrade_to_smb_volume_with_credentials', {
+      volumeId,
+      username,
+      password,
+      rememberInKeychain,
+    }),
   /**
    *  Does the system (login) keychain hold an SMB password another app (Finder) saved for
    *  this volume's server? Attributes-only probe — **never triggers the consent dialog** —
@@ -3633,16 +3635,13 @@ export const commands = {
   systemHasSavedSmbPassword: (volumeId: string) =>
     typedError<boolean, string>(__TAURI_INVOKE('system_has_saved_smb_password', { volumeId })),
   /**
-   *  Upgrades an OS-mounted SMB volume to a direct smb2 connection using the password that
-   *  another app (Finder/macOS) already saved in the login keychain — so the user doesn't
-   *  retype it. Reading the password triggers the macOS consent dialog (the frontend primes
-   *  the user first; we can't customize the system dialog's text). On success, the password
-   *  is also copied into Cmdr's own store so future reconnects are silent. If nothing is
-   *  saved or the user denies access, returns `CredentialsNeeded` so the frontend falls back
-   *  to its login form. **User-initiated only** — never call this at startup.
+   *  Upgrades an OS-mounted SMB volume to a direct smb2 connection using the password
+   *  another app (Finder) already saved in the login keychain, so the user doesn't retype
+   *  it. Reading it raises the macOS consent dialog, so this is **user-initiated only**:
+   *  never call it at startup. Where there's no system keychain, it asks for the password.
    */
   upgradeToSmbVolumeUsingSavedPassword: (volumeId: string) =>
-    typedError<UpgradeResult, string>(__TAURI_INVOKE('upgrade_to_smb_volume_using_saved_password', { volumeId })),
+    __TAURI_INVOKE<UpgradeResult>('upgrade_to_smb_volume_using_saved_password', { volumeId }),
   /**
    *  Tries to rebuild a Disconnected volume's session in place.
    *
@@ -13470,11 +13469,19 @@ export type UpgradeFailure =
   // It answered and then something we can't act on went wrong.
   | 'unexpected'
 
-// Result of an SMB volume upgrade attempt.
+/**
+ *  Where a "Connect directly" left the volume.
+ *
+ *  Every variant is an answer the caller words, a vanished volume included: a
+ *  share going away between the offer and the press (an unmount, an eject, a
+ *  network drop) is an ordinary outcome, not a breakdown. Flattened into a string
+ *  `Err`, it once left the OS-mount notice offering a retry on a volume that no
+ *  longer existed, press after press (ERR-SHUSC).
+ */
 export type UpgradeResult =
-  // Upgrade succeeded: volume now uses direct smb2.
+  // The volume uses direct smb2 now, or already did.
   | { status: 'success' }
-  // Credentials needed: frontend should show login form.
+  // Credentials needed: the caller asks for them.
   | {
       status: 'credentialsNeeded'
       server: string
@@ -13494,6 +13501,17 @@ export type UpgradeResult =
       // Friendly server name for the frontend to name in its copy.
       displayName: string
     }
+  /**
+   *  No volume is registered under this id anymore, or nothing is mounted at its
+   *  root: the share was unmounted, ejected, or dropped off the network. There's
+   *  no connection left to upgrade, and no retry can make one.
+   */
+  | { status: 'volumeGone' }
+  /**
+   *  Something is mounted at the volume's root, but not an SMB share, so there's
+   *  nothing to upgrade.
+   */
+  | { status: 'notSmbMount' }
 
 // Per-turn token usage, camelCase for the wire.
 export type UsageView = {

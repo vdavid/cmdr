@@ -5,11 +5,11 @@
      *
      * The button runs the SAME flow the yellow dot and the breadcrumb's "Connect
      * directly" item run (`connectDirectly`), which owns its own progress and
-     * failure toasts. So the three outcomes here are only about this notice:
-     * connected or handed to the sign-in sheet means it has had its say and
-     * goes; still on the OS mount means the button is worth pressing again once
-     * the server or the password is fixed, and `connectDirectly` has already said
-     * why it didn't work.
+     * failure toasts. So the outcomes here are only about this notice: connected,
+     * handed to the sign-in sheet, or gone (the share unmounted before the press)
+     * means it has had its say and goes; still on the OS mount means the button is
+     * worth pressing again once the server or the password is fixed, and
+     * `connectDirectly` has already said why it didn't work.
      */
     import type { Snippet } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -35,7 +35,7 @@
         if (connecting) return
         connecting = true
         try {
-            const outcome = await connectDirectly(volumeId)
+            const outcome = await connectDirectly({ volumeId, shareName: share })
             if (outcome !== 'stillOnOsMount') dismissToast(toastId)
         } finally {
             connecting = false

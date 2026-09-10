@@ -339,8 +339,8 @@ pub async fn rescan_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
 // `enable`/`rescan` need a concrete `AppHandle` (they spawn the indexer and emit
 // events), but the MCP tool executor is generic over `Runtime` and can't supply
 // one. So we stash the concrete handle at startup and expose handle-free
-// wrappers, mirroring the `upgrade_to_smb_volume_inner` / `space_poller`
-// pattern. `disable`/`forget` need no handle and are called directly.
+// wrappers, mirroring the `space_poller` pattern. `disable`/`forget` need no
+// handle and are called directly.
 
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 

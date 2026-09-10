@@ -223,8 +223,8 @@ User activates the "Add server…" row → the sign-in sheet opens in add mode
 
 ## Connect directly
 
-`direct-connect.ts::connectDirectly(volumeId, raiseCredentialsForm)` is the single implementation behind every "turn
-this OS-mounted share into a direct smb2 session" affordance: the yellow-dot popup and the dropdown submenu in
+`direct-connect.ts::connectDirectly({ volumeId, shareName })` is the single implementation behind every "turn this
+OS-mounted share into a direct smb2 session" affordance: the yellow-dot popup and the dropdown submenu in
 `../navigation/VolumeBreadcrumb.svelte`, and the retry button on the OS-mount fallback notice.
 
 The sequence, and who speaks at each step:
@@ -232,28 +232,31 @@ The sequence, and who speaks at each step:
 1. `triggerNetworkDiscovery()`, because the direct connect opens a TCP socket to a private IP, which fires the macOS
    Local Network prompt anyway, so this is the honest moment to also start mDNS.
 2. A persistent "Connecting directly…" toast goes up and comes down on every exit path.
-3. `upgradeToSmbVolume(volumeId)`. `success` → success toast + `requestVolumeRefresh()`. A typed `networkError` → the
-   `upgrade-messages.ts` sentence for that `UpgradeFailure`.
+3. `upgradeToSmbVolume(volumeId)` answers a typed `UpgradeResult` and never throws for an outcome. `success` → success
+   toast + `requestVolumeRefresh()`. `networkError` → the `upgrade-messages.ts` sentence for that `UpgradeFailure`, at
+   `error`. `volumeGone` / `notSmbMount` → `nothingToUpgradeMessage`, at `warn`: nothing broke, there was just no
+   OS-mounted share left to connect (an unmount, an eject, or a network drop between the offer and the press).
 4. `credentialsNeeded` → `systemHasSavedSmbPassword` (a prompt-free probe). If macOS/Finder saved one, a native primer
    dialog ("Use the saved password?") cushions the system Keychain consent dialog, whose own text we can't customize. On
    "Use saved password", `upgradeToSmbVolumeUsingSavedPassword` reads consent → direct smb2 → copies the password into
    Cmdr's store.
-5. Anything still short of a session goes to `raiseCredentialsForm`, which the caller supplies.
+5. Anything still short of a session goes to the one sign-in sheet.
 
-Two properties callers rely on:
+Three properties callers rely on:
 
-- **It never resolves without having said something.** Every branch, including a thrown IPC error and a
-  `raiseCredentialsForm` that returns `false`, raises a toast first. That's what lets a button call it bare and be sure
-  a press can't look inert.
+- **It never resolves without having said something.** Every branch, a thrown IPC error included, raises a toast first.
+  That's what lets a button call it bare and be sure a press can't look inert. A throw is the one case with no typed
+  reason: `announceBreakdown` logs it and toasts the unnamed sentence.
 - **The returned `DirectConnectOutcome` describes the volume, not the call.** `connected` / `askingForCredentials` /
-  `stillOnOsMount` is exactly the distinction a notice needs to decide whether it still has anything to say.
+  `stillOnOsMount` / `gone` is exactly the distinction a notice needs to decide whether it still has anything to say.
+- **The caller names the share.** A volume that's gone has no name left for the backend to look up, so `shareName` is
+  what the pressed control showed: the notice's `share`, or the breadcrumb row's name read at click time.
 
-The credential ask is the one app-global sign-in sheet, so the flow raises it itself and every caller is a bare
-`connectDirectly(volumeId)`. ❗ It returns `askingForCredentials` as soon as the sheet is UP, ❌ not when the user is
-done with it: the OS-mount notice retires on that outcome, and awaiting the sheet would leave the notice stacked under
-it. The sheet's `attempt` is `upgradeToSmbVolumeWithCredentials`; a refused credential keeps it open, and a server that
-stopped answering closes it with the same typed sentence the flow's own failure path toasts, because no password can fix
-that.
+The credential ask is the one app-global sign-in sheet, so the flow raises it itself. ❗ It returns
+`askingForCredentials` as soon as the sheet is UP, ❌ not when the user is done with it: the OS-mount notice retires on
+that outcome, and awaiting the sheet would leave the notice stacked under it. The sheet's `attempt` is
+`upgradeToSmbVolumeWithCredentials`; a refused credential keeps it open, and a server that stopped answering or a share
+that went away closes it with the same typed sentence the flow's own paths toast, because no password can fix either.
 
 ## The OS-mount fallback notice
 
@@ -271,14 +274,23 @@ persistent INFO toast rendering `SmbOsMountFallbackToastContent.svelte`, dedup i
 **Dismissal watches the volume list, not the button.** A share can reach a direct session four ways: this notice's
 button, the yellow dot, the breadcrumb submenu, and the pane's credential form after a working password. All four end in
 `register_replacing_predecessor`, which broadcasts the volume list, so the bridge dismisses on any `volumes-changed`
-carrying that volume as `direct`. One rule covers every route, and a fifth route can't forget it. The check is stateless
-(dismissing a toast that isn't up is a no-op), so there's no frontend ledger to fall out of step with the backend's.
+carrying that volume as `direct`. One rule covers every route, and a fifth route can't forget it. A share that goes AWAY
+broadcasts the list too, so a notice whose volume is no longer listed retires the same way: its button could only say
+the share is gone. The bridge asks the toast store which notices are up (`getToasts`, matched by content component and
+`props.volumeId`) rather than keeping a list, so there's no frontend ledger to fall out of step with the backend's or
+with the user closing one.
+
+❗ **Only a listing that finished may retire a notice by absence.** A `timedOut` payload is the last complete list
+standing in for a fresh one, so a share missing from it proves nothing. The rule's one gap: a discovery that started
+before a brand-new mount and finished slowly (inside its timeout) after that mount's fallback could retire the fresh
+notice. The share keeps its yellow dot either way.
 
 **What the button does on a second failure.** It runs `connectDirectly`, which raises its own error toast naming the
 typed reason, and the notice STAYS UP with the button live again: the situation it describes hasn't changed, and the
 next press is worth making once the server wakes or the password is fixed. It retires itself on `connected` (the share
-is fast now) and on `askingForCredentials` (the form is a better surface for the same job, and two stacked prompts for
-one share is noise). A press while an attempt is in flight is ignored.
+is fast now), on `askingForCredentials` (the form is a better surface for the same job, and two stacked prompts for one
+share is noise), and on `gone` (the share unmounted before the press, so no retry can help). A press while an attempt is
+in flight is ignored.
 
 ## Mount-phase auth failures
 
