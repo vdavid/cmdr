@@ -7,7 +7,7 @@
 use std::collections::BTreeMap;
 
 use super::pixel_captures::{DF_K_ROOT, DF_K_SHARED_STORAGE, data_row};
-use crate::errors::{EEXIST, EISDIR, ENOENT, ENOTEMPTY_DEVICE, EROFS};
+use crate::errors::{EEXIST, EISDIR, ENOENT, ENOTDIR, ENOTEMPTY_DEVICE, EROFS};
 
 /// One node of the in-memory device filesystem.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -300,9 +300,22 @@ impl FakeTree {
             .collect()
     }
 
-    /// Stat as the sync service would: `Err(errno)` when missing.
+    /// Stat as the sync service would. A missing path is `Err(ENOTDIR)` when
+    /// the nearest ancestor that exists is a file, as a phone's stat answers,
+    /// and `Err(ENOENT)` otherwise.
     pub fn stat(&self, path: &str) -> Result<FakeNode, i32> {
-        self.get(path).cloned().ok_or(ENOENT)
+        if let Some(node) = self.get(path) {
+            return Ok(node.clone());
+        }
+        let mut at = Self::normalize(path);
+        while let Some(parent) = Self::parent_of(&at) {
+            match self.nodes.get(&parent) {
+                Some(FakeNode::File { .. }) => return Err(ENOTDIR),
+                Some(_) => return Err(ENOENT),
+                None => at = parent,
+            }
+        }
+        Err(ENOENT)
     }
 
     /// Creates `path` and every missing ancestor (`mkdir -p`).

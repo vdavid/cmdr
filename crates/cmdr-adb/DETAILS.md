@@ -154,8 +154,9 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   the copy pre-flight asks about a destination folder the copy will create, and anything but `NotSupported` fails the
   dialog's preview (`copy.rs::dest_space_if_known`). ❗ That stays a plain space answer, even when the climb lands on
   `/` and its 0 free: telling a copy the place is read-only is the transfer layer's job, ❌ not a special case here.
-  Anything else, a `df` failing on a path that exists included, is `NotSupported` ("can't tell"), ❌ never a guessed
-  number. What `df -k` prints on a phone (verified on Pixel 9
+  Anything else is `NotSupported` ("can't tell"), ❌ never a guessed number: a `df` failing on a path that exists, or a
+  path under a file, where stat answers `ENOTDIR` and nothing could land (verified on Pixel 9 Pro XL, Android 17,
+  `adb shell stat /sdcard/x.png/New`, 2026-09-10; the fake's `FakeTree::stat` answers the same). What `df -k` prints on a phone (verified on Pixel 9
   Pro XL, Android 17, toybox 0.8.13, `adb shell df -k`, 2026-09-10): the last column is the MOUNT POINT, so `/sdcard`,
   `/storage/emulated/0`, and every folder under them report `/storage/emulated` (and `/data` its bind mount
   `/data/user/0`); toybox sizes the columns per invocation, so `shell::parse_df_k` reads the first three numbers after

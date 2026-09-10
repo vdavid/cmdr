@@ -335,6 +335,27 @@ async fn space_at_a_folder_that_does_not_exist_yet_is_the_filesystem_it_would_la
     assert_eq!(top.available_bytes(), Some(0));
 }
 
+/// A phone's stat answers `ENOTDIR` for a path under a file, and nothing can
+/// land there, so the climb stops at "can't tell" rather than answering for
+/// the file's filesystem.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_folder_under_a_file_is_cant_tell_where_the_climb_stops() {
+    let mut tree = FakeTree::new();
+    tree.add_file("/sdcard/photo.jpg", b"jpeg");
+    let server = FakeAdbServer::start(tree).await;
+    assert_eq!(
+        server.tree().lock().unwrap().stat("/sdcard/photo.jpg/New").err(),
+        Some(crate::errors::ENOTDIR),
+        "the fake's stat says what a phone's does"
+    );
+    let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
+    let outcome = volume.get_space_info_at(&fixture_path("/sdcard/photo.jpg/New")).await;
+    assert!(
+        matches!(outcome, Err(cmdr_fs::volume::VolumeError::NotSupported)),
+        "{outcome:?}"
+    );
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_df_that_fails_anywhere_else_is_cant_tell_never_a_zero() {
     let mut tree = FakeTree::new();
