@@ -75,25 +75,16 @@ pub(super) fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
     let share = segments.next()?.to_string();
     let subpath = segments.collect::<Vec<_>>().join("/");
 
-    let (username, server) = if let Some((user, host)) = server_part.split_once('@') {
-        (Some(user.to_string()), host.to_string())
-    } else {
-        (None, server_part.to_string())
-    };
-
-    // Extract port if present (for example, "192.168.1.111:10480")
-    let (server, port) = if let Some((host, port_str)) = server.rsplit_once(':') {
-        (host.to_string(), port_str.parse().unwrap_or(445))
-    } else {
-        (server, 445)
-    };
+    // `user:password@host:port`, with a bracketed IPv6 host; the split is shared
+    // with the macOS twin.
+    let authority = cmdr_fs::volume::smb_mount_source::split_authority(server_part);
 
     Some(SmbMountInfo {
-        server,
+        server: authority.host.to_string(),
         share,
         subpath: (!subpath.is_empty()).then_some(subpath),
-        username,
-        port,
+        username: authority.username.map(str::to_string),
+        port: authority.port.unwrap_or(445),
     })
 }
 
@@ -280,5 +271,19 @@ mod tests {
         let info = parse_smb_mount_source("//nas/media/").expect("a well-formed source");
         assert_eq!(info.share, "media");
         assert_eq!(info.subpath, None);
+    }
+
+    /// Same authority split as the macOS twin: an IPv6 host comes back
+    /// unbracketed, and a password never rides along in the username.
+    #[test]
+    fn an_ipv6_host_and_a_user_with_a_password_split_like_the_macos_twin() {
+        let info = parse_smb_mount_source("//guest:@[::1]:18445/public").expect("a well-formed source");
+        assert_eq!(info.server, "::1");
+        assert_eq!(info.port, 18445);
+        assert_eq!(info.username.as_deref(), Some("guest"));
+
+        let info = parse_smb_mount_source("//fe80::1/share").expect("a well-formed source");
+        assert_eq!(info.server, "fe80::1");
+        assert_eq!(info.port, 445);
     }
 }

@@ -113,7 +113,9 @@ fn decode_mount_field(field: &str) -> String {
 }
 
 /// Parses an SMB mount source string like `//user@host/share`, `//host/share`, or
-/// `//user@host/share/dir/below` for a mount anchored inside the share.
+/// `//user@host/share/dir/below` for a mount anchored inside the share. The
+/// authority may be `guest:@[::1]:18445` (an IPv6 host, a guest's empty password);
+/// `cmdr_fs::volume::smb_mount_source` splits it.
 ///
 /// Fields come back percent-decoded; see [`decode_mount_field`]. Decoding happens
 /// per SEGMENT, after the split: an encoded separator inside a name would
@@ -132,25 +134,16 @@ pub(crate) fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
     let share = decode_mount_field(segments.next()?);
     let subpath = segments.map(decode_mount_field).collect::<Vec<_>>().join("/");
 
-    let (username, server) = if let Some((user, host)) = server_part.split_once('@') {
-        (Some(user.to_string()), host.to_string())
-    } else {
-        (None, server_part.to_string())
-    };
-
-    // Extract port if present (for example, "192.168.1.111:10480")
-    let (server, port) = if let Some((host, port_str)) = server.rsplit_once(':') {
-        (host.to_string(), port_str.parse().unwrap_or(445))
-    } else {
-        (server, 445)
-    };
+    // `user:password@host:port`, with a bracketed IPv6 host; the split is shared
+    // with the Linux twin.
+    let authority = cmdr_fs::volume::smb_mount_source::split_authority(server_part);
 
     Some(SmbMountInfo {
-        server: decode_mount_field(&server),
+        server: decode_mount_field(authority.host),
         share,
         subpath: (!subpath.is_empty()).then_some(subpath),
-        username: username.map(|u| decode_mount_field(&u)),
-        port,
+        username: authority.username.map(decode_mount_field),
+        port: authority.port.unwrap_or(445),
     })
 }
 
@@ -210,6 +203,46 @@ mod mount_source_tests {
 
         let info = parse_smb_mount_source("//nas/Q%26A%20%231").expect("a well-formed SMB source");
         assert_eq!(info.share, "Q&A #1");
+    }
+
+    /// An IPv6 mount records its host in brackets, and a guest mount records the
+    /// empty password after the user: `//guest:@[::1]:18445/public` (verified on
+    /// macOS 26 via `mount`, after `mount_smbfs -N` through an `[::1]` forwarder to
+    /// the guest fixture, 2026-09-11).
+    ///
+    /// The host comes back unbracketed, because that's what `smb_volume_id` keys
+    /// on and what the smb2 dialer takes (`crates/cmdr-smb/DETAILS.md`), and the
+    /// username is the name before the password separator.
+    #[test]
+    fn an_ipv6_host_comes_back_unbracketed_with_its_port_and_a_clean_username() {
+        let info = parse_smb_mount_source("//guest:@[::1]:18445/public").expect("a well-formed SMB source");
+        assert_eq!(info.server, "::1");
+        assert_eq!(info.port, 18445);
+        assert_eq!(info.share, "public");
+        assert_eq!(info.username.as_deref(), Some("guest"));
+    }
+
+    /// Without a port, the colons inside an IPv6 literal are not a port separator.
+    #[test]
+    fn an_ipv6_host_without_a_port_keeps_every_colon_and_the_default_port() {
+        let info = parse_smb_mount_source("//[fe80::1]/share").expect("a well-formed SMB source");
+        assert_eq!(info.server, "fe80::1");
+        assert_eq!(info.port, 445);
+
+        let info = parse_smb_mount_source("//fe80::1/share").expect("a well-formed SMB source");
+        assert_eq!(info.server, "fe80::1");
+        assert_eq!(info.port, 445);
+    }
+
+    /// The guest form on an IPv4 host: the recorded empty password is not part of
+    /// the name, or a sign-in pre-fills `guest:` and the log blames saved
+    /// credentials for a guest attempt.
+    #[test]
+    fn the_empty_guest_password_is_not_part_of_the_username() {
+        let info = parse_smb_mount_source("//guest:@localhost:11484/public").expect("a well-formed SMB source");
+        assert_eq!(info.username.as_deref(), Some("guest"));
+        assert_eq!(info.server, "localhost");
+        assert_eq!(info.port, 11484);
     }
 
     /// A stray `%` that isn't an escape is a name, not a parse failure: keep the
