@@ -4,6 +4,10 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
+import { BLOCKED_BY_DIALOGS, runsOverDialogs } from '../while-dialog-open'
+
+// MCP sends `dialog.confirm` to answer the open dialog, so it has to run while one is up.
+const ANSWERS_OPEN_DIALOG = runsOverDialogs('MCP sends it to answer the open dialog, so it has to run while one is up.')
 
 export const mcpCommands: CommandSource[] = [
   // ============================================================================
@@ -18,6 +22,7 @@ export const mcpCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'selection.mcpSelect',
@@ -25,6 +30,7 @@ export const mcpCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'selection.mcpSelectByNames',
@@ -32,6 +38,7 @@ export const mcpCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'cursor.moveTo',
@@ -39,6 +46,7 @@ export const mcpCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'cursor.scrollTo',
@@ -46,6 +54,7 @@ export const mcpCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'nav.openUnderCursor',
@@ -53,6 +62,7 @@ export const mcpCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'tab.mcpAction',
@@ -60,6 +70,7 @@ export const mcpCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'dialog.confirm',
@@ -67,5 +78,6 @@ export const mcpCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
+    whileDialogOpen: ANSWERS_OPEN_DIALOG,
   },
 ]

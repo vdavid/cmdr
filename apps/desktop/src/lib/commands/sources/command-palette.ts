@@ -4,6 +4,7 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
+import { BLOCKED_BY_DIALOGS } from '../while-dialog-open'
 
 export const commandPaletteCommands: CommandSource[] = [
   // ============================================================================
@@ -15,6 +16,7 @@ export const commandPaletteCommands: CommandSource[] = [
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['↑'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
   {
@@ -23,6 +25,7 @@ export const commandPaletteCommands: CommandSource[] = [
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['↓'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
   {
@@ -31,6 +34,7 @@ export const commandPaletteCommands: CommandSource[] = [
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['Enter'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
   {
@@ -39,6 +43,7 @@ export const commandPaletteCommands: CommandSource[] = [
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['Escape'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
 ]

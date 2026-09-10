@@ -7,6 +7,7 @@ import type { BadgeStatus } from '$lib/feature-status'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { Initiator } from '$lib/tauri-commands'
 import type { CommandId } from './command-ids'
+import type { WhileDialogOpen } from './while-dialog-open'
 
 export type { CommandId } from './command-ids'
 
@@ -145,6 +146,13 @@ export interface Command {
   showInPalette: boolean
   /** Keyboard shortcuts (like ['⌘⇧P', 'F1']) */
   shortcuts: string[]
+  /**
+   * What the command does while a dialog or overlay is up in the main window. REQUIRED, so a
+   * new command doesn't compile until someone has decided: `BLOCKED_BY_DIALOGS` for anything
+   * that touches the panes or opens main-window UI, `IN_TEXT_INPUTS_ONLY` for the text-editing
+   * family, `runsOverDialogs(reason)` otherwise. See `./while-dialog-open.ts`.
+   */
+  whileDialogOpen: WhileDialogOpen
   /**
    * Stability badge shown in the palette row (uppercase ALPHA / BETA pill).
    * Derive it from `getBadgeStatus(id)` in `$lib/feature-status` so the

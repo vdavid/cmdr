@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Command } from '$lib/commands/types'
+import { BLOCKED_BY_DIALOGS } from '$lib/commands/while-dialog-open'
 import {
   classifyConflict,
   classifySystemShortcut,
@@ -15,6 +16,7 @@ function cmd(partial: { id: string; name?: string; nativeShortcut?: true; fixedK
     scope: 'App',
     showInPalette: false,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   }
   if (partial.nativeShortcut) command.nativeShortcut = true
   if (partial.fixedKey) command.fixedKey = true

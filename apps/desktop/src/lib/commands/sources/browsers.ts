@@ -4,6 +4,7 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
+import { BLOCKED_BY_DIALOGS } from '../while-dialog-open'
 
 export const browsersCommands: CommandSource[] = [
   // ============================================================================
@@ -15,6 +16,7 @@ export const browsersCommands: CommandSource[] = [
     scope: 'Main window/Servers',
     showInPalette: false,
     shortcuts: ['Enter'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
   {
@@ -26,6 +28,7 @@ export const browsersCommands: CommandSource[] = [
     scope: 'Main window/Servers',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 
   // ============================================================================
@@ -39,6 +42,7 @@ export const browsersCommands: CommandSource[] = [
     // `⌘↑` mirrors the file list's `⌘↑` = parent; PlacesBrowser handles all three
     // keys (`handleBackToHostKey`). Display-only — `fixedKey` handling is in-component.
     shortcuts: ['Backspace', 'Escape', '⌘↑'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
   {
@@ -47,6 +51,7 @@ export const browsersCommands: CommandSource[] = [
     scope: 'Main window/Places',
     showInPalette: true,
     shortcuts: ['Enter'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
 
@@ -61,6 +66,7 @@ export const browsersCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'servers.togglePin',
@@ -68,6 +74,7 @@ export const browsersCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'servers.disconnect',
@@ -75,6 +82,7 @@ export const browsersCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'servers.forgetSecret',
@@ -82,6 +90,7 @@ export const browsersCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     // ⌘K, Finder's binding for the same thing. ❗ Window-wide, ❌ not the hub's
@@ -92,6 +101,7 @@ export const browsersCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘K'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     // ⌘E lives in the hub's own scope, a sibling of the file list's, so it can
@@ -101,6 +111,7 @@ export const browsersCommands: CommandSource[] = [
     scope: 'Main window/Servers',
     showInPalette: true,
     shortcuts: ['⌘E'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 
   // ============================================================================
@@ -112,6 +123,7 @@ export const browsersCommands: CommandSource[] = [
     scope: 'Main window/Volume chooser',
     showInPalette: false,
     shortcuts: ['Enter'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
   {
@@ -120,6 +132,7 @@ export const browsersCommands: CommandSource[] = [
     scope: 'Main window/Volume chooser',
     showInPalette: false,
     shortcuts: ['Escape'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
 ]

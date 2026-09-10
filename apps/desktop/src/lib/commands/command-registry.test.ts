@@ -5,6 +5,7 @@ import {
   updateLicenseCommandName,
   NATIVE_SHORTCUT_COMMAND_IDS,
   FIXED_KEY_COMMAND_IDS,
+  whileDialogOpenFor,
 } from './command-registry'
 import { COMMAND_IDS, isCommandId, type CommandId } from './command-ids'
 import type { CommandArgs, CommandDispatchArgs } from './types'
@@ -192,6 +193,68 @@ describe('nativeShortcut flag', () => {
         expect(cmd.nativeShortcut).toBe(true)
       }
     }
+  })
+})
+
+/**
+ * The commands that still run while a dialog is up, pinned. Everything else is refused by
+ * the dispatch core, so moving a command in or out of these lists is a product decision:
+ * update them only on purpose. `routes/(main)/dialog-command-gate.ts` enforces the rule.
+ */
+const RUNS_OVER_DIALOGS: readonly CommandId[] = [
+  // Their own windows: the dialog in the main window stays up and untouched.
+  'app.settings',
+  'help.openShortcuts',
+  'queue.show',
+  // App-wide text size: it scales the dialog too, and touches no pane.
+  'view.zoom.set75',
+  'view.zoom.set100',
+  'view.zoom.set125',
+  'view.zoom.set150',
+  'view.zoom.in',
+  'view.zoom.out',
+  // macOS runs these from the menu bar, and they never reach the dispatch core.
+  'app.quit',
+  'app.hide',
+  'app.hideOthers',
+  'app.showAll',
+  // MCP sends it to answer the open dialog.
+  'dialog.confirm',
+]
+
+const IN_TEXT_INPUTS_ONLY_IDS: readonly CommandId[] = ['edit.cut', 'edit.copy', 'edit.paste', 'selection.selectAll']
+
+describe('whileDialogOpen', () => {
+  const idsWhere = (runs: string): string[] =>
+    commands
+      .filter((c) => (c.whileDialogOpen as { runs?: string } | undefined)?.runs === runs)
+      .map((c) => c.id)
+      .sort()
+
+  it('runs over dialogs for exactly the reviewed set', () => {
+    expect(idsWhere('always')).toEqual([...RUNS_OVER_DIALOGS].sort())
+  })
+
+  it('runs from a text input only for the text-editing family', () => {
+    expect(idsWhere('inTextInput')).toEqual([...IN_TEXT_INPUTS_ONLY_IDS].sort())
+  })
+
+  it('refuses every other command', () => {
+    const decided = new Set<string>([...RUNS_OVER_DIALOGS, ...IN_TEXT_INPUTS_ONLY_IDS])
+    expect(idsWhere('never')).toEqual(COMMAND_IDS.filter((id) => !decided.has(id)).sort())
+  })
+
+  it('gives every opt-out a reason', () => {
+    for (const cmd of commands) {
+      const rule = cmd.whileDialogOpen as { runs?: string; reason?: string } | undefined
+      if (rule?.runs === 'always') expect(rule.reason?.trim(), `${cmd.id} needs a reason`).toBeTruthy()
+    }
+  })
+
+  it('answers the same rule through whileDialogOpenFor', () => {
+    expect(whileDialogOpenFor('app.settings').runs).toBe('always')
+    expect(whileDialogOpenFor('edit.paste').runs).toBe('inTextInput')
+    expect(whileDialogOpenFor('tab.close').runs).toBe('never')
   })
 })
 

@@ -4,6 +4,7 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
+import { BLOCKED_BY_DIALOGS } from '../while-dialog-open'
 
 export const aboutWindowCommands: CommandSource[] = [
   // ============================================================================
@@ -15,6 +16,7 @@ export const aboutWindowCommands: CommandSource[] = [
     scope: 'About window',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'about.openUpgrade',
@@ -22,6 +24,7 @@ export const aboutWindowCommands: CommandSource[] = [
     scope: 'About window',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'about.close',
@@ -29,5 +32,6 @@ export const aboutWindowCommands: CommandSource[] = [
     scope: 'About window',
     showInPalette: true,
     shortcuts: ['Escape'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 ]

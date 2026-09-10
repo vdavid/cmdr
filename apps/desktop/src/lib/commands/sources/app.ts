@@ -5,6 +5,19 @@
  */
 import type { CommandSource } from '../types'
 import { getBadgeStatus } from '$lib/feature-status'
+import { BLOCKED_BY_DIALOGS, runsOverDialogs } from '../while-dialog-open'
+
+// macOS owns these four outright via PredefinedMenuItems; they never reach the dispatch core, so
+// they're inert to whatever's up in the main window.
+const NATIVE_MENU_BAR_ITEM = runsOverDialogs(
+  'macOS runs it from the menu bar as a predefined item, so it never reaches the dispatch core.',
+)
+const OPENS_OWN_WINDOW = runsOverDialogs(
+  'Opens its own window, so the dialog in the main window stays up and untouched.',
+)
+const OPENS_OWN_WINDOW_STEERING = runsOverDialogs(
+  'Opens its own window, and steering a running operation is what people reach for while its progress dialog is up.',
+)
 
 export const appCommands: CommandSource[] = [
   // ============================================================================
@@ -20,6 +33,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: false,
     shortcuts: ['⌘Q'],
+    whileDialogOpen: NATIVE_MENU_BAR_ITEM,
     nativeShortcut: true,
   },
   {
@@ -28,6 +42,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: false,
     shortcuts: ['⌘H'],
+    whileDialogOpen: NATIVE_MENU_BAR_ITEM,
     nativeShortcut: true,
   },
   {
@@ -36,6 +51,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: false,
     shortcuts: ['⌥⌘H'],
+    whileDialogOpen: NATIVE_MENU_BAR_ITEM,
     nativeShortcut: true,
   },
   {
@@ -44,15 +60,24 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: false,
     shortcuts: [],
+    whileDialogOpen: NATIVE_MENU_BAR_ITEM,
     nativeShortcut: true,
   },
-  { id: 'app.about', nameKey: 'commands.appAbout.label', scope: 'App', showInPalette: true, shortcuts: [] },
+  {
+    id: 'app.about',
+    nameKey: 'commands.appAbout.label',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+  },
   {
     id: 'app.acknowledgements',
     nameKey: 'commands.appAcknowledgements.label',
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   // `app.licenseKey` resolves its name from one of two keys via the license-state
   // getter below (see `resolveCommand`), so it carries no `nameKey` here.
@@ -62,6 +87,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'app.commandPalette',
@@ -69,14 +95,23 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: false, // Don't show the palette in itself
     shortcuts: ['⌘⇧P'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
-  { id: 'app.settings', nameKey: 'commands.appSettings.label', scope: 'App', showInPalette: true, shortcuts: ['⌘,'] },
+  {
+    id: 'app.settings',
+    nameKey: 'commands.appSettings.label',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: ['⌘,'],
+    whileDialogOpen: OPENS_OWN_WINDOW,
+  },
   {
     id: 'app.checkForUpdates',
     nameKey: 'commands.appCheckForUpdates.label',
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.appCheckForUpdates.description',
   },
   {
@@ -85,6 +120,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.cmdrOpenOnboarding.description',
   },
   {
@@ -93,6 +129,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: OPENS_OWN_WINDOW,
     descriptionKey: 'commands.helpOpenShortcuts.description',
   },
   {
@@ -105,6 +142,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: true,
     shortcuts: ['⌘⌥Q'],
+    whileDialogOpen: OPENS_OWN_WINDOW_STEERING,
     descriptionKey: 'commands.queueShow.description',
   },
   {
@@ -113,6 +151,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.helpSendErrorReport.description',
   },
   {
@@ -121,6 +160,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.helpWhatsNew.description',
   },
   {
@@ -129,6 +169,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.feedbackSend.description',
   },
   {
@@ -141,6 +182,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: true,
     shortcuts: ['⌘⌥L'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.logOperationLog.description',
   },
   {
@@ -152,6 +194,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.suggestedOpsShow.description',
   },
   {
@@ -162,6 +205,7 @@ export const appCommands: CommandSource[] = [
     scope: 'App',
     showInPalette: true,
     shortcuts: ['⌘⌥A'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.askCmdrToggle.description',
     status: getBadgeStatus('ask-cmdr'),
   },

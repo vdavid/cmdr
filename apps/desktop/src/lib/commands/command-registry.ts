@@ -16,6 +16,8 @@
  */
 
 import type { Command, CommandSource } from './types'
+import type { CommandId } from './command-ids'
+import { BLOCKED_BY_DIALOGS, type WhileDialogOpen } from './while-dialog-open'
 import { tString } from '$lib/intl/messages.svelte'
 import { appCommands } from './sources/app'
 import { mainWindowCommands } from './sources/main-window'
@@ -98,6 +100,20 @@ const commandSources: CommandSource[] = [
   ...aboutWindowCommands,
   ...commandPaletteCommands,
 ]
+
+const whileDialogOpenById = new Map<CommandId, WhileDialogOpen>(
+  commandSources.map((source) => [source.id, source.whileDialogOpen]),
+)
+
+/**
+ * What `id` does while a dialog or overlay is up. Read by the dispatch core's dialog gate
+ * (`routes/(main)/dialog-command-gate.ts`) and the native menu's greying.
+ */
+export function whileDialogOpenFor(id: CommandId): WhileDialogOpen {
+  // Every id has an entry (`command-registry.test.ts` pins the id sets equal), so the
+  // fallback is unreachable. Refusing is the answer that can't do damage if it ever isn't.
+  return whileDialogOpenById.get(id) ?? BLOCKED_BY_DIALOGS
+}
 
 /**
  * Resolves an authored `CommandSource` into a `Command` whose `name` (and, where
