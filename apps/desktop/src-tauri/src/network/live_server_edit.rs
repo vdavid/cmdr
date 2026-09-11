@@ -50,6 +50,8 @@ pub struct PlaceEdit<'a> {
 #[must_use]
 pub struct AcceptedEdit {
     volume_id: String,
+    /// The instance the check asked, and the only one the install replaces.
+    checked: Arc<dyn Volume>,
     /// The instance to swap in, when the label or the root moved.
     successor: Option<Arc<dyn Volume>>,
     /// What to tell the panes, when the root or the landing moved.
@@ -114,6 +116,7 @@ pub async fn check(
     });
     Ok(AcceptedEdit {
         volume_id: place.volume_id.clone(),
+        checked: Arc::clone(&place.live),
         successor,
         root_changed,
     })
@@ -158,14 +161,23 @@ impl AcceptedEdit {
     /// in through the registry's non-retiring replace, then tells the panes.
     pub fn install(self, manager: &VolumeManager) {
         if let Some(successor) = self.successor {
-            if let RootReplacement::NotRegistered = manager.replace_root_in_place(&self.volume_id, successor) {
+            match manager.replace_root_in_place(&self.volume_id, &self.checked, successor) {
+                RootReplacement::Replaced { .. } => volume_broadcast::emit_volumes_changed(),
                 // The place disconnected between the check and now. The store holds
                 // the edit and the next connect dials it, so there's no live root to
                 // announce.
-                log::info!(target: "volume", "{} disconnected while its edit was saved; the next connect uses it", self.volume_id);
-                return;
+                RootReplacement::NotRegistered => {
+                    log::info!(target: "volume", "{} disconnected while its edit was saved; the next connect uses it", self.volume_id);
+                    return;
+                }
+                // It disconnected AND reconnected: a fresh instance serves it, and the
+                // successor was built over the closed connection. Same answer as a
+                // disconnect: the next connect dials the stored edit.
+                RootReplacement::Superseded => {
+                    log::info!(target: "volume", "{} reconnected while its edit was saved; the next connect uses it", self.volume_id);
+                    return;
+                }
             }
-            volume_broadcast::emit_volumes_changed();
         }
         if let Some(change) = self.root_changed {
             volume_broadcast::emit_volume_root_changed(change);

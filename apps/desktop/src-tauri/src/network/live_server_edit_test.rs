@@ -357,6 +357,36 @@ async fn a_place_that_disconnected_before_the_install_announces_nothing() {
     assert!(volume_broadcast::volume_root_changes(id).is_empty());
 }
 
+/// ❗ A place that disconnected and reconnected while the check ran is served by
+/// a FRESH instance over a new connection. The successor was built over the
+/// old, closed one, so swapping it in would leave the place answering
+/// `DeviceDisconnected` for good: the fresh instance stays, and nothing is
+/// announced. The store holds the edit, and the next connect dials it.
+#[tokio::test]
+async fn a_place_that_reconnected_before_the_install_keeps_its_fresh_connection() {
+    let id = "live-edit-reconnected-before-install";
+    let live = server_at("ada@nas.local", "/srv/data/tmp");
+    let manager = registered(id, &live);
+    let edit = PlaceEdit {
+        label: "ada@nas.local",
+        remote_root: "/srv/data",
+        start_folder: None,
+    };
+
+    let accepted = check(&place(id, &live, None), &edit, over_the_same_server, BUDGET)
+        .await
+        .unwrap_or_else(|refusal| panic!("the server has /srv/data, refused with {refusal:?}"));
+    let fresh = server_at("ada@nas.local", "/srv/data/tmp");
+    manager.register(id, Arc::clone(&fresh));
+    accepted.install(&manager);
+
+    assert!(
+        Arc::ptr_eq(&manager.get(id).expect("still registered"), &fresh),
+        "the reconnected instance keeps serving the place"
+    );
+    assert!(volume_broadcast::volume_root_changes(id).is_empty());
+}
+
 // ── Refused, and nothing moves ───────────────────────────────────────
 
 /// ❗ The live session is asked BEFORE anything moves: a root the server

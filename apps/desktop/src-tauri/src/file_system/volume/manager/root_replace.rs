@@ -23,16 +23,26 @@ pub enum RootReplacement {
     /// Nothing is registered under the id, so nothing was replaced and nothing
     /// was registered either.
     NotRegistered,
+    /// The id is registered, but to an instance other than the one the caller
+    /// checked against: the place disconnected and reconnected meanwhile, so a
+    /// fresh volume over a new connection serves it. Nothing was replaced.
+    Superseded,
 }
 
 impl VolumeManager {
-    /// Makes `volume` the one serving `id`, across a root change, retiring nobody.
+    /// Makes `volume` the one serving `id`, across a root change, retiring nobody,
+    /// as long as `expected` still serves it.
     ///
     /// For a successor that shares the incumbent's connection: a saved SFTP or
     /// WebDAV place renamed or re-rooted while it's connected
     /// (`network/DETAILS.md` § "Editing a connected place"). The old active root
     /// leaves the entry's root set, so `find_by_root` and `mount_id_for_path`
     /// stop matching paths only it covered.
+    ///
+    /// ❗ A compare-and-swap. The successor was built over `expected`'s
+    /// connection, so it replaces only that instance: over a volume a reconnect
+    /// registered since, it would serve the place from a connection that's
+    /// closed, and every request would answer `DeviceDisconnected`.
     ///
     /// ❗ Nothing is retired and nothing is superseded: the incumbent's
     /// `Retirement` is typically the successor's too, and retiring it would stand
@@ -41,15 +51,26 @@ impl VolumeManager {
     /// instead, and a filesystem mounted twice wants [`register`].
     ///
     /// Announced to the arrival listeners like any `register`, after the guard
-    /// drops. An id nobody registered is refused and nothing is added.
+    /// drops. An id nobody registered, or one another instance serves now, is
+    /// refused and nothing is added.
     ///
     /// [`register`]: VolumeManager::register
-    pub fn replace_root_in_place(&self, id: &str, volume: Arc<dyn Volume>) -> RootReplacement {
+    pub fn replace_root_in_place(
+        &self,
+        id: &str,
+        expected: &Arc<dyn Volume>,
+        volume: Arc<dyn Volume>,
+    ) -> RootReplacement {
         let previous = {
             let mut volumes = self.volumes.write_ignore_poison();
             let Some(entry) = volumes.get_mut(id) else {
                 return RootReplacement::NotRegistered;
             };
+            // `Arc::ptr_eq` compares the data pointers only, so two `dyn` handles
+            // to one instance match whichever vtable each carries.
+            if !Arc::ptr_eq(&entry.volume, expected) {
+                return RootReplacement::Superseded;
+            }
             entry.replace_root(volume)
         };
         self.announce_arrival(id);

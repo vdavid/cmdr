@@ -760,7 +760,9 @@ built FIRST and statted through, because the live instance refuses any path abov
 the successor shares, standing the live place's reconnect loop and connection events down, and its identity guard
 refuses a changed root anyway (`file_system/volume/DETAILS.md` § "Replacing a root in place"). A place that
 disconnected between the check and the install (`RootReplacement::NotRegistered`) announces nothing: the store holds
-the edit, and the next connect dials it.
+the edit, and the next connect dials it. ❗ Neither does one that disconnected AND reconnected meanwhile
+(`Superseded`): the install replaces only the instance the check asked (`AcceptedEdit::checked`), because the successor
+rides that instance's connection, and a fresh one keeps serving the place.
 
 **`volume-root-changed`** (`volume_broadcast::VolumeRootChanged`: `volumeId`, `oldRoot`, `newRoot`, `oldLanding`,
 `newLanding`) goes out after the install, only when the root or the landing moved. Every path is an APP path minted

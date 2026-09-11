@@ -556,10 +556,17 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
 
 ### Replacing a root in place
 
-**Decision**: `VolumeManager::replace_root_in_place(id, volume)` (`manager/root_replace.rs`) swaps the volume serving a
-REGISTERED id for one at a possibly different root, and answers `RootReplacement::Replaced { previous }` or
-`NotRegistered`. It retires nobody, drops the old active root from the entry's root set (the new root enters fresh,
-other fallbacks stay), and announces the id to the arrival listeners after the guard drops, as `register` does.
+**Decision**: `VolumeManager::replace_root_in_place(id, expected, volume)` (`manager/root_replace.rs`) swaps the volume
+serving a REGISTERED id for one at a possibly different root, and answers `RootReplacement::Replaced { previous }`,
+`NotRegistered`, or `Superseded`. It retires nobody, drops the old active root from the entry's root set (the new root
+enters fresh, other fallbacks stay), and announces the id to the arrival listeners after the guard drops, as `register`
+does.
+
+**Why a compare-and-swap**: the successor rides `expected`'s connection. A disconnect and reconnect during the edit's
+folder check registers a fresh instance under the same id, and a successor built over the closed connection swapped onto
+it would answer `DeviceDisconnected` for good. So it replaces only while the entry's volume IS `expected` (`Arc::ptr_eq`,
+data pointers only), and answers `Superseded` otherwise. Pinned by
+`manager/root_replace_tests.rs::a_replace_against_an_instance_a_reconnect_displaced_replaces_nothing`.
 
 **Why its own door**: the one caller is a saved SFTP or WebDAV place edited while connected (`network/DETAILS.md` §
 "Editing a connected place"), whose successor is a new instance SHARING the live connection. Every existing path gets
