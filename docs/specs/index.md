@@ -336,3 +336,4 @@ left, so the durable intent survives the wipe.
       the tree: per-lane budgets above 1 (`LANE_BUDGET` is still a const 1, and the motivating case moved from parked
       FTP to SFTP/SMB), reconnect or keep-alive across a long pause (SMB and SFTP only now), bounding paused-and-parked
       blocking threads, queue reordering, and queue persistence across restarts.
+- [ ] `adb-follow-ups.md` - 7 things suggested by the agent that shipped the work
