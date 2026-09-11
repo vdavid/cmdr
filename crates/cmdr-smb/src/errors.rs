@@ -8,6 +8,11 @@ use crate::types::ShareListError;
 use smb2::ErrorKind;
 
 /// Checks if an error is an authentication error (including signing requirement).
+///
+/// It doesn't say WHICH step refused. Access denied at SessionSetup and at
+/// TreeConnect both count, and they mean different things: the second is a share
+/// turning away an identity the server signed in. A caller that words or routes a
+/// refusal reads the `Protocol` error's `command` too.
 pub fn is_auth_error(err: &smb2::Error) -> bool {
     matches!(
         err.kind(),

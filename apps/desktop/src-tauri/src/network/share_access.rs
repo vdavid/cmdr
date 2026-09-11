@@ -14,6 +14,7 @@
 //! `DETAILS.md` § "A share that says not found".
 
 use super::mount::MountError;
+use super::smb_connect_failure::{RefusedAt, SignInIdentity};
 use cmdr_smb::volume::SmbConnectionParams;
 use smb2::ErrorKind;
 use smb2::types::Command;
@@ -25,16 +26,6 @@ use std::time::Duration;
 /// number only decides how long a server that went quiet between the mount and
 /// the probe gets to look alive before the mount's own answer stands.
 const PROBE_LIMIT: Duration = Duration::from_secs(5);
-
-/// Who a mount went out as, which decides what a refusal means.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum SignInIdentity {
-    /// No username: NetFS mounted with `Guest = true`, and the probe goes out as
-    /// `Guest`, which is `SmbConnectionParams::new`'s default.
-    Guest,
-    /// A username and password the user offered.
-    Account,
-}
 
 /// One mount attempt, as the probe needs to repeat it.
 ///
@@ -48,13 +39,9 @@ pub(crate) struct ShareAttempt {
 
 impl ShareAttempt {
     pub(crate) fn new(server: &str, share: &str, port: u16, username: Option<&str>, password: Option<&str>) -> Self {
-        let identity = match username {
-            Some(_) => SignInIdentity::Account,
-            None => SignInIdentity::Guest,
-        };
         Self {
             params: SmbConnectionParams::new(server, share, port, username, password),
-            identity,
+            identity: SignInIdentity::from_username(username),
         }
     }
 
@@ -80,32 +67,31 @@ pub(crate) enum ShareVerdict {
 }
 
 /// Reads the probe's outcome by status and command.
+///
+/// A refusal is read by `RefusedAt::of`, the same reading "Connect directly" takes
+/// of a failed upgrade, so the two can't disagree about one answer. The one thing
+/// only the probe asks is whether the share exists at all.
 pub(crate) fn verdict_from(outcome: &Result<(), smb2::Error>) -> ShareVerdict {
     let error = match outcome {
         Ok(()) => return ShareVerdict::Opens,
         Err(error) => error,
     };
-    if matches!(
+    match RefusedAt::of(error) {
+        Some(RefusedAt::Share) => ShareVerdict::RefusedAtShare,
+        Some(RefusedAt::SignIn) => ShareVerdict::RefusedAtSignIn,
+        None if is_tree_connect(error) && error.kind() == ErrorKind::NotFound => ShareVerdict::NoSuchShare,
+        None => ShareVerdict::Unknown,
+    }
+}
+
+fn is_tree_connect(error: &smb2::Error) -> bool {
+    matches!(
         error,
         smb2::Error::Protocol {
             command: Command::TreeConnect,
             ..
         }
-    ) {
-        return match error.kind() {
-            ErrorKind::AccessDenied => ShareVerdict::RefusedAtShare,
-            ErrorKind::NotFound => ShareVerdict::NoSuchShare,
-            _ => ShareVerdict::Unknown,
-        };
-    }
-    // Not a TreeConnect answer, so an auth-class one came from the sign-in step:
-    // the logon-rejection family, access denied, or a server that wants signing a
-    // guest session can't give.
-    if cmdr_smb::is_auth_error(error) {
-        ShareVerdict::RefusedAtSignIn
-    } else {
-        ShareVerdict::Unknown
-    }
+    )
 }
 
 /// What a mount's "not found" really was, given what the server said.

@@ -26,7 +26,8 @@ of the app build.
   - `smb_smbclient.rs`: `smbclient -L` fallback for Linux (requires `samba-client` package)
   - `linux_distro.rs`: Thin wrapper calling `crate::linux_distro::LinuxDistro` for smbclient install hints; `cfg(target_os = "linux")` gated
   - The protocol layer under all of them is the `cmdr-smb` crate: the addr builder, the guest / authenticated `smb2::SmbClient` listing calls, the `classify_*` / `is_auth_error` classification, and the `ShareInfo` / `AuthMode` / `ShareListResult` / `ShareListError` vocabulary. `crates/cmdr-smb/DETAILS.md` says what belongs there and what stays here
-  - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by three upgrade paths (startup, mount-time watcher, manual "Connect directly"). Contains `register_smb_volume`, `resolve_and_register_smb_volume` (the shared resolve+creds+register used by both fire-and-forget auto-upgrade paths), `try_smb_upgrade`, `UpgradeError`/`UpgradeFailure` types, address resolution (`resolve_server_address`, `resolve_ip_to_hostname`, `friendly_server_name`), and `get_keychain_password`.
+  - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by three upgrade paths (startup, mount-time watcher, manual "Connect directly"). Contains `register_smb_volume`, `resolve_and_register_smb_volume` (the shared resolve+creds+register used by both fire-and-forget auto-upgrade paths), `try_smb_upgrade`, address resolution (`resolve_server_address`, `resolve_ip_to_hostname`, `friendly_server_name`), and `get_keychain_password`.
+  - `smb_connect_failure.rs`: why an smb2 connect didn't get in, read by type. A `Refusal` (who the attempt went out as, and whether sign-in or the share said no, with the log advice for each) or an `UpgradeFailure`; plus `UpgradeError` and `log_direct_connect_failure`. Shared by `share_access.rs` and both upgrade paths (§ "An auth rejection says what was actually rejected").
   - `smb_connect_directly.rs`: the manual "Connect directly" upgrade, with Cmdr's stored credentials, the sign-in sheet's, or Finder's saved password. Behind the three `upgrade_to_smb_volume*` commands, the MCP `upgrade_smb_to_direct` tool, and the indexer's `ensure_direct_smb`. Owns `UpgradeResult` (§ "Connect directly answers a gone volume").
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
   - `mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts, each success confirmed against `statfs` (§ "A reported mount counts once it's there"); also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
@@ -355,12 +356,25 @@ The two upgrade paths answer it differently, because they owe different things:
 
 ## An auth rejection says what was actually rejected
 
-With nothing in the secret store the connection goes out as `Guest` (`SmbConnectionParams::new`'s no-username default),
-so a server with guest access turned off rejects it. That is not a wrong password: there was no password, and the
-setting belongs to the server's admin. `smb_upgrade::AttemptedAs` carries which identity the attempt used, and
-`rejection_advice` says the matching thing, because the log line is what the next reader of an error report acts on.
-Telling someone to fix a saved password they never saved sends them into Keychain looking for an entry that isn't there
-(ERR-48RZX again).
+A refused smb2 connect has two coordinates, and each changes what the refusal means:
+
+- **Who it went out as** (`smb_connect_failure::SignInIdentity`). With nothing in the secret store the connection goes
+  out as `Guest` (`SmbConnectionParams::new`'s no-username default). A refused guest had no password to be wrong, so
+  telling the reader to fix a saved password sends them into Keychain for an entry that isn't there (ERR-48RZX).
+- **Which step said no** (`RefusedAt::of`). `STATUS_ACCESS_DENIED` at SessionSetup is the server refusing to sign the
+  identity in; the same status at TreeConnect means it signed in and the SHARE turned it away. ERR-SHUSC's Samba server
+  answered a guest with the second, and the upgrade path, reading every access denied as a sign-in refusal, logged
+  "guest access is turned off" and asked an account whose password worked to retype it. The fixture shows both answers:
+  `crates/cmdr-smb/src/connection_integration_test.rs`.
+
+`cmdr_smb::is_auth_error` can't tell the steps apart and doesn't try: it answers "would credentials help", and both
+say yes. ❌ So never word or route a refusal off `is_auth_error` alone. `RefusedAt::of` reads the status AND the command:
+at TreeConnect only access denied counts, and anywhere else an auth-class answer is a sign-in refusal.
+
+`Refusal::advice` gives each of the four pairs its own fix for the log line, since that's what the next reader of an
+error report acts on. The mount probe (`share_access::verdict_from`) and both upgrade paths (`UpgradeError::Refused`)
+read refusals through the same `RefusedAt::of`, so the two can't disagree about one answer. Pinned by
+`smb_connect_failure_test.rs`.
 
 ## A share that says not found
 
@@ -442,17 +456,17 @@ process. Rationale and the stdio trap it closes: the module doc on `subprocess.r
 ## The direct-connect fallback names its cause
 
 When smb2 can't connect, the share stays on the macOS kernel mount for the session: slower, and without the direct
-session's control surface. Both upgrade paths log that through `smb_upgrade::log_direct_connect_failure`, on the
-`smb_fallback` target.
+session's control surface. Both upgrade paths log that through `smb_connect_failure::log_direct_connect_failure`, on the
+`smb_fallback` target, naming who was turned away (the account, or a guest) and at which step.
 
-It asks `is_auth_error` itself rather than describing the failure with `UpgradeFailure`. **`UpgradeFailure` has no auth
-variant** and folds a rejected password into `Unexpected`: it crosses IPC to pick the network-error copy, and the auth
-case reaches `CredentialsNeeded` instead. Describing an auth failure with it makes a stale Keychain password read as a
+It reads the refusal itself (`Refusal::of`) rather than describing the failure with `UpgradeFailure`. **`UpgradeFailure`
+has no refusal variant** and folds a rejected password into `Unexpected`: it crosses IPC to pick the network-error copy,
+and a refusal reaches `CredentialsNeeded` instead. Describing a refusal with it makes a stale Keychain password read as a
 flaky server.
 
 Level follows what happens to the user, since that decides whether anything else will mention it: a share that
-silently stays on the kernel mount is a WARN even for auth (nobody will be asked anything), while the manual "Connect
-directly" path's auth failure is an INFO (a credentials prompt follows immediately).
+silently stays on the kernel mount is a WARN even for a refusal (nobody will be asked anything), while the manual
+"Connect directly" path's refusal is an INFO (the sign-in sheet follows immediately).
 
 ## Telling the user about a kernel-mount fallback
 

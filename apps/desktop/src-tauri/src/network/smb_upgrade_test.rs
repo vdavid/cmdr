@@ -627,34 +627,6 @@ async fn register_with_no_predecessor_just_registers() {
     manager.unregister(volume_id);
 }
 
-/// The reason the fallback log can't just print `UpgradeFailure`.
-///
-/// `UpgradeFailure` crosses IPC to pick the network-error copy, and the auth case
-/// never reaches that surface (it goes to `CredentialsNeeded` instead), so it has
-/// no auth variant and folds a rejected password into `Unexpected`. That's what
-/// made a stale Keychain password read as a flaky server in the log while the
-/// share sat silently on the kernel mount.
-///
-/// If someone gives `UpgradeFailure` an auth variant, this fails: fold the auth
-/// branch of `log_direct_connect_failure` back into the generic one at the same
-/// time, so there's one classification rather than two that can disagree.
-#[test]
-fn an_auth_rejection_is_invisible_to_upgrade_failure_so_the_log_asks_is_auth_error_itself() {
-    let rejected = smb2::Error::Auth {
-        message: "STATUS_LOGON_FAILURE during SessionSetup".to_string(),
-    };
-
-    assert!(
-        cmdr_smb::is_auth_error(&rejected),
-        "a rejected password must be recognizable as auth, or the log can't name it"
-    );
-    assert_eq!(
-        UpgradeFailure::from_smb_error(&rejected),
-        UpgradeFailure::Unexpected,
-        "UpgradeFailure has no auth variant; the fallback log must not use it to describe an auth failure"
-    );
-}
-
 /// Two upgrade attempts on one volume must not overlap.
 ///
 /// The bug this guards (ERR-ABXW4): the mount-time and startup paths both fired on
@@ -739,21 +711,82 @@ fn an_undiscovered_mdns_service_name_has_nothing_to_dial() {
     );
 }
 
-/// A rejected GUEST attempt is not a wrong password: there was no password. The
-/// advice has to point at signing in, or the reader goes looking in Keychain for
-/// an entry that was never written. Reported as ERR-48RZX.
-#[test]
-fn a_rejected_guest_attempt_is_not_reported_as_a_bad_saved_password() {
-    let guest = AttemptedAs::from_username(None).rejection_advice();
-    let saved = AttemptedAs::from_username(Some("andrew")).rejection_advice();
+// ── Refusals from a real server ───────────────────────────────────────────────
 
-    assert!(guest.contains("guest"), "the guest case has to name it: {guest}");
+/// The `both` fixture's port: what the Rust integration lane sets, else smb2's default.
+fn both_fixture_port() -> u16 {
+    std::env::var("SMB_CONSUMER_BOTH_PORT")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(10482)
+}
+
+/// A guest the SHARE turns away is refused at the share, not at sign-in.
+///
+/// ERR-SHUSC's shape: a Samba server that signs guests in, and a share that won't let
+/// them open it. Read as a sign-in refusal, the log said guest access was turned off.
+/// The `both` fixture reproduces it: `map to guest = Bad User`, and a `private` share
+/// with `valid users = testuser`. Nothing is mounted at the path, and a refused
+/// attempt registers nothing, so there's nothing to clean up.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_upgrade_reads_a_guest_refused_at_the_share() {
+    use crate::network::smb_connect_failure::{Refusal, RefusedAt, SignInIdentity};
+
+    let port = both_fixture_port();
+    let volume_id = crate::file_system::volume::smb_volume_id("127.0.0.1", port, "private");
+    let result = try_smb_upgrade(
+        "127.0.0.1",
+        "private",
+        "/Volumes/never-mounted",
+        None,
+        None,
+        port,
+        &volume_id,
+    )
+    .await;
+
     assert!(
-        !guest.contains("saved password"),
-        "nothing was saved, so there is no saved password to correct: {guest}"
+        matches!(
+            result,
+            Err(UpgradeError::Refused(Refusal {
+                identity: SignInIdentity::Guest,
+                at: RefusedAt::Share,
+            }))
+        ),
+        "a guest `private` turns away signed in, so the share refused it, got {result:?}"
     );
+}
+
+/// The other step: a wrong password never gets as far as the share. No fixture has a
+/// second account, so an ACCOUNT refused at the share is unit-tested only
+/// (`smb_connect_failure_test.rs`).
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_upgrade_reads_a_wrong_password_as_refused_at_sign_in() {
+    use crate::network::smb_connect_failure::{Refusal, RefusedAt, SignInIdentity};
+
+    let port = both_fixture_port();
+    let volume_id = crate::file_system::volume::smb_volume_id("127.0.0.1", port, "private");
+    let result = try_smb_upgrade(
+        "127.0.0.1",
+        "private",
+        "/Volumes/never-mounted",
+        Some("testuser"),
+        Some("not-the-password"),
+        port,
+        &volume_id,
+    )
+    .await;
+
     assert!(
-        saved.contains("saved password"),
-        "and the credentialed case still points at the thing to fix: {saved}"
+        matches!(
+            result,
+            Err(UpgradeError::Refused(Refusal {
+                identity: SignInIdentity::Account,
+                at: RefusedAt::SignIn,
+            }))
+        ),
+        "got {result:?}"
     );
 }

@@ -7,6 +7,9 @@
 
 use crate::ignore_poison::IgnorePoison;
 use crate::network::get_discovered_hosts;
+use crate::network::smb_connect_failure::{
+    DirectConnectOutcome, UpgradeError, UpgradeFailure, log_direct_connect_failure,
+};
 
 /// What a mount is, as the OS records it: which volume it belongs to, and where
 /// it sits inside that volume's share.
@@ -60,152 +63,6 @@ fn share_root_from_statfs(mount_path: &str) -> String {
     identity_from_statfs(mount_path)
         .map(|identity| identity.share_root)
         .unwrap_or_default()
-}
-
-/// Why a direct connection couldn't be established, as a typed reason rather
-/// than a sentence.
-///
-/// Word-free by design: the frontend renders the copy from the message catalog
-/// (`$lib/error-messages/` convention — classification in Rust, words on the frontend).
-/// A raw `No route to host (os error 65)` has no business reaching a person.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum UpgradeFailure {
-    /// Nothing answered on the SMB port: the server is off, asleep, or not on
-    /// this network right now.
-    Unreachable,
-    /// It answered, but the handshake ran out of time.
-    TooSlow,
-    /// It answered and then something we can't act on went wrong.
-    Unexpected,
-}
-
-impl UpgradeFailure {
-    /// Classifies a connect failure by io kind and smb2 error kind, never by
-    /// message text.
-    pub(crate) fn from_smb_error(err: &smb2::Error) -> Self {
-        use std::io::ErrorKind as Io;
-        if let smb2::Error::Io(io_err) = err {
-            return match io_err.kind() {
-                Io::HostUnreachable | Io::NetworkUnreachable | Io::ConnectionRefused | Io::NotConnected => {
-                    Self::Unreachable
-                }
-                Io::TimedOut => Self::TooSlow,
-                _ => Self::Unexpected,
-            };
-        }
-        match err.kind() {
-            smb2::ErrorKind::TimedOut => Self::TooSlow,
-            smb2::ErrorKind::ConnectionLost => Self::Unreachable,
-            _ => Self::Unexpected,
-        }
-    }
-}
-
-/// Where a failed direct connection leaves the user, which is what decides how
-/// loud the log is about it.
-enum DirectConnectOutcome {
-    /// Nobody will be asked anything: the share stays on the macOS kernel mount
-    /// for the rest of the session, at kernel-mount speed and without the direct
-    /// session's control surface. Always a WARN, because nothing else in the app
-    /// will ever mention it.
-    StaysOnKernelMount,
-    /// The caller gets the failure and surfaces it. Auth here is ordinary flow
-    /// (the "Connect directly" screen prompts for credentials), so it's an INFO.
-    SurfacedToCaller,
-}
-
-/// Who the attempt signed in as, which is what an auth rejection MEANS.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum AttemptedAs {
-    /// Credentials we held for this share.
-    SavedCredentials,
-    /// Nothing was saved, so the attempt went out as a guest, which is what
-    /// `SmbConnectionParams::new` does with no username.
-    Guest,
-}
-
-impl AttemptedAs {
-    /// Mirrors `SmbConnectionParams::new`: no username means the connection goes
-    /// out as `Guest`, so that is what a rejection is about.
-    fn from_username(username: Option<&str>) -> Self {
-        match username {
-            Some(_) => Self::SavedCredentials,
-            None => Self::Guest,
-        }
-    }
-
-    /// What a rejection of THIS identity means, and what would fix it.
-    ///
-    /// A rejected guest attempt is not a wrong password: there was no password.
-    /// The server has guest access turned off, which is an admin's setting, and
-    /// the way out is to sign in rather than to correct something saved. Telling
-    /// someone to fix a password they never saved sends them looking in Keychain
-    /// for an entry that isn't there (ERR-48RZX).
-    fn rejection_advice(self) -> &'static str {
-        match self {
-            Self::SavedCredentials => {
-                "The saved password for this share isn't being accepted; correcting it restores the direct connection."
-            }
-            Self::Guest => {
-                "Nothing is saved for this share, so the attempt went out as a guest and the server has guest access turned off. Signing in gets the direct connection."
-            }
-        }
-    }
-}
-
-/// Writes down why a direct smb2 connection didn't happen, naming the auth case.
-///
-/// **Why it's a function and not two `warn!`s.** Both upgrade paths end here, so
-/// the log answers "why is this share on the slow path" the same way whichever
-/// path ran. And it names auth, which neither used to: `UpgradeFailure` has no
-/// auth variant (it crosses IPC to drive the network-error copy; the auth case is
-/// handled by `CredentialsNeeded` instead), so the auto path printed `Unexpected`
-/// for a `STATUS_LOGON_FAILURE`, and the manual path printed nothing at all.
-/// A stale Keychain password therefore looked exactly like a flaky server, and
-/// the share sat silently on the kernel mount at a fraction of the speed.
-///
-/// `attempted_as` separates the two auth cases, which need different advice:
-/// see [`AttemptedAs::rejection_advice`].
-fn log_direct_connect_failure(
-    server: &str,
-    share: &str,
-    err: &smb2::Error,
-    outcome: DirectConnectOutcome,
-    attempted_as: AttemptedAs,
-) {
-    let auth = cmdr_smb::is_auth_error(err);
-    match (outcome, auth) {
-        (DirectConnectOutcome::StaysOnKernelMount, true) => log::warn!(
-            target: "smb_fallback",
-            "{server}/{share} turned our sign-in down ({err}), so it stays on the macOS kernel mount: slower, and Cmdr can't manage the connection. {}",
-            attempted_as.rejection_advice()
-        ),
-        (DirectConnectOutcome::StaysOnKernelMount, false) => log::warn!(
-            target: "smb_fallback",
-            "Couldn't establish an smb2 connection for {server}/{share} ({:?}): {err}. Staying on the macOS kernel mount.",
-            UpgradeFailure::from_smb_error(err)
-        ),
-        (DirectConnectOutcome::SurfacedToCaller, true) => log::info!(
-            target: "smb_fallback",
-            "{server}/{share} turned our sign-in down ({err}); asking for credentials. {}",
-            attempted_as.rejection_advice()
-        ),
-        (DirectConnectOutcome::SurfacedToCaller, false) => log::warn!(
-            target: "smb_fallback",
-            "Couldn't establish an smb2 connection for {server}/{share} ({:?}): {err}",
-            UpgradeFailure::from_smb_error(err)
-        ),
-    }
-}
-
-/// Internal error type for upgrade attempts, distinguishing auth from network failures.
-pub(crate) enum UpgradeError {
-    Auth,
-    Network {
-        reason: UpgradeFailure,
-        display_name: String,
-    },
 }
 
 /// Delays between direct-connect attempts.
@@ -499,13 +356,7 @@ pub(crate) async fn register_smb_volume(
         Err(e) => {
             // The raw error belongs in the log, where it's the diagnostic. The volume
             // stays on the OS mount, which still works, at a fraction of the speed.
-            log_direct_connect_failure(
-                server,
-                share,
-                &e,
-                DirectConnectOutcome::StaysOnKernelMount,
-                AttemptedAs::from_username(username),
-            );
+            log_direct_connect_failure(server, share, &e, DirectConnectOutcome::StaysOnKernelMount, username);
             // And tell the person, once per server: this is the only path that leaves
             // someone on the slow connection with nothing but a small yellow dot to
             // notice it by. The frontend's notice carries a retry button.
@@ -551,7 +402,6 @@ pub(crate) async fn try_smb_upgrade(
     port: u16,
     volume_id: &str,
 ) -> Result<(), UpgradeError> {
-    use cmdr_smb::is_auth_error;
     use cmdr_smb::volume::connect_smb_volume;
     use std::sync::Arc;
 
@@ -614,17 +464,9 @@ pub(crate) async fn try_smb_upgrade(
                 share,
                 &e,
                 DirectConnectOutcome::SurfacedToCaller,
-                AttemptedAs::from_username(username),
+                username,
             );
-            if is_auth_error(&e) {
-                Err(UpgradeError::Auth)
-            } else {
-                let reason = UpgradeFailure::from_smb_error(&e);
-                Err(UpgradeError::Network {
-                    reason,
-                    display_name: display,
-                })
-            }
+            Err(UpgradeError::from_connect_error(&e, username, display))
         }
     }
 }

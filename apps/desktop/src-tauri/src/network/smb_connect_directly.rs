@@ -18,9 +18,9 @@
 
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::network::keychain;
+use crate::network::smb_connect_failure::{UpgradeError, UpgradeFailure};
 use crate::network::smb_upgrade::{
-    UpgradeError, UpgradeFailure, friendly_server_name, get_keychain_password, resolve_ip_to_hostname_with_wait,
-    try_smb_upgrade,
+    friendly_server_name, get_keychain_password, resolve_ip_to_hostname_with_wait, try_smb_upgrade,
 };
 #[cfg(target_os = "macos")]
 use crate::volumes::{SmbMountInfo, get_smb_mount_info};
@@ -157,8 +157,8 @@ pub(crate) async fn connect_directly(volume_id: &str) -> UpgradeResult {
     .await;
     match upgraded {
         Ok(()) => UpgradeResult::Success,
-        Err(UpgradeError::Auth) => {
-            log::info!("Stored credentials didn't work, requesting new credentials");
+        Err(UpgradeError::Refused(refusal)) => {
+            log::info!("Stored credentials didn't work ({refusal:?}), requesting new credentials");
             credentials_needed(
                 info,
                 display_name,
@@ -207,7 +207,7 @@ pub(crate) async fn connect_directly_with_credentials(
             }
             UpgradeResult::Success
         }
-        Err(UpgradeError::Auth) => {
+        Err(UpgradeError::Refused(_)) => {
             credentials_needed(info, display_name, username, Some("Invalid username or password"))
         }
         Err(UpgradeError::Network { reason, display_name }) => UpgradeResult::NetworkError { reason, display_name },
@@ -271,7 +271,7 @@ pub(crate) async fn connect_directly_with_system_saved_password(volume_id: &str)
             }
             UpgradeResult::Success
         }
-        Err(UpgradeError::Auth) => credentials_needed(
+        Err(UpgradeError::Refused(_)) => credentials_needed(
             info,
             display_name,
             Some(creds.username),
