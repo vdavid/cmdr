@@ -2,7 +2,7 @@
 
 **The quest**: A user asked for F4 to open text files in Sublime Text, the way Double Commander lets them pick an
 editor. Today F4 runs `open -t`, which always hands the file to macOS's plain-text handler (TextEdit, unless someone
-changed it in Finder). David approved the product design; this plan turns it into four milestones.
+changed it in Finder). David approved the product design; this plan turns it into three milestones.
 
 **What the user gets**: a "Text editor" card in Settings > Behavior > Navigation & file ops with one dropdown: "System
 default (TextEdit)" first, then every app macOS lists as a plain-text editor with its icon, then "Choose an app…". F4,
@@ -51,9 +51,11 @@ A compiled Swift probe on David's Mac (verified on macOS 26.6 / Darwin 25.6.0, 2
 So the editor-ROLE C query is the right source: it keeps browsers out, answers one entry per bundle id, and exists from
 macOS 10.4 to today. `apps/desktop/src-tauri/src/macos_icons.rs` already calls its sibling
 `LSCopyDefaultRoleHandlerForContentType` through the `core-services` crate, a direct dependency, and `CoreServices` is
-recorded at 10.0 in `scripts/check/checks/macos-framework-versions.json`. Both functions are deprecated since macOS 12
-yet still in the macOS 26 SDK, and they're C symbols, so `desktop-rust-macos-availability` (Objective-C selectors only)
-has nothing to flag.
+recorded at 10.0 in `scripts/check/checks/macos-framework-versions.json`. `core-services` 1.0.0 (the `Cargo.lock` pin)
+declares both as `(CFStringRef, LSRolesMask)`, returning `CFStringRef` and `CFArrayRef`, exports `kLSRolesEditor`,
+`kLSRolesViewer`, and `kLSRolesAll`, and marks nothing `#[deprecated]` (read from the crate source, 2026-09-11). Apple
+deprecated both in macOS 12 yet keeps them in the macOS 26 SDK, and they're C symbols, so
+`desktop-rust-macos-availability` (Objective-C selectors only) has nothing to flag.
 
 ⚠️ **Unverified: whether the requester's editors show up.** Neither Sublime Text nor VS Code is installed on David's
 Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / `utxt` with role `Editor`, not by UTI
@@ -62,9 +64,11 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
 
 ## Map of the current code
 
-- **The launch**: `open_in_editor(path)` in `apps/desktop/src-tauri/src/commands/file_actions.rs`. Sync; `open -t` on
-  macOS, `xdg-open` on Linux, an error string elsewhere; a `playwright-e2e` arm records into `crate::open_mock` on every
-  platform. Once it asks LaunchServices anything it has to become `async` with a timeout (`commands/CLAUDE.md`).
+- **The launch**: `open_in_editor(path)` in `apps/desktop/src-tauri/src/commands/file_actions.rs`, four sync
+  `#[cfg]` arms: `open -t` on macOS and `xdg-open` on Linux (both `not(feature = "playwright-e2e")`), an error string
+  elsewhere, and ONE `playwright-e2e` arm, ungated by OS, that records into `crate::open_mock`. Once it asks
+  LaunchServices anything it has to become `async` with a timeout: a sync command runs on the main thread
+  (`commands/CLAUDE.md`).
 - **The frontend wrapper**: `openInEditor(path)` in `apps/desktop/src/lib/tauri-commands/file-actions.ts`,
   `throwIpcError` on failure.
 - **The guard**: `apps/desktop/src/lib/file-explorer/pane/editor-open.ts` (`canOpenInEditor`, `openInEditorOrExplain`,
@@ -75,8 +79,10 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
   - The ⇧F4 auto-open: `onOpenInEditor` in `pane/DualPaneExplorer.svelte`, called from `handleNewFileCreated` in
     `pane/dialog-state.svelte.ts`. `DualPaneExplorer.svelte` is at its size cap, and nothing here needs to touch it.
 - **Tests pinning the call**: `apps/desktop/src/routes/(main)/command-dispatch.characterization.test.ts` asserts
-  `openInEditor` ran exactly once with `ENTRY.path`; `pane/search-pane-keys.test.ts`, `pane/navigation-transaction.test.ts`,
-  and several `command-handlers/*.test.ts` files mock `openInEditor`.
+  `openInEditor` ran exactly once with `ENTRY.path`, and its mock resolves `undefined`; `pane/search-pane-keys.test.ts`
+  asserts `toHaveBeenCalledWith('/f.txt')` (exact arguments, so a new parameter fails it) and mocks neither
+  `$lib/settings` nor a return value. `pane/navigation-transaction.test.ts` and several `command-handlers/*.test.ts`
+  files mock `openInEditor` without dispatching `file.edit`.
 - **The template, "Open terminal here"**:
   - Rust `apps/desktop/src-tauri/src/file_system/terminal.rs`: `parse_choice`, pure `launch_argv`, pure
     `resolve_choice(setting, is_installed)`, `installed_app_path` (`URLForApplicationWithBundleIdentifier:`), `app_entry`
@@ -94,7 +100,9 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
     `openSettingsToTerminalApp()` under surface `'open-terminal-toast'` in the `SettingsSurface` union of
     `settings/settings-window.ts`.
 - **App helpers**: `apps/desktop/src-tauri/src/file_system/open_with.rs` (`read_app_display_name`,
-  `read_bundle_identifier`, `load_app_icon`, `open_paths_with`, `pick_app_via_open_panel`).
+  `read_bundle_identifier`, `load_app_icon`, `open_paths_with`, `pick_app_via_open_panel`). `file_system/mod.rs` declares
+  the module `#[cfg(target_os = "macos")]`; its AppKit code sits in a private `mod imp` exported through one
+  `pub use imp::{…}` list, so a moved helper goes inside `imp` and onto that list.
 - **LaunchServices C precedent**: `macos_icons.rs` imports `core_services::{LSCopyDefaultRoleHandlerForContentType,
   kLSRolesAll}`, wraps the +1 result with `wrap_under_create_rule`, and gives every `unsafe` block its own `// SAFETY:`.
 - **Platform gating in Settings**: a registry setting has NO platform flag. Only `SearchableRow.macOSOnly` exists
@@ -106,9 +114,14 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
   i18n capture's `new-file-dialog` surface only OPENS the dialog, so it never reaches the editor.
 - **i18n**: `desktop-i18n-coverage` is an ERROR both for a missing key and for a value left identical to English in a
   full locale (`scripts/check/checks/desktop-i18n-coverage.go`). Ten full locales ship (`de`, `es`, `fr`, `hu`, `nl`,
-  `pt`, `sv`, `vi`, `zh`, `zh-Hant`) plus the `en-GB` and `en-AU` overlays.
+  `pt`, `sv`, `vi`, `zh`, `zh-Hant`) plus the `en-GB` and `en-AU` overlays. `desktop-message-keys-unused` is ALSO an
+  error, in the fast lane: an `en` key no `.ts`, `.svelte`, or `.rs` source names fails the build, so a key can't land
+  before the code that references it. `desktop-i18n-term-consistency` is a warn that pairs keys by identical English
+  across namespaces; the terminal's toast buttons are `commands.handler.openTerminalHere.{dismiss,openSettings}`.
 - **Analytics**: `analytics/config_shape.rs` auto-ships every bool and number setting; a string setting ships only when
-  listed in `CATEGORICAL_STRING_KEYS`.
+  listed in `CATEGORICAL_STRING_KEYS`. `analytics-settings-defaults` regenerates
+  `apps/analytics-dashboard/src/lib/server/settings-defaults.gen.json` from the registry: locally it rewrites the file
+  and passes, in `--ci` an uncommitted rewrite fails.
 
 ## Decisions
 
@@ -117,9 +130,12 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
    startup-time read only (`settings/CLAUDE.md`). Why: the one precedent works, and the frontend already owns
    persistence and cross-window sync.
 
-2. **The Rust side is a new `text_editor.rs` beside `terminal.rs` under `file_system/`, macOS-gated at the module
-   level.** `installed_app_path` and the icon-to-data-URL step move from `terminal.rs` into `open_with.rs` as shared
-   helpers, so the two modules don't copy them. Why not grow `open_with.rs`: that file is the context menu's "Open with"
+2. **The Rust side is a new `text_editor.rs` beside `terminal.rs` under `file_system/`.** Unlike `terminal.rs`, the
+   module itself is NOT gated: the Linux and `playwright-e2e` arms of `open_in_editor` answer the same
+   `EditorOpenReport` / `OpenInEditorError`, so those wire types compile everywhere, and everything else in the file is
+   `#[cfg(target_os = "macos")]` (a `mod imp`, the `open_with.rs` shape), which keeps Linux free of dead-code warnings.
+   `installed_app_path` and the icon-to-data-URL step move from `terminal.rs` into `open_with.rs` as shared helpers, so
+   the two modules don't copy them. Why not grow `open_with.rs`: that file is the context menu's "Open with"
    candidates with their own cache, while this feature has its own vocabulary (choice, fallback, report) that reads
    better alone.
 
@@ -131,15 +147,18 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
 
    A listed app stores its bundle id, so it survives an update that moves or renames the bundle, and LaunchServices
    picks which copy to launch (the probe found Warp twice on disk). A pick stores its bundle id ONLY when
-   `URLForApplicationWithBundleIdentifier:` resolves that id to the very bundle picked, and the path otherwise (no
-   bundle id, or a second copy chosen on purpose). That canonicalization happens once, at pick time, by asking
+   `URLForApplicationWithBundleIdentifier:` resolves that id to the very bundle picked, compared after
+   `std::fs::canonicalize` on both sides (the dialog's spelling and LaunchServices' can differ by a symlink or a trailing
+   slash), and the path otherwise (no bundle id, or a second copy chosen on purpose). That canonicalization happens once, at pick time, by asking
    `list_text_editors(<picked path>)` for its `chosenId`. ❌ Browsing Settings never rewrites a stored value. Why a
    sentinel rather than an empty default: `system` reads plainly in `settings.json`, and no bundle id is a bare word.
 
 4. **The list is `LSCopyAllRoleHandlersForContentType("public.plain-text", kLSRolesEditor)`** through `core-services`.
-   Each id resolves with `URLForApplicationWithBundleIdentifier:` (an id that doesn't resolve is dropped), the system
-   default's own id is removed (it's already the first row), and the chosen app is appended when it isn't listed (a pick
-   of an app that doesn't claim plain text, or the default pinned explicitly). Names via `read_app_display_name`, icons
+   Each id resolves with `URLForApplicationWithBundleIdentifier:` (an id that doesn't resolve, or resolves to a bundle
+   no longer on disk, is dropped), the system default's own id is removed (it's already the first row), and the chosen
+   app is appended when it isn't listed (a pick of an app that doesn't claim plain text, or the default pinned
+   explicitly). `chosenId` is the stored choice in canonical form (`system`, a bundle id, or a path, per Decision 3),
+   and `null` once the chosen app is gone. Names via `read_app_display_name`, icons
    via `load_app_icon`; the frontend sorts rows by name in the app's locale, since that's presentation. The system
    default's name comes from `LSCopyDefaultRoleHandlerForContentType("public.plain-text", kLSRolesAll)`, the call
    `macos_icons.rs` already makes per extension. Why: the Evidence section. **Fallback rule**: if the M1 spike shows
@@ -153,7 +172,9 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
    - **`openedInName: string | null`**: the display name of the app that got the file (the chosen app, or the system
      default's resolved name).
    - **`otherEditorsInstalled: boolean | null`**: `null` unless asked. When asked, whether the list from Decision 4
-     minus the system default is non-empty. Computed AFTER the launch, so the hint's query never delays the editor.
+     minus the system default is non-empty. Computed AFTER the launch, so the hint's query never delays the editor, and
+     from ids and installed-ness only (❌ no names, no icons): it shares the launch's 5 s deadline, and a deadline that
+     expires after `open` spawned would word an editor that did open as `timedOut`.
    - **`OpenInEditorError`**: `launchRefused { errno }` or `timedOut`, typed like `OpenTerminalError`.
 
    Why one IPC: the terminal's first use costs two (list, then launch), and the only extra facts the hint needs here are
@@ -161,7 +182,8 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
    `{ outcome: opened, openedInName: null, otherEditorsInstalled: null }`.
 
 6. **A removed app: the press still opens the file, in the system default.** Rust checks installed-ness before launching
-   (a bundle id through `URLForApplicationWithBundleIdentifier:`, a path through `is_dir()`), falls back to `open -t`,
+   (a bundle id through `URLForApplicationWithBundleIdentifier:` AND `is_dir()` on the path it answers, a path through
+   `is_dir()`), falls back to `open -t`,
    and reports `chosen_app_missing_opened_default_instead`. The frontend resets the setting to `system` and raises a
    persistent toast naming the app the file DID open in, with "Open settings". Why: the user asked to edit this file and
    the default editor does that; the toast explains the surprise; the reset keeps the next press quiet. The toast names
@@ -221,42 +243,46 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
 
 ## Draft copy (for David's review)
 
+Each key is tagged with the milestone whose code first names it, which is where it lands and gets translated (§ The
+copy procedure).
+
 Settings, in `messages/en/settings.json`:
 
-- `settings.navigationAndFileOps.card.textEditor`: "Text editor"
-- `settings.behavior.textEditorApp.label`: "Edit files in"
-- `settings.behavior.textEditorApp.description`: "Cmdr lists the text editors macOS knows about on this Mac. To use a
-  different app, pick "Choose an app…"."
-- `settings.behavior.textEditorApp.systemDefault`: "System default ({app})"
-- `settings.behavior.textEditorApp.systemDefaultUnnamed`: "System default"
-- `settings.behavior.textEditorApp.chooseApp`: "Choose an app…" (the approved design said "Other app…"; this matches the
-  Terminal row right below it)
-- `settings.behavior.textEditorApp.chooseAppTitle`: "Choose a text editor"
-- `settings.behavior.textEditorApp.checking`: "Checking your apps…"
-- `settings.behavior.textEditorHintSeen.label`: "Text editor hint shown"
-- `settings.behavior.textEditorHintSeen.description`: "Whether the one-time hint about picking a text editor has been
-  shown."
+- (M2) `settings.navigationAndFileOps.card.textEditor`: "Text editor"
+- (M2) `settings.behavior.textEditorApp.label`: "Edit files in"
+- (M2) `settings.behavior.textEditorApp.description`: "Cmdr lists the text editors macOS knows about on this Mac. To use
+  a different app, pick "Choose an app…"."
+- (M3) `settings.behavior.textEditorApp.systemDefault`: "System default ({app})"
+- (M3) `settings.behavior.textEditorApp.systemDefaultUnnamed`: "System default"
+- (M3) `settings.behavior.textEditorApp.chooseApp`: "Choose an app…" (the approved design said "Other app…"; this
+  matches the Terminal row right below it)
+- (M3) `settings.behavior.textEditorApp.chooseAppTitle`: "Choose a text editor"
+- (M3) `settings.behavior.textEditorApp.checking`: "Checking your apps…"
+- (M3) `settings.behavior.textEditorHintSeen.label`: "Text editor hint shown"
+- (M3) `settings.behavior.textEditorHintSeen.description`: "Whether the one-time hint about picking a text editor has
+  been shown."
 
 Toasts, in `messages/en/fileExplorer.json` beside `fileExplorer.edit.notOnThisMac`:
 
-- `fileExplorer.edit.hint`: "Opened in {app}. Want a different editor next time? Pick one in Settings, under Navigation
-  & file ops."
-- `fileExplorer.edit.hintUnnamed`: "Opened in your default text editor. Want a different one next time? Pick one in
+- (M3) `fileExplorer.edit.hint`: "Opened in {app}. Want a different editor next time? Pick one in Settings, under
+  Navigation & file ops."
+- (M3) `fileExplorer.edit.hintUnnamed`: "Opened in your default text editor. Want a different one next time? Pick one in
   Settings, under Navigation & file ops."
-- `fileExplorer.edit.dismiss`: "Dismiss"
-- `fileExplorer.edit.openSettings`: "Open settings"
-- `fileExplorer.edit.appMissing`: "The editor you picked isn't installed anymore, so this file opened in {app}."
-- `fileExplorer.edit.appMissingUnnamed`: "The editor you picked isn't installed anymore, so this file opened in your
-  default text editor."
-- `fileExplorer.edit.launchRefused`: "Cmdr couldn't start your text editor. Try opening it yourself once, then come
-  back."
-- `fileExplorer.edit.timedOut`: "Your text editor is taking a while to start. It may still open."
+- (M2) `fileExplorer.edit.dismiss`: "Dismiss"
+- (M2) `fileExplorer.edit.openSettings`: "Open settings"
+- (M2) `fileExplorer.edit.appMissing`: "The editor you picked isn't installed anymore, so this file opened in {app}."
+- (M2) `fileExplorer.edit.appMissingUnnamed`: "The editor you picked isn't installed anymore, so this file opened in
+  your default text editor."
+- (M2) `fileExplorer.edit.launchRefused`: "Cmdr couldn't start your text editor. Try opening it yourself once, then
+  come back."
+- (M2) `fileExplorer.edit.timedOut`: "Your text editor is taking a while to start. It may still open."
 
 ICU values double every apostrophe (`isn''t`, `couldn''t`). `{app}` is an uncontrolled insert (any app's own name): say
 so in its `@key` description, and keep it in a slot a translator can restructure around
 (`docs/guides/i18n-translation.md` § Write placeholder strings to be restructurable). "Dismiss", "Open settings",
-"Choose an app…", and "Checking your apps…" repeat the terminal keys' English on purpose, so
-`desktop-i18n-term-consistency` keeps each locale's translations aligned.
+"Choose an app…", and "Checking your apps…" repeat the terminal keys' English on purpose
+(`commands.handler.openTerminalHere.*` and `settings.behavior.openTerminalHereApp.*`), so
+`desktop-i18n-term-consistency` warns if a locale translates them differently.
 
 ## Milestones
 
@@ -271,11 +297,15 @@ so in its `@key` description, and keep it in a slot a translator can restructure
   without it, pick between the `public.plain-text` query and Decision 4's union on what the plists declare, and say
   which evidence decided. Also ask, through the lead, whether David will spend a minute confirming that `open -t` and
   the resolved default name agree after changing a `.txt` file's default in Finder; if not, record it as an open item in
-  `file_system/DETAILS.md`. ❌ Never change David's default handler yourself.
-- **Shared helpers**: move `installed_app_path` out of `terminal.rs` into `open_with.rs` (public), plus an
-  `app_icon_data_url(app_path)` wrapping `load_app_icon` and `icons::rgba_to_data_url`. `terminal.rs` calls both.
-  Behavior-identical.
-- **The module**, `text_editor.rs` under `file_system/`, declared `#[cfg(target_os = "macos")]` in `file_system/mod.rs`:
+  `file_system/DETAILS.md`. Finder's "Change All" writes an all-roles handler, so that check can't tell `kLSRolesAll`
+  from `kLSRolesEditor`: note there too that a role-specific override (from `duti`, say) could name one default while
+  `open -t` launches another. ❌ Never change David's default handler yourself.
+- **Shared helpers**: move `installed_app_path` out of `terminal.rs` into `open_with.rs`'s `mod imp`, exported on its
+  `pub use imp::{…}` list, plus an `app_icon_data_url(app_path)` wrapping `load_app_icon` and
+  `icons::rgba_to_data_url`. `terminal.rs` calls both. Behavior-identical.
+- **The module**, `text_editor.rs` under `file_system/`, declared UNGATED in `file_system/mod.rs` (Decision 2): the wire
+  types `EditorOpenReport`, `EditorOpenOutcome`, and `OpenInEditorError` compile everywhere, and the rest sits behind
+  `#[cfg(target_os = "macos")]`:
   - `SYSTEM_DEFAULT_CHOICE = "system"` and `TextEditorChoice { SystemDefault, BundleId(String), AppPath(PathBuf) }`.
   - Pure: `parse_choice`, `launch_argv(&TextEditorChoice, file) -> Vec<String>`, `resolve_choice(choice,
     is_installed)`, the list assembly (handler ids + default id + chosen + a resolver → rows), the pick
@@ -287,14 +317,17 @@ so in its `@key` description, and keep it in a slot a translator can restructure
   - `open_in_editor(path, setting, ask) -> Result<EditorOpenReport, OpenInEditorError>`, with `launch` split by cfg:
     spawn `open`, or `crate::open_mock::record(<file>)` under `playwright-e2e`.
 - **Commands** in `commands/file_actions.rs`, registered in `ipc.rs` beside the terminal's:
-  - `open_in_editor` on macOS becomes `async` through `blocking_typed_result_with_timeout` (5 s) and always goes through
-    `text_editor::open_in_editor`. Linux keeps `xdg-open` and its own `playwright-e2e` recording arm (the Linux E2E lane
-    still asserts the ⇧F4 path), answering the plain report. The remaining platform arm answers
-    `launchRefused { errno: null }`.
+  - `open_in_editor` on macOS becomes ONE `async` arm, `#[cfg(target_os = "macos")]` with no feature condition, through
+    `blocking_typed_result_with_timeout` (5 s; the join-failure mapper logs and answers `TimedOut`, as
+    `open_terminal_here` does) into `text_editor::open_in_editor`, whose own `launch` records under `playwright-e2e`.
+  - Off macOS the arms stay sync, with the new signature and the plain report: `playwright-e2e` records (the Linux
+    Docker lane runs `file-operations.spec.ts` and still asserts the ⇧F4 path), Linux spawns `xdg-open`, anything else
+    answers `launchRefused { errno: null }`. ❗ Today's `playwright-e2e` arm has no OS condition: add
+    `not(target_os = "macos")` to it, or the macOS E2E build defines `open_in_editor` twice.
   - New macOS-only `list_text_editors(app_choice) -> TimedOut<TextEditorList>` (2 s, `blocking_with_timeout_flag`).
 - **Frontend plumbing only**: `pnpm bindings:regen`; `openInEditor(path, appChoice, askAboutOtherEditors):
   Promise<EditorOpenReport>` throwing an `OpenInEditorFailure` (`TypedFailure`) plus `asOpenInEditorError`, and
-  `listTextEditors(appChoice)`. `editor-open.ts` calls `openInEditor(rowPath, 'system', false)` with a comment that M3
+  `listTextEditors(appChoice)`. `editor-open.ts` calls `openInEditor(rowPath, 'system', false)` with a comment that M2
   replaces the literal.
 - **Docs**: `file_system/DETAILS.md` gets a § "Text editor (`text_editor.rs`)" (the Evidence section trimmed, with its
   anchor; why the role query; the Create rule; the pick canonicalization; the `open -t` verification status) and a
@@ -304,7 +337,7 @@ so in its `@key` description, and keep it in a slot a translator can restructure
   `file_system/terminal.rs`, and `tauri-commands/DETAILS.md` if its inventory lists `file-actions.ts` commands.
 
 **Intentions**: F4 behaves byte-identically after M1, because every caller still passes `system`. The Rust surface is
-complete, so M3 and M4 are frontend-only.
+complete, so M2 and M3 are frontend-only.
 
 **Landmines**
 
@@ -314,8 +347,9 @@ complete, so M3 and M4 are frontend-only.
 - `LSCopyAllRoleHandlersForContentType` returns NULL when nothing claims the type: an empty list, not an error.
 - The system default can be absent (TextEdit deleted and nothing else claims plain text): its name is `None`, and
   `open -t` does whatever it does today.
-- If `core-services` marks the functions `#[deprecated]` and clippy warns, use `#[allow(deprecated, reason = "…")]` on
-  the call naming the 10.15 floor. ❌ Never a module-wide allow.
+- `core-services` 1.0.0 marks neither function `#[deprecated]` (Evidence), so clippy stays quiet and no
+  `#[allow(deprecated)]` belongs here. If a later bump adds the attribute, allow it on the call with a reason naming the
+  10.15 floor, ❌ never module-wide.
 - A sync command must not grow a LaunchServices call (`commands/CLAUDE.md`), and every refusal is a typed variant, ❌
   never a message the frontend matches (`error-string-match`).
 - The blocking pool is fine for these calls (the terminal does the same); ❌ never rayon.
@@ -333,80 +367,88 @@ complete, so M3 and M4 are frontend-only.
 3. `resolve_choice`: an installed choice is used as is with `Opened`; a missing bundle id and a missing path both fall
    back to `SystemDefault` with `ChosenAppMissingOpenedDefaultInstead`; `SystemDefault` is never "missing", even when
    the installed check says no (it's never asked).
-4. List assembly: drops ids that don't resolve, removes the default's id, appends a chosen bundle id or path that isn't
-   listed, never duplicates a chosen id that is, keeps LaunchServices' order.
-5. Pick canonicalization: bundle id when it resolves to the same path; the path when it resolves elsewhere or there's
-   no bundle id.
+4. List assembly: drops ids that don't resolve or resolve to a missing bundle, removes the default's id, appends a
+   chosen bundle id or path that isn't listed, never duplicates a chosen id that is (a stored path whose canonical form
+   is a listed bundle id included), keeps LaunchServices' order; `chosenId` is `system` for the default and `None` for
+   a missing app.
+5. Pick canonicalization: bundle id when it resolves to the same bundle, a symlinked spelling of that path included;
+   the path when it resolves elsewhere or there's no bundle id.
 6. `other_editors_installed`: empty and default-only answer false; one more app answers true.
 7. macOS-only smoke test: the plain-text default's bundle id is `Some` (TextEdit ships with macOS). Break the CF
    wrapper to return `None`, see it fail, restore.
 8. `open_with.rs`: `installed_app_path("com.apple.TextEdit")` is `Some` on macOS (moves with the helper, or is added).
 9. Frontend: tests for the `openInEditor` and `listTextEditors` wrappers (typed failure round trip), because
-   `svelte-tests` holds every file to a 70% coverage floor. Update the `command-dispatch.characterization.test.ts`
-   expectation to the new arguments deliberately: the call changed on purpose.
+   `svelte-tests` holds every file to a 70% coverage floor. Update the exact-argument expectations in
+   `command-dispatch.characterization.test.ts` and `pane/search-pane-keys.test.ts` to `(path, 'system', false)`
+   deliberately: the call changed on purpose.
 
 **DONE**: `pnpm check clippy rust-tests desktop-bindings-fresh desktop-rust-macos-availability
 desktop-macos-framework-floor` green (the floor check needs a built binary; if it skips, say so) plus `pnpm check
 svelte` for the wrapper and call site. The spike's result and the list timing are in the report. Commit, for example
 `feat(editor): Cmdr can list the text editors macOS knows and launch a file in a chosen one, groundwork for picking what F4 opens`.
 
-### M2. The copy, in every language
+### The copy procedure (M2 and M3 each run it)
 
-**Scope**
+A key can't land ahead of its code: `desktop-message-keys-unused` (an error, fast lane) fails on an `en` key nothing
+references, and `desktop-i18n-coverage` (an error) fails on one left in English. So each frontend milestone adds the
+Draft copy keys tagged with its number, writes the code that names them, and translates them, all before its commit.
 
-- Add the 18 `en` keys from Draft copy, each with a `@key` description (surface, trigger, what `{app}` holds, and that
-  "Choose an app…" must match `settings.behavior.openTerminalHereApp.chooseApp`). Run `pnpm intl:keys`, then
+**Steps**
+
+- Add the milestone's `en` keys, each with a `@key` description (surface, trigger, what `{app}` holds; for
+  `textEditorApp.description` and `textEditorApp.chooseApp`, that "Choose an app…" must match
+  `settings.behavior.openTerminalHereApp.chooseApp`). Run `pnpm intl:keys`, then
   `node apps/desktop/scripts/sync-locale-keys.ts`.
 - Translate into the ten full locales per `docs/guides/i18n-translation.md` § "New feature → add strings and translate
   to ALL languages": each locale's style guide and glossary, the reference pile at the MAIN clone's absolute path, the
   reusable translator block, at most three translator subagents at a time (spawned without `name` when you're a subagent
-  yourself). Record glossary entries for "text editor" and "system default" per locale.
+  yourself). Record glossary entries per locale: "text editor" in M2, "system default" in M3.
 - Overlays (`en-GB`, `en-AU`): nothing to fork unless evidence says otherwise; "editor", "installed", and "default" are
   spelled the same.
 
-**Intentions**: all copy lands, translated, before any code renders it, so every later milestone passes
-`desktop-i18n-coverage`, which fails the build on English left in a full locale.
-
 **Landmines**
 
-- ❗ The keys sit unused until M3 and M4. The dead-key signal is a warn: report it, don't delete the keys.
 - The reference pile is NOT in the worktree: `~/projects-git/vdavid/cmdr/_ignored/i18n/<tag>/`.
 - Apostrophes are doubled in ICU values and normal in `@key` descriptions.
 - Translate "text editor" as the generic noun. TextEdit's own name is an app name that `{app}` carries; don't confuse
   the two.
-- `desktop-i18n-term-consistency`: the four strings shared with the terminal keys must translate identically per locale.
+- `desktop-i18n-term-consistency` (a warn): "Dismiss" and "Open settings" (M2), "Choose an app…" and "Checking your
+  apps…" (M3) should translate exactly as the terminal keys do in each locale.
 - ❌ Don't edit the existing terminal keys.
+- ❌ Never add a key before the code naming it, and never widen `unusedKeyDynamicPrefixes` to get one through.
 
-**Test plan**: no code, so the red step is the checker itself. Run `pnpm check desktop-i18n-coverage` right after
-`sync-locale-keys` and see it fail on the English skeletons; translate; see it pass.
+**Red step**: run `pnpm check desktop-i18n-coverage` right after `sync-locale-keys` and see it fail on the English
+skeletons; translate; see it pass.
 
-**DONE**: `pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural desktop-i18n-stale desktop-i18n-coverage
-desktop-i18n-dont-translate desktop-i18n-term-consistency desktop-i18n-aria-label desktop-i18n-doc-citations` green,
-warns reported. Commit, for example `feat(i18n): the text-editor setting and its toasts speak all ten languages`.
+**Checks**, inside the milestone's DONE: `pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural
+desktop-i18n-stale desktop-i18n-coverage desktop-i18n-dont-translate desktop-i18n-term-consistency
+desktop-i18n-aria-label desktop-i18n-doc-citations desktop-message-keys-unused`, warns reported.
 
-### M3. F4 honors the choice
+### M2. F4 honors the choice
 
 **Scope**
 
 - **Registry**: `behavior.textEditorApp` in `settings/definitions/behavior.ts` beside the terminal entries (`type:
   'string'`, `default: 'system'`, `component: 'select'`, `cardKey: 'settings.navigationAndFileOps.card.textEditor'`,
   keywords such as `editor`, `text editor`, `F4`, `Sublime Text`, `VS Code`, `BBEdit`, `TextEdit`), with a comment in
-  the terminal's style, and its `SettingsValues` key in `settings/types.ts`. No row until M4; until then the entry is
+  the terminal's style, and its `SettingsValues` key in `settings/types.ts`. No row until M3; until then the entry is
   searchable with nothing rendered, which is fine inside the branch. ❌ Never add it to `CATEGORICAL_STRING_KEYS`: the
-  value can be a path inside someone's home folder.
+  value can be a path inside someone's home folder. Commit the `settings-defaults.gen.json` rewrite that
+  `analytics-settings-defaults` makes.
+- **Copy**: § The copy procedure, for the keys tagged (M2).
 - **The module**, `text-editor/` under `apps/desktop/src/lib/`:
   - `text-editor-choice.ts`: a leaf with zero imports, `SYSTEM_DEFAULT_EDITOR_CHOICE = 'system'` (mirrors Rust's
     `SYSTEM_DEFAULT_CHOICE`).
   - `text-editor-setting.ts`: `getTextEditorChoice()` (a missing or non-string value reads as `system`),
     `setTextEditorChoice`, and `openSettingsToTextEditor()` (surface `'text-editor-toast'`, section `['Behavior',
-    'Navigation & file ops']`, anchor `settingAnchorId('behavior.textEditorApp')`, which starts resolving in M4; until
+    'Navigation & file ops']`, anchor `settingAnchorId('behavior.textEditorApp')`, which starts resolving in M3; until
     then the section opens at its top).
   - `open-file-in-editor.ts`: `openFileInEditor(path): Promise<boolean>`. Reads the choice, calls `openInEditor(path,
-    choice, false)` (the hint arrives in M4), resets to `system` and raises the missing-app toast on
+    choice, false)` (the hint arrives in M3), resets to `system` and raises the missing-app toast on
     `chosen_app_missing_opened_default_instead`, words `launchRefused` and `timedOut`, never throws, and says everything
     under the one id with dismiss-then-add.
   - `TextEditorToastContent.svelte`: one presentational body (a resolved `message`, an optional Dismiss, and "Open
-    settings"), used by the missing-app toast now and the hint in M4. `$lib/nudges/NudgeToastContent.svelte` is title +
+    settings"), used by the missing-app toast now and the hint in M3. `$lib/nudges/NudgeToastContent.svelte` is title +
     body + note + decline/accept, which doesn't fit a one-sentence message, so a small body of its own is expected.
   - `CLAUDE.md` (module map; must-knows: the guard lives in the pane, spend-on-show, ask only while due, one toast id,
     the toast names the fallback) and `DETAILS.md` (the hint table, the removed-app decision, the toasts, testing).
@@ -424,11 +466,14 @@ nothing in the UI advertises it yet.
 
 - ❗ One toast id, dismiss then add, and both toasts persistent (`open-terminal/DETAILS.md` § The toasts).
 - Word the missing-app toast from the REPORT's `openedInName`; don't re-read the setting after resetting it.
-- `import-cycles`: keep `text-editor-choice.ts` import-free, so `settings/sections/` can import it in M4 without a cycle
+- `import-cycles`: keep `text-editor-choice.ts` import-free, so `settings/sections/` can import it in M3 without a cycle
   through `$lib/settings`.
-- The three callers stay untouched. `command-dispatch.characterization.test.ts` pins `openInEditor`'s arguments: with
-  the choice now read from settings, give that test's settings mock the default and expect `('…path', 'system',
-  false)`.
+- The three callers stay untouched. `command-dispatch.characterization.test.ts` pins `openInEditor`'s arguments; its
+  settings mock answers `100` for every key, which `getTextEditorChoice` reads as `system`, so it keeps expecting
+  `(path, 'system', false)`. ❗ That mock and `pane/search-pane-keys.test.ts`'s spy both resolve `undefined`, and
+  `openFileInEditor` now reads the report: have them resolve `{ outcome: 'opened', openedInName: null,
+  otherEditorsInstalled: null }`. `search-pane-keys.test.ts` also reaches `$lib/settings` unmocked from here on; mock it
+  there if the real store doesn't load.
 - `svelte-tests` holds each new `.ts` file to 70% coverage.
 - Every string goes through `tString` (`cmdr/no-raw-user-facing-string`).
 - ❌ Don't touch `DualPaneExplorer.svelte` or `FilePane.svelte`.
@@ -446,19 +491,22 @@ nothing in the UI advertises it yet.
 4. `editor-open.test.ts` (new): the guard still refuses an `adb://…` row and an archive-inner row without calling
    `openFileInEditor`; a real row maps `true` to `'opened'` and `false` to `'launchFailed'`.
 5. `text-editor-toasts.a11y.test.ts`, mirroring `open-terminal-toasts.a11y.test.ts`.
+6. The copy: the procedure's red step on `desktop-i18n-coverage`.
 
-**DONE**: `pnpm check svelte`, then `pnpm check docs-reachable docs-dead-links docs-link-text claude-md-length`, then
-plain `pnpm check`. Commit, for example
+**DONE**: the copy procedure's checks, `pnpm check svelte`, then `pnpm check docs-reachable docs-dead-links
+docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for example
 `feat(editor): F4 opens files in the editor you chose, and falls back to the system default with a word when that app is gone`.
 
-### M4. The Settings row and the one-time hint
+### M3. The Settings row and the one-time hint
 
 **Scope**
 
 - **Platform flag**: `SettingDefinition.macOSOnly?: true` in `settings/types.ts`; `settings-search.ts::buildSearchIndex`
   drops `macOSOnly` settings off macOS, read at index build the way `searchableRowEntries` does. Set it on
   `behavior.textEditorApp`, `behavior.textEditorHintSeen`, and `behavior.openTerminalHereApp`.
-- **Registry**: hidden `behavior.textEditorHintSeen` (boolean, default false) and its `SettingsValues` key.
+- **Registry**: hidden `behavior.textEditorHintSeen` (boolean, default false) and its `SettingsValues` key; commit the
+  `settings-defaults.gen.json` rewrite that `analytics-settings-defaults` makes.
+- **Copy**: § The copy procedure, for the keys tagged (M3).
 - **Options**, `settings/sections/text-editor-options.ts` (pure): the system-default row first (named or unnamed label,
   the default's icon), the apps sorted with an `Intl.Collator` in the app's locale, then the choose-app sentinel; and
   `selectedTextEditorId(list)`, where a `null` `chosenId` DISPLAYS `system` and never writes.
@@ -506,11 +554,14 @@ plain `pnpm check`. Commit, for example
    pair where byte order and collation disagree, like "Ölmaker" and "Zed" under `de`), choose-app last; a `null`
    `chosenId` selects `system`.
 4. Settings search: with `isMacOS` false the three `macOSOnly` settings are gone from results; true brings them back.
+   Call `clearSearchIndex()` between the two: `buildSearchIndex` memoizes, so without it the second answer is the
+   first one's.
 5. `NavigationAndFileOpsSection.svelte.test.ts`: off macOS neither card renders; on macOS the Text editor card sits above
    Terminal.
 6. The terminal row's existing tests stay green through the extraction.
+7. The copy: the procedure's red step on `desktop-i18n-coverage`.
 
-**DONE**: plain `pnpm check` green; the "New file round-trip" test run alone per the single-spec recipe in
+**DONE**: the copy procedure's checks, then plain `pnpm check` green; the "New file round-trip" test run alone per the single-spec recipe in
 `apps/desktop/test/e2e-playwright/CLAUDE.md`, green; then `pnpm check --include-slow` once. Commit, for example
 `feat(settings): pick the app F4 opens files in from the editors macOS lists, and hear once where that setting lives`.
 
@@ -540,4 +591,4 @@ plain `pnpm check`. Commit, for example
 - The `playwright-e2e` build launches nothing and records the file path only.
 - Everything the feature says goes out under one toast id, dismissed before it's re-added.
 - Nothing from this feature renders or matches search off macOS.
-- All copy exists in all ten full locales before code renders it.
+- Every key lands in the same commit as the code naming it, translated into all ten full locales.
