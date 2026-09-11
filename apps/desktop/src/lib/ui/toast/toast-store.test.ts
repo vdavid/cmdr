@@ -47,6 +47,22 @@ describe('addToast', () => {
     expect(toasts[0].level).toBe('error')
   })
 
+  it('replaces props in place for duplicate IDs, so a re-fire shows its new values', () => {
+    // Pre-fix the first raise's props stuck: a low-disk toast re-raised in place kept
+    // showing the free space from when it first appeared.
+    addToast(dummyContent, { id: 'dup', props: { availableBytes: 10 } })
+    addToast(dummyContent, { id: 'dup', props: { availableBytes: 5 } })
+
+    expect(getToasts()[0].props).toEqual({ availableBytes: 5 })
+  })
+
+  it('clears props on a same-id add that passes none', () => {
+    addToast(dummyContent, { id: 'dup', props: { availableBytes: 10 } })
+    addToast(dummyContent, { id: 'dup' })
+
+    expect(getToasts()[0].props).toBeUndefined()
+  })
+
   it('re-stamps postedAt when a same-id add replaces the toast, so its age label restarts', () => {
     vi.useFakeTimers()
     try {

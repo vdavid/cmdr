@@ -28,7 +28,7 @@ export interface ToastOptions {
   dismissal?: ToastDismissal
   /** Timeout in ms. Default 4000 for transient toasts, ignored for persistent. */
   timeoutMs?: number
-  /** Optional dedup key. If a toast with this ID exists, its content and level are replaced in place. */
+  /** Optional dedup key. If a toast with this ID exists, its content, level, and props are replaced in place. */
   id?: string
   /**
    * Optional tooltip shown on the X (close) button. Useful when the toast also contains its own
@@ -144,6 +144,7 @@ function replaceExisting(index: number, content: ToastContent, level: ToastLevel
   toasts[index].level = level
   toasts[index].closeTooltip = options?.closeTooltip
   toasts[index].onDismiss = options?.onDismiss
+  toasts[index].props = options?.props
   toasts[index].postedAt = Date.now()
 }
 

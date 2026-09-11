@@ -1561,7 +1561,10 @@ Finder" and Dock offers among them) with buttons that ran their action again on 
 
 **Decision**: Toast dedup uses an optional `id` key with in-place replacement rather than preventing duplicates.
 **Why**: The update toast and AI toast need to update their content as state changes (e.g. download progress) while
-keeping the same slot in the stack. Replacing in place avoids the visual flicker of remove-then-add.
+keeping the same slot in the stack. Replacing in place avoids the visual flicker of remove-then-add. A replace takes the
+new content, level, `props`, close tooltip, and `onDismiss` (each cleared when the re-add omits it) and keeps the first
+raise's `originPane`, so a re-fired toast shows its new values: the low-disk toast re-raises per volume with fresh byte
+counts.
 
 ## Key gotchas
 

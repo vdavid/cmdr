@@ -243,9 +243,8 @@ function settle(last: { message: string; level: 'success' | 'warn' | 'default' }
 /**
  * Shows (or refreshes) the persistent running toast.
  *
- * The content component reads this module directly rather than taking props: a toast
- * replaced in place keeps its original props (`toast-store.svelte.ts`), so counters
- * passed in would freeze at the values they had when the pane opened.
+ * The content component reads this module's live `$state` rather than taking props,
+ * so its counters stay current between refreshes without a re-raise per change.
  */
 function showRunningToast(): void {
   addToast(WalkHandoffToastContent, {
