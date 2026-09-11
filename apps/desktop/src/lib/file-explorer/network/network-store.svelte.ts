@@ -21,6 +21,7 @@ import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-s
 import { initializeSettings } from '$lib/settings'
 import type { UnlistenFn } from '$lib/tauri-commands'
 import type { NetworkHost, DiscoveryState, ShareListResult, ShareListError } from '../types'
+import { ShareListFailure, shareListErrorOf } from './share-list-error'
 
 // Singleton state for network discovery
 let hosts = $state<NetworkHost[]>([])
@@ -126,8 +127,7 @@ async function fetchSharesSilent(host: NetworkHost): Promise<void> {
     )
     shareStates.set(host.id, { status: 'loaded', result, fetchedAt: Date.now() })
   } catch (error) {
-    const shareError = error as ShareListError
-    shareStates.set(host.id, { status: 'error', error: shareError, fetchedAt: Date.now() })
+    shareStates.set(host.id, { status: 'error', error: shareListErrorOf(error), fetchedAt: Date.now() })
   }
 }
 
@@ -270,7 +270,7 @@ export function isShareDataStale(hostId: string): boolean {
  */
 export async function fetchShares(host: NetworkHost): Promise<ShareListResult> {
   if (!host.hostname) {
-    throw new Error('Host hostname not resolved')
+    throw new ShareListFailure({ type: 'resolution_failed', message: 'the host has no hostname yet' })
   }
 
   // Mark as loading
@@ -288,8 +288,7 @@ export async function fetchShares(host: NetworkHost): Promise<ShareListResult> {
     shareStates.set(host.id, { status: 'loaded', result, fetchedAt: Date.now() })
     return result
   } catch (error) {
-    const shareError = error as ShareListError
-    shareStates.set(host.id, { status: 'error', error: shareError, fetchedAt: Date.now() })
+    shareStates.set(host.id, { status: 'error', error: shareListErrorOf(error), fetchedAt: Date.now() })
     throw error
   }
 }

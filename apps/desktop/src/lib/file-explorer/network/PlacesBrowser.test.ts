@@ -19,6 +19,7 @@ import { mount, unmount, tick } from 'svelte'
 import PlacesBrowser from './PlacesBrowser.svelte'
 import type { NetworkHost, ShareInfo, ShareListError } from '../types'
 import { renderShareListError } from './share-list-error-messages'
+import { ShareListFailure } from './share-list-error'
 
 const h = vi.hoisted(() => ({
   fetchShares: vi.fn(),
@@ -139,13 +140,27 @@ describe('PlacesBrowser credential gate', () => {
       type: 'host_unreachable',
       message: 'smbutil failed: Connection refused (os error 61)',
     }
-    h.fetchShares.mockRejectedValue(failure)
+    h.fetchShares.mockRejectedValue(new ShareListFailure(failure))
     const { target, component } = mountBrowser(vi.fn())
 
     const errorPane = await vi.waitFor(() => must(target.querySelector('.error-state'), 'the error pane'))
     const message = must(errorPane.querySelector('.error-message'), 'the message').textContent
     expect(message).toBe(renderShareListError(failure, 'Naspolya'))
     expect(message).not.toContain('smbutil')
+
+    await unmount(component)
+  })
+
+  it('words a listing that threw something untyped, instead of handing the renderer an Error with no type', async () => {
+    // Anything untyped that lands in the listing's catch (a runtime exception, an
+    // IPC call that broke) was cast to `ShareListError`, reached
+    // `renderShareListError` with `type` undefined, and the pane threw.
+    h.fetchShares.mockRejectedValue(new Error('the IPC bridge went away'))
+    const { target, component } = mountBrowser(vi.fn())
+
+    const errorPane = await vi.waitFor(() => must(target.querySelector('.error-state'), 'the error pane'))
+    const message = must(errorPane.querySelector('.error-message'), 'the message').textContent
+    expect(message).toBe(renderShareListError({ type: 'protocol_error', message: '' }, 'Naspolya'))
 
     await unmount(component)
   })
@@ -246,7 +261,7 @@ describe('PlacesBrowser listing sign-in', () => {
   }
 
   it('asks the sheet for a username and a password when the LISTING needs one', async () => {
-    h.fetchShares.mockRejectedValue({ type: 'auth_required', message: 'Authentication required' })
+    h.fetchShares.mockRejectedValue(new ShareListFailure({ type: 'auth_required', message: 'Authentication required' }))
     const { target, component } = mountBrowser(vi.fn())
 
     await vi.waitFor(() => {
@@ -283,7 +298,7 @@ describe('PlacesBrowser listing sign-in', () => {
   })
 
   it('lists with what the user typed, and remembers it only once the listing works', async () => {
-    h.fetchShares.mockRejectedValue({ type: 'auth_required', message: 'Authentication required' })
+    h.fetchShares.mockRejectedValue(new ShareListFailure({ type: 'auth_required', message: 'Authentication required' }))
     h.listSharesWithCredentials.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
     const { component } = mountBrowser(vi.fn())
     await vi.waitFor(() => {
@@ -313,8 +328,10 @@ describe('PlacesBrowser listing sign-in', () => {
   })
 
   it('keeps the sheet open on a password the server refused, with the reason it gave', async () => {
-    h.fetchShares.mockRejectedValue({ type: 'auth_required', message: 'Authentication required' })
-    h.listSharesWithCredentials.mockRejectedValue({ type: 'auth_failed', message: 'Invalid username or password' })
+    h.fetchShares.mockRejectedValue(new ShareListFailure({ type: 'auth_required', message: 'Authentication required' }))
+    h.listSharesWithCredentials.mockRejectedValue(
+      new ShareListFailure({ type: 'auth_failed', message: 'Invalid username or password' }),
+    )
     const { component } = mountBrowser(vi.fn())
     await vi.waitFor(() => {
       expect(h.openSignInSheet).toHaveBeenCalled()
@@ -334,7 +351,7 @@ describe('PlacesBrowser listing sign-in', () => {
   })
 
   it('sends no account for guest, so the server is asked for exactly what was offered', async () => {
-    h.fetchShares.mockRejectedValue({ type: 'auth_required', message: 'Authentication required' })
+    h.fetchShares.mockRejectedValue(new ShareListFailure({ type: 'auth_required', message: 'Authentication required' }))
     h.listSharesWithCredentials.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
     const { component } = mountBrowser(vi.fn())
     await vi.waitFor(() => {
@@ -358,7 +375,7 @@ describe('PlacesBrowser listing sign-in', () => {
   })
 
   it('goes back to the host list when the sign-in is cancelled, rather than sitting on a locked list', async () => {
-    h.fetchShares.mockRejectedValue({ type: 'auth_required', message: 'Authentication required' })
+    h.fetchShares.mockRejectedValue(new ShareListFailure({ type: 'auth_required', message: 'Authentication required' }))
     const onBack = vi.fn()
     const { component } = mountBrowser(vi.fn(), onBack)
 

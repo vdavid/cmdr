@@ -168,7 +168,11 @@ because that is where the retry and a missing dependency's install command live.
 The error state's sentence, and the servers list's tooltip for the same failure (`host-status.ts`), come from
 `share-list-error-messages.ts`: one `errors.shareList.*` key per `ShareListError` type, naming the host. ❌ Never
 `error.message`: the backend documents it as diagnostic detail for the log, and it's English, often a fallback tool's
-own stderr.
+own stderr. `listSharesOnHost` and `listSharesWithCredentials` throw the typed value as a `ShareListFailure`
+(`share-list-error.ts`), `fetchShares` throws its own for a host with no hostname yet (`resolution_failed`), and every
+catch reads the value back through `shareListErrorOf`. ❌ Never `e as ShareListError`: anything untyped that lands in
+the catch (a runtime exception, an IPC call that broke) had no `type`, and the renderer threw on it; it reads as
+`protocol_error` now, its text kept for the log. Pinned by `PlacesBrowser.test.ts`.
 
 When `authenticatedCredentials` is set, a "Forget saved password" button appears in the header; clicking it calls
 `forgetCredentials` and clears `authenticatedCredentials`. Shares sort case-insensitively. Escape/Backspace go back.

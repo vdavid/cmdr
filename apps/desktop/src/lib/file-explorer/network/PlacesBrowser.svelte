@@ -11,6 +11,7 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import type { AuthMode, PlacesAccount, ShareInfo, ShareListError } from '../types'
     import { renderShareListError } from './share-list-error-messages'
+    import { shareListErrorOf } from './share-list-error'
     import {
         getShareState,
         fetchShares,
@@ -240,7 +241,7 @@
             shares = result.shares
             authMode = result.authMode
         } catch (e) {
-            const shareError = e as ShareListError
+            const shareError = shareListErrorOf(e)
             if (isListingAuthError(shareError)) {
                 await settleListingAuth(shareError)
                 return
@@ -373,7 +374,7 @@
             )
             return { kind: 'handed_off' }
         } catch (e) {
-            const shareError = e as ShareListError
+            const shareError = shareListErrorOf(e)
             if (shareError.type === 'auth_failed') {
                 // Mark credentials as failed
                 setCredentialStatus(host.name, 'failed')

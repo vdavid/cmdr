@@ -4,6 +4,7 @@ import { type UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '$lib/ipc/bindings'
 import { throwEjectError } from '$lib/file-explorer/navigation/eject-error'
 import { throwMountError } from '$lib/file-explorer/network/mount-error'
+import { throwShareListError } from '$lib/file-explorer/network/share-list-error'
 import { throwReconnectError } from '$lib/file-explorer/network/reconnect-error'
 import type {
   MountResult,
@@ -127,7 +128,8 @@ export function onNetworkDiscoveryStateChanged(handler: (state: DiscoveryState) 
  * @param port SMB port (default 445, but Docker containers may use different ports)
  * @param timeoutMs Optional timeout in milliseconds (default: 15000)
  * @param cacheTtlMs Optional cache TTL in milliseconds (default: 30000)
- * @returns Result with shares and auth mode, or error
+ * @returns The shares and the auth mode
+ * @throws ShareListFailure carrying the typed `ShareListError`; `shareListErrorOf` gets it back
  */
 export async function listSharesOnHost(
   hostId: string,
@@ -145,7 +147,7 @@ export async function listSharesOnHost(
     timeoutMs ?? null,
     cacheTtlMs ?? null,
   )
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwShareListError(res.error)
   return res.data
 }
 
@@ -295,6 +297,7 @@ export async function deleteSmbCredentials(server: string, share: string | null)
  * @param password Password for authentication (null for guest)
  * @param timeoutMs Optional timeout in milliseconds (default: 15000)
  * @param cacheTtlMs Optional cache TTL in milliseconds (default: 30000)
+ * @throws ShareListFailure carrying the typed `ShareListError`; `shareListErrorOf` gets it back
  */
 export async function listSharesWithCredentials(
   hostId: string,
@@ -316,7 +319,7 @@ export async function listSharesWithCredentials(
     timeoutMs ?? null,
     cacheTtlMs ?? null,
   )
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwShareListError(res.error)
   return res.data
 }
 

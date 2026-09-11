@@ -45,7 +45,8 @@ mis-renders at runtime). Change both sides in the same commit.
   (the server, the share, and for a refused account the username), `mountNetworkShare` throws it as a `MountFailure`,
   and the network pane words it through `apps/desktop/src/lib/file-explorer/network/mount-error-messages.ts` under its
   "Couldn't mount share" title. The catch-all `Unexpected` keeps what NetFS or `gio` said in `detail`, for the log. A
-  server's share LISTING that didn't load is worded the same way: `ShareListError`'s `message` is a diagnostic, and
+  server's share LISTING that didn't load is worded the same way: `ShareListError`'s `message` is a diagnostic,
+  `listSharesOnHost` / `listSharesWithCredentials` throw it as a `ShareListFailure` (`share-list-error.ts`), and
   `share-list-error-messages.ts` beside it words the type for the pane and the servers list's tooltip.
 
 ## Every command family owns its error type
@@ -74,8 +75,8 @@ The rule that replaced it:
 - **A typed error needs a typed carrier on the frontend.** `throwIpcError` flattens anything without a `.message` into
   `new Error(JSON.stringify(...))`, which is exactly the string this design exists to end. A refusal that reaches a
   human crosses the throw as a `TypedFailure` subclass (`apps/desktop/src/lib/ipc/typed-failure.ts`: `MutationFailure`,
-  `EjectFailure`, `ReconnectFailure`, `AiSecretFailure`), and the catch site asks `failureOf` for the value back.
-  `throwIpcError` survives only for the commands still answering with a bare `String`.
+  `EjectFailure`, `ReconnectFailure`, `AiSecretFailure`, `MountFailure`, `ShareListFailure`), and the catch site asks
+  `failureOf` for the value back. `throwIpcError` survives only for the commands still answering with a bare `String`.
 - **A typed IPC parameter, too, where control flow depended on one.** `viewer_get_lines` used to take
   `target_type: String` and re-parse it, which meant an error arm for a case no typed caller could reach; it takes a
   `SeekTargetKind` now.
@@ -104,6 +105,10 @@ The rule that replaced it:
   `apps/desktop/src/lib/file-explorer/network/mount-error-messages.ts`, and `mount-error.ts` beside it carries the value
   across the throw. A new variant needs its `errors.mount.<variant>` key and its arm in `MOUNT_MESSAGE`, whose record
   type demands every variant.
+- **Share-list refusals**: the enum is `crates/cmdr-smb/src/types.rs`; the words are
+  `apps/desktop/src/lib/file-explorer/network/share-list-error-messages.ts`, and `share-list-error.ts` beside it carries
+  the value across the throw. Every catch site reads it back through `shareListErrorOf`, which reads anything untyped as
+  `protocol_error`.
 - **The typed-error catalogue and the deadline helpers**:
   [the command layer](../../apps/desktop/src-tauri/src/commands/DETAILS.md#decisions) and
   `apps/desktop/src-tauri/src/commands/CLAUDE.md`.
