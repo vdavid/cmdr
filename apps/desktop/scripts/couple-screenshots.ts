@@ -108,18 +108,6 @@ export function couplingsFromReport(report: CaptureReport): Map<string, string> 
 }
 
 /**
- * Message-key prefixes whose keys are assembled at runtime (a reason variable
- * spliced into the dotted path), so the static capture report can never name them
- * individually: the rendered surface records the RESOLVED key only if capture is
- * active at resolution time. Uncoupled keys under one of these are bucketed as
- * "dynamic-only" in the coverage report rather than as a missed surface. Mirrors
- * `unusedKeyDynamicPrefixes` in `scripts/check/checks/desktop-message-keys-unused.go`
- * (kept in sync by hand; both are small, closed, and tied to live construction
- * sites in `apps/desktop/src/lib/`).
- */
-export const DYNAMIC_KEY_PREFIXES: string[] = ['errors.git.', 'errors.listing.', 'errors.provider.', 'errors.write.']
-
-/**
  * Returns the first representative mapping whose prefix matches `key`, or null.
  * Order matters: list more specific prefixes before broader ones.
  */
