@@ -57,6 +57,42 @@ describe('createVolumeSelection', () => {
     })
   })
 
+  it('selectVolumeByName for a saved server place opens it on its start folder', async () => {
+    const place = vol({
+      id: 'sftp-nas',
+      name: 'Naspolya',
+      path: 'sftp://ada@nas.local:22/srv/data',
+      category: 'network',
+      connectionState: 'saved',
+      landingPath: 'sftp://ada@nas.local:22/srv/data/photos',
+    })
+    const { ops, navigate } = setup([place])
+    expect(await ops.selectVolumeByName('left', 'Naspolya')).toBe(true)
+    expect(navigate).toHaveBeenCalledWith({
+      pane: 'left',
+      to: { selectVolume: { volumeId: 'sftp-nas', path: 'sftp://ada@nas.local:22/srv/data/photos' } },
+      source: 'user',
+    })
+  })
+
+  it('selectVolumeByName for a connected server place opens it at its root, where the switch picks the path', async () => {
+    const place = vol({
+      id: 'sftp-nas',
+      name: 'Naspolya',
+      path: 'sftp://ada@nas.local:22/srv/data',
+      category: 'network',
+      connectionState: 'direct',
+      landingPath: 'sftp://ada@nas.local:22/srv/data/photos',
+    })
+    const { ops, navigate } = setup([place])
+    expect(await ops.selectVolumeByName('left', 'Naspolya')).toBe(true)
+    expect(navigate).toHaveBeenCalledWith({
+      pane: 'left',
+      to: { selectVolume: { volumeId: 'sftp-nas', path: 'sftp://ada@nas.local:22/srv/data' } },
+      source: 'user',
+    })
+  })
+
   it('selectVolumeByName for a favorite navigates to its path on the containing volume', async () => {
     resolvePathVolumeSpy.mockResolvedValue({ volume: { id: 'root' } })
     const { ops, navigate } = setup([vol({ id: 'fav', name: 'Docs', path: '/Users/me/Docs', category: 'favorite' })])

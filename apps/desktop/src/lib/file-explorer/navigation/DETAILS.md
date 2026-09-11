@@ -76,19 +76,46 @@ deleted → navigate to parent) doesn't push via this callback; it relies on the
 
 ## `path-navigation.ts`
 
-`determineNavigationPath({ volumeId, volumePath, targetPath, otherPane })`: picks best initial path when switching
-volumes. Runs checks **in parallel** with 500ms frontend timeouts per check. Priority:
+`determineNavigationPath({ volumeId, volumePath, targetPath, otherPane, landingPath })`: picks best initial path when
+switching volumes. Runs checks **in parallel** with 500ms frontend timeouts per check. Priority:
 
 1. Favorite path (when `targetPath !== volumePath`)
 2. Other pane's path (if same volume and path exists)
 3. Stored `lastUsedPath` for this volume
-4. Default: `~` for `DEFAULT_VOLUME_ID`, else `firstLandingOn(volumePath)`
+4. Default: `~` for `DEFAULT_VOLUME_ID`, else `firstLandingOn(volumePath, landingPath)`
 
-`firstLandingOn` is the volume root for everything but a phone: an `adb://<serial>` root becomes
-`adb://<serial>/sdcard`, where the user's own files are. ❗ It is a LANDING rule reached only by arm 4, ❌ never a
-different volume root: the root is unchanged, one Backspace away, and shown in the breadcrumb, and a remembered path
-(arm 3) still wins. Why, and why `/data` is never hidden: `$lib/adb/DETAILS.md` § "Where a phone's first navigation
-lands".
+`firstLandingOn` is the volume's landing. For a server place that's its start folder (`VolumeInfo.landingPath`, minted
+in Rust by `server_volumes.rs`; `../pane/navigate.ts` hands it over through `getVolumeLandingById`). Everything else
+lands at its root, except a phone: an `adb://<serial>` root becomes `adb://<serial>/sdcard`, where the user's own files
+are. ❗ It is a LANDING rule reached only by arm 4, ❌ never a different volume root: the root is unchanged, one Backspace
+away, and shown in the breadcrumb, and a remembered path (arm 3) still wins. Why a phone lands there, and why `/data` is
+never hidden: `$lib/adb/DETAILS.md` § "Where a phone's first navigation lands".
+
+### Picking a volume itself (`picked-volume-path.ts`)
+
+`pathForPickedVolume(volume)` is where a pane goes when the user picks the volume ITSELF: a switcher row
+(`VolumeBreadcrumb`), a hub row (`../pane/NetworkMountView.svelte`), the palette's and MCP's select
+(`../pane/volume-selection.ts`), and a server row's Open (`DualPaneExplorer`). A pane headed somewhere specific (a
+restored tab, a favorite, go-to-path, history) never comes through it, so it keeps its path.
+
+- **A `saved` place opens straight on its landing.** The connect is what lands it: nothing is registered, so arms 2 and
+  3 can't be probed, and the pane waits right there while `../pane/place-connect.svelte.ts` dials.
+- **Everything else opens at its root**, which `determineNavigationPath` reads as "pick for me" and reaches the landing
+  as arm 4. ❌ Passing the landing as the target instead reads as arm 1 (a favorite) and skips the other pane and the
+  remembered path.
+
+### Following an edited place (`root-change-follow.ts`)
+
+`pathAfterRootChange(path, change)` is where a path on a connected place goes after `volume-root-changed`, by whole
+components (❌ never a string prefix: `/srv/data-1` is a sibling of `/srv/data`):
+
+1. On the old root or the old landing → the new landing.
+2. Inside the new root → unchanged, so a pane that went deeper keeps its place.
+3. Anywhere else → the new landing, since the new root refuses it.
+
+It's idempotent, and it reads a root with or without a trailing slash as the same folder (Rust mints a `/` root as
+`sftp://ada@nas.local:22/`). Who applies it to panes, tabs, and the remembered path: `../pane/DETAILS.md` § "A place
+whose root moved under the pane".
 
 `withTimeout(promise, ms, fallback)`: imported from `$lib/utils/timing` and re-exported. Races a promise against a
 timeout, returning the fallback on expiry. Used by `determineNavigationPath` and also by `VolumeBreadcrumb.svelte`

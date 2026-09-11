@@ -46,7 +46,13 @@ vi.mock('$lib/ui/toast', () => ({
 const seenFlag: Record<string, boolean> = {}
 const raisedToasts: Record<string, unknown>[] = []
 
-import { initVolumeStore, cleanupVolumeStore, getVolumes, toConnectionState } from './volume-store.svelte'
+import {
+  applyVolumeRootChanged,
+  initVolumeStore,
+  cleanupVolumeStore,
+  getVolumes,
+  toConnectionState,
+} from './volume-store.svelte'
 
 /** A share mounted twice: two paths, one volume ID. */
 function doublyMountedShare(): VolumeInfo[] {
@@ -74,6 +80,84 @@ function doublyMountedShare(): VolumeInfo[] {
     },
   ]
 }
+
+/**
+ * ❗ An edit to a connected place moves its root in the registry and announces it
+ * with `volume-root-changed` before the debounced `volumes-changed` republishes the
+ * row. A pane following the edit navigates through `navigate()`, which checks the
+ * target against the ROW's root, so the row has to move first.
+ */
+describe('applyVolumeRootChanged', () => {
+  const place: VolumeInfo = {
+    id: 'sftp-nas-local-22-ada',
+    name: 'Naspolya',
+    path: 'sftp://ada@nas.local:22/srv/data/tmp',
+    category: 'network',
+    isEjectable: false,
+    connectionState: 'direct',
+  }
+
+  beforeEach(() => {
+    mockListVolumes.mockReset()
+    cleanupVolumeStore()
+  })
+
+  afterEach(() => {
+    cleanupVolumeStore()
+  })
+
+  it("moves the place's row to the new root and landing, and keeps everything else it carried", async () => {
+    mockListVolumes.mockResolvedValue({ data: [place], timedOut: false })
+    await initVolumeStore()
+
+    applyVolumeRootChanged({
+      volumeId: place.id,
+      oldRoot: place.path,
+      newRoot: 'sftp://ada@nas.local:22/srv/data',
+      oldLanding: place.path,
+      newLanding: 'sftp://ada@nas.local:22/srv/data/photos',
+    })
+
+    expect(getVolumes()).toEqual([
+      {
+        ...place,
+        path: 'sftp://ada@nas.local:22/srv/data',
+        landingPath: 'sftp://ada@nas.local:22/srv/data/photos',
+      },
+    ])
+  })
+
+  it('records a landing on the root itself as no landing, the spelling the listing uses', async () => {
+    mockListVolumes.mockResolvedValue({ data: [place], timedOut: false })
+    await initVolumeStore()
+
+    applyVolumeRootChanged({
+      volumeId: place.id,
+      oldRoot: place.path,
+      newRoot: 'sftp://ada@nas.local:22/srv/data',
+      oldLanding: place.path,
+      newLanding: 'sftp://ada@nas.local:22/srv/data',
+    })
+
+    expect(getVolumes()[0].landingPath).toBeNull()
+  })
+
+  it("leaves the list alone for a place it doesn't hold", async () => {
+    mockListVolumes.mockResolvedValue({ data: [place], timedOut: false })
+    await initVolumeStore()
+    const before = getVolumes()
+
+    applyVolumeRootChanged({
+      volumeId: 'sftp-somewhere-else-22-ada',
+      oldRoot: 'sftp://ada@somewhere.else:22/a',
+      newRoot: 'sftp://ada@somewhere.else:22/',
+      oldLanding: 'sftp://ada@somewhere.else:22/a',
+      newLanding: 'sftp://ada@somewhere.else:22/',
+    })
+
+    expect(getVolumes()).toBe(before)
+  })
+})
 
 describe('volume-store duplicate IDs', () => {
   beforeEach(() => {

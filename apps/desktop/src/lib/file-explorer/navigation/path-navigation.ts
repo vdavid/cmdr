@@ -25,6 +25,11 @@ export interface DetermineNavigationPathArgs {
   volumePath: string
   targetPath: string
   otherPane: OtherPaneState
+  /**
+   * Where the volume lands when nothing is remembered about it, when that isn't
+   * `volumePath`: a server place's start folder (`VolumeInfo.landingPath`).
+   */
+  landingPath?: string | null
 }
 
 /**
@@ -46,10 +51,10 @@ export function isPathOnVolume(path: string, volumePath: string): boolean {
  * 1. Favorite path (if targetPath !== volumePath)
  * 2. Other pane's path (if the other pane is on the same volume)
  * 3. Stored lastUsedPath for this volume
- * 4. Default: ~ for main volume, volume root for others
+ * 4. Default: ~ for main volume, the volume's landing for others (`firstLandingOn`)
  */
 export async function determineNavigationPath(args: DetermineNavigationPathArgs): Promise<string> {
-  const { volumeId, volumePath, targetPath, otherPane } = args
+  const { volumeId, volumePath, targetPath, otherPane, landingPath } = args
   const pathExistsTimeoutMs = 500
 
   // User navigated to a favorite, so go to the favorite's path directly
@@ -74,12 +79,17 @@ export async function determineNavigationPath(args: DetermineNavigationPathArgs)
   if (otherPaneValid) return otherPane.otherPanePath
   if (lastUsedResult) return lastUsedResult
 
-  // Default: ~ for main volume (root), volume path for others
-  return volumeId === DEFAULT_VOLUME_ID ? '~' : firstLandingOn(volumePath)
+  // Default: ~ for main volume (root), the volume's landing for others
+  return volumeId === DEFAULT_VOLUME_ID ? '~' : firstLandingOn(volumePath, landingPath)
 }
 
 /**
- * Where a volume with nothing remembered about it opens.
+ * Where a volume with nothing remembered about it opens: its landing when it has
+ * one, else its root.
+ *
+ * ❗ A server place's landing is the start folder its owner chose
+ * (`VolumeInfo.landingPath`, minted in Rust). The ROOT stays the ceiling, one
+ * Backspace away, and a remembered path (arm 3) still wins over it.
  *
  * ❗ A phone opens at `/sdcard`, not at `/`: an Android device root is a kernel
  * filesystem (`acct`, `apex`, `proc`, forty entries a person mostly cannot
@@ -94,7 +104,8 @@ export async function determineNavigationPath(args: DetermineNavigationPathArgs)
  * MTP is not folded in: an MTP volume is already rooted at one STORAGE, so its
  * root is the media tree rather than a kernel filesystem.
  */
-function firstLandingOn(volumePath: string): string {
+function firstLandingOn(volumePath: string, landingPath: string | null | undefined): string {
+  if (landingPath) return landingPath
   const parsed = parseAdbPath(volumePath)
   if (!parsed || parsed.path !== '') return volumePath
   return constructAdbPath(parsed.serial, ADB_FIRST_LANDING)

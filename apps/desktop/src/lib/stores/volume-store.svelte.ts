@@ -10,7 +10,7 @@
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { listVolumes, refreshVolumes, onVolumesChanged, onVolumeConnectionChanged } from '$lib/tauri-commands'
-import type { VolumeConnection } from '$lib/ipc/bindings'
+import type { VolumeConnection, VolumeRootChanged } from '$lib/ipc/bindings'
 import type { ConnectionState, VolumeInfo } from '$lib/file-explorer/types'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
@@ -67,6 +67,24 @@ export function requestVolumeRefresh(): void {
   // Tell the backend to re-broadcast. The result arrives via the
   // `volumes-changed` event listener, which handles retryFailed.
   void refreshVolumes()
+}
+
+/**
+ * Moves a connected place's row to the root and landing an edit just gave it.
+ *
+ * ❗ `volume-root-changed` arrives before the debounced `volumes-changed` that
+ * republishes the row, and a pane following the edit navigates through
+ * `navigate()`, which checks the target against the ROW's root. Without this, a
+ * WIDER root is refused against the old one. The republish then lands the same
+ * values. A landing on the root itself is `null`, the listing's own spelling.
+ */
+export function applyVolumeRootChanged(change: VolumeRootChanged): void {
+  const idx = volumes.findIndex((v) => v.id === change.volumeId)
+  if (idx < 0) return
+  const landingPath = change.newLanding === change.newRoot ? null : change.newLanding
+  const next = [...volumes]
+  next[idx] = { ...next[idx], path: change.newRoot, landingPath }
+  volumes = next
 }
 
 /**

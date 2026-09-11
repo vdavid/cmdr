@@ -19,6 +19,10 @@ import { resolveValidPath } from './path-resolution'
 const mockPathExists = vi.mocked(pathExists)
 const mockGetLastUsedPath = vi.mocked(getLastUsedPathForVolume)
 
+/** A server place rooted at `/srv/data`, with its start folder one level in. */
+const SERVER_ROOT = 'sftp://ada@nas.local:22/srv/data'
+const SERVER_LANDING = 'sftp://ada@nas.local:22/srv/data/photos'
+
 beforeEach(() => {
   vi.clearAllMocks()
 })
@@ -235,6 +239,41 @@ describe('determineNavigationPath', () => {
     await vi.advanceTimersByTimeAsync(500)
 
     expect(await resultPromise).toBe('mtp://pixel/65537')
+  })
+
+  it('lands a server place with nothing remembered on its start folder, not its root', async () => {
+    mockPathExists.mockResolvedValue(false)
+    mockGetLastUsedPath.mockResolvedValue(undefined)
+
+    const resultPromise = determineNavigationPath({
+      volumeId: 'sftp-nas-local-22-ada',
+      volumePath: SERVER_ROOT,
+      targetPath: SERVER_ROOT,
+      otherPane: defaultOtherPane,
+      landingPath: SERVER_LANDING,
+    })
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(await resultPromise).toBe(SERVER_LANDING)
+  })
+
+  it('still prefers a remembered path on a server place over its start folder', async () => {
+    // ❗ The start folder replaces only the ROOT as the last default: the other
+    // pane and the remembered path keep their priority on a connected place.
+    const remembered = `${SERVER_ROOT}/music`
+    mockGetLastUsedPath.mockResolvedValue(remembered)
+    mockPathExists.mockImplementation((p: string): Promise<boolean> => Promise.resolve(p === remembered))
+
+    const resultPromise = determineNavigationPath({
+      volumeId: 'sftp-nas-local-22-ada',
+      volumePath: SERVER_ROOT,
+      targetPath: SERVER_ROOT,
+      otherPane: defaultOtherPane,
+      landingPath: SERVER_LANDING,
+    })
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(await resultPromise).toBe(remembered)
   })
 
   it('returns volumePath when not default volume and no better option', async () => {

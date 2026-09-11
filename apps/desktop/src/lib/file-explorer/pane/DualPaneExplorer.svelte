@@ -31,6 +31,8 @@
     import type { SortColumn, SortOrder, NetworkHost, WriteOperationError, FriendlyError, FileEntry } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath } from '../navigation/path-navigation'
+    import { pathForPickedVolume } from '../navigation/picked-volume-path'
+    import { createVolumeRootFollow } from './volume-root-follow'
     import { runServerRowAction } from '../navigation/server-row-actions'
 
     import { canGoBack, type NavigationHistory } from '../navigation/navigation-history'
@@ -407,6 +409,7 @@
         },
         getPaneRef,
         getVolumePathById: (volumeId) => volumes.find((v) => v.id === volumeId)?.path,
+        getVolumeLandingById: (volumeId) => volumes.find((v) => v.id === volumeId)?.landingPath,
         determineNavigationPath: (args) => determineNavigationPath(args),
         persist: (event) => {
             // The single nav-state persistence subscriber (A5) owns disk writes.
@@ -444,6 +447,9 @@
     function navigateIntent(intent: NavigateIntent): NavigateResult {
         return runNavigate(intent, navigateDeps)
     }
+
+    // Panes and tabs on a connected place follow an edit that moved its root or start folder.
+    const volumeRootFollow = createVolumeRootFollow({ getTabMgr, navigate: navigateIntent, saveTabs: saveTabsForPaneSide })
 
     // Native drag-and-drop band: drop-target highlight state, the drag handlers,
     // the three Tauri drag listeners, and the folder-highlight effect. The effect
@@ -663,6 +669,7 @@
                 void edgeFlow.handleVolumeUnmount(volumeId)
             }
         })
+        await volumeRootFollow.init()
 
         // Native breadcrumb context menu's "Eject (name)" item routes back via this
         // event (see `on_menu_event` in `lib.rs`). The Svelte popup paths in
@@ -684,7 +691,7 @@
                         if (!volume) return
                         navigateIntent({
                             pane: explorerState.getFocusedPane(),
-                            to: { selectVolume: { volumeId, path: volume.path } },
+                            to: { selectVolume: { volumeId, path: pathForPickedVolume(volume) } },
                             source: 'user',
                         })
                     },
@@ -736,6 +743,7 @@
 
     onDestroy(() => {
         unlistenVolumeUnmount?.()
+        volumeRootFollow.cleanup()
         unlistenVolumeContextAction?.()
         unlistenIndexEvents?.()
         unlistenIndexAggregationComplete?.()

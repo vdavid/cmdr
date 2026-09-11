@@ -245,6 +245,12 @@ export interface NavigateDeps {
   // --- volume resolution + defaults ---
   /** The volume's mount path by id, or undefined when not in the live list. */
   getVolumePathById: (volumeId: string) => string | undefined
+  /**
+   * Where the volume lands when nothing is remembered about it, when that isn't
+   * its root: a server place's start folder (`VolumeInfo.landingPath`). The
+   * background correction takes it as its last default.
+   */
+  getVolumeLandingById: (volumeId: string) => string | null | undefined
   /** Background "best path" resolver (`determineNavigationPath`), gated by the token. */
   determineNavigationPath: (args: DetermineNavigationPathArgs) => Promise<string>
 
@@ -527,6 +533,7 @@ function scheduleVolumePathCorrection(
         otherPaneVolumeId: deps.getPaneVolumeId(other),
         otherPanePath: deps.getPanePath(other),
       },
+      landingPath: deps.getVolumeLandingById(volumeId),
     })
     .then((betterPath) => {
       // GLOBAL supersede (matches the old `volumeChangeGeneration`, which was a

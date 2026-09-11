@@ -10,6 +10,8 @@
         updateRightPaneState,
     } from '$lib/tauri-commands'
     import { getMountTimeoutMs } from '$lib/settings/network-settings'
+    import { getVolumes } from '$lib/stores/volume-store.svelte'
+    import { pathForPickedVolume } from '../navigation/picked-volume-path'
     import { getAppLogger } from '$lib/logging/logger'
     import type { ServersHubAPI, PlacesBrowserAPI, NetworkCursorEntry } from './types'
     import ServersHub from '../network/ServersHub.svelte'
@@ -162,19 +164,22 @@
     }
 
     /**
-     * Enter on a one-place server in the hub: take the pane to its place.
+     * Enter on a one-place server in the hub: take the pane to its place, a saved
+     * one on its start folder (`pathForPickedVolume`).
      *
      * ❗ The pane does the dialing, not the hub. Landing on a `saved` volume is
      * what `place-connect` watches for, so the connecting view and its Cancel
      * render where every other wait does.
      */
     function handleServerSelect(row: HubRow) {
-        const path = row.saved?.places[0]?.appRoot
-        if (!row.volumeId || !path) {
+        const volume = getVolumes().find((v) => v.id === row.volumeId)
+        const root = volume?.path ?? row.saved?.places[0]?.appRoot
+        if (!row.volumeId || !root) {
             log.warn('The hub row {name} has no place to open', { name: row.name })
             return
         }
-        onVolumeChange?.({ volumeId: row.volumeId, volumePath: path, targetPath: path })
+        const targetPath = volume ? pathForPickedVolume(volume) : root
+        onVolumeChange?.({ volumeId: row.volumeId, volumePath: root, targetPath })
     }
 
     /**

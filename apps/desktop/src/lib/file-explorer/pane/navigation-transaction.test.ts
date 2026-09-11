@@ -152,6 +152,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
       recorder.listen('volume-unmounted', (event) => {
         cb(event.payload)
       }),
+    onVolumeRootChanged: vi.fn().mockResolvedValue(() => {}),
     openInEditor: vi.fn().mockResolvedValue(undefined),
   }
 })

@@ -127,6 +127,9 @@ function makePaneFixture(spec: { path: string; volumeId: string } | undefined, s
   return { mgr, state }
 }
 
+/** Where each volume lands when nothing is remembered, when that isn't its root. */
+const LANDINGS = new Map<string, string>([['sftp-nas', 'sftp://ada@nas.local:22/srv/data/photos']])
+
 /** Builds a fresh harness: real per-pane tab managers + spied side effects. */
 function makeHarness(opts?: HarnessOpts): Harness {
   const suppress = new Set(opts?.suppressRef ?? [])
@@ -153,6 +156,7 @@ function makeHarness(opts?: HarnessOpts): Harness {
     ...makeStoreDeps(managers, paneState, tab),
     setFocusedPane,
     getVolumePathById: (volumeId) => VOLUMES.get(volumeId)?.path,
+    getVolumeLandingById: (volumeId) => LANDINGS.get(volumeId),
     determineNavigationPath,
     persist: (event) => {
       persistEvents.push(event)
@@ -289,6 +293,14 @@ describe('volume switch (P4 — truly optimistic, synchronous commit)', () => {
       targetPath: '/Volumes/Ext',
       otherPane: expect.anything() as DetermineNavigationPathArgs['otherPane'],
     })
+  })
+
+  it("hands the background correction the volume's landing, so a place with nothing remembered opens on its start folder", () => {
+    const root = 'sftp://ada@nas.local:22/srv/data'
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'sftp-nas', path: root } }, source: 'user' }, h.deps)
+    expect(h.determineNavigationPath).toHaveBeenCalledWith(
+      expect.objectContaining({ volumeId: 'sftp-nas', landingPath: 'sftp://ada@nas.local:22/srv/data/photos' }),
+    )
   })
 })
 

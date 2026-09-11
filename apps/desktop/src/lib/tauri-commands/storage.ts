@@ -14,6 +14,7 @@ import {
   type SpaceInfo,
   type VolumeConnectionChanged,
   type VolumeContextAction,
+  type VolumeRootChanged,
   type VolumesBusyChanged,
   type VolumeSpaceChanged,
   type VolumeUnmounted,
@@ -185,6 +186,18 @@ export function onVolumesChanged(handler: (payload: VolumesChangedPayload) => vo
  */
 export function onVolumeUnmounted(handler: (payload: VolumeUnmounted) => void): Promise<UnlistenFn> {
   return events.volumeUnmounted.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Subscribes to `volume-root-changed`: saving an edit to a connected place moved
+ * its root, its start folder, or both, and the registry already serves the new
+ * root. Every path in the payload is an app path. Call the returned `UnlistenFn`
+ * on destroy.
+ */
+export function onVolumeRootChanged(handler: (payload: VolumeRootChanged) => void): Promise<UnlistenFn> {
+  return events.volumeRootChanged.listen((event) => {
     handler(event.payload)
   })
 }

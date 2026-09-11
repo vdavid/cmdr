@@ -6,9 +6,10 @@
  * Both routes fold onto `navigate({ to: { selectVolume }, source: 'user' })`, so
  * the standard volume-switch mechanics (focus shift, history push, new-tab-on-
  * pinned) apply uniformly. Matches `VolumeBreadcrumb`'s `handleVolumeSelect`: a
- * favorite navigates to its path on the containing volume; a real volume opens at
- * its root; the virtual servers-hub volume isn't in the volumes list, so it's
- * special-cased. The switch arm shifts STORE focus but not DOM focus — re-
+ * favorite navigates to its path on the containing volume; a real volume opens
+ * where `pathForPickedVolume` says (a saved server place on its start folder,
+ * anything else at its root); the virtual servers-hub volume isn't in the
+ * volumes list, so it's special-cased. The switch arm shifts STORE focus but not DOM focus — re-
  * anchoring the container would drop a Space press during the multi-select-then-
  * delete sequence (regression guard: mtp.spec.ts).
  */
@@ -17,6 +18,7 @@ import { resolvePathVolume } from '$lib/tauri-commands'
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { reportFavoriteOpened } from '../navigation/favorites-analytics'
+import { pathForPickedVolume } from '../navigation/picked-volume-path'
 import type { VolumeInfo } from '../types'
 import type { NavigateIntent, NavigateResult } from './navigate'
 
@@ -52,8 +54,9 @@ export function createVolumeSelection(deps: VolumeSelectionDeps): VolumeSelectio
       const volumeId = containingVolume?.id ?? 'root'
       deps.navigate({ pane, to: { selectVolume: { volumeId, path: volume.path } }, source: 'user' })
     } else {
-      // For actual volumes, navigate to the volume's root.
-      deps.navigate({ pane, to: { selectVolume: { volumeId: volume.id, path: volume.path } }, source: 'user' })
+      // A saved server place opens on its start folder; anything else at its root.
+      const path = pathForPickedVolume(volume)
+      deps.navigate({ pane, to: { selectVolume: { volumeId: volume.id, path } }, source: 'user' })
     }
 
     return true

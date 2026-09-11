@@ -407,12 +407,35 @@ no session behind it, so every listing on it would refuse until something dials.
   volume id is what stops a dial per refresh against a server the user opened once.
 - **The attempt id is held outside `$state`**: nothing renders it, and it exists so Cancel has something to aim at
   before the dial returns (`$lib/servers/CLAUDE.md`).
+- **It dials where the pane already stands.** Picking a `saved` place sends the pane straight to its start folder
+  (`../navigation/picked-volume-path.ts`), so `connected` reloads the landing rather than navigating after the fact: no
+  second history entry, and no pinned-tab fork on arrival. A restored tab or a favorite keeps its own deeper path.
 - **`connected` reloads the pane** rather than waiting for the row to flip to `direct` on the next broadcast, which is
   what makes the place feel like it opened rather than waited. `cancelled` clears the view and says nothing.
   `reconnecting` KEEPS the spinner: the backoff loop owns it, and `smb-view-state`'s own `RemoteConnectState` takes over
   once the row reaches `disconnected`.
 - The listing still runs underneath and fails, setting `friendlyError`. That branch sits BEHIND this one in the chain,
   so it never shows, and the reload on connect clears it.
+
+### A place whose root moved under the pane
+
+`volume-root-follow.ts` answers `volume-root-changed`: saving an edit to a CONNECTED place moved its root, its start
+folder, or both (`apps/desktop/src-tauri/src/network/DETAILS.md` § "Editing a connected place"). Where each path goes
+is `../navigation/root-change-follow.ts`; this module applies that rule, in one order:
+
+1. ❗ **The volume store's row moves first** (`applyVolumeRootChanged`). The event arrives before the debounced
+   `volumes-changed`, and `navigate()` checks a server target against the row's root, so a pane following a WIDER root
+   would be refused against the old one.
+2. **Each pane's active tab moves through `navigate()`**, as a terminal `'fallback'` `selectVolume` with
+   `pushHistory: false`. Following an edit isn't a step the person took, so it grows no Back target and forks no pinned
+   tab. The pane's `initialPath` effect reloads the listing.
+3. **A tab no pane is showing** has nothing to navigate, so its path is rewritten in place, its remembered cursor row
+   is cleared, and its pane's tabs are saved.
+4. **`lastUsedPaths[volumeId]`**, so the next switch onto the place lands inside it.
+
+Each window's `DualPaneExplorer` subscribes on its own (`createVolumeRootFollow`). The rule is idempotent, so two
+windows rewriting the one shared remembered path agree. ❗ A test that mounts `DualPaneExplorer` with a mocked
+`$lib/tauri-commands` needs an `onVolumeRootChanged` stub, or `onMount` throws and the run fails with no failing test.
 
 ### A pane on a phone
 

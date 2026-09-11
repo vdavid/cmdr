@@ -180,6 +180,7 @@ export {
   getBusyVolumeIds,
   onVolumesChanged,
   onVolumeUnmounted,
+  onVolumeRootChanged,
   onVolumesBusyChanged,
   onVolumeConnectionChanged,
   onVolumeContextAction,

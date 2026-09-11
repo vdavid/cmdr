@@ -36,6 +36,7 @@
     import { disconnectServerPlace, isServerPlaceRow, openServerRowMenu } from './server-row-actions'
     import { wordEjectRefusal } from './eject-error-messages'
     import { buildFavoriteTooltip } from './favorite-tooltip'
+    import { pathForPickedVolume } from './picked-volume-path'
     import { tString } from '$lib/intl/messages.svelte'
     const favoriteTooltip = (volume: VolumeInfo): string => buildFavoriteTooltip(volume.path, isMacOS())
 
@@ -315,8 +316,8 @@
                 onVolumeChange?.({ volumeId: 'root', volumePath: '/', targetPath: volume.path })
             }
         } else {
-            // For actual volumes, navigate to the volume's root
-            onVolumeChange?.({ volumeId: volume.id, volumePath: volume.path, targetPath: volume.path })
+            // A saved server place opens on its start folder; anything else at its root
+            onVolumeChange?.({ volumeId: volume.id, volumePath: volume.path, targetPath: pathForPickedVolume(volume) })
             // First-connect indexing prompt (D6): self-gates on settings,
             // per-drive silence, and whether the drive is already indexed.
             if (isDriveRow(volume)) {
