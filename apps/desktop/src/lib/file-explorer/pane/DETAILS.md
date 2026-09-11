@@ -1225,6 +1225,14 @@ survive the rebuild on the Rust side, so they aren't in that list.
   overlay while `use:trapFocus` (see `lib/ui/DETAILS.md` § "Focus trapping") pulls it back — an endless focus ping-pong
   of microtasks that starves the event loop and freezes the webview. Pinned by the "rename to existing name is rejected
   on MTP" E2E. Focus containment inside a dialog is the trap's job; the guard only corrals pane chrome.
+- **A superseded `navigateToPath` rejects with `NavigationSuperseded`**, which the loader marks handled, so the callers
+  that fire and forget (the cancel-loading flow, a `navigate()` whose `settled` nobody reads) raise no unhandled
+  rejection while one that awaits (MCP `nav_to_path`) still sees it. Check it with `instanceof`, ❌ never the message.
+- **A listing lookup can outlive its listing.** `abandonListing` ends the backend listing the moment the pane walks
+  away, so a `findFileIndex` still in flight answers refused, and one that succeeded names rows no longer on screen. A
+  caller that fires and forgets compares the pane's listing id before and after, ❌ never the refusal's message:
+  `pane-commands.ts::moveCursorByNameInFileListing` answers "not found". The `directory-diff` and
+  `write-source-item-done` chains in `listing-diff-sync.svelte.ts` don't guard this yet.
 - **Parent offset.** When `hasParent`, frontend cursor index = backend index + 1. `toFrontendIndices` applies this; the
   type-to-jump match callback applies it manually. Forgetting it lands the cursor one row off on every match.
 - **Selection's `SvelteSet` requires mutations, not reassignment.** `selectionState.selectedIndices.add(i)` works;
