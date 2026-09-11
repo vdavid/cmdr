@@ -289,9 +289,6 @@
     "ui/CopyBox.svelte": {
       "reason": "Simple UI component, clipboard + 2s timeout"
     },
-    "ui/toast/ToastContainer.svelte": {
-      "reason": "UI component, renders from toast store"
-    },
     "utils/confirm-dialog.ts": {
       "reason": "Thin wrapper over Tauri dialog API"
     },

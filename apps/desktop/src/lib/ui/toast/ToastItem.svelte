@@ -66,10 +66,12 @@
     // minute is meant to go one second after the pointer leaves, not to get
     // its leftover seconds back.
     //
-    // The clock starts on mount and restarts on every same-id re-raise (a new
-    // `postedAt`), which can also change `dismissal` and `timeoutMs`. Persistent
-    // toasts never get a timer, and a toast re-raised under the pointer waits for
-    // the pointer to leave, same as one hovered the whole time.
+    // The clock counts from the later of mount and the latest post, so a same-id
+    // re-raise (a new `postedAt`, which can also change `dismissal` and
+    // `timeoutMs`) restarts it. Persistent toasts never get a timer, and a toast
+    // re-raised under the pointer waits for the pointer to leave, same as one
+    // hovered the whole time.
+    const mountedAt = Date.now()
     let timer: ReturnType<typeof setTimeout> | undefined
     let naturalDeadline = 0
     let hovered = false
@@ -138,12 +140,11 @@
     }
 
     $effect(() => {
-        // Tracked so a same-id re-raise restarts the clock even when dismissal and
-        // timeout come back unchanged.
-        void postedAt
         if (dismissal !== 'transient') return
-        naturalDeadline = Date.now() + timeoutMs
-        if (!hovered) armTimer(timeoutMs)
+        // Reading `postedAt` is also what restarts the clock on a same-id re-raise
+        // that leaves dismissal and timeout unchanged.
+        naturalDeadline = Math.max(mountedAt, postedAt) + timeoutMs
+        if (!hovered) armTimer(Math.max(naturalDeadline - Date.now(), 0))
         return clearTimer
     })
 </script>

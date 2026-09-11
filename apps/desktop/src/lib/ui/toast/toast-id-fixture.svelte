@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
     import { dismissToast } from './toast-store.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         toastId: string
@@ -20,5 +21,5 @@
     type="button"
     onclick={() => {
         dismissToast(toastId)
-    }}>Close</button
+    }}>{tString('ui.toast.dismissAria')}</button
 >

@@ -246,7 +246,10 @@ describe('ToastItem component content', () => {
     addToast(ToastIdFixture, { id: 'self-closing', dismissal: 'persistent' })
     const target = await mountContainer()
 
-    const close = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Close')
+    // The fixture's own button, by its text: the frame's × carries the same words only as an aria-label.
+    const close = Array.from(target.querySelectorAll('button')).find(
+      (b) => b.textContent.trim() === 'Dismiss notification',
+    )
     if (!close) throw new Error('Close button missing')
     close.click()
     await tick()
