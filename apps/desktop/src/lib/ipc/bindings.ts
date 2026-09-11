@@ -7944,8 +7944,10 @@ export type KnownSftpServer = {
    */
   username: string
   /**
-   *  What to call it in the UI. The user's own label, falling back to the host
-   *  when they never gave one.
+   *  The name a person gave this server, or empty when nobody did.
+   *
+   *  ❗ Not what the UI shows: [`Self::label`] is, and an empty name is what
+   *  makes that `username@host`.
    */
   displayName: string
   /**
@@ -8030,8 +8032,10 @@ export type KnownWebdavServer = {
    */
   username: string
   /**
-   *  What to call it in the UI. The user's own label, falling back to the host
-   *  when they never gave one.
+   *  The name a person gave this server, or empty when nobody did.
+   *
+   *  ❗ Not what the UI shows: [`Self::label`] is, and an empty name is what
+   *  makes that `username@host`.
    */
   displayName: string
   /**
@@ -11251,7 +11255,11 @@ export type SavedServer = {
    *  address.
    */
   protocol: ServerProtocol
-  // The user's own label, falling back to the address.
+  /**
+   *  What the hub calls it: a name a person chose, or a stand-in when nobody
+   *  did (an account's `username@host`, an SMB host's address). `name_source`
+   *  says which, so the frontend never re-derives one.
+   */
   displayName: string
   /**
    *  Whether a person named it, which is what lets the hub prefer a Bonjour
@@ -12134,19 +12142,19 @@ export type ServerConnectOutcome =
  *  enum publishes, ❌ never a guess at the string's shape. Only the store that
  *  wrote the label knows where it came from.
  *
- *  ❗ Every SMB row is [`Fallback`](Self::Fallback) today, so this reads as "is
- *  it SMB?" — it isn't. SMB has no name field to fill in yet; adding one changes
- *  what a store answers here and nothing else, and until then the rule at the
- *  hub stays readable as what it means.
+ *  ❗ Every SMB row is [`Fallback`](Self::Fallback) today because SMB has no name
+ *  field to fill in yet; adding one changes what a store answers here and nothing
+ *  else.
  */
 export type ServerNameSource =
   // A person typed the NAME itself, in the sign-in sheet's Name field.
   | 'user'
   /**
-   *  A stand-in the app derived, because nothing better existed: the SMB
-   *  mount's `server_name` (which `statfs` spells as the server answered,
-   *  `smb-consumer-guest` rather than `SMB Test (Guest)`), or the address typed
-   *  into "Add server", which is all an SMB host is ever given.
+   *  A stand-in the app derived, because nothing better existed: an SFTP or
+   *  WebDAV account's `username@host`, the SMB mount's `server_name` (which
+   *  `statfs` spells as the server answered, `smb-consumer-guest` rather than
+   *  `SMB Test (Guest)`), or the address typed into "Add server", which is all
+   *  an SMB host is ever given.
    */
   | 'fallback'
 

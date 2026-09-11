@@ -54,20 +54,31 @@ pub enum ServerProtocol {
 /// enum publishes, ❌ never a guess at the string's shape. Only the store that
 /// wrote the label knows where it came from.
 ///
-/// ❗ Every SMB row is [`Fallback`](Self::Fallback) today, so this reads as "is
-/// it SMB?" — it isn't. SMB has no name field to fill in yet; adding one changes
-/// what a store answers here and nothing else, and until then the rule at the
-/// hub stays readable as what it means.
+/// ❗ Every SMB row is [`Fallback`](Self::Fallback) today because SMB has no name
+/// field to fill in yet; adding one changes what a store answers here and nothing
+/// else.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ServerNameSource {
     /// A person typed the NAME itself, in the sign-in sheet's Name field.
     User,
-    /// A stand-in the app derived, because nothing better existed: the SMB
-    /// mount's `server_name` (which `statfs` spells as the server answered,
-    /// `smb-consumer-guest` rather than `SMB Test (Guest)`), or the address typed
-    /// into "Add server", which is all an SMB host is ever given.
+    /// A stand-in the app derived, because nothing better existed: an SFTP or
+    /// WebDAV account's `username@host`, the SMB mount's `server_name` (which
+    /// `statfs` spells as the server answered, `smb-consumer-guest` rather than
+    /// `SMB Test (Guest)`), or the address typed into "Add server", which is all
+    /// an SMB host is ever given.
     Fallback,
+}
+
+impl ServerNameSource {
+    /// An SFTP or WebDAV account's answer: `User` when its stored name isn't blank.
+    fn of_account(stored_name: &str) -> Self {
+        if saved_server_fields::is_named(stored_name) {
+            Self::User
+        } else {
+            Self::Fallback
+        }
+    }
 }
 
 /// One mountable thing under an account: an SFTP or WebDAV root, later an S3
@@ -113,7 +124,9 @@ pub struct SavedServer {
     /// Which protocol, so the hub can show a Type column without parsing an
     /// address.
     pub protocol: ServerProtocol,
-    /// The user's own label, falling back to the address.
+    /// What the hub calls it: a name a person chose, or a stand-in when nobody
+    /// did (an account's `username@host`, an SMB host's address). `name_source`
+    /// says which, so the frontend never re-derives one.
     pub display_name: String,
     /// Whether a person named it, which is what lets the hub prefer a Bonjour
     /// name over a stand-in nobody chose.
@@ -293,18 +306,19 @@ fn saved_servers(manual: Vec<manual_servers::ManualServerEntry>) -> Vec<SavedSer
             log::warn!(target: "volume", "a saved SFTP server has no place in the volume listing; leaving it out");
             continue;
         };
+        let label = entry.label();
         servers.push(SavedServer {
             places: vec![SavedPlace {
                 connected: manager.get(&volume_id).is_some(),
                 volume_id: volume_id.clone(),
-                name: entry.display_name.clone(),
+                name: label.clone(),
                 pinned: entry.pinned,
                 app_root,
             }],
             id: volume_id,
             protocol: ServerProtocol::Sftp,
-            display_name: entry.display_name,
-            name_source: ServerNameSource::User,
+            display_name: label,
+            name_source: ServerNameSource::of_account(&entry.display_name),
             address: format!("{}:{}", entry.host, entry.port),
             username: Some(entry.username),
             pinned: entry.pinned,
@@ -322,18 +336,19 @@ fn saved_servers(manual: Vec<manual_servers::ManualServerEntry>) -> Vec<SavedSer
             log::warn!(target: "volume", "a saved WebDAV server has no place in the volume listing; leaving it out");
             continue;
         };
+        let label = entry.label();
         servers.push(SavedServer {
             places: vec![SavedPlace {
                 connected: manager.get(&volume_id).is_some(),
                 volume_id: volume_id.clone(),
-                name: entry.display_name.clone(),
+                name: label.clone(),
                 pinned: entry.pinned,
                 app_root,
             }],
             id: volume_id,
             protocol: ServerProtocol::Webdav,
-            display_name: entry.display_name,
-            name_source: ServerNameSource::User,
+            display_name: label,
+            name_source: ServerNameSource::of_account(&entry.display_name),
             address: entry.url,
             username: Some(entry.username),
             pinned: entry.pinned,

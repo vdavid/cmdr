@@ -102,7 +102,9 @@ pub fn cancel_connect(attempt_id: &str) -> bool {
 /// beside `params` into the saved entry, which a connect rebuilds whole. ❗ So a
 /// caller that doesn't set them passes the SAVED values, or a connect would wipe
 /// what an edit stored. A start folder the root no longer holds is dropped here
-/// rather than saved.
+/// rather than saved. The volume is named by the label
+/// (`saved_server_fields::server_label`), so an unnamed server's tab and switcher
+/// row both read `username@host`.
 pub async fn connect_and_register(
     display_name: &str,
     start_folder: Option<String>,
@@ -115,7 +117,8 @@ pub async fn connect_and_register(
     let (host, _offer) =
         one_shot_credentials::host_for_dial(&params.credential_service(), &params.username, secret).await;
     let (cancel, _attempt) = ATTEMPTS.register(attempt_id);
-    let outcome = cmdr_sftp::connect_sftp_volume(display_name, &volume_id, params.clone(), host, cancel).await;
+    let label = saved_server_fields::server_label(display_name, &params.username, &params.host);
+    let outcome = cmdr_sftp::connect_sftp_volume(&label, &volume_id, params.clone(), host, cancel).await;
 
     let volume = match outcome {
         Ok(SftpConnectOutcome::Connected(volume)) => volume,

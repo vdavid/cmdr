@@ -531,6 +531,31 @@ them (neither is a connection param). So a caller with no field of its own passe
 look the start folder up with the store's `find`. Passing `None` would wipe what an edit stored, the same trap
 `remember`'s pin rule closes for `pinned`.
 
+### An unnamed server's label, and names that only repeat the address
+
+An SFTP or WebDAV entry's `display_name` holds only a name a person typed; empty means unnamed. What the UI calls the
+server is `saved_server_fields::server_label`, reached through the stores' `label()`: the name when there is one, else
+`username@host` (no port, scheme, or path, and the host alone for an account with no username). Every read goes through
+it: `server_volumes::server_places` (the volume list and the switcher), `commands/servers.rs`'s listing (the hub, which
+publishes `name_source: fallback` for an unnamed account so the frontend never derives a label), and both wirings'
+`connect_and_register` (the name a live volume is built with).
+
+❗ **A label that looks exactly like the address sends a person to edit the wrong field.** Unnamed servers were saved
+with the whole typed address as their name (`sftp://david@192.168.1.111:22/share/ZFS18_DATA/naspi`), which left the
+edit sheet's name as its only URL-shaped field, and a root got widened through the name. So each store's load runs
+`clear_address_shaped_names`, which unnames an entry whose name `saved_server_fields::spells_own_address` reads as that
+entry's OWN address, and writes the file back only when one changed. Conservative, because a match erases a name:
+
+- A spelling with a scheme (`sftp`/`ssh`, or `https`/`http`/`davs`/`dav`/`webdav`) may carry any path and may leave the
+  account out, but its host and effective port must be the entry's; a missing port means the scheme's own.
+- A scheme-less spelling has to name the account (`username@host[:port]`), since a bare host could be a chosen name.
+  With no port it matches any port: the derived label drops the port too, so clearing it can't change what anyone sees.
+- Another account, port, or host, a query or fragment, or anything that doesn't parse stays a label.
+- The host folds ASCII case and sheds IPv6 brackets; the account compares exactly.
+
+`KnownWebdavServer::endpoint` is the one reader of a stored URL's `(host, port)`, shared by the label, the cleanup,
+`server_volumes`, and `webdav_volume_wiring::save_without_connecting`.
+
 ### A secret used for one dial and never stored
 
 `connect_sftp_volume` and `connect_webdav_volume` take ❌ no password argument, on purpose: a secret that never appears

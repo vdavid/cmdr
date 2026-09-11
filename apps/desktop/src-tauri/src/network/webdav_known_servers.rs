@@ -23,6 +23,7 @@ use std::sync::{Mutex, OnceLock};
 
 use serde::{Deserialize, Serialize};
 
+use super::saved_server_fields::{self, OwnAddress};
 use super::server_list_file;
 
 use crate::ignore_poison::IgnorePoison;
@@ -37,8 +38,10 @@ pub struct KnownWebdavServer {
     /// The account to sign in as. ❗ Part of the identity: two accounts on one
     /// server see different files under the same paths.
     pub username: String,
-    /// What to call it in the UI. The user's own label, falling back to the host
-    /// when they never gave one.
+    /// The name a person gave this server, or empty when nobody did.
+    ///
+    /// ❗ Not what the UI shows: [`Self::label`] is, and an empty name is what
+    /// makes that `username@host`.
     pub display_name: String,
     /// The remote directory this place is rooted at, under the base URL's path.
     /// A CEILING: nothing on this place navigates above it.
@@ -92,6 +95,53 @@ pub struct KnownWebdavServer {
     /// When this server was last connected to, ISO 8601, so a picker can sort by
     /// recency.
     pub last_connected_at: String,
+}
+
+impl KnownWebdavServer {
+    /// What the UI calls this server: its name, or `username@host` with the host
+    /// read off the URL (`saved_server_fields::server_label`).
+    pub fn label(&self) -> String {
+        let host = self
+            .endpoint()
+            .map_or_else(|| self.url.trim().to_string(), |(host, _)| host);
+        saved_server_fields::server_label(&self.display_name, &self.username, &host)
+    }
+
+    /// The `(host, port)` this entry's URL names, the port being the scheme's own
+    /// when the URL gives none. `None` when it isn't an `http`/`https` URL.
+    ///
+    /// ❗ Through the crate's own params, so the pair is exactly the one a dial
+    /// derives the volume id and the app-root prefix from.
+    pub fn endpoint(&self) -> Option<(String, u16)> {
+        let parsed = url::Url::parse(self.url.trim()).ok()?;
+        if !matches!(parsed.scheme(), "http" | "https") {
+            return None;
+        }
+        let params = cmdr_webdav::WebdavConnectionParams::new(parsed, "", "/");
+        Some((params.host().to_string(), params.port()))
+    }
+
+    /// Whether its name only repeats its own address: its URL (any path, with or
+    /// without the account in it), a `dav`/`davs`/`webdav` spelling of it, or
+    /// `username@host[:port]`.
+    fn name_spells_own_address(&self) -> bool {
+        let Some((host, port)) = self.endpoint() else {
+            return false;
+        };
+        let own = OwnAddress {
+            username: &self.username,
+            host: &host,
+            port,
+            schemes: &[
+                ("https", 443),
+                ("http", 80),
+                ("davs", 443),
+                ("dav", 80),
+                ("webdav", 443),
+            ],
+        };
+        saved_server_fields::spells_own_address(&self.display_name, &own)
+    }
 }
 
 /// What `auto_reconnect` is when a stored entry doesn't name it.
@@ -157,12 +207,38 @@ fn same_server(entry: &KnownWebdavServer, url: &str, username: &str) -> bool {
 /// Call once at startup. A missing or unreadable file is an empty store: the
 /// user's server list is a convenience, and losing it costs one re-entry rather
 /// than access to anything.
+///
+/// Names that only repeat their server's own address are cleared first
+/// ([`clear_address_shaped_names`]), and the file is written back only when one
+/// was.
 pub fn load_known_webdav_servers<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
-    let Some((store, path)) = server_list_file::load(app, "webdav_known_servers.json") else {
+    let Some((mut store, path)) = server_list_file::load(app, "webdav_known_servers.json") else {
         return;
     };
+    let cleared = clear_address_shaped_names(&mut store);
     *known().lock_ignore_poison() = store;
     let _ = STORE_PATH.set(path);
+    if cleared > 0 {
+        log::info!(target: "volume", "unnamed {cleared} saved WebDAV server(s) whose name only repeated their address");
+        save();
+    }
+}
+
+/// Unnames every entry whose name only repeats its own address, answering how
+/// many it cleared.
+///
+/// ❗ An address in the name field is what the add form stored for a server
+/// nobody named, and a name that looks exactly like the address invites editing
+/// the wrong field. Runs on every load, and finds nothing after the first.
+fn clear_address_shaped_names(store: &mut KnownWebdavServersStore) -> usize {
+    let mut cleared = 0;
+    for entry in &mut store.known_webdav_servers {
+        if entry.name_spells_own_address() {
+            entry.display_name.clear();
+            cleared += 1;
+        }
+    }
+    cleared
 }
 
 /// Writes the in-memory store back, durably.

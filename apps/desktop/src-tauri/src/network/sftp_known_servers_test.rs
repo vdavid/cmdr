@@ -207,6 +207,88 @@ fn finding_a_server_uses_the_same_identity_as_remembering_one() {
     assert!(find(&host, 2222, "ada").is_none(), "the port is part of the identity");
 }
 
+// ── The label, and names that only repeat the address ────────────────
+
+#[test]
+fn an_unnamed_server_is_labeled_username_at_host() {
+    let mut unnamed = server("192.168.1.111", "david");
+    unnamed.display_name = String::new();
+    assert_eq!(unnamed.label(), "david@192.168.1.111");
+
+    let mut named = server("192.168.1.111", "david");
+    named.display_name = "NAS".to_string();
+    assert_eq!(named.label(), "NAS");
+}
+
+/// ❗ The prod case, and what the cleanup owes it: the address it was saved under
+/// stops being its name, and nothing else about the entry moves.
+#[test]
+fn a_name_that_only_repeats_the_servers_address_is_cleared_on_load() {
+    let mut prod = server("192.168.1.111", "david");
+    prod.display_name = "sftp://david@192.168.1.111:22/share/ZFS18_DATA/naspi".to_string();
+    prod.remote_root = "/share/ZFS18_DATA/naspi/tmp".to_string();
+    let mut labeled = server("192.168.1.111", "grace");
+    labeled.display_name = "NAS".to_string();
+    let mut elsewhere = server("192.168.1.112", "david");
+    elsewhere.display_name = "sftp://david@192.168.1.111:22".to_string();
+    let mut store = KnownSftpServersStore {
+        known_sftp_servers: vec![prod, labeled, elsewhere],
+    };
+
+    assert_eq!(clear_address_shaped_names(&mut store), 1);
+
+    let [prod, labeled, elsewhere] = store.known_sftp_servers.as_slice() else {
+        panic!("three entries in, three out");
+    };
+    assert_eq!(prod.display_name, "");
+    assert_eq!(prod.label(), "david@192.168.1.111");
+    assert_eq!(prod.remote_root, "/share/ZFS18_DATA/naspi/tmp", "only the name moves");
+    assert_eq!(labeled.display_name, "NAS", "a person's own label stays");
+    assert_eq!(
+        elsewhere.display_name, "sftp://david@192.168.1.111:22",
+        "another server's address is a label on this one"
+    );
+}
+
+#[test]
+fn the_account_at_host_spellings_are_cleared_and_the_port_still_counts() {
+    for (name, cleared) in [
+        ("david@192.168.1.111", true),
+        ("david@192.168.1.111:22", true),
+        ("DAVID@192.168.1.111", false),
+        ("david@192.168.1.111:2222", false),
+    ] {
+        let mut entry = server("192.168.1.111", "david");
+        entry.display_name = name.to_string();
+        let mut store = KnownSftpServersStore {
+            known_sftp_servers: vec![entry],
+        };
+        assert_eq!(clear_address_shaped_names(&mut store) == 1, cleared, "{name:?}");
+    }
+}
+
+#[test]
+fn a_host_typed_in_another_case_is_still_the_same_servers_address() {
+    let mut entry = server("NAS.local", "david");
+    entry.display_name = "sftp://david@nas.LOCAL:22/srv".to_string();
+    let mut store = KnownSftpServersStore {
+        known_sftp_servers: vec![entry],
+    };
+    assert_eq!(clear_address_shaped_names(&mut store), 1);
+}
+
+/// Nothing to clear reports nothing, which is what keeps a load from rewriting
+/// the file. `server()` names an entry after its bare host, and a bare host is a
+/// name someone might have chosen.
+#[test]
+fn a_store_with_no_address_shaped_names_reports_nothing_cleared() {
+    let mut store = KnownSftpServersStore {
+        known_sftp_servers: vec![server("nas.local", "ada")],
+    };
+    assert_eq!(clear_address_shaped_names(&mut store), 0);
+    assert_eq!(store.known_sftp_servers[0].display_name, "nas.local");
+}
+
 /// The switch survives a round trip through the file, both ways.
 #[test]
 fn the_switch_round_trips_through_the_stored_file() {

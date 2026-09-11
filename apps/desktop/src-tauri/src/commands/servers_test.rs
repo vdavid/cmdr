@@ -153,6 +153,28 @@ fn an_smb_host_lists_no_places_and_is_never_pinned() {
     assert!(smb.username.is_none(), "an SMB host is not an account yet");
 }
 
+/// ❗ **An account nobody named is listed by its derived label, and says so**:
+/// the hub shows `username@host`, and knows no person chose it.
+#[test]
+fn an_unnamed_account_is_listed_by_its_derived_label_as_a_stand_in() {
+    let sftp_host = "192.0.2.64";
+    let mut unnamed_sftp = sftp_entry(sftp_host, true);
+    unnamed_sftp.display_name = String::new();
+    sftp_known_servers::remember(unnamed_sftp);
+    let webdav_host = "192.0.2.65";
+    let mut unnamed_webdav = webdav_entry(webdav_host, true);
+    unnamed_webdav.display_name = String::new();
+    webdav_known_servers::remember(unnamed_webdav);
+
+    let servers = saved_servers(Vec::new());
+
+    for label in [format!("ada@{sftp_host}"), format!("ada@{webdav_host}")] {
+        let server = find(&servers, &label);
+        assert_eq!(server.name_source, ServerNameSource::Fallback, "{label}");
+        assert_eq!(server.places[0].name, label, "the place carries the same label");
+    }
+}
+
 // ── The outcome mapping ──────────────────────────────────────────────
 
 /// Every SFTP outcome lands on its superset twin.

@@ -6,6 +6,12 @@
 //! (`RemoteRoot::to_remote_path` refuses), so a start folder outside it names a
 //! place no pane could stand on. ❌ Never a string prefix: `/srv/data-1` is not
 //! under `/srv/data`, however much of it it spells.
+//!
+//! ❗ **An unnamed server is called `username@host`, derived in ONE place**
+//! ([`server_label`]), for SFTP and WebDAV alike. An empty stored name is what
+//! "unnamed" means, so a store keeps only a name a person typed, and a name that
+//! only repeats the server's own address is cleared on load
+//! ([`spells_own_address`]).
 
 use std::path::Path;
 
@@ -67,6 +73,112 @@ pub fn start_folder_for_root(remote_root: &str, start_folder: Option<String>) ->
         log::info!(target: "volume", "a saved start folder sits outside the root this connect dials; the place lands at its root");
         None
     })
+}
+
+/// Whether a person named the server: a stored name that isn't blank.
+pub fn is_named(name: &str) -> bool {
+    !name.trim().is_empty()
+}
+
+/// What the UI calls a saved SFTP or WebDAV server: its name when a person gave
+/// it one, else `username@host` (the host alone for an account with no
+/// username).
+///
+/// ❗ Every read of a name goes through here, by way of the stores' `label()`:
+/// the volume listing, the hub's rows, and the name a live volume is built with.
+/// No port, scheme, or path, because a label that looked exactly like the address
+/// is what sent a person to edit the wrong field.
+pub fn server_label(name: &str, username: &str, host: &str) -> String {
+    if is_named(name) {
+        name.to_string()
+    } else if username.is_empty() {
+        host.to_string()
+    } else {
+        format!("{username}@{host}")
+    }
+}
+
+/// The account an address has to name to count as a saved server's own.
+pub struct OwnAddress<'a> {
+    /// Compared exactly: an account doesn't fold case.
+    pub username: &'a str,
+    /// Compared folding ASCII case, with any IPv6 brackets set aside.
+    pub host: &'a str,
+    /// The effective port.
+    pub port: u16,
+    /// The schemes this protocol's addresses open with, each with the port it
+    /// implies when the address names none.
+    pub schemes: &'a [(&'a str, u16)],
+}
+
+/// Whether `name` only spells this account's own address:
+/// `[scheme://][username@]host[:port][/path]`.
+///
+/// ❗ Conservative, because a match ERASES a name: whatever isn't provably this
+/// server's own address is a label someone chose, and stays. So a scheme-less
+/// name has to name the account (a bare `nas.local` could be a chosen name),
+/// another account or port is another server, and a query or fragment is no
+/// address this app stores. An address with a scheme and no port means the
+/// scheme's own port. A scheme-less `username@host` matches any port: the derived
+/// label drops the port too, so clearing it can't change what anyone sees.
+pub fn spells_own_address(name: &str, own: &OwnAddress<'_>) -> bool {
+    let name = name.trim();
+    let (rest, scheme_port) = match name.split_once("://") {
+        Some((scheme, rest)) => match own.schemes.iter().find(|(known, _)| known.eq_ignore_ascii_case(scheme)) {
+            Some(&(_, port)) => (rest, Some(port)),
+            None => return false,
+        },
+        None => (name, None),
+    };
+    if rest.contains(['?', '#']) {
+        return false;
+    }
+    // From the first `/` on it's a path, and any path is still this server.
+    let authority = rest.split_once('/').map_or(rest, |(authority, _)| authority);
+    let host_port = match authority
+        .strip_prefix(own.username)
+        .and_then(|after| after.strip_prefix('@'))
+    {
+        Some(host_port) => host_port,
+        // Only an address with a scheme may leave the account out, and then it
+        // mustn't name a different one.
+        None if scheme_port.is_some() && !authority.contains('@') => authority,
+        None => return false,
+    };
+    let Some((host, port)) = split_host_port(host_port) else {
+        return false;
+    };
+    if host.is_empty() || !without_brackets(host).eq_ignore_ascii_case(without_brackets(own.host)) {
+        return false;
+    }
+    // An explicit port wins, then the scheme's own; a scheme-less spelling with
+    // neither matches any port.
+    port.or(scheme_port).is_none_or(|port| port == own.port)
+}
+
+/// `host[:port]`, with an IPv6 literal in brackets. `None` when the port isn't a
+/// port or a bracket doesn't close.
+fn split_host_port(authority: &str) -> Option<(&str, Option<u16>)> {
+    if let Some(bracketed) = authority.strip_prefix('[') {
+        let (host, after) = bracketed.split_once(']')?;
+        if after.is_empty() {
+            return Some((host, None));
+        }
+        return Some((host, Some(after.strip_prefix(':')?.parse().ok()?)));
+    }
+    match authority.rsplit_once(':') {
+        // More than one colon unbracketed is an IPv6 literal with no port.
+        Some((host, port)) if !host.contains(':') => Some((host, Some(port.parse().ok()?))),
+        _ => Some((authority, None)),
+    }
+}
+
+/// A host with any IPv6 brackets set aside, so `[fe80::1]` and `fe80::1` compare
+/// equal.
+fn without_brackets(host: &str) -> &str {
+    host.strip_prefix('[')
+        .and_then(|inner| inner.strip_suffix(']'))
+        .unwrap_or(host)
 }
 
 #[cfg(test)]

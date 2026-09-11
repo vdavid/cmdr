@@ -32,7 +32,8 @@ use crate::volume_listing::{LocationCategory, LocationInfo};
 pub(crate) struct ServerPlace {
     /// The volume id, from the same funnel the registry keys on.
     pub id: String,
-    /// The saved display name.
+    /// What the UI calls it: the stored name, or `username@host` for a server
+    /// nobody named (the stores' `label()`).
     pub name: String,
     /// The app-facing root: `<prefix><remote root>`
     /// (`cmdr_fs::volume::remote_paths`).
@@ -85,14 +86,14 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
         places.push(ServerPlace {
             state: registered(&id, BackendKind::Sftp).unwrap_or(ConnectionState::Saved),
             id,
-            name: server.display_name,
+            name: server.label(),
             app_root: root.app_root().to_string_lossy().into_owned(),
             fs_type: "sftp",
             pinned: server.pinned,
         });
     }
     for server in webdav_known_servers::all() {
-        let Some((host, port)) = webdav_endpoint(&server.url) else {
+        let Some((host, port)) = server.endpoint() else {
             // A stored URL that no longer parses names no server. ❌ Not a
             // panic and not a guess: the row simply isn't offered.
             log::warn!(target: "volume", "a saved WebDAV server's address isn't a URL any more; skipping its row");
@@ -106,7 +107,7 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
         places.push(ServerPlace {
             state: registered(&id, BackendKind::Webdav).unwrap_or(ConnectionState::Saved),
             id,
-            name: server.display_name,
+            name: server.label(),
             app_root: root.app_root().to_string_lossy().into_owned(),
             fs_type: "webdav",
             pinned: server.pinned,
@@ -138,19 +139,6 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
         });
     }
     places
-}
-
-/// The `(host, port)` a saved WebDAV URL names, or `None` when it isn't a URL.
-///
-/// ❗ Through the crate's own params, so the pair this derives an id and a prefix
-/// from is exactly the pair the dial derives them from.
-fn webdav_endpoint(url: &str) -> Option<(String, u16)> {
-    let parsed = url::Url::parse(url.trim()).ok()?;
-    if !matches!(parsed.scheme(), "http" | "https") {
-        return None;
-    }
-    let params = cmdr_webdav::WebdavConnectionParams::new(parsed, "", "/");
-    Some((params.host().to_string(), params.port()))
 }
 
 /// The row a place becomes.

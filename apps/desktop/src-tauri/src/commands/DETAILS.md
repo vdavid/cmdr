@@ -91,6 +91,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   surface they call: `list_saved_servers` (the union of the two saved-server stores plus SMB hosts from
   `known_shares.rs` and `manual_servers.rs`), `connect_saved_place`, `connect_server`, `cancel_server_connect`,
   `disconnect_place`, `set_place_pinned`, `forget_server`, `forget_server_secret`, `update_saved_server`.
+  - `list_saved_servers` names an SFTP or WebDAV account by its label and publishes `name_source: fallback` when
+    nobody named it, so the edit sheet can open an empty name field with the label as its placeholder, and nothing on
+    the frontend derives one (`network/DETAILS.md` § "An unnamed server's label, and names that only repeat the
+    address").
   - ❗ **`ServerConnectOutcome` is the SUPERSET** of the two per-protocol enums, so a sign-in UI branches once instead
     of twice. `auth_method_unsupported` stays its own outcome rather than collapsing into `authentication_rejected`: a
     Digest-only server never saw the password, so "check your password" is the wrong fix to put in front of someone.

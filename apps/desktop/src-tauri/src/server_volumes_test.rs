@@ -221,6 +221,25 @@ async fn a_copy_onto_a_saved_server_nobody_connected_is_refused_as_not_connected
 
 // ── The rows the switcher gets ───────────────────────────────────────
 
+/// An unnamed server's row carries the derived label, the same one the hub and
+/// a live volume use.
+#[test]
+fn an_unnamed_saved_server_gets_a_row_named_username_at_host() {
+    let host = "198.51.100.15";
+    let mut unnamed = saved_sftp(host, true);
+    unnamed.display_name = String::new();
+    sftp_known_servers::remember(unnamed);
+
+    let mut rows = Vec::new();
+    append_server_volumes(&mut rows);
+
+    let row = rows
+        .iter()
+        .find(|row| row.id == cmdr_fs::volume::sftp_volume_id(host, 2222, "ada"))
+        .expect("a saved server has a row");
+    assert_eq!(row.name, format!("ada@{host}"));
+}
+
 /// ❗ **Every saved server gets a row, and the row carries its own pin.** The
 /// list is the app's registry of what a volume id MEANS: a hub Enter and a
 /// restored tab both land on an id, and an id with no row is a volume the app

@@ -78,6 +78,36 @@ fn finding_a_server_uses_the_same_identity_as_remembering_one() {
 }
 
 #[test]
+fn an_unnamed_server_is_labeled_username_at_host_off_its_url() {
+    let mut unnamed = server("https://dav.example.test:8443/remote.php/dav/", "ada");
+    unnamed.display_name = String::new();
+    assert_eq!(unnamed.label(), "ada@dav.example.test", "no scheme, port, or path");
+}
+
+/// The URL an unnamed server was saved under stops being its name; anything that
+/// isn't this server's own address stays.
+#[test]
+fn a_name_that_only_repeats_the_servers_url_is_cleared_on_load() {
+    let url = "https://dav.example.test/remote.php/dav/";
+    for (name, cleared) in [
+        ("https://dav.example.test/remote.php/dav/", true),
+        ("https://dav.example.test", true),
+        ("HTTPS://DAV.example.test/remote.php/dav", true),
+        ("ada@dav.example.test", true),
+        ("https://other.example.test/remote.php/dav/", false),
+        ("http://dav.example.test/remote.php/dav/", false),
+        ("Docs", false),
+    ] {
+        let mut entry = server(url, "ada");
+        entry.display_name = name.to_string();
+        let mut store = KnownWebdavServersStore {
+            known_webdav_servers: vec![entry],
+        };
+        assert_eq!(clear_address_shaped_names(&mut store) == 1, cleared, "{name:?}");
+    }
+}
+
+#[test]
 fn connecting_again_updates_the_entry_rather_than_adding_one() {
     let url = url_for("updated");
     remember(server(&url, "ada"));
