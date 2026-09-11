@@ -774,8 +774,10 @@ means zero new CI-contract surface (both E2E checks already carry `NotInCI` reas
 
 `desktop-svelte-e2e-stale-selector` (fast lane, ERROR, in CI) fails when a selector in the Playwright test code names a
 class or `data-*` attribute that appears nowhere in `apps/desktop/src`. A UI change strands a selector silently in code
-nothing runs routinely: the i18n capture waited on `.network-browser .connect-row` for five days after the servers hub
-replaced that row (fixed in `43a711b1d`), and a static check flags it the day the UI changes.
+nothing runs routinely (the lane now stages the i18n capture's surfaces, `test/e2e-playwright/DETAILS.md` § "The i18n
+capture's staging in the lane", but not what it does after staging, nor the marketing capture): the i18n capture waited
+on `.network-browser .connect-row` for five days after the servers hub replaced that row (fixed in `43a711b1d`), and a
+static check flags it the day the UI changes.
 
 - **Scope**: every `.ts` under `apps/desktop/test/e2e-playwright/` and `apps/desktop/test/e2e-shared/`, minus Vitest
   `*.test.ts` files, which build their own happy-dom tree. The Linux E2E lane has no specs of its own.

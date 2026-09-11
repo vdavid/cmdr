@@ -197,14 +197,15 @@ Only the layout facts that none of those carry live here:
   naming a new MTP-touching spec `mtp-<something>.spec.ts` is what keeps it off a parallel lane (and mis-naming a
   non-MTP spec that way needlessly serializes it). `i18n-capture.spec.ts` is excluded from every normal lane (`all` /
   `mtp` / `non-mtp`) and runs only under its own `i18n-capture` shard kind via `pnpm i18n:shots`: it's a screenshot
-  driver, not a pass/fail suite. `marketing-shots.spec.ts` is the same shape (`marketing-shots` kind,
-  `pnpm marketing:shots`) with two extra reasons for its own lane: it is macOS-only, so it must stay out of `all` (what
-  the Linux Docker lane runs), and it is the only spec that runs with NO fixture tree, photographing the developer's
-  real folders. Both halves of that protection matter: the orchestrator leaves `CMDR_E2E_START_PATH` unset, AND
-  `global-setup.ts` returns early for the shard, because otherwise it would create a tree and SET the variable, arming
-  the guard that deletes anything not in the manifest. It also runs on `captureTest` (`fixtures.ts`), the bare `test`
-  with no auto fixture: the leak guard's fixture diff is meaningless with no fixtures, and its overlay check is wrong
-  for a master that is deliberately a picture of an open dialog.
+  driver, not a pass/fail suite. Its staging still runs in the lanes, with no camera (§ "The i18n capture's staging in
+  the lane"). `marketing-shots.spec.ts` is the same shape (`marketing-shots` kind, `pnpm marketing:shots`) with two
+  extra reasons for its own lane: it is macOS-only, so it must stay out of `all` (what the Linux Docker lane runs), and
+  it is the only spec that runs with NO fixture tree, photographing the developer's real folders. Both halves of that
+  protection matter: the orchestrator leaves `CMDR_E2E_START_PATH` unset, AND `global-setup.ts` returns early for the
+  shard, because otherwise it would create a tree and SET the variable, arming the guard that deletes anything not in
+  the manifest. It also runs on `captureTest` (`fixtures.ts`), the bare `test` with no auto fixture: the leak guard's
+  fixture diff is meaningless with no fixtures, and its overlay check is wrong for a master that is deliberately a
+  picture of an open dialog.
 - **Splitting a spec buys readability, never parallelism, and each half has to state its own preconditions.**
   `playwright.config.ts` sets `fullyParallel: false` and `workers: 1`, so every file in a shard runs sequentially
   against ONE app instance, and a setting one spec writes is still written for every spec that follows. A family of
@@ -292,6 +293,34 @@ Only the layout facts that none of those carry live here:
   shrink-wrapped to ~44px for "# Cmdr" and inflated scroll height ~7x, leaving the end of the file unreachable blank
   space), and `viewer-media.spec.ts` (a wrong CSP token surfaces as a `cmdr-media` / `img-src` / `object-src` violation
   with the media silently not rendering).
+
+## The i18n capture's staging in the lane
+
+`i18n-capture-staging.spec.ts` runs the i18n capture's own staging code in the non-MTP lanes, in stage-only mode
+(`setStageOnly` in `i18n-capture-config.ts`). A UI change that breaks how the capture reaches a surface therefore fails
+the lane at the commit that made it, with the step in the test title and the surfaces in the assertion, instead of
+waiting for the next `pnpm i18n:shots`. It walks `MAIN_PASS_STEPS` (`i18n-capture-main-pass.ts`), the same ordered list
+the capture walks, one test per step.
+
+- **Stage-only skips everything photographic.** Each engine stops once `stage()` returns and its `readySelector` holds.
+  `captureCall` never sends `enable`, `focusWindow` does nothing, and `shoot` throws if a caller reaches it, so a
+  routine run can't record keys, take the front position, or write into the tracked screenshots dir.
+  `i18n-capture-stage-only.test.ts` pins all three.
+- **Staging needs no front position.** The capture brings each window forward before its shot, but every surface except
+  `mtp-browse` stages from the back, Settings and Shortcuts included (verified on macOS 26 against an app launched with
+  a non-MTP shard's env, `focusWindow` disabled, two runs, 2026-09-12).
+- **What's left out, and why.** A step carrying `notStagedInLane` says why: `mtp-browse` needs the virtual MTP device,
+  which the non-MTP shards don't register, and `gallery-dialogs` never fails on staging (an unopenable state is a
+  documented skip). The license and FDA passes each need an app launched with their own mock env, and a shard launches
+  its app once. Linux skips the whole spec: the capture runs on macOS only, and its staging branches on the platform
+  (the FDA onboarding step, the Shift glyph, the Quick Look hint).
+- **A step leaves the shared app as it found it**: overlays and windows closed, toasts dismissed, synthetic events
+  ended, and the favorite it added removed. The spec's `afterEach` drains operations and restores the fixture tree.
+  Checked by running `archive-editing.spec.ts` straight after it on the same app (2026-09-12).
+- **Every step fits the 2 s duration budget**, which is why the main-window overlays are six steps, the conflict step
+  cancels its parked copy before dismissing (the dialog withdraws Escape during a clash, so dismissing first waits out a
+  3 s poll), and `queue-failed` drains the throttled copies before starting its doomed ones. ❌ Don't regroup steps to
+  shorten the list; split one that grows past the budget. The spec costs about 14 s for 27 tests (two runs, 2026-09-12).
 
 ## Transfer-dialog counters + programmatic drop entry
 
@@ -954,11 +983,11 @@ question truthfully, so an MTP spec that selected Internal Storage and waited fo
 reopens the folder last used there" pins the remembering itself.
 
 **Gotcha**: a selector naming a class or `data-*` attribute that nothing in `apps/desktop/src` renders fails
-`pnpm check e2e-stale-selector`, in the fast lane and CI. **Why**: code nothing runs routinely (the i18n and marketing
-captures) goes stale silently when the UI changes, and a stale NEGATIVE assertion (`isVisible(…)).toBe(false)`) passes
-forever. Point the selector at what the app renders now; a token the source can't spell opts out with
-`// allowed-stale-selector: <reason>`. What counts as a selector, and why component tests count toward the vocabulary:
-`scripts/check/checks/DETAILS.md` § "E2E stale selectors".
+`pnpm check e2e-stale-selector`, in the fast lane and CI. **Why**: code nothing runs routinely (the marketing capture,
+and whatever the i18n capture does after staging) goes stale silently when the UI changes, and a stale NEGATIVE
+assertion (`isVisible(…)).toBe(false)`) passes forever. Point the selector at what the app renders now; a token the
+source can't spell opts out with `// allowed-stale-selector: <reason>`. What counts as a selector, and why component
+tests count toward the vocabulary: `scripts/check/checks/DETAILS.md` § "E2E stale selectors".
 
 **Gotcha**: the proactive agent's inbox is SHARED with the running indexer, so "the wake reports what I staged" is not
 free. **Why**: the indexer's tap rolls up every folder the rest of the suite churns, and a wake covers everything

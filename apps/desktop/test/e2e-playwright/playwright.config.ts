@@ -16,7 +16,9 @@ const mtpSpecMatch = /mtp(-[a-z-]+)?\.spec\.ts$/
 // The i18n screenshot-capture driver is not a pass/fail test; it's excluded from
 // every normal lane and only runs under its own `i18n-capture` shard kind (used
 // by `pnpm i18n:shots`). Keeping it out of `all`/`mtp`/`non-mtp` means a full
-// suite run never spends time taking screenshots.
+// suite run never spends time taking screenshots. ❗ Keep the pattern exact: the
+// capture's STAGING runs in the normal lanes through `i18n-capture-staging.spec.ts`,
+// which a looser match would drop from them.
 const i18nCaptureSpecMatch = /i18n-capture\.spec\.ts$/
 // The marketing capture (`pnpm marketing:shots`) is the same shape: a screenshot
 // driver, not a pass/fail suite. It gets its own shard for a second reason too — it

@@ -61,9 +61,10 @@ disagree about staleness, and no entry point (`i18n:shots`, `i18n:shots:no-coupl
 `marketing:shots`) can launch an old binary.
 
 One binary serves both runs. Every E2E build carries the capture instrumentation inert, and the launch turns it into a
-capture with `CMDR_I18N_CAPTURE=1` beside `CMDR_E2E_MODE=1` (`src/lib/app-mode.ts`). The license passes need no build of
-their own either: `CMDR_MOCK_LICENSE` compiles into `playwright-e2e` builds, and an E2E build never reaches a production
-server (`src-tauri/src/licensing/DETAILS.md`).
+capture with `CMDR_I18N_CAPTURE=1` beside `CMDR_E2E_MODE=1` (`src/lib/app-mode.ts`). The lane also runs the capture's
+staging on that binary, with no camera and no `CMDR_I18N_CAPTURE`: `test/e2e-playwright/DETAILS.md` § "The i18n
+capture's staging in the lane". The license passes need no build of their own either: `CMDR_MOCK_LICENSE` compiles into
+`playwright-e2e` builds, and an E2E build never reaches a production server (`src-tauri/src/licensing/DETAILS.md`).
 
 ## The capture guard
 

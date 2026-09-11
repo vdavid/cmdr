@@ -70,6 +70,11 @@ export interface MainPassStep {
   name: string
   /** Stages the group's surfaces and, outside a stage-only run, photographs them. */
   run: (main: TauriPage, ledger: PassLedger) => Promise<void>
+  /**
+   * Why the E2E lane's stage-only run (`i18n-capture-staging.spec.ts`) leaves this
+   * step out, when it does. The capture itself runs every step regardless.
+   */
+  notStagedInLane?: string
 }
 
 /**
@@ -319,6 +324,9 @@ export const MAIN_PASS_STEPS: readonly MainPassStep[] = [
     run: async (main, { report, failed }) => {
       await captureMtpBrowse(main, report, failed)
     },
+    notStagedInLane:
+      "it needs the virtual MTP device, and the lane's non-MTP shards deliberately register none " +
+      '(`CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP`); `mtp.spec.ts` browses the device on the MTP shard',
   },
   {
     name: 'mtp-connected-toast',
@@ -354,6 +362,10 @@ export const MAIN_PASS_STEPS: readonly MainPassStep[] = [
     run: async (main, { report, failed, skipped }) => {
       await captureGalleryDialogs(main, report, failed, skipped)
     },
+    notStagedInLane:
+      'a gallery state that will not open is a documented skip, never a failure, so a stage-only run has ' +
+      'nothing to fail on; the tracked `capture-skipped.json` diff is what surfaces one, and ' +
+      '`dialog-inset.spec.ts` already opens every dialog through the same gallery in this lane',
   },
 
   // The standalone Keyboard shortcuts window (label `shortcuts`, opened by
