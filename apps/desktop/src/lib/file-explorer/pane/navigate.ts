@@ -49,7 +49,7 @@
  * history, networkHost? })` call that the pinned-tab fork, the in-place path
  * arm, the volume switch, the history walk, and every edge flow share. The ONLY
  * caller of the per-pane mutators (`setPaneVolumeId` / `setPanePath` /
- * `setPaneHistory`) is this `commit` — the sole exceptions are the two
+ * `setPaneHistory`) is this `commit` (in `navigate-commit.ts`) — the sole exceptions are the two
  * orthogonal network-host pushes (`handleNetworkHostChange`,
  * `mirrorNetworkStateToPane`) that carry an SMB host onto the history entry.
  *
@@ -118,316 +118,54 @@
  *   no-op for a cross-volume one (the pane's props re-list it).
  */
 
-import type { FilePaneAPI } from './types'
 import type { TabManager } from '../tabs/tab-state-manager.svelte'
 import { getActiveTab, pushHistoryEntry, MAX_TABS_PER_PANE } from '../tabs/tab-state-manager.svelte'
 import type { TabState } from '../tabs/tab-types'
 import {
-  pushPath,
   back,
   forward,
   getCurrentEntry,
   canGoBack,
   canGoForward,
   createHistory,
-  setCurrentIndex,
   type NavigationHistory,
   type HistoryEntry,
 } from '../navigation/navigation-history'
-import { isPathOnVolume, type DetermineNavigationPathArgs } from '../navigation/path-navigation'
+import { isPathOnVolume } from '../navigation/path-navigation'
 import { tString } from '$lib/intl/messages.svelte'
-import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
-import { isServerPath, isServerVolumeId } from '$lib/servers/server-path-utils'
 import type { Location } from '$lib/tauri-commands'
-import { pointBeforeCommit, pointInForce, returnIndexIn, type ReturnPoint } from './return-point'
+import {
+  NETWORK_VOLUME_PATH,
+  PANE_UNAVAILABLE_REFUSAL,
+  SMB_PATH_REFUSAL,
+  onNetworkRefusal,
+  validateAdbNavigation,
+  validateMtpNavigation,
+  validateServerNavigation,
+} from './navigate-refusals'
+import {
+  commit,
+  mintToken,
+  SETTLED_NOOP,
+  type NavigateDeps,
+  type NavigateIntent,
+  type NavigateResult,
+  type NavigateSource,
+} from './navigate-commit'
+import { commitAhead, returnToShown } from './navigate-return'
 
-/** Where a navigation originates. Drives focus + history-push behavior, never the destination. */
-export type NavigateSource = 'user' | 'mcp' | 'history' | 'correction' | 'cancel' | 'fallback' | 'mirror'
-
-/**
- * The destination of a navigation: a `Location` (go somewhere), a deliberate
- * volume (re)select, a history walk, or a snapshot open. `Location` is
- * navigation's currency — a `(volumeId, path)` pair resolved at the four edges
- * (⌘G, MCP `nav_to_path`, search-result activation, downloads reveal) via
- * `navigation/resolve-location.ts`. `{ goTo }` routes itself: same volume →
- * in-place arm, different volume → switch arm. `{ selectVolume }` is the
- * deliberate volume-(re)select intent that ALWAYS takes the switch arm (its
- * callers legitimately pass the CURRENT volume id to re-select it).
- */
-export type NavigateTo =
-  | { goTo: Location } // navigate to a location; in-place arm (same volume) or switch arm (different volume)
-  | { selectVolume: Location } // deliberately (re)activate a volume; ALWAYS the switch arm, even if already current
-  | { history: 'back' | 'forward' | 'parent' }
-  | { snapshot: string } // search-results snapshot id; routes through the volume-change machinery
-  | { returnTo: ReturnPoint } // a cancelled load hands the pane back to what it showed
-
-export interface NavigateIntent {
-  pane: 'left' | 'right'
-  to: NavigateTo
-  source: NavigateSource
-  /** Land the cursor on this entry after the listing settles (the FilePane selectName channel). */
-  selectName?: string
-  /**
-   * Whether a `{ volumeId, path }` volume switch pushes a history entry. Defaults
-   * to `true`. The volume-unmount redirect sets it `false`: ejecting a volume
-   * redirects each affected pane to the default volume at `~` WITHOUT growing a
-   * Back target (the history-push asymmetry — the MTP-fatal / retry / open-home
-   * fallbacks DO push, the unmount redirect does NOT). Encoded as an intent field
-   * rather than a distinct source because the four `'fallback'` flows share their
-   * focus behavior (none shift the focused pane) and differ only in this push.
-   */
-  pushHistory?: boolean
-}
-
-/** Why a synchronous navigation refused. `message` is the exact current string — contract (L12). */
-export interface NavigateRefusal {
-  kind:
-    | 'on-network-volume'
-    | 'smb-path-unsupported'
-    | 'mtp-unconnected'
-    | 'adb-unconnected'
-    | 'server-unconnected'
-    | 'pane-unavailable'
-    | 'no-volume-resolved'
-  /** EXACT current refusal string, forwarded verbatim as the `mcp-response` error. Pinned byte-for-byte. */
-  message: string
-}
-
-/**
- * The typed replacement for today's `navigateToPath` `string | Promise<void>`.
- * `started.settled` resolves when the listing completes (or per the per-arm
- * contract above); `refused` replaces the sync `string` sentinel three external
- * callers branch on via `typeof result === 'string'`.
- */
-export type NavigateResult =
-  | { status: 'started'; settled: Promise<void> }
-  | { status: 'refused'; reason: NavigateRefusal }
-
-/** A single state commit: volumeId (optional ⇒ unchanged) + path + an optional history entry to push. */
-export interface NavigateCommit {
-  pane: 'left' | 'right'
-  /** When set, the pane switches volume. Omitted ⇒ same-volume path commit. */
-  volumeId?: string
-  path: string
-  /**
-   * History push policy. `'push-path'` pushes a same-volume path entry (the
-   * in-place arm). `'push-entry'` pushes `{ volumeId, path, networkHost? }` (the
-   * volume-switch + edge-flow arms). `'none'` commits state without touching
-   * history (the volume-unmount redirect — its no-history-push asymmetry).
-   * `{ moveTo }` points history back at an entry still in the stack (the
-   * `{ returnTo }` arm).
-   */
-  history: 'push-path' | 'push-entry' | 'none' | { moveTo: number }
-  /** For `'push-entry'` on the network volume: the host to carry on the entry. */
-  networkHost?: HistoryEntry['networkHost']
-}
-
-/** Last-used-path record: a `Location` (volumeId + path). Fired through the persistence trigger. */
-export type LastUsedPathRecord = Location
-
-/**
- * Everything `navigate()` reads or writes, injected so the transaction is
- * headless-testable against fakes. Mirrors the Phase-0 factory pattern
- * (`createPaneCommands(access, dialogs)`): the app builds these from
- * `DualPaneExplorer`'s store + FilePane handles; tests pass fakes.
- */
-export interface NavigateDeps {
-  // --- store reads (live references, never snapshots) ---
-  getTabMgr: (pane: 'left' | 'right') => TabManager
-  getPaneVolumeId: (pane: 'left' | 'right') => string
-  getPanePath: (pane: 'left' | 'right') => string
-  getPaneHistory: (pane: 'left' | 'right') => NavigationHistory
-  /** The pane's volume mount path (`smb://` for network), used by the stale-listing drop policy. */
-  getPaneVolumePath: (pane: 'left' | 'right') => string
-  /** The pane's volume display name, used by the on-network / on-MTP refusal strings. */
-  getPaneVolumeName: (pane: 'left' | 'right') => string | undefined
-  otherPane: (pane: 'left' | 'right') => 'left' | 'right'
-
-  // --- store writes (the only callers of these are this module's `commit`) ---
-  setPaneVolumeId: (pane: 'left' | 'right', volumeId: string) => void
-  setPanePath: (pane: 'left' | 'right', path: string) => void
-  setPaneHistory: (pane: 'left' | 'right', history: NavigationHistory) => void
-  setFocusedPane: (pane: 'left' | 'right') => void
-
-  // --- FilePane handle ---
-  getPaneRef: (pane: 'left' | 'right') => FilePaneAPI | undefined
-
-  // --- volume resolution + defaults ---
-  /** The volume's mount path by id, or undefined when not in the live list. */
-  getVolumePathById: (volumeId: string) => string | undefined
-  /**
-   * Where the volume lands when nothing is remembered about it, when that isn't
-   * its root: a server place's start folder (`VolumeInfo.landingPath`). The
-   * background correction takes it as its last default.
-   */
-  getVolumeLandingById: (volumeId: string) => string | null | undefined
-  /** Whether a pane on this volume shows a listing: the Servers hub and a search snapshot don't. */
-  volumeHasListing: (volumeId: string) => boolean
-  /** Background "best path" resolver (`determineNavigationPath`), gated by the token. */
-  determineNavigationPath: (args: DetermineNavigationPathArgs) => Promise<string>
-
-  // --- side effects ---
-  /** Persistence trigger fed to the single nav-state persistence subscriber (A5). */
-  persist: (event: PersistEvent) => void
-  /**
-   * Warn toast (the `MAX_TABS_PER_PANE` "Tab limit reached" branch). Takes the
-   * forking pane so the refusal is tagged to it and clears on that pane's next
-   * navigation, not the other pane's.
-   */
-  addToast: (pane: 'left' | 'right', message: string, opts: { level: 'warn' }) => void
-
-  // --- the per-pane transaction token map (caller-owned so it survives across calls) ---
-  tokens: Map<'left' | 'right', number>
-  /**
-   * The GLOBAL background-correction generation (the old `volumeChangeGeneration`
-   * counter — a SINGLE counter shared by both panes, NOT per-pane). A mutable
-   * holder so it survives across `navigate()` calls. Each scheduled correction
-   * bumps `.value` and captures it; a later volume change on EITHER pane bumps it
-   * again, dropping the stale correction. Caller-owned, like `tokens`.
-   */
-  correctionGen: { value: number }
-  /**
-   * Per pane, what it showed before a navigation committed ahead of its listing
-   * (`return-point.ts`). Caller-owned like `tokens`, and written only here: by a
-   * commit that runs ahead of its listing, by a landing, and by the `{ returnTo }` arm.
-   */
-  returnPoints: Map<'left' | 'right', ReturnPoint>
-}
-
-/**
- * Persistence events emitted by `navigate()`, consumed by the single nav-state
- * persistence subscriber (A5). `pane-state` is covered REACTIVELY there (the
- * subscriber's per-pane effects watch the store mutation `commit` makes), so the
- * trigger is a no-op for it; `last-used-path` is a DELTA (the old path of the old
- * volume on a switch) the subscriber can't derive from a snapshot, so it's
- * forwarded explicitly.
- */
-export type PersistEvent =
-  | { kind: 'pane-state'; pane: 'left' | 'right' }
-  | { kind: 'last-used-path'; record: LastUsedPathRecord }
-
-/** Exact refusal strings — contract (L12). Pinned byte-for-byte by the navigate suites. */
-function onNetworkRefusal(volumeLabel: string): NavigateRefusal {
-  return {
-    kind: 'on-network-volume',
-    message: `Pane is on the ${volumeLabel} volume. Use select_volume to switch to a local volume first.`,
-  }
-}
-
-const PANE_UNAVAILABLE_REFUSAL: NavigateRefusal = { kind: 'pane-unavailable', message: 'Pane not available' }
-
-/** The one navigable path on the virtual `network` volume: its host list. */
-const NETWORK_VOLUME_PATH = 'smb://'
-
-/**
- * `resolve_location` maps EVERY `smb://` path to the virtual `network` volume, whose
- * state is a host and a share list rather than a path, so only the `smb://` sentinel
- * above is navigable. Anything longer used to commit the switch and report success
- * while the pane sat on the host list, which is a worse answer than saying so.
- */
-const SMB_PATH_REFUSAL: NavigateRefusal = {
-  kind: 'smb-path-unsupported',
-  message:
-    "nav_to_path doesn't take smb:// paths. A mounted share is its own volume, so use select_volume with the name from cmdr://state volumes; for a share that isn't mounted, use select_volume Network and open the host.",
-}
-
-/**
- * MTP capability check. Returns a refusal or `null`. Note the em dash in the
- * first string — it's contract (L12), byte-pinned by `navigate.refusals.test.ts`.
- */
-function validateMtpNavigation(path: string, volumeId: string, volumeName: string | undefined): NavigateRefusal | null {
-  if (path.startsWith('mtp://')) {
-    const mtpMatch = path.match(/^mtp:\/\/([^/]+)\/(\d+)/)
-    const pathDeviceId = mtpMatch?.[1]
-    const pathStorageId = mtpMatch?.[2]
-    if (!pathDeviceId || !pathStorageId || volumeId !== `${pathDeviceId}:${pathStorageId}`) {
-      return { kind: 'mtp-unconnected', message: `Pane is not on this MTP volume — call select_volume first.` }
-    }
-  } else if (volumeId.includes(':') && volumeId.startsWith('mtp-')) {
-    return {
-      kind: 'mtp-unconnected',
-      message: `Pane is on the ${volumeName ?? volumeId} MTP volume. Use select_volume to switch to a local volume first.`,
-    }
-  }
-  return null
-}
-
-/**
- * ADB capability check, the MTP twin: an `adb://<serial>/…` path is navigable only
- * while the pane sits on that device's volume. Returns a refusal or `null`.
- */
-function validateAdbNavigation(
-  deps: NavigateDeps,
-  path: string,
-  volumeId: string,
-  volumeName: string | undefined,
-): NavigateRefusal | null {
-  if (path.startsWith('adb://')) {
-    // The volume id (`adb-<slug>-<digest>`) isn't derivable from the serial; the
-    // volume's registered root (`adb://<serial>`) is the link.
-    const serial = /^adb:\/\/([^/]+)/.exec(path)?.[1]
-    if (!serial || !isAdbVolumeId(volumeId) || deps.getVolumePathById(volumeId) !== `adb://${serial}`) {
-      return { kind: 'adb-unconnected', message: 'Pane is not on this ADB volume. Call select_volume first.' }
-    }
-  } else if (isAdbVolumeId(volumeId)) {
-    return {
-      kind: 'adb-unconnected',
-      message: `Pane is on the ${volumeName ?? volumeId} ADB volume. Use select_volume to switch to a local volume first.`,
-    }
-  }
-  return null
-}
-
-/**
- * Server capability check, the ADB twin for an SFTP or WebDAV place: a scheme
- * path is navigable only while the pane sits on the volume rooted at or above
- * it. Returns a refusal or `null`.
- *
- * ❗ The test is "is the target under the pane volume's OWN root", by whole path
- * components, ❌ never a string prefix: two servers can both hold `/srv/data`,
- * and `/srv/data-1` is a legal sibling of `/srv/data` that a string compare
- * would accept and then ask the wrong server for. The Rust twin is
- * `cmdr_fs::volume::remote_paths::RemoteRoot::to_remote_path`, which refuses the
- * same three shapes for the same reason.
- */
-function validateServerNavigation(
-  deps: NavigateDeps,
-  path: string,
-  volumeId: string,
-  volumeName: string | undefined,
-): NavigateRefusal | null {
-  if (isServerPath(path)) {
-    const volumeRoot = isServerVolumeId(volumeId) ? deps.getVolumePathById(volumeId) : undefined
-    if (!volumeRoot || !isUnderServerRoot(volumeRoot, path)) {
-      return { kind: 'server-unconnected', message: 'Pane is not on this server volume. Call select_volume first.' }
-    }
-  } else if (isServerVolumeId(volumeId)) {
-    return {
-      kind: 'server-unconnected',
-      message: `Pane is on the ${volumeName ?? volumeId} server volume. Use select_volume to switch to a local volume first.`,
-    }
-  }
-  return null
-}
-
-/** Whether `path` is the volume root or sits under it, matched by whole components. */
-function isUnderServerRoot(volumeRoot: string, path: string): boolean {
-  return path === volumeRoot || path.startsWith(`${volumeRoot}/`)
-}
-
-/** A resolved no-op `settled` — for branches that commit state without driving a listing. */
-const SETTLED_NOOP: Promise<void> = Promise.resolve()
-
-/**
- * Mints + stores a fresh transaction token for `pane`, returning it. Every fresh
- * `navigate()` call advances the pane's token; the self-re-entry path
- * (`commitPathFromListing`) deliberately does NOT call this.
- */
-function mintToken(deps: NavigateDeps, pane: 'left' | 'right'): number {
-  const next = (deps.tokens.get(pane) ?? 0) + 1
-  deps.tokens.set(pane, next)
-  return next
-}
+// The contract lives in `navigate-commit.ts` and the refusals in `navigate-refusals.ts`,
+// so the sibling modules share them without importing this one. Callers keep importing
+// the names they use from here.
+export type {
+  LastUsedPathRecord,
+  NavigateDeps,
+  NavigateIntent,
+  NavigateResult,
+  NavigateTo,
+  PersistEvent,
+} from './navigate-commit'
+export { returnPointFor } from './navigate-return'
 
 /**
  * Whether a volume switch shifts the focused pane (L1). A direct user/history
@@ -448,31 +186,6 @@ function mintToken(deps: NavigateDeps, pane: 'left' | 'right'): number {
  */
 function shiftsFocus(source: NavigateSource): boolean {
   return source === 'user' || source === 'history'
-}
-
-/**
- * The single state-commit point. Writes volumeId (when switching) + path + an
- * optional history entry together, then fires the pane-state persistence intent.
- * This is the ONLY caller of `setPaneVolumeId` / `setPanePath` / `setPaneHistory`
- * outside the per-pane mutators themselves (the two orthogonal network-host
- * pushes aside).
- */
-function commit(deps: NavigateDeps, c: NavigateCommit): void {
-  if (c.volumeId !== undefined) deps.setPaneVolumeId(c.pane, c.volumeId)
-  deps.setPanePath(c.pane, c.path)
-
-  if (c.history === 'push-path') {
-    deps.setPaneHistory(c.pane, pushPath(deps.getPaneHistory(c.pane), c.path))
-  } else if (c.history === 'push-entry') {
-    const volumeId = c.volumeId ?? deps.getPaneVolumeId(c.pane)
-    const entry: HistoryEntry = { volumeId, path: c.path }
-    if (c.networkHost !== undefined) entry.networkHost = c.networkHost
-    deps.setPaneHistory(c.pane, pushHistoryEntry(deps.getPaneHistory(c.pane), entry))
-  } else if (c.history !== 'none') {
-    deps.setPaneHistory(c.pane, setCurrentIndex(deps.getPaneHistory(c.pane), c.history.moveTo))
-  }
-
-  deps.persist({ kind: 'pane-state', pane: c.pane })
 }
 
 /**
@@ -828,59 +541,6 @@ function commitHistoryWalk(
   if (entry.volumeId === 'network') {
     paneRef?.setNetworkHost(entry.networkHost ?? null)
   }
-}
-
-/**
- * Runs a commit that moves the pane's state ahead of its listing (a volume switch,
- * a history walk, a background correction) and keeps the pane's return point: the
- * one already in force, else the tab as it stood. A destination that shows without
- * a listing leaves nothing to cancel, so it clears the point.
- */
-function commitAhead(deps: NavigateDeps, pane: 'left' | 'right', apply: () => void): void {
-  const before = pointBeforeCommit(getActiveTab(deps.getTabMgr(pane)), returnPointFor(deps, pane))
-  apply()
-  const tab = getActiveTab(deps.getTabMgr(pane))
-  if (deps.volumeHasListing(tab.volumeId)) {
-    deps.returnPoints.set(pane, { ...before, ahead: { volumeId: tab.volumeId, path: tab.path } })
-  } else {
-    deps.returnPoints.delete(pane)
-  }
-}
-
-/** The pane's return point, while its tab still sits where the commits left it. */
-export function returnPointFor(deps: NavigateDeps, pane: 'left' | 'right'): ReturnPoint | null {
-  return pointInForce(getActiveTab(deps.getTabMgr(pane)), deps.returnPoints.get(pane))
-}
-
-/**
- * The `{ returnTo }` arm: a cancelled load hands the pane back to what it showed
- * before commits ran ahead of its listing. One commit restores the volume, the path,
- * and the history index (no push, no Back walk), and a background correction still
- * resolving for the cancelled switch is dropped so it can't move the pane again. A
- * same-volume return re-lists through the FilePane primitive, which is how
- * `selectName` reaches the cursor; a cross-volume one re-lists from the pane's
- * props, like any volume switch.
- */
-function returnToShown(deps: NavigateDeps, intent: NavigateIntent, point: ReturnPoint): NavigateResult {
-  const { pane } = intent
-  mintToken(deps, pane)
-  deps.correctionGen.value += 1
-  deps.returnPoints.delete(pane)
-  const leavingVolumeId = deps.getPaneVolumeId(pane)
-  const index = returnIndexIn(deps.getPaneHistory(pane), point)
-  commit(deps, {
-    pane,
-    volumeId: point.shown.volumeId,
-    path: point.shown.path,
-    // An entry a later push truncated away comes back as a fresh one.
-    history: index === null ? 'push-entry' : { moveTo: index },
-    networkHost: point.entry.networkHost,
-  })
-
-  const paneRef = deps.getPaneRef(pane)
-  if (point.shown.volumeId === 'network') paneRef?.setNetworkHost(point.entry.networkHost ?? null)
-  if (point.shown.volumeId !== leavingVolumeId || !paneRef) return { status: 'started', settled: SETTLED_NOOP }
-  return { status: 'started', settled: paneRef.navigateToPath(point.shown.path, intent.selectName) }
 }
 
 /**

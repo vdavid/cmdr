@@ -170,7 +170,7 @@ simultaneous error panes don't both toggle. Its `Main window/Error screen` scope
 ### Tests
 
 Colocated with the code they pin (`codegraph_files` lists them; every alt-view component carries an `*.a11y.test.ts` axe
-sweep). Four splits the layout doesn't explain for itself:
+sweep). Five splits the layout doesn't explain for itself:
 
 - **The drag-drop controller suite is split in two on purpose**: `drag-drop-controller.svelte.test.ts` (handler
   contracts, including the self-drag-identity scenarios) and `drag-drop-controller.listeners.svelte.test.ts` (Tauri
@@ -184,12 +184,18 @@ sweep). Four splits the layout doesn't explain for itself:
   `{ snapshot }`, the `'fallback'` edge-flow source, `{ history }`, `{ location }`, and `{ volumeId, path }`
   volume-(re)select), `navigate.return.test.ts` (the return point and the `{ returnTo }` arm, § "Escape during a load"),
   and `navigate.refusals.test.ts` (every refusal kind's `message`, byte-for-byte, L12).
+- **The listing loader suite is split by what it covers**, sharing `makeHarness` and `deferred` from
+  `listing-loader.test-fixtures.ts`: `listing-loader.test.ts` (the generation / drop-foreign token model and the
+  unguarded async-tail lock), `listing-loader.outcomes.test.ts` (a listing error, an MTP failure, a cancel, and the
+  pending-load promise), `listing-loader.navigation.test.ts` (the walk-up fallback, a cancelled load, the parent step),
+  and `listing-loader.teardown.test.ts` (swap adoption, cleanup, abandoned listings). The `vi.mock` blocks stay
+  DUPLICATED per file, as in the drag-drop split.
 - **`volume-tint.svelte.fallback.test.ts` sits beside `volume-tint.svelte.test.ts`** because the two force opposite
   `hasColorMix` branches: the main file pins it `true` to assert the `color-mix(...)` string, the fallback file forces
   the JS sRGB-mix branch and asserts hex (stubbing `getComputedStyle`, since jsdom doesn't resolve CSS custom
   properties).
-- **`integration-test-utils.ts`, `drag-drop-controller.test-fixtures.ts`, and `navigate.test-fixtures.ts` are
-  scaffolding, not suites** — they carry no tests of their own.
+- **`integration-test-utils.ts`, `drag-drop-controller.test-fixtures.ts`, `navigate.test-fixtures.ts`, and
+  `listing-loader.test-fixtures.ts` are scaffolding, not suites** — they carry no tests of their own.
 
 The drag-drop controller owns native drag auto-scroll lifecycle because it sees every terminal drag path (`drop`,
 `leave`, `cleanup`). `FilePane.autoScrollDuringDrag` forwards one animation-frame scroll request to the active list; the
@@ -496,11 +502,11 @@ capability record is the "differently complicated" failure mode to avoid:
   `category === 'network' || fsType === 'smbfs'`), `volume-grouping.ts` (`category === 'network'` sidebar grouping),
   `mtp-path-utils.ts::isMtpVolumeId` (`startsWith('mtp-')`). These ARE the classifier — converting them would be
   circular.
-- **Namespace / path mechanics (which string scheme, not what's allowed).** `navigate.ts` (the on-network / on-MTP
-  refusal sources + the `smb://` / `search-results://` drop-foreign-listings prefix + `validateMtpNavigation` path
-  parse), `DualPaneExplorer.svelte` (synthetic `smb://` path/name synthesis + the network-mirror /
-  copy-path-between-panes identity branches), `rename-flow.svelte.ts` (skip the Unix-`access()` permission check on MTP
-  virtual paths — a syscall-support mechanic, not a "may rename" capability).
+- **Namespace / path mechanics (which string scheme, not what's allowed).** `navigate.ts` and `navigate-refusals.ts`
+  (the on-network / on-MTP refusal sources + the `smb://` / `search-results://` drop-foreign-listings prefix +
+  `validateMtpNavigation` path parse), `DualPaneExplorer.svelte` (synthetic `smb://` path/name synthesis + the
+  network-mirror / copy-path-between-panes identity branches), `rename-flow.svelte.ts` (skip the Unix-`access()`
+  permission check on MTP virtual paths — a syscall-support mechanic, not a "may rename" capability).
 - **Display / view selection.** `VolumeBreadcrumb.svelte` (the "Network" / "Search results" labels + the
   network-disabled gate), `FilePane.svelte` (`paneViewKind` in the `{#if}` chain, sourced off `caps.kind`; the
   `isNetworkView` / `isSearchResultsView` named deriveds; the MTP device-only sub-state + the `loadDirectory` skip for
@@ -520,10 +526,10 @@ unchanged. Read-only / delegating bodies move; functions that WRITE component na
 `swapPanes`, `setViewMode`, `navigate`, `setSort*`, `moveCursor`, `selectVolumeBy*`, `copyPathBetweenPanes`, the
 `mirror*`/`restoreFocus` helpers) stay in the component — un-trapping that state is the explorer-store phase, not this
 factoring. The `navigate(intent)` transaction itself lives in `navigate.ts` (the component builds its `NavigateDeps` and
-wraps it as the `navigate` export). The MTP capability check lives in `navigate.ts` (`validateMtpNavigation`, the
-synchronous refusal gate for the in-place path arm); its refusal strings are byte-pinned by `navigate.refusals.test.ts`.
-`moveCursorByName*` moved into `pane-commands` even though it's called from component-resident writers (`moveCursor`,
-`restoreCursorByFilename`); those callers reach back via `paneCommands.*`.
+wraps it as the `navigate` export). The MTP capability check lives in `navigate-refusals.ts` (`validateMtpNavigation`,
+the synchronous refusal gate for the in-place path arm); its refusal strings are byte-pinned by
+`navigate.refusals.test.ts`. `moveCursorByName*` moved into `pane-commands` even though it's called from
+component-resident writers (`moveCursor`, `restoreCursorByFilename`); those callers reach back via `paneCommands.*`.
 
 **`refreshPane` is the one refresh, and it forces.** ⌘R (`pane.refresh`) and the MCP `refresh` tool both land in
 `pane-commands.ts::refreshPane()`. It routes on the view: the network browser has no listing, so there it re-scans hosts
@@ -912,6 +918,11 @@ FilePane listing primitives (`navigateToPath` / `navigateToParent`); listing mec
 of `setPaneVolumeId` / `setPanePath` / `setPaneHistory` are `navigate()`'s internal `commit` plus the two orthogonal
 network-host pushes (`handleNetworkHostChange`, `mirrorNetworkStateToPane`, which carry an SMB host onto the history
 entry — they're not pane-destination changes).
+
+The transaction is split across four files for length, with no import cycle: `navigate-commit.ts` holds the contract
+types, `commit`, and token minting, which `navigate.ts` and `navigate-return.ts` both import instead of each other;
+`navigate-refusals.ts` holds the synchronous refusals; `navigate-return.ts` holds the `{ returnTo }` arm and the
+return-point bookkeeping. `navigate.ts` re-exports the names callers use, so they import from it alone.
 
 - **`Location` is navigation's currency; resolution happens at the edge.** A bare path becomes a `Location`
   (`{ volumeId, path }`) at exactly four edges — ⌘G "Go to path", MCP `nav_to_path`, search-result activation (dialog

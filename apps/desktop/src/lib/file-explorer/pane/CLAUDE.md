@@ -11,6 +11,9 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   its own test file).
 - `FilePane.svelte`: one pane (lifecycle `$state`, the `FilePaneAPI` exports, the alt-view `{#if}` chain); its
   controllers and helpers are siblings (`DETAILS.md` § File map).
+- `navigate.ts`: the `navigate()` transaction. Split out for length: `navigate-commit.ts` (the intent/deps/result
+  contract, the single `commit`, token minting), `navigate-refusals.ts` (the byte-pinned refusals), and
+  `navigate-return.ts` (the `{ returnTo }` arm over the pure `return-point.ts`).
 
 ## Must-knows
 
