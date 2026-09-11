@@ -22,8 +22,15 @@ import type { TauriPage } from '@srsholmes/tauri-playwright'
 import { type SurfaceEntry, captureCall, captureSurface, focusWindow, settlePaint } from './i18n-capture-helpers.js'
 import { isOverflowPass, overflowLocale } from './i18n-capture-config.js'
 import {
+  captureConflictDialog,
+  captureFileOperationDialogs,
+  captureGoToPath,
+  captureQueryOverlays,
+  captureServersHub,
+  captureTransferDialog,
+} from './i18n-capture-main-overlays.js'
+import {
   captureSettingsWindow,
-  captureMainOverlays,
   captureFrontendToasts,
   captureEmptyPane,
   captureOnboardingWizard,
@@ -190,12 +197,44 @@ export const MAIN_PASS_STEPS: readonly MainPassStep[] = [
     },
   },
 
-  // Main-window overlays: the file-operation dialogs, the palette, the query UI, and
-  // the servers hub, each staged by a registry command.
+  // Main-window overlays, each staged by a registry command: the file-operation
+  // dialogs, the conflict and transfer dialogs, go-to-path, the palette and query UI,
+  // and the servers hub. The first step does the group's full reset; the rest rely
+  // on running right after it (`i18n-capture-main-overlays.ts`).
   {
-    name: 'main-overlays',
+    name: 'file-operation-dialogs',
     run: async (main, { report, failed }) => {
-      await captureMainOverlays(main, report, failed)
+      await captureFileOperationDialogs(main, report, failed)
+    },
+  },
+  {
+    name: 'conflict-dialog',
+    run: async (main, { report, failed }) => {
+      await captureConflictDialog(main, report, failed)
+    },
+  },
+  {
+    name: 'go-to-path',
+    run: async (main, { report, failed }) => {
+      await captureGoToPath(main, report, failed)
+    },
+  },
+  {
+    name: 'transfer-dialog',
+    run: async (main, { report, failed }) => {
+      await captureTransferDialog(main, report, failed)
+    },
+  },
+  {
+    name: 'query-overlays',
+    run: async (main, { report, failed }) => {
+      await captureQueryOverlays(main, report, failed)
+    },
+  },
+  {
+    name: 'servers-hub',
+    run: async (main, { report, failed }) => {
+      await captureServersHub(main, report, failed)
     },
   },
 

@@ -2,8 +2,9 @@
  * Per-group surface-capture functions for the i18n screenshot-capture driver
  * (`i18n-capture.spec.ts`).
  *
- * One exported function per surface group (settings window, main-window overlays,
- * toasts, empty pane, onboarding, what's-new, indexing). Each stages the app to
+ * One exported function per surface group (settings window, toasts, empty pane,
+ * onboarding, what's-new, indexing; the main-window overlays live in
+ * `i18n-capture-main-overlays.ts`). Each stages the app to
  * its surfaces and records keys via the shared engines in
  * `i18n-capture-helpers.ts`. The spec sequences these in coupling order; this
  * module holds no orchestration of its own.
@@ -18,22 +19,18 @@ import { join } from 'node:path'
 import { expect } from './fixtures.js'
 import {
   ensureAppReady,
-  dismissOverlay,
   acceptOnboardingTermsIfPresent,
   closeOnboardingWizardIfOpen,
-  skipParentEntry,
   moveCursorToFile,
   openSettingsWindowViaProd,
   closeScopedWindow,
   dispatchMenuCommand,
   getFixtureRoot,
   navigateToRoute,
-  LOCAL_VOLUME_NAME,
   TRANSFER_DIALOG,
 } from './helpers.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { initMcpClient, mcpSelectVolume, mcpNavToPath, mcpAwaitPath } from '../e2e-shared/mcp-client.js'
-import { writeFile, waitForConflictPolicy, clickTransferStart } from './conflict-helpers.js'
+import { initMcpClient, mcpNavToPath, mcpAwaitPath } from '../e2e-shared/mcp-client.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import {
   type SurfaceEntry,
@@ -46,7 +43,6 @@ import {
   settlePaint,
   shoot,
 } from './i18n-capture-helpers.js'
-import { resetOperationStateOrReport } from './i18n-capture-operations.js'
 import { isOverflowPass, isStageOnly, overflowLocale } from './i18n-capture-config.js'
 import { CROP_PADDING_TIGHT_CSS_PX, scanForClipping } from './i18n-capture-frame.js'
 
@@ -190,213 +186,6 @@ export async function captureSettingsWindow(
   } finally {
     if (settings) await closeScopedWindow(main, settings, 'settings').catch(() => {})
   }
-}
-
-/**
- * Captures every MAIN-WINDOW overlay surface: the file-op dialogs (new file,
- * delete, trash, rename, extension-change, conflict, transfer), the go-to-path
- * dialog, the command palette, the shared-`QueryDialog` query UI (search,
- * selection, filter popover), and the servers hub.
- *
- * All render into the main window's own capture sink, so each follows the About
- * pattern: enable + setSurface the sink BEFORE opening (to record mount-time
- * `t()` calls), open, wait on a per-overlay selector, capture, then dismiss +
- * disable. The `mainOverlay` local wraps that rhythm; its `open` callback does
- * the surface-specific staging and returns the wait selector. Surfaces that
- * mutate the fixture tree (rename, delete, conflict) get a fresh tree up front,
- * and cursor-dependent stages re-skip the synthetic `..` row first.
- *
- * Extracted from the test body so each surface's staging stays small and the
- * driver's top-level complexity stays under the lint ceiling.
- */
-export async function captureMainOverlays(
-  main: TauriPage,
-  report: Record<string, SurfaceEntry>,
-  failed: string[],
-): Promise<void> {
-  recreateFixtures(getFixtureRoot())
-  await ensureAppReady(main)
-  await initMcpClient(main)
-
-  // Stages one main-window overlay: enable+setSurface, run the surface-specific
-  // `open` (returns its wait selector), let `captureSurface` shoot it, then
-  // dismiss + disable. `dismissOverlay` no-ops (caught) for non-overlay surfaces.
-  // The wait selector doubles as the `readySelector`, so the same condition is
-  // re-proven in the frame that gets photographed, not just at open time.
-  const mainOverlay = async (label: string, open: () => Promise<string>): Promise<void> => {
-    await captureSurface(label, report, failed, async () => {
-      await captureCall(main, 'reset')
-      await captureCall(main, 'setSurface', label)
-      await captureCall<boolean>(main, 'enable')
-      const waitSelector = await open()
-      await main.waitForSelector(waitSelector, 5000)
-      return { page: main, readySelector: waitSelector }
-    })
-    await dismissOverlay(main).catch(() => {})
-    await captureCall(main, 'disable').catch(() => {})
-  }
-
-  // New-file dialog (⇧F4 → `file.newFile`). The mkfile twin of `new-folder-dialog`.
-  await mainOverlay('new-file-dialog', async () => {
-    await skipParentEntry(main)
-    await dispatchMenuCommand(main, 'file.newFile')
-    return '[data-dialog-id="new-file-confirmation"] input.text-field-control'
-  })
-
-  // Delete confirmation (F8 → `file.delete`): the recycle/trash-style confirm.
-  await mainOverlay('delete-confirm', async () => {
-    await skipParentEntry(main)
-    await dispatchMenuCommand(main, 'file.delete')
-    return '[data-dialog-id="delete-confirmation"]'
-  })
-
-  // Permanent-delete confirmation (⇧F8 → `file.deletePermanently`). Same
-  // `delete-confirmation` dialog id as trash, but distinct copy (no-trash
-  // warning / permanent wording), so it earns its own surface for the keys the
-  // trash variant doesn't render.
-  await mainOverlay('trash-confirm', async () => {
-    await skipParentEntry(main)
-    await dispatchMenuCommand(main, 'file.deletePermanently')
-    return '[data-dialog-id="delete-confirmation"]'
-  })
-
-  // ❌ No `rename-dialog` surface. The inline rename editor renders no copy of
-  // its own (it's a bare input in the pane), so every key it recorded belonged to
-  // the chrome around it and every one of them is captured elsewhere. The
-  // `extension-change` surface below reaches the same editor and shows the dialog
-  // that actually has words in it.
-
-  // Extension-change confirmation: rename to a MEANINGFULLY different extension
-  // (default `fileOperations.allowFileExtensionChanges` is "ask"). `.txt` → a
-  // non-equivalent extension like `.zip` triggers the dialog; equivalent groups
-  // (`.txt`/`.md`, `.jpg`/`.jpeg`, …) are silently allowed and would NOT show it.
-  // Drive the inline editor to the new extension, then ⏎.
-  await mainOverlay('extension-change', async () => {
-    await skipParentEntry(main)
-    await moveCursorToFile(main, 'file-a.txt')
-    await dispatchMenuCommand(main, 'file.rename')
-    await main.waitForSelector('.rename-input', 3000)
-    await main.evaluate(`(function(){
-      var el = document.querySelector('.rename-input');
-      if (!el) return;
-      el.focus();
-      el.value = 'file-a.zip';
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-    })()`)
-    await main.evaluate(`(function(){
-      var el = document.querySelector('.rename-input');
-      if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    })()`)
-    return '[data-dialog-id="extension-change"]'
-  })
-
-  // Conflict-resolution dialog: the inline `.conflict-section` inside the
-  // transfer-progress dialog. Stage a same-name collision (a `file-a.txt` in
-  // `right/`), copy `file-a.txt` left→right under the "Ask for each" (stop)
-  // policy so the per-file conflict prompt opens rather than an upfront policy.
-  await mainOverlay('conflict-dialog', async () => {
-    // Recreate first: an earlier surface (extension-change cancel) may leave the
-    // tree perturbed, and we need `file-a.txt` present on both sides to collide.
-    recreateFixtures(getFixtureRoot())
-    writeFile(getFixtureRoot(), 'right/file-a.txt', 'dest-collision')
-    await ensureAppReady(main)
-    await skipParentEntry(main)
-    await moveCursorToFile(main, 'file-a.txt')
-    await dispatchMenuCommand(main, 'file.copy')
-    await main.waitForSelector(TRANSFER_DIALOG, 5000)
-    await waitForConflictPolicy(main)
-    await clickTransferStart(main)
-    await main.waitForSelector('[data-dialog-id="transfer-progress"]', 3000)
-    return '.conflict-section'
-  })
-  // The conflict flow leaves a real copy PARKED on an unanswered clash, and the
-  // way out of one is an answer, never an Escape: `TransferProgressDialog` passes
-  // `onclose={undefined}` while a clash is up, because every exit from a clash
-  // decides something about the user's files. So the exit here is a real cancel on
-  // the operation, which ends it and takes the dialog down with it.
-  //
-  // ❗ Assert the drain, don't hope for it. A copy parked on a clash holds the
-  // local lane AND a queue row, so leaving one behind fails every later surface
-  // that needs real work in flight — `toast-transfer-complete` and all three queue
-  // shots — dozens of surfaces downstream of the one that caused it. That is
-  // exactly what a swallowed `dismissOverlay` failure did here once.
-  await resetOperationStateOrReport(main, failed, 'conflict-dialog')
-  await dismissOverlay(main).catch(() => {})
-
-  // Go-to-path dialog (`nav.goToPath`).
-  await mainOverlay('go-to-path', async () => {
-    await dispatchMenuCommand(main, 'nav.goToPath')
-    // Stable class, NOT the `aria-label` text: the overflow pass pseudolocalizes
-    // every label, so an English `aria-label="Path to go to"` selector never
-    // matches under en-XA.
-    return '[data-dialog-id="go-to-path"] input.text-field-control'
-  })
-
-  // Copy/move transfer dialog (F5 → `file.copy`): the source→dest picker with the
-  // operation toggle and counters, BEFORE confirming. No collision here, so it
-  // shows the plain confirm state (distinct from the conflict surface above).
-  await mainOverlay('transfer-dialog', async () => {
-    // Recreate first: the conflict surface left a collision in `right/`; a clean
-    // tree gives the plain confirm state (no upfront conflict-policy block).
-    recreateFixtures(getFixtureRoot())
-    await ensureAppReady(main)
-    await skipParentEntry(main)
-    await moveCursorToFile(main, 'file-b.txt')
-    await dispatchMenuCommand(main, 'file.copy')
-    return TRANSFER_DIALOG
-  })
-
-  // Command palette (`app.commandPalette`).
-  await mainOverlay('command-palette', async () => {
-    await dispatchMenuCommand(main, 'app.commandPalette')
-    return '.palette-overlay input.text-field-control'
-  })
-
-  // Search dialog (`search.open`). Shares the `.search-overlay` markup with the
-  // selection dialog; captured FIRST so search-specific keys couple here and the
-  // selection dialog below only claims its remaining unique keys.
-  await mainOverlay('search-dialog', async () => {
-    await dispatchMenuCommand(main, 'search.open')
-    return '.search-overlay .query-bar input.text-field-control'
-  })
-
-  // Filter-chip popover: open the Search dialog, then the Size filter chip's
-  // popover, for the chip/popover copy. The search dialog was torn down above,
-  // so re-open it here.
-  await mainOverlay('filter-popover', async () => {
-    await dispatchMenuCommand(main, 'search.open')
-    await main.waitForSelector('.search-overlay', 5000)
-    // Open the Size popover via its production shortcut (Option+S, matched on the
-    // layout-stable `event.code === 'KeyS'`), NOT by clicking a chip selected on
-    // its English `aria-label="Size"`: the overflow pass pseudolocalizes that
-    // label, so the text selector never matches under en-XA.
-    await main.evaluate(
-      `document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS', key: 's', altKey: true, bubbles: true }))`,
-    )
-    return '.search-overlay .ui-popover'
-  })
-  // The popover sits ON the search dialog; dismiss both (popover first).
-  await dismissOverlay(main).catch(() => {})
-
-  // Selection dialog (`selection.selectFiles`): the "Select files…" twin of the
-  // search dialog (same `QueryDialog` markup), so most keys already coupled to
-  // `search-dialog`; this claims the selection-only ones.
-  await mainOverlay('select-dialog', async () => {
-    await dispatchMenuCommand(main, 'selection.selectFiles')
-    return '.search-overlay .query-bar input.text-field-control'
-  })
-
-  // Servers hub: the table the Network row opens (`servers.hub.*`), whose last row
-  // is always "Add server…", so it renders with no server saved or nearby. The
-  // sheet that row opens is the gallery's `server-sign-in-*` states, so this
-  // surface is the hub alone. Same 15 s budget `servers.spec.ts` gives the mount.
-  await mainOverlay('servers-hub', async () => {
-    await mcpSelectVolume('left', 'Servers')
-    await main.waitForSelector('.servers-hub .add-row', 15000)
-    return '.servers-hub .add-row'
-  })
-  // Leave the panes back on local so nothing downstream inherits Network.
-  await mcpSelectVolume('left', LOCAL_VOLUME_NAME).catch(() => {})
 }
 
 /** The bare ids of every saved favorite, off `list_volumes` (favorites ride it as `fav-<id>` locations). */

@@ -59,7 +59,6 @@
     "apps/desktop/src/routes/(main)/command-dispatch.characterization.test.ts": 871,
     "apps/desktop/src/routes/debug/DebugSmbDiagnosticsPanel.svelte": 1040,
     "apps/desktop/src/routes/viewer/+page.svelte": 1442,
-    "apps/desktop/test/e2e-playwright/i18n-capture-surfaces.ts": 811,
     "apps/desktop/test/e2e-playwright/mtp.spec.ts": 1124,
     "apps/desktop/test/e2e-playwright/operation-log-rollback.spec.ts": 843,
     "apps/website/src/dev/blog-editor/entry.ts": 1096,
