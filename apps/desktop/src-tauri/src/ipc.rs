@@ -615,13 +615,13 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
-            // SFTP servers: connecting, host-key trust, secrets, and the server list.
+            // SFTP servers: host-key trust, secrets, and the server list. Connecting
+            // goes through the protocol-agnostic `commands::servers` block below.
             // ❌ Deliberately no `stubs::` counterpart — that file exists because SMB
             // browsing is macOS-only, and stubbing SFTP would turn it off on Linux, where
             // the Docker E2E lane runs.
             cfg(any(target_os = "macos", target_os = "linux")) {
                 typed: [
-                    crate::commands::sftp::connect_sftp_volume,
                     crate::commands::sftp::disconnect_sftp_volume,
                     crate::commands::sftp::approve_sftp_host_key,
                     crate::commands::sftp::forget_sftp_host_key,
@@ -637,11 +637,11 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
-            // WebDAV servers: connecting, secrets, and the server list. Same gate
-            // and same no-stub reasoning as the SFTP block above.
+            // WebDAV servers: secrets and the server list. Connecting goes through the
+            // protocol-agnostic `commands::servers` block below. Same gate and same
+            // no-stub reasoning as the SFTP block above.
             cfg(any(target_os = "macos", target_os = "linux")) {
                 typed: [
-                    crate::commands::webdav::connect_webdav_volume,
                     crate::commands::webdav::cancel_webdav_connect,
                     crate::commands::webdav::disconnect_webdav_volume,
                     crate::commands::webdav::save_webdav_credentials,

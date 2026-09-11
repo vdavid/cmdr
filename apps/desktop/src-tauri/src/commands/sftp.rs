@@ -1,15 +1,16 @@
-//! The IPC surface for SFTP servers: connecting, host-key trust, secrets, and
-//! the server list.
+//! The IPC surface for SFTP servers: host-key trust, secrets, and the server
+//! list. Connecting itself goes through the protocol-agnostic
+//! `commands::servers` facade now; this file keeps only what that facade has
+//! no reason to widen.
 //!
 //! Pass-throughs. The connect flow lives in `network::sftp_volume_wiring`, the
 //! trust store in `network::sftp_host_keys`, the server list in
 //! `network::sftp_known_servers`, and the secret store in `network::keychain`.
-//! What lives HERE is the wire vocabulary: every type a command hands the
-//! frontend, in one file, so the sign-in UI can be built from this plus
-//! `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
+//! `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend" covers the
+//! sign-in flow end to end.
 //!
 //! ❗ **Two carriers for host-key approval, because there are two moments.** At
-//! connect, [`SftpConnectResult::NeedsHostKeyApproval`] carries the fingerprint
+//! connect, `ServerConnectOutcome::NeedsHostKeyApproval` carries the fingerprint
 //! and whether it's first contact or a CHANGED key. Mid-life, a payload-free
 //! `VolumeConnection::NeedsHostKeyApproval` rides `volume-connection-changed`
 //! and the user opens the server again to see the key.
@@ -25,105 +26,14 @@ use crate::network::keychain::{self, KeychainError};
 use crate::network::saved_server_fields::SavedServerOutcome;
 use crate::network::sftp_host_keys::{self, TrustedHostKey};
 use crate::network::sftp_known_servers::{self, KnownSftpServer};
-use crate::network::sftp_volume_wiring::{self, SftpConnection};
-use cmdr_sftp::SftpConnectionParams;
-use cmdr_sftp::auth::{AuthRungUsed, UnattendedReconnect};
+use crate::network::sftp_volume_wiring;
+use cmdr_sftp::auth::UnattendedReconnect;
 use cmdr_sftp::transport::HostKeyPrompt;
 use cmdr_sftp::volume::HostKeyApproval;
 
 // ============================================================================
 // The wire vocabulary
 // ============================================================================
-
-/// Which credential proved a live session.
-///
-/// Flat where the backend's own enum nests, because the frontend's five banners
-/// are exactly these five rows. What each may do when the session drops:
-/// `crates/cmdr-sftp/DETAILS.md` § "What each rung may do, and what the frontend
-/// sees".
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "snake_case")]
-pub enum SftpAuthRung {
-    /// The ssh-agent signed. Comes back on its own until the identity goes away.
-    Agent,
-    /// An unencrypted key file. Comes back on its own.
-    KeyFile,
-    /// A passphrase-protected key file. Comes back from the remembered
-    /// passphrase: one unattended retry, then a person.
-    EncryptedKeyFile,
-    /// A password from the secret store. One unattended retry, then a person.
-    Password,
-    /// The server drove the prompts. Never unattended, however full the store is.
-    KeyboardInteractive,
-}
-
-impl From<AuthRungUsed> for SftpAuthRung {
-    fn from(rung: AuthRungUsed) -> Self {
-        match rung {
-            AuthRungUsed::Agent => Self::Agent,
-            AuthRungUsed::KeyFile {
-                passphrase_protected: false,
-            } => Self::KeyFile,
-            AuthRungUsed::KeyFile {
-                passphrase_protected: true,
-            } => Self::EncryptedKeyFile,
-            AuthRungUsed::Password => Self::Password,
-            AuthRungUsed::KeyboardInteractive => Self::KeyboardInteractive,
-        }
-    }
-}
-
-/// A live SFTP volume, as the connect that made it saw it.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct ConnectedSftpVolume {
-    /// The id every listing, tab, saved path, and index entry is filed under.
-    /// Derived from `host:port:username`, so two accounts on one server are two
-    /// volumes.
-    pub volume_id: String,
-    /// Which credential proved this session. ❗ A fact about THIS dial, and
-    /// nothing more: the next one can land on another rung, so ❌ don't derive a
-    /// later sign-in from it. `get_volume_sign_in_state` answers that, from the
-    /// live volume, at the moment a banner asks.
-    pub rung: SftpAuthRung,
-}
-
-/// What connecting produced.
-///
-/// ❗ Every outcome is a variant, including the ones that read as failures: the
-/// sign-in UI branches on all of them, and ❌ none may be recovered from a
-/// message.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-// Snake-case variant names, the house style for a wire enum (`VolumeConnection`,
-// `ConnectionMode`, `KeychainError`). Field names inside stay camelCase, from
-// each payload struct's own attribute.
-#[serde(rename_all = "snake_case", tag = "outcome")]
-pub enum SftpConnectResult {
-    /// A live volume, already registered and already in the server list.
-    Connected(ConnectedSftpVolume),
-    /// The server's host key needs a human. ❗ No session is held across the
-    /// prompt: the dial has been dropped, and approving is followed by calling
-    /// `connect_sftp_volume` again.
-    NeedsHostKeyApproval(HostKeyPrompt),
-    /// The key is explicitly revoked in `~/.ssh/known_hosts`. ❌ Not approvable
-    /// at all: a revocation says this exact key is known to be compromised.
-    HostKeyRevoked(SftpHostKeyIdentity),
-    /// Every rung was refused. ❗ Retrying with the same secret can lock the
-    /// account; only a freshly typed one moves this forward.
-    AuthenticationRejected,
-    /// Nothing was ever offered: no agent, no readable key file, no stored
-    /// secret. ❗ Not a rejection, and saying "wrong password" to someone who has
-    /// never entered one is what collapsing the two does.
-    NeedsCredentials,
-    /// The handshake didn't finish inside the connect budget.
-    TimedOut,
-    /// No route, refused, DNS, or a server with no SFTP subsystem.
-    Unreachable,
-    /// `cancel_sftp_connect` was called for this attempt. ❗ Nothing was
-    /// registered, remembered, or stored, so there is nothing to say about it
-    /// beyond closing the dialog.
-    Cancelled,
-}
 
 /// Whether an SFTP volume can actually come back on its own as it stands.
 ///
@@ -178,7 +88,7 @@ pub struct SftpHostKeyIdentity {
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case", tag = "outcome")]
 pub enum SftpHostKeyApprovalResult {
-    /// Recorded. Call `connect_sftp_volume` again and it walks past the prompt.
+    /// Recorded. Dialing again (`connectServer` / `connectSavedPlace`) walks past the prompt.
     Recorded,
     /// ❗ Nothing was recorded: the server presents a different key now than the
     /// one that was approved. Carries what it presents, so the flow starts over
@@ -193,63 +103,6 @@ pub enum SftpHostKeyApprovalResult {
 // Connecting
 // ============================================================================
 
-/// Opens an SFTP volume, or says what stands in the way.
-///
-/// On success the volume is registered under its id and the server is added to
-/// the known-servers list, so a picker sees it next launch.
-///
-/// ❗ Secrets are ❌ NOT arguments. A password and a key passphrase come from the
-/// secret store (`save_sftp_credentials`) at the moment the session is built and
-/// die with it; what travels here is the key file's PATH, which is a connection
-/// parameter.
-///
-/// ❗ `attempt_id` is the CALLER's own name for this attempt, and `cancel_sftp_connect`
-/// takes the same one. A fresh value per call (`crypto.randomUUID()`) is what a
-/// dialog wants, and it has to be made BEFORE the call: this command doesn't
-/// answer until the connect is over, which is far too late to arm a cancel
-/// button.
-#[tauri::command]
-#[specta::specta]
-#[allow(
-    clippy::too_many_arguments,
-    reason = "one argument per saved-server field, mirroring `update_known_sftp_server`"
-)]
-pub async fn connect_sftp_volume(
-    display_name: String,
-    host: String,
-    port: u16,
-    username: String,
-    remote_root: String,
-    key_file: Option<String>,
-    use_agent: bool,
-    auto_reconnect: bool,
-    attempt_id: String,
-) -> SftpConnectResult {
-    // ❗ No start-folder field here, so the SAVED one carries across: `None` would wipe what an edit stored. The
-    // wiring drops it if the root this dials no longer holds it.
-    let start_folder = sftp_known_servers::find(&host, port, &username).and_then(|saved| saved.start_folder);
-    let mut params = SftpConnectionParams::new(&host, port, &username, remote_root);
-    params.key_file = key_file.map(std::path::PathBuf::from);
-    params.use_agent = use_agent;
-    params.auto_reconnect = auto_reconnect;
-
-    match sftp_volume_wiring::connect_and_register(&display_name, start_folder, params, &attempt_id, None).await {
-        SftpConnection::Connected { volume_id, rung } => SftpConnectResult::Connected(ConnectedSftpVolume {
-            volume_id,
-            rung: SftpAuthRung::from(rung),
-        }),
-        SftpConnection::NeedsHostKeyApproval(prompt) => SftpConnectResult::NeedsHostKeyApproval(prompt),
-        SftpConnection::HostKeyRevoked { algorithm, fingerprint } => {
-            SftpConnectResult::HostKeyRevoked(SftpHostKeyIdentity { algorithm, fingerprint })
-        }
-        SftpConnection::AuthenticationRejected => SftpConnectResult::AuthenticationRejected,
-        SftpConnection::NeedsCredentials => SftpConnectResult::NeedsCredentials,
-        SftpConnection::TimedOut => SftpConnectResult::TimedOut,
-        SftpConnection::Unreachable => SftpConnectResult::Unreachable,
-        SftpConnection::Cancelled => SftpConnectResult::Cancelled,
-    }
-}
-
 /// Calls off the connect running under `attempt_id`, answering whether one was.
 ///
 /// ❗ The way out of a connect that is going nowhere. A dial can hold for up to
@@ -259,7 +112,8 @@ pub async fn connect_sftp_volume(
 /// it built (`crates/cmdr-sftp/DETAILS.md` § "Cancelling a connect").
 ///
 /// ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
-/// and ❌ no secret written. `connect_sftp_volume` answers `cancelled`.
+/// and ❌ no secret written. The connect command (`connectServer` /
+/// `connectSavedPlace`) answers `cancelled`.
 ///
 /// An id nobody is connecting under answers `false`: a cancel racing a connect
 /// that just finished is ordinary, and there is nothing wrong to report.
@@ -292,7 +146,7 @@ pub async fn disconnect_sftp_volume(volume_id: String) -> bool {
 /// key the user never read. The re-check offers no credential, so it can never
 /// spend an authentication attempt.
 ///
-/// After a `Recorded`, call `connect_sftp_volume` again for a fresh dial.
+/// After a `Recorded`, dial again (`connectServer` / `connectSavedPlace`) for a fresh dial.
 #[tauri::command]
 #[specta::specta]
 pub async fn approve_sftp_host_key(
@@ -433,14 +287,15 @@ pub fn get_known_sftp_servers() -> Vec<KnownSftpServer> {
 
 /// Adds a server, or replaces the entry for the same `(host, port, username)`.
 ///
-/// `connect_sftp_volume` already does this on every successful connection; this
-/// is for editing one without connecting (renaming it, or changing its root, its
-/// start folder, or its key file). ❗ A start folder outside the root is refused
-/// and nothing is written. The flow is `sftp_volume_wiring::save_without_connecting`.
+/// A successful `connectServer` / `connectSavedPlace` already does this on every
+/// connect; this is for editing one without connecting (renaming it, or changing
+/// its root, its start folder, or its key file). ❗ A start folder outside the
+/// root is refused and nothing is written. The flow is
+/// `sftp_volume_wiring::save_without_connecting`.
 #[tauri::command]
 #[specta::specta]
 // Flat parameters rather than a struct, so the generated TS call site names each
-// one; the shape mirrors `connect_sftp_volume`.
+// one.
 #[allow(
     clippy::too_many_arguments,
     reason = "one argument per saved-server field, mirroring the connect command"

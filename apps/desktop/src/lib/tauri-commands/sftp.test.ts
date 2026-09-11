@@ -1,14 +1,13 @@
 /**
- * The SFTP wrappers, whose one real risk is argument order: `connectSftpVolume` and
- * `updateKnownSftpServer` both take eight positional arguments, and swapping two
- * strings compiles fine and connects to the wrong thing.
+ * The SFTP wrappers, whose one real risk is argument order: `updateKnownSftpServer`
+ * takes eight positional arguments, and swapping two strings compiles fine and
+ * writes a different server.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    connectSftpVolume: vi.fn(),
     cancelSftpConnect: vi.fn(),
     disconnectSftpVolume: vi.fn(),
     approveSftpHostKey: vi.fn(),
@@ -28,7 +27,6 @@ import { commands } from '$lib/ipc/bindings'
 import {
   approveSftpHostKey,
   cancelSftpConnect,
-  connectSftpVolume,
   deleteSftpCredentials,
   disconnectSftpVolume,
   forgetKnownSftpServer,
@@ -37,7 +35,6 @@ import {
   getSftpUnattendedReconnect,
   hasSftpCredentials,
   listTrustedSftpHostKeys,
-  newSftpAttemptId,
   saveSftpCredentials,
   updateKnownSftpServer,
   type SftpTarget,
@@ -62,51 +59,10 @@ beforeEach(() => {
 })
 
 describe('connecting', () => {
-  it('hands every field to the command in the order it expects', async () => {
-    vi.mocked(commands.connectSftpVolume).mockResolvedValueOnce({ outcome: 'unreachable' })
-    await connectSftpVolume(target, 'attempt-1')
-    expect(commands.connectSftpVolume).toHaveBeenCalledWith(
-      'Naspolya',
-      'naspolya.local',
-      2222,
-      'ada',
-      '/srv/data',
-      '/Users/ada/.ssh/id_ed25519',
-      true,
-      true,
-      'attempt-1',
-    )
-  })
-
-  it('sends an absent key file as null rather than undefined', async () => {
-    // `undefined` drops out of the JSON payload entirely, and the Rust side would
-    // then see a missing argument instead of "no key file".
-    vi.mocked(commands.connectSftpVolume).mockResolvedValueOnce({ outcome: 'unreachable' })
-    await connectSftpVolume({ ...target, keyFile: undefined }, 'attempt-2')
-    expect(vi.mocked(commands.connectSftpVolume).mock.calls[0]?.[5]).toBeNull()
-  })
-
-  it('passes the outcome straight through, so the caller switches on it', async () => {
-    const prompt = {
-      outcome: 'needs_host_key_approval' as const,
-      host: 'naspolya.local',
-      port: 2222,
-      algorithm: 'ssh-ed25519',
-      fingerprint: 'SHA256:aaa',
-      kind: 'changed' as const,
-    }
-    vi.mocked(commands.connectSftpVolume).mockResolvedValueOnce(prompt)
-    expect(await connectSftpVolume(target, 'attempt-3')).toEqual(prompt)
-  })
-
   it('cancelSftpConnect forwards the attempt id, so a dialog can call its own dial off', async () => {
     vi.mocked(commands.cancelSftpConnect).mockResolvedValueOnce(true)
     expect(await cancelSftpConnect('attempt-1')).toBe(true)
     expect(commands.cancelSftpConnect).toHaveBeenCalledWith('attempt-1')
-  })
-
-  it('newSftpAttemptId makes a fresh id every time, so two dialogs never cancel each other', () => {
-    expect(newSftpAttemptId()).not.toBe(newSftpAttemptId())
   })
 
   it('disconnectSftpVolume forwards the volume id', async () => {
@@ -217,8 +173,8 @@ describe('the saved-server list', () => {
   })
 
   it('update reorders the target into the argument order the command takes', async () => {
-    // ❗ Not the same order as `connectSftpVolume`: the identity triple comes
-    // first here, and getting it wrong would silently write a different server.
+    // ❗ The identity triple comes first here, and getting it wrong would
+    // silently write a different server.
     vi.mocked(commands.updateKnownSftpServer).mockResolvedValueOnce({ outcome: 'saved' })
     expect(await updateKnownSftpServer(target)).toEqual({ outcome: 'saved' })
     expect(commands.updateKnownSftpServer).toHaveBeenCalledWith(

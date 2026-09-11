@@ -60,8 +60,8 @@ async fn signed_in_already(params: &SftpConnectionParams) {
         .expect(FIXTURE);
 }
 
-/// A successful connect leaves three things behind: a volume under its id, a
-/// server in the list, and the rung the session came up on.
+/// A successful connect leaves two things behind: a volume under its id, and a
+/// server in the list.
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn sftp_integration_connecting_registers_the_volume_and_remembers_the_server() {
@@ -71,10 +71,9 @@ async fn sftp_integration_connecting_registers_the_volume_and_remembers_the_serv
 
     let outcome =
         sftp_volume_wiring::connect_and_register("Fixture server", None, params.clone(), "fixture-attempt", None).await;
-    let SftpConnection::Connected { volume_id, rung } = outcome else {
+    let SftpConnection::Connected { volume_id } = outcome else {
         panic!("a fixture with its key approved and its password stored must connect");
     };
-    assert_eq!(rung, cmdr_sftp::auth::AuthRungUsed::Password);
 
     let manager = crate::file_system::volume::manager::get_volume_manager();
     let volume = manager.get(&volume_id).expect("a connect registers the volume it made");
@@ -335,10 +334,9 @@ async fn sftp_integration_a_one_shot_secret_connects_and_leaves_the_store_empty(
         }),
     )
     .await;
-    let SftpConnection::Connected { volume_id, rung } = outcome else {
+    let SftpConnection::Connected { volume_id } = outcome else {
         panic!("the offered secret is what proves this dial; the agent is off and nothing is stored");
     };
-    assert_eq!(rung, cmdr_sftp::auth::AuthRungUsed::Password);
 
     assert!(
         !keychain::has_credentials(&params.credential_service(), Some(&params.username)),

@@ -859,11 +859,10 @@ export type { BundleWriteBlocker, UpdateCheckResult } from './updates'
 // Dev/benchmark IPC
 export { benchmarkLog } from './debug'
 
-// SFTP servers: connecting, host-key trust, secrets, and the saved-server list
+// SFTP servers: host-key trust, secrets, and the saved-server list. Connecting
+// goes through the protocol-agnostic servers family below.
 export {
-  connectSftpVolume,
   cancelSftpConnect,
-  newSftpAttemptId,
   disconnectSftpVolume,
   approveSftpHostKey,
   forgetSftpHostKey,
@@ -877,11 +876,8 @@ export {
   getSftpUnattendedReconnect,
 } from './sftp'
 export type {
-  ConnectedSftpVolume,
   HostKeyPrompt,
   KnownSftpServer,
-  SftpAuthRung,
-  SftpConnectResult,
   SftpHostKeyApprovalResult,
   SftpHostKeyIdentity,
   SftpTarget,
@@ -912,11 +908,10 @@ export type {
   ServerTarget,
 } from './servers'
 
-// WebDAV servers: connecting, secrets, and the saved-server list
+// WebDAV servers: secrets and the saved-server list. Connecting goes through
+// the protocol-agnostic servers family above.
 export {
-  connectWebdavVolume,
   cancelWebdavConnect,
-  newWebdavAttemptId,
   disconnectWebdavVolume,
   saveWebdavCredentials,
   hasWebdavCredentials,
@@ -927,10 +922,8 @@ export {
   getWebdavUnattendedReconnect,
 } from './webdav'
 export type {
-  ConnectedWebdavVolume,
   KnownWebdavServer,
   SavedWebdavServer,
-  WebdavConnectResult,
   WebdavTarget,
   WebdavUnattendedReconnect,
 } from './webdav'

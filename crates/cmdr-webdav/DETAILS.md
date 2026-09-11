@@ -201,16 +201,19 @@ the typed password. `UnattendedReconnect` is `SwitchOff`, `NoStoredSecret`, or `
 
 ## Connecting from the frontend
 
-The app's commands (owned by `apps/desktop`):
-`connectWebdavVolume({displayName, url, username, remoteRoot, autoReconnect}, attemptId)` with outcomes
-`connected | authentication_rejected | needs_credentials | certificate_untrusted | not_a_webdav_server | timed_out | unreachable | cancelled`
-(`AuthMethodUnsupported` surfaces as `authentication_rejected` until the frontend grows a word for it),
-`cancelWebdavConnect`, `disconnectWebdavVolume`, `saveWebdavCredentials(url, username, secret)` / `hasWebdavCredentials`
-/ `deleteWebdavCredentials`, `getKnownWebdavServers` / `updateKnownWebdavServer` / `forgetKnownWebdavServer` (❗ neither
-write can change `pinned`: `webdav_known_servers::remember` honors it only for a NEW entry and carries the stored value
-across on a replace, so a reconnect can't undo an unpin; it defaults to FALSE, and `getKnownWebdavServers` in
-`tauri-commands/webdav.ts` is the one place that default is spelled), `getWebdavUnattendedReconnect(volumeId)`, and the
-backend-neutral `reconnectSmbVolume` / `reconnectSmbVolumeWithCredentials` / `getVolumeSignInState`.
+The sign-in UI's command surface is protocol-agnostic: `connectServer` (a brand-new target) and `connectSavedPlace`
+(one already saved) in `apps/desktop/src-tauri/src/commands/servers.rs`, documented end to end in
+`apps/desktop/src/lib/servers/DETAILS.md`. Both funnel into `network::webdav_volume_wiring::connect_and_register`,
+which answers with outcomes (`ServerConnectOutcome`, widened across protocols)
+`connected | authentication_rejected | needs_credentials | auth_method_unsupported | certificate_untrusted | not_a_webdav_server | timed_out | unreachable | cancelled`
+(`AuthMethodUnsupported` is its own variant, ❌ never folded into `AuthenticationRejected`: a Digest-only server never
+saw the password). The rest of the app's commands: `cancelServerConnect`, `disconnectWebdavVolume`,
+`saveWebdavCredentials(url, username, secret)` / `hasWebdavCredentials` / `deleteWebdavCredentials`,
+`getKnownWebdavServers` / `updateKnownWebdavServer` / `forgetKnownWebdavServer` (❗ neither write can change `pinned`:
+`webdav_known_servers::remember` honors it only for a NEW entry and carries the stored value across on a replace, so a
+reconnect can't undo an unpin; it defaults to FALSE, and `getKnownWebdavServers` in `tauri-commands/webdav.ts` is the
+one place that default is spelled), `getWebdavUnattendedReconnect(volumeId)`, and the backend-neutral
+`reconnectSmbVolume` / `reconnectSmbVolumeWithCredentials` / `getVolumeSignInState`.
 
 ## Which side a test lives on
 

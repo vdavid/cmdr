@@ -868,18 +868,19 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
 
 ## Connecting from the frontend
 
-Everything the sign-in UI needs, so building it takes no second file. The commands are `commands.*` in
-`apps/desktop/src/lib/ipc/bindings.ts` and typed wrappers in `apps/desktop/src/lib/tauri-commands/sftp.ts`; the Rust
-side is `apps/desktop/src-tauri/src/commands/sftp.rs`, whose types carry the same doc comments the bindings do.
+The sign-in UI's command surface is protocol-agnostic: `connectServer` (a brand-new target) and `connectSavedPlace`
+(one already saved) in `apps/desktop/src-tauri/src/commands/servers.rs`, documented end to end in
+`apps/desktop/src/lib/servers/DETAILS.md`. Both funnel into `network::sftp_volume_wiring::connect_and_register`, which
+is what the rest of this section describes: the round-trip shape, the host-key two-phase approval, and the one secret
+entry are facts about THIS crate's dial, true regardless of which command surface calls it.
 
-❌ **Nothing here is a string to parse.** Every command answers a typed value, and the reason the outcome enum is wide
-is that a sign-in UI genuinely branches on all of it.
+❌ **Nothing here is a string to parse.** The wiring answers a typed `SftpConnection`, and the reason it's wide is that
+a sign-in UI genuinely branches on all of it.
 
 ### The commands
 
-- `connectSftpVolume({ displayName, host, port, username, remoteRoot, keyFile, useAgent, autoReconnect }, attemptId)` →
-  `SftpConnectResult`. On `connected` the volume is already registered and the server is already in the saved list.
-- `cancelSftpConnect(attemptId)` → `boolean`, the dialog's cancel button. See § "Wiring the cancel button" below.
+- `cancelSftpConnect(attemptId)` / `cancelServerConnect(attemptId)` → `boolean`, the dialog's cancel button. See §
+  "Wiring the cancel button" below.
 - `disconnectSftpVolume(volumeId)` → `boolean` (whether there was an SFTP volume under that id). Drops the session and
   unregisters the volume.
 - `approveSftpHostKey({ host, port, algorithm, fingerprint })` → `SftpHostKeyApprovalResult`.
@@ -918,10 +919,11 @@ SFTP variants (`password`, `key_passphrase`) render the username READ-ONLY, whic
 `reconnect_with_credentials` enforces: the volume id is the account. All three live in
 `apps/desktop/src-tauri/src/commands/network.rs` and are wrapped in `apps/desktop/src/lib/tauri-commands/networking.ts`.
 
-`SftpConnectResult` is tagged on `outcome`:
+`ServerConnectOutcome` is tagged on `outcome` (the SFTP-relevant variants):
 
-- `connected` → `{ volumeId, rung }`. `volumeId` is what to navigate to; `rung` is which credential proved THIS dial,
-  and ❌ nothing to derive a later sign-in from (§ "What the banner shows, per rung").
+- `connected` → `{ volumeId }`. What to navigate to. ❗ Carries no rung: that's a fact about THIS dial, not the
+  outcome's business, and `getSftpUnattendedReconnect` is asked separately when a banner renders (§ "What the banner
+  shows, per rung").
 - `needs_host_key_approval` → `{ host, port, algorithm, fingerprint, kind }`, `kind` being `unknown` or `changed`.
 - `host_key_revoked` → `{ algorithm, fingerprint }`. ❌ Not approvable at all: `@revoked` in `~/.ssh/known_hosts` says
   this exact key is known to be compromised, so there is no button, only an explanation.
@@ -937,18 +939,17 @@ SFTP variants (`password`, `key_passphrase`) render the username READ-ONLY, whic
 A dial can hold for 30 s across its three phases (`crates/cmdr-sftp/DETAILS.md` § "2b. Calling a connect off"), so the
 sign-in dialog owes the user a way out. Four lines:
 
-1. Before calling, make an id: `const attemptId = newSftpAttemptId()`. Keep it in the dialog's state.
-2. `connectSftpVolume(target, attemptId)`.
-3. The cancel button calls `cancelSftpConnect(attemptId)`.
-4. The `connectSftpVolume` promise settles with `{ outcome: 'cancelled' }`. Close the dialog; there is nothing to say.
+1. Before calling, make an id (a fresh `crypto.randomUUID()` per attempt). Keep it in the dialog's state.
+2. `connectServer(target, attemptId)` or `connectSavedPlace(volumeId, attemptId)`.
+3. The cancel button calls `cancelServerConnect(attemptId)`.
+4. The connect promise settles with `{ outcome: 'cancelled' }`. Close the dialog; there is nothing to say.
 
-❗ **The id is the CALLER's, and it has to exist before the call.** `connectSftpVolume` doesn't answer until the connect
-is over, so an id the backend handed back would arrive at exactly the moment a cancel stopped being useful. ❗ A fresh
-id per attempt (`newSftpAttemptId` wraps `crypto.randomUUID`), or two open dialogs cancel each other.
+❗ **The id is the CALLER's, and it has to exist before the call.** The connect command doesn't answer until the
+connect is over, so an id the backend handed back would arrive at exactly the moment a cancel stopped being useful.
 
-`cancelSftpConnect` answering `false` means nobody was connecting under that id — a click landing just after the connect
-finished. That is not an error and there is nothing to show for it: whatever `connectSftpVolume` settled with is the
-real answer.
+`cancelServerConnect` answering `false` means nobody was connecting under that id — a click landing just after the
+connect finished. That is not an error and there is nothing to show for it: whatever the connect call settled with is
+the real answer.
 
 ❗ **A cancelled connect leaves nothing behind**: no volume, no saved server, no stored secret, and no approved host
 key. There is nothing to clean up after one.
@@ -958,15 +959,16 @@ genuinely unreachable server rather than a slow one.
 
 ### The first connection, end to end
 
-`connectSftpVolume` is called again after every step, and the order is fixed by the protocol: the key exchange happens
-before authentication, so the host key is always settled first. A brand-new server takes up to three rounds.
+The connect command (`connectServer` / `connectSavedPlace`) is called again after every step, and the order is fixed by
+the protocol: the key exchange happens before authentication, so the host key is always settled first. A brand-new
+server takes up to three rounds.
 
-1. `connectSftpVolume(target)` → `needs_host_key_approval`. Show the key, approve it (§ below), call again.
-2. `connectSftpVolume(target)` → `needs_credentials`, if the ladder found nothing to offer: no agent identity, no
-   readable key file, and nothing in the secret store. ❗ **The connect command takes no secret.** Show a password form,
-   call `saveSftpCredentials(host, port, username, secret)`, then call `connectSftpVolume` again — the backend reads the
+1. Call it → `needs_host_key_approval`. Show the key, approve it (§ below), call again.
+2. Call it → `needs_credentials`, if the ladder found nothing to offer: no agent identity, no readable key file, and
+   nothing in the secret store. ❗ **The connect command takes no secret.** Show a password form, call
+   `saveSftpCredentials(host, port, username, secret)`, then call the connect command again — the backend reads the
    store when it builds the session, which is also what makes every later connection silent.
-3. `connectSftpVolume(target)` → `connected`.
+3. Call it → `connected`.
 
 A server the user has connected to before skips straight to step 3, and one where only the password changed answers
 `authentication_rejected` at step 2 instead. ❗ A key file needs no round of its own: its PATH is part of the target,
@@ -990,7 +992,7 @@ switch, and the two are read together by `getSftpUnattendedReconnect` (§ "The t
 
 ### The two-phase approval, in order
 
-1. `connectSftpVolume(...)` answers `needs_host_key_approval` and **the dial is already gone**. ❗ No session is held
+1. The connect command answers `needs_host_key_approval` and **the dial is already gone**. ❗ No session is held
    across the prompt, so a user who walks away costs nothing and there is no handle to expire.
 2. Show the fingerprint. ❗ `kind: 'unknown'` is first contact and may be one click; `kind: 'changed'` is the shape a
    man-in-the-middle takes and ❌ must never share that path — different copy, different weight, and the honest way out
@@ -1001,7 +1003,7 @@ switch, and the two are read together by `getSftpUnattendedReconnect` (§ "The t
      carries what the server presents now; start over at step 2 with that.
    - `unreachable` → the server couldn't be re-asked, so nothing was recorded. Approving is a live question and an
      unanswered one is not a yes.
-4. `connectSftpVolume(...)` again, for a fresh dial.
+4. Call the connect command again, for a fresh dial.
 
 ❗ **Step 3's re-check is what makes the approval safe.** Time passes between the fingerprint being shown and the click,
 and recording whatever came back through IPC without re-asking is exactly how one approval becomes trust for a key
@@ -1011,12 +1013,14 @@ an authentication attempt against a server that locks accounts.
 ### What the banner shows, per rung
 
 ❗ **`getVolumeSignInState(volumeId)` is the answer, asked when the banner renders**, and there is deliberately no
-second source: the connect result carries `rung` and nothing else about signing in. The rung is decided per DIAL, so a
-mid-life reconnect can land somewhere else than the connect did — adding an ssh-agent identity lifts a `password` volume
-to `agent`, removing one drops it back — while `volume-connection-changed` is payload-free by design (§ "Mid-life") and
-carries no rung. An answer captured at connect therefore goes wrong in both directions: a stale `nothing` leaves a
-volume that now wants a password with no way in at all, and a stale `key_passphrase` asks for a secret the session no
-longer uses. Reading it live is what closes both.
+second source: the connect outcome (`ServerConnectOutcome`) doesn't carry a rung at all — `connect_and_register`'s own
+rung is dropped once it's widened into the outcome, because it's a fact about THIS dial, not something worth deriving a
+later sign-in from. The rung is decided per DIAL, so a mid-life reconnect can land somewhere else than the connect did
+— adding an ssh-agent identity lifts a `password` volume to `agent`, removing one drops it back — while
+`volume-connection-changed` is payload-free by design (§ "Mid-life") and carries no rung either. An answer captured at
+connect would therefore go wrong in both directions: a stale `nothing` leaves a volume that now wants a password with
+no way in at all, and a stale `key_passphrase` asks for a secret the session no longer uses. Reading it live is what
+closes both.
 
 The backend owns the mapping rather than the frontend deriving it from `rung`: getting it wrong ships a button that
 answers `NotSupported` every time it's pressed, or no button where one was the only way back in.
@@ -1070,7 +1074,7 @@ The connection state rides `volume-connection-changed` as `VolumeConnection`, wh
 
 - ❗ **A host key that no longer matches never produces a sign-in prompt.** A password box in front of a possible
   man-in-the-middle is how a password gets typed into one. The volume reports `needs_host_key_approval`, the backoff
-  loop stops, and recovery is the user opening the server again, where `connectSftpVolume` answers
+  loop stops, and recovery is the user opening the server again, where the connect command answers
   `needs_host_key_approval` with the fingerprint to look at.
 - ❗ **The event is payload-free**, so it carries no fingerprint: `VolumeConnection` is `Copy` on both sides of
   `events/volume_mapping.rs`'s `wire_state` and crosses IPC as a `specta::Type`, and widening either end is a compile
@@ -1082,7 +1086,7 @@ The connection state rides `volume-connection-changed` as `VolumeConnection`, wh
 
 ### What is NOT wired yet
 
-- **An SFTP volume doesn't appear in the sidebar.** `connectSftpVolume` registers it in the volume registry, so
+- **An SFTP volume doesn't appear in the sidebar.** The connect command registers it in the volume registry, so
   navigating by `volumeId` works and every write path can reach it, but `volume_listing::complete` (which builds what
   `listVolumes` returns) has no SFTP arm. Adding one is the sidebar's own design question — which section, what icon,
   what an eject means — and it belongs with the sign-in UI rather than ahead of it. The device-provider seam

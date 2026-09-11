@@ -1,4 +1,6 @@
-// SFTP servers: connecting, host-key trust, secrets, and the saved-server list.
+// SFTP servers: host-key trust, secrets, and the saved-server list. Connecting
+// goes through the protocol-agnostic `servers.ts` (`connectServer` /
+// `connectSavedPlace`).
 //
 // The whole flow, end to end, plus what every outcome means:
 // `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
@@ -8,15 +10,14 @@ import type {
   HostKeyPrompt,
   KnownSftpServer,
   SavedServerOutcome,
-  SftpConnectResult,
   SftpHostKeyApprovalResult,
   SftpUnattendedReconnect,
   TrustedHostKey,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { HostKeyPrompt, KnownSftpServer, SftpConnectResult, SftpHostKeyApprovalResult, TrustedHostKey }
-export type { SftpAuthRung, ConnectedSftpVolume, SftpHostKeyIdentity, SftpUnattendedReconnect } from '$lib/ipc/bindings'
+export type { HostKeyPrompt, KnownSftpServer, SftpHostKeyApprovalResult, TrustedHostKey }
+export type { SftpHostKeyIdentity, SftpUnattendedReconnect } from '$lib/ipc/bindings'
 
 /** How to reach one SFTP server. No secret: the backend reads those from the secret store itself. */
 export interface SftpTarget {
@@ -49,48 +50,13 @@ export interface SftpTarget {
 }
 
 /**
- * Opens an SFTP volume, or says what stands in the way.
- *
- * Switch on `result.outcome`. `connected` carries the volume id to navigate to;
- * `needs_host_key_approval` carries the fingerprint to show, and `kind` says
- * whether it's first contact (`unknown`) or a CHANGED key, which must never take
- * the same one-click path. Nothing here is a message to parse.
- *
- * A successful connect registers the volume and adds the server to the saved list.
- *
- * `attemptId` is this call's own name, and `cancelSftpConnect` takes the same one.
- * Make a fresh one per attempt with `newSftpAttemptId()` and hold it: a dial can run
- * for up to 30 s, and this promise doesn't settle until it's over, so the id has to
- * exist before the call for a cancel button to have anything to aim at. A cancelled
- * connect answers `cancelled` and leaves nothing behind.
- */
-export async function connectSftpVolume(target: SftpTarget, attemptId: string): Promise<SftpConnectResult> {
-  return await commands.connectSftpVolume(
-    target.displayName,
-    target.host,
-    target.port,
-    target.username,
-    target.remoteRoot,
-    target.keyFile ?? null,
-    target.useAgent,
-    target.autoReconnect,
-    attemptId,
-  )
-}
-
-/** A name for one connect attempt, for the pair of `connectSftpVolume` and `cancelSftpConnect`. */
-export function newSftpAttemptId(): string {
-  return `sftp-connect-${crypto.randomUUID()}`
-}
-
-/**
  * Calls off the connect running under `attemptId`, and returns whether one was.
  *
  * This is what a dialog's cancel button calls. The key exchange and the auth ladder
  * stop where they stand; a cancel landing in the SFTP hello ends the wait just the
  * same and lets the protocol engine finish quietly on its own. Either way the
- * `connectSftpVolume` promise settles with `cancelled`, and no volume, saved server,
- * or secret is left behind.
+ * connect promise (`connectServer` / `connectSavedPlace`) settles with `cancelled`,
+ * and no volume, saved server, or secret is left behind.
  *
  * `false` means nobody was connecting under that id, which is what a click landing
  * a moment after the connect finished looks like. Nothing is wrong with it.
@@ -110,8 +76,8 @@ export async function disconnectSftpVolume(volumeId: string): Promise<boolean> {
 /**
  * Records a host key the user approved, and only if the server still presents it.
  *
- * Returns `recorded` when the key is now trusted (call `connectSftpVolume` again
- * for a fresh dial), `superseded` when the server presents a different key than
+ * Returns `recorded` when the key is now trusted (dial again for a fresh
+ * connect), `superseded` when the server presents a different key than
  * the one shown (nothing was written; start over on the key it carries), or
  * `unreachable` when the server couldn't be re-asked.
  */
@@ -199,9 +165,9 @@ export async function getKnownSftpServers(): Promise<SavedSftpServer[]> {
 /**
  * Adds a saved server, or replaces the entry for the same host, port, and account.
  *
- * `connectSftpVolume` already does this on every successful connection; this is
- * for editing one without connecting. A start folder outside the root answers
- * `start_folder_outside_root`, and nothing is written.
+ * A successful `connectServer` / `connectSavedPlace` already does this on every
+ * connect; this is for editing one without connecting. A start folder outside
+ * the root answers `start_folder_outside_root`, and nothing is written.
  */
 export async function updateKnownSftpServer(target: SftpTarget): Promise<SavedServerOutcome> {
   return await commands.updateKnownSftpServer(

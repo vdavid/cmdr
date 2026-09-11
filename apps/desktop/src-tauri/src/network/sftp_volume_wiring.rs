@@ -35,9 +35,6 @@ pub enum SftpConnection {
     Connected {
         /// The id every listing, tab, and index entry is filed under.
         volume_id: String,
-        /// Which credential proved us, which is what decides what a dropped
-        /// session may do on its own.
-        rung: cmdr_sftp::auth::AuthRungUsed,
     },
     /// The server's host key needs a human. ❗ No session is held across the
     /// prompt: this dial has already been dropped.
@@ -129,7 +126,6 @@ pub async fn connect_and_register(
         Err(e) => return failed(e),
     };
 
-    let rung = volume.auth_rung();
     connect_wiring::install_retiring_incumbent(&volume_id, Arc::new(volume)).await;
     sftp_known_servers::remember(KnownSftpServer {
         host: params.host.clone(),
@@ -148,7 +144,7 @@ pub async fn connect_and_register(
         last_connected_at: chrono::Utc::now().to_rfc3339(),
     });
     log::info!(target: "volume", "registered SFTP volume {volume_id}");
-    SftpConnection::Connected { volume_id, rung }
+    SftpConnection::Connected { volume_id }
 }
 
 /// The typed connect errors, widened into the outcome the frontend branches on.

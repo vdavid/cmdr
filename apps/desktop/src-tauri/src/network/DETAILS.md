@@ -639,10 +639,10 @@ downcasts through `Volume::as_any` rather than guessing at the id's shape, then 
 `cancel_connect(attempt_id)` is what a dialog's cancel button reaches. What the token then does inside the dial is the
 backend's, and `crates/cmdr-sftp/DETAILS.md` § "2b. Calling a connect off" owns it.
 
-❗ **The id comes from the caller, and there is no version where the backend hands one back.** `connect_sftp_volume`
-doesn't answer until the connect is over (up to 30 s), so an id it returned would arrive at exactly the moment a
-cancel stopped being useful. A second command to allocate one first would be a round trip plus a state to leak whenever
-the connect never followed.
+❗ **The id comes from the caller, and there is no version where the backend hands one back.** The connect command
+(`connect_server` / `connect_saved_place`) doesn't answer until the connect is over (up to 30 s), so an id it returned
+would arrive at exactly the moment a cancel stopped being useful. A second command to allocate one first would be a
+round trip plus a state to leak whenever the connect never followed.
 
 Two details keep the table honest:
 
@@ -694,9 +694,8 @@ rule both stores share:
 
 ❗ **A connect rebuilds the saved entry whole**, from `params` plus the `display_name` and `start_folder` passed beside
 them (neither is a connection param). So a caller with no field of its own passes the SAVED values:
-`connect_saved_place` reads them off the entry, and the per-protocol `connect_sftp_volume` / `connect_webdav_volume`
-look the start folder up with the store's `find`. Passing `None` would wipe what an edit stored, the same trap
-`remember`'s pin rule closes for `pinned`.
+`connect_saved_place` reads them straight off the entry it already looked up (`saved_by_id`). Passing `None` would wipe
+what an edit stored, the same trap `remember`'s pin rule closes for `pinned`.
 
 ### An unnamed server's label, and names that only repeat the address
 
@@ -771,9 +770,9 @@ first.
 
 ### A secret used for one dial and never stored
 
-`connect_sftp_volume` and `connect_webdav_volume` take ❌ no password argument, on purpose: a secret that never appears
-in a connect param can't leak through an IPC argument, a log line, or a crash report, so both dials read the secret
-store instead. That leaves "connect once without remembering" with nowhere to put the secret, and save → dial → delete
+`connect_server` and `connect_saved_place` take ❌ no raw password argument, on purpose: a secret that never appears in
+a connect param can't leak through an IPC argument, a log line, or a crash report, so both dials read the secret store
+instead (a structured `SecretOffer`, below, is the one exception, and only for a sign-in sheet's own attempt). That leaves "connect once without remembering" with nowhere to put the secret, and save → dial → delete
 is not an answer: a Keychain entry that exists for a second is not what the user asked for, and a crash between the two
 steps leaves it there forever.
 

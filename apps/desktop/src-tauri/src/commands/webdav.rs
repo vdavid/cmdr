@@ -1,10 +1,11 @@
-//! The IPC surface for WebDAV servers: connecting, secrets, and the server list.
+//! The IPC surface for WebDAV servers: secrets and the server list. Connecting
+//! itself goes through the protocol-agnostic `commands::servers` facade now;
+//! this file keeps only what that facade has no reason to widen.
 //!
 //! Pass-throughs. The connect flow lives in `network::webdav_volume_wiring`, the
 //! server list in `network::webdav_known_servers`, and the secret store in
-//! `network::keychain`. What lives HERE is the wire vocabulary: every type a
-//! command hands the frontend, in one file, so the sign-in UI can be built from
-//! this plus `crates/cmdr-webdav/DETAILS.md`.
+//! `network::keychain`. `crates/cmdr-webdav/DETAILS.md` § "Connecting from the
+//! frontend" covers the sign-in flow end to end.
 //!
 //! ❌ **No result here is a string.** A sign-in UI branches on "the password was
 //! refused" against "nothing was ever offered" against "the certificate isn't
@@ -16,64 +17,12 @@ use serde::{Deserialize, Serialize};
 use crate::network::keychain::{self, KeychainError};
 use crate::network::saved_server_fields::SavedServerOutcome;
 use crate::network::webdav_known_servers::{self, KnownWebdavServer};
-use crate::network::webdav_volume_wiring::{self, WebdavConnection};
+use crate::network::webdav_volume_wiring;
 use cmdr_webdav::{UnattendedReconnect, WebdavConnectionParams};
 
 // ============================================================================
 // The wire vocabulary
 // ============================================================================
-
-/// A live WebDAV volume, as the connect that made it saw it.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct ConnectedWebdavVolume {
-    /// The id every listing, tab, saved path, and index entry is filed under.
-    /// Derived from `host:port:username`, so two accounts on one server are two
-    /// volumes.
-    pub volume_id: String,
-}
-
-/// What connecting produced.
-///
-/// ❗ Every outcome is a variant, including the ones that read as failures: the
-/// sign-in UI branches on all of them, and ❌ none may be recovered from a
-/// message.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-// Snake-case variant names, the house style for a wire enum (`VolumeConnection`,
-// `SftpConnectResult`, `KeychainError`). Field names inside stay camelCase, from
-// each payload struct's own attribute.
-#[serde(rename_all = "snake_case", tag = "outcome")]
-pub enum WebdavConnectResult {
-    /// A live volume, already registered and already in the server list.
-    Connected(ConnectedWebdavVolume),
-    /// The URL didn't parse, or its scheme is neither `http` nor `https`. ❗ Typed
-    /// rather than a message: the form marks the field, and the user fixes it.
-    InvalidUrl,
-    /// The server refused the credential. ❗ Retrying with the same secret can
-    /// lock the account; only a freshly typed one moves this forward.
-    AuthenticationRejected,
-    /// The server wants a credential and nothing is stored. ❗ Not a rejection,
-    /// and saying "wrong password" to someone who has never entered one is what
-    /// collapsing the two does.
-    NeedsCredentials,
-    /// The server challenged with no scheme this backend speaks (a Digest-only
-    /// server). ❌ Don't offer "check your password" as the fix; the secret was
-    /// never offered.
-    AuthMethodUnsupported,
-    /// The TLS certificate isn't trusted by the OS store. ❌ Not approvable from
-    /// the app: the fix is trusting the CA where the OS keeps them.
-    CertificateUntrusted,
-    /// The URL answers HTTP, but not WebDAV.
-    NotAWebdavServer,
-    /// The handshake didn't finish inside the connect budget.
-    TimedOut,
-    /// No route, refused, DNS, or a transport-level breakdown.
-    Unreachable,
-    /// `cancel_webdav_connect` was called for this attempt. ❗ Nothing was
-    /// registered, remembered, or stored, so there is nothing to say about it
-    /// beyond closing the dialog.
-    Cancelled,
-}
 
 /// Whether a WebDAV volume can actually come back on its own as it stands.
 ///
@@ -120,58 +69,11 @@ fn parse_base_url(url: &str) -> Option<url::Url> {
     matches!(parsed.scheme(), "http" | "https").then_some(parsed)
 }
 
-/// Opens a WebDAV volume, or says what stands in the way.
-///
-/// On success the volume is registered under its id and the server is added to
-/// the known-servers list, so a picker sees it next launch.
-///
-/// ❗ Secrets are ❌ NOT arguments. The password comes from the secret store
-/// (`save_webdav_credentials`) at the moment the client is built and dies with
-/// it.
-///
-/// ❗ `attempt_id` is the CALLER's own name for this attempt, and
-/// `cancel_webdav_connect` takes the same one. A fresh value per call
-/// (`crypto.randomUUID()`) is what a dialog wants, and it has to be made BEFORE
-/// the call: this command doesn't answer until the connect is over, which is far
-/// too late to arm a cancel button.
-#[tauri::command]
-#[specta::specta]
-pub async fn connect_webdav_volume(
-    display_name: String,
-    url: String,
-    username: String,
-    remote_root: String,
-    auto_reconnect: bool,
-    attempt_id: String,
-) -> WebdavConnectResult {
-    let Some(base_url) = parse_base_url(&url) else {
-        return WebdavConnectResult::InvalidUrl;
-    };
-    // ❗ No start-folder field here, so the SAVED one carries across: `None` would wipe what an edit stored. The
-    // wiring drops it if the root this dials no longer holds it.
-    let start_folder = webdav_known_servers::find(&url, &username).and_then(|saved| saved.start_folder);
-    let mut params = WebdavConnectionParams::new(base_url, &username, remote_root);
-    params.auto_reconnect = auto_reconnect;
-
-    match webdav_volume_wiring::connect_and_register(&display_name, start_folder, params, &attempt_id, None).await {
-        WebdavConnection::Connected { volume_id } => {
-            WebdavConnectResult::Connected(ConnectedWebdavVolume { volume_id })
-        }
-        WebdavConnection::AuthenticationRejected => WebdavConnectResult::AuthenticationRejected,
-        WebdavConnection::NeedsCredentials => WebdavConnectResult::NeedsCredentials,
-        WebdavConnection::AuthMethodUnsupported => WebdavConnectResult::AuthMethodUnsupported,
-        WebdavConnection::CertificateUntrusted => WebdavConnectResult::CertificateUntrusted,
-        WebdavConnection::NotAWebdavServer => WebdavConnectResult::NotAWebdavServer,
-        WebdavConnection::TimedOut => WebdavConnectResult::TimedOut,
-        WebdavConnection::Unreachable => WebdavConnectResult::Unreachable,
-        WebdavConnection::Cancelled => WebdavConnectResult::Cancelled,
-    }
-}
-
 /// Calls off the connect running under `attempt_id`, answering whether one was.
 ///
 /// ❗ The way out of a connect that is going nowhere. The probe stops where it
-/// stands, and `connect_webdav_volume` answers `cancelled`.
+/// stands, and the connect command (`connectServer` / `connectSavedPlace`)
+/// answers `cancelled`.
 ///
 /// ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
 /// and ❌ no secret written.
@@ -302,14 +204,14 @@ pub fn get_known_webdav_servers() -> Vec<KnownWebdavServer> {
 
 /// Adds a server, or replaces the entry for the same `(url, username)`.
 ///
-/// `connect_webdav_volume` already does this on every successful connection;
-/// this is for editing one without connecting (renaming it, or changing its root
-/// or its start folder). ❗ A start folder outside the root is refused and
-/// nothing is written. The flow is `webdav_volume_wiring::save_without_connecting`.
+/// A successful `connectServer` / `connectSavedPlace` already does this on every
+/// connect; this is for editing one without connecting (renaming it, or changing
+/// its root or its start folder). ❗ A start folder outside the root is refused
+/// and nothing is written. The flow is `webdav_volume_wiring::save_without_connecting`.
 #[tauri::command]
 #[specta::specta]
 // Flat parameters rather than a struct, so the generated TS call site names each
-// one; the shape mirrors `connect_webdav_volume`.
+// one.
 pub async fn update_known_webdav_server(
     url: String,
     username: String,

@@ -1,19 +1,14 @@
-// WebDAV servers: connecting, secrets, and the saved-server list.
+// WebDAV servers: secrets and the saved-server list. Connecting goes through
+// the protocol-agnostic `servers.ts` (`connectServer` / `connectSavedPlace`).
 //
 // The whole flow, end to end, plus what every outcome means:
 // `crates/cmdr-webdav/DETAILS.md`.
 
 import { commands } from '$lib/ipc/bindings'
-import type {
-  KnownWebdavServer,
-  SavedServerOutcome,
-  WebdavConnectResult,
-  WebdavUnattendedReconnect,
-} from '$lib/ipc/bindings'
+import type { KnownWebdavServer, SavedServerOutcome, WebdavUnattendedReconnect } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { KnownWebdavServer, WebdavConnectResult, WebdavUnattendedReconnect }
-export type { ConnectedWebdavVolume } from '$lib/ipc/bindings'
+export type { KnownWebdavServer, WebdavUnattendedReconnect }
 
 /** How to reach one WebDAV server. No secret: the backend reads those from the secret store itself. */
 export interface WebdavTarget {
@@ -39,42 +34,11 @@ export interface WebdavTarget {
 }
 
 /**
- * Opens a WebDAV volume, or says what stands in the way.
- *
- * Switch on `result.outcome`. `connected` carries the volume id to navigate to;
- * `invalid_url` means the address never named an http(s) server and the form marks
- * the field. Nothing here is a message to parse.
- *
- * A successful connect registers the volume and adds the server to the saved list.
- *
- * `attemptId` is this call's own name, and `cancelWebdavConnect` takes the same one.
- * Make a fresh one per attempt with `newWebdavAttemptId()` and hold it: this promise
- * doesn't settle until the dial is over, so the id has to exist before the call for
- * a cancel button to have anything to aim at. A cancelled connect answers
- * `cancelled` and leaves nothing behind.
- */
-export async function connectWebdavVolume(target: WebdavTarget, attemptId: string): Promise<WebdavConnectResult> {
-  return await commands.connectWebdavVolume(
-    target.displayName,
-    target.url,
-    target.username,
-    target.remoteRoot,
-    target.autoReconnect,
-    attemptId,
-  )
-}
-
-/** A name for one connect attempt, for the pair of `connectWebdavVolume` and `cancelWebdavConnect`. */
-export function newWebdavAttemptId(): string {
-  return `webdav-connect-${crypto.randomUUID()}`
-}
-
-/**
  * Calls off the connect running under `attemptId`, and returns whether one was.
  *
- * This is what a dialog's cancel button calls. The probe stops where it stands, the
- * `connectWebdavVolume` promise settles with `cancelled`, and no volume, saved
- * server, or secret is left behind.
+ * This is what a dialog's cancel button calls. The probe stops where it stands,
+ * the connect promise (`connectServer` / `connectSavedPlace`) settles with
+ * `cancelled`, and no volume, saved server, or secret is left behind.
  *
  * `false` means nobody was connecting under that id, which is what a click landing
  * a moment after the connect finished looks like. Nothing is wrong with it.
@@ -148,9 +112,9 @@ export async function getKnownWebdavServers(): Promise<SavedWebdavServer[]> {
 /**
  * Adds a saved server, or replaces the entry for the same URL and account.
  *
- * `connectWebdavVolume` already does this on every successful connection; this is
- * for editing one without connecting. A start folder outside the root answers
- * `start_folder_outside_root`, and nothing is written.
+ * A successful `connectServer` / `connectSavedPlace` already does this on every
+ * connect; this is for editing one without connecting. A start folder outside
+ * the root answers `start_folder_outside_root`, and nothing is written.
  */
 export async function updateKnownWebdavServer(target: WebdavTarget): Promise<SavedServerOutcome> {
   return await commands.updateKnownWebdavServer(

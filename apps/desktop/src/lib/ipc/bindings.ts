@@ -3751,45 +3751,6 @@ export const commands = {
    */
   setNetworkEnabled: (enabled: boolean) => __TAURI_INVOKE<void>('set_network_enabled', { enabled }),
   /**
-   *  Opens an SFTP volume, or says what stands in the way.
-   *
-   *  On success the volume is registered under its id and the server is added to
-   *  the known-servers list, so a picker sees it next launch.
-   *
-   *  ❗ Secrets are ❌ NOT arguments. A password and a key passphrase come from the
-   *  secret store (`save_sftp_credentials`) at the moment the session is built and
-   *  die with it; what travels here is the key file's PATH, which is a connection
-   *  parameter.
-   *
-   *  ❗ `attempt_id` is the CALLER's own name for this attempt, and `cancel_sftp_connect`
-   *  takes the same one. A fresh value per call (`crypto.randomUUID()`) is what a
-   *  dialog wants, and it has to be made BEFORE the call: this command doesn't
-   *  answer until the connect is over, which is far too late to arm a cancel
-   *  button.
-   */
-  connectSftpVolume: (
-    displayName: string,
-    host: string,
-    port: number,
-    username: string,
-    remoteRoot: string,
-    keyFile: string | null,
-    useAgent: boolean,
-    autoReconnect: boolean,
-    attemptId: string,
-  ) =>
-    __TAURI_INVOKE<SftpConnectResult>('connect_sftp_volume', {
-      displayName,
-      host,
-      port,
-      username,
-      remoteRoot,
-      keyFile,
-      useAgent,
-      autoReconnect,
-      attemptId,
-    }),
-  /**
    *  Drops an SFTP volume's session and takes it out of the volume registry.
    *
    *  Answers whether there was an SFTP volume under that id. ❗ Dropping the
@@ -3806,7 +3767,7 @@ export const commands = {
    *  key the user never read. The re-check offers no credential, so it can never
    *  spend an authentication attempt.
    *
-   *  After a `Recorded`, call `connect_sftp_volume` again for a fresh dial.
+   *  After a `Recorded`, dial again (`connectServer` / `connectSavedPlace`) for a fresh dial.
    */
   approveSftpHostKey: (host: string, port: number, algorithm: string, fingerprint: string) =>
     __TAURI_INVOKE<SftpHostKeyApprovalResult>('approve_sftp_host_key', { host, port, algorithm, fingerprint }),
@@ -3867,10 +3828,11 @@ export const commands = {
   /**
    *  Adds a server, or replaces the entry for the same `(host, port, username)`.
    *
-   *  `connect_sftp_volume` already does this on every successful connection; this
-   *  is for editing one without connecting (renaming it, or changing its root, its
-   *  start folder, or its key file). ❗ A start folder outside the root is refused
-   *  and nothing is written. The flow is `sftp_volume_wiring::save_without_connecting`.
+   *  A successful `connectServer` / `connectSavedPlace` already does this on every
+   *  connect; this is for editing one without connecting (renaming it, or changing
+   *  its root, its start folder, or its key file). ❗ A start folder outside the
+   *  root is refused and nothing is written. The flow is
+   *  `sftp_volume_wiring::save_without_connecting`.
    */
   updateKnownSftpServer: (
     host: string,
@@ -3952,49 +3914,19 @@ export const commands = {
    *  it built (`crates/cmdr-sftp/DETAILS.md` § "Cancelling a connect").
    *
    *  ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
-   *  and ❌ no secret written. `connect_sftp_volume` answers `cancelled`.
+   *  and ❌ no secret written. The connect command (`connectServer` /
+   *  `connectSavedPlace`) answers `cancelled`.
    *
    *  An id nobody is connecting under answers `false`: a cancel racing a connect
    *  that just finished is ordinary, and there is nothing wrong to report.
    */
   cancelSftpConnect: (attemptId: string) => __TAURI_INVOKE<boolean>('cancel_sftp_connect', { attemptId }),
   /**
-   *  Opens a WebDAV volume, or says what stands in the way.
-   *
-   *  On success the volume is registered under its id and the server is added to
-   *  the known-servers list, so a picker sees it next launch.
-   *
-   *  ❗ Secrets are ❌ NOT arguments. The password comes from the secret store
-   *  (`save_webdav_credentials`) at the moment the client is built and dies with
-   *  it.
-   *
-   *  ❗ `attempt_id` is the CALLER's own name for this attempt, and
-   *  `cancel_webdav_connect` takes the same one. A fresh value per call
-   *  (`crypto.randomUUID()`) is what a dialog wants, and it has to be made BEFORE
-   *  the call: this command doesn't answer until the connect is over, which is far
-   *  too late to arm a cancel button.
-   */
-  connectWebdavVolume: (
-    displayName: string,
-    url: string,
-    username: string,
-    remoteRoot: string,
-    autoReconnect: boolean,
-    attemptId: string,
-  ) =>
-    __TAURI_INVOKE<WebdavConnectResult>('connect_webdav_volume', {
-      displayName,
-      url,
-      username,
-      remoteRoot,
-      autoReconnect,
-      attemptId,
-    }),
-  /**
    *  Calls off the connect running under `attempt_id`, answering whether one was.
    *
    *  ❗ The way out of a connect that is going nowhere. The probe stops where it
-   *  stands, and `connect_webdav_volume` answers `cancelled`.
+   *  stands, and the connect command (`connectServer` / `connectSavedPlace`)
+   *  answers `cancelled`.
    *
    *  ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
    *  and ❌ no secret written.
@@ -4048,10 +3980,10 @@ export const commands = {
   /**
    *  Adds a server, or replaces the entry for the same `(url, username)`.
    *
-   *  `connect_webdav_volume` already does this on every successful connection;
-   *  this is for editing one without connecting (renaming it, or changing its root
-   *  or its start folder). ❗ A start folder outside the root is refused and
-   *  nothing is written. The flow is `webdav_volume_wiring::save_without_connecting`.
+   *  A successful `connectServer` / `connectSavedPlace` already does this on every
+   *  connect; this is for editing one without connecting (renaming it, or changing
+   *  its root or its start folder). ❗ A start folder outside the root is refused
+   *  and nothing is written. The flow is `webdav_volume_wiring::save_without_connecting`.
    */
   updateKnownWebdavServer: (
     url: string,
@@ -5728,33 +5660,6 @@ export type ConnectedDeviceInfo = {
   device: MtpDeviceInfo
   // Available storages on the device.
   storages: MtpStorageInfo[]
-}
-
-// A live SFTP volume, as the connect that made it saw it.
-export type ConnectedSftpVolume = {
-  /**
-   *  The id every listing, tab, saved path, and index entry is filed under.
-   *  Derived from `host:port:username`, so two accounts on one server are two
-   *  volumes.
-   */
-  volumeId: string
-  /**
-   *  Which credential proved this session. ❗ A fact about THIS dial, and
-   *  nothing more: the next one can land on another rung, so ❌ don't derive a
-   *  later sign-in from it. `get_volume_sign_in_state` answers that, from the
-   *  live volume, at the moment a banner asks.
-   */
-  rung: SftpAuthRung
-}
-
-// A live WebDAV volume, as the connect that made it saw it.
-export type ConnectedWebdavVolume = {
-  /**
-   *  The id every listing, tab, saved path, and index entry is filed under.
-   *  Derived from `host:port:username`, so two accounts on one server are two
-   *  volumes.
-   */
-  volumeId: string
 }
 
 export type ConnectionDiagnosticsDto = {
@@ -12390,75 +12295,9 @@ export type SettingsChanged = {
   showHiddenFiles: boolean
 }
 
-/**
- *  Which credential proved a live session.
- *
- *  Flat where the backend's own enum nests, because the frontend's five banners
- *  are exactly these five rows. What each may do when the session drops:
- *  `crates/cmdr-sftp/DETAILS.md` § "What each rung may do, and what the frontend
- *  sees".
- */
-export type SftpAuthRung =
-  // The ssh-agent signed. Comes back on its own until the identity goes away.
-  | 'agent'
-  // An unencrypted key file. Comes back on its own.
-  | 'key_file'
-  /**
-   *  A passphrase-protected key file. Comes back from the remembered
-   *  passphrase: one unattended retry, then a person.
-   */
-  | 'encrypted_key_file'
-  // A password from the secret store. One unattended retry, then a person.
-  | 'password'
-  // The server drove the prompts. Never unattended, however full the store is.
-  | 'keyboard_interactive'
-
-/**
- *  What connecting produced.
- *
- *  ❗ Every outcome is a variant, including the ones that read as failures: the
- *  sign-in UI branches on all of them, and ❌ none may be recovered from a
- *  message.
- */
-export type SftpConnectResult =
-  // A live volume, already registered and already in the server list.
-  | ({ outcome: 'connected' } & ConnectedSftpVolume)
-  /**
-   *  The server's host key needs a human. ❗ No session is held across the
-   *  prompt: the dial has been dropped, and approving is followed by calling
-   *  `connect_sftp_volume` again.
-   */
-  | ({ outcome: 'needs_host_key_approval' } & HostKeyPrompt)
-  /**
-   *  The key is explicitly revoked in `~/.ssh/known_hosts`. ❌ Not approvable
-   *  at all: a revocation says this exact key is known to be compromised.
-   */
-  | ({ outcome: 'host_key_revoked' } & SftpHostKeyIdentity)
-  /**
-   *  Every rung was refused. ❗ Retrying with the same secret can lock the
-   *  account; only a freshly typed one moves this forward.
-   */
-  | { outcome: 'authentication_rejected' }
-  /**
-   *  Nothing was ever offered: no agent, no readable key file, no stored
-   *  secret. ❗ Not a rejection, and saying "wrong password" to someone who has
-   *  never entered one is what collapsing the two does.
-   */
-  | { outcome: 'needs_credentials' }
-  // The handshake didn't finish inside the connect budget.
-  | { outcome: 'timed_out' }
-  // No route, refused, DNS, or a server with no SFTP subsystem.
-  | { outcome: 'unreachable' }
-  /**
-   *  `cancel_sftp_connect` was called for this attempt. ❗ Nothing was
-   *  registered, remembered, or stored, so there is nothing to say about it
-   *  beyond closing the dialog.
-   */
-  | { outcome: 'cancelled' }
-
 // What approving a host key produced.
 export type SftpHostKeyApprovalResult =
-  // Recorded. Call `connect_sftp_volume` again and it walks past the prompt.
+  // Recorded. Dialing again (`connectServer` / `connectSavedPlace`) walks past the prompt.
   | { outcome: 'recorded' }
   /**
    *  ❗ Nothing was recorded: the server presents a different key now than the
@@ -14395,56 +14234,6 @@ export type WatcherGateError =
    *  `message` carries the underlying error for the log line.
    */
   { kind: 'watcherStartFailed'; message: string }
-
-/**
- *  What connecting produced.
- *
- *  ❗ Every outcome is a variant, including the ones that read as failures: the
- *  sign-in UI branches on all of them, and ❌ none may be recovered from a
- *  message.
- */
-export type WebdavConnectResult =
-  // A live volume, already registered and already in the server list.
-  | ({ outcome: 'connected' } & ConnectedWebdavVolume)
-  /**
-   *  The URL didn't parse, or its scheme is neither `http` nor `https`. ❗ Typed
-   *  rather than a message: the form marks the field, and the user fixes it.
-   */
-  | { outcome: 'invalid_url' }
-  /**
-   *  The server refused the credential. ❗ Retrying with the same secret can
-   *  lock the account; only a freshly typed one moves this forward.
-   */
-  | { outcome: 'authentication_rejected' }
-  /**
-   *  The server wants a credential and nothing is stored. ❗ Not a rejection,
-   *  and saying "wrong password" to someone who has never entered one is what
-   *  collapsing the two does.
-   */
-  | { outcome: 'needs_credentials' }
-  /**
-   *  The server challenged with no scheme this backend speaks (a Digest-only
-   *  server). ❌ Don't offer "check your password" as the fix; the secret was
-   *  never offered.
-   */
-  | { outcome: 'auth_method_unsupported' }
-  /**
-   *  The TLS certificate isn't trusted by the OS store. ❌ Not approvable from
-   *  the app: the fix is trusting the CA where the OS keeps them.
-   */
-  | { outcome: 'certificate_untrusted' }
-  // The URL answers HTTP, but not WebDAV.
-  | { outcome: 'not_a_webdav_server' }
-  // The handshake didn't finish inside the connect budget.
-  | { outcome: 'timed_out' }
-  // No route, refused, DNS, or a transport-level breakdown.
-  | { outcome: 'unreachable' }
-  /**
-   *  `cancel_webdav_connect` was called for this attempt. ❗ Nothing was
-   *  registered, remembered, or stored, so there is nothing to say about it
-   *  beyond closing the dialog.
-   */
-  | { outcome: 'cancelled' }
 
 /**
  *  Whether a WebDAV volume can actually come back on its own as it stands.

@@ -193,7 +193,6 @@ fn every_sftp_outcome_maps_to_its_superset_twin() {
         (
             SftpConnection::Connected {
                 volume_id: "sftp-x".to_string(),
-                rung: cmdr_sftp::auth::AuthRungUsed::Password,
             },
             ServerConnectOutcome::Connected {
                 volume_id: "sftp-x".to_string(),

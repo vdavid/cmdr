@@ -1,14 +1,13 @@
 /**
- * The WebDAV wrappers, whose one real risk is argument order: `connectWebdavVolume`
- * and `updateKnownWebdavServer` both take several positional strings, and swapping
- * two compiles fine and connects to the wrong thing.
+ * The WebDAV wrappers, whose one real risk is argument order:
+ * `updateKnownWebdavServer` takes several positional strings, and swapping two
+ * compiles fine and writes a different server.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    connectWebdavVolume: vi.fn(),
     cancelWebdavConnect: vi.fn(),
     disconnectWebdavVolume: vi.fn(),
     saveWebdavCredentials: vi.fn(),
@@ -24,14 +23,12 @@ vi.mock('$lib/ipc/bindings', () => ({
 import { commands } from '$lib/ipc/bindings'
 import {
   cancelWebdavConnect,
-  connectWebdavVolume,
   deleteWebdavCredentials,
   disconnectWebdavVolume,
   forgetKnownWebdavServer,
   getKnownWebdavServers,
   getWebdavUnattendedReconnect,
   hasWebdavCredentials,
-  newWebdavAttemptId,
   saveWebdavCredentials,
   updateKnownWebdavServer,
   type WebdavTarget,
@@ -55,26 +52,10 @@ beforeEach(() => {
 })
 
 describe('connecting', () => {
-  it('hands every field to the command in the order it expects', async () => {
-    vi.mocked(commands.connectWebdavVolume).mockResolvedValueOnce({ outcome: 'unreachable' })
-    await connectWebdavVolume(target, 'attempt-1')
-    expect(commands.connectWebdavVolume).toHaveBeenCalledWith('Example', URL, 'ada', '/Photos', true, 'attempt-1')
-  })
-
-  it('passes the outcome straight through, so the caller switches on it', async () => {
-    const connected = { outcome: 'connected' as const, volumeId: 'webdav-dav-example-test-abc' }
-    vi.mocked(commands.connectWebdavVolume).mockResolvedValueOnce(connected)
-    expect(await connectWebdavVolume(target, 'attempt-2')).toEqual(connected)
-  })
-
   it('cancelWebdavConnect forwards the attempt id, so a dialog can call its own dial off', async () => {
     vi.mocked(commands.cancelWebdavConnect).mockResolvedValueOnce(true)
     expect(await cancelWebdavConnect('attempt-1')).toBe(true)
     expect(commands.cancelWebdavConnect).toHaveBeenCalledWith('attempt-1')
-  })
-
-  it('newWebdavAttemptId makes a fresh id every time, so two dialogs never cancel each other', () => {
-    expect(newWebdavAttemptId()).not.toBe(newWebdavAttemptId())
   })
 
   it('disconnectWebdavVolume forwards the volume id', async () => {
@@ -152,8 +133,8 @@ describe('the saved-server list', () => {
   })
 
   it('update reorders the target into the argument order the command takes', async () => {
-    // ❗ Not the same order as `connectWebdavVolume`: the identity pair comes
-    // first here, and getting it wrong would silently write a different server.
+    // ❗ The identity pair comes first here, and getting it wrong would
+    // silently write a different server.
     vi.mocked(commands.updateKnownWebdavServer).mockResolvedValueOnce({ outcome: 'saved' })
     expect(await updateKnownWebdavServer(target)).toEqual({ outcome: 'saved' })
     expect(commands.updateKnownWebdavServer).toHaveBeenCalledWith(URL, 'ada', 'Example', '/Photos', null, true)

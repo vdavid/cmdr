@@ -34,35 +34,6 @@ fn a_url_that_is_not_http_has_no_credential_key() {
     );
 }
 
-/// The connect outcome is tagged, so the frontend switches on a field rather
-/// than sniffing which key is present, and a bad URL is a variant of its own.
-#[tokio::test]
-async fn the_connect_outcome_names_itself_on_the_wire() {
-    let refused = serde_json::to_value(WebdavConnectResult::AuthenticationRejected).expect("serializes");
-    assert_eq!(refused["outcome"], "authentication_rejected");
-
-    let connected = serde_json::to_value(WebdavConnectResult::Connected(ConnectedWebdavVolume {
-        volume_id: "webdav-x".to_string(),
-    }))
-    .expect("serializes");
-    assert_eq!(connected["outcome"], "connected");
-    assert_eq!(connected["volumeId"], "webdav-x");
-
-    let outcome = connect_webdav_volume(
-        "Nowhere".to_string(),
-        "ftp://dav.example.test/".to_string(),
-        "ada".to_string(),
-        "/".to_string(),
-        true,
-        "webdav-invalid-url-attempt".to_string(),
-    )
-    .await;
-    assert!(
-        matches!(outcome, WebdavConnectResult::InvalidUrl),
-        "❗ a URL that isn't http(s) is answered before anything is dialed"
-    );
-}
-
 /// The three credential commands have to agree on the key, or a saved password
 /// is invisible to the check that decides whether to show a sign-in form.
 ///

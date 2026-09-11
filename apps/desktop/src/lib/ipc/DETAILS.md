@@ -102,7 +102,8 @@ and the diff proves it.
   `ConnectionState` is binary, because `needs_credentials` is a transient signal that accompanies a failed reconnect
   rather than a state a backend rests in, and `needs_host_key_approval` is SFTP's alone. ❗ That fourth value is
   payload-free on purpose — the enum is `Copy` on both sides of `wire_state` — so the host key it is ABOUT reaches the
-  frontend through `connectSftpVolume`'s typed outcome instead (`crates/cmdr-sftp/DETAILS.md` § "Connecting from the
+  frontend through the connect command's (`connectServer` / `connectSavedPlace`) typed outcome instead
+(`crates/cmdr-sftp/DETAILS.md` § "Connecting from the
   frontend"). `volume-store.svelte.ts`'s `toConnectionState` widens all four into the standing `ConnectionState` the
   picker renders (`needs_credentials` → `needs_sign_in`), so a server whose backend stopped retrying reaches the dot and
   the pane between `volumes-changed` broadcasts. `os_mount` and `saved` run the other way: only the backend's volume
