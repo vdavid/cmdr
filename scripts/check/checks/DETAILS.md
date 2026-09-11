@@ -1069,12 +1069,12 @@ making the mechanism unaffordable; execing back into the live container costs se
   load average sees the Linux VM as a few vCPU threads, so a container saturated from inside barely moves it; the
   container's own `/proc/loadavg` is blind to the Playwright shards and cargo processes competing outside the VM. An
   unreadable load reads as 0 (quiet), which keeps a run red rather than softening it.
-- **Tests' temp folders live on a tmpfs** (`TMPDIR=/test-tmp`, `linuxTestTmpfs`); the build folder stays on disk. On
-  the container's overlay disk one fsync costs ~2.4 ms (OrbStack, measured 2026-09-11: 200 autocommit SQLite inserts
-  took 2.15 s there against 0.01 s on tmpfs), and tests that synced a few hundred times crossed the 8 s cap whenever the
-  E2E lanes shared the disk. The tradeoff is fidelity: a tmpfs syncs, sizes, and reports its filesystem type unlike a
-  real disk, so a Linux-disk-only behavior surfaces in CI's native runner rather than here. ❌ Don't point
-  `CARGO_TARGET_DIR` at it: gigabytes in VM memory, and the contention re-run relies on the warm build.
+- **Tests' temp folders live on a tmpfs** (`TMPDIR=/test-tmp`, `linuxTestTmpfs`); the build folder stays on disk. On the
+  container's overlay disk one fsync costs ~2.4 ms (OrbStack, measured 2026-09-11: 200 autocommit SQLite inserts took
+  2.15 s there against 0.01 s on tmpfs), and tests that synced a few hundred times crossed the 8 s cap whenever the E2E
+  lanes shared the disk. The tradeoff is fidelity: a tmpfs syncs, sizes, and reports its filesystem type unlike a real
+  disk, so a Linux-disk-only behavior surfaces in CI's native runner rather than here. ❌ Don't point `CARGO_TARGET_DIR`
+  at it: gigabytes in VM memory, and the contention re-run relies on the warm build.
 - **The container's `cargo-nextest` is pinned** (`containerNextestVersion`) to the same version the host lanes install.
   It classifies the same output with the same profile semantics, so a container drifting to `latest` would quietly
   change what a verdict means.
