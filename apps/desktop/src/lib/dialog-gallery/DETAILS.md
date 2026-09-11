@@ -317,10 +317,10 @@ honest; wiring a plausible-looking fake action wouldn't be.
 
 Some dialogs still act for real, because the ACTION lives inside the component rather than in a callback the gallery
 supplies. Dismissing `commercial-reminder` or `expiration` records the real flag; `extension-change` writes the real
-"always allow" setting; `license` activates and resets keys for real; `crash-report`'s Send skips the upload in dev but still writes settings and deletes a pending crash file;
-`mkdir-confirmation` / `new-file-confirmation` create a real folder or file (inside the fixture directory); removing a
-row from `go-to-path`'s recents removes it for real. Each of those rows carries a `note` saying so. Don't silence one by
-adding a preview branch to the component.
+"always allow" setting; `license` activates and resets keys for real; `crash-report`'s Send skips the upload in dev but
+still writes settings and deletes a pending crash file; `mkdir-confirmation` / `new-file-confirmation` create a real
+folder or file (inside the fixture directory); removing a row from `go-to-path`'s recents removes it for real. Each of
+those rows carries a `note` saying so. Don't silence one by adding a preview branch to the component.
 
 The store-seeded rows are where this bites hardest, because the whole point is that the real component runs: `feedback`
 and `error-report` really send (to `localhost:8787` in a dev build, so with no local api-server up you get the
@@ -366,8 +366,8 @@ doesn't, so the four confirmations have to be read SIDE BY SIDE to catch one tha
 
 `about` and `license` take only callbacks and read the licensing store's cached status plus an on-mount IPC, so a
 reviewer sees whatever license the dev machine has; their other states (existing-license panel, server-invalid retry,
-confirm-reset, loading) have no prop to reach them. They're `ready` with one state and a `note` that says exactly this, which beats both a false `not-triggerable` reason
-and a silent row that implies a curated preview.
+confirm-reset, loading) have no prop to reach them. They're `ready` with one state and a `note` that says exactly this,
+which beats both a false `not-triggerable` reason and a silent row that implies a curated preview.
 
 Seeding the licensing store to unlock the other `license` / `about` states is the obvious next step, but it's
 store-seeding: it mutates real app state and owes a restore-on-close, so it belongs with the other store-seeded entries

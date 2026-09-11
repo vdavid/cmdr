@@ -607,17 +607,16 @@ user reported it). ❌ There's deliberately no fallback to the unshifted binding
 that row a chip is a claim about Shift+<key>, and no chip beats a wrong one. Which slots carry a command on Shift is
 still fixed (⇧F4 New file, ⇧F6 Rename, ⇧F8 Permanently); the four empty ones derive `⇧F<n>` from their POSITION (slot 0
 is F2), so the row always spells one ⇧F2…⇧F8 ladder. Their `aria-label` names the bare key, which is what the
-`noShiftAction` message ("{fnKey} (no shift action)") is worded around, and spares a screen reader a modifier glyph.
-The bar names the row it shows in `data-row` (`plain` / `shift`), which is what a harness waits on: chip text follows
-the user's bindings, the platform's Shift glyph, and the language, so the i18n capture's wait on a bare `F2` went stale
-the day this ladder landed.
-Layout survives an absurd custom binding: the buttons are `flex: 1; min-width: 0` and the label truncates before the
-chip, so a long combo can't push the bar past the window. Routing F-clicks through the bus means they now get the
-dispatch preamble (`log.info` + `record_breadcrumb` breadcrumb + the `blockedByCapabilities` guard) like every other
-entry path — a deliberate telemetry gain, not a behavior change. The buttons' visible `disabled` flags (`canRename` /
-`canMkfile` / `canMkdir` / `canSourceOps`) win first: a disabled button can't be clicked, so the dispatch capability
-guard never fires for an F-click (the guard's blocked set — `file.rename` / `file.newFile` / `file.newFolder` — matches
-exactly the buttons the flags disable on a snapshot pane).
+`noShiftAction` message ("{fnKey} (no shift action)") is worded around, and spares a screen reader a modifier glyph. The
+bar names the row it shows in `data-row` (`plain` / `shift`), which is what a harness waits on: chip text follows the
+user's bindings, the platform's Shift glyph, and the language, so the i18n capture's wait on a bare `F2` went stale the
+day this ladder landed. Layout survives an absurd custom binding: the buttons are `flex: 1; min-width: 0` and the label
+truncates before the chip, so a long combo can't push the bar past the window. Routing F-clicks through the bus means
+they now get the dispatch preamble (`log.info` + `record_breadcrumb` breadcrumb + the `blockedByCapabilities` guard)
+like every other entry path — a deliberate telemetry gain, not a behavior change. The buttons' visible `disabled` flags
+(`canRename` / `canMkfile` / `canMkdir` / `canSourceOps`) win first: a disabled button can't be clicked, so the dispatch
+capability guard never fires for an F-click (the guard's blocked set — `file.rename` / `file.newFile` / `file.newFolder`
+— matches exactly the buttons the flags disable on a snapshot pane).
 
 **Keydown handlers read their keys from the command registry.** `FilePane.handleKeyDown` runs before the document-level
 dispatcher (it's a descendant, and dispatch is registered in the bubble phase), so a loose local match silently shadows
