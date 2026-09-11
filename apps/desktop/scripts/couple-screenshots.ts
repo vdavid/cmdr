@@ -42,17 +42,17 @@
  *    later gains its own capture sheds its representative note.
  *
  * Alongside coupling, it writes a TRACKED coverage report
- * (`messages/screenshots/coverage-report.md`): per catalog area, how many keys are
- * coupled to a screenshot vs not, and for the uncoupled ones a likely-reason
- * bucket (dynamic-only keys that no static surface can name, vs keys on a surface
- * the driver doesn't visit yet). Coverage is partial by design until the driver
- * covers the full surface inventory, so the report says so rather than implying
- * gaps are bugs (Decision 4: no silent gaps).
+ * (`messages/screenshots/coverage-report.md`), rendered by
+ * `screenshot-coverage-report.ts`: per catalog area, how many keys are direct,
+ * representative, uncoupled, or native, plus a review of the captured surfaces.
+ * Coverage is partial by design until the driver covers the full surface
+ * inventory, so the report says so rather than implying gaps are bugs.
  *
- * The pure cores are exported (`couplingsFromReport`, `coupleCatalog`,
- * `buildCoverageReport`, `fileForKey`) so they're unit-testable without touching
- * the real catalogs (see `couple-screenshots.test.ts`). The CLI shell below is
- * only file I/O around those cores, and runs only when invoked as a script.
+ * The pure cores are exported (`couplingsFromReport`, `buildCouplings`,
+ * `coupleCatalog`, `findStructuralProblems`, `fileForKey`) so they're
+ * unit-testable without touching the real catalogs (see
+ * `couple-screenshots.test.ts`). The CLI shell below is only file I/O around
+ * those cores, and runs only when invoked as a script.
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
@@ -60,7 +60,12 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { type RepresentativeMapping, REPRESENTATIVE_SCREENSHOTS } from './representative-screenshots.ts'
-import { isNativeKey } from './gen-native-strings-lib.ts'
+import {
+  buildCoverageReport,
+  buildSurfaceReview,
+  renderCoverageReport,
+  renderSurfaceReview,
+} from './screenshot-coverage-report.ts'
 
 export { type RepresentativeMapping, REPRESENTATIVE_SCREENSHOTS }
 
@@ -173,244 +178,6 @@ export function buildCouplings(
   }
 
   return { byKey, directKeys, representativeKeys }
-}
-
-export interface AreaCoverage {
-  /** The catalog area (filename minus `.json`). */
-  area: string
-  /** Renderable keys in the area. */
-  total: number
-  /** Keys coupled to their OWN captured screenshot. */
-  direct: number
-  /** Keys coupled to a representative (stand-in) screenshot. */
-  representative: number
-  /** Keys with no screenshot at all. */
-  uncoupled: number
-  /**
-   * Keys drawn by the OS, not the webview (the native menu bar, the window
-   * title, the already-running alert). Counted apart from `uncoupled` because
-   * the capture harness drives a webview and structurally cannot reach them: a
-   * screenshot here would have to be faked, and a fake is worse for a translator
-   * than an honest gap. See `isNativeKey`.
-   */
-  nativeOnly: number
-}
-
-export interface CoverageReport {
-  /** Per-area coverage rows, sorted by area name. */
-  areas: AreaCoverage[]
-  /** Renderable keys across all areas. */
-  total: number
-  /** Directly-captured keys across all areas. */
-  direct: number
-  /** Representative-coupled keys across all areas. */
-  representative: number
-  /** Uncoupled keys across all areas. */
-  uncoupled: number
-  /** Native-surface keys across all areas (see `AreaCoverage.nativeOnly`). */
-  nativeOnly: number
-}
-
-/**
- * Pure coverage core: given every renderable catalog key (by area), the keys
- * coupled to their OWN captured screenshot (`directKeys`), and the keys coupled
- * to a representative stand-in (`representativeKeys`), tallies per area how many
- * are direct vs representative vs uncoupled. A representative coupling is counted
- * separately from a direct one so the report never implies a stand-in image is a
- * precise capture. No filesystem access.
- * @param directKeys keys with their own captured screenshot.
- * @param representativeKeys keys coupled to a representative screenshot.
- * @param keysByArea area → its renderable keys.
- */
-export function buildCoverageReport(
-  directKeys: Set<string>,
-  representativeKeys: Set<string>,
-  keysByArea: Map<string, string[]>,
-): CoverageReport {
-  const areas: AreaCoverage[] = []
-  let total = 0
-  let direct = 0
-  let representative = 0
-  let uncoupled = 0
-  let nativeOnly = 0
-
-  for (const area of [...keysByArea.keys()].sort()) {
-    const keys = keysByArea.get(area) ?? []
-    let areaDirect = 0
-    let areaRep = 0
-    let areaUncoupled = 0
-    let areaNative = 0
-    for (const key of keys) {
-      if (directKeys.has(key)) areaDirect++
-      else if (representativeKeys.has(key)) areaRep++
-      // Checked AFTER the two coupling passes, so a native key that somehow did
-      // render in the webview keeps its real screenshot rather than being
-      // written off as unreachable.
-      else if (isNativeKey(key)) areaNative++
-      else areaUncoupled++
-    }
-    areas.push({
-      area,
-      total: keys.length,
-      direct: areaDirect,
-      representative: areaRep,
-      uncoupled: areaUncoupled,
-      nativeOnly: areaNative,
-    })
-    total += keys.length
-    direct += areaDirect
-    representative += areaRep
-    uncoupled += areaUncoupled
-    nativeOnly += areaNative
-  }
-
-  return { areas, total, direct, representative, uncoupled, nativeOnly }
-}
-
-/**
- * Renders a CoverageReport as Markdown for the tracked artifact. Kept text + small
- * so its diff stays readable. Pure (no filesystem, no Date: the caller stamps any
- * timestamp), so it's snapshot-testable.
- */
-export function renderCoverageReport(report: CoverageReport): string {
-  const pct = (n: number, d: number): string => (d === 0 ? 'n/a' : `${String(Math.round((n / d) * 100))}%`)
-  const anyCoverage = report.direct + report.representative
-  const lines = [
-    '# Screenshot coverage',
-    '',
-    'Generated by `scripts/couple-screenshots.ts` (via `pnpm i18n:shots`). Tracked, regenerable.',
-    '',
-    'Per catalog area, each renderable key is one of three:',
-    '',
-    '- **Direct**: coupled to a screenshot that actually shows THIS string in context (a real capture of its own surface).',
-    '- **Representative**: coupled to a stand-in screenshot of the same panel/toast/dialog where the string appears, plus a',
-    '  `@key.screenshotNote` explaining the mapping. Honest-by-design: it is NOT a precise capture, but it shows the right',
-    '  layout and position so a translator loads one image for a whole family of strings.',
-    '- **Uncoupled**: no screenshot yet (a surface the capture driver does not visit, or one with no honest representative).',
-    '- **Native**: drawn by the operating system, not the webview (the menu bar, the window title, the already-running',
-    '  alert). The capture harness drives a webview, so it can never reach these; the `@key` description is the whole',
-    '  translator aid there, which is why those descriptions carry the menu, the verb-or-noun call, and the Finder',
-    '  counterpart. Counted apart from Uncoupled so a permanent structural gap never reads as a missing capture.',
-    '',
-    `Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.`,
-    '',
-    `**Total: ${String(anyCoverage)} / ${String(report.total)} keys have a screenshot (${pct(anyCoverage, report.total)}):** ` +
-      `${String(report.direct)} direct (${pct(report.direct, report.total)}) and ` +
-      `${String(report.representative)} representative (${pct(report.representative, report.total)}). ` +
-      `${String(report.uncoupled)} remain uncoupled, and ${String(report.nativeOnly)} are native surfaces a webview capture cannot reach.`,
-    '',
-    '| Area | Direct | Representative | Uncoupled | Native | Total | Any % |',
-    '| --- | ---: | ---: | ---: | ---: | ---: | ---: |',
-  ]
-  for (const a of report.areas) {
-    lines.push(
-      `| ${a.area} | ${String(a.direct)} | ${String(a.representative)} | ${String(a.uncoupled)} | ${String(a.nativeOnly)} | ${String(a.total)} | ${pct(a.direct + a.representative, a.total)} |`,
-    )
-  }
-  lines.push('')
-  return lines.join('\n')
-}
-
-/** A captured surface that resolved no key some other captured surface didn't. */
-export interface RedundantSurface {
-  surface: string
-  screenshot: string
-  /** How many keys it recorded (all of them shared with other surfaces). */
-  keys: number
-}
-
-/** A surface the driver had to shrink the UI for, because it wouldn't fit the display. */
-export interface ReducedZoomSurface {
-  surface: string
-  screenshot: string
-  uiZoom: number
-}
-
-/** The per-SURFACE review notes that ride along with the per-KEY coverage table. */
-export interface SurfaceReview {
-  /** Captured surfaces in the run. */
-  surfaces: number
-  redundant: RedundantSurface[]
-  reducedZoom: ReducedZoomSurface[]
-}
-
-/**
- * Pure: reviews the capture report itself, rather than the catalog.
- *
- * Two things a human wants to know after a run and can't see from the coverage
- * table. First, which surfaces contributed NO unique key: the surface set grows
- * every time a dialog does, and nothing shrinks it, so without this the pruning
- * only happens when someone thinks to look. Second, which surfaces the driver
- * had to shrink the UI to photograph, since those images show text smaller than a
- * user sees it.
- */
-export function buildSurfaceReview(report: CaptureReport): SurfaceReview {
-  const surfaceCount = new Map<string, number>()
-  for (const { keys } of Object.values(report)) {
-    for (const key of new Set(keys)) surfaceCount.set(key, (surfaceCount.get(key) ?? 0) + 1)
-  }
-  const redundant: RedundantSurface[] = []
-  const reducedZoom: ReducedZoomSurface[] = []
-  for (const [surface, entry] of Object.entries(report)) {
-    if (entry.keys.length > 0 && entry.keys.every((key) => (surfaceCount.get(key) ?? 0) > 1)) {
-      redundant.push({ surface, screenshot: entry.screenshot, keys: entry.keys.length })
-    }
-    if (entry.uiZoom !== undefined && entry.uiZoom !== 100) {
-      reducedZoom.push({ surface, screenshot: entry.screenshot, uiZoom: entry.uiZoom })
-    }
-  }
-  return { surfaces: Object.keys(report).length, redundant, reducedZoom }
-}
-
-/**
- * Renders the surface review as the tail of the coverage report. Deliberately
- * worded as something to consider, not a verdict: a surface that adds no unique
- * key can still be the clearest CONTEXT for a key that several surfaces share.
- *
- * DRAFT (David reviews human-facing copy).
- */
-export function renderSurfaceReview(review: SurfaceReview): string {
-  const lines = ['## Surfaces to review', '']
-  lines.push(
-    `The run captured ${String(review.surfaces)} surfaces. This section is regenerated every run, so it stays ` +
-      'true as the UI changes.',
-  )
-  lines.push('')
-  lines.push(`### No unique keys (${String(review.redundant.length)})`)
-  lines.push('')
-  if (review.redundant.length === 0) {
-    lines.push('Every captured surface is the only source of at least one key.')
-  } else {
-    lines.push(
-      'Every key on these surfaces also renders on another captured surface, so dropping one costs no coverage: ' +
-        'its keys would simply couple to whichever surface keeps them. Worth considering, NOT an automatic delete. ' +
-        'A surface can be the clearest picture of a key several surfaces share, and being the clearest is reason ' +
-        'enough to keep it. To drop one, remove its staging (or add it to `DROPPED_GALLERY_STATES` for a gallery ' +
-        'state) in `test/e2e-playwright/`.',
-    )
-    lines.push('')
-    for (const { surface, keys } of [...review.redundant].sort((a, b) => b.keys - a.keys)) {
-      lines.push(`- \`${surface}\` (${String(keys)} key${keys === 1 ? '' : 's'}, none unique)`)
-    }
-  }
-  lines.push('')
-  lines.push(`### Captured at a reduced UI zoom (${String(review.reducedZoom.length)})`)
-  lines.push('')
-  if (review.reducedZoom.length === 0) {
-    lines.push('Every surface fit the display at 100% zoom, so every image shows text at its real size.')
-  } else {
-    lines.push(
-      '❗ These surfaces are taller than the display allows even with the window grown to full height, so the ' +
-        'driver reduced the UI zoom to fit the whole surface in frame. **The text in these images is smaller ' +
-        'than what a user sees.** Judge length against the other screenshots, not these.',
-    )
-    lines.push('')
-    for (const { surface, uiZoom } of [...review.reducedZoom].sort((a, b) => a.surface.localeCompare(b.surface))) {
-      lines.push(`- \`${surface}\`: captured at ${String(uiZoom)}% zoom`)
-    }
-  }
-  lines.push('')
-  return lines.join('\n')
 }
 
 /**
