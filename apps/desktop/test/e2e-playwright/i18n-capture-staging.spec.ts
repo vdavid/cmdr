@@ -38,7 +38,7 @@ test.describe('i18n capture staging', () => {
   // Several steps start real operations or copy into `right/`. Drain first, then
   // restore, in ONE hook: a restore under a live operation deletes its source.
   test.afterEach(async ({ tauriPage }) => {
-    await drainOperations(tauriPage as TauriPage)
+    await drainOperations(tauriPage)
     restoreFixtureTree(getFixtureRoot())
   })
 
