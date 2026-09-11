@@ -201,9 +201,19 @@ mod imp {
         candidates
     }
 
-    /// Reads `CFBundleDisplayName` (preferring localized) and falls back to
-    /// `CFBundleName`, then to the bundle's directory name.
+    /// The app's name the way Finder shows it. Every surface that names an app (the
+    /// "Open with" menu, the terminal and text editor rows, the file-viewer row) wants
+    /// this one: VS Code's plist says `Code`, while Finder, Spotlight, and the Dock say
+    /// "Visual Studio Code".
+    ///
+    /// Asks `NSFileManager` first, which honors a localized bundle name and otherwise
+    /// takes the bundle folder's name. When there's no bundle at the path to ask about,
+    /// falls back to the plist's `CFBundleDisplayName` / `CFBundleName`, then to the
+    /// folder name.
     pub fn read_app_display_name(app_path: &Path) -> String {
+        if let Some(name) = finder_display_name(app_path) {
+            return name;
+        }
         let plist_data = std::fs::read(app_path.join("Contents/Info.plist")).ok();
         let plist = plist_data.and_then(|data| plist::from_bytes::<Value>(&data).ok());
         if let Some(plist) = plist
@@ -221,6 +231,34 @@ mod imp {
             .and_then(|s| s.to_str())
             .unwrap_or("Unknown")
             .to_string()
+    }
+
+    /// `displayNameAtPath:` (macOS 10.0), or `None` when it has nothing better than the
+    /// path itself, which is what it answers for a path with nothing at it.
+    fn finder_display_name(app_path: &Path) -> Option<String> {
+        let path = app_path.to_str()?;
+        autoreleasepool(|_| {
+            let name = objc2_foundation::NSFileManager::defaultManager()
+                .displayNameAtPath(&NSString::from_str(path))
+                .to_string();
+            if name == path {
+                return None;
+            }
+            let name = trim_app_extension(&name);
+            (!name.is_empty()).then(|| name.to_string())
+        })
+    }
+
+    /// `name` without a trailing `.app`, matched case-insensitively. The display name
+    /// keeps it when Finder's "Show all filename extensions" is on. A name that is only
+    /// `.app` stays as it is.
+    pub(super) fn trim_app_extension(name: &str) -> &str {
+        const SUFFIX: &str = ".app";
+        let stem_len = name.len().saturating_sub(SUFFIX.len());
+        match (name.get(..stem_len), name.get(stem_len..)) {
+            (Some(stem), Some(ext)) if !stem.is_empty() && ext.eq_ignore_ascii_case(SUFFIX) => stem,
+            _ => name,
+        }
     }
 
     /// Reads `CFBundleIdentifier` from Info.plist. Used as a stable menu-item ID.
@@ -488,5 +526,50 @@ mod tests {
     fn ext_key_none_for_extensionless() {
         assert!(extension_cache_key(Path::new("Makefile")).is_none());
         assert!(extension_cache_key(Path::new("/path/to/dir")).is_none());
+    }
+
+    #[cfg(target_os = "macos")]
+    mod app_names {
+        use super::*;
+        use crate::test_support::TestDir;
+
+        /// An `.app` folder whose `Info.plist` names the app `plist_name`.
+        fn fake_bundle(dir: &Path, folder: &str, plist_name: &str) -> PathBuf {
+            let app = dir.join(folder);
+            std::fs::create_dir_all(app.join("Contents")).expect("create the bundle's Contents folder");
+            let plist = format!(
+                r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleDisplayName</key><string>{plist_name}</string>
+<key>CFBundleName</key><string>{plist_name}</string>
+</dict></plist>"#
+            );
+            std::fs::write(app.join("Contents/Info.plist"), plist).expect("write the bundle's Info.plist");
+            app
+        }
+
+        /// VS Code's plist says `Code`, while Finder, Spotlight, and the Dock all say
+        /// `Visual Studio Code`. A menu row or a settings row reads like the latter.
+        #[test]
+        fn an_app_is_named_the_way_finder_shows_it() {
+            let dir = TestDir::new("app_display_name");
+            let app = fake_bundle(&dir, "Visual Studio Code.app", "Code");
+            assert_eq!(read_app_display_name(&app), "Visual Studio Code");
+        }
+
+        #[test]
+        fn a_bundle_that_is_gone_is_named_by_its_folder() {
+            assert_eq!(read_app_display_name(Path::new("/nonexistent/Gone Editor.app")), "Gone Editor");
+        }
+
+        /// Finder's "Show all filename extensions" makes the display name keep `.app`.
+        #[test]
+        fn a_trailing_app_extension_is_trimmed() {
+            assert_eq!(imp::trim_app_extension("Visual Studio Code.app"), "Visual Studio Code");
+            assert_eq!(imp::trim_app_extension("Notes.APP"), "Notes");
+            assert_eq!(imp::trim_app_extension("Sublime Text"), "Sublime Text");
+            assert_eq!(imp::trim_app_extension(".app"), ".app");
+        }
     }
 }

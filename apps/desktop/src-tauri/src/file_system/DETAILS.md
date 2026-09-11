@@ -217,6 +217,12 @@ already provider-agnostic: a streamed Drive file carries `SF_DATALESS` like any 
   `openURLs:withApplicationAtURL:configuration:completionHandler:` call.
 - `pick_app_via_open_panel` shows an `NSOpenPanel` filtered to `.app` bundles for the "Open with → Other…" entry.
 - Worker threads use 8 MB stacks (FileProvider XPC depth), per the gotcha in `CLAUDE.md`.
+- **App names are what Finder shows.** `read_app_display_name` asks `NSFileManager` `displayNameAtPath:` (macOS 10.0)
+  and trims a trailing `.app`, which stays when Finder's "Show all filename extensions" is on. The plist's
+  `CFBundleDisplayName` / `CFBundleName` are only the fallback for a path with no bundle to ask about, because they
+  aren't what people read: VS Code's plist says `Code`, while Finder, Spotlight, and the Dock say "Visual Studio Code"
+  (verified on macOS 26.6.2 with VS Code 1.137.0, compiled probe, 2026-09-11). The terminal row, the text editor row,
+  and the file-viewer row in `reveal/` name apps through it too.
 
 ## The Share submenu (`share.rs`)
 
