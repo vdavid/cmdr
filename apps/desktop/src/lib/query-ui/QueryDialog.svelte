@@ -231,9 +231,11 @@
      * `autoRun: true` counts as the explicit trigger (matching recent-search AI
      * click semantics).
      */
+    let runRequestHandled = false
     $effect(() => {
         if (!config.state.getRunOnMount()) return
         config.state.setRunOnMount(false)
+        runRequestHandled = true
         // The prefill already cleared `results` / `cursorIndex`. Reset `hasSearched`
         // so the empty state (examples + index hint) is what the user sees until
         // the prefilled query runs.
@@ -303,9 +305,16 @@
         // "Open in pane" leaves a walk feeding that pane, and re-running would SUPERSEDE
         // it — the pane would stop growing with nothing on screen saying why. So adopt
         // first, and only re-derive when there was nothing to adopt.
+        //
+        // ❗ A run someone asked for at mount (an MCP prefill with `autoRun`) already
+        // started from the effect above, which runs before this hook and records that
+        // run as `lastRunQuery`. Re-deriving on top of it starts the same query twice,
+        // and the backend silences every dialog run but the last to register, so the
+        // dialog can end up tracking a run that never reports.
         const resumed = runner.resumeLive()
         if (
             !resumed &&
+            !runRequestHandled &&
             config.state.getLastRunQuery() !== null &&
             config.state.getMode() !== 'ai' &&
             hasRunnableQuery(config.state)

@@ -15,6 +15,7 @@ import QueryDialog from './QueryDialog.svelte'
 import { createQueryFilterState, type QueryFilterState } from './query-filter-state.svelte'
 import { createRecentItemsState } from './recent-items/recent-items-state.svelte'
 import type { QueryDialogConfig, AiTranslateResult } from './query-dialog-config'
+import type { QueryStreamSource } from './query-stream'
 import { getToasts, clearAllToasts } from '$lib/ui/toast/toast-store.svelte'
 import type { SearchResultEntry } from '$lib/tauri-commands'
 import type { HistoryEntry } from '$lib/tauri-commands'
@@ -65,12 +66,17 @@ interface MountOptions {
   /** Wires the Search-only count-only mode (Selection leaves both undefined). */
   countOnly?: boolean
   onToggleCountOnly?: () => void
+  /** Answers over time, as Search does. Omitted, runs go through `runQuery`. */
+  streamingSource?: QueryStreamSource
+  /** Mounts with a run already asked for, as an MCP `open_search_dialog` with `autoRun` does. */
+  runOnMount?: boolean
 }
 
 function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
   const state = createQueryFilterState({ defaultMode: 'filename' })
   if (opts.initialQuery !== undefined) state.setQuery(opts.initialQuery)
   if (opts.initialMode !== undefined) state.setMode(opts.initialMode)
+  if (opts.runOnMount) state.setRunOnMount(true)
 
   const calls = {
     primary: [] as SearchResultEntry[][],
@@ -133,6 +139,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
     indexEntryCount: 1000,
     isIndexAvailable: true,
     isIndexReady: true,
+    streamingSource: opts.streamingSource,
     runQuery: () => {
       calls.runQuery += 1
       if (opts.runQueryError !== undefined) return Promise.reject(opts.runQueryError)
@@ -440,6 +447,26 @@ describe('QueryDialog recent-items dropdown', () => {
     expect(document.body.querySelector('.recent-popover')).toBeNull()
     // ⏎ goes back to owning "run-search" so the very next Enter runs what was picked.
     expect(state.getLastDialogEvent()).toBe('query-edited')
+    cleanup()
+  })
+})
+
+describe('QueryDialog run asked for at mount', () => {
+  it('starts a prefilled streaming run exactly once', async () => {
+    // Two starts race to the backend, which silences every dialog run but the one that
+    // registered last; when that isn't the run the dialog tracks, it waits forever.
+    const starts: string[] = []
+    const streamingSource: QueryStreamSource = {
+      start: (runId) => {
+        starts.push(runId)
+        return Promise.resolve(() => {})
+      },
+      cancel: () => {},
+    }
+    const { cleanup } = mountQueryDialog({ initialQuery: 'file', streamingSource, runOnMount: true })
+    await settle()
+
+    expect(starts).toHaveLength(1)
     cleanup()
   })
 })
