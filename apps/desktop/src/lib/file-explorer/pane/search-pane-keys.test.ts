@@ -22,6 +22,12 @@ vi.mock('$lib/tauri-commands', () => ({ openInEditor: openInEditorSpy }))
 vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
 // An empty volume list: the edit gate classifies the ids below off their shape alone.
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
+// The system default editor, with the one-time hint already spent, so F4 launches
+// plainly and the hint's own rules stay `$lib/text-editor`'s to test.
+vi.mock('$lib/settings', () => ({
+  getSetting: (id: string) => (id === 'behavior.textEditorHintSeen' ? true : undefined),
+  setSetting: vi.fn(),
+}))
 
 import { createSearchPaneKeys, type SearchPaneKeysDeps } from './search-pane-keys'
 

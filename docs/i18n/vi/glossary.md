@@ -3022,3 +3022,9 @@ trường hợp này cho "Kết nối với máy chủ", và kho tham chiếu kh
   · `high`.
 - Dismiss và Open settings giống `commands.handler.openTerminalHere.dismiss` /
   `commands.handler.openTerminalHere.openSettings`.
+- **system default → `Mặc định hệ thống`** · danh mục (`settings.appearance.language.opt.system`,
+  `settings.appearance.dateTimeFormat.opt.system`) · `high`. `settings.behavior.textEditorApp.systemDefault` đặt tên ứng
+  dụng trong ngoặc phía sau, như `settings.appearance.language.opt.systemWithLanguage`.
+- "Choose an app…" và "Checking your apps…" giống `settings.behavior.openTerminalHereApp.chooseApp` /
+  `settings.behavior.openTerminalHereApp.checking`. Gợi ý (`fileExplorer.edit.hint`) theo mẫu
+  `commands.handler.openTerminalHere.hint` nhưng không nêu vị trí trong Cài đặt, vì nút của nó dẫn thẳng tới đó.

@@ -1878,6 +1878,37 @@
   "@settings.behavior.textEditorApp.description": {
     "description": "Helper text under the \"Edit files in\" dropdown in Settings > Behavior > Navigation & file ops. Says two things: the list is what macOS itself reports as text editors on this Mac, and there's a way to pick any other app. \"Choose an app…\" is the last row of that same dropdown and matches the terminal row below it, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key. \"Cmdr\" is the product name and \"macOS\" the system name; keep both."
   },
+  "settings.behavior.textEditorApp.systemDefault": "System default ({app})",
+  "@settings.behavior.textEditorApp.systemDefault": {
+    "description": "First row of the \"Edit files in\" dropdown in Settings > Behavior > Navigation & file ops. Picking it makes F4 (edit) open files in whatever app macOS uses for plain text, which is TextEdit unless the user changed it in Finder. \"System default\" = the Mac's own default app; use the wording your locale's macOS uses for a system-wide default where it has one.",
+    "placeholders": {
+      "app": "the name of that default app as Finder shows it, like \"TextEdit\" or \"Xcode\". Any installed app's own name, never translated; the parentheses keep it out of the phrase's grammar"
+    }
+  },
+  "settings.behavior.textEditorApp.systemDefaultUnnamed": "System default",
+  "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
+    "description": "The same first row as settings.behavior.textEditorApp.systemDefault, for the rare Mac where nothing claims plain text, so there's no app to name. Translate \"System default\" identically in both keys."
+  },
+  "settings.behavior.textEditorApp.chooseApp": "Choose an app…",
+  "@settings.behavior.textEditorApp.chooseApp": {
+    "description": "Last row of the \"Edit files in\" dropdown in Settings > Behavior > Navigation & file ops. Picking it opens the macOS file picker so the user can point at any app on their Mac. The trailing … (U+2026) means \"this opens a dialog\"; keep it. Same row as on the terminal dropdown below it, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key."
+  },
+  "settings.behavior.textEditorApp.chooseAppTitle": "Choose a text editor",
+  "@settings.behavior.textEditorApp.chooseAppTitle": {
+    "description": "Title of the macOS file-picker window that opens after picking \"Choose an app…\" in the \"Edit files in\" dropdown. The picker shows /Applications and only lets an app be selected. Imperative, addressed to the user. \"text editor\" is the generic kind of app, NOT Apple's app called TextEdit."
+  },
+  "settings.behavior.textEditorApp.checking": "Checking your apps…",
+  "@settings.behavior.textEditorApp.checking": {
+    "description": "Placeholder shown in the \"Edit files in\" dropdown for the moment before Cmdr has finished asking macOS which text editors are on this Mac. The dropdown is disabled while it reads this. \"your apps\" = the apps on this Mac. Usually gone within a few milliseconds. Same wording as the terminal dropdown's settings.behavior.openTerminalHereApp.checking key; translate it identically."
+  },
+  "settings.behavior.textEditorHintSeen.label": "Text editor hint shown",
+  "@settings.behavior.textEditorHintSeen.label": {
+    "description": "Internal, never shown in the UI: tracks whether the one-time hint about picking a text editor has appeared after F4 (edit)."
+  },
+  "settings.behavior.textEditorHintSeen.description": "Whether the one-time hint about picking a text editor has been shown.",
+  "@settings.behavior.textEditorHintSeen.description": {
+    "description": "Internal, never shown in the UI. Pairs with the text editor hint label."
+  },
   "settings.behavior.openTerminalHereApp.label": "Open terminal here uses",
   "@settings.behavior.openTerminalHereApp.label": {
     "description": "Label of the dropdown that picks which terminal app the \"Open terminal here\" action launches, in Settings > Behavior > Navigation & file ops. \"Open terminal here\" is Cmdr's own command name (it opens a terminal at the folder you're looking at), so translate it the same way as the command of that name. The sentence continues in the dropdown beside it, which names an app: \"Open terminal here uses [Ghostty]\".",

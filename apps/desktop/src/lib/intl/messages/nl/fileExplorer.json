@@ -618,6 +618,14 @@
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
+  "fileExplorer.edit.hint": "Geopend in {app}. Wil je de volgende keer een andere editor? Kies er een in Instellingen.",
+  "@fileExplorer.edit.hint": {
+    "sourceHash": "3632f06"
+  },
+  "fileExplorer.edit.hintUnnamed": "Geopend in je standaardeditor. Wil je de volgende keer een andere? Kies er een in Instellingen.",
+  "@fileExplorer.edit.hintUnnamed": {
+    "sourceHash": "6216471"
+  },
   "fileExplorer.edit.dismiss": "Sluit",
   "@fileExplorer.edit.dismiss": {
     "sourceHash": "48845bf"

@@ -933,6 +933,17 @@
   "@fileExplorer.edit.notOnThisMac": {
     "description": "Info toast shown when the user presses F4 (edit) on a file with no regular file behind it on the Mac: a file on a phone or camera, on a server reached over SFTP or WebDAV, inside an archive, or in the virtual .git folders. A text editor can't open it yet, so the toast says so and points at F3, which opens Cmdr's own viewer and can show the file. \"Cmdr\" is the product name and \"F3\" a key name; keep both. Never use the words 'error' or 'failed'."
   },
+  "fileExplorer.edit.hint": "Opened in {app}. Want a different editor next time? Pick one in Settings.",
+  "@fileExplorer.edit.hint": {
+    "description": "One-time toast shown after F4 (edit) opens a file in the Mac's default text editor, on a Mac where other text editors are installed too. Says which app the file opened in, then points at the setting that picks a different one; the toast's \"Open settings\" button goes straight to it. Shown once ever. \"Settings\" is Cmdr's own Settings window. Conversational.",
+    "placeholders": {
+      "app": "the display name of the app the file opened in, as Finder shows it, like \"TextEdit\" or \"Xcode\". Any installed app's own name, never translated; phrase the sentence so it reads correctly whatever name lands here"
+    }
+  },
+  "fileExplorer.edit.hintUnnamed": "Opened in your default text editor. Want a different one next time? Pick one in Settings.",
+  "@fileExplorer.edit.hintUnnamed": {
+    "description": "The same one-time toast as fileExplorer.edit.hint, for the rare case where Cmdr can't name the default app the file opened in. \"your default text editor\" is the Mac's system-wide default app for text files; \"a different one\" = a different text editor. \"Settings\" is Cmdr's own Settings window."
+  },
   "fileExplorer.edit.dismiss": "Dismiss",
   "@fileExplorer.edit.dismiss": {
     "description": "VERB (imperative). Button on a text editor toast (after F4) that closes it and changes nothing. Same wording as the commands.handler.openTerminalHere.dismiss button on the \"Open terminal here\" toasts; translate it identically."

@@ -2945,3 +2945,9 @@ formulerar just de här fallen för ”Anslut till server” och saknas i refere
 - **Edit files in [app] → `Redigera filer i`** · meningen fortsätter i menyn · `tentative`.
 - `{app}` efter `i`, utan böjning. Dismiss och Open settings samma som `commands.handler.openTerminalHere.dismiss` /
   `commands.handler.openTerminalHere.openSettings`.
+- **system default → `Systemets standard`** · katalogen (`settings.appearance.language.opt.system`,
+  `settings.appearance.dateTimeFormat.opt.system`) · `high`. `settings.behavior.textEditorApp.systemDefault` sätter
+  appnamnet inom parentes efter, som `settings.appearance.language.opt.systemWithLanguage`.
+- ”Choose an app…” och ”Checking your apps…” samma som `settings.behavior.openTerminalHereApp.chooseApp` /
+  `settings.behavior.openTerminalHereApp.checking`. Tipset (`fileExplorer.edit.hint`) följer
+  `commands.handler.openTerminalHere.hint`, utan platsen i Inställningar: knappen leder dit direkt.

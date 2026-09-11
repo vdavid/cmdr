@@ -1524,6 +1524,34 @@
   "@settings.behavior.textEditorApp.description": {
     "sourceHash": "b062aed"
   },
+  "settings.behavior.textEditorApp.systemDefault": "Rendszer szerinti ({app})",
+  "@settings.behavior.textEditorApp.systemDefault": {
+    "sourceHash": "b8133f4"
+  },
+  "settings.behavior.textEditorApp.systemDefaultUnnamed": "Rendszer szerinti",
+  "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
+    "sourceHash": "b045921"
+  },
+  "settings.behavior.textEditorApp.chooseApp": "App kiválasztása…",
+  "@settings.behavior.textEditorApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.textEditorApp.chooseAppTitle": "Válassz egy szövegszerkesztőt",
+  "@settings.behavior.textEditorApp.chooseAppTitle": {
+    "sourceHash": "7a683d5"
+  },
+  "settings.behavior.textEditorApp.checking": "Appok ellenőrzése…",
+  "@settings.behavior.textEditorApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.textEditorHintSeen.label": "A szövegszerkesztő tippje megjelent",
+  "@settings.behavior.textEditorHintSeen.label": {
+    "sourceHash": "4d2a7fc"
+  },
+  "settings.behavior.textEditorHintSeen.description": "Hogy a szövegszerkesztő választásáról szóló egyszeri tipp megjelent-e már.",
+  "@settings.behavior.textEditorHintSeen.description": {
+    "sourceHash": "65440fb"
+  },
   "settings.behavior.openTerminalHereApp.label": "A „Terminál megnyitása itt” appja",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

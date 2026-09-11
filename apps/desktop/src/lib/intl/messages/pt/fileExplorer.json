@@ -617,6 +617,14 @@
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
+  "fileExplorer.edit.hint": "Arquivo aberto em {app}. Quer outro editor da próxima vez? Escolha um em Ajustes.",
+  "@fileExplorer.edit.hint": {
+    "sourceHash": "3632f06"
+  },
+  "fileExplorer.edit.hintUnnamed": "Arquivo aberto no seu editor de texto padrão. Quer outro da próxima vez? Escolha um em Ajustes.",
+  "@fileExplorer.edit.hintUnnamed": {
+    "sourceHash": "6216471"
+  },
   "fileExplorer.edit.dismiss": "Dispensar",
   "@fileExplorer.edit.dismiss": {
     "sourceHash": "48845bf"

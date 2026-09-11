@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   searchSettings,
   getMatchingSections,
@@ -11,6 +11,50 @@ import {
   getMatchingSettingIdsInSection,
 } from './settings-search'
 import { getSettingDefinition } from './settings-registry'
+
+/**
+ * On a Mac by default, so `macOSOnly` settings are in the index under test. The
+ * same mock drives the searchable-row filter, so both halves of the index answer
+ * to one platform.
+ */
+const isMacOS = vi.hoisted(() => vi.fn(() => true))
+
+vi.mock('$lib/shortcuts/key-capture', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/shortcuts/key-capture')>()),
+  isMacOS: () => isMacOS(),
+}))
+
+/**
+ * Off macOS a `macOSOnly` setting renders nowhere, so a hit would open a page with
+ * nothing to show for it. The entry stays registered; only the index drops it.
+ */
+describe('a macOS-only setting', () => {
+  const MAC_ONLY = ['behavior.openTerminalHereApp', 'behavior.textEditorApp', 'behavior.textEditorHintSeen']
+
+  afterEach(() => {
+    isMacOS.mockReturnValue(true)
+    clearSearchIndex()
+  })
+
+  it('stays out of the search index off macOS', () => {
+    isMacOS.mockReturnValue(false)
+    clearSearchIndex()
+
+    const ids = searchSettings('').map((r) => r.entry.id)
+    for (const id of MAC_ONLY) {
+      expect(ids).not.toContain(id)
+    }
+    expect(searchSettings('Sublime Text').map((r) => r.entry.id)).not.toContain('behavior.textEditorApp')
+  })
+
+  it('is in the search index on macOS', () => {
+    isMacOS.mockReturnValue(true)
+    clearSearchIndex()
+
+    expect(searchSettings('').map((r) => r.entry.id)).toEqual(expect.arrayContaining(MAC_ONLY))
+    expect(searchSettings('Sublime Text').map((r) => r.entry.id)).toContain('behavior.textEditorApp')
+  })
+})
 
 describe('searchSettings', () => {
   beforeEach(() => {

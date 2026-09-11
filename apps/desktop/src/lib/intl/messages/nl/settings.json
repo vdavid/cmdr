@@ -1530,6 +1530,34 @@
   "@settings.behavior.textEditorApp.description": {
     "sourceHash": "b062aed"
   },
+  "settings.behavior.textEditorApp.systemDefault": "Systeemstandaard ({app})",
+  "@settings.behavior.textEditorApp.systemDefault": {
+    "sourceHash": "b8133f4"
+  },
+  "settings.behavior.textEditorApp.systemDefaultUnnamed": "Systeemstandaard",
+  "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
+    "sourceHash": "b045921"
+  },
+  "settings.behavior.textEditorApp.chooseApp": "Kies app…",
+  "@settings.behavior.textEditorApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.textEditorApp.chooseAppTitle": "Kies een teksteditor",
+  "@settings.behavior.textEditorApp.chooseAppTitle": {
+    "sourceHash": "7a683d5"
+  },
+  "settings.behavior.textEditorApp.checking": "Je apps controleren…",
+  "@settings.behavior.textEditorApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.textEditorHintSeen.label": "Hint voor teksteditor getoond",
+  "@settings.behavior.textEditorHintSeen.label": {
+    "sourceHash": "4d2a7fc"
+  },
+  "settings.behavior.textEditorHintSeen.description": "Of de eenmalige hint over het kiezen van een teksteditor is getoond.",
+  "@settings.behavior.textEditorHintSeen.description": {
+    "sourceHash": "65440fb"
+  },
   "settings.behavior.openTerminalHereApp.label": "‘Terminal hier openen’ gebruikt",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

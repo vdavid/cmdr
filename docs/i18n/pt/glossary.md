@@ -2892,3 +2892,9 @@ que redige esses mesmos casos para «Conectar ao Servidor» e não está na pilh
   contração de gênero (`no`/`na`) · `tentative`.
 - `{app}` vem depois de `em`, sem artigo, pelo mesmo motivo. Dismiss e Open settings iguais a
   `commands.handler.openTerminalHere.dismiss` / `commands.handler.openTerminalHere.openSettings`.
+- **system default → `padrão do sistema`** · o catálogo (`settings.appearance.language.opt.system`,
+  `settings.appearance.dateTimeFormat.opt.system`) · `high`. `settings.behavior.textEditorApp.systemDefault` põe o nome
+  do app entre parênteses depois, como `settings.appearance.language.opt.systemWithLanguage`.
+- "Choose an app…" e "Checking your apps…" iguais a `settings.behavior.openTerminalHereApp.chooseApp` /
+  `settings.behavior.openTerminalHereApp.checking`. A dica (`fileExplorer.edit.hint`) segue
+  `commands.handler.openTerminalHere.hint`, sem dizer onde fica o ajuste: o botão dela leva direto.

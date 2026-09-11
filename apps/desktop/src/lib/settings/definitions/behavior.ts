@@ -185,6 +185,24 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     // The options are whatever macOS lists right now, so they can't be registry
     // constants.
     component: 'select',
+    // Linux keeps `xdg-open` and renders no Text editor card.
+    macOSOnly: true,
+  },
+  {
+    // Internal (FE-owned): whether the one-time "want a different editor next
+    // time?" toast has fired after F4. No UI row; hidden from the section tree,
+    // the way `behavior.openTerminalHereToastSeen` is. Hidden settings still
+    // enter search, hence `macOSOnly` too.
+    id: 'behavior.textEditorHintSeen',
+    section: ['Behavior', 'Navigation & file ops'],
+    labelKey: 'settings.behavior.textEditorHintSeen.label',
+    descriptionKey: 'settings.behavior.textEditorHintSeen.description',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+    macOSOnly: true,
   },
 
   // ------------------------------------------------------------------------
@@ -224,6 +242,8 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     // Rendered by `TerminalAppSelect.svelte`, not `SettingSelect`: the options
     // are whatever is installed right now, so they can't be registry constants.
     component: 'select',
+    // The whole feature is macOS-only, and so is the Terminal card.
+    macOSOnly: true,
   },
   {
     // Internal (FE-owned): whether the one-time "which app opened, and how to

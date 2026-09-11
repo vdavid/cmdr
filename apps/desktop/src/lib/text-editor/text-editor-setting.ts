@@ -31,6 +31,26 @@ export function setTextEditorChoice(appChoice: string): void {
   setSetting(TEXT_EDITOR_SETTING_KEY, appChoice)
 }
 
+/** The one-time hint's flag. Hidden: nothing renders a row for it. */
+export const TEXT_EDITOR_HINT_SEEN_SETTING_KEY = 'behavior.textEditorHintSeen'
+
+/**
+ * Whether the one-time hint has already been shown. Anything but an explicit
+ * `false` reads as shown, so a corrupt value can cost the user the hint but never
+ * bring back a toast they've already seen.
+ */
+export function getTextEditorHintSeen(): boolean {
+  // `unknown`, not the typed `boolean`: the store can hand back whatever
+  // `settings.json` holds, and that's exactly the case this reads defensively.
+  const value: unknown = getSetting(TEXT_EDITOR_HINT_SEEN_SETTING_KEY)
+  return value !== false
+}
+
+/** Spends the one-time hint flag. */
+export function markTextEditorHintSeen(): void {
+  setSetting(TEXT_EDITOR_HINT_SEEN_SETTING_KEY, true)
+}
+
 /**
  * Deep-links to **Settings > Behavior > Navigation & file ops**, scrolled to the
  * text editor row. Every text-editor toast's "Open settings" lands here.

@@ -617,6 +617,14 @@
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
+  "fileExplorer.edit.hint": "Filen öppnades i {app}. Vill du ha en annan redigerare nästa gång? Välj den i Inställningar.",
+  "@fileExplorer.edit.hint": {
+    "sourceHash": "3632f06"
+  },
+  "fileExplorer.edit.hintUnnamed": "Filen öppnades i din standardredigerare. Vill du ha en annan nästa gång? Välj den i Inställningar.",
+  "@fileExplorer.edit.hintUnnamed": {
+    "sourceHash": "6216471"
+  },
   "fileExplorer.edit.dismiss": "Avfärda",
   "@fileExplorer.edit.dismiss": {
     "sourceHash": "48845bf"

@@ -2,21 +2,23 @@
     /**
      * Settings > Behavior > Navigation & file ops.
      *
-     * Four cards:
+     * Cards, in page order:
      *   1. **Navigation** — the `behavior.doubleClickPaneNavigatesToParent` switch
      *      (double-click the empty pane background to go up one folder).
      *   2. **File operations** — the file-extension-change confirmation radio. The
      *      conflict/progress settings live in Advanced (their single home); this
      *      page holds only its own settings, never a mirror.
-     *   3. **Terminal** — which app "Open terminal here" launches. Its options are
-     *      the terminals installed right now, so the control is the bespoke
-     *      `TerminalAppSelect`, not `SettingSelect`.
-     *   4. **Operation log** — the retention limits (`operationLog.maxAge` /
-     *      `operationLog.maxSize`) for the file-operation history and undo log.
+     *   3. **Text editor** — which app F4 opens files in (`TextEditorSelect`).
+     *   4. **Terminal** — which app "Open terminal here" launches
+     *      (`TerminalAppSelect`). Both rows read their options off this Mac, so
+     *      neither is `SettingSelect`, and both cards render on macOS only: their
+     *      settings carry `macOSOnly`, so search agrees.
      *   5. **Show in Finder** — `RevealHandlerCard`, whose switch is backed by a
      *      macOS preference rather than the registry, so it owns its own card
      *      and gates it on search itself (`RevealHandlerCard.rows.ts`). Its own
      *      doc comment says why.
+     *   6. **Operation log** — the retention limits (`operationLog.maxAge` /
+     *      `operationLog.maxSize`) for the file-operation history and undo log.
      *
      * Card visibility is section-owned: each `SectionCard` frame is wrapped in
      * `{#if anyVisible(shouldShow, ...ids)}` over the SAME `shouldShow` predicate
@@ -29,11 +31,13 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingSelect from '../components/SettingSelect.svelte'
+    import TextEditorSelect from './TextEditorSelect.svelte'
     import TerminalAppSelect from './TerminalAppSelect.svelte'
     import RevealHandlerCard from './RevealHandlerCard.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
+    import { isMacOS } from '$lib/shortcuts/key-capture'
 
     interface Props {
         searchQuery: string
@@ -43,10 +47,15 @@
 
     const shouldShow = $derived(createShouldShow(searchQuery))
 
+    // The text editor and terminal rows speak macOS's vocabulary (LaunchServices
+    // bundle ids); Linux keeps `xdg-open` for F4 and has no terminal table.
+    const onMacOS = isMacOS()
+
     const defaultDef = { label: '', description: '', disabled: false, disabledReason: '' }
     const doubleClickDef = getSettingDefinition('behavior.doubleClickPaneNavigatesToParent') ?? defaultDef
     const extensionChangesDef = getSettingDefinition('fileOperations.allowFileExtensionChanges') ?? defaultDef
     const pasteAsFileDef = getSettingDefinition('fileOperations.pasteClipboardAsFile') ?? defaultDef
+    const textEditorAppDef = getSettingDefinition('behavior.textEditorApp') ?? defaultDef
     const openTerminalHereAppDef = getSettingDefinition('behavior.openTerminalHereApp') ?? defaultDef
     const operationLogMaxAgeDef = getSettingDefinition('operationLog.maxAge') ?? defaultDef
     const operationLogMaxSizeDef = getSettingDefinition('operationLog.maxSize') ?? defaultDef
@@ -93,7 +102,23 @@
         </SectionCard>
     {/if}
 
-    {#if anyVisible(shouldShow, 'behavior.openTerminalHereApp')}
+    {#if onMacOS && anyVisible(shouldShow, 'behavior.textEditorApp')}
+        <SectionCard label={tString('settings.navigationAndFileOps.card.textEditor')}>
+            {#if shouldShow('behavior.textEditorApp')}
+                <SettingRow
+                    id="behavior.textEditorApp"
+                    label={textEditorAppDef.label}
+                    description={textEditorAppDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <TextEditorSelect ariaLabel={textEditorAppDef.label} />
+                </SettingRow>
+            {/if}
+        </SectionCard>
+    {/if}
+
+    {#if onMacOS && anyVisible(shouldShow, 'behavior.openTerminalHereApp')}
         <SectionCard label={tString('settings.navigationAndFileOps.card.terminal')}>
             {#if shouldShow('behavior.openTerminalHereApp')}
                 <SettingRow

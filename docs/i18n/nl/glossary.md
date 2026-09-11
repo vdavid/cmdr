@@ -3366,3 +3366,10 @@ gevallen voor „Verbind met server” formuleert en niet in de stapel zit.
   editor openen, precies dit · `high`.
 - `{app}` na `in`, zonder lidwoord. Dismiss en Open settings gelijk aan `commands.handler.openTerminalHere.dismiss` /
   `commands.handler.openTerminalHere.openSettings`.
+- **system default → `Systeemstandaard`** · de catalogus (`settings.appearance.language.opt.system`,
+  `settings.appearance.dateTimeFormat.opt.system`) en de regel "system default → Systeemstandaard" bovenaan · `high`.
+  `settings.behavior.textEditorApp.systemDefault` zet de appnaam erachter tussen haakjes, zoals
+  `settings.appearance.language.opt.systemWithLanguage`.
+- ‘Choose an app…’ en ‘Checking your apps…’ gelijk aan `settings.behavior.openTerminalHereApp.chooseApp` /
+  `settings.behavior.openTerminalHereApp.checking`. De hint (`fileExplorer.edit.hint`) volgt
+  `commands.handler.openTerminalHere.hint`, zonder de plek in Instellingen: de knop gaat er direct heen.

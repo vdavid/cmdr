@@ -69,7 +69,27 @@ const bindingCommands = vi.hoisted(() => ({
       timedOut: false,
     }),
   ),
+  listTextEditors: vi.fn(() =>
+    Promise.resolve({
+      data: {
+        defaultAppName: 'TextEdit',
+        defaultAppIcon: null,
+        apps: [{ id: 'com.sublimetext.4', displayName: 'Sublime Text', icon: null }],
+        chosenId: 'system',
+      },
+      timedOut: false,
+    }),
+  ),
 }))
+
+// `isMacOS()` reads false under jsdom on every host. Off by default, as the real
+// check answers here; the blocks whose rows render on macOS only switch it on.
+const isMacOS = vi.hoisted(() => vi.fn(() => false))
+vi.mock('$lib/shortcuts/key-capture', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/shortcuts/key-capture')>()),
+  isMacOS: () => isMacOS(),
+}))
+
 vi.mock('$lib/ipc/bindings', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   commands: bindingCommands,
@@ -121,6 +141,7 @@ import NotificationsSection from './NotificationsSection.svelte'
 import SearchSection from './SearchSection.svelte'
 import ShortcutPill from './ShortcutPill.svelte'
 import TerminalAppSelect from './TerminalAppSelect.svelte'
+import TextEditorSelect from './TextEditorSelect.svelte'
 
 /**
  * Installs this block's `getSetting` for its own tests only. Call inside a
@@ -492,18 +513,47 @@ describe('McpServerSection a11y', () => {
   })
 })
 
-/** Tier 3 a11y tests for `NavigationAndFileOpsSection.svelte`. */
+/**
+ * Tier 3 a11y tests for `NavigationAndFileOpsSection.svelte`, on macOS so the Text
+ * editor and Terminal cards render too.
+ */
 describe('NavigationAndFileOpsSection a11y', () => {
   useSettings((key: string) => {
     if (key === 'fileOperations.allowFileExtensionChanges') return 'ask'
     if (key === 'behavior.doubleClickPaneNavigatesToParent') return true
+    if (key === 'behavior.textEditorApp') return 'system'
     if (key === 'behavior.openTerminalHereApp') return 'com.apple.Terminal'
     return undefined
+  })
+
+  beforeEach(() => {
+    isMacOS.mockReturnValue(true)
+  })
+
+  afterEach(() => {
+    isMacOS.mockReturnValue(false)
   })
 
   it('default has no a11y violations', async () => {
     const target = container()
     mount(NavigationAndFileOpsSection, { target, props: { searchQuery: '' } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `TextEditorSelect.svelte`, the "Edit files in" control.
+ * Audited on its own as well as inside its section, because it carries its own
+ * accessible name and spends its first moments disabled.
+ */
+describe('TextEditorSelect a11y', () => {
+  useSettings((key: string) => (key === 'behavior.textEditorApp' ? 'system' : undefined))
+
+  it('has no a11y violations once the editor list has landed', async () => {
+    const target = container()
+    mount(TextEditorSelect, { target, props: { ariaLabel: 'Edit files in' } })
+    await tick()
     await tick()
     await expectNoA11yViolations(target)
   })

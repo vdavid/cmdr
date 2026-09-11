@@ -617,6 +617,14 @@
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
+  "fileExplorer.edit.hint": "Đã mở tệp trong {app}. Bạn muốn dùng trình soạn thảo khác vào lần sau? Hãy chọn trong Cài đặt.",
+  "@fileExplorer.edit.hint": {
+    "sourceHash": "3632f06"
+  },
+  "fileExplorer.edit.hintUnnamed": "Đã mở tệp trong trình soạn thảo văn bản mặc định của bạn. Bạn muốn dùng trình soạn thảo khác vào lần sau? Hãy chọn trong Cài đặt.",
+  "@fileExplorer.edit.hintUnnamed": {
+    "sourceHash": "6216471"
+  },
   "fileExplorer.edit.dismiss": "Bỏ qua",
   "@fileExplorer.edit.dismiss": {
     "sourceHash": "48845bf"

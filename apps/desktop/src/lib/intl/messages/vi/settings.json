@@ -1522,6 +1522,34 @@
   "@settings.behavior.textEditorApp.description": {
     "sourceHash": "b062aed"
   },
+  "settings.behavior.textEditorApp.systemDefault": "Mặc định hệ thống ({app})",
+  "@settings.behavior.textEditorApp.systemDefault": {
+    "sourceHash": "b8133f4"
+  },
+  "settings.behavior.textEditorApp.systemDefaultUnnamed": "Mặc định hệ thống",
+  "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
+    "sourceHash": "b045921"
+  },
+  "settings.behavior.textEditorApp.chooseApp": "Chọn ứng dụng…",
+  "@settings.behavior.textEditorApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.textEditorApp.chooseAppTitle": "Chọn một trình soạn thảo văn bản",
+  "@settings.behavior.textEditorApp.chooseAppTitle": {
+    "sourceHash": "7a683d5"
+  },
+  "settings.behavior.textEditorApp.checking": "Đang kiểm tra các ứng dụng của bạn…",
+  "@settings.behavior.textEditorApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.textEditorHintSeen.label": "Đã hiện gợi ý về trình soạn thảo văn bản",
+  "@settings.behavior.textEditorHintSeen.label": {
+    "sourceHash": "4d2a7fc"
+  },
+  "settings.behavior.textEditorHintSeen.description": "Gợi ý một lần về việc chọn trình soạn thảo văn bản đã hiện hay chưa.",
+  "@settings.behavior.textEditorHintSeen.description": {
+    "sourceHash": "65440fb"
+  },
   "settings.behavior.openTerminalHereApp.label": "“Mở terminal tại đây” dùng",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

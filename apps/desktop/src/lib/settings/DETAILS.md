@@ -544,6 +544,10 @@ element and widen that signature — deliberately not done for an unused capabil
   the CLIP model's download/delete, everything behind the image-index master toggle) stay unregistered: a hit that
   scrolls to a row that isn't rendered is worse than no hit. A row that renders on one platform only is fine:
   `macOSOnly: true` keeps it out of the index everywhere else (`searchable-rows.ts`, pinned by its test).
+- **Settings take the same flag.** `SettingDefinition.macOSOnly` drops a setting from the index off macOS
+  (`buildSearchIndex` in `settings-search.ts`, pinned by `settings-search.test.ts`), for a setting whose section renders
+  it on macOS only. It decides nothing about rendering: the section gates its own markup on `isMacOS()`. Hidden settings
+  still enter search, so a macOS-only feature's hidden flags take it too (`behavior.textEditorHintSeen`).
 
 ## OS-backed rows (a control whose value lives outside Cmdr)
 

@@ -1523,6 +1523,34 @@
   "@settings.behavior.textEditorApp.description": {
     "sourceHash": "b062aed"
   },
+  "settings.behavior.textEditorApp.systemDefault": "跟随系统（{app}）",
+  "@settings.behavior.textEditorApp.systemDefault": {
+    "sourceHash": "b8133f4"
+  },
+  "settings.behavior.textEditorApp.systemDefaultUnnamed": "跟随系统",
+  "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
+    "sourceHash": "b045921"
+  },
+  "settings.behavior.textEditorApp.chooseApp": "选取 App…",
+  "@settings.behavior.textEditorApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.textEditorApp.chooseAppTitle": "选取文本编辑器",
+  "@settings.behavior.textEditorApp.chooseAppTitle": {
+    "sourceHash": "7a683d5"
+  },
+  "settings.behavior.textEditorApp.checking": "正在检查你的 App…",
+  "@settings.behavior.textEditorApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.textEditorHintSeen.label": "已显示文本编辑器提示",
+  "@settings.behavior.textEditorHintSeen.label": {
+    "sourceHash": "4d2a7fc"
+  },
+  "settings.behavior.textEditorHintSeen.description": "是否已显示过关于选择文本编辑器的一次性提示。",
+  "@settings.behavior.textEditorHintSeen.description": {
+    "sourceHash": "65440fb"
+  },
   "settings.behavior.openTerminalHereApp.label": "“在此处打开终端”使用",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

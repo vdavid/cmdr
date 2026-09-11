@@ -1526,6 +1526,34 @@
   "@settings.behavior.textEditorApp.description": {
     "sourceHash": "b062aed"
   },
+  "settings.behavior.textEditorApp.systemDefault": "Padrão do sistema ({app})",
+  "@settings.behavior.textEditorApp.systemDefault": {
+    "sourceHash": "b8133f4"
+  },
+  "settings.behavior.textEditorApp.systemDefaultUnnamed": "Padrão do sistema",
+  "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
+    "sourceHash": "b045921"
+  },
+  "settings.behavior.textEditorApp.chooseApp": "Escolher app…",
+  "@settings.behavior.textEditorApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.textEditorApp.chooseAppTitle": "Escolher um editor de texto",
+  "@settings.behavior.textEditorApp.chooseAppTitle": {
+    "sourceHash": "7a683d5"
+  },
+  "settings.behavior.textEditorApp.checking": "Verificando seus apps…",
+  "@settings.behavior.textEditorApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.textEditorHintSeen.label": "Dica do editor de texto exibida",
+  "@settings.behavior.textEditorHintSeen.label": {
+    "sourceHash": "4d2a7fc"
+  },
+  "settings.behavior.textEditorHintSeen.description": "Se a dica única sobre escolher um editor de texto já foi exibida.",
+  "@settings.behavior.textEditorHintSeen.description": {
+    "sourceHash": "65440fb"
+  },
   "settings.behavior.openTerminalHereApp.label": "“Abrir terminal aqui” usa",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"

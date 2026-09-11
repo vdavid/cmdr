@@ -8,6 +8,7 @@ import type { SearchableEntry, SettingSearchResult } from './types'
 import { settingsRegistry } from './settings-registry'
 import { searchableRowEntries } from './sections/searchable-rows'
 import { searchAllCommands } from '$lib/commands/fuzzy-search'
+import { isMacOS } from '$lib/shortcuts/key-capture'
 
 // ============================================================================
 // Search Configuration (same as command palette)
@@ -48,7 +49,13 @@ function buildSearchIndex(): SearchIndexEntry[] {
   // Searchable rows (the hand-rendered non-settings: "Clear index", "Get a
   // license") join here as equal entries. They carry no `SettingsValues` key and
   // add no nav entry — `buildSectionTree` reads the registry alone.
-  searchIndex = [...settingsRegistry, ...searchableRowEntries()].map((entry) => ({
+  //
+  // A `macOSOnly` setting renders nowhere else, so off macOS it stays out, the
+  // same rule `searchableRowEntries` applies to rows. Read when the index builds
+  // rather than at import, so a test can flip the platform.
+  const onMacOS = isMacOS()
+  const settings = settingsRegistry.filter((setting) => onMacOS || setting.macOSOnly !== true)
+  searchIndex = [...settings, ...searchableRowEntries()].map((entry) => ({
     entry,
     searchableText: buildSearchableText(entry),
   }))

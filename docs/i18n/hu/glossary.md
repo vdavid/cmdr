@@ -3316,3 +3316,10 @@ csatlakozni ehhez: {hostName}” (`fileExplorer.network.share.connectFailedTitle
 - **`{app}` toldalék nélkül**: „a fájl ebben nyílt meg: {app}”, mert a `-ban/-ben` illeszkedése a futásidőben érkező
   névtől függene. Dismiss és Open settings azonos a `commands.handler.openTerminalHere.dismiss` /
   `commands.handler.openTerminalHere.openSettings` fordításával.
+- **system default → `Rendszer szerinti`** · a katalógus (`settings.appearance.language.opt.system`,
+  `settings.appearance.dateTimeFormat.opt.system`) · `high`. A `settings.behavior.textEditorApp.systemDefault` zárójelben
+  teszi mögé az app nevét, mint a `settings.appearance.language.opt.systemWithLanguage`.
+- A „Choose an app…” és a „Checking your apps…” azonos a `settings.behavior.openTerminalHereApp.chooseApp` /
+  `settings.behavior.openTerminalHereApp.checking` fordításával. A tipp (`fileExplorer.edit.hint`) a
+  `commands.handler.openTerminalHere.hint` mintáját követi, a beállítás helye nélkül, mert a gombja egyenesen odavisz; a
+  `{app}` itt is toldalék nélkül áll.

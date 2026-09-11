@@ -617,6 +617,14 @@
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
+  "fileExplorer.edit.hint": "A fájl ebben nyílt meg: {app}. Legközelebb másik szerkesztőt szeretnél? Válaszd ki a Beállításokban.",
+  "@fileExplorer.edit.hint": {
+    "sourceHash": "3632f06"
+  },
+  "fileExplorer.edit.hintUnnamed": "A fájl az alapértelmezett szövegszerkesztődben nyílt meg. Legközelebb másikat szeretnél? Válaszd ki a Beállításokban.",
+  "@fileExplorer.edit.hintUnnamed": {
+    "sourceHash": "6216471"
+  },
   "fileExplorer.edit.dismiss": "Elvetés",
   "@fileExplorer.edit.dismiss": {
     "sourceHash": "48845bf"

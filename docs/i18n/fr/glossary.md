@@ -3367,3 +3367,9 @@ mêmes cas pour « Se connecter au serveur » et n'est pas dans le tas de réfé
   d’app sans article · `tentative`.
 - `{app}` suit `dans` sans article. Dismiss et Open settings identiques à `commands.handler.openTerminalHere.dismiss` /
   `commands.handler.openTerminalHere.openSettings`.
+- **system default → `par défaut du système`** · le catalogue (`settings.appearance.language.opt.system`,
+  `settings.appearance.dateTimeFormat.opt.system`) · `high`. `settings.behavior.textEditorApp.systemDefault` ajoute le
+  nom de l’app entre parenthèses, comme `settings.appearance.language.opt.systemWithLanguage`.
+- « Choose an app… » et « Checking your apps… » identiques à `settings.behavior.openTerminalHereApp.chooseApp` /
+  `settings.behavior.openTerminalHereApp.checking`. L’astuce (`fileExplorer.edit.hint`) suit
+  `commands.handler.openTerminalHere.hint`, sans dire où se trouve le réglage : son bouton y mène directement.

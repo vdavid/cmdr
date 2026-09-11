@@ -202,6 +202,13 @@ export interface SettingDefinition {
   disabledReason?: string
   /** Internal state that should not appear in any section (main tree or Advanced). Persisted via the same store. */
   hidden?: boolean
+  /**
+   * The setting renders only on macOS, so it joins the search index only there
+   * (`settings-search.ts`); off macOS a hit would open a page with nothing to show
+   * for it. Same meaning as `SearchableRow.macOSOnly`. It decides nothing about
+   * rendering: the section gates its own markup.
+   */
+  macOSOnly?: true
 
   // UI hints
   component?:
@@ -392,6 +399,7 @@ export interface SettingsValues {
   // F4's editor: `system`, a bundle id, or an absolute `.app` path for a "Choose
   // an app…" pick. Rust's `parse_choice` tells the three apart.
   'behavior.textEditorApp': string
+  'behavior.textEditorHintSeen': boolean
 
   // Open terminal here: a known terminal's bundle id, or an absolute `.app` path
   // for a "Choose an app…" pick. Rust's `parse_choice` tells the two apart.

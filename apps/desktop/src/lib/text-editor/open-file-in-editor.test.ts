@@ -57,19 +57,97 @@ import { openFileInEditor } from './open-file-in-editor'
 
 const { openInEditor, addToast, dismissToast, settings } = m
 const APP_KEY = 'behavior.textEditorApp'
+const HINT_KEY = 'behavior.textEditorHintSeen'
 const TOAST_ID = 'text-editor'
 const SUBLIME = 'com.sublimetext.4'
 const FILE = '/Users/dave/notes.txt'
 
 /** Resolves the launch with this report, filling in the fields a test doesn't care about. */
-function reports(report: { outcome?: string; openedInName?: string | null }): void {
+function reports(report: {
+  outcome?: string
+  openedInName?: string | null
+  otherEditorsInstalled?: boolean | null
+}): void {
   openInEditor.mockResolvedValue({ outcome: 'opened', openedInName: null, otherEditorsInstalled: null, ...report })
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   settings.clear()
+  // Spent unless a test says otherwise, so the suites below about which app launches
+  // and what a failure says don't also have to reason about the hint.
+  settings.set(HINT_KEY, true)
   reports({})
+})
+
+describe('openFileInEditor: the one-time hint', () => {
+  beforeEach(() => {
+    settings.set(HINT_KEY, false)
+  })
+
+  it('asks about other editors while the hint is due and the choice is the system default', async () => {
+    await openFileInEditor(FILE)
+
+    expect(openInEditor).toHaveBeenCalledExactlyOnceWith(FILE, 'system', true)
+  })
+
+  it('does not ask once the hint is spent', async () => {
+    settings.set(HINT_KEY, true)
+
+    await openFileInEditor(FILE)
+
+    expect(openInEditor).toHaveBeenCalledExactlyOnceWith(FILE, 'system', false)
+  })
+
+  it('raises the hint naming the app the file opened in, and spends the flag', async () => {
+    reports({ openedInName: 'TextEdit', otherEditorsInstalled: true })
+
+    await expect(openFileInEditor(FILE)).resolves.toBe(true)
+
+    expect(settings.get(HINT_KEY)).toBe(true)
+    expect(addToast).toHaveBeenCalledOnce()
+    expect(addToast.mock.calls[0][1]).toMatchObject({
+      id: TOAST_ID,
+      dismissal: 'persistent',
+      props: { message: 'fileExplorer.edit.hint {"app":"TextEdit"}', showDismiss: true },
+    })
+    expect(dismissToast.mock.invocationCallOrder[0]).toBeLessThan(addToast.mock.invocationCallOrder[0])
+  })
+
+  it('uses the unnamed wording when no name came back', async () => {
+    reports({ openedInName: null, otherEditorsInstalled: true })
+
+    await openFileInEditor(FILE)
+
+    expect(addToast.mock.calls[0][1]).toMatchObject({ props: { message: 'fileExplorer.edit.hintUnnamed' } })
+  })
+
+  it('says nothing and leaves the flag unspent when no other editor is installed', async () => {
+    reports({ openedInName: 'TextEdit', otherEditorsInstalled: false })
+
+    await openFileInEditor(FILE)
+
+    expect(addToast).not.toHaveBeenCalled()
+    expect(settings.get(HINT_KEY)).toBe(false)
+  })
+
+  it('spends the flag without asking about other editors when an editor is already chosen', async () => {
+    settings.set(APP_KEY, SUBLIME)
+
+    await openFileInEditor(FILE)
+
+    expect(openInEditor).toHaveBeenCalledExactlyOnceWith(FILE, SUBLIME, false)
+    expect(settings.get(HINT_KEY)).toBe(true)
+    expect(addToast).not.toHaveBeenCalled()
+  })
+
+  it('leaves the flag unspent when the launch never started', async () => {
+    openInEditor.mockRejectedValue(new FakeOpenInEditorFailure({ type: 'timedOut' }))
+
+    await openFileInEditor(FILE)
+
+    expect(settings.get(HINT_KEY)).toBe(false)
+  })
 })
 
 describe('openFileInEditor: which app it asks for', () => {

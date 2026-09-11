@@ -615,6 +615,14 @@
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
+  "fileExplorer.edit.hint": "已在 {app} 里打开这个文件。想下次换个编辑器？在“设置”里选一个。",
+  "@fileExplorer.edit.hint": {
+    "sourceHash": "3632f06"
+  },
+  "fileExplorer.edit.hintUnnamed": "已在你的默认文本编辑器里打开这个文件。想下次换一个？在“设置”里选一个。",
+  "@fileExplorer.edit.hintUnnamed": {
+    "sourceHash": "6216471"
+  },
   "fileExplorer.edit.dismiss": "关闭",
   "@fileExplorer.edit.dismiss": {
     "sourceHash": "48845bf"

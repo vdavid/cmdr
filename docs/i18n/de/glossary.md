@@ -2866,3 +2866,10 @@ genau diese Fälle für „Mit Server verbinden“ und fehlt im Stapel.
   ohne Artikel · `tentative`.
 - `{app}` steht nach `in` ohne Artikel („in {app} geöffnet“), so passt jeder App-Name. Dismiss und Open settings
   wortgleich mit `commands.handler.openTerminalHere.dismiss` / `commands.handler.openTerminalHere.openSettings`.
+- **system default → `Systemstandard`** · der Katalog (`settings.appearance.language.opt.system`,
+  `settings.appearance.dateTimeFormat.opt.system`) und der Eintrag „system default → Systemstandard“ oben · `high`.
+  `settings.behavior.textEditorApp.systemDefault` setzt den App-Namen in Klammern dahinter, wie
+  `settings.appearance.language.opt.systemWithLanguage`.
+- „Choose an app…“ und „Checking your apps…“ wortgleich mit `settings.behavior.openTerminalHereApp.chooseApp` /
+  `settings.behavior.openTerminalHereApp.checking`. Der Hinweis (`fileExplorer.edit.hint`) folgt
+  `commands.handler.openTerminalHere.hint`, nennt aber keinen Ort in den Einstellungen: sein Knopf führt direkt hin.

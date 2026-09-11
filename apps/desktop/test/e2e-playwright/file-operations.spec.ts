@@ -495,6 +495,11 @@ test.describe('New file round-trip', () => {
     // reset the record here and assert the intent below — proving the open goes
     // through the mock, not a real `open -t` that would leak a TextEdit window.
     await clearOpenedPaths(tauriPage)
+    // Spend the one-time text editor hint first. Whether it fires depends on which
+    // editors the machine running the suite has (any Mac with Xcode qualifies), and
+    // a hint left on screen fails this test through the global toast guard.
+    await ensureMcpClient(tauriPage)
+    await mcpCall('set_setting', { id: 'behavior.textEditorHintSeen', value: true })
     const fixtureRoot = getFixtureRoot()
 
     const fileName = `new-test-file-${String(Date.now())}.txt`

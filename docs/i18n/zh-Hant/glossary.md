@@ -1748,3 +1748,9 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
   `settings.behavior.openTerminalHereApp.label` 的「……使用」同一結構 · `tentative`。
 - `{app}` 前後留空格。Dismiss、Open settings 與 `commands.handler.openTerminalHere.dismiss` /
   `commands.handler.openTerminalHere.openSettings` 一致。
+- **system default → `跟隨系統`** · 目錄（`settings.appearance.language.opt.system`、
+  `settings.appearance.dateTimeFormat.opt.system`）· `high`。`settings.behavior.textEditorApp.systemDefault` 在後面用全形括號帶上
+  App 名，同 `settings.appearance.language.opt.systemWithLanguage`。
+- 「Choose an app…」、「Checking your apps…」與 `settings.behavior.openTerminalHereApp.chooseApp` /
+  `settings.behavior.openTerminalHereApp.checking` 一致。提示（`fileExplorer.edit.hint`）沿用
+  `commands.handler.openTerminalHere.hint` 的句式，但不寫設定的位置，因為它的按鈕直接跳過去。

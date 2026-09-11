@@ -292,10 +292,10 @@ Settings, in `messages/en/settings.json`:
 
 Toasts, in `messages/en/fileExplorer.json` beside `fileExplorer.edit.notOnThisMac`:
 
-- (M3) `fileExplorer.edit.hint`: "Opened in {app}. Want a different editor next time? Pick one in Settings, under
-  Navigation & file ops."
+- (M3) `fileExplorer.edit.hint`: "Opened in {app}. Want a different editor next time? Pick one in Settings." (no
+  location clause: the toast's "Open settings" button goes straight to the row)
 - (M3) `fileExplorer.edit.hintUnnamed`: "Opened in your default text editor. Want a different one next time? Pick one in
-  Settings, under Navigation & file ops."
+  Settings."
 - (M2) `fileExplorer.edit.dismiss`: "Dismiss"
 - (M2) `fileExplorer.edit.openSettings`: "Open settings"
 - (M2) `fileExplorer.edit.appMissing`: "Cmdr can't find the editor you picked, so this file opened in {app}."

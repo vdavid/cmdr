@@ -16,6 +16,10 @@ Add an entry to `settings-registry.ts`. Name the id after the UI vocabulary (`wh
   `color`, `text-input`)
 - `hidden: true` for internal state with no UI (for example a "last seen version" stamp). Hidden settings live in the
   same store and sync across windows but never render, so **skip step 2 for them**.
+- `macOSOnly: true` when the row renders only on macOS (the section gates its markup on `isMacOS()`). The setting then
+  joins the search index only on macOS, so a Linux search can't land on a card that isn't there. A `hidden` setting
+  still enters search, so a macOS-only feature's hidden flags take it too. See `lib/settings/DETAILS.md` § Searchable
+  rows.
 - `cardKey` when the page groups its rows into `SectionCard`s: set it to the SAME catalog key the card's title displays,
   so searching the card title surfaces the row. It's metadata only — it never decides whether the card renders (the
   section owns that via `visible`). See `lib/settings/DETAILS.md` § Card groups.

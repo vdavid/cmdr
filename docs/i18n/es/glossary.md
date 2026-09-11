@@ -3090,3 +3090,9 @@ casos para «Conectarse al servidor» y no está en la pila.
   app sin artículo ni género · `tentative`.
 - `{app}` va tras `en` sin artículo. Dismiss y Open settings iguales que `commands.handler.openTerminalHere.dismiss` /
   `commands.handler.openTerminalHere.openSettings`.
+- **system default → `por omisión del sistema`** · el catálogo (`settings.appearance.language.opt.system`,
+  `settings.appearance.dateTimeFormat.opt.system`) · `high`. `settings.behavior.textEditorApp.systemDefault` pone el
+  nombre de la app entre paréntesis detrás, como `settings.appearance.language.opt.systemWithLanguage`.
+- "Choose an app…" y "Checking your apps…" iguales que `settings.behavior.openTerminalHereApp.chooseApp` /
+  `settings.behavior.openTerminalHereApp.checking`. El aviso (`fileExplorer.edit.hint`) sigue a
+  `commands.handler.openTerminalHere.hint`, sin decir dónde está el ajuste: su botón lleva directo.

@@ -29,9 +29,40 @@ vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: m.warn, info: vi.fn(), debug: vi.fn(), error: vi.fn() }),
 }))
 
-import { getTextEditorChoice, openSettingsToTextEditor, setTextEditorChoice } from './text-editor-setting'
+import {
+  getTextEditorChoice,
+  getTextEditorHintSeen,
+  markTextEditorHintSeen,
+  openSettingsToTextEditor,
+  setTextEditorChoice,
+} from './text-editor-setting'
 
 const APP_KEY = 'behavior.textEditorApp'
+const HINT_KEY = 'behavior.textEditorHintSeen'
+
+describe('the one-time hint flag', () => {
+  it('reads unspent only while the store says false', () => {
+    m.settings.set(HINT_KEY, false)
+
+    expect(getTextEditorHintSeen()).toBe(false)
+  })
+
+  it('reads a missing or corrupt value as spent, so a hint that showed never comes back', () => {
+    expect(getTextEditorHintSeen()).toBe(true)
+
+    m.settings.set(HINT_KEY, 100)
+
+    expect(getTextEditorHintSeen()).toBe(true)
+  })
+
+  it('spends the flag', () => {
+    m.settings.set(HINT_KEY, false)
+
+    markTextEditorHintSeen()
+
+    expect(getTextEditorHintSeen()).toBe(true)
+  })
+})
 
 beforeEach(() => {
   vi.clearAllMocks()

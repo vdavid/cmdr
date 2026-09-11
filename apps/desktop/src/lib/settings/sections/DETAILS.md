@@ -22,15 +22,20 @@ sections compose).
   is one control, not two: the `listing.briefColumnWidthMode` radio group carries the `briefColumnWidthMaxPx` number
   field on its "Limit to" option's own line (`SettingRadioGroup`'s `itemTrailing`), greyed out while the other option is
   picked, so the row reads as the sentence the option label was written for ("Limit to [400 px]")
-- **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: four labeled `SectionCard`s — Navigation
-  (the `behavior.doubleClickPaneNavigatesToParent` switch), File operations (the extension-change confirmation row
-  `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group), Terminal (the `behavior.openTerminalHereApp`
-  row, see below), and Operation log (the retention limits `operationLog.maxAge` / `operationLog.maxSize`, plus the
+- **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: labeled `SectionCard`s — Navigation (the
+  `behavior.doubleClickPaneNavigatesToParent` switch), File operations (the extension-change confirmation row
+  `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group), Text editor (the `behavior.textEditorApp` row)
+  and Terminal (the `behavior.openTerminalHereApp` row), both macOS-only and described below, then Show in Finder
+  (`RevealHandlerCard`) and Operation log (the retention limits `operationLog.maxAge` / `operationLog.maxSize`, plus the
   `settings.operationLog.intro` blurb). The conflict/progress settings live ONLY in Advanced (`maxConflictsToShow`,
   `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. The hidden
-  `behavior.doubleClickOnPaneNotificationSeen` and `behavior.openTerminalHereToastSeen` flags (one-time-hint trackers)
-  are registered but render no row. Each card frame gated via `anyVisible(shouldShow, ...)` (the card-group pattern).
-- **`TerminalAppSelect.svelte`** + **`terminal-app-options.ts`**: the "Open terminal here uses" control. See below.
+  `behavior.doubleClickOnPaneNotificationSeen`, `behavior.textEditorHintSeen`, and `behavior.openTerminalHereToastSeen`
+  flags (one-time-hint trackers) are registered but render no row. Each card frame gated via `anyVisible(shouldShow,
+  ...)` (the card-group pattern).
+- **`AppChoiceSelect.svelte`** + **`app-choice-options.ts`**: the shell behind both rows that pick an app off this Mac.
+  **`TextEditorSelect.svelte`** + **`text-editor-options.ts`**: the "Edit files in" control.
+  **`TerminalAppSelect.svelte`** + **`terminal-app-options.ts`**: the "Open terminal here uses" control. See § "Rows
+  that pick an app" below.
 - **`RevealHandlerCard.svelte`**: the fifth card on that page, "Show in Finder": one switch deciding whether another
   app's reveal lands in a Cmdr pane. It's the only OS-BACKED row in Settings, so it owns its card frame rather than
   taking one from the section (only it can tell whether there's anything to render), carries no registry entry, and
@@ -531,38 +536,79 @@ the section top; the Low disk space card carries `LOW_DISK_SPACE_ANCHOR_ID` the 
 (`routes/settings/+page.svelte`) reads from the URL on cold-open and from the `navigate-to-section` event on
 already-open windows, then `scrollIntoView`s the matching element.
 
-### "Open terminal here uses": a row whose options are read off the machine
+### Rows that pick an app (`AppChoiceSelect.svelte`)
 
-macOS has no system-wide default terminal, so Cmdr keeps its own list. The Rust side owns it
-(`src-tauri/src/file_system/terminal.rs`: which apps it knows, how each one takes a folder, and which are installed
-right now); this row only renders the answer.
+Two rows choose an app off this Mac: "Edit files in" (`TextEditorSelect.svelte`) and "Open terminal here uses"
+(`TerminalAppSelect.svelte`). Both are thin wrappers over `AppChoiceSelect.svelte`, which owns the `Select`, the
+"Checking…" state, the picker, and the refresh after every write. Each wrapper hands it the list call, its own
+`*-options.ts` builders (the rows and the selected value), its strings, and optionally a `resolvePick` step.
+`app-choice-options.ts` holds the row shape and the `CHOOSE_APP_VALUE` sentinel both rows share.
 
-**Why it isn't `SettingSelect`.** Those options are registry constants. These are whatever is installed at this moment,
-so `TerminalAppSelect.svelte` builds them from `list_terminal_apps` instead: on mount, and again after every write. The
-query is one LaunchServices lookup per known app plus a bundle-icon read, cheap enough that caching would only buy a
-stale list the day someone installs Ghostty. Hence ❌ no `/Applications` scan and ❌ no refresh button, both settled in
-the Rust module.
+**Why it isn't `SettingSelect`.** Those options are registry constants. These are whatever is on this Mac at this moment,
+so the shell asks the backend on mount and again after every write of its setting. Each query is a few LaunchServices
+lookups plus bundle-icon reads, cheap enough that caching would only buy a stale list the day someone installs a new
+app. Hence ❌ no `/Applications` scan and ❌ no refresh button, both settled in the Rust modules.
 
-**The stored value carries both kinds of choice.** `behavior.openTerminalHereApp` is one string: a bundle id for a known
-terminal, an absolute `.app` path for a "Choose an app…" pick. Rust's `parse_choice` tells them apart structurally (a
-choice is a path exactly when it's absolute), which is why the frontend never has to tag or wrap the value. The
-`CHOOSE_APP_VALUE` sentinel is deliberately neither shape, so it couldn't be mistaken for a real choice even if a bug
-wrote it.
+**Ready means an answer landed that didn't time out, ❌ never "the app list is non-empty".** The text editor list leaves
+out the system default, so a Mac whose only editor is TextEdit answers a complete, empty `apps`, and that row must still
+offer "System default (TextEdit)" and "Choose an app…". A timed-out answer (the 2 s command deadline) keeps the control
+disabled at "Checking…": a short list would claim this Mac has fewer apps than it does, while staying disabled claims
+nothing.
 
 **The picker is the plugin's, not a new IPC.** "Choose an app…" opens `@tauri-apps/plugin-dialog`'s `open()` filtered to
 `app`, defaulting to `/Applications`, the same shape `MediaIndexChosenFolders` uses for its folder picker. Under the
 hood that's the same `NSOpenPanel` with the same `setAllowedFileTypes(["app"])` as the native "Open with > Other…" path,
 so `.app` bundles select as files. The settings window already grants `dialog:allow-open`. Cancelling returns `null` and
-the setting is left alone.
+the setting is left alone. A row's `resolvePick` turns the picked path into the value to store; without one, or when it
+throws, the path itself is stored, which Rust launches with `open -a`.
 
-**An uninstalled app shows as Terminal, without a write.** `list_terminal_apps` reports `chosenId: null` when the stored
-app is gone, and `selectedTerminalAppId` displays Terminal.app for it, matching what the action does when it falls back.
-It only DISPLAYS: rewriting the setting belongs to the moment the action actually opens Terminal instead, so browsing
-Settings never silently changes a choice.
+**A missing app displays its fallback, without a write.** Both backends report `chosenId: null` when the stored app is
+gone, and each row's selected-value function shows what the action itself falls back to (the system default, or
+Terminal.app). Rewriting the setting belongs to the moment the action actually falls back, so browsing Settings never
+changes a choice.
 
-**While the list is empty the control is disabled and reads "Checking…".** That covers both the first few milliseconds
-and the (very unlikely) case of the 2 s command deadline expiring, which answers with an empty list. Showing a short
-list would claim this Mac has fewer terminals than it does; staying disabled claims nothing.
+**Only the newest answer lands.** A pick refreshes once itself and its write's change event refreshes again; an older
+answer arriving last would show a stale list, so the shell drops it. A just-picked row shows at once until the next
+answer confirms it.
+
+**The `CHOOSE_APP_VALUE` sentinel is neither `system`, nor a bundle id, nor an absolute path**, the shapes Rust's
+`parse_choice` reads, so it couldn't be mistaken for a real choice even if a bug wrote it.
+
+**Both rows render on macOS only.** `NavigationAndFileOpsSection.svelte` gates both cards on `isMacOS()`, and both
+settings carry `macOSOnly`, so a search off macOS can't land on them (`../DETAILS.md` § Searchable rows).
+
+### "Edit files in": the text editor row
+
+Its options are what macOS lists as plain-text editors (`list_text_editors`, `src-tauri/src/file_system/DETAILS.md` §
+Text editor); `text-editor-options.ts` only presents that answer.
+
+- **Rows**: "System default (TextEdit)" first (plain "System default" when nothing on this Mac claims plain text), then
+  the other editors sorted by name with an `Intl.Collator` in the UI language, then "Choose an app…". LaunchServices'
+  own order shifts between calls, which is why the frontend sorts.
+- **The stored value** is `system`, a bundle id, or an absolute `.app` path
+  (`apps/desktop/src/lib/text-editor/DETAILS.md` § The stored choice).
+- **A pick is stored in canonical form.** `resolvePick` asks `listTextEditors(<picked path>)` and stores its `chosenId`:
+  a bundle id, unless the user picked a different copy than the one macOS would launch. A timed-out answer stores the
+  path. ❌ Browsing never rewrites a stored value; the canonical form is asked for once, at pick time.
+- **A missing editor shows as the system default**, which is what F4 opens before it resets the setting.
+- **Deep-linking here**: `openSettingsToTextEditor()` in `apps/desktop/src/lib/text-editor/text-editor-setting.ts`, the
+  target of every text editor toast. The hidden `behavior.textEditorHintSeen` flag beside the row belongs to the
+  one-time hint, whose rules live in `apps/desktop/src/lib/text-editor/DETAILS.md` § The hint. This row only reads and
+  writes the choice.
+- **Decided edge**: TextEdit picked through "Choose an app…" canonicalizes to `com.apple.TextEdit`, which isn't
+  `system`, so the row shows "System default (TextEdit)" AND a second "TextEdit" row. The pin survives a later change
+  of the system default.
+
+### "Open terminal here uses": a row whose options are read off the machine
+
+macOS has no system-wide default terminal, so Cmdr keeps its own list. The Rust side owns it
+(`src-tauri/src/file_system/terminal.rs`: which apps it knows, how each one takes a folder, and which are installed
+right now); this row only renders the answer, in the order the backend listed it.
+
+**The stored value carries both kinds of choice.** `behavior.openTerminalHereApp` is one string: a bundle id for a known
+terminal, an absolute `.app` path for a "Choose an app…" pick. Rust's `parse_choice` tells them apart structurally (a
+choice is a path exactly when it's absolute), which is why the frontend never has to tag or wrap the value, and why this
+row passes no `resolvePick`.
 
 **Deep-linking here** uses the standard row anchor:
 `openSettingsWindow(surface, ['Behavior', 'Navigation & file ops'], settingAnchorId('behavior.openTerminalHereApp'))`.
