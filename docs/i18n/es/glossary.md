@@ -3054,3 +3054,28 @@ donde se abre el panel. Montón de referencia minado en `_ignored/i18n/es/` (202
   `servers.refusal.timedOut`; la última frase es la forma más repetida del catálogo
   (`settings.mediaIndex.clip.deleteFailed`, `operationLog.dialog.loadError`, `ai.translateError.serverError.body`) ·
   `high`.
+
+## Por qué no se monta un recurso compartido o no carga su lista (`errors.mount.*`, `errors.shareList.*`, 2026-09-11)
+
+Las frases bajo «No se pudo montar el recurso compartido» (`fileExplorer.networkMount.mountFailedTitle`) y «No se pudo
+conectar con {hostName}» (`fileExplorer.network.share.connectFailedTitle`), más los avisos
+`fileExplorer.pane.directConnectionShareGoneToast`, `fileExplorer.pane.directConnectionMountNotRespondingToast`,
+`fileExplorer.pane.directConnectionNotNetworkShareToast` y `servers.refusal.accountNotPermitted`. Tier 1 del bundle VIVO
+`NetAuthAgent.app/Contents/Resources/Localizable.loctable` (macOS 26.6.2, 25G83, 2026-09-11), que redacta estos mismos
+casos para «Conectarse al servidor» y no está en la pila.
+
+- **share → `recurso compartido`** · NetAuthAgent `EINFO_NO_SHARES` («No hay recursos compartidos disponibles…») y el
+  título hermano · `high`. `EINFO_NO_SHARE` dice «volumen», pero el catálogo ya fijó `recurso compartido`.
+- **guest access → `acceso como invitado`** · NetAuthAgent `EINFO_NO_ACCESS_GUEST` («Este servidor no permite el acceso
+  como invitado.») · `high`. `signingRequired` lo usa tal cual para no nombrar a una persona.
+- **reach → `acceder a`**, **didn't answer in time → `no respondió a tiempo`** · `servers.refusal.unreachable`,
+  `servers.refusal.timedOut` · `high`
+- **this computer → `este equipo`** · hereda la decisión abierta de `style.md` (`tu equipo`); estas frases salen también
+  en Linux, así que no `Mac` · `tentative`
+- **You're signed in → `Tienes la sesión iniciada en …`** · un estado sin participio que concuerde con quien lee ·
+  `high`. **when you're ready → `cuando quieras`**, sin `listo/lista`.
+- **package → `paquete`** · KDE Dolphin («No se ha encontrado el paquete %1.») · `high`. **distribution (Linux) →
+  `distribución`** · la TBX solo trae el sentido logístico · `tentative`
+- **there's nothing to speed up → `no hay nada que acelerar`** · molde de `errors.eject.notAnSmbVolume` · `high`
+- Mismo inglés, mismo español: `errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable` y
+  `errors.mount.authFailed` / `errors.shareList.authFailed`. Comillas curvas, como `errors.volume.permissionDenied`.

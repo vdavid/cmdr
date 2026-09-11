@@ -1715,3 +1715,26 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 - **stays as a reminder（黃色狀態）** · `手機旁邊的黃色狀態會一直留著，提醒你這件事` · `黃色狀態` 與 `X 旁邊` 逐字沿用
   `indexing.staleDialog.body`；`提醒` 是目錄既有用字（`settings.fileExplorer.suppressQuickLookHint.description`）·
   `high`
+
+## 共享資料夾裝載不了、共享清單載入不出來時的那句話（`errors.mount.*`、`errors.shareList.*`，2026-09-11）
+
+`無法裝載共享資料夾`（`fileExplorer.networkMount.mountFailedTitle`）和 `無法連線到 {hostName}`
+（`fileExplorer.network.share.connectFailedTitle`）下面的那句話，加上
+`fileExplorer.pane.directConnectionShareGoneToast`、`fileExplorer.pane.directConnectionMountNotRespondingToast`、
+`fileExplorer.pane.directConnectionNotNetworkShareToast` 三則提示和 `servers.refusal.accountNotPermitted`。Tier
+1取自系統裡裝著的 `NetAuthAgent.app/Contents/Resources/Localizable.loctable`（macOS
+26.6.2，25G83，2026-09-11，TW 與 HK 兩邊）：它正是「連接伺服器」這些狀況的文案，參考素材裡沒有。
+
+- **share → `共享資料夾`** · 目錄已定（標題就是它）· `high`。NetAuthAgent `EINFO_NO_SHARE` 寫
+  `共享「%@」`，但這個目錄的名詞一律帶 `資料夾`。
+- **guest → `訪客`** · NetAuthAgent `EINFO_NO_ACCESS_GUEST`（TW = HK：`此伺服器不允許「訪客」連線。`）· `high`
+- **reach → `連不上`**、**didn't answer in time → `沒有及時回應`**、**isn't responding → `沒有回應`** ·
+  `servers.refusal.unreachable`、`servers.refusal.timedOut`、上面的 `is not responding` 一條 · `high`
+- **didn't work（帳密）→ `不管用`** · `servers.refusal.authenticationRejected` · `high`
+- **package → `套件`** · `licensing.acknowledgements.npmHeading`（`npm 套件`）、Microsoft `套件管理員` · `high`。
+  **distribution（Linux）→ `發行版`** · 沒有任何來源有 Linux 義項 · `tentative`
+- **Something went wrong → `出了點狀況`** · `errors.mutation.unexpected` · `high`
+- **there's nothing to speed up → `沒有連線需要加速`** · 句形取自 `errors.eject.notAnSmbVolume` · `high`
+- 英文相同的兩對譯文也逐字相同：`errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`、
+  `errors.mount.authFailed` / `errors.shareList.authFailed`。角括號 `「…」`；`Cmdr`、`SMB 2`、`GVFS`、`smbclient`
+  前後留空格。

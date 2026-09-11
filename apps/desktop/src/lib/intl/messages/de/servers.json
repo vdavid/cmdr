@@ -117,7 +117,7 @@
   "@servers.refusal.needsCredentials": {
     "sourceHash": "f5f689b"
   },
-  "servers.refusal.accountNotPermitted": "{username} doesn''t have access here. Try a different account.",
+  "servers.refusal.accountNotPermitted": "{username} hat hier keinen Zugriff. Versuche es mit einem anderen Konto.",
   "@servers.refusal.accountNotPermitted": {
     "sourceHash": "fbd3b7b"
   },

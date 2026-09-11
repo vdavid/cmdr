@@ -2852,3 +2852,32 @@ se repetem nas nove chaves (rótulos, legendas e recusas), então cada um é uma
 
 Nenhum valor leva apóstrofo, então não há `''` a dobrar, e nenhum precisa de `sameAsSourceJustification`. Varredura
 pt-PT: zero `ficheiro`, `estar a` + infinitivo, `guardar`, próclise antes de infinitivo, `tu`.
+
+## Por que um compartilhamento não monta ou a lista não carrega (`errors.mount.*`, `errors.shareList.*`, 2026-09-11)
+
+As frases sob «Não foi possível montar o compartilhamento» (`fileExplorer.networkMount.mountFailedTitle`) e «Não foi
+possível conectar a {hostName}» (`fileExplorer.network.share.connectFailedTitle`), mais os avisos
+`fileExplorer.pane.directConnectionShareGoneToast`, `fileExplorer.pane.directConnectionMountNotRespondingToast`,
+`fileExplorer.pane.directConnectionNotNetworkShareToast` e `servers.refusal.accountNotPermitted`. Tier 1 do pacote
+instalado `NetAuthAgent.app/Contents/Resources/Localizable.loctable` (macOS 26.6.2, 25G83, 2026-09-11, lado `pt_BR`),
+que redige esses mesmos casos para «Conectar ao Servidor» e não está na pilha.
+
+- **share → `compartilhamento`** · NetAuthAgent `EINFO_NO_SHARE` («O compartilhamento “%@” não existe no servidor.») ·
+  high
+- **guests → `convidados`** · NetAuthAgent `EINFO_NO_ACCESS_GUEST` («Este servidor não permite acesso a convidados.») ·
+  high
+- **reach → `alcançar`**, **didn't answer in time → `não respondeu a tempo`**, **isn't responding →
+  `não está respondendo`** · `servers.refusal.unreachable`, `servers.refusal.timedOut`, a linha `isn't responding` acima
+  · high
+- **server settings (o painel de um NAS) → `configurações do servidor`** · não é o app Ajustes da Apple, então fica a
+  palavra genérica pt-BR · tentative
+- **when you're ready → `quando quiser`** · evita `pronto/pronta` · high
+- **package → `pacote`** · KDE Dolphin («Não foi possível encontrar pacote %1.»),
+  `licensing.acknowledgements.npmHeading` · high. **distribution (Linux) → `distribuição`** · a TBX só traz o sentido
+  logístico · tentative
+- **there's nothing to speed up → `então não há nada para acelerar`** · o molde fixo de `style.md` · high
+- **Try again in a moment → `Tente novamente em instantes.`** · `operationLog.dialog.loadError` · high
+- Mesmo inglês, mesmo português: `errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`,
+  `errors.mount.authFailed` / `errors.shareList.authFailed`. Aspas retas, como `errors.volume.permissionDenied`.
+  Varredura pt-PT: zero `ficheiro`, `estar a` + infinitivo, próclise pt-PT (`se recusou` e `se conectar` são a colocação
+  pt-BR).

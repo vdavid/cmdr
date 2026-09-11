@@ -230,6 +230,16 @@ parallel":
   files kept their names") is what the pile attests, so it pulls hard — but when the key also carries a `{reason}`
   describing only X, merging silently widens that reason to all N+1 files. Keep the tail as its own clause. Hit in
   `fileExplorer.rename.chainKeptOriginalNameAndOthers` by zh, hu, and nl independently.
+- **SMB connection copy has a Tier-1 source the pile doesn't carry: NetAuthAgent.** Apple's "Connect to Server" errors
+  live in `/System/Library/CoreServices/NetAuthAgent.app/Contents/Resources/Localizable.loctable`, every language in one
+  file, with readable keys: `EINFO_NO_SHARE` (a share that doesn't exist), `EINFO_NO_ACCESS_GUEST` (no guest access),
+  `EINFO_UNSUPPORTED_VERSION` (server version not supported), `EMSG_INVALID_NAME_PWD` (wrong username or password),
+  `EINFO_NO_SERVER` (server missing or unavailable). They settle share, guest, and the article or case pattern around a
+  quoted server name in all ten locales at once (verified on macOS 26.6.2, build 25G83, 2026-09-11). Apple words them
+  formally (hu önözés, "Please …"), so take the terms and the name pattern, not the register.
+- **A Linux "distribution" has no source in any locale.** Microsoft's TBX carries only the logistics sense (de
+  `Verteilung`, hu `elosztás`, zh `分配`), and none of the file-manager catalogs use the word. Every locale took its
+  community standard (`Distribution`, `disztribúció`, `发行版`, …) and recorded it `tentative`. Don't take the TBX hit.
 
 ## Orchestration gotchas (for whoever automates this)
 

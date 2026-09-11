@@ -3329,3 +3329,29 @@ paneel opent. Beide termen staan byte-gelijk in de labels, de hulpregels en de w
   technisch niet kan; `hem` voor `de map`, zoals `Cmdr maakt hem aan` · `tentative`
 - **nothing was saved → `er is niets bewaard`** · glossary save → `bewaren` (macOS), `{host} reageerde niet op tijd`
   byte-gelijk aan `servers.refusal.timedOut` · `high`
+
+## Waarom een gedeelde map niet aankoppelt of de lijst niet laadt (`errors.mount.*`, `errors.shareList.*`, 2026-09-11)
+
+De zinnen onder „Gedeelde map aankoppelen lukte niet” (`fileExplorer.networkMount.mountFailedTitle`) en „Verbinden met
+{hostName} lukte niet” (`fileExplorer.network.share.connectFailedTitle`), plus de meldingen
+`fileExplorer.pane.directConnectionShareGoneToast`, `fileExplorer.pane.directConnectionMountNotRespondingToast`,
+`fileExplorer.pane.directConnectionNotNetworkShareToast` en `servers.refusal.accountNotPermitted`. Tier 1 uit de LIVE
+bundel `NetAuthAgent.app/Contents/Resources/Localizable.loctable` (macOS 26.6.2, 25G83, 2026-09-11), die precies deze
+gevallen voor „Verbind met server” formuleert en niet in de stapel zit.
+
+- **share (in het paneel) → `gedeelde map`** · de titel ernaast en `fileExplorer.network.share.notFound` · `high`.
+  NetAuthAgent `EINFO_NO_SHARE` zegt `share`, maar het paneel heeft `gedeelde map` al vastgelegd. **network share →
+  `netwerkshare`** blijft voor „is geen netwerkshare”, zoals `errors.eject.notAnSmbVolume`.
+- **guests → `gasten`** · NetAuthAgent `EINFO_NO_ACCESS_GUEST` („Voor deze server is geen gasttoegang toegestaan.”) ·
+  `high`
+- **reach → `bereiken`**, **didn't answer in time → `reageerde niet op tijd`**, **isn't responding → `reageert niet`** ·
+  `servers.refusal.unreachable`, `servers.refusal.timedOut`, de rij respond → `reageren` · `high`
+- **turned on → `is ingeschakeld`** · `errors.listing.hostUnreachable.suggestion` · `high`
+- **`{server}` en `{share}` krijgen geen voornaamwoord**: de zin herhaalt `de server` of `de gedeelde map` (`style.md`)
+  · `high`
+- **package → `pakket`** · KDE Dolphin („Kon pakket %1 niet vinden.”) · `high`. **distribution (Linux) → `distributie`**
+  · geen bron in de Linux-betekenis · `tentative`
+- **there's nothing to speed up → `dus er valt niets te versnellen`** · kader van `errors.eject.volumeNotFound` · `high`
+- **Try again in a moment → `Probeer het zo meteen opnieuw.`** · `errors.volume.deletePending` · `high`
+- Zelfde Engels, zelfde Nederlands: `errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`,
+  `errors.mount.authFailed` / `errors.shareList.authFailed`.

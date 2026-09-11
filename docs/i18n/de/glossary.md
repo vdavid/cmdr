@@ -2823,3 +2823,34 @@ hinausgeht, und der Ordner, in dem sich ein Bereich beim Öffnen des Servers zei
 - **„Leave it empty to …“ → `Leer lassen, um … zu …`** · der Katalog (`settings.askCmdr.interactiveModel.description`
   „Leer lassen, um dasselbe Modell … zu verwenden.“) · `high`. `benennen` passt hier, anders als in `identityLocked`,
   weil der Hinweis wirklich über die Beschriftung im Feld `Name` spricht.
+
+## Warum eine Freigabe nicht eingebunden wird oder die Freigabenliste nicht lädt (`errors.mount.*`, `errors.shareList.*`, 2026-09-11)
+
+Die Sätze unter den Titeln „Freigabe ließ sich nicht einbinden“ (`fileExplorer.networkMount.mountFailedTitle`) und
+„Verbindung zu {hostName} nicht möglich“ (`fileExplorer.network.share.connectFailedTitle`), dazu die drei Toasts
+`fileExplorer.pane.directConnectionShareGoneToast`, `fileExplorer.pane.directConnectionMountNotRespondingToast`,
+`fileExplorer.pane.directConnectionNotNetworkShareToast` und `servers.refusal.accountNotPermitted`. Tier 1 aus dem
+LIVE-Bundle `NetAuthAgent.app/Contents/Resources/Localizable.loctable` (macOS 26.6.2, 25G83, 2026-09-11): es formuliert
+genau diese Fälle für „Mit Server verbinden“ und fehlt im Stapel.
+
+- **share → `Freigabe`** · NetAuthAgent `EINFO_NO_SHARE` („Die Freigabe „%@“ existiert nicht auf dem Server.“) · `high`
+- **guests → `Gäste`** · NetAuthAgent `EINFO_NO_ACCESS_GUEST` („Dieser Server erlaubt keinen Gastzugriff.“) · `high`.
+  `„{server}“ zeigt Gästen keine Freigaben` spart das Possessiv `seine` auf dem Platzhalter.
+- **SMB version → `SMB-Version`** · `EINFO_UNSUPPORTED_VERSION` („Die Version des Servers …“), Bindestrich wie
+  `SMB-Freigaben` · `high`
+- **isn't responding (eine Netzwerkfreigabe) → `antwortet nicht`** · die Zeile `isn''t responding` oben:
+  `antwortet nicht` fürs Netz, `reagiert nicht` fürs Gerät am Kabel · `high`
+- **this computer → `dieser Computer`** · der Katalog (`settings.mediaIndex.privacyNote` „deinen Computer“) · `high`.
+  Die Sätze erscheinen auch unter Linux, deshalb nicht `Mac`.
+- **package → `Paket`** · KDE Dolphin („Das Paket %1 kann nicht gefunden werden.“),
+  `licensing.acknowledgements.npmHeading` („npm-Pakete“) · `high`. **distribution (Linux) → `Distribution`** · kein
+  Beleg im Linux-Sinn; Microsofts `Verteilung` ist der Logistik-Sinn · `tentative`
+- **Rückverweis auf `{server}` → `der Server`**, nie `er`/`es` (`style.md` § Notes) · `high`. `mountRefused` sagt
+  `der Server hat das Öffnen … abgelehnt`, damit niemand das Passwort für die Ursache hält.
+- **„there's no connection to speed up“ → `es gibt also nichts zu beschleunigen`** · Rahmen aus
+  `errors.eject.notAnSmbVolume` und `errors.eject.volumeNotFound` · `high`
+- **„Try again in a moment“ → `Versuche es gleich noch einmal.`** · wortgleich mit `errors.volume.deletePending` ·
+  `high`
+- Gleiches Englisch, gleiches Deutsch: `errors.mount.hostUnreachable` = `errors.shareList.hostUnreachable`,
+  `errors.mount.authFailed` = `errors.shareList.authFailed`. `errors.*` ist roh: normale Apostrophe, `„…“` wie
+  `errors.volume.permissionDenied`.

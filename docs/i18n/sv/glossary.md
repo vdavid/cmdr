@@ -2907,3 +2907,30 @@ etiketter, hjälprader och vägranden. Ersätter den borttagna etiketten "Remote
   katalogens `Försök igen om en stund.` `high`.
 
 Inga `sameAsSourceJustification`; `{host}` står oförändrad, och ingen apostrof i värdena.
+
+## Varför en delad mapp inte monteras eller listan inte läses in (`errors.mount.*`, `errors.shareList.*`, 2026-09-11)
+
+Meningarna under ”Det gick inte att montera den delade mappen” (`fileExplorer.networkMount.mountFailedTitle`) och ”Det
+gick inte att ansluta till {hostName}” (`fileExplorer.network.share.connectFailedTitle`), plus notiserna
+`fileExplorer.pane.directConnectionShareGoneToast`, `fileExplorer.pane.directConnectionMountNotRespondingToast`,
+`fileExplorer.pane.directConnectionNotNetworkShareToast` och `servers.refusal.accountNotPermitted`. Tier 1 ur den
+INSTALLERADE bunten `NetAuthAgent.app/Contents/Resources/Localizable.loctable` (macOS 26.6.2, 25G83, 2026-09-11), som
+formulerar just de här fallen för ”Anslut till server” och saknas i referenssamlingen.
+
+- **share → `delad mapp`** · glossaryns satta ord och titeln bredvid · `high`. NetAuthAgent `EINFO_NO_SHARE` säger
+  `Delningspunkten`, men katalogen har redan `delad mapp`.
+- **guests → `gäster`** · NetAuthAgent `EINFO_NO_ACCESS_GUEST` (”Den här filservern tillåter inte gäståtkomst.”) ·
+  `high`
+- **reach → `nå`**, **didn't answer in time → `svarade inte i tid`**, **isn't responding → `svarar inte`** ·
+  `servers.refusal.unreachable`, `servers.refusal.timedOut`, `adb.readiness.offline` · `high`
+- **turned on → `påslagen`**, **same network → `på samma nätverk`** · `errors.listing.hostUnreachable.suggestion` ·
+  `high`. **this computer → `den här datorn`**: meningarna visas även på Linux.
+- **network shares → `delade mappar på nätverket`** · `errors.listing.remotePermissionDenied.explanation` · `high`
+- **package → `paket`** · KDE Dolphin (”Kunde inte hitta paketet %1.”) · `high`. **distribution (Linux) →
+  `distribution`** · inget belägg i Linux-betydelsen · `tentative`. `smbclient` är ett program:
+  `som inte är installerat`, `Installera det`.
+- **`igen … igen` undviks**: `resolutionFailed` säger `försök på nytt när servern är online igen` · `high`
+- **there's nothing to speed up → `så det finns inget att snabba upp`** · ramen från `errors.eject.notAnSmbVolume` ·
+  `high`
+- Samma engelska, samma svenska: `errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`,
+  `errors.mount.authFailed` / `errors.shareList.authFailed`.

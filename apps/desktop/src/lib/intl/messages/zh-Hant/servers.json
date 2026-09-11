@@ -115,7 +115,7 @@
   "@servers.refusal.needsCredentials": {
     "sourceHash": "f5f689b"
   },
-  "servers.refusal.accountNotPermitted": "{username} doesn''t have access here. Try a different account.",
+  "servers.refusal.accountNotPermitted": "{username} 在這裡沒有存取權。請改用其他帳號試試。",
   "@servers.refusal.accountNotPermitted": {
     "sourceHash": "fbd3b7b"
   },

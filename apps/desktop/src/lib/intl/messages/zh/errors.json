@@ -1737,83 +1737,83 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.mount.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.mount.hostUnreachable": "Cmdr 连不上“{server}”。请确认它已开机，并且和这台电脑在同一个网络上。",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.mount.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Check that it's turned on and reachable, then try again.",
+  "errors.mount.timeout": "Cmdr 等了一会儿，但“{server}”没能及时响应。请确认它已开机并且可以连接，然后重试。",
   "@errors.mount.timeout": {
     "sourceHash": "bfb786c"
   },
-  "errors.mount.shareNotFound": "There's no share called \"{share}\" on \"{server}\". Go back and pick one from the list.",
+  "errors.mount.shareNotFound": "“{server}”上没有名为“{share}”的共享。请返回并从列表中选择一个。",
   "@errors.mount.shareNotFound": {
     "sourceHash": "4f930a5"
   },
-  "errors.mount.authRequired": "Sign in to open \"{share}\" on \"{server}\".",
+  "errors.mount.authRequired": "请登录以打开“{server}”上的“{share}”。",
   "@errors.mount.authRequired": {
     "sourceHash": "8466652"
   },
-  "errors.mount.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.mount.authFailed": "这个用户名和密码在“{server}”上不起作用。请检查后重新登录。",
   "@errors.mount.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.mount.permissionDenied": "You're signed in to \"{server}\" as \"{username}\", but that account can't open \"{share}\". Sign in with a different account.",
+  "errors.mount.permissionDenied": "你已用“{username}”登录“{server}”，但这个账户无法打开“{share}”。请用其他账户登录。",
   "@errors.mount.permissionDenied": {
     "sourceHash": "12e20d9"
   },
-  "errors.mount.cancelled": "Connecting to \"{share}\" stopped before it finished. Try again when you're ready.",
+  "errors.mount.cancelled": "连接“{share}”的过程在完成前停止了。准备好后请重试。",
   "@errors.mount.cancelled": {
     "sourceHash": "0b0ec30"
   },
-  "errors.mount.unsupportedProtocol": "This computer and \"{server}\" have no SMB version in common. Turn on SMB 2 or later in the server's settings, then try again.",
+  "errors.mount.unsupportedProtocol": "这台电脑和“{server}”没有共同支持的 SMB 版本。请在服务器设置中开启 SMB 2 或更新版本，然后重试。",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "bf9c71e"
   },
-  "errors.mount.mountRefused": "You're signed in to \"{server}\", but it wouldn't open \"{share}\". Check the share's settings on the server, then try again.",
+  "errors.mount.mountRefused": "你已登录“{server}”，但它拒绝打开“{share}”。请在服务器上检查这个共享的设置，然后重试。",
   "@errors.mount.mountRefused": {
     "sourceHash": "c354782"
   },
-  "errors.mount.mountMissing": "Your computer said \"{share}\" on \"{server}\" was connected, but it never showed up. Try again.",
+  "errors.mount.mountMissing": "你的电脑报告“{server}”上的“{share}”已连接，但它始终没有出现。请重试。",
   "@errors.mount.mountMissing": {
     "sourceHash": "a5f61b5"
   },
-  "errors.mount.gvfsMissing": "Connecting to network shares on Linux needs GVFS. Install your distribution's gvfs-smb package, then try again.",
+  "errors.mount.gvfsMissing": "在 Linux 上连接网络共享需要 GVFS。请安装你所用发行版的 gvfs-smb 软件包，然后重试。",
   "@errors.mount.gvfsMissing": {
     "sourceHash": "068da95"
   },
-  "errors.mount.unexpected": "Something went wrong while connecting to \"{share}\" on \"{server}\". Try again in a moment.",
+  "errors.mount.unexpected": "连接“{server}”上的“{share}”时出了点问题。请稍后重试。",
   "@errors.mount.unexpected": {
     "sourceHash": "8daf9ba"
   },
-  "errors.shareList.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.shareList.hostUnreachable": "Cmdr 连不上“{server}”。请确认它已开机，并且和这台电脑在同一个网络上。",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.shareList.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Try again in a moment.",
+  "errors.shareList.timeout": "Cmdr 等了一会儿，但“{server}”没能及时响应。请稍后重试。",
   "@errors.shareList.timeout": {
     "sourceHash": "ae84e14"
   },
-  "errors.shareList.authRequired": "Sign in to see the shares on \"{server}\".",
+  "errors.shareList.authRequired": "请登录以查看“{server}”上的共享。",
   "@errors.shareList.authRequired": {
     "sourceHash": "4268ae9"
   },
-  "errors.shareList.signingRequired": "\"{server}\" doesn't show its shares to guests. Sign in to see them.",
+  "errors.shareList.signingRequired": "“{server}”不向来宾显示共享。请登录后查看。",
   "@errors.shareList.signingRequired": {
     "sourceHash": "8ae651a"
   },
-  "errors.shareList.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.shareList.authFailed": "这个用户名和密码在“{server}”上不起作用。请检查后重新登录。",
   "@errors.shareList.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.shareList.protocolError": "Something went wrong while asking \"{server}\" for its shares. Try again in a moment.",
+  "errors.shareList.protocolError": "向“{server}”获取共享列表时出了点问题。请稍后重试。",
   "@errors.shareList.protocolError": {
     "sourceHash": "064a773"
   },
-  "errors.shareList.resolutionFailed": "Cmdr couldn't find \"{server}\" on the network. Check its name, or try again once it's back online.",
+  "errors.shareList.resolutionFailed": "Cmdr 在网络上找不到“{server}”。请检查名称，或等它重新上线后再试。",
   "@errors.shareList.resolutionFailed": {
     "sourceHash": "d2e5b54"
   },
-  "errors.shareList.missingDependency": "Listing shares on this computer needs smbclient, which isn't installed. Install it, then try again.",
+  "errors.shareList.missingDependency": "在这台电脑上列出共享需要 smbclient，但它尚未安装。请安装后重试。",
   "@errors.shareList.missingDependency": {
     "sourceHash": "810b06a"
   },

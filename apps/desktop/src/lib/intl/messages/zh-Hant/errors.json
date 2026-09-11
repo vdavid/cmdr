@@ -1737,83 +1737,83 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.mount.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.mount.hostUnreachable": "Cmdr 連不上「{server}」。請確認它已經開機，而且和這台電腦在同一個網路上。",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.mount.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Check that it's turned on and reachable, then try again.",
+  "errors.mount.timeout": "Cmdr 等了一下，但「{server}」沒有及時回應。請確認它已經開機而且連得上，然後再試一次。",
   "@errors.mount.timeout": {
     "sourceHash": "bfb786c"
   },
-  "errors.mount.shareNotFound": "There's no share called \"{share}\" on \"{server}\". Go back and pick one from the list.",
+  "errors.mount.shareNotFound": "「{server}」上沒有名為「{share}」的共享資料夾。請返回，從清單中挑一個。",
   "@errors.mount.shareNotFound": {
     "sourceHash": "4f930a5"
   },
-  "errors.mount.authRequired": "Sign in to open \"{share}\" on \"{server}\".",
+  "errors.mount.authRequired": "請先登入，才能開啟「{server}」上的「{share}」。",
   "@errors.mount.authRequired": {
     "sourceHash": "8466652"
   },
-  "errors.mount.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.mount.authFailed": "這組使用者名稱和密碼在「{server}」上不管用。請檢查一下，再重新登入。",
   "@errors.mount.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.mount.permissionDenied": "You're signed in to \"{server}\" as \"{username}\", but that account can't open \"{share}\". Sign in with a different account.",
+  "errors.mount.permissionDenied": "你已經用「{username}」登入「{server}」，但這個帳號無法開啟「{share}」。請改用其他帳號登入。",
   "@errors.mount.permissionDenied": {
     "sourceHash": "12e20d9"
   },
-  "errors.mount.cancelled": "Connecting to \"{share}\" stopped before it finished. Try again when you're ready.",
+  "errors.mount.cancelled": "連線到「{share}」的過程在完成前就停止了。準備好之後再試一次。",
   "@errors.mount.cancelled": {
     "sourceHash": "0b0ec30"
   },
-  "errors.mount.unsupportedProtocol": "This computer and \"{server}\" have no SMB version in common. Turn on SMB 2 or later in the server's settings, then try again.",
+  "errors.mount.unsupportedProtocol": "這台電腦和「{server}」沒有共同支援的 SMB 版本。請在伺服器的設定中開啟 SMB 2 或更新版本，然後再試一次。",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "bf9c71e"
   },
-  "errors.mount.mountRefused": "You're signed in to \"{server}\", but it wouldn't open \"{share}\". Check the share's settings on the server, then try again.",
+  "errors.mount.mountRefused": "你已經登入「{server}」，但它不肯開啟「{share}」。請到伺服器上檢查這個共享資料夾的設定，然後再試一次。",
   "@errors.mount.mountRefused": {
     "sourceHash": "c354782"
   },
-  "errors.mount.mountMissing": "Your computer said \"{share}\" on \"{server}\" was connected, but it never showed up. Try again.",
+  "errors.mount.mountMissing": "你的電腦回報「{server}」上的「{share}」已經連線，但它一直沒有出現。請再試一次。",
   "@errors.mount.mountMissing": {
     "sourceHash": "a5f61b5"
   },
-  "errors.mount.gvfsMissing": "Connecting to network shares on Linux needs GVFS. Install your distribution's gvfs-smb package, then try again.",
+  "errors.mount.gvfsMissing": "在 Linux 上連線到網路共享資料夾需要 GVFS。請安裝你所用發行版的 gvfs-smb 套件，然後再試一次。",
   "@errors.mount.gvfsMissing": {
     "sourceHash": "068da95"
   },
-  "errors.mount.unexpected": "Something went wrong while connecting to \"{share}\" on \"{server}\". Try again in a moment.",
+  "errors.mount.unexpected": "連線到「{server}」上的「{share}」時出了點狀況。請稍後再試一次。",
   "@errors.mount.unexpected": {
     "sourceHash": "8daf9ba"
   },
-  "errors.shareList.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.shareList.hostUnreachable": "Cmdr 連不上「{server}」。請確認它已經開機，而且和這台電腦在同一個網路上。",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.shareList.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Try again in a moment.",
+  "errors.shareList.timeout": "Cmdr 等了一下，但「{server}」沒有及時回應。請稍後再試一次。",
   "@errors.shareList.timeout": {
     "sourceHash": "ae84e14"
   },
-  "errors.shareList.authRequired": "Sign in to see the shares on \"{server}\".",
+  "errors.shareList.authRequired": "請登入以查看「{server}」上的共享資料夾。",
   "@errors.shareList.authRequired": {
     "sourceHash": "4268ae9"
   },
-  "errors.shareList.signingRequired": "\"{server}\" doesn't show its shares to guests. Sign in to see them.",
+  "errors.shareList.signingRequired": "「{server}」不會向訪客顯示共享資料夾。請登入後再查看。",
   "@errors.shareList.signingRequired": {
     "sourceHash": "8ae651a"
   },
-  "errors.shareList.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.shareList.authFailed": "這組使用者名稱和密碼在「{server}」上不管用。請檢查一下，再重新登入。",
   "@errors.shareList.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.shareList.protocolError": "Something went wrong while asking \"{server}\" for its shares. Try again in a moment.",
+  "errors.shareList.protocolError": "向「{server}」取得共享資料夾清單時出了點狀況。請稍後再試一次。",
   "@errors.shareList.protocolError": {
     "sourceHash": "064a773"
   },
-  "errors.shareList.resolutionFailed": "Cmdr couldn't find \"{server}\" on the network. Check its name, or try again once it's back online.",
+  "errors.shareList.resolutionFailed": "Cmdr 在網路上找不到「{server}」。請檢查名稱，或等它重新上線後再試一次。",
   "@errors.shareList.resolutionFailed": {
     "sourceHash": "d2e5b54"
   },
-  "errors.shareList.missingDependency": "Listing shares on this computer needs smbclient, which isn't installed. Install it, then try again.",
+  "errors.shareList.missingDependency": "在這台電腦上列出共享資料夾需要 smbclient，但它還沒有安裝。請安裝之後再試一次。",
   "@errors.shareList.missingDependency": {
     "sourceHash": "810b06a"
   },

@@ -1737,83 +1737,83 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.mount.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.mount.hostUnreachable": "Cmdr kon ‘{server}’ niet bereiken. Controleer of de server is ingeschakeld en op hetzelfde netwerk zit als deze computer.",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.mount.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Check that it's turned on and reachable, then try again.",
+  "errors.mount.timeout": "Cmdr heeft gewacht, maar ‘{server}’ reageerde niet op tijd. Controleer of de server is ingeschakeld en bereikbaar is, en probeer het dan opnieuw.",
   "@errors.mount.timeout": {
     "sourceHash": "bfb786c"
   },
-  "errors.mount.shareNotFound": "There's no share called \"{share}\" on \"{server}\". Go back and pick one from the list.",
+  "errors.mount.shareNotFound": "Er is geen gedeelde map met de naam ‘{share}’ op ‘{server}’. Ga terug en kies er een uit de lijst.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "4f930a5"
   },
-  "errors.mount.authRequired": "Sign in to open \"{share}\" on \"{server}\".",
+  "errors.mount.authRequired": "Log in bij ‘{server}’ om ‘{share}’ te openen.",
   "@errors.mount.authRequired": {
     "sourceHash": "8466652"
   },
-  "errors.mount.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.mount.authFailed": "Die gebruikersnaam en dat wachtwoord werkten niet op ‘{server}’. Controleer ze en log opnieuw in.",
   "@errors.mount.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.mount.permissionDenied": "You're signed in to \"{server}\" as \"{username}\", but that account can't open \"{share}\". Sign in with a different account.",
+  "errors.mount.permissionDenied": "Je bent bij ‘{server}’ ingelogd als ‘{username}’, maar dat account kan ‘{share}’ niet openen. Log in met een ander account.",
   "@errors.mount.permissionDenied": {
     "sourceHash": "12e20d9"
   },
-  "errors.mount.cancelled": "Connecting to \"{share}\" stopped before it finished. Try again when you're ready.",
+  "errors.mount.cancelled": "Het verbinden met ‘{share}’ stopte voordat het klaar was. Probeer het opnieuw wanneer je wilt.",
   "@errors.mount.cancelled": {
     "sourceHash": "0b0ec30"
   },
-  "errors.mount.unsupportedProtocol": "This computer and \"{server}\" have no SMB version in common. Turn on SMB 2 or later in the server's settings, then try again.",
+  "errors.mount.unsupportedProtocol": "Deze computer en ‘{server}’ hebben geen SMB-versie gemeen. Schakel SMB 2 of later in bij de instellingen van de server en probeer het dan opnieuw.",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "bf9c71e"
   },
-  "errors.mount.mountRefused": "You're signed in to \"{server}\", but it wouldn't open \"{share}\". Check the share's settings on the server, then try again.",
+  "errors.mount.mountRefused": "Je bent ingelogd bij ‘{server}’, maar de server wilde ‘{share}’ niet openen. Controleer de instellingen van de gedeelde map op de server en probeer het dan opnieuw.",
   "@errors.mount.mountRefused": {
     "sourceHash": "c354782"
   },
-  "errors.mount.mountMissing": "Your computer said \"{share}\" on \"{server}\" was connected, but it never showed up. Try again.",
+  "errors.mount.mountMissing": "Je computer meldde dat ‘{share}’ op ‘{server}’ verbonden was, maar de gedeelde map verscheen nooit. Probeer het opnieuw.",
   "@errors.mount.mountMissing": {
     "sourceHash": "a5f61b5"
   },
-  "errors.mount.gvfsMissing": "Connecting to network shares on Linux needs GVFS. Install your distribution's gvfs-smb package, then try again.",
+  "errors.mount.gvfsMissing": "Om op Linux verbinding te maken met netwerkshares is GVFS nodig. Installeer het pakket gvfs-smb van je distributie en probeer het dan opnieuw.",
   "@errors.mount.gvfsMissing": {
     "sourceHash": "068da95"
   },
-  "errors.mount.unexpected": "Something went wrong while connecting to \"{share}\" on \"{server}\". Try again in a moment.",
+  "errors.mount.unexpected": "Er ging iets mis bij het verbinden met ‘{share}’ op ‘{server}’. Probeer het zo meteen opnieuw.",
   "@errors.mount.unexpected": {
     "sourceHash": "8daf9ba"
   },
-  "errors.shareList.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.shareList.hostUnreachable": "Cmdr kon ‘{server}’ niet bereiken. Controleer of de server is ingeschakeld en op hetzelfde netwerk zit als deze computer.",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.shareList.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Try again in a moment.",
+  "errors.shareList.timeout": "Cmdr heeft gewacht, maar ‘{server}’ reageerde niet op tijd. Probeer het zo meteen opnieuw.",
   "@errors.shareList.timeout": {
     "sourceHash": "ae84e14"
   },
-  "errors.shareList.authRequired": "Sign in to see the shares on \"{server}\".",
+  "errors.shareList.authRequired": "Log in bij ‘{server}’ om de gedeelde mappen te zien.",
   "@errors.shareList.authRequired": {
     "sourceHash": "4268ae9"
   },
-  "errors.shareList.signingRequired": "\"{server}\" doesn't show its shares to guests. Sign in to see them.",
+  "errors.shareList.signingRequired": "‘{server}’ toont geen gedeelde mappen aan gasten. Log in om ze te zien.",
   "@errors.shareList.signingRequired": {
     "sourceHash": "8ae651a"
   },
-  "errors.shareList.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.shareList.authFailed": "Die gebruikersnaam en dat wachtwoord werkten niet op ‘{server}’. Controleer ze en log opnieuw in.",
   "@errors.shareList.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.shareList.protocolError": "Something went wrong while asking \"{server}\" for its shares. Try again in a moment.",
+  "errors.shareList.protocolError": "Er ging iets mis bij het opvragen van de gedeelde mappen van ‘{server}’. Probeer het zo meteen opnieuw.",
   "@errors.shareList.protocolError": {
     "sourceHash": "064a773"
   },
-  "errors.shareList.resolutionFailed": "Cmdr couldn't find \"{server}\" on the network. Check its name, or try again once it's back online.",
+  "errors.shareList.resolutionFailed": "Cmdr kon ‘{server}’ niet vinden op het netwerk. Controleer de naam, of probeer het opnieuw zodra de server weer online is.",
   "@errors.shareList.resolutionFailed": {
     "sourceHash": "d2e5b54"
   },
-  "errors.shareList.missingDependency": "Listing shares on this computer needs smbclient, which isn't installed. Install it, then try again.",
+  "errors.shareList.missingDependency": "Om gedeelde mappen op te sommen heeft deze computer smbclient nodig, en dat is niet geïnstalleerd. Installeer het en probeer het dan opnieuw.",
   "@errors.shareList.missingDependency": {
     "sourceHash": "810b06a"
   },

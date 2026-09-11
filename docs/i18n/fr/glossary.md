@@ -3330,3 +3330,29 @@ Décisions de formulation :
   `servers.refusal.timedOut` ; la voix active remplace le passif anglais (style guide § Voice).
   `Réessayez dans un instant.` recopie cinq clés livrées (`ai.translateError.timeout.body`,
   `operationLog.rollback.refusalUnexpected`, …).
+
+## Pourquoi un partage ne se monte pas ou sa liste ne se charge pas (`errors.mount.*`, `errors.shareList.*`, 2026-09-11)
+
+Les phrases sous « Impossible de monter le partage » (`fileExplorer.networkMount.mountFailedTitle`) et « Impossible de
+se connecter à {hostName} » (`fileExplorer.network.share.connectFailedTitle`), plus les notifications
+`fileExplorer.pane.directConnectionShareGoneToast`, `fileExplorer.pane.directConnectionMountNotRespondingToast`,
+`fileExplorer.pane.directConnectionNotNetworkShareToast` et `servers.refusal.accountNotPermitted`. Tier 1 : le paquet
+installé `NetAuthAgent.app/Contents/Resources/Localizable.loctable` (macOS 26.6.2, 25G83, 2026-09-11), qui rédige ces
+mêmes cas pour « Se connecter au serveur » et n'est pas dans le tas de références.
+
+- **share → `partage`** · NetAuthAgent `EINFO_NO_SHARE` (« Le partage « %@ » n'existe pas sur le serveur. ») · high
+- **guests → `invités`** · NetAuthAgent `EINFO_NO_ACCESS_GUEST` (« Ce serveur n'accepte pas les invités. ») · high
+- **reach → `joindre` / `joignable`** · la sœur `fileExplorer.pane.directConnectionUnreachableToast` (« injoignable »)
+  et la ligne « Couldn't reach X » plus haut · high. `servers.refusal.unreachable` dit `atteindre` : écart antérieur,
+  pas touché ici.
+- **You're signed in → `L'identification sur « {server} » … a réussi`** · `Vous êtes identifié` s'accorderait avec la
+  personne ; la phrase s'accorde avec l'identification · high. **when you're ready → `quand vous le souhaitez`**.
+- **SMB 2 or later → `SMB 2 ou ultérieur`** · moule de `settings.ai.tooltipLocalDisabled` (« M1 ou ultérieur ») · high
+- **package → `paquet`** · KDE Dolphin (« Impossible de trouver le paquet %1. »),
+  `licensing.acknowledgements.npmHeading` · high. **distribution (Linux) → `distribution`** · aucune source dans ce sens
+  (la TBX n'a que le sens logistique) · tentative
+- **there's nothing to speed up → `il n'y a donc rien à accélérer`** · moule de `errors.eject.notAnSmbVolume` · high
+- **Try again in a moment → `Réessayez dans un instant.`** · `operationLog.dialog.loadError` · high
+- Même anglais, même français : `errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`,
+  `errors.mount.authFailed` / `errors.shareList.authFailed`. Les trois notifications et
+  `servers.refusal.accountNotPermitted` doublent l'apostrophe (ICU) ; les `errors.*` bruts gardent l'apostrophe simple.

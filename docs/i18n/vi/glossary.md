@@ -2986,3 +2986,28 @@ nó. Thư mục bắt đầu là nơi khung mở ra, và phải là thư mục g
 - **"Leave it empty" → `Để trống để …`** · `để trống` đã chốt trong `style.md`; khuôn câu y như
   `settings.askCmdr.interactiveModel.description` (`Để trống để dùng chung mô hình…`).
 - Không giá trị tiếng Việt nào có dấu nháy đơn, nên không có `''` nào phải nhân đôi; `{host}` giữ nguyên.
+
+## Vì sao mục chia sẻ không gắn kết được hoặc danh sách không tải được (`errors.mount.*`, `errors.shareList.*`, 2026-09-11)
+
+Các câu dưới tiêu đề `Không thể gắn kết mục chia sẻ` (`fileExplorer.networkMount.mountFailedTitle`) và
+`Không thể kết nối tới {hostName}` (`fileExplorer.network.share.connectFailedTitle`), cùng các toast
+`fileExplorer.pane.directConnectionShareGoneToast`, `fileExplorer.pane.directConnectionMountNotRespondingToast`,
+`fileExplorer.pane.directConnectionNotNetworkShareToast` và `servers.refusal.accountNotPermitted`. Tier 1 lấy từ bundle
+ĐANG CÀI `NetAuthAgent.app/Contents/Resources/Localizable.loctable` (macOS 26.6.2, 25G83, 2026-09-11): nó viết đúng các
+trường hợp này cho "Kết nối với máy chủ", và kho tham chiếu không có nó.
+
+- **share → `mục chia sẻ`** · các chuỗi chị em (`fileExplorer.networkMount.mountFailedTitle`,
+  `fileExplorer.pane.directConnectionUnreachableToast`) · `high`
+- **guest → `khách`** · NetAuthAgent `EINFO_NO_ACCESS_GUEST` (`Máy chủ này không cho phép Khách truy cập.`) · `high`
+- **reach a server → `không kết nối được tới`** · `style.md` § "Reach" có hai lối, `servers.refusal.unreachable` ·
+  `high`
+- **didn't answer in time → `đã không phản hồi kịp thời`**, **isn't responding → `không phản hồi`** ·
+  `servers.refusal.timedOut`, `adb.readiness.offline` · `high`
+- **SMB 2 or later → `SMB 2 trở lên`** · khuôn của `settings.ai.tooltipLocalDisabled` (`M1 trở lên`) · `high`
+- **Go back (về màn hình trước) → `quay lại`** · `style.md` § "Back" · `high`
+- **package → `gói`** · GNOME Nautilus (`bộ cài đặt gói`), `licensing.acknowledgements.npmHeading` (`Gói npm`) · `high`.
+  **distribution (Linux) → `bản phân phối`** · không nguồn nào có nghĩa Linux · `tentative`
+- **Something went wrong → `Có gì đó không ổn`** · `errors.mutation.unexpected` · `high`
+- **Try again in a moment → `Hãy thử lại sau giây lát.`** · `errors.volume.deletePending` · `high`
+- Cùng tiếng Anh thì cùng tiếng Việt: `errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`,
+  `errors.mount.authFailed` / `errors.shareList.authFailed`. Dấu ngoặc kép thẳng, như `errors.volume.permissionDenied`.

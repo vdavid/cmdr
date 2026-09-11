@@ -3260,3 +3260,46 @@ A szerverlap két mappamezője: a gyökérmappa a plafon (a Cmdr sosem lép föl
   `settings.mediaIndex.clip.deleteFailed` alakja · `high`.
 - Aposztróf egyik magyar értékben sincs, a `{host}` halmaza egyezik az angoléval, `sameAsSourceJustification` nem
   kellett.
+
+## Miért nem csatolható egy megosztás, és miért nem töltődik be a megosztáslista (`errors.mount.*`, `errors.shareList.*`, 2026-09-11)
+
+A mondatok a „Nem sikerült csatolni a megosztást” (`fileExplorer.networkMount.mountFailedTitle`) és a „Nem sikerült
+csatlakozni ehhez: {hostName}” (`fileExplorer.network.share.connectFailedTitle`) cím alatt, plusz a
+`fileExplorer.pane.directConnectionShareGoneToast`, `fileExplorer.pane.directConnectionMountNotRespondingToast`,
+`fileExplorer.pane.directConnectionNotNetworkShareToast` toast és a `servers.refusal.accountNotPermitted` sor. Tier 1 az
+élő `NetAuthAgent.app/Contents/Resources/Localizable.loctable` (macOS 26.6.2, 25G83, 2026-09-11): pontosan a
+„Kapcsolódás szerverre” hibaeseteit fogalmazza meg, és a kupacban nincs benne.
+
+- **Az idézett helyőrző alaptagot kap: `a(z) „{server}” szerver…`, `a(z) „{share}” megosztás…`** · mac NetAuthAgent
+  `EMSG_CONNECTION_FAILED` („a(z) „%@” szerverhez való kapcsolódás”), `EINFO_NO_SHARE` („A(z) „%@” megosztás nem létezik
+  a szerveren.”), és a `style.md` `A(z) „{name}”` szabálya · `high`. A rag mindig az alaptagra kerül (`szervert`,
+  `szerverhez`, `szerveren`, `megosztást`), a helyőrző ragozatlan marad. Az angol itt idézi a neveket, ezért ez
+  természetesebb, mint a kettőspontos `ehhez: {host}` keret.
+- **share → `megosztás`**, **guest → `vendég`** · NetAuthAgent `EINFO_NO_SHARE`, `EINFO_NO_ACCESS_GUEST` („Ez a szerver
+  nem engedélyezi a vendéghozzáférést.”) · `high`
+- **connect (megosztáshoz) → `csatlakoz-`** · a mellette álló szállított cím
+  (`fileExplorer.network.share.connectFailedTitle`) és `fileExplorer.navigation.driveIndex.refusedUpgradeFailed`
+  („közvetlenül csatlakozni”) · `high`. Az Apple `kapcsolódás` töve a panel nyitósorában marad
+  (`servers.paneState.connecting`).
+- **„Cmdr couldn't reach” → `A Cmdr nem tudta elérni`** · a szótár `Cmdr couldn't … → A Cmdr nem tudta …` sora · `high`
+- **„didn't answer in time” → `nem válaszolt időben`**, **„isn't responding” → `nem válaszol`** ·
+  `servers.refusal.timedOut`, `adb.readiness.offline`, `fileOperations.transferDialog.scanUnresponsive` · `high`
+- **„turned on … same network” → `be van-e kapcsolva, és ugyanazon a hálózaton van-e`** ·
+  `errors.listing.hostUnreachable.suggestion` · `high`. **this computer → `ez a számítógép`**: a mondatok Linuxon is
+  megjelennek, ezért nem `Mac`.
+- **account → `fiók`**, **„as {username}” → `„{username}” néven`** · a szótár `the account` sora; a `néven` nem ragozza
+  a helyőrzőt · `high`
+- **Something went wrong → `Váratlan probléma történt, miközben a Cmdr …`** · `style.md`: a próza problémaszava
+  `probléma`; a kezdés az `errors.write.fallback.message.copy` alakja · `high`. Az alany `a Cmdr`, mert egy
+  `…megosztáshoz való csatlakozáskor` névszói lánc nehezen olvasható.
+- **package → `csomag`** · `licensing.acknowledgements.npmHeading` („npm csomagok”), ms `Csomagkezelő` · `high`.
+  **distribution (Linux) → `disztribúció`** · egyik forrásban sincs Linux-értelemben (az ms `elosztás` a logisztikai
+  jelentés) · `tentative`. Az `az smbclient` névelője `az`, mert a betűszó kiejtése magánhangzóval kezdődik; a
+  `gvfs-smb csomagját` alaptag viszi a ragot.
+- **„SMB 2 or later” → `az SMB 2-es vagy újabb verzióját`** · a `-es` a számra, a birtokos rag a `verzió`-ra kerül ·
+  `high`
+- **„there's no connection to speed up” → `így nincs mit felgyorsítani`** · az `errors.eject.notAnSmbVolume` („így nincs
+  mit leválasztani”) kerete · `high`
+- **„Try again in a moment” → `Próbáld újra egy pillanat múlva.`** · `errors.volume.deletePending` · `high`
+- Az azonos angol értékek magyarja is azonos: `errors.mount.hostUnreachable` = `errors.shareList.hostUnreachable`,
+  `errors.mount.authFailed` = `errors.shareList.authFailed`. Aposztróf egyik értékben sincs.

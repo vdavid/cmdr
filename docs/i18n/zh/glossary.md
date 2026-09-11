@@ -2578,3 +2578,28 @@ WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「�
   `{host} 没能及时响应，所以什么都没保存。过一会儿再试一次。`** · `没能及时响应` 逐字沿用
   `servers.refusal.timedOut`；`过一会儿再试一次` 与 `ai.translateError.timeout.body` 同型 · `high`。
 - **ICU** · 九个值都不含撇号；`{host}` 原样保留，两侧留半角空格。没有值与英文相同，不需要 `sameAsSourceJustification`。
+
+## 共享装载不上、共享列表加载不出来时的那句话（`errors.mount.*`、`errors.shareList.*`，2026-09-11）
+
+`无法装载共享`（`fileExplorer.networkMount.mountFailedTitle`）和 `无法连接到 {hostName}`
+（`fileExplorer.network.share.connectFailedTitle`）下面的那句话，外加
+`fileExplorer.pane.directConnectionShareGoneToast`、
+`fileExplorer.pane.directConnectionMountNotRespondingToast`、`fileExplorer.pane.directConnectionNotNetworkShareToast`
+三条提示和 `servers.refusal.accountNotPermitted`。Tier 1 取自系统里装着的
+`NetAuthAgent.app/Contents/Resources/Localizable.loctable`（macOS
+26.6.2，25G83，2026-09-11）：它正是「连接服务器」这些出错情形的文案，参考堆里没有。
+
+- **share → `共享`** · NetAuthAgent `EINFO_NO_SHARE`（`服务器上不存在共享“%@”。`）· `high`
+- **guest → `来宾`** · 沿用目录的 `fileExplorer.network.browser.status.guest` · `high`。⚠️ NetAuthAgent
+  `EINFO_NO_ACCESS_GUEST` 写 `客人`，与本文件已记的 `来宾` / `客人` 分歧相同，这一批不改。
+- **reach → `连不上`** · `servers.refusal.unreachable` · `high`
+- **didn't answer in time → `没能及时响应`**、**isn't responding → `没有响应`** · `servers.refusal.timedOut`、
+  `adb.readiness.offline` · `high`
+- **this computer → `这台电脑`** · 这些句子在 Linux 上也会出现，所以不写 `Mac` · `high`
+- **package → `软件包`** · KDE Dolphin（`无法找到 %1 软件包。`）、`settings.archives.ooxml.label` · `high`。
+  **distribution（Linux）→ `发行版`** · 参考堆没有 Linux 义项（Microsoft TBX 只有 `分配`）· `tentative`
+- **Something went wrong → `出了点问题`** · `errors.mutation.unexpected` · `high`
+- **there's nothing to speed up → `所以没有连接需要加速`** · 句形取自 `errors.eject.notAnSmbVolume` · `high`
+- 英文相同的两对译文也逐字相同：`errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`、
+  `errors.mount.authFailed` / `errors.shareList.authFailed`。引号 `“…”` 紧贴汉字，与 `errors.volume.permissionDenied`
+  一致；`Cmdr`、`SMB 2`、`GVFS`、`smbclient` 与汉字之间留空格。

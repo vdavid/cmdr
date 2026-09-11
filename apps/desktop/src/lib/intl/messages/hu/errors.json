@@ -1737,83 +1737,83 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.mount.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.mount.hostUnreachable": "A Cmdr nem tudta elérni a(z) „{server}” szervert. Ellenőrizd, hogy be van-e kapcsolva, és ugyanazon a hálózaton van-e, mint ez a számítógép.",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.mount.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Check that it's turned on and reachable, then try again.",
+  "errors.mount.timeout": "A Cmdr várt, de a(z) „{server}” szerver nem válaszolt időben. Ellenőrizd, hogy be van-e kapcsolva és elérhető-e, aztán próbáld újra.",
   "@errors.mount.timeout": {
     "sourceHash": "bfb786c"
   },
-  "errors.mount.shareNotFound": "There's no share called \"{share}\" on \"{server}\". Go back and pick one from the list.",
+  "errors.mount.shareNotFound": "A(z) „{server}” szerveren nincs „{share}” nevű megosztás. Lépj vissza, és válassz egyet a listából.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "4f930a5"
   },
-  "errors.mount.authRequired": "Sign in to open \"{share}\" on \"{server}\".",
+  "errors.mount.authRequired": "Jelentkezz be a(z) „{server}” szerverre, hogy megnyithasd a(z) „{share}” megosztást.",
   "@errors.mount.authRequired": {
     "sourceHash": "8466652"
   },
-  "errors.mount.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.mount.authFailed": "Ez a felhasználónév és jelszó nem jó a(z) „{server}” szerverhez. Ellenőrizd őket, és jelentkezz be újra.",
   "@errors.mount.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.mount.permissionDenied": "You're signed in to \"{server}\" as \"{username}\", but that account can't open \"{share}\". Sign in with a different account.",
+  "errors.mount.permissionDenied": "Be vagy jelentkezve a(z) „{server}” szerverre „{username}” néven, de ez a fiók nem nyithatja meg a(z) „{share}” megosztást. Jelentkezz be egy másik fiókkal.",
   "@errors.mount.permissionDenied": {
     "sourceHash": "12e20d9"
   },
-  "errors.mount.cancelled": "Connecting to \"{share}\" stopped before it finished. Try again when you're ready.",
+  "errors.mount.cancelled": "A(z) „{share}” megosztáshoz való csatlakozás félbeszakadt. Próbáld újra, amikor készen állsz.",
   "@errors.mount.cancelled": {
     "sourceHash": "0b0ec30"
   },
-  "errors.mount.unsupportedProtocol": "This computer and \"{server}\" have no SMB version in common. Turn on SMB 2 or later in the server's settings, then try again.",
+  "errors.mount.unsupportedProtocol": "Ennek a számítógépnek és a(z) „{server}” szervernek nincs közös SMB-verziója. Kapcsold be a szerver beállításaiban az SMB 2-es vagy újabb verzióját, aztán próbáld újra.",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "bf9c71e"
   },
-  "errors.mount.mountRefused": "You're signed in to \"{server}\", but it wouldn't open \"{share}\". Check the share's settings on the server, then try again.",
+  "errors.mount.mountRefused": "Be vagy jelentkezve a(z) „{server}” szerverre, de a szerver nem engedte megnyitni a(z) „{share}” megosztást. Ellenőrizd a megosztás beállításait a szerveren, aztán próbáld újra.",
   "@errors.mount.mountRefused": {
     "sourceHash": "c354782"
   },
-  "errors.mount.mountMissing": "Your computer said \"{share}\" on \"{server}\" was connected, but it never showed up. Try again.",
+  "errors.mount.mountMissing": "A számítógéped azt jelezte, hogy a(z) „{server}” szerveren lévő „{share}” megosztás csatlakoztatva van, de sosem jelent meg. Próbáld újra.",
   "@errors.mount.mountMissing": {
     "sourceHash": "a5f61b5"
   },
-  "errors.mount.gvfsMissing": "Connecting to network shares on Linux needs GVFS. Install your distribution's gvfs-smb package, then try again.",
+  "errors.mount.gvfsMissing": "Linuxon a GVFS kell ahhoz, hogy hálózati megosztásokhoz csatlakozhass. Telepítsd a disztribúciód gvfs-smb csomagját, aztán próbáld újra.",
   "@errors.mount.gvfsMissing": {
     "sourceHash": "068da95"
   },
-  "errors.mount.unexpected": "Something went wrong while connecting to \"{share}\" on \"{server}\". Try again in a moment.",
+  "errors.mount.unexpected": "Váratlan probléma történt, miközben a Cmdr a(z) „{server}” szerveren lévő „{share}” megosztáshoz csatlakozott. Próbáld újra egy pillanat múlva.",
   "@errors.mount.unexpected": {
     "sourceHash": "8daf9ba"
   },
-  "errors.shareList.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.shareList.hostUnreachable": "A Cmdr nem tudta elérni a(z) „{server}” szervert. Ellenőrizd, hogy be van-e kapcsolva, és ugyanazon a hálózaton van-e, mint ez a számítógép.",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.shareList.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Try again in a moment.",
+  "errors.shareList.timeout": "A Cmdr várt, de a(z) „{server}” szerver nem válaszolt időben. Próbáld újra egy pillanat múlva.",
   "@errors.shareList.timeout": {
     "sourceHash": "ae84e14"
   },
-  "errors.shareList.authRequired": "Sign in to see the shares on \"{server}\".",
+  "errors.shareList.authRequired": "Jelentkezz be, hogy lásd a(z) „{server}” szerver megosztásait.",
   "@errors.shareList.authRequired": {
     "sourceHash": "4268ae9"
   },
-  "errors.shareList.signingRequired": "\"{server}\" doesn't show its shares to guests. Sign in to see them.",
+  "errors.shareList.signingRequired": "A(z) „{server}” szerver vendégeknek nem mutatja meg a megosztásait. Jelentkezz be, hogy lásd őket.",
   "@errors.shareList.signingRequired": {
     "sourceHash": "8ae651a"
   },
-  "errors.shareList.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.shareList.authFailed": "Ez a felhasználónév és jelszó nem jó a(z) „{server}” szerverhez. Ellenőrizd őket, és jelentkezz be újra.",
   "@errors.shareList.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.shareList.protocolError": "Something went wrong while asking \"{server}\" for its shares. Try again in a moment.",
+  "errors.shareList.protocolError": "Váratlan probléma történt, miközben a Cmdr lekérte a(z) „{server}” szerver megosztásait. Próbáld újra egy pillanat múlva.",
   "@errors.shareList.protocolError": {
     "sourceHash": "064a773"
   },
-  "errors.shareList.resolutionFailed": "Cmdr couldn't find \"{server}\" on the network. Check its name, or try again once it's back online.",
+  "errors.shareList.resolutionFailed": "A Cmdr nem találta meg a(z) „{server}” szervert a hálózaton. Ellenőrizd a nevét, vagy próbáld újra, amint ismét elérhető.",
   "@errors.shareList.resolutionFailed": {
     "sourceHash": "d2e5b54"
   },
-  "errors.shareList.missingDependency": "Listing shares on this computer needs smbclient, which isn't installed. Install it, then try again.",
+  "errors.shareList.missingDependency": "Ezen a számítógépen az smbclient kell a megosztások listázásához, de nincs telepítve. Telepítsd, aztán próbáld újra.",
   "@errors.shareList.missingDependency": {
     "sourceHash": "810b06a"
   },

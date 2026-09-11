@@ -116,15 +116,15 @@
   "@fileExplorer.pane.directConnectionUnavailableToast": {
     "sourceHash": "0440df9"
   },
-  "fileExplorer.pane.directConnectionShareGoneToast": "{share} isn''t connected anymore, so there''s no connection to speed up.",
+  "fileExplorer.pane.directConnectionShareGoneToast": "{share} is niet meer verbonden, dus er valt niets te versnellen.",
   "@fileExplorer.pane.directConnectionShareGoneToast": {
     "sourceHash": "8a4b5ae"
   },
-  "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} isn''t responding right now, so Cmdr can''t connect to it directly. Try again in a moment.",
+  "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} reageert nu niet, dus Cmdr kan er niet direct mee verbinden. Probeer het zo meteen opnieuw.",
   "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
     "sourceHash": "6c29cca"
   },
-  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} isn''t a network share, so there''s no connection to speed up.",
+  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} is geen netwerkshare, dus er valt niets te versnellen.",
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
     "sourceHash": "193a804"
   },

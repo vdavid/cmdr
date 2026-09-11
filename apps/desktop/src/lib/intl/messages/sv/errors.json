@@ -1737,83 +1737,83 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.mount.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.mount.hostUnreachable": "Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.mount.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Check that it's turned on and reachable, then try again.",
+  "errors.mount.timeout": "Cmdr väntade, men ”{server}” svarade inte i tid. Kontrollera att servern är påslagen och går att nå, och försök sedan igen.",
   "@errors.mount.timeout": {
     "sourceHash": "bfb786c"
   },
-  "errors.mount.shareNotFound": "There's no share called \"{share}\" on \"{server}\". Go back and pick one from the list.",
+  "errors.mount.shareNotFound": "Det finns ingen delad mapp som heter ”{share}” på ”{server}”. Gå tillbaka och välj en i listan.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "4f930a5"
   },
-  "errors.mount.authRequired": "Sign in to open \"{share}\" on \"{server}\".",
+  "errors.mount.authRequired": "Logga in för att öppna ”{share}” på ”{server}”.",
   "@errors.mount.authRequired": {
     "sourceHash": "8466652"
   },
-  "errors.mount.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.mount.authFailed": "Det användarnamnet och lösenordet fungerade inte på ”{server}”. Kontrollera dem och logga in igen.",
   "@errors.mount.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.mount.permissionDenied": "You're signed in to \"{server}\" as \"{username}\", but that account can't open \"{share}\". Sign in with a different account.",
+  "errors.mount.permissionDenied": "Du är inloggad på ”{server}” som ”{username}”, men det kontot kan inte öppna ”{share}”. Logga in med ett annat konto.",
   "@errors.mount.permissionDenied": {
     "sourceHash": "12e20d9"
   },
-  "errors.mount.cancelled": "Connecting to \"{share}\" stopped before it finished. Try again when you're ready.",
+  "errors.mount.cancelled": "Anslutningen till ”{share}” avbröts innan den var klar. Försök igen när du vill.",
   "@errors.mount.cancelled": {
     "sourceHash": "0b0ec30"
   },
-  "errors.mount.unsupportedProtocol": "This computer and \"{server}\" have no SMB version in common. Turn on SMB 2 or later in the server's settings, then try again.",
+  "errors.mount.unsupportedProtocol": "Den här datorn och ”{server}” har ingen gemensam SMB-version. Slå på SMB 2 eller senare i serverns inställningar och försök sedan igen.",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "bf9c71e"
   },
-  "errors.mount.mountRefused": "You're signed in to \"{server}\", but it wouldn't open \"{share}\". Check the share's settings on the server, then try again.",
+  "errors.mount.mountRefused": "Du är inloggad på ”{server}”, men servern ville inte öppna ”{share}”. Kontrollera den delade mappens inställningar på servern och försök sedan igen.",
   "@errors.mount.mountRefused": {
     "sourceHash": "c354782"
   },
-  "errors.mount.mountMissing": "Your computer said \"{share}\" on \"{server}\" was connected, but it never showed up. Try again.",
+  "errors.mount.mountMissing": "Din dator rapporterade att ”{share}” på ”{server}” var ansluten, men den delade mappen dök aldrig upp. Försök igen.",
   "@errors.mount.mountMissing": {
     "sourceHash": "a5f61b5"
   },
-  "errors.mount.gvfsMissing": "Connecting to network shares on Linux needs GVFS. Install your distribution's gvfs-smb package, then try again.",
+  "errors.mount.gvfsMissing": "För att ansluta till delade mappar på nätverket i Linux krävs GVFS. Installera paketet gvfs-smb från din distribution och försök sedan igen.",
   "@errors.mount.gvfsMissing": {
     "sourceHash": "068da95"
   },
-  "errors.mount.unexpected": "Something went wrong while connecting to \"{share}\" on \"{server}\". Try again in a moment.",
+  "errors.mount.unexpected": "Något gick fel vid anslutningen till ”{share}” på ”{server}”. Försök igen om en stund.",
   "@errors.mount.unexpected": {
     "sourceHash": "8daf9ba"
   },
-  "errors.shareList.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.shareList.hostUnreachable": "Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.shareList.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Try again in a moment.",
+  "errors.shareList.timeout": "Cmdr väntade, men ”{server}” svarade inte i tid. Försök igen om en stund.",
   "@errors.shareList.timeout": {
     "sourceHash": "ae84e14"
   },
-  "errors.shareList.authRequired": "Sign in to see the shares on \"{server}\".",
+  "errors.shareList.authRequired": "Logga in för att se de delade mapparna på ”{server}”.",
   "@errors.shareList.authRequired": {
     "sourceHash": "4268ae9"
   },
-  "errors.shareList.signingRequired": "\"{server}\" doesn't show its shares to guests. Sign in to see them.",
+  "errors.shareList.signingRequired": "”{server}” visar inte sina delade mappar för gäster. Logga in för att se dem.",
   "@errors.shareList.signingRequired": {
     "sourceHash": "8ae651a"
   },
-  "errors.shareList.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.shareList.authFailed": "Det användarnamnet och lösenordet fungerade inte på ”{server}”. Kontrollera dem och logga in igen.",
   "@errors.shareList.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.shareList.protocolError": "Something went wrong while asking \"{server}\" for its shares. Try again in a moment.",
+  "errors.shareList.protocolError": "Något gick fel när listan över delade mappar hämtades från ”{server}”. Försök igen om en stund.",
   "@errors.shareList.protocolError": {
     "sourceHash": "064a773"
   },
-  "errors.shareList.resolutionFailed": "Cmdr couldn't find \"{server}\" on the network. Check its name, or try again once it's back online.",
+  "errors.shareList.resolutionFailed": "Cmdr hittade inte ”{server}” på nätverket. Kontrollera namnet eller försök på nytt när servern är online igen.",
   "@errors.shareList.resolutionFailed": {
     "sourceHash": "d2e5b54"
   },
-  "errors.shareList.missingDependency": "Listing shares on this computer needs smbclient, which isn't installed. Install it, then try again.",
+  "errors.shareList.missingDependency": "För att lista delade mappar behöver den här datorn smbclient, som inte är installerat. Installera det och försök sedan igen.",
   "@errors.shareList.missingDependency": {
     "sourceHash": "810b06a"
   },

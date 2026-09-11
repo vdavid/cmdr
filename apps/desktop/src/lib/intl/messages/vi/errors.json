@@ -1737,83 +1737,83 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.mount.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.mount.hostUnreachable": "Cmdr không kết nối được tới \"{server}\". Hãy kiểm tra xem máy chủ có đang bật và ở cùng mạng với máy tính này không.",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.mount.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Check that it's turned on and reachable, then try again.",
+  "errors.mount.timeout": "Cmdr đã chờ, nhưng \"{server}\" đã không phản hồi kịp thời. Hãy kiểm tra xem máy chủ có đang bật và kết nối được không, rồi thử lại.",
   "@errors.mount.timeout": {
     "sourceHash": "bfb786c"
   },
-  "errors.mount.shareNotFound": "There's no share called \"{share}\" on \"{server}\". Go back and pick one from the list.",
+  "errors.mount.shareNotFound": "Không có mục chia sẻ nào tên \"{share}\" trên \"{server}\". Hãy quay lại và chọn một mục trong danh sách.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "4f930a5"
   },
-  "errors.mount.authRequired": "Sign in to open \"{share}\" on \"{server}\".",
+  "errors.mount.authRequired": "Hãy đăng nhập để mở \"{share}\" trên \"{server}\".",
   "@errors.mount.authRequired": {
     "sourceHash": "8466652"
   },
-  "errors.mount.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.mount.authFailed": "Tên người dùng và mật khẩu đó không đúng với \"{server}\". Hãy kiểm tra rồi đăng nhập lại.",
   "@errors.mount.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.mount.permissionDenied": "You're signed in to \"{server}\" as \"{username}\", but that account can't open \"{share}\". Sign in with a different account.",
+  "errors.mount.permissionDenied": "Bạn đã đăng nhập vào \"{server}\" với tên \"{username}\", nhưng tài khoản đó không mở được \"{share}\". Hãy đăng nhập bằng một tài khoản khác.",
   "@errors.mount.permissionDenied": {
     "sourceHash": "12e20d9"
   },
-  "errors.mount.cancelled": "Connecting to \"{share}\" stopped before it finished. Try again when you're ready.",
+  "errors.mount.cancelled": "Việc kết nối tới \"{share}\" đã dừng trước khi hoàn tất. Hãy thử lại khi bạn sẵn sàng.",
   "@errors.mount.cancelled": {
     "sourceHash": "0b0ec30"
   },
-  "errors.mount.unsupportedProtocol": "This computer and \"{server}\" have no SMB version in common. Turn on SMB 2 or later in the server's settings, then try again.",
+  "errors.mount.unsupportedProtocol": "Máy tính này và \"{server}\" không có phiên bản SMB nào chung. Hãy bật SMB 2 trở lên trong phần cài đặt của máy chủ, rồi thử lại.",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "bf9c71e"
   },
-  "errors.mount.mountRefused": "You're signed in to \"{server}\", but it wouldn't open \"{share}\". Check the share's settings on the server, then try again.",
+  "errors.mount.mountRefused": "Bạn đã đăng nhập vào \"{server}\", nhưng máy chủ không chịu mở \"{share}\". Hãy kiểm tra cài đặt của mục chia sẻ trên máy chủ, rồi thử lại.",
   "@errors.mount.mountRefused": {
     "sourceHash": "c354782"
   },
-  "errors.mount.mountMissing": "Your computer said \"{share}\" on \"{server}\" was connected, but it never showed up. Try again.",
+  "errors.mount.mountMissing": "Máy tính của bạn báo rằng \"{share}\" trên \"{server}\" đã được kết nối, nhưng mục chia sẻ không hề xuất hiện. Hãy thử lại.",
   "@errors.mount.mountMissing": {
     "sourceHash": "a5f61b5"
   },
-  "errors.mount.gvfsMissing": "Connecting to network shares on Linux needs GVFS. Install your distribution's gvfs-smb package, then try again.",
+  "errors.mount.gvfsMissing": "Để kết nối tới các mục chia sẻ mạng trên Linux, cần có GVFS. Hãy cài gói gvfs-smb của bản phân phối bạn đang dùng, rồi thử lại.",
   "@errors.mount.gvfsMissing": {
     "sourceHash": "068da95"
   },
-  "errors.mount.unexpected": "Something went wrong while connecting to \"{share}\" on \"{server}\". Try again in a moment.",
+  "errors.mount.unexpected": "Có gì đó không ổn khi kết nối tới \"{share}\" trên \"{server}\". Hãy thử lại sau giây lát.",
   "@errors.mount.unexpected": {
     "sourceHash": "8daf9ba"
   },
-  "errors.shareList.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.shareList.hostUnreachable": "Cmdr không kết nối được tới \"{server}\". Hãy kiểm tra xem máy chủ có đang bật và ở cùng mạng với máy tính này không.",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.shareList.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Try again in a moment.",
+  "errors.shareList.timeout": "Cmdr đã chờ, nhưng \"{server}\" đã không phản hồi kịp thời. Hãy thử lại sau giây lát.",
   "@errors.shareList.timeout": {
     "sourceHash": "ae84e14"
   },
-  "errors.shareList.authRequired": "Sign in to see the shares on \"{server}\".",
+  "errors.shareList.authRequired": "Hãy đăng nhập để xem các mục chia sẻ trên \"{server}\".",
   "@errors.shareList.authRequired": {
     "sourceHash": "4268ae9"
   },
-  "errors.shareList.signingRequired": "\"{server}\" doesn't show its shares to guests. Sign in to see them.",
+  "errors.shareList.signingRequired": "\"{server}\" không hiển thị các mục chia sẻ cho khách. Hãy đăng nhập để xem.",
   "@errors.shareList.signingRequired": {
     "sourceHash": "8ae651a"
   },
-  "errors.shareList.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.shareList.authFailed": "Tên người dùng và mật khẩu đó không đúng với \"{server}\". Hãy kiểm tra rồi đăng nhập lại.",
   "@errors.shareList.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.shareList.protocolError": "Something went wrong while asking \"{server}\" for its shares. Try again in a moment.",
+  "errors.shareList.protocolError": "Có gì đó không ổn khi lấy danh sách mục chia sẻ từ \"{server}\". Hãy thử lại sau giây lát.",
   "@errors.shareList.protocolError": {
     "sourceHash": "064a773"
   },
-  "errors.shareList.resolutionFailed": "Cmdr couldn't find \"{server}\" on the network. Check its name, or try again once it's back online.",
+  "errors.shareList.resolutionFailed": "Cmdr không tìm thấy \"{server}\" trên mạng. Hãy kiểm tra tên, hoặc thử lại khi máy chủ trực tuyến trở lại.",
   "@errors.shareList.resolutionFailed": {
     "sourceHash": "d2e5b54"
   },
-  "errors.shareList.missingDependency": "Listing shares on this computer needs smbclient, which isn't installed. Install it, then try again.",
+  "errors.shareList.missingDependency": "Để liệt kê các mục chia sẻ, máy tính này cần smbclient, nhưng chương trình này chưa được cài đặt. Hãy cài đặt nó, rồi thử lại.",
   "@errors.shareList.missingDependency": {
     "sourceHash": "810b06a"
   },

@@ -1737,83 +1737,83 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.mount.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.mount.hostUnreachable": "Cmdr n'a pas pu joindre « {server} ». Vérifiez qu'il est allumé et sur le même réseau que cet ordinateur.",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.mount.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Check that it's turned on and reachable, then try again.",
+  "errors.mount.timeout": "Cmdr a attendu, mais « {server} » n'a pas répondu à temps. Vérifiez qu'il est allumé et joignable, puis réessayez.",
   "@errors.mount.timeout": {
     "sourceHash": "bfb786c"
   },
-  "errors.mount.shareNotFound": "There's no share called \"{share}\" on \"{server}\". Go back and pick one from the list.",
+  "errors.mount.shareNotFound": "Il n'y a aucun partage nommé « {share} » sur « {server} ». Revenez en arrière et choisissez-en un dans la liste.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "4f930a5"
   },
-  "errors.mount.authRequired": "Sign in to open \"{share}\" on \"{server}\".",
+  "errors.mount.authRequired": "Identifiez-vous pour ouvrir « {share} » sur « {server} ».",
   "@errors.mount.authRequired": {
     "sourceHash": "8466652"
   },
-  "errors.mount.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.mount.authFailed": "Ce nom d'utilisateur et ce mot de passe n'ont pas fonctionné sur « {server} ». Vérifiez-les et identifiez-vous à nouveau.",
   "@errors.mount.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.mount.permissionDenied": "You're signed in to \"{server}\" as \"{username}\", but that account can't open \"{share}\". Sign in with a different account.",
+  "errors.mount.permissionDenied": "L'identification sur « {server} » en tant que « {username} » a réussi, mais ce compte ne peut pas ouvrir « {share} ». Identifiez-vous avec un autre compte.",
   "@errors.mount.permissionDenied": {
     "sourceHash": "12e20d9"
   },
-  "errors.mount.cancelled": "Connecting to \"{share}\" stopped before it finished. Try again when you're ready.",
+  "errors.mount.cancelled": "La connexion à « {share} » s'est arrêtée avant la fin. Réessayez quand vous le souhaitez.",
   "@errors.mount.cancelled": {
     "sourceHash": "0b0ec30"
   },
-  "errors.mount.unsupportedProtocol": "This computer and \"{server}\" have no SMB version in common. Turn on SMB 2 or later in the server's settings, then try again.",
+  "errors.mount.unsupportedProtocol": "Cet ordinateur et « {server} » n'ont aucune version de SMB en commun. Activez SMB 2 ou ultérieur dans les réglages du serveur, puis réessayez.",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "bf9c71e"
   },
-  "errors.mount.mountRefused": "You're signed in to \"{server}\", but it wouldn't open \"{share}\". Check the share's settings on the server, then try again.",
+  "errors.mount.mountRefused": "L'identification sur « {server} » a réussi, mais le serveur a refusé d'ouvrir « {share} ». Vérifiez les réglages du partage sur le serveur, puis réessayez.",
   "@errors.mount.mountRefused": {
     "sourceHash": "c354782"
   },
-  "errors.mount.mountMissing": "Your computer said \"{share}\" on \"{server}\" was connected, but it never showed up. Try again.",
+  "errors.mount.mountMissing": "Votre ordinateur a indiqué que « {share} » sur « {server} » était connecté, mais le partage n'est jamais apparu. Réessayez.",
   "@errors.mount.mountMissing": {
     "sourceHash": "a5f61b5"
   },
-  "errors.mount.gvfsMissing": "Connecting to network shares on Linux needs GVFS. Install your distribution's gvfs-smb package, then try again.",
+  "errors.mount.gvfsMissing": "Sous Linux, la connexion aux partages réseau nécessite GVFS. Installez le paquet gvfs-smb de votre distribution, puis réessayez.",
   "@errors.mount.gvfsMissing": {
     "sourceHash": "068da95"
   },
-  "errors.mount.unexpected": "Something went wrong while connecting to \"{share}\" on \"{server}\". Try again in a moment.",
+  "errors.mount.unexpected": "Un problème est survenu pendant la connexion à « {share} » sur « {server} ». Réessayez dans un instant.",
   "@errors.mount.unexpected": {
     "sourceHash": "8daf9ba"
   },
-  "errors.shareList.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "errors.shareList.hostUnreachable": "Cmdr n'a pas pu joindre « {server} ». Vérifiez qu'il est allumé et sur le même réseau que cet ordinateur.",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "a8a5d87"
   },
-  "errors.shareList.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Try again in a moment.",
+  "errors.shareList.timeout": "Cmdr a attendu, mais « {server} » n'a pas répondu à temps. Réessayez dans un instant.",
   "@errors.shareList.timeout": {
     "sourceHash": "ae84e14"
   },
-  "errors.shareList.authRequired": "Sign in to see the shares on \"{server}\".",
+  "errors.shareList.authRequired": "Identifiez-vous pour voir les partages de « {server} ».",
   "@errors.shareList.authRequired": {
     "sourceHash": "4268ae9"
   },
-  "errors.shareList.signingRequired": "\"{server}\" doesn't show its shares to guests. Sign in to see them.",
+  "errors.shareList.signingRequired": "« {server} » ne montre pas ses partages aux invités. Identifiez-vous pour les voir.",
   "@errors.shareList.signingRequired": {
     "sourceHash": "8ae651a"
   },
-  "errors.shareList.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "errors.shareList.authFailed": "Ce nom d'utilisateur et ce mot de passe n'ont pas fonctionné sur « {server} ». Vérifiez-les et identifiez-vous à nouveau.",
   "@errors.shareList.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.shareList.protocolError": "Something went wrong while asking \"{server}\" for its shares. Try again in a moment.",
+  "errors.shareList.protocolError": "Un problème est survenu lors de la récupération des partages de « {server} ». Réessayez dans un instant.",
   "@errors.shareList.protocolError": {
     "sourceHash": "064a773"
   },
-  "errors.shareList.resolutionFailed": "Cmdr couldn't find \"{server}\" on the network. Check its name, or try again once it's back online.",
+  "errors.shareList.resolutionFailed": "Cmdr n'a pas trouvé « {server} » sur le réseau. Vérifiez son nom, ou réessayez une fois qu'il sera de nouveau en ligne.",
   "@errors.shareList.resolutionFailed": {
     "sourceHash": "d2e5b54"
   },
-  "errors.shareList.missingDependency": "Listing shares on this computer needs smbclient, which isn't installed. Install it, then try again.",
+  "errors.shareList.missingDependency": "Pour lister les partages, cet ordinateur a besoin de smbclient, qui n'est pas installé. Installez-le, puis réessayez.",
   "@errors.shareList.missingDependency": {
     "sourceHash": "810b06a"
   },
