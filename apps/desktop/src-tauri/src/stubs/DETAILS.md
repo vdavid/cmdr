@@ -8,7 +8,8 @@ Per-stub behavior and rationale. `CLAUDE.md` holds the invariants; the catalog b
 - **`mtp.rs`**: all MTP commands return `MtpConnectionError::NotSupported`. Defines a local `FileEntry` subset plus stub
   types `ConnectedDeviceInfo`, `MtpObjectInfo`, `MtpScanResult`.
 - **`network.rs`**: all network commands return empty results or errors; types mirror the macOS shapes for JSON
-  compatibility.
+  compatibility. A mount answers `MountError::Unexpected`, and the three "Connect directly" commands answer
+  `UpgradeResult::NotSmbMount`: nothing on these platforms is an SMB mount, so that's the one real variant that holds.
 - **`permissions.rs`**: `check_full_disk_access` / `check_full_disk_access_quiet` return `true`;
   `open_privacy_settings` and the appearance/System-Settings deep-link commands return errors.
 - **`text_size.rs`** (non-macOS, so also Linux): `get_system_text_size_multiplier` returns `1.0` (no system scaling).

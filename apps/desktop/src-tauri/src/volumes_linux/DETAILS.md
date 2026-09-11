@@ -78,6 +78,10 @@ first segment, `SmbMountInfo::subpath` is everything below it. Same field, same 
 derives the share's own volume ID and the backend addresses it through the same anchor. The rule and the incident
 behind it live once, in `volumes/DETAILS.md` § "A mount can sit inside its share".
 
+The authority (`user:password@host:port`, a bracketed IPv6 host) goes through the twin's own splitter,
+`cmdr_fs::volume::smb_mount_source::split_authority`, so the two platforms can't disagree about a host, a port, or a
+username (`volumes/DETAILS.md` § "SMB mount sources are percent-escaped").
+
 Two differences from the macOS twin, both pre-existing: the segments are taken verbatim (percent-decoding is a macOS
 mount-source concern, `volumes/DETAILS.md` § "SMB mount sources are percent-escaped"), and GVFS shares don't come
 through this parser at all but through `parse_gvfs_smb_dirname`, which carries no subpath.

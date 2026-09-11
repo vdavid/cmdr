@@ -10,7 +10,9 @@ badges). The leaves beside them:
 
 - `watcher.rs`: FSEvents-driven listing updates.
 - `staging.rs`: scratch visibility. The `StagingTemp` mint itself is `cmdr_fs::staging`.
-- `index_provider.rs`: the app's `VolumeProvider`, so the index never has to import `VolumeManager`.
+- `index_provider.rs`: the app's `VolumeProvider`, so the index never has to import `VolumeManager`. Its
+  `ensure_direct_smb` is `network::smb_connect_directly::connect_directly`, with every `UpgradeResult` but `Success`
+  read as a refusal.
 - `backend_settings.rs`: live per-backend knobs.
 - `cloud_actions.rs`: iCloud download and eviction. `cloud_provider.rs`: who owns a path, and what they can do.
 - `google_drive/`: Drive item links, with `mirror_db.rs` as the mirror-mode fallback.

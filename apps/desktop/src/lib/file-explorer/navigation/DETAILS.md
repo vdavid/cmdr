@@ -278,9 +278,9 @@ SFTP server hovered as "Using system connection".
 in the dropdown and a clickable button (circle + down arrow) in the breadcrumb, both opening a "Connect directly for
 faster access" menu item. Clicking it hands off to `connectDirectly` in `../network/direct-connect.ts`, which owns the
 whole flow (stored credentials → saved-password probe → login form) and every toast along it; the OS-mount fallback
-notice presses the same function. This component's only job in it is the credential surface: it passes a callback that
-routes `credentialsNeeded` to `onSmbUpgradeLogin`, so the form opens in THIS pane (the dropdown can list any volume, and
-the form belongs where the click was). The flow itself: `../network/DETAILS.md` § "Connect directly". Submenu supports
+notice presses the same function. This component hands it the volume id and the share's name, read while the row is
+still listed: the name is what words the answer if the share goes away before the backend gets there. A credential
+question opens the one sign-in sheet, which the flow raises itself. The flow itself: `../network/DETAILS.md` § "Connect directly". Submenu supports
 full keyboard navigation (ArrowRight to open, ArrowLeft/Escape to close, Enter to activate).
 
 ### Eject button + row context menu

@@ -229,7 +229,10 @@ quietly fell back to a path ID, so `nsurl::tests::the_boot_volume_reports_a_uuid
 (verified on macOS 26.5.2, `getResourceValue:forKey:`, 2026-08-10).
 
 The unmount path can't use any of this: it goes through `VolumeManager::remove_root` (root-keyed, like
-`find_by_root`), because neither statfs nor NSURL recovers a gone mount's identity.
+`find_by_root`), because neither statfs nor NSURL recovers a gone mount's identity. When that unregisters the volume, the
+watcher hands its id to `network::os_mount_notice::forget_unmounted_volume` (the Linux watcher does the same), so a
+server whose slow-connection notice named this share can speak again after a remount (`network/DETAILS.md` § "Telling
+the user about a kernel-mount fallback").
 
 **Decision**: Index databases keyed by an ID from the retired scheme are deleted at launch (the reclaim half of
 `Index::start_root_at_launch`, driven by `is_legacy_volume_id`), rather than migrated.
@@ -299,6 +302,11 @@ list and a different one from `statfs` for the same mount. Both halves are caugh
 `find_mount_path_for_share` finds it and that `resolve_path_volume_fast` derives the `(server, port, share)` id from
 that live mount. A `%` that isn't a valid escape is a character in a name, so a decode failure keeps the source text
 rather than dropping the mount.
+
+The authority half (`user:password@host:port`, with a bracketed IPv6 host) goes through
+`cmdr_fs::volume::smb_mount_source::split_authority`, shared with the Linux twin: a guest mount records its empty
+password (`//guest:@…`), which must never ride along in the username, and an IPv6 host comes back unbracketed with its
+port (`//guest:@[::1]:18445/public` → `::1`, 18445). The rules: `crates/cmdr-fs/DETAILS.md`.
 
 The escaping half lives with the mount: `network/mount.rs::build_smb_mount_url`.
 

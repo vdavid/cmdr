@@ -61,7 +61,9 @@ commands, and notable non-obvious placements.
 - **`networking.ts`**: SMB host discovery, share listing, Keychain credential ops, mounting, direct-connection upgrade,
   in-place `reconnectVolume` and per-volume `disconnectSmbVolume`, plus `getVolumeSignInState(volumeId)` — what a
   sign-in on any volume would ask for (`'nothing'` / `'password'` / `'key_passphrase'`), backend-neutral and ❗ asked
-  when the affordance renders, ❌ never kept from an earlier answer.
+  when the affordance renders, ❌ never kept from an earlier answer. `mountNetworkShare` throws a `MountFailure`
+  (`asMountError` gets the typed refusal back), while the three `upgradeToSmbVolume*` wrappers return the backend's
+  `UpgradeResult` as it comes: every outcome, a volume that's gone included, is an answer, never a throw.
 - **`mtp.ts`**: Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy.
 - **`sftp.ts`**: SFTP servers: connect (a tagged `SftpConnectResult`, never a message to parse), disconnect, the
   two-phase host-key approval, the saved-server list, and the password store. The whole frontend contract, including the

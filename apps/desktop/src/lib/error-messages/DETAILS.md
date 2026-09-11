@@ -111,8 +111,8 @@ into a single `nonTransient` key (they rendered identical copy for both). The `n
   because that would relabel an accidental drift elsewhere in the matrix as intended. It also never grows: the test
   iterates the golden's own keys, and a reason added after the move (`remotePermissionDenied`) has no pre-change output
   to be pinned against, so it lives in the style matrix only.
-- **`friendly-error-style.test.ts`**: iterates every listing reason × representative params, every git kind, and every
-  provider × category, asserting the rendered output obeys the writing rules (no "error" / "failed" / trivializing
+- **`friendly-error-style.test.ts`**: iterates every listing reason × representative params, every git kind, every
+  provider × category, and every `ConnectRefusalKind` the sign-in sheet words, asserting the rendered output obeys the writing rules (no "error" / "failed" / trivializing
   words). Strictly better coverage than the old Rust string test: it checks the actual rendered output. The one
   pre-existing nit ("for just this folder" in `tccRestricted`) is exempted via `PREEXISTING_TRIVIALIZING_EXCEPTIONS`,
   flagged for a future copy pass, not reworded (behavior-preserving move).
