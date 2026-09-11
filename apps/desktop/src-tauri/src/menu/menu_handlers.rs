@@ -495,6 +495,19 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
+    // === Share on Google Drive: Drive's own share dialog ===
+    // Not through `menu_id_to_command`: the item exists only once File Provider vouched for
+    // the right-clicked row, which a palette entry or shortcut couldn't check first. The
+    // dialog is Drive's own window, so nothing needs the main thread; the File Provider
+    // calls run on a thread of their own.
+    #[cfg(target_os = "macos")]
+    if id == super::DRIVE_SHARE_ID {
+        let menu_state = app.state::<MenuState<tauri::Wry>>();
+        let path = menu_state.context.lock_ignore_poison().path.clone();
+        crate::file_system::google_drive::share_dialog::open_share_dialog(std::path::PathBuf::from(path));
+        return;
+    }
+
     // === Share → Edit extensions: System Settings' Extensions pane ===
     // Handled here rather than through `menu_id_to_command` because it isn't a file
     // command: there's nothing to bind a shortcut to and nothing for the palette to

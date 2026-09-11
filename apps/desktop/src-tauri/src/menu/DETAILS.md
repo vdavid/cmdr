@@ -191,6 +191,12 @@ Exceptions that do NOT use `"execute-command"`:
   **The click is deferred one main-thread turn** (`run_on_main_thread`) rather than performed inline.
   `on_menu_event` runs while muda's own menu-tracking loop is still unwinding, and a service usually
   puts a window or sheet up, which that unwind can dismiss.
+- **Share on Google Drive** (macOS): `DRIVE_SHARE_ID`, right below "Open in Google Drive", shown only
+  when `FileContextInfo.google_drive_can_share` says File Provider vouched for the ONE right-clicked
+  item. Routed in `handle_menu_event` rather than `menu_id_to_command`, since a palette entry or
+  shortcut couldn't make that check first. The click hands the path to
+  `share_dialog::open_share_dialog`, which works off the main thread: the dialog is Drive's own
+  window. `file_system/DETAILS.md` § "Google Drive links".
 - **Image-search group** (media_index): a folder's context menu carries TWO items, shown only while
   image indexing is enabled: chosen-folder membership ("Add to indexed folders" / "Remove from indexed
   folders", `media_index_{add,remove}_folder`) and the privacy veto ("Don't index images in this
@@ -478,12 +484,13 @@ menu never enters the menu bar, so none of the resolution machinery above transf
 on its bare `NSMenuItem`s directly — no arming, no tracking observer, because it owns the items rather
 than borrowing Tauri's. That menu's own rules: `../dock/menu/CLAUDE.md`.
 
-Today the table is the three Google Drive items: `arrow.up.forward.app` for "Open in Google Drive"
-(distinct from the menu bar's plain `arrow.up.forward` on `Open`), `link` for "Copy Google Drive
-link" — deliberately the same symbol the menu bar's `Copy path` carries, since `Copy` already shares
-`document.on.document` across two menus — and `sparkles` for "Ask Gemini", the glyph Apple and Google
-both spell AI with, shared with `Ask Cmdr` in the menu bar. All verified present with
-`NSImage(systemSymbolName:)` on macOS 26.6.2, 2026-09-09.
+Today the table is the four Google Drive items: `arrow.up.forward.app` for "Open in Google Drive"
+(distinct from the menu bar's plain `arrow.up.forward` on `Open`), `person.crop.circle.badge.plus`
+for "Share on Google Drive" (the add-people glyph, which is what Drive's dialog is for), `link` for
+"Copy Google Drive link" — deliberately the same symbol the menu bar's `Copy path` carries, since
+`Copy` already shares `document.on.document` across two menus — and `sparkles` for "Ask Gemini", the
+glyph Apple and Google both spell AI with, shared with `Ask Cmdr` in the menu bar. All verified
+present with `NSImage(systemSymbolName:)` on macOS 26.6.2 (2026-09-09; the share glyph 2026-09-11).
 
 **Full-color non-template images do render correctly** through `IconMenuItem`, and that is what stays
 there: app-bundle icons in "Open with" (via `file_system::open_with::load_app_icon`), each

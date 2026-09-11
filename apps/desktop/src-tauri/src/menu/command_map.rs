@@ -100,6 +100,11 @@ pub const CLOUD_REMOVE_DOWNLOAD_ID: &str = "cloud_remove_download";
 /// Menu item IDs for the Google Drive items. Shown only when the right-clicked
 /// item resolves to a Drive ID (`file_system/google_drive/`).
 pub const DRIVE_OPEN_ID: &str = "drive_open";
+/// Stream mode only, and only once File Provider vouched for the item
+/// (`file_system/google_drive/share_dialog.rs`). Deliberately absent from
+/// `menu_id_to_command`: `handle_menu_event` opens Drive's dialog itself, since no
+/// palette entry or shortcut could make that check first.
+pub const DRIVE_SHARE_ID: &str = "drive_share";
 pub const DRIVE_COPY_LINK_ID: &str = "drive_copy_link";
 /// Files only: Gemini's `?di=` names a document, so a folder never gets this one.
 pub const DRIVE_ASK_GEMINI_ID: &str = "drive_ask_gemini";
@@ -606,6 +611,7 @@ mod tests {
         assert_eq!(menu_id_to_command(VIEW_MODE_FULL_RIGHT_ID), None);
         assert_eq!(menu_id_to_command(VIEW_MODE_BRIEF_RIGHT_ID), None);
         assert_eq!(menu_id_to_command(VIEWER_WORD_WRAP_ID), None);
+        assert_eq!(menu_id_to_command(DRIVE_SHARE_ID), None);
         // Sort order items (ascending/descending) and date-created use the menu-sort
         // event path and are not mapped. Only the four shortcut-bound columns are.
         assert_eq!(menu_id_to_command(SORT_ASCENDING_ID), None);

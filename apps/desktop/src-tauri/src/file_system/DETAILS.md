@@ -15,7 +15,8 @@ badges). The leaves beside them:
   read as a refusal.
 - `backend_settings.rs`: live per-backend knobs.
 - `cloud_actions.rs`: iCloud download and eviction. `cloud_provider.rs`: who owns a path, and what they can do.
-- `google_drive/`: Drive item links, with `mirror_db.rs` as the mirror-mode fallback.
+- `google_drive/`: Drive item links, with `mirror_db.rs` as the mirror-mode fallback, and `share_dialog.rs` for
+  Drive's own share dialog (stream mode).
 - `open_with.rs`: the "Open with" candidate apps. `share.rs`: the `Share` submenu's services.
 - `tags.rs`: Finder tags. `terminal.rs`: "open terminal here". `text_editor.rs`: which app F4 opens a file in (wire
   types; the macOS half in `text_editor_macos.rs`, its tests in `text_editor_test.rs`).
@@ -109,9 +110,19 @@ not prove a path is outside Google Drive.
 ## Google Drive links (`google_drive/`)
 
 Backs "Open in Google Drive", "Copy Google Drive link", and "Ask Gemini". Drive registers no URL scheme (no
-`CFBundleURLTypes`, no `NSServices` in its `Info.plist`) and its Finder items are File Provider custom actions only
-Finder can render, so there's no way to reach Drive's own Share sheet from another app. The web page, where Share is one
-click away, is the reachable equivalent.
+`CFBundleURLTypes`, no `NSServices` in its `Info.plist`), so these build web URLs.
+
+**"Share on Google Drive" is the one item that opens Drive itself, in stream mode only** (`share_dialog.rs`, whose
+header carries the mechanism and its evidence). It runs Drive's own `ACTION_SHARE` File Provider custom action through
+FileProvider.framework's private host API, the way Finder does, gated on Drive's own activation rule. What a reader
+needs before touching it:
+
+- **Mirror mode can't have it.** A mirrored file isn't a File Provider item, and Drive's Finder menu there comes from
+  its Finder Sync extension, which only Finder can host. The fetch answers nil, so the menu stays as it was.
+- **Private API, so it fails closed.** Runtime class and selector checks, `objc2::exception::catch` around every call,
+  and a 250 ms wait at menu build (`commands/menu.rs`). Anything off means no menu item, never a crash.
+- **No completion block on the operation.** Its signature is private, and a guessed argument we'd dereference could
+  crash the app, so a click reports only whether it scheduled.
 
 **One resolution, every URL.** `item_links()` resolves the item ONCE into a private `ResolvedItem` (id + kind +
 resource key) and formats each URL from it, so a context menu never pays two xattr reads or two SQLite round-trips for

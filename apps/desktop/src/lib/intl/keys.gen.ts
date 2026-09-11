@@ -1974,6 +1974,7 @@ export type MessageKey =
   | 'menu.context.openWithOther'
   | 'menu.context.removeDownload'
   | 'menu.context.share'
+  | 'menu.context.shareOnGoogleDrive'
   | 'menu.context.toggleSelection'
   | 'menu.dock.connectToServer'
   | 'menu.dock.goToFolder'

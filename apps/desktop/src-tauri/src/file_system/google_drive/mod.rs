@@ -1,16 +1,16 @@
 //! Google Drive item links: turning a local path inside Google Drive into the
 //! `drive.google.com` / `docs.google.com` URLs for the same item.
 //!
-//! [`item_links`] is the whole surface. It resolves the item ONCE and formats
-//! every URL from that one answer, because resolution is the expensive half and
-//! a context menu asks for all of them at once.
+//! [`item_links`] is the whole links surface. It resolves the item ONCE and
+//! formats every URL from that one answer, because resolution is the expensive
+//! half and a context menu asks for all of them at once.
 //!
 //! Drive for desktop never registers a URL scheme (its `Info.plist` carries no
 //! `CFBundleURLTypes` and no `NSServices`, verified on Drive for desktop
-//! 2025-08 / macOS 15), and its Finder items are File Provider custom actions
-//! only Finder can render. So there is no way to pop Drive's own Share sheet
-//! from another app. Opening the item on the web is the reachable equivalent:
-//! Share is one click away there.
+//! 2025-08 / macOS 15), so these items reach Drive through its web pages. The
+//! one exception is "Share on Google Drive", which opens Drive's own share
+//! dialog through File Provider's private action API, in stream mode only:
+//! [`share_dialog`] has the mechanism and why mirror mode can't have it.
 //!
 //! ## Where the item ID comes from
 //!
@@ -47,6 +47,8 @@
 //! an ID actually resolves, which is self-validating in every Drive setup.
 
 mod mirror_db;
+#[cfg(target_os = "macos")]
+pub mod share_dialog;
 
 use std::path::Path;
 

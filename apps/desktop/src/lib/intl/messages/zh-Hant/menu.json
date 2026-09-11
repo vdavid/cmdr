@@ -456,6 +456,10 @@
   "@menu.context.askGemini": {
     "sourceHash": "7eec77f"
   },
+  "menu.context.shareOnGoogleDrive": "在 Google Drive 中分享",
+  "@menu.context.shareOnGoogleDrive": {
+    "sourceHash": "380a775"
+  },
   "menu.context.share": "分享",
   "@menu.context.share": {
     "sourceHash": "29887a5"

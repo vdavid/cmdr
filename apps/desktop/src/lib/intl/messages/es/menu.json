@@ -458,6 +458,10 @@
   "@menu.context.askGemini": {
     "sourceHash": "7eec77f"
   },
+  "menu.context.shareOnGoogleDrive": "Compartir en Google Drive",
+  "@menu.context.shareOnGoogleDrive": {
+    "sourceHash": "380a775"
+  },
   "menu.context.share": "Compartir",
   "@menu.context.share": {
     "sourceHash": "29887a5"

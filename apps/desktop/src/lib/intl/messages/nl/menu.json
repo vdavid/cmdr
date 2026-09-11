@@ -462,6 +462,10 @@
   "@menu.context.askGemini": {
     "sourceHash": "7eec77f"
   },
+  "menu.context.shareOnGoogleDrive": "Deel op Google Drive",
+  "@menu.context.shareOnGoogleDrive": {
+    "sourceHash": "380a775"
+  },
   "menu.context.share": "Deel",
   "@menu.context.share": {
     "sourceHash": "29887a5"
