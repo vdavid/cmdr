@@ -256,29 +256,35 @@ export async function fileExistsInPane(tauriPage: PageLike, targetName: string, 
  * the swallow-guard version performed. `rowIndex` picks a later row than the
  * first; the default (0) is the `..` parent entry in a non-root listing.
  *
+ * ❗ Finding the row and clicking it happen in ONE `evaluate`, retried until the
+ * deadline. ❌ Don't split them back into a "wait for the row" round trip and a
+ * "click it" round trip: a pane replaces every row when a listing lands, and
+ * `ensureAppReady`'s own navigation lands one right after a route remount, so the
+ * row the first trip saw can be gone by the second even though it's back a moment
+ * later. Measured in the lane, 2026-09-12: all rows removed ~25 ms before the click
+ * when idle, and between the two trips under a loaded run.
+ * `click-entry-in-pane.test.ts` anchors it.
+ *
  * 5 s is failure headroom for a listing reload under parallel-shard load, not an
  * expected wait: a rendered pane returns on the first poll.
  */
 export async function clickEntryInPane(tauriPage: PageLike, paneIndex: number, rowIndex = 0): Promise<void> {
   const pane = `document.querySelectorAll('.file-pane')[${String(paneIndex)}]`
   const row = `${pane}?.querySelectorAll('.file-entry')[${String(rowIndex)}]`
-  const rendered = await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!(${row})`), 5000)
-  if (!rendered) {
-    throw new Error(
-      `clickEntryInPane: pane ${String(paneIndex)} never rendered row ${String(rowIndex)} to click (waited 5 s)`,
-    )
-  }
-  // Re-check inside the click: the row can still vanish between the poll and
-  // here, and a silent no-op is exactly what this helper exists to prevent.
-  const clicked = await tauriPage.evaluate<boolean>(`(function() {
+  const clicked = await pollUntil(
+    tauriPage,
+    async () =>
+      tauriPage.evaluate<boolean>(`(function() {
         var entry = ${row};
         if (!entry) return false;
         entry.click();
         return true;
-    })()`)
+    })()`),
+    5000,
+  )
   if (!clicked) {
     throw new Error(
-      `clickEntryInPane: pane ${String(paneIndex)} row ${String(rowIndex)} disappeared between the wait and the click`,
+      `clickEntryInPane: pane ${String(paneIndex)} never rendered row ${String(rowIndex)} to click (waited 5 s)`,
     )
   }
 }
