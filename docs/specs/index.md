@@ -49,6 +49,14 @@ below is met.
 
 ## In progress
 
+- [ ] 2026-09-11 `text-editor-choice.md` - **F4 always opens files in TextEdit, and a user wants Sublime Text.** Not
+      started. A "Text editor" row in Navigation & file ops lists what LaunchServices reports as plain-text EDITORS
+      (the role-filtered C query: the `NSWorkspace` content-type API would load a macOS 11 framework and lists
+      browsers, and a made-up `.txt` URL answers nothing, both measured), stores a bundle id or an `.app` path beside a
+      `system` default that keeps `open -t` byte-identical, and teaches itself once with a toast that fires only when
+      another editor exists. A removed app still opens the file, in the system default. Four milestones: the Rust
+      surface, the copy in ten languages first (English left in a locale fails the build), F4 honoring the choice, then
+      the row and the hint. M1 opens with a spike on whether Sublime Text and VS Code register under plain text at all.
 - [ ] 2026-09-09 `dock-integration.md` - **Cmdr has no presence in the Dock beyond its running tile.** An implementation
       map for four pieces, three of which have now landed on `worktree-dock-integration`: the `usage.json` launch-day
       ledger, the one-time "add Cmdr to your Dock" nudge that writes `com.apple.dock`'s `persistent-apps` through
