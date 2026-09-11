@@ -301,12 +301,12 @@
   "fileExplorer.functionKeyBar.newFileLabel": "New file",
   "@fileExplorer.functionKeyBar.newFileLabel": {
     "description": "Short button label on the function-key bar for creating a new file. Space is tight; keep it short.",
-    "screenshot": "function-key-bar-shift.png"
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.newFileAction": "Create new file",
   "@fileExplorer.functionKeyBar.newFileAction": {
     "description": "The full spoken action name (for screen readers) of the new-file function-key button. Longer form of the short button label.",
-    "screenshot": "function-key-bar-shift.png"
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.renameLabel": "Rename",
   "@fileExplorer.functionKeyBar.renameLabel": {
@@ -321,12 +321,12 @@
   "fileExplorer.functionKeyBar.permanentlyLabel": "Permanently",
   "@fileExplorer.functionKeyBar.permanentlyLabel": {
     "description": "Short button label (shown while Shift is held) for permanently deleting the selected files, bypassing the trash. Space is tight; the full action is spoken separately.",
-    "screenshot": "function-key-bar-shift.png"
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.deletePermanentlyAction": "Delete permanently",
   "@fileExplorer.functionKeyBar.deletePermanentlyAction": {
     "description": "The full spoken action name (for screen readers) of the permanent-delete function-key button (bypasses the trash).",
-    "screenshot": "function-key-bar-shift.png"
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.viewLabel": "View",
   "@fileExplorer.functionKeyBar.viewLabel": {
@@ -414,31 +414,32 @@
   "fileExplorer.network.connect": "Connect",
   "@fileExplorer.network.connect": {
     "description": "Button that starts connecting to the entered network server or share.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.connecting": "Connecting...",
   "@fileExplorer.network.connecting": {
     "description": "In-progress label shown on the connect button (and in status text) while a network connection is being established.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.back": "Back",
   "@fileExplorer.network.back": {
     "description": "Button that returns to the previous network screen (for example from a host''s shares back to the host list).",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.retry": "Retry",
   "@fileExplorer.network.retry": {
     "description": "Button that re-attempts a failed network operation, such as connecting to a host.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.signIn": "Sign in",
   "@fileExplorer.network.signIn": {
     "description": "Button that opens the credentials form to sign in to a network host or share.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.osMountFallback.message": "Couldn''t directly connect to <shareName>{share}</shareName>. You are connected, but only via macOS''s native SMB network connection, which is 4x slower for most connections (sometimes 100x) than Cmdr''s direct connection. Click the button below to try again.",
   "@fileExplorer.network.osMountFallback.message": {
@@ -446,35 +447,35 @@
     "placeholders": {
       "share": "the name of the network share, for example archive or Photos"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.osMountFallback.retry": "Try connecting directly",
   "@fileExplorer.network.osMountFallback.retry": {
     "description": "Button inside that notification. Pressing it retries Cmdr''s own faster connection to the share. Matches the \"connectDirectly\" wording used in the volume menu; keep the two consistent in your language.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.osMountFallback.closeTooltip": "Dismiss",
   "@fileExplorer.network.osMountFallback.closeTooltip": {
     "description": "Hover tooltip on the X that closes that notification. Named separately from the retry button so it''s clear which control does what.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.searching": "Searching...",
   "@fileExplorer.network.browser.searching": {
     "description": "Status shown while the app is still discovering network hosts (mDNS browsing in progress).",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "servers-hub.png"
   },
   "fileExplorer.network.browser.refresh": "Refresh",
   "@fileExplorer.network.browser.refresh": {
     "description": "Button in the empty network browser that re-scans the network for hosts.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "servers-hub.png"
   },
   "fileExplorer.network.browser.refreshAriaLabel": "Refresh network hosts",
   "@fileExplorer.network.browser.refreshAriaLabel": {
     "description": "Accessibility label for the status-bar button that re-scans the network for hosts.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "servers-hub.png"
   },
   "fileExplorer.network.browser.refreshHint": "Press <key></key> or click here to refresh",
   "@fileExplorer.network.browser.refreshHint": {
@@ -482,121 +483,125 @@
     "placeholders": {
       "key": "marks where the keyboard-shortcut chip is inserted inline (the chip shows the refresh key combo, ⌘R by default); keep the tag, it carries no translatable text"
     },
-    "screenshot": "connect-to-server.png"
+    "screenshot": "servers-hub.png"
   },
   "fileExplorer.network.browser.status.resolving": "Resolving...",
   "@fileExplorer.network.browser.status.resolving": {
     "description": "Status cell in the network host list while the host''s name and IP are still being resolved.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.waitingForNetwork": "Waiting for network...",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
     "description": "Status cell shown when a host is known but the network name has not resolved yet.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.notChecked": "Not checked",
   "@fileExplorer.network.browser.status.notChecked": {
     "description": "Status cell for a host that has not been contacted yet (the user has not tried connecting).",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.loggedIn": "Logged in",
   "@fileExplorer.network.browser.status.loggedIn": {
     "description": "Status cell when stored credentials exist for a host that needs login.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.loginFailed": "Login failed",
   "@fileExplorer.network.browser.status.loginFailed": {
     "description": "Status cell when a login attempt to the host failed.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.loginNeeded": "Login needed",
   "@fileExplorer.network.browser.status.loginNeeded": {
     "description": "Status cell when the host requires login and no credentials are stored.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.timeout": "Timeout",
   "@fileExplorer.network.browser.status.timeout": {
     "description": "Status cell when contacting the host timed out.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.unreachable": "Unreachable",
   "@fileExplorer.network.browser.status.unreachable": {
     "description": "Status cell when the host could not be reached.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.error": "Error",
   "@fileExplorer.network.browser.status.error": {
     "description": "Generic fallback status cell for an unclassified host problem. Avoid the literal word for \"error\" in languages with a friendlier alternative if your style guide prefers it.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.loggedInOk": "Logged in",
   "@fileExplorer.network.browser.status.loggedInOk": {
     "description": "Status cell when connected to a host using stored credentials.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.guest": "Guest",
   "@fileExplorer.network.browser.status.guest": {
     "description": "Status cell when connected to a host as a guest (no credentials).",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.connected": "Connected",
   "@fileExplorer.network.browser.status.connected": {
     "description": "Status cell when connected to a host (generic, neither explicitly credentialed nor guest).",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.tooltip.resolving": "Resolving hostname and IP address...",
   "@fileExplorer.network.browser.tooltip.resolving": {
     "description": "Hover tooltip on a host row explaining that its name and IP are still being resolved.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "servers-hub.png"
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "Waiting for network name resolution",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
     "description": "Hover tooltip on a host row explaining the app is waiting for the network to resolve the host name.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Double-click to connect and view shares",
   "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
     "description": "Hover tooltip on a not-yet-contacted host row inviting the user to double-click to connect.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "servers-hub.png"
   },
   "fileExplorer.network.browser.tooltip.credsStored": "Credentials stored. Double-click to connect.",
   "@fileExplorer.network.browser.tooltip.credsStored": {
     "description": "Hover tooltip on a host row that needs login but already has stored credentials.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.tooltip.credsRejected": "Stored credentials were rejected. Please log in with updated credentials.",
   "@fileExplorer.network.browser.tooltip.credsRejected": {
     "description": "Hover tooltip on a host row whose stored credentials the server rejected, asking the user to update them.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.tooltip.requiresLogin": "This host requires login. Double-click to enter credentials.",
   "@fileExplorer.network.browser.tooltip.requiresLogin": {
     "description": "Hover tooltip on a host row that needs login and has no stored credentials.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.tooltip.authFailed": "Authentication failed. Check your credentials and try again.",
   "@fileExplorer.network.browser.tooltip.authFailed": {
     "description": "Hover tooltip on a host row whose authentication failed, asking the user to recheck credentials.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.cannotRemoveDiscovered": "Can''t remove discovered hosts",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "description": "Warning toast when the user tries to remove a host that was auto-discovered (only manually-added hosts can be removed).",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.removeHostConfirm": "Remove {hostName} from the server list?",
   "@fileExplorer.network.browser.removeHostConfirm": {
@@ -604,14 +609,14 @@
     "placeholders": {
       "hostName": "the display name of the host being removed"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.removeHostConfirmButton": "Remove",
   "@fileExplorer.network.browser.removeHostConfirmButton": {
     "description": "Confirm button in the remove-host dialog.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.hostRemoved": "Removed {hostName}",
   "@fileExplorer.network.browser.hostRemoved": {
@@ -619,8 +624,8 @@
     "placeholders": {
       "hostName": "the display name of the host that was removed"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.hostRemoveFailed": "Couldn''t remove {hostName}",
   "@fileExplorer.network.browser.hostRemoveFailed": {
@@ -628,8 +633,8 @@
     "placeholders": {
       "hostName": "the display name of the host that could not be removed"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.forgotPassword": "Forgot saved password for {hostName}",
   "@fileExplorer.network.forgotPassword": {
@@ -637,14 +642,14 @@
     "placeholders": {
       "hostName": "the display name of the host whose password was removed"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.deletePasswordFailed": "Couldn''t delete saved password",
   "@fileExplorer.network.deletePasswordFailed": {
     "description": "Error toast when deleting a host''s saved password from the Keychain did not work.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.disconnected": "Disconnected from {hostName}",
   "@fileExplorer.network.browser.disconnected": {
@@ -652,8 +657,8 @@
     "placeholders": {
       "hostName": "the display name of the host that was disconnected"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.noMountedShares": "No mounted shares from {hostName}",
   "@fileExplorer.network.browser.noMountedShares": {
@@ -661,8 +666,8 @@
     "placeholders": {
       "hostName": "the display name of the host"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.browser.disconnectFailed": "Couldn''t disconnect: {message}",
   "@fileExplorer.network.browser.disconnectFailed": {
@@ -670,14 +675,14 @@
     "placeholders": {
       "message": "the underlying failure reason"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.share.credentialsStoredLocally": "Credentials stored locally (no system keyring detected)",
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "description": "Info toast shown when no OS keyring is available, so credentials are kept in a local store instead.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.share.notFound": "Share ''{shareName}'' not found on {hostName}",
   "@fileExplorer.network.share.notFound": {
@@ -686,8 +691,8 @@
       "shareName": "the name of the share that was not found",
       "hostName": "the display name of the host"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.share.connecting": "Connecting to {hostName}...",
   "@fileExplorer.network.share.connecting": {
@@ -695,8 +700,8 @@
     "placeholders": {
       "hostName": "the display name of the host being connected to"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.share.connectFailedTitle": "Couldn''t connect to {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
@@ -704,38 +709,38 @@
     "placeholders": {
       "hostName": "the display name of the host"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.share.noSharesTitle": "No shares available",
   "@fileExplorer.network.share.noSharesTitle": {
     "description": "Empty-state title when a host exposes no accessible shares.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.share.noSharesMessage": "This host has no accessible shares, or authentication is needed.",
   "@fileExplorer.network.share.noSharesMessage": {
     "description": "Empty-state body when a host exposes no accessible shares, hinting that signing in might help.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.share.backArrow": "Back",
   "@fileExplorer.network.share.backArrow": {
     "description": "Compact back button in the share-list header that returns to the host list. The UI renders a back-arrow icon before this label; the label itself is text-only.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.share.forgetPasswordTooltip": "Remove saved password from Keychain",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "description": "Hover tooltip for the button that deletes this host''s saved password. \"Keychain\" is the macOS credential store.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.share.forgetPassword": "Forget saved password",
   "@fileExplorer.network.share.forgetPassword": {
     "description": "Button in the share-list header that deletes this host''s saved password from the Keychain. The UI renders a key icon before this label; the label itself is text-only.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} share} other {{countText} shares}}",
   "@fileExplorer.network.share.shareCount": {
@@ -744,20 +749,20 @@
       "countText": "the number of shares, already formatted for display",
       "count": "the same number of shares (drives the singular/plural form)"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.reconnect.once": "once",
   "@fileExplorer.network.reconnect.once": {
     "description": "Word for one reconnection attempt, used inside the reconnect-progress sentences (e.g. \"Retried once\"). Must read naturally where the sentences embed it.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.reconnect.twice": "twice",
   "@fileExplorer.network.reconnect.twice": {
     "description": "Word for two reconnection attempts, used inside the reconnect-progress sentences (e.g. \"Retried twice\"). Must read naturally where the sentences embed it.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.reconnect.times": "{count, plural, other {{countText} times}}",
   "@fileExplorer.network.reconnect.times": {
@@ -766,8 +771,8 @@
       "countText": "the number of attempts, already formatted for display",
       "count": "the same number of attempts (drives the plural form)"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.reconnect.finalAttempt": "Retried {retried}, this is the final attempt. Connection drops if it fails.",
   "@fileExplorer.network.reconnect.finalAttempt": {
@@ -775,8 +780,8 @@
     "placeholders": {
       "retried": "how many times it has retried so far, as a phrase (once / twice / N times)"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.reconnect.willTryMore": "Retried {retried}, will try it {remaining} more after this.",
   "@fileExplorer.network.reconnect.willTryMore": {
@@ -785,8 +790,8 @@
       "retried": "how many times it has retried so far, as a phrase (once / twice / N times)",
       "remaining": "how many attempts remain after the current one, as a phrase (once / twice / N times)"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.mtp.connectTimedOut": "Connection timed out. The device may be slow or unresponsive.",
   "@fileExplorer.mtp.connectTimedOut": {
@@ -842,32 +847,32 @@
     "placeholders": {
       "target": "the host/share name being mounted, or a generic word for a share"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
   },
   "fileExplorer.networkMount.shareFallback": "share",
   "@fileExplorer.networkMount.shareFallback": {
     "description": "Generic word used in the mounting text when the share''s name is not known yet (e.g. \"Mounting share...\").",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
   },
   "fileExplorer.networkMount.mountFailedTitle": "Couldn''t mount share",
   "@fileExplorer.networkMount.mountFailedTitle": {
     "description": "Error title shown when mounting a network share failed.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
   },
   "fileExplorer.networkMount.tryAgain": "Try again",
   "@fileExplorer.networkMount.tryAgain": {
     "description": "Button to retry mounting a network share after a failure.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
   },
   "fileExplorer.networkMount.back": "Back",
   "@fileExplorer.networkMount.back": {
     "description": "Button that returns from the mount-error screen to the share list.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
   },
   "fileExplorer.unreachable.title": "Couldn''t reach {path}",
   "@fileExplorer.unreachable.title": {

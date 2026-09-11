@@ -53,15 +53,18 @@
   },
   "adb.hint.text": "Want the whole filesystem? Turn on USB debugging.",
   "@adb.hint.text": {
-    "description": "One quiet line at the top of a pane showing an Android phone over the ordinary photo-and-music connection, telling the user there is a fuller way in. \"Filesystem\" means all the phone's folders rather than only its media. \"USB debugging\" is the ANDROID setting's own name: render it the way Android's own translation names it in your language."
+    "description": "One quiet line at the top of a pane showing an Android phone over the ordinary photo-and-music connection, telling the user there is a fuller way in. \"Filesystem\" means all the phone's folders rather than only its media. \"USB debugging\" is the ANDROID setting's own name: render it the way Android's own translation names it in your language.",
+    "screenshot": "mtp-browse.png"
   },
   "adb.hint.how": "How",
   "@adb.hint.how": {
-    "description": "Link at the end of that line; it opens Android's own instructions for turning USB debugging on. One word, the way a person asks \"how do I do that?\"."
+    "description": "Link at the end of that line; it opens Android's own instructions for turning USB debugging on. One word, the way a person asks \"how do I do that?\".",
+    "screenshot": "mtp-browse.png"
   },
   "adb.hint.dismiss": "Dismiss",
   "@adb.hint.dismiss": {
-    "description": "Accessible name of the small × button that hides that line for good. Screen readers only; not visible. VERB, imperative."
+    "description": "Accessible name of the small × button that hides that line for good. Screen readers only; not visible. VERB, imperative.",
+    "screenshot": "mtp-browse.png"
   },
   "adb.disconnectDeviceAriaLabel": "Disconnect {name}",
   "@adb.disconnectDeviceAriaLabel": {

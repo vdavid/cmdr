@@ -16,23 +16,23 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2250 / 3534 keys have a screenshot (64%):** 1280 direct (36%) and 970 representative (27%). 1129 remain
+**Total: 2335 / 3542 keys have a screenshot (66%):** 1369 direct (39%) and 966 representative (27%). 1052 remain
 uncoupled, and 155 are native surfaces a webview capture cannot reach.
 
 | Area           | Direct | Representative | Uncoupled | Native | Total | Any % |
 | -------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
-| adb            |      0 |              0 |        19 |      0 |    19 |    0% |
+| adb            |      3 |              0 |        16 |      0 |    19 |   16% |
 | ai             |      0 |             89 |         0 |      0 |    89 |  100% |
-| askCmdr        |     79 |              0 |       123 |      0 |   202 |   39% |
+| askCmdr        |     78 |              0 |       124 |      0 |   202 |   39% |
 | commandPalette |      3 |              0 |         3 |      0 |     6 |   50% |
-| commands       |    139 |              0 |        69 |      0 |   208 |   67% |
+| commands       |    148 |              0 |        60 |      0 |   208 |   71% |
 | common         |      1 |              0 |         5 |      0 |     6 |   17% |
 | crashReporter  |     12 |              6 |         0 |      0 |    18 |  100% |
 | downloads      |     10 |              0 |        26 |      0 |    36 |   28% |
 | errorReporter  |     17 |              0 |        27 |      0 |    44 |   39% |
-| errors         |     77 |            378 |         0 |      0 |   455 |  100% |
+| errors         |     84 |            371 |         0 |      0 |   455 |  100% |
 | feedback       |      7 |              0 |         6 |      0 |    13 |   54% |
-| fileExplorer   |    109 |             58 |       209 |      0 |   376 |   44% |
+| fileExplorer   |    104 |             63 |       209 |      0 |   376 |   44% |
 | fileOperations |    107 |             51 |        68 |      0 |   226 |   70% |
 | goToPath       |      5 |              0 |         7 |      0 |    12 |   42% |
 | indexing       |     33 |              0 |        33 |      0 |    66 |   50% |
@@ -42,14 +42,14 @@ uncoupled, and 155 are native surfaces a webview capture cannot reach.
 | menu           |      0 |              0 |         0 |    153 |   153 |    0% |
 | mtp            |     18 |              4 |         0 |      0 |    22 |  100% |
 | notifications  |      0 |              0 |         1 |      0 |     1 |    0% |
-| onboarding     |     74 |             40 |        35 |      0 |   149 |   77% |
+| onboarding     |     95 |             38 |        16 |      0 |   149 |   89% |
 | operationLog   |     26 |             26 |         0 |      0 |    52 |  100% |
 | queryUi        |     44 |            124 |         0 |      0 |   168 |  100% |
 | queue          |     25 |              1 |        10 |      0 |    36 |   72% |
 | search         |      9 |             48 |         0 |      0 |    57 |  100% |
 | selection      |     14 |              0 |         1 |      0 |    15 |   93% |
-| servers        |      0 |              0 |        92 |      0 |    92 |    0% |
-| settings       |    330 |              0 |       285 |      0 |   615 |   54% |
+| servers        |     48 |              0 |        52 |      0 |   100 |   48% |
+| settings       |    337 |              0 |       278 |      0 |   615 |   55% |
 | shortcuts      |     31 |             28 |         0 |      0 |    59 |  100% |
 | suggestedOps   |      0 |              0 |        29 |      0 |    29 |    0% |
 | transfer       |      2 |              0 |        11 |      0 |    13 |   15% |
@@ -60,35 +60,37 @@ uncoupled, and 155 are native surfaces a webview capture cannot reach.
 
 ## Surfaces to review
 
-The run captured 149 surfaces. This section is regenerated every run, so it stays true as the UI changes.
+The run captured 159 surfaces. This section is regenerated every run, so it stays true as the UI changes.
 
-### No unique keys (21)
+### No unique keys (23)
 
 Every key on these surfaces also renders on another captured surface, so dropping one costs no coverage: its keys would
 simply couple to whichever surface keeps them. Worth considering, NOT an automatic delete. A surface can be the clearest
 picture of a key several surfaces share, and being the clearest is reason enough to keep it. To drop one, remove its
 staging (or add it to `DROPPED_GALLERY_STATES` for a gallery state) in `test/e2e-playwright/`.
 
-- `search-dialog` (93 keys, none unique)
-- `select-dialog` (86 keys, none unique)
-- `transfer-confirmation-copy` (80 keys, none unique)
-- `transfer-dialog` (73 keys, none unique)
-- `onboarding-optional` (71 keys, none unique)
-- `onboarding-fda-notgranted` (70 keys, none unique)
-- `onboarding-fda-denied` (70 keys, none unique)
-- `bulk-rename-review-all-allowed` (69 keys, none unique)
-- `mkdir-confirmation-empty` (62 keys, none unique)
-- `delete-confirm` (59 keys, none unique)
-- `trash-confirm` (59 keys, none unique)
-- `onboarding-fda` (58 keys, none unique)
-- `expiration` (58 keys, none unique)
-- `new-folder-dialog` (57 keys, none unique)
-- `new-file-dialog` (57 keys, none unique)
-- `expiration-organization` (56 keys, none unique)
-- `transfer-error-source_not_found` (55 keys, none unique)
-- `alert-long` (52 keys, none unique)
-- `main-window` (50 keys, none unique)
-- `empty-pane` (46 keys, none unique)
+- `search-dialog` (97 keys, none unique)
+- `select-dialog` (90 keys, none unique)
+- `transfer-confirmation-copy` (84 keys, none unique)
+- `onboarding-optional` (83 keys, none unique)
+- `transfer-dialog` (77 keys, none unique)
+- `onboarding-fda-notgranted` (76 keys, none unique)
+- `onboarding-fda-denied` (76 keys, none unique)
+- `bulk-rename-review-all-allowed` (73 keys, none unique)
+- `server-sign-in-add` (67 keys, none unique)
+- `mkdir-confirmation-empty` (66 keys, none unique)
+- `delete-confirm` (63 keys, none unique)
+- `trash-confirm` (63 keys, none unique)
+- `onboarding-fda` (63 keys, none unique)
+- `new-folder-dialog` (61 keys, none unique)
+- `new-file-dialog` (61 keys, none unique)
+- `expiration` (61 keys, none unique)
+- `server-sign-in-sign-in` (60 keys, none unique)
+- `expiration-organization` (60 keys, none unique)
+- `transfer-error-source_not_found` (59 keys, none unique)
+- `alert-long` (56 keys, none unique)
+- `main-window` (54 keys, none unique)
+- `empty-pane` (50 keys, none unique)
 - `viewer-encoding` (15 keys, none unique)
 
 ### Captured at a reduced UI zoom (2)

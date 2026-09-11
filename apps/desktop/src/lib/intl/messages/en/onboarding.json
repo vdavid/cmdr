@@ -25,7 +25,7 @@
     "placeholders": {
       "topic": "the label the glyph sits beside, already translated (for example \"Drive indexing\")"
     },
-    "screenshot": "onboarding-optional.png"
+    "screenshot": "onboarding-ai.png"
   },
   "onboarding.wizard.stepTooltip": "Step {step} of {mandatory}+1{note, select, remaining {, one optional step remains} last {, this is the last, optional step} other {}}",
   "@onboarding.wizard.stepTooltip": {
@@ -35,7 +35,7 @@
       "mandatory": "how many steps are required, the optional one excluded (for example 3)",
       "note": "which tail to add: \"remaining\" for the step before the optional one, \"last\" on the optional step itself, anything else for no tail"
     },
-    "screenshot": "onboarding-ai.png"
+    "screenshot": "onboarding-fda.png"
   },
   "onboarding.wizard.back": "Back",
   "@onboarding.wizard.back": {
@@ -376,8 +376,7 @@
   "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that''s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
   "@onboarding.stepAi.local.tooltip": {
     "description": "The local-AI option's full explanation, in the tooltip behind the info glyph beside it: a weaker on-device model that keeps everything local, and the better route for someone who wants both privacy and quality. Honest, plain tone (\"dumber\" is deliberate). <em> emphasizes \"and\"; <strong> wraps the name of the cloud option below, so keep that wording matching onboarding.stepAi.cloud.label. \"Cmdr\" is the product name; \"GB\" is gigabytes; \"RAM\" and \"CPU\" are the memory and the processor; \"ollama\" is a product name; all stay untranslated. \"2 GB\" is an approximate disk-size figure. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
-    "screenshot": "onboarding-ai.png",
-    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
+    "screenshot": "onboarding-ai.png"
   },
   "onboarding.stepAi.local.note": "Started downloading the local model in the background. You can finish onboarding now; the toast in the corner will keep you posted.",
   "@onboarding.stepAi.local.note": {
@@ -397,8 +396,7 @@
     "placeholders": {
       "nextLabel": "the forward button's label, already translated (for example \"Next\")"
     },
-    "screenshot": "onboarding-ai.png",
-    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
+    "screenshot": "onboarding-ai.png"
   },
   "onboarding.stepAi.off.label": "Thanks but no thanks, no AI for me",
   "@onboarding.stepAi.off.label": {

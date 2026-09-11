@@ -1,7 +1,8 @@
 {
   "servers.sheet.usernamePlaceholder": "Example: barry",
   "@servers.sheet.usernamePlaceholder": {
-    "description": "Placeholder in the sign-in sheet's username field, shown when the server gave no hint about who signs in. \"barry\" is a sample first name; swap it for a typical sample name in the target language if appropriate. The word before it is the ordinary label your language puts in front of an example."
+    "description": "Placeholder in the sign-in sheet's username field, shown when the server gave no hint about who signs in. \"barry\" is a sample first name; swap it for a typical sample name in the target language if appropriate. The word before it is the ordinary label your language puts in front of an example.",
+    "screenshot": "server-sign-in-sign-in-guest.png"
   },
   "servers.pinHint.title": "Your Network group is getting long",
   "@servers.pinHint.title": {
@@ -24,27 +25,33 @@
   },
   "servers.hub.colName": "Name",
   "@servers.hub.colName": {
-    "description": "Column heading in the servers hub: the server''s own name. One or two words; the column is narrow."
+    "description": "Column heading in the servers hub: the server''s own name. One or two words; the column is narrow.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.colType": "Type",
   "@servers.hub.colType": {
-    "description": "Column heading in the servers hub for which protocol a server speaks (SFTP, WebDAV, SMB). One word."
+    "description": "Column heading in the servers hub for which protocol a server speaks (SFTP, WebDAV, SMB). One word.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.colAddress": "Address",
   "@servers.hub.colAddress": {
-    "description": "Column heading in the servers hub for where the server lives: a hostname, an IP address, or a web address. One word."
+    "description": "Column heading in the servers hub for where the server lives: a hostname, an IP address, or a web address. One word.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.colStatus": "Status",
   "@servers.hub.colStatus": {
-    "description": "Column heading in the servers hub for how the server is doing right now. One word."
+    "description": "Column heading in the servers hub for how the server is doing right now. One word.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.colLastUsed": "Last used",
   "@servers.hub.colLastUsed": {
-    "description": "Column heading in the servers hub for when the user last connected to the server. Two words at most."
+    "description": "Column heading in the servers hub for when the user last connected to the server. Two words at most.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.addServer": "Add server…",
   "@servers.hub.addServer": {
-    "description": "The last row of the servers hub, which opens the form for typing a new server. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means \"this opens something\"; keep it."
+    "description": "The last row of the servers hub, which opens the form for typing a new server. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means \"this opens something\"; keep it.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.status.connected": "Connected",
   "@servers.hub.status.connected": {
@@ -56,7 +63,8 @@
   },
   "servers.hub.status.foundNearby": "Found nearby",
   "@servers.hub.status.foundNearby": {
-    "description": "Status of a server Cmdr can see on the local network right now, whether or not the user saved it. Two words."
+    "description": "Status of a server Cmdr can see on the local network right now, whether or not the user saved it. Two words.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.status.signedOut": "Signed out",
   "@servers.hub.status.signedOut": {
@@ -68,7 +76,8 @@
   },
   "servers.hub.neverUsed": "Never",
   "@servers.hub.neverUsed": {
-    "description": "Shown in the servers hub''s \"Last used\" column for a server the user has never connected to. One word."
+    "description": "Shown in the servers hub''s \"Last used\" column for a server the user has never connected to. One word.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.discoveryOff": "Local network discovery is off.",
   "@servers.hub.discoveryOff": {
@@ -80,11 +89,13 @@
   },
   "servers.hub.emptyTitle": "No servers yet",
   "@servers.hub.emptyTitle": {
-    "description": "Heading of the empty state in the servers hub, when the user has saved none and Cmdr found none nearby. Short and neutral."
+    "description": "Heading of the empty state in the servers hub, when the user has saved none and Cmdr found none nearby. Short and neutral.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.emptyMessage": "Add one below, or turn on a Mac or NAS on your network and Cmdr will find it.",
   "@servers.hub.emptyMessage": {
-    "description": "One line under the empty-state heading in the servers hub. \"NAS\" is a network storage box; keep the abbreviation if your language uses it, otherwise say the equivalent. \"below\" points at the \"Add server…\" row at the bottom of the list."
+    "description": "One line under the empty-state heading in the servers hub. \"NAS\" is a network storage box; keep the abbreviation if your language uses it, otherwise say the equivalent. \"below\" points at the \"Add server…\" row at the bottom of the list.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.rowCount": "{count, plural, one {{countText} server} other {{countText} servers}}",
   "@servers.hub.rowCount": {
@@ -92,7 +103,8 @@
     "placeholders": {
       "count": "the number, for choosing the plural form",
       "countText": "the number as the user''s locale writes it, like \"1,024\""
-    }
+    },
+    "screenshot": "servers-hub.png"
   },
   "servers.paneState.connecting": "Connecting to {name}…",
   "@servers.paneState.connecting": {
@@ -203,37 +215,44 @@
   },
   "servers.sheet.addTitle": "Add server",
   "@servers.sheet.addTitle": {
-    "description": "Title of the sheet where the user types a new server. VERB phrase, imperative."
+    "description": "Title of the sheet where the user types a new server. VERB phrase, imperative.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.signInTitle": "Sign in to {name}",
   "@servers.sheet.signInTitle": {
     "description": "Title of the sheet when a server is asking for a credential. VERB phrase, imperative.",
     "placeholders": {
       "name": "the server''s display name, like “Naspolya”"
-    }
+    },
+    "screenshot": "server-sign-in-sign-in.png"
   },
   "servers.sheet.editTitle": "Edit {name}",
   "@servers.sheet.editTitle": {
     "description": "Title of the sheet when the user is changing a server they already saved. VERB phrase, imperative.",
     "placeholders": {
       "name": "the server''s display name, like “Naspolya”"
-    }
+    },
+    "screenshot": "server-sign-in-edit.png"
   },
   "servers.sheet.connect": "Connect",
   "@servers.sheet.connect": {
-    "description": "The sheet's main button in add mode: it dials the server the user typed. VERB, imperative."
+    "description": "The sheet's main button in add mode: it dials the server the user typed. VERB, imperative.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.signIn": "Sign in",
   "@servers.sheet.signIn": {
-    "description": "The sheet's main button when a server is asking for a credential. VERB phrase, imperative."
+    "description": "The sheet's main button when a server is asking for a credential. VERB phrase, imperative.",
+    "screenshot": "server-sign-in-sign-in.png"
   },
   "servers.sheet.save": "Save",
   "@servers.sheet.save": {
-    "description": "The sheet's main button when the user is editing a saved server. VERB, imperative."
+    "description": "The sheet's main button when the user is editing a saved server. VERB, imperative.",
+    "screenshot": "server-sign-in-edit.png"
   },
   "servers.sheet.cancel": "Cancel",
   "@servers.sheet.cancel": {
-    "description": "The sheet's secondary button: it closes without connecting or saving. VERB, imperative."
+    "description": "The sheet's secondary button: it closes without connecting or saving. VERB, imperative.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.connecting": "Connecting…",
   "@servers.sheet.connecting": {
@@ -241,31 +260,38 @@
   },
   "servers.sheet.protocolLegend": "Protocol",
   "@servers.sheet.protocolLegend": {
-    "description": "Accessible name of the SMB / SFTP / WebDAV picker in the add form. Screen readers only; not visible. One word, NOUN."
+    "description": "Accessible name of the SMB / SFTP / WebDAV picker in the add form. Screen readers only; not visible. One word, NOUN.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.protocolSmb": "SMB",
   "@servers.sheet.protocolSmb": {
-    "description": "One option of the protocol picker. A protocol name; keep it as-is."
+    "description": "One option of the protocol picker. A protocol name; keep it as-is.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.protocolSftp": "SFTP",
   "@servers.sheet.protocolSftp": {
-    "description": "One option of the protocol picker. A protocol name; keep it as-is."
+    "description": "One option of the protocol picker. A protocol name; keep it as-is.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.protocolWebdav": "WebDAV",
   "@servers.sheet.protocolWebdav": {
-    "description": "One option of the protocol picker. A protocol name; keep it as-is."
+    "description": "One option of the protocol picker. A protocol name; keep it as-is.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.address": "Address",
   "@servers.sheet.address": {
-    "description": "Label of the field where the user types where the server lives. One word, NOUN."
+    "description": "Label of the field where the user types where the server lives. One word, NOUN.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.addressPlaceholder": "nas.local",
   "@servers.sheet.addressPlaceholder": {
-    "description": "Placeholder inside the address field. A short example hostname; leave it as-is or use an equally short one."
+    "description": "Placeholder inside the address field. A short example hostname; leave it as-is or use an equally short one.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.addressHelp": "A hostname, an address you copied, or a whole ssh line. Cmdr picks the protocol.",
   "@servers.sheet.addressHelp": {
-    "description": "One line under the address field, telling the user they can paste whatever they have. “Cmdr” is the product name; “ssh” is a command name, keep it lowercase and untranslated."
+    "description": "One line under the address field, telling the user they can paste whatever they have. “Cmdr” is the product name; “ssh” is a command name, keep it lowercase and untranslated.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.identityLocked": "The address and the account are what name this server. Forget this server and add it again to change them.",
   "@servers.sheet.identityLocked": {
@@ -273,11 +299,13 @@
   },
   "servers.sheet.username": "Username",
   "@servers.sheet.username": {
-    "description": "Label of the account field. One word, NOUN."
+    "description": "Label of the account field. One word, NOUN.",
+    "screenshot": "server-sign-in-add-prefilled.png"
   },
   "servers.sheet.password": "Password",
   "@servers.sheet.password": {
-    "description": "Label of the password field. One word, NOUN."
+    "description": "Label of the password field. One word, NOUN.",
+    "screenshot": "server-sign-in-add-prefilled.png"
   },
   "servers.sheet.passphrase": "Key passphrase",
   "@servers.sheet.passphrase": {
@@ -285,47 +313,58 @@
   },
   "servers.sheet.remember": "Remember in Keychain",
   "@servers.sheet.remember": {
-    "description": "Checkbox that stores the password in the macOS Keychain. “Keychain” is the macOS feature name, which the OS ships translated; use the name your language's macOS uses."
+    "description": "Checkbox that stores the password in the macOS Keychain. “Keychain” is the macOS feature name, which the OS ships translated; use the name your language's macOS uses.",
+    "screenshot": "server-sign-in-add-prefilled.png"
   },
   "servers.sheet.connectionModeLegend": "How to connect",
   "@servers.sheet.connectionModeLegend": {
-    "description": "Accessible name of the guest-or-account choice for a share that allows both. Screen readers only; not visible."
+    "description": "Accessible name of the guest-or-account choice for a share that allows both. Screen readers only; not visible.",
+    "screenshot": "server-sign-in-sign-in-guest.png"
   },
   "servers.sheet.connectAsGuest": "Connect as guest",
   "@servers.sheet.connectAsGuest": {
-    "description": "One option: open the share without an account, which some servers allow. VERB phrase, imperative."
+    "description": "One option: open the share without an account, which some servers allow. VERB phrase, imperative.",
+    "screenshot": "server-sign-in-sign-in-guest.png"
   },
   "servers.sheet.signInWithCredentials": "Sign in with a username and password",
   "@servers.sheet.signInWithCredentials": {
-    "description": "The other option: open the share as a named account. VERB phrase, imperative."
+    "description": "The other option: open the share as a named account. VERB phrase, imperative.",
+    "screenshot": "server-sign-in-sign-in-guest.png"
   },
   "servers.sheet.advanced": "Advanced",
   "@servers.sheet.advanced": {
-    "description": "A collapsed section holding the settings most people never change. One word, ADJECTIVE."
+    "description": "A collapsed section holding the settings most people never change. One word, ADJECTIVE.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.name": "Name",
   "@servers.sheet.name": {
-    "description": "Label of the field for what to call this server in the app. One word, NOUN."
+    "description": "Label of the field for what to call this server in the app. One word, NOUN.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.nameHelp": "Leave it empty to call this server by its account and host.",
   "@servers.sheet.nameHelp": {
-    "description": "One line under the Name field in the add and edit server sheets. An empty name makes Cmdr call the server by its account name and host, like ada@nas.local."
+    "description": "One line under the Name field in the add and edit server sheets. An empty name makes Cmdr call the server by its account name and host, like ada@nas.local.",
+    "screenshot": "server-sign-in-add.png"
   },
   "servers.sheet.rootFolder": "Root folder",
   "@servers.sheet.rootFolder": {
-    "description": "Label of the field for the folder ON THE SERVER this saved server is limited to: Cmdr never shows anything above it. Two words, NOUN phrase. The refusal messages and the start folder help reuse this term, so keep it consistent."
+    "description": "Label of the field for the folder ON THE SERVER this saved server is limited to: Cmdr never shows anything above it. Two words, NOUN phrase. The refusal messages and the start folder help reuse this term, so keep it consistent.",
+    "screenshot": "server-sign-in-add-prefilled.png"
   },
   "servers.sheet.rootFolderHelp": "Cmdr never goes above this folder on the server.",
   "@servers.sheet.rootFolderHelp": {
-    "description": "One line under the Root folder field, explaining that the folder is a ceiling: Cmdr never navigates above it on the server. \"Cmdr\" is the product name."
+    "description": "One line under the Root folder field, explaining that the folder is a ceiling: Cmdr never navigates above it on the server. \"Cmdr\" is the product name.",
+    "screenshot": "server-sign-in-add-prefilled.png"
   },
   "servers.sheet.startFolder": "Start folder",
   "@servers.sheet.startFolder": {
-    "description": "Label of the field for the folder a pane opens at when the user opens this server. It must be the root folder or a folder inside it. Two words, NOUN phrase."
+    "description": "Label of the field for the folder a pane opens at when the user opens this server. It must be the root folder or a folder inside it. Two words, NOUN phrase.",
+    "screenshot": "server-sign-in-add-prefilled.png"
   },
   "servers.sheet.startFolderHelp": "Where the server opens. Leave it empty to open the root folder.",
   "@servers.sheet.startFolderHelp": {
-    "description": "One line under the Start folder field: it is where the server opens, and leaving it empty opens the root folder. \"root folder\" must use the same words as the servers.sheet.rootFolder label."
+    "description": "One line under the Start folder field: it is where the server opens, and leaving it empty opens the root folder. \"root folder\" must use the same words as the servers.sheet.rootFolder label.",
+    "screenshot": "server-sign-in-add-prefilled.png"
   },
   "servers.sheet.keyFile": "Key file",
   "@servers.sheet.keyFile": {
@@ -341,7 +380,8 @@
   },
   "servers.sheet.autoReconnect": "Reconnect automatically",
   "@servers.sheet.autoReconnect": {
-    "description": "Checkbox letting Cmdr redial this server on its own when the connection drops. VERB phrase, imperative."
+    "description": "Checkbox letting Cmdr redial this server on its own when the connection drops. VERB phrase, imperative.",
+    "screenshot": "server-sign-in-add-prefilled.png"
   },
   "servers.sheet.needsStoredSecret": "Reconnecting on its own needs a remembered password. Turn on “Remember in Keychain” and sign in once.",
   "@servers.sheet.needsStoredSecret": {
@@ -356,38 +396,46 @@
     "description": "Heading of the step where the user approves a server's SSH identity key the first time. Routine, not alarming.",
     "placeholders": {
       "host": "the server''s hostname or address, like “nas.local”"
-    }
+    },
+    "screenshot": "server-sign-in-host-key-first-contact.png"
   },
   "servers.hostKey.firstContactBody": "Check the fingerprint below against the one the server''s owner gave you, then trust it.",
   "@servers.hostKey.firstContactBody": {
-    "description": "One line under that heading. “Fingerprint” is the short string that identifies an SSH key; a person compares it character by character."
+    "description": "One line under that heading. “Fingerprint” is the short string that identifies an SSH key; a person compares it character by character.",
+    "screenshot": "server-sign-in-host-key-first-contact.png"
   },
   "servers.hostKey.changedTitle": "{host}''s key changed",
   "@servers.hostKey.changedTitle": {
     "description": "Heading of the same step when the server presents a DIFFERENT key than the one already trusted. This one is serious: it can mean someone is in the middle.",
     "placeholders": {
       "host": "the server''s hostname or address, like “nas.local”"
-    }
+    },
+    "screenshot": "server-sign-in-host-key-changed.png"
   },
   "servers.hostKey.changedBody": "This can mean the server was reinstalled, or that something is sitting between you and it. Check the fingerprint with the server''s owner before trusting it.",
   "@servers.hostKey.changedBody": {
-    "description": "One line under the changed-key heading. Says both innocent and serious causes, and what to do first."
+    "description": "One line under the changed-key heading. Says both innocent and serious causes, and what to do first.",
+    "screenshot": "server-sign-in-host-key-changed.png"
   },
   "servers.hostKey.changedDisclosure": "I''ve checked it",
   "@servers.hostKey.changedDisclosure": {
-    "description": "A collapsed section holding the button that trusts a CHANGED key. Deliberately behind a click, so trusting one is never a reflex. First person: the user speaking."
+    "description": "A collapsed section holding the button that trusts a CHANGED key. Deliberately behind a click, so trusting one is never a reflex. First person: the user speaking.",
+    "screenshot": "server-sign-in-host-key-changed.png"
   },
   "servers.hostKey.fingerprintLabel": "Key fingerprint",
   "@servers.hostKey.fingerprintLabel": {
-    "description": "Label above the SSH key's algorithm and fingerprint. Two words, NOUN phrase."
+    "description": "Label above the SSH key's algorithm and fingerprint. Two words, NOUN phrase.",
+    "screenshot": "server-sign-in-host-key-first-contact.png"
   },
   "servers.hostKey.trustAndConnect": "Trust and connect",
   "@servers.hostKey.trustAndConnect": {
-    "description": "Button that records a first-contact key and carries on connecting. VERB phrase, imperative."
+    "description": "Button that records a first-contact key and carries on connecting. VERB phrase, imperative.",
+    "screenshot": "server-sign-in-host-key-first-contact.png"
   },
   "servers.hostKey.trustNewKey": "Trust the new key",
   "@servers.hostKey.trustNewKey": {
-    "description": "Button that records a CHANGED key, behind the disclosure. VERB phrase, imperative."
+    "description": "Button that records a CHANGED key, behind the disclosure. VERB phrase, imperative.",
+    "screenshot": "server-sign-in-host-key-changed.png"
   },
   "servers.paneState.signedOut": "Signed out of {name}",
   "@servers.paneState.signedOut": {

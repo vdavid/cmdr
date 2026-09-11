@@ -1830,15 +1830,18 @@
   },
   "settings.navigationAndFileOps.card.showInFinder": "Show in Finder",
   "@settings.navigationAndFileOps.card.showInFinder": {
-    "description": "Heading of the card in Settings > Behavior > Navigation & file ops that holds one switch: whether another app's \"Show in Finder\" command lands in a Cmdr pane. \"Show in Finder\" is the macOS command name that apps like Chrome and Slack put on their downloads; use the wording your locale's macOS and its apps use for it. macOS only, so the card is absent on other platforms."
+    "description": "Heading of the card in Settings > Behavior > Navigation & file ops that holds one switch: whether another app's \"Show in Finder\" command lands in a Cmdr pane. \"Show in Finder\" is the macOS command name that apps like Chrome and Slack put on their downloads; use the wording your locale's macOS and its apps use for it. macOS only, so the card is absent on other platforms.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.revealHandler.label": "Let other apps show files in Cmdr",
   "@settings.revealHandler.label": {
-    "description": "Label of the switch that hands the macOS \"Show in Finder\" command to Cmdr, in Settings > Behavior > Navigation & file ops. \"Cmdr\" is the product name; keep it. Addressed to the user, describing what turning the switch on allows."
+    "description": "Label of the switch that hands the macOS \"Show in Finder\" command to Cmdr, in Settings > Behavior > Navigation & file ops. \"Cmdr\" is the product name; keep it. Addressed to the user, describing what turning the switch on allows.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.revealHandler.description": "When another app runs \"Show in Finder\", Cmdr opens that folder with the file under the cursor. Finder stays your default file manager everywhere else.",
   "@settings.revealHandler.description": {
-    "description": "Help text under the \"Let other apps show files in Cmdr\" switch in Settings > Behavior > Navigation & file ops. Two sentences: what the switch does, then the honest limit (this does NOT make Cmdr replace Finder; double-clicking a folder still opens Finder). \"Show in Finder\" is the macOS command name and \"Finder\" the macOS file manager; use your locale's macOS wording for both. \"Cmdr\" is the product name; keep it. \"cursor\" = the highlighted row in a Cmdr file pane."
+    "description": "Help text under the \"Let other apps show files in Cmdr\" switch in Settings > Behavior > Navigation & file ops. Two sentences: what the switch does, then the honest limit (this does NOT make Cmdr replace Finder; double-clicking a folder still opens Finder). \"Show in Finder\" is the macOS command name and \"Finder\" the macOS file manager; use your locale's macOS wording for both. \"Cmdr\" is the product name; keep it. \"cursor\" = the highlighted row in a Cmdr file pane.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.revealHandler.heldByOtherApp": "Currently: {app}. Turning this on hands \"Show in Finder\" to Cmdr.",
   "@settings.revealHandler.heldByOtherApp": {
@@ -1847,7 +1850,8 @@
       "app": {
         "description": "Name of the app that currently receives \"Show in Finder\", for example \"Path Finder\". Falls back to that app's raw bundle identifier (like com.cocoatech.PathFinder) when the app isn't installed any more. Never translated."
       }
-    }
+    },
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.revealHandler.uninstallWarning": "<lead>Before you uninstall Cmdr, switch this off.</lead> macOS keeps sending \"Show in Finder\" here, and with Cmdr gone those clicks quietly do nothing.",
   "@settings.revealHandler.uninstallWarning": {
@@ -1859,7 +1863,8 @@
   },
   "settings.revealHandler.notProductionBuild": "Only a released copy of Cmdr can switch this on. Dev and test builds come and go, and deleting one would leave every \"Show in Finder\" click pointing at nothing.",
   "@settings.revealHandler.notProductionBuild": {
-    "description": "Tooltip on the \"Let other apps show files in Cmdr\" row in Settings > Behavior > Navigation & file ops, shown while the switch is disabled because this is a development or automated-test build of Cmdr rather than a released one. Mostly seen by people who build Cmdr themselves. Says who can switch it on, then why. \"Dev and test builds\" means builds made while developing and testing Cmdr. \"Show in Finder\" is the macOS command name and \"Cmdr\" the product name; keep both."
+    "description": "Tooltip on the \"Let other apps show files in Cmdr\" row in Settings > Behavior > Navigation & file ops, shown while the switch is disabled because this is a development or automated-test build of Cmdr rather than a released one. Mostly seen by people who build Cmdr themselves. Says who can switch it on, then why. \"Dev and test builds\" means builds made while developing and testing Cmdr. \"Show in Finder\" is the macOS command name and \"Cmdr\" the product name; keep both.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.openTerminalHereApp.label": "Open terminal here uses",
   "@settings.behavior.openTerminalHereApp.label": {
@@ -2199,11 +2204,13 @@
   },
   "settings.section.servers": "Servers (SFTP, WebDAV)",
   "@settings.section.servers": {
-    "description": "Settings subsection title under File systems: the page listing the SSH host keys this Mac trusts. \"SFTP\" and \"WebDAV\" are protocol names; keep both as-is, parentheses included. Sidebar and page heading."
+    "description": "Settings subsection title under File systems: the page listing the SSH host keys this Mac trusts. \"SFTP\" and \"WebDAV\" are protocol names; keep both as-is, parentheses included. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.adb": "Android (ADB)",
   "@settings.section.adb": {
-    "description": "Settings subsection title under File systems: browsing an Android phone over the Android Debug Bridge. \"Android\" is a product name and \"ADB\" its debug-bridge abbreviation; keep both as-is, parentheses included. Sidebar and page heading."
+    "description": "Settings subsection title under File systems: browsing an Android phone over the Android Debug Bridge. \"Android\" is a product name and \"ADB\" its debug-bridge abbreviation; keep both as-is, parentheses included. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.mtp": "MTP (Android/Kindle/cameras)",
   "@settings.section.mtp": {

@@ -781,27 +781,33 @@
   },
   "commands.serversShow.label": "Show servers",
   "@commands.serversShow.label": {
-    "description": "Command name that takes the focused pane to the servers hub, the list of every saved and nearby server. VERB phrase, imperative. Appears in the command palette."
+    "description": "Command name that takes the focused pane to the servers hub, the list of every saved and nearby server. VERB phrase, imperative. Appears in the command palette.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.serversTogglePin.label": "Pin / unpin server",
   "@commands.serversTogglePin.label": {
-    "description": "Command name that adds the server under the cursor to the volume switcher, or takes it out again. One command for both directions, so the slash stays. VERB phrase, imperative. Appears in the command palette."
+    "description": "Command name that adds the server under the cursor to the volume switcher, or takes it out again. One command for both directions, so the slash stays. VERB phrase, imperative. Appears in the command palette.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.serversDisconnect.label": "Disconnect server",
   "@commands.serversDisconnect.label": {
-    "description": "Command name that drops the connection to the server under the cursor, leaving it saved. VERB phrase, imperative. ❗ Not \"eject\": a server has nothing to unplug. Appears in the command palette."
+    "description": "Command name that drops the connection to the server under the cursor, leaving it saved. VERB phrase, imperative. ❗ Not \"eject\": a server has nothing to unplug. Appears in the command palette.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.serversForgetSecret.label": "Forget saved password",
   "@commands.serversForgetSecret.label": {
-    "description": "Command name that removes the server''s remembered password from the Keychain, keeping the server itself saved. VERB phrase, imperative. Appears in the command palette."
+    "description": "Command name that removes the server''s remembered password from the Keychain, keeping the server itself saved. VERB phrase, imperative. Appears in the command palette.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.serversEdit.label": "Edit server…",
   "@commands.serversEdit.label": {
-    "description": "Command name that opens the form for changing a saved server''s address, account, or options. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means \"this opens something\"; keep it. Appears in the command palette and in Settings under Keyboard shortcuts."
+    "description": "Command name that opens the form for changing a saved server''s address, account, or options. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means \"this opens something\"; keep it. Appears in the command palette and in Settings under Keyboard shortcuts.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.serversConnect.label": "Connect to server…",
   "@commands.serversConnect.label": {
-    "description": "Command-palette entry and shortcut label for opening the form that adds a server. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means “this opens something”; keep it."
+    "description": "Command-palette entry and shortcut label for opening the form that adds a server. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means “this opens something”; keep it.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.networkRefresh.label": "Refresh network hosts",
   "@commands.networkRefresh.label": {

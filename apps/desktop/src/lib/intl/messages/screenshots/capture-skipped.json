@@ -23,7 +23,6 @@
   "gallery-unavailable:suggested-ops",
   "gallery-unavailable:delete-ai-model",
   "gallery-unavailable:forget-memory",
-  "gallery-redundant:connect-to-server-idle",
   "gallery-redundant:quit-confirmation-several-operations",
   "gallery-redundant:quit-confirmation-long-names",
   "gallery-redundant:quit-confirmation-last-second",
