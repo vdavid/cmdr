@@ -15,7 +15,6 @@
 use serde::{Deserialize, Serialize};
 
 use crate::network::keychain::{self, KeychainError};
-use crate::network::saved_server_fields::SavedServerOutcome;
 use crate::network::webdav_known_servers::{self, KnownWebdavServer};
 use crate::network::webdav_volume_wiring;
 use cmdr_webdav::{UnattendedReconnect, WebdavConnectionParams};
@@ -128,7 +127,7 @@ fn not_a_server_url() -> KeychainError {
 ///
 /// ❗ Remembering a secret is what makes unattended reconnects POSSIBLE; it
 /// doesn't turn them on. That is the other switch
-/// (`update_known_webdav_server`'s `auto_reconnect`), and
+/// (`KnownWebdavServer::auto_reconnect`, moved by `update_saved_server`), and
 /// `get_webdav_unattended_reconnect` is what says whether the two add up.
 ///
 /// ❗ On a blocking task: the store can put a Keychain prompt in front of this,
@@ -200,40 +199,6 @@ fn keychain_timed_out() -> KeychainError {
 #[specta::specta]
 pub fn get_known_webdav_servers() -> Vec<KnownWebdavServer> {
     webdav_known_servers::all()
-}
-
-/// Adds a server, or replaces the entry for the same `(url, username)`.
-///
-/// A successful `connectServer` / `connectSavedPlace` already does this on every
-/// connect; this is for editing one without connecting (renaming it, or changing
-/// its root or its start folder). ❗ A start folder outside the root is refused
-/// and nothing is written. The flow is `webdav_volume_wiring::save_without_connecting`.
-#[tauri::command]
-#[specta::specta]
-// Flat parameters rather than a struct, so the generated TS call site names each
-// one.
-pub async fn update_known_webdav_server(
-    url: String,
-    username: String,
-    display_name: String,
-    remote_root: String,
-    start_folder: Option<String>,
-    auto_reconnect: bool,
-) -> SavedServerOutcome {
-    webdav_volume_wiring::save_without_connecting(KnownWebdavServer {
-        url,
-        username,
-        display_name,
-        remote_root,
-        start_folder,
-        auto_reconnect,
-        // Only reachable for a NEW entry: editing a saved server leaves its pin
-        // alone, which is `remember`'s rule, and a server nobody saved yet is
-        // being saved for the first time here.
-        pinned: true,
-        last_connected_at: chrono::Utc::now().to_rfc3339(),
-    })
-    .await
 }
 
 /// Whether a WebDAV volume can actually come back on its own as it stands.

@@ -1,7 +1,5 @@
 /**
- * The WebDAV wrappers, whose one real risk is argument order:
- * `updateKnownWebdavServer` takes several positional strings, and swapping two
- * compiles fine and writes a different server.
+ * The WebDAV wrappers.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -14,7 +12,6 @@ vi.mock('$lib/ipc/bindings', () => ({
     hasWebdavCredentials: vi.fn(),
     deleteWebdavCredentials: vi.fn(),
     getKnownWebdavServers: vi.fn(),
-    updateKnownWebdavServer: vi.fn(),
     forgetKnownWebdavServer: vi.fn(),
     getWebdavUnattendedReconnect: vi.fn(),
   },
@@ -30,19 +27,9 @@ import {
   getWebdavUnattendedReconnect,
   hasWebdavCredentials,
   saveWebdavCredentials,
-  updateKnownWebdavServer,
-  type WebdavTarget,
 } from './webdav'
 
 const URL = 'https://dav.example.test/remote.php/dav/'
-
-const target: WebdavTarget = {
-  displayName: 'Example',
-  url: URL,
-  username: 'ada',
-  remoteRoot: '/Photos',
-  autoReconnect: true,
-}
 
 const ok = { status: 'ok' as const, data: null }
 const err = { status: 'error' as const, error: { type: 'access_denied' as const, message: 'nope' } }
@@ -130,14 +117,6 @@ describe('the saved-server list', () => {
     vi.mocked(commands.getWebdavUnattendedReconnect).mockResolvedValueOnce('no_stored_secret')
     expect(await getWebdavUnattendedReconnect('webdav-dav-example-test-abc')).toBe('no_stored_secret')
     expect(commands.getWebdavUnattendedReconnect).toHaveBeenCalledWith('webdav-dav-example-test-abc')
-  })
-
-  it('update reorders the target into the argument order the command takes', async () => {
-    // ❗ The identity pair comes first here, and getting it wrong would
-    // silently write a different server.
-    vi.mocked(commands.updateKnownWebdavServer).mockResolvedValueOnce({ outcome: 'saved' })
-    expect(await updateKnownWebdavServer(target)).toEqual({ outcome: 'saved' })
-    expect(commands.updateKnownWebdavServer).toHaveBeenCalledWith(URL, 'ada', 'Example', '/Photos', null, true)
   })
 
   it('forget is keyed by the same pair the store is', async () => {

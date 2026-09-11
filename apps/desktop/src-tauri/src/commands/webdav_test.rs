@@ -2,6 +2,7 @@
 //! branches on these values and never on a message.
 
 use super::*;
+use crate::network::saved_server_fields::SavedServerOutcome;
 
 /// The secret store is keyed per server origin, ❌ never per host alone, and the
 /// key is the crate's own, so what the form saves is what the dial reads.
@@ -82,17 +83,23 @@ async fn the_credential_trio_agrees_on_where_a_secret_lives() {
 
 /// The known-servers commands round-trip through the same store the connect path
 /// writes.
+///
+/// ❗ Exercises `webdav_volume_wiring::save_without_connecting` directly: there
+/// is no command left that only edits a saved entry without connecting
+/// (`update_saved_server` in `servers.rs` calls the same wiring function).
 #[tokio::test]
 async fn the_known_servers_trio_round_trips() {
     let url = "https://known-servers-trio.webdav.test/dav";
-    let saved = update_known_webdav_server(
-        url.to_string(),
-        "ada".to_string(),
-        "Trio".to_string(),
-        "/".to_string(),
-        None,
-        false,
-    )
+    let saved = webdav_volume_wiring::save_without_connecting(KnownWebdavServer {
+        url: url.to_string(),
+        username: "ada".to_string(),
+        display_name: "Trio".to_string(),
+        remote_root: "/".to_string(),
+        start_folder: None,
+        auto_reconnect: false,
+        pinned: true,
+        last_connected_at: chrono::Utc::now().to_rfc3339(),
+    })
     .await;
     assert_eq!(saved, SavedServerOutcome::Saved);
 

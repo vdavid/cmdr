@@ -621,10 +621,11 @@ rather than a fact about a secret, so the saved-server list is its home. ❗ It 
 doesn't name it: SFTP has always come back on its own, and a missing field must not switch that off under servers saved
 before the setting existed.
 
-`sftp_volume_wiring::save_without_connecting` (behind `update_known_sftp_server` and `update_saved_server`) moves both
-copies: the saved entry, and on a connected place the live volume's switch, so it takes effect now rather than on the
-next connect (§ "Editing a connected place" has everything else an edit moves live). What the two mean together, what the backend answers when one is on and
-can't work, and what a UI shows: `crates/cmdr-sftp/DETAILS.md` § "The two switches".
+`sftp_volume_wiring::save_without_connecting` (behind `commands/servers.rs`'s `update_saved_server`, its only caller)
+moves both copies: the saved entry, and on a connected place the live volume's switch, so it takes effect now rather
+than on the next connect (§ "Editing a connected place" has everything else an edit moves live). What the two mean
+together, what the backend answers when one is on and can't work, and what a UI shows: `crates/cmdr-sftp/DETAILS.md` §
+"The two switches".
 
 `sftp_volume_wiring.rs` is the only path a volume gets registered on, and it does three things in one order: dial
 through `cmdr_sftp::connect_sftp_volume` (an ABANDONED connect leaves the server nothing, because the SFTP hello's

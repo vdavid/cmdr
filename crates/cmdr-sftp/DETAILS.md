@@ -893,17 +893,18 @@ a sign-in UI genuinely branches on all of it.
   whatever the rung uses it for** — see § "The one secret entry" below. ❗ **These three ARE the "remember the secret"
   switch**: save turns it on, `hasSftpCredentials` reads it, delete turns it off, and there is no fourth flag to keep in
   sync (§ "The two switches").
-- `getKnownSftpServers()` → `KnownSftpServer[]` / `updateKnownSftpServer(target)` /
-  `forgetKnownSftpServer(host, port, username)` → `boolean`. A successful connect already calls the middle one, so the
-  update command is for editing a server without connecting (renaming it, changing its root or key file, or moving the
-  `autoReconnect` switch). ❗ `updateKnownSftpServer` also pushes `autoReconnect` into a volume that happens to be
-  mounted, so the switch takes effect now rather than on the next connect. ❗ **Neither command can change `pinned`.**
-  `sftp_known_servers::remember` honors the caller's value only when the entry is NEW (which is what pins a place on its
-  first successful connect) and carries the stored value across on a replace. It runs on EVERY successful connect, so a
-  caller-supplied pin would put an unpinned row back in the switcher the next time the session came back. Changing a pin
-  is its own writer's job. `pinned` is `serde(default)` and defaults to FALSE — the opposite of `autoReconnect`, and for
-  the same reason: nothing was in the switcher before pins existed. `getKnownSftpServers` in `tauri-commands/sftp.ts` is
-  the one place both defaults are spelled on the frontend.
+- `getKnownSftpServers()` → `KnownSftpServer[]` / `forgetKnownSftpServer(host, port, username)` → `boolean`. Editing a
+  server without connecting (renaming it, changing its root or key file, or moving the `autoReconnect` switch) goes
+  through the protocol-agnostic `updateSavedServer` (`commands/servers.rs`), which calls
+  `sftp_volume_wiring::save_without_connecting` directly rather than through a per-protocol command; a successful
+  connect calls the same wiring function. ❗ It also pushes `autoReconnect` into a volume that happens to be mounted,
+  so the switch takes effect now rather than on the next connect. ❗ **Neither the edit nor a connect can change
+  `pinned`.** `sftp_known_servers::remember` honors the caller's value only when the entry is NEW (which is what pins a
+  place on its first successful connect) and carries the stored value across on a replace. It runs on EVERY successful
+  connect, so a caller-supplied pin would put an unpinned row back in the switcher the next time the session came back.
+  Changing a pin is its own writer's job. `pinned` is `serde(default)` and defaults to FALSE — the opposite of
+  `autoReconnect`, and for the same reason: nothing was in the switcher before pins existed. `getKnownSftpServers` in
+  `tauri-commands/sftp.ts` is the one place both defaults are spelled on the frontend.
 - `getSftpUnattendedReconnect(volumeId)` → `SftpUnattendedReconnect | null`, the backend's answer to "the switch is on
   and nothing comes back". ❗ Ask it when the banner renders, the same way `getVolumeSignInState` is asked, and ❌ never
   derive it in the frontend from a rung plus a `hasSftpCredentials` call: the rung is decided per DIAL, so a derivation

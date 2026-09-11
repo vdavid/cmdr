@@ -480,6 +480,11 @@ pub async fn update_saved_server(server: ServerTarget) -> SavedServerOutcome {
 }
 
 /// The per-protocol save behind [`update_saved_server`].
+///
+/// ❗ Calls each wiring's `save_without_connecting` directly: there is no
+/// per-protocol IPC command behind it any more (nothing but its own test ever
+/// called `update_known_sftp_server` / `update_known_webdav_server`), so this
+/// facade builds the known-servers entry itself instead of forwarding.
 async fn save_target(server: ServerTarget) -> SavedServerOutcome {
     match server {
         ServerTarget::Sftp {
@@ -493,7 +498,7 @@ async fn save_target(server: ServerTarget) -> SavedServerOutcome {
             use_agent,
             auto_reconnect,
         } => {
-            super::sftp::update_known_sftp_server(
+            sftp_volume_wiring::save_without_connecting(sftp_known_servers::KnownSftpServer {
                 host,
                 port,
                 username,
@@ -503,7 +508,12 @@ async fn save_target(server: ServerTarget) -> SavedServerOutcome {
                 key_file,
                 use_agent,
                 auto_reconnect,
-            )
+                // Only reachable for a NEW entry: editing a saved server leaves its pin
+                // alone, which is `remember`'s rule, and a server nobody saved yet is
+                // being saved for the first time here.
+                pinned: true,
+                last_connected_at: chrono::Utc::now().to_rfc3339(),
+            })
             .await
         }
         ServerTarget::Webdav {
@@ -514,14 +524,17 @@ async fn save_target(server: ServerTarget) -> SavedServerOutcome {
             start_folder,
             auto_reconnect,
         } => {
-            super::webdav::update_known_webdav_server(
+            webdav_volume_wiring::save_without_connecting(webdav_known_servers::KnownWebdavServer {
                 url,
                 username,
                 display_name,
                 remote_root,
                 start_folder,
                 auto_reconnect,
-            )
+                // Same rule as the SFTP arm above.
+                pinned: true,
+                last_connected_at: chrono::Utc::now().to_rfc3339(),
+            })
             .await
         }
     }

@@ -871,7 +871,6 @@ export {
   hasSftpCredentials,
   deleteSftpCredentials,
   getKnownSftpServers,
-  updateKnownSftpServer,
   forgetKnownSftpServer,
   getSftpUnattendedReconnect,
 } from './sftp'
@@ -880,7 +879,6 @@ export type {
   KnownSftpServer,
   SftpHostKeyApprovalResult,
   SftpHostKeyIdentity,
-  SftpTarget,
   SftpUnattendedReconnect,
   SavedSftpServer,
 } from './sftp'
@@ -917,8 +915,7 @@ export {
   hasWebdavCredentials,
   deleteWebdavCredentials,
   getKnownWebdavServers,
-  updateKnownWebdavServer,
   forgetKnownWebdavServer,
   getWebdavUnattendedReconnect,
 } from './webdav'
-export type { KnownWebdavServer, SavedWebdavServer, WebdavTarget, WebdavUnattendedReconnect } from './webdav'
+export type { KnownWebdavServer, SavedWebdavServer, WebdavUnattendedReconnect } from './webdav'

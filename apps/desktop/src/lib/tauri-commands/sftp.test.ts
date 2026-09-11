@@ -1,7 +1,5 @@
 /**
- * The SFTP wrappers, whose one real risk is argument order: `updateKnownSftpServer`
- * takes eight positional arguments, and swapping two strings compiles fine and
- * writes a different server.
+ * The SFTP wrappers.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -17,7 +15,6 @@ vi.mock('$lib/ipc/bindings', () => ({
     hasSftpCredentials: vi.fn(),
     deleteSftpCredentials: vi.fn(),
     getKnownSftpServers: vi.fn(),
-    updateKnownSftpServer: vi.fn(),
     forgetKnownSftpServer: vi.fn(),
     getSftpUnattendedReconnect: vi.fn(),
   },
@@ -36,20 +33,7 @@ import {
   hasSftpCredentials,
   listTrustedSftpHostKeys,
   saveSftpCredentials,
-  updateKnownSftpServer,
-  type SftpTarget,
 } from './sftp'
-
-const target: SftpTarget = {
-  displayName: 'Naspolya',
-  host: 'naspolya.local',
-  port: 2222,
-  username: 'ada',
-  remoteRoot: '/srv/data',
-  keyFile: '/Users/ada/.ssh/id_ed25519',
-  useAgent: true,
-  autoReconnect: true,
-}
 
 const ok = { status: 'ok' as const, data: null }
 const err = { status: 'error' as const, error: { type: 'access_denied' as const, message: 'nope' } }
@@ -170,24 +154,6 @@ describe('the saved-server list', () => {
     vi.mocked(commands.getSftpUnattendedReconnect).mockResolvedValueOnce('needs_stored_secret')
     expect(await getSftpUnattendedReconnect('sftp-naspolya-abc')).toBe('needs_stored_secret')
     expect(commands.getSftpUnattendedReconnect).toHaveBeenCalledWith('sftp-naspolya-abc')
-  })
-
-  it('update reorders the target into the argument order the command takes', async () => {
-    // ❗ The identity triple comes first here, and getting it wrong would
-    // silently write a different server.
-    vi.mocked(commands.updateKnownSftpServer).mockResolvedValueOnce({ outcome: 'saved' })
-    expect(await updateKnownSftpServer(target)).toEqual({ outcome: 'saved' })
-    expect(commands.updateKnownSftpServer).toHaveBeenCalledWith(
-      'naspolya.local',
-      2222,
-      'ada',
-      'Naspolya',
-      '/srv/data',
-      null,
-      '/Users/ada/.ssh/id_ed25519',
-      true,
-      true,
-    )
   })
 
   it('forget is keyed by the same triple the volume id is', async () => {

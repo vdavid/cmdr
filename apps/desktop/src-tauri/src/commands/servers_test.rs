@@ -580,6 +580,25 @@ async fn connecting_with_a_start_folder_outside_the_root_is_refused_before_diali
     assert!(webdav_known_servers::find(url, username).is_none(), "nothing was saved");
 }
 
+/// ❗ A URL that isn't `http`(s) is answered before anything is dialed: the
+/// WebDAV arm parses the address first, so a garbled scheme never reaches the
+/// wiring and nothing is registered or saved.
+#[tokio::test]
+async fn connecting_a_webdav_target_with_a_non_http_url_answers_invalid_url_without_dialing() {
+    let username = "invalid-url";
+    let url = "ftp://127.0.0.1/dav/";
+
+    let outcome = connect_server(
+        webdav_target(url, username, None),
+        "invalid-url-attempt".to_string(),
+        None,
+    )
+    .await;
+
+    assert!(matches!(outcome, ServerConnectOutcome::InvalidUrl), "got {outcome:?}");
+    assert!(webdav_known_servers::find(url, username).is_none(), "nothing was saved");
+}
+
 /// An id nothing saved has no secret to forget, so the menu item stays off
 /// rather than offering to revoke a credential that was never stored.
 #[tokio::test]

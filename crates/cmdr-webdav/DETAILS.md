@@ -209,11 +209,13 @@ answers with outcomes (`ServerConnectOutcome`, widened across protocols)
 (`AuthMethodUnsupported` is its own variant, ❌ never folded into `AuthenticationRejected`: a Digest-only server never
 saw the password). The rest of the app's commands: `cancelServerConnect`, `disconnectWebdavVolume`,
 `saveWebdavCredentials(url, username, secret)` / `hasWebdavCredentials` / `deleteWebdavCredentials`,
-`getKnownWebdavServers` / `updateKnownWebdavServer` / `forgetKnownWebdavServer` (❗ neither write can change `pinned`:
-`webdav_known_servers::remember` honors it only for a NEW entry and carries the stored value across on a replace, so a
-reconnect can't undo an unpin; it defaults to FALSE, and `getKnownWebdavServers` in `tauri-commands/webdav.ts` is the
-one place that default is spelled), `getWebdavUnattendedReconnect(volumeId)`, and the backend-neutral
-`reconnectSmbVolume` / `reconnectSmbVolumeWithCredentials` / `getVolumeSignInState`.
+`getKnownWebdavServers` / `forgetKnownWebdavServer`. Editing a saved server without connecting goes through the
+protocol-agnostic `updateSavedServer` (`commands/servers.rs`), which calls `webdav_volume_wiring::save_without_connecting`
+directly. ❗ Neither that edit nor a connect can change `pinned`: `webdav_known_servers::remember` honors it only for a
+NEW entry and carries the stored value across on a replace, so a reconnect can't undo an unpin; it defaults to FALSE,
+and `getKnownWebdavServers` in `tauri-commands/webdav.ts` is the one place that default is spelled.
+`getWebdavUnattendedReconnect(volumeId)`, and the backend-neutral `reconnectSmbVolume` /
+`reconnectSmbVolumeWithCredentials` / `getVolumeSignInState`.
 
 ## Which side a test lives on
 

@@ -64,12 +64,13 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`volumes_linux.rs`** (Linux): same interface as `volumes.rs` (including `resolve_location`), delegates to the
   `volumes_linux` module.
 - **`mtp.rs`**: full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan).
-- **`sftp.rs`**: the SFTP surface minus connecting (that's `servers.rs`, below): `cancel_sftp_connect`,
-  `disconnect_sftp_volume`, `approve_sftp_host_key` / `forget_sftp_host_key` / `list_trusted_sftp_host_keys`, the
-  credential trio (`save` / `has` / `delete`, keyed `host:port` + username, each on a blocking task because the
-  Keychain can prompt), and the known-servers trio (`get` / `update` / `forget`). ❗ There is deliberately no command
-  that returns a stored secret. The flow behind the commands is `network::sftp_volume_wiring`; the frontend contract
-  is `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
+- **`sftp.rs`**: the SFTP surface minus connecting (that's `servers.rs`, below) and minus editing a saved entry
+  without connecting (`servers.rs`'s `update_saved_server` calls `sftp_volume_wiring::save_without_connecting`
+  directly now): `cancel_sftp_connect`, `disconnect_sftp_volume`, `approve_sftp_host_key` / `forget_sftp_host_key` /
+  `list_trusted_sftp_host_keys`, the credential trio (`save` / `has` / `delete`, keyed `host:port` + username, each on
+  a blocking task because the Keychain can prompt), and the known-servers pair (`get` / `forget`). ❗ There is
+  deliberately no command that returns a stored secret. The flow behind the commands is `network::sftp_volume_wiring`;
+  the frontend contract is `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
   - ❗ **Reconnecting an SFTP volume, and asking what a sign-in would want, both go through `network.rs`**:
     `reconnect_volume`, `reconnect_volume_with_credentials`, and `get_volume_sign_in_state`. All three are
     backend-neutral: they delegate to a `Volume` trait method on whatever is registered, so no backend owns a copy.
@@ -79,12 +80,12 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   - ❗ **`cancel_sftp_connect` takes the CALLER's own `attempt_id`, made before the connect call.** The connect command
     doesn't answer for up to 30 s, so an id it returned would be useless for arming a cancel button. The table behind
     it: `network/DETAILS.md` § "The attempt table, and why the id is the caller's".
-- **`webdav.rs`**: the WebDAV surface minus connecting, shaped like `sftp.rs` minus host keys: `cancel_webdav_connect`,
-  `disconnect_webdav_volume`, the credential trio (`save` / `has` / `delete`, keyed `scheme://host:port` + username),
-  the known-servers trio (`get` / `update` / `forget`), and `get_webdav_unattended_reconnect`. Same rules as SFTP: the
-  `attempt_id` is the caller's, reconnect and sign-in go through `network.rs`, and no command returns a stored secret.
-  The flow is `network::webdav_volume_wiring`; the contract is `crates/cmdr-webdav/DETAILS.md` § "Connecting from the
-  frontend".
+- **`webdav.rs`**: the WebDAV surface minus connecting and minus editing without connecting, shaped like `sftp.rs`
+  minus host keys: `cancel_webdav_connect`, `disconnect_webdav_volume`, the credential trio (`save` / `has` /
+  `delete`, keyed `scheme://host:port` + username), the known-servers pair (`get` / `forget`), and
+  `get_webdav_unattended_reconnect`. Same rules as SFTP: the `attempt_id` is the caller's, reconnect and sign-in go
+  through `network.rs`, and no command returns a stored secret. The flow is `network::webdav_volume_wiring`; the
+  contract is `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend".
 - **`servers.rs`**: the protocol-agnostic server family, a FACADE over the three above. The hub, the switcher, the
   sign-in sheet, and the pane banner speak about servers rather than about SFTP, WebDAV, and SMB, so this is the
   surface they call: `list_saved_servers` (the union of the two saved-server stores plus SMB hosts from
@@ -116,11 +117,13 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
     the consumer has nothing to race. ❌ And no new "you disconnected" pane state: a `saved` row dials on activation.
   - `update_saved_server` takes a `ServerTarget`, the same shape the add sheet collects, because an edit and an add
     differ only in whether the fields arrived prefilled. It carries no PIN: `set_place_pinned` is the one writer that
-    moves one, because the stores' `remember` deliberately preserves a stored pin on every replace. It answers a typed
-    `SavedServerOutcome` (`network/saved_server_fields.rs`), the same one the per-protocol `update_known_*_server`
-    commands answer, and a refusal writes nothing: `start_folder_outside_root` (connected or not), and for a connected
-    place, whose edit applies live, `root_not_found`, `start_folder_not_found`, and `unreachable` (`network/DETAILS.md`
-    § "Editing a connected place"). All three commands are `async`, because a live edit asks the server.
+    moves one, because the stores' `remember` deliberately preserves a stored pin on every replace. Its own
+    `save_target` builds the `KnownSftpServer` / `KnownWebdavServer` and calls `*_volume_wiring::save_without_connecting`
+    directly — there is no per-protocol command behind it any more. It answers a typed `SavedServerOutcome`
+    (`network/saved_server_fields.rs`), and a refusal writes nothing: `start_folder_outside_root` (connected or not),
+    and for a connected place, whose edit applies live, `root_not_found`, `start_folder_not_found`, and `unreachable`
+    (`network/DETAILS.md` § "Editing a connected place"). All three commands are `async`, because a live edit asks the
+    server.
   - ❗ **A saved edit republishes the volume list, whatever it changed** (`update_saved_server` requests
     `volumes-changed` on `Saved`). The rows carry each place's label and landing, and neither an unconnected place's
     edit nor a start-folder-only one moves anything in the registry that would announce it. The servers hub re-reads

@@ -2,6 +2,7 @@
 //! branches on these values and never on a message.
 
 use super::*;
+use crate::network::saved_server_fields::SavedServerOutcome;
 
 /// The secret store is keyed per account, ❌ never per host.
 ///
@@ -53,20 +54,26 @@ async fn the_credential_trio_agrees_on_where_a_secret_lives() {
 
 /// The known-servers commands round-trip through the same store the connect path
 /// writes.
+///
+/// ❗ Exercises `sftp_volume_wiring::save_without_connecting` directly: there is
+/// no command left that only edits a saved entry without connecting
+/// (`update_saved_server` in `servers.rs` calls the same wiring function).
 #[tokio::test]
 async fn the_known_servers_trio_round_trips() {
     let host = "known-servers-trio.sftp.test";
-    let saved = update_known_sftp_server(
-        host.to_string(),
-        22,
-        "ada".to_string(),
-        "Trio".to_string(),
-        "/srv/data".to_string(),
-        None,
-        None,
-        true,
-        false,
-    )
+    let saved = sftp_volume_wiring::save_without_connecting(KnownSftpServer {
+        host: host.to_string(),
+        port: 22,
+        username: "ada".to_string(),
+        display_name: "Trio".to_string(),
+        remote_root: "/srv/data".to_string(),
+        start_folder: None,
+        key_file: None,
+        use_agent: true,
+        auto_reconnect: false,
+        pinned: true,
+        last_connected_at: chrono::Utc::now().to_rfc3339(),
+    })
     .await;
     assert_eq!(saved, SavedServerOutcome::Saved);
 

@@ -3799,8 +3799,8 @@ export const commands = {
    *
    *  ❗ Remembering a secret is what makes unattended reconnects POSSIBLE on the
    *  password and encrypted-key rungs; it doesn't turn them on. That is the other
-   *  switch (`update_known_sftp_server`'s `auto_reconnect`), and
-   *  `get_sftp_unattended_reconnect` is what says whether the two add up.
+   *  switch (`KnownSftpServer::auto_reconnect`, moved by `update_saved_server`),
+   *  and `get_sftp_unattended_reconnect` is what says whether the two add up.
    *
    *  ❗ On a blocking task: the store can put a Keychain prompt in front of this,
    *  and a modal dialog on the async runtime stalls every other volume.
@@ -3825,37 +3825,6 @@ export const commands = {
     typedError<null, KeychainError>(__TAURI_INVOKE('delete_sftp_credentials', { host, port, username })),
   // Every SFTP server the user has connected to.
   getKnownSftpServers: () => __TAURI_INVOKE<KnownSftpServer[]>('get_known_sftp_servers'),
-  /**
-   *  Adds a server, or replaces the entry for the same `(host, port, username)`.
-   *
-   *  A successful `connectServer` / `connectSavedPlace` already does this on every
-   *  connect; this is for editing one without connecting (renaming it, or changing
-   *  its root, its start folder, or its key file). ❗ A start folder outside the
-   *  root is refused and nothing is written. The flow is
-   *  `sftp_volume_wiring::save_without_connecting`.
-   */
-  updateKnownSftpServer: (
-    host: string,
-    port: number,
-    username: string,
-    displayName: string,
-    remoteRoot: string,
-    startFolder: string | null,
-    keyFile: string | null,
-    useAgent: boolean,
-    autoReconnect: boolean,
-  ) =>
-    __TAURI_INVOKE<SavedServerOutcome>('update_known_sftp_server', {
-      host,
-      port,
-      username,
-      displayName,
-      remoteRoot,
-      startFolder,
-      keyFile,
-      useAgent,
-      autoReconnect,
-    }),
   /**
    *  Drops a server from the list, answering whether one was there.
    *
@@ -3951,7 +3920,7 @@ export const commands = {
    *
    *  ❗ Remembering a secret is what makes unattended reconnects POSSIBLE; it
    *  doesn't turn them on. That is the other switch
-   *  (`update_known_webdav_server`'s `auto_reconnect`), and
+   *  (`KnownWebdavServer::auto_reconnect`, moved by `update_saved_server`), and
    *  `get_webdav_unattended_reconnect` is what says whether the two add up.
    *
    *  ❗ On a blocking task: the store can put a Keychain prompt in front of this,
@@ -3977,30 +3946,6 @@ export const commands = {
     typedError<null, KeychainError>(__TAURI_INVOKE('delete_webdav_credentials', { url, username })),
   // Every WebDAV server the user has connected to.
   getKnownWebdavServers: () => __TAURI_INVOKE<KnownWebdavServer[]>('get_known_webdav_servers'),
-  /**
-   *  Adds a server, or replaces the entry for the same `(url, username)`.
-   *
-   *  A successful `connectServer` / `connectSavedPlace` already does this on every
-   *  connect; this is for editing one without connecting (renaming it, or changing
-   *  its root or its start folder). ❗ A start folder outside the root is refused
-   *  and nothing is written. The flow is `webdav_volume_wiring::save_without_connecting`.
-   */
-  updateKnownWebdavServer: (
-    url: string,
-    username: string,
-    displayName: string,
-    remoteRoot: string,
-    startFolder: string | null,
-    autoReconnect: boolean,
-  ) =>
-    __TAURI_INVOKE<SavedServerOutcome>('update_known_webdav_server', {
-      url,
-      username,
-      displayName,
-      remoteRoot,
-      startFolder,
-      autoReconnect,
-    }),
   /**
    *  Drops a server from the list, answering whether one was there.
    *

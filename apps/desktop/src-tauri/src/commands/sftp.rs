@@ -23,7 +23,6 @@
 use serde::{Deserialize, Serialize};
 
 use crate::network::keychain::{self, KeychainError};
-use crate::network::saved_server_fields::SavedServerOutcome;
 use crate::network::sftp_host_keys::{self, TrustedHostKey};
 use crate::network::sftp_known_servers::{self, KnownSftpServer};
 use crate::network::sftp_volume_wiring;
@@ -212,8 +211,8 @@ fn credential_key(host: &str, port: u16) -> String {
 ///
 /// ❗ Remembering a secret is what makes unattended reconnects POSSIBLE on the
 /// password and encrypted-key rungs; it doesn't turn them on. That is the other
-/// switch (`update_known_sftp_server`'s `auto_reconnect`), and
-/// `get_sftp_unattended_reconnect` is what says whether the two add up.
+/// switch (`KnownSftpServer::auto_reconnect`, moved by `update_saved_server`),
+/// and `get_sftp_unattended_reconnect` is what says whether the two add up.
 ///
 /// ❗ On a blocking task: the store can put a Keychain prompt in front of this,
 /// and a modal dialog on the async runtime stalls every other volume.
@@ -283,51 +282,6 @@ fn keychain_timed_out() -> KeychainError {
 #[specta::specta]
 pub fn get_known_sftp_servers() -> Vec<KnownSftpServer> {
     sftp_known_servers::all()
-}
-
-/// Adds a server, or replaces the entry for the same `(host, port, username)`.
-///
-/// A successful `connectServer` / `connectSavedPlace` already does this on every
-/// connect; this is for editing one without connecting (renaming it, or changing
-/// its root, its start folder, or its key file). ❗ A start folder outside the
-/// root is refused and nothing is written. The flow is
-/// `sftp_volume_wiring::save_without_connecting`.
-#[tauri::command]
-#[specta::specta]
-// Flat parameters rather than a struct, so the generated TS call site names each
-// one.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "one argument per saved-server field, mirroring the connect command"
-)]
-pub async fn update_known_sftp_server(
-    host: String,
-    port: u16,
-    username: String,
-    display_name: String,
-    remote_root: String,
-    start_folder: Option<String>,
-    key_file: Option<String>,
-    use_agent: bool,
-    auto_reconnect: bool,
-) -> SavedServerOutcome {
-    sftp_volume_wiring::save_without_connecting(KnownSftpServer {
-        host,
-        port,
-        username,
-        display_name,
-        remote_root,
-        start_folder,
-        key_file,
-        use_agent,
-        auto_reconnect,
-        // Only reachable for a NEW entry: editing a saved server leaves its pin
-        // alone, which is `remember`'s rule, and a server nobody saved yet is
-        // being saved for the first time here.
-        pinned: true,
-        last_connected_at: chrono::Utc::now().to_rfc3339(),
-    })
-    .await
 }
 
 /// Whether an SFTP volume can actually come back on its own as it stands.

@@ -9,7 +9,6 @@ import { commands } from '$lib/ipc/bindings'
 import type {
   HostKeyPrompt,
   KnownSftpServer,
-  SavedServerOutcome,
   SftpHostKeyApprovalResult,
   SftpUnattendedReconnect,
   TrustedHostKey,
@@ -18,36 +17,6 @@ import { throwIpcError } from './ipc-types'
 
 export type { HostKeyPrompt, KnownSftpServer, SftpHostKeyApprovalResult, TrustedHostKey }
 export type { SftpHostKeyIdentity, SftpUnattendedReconnect } from '$lib/ipc/bindings'
-
-/** How to reach one SFTP server. No secret: the backend reads those from the secret store itself. */
-export interface SftpTarget {
-  /** What to call the server in the UI. */
-  displayName: string
-  /** The host, as the user typed it. */
-  host: string
-  /** The TCP port. 22 unless the user says otherwise. */
-  port: number
-  /** The account to sign in as. Part of the volume's identity. */
-  username: string
-  /** The remote directory the place is rooted at. Absolute, server-side. */
-  remoteRoot: string
-  /** Where the place lands when opened, at or under `remoteRoot`. Absent is the root. */
-  startFolder?: string | null
-  /** A private key file to offer. A path, not a secret. */
-  keyFile?: string | null
-  /** Whether the running ssh-agent may be asked. */
-  useAgent: boolean
-  /**
-   * Whether Cmdr may redial this server unattended when the session drops.
-   *
-   * Independent of whether the secret is remembered, which is the other switch
-   * (`hasSftpCredentials` / `saveSftpCredentials` / `deleteSftpCredentials`).
-   * Their combination has a precondition, and `getSftpUnattendedReconnect` is
-   * what says whether it holds. Defaults to on, which is how SFTP has always
-   * behaved.
-   */
-  autoReconnect: boolean
-}
 
 /**
  * Calls off the connect running under `attemptId`, and returns whether one was.
@@ -160,27 +129,6 @@ export async function getKnownSftpServers(): Promise<SavedSftpServer[]> {
     autoReconnect: server.autoReconnect ?? true,
     pinned: server.pinned ?? false,
   }))
-}
-
-/**
- * Adds a saved server, or replaces the entry for the same host, port, and account.
- *
- * A successful `connectServer` / `connectSavedPlace` already does this on every
- * connect; this is for editing one without connecting. A start folder outside
- * the root answers `start_folder_outside_root`, and nothing is written.
- */
-export async function updateKnownSftpServer(target: SftpTarget): Promise<SavedServerOutcome> {
-  return await commands.updateKnownSftpServer(
-    target.host,
-    target.port,
-    target.username,
-    target.displayName,
-    target.remoteRoot,
-    target.startFolder ?? null,
-    target.keyFile ?? null,
-    target.useAgent,
-    target.autoReconnect,
-  )
 }
 
 /**

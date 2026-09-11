@@ -630,7 +630,6 @@ macro_rules! ipc_command_manifest {
                     crate::commands::sftp::has_sftp_credentials,
                     crate::commands::sftp::delete_sftp_credentials,
                     crate::commands::sftp::get_known_sftp_servers,
-                    crate::commands::sftp::update_known_sftp_server,
                     crate::commands::sftp::forget_known_sftp_server,
                     crate::commands::sftp::get_sftp_unattended_reconnect,
                     crate::commands::sftp::cancel_sftp_connect,
@@ -648,7 +647,6 @@ macro_rules! ipc_command_manifest {
                     crate::commands::webdav::has_webdav_credentials,
                     crate::commands::webdav::delete_webdav_credentials,
                     crate::commands::webdav::get_known_webdav_servers,
-                    crate::commands::webdav::update_known_webdav_server,
                     crate::commands::webdav::forget_known_webdav_server,
                     crate::commands::webdav::get_webdav_unattended_reconnect,
                 ]

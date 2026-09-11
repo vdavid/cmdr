@@ -5,33 +5,10 @@
 // `crates/cmdr-webdav/DETAILS.md`.
 
 import { commands } from '$lib/ipc/bindings'
-import type { KnownWebdavServer, SavedServerOutcome, WebdavUnattendedReconnect } from '$lib/ipc/bindings'
+import type { KnownWebdavServer, WebdavUnattendedReconnect } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 export type { KnownWebdavServer, WebdavUnattendedReconnect }
-
-/** How to reach one WebDAV server. No secret: the backend reads those from the secret store itself. */
-export interface WebdavTarget {
-  /** What to call the server in the UI. */
-  displayName: string
-  /** The base URL, as the user typed it: scheme, host, optional port, and the DAV path. */
-  url: string
-  /** The account to sign in as. Part of the volume's identity. */
-  username: string
-  /** The remote directory the place is rooted at, relative to the base URL's path. */
-  remoteRoot: string
-  /** Where the place lands when opened, at or under `remoteRoot`. Absent is the root. */
-  startFolder?: string | null
-  /**
-   * Whether Cmdr may redial this server unattended when the session drops.
-   *
-   * Independent of whether the secret is remembered, which is the other switch
-   * (`hasWebdavCredentials` / `saveWebdavCredentials` / `deleteWebdavCredentials`).
-   * Their combination has a precondition, and `getWebdavUnattendedReconnect` is
-   * what says whether it holds. Defaults to on.
-   */
-  autoReconnect: boolean
-}
 
 /**
  * Calls off the connect running under `attemptId`, and returns whether one was.
@@ -107,24 +84,6 @@ export async function getKnownWebdavServers(): Promise<SavedWebdavServer[]> {
     autoReconnect: server.autoReconnect ?? true,
     pinned: server.pinned ?? false,
   }))
-}
-
-/**
- * Adds a saved server, or replaces the entry for the same URL and account.
- *
- * A successful `connectServer` / `connectSavedPlace` already does this on every
- * connect; this is for editing one without connecting. A start folder outside
- * the root answers `start_folder_outside_root`, and nothing is written.
- */
-export async function updateKnownWebdavServer(target: WebdavTarget): Promise<SavedServerOutcome> {
-  return await commands.updateKnownWebdavServer(
-    target.url,
-    target.username,
-    target.displayName,
-    target.remoteRoot,
-    target.startFolder ?? null,
-    target.autoReconnect,
-  )
 }
 
 /**
