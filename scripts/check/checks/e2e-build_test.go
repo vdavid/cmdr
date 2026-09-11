@@ -1,8 +1,10 @@
 package checks
 
 import (
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -80,6 +82,45 @@ func TestE2EBinaryIsCurrent(t *testing.T) {
 			t.Error("an empty fingerprint matched; a failed fingerprint pass must force a rebuild")
 		}
 	})
+}
+
+// TestEnsureE2EBinaryReusesASignedBinary pins the order of the build's side effects.
+// `codesign --force` rewrites the binary in place (a new size and mtime), and the
+// stamp vouches for exactly that size and mtime, so a stamp written before signing
+// describes a file that no longer exists: every later run would rebuild, and a
+// re-sign on the reuse path would do the same to the run after it.
+func TestEnsureE2EBinaryReusesASignedBinary(t *testing.T) {
+	binaryPath := filepath.Join(t.TempDir(), "Cmdr")
+	builds, signs := 0, 0
+	steps := e2eBinarySteps{
+		find: func() (string, error) {
+			if _, err := os.Stat(binaryPath); err != nil {
+				return "", err
+			}
+			return binaryPath, nil
+		},
+		build: func() (string, error) {
+			builds++
+			return binaryPath, os.WriteFile(binaryPath, []byte("freshly built"), 0o755)
+		},
+		// What `codesign --force` does to the file: rewrites it, here a byte longer each time.
+		sign: func(path string) error {
+			signs++
+			return os.WriteFile(path, []byte("signed"+strings.Repeat("!", signs)), 0o755)
+		},
+	}
+
+	for call := 1; call <= 3; call++ {
+		if _, err := ensureE2EBinaryWith(true, "abc123", io.Discard, steps); err != nil {
+			t.Fatalf("call %d: %v", call, err)
+		}
+	}
+	if builds != 1 {
+		t.Errorf("built %d times across three calls on an unchanged tree; the stamp must describe the signed binary, or every run pays a full rebuild", builds)
+	}
+	if signs != 3 {
+		t.Errorf("signed %d times across three calls; every call re-asserts the signature", signs)
+	}
 }
 
 // TestE2EBuildFingerprintSeesTheGitignoredPseudolocale pins the one build input git

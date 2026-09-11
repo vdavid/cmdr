@@ -205,26 +205,58 @@ func EnsureE2EBinary(ctx *CheckContext, timestamp int64, progress io.Writer) (st
 	fingerprint, _ := e2eBuildFingerprint(ctx.RootDir)
 
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
-	binaryPath, buildErr := reuseOrBuildTauriBinary(ctx, desktopDir, timestamp, fingerprint, progress)
-	if buildErr != nil {
-		return "", buildErr
+	return ensureE2EBinaryWith(ctx.ReuseArtifacts, fingerprint, progress, e2eBinarySteps{
+		find:  func() (string, error) { return findTauriBinary(ctx.RootDir) },
+		build: func() (string, error) { return buildTauriBinary(ctx, desktopDir, timestamp) },
+		sign:  codesignDevBinary,
+	})
+}
+
+// e2eBinarySteps are the side effects `EnsureE2EBinary` sequences, split out so the
+// ORDER they run in is testable without cargo or codesign: that order decides
+// whether the stamp still describes the file on disk once they've all run.
+type e2eBinarySteps struct {
+	find  func() (string, error)
+	build func() (string, error)
+	sign  func(binaryPath string) error
+}
+
+// ensureE2EBinaryWith returns the path to a binary built from the tree `fingerprint`
+// describes, building one only when the binary on disk isn't already it.
+func ensureE2EBinaryWith(reuse bool, fingerprint string, progress io.Writer, steps e2eBinarySteps) (string, error) {
+	binaryPath := ""
+	if reuse {
+		if existing, err := steps.find(); err == nil && e2eBinaryIsCurrent(existing, fingerprint) {
+			binaryPath = existing
+		}
 	}
-	if err := codesignDevBinary(binaryPath); err != nil {
+	if binaryPath == "" {
+		fmt.Fprintln(progress, "Building the E2E binary: none on disk was built from this tree. This takes a few minutes…")
+		built, err := steps.build()
+		if err != nil {
+			return "", err
+		}
+		binaryPath = built
+	}
+
+	// Sign BEFORE stamping, on both paths. `codesign --force` rewrites the binary in
+	// place, and the stamp vouches for the file's exact size and mtime, so a stamp
+	// written first describes bytes that no longer exist and every later run rebuilds.
+	if err := steps.sign(binaryPath); err != nil {
 		return "", err
+	}
+	// A stamp we can't write costs a rebuild next time, never a wrong verdict, so it
+	// doesn't fail the lane. An empty fingerprint never reaches here as a reuse (it
+	// can't read as current), and `recordE2EBuild` refuses to write one anyway.
+	if fingerprint != "" {
+		_ = recordE2EBuild(binaryPath, fingerprint)
 	}
 	return binaryPath, nil
 }
 
-// reuseOrBuildTauriBinary returns the path to a binary built from the current tree,
-// compiling one only when the binary on disk isn't already it.
-func reuseOrBuildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int64, fingerprint string, progress io.Writer) (string, error) {
-	if ctx.ReuseArtifacts {
-		if existing, err := findTauriBinary(ctx.RootDir); err == nil && e2eBinaryIsCurrent(existing, fingerprint) {
-			return existing, nil
-		}
-	}
-
-	fmt.Fprintln(progress, "Building the E2E binary: none on disk was built from this tree. This takes a few minutes…")
+// buildTauriBinary runs the E2E build (`pnpm test:e2e:playwright:build`) and returns
+// the binary it produced.
+func buildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int64) (string, error) {
 	buildCmd := exec.Command("pnpm", "test:e2e:playwright:build")
 	buildCmd.Dir = desktopDir
 	buildOutput, err := RunCommand(buildCmd, true)
@@ -237,16 +269,7 @@ func reuseOrBuildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int
 		return "", fmt.Errorf("tauri build failed (log: %s)\n%s", buildLog, indentOutput(buildOutput))
 	}
 
-	binaryPath, err := findTauriBinary(ctx.RootDir)
-	if err != nil {
-		return "", err
-	}
-	// A stamp we can't write costs a rebuild next time, never a wrong verdict, so
-	// it doesn't fail the lane.
-	if fingerprint != "" {
-		_ = recordE2EBuild(binaryPath, fingerprint)
-	}
-	return binaryPath, nil
+	return findTauriBinary(ctx.RootDir)
 }
 
 // findTauriBinary locates the built Cmdr binary by querying rustc for the host triple.

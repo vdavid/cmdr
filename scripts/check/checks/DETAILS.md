@@ -939,6 +939,12 @@ for whatever sits at that path. `target/<triple>/release/Cmdr` isn't ours exclus
 same worktree writes the same path without the `playwright-e2e` feature, and an unbound stamp would hand that binary to
 a harness that can't drive it.
 
+That binding is also why the stamp is written AFTER `codesignDevBinary`, on the reuse path as well as after a build.
+`codesign --force` rewrites the binary in place, so a stamp taken before signing describes bytes that no longer exist,
+and on a machine with the `Cmdr Dev` identity every run rebuilt (verified on macOS 26, 2026-09-11: the stamp recorded
+98,714,736 bytes while the signed binary on disk was 98,158,960). `TestEnsureE2EBinaryReusesASignedBinary` pins the
+order.
+
 `ctx.ReuseArtifacts` is the escape hatch, false under `--ci`, `--fresh`, and `CMDR_CHECK_NO_CACHE`. It deliberately
 stays true for a NAMED check, unlike the check-level cache's "named ⇒ run fresh" rule: naming the slow lane is how you
 run it at all, and running the suite against an up-to-date binary is running it for real. `cacheBypassed` in `plan.go`
