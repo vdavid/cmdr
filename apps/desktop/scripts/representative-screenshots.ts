@@ -92,11 +92,14 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'on the closely related browsing, sign-in, or reconnect states reached from it.',
   },
   {
-    prefix: 'fileExplorer.smbReconnect.',
+    // The pane's own connection states (`RemoteConnectView`): connecting, signed
+    // out, a changed host key, and the reconnect cycle's countdown.
+    prefix: 'servers.paneState.',
     screenshot: 'servers-hub.png',
     note:
-      'The SMB reconnect banner shown when a mounted server drops: a "Reconnecting…" title, a countdown, and Retry/Cancel ' +
-      'controls. This shows the servers list the connection started from; your string appears in the same network context.',
+      'Shown inside a file pane while it connects to a server: "Connecting…", "Signed out", a changed host key, or a ' +
+      '"Reconnecting…" state with a countdown and Retry/Cancel controls. This shows the servers list those connections ' +
+      'start from; your string appears in the pane, in the same network context.',
   },
   {
     prefix: 'fileExplorer.networkMount.',

@@ -108,23 +108,33 @@
   },
   "servers.paneState.connecting": "Connecting to {name}…",
   "@servers.paneState.connecting": {
-    "description": "Heading of the pane view shown while Cmdr opens a connection to a server. {name} is the server''s display name. The ellipsis is the single character … (U+2026)."
+    "description": "Heading of the pane view shown while Cmdr opens a connection to a server. {name} is the server''s display name. The ellipsis is the single character … (U+2026).",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.connectingHint": "This can take a few seconds.",
   "@servers.paneState.connectingHint": {
-    "description": "One line under the connecting heading, setting the expectation that a server handshake is not instant. Reassurance, not an instruction."
+    "description": "One line under the connecting heading, setting the expectation that a server handshake is not instant. Reassurance, not an instruction.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.cancel": "Cancel",
   "@servers.paneState.cancel": {
-    "description": "Button that calls off a connection Cmdr is in the middle of opening. VERB, imperative."
+    "description": "Button that calls off a connection Cmdr is in the middle of opening. VERB, imperative.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.tryAgain": "Try again",
   "@servers.paneState.tryAgain": {
-    "description": "Button that starts the same connection over after it was refused. VERB phrase, imperative."
+    "description": "Button that starts the same connection over after it was refused. VERB phrase, imperative.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.disconnect": "Disconnect",
   "@servers.paneState.disconnect": {
-    "description": "Button that drops the server''s session and leaves the pane. VERB, imperative. A server has nothing to unplug, so it says Disconnect rather than Eject."
+    "description": "Button that drops the server''s session and leaves the pane. VERB, imperative. A server has nothing to unplug, so it says Disconnect rather than Eject.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.refusal.authenticationRejected": "That password didn''t work for {username}.",
   "@servers.refusal.authenticationRejected": {
@@ -442,63 +452,75 @@
     "description": "Heading of the pane view shown when a server's session ended because a password is what's missing. ❗ NOT a rejection and not a fault: the user simply has to sign in again.",
     "placeholders": {
       "name": "the server''s display name, like “Naspolya”"
-    }
+    },
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.signIn": "Sign in…",
   "@servers.paneState.signIn": {
-    "description": "Button that opens the form for signing in to the server again. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means “this opens something”; keep it."
+    "description": "Button that opens the form for signing in to the server again. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means “this opens something”; keep it.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.hostKeyChanged": "Cmdr won''t connect to {name}",
   "@servers.paneState.hostKeyChanged": {
     "description": "Heading of the pane view shown when an SSH server presents a different identity key than the one this Mac trusts. Serious: it can mean someone is in the middle. “Cmdr” is the product name.",
     "placeholders": {
       "name": "the server''s display name, like “Naspolya”"
-    }
+    },
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.hostKeyChangedHint": "Its key changed. That can mean the server was reinstalled, or that something is sitting between you and it. Disconnect, then open it again to check the fingerprint.",
   "@servers.paneState.hostKeyChangedHint": {
-    "description": "One line under that heading, saying both innocent and serious causes and what to do. “Key” is the server''s SSH host key; “fingerprint” is the short string a person compares before trusting it."
+    "description": "One line under that heading, saying both innocent and serious causes and what to do. “Key” is the server''s SSH host key; “fingerprint” is the short string a person compares before trusting it.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.reconnecting": "Reconnecting to {name}…",
   "@servers.paneState.reconnecting": {
     "description": "Heading of the pane view shown while Cmdr keeps trying to bring back a server connection that dropped. ❗ NOT a first connection: the session existed and Cmdr is getting it back on its own. {name} is the server''s display name. The ellipsis is the single character … (U+2026).",
     "placeholders": {
       "name": "the server''s display name"
-    }
+    },
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.signedOutNothingToAsk": "This server signs in with a key rather than a password, so there''s nothing to type. Open it again to retry.",
   "@servers.paneState.signedOutNothingToAsk": {
-    "description": "One line under the \"Signed out\" heading, shown instead of a Sign in button when the server proves itself with an SSH key or an agent identity rather than a password. Say plainly that there is nothing for the user to enter and what they can do instead. ❗ Not an apology and not a fault."
+    "description": "One line under the \"Signed out\" heading, shown instead of a Sign in button when the server proves itself with an SSH key or an agent identity rather than a password. Say plainly that there is nothing for the user to enter and what they can do instead. ❗ Not an apology and not a fault.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.retryProgressAriaLabel": "Time until next reconnect attempt",
   "@servers.paneState.retryProgressAriaLabel": {
     "description": "Accessibility label for the countdown progress bar showing how long until the next reconnect attempt.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.retryNow": "Retry now",
   "@servers.paneState.retryNow": {
     "description": "Button that triggers a reconnect attempt immediately.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.retryNowTooltip": "Try reconnecting immediately.",
   "@servers.paneState.retryNowTooltip": {
     "description": "Hover tooltip for the button that triggers a reconnect attempt right away instead of waiting.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.cancelCycleTooltip": "Stop trying for now. The connection stays available. Switch back to retry.",
   "@servers.paneState.cancelCycleTooltip": {
     "description": "Hover tooltip for the button that pauses auto-reconnect while keeping the connection available to resume.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.disconnectCycleTooltip": "Stop trying and disconnect from the server.",
   "@servers.paneState.disconnectCycleTooltip": {
     "description": "Hover tooltip for the button that stops reconnecting and drops the server connection.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.retryKeepsTrying": "Will keep trying for a total of {duration}.",
   "@servers.paneState.retryKeepsTrying": {
@@ -506,8 +528,8 @@
     "placeholders": {
       "duration": "the total duration phrase, e.g. 60 seconds or 2 minutes"
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.retryTotalSeconds": "{seconds, plural, one {{secondsText} second} other {{secondsText} seconds}}",
   "@servers.paneState.retryTotalSeconds": {
@@ -516,8 +538,8 @@
       "seconds": "the number of seconds, for choosing the plural form",
       "secondsText": "the same number as the user's locale writes it, like \"1,024\""
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.retryTotalMinutes": "{minutes, plural, one {{minutesText} minute} other {{minutesText} minutes}}",
   "@servers.paneState.retryTotalMinutes": {
@@ -526,7 +548,7 @@
       "minutes": "the number of minutes, for choosing the plural form",
       "minutesText": "the same number as the user's locale writes it, like \"1,024\""
     },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   }
 }
