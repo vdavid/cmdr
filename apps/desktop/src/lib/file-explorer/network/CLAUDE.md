@@ -19,14 +19,12 @@ Signing in is `$lib/servers`' one sheet; this module only says what to ask and w
   reactive only inside `.svelte` / `.svelte.ts`, so a raw import from a plain `.ts` silently loses reactivity.
 - **`triggerNetworkDiscovery()` is the single chokepoint for starting mDNS.** Call it on any networking intent; ❌ don't
   gate on `network.enabled` yourself, the helper does.
-- **❌ Never ask the Keychain twice.** Each macOS access can raise a system prompt, so don't pre-check
-  `hasSmbCredentials` before `getSmbCredentials`, and don't probe whether a password is stored. Share activation never
-  pre-prompts either (`activateShare`, every path): try stored creds, mount with what we have, and let the mount's own
-  refusal ask. A pre-prompt there was a real bug; `PlacesBrowser.test.ts` pins it.
-- **`direct-connect.ts::connectDirectly` is the ONE upgrade flow**: the yellow dot, the breadcrumb submenu, and the
-  fallback notice all press it, so route a new entry point through it rather than re-inlining the saved-password probe
-  and the toast lifecycle. Every answer is a typed `UpgradeResult` status worded by `upgrade-messages.ts` (a share gone
-  before the press is `volumeGone`, not a throw); ❌ never toast `String(e)`.
+- **❌ Never ask the Keychain twice**: each access can raise a system prompt. No `hasSmbCredentials` pre-check before
+  `getSmbCredentials`, and share activation never pre-prompts (`activateShare`): try stored creds, mount, and let the
+  mount's own refusal ask (`PlacesBrowser.test.ts` pins it).
+- **`direct-connect.ts::connectDirectly` is the ONE upgrade flow** (the yellow dot, the breadcrumb submenu, the fallback
+  notice): route a new entry point through it. Every answer is a typed `UpgradeResult` status worded by
+  `upgrade-messages.ts`; ❌ never toast `String(e)`.
 - **A credential is asked for on the sheet and ❌ never in the pane**, through `smb-sign-in.ts`. The three sites, what
   each `attempt` runs, and where cancelling lands: `../../servers/DETAILS.md`.
 - **`NetworkMountView` must propagate its local `currentNetworkHost` via `onNetworkHostChange`**, mirrored in the parent
