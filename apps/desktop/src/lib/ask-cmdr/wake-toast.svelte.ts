@@ -48,7 +48,7 @@ export function announceStagedWake(conversationId: number, proposals: number): v
     level: 'info',
     toastGroup: WAKE_TOAST_GROUP,
     maxInGroup: MAX_IN_GROUP,
-    props: { toastId: toastId(conversationId), conversationId, proposals },
+    props: { conversationId, proposals },
   })
 }
 

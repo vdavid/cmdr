@@ -3,12 +3,13 @@
  *
  * Individual toast frame with a close button. Each level uses the right
  * `role` (`status` for info/success, `alert` for warn/error). Tests
- * cover all levels, both dismissal modes, and string content.
+ * cover all levels, both dismissal modes, and string and component content.
  */
 
 import { describe, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import ToastItem from './ToastItem.svelte'
+import ToastIdFixture from './toast-id-fixture.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 describe('ToastItem a11y', () => {
@@ -83,6 +84,26 @@ describe('ToastItem a11y', () => {
         level: 'error',
         dismissal: 'transient',
         timeoutMs: 4000,
+        postedAt: Date.now(),
+        onTimeout: vi.fn(),
+        onUserDismiss: vi.fn(),
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('component content with its own button has no violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ToastItem, {
+      target,
+      props: {
+        id: 't5',
+        content: ToastIdFixture,
+        level: 'info',
+        dismissal: 'persistent',
+        timeoutMs: 0,
         postedAt: Date.now(),
         onTimeout: vi.fn(),
         onUserDismiss: vi.fn(),

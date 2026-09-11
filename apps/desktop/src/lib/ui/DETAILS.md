@@ -1553,7 +1553,11 @@ design token system.
 
 **Decision**: Toast content accepts both `string` and `Component<any>` (Svelte component). **Why**: Simple notifications
 are strings. Interactive toasts (update restart, AI download) need buttons and state, so they're full Svelte components.
-The toast item renders strings as `<span>` and components via `{@const}` + render. No wrapper needed.
+The toast item renders strings as `<span>` and components via `{@const}` + render. No wrapper needed. Every component
+toast gets its own id as `toastId` (on top of any `props`), so a body's own buttons close it with
+`dismissToast(toastId)`. Only forwarding it when `props` was passed once left four props-less toasts (the "Show in
+Finder" and Dock offers among them) with buttons that ran their action again on every click while the toast stayed up;
+`ToastItem.test.ts` pins it.
 
 **Decision**: Toast dedup uses an optional `id` key with in-place replacement rather than preventing duplicates.
 **Why**: The update toast and AI toast need to update their content as state changes (e.g. download progress) while

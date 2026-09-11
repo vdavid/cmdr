@@ -20,9 +20,9 @@
         postedAt: number
         closeTooltip?: string
         /**
-         * Props forwarded to a component-shaped `content`. Merged with the
-         * toast id under `toastId` so the content component can self-dismiss
-         * without a module-state bridge. Ignored for string content.
+         * Props forwarded to a component-shaped `content`. The component always
+         * gets the toast id as `toastId` too, with or without these, so it can
+         * close itself. Ignored for string content.
          */
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mirrors ToastOptions.props
         contentProps?: Record<string, any>
@@ -180,15 +180,10 @@
                 </div>
             {:else}
                 {@const ContentComponent = content}
-                {#if contentProps}
-                    <!-- Component toasts that opt into the prop-forwarding shape get
-                         the toast id appended for self-dismiss. Existing toasts that
-                         don't pass `props` to `addToast` keep their zero-prop shape so
-                         they don't see Svelte's unknown-prop warning. -->
-                    <ContentComponent {...contentProps} toastId={id} />
-                {:else}
-                    <ContentComponent />
-                {/if}
+                <!-- `toastId` goes to EVERY component toast, props or not: a body that
+                     closes itself calls `dismissToast(toastId)`, and without the id that's
+                     a silent no-op that leaves the toast up. -->
+                <ContentComponent {...contentProps} toastId={id} />
             {/if}
         </div>
     </div>

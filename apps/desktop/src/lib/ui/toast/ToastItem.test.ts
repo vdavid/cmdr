@@ -9,7 +9,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import ToastItem from './ToastItem.svelte'
-import { HOVER_LEAVE_GRACE_MS } from './toast-store.svelte'
+import ToastContainer from './ToastContainer.svelte'
+import ToastIdFixture from './toast-id-fixture.svelte'
+import { HOVER_LEAVE_GRACE_MS, addToast, clearAllToasts, getToasts } from './toast-store.svelte'
 
 function mountItem(props: Record<string, unknown>): HTMLElement {
   const target = document.createElement('div')
@@ -195,6 +197,45 @@ describe('ToastItem auto-dismiss rule', () => {
     vi.advanceTimersByTime(100000)
 
     expect(onTimeout).not.toHaveBeenCalled()
+  })
+})
+
+describe('ToastItem component content', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    clearAllToasts()
+  })
+
+  it('hands a component its toast id even when the raise passed no props', async () => {
+    const target = mountItem({ id: 'no-props', content: ToastIdFixture })
+    await tick()
+
+    expect(target.querySelector('[data-test="toast-id"]')?.textContent).toBe('no-props')
+  })
+
+  it('hands a component its toast id alongside the props the raise passed', async () => {
+    const target = mountItem({ id: 'with-props', content: ToastIdFixture, contentProps: { label: 'Hi' } })
+    await tick()
+
+    expect(target.querySelector('[data-test="toast-id"]')?.textContent).toBe('with-props')
+    expect(target.querySelector('[data-test="toast-label"]')?.textContent).toBe('Hi')
+  })
+
+  it('lets a props-less component toast close itself from its own button', async () => {
+    // Pre-fix this stayed up: the body called `dismissToast(undefined)`, so an offer's
+    // "Yes" ran again on every click while the toast never went away.
+    addToast(ToastIdFixture, { id: 'self-closing', dismissal: 'persistent' })
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ToastContainer, { target })
+    await tick()
+
+    const close = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Close')
+    if (!close) throw new Error('Close button missing')
+    close.click()
+    await tick()
+
+    expect(getToasts()).toHaveLength(0)
   })
 })
 
