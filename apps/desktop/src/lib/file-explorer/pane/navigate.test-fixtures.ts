@@ -151,6 +151,9 @@ export function makeHarness(opts?: HarnessOpts): Harness {
     addToast,
     tokens: new Map(),
     correctionGen: { value: 0 },
+    returnPoints: new Map(),
+    // The two virtual volumes render without a listing, as their capability rows say.
+    volumeHasListing: (volumeId) => volumeId !== 'network' && volumeId !== 'search-results',
   }
 
   return {

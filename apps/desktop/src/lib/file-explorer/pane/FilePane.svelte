@@ -126,7 +126,7 @@
         onRequestFocus?: () => void
         /** Called when active network host changes (for history tracking) */
         onNetworkHostChange?: (host: NetworkHost | null) => void
-        /** Called when user cancels loading (ESC key) - parent navigates back to previous folder */
+        /** Escape during a load: the parent puts the pane back on what it last showed */
         onCancelLoading?: (cancelled: CancelLoadingPayload) => void
         /** Called when MTP connection fails fatally (device disconnected, timeout) - parent should fall back to previous volume */
         onMtpFatalError?: (error: string) => void

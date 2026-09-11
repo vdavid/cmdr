@@ -1,6 +1,6 @@
 import type { FileEntry, FriendlyError, NetworkHost, ShareInfo } from '../types'
 import type { DragAutoScrollFrameResult, DragAutoScrollPointer } from '../drag/drag-auto-scroll'
-import type { Initiator } from '$lib/tauri-commands'
+import type { Initiator, Location } from '$lib/tauri-commands'
 import type { HubRow } from '../network/servers-hub-rows'
 
 /** Options for `startRename`. */
@@ -55,13 +55,19 @@ export interface LoadDirectoryArgs {
   selectName?: string
 }
 
+/** A directory load: the volume and path it lists, and the entry it puts under the cursor on landing. */
+export interface ListingLoad extends LoadDirectoryArgs {
+  volumeId: string
+}
+
 /**
- * The path (and the entry to reselect) a cancelled load leaves behind, bubbled
- * from the loader up through `FilePane`'s `onCancelLoading` prop.
+ * What a cancel stopped, and what the pane last showed, bubbled from the loader up
+ * through `FilePane`'s `onCancelLoading` prop. `lastShown` is the pane's last landed
+ * listing (the error screen included), `null` before its first landing.
  */
 export interface CancelLoadingPayload {
-  cancelledPath: string
-  selectName?: string
+  cancelled: ListingLoad
+  lastShown: Location | null
 }
 
 /**
@@ -213,9 +219,9 @@ export interface FilePaneAPI {
 
   navigateToParent(): Promise<boolean>
   /**
-   * Resolves when the listing lands. Rejects on a listing error, a cancel, or
-   * `NavigationSuperseded` when a newer navigation takes over; only that last one
-   * is safe to drop unawaited.
+   * Resolves when the listing lands. Rejects on a listing error, with
+   * `NavigationCancelled` when its load is cancelled, or with `NavigationSuperseded`
+   * when a newer navigation takes over; only those last two are safe to drop unawaited.
    */
   navigateToPath(path: string, selectName?: string): Promise<void>
   handleCancelLoading(): void

@@ -1,27 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { TabManager } from '../tabs/tab-state-manager.svelte'
 import type { VolumeInfo } from '../types'
-import type { NavigationHistory } from '../navigation/navigation-history'
 import type { NavigateIntent, NavigateResult } from './navigate'
-import type { FilePaneAPI } from './types'
+import type { ReturnPoint } from './return-point'
 
-const {
-  getDefaultVolumeIdSpy,
-  resolvePathVolumeSpy,
-  pathExistsSpy,
-  requestVolumeRefreshSpy,
-  resolveValidPathSpy,
-  getCurrentEntrySpy,
-  canGoBackSpy,
-} = vi.hoisted(() => ({
-  getDefaultVolumeIdSpy: vi.fn<() => Promise<string>>(),
-  resolvePathVolumeSpy: vi.fn<() => Promise<{ volume: { id: string } | null }>>(),
-  pathExistsSpy: vi.fn<() => Promise<boolean>>(),
-  requestVolumeRefreshSpy: vi.fn(),
-  resolveValidPathSpy: vi.fn<() => Promise<string | null>>(),
-  getCurrentEntrySpy: vi.fn(),
-  canGoBackSpy: vi.fn<() => boolean>(),
-}))
+const { getDefaultVolumeIdSpy, resolvePathVolumeSpy, pathExistsSpy, requestVolumeRefreshSpy, resolveValidPathSpy } =
+  vi.hoisted(() => ({
+    getDefaultVolumeIdSpy: vi.fn<() => Promise<string>>(),
+    resolvePathVolumeSpy: vi.fn<() => Promise<{ volume: { id: string } | null }>>(),
+    pathExistsSpy: vi.fn<() => Promise<boolean>>(),
+    requestVolumeRefreshSpy: vi.fn(),
+    resolveValidPathSpy: vi.fn<() => Promise<string | null>>(),
+  }))
 
 vi.mock('$lib/tauri-commands', () => ({
   getDefaultVolumeId: getDefaultVolumeIdSpy,
@@ -30,43 +20,30 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 vi.mock('$lib/stores/volume-store.svelte', () => ({ requestVolumeRefresh: requestVolumeRefreshSpy }))
 vi.mock('../navigation/path-resolution', () => ({ resolveValidPath: resolveValidPathSpy }))
-vi.mock('../navigation/navigation-history', () => ({
-  getCurrentEntry: getCurrentEntrySpy,
-  canGoBack: canGoBackSpy,
-}))
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
 
 import { createEdgeFlowHandlers, type EdgeFlowHandlersDeps } from './edge-flow-handlers'
 
-function makePaneRef(overrides: Record<string, unknown> = {}) {
-  return {
-    setNetworkHost: vi.fn(),
-    navigateToPath: vi.fn(() => Promise.resolve()),
-    ...overrides,
-  }
-}
-
 function makeTabMgr(unreachable: unknown): TabManager {
   return { tabs: [{ id: 't', unreachable }], activeTabId: 't' } as unknown as TabManager
 }
 
 function setup(opts: {
-  paneRef?: ReturnType<typeof makePaneRef>
+  returnPoint?: ReturnPoint
   volumes?: VolumeInfo[]
-  history?: NavigationHistory
   volumeIdByPane?: Record<'left' | 'right', string>
   tabMgr?: TabManager
 }) {
-  const navigate = vi.fn<(i: NavigateIntent) => NavigateResult>(
-    () => ({ status: 'started' }) as unknown as NavigateResult,
-  )
+  const navigate = vi.fn<(i: NavigateIntent) => NavigateResult>(() => ({
+    status: 'started',
+    settled: Promise.resolve(),
+  }))
   const focusContainer = vi.fn()
   const deps: EdgeFlowHandlersDeps = {
     navigate,
-    getPaneRef: () => opts.paneRef as unknown as FilePaneAPI | undefined,
-    getPaneHistory: () => opts.history ?? ({} as NavigationHistory),
+    getReturnPoint: () => opts.returnPoint ?? null,
     getPaneVolumeId: (p) => opts.volumeIdByPane?.[p] ?? 'root',
     getTabMgr: () => opts.tabMgr ?? makeTabMgr(null),
     getVolumes: () => opts.volumes ?? [],
@@ -83,47 +60,68 @@ describe('createEdgeFlowHandlers', () => {
   })
 
   describe('handleCancelLoading', () => {
-    it('network entry re-commits the network volume without a history push and restores the host', () => {
-      getCurrentEntrySpy.mockReturnValue({
-        volumeId: 'network',
-        path: 'smb://host/share',
-        networkHost: { name: 'h' },
-      })
-      const paneRef = makePaneRef()
-      const { handlers, navigate, focusContainer } = setup({ paneRef })
+    const shownA = { volumeId: 'root', path: '/a' }
 
-      handlers.handleCancelLoading('left', { cancelledPath: '/whatever' })
+    it('with a return point, returns there, selecting the folder the load was opening when it sits right inside', () => {
+      const point = {
+        tabId: 't',
+        shown: shownA,
+        historyIndex: 1,
+        entry: shownA,
+        ahead: { volumeId: 'root', path: '/a/b' },
+      }
+      const { handlers, navigate, focusContainer } = setup({ returnPoint: point })
 
-      expect(navigate).toHaveBeenCalledWith({
-        pane: 'left',
-        to: { selectVolume: { volumeId: 'network', path: 'smb://host/share' } },
-        source: 'fallback',
-        pushHistory: false,
+      handlers.handleCancelLoading('left', {
+        cancelled: { volumeId: 'root', path: '/a/b' },
+        lastShown: { volumeId: 'root', path: '/elsewhere' },
       })
-      expect(paneRef.setNetworkHost).toHaveBeenCalledWith({ name: 'h' })
+
+      expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { returnTo: point }, source: 'cancel', selectName: 'b' })
       expect(focusContainer).toHaveBeenCalled()
     })
 
-    it('when the cancelled path is current and history can go back, navigates back', () => {
-      getCurrentEntrySpy.mockReturnValue({ volumeId: 'root', path: '/a/b' })
-      canGoBackSpy.mockReturnValue(true)
-      const { handlers, navigate } = setup({ paneRef: makePaneRef() })
+    it('without one, re-lists the location the pane last showed, with the child under the cursor', () => {
+      const { handlers, navigate } = setup({})
 
-      handlers.handleCancelLoading('right', { cancelledPath: '/a/b' })
+      handlers.handleCancelLoading('right', { cancelled: { volumeId: 'root', path: '/a/b' }, lastShown: shownA })
 
-      expect(navigate).toHaveBeenCalledWith({ pane: 'right', to: { history: 'back' }, source: 'cancel' })
+      expect(navigate).toHaveBeenCalledWith({ pane: 'right', to: { goTo: shownA }, source: 'cancel', selectName: 'b' })
     })
 
-    it('when the cancelled path is current and there is no history, walks up to a valid parent', async () => {
-      getCurrentEntrySpy.mockReturnValue({ volumeId: 'root', path: '/a/b' })
-      canGoBackSpy.mockReturnValue(false)
-      resolveValidPathSpy.mockResolvedValue('/a')
-      const { handlers, navigate } = setup({
-        paneRef: makePaneRef(),
-        volumeIdByPane: { left: 'root', right: 'root' },
+    it('selects nothing when the cancelled folder is not directly inside the shown one', () => {
+      const { handlers, navigate } = setup({})
+
+      handlers.handleCancelLoading('left', { cancelled: { volumeId: 'root', path: '/c/d' }, lastShown: shownA })
+
+      expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { goTo: shownA }, source: 'cancel' })
+    })
+
+    it('a cancelled re-list of the shown folder keeps the entry that load was bringing under the cursor', () => {
+      const { handlers, navigate } = setup({})
+
+      handlers.handleCancelLoading('left', {
+        cancelled: { volumeId: 'root', path: '/a', selectName: 'child' },
+        lastShown: shownA,
       })
 
-      handlers.handleCancelLoading('left', { cancelledPath: '/a/b' })
+      expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { goTo: shownA }, source: 'cancel', selectName: 'child' })
+    })
+
+    it('stops a load the pane already switched away from, and does nothing more', () => {
+      const { handlers, navigate, focusContainer } = setup({ volumeIdByPane: { left: 'network', right: 'root' } })
+
+      handlers.handleCancelLoading('left', { cancelled: { volumeId: 'root', path: '/a/b' }, lastShown: shownA })
+
+      expect(navigate).not.toHaveBeenCalled()
+      expect(focusContainer).toHaveBeenCalled()
+    })
+
+    it('before anything was shown, walks up to the nearest valid parent with no history push', async () => {
+      resolveValidPathSpy.mockResolvedValue('/a')
+      const { handlers, navigate } = setup({})
+
+      handlers.handleCancelLoading('left', { cancelled: { volumeId: 'root', path: '/a/b' }, lastShown: null })
       await vi.waitFor(() => {
         expect(navigate).toHaveBeenCalled()
       })
@@ -131,24 +129,24 @@ describe('createEdgeFlowHandlers', () => {
       expect(navigate).toHaveBeenCalledWith({
         pane: 'left',
         to: { selectVolume: { volumeId: 'root', path: '/a' } },
-        source: 'fallback',
+        source: 'cancel',
         pushHistory: false,
       })
     })
 
-    it('walks up on the volume the tab was on, asking that volume', async () => {
+    it('walks up on the volume the load ran on, asking that volume', async () => {
       // Pre-fix the walk asked the boot disk about a phone's folders, heard "gone"
       // at every level, and landed the pane on the phone's root.
-      getCurrentEntrySpy.mockReturnValue({ volumeId: 'adb-phone', path: 'adb://R58M/sdcard/a' })
-      canGoBackSpy.mockReturnValue(false)
       resolveValidPathSpy.mockResolvedValue('adb://R58M/sdcard')
       const { handlers, navigate } = setup({
-        paneRef: makePaneRef(),
         volumes: [{ id: 'adb-phone', path: 'adb://R58M' } as VolumeInfo],
         volumeIdByPane: { left: 'adb-phone', right: 'root' },
       })
 
-      handlers.handleCancelLoading('left', { cancelledPath: 'adb://R58M/sdcard/a' })
+      handlers.handleCancelLoading('left', {
+        cancelled: { volumeId: 'adb-phone', path: 'adb://R58M/sdcard/a' },
+        lastShown: null,
+      })
       await vi.waitFor(() => {
         expect(navigate).toHaveBeenCalled()
       })
@@ -157,17 +155,6 @@ describe('createEdgeFlowHandlers', () => {
         volumeRoot: 'adb://R58M',
         volumeId: 'adb-phone',
       })
-    })
-
-    it('when the listing did not complete, navigates the pane straight to the previous folder', () => {
-      getCurrentEntrySpy.mockReturnValue({ volumeId: 'root', path: '/prev' })
-      const paneRef = makePaneRef()
-      const { handlers, navigate } = setup({ paneRef })
-
-      handlers.handleCancelLoading('left', { cancelledPath: '/different', selectName: 'pick.txt' })
-
-      expect(paneRef.navigateToPath).toHaveBeenCalledWith('/prev', 'pick.txt')
-      expect(navigate).not.toHaveBeenCalled()
     })
   })
 

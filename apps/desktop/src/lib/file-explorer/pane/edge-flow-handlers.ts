@@ -19,22 +19,22 @@
  *   (they don't shift the focused pane).
  */
 
-import { getCurrentEntry, canGoBack, type NavigationHistory } from '../navigation/navigation-history'
 import { getActiveTab, type TabManager } from '../tabs/tab-state-manager.svelte'
-import { getDefaultVolumeId, resolvePathVolume, pathExists } from '$lib/tauri-commands'
+import { getDefaultVolumeId, resolvePathVolume, pathExists, type Location } from '$lib/tauri-commands'
 import { requestVolumeRefresh } from '$lib/stores/volume-store.svelte'
 import { resolveValidPath } from '../navigation/path-resolution'
 import { getAppLogger } from '$lib/logging/logger'
 import type { VolumeInfo } from '../types'
-import type { NavigateIntent, NavigateResult } from './navigate'
-import type { CancelLoadingPayload, FilePaneAPI } from './types'
+import type { NavigateIntent, NavigateResult, NavigateTo } from './navigate'
+import type { ReturnPoint } from './return-point'
+import type { CancelLoadingPayload, ListingLoad } from './types'
 
 const log = getAppLogger('fileExplorer')
 
 export interface EdgeFlowHandlersDeps {
   navigate: (intent: NavigateIntent) => NavigateResult
-  getPaneRef: (pane: 'left' | 'right') => FilePaneAPI | undefined
-  getPaneHistory: (pane: 'left' | 'right') => NavigationHistory
+  /** The pane's return point while one is in force (`navigate.ts::returnPointFor`). */
+  getReturnPoint: (pane: 'left' | 'right') => ReturnPoint | null
   getPaneVolumeId: (pane: 'left' | 'right') => string
   getTabMgr: (pane: 'left' | 'right') => TabManager
   getVolumes: () => VolumeInfo[]
@@ -49,68 +49,70 @@ export interface EdgeFlowHandlers {
   handleVolumeUnmount: (unmountedId: string) => Promise<void>
 }
 
+/**
+ * The entry the cursor lands on when a cancel returns to `shown`: the folder the load
+ * was opening when it sits right inside, or, for a cancelled re-list of `shown`
+ * itself, the entry that load was bringing under the cursor.
+ */
+function selectionOnReturn(shown: Location, cancelled: ListingLoad): string | undefined {
+  if (shown.volumeId !== cancelled.volumeId) return undefined
+  if (shown.path === cancelled.path) return cancelled.selectName
+  const cut = cancelled.path.lastIndexOf('/')
+  const parent = cut <= 0 ? '/' : cancelled.path.slice(0, cut)
+  return parent === shown.path ? cancelled.path.slice(cut + 1) : undefined
+}
+
 export function createEdgeFlowHandlers(deps: EdgeFlowHandlersDeps): EdgeFlowHandlers {
-  function handleCancelLoading(pane: 'left' | 'right', { cancelledPath, selectName }: CancelLoadingPayload): void {
-    const history = deps.getPaneHistory(pane)
-    const entry = getCurrentEntry(history)
-    const paneRef = deps.getPaneRef(pane)
-
-    if (entry.volumeId === 'network') {
-      // Network restore: re-commit the network entry without leaving the
-      // volume and without a load. A `'fallback'` volume "switch" to the same
-      // network volume is a terminal commit (no old-path pre-save, no
-      // correction); `pushHistory: false` keeps history put (the entry's
-      // already current). The subscriber persists the store mutation.
-      deps.navigate({
-        pane,
-        to: { selectVolume: { volumeId: 'network', path: entry.path } },
-        source: 'fallback',
-        pushHistory: false,
-      })
-      paneRef?.setNetworkHost(entry.networkHost ?? null)
-      deps.focusContainer()
-      return
-    }
-
-    if (entry.path === cancelledPath) {
-      // Listing completed before cancel; history has the cancelled path pushed. Go back.
-      // The history-back walk + commit lives in `navigate()`'s history arm.
-      // `navigate()` re-checks `canGoBack`, so the gate here is the
-      // cancel-specific guard, not a duplicate.
-      if (canGoBack(history)) {
-        deps.navigate({ pane, to: { history: 'back' }, source: 'cancel' })
+  /**
+   * Escape during a load puts the pane back on what it last showed
+   * (`pane/DETAILS.md` § "Escape during a load"): undo the commits that ran ahead of
+   * the listing, else re-list the last shown location, else walk up from the
+   * cancelled folder, since nothing was shown yet.
+   */
+  function handleCancelLoading(pane: 'left' | 'right', { cancelled, lastShown }: CancelLoadingPayload): void {
+    const point = deps.getReturnPoint(pane)
+    if (point) {
+      returnFromCancel(pane, { returnTo: point }, selectionOnReturn(point.shown, cancelled))
+    } else if (cancelled.volumeId === deps.getPaneVolumeId(pane)) {
+      if (lastShown?.volumeId !== cancelled.volumeId) {
+        walkUpFrom(pane, cancelled)
         return
       }
-
-      // Edge case: tab opened directly at this path, no history. Walk up to nearest valid parent.
-      const parentPath = entry.path.substring(0, Math.max(1, entry.path.lastIndexOf('/')))
-      // Asking the tab's own volume: the boot disk says "gone" for a phone's or server's folders.
-      const volume = deps.getVolumes().find((v) => v.id === entry.volumeId)
-      void resolveValidPath(parentPath, { volumeRoot: volume?.path, volumeId: volume?.id }).then((validPath) => {
-        const target = validPath ?? '~'
-        const isOutsideVolume = entry.volumeId !== 'root' && (target === '~' || target === '/')
-        // Volume root unreachable ⇒ switch to root volume; otherwise stay on
-        // the current volume at the resolved parent. Either way a terminal
-        // `'fallback'` commit (no history push — the walk-up is a correction
-        // to the cancelled destination, not a new Back target). The
-        // subscriber persists the store mutation.
-        deps.navigate({
-          pane,
-          to: {
-            selectVolume: { volumeId: isOutsideVolume ? 'root' : deps.getPaneVolumeId(pane), path: target },
-          },
-          source: 'fallback',
-          pushHistory: false,
-        })
-        deps.focusContainer()
-      })
-      return
+      returnFromCancel(pane, { goTo: lastShown }, selectionOnReturn(lastShown, cancelled))
     }
-
-    // Listing didn't complete; history still points at the previous folder (correct destination).
-    // setPanePath won't trigger FilePane's $effect (path unchanged), so call navigateToPath directly.
-    void paneRef?.navigateToPath(entry.path, selectName)
+    // Otherwise the load was one the pane had already left (for the Servers hub,
+    // say), and stopping it was the whole job.
     deps.focusContainer()
+  }
+
+  function returnFromCancel(pane: 'left' | 'right', to: NavigateTo, selectName: string | undefined): void {
+    const result = deps.navigate({ pane, to, source: 'cancel', selectName })
+    // Nobody awaits the return trip: a listing error there shows in the pane, and a
+    // second Escape cancels it.
+    if (result.status === 'started') void result.settled.catch(() => {})
+  }
+
+  function walkUpFrom(pane: 'left' | 'right', cancelled: ListingLoad): void {
+    const parentPath = cancelled.path.substring(0, Math.max(1, cancelled.path.lastIndexOf('/')))
+    // Asking the load's own volume: the boot disk says "gone" for a phone's or server's folders.
+    const volume = deps.getVolumes().find((v) => v.id === cancelled.volumeId)
+    void resolveValidPath(parentPath, { volumeRoot: volume?.path, volumeId: volume?.id }).then((validPath) => {
+      const target = validPath ?? '~'
+      const isOutsideVolume = cancelled.volumeId !== 'root' && (target === '~' || target === '/')
+      // Volume root unreachable ⇒ switch to the root volume; otherwise stay on the
+      // pane's volume at the resolved parent. No history push: the walk-up corrects
+      // the cancelled destination, it's no new Back target. The subscriber persists
+      // the store mutation.
+      deps.navigate({
+        pane,
+        to: {
+          selectVolume: { volumeId: isOutsideVolume ? 'root' : deps.getPaneVolumeId(pane), path: target },
+        },
+        source: 'cancel',
+        pushHistory: false,
+      })
+      deps.focusContainer()
+    })
   }
 
   async function handleMtpFatalError(pane: 'left' | 'right', errorMessage: string): Promise<void> {

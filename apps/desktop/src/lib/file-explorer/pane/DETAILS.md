@@ -182,7 +182,8 @@ sweep). Four splits the layout doesn't explain for itself:
   background-correction token/generation bookkeeping, `commitPathFromListing`'s stale-listing drop policy, and the
   same-token self-re-entry rule), `navigate.arms.test.ts` (WHICH arm handles an intent — the pinned-tab fork,
   `{ snapshot }`, the `'fallback'` edge-flow source, `{ history }`, `{ location }`, and `{ volumeId, path }`
-  volume-(re)select), and `navigate.refusals.test.ts` (every refusal kind's `message`, byte-for-byte, L12).
+  volume-(re)select), `navigate.return.test.ts` (the return point and the `{ returnTo }` arm, § "Escape during a
+  load"), and `navigate.refusals.test.ts` (every refusal kind's `message`, byte-for-byte, L12).
 - **`volume-tint.svelte.fallback.test.ts` sits beside `volume-tint.svelte.test.ts`** because the two force opposite
   `hasColorMix` branches: the main file pins it `true` to assert the `color-mix(...)` string, the fallback file forces
   the JS sRGB-mix branch and asserts hex (stubbing `getComputedStyle`, since jsdom doesn't resolve CSS custom
@@ -920,9 +921,10 @@ entry — they're not pane-destination changes).
   wrong-volume listing. The canonical description of the shapes + edges lives in `navigate.ts`'s module doc.
 - **Intent arms.** `{ goTo }` self-routes: same volume as the pane → the in-place arm, a different volume → the switch
   arm. `{ selectVolume }` is the deliberate volume-(re)select intent and ALWAYS takes the switch arm (its callers —
-  network-restore-on-cancel, retry, `selectVolumeByIndex` — pass the CURRENT volume id on purpose).
+  the cancel walk-up, retry, `selectVolumeByIndex` — pass the CURRENT volume id on purpose).
   `{ history: 'back' | 'forward' | 'parent' }` walks the stack (`parent` delegates to `FilePane.navigateToParent`);
-  `{ snapshot: id }` opens `search-results://<id>` through the volume-switch machinery. The pinned-tab fork (L7) lives
+  `{ snapshot: id }` opens `search-results://<id>` through the volume-switch machinery; `{ returnTo }` hands the pane
+  back after a cancelled load (§ "Escape during a load"). The pinned-tab fork (L7) lives
   in ONE place per arm: `commitPathFromListing` for the in-place landing, `commitVolumeSwitch` for the switch.
 - **Per-arm optimism (P4).** The switch arm commits volumeId + path + history SYNCHRONOUSLY (truly optimistic). The
   in-place arm does NOT commit on call — it drives the FilePane primitive, and the commit lands when the listing
@@ -1134,11 +1136,55 @@ subscriber. Two behaviors the fold preserves byte-for-byte:
   `pushHistory`); the volume-unmount redirect does NOT (`pushHistory: false` ⇒ `commit` history `'none'`), so ejecting a
   volume can't inject a spurious Back target. The unmount handler redirects EACH affected pane independently (left and
   right), not just the focused one.
-- **Per-source focus.** The `'fallback'` / `'cancel'` flows re-anchor DOM focus on the container (the cancel walk-up /
-  network-restore branches call `containerElement?.focus()` where today's code does) but do NOT shift the focused pane —
-  unlike a `'user'` / `'mcp'` volume select, which makes the navigated pane focused. `shiftsFocus(source)` in
-  `navigate.ts` is the single source of that rule. The `'fallback'` source is also `terminal`: a fixed recovery target,
-  so no old-path pre-save and no background `determineNavigationPath` correction.
+- **Per-source focus.** The `'fallback'` / `'cancel'` flows re-anchor DOM focus on the container (the cancel flow calls
+  `focusContainer()`) but do NOT shift the focused pane — unlike a `'user'` / `'mcp'` volume select, which makes the
+  navigated pane focused. `shiftsFocus(source)` in `navigate.ts` is the single source of that rule. The `'fallback'` and
+  `'cancel'` sources are also `terminal`: a fixed recovery target, so no old-path pre-save and no background
+  `determineNavigationPath` correction.
+
+### Escape during a load
+
+Escape while a pane's listing loads returns the pane to what it last SHOWED, like a browser's Stop.
+`listing-loader.ts::handleCancelLoading` stops the listing, rejects an awaiting `navigateToPath` with
+`NavigationCancelled` (MCP `nav_to_path` replies with that), and bubbles `{ cancelled, lastShown }`.
+`edge-flow-handlers.ts::handleCancelLoading` picks the way back, first match wins:
+
+1. **A return point is in force** ⇒ the `{ returnTo }` arm. Some navigations commit ahead of their listing: a volume
+   switch (volume, path, and a pushed entry), a history walk (the index), and the background correction (path and an
+   entry). The first such commit since the pane last landed stores a return point (`return-point.ts`): the tab's volume,
+   path, and current history entry before it. The arm restores all three in one commit with no push, drops a correction
+   still resolving, and reopens the Servers hub host when that's what the pane showed. A switch's pushed entry stays as
+   a Forward target, so Forward retries the cancelled navigation.
+2. **The cancelled load isn't on the pane's volume** ⇒ nothing more. The pane already moved to a view with no listing
+   (the Servers hub, a search snapshot), and stopping the stray load was the whole job.
+3. **The pane showed something on this volume** ⇒ re-list `lastShown` through the in-place arm. An in-place navigation
+   (Enter, a breadcrumb, Backspace, `nav_to_path` on the same volume) commits only when its listing lands, so history is
+   already right and the landing's `pushPath` dedupes.
+4. **Nothing shown yet** (the first load at startup, a new or switched-to tab) ⇒ walk up from the cancelled folder to
+   the nearest one that exists, as a terminal `'cancel'` commit with no history push.
+
+The cursor lands on the cancelled folder when it sits right inside the place the pane returns to. A cancelled re-list of
+the shown folder itself (the return trip of an earlier Escape) keeps the entry that load was bringing, so a second
+Escape leaves the cursor where the first one put it.
+
+Rules that look like tidy-ups and aren't:
+
+- ❌ **Never decide from history.** "The cancelled path equals history's current entry" also matches a pane-internal
+  return trip, so walking Back from there went one step too far: on a slow SFTP server, a second Escape during the
+  return to `_test` landed on `child`, the folder just left. The return point and `lastShown` record what happened;
+  history can't tell.
+- **`lastShown` counts the error screen.** Both landings go through `onPathChange`, so the error pane is in history and
+  is what the user was looking at. A superseded or cancelled load never counts.
+- **A return point lapses** once a listing lands (`commitPathFromListing`), when the destination shows without a listing
+  (`volumeHasListing`), in another tab, and when the tab no longer sits where the commits left it (`ahead`). That last
+  check covers a pane swap or a root-follow rewrite without either knowing return points exist. A second commit before
+  the first one lands keeps the first point, since the pane still shows what it showed before both.
+- **A cancel's own commits keep no point** (`fromCancel`). Otherwise Escape during the walk-up would return to the
+  cancelled folder, and the next Escape would walk up again, forever.
+- **`lastShown` is loader state, one per `FilePane` instance.** `DualPaneExplorer` keys `FilePane` on the active tab id,
+  so a tab switch starts from nothing shown, and a background tab's location can't leak into another tab.
+- **The fallback flows keep a point too.** Escape during the home load after an MTP-fatal or unmount redirect returns to
+  the volume the pane was on; a volume that's gone then fails its listing, and the error screen offers the way home.
 
 ### The operation-start gate
 
@@ -1229,9 +1275,11 @@ survive the rebuild on the Rust side, so they aren't in that list.
   overlay while `use:trapFocus` (see `lib/ui/DETAILS.md` § "Focus trapping") pulls it back — an endless focus ping-pong
   of microtasks that starves the event loop and freezes the webview. Pinned by the "rename to existing name is rejected
   on MTP" E2E. Focus containment inside a dialog is the trap's job; the guard only corrals pane chrome.
-- **A superseded `navigateToPath` rejects with `NavigationSuperseded`**, which the loader marks handled, so the callers
-  that fire and forget (the cancel-loading flow, a `navigate()` whose `settled` nobody reads) raise no unhandled
-  rejection while one that awaits (MCP `nav_to_path`) still sees it. Check it with `instanceof`, ❌ never the message.
+- **A superseded `navigateToPath` rejects with `NavigationSuperseded`, a cancelled one with `NavigationCancelled`.** The
+  loader marks both handled, so the callers that fire and forget (the cancel flow's return trip, a `navigate()` whose
+  `settled` nobody reads) raise no unhandled rejection while one that awaits (MCP `nav_to_path`) still sees which. A
+  cancel rejects BEFORE the return trip starts, or the awaiting caller would read it as superseded. Check with
+  `instanceof`, ❌ never the message.
 - **A listing lookup can outlive its listing.** `abandonListing` ends the backend listing the moment the pane walks
   away, so a `findFileIndex` still in flight answers refused, and one that succeeded names rows no longer on screen. A
   caller that fires and forgets compares the pane's listing id before and after, ❌ never the refusal's message:

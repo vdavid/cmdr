@@ -81,10 +81,13 @@
     import {
         navigate as runNavigate,
         commitPathFromListing,
+        returnPointFor,
         type NavigateDeps,
         type NavigateIntent,
         type NavigateResult,
     } from './navigate'
+    import type { ReturnPoint } from './return-point'
+    import { capabilitiesFor } from './volume-capabilities'
     import { createDragDropController } from './drag-drop-controller.svelte'
     import { createPaneAccessors } from './pane-accessors.svelte'
     import { moveCursorToTarget } from './move-cursor'
@@ -248,8 +251,7 @@
     // open-home, volume-unmount). Each folds onto navigate({ source: 'fallback' | 'cancel' }).
     const edgeFlow = createEdgeFlowHandlers({
         navigate: navigateIntent,
-        getPaneRef,
-        getPaneHistory,
+        getReturnPoint: (pane) => returnPointFor(navigateDeps, pane),
         getPaneVolumeId,
         getTabMgr,
         getVolumes: () => volumes,
@@ -302,6 +304,9 @@
     // drops stale listings by the foreign-path policy (L6), not the token.
     const navTokens = new Map<'left' | 'right', number>()
     const navCorrectionGen = { value: 0 }
+    // What each pane showed before a navigation ran ahead of its listing, so Escape
+    // during that load can put the pane back (`return-point.ts`). Caller-owned like the tokens.
+    const navReturnPoints = new Map<'left' | 'right', ReturnPoint>()
 
     // The store-backed `NavigateDeps`, built the same way `paneAccess` is — the
     // component owns the construction; `navigate()` owns the transaction logic.
@@ -340,6 +345,8 @@
         addToast: (pane, message, opts) => addToastForPane(pane, message, opts),
         tokens: navTokens,
         correctionGen: navCorrectionGen,
+        returnPoints: navReturnPoints,
+        volumeHasListing: (volumeId) => capabilitiesFor(volumeId).hasBackendListing,
     }
 
     // The single nav-state persistence subscriber (A5). Created synchronously

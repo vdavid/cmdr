@@ -11,8 +11,9 @@
  * owns its buffer but injects `cursorIndex`): the loader OWNS the orchestration
  * and the staleness machinery — the `loadGeneration` counter (its only two bump
  * sites, `loadDirectory` and `adoptListing`, both live here), `isDestroyed`, the
- * active listing's `loadedPath`, the six `unlisten*` handles, and the
- * `pendingLoad` resolver/rejecter. The pane's lifecycle `$state`
+ * active listing's `loadedPath`, what the pane last showed (`lastShown`) and the
+ * load in flight, the six `unlisten*` handles, and the `pendingLoad`
+ * resolver/rejecter. The pane's lifecycle `$state`
  * (`loading` / `listingId` / `totalCount` / `error` / `friendlyError` /
  * `openingFolder` / `loadingCount` / `finalizingCount` / `volumeRootFromEvent` /
  * `lastSequence`) STAYS in `FilePane` (~60 non-loader read sites — selection,
@@ -27,8 +28,9 @@
  */
 import { tick } from 'svelte'
 import type { FriendlyError } from '../types'
-import type { CancelLoadingPayload, LoadDirectoryArgs, SwapState, VolumeChangePayload } from './types'
+import type { CancelLoadingPayload, ListingLoad, LoadDirectoryArgs, SwapState, VolumeChangePayload } from './types'
 import {
+  type Location,
   cancelListing,
   findFileIndex,
   pathExistsChecked,
@@ -72,6 +74,18 @@ export class NavigationSuperseded extends Error {
   constructor() {
     super('Superseded by new navigation')
     this.name = 'NavigationSuperseded'
+  }
+}
+
+/**
+ * What a pending `navigateToPath` rejects with when its load is cancelled, by Escape
+ * or by the backend. Expected control flow like `NavigationSuperseded`: check it with
+ * `instanceof`, ❌ never by its message.
+ */
+export class NavigationCancelled extends Error {
+  constructor() {
+    super('Navigation cancelled')
+    this.name = 'NavigationCancelled'
   }
 }
 
@@ -181,6 +195,12 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
   // when the listing ends, so a folder re-iconed while away is re-detected next
   // time it's shown rather than served stale from the session cache.
   let loadedPath = ''
+  // What the pane last showed: its last landed listing, the error screen included
+  // (both land through `onPathChange`). A superseded or cancelled load never counts.
+  // Per FilePane instance, and so per tab: a tab switch remounts the pane.
+  let lastShown: Location | null = null
+  // The load in flight, so a cancel can say what it stopped.
+  let inFlight: ListingLoad | null = null
   // Streaming event listeners.
   let unlistenOpening: UnlistenFn | undefined
   let unlistenProgress: UnlistenFn | undefined
@@ -240,11 +260,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     deps.setLoadingCount(undefined)
     deps.setFinalizingCount(undefined)
     // Reject pending load promise on error/cancel
-    if (errorMessage) {
-      rejectPendingLoad(new Error(errorMessage))
-    } else {
-      rejectPendingLoad(new Error('Loading cancelled'))
-    }
+    rejectPendingLoad(errorMessage ? new Error(errorMessage) : new NavigationCancelled())
   }
 
   /**
@@ -364,9 +380,10 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     deps.setTotalCount(0) // Reset to show empty list immediately
     deps.clearEntryUnderCursor() // Clear old under-the-cursor entry info
 
-    // Store path and selectName for use in event handlers
+    // Store the load for use in event handlers, and as the one a cancel would stop
     const loadPath = path
-    const loadSelectName = selectName
+    const load: ListingLoad = { volumeId, path, selectName }
+    inFlight = load
 
     // Loading state is set synchronously above; Svelte will render it on the next
     // microtask. The IPC call below is non-blocking (spawns a background task and
@@ -404,7 +421,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
           }),
           onListingComplete((payload) => {
             if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
-              void handleListingComplete(payload, loadPath, loadSelectName)
+              void handleListingComplete(payload, load)
             }
           }),
           onListingError((payload) => {
@@ -431,10 +448,12 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
               // back one step, not two. The success path pushes via the
               // `onPathChange` call in `handleListingComplete`; without this an
               // error pane would be visible but absent from history, so Back
-              // would skip over it. `pushPath` deduplicates same-path retries.
+              // would skip over it. `pushPath` deduplicates same-path retries. The
+              // error screen is what the pane shows now, so a later cancel returns here.
               const showListingError = () => {
                 const rendered = payload.error ? renderListingError(payload.error) : undefined
                 resetLoadingState(payload.message, false, rendered)
+                lastShown = { volumeId, path: loadPath }
                 deps.onPathChange?.(loadPath)
               }
 
@@ -544,11 +563,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
   }
 
   // Handle listing completion event
-  async function handleListingComplete(
-    payload: ListingCompleteEvent,
-    loadPath: string,
-    loadSelectName: string | undefined,
-  ) {
+  async function handleListingComplete(payload: ListingCompleteEvent, load: ListingLoad) {
     benchmark.logEventValue('listing-complete received, totalCount', payload.totalCount)
     deps.setTotalCount(payload.totalCount)
     deps.setVolumeRootFromEvent(payload.volumeRoot)
@@ -556,8 +571,8 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     const includeHidden = deps.getIncludeHidden()
 
     // Determine initial cursor position
-    if (loadSelectName) {
-      const foundIndex = await findFileIndex(deps.getListingId(), loadSelectName, includeHidden)
+    if (load.selectName) {
+      const foundIndex = await findFileIndex(deps.getListingId(), load.selectName, includeHidden)
       const adjustedIndex = deps.getHasParent() ? (foundIndex ?? -1) + 1 : (foundIndex ?? 0)
       deps.setCursorIndexRaw(adjustedIndex >= 0 ? adjustedIndex : 0)
     } else {
@@ -571,7 +586,8 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     benchmark.logEvent('loading = false (UI can render)')
 
     // NOW push to history (only on successful completion)
-    deps.onPathChange?.(loadPath)
+    lastShown = { volumeId: load.volumeId, path: load.path }
+    deps.onPathChange?.(load.path)
 
     // PII-free analytics: a navigation landed. Only the volume KIND enum crosses; never the path.
     void trackEvent('pane_navigated', { volume_kind: deps.getCaps().kind })
@@ -610,19 +626,17 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     })
   }
 
-  // Handle cancellation during loading (called from DualPaneExplorer on ESC)
+  // Escape during a load (routed from `key-dispatch.ts`): stop the listing, settle an
+  // awaiting `navigateToPath` as cancelled BEFORE the parent's return trip could read
+  // as superseding it, and hand the parent what stopped and what the pane last showed.
   function handleCancelLoading() {
-    if (!deps.getLoading() || !deps.getListingId()) return
+    if (!deps.getLoading() || !deps.getListingId() || !inFlight) return
 
     // Cancel the Rust-side operation
     void cancelListing(deps.getListingId())
+    rejectPendingLoad(new NavigationCancelled())
 
-    // Extract the folder name we were trying to enter, so parent can select it when reloading
-    const currentPath = deps.getCurrentPath()
-    const folderName = currentPath.split('/').pop()
-
-    // Tell parent to navigate back (passes the path we were loading so parent can decide where to go)
-    deps.onCancelLoading?.({ cancelledPath: currentPath, selectName: folderName })
+    deps.onCancelLoading?.({ cancelled: inFlight, lastShown })
   }
 
   // Navigate to a specific path with optional item selection (used when cancelling navigation).
@@ -635,11 +649,13 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     const landed = new Promise<void>((resolve, reject) => {
       pendingLoadResolve = resolve
       pendingLoadReject = (reason: Error) => {
-        // A newer navigation taking over is expected, so it's marked handled: a
-        // caller that fires and forgets (the cancel flow, a `navigate()` whose
-        // `settled` nobody reads) raises no unhandled rejection. One that awaits
-        // still gets `NavigationSuperseded`.
-        if (reason instanceof NavigationSuperseded) void landed.catch(() => {})
+        // A newer navigation taking over, or a cancel, is expected, so it's marked
+        // handled: a caller that fires and forgets (the cancel flow's return trip, a
+        // `navigate()` whose `settled` nobody reads) raises no unhandled rejection.
+        // One that awaits still gets `NavigationSuperseded` / `NavigationCancelled`.
+        if (reason instanceof NavigationSuperseded || reason instanceof NavigationCancelled) {
+          void landed.catch(() => {})
+        }
         reject(reason)
       }
     })

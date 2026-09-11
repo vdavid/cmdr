@@ -12,17 +12,20 @@
  *
  * ## Destination shapes — `Location` is navigation's currency
  *
- * A navigation's destination is one of four `NavigateTo` shapes. Both path-bearing
+ * A navigation's destination is one of five `NavigateTo` shapes. The path-bearing
  * shapes carry a uniform `Location`; the KEY names the operation:
  * - **`{ goTo: Location }`** — navigate to a `(volumeId, path)`. It self-routes:
  *   `goTo.volumeId === currentVolumeId` → the in-place arm; otherwise the switch
  *   arm. This shape makes the volumeId/path-mismatch bug unrepresentable.
  * - **`{ selectVolume: Location }`** — deliberately (re)activate a volume, ALWAYS
  *   the switch arm (its callers legitimately pass the CURRENT volume id to
- *   re-select it: network-restore-on-cancel, retry, `selectVolumeByIndex`). Same
+ *   re-select it: the cancel walk-up, retry, `selectVolumeByIndex`). Same
  *   payload as `goTo`, different behavior on the same-volume case — hence two names.
  * - **`{ history }`** / **`{ snapshot }`** — the back/forward/parent walk and the
  *   search-results snapshot open.
+ * - **`{ returnTo }`** — a cancelled load hands the pane back to what it showed
+ *   before commits ran ahead of its listing (`return-point.ts`; the flow is
+ *   `pane/DETAILS.md` § "Escape during a load").
  *
  * A bare path becomes a `Location` at exactly FOUR edges, each resolving once via
  * `navigation/resolve-location.ts` before navigating: ⌘G "Go to path", MCP
@@ -110,7 +113,9 @@
  *   `navigate-and-select` / `revealSearchResultInPane` bridge the gap to the
  *   cursor move themselves via `moveCursor`'s internal `whenLoadSettles`
  *   (L2-adjacent); don't "fix" this to await the listing.
- * - **History / edge flows**: match whichever primitive they drive.
+ * - **History / edge flows**: match whichever primitive they drive. The
+ *   `{ returnTo }` arm: the FilePane promise for a same-volume return, a resolved
+ *   no-op for a cross-volume one (the pane's props re-list it).
  */
 
 import type { FilePaneAPI } from './types'
@@ -125,6 +130,7 @@ import {
   canGoBack,
   canGoForward,
   createHistory,
+  setCurrentIndex,
   type NavigationHistory,
   type HistoryEntry,
 } from '../navigation/navigation-history'
@@ -133,6 +139,7 @@ import { tString } from '$lib/intl/messages.svelte'
 import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
 import { isServerPath, isServerVolumeId } from '$lib/servers/server-path-utils'
 import type { Location } from '$lib/tauri-commands'
+import { pointBeforeCommit, pointInForce, returnIndexIn, type ReturnPoint } from './return-point'
 
 /** Where a navigation originates. Drives focus + history-push behavior, never the destination. */
 export type NavigateSource = 'user' | 'mcp' | 'history' | 'correction' | 'cancel' | 'fallback' | 'mirror'
@@ -152,6 +159,7 @@ export type NavigateTo =
   | { selectVolume: Location } // deliberately (re)activate a volume; ALWAYS the switch arm, even if already current
   | { history: 'back' | 'forward' | 'parent' }
   | { snapshot: string } // search-results snapshot id; routes through the volume-change machinery
+  | { returnTo: ReturnPoint } // a cancelled load hands the pane back to what it showed
 
 export interface NavigateIntent {
   pane: 'left' | 'right'
@@ -206,8 +214,10 @@ export interface NavigateCommit {
    * in-place arm). `'push-entry'` pushes `{ volumeId, path, networkHost? }` (the
    * volume-switch + edge-flow arms). `'none'` commits state without touching
    * history (the volume-unmount redirect — its no-history-push asymmetry).
+   * `{ moveTo }` points history back at an entry still in the stack (the
+   * `{ returnTo }` arm).
    */
-  history: 'push-path' | 'push-entry' | 'none'
+  history: 'push-path' | 'push-entry' | 'none' | { moveTo: number }
   /** For `'push-entry'` on the network volume: the host to carry on the entry. */
   networkHost?: HistoryEntry['networkHost']
 }
@@ -251,6 +261,8 @@ export interface NavigateDeps {
    * background correction takes it as its last default.
    */
   getVolumeLandingById: (volumeId: string) => string | null | undefined
+  /** Whether a pane on this volume shows a listing: the Servers hub and a search snapshot don't. */
+  volumeHasListing: (volumeId: string) => boolean
   /** Background "best path" resolver (`determineNavigationPath`), gated by the token. */
   determineNavigationPath: (args: DetermineNavigationPathArgs) => Promise<string>
 
@@ -274,6 +286,12 @@ export interface NavigateDeps {
    * again, dropping the stale correction. Caller-owned, like `tokens`.
    */
   correctionGen: { value: number }
+  /**
+   * Per pane, what it showed before a navigation committed ahead of its listing
+   * (`return-point.ts`). Caller-owned like `tokens`, and written only here: by a
+   * commit that runs ahead of its listing, by a landing, and by the `{ returnTo }` arm.
+   */
+  returnPoints: Map<'left' | 'right', ReturnPoint>
 }
 
 /**
@@ -450,6 +468,8 @@ function commit(deps: NavigateDeps, c: NavigateCommit): void {
     const entry: HistoryEntry = { volumeId, path: c.path }
     if (c.networkHost !== undefined) entry.networkHost = c.networkHost
     deps.setPaneHistory(c.pane, pushHistoryEntry(deps.getPaneHistory(c.pane), entry))
+  } else if (c.history !== 'none') {
+    deps.setPaneHistory(c.pane, setCurrentIndex(deps.getPaneHistory(c.pane), c.history.moveTo))
   }
 
   deps.persist({ kind: 'pane-state', pane: c.pane })
@@ -546,8 +566,10 @@ function scheduleVolumePathCorrection(
       // rule (commitPathFromListing); this correction supersede is global.
       if (correctionGen !== deps.correctionGen.value) return
       if (betterPath !== targetPath && betterPath !== deps.getPanePath(pane)) {
-        deps.setPanePath(pane, betterPath)
-        deps.setPaneHistory(pane, pushHistoryEntry(deps.getPaneHistory(pane), { volumeId, path: betterPath }))
+        commitAhead(deps, pane, () => {
+          deps.setPanePath(pane, betterPath)
+          deps.setPaneHistory(pane, pushHistoryEntry(deps.getPaneHistory(pane), { volumeId, path: betterPath }))
+        })
         deps.persist({ kind: 'pane-state', pane })
       }
     })
@@ -561,13 +583,15 @@ function scheduleVolumePathCorrection(
  * then schedules the correction.
  *
  * `options.terminal` marks an edge-flow fallback (MTP-fatal / retry / open-home /
- * unmount): the destination is a fixed recovery target the user/error already
+ * unmount, the cancel walk-up): the destination is a fixed recovery target the user/error already
  * resolved, so there's no OLD-path pre-save (the old volume is broken/gone) and
  * no background `determineNavigationPath` correction (no "best path" to refine —
  * the recovery target IS the answer). Matches today's bespoke handlers, which
  * neither save the old path nor run a correction. `options.pushHistory: false`
  * additionally commits with `history: 'none'` (the unmount redirect's
- * no-Back-target asymmetry); the other three fallbacks push an entry.
+ * no-Back-target asymmetry); the other three fallbacks push an entry. Every
+ * commit but a cancel's own (`options.fromCancel`) keeps the pane's return point
+ * (`commitAhead`).
  */
 function commitVolumeSwitch(
   deps: NavigateDeps,
@@ -581,6 +605,7 @@ function commitVolumeSwitch(
     networkHost?: HistoryEntry['networkHost']
     terminal?: boolean
     pushHistory?: boolean
+    fromCancel?: boolean
   },
 ): void {
   if (!options.terminal) {
@@ -606,13 +631,22 @@ function commitVolumeSwitch(
     return
   }
 
-  commit(deps, {
-    pane,
-    volumeId,
-    path: targetPath,
-    history: options.pushHistory === false ? 'none' : 'push-entry',
-    networkHost: options.networkHost,
-  })
+  const commitSwitch = () => {
+    commit(deps, {
+      pane,
+      volumeId,
+      path: targetPath,
+      history: options.pushHistory === false ? 'none' : 'push-entry',
+      networkHost: options.networkHost,
+    })
+  }
+  if (options.fromCancel) {
+    // A cancel's own landing (the walk-up) is no place for a later Escape to return to.
+    commitSwitch()
+    deps.returnPoints.delete(pane)
+  } else {
+    commitAhead(deps, pane, commitSwitch)
+  }
   if (options.shiftFocus) deps.setFocusedPane(pane)
   if (!options.terminal) scheduleVolumePathCorrection(deps, pane, token, volumeId, volumePath, targetPath)
 }
@@ -632,13 +666,17 @@ export function navigate(intent: NavigateIntent, deps: NavigateDeps): NavigateRe
     return navigateSnapshot(deps, pane, to.snapshot)
   }
 
+  if ('returnTo' in to) {
+    return returnToShown(deps, intent, to.returnTo)
+  }
+
   if ('goTo' in to) {
     return navigateToLocation(deps, intent, to.goTo)
   }
 
   // `{ selectVolume }`: the deliberate volume-(re)select intent — ALWAYS the
   // switch arm, even when the volume equals the pane's current one (the
-  // network-restore-on-cancel, retry, and `selectVolumeByIndex` re-select callers
+  // cancel walk-up, retry, and `selectVolumeByIndex` re-select callers
   // all pass the current id on purpose).
   return switchVolumeArm(deps, intent, to.selectVolume.volumeId, to.selectVolume.path)
 }
@@ -668,9 +706,10 @@ function navigateToLocation(deps: NavigateDeps, intent: NavigateIntent, location
  * The switch arm shared by `{ location }` (cross-volume) and `{ volumeId, path }`
  * (deliberate volume-(re)select): mint a token, resolve the volume mount path,
  * and commit the optimistic synchronous switch. `'fallback'` is the edge-flow
- * recovery (MTP-fatal / retry / open-home / unmount): a terminal commit with no
- * old-path pre-save and no correction. The unmount redirect additionally
- * suppresses the history push (`pushHistory: false`).
+ * recovery (MTP-fatal / retry / open-home / unmount), and `'cancel'` the cancel
+ * walk-up: both are terminal commits with no old-path pre-save and no
+ * correction. The unmount redirect and the walk-up additionally suppress the
+ * history push (`pushHistory: false`).
  */
 function switchVolumeArm(deps: NavigateDeps, intent: NavigateIntent, volumeId: string, path: string): NavigateResult {
   const { pane, source } = intent
@@ -678,8 +717,9 @@ function switchVolumeArm(deps: NavigateDeps, intent: NavigateIntent, volumeId: s
   const volumePath = deps.getVolumePathById(volumeId) ?? path
   commitVolumeSwitch(deps, pane, token, volumeId, volumePath, path, {
     shiftFocus: shiftsFocus(source),
-    terminal: source === 'fallback',
+    terminal: source === 'fallback' || source === 'cancel',
     pushHistory: intent.pushHistory,
+    fromCancel: source === 'cancel',
   })
   return { status: 'started', settled: SETTLED_NOOP }
 }
@@ -775,17 +815,72 @@ function commitHistoryWalk(
   const entry = getCurrentEntry(newHistory)
   const paneRef = deps.getPaneRef(pane)
 
-  deps.setPaneHistory(pane, newHistory)
-  deps.setPanePath(pane, targetPath)
-  if (entry.volumeId !== deps.getPaneVolumeId(pane)) {
-    deps.setPaneVolumeId(pane, entry.volumeId)
-  }
+  commitAhead(deps, pane, () => {
+    deps.setPaneHistory(pane, newHistory)
+    deps.setPanePath(pane, targetPath)
+    if (entry.volumeId !== deps.getPaneVolumeId(pane)) {
+      deps.setPaneVolumeId(pane, entry.volumeId)
+    }
+  })
   deps.persist({ kind: 'pane-state', pane })
   deps.persist({ kind: 'last-used-path', record: { volumeId: entry.volumeId, path: targetPath } })
 
   if (entry.volumeId === 'network') {
     paneRef?.setNetworkHost(entry.networkHost ?? null)
   }
+}
+
+/**
+ * Runs a commit that moves the pane's state ahead of its listing (a volume switch,
+ * a history walk, a background correction) and keeps the pane's return point: the
+ * one already in force, else the tab as it stood. A destination that shows without
+ * a listing leaves nothing to cancel, so it clears the point.
+ */
+function commitAhead(deps: NavigateDeps, pane: 'left' | 'right', apply: () => void): void {
+  const before = pointBeforeCommit(getActiveTab(deps.getTabMgr(pane)), returnPointFor(deps, pane))
+  apply()
+  const tab = getActiveTab(deps.getTabMgr(pane))
+  if (deps.volumeHasListing(tab.volumeId)) {
+    deps.returnPoints.set(pane, { ...before, ahead: { volumeId: tab.volumeId, path: tab.path } })
+  } else {
+    deps.returnPoints.delete(pane)
+  }
+}
+
+/** The pane's return point, while its tab still sits where the commits left it. */
+export function returnPointFor(deps: NavigateDeps, pane: 'left' | 'right'): ReturnPoint | null {
+  return pointInForce(getActiveTab(deps.getTabMgr(pane)), deps.returnPoints.get(pane))
+}
+
+/**
+ * The `{ returnTo }` arm: a cancelled load hands the pane back to what it showed
+ * before commits ran ahead of its listing. One commit restores the volume, the path,
+ * and the history index (no push, no Back walk), and a background correction still
+ * resolving for the cancelled switch is dropped so it can't move the pane again. A
+ * same-volume return re-lists through the FilePane primitive, which is how
+ * `selectName` reaches the cursor; a cross-volume one re-lists from the pane's
+ * props, like any volume switch.
+ */
+function returnToShown(deps: NavigateDeps, intent: NavigateIntent, point: ReturnPoint): NavigateResult {
+  const { pane } = intent
+  mintToken(deps, pane)
+  deps.correctionGen.value += 1
+  deps.returnPoints.delete(pane)
+  const leavingVolumeId = deps.getPaneVolumeId(pane)
+  const index = returnIndexIn(deps.getPaneHistory(pane), point)
+  commit(deps, {
+    pane,
+    volumeId: point.shown.volumeId,
+    path: point.shown.path,
+    // An entry a later push truncated away comes back as a fresh one.
+    history: index === null ? 'push-entry' : { moveTo: index },
+    networkHost: point.entry.networkHost,
+  })
+
+  const paneRef = deps.getPaneRef(pane)
+  if (point.shown.volumeId === 'network') paneRef?.setNetworkHost(point.entry.networkHost ?? null)
+  if (point.shown.volumeId !== leavingVolumeId || !paneRef) return { status: 'started', settled: SETTLED_NOOP }
+  return { status: 'started', settled: paneRef.navigateToPath(point.shown.path, intent.selectName) }
 }
 
 /**
@@ -824,7 +919,10 @@ export function commitPathFromListing(deps: NavigateDeps, pane: 'left' | 'right'
   // listing landing on a pinned tab at a NEW path opens a fresh unpinned tab
   // instead of navigating in-place. Returns `false`: a fork is not an in-place
   // commit, so the caller does not restore the cursor.
-  if (commitPinnedPathFork(deps, pane, path)) return false
+  if (commitPinnedPathFork(deps, pane, path)) {
+    deps.returnPoints.delete(pane)
+    return false
+  }
 
   const currentVolumeId = deps.getPaneVolumeId(pane)
   const currentVolumePath = deps.getPaneVolumePath(pane)
@@ -838,6 +936,8 @@ export function commitPathFromListing(deps: NavigateDeps, pane: 'left' | 'right'
     return false
   }
 
+  // A listing landed, so the pane shows its committed state: nothing is ahead of it now.
+  deps.returnPoints.delete(pane)
   commit(deps, { pane, path, history: 'push-path' })
   deps.persist({ kind: 'last-used-path', record: { volumeId: deps.getPaneVolumeId(pane), path } })
   return true

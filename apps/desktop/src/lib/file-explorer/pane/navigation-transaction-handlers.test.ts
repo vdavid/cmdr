@@ -23,7 +23,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
-import type { VolumeChangePayload } from './types'
+import type { CancelLoadingPayload, VolumeChangePayload } from './types'
 
 /** Props the mocked FilePane last received, keyed by pane id. */
 const captured = vi.hoisted((): { props: Record<string, Record<string, unknown>> } => ({ props: {} }))
@@ -192,7 +192,7 @@ vi.mock('$lib/ui/toast', () => ({
 
 import DualPaneExplorer from './DualPaneExplorer.svelte'
 import { explorerState, _resetForTesting } from './explorer-state.svelte'
-import { getActiveTab, pushHistoryEntry } from '../tabs/tab-state-manager.svelte'
+import { getActiveTab } from '../tabs/tab-state-manager.svelte'
 import type { NavigateResult } from './navigate'
 
 type ExplorerHandle = {
@@ -418,59 +418,59 @@ describe('scenario 4: unreachable fallback', () => {
 })
 
 describe('scenario 5: cancel-during-load', () => {
-  it('history-back branch: when the cancelled path completed, go back one history entry', async () => {
-    await mountExplorer()
-    const tab = leftTab()
-    // History: /Users/me -> /Users/me/deep (current). The cancelled path equals
-    // the current entry, so the handler goes back.
-    tab.history = pushHistoryEntry(
-      { stack: [{ volumeId: 'root', path: '/Users/me' }], currentIndex: 0 },
-      { volumeId: 'root', path: '/Users/me/deep' },
-    )
-    tab.path = '/Users/me/deep'
-    await tick()
+  function cancelLoading(payload: CancelLoadingPayload): void {
+    ;(leftProps().onCancelLoading as (c: CancelLoadingPayload) => void)(payload)
+  }
 
-    ;(leftProps().onCancelLoading as (c: { cancelledPath: string; selectName?: string }) => void)({
-      cancelledPath: '/Users/me/deep',
+  it('return-point branch: a cancelled volume switch lands back on the volume, folder, and history entry the pane showed', async () => {
+    const handle = await mountExplorer()
+    const indexBefore = leftTab().history.currentIndex
+
+    handle.navigate({
+      pane: 'left',
+      to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext/photos' } },
+      source: 'user',
+    })
+    await tick()
+    cancelLoading({
+      cancelled: { volumeId: 'ext', path: '/Volumes/Ext/photos' },
+      lastShown: { volumeId: 'root', path: '/Users/me' },
     })
     await settle()
 
-    // Went back to /Users/me.
+    expect(leftTab().volumeId).toBe('root')
     expect(leftTab().path).toBe('/Users/me')
+    expect(leftTab().history.currentIndex).toBe(indexBefore)
   })
 
-  it('network-restore branch: restores the network entry without leaving the network volume', async () => {
-    await mountExplorer()
+  it('return-point branch: a cancelled switch away from the Servers hub reopens the hub', async () => {
+    const handle = await mountExplorer()
     const tab = leftTab()
     tab.volumeId = 'network'
-    tab.path = 'smb://server/share'
-    tab.history = { stack: [{ volumeId: 'network', path: 'smb://server/share' }], currentIndex: 0 }
+    tab.path = 'smb://'
+    tab.history = { stack: [{ volumeId: 'network', path: 'smb://' }], currentIndex: 0 }
     await tick()
 
-    ;(leftProps().onCancelLoading as (c: { cancelledPath: string; selectName?: string }) => void)({
-      cancelledPath: 'smb://server/share/sub',
-    })
+    handle.navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' })
+    await tick()
+    cancelLoading({ cancelled: { volumeId: 'ext', path: '/Volumes/Ext' }, lastShown: null })
     await settle()
 
     expect(leftTab().volumeId).toBe('network')
-    expect(leftTab().path).toBe('smb://server/share')
+    expect(leftTab().path).toBe('smb://')
   })
 
-  it('walk-up branch: no history at the cancelled path resolves to the nearest valid parent', async () => {
+  it('walk-up branch: before the pane showed anything, resolves to the nearest valid parent', async () => {
     const { resolveValidPath } = await import('../navigation/path-resolution')
     vi.mocked(resolveValidPath).mockResolvedValue('/Users')
 
     await mountExplorer()
     const tab = leftTab()
-    // History has a single entry equal to the cancelled path, so canGoBack is false
-    // → walk up to the nearest valid parent.
     tab.history = { stack: [{ volumeId: 'root', path: '/Users/me/deep' }], currentIndex: 0 }
     tab.path = '/Users/me/deep'
     await tick()
 
-    ;(leftProps().onCancelLoading as (c: { cancelledPath: string; selectName?: string }) => void)({
-      cancelledPath: '/Users/me/deep',
-    })
+    cancelLoading({ cancelled: { volumeId: 'root', path: '/Users/me/deep' }, lastShown: null })
     await settle()
 
     expect(leftTab().path).toBe('/Users')

@@ -87,7 +87,12 @@ vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }))
 
-import { createListingLoader, NavigationSuperseded, type ListingLoaderDeps } from './listing-loader'
+import {
+  createListingLoader,
+  NavigationCancelled,
+  NavigationSuperseded,
+  type ListingLoaderDeps,
+} from './listing-loader'
 
 interface PaneState {
   volumeId: string
@@ -712,11 +717,67 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
     expect(spies.onCancelLoading).not.toHaveBeenCalled()
   })
 
-  it('handleCancelLoading cancels the active listing and bubbles the folder name', () => {
-    const { loader, spies } = makeHarness({ loading: true, listingId: 'abc', currentPath: '/a/sub' })
+  it('handleCancelLoading cancels the active listing and reports the load it stopped, with nothing shown yet', async () => {
+    const { loader, state, spies } = makeHarness({ volumeId: 'root' })
+    await loader.loadDirectory({ path: '/a/sub', selectName: 'pick.txt' })
     loader.handleCancelLoading()
-    expect(h.cancelListing).toHaveBeenCalledWith('abc')
-    expect(spies.onCancelLoading).toHaveBeenCalledWith({ cancelledPath: '/a/sub', selectName: 'sub' })
+    expect(h.cancelListing).toHaveBeenCalledWith(state.listingId)
+    expect(spies.onCancelLoading).toHaveBeenCalledWith({
+      cancelled: { volumeId: 'root', path: '/a/sub', selectName: 'pick.txt' },
+      lastShown: null,
+    })
+  })
+
+  it('handleCancelLoading reports the last landed location, error screen included, never a superseded load', async () => {
+    const { loader, state, spies } = makeHarness({ volumeId: 'root' })
+    await loader.loadDirectory({ path: '/a' })
+    completeCb(0)({ listingId: state.listingId, totalCount: 1, volumeRoot: '/' })
+    await vi.waitFor(() => {
+      expect(state.loading).toBe(false)
+    })
+    await loader.loadDirectory({ path: '/a/locked' })
+    h.listeners.error[1]({ listingId: state.listingId, message: 'no', error: { reason: { reason: 'notConnected' } } })
+    expect(spies.onPathChange).toHaveBeenCalledWith('/a/locked')
+
+    await loader.loadDirectory({ path: '/b' }) // superseded before it lands
+    await loader.loadDirectory({ path: '/c' })
+    loader.handleCancelLoading()
+
+    expect(spies.onCancelLoading).toHaveBeenCalledWith({
+      cancelled: { volumeId: 'root', path: '/c' },
+      lastShown: { volumeId: 'root', path: '/a/locked' },
+    })
+  })
+
+  it('handleCancelLoading rejects an awaiting navigateToPath with NavigationCancelled', async () => {
+    const { loader, state } = makeHarness({ loading: false })
+    const outcome = loader.navigateToPath({ path: '/a/sub' }).then(
+      () => 'landed',
+      (e: unknown) => e,
+    )
+    await vi.waitFor(() => {
+      expect(state.listingId).not.toBe('')
+    })
+    loader.handleCancelLoading()
+    expect(await outcome).toBeInstanceOf(NavigationCancelled)
+  })
+
+  it('a cancelled navigateToPath that nobody awaits raises no unhandled rejection', async () => {
+    // The cancel flow's own return trip fires and forgets, and a second Escape cancels it.
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    try {
+      const { loader, state } = makeHarness({ loading: false })
+      void loader.navigateToPath({ path: '/a' })
+      await vi.waitFor(() => {
+        expect(state.listingId).not.toBe('')
+      })
+      loader.handleCancelLoading()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(unhandled).not.toHaveBeenCalled()
+    } finally {
+      process.off('unhandledRejection', unhandled)
+    }
   })
 
   it('navigateToParent returns false at the volume root', async () => {

@@ -7,8 +7,9 @@
  * `integration-test-utils.ts`). The recorder is what lets a synthetic
  * `listing-complete` / `listing-error` flow through `FilePane`'s real
  * listing-id gate into the coordinator's `onPathChange` handler — the only way
- * to express the stale-listing drop (scenario 1) and the optimistic-commit
- * ordering (scenario 8) at the braid layer.
+ * to express the stale-listing drop (scenario 1), the optimistic-commit
+ * ordering (scenario 8), and what Escape during a load returns to (scenario 9)
+ * at the braid layer.
  *
  * Assertions are on OBSERVABLE OUTCOMES (committed pane state read off the
  * explorer store, history depth, persisted-call spies), never internal function
@@ -18,8 +19,8 @@
  * cancel/MTP/unreachable/unmount edge flows, and the refusal strings — live in
  * the sibling `navigation-transaction-handlers.test.ts`.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, tick } from 'svelte'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mount, tick, unmount } from 'svelte'
 
 const events = vi.hoisted(() => ({
   recorder: null as ReturnType<typeof import('./integration-test-utils').createListenRecorder> | null,
@@ -194,22 +195,30 @@ import DualPaneExplorer from './DualPaneExplorer.svelte'
 import { explorerState, _resetForTesting } from './explorer-state.svelte'
 import { getActiveTab, pushHistoryEntry } from '../tabs/tab-state-manager.svelte'
 import { saveLastUsedPathForVolume } from '$lib/app-status-store'
+import { findFileIndex } from '$lib/tauri-commands'
+import { NavigationCancelled } from './listing-loader'
 import type { NavigateResult } from './navigate'
 
 type ExplorerHandle = {
   navigate: (intent: {
     pane: 'left' | 'right'
-    to: { goTo: { volumeId: string; path: string } } | { selectVolume: { volumeId: string; path: string } }
+    to:
+      | { goTo: { volumeId: string; path: string } }
+      | { selectVolume: { volumeId: string; path: string } }
+      | { history: 'back' | 'forward' }
     source: 'user' | 'mcp'
   }) => NavigateResult
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
 }
+
+const mounted: ExplorerHandle[] = []
 
 /** Mount the explorer and let initialization (paths, volumes, settings, first listing) settle. */
 async function mountExplorer(): Promise<{ target: HTMLDivElement; handle: ExplorerHandle }> {
   const target = document.createElement('div')
   document.body.appendChild(target)
   const handle = mount(DualPaneExplorer, { target }) as unknown as ExplorerHandle
+  mounted.push(handle)
   for (let i = 0; i < 20; i++) await tick()
   await new Promise((r) => setTimeout(r, 30))
   await tick()
@@ -259,6 +268,14 @@ beforeEach(() => {
   events.recorder?.reset()
   listDirectoryStartMock.mockClear()
   vi.mocked(saveLastUsedPathForVolume).mockClear()
+})
+
+// Every explorer mounted here reads the one explorer store, so one left mounted would
+// answer the next test's store changes with listings of its own, and a test that lands
+// "the latest listing" could land a leftover's.
+afterEach(async () => {
+  for (const handle of mounted.splice(0)) await unmount(handle)
+  document.body.replaceChildren()
 })
 
 describe('listen capture-and-replay helper (seam a smoke test)', () => {
@@ -492,5 +509,163 @@ describe('volume-unmount redirect (per-pane, NO history push)', () => {
     // redirect for an unmounted volume must not grow a Back target).
     expect(leftTab().history.stack.length).toBe(leftDepthBefore)
     expect(rightTab().history.stack.length).toBe(rightDepthBefore)
+  })
+})
+
+describe('scenario 9: Escape during a load returns the pane to what it last showed', () => {
+  const testDir = '/Users/me/_test'
+  const child = '/Users/me/_test/child'
+
+  async function settleUi(): Promise<void> {
+    for (let i = 0; i < 5; i++) await tick()
+    await new Promise((r) => setTimeout(r, 10))
+  }
+
+  /** Waits until the pane's newest listing is of `path`: a load that re-renders first can outlast a fixed settle. */
+  async function listed(path: string): Promise<void> {
+    await vi.waitFor(() => {
+      expect(listDirectoryStartMock.mock.calls.at(-1)?.[1]).toBe(path)
+    })
+  }
+
+  /** Lands the pane's listing of `path` once it has started, as the backend's `listing-complete` would. */
+  async function land(path: string): Promise<void> {
+    await listed(path)
+    events.recorder?.fireListingEvent('listing-complete', { listingId: latestListingId(), totalCount: 0, volumeRoot: '/' })
+    await settleUi()
+  }
+
+  /** Escape on the explorer, the way the key reaches `key-dispatch.ts`. */
+  async function pressEscape(target: HTMLDivElement): Promise<void> {
+    const container = target.querySelector('.dual-pane-explorer')
+    container?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await settleUi()
+  }
+
+  /** Drives the left pane in place to `path` and lands it, so the pane shows it. */
+  async function showLeft(handle: ExplorerHandle, path: string): Promise<void> {
+    await driveLeftLoad(handle, path)
+    await land(path)
+  }
+
+  it("David's sequence: a second Escape during the return trip stays on the folder the pane showed", async () => {
+    const { target, handle } = await mountExplorer()
+    await showLeft(handle, testDir)
+    // Earlier open-then-back rounds left the child behind the current entry.
+    leftTab().history = {
+      stack: [
+        { volumeId: 'root', path: '/Users/me' },
+        { volumeId: 'root', path: child },
+        { volumeId: 'root', path: testDir },
+      ],
+      currentIndex: 2,
+    }
+    await tick()
+
+    await driveLeftLoad(handle, child) // a slow server: it never lands
+    await pressEscape(target)
+    await listed(testDir)
+
+    await pressEscape(target) // again, during the return trip
+    // Pre-fix the second Escape read "cancelled path == current entry" as "the
+    // load pushed it" and went Back, landing on the child the user had just left.
+    expect(leftTab().path).toBe(testDir)
+    expect(leftTab().history.currentIndex).toBe(2)
+    await listed(testDir)
+  })
+
+  it('Escape during a child load re-lists the parent with the child under the cursor, and pushes no history', async () => {
+    const { target, handle } = await mountExplorer()
+    await showLeft(handle, testDir)
+    const depthBefore = leftTab().history.stack.length
+
+    await driveLeftLoad(handle, child)
+    vi.mocked(findFileIndex).mockClear()
+    await pressEscape(target)
+    await land(testDir)
+
+    expect(findFileIndex).toHaveBeenCalledWith(expect.any(String), 'child', expect.anything())
+    expect(leftTab().path).toBe(testDir)
+    expect(leftTab().history.stack.length).toBe(depthBefore)
+  })
+
+  it('Escape during a volume switch returns to the previous volume and folder, at the history entry it showed', async () => {
+    const { target, handle } = await mountExplorer()
+    await showLeft(handle, testDir)
+    const indexBefore = leftTab().history.currentIndex
+
+    // Two quick picks before the first one lists: history now ends [..., ext/a, ext/b].
+    handle.navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext/a' } }, source: 'user' })
+    await settleUi()
+    handle.navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext/b' } }, source: 'user' })
+    await settleUi()
+    await listed('/Volumes/Ext/b')
+
+    await pressEscape(target)
+
+    // Pre-fix Escape went Back one entry, onto `ext/a`, which the pane never showed.
+    expect(leftTab().volumeId).toBe('root')
+    expect(leftTab().path).toBe(testDir)
+    expect(leftTab().history.currentIndex).toBe(indexBefore)
+    await listed(testDir)
+  })
+
+  it('Escape during Back restores the history index and re-lists the folder the pane showed', async () => {
+    const { target, handle } = await mountExplorer()
+    await showLeft(handle, testDir) // history [/Users/me, _test] at index 1
+
+    handle.navigate({ pane: 'left', to: { history: 'back' }, source: 'user' })
+    await settleUi()
+    await listed('/Users/me')
+
+    await pressEscape(target)
+
+    // Pre-fix Back had nowhere further back to go, so the cancel walked up to `/Users`.
+    expect(leftTab().history.currentIndex).toBe(1)
+    expect(leftTab().path).toBe(testDir)
+    await listed(testDir)
+  })
+
+  it('Escape during Forward restores the history index and puts the cursor on the folder Forward was opening', async () => {
+    const { target, handle } = await mountExplorer()
+    await showLeft(handle, testDir)
+    await showLeft(handle, child) // history [/Users/me, _test, child] at index 2
+    handle.navigate({ pane: 'left', to: { history: 'back' }, source: 'user' })
+    await settleUi()
+    await land(testDir) // shows `_test` at index 1
+
+    handle.navigate({ pane: 'left', to: { history: 'forward' }, source: 'user' })
+    await settleUi()
+    vi.mocked(findFileIndex).mockClear()
+    await pressEscape(target)
+    await land(testDir)
+
+    expect(leftTab().history.currentIndex).toBe(1)
+    expect(leftTab().path).toBe(testDir)
+    expect(findFileIndex).toHaveBeenCalledWith(expect.any(String), 'child', expect.anything())
+  })
+
+  it('Escape before the pane ever showed a listing walks up to the nearest folder that exists', async () => {
+    const { target } = await mountExplorer() // the mount-time listing of /Users/me never lands
+
+    await pressEscape(target)
+
+    expect(leftTab().path).toBe('/Users')
+  })
+
+  it('an awaiting in-place navigation learns that Escape cancelled it', async () => {
+    const { target, handle } = await mountExplorer()
+    await showLeft(handle, testDir)
+
+    const result = handle.navigate({ pane: 'left', to: { goTo: { volumeId: 'root', path: child } }, source: 'mcp' })
+    if (result.status !== 'started') throw new Error('expected the in-place arm to start')
+    const outcome = result.settled.then(
+      () => 'landed',
+      (e: unknown) => e,
+    )
+    await settleUi()
+    await pressEscape(target)
+
+    expect(await outcome).toBeInstanceOf(NavigationCancelled)
   })
 })

@@ -185,10 +185,9 @@ resolves the "best" path in the background via `determineNavigationPath`. A sing
 caller-owned holder in `NavigateDeps`, shared by both panes) guards against stale corrections: a later volume change on
 either pane bumps it, so a pending correction whose generation was superseded is dropped.
 
-`handleCancelLoading` (`DualPaneExplorer.svelte`) folds onto `navigate()`: on ESC it walks history back via
-`navigate({ to: { history: 'back' }, source: 'cancel' })`, or for a tab with no history resolves the nearest valid
-parent and routes a terminal `source: 'fallback'` commit. Back/forward go through `navigate({ to: { history } })`;
-parent (`{ history: 'parent' }`) delegates to `FilePane.navigateToParent`, whose `onPathChange` re-enters
+Escape during a load returns the pane to what it last showed, never to a guess from history
+(`../pane/DETAILS.md` § "Escape during a load"). Back/forward go through `navigate({ to: { history } })`; parent
+(`{ history: 'parent' }`) delegates to `FilePane.navigateToParent`, whose `onPathChange` re-enters
 `commitPathFromListing`. FilePane's listing-error handler resolves upward if the path is gone.
 
 ## `keyboard-shortcuts.ts`
