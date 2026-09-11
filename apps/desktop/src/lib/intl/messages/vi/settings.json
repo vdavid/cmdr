@@ -1477,6 +1477,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.textEditor": "Trình soạn thảo văn bản",
+  "@settings.navigationAndFileOps.card.textEditor": {
+    "sourceHash": "95642d5"
+  },
   "settings.navigationAndFileOps.card.terminal": "Terminal",
   "@settings.navigationAndFileOps.card.terminal": {
     "sourceHash": "e0926fd",
@@ -1509,6 +1513,14 @@
   "settings.revealHandler.notProductionBuild": "Chỉ bản phát hành chính thức của Cmdr mới bật được mục này. Các bản dựng để phát triển và thử nghiệm chỉ tồn tại tạm thời, và việc xóa một bản như vậy sẽ khiến mọi lần bấm “Hiển thị trong Finder” trỏ vào chỗ trống.",
   "@settings.revealHandler.notProductionBuild": {
     "sourceHash": "20648ba"
+  },
+  "settings.behavior.textEditorApp.label": "Chỉnh sửa tệp bằng",
+  "@settings.behavior.textEditorApp.label": {
+    "sourceHash": "807338f"
+  },
+  "settings.behavior.textEditorApp.description": "Cmdr liệt kê các trình soạn thảo văn bản mà macOS biết trên máy Mac này. Để dùng một ứng dụng khác, hãy chọn “Chọn ứng dụng…”.",
+  "@settings.behavior.textEditorApp.description": {
+    "sourceHash": "b062aed"
   },
   "settings.behavior.openTerminalHereApp.label": "“Mở terminal tại đây” dùng",
   "@settings.behavior.openTerminalHereApp.label": {

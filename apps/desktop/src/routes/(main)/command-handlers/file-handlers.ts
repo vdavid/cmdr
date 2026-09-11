@@ -98,8 +98,8 @@ export const fileHandlers = {
 
   'file.edit': (hctx) =>
     withEntryUnderCursor(hctx, async (entry) => {
-      // F4 hands the file to the OS's text editor (`open -t`), or refuses a row with
-      // no real file behind it, with a toast (`pane/editor-open.ts`). Nothing
+      // F4 hands the file to the text editor the user chose (`$lib/text-editor`), or
+      // refuses a row with no real file behind it, with a toast (`pane/editor-open.ts`). Nothing
       // downstream of the editor can count an open, so it's counted here, only when
       // an editor was asked. No props: the file's name and extension are exactly
       // what must never cross.

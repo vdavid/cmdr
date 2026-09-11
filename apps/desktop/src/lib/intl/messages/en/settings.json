@@ -1823,6 +1823,10 @@
     "description": "Heading of the File operations card (copy, move, rename, delete settings) in Settings > Behavior > Navigation & file ops.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.navigationAndFileOps.card.textEditor": "Text editor",
+  "@settings.navigationAndFileOps.card.textEditor": {
+    "description": "Heading of the Text editor card in Settings > Behavior > Navigation & file ops, directly above the Terminal card. It holds the setting for which app F4 (edit) opens files in. Generic here: a text editor app in general, NOT Apple's app called TextEdit. macOS only."
+  },
   "settings.navigationAndFileOps.card.terminal": "Terminal",
   "@settings.navigationAndFileOps.card.terminal": {
     "description": "Heading of the Terminal card in Settings > Behavior > Navigation & file ops. It holds the setting for which terminal app the \"Open terminal here\" action launches. Generic here: a terminal (command-line) app in general, NOT Apple's app called Terminal.",
@@ -1865,6 +1869,14 @@
   "@settings.revealHandler.notProductionBuild": {
     "description": "Tooltip on the \"Let other apps show files in Cmdr\" row in Settings > Behavior > Navigation & file ops, shown while the switch is disabled because this is a development or automated-test build of Cmdr rather than a released one. Mostly seen by people who build Cmdr themselves. Says who can switch it on, then why. \"Dev and test builds\" means builds made while developing and testing Cmdr. \"Show in Finder\" is the macOS command name and \"Cmdr\" the product name; keep both.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.textEditorApp.label": "Edit files in",
+  "@settings.behavior.textEditorApp.label": {
+    "description": "Label of the dropdown that picks which app F4 (edit) opens files in, in the Text editor card of Settings > Behavior > Navigation & file ops. The sentence continues in the dropdown beside it, which names an app: \"Edit files in [Sublime Text]\" or \"Edit files in [System default (TextEdit)]\". If your language can't continue a label into an app name, a noun label like \"Editor app\" is fine."
+  },
+  "settings.behavior.textEditorApp.description": "Cmdr lists the text editors macOS knows about on this Mac. To use a different app, pick \"Choose an app…\".",
+  "@settings.behavior.textEditorApp.description": {
+    "description": "Helper text under the \"Edit files in\" dropdown in Settings > Behavior > Navigation & file ops. Says two things: the list is what macOS itself reports as text editors on this Mac, and there's a way to pick any other app. \"Choose an app…\" is the last row of that same dropdown and matches the terminal row below it, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key. \"Cmdr\" is the product name and \"macOS\" the system name; keep both."
   },
   "settings.behavior.openTerminalHereApp.label": "Open terminal here uses",
   "@settings.behavior.openTerminalHereApp.label": {

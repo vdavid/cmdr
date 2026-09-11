@@ -160,6 +160,34 @@ export const behaviorSettings: SettingDefinitionSource[] = [
   },
 
   // ------------------------------------------------------------------------
+  // Text editor, rendered as its own card inside Navigation & file ops, above
+  // Terminal.
+  //
+  // FE-owned like the terminal below: `$lib/text-editor` reads the choice and
+  // passes it to `openInEditor` / `listTextEditors`, so there's no applier case
+  // and no backend push. The stored value is one string, told apart structurally
+  // by Rust's `parse_choice`: `system` for the macOS plain-text default (`open
+  // -t`), a bundle id for a listed editor, or an absolute `.app` path for a
+  // "Choose an app…" pick. ❌ Never on `CATEGORICAL_STRING_KEYS`: the value can be
+  // a path inside someone's home folder.
+  // ------------------------------------------------------------------------
+  {
+    id: 'behavior.textEditorApp',
+    section: ['Behavior', 'Navigation & file ops'],
+    cardKey: 'settings.navigationAndFileOps.card.textEditor',
+    labelKey: 'settings.behavior.textEditorApp.label',
+    descriptionKey: 'settings.behavior.textEditorApp.description',
+    keywords: ['editor', 'text editor', 'edit', 'F4', 'Sublime Text', 'VS Code', 'BBEdit', 'TextEdit'],
+    type: 'string',
+    // Mirrors `SYSTEM_DEFAULT_EDITOR_CHOICE` in `$lib/text-editor/text-editor-choice.ts`
+    // and `SYSTEM_DEFAULT_CHOICE` in `src-tauri/src/file_system/text_editor.rs`.
+    default: 'system',
+    // The options are whatever macOS lists right now, so they can't be registry
+    // constants.
+    component: 'select',
+  },
+
+  // ------------------------------------------------------------------------
   // Terminal, rendered as its own card inside Navigation & file ops.
   //
   // FE-owned: the frontend reads the choice and passes it to `listTerminalApps`

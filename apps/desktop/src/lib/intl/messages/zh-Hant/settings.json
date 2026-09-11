@@ -1479,6 +1479,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.textEditor": "文字編輯器",
+  "@settings.navigationAndFileOps.card.textEditor": {
+    "sourceHash": "95642d5"
+  },
   "settings.navigationAndFileOps.card.terminal": "終端機",
   "@settings.navigationAndFileOps.card.terminal": {
     "sourceHash": "e0926fd"
@@ -1510,6 +1514,14 @@
   "settings.revealHandler.notProductionBuild": "只有正式發行的 Cmdr 版本才能開啟這一項。開發版和測試版來來去去，一旦刪掉其中一個，每一次「在 Finder 中顯示」的點擊就都會指向空的地方。",
   "@settings.revealHandler.notProductionBuild": {
     "sourceHash": "20648ba"
+  },
+  "settings.behavior.textEditorApp.label": "編輯檔案時使用",
+  "@settings.behavior.textEditorApp.label": {
+    "sourceHash": "807338f"
+  },
+  "settings.behavior.textEditorApp.description": "Cmdr 會列出 macOS 在這台 Mac 上認得的文字編輯器。想用別的 App，請選擇「選擇 App…」。",
+  "@settings.behavior.textEditorApp.description": {
+    "sourceHash": "b062aed"
   },
   "settings.behavior.openTerminalHereApp.label": "「在此開啟終端機」使用",
   "@settings.behavior.openTerminalHereApp.label": {

@@ -2603,3 +2603,13 @@ WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「�
 - 英文相同的两对译文也逐字相同：`errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`、
   `errors.mount.authFailed` / `errors.shareList.authFailed`。引号 `“…”` 紧贴汉字，与 `errors.volume.permissionDenied`
   一致；`Cmdr`、`SMB 2`、`GVFS`、`smbclient` 与汉字之间留空格。
+
+## F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)
+
+- **text editor → `文本编辑器`** · Microsoft 术语库 `zh-Hans`（`text editor` → `文本编辑器`）·
+  `high`。指这一类 App，❌ 不是 Apple 的"文本编辑"App（它的名字由 `{app}` 带进来）。
+- **default text editor → `默认文本编辑器`** · 沿用目录里的 `默认编辑器`（`commands.fileEdit.label`）· `high`。
+- **Edit files in [app] → `编辑文件时使用`** · 句子接到下拉菜单里的 App 名，与
+  `settings.behavior.openTerminalHereApp.label` 的"……使用"同一结构 · `tentative`。
+- `{app}` 前后留空格。Dismiss、Open settings 与 `commands.handler.openTerminalHere.dismiss` /
+  `commands.handler.openTerminalHere.openSettings` 一致。

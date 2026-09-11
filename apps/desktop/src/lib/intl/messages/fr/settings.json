@@ -1489,6 +1489,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.textEditor": "Éditeur de texte",
+  "@settings.navigationAndFileOps.card.textEditor": {
+    "sourceHash": "95642d5"
+  },
   "settings.navigationAndFileOps.card.terminal": "Terminal",
   "@settings.navigationAndFileOps.card.terminal": {
     "sourceHash": "e0926fd",
@@ -1521,6 +1525,14 @@
   "settings.revealHandler.notProductionBuild": "Seule une version publiée de Cmdr peut activer ceci. Les versions de développement et de test vont et viennent, et en supprimer une laisserait chaque clic sur « Afficher dans le Finder » sans destination.",
   "@settings.revealHandler.notProductionBuild": {
     "sourceHash": "20648ba"
+  },
+  "settings.behavior.textEditorApp.label": "Modifier les fichiers avec",
+  "@settings.behavior.textEditorApp.label": {
+    "sourceHash": "807338f"
+  },
+  "settings.behavior.textEditorApp.description": "Cmdr liste les éditeurs de texte que macOS connaît sur ce Mac. Pour utiliser une autre app, choisissez « Choisir une app… ».",
+  "@settings.behavior.textEditorApp.description": {
+    "sourceHash": "b062aed"
   },
   "settings.behavior.openTerminalHereApp.label": "« Ouvrir un terminal ici » utilise",
   "@settings.behavior.openTerminalHereApp.label": {

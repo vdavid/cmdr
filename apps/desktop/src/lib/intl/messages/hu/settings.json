@@ -1480,6 +1480,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.textEditor": "Szövegszerkesztő",
+  "@settings.navigationAndFileOps.card.textEditor": {
+    "sourceHash": "95642d5"
+  },
   "settings.navigationAndFileOps.card.terminal": "Terminál",
   "@settings.navigationAndFileOps.card.terminal": {
     "sourceHash": "e0926fd"
@@ -1511,6 +1515,14 @@
   "settings.revealHandler.notProductionBuild": "Csak a Cmdr kiadott verziójában kapcsolhatod be. A fejlesztői és a tesztbuildek jönnek-mennek, és egy ilyen build törlése után minden „Megjelenítés a Finderben” kattintás a semmibe mutatna.",
   "@settings.revealHandler.notProductionBuild": {
     "sourceHash": "20648ba"
+  },
+  "settings.behavior.textEditorApp.label": "Szerkesztésre használt app",
+  "@settings.behavior.textEditorApp.label": {
+    "sourceHash": "807338f"
+  },
+  "settings.behavior.textEditorApp.description": "A Cmdr felsorolja a szövegszerkesztőket, amelyeket a macOS ismer ezen a Macen. Ha másik appot használnál, válaszd az „App kiválasztása…” lehetőséget.",
+  "@settings.behavior.textEditorApp.description": {
+    "sourceHash": "b062aed"
   },
   "settings.behavior.openTerminalHereApp.label": "A „Terminál megnyitása itt” appja",
   "@settings.behavior.openTerminalHereApp.label": {

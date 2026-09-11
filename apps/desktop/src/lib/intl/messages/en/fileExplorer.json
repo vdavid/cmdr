@@ -933,6 +933,33 @@
   "@fileExplorer.edit.notOnThisMac": {
     "description": "Info toast shown when the user presses F4 (edit) on a file with no regular file behind it on the Mac: a file on a phone or camera, on a server reached over SFTP or WebDAV, inside an archive, or in the virtual .git folders. A text editor can't open it yet, so the toast says so and points at F3, which opens Cmdr's own viewer and can show the file. \"Cmdr\" is the product name and \"F3\" a key name; keep both. Never use the words 'error' or 'failed'."
   },
+  "fileExplorer.edit.dismiss": "Dismiss",
+  "@fileExplorer.edit.dismiss": {
+    "description": "VERB (imperative). Button on a text editor toast (after F4) that closes it and changes nothing. Same wording as the commands.handler.openTerminalHere.dismiss button on the \"Open terminal here\" toasts; translate it identically."
+  },
+  "fileExplorer.edit.openSettings": "Open settings",
+  "@fileExplorer.edit.openSettings": {
+    "description": "VERB phrase (imperative). Button on the text editor toasts (after F4). Opens the Settings window scrolled to the row that picks which app F4 opens files in. Same wording as the commands.handler.openTerminalHere.openSettings button; translate it identically."
+  },
+  "fileExplorer.edit.appMissing": "Cmdr can''t find the editor you picked, so this file opened in {app}.",
+  "@fileExplorer.edit.appMissing": {
+    "description": "Toast shown after F4 when the app the user picked to edit files in isn't on this Mac right now (uninstalled, or on a disk that isn't connected). Cmdr opened the file in the system's default text editor instead and reset the setting to it. Names the app the file DID open in, because nothing is left to read the missing app's name from. Not phrased as something going wrong, because the file did open. \"Cmdr\" is the product name; keep it.",
+    "placeholders": {
+      "app": "the display name of the app the file opened in, as Finder shows it, like \"TextEdit\" or \"Xcode\". Any installed app's own name, never translated; phrase the sentence so it reads correctly whatever name lands here"
+    }
+  },
+  "fileExplorer.edit.appMissingUnnamed": "Cmdr can''t find the editor you picked, so this file opened in your default text editor.",
+  "@fileExplorer.edit.appMissingUnnamed": {
+    "description": "The same toast as fileExplorer.edit.appMissing, for the rare case where Cmdr can't name the default app the file opened in. \"your default text editor\" is the Mac's system-wide default app for text files. \"Cmdr\" is the product name; keep it."
+  },
+  "fileExplorer.edit.launchRefused": "Cmdr couldn''t start your text editor. Try opening it yourself once, then come back.",
+  "@fileExplorer.edit.launchRefused": {
+    "description": "Toast shown after F4 when macOS refused to launch the text editor. Opening the app by hand once usually clears whatever blocked it (a quarantine prompt, a permission), which is what the second sentence suggests. Same advice as commands.handler.openTerminalHere.launchRefused, with \"text editor\" in place of \"terminal app\". Conversational; avoid the words \"error\" and \"failed\"."
+  },
+  "fileExplorer.edit.timedOut": "Your text editor is taking a while to start. It may still open.",
+  "@fileExplorer.edit.timedOut": {
+    "description": "Toast shown after F4 when the editor launch outlived the few seconds Cmdr waits for it. Honest about not knowing: the editor may well appear a moment later. Conversational; avoid the words \"error\" and \"failed\"."
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Use F5 to copy files to MTP devices",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "description": "Info toast shown when the user tries to paste onto a phone/camera. It points them at the F5 copy flow instead. \"F5\" is a key name and \"MTP\" the phone/camera protocol; keep both."

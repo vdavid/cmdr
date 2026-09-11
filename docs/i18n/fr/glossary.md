@@ -3356,3 +3356,14 @@ mêmes cas pour « Se connecter au serveur » et n'est pas dans le tas de réfé
 - Même anglais, même français : `errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`,
   `errors.mount.authFailed` / `errors.shareList.authFailed`. Les trois notifications et
   `servers.refusal.accountNotPermitted` doublent l'apostrophe (ICU) ; les `errors.*` bruts gardent l'apostrophe simple.
+
+## F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)
+
+- **text editor → `éditeur de texte`** · terminologie Microsoft (`text editor` → `éditeur de texte`) · `high`. La
+  catégorie d’app, ❌ pas l’app TextEdit d’Apple, dont le nom arrive dans `{app}`.
+- **default text editor → `éditeur de texte par défaut`** · le catalogue (`commands.fileEdit.label` « Modifier dans
+  l’éditeur par défaut ») · `high`.
+- **Edit files in [app] → `Modifier les fichiers avec`** · la phrase continue dans le menu ; `avec` accepte tout nom
+  d’app sans article · `tentative`.
+- `{app}` suit `dans` sans article. Dismiss et Open settings identiques à `commands.handler.openTerminalHere.dismiss` /
+  `commands.handler.openTerminalHere.openSettings`.

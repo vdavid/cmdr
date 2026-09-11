@@ -617,6 +617,30 @@
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
+  "fileExplorer.edit.dismiss": "Bỏ qua",
+  "@fileExplorer.edit.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "fileExplorer.edit.openSettings": "Mở cài đặt",
+  "@fileExplorer.edit.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.edit.appMissing": "Cmdr không tìm thấy trình soạn thảo bạn đã chọn, nên tệp này đã mở trong {app}.",
+  "@fileExplorer.edit.appMissing": {
+    "sourceHash": "e063ef8"
+  },
+  "fileExplorer.edit.appMissingUnnamed": "Cmdr không tìm thấy trình soạn thảo bạn đã chọn, nên tệp này đã mở trong trình soạn thảo văn bản mặc định của bạn.",
+  "@fileExplorer.edit.appMissingUnnamed": {
+    "sourceHash": "421e9d9"
+  },
+  "fileExplorer.edit.launchRefused": "Cmdr chưa khởi động được trình soạn thảo văn bản của bạn. Hãy tự mở nó một lần rồi thử lại.",
+  "@fileExplorer.edit.launchRefused": {
+    "sourceHash": "741e049"
+  },
+  "fileExplorer.edit.timedOut": "Trình soạn thảo văn bản của bạn khởi động hơi lâu. Có thể nó vẫn sẽ mở.",
+  "@fileExplorer.edit.timedOut": {
+    "sourceHash": "70d283f"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Dùng F5 để sao chép tệp vào thiết bị MTP",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"

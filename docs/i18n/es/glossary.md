@@ -3079,3 +3079,14 @@ casos para «Conectarse al servidor» y no está en la pila.
 - **there's nothing to speed up → `no hay nada que acelerar`** · molde de `errors.eject.notAnSmbVolume` · `high`
 - Mismo inglés, mismo español: `errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable` y
   `errors.mount.authFailed` / `errors.shareList.authFailed`. Comillas curvas, como `errors.volume.permissionDenied`.
+
+## F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)
+
+- **text editor → `editor de texto`** · terminología de Microsoft (`text editor` → `editor de texto`) · `high`. Es la
+  categoría de app, ❌ no la app TextEdit de Apple, que llega como nombre en `{app}`.
+- **default text editor → `editor de texto por omisión`** · el catálogo ya dice `por omisión` para "default"
+  (`commands.fileEdit.label` "Editar en el editor por omisión") · `high`.
+- **Edit files in [app] → `Editar archivos con`** · la frase sigue en el desplegable; `con` acepta cualquier nombre de
+  app sin artículo ni género · `tentative`.
+- `{app}` va tras `en` sin artículo. Dismiss y Open settings iguales que `commands.handler.openTerminalHere.dismiss` /
+  `commands.handler.openTerminalHere.openSettings`.

@@ -11,7 +11,8 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 const { computeSpy, openFileViewerSpy, openInEditorSpy, addToastSpy } = vi.hoisted(() => ({
   computeSpy: vi.fn(),
   openFileViewerSpy: vi.fn(),
-  openInEditorSpy: vi.fn(),
+  // `$lib/text-editor` reads the report, so a plain open has to come back as one.
+  openInEditorSpy: vi.fn(() => Promise.resolve({ outcome: 'opened', openedInName: null, otherEditorsInstalled: null })),
   addToastSpy: vi.fn(),
 }))
 

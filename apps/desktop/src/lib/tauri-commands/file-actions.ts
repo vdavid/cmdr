@@ -18,6 +18,7 @@ import { throwIpcError } from './ipc-types'
 
 export type {
   DriveItemLinks,
+  EditorOpenOutcome,
   EditorOpenReport,
   OpenInEditorError,
   OpenTerminalError,

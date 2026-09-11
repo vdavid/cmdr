@@ -120,6 +120,7 @@ export {
 } from './file-actions'
 export type {
   DriveItemLinks,
+  EditorOpenOutcome,
   EditorOpenReport,
   OpenInEditorError,
   OpenTerminalError,

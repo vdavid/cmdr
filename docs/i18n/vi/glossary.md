@@ -3011,3 +3011,14 @@ trường hợp này cho "Kết nối với máy chủ", và kho tham chiếu kh
 - **Try again in a moment → `Hãy thử lại sau giây lát.`** · `errors.volume.deletePending` · `high`
 - Cùng tiếng Anh thì cùng tiếng Việt: `errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`,
   `errors.mount.authFailed` / `errors.shareList.authFailed`. Dấu ngoặc kép thẳng, như `errors.volume.permissionDenied`.
+
+## F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)
+
+- **text editor → `trình soạn thảo văn bản`** · thuật ngữ Microsoft (`text editor` → `trình soạn thảo văn bản`) ·
+  `high`. Là loại ứng dụng, ❌ không phải ứng dụng TextEdit của Apple (tên đó nằm trong `{app}`).
+- **default text editor → `trình soạn thảo văn bản mặc định`** · danh mục (`commands.fileEdit.label` "Chỉnh sửa bằng
+  trình soạn thảo mặc định") · `high`.
+- **Edit files in [app] → `Chỉnh sửa tệp bằng`** · câu nối tiếp vào menu thả xuống, `bằng` như `commands.fileEdit.label`
+  · `high`.
+- Dismiss và Open settings giống `commands.handler.openTerminalHere.dismiss` /
+  `commands.handler.openTerminalHere.openSettings`.

@@ -389,6 +389,10 @@ export interface SettingsValues {
    */
   'behavior.adbHintDismissed': boolean
 
+  // F4's editor: `system`, a bundle id, or an absolute `.app` path for a "Choose
+  // an app…" pick. Rust's `parse_choice` tells the three apart.
+  'behavior.textEditorApp': string
+
   // Open terminal here: a known terminal's bundle id, or an absolute `.app` path
   // for a "Choose an app…" pick. Rust's `parse_choice` tells the two apart.
   'behavior.openTerminalHereApp': string

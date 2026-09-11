@@ -88,6 +88,8 @@ export type SettingsSurface =
   | 'low-disk-toast'
   /** Either "Open terminal here" toast, deep-linking to the terminal-app row. */
   | 'open-terminal-toast'
+  /** Any text-editor toast (F4), deep-linking to the text editor row. */
+  | 'text-editor-toast'
   /** A clickable `ShortcutChip`, deep-linking to that command's row. */
   | 'shortcut-chip'
   /** The Quick Look hint toast, deep-linking to the Quick Look shortcut row. */

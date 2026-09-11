@@ -1486,6 +1486,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.textEditor": "Textredigerare",
+  "@settings.navigationAndFileOps.card.textEditor": {
+    "sourceHash": "95642d5"
+  },
   "settings.navigationAndFileOps.card.terminal": "Terminal",
   "@settings.navigationAndFileOps.card.terminal": {
     "sourceHash": "e0926fd",
@@ -1518,6 +1522,14 @@
   "settings.revealHandler.notProductionBuild": "Det här går bara att slå på i en släppt version av Cmdr. Utvecklings- och testversioner kommer och går, och raderar du en av dem skulle varje klick på ”Visa i Finder” peka på ingenting.",
   "@settings.revealHandler.notProductionBuild": {
     "sourceHash": "20648ba"
+  },
+  "settings.behavior.textEditorApp.label": "Redigera filer i",
+  "@settings.behavior.textEditorApp.label": {
+    "sourceHash": "807338f"
+  },
+  "settings.behavior.textEditorApp.description": "Cmdr listar de textredigerare som macOS känner till på den här Macen. För en annan app, välj ”Välj app…”.",
+  "@settings.behavior.textEditorApp.description": {
+    "sourceHash": "b062aed"
   },
   "settings.behavior.openTerminalHereApp.label": "”Öppna terminal här” använder",
   "@settings.behavior.openTerminalHereApp.label": {

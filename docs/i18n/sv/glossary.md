@@ -2934,3 +2934,14 @@ formulerar just de här fallen för ”Anslut till server” och saknas i refere
   `high`
 - Samma engelska, samma svenska: `errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`,
   `errors.mount.authFailed` / `errors.shareList.authFailed`.
+
+## F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)
+
+- **text editor → `textredigerare`** · Microsofts terminologi säger `textredigeringsprogram`; katalogen har redan
+  stammen `redigerare` (`commands.fileEdit.label` "Redigera i standardredigeraren", `menu.file.edit` "Öppna i
+  redigeraren"), och den gemensamma stammen avgör · `tentative`. Appslaget, ❌ inte Apples app TextEdit, vars namn
+  kommer i `{app}`.
+- **default text editor → `standardredigerare`** · katalogen (`commands.fileEdit.label`) · `high`.
+- **Edit files in [app] → `Redigera filer i`** · meningen fortsätter i menyn · `tentative`.
+- `{app}` efter `i`, utan böjning. Dismiss och Open settings samma som `commands.handler.openTerminalHere.dismiss` /
+  `commands.handler.openTerminalHere.openSettings`.

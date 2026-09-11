@@ -617,6 +617,30 @@
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
+  "fileExplorer.edit.dismiss": "Schließen",
+  "@fileExplorer.edit.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "fileExplorer.edit.openSettings": "Einstellungen öffnen",
+  "@fileExplorer.edit.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.edit.appMissing": "Cmdr findet den Editor nicht, den du gewählt hast, also wurde die Datei in {app} geöffnet.",
+  "@fileExplorer.edit.appMissing": {
+    "sourceHash": "e063ef8"
+  },
+  "fileExplorer.edit.appMissingUnnamed": "Cmdr findet den Editor nicht, den du gewählt hast, also wurde die Datei in deinem Standardeditor geöffnet.",
+  "@fileExplorer.edit.appMissingUnnamed": {
+    "sourceHash": "421e9d9"
+  },
+  "fileExplorer.edit.launchRefused": "Cmdr konnte deinen Text-Editor nicht starten. Öffne ihn einmal selbst und versuch es dann noch mal.",
+  "@fileExplorer.edit.launchRefused": {
+    "sourceHash": "741e049"
+  },
+  "fileExplorer.edit.timedOut": "Dein Text-Editor braucht länger zum Starten. Vielleicht geht er gleich noch auf.",
+  "@fileExplorer.edit.timedOut": {
+    "sourceHash": "70d283f"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Nutze F5, um Dateien auf MTP-Geräte zu kopieren",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"

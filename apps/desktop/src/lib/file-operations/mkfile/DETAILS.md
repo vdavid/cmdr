@@ -13,9 +13,10 @@ Flow and design rationale. The must-knows are in `CLAUDE.md`.
 3. On confirm, `createFile(currentPath, name, volumeId)` creates an empty file, then the dialog calls `onCreated(name)`
    and stops.
 4. The parent's `handleNewFileCreated` (`file-explorer/pane/dialog-state.svelte.ts`) then lands the cursor on the new
-   file via `moveCursorToNewFolder` (entry-type-agnostic; shared with mkdir) and opens it in the default editor via
-   `onOpenInEditor` (which calls `openInEditor`). If the editor launch fails (no default app, denied), the file is still
-   created and the dialog has already closed, so the user can open it manually.
+   file via `moveCursorToNewFolder` (entry-type-agnostic; shared with mkdir) and opens it in the user's chosen text
+   editor via `onOpenInEditor`, which runs the same F4 guard and launch as the pane (`openInEditorOrExplain` in
+   `file-explorer/pane/editor-open.ts`). If the editor launch fails (no default app, denied), the file is still created,
+   the dialog has already closed, and the launch's own toast says so, so the user can open it manually.
 
 ## Why simpler than `NewFolderDialog`
 

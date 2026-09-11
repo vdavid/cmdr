@@ -1485,6 +1485,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.textEditor": "Teksteditor",
+  "@settings.navigationAndFileOps.card.textEditor": {
+    "sourceHash": "95642d5"
+  },
   "settings.navigationAndFileOps.card.terminal": "Terminal",
   "@settings.navigationAndFileOps.card.terminal": {
     "sourceHash": "e0926fd",
@@ -1517,6 +1521,14 @@
   "settings.revealHandler.notProductionBuild": "Je kunt dit alleen aanzetten in een uitgebrachte versie van Cmdr. Dev- en testbuilds komen en gaan, en het verwijderen van zo''n build zou elke klik op ‘Toon in Finder’ naar niets laten wijzen.",
   "@settings.revealHandler.notProductionBuild": {
     "sourceHash": "20648ba"
+  },
+  "settings.behavior.textEditorApp.label": "Bewerk bestanden in",
+  "@settings.behavior.textEditorApp.label": {
+    "sourceHash": "807338f"
+  },
+  "settings.behavior.textEditorApp.description": "Cmdr toont de teksteditors die macOS op deze Mac kent. Voor een andere app kies je ‘Kies app…’.",
+  "@settings.behavior.textEditorApp.description": {
+    "sourceHash": "b062aed"
   },
   "settings.behavior.openTerminalHereApp.label": "‘Terminal hier openen’ gebruikt",
   "@settings.behavior.openTerminalHereApp.label": {

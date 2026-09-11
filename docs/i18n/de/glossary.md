@@ -2854,3 +2854,15 @@ genau diese Fälle für „Mit Server verbinden“ und fehlt im Stapel.
 - Gleiches Englisch, gleiches Deutsch: `errors.mount.hostUnreachable` = `errors.shareList.hostUnreachable`,
   `errors.mount.authFailed` = `errors.shareList.authFailed`. `errors.*` ist roh: normale Apostrophe, `„…“` wie
   `errors.volume.permissionDenied`.
+
+## F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)
+
+- **text editor → `Text-Editor`** · Microsoft-Terminologie (`text editor` → `Text-Editor`, AUT/DEU/CHE/LUX; daneben
+  `Editor`) · `high`. Bindestrich wie `Terminal-App`. Das Wort meint die App-Gattung, ❌ nicht Apples App TextEdit, die
+  `{app}` als Namen trägt.
+- **default text editor → `Standardeditor`** · der Katalog (`commands.fileEdit.label` „Im Standardeditor bearbeiten“) ·
+  `high`. Der ausgeschriebene `Standard-Text-Editor` wäre schwerfällig.
+- **Edit files in [App] → `Dateien bearbeiten mit`** · der Satz läuft ins Dropdown weiter; `mit` trägt jeden App-Namen
+  ohne Artikel · `tentative`.
+- `{app}` steht nach `in` ohne Artikel („in {app} geöffnet“), so passt jeder App-Name. Dismiss und Open settings
+  wortgleich mit `commands.handler.openTerminalHere.dismiss` / `commands.handler.openTerminalHere.openSettings`.

@@ -617,6 +617,30 @@
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
+  "fileExplorer.edit.dismiss": "Elvetés",
+  "@fileExplorer.edit.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "fileExplorer.edit.openSettings": "Beállítások megnyitása",
+  "@fileExplorer.edit.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.edit.appMissing": "A Cmdr nem találja a kiválasztott szerkesztőt, ezért a fájl ebben nyílt meg: {app}.",
+  "@fileExplorer.edit.appMissing": {
+    "sourceHash": "e063ef8"
+  },
+  "fileExplorer.edit.appMissingUnnamed": "A Cmdr nem találja a kiválasztott szerkesztőt, ezért a fájl az alapértelmezett szövegszerkesztődben nyílt meg.",
+  "@fileExplorer.edit.appMissingUnnamed": {
+    "sourceHash": "421e9d9"
+  },
+  "fileExplorer.edit.launchRefused": "A Cmdr nem tudta elindítani a szövegszerkesztődet. Nyisd meg egyszer magad, aztán próbáld újra.",
+  "@fileExplorer.edit.launchRefused": {
+    "sourceHash": "741e049"
+  },
+  "fileExplorer.edit.timedOut": "A szövegszerkesztőd lassabban indul. Lehet, hogy még megnyílik.",
+  "@fileExplorer.edit.timedOut": {
+    "sourceHash": "70d283f"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Az F5 billentyűvel másolhatsz fájlokat MTP-eszközökre",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"

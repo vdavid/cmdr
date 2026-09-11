@@ -617,6 +617,30 @@
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
+  "fileExplorer.edit.dismiss": "Avfärda",
+  "@fileExplorer.edit.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "fileExplorer.edit.openSettings": "Öppna inställningar",
+  "@fileExplorer.edit.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.edit.appMissing": "Cmdr hittar inte redigeraren du valde, så den här filen öppnades i {app}.",
+  "@fileExplorer.edit.appMissing": {
+    "sourceHash": "e063ef8"
+  },
+  "fileExplorer.edit.appMissingUnnamed": "Cmdr hittar inte redigeraren du valde, så den här filen öppnades i din standardredigerare.",
+  "@fileExplorer.edit.appMissingUnnamed": {
+    "sourceHash": "421e9d9"
+  },
+  "fileExplorer.edit.launchRefused": "Cmdr kunde inte starta din textredigerare. Öppna den själv en gång och försök igen.",
+  "@fileExplorer.edit.launchRefused": {
+    "sourceHash": "741e049"
+  },
+  "fileExplorer.edit.timedOut": "Din textredigerare tar en stund att starta. Den kan fortfarande dyka upp.",
+  "@fileExplorer.edit.timedOut": {
+    "sourceHash": "70d283f"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Använd F5 för att kopiera filer till MTP-enheter",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"

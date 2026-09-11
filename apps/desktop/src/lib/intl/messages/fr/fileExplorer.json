@@ -617,6 +617,30 @@
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
+  "fileExplorer.edit.dismiss": "Ignorer",
+  "@fileExplorer.edit.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "fileExplorer.edit.openSettings": "Ouvrir les réglages",
+  "@fileExplorer.edit.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.edit.appMissing": "Cmdr ne trouve pas l''éditeur que vous avez choisi, donc ce fichier s''est ouvert dans {app}.",
+  "@fileExplorer.edit.appMissing": {
+    "sourceHash": "e063ef8"
+  },
+  "fileExplorer.edit.appMissingUnnamed": "Cmdr ne trouve pas l''éditeur que vous avez choisi, donc ce fichier s''est ouvert dans votre éditeur de texte par défaut.",
+  "@fileExplorer.edit.appMissingUnnamed": {
+    "sourceHash": "421e9d9"
+  },
+  "fileExplorer.edit.launchRefused": "Cmdr n''a pas pu lancer votre éditeur de texte. Ouvrez-le une fois vous-même, puis réessayez.",
+  "@fileExplorer.edit.launchRefused": {
+    "sourceHash": "741e049"
+  },
+  "fileExplorer.edit.timedOut": "Votre éditeur de texte met du temps à démarrer. Il va peut-être encore s''ouvrir.",
+  "@fileExplorer.edit.timedOut": {
+    "sourceHash": "70d283f"
+  },
   "fileExplorer.clipboard.useF5ToMtp": "Utilisez F5 pour copier des fichiers vers les appareils MTP",
   "@fileExplorer.clipboard.useF5ToMtp": {
     "sourceHash": "8c20d0e"

@@ -49,7 +49,10 @@ const m = vi.hoisted(() => ({
   quickLookOpen: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   quickLookClose: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   getInfo: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
-  openInEditor: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
+  // `$lib/text-editor` reads the report, so a plain open has to come back as one.
+  openInEditor: vi.fn<(...a: unknown[]) => Promise<unknown>>(() =>
+    Promise.resolve({ outcome: 'opened', openedInName: null, otherEditorsInstalled: null }),
+  ),
   openTerminalHere: vi.fn<(...a: unknown[]) => Promise<string>>(() => Promise.resolve('opened')),
   syncMenuShowHidden: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   readClipboardText: vi.fn<() => Promise<string>>(() => Promise.resolve('')),

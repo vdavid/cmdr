@@ -3303,3 +3303,16 @@ csatlakozni ehhez: {hostName}” (`fileExplorer.network.share.connectFailedTitle
 - **„Try again in a moment” → `Próbáld újra egy pillanat múlva.`** · `errors.volume.deletePending` · `high`
 - Az azonos angol értékek magyarja is azonos: `errors.mount.hostUnreachable` = `errors.shareList.hostUnreachable`,
   `errors.mount.authFailed` = `errors.shareList.authFailed`. Aposztróf egyik értékben sincs.
+
+## F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)
+
+- **text editor → `szövegszerkesztő`** · Microsoft-terminológia (`text editor` → `szövegszerkesztő`; mellette
+  `szerkesztő`, `szerkesztőprogram`) · `high`. Az app-fajta neve, ❌ nem az Apple TextEdit appja, amelynek a neve a
+  `{app}` helyére kerül.
+- **default text editor → `alapértelmezett szövegszerkesztő`** · a katalógus `alapértelmezett szerkesztő` szerkezete
+  (`commands.fileEdit.label`) · `high`.
+- **Edit files in [app] → `Szerkesztésre használt app`** · a magyar címke nem folytatódhat toldalékkal egy ismeretlen
+  appnévbe, ezért névszói címke, ahogy a terminál sora (`settings.behavior.openTerminalHereApp.label`) · `tentative`.
+- **`{app}` toldalék nélkül**: „a fájl ebben nyílt meg: {app}”, mert a `-ban/-ben` illeszkedése a futásidőben érkező
+  névtől függene. Dismiss és Open settings azonos a `commands.handler.openTerminalHere.dismiss` /
+  `commands.handler.openTerminalHere.openSettings` fordításával.

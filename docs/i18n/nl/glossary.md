@@ -3355,3 +3355,14 @@ gevallen voor „Verbind met server” formuleert en niet in de stapel zit.
 - **Try again in a moment → `Probeer het zo meteen opnieuw.`** · `errors.volume.deletePending` · `high`
 - Zelfde Engels, zelfde Nederlands: `errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`,
   `errors.mount.authFailed` / `errors.shareList.authFailed`.
+
+## F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)
+
+- **text editor → `teksteditor`** · Microsoft-terminologie (`text editor` → `teksteditor`; daarnaast `editor`) · `high`.
+  De app-soort, ❌ niet Apples app TextEdit, waarvan de naam in `{app}` staat.
+- **default text editor → `standaardeditor`** · de catalogus (`commands.fileEdit.label` "Bewerk in standaardeditor") ·
+  `high`.
+- **Edit files in [app] → `Bewerk bestanden in`** · `Bewerk` is in deze catalogus gereserveerd voor een bestand in een
+  editor openen, precies dit · `high`.
+- `{app}` na `in`, zonder lidwoord. Dismiss en Open settings gelijk aan `commands.handler.openTerminalHere.dismiss` /
+  `commands.handler.openTerminalHere.openSettings`.

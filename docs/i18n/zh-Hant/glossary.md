@@ -1738,3 +1738,13 @@ machine?"，直接從這部 Mac 的 `.loctable` / `.strings` 比對英文鍵得�
 - 英文相同的兩對譯文也逐字相同：`errors.mount.hostUnreachable` / `errors.shareList.hostUnreachable`、
   `errors.mount.authFailed` / `errors.shareList.authFailed`。角括號 `「…」`；`Cmdr`、`SMB 2`、`GVFS`、`smbclient`
   前後留空格。
+
+## F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)
+
+- **text editor → `文字編輯器`** · Microsoft 術語庫 `zh-Hant`（`text editor` → `文字編輯器`）·
+  `high`。指這一類 App，❌ 不是 Apple 的「文字編輯」App（它的名字由 `{app}` 帶進來）。
+- **default text editor → `預設文字編輯器`** · 沿用目錄裡的 `預設編輯器`（`commands.fileEdit.label`）· `high`。
+- **Edit files in [app] → `編輯檔案時使用`** · 句子接到下拉選單裡的 App 名，與
+  `settings.behavior.openTerminalHereApp.label` 的「……使用」同一結構 · `tentative`。
+- `{app}` 前後留空格。Dismiss、Open settings 與 `commands.handler.openTerminalHere.dismiss` /
+  `commands.handler.openTerminalHere.openSettings` 一致。

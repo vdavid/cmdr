@@ -2881,3 +2881,14 @@ que redige esses mesmos casos para «Conectar ao Servidor» e não está na pilh
   `errors.mount.authFailed` / `errors.shareList.authFailed`. Aspas retas, como `errors.volume.permissionDenied`.
   Varredura pt-PT: zero `ficheiro`, `estar a` + infinitivo, próclise pt-PT (`se recusou` e `se conectar` são a colocação
   pt-BR).
+
+## F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)
+
+- **text editor → `editor de texto`** · terminologia da Microsoft pt-BR (`text editor` → `editor de texto`) · `high`. O
+  tipo de app, ❌ não o app TextEdit da Apple, cujo nome chega em `{app}`.
+- **default text editor → `editor de texto padrão`** · o catálogo (`commands.fileEdit.label` "Editar no editor padrão")
+  · `high`.
+- **Edit files in [app] → `Editar arquivos com`** · a frase continua no menu; `com` aceita qualquer nome de app sem
+  contração de gênero (`no`/`na`) · `tentative`.
+- `{app}` vem depois de `em`, sem artigo, pelo mesmo motivo. Dismiss e Open settings iguais a
+  `commands.handler.openTerminalHere.dismiss` / `commands.handler.openTerminalHere.openSettings`.
