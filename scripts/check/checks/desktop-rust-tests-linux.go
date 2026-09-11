@@ -217,6 +217,18 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 	return Success(fmt.Sprintf("All tests passed on Linux (provision log: %s)", provisionLog)), nil
 }
 
+// linuxTestTmpDir is where the container's tests make their temp folders (`TMPDIR`): a
+// tmpfs, so a test that syncs pays memory prices. On the overlay disk one fsync costs
+// ~2.4 ms (OrbStack, measured 2026-09-11), and tests that synced a few hundred times
+// crossed nextest's 8 s cap whenever the E2E lanes shared that disk.
+const linuxTestTmpDir = "/test-tmp"
+
+// linuxTestTmpfs mounts linuxTestTmpDir. Docker's `--tmpfs` defaults to `noexec` and 64 MiB,
+// both stricter than the disk temp folder it replaces, so the mount says `exec` and sizes
+// itself for the suite; it takes memory only as tests fill it. `CARGO_TARGET_DIR` stays on
+// disk: it's gigabytes, and the contention re-run reuses it.
+const linuxTestTmpfs = linuxTestTmpDir + ":rw,exec,mode=1777,size=4g"
+
 // startTestContainer brings up the detached container every phase execs into.
 //
 // The whole repo is mounted so cargo can find the workspace root Cargo.toml (and its
@@ -231,6 +243,8 @@ func startTestContainer(name, rootDir, logDir string) error {
 		"--name", name,
 		"-v", rootDir+":/repo",
 		"-v", logDir+":/cmdr-logs",
+		"--tmpfs", linuxTestTmpfs,
+		"-e", "TMPDIR="+linuxTestTmpDir,
 		"-w", "/repo",
 		"-e", "CARGO_TARGET_DIR=/tmp/cargo-target",
 		"rust:latest",
